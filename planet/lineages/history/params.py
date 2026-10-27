@@ -4,6 +4,7 @@ from __future__ import annotations
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 PIONEER_P = 1.0  # pressure a people's frontier carries into empty country, at most (its habitat there); 0: only its presence
+POLY_MKM2, POLY_MAX = 2.0, 4  # polycentric origins (owner 2026-10-27, origins._polycentric): a split founds in one patch per this many Mkm² of the parent's range, at most this many
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then
@@ -11,7 +12,7 @@ MIX_DROP = 0.6  # competition falls by this share by the present (from mixing_st
 ALPHA_CLOSED = 1.4  # competition in closed country (contact 0), whatever the niches: over 1, the larger excludes
 TAU_KYR = 1.0  # a people held above its competitive room declines toward it with this e-folding time
 REFUGE_MKM2 = 0.5  # ...more slowly as its range shrinks toward this (last refuges hold out: no line is pushed out)
-HOLD_MIN = 0.25  # PW-920: a people displaced below this share of its carrying density on a cell (p < HOLD_MIN x K) loses its hold there and
+HOLD_MIN = 0.25  # PW-920 (kept, PW-928: crude but sound): a people displaced below this share of its carrying density on a cell (p < HOLD_MIN x K) loses its hold there and
 # leaves (the Allee threshold: under a critical density a local population declines to nothing, Courchamp, Berec & Gascoigne 2008, Allee Effects
 # in Ecology and Conservation; critical densities of order a fifth to a quarter of K), so the rival moves in fully instead of the land
 # staying held by a thin remnant. Never below the refuge floor: the lapse takes cells only while the range exceeds REFUGE_MKM2 (displacement's own gate)
@@ -58,11 +59,20 @@ DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x 
 # spec.HOPS['flies'] over land and sea alike (birds disperse several times farther than mammals of their size, Paradis et al. 1998),
 # a land people over water its crossing craft's reach (crossing.modes, raft drift excepted: that is crossing.hop's), a sea people
 # (marine realm) JUMP_SWIM_KM over water (marine dispersal runs orders of magnitude farther than terrestrial, Kinlan & Gaines 2003)
-JUMP_RATE = 0.02  # jumps per kyr of a fully crowded, fully hemmed-in people (one in ~50 kyr: deep-time steps are kyr to Myr, rare jumps suffice)
+JUMP_RATE = 0.02  # jumps per kyr of a fully crowded, fully hemmed-in people (one in ~50 kyr: deep-time steps are kyr to Myr, rare jumps suffice).
+# Crude but sound (PW-928, coordinator 2026-10-27): no study gives a founding rate per people; one long relocation per ~2000 generations of a
+# boxed-in people keeps jumps the rare tail of dispersal (Nathan 2012: long-distance events are a small share of all moves) while a
+# squeezed people still gets several chances over a glacial cycle (~100 kyr)
 JUMP_SHAPE = 0.5  # c of the exponential-power kernel exp(-(d / L)^c)
-JUMP_KM, JUMP_SWIM_KM = 300.0, 1000.0
+JUMP_KM, JUMP_SWIM_KM = 800.0, 1000.0  # owner 2026-10-27: walkers ~800 km (was 300). Forager fronts advance ~0.5-1 km/yr (Ammerman &
+# Cavalli-Sforza 1984 for the Neolithic wave of advance ~1 km/yr; Hamilton & Buchanan 2007 ~0.5-1 km/yr for the Clovis spread), so a
+# kyr-long step spans 500-1000 km of advance. A long jump is a small scouting band seeking better country: the kernel exp(-D^0.5)
+# keeps a far landing rarer than a near one (few make it), and the founding weight (room there) favours the shorter successful ones
 JUMP_MAX = 25.0  # (jump lengths searched: exp(-25^0.5) = 0.7% of a jump next door)
 JUMP_HEMMED = 0.05  # 'no room next door': under this share of the cells next to its range are free good country (room and K >= 0.3)
+# (PW-928: a judgement threshold, kept: at a few percent of free frontier the ordinary spread still has somewhere to go; jumps are
+# the fallback of a people with essentially none, as long-distance dispersal is favoured when local competition is saturated,
+# Hamilton & May 1977, "Dispersal in stable habitats")
 EXPLORE_MARGIN = (0.25, 0.5)  # into marginal land (K < 0.3) the spread keeps a + (1 - a) K / 0.3, a = [0] + [1] x explore
 MVP_TAU_KYR = 2.0  # a separate patch of a people with fewer than meta.viable_pop people fades with this e-folding time
 MVP_EVERY_KYR = 1.0  # (looked at about this often; a people's largest patch is never faded: its refuges hold)

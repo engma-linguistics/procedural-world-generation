@@ -17,7 +17,13 @@ import numpy as np
 from . import spec as SP
 
 APART_FACTOR = 0.8  # an 'apart' wish of weight 1 cuts the pair's cohabitation by this share, a 'near' one closes this share of the gap to 1
-EARLY = 0.2  # before the late mixing every pair counts this much (a little contact, trade, a border village)
+EARLY = 0.2  # before the late mixing every pair counts this much (a little contact, trade, a border village)...
+# ...but among foragers (before the farming onset, `edge` given: PW-927) only in the contact zone where their ranges meet: forager
+# groups hold their own country (Dyson-Hudson & Smith 1978, "Human territoriality: an ecological reassessment"; Cashdan 1983, social
+# boundary defence) and meet other groups at its edges. Birdsell's Australian tribes married ~15% across tribal lines (Birdsell 1958,
+# 1973; Tindale 1953), the in-marrying spouses from the bands at the boundary: EARLY = 0.2 at equal density is a second people at ~17%
+# of a boundary cell. Inside one people's country the other counts EARLY_INTERIOR (no band of another tribe lives there)
+EARLY_INTERIOR = 0.0
 SUIT_K = 0.4  # a cell suits a people fully at habitat K >= this (less: in proportion; under the establishing threshold: not at all)
 REACH_CELLS = 10  # by the present a people's presence reaches this many cells beyond its range (travel, trade, settlers: ~560 km at L7)...
 REACH_DECAY = 0.85  # ...each cell out at this share of the one before, less in closed country...
@@ -62,11 +68,24 @@ def reach(g, Pw: np.ndarray, suit: np.ndarray, corr: np.ndarray, open_land: np.n
     return out
 
 
-def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: float, freq=None, dens=None) -> dict:
+def edges(g, Pw: np.ndarray, land: np.ndarray, est: float) -> np.ndarray:
+    """(lines x cells) bool: the cells of each people's range next to land it does not hold (its range's edge on land; a
+    coast is not a contact boundary). The composition's forager contact zone (compose `edge`, PW-927)."""
+    E = np.zeros(Pw.shape, bool)
+    for j in np.flatnonzero(Pw.max(1) >= est):
+        held = Pw[j] >= est
+        out = land & ~held
+        E[j] = held & np.logical_or.reduceat(out[g.nbr_idx], g.nbr_off[:-1])
+    return E
+
+
+def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: float, freq=None, dens=None, edge=None) -> dict:
     """Pw (lines x cells): each native people's presence (groups folded into their people); Pr: the same with the
     reach added (reach()). ramp 0..1: how far the late mixing has come. dens (per line, people/km2 at full
     habitat; None: all alike): the shares are shares of the cell's people, so presence is weighted by density (PW-703). Returns uint8 layers: mix_lead (index; the people with most heads, PW-705; the ground holder stays peoples_whole), mix_lead_share, mix_second (index; 255 none), mix_second_share,
-    mix_other_share (percent of the cell, summing to 100 where anyone lives; the leader is the largest share), and, per `freq` ({trait: line x cells share of the line}), body_<trait> (% of the cell)."""
+    mix_other_share (percent of the cell, summing to 100 where anyone lives; the leader is the largest share), and, per `freq` ({trait: line x cells share of the line}), body_<trait> (% of the cell).
+    edge (edges(); foragers, before the farming onset): a pair counts EARLY only where the cell is at the edge of either's
+    range, EARLY_INTERIOR inside both (PW-927)."""
     n, N = Pw.shape
     here = Pw.max(0) >= est
     out = {"mix_lead": np.full(N, 255, np.uint8), "mix_lead_share": np.zeros(N, np.uint8), "mix_second": np.full(N, 255, np.uint8),
@@ -79,7 +98,11 @@ def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: flo
     lead = Pw[:, cells].argmax(0)
     P = np.where(Pr[:, cells] >= 0.5 * est, Pr[:, cells], 0.0)  # (the leader holds the cell; the rest by presence or reach)
     P[lead, np.arange(len(cells))] = Pw[lead, cells]
-    rho = EARLY * (1 - ramp) + ramp * H[lead].T  # (lines x cells): how readily each lives beside the leader
+    early = EARLY
+    if edge is not None:  # (foragers: contact at the range edges only)
+        E = edge[:, cells]
+        early = np.where(E | E[lead, np.arange(len(cells))], EARLY, EARLY_INTERIOR)
+    rho = early * (1 - ramp) + ramp * H[lead].T  # (lines x cells): how readily each lives beside the leader
     rho[lead, np.arange(len(cells))] = 1.0
     W = P * rho
     if dens is not None:
