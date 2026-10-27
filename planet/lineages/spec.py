@@ -142,6 +142,7 @@ DEMOGRAPHY = {
     "insular": {"insularity": 0.85, "explore": 0.25},
 }
 DEMO_KEYS = tuple(DEMO_DEFAULT)
+GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
 VIABLE_POP = 500.0  # default meta.viable_pop
 
 
@@ -308,6 +309,7 @@ class Lineage:
     prefers: list[str] = field(default_factory=list)
     avoids: list[str] = field(default_factory=list)
     traits: list[str] = field(default_factory=list)
+    generation_yr: float = GENERATION_YR  # years per generation (history.origin_mvp scales a daughter's founding floor with the generations it must persist)
     speed_kmyr: float = 0.5  # expansion: how fast the frontier advances, km/yr (x the traits' speed)
     density: float | None = None  # people per km² at full habitat (None: from the traits, DEMOGRAPHY)
     explore: float | None = None  # 0..1, how readily it pushes into new land and over the sea
@@ -708,6 +710,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
+                    generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
                     body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
@@ -853,7 +856,7 @@ def to_raw(t: Tree) -> dict:
         elif l.parents:
             r["parents"] = l.parents
         r.update(temp_c=list(l.temp_c), rain_mm=list(l.rain_mm), prefers=l.prefers, avoids=l.avoids,
-                 traits=l.traits, speed_kmyr=l.speed_kmyr, **l.given_demo())
+                 traits=l.traits, speed_kmyr=l.speed_kmyr, generation_yr=l.generation_yr, **l.given_demo())
         if l.elev_m is not None:
             r["elev_m"] = list(l.elev_m)
         if l.marine or (l.origin == "split" and t.lines[l.parents[0]].marine):  # (a land tree's raw stays as it was)

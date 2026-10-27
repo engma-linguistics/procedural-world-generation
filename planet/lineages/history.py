@@ -46,7 +46,9 @@ LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, 
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
 ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
 SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (its habitable area)^z, z ~ 0.25-0.35 (the species-area relationship, Rosenzweig 1995, Species Diversity in Space and Time); islands keep some, as isolation drives speciation
-ORIGIN_MVP_MULT = 8.0  # PW-888: a landmass can take an origin only if it can carry a long-term minimum viable population, this many times tree.viable_pop (the founder size, 500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500. Founders still start at the founder size
+ORIGIN_MVP_MULT = 8.0  # PW-888: the census minimum viable population over the REFERENCE horizon, this many times tree.viable_pop (500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500, for about MVP_REF_GEN generations
+MVP_REF_GEN = 40.0  # ...Traill et al. 2007 take persistence over ~40 generations
+PERSIST_EXP = 1.0  # PW-888: a daughter must persist from its origin to the present, so the population it needs grows with the horizon. Lande 1993 (environmental stochasticity): mean persistence time T ~ K^c with c = 2r/sigma_e^2 - 1 (Foley 1994 for vertebrate data), so the K needed for T goes as T^(1/c). c = 1 is r = sigma_e^2, a population growing as fast as its environment fluctuates; the literature gives a spread of c, this is its middle, not a fit to any target. K_req = ORIGIN_MVP_MULT x viable_pop x (horizon in generations / MVP_REF_GEN)^(1/c)
 PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
 PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
 EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
@@ -549,7 +551,13 @@ class History:
         self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 0.3, 1))
         return blob
 
-    def _by_landmass(self, line, score, K, env, reach=None):
+    def origin_mvp(self, line, ago):
+        """PW-888: the people a landmass must carry for the line's origin to persist from `ago` (kyr before the present) to the present:
+        ORIGIN_MVP_MULT x viable_pop over MVP_REF_GEN generations, growing as the horizon in generations to 1/PERSIST_EXP (Lande 1993)."""
+        gens = max(ago, 0.0) * 1000.0 / max(line.generation_yr, 1e-6)
+        return ORIGIN_MVP_MULT * self.tree.viable_pop * max(gens / MVP_REF_GEN, 1.0) ** (1.0 / PERSIST_EXP)
+
+    def _by_landmass(self, line, score, K, env, reach=None, ago=0.0):
         """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
         glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
         long-term viable population (ORIGIN_MVP_MULT x tree.viable_pop, as _viable counts people), draws with probability (habitable area)^SPECIES_AREA_Z; the
@@ -565,12 +573,15 @@ class History:
         k = self.idx[line.id]
         cells = np.bincount(lab[suit], minlength=n).astype(float)
         founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
-        w = np.where(founders >= ORIGIN_MVP_MULT * self.tree.viable_pop, cells, 0.0) ** SPECIES_AREA_Z
+        ok = founders >= self.origin_mvp(line, ago)
+        if not ok.any():  # (none can carry it for the whole horizon: the one that carries most)
+            ok = founders >= founders.max()
+        w = np.where(ok, cells, 0.0) ** SPECIES_AREA_Z
         if reach is not None:  # (founders carried over the sea: a landmass is drawn in proportion to how readily the crossing reaches it)
             top = np.zeros(n)
             np.maximum.at(top, lab[suit], reach[suit])
             w = w * top
-        if np.count_nonzero(w) < 2:
+        if np.count_nonzero(w) < 1:
             return score
         pick = int(self._lrng[line.id].choice(n, p=w / w.sum()))
         return np.where(lab == pick, score, 0.0)
@@ -608,7 +619,7 @@ class History:
                                 pull = m if pull is None else pull * m
                                 score = score * m
             if not line.place:
-                score = self._by_landmass(line, score, K, env)
+                score = self._by_landmass(line, score, K, env, ago=step.ago)
             if line.place:
                 la, lo = np.radians(line.place)
                 c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
@@ -677,7 +688,7 @@ class History:
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
-            score = self._by_landmass(line, score, K, env, reach)
+            score = self._by_landmass(line, score, K, env, reach, step.ago)
             cell = int(np.argmax(score))
             why = ("isolated part of the parent's range" if lab[cell] != big else
                    "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
