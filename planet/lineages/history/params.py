@@ -65,7 +65,10 @@ JUMP_RATE = 0.02  # jumps per kyr of a fully crowded, fully hemmed-in people (on
 # boxed-in people keeps jumps the rare tail of dispersal (Nathan 2012: long-distance events are a small share of all moves) while a
 # squeezed people still gets several chances over a glacial cycle (~100 kyr)
 JUMP_SHAPE = 0.5  # c of the exponential-power kernel exp(-(d / L)^c)
-JUMP_KM, JUMP_SWIM_KM = 300.0, 1000.0
+JUMP_KM, JUMP_SWIM_KM = 800.0, 1000.0  # owner 2026-10-27: walkers ~800 km (was 300). Forager fronts advance ~0.5-1 km/yr (Ammerman &
+# Cavalli-Sforza 1984 for the Neolithic wave of advance ~1 km/yr; Hamilton & Buchanan 2007 ~0.5-1 km/yr for the Clovis spread), so a
+# kyr-long step spans 500-1000 km of advance. A long jump is a small scouting band seeking better country: the kernel exp(-D^0.5)
+# keeps a far landing rarer than a near one (few make it), and the founding weight (room there) favours the shorter successful ones
 JUMP_MAX = 25.0  # (jump lengths searched: exp(-25^0.5) = 0.7% of a jump next door)
 JUMP_HEMMED = 0.05  # 'no room next door': under this share of the cells next to its range are free good country (room and K >= 0.3)
 # (PW-928: a judgement threshold, kept: at a few percent of free frontier the ordinary spread still has somewhere to go; jumps are
