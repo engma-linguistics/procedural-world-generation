@@ -1,8 +1,10 @@
 ---
-title: RULED (floor B built, not sufficient): under the species-area origin draw (PW-888) some peoples now found on small landmasses and start thin: humans at 100 kyr ago, elves on 1df1c3
+id: PW-919
+title: "RULED (floor B built, not sufficient): under the species-area origin draw (PW-888) some peoples now found on small landmasses and start thin: humans at 100 kyr ago, elves on 1df1c3"
 type: task
 status: todo
 parent: PW-692
+milestone: null
 subsystem: timezoom
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: fun-lane-30
 blocked_by: []
 relates: [PW-888, PW-885]
 refs: [planet/lineages/history.py, "world 2a7385", "world 1df1c3", "dnd tries 7000-7007"]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -58,3 +62,6 @@ Tried, measured over the same 24 rolls, not merged (no change beyond roll noise)
 - r3, home ground: a rival's closed-country (territorial) term on a cell x min(1, its K / one's own), so the better suited holds its own ground: main < 100 on 1/1/0/3/3/2 rolls (9/24 vs 10/24); goliath 9 -> 15, drow 1 -> 2, cloud giant 6 -> 2, gnome 11 -> 9: reshuffles rolls, no net gain.
 Origin share (top origin landmass, mean of 4 rolls, vs its share of the land): 2a7385 82% on 70%, 1df1c3 55% on 32%, e71172 74% on 48%, 6909cb 73% on 55%, a12762 78% on 82%, 067778 88% on 76%. Worse than main on 2a7385 (61% on 70% before PW-888, 49% with z 0.3 on the old trees). Cause: the reptilian root moved from 320 Myr to 20 Myr (and its lines from 100-250 Myr to <= 3 Myr), so the reptile peoples no longer had hundreds of Myr of drift and rafting to spread. Every people now comes from 3 roots plus the arrivals, and under the existing crossing law a 20 Myr tree does not cross 1000-2300 km seas. r2 is the "disperse before splitting" fix through that law, and it does not move the share. Lowering the share needs a ruling, not a constant: either accept phylogenetic clustering (descendants near their ancestors) as the 20 Myr consequence, or let the roots draw separate landmasses.
 Leftovers: draft-squeezed-peoples-dispersal-limited.md (needs-decision).
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-small-landmass-founders-start-thin.md (found by fun-lane-30).

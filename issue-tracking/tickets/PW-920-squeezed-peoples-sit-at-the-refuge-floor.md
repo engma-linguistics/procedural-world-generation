@@ -1,8 +1,10 @@
 ---
+id: PW-920
 title: Squeezed peoples sit at the refuge floor (160 cells at L7) because their free habitat is in other patches they cannot reach overland; pick a mechanism (or accept)
 type: task
 status: needs-decision
 parent: PW-692
+milestone: null
 subsystem: timezoom
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: fun-lane-30
 blocked_by: []
 relates: [PW-888, PW-887, PW-885]
 refs: [planet/lineages/history.py, planet/lineages/spread.py, "worlds 2a7385 1df1c3 e71172 6909cb a12762 067778", "dnd 7000-7003"]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -20,3 +24,6 @@ Options:
 - C. Scale the refuge floor with the people's own habitat (e.g. a share of its K >= 0.5 country) instead of a fixed 0.5 Mkm2.
 Lean: B (it is the missing process), behind the 6 x 4 sweep.
 - [ ] each people >= 300 cells on ~70% of rolls, or the exceptions ruled niche
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-squeezed-peoples-dispersal-limited.md (found by fun-lane-30).
