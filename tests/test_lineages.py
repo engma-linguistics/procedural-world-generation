@@ -1507,7 +1507,7 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_ruminant_peopl
                  ("lizardfolk", "dragonborn"), ("lizardfolk", "kobold"), ("lizardfolk", "draconic")):
         assert tier(a, b) == 3, (a, b)
     assert tier("draconic", "dragonborn") == 2 and tier("draconic", "kobold") == 2
-    assert t.lines["draconic"].persists and t.lines["draconic"].ago_kyr >= 10_000  # (the ur-dragon: near the root, ~19.5 Myr)
+    assert not t.lines["draconic"].persists and t.lines["draconic"].ago_kyr >= 10_000  # (the ur-dragon: near the root, ~19.5 Myr; it ends at its last split, PW-924)
     assert tier("arha", "anja") == 0 and tier("lizard_desert", "lizard_delta") == 0 and tier("aarakocra", "kenku") == 0
     # goliaths are sisters of the humans, not giant-kin
     assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
@@ -1940,20 +1940,21 @@ def test_an_arrival_whose_hybrid_is_wanted_comes_down_within_reach_of_the_other_
 
 
 def test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome():
-    """PW-855: the draconic stem is the dragons: dinosaur-era reptiles that persist as megafauna at giant-like density, with the
-    chromatic and metallic kinds as groups by biome; the lizardfolk and tortles split from the reptile line as long ago, so
+    """PW-855: the draconic stem is the dragons: dinosaur-era reptiles, megafauna at giant-like density, whose chromatic and metallic
+    kinds split into the colours, each in its own country; the stems end at their last split (PW-924: no dragon of no set colour); the lizardfolk and tortles split from the reptile line as long ago, so
     the dragon-blooded peoples are no kin of them."""
     chromatic, metallic = {"red", "blue", "green", "black", "white"}, {"gold", "silver", "bronze", "copper", "brass"}
     for name in ("dnd", "seven_meals"):
         t = LR.load_tree(name)
         d = t.lines["draconic"]
-        assert d.persists and d.megafauna and d.ago_kyr >= 10_000 and t.lines[d.parents[0]].ago_kyr <= 20_000  # (the ur-dragon: near a root no older than 20 Myr)
+        assert not d.persists and d.megafauna and d.ago_kyr >= 10_000 and t.lines[d.parents[0]].ago_kyr <= 20_000  # (the ur-dragon: near a root no older than 20 Myr)
         for g in ("chromatic_dragon", "metallic_dragon"):  # (owner: the two great kinds split ~2.5 Myr ago)
-            assert t.lines[g].parents == ["draconic"] and 1_000 <= t.lines[g].ago_kyr <= 4_000 and t.lines[g].megafauna
-        assert d.demo("density") <= 0.01 and "draconic" in [x.id for x in t.leaves()]
-        kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon") and l.origin == "group"}
-        assert set(kinds) == chromatic | metallic
-        assert all(l.group_of == ("chromatic_dragon" if l.id.removesuffix("_dragon") in chromatic else "metallic_dragon") and l.prefers and 500 <= l.ago_kyr <= 1_000 for l in kinds.values())
+            assert t.lines[g].parents == ["draconic"] and 1_000 <= t.lines[g].ago_kyr <= 4_000 and t.lines[g].megafauna and not t.lines[g].persists
+        leaves = [x.id for x in t.leaves()]
+        assert d.demo("density") <= 0.01 and not {"draconic", "chromatic_dragon", "metallic_dragon"} & set(leaves)
+        kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon") and l.origin == "split" and l.id in leaves}
+        assert set(kinds) == chromatic | metallic and all(l.megafauna for l in kinds.values())
+        assert all(l.parents == ["chromatic_dragon" if l.id.removesuffix("_dragon") in chromatic else "metallic_dragon"] and l.prefers and 500 <= l.ago_kyr <= 1_000 for l in kinds.values())
         assert len({tuple(l.prefers) for l in kinds.values()}) >= 8  # (kinds differ by biome)
         for k in ("lizardfolk", "tortle"):
             assert t.lines[k].ago_kyr <= 3_000 and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3

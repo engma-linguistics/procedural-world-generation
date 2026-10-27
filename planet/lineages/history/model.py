@@ -96,9 +96,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
                 self.alpha[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
                 self.terr[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
-        riv = np.array([l.rivalry for l in self.lines])  # (metallic dragons coexist more readily: weaker competition both ways, PW-924)
-        self.alpha *= riv[:, None] * riv[None, :]
-        self.terr *= riv[:, None] * riv[None, :]
+        riv = np.array([l.rivalry for l in self.lines])  # (metallic dragons coexist more readily with other megafauna: weaker competition
+        rv = np.where(mega[:, None] & mega[None, :], riv[:, None] * riv[None, :], 1.0)  # both ways, among megafauna only: coexistence, not numbers, PW-924)
+        self.alpha *= rv
+        self.terr *= rv
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:

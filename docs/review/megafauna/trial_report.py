@@ -17,7 +17,7 @@ runs = {}
 for d in DENS:
     z = np.load(S / d / "2a7385-7000.npz")
     runs[d] = {"pres": json.loads(str(z["pres"])), "tags": dict(zip([str(x) for x in z["tagnames"]], z["tags"])),
-               "label": z["label"], "level": int(z["level"])}
+               "label": z["label"], "level": int(z["level"]), "P": z["P"].astype(np.float32), "ids": [str(x) for x in z["ids"]]}
 g = build_grid(runs["5000"]["level"])
 lat = np.degrees(np.arcsin(g.centers[:, 2]))
 lon = np.degrees(np.arctan2(g.centers[:, 1], g.centers[:, 0]))
@@ -35,21 +35,26 @@ def dragons(d):
     return {kind_of(k): v for k, v in mf.items() if kind_of(k)}
 
 
-def base(ax, box=None, country=None):
-    sel = land if box is None else land & (lat > box[2]) & (lat < box[3]) & (lon > box[0]) & (lon < box[1])
-    sea = ~land if box is None else ~land & (lat > box[2]) & (lat < box[3]) & (lon > box[0]) & (lon < box[1])
-    s = 0.25 if box is None else 9
-    ax.scatter(lon[sea], lat[sea], s=s, c="#dfe9f3", marker="s", linewidths=0)
-    ax.scatter(lon[sel], lat[sel], s=s, c="#e8e2d0", marker="s", linewidths=0)
+def rgb(h):
+    return np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)]) / 255.0
+
+
+def base(ax, box=None, country=None, px=900):
+    """A raster base map (nearest cell per pixel): sea, land, mountains a shade darker, and a kind's country highlighted."""
+    x0, x1, y0, y1 = box if box else (-180, 180, -90, 90)
+    nx = px
+    ny = max(2, int(px * (y1 - y0) / max(x1 - x0, 1e-6) * (1 if box is None else 1 / max(np.cos(np.radians(0.5 * (y0 + y1))), 0.3))))
+    LO, LA = np.meshgrid(np.linspace(x0, x1, nx), np.linspace(y1, y0, ny))
+    la, lo = np.radians(LA.ravel()), np.radians(LO.ravel())
+    pts = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], 1)
+    c = g.locate(pts)
+    img = np.where(land[c][:, None], rgb("#e6dfc8"), rgb("#cfe0ef"))
+    img = np.where((land & T["mountain"])[c][:, None], rgb("#c9bd9c"), img)
     if country is not None:
-        c = sel & T[country[0]]
-        ax.scatter(lon[c], lat[c], s=s, c=country[1], marker="s", linewidths=0)
+        img = np.where((land & T[country[0]])[c][:, None], rgb(country[1]), img)
+    ax.imshow(img.reshape(ny, nx, 3), extent=(x0, x1, y0, y1), aspect="auto" if box else "equal", interpolation="nearest")
     ax.set_xticks([]); ax.set_yticks([])
-    if box:
-        ax.set_xlim(box[0], box[1]); ax.set_ylim(box[2], box[3])
-    else:
-        ax.set_xlim(-180, 180); ax.set_ylim(-90, 90)
-    ax.set_aspect("equal")
+    ax.set_xlim(x0, x1); ax.set_ylim(y0, y1)
 
 
 def png(fig):
@@ -61,14 +66,14 @@ def png(fig):
 
 imgs = {}
 # 1. world maps: every dragon pocket, a dot sized by count, one panel per density
-fig, axs = plt.subplots(1, 3, figsize=(15, 3.4))
+fig, axs = plt.subplots(1, 3, figsize=(15, 2.9))
 for ax, d in zip(axs, DENS):
     base(ax)
     tot = 0
     for k, r in dragons(d).items():
         ps = r["pocket_list"]
         tot += r["count"]
-        ax.scatter([p["lon"] for p in ps], [p["lat"] for p in ps], s=[4 + 3 * p["count"] for p in ps], c=KINDS[k],
+        ax.scatter([p["lon"] for p in ps], [p["lat"] for p in ps], s=[6 + 10 * np.sqrt(p["count"]) for p in ps], c=KINDS[k],
                    edgecolors="k", linewidths=0.2, alpha=0.85)
     ax.set_title(f"1 per {int(d):,} km²: ~{tot:,} dragons", fontsize=11)
 imgs["world"] = png(fig)
@@ -87,7 +92,7 @@ def close(d, lid, tag, col, word, km=900):
     base(ax, box, (tag, col))
     near = [q for q in r["pocket_list"] if box[0] < q["lon"] < box[1] and box[2] < q["lat"] < box[3]]
     for q in near:
-        ax.scatter(q["lon"], q["lat"], s=60 + 40 * q["count"], c=KINDS[kind_of(lid)], edgecolors="w", linewidths=1.2, zorder=3)
+        ax.scatter(q["lon"], q["lat"], s=80 + 60 * np.sqrt(q["count"]), c=KINDS[kind_of(lid)], edgecolors="w", linewidths=1.2, zorder=3)
         ax.annotate(str(q["count"]), (q["lon"], q["lat"]), ha="center", va="center", color="w", fontsize=9, weight="bold", zorder=4)
     n = sum(q["count"] for q in near)
     title = f"this {word} has {p['count']} {kind_of(lid)} dragon{'s' if p['count'] > 1 else ''}"
@@ -117,8 +122,11 @@ for ax, d in zip(axs, DENS):
     n = 0
     for k, r in dragons(d).items():
         ps = [p for p in r["pocket_list"] if box[0] < p["lon"] < box[1] and box[2] < p["lat"] < box[3]]
-        n += sum(p["count"] for p in ps)
-        ax.scatter([p["lon"] for p in ps], [p["lat"] for p in ps], s=[15 + 12 * p["count"] for p in ps], c=KINDS[k], edgecolors="k", linewidths=0.3)
+        r_ = runs[d]
+        P = r_["P"][r_["ids"].index(k + "_dragon")]
+        inb = (lat > box[2]) & (lat < box[3]) & (lon > box[0]) & (lon < box[1]) & (P >= 0.12)
+        n += int(round(float(P[inb].sum()) * r["per_km2"] * 4 * np.pi * 6371.0 ** 2 / g.n))  # (expected, cell by cell in the square)
+        ax.scatter([p["lon"] for p in ps], [p["lat"] for p in ps], s=[12 + 18 * np.sqrt(p["count"]) for p in ps], c=KINDS[k], edgecolors="k", linewidths=0.3)
     region[d] = n
     ax.set_title(f"1 per {int(d):,} km²: expect ~{n} here", fontsize=10)
 imgs["region"] = png(fig)
@@ -165,13 +173,13 @@ td:first-child,td:nth-child(2),th:first-child,th:nth-child(2){{text-align:left}}
 .tot td{{font-weight:600}}
 </style></head><body>
 <h1>Dragon density trial: 1 per 1,000 / 5,000 / 10,000 km²</h1>
-<div class="mut">World 2a7385 (seed 11, L7), dnd peoples seed 7000, PW-923. Dots are pockets of country with dragons, sized by how many; colours are the kinds. Pick one density.</div>
+<div class="mut">World 2a7385 (seed 11, L7), dnd peoples seed 7000, PW-923. Dots are pockets of country with dragons, sized by how many; colours are the kinds; each density is its own history run, so pockets move between panels. Every kind lives only in its own country (PW-924); no dragon is of no set colour. Pick one density.</div>
 <h2>The world</h2><img src="{imgs['world']}">
 <h2>Close up (1 per 5,000 km²)</h2><div class="row">{closes}</div>
 <h2>A region: {region_where}</h2><img src="{imgs['region']}">
 <h2>Dragons by kind, on the five landmasses with the most</h2>
 <table><tr><th>landmass</th><th>kind</th>{th}</tr>{''.join(body)}</table>
-<p class="mut">Megafauna are counted per pocket (presence x density x area, rounded). Giants are unchanged by this trial (~1 per 100-200 km², in steadings). The code default is 1 per 5,000 km².</p>
+<p class="mut">Megafauna are counted per pocket (presence x density x area, rounded); the regional "expect" sums the same cell by cell in the square. Giants are unchanged by this trial (~1 per 100-200 km², in steadings). The code default is 1 per 5,000 km².</p>
 </body></html>"""
 (OUT / "density-trial.html").write_text(html)
 print(json.dumps({"totals": tot, "region": region, "top": top}))

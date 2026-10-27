@@ -33,9 +33,9 @@ COUNTRY = {"wetland": "swamp", "forest": "forest", "jungle": "jungle", "volcanic
            "open": "open country", "shore": "coast", "sea": "sea"}
 
 
-SCATTER_RATE = 0.2  # new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
+SCATTER_RATE = 1.0  # (PW-924 coverage: was 0.2) new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
 SCATTER_MAX = 3  # stays a mystery), in free suitable country within SCATTER_LINKS of its reach (link_km) of a pocket it holds; they do not
-SCATTER_LINKS = 3.0  # wait for crowding as a people's jump does (History._jump), and they settle beside peoples, whom they hardly press
+SCATTER_LINKS = 5.0  # wait for crowding as a people's jump does (History._jump), and they settle beside peoples, whom they hardly press
 
 
 def scatter(h: History, l, k: int, K: np.ndarray, step, env: dict) -> None:
@@ -148,7 +148,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
              "one_per_km2": int(round(1.0 / max(h.dens[k], 1e-12))), "generation_yr": l.generation_yr,
              "group_size": list(l.group_size) if l.group_size else None,
              "by_landmass": dict(sorted(by.items(), key=lambda x: -x[1])), "pocket_list": pockets}
-        if S is not None and not l.marine:
+        if S is not None:  # (suitable: the kind's own country, its prefers, as its habitat sits at MEGAFAUNA_OFF elsewhere)
             suit = S[k] >= SUITABLE
             if suit.any():
                 sl, sn = g.components(suit)

@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import spec as SP
 from ..spread import EST, graph_dist
-from .params import HOLOCENE_KYR, NEAR_KM, NEAR_ORIGIN, NEAR_ORIGIN_KM, NEAR_RANGE
+from .params import HOLOCENE_KYR, MEGAFAUNA_OFF, NEAR_KM, NEAR_ORIGIN, NEAR_ORIGIN_KM, NEAR_RANGE
 from .gridops import _isin, _soft
 from .tags import _tags
 
@@ -52,7 +52,7 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
         match = np.zeros(len(K), bool)
         for t in line.prefers:
             match |= has(t)
-        K = K * np.where(match, 1.0, 0.4)
+        K = K * np.where(match, 1.0, MEGAFAUNA_OFF if line.megafauna else 0.4)
     for t in line.avoids:
         K = K * np.where(has(t), 0.25, 1.0)
     cb = line.trait("coast", 0.0)
