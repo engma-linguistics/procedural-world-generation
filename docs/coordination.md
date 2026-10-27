@@ -7,7 +7,7 @@ Durable how-to for the coordinating session: worktrees, merging, the server, run
 - Iterate at level 6 (~5 min per run is fine); level 7 is the showcase default.
 - Ask about genuine judgement calls (as `needs-decision` tickets); nudge systems rather than force them. Correct the owner's wrong assumptions rather than building on them.
 - No backward compatibility: old runs, worlds and zooms can be deleted whenever a change breaks them (`uv run python -m planet delete run:<id>` / `world:` / `zoom:`, or `--orphans`). Don't keep code paths only so old runs replay.
-- Run `uv run pytest` (~5 min; `-m 'not slow'` skips the level-5 envelope worlds) before every commit that touches `planet/`. Run `uv run python tools/scorecard.py` (~11 min) after model changes, and `tools/earth_check.py` after climate changes.
+- Lanes run `uv run pytest -m 'not slow'` (plus the tests of the area they touched) before committing under `planet/`. The full suite (~30 min under sim load; `test_timezoom_consistency`'s 51-seed fixture alone is ~29 min) runs once, by the coordinator, at merge. Physics lanes that touch the run or time zoom also run the slow tests for their area. Run `uv run python tools/scorecard.py` (~11 min) after model changes, and `tools/earth_check.py` after climate changes.
 
 ## Parallel agents and merging
 Each agent works in its own worktree, `.claude/worktrees/<branch>`, with `data runs worlds zooms grids` symlinked to the main checkout. Agents stop every background task they started (servers, runs, wait loops) before their final report, or they stay listed as running after they're done. Agents report remaining issues as inbox drafts (`issue-tracking/inbox/draft-*.md`, see `issue-tracking/README.md`), and should merge main before reporting.
