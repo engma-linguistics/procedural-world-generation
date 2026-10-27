@@ -1,4 +1,5 @@
 ---
+id: PW-921
 title: Animals and Crops could share a neutral base class instead of Crops subclassing Animals
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: pw901-history-split
 blocked_by: []
 relates: [PW-901]
 refs: [planet/lineages/animals.py, planet/lineages/crops.py, planet/lineages/crop_defs.py]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -29,3 +32,6 @@ events, run.json, run.txt and briefs for two worlds, two trees, two seeds, base 
 say) is planned, or when next editing either class; otherwise leave it.
 - [ ] `Crops` no longer inherits from `Animals`
 - [ ] outputs bit-identical on the probe matrix; no golden updated
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-animals-crops-base-class.md (found by pw901-history-split).

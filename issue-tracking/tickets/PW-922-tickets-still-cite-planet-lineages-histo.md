@@ -1,4 +1,5 @@
 ---
+id: PW-922
 title: Tickets still cite planet/lineages/history.py, which is now a package
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: pw901-history-split
 blocked_by: []
 relates: [PW-901]
 refs: [planet/lineages/history/, issue-tracking/tickets/, docs/review/backlog-workgroups/proposal.md]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,3 +33,6 @@ spans several). Leave done/wontdo tickets and the review docs alone, or add one 
 saying the file became a package; Updates are append-only, so do not rewrite old entries.
 - [ ] open tickets' refs point at existing paths
 - [ ] `grep -l "lineages/history.py"` finds only closed tickets and dated review docs
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-repoint-history-py-refs.md (found by pw901-history-split).
