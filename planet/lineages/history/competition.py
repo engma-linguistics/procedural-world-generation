@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import spec as SP
 from ..spread import EST, rivals_load
-from .params import INVADE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
+from .params import HOLD_MIN, INVADE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
 from .pressure import crowding, invasion_weights, pioneer_factors
 
 
@@ -55,6 +55,12 @@ class CompetitionMixin:
                 held = (self.p[k] >= EST).sum() * self.cell_mkm2
                 r = (1 - np.exp(-step.dt / TAU_KYR)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1) * (1.0 - pio)  # (a newcomer's founders are not displaced, PW-869)
                 self.p[k][over] -= r * (self.p[k][over] - room[over])
+                if r > 0 and HOLD_MIN > 0:  # (the hold lapses where it is thinned under HOLD_MIN x K, the range kept above the refuge floor)
+                    lapse = np.flatnonzero(over & (self.p[k] >= EST) & (self.p[k] < HOLD_MIN * K))
+                    spare = int((self.p[k] >= EST).sum() - np.ceil(REFUGE_MKM2 / self.cell_mkm2))
+                    if len(lapse) and spare > 0:
+                        lapse = lapse[np.argsort(self.p[k][lapse] / np.maximum(K[lapse], 1e-9), kind="stable")[:spare]]
+                        self.p[k][lapse] = 0.0
                 self.p[k][self.p[k] < EST] = 0
             if not deep and not l.marine:
                 crowd = crowding(K, room, self.p[k] >= EST)

@@ -11,6 +11,10 @@ MIX_DROP = 0.6  # competition falls by this share by the present (from mixing_st
 ALPHA_CLOSED = 1.4  # competition in closed country (contact 0), whatever the niches: over 1, the larger excludes
 TAU_KYR = 1.0  # a people held above its competitive room declines toward it with this e-folding time
 REFUGE_MKM2 = 0.5  # ...more slowly as its range shrinks toward this (last refuges hold out: no line is pushed out)
+HOLD_MIN = 0.25  # PW-920: a people displaced below this share of its carrying density on a cell (p < HOLD_MIN x K) loses its hold there and
+# leaves (the Allee threshold: under a critical density a local population declines to nothing, Courchamp, Berec & Gascoigne 2008, Allee Effects
+# in Ecology and Conservation; critical densities of order a fifth to a quarter of K), so the rival moves in fully instead of the land
+# staying held by a thin remnant. Never below the refuge floor: the lapse takes cells only while the range exceeds REFUGE_MKM2 (displacement's own gate)
 NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0.5 w) at the other's border, e-folding 300 km
 NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
