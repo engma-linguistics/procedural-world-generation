@@ -549,6 +549,7 @@ def update_climate(sim, e):
                         rain_start=sim.rain_state)
     sim.rain_state = c["rain_state"]  # the next update's rain starts from it (PW-387)
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
+    sim.sst = c["sst"]  # (the sea's own surface temperature: the reefs', PW-876)
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
@@ -572,6 +573,23 @@ def update_climate(sim, e):
     update_vegetation(sim, e)
     sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
+
+
+def bed_thawed(ice, t_s, precip, geo=0.065):
+    """Share (0..1) of each ice column's bed at the melting point
+    (timezoom.kernels.thawed, Robin 1955, vectorised): ice (m) thick, t_s
+    (C) the ice surface's annual mean, the accumulation ~ the
+    precipitation (mm/yr, as m/yr of ice: on a sheet nearly all of it is
+    snow) carrying the surface's cold down, geo (W/m2) geothermal heat (the
+    time zoom's geo_flux). 0 where there is no ice."""
+    from math import sqrt
+    from ..timezoom.kernels import K_ICE, KAPPA_ICE, PMP
+    h = np.maximum(np.asarray(ice, float), 0.0)
+    acc = np.maximum(np.asarray(precip, float), 0.0) / 1000.0
+    g = geo / K_ICE
+    L = np.sqrt(2.0 * KAPPA_ICE * h / np.maximum(acc, 1e-6))
+    rise = np.where(acc > 1e-6, g * L * (sqrt(np.pi) / 2) * _erf(h / np.maximum(L, 1e-9)), g * h)
+    return np.where(h > 0, np.clip(1.0 + (np.asarray(t_s, float) + rise + PMP * h) / 2.0, 0.0, 1.0), 0.0)
 
 
 def veg_feedback(sim):
@@ -968,20 +986,6 @@ def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS, *, cost):
     return iced
 
 
-def degree_days(t_warm, t_cold, sd=5.0):
-    """Positive degree-days in a year whose months run sinusoidally from
-    t_cold to t_warm, the days scattered around each month's mean with
-    standard deviation sd (C) (Reeh 1991, as the time zoom)."""
-    mid, half = 0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold)
-    total = np.zeros_like(mid)
-    for m in range(12):
-        t = mid + half * np.cos(2 * np.pi * m / 12)
-        x = t / sd
-        cdf = 0.5 * (1 + _erf(x / np.sqrt(2)))
-        total += (365.25 / 12) * (sd / np.sqrt(2 * np.pi) * np.exp(-0.5 * x * x) + t * cdf)
-    return total
-
-
 def _erf(x):
     """Abramowitz-Stegun 7.1.26 (|error| < 1.5e-7)."""
     s = np.sign(x)
@@ -999,8 +1003,13 @@ def erode(sim, col):
     t, cover, x, cont, rock = col.t, col.cover, col.x, col.cont, col.rock
     # Glaciers grind their beds hard where they slide on meltwater (the
     # 'glacial buzzsaw' that keeps ranges from growing much above the
-    # snowline); polar ice frozen to its bed protects it instead.
-    k_mult = np.where(sim.ice > 0, np.where(sim.t_warm > -8, p.glacial_erosion, 0.3), 1.0)
+    # snowline); polar ice frozen to its bed protects it instead. Whether
+    # the bed is thawed: the time zoom's rule (Robin's steady column,
+    # bed_thawed), on the ice surface's annual mean, the ice's thickness and
+    # the snow falling on it (PW-872; was warm month > -8 C, a threshold set
+    # on the bare ground's temperatures before PW-277).
+    wet = bed_thawed(sim.ice, sim.temp, sim.precip)
+    k_mult = np.where(sim.ice > 0, 0.3 + (p.glacial_erosion - 0.3) * wet, 1.0)
     # Plants (once they exist) hold soil on wet ground; bare wet ground
     # washes away faster (vegetation's ground cover: canopy, herbs, moss and
     # crust). Deserts are bare either way.
@@ -1114,7 +1123,7 @@ def reefs(sim, col, dep, chem):
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
     e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
-    reef = (e < -5) & (e > -1500) & (sim.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
+    reef = (e < -5) & (e > -1500) & (sim.sst >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
     rate = p.reef_rate * (1.0 if sim.t >= reef_builders_t(sim) - 1e-9 else MICROBIAL_REEF)
     grow = np.minimum(rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
     carb = grow / sediment_iso(cont, rock, sed)

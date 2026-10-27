@@ -233,7 +233,7 @@ def orbit_dt(run: dict, st: dict) -> np.ndarray:
     if p.orbit_resp == "seasons":  # (each cell's own response to the orbit, its seasons', PW-459: from the frame's
         # climate at the mean orbit, the bare ground's under its ice)
         from . import climate, icemass
-        gw, gc, _ = climate.compute(grid, st["elevation"] + st["ice"], st["dT"], tilt,
+        gw, gc, _ = climate.compute(grid, st["elevation"], st["dT"], tilt,  # (the bed: compute adds the ice, PW-871)
                                     np.where(land, st["ice"], 0.0))["ground"]
         own = icemass.seasonal_k(grid.lat, gw, gc, tilt)
     d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), tilt,

@@ -280,7 +280,8 @@ def floor_age(sim, cells, cont):
 def arc_rock(sim, col, growth):
     """Arc rock: on continents wherever arcs build; at sea only once the
     crust has thickened into a real island arc. Returns where."""
-    arcky = (growth * sim.dt_now > 0.1) & (col.rock != CRATON) & (col.cont | (col.t > OCEAN_KM + 5))
+    # (a rate: km/Myr x the run's step, so a finish-window step's shorter length doesn't raise the bar, PW-915)
+    arcky = (growth * sim.dt > 0.1) & (col.rock != CRATON) & (col.cont | (col.t > OCEAN_KM + 5))
     col.rock[arcky] = ARC
     return arcky
 
@@ -307,7 +308,7 @@ def stretch(sim, col, rate, plume, newc, stack_add=None):
     record.rift(col.rec, thin & (rate > RIFT_THINNING), np.log(t0 / np.maximum(t, 1e-9)), sim.t)
     sim.book("stretch", t0, t, col.cont)
     rifted_margin(sim, t0 - t, col, newc)
-    col.rock[~col.cont & (plume * dt > 0.2)] = HOTSPOT
+    col.rock[~col.cont & (plume * sim.dt > 0.2)] = HOTSPOT  # (a rate, at the run's step: PW-915)
 
 
 MARGIN_MIN_KM = 12.0  # thinnest rifted-margin crust laid in a rift (else: ocean floor)

@@ -1897,7 +1897,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # smooth it), redrawn on the finished valleys after the landscape pass
     ice_n = ZK.fbm(Pk, 0.4 * sp, _octaves(0.4 * sp, 2 * res), 0.6, S + 5) / 0.17
     lat_px = np.degrees(np.arcsin(np.clip(P[:, 2], -1, 1)))
-    tilt_w = float(world["meta"].get("params", {}).get("tectonics", {}).get("tilt", 23.4))
+    tilt_w = float(world["meta"].get("params", {}).get("tilt", 23.4))
 
     def glacier_mask(hh, stop):
         _, rec_g, order_g = ZK.flood_d8(hh, outlet, nx, ny, 1e-3, jitter_g)
@@ -3183,7 +3183,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     vz = ZVG.compute(world, fr, nx, ny, res, seed, size_km,
                      ZVG.surface(h.astype(np.float32), lake_depth.astype(np.float32), water), water, ice_l,
                      discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log,
-                     want_fractions=True, rock=surf_f, landform=form_f)  # (and the soils, PW-331)
+                     want_fractions=True, rock=surf_f, landform=form_f,  # (and the soils, PW-331)
+                     glacial_loess=glac_loess if glac_stats else None)
     veg_l, tr = vz["layers"], vz["terrain"]
     # --- coastal and shallow-sea life (zoom_coastal, PW-188); names mangrove and salt-marsh pixels
     cz = ZCL.place(world, fr, Pk, px, py, nx, ny, res, size_km, seed, h, water, glacier, d_sea, surf_f,
@@ -3317,7 +3318,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "climate": clim_f,
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
-        **({"glacial_form": glac_form, "loess": glac_loess.astype(np.float32)} if glac_stats else {}),
+        **({"glacial_form": glac_form} if glac_stats else {}),  # (its loess goes to the soils' "loess", PW-884)
         "wetland": wetland,
         "barrier_island": bi_layer,
         "coastal_life": cz["layer"],
@@ -3484,7 +3485,8 @@ LAYER_DOC = {
     "glacial_form": ("enum", "what the ice left (zoom_glacial, PW-092): 0 none; 1 trough (U-valley), 2 cirque, "
                              "3 moraine belt, 4 drumlin field, 5 outwash plain, 6 loess blanket (>= 2 m), "
                              "7 fjord (a trough the sea floods), 8 overdeepened or moraine-dammed lake, 9 esker, 10 kettle pit"),
-    "loess": ("m", "wind-blown silt thickness: downwind of the glacial outwash (zoom_glacial; the ground under it is softened)"),
+    "loess": ("m", "wind-blown silt thickness: the world's soils' loess, or the zoom's glacial loess downwind of the "
+                   "outwash where thicker (zoom_glacial; the ground under it is softened)"),
     "coastal_life": ("enum", "coastal and shallow-sea life (zoom_coastal, PW-188): 0 none, 1 coral reef, 2 kelp "
                              "forest, 3 seagrass meadow (sea); 4 mangrove, 5 salt marsh (land between the tides); "
                              "legend 'coastal_life'"),

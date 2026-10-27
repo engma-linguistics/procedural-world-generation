@@ -85,6 +85,7 @@ class Simulation:
         "climate_t",  # Myr: when the climate fields were computed
         "rain_state",  # the rain kernel's end state at that update (climate.compute's; None before the first)
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
+        "sst",  # C: the sea surface's annual mean (the reefs', PW-876)
         "precip", "p_jul", "p_jan",  # mm/yr: annual, July, January
         "runoff", "aet", "lake_evap",  # mm/yr
         "koppen",  # climate.KOPPEN id
@@ -163,6 +164,7 @@ class Simulation:
         self.climate_t = 0.0
         self.rain_state = None
         self.temp = self.t_warm = self.t_cold = None
+        self.sst = None  # C, the climate's sea-surface temperature (earth.update_climate)
         self.precip = self.p_jul = self.p_jan = None
         self.runoff = self.aet = self.lake_evap = None
         self.koppen = self.wind = self.current = None

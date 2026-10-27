@@ -73,7 +73,7 @@ def glaciers(world: dict, pa, pr, pc, Pk, P, h, land, sea, ring, nb: int, res: f
     jul = np.where(fields["p_jul"] + fields["p_jan"] > 0, jul, 0.5)
     noise = ZK.fbm(Pk, 0.4 * sp, Z._octaves(0.4 * sp, 2 * res), 0.6, S + 5) / 0.17
     lat = latlon(P)[0]
-    tilt = float(world["meta"].get("params", {}).get("tectonics", {}).get("tilt", 23.4))
+    tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
     jitter = Z.tie_jitter(Pk, res, S + 63)
     _, rec, order = ZK.flood_d8(h, ring | sea, nb, nb, 1e-3, jitter)
     glacier, th = Z.glaciers(h, rec, order, land, sea, nb, nb, res, fields["warm_sl"], fields["cold_sl"],

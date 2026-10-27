@@ -239,7 +239,7 @@ def surface(elevation, lake_depth, water) -> np.ndarray:
 
 def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul,
                  cloud_jan, slope, res, rock, landform, plain, strip, hollow, glacier, nx, ny, idx,
-                 river_q=None, river_km=None) -> dict:
+                 river_q=None, river_km=None, glacial_loess=None) -> dict:
     """soils.zoom_mineral on the bare land pixels idx (their climate,
     slope (tan), floodplain and river-strip shares, hollows, the nearest
     river's discharge and km to it, all (nv,)):
@@ -262,6 +262,8 @@ def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold
         f, _ = ZK.gauss_interp(pxv, pyv, cx, cy, np.asarray(L["loess"], float)[sel][:, None],
                                (np.asarray(L["elevation"])[sel] > 0)[:, None].astype(float), 0.5 * g.spacing * R_KM)
         loess = np.nan_to_num(f[:, 0])
+    if glacial_loess is not None:  # (the zoom's own glacial loess, zoom_glacial, PW-884: the soils grow on it)
+        loess = np.maximum(loess, np.asarray(glacial_loess, float).ravel()[idx])
     ice_km = ZT.nearest(np.asarray(glacier, bool), nx, ny)[0][idx] * res
     return SO.zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, slope, res, rock,
                            landform, lfa, glac, plain, strip, hollow, loess, salt, ice_km, river_q, river_km)
@@ -276,7 +278,7 @@ SOIL_LAYER_DOC = {k: (S.LAYERS[k]["units"], S.LAYERS[k]["description"] + " (per 
 
 def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: float, h, water, ice, discharge,
             area, marsh, fields: dict | None = None, log=print, want_fractions: bool = False, rock=None,
-            landform=None) -> dict:
+            landform=None, glacial_loess=None) -> dict:
     """Vegetation of a zoom (see the module doc). h: ground (m, lake beds
     included) and water (0 land, 1 sea, 2 lake), with lake_depth folded in
     by the caller as h_surface; ice (m), discharge (m^3/s), area
@@ -376,7 +378,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     # its fertility and permafrost, for the vegetation
     t_s = time.time()
     sp_m = soil_mineral(world, fr, px[idx], py[idx], sel, cell, latv, temp, t_warm, t_cold, pj, pn, tilt,
-                        cj, cn, slope, res, rock, landform, plain, rip, wet, glacier, nx, ny, idx, rq, dist)
+                        cj, cn, slope, res, rock, landform, plain, rip, wet, glacier, nx, ny, idx, rq, dist, glacial_loess)
     t_soil = time.time() - t_s
 
     # --- productivity, in batches -----------------------------------------
