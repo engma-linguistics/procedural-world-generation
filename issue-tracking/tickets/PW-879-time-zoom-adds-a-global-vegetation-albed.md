@@ -2,7 +2,7 @@
 id: PW-879
 title: Time zoom adds a global vegetation-albedo cooling on top of a glacial cooling sized on Earth's whole LGM cooling
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-470, PW-471]
 refs: [planet/timezoom/params.py, planet/timezoom/plants.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Coupling audit finding C6 (severity low for the Earth-like v1 finish; docs/revie
 **What to try:** Either take ~5% off glacial_cool (say so in its comment) or keep the explicit term and note that glacial_cool excludes vegetation. Fold into the ice-age epic.
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-25: Created from inbox draft draft-timezoom-vegetation-albedo-on-top-of-lgm-cooling.md (found by coupling-audit).

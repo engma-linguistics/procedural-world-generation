@@ -1,4 +1,5 @@
 ---
+id: PW-934
 title: "PW-877 remainder: months' snowmelt and the three permafrost tests still disagree"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-17
 blocked_by: []
 relates: [PW-877]
 refs: [planet/climate.py, planet/icemass.py, planet/soils.py, planet/vegetation.py, planet/hydrology.py]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -20,3 +23,6 @@ earth.ICE_DDF" comment now points at icemass. Left open:
   DDF 3/8, 60% refreeze: give months icemass's PDD melt (one snow rule)
 - [ ] one permafrost class (soils' nival-offset one) shared by vegetation.flooded (temp < -2) and hydrology (>= 6 months below -2 C)
 - [ ] measure the snow-albedo change with fmtally over two re-rolled draw sets
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-pw877-remainder-one-snow-and-permafrost-rule.md (found by v1-finish-17).

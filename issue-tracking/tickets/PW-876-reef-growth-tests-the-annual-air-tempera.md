@@ -2,7 +2,7 @@
 id: PW-876
 title: Reef growth tests the annual air temperature against reef_temp, which is documented as sea-surface temperature
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: surface
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/earth.py, planet/tectonics/volcanism.py, planet/coastal.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Coupling audit finding C7 (severity low for the Earth-like v1 finish; docs/revie
 **What to try:** Keep the climate's sst on the sim (sim.sst) and test it, or lower reef_temp by ~1.7 C and relabel it as air.
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-25: Created from inbox draft draft-reefs-read-air-temperature-as-sea-surface.md (found by coupling-audit).

@@ -2,7 +2,7 @@
 id: PW-884
 title: A zoom's stored loess layer is the soils' interpolated world loess, not the glacial loess the zoom drew
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/zoom.py, planet/zoom_vegetation.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Coupling audit finding C12 (severity low for the Earth-like v1 finish; docs/revi
 **What to try:** Name the glacial one glacial_loess (or feed it to the soils as their loess).
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-25: Created from inbox draft draft-zoom-loess-layer-overwritten-by-soils.md (found by coupling-audit).

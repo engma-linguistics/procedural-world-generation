@@ -2,7 +2,7 @@
 id: PW-915
 title: Audit the run's per-step amounts for step-length dependence now that the finish window steps 0.5 Myr
 type: task
-status: todo
+status: done
 parent: PW-244
 milestone: v1
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-866]
 refs: [planet/tectonics/simulation.py, planet/tectonics/earth.py]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 ## Description
@@ -33,4 +33,5 @@ learnt at dt = 2:
 - [ ] audit done, any further per-step amount scaled to per-dt
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-26: Created from inbox draft draft-step-length-audit.md (found by v1-finish-16).

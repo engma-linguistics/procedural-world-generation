@@ -2,7 +2,7 @@
 id: PW-883
 title: Zoom glaciers read the tilt from meta.params.tectonics, the zoom's climate and plants from meta.params
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/zoom.py, planet/zoom_fine_forms.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Coupling audit finding C11 (severity low for the Earth-like v1 finish; docs/revi
 **What to try:** Read meta.params.tilt everywhere.
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-25: Created from inbox draft draft-zoom-glaciers-read-a-different-tilt-key.md (found by coupling-audit).

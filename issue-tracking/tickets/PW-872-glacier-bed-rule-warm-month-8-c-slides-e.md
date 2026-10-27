@@ -2,7 +2,7 @@
 id: PW-872
 title: Glacier bed rule (warm month > -8 C slides, else frozen) was set on the bare-ground frame and now reads the ice surface
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: surface
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-277]
 refs: [planet/tectonics/earth.py, planet/timezoom/params.py, "runs 0ceebf 172922 2b0b65 6b48f5", docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Coupling audit finding C5 (severity low-med for the Earth-like v1 finish; docs/r
 **What to try:** Re-derive the bed regime from the ice's own state (thickness and surface temperature, e.g. the time zoom's sliding rule or a pressure-melting estimate), or at least re-check the -8 C on the post-PW-277 temperatures against the glacial-erosion calibration.
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged v1-finish-17 (paired with main on two rolls: indistinguishable).
 - 2026-10-25: Created from inbox draft draft-glacier-bed-threshold-in-pre-pw277-frame.md (found by coupling-audit).
