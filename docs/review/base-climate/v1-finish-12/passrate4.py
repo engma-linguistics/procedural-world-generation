@@ -42,8 +42,9 @@ def judge(t, si, dT, a, b):
     hell = med > 10.5 or mx > 15.5
     icebox = share >= 90 or deep >= 30
     never = share < 5
-    return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, icebox=icebox, never=never,
-                ok=not hell and not icebox and not never)
+    # owner 2026-10-27: only a hellhouse fails a world; icebox and never-ice are reported as colour (life carries on).
+    # The set-level check (sanity in fmtally) flags the sim as wrong if nearly all worlds are iceboxes or nearly all hellhouses.
+    return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, icebox=icebox, never=never, ok=not hell)
 
 
 def flags(j):

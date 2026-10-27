@@ -85,3 +85,9 @@ backs = [r[8]["before_end_myr"] for r in rows if r[8]["passes"]]
 if backs:
     print(f"look-back of passing moments (Myr): median {np.median(backs):g}, max {max(backs):g}, "
           f"at the end {sum(b == 0 for b in backs)}/{len(backs)}")
+
+# set-level sanity (owner 2026-10-27): nearly all worlds icebox, or nearly all hellhouse, means the sim is wrong
+for q in sorted({r[0] for r in rows}):
+    rs = [r for r in rows if r[0] == q]
+    ib, hl = sum(bool((r[3] or {}).get("icebox")) for r in rs), sum(bool((r[3] or {}).get("hell")) for r in rs)
+    print(f"{q}: icebox {ib}/{len(rs)}, hellhouse {hl}/{len(rs)}" + ("  << SIM SUSPECT" if max(ib, hl) >= 0.8 * len(rs) else ""))
