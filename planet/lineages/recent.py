@@ -32,6 +32,7 @@ from .. import timeline as T
 from ..geo import R_KM
 from ..grid import Grid, build_grid
 from ..provenance import code_version
+from .gridops import dist_km
 
 TZ_LAYERS = ("elevation", "ice", "temperature", "climate", "tree_cover")
 RAIN_K = 0.07  # per C: the time zoom's rain scaling (Clausius-Clapeyron)
@@ -73,9 +74,7 @@ class Episode:
 
 
 def _cap(grid: Grid, lat: float, lon: float, radius_km: float) -> np.ndarray:
-    la, lo = np.radians(lat), np.radians(lon)
-    c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
-    d = np.arccos(np.clip(grid.centers @ c, -1, 1)) * R_KM
+    d = dist_km(grid, lat, lon)
     return np.where(d < radius_km, 0.5 * (1 + np.cos(np.pi * d / radius_km)), 0.0)
 
 

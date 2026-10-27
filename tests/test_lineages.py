@@ -108,6 +108,7 @@ def test_recent_saved_as_a_viewable_time_zoom(faketz):
 
 # ---- the input and the history -------------------------------------------------------------------
 from planet.lineages import history as H  # noqa: E402
+from planet.lineages.gridops import nbr_reduce  # noqa: E402
 from planet.lineages import output as O  # noqa: E402
 from planet.lineages import run as LR  # noqa: E402
 from planet.lineages import spec as SP  # noqa: E402
@@ -1180,8 +1181,8 @@ def test_salt_distance_and_sources_and_sea_food():
     g, L, land, isl = _toy_world()
     n = g.n
     sea = ~land
-    coast = land & SF._nbr(g, np.logical_or, sea[g.nbr_idx])
-    inland = land & ~coast & ~SF._nbr(g, np.logical_or, coast[g.nbr_idx])
+    coast = land & nbr_reduce(g, np.logical_or, sea[g.nbr_idx])
+    inland = land & ~coast & ~nbr_reduce(g, np.logical_or, coast[g.nbr_idx])
     pit = int(np.flatnonzero(inland)[0])
     L["res_salt"] = np.zeros(n)
     L["res_salt"][pit] = 0.9
@@ -1221,8 +1222,8 @@ def test_salt_playa_lick_and_basin_brine():
     g, L, land, isl = _toy_world()
     n = g.n
     sea = ~land
-    coast = land & SF._nbr(g, np.logical_or, sea[g.nbr_idx])
-    inland = np.flatnonzero(land & ~coast & ~SF._nbr(g, np.logical_or, coast[g.nbr_idx]))
+    coast = land & nbr_reduce(g, np.logical_or, sea[g.nbr_idx])
+    inland = np.flatnonzero(land & ~coast & ~nbr_reduce(g, np.logical_or, coast[g.nbr_idx]))
     a, b, c = int(inland[0]), int(inland[len(inland) // 2]), int(inland[-1])
     L["salinity"] = np.where(sea, 35.0, 0.0)
     L["precipitation"] = np.full(n, 1000.0)
@@ -1383,7 +1384,7 @@ def test_sparse_smooth_equals_the_full_neighbour_mean(faketz):
     rng = np.random.default_rng(3)
     for frac in (0.0, 0.002, 0.05, 0.4):
         x = np.where(rng.random(g.n) < frac, rng.random(g.n), 0.0)
-        full = np.maximum(x, H._nbr(np.add, x[g.nbr_idx], g) / np.diff(g.nbr_off))
+        full = np.maximum(x, nbr_reduce(g, np.add, x[g.nbr_idx]) / np.diff(g.nbr_off))
         assert np.array_equal(h._smooth(x), full)
 
 

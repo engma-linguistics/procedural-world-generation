@@ -33,6 +33,7 @@ from .. import coastform as CF
 from ..coastal import ramp
 from ..geo import R_KM
 from ..kernels import bfs_within
+from .gridops import nbr_reduce
 
 ROCK_MIN = 0.2  # res_salt likelihood below this is not worked
 SRC_MIN = 0.25  # a cell with salt at least this is a source for the distance
@@ -68,14 +69,10 @@ def _kind(L: dict, k: str) -> np.ndarray:
     return np.asarray(L[k]).astype(int)
 
 
-def _nbr(g, ufunc, v):
-    return ufunc.reduceat(v, g.nbr_off[:-1])
-
-
 def _nmax(g, v, mask=None):
     """Max of v over each cell's neighbours (and itself), optionally only neighbours in mask."""
     w = v if mask is None else np.where(mask, v, 0.0)
-    return np.maximum(w, _nbr(g, np.maximum, w[g.nbr_idx]))
+    return np.maximum(w, nbr_reduce(g, np.maximum, w[g.nbr_idx]))
 
 
 def _sea_to_coast(g, v, sea, coast, rings=2):

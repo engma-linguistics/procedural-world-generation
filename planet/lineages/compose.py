@@ -1,6 +1,6 @@
 """Who lives in a cell, as a composition (PW-689): the leading people's share, the second's, and an 'other' rest.
 
-Presence (history.py) says which peoples hold ground in a cell; this says how they share it, as shares of the
+Presence (history/) says which peoples hold ground in a cell; this says how they share it, as shares of the
 cell's people (presence x density, PW-703), so a dense people beside a sparse one is most of the heads. Not a recipe: the
 shares come out of who reaches the cell (their presence there) and who will live with whom (the cohabitation
 matrix: each people's openness, the wishes' near/apart, defaults). Before the late mixing (`mixing_start`,

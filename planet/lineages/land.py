@@ -22,6 +22,7 @@ import time
 import numpy as np
 
 from ..geo import R_KM, world_land
+from .gridops import nbr_reduce
 
 REACH = 0.7  # an ore district's or a coast's good reaches one cell ring inland at this share (a people settles around it)
 DISTRICT_MIN = 0.5  # cells at or above this make a district (resources.DISTRICT_MIN)
@@ -87,13 +88,9 @@ MISSING_SHARE = 0.02  # a living good on less than this share of the land (at 1/
 _CACHE: dict = {}
 
 
-def _nbr(grid, ufunc, vals):
-    return ufunc.reduceat(vals, grid.nbr_off[:-1])
-
-
 def _reach(grid, v):
     """A district's good reaches the next cell ring at REACH of its value (the country around it)."""
-    return np.maximum(v, REACH * _nbr(grid, np.maximum, v[grid.nbr_idx]))
+    return np.maximum(v, REACH * nbr_reduce(grid, np.maximum, v[grid.nbr_idx]))
 
 
 def _rel(v, land):
@@ -270,12 +267,12 @@ def _make_goods(world_ref: str) -> dict:
     raw["metal"] = np.max([raw[k] for k in ("gold", "iron", "copper", "tin")]
                           + [f(f"res_{x}") for x in ("magmatic_ni", "laterite_ni", "bauxite", "ree")], axis=0)
     # at sea: harbours and hazards, carried to the coast's land cells (the best harbour, the mean hazard offshore)
-    coast = land & _nbr(g, np.logical_or, sea[g.nbr_idx])
+    coast = land & nbr_reduce(g, np.logical_or, sea[g.nbr_idx])
     hb = np.where(sea, f("harbour") / 3.0, 0.0)
-    raw["harbour"] = np.where(coast, _nbr(g, np.maximum, hb[g.nbr_idx]), 0.0)
+    raw["harbour"] = np.where(coast, nbr_reduce(g, np.maximum, hb[g.nbr_idx]), 0.0)
     nh = np.where(sea, f("nav_hazard"), 0.0)
-    cnt = np.maximum(_nbr(g, np.add, sea[g.nbr_idx].astype(float)), 1)
-    raw["nav_hazard"] = np.where(coast, _nbr(g, np.add, nh[g.nbr_idx]) / cnt, 0.0)
+    cnt = np.maximum(nbr_reduce(g, np.add, sea[g.nbr_idx].astype(float)), 1)
+    raw["nav_hazard"] = np.where(coast, nbr_reduce(g, np.add, nh[g.nbr_idx]) / cnt, 0.0)
     ct = f("coast_type").astype(int)
     raw["coral"] = (ct == CF.KEYS["coral"]).astype(float)
     raw["lagoon"] = np.where(ct == CF.KEYS["barrier"], 1.0, 0.5 * f("barrier"))
@@ -284,11 +281,11 @@ def _make_goods(world_ref: str) -> dict:
     raw["seabirds"], raw["seals"] = f("seabirds"), f("seals")
     raw["volcanic"] = _volcanic(g, L, land)
     elev = f("elevation")
-    rise = _nbr(g, np.maximum, np.abs(elev[g.nbr_idx] - elev[g.nbr_src])) / (g.spacing * R_KM)
+    rise = nbr_reduce(g, np.maximum, np.abs(elev[g.nbr_idx] - elev[g.nbr_src])) / (g.spacing * R_KM)
     raw["hills"] = _window(rise, HILL_SLOPE) * _window(elev, HILL_ELEV)
     raw["peaks"] = np.clip((elev - PEAK_ELEV[0]) / (PEAK_ELEV[1] - PEAK_ELEV[0]), 0, 1)
     ice = f("ice") > 0
-    ice_edge = ~ice & _nbr(g, np.logical_or, ice[g.nbr_idx])
+    ice_edge = ~ice & nbr_reduce(g, np.logical_or, ice[g.nbr_idx])
     raw["frost"] = np.maximum(np.clip(f("permafrost") / 3.0, 0, 1), 0.8 * ice_edge) * ~ice
     from . import seafood as SF
     sl, sf = SF.salt(g, L, land, coast, f), SF.seafood(g, L, land, coast, f)
@@ -296,7 +293,7 @@ def _make_goods(world_ref: str) -> dict:
     raw.update(sl)
     raw.update(sf)
     wp = np.where(sea, f("wave_power"), 0.0)
-    raw["storm_coast"] = np.where(coast, _rel(_nbr(g, np.maximum, wp[g.nbr_idx]), coast), 0.0)
+    raw["storm_coast"] = np.where(coast, _rel(nbr_reduce(g, np.maximum, wp[g.nbr_idx]), coast), 0.0)
     out, missing = {}, []
     for k, v in raw.items():
         v = np.where(land, v, 0.0)

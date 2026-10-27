@@ -28,6 +28,7 @@ Code map by file: [overview section 6](../overview.md). This page is the operati
 - `planet serve --no-open` on port **8765**, viewer at http://127.0.0.1:8765/viewer/. Restart only after `planet/server.py` or `planet/api.py` change; recipe in [coordination.md](../coordination.md). Subagents never touch it.
 
 ## Peoples presets
+- `planet/lineages/history/` (PW-901): the peoples simulation as a package, `History` built from mixins by concern; see its `__init__` docstring. Older tickets still cite `history.py`: look in the module for the concern (origins.py, dispersal.py, contact.py, ...).
 - `planet/lineages/samples/dnd.toml` (stock D&D tree), `planet/lineages/samples/seven_meals.toml` (the owner's world). Spec reference: docstring of `planet/lineages/spec.py`. The editor is `viewer/lineages.html`.
 
 ## Board

@@ -31,6 +31,7 @@ from ..grid import shared_grid
 from . import mining as MN
 from . import salt_reach as SR
 from . import spec as SP
+from .gridops import dist_km
 from .spread import graph_dist
 
 BRIEF_VERSION = 9  # 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
@@ -51,12 +52,6 @@ SALT_TRADED_KM = 300.0  # land farther than this from any salt gets its salt by 
 def _popcount(a: np.ndarray) -> np.ndarray:
     a = np.asarray(a).astype(np.int64)
     return sum((a >> b) & 1 for b in range(MONTHS))
-
-
-def _dist_km(g, lat: float, lon: float) -> np.ndarray:
-    la, lo = np.radians(lat), np.radians(lon)
-    c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
-    return np.arccos(np.clip(g.centers @ c, -1, 1)) * R_KM
 
 
 def _mean(x, sel) -> float | None:
@@ -190,7 +185,7 @@ def _centre(ctx: Ctx, sel: np.ndarray) -> tuple:
     xyz = xyz / max(np.linalg.norm(xyz), 1e-9)
     lat = float(np.degrees(np.arcsin(np.clip(xyz[2], -1, 1))))
     lon = float(np.degrees(np.arctan2(xyz[1], xyz[0])))
-    return round(lat, 1), round(lon, 1), round(float(_dist_km(ctx.g, lat, lon)[sel].max()), 0)
+    return round(lat, 1), round(lon, 1), round(float(dist_km(ctx.g, lat, lon)[sel].max()), 0)
 
 
 def build(run_ref, region: tuple | None = None, people: str | None = None, era_kyr: float = 0.0, ctx: Ctx | None = None) -> dict:
@@ -209,7 +204,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
         lat, lon, rad = region if region else (0.0, 0.0, DEFAULT_RADIUS_KM)
         if region is None:
             raise SystemExit("give --region lat,lon[,radius_km] or --people ID")
-        d = _dist_km(g, lat, lon)
+        d = dist_km(g, lat, lon)
         sel = d <= rad
         place = {"lat": lat, "lon": lon, "radius_km": rad, "basis": "a circle"}
     elev = ctx.f("elevation", i).astype(float)
@@ -223,12 +218,12 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     place["land_mkm2"] = round(float(land.sum()) * 4 * np.pi * R_KM ** 2 / g.n / 1e6, 4)
     p = m["present"]
     if sel.any():
-        dc = _dist_km(g, place["lat"], place["lon"])
-        best = min(p.get("landmasses", []), key=lambda lm: float(_dist_km(g, lm["lat"], lm["lon"])[np.argmin(dc)]), default=None)
+        dc = dist_km(g, place["lat"], place["lon"])
+        best = min(p.get("landmasses", []), key=lambda lm: float(dist_km(g, lm["lat"], lm["lon"])[np.argmin(dc)]), default=None)
         place["landmass"] = best["name"] if best else None
     zones = []
     for z in p.get("mixing_zones", []):
-        dz = _dist_km(g, z["lat"], z["lon"])
+        dz = dist_km(g, z["lat"], z["lon"])
         if sel[int(np.argmin(dz))]:
             zones.append({"lat": z["lat"], "lon": z["lon"], "area_mkm2": z["area_mkm2"], "peoples": z["lines"]})
     brief: dict = {
@@ -765,7 +760,7 @@ def _groups_here(ctx: Ctx, i: int, sel: np.ndarray, listed: set) -> list:
 def _neighbours(ctx: Ctx, i: int, sel: np.ndarray, place: dict) -> dict:
     if not sel.any():
         return {"list": []}
-    d = _dist_km(ctx.g, place["lat"], place["lon"])
+    d = dist_km(ctx.g, place["lat"], place["lon"])
     ring = (d > place["radius_km"]) & (d <= place["radius_km"] + RING_KM) & ~sel
     own = set(np.unique(ctx.f("peoples_whole", i)[sel & (ctx.f("peoples_whole", i) < 255)]).tolist())
     whole = ctx.f("peoples_whole", i)
