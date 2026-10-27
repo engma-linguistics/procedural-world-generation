@@ -34,7 +34,7 @@ from . import spec as SP
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 9  # 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 10  # 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -241,6 +241,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
     brief["sea_peoples"] = _sea_peoples(ctx, i, sel, sea, land_all)
+    brief["megafauna"] = _megafauna(ctx, sel, era)
     brief["animal_foods"] = _animal_foods(brief)
     brief["mixing_zones"] = zones
     brief["substrate"] = _substrate(ctx, brief["peoples"])
@@ -663,6 +664,21 @@ def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
             "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"}
 
 
+def _megafauna(ctx: Ctx, sel: np.ndarray, era: float) -> list | None:
+    """PW-924: the counted megafauna (dragons, giants) with a pocket in the region, at the present: '~2 black dragons in this swamp'."""
+    mf = ctx.meta["present"].get("megafauna")
+    if mf is None or abs(era) > 1e-6:
+        return None
+    names = {l["id"]: l["name"] for l in ctx.lines}
+    out = []
+    for lid, r in mf.items():
+        here = [p for p in r["pocket_list"] if sel[int(np.argmin(dist_km(ctx.g, p["lat"], p["lon"])))]]
+        if here:
+            out.append({"id": lid, "name": names.get(lid, lid).split(" (")[0], "count": sum(p["count"] for p in here),
+                        "pockets": here[:8], "one_per_km2": r["one_per_km2"], "world_count": r["count"]})
+    return sorted(out, key=lambda x: -x["count"])
+
+
 def _marine_mask(ctx: Ctx) -> np.ndarray:
     """Per line index: lives at sea (realm coast or sea, PW-775; a run made before it has none). One extra False at the end."""
     return np.array([l.get("realm", "land") != "land" for l in ctx.lines] + [False], bool)
@@ -1029,6 +1045,11 @@ def markdown(b: dict) -> str:
         body = r["body"]
         t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (f" (culture of {r['groups_of']}, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
+    mf = b.get("megafauna")
+    if mf:
+        t += ["", "## Megafauna (counted)", ""]
+        t += [f"- ~{r['count']} {r['name']} here ({r['world_count']} in the world, 1 per {r['one_per_km2']:,} km²): " + "; ".join(
+              f"{p['count']} in the {p['country']} at {p['lat']:g}, {p['lon']:g} ({p['groups']})" for p in r["pockets"]) for r in mf]
     sp = b.get("sea_peoples")
     if sp and sp["list"]:
         t += ["", "## Sea peoples", ""]

@@ -90,10 +90,14 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push
-        for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855)
-            if b.megafauna:
-                self.alpha[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
-                self.terr[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
+        mega = np.array([l.megafauna for l in self.lines])
+        for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855);
+            if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
+                self.alpha[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
+                self.terr[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
+        riv = np.array([l.rivalry for l in self.lines])  # (metallic dragons coexist more readily: weaker competition both ways, PW-924)
+        self.alpha *= riv[:, None] * riv[None, :]
+        self.terr *= riv[:, None] * riv[None, :]
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:

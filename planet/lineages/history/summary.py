@@ -11,6 +11,7 @@ from ..crossing import corridor
 from ..spread import EST
 from .params import APART_CONTESTED, NEAR_SCORE_KM
 from ..gridops import nbr_reduce
+from . import megafauna as MG
 from .habitat import capacity
 from .tags import _tags
 
@@ -101,6 +102,9 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     out["mixing_zones"].sort(key=lambda z: -z["cells"])
     out["mixing_zones"] = out["mixing_zones"][:20]
     out["wishes"] = wish_scores(h, P, tags)
+    out["megafauna"] = MG.summary(h, P, tags)  # (counted, exempt from the peoples' range targets, PW-924)
+    for lid in out["megafauna"]:
+        out["lines"][lid]["megafauna"] = True
     out["peoples"] = people_rollup(h, P, out["lines"])
     # lines that should be alive at the present (leaves not set to die out) but aren't
     out["lost"] = [l.id for l in tree.leaves() if l.extinct_kyr is None and l.id not in out["lines"]]

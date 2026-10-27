@@ -1079,6 +1079,7 @@ document.addEventListener('change', (e) => {
 });
 function peoplesPanel() {
   const m = V.run.meta, lines = m.lineages || [], s = V.run.frames[V.frame].stats.peoples || {};
+  const mf = V.frame === V.run.frames.length - 1 ? (m.present?.megafauna || {}) : {};  // (counted megafauna at the present, PW-924)
   const kids = {}; lines.forEach((l) => (l.parents || []).forEach((p) => (kids[p] = kids[p] || []).push(l)));
   const hasGroups = lines.some((l) => l.group_of);
   const fmt = (a) => (a >= 1000 ? `${+(a / 1000).toFixed(1)} Myr` : a >= 1 ? `${+a.toFixed(1)} kyr` : `${Math.round(a * 1000)} yr`);
@@ -1090,13 +1091,17 @@ function peoplesPanel() {
     return `<div style="padding:1px 0 1px ${6 + 12 * depth}px;cursor:pointer;opacity:${alive ? 1 : 0.5}" data-people="${l.index}"
       title="${esc(l.story || (o ? `from ${o.lat}, ${o.lon} at ${fmt(o.ago_kyr)} ago: ${o.why}` : 'not yet / never appeared'))}">
       <span style="display:inline-block;width:10px;height:10px;background:${l.color};margin-right:4px"></span>${esc(l.name)}${kind}
-      <span class="muted">${fmt(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${fmt(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}</span></div>`;
+      <span class="muted">${fmt(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${fmt(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}${alive && mf[l.id] ? ` · ~${mf[l.id].count} in ${mf[l.id].pockets} pockets` : ''}</span></div>`;
   };
   const seen = new Set(), out = [];
   const walk = (l, d) => { if (seen.has(l.id)) return; seen.add(l.id); out.push(row(l, d));
     if (!state.peoplesWhole) (kids[l.id] || []).filter((k) => k.origin === 'group').forEach((k) => walk(k, d + 1));
     (kids[l.id] || []).filter((k) => k.origin === 'split').forEach((k) => walk(k, d + 1)); };
   lines.filter((l) => l.origin !== 'split' && l.origin !== 'group').forEach((l) => walk(l, 0));
+  const mfSel = state.people != null && lines[state.people] ? mf[lines[state.people].id] : null;
+  const mfBox = mfSel ? `<div style="margin-top:4px;max-width:360px"><b>Counted</b> <span class="muted">(megafauna, 1 per ${mfSel.one_per_km2.toLocaleString()} km²${mfSel.suitable_reached != null ? `; in ${Math.round(100 * mfSel.suitable_reached)}% of their country` : ''})</span><br>`
+    + mfSel.pocket_list.slice(0, 8).map((q) => `~${q.count} in the ${esc(q.country)} at ${q.lat}, ${q.lon}${q.landmass_name ? ` (${esc(q.landmass_name)})` : ''} <span class="muted">${esc(q.groups)}</span>`).join('<br>')
+    + (mfSel.pocket_list.length > 8 ? `<br><span class="muted">… ${mfSel.pocket_list.length - 8} more pockets</span>` : '') + '</div>' : '';
   const p = m.present || {}, zones = (p.mixing_zones || []).slice(0, 5).map((z) => `${z.lines.join(', ')} <span class="muted">(${z.area_mkm2} Mkm² near ${z.lat}, ${z.lon})</span>`);
   return `<div class="tzBox"><b>Peoples</b> <span class="muted">(${esc(m.tree_name || '')}; click one to show only its range;
     <a href="lineages.html?tree=${encodeURIComponent((m.tree_file || '').split('/').pop().replace(/\.(toml|json)$/, '') || 'dnd')}&world=${m.world || ''}">edit the tree</a>)</span>
@@ -1105,7 +1110,7 @@ function peoplesPanel() {
     ${state.people != null ? `<div><a href="#" data-people="-1">show all</a></div>` : ''}${out.join('')}
     ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b> <span class="muted">${p.mixing ? `${p.mixing.area_mkm2} Mkm² (${Math.round(100 * p.mixing.land_share)}% of the land; corridors ${Math.round(100 * (p.mixing.in_corridors || 0))}% mixed, closed country ${Math.round(100 * (p.mixing.in_closed || 0))}%)` : ''}</span><br>${zones.join('<br>')}</div>` : ''}
     ${p.empty_continents?.length ? `<div class="muted">nobody on ${p.empty_continents.join(', ')}</div>` : ''}
-    ${state.people != null && lines[state.people]?.story ? `<div style="margin-top:4px;max-width:340px">${esc(lines[state.people].story)}</div>` : ''}
+    ${state.people != null && lines[state.people]?.story ? `<div style="margin-top:4px;max-width:340px">${esc(lines[state.people].story)}</div>` : ''}${mfBox}
     <div style="margin-top:4px"><button data-brief="${state.people != null && lines[state.people] ? esc(lines[state.people].id) : ''}" title="What a people's range looks like for a cook: land, fuels, wild and grown foods, coast, seasons, bad years; pick any people, an era, or the picked cell in the window (planet brief, PW-728)">Culinary brief…</button></div>
     ${p.wishes?.length ? `<div style="margin-top:4px"><b>Wishes</b> <span class="muted">(score ${p.wish_score}; tries ${(p.tries || []).join(', ')})</span><br>${p.wishes.map((w) => `${w.a} ${w.want} ${w.b || ''}: ${w.score}`).join(' · ')}</div>` : ''}</div>`;
 }

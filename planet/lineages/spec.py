@@ -21,6 +21,9 @@ A line's `realm` (PW-775): "land" (default), "coast" (the sea cells next to land
 (all open water, within its `temp_c` and its `elev_m` as a depth band in negative metres: storm giants). Marine lines (coast, sea)
 only take root, arrival or split origins; they compete with each other, not with land peoples, who they meet on the shared coast
 (the contact record, the brief); rain, prefers and avoids do not apply to them. The deep folk stay authored (no realm).
+Megafauna (PW-855, PW-924: `megafauna = true`, the dragons and the true giants) are counted animals, not peoples: a handful per pocket
+of their own country (history.megafauna), exempt from the peoples' range targets; `generation_yr` lowers their viable number,
+`group_size = [least, most]` says how many live together and `rivalry` (0..1) weakens the competition they feel and give.
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -322,6 +325,8 @@ class Lineage:
     realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
     persists: bool = False  # keeps living after its last split child
     megafauna: bool = False  # a handful per country (dragons): its range hardly takes room from the peoples that share it (history.MEGAFAUNA_PUSH, PW-855)
+    group_size: tuple[float, float] | None = None  # megafauna (PW-924): how many live together, [least, most] (dragons [1, 3]: solitary, a pair with young; giants [5, 20]: a steading); inherited by splits and groups
+    rivalry: float = 1.0  # megafauna (PW-924): x the competition the line feels and gives (metallic dragons 0.5: they coexist more readily); inherited by splits and groups
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
     start_near: list[str] = field(default_factory=list)  # where its origin is placed (PW-763): near these lines' ranges...
@@ -711,7 +716,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)),
@@ -881,6 +886,10 @@ def to_raw(t: Tree) -> dict:
             r["persists"] = True
         if l.megafauna:
             r["megafauna"] = True
+        if l.group_size is not None:
+            r["group_size"] = list(l.group_size)
+        if l.rivalry != 1.0:
+            r["rivalry"] = l.rivalry
         if l.extinct_kyr is not None:
             r["extinct"] = f"{l.extinct_kyr:g} kyr"
         if l.custom:

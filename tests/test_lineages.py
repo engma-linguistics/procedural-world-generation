@@ -112,6 +112,7 @@ from planet.lineages.gridops import nbr_reduce  # noqa: E402
 from planet.lineages import output as O  # noqa: E402
 from planet.lineages import run as LR  # noqa: E402
 from planet.lineages import spec as SP  # noqa: E402
+from planet.lineages.history import megafauna as MG  # noqa: E402
 
 
 def _raw():
@@ -2124,6 +2125,54 @@ def test_megafauna_press_the_peoples_hardly_at_all_and_the_kinds_inherit_it(fake
     assert np.isclose(mega.alpha[i, mega.idx["red"]], H.MEGAFAUNA_PUSH * plain.alpha[i, plain.idx["red"]])
     assert np.isclose(mega.alpha[i, mega.idx["kin"]], plain.alpha[i, plain.idx["kin"]])  # (the dragon-blooded peoples press as peoples)
     assert np.isclose(mega.alpha[j, i], plain.alpha[plain.idx["wyrm"], plain.idx["folk"]])  # (the peoples press the dragons as before)
+
+
+def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
+    """PW-924: megafauna compete with each other at their niche overlap (red dragons and fire giants), a rivalry under 1 (the metallics)
+    weakens it both ways; a long generation lowers the viable number of a patch; pockets within reach are one population; the present
+    summary counts each pocket; the presets carry the Damuth densities, generations and group sizes."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1, "viable_pop": 500}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.0002, "persists": True, "megafauna": True,
+         "generation_yr": 200, "group_size": [1, 3], "traits": ["flies"]},
+        {"id": "gold", "parents": ["wyrm"], "at": "1 Myr", "megafauna": True, "rivalry": 0.5},
+        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.005, "megafauna": True, "generation_yr": 65, "group_size": [5, 20]},
+        {"id": "folk", "parents": ["stem"], "at": "2 Myr", "density": 2}]}
+    t = SP.parse(raw)
+    assert t.lines["gold"].group_size == (1.0, 3.0) and t.lines["gold"].generation_yr == 200 and t.lines["gold"].rivalry == 0.5
+    t2 = SP.parse(SP.to_raw(t))
+    assert t2.lines["gold"].rivalry == 0.5 and t2.lines["giant"].group_size == (5.0, 20.0)
+    h = H.History(t, ps, 1)
+    plain = H.History(SP.parse({**raw, "lineage": [{k: v for k, v in r.items() if k not in ("megafauna", "rivalry")} for r in raw["lineage"]]}), ps, 1)
+    w, gd, gi, f = (h.idx[x] for x in ("wyrm", "gold", "giant", "folk"))
+    assert np.isclose(h.alpha[w, gi], plain.alpha[w, gi])  # (megafauna among themselves: their niche overlap in full)
+    assert np.isclose(h.alpha[f, gi], H.MEGAFAUNA_PUSH * plain.alpha[f, gi])  # (on the peoples: hardly at all)
+    assert np.isclose(h.alpha[gd, gi], 0.5 * plain.alpha[gd, gi]) and np.isclose(h.alpha[gi, gd], 0.5 * plain.alpha[gi, gd])
+    assert np.isclose(h.line_mvp(t.lines["wyrm"]), 500 * 25 / 200) and h.line_mvp(t.lines["folk"]) == 500
+    g = h.grid
+    held = np.zeros(g.n, bool)
+    two = int(g.nbr_idx[g.nbr_off[g.nbr_idx[g.nbr_off[0]]]])  # (two cells from cell 0: a separate pocket within reach)
+    held[[0, two]] = True
+    far = int(np.argmin(g.centers @ g.centers[0]))  # (the antipode)
+    held[far] = True
+    assert g.components(held)[1] == 3
+    lab, n = MG.linked_pockets(h, held, 4 * h.cell_km)
+    assert n == 2 and lab[0] == lab[two] != lab[far] and (lab[~held] == -1).all()
+    res = h.run()
+    pres = H.present_summary(h, res["present"])
+    for lid, r in pres["megafauna"].items():
+        assert pres["lines"][lid]["megafauna"] and r["count"] == sum(p["count"] for p in r["pocket_list"]) and r["count"] > 0
+        assert all(p["count"] >= 1 and p["country"] and p["groups"] for p in r["pocket_list"])
+    assert "folk" not in pres["megafauna"]
+    for name in ("dnd", "seven_meals"):
+        tr = LR.load_tree(name)
+        for l in tr.lines.values():
+            if l.megafauna and "dragon" in l.id or l.id == "draconic":
+                assert 1e-4 <= l.demo("density") <= 1e-3 and l.generation_yr >= 150 and l.group_size[1] <= 3
+            if l.megafauna and "giant" in l.id:
+                assert 1 / 500 <= l.demo("density") <= 1 / 100 and 50 <= l.generation_yr <= 80 and l.group_size == (5.0, 20.0)
+        assert tr.lines["dragonborn"].generation_yr == 25 and tr.lines["metallic_dragon"].rivalry < 1
 
 
 def test_denser_people_weighs_thinner_rivals_less_at_the_front():

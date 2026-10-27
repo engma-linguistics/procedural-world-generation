@@ -12,9 +12,10 @@ from ..crossing import modes, short_hop
 from ..spread import EST, jump_reach, rings, spread
 from ..gridops import nbr_reduce
 from .gridops import _csr_gather
+from . import megafauna as MG
 from .habitat import hold_mask
 from .pressure import crowding
-from .params import JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
+from .params import JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
 class DispersalMixin:
@@ -48,19 +49,27 @@ class DispersalMixin:
             self._cnt += now.astype(np.int16) - self._pm[k]
         self._pm[k] = now
 
+    def line_mvp(self, l) -> float:
+        """The viable number of a line's patch: tree.viable_pop for a people of GENERATION_YR, smaller for a longer-lived one. Over the
+        same span in years a long-lived line lives fewer generations, and the number it needs goes as the horizon in generations to
+        1/PERSIST_EXP (Lande 1993, as origin_mvp): dragons at 200 yr need 1/8 of it, giants at 65 yr ~0.4 (PW-924)."""
+        if not l.megafauna:  # (the peoples keep the tree's number; see the inbox draft on a general rule)
+            return float(self.tree.viable_pop)
+        return self.tree.viable_pop * min(1.0, SP.GENERATION_YR / max(l.generation_yr, 1e-6)) ** (1.0 / PERSIST_EXP)
+
     def _viable(self, l, k, dt, step):
         """A separate patch of the people's land holding fewer than tree.viable_pop people fades (e-folding
         MVP_TAU_KYR): a sparse people (a band roaming thousands of km²) needs a large piece of good country to
         hold a land. Only for lines sparse enough that the viable number needs more than 2 cells; never the
         largest patch (a people's last land is the refuge logic's)."""
-        mvp = self.tree.viable_pop
+        mvp = self.line_mvp(l)
         area = self.cell_mkm2 * 1e6
         if mvp <= 0 or mvp / (self.dens[k] * area * 0.5) <= 2:
             return
         held = self.p[k] >= EST
         if not held.any():
             return
-        lab, n = self.grid.components(held)
+        lab, n = self.grid.components(held) if not l.megafauna else MG.linked_pockets(self, held, MG.link_km(l))
         if n < 2:
             return
         pop = np.bincount(lab[held], weights=self.p[k][held] * self.dens[k] * area, minlength=n)
