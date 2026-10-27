@@ -986,20 +986,6 @@ def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS, *, cost):
     return iced
 
 
-def degree_days(t_warm, t_cold, sd=5.0):
-    """Positive degree-days in a year whose months run sinusoidally from
-    t_cold to t_warm, the days scattered around each month's mean with
-    standard deviation sd (C) (Reeh 1991, as the time zoom)."""
-    mid, half = 0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold)
-    total = np.zeros_like(mid)
-    for m in range(12):
-        t = mid + half * np.cos(2 * np.pi * m / 12)
-        x = t / sd
-        cdf = 0.5 * (1 + _erf(x / np.sqrt(2)))
-        total += (365.25 / 12) * (sd / np.sqrt(2 * np.pi) * np.exp(-0.5 * x * x) + t * cdf)
-    return total
-
-
 def _erf(x):
     """Abramowitz-Stegun 7.1.26 (|error| < 1.5e-7)."""
     s = np.sign(x)

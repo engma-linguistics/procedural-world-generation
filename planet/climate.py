@@ -1807,7 +1807,7 @@ def month_temps(lat, temp, t_warm, t_cold) -> np.ndarray:
 # share of a half-year's months under a cosine peaking at its middle month
 # (Jul for Apr-Sep): (0 + .5 + .866 + 1 + .866 + .5) / 6
 _HALF_COS = (1 + 2 * np.cos(np.pi / 6) + 2 * np.cos(np.pi / 3)) / 6
-SNOW_DDF = 3.0  # mm of snow melted per positive degree-day (as earth.ICE_DDF)
+SNOW_DDF = 3.0  # mm of snow melted per positive degree-day (icemass.py's snow DDF; months melt at the monthly mean, no day-to-day scatter: PW-877)
 
 
 def month_rain(p_jul, p_jan) -> np.ndarray:
