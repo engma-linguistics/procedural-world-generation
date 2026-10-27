@@ -14,7 +14,7 @@ from ..gridops import nbr_reduce
 from .gridops import _csr_gather
 from .habitat import hold_mask
 from .pressure import crowding
-from .params import HOLD_MIN, JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
+from .params import JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
 class DispersalMixin:
@@ -151,20 +151,6 @@ class DispersalMixin:
                 self._refuged.add(l.id)
                 self._event_at(step.ago, "refuge", l, f"{l.label()} hold out in a refuge", cell)
 
-    def _held_against(self, k, K):
-        """The cells another native people holds firmly against line k's founders (PW-929): at least HOLD_MIN of its own carrying
-        density there (thinner, its hold is lapsing: competition's Allee rule) and where its habitat is at least k's. Land held only
-        thinly, or by a people for whom it is poorer country than for k, is open to a jump; the founding window then decides."""
-        g = self.grid
-        out = np.zeros(g.n, bool)
-        for j in self._native:
-            if j == k or not self._pm[j].any():
-                continue
-            Kj = self._K_now.get(int(j))
-            firm = self._pm[j] if Kj is None else self._pm[j] & (self.p[j] >= HOLD_MIN * Kj) & (Kj >= K)
-            out |= firm
-        return out
-
     def _jump(self, l, k, K, room, step, env, tags):
         """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
         chance JUMP_RATE x crowding x dt, the place drawn by a fat-tailed kernel exp(-D^JUMP_SHAPE) over D, the distance in the people's
@@ -203,7 +189,8 @@ class DispersalMixin:
             if rng.random() >= crowd:
                 continue
             D = jump_reach(held, cost, JUMP_MAX, g.nbr_off, g.nbr_idx)
-            taken = self._held_against(k, K) if not l.marine else np.zeros(g.n, bool)
+            # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one)
+            taken = (self._cnt - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
             cand = good & realm & ~taken & ~self._dilate(held, 1) & (D > 0)
             if not cand.any():
                 return
