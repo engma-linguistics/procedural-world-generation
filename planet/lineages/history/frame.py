@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import compose as CP, contacts as CT, landuse as LU
 from ..spread import EST
-from .params import COMPOSITION_TWO_PCT
+from .params import COMPOSITION_TWO_PCT, HYBRID_FROM_KYR
 
 
 class FrameMixin:
@@ -26,7 +26,9 @@ class FrameMixin:
         ramp = self._mix_ramp(step.ago)
         land = env["land"] & ~(env["ice"] > 0.5) if "ice" in env else env["land"]
         Pr = CP.reach(self.grid, Pw, self._suit(), self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land, ramp, EST)
-        comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens)
+        # (before the farming onset foragers meet other peoples only at their ranges' edges, PW-927)
+        edge = CP.edges(self.grid, Pw, land, EST) if step.ago > HYBRID_FROM_KYR else None
+        comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens, edge)
         CT.cline(self, comp, whole, land)  # (a body share spreads over the border of a close people; output only, PW-727)
         if self.contacts is not None and self._tags_now is not None:
             self.contacts.update(Pw, step, self._tags_now, self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land)
