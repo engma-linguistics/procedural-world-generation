@@ -2,7 +2,7 @@
 id: PW-920
 title: Squeezed peoples sit at the refuge floor (160 cells at L7) because their free habitat is in other patches they cannot reach overland; pick a mechanism (or accept)
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: null
 subsystem: timezoom
@@ -26,4 +26,5 @@ Lean: B (it is the missing process), behind the 6 x 4 sweep.
 - [ ] each people >= 300 cells on ~70% of rolls, or the exceptions ruled niche
 
 ## Updates
+- 2026-10-27: Status needs-decision -> todo. Owner 2026-10-27: YES to overland jump dispersal (displacement or seeking new environs): dwarves find other mountains, giants/goblins/lizardfolk/tortles not locked to one patch. Jump reach by mobility: fliers (aarakocra) far, sea-friendly peoples further over water, fully aquatic peoples furthest. Also add abandonment: peoples leave land no longer suitable/desirable; below some density others can move in fully.
 - 2026-10-27: Created from inbox draft draft-squeezed-peoples-dispersal-limited.md (found by fun-lane-30).
