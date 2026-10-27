@@ -574,6 +574,23 @@ def update_climate(sim, e):
     sim.climate_t = sim.t
 
 
+def bed_thawed(ice, t_s, precip, geo=0.065):
+    """Share (0..1) of each ice column's bed at the melting point
+    (timezoom.kernels.thawed, Robin 1955, vectorised): ice (m) thick, t_s
+    (C) the ice surface's annual mean, the accumulation ~ the
+    precipitation (mm/yr, as m/yr of ice: on a sheet nearly all of it is
+    snow) carrying the surface's cold down, geo (W/m2) geothermal heat (the
+    time zoom's geo_flux). 0 where there is no ice."""
+    from math import sqrt
+    from ..timezoom.kernels import K_ICE, KAPPA_ICE, PMP
+    h = np.maximum(np.asarray(ice, float), 0.0)
+    acc = np.maximum(np.asarray(precip, float), 0.0) / 1000.0
+    g = geo / K_ICE
+    L = np.sqrt(2.0 * KAPPA_ICE * h / np.maximum(acc, 1e-6))
+    rise = np.where(acc > 1e-6, g * L * (sqrt(np.pi) / 2) * _erf(h / np.maximum(L, 1e-9)), g * h)
+    return np.where(h > 0, np.clip(1.0 + (np.asarray(t_s, float) + rise + PMP * h) / 2.0, 0.0, 1.0), 0.0)
+
+
 def veg_feedback(sim):
     """The vegetation's feedbacks on the climate (climate.compute's veg),
     from the last update's vegetation (one climate step behind): bare land
@@ -999,8 +1016,13 @@ def erode(sim, col):
     t, cover, x, cont, rock = col.t, col.cover, col.x, col.cont, col.rock
     # Glaciers grind their beds hard where they slide on meltwater (the
     # 'glacial buzzsaw' that keeps ranges from growing much above the
-    # snowline); polar ice frozen to its bed protects it instead.
-    k_mult = np.where(sim.ice > 0, np.where(sim.t_warm > -8, p.glacial_erosion, 0.3), 1.0)
+    # snowline); polar ice frozen to its bed protects it instead. Whether
+    # the bed is thawed: the time zoom's rule (Robin's steady column,
+    # bed_thawed), on the ice surface's annual mean, the ice's thickness and
+    # the snow falling on it (PW-872; was warm month > -8 C, a threshold set
+    # on the bare ground's temperatures before PW-277).
+    wet = bed_thawed(sim.ice, sim.temp, sim.precip)
+    k_mult = np.where(sim.ice > 0, 0.3 + (p.glacial_erosion - 0.3) * wet, 1.0)
     # Plants (once they exist) hold soil on wet ground; bare wet ground
     # washes away faster (vegetation's ground cover: canopy, herbs, moss and
     # crust). Deserts are bare either way.
