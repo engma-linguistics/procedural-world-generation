@@ -2,7 +2,7 @@
 id: PW-931
 title: Gnomes (9/24) and half-elves (6/24) still remnants (<100 cells) at the present after polycentric origins and 800 km jumps
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -27,4 +27,5 @@ Options: a longer arrival founding window for an insular latecomer (PIONEER_KYR)
 - [ ] no main people under 100 cells at the present on the 6 x 4 sweep
 
 ## Updates
+- 2026-10-27: Status needs-decision -> todo. Owner 2026-10-27: half-elves exempt (hybrids rare where parents rarely meet is fine). Gnomes moved to arrive at 50 kyr (ac3822a6); verify with the next peoples sweep.
 - 2026-10-27: Created from inbox draft draft-gnome-half-elf-remnants-after-polycentric.md (found by fun-lane-36).

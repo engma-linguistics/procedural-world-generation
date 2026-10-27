@@ -2,7 +2,7 @@
 id: PW-930
 title: Deep-time co-held presence is still ~30-70% of peopled land; only the composition stat (2+ peoples) was fixed
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -22,4 +22,5 @@ The presence layer still shows heavy co-holding. Before 20 kyr, 2+ whole peoples
 - [ ] decide whether deep-time presence co-holding must also fall, or whether the composition is the measure
 
 ## Updates
+- 2026-10-27: Status needs-decision -> wontdo. Owner 2026-10-27: low-density overlap of peoples is fine.
 - 2026-10-27: Created from inbox draft draft-deep-coheld-presence.md (found by fun-lane-36).
