@@ -34,6 +34,8 @@ PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted i
 MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
+HYBRID_FROM_KYR = 12.0  # coordinator 2026-10-27: hybrid peoples (half-elves, half-orcs) appear no earlier than the farming onset (~12-10 kyr ago,
+# the Natufian / early Neolithic): before it, contact between foragers leaves ancestry traces (contacts.py) but no people of mixed descent of its own
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
 INVADE, INVADE_FLOOR = 0.5, 0.3  # frontier invasion (PW-887): on the cells touching its range, a rival thinner than one weighs exp(-INVADE x ln(own density / its))
 # (a small demographic edge at the front displaces a thinner people, the modern-human / Neanderthal mechanism: Banks 2008, Kolodny & Feldman 2017), at least INVADE_FLOOR

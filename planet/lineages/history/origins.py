@@ -7,7 +7,7 @@ import numpy as np
 from ...geo import R_KM
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
-from .params import ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
+from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
 
@@ -363,6 +363,8 @@ class OriginsMixin:
         L = self.lines
         for l in L:
             if l.id in self.started or l.ago_kyr < step.ago - 1e-9:
+                continue
+            if l.origin == "hybrid" and step.ago > HYBRID_FROM_KYR + 1e-9:  # (no hybrid people before the farming onset, whatever its date)
                 continue
             if l.extinct_kyr is not None and step.ago <= l.extinct_kyr:
                 self.started[l.id] = step.ago

@@ -601,7 +601,7 @@ id = "half_elf"
 name = "half-elves"
 origin = "hybrid"
 parents = ["human", "elf"]
-at = "20 kyr"
+at = "10 kyr"
 contact = true
 linger = false
 
