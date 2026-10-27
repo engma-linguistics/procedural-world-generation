@@ -390,7 +390,9 @@ def tend(sim):
                 top = WAVE_BASE
         v["top"] = top
         if sim.temp is not None:
-            sst = float(sim.temp[c]) + 0.0065 * max(float(sim.w_elev[c]), 0.0)
+            # the sea's surface temperature at a sea cell (PW-876); an island cell's own: its air at sea level
+            sst = (float(sim.sst[c]) if sim.sst is not None and sim.w_elev[c] <= 0
+                   else float(sim.temp[c]) + 0.0065 * max(float(sim.w_elev[c]), 0.0))
             if v["reef"] == NO_REEF and top > 0 > v["floor"] and sst >= p.reef_temp:
                 v["reef"] = REEF
             elif v["reef"] == REEF and sst < p.reef_temp - 1.5:

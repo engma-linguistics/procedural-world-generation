@@ -549,6 +549,7 @@ def update_climate(sim, e):
                         rain_start=sim.rain_state)
     sim.rain_state = c["rain_state"]  # the next update's rain starts from it (PW-387)
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
+    sim.sst = c["sst"]  # (the sea's own surface temperature: the reefs', PW-876)
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
@@ -1136,7 +1137,7 @@ def reefs(sim, col, dep, chem):
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
     e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
-    reef = (e < -5) & (e > -1500) & (sim.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
+    reef = (e < -5) & (e > -1500) & (sim.sst >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
     rate = p.reef_rate * (1.0 if sim.t >= reef_builders_t(sim) - 1e-9 else MICROBIAL_REEF)
     grow = np.minimum(rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
     carb = grow / sediment_iso(cont, rock, sed)
