@@ -1,4 +1,5 @@
 ---
+id: PW-931
 title: Gnomes (9/24) and half-elves (6/24) still remnants (<100 cells) at the present after polycentric origins and 800 km jumps
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-36
 blocked_by: []
 relates: [PW-929, PW-920, PW-888]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, "worlds 067778 a12762 e71172 2a7385 1df1c3 6909cb", "dnd 7000-7003"]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Left over:
 - The thin-land jump landing (PW-929 ruling) gave no gain over polycentric + 800 km (17 vs 16 remnants), so it was dropped per the owner ruling.
 Options: a longer arrival founding window for an insular latecomer (PIONEER_KYR), or an earlier gnome arrival. Each changes the tree or a constant, so each needs the owner's call.
 - [ ] no main people under 100 cells at the present on the 6 x 4 sweep
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-gnome-half-elf-remnants-after-polycentric.md (found by fun-lane-36).

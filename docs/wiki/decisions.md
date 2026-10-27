@@ -66,6 +66,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-10-27 (owner): gnomes arrive at 50 kyr (were 15 kyr, remnants into a full world). Half-elves (and hybrids generally) are exempt from the remnant check: few where parents rarely meet is fine, reported only. Low-density overlap of peoples is fine.
 - 2026-10-27 (owner): polycentric origins: a split people arises in several patches of its country, only where its parent lived at the split (dwarves in ranges the hominid stem reached). Walker jump reach ~800 km; far jumps rarer (small scouting bands), shorter ones preferred.
 - 2026-10-27: hybrid peoples only after the farming onset (visible kin, not smoothed-away ancestry); check little 2+-people land before 20 kyr. Dragons and giants are counted megafauna (Damuth densities, own country, many small pockets, exempt from the 300-cell target; frost giants and white dragons, fire giants and red dragons overlap); breeding stays a mystery. Gnomes are a normal people: insular, denser, less far-reaching than humans.
 - 2026-10-27: root ancestor lines start on different landmasses; related peoples may cluster near their ancestor until the civ stage. Overland jump dispersal yes, reach scaled by mobility (fliers > sea peoples > aquatic furthest over water); peoples abandon unsuitable land and low-density land can be taken over fully (PW-888, PW-920).
