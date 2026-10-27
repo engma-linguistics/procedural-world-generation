@@ -34,26 +34,28 @@ portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' 
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
-# Real reptile splits (PW-855): turtles ~250 Myr, lizards and snakes ~200 Myr, the archosaur-dinosaur line ~230 Myr. The draconic stem IS
-# the dragons: reptiles from the dinosaur era that never went out, extant megafauna at very low density (as the true giants), intelligence
-# arriving late (not modelled: the stem is the animals; the dragonborn and kobolds are its dragon-blooded humanoid peoples, split off
-# recently while the stem lives on). The chromatic and metallic kinds are its groups, by biome (below). Interfertility follows the
-# dates (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people.
+# Stems are the last common ancestor of the peoples under them, not the first reptiles or mammals (owner ruling): roots are no older than ~20 Myr
+# and the named peoples are fully realized within ~3 Myr, as the avian line is. The draconic stem IS the dragons, the elder line among the
+# reptilian peoples (the ur-dragon, ~19.5 Myr, against ~3 Myr for the lizardfolk, tortles and troglodytes): extant megafauna at very low density (as the true
+# giants), intelligence arriving late (not modelled: the stem is the animals; the dragonborn and kobolds are its dragon-blooded humanoid
+# peoples, split off recently while the stem lives on). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the colours are their groups, by biome (below). Interfertility
+# follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people (T3); the lizardfolk,
+# tortles and troglodytes, three Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
 body = { smell = "keen", raw_meat = true, thermo = "ecto" }  # reptiles flick their tongues to smell; swallow prey raw; ectotherms: appetite and activity follow the weather (feast and fast)
 origin = "root"
-at = "320 Myr"
+at = "20 Myr"
 temp_c = [18, 30]
 rain_mm = [700, 3500]
 prefers = ["tropical"]
 
 [[lineage]]
 id = "draconic"
-name = "dragons (the draconic stem: dinosaur-era reptiles; elder, dragon-blooded)"
+name = "dragons (the draconic stem: the ur-dragon, split from the reptilian stem near the root, a recognizable modern ur-dragon by ~10 Myr; elder, dragon-blooded)"
 parents = ["reptilian"]
-at = "230 Myr"
+at = "19.5 Myr"
 persists = true  # extant: the great wyrms live on beside the peoples they sired
 megafauna = true  # a handful per country: their range hardly takes room from the peoples
 density = 0.006  # as the true giants: a handful per country
@@ -66,12 +68,45 @@ prefers = ["mountain", "open"]
 traits = ["hardy", "flies", "insular"]
 
 # the kinds of dragon, by the country they lair in (PW-855): chromatic (red, blue, green, black, white) and metallic (gold, silver, bronze, copper, brass)
+
+[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the colours below are their groups
+id = "chromatic_dragon"
+name = "chromatic dragons (red, blue, green, black, white)"
+parents = ["draconic"]
+at = "2.5 Myr"
+persists = true
+megafauna = true
+density = 0.006
+explore = 0.3
+sea_share = 0.02
+insularity = 0.85
+temp_c = [-6, 38]
+rain_mm = [150, 3000]
+prefers = ["mountain", "open"]
+traits = ["hardy", "flies", "insular"]
+
+[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the colours below are their groups
+id = "metallic_dragon"
+name = "metallic dragons (gold, silver, bronze, copper, brass)"
+parents = ["draconic"]
+at = "2.5 Myr"
+persists = true
+megafauna = true
+density = 0.006
+explore = 0.3
+sea_share = 0.02
+insularity = 0.85
+temp_c = [-6, 38]
+rain_mm = [150, 3000]
+prefers = ["mountain", "open"]
+traits = ["hardy", "flies", "insular"]
+
 [[lineage]]
 id = "red_dragon"
 name = "red dragons (chromatic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "chromatic_dragon"
+at = "750 kyr"
 temp_c = [12, 40]
 prefers = ["volcanic", "mountain"]
 
@@ -79,8 +114,8 @@ prefers = ["volcanic", "mountain"]
 id = "blue_dragon"
 name = "blue dragons (chromatic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "chromatic_dragon"
+at = "750 kyr"
 temp_c = [14, 40]
 rain_mm = [60, 600]
 prefers = ["desert"]
@@ -89,8 +124,8 @@ prefers = ["desert"]
 id = "green_dragon"
 name = "green dragons (chromatic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "chromatic_dragon"
+at = "750 kyr"
 temp_c = [8, 30]
 rain_mm = [900, 3000]
 prefers = ["forest", "jungle"]
@@ -99,8 +134,8 @@ prefers = ["forest", "jungle"]
 id = "black_dragon"
 name = "black dragons (chromatic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "chromatic_dragon"
+at = "750 kyr"
 temp_c = [14, 34]
 rain_mm = [1000, 3000]
 prefers = ["wetland"]
@@ -109,8 +144,8 @@ prefers = ["wetland"]
 id = "white_dragon"
 name = "white dragons (chromatic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "chromatic_dragon"
+at = "750 kyr"
 temp_c = [-20, 6]
 prefers = ["tundra", "polar"]
 
@@ -118,8 +153,8 @@ prefers = ["tundra", "polar"]
 id = "gold_dragon"
 name = "gold dragons (metallic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "metallic_dragon"
+at = "750 kyr"
 temp_c = [16, 32]
 rain_mm = [500, 1500]
 prefers = ["savanna", "open"]
@@ -128,8 +163,8 @@ prefers = ["savanna", "open"]
 id = "silver_dragon"
 name = "silver dragons (metallic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "metallic_dragon"
+at = "750 kyr"
 temp_c = [-8, 12]
 rain_mm = [300, 2000]
 prefers = ["mountain"]
@@ -138,8 +173,8 @@ prefers = ["mountain"]
 id = "bronze_dragon"
 name = "bronze dragons (metallic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "metallic_dragon"
+at = "750 kyr"
 temp_c = [10, 32]
 prefers = ["coast", "island"]
 
@@ -147,8 +182,8 @@ prefers = ["coast", "island"]
 id = "copper_dragon"
 name = "copper dragons (metallic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "metallic_dragon"
+at = "750 kyr"
 temp_c = [10, 30]
 rain_mm = [300, 1100]
 prefers = ["hills"]
@@ -157,8 +192,8 @@ prefers = ["hills"]
 id = "brass_dragon"
 name = "brass dragons (metallic)"
 origin = "group"
-group_of = "draconic"
-at = "60 kyr"
+group_of = "metallic_dragon"
+at = "750 kyr"
 temp_c = [18, 40]
 rain_mm = [100, 700]
 prefers = ["steppe", "arid"]
@@ -181,7 +216,7 @@ near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 id = "troglodyte"
 name = "troglodytes (extinct)"
 parents = ["reptilian"]
-at = "100 Myr"
+at = "3 Myr"
 extinct = "60 kyr"
 temp_c = [12, 28]
 traits = ["subterranean"]
@@ -191,7 +226,7 @@ id = "lizardfolk"
 name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["reptilian"]
-at = "200 Myr"
+at = "3 Myr"
 density = 1.5
 explore = 0.4
 sea_share = 0.25
@@ -205,7 +240,7 @@ id = "tortle"
 name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["reptilian"]
-at = "250 Myr"
+at = "3 Myr"
 density = 1
 explore = 0.7
 sea_share = 0.8
@@ -277,6 +312,7 @@ traits = ["nomadic", "hunter"]  # pride hunters following the herds across open 
 [[lineage]]
 id = "goblinoid"
 name = "goblinoid stem"
+generation_yr = 15  # years per generation (default 25, humans: Fenner 2005): short-lived, early-breeding; sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { raw_meat = true, bitter = "low" }  # scavengers with strong stomachs
 parents = ["mammalian"]
 at = "2.5 Myr"
@@ -513,6 +549,7 @@ way = "farmer"
 [[lineage]]
 id = "dwarf"
 name = "dwarves"
+generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
@@ -659,6 +696,7 @@ traits = ["agricultural", "cosmopolitan"]
 [[lineage]]
 id = "elf"
 name = "elves (from the feywild)"
+generation_yr = 50  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
@@ -701,6 +739,7 @@ traits = ["swims", "coastal"]
 [[lineage]]
 id = "gnome"
 name = "gnomes (from the feywild)"
+generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 origin = "arrival"
 at = "15 kyr"
 density = 3
@@ -1239,3 +1278,17 @@ valence = ["exotic"]
 id = "edge_folk"
 label = "folk from beyond the edge"
 valence = ["edge"]
+
+# the reptilian peoples, formerly hundreds of Myr apart, kept unable to hybridize now that they all branch ~3 Myr ago (T3)
+[[interfertile]]
+a = "lizardfolk"
+b = "tortle"
+tier = 3
+[[interfertile]]
+a = "lizardfolk"
+b = "troglodyte"
+tier = 3
+[[interfertile]]
+a = "tortle"
+b = "troglodyte"
+tier = 3

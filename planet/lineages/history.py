@@ -18,7 +18,7 @@ from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
 from . import land as LD
-from .crossing import Crossings, corridor, short_hop
+from .crossing import Crossings, corridor, modes, sea_gap, short_hop
 from . import compose as CP
 from . import contacts as CT
 from . import landuse as LU
@@ -45,6 +45,10 @@ NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within 
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
 ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
+SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (its habitable area)^z, z ~ 0.25-0.35 (the species-area relationship, Rosenzweig 1995, Species Diversity in Space and Time); islands keep some, as isolation drives speciation
+ORIGIN_MVP_MULT = 8.0  # PW-888: the census minimum viable population over the REFERENCE horizon, this many times tree.viable_pop (500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500, for about MVP_REF_GEN generations
+MVP_REF_GEN = 40.0  # ...Traill et al. 2007 take persistence over ~40 generations
+PERSIST_EXP = 1.0  # PW-888: a daughter must persist from its origin to the present, so the population it needs grows with the horizon. Lande 1993 (environmental stochasticity): mean persistence time T ~ K^c with c = 2r/sigma_e^2 - 1 (Foley 1994 for vertebrate data), so the K needed for T goes as T^(1/c). c = 1 is r = sigma_e^2, a population growing as fast as its environment fluctuates; the literature gives a spread of c, this is its middle, not a fit to any target. K_req = ORIGIN_MVP_MULT x viable_pop x (horizon in generations / MVP_REF_GEN)^(1/c)
 PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
 PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
 EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
@@ -547,6 +551,41 @@ class History:
         self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 0.3, 1))
         return blob
 
+    def origin_mvp(self, line, ago):
+        """PW-888: the people a landmass must carry for the line's origin to persist from `ago` (kyr before the present) to the present:
+        ORIGIN_MVP_MULT x viable_pop over MVP_REF_GEN generations, growing as the horizon in generations to 1/PERSIST_EXP (Lande 1993)."""
+        gens = max(ago, 0.0) * 1000.0 / max(line.generation_yr, 1e-6)
+        return ORIGIN_MVP_MULT * self.tree.viable_pop * max(gens / MVP_REF_GEN, 1.0) ** (1.0 / PERSIST_EXP)
+
+    def _by_landmass(self, line, score, K, env, reach=None, ago=0.0):
+        """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
+        glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
+        long-term viable population (ORIGIN_MVP_MULT x tree.viable_pop, as _viable counts people), draws with probability (habitable area)^SPECIES_AREA_Z; the
+        habitat score then picks the cell within it. Without this the best cell of a heavy-tailed noise field wins wherever it
+        falls, and one small continent held 13-15 peoples. The same rule for every people; nothing is drawn when only one
+        landmass qualifies."""
+        if SPECIES_AREA_Z <= 0:  # (0: off)
+            return score
+        lab, n = self.grid.components(env["land"])
+        suit = (K > EST) & (score > 0) & (lab >= 0)
+        if n < 2 or not suit.any():
+            return score
+        k = self.idx[line.id]
+        cells = np.bincount(lab[suit], minlength=n).astype(float)
+        founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
+        ok = founders >= self.origin_mvp(line, ago)
+        if not ok.any():  # (none can carry it for the whole horizon: the one that carries most)
+            ok = founders >= founders.max()
+        w = np.where(ok, cells, 0.0) ** SPECIES_AREA_Z
+        if reach is not None:  # (founders carried over the sea: a landmass is drawn in proportion to how readily the crossing reaches it)
+            top = np.zeros(n)
+            np.maximum.at(top, lab[suit], reach[suit])
+            w = w * top
+        if np.count_nonzero(w) < 1:
+            return score
+        pick = int(self._lrng[line.id].choice(n, p=w / w.sum()))
+        return np.where(lab == pick, score, 0.0)
+
     def _origin(self, line, step, env, tags, K):
         g, k = self.grid, self.idx[line.id]
         noise = self._noise(line)
@@ -579,6 +618,8 @@ class History:
                                 m = np.where(ok, m, 0.0)
                                 pull = m if pull is None else pull * m
                                 score = score * m
+            if not line.place:
+                score = self._by_landmass(line, score, K, env, ago=step.ago)
             if line.place:
                 la, lo = np.radians(line.place)
                 c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
@@ -625,13 +666,33 @@ class History:
             iso = np.where(P & (lab != big), 3.0, np.where(edge & P, 1.5, 1.0))
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
             near = self._dilate(P, 4) & hold_mask(line, tags)
-            score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, 0)) * self._place_mult(line, tags) \
+            # ...or, PW-888, founders carried over the sea to a landmass the parent's range does not touch (rafting on drift over
+            # Myr, island radiations): its country weighs like the country beside the range; _by_landmass then draws the landmass
+            # by habitable area, so a stem on one small continent does not put all its daughters there
+            ll, _ = g.components(env["land"])
+            touched = np.zeros(ll.max() + 2, bool)
+            touched[ll[(P | near) & (ll >= 0)]] = True
+            across = hold_mask(line, tags) & (ll >= 0) & ~touched[ll] & (SPECIES_AREA_Z > 0)
+            # ...its chance falling with the sea gap from the parent's coast as any crossing does (crossing.hop: the ways open to the
+            # parent at that time, rate x exp(-gap / L), relative to a gap of 0), so a far islet is rarely where founders land
+            reach = np.ones(g.n)
+            src = P & tags["coast"]
+            if across.any() and src.any():
+                ms = modes(self.tree.lines[line.parents[0]], step.ago)
+                if ms:
+                    d = sea_gap(src, env["land"], g.nbr_off, g.nbr_idx, int(min(6 * max(m[2] for m in ms) / self.cell_km, 200)))
+                    km = np.maximum(d, 0) * self.cell_km
+                    f = sum(m[1] * np.exp(-km / m[2]) for m in ms) / sum(m[1] for m in ms)
+                    reach = np.where(across, np.where(d > 0, f, 0.0), 1.0)
+            score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, np.where(across, 0.6 * K * reach, 0))) * self._place_mult(line, tags) \
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
+            score = self._by_landmass(line, score, K, env, reach, step.ago)
             cell = int(np.argmax(score))
             why = ("isolated part of the parent's range" if lab[cell] != big else
                    "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
+                else "across the sea from the parent's range (founders carried over)" if across[cell] \
                 else "beside the parent's range (new niche)"
             # the founders hold the country around the origin that suits them at least half as well as it
             # suits the parent (FOUNDER_KM), or the whole cut-off part of the parent's range they arose in

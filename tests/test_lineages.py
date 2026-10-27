@@ -1504,12 +1504,12 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_ruminant_peopl
                  ("lizardfolk", "dragonborn"), ("lizardfolk", "kobold"), ("lizardfolk", "draconic")):
         assert tier(a, b) == 3, (a, b)
     assert tier("draconic", "dragonborn") == 2 and tier("draconic", "kobold") == 2
-    assert t.lines["draconic"].persists and t.lines["draconic"].ago_kyr >= 150_000
+    assert t.lines["draconic"].persists and t.lines["draconic"].ago_kyr >= 10_000  # (the ur-dragon: near the root, ~19.5 Myr)
     assert tier("arha", "anja") == 0 and tier("lizard_desert", "lizard_delta") == 0 and tier("aarakocra", "kenku") == 0
     # goliaths are sisters of the humans, not giant-kin
     assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
     # the ruminant peoples (PW-734, PW-858): a deep branch, no hybrids with humans, no tiefling template
-    assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 3  # (~25 Myr apart: past the 4 Myr limit, PW-851)
+    assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 3  # (both ~3 Myr, held T3 by an [[interfertile]] row: deer and antelope do not interbreed, PW-851)
     assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents]
     # half-elves (PW-758): a contact hybrid that never lingers, so no people of their own
     he = t.lines["half_elf"]
@@ -1944,14 +1944,16 @@ def test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome():
     for name in ("dnd", "seven_meals"):
         t = LR.load_tree(name)
         d = t.lines["draconic"]
-        assert d.persists and d.megafauna and d.ago_kyr >= 150_000
+        assert d.persists and d.megafauna and d.ago_kyr >= 10_000 and t.lines[d.parents[0]].ago_kyr <= 20_000  # (the ur-dragon: near a root no older than 20 Myr)
+        for g in ("chromatic_dragon", "metallic_dragon"):  # (owner: the two great kinds split ~2.5 Myr ago)
+            assert t.lines[g].parents == ["draconic"] and 1_000 <= t.lines[g].ago_kyr <= 4_000 and t.lines[g].megafauna
         assert d.demo("density") <= 0.01 and "draconic" in [x.id for x in t.leaves()]
-        kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon")}
+        kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon") and l.origin == "group"}
         assert set(kinds) == chromatic | metallic
-        assert all(l.origin == "group" and l.group_of == "draconic" and l.prefers for l in kinds.values())
+        assert all(l.group_of == ("chromatic_dragon" if l.id.removesuffix("_dragon") in chromatic else "metallic_dragon") and l.prefers and 500 <= l.ago_kyr <= 1_000 for l in kinds.values())
         assert len({tuple(l.prefers) for l in kinds.values()}) >= 8  # (kinds differ by biome)
         for k in ("lizardfolk", "tortle"):
-            assert t.lines[k].ago_kyr >= 150_000 and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3
+            assert t.lines[k].ago_kyr <= 3_000 and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3
         assert t.tier_of("dragonborn", "kobold") == 2 and t.tier_of("draconic", "dragonborn") <= 2
         for k in ("dragonborn", "kobold"):
             assert t.lines[k].parents == ["draconic"] and t.lines[k].start_near == ["draconic"]
@@ -2141,3 +2143,33 @@ def test_crowding_measures_the_share_of_habitat_rivals_take():
     assert H.crowding(K, np.array([0.5, 0.5, 0.25, 0.0]), held) == pytest.approx(0.5)  # (half of every held cell)
     assert H.crowding(K, np.zeros(4), held) == 1.0
     assert H.crowding(K, K, np.zeros(4, bool)) == 0.0  # (no range: nothing)
+
+
+def test_origins_pick_a_landmass_by_habitable_area_to_the_z(faketz):
+    """PW-888: the landmass of an origin is drawn with probability ~ (habitable cells)^z (species-area, z = 0.3), the island
+    keeping a share, a landmass too small to hold a viable founder population drawing none; habitat then picks the cell."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1, "viable_pop": 0}, "lineage": [{"id": "a", "appears": "30 kyr", **base}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    lab, n = g.components(land)
+    sizes = np.bincount(lab[land], minlength=n).astype(float)
+    assert n >= 3 and sizes.min() < 0.1 * sizes.max()  # two continents and an island
+    K = np.where(land, 1.0, 0.0)
+    line = h.tree.lines["a"]
+    score = K * np.exp(np.random.default_rng(3).gumbel(size=g.n))  # (heavy-tailed luck, as _noise)
+    env = {"land": land}
+    picks = np.array([lab[int(np.argmax(h._by_landmass(line, score, K, env)))] for _ in range(1500)])
+    got = np.bincount(picks, minlength=n) / len(picks)
+    want = sizes ** H.SPECIES_AREA_Z / (sizes ** H.SPECIES_AREA_Z).sum()
+    assert np.allclose(got, want, atol=0.05)
+    assert got[np.argmax(sizes)] < 0.6 and (got > 0.03).sum() == n  # (the biggest does not take all; every landmass draws some)
+    # a long-term viable population (ORIGIN_MVP_MULT x viable_pop) that the smallest landmass cannot hold: only the others draw
+    h.tree.viable_pop = float(np.sort(sizes)[1] * h.dens[h.idx["a"]] * h.cell_mkm2 * 1e6 * 0.5 * 0.99 / H.ORIGIN_MVP_MULT)
+    few = np.array([lab[int(np.argmax(h._by_landmass(line, score, K, env)))] for _ in range(300)])
+    assert set(np.unique(few)) <= {int(i) for i in np.argsort(sizes)[-2:]}
+    # one qualifying landmass: nothing is drawn
+    one = np.where(lab == np.argmax(sizes), score, 0)
+    assert np.array_equal(h._by_landmass(line, one, K, env), one)
