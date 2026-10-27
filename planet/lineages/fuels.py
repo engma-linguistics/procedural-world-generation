@@ -38,6 +38,7 @@ import numpy as np
 from .. import store as S
 from ..grid import shared_grid
 from . import animal_defs as AD
+from .gridops import nbr_reduce
 from . import land as LD
 from . import landuse as LU
 from . import spec as SP
@@ -113,7 +114,7 @@ def at_frame(m: dict, goods: dict, q: dict, tc: np.ndarray, animal_bits: np.ndar
     n = m["cells"]
     land = goods["_land"]
     g = shared_grid(m["level"])
-    coast = land & LD._nbr(g, np.logical_or, ~land[g.nbr_idx])
+    coast = land & nbr_reduce(g, np.logical_or, ~land[g.nbr_idx])
     herd_known = np.zeros(n)
     stocks = (m.get("animals") or {}).get("stocks") or {}
     if animal_bits is not None:
@@ -151,7 +152,7 @@ def derive(run_dir: Path) -> dict:
     n = m["cells"]
     land = goods["_land"]
     g = shared_grid(m["level"])
-    coast = land & LD._nbr(g, np.logical_or, ~land[g.nbr_idx])
+    coast = land & nbr_reduce(g, np.logical_or, ~land[g.nbr_idx])
     herd = np.zeros(n)
     stocks = (m.get("animals") or {}).get("stocks") or {}
     if "animal_known" in run["layers"] and stocks:
