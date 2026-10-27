@@ -155,7 +155,7 @@ class DispersalMixin:
         """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
         chance JUMP_RATE x crowding x dt, the place drawn by a fat-tailed kernel exp(-D^JUMP_SHAPE) over D, the distance in the people's
         own jump lengths (land, water: by mobility, params), times the room there. Displaced peoples and those seeking new country."""
-        if l.overlay or JUMP_RATE <= 0:
+        if l.overlay or l.megafauna or JUMP_RATE <= 0:  # (megafauna: counted pockets, PW-924, not grown by jumps)
             return
         g = self.grid
         rng = self.__dict__.setdefault("_jrng", {}).get(l.id)
@@ -189,7 +189,9 @@ class DispersalMixin:
             if rng.random() >= crowd:
                 continue
             D = jump_reach(held, cost, JUMP_MAX, g.nbr_off, g.nbr_idx)
-            cand = good & realm & ~self._dilate(held, 1) & (D > 0)
+            # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one)
+            taken = (self._cnt - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
+            cand = good & realm & ~taken & ~self._dilate(held, 1) & (D > 0)
             if not cand.any():
                 return
             ker = np.where(cand, np.exp(-np.maximum(D, 0) ** JUMP_SHAPE), 0.0)
@@ -198,7 +200,7 @@ class DispersalMixin:
             w = ker * np.minimum(K, room)
             c = int(rng.choice(g.n, p=w / w.sum()))
             # the founders hold the free country round the place, ring by ring until it carries a viable population (or FOUNDER_KM)
-            free = (room > EST) & (K > EST) & realm
+            free = (room > EST) & (K > EST) & realm & ~taken
             area = self.cell_mkm2 * 1e6
             for r in range(1, max(2, int(round(FOUNDER_KM / cell))) + 1):
                 blob = rings(c, free, r, g.nbr_off, g.nbr_idx)
