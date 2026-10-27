@@ -122,6 +122,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.active = {l.id: False for l in L}
         self.started, self.ended = {}, {}
         self.crossings_n: dict[str, int] = {}
+        self.jumps_n: dict[str, int] = {}  # (overland jumps, PW-920)
         self._hop_dt = np.zeros(len(L))
         self._mvp_dt = np.zeros(len(L))
         self._div_dt = np.zeros(len(L))
@@ -199,6 +200,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         room, crowd = self._compete(l, k, K, step, tags, corr, mix, deep)
         self._disperse(l, k, K, room, crowd, step, env, tags)
         self._sail(l, k, K, room, crowd, step, env, tags)
+        self._jump(l, k, K, room, step, env, tags)
         if not l.overlay and not l.marine:
             self._mvp_dt[k] += step.dt
             if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:

@@ -169,7 +169,7 @@ class Crossings:
                 verb = {"overland": "spreads overland (the land was joined then) to", "land bridge": "walks over a land bridge to", "strait": "crosses a strait to",
                         "raft": "is carried on drift across the sea to", "coastal": "paddles along the coast to",
                         "swims": "swims across the sea to", "flies": "flies across the sea to",
-                        "seafaring": "sails across the sea to"}.get(how, f"reaches ({how})")
+                        "seafaring": "sails across the sea to", "jump": "moves far off (crowded at home) to"}.get(how, f"reaches ({how})")
                 gap = f" ({gap_km:.0f} km of open sea)" if gap_km else ""
                 events.append({"ago_kyr": round(ago, 3), "kind": "crossing", "line": line_id,
                                "text": f"{label} {verb} {self.names[m]['name']}{gap}",
