@@ -17,8 +17,10 @@
   main { overflow: hidden; min-height: 0; }
   .tab { display: none; height: 100%; overflow: auto; padding: 10px 12px; }
   .tab.on { display: block; }
-  #tab-tree.on { display: grid; grid-template-columns: 1fr 380px; padding: 0; }
-  #tl { overflow: auto; position: relative; }
+  /* PW-841: the row must be bounded (minmax(0,1fr)) or #tl grows to its content height, never scrolls itself, and its sideways scrollbar sits at the very bottom of a tall list, off screen */
+  #tab-tree.on { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: minmax(0, 1fr); padding: 0; overflow: hidden; }
+  #tl { overflow: scroll; position: relative; min-width: 0; min-height: 0; overscroll-behavior: contain; scrollbar-width: auto; cursor: grab; } #tl.panning { cursor: grabbing; user-select: none; }
+  #tl .grip { cursor: ew-resize; }
   /* PW-841: the axis stays on top and the names stay on the left when the timeline scrolls */
   #tl svg { display: block; } #axis { position: sticky; top: 0; z-index: 3; background: var(--bg); }
   #lab { position: sticky; left: 0; z-index: 2; } #tlctl { position: sticky; top: 0; left: 0; z-index: 4; height: 0; }
@@ -79,7 +81,7 @@
   <button data-tab="results">Results</button>
 </nav>
 <main>
-  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option></select></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
   <section class="tab" id="tab-peoples"></section>
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
@@ -266,7 +268,7 @@ function drawTimeline() {
   const label = (r, d) => `${originOf(r) === 'group' ? '↳ ' : ''}${r.name || r.id}${r.custom ? ' ✎' : ''}${eff0.off.has(r.id) ? ' (off)' : ''}`;
   const eff = effective(), eff0 = eff;
   W0 = Math.min(330, Math.max(190, ...rows.map(([r, d]) => 14 + 10 * Math.min(d, 8) + 6.3 * label(r, d).length)));
-  WIDTH = Math.max(1100, $('tl').clientWidth - 4);  // (a narrower window scrolls sideways)
+  WIDTH = fitAll ? Math.max(500, $('tl').clientWidth - 24) : Math.max(1100, $('tl').clientWidth - 4);  // (a narrower window scrolls sideways)
   const svg = $('svg'), H = TOP + rows.length * ROW + 10;
   svg.setAttribute('width', WIDTH); svg.setAttribute('height', H - TOP); svg.setAttribute('viewBox', `0 ${TOP} ${WIDTH} ${H - TOP}`);
   const axis = $('axis'); axis.setAttribute('width', WIDTH); axis.setAttribute('height', TOP); axis.setAttribute('viewBox', `0 0 ${WIDTH} ${TOP}`);
@@ -305,9 +307,41 @@ function drawTimeline() {
   });
   svg.innerHTML = s;
   axis.innerHTML = ax;
+  diagTl('draw');
   lab.innerHTML = `<defs><clipPath id="labclip"><rect x="0" y="${TOP}" width="${W0 - 6}" height="${H}"/></clipPath></defs>` + ls;
 }
-let viewMode = 'all';
+let viewMode = 'all', fitAll = false;
+$('tlFit').onclick = () => { fitAll = !fitAll; $('tlFit').textContent = fitAll ? 'scroll' : 'fit all'; drawTimeline(); $('tl').scrollLeft = 0; diagTl('fit'); };
+// sideways navigation (PW-841): the native scrollbar, trackpad swipe and shift+wheel (explicit, as not every browser maps it over an svg),
+// and click-drag on the background (a bar still selects on a plain click; the end grips still drag the start point)
+function diagTl(why) {
+  if (!/[?&]diag=1/.test(location.search)) return;
+  const t = $('tl'), cs = getComputedStyle(t);
+  console.log('[diag tl]', why, { scrollWidth: t.scrollWidth, clientWidth: t.clientWidth, scrollLeft: t.scrollLeft, scrollHeight: t.scrollHeight, clientHeight: t.clientHeight,
+    overflowX: cs.overflowX, overflowY: cs.overflowY, svgWidth: $('svg').getAttribute('width'), tabHeight: $('tab-tree').clientHeight });
+}
+$('tl').addEventListener('wheel', (e) => {
+  const t = $('tl');
+  if (e.ctrlKey) return;
+  const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+  if (!dx || (e.shiftKey ? false : Math.abs(e.deltaX) < Math.abs(e.deltaY))) return;
+  t.scrollLeft += dx * (e.deltaMode === 1 ? 16 : 1); e.preventDefault();
+}, { passive: false });
+let pan = null, panMoved = false;
+$('tl').addEventListener('mousedown', (e) => {
+  if (e.button !== 0 || e.target.closest('.grip, .lab, select, button')) return;
+  const t = $('tl'); if (e.clientX > t.getBoundingClientRect().left + t.clientWidth || e.clientY > t.getBoundingClientRect().top + t.clientHeight) return;  // (a scrollbar)
+  pan = { x: e.clientX, y: e.clientY, sl: t.scrollLeft, st: t.scrollTop }; panMoved = false;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!pan || drag) return;
+  const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+  if (!panMoved && Math.hypot(dx, dy) < 4) return;
+  panMoved = true; $('tl').classList.add('panning');
+  $('tl').scrollLeft = pan.sl - dx; $('tl').scrollTop = pan.st - dy;
+});
+window.addEventListener('mouseup', () => { if (pan) { pan = null; $('tl').classList.remove('panning'); setTimeout(() => { panMoved = false; }, 0); } });
+$('tl').addEventListener('click', (e) => { if (panMoved) e.stopPropagation(); }, true);
 $('tlView').onchange = (e) => { viewMode = e.target.value; drawTimeline(); };
 $('lab').addEventListener('mousedown', (e) => {
   const b = e.target.closest('.lab');
@@ -318,7 +352,7 @@ $('svg').addEventListener('mousedown', (e) => {
   const g = e.target.closest('.grip');
   if (g) { drag = g.dataset.id; e.preventDefault(); return; }
   const b = e.target.closest('.bar');
-  if (b) { sel = b.dataset.id; drawTimeline(); drawSide(); }
+  if (b) { const id = b.dataset.id; const up = () => { window.removeEventListener('mouseup', up); if (!panMoved) { sel = id; drawTimeline(); drawSide(); } }; window.addEventListener('mouseup', up); }
 });
 window.addEventListener('mousemove', (e) => {
   if (!drag) return;
