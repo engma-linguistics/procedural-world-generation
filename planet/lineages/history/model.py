@@ -24,6 +24,7 @@ from .frame import FrameMixin
 from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
+from . import megafauna as MG
 from .params import (ALPHA_CLOSED, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH, MVP_EVERY_KYR,
                      NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
@@ -90,10 +91,15 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push
-        for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855)
-            if b.megafauna:
-                self.alpha[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
-                self.terr[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
+        mega = np.array([l.megafauna for l in self.lines])
+        for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855);
+            if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
+                self.alpha[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
+                self.terr[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
+        riv = np.array([l.rivalry for l in self.lines])  # (metallic dragons coexist more readily with other megafauna: weaker competition
+        rv = np.where(mega[:, None] & mega[None, :], riv[:, None] * riv[None, :], 1.0)  # both ways, among megafauna only: coexistence, not numbers, PW-924)
+        self.alpha *= rv
+        self.terr *= rv
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:
@@ -201,6 +207,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._disperse(l, k, K, room, crowd, step, env, tags)
         self._sail(l, k, K, room, crowd, step, env, tags)
         self._jump(l, k, K, room, step, env, tags)
+        if l.megafauna:
+            MG.scatter(self, l, k, K, step, env)
         if not l.overlay and not l.marine:
             self._mvp_dt[k] += step.dt
             if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:

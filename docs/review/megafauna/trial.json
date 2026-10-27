@@ -1,0 +1,360 @@
+{
+ "tbl": {
+  "the continent of Luki (15 Mkm\u00b2)": {
+   "black": {
+    "1000": 1421,
+    "5000": 284,
+    "10000": 151
+   },
+   "blue": {
+    "1000": 734,
+    "5000": 145,
+    "10000": 62
+   },
+   "brass": {
+    "1000": 470,
+    "5000": 74
+   },
+   "bronze": {
+    "1000": 575,
+    "5000": 10,
+    "10000": 8
+   },
+   "copper": {
+    "1000": 619,
+    "5000": 124
+   },
+   "gold": {
+    "1000": 245,
+    "5000": 26,
+    "10000": 4
+   },
+   "green": {
+    "1000": 4004,
+    "5000": 848,
+    "10000": 419
+   },
+   "red": {
+    "1000": 392
+   }
+  },
+  "the continent of Hizam (1.3e+02 Mkm\u00b2)": {
+   "black": {
+    "1000": 2196,
+    "5000": 114
+   },
+   "blue": {
+    "1000": 7968,
+    "5000": 1389,
+    "10000": 776
+   },
+   "brass": {
+    "1000": 6253,
+    "5000": 923,
+    "10000": 417
+   },
+   "bronze": {
+    "1000": 1793,
+    "5000": 184,
+    "10000": 204
+   },
+   "copper": {
+    "1000": 2465,
+    "5000": 261,
+    "10000": 250
+   },
+   "gold": {
+    "1000": 2213,
+    "5000": 130,
+    "10000": 145
+   },
+   "green": {
+    "1000": 17535,
+    "5000": 3295,
+    "10000": 1692
+   },
+   "red": {
+    "1000": 230,
+    "5000": 43,
+    "10000": 28
+   },
+   "silver": {
+    "1000": 393,
+    "5000": 73,
+    "10000": 42
+   },
+   "white": {
+    "1000": 2297,
+    "5000": 387,
+    "10000": 164
+   }
+  },
+  "the large island of Munin (1.7 Mkm\u00b2)": {
+   "black": {
+    "1000": 89
+   },
+   "gold": {
+    "1000": 9
+   }
+  },
+  "the continent of Talatos (36 Mkm\u00b2)": {
+   "blue": {
+    "1000": 1450,
+    "5000": 290,
+    "10000": 149
+   },
+   "gold": {
+    "1000": 4,
+    "5000": 1,
+    "10000": 1
+   },
+   "white": {
+    "1000": 224
+   }
+  },
+  "the island of Rabretam (0.012 Mkm\u00b2)": {
+   "brass": {
+    "1000": 5
+   }
+  },
+  "the island of Hanabren (0.0031 Mkm\u00b2)": {
+   "brass": {
+    "1000": 2
+   },
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Zibrojur (0.081 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 10,
+    "10000": 1
+   },
+   "copper": {
+    "10000": 1
+   }
+  },
+  "the island of Hinotor (0.0093 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2,
+    "5000": 1
+   }
+  },
+  "the island of Lesujath (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Kokakam (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Joshor (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Gola (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "green": {
+    "1000": 1,
+    "5000": 1
+   }
+  },
+  "the island of Botijor (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Lahulas (0.0062 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "green": {
+    "1000": 1
+   }
+  },
+  "the large island of Razukum (0.31 Mkm\u00b2)": {
+   "green": {
+    "1000": 3
+   },
+   "bronze": {
+    "10000": 1
+   },
+   "gold": {
+    "10000": 1
+   }
+  },
+  "the island of Katham (0.0031 Mkm\u00b2)": {
+   "green": {
+    "1000": 1
+   }
+  },
+  "the island of Branu (0.0031 Mkm\u00b2)": {
+   "green": {
+    "1000": 1
+   }
+  },
+  "the large island of Shakhitrem (0.55 Mkm\u00b2)": {
+   "white": {
+    "1000": 38,
+    "5000": 3,
+    "10000": 1
+   }
+  },
+  "the island of Shoshu (0.0031 Mkm\u00b2)": {
+   "white": {
+    "1000": 1
+   }
+  },
+  "the island of Drimasol (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "5000": 1
+   }
+  }
+ },
+ "top": [
+  "the continent of Hizam (1.3e+02 Mkm\u00b2)",
+  "the continent of Luki (15 Mkm\u00b2)",
+  "the continent of Talatos (36 Mkm\u00b2)",
+  "the large island of Shakhitrem (0.55 Mkm\u00b2)",
+  "the island of Hinotor (0.0093 Mkm\u00b2)"
+ ],
+ "region": {
+  "1000": 2996,
+  "5000": 524,
+  "10000": 291
+ },
+ "region_where": "the continent of Hizam (1.3e+02 Mkm\u00b2), a 3,000 km square around 49.5, -151.7",
+ "close": [
+  [
+   "this swamp has 2 black dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) 0.1, -116.6; 9 in this 1,800 km square (2 pockets)"
+  ],
+  [
+   "this volcano country has 3 red dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) -6.9, -121.7; 25 in this 1,800 km square (6 pockets)"
+  ],
+  [
+   "this cold range has 3 white dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) 58.8, -26.4; 29 in this 1,800 km square (6 pockets)"
+  ]
+ ],
+ "totals": {
+  "1000": {
+   "black": 3706,
+   "blue": 10152,
+   "brass": 6730,
+   "bronze": 2387,
+   "copper": 3084,
+   "gold": 2471,
+   "green": 21546,
+   "red": 622,
+   "silver": 393,
+   "white": 2560
+  },
+  "5000": {
+   "black": 398,
+   "blue": 1824,
+   "brass": 997,
+   "bronze": 196,
+   "copper": 385,
+   "gold": 157,
+   "green": 4144,
+   "red": 43,
+   "silver": 73,
+   "white": 390
+  },
+  "10000": {
+   "black": 151,
+   "blue": 987,
+   "brass": 417,
+   "bronze": 214,
+   "copper": 251,
+   "gold": 151,
+   "green": 2111,
+   "red": 28,
+   "silver": 42,
+   "white": 165
+  }
+ },
+ "pockets": {
+  "1000": {
+   "black": 36,
+   "blue": 9,
+   "brass": 62,
+   "bronze": 127,
+   "copper": 161,
+   "gold": 54,
+   "green": 72,
+   "red": 28,
+   "silver": 8,
+   "white": 68
+  },
+  "5000": {
+   "black": 6,
+   "blue": 11,
+   "brass": 33,
+   "bronze": 53,
+   "copper": 45,
+   "gold": 25,
+   "green": 38,
+   "red": 13,
+   "silver": 8,
+   "white": 26
+  },
+  "10000": {
+   "black": 4,
+   "blue": 8,
+   "brass": 17,
+   "bronze": 62,
+   "copper": 64,
+   "gold": 18,
+   "green": 27,
+   "red": 13,
+   "silver": 7,
+   "white": 20
+  }
+ },
+ "reached": {
+  "1000": {
+   "black": 0.72,
+   "blue": 1.0,
+   "brass": 0.86,
+   "bronze": 0.79,
+   "copper": 0.72,
+   "gold": 0.89,
+   "green": 0.89,
+   "red": 0.27,
+   "silver": 0.68,
+   "white": 0.77
+  },
+  "5000": {
+   "black": 0.36,
+   "blue": 1.0,
+   "brass": 0.85,
+   "bronze": 0.78,
+   "copper": 0.35,
+   "gold": 0.46,
+   "green": 0.86,
+   "red": 0.35,
+   "silver": 0.66,
+   "white": 0.6
+  },
+  "10000": {
+   "black": 0.19,
+   "blue": 1.0,
+   "brass": 0.71,
+   "bronze": 0.8,
+   "copper": 0.61,
+   "gold": 0.58,
+   "green": 0.85,
+   "red": 0.27,
+   "silver": 0.66,
+   "white": 0.35
+  }
+ }
+}

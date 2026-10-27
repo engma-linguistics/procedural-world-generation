@@ -38,7 +38,7 @@ land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each
 # and the named peoples are fully realized within ~3 Myr, as the avian line is. The draconic stem IS the dragons, the elder line among the
 # reptilian peoples (the ur-dragon, ~19.5 Myr, against ~3 Myr for the lizardfolk, tortles and troglodytes): extant megafauna at very low density (as the true
 # giants), intelligence arriving late (not modelled: the stem is the animals; the dragonborn and kobolds are its dragon-blooded humanoid
-# peoples, split off recently while the stem lives on). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the colours are their groups, by biome (below). Interfertility
+# peoples, split off recently; the stem ends at its last split, PW-924). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the kinds of dragon split from those, each in its own country (below; PW-924: the stems end, no dragon is of no set colour). Interfertility
 # follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people (T3); the lizardfolk,
 # tortles and troglodytes, three Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
 [[lineage]]
@@ -56,56 +56,60 @@ id = "draconic"
 name = "dragons (the draconic stem: the ur-dragon, split from the reptilian stem near the root, a recognizable modern ur-dragon by ~10 Myr; elder, dragon-blooded)"
 parents = ["reptilian"]
 at = "19.5 Myr"
-persists = true  # extant: the great wyrms live on beside the peoples they sired
+group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
 megafauna = true  # a handful per country: their range hardly takes room from the peoples
-density = 0.006  # as the true giants: a handful per country
+density = 0.0002  # PW-924: Damuth's M^-0.75, an apex hunter far sparser (Carbone & Gittleman 2002): 1 per 5,000 km2 (PW-923 trial: 1,000-10,000)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
 temp_c = [-6, 38]
 rain_mm = [150, 3000]
-prefers = ["mountain", "open"]
+prefers = ["volcanic", "mountain", "desert", "forest", "jungle", "wetland", "tundra", "savanna", "coast", "hills", "steppe"]  # PW-924: the stem lived in every kind's country; it ends at its last split (the kinds live on)
 traits = ["hardy", "flies", "insular"]
 
 # the kinds of dragon, by the country they lair in (PW-855): chromatic (red, blue, green, black, white) and metallic (gold, silver, bronze, copper, brass)
 
-[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the colours below are their groups
+[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the kinds below split from them (PW-924), and the stems end
 id = "chromatic_dragon"
 name = "chromatic dragons (red, blue, green, black, white)"
 parents = ["draconic"]
 at = "2.5 Myr"
-persists = true
+group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
 megafauna = true
-density = 0.006
+density = 0.0002  # PW-924: Damuth's M^-0.75, an apex hunter far sparser (Carbone & Gittleman 2002): 1 per 5,000 km2 (PW-923 trial: 1,000-10,000)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
 temp_c = [-6, 38]
 rain_mm = [150, 3000]
-prefers = ["mountain", "open"]
+prefers = ["volcanic", "mountain", "desert", "forest", "jungle", "wetland", "tundra"]  # PW-924: its colours' countries; it ends as they split
 traits = ["hardy", "flies", "insular"]
 
-[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the colours below are their groups
+[[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the kinds below split from them (PW-924), and the stems end
 id = "metallic_dragon"
 name = "metallic dragons (gold, silver, bronze, copper, brass)"
 parents = ["draconic"]
 at = "2.5 Myr"
-persists = true
+rivalry = 0.5  # PW-924: the metallics coexist more readily with other megafauna (weaker competition among them, not with the peoples)
+group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
 megafauna = true
-density = 0.006
+density = 0.0002  # PW-924: Damuth's M^-0.75, an apex hunter far sparser (Carbone & Gittleman 2002): 1 per 5,000 km2 (PW-923 trial: 1,000-10,000)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
 temp_c = [-6, 38]
 rain_mm = [150, 3000]
-prefers = ["mountain", "open"]
+prefers = ["savanna", "mountain", "coast", "hills", "steppe"]  # PW-924: its kinds' countries; it ends as they split
 traits = ["hardy", "flies", "insular"]
 
 [[lineage]]
 id = "red_dragon"
 name = "red dragons (chromatic)"
-origin = "group"
-group_of = "chromatic_dragon"
+parents = ["chromatic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [12, 40]
 prefers = ["volcanic", "mountain"]
@@ -113,8 +117,8 @@ prefers = ["volcanic", "mountain"]
 [[lineage]]
 id = "blue_dragon"
 name = "blue dragons (chromatic)"
-origin = "group"
-group_of = "chromatic_dragon"
+parents = ["chromatic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [14, 40]
 rain_mm = [60, 600]
@@ -123,8 +127,8 @@ prefers = ["desert"]
 [[lineage]]
 id = "green_dragon"
 name = "green dragons (chromatic)"
-origin = "group"
-group_of = "chromatic_dragon"
+parents = ["chromatic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [8, 30]
 rain_mm = [900, 3000]
@@ -133,8 +137,8 @@ prefers = ["forest", "jungle"]
 [[lineage]]
 id = "black_dragon"
 name = "black dragons (chromatic)"
-origin = "group"
-group_of = "chromatic_dragon"
+parents = ["chromatic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [14, 34]
 rain_mm = [1000, 3000]
@@ -143,60 +147,61 @@ prefers = ["wetland"]
 [[lineage]]
 id = "white_dragon"
 name = "white dragons (chromatic)"
-origin = "group"
-group_of = "chromatic_dragon"
+parents = ["chromatic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [-20, 6]
-prefers = ["tundra", "polar"]
+prefers = ["mountain", "tundra", "polar"]  # PW-924: cold mountains
 
 [[lineage]]
 id = "gold_dragon"
 name = "gold dragons (metallic)"
-origin = "group"
-group_of = "metallic_dragon"
+parents = ["metallic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [16, 32]
 rain_mm = [500, 1500]
-prefers = ["savanna", "open"]
+prefers = ["savanna"]  # PW-924: warm grassland and open woodland
 
 [[lineage]]
 id = "silver_dragon"
 name = "silver dragons (metallic)"
-origin = "group"
-group_of = "metallic_dragon"
+parents = ["metallic_dragon"]
+megafauna = true
 at = "750 kyr"
-temp_c = [-8, 12]
+elev_m = [2000, 7000]  # PW-924: the high peaks, beside the cloud giants
+temp_c = [-12, 10]
 rain_mm = [300, 2000]
 prefers = ["mountain"]
 
 [[lineage]]
 id = "bronze_dragon"
 name = "bronze dragons (metallic)"
-origin = "group"
-group_of = "metallic_dragon"
+parents = ["metallic_dragon"]
+megafauna = true
 at = "750 kyr"
-temp_c = [10, 32]
-prefers = ["coast", "island"]
+temp_c = [6, 28]
+prefers = ["coast"]  # PW-924: sea coasts, beside the storm giants
 
 [[lineage]]
 id = "copper_dragon"
 name = "copper dragons (metallic)"
-origin = "group"
-group_of = "metallic_dragon"
+parents = ["metallic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [10, 30]
 rain_mm = [300, 1100]
-prefers = ["hills"]
+prefers = ["hills"]  # PW-924: dry rocky uplands
 
 [[lineage]]
 id = "brass_dragon"
 name = "brass dragons (metallic)"
-origin = "group"
-group_of = "metallic_dragon"
+parents = ["metallic_dragon"]
+megafauna = true
 at = "750 kyr"
 temp_c = [18, 40]
 rain_mm = [100, 700]
-prefers = ["steppe", "arid"]
+prefers = ["steppe"]  # PW-924: hot dry grassland and scrub at the desert edges (the blues hold the deserts)
 
 [[lineage]]
 id = "kobold"
@@ -204,6 +209,7 @@ name = "kobolds"
 body = { bitter = "low" }  # scavengers
 parents = ["draconic"]
 at = "2 Myr"
+generation_yr = 25  # (a people of its own, not a great wyrm: the default)
 density = 4
 sea_share = 0.02
 temp_c = [5, 25]
@@ -255,6 +261,7 @@ name = "dragonborn"
 body = { smell = "keen", suction = "poor" }  # dragon-blooded predators; dragonborn: a poor sucker (lapping and tipping, intake 4.3)
 parents = ["draconic"]
 at = "300 kyr"
+generation_yr = 25  # (a people of its own, not a great wyrm: the default)
 density = 2
 explore = 0.6
 temp_c = [8, 28]
@@ -391,6 +398,9 @@ id = "true_giant"
 name = "true giants stem (the ordning)"
 parents = ["giantkin"]
 at = "1.2 Myr"
+group_size = [5, 20]  # families and steadings
+generation_yr = 65  # PW-924: giants 50-80 yr
+megafauna = true  # PW-924: counted, ~1 per 100-500 km2 in steadings
 density = 0.006
 explore = 0.3
 sea_share = 0.02
@@ -406,6 +416,7 @@ body = { gut = "foregut" }  # the ancestral fermenting gut
 name = "hill giants"
 parents = ["true_giant"]
 at = "900 kyr"
+megafauna = true
 density = 0.01
 temp_c = [0, 18]
 rain_mm = [350, 1500]
@@ -418,6 +429,7 @@ id = "sky_giant"
 name = "sky giants stem (storm and cloud kin)"
 parents = ["true_giant"]
 at = "800 kyr"
+megafauna = true
 density = 0.005
 temp_c = [-6, 22]
 rain_mm = [600, 3000]
@@ -429,6 +441,7 @@ id = "elemental_giant"
 name = "elemental giants stem (frost and fire kin)"
 parents = ["true_giant"]
 at = "700 kyr"
+megafauna = true
 density = 0.006
 temp_c = [-14, 30]
 rain_mm = [100, 1500]
@@ -440,6 +453,7 @@ id = "cloud_giant"
 name = "cloud giants"
 parents = ["sky_giant"]
 at = "400 kyr"
+megafauna = true
 density = 0.005
 temp_c = [-12, 10]
 rain_mm = [400, 2500]
@@ -452,6 +466,7 @@ id = "frost_giant"
 name = "frost giants"
 parents = ["elemental_giant"]
 at = "350 kyr"
+megafauna = true
 density = 0.006
 temp_c = [-20, -2]
 rain_mm = [100, 1000]
@@ -463,12 +478,12 @@ id = "storm_giant"
 name = "storm giants"
 parents = ["sky_giant"]
 at = "300 kyr"
+megafauna = true
 density = 0.005
 explore = 0.45
 sea_share = 0.5
-realm = "sea"  # offshore and along the coast (PW-775): all open water within the depth band
-temp_c = [6, 16]  # (a rare people of the cool open sea, not every ocean: PW-779 was 111 Mkm2 at [4, 24] over [-4000, 0])
-elev_m = [-3500, -300]
+realm = "coast"  # owner (PW-924): coasts and the sea near them (the shore ring, as the merfolk), not the open sea
+temp_c = [6, 16]
 traits = ["swims", "insular"]
 
 [[lineage]]
@@ -476,6 +491,7 @@ id = "fire_giant"
 name = "fire giants"
 parents = ["elemental_giant"]
 at = "250 kyr"
+megafauna = true
 density = 0.008
 temp_c = [12, 34]
 rain_mm = [50, 1500]

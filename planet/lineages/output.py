@@ -18,6 +18,7 @@ from . import landuse as LU
 from . import reputation as RP
 from . import spec as SP
 from .history import COMPOSITION_TWO_PCT, EST, PALETTE, History
+from .history import megafauna as MG
 
 U8 = lambda d: {"dtype": "uint8", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
 PEOPLE_LAYERS = {
@@ -399,6 +400,10 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
             L += [f"    {'first ' if t['first'] else ''}cultivated ~{_ago(t['ago_kyr'])} ago by the {t['people']} on {t['landmass_name']} "
                   f"({t['lat']}, {t['lon']}; {t['wild_mkm2']} Mkm² of wild range there)" + ("" if t["first"] else " (again, on its own)")
                   for t in hs["tamed"]] or [f"    never cultivated: {hs['never']} (date drawn {hs['date_drawn_kyr']} kyr ago)"]
+    mf = pres.get("megafauna")
+    if mf:
+        L += ["", "## Megafauna (PW-924: counted, exempt from the peoples' range targets)"]
+        L += [f"  {MG.line_text(lid, h.tree.lines[lid].label(), r)}" for lid, r in mf.items()]
     L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
     L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     mx = pres.get("mixing", {})

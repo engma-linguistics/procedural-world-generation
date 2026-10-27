@@ -36,6 +36,8 @@ EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full a
 EXPANSE_FROM, EXPANSE_SPAN = 0.4, 0.3  # ...presses into country others hold: the competition it feels falls by up to this x its expansiveness x the unfilled
 EXPANSE_FILL = 0.5  # share (1 - its range / (this x the country with K >= 0.3)); alone the founding window left the elves at 2 of 8 tries with 500 cells
 PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted is this much likelier (x1 + this) on the partner's own coast (PW-861)
+MEGAFAUNA_OFF = 0.1  # PW-924: a megafauna line's habitat outside its own country (its prefers), against 0.4 for a people: dragons and giants
+# lair in their kind's country (swamp for black dragons, volcanoes for red), not anywhere they could survive
 MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
