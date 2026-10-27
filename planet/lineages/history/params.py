@@ -4,6 +4,7 @@ from __future__ import annotations
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 PIONEER_P = 1.0  # pressure a people's frontier carries into empty country, at most (its habitat there); 0: only its presence
+POLY_MKM2, POLY_MAX = 2.0, 4  # polycentric origins (owner 2026-10-27, origins._polycentric): a split founds in one patch per this many Mkm² of the parent's range, at most this many
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then

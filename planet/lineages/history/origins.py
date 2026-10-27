@@ -7,7 +7,7 @@ import numpy as np
 from ...geo import R_KM
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
-from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
+from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
 
@@ -301,8 +301,35 @@ class OriginsMixin:
             part = (lab == lab[cell]) & (K > EST)
             self.p[k][part] = np.maximum(self.p[k][part], np.minimum(K[part], np.maximum(self.p[pk][part], 0.3)))
             blob = blob | part
+        blob = blob | self._polycentric(line, k, K, pK, P, blob, r)
         self.p[pk][blob & P] = 0.0
         return cell, why
+
+    def _polycentric(self, line, k, K, pK, P, blob, r):
+        """Owner 2026-10-27: a daughter people emerges in several patches of its own kind of country at once, but only where its parent
+        held ground at the split (no founders on land the parent never touched). Modern humans arose across a web of linked African
+        populations, not in one cradle (Scerri et al. 2018, "Did our species evolve in subdivided populations across Africa", TREE 33),
+        and the same adaptation arises apart in separate patches of one kind of country (high altitude: Tibetans, Andeans and Ethiopian
+        highlanders, Beall 2007, PNAS 104). A few patches, more for a wider parent (one per POLY_MKM2 of its range, at most POLY_MAX in
+        all), the best first, each needing a viable population (tree.viable_pop) of its own; still one line."""
+        g = self.grid
+        n_more = min(POLY_MAX, int(P.sum() * self.cell_mkm2 / POLY_MKM2)) - 1
+        if n_more <= 0:
+            return np.zeros(g.n, bool)
+        own = P & (K >= 0.5) & (K >= 0.5 * pK) & ~self._dilate(blob, r)
+        if not own.any():
+            return np.zeros(g.n, bool)
+        lab, n = g.components(own)
+        area = self.cell_mkm2 * 1e6
+        w = np.bincount(lab[own], weights=K[own], minlength=n)
+        out = np.zeros(g.n, bool)
+        for c in np.argsort(-w)[:n_more]:
+            if w[c] * self.dens[k] * area * 0.5 < self.tree.viable_pop:
+                break
+            sel = lab == c
+            cell = int(np.argmax(np.where(sel, K, -1.0)))
+            out |= self._seed_blob(k, cell, K, sel, r)
+        return out
 
     def _origin_hybrid(self, line, K, noise):
         """A hybrid where its parents meet: (cell, why), or False while they have not met."""
