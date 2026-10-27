@@ -686,6 +686,8 @@ def delete(kind: str, item_id: str) -> list[Path]:
                     gone.append(z)
         shutil.rmtree(p)
         gone.append(p)
+    from . import favourites
+    favourites.forget(kind, item_id)
     for k in {"run": ("run",), "world": ("world", "zoom"), "zoom": ("zoom",)}[kind]:
         update_index(k)
     return gone

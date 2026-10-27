@@ -387,6 +387,25 @@ def cmd_list(args):
         print(f"  {z['id']}  {z['created']}  {z['name']}")
 
 
+def cmd_favourites(args):
+    """The owner's starred runs and worlds (favourites.py): a table, bare ids with --ids, or --json."""
+    from . import favourites as F
+    favs = F.listing(args.kind)
+    if args.json:
+        print(json.dumps(favs, indent=1))
+        return
+    if args.ids:
+        for e in favs:
+            print(e["id"])
+        return
+    if not favs:
+        print("no favourites")
+    for e in favs:
+        src = {"run": S.runs_dir() / e["id"] / "run.json", "world": S.worlds_dir() / f"{e['id']}.json",
+               "zoom": S.zooms_dir() / e["id"] / "zoom.json"}[e["kind"]]
+        print(f"{e['kind']}:{e['id']}  {e['starred']}  {S.read_header(src).get('name') or ''}")
+
+
 def cmd_delete(args):
     """ids may say their kind (run:<id>, world:<id>, zoom:<id>); a bare id
     must belong to one kind only."""
@@ -740,6 +759,12 @@ def main():
 
     ls = sub.add_parser("list", help="list runs, worlds and zooms with their ids")
     ls.set_defaults(func=cmd_list)
+
+    fv = sub.add_parser("favourites", help="list the runs and worlds the owner starred in the viewer (the default test worlds for peoples and civilization runs)")
+    fv.add_argument("--kind", choices=S.KINDS, help="only runs, worlds or zooms")
+    fv.add_argument("--ids", action="store_true", help="bare ids, one per line (for scripts)")
+    fv.add_argument("--json", action="store_true", help="JSON list of {kind, id, starred}")
+    fv.set_defaults(func=cmd_favourites)
 
     d = sub.add_parser("delete", help="delete runs, worlds or zooms by id (a world takes its zooms with it)")
     d.add_argument("ids", nargs="*", help="ids, or kind:id (run:a3f9c2, world:..., zoom:...) when ambiguous")

@@ -16,6 +16,8 @@
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
+  GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
+  POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
   GET    /api/cell?world=<id>&i=<cell>  one world cell's 12 months (cell())
 
 Big data files (.bin run layers, .json worlds and grids) go gzipped when the
@@ -45,7 +47,7 @@ import zlib
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
-from . import api, family, make, thumbs
+from . import api, family, favourites, make, thumbs
 from . import zoom_fine as ZF
 from . import parallel as P
 from . import store as S
@@ -109,6 +111,26 @@ def rename_landmass(raw: bytes) -> tuple[dict, int]:
         return {"error": str(e)}, 400
     except SystemExit as e:
         return {"error": str(e)}, 404
+
+
+def favourites_list(query: str) -> tuple[dict, int]:
+    """GET /api/favourites[?kind=]: the starred runs, worlds and zooms that still exist, oldest star first."""
+    kind = dict(parse_qsl(query)).get("kind") or None
+    if kind and kind not in S.KINDS:
+        return {"error": f"unknown kind {kind!r}; one of {list(S.KINDS)}"}, 400
+    return {"favourites": favourites.listing(kind)}, 200
+
+
+def favourites_set(raw: bytes) -> tuple[dict, int]:
+    """POST /api/favourites {kind, id, starred}: star (default) or unstar one item (an id may carry .json)."""
+    try:
+        b = json.loads(raw or b"{}")
+        item_id = str(b.get("id") or "").removesuffix(".json")
+        return {"favourites": favourites.set_favourite(str(b.get("kind") or ""), item_id, bool(b.get("starred", True)))}, 200
+    except (ValueError, TypeError, AttributeError) as e:
+        return {"error": str(e)}, 400
+    except KeyError as e:
+        return {"error": e.args[0]}, 404
 
 
 def landmass_names(query: str) -> tuple[dict, int]:
@@ -355,6 +377,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*brief(url.query))
         if url.path == "/api/names":
             return self.send_json(*landmass_names(url.query))
+        if url.path == "/api/favourites":
+            return self.send_json(*favourites_list(url.query))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
         if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom_fine): the viewer's size menu
@@ -428,6 +452,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.lineages_api("POST"):
             return
+        if self.path == "/api/favourites":
+            return self.send_json(*favourites_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path == "/api/names":
             return self.send_json(*rename_landmass(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",

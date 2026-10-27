@@ -3,7 +3,7 @@
 // chain as a server job (POST /api/make) and follows its progress. Shown by index.html when the address
 // names nothing to open; opening anything is a plain navigation (?run=, ?world=, ?world=&tab=zoom&zoom=).
 import { createGlobePicker } from './globepick.js';
-import { cancelJob, deleteNode, esc, fmtDuration, getPlanets, injectCss, kindName, nodeWhen, openUrl, postJob, primaryNode, trackJob, treeHtml } from './planets.js';
+import { cancelJob, deleteNode, esc, favKey, fmtDuration, getFavourites, getPlanets, setFavourite, starHtml, injectCss, kindName, nodeWhen, openUrl, postJob, primaryNode, trackJob, treeHtml } from './planets.js';
 
 const CSS = `
 #start { position: fixed; inset: 0; z-index: 40; overflow-y: auto; background: var(--bg); color: var(--text); }
@@ -79,7 +79,7 @@ export async function showStart() {
       <div id="stGlobe"></div><div id="stList"></div></section><section id="stNew" hidden></section></div>`;
   document.body.append(el);
   const $ = (s) => el.querySelector(s);
-  let planets = [];
+  let planets = [], favs = new Set();
 
   const tab = (name) => {
     $('#stGallery').hidden = name !== 'gallery'; $('#stNew').hidden = name !== 'new';
@@ -108,7 +108,7 @@ export async function showStart() {
   });
   async function loadGallery() {
     $('#stList').innerHTML = '<div class="empty">Loading...</div>';
-    planets = await getPlanets();
+    [planets, favs] = await Promise.all([getPlanets(), getFavourites()]);
     drawGallery();
   }
   function drawGallery() {
@@ -122,18 +122,24 @@ export async function showStart() {
     $('#stList').innerHTML = `<div class="grid">${planets.map((p, i) => {
       const c = p.counts, chips = [c.timezoom && `${c.timezoom} time zoom${c.timezoom > 1 ? 's' : ''}`, c.world && `${c.world} world${c.world > 1 ? 's' : ''}`,
         (c.zoom + c.fine) && `${c.zoom + c.fine} zoom${c.zoom + c.fine > 1 ? 's' : ''}`].filter(Boolean);
-      const meta = metaOf(p);
+      const meta = metaOf(p), starred = p.nodes.some((n) => favs.has(favKey(n)));
       return `<div class="card" data-i="${i}"><div class="pic" data-act="open"><img class="pl-thumb" src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
-        <div class="nm">${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
+        <div class="nm">${starHtml(favs.has(favKey(primaryNode(p))), 'data-act="star"')}${starred && !favs.has(favKey(primaryNode(p))) ? '<span title="Another part of this planet is starred (see All)" style="color:#ffc940"> \u2605</span> ' : ' '}${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
         <div class="chips">${chips.map((x) => `<span class="chip">${x}</span>`).join('')}</div>
         <div class="row"><button class="pl-btn primary" data-act="open">Open</button><button class="pl-btn" data-act="details">All ${p.nodes.length}</button></div></div>`;
     }).join('')}</div>`;
   }
-  $('#stGallery').addEventListener('click', (e) => {
+  $('#stGallery').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'new') return tab('new');
     const p = planets[+b.closest('.card').dataset.i];
+    if (b.dataset.act === 'star') {
+      const k = favKey(primaryNode(p));
+      if (!(await setFavourite(k, !favs.has(k)))) return alert('Could not save the favourite. Is the viewer running via planet serve?');
+      favs = await getFavourites();
+      return drawGallery();
+    }
     if (b.dataset.act === 'open') location.href = openUrl(p, primaryNode(p));
     if (b.dataset.act === 'details') details(p);
   });
@@ -144,13 +150,22 @@ export async function showStart() {
     m.innerHTML = `<div class="box"><div class="inl" style="justify-content:space-between"><h3>${esc(p.name)}</h3>
       <button class="pl-btn sm" data-act="close">Close</button></div>
       <div class="meta muted" style="color:var(--muted);font-size:12px;margin-bottom:8px">Each step shows what it was made from: run, then time zoom, finished world and zooms. Click one to open it.</div>
-      ${treeHtml(p, null, (n) => `<button class="pl-btn sm danger" data-del="${esc(n.key)}">Delete</button>`)}
+      ${treeHtml(p, null, (n) => `${n.kind === 'fine' || n.kind === 'zoom' ? '' : starHtml(favs.has(favKey(n)), `data-fav="${esc(n.key)}"`)} <button class="pl-btn sm danger" data-del="${esc(n.key)}">Delete</button>`)}
       <div style="margin-top:12px"><button class="pl-btn danger" data-act="delall">Delete this whole planet</button></div></div>`;
     el.append(m);
     m.addEventListener('click', async (e) => {
       if (e.target === m || e.target.dataset.act === 'close') return m.remove();
       const open = e.target.dataset.open;
       if (open) return (location.href = openUrl(p, p.nodes.find((n) => n.key === open)));
+      const fav = e.target.dataset.fav && p.nodes.find((n) => n.key === e.target.dataset.fav);
+      if (fav) {
+        const k = favKey(fav);
+        if (!(await setFavourite(k, !favs.has(k)))) return alert('Could not save the favourite.');
+        m.remove(); await loadGallery();
+        const again = planets.find((q) => q.key === p.key);
+        if (again) details(again);
+        return;
+      }
       const del = e.target.dataset.del && p.nodes.find((n) => n.key === e.target.dataset.del);
       if (del) {
         const below = p.nodes.filter((n) => n.parent === del.key).length;

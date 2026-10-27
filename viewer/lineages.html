@@ -68,7 +68,8 @@
   <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
-  <span class="muted">world</span><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history)"></select>
+  <span class="muted">world</span><button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here, and for agents: planet favourites)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
+  <label class="muted" title="List only the worlds you starred (when there are any)"><input type="checkbox" id="favOnly"> favourites only</label>
   <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8">
   <button id="run">Run on world</button>
   <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
@@ -844,6 +845,22 @@ async function showResult(id) {
   g.href = `index.html?run=${encodeURIComponent(id)}&layer=peoples`; g.hidden = false;
   redraw();
 }
+// favourites (planet/favourites.py, kept by the server): starred worlds list first and the first of them is the default pick
+let favs = new Set();
+async function getFavs() {
+  try { return new Set(((await (await fetch('../api/favourites?kind=world', { cache: 'no-store' })).json()).favourites || []).map((e) => e.id)); } catch { return new Set(); }
+}
+function syncFav() {
+  const w = $('world').value, ok = /^[0-9a-zA-Z_-]+$/.test(w), on = ok && favs.has(w), b = $('favBtn');
+  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+}
+$('favBtn').onclick = async () => {
+  const id = $('world').value;
+  const r = await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind: 'world', id, starred: !favs.has(id) }) }).catch(() => null);
+  if (!r || !r.ok) return status('could not save the favourite', true);
+  await listWorlds(); $('world').value = id; syncFav();
+};
+$('favOnly').onchange = () => listWorlds();
 // the world picker: finished worlds whose time zoom is still stored, newest first; ?world= / ?timezoom= name one not listed
 async function listWorlds() {
   const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };
@@ -851,17 +868,20 @@ async function listWorlds() {
   const tzs = new Set(runs.filter((r) => r.kind === 'timezoom' && !r.phase).map((r) => r.dir));
   peoplesRuns = runs.filter((r) => r.phase === 'lineages').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
   const have = new Set(peoplesRuns.map((r) => r.world));
-  const ok = worlds.filter((w) => w.timezoom && tzs.has(w.timezoom)).sort((a, b) => b.created.localeCompare(a.created));
-  const opts = ok.map((w) => `<option value="${esc(w.id)}">${esc(w.id)} · ${esc(w.name)}${have.has(w.id) ? ' (has peoples)' : ''}</option>`);
+  favs = await getFavs();
+  let ok = worlds.filter((w) => w.timezoom && tzs.has(w.timezoom)).sort((a, b) => (favs.has(b.id) - favs.has(a.id)) || b.created.localeCompare(a.created));  // (favourites first)
+  if ($('favOnly').checked && ok.some((w) => favs.has(w.id))) ok = ok.filter((w) => favs.has(w.id));
+  const opts = ok.map((w) => `<option value="${esc(w.id)}">${favs.has(w.id) ? '\u2605 ' : ''}${esc(w.id)} · ${esc(w.name)}${have.has(w.id) ? ' (has peoples)' : ''}</option>`);
   const want = q.get('world'), tz = q.get('timezoom');
   if (want && !ok.some((w) => w.id === want)) opts.unshift(`<option value="${esc(want)}">${esc(want)} (not runnable?)</option>`);
   if (tz) opts.unshift(`<option value="tz:${esc(tz)}">time zoom ${esc(tz)}</option>`);
-  const cur = $('world').value;
+  const cur = $('world').value;  // (kept on a refresh; on the first load the first option is the default: the newest favourite if there is one)
   $('world').innerHTML = (opts.length ? '' : '<option value="">(no finished world with its time zoom)</option>') + opts.join('');
   if (cur) $('world').value = cur;
   if (want) $('world').value = want;
-  $('world').onchange = () => { if (tab === 'results') { result = null; redraw(); } };
+  $('world').onchange = () => { syncFav(); if (tab === 'results') { result = null; redraw(); } };
   if (tz) $('world').value = 'tz:' + tz;
+  syncFav();
 }
 (async () => {
   await listTrees(q.get('tree') || 'dnd');

@@ -8,6 +8,7 @@ Code map by file: [overview section 6](../overview.md). This page is the operati
 | `runs/<id>/` | simulation runs: keyframes, layers, checkpoints, time zooms (also runs) | `uv run python -m planet delete run:<id>` |
 | `worlds/<id>.json` | finished worlds | `delete world:<id>` |
 | `zooms/<id>/` | regional and fine zooms | `delete zoom:<id>` |
+| `worlds/favourites/favourites.json` | the owner's starred runs and worlds (viewer stars; `planet favourites [--ids] [--kind world]` lists them for agents; `GET/POST /api/favourites`); a star goes when its item is deleted | unstar in the viewer |
 | `grids/` | cached icosphere grids | rebuilt on demand |
 | `data/` | symlinked input data (Earth reference data) | |
 

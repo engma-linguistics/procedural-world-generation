@@ -26,6 +26,8 @@ When an agent reports:
 pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open > $CLAUDE_JOB_DIR/tmp/serve.log 2>&1 &
 ```
 
+Favourites: the owner stars runs and worlds in the viewer (gallery, list, peoples workbench); lanes needing a test world for peoples or civilization runs should pick from `uv run python -m planet favourites --ids --kind world` (planet/favourites.py).
+
 Jobs (zooms, time zooms, finished worlds) run `--jobs J` at a time (default 4), each in a worker process (`planet/parallel.py`, `spawn`ed, `--threads T` numba threads each, default the cores shared out, at most 8). Workers exit with the server. Same request, same job; jobs start in submission order; two jobs that need the same slice wait on its file lock (`store.lock`, `runs/.locks/`) and the second reuses it. Highlights that aren't cached are sliced and computed in two worker processes of their own (`server.HIGHLIGHT_WORKERS`, started on the first such request, PW-261), so they wait neither for the jobs nor for each other; cached ones are answered in the server process. Measured 2026-10-15 (Threadripper 9960X, load ~5-15): 4 viewer zooms of one unsliced L6 moment took 22.8 s at `--jobs 1`, and 18.3 s cold / 16.5 s warm at `--jobs 4 --threads 4` (the ~6 s slice comes first; the zooms then run at once).
 
 ## Run costs (the table: the Mac laptop, often shared with 2–4 other jobs; the Threadripper numbers are below it)

@@ -186,8 +186,10 @@
 
 <div id="controls" class="panel">
   <h1>Planet Viewer</h1>
-  <div class="row" style="gap:6px"><select id="worldSel" style="flex:1;min-width:0"></select>
+  <div class="row" style="gap:6px"><button id="favBtn" title="Star as a favourite (kept by the server; the default world for peoples runs)" aria-pressed="false" disabled>&#9734;</button>
+    <select id="worldSel" style="flex:1;min-width:0"></select>
     <button id="delBtn" title="Delete this run/world from disk">Delete</button></div>
+  <div class="row" style="gap:6px"><span class="muted">list</span><select id="favMode" title="Favourites are the runs and worlds you starred"><option value="all">all</option><option value="first">favourites first</option><option value="only">favourites only</option></select></div>
   <div class="muted" style="margin-top:4px">or drop a world .json anywhere</div>
 
   <details class="sec" data-sec="view" open><summary>View</summary>
@@ -3155,6 +3157,10 @@ async function startFinish() {
 // (worlds/index.json), each zoom's world (zooms/index.json) and each time
 // zoom's source run (runs/index.json). Filled by fillSelector().
 let IDX = { runs: [], worlds: [], zooms: [] };
+let FAVS = new Set();  // "run:<dir>" / "world:<id>" the owner starred (GET /api/favourites; kept by the server, not the browser)
+try { $('favMode').value = localStorage.getItem('planet.favMode') || 'all'; } catch { /* private window */ }
+if (!$('favMode').value) $('favMode').value = 'all';
+const favKeyOf = (v) => v.replace(/\.json$/, '');  // option value -> favourites key
 const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const runOf = (id) => IDX.runs.find((r) => r.dir === id || r.id === id);
 // a world from a run is "<run name> @ T Myr"; others go by their name
@@ -3244,7 +3250,7 @@ $('marks').addEventListener('click', (e) => {
   stop(); setFrame(nearestFrame(+e.target.dataset.t));
 });
 async function openWorld(file) {
-  $('worldSel').value = 'world:' + file;
+  $('worldSel').value = 'world:' + file; syncFav();
   await loadSelection('world:' + file);
 }
 // after something new was made: re-read the indexes, redraw what lists them
@@ -4908,25 +4914,50 @@ async function fillSelector() {
   const [runs, worlds, zooms] = await Promise.all([getJSON('../runs/index.json'), getJSON('../worlds/index.json'),
                                                   getJSON('../zooms/index.json')]);
   IDX = { runs, worlds, zooms };
+  try { FAVS = new Set(((await (await fetch('../api/favourites', { cache: 'no-store' })).json()).favourites || []).map((e) => `${e.kind}:${e.id}`)); } catch { FAVS = new Set(); }
   if (!runs.length && !worlds.length) return false;
-  const was = $('worldSel').value;
-  const opt = (v, label) => `<option value="${v}">${label}</option>`;
+  const was = $('worldSel').value || (urlp.get('run') ? 'run:' + urlp.get('run') : urlp.get('world') ? 'world:' + urlp.get('world') : '');
+  const isFav = (v) => FAVS.has(favKeyOf(v));
+  const mode = FAVS.size ? $('favMode').value : 'all';  // (with no favourite yet, every mode lists everything)
+  const opt = (v, label) => `<option value="${v}">${isFav(v) ? '\u2605 ' : ''}${label}</option>`;
   const when = (c) => (c || '').slice(5, 16);  // "MM-DD HH:MM"
-  const main = runs.filter((r) => r.kind !== 'timezoom'), tzs = runs.filter((r) => r.kind === 'timezoom');
-  $('worldSel').innerHTML =
-    (main.length ? `<optgroup label="Tectonic timelines (newest first)">${main.map((r) =>
-      opt('run:' + r.dir, `${r.id} · ${r.name} · ${r.myr} Myr · ${when(r.created)}`)).join('')}</optgroup>` : '') +
-    (tzs.length ? `<optgroup label="Glacial time zooms (newest first)">${tzs.map((r) =>
-      opt('run:' + r.dir, `${r.id} · ${r.name} · ${r.kyr} kyr · ${when(r.created)}`)).join('')}</optgroup>` : '') +
-    (worlds.length ? `<optgroup label="Worlds (newest first)">${worlds.map((w) =>
-      opt('world:' + w.file, `${w.id} · ${worldTitle(w)}${w.name !== worldTitle(w) ? ' — ' + w.name : ''} · ${when(w.created)}`)).join('')}</optgroup>` : '');
+  const all = [
+    ...runs.filter((r) => r.kind !== 'timezoom').map((r) => ['main', 'run:' + r.dir, `${r.id} · ${r.name} · ${r.myr} Myr · ${when(r.created)}`]),
+    ...runs.filter((r) => r.kind === 'timezoom').map((r) => ['tz', 'run:' + r.dir, `${r.id} · ${r.name} · ${r.kyr} kyr · ${when(r.created)}`]),
+    ...worlds.map((w) => ['world', 'world:' + w.file, `${w.id} · ${worldTitle(w)}${w.name !== worldTitle(w) ? ' — ' + w.name : ''} · ${when(w.created)}`])];
+  const LABEL = { main: 'Tectonic timelines (newest first)', tz: 'Glacial time zooms (newest first)', world: 'Worlds (newest first)' };
+  const group = (label, items) => (items.length ? `<optgroup label="${label}">${items.map(([, v, l]) => opt(v, l)).join('')}</optgroup>` : '');
+  const groups = (items) => ['main', 'tz', 'world'].map((g) => group(LABEL[g], items.filter((x) => x[0] === g))).join('');
+  const favItems = all.filter((x) => isFav(x[1]));
+  // favourites first: a group of them on top (the rest below, each once); only: just those, plus the item on show so it stays selectable
+  $('worldSel').innerHTML = mode === 'first' ? group('\u2605 Favourites', favItems) + groups(all.filter((x) => !isFav(x[1])))
+    : mode === 'only' ? group('\u2605 Favourites', favItems) + group('Not a favourite (on show)', all.filter((x) => !isFav(x[1]) && x[1] === was))
+    : groups(all);
   if (was && [...$('worldSel').options].some((o) => o.value === was)) $('worldSel').value = was;
+  syncFav();
   return true;
 }
+// the star button shows whether the run or world on show is a favourite; a click stars or unstars it (POST /api/favourites)
+function syncFav() {
+  const v = $('worldSel').value, b = $('favBtn'), on = !!v && FAVS.has(favKeyOf(v));
+  b.disabled = !v; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+}
+$('favBtn').addEventListener('click', async () => {
+  const v = $('worldSel').value; if (!v) return;
+  const [kind, ...id] = favKeyOf(v).split(':');
+  const r = await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind, id: id.join(':'), starred: !FAVS.has(favKeyOf(v)) }) }).catch(() => null);
+  if (!r || !r.ok) { alert('Could not save the favourite. Is the viewer running via planet serve?'); return; }
+  await fillSelector();
+});
+$('worldSel').addEventListener('change', syncFav);
+$('favMode').addEventListener('change', async () => {
+  try { localStorage.setItem('planet.favMode', $('favMode').value); } catch { /* private window */ }
+  await fillSelector();
+});
 // open a run (e.g. a time zoom just made, or a time zoom's source) at time t
 async function openRun(id, t) {
   await fillSelector();
-  $('worldSel').value = 'run:' + id;
+  $('worldSel').value = 'run:' + id; syncFav();
   const u = new URL(location);
   ['world', 'run', 't'].forEach((k) => u.searchParams.delete(k));
   u.searchParams.set('run', id); history.replaceState(null, '', u);
@@ -4940,7 +4971,7 @@ async function init() {
     return;
   }
   let want = urlp.get('run') ? 'run:' + urlp.get('run') : urlp.get('world') ? 'world:' + urlp.get('world') : $('worldSel').value;
-  $('worldSel').value = want;
+  $('worldSel').value = want; syncFav();
   if (want.startsWith('run:')) await loadRun(want.slice(4), urlp.has('t') ? +urlp.get('t') : null);
   else await loadSelection(want);
   if (urlp.has('lat') && urlp.has('lon')) { goToLatLon(+urlp.get('lat'), +urlp.get('lon')); urlp.delete('lat'); urlp.delete('lon'); }

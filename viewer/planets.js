@@ -29,6 +29,7 @@ const CSS = `
 .pl-btn.primary { background: var(--accent); color: #06121f; border-color: var(--accent); font-weight: 600; }
 .pl-btn.danger:hover:not(:disabled) { border-color: #ff8a80; color: #ff8a80; }
 .pl-btn.sm { padding: 1px 7px; font-size: 11px; }
+.pl-btn.star.on { color: #ffc940; border-color: #ffc940; }
 `;
 let cssDone = false;
 export function injectCss() {
@@ -130,3 +131,15 @@ export async function deleteNode(n) {
   const r = await fetch(`../${dir}/${n.id}`, { method: 'DELETE' });
   return r.ok;
 }
+
+// Favourites (planet/favourites.py): the owner's stars, kept by the server (GET / POST /api/favourites), never in the browser.
+// A key is "<kind>:<id>" with kind run | world | zoom (time zooms are runs, fine zooms are zooms).
+export const favKey = (n) => `${{ run: 'run', timezoom: 'run', world: 'world', zoom: 'zoom', fine: 'zoom' }[n.kind]}:${n.id}`;
+export async function getFavourites() {
+  try { return new Set(((await (await fetch('../api/favourites', { cache: 'no-store' })).json()).favourites || []).map((e) => `${e.kind}:${e.id}`)); } catch { return new Set(); }
+}
+export async function setFavourite(key, starred) {
+  const [kind, ...id] = key.split(':');
+  try { return (await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind, id: id.join(':').replace(/\.json$/, ''), starred }) })).ok; } catch { return false; }
+}
+export const starHtml = (on, attrs = '') => `<button class="pl-btn sm star${on ? ' on' : ''}" ${attrs} title="${on ? 'Favourite: click to remove the star' : 'Star as a favourite (the default world for peoples runs)'}" aria-pressed="${on}">${on ? '\u2605' : '\u2606'}</button>`;
