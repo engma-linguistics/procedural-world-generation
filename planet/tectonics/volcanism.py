@@ -470,7 +470,9 @@ def volcanoes(sim, growth, t, rng):
     # island arcs that have built up near the surface (Japan, Aleutians)
     near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.datum(),
                          sediment_km(sim.w_cover, sim.w_extra)) > -1500
-    cand = np.flatnonzero((growth * dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))
+    # (growth's bar is a rate, km/Myr x the run's step: a finish-window step is shorter, PW-915; the chance
+    # below is per step, so it takes the step's own length)
+    cand = np.flatnonzero((growth * sim.dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))
     if len(cand) == 0:
         return t
     cand = cand[rng.random(len(cand)) < dt / p.volcano_life]
