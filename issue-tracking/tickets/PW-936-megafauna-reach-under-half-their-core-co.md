@@ -1,4 +1,5 @@
 ---
+id: PW-936
 title: Megafauna reach under half their core country for about half the kinds (hill giants ~0.1, red dragons ~0.25)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-37
 blocked_by: []
 relates: [PW-924, PW-923]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/samples/dnd.toml, "world 2a7385, dnd 7000-7002"]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Green dragons run to ~4,000 at 1 per 5,000 (forest is most of the land); a narro
 into the few-hundred band.
 - [ ] a per-kind diagnosis: core patches reached, founded and then faded, against those never reached
 - [ ] ~70% of kinds at suitable_reached >= 0.5 on the 2a7385 seeds
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-megafauna-coverage-short.md (found by fun-lane-37).

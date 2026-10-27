@@ -2,7 +2,7 @@
 id: PW-924
 title: Dragons and giants as counted megafauna in their own country (Damuth densities, many small pockets, exempt from the 300-cell target)
 type: story
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -54,4 +54,5 @@ Owner 2026-10-27 (agreed with the coordinator's proposal). Dragons and giants ju
 Breeding stays a mystery, like eels before the Sargasso Sea: new dragons just turn up now and then. No mating sites are modelled.
 
 ## Updates
+- 2026-10-27: Status todo -> done. Merged fun lane 37 (counted megafauna). Coverage shortfall continues in the intake draft.
 - 2026-10-27: Created from inbox draft draft-megafauna-placement.md (found by owner).

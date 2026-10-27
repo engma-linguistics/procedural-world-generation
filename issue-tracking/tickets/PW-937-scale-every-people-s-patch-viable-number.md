@@ -1,4 +1,5 @@
 ---
+id: PW-937
 title: Scale every people's patch viable number by its generation time, not only the megafauna's
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-37
 blocked_by: []
 relates: [PW-924, PW-888, PW-931]
 refs: [planet/lineages/history/dispersal.py, planet/lineages/history/origins.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-27
+updated: 2026-10-27
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 
 Lean: A, since it is the same mechanism as the founder rule, but it shifts every long-lived people's ranges, so it needs the sweep and the owner's yes.
 - [ ] decision recorded; if A, the 6 x 4 sweep compared before and after
+
+## Updates
+- 2026-10-27: Created from inbox draft draft-viable-pop-by-generation-for-all-peoples.md (found by fun-lane-37).

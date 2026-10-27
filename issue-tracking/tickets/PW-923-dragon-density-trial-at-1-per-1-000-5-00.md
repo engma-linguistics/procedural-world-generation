@@ -2,7 +2,7 @@
 id: PW-923
 title: Dragon density trial at 1 per 1,000 / 5,000 / 10,000 km2 with a one-page visual report for the owner
 type: task
-status: todo
+status: needs-decision
 parent: null
 milestone: v2
 subsystem: viewer
@@ -25,4 +25,5 @@ Owner 2026-10-27: try dragons at 1 per 1,000, 5,000 and 10,000 km2 on one world,
 The owner picks the density from it.
 
 ## Updates
+- 2026-10-27: Status todo -> needs-decision. Report at docs/review/megafauna/density-trial.html; owner to pick density (default 1/5000).
 - 2026-10-27: Created from inbox draft draft-dragon-density-trial.md (found by owner).
