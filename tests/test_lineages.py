@@ -777,7 +777,8 @@ def _animal_tree(animals=("horse",), force=(), mode="fantasy", seed=1):
     raw = {"meta": {"name": "h", "seed": seed, "mixing_start": "3 kyr", "mode": mode, "animals": list(animals), "animals_force": list(force),
                     "animals_at": {"horse": "9 kyr", "dog": "20 kyr", "great_elk": "9 kyr"}}, "lineage": [
         {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"], "real": True},
-        {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"], "real": True}],
+        # (an arrival: two roots would start on landmasses of their own, PW-888, and the test wants them to meet)
+        {"id": "farm", "origin": "arrival", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"], "real": True}],
         "use": [{"by": "nomadic", "good": "grazing"}, {"by": "agricultural", "good": "fertile"}]}
     return SP.parse(raw)
 

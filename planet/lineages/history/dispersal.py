@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import zlib
+
 import numpy as np
 
 from .. import spec as SP
-from ..crossing import short_hop
-from ..spread import EST, rings, spread
+
+from ..crossing import modes, short_hop
+from ..spread import EST, jump_reach, rings, spread
 from ..gridops import nbr_reduce
 from .gridops import _csr_gather
 from .habitat import hold_mask
-from .params import CONVERGE, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
+from .pressure import crowding
+from .params import JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
 class DispersalMixin:
@@ -146,3 +150,64 @@ class DispersalMixin:
             if l.id not in self._refuged:
                 self._refuged.add(l.id)
                 self._event_at(step.ago, "refuge", l, f"{l.label()} hold out in a refuge", cell)
+
+    def _jump(self, l, k, K, room, step, env, tags):
+        """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
+        chance JUMP_RATE x crowding x dt, the place drawn by a fat-tailed kernel exp(-D^JUMP_SHAPE) over D, the distance in the people's
+        own jump lengths (land, water: by mobility, params), times the room there. Displaced peoples and those seeking new country."""
+        if l.overlay or l.megafauna or JUMP_RATE <= 0:  # (megafauna: counted pockets, PW-924, not grown by jumps)
+            return
+        g = self.grid
+        rng = self.__dict__.setdefault("_jrng", {}).get(l.id)
+        if rng is None:  # (a generator of its own: the other draws of the line stay as they were)
+            rng = self._jrng[l.id] = np.random.default_rng((self.seed, 920, zlib.crc32(l.id.encode())))
+        lam = JUMP_RATE * step.dt
+        n_ev = min(int(rng.poisson(lam)), 3)  # (thinned below: crowding, hemmed in, the best place's weight)
+        if n_ev == 0:
+            return
+        held = self.p[k] >= EST
+        if not held.any():
+            return
+        crowd = crowding(K, room, held)
+        ring = self._dilate(held, 1) & ~held
+        realm = hold_mask(l, tags) if l.marine else env["land"]
+        ring &= realm
+        good = (K >= 0.3) & (room >= 0.3)
+        if ring.any() and (good & ring).sum() >= JUMP_HEMMED * ring.sum():
+            return  # (room next door: the spread takes it)
+        cell = self.cell_km
+        land = env["land"]
+        if l.marine:
+            cost = np.where(land, np.inf, cell / JUMP_SWIM_KM)
+        elif "flies" in l.traits:
+            Lf = SP.HOPS["flies"][1]
+            cost = np.full(g.n, cell / Lf)
+        else:
+            Ls = max([m[2] for m in modes(l, step.ago) if m[0] != "raft"], default=0.0)
+            cost = np.where(land, cell / JUMP_KM, cell / Ls if Ls > 0 else np.inf)
+        for _ in range(n_ev):
+            if rng.random() >= crowd:
+                continue
+            D = jump_reach(held, cost, JUMP_MAX, g.nbr_off, g.nbr_idx)
+            # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one)
+            taken = (self._cnt - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
+            cand = good & realm & ~taken & ~self._dilate(held, 1) & (D > 0)
+            if not cand.any():
+                return
+            ker = np.where(cand, np.exp(-np.maximum(D, 0) ** JUMP_SHAPE), 0.0)
+            if rng.random() >= ker.max():
+                continue
+            w = ker * np.minimum(K, room)
+            c = int(rng.choice(g.n, p=w / w.sum()))
+            # the founders hold the free country round the place, ring by ring until it carries a viable population (or FOUNDER_KM)
+            free = (room > EST) & (K > EST) & realm & ~taken
+            area = self.cell_mkm2 * 1e6
+            for r in range(1, max(2, int(round(FOUNDER_KM / cell))) + 1):
+                blob = rings(c, free, r, g.nbr_off, g.nbr_idx)
+                if (np.minimum(room[blob], np.clip(K[blob], 0.3, 1)) * self.dens[k] * area * 0.5).sum() >= self.tree.viable_pop:
+                    break
+            self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
+            self.jumps_n[l.id] = self.jumps_n.get(l.id, 0) + 1
+            if not l.marine:
+                self.cross.note(l.id, blob, step.ago, "jump", self.events, l.label())
+            held = self.p[k] >= EST

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import heapq
+
 import numpy as np
 from numba import njit
 
@@ -167,3 +169,33 @@ def graph_dist(mask, maxd, nbr_off, nbr_idx):
                 q[t] = j
                 t += 1
     return d
+
+
+@njit(cache=True)
+def jump_reach(src, cost, maxd, nbr_off, nbr_idx):
+    """Least summed cost from the src cells to each cell (Dijkstra; entering cell i costs cost[i], inf: impassable),
+    -1 beyond maxd: the reach of a jump (history dispersal, PW-920), each cell's cost being its width over the people's
+    jump length there (land or water)."""
+    n = src.shape[0]
+    d = np.full(n, np.inf)
+    hq = [(0.0, 0)]
+    hq.pop()
+    for i in range(n):
+        if src[i]:
+            d[i] = 0.0
+            hq.append((0.0, i))
+    heapq.heapify(hq)
+    while len(hq):
+        di, i = heapq.heappop(hq)
+        if di > d[i] or di > maxd:
+            continue
+        for k in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[k]
+            c = cost[j]
+            if not np.isfinite(c):
+                continue
+            v = di + c
+            if v < d[j] and v <= maxd:
+                d[j] = v
+                heapq.heappush(hq, (v, j))
+    return np.where(np.isfinite(d), d, -1.0)

@@ -7,7 +7,7 @@ import numpy as np
 from ...geo import R_KM
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
-from .params import ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
+from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
 
@@ -100,6 +100,27 @@ class OriginsMixin:
         gens = max(ago, 0.0) * 1000.0 / max(line.generation_yr, 1e-6)
         return ORIGIN_MVP_MULT * self.tree.viable_pop * max(gens / MVP_REF_GEN, 1.0) ** (1.0 / PERSIST_EXP)
 
+    def _root_of(self, lid):
+        """The root (or arrival) line a line descends from."""
+        l = self.tree.lines[lid]
+        while l.parents and l.origin not in ("root", "arrival"):
+            l = self.tree.lines[l.parents[0]]
+        return l.id
+
+    def _other_roots_land(self, line, lab, n):
+        """PW-888 (owner 2026-10-27): per landmass of the step's land, whether peoples of another root line (reptilian,
+        mammalian, avian...) hold any of it now: a root starts on a landmass of its own where the world has one."""
+        mine = self._root_of(line.id)
+        taken = np.zeros(n, bool)
+        active = getattr(self, "active", {})
+        for j, o in enumerate(self.lines):
+            if o.overlay or o.marine or not active.get(o.id) or self._root_of(o.id) == mine \
+                    or self.tree.lines[self._root_of(o.id)].origin != "root":
+                continue
+            at = lab[(self.p[j] >= EST) & (lab >= 0)]
+            taken[np.unique(at)] = True
+        return taken
+
     def _by_landmass(self, line, score, K, env, reach=None, ago=0.0):
         """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
         glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
@@ -119,6 +140,16 @@ class OriginsMixin:
         ok = founders >= self.origin_mvp(line, ago)
         if not ok.any():  # (none can carry it for the whole horizon: the one that carries most)
             ok = founders >= founders.max()
+        if line.origin == "root" and not line.marine:  # (a root line: off the other root lines' landmasses, where a viable one is left)
+            free = ok & ~self._other_roots_land(line, lab, n)
+            if free.any():
+                ok = free
+            elif not ok.any():
+                pass
+            else:
+                cand = (founders > 0) & ~self._other_roots_land(line, lab, n)
+                if cand.any():  # (none free can carry the full horizon: the free one that carries most)
+                    ok = cand & (founders >= founders[cand].max())
         w = np.where(ok, cells, 0.0) ** SPECIES_AREA_Z
         if reach is not None:  # (founders carried over the sea: a landmass is drawn in proportion to how readily the crossing reaches it)
             top = np.zeros(n)
@@ -316,6 +347,12 @@ class OriginsMixin:
         g = self.grid
         self.origins[line.id] = {"cell": int(cell), "lat": round(float(g.lat[cell]), 2), "lon": round(float(g.lon[cell]), 2),
                                  "ago_kyr": round(step.ago, 3), "wanted_kyr": line.ago_kyr, "epoch": step.epoch, "why": why}
+        if line.origin == "root" and self._tags_now is not None:  # (PW-888: does it share its landmass with another root line?)
+            lab = self._tags_now["label"]
+            n = int(lab.max()) + 1
+            if lab[cell] >= 0 and n > 0:
+                self.origins[line.id]["landmass_cells"] = int((lab == lab[cell]).sum())
+                self.origins[line.id]["shares_landmass"] = bool(self._other_roots_land(line, lab, n)[lab[cell]])
         verb = {"root": "arises", "split": f"splits from {line.parents[0] if line.parents else '?'}", "arrival": "arrives",
                 "hybrid": f"appears where {' and '.join(line.parents)} meet", "template": f"appears among {', '.join(line.parents)}",
                 "group": f"becomes a way of life among the {self.tree.lines[line.parents[0]].label() if line.parents else '?'}"}
@@ -363,6 +400,8 @@ class OriginsMixin:
         L = self.lines
         for l in L:
             if l.id in self.started or l.ago_kyr < step.ago - 1e-9:
+                continue
+            if l.origin == "hybrid" and step.ago > HYBRID_FROM_KYR + 1e-9:  # (no hybrid people before the farming onset, whatever its date)
                 continue
             if l.extinct_kyr is not None and step.ago <= l.extinct_kyr:
                 self.started[l.id] = step.ago

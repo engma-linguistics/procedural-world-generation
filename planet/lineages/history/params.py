@@ -11,6 +11,10 @@ MIX_DROP = 0.6  # competition falls by this share by the present (from mixing_st
 ALPHA_CLOSED = 1.4  # competition in closed country (contact 0), whatever the niches: over 1, the larger excludes
 TAU_KYR = 1.0  # a people held above its competitive room declines toward it with this e-folding time
 REFUGE_MKM2 = 0.5  # ...more slowly as its range shrinks toward this (last refuges hold out: no line is pushed out)
+HOLD_MIN = 0.25  # PW-920: a people displaced below this share of its carrying density on a cell (p < HOLD_MIN x K) loses its hold there and
+# leaves (the Allee threshold: under a critical density a local population declines to nothing, Courchamp, Berec & Gascoigne 2008, Allee Effects
+# in Ecology and Conservation; critical densities of order a fifth to a quarter of K), so the rival moves in fully instead of the land
+# staying held by a thin remnant. Never below the refuge floor: the lapse takes cells only while the range exceeds REFUGE_MKM2 (displacement's own gate)
 NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0.5 w) at the other's border, e-folding 300 km
 NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
@@ -34,6 +38,8 @@ PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted i
 MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
+HYBRID_FROM_KYR = 12.0  # coordinator 2026-10-27: hybrid peoples (half-elves, half-orcs) appear no earlier than the farming onset (~12-10 kyr ago,
+# the Natufian / early Neolithic): before it, contact between foragers leaves ancestry traces (contacts.py) but no people of mixed descent of its own
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
 INVADE, INVADE_FLOOR = 0.5, 0.3  # frontier invasion (PW-887): on the cells touching its range, a rival thinner than one weighs exp(-INVADE x ln(own density / its))
 # (a small demographic edge at the front displaces a thinner people, the modern-human / Neanderthal mechanism: Banks 2008, Kolodny & Feldman 2017), at least INVADE_FLOOR
@@ -43,6 +49,20 @@ DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x 
 # 0.7..1.4: numbers tell a little where peoples share land (farmers at 10 /km² press on foragers at 2 x1.17; giants
 # at 0.005 dent others' room x0.7 and feel theirs x1.4). Mild: at 0.25, 0.5..2, the elves and orcs lost
 # most of their land to the humans in single tries on 1df1c3
+# overland (and over-water) jump dispersal (PW-920, owner 2026-10-27): a crowded people with no free country next door founds,
+# now and then, on free suitable land farther off. Long-distance dispersal is rare and its kernel fat-tailed (Clark et al. 1998,
+# "Reid's paradox of rapid plant migration", BioScience 48; Nathan et al. 2012, "Dispersal kernels: review", in Dispersal Ecology
+# and Evolution): the weight of a place D jump lengths away is exp(-D^c) with c ~ 0.5 (Clark 1998's fitted exponential-power shape;
+# c = 1 is the thin-tailed exponential). The lengths go by mobility: a walking people JUMP_KM (ethnographic and prehistoric
+# relocations of foragers over a few hundred km: the order of the largest mammal natal dispersal, Sutherland et al. 2000), fliers
+# spec.HOPS['flies'] over land and sea alike (birds disperse several times farther than mammals of their size, Paradis et al. 1998),
+# a land people over water its crossing craft's reach (crossing.modes, raft drift excepted: that is crossing.hop's), a sea people
+# (marine realm) JUMP_SWIM_KM over water (marine dispersal runs orders of magnitude farther than terrestrial, Kinlan & Gaines 2003)
+JUMP_RATE = 0.02  # jumps per kyr of a fully crowded, fully hemmed-in people (one in ~50 kyr: deep-time steps are kyr to Myr, rare jumps suffice)
+JUMP_SHAPE = 0.5  # c of the exponential-power kernel exp(-(d / L)^c)
+JUMP_KM, JUMP_SWIM_KM = 300.0, 1000.0
+JUMP_MAX = 25.0  # (jump lengths searched: exp(-25^0.5) = 0.7% of a jump next door)
+JUMP_HEMMED = 0.05  # 'no room next door': under this share of the cells next to its range are free good country (room and K >= 0.3)
 EXPLORE_MARGIN = (0.25, 0.5)  # into marginal land (K < 0.3) the spread keeps a + (1 - a) K / 0.3, a = [0] + [1] x explore
 MVP_TAU_KYR = 2.0  # a separate patch of a people with fewer than meta.viable_pop people fades with this e-folding time
 MVP_EVERY_KYR = 1.0  # (looked at about this often; a people's largest patch is never faded: its refuges hold)

@@ -770,7 +770,7 @@ id = "half_elf"
 name = "half-elves"
 origin = "hybrid"
 parents = ["human", "elf"]
-at = "20 kyr"
+at = "10 kyr"
 contact = true
 insularity = 0.3  # (at home in neither parent group, not as aloof as their elven parents; it feeds the composition's cohabitation. A contact hybrid spreads nowhere itself, so no explore, PW-758)
 
@@ -779,7 +779,7 @@ id = "half_orc"
 name = "half-orcs"
 origin = "hybrid"
 parents = ["human", "orc"]
-at = "60 kyr"
+at = "10 kyr"
 contact = true
 insularity = 0.3  # (like the half-elves; no explore: a contact hybrid does not spread itself, PW-758)
 
