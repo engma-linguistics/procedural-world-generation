@@ -1,0 +1,607 @@
+{
+ "tbl": {
+  "the continent of Luki (15 Mkm\u00b2)": {
+   "black": {
+    "1000": 753,
+    "10000": 137
+   },
+   "brass": {
+    "1000": 882,
+    "5000": 319,
+    "10000": 97
+   },
+   "bronze": {
+    "1000": 1669,
+    "5000": 381
+   },
+   "copper": {
+    "1000": 863,
+    "5000": 159
+   },
+   "gold": {
+    "1000": 4563,
+    "5000": 1037,
+    "10000": 518
+   }
+  },
+  "the continent of Hizam (1.3e+02 Mkm\u00b2)": {
+   "black": {
+    "1000": 225,
+    "5000": 39
+   },
+   "blue": {
+    "1000": 2454,
+    "5000": 30,
+    "10000": 15
+   },
+   "brass": {
+    "1000": 14892,
+    "5000": 2692,
+    "10000": 1365
+   },
+   "bronze": {
+    "1000": 6399,
+    "5000": 1461,
+    "10000": 767
+   },
+   "copper": {
+    "1000": 8601,
+    "5000": 1711,
+    "10000": 908
+   },
+   "gold": {
+    "1000": 25768,
+    "5000": 5484,
+    "10000": 2213
+   },
+   "green": {
+    "1000": 11105,
+    "5000": 1944,
+    "10000": 1031
+   },
+   "red": {
+    "1000": 263,
+    "5000": 23,
+    "10000": 22
+   },
+   "silver": {
+    "1000": 7210,
+    "5000": 1300,
+    "10000": 748
+   },
+   "white": {
+    "1000": 3149,
+    "5000": 575,
+    "10000": 196
+   }
+  },
+  "the continent of Talatos (36 Mkm\u00b2)": {
+   "blue": {
+    "1000": 431
+   },
+   "brass": {
+    "1000": 2645,
+    "5000": 521,
+    "10000": 130
+   },
+   "bronze": {
+    "1000": 119,
+    "5000": 11
+   },
+   "gold": {
+    "1000": 537,
+    "5000": 117,
+    "10000": 58
+   }
+  },
+  "the large island of Munin (1.7 Mkm\u00b2)": {
+   "brass": {
+    "1000": 420,
+    "5000": 77,
+    "10000": 39
+   },
+   "bronze": {
+    "1000": 131,
+    "5000": 6
+   },
+   "gold": {
+    "1000": 638,
+    "5000": 106,
+    "10000": 51
+   }
+  },
+  "the island of Rabretam (0.012 Mkm\u00b2)": {
+   "brass": {
+    "1000": 5,
+    "5000": 2,
+    "10000": 1
+   },
+   "bronze": {
+    "1000": 1,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 4,
+    "5000": 1,
+    "10000": 1
+   }
+  },
+  "the island of Sode (0.0062 Mkm\u00b2)": {
+   "brass": {
+    "1000": 2,
+    "5000": 1
+   },
+   "bronze": {
+    "1000": 3
+   },
+   "copper": {
+    "1000": 2,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 2,
+    "5000": 1
+   }
+  },
+  "the island of Hanabren (0.0031 Mkm\u00b2)": {
+   "brass": {
+    "1000": 1
+   },
+   "bronze": {
+    "1000": 2,
+    "10000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the large island of Razukum (0.31 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 121,
+    "5000": 13,
+    "10000": 7
+   },
+   "gold": {
+    "1000": 135,
+    "5000": 17,
+    "10000": 10
+   }
+  },
+  "the large island of Ratote (0.35 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 43,
+    "5000": 34,
+    "10000": 18
+   },
+   "gold": {
+    "1000": 11,
+    "5000": 19,
+    "10000": 6
+   },
+   "copper": {
+    "5000": 4,
+    "10000": 2
+   }
+  },
+  "the island of Zibrojur (0.081 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 6,
+    "5000": 7,
+    "10000": 4
+   },
+   "copper": {
+    "1000": 3,
+    "5000": 2,
+    "10000": 1
+   },
+   "red": {
+    "1000": 2
+   },
+   "silver": {
+    "10000": 1
+   }
+  },
+  "the island of Ragujur (0.0093 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 4,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 2,
+    "10000": 1
+   }
+  },
+  "the island of Hinotor (0.0093 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 4,
+    "5000": 1,
+    "10000": 1
+   },
+   "gold": {
+    "1000": 6,
+    "5000": 1,
+    "10000": 1
+   }
+  },
+  "the island of Ratukham (0.0062 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 3
+   },
+   "gold": {
+    "1000": 2
+   }
+  },
+  "the island of Botijor (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 3,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 1
+   },
+   "copper": {
+    "5000": 1
+   }
+  },
+  "the island of Lesujath (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 2
+   }
+  },
+  "the island of Khagen (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2
+   },
+   "gold": {
+    "1000": 1,
+    "5000": 1
+   }
+  },
+  "the island of Veraton (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2,
+    "5000": 1,
+    "10000": 1
+   },
+   "gold": {
+    "1000": 1,
+    "10000": 1
+   }
+  },
+  "the island of Kokakam (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Joshor (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Thotrega (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 1,
+    "5000": 1
+   }
+  },
+  "the island of Badutros (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2
+   }
+  },
+  "the island of Lahulas (0.0062 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 2
+   },
+   "gold": {
+    "1000": 4
+   }
+  },
+  "the island of Bradrem (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Brakothom (0.0093 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Katham (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Hothano (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Branu (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Vageshe (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Suthem (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1,
+    "5000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Lathodrin (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   }
+  },
+  "the island of Jovath (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1,
+    "5000": 1,
+    "10000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Sabrade (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "silver": {
+    "1000": 1
+   }
+  },
+  "the island of Gola (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1,
+    "5000": 1,
+    "10000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Drimasol (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "copper": {
+    "1000": 1
+   },
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Lakhos (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "gold": {
+    "1000": 1,
+    "10000": 1
+   }
+  },
+  "the island of Tukhadror (0.0031 Mkm\u00b2)": {
+   "bronze": {
+    "1000": 1
+   },
+   "gold": {
+    "5000": 1
+   }
+  },
+  "the island of Magus (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 2,
+    "5000": 1
+   }
+  },
+  "the island of Bamosol (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Rogin (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Khakija (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Hashun (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Brokhusil (0.0031 Mkm\u00b2)": {
+   "gold": {
+    "1000": 1
+   }
+  },
+  "the island of Truro (0.0031 Mkm\u00b2)": {
+   "white": {
+    "1000": 1
+   }
+  },
+  "the island of Loshom (0.1 Mkm\u00b2)": {
+   "copper": {
+    "5000": 1
+   }
+  }
+ },
+ "top": [
+  "the continent of Hizam (1.3e+02 Mkm\u00b2)",
+  "the continent of Luki (15 Mkm\u00b2)",
+  "the continent of Talatos (36 Mkm\u00b2)",
+  "the large island of Munin (1.7 Mkm\u00b2)",
+  "the large island of Ratote (0.35 Mkm\u00b2)"
+ ],
+ "region": {
+  "1000": 12332,
+  "5000": 3159,
+  "10000": 325
+ },
+ "region_where": "the continent of Hizam (1.3e+02 Mkm\u00b2), a 3,000 km square around -9.3, -138.0",
+ "close": [
+  [
+   "this swamp has 3 black dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) -2.5, -102.4; 3 in this 1,800 km square (1 pockets)"
+  ],
+  [
+   "this volcano country has 3 red dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) 7.5, -165.5; 9 in this 1,800 km square (5 pockets)"
+  ],
+  [
+   "this cold range has 2 white dragons",
+   "the continent of Hizam (1.3e+02 Mkm\u00b2) 67.4, -31.1; 4 in this 1,800 km square (3 pockets)"
+  ]
+ ],
+ "totals": {
+  "1000": {
+   "black": 978,
+   "blue": 2885,
+   "brass": 18847,
+   "bronze": 8538,
+   "copper": 9470,
+   "gold": 31696,
+   "green": 11105,
+   "red": 265,
+   "silver": 7211,
+   "white": 3150
+  },
+  "5000": {
+   "black": 39,
+   "blue": 30,
+   "brass": 3612,
+   "bronze": 1924,
+   "copper": 1879,
+   "gold": 6787,
+   "green": 1944,
+   "red": 23,
+   "silver": 1300,
+   "white": 575
+  },
+  "10000": {
+   "black": 137,
+   "blue": 15,
+   "brass": 1632,
+   "bronze": 801,
+   "copper": 911,
+   "gold": 2861,
+   "green": 1031,
+   "red": 22,
+   "silver": 749,
+   "white": 196
+  }
+ },
+ "pockets": {
+  "1000": {
+   "black": 9,
+   "blue": 5,
+   "brass": 40,
+   "bronze": 81,
+   "copper": 274,
+   "gold": 102,
+   "green": 51,
+   "red": 9,
+   "silver": 53,
+   "white": 52
+  },
+  "5000": {
+   "black": 9,
+   "blue": 1,
+   "brass": 33,
+   "bronze": 43,
+   "copper": 174,
+   "gold": 47,
+   "green": 37,
+   "red": 8,
+   "silver": 38,
+   "white": 20
+  },
+  "10000": {
+   "black": 4,
+   "blue": 1,
+   "brass": 24,
+   "bronze": 25,
+   "copper": 110,
+   "gold": 35,
+   "green": 30,
+   "red": 4,
+   "silver": 20,
+   "white": 6
+  }
+ },
+ "reached": {
+  "1000": {
+   "black": 0.25,
+   "blue": 0.6,
+   "brass": 0.92,
+   "bronze": 1.0,
+   "copper": 0.84,
+   "gold": 0.99,
+   "green": 0.66,
+   "red": 0.7,
+   "silver": 0.76,
+   "white": 0.71
+  },
+  "5000": {
+   "black": 0.33,
+   "blue": 0.14,
+   "brass": 0.92,
+   "bronze": 1.0,
+   "copper": 0.84,
+   "gold": 0.99,
+   "green": 0.64,
+   "red": 0.7,
+   "silver": 0.76,
+   "white": 0.67
+  },
+  "10000": {
+   "black": 0.14,
+   "blue": 0.14,
+   "brass": 0.93,
+   "bronze": 0.88,
+   "copper": 0.78,
+   "gold": 0.99,
+   "green": 0.64,
+   "red": 0.7,
+   "silver": 0.76,
+   "white": 0.67
+  }
+ }
+}

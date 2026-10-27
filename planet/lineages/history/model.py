@@ -24,6 +24,7 @@ from .frame import FrameMixin
 from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
+from . import megafauna as MG
 from .params import (ALPHA_CLOSED, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH, MVP_EVERY_KYR,
                      NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
@@ -205,6 +206,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._disperse(l, k, K, room, crowd, step, env, tags)
         self._sail(l, k, K, room, crowd, step, env, tags)
         self._jump(l, k, K, room, step, env, tags)
+        if l.megafauna:
+            MG.scatter(self, l, k, K, step, env)
         if not l.overlay and not l.marine:
             self._mvp_dt[k] += step.dt
             if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:

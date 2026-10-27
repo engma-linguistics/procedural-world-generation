@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..gridops import nbr_reduce
-from ..spread import EST
+from ..spread import EST, jump_reach, rings
+from .habitat import hold_mask
 
 if TYPE_CHECKING:
     from .model import History
@@ -30,6 +31,40 @@ TARGET_SHARE = 0.5  # the target: at least this share of the suitable country li
 COUNTRY = {"wetland": "swamp", "forest": "forest", "jungle": "jungle", "volcanic": "volcano country", "mountain": "mountains",
            "tundra": "tundra", "desert": "desert", "hills": "hills", "coast": "coast", "steppe": "steppe", "island": "island",
            "open": "open country", "shore": "coast", "sea": "sea"}
+
+
+SCATTER_RATE = 0.2  # new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
+SCATTER_MAX = 3  # stays a mystery), in free suitable country within SCATTER_LINKS of its reach (link_km) of a pocket it holds; they do not
+SCATTER_LINKS = 3.0  # wait for crowding as a people's jump does (History._jump), and they settle beside peoples, whom they hardly press
+
+
+def scatter(h: History, l, k: int, K: np.ndarray, step, env: dict) -> None:
+    """PW-924: a megafauna line reaches many separate pockets of its country by flight or long range, not one big range: a Poisson
+    number of new pockets (SCATTER_RATE x dt) in cells of suitable habitat (K >= SUITABLE, its realm) not yet held, within SCATTER_LINKS
+    reaches of the pockets it holds (a flier over land and sea; a walker over land, the sea at its own reach), drawn by K."""
+    g = h.grid
+    rng = h.__dict__.setdefault("_mrng", {}).get(l.id)
+    if rng is None:
+        rng = h._mrng[l.id] = np.random.default_rng((h.seed, 924, k))
+    n_ev = min(int(rng.poisson(SCATTER_RATE * step.dt)), SCATTER_MAX)
+    held = h.p[k] >= EST
+    if n_ev == 0 or not held.any():
+        return
+    reach = link_km(l)
+    land = env["land"]
+    realm = hold_mask(l, h._tags_now) if l.marine else land
+    cost = np.full(g.n, h.cell_km / reach) if ("flies" in l.traits or l.marine) else np.where(land, h.cell_km / reach, 2 * h.cell_km / reach)
+    D = jump_reach(held, cost, SCATTER_LINKS, g.nbr_off, g.nbr_idx)
+    cand = (K >= SUITABLE) & realm & ~held & (D > 0)
+    if not cand.any():
+        return
+    w = np.where(cand, K, 0.0)
+    for c in rng.choice(g.n, size=n_ev, replace=False if cand.sum() >= n_ev else True, p=w / w.sum()):
+        blob = rings(int(c), cand, 1, g.nbr_off, g.nbr_idx)
+        blob[c] = True
+        h.p[k][blob] = np.maximum(h.p[k][blob], np.clip(K[blob], 0.3, 1))
+        if not l.marine:
+            h.cross.note(l.id, blob, step.ago, "jump", h.events, l.label())
 
 
 def link_km(line) -> float:
