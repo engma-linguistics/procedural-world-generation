@@ -4,6 +4,11 @@ type: task
 subsystem: viewer
 effort: s
 impact: low
+status: todo
+parent: null
+blocked_by: []
+relates: []
+refs: []
 found_by: pw-841-reopen
 ---
 
