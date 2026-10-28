@@ -80,6 +80,7 @@
   <button data-tab="places">Places &amp; land use</button>
   <button data-tab="wishes">Wishes</button>
   <button data-tab="results">Results</button>
+  <button data-tab="tech">Technology</button>
 </nav>
 <main>
   <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
@@ -87,6 +88,7 @@
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
   <section class="tab" id="tab-results"></section>
+  <section class="tab" id="tab-tech"></section>
 </main>
 <footer id="foot"></footer>
 <script>
@@ -210,6 +212,10 @@ const FOOT = {
     habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
+  tech: `The technology tree (PW-675 first pass, planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.
+    <span style="color:#ffd27a">invented</span> · <span style="color:#7fb0ff">contact</span> · <span style="color:#c79bff">kit (brought on arrival)</span> ·
+    <span style="color:#8fa0b4">inherited (from the parent, at the split)</span> · <span style="color:#6bd6a0">tamed (a crop or herd of the history)</span> · <span style="color:#6bd6d0">shared within a people</span>.
+    Drag the time slider: what was not yet known then is greyed. Older runs: <code>uv run python -m planet techtree RUN</code> adds it.`,
   results: 'From a peoples run (meta.present). Numbers are presence x density x area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1);
@@ -229,6 +235,7 @@ function redraw() {
   else if (tab === 'peoples') drawPeoples();
   else if (tab === 'places') drawPlaces();
   else if (tab === 'wishes') drawWishes();
+  else if (tab === 'tech') drawTech();
   else drawResults();
 }
 
@@ -768,6 +775,79 @@ function drawResults() {
     <div style="margin-top:4px">${esc(l.story)}</div></div>`).join('')}</div>`;
   el.innerHTML = h;
   bind();
+}
+// ---- the technology tab (techtree.py, PW-675 v0) ----------------------------------------------------------
+const HOW_COL = { invented: '#ffd27a', contact: '#7fb0ff', kit: '#c79bff', inherited: '#8fa0b4', tamed: '#6bd6a0', shared: '#6bd6d0' };
+const howCol = (how) => HOW_COL[how] || (String(how).startsWith('with') ? '#6bd6a0' : '#aaa');
+let techAt = 0, techTrack = 'all', techAll = false;  // (the slider's kyr ago; the track shown; lines gone by the present too)
+function drawTech() {
+  const el = $('tab-tech');
+  if (!result) {
+    const mine = worldRuns();
+    if (mine.length && !drawTech.busy) { drawTech.busy = true; showResult(mine[0].dir).finally(() => { drawTech.busy = false; }); }
+    el.innerHTML = '<p class="muted">Pick a peoples run in the Results tab (or run the tree on a world) to see its technology.</p>'; return;
+  }
+  const tt = result.techtree;
+  if (!tt) { el.innerHTML = `<p class="muted">Run ${esc(result.id)} has no technology tree yet: <code>uv run python -m planet techtree ${esc(result.id)}</code> adds it.</p>`; return; }
+  const lines = result.lineages || [], L = Object.fromEntries(lines.map((l) => [l.id, l]));
+  const sw = (id) => `<span class="sw" style="background:${L[id]?.color || '#888'}"></span>`;
+  const short = (id) => esc((L[id]?.name || id).split(' (')[0]);
+  const techs = tt.techs.filter((t) => techTrack === 'all' || t.track === techTrack);
+  const rows = lines.filter((l) => tt.known[l.id] && (techAll || l.leaf || l.ended_kyr == null))
+    .sort((a, b) => (b.started_kyr ?? b.ago_kyr) - (a.started_kyr ?? a.ago_kyr));
+  const oldest = Math.max(1, ...rows.map((l) => l.started_kyr ?? l.ago_kyr ?? 1));
+  // the slider on a log scale: 0 the present, 1000 the oldest line shown
+  const lo = Math.log10(0.05), hi = Math.log10(oldest);
+  const toK = (v) => v <= 0 ? 0 : 10 ** (lo + (v / 1000) * (hi - lo));
+  const toV = (k) => k <= 0.05 ? 0 : Math.round(1000 * (Math.log10(k) - lo) / (hi - lo));
+  const cell = 12;
+  let h = `<div class="row" style="margin-bottom:8px"><b>Technology</b> <span class="muted">run ${esc(result.id)} · ${tt.techs.length} techs in ${tt.tracks.length} tracks · era cap ${esc(tt.era)} · ${esc(tt.mode)} mode</span>
+    <select id="ttTrack"><option value="all">all tracks</option>${tt.tracks.map((k) => `<option value="${k.id}" ${k.id === techTrack ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select>
+    <label class="muted"><input type="checkbox" id="ttAll" ${techAll ? 'checked' : ''}> lines gone by the present too</label>
+    <span class="muted">known at</span><input type="range" id="ttAt" min="0" max="1000" value="${toV(techAt)}" style="width:320px">
+    <b id="ttAtLab">${techAt <= 0 ? 'the present' : fmt(techAt) + ' ago'}</b></div>`;
+  // the matrix: peoples down (oldest first), techs across grouped by track, a square per known tech in the colour of how it came
+  h += '<div style="overflow:auto;max-height:calc(100vh - 230px)"><table id="ttMat" style="border-collapse:collapse"><tr><th></th>';
+  let lastTrack = null;
+  for (const t of techs) {
+    const edge = t.track !== lastTrack ? 'border-left:2px solid #3a4658;' : ''; lastTrack = t.track;
+    const land = [...t.env, ...(t.env_any.length ? ['one of ' + t.env_any.join('/')] : [])].join(', ');
+    h += `<th title="${esc(t.name)} (${esc(t.track)}; ${esc(t.era)}; earliest ${t.earliest_kyr ?? '?'} kyr${t.elder_kyr ? `, elder kinds ${t.elder_kyr}` : ''}; needs ${esc(t.needs.join(', ') || 'nothing')}${land ? `; land: ${esc(land)}` : ''})&#10;${esc(t.source)}"
+      style="${edge}vertical-align:bottom;font-weight:normal;font-size:10px;padding:0 1px"><div style="writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;max-height:130px;overflow:hidden">${esc(t.name.split(' (')[0])}</div></th>`;
+  }
+  h += '<th style="vertical-align:bottom">known</th><th style="vertical-align:bottom;text-align:left">language</th></tr>';
+  for (const l of rows) {
+    const kn = tt.known[l.id];
+    let n = 0;
+    h += `<tr><td style="white-space:nowrap;font-size:12px;padding-right:6px">${l.group_of ? '<span class="muted">↳ </span>' : ''}${sw(l.id)}${short(l.id)}${l.leaf ? '' : ' <span class="muted">(gone)</span>'}</td>`;
+    lastTrack = null;
+    for (const t of techs) {
+      const edge = t.track !== lastTrack ? 'border-left:2px solid #3a4658;' : ''; lastTrack = t.track;
+      const v = kn[t.id], on = v && v[0] >= techAt;
+      if (on) n++;
+      h += v ? `<td style="padding:1px;${edge}" title="${short(l.id)}: ${esc(t.name)} since ${fmt(v[0])} ago (${esc(v[1])}${v[2] ? ' from ' + short(v[2]) : ''})"><div class="tq" data-k="${v[0]}" style="width:${cell}px;height:${cell}px;border-radius:2px;background:${howCol(v[1])};opacity:${on ? 1 : 0.12}"></div></td>`
+        : `<td style="padding:1px;${edge}"><div style="width:${cell}px;height:${cell}px;border-radius:2px;border:1px solid #1f2836;box-sizing:border-box"></div></td>`;
+    }
+    const lg = kn.language;
+    h += `<td class="n tn">${n}</td><td class="muted" style="white-space:nowrap;font-size:12px">${lg ? `${fmt(lg[0])} ago, ${esc(lg[1])}${lg[2] ? ' from ' + short(lg[2]) : ''}` : 'none'}</td></tr>`;
+  }
+  h += '</table></div>';
+  // the firsts, by track
+  h += `<h2>Firsts</h2><div class="cards">${tt.tracks.filter((k) => techTrack === 'all' || k.id === techTrack).map((k) => `<div class="card"><b>${esc(k.name)}</b>
+    <table class="t" style="font-size:12px">${tt.techs.filter((t) => t.track === k.id).map((t) => { const f = tt.firsts[t.id];
+      return `<tr><td title="${esc(t.source)}">${esc(t.name)}</td><td style="white-space:nowrap">${f ? `${sw(f.line)}${short(f.line)}` : '<span class="muted">nobody</span>'}</td><td class="n">${f ? fmt(f.ago_kyr) : ''}</td><td class="muted">${f ? esc(f.how) : ''}</td></tr>`; }).join('')}</table></div>`).join('')}</div>`;
+  el.innerHTML = h;
+  $('ttTrack').onchange = (e) => { techTrack = e.target.value; drawTech(); };
+  $('ttAll').onchange = (e) => { techAll = e.target.checked; drawTech(); };
+  $('ttAt').oninput = (e) => {  // (only the squares' opacity and the counts change: no redraw)
+    techAt = toK(+e.target.value);
+    $('ttAtLab').textContent = techAt <= 0 ? 'the present' : fmt(techAt) + ' ago';
+    for (const tr of $('ttMat').rows) {
+      let n = 0;
+      for (const q of tr.querySelectorAll('.tq')) { const on = +q.dataset.k >= techAt; q.style.opacity = on ? 1 : 0.12; n += on; }
+      const c = tr.querySelector('.tn'); if (c) c.textContent = n;
+    }
+  };
 }
 function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger
   const rows = lms.filter((m) => m.area_mkm2 >= 0.3 && m.arrivals?.length).slice(0, 12);

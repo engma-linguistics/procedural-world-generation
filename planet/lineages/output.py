@@ -17,6 +17,7 @@ from . import land as LD
 from . import landuse as LU
 from . import reputation as RP
 from . import spec as SP
+from . import techtree as TT
 from .history import COMPOSITION_TWO_PCT, EST, PALETTE, History
 from .history import megafauna as MG
 
@@ -140,6 +141,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     contacts = h.contacts.summary() if h.contacts is not None else None
     pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)
+    # the technology tree (PW-675 v0): which people knew what, and since when (techtree.py)
+    techtree = TT.build(lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed)
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -149,7 +152,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
-                 "contacts": contacts, "eraq": eraq_meta,
+                 "contacts": contacts, "techtree": techtree, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
@@ -162,6 +165,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "grid": f"../../grids/L{g.level}.json", "legend": S.legends(), "layers": layers,
         "events": events, "frames": out_frames})
     report(out, h, res, pres)
+    with open(out / "run.txt", "a") as f:
+        f.write("\n".join(TT.lines_for_report(techtree, lines)) + "\n")
     if world:  # (peoples change the land, PW-662: needs the world's farmland)
         sm = LU.write(out)
         with open(out / "run.txt", "a") as f:

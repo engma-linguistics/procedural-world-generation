@@ -1,0 +1,1098 @@
+# The technology tree, first pass (PW-675 prototype; planet/lineages/techtree.py reads it). Nothing here is final.
+#
+# A tech: id, name, track, needs (techs that must be known first), env (goods of the land, land.GOODS, that must be in the
+# people's country: all of them), env_any (at least one of them), earliest_kyr (no ordinary people invents it before this,
+# kyr before the present: the real-world anchor, see `source`), elder_kyr (the same for the elder kinds, [[kind]] elder = true;
+# left out: as earliest_kyr), rate (chance per kyr a people that could invent it does, once possible; [defaults] by track),
+# traded = true (taken up by contact without the goods: the metal comes by trade), spread (x the contact rate at which a neighbour takes it up), hands (false: a people without hands can know it: dragons),
+# era (the era it belongs to: the tree's meta.era caps what any people reaches), mode = "fantasy" (left out in real mode),
+# stock = "crops" | "animals" (also known by whoever first tames a crop or an animal in the history: crops.py, animals.py).
+#
+# Dates are the real-world (Earth) archaeological firsts the ordering leans on, in kyr before the present. Sources are
+# given as author, year, journal; "unverified" marks a date the author of this file could not tie to a source it is sure
+# of (provenance epic PW-938). Never invent a citation here. The fantasy (arcane) rows cite nothing: they are D&D flavour.
+
+[defaults]
+rate = 0.02          # per kyr, a tech with no rate of its own
+spread = 1.0
+track_rate = { communication = 0.01, fire = 0.02, tools = 0.02, food = 0.03, shelter = 0.03, travel = 0.02, social = 0.02, arcane = 0.02 }
+contact_rate = 0.15  # per kyr: a tech known across a border of CONTACT_FULL_KM is taken up at this rate (x spread, x the taker's openness)
+contact_full_km = 1500
+env_min = 0.3        # a good counts where it reaches this (0..1) ...
+env_share = 0.04     # ... on this share of the people's cells
+deposit_min = 0.5    # a deposit (ore, salt, stone: techtree.DEPOSITS) counts where it reaches this (mining.ORE_MIN) ...
+deposit_share = 0.005  # ... on this share of the people's cells (at least 2): a mine is a point, not a plain
+late_kyr = 12        # techs no older than this with no rate of their own ...
+late_rate = 0.12     # ... are found at least this often per kyr once possible
+
+[[track]]
+id = "communication"
+name = "Communication"
+[[track]]
+id = "fire"
+name = "Fire and cooking"
+[[track]]
+id = "tools"
+name = "Tools and materials"
+[[track]]
+id = "food"
+name = "Food getting"
+[[track]]
+id = "shelter"
+name = "Shelter and settlement"
+[[track]]
+id = "travel"
+name = "Travel"
+[[track]]
+id = "social"
+name = "Social and ritual"
+[[track]]
+id = "arcane"
+name = "Magic and the arcane"
+
+# ---- kinds: who starts with what -----------------------------------------------------------------------
+# of = a line id; the rule applies to it and every line below it in the tree. elder: an old kind (elder_kyr applies).
+# hands = false: cannot knap, haft, pot or forge (dragons). kit: what it knows from its start (an arrival brings it from
+# elsewhere: the feywild, the sea; a split or group otherwise inherits its parent's). rate_x scales its own inventing.
+[[kind]]
+of = "draconic"
+elder = true
+hands = false
+rate_x = 0.6   # few and long-lived: slow to invent, but they have had a long time
+kit = ["innate_magic"]  # breath and flight-craft are part of being a dragon
+[[kind]]
+of = "kobold"  # (dragon-blooded, but neither elder nor handless: the rule of the nearest kind holds)
+[[kind]]
+of = "dragonborn"
+[[kind]]
+of = "true_giant"
+elder = true
+[[kind]]
+of = "elf"
+kit = ["language", "song", "counting", "marks", "fire_control", "cooking", "knapping", "hafting", "projectiles", "bow", "cordage", "sewing", "burial", "music", "ornament", "foraging_lore", "fishing", "trapping", "huts", "rafts", "spirit_ritual", "druidcraft", "fey_glamour", "runes"]
+[[kind]]
+of = "gnome"  # owner: early comers like gnomes have it when they arrive (50 kyr)
+kit = ["language", "song", "counting", "marks", "tallies", "fire_control", "cooking", "earth_oven", "knapping", "hafting", "cordage", "sewing", "grinding", "projectiles", "burial", "music", "ornament", "foraging_lore", "trapping", "huts", "pit_houses", "spirit_ritual", "fey_glamour", "illusion"]
+rate_x = 1.5   # tinkerers
+[[kind]]
+of = "triton"
+kit = ["language", "song", "counting", "marks", "foraging_lore", "fishing", "shellfish", "cordage", "ornament", "spirit_ritual", "tide_lore", "elemental_pact"]
+[[kind]]
+of = "edge_folk"
+kit = ["language", "song", "foraging_lore", "shellfish"]
+[[kind]]
+of = "dwarf"
+rate_x = 1.2  # miners: metals come easier (the env still has to hold the ore)
+
+# ---- communication ------------------------------------------------------------------------------------
+[[tech]]
+id = "gesture"
+name = "gesture and call systems"
+track = "communication"
+earliest_kyr = 3000
+elder_kyr = 15000
+rate = 0.02
+hands = false
+spread = 0.0
+era = "stone age"
+source = "unverified (gestural-origins hypotheses; no dated record)"
+
+[[tech]]
+id = "language"
+name = "language (full syntax)"
+track = "communication"
+needs = ["gesture"]
+earliest_kyr = 500
+elder_kyr = 2000
+rate = 0.01     # mean wait ~100 kyr once possible: stems come to it at very different times
+spread = 0.0    # never learnt from neighbours here: each stem comes to it on its own (owner: not everywhere at once)
+hands = false
+era = "stone age"
+source = "Dediu & Levinson 2013, Frontiers in Psychology 4:397 (On the antiquity of language: Neanderthal speech, >~0.5 Myr); the date is debated, many put it nearer 100-200 kyr"
+
+[[tech]]
+id = "song"
+name = "song and chant"
+track = "communication"
+needs = ["language"]
+earliest_kyr = 300
+elder_kyr = 1500
+hands = false
+era = "stone age"
+source = "unverified (no direct record before the flutes below)"
+
+[[tech]]
+id = "counting"
+name = "counting words"
+track = "communication"
+needs = ["language"]
+earliest_kyr = 150
+elder_kyr = 1500
+hands = false
+era = "stone age"
+source = "unverified (inferred; Everett 2017, Numbers and the Making of Us, Harvard UP, on peoples without exact number words)"
+
+[[tech]]
+id = "marks"
+name = "abstract marks and engraving"
+track = "communication"
+needs = ["language"]
+earliest_kyr = 100
+elder_kyr = 1000
+era = "stone age"
+source = "Henshilwood et al. 2002, Science 295:1278 (engraved ochre, Blombos Cave, ~75 kyr); Henshilwood et al. 2009, J Hum Evol 57:27 (to ~100 kyr)"
+
+[[tech]]
+id = "tallies"
+name = "tally sticks"
+track = "communication"
+needs = ["marks", "counting"]
+earliest_kyr = 45
+elder_kyr = 800
+era = "stone age"
+source = "d'Errico et al. 2012, PNAS 109:13214 (notched bones, Border Cave, ~44 kyr); de Heinzelin 1962, Scientific American 206(6):105 (Ishango bone, ~20 kyr)"
+
+[[tech]]
+id = "tokens"
+name = "clay counting tokens"
+track = "communication"
+needs = ["tallies", "pottery"]
+earliest_kyr = 10
+era = "stone age"
+source = "Schmandt-Besserat 1992, Before Writing, U of Texas Press (Near Eastern tokens from ~10 kyr)"
+
+[[tech]]
+id = "writing"
+name = "writing"
+track = "communication"
+needs = ["tokens", "villages"]
+earliest_kyr = 5.4
+elder_kyr = 300
+rate = 0.15
+era = "bronze age"
+source = "Schmandt-Besserat 1992 (proto-cuneiform from the tokens, Uruk, ~5.3 kyr); Egyptian writing of about the same age (unverified exact date)"
+
+[[tech]]
+id = "alphabet"
+name = "alphabet"
+track = "communication"
+needs = ["writing"]
+earliest_kyr = 3.8
+rate = 0.1
+era = "classical"
+source = "unverified (Proto-Sinaitic, ~3.8 kyr, the usual textbook date)"
+
+[[tech]]
+id = "libraries"
+name = "archives and libraries"
+track = "communication"
+needs = ["writing", "towns"]
+earliest_kyr = 4.5
+rate = 0.1
+era = "classical"
+source = "unverified (Ebla archives, ~4.3 kyr, textbook date)"
+
+[[tech]]
+id = "printing"
+name = "block and movable-type printing"
+track = "communication"
+needs = ["libraries", "alphabet"]
+earliest_kyr = 1.3
+rate = 0.15
+era = "renaissance"
+source = "unverified (woodblock printing in Tang China ~1.3 kyr; Gutenberg ~0.57 kyr)"
+
+# ---- fire and cooking ---------------------------------------------------------------------------------
+[[tech]]
+id = "fire_control"
+name = "keeping fire"
+track = "fire"
+needs = ["gesture"]
+env_any = ["fuel", "timber", "foraging"]
+earliest_kyr = 1000
+elder_kyr = 3000
+rate = 0.006
+era = "stone age"
+source = "Berna et al. 2012, PNAS 109:E1215 (burnt bone and ash in Wonderwerk Cave, ~1 Myr)"
+
+[[tech]]
+id = "cooking"
+name = "habitual cooking"
+track = "fire"
+needs = ["fire_control"]
+earliest_kyr = 400
+elder_kyr = 1500
+era = "stone age"
+source = "Shahack-Gross et al. 2014, J Archaeol Sci 44:12 (a central hearth used again and again, Qesem Cave, ~300 kyr); Wrangham 2009, Catching Fire (argues earlier; unverified as a date)"
+
+[[tech]]
+id = "fire_making"
+name = "making fire at will (strike-a-light, drill)"
+track = "fire"
+needs = ["fire_control", "knapping"]
+earliest_kyr = 50
+era = "stone age"
+source = "Sorensen et al. 2018, Scientific Reports 8:10065 (Neanderthal strike-a-light wear on bifaces, ~50 kyr)"
+
+[[tech]]
+id = "earth_oven"
+name = "earth ovens and stone boiling"
+track = "fire"
+needs = ["cooking"]
+earliest_kyr = 40
+era = "stone age"
+source = "unverified (heated-stone cooking pits widespread in the Upper Palaeolithic; no single dated first known here)"
+
+[[tech]]
+id = "smoking_drying"
+name = "smoking and drying food"
+track = "fire"
+needs = ["cooking"]
+earliest_kyr = 40
+era = "stone age"
+source = "unverified (inferred from storage and fish remains; no direct early record)"
+
+[[tech]]
+id = "boiling_pots"
+name = "boiling in pots (stews, porridge)"
+track = "fire"
+needs = ["pottery"]
+earliest_kyr = 20
+era = "stone age"
+source = "Craig et al. 2013, Nature 496:351 (fish and shellfish residues in Jomon pots, ~15 kyr); Wu et al. 2012, Science 336:1696 (pottery, Xianrendong, ~20 kyr)"
+
+[[tech]]
+id = "bread"
+name = "bread and flatbread baking"
+track = "fire"
+needs = ["grinding", "cooking"]
+env_any = ["fertile", "foraging"]
+earliest_kyr = 14.5
+era = "stone age"
+source = "Arranz-Otaegui et al. 2018, PNAS 115:7925 (charred flatbread, Shubayqa 1, Jordan, ~14.4 kyr, before farming)"
+
+[[tech]]
+id = "fermentation"
+name = "brewing and fermentation"
+track = "fire"
+needs = ["cooking", "containers"]
+earliest_kyr = 13
+era = "stone age"
+source = "Liu et al. 2018, J Archaeol Sci Reports 21:783 (beer residues, Raqefet Cave, ~13 kyr); McGovern et al. 2004, PNAS 101:17593 (rice-honey-fruit drink, Jiahu, ~9 kyr)"
+
+[[tech]]
+id = "cheese"
+name = "cheese and soured milk"
+track = "fire"
+needs = ["herding", "pottery"]
+env = ["grazing"]
+earliest_kyr = 8
+era = "stone age"
+source = "Evershed et al. 2008, Nature 455:528 (milk fats in pots, NW Anatolia, ~8.5 kyr); Salque et al. 2013, Nature 493:522 (cheese-strainer sieves, Kuyavia, ~7.2 kyr)"
+
+[[tech]]
+id = "salting"
+name = "salting and salt making"
+track = "fire"
+needs = ["cooking", "containers"]
+env = ["salt"]
+earliest_kyr = 8
+era = "stone age"
+source = "unverified (briquetage at Poiana Slatinei, Romania, ~8 kyr, often cited; source not checked here)"
+
+[[tech]]
+id = "kilns"
+name = "kilns (high heat)"
+track = "fire"
+needs = ["pottery", "villages"]
+earliest_kyr = 8
+era = "stone age"
+source = "unverified (updraft kilns in the Near East by ~8 kyr, textbook date)"
+
+[[tech]]
+id = "distilling"
+name = "distilling"
+track = "fire"
+needs = ["fermentation", "copper"]
+earliest_kyr = 2
+rate = 0.03
+era = "medieval"
+source = "unverified (alembics in Roman Egypt ~1.7 kyr; spirits common in Europe by ~0.7 kyr)"
+
+# ---- tools and materials -------------------------------------------------------------------------------
+[[tech]]
+id = "knapping"
+name = "knapped stone tools"
+track = "tools"
+earliest_kyr = 3300
+elder_kyr = 4000
+rate = 0.01
+era = "stone age"
+source = "Harmand et al. 2015, Nature 521:310 (Lomekwi 3, ~3.3 Myr); Semaw et al. 1997, Nature 385:333 (Oldowan, Gona, ~2.6 Myr)"
+
+[[tech]]
+id = "handaxes"
+name = "shaped handaxes"
+track = "tools"
+needs = ["knapping"]
+earliest_kyr = 1760
+elder_kyr = 3000
+rate = 0.005
+era = "stone age"
+source = "Lepre et al. 2011, Nature 477:82 (Acheulean, Kokiselei, ~1.76 Myr)"
+
+[[tech]]
+id = "hafting"
+name = "hafted tools (spears with stone points)"
+track = "tools"
+needs = ["handaxes", "cordage"]
+earliest_kyr = 500
+elder_kyr = 1500
+era = "stone age"
+source = "Wilkins et al. 2012, Science 338:942 (hafted points, Kathu Pan 1, ~500 kyr)"
+
+[[tech]]
+id = "cordage"
+name = "cordage and string"
+track = "tools"
+needs = ["knapping"]
+earliest_kyr = 500
+elder_kyr = 1500
+era = "stone age"
+source = "Hardy et al. 2020, Scientific Reports 10:4889 (three-ply cord, Abri du Maras, ~45 kyr: the oldest direct find; older is inferred from hafting, unverified)"
+
+[[tech]]
+id = "projectiles"
+name = "spear throwers and darts"
+track = "tools"
+needs = ["hafting"]
+earliest_kyr = 80
+era = "stone age"
+source = "unverified (spear-thrower hooks are Upper Palaeolithic, ~20 kyr; earlier use is inferred from small points)"
+
+[[tech]]
+id = "bow"
+name = "bow and arrow"
+track = "tools"
+needs = ["projectiles", "cordage"]
+env_any = ["timber", "foraging"]
+earliest_kyr = 64
+era = "stone age"
+source = "Lombard & Phillipson 2010, Antiquity 84:635 (arrow points, Sibudu Cave, ~64 kyr)"
+
+[[tech]]
+id = "sewing"
+name = "eyed needles and sewn clothing"
+track = "tools"
+needs = ["cordage"]
+earliest_kyr = 45
+era = "stone age"
+source = "unverified (bone needles from Denisova Cave, ~50 kyr, are often cited; source not checked here)"
+
+[[tech]]
+id = "grinding"
+name = "grinding stones (seeds, ochre)"
+track = "tools"
+needs = ["knapping"]
+earliest_kyr = 40
+era = "stone age"
+source = "Piperno et al. 2004, Nature 430:670 (starch on a grinding stone, Ohalo II, ~23 kyr); Revedin et al. 2010, PNAS 107:18815 (flour on grinding stones, Europe, ~30 kyr)"
+
+[[tech]]
+id = "containers"
+name = "containers (baskets, skins, bark)"
+track = "tools"
+needs = ["cordage"]
+earliest_kyr = 60
+era = "stone age"
+source = "Texier et al. 2010, PNAS 107:6180 (engraved ostrich-eggshell water flasks, Diepkloof, ~60 kyr)"
+
+[[tech]]
+id = "pottery"
+name = "pottery"
+track = "tools"
+needs = ["fire_control", "containers"]
+env_any = ["fertile", "foraging", "building"]  # (clay: there is no clay layer yet; any soil-bearing country stands in, PW draft)
+earliest_kyr = 20
+era = "stone age"
+source = "Wu et al. 2012, Science 336:1696 (pottery, Xianrendong Cave, ~20 kyr)"
+
+[[tech]]
+id = "ground_stone"
+name = "polished stone axes"
+track = "tools"
+needs = ["grinding"]
+env = ["stone"]
+earliest_kyr = 35
+era = "stone age"
+source = "unverified (edge-ground axes in Sahul ~35-46 kyr; Geneste et al. 2010 is often cited, not checked here)"
+
+[[tech]]
+id = "copper"
+name = "copper smelting"
+track = "tools"
+needs = ["kilns"]
+env = ["copper"]
+earliest_kyr = 7.0
+elder_kyr = 50
+rate = 0.08
+era = "bronze age"
+source = "Radivojevic et al. 2010, J Archaeol Sci 37:2775 (copper smelting, Belovode, Serbia, ~7 kyr)"
+
+[[tech]]
+id = "arsenical_copper"
+name = "arsenical copper (the first bronze)"
+track = "tools"
+needs = ["copper"]
+env = ["copper"]
+earliest_kyr = 6.5
+rate = 0.08
+traded = true
+era = "bronze age"
+source = "unverified (arsenical copper precedes tin bronze in the Near East and the Caucasus, ~6 kyr; textbook ordering)"
+
+[[tech]]
+id = "bronze"
+name = "tin bronze"
+track = "tools"
+needs = ["copper"]
+env = ["tin"]
+earliest_kyr = 6.5
+rate = 0.08
+spread = 2.0   # traded alloy: travels faster than the know-how to find tin
+traded = true  # taken up by contact without tin in the taker's own country
+era = "bronze age"
+source = "Radivojevic et al. 2013, Antiquity 87:1030 (tin bronze foil, Plocnik, ~6.5 kyr)"
+
+[[tech]]
+id = "iron"
+name = "iron smelting"
+track = "tools"
+needs = ["copper"]  # (the know-how of smelting, not tin bronze itself: tin is rare, and iron came to peoples that never had tin)
+env = ["iron"]
+traded = true
+earliest_kyr = 3.3
+rate = 0.08
+era = "classical"
+source = "unverified (bloomery iron spreads from Anatolia ~3.2 kyr, textbook date)"
+
+[[tech]]
+id = "steel"
+name = "steel and pattern welding"
+track = "tools"
+needs = ["iron"]
+earliest_kyr = 2.5
+rate = 0.06
+era = "medieval"
+source = "unverified (wootz and quenched steels by ~2.3 kyr, textbook date)"
+
+[[tech]]
+id = "mithril_work"
+name = "working mithril and adamant"
+track = "tools"
+needs = ["steel"]
+env = ["mithril"]
+earliest_kyr = 2.0
+rate = 0.05
+era = "medieval"
+mode = "fantasy"
+source = "fantasy (D&D)"
+
+[[tech]]
+id = "glass"
+name = "glass"
+track = "tools"
+needs = ["kilns", "copper"]
+earliest_kyr = 4.5
+rate = 0.05
+era = "classical"
+source = "unverified (glass beads in Mesopotamia ~4.5 kyr, textbook date)"
+
+# ---- food getting --------------------------------------------------------------------------------------
+[[tech]]
+id = "foraging_lore"
+name = "plant and animal lore"
+track = "food"
+needs = ["language"]
+hands = false
+earliest_kyr = 500
+elder_kyr = 2000
+era = "stone age"
+source = "unverified (inferred: all known foragers; no dated first)"
+
+[[tech]]
+id = "shellfish"
+name = "shellfish gathering"
+track = "food"
+env_any = ["shellfish", "fish"]
+earliest_kyr = 165
+era = "stone age"
+source = "Marean et al. 2007, Nature 449:905 (shellfish at Pinnacle Point, ~164 kyr)"
+
+[[tech]]
+id = "fishing"
+name = "fishing (spears, weirs, nets)"
+track = "food"
+needs = ["cordage"]
+env_any = ["fish", "shellfish"]
+earliest_kyr = 90
+era = "stone age"
+source = "Yellen et al. 1995, Science 268:553 (barbed bone points, Katanda, ~90 kyr; the date is debated)"
+
+[[tech]]
+id = "hooks"
+name = "fish hooks"
+track = "food"
+needs = ["fishing"]
+earliest_kyr = 23
+era = "stone age"
+source = "Fujita et al. 2016, PNAS 113:11184 (shell fish hooks, Sakitari Cave, Okinawa, ~23 kyr)"
+
+[[tech]]
+id = "trapping"
+name = "snares and traps"
+track = "food"
+needs = ["cordage"]
+earliest_kyr = 60
+era = "stone age"
+source = "unverified (inferred from small-game remains; no direct early trap)"
+
+[[tech]]
+id = "storage"
+name = "food storage (pits, granaries)"
+track = "food"
+needs = ["containers"]
+earliest_kyr = 11.5
+era = "stone age"
+source = "Kuijt & Finlayson 2009, PNAS 106:10966 (granaries at Dhra', Jordan, ~11.3 kyr, before domesticated grain)"
+
+[[tech]]
+id = "cultivation"
+name = "cultivation (sowing and tending)"
+track = "food"
+needs = ["storage", "grinding"]
+env_any = ["fertile"]
+earliest_kyr = 11.5
+rate = 0.02
+stock = "crops"
+era = "stone age"
+source = "Zeder 2011, Current Anthropology 52:S221 (The origins of agriculture in the Near East: cultivation ~11.5 kyr, domestic forms by ~10.5)"
+
+[[tech]]
+id = "herding"
+name = "herding"
+track = "food"
+needs = ["trapping"]
+env = ["grazing"]
+earliest_kyr = 11
+rate = 0.02
+stock = "animals"
+era = "stone age"
+source = "Zeder 2008, PNAS 105:11597 (domestic goats and sheep, Zagros and Taurus, ~10.5-11 kyr)"
+
+[[tech]]
+id = "dogs"
+name = "dogs and companion beasts"
+track = "food"
+needs = ["trapping"]
+earliest_kyr = 25
+era = "stone age"
+source = "unverified (dog domestication dates range ~15-30 kyr in the genetic literature)"
+
+[[tech]]
+id = "plough"
+name = "ard and plough"
+track = "food"
+needs = ["cultivation", "herding"]
+env = ["fertile"]
+earliest_kyr = 6.5
+rate = 0.05
+era = "bronze age"
+source = "unverified (ards in Mesopotamia ~6 kyr, textbook date)"
+
+[[tech]]
+id = "irrigation"
+name = "irrigation canals"
+track = "food"
+needs = ["cultivation", "villages"]
+earliest_kyr = 8
+rate = 0.04
+era = "bronze age"
+source = "unverified (canals at Choga Mami, Iraq, ~8 kyr, textbook date)"
+
+[[tech]]
+id = "orchards"
+name = "orchards and grafting"
+track = "food"
+needs = ["cultivation"]
+earliest_kyr = 6
+rate = 0.04
+era = "bronze age"
+source = "unverified (olive, date and fig cultivation ~6-7 kyr; grafting by ~3.8 kyr)"
+
+[[tech]]
+id = "watermill"
+name = "water and wind mills"
+track = "food"
+needs = ["wheel", "plough"]
+earliest_kyr = 2.3
+rate = 0.05
+era = "medieval"
+source = "unverified (Greek watermills ~2.3 kyr, textbook date)"
+
+# ---- shelter and settlement -----------------------------------------------------------------------------
+[[tech]]
+id = "huts"
+name = "built shelters"
+track = "shelter"
+needs = ["cordage"]
+earliest_kyr = 400
+elder_kyr = 1500
+era = "stone age"
+source = "unverified (Terra Amata huts, ~400 kyr, are disputed; firm structures by ~23 kyr at Ohalo II: Nadel et al. 2004, PNAS 101:6821)"
+
+[[tech]]
+id = "pit_houses"
+name = "pit houses and earth lodges"
+track = "shelter"
+needs = ["huts"]
+earliest_kyr = 30
+era = "stone age"
+source = "unverified (mammoth-bone dwellings, Mezhyrich, ~15 kyr; date not checked here)"
+
+[[tech]]
+id = "villages"
+name = "year-round villages"
+track = "shelter"
+needs = ["huts", "storage"]
+earliest_kyr = 14.5
+era = "stone age"
+source = "Bar-Yosef 1998, Evolutionary Anthropology 6:159 (Natufian villages, ~14.5 kyr)"
+
+[[tech]]
+id = "mudbrick"
+name = "mudbrick and stone building"
+track = "shelter"
+needs = ["villages"]
+env_any = ["building", "stone"]
+earliest_kyr = 11
+era = "stone age"
+source = "unverified (Jericho mudbrick ~10.5 kyr; Gobekli Tepe enclosures ~11.5 kyr: Schmidt 2010, Documenta Praehistorica 37:239)"
+
+[[tech]]
+id = "towns"
+name = "towns"
+track = "shelter"
+needs = ["mudbrick", "cultivation"]
+earliest_kyr = 9.5
+rate = 0.05
+era = "stone age"
+source = "Hodder 2006, The Leopard's Tale (Catalhoyuk, ~9 kyr)"
+
+[[tech]]
+id = "cities"
+name = "cities"
+track = "shelter"
+needs = ["towns", "irrigation"]
+earliest_kyr = 6
+rate = 0.06
+era = "bronze age"
+source = "unverified (Uruk, ~6 kyr; Algaze 2008, Ancient Mesopotamia at the Dawn of Civilization, is the usual reference, not checked here)"
+
+[[tech]]
+id = "fortifications"
+name = "walls and fortifications"
+track = "shelter"
+needs = ["towns"]
+earliest_kyr = 9
+rate = 0.04
+era = "bronze age"
+source = "unverified (the Jericho wall and tower, ~10 kyr, function debated)"
+
+[[tech]]
+id = "delving"
+name = "deep delving (halls under the mountain)"
+track = "shelter"
+needs = ["mines", "fortifications"]
+env = ["stone"]
+earliest_kyr = 5
+rate = 0.05
+era = "bronze age"
+mode = "fantasy"
+source = "fantasy (D&D dwarves)"
+
+[[tech]]
+id = "mines"
+name = "mines and quarries"
+track = "shelter"
+needs = ["ground_stone"]
+env_any = ["metal", "stone", "salt_rock", "gems"]
+earliest_kyr = 40
+era = "stone age"
+source = "unverified (ochre mining at Lion Cave, Eswatini, ~40 kyr, often cited; flint mines in Neolithic Europe ~7 kyr)"
+
+# ---- travel ---------------------------------------------------------------------------------------------
+[[tech]]
+id = "rafts"
+name = "rafts"
+track = "travel"
+needs = ["cordage"]
+earliest_kyr = 130
+era = "stone age"
+source = "Clarkson et al. 2017, Nature 547:306 (people in Sahul by ~65 kyr: open-water crossings); earlier island crossings are debated (unverified)"
+
+[[tech]]
+id = "canoes"
+name = "dugout and skin boats"
+track = "travel"
+needs = ["rafts", "ground_stone"]
+env_any = ["timber", "seals", "sea_mammals"]
+earliest_kyr = 12
+era = "stone age"
+source = "unverified (the Pesse canoe, ~10 kyr, is the oldest known boat; earlier boats are inferred)"
+
+[[tech]]
+id = "sledges"
+name = "sledges and skis"
+track = "travel"
+needs = ["huts", "cordage"]
+env = ["frost"]
+earliest_kyr = 10
+era = "stone age"
+source = "unverified (Vis I sledge runners, Russia, ~10 kyr, often cited)"
+
+[[tech]]
+id = "pack_animals"
+name = "pack animals"
+track = "travel"
+needs = ["herding"]
+earliest_kyr = 7
+era = "bronze age"
+source = "unverified (donkeys in NE Africa ~7 kyr; Rossel et al. 2008, PNAS 105:3715, ~5 kyr)"
+
+[[tech]]
+id = "wheel"
+name = "wheel and cart"
+track = "travel"
+needs = ["pack_animals", "ground_stone"]
+earliest_kyr = 5.6
+rate = 0.06
+era = "bronze age"
+source = "Anthony 2007, The Horse, the Wheel, and Language, Princeton UP (wheeled vehicles appear ~5.5 kyr across Europe and Mesopotamia)"
+
+[[tech]]
+id = "riding"
+name = "riding"
+track = "travel"
+needs = ["pack_animals"]
+env = ["grazing"]
+earliest_kyr = 5.5
+rate = 0.05
+era = "bronze age"
+source = "Outram et al. 2009, Science 323:1332 (Botai horses, ~5.5 kyr); Librado et al. 2021, Nature 598:634 (the modern domestic horse spreads from ~4.2 kyr)"
+
+[[tech]]
+id = "sails"
+name = "sail"
+track = "travel"
+needs = ["canoes", "sewing"]
+env_any = ["harbour", "fish"]
+earliest_kyr = 7
+rate = 0.04
+era = "bronze age"
+source = "unverified (sail depicted on Ubaid pottery and in Egypt by ~5-7 kyr)"
+
+[[tech]]
+id = "outriggers"
+name = "outriggers and ocean voyaging"
+track = "travel"
+needs = ["sails"]
+earliest_kyr = 3.5
+rate = 0.04
+era = "classical"
+source = "Kirch 2017, On the Road of the Winds, U of California Press (Lapita voyaging ~3.3 kyr)"
+
+[[tech]]
+id = "roads"
+name = "roads and bridges"
+track = "travel"
+needs = ["wheel", "towns"]
+earliest_kyr = 4.5
+rate = 0.04
+era = "classical"
+source = "unverified (paved roads in Egypt and Mesopotamia ~4.5 kyr, textbook date)"
+
+[[tech]]
+id = "navigation"
+name = "star and compass navigation"
+track = "travel"
+needs = ["outriggers", "writing"]
+earliest_kyr = 1.0
+rate = 0.06
+era = "medieval"
+source = "unverified (the magnetic compass at sea ~0.9 kyr in China, textbook date)"
+
+[[tech]]
+id = "flight_bearing"
+name = "bearing riders (sky mounts)"
+track = "travel"
+needs = ["riding", "beast_bond"]
+earliest_kyr = 2.0
+rate = 0.03
+era = "medieval"
+mode = "fantasy"
+source = "fantasy (D&D griffon and pegasus riders)"
+
+# ---- social and ritual ----------------------------------------------------------------------------------
+[[tech]]
+id = "ornament"
+name = "beads and body ornament"
+track = "social"
+needs = ["language"]
+earliest_kyr = 100
+elder_kyr = 1000
+era = "stone age"
+source = "Vanhaeren et al. 2006, Science 312:1785 (shell beads, Skhul and Oued Djebbana, ~100 kyr)"
+
+[[tech]]
+id = "burial"
+name = "burial of the dead"
+track = "social"
+needs = ["language"]
+hands = false
+earliest_kyr = 120
+elder_kyr = 1500
+era = "stone age"
+source = "unverified (Skhul and Qafzeh burials ~90-120 kyr, textbook dates)"
+
+[[tech]]
+id = "music"
+name = "instruments (flutes, drums)"
+track = "social"
+needs = ["song", "knapping"]
+earliest_kyr = 43
+era = "stone age"
+source = "Conard et al. 2009, Nature 460:737 (bone and ivory flutes, Hohle Fels, ~40 kyr)"
+
+[[tech]]
+id = "cave_art"
+name = "painting"
+track = "social"
+needs = ["marks"]
+earliest_kyr = 50
+era = "stone age"
+source = "Aubert et al. 2019, Nature 576:442 (hunting scene, Sulawesi, ~44 kyr)"
+
+[[tech]]
+id = "spirit_ritual"
+name = "spirit ritual and shamanism"
+track = "social"
+needs = ["burial", "song"]
+hands = false
+earliest_kyr = 50
+elder_kyr = 1000
+era = "stone age"
+source = "unverified (inferred; Gobekli Tepe, ~11.5 kyr, the first sure monumental ritual site: Schmidt 2010)"
+
+[[tech]]
+id = "feasting"
+name = "feasting"
+track = "social"
+needs = ["cooking", "spirit_ritual"]
+earliest_kyr = 12
+era = "stone age"
+source = "Munro & Grosman 2010, PNAS 107:15362 (a funerary feast, Hilazon Tachtit, ~12 kyr)"
+
+[[tech]]
+id = "trade"
+name = "long-distance exchange"
+track = "social"
+needs = ["ornament"]
+earliest_kyr = 100
+era = "stone age"
+source = "Brooks et al. 2018, Science 360:90 (obsidian moved 25-95 km, Olorgesailie, ~300 kyr; long trade by ~50 kyr: unverified)"
+
+[[tech]]
+id = "chiefdoms"
+name = "chiefs and ranked lineages"
+track = "social"
+needs = ["villages", "feasting"]
+earliest_kyr = 9
+era = "stone age"
+source = "unverified (ranked burials of the Neolithic and Chalcolithic, no single first)"
+
+[[tech]]
+id = "law"
+name = "written law"
+track = "social"
+needs = ["writing", "chiefdoms"]
+earliest_kyr = 4.1
+rate = 0.08
+era = "bronze age"
+source = "unverified (Ur-Nammu ~4.1 kyr, Hammurabi ~3.75 kyr, textbook dates)"
+
+[[tech]]
+id = "temples"
+name = "temples and priesthoods"
+track = "social"
+needs = ["towns", "spirit_ritual"]
+earliest_kyr = 8
+era = "bronze age"
+source = "unverified (Eridu temple sequence from ~7.5 kyr, textbook date)"
+
+[[tech]]
+id = "coinage"
+name = "coinage"
+track = "social"
+needs = ["trade", "law", "copper"]
+earliest_kyr = 2.7
+rate = 0.08
+era = "classical"
+source = "unverified (Lydian electrum coins ~2.65 kyr, textbook date)"
+
+[[tech]]
+id = "calendar"
+name = "calendars and astronomy"
+track = "social"
+needs = ["tallies", "spirit_ritual"]
+earliest_kyr = 10
+elder_kyr = 300
+era = "stone age"
+source = "unverified (lunar tallies and stone alignments; Warren Field pits, ~10 kyr, often cited)"
+
+[[tech]]
+id = "hoards"
+name = "hoards and tribute"
+track = "social"
+needs = ["language"]
+hands = false
+earliest_kyr = 20
+elder_kyr = 500
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (dragon hoards); real tribute is later and unverified here"
+
+# ---- magic and the arcane (fantasy only; D&D flavour, no citations) --------------------------------------
+[[tech]]
+id = "innate_magic"
+name = "innate magic (breath, flight-craft)"
+track = "arcane"
+needs = ["gesture"]
+hands = false
+earliest_kyr = 100000  # (only kinds starting with it or elder kinds: elder_kyr)
+elder_kyr = 5000
+rate = 0.002
+spread = 0.0
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D dragons)"
+
+[[tech]]
+id = "druidcraft"
+name = "druidcraft (weather and growth rites)"
+track = "arcane"
+needs = ["spirit_ritual", "foraging_lore"]
+hands = false
+earliest_kyr = 30
+elder_kyr = 500
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D druids)"
+
+[[tech]]
+id = "fey_glamour"
+name = "fey glamour"
+track = "arcane"
+needs = ["song"]
+earliest_kyr = 100000
+spread = 0.1
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D feywild): brought by the fey arrivals, rarely learnt"
+
+[[tech]]
+id = "illusion"
+name = "illusion and tinkering charms"
+track = "arcane"
+needs = ["fey_glamour"]
+earliest_kyr = 40
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D gnomes)"
+
+[[tech]]
+id = "tide_lore"
+name = "tide lore"
+track = "arcane"
+needs = ["spirit_ritual"]
+env_any = ["fish", "shellfish"]
+earliest_kyr = 20
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D tritons and sea elves)"
+
+[[tech]]
+id = "elemental_pact"
+name = "elemental pacts"
+track = "arcane"
+needs = ["spirit_ritual"]
+earliest_kyr = 10
+elder_kyr = 300
+era = "stone age"
+mode = "fantasy"
+source = "fantasy (D&D genasi, giants)"
+
+[[tech]]
+id = "runes"
+name = "runes of warding"
+track = "arcane"
+needs = ["marks", "spirit_ritual"]
+earliest_kyr = 8
+elder_kyr = 200
+era = "bronze age"
+mode = "fantasy"
+source = "fantasy (D&D dwarven and giant runes)"
+
+[[tech]]
+id = "beast_bond"
+name = "beast bonding"
+track = "arcane"
+needs = ["druidcraft", "herding"]
+earliest_kyr = 5
+era = "bronze age"
+mode = "fantasy"
+source = "fantasy (D&D rangers)"
+
+[[tech]]
+id = "wizardry"
+name = "written wizardry (spellbooks)"
+track = "arcane"
+needs = ["writing", "runes"]
+earliest_kyr = 3
+elder_kyr = 50
+rate = 0.06
+era = "classical"
+mode = "fantasy"
+source = "fantasy (D&D wizards)"
+
+[[tech]]
+id = "arcane_schools"
+name = "arcane schools and colleges"
+track = "arcane"
+needs = ["wizardry", "libraries", "cities"]
+earliest_kyr = 1.5
+rate = 0.06
+era = "medieval"
+mode = "fantasy"
+source = "fantasy (D&D)"
+
+[[tech]]
+id = "enchanting"
+name = "enchanting arms and tools"
+track = "arcane"
+needs = ["wizardry", "steel"]
+earliest_kyr = 1.2
+rate = 0.06
+era = "renaissance"
+mode = "fantasy"
+source = "fantasy (D&D)"
