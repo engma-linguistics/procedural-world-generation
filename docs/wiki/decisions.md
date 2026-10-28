@@ -92,3 +92,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-24 · Demographics · giants far fewer with larger ranges; some peoples insular, some exploratory · PW-650
 - 2026-10-20 · Fauna · post-v1; first version a lookup by biome/water body · PW-207
 - 2026-10-20 · Rock · detailed rock knowledge post-v1, nothing slow · PW-474
+- 2026-10-28: PW-821 rain fix (showers need humid air) tried and dropped for now: paired 2-roll L6, 24/36 vs main 29/36 finish passes, Earth rain corr 0.637 vs 0.648. Kept on branch worktree-agent-a27927a0e29b0cbdf; waits on PW-015 (ocean evaporation).
