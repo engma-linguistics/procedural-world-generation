@@ -263,10 +263,15 @@ class Simulation:
 
     def _climate(self, e):
         """Update the climate on elevation e (m above the current sea level).
-        It moves the sea (land ice), so the world view's elevation follows."""
-        sea0 = self.sea_level
+        It moves the sea (land ice), so the world view's elevation follows.
+        (Recomputed at the new sea level, not shifted by the sea's move: the
+        same up to rounding, but a run resumed from its state() rebuilds the
+        world view this way, and the shifted one differed from it in the
+        last bits, so a checkpoint taken after a climate update didn't
+        resume bit for bit: test_state, PW-970's branch.)"""
         earth.update_climate(self, e)
-        self.w_elev = self.w_elev - (self.sea_level - sea0)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
+                                sediment_km(self.w_cover, self.w_extra))
 
     def _resolve(self):
         """Decide which plate owns each world cell (plate_kernels.resolve).
