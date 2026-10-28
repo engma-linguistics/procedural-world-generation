@@ -1157,7 +1157,7 @@ def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
 def stratovolcano(ctx: _Ctx) -> list[dict]:
     """The highest active arc volcano above the sea (Chimborazo, Ojos del
     Salado, Fuji): the highest summit, then the tallest above its ground
-    (the run caps an active summit at volcanism.TOP_MAX, so ties happen)."""
+    (the run caps an active summit at volcanism.top_limit, so ties happen)."""
     arcs = [v for v in _volcano_forms(ctx) if v["kind"] == ARC_VOLCANO and v["status"] == "active" and v["top_m"] > 0]
     if not arcs:
         return []

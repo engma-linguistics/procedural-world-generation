@@ -13,6 +13,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 ## Peoples (`planet/lineages/`; the spec's docstring in `planet/lineages/spec.py` is the reference)
 - **peoples run**: a lineage history computed on a finished world (and its time zoom); listed in the viewer's Peoples panel. Proposal: [lineages.md](../proposals/lineages.md); intake: [culinary-dnd-intake.md](../proposals/culinary-dnd-intake.md).
 - **preset**: a TOML tree in `planet/lineages/samples/` (`dnd.toml`, `seven_meals.toml`).
+- **tech tree** (PW-675 v0): `planet/lineages/samples/techtree.toml` read by `lineages/techtree.py` after a peoples run: tracks, techs with needs, land goods and a real-world earliest date (sources in the file and in [the review](../review/techtree/techtree.md)). **kit**: what an arrival (gnomes, elves) brings; **elder kind**: dragons and true giants, who may reach a tech before its ordinary earliest date. Viewer: the Technology tab of `lineages.html`; `planet techtree RUN` adds it to a stored run.
 - **line** (`[[lineage]]`): one node of the tree: `origin` root / split / arrival / hybrid / template / group, plus a time `at` (years before present).
 - **people**: a living line, with niche, traits and range. The tree is a DAG; unset fields inherit from the first parent.
 - **group** (culture): a way of life inside one people (`group_of`): steppe vs forest orcs. Not a split; mixes freely and rolls up into its people (PW-776; deeper culture is PW-661).

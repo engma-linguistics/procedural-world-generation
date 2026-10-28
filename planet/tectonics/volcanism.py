@@ -57,7 +57,8 @@ HEAD_MYR = 6.0  # a new plume's head: a huge outpouring for this long (flood bas
 GAP_KM = (60.0, 150.0)  # km of plate motion between a plume's vents (vent_gap)
 SCATTER_KM = 12.0  # rms offset of a vent from the plume's track
 VENT_KM = 25.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~25-60 km)
-TOP_MAX = (4200.0, 3500.0)  # m: highest summit at sea (Mauna Kea), on a continent
+TOP_MAX = 4200.0  # m: highest summit at sea (Mauna Kea; oceanic flexure limits it)
+RELIEF_MAX = 4800.0  # m: tallest continental cone above its ground (Kilimanjaro ~4.9 km; edifice strength, PW-826)
 APRON_TOP = (-2000.0, 1500.0)  # m: lava that can't pile higher spreads into a broad apron up to here
 ARC_SLOPE = 0.6  # an arc volcano's height / its cone's e-folding radius (a ~30 deg stratocone top)
 H_WAVES = 1000.0  # m: the sea's own share of eroding an island (cliff retreat), as if this much higher
@@ -227,10 +228,17 @@ def _iso(v):
 
 def _room(v):
     """km3 of crust a hotspot vent can still take: it grows until its summit
-    reaches its height limit (see new_vent) or TOP_MAX."""
-    top_max = TOP_MAX[1 if v["cont"] else 0]
+    reaches its height limit (see new_vent) or top_limit."""
+    top_max = top_limit(v)
     target = min(v["hmax"], top_max - v["floor"])
     return max(target - v["height"], 0.0) * np.pi * v["r"] ** 2 / _iso(v)
+
+
+def top_limit(v):
+    """m: the highest summit a volcano can hold: an absolute height at sea
+    (TOP_MAX), a relief above its own ground on a continent (RELIEF_MAX), so
+    a cone on a high plateau stands as tall above it as one on a lowland."""
+    return v["floor"] + RELIEF_MAX if v["cont"] else TOP_MAX
 
 
 def _grow(v, add):
@@ -337,7 +345,7 @@ def tend(sim):
     ~sqrt); once it's down to AWASH the waves plane it off to their base
     (Hawaii: Kauai, 5 Myr old, has lost about half its height; by ~10 Myr
     Necker is an 80 m stump). Then it only sinks, flat-topped. A summit
-    above TOP_MAX (lifted by its swell) slides away in giant landslides.
+    above its limit (top_limit; lifted by its swell) slides away in giant landslides.
     Reefs (params.reef_temp, annual sea temperature): an island in warm
     water gets a fringing reef along its shore; as the island sinks the
     reef keeps growing up at the same place (~1 mm/yr, faster than any
@@ -371,7 +379,7 @@ def tend(sim):
             v["floor"] = v["floor0"] + base_level(sim, v) - v["base0"]
         top = v["floor"] + v["height"] - v["eroded"]
         if v["active"]:  # fresh lava keeps resurfacing it (but its flanks still collapse)
-            cut = max(top - TOP_MAX[1 if v["cont"] else 0], 0.0)
+            cut = max(top - top_limit(v), 0.0)
             v["eroded"] += cut
             top -= cut
         elif top > max(v["floor"], 0.0):
@@ -382,7 +390,7 @@ def tend(sim):
                 cut = (top + H_WAVES) * (1 - np.exp(-dt / tau))
             else:  # on land: it wears down toward the land around it
                 cut = (top - v["floor"]) * (1 - np.exp(-dt / tau))
-            cut += max(top - cut - TOP_MAX[1 if v["cont"] else 0], 0.0)  # giant landslides
+            cut += max(top - cut - top_limit(v), 0.0)  # giant landslides
             v["eroded"] += cut
             top -= cut
             if v["floor"] < 0 and top < AWASH:  # the waves plane what's left down to their base:

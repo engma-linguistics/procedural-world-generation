@@ -176,10 +176,14 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
     """Where the rivers' load (km of crust arriving at each sea cell) settles.
     Shallowest first: each cell on the shelf keeps what fits below its
     target level (DELTA_TOP next to land, SHELF_TOP farther out) and passes
-    the rest to its deepest neighbour. Below the shelf edge (a steep coast,
-    the slope, the deep sea floor) a share 1 - exp(-d_km / fan_km) settles
-    per cell passed, so a delta builds out into deep water only slowly. A
-    sea-floor low (a trench, an enclosed basin) keeps whatever reaches it."""
+    the rest to its deepest neighbour. At the shelf's brink (a deep cell
+    next to land or to the shelf: the slope just off it) the load drops as
+    a clinoform's foreset and fills the cell toward the shelf's level, so a
+    supplied shelf builds out over the slope (progradation; PW-818: most of
+    a margin's sediment stays in its shelf-slope wedge, Steckler et al.
+    1999). Beyond that (the deep sea floor) a share 1 - exp(-d_km / fan_km)
+    settles per cell passed (submarine fans). A sea-floor low (a trench, an
+    enclosed basin) keeps whatever reaches it."""
     n = elev.shape[0]
     dep = np.zeros(n)
     flux = load.copy()
@@ -191,7 +195,14 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
         if elev[i] > SHELF_EDGE:
             keep = min(flux[i], max((DELTA_TOP if coast[i] else SHELF_TOP) - elev[i], 0.0) / iso[i])
         else:
-            keep = min(flux[i] * (1 - np.exp(-d_km / fan_km)), (SHELF_TOP - elev[i]) / iso[i])
+            brink = False
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[e]
+                if not ocean[j] or elev[j] > SHELF_EDGE:
+                    brink = True
+                    break
+            share = 1.0 if brink else 1 - np.exp(-d_km / fan_km)
+            keep = min(flux[i] * share, (SHELF_TOP - elev[i]) / iso[i])
         dep[i] += keep
         f = flux[i] - keep
         lo, bz = -1, elev[i]
