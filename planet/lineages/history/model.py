@@ -87,8 +87,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
         # numbers: a denser rival weighs more (DENSITY_PUSH)
-        self.dens = np.array([1.0 / tree.dragon_km2 if (l.megafauna and "flies" in l.traits) else l.demo("density") for l in self.lines])
-        # (dragons, the flying megafauna: one per meta.dragon_km2 of their country, a user option, owner PW-923)
+        self.dens = np.array([(1.0 / tree.dragon_km2 if "flies" in l.traits else 1.0 / tree.giant_km2) if l.megafauna else l.demo("density")
+                              for l in self.lines])
+        # (dragons, the flying megafauna: one per meta.dragon_km2 of their country, owner PW-923; the true giants, the rest of the
+        # megafauna: one per meta.giant_km2, owner on PW-936; both user options)
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push
@@ -97,6 +99,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
                 self.alpha[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
                 self.terr[~mega, self.idx[b.id]] *= MEGAFAUNA_PUSH
+        mob = np.array([SP.WAY_MOBILE.get(l.way, 0.0) if l.way else 0.0 for l in self.lines])  # nomads overlap more (spec.WAY_MOBILE)
+        nm = np.where((mob[:, None] > 0) != (mob[None, :] > 0), 1 - SP.NOMAD_COEXIST * np.maximum(mob[:, None], mob[None, :]), 1.0)
+        self.alpha *= nm
+        self.terr *= nm
         riv = np.array([l.rivalry for l in self.lines])  # (metallic dragons coexist more readily with other megafauna: weaker competition
         rv = np.where(mega[:, None] & mega[None, :], riv[:, None] * riv[None, :], 1.0)  # both ways, among megafauna only: coexistence, not numbers, PW-924)
         self.alpha *= rv

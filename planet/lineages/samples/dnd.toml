@@ -29,6 +29,8 @@ era = "renaissance"  # the era the present is meant to be (stone age | bronze ag
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
 dragon_km2 = 5000  # one dragon per this many km2 of its kind's country (Damuth's M^-0.75, an apex hunter far sparser: Carbone & Gittleman 2002). 5000: the default,
 # a few hundred of each kind on a world, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies are thick with them, dozens in every forest
+giant_km2 = 1000  # one true giant per this many km2 of its kind's country (Damuth's M^-0.75 from a forager's density, spec.GIANT_KM2). 1000: the default,
+# a few hundred to low thousands of each kind on a world; 2000: scarcer, a steading per range; 500: giant country
 mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
 portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)
 portals = 1  # ...how many portals they come through (portal_mode random / sites)
@@ -402,8 +404,8 @@ parents = ["giantkin"]
 at = "1.2 Myr"
 group_size = [5, 20]  # families and steadings
 generation_yr = 65  # PW-924: giants 50-80 yr
-megafauna = true  # PW-924: counted, ~1 per 100-500 km2 in steadings
-density = 0.006
+megafauna = true  # PW-924: counted, in steadings (one per meta.giant_km2, default 1,000 km2)
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -419,7 +421,7 @@ name = "hill giants"
 parents = ["true_giant"]
 at = "900 kyr"
 megafauna = true
-density = 0.01
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [0, 18]
 rain_mm = [350, 1500]
 prefers = ["hills"]  # rolling hill country and uplands, below the mountains (and the 'hills' good, [[use]])
@@ -432,7 +434,7 @@ name = "sky giants stem (storm and cloud kin)"
 parents = ["true_giant"]
 at = "800 kyr"
 megafauna = true
-density = 0.005
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-6, 22]
 rain_mm = [600, 3000]
 prefers = ["mountain", "coast"]
@@ -444,7 +446,7 @@ name = "elemental giants stem (frost and fire kin)"
 parents = ["true_giant"]
 at = "700 kyr"
 megafauna = true
-density = 0.006
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-14, 30]
 rain_mm = [100, 1500]
 prefers = ["mountain"]
@@ -456,7 +458,7 @@ name = "cloud giants"
 parents = ["sky_giant"]
 at = "400 kyr"
 megafauna = true
-density = 0.005
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-12, 10]
 rain_mm = [400, 2500]
 elev_m = [2000, 7000]  # the high peaks (and the 'peaks' good, [[use]])
@@ -469,7 +471,7 @@ name = "frost giants"
 parents = ["elemental_giant"]
 at = "350 kyr"
 megafauna = true
-density = 0.006
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-20, -2]
 rain_mm = [100, 1000]
 prefers = ["tundra", "polar", "mountain"]  # (and the 'frost' good, [[use]]: frozen ground, the ice's edge)
@@ -481,7 +483,7 @@ name = "storm giants"
 parents = ["sky_giant"]
 at = "300 kyr"
 megafauna = true
-density = 0.005
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 explore = 0.45
 sea_share = 0.5
 realm = "coast"  # owner (PW-924): coasts and the sea near them (the shore ring, as the merfolk), not the open sea
@@ -494,7 +496,7 @@ name = "fire giants"
 parents = ["elemental_giant"]
 at = "250 kyr"
 megafauna = true
-density = 0.008
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [12, 34]
 rain_mm = [50, 1500]
 prefers = ["volcanic"]  # smiths of the forges in the fire mountains (and the 'volcanic' good, [[use]])

@@ -28,6 +28,7 @@ mixing_start = "3 kyr"
 era = "renaissance"
 viable_pop = 500
 dragon_km2 = 5000  # one dragon per this many km2 of its country (PW-923). 5000: the default, a few hundred of each kind, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies thick with them
+giant_km2 = 1000  # one true giant per this many km2 of its country (PW-936 ruling). 1000: the default, a few hundred to low thousands of each kind; 2000: scarcer; 500: giant country
 mode = "fantasy"
 portal_mode = "off"  # (the elves and gnomes each arrive from outside at their best habitat: "two separate places")
 portals = 1
@@ -325,7 +326,7 @@ at = "3 Myr"
 group_size = [5, 20]  # families and steadings
 generation_yr = 65  # PW-924: giants 50-80 yr
 megafauna = true  # PW-924: counted, ~1 per 100-500 km2 in steadings
-density = 0.008
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -340,7 +341,7 @@ name = "stone giants"
 parents = ["giant"]
 at = "500 kyr"
 megafauna = true
-density = 0.006
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-6, 16]
 rain_mm = [250, 1500]
 prefers = ["mountain"]
@@ -353,7 +354,7 @@ body = { gut = "foregut" }  # the ancestral fermenting gut: agro-pastoralists wh
 parents = ["giant"]
 at = "450 kyr"
 megafauna = true
-density = 0.01
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [0, 18]
 rain_mm = [350, 1500]
 prefers = ["hills"]
@@ -366,7 +367,7 @@ name = "cloud giants"
 parents = ["giant"]
 at = "400 kyr"
 megafauna = true
-density = 0.005
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-12, 10]
 rain_mm = [400, 2500]
 elev_m = [2000, 7000]
@@ -379,7 +380,7 @@ name = "fire giants"
 parents = ["giant"]
 at = "350 kyr"
 megafauna = true
-density = 0.008
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [12, 34]
 rain_mm = [50, 1500]
 prefers = ["volcanic"]
@@ -391,7 +392,7 @@ name = "frost giants"
 parents = ["giant"]
 at = "320 kyr"
 megafauna = true
-density = 0.006
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 temp_c = [-20, -2]
 rain_mm = [100, 1000]
 prefers = ["tundra", "polar", "mountain"]
@@ -403,7 +404,7 @@ name = "storm giants"
 parents = ["giant"]
 at = "300 kyr"
 megafauna = true
-density = 0.005
+# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 explore = 0.45
 sea_share = 0.5
 realm = "coast"  # owner (PW-924): coasts and the sea near them (the shore ring, as the merfolk), not the open sea
