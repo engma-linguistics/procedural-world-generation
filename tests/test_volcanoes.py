@@ -32,7 +32,7 @@ def test_vents_form_spaced_chains(sim4):
         assert v["vol"] >= 0 and v["height"] >= 0
         assert v["floor"] + v["height"] - v["eroded"] == v["top"] or abs(
             v["floor"] + v["height"] - v["eroded"] - v["top"]) < 1e-6
-        assert v["top"] <= V.TOP_MAX[0] + 1e-6
+        assert v["top"] <= V.top_limit(v) + 1e-6
 
 
 def test_vents_stand_on_the_ground_around_them(sim4):

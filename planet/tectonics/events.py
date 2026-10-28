@@ -297,7 +297,11 @@ def maybe_rift(sim, cf: CellForces, rng):
         stress, cut = 0.0, None
         # (a freshly formed plate gets time to settle first, or splits cascade)
         if all_cells[k] >= big and sim.t - pl.formed[k] >= p.settle_time:
-            c_s, t_s, opening = stress_cut(sim, k, cf, rng)
+            # (a bigger plate gets more trial cuts, ~ its size in stress_min_plate units: on a plate holding
+            # several continents most straight lines slice one into a sliver (piece_ok), so 12 tries left a
+            # half-planet plate with no admissible cut at all on most steps; PW-827)
+            tries = int(min(12 * np.sqrt(all_cells[k] / big), 60))
+            c_s, t_s, opening = stress_cut(sim, k, cf, rng, tries)
             if opening > p.rift_stress and t_s is not None:
                 stress = (opening / p.rift_stress - 1) * all_cells[k] / big
                 cut = (c_s, t_s)

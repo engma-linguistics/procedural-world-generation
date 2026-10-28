@@ -47,7 +47,9 @@ RESOURCES = [
     ("sn_w", "tin-tungsten (granite)", "metal", "#9aa3b5",
      "exhumed granites, above all collision granites from thick crust (Cornwall, SE Asia)"),
     ("bif_fe", "banded iron formation", "metal", "#a33b2b",
-     "ancient (>= 1.8 Gyr) shield crust, exposed (Pilbara, Labrador)"),
+     "ancient (>= 1.8 Gyr) shield crust, exposed (Pilbara, Labrador): high grade, worked only with industry"),
+    ("iron_ore", "bog iron, ironstone and ferricrete", "metal", "#c96a3a",
+     "the pre-industrial irons of young land: bog ore in cool wetlands, laterite crusts, shale ironstones"),
     ("magmatic_ni", "magmatic nickel-copper-PGE", "metal", "#5f7f3a",
      "plume melts and flood basalts on continents (Noril'sk, Bushveld)"),
     ("laterite_ni", "laterite nickel", "metal", "#7cbf4a",
@@ -610,6 +612,19 @@ def likelihoods(grid, L: dict, meta: dict | None = None, hist: dict | None = Non
     aluminous = np.select([np.isin(top, (_SANDSTONE, _QUARTZITE)), np.isin(top, (_LIMESTONE, _DOLOMITE)),
                            top == _EVAPORITE], [0.25, 0.4, 0.0], 1.0)
     R["bauxite"] = 0.85 * tro * aluminous
+    # pre-industrial iron (PW-817; Pleiner 2000, Buchwald 2005): before industrial beneficiation nearly all iron
+    # was smelted from small, shallow, young ores, not from BIF. Bog ore (limonite precipitated where iron-rich
+    # groundwater seeps into peat and gley wetlands; Scandinavia, Russia, the Baltic, worked from cool-temperate
+    # to boreal climates, rarer where the ground is frozen); lateritic ferricrete (the same matured tropical
+    # profile as bauxite, on any rock: West Africa's iron); siderite and oolitic ironstones of shale and coal
+    # strata near the surface (Cleveland, Minette, the coal-measure clay-ironstones).
+    soil = g("soil", 0).astype(int)
+    from .soils import GLEY, PEAT
+    wet = np.where(soil == PEAT, 1.0, np.where(soil == GLEY, 0.7, 0.0))
+    bog = wet * np.where((temp > -4) & (temp < 14), 1.0, 0.35) * (g("permafrost", 0) < 2)
+    shaley = np.isin(top, (_SHALE, _COAL)) * 1.0 + np.isin(nxt, (_SHALE, _COAL)) * 0.5
+    ironstone = np.clip(shaley, 0, 1) * (cover > 0.3) * (cover < 4.0)
+    R["iron_ore"] = np.maximum.reduce([0.6 * bog, 0.7 * tro, 0.45 * ironstone]) * land
     # sediment-hosted Pb-Zn-Cu: carbonate or red-bed strata in rifts and orogen forelands
     carb = np.isin(top, (_LIMESTONE, _DOLOMITE)) | np.isin(nxt, (_LIMESTONE, _DOLOMITE))
     foreland = _dilate(grid, (lf == 3) & land, 3) & (lf != 3)
@@ -824,7 +839,7 @@ def deposits(grid, L: dict, per_landmass: int = 6, landmasses: int = 6) -> dict:
 
 # how much a district counts in the per-landmass ranking (games care about gold more than clay)
 _VALUE = {"porphyry_cu": 1.5, "epithermal_au": 1.6, "orogenic_au": 1.6, "placer_au": 1.4, "diamond": 2.0,
-          "gem_meta": 1.6, "oil": 1.5, "gas": 1.0, "coal": 1.2, "bif_fe": 1.3, "vms": 1.3, "magmatic_ni": 1.3,
+          "gem_meta": 1.6, "oil": 1.5, "gas": 1.0, "coal": 1.2, "bif_fe": 1.3, "iron_ore": 1.0, "vms": 1.3, "magmatic_ni": 1.3,
           "sn_w": 1.1, "bauxite": 1.0, "laterite_ni": 1.0, "sed_pbzn": 1.1, "ree": 1.2, "salt": 0.8,
           "placer_sn": 0.9, "obsidian": 0.5, "flint": 0.4, "clay": 0.3}
 
