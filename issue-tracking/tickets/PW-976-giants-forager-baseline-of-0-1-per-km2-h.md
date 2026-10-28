@@ -2,7 +2,7 @@
 id: PW-976
 title: Giants' forager baseline of 0.1 per km2 has no located source
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: infra
@@ -32,4 +32,5 @@ Lean: C, since the giants are hand-waved placement anyway (PW-936) and the note 
 - [ ] decision made; constant, comment and proposal agree
 
 ## Updates
+- 2026-10-28: Status needs-decision -> done. Owner 10-28 option C: meta.forager_km2 (default 0.1) is a tree setting with a workbench select (0.03/0.05/0.1); Binford 2001 on docs/references/wishlist.md.
 - 2026-10-28: Created from inbox draft draft-forager-density-source.md (found by citation-check-hamilton-chatterjee-mcnab).

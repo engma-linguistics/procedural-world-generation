@@ -66,8 +66,7 @@ NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candida
 NATURAL_DEFAULT = "prey"
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring)
-FORAGER_KM2 = 0.1  # human foragers per km2, the proposal's median of hunter-gatherer densities (Binford 2001's dataset; the figure itself is not in Hamilton 2007, see the docstring), the giants' baseline...
-FORAGER_KG = 65.0  # ...for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
+FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per km2, PW-976) is for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
 PRESS_N0 = 0.05  # peoples press megafauna easily: the pressure is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell, so a
 # thin forager band (0.1 per km2, held at half its habitat) presses ~2/3 of the way and any settled people all the way (owner, PW-963:
 # "pushed down easily by peoples"; large carnivores in human-held land at a few percent of their potential, Ripple et al. 2014)
@@ -85,7 +84,7 @@ def natural_coef(h: History, line) -> float:
     dragon under "prey", per km2 per t/km2 of prey (Carbone & Gittleman)."""
     m = eco_mass(h, line)
     if "flies" not in line.traits:
-        return FORAGER_KM2 * (m / FORAGER_KG) ** -DAMUTH_EXP
+        return h.tree.forager_km2 * (m / FORAGER_KG) ** -DAMUTH_EXP
     if h.mf_natural == "prey" and h.prey_wild is not None:
         return CARBONE_A * m ** -CARBONE_B / 10.0
     la = LOG_A["mammal" if h.mf_natural == "mammal" else "mesotherm"]
