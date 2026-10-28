@@ -88,6 +88,13 @@ WAY_FOOD = ("fertile", "grazing", "foraging", "fish", "shellfish")  # (the goods
 # felt at this share, in proportion to how far the people keeps herds (animals.herding; HERD_FULL: fully), so nothing before
 # the herd animals are known to it (the farmers' analogue is the agricultural trait's push into fertile land, history.run).
 WAY_PRESS = {"pastoral_nomad": ("grazing", 0.6)}
+# how mobile a way of life is (owner, on PW-936: nomads overlap more). Herders who move with the seasons share a country with settled
+# peoples more readily than two settled peoples do: they use the open pasture and the stubble the fields leave, and trade animals,
+# hides and dairy for grain and goods, with raids now and then (the nomads' need of the settled world: Khazanov 1984, "Nomads and
+# the Outside World"). A settled-mobile pair's competition both ways is x (1 - NOMAD_COEXIST x the more mobile one's WAY_MOBILE);
+# what is left is the occasional conflict. Two herding peoples still compete in full for the same pasture.
+WAY_MOBILE = {"pastoral_nomad": 1.0, "transhumant": 0.6, "agro_pastoral": 0.3}
+NOMAD_COEXIST = 0.5
 HERD_FULL = 0.5
 LATE_SEA_KYR = 3.0  # short sea hops by boat (the spread's sea factor) from then, for a sea share >= SHORT_HOP_SHARE
 SHORT_HOP_SHARE = 0.2
@@ -147,6 +154,9 @@ DEMOGRAPHY = {
 DEMO_KEYS = tuple(DEMO_DEFAULT)
 GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
 VIABLE_POP = 500.0  # default meta.viable_pop
+DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923): one dragon per this many km2 of its country, every kind
+GIANT_KM2 = 5000.0  # default meta.giant_km2 (owner, on PW-936): one true giant per this many km2 of its country, every kind that does not
+# fly; the owner's ruling sets it at the dragons' 5,000 (DRAGON_KM2), so the giants are as rare as the dragons
 
 
 def demography(traits) -> dict:
@@ -441,6 +451,8 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
+    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 (PW-923); overrides their lines' density
+    giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2 (PW-936 ruling); overrides their lines' density
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
     exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
     events: list = field(default_factory=list)  # [[event]]: dated conquests the reputation pass remembers (reputation.parse_events, PW-730)
@@ -846,6 +858,12 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
+    t.dragon_km2 = float(meta.get("dragon_km2", DRAGON_KM2))
+    if t.dragon_km2 <= 0:
+        raise ValueError("meta.dragon_km2 must be > 0")
+    t.giant_km2 = float(meta.get("giant_km2", GIANT_KM2))
+    if t.giant_km2 <= 0:
+        raise ValueError("meta.giant_km2 must be > 0")
     if not 0 <= t.land_pull <= 1:
         raise ValueError("meta.land_pull must be within 0..1")
     return t
@@ -906,7 +924,7 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "era": t.era, "viable_pop": t.viable_pop,
+                     "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"reputation": t.reputation} if t.reputation else {}),
