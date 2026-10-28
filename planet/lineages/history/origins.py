@@ -97,7 +97,7 @@ class OriginsMixin:
     def origin_mvp(self, line, ago):
         """PW-888: the people a landmass must carry for the line's origin to persist from `ago` (kyr before the present) to the present:
         ORIGIN_MVP_MULT x viable_pop over MVP_REF_GEN generations, growing as the horizon in generations to 1/PERSIST_EXP (Lande 1993)."""
-        gens = max(ago, 0.0) * 1000.0 / max(line.generation_yr, 1e-6)
+        gens = max(ago, 0.0) * 1000.0 / max(self.gen_yr(line), 1e-6)
         return ORIGIN_MVP_MULT * self.tree.viable_pop * max(gens / MVP_REF_GEN, 1.0) ** (1.0 / PERSIST_EXP)
 
     def _root_of(self, lid):
@@ -136,7 +136,8 @@ class OriginsMixin:
             return score
         k = self.idx[line.id]
         cells = np.bincount(lab[suit], minlength=n).astype(float)
-        founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
+        d = self.dens_at(k)  # (megafauna: per cell, pressed by the peoples there, PW-957)
+        founders = np.bincount(lab[suit], weights=K[suit] * (d[suit] if np.ndim(d) else d), minlength=n) * self.cell_mkm2 * 1e6 * 0.5
         ok = founders >= self.origin_mvp(line, ago)
         if not ok.any():  # (none can carry it for the whole horizon: the one that carries most)
             ok = founders >= founders.max()
@@ -322,9 +323,11 @@ class OriginsMixin:
         lab, n = g.components(own)
         area = self.cell_mkm2 * 1e6
         w = np.bincount(lab[own], weights=K[own], minlength=n)
+        d = self.dens_at(k)
+        wd = np.bincount(lab[own], weights=K[own] * (d[own] if np.ndim(d) else d), minlength=n)
         out = np.zeros(g.n, bool)
         for c in np.argsort(-w)[:n_more]:
-            if w[c] * self.dens[k] * area * 0.5 < self.line_mvp(line):
+            if wd[c] * area * 0.5 < self.line_mvp(line):
                 break
             sel = lab == c
             cell = int(np.argmax(np.where(sel, K, -1.0)))

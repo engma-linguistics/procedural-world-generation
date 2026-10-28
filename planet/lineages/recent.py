@@ -122,6 +122,7 @@ class Pass:
         self.flow = None  # the world's river flow (lineages' contact corridors), if a world is given
         self.world_seed = None  # ...and its seed: the landmasses' names (names.py, PW-853)
         self.world_names: dict = {}  # ...and the owner's own names for some of them (planet name, PW-867)
+        self.graze_npp = None  # ...and its grazing NPP, g C/m2/yr (gameattrs, raw): the static prey field's base (lineages.prey, PW-966)
         if world_ref:
             from .. import world as W
             w = W.load(S.find_world(world_ref))
@@ -132,6 +133,9 @@ class Pass:
             self.world_names = NM.load_overrides(S.find_world(world_ref).stem)
             if "flow" in w["layers"]:
                 self.flow = w["layers"]["flow"].astype(float)
+            from .. import gameattrs as GA
+            tilt = float(m.get("params", {}).get("tilt", 23.4))
+            self.graze_npp = GA.world_layers(self.grid, w["layers"], tilt, raw=True).get("grazing_npp")
             return
         if m.get("source_run") and m["source_run"] != "earth":
             src = S.find_run(m["source_run"])

@@ -2,7 +2,7 @@
 id: PW-963
 title: Giant density - meta.giant_km2 default 5,000 km2 vs ~130-345 (forager-scaled) vs ~30-100 (culinary-dnd herders)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -43,5 +43,6 @@ Options:
 Lean: C, sharing PW-957's pressure mechanism, so dragons and giants follow one rule. Check that a steading's country still reads right in the brief.
 
 ## Updates
+- 2026-10-28: Status todo -> done. Merged (fun lane 41); defaults are candidates until the owner reviews PW-967.
 - 2026-10-28: Status needs-decision -> todo. RULING (owner): option C. Giants have a natural density from mass (forager-scaled, ~1/130-345 km2 by kind, docs/proposals/megafauna-scaling.md), approached where few small folk or competing peoples hold the land, and pushed down easily by peoples to a sparse present-day default in peopled country (players should not find far more giants than they expect, or flocks of dragons). Coordinator default: 1 per 2,000 km2 in peopled giant country (top of C's 1-2k range; meta.giant_km2 becomes that pressed value, 2k added to its 1k/5k/10k select). Same pressure mechanism as PW-957; build them together.
 - 2026-10-28: Created from inbox draft draft-megafauna-7-giant-density-reconcile.md (found by coordinator).

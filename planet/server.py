@@ -306,9 +306,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     hl_pool: P.Pool | None = None  # (highlights' worker processes, set by serve())
 
     def translate_path(self, path):
-        # the viewer comes from the repository, everything else from the data root
-        top = urlsplit(path).path.lstrip("/").split("/", 1)[0]
-        self.directory = str(S.REPO if top == "viewer" else S.root())
+        # the viewer (and the review pages it links to, docs/review/, PW-967) comes from the repository, everything else from the data root
+        parts = urlsplit(path).path.lstrip("/").split("/", 2)
+        self.directory = str(S.REPO if parts[0] == "viewer" or parts[:2] == ["docs", "review"] else S.root())
         return super().translate_path(path)
 
     def end_headers(self):

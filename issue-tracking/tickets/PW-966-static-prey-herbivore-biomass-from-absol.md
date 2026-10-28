@@ -2,7 +2,7 @@
 id: PW-966
 title: Static prey (herbivore) biomass from absolute NPP, livestock included, feeding natural megafauna density and people density
 type: story
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -37,4 +37,5 @@ Owner 2026-10-28 (megafauna side session). Nothing in the model knows how much p
 Cheap: arrays per cell, no time-stepped ecology.
 
 ## Updates
+- 2026-10-28: Status todo -> done. Merged (fun lane 41); defaults are candidates until the owner reviews PW-967.
 - 2026-10-28: Created from inbox draft draft-megafauna-8-prey-biomass-from-npp.md (found by daniel).

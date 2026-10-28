@@ -409,6 +409,7 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     if mf:
         L += ["", "## Megafauna (PW-924: counted, exempt from the peoples' range targets)"]
         L += [f"  {MG.line_text(lid, h.tree.lines[lid].label(), r)}" for lid, r in mf.items()]
+        L += [f"  {t}" for t in MG.ages_text(pres.get("megafauna_ages") or {})]
     L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
     L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     mx = pres.get("mixing", {})

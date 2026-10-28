@@ -27,6 +27,10 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 
 ## Owner to fetch: paywalled (most wanted first)
 
+- [ ] McNaughton, Oesterheld, Frank & Williams 1989, Nature 341:142-144, doi:10.1038/341142a0: herbivore biomass, consumption and secondary production against aboveground NPP. **The prey field's fit (planet/lineages/prey.py, PW-966) waits on its biomass regression**: until it is read here, prey is proportional to grazing NPP through one anchor.
+- [ ] Coe, Cumming & Phillipson 1976, Oecologia 22:341-354, doi:10.1007/BF00345312: large African herbivore biomass against rainfall and primary production (the second candidate fit for PW-966).
+- [ ] Sandom, Faurby, Sandel & Svenning 2014, Proc R Soc B 281:20133254, doi:10.1098/rspb.2013.3254: late-Quaternary megafauna extinctions linked to humans (PW-966 overkill).
+
 - [ ] Nagy, Girard & Brown 1999, Annu Rev Nutr 19:247, doi:10.1146/annurev.nutr.19.1.247. Field metabolic rate per class. The slopes are confirmed from the abstract (reptiles 0.889, mammals 0.734, birds 0.681). **The intercepts used (4.82, 10.5, 0.196, kJ/day with M in g) are unverified.**
 - [ ] Farlow 1993, Am J Sci 293:167-199, doi:10.2475/ajs.293.a.167: "On the rareness of big, fierce animals"
 - [ ] Damuth 1987, Biol J Linn Soc 31:193-246, doi:10.1111/j.1095-8312.1987.tb01990.x: does it give reptile intercepts?
