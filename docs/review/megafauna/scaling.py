@@ -24,7 +24,7 @@ hum=70*75**0.75*1.7
 for k,h,b,rep in G:
     r=h*ft/ref_h; iso=ref_m*r**3; bm=iso*b; rob=ref_m*r**3.3*b
     M=bm; kc=70*M**0.75*1.7; yr=kc*365
-    forager=0.1*(M/65)**-0.75  # human foragers ~0.1/km2 median
+    forager=0.1*(M/65)**-0.75  # human foragers ~0.1/km2 median (source not in Hamilton 2007; see proposal)
     carn=197.6*M**-0.88/100      # Carbone & Gittleman density fit (checked: PDF p. 2, 197.6 and -0.88)
     print(f"{k:6}{h*ft:6.1f}{iso:8.0f}{bm:9.0f}{rob:10.0f}{kc:9.0f}{kc/hum:8.1f}{yr/3400/1000:11.1f}{yr/625e3:8.0f}{yr/1200/1000:10.1f}{1/forager:14.0f}{1/carn:13.0f}{(1/rep if rep else float('nan')):11.0f}")
 # ---------- DRAGONS: Damuth at a single mass ----------

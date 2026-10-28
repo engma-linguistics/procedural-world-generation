@@ -14,8 +14,10 @@ the PW-967 review before any is fixed):
   about the factor between this and the mammal-carnivore intercept.
 - "mammal": the same on the mammal-carnivore intercept (log10 a = 2.67): ~1 per 137 km2.
 The dragons' ecological mass, stage shares and generation time follow meta.dragon_ages (lineages.dragon_ages, PW-958, PW-959).
-Giants under "mesotherm" and "mammal" are uniform mass-scaled foragers: human foragers (~0.1 per km2, the proposal's median; the
-datasets behind it are Binford 2001 and Hamilton et al. 2007) scaled by M^-0.75 from 65 kg: hill giants (2.2 t) ~1 per 140 km2,
+Giants under "mesotherm" and "mammal" are uniform mass-scaled foragers: human foragers (~0.1 per km2, the proposal's median, whose source is
+not yet found: Hamilton et al. 2007 reuses Binford 2001's data but fits area against group size, not density, and its fit implies
+0.03-0.09 per km2 for groups of 25-1000, PNAS 104:4765, Table 1, p. 4767; the M^-0.75 body-mass scaling is Damuth/Kleiber, not
+from Hamilton) scaled by M^-0.75 from 65 kg: hill giants (2.2 t) ~1 per 140 km2,
 storm giants (7.3 t) ~1 per 345.
 The older note here ("an apex hunter two to three orders below the herbivore line", after Carbone & Gittleman) was unsupported:
 their carnivore line sits ~1.5 orders below the herbivores'.
@@ -24,7 +26,7 @@ Peoples press both down easily (`pressure`, one suppression number: persecution,
 land run at a few percent of their potential (Ripple et al. 2014, Science 343:1241484). Where small folk hold the land a kind sits
 at the present-day value (`local_density`); where no people holds it, at its natural density. Before the peoples spread they were
 many more: the age of dragons (`ages`).
-Of these papers Marshall 2021 and Carbone & Gittleman 2002 are on file; Damuth, Nagy (slopes from its abstract), Binford, Hamilton and
+Of these papers Marshall 2021, Carbone & Gittleman 2002 and Hamilton et al. 2007 are on file; Damuth, Nagy (slopes from its abstract), Binford and
 Ripple are cited as the proposal gives them and are still to be fetched (docs/references/megafauna/README.md, PW-962).
 
 They live long (dragons a few hundred years a generation, giants 50-80 yr), so few of them persist: their patches' viable number
@@ -64,7 +66,7 @@ NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candida
 NATURAL_DEFAULT = "prey"
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring)
-FORAGER_KM2 = 0.1  # human foragers per km2, the proposal's median of hunter-gatherer densities (Binford 2001's dataset), the giants' baseline...
+FORAGER_KM2 = 0.1  # human foragers per km2, the proposal's median of hunter-gatherer densities (Binford 2001's dataset; the figure itself is not in Hamilton 2007, see the docstring), the giants' baseline...
 FORAGER_KG = 65.0  # ...for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
 PRESS_N0 = 0.05  # peoples press megafauna easily: the pressure is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell, so a
 # thin forager band (0.1 per km2, held at half its habitat) presses ~2/3 of the way and any settled people all the way (owner, PW-963:

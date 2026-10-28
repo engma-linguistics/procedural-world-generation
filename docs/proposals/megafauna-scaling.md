@@ -20,7 +20,7 @@ Owner and a side session, 2026-10-28. The owner approved everything here. The ti
   - birds 10.5 M^0.681
   - reptiles 0.196 M^0.889
 
-  The reptile exponent is steeper. The reptile/mammal ratio is 0.23 at 70 kg (McNab's Komodo figure), 0.39 at 2 t and 0.55 at 20 t. At dragon size, "reptile" therefore buys only about 2× more animals than "mammal", which is roughly what Marshall's mesotherm intercept gives. **Dragons use log10 a = 2.99.**
+  The reptile exponent is steeper. The reptile/mammal ratio is 0.23 at 70 kg, 0.39 at 2 t and 0.55 at 20 t (computed from the three fits above). McNab 2009 (PNAS 106:12184) independently puts the varanid lizards' field energy at 22% of a mammal's of the same size: FEE = 1.07 g^0.735 against 4.82 g^0.734, fitted to six varanids of 2.2-45.2 kg (checked: abstract, p. 12184, and p. 12185). It is a varanid fit, not a Komodo-specific figure, and 70 kg lies just outside its mass range. At dragon size, "reptile" therefore buys only about 2× more animals than "mammal", which is roughly what Marshall's mesotherm intercept gives. **Dragons use log10 a = 2.99.**
 
 ## What was wrong before
 
@@ -46,7 +46,7 @@ The "robust" column uses mass ∝ height^3.3.
 - cattle: 625 Mcal edible per head
 - fish: 1,200 kcal/kg
 
-**Density baseline.** The forager-scaled column takes human foragers (~0.1/km² median) and scales them by M^-0.75.
+**Density baseline.** The forager-scaled column takes human foragers (~0.1/km² median) and scales them by M^-0.75. (Checked against Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, pp. 4766-4768: the paper analyses Binford's 339 hunter-gatherer societies, but fits area used against group size, not density against body mass. Its all-forager fit, Table 1, p. 4767, is A = e^4.44 N^0.70 km², about 0.03/km² for a group of 25, 0.08 for 500 and 0.09 for 1,000. The ~0.1/km² median is not printed in the paper, and its exponents (0.70, mixed model 0.756) concern group size; the M^-0.75 here is the separate metabolic scaling, Kleiber/Damuth. Source for the 0.1: still to be found, likely Binford 2001 itself; see the inbox draft.)
 
 | kind | height | iso | **recommended** | robust | kcal/day | × human | grain t/yr | cattle/yr | fish t/yr | forager-scaled | repo before lane 38 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
