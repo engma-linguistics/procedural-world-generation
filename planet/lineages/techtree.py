@@ -19,6 +19,8 @@ Rules, all seeded and simple:
   from then, one that tamed or took up an animal (animals.py) knows herding.
 - Language and the other within-a-people techs (spread = 0) never pass by contact: each stem comes to them itself.
 - Nothing goes past the tree's era (meta.era), and the fantasy techs are left out in real mode.
+A stem that ends as animals (spec.Lineage.animals_end, PW-965: the dragons' wyverns, drakes and pseudodragons) is untracked past its end, so
+no animal line exists here to get language or techs; a sapiens node (sapient_kyr) is a marker and gates nothing here yet.
 Megafauna (dragons, giants) count as peoples here; templates (tieflings) do not: they are their hosts.
 """
 

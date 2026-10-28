@@ -2261,3 +2261,53 @@ def test_nomads_and_settled_compete_less(faketz):
     for x, y in ((f, n), (n, f)):
         assert np.isclose(h.alpha[x, y], h0.alpha[x, y] * (1 - SP.NOMAD_COEXIST)) and h0.alpha[x, y] > 0
     assert np.isclose(h.alpha[n, n2], h0.alpha[n, n2]) and np.isclose(h.alpha[f, f2], h0.alpha[f, f2])
+
+
+# ---- PW-965: the sapiens node and the "continues as animals" end of a stem ------------------------------------------------
+
+
+def _stem_raw(**kw) -> dict:
+    return {"meta": {"name": "t"}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", **kw},
+        {"id": "a", "parents": ["stem"], "at": "2 Myr"},
+        {"id": "b", "parents": ["stem"], "at": "1 Myr"}]}
+
+
+def test_sapiens_node_and_animal_end_parse_and_round_trip():
+    from planet.lineages import spec as SP
+    t = SP.parse(_stem_raw(sapient="4 Myr", animals=True))
+    assert t.lines["stem"].sapient_kyr == 4000 and t.lines["stem"].animals_end
+    assert t.lines["a"].sapient_kyr is None and not t.lines["a"].animals_end  # (not inherited by the kinds)
+    t2 = SP.parse(SP.to_raw(t))
+    assert t2.lines["stem"].sapient_kyr == 4000 and t2.lines["stem"].animals_end
+
+
+def test_sapiens_node_and_animal_end_validation():
+    from planet.lineages import spec as SP
+    with pytest.raises(ValueError, match="before its kinds split"):
+        SP.parse(_stem_raw(sapient="1.5 Myr"))
+    with pytest.raises(ValueError, match="sapient"):
+        SP.parse(_stem_raw(sapient="12 Myr"))
+    with pytest.raises(ValueError, match="animals = true"):
+        SP.parse(_stem_raw(animals=True, persists=True))
+    with pytest.raises(ValueError, match="animals = true"):
+        SP.parse(_stem_raw(animals=True, extinct="1 Myr"))
+
+
+def test_animal_end_changes_no_simulated_line():
+    """The marker is not simulated: the same tree with and without it has the same lines, ends and techs-eligible peoples."""
+    from planet.lineages import spec as SP
+    a, b = SP.parse(_stem_raw()), SP.parse(_stem_raw(sapient="4 Myr", animals=True))
+    assert [(l.id, l.ago_kyr, l.extinct_kyr, l.persists, l.megafauna, l.children) for l in a.order()] == \
+        [(l.id, l.ago_kyr, l.extinct_kyr, l.persists, l.megafauna, l.children) for l in b.order()]
+    assert [l.id for l in a.leaves()] == [l.id for l in b.leaves()]  # (the stem still ends at its last split)
+
+
+def test_samples_dragons_have_one_node_and_animal_end():
+    from planet.lineages import spec as SP
+    for f in ("dnd", "seven_meals"):
+        t = SP.load(f"planet/lineages/samples/{f}.toml")
+        d = t.lines["draconic"]
+        assert d.animals_end and d.sapient_kyr is not None and 2500 < d.sapient_kyr < d.ago_kyr  # before the chromatic/metallic split
+        assert not any(t.lines[i].sapient_kyr or t.lines[i].animals_end for i in ("chromatic_dragon", "metallic_dragon", "red_dragon"))
+        assert d not in t.leaves()  # (the animals are no line of the tree: nothing for peoples, techs or megafauna to count)
