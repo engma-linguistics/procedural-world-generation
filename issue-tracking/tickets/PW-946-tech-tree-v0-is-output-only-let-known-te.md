@@ -1,8 +1,10 @@
 ---
+id: PW-946
 title: "Tech tree v0 is output only: let known techs feed back into the history (boats, densities, farming)"
 type: story
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: l
 impact: med
@@ -10,6 +12,8 @@ found_by: fun39-techtree
 blocked_by: []
 relates: [PW-913, PW-688, PW-869]
 refs: [planet/lineages/techtree.py, planet/lineages/history/]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -19,3 +23,6 @@ A second gap: the land check reads only each people's present range. A line that
 - [ ] tree stepped in History.run (same rules, same seeds)
 - [ ] crossings read rafts / canoes / sails
 - [ ] the land check reads the range at each step
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-techtree-feedback.md (found by fun39-techtree).
