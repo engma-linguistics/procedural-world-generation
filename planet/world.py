@@ -178,7 +178,9 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
     # coastal and shallow-sea life (coastal.py, PW-188), from the layers as stored: % of each
     # cell, and the sea's turbidity (mg/L)
-    cl = coastal.world_layers(grid, layers, {**meta, "params": params or {}}, veg.get("unlocked"))
+    reef_ok = bool(veg.get("reef_builders", True))  # (skeletal reef builders by now: the run's calendar, PW-892)
+    cl = coastal.world_layers(grid, layers, {**meta, "params": params or {}, "reef_builders": reef_ok},
+                              veg.get("unlocked"))
     layers.update({k: np.round(100 * cl[k], 1) for k in coastal.LAYERS})
     layers["turbidity"] = np.round(cl["turbidity"], 1)
     # vegetation (vegetation.py): named type, structure, productivity, fire, and each PFT's
@@ -219,7 +221,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "vegetation": {"pco2": round(float(veg.get("pco2", vegetation.CA_REF)), 1),
                        "pfts": [p for p, ok in zip(vegetation.CODES, vg["unlocked"]) if ok],
                        **({"groups": veg["groups"]} if veg.get("groups") is not None else {}),
-                       "from_history": veg.get("nu0") is not None},
+                       "from_history": veg.get("nu0") is not None, "reef_builders": reef_ok},
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }

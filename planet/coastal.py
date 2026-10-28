@@ -346,6 +346,16 @@ def reef_temp(meta: dict | None) -> float:
     return float(p.get("reef_temp", Params().reef_temp))
 
 
+def reef_builders(meta: dict | None) -> bool:
+    """Whether skeletal reef builders (corals and their kin) exist at the world's moment (PW-892): the run's
+    calendar (tectonics.earth.reef_builders_t, counted back from its end) as the world stores it, meta's
+    "reef_builders" or its vegetation block's. Before them a warm clear sea grows microbial carbonate at most
+    (stromatolite flats), no living reef. Unknown (a hand-made world): they do."""
+    m = meta or {}
+    v = m.get("reef_builders", (m.get("vegetation") or {}).get("reef_builders"))
+    return True if v is None else bool(v)
+
+
 def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None) -> dict:
     """Per cell, 0..1: each habitat's suitability from the water and the
     coast, before the geometry (module docstring), plus the fields they use:
@@ -389,7 +399,7 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     # coral reefs
     t0 = reef_temp(meta)
     reef = (ramp(sst, t0 - 1.5, t0) * ramp(s_cold, *REEF_COLD) * ramp(s_warm, *REEF_HOT)
-            * ramp(sal, *REEF_SALT[0]) * ramp(sal, *REEF_SALT[1]) * ramp(ssc, *REEF_MUD))
+            * ramp(sal, *REEF_SALT[0]) * ramp(sal, *REEF_SALT[1]) * ramp(ssc, *REEF_MUD)) * reef_builders(meta)
     # kelp (the water's part, then on rocky shores)
     kelp_w = (ramp(s_warm, *KELP_HOT) * np.maximum(ramp(s_warm, *KELP_NUTRIENT), ramp(up, *KELP_UPWELL))
               * ramp(sal, *KELP_SALT) * (1 - ramp(ice_y, *KELP_ICE)))
@@ -492,7 +502,7 @@ def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict
     cs, kd = env["coastal_sea"], env["kd"]
     reef = REEF_SHARE * env["reef"] * shallow_share(depth, np.minimum(light_depth(kd, REEF_LIGHT), REEF_MAX_M), cs)
     # (a volcano's living reef is the run's own: warm enough by its reef_temp)
-    reef = np.where(sea, np.clip(reef + volcano_reefs(grid, meta, sea), 0, 1), 0.0)
+    reef = np.where(sea, np.clip(reef + volcano_reefs(grid, meta, sea) * reef_builders(meta), 0, 1), 0.0)
     free = 1 - reef
     kelp = free * env["kelp"] * shallow_share(depth, np.minimum(light_depth(kd, KELP_LIGHT), KELP_MAX_M), cs)
     free = free - kelp
