@@ -1,4 +1,5 @@
 ---
+id: PW-967
 title: Age-of-dragons review for the owner - maps with dots, counts by stage at familiar-sized areas, natural vs present
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-957, PW-958, PW-923]
 refs: [docs/review/megafauna/trial_report.py, docs/review/megafauna/density-trial.html]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Show:
 - what dragons eat against what the peoples nearby raise. In aggregate it is small, but locally a single ancient taking ~100 cattle a year ruins a valley, which is where adventurers come from.
 
 Format as PW-923's report: under a page, mostly pictures.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-9-age-of-dragons-maps.md (found by daniel).

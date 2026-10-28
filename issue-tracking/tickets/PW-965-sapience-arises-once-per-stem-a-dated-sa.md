@@ -1,4 +1,5 @@
 ---
+id: PW-965
 title: Sapience arises once per stem (a dated "sapiens" node); the non-sapient lines live on as animals (wyverns, drakes, pseudodragons)
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-868, PW-945, PW-957]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/spec.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -40,3 +43,6 @@ Owner 2026-10-28.
 | cities | ~6 ka |
 
 **Out of scope.** Giant-line offshoots such as trolls and ogres are not tracked. Anything not in the tree is DM-scale: occasional lone creatures or small bands, too few to count in the simulation. Troglodytes going extinct is fine.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-10-sapience-node-and-animal-kin.md (found by daniel).

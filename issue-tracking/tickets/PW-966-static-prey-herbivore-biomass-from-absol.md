@@ -1,4 +1,5 @@
 ---
+id: PW-966
 title: Static prey (herbivore) biomass from absolute NPP, livestock included, feeding natural megafauna density and people density
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-833, PW-957, PW-963, PW-724, PW-207, PW-836]
 refs: [planet/gameattrs.py, docs/proposals/megafauna-scaling.md, docs/references/megafauna/README.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Owner 2026-10-28 (megafauna side session). Nothing in the model knows how much p
 5. **The same productivity base feeds people density** (PW-833, owner-approved): density = way-of-life factor × f(absolute NPP).
 
 Cheap: arrays per cell, no time-stepped ecology.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-8-prey-biomass-from-npp.md (found by daniel).
