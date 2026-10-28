@@ -2,9 +2,9 @@
 id: PW-947
 title: "Tech tree: how early and how uneven should language be for the younger peoples?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-675
-milestone: null
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -30,4 +30,5 @@ So on a typical D&D roll the stems reach language between ~500 and ~150 kyr ago.
 Lean: A, with the report counting peoples without language.
 
 ## Updates
+- 2026-10-28: Status needs-decision -> todo. Owner 10-28: language work comes later, as its own project with the owner; present for review only, no follow-up yet. Ruling: on these timescales almost any contact spreads language to any genetically modern species.
 - 2026-10-28: Created from inbox draft draft-techtree-language-dates.md (found by fun39-techtree).

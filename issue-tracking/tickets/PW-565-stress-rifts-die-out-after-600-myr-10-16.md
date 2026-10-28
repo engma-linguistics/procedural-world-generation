@@ -4,7 +4,7 @@ title: Stress rifts die out after ~600 Myr (10-16 per 200 Myr -> 1-5), so ridges
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v1
 subsystem: tectonics
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-549, PW-051, PW-024, PW-191]
 refs: [planet/tectonics/events.py, planet/tectonics/motion.py, docs/review/audit/pw549-sea-level.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-28
 ---
 
 ## Description
@@ -40,4 +40,5 @@ set, and the deficit is in ridge length, not speed.
 - [ ] the floor's mean age over 300-2000 Myr stays within ~50-80 Myr on ~70% of seeds
 
 ## Updates
+- 2026-10-28: Owner 10-28: likely an earlier kludge, experiment it away; moved to v1 with the triple-junction ticket.
 - 2026-10-22: Created from inbox draft draft-stress-rifts-die-out-late.md (found by pw549).

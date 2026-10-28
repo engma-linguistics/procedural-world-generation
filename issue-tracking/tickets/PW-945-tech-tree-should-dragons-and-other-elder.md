@@ -2,9 +2,9 @@
 id: PW-945
 title: "Tech tree: should dragons and other elder kinds teach language and magic to the younger peoples?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-675
-milestone: null
+milestone: later
 subsystem: timezoom
 effort: s
 impact: med
@@ -24,4 +24,5 @@ In the v0 tech tree the dragons are an elder kind with no hands. Through `elder_
 Lean: C, with B available as a per-tree option (a `teaches` list on the [[kind]]).
 
 ## Updates
+- 2026-10-28: Status needs-decision -> todo. Owner 10-28: language work comes later, as its own project with the owner; present for review only, no follow-up yet. Ruling: on these timescales almost any contact spreads language to any genetically modern species.
 - 2026-10-28: Created from inbox draft draft-techtree-dragon-teachers.md (found by fun39-techtree).

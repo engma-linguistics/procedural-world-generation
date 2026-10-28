@@ -94,3 +94,6 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-20 · Rock · detailed rock knowledge post-v1, nothing slow · PW-474
 - 2026-10-28: PW-821 rain fix (showers need humid air) tried and dropped for now: paired 2-roll L6, 24/36 vs main 29/36 finish passes, Earth rain corr 0.637 vs 0.648. Kept on branch worktree-agent-a27927a0e29b0cbdf; waits on PW-015 (ocean evaporation).
 - 2026-10-28: tech tree v0 merged (fun lane 39): 8 tracks, 98 techs in planet/lineages/samples/techtree.toml; language arises per stem and never by contact; elders early, arrivals bring kits; Technology tab in the peoples workbench. Output only for now (PW-946).
+- 2026-10-28 (owner): language is a later joint project; the tech tree's language rules are for review only. Ruling: almost any contact spreads language to genetically modern species on these timescales.
+- 2026-10-28 (owner): giants get their own, lower density (user option like dragons'). Nomads, hill giants above all, overlap other peoples more, with occasional conflict. An occasional main people with a small range in one setting is realistic; avoid only the pattern.
+- 2026-10-28 (owner): plates may split three ways (triple junctions); experiment away the stress-rift die-off (PW-565, now v1).
