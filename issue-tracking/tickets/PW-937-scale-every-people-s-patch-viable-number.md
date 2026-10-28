@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-924, PW-888, PW-931]
 refs: [planet/lineages/history/dispersal.py, planet/lineages/history/origins.py, planet/lineages/samples/dnd.toml]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Lean: A, since it is the same mechanism as the founder rule, but it shifts every
 - [ ] decision recorded; if A, the 6 x 4 sweep compared before and after
 
 ## Updates
+- 2026-10-28: 10-28: dragons' own generation time is short (200 yr vs ~430 yr from the approved age structure; inbox draft-megafauna-3). Decide this one with that in mind.
 - 2026-10-27: Created from inbox draft draft-viable-pop-by-generation-for-all-peoples.md (found by fun-lane-37).

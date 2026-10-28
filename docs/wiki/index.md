@@ -18,6 +18,7 @@ Read first, in order:
 | Open work, tickets, drafts | the board (`uv run python issue-tracking/board.py next`); rules in [issue-tracking/README.md](../../issue-tracking/README.md) |
 | Worktrees, run costs, showcase recipes, server | [coordination.md](../coordination.md) |
 | Roadmap by milestone | [plan_next.md](../plan_next.md) |
+| Papers behind a model choice (local PDFs, plus what the owner still has to fetch) | [docs/references/](../references/megafauna/README.md) (megafauna: [scaling](../proposals/megafauna-scaling.md)) |
 
 Conventions for this wiki:
 - Link, don't copy. If a fact lives in a ticket or in overview.md, give the id or section.

@@ -22,3 +22,6 @@ data/
 ice_v2_moments/
 ice_diag_out/
 briefs/
+
+# reference papers: PDFs stay local (copyright); the folder README indexes them
+docs/references/**/*.pdf
