@@ -71,6 +71,14 @@ def link_km(line) -> float:
     return LINK_KM["flies" if "flies" in line.traits else "walks"]
 
 
+def metapop_km(line) -> float:
+    """PW-936: pockets within the reach of scatter (SCATTER_LINKS x link_km) are one metapopulation for the viable-number fade
+    (History._viable): the same dispersal that founds a pocket from its neighbours keeps it in touch with them, as patches linked by
+    colonisation persist together though each alone would wink out (Levins 1969; Hanski 1998, "Metapopulation dynamics", Nature 396).
+    Linked only within one reach, a pocket scatter founded farther off was faded as an isolate (most of the red and black dragons' losses)."""
+    return SCATTER_LINKS * link_km(line)
+
+
 def linked_pockets(h: History, held: np.ndarray, km: float) -> tuple[np.ndarray, int]:
     """Components of `held`, joining pockets within `km` of each other (over land and sea): the held cells are grown by half
     the reach, the grown mask labelled, and the labels read back on the held cells (as grid.components: -1 outside, count)."""
