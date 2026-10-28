@@ -49,5 +49,6 @@ Options:
 Lean: C (A in stages), with the younger age schedule (PW-958), which halves food per dragon.
 
 ## Updates
+- 2026-10-28: Stage 1 also re-runs the PW-967 review page (age_of_dragons.py; rebuild a probe that writes RUN.npz/SERIES.json, since lane 41's is gone) with the new prey and the younger schedule.
 - 2026-10-28: Status needs-decision -> todo. Owner 10-28: go with C (staged): 1) food cap against wild prey + stock, 2) peoples' share, 3) persecution. Younger schedule (PW-958). Stage 1 starts after the PW-975 McNaughton lane merges.
 - 2026-10-28: Created from inbox draft draft-megafauna-food-budget-equilibrium.md (found by coordinator).

@@ -120,3 +120,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28: The megafauna side session is closed; megafauna design continues in the main session. PW-973 closed into PW-977 and PW-975; PW-967 reviewed.
 - 2026-10-28: Owner: PW-959 dragon generation ~430 yr default for now (flag if counts wobble). PW-947/PW-971: language only after a stem's sapiens node; only bare-bones tool use before it. Node dates get a sourced review doc first.
 - 2026-10-28: Merged the sapiens node dates review doc (docs/review/lineages/sapiens-dates.md, PW-971/PW-978); owner gut call pending.
+- 2026-10-28: Merged PW-975: prey field from McNaughton et al. 1989 (log B = 1.52 log NAP - 4.79); present dragons and giants about 40% lower.
