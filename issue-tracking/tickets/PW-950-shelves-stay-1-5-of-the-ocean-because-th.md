@@ -4,7 +4,7 @@ title: Shelves stay ~1.5% of the ocean because the submerged continent sits ~1.5
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med

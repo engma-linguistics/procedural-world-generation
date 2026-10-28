@@ -2,9 +2,9 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: blocked
+status: todo
 parent: PW-013
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-352]
 relates: [PW-019]
 refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/ (removed; see git d32f7fa), docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-10-28
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-28: Coordinator 10-28: pulled into v1 as a soundness gap (too few hot deserts: B 20% vs Earth 30%, hot desert 3-5%). The PW-821 attempt shows the rain-side patch alone fails; fix the moisture source.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
 - 2026-10-22: Merged inbox draft draft-sea-evaporation-bulk-exchange.md ("Rain kernel: the sea fills the air to src_q instantly each step; a bulk exchange over a fetch moves the overturning and the rain a lot", found by base-climate-laneA).
