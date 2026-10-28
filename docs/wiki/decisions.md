@@ -101,3 +101,11 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28 (owner, megafauna scaling side session): approved docs/proposals/megafauna-scaling.md. Giants' masses and food, recommended column: hill 2.2 t, about 12 humans' food; storm 7.3 t, about 31. Dragons' size, wingspan and food by age. Dragons use the base age structure: ancients ~7% of dragons, ~1/3 of their biomass. Dragon generation time to be revisited (~430 yr). Report dragons by stage; giants don't need it. 1/5,000 km² is the present-day dragon density in peopled country. Natural density (~1/65 km²) holds where no people presses them: "the age of dragons". Papers live in docs/references/ (PDFs local, README index). Tickets PW-957..963. Giant density vs lane 38's 5,000 is open (PW-963).
 - 2026-10-28: megafauna merged (94c5a318): giants 1 per meta.giant_km2 (default 5,000 km2, select 1k/5k/10k); nomads compete at 1-0.5*mobility with settled peoples (Khazanov 1984). Remnants 18 -> 24 per 24 rolls, per-people pass 75% held; repeats on 1df1c3 (orcs) and 067778 in PW-964. Giant density reconcile PW-963 (side session).
 - 2026-10-28 (owner): giant density, option C (PW-963). Natural density comes from mass and is approached where few small folk compete. Peoples push it down easily, to a sparse present-day default (1 per 2,000 km² in peopled country; meta.giant_km2 becomes this pressed value). This is the same mechanism as dragons (PW-957). Players should not meet far more giants than they expect, or flocks of dragons.
+- 2026-10-28 (owner, megafauna side session):
+  - People density = way-of-life factor × productivity (PW-833).
+  - Prey is a static field from net primary production (NPP), with no predator-prey cycles. Livestock counts as prey. Wild megaherbivores persist in giant country hostile to small folk (draft-megafauna-8).
+  - Megafauna pressure is one suppression number: persecution, not hunting.
+  - Losing megaherbivores never zeroes dragons; they turn to livestock, tribute and kobold thralls.
+  - Natural dragon numbers are reviewed on maps against familiar areas before they are fixed (draft-megafauna-9).
+  - Sapience arises once per stem at a dated node. Non-sapient kin live on as wyverns, drakes and pseudodragons (draft-megafauna-10).
+  - Kinds outside the tree (trolls, ogres) are DM-scale and not tracked.
