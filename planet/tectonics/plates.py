@@ -43,7 +43,7 @@ class Plates:
       alive (P,)        slot in use
       label (P,)        the permanent id people see (slots are reused)
       next_label        the label the next new plate gets
-      formed (P,)       Myr: when the plate got its current shape (rift/split)
+      formed (P,)       Myr: when the plate split off another (events.split; its settle_time clock)
       Q (P, 3, 3)       rotation: plate frame -> world
       omega (P, 3)      angular velocity, rad/Myr
       wander (P, 3)     the slowly wandering basal mantle drag (see motion.forces)

@@ -21,6 +21,7 @@ from ..noise import Perlin3D, fbm
 from ..surface import CRATON, OROGEN
 from .motion import Boundaries, CellForces
 from .plates import CMYR, P_MAX
+from .volcanism import PLUME_KM
 
 TRENCH_KM = 6000.0  # length of margin along which new subduction starts (margin_side)
 
@@ -238,8 +239,13 @@ def stress_cut(sim, k, cf: CellForces, rng, tries=12):
     # The pull on each half grows with its area, the rock resisting it
     # with the cut's length: the bigger the plate, the smaller the
     # difference in motion it takes to break it (why plates much bigger
-    # than the Pacific are rare). Gently: (area / stress_min_plate)^(1/4).
-    size = max(len(cells) / (p.stress_min_plate * sim.grid.n), 1.0) ** 0.25
+    # than the Pacific are rare). The halves' speeds are force per drag,
+    # and drag ~ area, so the stress across the cut is the speed
+    # difference x area / length ~ opening x sqrt(area): (area /
+    # stress_min_plate)^(1/2). (It was damped to the 1/4 power, which left
+    # plates of 40-90% of the surface under too little stress to break
+    # late in runs; PW-565.)
+    size = max(len(cells) / (p.stress_min_plate * sim.grid.n), 1.0) ** 0.5
     eff = opening * size / np.maximum(weak, 0.1)
     frac = side.mean(1)
     cont = sim.w_cont[cells].astype(float)
@@ -292,6 +298,8 @@ def maybe_rift(sim, cf: CellForces, rng):
     cont_cells = np.bincount(sim.owner, weights=sim.w_cont, minlength=P_MAX)
     all_cells = np.bincount(sim.owner, minlength=P_MAX)
     margin_age, margin_len = old_margins(sim)
+    if triple_rift(sim, rng):
+        return
     big = p.stress_min_plate * g.n
     for k in np.flatnonzero(pl.alive):
         stress, cut = 0.0, None
@@ -344,6 +352,126 @@ def maybe_rift(sim, cf: CellForces, rng):
         why = " over warm mantle" if heat > 0.3 else (" over cold mantle" if heat < -0.3 else "")
         log(sim, "rift", [k, new], c, what + why + "; the split-off part becomes plate {1}")
         return
+
+
+def sliver(sim, cont) -> bool:
+    """A piece carrying a continental sliver: more than none but less than
+    rift_min_piece of the surface (piece_ok's rule, for one piece)."""
+    lo, hi = 0.1 * sim.params.rift_min_piece * sim.grid.n, sim.params.rift_min_piece * sim.grid.n
+    return lo < cont < hi
+
+
+def triple_rift(sim, rng) -> bool:
+    """A new mantle plume's head under a continent on a big plate domes and
+    heats it, and the dome cracks along three arms from the plume, ~120
+    degrees apart: a rift-rift-rift triple junction (Burke & Dewey 1973,
+    J. Geol. 81:406, 'Plume-generated triple-junctions'). Afar today, where
+    the Red Sea, the Gulf of Aden and the East African Rift meet, is one;
+    the Atlantic opened along a chain of them. Often one arm stops opening
+    and is left as a failed rift (an aulacogen: the Benue trough off the
+    Gulf of Guinea), so the plate splits in two along the other two arms;
+    if two arms fail, nothing splits. Each new plume decides once, when its
+    head arrives: it cracks the plate with odds triple_odds, more on weak
+    rock (/ strength() at the plume, at most 1); each arm then fails with
+    odds aulacogen_odds. Returns whether the plate split."""
+    p, g, pl = sim.params, sim.grid, sim.plates
+    if p.triple_odds <= 0 or sim.step_no <= 1:
+        return False
+    sizes = np.bincount(sim.owner, minlength=P_MAX)
+    s = None
+    for h in sim.hotspots:
+        if h["born"] != sim.t:  # (a plume's head arrives on the step it is born)
+            continue
+        c0 = int(g.locate(h["pos"][None])[0])
+        k = int(sim.owner[c0])
+        near = np.flatnonzero(g.centers @ h["pos"] > np.cos(max(PLUME_KM / R_KM, 1.5 * g.spacing)))
+        if sizes[k] < p.stress_min_plate * g.n or not (sim.w_cont[near] & (sim.owner[near] == k)).any():
+            continue
+        if s is None:
+            s = strength(sim)
+        if rng.random() > min(1.0, p.triple_odds / max(float(s[c0]), 0.1)):
+            continue
+        failed = rng.random(3) < p.aulacogen_odds
+        if failed.sum() >= 2:
+            log(sim, "aulacogen", [k], h["pos"], "a plume head domes plate {0}; its rift arms fail (aulacogens)")
+            continue
+        if triple_split(sim, k, h["pos"], failed, rng):
+            return True
+    return False
+
+
+def triple_sectors(sim, c, failed, rng):
+    """f(x) -> the sector (0, 1, 2) of positions x around point c, between
+    three wandering arms ~120 degrees apart (jittered), with the sectors on
+    either side of a failed arm merged."""
+    e1 = np.cross(c, [0.0, 0.0, 1.0] if abs(c[2]) < 0.9 else [1.0, 0.0, 0.0])
+    e1 /= np.linalg.norm(e1)
+    e2 = np.cross(c, e1)
+    arms = np.sort((rng.uniform(0, 2 * np.pi) + np.radians([0, 120, 240]) + rng.normal(0, np.radians(12), 3))
+                   % (2 * np.pi))
+    seeds = rng.integers(2**31, size=4)
+    # (the sector boundaries: the arms that stay open)
+    keep = arms[~failed]
+
+    def f(x):
+        warp = np.stack([fbm(Perlin3D(int(sd)), x, octaves=3, freq=2.0) for sd in seeds[:3]], 1)
+        y = x + 0.12 * warp
+        th = (np.arctan2(y @ e2, y @ e1) + 0.25 * fbm(Perlin3D(int(seeds[3])), y, octaves=4, freq=4.0)) % (2 * np.pi)
+        return np.searchsorted(keep, th) % len(keep)
+    return f
+
+
+def triple_split(sim, k, c, failed, rng, tries=4) -> bool:
+    """Split plate k into the sectors around c (triple_sectors), if every
+    piece holds at least a tenth of the plate and no continental sliver."""
+    g, pl = sim.grid, sim.plates
+    on = sim.owner == k
+    mine = np.flatnonzero(on)
+    for _ in range(tries):
+        f = triple_sectors(sim, c, failed, rng)
+        lab = np.full(g.n, -1)
+        lab[mine] = f(g.centers[mine])
+        npc = int(lab.max()) + 1
+        # stray fragments go to the piece around them
+        for m in range(npc):
+            comp, nl = g.components(on & (lab == m))
+            if nl > 1:
+                big = np.bincount(comp[comp >= 0]).argmax()
+                for j in np.flatnonzero(np.arange(nl) != big):
+                    cells = np.flatnonzero(comp == j)
+                    nb = g.nbr_idx[np.concatenate([np.arange(g.nbr_off[i], g.nbr_off[i + 1]) for i in cells])]
+                    other = lab[nb][(lab[nb] >= 0) & (lab[nb] != m)]
+                    if len(other):
+                        lab[cells] = np.bincount(other).argmax()
+        size = np.bincount(lab[mine], minlength=npc)
+        cont = np.bincount(lab[mine], weights=sim.w_cont[mine], minlength=npc)
+        if size.min() < 0.1 * len(mine) or any(sliver(sim, x) for x in cont):
+            continue
+        refs = np.flatnonzero(pl.owned[k])
+        world = g.centers[refs] @ pl.Q[k].T
+        cell = g.locate(world)
+        lr = np.where(sim.owner[cell] == k, lab[cell], f(world))
+        stay = int(size.argmax())
+        new = []
+        for m in range(npc):
+            if m == stay:
+                continue
+            r = np.flatnonzero(pl.owned[k])
+            sel = np.isin(refs, r)
+            got = split(sim, k, refs[sel], world[sel], lr[sel] == m, toward=False)
+            if got is not None:
+                new.append(got)
+        if not new:
+            return False
+        if len(new) == 2:
+            what = ("a plume head under plate {0} cracks it three ways from a triple junction; "
+                    "plates {1} and {2} split off")
+        else:
+            what = ("a plume head under plate {0} cracks it from a triple junction: two arms open and plate {1} "
+                    "splits off; the third arm fails (an aulacogen)")
+        log(sim, "rift", [k, *new], c, what)
+        return True
+    return False
 
 
 def margin_side(sim, k, world):
@@ -455,7 +583,11 @@ def split(sim, k, refs, world, side, toward):
     if side.sum() < 4 or (~side).sum() < 4:
         return None
     new = pl.new_slot()
-    pl.formed[new] = pl.formed[k] = sim.t
+    # (only the new plate starts its settle_time: plate k is the same plate less a piece. Restarting k's clock
+    # too kept the biggest plates from ever being stress-tested: every piece of old ocean that broke off their
+    # margins, more of them as the floor aged, held them off for another 30 Myr, so the largest plate was
+    # skipped on 40-85% of steps after ~400 Myr and stress rifts fell from ~13 to ~5 per 200 Myr; PW-565)
+    pl.formed[new] = sim.t
     pl.Q[new] = pl.Q[k]
     pl.idx[new] = pl.idx[k]
     r = refs[side]

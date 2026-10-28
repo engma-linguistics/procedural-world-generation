@@ -31,6 +31,36 @@ def test_rifts_leave_no_continental_slivers(monkeypatch):
             assert x <= 0.1 * p + 3 / s.grid.n or x >= 0.95 * p, pieces
 
 
+def test_triple_junction_splits_a_plate_three_or_two_ways():
+    """PW-952: a plume-centred rift cracks a big plate into three pieces
+    around the plume (two if one arm fails), each a real share of the plate
+    and none with a continental sliver; the pieces meet near the plume."""
+    s = Simulation(build_grid(5), 1, Params(), 2.0)
+    g = s.grid
+    k = int(np.argmax(np.bincount(s.owner, minlength=events.P_MAX)))
+    on = s.owner == k
+    cells = np.flatnonzero(on & s.w_cont)
+    c = g.centers[cells].mean(0)
+    c = g.centers[cells[np.argmax(g.centers[cells] @ c)]]  # a continental cell near the plate's continent's centre
+    for failed, want in ((np.zeros(3, bool), 3), (np.array([False, True, False]), 2)):
+        t = Simulation(build_grid(5), 1, Params(), 2.0)
+        n0 = t.plates.alive.sum()
+        ok = any(events.triple_split(t, k, c, failed, np.random.default_rng(i)) for i in range(6))
+        assert ok
+        assert t.plates.alive.sum() == n0 + want - 1
+        pieces = list(np.unique(t.owner[on]))
+        assert len(pieces) == want, pieces
+        lo, hi = 0.1 * t.params.rift_min_piece * g.n, t.params.rift_min_piece * g.n
+        for j in pieces:
+            assert ((t.owner == j) & on).sum() >= 0.1 * on.sum() - 3
+            x = ((t.owner == j) & on & t.w_cont).sum()
+            # (judged on the world cells before the split; allow a few cells)
+            assert x <= lo + 3 or x >= 0.95 * hi, (j, x)
+        # every piece reaches to within a few cells of the plume
+        near = g.centers @ c > np.cos(4 * g.spacing)
+        assert set(np.unique(t.owner[near & on])) == set(pieces)
+
+
 def test_piece_rule():
     s = Simulation(build_grid(4), 1, Params(rift_min_piece=0.03), 2.0)
     n = s.grid.n
