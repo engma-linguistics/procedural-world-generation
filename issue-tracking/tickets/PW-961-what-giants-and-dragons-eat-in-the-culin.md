@@ -1,4 +1,5 @@
 ---
+id: PW-961
 title: What giants and dragons eat, in the culinary output (tribute, raids, herd losses, whale-falls)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-724]
 refs: [docs/proposals/megafauna-scaling.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -20,3 +23,6 @@ From the 2026-10-28 megafauna scaling session (owner approved). Once body size a
 - **Dragons.** An adult takes ~40 cattle a year, an ancient ~100+. The loss lands on herders in its country. Its ectotherm habit is feast and fast.
 
 Output: per people, the megafauna it lives beside and what they take (tribute, raids, herd losses). Per giant kind, what it eats and from whom. This can also feed peoples' customs (offerings, dragon-proof herding) later.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-5-culinary-what-megafauna-eat.md (found by daniel).

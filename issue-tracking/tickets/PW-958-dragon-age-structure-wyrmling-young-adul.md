@@ -1,4 +1,5 @@
 ---
+id: PW-958
 title: Dragon age structure (wyrmling, young, adult, ancient) with counts reported by stage
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-924, PW-923]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/history/megafauna.py, docs/review/megafauna/scaling.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -32,3 +35,6 @@ The oldest age is 3,000 years. Ancients hold 34% of the biomass and 31% of the f
 - Keep the mortality schedule as data on the line, inherited by the kinds. The ancient share is very sensitive to adult mortality (0.3% to 26% between doubled and halved rates), so it may want a user option later.
 - The ecological mass from this structure feeds the natural density (draft-megafauna-1) and food use (draft-megafauna-4).
 - Consider making mated pairs and "a pair with young" in groups_note follow the stages: young dragons with an adult.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-2-dragon-age-structure.md (found by daniel).

@@ -1,4 +1,5 @@
 ---
+id: PW-964
 title: After the PW-936 megafauna fixes, orcs on 1df1c3 and halflings and goblins on 067778 are remnants roll after roll
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-38
 blocked_by: []
 relates: [PW-936, PW-924, PW-937]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/history/model.py, planet/lineages/spec.py, "worlds 1df1c3 067778 e71172, dnd rolls 7000-7003"]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -28,4 +31,5 @@ or the hill giants (pastoral nomads, now sharing at NOMAD_COEXIST) took the orcs
 - [ ] fix at the cause; re-run the 6 x 4 sweep: remnants back to main's level, pass >= 70%, coverage held
 
 ## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-fixes-leave-recurring-remnants.md (found by fun-lane-38).
 - 2026-10-28: Created.

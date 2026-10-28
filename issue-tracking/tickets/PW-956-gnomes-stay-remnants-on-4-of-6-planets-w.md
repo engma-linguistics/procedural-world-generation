@@ -1,4 +1,5 @@
 ---
+id: PW-956
 title: Gnomes stay remnants on 4 of 6 planets whatever the megafauna and viable-number changes (PW-931 evidence)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-38
 blocked_by: []
 relates: [PW-931, PW-937]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/dispersal.py, "worlds 1df1c3 2a7385 a12762 067778, dnd rolls 7000-7003"]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -21,4 +24,5 @@ country or K), not by these changes. Only present cells were probed; the 50 kyr 
 - [ ] find what pins gnomes to one small pocket on these planets (origin, K, competition) and fix it
 
 ## Updates
+- 2026-10-28: Created from inbox draft draft-gnome-remnants-persist.md (found by fun-lane-38).
 - 2026-10-28: Created.

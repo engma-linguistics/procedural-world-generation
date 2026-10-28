@@ -1,4 +1,5 @@
 ---
+id: PW-963
 title: Giant density - meta.giant_km2 default 5,000 km2 vs ~130-345 (forager-scaled) vs ~30-100 (culinary-dnd herders)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: coordinator
 blocked_by: []
 relates: [PW-936, PW-724, PW-923]
 refs: [planet/lineages/spec.py, planet/lineages/samples/dnd.toml, docs/proposals/megafauna-scaling.md, /home/daniel/personal/repos/culinary-dnd/docs/giants-shared-fact-sheet.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
 - **C.** A split: a natural density from mass, pressed by peoples to a present-day default. The present default sits between, e.g. ~1/1,000-2,000, so a steading of 10 holds 10-20 thousand km2.
 
 Lean: C, sharing draft-megafauna-1's pressure mechanism, so dragons and giants follow one rule. Check that a steading's country still reads right in the brief.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-7-giant-density-reconcile.md (found by coordinator).

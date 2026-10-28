@@ -1,4 +1,5 @@
 ---
+id: PW-959
 title: Dragon generation time is 200 yr; the approved age structure gives ~430 yr (more if fecundity grows with size)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-937, PW-924]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/samples/seven_meals.toml, docs/proposals/megafauna-scaling.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Generation time feeds History.line_mvp and the persistence-horizon founder rule 
 
 - [ ] generation_yr ~430 for dragon lines, derived from the stage schedule if that is cheap
 - [ ] dragon persistence and coverage compared before and after on the usual worlds
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-3-dragon-generation-time.md (found by daniel).

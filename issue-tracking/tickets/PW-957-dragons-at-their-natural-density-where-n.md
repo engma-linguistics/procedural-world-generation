@@ -1,4 +1,5 @@
 ---
+id: PW-957
 title: Dragons at their natural density where no people presses them, suppressed to ~1 per 5,000 km2 by peoples (the age of dragons)
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-923, PW-924, PW-936]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/history/megafauna.py, planet/lineages/samples/dnd.toml, docs/references/megafauna/]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -31,3 +34,6 @@ The user option should probably become "present-day density in peopled country",
 - [ ] suppression by peoples' pressure, calibrated so the present default is ~1/5,000 km2 in peopled dragon country
 - [ ] counts before the peoples spread shown in the history and brief ("the age of dragons")
 - [ ] comments and citations corrected
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-1-dragon-natural-density.md (found by daniel).

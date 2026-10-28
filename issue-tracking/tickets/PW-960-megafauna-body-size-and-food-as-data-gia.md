@@ -1,4 +1,5 @@
 ---
+id: PW-960
 title: Megafauna body size and food as data (giants' recommended masses and food; dragons' length, mass, wingspan and food by age)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: daniel
 blocked_by: []
 relates: [PW-724, PW-692]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/samples/dnd.toml, planet/lineages/spec.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -44,3 +47,6 @@ How the dragon figures are built: reptile field metabolic rate (Nagy et al. 1999
 - A `mass_kg` (or a size block) on the spec, with dragons reading the stage curve.
 - Food per day derived from mass and `thermo` (mammal: Kleiber × 1.7; ecto: reptile field metabolic rate), not stored by hand.
 - The brief can then say "a hill giant eats like twelve peasants" and "an adult red dragon takes about forty cattle a year".
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-megafauna-4-body-size-and-food-data.md (found by daniel).
