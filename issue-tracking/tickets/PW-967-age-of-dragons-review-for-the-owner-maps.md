@@ -17,7 +17,7 @@ updated: 2026-10-28
 ---
 
 ## Description
-Owner 2026-10-28: before the natural dragon density is fixed, show it on maps once prey varies by country (draft-megafauna-8). Use dots or circles per dragon, sized or coloured by stage. Tie the counts to areas a person can picture:
+Owner 2026-10-28: before the natural dragon density is fixed, show it on maps once prey varies by country (PW-966). Use dots or circles per dragon, sized or coloured by stage. Tie the counts to areas a person can picture:
 
 | reference area | km² |
 |---|---|
