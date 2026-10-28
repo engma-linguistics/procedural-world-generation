@@ -24,7 +24,7 @@ Owner 2026-10-28: before the natural dragon density is fixed, show it on maps on
 | California | ~424,000 |
 | France | ~550,000 |
 
-The owner's yardstick: "California has maybe 2 ancients at a time, ~10 adults and 30+ young", not "37 dragons in a DC-sized patch".
+The owner's hunch, to compare against rather than to fit: "California has maybe 2 ancients at a time, ~10 adults and 30+ young", not "37 dragons in a DC-sized patch". Show counts under several age schedules (base, younger, harsher; PW-958), not one.
 
 Show:
 - the natural density (the age of dragons, before peoples) and the present (pressed) side by side;
