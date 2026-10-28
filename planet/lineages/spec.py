@@ -23,7 +23,9 @@ only take root, arrival or split origins; they compete with each other, not with
 (the contact record, the brief); rain, prefers and avoids do not apply to them. The deep folk stay authored (no realm).
 Megafauna (PW-855, PW-924: `megafauna = true`, the dragons and the true giants) are counted animals, not peoples: a handful per pocket
 of their own country (history.megafauna), exempt from the peoples' range targets; `generation_yr` lowers their viable number,
-`group_size = [least, most]` says how many live together and `rivalry` (0..1) weakens the competition they feel and give.
+`group_size = [least, most]` says how many live together and `rivalry` (0..1) weakens the competition they feel and give;
+`mass_kg` (a giant kind's ecological mass; dragons' comes from meta.dragon_ages) sets the kind's natural density with
+meta.megafauna_natural, which peoples press down to meta.dragon_km2 / meta.giant_km2 (PW-957, PW-963).
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -154,9 +156,17 @@ DEMOGRAPHY = {
 DEMO_KEYS = tuple(DEMO_DEFAULT)
 GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
 VIABLE_POP = 500.0  # default meta.viable_pop
-DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923): one dragon per this many km2 of its country, every kind
-GIANT_KM2 = 5000.0  # default meta.giant_km2 (owner, on PW-936): one true giant per this many km2 of its country, every kind that does not
-# fly; the owner's ruling sets it at the dragons' 5,000 (DRAGON_KM2), so the giants are as rare as the dragons
+DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923, PW-957): one dragon per this many km2 where peoples press them, every kind
+GIANT_KM2 = 2000.0  # default meta.giant_km2 (owner, PW-963 option C): one true giant per this many km2 where peoples press them, every
+# kind that does not fly. Both are the present-day density in peopled country; away from the peoples each kind keeps nearer its natural
+# density, from its body mass (`mass_kg`, history.megafauna.natural_density)
+GIANT_MASS_KG = 2200.0  # a giant kind's ecological mass where the tree gives none: the hill giant's, the proposal's recommended column
+MEGAFAUNA_NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural (PW-957, PW-966): the megafauna's natural density from the
+# prey field (Carbone & Gittleman 2002), or uniform from mass on Marshall et al. 2021's mesotherm or mammal-carnivore Damuth line
+# (history.megafauna). Candidates: the owner chooses after the PW-967 review
+MEGAFAUNA_NATURAL_DEFAULT = "prey"
+# meta.dragon_ages (PW-958): the dragons' mortality schedule, lineages.dragon_ages.SCHEDULES (base | younger | harsher | gentler);
+# meta.dragon_generation (PW-959): schedule | schedule_mass | line. Both candidates until the PW-967 review
 
 
 def demography(traits) -> dict:
@@ -337,6 +347,7 @@ class Lineage:
     megafauna: bool = False  # a handful per country (dragons): its range hardly takes room from the peoples that share it (history.MEGAFAUNA_PUSH, PW-855)
     group_size: tuple[float, float] | None = None  # megafauna (PW-924): how many live together, [least, most] (dragons [1, 3]: solitary, a pair with young; giants [5, 20]: a steading); inherited by splits and groups
     rivalry: float = 1.0  # megafauna (PW-924): x the competition the line feels and gives (metallic dragons 0.5: they coexist more readily); inherited by splits and groups
+    mass_kg: float | None = None  # megafauna (PW-957, PW-963): the ecological mass, kg, that sets the kind's natural density (history.megafauna); inherited from the first parent
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
     start_near: list[str] = field(default_factory=list)  # where its origin is placed (PW-763): near these lines' ranges...
@@ -451,8 +462,11 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
-    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 (PW-923); overrides their lines' density
-    giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2 (PW-936 ruling); overrides their lines' density
+    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 where peoples press them (PW-923, PW-957); overrides their lines' density
+    giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2 where peoples press them (PW-963); overrides their lines' density
+    megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: prey | mesotherm | mammal (PW-957, PW-966)
+    dragon_ages: str = "base"  # the dragons' age schedule (PW-958, lineages.dragon_ages)
+    dragon_generation: str = "schedule"  # the dragons' generation time: from the schedule, with fecundity ~ mass, or the lines' own (PW-959)
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
     exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
     events: list = field(default_factory=list)  # [[event]]: dated conquests the reputation pass remembers (reputation.parse_events, PW-730)
@@ -594,6 +608,16 @@ def _pair(v, what):
     return (float(v[0]), float(v[1]))
 
 
+def _mass(r: dict, base, lid: str) -> float | None:
+    """A megafauna line's `mass_kg` (> 0), else its first parent's."""
+    if "mass_kg" not in r:
+        return base.mass_kg
+    m = float(r["mass_kg"])
+    if m <= 0:
+        raise ValueError(f"{lid}: mass_kg must be > 0")
+    return m
+
+
 def _check_tag(t, lid):
     if t in GROUPS or t in PLACES or t in KOPPEN_CODES:
         return t
@@ -728,7 +752,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)),
@@ -864,6 +888,13 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.giant_km2 = float(meta.get("giant_km2", GIANT_KM2))
     if t.giant_km2 <= 0:
         raise ValueError("meta.giant_km2 must be > 0")
+    from . import dragon_ages as DA
+    for key, opts, dflt in (("megafauna_natural", MEGAFAUNA_NATURAL, MEGAFAUNA_NATURAL_DEFAULT), ("dragon_ages", tuple(DA.SCHEDULES), DA.DEFAULT),
+                            ("dragon_generation", DA.GENERATION, DA.GENERATION_DEFAULT)):
+        v = str(meta.get(key) or dflt).strip().lower()
+        if v not in opts:
+            raise ValueError(f"meta.{key} must be one of {list(opts)}")
+        setattr(t, key, v)
     if not 0 <= t.land_pull <= 1:
         raise ValueError("meta.land_pull must be within 0..1")
     return t
@@ -908,6 +939,8 @@ def to_raw(t: Tree) -> dict:
             r["group_size"] = list(l.group_size)
         if l.rivalry != 1.0:
             r["rivalry"] = l.rivalry
+        if l.mass_kg is not None:
+            r["mass_kg"] = l.mass_kg
         if l.extinct_kyr is not None:
             r["extinct"] = f"{l.extinct_kyr:g} kyr"
         if l.custom:
@@ -925,6 +958,7 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2,
+                     "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"reputation": t.reputation} if t.reputation else {}),

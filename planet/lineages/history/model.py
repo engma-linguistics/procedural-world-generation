@@ -87,10 +87,12 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
         # numbers: a denser rival weighs more (DENSITY_PUSH)
-        self.dens = np.array([(1.0 / tree.dragon_km2 if "flies" in l.traits else 1.0 / tree.giant_km2) if l.megafauna else l.demo("density")
-                              for l in self.lines])
-        # (dragons, the flying megafauna: one per meta.dragon_km2 of their country, owner PW-923; the true giants, the rest of the
-        # megafauna: one per meta.giant_km2, owner on PW-936; both user options)
+        self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else l.demo("density") for l in self.lines])
+        # (dragons, the flying megafauna: one per meta.dragon_km2 where peoples press them, owner PW-923, PW-957; the true giants, the rest
+        # of the megafauna: one per meta.giant_km2, PW-963; both user options. Away from the peoples they keep nearer their natural
+        # density (meta.megafauna_natural: from the prey, PW-966, or from mass): MG.local_density, read through dens_at. The competition
+        # below takes the pressed value)
+        MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push
@@ -164,6 +166,11 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._corr_now = corr
             self._tags_now = tags
             Ks = {}
+            self._land_now = env["land"]  # (the peoples' pressure on the megafauna this step, PW-957)
+            self._deep_now = deep
+            self._dens_memo = None
+            self._press = MG.pressure(self, self.p, env["land"]) if any(x.megafauna for x in L) else None
+            self._prey = MG.prey_now(self, self.p, self._press, tags) if self._press is not None and not deep else None
             self._start_due(step, env, tags, Ks)
             if self.animals is not None:
                 self.animals.step(step, env, tags, self.p, self._native)

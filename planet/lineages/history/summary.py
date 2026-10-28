@@ -103,6 +103,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     out["mixing_zones"] = out["mixing_zones"][:20]
     out["wishes"] = wish_scores(h, P, tags)
     out["megafauna"] = MG.summary(h, P, tags)  # (counted, exempt from the peoples' range targets, PW-924)
+    out["megafauna_ages"] = MG.ages(h)  # (their counts at the present and at their peak, the age of dragons, PW-957)
     for lid in out["megafauna"]:
         out["lines"][lid]["megafauna"] = True
     out["peoples"] = people_rollup(h, P, out["lines"])
