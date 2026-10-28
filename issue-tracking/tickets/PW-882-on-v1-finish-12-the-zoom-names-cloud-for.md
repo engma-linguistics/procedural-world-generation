@@ -2,7 +2,7 @@
 id: PW-882
 title: On v1-finish-12 the zoom names cloud forest from the light's shade, not the sky's cover (run and world pass sky)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-806, PW-808]
 refs: [planet/zoom_vegetation.py, planet/vegetation.py, "worlds 6909cb 2a7385", docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-28
 ---
 
 ## Description
@@ -30,5 +30,6 @@ Coupling audit finding C10 (severity low-med for the Earth-like v1 finish; docs/
 **What to try:** Interpolate cloud_jul/jan in zoom_vegetation.fine_fields as before and pass sky= to the vegetation; land with the v1-finish-12 merge.
 
 ## Updates
+- 2026-10-28: Status todo -> done. Lane 21: verified fixed by 1b52cdfb (zoom_vegetation sets s['cloud'] from cloud_jul/jan as vegetation.model's sky= does); closing.
 - 2026-10-25: v1-finish-13 (1b52cdf): zoom_vegetation sets s['cloud'] from the world's sky cover (cloud_jul/jan), as the globe does.
 - 2026-10-25: Created from inbox draft draft-zoom-cloud-forest-tested-on-shade-not-sky.md (found by coupling-audit).

@@ -256,6 +256,7 @@ def nav_reaches(lines, cls, q, grad, openm, conn, km_of) -> list[dict]:
 # Harbours
 # ---------------------------------------------------------------------------
 HARBOUR_DEPTH_M = 6.0  # a loaded ship's draught plus a margin
+HARBOUR_FETCH_KM = 50.0  # km: zooms look this far for open water (fetch); a sea pit smaller than this square is no sea
 DEPTH_REACH_KM = 6.0  # (zooms: the deepest water within this of the pixel; a shoreface shoals to the beach)
 HARBOUR_SHELTER = (0.60, 0.72, 0.85)  # 1 - effective fetch / reach; a straight coast scores 0.5 (half the horizon is land)
 ESTUARY_Q = 300.0  # m^3/s: a river mouth this big carves an estuary (shelters itself)
@@ -322,6 +323,21 @@ def harbours(net: Net, depth, land, sea_ice_months, q_mouth, fetch_eff, reach_km
     cls = np.where(sea_ice_months >= SEA_ICE_MONTHS[0], np.maximum(cls.astype(int) - 1, 0), cls)
     cls = np.where(sea_ice_months >= SEA_ICE_MONTHS[1], 0, cls).astype(np.uint8)
     return cls, shelter
+
+
+def open_sea(sea, res_km: float):
+    """(ny, nx) bool: the sea pixels of a zoom that ships reach from outside it: their (8-connected)
+    water touches the zoom's edge, or is a sea of its own at least HARBOUR_FETCH_KM across (area)."""
+    from .zoom_kernels import label_components
+    if not sea.any():
+        return sea
+    ny, nx = sea.shape
+    lab, size = label_components(sea.ravel(), nx, ny)
+    lab = lab.reshape(ny, nx)
+    ok = np.asarray(size, float) * res_km ** 2 >= HARBOUR_FETCH_KM ** 2
+    rim = np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])
+    ok[rim[rim >= 0]] = True
+    return sea & np.where(lab >= 0, ok[np.maximum(lab, 0)], False)
 
 
 def _mouth_discharge(net: Net, land, q) -> np.ndarray:
@@ -604,11 +620,12 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
         out["river_nav"] = cls.reshape(ny, nx)
         tab["nav"] = {"cls": cls, "q": q, "grad": grad, "open": openm, "conn": conn}
     sea = water == 1
-    near = _coast_nodes(net, land, 3)
+    # (a harbour is reached from the open sea: not in a pit of sea cut off inside the zoom, PW-844)
+    near = _coast_nodes(net, land, 3) & open_sea(sea.reshape(ny, nx), res_km).ravel()
     out["harbour"] = np.zeros((ny, nx), np.uint8)  # always present (all 0 for an inland zoom): the viewer indexes it unconditionally
     if near.any():
         pix = np.flatnonzero(near)
-        fe, reach = fetch_raster(land.reshape(ny, nx), pix, res_km, 50.0)
+        fe, reach = fetch_raster(land.reshape(ny, nx), pix, res_km, HARBOUR_FETCH_KM)
         full = np.zeros(net.n)
         full[pix] = fe
         ice_m = months_below(tw, tc, FREEZE_SEA) * sea

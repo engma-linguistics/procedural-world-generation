@@ -41,7 +41,7 @@ from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
 from .surface import _relief, surface_rock
-from .tectonics.earth import now_myr
+from .tectonics.earth import now_myr, reef_builders_t
 from .tectonics.isostasy import grounded
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
@@ -172,6 +172,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
                  "plant_groups": plant_groups(sim),
+                 # run time (Myr) from which skeletal reef builders exist (earth.reef_builders_t, PW-892)
+                 "reef_builders_t": round(float(reef_builders_t(sim)), 1),
                  # the finished world's moment and why (PW-866): what `--at auto`, make and the viewer take
                  "finish_moment": H.finish_moment(frames, params.finish_window),
                  "generated_in_s": round(time.time() - t0, 1),
@@ -205,7 +207,7 @@ def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray) -> dict:
     t_fr = float(fr["t"])
     return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
             "unlocked": VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr),
-            "groups": groups}
+            "groups": groups, "reef_builders": t_fr >= float(meta.get("reef_builders_t", -np.inf)) - 1e-9}
 
 
 def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
@@ -371,6 +373,7 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = 
     climate for the soils (soil_memory)."""
     snap = sim.snapshot()
     veg = {"nu0": sim.veg_frac, "pco2": climate.pco2(sim.co2), "unlocked": VEG.unlocked_at(sim.flora, sim.t),
+           "reef_builders": sim.t >= reef_builders_t(sim) - 1e-9,
            "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,

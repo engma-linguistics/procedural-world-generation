@@ -68,6 +68,16 @@ def test_no_reef_in_cold_sea(g4):
     assert C.world_layers(g4, _layers(g4, salinity=15.0))["reef"].max() == 0
 
 
+def test_no_living_reef_before_the_reef_builders(g4):
+    """PW-892: a world taken before the run's skeletal reef builders (slice --ago 600) has no living reef;
+    the flag comes from the world meta (its vegetation block, for a zoom) and defaults to on."""
+    L = _layers(g4)
+    assert C.world_layers(g4, L)["reef"].max() > 0
+    assert C.world_layers(g4, L, {"reef_builders": False})["reef"].max() == 0
+    assert C.environment(g4, L, {"vegetation": {"reef_builders": False}})["reef"].max() == 0
+    assert C.environment(g4, L, {"vegetation": {"reef_builders": True}})["reef"].max() > 0
+
+
 def test_mangroves_only_on_tidal_coast_cells(g4):
     L = _layers(g4)
     out = C.world_layers(g4, L)
