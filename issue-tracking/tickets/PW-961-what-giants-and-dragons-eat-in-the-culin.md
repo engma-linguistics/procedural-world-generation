@@ -25,4 +25,5 @@ From the 2026-10-28 megafauna scaling session (owner approved). Once body size a
 Output: per people, the megafauna it lives beside and what they take (tribute, raids, herd losses). Per giant kind, what it eats and from whom. This can also feed peoples' customs (offerings, dragon-proof herding) later.
 
 ## Updates
+- 2026-10-28: Owner 10-28: the adventurer hook. One super-predator taking ~100 head a year from one valley's herders ruins those families, so the local lord posts a bounty: the brief should be able to say where that happens (a dragon's range over herders' country; giants raiding).
 - 2026-10-28: Created from inbox draft draft-megafauna-5-culinary-what-megafauna-eat.md (found by daniel).

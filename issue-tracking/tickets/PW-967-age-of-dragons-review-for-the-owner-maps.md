@@ -38,4 +38,9 @@ Show:
 Format as PW-923's report: under a page, mostly pictures.
 
 ## Updates
+- 2026-10-28: Owner 10-28, for the review:
+  (1) Show the literature-suggested natural density (prey-based Carbone and Damuth/Marshall) next to the 1/5,000 present-day value, maps and tables for each.
+  (2) Show several age schedules side by side. Owner leans young-heavy ('you don't get to be an ancient without being very, very good at surviving'); defaults are not settled until the owner has seen them.
+  (3) Give food in cattle-equivalents against the livestock of the same area (e.g. a California of dragons ~800 cattle/yr vs millions of head). The owner finds this the most convincing framing.
+  (4) Draw each ancient's (and adult's) range as a circle, from its food need over local prey offtake. Rough figures: an ancient takes ~100 head/yr (~50 t live). At ~1 t/km2 wild prey and ~10%/yr sustainable offtake that is ~500 km2 of wild country, or about one valley of herders. Show the herders inside it.
 - 2026-10-28: Created from inbox draft draft-megafauna-9-age-of-dragons-maps.md (found by daniel).
