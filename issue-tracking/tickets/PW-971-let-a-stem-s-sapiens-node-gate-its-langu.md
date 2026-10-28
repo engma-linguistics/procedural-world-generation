@@ -1,4 +1,5 @@
 ---
+id: PW-971
 title: Let a stem's sapiens node gate its language and techs, and mark it in run results
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-42
 blocked_by: []
 relates: [PW-965, PW-868, PW-945, PW-947]
 refs: [planet/lineages/spec.py, planet/lineages/techtree.py, viewer/lineages.html, planet/lineages/samples/dnd.toml]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -22,3 +25,6 @@ PW-965 added the dated sapiens node (`sapient = "T"` on a stem) and the "continu
 
 - [ ] decide whether sapiens gates language/techs (needs PW-947)
 - [ ] draw the node and the animals tail in the Results/run views
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-sapiens-node-gates-language-and-lairs.md (found by fun-lane-42).
