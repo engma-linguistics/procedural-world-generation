@@ -2,7 +2,7 @@
 id: PW-978
 title: Owner call on stem sapiens-node dates, then write them into the samples
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -22,4 +22,5 @@ docs/review/lineages/sapiens-dates.md lays out candidate dates per stem (draconi
 - [ ] update the toml values and their comments
 
 ## Updates
+- 2026-10-28: Owner 10-28 gut call on sapiens-dates.md: (1) adjust both the stems' timelines and what is allowed before sapience to reflect that real humans took ~3 Myr from first tools to sapiens (a long run of bare-bones tools before minds); (2) a node older than the first fossil is fine; (3) generation scaling is goofy for long-lived kinds, fine to ignore; (4) dragons ~5 Myr is plenty (can shift, whatever feels right); (5) giantkin must split earlier than 0.5 Myr after the hominid node: move dates or add an intermediate split as needed; (6) the reptilian peoples all split at about the same time: spread them out as feels reasonable; (7) goblinoids shorter in time than the hominids is fine.
 - 2026-10-28: Created from inbox draft draft-sapiens-dates-owner-call.md (found by sapiens-dates-doc).
