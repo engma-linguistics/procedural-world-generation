@@ -2307,7 +2307,9 @@ def test_megafauna_natural_settings_and_prey(faketz):
     h2 = H.History(t2, ps, 1)
     assert h2.gen_yr(h2.lines[w]) == 200 and 25 <= 1 / h2.dens_nat[w] <= 80  # (mammal line at the younger schedule's lighter mass)
     # prey mode with a prey field: dragons per Carbone & Gittleman, ~1 per 530 km2 at 1 t/km2 of prey (base schedule)
-    ps.graze_npp = np.full(ps.grid.n, 47.0)  # (-> 1 t/km2 of wild prey, lineages.prey's anchor)
+    from planet.lineages import prey as PR
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C  # (g C/m2/yr that McNaughton's fit gives 1 t/km2 of wild prey)
+    ps.graze_npp = np.full(ps.grid.n, g1)
     h3 = H.History(t, ps, 1)
     del ps.graze_npp
     assert np.allclose(h3.prey_wild, 1.0)

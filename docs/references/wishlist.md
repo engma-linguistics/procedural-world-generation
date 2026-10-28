@@ -8,9 +8,10 @@ Ordered by how much a finding would change what the worlds show.
 
 ## Most wanted
 
-- [ ] **McNaughton, Oesterheld, Frank & Williams 1989**, Nature 341:142-144, doi:10.1038/341142a0. Herbivore biomass against plant
-  growth. Our prey field (planet/lineages/prey.py, PW-975) is a one-anchor stand-in until we read its regression. It is behind the
-  "too many blue dragons in deserts" problem (PW-973).
+- [x] **McNaughton, Oesterheld, Frank & Williams 1989**, Nature 341:142-144, doi:10.1038/341142a0. Herbivore biomass against plant
+  growth. Read (PW-975): prey.py uses its biomass fit. Its kJ-to-mass conversions are not in the paper;
+  see the next item.
+- [ ] **Standard energy conversion factors** (carbon to dry matter, kJ per g dry plant, kJ per g live herbivore), e.g. Golley 1961 Ecology 42:581 or Schroeder 1977 Oecologia 28:261 (McNaughton's refs 41-42). prey.py's C_FRAC 0.45, KJ_PER_G_DRY 17.5 and KJ_PER_G_LIVE 7.0 are unverified typical values (PW-975).
 - [ ] **Coe, Cumming & Phillipson 1976**, Oecologia 22:341-354, doi:10.1007/BF00345312. African herbivore biomass against rainfall,
   the second candidate fit for the same field.
 - [ ] **Binford 2001**, *Constructing Frames of Reference* (University of California Press; a book, likely only in print or a

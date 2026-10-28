@@ -7,9 +7,13 @@ from planet import gameattrs as GA
 from planet.lineages import prey as PR
 
 
-def test_wild_prey_scales_with_grazing_npp():
-    w = PR.wild(np.array([0.0, PR.PREY_G_REF / 10, PR.PREY_G_REF, -5.0]))
-    assert np.allclose(w, [0, PR.PREY_T_REF / 10, PR.PREY_T_REF, 0])
+def test_wild_prey_follows_mcnaughton_fit():
+    w = PR.wild(np.array([0.0, 100.0, 200.0, -5.0]))
+    assert w[0] == 0 and w[3] == 0
+    assert np.isclose(w[2] / w[1], 2.0 ** 1.52)  # (log-log slope 1.52, McNaughton et al. 1989)
+    nap = 200.0 * PR.C_FRAC ** -1 * PR.KJ_PER_G_DRY  # kJ/m2/yr
+    assert np.isclose(w[2], 10 ** (1.52 * np.log10(nap) - 4.79) / PR.KJ_PER_G_LIVE)  # (the paper's equation, kJ/m2 -> t/km2)
+    assert 5 < PR.wild(np.array([470.0]))[0] < 15  # (a rich savanna: PW-966's ~10 t/km2 anchor, within the conversions' error)
     assert PR.wild(None) is None
 
 

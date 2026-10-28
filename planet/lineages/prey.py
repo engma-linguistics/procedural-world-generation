@@ -6,11 +6,18 @@ season-weighted, g C/m2/yr; forests hold less than savanna because forest NPP is
 - the megafauna's natural density (history.megafauna: dragons on Carbone & Gittleman 2002's carnivores per prey biomass; checked: PDF p. 2);
 - people density later (PW-833: density = way-of-life factor x f(absolute NPP); `productivity` is that f, not yet read).
 
-**The fit.** Wild herbivore biomass is taken proportional to the grazing NPP, through PW-966's rich-savanna anchor: ~10 t/km2 at a
-savanna's ~470 g C/m2/yr (the model's savanna median on world 2a7385). The slope is 1, the plainest assumption. McNaughton et
-al. 1989 (Nature 341:142) and Coe, Cumming & Phillipson 1976 (Oecologia 22:341) are the published fits to put here; neither is on
-file yet (docs/references/megafauna/README.md), so their coefficients are not used. With this anchor the model's biome medians
-give temperate forest ~0.3, boreal ~0.6, tundra ~1.3, temperate grassland ~5.7 and savanna ~10 t/km2.
+**The fit.** McNaughton, Oesterheld, Frank & Williams 1989 (Nature 341:142-144, doi:10.1038/341142a0; PDF p. 142-143, checked): across
+51 ecosystems, log10 B = 1.52 log10 NAP - 4.79 (r2 = 0.579, d.f. 49), B the herbivore biomass in kJ/m2 and NAP the net above-ground
+primary productivity in kJ/m2/yr. The slope is above 1 (t = 2.80, per the coordinator's reading; not rechecked), so poor country holds
+proportionally fewer herbivores than rich. The paper gives no conversion to mass or carbon: it says only that fluxes in mass were
+turned to energy "using standard conversion factors" (its refs 41-43: Golley 1961, Schroeder 1977, Whitfield 1977; not on file). So the
+three factors below are this module's own, each marked: carbon to dry matter (C_FRAC), dry plant to kJ (KJ_PER_G_DRY) and live animal
+to kJ (KJ_PER_G_LIVE). With them 470 g C/m2/yr (a rich savanna, PW-966's anchor) gives ~7 t/km2, against PW-966's ~10: the paper's fit
+and the old anchor agree to within the factors' uncertainty, so the paper's intercept is used outright. The scatter is wide (r2 0.58:
+a factor of a few either way), and the fit is across ecosystems, not for one grazer guild. The model's grazing NPP (herb layer plus
+browse, season-weighted) is not exactly McNaughton's NAP (above-ground, all plant parts, annual), a stated approximation. Coe, Cumming &
+Phillipson 1976 (Oecologia 22:341), an African-only fit on rainfall, is not on file and not used. With the fit, grazing NPP of 90 / 200 / 470 g C/m2/yr
+(a hot desert's median / a steppe / a rich savanna) holds ~0.6 / ~1.9 / ~7 t/km2 of wild herbivores.
 
 **Overkill.** Where small folk press the land (the megafauna pressure, history.megafauna.pressure) the wild big herbivores fall
 to (1 - OVERKILL x pressure) of their potential, the late-Pleistocene pattern after people arrive (Sandom et al. 2014, Proc R Soc B
@@ -26,9 +33,14 @@ from __future__ import annotations
 
 import numpy as np
 
-PREY_G_REF = 470.0  # g C/m2/yr of grazing NPP at the anchor (a rich savanna; the model's savanna median on 2a7385)...
-PREY_T_REF = 10.0  # ...and its wild herbivore biomass, t/km2 (PW-966's rich-savanna example)
-PREY_EXP = 1.0  # biomass ~ grazing NPP^PREY_EXP (1: proportional; a published slope to replace it, see the module note)
+# McNaughton et al. 1989, Nature 341:142 (PDF p. 142-143): log10 B = 1.52 log10 NAP - 4.79, B in kJ/m2, NAP in kJ/m2/yr. Checked.
+PREY_EXP = 1.52  # the slope (log-log), checked against the PDF
+PREY_LOG_A = -4.79  # the intercept, checked against the PDF
+# Unit conversions, none from the paper (it cites "standard factors" without giving them). Typical textbook values, unverified:
+C_FRAC = 0.45  # g C per g dry plant matter (assumption: ~0.45-0.5 for plant tissue; unverified)
+KJ_PER_G_DRY = 17.5  # kJ per g dry plant matter (assumption: ~17-20 for plant tissue; unverified, cf. Golley 1961, not on file)
+KJ_PER_G_LIVE = 7.0  # kJ per g live weight of a grazing mammal (assumption: ~20-24 kJ/g dry x ~30% dry matter; unverified)
+KJ_PER_G_C = KJ_PER_G_DRY / C_FRAC  # kJ of NAP per g C (~39)
 OVERKILL = 0.6  # the share of the wild big herbivores lost where small folk press the land fully (a judgement, after Sandom et al. 2014)
 REFUGE = ("tundra", "mountain")  # places (history.tags) hostile to small folk, where the wild herds persist (and the sea)
 LIVESTOCK = {"pastoral_nomad": 1.0, "transhumant": 0.9, "agro_pastoral": 0.8, "farmer": 0.5, "horticulturalist": 0.2}
@@ -38,10 +50,12 @@ HEAD_T = 0.5  # t live weight per head of cattle (PW-967: an ancient's ~100 head
 
 
 def wild(graze_npp: np.ndarray | None) -> np.ndarray | None:
-    """Wild herbivore biomass, t/km2, per cell, from the grazing NPP (g C/m2/yr); None without a world."""
+    """Wild herbivore biomass, t/km2, per cell, from the grazing NPP (g C/m2/yr) by McNaughton's fit; None without a world."""
     if graze_npp is None:
         return None
-    return PREY_T_REF * (np.maximum(np.asarray(graze_npp, float), 0.0) / PREY_G_REF) ** PREY_EXP
+    nap = np.maximum(np.asarray(graze_npp, float), 0.0) * KJ_PER_G_C  # kJ/m2/yr
+    b_kj = 10.0 ** PREY_LOG_A * nap ** PREY_EXP  # kJ/m2 of herbivores
+    return b_kj / KJ_PER_G_LIVE  # g/m2 live weight = t/km2
 
 
 def refuge(tags: dict) -> np.ndarray:
