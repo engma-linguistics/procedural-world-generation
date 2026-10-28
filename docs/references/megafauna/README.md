@@ -32,7 +32,7 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 
 ## Owner to fetch: paywalled (most wanted first)
 
-- [ ] McNaughton, Oesterheld, Frank & Williams 1989, Nature 341:142-144, doi:10.1038/341142a0: herbivore biomass, consumption and secondary production against aboveground NPP. **The prey field's fit (planet/lineages/prey.py, PW-966) waits on its biomass regression**: until it is read here, prey is proportional to grazing NPP through one anchor.
+- [x] (mcnaughton1989_herbivore_biomass_productivity_nature.pdf) McNaughton, Oesterheld, Frank & Williams 1989, Nature 341:142-144, doi:10.1038/341142a0: herbivore biomass, consumption and secondary production against aboveground NPP. **Read (PW-975)**: log10 B = 1.52 log10 NAP - 4.79 (kJ/m2 and kJ/m2/yr; r2 0.579, d.f. 49) is prey.py's fit. The paper gives no kJ-to-mass conversions (cites "standard factors", refs 41-43), so prey.py's three conversion constants are unverified assumptions.
 - [ ] Coe, Cumming & Phillipson 1976, Oecologia 22:341-354, doi:10.1007/BF00345312: large African herbivore biomass against rainfall and primary production (the second candidate fit for PW-966).
 - [ ] Sandom, Faurby, Sandel & Svenning 2014, Proc R Soc B 281:20133254, doi:10.1098/rspb.2013.3254: late-Quaternary megafauna extinctions linked to humans (PW-966 overkill).
 

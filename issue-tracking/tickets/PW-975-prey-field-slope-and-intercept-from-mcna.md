@@ -38,3 +38,4 @@ gameattrs) would bring that down.
 
 ## Updates
 - 2026-10-28: Created from inbox draft draft-prey-fit-from-papers.md (found by fun-lane-41).
+- 2026-10-28: fun-lane-42: McNaughton 1989 fit read from the PDF and put in prey.py (slope 1.52, intercept -4.79; conversions C_FRAC 0.45, 17.5 kJ/g dry, 7 kJ/g live are unverified assumptions, wishlist item added). 470 g C gives ~7 t/km2 vs the old 10 anchor. 6 planets x roll 7000 present counts, before -> after: dragons 128k -> 73k, giants 48k -> 31k (blue 50k -> 23k, frost giants 25k -> 12k). Coe 1976 still open. Not closed: PW-973 is the owner's call.
