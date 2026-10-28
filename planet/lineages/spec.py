@@ -155,9 +155,8 @@ DEMO_KEYS = tuple(DEMO_DEFAULT)
 GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
 VIABLE_POP = 500.0  # default meta.viable_pop
 DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923): one dragon per this many km2 of its country, every kind
-GIANT_KM2 = 1000.0  # default meta.giant_km2 (owner, on PW-936): one true giant per this many km2 of its country, every kind that does not fly.
-# Damuth's density ~ M^-0.75 (Damuth 1981, Nature 290) from a human forager's order of 0.01-0.1 per km2, for a giant some 50-100x a
-# human's mass, gives ~1 per 300-3,000 km2; 1,000 keeps a few hundred to low thousands of each kind on a world (owner's target)
+GIANT_KM2 = 5000.0  # default meta.giant_km2 (owner, on PW-936): one true giant per this many km2 of its country, every kind that does not
+# fly; the owner's ruling sets it at the dragons' 5,000 (DRAGON_KM2), so the giants are as rare as the dragons
 
 
 def demography(traits) -> dict:

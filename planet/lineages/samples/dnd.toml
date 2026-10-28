@@ -29,8 +29,8 @@ era = "renaissance"  # the era the present is meant to be (stone age | bronze ag
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
 dragon_km2 = 5000  # one dragon per this many km2 of its kind's country (Damuth's M^-0.75, an apex hunter far sparser: Carbone & Gittleman 2002). 5000: the default,
 # a few hundred of each kind on a world, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies are thick with them, dozens in every forest
-giant_km2 = 1000  # one true giant per this many km2 of its kind's country (Damuth's M^-0.75 from a forager's density, spec.GIANT_KM2). 1000: the default,
-# a few hundred to low thousands of each kind on a world; 2000: scarcer, a steading per range; 500: giant country
+giant_km2 = 5000  # one true giant per this many km2 of its kind's country, as for dragons (owner, PW-936 ruling). 5000: the default;
+# 10000: rarer, a lone steading per region; 1000: giant country, steadings in every upland
 mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
 portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)
 portals = 1  # ...how many portals they come through (portal_mode random / sites)
@@ -404,7 +404,7 @@ parents = ["giantkin"]
 at = "1.2 Myr"
 group_size = [5, 20]  # families and steadings
 generation_yr = 65  # PW-924: giants 50-80 yr
-megafauna = true  # PW-924: counted, in steadings (one per meta.giant_km2, default 1,000 km2)
+megafauna = true  # PW-924: counted, in steadings (one per meta.giant_km2, default 5,000 km2)
 # (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
 explore = 0.3
 sea_share = 0.02

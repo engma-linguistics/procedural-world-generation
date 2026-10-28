@@ -2138,7 +2138,7 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.0002, "persists": True, "megafauna": True,
          "generation_yr": 200, "group_size": [1, 3], "traits": ["flies"]},
         {"id": "gold", "parents": ["wyrm"], "at": "1 Myr", "megafauna": True, "rivalry": 0.5},
-        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.001, "megafauna": True, "generation_yr": 65, "group_size": [5, 20]},
+        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.0002, "megafauna": True, "generation_yr": 65, "group_size": [5, 20]},
         {"id": "folk", "parents": ["stem"], "at": "2 Myr", "density": 2}]}
     t = SP.parse(raw)
     assert t.lines["gold"].group_size == (1.0, 3.0) and t.lines["gold"].generation_yr == 200 and t.lines["gold"].rivalry == 0.5
@@ -2172,7 +2172,7 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
             if l.megafauna and "dragon" in l.id or l.id == "draconic":
                 assert 1000 <= tr.dragon_km2 <= 10000 and l.generation_yr >= 150 and l.group_size[1] <= 3
             if l.megafauna and "giant" in l.id:
-                assert 500 <= tr.giant_km2 <= 2000 and 50 <= l.generation_yr <= 80 and l.group_size == (5.0, 20.0)
+                assert 1000 <= tr.giant_km2 <= 10000 and 50 <= l.generation_yr <= 80 and l.group_size == (5.0, 20.0)
         assert tr.lines["dragonborn"].generation_yr == 25 and tr.lines["metallic_dragon"].rivalry < 1
 
 
@@ -2237,7 +2237,7 @@ def test_dragon_km2_sets_every_dragon_density(faketz):
     t = SP.parse(raw)
     assert t.dragon_km2 == 5000 and SP.parse(SP.to_raw(t)).dragon_km2 == 5000
     h = H.History(t, ps, 1)
-    assert np.isclose(h.dens[h.idx["wyrm"]], 1 / 5000) and np.isclose(h.dens[h.idx["giant"]], 1 / 1000)  # (meta.giant_km2, PW-936)
+    assert np.isclose(h.dens[h.idx["wyrm"]], 1 / 5000) and np.isclose(h.dens[h.idx["giant"]], 1 / 5000)  # (meta.giant_km2, PW-936)
     t2 = SP.parse({**raw, "meta": {"seed": 1, "dragon_km2": 1000}})
     assert np.isclose(H.History(t2, ps, 1).dens[h.idx["wyrm"]], 1 / 1000)
     t3 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 2000}})
