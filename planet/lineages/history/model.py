@@ -87,7 +87,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
         # numbers: a denser rival weighs more (DENSITY_PUSH)
-        self.dens = np.array([l.demo("density") for l in self.lines])
+        self.dens = np.array([1.0 / tree.dragon_km2 if (l.megafauna and "flies" in l.traits) else l.demo("density") for l in self.lines])
+        # (dragons, the flying megafauna: one per meta.dragon_km2 of their country, a user option, owner PW-923)
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push

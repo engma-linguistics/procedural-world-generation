@@ -1951,7 +1951,7 @@ def test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome():
         for g in ("chromatic_dragon", "metallic_dragon"):  # (owner: the two great kinds split ~2.5 Myr ago)
             assert t.lines[g].parents == ["draconic"] and 1_000 <= t.lines[g].ago_kyr <= 4_000 and t.lines[g].megafauna and not t.lines[g].persists
         leaves = [x.id for x in t.leaves()]
-        assert d.demo("density") <= 0.01 and not {"draconic", "chromatic_dragon", "metallic_dragon"} & set(leaves)
+        assert t.dragon_km2 >= 1000 and not {"draconic", "chromatic_dragon", "metallic_dragon"} & set(leaves)
         kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon") and l.origin == "split" and l.id in leaves}
         assert set(kinds) == chromatic | metallic and all(l.megafauna for l in kinds.values())
         assert all(l.parents == ["chromatic_dragon" if l.id.removesuffix("_dragon") in chromatic else "metallic_dragon"] and l.prefers and 500 <= l.ago_kyr <= 1_000 for l in kinds.values())
@@ -2170,7 +2170,7 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
         tr = LR.load_tree(name)
         for l in tr.lines.values():
             if l.megafauna and "dragon" in l.id or l.id == "draconic":
-                assert 1e-4 <= l.demo("density") <= 1e-3 and l.generation_yr >= 150 and l.group_size[1] <= 3
+                assert 1000 <= t.dragon_km2 <= 10000 and l.generation_yr >= 150 and l.group_size[1] <= 3
             if l.megafauna and "giant" in l.id:
                 assert 1 / 500 <= l.demo("density") <= 1 / 100 and 50 <= l.generation_yr <= 80 and l.group_size == (5.0, 20.0)
         assert tr.lines["dragonborn"].generation_yr == 25 and tr.lines["metallic_dragon"].rivalry < 1
@@ -2225,3 +2225,18 @@ def test_origins_pick_a_landmass_by_habitable_area_to_the_z(faketz):
     # one qualifying landmass: nothing is drawn
     one = np.where(lab == np.argmax(sizes), score, 0)
     assert np.array_equal(h._by_landmass(line, one, K, env), one)
+
+
+def test_dragon_km2_sets_every_dragon_density(faketz):
+    """PW-923 (owner): meta.dragon_km2 is the dragons' density, one per that many km2 (default 5,000); other lines keep theirs."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
+        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.005, "megafauna": True}]}
+    t = SP.parse(raw)
+    assert t.dragon_km2 == 5000 and SP.parse(SP.to_raw(t)).dragon_km2 == 5000
+    h = H.History(t, ps, 1)
+    assert np.isclose(h.dens[h.idx["wyrm"]], 1 / 5000) and np.isclose(h.dens[h.idx["giant"]], 0.005)
+    t2 = SP.parse({**raw, "meta": {"seed": 1, "dragon_km2": 1000}})
+    assert np.isclose(H.History(t2, ps, 1).dens[h.idx["wyrm"]], 1 / 1000)

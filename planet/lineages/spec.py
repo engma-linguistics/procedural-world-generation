@@ -147,6 +147,7 @@ DEMOGRAPHY = {
 DEMO_KEYS = tuple(DEMO_DEFAULT)
 GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
 VIABLE_POP = 500.0  # default meta.viable_pop
+DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923): one dragon per this many km2 of its country, every kind
 
 
 def demography(traits) -> dict:
@@ -441,6 +442,7 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
+    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 (PW-923); overrides their lines' density
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
     exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
     events: list = field(default_factory=list)  # [[event]]: dated conquests the reputation pass remembers (reputation.parse_events, PW-730)
@@ -846,6 +848,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
+    t.dragon_km2 = float(meta.get("dragon_km2", DRAGON_KM2))
+    if t.dragon_km2 <= 0:
+        raise ValueError("meta.dragon_km2 must be > 0")
     if not 0 <= t.land_pull <= 1:
         raise ValueError("meta.land_pull must be within 0..1")
     return t
@@ -906,7 +911,7 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "era": t.era, "viable_pop": t.viable_pop,
+                     "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"reputation": t.reputation} if t.reputation else {}),
