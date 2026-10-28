@@ -4,7 +4,7 @@ title: "Large waterfalls: count against a real-world count of comparable falls"
 type: task
 status: todo
 parent: PW-244
-milestone: v1
+milestone: v2
 subsystem: highlights
 effort: s
 impact: low

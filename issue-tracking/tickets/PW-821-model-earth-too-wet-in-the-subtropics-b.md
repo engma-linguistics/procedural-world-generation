@@ -3,8 +3,8 @@ id: PW-821
 title: "Model Earth too wet in the subtropics (B climates 20% vs 30%, hot desert 3-5%): add hot-desert and B share to earth_check; declare it a v1 limitation or pull PW-228's dryness part into v1"
 type: task
 status: blocked
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

@@ -3,8 +3,8 @@ id: PW-809
 title: Anchor the star's brightening at the run's end ("now"), full Gough, with an optional star_now_offset_myr; decide what the forcing is counted against
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

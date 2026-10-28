@@ -110,3 +110,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
   - Sapience arises once per stem at a dated node. Non-sapient kin live on as wyverns, drakes and pseudodragons (PW-965).
   - Kinds outside the tree (trolls, ogres) are DM-scale and not tracked.
 - 2026-10-28 (owner): don't track non-sapient kin (wyverns, ogres, trolls...). A line may end as 'continues as animals, untracked', distinct from extinction, likely the stem's end at its split (PW-965).
+- 2026-10-28 (owner): v1 physics triage. The climate leftovers go to v2 under the ice-age epic PW-470; PW-815 (star brightening) and PW-895 (mantle heat) are decided by going live on the 2 Gyr ticket PW-894. v1 physics is now rifts (PW-565/952/827), PW-880, PW-819 and PW-948, then the showcase rebuild and the tag. Owner worry: the ice-age redo is a possible bottomless pit, so timebox it in v2.

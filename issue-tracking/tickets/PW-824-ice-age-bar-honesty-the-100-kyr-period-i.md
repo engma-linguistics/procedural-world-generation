@@ -3,8 +3,8 @@ id: PW-824
 title: "Ice-age bar honesty: the ~100 kyr period is scripted; floor glacial cooling so icehouse moments never get ~0.5 C; move the 100/405 kyr periods into TZParams"
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: med

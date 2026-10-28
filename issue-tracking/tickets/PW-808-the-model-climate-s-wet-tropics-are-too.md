@@ -3,8 +3,8 @@ id: PW-808
 title: The model climate's wet tropics are too dim for forest, so tropical forest NPP is a thin margin (NPP ~55% of MOD17 at the equator)
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: med

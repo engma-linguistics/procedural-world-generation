@@ -3,8 +3,8 @@ id: PW-873
 title: Ice-albedo term counts from real Earth's ice share (3.1%), not the model's own ice at dT = 0
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: xs
 impact: low

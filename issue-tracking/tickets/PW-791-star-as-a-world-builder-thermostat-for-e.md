@@ -3,8 +3,8 @@ id: PW-791
 title: "Star as a world-builder thermostat for Earth-like presets: dim or brighten slowly when the running icehouse share leaves the bar (opt-in, causal, labelled as a control, not physics)"
 type: story
 status: in-progress
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

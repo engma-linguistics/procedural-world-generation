@@ -3,8 +3,8 @@ id: PW-822
 title: Report the area-weighted global mean temperature; dT overstates it by ~20% of dT; restate the hellhole and hot lines in that unit (bar values need the owner)
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

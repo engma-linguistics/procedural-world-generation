@@ -3,8 +3,8 @@ id: PW-813
 title: "Star anchor: one run-end parameter for the star and the plant calendar, set by every direct Simulation caller and stored for replays; guard runs longer than the star's age; an extension keeps the anchor"
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: tectonics
 effort: s
 impact: med

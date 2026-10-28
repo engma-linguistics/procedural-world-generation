@@ -3,8 +3,8 @@ id: PW-933
 title: "PW-874 remainder: climate.compute / months / icemass still see today's S0, not the run's star"
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: low
