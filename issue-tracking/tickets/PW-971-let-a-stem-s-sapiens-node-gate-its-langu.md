@@ -27,4 +27,5 @@ PW-965 added the dated sapiens node (`sapient = "T"` on a stem) and the "continu
 - [ ] draw the node and the animals tail in the Results/run views
 
 ## Updates
+- 2026-10-28: Owner 10-28: the sapiens node gates language (PW-947 ruling). Node dates: a subagent writes a sourced review doc of candidate dates; owner gives a gut call after.
 - 2026-10-28: Created from inbox draft draft-sapiens-node-gates-language-and-lairs.md (found by fun-lane-42).

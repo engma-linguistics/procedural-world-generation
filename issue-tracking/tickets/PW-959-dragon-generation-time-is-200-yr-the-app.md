@@ -29,5 +29,6 @@ Generation time feeds History.line_mvp and the persistence-horizon founder rule 
 - [ ] dragon persistence and coverage compared before and after on the usual worlds
 
 ## Updates
+- 2026-10-28: Owner 10-28: ~430 yr is the default for now (even under the younger schedule, whose own figure is ~460-520); flag if it wobbles or makes the numbers fall out badly.
 - 2026-10-28: 10-28: under PW-958's proposed younger pyramid the generation time is ~460-520 yr (base case ~430).
 - 2026-10-28: Created from inbox draft draft-megafauna-3-dragon-generation-time.md (found by daniel).
