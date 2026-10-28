@@ -64,16 +64,24 @@ def world_scores(seed: int, myr: float) -> dict:
         sim.run(min(myr, sim.t + 100))
         land = sim.w_elev > 0
         st = sim.stats()
+        sea, sub = sim.w_elev <= 0, (sim.w_elev <= 0) & sim.w_cont
         track.append({"t": sim.t, "land": st["land_pct"], "cont": st["continental_pct"],
                       "largest": st["largest_landmass_pct"], "masses": st["landmasses"],
                       "dry": round(100 * float((GROUP[sim.snapshot().koppen[land]] == "B").mean()), 1),
                       "ice": st["ice_pct"], "speed": st["mean_speed_cmyr"],
+                      "plate_max": st["largest_plate_pct"], "plates2": st["plates_over_2pct"],
+                      # hypsometry (PW-818, PW-846; Earth at L6: shelf 0..-200 m ~5.8% of the ocean, submerged
+                      # continent's median -184 m, land above 4 km ~1.5%)
+                      "shelf": round(100 * float((sim.w_elev[sea] > -200).mean()), 1),
+                      "sub_cont_med": int(np.median(sim.w_elev[sub])) if sub.any() else 0,
+                      "gt4km": round(100 * float((sim.w_elev[land] > 4000).mean()), 2), "peak": st["max_elev_m"],
                       "npp": round(float(sim.npp[land].mean())), "trees": round(100 * float(sim.tree_cover[land].mean()), 1)})
     last = track[-1]
     return {"seed": seed, "myr": myr, "final": last,
             "volume_ratio": round(float((sim.w_thick * sim.w_cont).sum()) / v0, 3),
             "land_min": min(r["land"] for r in track), "land_max": max(r["land"] for r in track),
             "largest_max": max(r["largest"] for r in track),
+            "plate_max_max": max(r["plate_max"] for r in track),
             "ocean_age": round(float(sim.w_age[~sim.w_cont].mean()), 1),
             "plant_groups": [None if not np.isfinite(t) else t for t in sim.flora], "track": track}
 
@@ -109,7 +117,9 @@ def main():
         f = w["final"]
         print(f"seed {w['seed']} @ {w['myr']:g} Myr: land {f['land']}% (range {w['land_min']}-{w['land_max']}), "
               f"crust {f['cont']}%, volume x{w['volume_ratio']}, dry {f['dry']}%, ice {f['ice']}%, "
-              f"largest landmass max {w['largest_max']}%, ocean age {w['ocean_age']} Myr, "
+              f"largest landmass max {w['largest_max']}%, largest plate {f['plate_max']}% (max {w['plate_max_max']}%, "
+              f"{f['plates2']} plates >2%), shelf {f['shelf']}% of ocean (submerged continent median {f['sub_cont_med']} m), "
+              f"land >4 km {f['gt4km']}%, peak {f['peak']} m, ocean age {w['ocean_age']} Myr, "
               f"land NPP {f['npp']} g C/m2/yr, tree cover {f['trees']}%, plant groups at {w['plant_groups']} Myr")
     print(f"appended to {out.relative_to(ROOT)}  [{rec['seconds']}s]")
 

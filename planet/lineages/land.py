@@ -70,7 +70,7 @@ GOODS = {
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
 DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
              "volcanic", "salt", "salt_rock"}
-_ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe",),
+_ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe", "iron_ore"),
          "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"), "gems": ("diamond", "gem_meta"),
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
 LIVING = ("fertile", "grazing", "foraging", "timber", "fuel", "building")  # scaled to the world's best

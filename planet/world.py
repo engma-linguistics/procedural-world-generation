@@ -314,7 +314,10 @@ def summarize(world: dict) -> dict:
         "largest_rivers": rivers,
     }
     if "plate" in L:
-        s["plates"] = int(L["plate"].max() + 1)
+        # distinct plates present (ids are not dense), and the largest's share of the surface (PW-827)
+        ids, n = np.unique(np.asarray(L["plate"]), return_counts=True)
+        s["plates"] = int(len(ids))
+        s["largest_plate_pct"] = round(100 * float(n.max() / n.sum()), 1)  # (cells are near equal-area)
     if "landform" in L:
         from .landform import shares
         s["landform_pct"] = shares(np.asarray(L["landform"]))

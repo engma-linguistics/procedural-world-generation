@@ -173,9 +173,12 @@ def stats(sim) -> dict:
     lab, nlab = g.components(land)
     sizes = np.bincount(lab[lab >= 0], minlength=1) if nlab else np.array([0])
     v = np.linalg.norm(sim.velocity(), axis=1) * CMYR
+    share = np.bincount(np.asarray(sim.owner)) / g.n  # each plate's share of the surface (PW-827)
     return {
         "t": sim.t,
         "plates": int(sim.plates.alive.sum()),
+        "largest_plate_pct": round(100 * float(share.max()), 1),  # (Earth: the Pacific, ~20%)
+        "plates_over_2pct": int((share > 0.02).sum()),  # (Earth: ~8)
         "land_pct": round(100 * land.mean(), 1),
         "continental_pct": round(100 * sim.w_cont.mean(), 1),
         "landmasses": int((sizes >= 3).sum()),
