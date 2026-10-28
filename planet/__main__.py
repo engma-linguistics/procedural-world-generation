@@ -319,6 +319,16 @@ def cmd_lineages(args):
     print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
 
 
+def cmd_techtree(args):
+    """Builds (or redoes) the technology tree of peoples runs in place (PW-675 v0, lineages/techtree.py)."""
+    from .lineages import techtree as TT
+    for ref in args.runs:
+        d = S.path_of("run", ref)
+        tt = TT.for_run(d)
+        lines = json.loads((d / "run.json").read_text())["meta"]["lineages"]
+        print(f"{ref}:\n" + "\n".join(TT.lines_for_report(tt, lines)))
+
+
 def cmd_fuels(args):
     """Adds (or redoes) the fuel layers and story lines of peoples runs in place (PW-722); needs the land use (planet landuse)."""
     from .lineages import fuels as FU
@@ -686,6 +696,11 @@ def main():
                     "(PW-599; 0: the keyframe's rain scaled with the warming, as before)")
     lg.add_argument("--name", "-n")
     lg.set_defaults(func=cmd_lineages)
+
+    tt = sub.add_parser("techtree", help="the technology tree of peoples runs (PW-675 v0): which people knew what, and when; "
+                                         "rewrites meta.techtree in place (lineages/samples/techtree.toml)")
+    tt.add_argument("runs", nargs="+", help="peoples run ids")
+    tt.set_defaults(func=cmd_techtree)
 
     br = sub.add_parser("brief", help="the culinary brief of a peoples run's region or people at an era: JSON and Markdown (PW-728)")
     br.add_argument("run", help="a peoples run id")
