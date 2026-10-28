@@ -2,7 +2,7 @@
 id: PW-973
 title: Megafauna in country no people holds now sit at their natural density - 2.5x the dragons, 3.8x the giants per world
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -38,4 +38,5 @@ Options:
 Lean: A plus C, decided on the PW-967 review page. C is persecution by mobile adventurers, a mechanism; B is a clamp.
 
 ## Updates
+- 2026-10-28: Status needs-decision -> done. Owner 10-28: resolved by PW-977 (food-budget equilibrium; option C becomes its persecution stage) and PW-975 (option A's desert prey fix). No clamp (B).
 - 2026-10-28: Created from inbox draft draft-megafauna-unpeopled-country-counts.md (found by fun-lane-41).
