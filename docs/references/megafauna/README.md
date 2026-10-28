@@ -16,14 +16,19 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 | field2013_bird_mass_skeletal_plosone.pdf | Field, Lynner, Brown & Darroch 2013, PLoS ONE 8:e82000 | body mass from the skeleton in flying birds |
 | sato2009_soaring_seabirds_pterosaurs_plosone.pdf | Sato et al. 2009, PLoS ONE 4:e5400 | the size limit of soaring flight |
 | witton2010_giant_pterosaurs_plosone.pdf | Witton & Habib 2010, PLoS ONE 5:e13982 | *Quetzalcoatlus* ~250 kg, ~10.5 m span (dragon wing-loading anchor) |
+| carbone2011_intraguild_trex_procb.pdf | Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 | intra-guild competition, T. rex |
+| ksepka2014_pelagornis_flight_pnas.pdf | Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 | *Pelagornis sandersi* flight, the largest volant bird |
+| hamilton2009_population_stability_huntergatherers_pnas.pdf | Hamilton, Burger, DeLong, Walker, Moses & Brown 2009, PNAS 106:12255 (doi to be checked) | hunter-gatherer density dependence; NOT the 2007 space-use paper listed below |
+| alexander2007_argentavis_commentary_pnas.pdf | Alexander 2007, PNAS commentary "Ancient Argentavis soars again" (doi to be checked) | commentary on Chatterjee et al. 2007; NOT the paper itself |
+| seymour2013_crocodile_power_gigantothermy_plosone.pdf | Seymour 2013, PLoS ONE 8:e69361 | aerobic and anaerobic power in large crocodiles vs mammals; dinosaur gigantothermy (bonus, not on the list) |
 
 ## Owner to fetch: free in PMC (open in a browser)
 
 - [ ] McNab 2009, PNAS 106:12184, doi:10.1073/pnas.0904000106 (PMC2715483): varanid ~22% of mammal energy use
-- [ ] Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 (PMC3136829): intra-guild competition, T. rex
-- [ ] Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
-- [ ] Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 (PMC4115518): *Pelagornis sandersi* flight
-- [ ] Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
+- [x] Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 (PMC3136829): intra-guild competition, T. rex
+- [ ] (have only Alexander 2007's commentary on it) Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
+- [x] Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 (PMC4115518): *Pelagornis sandersi* flight
+- [ ] (have Hamilton et al. 2009 instead, a different paper) Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
 
 ## Owner to fetch: paywalled (most wanted first)
 
