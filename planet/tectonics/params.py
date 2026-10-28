@@ -186,7 +186,12 @@ class Params:
     # the surface (but may split off purely oceanic plate): continents break
     # into a few big blocks, along their weak zones (events.strength)
     rift_min_piece: float = 0.03
-    settle_time: float = 30.0  # Myr after forming before a plate can break under stress
+    # plume-centred triple junctions (events.triple_rift): a new plume head under a continent on a plate of at
+    # least stress_min_plate cracks it along three arms with these odds (/ the rock's strength there), and
+    # each arm fails (an aulacogen) with aulacogen_odds
+    triple_odds: float = 0.5
+    aulacogen_odds: float = 0.3
+    settle_time: float = 30.0  # Myr after a plate splits off before it can break under stress (events.split)
     margin_age: float = 120.0  # Myr: ocean floor older than this at a passive margin may start subducting
     max_plates: int = 30
 
