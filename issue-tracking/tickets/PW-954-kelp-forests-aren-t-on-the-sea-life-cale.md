@@ -1,4 +1,5 @@
 ---
+id: PW-954
 title: Kelp forests aren't on the sea-life calendar (a `slice --ago 600` world still gets kelp)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: physics-lane-21
 blocked_by: []
 relates: [PW-892]
 refs: [planet/coastal.py, planet/tectonics/earth.py, planet/timeline.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -26,3 +29,6 @@ per-seed draw over the dated window), and gate `coastal.environment`'s kelp term
 shores would have other brown and red algal turf, not forests.
 - [ ] a cited arrival window
 - [ ] kelp gated like the reefs, with a test like `test_no_living_reef_before_the_reef_builders`
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-kelp-on-the-calendar.md (found by physics-lane-21).

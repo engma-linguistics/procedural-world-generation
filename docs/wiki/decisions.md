@@ -97,3 +97,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28 (owner): language is a later joint project; the tech tree's language rules are for review only. Ruling: almost any contact spreads language to genetically modern species on these timescales.
 - 2026-10-28 (owner): giants get their own, lower density (user option like dragons'). Nomads, hill giants above all, overlap other peoples more, with occasional conflict. An occasional main people with a small range in one setting is realistic; avoid only the pattern.
 - 2026-10-28 (owner): plates may split three ways (triple junctions); experiment away the stress-rift die-off (PW-565, now v1).
+- 2026-10-28: zoom tail merged (7cb8ca12): deltas grow a bird's foot only when river-dominated into water several channel depths deep (Wright 1977; Coleman & Wright 1975), not a hand; zoom harbours need open sea; living reefs follow the reef builders' calendar.

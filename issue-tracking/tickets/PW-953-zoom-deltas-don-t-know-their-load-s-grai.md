@@ -1,4 +1,5 @@
 ---
+id: PW-953
 title: Zoom deltas don't know their load's grain size (cohesive mud vs sand sets elongate vs lobate)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: physics-lane-21
 blocked_by: []
 relates: [PW-847]
 refs: [planet/zoom.py, planet/coast.py, "zoom 91bf86 of world 2a7385", docs/review/zoom/pw847/]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -30,3 +33,6 @@ weathering climate), checked against published bedload and suspended-sand shares
 lobe's rim scallops by it. Cite each source; any threshold that has none is judgement and should say so.
 - [ ] a load-calibre estimate per delta, with its source
 - [ ] the finger and lobe shapes scaled by it, with before/after zooms
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-delta-form-from-load-calibre.md (found by physics-lane-21).

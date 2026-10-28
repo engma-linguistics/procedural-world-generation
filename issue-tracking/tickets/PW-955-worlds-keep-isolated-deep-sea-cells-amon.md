@@ -1,4 +1,5 @@
 ---
+id: PW-955
 title: Worlds keep isolated deep 'sea' cells among polar high ground (world 2a7385, -82 S)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: physics-lane-21
 blocked_by: []
 relates: [PW-844]
 refs: [planet/world.py, planet/geo.py, "world 2a7385", "zoom 1ab4c4", docs/review/zoom/pw844/]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -25,3 +28,6 @@ What to try: list the sea cells of a few L7 worlds that have no sea neighbour, o
 than a few cells. Find out whether they are beds under ice (land, by the `world_land` rule) or truly open
 water. If they are open water, decide whether the run should fill them as lakes.
 - [ ] a count of such cells on 3+ worlds, and what they are
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-sea-pits-among-high-ground.md (found by physics-lane-21).
