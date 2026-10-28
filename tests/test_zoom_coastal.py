@@ -163,3 +163,24 @@ def test_forearc_island_keeps_part_of_its_mean_in_its_sea():
     assert 0.3 < on[m].mean() < 0.9 and h[m].mean() > 140  # (an island; the cell's mean held as before, ~170 m)
     p90, sea = np.percentile(h[m & on], 90), h[m & ~on].mean()
     assert p90 < 750 and sea > -450, (p90, sea)
+
+
+def test_lone_deep_sea_cell_among_high_ground_keeps_to_its_depth():
+    """PW-844: a lone -4,400 m sea cell inside 3 km high ground. The fine coast leaves it mostly land, and
+    the mean correction drove its few sea pixels to -23 km (zoom 1ab4c4); now its floor stays within the
+    coarse cells' range (less the sea floor's detail)."""
+    from planet import world as W
+    from planet.geo import xyz
+    from planet.grid import build_grid
+    g = build_grid(5)
+    k = int(np.argmax(g.centers @ xyz(0.0, np.radians(20.0))))
+    elev = np.full(g.n, 3000.0)
+    elev[k] = -4400.0
+    extra = {"rock": np.full(g.n, 2), "surface_rock": np.full(g.n, 2), "sediment_cover": np.full(g.n, 0.1)}
+    w = W.finish(g, elev, extra, {"method": "test", "seed": 0, "level": 5}, erosion=0.0)
+    w["layers"]["elevation"] = np.round(elev)
+    c = g.centers[k]
+    z = zoom.build(w, np.degrees(np.arcsin(c[2])), np.degrees(np.arctan2(c[1], c[0])), size_km=400, res_km=2,
+                   iterations=4, log=lambda *a: None)
+    assert (z["layers"]["water"] == 1).any()
+    assert z["layers"]["elevation"].min() > -4400 - 1000  # (the sea floor's detail reaches ~800 m at that depth)

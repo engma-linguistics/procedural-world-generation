@@ -277,11 +277,22 @@ def test_delta_fingers_curve_and_build_out_into_the_sea():
         c = np.clip(np.floor(ln[:, 0] / res + n / 2).astype(int), 0, n - 1)
         r = np.clip(np.floor(n / 2 - ln[:, 1] / res).astype(int), 0, n - 1)
         assert np.mean(ind[r * n + c][len(ln) // 4:] > 0) <= 0.4
+    # PW-847: a bird's foot, not a hand: at most FINGER_MAX fingers, each reaching only a little
+    # beyond the lobe's front (they were up to 1.1 R long, 0.06 R wide and 9 of them)
+    assert len(dl["finger_lines"]) <= zoom.FINGER_MAX
+    reach = max(np.hypot(*(ln[-1] - [dl["x"], dl["y"]])) for ln in dl["finger_lines"])
+    assert reach < 0.45 * dl["R"]
+    # ... and the lobe is land out to its front: the coast stands out seaward of the mouth
+    assert f["keep"][np.argmin(np.hypot(px - 20.0, py))] > 0
+    # over a shallow floor (friction-dominated outflow, Wright 1977) a fan of mouths, no fingers
+    f = zoom._delta_forms({**dl, "buoy": 0.0}, px, py, res, np.random.default_rng(1), ind, n, n)
+    assert f["kind"] != "fingers"
     # PW-363: where the tide's funnels take the branches, no fingers are drawn
     # (no branch heads for them: they stood as strips of land with no channel)
     dl.update(wR=0.45, wT=0.55)
     f = zoom._delta_forms(dl, px, py, res, np.random.default_rng(1), ind, n, n)
-    assert f["kind"] == "funnels" and not dl["finger_lines"] and f["keep"].max() < 0
+    # (the only land held is the lobe's, PW-847)
+    assert f["kind"] == "funnels" and not dl["finger_lines"] and f["keep"].max() <= 0.6 * (1 - 0.5 * 0.55 - 0.5) + 1e-9
 
 
 def test_no_delta_plain_on_high_ground():

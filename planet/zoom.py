@@ -210,6 +210,16 @@ FLOOR_MIN_M = 100.0  # m: lower flats are plains (deltas, coastal fill)
 FLOOR_SLOPE, FLOOR_MAX_SHARE = 2.0, 0.5  # m/km a filled basin's floor falls to its exit, at most this share of its fill depth (PW-521)
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 SEA_SHARE_PASSES = 3  # ... after a land cell's own sea pixels took what its mean lacks, up to the shore (PW-362)
+# Delta fingers (PW-847). A finger is a distributary between its levees building out beyond the
+# delta's lobe; only a river-dominated delta into water many channel depths deep grows them (BUOYANT_DEPTHS:
+# the basin's depth over the river's bankfull depth 0.27 Q^0.39, Leopold & Maddock 1953; from a friction-
+# dominated to an inertia/buoyancy-dominated outflow, Wright 1977, GSA Bulletin 88:857-868; the two ratios
+# are judgement). Their length: the Mississippi's passes run ~30 km beyond the delta front on a ~250 km
+# plain, so FINGER_LEN 0.12 R; their width a few km (levees and channel), FINGER_W 0.012 R; at most
+# FINGER_MAX of them (the Mississippi's three main passes; Coleman & Wright 1975, in Broussard ed.,
+# Deltas: Models for Exploration). Earlier fingers were 1.1 R long and 0.06 R wide, a hand of up to 9.
+BUOYANT_DEPTHS = (2.0, 6.0)
+FINGER_LEN, FINGER_W, FINGER_MAX = 0.12, 0.012, 4
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 BRANCH_CLIMB_M = 30.0  # m: ... nor where it stands higher than this above the delta's apex (PW-061)
 
@@ -791,6 +801,13 @@ def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
         u /= max(np.linalg.norm(u), 1e-9)
         near = np.arccos(np.clip(g.centers[sea_sel] @ (p / np.linalg.norm(p)), -1, 1)) * R_KM < 2.5 * sp
         sf = float(smoothstep(0.5, 8.0, cover[sea_sel][near].max())) if near.any() else 0.0
+        # the water the river runs out into, against its own depth (PW-847; Wright 1977): over a
+        # shallow floor the outflow drags on the bed and drops its load in middle-ground bars that
+        # split the channel again and again (a lobate fan of many mouths: the Lena, the Volga);
+        # into water many channel depths deep it spreads as a buoyant plume that keeps its jet, and
+        # a few channels build long between their levees (the Mississippi's bird's foot)
+        depth = float(np.median(-elev[sea_sel][near])) if near.any() else 0.0
+        buoy = float(smoothstep(*BUOYANT_DEPTHS, depth / max(0.27 * float(q[k]) ** 0.39, 1.0)))
         # Earth: Nile ~150 km of plain at 2,800 m^3/s, Mississippi ~250 km at
         # 17,000, Ganges-Brahmaputra ~350 km (huge sediment load)
         R = coast.plain_radius_km(float(q[k]), sf)
@@ -809,7 +826,7 @@ def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
         out.append({"x": mx, "y": my, "u": u, "q": float(q[k]), "sf": sf, "R": R,
                     "Rl": 0.22 * R * (0.6 + 0.8 * sf), "cell": int(i), "wave": wave, "tide": tide,
                     "marine": marine, "gw": gw, "wR": w["river"], "wW": w["wave"], "wT": w["tide"],
-                    "nb": n_mouths})
+                    "nb": n_mouths, "buoy": buoy, "depth_front_m": depth})
     return out
 
 
@@ -894,12 +911,22 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     near = r < 2.5 * R
     lobe, cut, smooth, keep = (np.zeros_like(px) for _ in range(4))
     keep -= 9.0
-    # the lobe, centred on the coast seaward of the mouth: out ~0.3 R, and wide for waves
+    # the lobe, centred on the coast seaward of the mouth: furthest out for a river-dominated delta,
+    # a broad low arc for waves (they spread its sand along the shore: cuspate, arcuate fronts)
     s0 = _coast_along(ind, nx, ny, res, dl["x"], dl["y"], u, 1.5 * R)
-    la = R * (0.12 + 0.08 * wR + 0.25 * wW)
+    la = R * (0.08 + 0.30 * wR + 0.06 * wW)  # (river: the front ~0.3 R out, ~0.4 R with the fingers: the Mississippi)
     lb = R * (0.3 - 0.1 * wR + 0.7 * wW + 0.2 * wT)
     amp = 1.0 - 0.5 * wT
     lobe[near] = amp * np.exp(-((a[near] - s0) / la) ** 2 - (b[near] / lb) ** 2)
+    # ... and that lobe is land: the delta front stands out from the coast as far as the lobe
+    # reaches (PW-847: it only nudged the indicator, so a big delta's front lay flush with the
+    # coast and its fingers reached out of a straight shore), its rim scalloped by the mouth bars
+    # of the many channels a fan builds (a few per lobe; fewer bigger ones where waves smooth it)
+    phi = np.arctan2(b[near], a[near] - s0)
+    m_ = 3 + int(rng.integers(0, 4))
+    rim = 1.0 + 0.12 * (1 - wW) * np.sin(m_ * phi + rng.uniform(0, 2 * np.pi))
+    e_rim = amp * np.exp(-(((a[near] - s0) / la) ** 2 + (b[near] / lb) ** 2) / rim ** 2)
+    keep[near] = np.maximum(keep[near], 0.6 * (e_rim - 0.5))
     dl["lobe_at"] = (dl["x"] + s0 * u[0], dl["y"] + s0 * u[1])
     smooth[near] = smoothstep(1.4 * R, 0.9 * R, r[near]) * np.clip(0.85 * wW + 0.5 * wR, 0, 0.9)
     goals, kind = [], "fan"
@@ -908,17 +935,20 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     # fingers: from the mouth out along a fan of directions, each bending
     # away from the fan's middle and wandering a little as it builds out
     # (the Mississippi's passes), narrowing to its tip
-    Lf = R * 1.1 * wR ** 2  # (the Mississippi's bird's foot reaches ~100 km out from a ~250 km plain)
+    # beyond the lobe's front (FINGER_LEN, BUOYANT_DEPTHS); a fan of many mouths over a shallow floor
+    Lf = FINGER_LEN * R * wR ** 2 * dl.get("buoy", 1.0)
+    front = 0.8 * la  # (how far the lobe carries the coast out)
     # (not where the tide's funnels take the branches instead: a finger
     # no branch heads for stood as a strip of land with no channel, PW-363)
     if Lf > 3 * res and n >= 1 and not (1.6 * wT > 0.3 and wT >= wR):
-        wf = max(2.0 * res, 0.06 * R)
+        n = min(n, FINGER_MAX)
+        wf = max(1.5 * res, FINGER_W * R)
         spread = np.radians(50 + 15 * min(n, 5))
         th = (np.linspace(-0.5, 0.5, n) if n > 1 else np.zeros(1)) * spread + rng.normal(0, 0.08, n)
         for k in range(n):
             dk = np.cos(th[k]) * u + np.sin(th[k]) * t
             tk = np.array([-dk[1], dk[0]])
-            Lk = Lf * rng.uniform(0.6, 1.1)
+            Lk = front * np.cos(th[k]) + Lf * rng.uniform(0.6, 1.1)
             sc = _coast_along(ind, nx, ny, res, dl["x"], dl["y"], dk, 1.5 * R)
             line = _finger_axis(dl["x"], dl["y"], dk, tk, Lk + sc, th[k], rng)
             # (a finger builds out into the sea: none along a direction that runs on over land)
@@ -1377,13 +1407,22 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     s_land, s_sea = 15.0 * (1 - 0.95 * wD), 15.0 * (1 - 0.9 * wS)
     s_land, s_sea = np.where(bi_island, 0.4, s_land), np.where(isl["lagoon"], 0.5, s_sea)  # (low sand, shallow lagoon)
 
+    # ... and no sea floor deeper than the deepest coarse cell around it, by more than the sea
+    # floor's own detail can reach (PW-844): the mean correction below can't reach a sea cell's
+    # mean when the fine coast leaves only a few of its pixels sea (an isolated deep cell among
+    # high ground), and drove those few to -23 km (an interpolant has no business leaving the
+    # range of its data; the margin is the detail's own reach, amp_sea's at that depth x 2.2)
+    own = g.locate(P)
+    e_nb = np.minimum(elev, np.minimum.reduceat(elev[g.nbr_idx], g.nbr_off[:-1]))[own]
+    sea_floor = np.minimum(e_nb - 2.2 * (5 + 0.08 * np.abs(e_nb)), -0.5)
+
     def clamp(hh):
-        return np.where(land, 0.5 + softplus(hh - 0.5, s_land), -0.5 - softplus(-0.5 - hh, s_sea))
+        return np.where(land, 0.5 + softplus(hh - 0.5, s_land),
+                        np.maximum(-0.5 - softplus(-0.5 - hh, s_sea), sea_floor))
 
     h = clamp(h)
 
     # --- keep each coarse cell's mean ----------------------------------
-    own = g.locate(P)
     lut = np.full(g.n, -1)
     lut[sel] = np.arange(len(sel))
     own_s = lut[own]
@@ -1411,9 +1450,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n)) * (1 - wC)
     # (each pass removes only part of a residual one cell wide, e.g. a trench,
     # because the correction is smooth over half a cell: MEAN_PASSES of them)
+    # (a sea cell the fine coast leaves mostly land isn't held to its mean: its few sea pixels
+    # would have to carry the whole cell's depth, PW-844; the mirror of PW-362's land cells)
+    sea_px = np.bincount(own_s, ~land, minlength=len(sel))
+    mostly_land_sea = ~land_c & (sea_px < 0.5 * np.bincount(own_s, minlength=len(sel)))
     for _ in range(MEAN_PASSES):
         m, cnt = cell_means(h)
-        ok = cnt > 0.25 * full_px
+        ok = (cnt > 0.25 * full_px) & ~mostly_land_sea
         resid = np.where(ok, e_c - m, 0.0)
         corr, _ = ZK.gauss_interp(px, py, cx, cy, resid[:, None], ok[:, None].astype(float), 0.5 * sp)
         h = clamp(h + corr_taper * np.nan_to_num(corr[:, 0]))
@@ -3275,6 +3318,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
                     "mouths": d["mouths"], "fingers": d.get("fingers", [0, 0]),
+                    "depth_front_m": round(d["depth_front_m"]), "buoyant": round(d["buoy"], 2),
                     "form": d["form"], "marine_layers": d["marine"],
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
