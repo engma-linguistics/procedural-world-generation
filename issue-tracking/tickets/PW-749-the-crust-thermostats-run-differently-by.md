@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-741, PW-046, PW-052]
 refs: [planet/tectonics/crust.py, docs/review/base-climate/v1-finish-5/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-28
 ---
 
 ## Description
@@ -34,4 +34,5 @@ in km.
 - [ ] the process whose rate per km of coast/trench differs by level: make it level-consistent
 
 ## Updates
+- 2026-10-28: Lane 23 (PW-970): one level-dependent area source found and fixed. Coherence welds re-filled gaps that only the world grid's nearest-cell sampling showed at coastlines, and that wrote continental crust into the plate's ocean cell: a ratchet that runs with coastline length in cells. Welds now need the inlet on the plate's own grid (a607c614). The volume thermostat's shortfall remains (draft-crust-volume-thermostat-shortfall).
 - 2026-10-24: Created from inbox draft draft-crust-thermostats-level-dependent.md (found by v1-finish-5).

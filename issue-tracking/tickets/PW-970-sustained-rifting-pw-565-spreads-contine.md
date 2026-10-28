@@ -40,5 +40,6 @@ Options:
 - [ ] L6 continental crust back to ~33-35 km at 1 Gyr without bringing back the late giant plates
 
 ## Updates
+- 2026-10-28: Lane 23 (a607c614): cause found. crust.coherence's welds were a net area source (L5 s2 380-400 Myr: 773 welds vs 570 shreds, +200 cells, more than the margins' +98). 56% re-welded cells that the world grid's nearest-cell sampling had shown continental the step before, which ratcheted every sampled coastline outward on the plate. 80% filled holes in thin (<20 km) margin crust. Fix: weld only an inlet on the plate's own grid, among crust with mean >= BECOMES_CONT_KM. L5 envelope 27.7 -> 32.8 km (seed 1 29.4 -> 34.0); xfail removed, 28 km floor kept. Paired L6 1 Gyr: thickness 32.6 -> 34.2 km (600-1000 Myr), 33.9 at 1 Gyr; largest plate 27.7 -> 26.3%; pass 31/36 -> 28/36 (lost draws all too warm; land 31 -> 35%, draft-thicker-continents-more-land-warmer). The volume half (volume 3-7% under target, older than the rifts) is draft-crust-volume-thermostat-shortfall. Both checkboxes met. docs/review/tectonics/crust/crust.md.
 - 2026-10-28: Status needs-decision -> todo. Owner 10-28: test_land_and_crust[2] marked xfail (27-28 km only); tell the owner if it still fails after the rework. Real thin crust: Basin and Range ~25-30 km, Afar thinner.
 - 2026-10-28: Created from inbox draft draft-rifting-thins-continents.md (found by lane22).
