@@ -1,13 +1,12 @@
 # State
 
-**Last updated: 2026-10-24.** Overwrite this page; never append (history is in git). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
+**Last updated: 2026-10-28.** Overwrite this page; never append (history is in git). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics (Opus): v1-finish-16 merged (PW-866): the finished world is the latest moment in the run's last 10 Myr (0.5 Myr steps) that passes the finish checks; run.json meta.finish_moment; viewer and --at auto open there. Bar + checks at the moment: L6 1 Gyr 15/18, L7 7/8 (end-only 10/18, 5/8): v1 physics bar met. Earth group 71%. PW-895 held. Next: coupling tail PW-878/872/879/876/874/877/883/884/871, PW-915 step-length audit, PW-821/816, geology and zoom tails, then tag v1. Fun lane 31 (PW-888 founder floor in area) running. Up to ~12 sims with >=40 GB free.
-- Civilizations design (PW-856): owner answered both rounds 2026-10-26 (tickets PW-900..913). Backlog workgroups approved (PW-900). Next fun lane: PW-901 peoples refactor after fun lane 30 merges.
-- Fun (Sonnet): fun lane 29 merged (6e66244): PW-887 frontier invasion (a thinner rival's cells at a people's front weigh exp(-0.5 ln density ratio), floor 0.3; Banks 2008, Kolodny & Feldman 2017) and the crowding drive (sea-crossing x(1+2 crowd) within the craft ladder; entry into poor country). Small-continent humans now fill their ~4k suitable cells by 100 kyr ago (the PW-885 8k line is the sea-limited niche); elves >=500 on 8/8, half-elves 8/8; hobgoblins thin to 80-140 cells on the small-continent tries (PW-889, re-measure after PW-888). Kept on 2a7385: fl29-dnd acd1e5, fl29-seven_meals ff49f2. Earlier kept: fl28 099362/89098b, fl27 bbfeb6/620278, fl26 97d5ba/3d951f. Next: PW-888 origins by habitable landmass area, then PW-868, 870, then civilizations once the owner answers the doc.
-- Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
+- Physics: lane 19 geology tail merged (d7b8577e: PW-826/818/817 done, PW-827 metric; paired 29/36 vs main 29/36). PW-821 rain fix dropped (24/36 vs 29/36), blocked on PW-015. Gallery: 12 L7 worlds (docs/review/gallery/gallery.md), only 6/12 finish well (PW-948, lean cold): look into it before tagging v1. Next: PW-948, zoom tail, then tag v1.
+- Fun: lane 39 tech tree v0 merged (8 tracks, 98 techs, Technology tab; output only, PW-946). Lane 38 megafauna coverage held on branch worktree-agent-a3512fd38525dbb67: coverage 48 -> 106/116 but peoples remnants 18 -> 24, per-people pass 75% -> 70%; awaiting the owner (giant density option?). Owner questions open: PW-945 dragon teachers, PW-947 language dates.
+- Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1
 - Epic PW-244. Only the owner sign-off PW-780 is open (default `star_brightening` 0.45, a K-type star; provisional owner OK 2026-10-24). 42 open tickets in the v1 milestone (workgroups A-D in the backlog doc https://claude.ai/artifact/8rxpMkD49iovLmeBzZmP4t).

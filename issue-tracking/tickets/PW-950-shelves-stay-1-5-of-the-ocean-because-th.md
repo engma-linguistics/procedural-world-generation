@@ -1,8 +1,10 @@
 ---
+id: PW-950
 title: Shelves stay ~1.5% of the ocean because the submerged continent sits ~1.5 km deep; try water-loaded isostasy
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane19b
 blocked_by: []
 relates: [PW-818, PW-846]
 refs: [planet/surface.py, planet/tectonics/, tools/scorecard.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -22,3 +26,6 @@ so a flooded margin sinks too far; under water a column floats ~1/(rho_m - rho_w
 crust thinned. Try water-loaded isostasy for sea cells of continental crust (no fudge to the shelf target).
 - [ ] median submerged continental cell within -100..-500 m on ~70% of seeds at 1 Gyr
 - [ ] shelf share of ocean >= 3% without a pass-rate cost on the paired judge
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-shelf-water-loaded-isostasy.md (found by lane19b).

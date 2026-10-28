@@ -1,8 +1,10 @@
 ---
+id: PW-949
 title: Re-rank PW-565 up; it is the real lever on giant plates (PW-827), more rift tries barely help
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: tectonics
 effort: xs
 impact: med
@@ -10,6 +12,8 @@ found_by: lane19b
 blocked_by: []
 relates: [PW-565, PW-827]
 refs: [planet/tectonics/events.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -19,3 +23,6 @@ Seeds 1-6 L6 1 Gyr, mean over 600-1000 Myr: largest plate 0.45 -> 0.44 of the su
 no pass rate (paired judge 29/36 both arms), but it does not fix PW-827. Late plates stay huge because stress rifts
 die out after ~600 Myr (PW-565), so PW-565 is what PW-827 needs. Suggest PW-565 milestone v2 -> v1-adjacent or high
 priority in the tectonics lane, and PW-827 blocked_by PW-565. Coordinator call.
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-rerank-pw565-giant-plates.md (found by lane19b).
