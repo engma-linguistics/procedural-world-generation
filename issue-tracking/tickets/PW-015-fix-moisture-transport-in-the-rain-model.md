@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-28: Owner 10-28: no per-world desert quota. Target only the Earth analogue: on Earth's own map, dry (B) climates should land near Earth's ~30% of land (now ~20%). Generated worlds get whatever deserts their geography and Hadley belts give.
 - 2026-10-28: Coordinator 10-28: pulled into v1 as a soundness gap (too few hot deserts: B 20% vs Earth 30%, hot desert 3-5%). The PW-821 attempt shows the rain-side patch alone fails; fix the moisture source.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
