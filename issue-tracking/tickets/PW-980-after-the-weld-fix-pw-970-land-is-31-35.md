@@ -1,5 +1,6 @@
 ---
-title: "After the weld fix (PW-970) land is 31 -> 35% of the surface and finish moments run ~0.9 C warmer"
+id: PW-980
+title: After the weld fix (PW-970) land is 31 -> 35% of the surface and finish moments run ~0.9 C warmer
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane23
 blocked_by: []
 relates: [PW-970, PW-950, PW-293, PW-865]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/crust/crust.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -29,3 +32,6 @@ sea level.
 - [ ] find what warms the branch's finish moments (one warm draw, e.g. seed 639472 r0.001 l6fix: +11.1 C
   against main's -3.6 C, traced through ice_diag's CO2 source/sink and albedo terms)
 - [ ] land back within ~29-33% at L6 without thinning the crust again
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-thicker-continents-more-land-warmer.md (found by lane23).

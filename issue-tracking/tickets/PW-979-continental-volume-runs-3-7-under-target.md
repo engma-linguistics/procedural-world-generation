@@ -1,5 +1,6 @@
 ---
-title: "Continental volume runs 3-7% under target all run although the arc thermostat's gain climbs to 2-3"
+id: PW-979
+title: Continental volume runs 3-7% under target all run although the arc thermostat's gain climbs to 2-3
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane23
 blocked_by: []
 relates: [PW-970, PW-749, PW-046, PW-052]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/crust/crust.md, docs/review/tectonics/crust/areadiag.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 Lean: B for v1, A in v2 with PW-749.
 - [ ] per-process volume budget in km3 at L6 and L7 over two seeds; the sink whose rate per km of trench or
   boundary is off, sized from a source
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-crust-volume-thermostat-shortfall.md (found by lane23).

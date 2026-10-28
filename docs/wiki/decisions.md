@@ -121,3 +121,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28: Owner: PW-959 dragon generation ~430 yr default for now (flag if counts wobble). PW-947/PW-971: language only after a stem's sapiens node; only bare-bones tool use before it. Node dates get a sourced review doc first.
 - 2026-10-28: Merged the sapiens node dates review doc (docs/review/lineages/sapiens-dates.md, PW-971/PW-978); owner gut call pending.
 - 2026-10-28: Merged PW-975: prey field from McNaughton et al. 1989 (log B = 1.52 log NAP - 4.79); present dragons and giants about 40% lower.
+- 2026-10-28: Merged lane 23 (PW-970): welds need an inlet on the plate's own grid and >=20 km surrounding crust (a sampling ratchet grew continents with thin crust). The xfail is gone. Pass 31/36 -> 28/36, all losses warm (PW-980, v1, with PW-880/PW-819 next). PW-950 shelves to v2 after one failed round (water-loaded isostasy deepens margins; suggestions in the ticket).
