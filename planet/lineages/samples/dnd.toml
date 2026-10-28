@@ -27,10 +27,17 @@ seed = 7
 mixing_start = "3 kyr"
 era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). A PLACEHOLDER: stored, not yet read; the technology tree (PW-675) will use it. The history is not run past the present.
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
-dragon_km2 = 5000  # one dragon per this many km2 of its kind's country (Damuth's M^-0.75, an apex hunter far sparser: Carbone & Gittleman 2002). 5000: the default,
-# a few hundred of each kind on a world, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies are thick with them, dozens in every forest
-giant_km2 = 5000  # one true giant per this many km2 of its kind's country, as for dragons (owner, PW-936 ruling). 5000: the default;
-# 10000: rarer, a lone steading per region; 1000: giant country, steadings in every upland
+dragon_km2 = 5000  # one dragon per this many km2 of its kind's country where peoples press them (PW-957). Where no people holds the
+# land they keep nearer their natural density (meta.megafauna_natural below), and were many more before the peoples spread (the age of dragons). 5000: the default, a few per swamp or range in peopled country; 10000: rarer,
+# a lone dragon per region; 1000: the skies are thick with them, dozens in every forest
+giant_km2 = 2000  # one true giant per this many km2 of its kind's country where peoples press them (owner, PW-963 option C). Natural,
+# from mass as scaled foragers: ~1 per 130-345 km2 by kind (x the land's productivity under "prey"), kept where few small folk hold the land. 2000: the default, a steading of 10
+# to some 20,000 km2; 5000 and 10000: rarer; 1000: giant country, steadings in every upland
+megafauna_natural = "prey"  # the megafauna's natural density where no people presses them (PW-957, PW-966). Candidates, until the owner's
+# PW-967 review: "prey" (from the land's prey, wild herds and livestock: Carbone & Gittleman 2002, checked PDF p. 2; ~1 dragon per 530 km2 at 1 t/km2),
+# "mesotherm" (uniform from mass, Marshall et al. 2021's dinosaur line, checked Table 1; ~1 per 65 km2), "mammal" (the mammal-carnivore line: ~1 per 137)
+dragon_ages = "base"  # the dragons' age schedule (PW-958): base (ancients ~7%) | younger (young-heavy, ancients ~3%) | harsher | gentler
+dragon_generation = "schedule"  # the dragons' generation time (PW-959): schedule (~430 yr at base) | schedule_mass (~700) | line (each line's generation_yr)
 mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
 portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)
 portals = 1  # ...how many portals they come through (portal_mode random / sites)
@@ -41,7 +48,7 @@ land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each
 # Stems are the last common ancestor of the peoples under them, not the first reptiles or mammals (owner ruling): roots are no older than ~20 Myr
 # and the named peoples are fully realized within ~3 Myr, as the avian line is. The draconic stem IS the dragons, the elder line among the
 # reptilian peoples (the ur-dragon, ~19.5 Myr, against ~3 Myr for the lizardfolk, tortles and troglodytes): extant megafauna at very low density (as the true
-# giants), intelligence arriving late (not modelled: the stem is the animals; the dragonborn and kobolds are its dragon-blooded humanoid
+# giants), minds arriving at the stem's sapiens node (PW-965, a marker: sapient = ...; the stem ends as animals, animals = true: wyverns, drakes and pseudodragons, untracked; the dragonborn and kobolds are its dragon-blooded humanoid
 # peoples, split off recently; the stem ends at its last split, PW-924). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the kinds of dragon split from those, each in its own country (below; PW-924: the stems end, no dragon is of no set colour). Interfertility
 # follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people (T3); the lizardfolk,
 # tortles and troglodytes, three Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
@@ -57,13 +64,15 @@ prefers = ["tropical"]
 
 [[lineage]]
 id = "draconic"
+sapient = "4 Myr"  # PW-965 sapiens node: minds arrive for the whole draconic stem, well before the chromatic/metallic split (2.5 Myr). A guess to change
+animals = true  # PW-965: at its last split the rest of the stem continues as animals (wyverns, drakes, pseudodragons), untracked
 name = "dragons (the draconic stem: the ur-dragon, split from the reptilian stem near the root, a recognizable modern ur-dragon by ~10 Myr; elder, dragon-blooded)"
 parents = ["reptilian"]
 at = "19.5 Myr"
 group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
-generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp). Read only under meta.dragon_generation = "line" (PW-959)
 megafauna = true  # a handful per country: their range hardly takes room from the peoples
-# (density: meta.dragon_km2 sets every dragon kind's, PW-923)
+# (density: natural (meta.megafauna_natural, the age schedule meta.dragon_ages) where no people presses them, meta.dragon_km2 where peoples do, PW-957)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -80,9 +89,9 @@ name = "chromatic dragons (red, blue, green, black, white)"
 parents = ["draconic"]
 at = "2.5 Myr"
 group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
-generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp). Read only under meta.dragon_generation = "line" (PW-959)
 megafauna = true
-# (density: meta.dragon_km2 sets every dragon kind's, PW-923)
+# (density: natural (meta.megafauna_natural, the age schedule meta.dragon_ages) where no people presses them, meta.dragon_km2 where peoples do, PW-957)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -98,9 +107,9 @@ parents = ["draconic"]
 at = "2.5 Myr"
 rivalry = 0.5  # PW-924: the metallics coexist more readily with other megafauna (weaker competition among them, not with the peoples)
 group_size = [1, 3]  # mostly solitary, now and then a mated pair with young
-generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp)
+generation_yr = 200  # PW-924: long-lived great wyrms; few dragons persist (history.line_mvp). Read only under meta.dragon_generation = "line" (PW-959)
 megafauna = true
-# (density: meta.dragon_km2 sets every dragon kind's, PW-923)
+# (density: natural (meta.megafauna_natural, the age schedule meta.dragon_ages) where no people presses them, meta.dragon_km2 where peoples do, PW-957)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -287,6 +296,7 @@ rain_mm = [400, 2500]
 
 [[lineage]]
 id = "feline"
+sapient = "1500 kyr"  # PW-965 sapiens node (a guess): before tabaxi and leonin split
 name = "feline stem"
 body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular" }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison; cats: tearing teeth, active at dawn and dusk
 parents = ["mammalian"]
@@ -322,6 +332,7 @@ traits = ["nomadic", "hunter"]  # pride hunters following the herds across open 
 
 [[lineage]]
 id = "goblinoid"
+sapient = "1000 kyr"  # PW-965 sapiens node (a guess): before the goblin kinds split
 name = "goblinoid stem"
 generation_yr = 15  # years per generation (default 25, humans: Fenner 2005): short-lived, early-breeding; sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { raw_meat = true, bitter = "low" }  # scavengers with strong stomachs
@@ -378,6 +389,7 @@ traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "hominid"
+sapient = "1800 kyr"  # PW-965 sapiens node (a guess): before giantkin, orcs, dwarves and humans split
 name = "hominid stem"
 parents = ["mammalian"]
 at = "2 Myr"
@@ -404,8 +416,9 @@ parents = ["giantkin"]
 at = "1.2 Myr"
 group_size = [5, 20]  # families and steadings
 generation_yr = 65  # PW-924: giants 50-80 yr
-megafauna = true  # PW-924: counted, in steadings (one per meta.giant_km2, default 5,000 km2)
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+megafauna = true  # PW-924: counted, in steadings (PW-963: ~1 per 130-345 km2 by kind where no people presses them, one per meta.giant_km2, default 2,000 km2, where peoples do)
+mass_kg = 2200  # PW-963: the proposal's recommended mass (hill giant): natural density ~1 per 140 km2, forager-scaled (history.megafauna)
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 explore = 0.3
 sea_share = 0.02
 insularity = 0.85
@@ -421,7 +434,8 @@ name = "hill giants"
 parents = ["true_giant"]
 at = "900 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 2200  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [0, 18]
 rain_mm = [350, 1500]
 prefers = ["hills"]  # rolling hill country and uplands, below the mountains (and the 'hills' good, [[use]])
@@ -434,7 +448,8 @@ name = "sky giants stem (storm and cloud kin)"
 parents = ["true_giant"]
 at = "800 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 5200  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [-6, 22]
 rain_mm = [600, 3000]
 prefers = ["mountain", "coast"]
@@ -446,7 +461,8 @@ name = "elemental giants stem (frost and fire kin)"
 parents = ["true_giant"]
 at = "700 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 3300  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [-14, 30]
 rain_mm = [100, 1500]
 prefers = ["mountain"]
@@ -458,7 +474,8 @@ name = "cloud giants"
 parents = ["sky_giant"]
 at = "400 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 5200  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [-12, 10]
 rain_mm = [400, 2500]
 elev_m = [2000, 7000]  # the high peaks (and the 'peaks' good, [[use]])
@@ -471,7 +488,8 @@ name = "frost giants"
 parents = ["elemental_giant"]
 at = "350 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 4000  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [-20, -2]
 rain_mm = [100, 1000]
 prefers = ["tundra", "polar", "mountain"]  # (and the 'frost' good, [[use]]: frozen ground, the ice's edge)
@@ -483,7 +501,8 @@ name = "storm giants"
 parents = ["sky_giant"]
 at = "300 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 7300  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 explore = 0.45
 sea_share = 0.5
 realm = "coast"  # owner (PW-924): coasts and the sea near them (the shore ring, as the merfolk), not the open sea
@@ -496,7 +515,8 @@ name = "fire giants"
 parents = ["elemental_giant"]
 at = "250 kyr"
 megafauna = true
-# (density: meta.giant_km2 sets every giant kind's, PW-936 ruling)
+mass_kg = 3300  # PW-963: the proposal's recommended mass
+# (density: natural from mass_kg where no people presses them, meta.giant_km2 where peoples do, PW-963)
 temp_c = [12, 34]
 rain_mm = [50, 1500]
 prefers = ["volcanic"]  # smiths of the forges in the fire mountains (and the 'volcanic' good, [[use]])
@@ -836,6 +856,7 @@ sites = 3
 # ---- the avian line --------------------------------------------------------------------
 [[lineage]]
 id = "avian"
+sapient = "1200 kyr"  # PW-965 sapiens node (a guess): before aarakocra and kenku split
 name = "avian stem"
 body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"], thermo = "endo", teeth = "beak", suction = "none" }  # birds: no sweet receptor, immune to capsaicin, poor smell; birds: warm-blooded, toothless beaked, they scoop and tip the head back to drink
 origin = "root"

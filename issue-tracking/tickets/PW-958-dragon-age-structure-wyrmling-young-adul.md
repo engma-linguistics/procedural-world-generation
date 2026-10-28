@@ -37,6 +37,8 @@ The oldest age is 3,000 years. Ancients hold 34% of the biomass and 31% of the f
 - Consider making mated pairs and "a pair with young" in groups_note follow the stages: young dragons with an adult.
 
 ## Updates
+- 2026-10-28: Owner 10-28: confirmed, younger is the default.
+- 2026-10-28: Owner 10-28 after the PW-967 review: leans younger; coordinator agrees (crocodilian-like survivorship, ~2% of hatchlings reach adulthood; halves food per dragon; matches the California hunch). Default: younger, with base/harsher/gentler kept as meta.dragon_ages options.
 - 2026-10-28: Owner 10-28: leans young-heavy (ancients are the very best survivors); still wants maps and tables of the candidate schedules before defaults are set (PW-967).
 - 2026-10-28: Owner 10-28 clarification: the California figure was a wild hunch, not a target. The base and younger schedules are both candidates; the draft-megafauna-9 review should show counts under each (and a harsher one) so the owner can compare numbers, not confirm one.
 - 2026-10-28: Owner 10-28: intuition 'California has ~2 ancients, ~10 adults, 30+ young' fits a younger pyramid than the base case. Proposed (owner to confirm on the draft-megafauna-9 maps): annual mortality wyrmling 20%, young 3%, adult 0.5%, ancient ~0.1% (the survivors are near-untouchable). Gives wyrmling 24%, young 53%, adult 20%, ancient 3.5%; generation time ~480 yr. At 1/5,000 km2 a California-sized dragon country holds ~85 dragons: ~20 wyrmlings, ~45 young, ~17 adults, ~3 ancients.

@@ -4,7 +4,7 @@ Owner and a side session, 2026-10-28. The owner approved everything here. The ti
 
 ## The equations
 
-- **Damuth's law, in Marshall et al.'s form** (2021, Science 372:284): density = a·M^-0.75, with M in grams and density per km². log10 a depends on the metabolism class, in steps of 2.1×:
+- **Damuth's law, in Marshall et al.'s form** (2021, Science 372:284): density = a·M^-0.75, with M in grams and density per km². log10 a depends on the metabolism class, in steps of 2.1× (checked against the paper: mesotherm log10 a = 2.99 in Table 1, slope -3/4 in Eq. 1, the 2.1× steps and the ~35× mammal herbivore step in the text, all Science p. 284; the mammal carnivore 2.67 and varanid 3.31 rows are 2.99 -/+ log10 2.1, derived, not printed; M in grams checked by 10^2.99 × (5.2e6 g)^-0.75 = 0.0090/km², the paper's median 0.0091):
 
   | class | log10 a |
   |---|---|
@@ -13,14 +13,14 @@ Owner and a side session, 2026-10-28. The owner approved everything here. The ti
   | large varanid | 3.31 |
   | mammal herbivore (~35× mammal carnivores) | 4.21 |
 
-  Species scatter is ~240× across the 95% band (σ ≈ 0.61 in log10). Apply the law to the **ecological mass**: the mean over the age structure, weighted by survivorship. Do not use the maximum size.
-- **Carbone & Gittleman** (2002, Science 295:2273), Carnivora from 0.14 to 310 kg: carnivores per 10 t of prey = 89.1·M^-1.05; density per 100 km² = 197.6·M^-0.88 (M in kg).
+  Scatter is ~240× across the 95% band (σ ≈ 0.61 in log10). (checked: Table 1, p. 284: 240× is the ratio of the 97.5% and 2.5% tails of the T. rex intercept, log10 a 1.80 to 4.18, which folds in the unknown physiology; the text, p. 284, gives 150× at ±1.96σ for flesh-eating mammals of one body mass, σ ≈ 0.55.) Apply the law to the **ecological mass**: the mean over the age structure, weighted by survivorship. Do not use the maximum size. (checked: p. 284; Marshall averages the postjuvenile cohorts only, weighted by cohort share from survivorship data.)
+- **Carbone & Gittleman** (2002, Science 295:2273), Carnivora from 0.14 to 310 kg: carnivores per 10 t of prey = 89.1·M^-1.05; density per 100 km² = 197.6·M^-0.88 (M in kg). (checked: PDF p. 2, Science p. 2274; both fits N = 25, and Table 1 spans least weasel 0.14 kg to polar bear 310 kg.)
 - **Field metabolic rate** (Nagy, Girard & Brown 1999), in kJ/day with M in grams:
   - mammals 4.82 M^0.734
   - birds 10.5 M^0.681
   - reptiles 0.196 M^0.889
 
-  The reptile exponent is steeper. The reptile/mammal ratio is 0.23 at 70 kg (McNab's Komodo figure), 0.39 at 2 t and 0.55 at 20 t. At dragon size, "reptile" therefore buys only about 2× more animals than "mammal", which is roughly what Marshall's mesotherm intercept gives. **Dragons use log10 a = 2.99.**
+  The reptile exponent is steeper. The reptile/mammal ratio is 0.23 at 70 kg, 0.39 at 2 t and 0.55 at 20 t (computed from the three fits above). McNab 2009 (PNAS 106:12184) independently puts the varanid lizards' field energy at 22% of a mammal's of the same size: FEE = 1.07 g^0.735 against 4.82 g^0.734, fitted to six varanids of 2.2-45.2 kg (checked: abstract, p. 12184, and p. 12185). It is a varanid fit, not a Komodo-specific figure, and 70 kg lies just outside its mass range. At dragon size, "reptile" therefore buys only about 2× more animals than "mammal", which is roughly what Marshall's mesotherm intercept gives. **Dragons use log10 a = 2.99.**
 
 ## What was wrong before
 
@@ -46,7 +46,7 @@ The "robust" column uses mass ∝ height^3.3.
 - cattle: 625 Mcal edible per head
 - fish: 1,200 kcal/kg
 
-**Density baseline.** The forager-scaled column takes human foragers (~0.1/km² median) and scales them by M^-0.75.
+**Density baseline.** The forager-scaled column takes human foragers (~0.1/km² median) and scales them by M^-0.75. (Checked against Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, pp. 4766-4768: the paper analyses Binford's 339 hunter-gatherer societies, but fits area used against group size, not density against body mass. Its all-forager fit, Table 1, p. 4767, is A = e^4.44 N^0.70 km², about 0.03/km² for a group of 25, 0.08 for 500 and 0.09 for 1,000. The ~0.1/km² median is not printed in the paper, and its exponents (0.70, mixed model 0.756) concern group size; the M^-0.75 here is the separate metabolic scaling, Kleiber/Damuth. Source for the 0.1: still to be found, likely Binford 2001 itself; see the inbox draft.)
 
 | kind | height | iso | **recommended** | robust | kcal/day | × human | grain t/yr | cattle/yr | fish t/yr | forager-scaled | repo before lane 38 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -74,7 +74,7 @@ The growth model:
 - body length (snout to tail) is interpolated through 0.8 m at hatching, 3 m at 5 yr, 8 m at 100, 16 m at 800, 22 m at 1,500 and 28 m at 3,000;
 - mass is a Komodo build (70 kg at 2.6 m, ∝ L³), lightened ×0.6 for flight.
 
-The wingspan columns hold the wing loading of *Quetzalcoatlus* (~250 kg, 10.5 m span; Witton & Habib 2010). One scales the span ∝ M^(1/3), the other ∝ M^0.39 (the bird trend).
+The wingspan columns hold the wing loading of *Quetzalcoatlus* (200-250 kg and a 10-11 m span, Witton & Habib 2010 abstract; their Table 2 uses 10.40 m at 250 kg, p. 7. Earlier text said "~10.5 m", the midpoint of 10-11 m). One scales the span ∝ M^(1/3), the other ∝ M^0.39 (the bird trend).
 
 Food is reptile field metabolic rate. Cattle are counted as whole carcasses: 836 Mcal each, 85% of it assimilated.
 
@@ -90,7 +90,7 @@ Food is reptile field metabolic rate. Cattle are counted as whole carcasses: 836
 | 2,000 | ancient | 24.0 m | 33 t | 54-71 m | 226,000 | 116 |
 | 3,000 | ancient (oldest) | 28.0 m | 52 t | 62-85 m | 342,000 | 176 |
 
-Real flight tops out near 250 kg. Every adult dragon is far past that: this is "don't worry about it" physics. Ectotherm habits fit: feast and fast, one large kill every week or two.
+Real flight tops out near 250 kg (Witton & Habib 2010, abstract: 200-250 kg is the most reliable upper pterosaur estimate; the largest volant bird, *Pelagornis*, is 21.9-40.1 kg, Ksepka 2014, Fig. 2). Every adult dragon is far past that: this is "don't worry about it" physics. Ectotherm habits fit: feast and fast, one large kill every week or two.
 
 ### Age structure (the base case, owner-approved)
 

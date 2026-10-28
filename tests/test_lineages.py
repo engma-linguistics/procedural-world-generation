@@ -2133,7 +2133,7 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
     weakens it both ways; a long generation lowers the viable number of a patch; pockets within reach are one population; the present
     summary counts each pocket; the presets carry the Damuth densities, generations and group sizes."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    raw = {"meta": {"seed": 1, "viable_pop": 500}, "lineage": [
+    raw = {"meta": {"seed": 1, "viable_pop": 500, "giant_km2": 5000, "dragon_generation": "line"}, "lineage": [  # (giants as dense as dragons here: their overlap, not their numbers; the lines' own generation, PW-959)
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.0002, "persists": True, "megafauna": True,
          "generation_yr": 200, "group_size": [1, 3], "traits": ["flies"]},
@@ -2237,12 +2237,95 @@ def test_dragon_km2_sets_every_dragon_density(faketz):
     t = SP.parse(raw)
     assert t.dragon_km2 == 5000 and SP.parse(SP.to_raw(t)).dragon_km2 == 5000
     h = H.History(t, ps, 1)
-    assert np.isclose(h.dens[h.idx["wyrm"]], 1 / 5000) and np.isclose(h.dens[h.idx["giant"]], 1 / 5000)  # (meta.giant_km2, PW-936)
+    assert np.isclose(h.dens[h.idx["wyrm"]], 1 / 5000) and np.isclose(h.dens[h.idx["giant"]], 1 / 2000)  # (meta.giant_km2, PW-963: default 2,000)
     t2 = SP.parse({**raw, "meta": {"seed": 1, "dragon_km2": 1000}})
     assert np.isclose(H.History(t2, ps, 1).dens[h.idx["wyrm"]], 1 / 1000)
-    t3 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 2000}})
-    assert t3.giant_km2 == 2000 and SP.parse(SP.to_raw(t3)).giant_km2 == 2000
-    assert np.isclose(H.History(t3, ps, 1).dens[h.idx["giant"]], 1 / 2000)
+    t3 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 5000}})
+    assert t3.giant_km2 == 5000 and SP.parse(SP.to_raw(t3)).giant_km2 == 5000
+    assert np.isclose(H.History(t3, ps, 1).dens[h.idx["giant"]], 1 / 5000)
+
+
+def test_megafauna_natural_density_pressed_by_peoples(faketz):
+    """PW-957, PW-963: a megafauna kind's natural density comes from its mass (dragons on Marshall et al. 2021's mesotherm line over
+    every age, ~1 per 65 km2 at 3.2 t; giants as mass-scaled foragers, ~1 per 140 km2 at 2.2 t, 1 per 345 at 7.3 t); peoples press it
+    down to meta.dragon_km2 / meta.giant_km2, one rule for both, and the summary counts by it."""
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "folk", "parents": ["stem"], "at": "1 Myr", "density": 1.0},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "mass_kg": 3200, "generation_yr": 200, "traits": ["flies"]},
+        {"id": "hill", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "mass_kg": 2200},
+        {"id": "storm", "parents": ["hill"], "at": "1 Myr", "megafauna": True, "mass_kg": 7300}]}
+    t = SP.parse(raw)
+    assert t.lines["storm"].mass_kg == 7300 and SP.parse(SP.to_raw(t)).lines["hill"].mass_kg == 2200
+    assert SP.parse({**raw, "lineage": raw["lineage"][:4] + [{"id": "kid", "parents": ["hill"], "at": "1 Myr", "megafauna": True}]}).lines["kid"].mass_kg == 2200
+    h = H.History(t, ps, 1)
+    w, hi, st, f = (h.idx[x] for x in ("wyrm", "hill", "storm", "folk"))
+    assert 60 <= 1 / h.dens_nat[w] <= 70 and 130 <= 1 / h.dens_nat[hi] <= 150 and 330 <= 1 / h.dens_nat[st] <= 360
+    assert h.dens_nat[f] == h.dens[f]
+    # pressure: none on empty land, near full where a people holds it, and the density between natural and pressed by it
+    P = np.zeros((len(h.lines), h.grid.n))
+    P[f, : h.grid.n // 2] = 0.5
+    s = MG.pressure(h, P)
+    assert s[: h.grid.n // 2].min() > 0.99 and s[h.grid.n // 2:].max() == 0
+    d = MG.local_density(h, w, s)
+    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and np.allclose(d[: h.grid.n // 2], h.dens[w], rtol=0.05)
+    assert np.isclose(MG.local_density(h, w, np.full(h.grid.n, 0.5)), np.sqrt(h.dens_nat[w] * h.dens[w])).all()
+    # a user value denser than the natural one: peoples never raise a kind above its natural density
+    t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
+    h4 = H.History(t4, ps, 1)
+    assert np.allclose(MG.local_density(h4, h4.idx["hill"], np.ones(h4.grid.n)), h4.dens_nat[h4.idx["hill"]])
+
+
+def test_megafauna_natural_settings_and_prey(faketz):
+    """PW-957, PW-958, PW-959, PW-966: meta.megafauna_natural picks the natural density (prey: Carbone & Gittleman on the prey field;
+    mesotherm / mammal: Damuth at the ecological mass), meta.dragon_ages the schedule (ecological mass, stages), meta.dragon_generation
+    the dragons' generation; the summary splits dragons by stage."""
+    from planet.lineages import dragon_ages as DA
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
+        {"id": "hill", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "mass_kg": 2200}]}
+    t = SP.parse(raw)
+    assert (t.megafauna_natural, t.dragon_ages, t.dragon_generation) == ("prey", "base", "schedule")
+    t2 = SP.parse({**raw, "meta": {"seed": 1, "megafauna_natural": "mammal", "dragon_ages": "younger", "dragon_generation": "line"}})
+    assert (SP.parse(SP.to_raw(t2)).megafauna_natural, SP.parse(SP.to_raw(t2)).dragon_ages) == ("mammal", "younger")
+    for bad in ({"megafauna_natural": "x"}, {"dragon_ages": "x"}, {"dragon_generation": "x"}):
+        with pytest.raises(ValueError):
+            SP.parse({**raw, "meta": {"seed": 1, **bad}})
+    base, young = DA.structure("base"), DA.structure("younger")
+    assert 0.06 < base["share"][3] < 0.08 and 0.3 < base["biomass_share"][3] < 0.37 and 3000 < base["eco_mass_kg"] < 3300
+    assert 400 < base["generation_yr"] < 460 and 650 < base["generation_mass_yr"] < 750
+    assert young["share"][3] < base["share"][3] and young["share"][1] > base["share"][1]
+    h = H.History(t, ps, 1)
+    w, hi = h.idx["wyrm"], h.idx["hill"]
+    assert h.prey_wild is None and 60 <= 1 / h.dens_nat[w] <= 70  # (no world: "prey" falls back to the mesotherm line)
+    assert 400 < h.gen_yr(h.lines[w]) < 460 and h.gen_yr(h.lines[hi]) == h.lines[hi].generation_yr
+    h2 = H.History(t2, ps, 1)
+    assert h2.gen_yr(h2.lines[w]) == 200 and 25 <= 1 / h2.dens_nat[w] <= 80  # (mammal line at the younger schedule's lighter mass)
+    # prey mode with a prey field: dragons per Carbone & Gittleman, ~1 per 530 km2 at 1 t/km2 of prey (base schedule)
+    from planet.lineages import prey as PR
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C  # (g C/m2/yr that McNaughton's fit gives 1 t/km2 of wild prey)
+    ps.graze_npp = np.full(ps.grid.n, g1)
+    h3 = H.History(t, ps, 1)
+    del ps.graze_npp
+    assert np.allclose(h3.prey_wild, 1.0)
+    d = MG.natural(h3, w, h3.prey_wild)
+    assert 500 <= 1 / d.mean() <= 560
+    assert np.allclose(MG.natural(h3, hi, h3.prey_wild), h3.dens_nat[hi])  # (giants: productivity 1 at the median)
+    P = np.zeros((len(h3.lines), h3.grid.n))
+    P[w] = 0.5
+    h3._land_now = np.ones(h3.grid.n, bool)
+    tags = {"land": np.ones(h3.grid.n, bool)}
+    h3._K_now = {}
+    out = MG.summary(h3, P, tags)
+    r = out["wyrm"]
+    assert sum(r["stages"]) == r["count"] > 0 and r["ages"] == "base" and "prey_t_km2" in r["pocket_list"][0]
+    assert 500 <= r["natural_one_per_km2"] <= 560 and r["cattle_yr_each"] > 5
+    assert "ancient" in MG.line_text("wyrm", "wyrms", r) or r["stages"][3] == 0
 
 
 def test_nomads_and_settled_compete_less(faketz):
@@ -2261,3 +2344,53 @@ def test_nomads_and_settled_compete_less(faketz):
     for x, y in ((f, n), (n, f)):
         assert np.isclose(h.alpha[x, y], h0.alpha[x, y] * (1 - SP.NOMAD_COEXIST)) and h0.alpha[x, y] > 0
     assert np.isclose(h.alpha[n, n2], h0.alpha[n, n2]) and np.isclose(h.alpha[f, f2], h0.alpha[f, f2])
+
+
+# ---- PW-965: the sapiens node and the "continues as animals" end of a stem ------------------------------------------------
+
+
+def _stem_raw(**kw) -> dict:
+    return {"meta": {"name": "t"}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", **kw},
+        {"id": "a", "parents": ["stem"], "at": "2 Myr"},
+        {"id": "b", "parents": ["stem"], "at": "1 Myr"}]}
+
+
+def test_sapiens_node_and_animal_end_parse_and_round_trip():
+    from planet.lineages import spec as SP
+    t = SP.parse(_stem_raw(sapient="4 Myr", animals=True))
+    assert t.lines["stem"].sapient_kyr == 4000 and t.lines["stem"].animals_end
+    assert t.lines["a"].sapient_kyr is None and not t.lines["a"].animals_end  # (not inherited by the kinds)
+    t2 = SP.parse(SP.to_raw(t))
+    assert t2.lines["stem"].sapient_kyr == 4000 and t2.lines["stem"].animals_end
+
+
+def test_sapiens_node_and_animal_end_validation():
+    from planet.lineages import spec as SP
+    with pytest.raises(ValueError, match="before its kinds split"):
+        SP.parse(_stem_raw(sapient="1.5 Myr"))
+    with pytest.raises(ValueError, match="sapient"):
+        SP.parse(_stem_raw(sapient="12 Myr"))
+    with pytest.raises(ValueError, match="animals = true"):
+        SP.parse(_stem_raw(animals=True, persists=True))
+    with pytest.raises(ValueError, match="animals = true"):
+        SP.parse(_stem_raw(animals=True, extinct="1 Myr"))
+
+
+def test_animal_end_changes_no_simulated_line():
+    """The marker is not simulated: the same tree with and without it has the same lines, ends and techs-eligible peoples."""
+    from planet.lineages import spec as SP
+    a, b = SP.parse(_stem_raw()), SP.parse(_stem_raw(sapient="4 Myr", animals=True))
+    assert [(l.id, l.ago_kyr, l.extinct_kyr, l.persists, l.megafauna, l.children) for l in a.order()] == \
+        [(l.id, l.ago_kyr, l.extinct_kyr, l.persists, l.megafauna, l.children) for l in b.order()]
+    assert [l.id for l in a.leaves()] == [l.id for l in b.leaves()]  # (the stem still ends at its last split)
+
+
+def test_samples_dragons_have_one_node_and_animal_end():
+    from planet.lineages import spec as SP
+    for f in ("dnd", "seven_meals"):
+        t = SP.load(f"planet/lineages/samples/{f}.toml")
+        d = t.lines["draconic"]
+        assert d.animals_end and d.sapient_kyr is not None and 2500 < d.sapient_kyr < d.ago_kyr  # before the chromatic/metallic split
+        assert not any(t.lines[i].sapient_kyr or t.lines[i].animals_end for i in ("chromatic_dragon", "metallic_dragon", "red_dragon"))
+        assert d not in t.leaves()  # (the animals are no line of the tree: nothing for peoples, techs or megafauna to count)

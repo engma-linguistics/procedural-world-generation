@@ -29,12 +29,13 @@ from .. import world as W
 from ..geo import R_KM
 from ..grid import shared_grid
 from . import mining as MN
+from .history import megafauna as MG
 from . import salt_reach as SR
 from . import spec as SP
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 10  # 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 11  # 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -242,6 +243,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["peoples"] = _peoples(ctx, i, sel)
     brief["sea_peoples"] = _sea_peoples(ctx, i, sel, sea, land_all)
     brief["megafauna"] = _megafauna(ctx, sel, era)
+    brief["megafauna_ages"] = (MG.ages_text(ctx.meta["present"].get("megafauna_ages") or {}) or None) if abs(era) <= 1e-6 else None
     brief["animal_foods"] = _animal_foods(brief)
     brief["mixing_zones"] = zones
     brief["substrate"] = _substrate(ctx, brief["peoples"])
@@ -674,9 +676,28 @@ def _megafauna(ctx: Ctx, sel: np.ndarray, era: float) -> list | None:
     for lid, r in mf.items():
         here = [p for p in r["pocket_list"] if sel[int(np.argmin(dist_km(ctx.g, p["lat"], p["lon"])))]]
         if here:
+            st = [sum(p["stages"][i] for p in here) for i in range(4)] if all("stages" in p for p in here) else None
             out.append({"id": lid, "name": names.get(lid, lid).split(" (")[0], "count": sum(p["count"] for p in here),
-                        "pockets": here[:8], "one_per_km2": r["one_per_km2"], "world_count": r["count"]})
+                        "pockets": here[:8], "one_per_km2": r["one_per_km2"], "density": MG.density_text(r), "world_count": r["count"],
+                        "stages": st, "cattle_yr": sum(p.get("cattle_yr", 0) for p in here) if st else None,
+                        "bounty": _bounty(here)})
     return sorted(out, key=lambda x: -x["count"])
+
+
+def _bounty(pockets: list) -> str | None:
+    """PW-961: the adventurer hook. An ancient dragon's yearly kill against the herders' stock inside its own range (its food over
+    the prey's sustainable offtake, history.megafauna): where that takes a large share of the herd, the families are ruined and the
+    lord posts a bounty. The pocket where an ancient takes the largest share of a herd of at least 20, said so; else None."""
+    def herd(p):
+        return p["livestock_head"] / max(p["km2"], 1) * p.get("ancient_range_km2", 0)
+    ok = [p for p in pockets if p.get("stages") and p["stages"][3] and p.get("livestock_head") and herd(p) >= 20]
+    if not ok:
+        return None
+    best = min(ok, key=herd)
+    n, eat = best["stages"][3], best.get("ancient_cattle_yr", 0)
+    eat_txt = f"~{eat:.0f} head a year from" if eat else "its kills from"
+    return (f"{n} ancient{'s' if n > 1 else ''} in the {best['country']} at {best['lat']:g}, {best['lon']:g}: each takes {eat_txt} the"
+            f" ~{herd(best):,.0f} head the herders keep in its ~{best.get('ancient_range_km2', 0):,} km² range; where bounties are posted")
 
 
 def _marine_mask(ctx: Ctx) -> np.ndarray:
@@ -1048,8 +1069,14 @@ def markdown(b: dict) -> str:
     mf = b.get("megafauna")
     if mf:
         t += ["", "## Megafauna (counted)", ""]
-        t += [f"- ~{r['count']} {r['name']} here ({r['world_count']} in the world, 1 per {r['one_per_km2']:,} km²): " + "; ".join(
-              f"{p['count']} in the {p['country']} at {p['lat']:g}, {p['lon']:g} ({p['groups']})" for p in r["pockets"]) for r in mf]
+        for r in mf:
+            st = f" ({MG.stages_of(r)}; ~{r['cattle_yr']:,} head of cattle a year)" if r.get("stages") and r["count"] else ""
+            t += [f"- ~{r['count']} {r['name']} here{st} ({r['world_count']} in the world, {r['density']}): " + "; ".join(
+                  f"{p['count']} in the {p['country']} at {p['lat']:g}, {p['lon']:g} ({p['groups']})" for p in r["pockets"])]
+            if r.get("bounty"):
+                t += [f"  - {r['bounty']}"]
+    if b.get("megafauna_ages"):
+        t += [""] + [f"- {x}" for x in b["megafauna_ages"]]
     sp = b.get("sea_peoples")
     if sp and sp["list"]:
         t += ["", "## Sea peoples", ""]

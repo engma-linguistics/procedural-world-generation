@@ -12,20 +12,29 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 |---|---|---|
 | marshall2021_trex_abundance_science.abc8300.pdf | Marshall et al. 2021, Science 372:284, doi:10.1126/science.abc8300 | Damuth intercepts by physiology; ecological (age-weighted) mass |
 | carbone_gittleman2002_carnivore_density_science.1067994.pdf | Carbone & Gittleman 2002, Science 295:2273, doi:10.1126/science.1067994 | carnivore density per prey biomass (Carnivora only) |
-| carbone2007_costs_of_carnivory_plosbiol.pdf | Carbone, Teacher & Rowcliffe 2007, PLoS Biol 5:e22 | predators over ~21.5 kg must take large prey |
+| carbone2007_costs_of_carnivory_plosbiol.pdf | Carbone, Teacher & Rowcliffe 2007, PLoS Biol 5:e22 | carnivores over a predicted 14.5 kg threshold (observed ~15-20 kg) gain more from large prey (read 2026-10-28; the earlier "~21.5 kg" is not in this paper) |
 | field2013_bird_mass_skeletal_plosone.pdf | Field, Lynner, Brown & Darroch 2013, PLoS ONE 8:e82000 | body mass from the skeleton in flying birds |
 | sato2009_soaring_seabirds_pterosaurs_plosone.pdf | Sato et al. 2009, PLoS ONE 4:e5400 | the size limit of soaring flight |
-| witton2010_giant_pterosaurs_plosone.pdf | Witton & Habib 2010, PLoS ONE 5:e13982 | *Quetzalcoatlus* ~250 kg, ~10.5 m span (dragon wing-loading anchor) |
+| witton2010_giant_pterosaurs_plosone.pdf | Witton & Habib 2010, PLoS ONE 5:e13982 | *Quetzalcoatlus* 200-250 kg, 10-11 m span (abstract; Table 2 uses 10.40 m at 250 kg, p. 7) (dragon wing-loading anchor) |
+| carbone2011_intraguild_trex_procb.pdf | Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 | intra-guild competition, T. rex |
+| ksepka2014_pelagornis_flight_pnas.pdf | Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 | *Pelagornis sandersi* flight, the largest volant bird |
+| hamilton2009_population_stability_huntergatherers_pnas.pdf | Hamilton, Burger, DeLong, Walker, Moses & Brown 2009, PNAS 106:12255-12260, doi:10.1073/pnas.0905708106 (title: "Population stability, cooperation, and the invasibility of the human species") | hunter-gatherer density dependence; NOT the 2007 space-use paper listed below |
+| alexander2007_argentavis_commentary_pnas.pdf | Alexander 2007, PNAS 104:12233-12234, doi:10.1073/pnas.0705515104, commentary "Ancient Argentavis soars again" | commentary on Chatterjee et al. 2007; NOT the paper itself |
+| seymour2013_crocodile_power_gigantothermy_plosone.pdf | Seymour 2013, PLoS ONE 8:e69361 | aerobic and anaerobic power in large crocodiles vs mammals; dinosaur gigantothermy (bonus, not on the list) |
 
 ## Owner to fetch: free in PMC (open in a browser)
 
-- [ ] McNab 2009, PNAS 106:12184, doi:10.1073/pnas.0904000106 (PMC2715483): varanid ~22% of mammal energy use
-- [ ] Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 (PMC3136829): intra-guild competition, T. rex
-- [ ] Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
-- [ ] Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 (PMC4115518): *Pelagornis sandersi* flight
-- [ ] Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
+- [x] McNab 2009 (mcnab2009_dinosaur_energetics_pnas.pdf), PNAS 106:12184, doi:10.1073/pnas.0904000106 (PMC2715483): varanid ~22% of mammal energy use
+- [x] Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 (PMC3136829): intra-guild competition, T. rex
+- [x] (chatterjee2007_argentavis_aerodynamics_pnas.pdf) Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
+- [x] Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 (PMC4115518): *Pelagornis sandersi* flight
+- [x] (hamilton2007_spaceuse_huntergatherers_pnas.pdf) Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
 
 ## Owner to fetch: paywalled (most wanted first)
+
+- [x] (mcnaughton1989_herbivore_biomass_productivity_nature.pdf) McNaughton, Oesterheld, Frank & Williams 1989, Nature 341:142-144, doi:10.1038/341142a0: herbivore biomass, consumption and secondary production against aboveground NPP. **Read (PW-975)**: log10 B = 1.52 log10 NAP - 4.79 (kJ/m2 and kJ/m2/yr; r2 0.579, d.f. 49) is prey.py's fit. The paper gives no kJ-to-mass conversions (cites "standard factors", refs 41-43), so prey.py's three conversion constants are unverified assumptions.
+- [ ] Coe, Cumming & Phillipson 1976, Oecologia 22:341-354, doi:10.1007/BF00345312: large African herbivore biomass against rainfall and primary production (the second candidate fit for PW-966).
+- [ ] Sandom, Faurby, Sandel & Svenning 2014, Proc R Soc B 281:20133254, doi:10.1098/rspb.2013.3254: late-Quaternary megafauna extinctions linked to humans (PW-966 overkill).
 
 - [ ] Nagy, Girard & Brown 1999, Annu Rev Nutr 19:247, doi:10.1146/annurev.nutr.19.1.247. Field metabolic rate per class. The slopes are confirmed from the abstract (reptiles 0.889, mammals 0.734, birds 0.681). **The intercepts used (4.82, 10.5, 0.196, kJ/day with M in g) are unverified.**
 - [ ] Farlow 1993, Am J Sci 293:167-199, doi:10.2475/ajs.293.a.167: "On the rareness of big, fierce animals"

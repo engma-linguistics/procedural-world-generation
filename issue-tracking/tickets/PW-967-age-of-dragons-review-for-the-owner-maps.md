@@ -2,7 +2,7 @@
 id: PW-967
 title: Age-of-dragons review for the owner - maps with dots, counts by stage at familiar-sized areas, natural vs present
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -38,6 +38,8 @@ Show:
 Format as PW-923's report: under a page, mostly pictures.
 
 ## Updates
+- 2026-10-28: Status in-progress -> done. Owner reviewed 10-28: younger schedule (PW-958), food-budget equilibrium (PW-977). The page is re-run after PW-975 for the new prey fit.
+- 2026-10-28: Status todo -> in-progress. Review page merged: docs/review/megafauna/age-of-dragons.html, linked from the peoples panel. Awaiting the owner's look.
 - 2026-10-28: Owner 10-28, for the review:
   (1) Show the literature-suggested natural density (prey-based Carbone and Damuth/Marshall) next to the 1/5,000 present-day value, maps and tables for each.
   (2) Show several age schedules side by side. Owner leans young-heavy ('you don't get to be an ancient without being very, very good at surviving'); defaults are not settled until the owner has seen them.

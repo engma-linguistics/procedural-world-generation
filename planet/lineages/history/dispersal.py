@@ -53,8 +53,9 @@ class DispersalMixin:
         """The viable number of a line's patch: tree.viable_pop for a people of GENERATION_YR, smaller for a longer-lived one. Over the
         same span in years a long-lived line lives fewer generations, and the number it needs goes as the horizon in generations to
         1/PERSIST_EXP (Lande 1993, as origin_mvp): dragons at 200 yr need 1/8 of it, giants at 65 yr ~0.4 (PW-924), elves at 50 yr 1/2,
-        dwarves and gnomes at 40 yr ~0.6; for every line, people or megafauna (PW-937). Capped at 1: a short-lived line keeps the tree's number."""
-        return self.tree.viable_pop * min(1.0, SP.GENERATION_YR / max(l.generation_yr, 1e-6)) ** (1.0 / PERSIST_EXP)
+        dwarves and gnomes at 40 yr ~0.6; for every line, people or megafauna (PW-937). Capped at 1: a short-lived line keeps the tree's number.
+        A dragon's generation follows meta.dragon_generation (gen_yr, PW-959)."""
+        return self.tree.viable_pop * min(1.0, SP.GENERATION_YR / max(self.gen_yr(l), 1e-6)) ** (1.0 / PERSIST_EXP)
 
     def _viable(self, l, k, dt, step):
         """A separate patch of the people's land holding fewer than its viable number (line_mvp) fades (e-folding
@@ -71,7 +72,8 @@ class DispersalMixin:
         lab, n = self.grid.components(held) if not l.megafauna else MG.linked_pockets(self, held, MG.metapop_km(l))
         if n < 2:
             return
-        pop = np.bincount(lab[held], weights=self.p[k][held] * self.dens[k] * area, minlength=n)
+        d = self.dens_at(k)  # (megafauna: per cell, pressed by the peoples, PW-957)
+        pop = np.bincount(lab[held], weights=self.p[k][held] * (d[held] if np.ndim(d) else d) * area, minlength=n)
         small = pop < mvp
         small[int(np.argmax(pop))] = False
         if not small.any():
@@ -210,9 +212,10 @@ class DispersalMixin:
             # the founders hold the free country round the place, ring by ring until it carries a viable population (or FOUNDER_KM)
             free = (room > EST) & (K > EST) & realm & ~taken
             area = self.cell_mkm2 * 1e6
+            d = self.dens_at(k)
             for r in range(1, max(2, int(round(FOUNDER_KM / cell))) + 1):
                 blob = rings(c, free, r, g.nbr_off, g.nbr_idx)
-                if (np.minimum(room[blob], np.clip(K[blob], 0.3, 1)) * self.dens[k] * area * 0.5).sum() >= self.line_mvp(l):
+                if (np.minimum(room[blob], np.clip(K[blob], 0.3, 1)) * (d[blob] if np.ndim(d) else d) * area * 0.5).sum() >= self.line_mvp(l):
                     break
             self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
             self.jumps_n[l.id] = self.jumps_n.get(l.id, 0) + 1

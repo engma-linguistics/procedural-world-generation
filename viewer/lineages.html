@@ -206,7 +206,8 @@ const FOOT = {
   tree: `Time runs left to right, Myr to the present, on a log scale (tectonic run, glacial time zoom, recent pass). Drag a bar's left end to move when
     the line appears; click a bar to edit it. Origins: <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> ·
     <span style="color:#c79bff">arrival</span> · <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>.
-    <span style="color:#6bd6d0">group (a way of life within a people)</span>.
+    <span style="color:#6bd6d0">group (a way of life within a people)</span>. <span style="color:#fff">&#9670;</span> sapiens node: minds arrive once for the whole stem, its kinds split after it.
+    <span style="color:#b39c86">&rsaquo; dotted tail</span>: not extinct, the stem continues as animals, untracked (no peoples, techs or megafauna after it).
     Switching a line off: its split children re-parent to its parent; its hybrids, templates and groups go with it.`,
   peoples: `A people's groups (ways of life: steppe and forest orcs, human seafarers...) sit under it: ▸ opens them, + group adds one. Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
     habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
@@ -270,6 +271,13 @@ function endOf(r, eff, res) {
     .map((x) => kyrOf(x.at));
   return kids.length ? Math.min(...kids) : null;
 }
+// PW-965: a stem that ends at its last split without going extinct: the rest continues as non-sapient animals, untracked.
+// Drawn apart from extinction (the dagger): a dotted, fading tail to the present and an open chevron at the end.
+function animalsEnd(x, yy, r) {
+  const x1 = xOf(0.05), tip = `${esc(r.name || r.id)}: continues as animals, untracked (not extinct; no people, techs or megafauna count after this point)`;
+  return `<g class="animals"><line x1="${x}" x2="${x1}" y1="${yy}" y2="${yy}" stroke="#b39c86" stroke-width="2" stroke-dasharray="1 4" stroke-linecap="round" opacity=".7"><title>${tip}</title></line>
+    <path d="M${x - 3},${yy - 6} l7,6 l-7,6" fill="none" stroke="#b39c86" stroke-width="2"><title>${tip}</title></path></g>`;
+}
 function drawTimeline() {
   LMAX = Math.log10(Math.max(20000, ...T.lineage.map((r) => kyrOf(r.at) || 0)) * 1.15);  // no line starts off the left edge
   let rows = order();
@@ -305,6 +313,8 @@ function drawTimeline() {
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
       ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
+      ${kyrOf(r.sapient) != null ? `<path d="M${xOf(kyrOf(r.sapient))},${yy - 8} l5,8 l-5,8 l-5,-8 z" fill="#fff" stroke="#1b2230" stroke-width="1"><title>sapiens node: minds arrive for the whole ${esc(r.name || r.id)} stem ${fmt(kyrOf(r.sapient))} ago; its kinds split after it and inherit it</title></path>` : ''}
+      ${r.animals && end != null ? animalsEnd(xOf(end), yy, r) : ''}
       ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
     </g>`;
     ls += `<g class="lab${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.4 : 1}" style="cursor:pointer"><rect x="0" y="${yy - ROW / 2}" width="${W0 - 2}" height="${ROW}" fill="${sel === r.id ? '#233047' : 'transparent'}"/>` +
@@ -400,7 +410,9 @@ function drawSide() {
       ${field('name', `<input class="wide" data-k="name" value="${esc(r.name || '')}">`)}
       <div class="row">${field('origin', `<select data-k="origin">${Object.keys(ORIGIN_COL).map((x) => `<option ${x === o ? 'selected' : ''}>${x}</option>`).join('')}</select>`)}
         ${field('at (ago)', `<input data-k="at" size="9" value="${esc(r.at)}">`)}
-        ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
+        ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}
+        ${['split', 'root', 'arrival'].includes(o) ? field('sapiens node', `<input data-k="sapient" size="9" placeholder="(none)" title="Where minds arrive for this stem (PW-965): once, before its kinds split" value="${esc(r.sapient || '')}">`) : ''}
+        ${['split', 'root', 'arrival'].includes(o) ? `<label class="trait" title="Not extinct: after its last split the rest of the stem continues as non-sapient animals, untracked (PW-965)"><input type="checkbox" data-k="animals" ${r.animals ? 'checked' : ''}> continues as animals</label>` : ''}</div>
       ${o === 'group' ? `<div class="muted">A culture within the ${esc(byId()[parentsOf(r)[0]]?.name || parentsOf(r)[0])} (not a subspecies; its date is when it is first told apart, not a split; it may carry its own markers, e.g. lactase in body): it inherits what it leaves out, takes hold where its own niche
         beats its people's, mixes freely with them, and counts with them in the summaries.</div>` : ''}
       ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'group' ? 'group of (people)' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="${o === 'group' ? 'group_of' : 'parents'}" ${o === 'split' || o === 'group' ? '' : 'multiple size="4"'} class="wide">
@@ -477,6 +489,8 @@ function editLine(r, el) {
     if (el.value === '') delete r[k]; else r[k] = +el.value;
     if (k === 'band_km2' && el.value !== '') { r.density = +(BAND / +el.value).toPrecision(3); delete r.band_km2; }
   } else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
+  else if (k === 'sapient') { if (el.value.trim()) r.sapient = el.value.trim(); else delete r.sapient; }
+  else if (k === 'animals') { if (el.checked) r.animals = true; else delete r.animals; }
   else if (k === 'id') {
     const old = r.id; r.id = el.value.trim();
     for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
@@ -574,8 +588,12 @@ function drawPeoples() {
   let h = `<p class="hint">Each people's demography and movement. Giants are sparse (a band roams thousands of km²) and insular; farmers dense; seafarers
     and explorers find the empty lands first. Click a name to open it in the tree; click a numeric heading to sort. ${result ? `Last run: <b>${esc(result.id)}</b> (${esc(result.world || '')}).` : 'Run on a world to fill population and area.'}</p>
     <div class="row" style="margin-bottom:6px">${field('viable population (a separate patch with fewer fades)', `<input type="number" step="50" data-m="viable_pop" value="${T.meta?.viable_pop ?? ''}" placeholder="500">`)}</div>
-    <div class="row" style="margin-bottom:6px" title="One dragon per this many km² of its kind's country. 5,000: the default; a few hundred of each kind on a world, a few per swamp or range. 10,000: rarer, a lone dragon per region. 1,000: the skies are thick with them, dozens in every forest.">${field('dragons: one per km²', `<select data-m="dragon_km2" data-num="1">${[1000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.dragon_km2 ?? 5000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 5000 ? ' (default)' : v === 1000 ? ' (thick)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="One true giant per this many km² of its kind's country (hill, cloud, frost, fire, storm). 5,000: the default, as for dragons. 10,000: rarer, a lone steading per region. 1,000: giant country, steadings in every upland.">${field('giants: one per km²', `<select data-m="giant_km2" data-num="1">${[1000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.giant_km2 ?? 5000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 5000 ? ' (default)' : v === 1000 ? ' (many)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="One dragon per this many km² of its kind's country where peoples press them. Where no people holds the land they keep nearer their natural density (the next setting), and before the peoples spread there were many more: the age of dragons. 5,000: the default, a few per swamp or range in peopled country. 10,000: rarer, a lone dragon per region. 1,000: the skies are thick with them, dozens in every forest.">${field('dragons where peoples press them: one per km²', `<select data-m="dragon_km2" data-num="1">${[1000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.dragon_km2 ?? 5000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 5000 ? ' (default)' : v === 1000 ? ' (thick)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="One true giant per this many km² of its kind's country (hill, cloud, frost, fire, storm) where peoples press them. Where few small folk hold the land they keep nearer their natural density, from their mass (about 1 per 130-345 km² by kind; x the land's productivity under 'from the prey'). 2,000: the default, a steading of 10 to some 20,000 km². 5,000 and 10,000: rarer, a lone steading per region. 1,000: giant country, steadings in every upland.">${field('giants where peoples press them: one per km²', `<select data-m="giant_km2" data-num="1">${[1000, 2000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.giant_km2 ?? 2000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 2000 ? ' (default)' : v === 1000 ? ' (many)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The giants' natural density is scaled from human foragers of 65 kg, by body mass^-0.75. 0.1 per km²: the default, the top of what Hamilton et al. 2007's fit implies (0.03-0.09 for groups of 25-1,000); no published median located yet (PW-976). Lower gives fewer giants in wild country.">${field('forager baseline for giants: people per km²', `<select data-m="forager_km2" data-num="1">${[0.03, 0.05, 0.1].map(v => `<option value="${v}"${+(T.meta?.forager_km2 ?? 0.1) === v ? ' selected' : ''}>${v}${v === 0.1 ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The megafauna's natural density, where no people presses them (PW-957, PW-966). Candidates until the owner's review (PW-967): from the prey (wild herds from the land's grazing NPP plus livestock; Carbone &amp; Gittleman 2002: a dragon per ~530 km² at 1 t/km² of prey, more on rich savanna, fewer in forest); uniform on Marshall et al. 2021's dinosaur line (~1 per 65 km²); uniform on the mammal-carnivore line (~1 per 137 km²).">${field('megafauna natural density', `<select data-m="megafauna_natural">${[['prey', 'from the prey (default)'], ['mesotherm', 'dinosaur line, ~1/65 km²'], ['mammal', 'mammal carnivores, ~1/137 km²']].map(([v, t]) => `<option value="${v}"${(T.meta?.megafauna_natural ?? 'prey') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The dragons' age schedule (PW-958): annual mortality of wyrmlings, young, adults and ancients. It sets the stage shares, the ecological mass (and so the natural density) and the generation time. Base: ancients ~7% of dragons, a third of their biomass. Younger: young-heavy, ancients ~3% (the very best survivors). Harsher: ancients rare (~0.3%). Gentler: ancients ~26%.">${field('dragon age schedule', `<select data-m="dragon_ages">${[['base', 'base (default)'], ['younger', 'younger'], ['harsher', 'harsher'], ['gentler', 'gentler']].map(([v, t]) => `<option value="${v}"${(T.meta?.dragon_ages ?? 'base') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The dragons' generation time (PW-959), which sets how few of them persist: from the age schedule with flat fecundity (~430 yr at base), with fecundity growing with size (~700 yr), or each line's own generation_yr (200).">${field('dragon generation', `<select data-m="dragon_generation">${[['schedule', 'from the schedule (default)'], ['schedule_mass', 'fecundity ~ size'], ['line', 'the lines\' own']].map(([v, t]) => `<option value="${v}"${(T.meta?.dragon_generation ?? 'schedule') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
     <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
     ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-661, PW-103]
 refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/history.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-28
 ---
 
 ## Description
@@ -51,6 +51,7 @@ Judgement calls for the owner: the folk-category table, and the decay time.
       humans who live among the cervid folk use an ordinary name.
 
 ## Updates
+- 2026-10-28: Owner 2026-10-28: v0's body-based folk categories are pattern X7 ('appearance as observed') in Owner's Claude Doc 'Ethnonyms: A Taxonomy for Culture Generation' (https://claude.ai/artifact/GDbAyM2ZHRYuXKkeMes8vS; Claude Docs id 7b3b1078-417a-4f09-a04d-862b94bd6877); valences map onto its 'exonym by relationship' rule (war X5, trade X1, thin contact X2/X3/X8). Next steps: PW-972 and PW-767.
 - 2026-10-24: Status todo -> done. Merged f721107: reputation.py, [[exonym]] rows, brief v5. Memory length PW-754.
 - 2026-10-24: Created from inbox draft draft-reputation-and-exonyms.md (found by culinary-intake).
 - 2026-10-24: fun12 (branch worktree-agent-a9e99f60fb4ba7931): v0 built on the contact record. `planet/lineages/reputation.py` -> `meta.present.reputation[observer][subject]` (category, name, valence feared/despised/edge/exotic/neighbour, basis, since_kyr, strength, lumped_with, borrowed_from, text); folk categories are `[[exonym]]` spec rows (generic table in dnd.toml, no owner story); brief_version 5 shows them beside what each people is (region `reputation`, `people.reputation`); schema doc updated. Conquest = substrate (S holds cells O held), fading with an e-folding of 1.5 kyr x era scale or a row's own `efold_kyr`. Not yet: authored conquests/polities and derived incursions (PW-661), so no "resented" valence; the owner's rows and decay are in draft-exonym-rows-and-memory-length.

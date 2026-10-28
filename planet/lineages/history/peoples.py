@@ -6,9 +6,33 @@ import numpy as np
 
 from .. import compose as CP
 from ..spread import EST
+from . import megafauna as MG
 
 
 class PeoplesMixin:
+    def dens_at(self, k: int, P: np.ndarray | None = None):
+        """Line k's density, per km2: a people's own (a number); a megafauna line's per cell, natural where no people presses it and
+        pressed where peoples do (an array, MG.local_density; P: the presences to take the pressure and prey from, else those at the
+        start of the step)."""
+        if not self.lines[k].megafauna:
+            return self.dens[k]
+        if (P is None or P is self.p) and self._press is not None:
+            return MG.local_density(self, k, self._press, self._prey)
+        P = self.p if P is None else P
+        c = self.__dict__.get("_dens_memo")
+        if c is None or c[0] is not P:  # (one pressure and prey per presence array: the summary asks for every line)
+            s = MG.pressure(self, P, self._land_now)
+            prey = MG.prey_now(self, P, s, self._tags_now) if self._tags_now is not None and not self._deep_now else None
+            c = self._dens_memo = (P, s, prey)
+        return MG.local_density(self, k, c[1], c[2])
+
+    def gen_yr(self, l) -> float:
+        """A line's generation time, years: its own, or a dragon's from its age schedule (meta.dragon_generation, PW-959)."""
+        if l.megafauna and "flies" in l.traits:
+            from .. import dragon_ages as DA
+            return DA.generation_yr(self.tree.dragon_ages, self.tree.dragon_generation, l.generation_yr)
+        return l.generation_yr
+
     def whole(self, lid: str, P: np.ndarray | None = None) -> np.ndarray:
         """A people's presence with its groups (their sum, at most 1); a line without groups, its own."""
         P = self.p if P is None else P
@@ -58,7 +82,7 @@ class PeoplesMixin:
         l, area = self.lines[k], self.cell_mkm2 * 1e6
         x = np.where(P[k] >= EST, P[k], 0.0)
         if not l.overlay:
-            return x * self.dens[k] * area
+            return x * self.dens_at(k, P) * area
         hosts = sum(np.where(P[j] >= EST, P[j], 0.0) * self.dens[j]
                     for q in l.parents for j in [self.idx[q], *self._groups.get(q, [])])
         own = self._linger[k]
