@@ -3,7 +3,7 @@
 One field per cell, made once from the world's grazing NPP (gameattrs `grazing_npp`: the herb layer's NPP plus browse,
 season-weighted, g C/m2/yr; forests hold less than savanna because forest NPP is mostly wood). There are no predator-prey cycles
 (owner, 10-28: "just fit to what should work"). It feeds:
-- the megafauna's natural density (history.megafauna: dragons on Carbone & Gittleman 2002's carnivores per prey biomass);
+- the megafauna's natural density (history.megafauna: dragons on Carbone & Gittleman 2002's carnivores per prey biomass; checked: PDF p. 2);
 - people density later (PW-833: density = way-of-life factor x f(absolute NPP); `productivity` is that f, not yet read).
 
 **The fit.** Wild herbivore biomass is taken proportional to the grazing NPP, through PW-966's rich-savanna anchor: ~10 t/km2 at a

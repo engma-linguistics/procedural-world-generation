@@ -12,14 +12,14 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 |---|---|---|
 | marshall2021_trex_abundance_science.abc8300.pdf | Marshall et al. 2021, Science 372:284, doi:10.1126/science.abc8300 | Damuth intercepts by physiology; ecological (age-weighted) mass |
 | carbone_gittleman2002_carnivore_density_science.1067994.pdf | Carbone & Gittleman 2002, Science 295:2273, doi:10.1126/science.1067994 | carnivore density per prey biomass (Carnivora only) |
-| carbone2007_costs_of_carnivory_plosbiol.pdf | Carbone, Teacher & Rowcliffe 2007, PLoS Biol 5:e22 | predators over ~21.5 kg must take large prey |
+| carbone2007_costs_of_carnivory_plosbiol.pdf | Carbone, Teacher & Rowcliffe 2007, PLoS Biol 5:e22 | carnivores over a predicted 14.5 kg threshold (observed ~15-20 kg) gain more from large prey (read 2026-10-28; the earlier "~21.5 kg" is not in this paper) |
 | field2013_bird_mass_skeletal_plosone.pdf | Field, Lynner, Brown & Darroch 2013, PLoS ONE 8:e82000 | body mass from the skeleton in flying birds |
 | sato2009_soaring_seabirds_pterosaurs_plosone.pdf | Sato et al. 2009, PLoS ONE 4:e5400 | the size limit of soaring flight |
-| witton2010_giant_pterosaurs_plosone.pdf | Witton & Habib 2010, PLoS ONE 5:e13982 | *Quetzalcoatlus* ~250 kg, ~10.5 m span (dragon wing-loading anchor) |
+| witton2010_giant_pterosaurs_plosone.pdf | Witton & Habib 2010, PLoS ONE 5:e13982 | *Quetzalcoatlus* 200-250 kg, 10-11 m span (abstract; Table 2 uses 10.40 m at 250 kg, p. 7) (dragon wing-loading anchor) |
 | carbone2011_intraguild_trex_procb.pdf | Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 | intra-guild competition, T. rex |
 | ksepka2014_pelagornis_flight_pnas.pdf | Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 | *Pelagornis sandersi* flight, the largest volant bird |
-| hamilton2009_population_stability_huntergatherers_pnas.pdf | Hamilton, Burger, DeLong, Walker, Moses & Brown 2009, PNAS 106:12255 (doi to be checked) | hunter-gatherer density dependence; NOT the 2007 space-use paper listed below |
-| alexander2007_argentavis_commentary_pnas.pdf | Alexander 2007, PNAS commentary "Ancient Argentavis soars again" (doi to be checked) | commentary on Chatterjee et al. 2007; NOT the paper itself |
+| hamilton2009_population_stability_huntergatherers_pnas.pdf | Hamilton, Burger, DeLong, Walker, Moses & Brown 2009, PNAS 106:12255-12260, doi:10.1073/pnas.0905708106 (title: "Population stability, cooperation, and the invasibility of the human species") | hunter-gatherer density dependence; NOT the 2007 space-use paper listed below |
+| alexander2007_argentavis_commentary_pnas.pdf | Alexander 2007, PNAS 104:12233-12234, doi:10.1073/pnas.0705515104, commentary "Ancient Argentavis soars again" | commentary on Chatterjee et al. 2007; NOT the paper itself |
 | seymour2013_crocodile_power_gigantothermy_plosone.pdf | Seymour 2013, PLoS ONE 8:e69361 | aerobic and anaerobic power in large crocodiles vs mammals; dinosaur gigantothermy (bonus, not on the list) |
 
 ## Owner to fetch: free in PMC (open in a browser)

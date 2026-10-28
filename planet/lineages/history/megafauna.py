@@ -6,10 +6,10 @@ meta.giant_km2). The natural density is a setting, meta.megafauna_natural, with 
 the PW-967 review before any is fixed):
 - "prey" (default): from the static prey field (lineages.prey: wild herbivores from grazing NPP after overkill, plus livestock),
   taken over a dragon's foraging reach (FORAGE_KM). Dragons on Carbone & Gittleman (2002, Science 295:2273): carnivores per 10 t of
-  prey = 89.1 M^-1.05 (M kg) at the ecological mass, ~1 per 530 km2 at 1 t/km2 of prey for the base schedule's 3.2 t. Giants as
+  prey = 89.1 M^-1.05 (M kg; checked against the paper, PDF p. 2, N = 25) at the ecological mass, ~1 per 530 km2 at 1 t/km2 of prey for the base schedule's 3.2 t. Giants as
   mass-scaled foragers (below) x the land's productivity over its median (lineages.prey.productivity, the PW-833 rule).
 - "mesotherm": Damuth's law, density = a M^-0.75, on the intercept Marshall et al. (2021, Science 372:284) fit to dinosaurs,
-  log10 a = 2.99 (M in g, per km2), at the ecological mass, its food spread over every age: ~1 per 65 km2 for the base schedule,
+  log10 a = 2.99 (M in g, per km2; checked: Marshall Table 1, p. 284), at the ecological mass, its food spread over every age: ~1 per 65 km2 for the base schedule,
   uniform over the kind's country. Reptile field metabolic rate (Nagy, Girard & Brown 1999) at dragon size is ~0.55 of a mammal's,
   about the factor between this and the mammal-carnivore intercept.
 - "mammal": the same on the mammal-carnivore intercept (log10 a = 2.67): ~1 per 137 km2.
@@ -58,11 +58,11 @@ COUNTRY = {"wetland": "swamp", "forest": "forest", "jungle": "jungle", "volcanic
 
 
 DAMUTH_EXP = 0.75  # density ~ M^-0.75 (Damuth 1981)
-LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2021: log10 of Damuth's intercept (M in g, per km2)
+LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2021: log10 of Damuth's intercept (M in g, per km2); checked: Table 1 p. 284, mammal = 2.99 - log10(2.1) from the text
 # for dinosaur-like mesotherms, and for mammal carnivores (2.1x lower, the proposal's table)
 NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candidates
 NATURAL_DEFAULT = "prey"
-CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg
+CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring)
 FORAGER_KM2 = 0.1  # human foragers per km2, the proposal's median of hunter-gatherer densities (Binford 2001's dataset), the giants' baseline...
 FORAGER_KG = 65.0  # ...for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)

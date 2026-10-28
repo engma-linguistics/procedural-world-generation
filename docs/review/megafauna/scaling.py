@@ -5,6 +5,8 @@ Run: uv run python docs/review/megafauna/scaling.py. Standalone; nothing in plan
 import numpy as np
 ft=0.3048
 # ---------- Marshall et al. 2021 intercepts (log10, M in g, per km2) ----------
+# (checked against the paper: 2.99 is Table 1's mean, p. 284; the 2.1x steps and the ~35x herbivore step are in the text, p. 284;
+#  the 240x below is Table 1's 2.5%-97.5% tail ratio, log10 a 1.80 to 4.18)
 LA={"mammal carnivore":2.99-np.log10(2.1),"mesotherm (Marshall)":2.99,"varanid":2.99+np.log10(2.1),
     "mammal herbivore":2.99-np.log10(2.1)+np.log10(35)}
 dens=lambda M,la: 10**la*(M*1000)**-0.75
@@ -23,7 +25,7 @@ for k,h,b,rep in G:
     r=h*ft/ref_h; iso=ref_m*r**3; bm=iso*b; rob=ref_m*r**3.3*b
     M=bm; kc=70*M**0.75*1.7; yr=kc*365
     forager=0.1*(M/65)**-0.75  # human foragers ~0.1/km2 median
-    carn=197.6*M**-0.88/100      # Carbone & Gittleman density fit
+    carn=197.6*M**-0.88/100      # Carbone & Gittleman density fit (checked: PDF p. 2, 197.6 and -0.88)
     print(f"{k:6}{h*ft:6.1f}{iso:8.0f}{bm:9.0f}{rob:10.0f}{kc:9.0f}{kc/hum:8.1f}{yr/3400/1000:11.1f}{yr/625e3:8.0f}{yr/1200/1000:10.1f}{1/forager:14.0f}{1/carn:13.0f}{(1/rep if rep else float('nan')):11.0f}")
 # ---------- DRAGONS: Damuth at a single mass ----------
 print("\nDRAGON single-mass Damuth, 1 per X km2 (median; z of owner's 1/5000)")
@@ -36,7 +38,7 @@ for M in (2000,10000,20000,40000):
 for M in (2000,20000,40000):
     print(f"FMR {M/1000:.0f} t kcal/d:",{k:round(kcal(f(M))) for k,f in fmr.items()}, " reptile/mammal",round(fmr['reptile'](M)/fmr['mammal'](M),2))
 print("Komodo 70kg reptile/mammal",round(fmr['reptile'](70)/fmr['mammal'](70),2))
-# Carbone prey biomass needed per dragon
+# Carbone prey biomass needed per dragon (89.1 and -1.05 checked: PDF p. 2)
 for M in (2000,20000):
     per10t=89.1*M**-1.05
     print(f"Carbone: {M/1000:.0f} t carnivore needs {10/per10t:,.0f} t prey standing biomass each")
