@@ -206,7 +206,8 @@ const FOOT = {
   tree: `Time runs left to right, Myr to the present, on a log scale (tectonic run, glacial time zoom, recent pass). Drag a bar's left end to move when
     the line appears; click a bar to edit it. Origins: <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> ·
     <span style="color:#c79bff">arrival</span> · <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>.
-    <span style="color:#6bd6d0">group (a way of life within a people)</span>.
+    <span style="color:#6bd6d0">group (a way of life within a people)</span>. <span style="color:#fff">&#9670;</span> sapiens node: minds arrive once for the whole stem, its kinds split after it.
+    <span style="color:#b39c86">&rsaquo; dotted tail</span>: not extinct, the stem continues as animals, untracked (no peoples, techs or megafauna after it).
     Switching a line off: its split children re-parent to its parent; its hybrids, templates and groups go with it.`,
   peoples: `A people's groups (ways of life: steppe and forest orcs, human seafarers...) sit under it: ▸ opens them, + group adds one. Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
     habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
@@ -270,6 +271,13 @@ function endOf(r, eff, res) {
     .map((x) => kyrOf(x.at));
   return kids.length ? Math.min(...kids) : null;
 }
+// PW-965: a stem that ends at its last split without going extinct: the rest continues as non-sapient animals, untracked.
+// Drawn apart from extinction (the dagger): a dotted, fading tail to the present and an open chevron at the end.
+function animalsEnd(x, yy, r) {
+  const x1 = xOf(0.05), tip = `${esc(r.name || r.id)}: continues as animals, untracked (not extinct; no people, techs or megafauna count after this point)`;
+  return `<g class="animals"><line x1="${x}" x2="${x1}" y1="${yy}" y2="${yy}" stroke="#b39c86" stroke-width="2" stroke-dasharray="1 4" stroke-linecap="round" opacity=".7"><title>${tip}</title></line>
+    <path d="M${x - 3},${yy - 6} l7,6 l-7,6" fill="none" stroke="#b39c86" stroke-width="2"><title>${tip}</title></path></g>`;
+}
 function drawTimeline() {
   LMAX = Math.log10(Math.max(20000, ...T.lineage.map((r) => kyrOf(r.at) || 0)) * 1.15);  // no line starts off the left edge
   let rows = order();
@@ -305,6 +313,8 @@ function drawTimeline() {
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
       ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
+      ${kyrOf(r.sapient) != null ? `<path d="M${xOf(kyrOf(r.sapient))},${yy - 8} l5,8 l-5,8 l-5,-8 z" fill="#fff" stroke="#1b2230" stroke-width="1"><title>sapiens node: minds arrive for the whole ${esc(r.name || r.id)} stem ${fmt(kyrOf(r.sapient))} ago; its kinds split after it and inherit it</title></path>` : ''}
+      ${r.animals && end != null ? animalsEnd(xOf(end), yy, r) : ''}
       ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
     </g>`;
     ls += `<g class="lab${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.4 : 1}" style="cursor:pointer"><rect x="0" y="${yy - ROW / 2}" width="${W0 - 2}" height="${ROW}" fill="${sel === r.id ? '#233047' : 'transparent'}"/>` +
@@ -400,7 +410,9 @@ function drawSide() {
       ${field('name', `<input class="wide" data-k="name" value="${esc(r.name || '')}">`)}
       <div class="row">${field('origin', `<select data-k="origin">${Object.keys(ORIGIN_COL).map((x) => `<option ${x === o ? 'selected' : ''}>${x}</option>`).join('')}</select>`)}
         ${field('at (ago)', `<input data-k="at" size="9" value="${esc(r.at)}">`)}
-        ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
+        ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}
+        ${['split', 'root', 'arrival'].includes(o) ? field('sapiens node', `<input data-k="sapient" size="9" placeholder="(none)" title="Where minds arrive for this stem (PW-965): once, before its kinds split" value="${esc(r.sapient || '')}">`) : ''}
+        ${['split', 'root', 'arrival'].includes(o) ? `<label class="trait" title="Not extinct: after its last split the rest of the stem continues as non-sapient animals, untracked (PW-965)"><input type="checkbox" data-k="animals" ${r.animals ? 'checked' : ''}> continues as animals</label>` : ''}</div>
       ${o === 'group' ? `<div class="muted">A culture within the ${esc(byId()[parentsOf(r)[0]]?.name || parentsOf(r)[0])} (not a subspecies; its date is when it is first told apart, not a split; it may carry its own markers, e.g. lactase in body): it inherits what it leaves out, takes hold where its own niche
         beats its people's, mixes freely with them, and counts with them in the summaries.</div>` : ''}
       ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'group' ? 'group of (people)' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="${o === 'group' ? 'group_of' : 'parents'}" ${o === 'split' || o === 'group' ? '' : 'multiple size="4"'} class="wide">
@@ -477,6 +489,8 @@ function editLine(r, el) {
     if (el.value === '') delete r[k]; else r[k] = +el.value;
     if (k === 'band_km2' && el.value !== '') { r.density = +(BAND / +el.value).toPrecision(3); delete r.band_km2; }
   } else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
+  else if (k === 'sapient') { if (el.value.trim()) r.sapient = el.value.trim(); else delete r.sapient; }
+  else if (k === 'animals') { if (el.checked) r.animals = true; else delete r.animals; }
   else if (k === 'id') {
     const old = r.id; r.id = el.value.trim();
     for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));

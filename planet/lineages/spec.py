@@ -24,6 +24,12 @@ only take root, arrival or split origins; they compete with each other, not with
 Megafauna (PW-855, PW-924: `megafauna = true`, the dragons and the true giants) are counted animals, not peoples: a handful per pocket
 of their own country (history.megafauna), exempt from the peoples' range targets; `generation_yr` lowers their viable number,
 `group_size = [least, most]` says how many live together and `rivalry` (0..1) weakens the competition they feel and give.
+Sapience (PW-965): a stem may say `sapient = "T"`, the one dated "sapiens" node where minds arrive for the whole stem (it must lie
+between the stem's start and its first split child: the kinds split after it and inherit it, they do not evolve minds apart).
+`animals = true` (a non-persisting stem with split children) gives it a new kind of end, not extinction: at its last split the stem is
+assumed to continue only as non-sapient animals (the dragons' wyverns, drakes and pseudodragons), untracked from then on: no people,
+no tech, no megafauna count. It is the end a stem already has (history: the stem ends at its last split); the flag only says what
+becomes of the rest, and the timeline marks it apart from extinction. Neither field changes the simulation.
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -348,6 +354,8 @@ class Lineage:
     linger: bool = True  # contact hybrid: lives on as a small people of its own where its parents last met (False: never, PW-758)
     sites: int = 3  # template: incursion sites
     extinct_kyr: float | None = None  # gone by this long before the present (dwindles over the time before)
+    sapient_kyr: float | None = None  # a stem: the dated "sapiens" node where minds arrive for it (PW-965); not inherited. A marker, not simulated
+    animals_end: bool = False  # PW-965: the line's end (its last split) is not extinction: the rest continues as non-sapient animals, untracked. A marker; not inherited
     custom: bool = False  # added by the user (the editor marks it), not from a preset
     real: bool = False  # lives in the real-world mode too (meta.mode = 'real' keeps only these lines, PW-695)
     children: list[str] = field(default_factory=list)  # split children
@@ -733,7 +741,11 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
-                    extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None)
+                    extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None,
+                    sapient_kyr=parse_ago(r["sapient"]) if r.get("sapient") not in (None, "") else None,
+                    animals_end=bool(r.get("animals", False)))
+        if l.sapient_kyr is not None and (origin == "group" or not 0 < l.sapient_kyr < ago):
+            raise ValueError(f"{lid}: sapient ({l.sapient_kyr:g} kyr) must come after the stem appears ({ago:g} kyr) and before the present")
         if l.extinct_kyr is not None and not 0 <= l.extinct_kyr < ago:
             raise ValueError(f"{lid}: extinct ({l.extinct_kyr:g} kyr) must come after it appears ({ago:g} kyr)")
         lines[lid] = l
@@ -771,6 +783,13 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     for l in lines.values():
         if l.origin == "split":
             lines[l.parents[0]].children.append(l.id)
+    for l in lines.values():  # the kinds split after the sapiens node and inherit it (PW-965)
+        if l.sapient_kyr is not None:
+            late = [c for c in l.children if lines[c].ago_kyr > l.sapient_kyr]
+            if late:
+                raise ValueError(f"{l.id}: sapient ({l.sapient_kyr:g} kyr) must come before its kinds split ({', '.join(late)} split earlier)")
+        if l.animals_end and (l.persists or l.extinct_kyr is not None or not any(lines[c].extinct_kyr is None for c in l.children)):
+            raise ValueError(f"{l.id}: animals = true needs a stem that ends at its last split (living split children; not persists, not extinct)")
     wishes = []
     for w in raw.get("wish", raw.get("wishes", [])):
         want = str(w["want"])
@@ -910,6 +929,10 @@ def to_raw(t: Tree) -> dict:
             r["rivalry"] = l.rivalry
         if l.extinct_kyr is not None:
             r["extinct"] = f"{l.extinct_kyr:g} kyr"
+        if l.sapient_kyr is not None:
+            r["sapient"] = f"{l.sapient_kyr:g} kyr"
+        if l.animals_end:
+            r["animals"] = True
         if l.custom:
             r["custom"] = True
         if l.real:
