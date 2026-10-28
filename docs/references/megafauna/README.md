@@ -24,11 +24,11 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 
 ## Owner to fetch: free in PMC (open in a browser)
 
-- [ ] McNab 2009, PNAS 106:12184, doi:10.1073/pnas.0904000106 (PMC2715483): varanid ~22% of mammal energy use
+- [x] McNab 2009 (mcnab2009_dinosaur_energetics_pnas.pdf), PNAS 106:12184, doi:10.1073/pnas.0904000106 (PMC2715483): varanid ~22% of mammal energy use
 - [x] Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682, doi:10.1098/rspb.2010.2497 (PMC3136829): intra-guild competition, T. rex
-- [ ] (have only Alexander 2007's commentary on it) Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
+- [x] (chatterjee2007_argentavis_aerodynamics_pnas.pdf) Chatterjee, Templin & Campbell 2007, PNAS 104:12398, doi:10.1073/pnas.0702040104 (PMC1906724): *Argentavis* flight
 - [x] Ksepka 2014, PNAS 111:10624, doi:10.1073/pnas.1320297111 (PMC4115518): *Pelagornis sandersi* flight
-- [ ] (have Hamilton et al. 2009 instead, a different paper) Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
+- [x] (hamilton2007_spaceuse_huntergatherers_pnas.pdf) Hamilton, Milne, Walker & Brown 2007, PNAS 104:4765, doi:10.1073/pnas.0611197104 (PMC1810510): hunter-gatherer space use (giant forager baseline)
 
 ## Owner to fetch: paywalled (most wanted first)
 
