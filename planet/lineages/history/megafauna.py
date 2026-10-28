@@ -341,6 +341,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
                     pk["prey_t_km2"] = round(pt, 2)
                     pk["livestock_head"] = int(round(float(lvs[sel].sum()) * area / PR.HEAD_T))
                     pk["ancient_range_km2"] = int(round(ds["stage_cattle_yr"][3] * PR.HEAD_T / max(OFFTAKE * pt, 1e-6)))
+                    pk["ancient_cattle_yr"] = round(ds["stage_cattle_yr"][3], 1)
                 pk["cattle_yr"] = int(round(sum(n_ * f for n_, f in zip(pk["stages"], ds["stage_cattle_yr"]))))
             pockets.append(pk)
         pockets.sort(key=lambda p: -p["count"])

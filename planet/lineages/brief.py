@@ -685,16 +685,19 @@ def _megafauna(ctx: Ctx, sel: np.ndarray, era: float) -> list | None:
 
 
 def _bounty(pockets: list) -> str | None:
-    """PW-961: the adventurer hook. An ancient dragon over herders' country takes ~100 head a year from one valley: the families are
-    ruined and the lord posts a bounty. The pocket with the most ancients among livestock, said so; else None."""
-    best = max((p for p in pockets if p.get("stages") and p["stages"][3] and p.get("livestock_head")),
-               key=lambda p: (p["stages"][3], p["livestock_head"]), default=None)
-    if best is None:
+    """PW-961: the adventurer hook. An ancient dragon's yearly kill against the herders' stock inside its own range (its food over
+    the prey's sustainable offtake, history.megafauna): where that takes a large share of the herd, the families are ruined and the
+    lord posts a bounty. The pocket where an ancient takes the largest share of a herd of at least 20, said so; else None."""
+    def herd(p):
+        return p["livestock_head"] / max(p["km2"], 1) * p.get("ancient_range_km2", 0)
+    ok = [p for p in pockets if p.get("stages") and p["stages"][3] and p.get("livestock_head") and herd(p) >= 20]
+    if not ok:
         return None
-    n = best["stages"][3]
-    return (f"{n} ancient{'s' if n > 1 else ''} in the {best['country']} at {best['lat']:g}, {best['lon']:g}, each ranging"
-            f" ~{best.get('ancient_range_km2', 0):,} km² over ~{best['livestock_head']:,} head of the peoples' stock; the pocket takes"
-            f" ~{best.get('cattle_yr', 0):,} head a year, a valley's herd to each ancient: where bounties are posted")
+    best = min(ok, key=herd)
+    n, eat = best["stages"][3], best.get("ancient_cattle_yr", 0)
+    eat_txt = f"~{eat:.0f} head a year from" if eat else "its kills from"
+    return (f"{n} ancient{'s' if n > 1 else ''} in the {best['country']} at {best['lat']:g}, {best['lon']:g}: each takes {eat_txt} the"
+            f" ~{herd(best):,.0f} head the herders keep in its ~{best.get('ancient_range_km2', 0):,} km² range; where bounties are posted")
 
 
 def _marine_mask(ctx: Ctx) -> np.ndarray:

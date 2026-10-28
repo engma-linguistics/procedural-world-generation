@@ -98,4 +98,4 @@ def split(count: int, name: str, rng: np.random.Generator) -> list[int]:
 def stages_text(st: list[int]) -> str:
     """'1 ancient, 6 adults, 4 young, 1 wyrmling' (largest stages first in age order: ancients first)."""
     nm = (("wyrmling", "wyrmlings"), ("young", "young"), ("adult", "adults"), ("ancient", "ancients"))
-    return ", ".join(f"{st[s]} {nm[s][st[s] != 1]}" for s in (3, 2, 1, 0) if st[s])
+    return ", ".join(f"{int(st[s])} {nm[s][int(st[s]) != 1]}" for s in (3, 2, 1, 0) if st[s])

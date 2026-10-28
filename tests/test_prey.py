@@ -47,3 +47,16 @@ def test_gameattrs_raw_grazing_npp():
     g = out["grazing_npp"]
     assert g[0] > g[1] > 0 and g[2] == 0
     assert np.allclose(out["grazing"][:2], GA._sat(g[:2], 250.0), atol=0.06)
+
+
+def test_brief_bounty_hook_picks_the_ruined_valley():
+    """PW-961: the brief names the pocket where an ancient's kill is the largest share of the herd in its range."""
+    from planet.lineages.brief import _bounty
+
+    def p(head, km2, rng_, anc):
+        return {"stages": [0, 1, 2, anc], "livestock_head": head, "km2": km2, "ancient_range_km2": rng_,
+                "ancient_cattle_yr": 56.0, "country": "hills", "lat": 1.0, "lon": 2.0}
+    assert _bounty([p(1000, 1000, 300, 0)]) is None  # (no ancient)
+    assert _bounty([p(10, 1000, 300, 1)]) is None  # (no herd worth the name in its range)
+    t = _bounty([p(100000, 1000, 300, 1), p(100, 1000, 300, 2)])
+    assert t.startswith("2 ancients") and "~30 head" in t and "bounties" in t
