@@ -450,29 +450,50 @@ def coherence(sim, col, trench=None):
     subducting edge): a notch there is the slab grinding the forearc away
     (subduction_erosion), and welding it shut again every step made the
     erosion thin the continent instead of shrinking it (PW-046, PW-052).
+    Two more conditions on a weld (PW-970), or welds become a net source of
+    continental area that no process answers, spread thin from the
+    continents' volume (L5 seed 2, 380-400 Myr: 773 welds against 570
+    shreds, +200 cells, more than the rifted margins laid; 26% of the
+    continental crust thinner than 20 km, the area thermostat at x4.4):
+    - the inlet must be one on the plate itself (its cell on the plate's
+      own grid nearly ringed by the plate's continental crust, the same
+      count as on the world grid). A gap that only the world grid's
+      nearest-cell sampling of a moved plate shows (56% of the welds were
+      continental on the world grid the step before) is not welded: welding
+      it wrote continental crust into the plate's ocean cell at the coast,
+      while the continental cell the world grid showed there before stayed
+      on the plate, so every jitter of a sampled coastline grew the plate's
+      continent by a cell, a ratchet that runs with coastline length and
+      the cells per km (PW-749);
+    - the crust around it must be continental crust by the model's own
+      measure (its mean at least BECOMES_CONT_KM, as for a cell born
+      continental; the shred rule's bound): a hole among thin margin cells
+      is a gap in the ocean-continent transition, not in a continent.
     In place on col; returns (cells made continental, cells made oceanic)."""
     g = sim.grid
     own = sim.owner
     src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
     same = own[g.nbr_idx] == own[src]
     n_same = np.add.reduceat(same.astype(np.int64), g.nbr_off[:-1])
-    n_cont = np.add.reduceat((same & col.cont[g.nbr_idx]).astype(np.int64), g.nbr_off[:-1])
+    ok = same & col.cont[g.nbr_idx]
+    n_cont = np.add.reduceat(ok.astype(np.int64), g.nbr_off[:-1])
     ring = n_same >= 5  # (not on a plate boundary)
     weld = ring & ~col.cont & (n_cont >= n_same - 2) & (col.rock != HOTSPOT)
     if trench is not None:
         weld &= ~trench
+    s_t = np.add.reduceat(np.where(ok, col.t[g.nbr_idx], 0.0), g.nbr_off[:-1])
+    weld &= s_t >= BECOMES_CONT_KM * np.maximum(n_cont, 1)
+    weld[weld] = _inlet_on_plate(sim, np.flatnonzero(weld))
     shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
     if weld.any() or shred.any():
         v0 = col.t * col.cont
         col.cont = col.cont.copy()
         # (its basement: a continental neighbour's)
-        ok = same & col.cont[g.nbr_idx]
         first = np.minimum.reduceat(np.where(ok, np.arange(len(ok)), len(ok)), g.nbr_off[:-1])
         w = np.flatnonzero(weld)
         col.rock[w] = col.rock[g.nbr_idx[first[w]]]
         # crust flows in from the continental neighbours
         t = col.t
-        s_t = np.add.reduceat(np.where(ok, t[g.nbr_idx], 0.0), g.nbr_off[:-1])
         x = np.where(weld, np.maximum(s_t / np.maximum(n_cont, 1) - t, 0) / (n_cont + 1), 0.0)
         e = np.flatnonzero(ok & weld[src])
         loss = np.zeros(g.n)
@@ -484,6 +505,27 @@ def coherence(sim, col, trench=None):
         floor_age(sim, shred, col.cont)
         sim.book("coherence", v0, col.t * col.cont, 1.0)
     return weld, shred
+
+
+def _inlet_on_plate(sim, cells):
+    """For world cells `cells` (each an inlet on the world grid), whether
+    its owner's own grid shows the inlet too: the plate's cell there
+    (plates.idx) has all but 2 of its owned neighbours on that grid
+    continental. Returns a mask over cells."""
+    if len(cells) == 0:
+        return np.zeros(0, bool)
+    g, pl = sim.grid, sim.plates
+    k = sim.owner[cells]
+    r = pl.idx[k, cells]
+    st, deg = g.nbr_off[r], g.nbr_off[r + 1] - g.nbr_off[r]
+    n_own = np.zeros(len(cells), np.int64)
+    n_cont = np.zeros(len(cells), np.int64)
+    for j in range(int(deg.max())):
+        nb = g.nbr_idx[np.minimum(st + j, len(g.nbr_idx) - 1)]
+        owned = (j < deg) & pl.owned[k, nb]
+        n_own += owned
+        n_cont += owned & pl.cont[k, nb]
+    return n_cont >= n_own - 2
 
 
 def birth_and_cratons(sim, col, arcky, squeezed):
