@@ -52,3 +52,15 @@ was sure of, and journal references written from memory (PW-943). A general arch
 - [ ] Burke & Dewey 1973, J Geol 81:406-433. Plume-generated triple junctions; title and pages checked, contents not read
   (triple_rift, PW-952).
 - [ ] McKenzie 1978, Earth Planet Sci Lett 40:25-32. Stretched margins thin and subside (the shelves work, PW-950).
+
+## Sapience and language
+
+For the sapiens-node dates (PW-971, docs/review/lineages/sapiens-dates.md). Reading these would settle the "unverified" marks there.
+
+- [ ] Richter et al. 2017, Nature 546:293-296. The Irhoud dating companion to Hublin et al. 2017 (the 315 kyr figure; unverified, from memory).
+- [ ] Roebroeks & Villa 2011, PNAS. When fire became habitual (regular use, not first signs); reference written from memory, unverified.
+- [ ] Emery & Clayton 2004, Science 306:1903-1907, "The mentality of crows". The full corvid cognition review; reference from memory, unverified.
+- [ ] Olkowicz et al. 2016, PNAS. Bird pallium neuron counts, for the avian stem; reference from memory, unverified.
+- [ ] A big-cat cognition review (none found), for the feline stem.
+- [ ] The Dikika cut-mark dispute (a rebuttal to McPherron et al. 2010), no reference yet.
+- [ ] Dediu & Levinson 2013 full text for the Neanderthal/sapiens split date they use.
