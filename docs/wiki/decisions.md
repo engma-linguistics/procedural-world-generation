@@ -109,3 +109,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
   - Natural dragon numbers are reviewed on maps against familiar areas before they are fixed (PW-967).
   - Sapience arises once per stem at a dated node. Non-sapient kin live on as wyverns, drakes and pseudodragons (PW-965).
   - Kinds outside the tree (trolls, ogres) are DM-scale and not tracked.
+- 2026-10-28 (owner): don't track non-sapient kin (wyverns, ogres, trolls...). A line may end as 'continues as animals, untracked', distinct from extinction, likely the stem's end at its split (PW-965).

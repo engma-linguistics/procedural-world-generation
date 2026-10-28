@@ -2,7 +2,7 @@
 id: PW-965
 title: Sapience arises once per stem (a dated "sapiens" node); the non-sapient lines live on as animals (wyverns, drakes, pseudodragons)
 type: story
-status: todo
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -45,4 +45,5 @@ Owner 2026-10-28.
 **Out of scope.** Giant-line offshoots such as trolls and ogres are not tracked. Anything not in the tree is DM-scale: occasional lone creatures or small bands, too few to count in the simulation. Troglodytes going extinct is fine.
 
 ## Updates
+- 2026-10-28: Status todo -> in-progress. Owner 10-28 correction: no animal-kin lines (it would pull in much of the Monster Manual). Instead a line gets an endpoint, 'continues as animals, untracked', not extinction, likely the same end a stem already has at its split.
 - 2026-10-28: Created from inbox draft draft-megafauna-10-sapience-node-and-animal-kin.md (found by daniel).
