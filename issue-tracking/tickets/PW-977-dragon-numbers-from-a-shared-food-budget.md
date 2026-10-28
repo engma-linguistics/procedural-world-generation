@@ -2,7 +2,7 @@
 id: PW-977
 title: Dragon numbers from a shared food budget - the land's surplus split between dragons, hunters and herders, not a fixed 1 per 5,000 km2
 type: story
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -49,4 +49,5 @@ Options:
 Lean: C (A in stages), with the younger age schedule (PW-958), which halves food per dragon.
 
 ## Updates
+- 2026-10-28: Status needs-decision -> todo. Owner 10-28: go with C (staged): 1) food cap against wild prey + stock, 2) peoples' share, 3) persecution. Younger schedule (PW-958). Stage 1 starts after the PW-975 McNaughton lane merges.
 - 2026-10-28: Created from inbox draft draft-megafauna-food-budget-equilibrium.md (found by coordinator).
