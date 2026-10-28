@@ -1,8 +1,10 @@
 ---
+id: PW-976
 title: Giants' forager baseline of 0.1 per km2 has no located source
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: infra
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: citation-check-hamilton-chatterjee-mcnab
 blocked_by: []
 relates: [PW-938, PW-963]
 refs: [planet/lineages/history/megafauna.py, docs/proposals/megafauna-scaling.md, docs/references/megafauna/README.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -26,3 +30,6 @@ Options:
 - C: leave as an owner-set setting and say so in the docs.
 Lean: C, since the giants are hand-waved placement anyway (PW-936) and the note in the proposal already says the 0.1 is unsourced; A only if Binford turns up.
 - [ ] decision made; constant, comment and proposal agree
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-forager-density-source.md (found by citation-check-hamilton-chatterjee-mcnab).
