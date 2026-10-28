@@ -2,7 +2,7 @@
 id: PW-565
 title: Stress rifts die out after ~600 Myr (10-16 per 200 Myr -> 1-5), so ridges shorten and the floor ages to 75-120 Myr
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: tectonics
@@ -40,5 +40,6 @@ set, and the deficit is in ridge length, not speed.
 - [ ] the floor's mean age over 300-2000 Myr stays within ~50-80 Myr on ~70% of seeds
 
 ## Updates
+- 2026-10-28: Status todo -> done. Merged (lane 22): largest plate 41 -> 26% over 600-1000 Myr, paired 31/36 vs 31/36; owner approved the examples 10-28.
 - 2026-10-28: Owner 10-28: likely an earlier kludge, experiment it away; moved to v1 with the triple-junction ticket.
 - 2026-10-22: Created from inbox draft draft-stress-rifts-die-out-late.md (found by pw549).

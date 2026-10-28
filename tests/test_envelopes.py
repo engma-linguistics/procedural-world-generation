@@ -43,11 +43,13 @@ def world(request):
     )
 
 
-def test_land_and_crust(world):
+def test_land_and_crust(world, request):
     assert 22 <= world["land"] <= 42, world["land"]  # Earth 29
     assert 33 <= world["cont"] <= 50, world["cont"]  # Earth ~41 incl. shelves
     # Earth ~35-40. Level 5 (240 km cells), 320 Myr: 29.5-34.8 km across recent code versions
     # (runs are deterministic since PW-215); L6/L7 34-36 km since PW-052
+    if request.node.callspec.params["world"] == 2 and 27 <= world["thick"] < 28:
+        pytest.xfail(f"PW-970: sustained rifting (PW-565) spreads continents thinner, {world['thick']:.1f} km < 28 (owner 10-28: merge, fix next)")
     assert 28 <= world["thick"] <= 42, world["thick"]
 
 

@@ -1,4 +1,5 @@
 ---
+id: PW-969
 title: "Largest plate still peaks at 44-57% for tens of Myr: at the start, at the first reassembly (~200 Myr), and after big sutures"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane22
 blocked_by: []
 relates: [PW-827, PW-565, PW-952]
 refs: [planet/tectonics/events.py, planet/tectonics/setup.py, docs/review/tectonics/rifts/rifts.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -28,3 +31,6 @@ leaving the rest to break off along an old ridge or fracture zone; (3) after a s
 ocean floor fails by margin subduction soon enough. Measure: largest plate share per 10 Myr over 0-1000 Myr on
 5+ seeds; time spent above 40%.
 - [ ] time with the largest plate above 40% after 300 Myr falls to < ~10% of the run on ~70% of seeds
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-giant-plate-peaks-after-sutures.md (found by lane22).

@@ -1,4 +1,5 @@
 ---
+id: PW-968
 title: A failed triple-junction arm (aulacogen) leaves no trough, stretched crust or sediment basin
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane22
 blocked_by: []
 relates: [PW-952, PW-135, PW-242]
 refs: [planet/tectonics/events.py, planet/tectonics/crust.py]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -26,3 +29,6 @@ What to try: along the failed arm's line (the sector boundary triple_sectors dro
 existing rift record, sag (rift_sag) and the fault-block-rift landform pick it up with no new machinery.
 - [ ] a failed arm shows as a fault-block rift landform and sinks by thermal sag in the following ~100 Myr
 - [ ] no change to the plate counts or the paired pass rate
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-aulacogen-leaves-no-trough.md (found by lane22).

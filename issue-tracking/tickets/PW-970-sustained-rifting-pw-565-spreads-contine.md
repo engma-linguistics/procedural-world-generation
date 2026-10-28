@@ -1,7 +1,8 @@
 ---
+id: PW-970
 title: "Sustained rifting (PW-565) spreads continents thinner: L5 envelope test_land_and_crust[2] at 27.7 km < 28"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: tectonics
@@ -11,6 +12,8 @@ found_by: lane22
 blocked_by: []
 relates: [PW-565, PW-952, PW-749, PW-046, PW-052]
 refs: [planet/tectonics/crust.py, planet/tectonics/events.py, tests/test_envelopes.py, docs/review/tectonics/rifts/rifts.md]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
@@ -35,3 +38,7 @@ Options:
   L5 has sat at 29.5-34.8 km across versions; L6/L7 are 34-36 km on main).
 - [ ] test_envelopes passes with the rift fixes in
 - [ ] L6 continental crust back to ~33-35 km at 1 Gyr without bringing back the late giant plates
+
+## Updates
+- 2026-10-28: Status needs-decision -> todo. Owner 10-28: test_land_and_crust[2] marked xfail (27-28 km only); tell the owner if it still fails after the rework. Real thin crust: Basin and Range ~25-30 km, Afar thinner.
+- 2026-10-28: Created from inbox draft draft-rifting-thins-continents.md (found by lane22).

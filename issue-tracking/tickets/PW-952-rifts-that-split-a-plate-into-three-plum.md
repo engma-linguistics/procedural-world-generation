@@ -2,7 +2,7 @@
 id: PW-952
 title: "Rifts that split a plate into three: plume-centred triple junctions (with PW-565)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: tectonics
@@ -25,4 +25,5 @@ Try a plume-centred rift on a big plate: two or three arms from one point, with 
 - [ ] Before/after plate maps in docs/review/tectonics/.
 
 ## Updates
+- 2026-10-28: Status todo -> done. Merged (lane 22): largest plate 41 -> 26% over 600-1000 Myr, paired 31/36 vs 31/36; owner approved the examples 10-28.
 - 2026-10-28: Created from inbox draft draft-triple-junction-rifts.md (found by coordinator).
