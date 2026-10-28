@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-888, PW-917, PW-920]
 refs: []
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 ---
 
 ## Description
@@ -54,5 +54,6 @@ Owner 2026-10-27 (agreed with the coordinator's proposal). Dragons and giants ju
 Breeding stays a mystery, like eels before the Sargasso Sea: new dragons just turn up now and then. No mating sites are modelled.
 
 ## Updates
+- 2026-10-28: 10-28: the density derivation in the comments ('apex hunter 2-3 orders below the herbivore line, Carbone & Gittleman') is unsupported; corrected basis in docs/proposals/megafauna-scaling.md, fix carried by inbox draft-megafauna-1. Papers in docs/references/megafauna/.
 - 2026-10-27: Status todo -> done. Merged fun lane 37 (counted megafauna). Coverage shortfall continues in the intake draft.
 - 2026-10-27: Created from inbox draft draft-megafauna-placement.md (found by owner).

@@ -4,7 +4,7 @@ title: "PW-915: measure the finish window's drift with the step-length threshold
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: tectonics
 effort: s
 impact: low

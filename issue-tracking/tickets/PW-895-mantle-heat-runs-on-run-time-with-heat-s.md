@@ -2,9 +2,9 @@
 id: PW-895
 title: "Mantle heat runs on run time with heat_start 1: a 2 Gyr run's 2.0 Ga mantle is today's, and its outgassing drifts to ~0.7-0.8 of the spin-up's"
 type: task
-status: needs-decision
-parent: null
-milestone: v1
+status: todo
+parent: PW-470
+milestone: v2
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-859]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-28
 ---
 
 ## Description
@@ -27,5 +27,6 @@ argues a hotter mantle had slower plates, so the sign on the CO2 flux is debated
 look at the sea-level and continent paths, which also read heat().
 
 ## Updates
+- 2026-10-28: Owner 10-28: decide this by going live on the 2 Gyr runs ticket (PW-894), v2 under the ice-age epic.
 - 2026-10-26: Held on hold/v1-finish-15-heat: no 2 Gyr gain, L6 1 Gyr all checks 12->9/18, L7 4->2/8. Revisit with 2 Gyr post-v1.
 - 2026-10-26: Created from inbox draft draft-mantle-heat-by-age.md (found by v1-finish-14).

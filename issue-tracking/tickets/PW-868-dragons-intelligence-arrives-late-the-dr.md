@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-855]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/samples/seven_meals.toml, planet/lineages/spec.py]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-28
 ---
 
 ## Description
@@ -22,4 +22,5 @@ Options: (A) a line field `sapient_kyr` (default: always), read by the brief/out
 - [ ] dragons listed as animals before their intelligence date, as a people after it, in dnd and seven_meals
 
 ## Updates
+- 2026-10-28: RULING (owner, 10-28): sapience arises once per stem at a dated 'sapiens' node, not per kind; non-sapient lines live on as animals (wyverns, drakes, pseudodragons). Carried by inbox draft-megafauna-10.
 - 2026-10-25: Created from inbox draft draft-dragon-intelligence-late.md (found by fun-lane-26).

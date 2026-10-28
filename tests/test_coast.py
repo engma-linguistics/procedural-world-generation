@@ -245,8 +245,8 @@ def three_deltas(water_world):  # noqa: F811
 
 
 def _measures(z):
-    """Within the delta plain (radius R) of the zoom's main delta: coast
-    length per R (roughness), how far land reaches seaward beyond the coast
+    """Within the delta plain (radius R) of the zoom's main delta: how much the outer coast
+    wanders across it per R (roughness), how far land reaches seaward beyond the coast
     at the mouth (protrusion, in R), and the sea's share in a band just
     inside the coast vs further inland (channels widening seaward)."""
     d = z["stats"]["deltas"][0]
@@ -259,18 +259,24 @@ def _measures(z):
     a, b = dx * u[0] + dy * u[1], dx * -u[1] + dy * u[0]
     land = z["layers"]["water"] != 1
     sea = ~land
-    coast = land & zoom._dilate(sea, 1)
-    disc = np.hypot(dx, dy) < R
-    rough = coast[disc].sum() * res / R
     beam = np.abs(b) < 0.7 * R
-    reach = a[land & beam].max() / R
+    reach = a[land & (np.abs(b) < 0.3 * R)].max() / R  # (on the delta's axis: a diagonal coast reaches further out at the beam's edges)
     # the coast at the mouth: the median seaward reach of land across the beam
     cols = [a[land & beam & (np.abs(b - c) < res)].max() for c in np.arange(-0.6 * R, 0.6 * R, 2 * res)
             if (land & beam & (np.abs(b - c) < res)).any()]
     s0 = float(np.median(cols))
+    # roughness: how much the outer coast across the beam wanders, per R (PW-847: counting every coast
+    # pixel in the disc counted a wave delta's lagoon shores as rough; its bird's foot no longer is)
+    rough = float(np.abs(np.diff(cols)).sum()) / R
+    # the coast the delta stands out from: its flanks, beyond the lobe and the tide's funnels (PW-847: with
+    # the bird's foot now a few km wide and ~0.1 R long, the funnels' notches set the median above)
+    flank = [a[land & (np.abs(b - c) < res)].max() for c in np.r_[np.arange(-1.0 * R, -0.7 * R, 2 * res),
+                                                                   np.arange(0.7 * R, 1.0 * R, 2 * res)]
+             if (land & (np.abs(b - c) < res)).any()]
+    s_ref = float(np.median(flank))
     near = beam & (a > s0 - 0.15 * R) & (a < s0 - 0.02 * R)
     inland = beam & (a > s0 - 0.45 * R) & (a < s0 - 0.3 * R)
-    return {"rough": rough, "reach": reach - s0 / R, "sea_near": sea[near].mean(), "sea_inland": sea[inland].mean(),
+    return {"rough": rough, "reach": reach - s_ref / R, "sea_near": sea[near].mean(), "sea_inland": sea[inland].mean(),
             "mouths": d["mouths"], "type": d["type"], "weights": d["weights"]}
 
 

@@ -4,7 +4,7 @@ title: Shelves stay ~1.5% of the ocean because the submerged continent sits ~1.5
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med
@@ -28,4 +28,5 @@ crust thinned. Try water-loaded isostasy for sea cells of continental crust (no 
 - [ ] shelf share of ocean >= 3% without a pass-rate cost on the paired judge
 
 ## Updates
+- 2026-10-28: Owner 10-28: if it fails a round or three, record what was tried, why it failed and suggestions, then move it to v2.
 - 2026-10-28: Created from inbox draft draft-shelf-water-loaded-isostasy.md (found by lane19b).

@@ -3,8 +3,8 @@ id: PW-896
 title: "N2O in ghg_conc: all of it scales with ice-free land (the ocean's ~1/3 shouldn't), and there is no deep-time N2O"
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: xs
 impact: low

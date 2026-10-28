@@ -2,7 +2,7 @@
 id: PW-892
 title: "World coastal layers (living reef, kelp) ignore the sea-life calendar: a `slice --ago 600` world still gets coral reefs"
 type: task
-status: todo
+status: done
 parent: PW-244
 milestone: v1
 subsystem: coast
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-807]
 refs: [planet/coastal.py, planet/tectonics/earth.py, planet/timeline.py]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-28
 ---
 
 ## Description
@@ -28,4 +28,5 @@ the reef builders. Default worlds are taken at the run's end, so they are right;
 - [ ] kelp (brown algae, ~ Mesozoic-Cenozoic radiation) checked against the same calendar
 
 ## Updates
+- 2026-10-28: Status todo -> done. Lane 21: run meta reef_builders_t, world meta vegetation.reef_builders (sim and keyframe paths), coastal.reef_builders gates the reef habitat and volcano reef rings (coral coasts follow). slice --ago 600 of run 479429: 0 reef cells (614 at the end). Kelp left as an inbox draft (no citable date in hand).
 - 2026-10-26: Created from inbox draft draft-coastal-reefs-on-the-calendar.md (found by v1-finish-10).

@@ -25,7 +25,9 @@ from .habitat import hold_mask
 if TYPE_CHECKING:
     from .model import History
 
-LINK_KM = {"flies": 1500.0, "walks": 800.0}  # pockets this close are one population: a dragon's flight, a giant's range (JUMP_KM)
+LINK_KM = 1500.0  # pockets this close are one population: a dragon's flight, and a giant's roaming too (PW-936: owner ruling that
+# giants "just need to be where they need to be", hand-waved placement being fine for megafauna; so the walking giants, hill, cloud
+# and frost, roam as far as dragons fly and wade straits, rather than a walker's 800 km JUMP_KM that left their country out of reach)
 SUITABLE = 0.5  # a cell is suitable country for a kind where its habitat suitability (History._suit) is at least this
 TARGET_SHARE = 0.5  # the target: at least this share of the suitable country lies in patches the kind reaches
 COUNTRY = {"wetland": "swamp", "forest": "forest", "jungle": "jungle", "volcanic": "volcano country", "mountain": "mountains",
@@ -41,7 +43,7 @@ SCATTER_LINKS = 5.0  # wait for crowding as a people's jump does (History._jump)
 def scatter(h: History, l, k: int, K: np.ndarray, step, env: dict) -> None:
     """PW-924: a megafauna line reaches many separate pockets of its country by flight or long range, not one big range: a Poisson
     number of new pockets (SCATTER_RATE x dt) in cells of suitable habitat (K >= SUITABLE, its realm) not yet held, within SCATTER_LINKS
-    reaches of the pockets it holds (a flier over land and sea; a walker over land, the sea at its own reach), drawn by K."""
+    reaches of the pockets it holds (over land and sea, LINK_KM), drawn by K."""
     g = h.grid
     rng = h.__dict__.setdefault("_mrng", {}).get(l.id)
     if rng is None:
@@ -53,7 +55,7 @@ def scatter(h: History, l, k: int, K: np.ndarray, step, env: dict) -> None:
     reach = link_km(l)
     land = env["land"]
     realm = hold_mask(l, h._tags_now) if l.marine else land
-    cost = np.full(g.n, h.cell_km / reach) if ("flies" in l.traits or l.marine) else np.where(land, h.cell_km / reach, 2 * h.cell_km / reach)
+    cost = np.full(g.n, h.cell_km / reach)  # (over land and sea alike: dragons fly, giants wade straits; LINK_KM)
     D = jump_reach(held, cost, SCATTER_LINKS, g.nbr_off, g.nbr_idx)
     cand = (K >= SUITABLE) & realm & ~held & (D > 0)
     if not cand.any():
@@ -68,7 +70,15 @@ def scatter(h: History, l, k: int, K: np.ndarray, step, env: dict) -> None:
 
 
 def link_km(line) -> float:
-    return LINK_KM["flies" if "flies" in line.traits else "walks"]
+    return LINK_KM
+
+
+def metapop_km(line) -> float:
+    """PW-936: pockets within the reach of scatter (SCATTER_LINKS x link_km) are one metapopulation for the viable-number fade
+    (History._viable): the same dispersal that founds a pocket from its neighbours keeps it in touch with them, as patches linked by
+    colonisation persist together though each alone would wink out (Levins 1969; Hanski 1998, "Metapopulation dynamics", Nature 396).
+    Linked only within one reach, a pocket scatter founded farther off was faded as an isolate (most of the red and black dragons' losses)."""
+    return SCATTER_LINKS * link_km(line)
 
 
 def linked_pockets(h: History, held: np.ndarray, km: float) -> tuple[np.ndarray, int]:

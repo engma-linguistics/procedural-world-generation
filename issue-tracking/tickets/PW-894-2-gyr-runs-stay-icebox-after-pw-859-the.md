@@ -3,14 +3,14 @@ id: PW-894
 title: "2 Gyr runs stay icebox after PW-859: the bare-ground weathering thermostat returns only ~40% of the faint star's forcing"
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
 found_by: v1-finish-14
 blocked_by: []
-relates: [PW-859, PW-865]
+relates: [PW-859, PW-865, PW-815, PW-895]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-14/README.md]
 created: 2026-10-26
 updated: 2026-10-26

@@ -3,8 +3,8 @@ id: PW-828
 title: "Time-zoom glacial CO2 drop gives 0.47x at the LGM (Earth 0.68x): express it as a glacial pCO2 ratio"
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: xs
 impact: med

@@ -3,8 +3,8 @@ id: PW-899
 title: PW-880's balance-CO2 plants for the weathering sink run vegetation.model twice per climate update; measure the cost and find a cheaper exact form
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: low

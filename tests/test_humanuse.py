@@ -85,6 +85,24 @@ def test_harbour_needs_shelter_and_deep_water():
     assert cls4[30 * nx + 18] > cls[30 * nx + 18]
 
 
+def test_no_harbour_in_a_sea_pit_cut_off_inside_a_zoom():
+    """PW-844: an ice-ringed polar zoom listed 581 harbour pixels, all in pits of 'sea' among high
+    ground that no ship reaches: a zoom's harbours need water joined to its edge (or a sea of its own)."""
+    ny = nx = 60
+    land = np.ones((ny, nx), bool)
+    yy, xx = np.mgrid[:ny, :nx]
+    land[np.hypot(yy - 30, xx - 20) < 5] = False  # a pit, 10 px across
+    land[:, 55:] = False  # the open sea along the east edge
+    sea = ~land
+    open_ = HU.open_sea(sea, 1.0)
+    assert open_[:, 55:].all() and not open_[30, 20]
+    assert HU.open_sea(sea, 10.0)[30, 20]  # (at 10 km/px the pit is a 100 km sea of its own)
+    L = {"elevation": np.where(land, 2000.0, -800.0), "water": sea.astype(np.uint8)}
+    out, _ = HU.analyse_zoom(L, 1.0)
+    h = out["harbour"]
+    assert not h[np.hypot(yy - 30, xx - 20) < 8].any()
+
+
 def test_pass_is_the_lowest_saddle_of_a_range():
     ny, nx = 40, 60
     yy, xx = np.mgrid[:ny, :nx]

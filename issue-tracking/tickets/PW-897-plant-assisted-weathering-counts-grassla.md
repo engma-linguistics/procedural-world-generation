@@ -2,9 +2,9 @@
 id: PW-897
 title: Plant-assisted weathering counts grassland like forest and feels no CO2 below 124 ppm, so it falls ~1.6x from 400 to 100 ppm where Beerling et al. 2012 find ~4x
 type: task
-status: needs-decision
-parent: PW-244
-milestone: v1
+status: todo
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-865, PW-806]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, docs/review/base-climate/v1-finish-13/README.md]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-28
 ---
 
 ## Description
@@ -54,4 +54,5 @@ Lean B for v1 (rare after the drift fix; re-check in the v1-finish-13 tally) and
 literature number for grass against forest weathering before any change.
 
 ## Updates
+- 2026-10-28: Status needs-decision -> todo. Coordinator 10-28: v2 under PW-470; not needed for the v1 bar.
 - 2026-10-26: Created from inbox draft draft-plant-weathering-grass-as-forest.md (found by v1-finish-13).

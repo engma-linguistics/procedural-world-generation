@@ -52,13 +52,12 @@ class DispersalMixin:
     def line_mvp(self, l) -> float:
         """The viable number of a line's patch: tree.viable_pop for a people of GENERATION_YR, smaller for a longer-lived one. Over the
         same span in years a long-lived line lives fewer generations, and the number it needs goes as the horizon in generations to
-        1/PERSIST_EXP (Lande 1993, as origin_mvp): dragons at 200 yr need 1/8 of it, giants at 65 yr ~0.4 (PW-924)."""
-        if not l.megafauna:  # (the peoples keep the tree's number; see the inbox draft on a general rule)
-            return float(self.tree.viable_pop)
+        1/PERSIST_EXP (Lande 1993, as origin_mvp): dragons at 200 yr need 1/8 of it, giants at 65 yr ~0.4 (PW-924), elves at 50 yr 1/2,
+        dwarves and gnomes at 40 yr ~0.6; for every line, people or megafauna (PW-937). Capped at 1: a short-lived line keeps the tree's number."""
         return self.tree.viable_pop * min(1.0, SP.GENERATION_YR / max(l.generation_yr, 1e-6)) ** (1.0 / PERSIST_EXP)
 
     def _viable(self, l, k, dt, step):
-        """A separate patch of the people's land holding fewer than tree.viable_pop people fades (e-folding
+        """A separate patch of the people's land holding fewer than its viable number (line_mvp) fades (e-folding
         MVP_TAU_KYR): a sparse people (a band roaming thousands of km²) needs a large piece of good country to
         hold a land. Only for lines sparse enough that the viable number needs more than 2 cells; never the
         largest patch (a people's last land is the refuge logic's)."""
@@ -69,7 +68,7 @@ class DispersalMixin:
         held = self.p[k] >= EST
         if not held.any():
             return
-        lab, n = self.grid.components(held) if not l.megafauna else MG.linked_pockets(self, held, MG.link_km(l))
+        lab, n = self.grid.components(held) if not l.megafauna else MG.linked_pockets(self, held, MG.metapop_km(l))
         if n < 2:
             return
         pop = np.bincount(lab[held], weights=self.p[k][held] * self.dens[k] * area, minlength=n)
@@ -213,7 +212,7 @@ class DispersalMixin:
             area = self.cell_mkm2 * 1e6
             for r in range(1, max(2, int(round(FOUNDER_KM / cell))) + 1):
                 blob = rings(c, free, r, g.nbr_off, g.nbr_idx)
-                if (np.minimum(room[blob], np.clip(K[blob], 0.3, 1)) * self.dens[k] * area * 0.5).sum() >= self.tree.viable_pop:
+                if (np.minimum(room[blob], np.clip(K[blob], 0.3, 1)) * self.dens[k] * area * 0.5).sum() >= self.line_mvp(l):
                     break
             self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
             self.jumps_n[l.id] = self.jumps_n.get(l.id, 0) + 1

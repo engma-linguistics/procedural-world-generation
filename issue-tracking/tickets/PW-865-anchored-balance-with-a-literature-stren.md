@@ -3,8 +3,8 @@ id: PW-865
 title: "Anchored balance: with a literature-strength thermostat the planet sits at its balance climate (+1.5 C, 500 ppm), too icy for the strict bar; the star thermostat passes it (16/18 L6) only by pinning at +4% luminosity, with warm finishes and treeless wet tropics"
 type: task
 status: in-progress
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

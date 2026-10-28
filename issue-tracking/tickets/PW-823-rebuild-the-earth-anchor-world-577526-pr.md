@@ -3,8 +3,8 @@ id: PW-823
 title: Rebuild the Earth anchor world (577526 predates ~15 climate commits) and re-check PW-808 on it
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

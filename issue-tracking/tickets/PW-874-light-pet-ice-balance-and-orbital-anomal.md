@@ -3,8 +3,8 @@ id: PW-874
 title: Light, PET, ice balance and orbital anomalies use today's S0 while the run's star is fainter (or thermostatted)
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: low

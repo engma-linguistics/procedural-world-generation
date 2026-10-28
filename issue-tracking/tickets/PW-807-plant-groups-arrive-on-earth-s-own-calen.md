@@ -3,8 +3,8 @@ id: PW-807
 title: Plant groups arrive on Earth's own calendar counted back from the run's end ('now'), with per-seed spread and a latest deadline
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

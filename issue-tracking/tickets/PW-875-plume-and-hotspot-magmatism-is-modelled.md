@@ -3,8 +3,8 @@ id: PW-875
 title: Plume and hotspot magmatism is modelled but never outgasses CO2; the resized drift no longer stands in for it
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: med

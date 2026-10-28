@@ -3,8 +3,8 @@ id: PW-881
 title: Weathering's runoff factor scales with the global-mean rain law, not the land runoff the climate computes
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

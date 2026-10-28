@@ -3,8 +3,8 @@ id: PW-812
 title: "Star anchor: re-measure the v1 climate bar and PW-806's showcase diagnosis on the anchored star; add an end-counted last-540-Myr window as a reported diagnostic"
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

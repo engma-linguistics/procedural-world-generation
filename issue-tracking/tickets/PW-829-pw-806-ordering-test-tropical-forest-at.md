@@ -3,8 +3,8 @@ id: PW-829
 title: "PW-806 ordering test: tropical forest at the LGM < Holocene <= today, gated on PW-808"
 type: task
 status: todo
-parent: PW-244
-milestone: v1
+parent: PW-470
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

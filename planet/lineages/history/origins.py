@@ -311,7 +311,7 @@ class OriginsMixin:
         populations, not in one cradle (Scerri et al. 2018, "Did our species evolve in subdivided populations across Africa", TREE 33),
         and the same adaptation arises apart in separate patches of one kind of country (high altitude: Tibetans, Andeans and Ethiopian
         highlanders, Beall 2007, PNAS 104). A few patches, more for a wider parent (one per POLY_MKM2 of its range, at most POLY_MAX in
-        all), the best first, each needing a viable population (tree.viable_pop) of its own; still one line."""
+        all), the best first, each needing a viable population (line_mvp, PW-937) of its own; still one line."""
         g = self.grid
         n_more = min(POLY_MAX, int(P.sum() * self.cell_mkm2 / POLY_MKM2)) - 1
         if n_more <= 0:
@@ -324,7 +324,7 @@ class OriginsMixin:
         w = np.bincount(lab[own], weights=K[own], minlength=n)
         out = np.zeros(g.n, bool)
         for c in np.argsort(-w)[:n_more]:
-            if w[c] * self.dens[k] * area * 0.5 < self.tree.viable_pop:
+            if w[c] * self.dens[k] * area * 0.5 < self.line_mvp(line):
                 break
             sel = lab == c
             cell = int(np.argmax(np.where(sel, K, -1.0)))

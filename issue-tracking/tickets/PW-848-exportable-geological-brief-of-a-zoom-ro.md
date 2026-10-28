@@ -4,7 +4,7 @@ title: "Exportable geological brief of a zoom: rock record, structures and depos
 type: task
 status: todo
 parent: PW-244
-milestone: v1
+milestone: v2
 subsystem: zoom
 effort: s
 impact: med
