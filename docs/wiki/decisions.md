@@ -119,3 +119,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28: Owner: PW-958 younger age schedule is the default; PW-977 present dragon density becomes a food-budget equilibrium (supply from prey + stock, demand from peoples and other predators, persecution separate), built in stages after PW-975.
 - 2026-10-28: The megafauna side session is closed; megafauna design continues in the main session. PW-973 closed into PW-977 and PW-975; PW-967 reviewed.
 - 2026-10-28: Owner: PW-959 dragon generation ~430 yr default for now (flag if counts wobble). PW-947/PW-971: language only after a stem's sapiens node; only bare-bones tool use before it. Node dates get a sourced review doc first.
+- 2026-10-28: Merged the sapiens node dates review doc (docs/review/lineages/sapiens-dates.md, PW-971/PW-978); owner gut call pending.

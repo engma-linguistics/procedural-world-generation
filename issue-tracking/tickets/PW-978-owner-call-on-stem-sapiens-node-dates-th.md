@@ -1,4 +1,5 @@
 ---
+id: PW-978
 title: Owner call on stem sapiens-node dates, then write them into the samples
 type: task
 status: needs-decision
@@ -11,9 +12,14 @@ found_by: sapiens-dates-doc
 blocked_by: []
 relates: [PW-971, PW-965, PW-947, PW-945]
 refs: [docs/review/lineages/sapiens-dates.md, planet/lineages/samples/dnd.toml, planet/lineages/samples/seven_meals.toml]
+created: 2026-10-28
+updated: 2026-10-28
 ---
 
 ## Description
 docs/review/lineages/sapiens-dates.md lays out candidate dates per stem (draconic, feline, goblinoid, hominid, avian). My leans: draconic 5 Myr, feline 2.0 Myr, goblinoid 1.2 Myr, hominid 1.7 Myr, avian 2.0 Myr, but these are leans for the owner to react to. After the owner's gut call, set `sapient` in dnd.toml and the draconic line in seven_meals.toml, and rerun the lineage tests.
 - [ ] owner picks dates (see the doc's open questions)
 - [ ] update the toml values and their comments
+
+## Updates
+- 2026-10-28: Created from inbox draft draft-sapiens-dates-owner-call.md (found by sapiens-dates-doc).
