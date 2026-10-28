@@ -17,7 +17,7 @@ updated: 2026-10-28
 ---
 
 ## Description
-From the 2026-10-28 megafauna scaling session (owner approved). Once body size and food are data (draft-megafauna-4), the culinary ethnography can count what megafauna cost the peoples beside them:
+From the 2026-10-28 megafauna scaling session (owner approved). Once body size and food are data (PW-960), the culinary ethnography can count what megafauna cost the peoples beside them:
 - **Hill giants.** One eats ~22 cattle or ~4 t of grain a year. A steading of 10 taking tribute uses up a village of 100-150 people's surplus. This fits the 10-28 ruling: nomads overlapping other peoples, with occasional conflict.
 - **Storm giants.** One takes ~29 t of fish a year, about half a grey whale.
 - **Dragons.** An adult takes ~40 cattle a year, an ancient ~100+. The loss lands on herders in its country. Its ectotherm habit is feast and fast.

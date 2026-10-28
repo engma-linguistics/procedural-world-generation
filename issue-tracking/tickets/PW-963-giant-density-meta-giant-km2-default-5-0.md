@@ -36,11 +36,11 @@ The three giant densities disagree, all as of 10-28.
 So 5,000 is 15-35x below forager-scaled giants and 50-150x below culinary-dnd's. Lane 38's note says a lower density helped coverage and the peoples' remnant pass (giants take less room), which may be what really drove the number.
 
 Options:
-- **A.** Keep 5,000 and read it as people pressure, like dragons (draft-megafauna-1). Giants are pressed hard by the younger peoples (giant-slaying, displacement) and have natural density only in unpeopled country. This is consistent with the dragon story, but it leaves culinary-dnd's local numbers as the "natural, unpressed" case, which the consumer repo would need told.
+- **A.** Keep 5,000 and read it as people pressure, like dragons (PW-957). Giants are pressed hard by the younger peoples (giant-slaying, displacement) and have natural density only in unpeopled country. This is consistent with the dragon story, but it leaves culinary-dnd's local numbers as the "natural, unpressed" case, which the consumer repo would need told.
 - **B.** Default by way of life, scaled by mass (forager-scaled ~1/150-350, herders denser, raiders sparser), with giant_km2 as a multiplier. Coverage and remnants then need re-solving by competition, not by thinning.
 - **C.** A split: a natural density from mass, pressed by peoples to a present-day default. The present default sits between, e.g. ~1/1,000-2,000, so a steading of 10 holds 10-20 thousand km2.
 
-Lean: C, sharing draft-megafauna-1's pressure mechanism, so dragons and giants follow one rule. Check that a steading's country still reads right in the brief.
+Lean: C, sharing PW-957's pressure mechanism, so dragons and giants follow one rule. Check that a steading's country still reads right in the brief.
 
 ## Updates
 - 2026-10-28: Created from inbox draft draft-megafauna-7-giant-density-reconcile.md (found by coordinator).

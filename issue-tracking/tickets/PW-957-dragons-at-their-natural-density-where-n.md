@@ -22,7 +22,7 @@ Owner 2026-10-28 (approved docs/proposals/megafauna-scaling.md). The present dra
 The realistic reason for the gap is pressure from peoples. Real large carnivores in human-dominated land run at a few percent of their potential: tigers are at ~3-4% of their historical numbers (Ripple et al. 2014).
 
 Model it:
-- **Natural density.** A dragon kind's natural density comes from Damuth's law at its ecological mass (draft-megafauna-2), on Marshall's mesotherm intercept. That intercept is also where reptile field metabolic rate lands at dragon size: the reptile/mammal energy use ratio is ~0.55 at 20 t.
+- **Natural density.** A dragon kind's natural density comes from Damuth's law at its ecological mass (PW-958), on Marshall's mesotherm intercept. That intercept is also where reptile field metabolic rate lands at dragon size: the reptile/mammal energy use ratio is ~0.55 at 20 t.
 - **Pressed density.** Where peoples hold the land, density falls with their pressure (people density, or farmers more than foragers; to be chosen). The present-day world average over the dragons' country should land near the owner's user option (default 1/5,000 km2).
 - **Unpeopled country.** Country no people holds keeps closer to natural density.
 - **The age of dragons.** Before peoples spread, dragons are far more numerous. The history and brief should say so.

@@ -62,7 +62,7 @@ The "robust" column uses mass ∝ height^3.3.
   - a hill giant eats like 12 peasants;
   - a steading of 10 taking tribute uses up a village of 100-150 people's surplus;
   - a storm giant needs about half a grey whale a year.
-- Fun lane 38 (10-28) has since set every giant to `meta.giant_km2` = 5,000 km², 15-35× sparser than the forager-scaled figure. That is open for the owner as `draft-megafauna-7`. Before lane 38, the repo's densities were 1.4-1.7× denser than the forager-scaled figure, which is well within the noise. A pure-carnivore giant on Carbone's line would be 1 per 400-1,300 km². The owner's 10-28 ruling ("giants lower, a user option") has room to go 2-3× lower and stay realistic.
+- Fun lane 38 (10-28) has since set every giant to `meta.giant_km2` = 5,000 km², 15-35× sparser than the forager-scaled figure. That is open for the owner as PW-963. Before lane 38, the repo's densities were 1.4-1.7× denser than the forager-scaled figure, which is well within the noise. A pure-carnivore giant on Carbone's line would be 1 per 400-1,300 km². The owner's 10-28 ruling ("giants lower, a user option") has room to go 2-3× lower and stay realistic.
 - No age structure for giants (owner). Their demography is human-like.
 
 ## Dragons
@@ -119,7 +119,7 @@ The oldest age is 3,000 years.
   - halving every rate gives 26%.
 
   How dangerous the world is for an adult dragon is the real knob.
-- **Generation time.** With breeding from age 100 and flat fecundity, it is ~430 yr. If fecundity rises with mass, it is ~700 yr. The repo uses 200 (PW-958).
+- **Generation time.** With breeding from age 100 and flat fecundity, it is ~430 yr. If fecundity rises with mass, it is ~700 yr. The repo uses 200 (PW-959).
 
 ### Natural density, people pressure and the age of dragons
 
@@ -140,16 +140,16 @@ At 1 per 5,000 km² overall, the base case leaves about one ancient per 75,000 k
 
 ## Tickets
 
-These are inbox drafts until the coordinator numbers them:
+The tickets:
 
 | Draft | Carries |
 |---|---|
-| `draft-megafauna-1` | the natural dragon density, suppressed by people pressure (the age of dragons) |
-| `draft-megafauna-2` | dragon age structure, with counts reported by stage |
-| `draft-megafauna-3` | revisit dragon generation time (~430 yr) |
-| `draft-megafauna-4` | body size and food as data |
-| `draft-megafauna-5` | what megafauna eat, in the culinary output |
-| `draft-megafauna-6` | owner action: fetch the paywalled papers |
-| `draft-megafauna-7` | giant density, reconcile (needs-decision) |
+| PW-957 | the natural dragon density, suppressed by people pressure (the age of dragons) |
+| PW-958 | dragon age structure, with counts reported by stage |
+| PW-959 | revisit dragon generation time (~430 yr) |
+| PW-960 | body size and food as data |
+| PW-961 | what megafauna eat, in the culinary output |
+| PW-962 | owner action: fetch the paywalled papers |
+| PW-963 | giant density, reconcile (needs-decision) |
 
 Updates were added to PW-923, PW-924, PW-936 and PW-937.

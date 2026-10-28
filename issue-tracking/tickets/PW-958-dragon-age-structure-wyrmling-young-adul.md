@@ -33,7 +33,7 @@ The oldest age is 3,000 years. Ancients hold 34% of the biomass and 31% of the f
 - Each counted pocket splits its count into stages. Draw it, as summary() already draws counts, so a pocket of 2 is usually two adults or a young dragon and an adult. Ancients turn up roughly once per ~14 dragons.
 - Report the stages in line_text, the brief and the viewer: "~12 red dragons: 1 ancient, 6 adults, 4 young, 1 wyrmling".
 - Keep the mortality schedule as data on the line, inherited by the kinds. The ancient share is very sensitive to adult mortality (0.3% to 26% between doubled and halved rates), so it may want a user option later.
-- The ecological mass from this structure feeds the natural density (draft-megafauna-1) and food use (draft-megafauna-4).
+- The ecological mass from this structure feeds the natural density (PW-957) and food use (PW-960).
 - Consider making mated pairs and "a pair with young" in groups_note follow the stages: young dragons with an adult.
 
 ## Updates

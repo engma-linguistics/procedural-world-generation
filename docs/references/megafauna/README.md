@@ -4,7 +4,7 @@ These are the papers behind `docs/proposals/megafauna-scaling.md`, used for gian
 
 **Before citing a paper in code or a ticket, read it here, not from memory.** All the citations were checked against Crossref on 2026-10-28.
 
-**Owner to fetch** (paywalled, or bot-blocked for agents). Fetch these into this folder and tick them off here. PW ticket: the inbox draft `draft-megafauna-6-fetch-paywalled-papers`. The PMC items open fine in a browser.
+**Owner to fetch** (paywalled, or bot-blocked for agents). Fetch these into this folder and tick them off here. PW ticket: PW-962. The PMC items open fine in a browser.
 
 ## Have (local PDF)
 

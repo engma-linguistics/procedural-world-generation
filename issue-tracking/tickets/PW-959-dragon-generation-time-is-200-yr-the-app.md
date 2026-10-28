@@ -19,7 +19,7 @@ updated: 2026-10-28
 ## Description
 Owner 2026-10-28: revisit the dragon generation time.
 
-dnd.toml and seven_meals.toml give every dragon line generation_yr = 200. The base age structure (draft-megafauna-2) gives a different figure:
+dnd.toml and seven_meals.toml give every dragon line generation_yr = 200. The base age structure (PW-958) gives a different figure:
 - **~430 yr**, the mean age of mothers with breeding from age 100, flat fecundity and 0.25%/yr adult mortality;
 - **~700 yr**, if fecundity rises with body mass, as in big reptiles where larger females lay more.
 
