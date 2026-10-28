@@ -104,7 +104,7 @@ def _mask(b: np.ndarray) -> np.ndarray:
     return (b.astype(np.int64) << np.arange(12)[:, None]).sum(0).astype(np.uint16)
 
 
-def compute(lat, F: dict, nu: np.ndarray | None = None, rough=None, q=None, tilt: float = 23.4) -> dict:
+def compute(lat, F: dict, nu: np.ndarray | None = None, rough=None, q=None, tilt: float = 23.4, raw: bool = False) -> dict:
     """Game attributes of n places. F: 1-D arrays (n,) in real units:
     land (bool), ice (m), elevation (m), temp, t_warm, t_cold (C), p_jul,
     p_jan (mm/yr), tree, cover (0..1: tree and plant cover), lai, height (m),
@@ -114,7 +114,8 @@ def compute(lat, F: dict, nu: np.ndarray | None = None, rough=None, q=None, tilt
     nu (NP, n): the plant types' shares of the ground, or None (rules fall
     back on tree and plant cover). rough: x walking time for the ground's
     roughness (the caller's: a world cell's relief, a zoom pixel's slope).
-    q: m^3/s of river through the place. Returns {LAYER_SPECS name: array}."""
+    q: m^3/s of river through the place. Returns {LAYER_SPECS name: array}; raw: also "grazing_npp", the grazing layer's
+    absolute value before it saturates (g C/m2/yr of herb NPP plus browse, the season-weighted pasture; lineages.prey, PW-966)."""
     lat = np.asarray(lat, float)
     n = len(lat)
     g = lambda k, d=0.0: np.asarray(F[k], float) if k in F and F[k] is not None else np.full(n, d)
@@ -169,6 +170,7 @@ def compute(lat, F: dict, nu: np.ndarray | None = None, rough=None, q=None, tilt
     open_months = ((mo["t"] > 0) & (mo["snow"] < 30)).sum(0)
     graze = (herb_npp + 0.3 * npp * shrub_s) * (0.4 + 0.6 * open_months / 12.0)
     out["grazing"] = np.where(land, _sat(graze, 250.0), 0)
+    gnpp = np.where(land, graze, 0.0) if raw else None
 
     # foraging: mast and fruit trees, game (the grazing), wetlands (waterfowl, wild grain, roots), river fish
     x = 1.2 * mast * np.clip(npp / 600.0, 0, 1.5) + 0.16 * out["grazing"] + 2.0 * flooded
@@ -243,8 +245,11 @@ def compute(lat, F: dict, nu: np.ndarray | None = None, rough=None, q=None, tilt
     hz |= put("avalanche", (g("slope") >= 28) & (snow_max >= 100.0))
     out["hazards"] = np.where(land | glacier, hz, 0).astype(np.uint16)
 
-    return {k: np.round(v / LAYER_SPECS[k][1]) * LAYER_SPECS[k][1] if LAYER_SPECS[k][1] != 1 else
-            np.asarray(v).astype(int) for k, v in out.items()}
+    out = {k: np.round(v / LAYER_SPECS[k][1]) * LAYER_SPECS[k][1] if LAYER_SPECS[k][1] != 1 else
+           np.asarray(v).astype(int) for k, v in out.items()}
+    if raw:
+        out["grazing_npp"] = gnpp
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -255,8 +260,9 @@ def _soil_fields(L, get):
             if k in L}
 
 
-def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
-    """The layers to store with a world (world.finish), from its stored layers (needs the vegetation)."""
+def world_layers(grid, L: dict, tilt: float = 23.4, raw: bool = False) -> dict:
+    """The layers to store with a world (world.finish), from its stored layers (needs the vegetation); raw: with "grazing_npp" too
+    (compute), not stored."""
     if "vegetation" not in L or "veg_Moss" not in L:
         return {}
     from . import hydrology
@@ -273,7 +279,7 @@ def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
          "tree": a("tree_cover") / 100, "cover": a("plant_cover") / 100, "lai": a("lai"), "height": a("canopy_height"),
          "npp": a("npp"), "fire_return": a("fire_return"), "biomass": a("biomass"), "stand_age": a("stand_age"),
          "flooded": a("flooded") / 100, "mangrove": a("mangrove") / 100, **_soil_fields(L, a)}
-    return compute(grid.lat, F, nu, rough, q, tilt)
+    return compute(grid.lat, F, nu, rough, q, tilt, raw)
 
 
 def zoom_layers(L: dict, res_km: float, lat, nu: np.ndarray | None = None, tilt: float = 23.4) -> dict:
