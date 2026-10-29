@@ -1,0 +1,75 @@
+"""The coarser nested grid's climate (planet/nest.py, PW-247) and the run's climate cadence (earth.climate_cadence)."""
+
+import numpy as np
+
+from planet import climate, nest
+from planet.grid import build_grid
+from planet.ocean import cell_area_km2
+from planet.tectonics import Simulation, earth
+from planet.tectonics.params import Params
+
+from helpers import run_sim
+from test_golden import sim_digest
+
+
+def test_restrict_keeps_area_means_and_prolong_is_linear(grid4):
+    s = nest.step(grid4)
+    c = s["coarse"]
+    assert c.level == 3 and np.array_equal(s["p0"][:c.n], np.arange(c.n))
+    f = grid4.centers[:, 0] + 2.0
+    r = nest._restrict(s, f)
+    a4, a3 = cell_area_km2(grid4), cell_area_km2(c)
+    assert abs((a4 * f).sum() / a4.sum() - (a3 * r).sum() / a3.sum()) < 2e-3
+    assert np.allclose(nest._restrict(s, np.full(grid4.n, 7.0)), 7.0)
+    # a linear field comes back to within its curvature over a cell
+    back = nest._prolong(s, c.centers[:, 0] + 2.0)
+    assert np.abs(back - f).max() < 0.02
+
+
+def test_coarse_climate_is_close_to_the_native_one(sim4_60):
+    s, g = sim4_60, sim4_60.grid
+    e = s.w_elev
+    land = e > 0
+    ice = np.where(land, s.ice, 0.0)
+    a = climate.compute(g, e, s.dT, s.params.tilt, ice)
+    b = nest.climate_coarse(g, 3, e, s.dT, s.params.tilt, ice)
+    for k in ("temp", "t_warm", "t_cold", "precip", "runoff", "sst"):
+        assert b[k].shape == a[k].shape, k
+    assert b["wind_jul"].shape == (g.n, 3) and np.abs((b["wind_jul"] * g.centers).sum(1)).max() < 1e-9
+    w = cell_area_km2(g) * land
+    assert abs(((a["temp"] - b["temp"]) * w).sum() / w.sum()) < 1.0
+    # (plumbing, not accuracy: L3's ~500 km cells rain ~20% less on L4's land; L6 on L7 is measured in
+    # docs/review/speed/README.md)
+    assert abs((b["precip"] * w).sum() / (a["precip"] * w).sum() - 1) < 0.35
+    assert b["rain_state"]["vap"].shape[-1] == build_grid(3).n
+
+
+def test_cadence_ramps_to_climate_every_before_the_finish_window_and_comes_early_when_dT_moves():
+    p = Params(run_end=1000.0)
+    sim = Simulation.__new__(Simulation)
+    sim.params = p
+    for t, k in ((0, 16), (650, 16), (685, 16), (700, 8), (900, 8), (965, 4), (989, 4)):
+        sim.t = float(t)
+        assert earth.climate_cadence(sim) == k, t
+    # the adaptive part: early once dT moved climate_adapt_dT since the last update
+    sim.t, sim.climate_t, sim.precip, sim.dT = 100.0, 96.0, np.zeros(1), 0.5
+    sim.climate_in = {"dT": 0.0}
+    assert not earth.climate_due(sim)
+    sim.dT = -1.2
+    assert earth.climate_due(sim)
+    sim.params = Params(run_end=1000.0, climate_every=4.0, climate_every_max=4.0)
+    sim.t = 0.0
+    assert earth.climate_cadence(sim) == 4  # (main's fixed 4 Myr before PW-247)
+
+
+def test_coarse_spin_up_hands_over_to_the_run_grid_and_resumes_bit_identical():
+    """An L4 run with its spin-up climate on L3: the finish window's climate is the run's own grid's (its rain
+    starts from the coarse kernel's state prolonged), and a state taken in the spin-up resumes bit for bit."""
+    a = run_sim(level=4, seed=2, myr=20, climate_level=3, run_end=36.0)
+    assert a.rain_state["vap"].shape[-1] == build_grid(3).n
+    st = a.state()
+    a.run(36)
+    assert a.rain_state["vap"].shape[-1] == a.grid.n and a.climate_t == a.t
+    b = Simulation.from_state(a.grid, a.seed, a.params, a.dt, st)
+    b.run(36)
+    assert sim_digest(b) == sim_digest(a)

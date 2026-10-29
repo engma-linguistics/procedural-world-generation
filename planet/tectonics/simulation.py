@@ -85,6 +85,7 @@ class Simulation:
         "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
         "climate_t",  # Myr: when the climate fields were computed
+        "climate_in",  # what that climate saw (earth.climate_moved: {"dT"}; None before the first)
         "rain_state",  # the rain kernel's end state at that update (climate.compute's; None before the first)
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
         "sst",  # C: the sea surface's annual mean (the reefs', PW-876)
@@ -165,6 +166,7 @@ class Simulation:
         self.weathered = np.zeros(n)
         self.thermo = np.zeros(2)
         self.climate_t = 0.0
+        self.climate_in = None
         self.rain_state = None
         self.temp = self.t_warm = self.t_cold = None
         self.sst = None  # C, the climate's sea-surface temperature (earth.update_climate)
@@ -275,6 +277,7 @@ class Simulation:
         earth.update_climate(self, e)
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
                                 sediment_km(self.w_cover, self.w_extra))
+        self.climate_in = {"dT": float(self.dT)}  # (what this climate saw: earth.climate_moved)
 
     def _resolve(self):
         """Decide which plate owns each world cell (plate_kernels.resolve).
