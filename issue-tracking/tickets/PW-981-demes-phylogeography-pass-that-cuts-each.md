@@ -27,5 +27,7 @@ Result: a dated, located deme tree nested inside the authored people tree, plus 
 - [ ] a review page/map of demes over time
 
 ## Updates
+- 2026-10-29: Fun lane 46 follow-up: gap splits and fusions must hold 4 frames (PERSIST, from the fuse-back ages: half within 3 frames, flat after) and a 120 km neck of other peoples' land is bridged; b69f51 gap splits 459 -> 102, fusions 389 -> 68, gap events of 60+ cells 494 -> 114, but only 11% have sea, ice or a corridor changing in the gap (another people holds the gap in 90 of the rest); no land bridges on b69f51 (its sea barely moves), three drowned gaps on 2cb509. Per-people cuts: 20-33 s per L7 run (was 71-134 s). Drafts: gap cause, speed floor; scale draft rewritten (~20/~60/~150 human demes); gap-flicker and speed drafts done and removed.
+- 2026-10-29: Fun lane 46: demes v0 built (planet/lineages/demes.py; `planet demes RUN`, run by output.save; globe layer "demes", workbench view "species + regional populations"). Review docs/review/lineages/demes.md: b69f51 60 living human demes, 2cb509 16 (a boat diaspora). Drafts: full presence per frame, gap flicker, scale (needs-decision), speed.
 - 2026-10-28: Owner 2026-10-28: moved under the cultures epic PW-856 and into v2 (cultures are probably demes more than species); still the foundation of the language work under PW-767 and of the demo PW-986. Strongly tied to PW-902 (ranges follow ice-age sea level and land bridges).
 - 2026-10-28: Created.
