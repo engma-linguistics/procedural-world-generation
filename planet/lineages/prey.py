@@ -86,7 +86,42 @@ def stocked(P: np.ndarray, share: np.ndarray, est: float) -> np.ndarray:
 
 
 def productivity(wild_t: np.ndarray, land: np.ndarray) -> np.ndarray:
-    """f(absolute NPP) for people density (PW-833, not yet read): the wild prey over its median on the land with any."""
+    """The wild prey over its median on the land with any (the giants' productivity factor, PW-833)."""
     sel = land & (wild_t > 0)
     ref = float(np.median(wild_t[sel])) if sel.any() else 1.0
     return wild_t / max(ref, 1e-9)
+
+
+# People density reads the land's productivity (PW-974, PW-833: density = way-of-life factor x f(absolute NPP)). Each people's density
+# is its way-of-life number (the spec's) times f per cell: the layer over its mean on the land that has any, divided by a calibration so
+# the mean f over the country peoples actually hold stays 1 (measured on the dnd sweep, FORAGE_REF and GRAZE_REF; a fit to keep each way's
+# mean density where it was, not a physical constant). f is linear in the layer (Tallavaara et al. 2015 find hunter-gatherer density
+# rising with NPP; not on file, so the linear form is an assumption, as is every number here).
+FORAGE_REF = 1.20  # the foraging layer's reference over its land mean: foragers hold richer-than-average country, so a unit f gives them ~1.2 times their number (dnd sweep, 6 worlds, roll 7000; fitted to keep their mean)
+GRAZE_REF = 1.18  # the grazing NPP's reference over its land mean (herders, the same fit)
+
+
+def _unit(x: np.ndarray, ref: float) -> np.ndarray:
+    """x over its mean on the cells where it is positive, times 1 / ref."""
+    x = np.maximum(np.asarray(x, float), 0.0)
+    sel = x > 0
+    return x / (float(x[sel].mean()) * ref) if sel.any() else np.ones_like(x)
+
+
+def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.ndarray | None) -> np.ndarray | None:
+    """Per line (L x cells), the productivity factor f of its density: the herders' share of its living reads the grazing NPP, the
+    foragers' (and anything else drawn from wild food) the foraging layer, the farmers' share nothing (their soil is already in the habitat
+    K). 1 for megafauna, overlays, marine peoples and lines whose way uses none of these goods. `shares_of(line)` is landuse.shares.
+    None without a world."""
+    if graze_npp is None or forage is None:
+        return None
+    fg, ff = _unit(graze_npp, GRAZE_REF), _unit(forage, FORAGE_REF)
+    out = np.ones((len(lines), len(fg)))
+    for k, l in enumerate(lines):
+        if l.megafauna or l.overlay or l.marine or l.way in ("fisher_forager", "sea_nomad"):
+            continue
+        sh = shares_of(l)
+        tot = sh["herd"] + sh["forage"] + sh["farm"]
+        if tot > 0:
+            out[k] = (sh["herd"] * fg + sh["forage"] * ff + sh["farm"]) / tot
+    return out

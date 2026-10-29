@@ -90,3 +90,5 @@ CHAIN_CELLS = 4
 PORTAL_SEP_KM = 1800.0  # portals are at least this far apart
 PORTAL_KM = 700.0  # an arriving people founds at a portal if it can live within this of it...
 PORTAL_FAR_KM = 2500.0  # ...else within this of it (the portal opens onto bad ground for it); else at its best habitat anywhere
+
+PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does

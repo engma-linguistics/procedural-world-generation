@@ -129,7 +129,7 @@ def frame_inputs(h, P: np.ndarray, land: np.ndarray) -> dict:
     sh = getattr(h, "_lu_sh", None)
     if sh is None:
         sh = h._lu_sh = np.array([[0.0, 0.0, 0.0] if l.overlay else [shares(h.tree, l)[k] for k in ("farm", "herd", "wood")] for l in h.lines]).reshape(L, 3)
-    d = P * h.dens[:, None] * land[None, :]
+    d = P * h.dens_cells() * land[None, :]
     d = d * np.array([not l.overlay for l in h.lines])[:, None]
     hl, cl = np.zeros((L, n)), np.zeros((L, n))
     if h.animals is not None:

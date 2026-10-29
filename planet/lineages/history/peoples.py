@@ -15,7 +15,7 @@ class PeoplesMixin:
         pressed where peoples do (an array, MG.local_density; P: the presences to take the pressure and prey from, else those at the
         start of the step)."""
         if not self.lines[k].megafauna:
-            return self.dens[k]
+            return self.dens[k] if self._dmap is None or self._deep_now else self._dmap[k]
         if (P is None or P is self.p) and self._press is not None:
             return MG.local_density(self, k, self._press, self._prey, self._food, self.p)
         P = self.p if P is None else P
@@ -25,6 +25,13 @@ class PeoplesMixin:
             prey, food, _ = MG.prey_and_food(self, P, s, self._tags_now) if self._tags_now is not None and not self._deep_now else (None, None, None)
             c = self._dens_memo = (P, s, prey, food)
         return MG.local_density(self, k, c[1], c[2], c[3], P)
+
+    def dens_cells(self) -> np.ndarray:
+        """The peoples' densities per cell, lines x cells (people/km2 at full habitat; the megafauna's and overlays' rows are their numbers
+        only: use dens_at for the megafauna). Productivity-scaled (PW-974) except in the deep epoch."""
+        if self._dmap is None or self._deep_now:
+            return np.broadcast_to(self.dens[:, None], (len(self.lines), self.grid.n))
+        return self._dmap
 
     def gen_yr(self, l) -> float:
         """A line's generation time, years: its own, or a dragon's from its age schedule (meta.dragon_generation, PW-959)."""

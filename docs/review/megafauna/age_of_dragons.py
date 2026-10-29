@@ -5,7 +5,9 @@ peoples' pressure, the prey field (wild after overkill, livestock) and the prese
 (counts over time). Writes OUTDIR/age-of-dragons.html and its PNGs. Every number comes from the run or from planet.lineages
 (dragon_ages, prey, history.megafauna): nothing is tuned here. The candidates are shown side by side; none is picked.
 
-Run: uv run python docs/review/megafauna/age_of_dragons.py RUN.npz SERIES.json docs/review/megafauna
+Run (PYTHONPATH=. uv run --with matplotlib python ...): age_of_dragons.py RUN.npz SERIES.json OUTDIR [ERAS.npz] [--arm LABEL=SERIES.json ...]
+ERAS.npz (probe --eras) adds section 7, the food budget at two eras; each --arm adds a line to its dragons-over-time figure (the same
+world and roll under another setting of the model).
 """
 import json
 import sys
@@ -23,7 +25,10 @@ from planet.lineages import dragon_ages as DA  # noqa: E402
 from planet.lineages import prey as PR  # noqa: E402
 from planet.lineages.history import megafauna as MG  # noqa: E402
 
-NPZ, SERIES, OUT = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
+_args = [x for x in sys.argv[1:] if not x.startswith("--arm")]
+ARMS = [(a.split("=", 1)[0], Path(a.split("=", 1)[1])) for a in sys.argv[1:] if a.startswith("--arm=")]
+NPZ, SERIES, OUT = Path(_args[0]), Path(_args[1]), Path(_args[2])
+ERAS = Path(_args[3]) if len(_args) > 3 else None
 FIG = OUT / "age-of-dragons"
 FIG.mkdir(parents=True, exist_ok=True)
 z = np.load(NPZ, allow_pickle=False)
@@ -259,6 +264,88 @@ for lid, r in dragons.items():
 bounties = [b for b in bounties if b[0] >= 20 and b[2].get("stock_take") is not None]  # (at least a herd of 20 there)
 bounties.sort(key=lambda x: -x[2]["stock_take"])  # (the largest share of the stock taken first: the valleys that would pay tribute)
 
+
+# ---- section 7: the food budget (PW-977 stage 2) at two eras and the dragons through time ------------------------------------
+sec7 = ""
+if ERAS is not None and ERAS.exists():
+    E = np.load(ERAS, allow_pickle=False)
+    tg = [float(t) for t in E["targets"]]
+    era_names = {t: (f"{E[f'ago_{t:g}']:.0f} kyr ago" if t > 0 else "the present") for t in tg}
+    # the three squares: a county, Wales and California, round the run's busiest ancient pocket
+    cx, cy = p0["lon"], p0["lat"]
+    sq = []
+    for nm, km2 in (("a county", 2000), ("Wales", 21000), ("California", 424000)):
+        half_ = np.sqrt(km2) / 2 / 111.0
+        clat = max(np.cos(np.radians(cy)), 0.3)
+        sq.append((nm, km2, (lat > cy - half_) & (lat < cy + half_) & (np.abs(((lon - cx + 180) % 360) - 180) < half_ / clat)))
+
+    def head(x, sel):  # t/km2/yr over the cells -> head of cattle a year
+        return float(x[sel].sum() * AREA / PR.HEAD_T)
+
+    rows7 = []
+    for t in tg:
+        key = lambda k: E[f"{k}_{t:g}"]
+        for nm, km2, sel in sq:
+            sel = sel & land
+            if not sel.any():
+                continue
+            wild_, stock_, ppl_, gi_, gu_, food_ = (head(key(k), sel) for k in ("wild", "stock", "peoples", "giants", "guild", "food"))
+            sup = wild_ + stock_
+            need = float((key("dragons")[sel]).sum() * AREA * base["cattle_yr"])
+            unc = float((key("dragons_uncapped")[sel]).sum() * AREA)
+            rows7.append((era_names[t], nm, int(sel.sum() * AREA), sup, ppl_ / sup if sup else 0, gi_ / sup if sup else 0, gu_ / sup if sup else 0,
+                          food_ / sup if sup else 0, float(key("dragons")[sel].sum() * AREA), unc, need / food_ if food_ > 0 else 0))
+    # where the cap binds: cells of dragon country by who lives there; the dragons the cap removes
+    bind_rows = []
+    for t in tg:
+        key = lambda k: E[f"{k}_{t:g}"]
+        pf, ph, pa = key("people_foragers"), key("people_herders"), key("people_farmers")
+        po = key("people_others")
+        allp = pf + ph + pa + po
+        classes = (("no people", allp < 0.02), ("foragers' country", (pf >= ph) & (pf >= pa) & (pf >= 0.02)),
+                   ("herders' country", (ph > pf) & (ph >= pa) & (ph >= 0.02)), ("farmers' country", (pa > pf) & (pa > ph) & (pa >= 0.02)))
+        dm_ = dmask & land & (key("dragons_uncapped") > 0)
+        for cn, cm in classes:
+            sel = dm_ & cm
+            if sel.sum() < 5:
+                continue
+            unc, dr = float(key("dragons_uncapped")[sel].sum()), float(key("dragons")[sel].sum())
+            need_all = key("dragons_uncapped")[sel] * base["cattle_yr"] * PR.HEAD_T
+            bind = float((need_all > key("food")[sel] + 1e-12).mean())
+            sup = key("wild")[sel] + key("stock")[sel]
+            bind_rows.append((era_names[t], cn, int(sel.sum()), float((key("peoples")[sel] / np.maximum(sup, 1e-12)).mean()),
+                              float((key("guild")[sel] / np.maximum(sup, 1e-12)).mean()), float((need_all / np.maximum(sup, 1e-12)).mean()),
+                              bind, 1 - dr / max(unc, 1e-12)))
+    # dragons through time: this run and its arms
+    fig, ax = plt.subplots(figsize=(8.0, 3.0))
+    pal = ["#2a78d6", "#eb6834", "#2b8a3e", "#8a8f98", "#9467bd"]
+    for (lab, f_), col in zip([("this run (stage 2: food budget)", SERIES)] + ARMS, pal):
+        sr = json.loads(Path(f_).read_text())["series"]
+        tt = sorted(float(t) for t in sr)
+        ax.plot([-t for t in tt], [sr[str(t) if str(t) in sr else repr(t)]["dragons"] for t in tt], color=col, lw=2, label=lab)
+    ax.set_yscale("log"), ax.set_xlabel("kyr before the present"), ax.legend(frameon=False, fontsize=8)
+    ax.axvline(-MG.__dict__.get("FARM_KYR", 6.0), color="#bbb", lw=0.8, ls=":")
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    ax.grid(axis="y", color="#ddd", lw=0.6)
+    ax.set_title("Dragons through the history, world 2a7385 roll 7000, under each stage of the model (dotted: farming speeds up)", fontsize=9.5)
+    img_arms = save(fig, "arms-over-time.png")
+    t7 = "".join(f"<tr><td>{e}</td><td>{n}</td><td>{k:,}</td><td>{sp:,.0f}</td><td>{a:.1%}</td><td>{b:.1%}</td><td>{c:.1%}</td><td>{d:.1%}</td><td>{dr:.1f}</td><td>{un:.1f}</td><td>{nd:.0%}</td></tr>"
+                 for e, n, k, sp, a, b, c, d, dr, un, nd in rows7)
+    b7 = "".join(f"<tr><td>{e}</td><td>{c}</td><td>{n:,}</td><td>{a:.1%}</td><td>{gd:.1%}</td><td>{nd:.1%}</td><td>{bd:.1%}</td><td>{lost:.1%}</td></tr>"
+                 for e, c, n, a, gd, nd, bd, lost in bind_rows)
+    sec7 = f"""<h2>7. The food budget, stage 2 (PW-977): the peoples' and the guild's share, then the dragons'</h2>
+<div class="mut">Per cell, in head of cattle-sized prey a year (1 head = {PR.HEAD_T} t): the supply is the wild herds' sustainable offtake ({MG.OFFTAKE:.0%}/yr, unverified) plus
+the herders' tolerable stock loss ({MG.STOCK_TOLERABLE:.0%}/yr, unverified). First the hunting peoples take their game (density x need: a person eats {MG.PERSON_KCAL_YR / 365:,.0f} kcal/day, {MG.WILD_MEAT[0]:.0%} of a
+forager's and {MG.WILD_MEAT[1]:.0%} of any other way's from wild game, unverified), then the giants (their own densities and food) and the rest of the predator guild
+(&times;{MG.guild_ratio():.1f} the dragons' own food at their natural density, derived from Carbone, Turvey &amp; Bielby 2011's size classes with a metabolic M<sup>0.75</sup>; see the ticket),
+and the dragons get what is left; where they would need more, there are fewer. The squares are centred on the run's busiest ancient pocket ({cy}, {cx}).</div>
+<img src="{img_arms}" alt="arms" style="max-width:640px">
+<div class="wrap"><table><tr><th>era</th><th>area</th><th>km&sup2;</th><th>supply, head/yr</th><th>peoples</th><th>giants</th><th>guild</th><th>left for dragons</th><th>dragons there</th><th>...without the cap</th><th>need / their share</th></tr>{t7}</table></div>
+<div class="mut">Shares of the supply. "dragons there": expected number at the density the model used; "without the cap": what the pressure alone would leave; "need / their share" above 100% would mean the cap bites.</div>
+<div class="wrap"><table><tr><th>era</th><th>dragon country that is...</th><th>cells</th><th>peoples' take / supply</th><th>guild's take / supply</th><th>dragons' need at the uncapped density / supply</th><th>cells where the cap binds</th><th>dragons the cap removes</th></tr>{b7}</table></div>
+"""
+
 # ---- html -----------------------------------------------------------------------------------------------------------------------
 T = lambda rows: "".join(f"<tr><td>{nm}</td><td>{km2:,}</td>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>" for nm, km2, cells in rows)
 sched_head = "".join(f"<th>{n}</th>" for n in SCHED)
@@ -325,7 +412,7 @@ for comparison): that is not what a dragon in wild country does, and it is not a
 <img src="{img_range}" alt="ranges" style="max-width:460px"></div>
 <h2>6. Per kind (present, {CUR})</h2><table><tr><th>kind</th><th>now</th><th>by stage</th><th>natural in the same country</th><th>in peopled country</th><th>of their country reached</th></tr>{kind_tbl}</table>
 <div class="mut">Giants (no stages): {giant_line}.</div>
-<p class="mut">Made by docs/review/megafauna/age_of_dragons.py from one run; sources in docs/references/megafauna/README.md (Carbone &amp; Gittleman 2002 and Marshall et al. 2021 on file;
+{sec7}<p class="mut">Made by docs/review/megafauna/age_of_dragons.py from one run; sources in docs/references/megafauna/README.md (Carbone &amp; Gittleman 2002 and Marshall et al. 2021 on file;
 Nagy et al. 1999's reptile intercept unverified).</p>
 </body></html>"""
 (OUT / "age-of-dragons.html").write_text(html)
