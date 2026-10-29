@@ -48,3 +48,30 @@ started: they stopped with no error in the log, so something outside killed them
   and needs 40 GB free before each launch.
 - Tally with `uv run python docs/review/base-climate/v1-finish-16/fmtally.py <V>/fm_*`.
 - Not done yet: `tools/scorecard.py` and `tools/earth_check.py`, and committing the scorecard line.
+
+## The paired merge judge (PW-994, lane 25, 2026-10-29)
+A near-null change flips ~15 of 36 paired draws and moves the pooled pass count by ±3 and the median end T by
+±0.8 C (lane 24, `../warm-drift/README.md`). So merges are judged on **paired continuous measures**, with the pass
+count as a check (coordinator ruling, PW-994).
+
+1. Freeze each arm's code, so later edits don't leak into running sims:
+   `git archive <commit> | tar -x -C <scratch>/code/<arm>` (or copy `planet/` and `tools/` from a working tree).
+2. Launch each arm: `paired.sh <scratch>/code/<arm> <scratch>/judge <arm> 0.0005 0.001`
+   (v1-finish-16's 18 L6 1 Gyr seed-draws × 2 rolls = 36 runs; `MAXSIM` (default 10) caps the sims under that out
+   root, so arms launched into the same root share it; `THREADS` numba threads each (default 3); needs
+   `free -g` ≥ `MINFREE` (40) GB). ~15 min per run at load ~25; 72 runs for two arms ≈ 2 h at 10 at once.
+   A draw with a log is skipped, so delete the log of a draw that died and launch again to fill the gap.
+3. Judge: `uv run python pjudge.py <scratch>/judge <armA> <armB> [--table] [--json out.json]`.
+   - Per measure: each arm's median, the median of the paired B − A differences, its bootstrap 95% interval
+     (4000 resamples of the draws) and a two-sided sign test. "moved" (*) = the interval excludes 0.
+   - Measures: end T and moment T (true mean − 13.8 C), late dT, late CO2, land %, the sink and source references
+     (ln, 600-1000 Myr), and the climate's own: arid % (Koppen B share of land), hot desert % (BWh), land rain,
+     tree cover (diag fields recorded per climate update since lane 25). Add measures in `MEASURES`.
+   - Pass count, unchanged definition (a good finish moment and no hellhouse; icebox colour only; SIM SUSPECT at
+     ≥ 80% iceboxes or hellhouses), per roll and pooled, with both / A only / B only / neither and an exact
+     McNemar p on the discordant draws.
+4. Reading it: a mechanism change is judged by whether the measures it targets moved (interval excluding 0) in the
+   intended direction, and whether the others (end T, CO2, land, the sink reference) stayed within their intervals
+   or moved by an amount the change explains. The pass count is a check: a drop beyond ±3 of 36 asks for a look.
+   **Use 4 rolls (add 0.0015 0.002) only when the pass count decides the merge**, e.g. a correct mechanism against
+   a fitted kernel's loss.
