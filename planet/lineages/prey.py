@@ -108,8 +108,8 @@ def productivity(wild_t: np.ndarray, land: np.ndarray) -> np.ndarray:
 # Binford 2001 is not on file, and the linear form is not from it). The two references are not physical constants: they are the
 # layers' presence-weighted means over the country the peoples held on the 6 x 4 dnd sweep (rolls 7000-7003) with the factor off, so
 # each way's mean density over that sweep stays at its number (docs/review/megafauna/people_density.py fits them).
-FORAGE_REF = 2.6  # foraging score (0-5) at which a forager holds its way-of-life density
-GRAZE_REF = 150.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
+FORAGE_REF = 0.877  # foraging score (0-5) at which a forager holds its way-of-life density
+GRAZE_REF = 314.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
 
 
 def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.ndarray | None) -> np.ndarray | None:
