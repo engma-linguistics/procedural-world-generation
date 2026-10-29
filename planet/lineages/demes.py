@@ -12,20 +12,24 @@ cell's leading people; 65535 none) and `meta.demes` in run.json (a summary, the 
 How a frame is cut (per people):
 - Occupied cells: the cell's leading people (peoples_whole), its people with most heads (mix_lead), and its second people
   by heads where at least SECOND_MIN % of the cell (mix_second). Frames store no fuller presence (see the caveat below).
-- Travel cost: entering a land cell costs CORR_EASY / corridor (crossing.corridor, the history's own contact value from
-  this frame's land, rain, trees, ice and the world's rivers): 1 on a coast, ~1.6 on open lowland, 4-5 in desert or
-  mountains, 8 on ice. Open sea up to SEA_KM wide is crossed at SEA_COST per cell (canoes over a strait, one population
-  either side); a wider gap cuts the people in two.
+- Travel cost: entering a land cell costs (CORR_EASY / corridor) ** COST_POW, at most COST_MAX (crossing.corridor, the
+  history's own contact value from this frame's land, rain, trees, ice and the world's rivers): 1 on a coast, ~1.3 on
+  open lowland, ~2-2.3 in desert or mountains. Open sea up to SEA_KM wide is crossed at SEA_COST per cell (canoes over a
+  strait, one population either side); a wider gap cuts the people in two. A strip of other peoples' land up to NECK_KM
+  wide is bridged the same way (a minority's corridor through a range does not cut it).
 - Founder chains: the cells of each deme in the frame before keep its label; newly settled cells take the label of the
   cheapest-to-reach labelled cell (a front carries its parent's name); land reached by no path (a long crossing) starts
-  a new deme whose parent is the nearest deme of that people (spread.nearest_label), if it is at least MIN_CELLS.
-- Splits: a deme whose land falls apart (rising sea, a front dying back) splits along the gap: the largest piece keeps its
-  id, each other piece of MIN_CELLS or more is a new deme ("split by a gap"). A deme whose travel-cost diameter passes
+  a new deme whose parent is the nearest deme of that people (straight line), if it is at least MIN_CELLS.
+- Splits: a deme whose land falls apart (rising sea, a front dying back, a neighbour moving in) and stays apart PERSIST
+  frames splits along the gap, dated when it opened: the largest piece keeps its id, each other piece of MIN_CELLS or
+  more is a new deme ("split by a gap"). Pieces that rejoin sooner are flicker and leave no trace. A deme whose travel-cost diameter passes
   SPLIT_KM splits in two (isolation by distance): the half holding its oldest cells keeps the id, the other half buds off.
 - Fusions: two touching demes of a people fuse when their diameters together are under FUSE_KM (a range that shrank back
-  or a land bridge reconnecting two small populations); the older keeps its id.
+  or a land bridge reconnecting two small populations) and have been for PERSIST frames; the older keeps its id.
 - Extinction: a deme with no cells left ends at that frame.
-- A new people's first demes take as parent the deme (of any people) that held most of their cells the frame before.
+- A new people's first demes take as parent the deme of its tree parent on (or nearest) their cells the frame before,
+  else the deme that led most of those cells.
+Each people is cut on a subgraph of its own cells, the sea within SEA_KM and the necks within NECK_KM of them.
 Contacts: per frame, per pair of demes (of the same or of different peoples), the land edges where the leading peoples of
 two neighbouring cells are those demes, and the cells where one leads and the other is the second people.
 
