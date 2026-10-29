@@ -129,9 +129,63 @@ exact.
   The lift fixes the gate, not the supply. SE USA and Pampas can't reach 60% from this round. The rest is the return
   flow's vapour (round 1 went part way) and the Pampas jet.
 
+## Diagnosis gate: the poleward (eddy) vapour transport (lane 26b, 2026-10-29; probes only, `eddy_probes.patch`)
+One Earth L6 solve each, on round 2 (4d18c72c). `quick.py --books` prints the northward vapour transport through the
+kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P implies.
+
+**The books on round 2** (advection + eddy mixing = total; NCEP implied):
+
+| lat | -40 | -30 | -20 | 20 | 30 | 40 |
+|---|---|---|---|---|---|---|
+| model | -0.69 | -0.03 | +1.12 | -0.90 | +0.19 | +0.74 |
+| of which eddy mixing | -0.01 | -0.02 | -0.03 | +0.03 | +0.01 | +0.01 |
+| NCEP implied | -1.39 | -1.24 | -0.50 | +0.08 | +0.72 | +0.83 |
+
+- The deficit isn't a weak source. The model's 20-30N belt gives off +1.09 Sv (NCEP +0.64), but the trades take it all
+  equatorward. The model's moisture divide (transport 0) is at ~28N / ~30S. In NCEP it's at ~18N / ~12S. So the
+  subtropics export their vapour the wrong way: the poleward export that should feed the subtropical east coasts and
+  the mid-latitudes is missing.
+- Unverified, from memory: across 30-40 deg the observed transport is mostly transient eddies (v'q'). The warm
+  sector's moist air goes poleward and the cold air's dry air comes back, so the flux follows the storms' correlation,
+  not the mean vapour gradient at the ground.
+
+| candidate | SE USA | Pampas | SE USA win | Pampas Oct-Mar | Japan | Arabia | Amazon | B | BWh | corr | exact | 30N / 30S Sv | 40N Sv | Japan Tc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| round 2 | 601 | 330 | 288 | 490 | 666 | 214 | 3552 | 25.6 | 13.7 | 0.707 | 37.9 | +0.19 / -0.03 | +0.74 | 9.6 |
+| E1: all mixing x5 | 731 | 403 | 446 | 554 | 732 | 250 | 3457 | 23.5 | 12.1 | 0.707 | 37.7 | +0.26 / -0.09 | +0.80 | 9.5 |
+| E2: + 4 K_MIX x B (storms only) | 713 | 389 | 433 | 541 | 721 | 243 | 3479 | 24.0 | 12.5 | 0.711 | 37.8 | +0.24 / -0.08 | +0.79 | 9.5 |
+| E3: + 4 K_MIX x B, meridional faces only | 682 | 373 | 386 | 551 | 699 | 233 | 3491 | 24.5 | 12.9 | 0.712 | 38.0 | +0.23 / -0.07 | +0.78 | 9.5 |
+| E4: v'q' as a poleward drift, 0.5 m/s x B | 610 | 366 | 317 | 567 | 681 | 228 | 3401 | 25.5 | 13.3 | 0.713 | 38.1 | +0.30 / -0.17 | +0.85 | 9.4 |
+| E4, 1 m/s x B | 627 | 403 | 355 | 645 | 695 | 242 | 3271 | 25.3 | 12.8 | 0.716 | 38.1 | +0.42 / -0.32 | +0.97 | 9.1 |
+| E4, 2 m/s x B | 671 | 473 | 443 | 787 | 721 | 270 | 2989 | 24.8 | 12.1 | 0.718 | 38.3 | +0.65 / -0.61 | +1.21 | 8.7 |
+| E4 x (1 - sink), 1 / 2 m/s | 619 / 649 | 239 / 202 | 288 / 299 | 330 / 272 | 639 / 618 | 213 / 216 | 3327 / 3100 | 25.6 / 25.7 | 13.8 / 13.6 | 0.710 / 0.701 | 37.8 / 37.7 | +0.29 / -0.13, +0.38 / -0.23 | +0.91 / +1.07 | 9.1 / 8.7 |
+
+- **E1-E3, more down-gradient mixing: ruled out as the lever.** At 5x the mixing still carries only 0.07-0.15 Sv. The
+  vapour gradient at the ground across 30 deg is too weak for diffusion to carry the observed flux. What extra rain it
+  makes comes from wetting the land-sea contrast inland: Gobi 583 -> 764-863 (GPCC 157), and B falls 1-2 points.
+- **E4, the storms' v'q' as a poleward drift of the vapour (u_e x B, poleward, on the faces): the only form that moves
+  the books.** 30N goes +0.19 -> +0.42 / +0.65 (NCEP +0.72) and 30S -0.03 -> -0.32 / -0.61 (NCEP -1.24). It's the first
+  mechanism that moves the Pampas without the Andes (Oct-Mar 490 -> 645 / 787, GPCC 1321). It dries the Amazon toward
+  GPCC (3552 -> 3271 / 2989; GPCC 2335), cools Japan's winter (9.6 -> 9.1 / 8.7; NCEP 2.0) and gives the best corr
+  so far (0.716 / 0.718). The physical scale: u_e ~ r x sigma_v x sigma_q / q ~ 0.5 x 6 m/s x 0.3 ~ 1 m/s (all three
+  unverified, back of the envelope), so 1 m/s is the anchored value, not a fit.
+  - **What it breaks:** 40N overshoots (+0.97 / +1.21 vs +0.83). The drift runs on B, whose latitude belt part is
+    still ~0.3-0.5 at 50-60 deg. The deserts' poleward edges get wetter (Arabia +28 / +56, Central Asia +13 / +36),
+    so B falls 0.3 / 0.8 and BWh 0.9 / 1.6. NE USA's summer, already 2.4x too wet, is unchanged. Tests: none run
+    (probe only).
+  - Masked by (1 - sink), like round 2: the Pampas collapses (Oct-Mar 330 / 272). The drift *across* the subtropical
+    high is what feeds it, so that mask is wrong for transport (it was right for lifting). Dropped.
+- **Open questions for E4's design:** (i) Should it ride the storm tracks only (the `track` part of B), to stop 40-60
+  deg overshooting? (ii) Should it act on the vapour's anomaly from the zonal mean (v'q' needs q' ~ q - [q]) rather
+  than on q, which would also stop it draining the deserts? (iii) It doesn't conserve dry air. That's fine for a
+  vapour tracer, because the return flow is the dry air. A 2 m/s drift through the faces may need RAIN_CFL's dt to
+  shrink (not seen: same step count).
+
 ## Harness (here)
 - `quick.py [--level L] [k=v ...]`: Earth summary (regions by half-year, B, BWh, corr, winter T).
 - `winds.py [k=v ...]`: the rain's wind and vapour by box against NCEP 850/925 hPa.
+- `quick.py --books`: adds the northward vapour transport table (Sv).
+- `eddy_probes.patch`: the eddy-transport probe knobs (`k_all`, `k_storm`, `k_mer`, `k_drift`, `k_drift_sink`) on face_winds. Not for merging.
 - `bflip.py [k=v ...]`: which land cells leave or join Koppen B under the overrides, against Kottek, by continent.
 - `probes.patch`: the probe knobs (`k_mix`, `lsw_f`, `sub_a`/`sub_one`/`sub_km`/`sub_lat`, `cold_col`) on
   planet/climate.py. Not for merging.

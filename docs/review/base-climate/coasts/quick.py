@@ -10,6 +10,8 @@ import numpy as np
 from planet import climate
 level = 6
 args = sys.argv[1:]
+books = "--books" in args
+args = [a for a in args if a != "--books"]
 if args and args[0] == "--level":
     level = int(args[1]); args = args[2:]
 for kv in args:
@@ -55,3 +57,11 @@ for nm in ("W Europe", "Scandinavia", "European Russia", "W Siberia", "E Siberia
     m = mask(*REG[nm])
     f = lambda x: E.wmean(np.asarray(x, float), w, m)  # noqa: E731
     print(f"{nm:>18} {f(c['t_cold']):6.1f} {f(d['obs_t_cold']):6.1f} {f(c['t_warm']):6.1f} {f(d['obs_t_warm']):6.1f}")
+if books:  # northward vapour transport (Sv; moisture_budget's table) and the coasts' column vapour
+    from tools import moisture_budget as MB
+    RB = MB.analyse(grid, d, c, rec)
+    print(f"{'lat':>4} {'adv':>6} {'eddy':>6} {'total':>6} {'implied':>7} {'NCEP':>6}")
+    for r in RB["meridional"]:
+        if abs(r["lat"]) <= 60:
+            print(f"{r['lat']:4d} {r['adv_sv']:+6.2f} {r['eddy_sv']:+6.2f} {r['adv_sv'] + r['eddy_sv']:+6.2f} "
+                  f"{r['implied_sv']:+7.2f} {r['obs_implied_sv']:+6.2f}")

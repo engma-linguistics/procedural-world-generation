@@ -37,3 +37,7 @@ vapour in mm against NCEP:
   and drop any form that doesn't move these regions. This is lane 26's round 2.
 - Bar (with the Pampas jet ticket): SE USA and Pampas each at >= 60% of GPCC annual rain, B >= ~26, log-rain corr
   not below 0.69.
+- 2026-10-29 (lane 26b): round 2 coded as the storm-lifted gate rh_c x exp(-q_k LAPSE lift_m B (1 - sink)), lift_m
+  1500 m (c9b4990e). Of five forms, two didn't move the winters (cold-dome mask, warm-advection mask) and two wet the
+  deserts (unmasked, land-only); see the coasts README's round 2 note. SE USA winter 153 -> 288 (GPCC 1334) is still
+  vapour-limited (7.7 mm vs NCEP 17.5): what's left is the return flow's supply.
