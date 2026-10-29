@@ -17,10 +17,15 @@ Rules, all seeded and simple:
   (openness = 1 - 0.7 insularity): fast for traded things, slow for language.
 - The crops and herd animals of the history count: a people that first cultivated a crop (crops.py) knows cultivation
   from then, one that tamed or took up an animal (animals.py) knows herding.
-- Language and the other within-a-people techs (spread = 0) never pass by contact: each stem comes to them itself.
+- Language never passes between stems before their minds (below), but once a people is genetically modern (below a stem with a
+  sapiens node) it takes language from any neighbour that has it, at the contact rate (modern_contact, PW-971; owner: almost any
+  contact spreads language). The other within-a-people techs (spread = 0) never pass by contact.
+- The sapiens node gates (PW-971, PW-978): in a line under a stem with `sapient`, nothing arises or spreads before the node but the
+  techs marked `bare = true` (knapping, handaxes: Lomekwi/Oldowan/Acheulean). Gesture and call systems, language and everything
+  past them wait for the node. A kind's starting kit (the dragons' innate magic, with its gesture roots) is not gated: it is body.
 - Nothing goes past the tree's era (meta.era), and the fantasy techs are left out in real mode.
 A stem that ends as animals (spec.Lineage.animals_end, PW-965: the dragons' wyverns, drakes and pseudodragons) is untracked past its end, so
-no animal line exists here to get language or techs; a sapiens node (sapient_kyr) is a marker and gates nothing here yet.
+no animal line exists here to get language or techs.
 Megafauna (dragons, giants) count as peoples here; templates (tieflings) do not: they are their hosts.
 """
 
@@ -93,6 +98,18 @@ def _kind(T: dict, line: dict, L: dict) -> dict:
     return {}
 
 
+def _node(line: dict, L: dict) -> float | None:
+    """The sapiens node (kyr) of the line's own stem or the nearest stem above it (first parent up the tree; PW-971)."""
+    seen, cur = set(), line
+    while cur is not None and cur["id"] not in seen:
+        seen.add(cur["id"])
+        if cur.get("sapient_kyr") is not None:
+            return float(cur["sapient_kyr"])
+        up = cur.get("group_of") or (cur.get("parents") or [None])[0]
+        cur = L.get(up)
+    return None
+
+
 def _env_ok(t: dict, have: set | None) -> bool:
     if have is None:  # (no range or no goods to read: not checked)
         return True
@@ -150,6 +167,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     people = [l for l in lines if not (l.get("overlay") and l.get("origin") == "template")]
     idx = {l["id"]: l.get("index", k) for k, l in enumerate(lines)}
     kind = {l["id"]: _kind(T, l, L) for l in people}
+    node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
     have = {l["id"]: goods_held(T, present, goods, idx[l["id"]]) for l in people}
     pops = ((pres or {}).get("lines") or {})
     size = {}
@@ -188,10 +206,12 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         if tid in techs and tid not in known[lid]:
             known[lid][tid] = [round(float(ago), 3), how, frm]
 
-    def can(lid, tid, ago, inventing):
+    def can(lid, tid, ago, inventing, needs=True):
         t = techs[tid]
         k = kind[lid]
-        if tid in known[lid] or any(n not in known[lid] for n in t.get("needs", [])):
+        if tid in known[lid] or (needs and any(n not in known[lid] for n in t.get("needs", []))):
+            return False
+        if node[lid] is not None and ago > node[lid] and not t.get("bare"):  # (PW-971: before its stem's minds only bare-bones tools)
             return False
         if t.get("hands", True) and k.get("hands", True) is False:
             return False
@@ -217,12 +237,13 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             if l.get("origin") in ("split", "group") or l.get("group_of"):
                 src = l.get("group_of") or (l.get("parents") or [None])[0]
                 for tid, v in (known.get(src) or {}).items():
-                    if v[0] >= at - 1e-9:
+                    if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):  # (PW-971: a stem under a node inherits only bare tools from before it)
                         give(lid, tid, at, "inherited", src)
             elif l.get("origin") == "hybrid":
                 for src in l.get("parents") or []:
                     for tid in list((known.get(src) or {})):
-                        give(lid, tid, at, "inherited", src)
+                        if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):
+                            give(lid, tid, at, "inherited", src)
             kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
             for tid in [i for i in order if i in kit]:
                 give(lid, tid, at, "kit" if l.get("origin") == "arrival" else "inherited", None)
@@ -252,9 +273,14 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     continue
                 op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
                 for tid in order:
-                    if tid in known[x] and known[x][tid][0] >= ago and can(y, tid, ago, False):
+                    lang = bool(techs[tid].get("modern_contact"))  # (language: to any genetically modern people, PW-971)
+                    if lang and node[y] is None:
+                        continue
+                    if tid in known[x] and known[x][tid][0] >= ago and can(y, tid, ago, False, needs=not lang):
                         r = D["contact_rate"] * techs[tid].get("spread", D["spread"]) * w * op
                         if r > 0 and rng.random() < 1 - math.exp(-r * dt):
+                            for n in [i for i in order if lang and i in closure(T, [tid]) and i != tid]:
+                                give(y, n, ago, "with " + tid, x)  # (its roots, gesture, come with it)
                             give(y, tid, ago, "contact", x)
         for l in alive:  # (a group and its people share what they know as they go)
             g = l.get("group_of")

@@ -91,3 +91,33 @@ def test_goods_gate_metals():
     assert held == {"fertile"}
     t = T["techs"]["copper"]
     assert not TT._env_ok(t, held) and TT._env_ok(t, None)
+
+
+def test_sapiens_node_gates_all_but_bare_tools():  # PW-971, PW-978
+    lines = [line("stem", at=4000.0, sapient_kyr=1500.0), line("kid", "split", at=1000.0, parents=["stem"])]
+    saw_bare_early = False
+    for s in range(6):
+        tt = TT.build(lines, None, None, seed=s, T=T)
+        for lid in ("stem", "kid"):
+            for tid, (ago, how, _) in tt["known"][lid].items():
+                if tid in ("knapping", "handaxes"):
+                    saw_bare_early |= ago > 1500.0
+                else:
+                    assert ago <= 1500.0, (s, lid, tid, ago)  # (nothing else before the node)
+    assert saw_bare_early
+
+
+def test_language_spreads_by_contact_to_peoples_under_a_node():
+    lines = [line("talker", at=3000.0), line("stem", at=1500.0, sapient_kyr=1000.0),
+             line("modern", "split", at=900.0, parents=["stem"])]
+    talk = {"pairs": [{"a": "talker", "b": "modern", "first_contact_kyr": 800.0, "in_contact_now": True,
+                       "series": [[800.0, 3000, 0.0], [0.0, 3000, 0.0]]}]}
+    hit = 0
+    for s in range(6):
+        tt = TT.build(lines, talk, None, seed=s, T=T)
+        k = tt["known"]["modern"]
+        lang = k.get("language")
+        if lang and lang[1] == "contact":
+            hit += 1
+            assert lang[0] <= 800.0 and "gesture" in k  # (the roots come along)
+    assert hit >= 1

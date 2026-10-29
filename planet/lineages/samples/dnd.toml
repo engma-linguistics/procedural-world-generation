@@ -47,11 +47,11 @@ land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each
 # ---- the reptilian line ---------------------------------------------------------------
 # Stems are the last common ancestor of the peoples under them, not the first reptiles or mammals (owner ruling): roots are no older than ~20 Myr
 # and the named peoples are fully realized within ~3 Myr, as the avian line is. The draconic stem IS the dragons, the elder line among the
-# reptilian peoples (the ur-dragon, ~19.5 Myr, against ~3 Myr for the lizardfolk, tortles and troglodytes): extant megafauna at very low density (as the true
+# reptilian peoples (the ur-dragon, ~19.5 Myr, against 2-3 Myr for the kobolds, lizardfolk, troglodytes and tortles, PW-978): extant megafauna at very low density (as the true
 # giants), minds arriving at the stem's sapiens node (PW-965, a marker: sapient = ...; the stem ends as animals, animals = true: wyverns, drakes and pseudodragons, untracked; the dragonborn and kobolds are its dragon-blooded humanoid
 # peoples, split off recently; the stem ends at its last split, PW-924). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the kinds of dragon split from those, each in its own country (below; PW-924: the stems end, no dragon is of no set colour). Interfertility
 # follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people (T3); the lizardfolk,
-# tortles and troglodytes, three Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
+# tortles and troglodytes, 0.3-1 Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
@@ -64,7 +64,7 @@ prefers = ["tropical"]
 
 [[lineage]]
 id = "draconic"
-sapient = "4 Myr"  # PW-965 sapiens node: minds arrive for the whole draconic stem, well before the chromatic/metallic split (2.5 Myr). A guess to change
+sapient = "5 Myr"  # PW-965 sapiens node: minds arrive for the whole draconic stem; PW-978: 5 Myr (owner 10-28), 2.5 Myr of one-people dragons before the chromatic/metallic split
 animals = true  # PW-965: at its last split the rest of the stem continues as animals (wyverns, drakes, pseudodragons), untracked
 name = "dragons (the draconic stem: the ur-dragon, split from the reptilian stem near the root, a recognizable modern ur-dragon by ~10 Myr; elder, dragon-blooded)"
 parents = ["reptilian"]
@@ -235,7 +235,7 @@ near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 id = "troglodyte"
 name = "troglodytes (extinct)"
 parents = ["reptilian"]
-at = "3 Myr"
+at = "2.6 Myr"  # PW-978: the reptilian peoples split spread out within the ~3 Myr cap (tortle 3, troglodyte 2.6, lizardfolk 2.3, kobold 2 Myr)
 extinct = "60 kyr"
 temp_c = [12, 28]
 traits = ["subterranean"]
@@ -245,7 +245,7 @@ id = "lizardfolk"
 name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["reptilian"]
-at = "3 Myr"
+at = "2.3 Myr"
 density = 1.5
 explore = 0.4
 sea_share = 0.25
@@ -296,7 +296,7 @@ rain_mm = [400, 2500]
 
 [[lineage]]
 id = "feline"
-sapient = "1500 kyr"  # PW-965 sapiens node (a guess): before tabaxi and leonin split
+sapient = "2 Myr"  # PW-965 sapiens node; PW-978: 2 Myr, 0.8 Myr before the first split
 name = "feline stem"
 body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular" }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison; cats: tearing teeth, active at dawn and dusk
 parents = ["mammalian"]
@@ -332,7 +332,7 @@ traits = ["nomadic", "hunter"]  # pride hunters following the herds across open 
 
 [[lineage]]
 id = "goblinoid"
-sapient = "1000 kyr"  # PW-965 sapiens node (a guess): before the goblin kinds split
+sapient = "1.2 Myr"  # PW-965 sapiens node; PW-978: 1.2 Myr (a shorter timeline than the hominids, owner)
 name = "goblinoid stem"
 generation_yr = 15  # years per generation (default 25, humans: Fenner 2005): short-lived, early-breeding; sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { raw_meat = true, bitter = "low" }  # scavengers with strong stomachs
@@ -389,10 +389,10 @@ traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "hominid"
-sapient = "1800 kyr"  # PW-965 sapiens node (a guess): before giantkin, orcs, dwarves and humans split
+sapient = "1.6 Myr"  # PW-965 sapiens node; PW-978: stem from 4 Myr so ~1.7 Myr of bare-bones tools (knapping, handaxes) precede minds, as Lomekwi -> Oldowan -> Acheulean -> sapiens
 name = "hominid stem"
 parents = ["mammalian"]
-at = "2 Myr"
+at = "4 Myr"  # PW-978: was 2 Myr; room for a long tools-before-minds run
 temp_c = [8, 26]
 rain_mm = [400, 2200]
 
@@ -402,7 +402,7 @@ rain_mm = [400, 2200]
 id = "giantkin"
 name = "giant-kin stem"
 parents = ["hominid"]
-at = "1.5 Myr"
+at = "1.1 Myr"  # PW-978: was 1.5 Myr, 0.5 Myr after the hominid node
 density = 0.1
 temp_c = [-4, 14]
 rain_mm = [300, 1500]
@@ -413,7 +413,7 @@ traits = ["hardy", "mountain"]
 id = "true_giant"
 name = "true giants stem (the ordning)"
 parents = ["giantkin"]
-at = "1.2 Myr"
+at = "1 Myr"  # PW-978: was 1.2 Myr (stays after giantkin)
 group_size = [5, 20]  # families and steadings
 generation_yr = 65  # PW-924: giants 50-80 yr
 megafauna = true  # PW-924: counted, in steadings (PW-963: ~1 per 130-345 km2 by kind where no people presses them, one per meta.giant_km2, default 2,000 km2, where peoples do)
@@ -856,7 +856,7 @@ sites = 3
 # ---- the avian line --------------------------------------------------------------------
 [[lineage]]
 id = "avian"
-sapient = "1200 kyr"  # PW-965 sapiens node (a guess): before aarakocra and kenku split
+sapient = "2 Myr"  # PW-965 sapiens node; PW-978: 2 Myr, a long crow-like tool run before it
 name = "avian stem"
 body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"], thermo = "endo", teeth = "beak", suction = "none" }  # birds: no sweet receptor, immune to capsaicin, poor smell; birds: warm-blooded, toothless beaked, they scoop and tip the head back to drink
 origin = "root"
