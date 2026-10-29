@@ -913,6 +913,24 @@ function peoplesColor(layer, i, c) {
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
 }
+// Demes (planet/lineages/demes.py, PW-981): the regional population of each cell's leading people, each a shade of its
+// people's colour (layer demes: index into demes.json, V.demes, loaded with the run; 65535 nobody)
+function demeOf(i) { const d = V.layers.demes?.[i]; return d == null || d === 65535 ? null : V.demes?.demes?.[d] || null; }
+function demesColor(i, c) {
+  const L = V.layers, elev = L.elevation;
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  const d = demeOf(i);
+  if (elev[i] <= 0 && !d) return c.copy(OCEAN);
+  if (!d) return c.copy(NOBODY);
+  const col = d._c ||= new THREE.Color(d.color);
+  if (state.people != null && (V.run.meta.lineages || [])[state.people]?.id !== d.people) return c.copy(NOBODY).lerp(col, 0.15);
+  return elev[i] <= 0 ? c.copy(OCEAN).lerp(col, 0.75) : c.copy(col);
+}
+async function loadDemes() {  // (demes.json beside run.json: the tree, names and colours)
+  if (!V?.run?.meta?.demes || V.demes) return;
+  const v = V;
+  try { const j = await (await fetch(v.base + v.run.meta.demes.file, { cache: 'no-store' })).json(); if (V === v) V.demes = j; } catch (e) { console.error(e); }
+}
 // Animals (planet/lineages/animals.py, PW-691): per animal the wild range (green: derived from the land) and where it is known
 // (the animal's own colour, spreading from the taming homeland over peopled land and, by boat, over the sea); both: its colour over green.
 // The layers hold one bit per animal (animal_wild, animal_known; meta.animals.stocks[id].bit).
@@ -1192,6 +1210,7 @@ function cellColors(layer) {
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') peoplesColor(layer, i, c);
+    else if (layer === 'demes') demesColor(i, c);
     else if (layer.startsWith('body: ')) {
       if (L.ice && L.ice[i] > 0) c.copy(ICE); else if (elev[i] <= 0) c.copy(OCEAN);
       else if (L.peoples_whole[i] === 255) c.copy(NOBODY); else rampFns.body(L['body_' + layer.slice(6)][i], c);
@@ -1289,7 +1308,7 @@ function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
-    hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), 'peoples mix', 'peoples overlay'].concat(
+    hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), ...(hasLayer('demes') ? ['demes'] : []), 'peoples mix', 'peoples overlay'].concat(
       Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], hasLayer('crop_wild') ? Object.keys(cropStocks()).map((k) => 'crop: ' + k) : [],
     V.run?.meta?.anthro ? ['land use'] : [], V.run?.meta?.fuels ? ['fuels'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
@@ -2604,6 +2623,13 @@ function renderLegend() {
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
   } else if (state.layer.startsWith('body: ')) {
     el.innerHTML = rampLegend('body', `% of the cell's people with it (${state.layer.slice(6)}: each people's share, mixed by who lives there)`, ['0%', '100%']) + sw('#5a5a52', 'nobody');
+  } else if (state.layer === 'demes') {
+    // the regional populations of this frame (planet/lineages/demes.py, PW-981), the largest first
+    const L = V.layers, D = V.demes?.demes || [], cnt = new Map();
+    if (L.demes) for (let i = 0; i < V.n; i++) { const d = L.demes[i]; if (d !== 65535) cnt.set(d, (cnt.get(d) || 0) + 1); }
+    const rows = [...cnt.entries()].filter(([d]) => D[d]).sort((a, b) => b[1] - a[1]);
+    el.innerHTML = rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
+      sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations of the leading peoples here: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${V.demes ? `cut since ${V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
   } else if (state.layer === 'peoples' || state.layer === 'peoples mix' || state.layer === 'peoples overlay' || state.layer === 'peoples blend') {
     // the peoples present in this frame (planet/lineages/), by the land they lead
     const L = V.layers, lines = V.run.meta.lineages || [], cnt = new Map();
@@ -3397,6 +3423,12 @@ function peoplesRows(i, R) {
   const mixn = L.peoples_mix?.[i] || 0;
   R('place', '', d !== 255 && lines[d] ? `${lines[d].name}${isSeaPeople(lines[d]) ? ' (at sea)' : ''} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
     { lab: 'peoples (this frame)', ess: true });
+  const dm = demeOf(i);  // (the regional population, PW-981: when the demes layer is loaded)
+  if (dm) {
+    const D = V.demes.demes, par = dm.parent != null ? D[dm.parent] : null;
+    R('place', '', `${dm.name}, since ~${dm.born_kyr} kyr ago${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
+      { lab: 'regional population', ess: true });
+  }
   const wd = L.peoples_whole?.[i];  // the cell's composition (PW-689): leading people, second, all others
   const ml = L.mix_lead ? L.mix_lead[i] : wd;  // (the people with most heads, PW-705)
   if (L.mix_lead_share && wd != null && wd !== 255 && lines[ml]) {
@@ -4608,7 +4640,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  'land use': ['tree_cover', 'ice'], fuels: ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
+  'land use': ['tree_cover', 'ice'], fuels: ['tree_cover', 'ice'], demes: ['demes'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4695,6 +4727,7 @@ async function loadRun(dir, wantT) {
   if (wantT != null) f = run.frames.reduce((b, fr, i) => (Math.abs(fr.t - wantT) < Math.abs(run.frames[b].t - wantT) ? i : b), 0);
   V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load
+  await loadDemes();
   await loadNeeded();
   setFrame(f, false);
   buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();

@@ -83,7 +83,7 @@
   <button data-tab="tech">Technology</button>
 </nav>
 <main>
-  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option><option value="demes" title="each people's regional populations (demes, PW-981) from the picked peoples run: where sea, hard country or distance cut a people, dated splits, fusions and ends">species + regional populations</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
   <section class="tab" id="tab-peoples"></section>
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
@@ -281,9 +281,10 @@ function animalsEnd(x, yy, r) {
 function drawTimeline() {
   LMAX = Math.log10(Math.max(20000, ...T.lineage.map((r) => kyrOf(r.at) || 0)) * 1.15);  // no line starts off the left edge
   let rows = order();
-  if (viewMode === 'species') rows = rows.filter(([r]) => originOf(r) !== 'group');
+  if (viewMode === 'species' || viewMode === 'demes') rows = rows.filter(([r]) => originOf(r) !== 'group');
+  if (viewMode === 'demes') rows = withDemes(rows);
   // the name column fits the longest name (indent + ~6.3 px a letter, at most 330 px; a longer one is clipped, its full name a tooltip)
-  const label = (r, d) => `${originOf(r) === 'group' ? '↳ ' : ''}${r.name || r.id}${r.custom ? ' ✎' : ''}${eff0.off.has(r.id) ? ' (off)' : ''}`;
+  const label = (r, d) => r._deme ? r._deme.name : `${originOf(r) === 'group' ? '↳ ' : ''}${r.name || r.id}${r.custom ? ' ✎' : ''}${eff0.off.has(r.id) ? ' (off)' : ''}`;
   const eff = effective(), eff0 = eff;
   W0 = Math.min(330, Math.max(190, ...rows.map(([r, d]) => 14 + 10 * Math.min(d, 8) + 6.3 * label(r, d).length)));
   WIDTH = fitAll ? Math.max(500, $('tl').clientWidth - 24) : Math.max(1100, $('tl').clientWidth - 4);  // (a narrower window scrolls sideways)
@@ -303,6 +304,7 @@ function drawTimeline() {
   s += '</g>'; ax += `<line x1="0" x2="${WIDTH}" y1="${TOP - 0.5}" y2="${TOP - 0.5}" stroke="#2a3446"/></g>`;
   let ls = `<rect x="0" y="${TOP}" width="${W0}" height="${H - TOP}" style="fill:var(--bg)"/><line x1="${W0 - 0.5}" x2="${W0 - 0.5}" y1="${TOP}" y2="${H}" stroke="#2a3446"/>`;
   rows.forEach(([r, d]) => {
+    if (r._deme) { const q = demeRow(r._deme, y, d); s += q.bar; ls += q.lab; return; }
     const yy = y[r.id], off = eff.off.has(r.id), o = originOf(r), a = kyrOf(r.at) ?? 1, ex = kyrOf(r.extinct);
     const col = r.color || ORIGIN_COL[o] || '#aaa';
     const res = resLine(r.id);
@@ -329,6 +331,39 @@ function drawTimeline() {
   axis.innerHTML = ax;
   diagTl('draw');
   lab.innerHTML = `<defs><clipPath id="labclip"><rect x="0" y="${TOP}" width="${W0 - 6}" height="${H}"/></clipPath></defs>` + ls;
+}
+// PW-981: the regional populations (demes.json of the picked peoples run) under each people, as a tree of their own:
+// a bar from the deme's birth to its end in its colour, a branch from the deme it came from, † where it died out, → where it fused.
+// Only demes that ever held DEME_MIN cells, or live now, are drawn (the rest are brief fragments).
+const DEME_MIN = 150;
+const DEME_HOW = { first: 'there when the cut starts', from_people: 'arose from', split_gap: 'split by a gap from', split_distance: 'budded off (distance) from', crossing: 'founded over the sea from' };
+function withDemes(rows) {
+  const D = result?.demesDoc?.demes;
+  if (!D) return rows;
+  const keep = D.filter((x) => x.peak_cells >= DEME_MIN || x.ended_kyr == null), by = {};
+  for (const x of keep) (by[x.people] ||= []).push(x);
+  const out = [];
+  for (const [r, d] of rows) {
+    out.push([r, d]);
+    const mine = by[r.id];
+    if (!mine) continue;
+    const ids = new Set(mine.map((x) => x.id)), kids = {};
+    for (const x of mine) { const p = ids.has(x.parent) ? x.parent : -1; (kids[p] ||= []).push(x); }
+    const walk = (x, k) => { out.push([{ id: 'deme:' + x.id, _deme: x }, d + 1 + Math.min(k, 3)]); (kids[x.id] || []).sort((a, b) => b.born_kyr - a.born_kyr).forEach((c) => walk(c, k + 1)); };
+    (kids[-1] || []).sort((a, b) => b.born_kyr - a.born_kyr).forEach((x) => walk(x, 0));
+  }
+  return out;
+}
+function demeRow(x, y, d) {
+  const yy = y['deme:' + x.id], D = result.demesDoc.demes, par = x.parent != null ? D[x.parent] : null, x0 = xOf(Math.max(x.born_kyr, 0.05)), x1 = xOf(Math.max(x.ended_kyr ?? 0.05, 0.05));
+  const tip = `${x.name}: ${DEME_HOW[x.how] || x.how}${par ? ' ' + par.name : ''} ~${fmt(Math.max(x.born_kyr, 0.05))} ago` + (x.settled_kyr != null ? ` (its land settled ~${fmt(x.settled_kyr)} ago)` : '') +
+    `; at most ${x.peak_cells} cells (~${fmt(x.peak_kyr || 0.05)} ago)` + (x.ended_kyr != null ? `; ${x.end === 'fused' ? 'fused into ' + (D[x.into]?.name || '?') : 'died out'} ~${fmt(Math.max(x.ended_kyr, 0.05))} ago` : `; ${x.cells_now} cells now`);
+  let bar = `<g class="deme"><title>${esc(tip)}</title><rect x="${x0}" y="${yy - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="2" fill="${x.color}" opacity=".9"/>`;
+  if (par && y['deme:' + par.id] != null) bar += `<path d="M${x0},${y['deme:' + par.id]} L${x0},${yy}" stroke="${par.color}" stroke-width="1" fill="none" opacity=".7" ${x.how === 'crossing' ? 'stroke-dasharray="2 2"' : ''}/>`;
+  if (x.ended_kyr != null) bar += `<text x="${x1 + 3}" y="${yy + 4}" font-size="10">${x.end === 'fused' ? '→' : '†'}</text>`;
+  bar += '</g>';
+  const lab = `<g class="lab"><text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}" font-size="11" fill="${x.color}" clip-path="url(#labclip)"><title>${esc(tip)}</title>${esc(x.name)}</text></g>`;
+  return { bar, lab };
 }
 let viewMode = 'all', fitAll = false;
 $('tlFit').onclick = () => { fitAll = !fitAll; $('tlFit').textContent = fitAll ? 'scroll' : 'fit all'; drawTimeline(); $('tl').scrollLeft = 0; diagTl('fit'); };
@@ -940,6 +975,7 @@ $('run').onclick = async () => {
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
   result = { id, ...run.meta };
+  if (run.meta.demes?.file) try { result.demesDoc = await (await fetch(`../runs/${id}/${run.meta.demes.file}`, { cache: 'no-store' })).json(); } catch { result.demesDoc = null; }  // (PW-981)
   status(`run ${id}`);
   const g = $('globe');
   g.href = `index.html?run=${encodeURIComponent(id)}&layer=peoples`; g.hidden = false;
