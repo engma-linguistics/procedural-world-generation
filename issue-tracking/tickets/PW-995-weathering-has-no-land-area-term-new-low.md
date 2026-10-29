@@ -37,5 +37,5 @@ Lean: A. The warm shift after the weld fix comes from erosion against the frozen
 from a missing area term. B is the physical option if the owner wants land area to cool.
 
 ## Updates
-- 2026-10-29: Status needs-decision -> done. Coordinator 10-29 (geophysics delegated): keep weathering supply-limited for v1; low new land weathers little, which is physical (West 2012-style supply limit). Revisit a kinetic share with PW-470 in v2.
+- 2026-10-29: Status needs-decision -> done. Coordinator 10-29 (geophysics delegated): keep weathering supply-limited for v1; low new land weathers little (a supply limit). Revisit a kinetic share with PW-470 in v2.
 - 2026-10-29: Created from inbox draft draft-weathering-land-area-term.md (found by lane24).
