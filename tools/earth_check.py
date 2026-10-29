@@ -365,8 +365,8 @@ def analyse(grid, d, c) -> dict:
         "model_all_land_excl_ant_mean": wmean(c["precip"], w, land & ~ant),
     }
     # (as the scorecard has it: cell by cell, log(P + 10 mm))
-    ok = mp & (d["obs_precip"] > 0)
-    R["log_rain_corr"] = float(np.corrcoef(np.log(c["precip"][ok] + 10), np.log(d["obs_precip"][ok] + 10))[0, 1])
+    okp = mp & (d["obs_precip"] > 0)  # (not `ok`: that is Kottek's codes, read again below)
+    R["log_rain_corr"] = float(np.corrcoef(np.log(c["precip"][okp] + 10), np.log(d["obs_precip"][okp] + 10))[0, 1])
     # rain's cell-to-cell patchiness on flat ground (PW-019): median ratio of the wetter to the drier
     # of two neighbouring ice-free land cells, both below 500 m and within 100 m of each other
     ea, eb = grid.edges[:, 0], grid.edges[:, 1]
@@ -659,6 +659,16 @@ def systematic_errors(R) -> list[str]:
     return [s for _, s in out]
 
 
+def dryness(R) -> dict:
+    """The dry-land headline (PW-821): Koppen B share, hot desert (BWh) and hot steppe (BSh) shares of land
+    excl. Antarctica, model and Kottek, and the land rain's mean against GPCC's."""
+    ks, cs, lp = R["koppen_shares"], R["code_shares_excl_ant"], R["land_precip_excl_ant"]
+    z = {"model": 0.0, "kottek": 0.0}
+    return dict(B=dict(model=ks["model_excl_ant"]["B"], kottek=ks["kottek_excl_ant"]["B"]),
+                BWh=dict(cs.get("BWh", z)), BSh=dict(cs.get("BSh", z)),
+                land_P_ratio=lp["model"]["mean"] / lp["gpcc"]["mean"])
+
+
 def report(R, times, level):
     L = []
     p = L.append
@@ -680,6 +690,10 @@ def report(R, times, level):
     cs = sorted(R["code_shares_excl_ant"].items(), key=lambda kv: -max(kv[1]["model"], kv[1]["kottek"]))
     p("largest codes (% land excl. Ant.), model/obs: " +
       ", ".join(f"{c} {v['model']:.1f}/{v['kottek']:.1f}" for c, v in cs[:14]))
+    dr = dryness(R)
+    p(f"dry land (PW-821; % land excl. Ant., model/obs): B {dr['B']['model']:.1f}/{dr['B']['kottek']:.1f}, "
+      f"hot desert BWh {dr['BWh']['model']:.1f}/{dr['BWh']['kottek']:.1f}, hot steppe BSh "
+      f"{dr['BSh']['model']:.1f}/{dr['BSh']['kottek']:.1f}; land rain x{dr['land_P_ratio']:.2f} GPCC's mean")
 
     p("\nBy 10-degree band, land only: group shares model | Kottek (%), group match")
     p(f"{'band':>9} {'land%':>5}  {'A':>3} {'B':>3} {'C':>3} {'D':>3} {'E':>3} | "
@@ -870,6 +884,7 @@ def main():
     R["moisture"] = moisture_budget.headlines(moisture_budget.analyse(grid, d, c, rec))
     times = (*times, time.time() - t0)
     R["systematic_errors"] = systematic_errors(R)
+    R["dryness"] = dryness(R)
     R["level"] = a.level
     print(report(R, times, a.level))
     if a.json:

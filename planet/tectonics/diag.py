@@ -10,7 +10,8 @@ to one without (tests/test_ice_diag.py). It records:
   sink against their references, the share of the land under ice (which doesn't weather), sea
   level and its two parts (the ice's, sea_ice, and the ocean basins', sea_tect), the iced share;
 - every climate update (`updates`): the global climate (mean temperature, rain, rain on the ice,
-  frozen sea share, the land poleward of the snowline), how many passes the ice's fixed point took,
+  frozen sea share, the land poleward of the snowline, the land's Koppen B and hot-desert shares and
+  mean rain), how many passes the ice's fixed point took,
   and every ice sheet's budget at the ice it settled to: area, volume (m of sea level), mean and
   highest surface, centroid latitude and its most equatorward cell, the snow it gains where its
   balance is positive, the melt where it is negative, what the sea takes at its coast
@@ -33,6 +34,8 @@ from .. import climate, icemass, kernels
 from ..geo import R_KM
 from . import output
 
+ARID = [k for k, c, _, _ in climate.KOPPEN if c.startswith("B")]  # Koppen group B ids
+BWH = next(k for k, c, _, _ in climate.KOPPEN if c == "BWh")
 TOP_SHEETS = 12  # sheets recorded per update (the largest by area); the rest are summed as "other"
 
 
@@ -137,6 +140,11 @@ class Recorder:
         rec["wet_eq_trees"] = round(100 * float(tc[wet].mean()), 2) if wet.any() else None
         rec["wet_eq_cells"] = int(wet.sum())
         rec["pco2"] = round(float(climate.pco2(sim.co2)), 1)
+        # the dry land (PW-015): Koppen B and hot desert (BWh) shares of the land, and the land's mean rain
+        kp = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul, sim.p_jan, g.lat, sim.ice)[land]
+        rec["arid_pct"] = round(100 * float(np.isin(kp, ARID).mean()), 2) if land.any() else None
+        rec["bwh_pct"] = round(100 * float((kp == BWH).mean()), 2) if land.any() else None
+        rec["land_precip"] = round(float(sim.precip[land].mean()), 1) if land.any() else None
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
         rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)
