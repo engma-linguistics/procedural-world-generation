@@ -115,6 +115,14 @@ for lid in peoples:
     if occ.any():
         d = h.dens_at(k, P)
         meand[lid] = float((np.broadcast_to(d, occ.shape)[occ] * P[k][occ]).sum() / P[k][occ].sum())
+lmean = {}  # (PW-974 calibration: per people, its presence-weighted mean of the foraging layer and the grazing NPP over the cells it holds)
+for lid in peoples:
+    k = h.idx[lid]
+    occ = P[k] >= EST
+    if occ.any() and ps.forage is not None and ps.graze_npp is not None:
+        w = P[k][occ]
+        lmean[lid] = {"forage": float((ps.forage[occ] * w).sum() / w.sum()), "graze": float((ps.graze_npp[occ] * w).sum() / w.sum()),
+                      "dens": float(h.dens[k]), **{s: float(v) for s, v in LU.shares(tree, h.lines[k]).items() if s in ("herd", "forage", "farm")}}
 mf = pres.get("megafauna", {})
 cov = {lid: r.get("suitable_reached") for lid, r in mf.items()}
 cnt = {lid: r["count"] for lid, r in mf.items()}
@@ -161,7 +169,7 @@ if fs is not None:
     food["cells_over_food"] = int((use > 1.0 + 1e-9).sum())
 extra = {lid: {k: r.get(k) for k in ("count", "one_per_km2", "pressed_one_per_km2", "natural_one_per_km2", "peopled_one_per_km2",
                                      "wild_one_per_km2", "peopled_share", "stages")} for lid, r in mf.items()}
-json.dump({"world": a.world, "roll": a.roll, "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "mf_cov": cov, "mf_count": cnt,
+json.dump({"world": a.world, "roll": a.roll, "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "lmean": lmean, "mf_cov": cov, "mf_count": cnt,
            "present": present, "stages": stages, "blue_desert": in_country("blue_dragon", "desert"), "blue": cnt.get("blue_dragon", 0),
            "frost_tundra": in_country("frost_giant", "tundra"), "frost": cnt.get("frost_giant", 0), "food": food, "peak": peak,
            "series": {str(t): by_t[t] for t in ts}, "mf_extra": extra, "lost": pres.get("lost"),
