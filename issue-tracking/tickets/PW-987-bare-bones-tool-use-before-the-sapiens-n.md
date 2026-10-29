@@ -1,4 +1,5 @@
 ---
+id: PW-987
 title: Bare-bones tool use before the sapiens node is the same knapping and handaxes for every stem with hands
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-44
 blocked_by: []
 relates: [PW-971, PW-978, PW-947]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -19,3 +22,6 @@ PW-971 gates the tech tree on a stem's sapiens node: before it only techs marked
 - The cat stems (feline) have hands in the model, which is itself doubtful.
 Also gesture and call systems are gated by the node (a dragon's kit still brings them with innate_magic). If the owner wants animal calls to be ungated, `gesture` can take `bare = true`; then language alone waits for the node.
 Lean: leave as is until the language project (PW-947); then give each body plan its own bare tool.
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-bare-bones-tools-for-handless-and-bird-stems.md (found by fun-lane-44).
