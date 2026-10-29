@@ -16,12 +16,17 @@ to kJ (KJ_PER_G_LIVE). With them 470 g C/m2/yr (a rich savanna, PW-966's anchor)
 and the old anchor agree to within the factors' uncertainty, so the paper's intercept is used outright. The scatter is wide (r2 0.58:
 a factor of a few either way), and the fit is across ecosystems, not for one grazer guild. The model's grazing NPP (herb layer plus
 browse, season-weighted) is not exactly McNaughton's NAP (above-ground, all plant parts, annual), a stated approximation. Coe, Cumming &
-Phillipson 1976 (Oecologia 22:341), an African-only fit on rainfall, is not on file and not used. With the fit, grazing NPP of 90 / 200 / 470 g C/m2/yr
+Phillipson 1976 (Oecologia 22:341, on file, read 2026-10-29) is not used but agrees: for twelve semi-arid African wildlife areas
+(rain < 700 mm) it fits log10 B = 1.094 log10 NAAP + 0.389 (B kg/km2 live weight, NAAP g dry matter/m2/yr predicted from rainfall
+by Rosenzweig 1968; r = 0.966; Fig. 3, p. 349), which at this module's C_FRAC gives ~0.8 / ~1.9 / ~4.9 t/km2 for the three anchors
+below: a shallower slope (1.09 against 1.52) on a narrower range. With the fit, grazing NPP of 90 / 200 / 470 g C/m2/yr
 (a hot desert's median / a steppe / a rich savanna) holds ~0.6 / ~1.9 / ~7 t/km2 of wild herbivores.
 
 **Overkill.** Where small folk press the land (the megafauna pressure, history.megafauna.pressure) the wild big herbivores fall
 to (1 - OVERKILL x pressure) of their potential, the late-Pleistocene pattern after people arrive (Sandom et al. 2014, Proc R Soc B
-281:20133254; not on file). Country hostile to small folk keeps them: tundra, high mountains and the sea (REFUGE), where frost,
+281:20133254; on file, read 2026-10-29: it counts the share of large-mammal SPECIES (>= 10 kg) lost per country, not biomass, and the
+loss depends on how long the fauna lived beside hominins: median ~0.46 where modern humans were the first to arrive, ~0.23 where
+archaic hominins were there before, near 0 in Africa (max 13%); Fig. 3, p. 5, and p. 6). Country hostile to small folk keeps them: tundra, high mountains and the sea (REFUGE), where frost,
 cloud and storm giants herd or tend them (PW-724). Overkill never zeroes the prey (and never the dragons: livestock below).
 
 **Livestock** counts as prey where peoples herd or farm (owner, 10-28: dragons take cattle-sized prey readily, later tribute and
@@ -36,12 +41,14 @@ import numpy as np
 # McNaughton et al. 1989, Nature 341:142 (PDF p. 142-143): log10 B = 1.52 log10 NAP - 4.79, B in kJ/m2, NAP in kJ/m2/yr. Checked.
 PREY_EXP = 1.52  # the slope (log-log), checked against the PDF
 PREY_LOG_A = -4.79  # the intercept, checked against the PDF
-# Unit conversions, none from the paper (it cites "standard factors" without giving them). Typical textbook values, unverified:
+# Unit conversions, none from the paper (it cites "standard factors" without giving them). The first two are typical textbook values, unverified:
 C_FRAC = 0.45  # g C per g dry plant matter (assumption: ~0.45-0.5 for plant tissue; unverified)
 KJ_PER_G_DRY = 17.5  # kJ per g dry plant matter (assumption: ~17-20 for plant tissue; unverified, cf. Golley 1961, not on file)
-KJ_PER_G_LIVE = 7.0  # kJ per g live weight of a grazing mammal (assumption: ~20-24 kJ/g dry x ~30% dry matter; unverified)
+KJ_PER_G_LIVE = 7.0  # kJ per g live weight of an animal: Farlow 1993, Am J Sci 293:167, p. 172 ("the energy content of animal tissue
+# approximates 7 x 10^6 joules/kg live mass", citing Peters 1983, p. 33). Checked.
 KJ_PER_G_C = KJ_PER_G_DRY / C_FRAC  # kJ of NAP per g C (~39)
-OVERKILL = 0.6  # the share of the wild big herbivores lost where small folk press the land fully (a judgement, after Sandom et al. 2014)
+OVERKILL = 0.6  # the share of the wild big herbivores lost where small folk press the land fully (a judgement, after Sandom et al. 2014,
+# whose figure is species lost, not biomass, and varies with how long the fauna knew hominins: see the module docstring)
 REFUGE = ("tundra", "mountain")  # places (history.tags) hostile to small folk, where the wild herds persist (and the sea)
 LIVESTOCK = {"pastoral_nomad": 1.0, "transhumant": 0.9, "agro_pastoral": 0.8, "farmer": 0.5, "horticulturalist": 0.2}
 # the share of a people's country stocked, by way of life (herders all of it; farmers keep draught, dairy and meat stock on part)

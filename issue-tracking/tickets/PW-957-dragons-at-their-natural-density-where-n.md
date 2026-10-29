@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-923, PW-924, PW-936]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/history/megafauna.py, planet/lineages/samples/dnd.toml, docs/references/megafauna/]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -36,6 +36,7 @@ The user option should probably become "present-day density in peopled country",
 - [ ] comments and citations corrected
 
 ## Updates
+- 2026-10-29: 10-29: Ripple et al. 2014 is now on file and does not give 'a few percent of their potential' (nor tigers at 3-4% of historical numbers). It gives range: 17 of the 31 largest carnivores hold on average 47% of their historical range, <1% to 73%; tiger 18%, lion 17% (p. 1241484-2, Table 1). Fig. 1 gives present world populations only. Comments in megafauna.py and the proposal are corrected; sourcing the density figure is inbox draft draft-ripple-few-percent-unsourced.md.
 - 2026-10-28: Status todo -> done. Merged (fun lane 41); defaults are candidates until the owner reviews PW-967.
 - 2026-10-28: Owner 10-28: pressure is one suppression number (farmers and herders persecute predators, i.e. the adventurers; foragers press less), and the word is persecute or drive off, not hunt: these are thinking creatures. Megaherbivore loss must not zero dragons: they turn to livestock, later tribute and kobold thralls. Arc: numerous as animals, sapient while numerous, pressed as peoples spread, hardest at the farming onset. Prey field: draft-megafauna-8; owner review maps: draft-megafauna-9; sapience node: draft-megafauna-10.
 - 2026-10-28: Owner 10-28: a dragon every ~8 km (1/65 km2) sounds wild; build the natural density as a setting and show the owner numbers (counts, maps) before fixing it. For scale, the PW-923 trial world would hold ~660k dragons at 1/65, ~140k at 1/300, ~43k at 1/1,000 (vs 8.6k at 1/5,000). Marshall's T. rex ran at ~1/110 km2. Prey from NPP (static, no predator-prey cycles), with megaherbivore overkill by peoples; discussion continuing with the owner.

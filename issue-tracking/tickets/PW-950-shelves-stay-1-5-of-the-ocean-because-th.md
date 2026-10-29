@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-818, PW-846]
 refs: [planet/surface.py, planet/tectonics/, tools/scorecard.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -28,6 +28,7 @@ crust thinned. Try water-loaded isostasy for sea cells of continental crust (no 
 - [ ] shelf share of ocean >= 3% without a pass-rate cost on the paired judge
 
 ## Updates
+- 2026-10-29: McKenzie 1978 on file (read 10-29). Table 1 (p. 27) and eq. 12 (p. 28): E0 = 4 a rho0 alpha T1 / (pi^2 (rho0 - rho_w)) = 3.2 km, water-loaded; isostasy's SAG_KM 2.2 is the same with rho0 in the denominator (3.2 x 2.33/3.33 = 2.24), and SAG_TIME 63 is tau = 62.8 My. So the paper agrees with lane 23: water loading deepens a drowned margin's sag (1.43x), it doesn't lift it. McKenzie also has an initial subsidence Si, positive where the crust is thicker than 18 km (p. 27), and sediment-filled basins sink further (Fig. 4, p. 29).
 - 2026-10-28: Lane 23, round 1 (failed): water-loaded isostasy. The premise has the sign backwards. Under water a column carries water, not air, so each km of thinning sinks it (rho_m-rho_c)/(rho_m-rho_w) = 220 m, not 150 m, and a drowned margin goes 1.45x deeper (the standard air- to water-loaded conversion, e.g. Allen & Allen, Basin Analysis). Tried anyway (docs/review/tectonics/crust/wl.py, L6 s1, branch code): submerged median -766/-875/-997 m (air) vs -1105/-1135/-1369 (water) at 200/300/400 Myr; shelf lower in 6 of 8 samples. Not kept. Separately, PW-970's weld fix moved the paired L6 set (36 draws, 600-1000 Myr): submerged median -1519 -> -819 m, shelf 1.58 -> 2.10% of ocean; at 1 Gyr the median is within -100..-500 m on 2/36 draws and shelf >= 3% on 10/36. Criteria still unmet. Why: drowned continent is mostly the stretch floor (22 km, -1.4 km) and 12-18 km margin rings. Earth's shelves are on beta ~1.2-2 crust held at sea level by 5-15 km sediment wedges (Steckler et al. 1999). Suggestions: (1) tapered stretching, thinning that falls off over a 50-200 km necking zone, so inner margin cells keep 27-33 km; (2) measure sediment delivered to the shelf brink against the ~2.3x-depth fill it needs; (3) wave-base planation at lowstands; (4) go water-loaded only after 1-2. Moved to v2 (owner rule: record and stop).
 - 2026-10-28: Owner 10-28: if it fails a round or three, record what was tried, why it failed and suggestions, then move it to v2.
 - 2026-10-28: Created from inbox draft draft-shelf-water-loaded-isostasy.md (found by lane19b).

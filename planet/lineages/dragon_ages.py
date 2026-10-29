@@ -3,8 +3,9 @@
 From docs/proposals/megafauna-scaling.md and docs/review/megafauna/scaling.py (the owner-approved sums). A dragon grows all its life,
 reptile-style: snout-to-tail length through 0.8 m at hatching, 3 m at 5 yr, 8 m at 100, 16 m at 800, 22 m at 1,500 and 28 m at
 3,000 (the oldest); mass is a Komodo build (70 kg at 2.6 m, ~ L^3), x0.6 for flight. Food is reptile field metabolic rate (Nagy,
-Girard & Brown 1999, Annu Rev Nutr 19:247: 0.196 M^0.889 kJ/day, M in g; the slope is from the abstract, the intercept unverified,
-docs/references/megafauna/README.md), eaten as whole cattle (836 Mcal each, 85% assimilated).
+Girard & Brown 1999, Annu Rev Nutr 19:247: 0.196 M^0.889 kJ/day, M in g; checked: Table 2, p. 260, all reptiles, n = 55; its
+largest reptile is the Komodo dragon, 45.2 kg at 2,430 kJ/day, Table 1 p. 258, where the fit gives ~2,700), eaten as whole cattle
+(836 Mcal each, 85% assimilated).
 
 Owner 10-28: younger is the default schedule; the others stay as options. meta.dragon_ages picks one:
 - base: the proposal's approved base case (ancients ~7% of dragons, ~1/3 of their biomass);
@@ -46,7 +47,7 @@ STAGE_OF = np.select([AGES <= STAGE_END[0], AGES <= STAGE_END[1], AGES <= STAGE_
 
 
 def fmr_kcal(mass_kg):
-    """Reptile field metabolic rate, kcal/day (Nagy et al. 1999)."""
+    """Reptile field metabolic rate, kcal/day (Nagy et al. 1999, Table 2 p. 260: 0.196 M^0.889 kJ/day, M in g)."""
     return 0.196 * (np.asarray(mass_kg, float) * 1000.0) ** 0.889 / KJ_PER_KCAL
 
 
