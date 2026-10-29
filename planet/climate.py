@@ -1077,9 +1077,9 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       of each neighbour's (nbr, CSR off: _faces'), so what leaves one cell
       enters the next and the vapour's mass (per m2 x the cell's area) is
       kept;
-    - over the sea the air takes up water to src_q, the share open_sea
-      [season, cell] of it (the share not under sea ice, less the stable
-      summer air off land: compute);
+    - over the sea the air takes up the share open_sea [season, cell] of
+      its deficit to src_q each step: the bulk exchange's uptake in one
+      step (_rain_args' sea_uptake, PW-015);
     - over land it takes up what the ground evaporates: water_balance's
       actual evaporation (Budyko, Fu's w budyko_w per cell, with soil_mm
       kept over from the other season) of the rain the place gets, in mm
@@ -1423,7 +1423,8 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     t_sl = np.where(ocean, sst, t_air + up)
     t_mass = np.maximum(smooth(grid, t_sl, tune["airmass_km"]), np.where(ocean, -99.0, t_sl))
     qs = np.where(ocean, _qsat(sst, tune["q_k"]), _qsat(t_mass - tune["lapse_q"] * up, tune["q_k"]))
-    src_q = np.where(ocean, tune["rh"] * qs, 0.0)
+    # the sea's own humidity, which its evaporation drives the air toward: saturation over salt water
+    src_q = np.where(ocean, tune["sea_sat"] * qs, 0.0)
     # Storms stir moisture around (eddy mixing, see rain) and make large-scale
     # rain, both in proportion to the storminess (~1 in a mid-latitude winter).
     B = storminess(grid, t_sl_season) / 7.0
@@ -1506,6 +1507,22 @@ def _transport(grid: Grid, un: np.ndarray, kd: np.ndarray) -> tuple:
     return 1.0 - dt * out, np.ascontiguousarray((dt * gain).T), F["nbr"], dt
 
 
+def sea_uptake(seasons_in: list[dict], open_sea: np.ndarray, dt: float, tune: dict) -> np.ndarray:
+    """The share of its deficit to the sea's humidity (src_q) that the air
+    takes up over the sea in one rain step of dt s, [season, cell]: a bulk
+    exchange (PW-015). The sea evaporates into the boundary layer at
+    C_E x wind x (src_q - q), so the air's deficit closes on a time scale
+    sea_bl_m / (sea_ce x wind): ~0.6 days at 7 m/s, a fetch of ~400 km,
+    with sea_wind_min standing for the gusts in a calm. Only the open share
+    of the sea (open_sea: not under sea ice, less the stable summer air
+    off land, compute) exchanges, per unit of time, so a frozen sea's
+    leads take up the same per day at any time step. Before, the air was
+    refilled to src_q at once each step: the sea's evaporation was set by
+    what left the air, and any strip of sea saturated the air crossing it."""
+    spd = np.stack([np.maximum(speed(d["v"]) * U_REF, tune["sea_wind_min"]) for d in seasons_in])
+    return np.ascontiguousarray(1.0 - np.exp(-open_sea * tune["sea_ce"] * spd / tune["sea_bl_m"] * dt))
+
+
 def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None, open_sea=None,
                ocean=None, start=None) -> tuple:
     """rain's arguments to _rain (also tools/moisture_budget.py's). start:
@@ -1518,6 +1535,7 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
           ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr")}
     c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
+    open_sea = sea_uptake(seasons_in, open_sea, dt, tune)
     warm = start is not None and start["vap"].shape == st["qs"].shape
     steps = int((RAIN_WARM_DAYS if warm else RAIN_DAYS) * 86400.0 / dt) + 20
     tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
@@ -1552,10 +1570,10 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
     planet rains the same at every grid level. pet: potential evaporation
     (mm/yr) in each season, [season, cell], and w: Fu's w per cell
     (default TUNE's budyko_w), from which the land evaporates as
-    water_balance has it; open_sea: the share of the sea's air it fills
-    (default 1; per cell, or [season, cell]): the share not under sea ice,
-    the only part the air takes up water from, less the stable land air of
-    a summer (compute). tune's
+    water_balance has it; open_sea: the open share of the sea (default 1;
+    per cell, or [season, cell]): the share not under sea ice, the only
+    part the air takes up water from, less the stable land air of a summer
+    (compute), which sets its bulk exchange (sea_uptake). tune's
     mean_mm: the global mean rain the kernel's rain is scaled to (in mm,
     for the land's evaporation). ocean: default elev <= 0 (compute's: not
     geo.is_land). start: an earlier call's end state (the fourth result:
@@ -1568,7 +1586,11 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
 
 TUNE = dict(
     # moisture
-    rh=0.85,  # sea air's humidity relative to saturation at the sea surface
+    rh=0.85,  # sea air's humidity relative to saturation at the sea surface (the showers' reference air aloft)
+    sea_sat=0.98,  # the sea surface's own humidity, relative to fresh water's saturation (salt lowers it ~2%)
+    sea_ce=1.3e-3,  # bulk transfer coefficient of the sea's evaporation (C_E, neutral, ~10 m)
+    sea_bl_m=500.0,  # m: the marine boundary layer the sea's evaporation fills (the bulk exchange's depth)
+    sea_wind_min=3.0,  # m/s: the least wind the bulk exchange sees (gusts in a calm)
     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
