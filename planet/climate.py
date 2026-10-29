@@ -637,7 +637,7 @@ def westerly_belt(grid: Grid, t_jul: np.ndarray, t_jan: np.ndarray) -> tuple[np.
     return tuple(np.where(north, g[k][0], g[k][1]) / ref for k in ("jul", "jan"))
 
 
-def low_column(grid: Grid, land: np.ndarray, tune: dict) -> np.ndarray:
+def low_column(grid: Grid, land: np.ndarray, tune: dict) -> tuple[np.ndarray, np.ndarray]:
     """How much of the air column over each cell its ground's warmth or cold
     fills (0..1): what sets a thermal low's or high's pressure, which is
     hydrostatic, the column's mean temperature (PW-596). The boundary layer
@@ -646,15 +646,22 @@ def low_column(grid: Grid, land: np.ndarray, tune: dict) -> np.ndarray:
     land within the synoptic scale (fetch_km) is land (as _summer_fetch). So
     a narrow land (Patagonia, Tasmania, New Zealand) or a continent's coast
     makes a shallow low, and a continent's interior a deep one. The sea's
-    own column: 1."""
+    own column: 1. Returns (warm, cold): the column a warm land fills, and
+    the one a cold land fills. Cold ground warms no air above it: its cold
+    stays in the stable winter air mass under the inversion (air_m deep, as
+    _winter_air has it), so a winter continent's high is a shallow dome,
+    air_m / fetch_h of the warm column at most (PW-998: on Earth its full-
+    depth outflow blew the Gulf's and the South China Sea's air offshore,
+    where the subtropical highs' return flow blows weakly onshore)."""
     bl = tune["sum_h"] / tune["fetch_h"]
     cont = np.clip(smooth(grid, land.astype(float), tune["fetch_km"]), 0.0, 1.0)
-    return np.where(land, bl + (1 - bl) * cont, 1.0)
+    return (np.where(land, bl + (1 - bl) * cont, 1.0),
+            np.where(land, min(tune["air_m"] / tune["fetch_h"], 1.0), 1.0))
 
 
 def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1.0, big: float = 0.0,
                  big_km: float = 2000.0, front: np.ndarray | None = None, belt=1.0,
-                 column: np.ndarray | None = None):
+                 column: tuple | None = None):
     """Zonal bands plus the winds made by land-sea temperature contrasts.
     Air over ground warmer than its latitude's average rises (low pressure),
     over cooler ground it sinks (high pressure). Away from the equator the
@@ -670,12 +677,12 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
     surface temperature reduced to sea level, C. front: the bands'
     displacement (wind(), front_shift); belt: the westerlies' strength
     (westerly_belt). column: how much of the air column the ground's
-    warmth fills (low_column; default all of it): a land's lows and highs
-    are as deep as its air's warmth or cold. Returns (wind, warmth):
+    warmth and cold fill (low_column's pair; default all of it): a land's
+    lows and highs are as deep as its air's warmth or cold. Returns (wind, warmth):
     warmth is the smoothed temperature excess, C (>0: rising air)."""
     anom = t_sl - zonal_mean(grid, t_sl)
     if column is not None:
-        anom = anom * column
+        anom = anom * np.where(anom >= 0, column[0], column[1])
     warmth = smooth(grid, anom, 900.0)
     if big > 0:
         warmth = warmth + big * smooth_big(grid, anom, big_km)
