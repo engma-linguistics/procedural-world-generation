@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What a people has · mockup</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  main { overflow: auto; padding: 10px 12px; }
+  .kpi { display: flex; gap: 22px; flex-wrap: wrap; margin: 2px 0 10px; align-items: flex-end; }
+  .kpi div b { display: block; font-size: 18px; } .kpi div span { color: var(--muted); font-size: 11px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .card h3 { margin: 0 0 6px; display: flex; gap: 6px; align-items: center; } .card h3 .muted { font-weight: normal; margin-left: auto; font-size: 11px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px 2px 5px; font-size: 12px; cursor: default; background: #141a22; color: var(--muted); border-left-width: 4px; white-space: nowrap; }
+  .chip.k { background: #1f2a3a; color: var(--text); }
+  .chip.f { border-style: dashed; border-left-style: solid; color: #e8d9a8; }
+  .chip .w { color: var(--muted); font-size: 10px; margin-left: 4px; }
+  .chip.need { outline: 2px solid #e3c26b; } .chip.lead { outline: 2px solid var(--acc); } .chip.me { outline: 2px solid #fff; }
+  .chip .vs { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 4px; vertical-align: 1px; }
+  .people { display: flex; gap: 10px; align-items: center; }
+  .people .big { font-size: 16px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<div class="bar">
+  <span class="muted">people</span><select id="who"></select>
+  <span class="muted">compare with</span><select id="vs"><option value="">nobody</option></select>
+  <span class="muted">as at</span><select id="at"></select>
+  <label class="muted"><input type="checkbox" id="fant" checked> fantasy techs</label>
+  <span class="key"><span><span class="sw" style="background:#1f2a3a;border-left:3px solid #ffd27a"></span>known (edge: how it came)</span><span><span class="sw" style="border:1px dashed #e3c26b"></span>could come next</span><span><span class="sw" style="background:#141a22;border:1px solid #2a3446"></span>out of reach</span>
+  <span>hover: <span style="color:#e3c26b">needs</span> · <span style="color:#7cc4ff">leads to</span></span></span>
+</div>
+<main id="main"></main>
+<footer>One people's kit, by track, in tree order. A dashed chip has all its needs met: it waits on chance, its earliest date, or land its country lacks (said on hover). With a second people picked, a dot on each chip says who else has it (<span style="color:#9fd18b">●</span> both, <span style="color:#ff7b7b">●</span> only the compared people).</footer>
+<script src="tech-data.js"></script>
+<script src="common.js"></script>
+<script>
+$('hdr').innerHTML = header('view4');
+const st = { who: 'human', vs: '', at: 0, fant: true };
+const opt = (l) => `<option value="${l.id}">${l.group_of ? '· ' : ''}${esc(l.name)}${alive(l) ? '' : ' (gone)'} — ${Object.keys(D.known[l.id]).length}</option>`;
+for (const l of PEOPLES) { $('who').insertAdjacentHTML('beforeend', opt(l)); $('vs').insertAdjacentHTML('beforeend', opt(l)); }
+for (const k of [0, 1, 3, 6, 12, 25, 50, 100, 300, 1000]) $('at').insertAdjacentHTML('beforeend', `<option value="${k}">${k ? fmt(k) + ' ago' : 'the present'}</option>`);
+function kit(lid, at) { const out = {}; for (const [t, v] of Object.entries(D.known[lid] || {})) if (v[0] >= at) out[t] = v; return out; }
+function why(t, kn, lid) {  // why a tech is not known yet
+  const need = t.needs.filter((n) => !kn[n]);
+  if (need.length) return `waits on ${need.map((n) => esc(tname(n))).join(', ')}`;
+  const g = D.goods_checked?.[lid];
+  if (g) {
+    const lack = t.env.filter((e) => !g.includes(e));
+    if (lack.length) return `all needs known; its country lacks ${lack.join(', ')}`;
+    if (t.env_any.length && !t.env_any.some((e) => g.includes(e))) return `all needs known; its country has none of ${t.env_any.join(' / ')}`;
+  }
+  return `all needs known${t.earliest_kyr != null ? `; not before ${fmt(t.earliest_kyr)} ago` : ''}; waits on invention or a neighbour`;
+}
+function draw() {
+  const l = LINE[st.who], kn = kit(st.who, st.at), other = st.vs ? kit(st.vs, st.at) : null;
+  const techs = D.techs.filter((t) => st.fant || !t.fantasy);
+  const vals = Object.values(kn), cnt = (f) => vals.filter(f).length;
+  const eraTop = ERAS.filter((e) => techs.some((t) => t.era === e && kn[t.id])).pop() || '—';
+  const front = techs.filter((t) => !kn[t.id] && t.needs.every((n) => kn[n]));
+  const lg = kn.language;
+  let h = `<div class="people">${sw(st.who)}<span class="big">${esc(l.full)}</span><span class="muted">${esc(l.origin)}${l.group_of ? ' of ' + esc(short(l.group_of)) : l.parents.length ? ' from ' + l.parents.map((p) => esc(short(p))).join(' + ') : ''} · began ${ago(startOf(l))}${l.ended_kyr != null ? ', gone ' + ago(l.ended_kyr) : ''}${l.population ? ' · ' + (l.population / 1e6).toFixed(1) + ' M people now' : ''}</span></div>
+    <div class="kpi"><div><b>${vals.length}</b><span>of ${techs.length} techs</span></div><div><b>${esc(eraTop)}</b><span>furthest era reached</span></div>
+    <div><b>${cnt((v) => v[1] === 'invented')}</b><span>invented itself</span></div><div><b>${cnt((v) => v[1] === 'contact')}</b><span>by contact</span></div>
+    <div><b>${cnt((v) => v[1] === 'inherited' || v[1] === 'kit')}</b><span>inherited or brought</span></div><div><b>${cnt((v) => v[1] === 'shared')}</b><span>shared within its people</span></div>
+    <div><b>${front.length}</b><span>could come next</span></div><div><b>${lg ? fmt(lg[0]) : 'none'}</b><span>language${lg ? ' (' + esc(lg[1]) + ')' : ''}</span></div>
+    ${other ? `<div><b>${Object.keys(kn).filter((t) => !other[t]).length} / ${Object.keys(other).filter((t) => !kn[t]).length}</b><span>only ${esc(l.name)} / only ${esc(short(st.vs))}</span></div>` : ''}</div>`;
+  h += '<div class="grid">';
+  for (const k of D.tracks) {
+    const tt = techs.filter((t) => t.track === k.id); if (!tt.length) continue;
+    h += `<div class="card"><h3><span class="sw" style="background:${TRACK_COL[k.id]}"></span>${esc(k.name)}<span class="muted">${tt.filter((t) => kn[t.id]).length} / ${tt.length}</span></h3><div class="chips">`;
+    for (const t of tt) {
+      const v = kn[t.id], f = !v && t.needs.every((n) => kn[n]);
+      const dot = other ? (v && other[t.id] ? '#9fd18b' : !v && other[t.id] ? '#ff7b7b' : null) : null;
+      h += `<span class="chip ${v ? 'k' : f ? 'f' : ''}" data-id="${t.id}" style="border-left-color:${v ? howCol(v[1]) : f ? '#e3c26b' : '#2a3446'}">${esc(tname(t.id))}${t.fantasy ? ' ✦' : ''}${v ? `<span class="w">${fmt(v[0])}</span>` : ''}${dot ? `<span class="vs" style="background:${dot}"></span>` : ''}</span>`;
+    }
+    h += '</div></div>';
+  }
+  h += '</div>';
+  $('main').innerHTML = h;
+  for (const c of $('main').querySelectorAll('.chip')) {
+    const id = c.dataset.id;
+    c.onmouseenter = (e) => {
+      const need = closure([id]); need.delete(id); const lead = new Set(users[id] || []);
+      for (const o of $('main').querySelectorAll('.chip')) { o.classList.toggle('need', need.has(o.dataset.id)); o.classList.toggle('lead', lead.has(o.dataset.id)); o.classList.toggle('me', o.dataset.id === id); }
+      const v = kn[id], ov = other?.[id];
+      showTip(e, techTip(id, `<div style="margin-top:4px"><b>${esc(l.name)}</b>: ${v ? `since ${ago(v[0])}, ${esc(howText(v[1]))}${v[2] ? ' from ' + esc(short(v[2])) : ''}` : esc('not known: ') + why(TECH[id], kn, st.who)}</div>
+        ${other ? `<div><b>${esc(short(st.vs))}</b>: ${ov ? `since ${ago(ov[0])}, ${esc(howText(ov[1]))}` : 'not known'}</div>` : ''}`));
+    };
+    c.onmouseleave = () => { for (const o of $('main').querySelectorAll('.chip')) o.classList.remove('need', 'lead', 'me'); hideTip(); };
+  }
+}
+$('who').onchange = (e) => { st.who = e.target.value; draw(); };
+$('vs').onchange = (e) => { st.vs = e.target.value; draw(); };
+$('at').onchange = (e) => { st.at = +e.target.value; draw(); };
+$('fant').onchange = (e) => { st.fant = e.target.checked; draw(); };
+const q = new URLSearchParams(location.search); if (q.get('who') && LINE[q.get('who')]) st.who = q.get('who'); if (q.get('vs')) st.vs = q.get('vs');
+$('who').value = st.who; $('vs').value = st.vs; draw();
+</script>
+</body>
+</html>

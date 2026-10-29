@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech tree (Civ-style) · mockup</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+  #wrap { overflow: auto; position: relative; cursor: grab; } #wrap.panning { cursor: grabbing; user-select: none; }
+  #lanes { position: sticky; left: 0; z-index: 2; pointer-events: none; }
+  .node { cursor: pointer; }
+  .node rect.bg { fill: #1b2330; stroke: #2f3a4d; }
+  .node.known rect.bg { fill: #223047; stroke: #4a5b78; }
+  .node.frontier rect.bg { stroke: #e3c26b; stroke-dasharray: 4 3; }
+  .node.dim { opacity: .28; }
+  .node.hl rect.bg { stroke: var(--acc); stroke-width: 2; }
+  .node .when { fill: var(--muted); font-size: 10px; }
+  path.e { fill: none; stroke: #3a4658; stroke-width: 1; opacity: .55; }
+  path.e.up { stroke: #e3c26b; opacity: 1; stroke-width: 1.6; }
+  path.e.down { stroke: var(--acc); opacity: 1; stroke-width: 1.6; }
+  path.e.faded { opacity: .12; }
+  .era text { fill: var(--muted); font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<div class="bar">
+  <span class="muted">as seen by</span><select id="who"><option value="">nobody (the whole tree)</option></select>
+  <label class="muted"><input type="checkbox" id="fant" checked> fantasy techs</label>
+  <span class="key"><span><span class="sw" style="background:#223047;border:1px solid #4a5b78"></span>known</span>
+    <span><span class="sw" style="border:1px dashed #e3c26b"></span>could come next (all needs known)</span>
+    <span><span class="sw" style="background:#e3c26b"></span>needs (upstream)</span><span><span class="sw" style="background:#7cc4ff"></span>leads to</span></span>
+  <span class="muted">· hover a tech for its chain, click for who has it · drag to pan</span>
+</div>
+<main><div id="wrap"><svg id="svg"></svg></div><div class="side" id="side"></div></main>
+<footer>Columns: prerequisite depth inside each era (eras left to right, an era starts after the last column of the one before). Lanes: the eight tracks. A box shows the tech's earliest real-world date (or, as seen by a people, when and how it came to them); the small bar, bottom right, the share of living peoples that know it now. ✦ fantasy.</footer>
+<script src="tech-data.js"></script>
+<script src="common.js"></script>
+<script>
+$('hdr').innerHTML = header('view1');
+const CW = 190, BW = 160, BH = 30, RH = 38, TOP = 34, LEFT = 120;
+let who = '', showFant = true, hover = null, picked = null;
+function layout() {
+  const techs = D.techs.filter((t) => showFant || !t.fantasy), ids = new Set(techs.map((t) => t.id));
+  const col = {}; let start = 0; const eraSpan = [];
+  for (const e of ERAS) {
+    const these = techs.filter((t) => t.era === e);
+    if (!these.length) continue;
+    let mx = start;
+    for (const t of techs) if (t.era === e) {  // (D.techs is in prerequisite order)
+      col[t.id] = Math.max(start, ...t.needs.filter((n) => ids.has(n)).map((n) => col[n] + 1));
+      mx = Math.max(mx, col[t.id]);
+    }
+    eraSpan.push([e, start, mx]); start = mx + 1;
+  }
+  // lanes: within a track, the first free sub-row at the tech's column, placed in column order
+  const rows = {}, laneRows = {};
+  for (const k of D.tracks) {
+    const these = techs.filter((t) => t.track === k.id).sort((a, b) => col[a.id] - col[b.id]);
+    const used = [];
+    for (const t of these) {
+      // prefer the sub-row of its first same-track prerequisite, keeping chains straight
+      const pre = t.needs.find((n) => TECH[n]?.track === k.id && rows[n] != null);
+      let r = pre != null && !(used[rows[pre]]?.has(col[t.id])) ? rows[pre] : 0;
+      if (pre == null || used[r]?.has(col[t.id])) { r = 0; while (used[r]?.has(col[t.id])) r++; }
+      (used[r] ||= new Set()).add(col[t.id]); rows[t.id] = r;
+    }
+    laneRows[k.id] = Math.max(1, used.length);
+  }
+  let y = TOP; const laneY = {};
+  for (const k of D.tracks) { laneY[k.id] = y; y += laneRows[k.id] * RH + 14; }
+  const pos = {};
+  for (const t of techs) pos[t.id] = [LEFT + col[t.id] * CW + 12, laneY[t.track] + rows[t.id] * RH + 6];
+  return { techs, ids, pos, eraSpan, laneY, laneRows, W: LEFT + start * CW + 20, H: y };
+}
+let LY;
+function draw() {
+  LY = layout();
+  const { techs, ids, pos, eraSpan, laneY, laneRows, W, H } = LY;
+  const kn = who ? D.known[who] : null;
+  const nowKnow = {}; for (const l of PEOPLES) if (alive(l)) for (const t in D.known[l.id]) nowKnow[t] = (nowKnow[t] || 0) + 1;
+  const nAlive = PEOPLES.filter(alive).length;
+  let s = `<g class="era">`;
+  eraSpan.forEach(([e, a, b], i) => {
+    const x = LEFT + a * CW, w = (b - a + 1) * CW;
+    s += `<rect x="${x}" y="0" width="${w}" height="${H}" fill="${i % 2 ? '#111821' : '#0e1218'}"/><text x="${x + 10}" y="20">${esc(e)}</text>`;
+  });
+  s += '</g>';
+  for (const k of D.tracks) s += `<rect x="0" y="${laneY[k.id] - 4}" width="${W}" height="${laneRows[k.id] * RH + 6}" fill="${TRACK_COL[k.id]}" opacity=".035"/>`;
+  s += '<g id="edges">';
+  for (const t of techs) for (const n of t.needs) if (ids.has(n)) {
+    const [x1, y1] = pos[n], [x2, y2] = pos[t.id];
+    const a = x1 + BW, b = y1 + BH / 2, c = x2, d = y2 + BH / 2, m = (a + c) / 2;
+    s += `<path class="e" data-a="${n}" data-b="${t.id}" d="M${a},${b} C${m},${b} ${m},${d} ${c},${d}"/>`;
+  }
+  s += '</g>';
+  for (const t of techs) {
+    const [x, y] = pos[t.id], v = kn?.[t.id];
+    const front = kn && !v && t.needs.every((n) => kn[n]);
+    const cls = ['node', v ? 'known' : '', front ? 'frontier' : '', kn && !v && !front ? 'dim' : ''].join(' ');
+    const share = (nowKnow[t.id] || 0) / nAlive;
+    s += `<g class="${cls}" data-id="${t.id}" transform="translate(${x},${y})"><rect class="bg" width="${BW}" height="${BH}" rx="4"/>
+      <rect width="4" height="${BH}" rx="2" fill="${TRACK_COL[t.track]}"/>
+      <text x="10" y="13">${esc(tname(t.id).slice(0, 25))}${t.fantasy ? ' ✦' : ''}</text>
+      <text class="when" x="10" y="25">${v ? `${fmt(v[0])} ago · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
+      <rect x="${BW - 26}" y="${BH - 7}" width="22" height="3" fill="#2a3446"/><rect x="${BW - 26}" y="${BH - 7}" width="${22 * share}" height="3" fill="${TRACK_COL[t.track]}"/></g>`;
+  }
+  const svg = $('svg'); svg.setAttribute('width', W); svg.setAttribute('height', H); svg.innerHTML = s;
+  // lane names stay on the left
+  let lab = `<rect width="${LEFT}" height="${H}" fill="#0e1218" opacity=".92"/>`;
+  for (const k of D.tracks) lab += `<rect x="0" y="${laneY[k.id] - 4}" width="4" height="${laneRows[k.id] * RH + 6}" fill="${TRACK_COL[k.id]}"/><text x="10" y="${laneY[k.id] + 16}" style="font-weight:600">${esc(k.name.split(' and ')[0])}</text>
+    <text x="10" y="${laneY[k.id] + 30}" style="fill:#8b97a8;font-size:10px">${techs.filter((t) => t.track === k.id).length} techs</text>`;
+  svg.innerHTML += `<g id="lanefix">${lab}</g>`;
+  fixLanes();
+  for (const g of svg.querySelectorAll('.node')) {
+    g.onmouseenter = (e) => { hl(g.dataset.id); showTip(e, techTip(g.dataset.id, kn ? `<div>${esc(short(who))}: ${kn[g.dataset.id] ? `${ago(kn[g.dataset.id][0])}, ${esc(howText(kn[g.dataset.id][1]))}${kn[g.dataset.id][2] ? ' from ' + esc(short(kn[g.dataset.id][2])) : ''}` : 'not known'}</div>` : '')); };
+    g.onmousemove = (e) => showTip(e, tip.innerHTML);
+    g.onmouseleave = () => { hl(picked); hideTip(); };
+    g.onclick = () => { picked = g.dataset.id; side(); hl(picked); };
+  }
+  hl(picked); side();
+}
+function fixLanes() { const g = $('lanefix'); if (g) g.setAttribute('transform', `translate(${$('wrap').scrollLeft},0)`); }
+function hl(id) {
+  const up = id ? closure([id]) : new Set(), down = new Set();
+  if (id) { const todo = [id]; while (todo.length) { const i = todo.pop(); for (const u of users[i] || []) if (!down.has(u)) { down.add(u); todo.push(u); } } }
+  for (const p of $('svg').querySelectorAll('path.e')) {
+    const a = p.dataset.a, b = p.dataset.b;
+    p.classList.toggle('up', !!id && up.has(a) && up.has(b));
+    p.classList.toggle('down', !!id && (b && down.has(b)) && (a === id || down.has(a)));
+    p.classList.toggle('faded', !!id && !p.classList.contains('up') && !p.classList.contains('down'));
+  }
+  for (const g of $('svg').querySelectorAll('.node')) g.classList.toggle('hl', g.dataset.id === id);
+}
+function side() {
+  const el = $('side');
+  if (!picked || !TECH[picked]) { el.innerHTML = '<p class="muted">Click a tech to see who knows it and how it came to them.</p>' + legendHow(); return; }
+  const t = TECH[picked];
+  const have = PEOPLES.filter((l) => D.known[l.id][picked]).sort((a, b) => D.known[b.id][picked][0] - D.known[a.id][picked][0]);
+  const lack = PEOPLES.filter((l) => alive(l) && !D.known[l.id][picked]);
+  el.innerHTML = `${techTip(picked)}
+    <h3>Known by ${have.length} of ${PEOPLES.length} (${have.filter(alive).length} living)</h3>
+    <table class="t">${have.map((l) => { const v = D.known[l.id][picked]; return `<tr><td>${sw(l.id)}${esc(l.name)}${alive(l) ? '' : ' <span class="muted">(gone)</span>'}</td><td class="n">${fmt(v[0])}</td><td><span class="sw" style="background:${howCol(v[1])}"></span>${esc(v[1])}${v[2] ? ' <span class="muted">from</span> ' + esc(short(v[2])) : ''}</td></tr>`; }).join('')}</table>
+    <h3>Living peoples without it (${lack.length})</h3><div>${lack.map((l) => `<span style="white-space:nowrap;margin-right:8px">${sw(l.id)}${esc(l.name)}</span>`).join(' ') || '<span class="muted">none</span>'}</div>` + legendHow();
+}
+const legendHow = () => `<h3>How it came</h3><div class="key">${Object.keys(HOW_COL).map((h) => `<span><span class="sw" style="background:${HOW_COL[h]}"></span>${esc(howText(h))}</span>`).join('')}</div>`;
+for (const l of PEOPLES) $('who').insertAdjacentHTML('beforeend', `<option value="${l.id}">${'· '.repeat(l.group_of ? 1 : 0)}${esc(l.name)}${alive(l) ? '' : ' (gone)'} — ${Object.keys(D.known[l.id]).length}</option>`);
+$('who').onchange = (e) => { who = e.target.value; draw(); };
+$('fant').onchange = (e) => { showFant = e.target.checked; draw(); };
+$('wrap').addEventListener('scroll', fixLanes);
+// drag to pan
+{ const w = $('wrap'); let d = null;
+  w.addEventListener('mousedown', (e) => { if (e.target.closest('.node')) return; d = [e.clientX, e.clientY, w.scrollLeft, w.scrollTop]; w.classList.add('panning'); });
+  addEventListener('mousemove', (e) => { if (d) { w.scrollLeft = d[2] - (e.clientX - d[0]); w.scrollTop = d[3] - (e.clientY - d[1]); } });
+  addEventListener('mouseup', () => { d = null; w.classList.remove('panning'); }); }
+const q = new URLSearchParams(location.search); if (q.get('who')) { who = q.get('who'); $('who').value = who; } if (q.get('tech')) picked = q.get('tech');
+draw();
+</script>
+</body>
+</html>

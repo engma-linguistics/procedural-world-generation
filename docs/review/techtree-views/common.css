@@ -1,0 +1,27 @@
+/* The viewer's look (viewer/lineages.html): colours, controls, panels. Shared by the five mockups. */
+:root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; --ok: #9fd18b; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100vh; }
+header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+header b { font-size: 15px; margin-right: 8px; }
+header a.cur { color: var(--text); border-bottom: 2px solid var(--acc); text-decoration: none; }
+.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+main { min-height: 0; overflow: hidden; }
+footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
+button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+button { cursor: pointer; } button:hover { border-color: var(--acc); } button.on { border-color: var(--acc); color: var(--acc); }
+a { color: var(--acc); }
+.muted { color: var(--muted); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+h2 { font-size: 14px; margin: 4px 0 8px; } h3 { margin: 12px 0 4px; font-size: 13px; }
+svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
+.tip { position: fixed; display: none; z-index: 50; max-width: 380px; background: #1b2330; border: 1px solid #3a4658; border-radius: 5px; padding: 6px 8px; pointer-events: none; font-size: 12px; box-shadow: 0 4px 14px #0008; }
+.tip .src { margin-top: 4px; font-size: 11px; }
+.key { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
+.side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
+table.t { border-collapse: collapse; font-size: 12px; }
+table.t th { text-align: left; font-weight: 600; color: var(--muted); padding: 3px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t td { padding: 2px 5px; border-bottom: 1px solid #1c2430; vertical-align: top; }
+table.t td.n { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
