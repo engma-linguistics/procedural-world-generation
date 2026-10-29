@@ -158,6 +158,7 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
 | E4: v'q' as a poleward drift, 0.5 m/s x B | 610 | 366 | 317 | 567 | 681 | 228 | 3401 | 25.5 | 13.3 | 0.713 | 38.1 | +0.30 / -0.17 | +0.85 | 9.4 |
 | E4, 1 m/s x B | 627 | 403 | 355 | 645 | 695 | 242 | 3271 | 25.3 | 12.8 | 0.716 | 38.1 | +0.42 / -0.32 | +0.97 | 9.1 |
 | E4, 2 m/s x B | 671 | 473 | 443 | 787 | 721 | 270 | 2989 | 24.8 | 12.1 | 0.718 | 38.3 | +0.65 / -0.61 | +1.21 | 8.7 |
+| E4 (i): 1 m/s x the jet's storm tracks only (`track`) | 638 | 402 | 362 | 641 | 703 | 247 | 3237 | 25.1 | 12.7 | 0.718 | 38.1 | +0.41 / -0.31 | +0.96 | 9.2 |
 | E4 x (1 - sink), 1 / 2 m/s | 619 / 649 | 239 / 202 | 288 / 299 | 330 / 272 | 639 / 618 | 213 / 216 | 3327 / 3100 | 25.6 / 25.7 | 13.8 / 13.6 | 0.710 / 0.701 | 37.8 / 37.7 | +0.29 / -0.13, +0.38 / -0.23 | +0.91 / +1.07 | 9.1 / 8.7 |
 
 - **E1-E3, more down-gradient mixing: ruled out as the lever.** At 5x the mixing still carries only 0.07-0.15 Sv. The
@@ -168,14 +169,19 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
   mechanism that moves the Pampas without the Andes (Oct-Mar 490 -> 645 / 787, GPCC 1321). It dries the Amazon toward
   GPCC (3552 -> 3271 / 2989; GPCC 2335), cools Japan's winter (9.6 -> 9.1 / 8.7; NCEP 2.0) and gives the best corr
   so far (0.716 / 0.718). The physical scale: u_e ~ r x sigma_v x sigma_q / q ~ 0.5 x 6 m/s x 0.3 ~ 1 m/s (all three
-  unverified, back of the envelope), so 1 m/s is the anchored value, not a fit.
+  unverified, back of the envelope), so 1 m/s is the anchored value, not a fit (unverified; a source is on docs/references/wishlist.md).
   - **What it breaks:** 40N overshoots (+0.97 / +1.21 vs +0.83). The drift runs on B, whose latitude belt part is
     still ~0.3-0.5 at 50-60 deg. The deserts' poleward edges get wetter (Arabia +28 / +56, Central Asia +13 / +36),
     so B falls 0.3 / 0.8 and BWh 0.9 / 1.6. NE USA's summer, already 2.4x too wet, is unchanged. Tests: none run
     (probe only).
   - Masked by (1 - sink), like round 2: the Pampas collapses (Oct-Mar 330 / 272). The drift *across* the subtropical
     high is what feeds it, so that mask is wrong for transport (it was right for lifting). Dropped.
-- **Open questions for E4's design:** (i) Should it ride the storm tracks only (the `track` part of B), to stop 40-60
+- **(i), the storm tracks only (coordinator's pick, 1 m/s):** about the same as on B. 30N +0.41, 30S -0.31, corr
+  0.718 (+0.002), B 25.1 (-0.2), Pampas 43%, SE USA 48%. It doesn't cure the overshoot: 40N +0.96, 50N +0.65 (NCEP
+  +0.83 / +0.52), the same as on B. The tracks themselves peak there. (ii), acting on q minus the zonal-mean q, was
+  dropped: transient eddies' q' is the anomaly from the *time* mean, not from the zonal mean, so its only merit
+  would be sparing the deserts (coordinator).
+- **Open questions for E4's design (before the solves above):** (i) Should it ride the storm tracks only (the `track` part of B), to stop 40-60
   deg overshooting? (ii) Should it act on the vapour's anomaly from the zonal mean (v'q' needs q' ~ q - [q]) rather
   than on q, which would also stop it draining the deserts? (iii) It doesn't conserve dry air. That's fine for a
   vapour tracer, because the return flow is the dry air. A 2 m/s drift through the faces may need RAIN_CFL's dt to
