@@ -401,7 +401,7 @@ small folk cut them by up to 60% outside tundra and mountains; livestock by way 
 <div class="wrap"><b>Natural, from the prey (at the dragon country's median, {prey_med:.1f} t/km²)</b><table><tr><th>area</th><th>km²</th>{sched_head}</tr>{T(natprey_rows)}</table></div>
 <div class="wrap"><b>Natural, Damuth on Marshall's dinosaur line</b><table><tr><th>area</th><th>km²</th>{sched_head}</tr>{T(natmeso_rows)}</table></div>
 <h2>5. Food against the livestock beside them (present, {CUR} schedule)</h2>
-<div class="mut">PW-977 stage 1: the land feeds dragons from the sustainable offtake of the wild herds ({MG.OFFTAKE:.0%}/yr, unverified) plus the share of the herders' stock they
+<div class="mut">PW-977 stage 1: the land feeds dragons from the sustainable offtake of the wild herds ({MG.OFFTAKE:.0%}/yr, a judgement inside Farlow 1993's prey turnover) plus the share of the herders' stock they
 tolerate losing ({MG.STOCK_TOLERABLE:.0%}/yr, unverified); where the dragons would need more, there are fewer. They take wild prey and stock in proportion to what each supplies.
 Worst case in this run: a cell's need is {worst_cell:.1%} of its supply, a pocket's {worst_pk:.1%}, and no pocket with a herd loses more than {worst_take:.2%} of its stock a year.
 The earlier version of this table put an ancient's whole yearly kill against the stock in its range, as if it ate only stock (the "eaten / stock if all from stock" column, kept
@@ -412,8 +412,8 @@ for comparison): that is not what a dragon in wild country does, and it is not a
 <img src="{img_range}" alt="ranges" style="max-width:460px"></div>
 <h2>6. Per kind (present, {CUR})</h2><table><tr><th>kind</th><th>now</th><th>by stage</th><th>natural in the same country</th><th>in peopled country</th><th>of their country reached</th></tr>{kind_tbl}</table>
 <div class="mut">Giants (no stages): {giant_line}.</div>
-{sec7}<p class="mut">Made by docs/review/megafauna/age_of_dragons.py from one run; sources in docs/references/megafauna/README.md (Carbone &amp; Gittleman 2002 and Marshall et al. 2021 on file;
-Nagy et al. 1999's reptile intercept unverified).</p>
+{sec7}<p class="mut">Made by docs/review/megafauna/age_of_dragons.py from one run; sources in docs/references/megafauna/README.md (Carbone &amp; Gittleman 2002, Marshall et al. 2021 and
+Nagy et al. 1999 on file and checked; the wild offtake and stock shares are judgements, PW-991).</p>
 </body></html>"""
 (OUT / "age-of-dragons.html").write_text(html)
 print("wrote", OUT / "age-of-dragons.html", "circles", n_circ, "squares", len(food_rows), "range box", p0["lat"], p0["lon"])

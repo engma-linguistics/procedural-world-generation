@@ -4,7 +4,7 @@ title: Winter maritime air should reach 1000-2000 km inland under westerlies
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-022]
 refs: [planet/climate.py, tools/earth_check.py, "plan_next@bdc967f: Known issues → Climate"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-29
 ---
 
 ## Description
@@ -25,4 +25,5 @@ westerlies (and the reverse on east coasts). Also check the old continental-wint
 Alaska, Quebec, NE China 5–10 °C off) with the same change.
 
 ## Updates
+- 2026-10-29: Pulled into v1 (owner 10-29) with PW-998: the sea's bulk exchange exposed that maritime air doesn't reach far enough inland (SE USA, Japan, Pampas dry).
 - 2026-10-14: Created from the owner discussion 2026-10-14 (air model, not ocean). Merged Known issues 'Norway too cold' (ocean), 'Older Earth errors: winters 5–10 °C off' (v1), morning decision 3(d).

@@ -365,7 +365,10 @@ def triple_rift(sim, rng) -> bool:
     """A new mantle plume's head under a continent on a big plate domes and
     heats it, and the dome cracks along three arms from the plume, ~120
     degrees apart: a rift-rift-rift triple junction (Burke & Dewey 1973,
-    J. Geol. 81:406, 'Plume-generated triple-junctions'). Afar today, where
+    J. Geol. 81:406, 'Plume-generated triple-junctions'; read 2026-10-29:
+    ~120 degrees, abstract p. 406; of their 45 junctions 32 spread on two
+    arms with the third failed, 3 on all three, 5 on none, 5 too young
+    to tell, p. 426). Afar today, where
     the Red Sea, the Gulf of Aden and the East African Rift meet, is one;
     the Atlantic opened along a chain of them. Often one arm stops opening
     and is left as a failed rift (an aulacogen: the Benue trough off the

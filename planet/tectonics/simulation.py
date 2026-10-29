@@ -65,6 +65,8 @@ class Simulation:
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
         "depth_ref",  # m: the starting sea floor's mean depth, sea level 0 (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
+        "sea_cont",  # m: the part of sea_tect from the water the continents hold (earth.continent_water)
+        "cont_water_ref",  # m: the sea the start's continents held, over the whole surface (None before the first step)
         "ice",  # m of land ice per cell
         "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
@@ -146,6 +148,7 @@ class Simulation:
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
+        self.sea_cont, self.cont_water_ref = 0.0, None
         self.ice = np.zeros(n)
         self.ice_sink = np.zeros(n)
         self.veg = 0.0
