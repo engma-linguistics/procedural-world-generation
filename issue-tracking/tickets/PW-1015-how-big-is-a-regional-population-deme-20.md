@@ -1,5 +1,6 @@
 ---
-title: "How big is a regional population (deme)? ~20, ~60 or ~150 human demes on b69f51"
+id: PW-1015
+title: How big is a regional population (deme)? ~20, ~60 or ~150 human demes on b69f51
 type: task
 status: needs-decision
 parent: PW-981
@@ -11,6 +12,8 @@ found_by: fun46-demes
 blocked_by: []
 relates: [PW-981, PW-856, PW-767]
 refs: [planet/lineages/demes.py, "run b69f51"]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 - C: 3,500 (~150): fine-grained, busy and churning;
 - D: two levels: big demes (B) with sub-demes (A) inside, the tree drawing the big ones and the sub-demes on demand.
 Lean: A now; D later, since languages want both levels (family and dialect).
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-demes-scale.md (found by fun46-demes).

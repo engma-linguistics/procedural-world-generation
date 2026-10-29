@@ -1,5 +1,6 @@
 ---
-title: "Store each frame's full people presence as bit flags so demes see peoples that rarely lead a cell"
+id: PW-1013
+title: Store each frame's full people presence as bit flags so demes see peoples that rarely lead a cell
 type: task
 status: todo
 parent: PW-981
@@ -11,6 +12,8 @@ found_by: fun46-demes
 blocked_by: []
 relates: [PW-981, PW-689]
 refs: [planet/lineages/history/frame.py, planet/lineages/output.py, planet/lineages/demes.py, "run b69f51"]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -31,3 +34,6 @@ frames <= 300 kyr that demes cuts, ~170 MB). Up to 64 whole peoples fit (b69f51 
 bit instead of lead/second.
 - [ ] `peoples_present` stored per frame (history/frame.py, output.PEOPLE_LAYERS)
 - [ ] demes.occupied uses it when present; the caveat table above re-measured (target: every people >= 90% seen)
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-demes-full-presence-frames.md (found by fun46-demes).

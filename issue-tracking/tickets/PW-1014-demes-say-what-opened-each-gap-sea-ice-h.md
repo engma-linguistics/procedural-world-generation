@@ -1,4 +1,5 @@
 ---
+id: PW-1014
 title: "Demes: say what opened each gap (sea, ice, hard country, or a neighbour moving in); most are neighbours"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun46-demes
 blocked_by: []
 relates: [PW-981, PW-902]
 refs: [planet/lineages/demes.py, "run b69f51", "run 2cb509"]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -34,3 +37,6 @@ What to do: tag each split_gap / fusion event with its cause (sea rose / fell, i
 "<people> withdrew") and put it in the event text and the workbench hover. That makes land-bridge stories findable
 when a world has them (PW-902: ranges following sea level).
 - [ ] each gap event names its cause; b69f51's 114 and 2cb509's 125 events classified, counts in the review note
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-demes-gap-cause.md (found by fun46-demes).

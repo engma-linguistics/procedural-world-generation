@@ -1,4 +1,5 @@
 ---
+id: PW-1016
 title: "Demes pass: 20-33 s per L7 run after the per-people cut; the next halving needs incremental re-cuts"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun46-demes
 blocked_by: []
 relates: [PW-981]
 refs: [planet/lineages/demes.py, "run b69f51"]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Next steps, if it matters:
 - compute the corridor cost on the union of the peoples' neighbourhoods, not the globe;
 - keep the rivers (flow) in the run, so the pass need not parse the world JSON.
 - [ ] demes.derive on b69f51 under 15 s, same output
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-demes-speed-floor.md (found by fun46-demes).
