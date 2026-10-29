@@ -2,7 +2,7 @@
 id: PW-987
 title: Bare-bones tool use before the sapiens node is the same knapping and handaxes for every stem with hands
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -24,4 +24,5 @@ Also gesture and call systems are gated by the node (a dragon's kit still brings
 Lean: leave as is until the language project (PW-947); then give each body plan its own bare tool.
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: birds use found tools before sapience, not knapped stone. Felines have hands once genetically modern, and so do the bird-peoples. So each body plan gets its own bare tool: found or probing tools for avian stems, with knapping only where hands exist pre-node.
 - 2026-10-29: Created from inbox draft draft-bare-bones-tools-for-handless-and-bird-stems.md (found by fun-lane-44).

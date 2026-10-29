@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-10-26
+updated: 2026-10-29
 ---
 
 ## Description
@@ -21,6 +21,7 @@ With the frontier-invasion term (history.INVADE 0.5, floor 0.3) the humans on th
 - [ ] decide on a hobgoblin refuge floor or a lower INVADE; re-measure over 8 seeds
 
 ## Updates
+- 2026-10-29: Owner 10-29: an occasional refuge group (~100 cells) is fine; worlds needn't end balanced. Idea: cohabitation preferences between peoples (bugbears happy among goblins and hobgoblins, and others similarly), so a squeezed people can share a friendly people's land instead of losing it. A stronger form: under pressure a people grows more willing to integrate with a neighbour, as a survival strategy. Coordinator to design.
 - 2026-10-25: (fun-lane-30) With PW-888 origins, hobgoblins at the present on tries 7000/7005/7006 of 2a7385: 7406/12479/6317 cells (82/92/141 before); the other five tries 3.1-8.5k. Different draws of origin, so not the same worlds of peoples as before.
 - 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-25: Created from inbox draft draft-hobgoblins-thin-out-under-frontier-invasion.md (found by fun-lane-29).

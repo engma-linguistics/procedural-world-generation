@@ -39,4 +39,5 @@ Options:
 Lean: A for v1/v2 tidiness and B as a v2 fun feature, because it gives the "Africa kept its giants" pattern for free. A value change needs a world run and the prey-map review.
 
 ## Updates
+- 2026-10-29: Owner 10-29: option A for now (flat overkill, wording fixed); B (overkill by people's arrival history) goes to v2. If a world shows 'all the big animals eaten everywhere at once', lower OVERKILL toward Sandom's 0.23-0.46. The check now is only for sane, no-collapse results.
 - 2026-10-29: Created from inbox draft draft-overkill-by-hominin-history.md (found by papers-1029).
