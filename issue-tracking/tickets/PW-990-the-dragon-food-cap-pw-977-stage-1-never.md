@@ -29,4 +29,5 @@ Options:
 Lean: A now, B with stage 2 (the budget is only a budget once hunters and herders draw on it too).
 
 ## Updates
+- 2026-10-29: Papers read 10-29 bearing on option B (density from food): Farlow 1993 (pp. 171-174) builds predator density exactly that way, predator density x mass x intake = prey density x mass x turnover (eqs. 1-5), with intake 48.87 M^-0.30 kg/kg/yr for endotherms (eq. 7, p. 172) and 3.81 M^-0.16 for reptiles (eq. 8, p. 187). His reptile density fit, 66.07 M^-1.01 per km2 (M kg, p. 187), gives ~1 per 50 km2 at 3.2 t, close to Marshall's mesotherm line (~1 per 65, all ages). Jetz et al. 2004 (Table 1, p. 268) puts a 3.2 t mammal carnivore's home range at ~8,400 km2 (~52 km radius), near FORAGE_KM = 60. Nothing here favours A over B; it shows B has a standard form.
 - 2026-10-29: Created from inbox draft draft-dragon-food-cap-does-not-bind.md (found by fun-lane-43).

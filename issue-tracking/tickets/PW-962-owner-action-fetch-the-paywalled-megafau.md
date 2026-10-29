@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-923]
 refs: [docs/references/megafauna/README.md]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -22,4 +22,5 @@ The megafauna scaling work (docs/proposals/megafauna-scaling.md) cites papers ke
 Agents: before citing a paper in code, check the PDF in that folder, not memory. Several of the 10-28 citations were from memory.
 
 ## Updates
+- 2026-10-29: 10-29 batch ingested: Sandom 2014, Nagy 1999, Nagy 2005, Coe 1976, Farlow 1993, Ripple 2014, Jetz 2004 (+ Burness et al. 2001, unlisted) to docs/references/megafauna/; Burke & Dewey 1973 and McKenzie 1978 to docs/references/tectonics/. Still missing: Damuth 1981/1987, Grady 2014, Greenewalt, Rayner, McMahon, Biewener, Campione, Binford; the owner says these are probably not coming.
 - 2026-10-28: Created from inbox draft draft-megafauna-6-fetch-paywalled-papers.md (found by coordinator).

@@ -12,7 +12,7 @@ LA={"mammal carnivore":2.99-np.log10(2.1),"mesotherm (Marshall)":2.99,"varanid":
 dens=lambda M,la: 10**la*(M*1000)**-0.75
 sig=np.log10(240)/3.92
 print("Marshall check T.rex 5200 kg:",dens(5200,2.99))
-# ---------- FMR, Nagy et al. 1999 (kJ/d, M in g) ----------
+# ---------- FMR, Nagy et al. 1999 (kJ/d, M in g; checked: Table 2, p. 260) ----------
 fmr={"mammal":lambda M:4.82*(M*1e3)**0.734,"bird":lambda M:10.5*(M*1e3)**0.681,"reptile":lambda M:0.196*(M*1e3)**0.889}
 kcal=lambda kj:kj/4.184
 # ---------- GIANTS ----------
