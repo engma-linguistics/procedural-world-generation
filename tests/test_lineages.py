@@ -2417,11 +2417,22 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
         assert np.allclose(b2["food"], b2["wild"] + b2["stock"]) and np.allclose(b2["guild"], 0)
     finally:
         MG.BUDGET = True
+    MG.FOOD_NATURAL = True  # PW-990 option B (a prototype): the guild splits the rest by size class, the dragons' natural density is their part / their food
+    try:
+        b3 = MG.budget(h, P, np.zeros(n), tags)
+        r = MG.guild_ratio()
+        assert np.allclose(b3["food"] * r, b3["guild"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])
+        nat = MG.natural(h, w, b3["prey"], b3["food"])
+        assert np.allclose(nat * h.dragon_struct["cattle_yr"] * PR.HEAD_T, b3["food"])
+    finally:
+        MG.FOOD_NATURAL = False
 
 
 def test_people_density_reads_productivity(faketz):
-    """PW-974: a people's density per cell is its number x f (the foraging layer for foragers, the grazing NPP for herders; farmers none),
-    f averaging 1 over the land; with no world, a number; in the deep epoch, a number."""
+    """PW-974: a people's density per cell is its number x f, f absolute (the foraging layer over FORAGE_REF for foragers, the grazing
+    NPP over GRAZE_REF for herders; farmers none): a poorer world holds fewer; with no world, a number; in the deep epoch, a number."""
+    from planet.lineages import landuse as LU
+    from planet.lineages import prey as PR
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
     raw = {"meta": {"seed": 1}, "lineage": [
@@ -2431,13 +2442,19 @@ def test_people_density_reads_productivity(faketz):
     h0 = H.History(SP.parse(raw), ps, 1)
     assert h0._dmap is None and np.ndim(h0.dens_at(h0.idx["hunt"])) == 0  # (no world: the number)
     rng = np.random.default_rng(3)
-    ps.graze_npp = rng.uniform(10, 400, ps.grid.n)
-    ps.forage = rng.uniform(0.1, 5, ps.grid.n)
+    ps.graze_npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.GRAZE_REF
+    ps.forage = rng.uniform(0.1, 1.9, ps.grid.n) * PR.FORAGE_REF
+    fo = ps.forage.copy()
     h = H.History(SP.parse(raw), ps, 1)
+    ps.graze_npp, ps.forage = ps.graze_npp * 0.5, ps.forage * 0.5  # (a world half as productive)
+    hp = H.History(SP.parse(raw), ps, 1)
     del ps.graze_npp, ps.forage
     hu, he, fa = (h.idx[x] for x in ("hunt", "herd", "farm"))
-    assert np.isclose(h.dens_at(hu).mean(), h.dens[hu]) and np.isclose(h.dens_at(he).mean(), h.dens[he])  # (the mean stays the number)
-    assert abs(np.corrcoef(h.dens_at(hu), h.dens_at(he))[0, 1]) < 0.5 and h.dens_at(hu).std() > 0 and h.dens_at(he).std() > 0
+    ff = h.dens_at(hu) / h.dens[hu]
+    sh = LU.shares(h.tree, h.lines[he])
+    assert np.allclose(hp.dens_at(hu), 0.5 * h.dens_at(hu)) and np.allclose(hp.dens_at(he), 0.5 * h.dens_at(he))  # (absolute: half the food, half the people)
+    assert abs(np.corrcoef(h.dens_at(hu), h.dens_at(he))[0, 1]) < 0.5 and ff.std() > 0 and h.dens_at(he).std() > 0
+    assert np.allclose(ff, fo / PR.FORAGE_REF) and sh["herd"] > 0  # (a forager: the foraging layer over its reference)
     assert np.allclose(h.dens_at(fa), h.dens[fa])  # (the farmers' soil is in the habitat already)
     h._deep_now = True
     assert np.ndim(h.dens_at(hu)) == 0  # (the deep epoch's plates lay elsewhere: the number)

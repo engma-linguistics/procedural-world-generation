@@ -80,15 +80,19 @@ STOCK_TOLERABLE = 0.1  # the share of herders' stock the herders tolerate losing
 # year they put up with, PW-977; the herders' tolerance itself is to be sourced)
 BUDGET = True  # PW-977 stage 2: the peoples' hunters, the giants and the rest of the predator guild draw on the wild offtake before the dragons do (off only to measure it: the dragons then get all of it, stage 1)
 PERSON_KCAL_YR = 2200.0 * 365.0  # a person's food, kcal a year (a working adult's ~2,200 kcal a day; the proposal's Kleiber x 1.7 figure for a 65 kg forager is ~1,900; UNVERIFIED round number)
-HEAD_KCAL = 625e3  # edible kcal in a head of cattle-sized prey (the proposal's figure, as giant_cattle_yr; it also serves wild game of that size)
-WILD_MEAT = (0.5, 0.05)  # the share of a people's food that is wild game: (a forager's, any other way's): UNVERIFIED. Hunter-gatherer diets run roughly half to two thirds animal food
-# by energy in most ethnographic samples (Cordain et al. 2000, Am J Clin Nutr 71:682, from memory; not on file); herders, farmers and gardeners hunt little (5% is a guess)
+HEAD_KCAL = 625e3  # edible kcal in a head of cattle-sized prey (the proposal's figure, as giant_cattle_yr; it also serves wild game of that size). Cross-check: at
+# Farlow 1993's 7 kJ per g live mass (p. 172) a 0.5 t head (prey.HEAD_T) holds ~840,000 kcal, so 625,000 is ~3/4 of it eaten
+WILD_MEAT = (0.5, 0.05)  # the share of a people's food that is wild game: (a forager's, any other way's). UNVERIFIED round numbers, no source on file: a
+# forager eats much of its food as game, herders, farmers and gardeners hunt little (the ethnographic figure is wanted; inbox draft)
 # Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682 (PDF p. 2683-2684, Fig. 1 and Table 1; read 10-29): the carnivorous theropod guild of Late Cretaceous North America by
 # size class, as the share of the guild's individuals (their abundances follow the mammalian carnivore line N ~ 1.97 M^-0.88, their Table 3): 20.6 kg 79.9%, 58.3 kg 19.0%, 1,123 kg
 # 0.9%, 5,347 kg 0.1%. They give the abundance, not the food; the guild's food by class is that times a metabolic M^0.75 (Kleiber; the exponent is not from the paper).
 GUILD_CLASSES = ((20.6, 79.9), (58.3, 19.0), (1123.0, 0.9), (5347.0, 0.1))  # (mass kg, % of the guild's individuals)
 GUILD_APEX_KG = 1000.0  # the classes of this mass and up are the dragons' own size class (a dragon's ecological mass is ~2-3 t)
 GUILD_KLEIBER = 0.75
+FOOD_NATURAL = False  # PW-990 option B, a prototype (the owner has not ruled; off by default): a dragon's natural density from food, not Carbone & Gittleman.
+# The predator guild, dragons included, splits what the peoples and the giants leave by Carbone, Turvey & Bielby 2011's size classes (the
+# dragons 1 / (1 + guild_ratio), the smaller carnivores the rest), and the dragons' natural density is their part / a dragon's food
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring).
 # Cross-check: Jetz et al. 2004 (Science 306:266, Table 1 p. 268) fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70);
@@ -132,6 +136,8 @@ def natural_coef(h: History, line) -> float:
     m = eco_mass(h, line)
     if "flies" not in line.traits:
         return h.tree.forager_km2 * (m / FORAGER_KG) ** -DAMUTH_EXP
+    if FOOD_NATURAL and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's apex part / a dragon's food; the deep epoch's)
+        return OFFTAKE / (1.0 + guild_ratio()) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
     if h.mf_natural == "prey" and h.prey_wild is not None:
         return CARBONE_A * m ** -CARBONE_B / 10.0
     la = LOG_A["mammal" if h.mf_natural == "mammal" else "mesotherm"]
@@ -203,8 +209,11 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> d
             if l.megafauna and "flies" not in l.traits:
                 gi += x[k] * local_density(h, k, press, wild + live) * giant_cattle_yr(eco_mass(h, l)) * PR.HEAD_T
         gi = _reach(h, gi)
-        gd = guild_ratio() * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
         out["giants"] = np.minimum(gi, pool)
+        if FOOD_NATURAL:  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
+            gd = guild_ratio() / (1.0 + guild_ratio()) * (pool - out["giants"])
+        else:
+            gd = guild_ratio() * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
         out["guild"] = np.minimum(gd, pool - out["giants"])
         out["pool"] = pool
         out["food"] = pool - out["giants"] - out["guild"]
@@ -225,11 +234,13 @@ def prey_now(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) ->
     return prey_and_food(h, P, press, tags)[0]
 
 
-def natural(h: History, k: int, prey: np.ndarray | None):
+def natural(h: History, k: int, prey: np.ndarray | None, food: np.ndarray | None = None):
     """Line k's natural density, per km2: per cell under "prey" (dragons from the prey, giants from the productivity), else a number.
     prey None (the deep epoch, when the plates lay elsewhere and the present's prey field does not apply): uniform, a dragon at the
     land's median prey, a giant at its forager-scaled density."""
     l, c = h.lines[k], h.dens_nat[k]
+    if FOOD_NATURAL and "flies" in l.traits and h.prey_wild is not None:  # (PW-990 B: the dragons' part of the food / a dragon's food)
+        return food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T) if food is not None else c * (prey if prey is not None else h.prey_ref)
     if h.mf_natural != "prey" or h.prey_wild is None:
         return c
     if "flies" in l.traits:
@@ -251,8 +262,8 @@ def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.nd
     return 1.0 - np.exp(-N / PRESS_N0)
 
 
-def _pressed(h: History, k: int, s: np.ndarray, prey: np.ndarray | None) -> np.ndarray:
-    nat = np.maximum(natural(h, k, prey), 1e-12)
+def _pressed(h: History, k: int, s: np.ndarray, prey: np.ndarray | None, food: np.ndarray | None = None) -> np.ndarray:
+    nat = np.maximum(natural(h, k, prey, food), 1e-12)
     return nat * np.minimum(1.0, h.dens[k] / nat) ** s
 
 
@@ -264,7 +275,7 @@ def food_scale(h: History, P: np.ndarray, s: np.ndarray, prey: np.ndarray, food:
     need = np.zeros(h.grid.n)
     for j, l in enumerate(h.lines):
         if l.megafauna and "flies" in l.traits:
-            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, s, prey)
+            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, s, prey, food)
     need = need * h.dragon_struct["cattle_yr"] * PR.HEAD_T
     return np.minimum(1.0, food / np.maximum(need, 1e-12))
 
@@ -275,7 +286,7 @@ def local_density(h: History, k: int, s: np.ndarray, prey: np.ndarray | None = N
     to the pressed present-day value at s = 1. Where the natural density is already sparser (poor country), peoples do not raise it.
     One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
     the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere)."""
-    d = _pressed(h, k, s, prey)
+    d = _pressed(h, k, s, prey, food if "flies" in h.lines[k].traits else None)
     if FOOD_CAP and food is not None and P is not None and "flies" in h.lines[k].traits:
         d = d * food_scale(h, P, s, prey, food)
     return d
@@ -447,7 +458,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
         rng = np.random.default_rng((h.seed, 924, k))
         flies = "flies" in l.traits
         dk = dens[k]  # (per cell: natural where no people presses them, PW-957; dragons held to their food, PW-977)
-        nat = np.broadcast_to(np.asarray(natural(h, k, prey), float), dk.shape)
+        nat = np.broadcast_to(np.asarray(natural(h, k, prey, food if flies else None), float), dk.shape)
         exp = np.where(held, P[k], 0.0) * dk * area
         lab, n = g.components(held)
         pockets = []

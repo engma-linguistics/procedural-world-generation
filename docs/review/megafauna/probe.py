@@ -1,4 +1,4 @@
-"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
+"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--food-natural] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
 
 Writes OUT.json: the peoples' cells, the megafauna's coverage and counts (present, and the deep-time peak), blue dragons in deserts,
 frost giants in tundra, the dragons' food use (PW-977 stage 1) and the counts over time. For the sweep (6 worlds x rolls 7000-7003):
@@ -11,7 +11,8 @@ schedule_mass), --gen-yr (the dragon lines' generation_yr), --no-cap (megafauna.
 --no-budget (megafauna.BUDGET off: the dragons get all the wild offtake and the stock, PW-977 stage 1), --no-people-prod (PW-974 off: a people's
 density is its way-of-life number everywhere), --no-press (a diagnostic, not a model setting: the peoples press the megafauna not at all, so the
 dragons stand at their natural density wherever the food budget lets them; it shows what the budget alone does through time).
---eras 25,10,0 (with --save) also writes DIR/ERAS.npz: the budget, presences and dragons at the steps nearest those kyr ago.
+--food-natural (megafauna.FOOD_NATURAL, PW-990 option B, a prototype: the dragons' natural density from their part of the food).
+--eras 25,10,0 adds the budget sums at those eras to OUT.json; with --save it also writes DIR/ERAS.npz: the budget, presences and dragons at the steps nearest those kyr ago.
 
 --save DIR also writes DIR/RUN.npz and DIR/SERIES.json, the inputs of age_of_dragons.py (the PW-967 review): presences, the megafauna's
 suitability, the peoples' pressure, the prey field (wild before and after overkill, livestock), the dragons' food and the present summary.
@@ -25,6 +26,7 @@ import numpy as np
 
 from planet.lineages import land as LD
 from planet.lineages import landuse as LU
+from planet.lineages import prey as PR
 from planet.lineages import recent as R
 from planet.lineages import run as LR
 from planet.lineages.history import megafauna as MG
@@ -43,6 +45,7 @@ ap.add_argument("--no-cap", action="store_true")
 ap.add_argument("--no-budget", action="store_true")
 ap.add_argument("--no-people-prod", action="store_true")
 ap.add_argument("--no-press", action="store_true")
+ap.add_argument("--food-natural", action="store_true")
 ap.add_argument("--eras")
 ap.add_argument("--tree", default="dnd")
 ap.add_argument("--save")
@@ -52,6 +55,8 @@ if a.no_cap:
     MG.FOOD_CAP = False
 if a.no_budget and hasattr(MG, "BUDGET"):
     MG.BUDGET = False
+if a.food_natural:
+    MG.FOOD_NATURAL = True
 if a.no_press:
     MG.PRESS_N0 = 1e12
 if a.no_people_prod:
@@ -167,9 +172,27 @@ if fs is not None:
     use = fs["demand"] / np.maximum(fs["supply"], 1e-12)
     food["worst_cell_food_use"] = float(use.max())
     food["cells_over_food"] = int((use > 1.0 + 1e-9).sum())
+eras_sum = {}  # (PW-977 stage 2: per era, the budget summed over the land, t/yr, and the dragons' share of the supply, all and by who lives there)
+area_km2 = h.cell_mkm2 * 1e6
+for e, r in eras.items():
+    lnd = r["land"]
+    tot = lambda x, m=lnd: float((np.asarray(x)[m]).sum() * area_km2)
+    need = r["dragons"] * h.dragon_struct["cattle_yr"] * PR.HEAD_T
+    pp = {c: r["people_" + c] for c in ("foragers", "herders", "farmers", "others")}
+    allp = sum(pp.values())
+    cls = {"none": lnd & (allp < 0.02)}
+    for c in ("foragers", "herders", "farmers"):
+        cls[c] = lnd & (allp >= 0.02) & np.all([pp[c] >= pp[o] for o in pp if o != c], axis=0)
+    row = {"ago": float(r["ago"]), "dragons": tot(r["dragons"]), "dragons_uncapped": tot(r["dragons_uncapped"])}
+    for cn, m in [("all", lnd)] + list(cls.items()):
+        sup = tot(r["wild"] + r["stock"], m)
+        row[cn] = {"cells": int(m.sum()), "supply_t": sup, "dragons": tot(r["dragons"], m),
+                   **{k: (tot(r[k], m) / sup if sup > 0 else 0.0) for k in ("stock", "peoples", "giants", "guild", "food")},
+                   "dragons_need": tot(need, m) / sup if sup > 0 else 0.0}
+    eras_sum[f"{e:g}"] = row
 extra = {lid: {k: r.get(k) for k in ("count", "one_per_km2", "pressed_one_per_km2", "natural_one_per_km2", "peopled_one_per_km2",
                                      "wild_one_per_km2", "peopled_share", "stages")} for lid, r in mf.items()}
-json.dump({"world": a.world, "roll": a.roll, "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "lmean": lmean, "mf_cov": cov, "mf_count": cnt,
+json.dump({"world": a.world, "roll": a.roll, "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "lmean": lmean, "eras": eras_sum, "mf_cov": cov, "mf_count": cnt,
            "present": present, "stages": stages, "blue_desert": in_country("blue_dragon", "desert"), "blue": cnt.get("blue_dragon", 0),
            "frost_tundra": in_country("frost_giant", "tundra"), "frost": cnt.get("frost_giant", 0), "food": food, "peak": peak,
            "series": {str(t): by_t[t] for t in ts}, "mf_extra": extra, "lost": pres.get("lost"),
