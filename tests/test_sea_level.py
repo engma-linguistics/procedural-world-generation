@@ -21,10 +21,33 @@ def test_basin_term_is_measured_against_the_starting_floor():
         s.step()
         assert s.depth_ref == ref
         rise = (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (s.depth_ridge - ref)
-        assert np.isclose(s.sea_tect, earth.SEA_TECT_MAX * np.tanh(rise / earth.SEA_TECT_MAX))
+        assert np.isclose(s.sea_tect - s.sea_cont, earth.SEA_TECT_MAX * np.tanh(rise / earth.SEA_TECT_MAX))
         seen.append(rise)
     assert max(abs(x) for x in seen) > 1.0  # (the floor did change)
     assert abs((RHO_MANTLE - RHO_WATER) / RHO_MANTLE - 0.69) < 0.01
+
+
+def test_water_the_continents_give_up_raises_the_sea(grid4):
+    """PW-980: the ocean's water is conserved. The sea the start's continents hold is the reference (0 at the
+    first step); continents that rise out of it give their water to the basins, which rise by 0.69 of its
+    depth over the ocean, and continents that sink take it back. An ice age's drained shelves don't count."""
+    s = Simulation(grid4, 1, Params(heat_start=1.0), 2.0)
+    s.step()
+    w = earth.ocean_area(s.grid)
+    assert s.cont_water_ref is not None
+    s.cont_water_ref = None  # (taken again at this moment: the reference is what the continents hold then)
+    assert abs(earth.continent_water(s, w)) < 1e-9 and s.cont_water_ref > 0
+    held = s.cont_water_ref
+    sub = s.w_cont & (s.w_elev + s.sea_ice < 0)
+    assert sub.any()
+    up = s.w_elev.copy()
+    s.w_elev = np.where(sub, -s.sea_ice, up)  # every drowned continental cell brought up to the (ice-free) shore
+    ocean = float(((s.w_elev + s.sea_ice < 0) * w).sum() / w.sum())
+    assert np.isclose(earth.continent_water(s, w), (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * held / ocean)
+    s.w_elev = np.where(s.w_cont, up - 100.0, up)  # sunk by 100 m: the sea falls
+    assert earth.continent_water(s, w) < 0.0
+    s.w_elev, s.sea_ice = up + 50.0, s.sea_ice - 50.0  # 50 m more ice: the same water at the ice-free level
+    assert abs(earth.continent_water(s, w)) < 1e-9
 
 
 def test_starting_ocean_is_the_models_steady_state(grid4):
