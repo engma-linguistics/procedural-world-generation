@@ -3,14 +3,14 @@ id: PW-981
 title: "Demes: phylogeography pass that cuts each people's range into speech/breeding populations per frame and tracks their splits, fusions and contacts into a dated deme tree"
 type: story
 status: todo
-parent: PW-767
-milestone: later
+parent: PW-856
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high
 found_by: owner
 blocked_by: []
-relates: [PW-856, PW-731, PW-665]
+relates: [PW-767, PW-902, PW-731, PW-665]
 refs: [planet/lineages/contacts.py, planet/lineages/spread.py, planet/lineages/crossing.py]
 created: 2026-10-28
 updated: 2026-10-28
@@ -27,4 +27,5 @@ Result: a dated, located deme tree nested inside the authored people tree, plus 
 - [ ] a review page/map of demes over time
 
 ## Updates
+- 2026-10-28: Owner 2026-10-28: moved under the cultures epic PW-856 and into v2 (cultures are probably demes more than species); still the foundation of the language work under PW-767 and of the demo PW-986. Strongly tied to PW-902 (ranges follow ice-age sea level and land bridges).
 - 2026-10-28: Created.
