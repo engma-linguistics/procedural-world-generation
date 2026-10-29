@@ -1,5 +1,6 @@
 ---
-title: The dragon food cap (PW-977 stage 1) never binds at the default densities: what limits dragons is the pressed 1 per 5,000 km2 and the natural prey density, not food
+id: PW-990
+title: "The dragon food cap (PW-977 stage 1) never binds at the default densities: what limits dragons is the pressed 1 per 5,000 km2 and the natural prey density, not food"
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: fun-lane-43
 blocked_by: []
 relates: [PW-977, PW-957, PW-973]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/probe.py, docs/review/megafauna/age-of-dragons.html]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Options:
 - **C.** Raise OFFTAKE-style shares, or lower the herders' tolerated loss, until the cap is a real limit (a tuning against nothing; not recommended).
 
 Lean: A now, B with stage 2 (the budget is only a budget once hunters and herders draw on it too).
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-dragon-food-cap-does-not-bind.md (found by fun-lane-43).

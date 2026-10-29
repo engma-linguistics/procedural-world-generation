@@ -2,7 +2,7 @@
 id: PW-958
 title: Dragon age structure (wyrmling, young, adult, ancient) with counts reported by stage
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-924, PW-923]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/history/megafauna.py, docs/review/megafauna/scaling.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -37,6 +37,7 @@ The oldest age is 3,000 years. Ancients hold 34% of the biomass and 31% of the f
 - Consider making mated pairs and "a pair with young" in groups_note follow the stages: young dragons with an adult.
 
 ## Updates
+- 2026-10-29: Status todo -> done. Merged 10-29 (fun lane 43): younger schedule default; dragon generation_yr 430 ('line' mode). Follow-ups PW-992, PW-993.
 - 2026-10-29: fun-lane-43: default schedule is now younger (mortality 20/3/0.5/0.1%; stage shares 24/54/19/3%, eco mass 1.65 t, 5.4 cattle a year each, generation 427 yr); base, harsher and gentler stay as meta.dragon_ages options. The split into stages, line_text, the brief and the viewer were already in; the food and natural density now follow the younger mass. Present dragons per run on 6 worlds x rolls 7000-7001: base 10.0k -> younger 15.6k (giants 4.9k -> 4.6k). Left: groups_note following the stages (draft).
 - 2026-10-28: Owner 10-28: confirmed, younger is the default.
 - 2026-10-28: Owner 10-28 after the PW-967 review: leans younger; coordinator agrees (crocodilian-like survivorship, ~2% of hatchlings reach adulthood; halves food per dragon; matches the California hunch). Default: younger, with base/harsher/gentler kept as meta.dragon_ages options.
