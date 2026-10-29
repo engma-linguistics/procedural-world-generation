@@ -337,6 +337,15 @@ def cmd_fuels(args):
         print(ref, "\n".join(FU.lines_for_report(sm)))
 
 
+def cmd_demes(args):
+    """Adds (or redoes) a peoples run's demes in place (PW-981): demes.json, layers/demes.bin, meta.demes."""
+    from .lineages import demes as DM
+    for ref in args.runs:
+        d = S.find_run(ref)
+        sm = DM.write(d, report=False)
+        print(ref, "\n".join(DM.lines_for_report(sm, json.loads((d / "demes.json").read_text()))))
+
+
 def cmd_brief(args):
     """The culinary brief of a peoples run's region or people at an era (PW-728): JSON and Markdown."""
     from .lineages import brief as BR
@@ -723,6 +732,11 @@ def main():
                                       "and each people's cooking-fuel line, in place (PW-722); the run needs its land use")
     fu.add_argument("runs", nargs="+", help="peoples run ids")
     fu.set_defaults(func=cmd_fuels)
+
+    dm = sub.add_parser("demes", help="add or redo a peoples run's demes: each people's land cut into regional populations per frame "
+                                      "(by sea gaps, hard country and distance) and their dated tree of splits, fusions and contacts, in place (PW-981)")
+    dm.add_argument("runs", nargs="+", help="peoples run ids")
+    dm.set_defaults(func=cmd_demes)
 
     ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
                                        "class maps, GeoJSON features, manifest.json -> exports/<id>/")

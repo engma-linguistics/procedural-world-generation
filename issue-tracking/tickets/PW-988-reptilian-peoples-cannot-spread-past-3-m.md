@@ -2,7 +2,7 @@
 id: PW-988
 title: Reptilian peoples cannot spread past 3 Myr without relaxing a test and an owner ruling
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -22,4 +22,5 @@ Owner 10-28 (PW-978): the kobolds, troglodytes, lizardfolk, tortles and dragonbo
 Options: (A) leave it (0.3-1 Myr between splits). (B) Allow the tortles deeper (say 5 Myr, "a far deeper branch"; seven_meals already calls them that) and raise the test's bound to match; they stay T3 to the dragons either way. (C) Also push the dragonborn up to ~1 Myr in dnd.toml (T2 to the dragons from 1.1 Myr). Lean: B, since the tortles are the slow, deep, ocean-going branch, and nothing else depends on their date.
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: restructure rather than just spread the dates. Troglodytes, tortles and lizardfolk become their own branch off the reptilian line, and troglodytes split from the other two later. Kobolds and dragonborn stay as they are. The test's 3 Myr bound is a placeholder like the rest of the timeline, so change it to fit; the coordinator may choose the dates.
 - 2026-10-29: Created from inbox draft draft-reptilian-splits-capped-at-3-myr.md (found by fun-lane-44).

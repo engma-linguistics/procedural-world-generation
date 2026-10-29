@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-155]
 refs: [planet/surface.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-29
 ---
 
 ## Description
@@ -23,4 +23,5 @@ Output: a named surface rock per cell or zoom pixel, plus a rock column at any p
 Cost: labels only, so ~0 run time; the stored column is a few bytes per layer.
 
 ## Updates
+- 2026-10-29: 2026-10-29: owner wants the rock column in v2; World Orogen's per-cell rock column and lithology-controlled relief (PW-1005) are the reference design (docs/review/landscape/world-orogen.md).
 - 2026-10-20: Created.

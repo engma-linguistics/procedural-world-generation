@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech timeline per people · mockup</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  main { overflow: auto; position: relative; }
+  #axis { position: sticky; top: 0; z-index: 3; background: var(--bg); display: block; }
+  #svg { display: block; }
+  circle.d { cursor: pointer; }
+  .row:hover rect.bg { fill: #182131; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<div class="bar">
+  <span class="muted">track</span><select id="track"><option value="">all tracks</option></select>
+  <span class="muted">highlight a tech</span><select id="tech"><option value="">none</option></select>
+  <span class="muted">sort</span><select id="sort"><option value="start">by when the people began</option><option value="n">by techs known now</option><option value="lang">by language</option><option value="tree">as the family tree</option></select>
+  <label class="muted"><input type="checkbox" id="inh"> show inherited (split) dots</label>
+  <label class="muted"><input type="checkbox" id="gone" checked> lines gone by the present</label>
+  <span class="key" id="key"></span>
+</div>
+<main id="main"><svg id="axis"></svg><svg id="svg"></svg></main>
+<footer>One row per people, on a log time axis (left: 20 Myr ago, right: the present). The faint bar is the people's own span; each dot a tech it came to, coloured by track, filled when invented, a ring when it came by contact or was shared within its people. <b>+N</b> at a row's start counts what it inherited at its split (or brought along). Pick a tech to see it spread: the lines join a giver to a taker.</footer>
+<script src="tech-data.js"></script>
+<script src="common.js"></script>
+<script>
+$('hdr').innerHTML = header('view2');
+for (const k of D.tracks) $('track').insertAdjacentHTML('beforeend', `<option value="${k.id}">${esc(k.name)}</option>`);
+for (const k of D.tracks) { const g = document.createElement('optgroup'); g.label = k.name; for (const t of D.techs.filter((t) => t.track === k.id)) g.insertAdjacentHTML('beforeend', `<option value="${t.id}">${esc(tname(t.id))}</option>`); $('tech').appendChild(g); }
+$('key').innerHTML = D.tracks.map((k) => `<span><span class="sw" style="background:${TRACK_COL[k.id]};border-radius:5px"></span>${esc(k.name.split(' and ')[0])}</span>`).join('')
+  + '<span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="#ddd"/></svg>invented</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="3.5" fill="none" stroke="#ddd" stroke-width="1.5"/></svg>contact / shared</span>';
+const RH = 24, LAB = 190, TOPH = 26;
+const st = { track: '', tech: '', sort: 'start', inh: false, gone: true };
+const isInh = (h) => h === 'inherited' || h === 'kit';
+function order() {
+  let rows = PEOPLES.filter((l) => st.gone || alive(l));
+  const n = (l) => Object.keys(D.known[l.id]).length;
+  if (st.sort === 'n') rows.sort((a, b) => n(b) - n(a));
+  else if (st.sort === 'lang') rows.sort((a, b) => (D.known[b.id].language?.[0] ?? -1) - (D.known[a.id].language?.[0] ?? -1));
+  else if (st.sort === 'tree') {  // depth-first from the roots, children oldest first
+    const kids = {}; for (const l of rows) { const p = l.group_of || l.parents[0]; (kids[p] ||= []).push(l); }
+    const ids = new Set(rows.map((l) => l.id)), out = [], seen = new Set();
+    const walk = (l, d) => { if (seen.has(l.id)) return; seen.add(l.id); l._d = d; out.push(l); for (const c of (kids[l.id] || []).sort((a, b) => startOf(b) - startOf(a))) walk(c, d + 1); };
+    for (const l of rows) if (!ids.has(l.group_of || l.parents[0])) walk(l, 0);
+    for (const l of rows) walk(l, 0);
+    return out;
+  }
+  for (const l of rows) l._d = 0;
+  return rows;
+}
+function draw() {
+  const W = Math.max(900, $('main').clientWidth - 4), X = (u) => LAB + u * (W - LAB - 20);
+  const ax = logAxis(20000, 0.05), x = (k) => X(ax(k));
+  const rows = order(), H = rows.length * RH + 10;
+  let a = `<g class="axis">`;
+  for (const k of [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000]) a += `<line x1="${x(k)}" x2="${x(k)}" y1="18" y2="${TOPH}" stroke="#3a4658"/><text x="${x(k)}" y="13" text-anchor="middle">${fmt(k)}</text>`;
+  a += `<text x="8" y="13">kyr ago</text></g>`;
+  $('axis').setAttribute('width', W); $('axis').setAttribute('height', TOPH); $('axis').innerHTML = a;
+  let s = '';
+  for (const k of [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000]) s += `<line x1="${x(k)}" x2="${x(k)}" y1="0" y2="${H}" stroke="#1a2230"/>`;
+  const rowY = {};
+  const tix = Object.fromEntries(D.tracks.map((k, i) => [k.id, i]));
+  rows.forEach((l, i) => {
+    const y = i * RH; rowY[l.id] = y;
+    const kn = D.known[l.id], s0 = startOf(l), e0 = l.ended_kyr ?? 0.05;
+    s += `<g class="row"><rect class="bg" x="0" y="${y}" width="${W}" height="${RH}" fill="${i % 2 ? '#10161e' : 'transparent'}"/>
+      <rect x="${x(s0)}" y="${y + 3}" width="${Math.max(2, x(e0) - x(s0))}" height="${RH - 6}" rx="3" fill="${l.color}" opacity=".13"/>
+      <text x="${6 + 10 * (l._d || 0)}" y="${y + 16}">${l.group_of ? '↳ ' : ''}${esc(l.name)}${alive(l) ? '' : ' †'}</text>
+      <rect x="${LAB - 14}" y="${y + 7}" width="9" height="9" rx="2" fill="${l.color}"/>`;
+    const inh = Object.entries(kn).filter(([t, v]) => isInh(v[1]) && (!st.track || TECH[t].track === st.track));
+    if (inh.length) s += `<text x="${x(s0) - 3}" y="${y + 16}" text-anchor="end" style="fill:#8b97a8;font-size:10px">+${inh.length}</text>`;
+    for (const [t, v] of Object.entries(kn)) {
+      const tk = TECH[t]; if (!tk || (st.track && tk.track !== st.track)) continue;
+      if (isInh(v[1]) && !st.inh) continue;
+      const cy = y + 4 + (tix[tk.track] + 0.5) * (RH - 8) / 8, cx = x(v[0]), col = TRACK_COL[tk.track];
+      const hl = st.tech === t, dim = st.tech && !hl;
+      const fill = v[1] === 'invented' || v[1] === 'tamed' || String(v[1]).startsWith('with');
+      s += `<circle class="d" data-l="${l.id}" data-t="${t}" cx="${cx}" cy="${cy}" r="${hl ? 6 : 3.2}" fill="${fill ? col : '#0e1218'}" stroke="${col}" stroke-width="${fill ? 0 : 1.4}" opacity="${dim ? 0.18 : 1}"${hl ? ' style="stroke:#fff;stroke-width:1.5"' : ''}/>`;
+    }
+  });
+  if (st.tech) {  // giver -> taker links for the picked tech
+    for (const l of rows) {
+      const v = D.known[l.id][st.tech]; if (!v || !v[2] || rowY[v[2]] == null) continue;
+      const y1 = rowY[v[2]] + RH / 2, y2 = rowY[l.id] + RH / 2, cx = x(v[0]);
+      s += `<path d="M${cx},${y1} C${cx + 18},${y1} ${cx + 18},${y2} ${cx},${y2}" fill="none" stroke="${howCol(v[1])}" stroke-width="1.3" opacity=".8"/>`;
+    }
+  }
+  $('svg').setAttribute('width', W); $('svg').setAttribute('height', H); $('svg').innerHTML = s;
+  for (const c of $('svg').querySelectorAll('circle.d')) {
+    c.onmouseenter = (e) => { const l = c.dataset.l, t = c.dataset.t, v = D.known[l][t];
+      showTip(e, `${sw(l)}<b>${esc(short(l))}</b>: ${esc(tname(t))}, ${ago(v[0])}<div>${esc(howText(v[1]))}${v[2] ? ' from ' + sw(v[2]) + esc(short(v[2])) : ''}</div><hr style="border-color:#2a3446">${techTip(t)}`); };
+    c.onmouseleave = hideTip;
+    c.onclick = () => { st.tech = st.tech === c.dataset.t ? '' : c.dataset.t; $('tech').value = st.tech; draw(); };
+  }
+}
+for (const [id, k] of [['track', 'track'], ['tech', 'tech'], ['sort', 'sort']]) $(id).onchange = (e) => { st[k] = e.target.value; draw(); };
+$('inh').onchange = (e) => { st.inh = e.target.checked; draw(); };
+$('gone').onchange = (e) => { st.gone = e.target.checked; draw(); };
+addEventListener('resize', draw);
+const q = new URLSearchParams(location.search); if (q.get('tech')) { st.tech = q.get('tech'); $('tech').value = st.tech; } if (q.get('sort')) { st.sort = q.get('sort'); $('sort').value = st.sort; }
+draw();
+</script>
+</body>
+</html>
