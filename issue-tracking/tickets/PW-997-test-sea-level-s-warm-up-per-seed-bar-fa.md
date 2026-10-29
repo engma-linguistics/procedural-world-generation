@@ -1,4 +1,5 @@
 ---
+id: PW-997
 title: "test_sea_level's warm-up per-seed bar fails after the sea's bulk exchange: L4 seed 1's basin mean is -55 m (bar -50; main +7)"
 type: task
 status: done
@@ -11,6 +12,8 @@ found_by: lane25
 blocked_by: []
 relates: [PW-015, PW-549, PW-980]
 refs: [tests/test_sea_level.py, planet/climate.py, docs/review/base-climate/deserts/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -35,6 +38,7 @@ Options:
 Lean: B (a 3-seed per-seed bar at L4 is a fixture, not a measure); then A if the wider sample also drops.
 
 ## Updates
+- 2026-10-29: Created from inbox draft draft-sea-level-warmup-seed1-after-bulk-evap.md (found by lane25).
 - 2026-10-29: owner ruling, option B. The per-seed band is judged over seeds 1-10 at >=70%, assertions unchanged; marked slow
   (about 5 min). L4 basin means, seeds 1-10: main 7, 38, 15, 31, 37, -23, 36, -31, -33, 55 (10/10, set mean +13); branch -55,
   23, 35, 44, -17, -24, -8, -34, 52, 11 (9/10, set mean +3). The set mean sits lower, still inside its 0..150 bar.

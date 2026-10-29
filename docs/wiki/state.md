@@ -4,8 +4,8 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics: lane 19 geology tail merged (d7b8577e: PW-826/818/817 done, PW-827 metric; paired 29/36 vs main 29/36). PW-821 rain fix dropped (24/36 vs 29/36), blocked on PW-015. Gallery: 12 L7 worlds (docs/review/gallery/gallery.md), only 6/12 finish well (PW-948, lean cold): look into it before tagging v1. Next: PW-948, zoom tail, then tag v1.
-- Fun: lane 39 tech tree v0 merged (8 tracks, 98 techs, Technology tab; output only, PW-946). Lane 38 megafauna coverage held on branch worktree-agent-a3512fd38525dbb67: coverage 48 -> 106/116 but peoples remnants 18 -> 24, per-people pass 75% -> 70%; awaiting the owner (giant density option?). Owner questions open: PW-945 dragon teachers, PW-947 language dates.
+- Physics (10-29): lanes 23-25 merged (weld ratchet PW-970; continents' sea water PW-980 part; sea bulk evaporation PW-015 with Earth B 27-28%; paired judge PW-994). Lane 26 running: dry subtropical coasts PW-998 with PW-026 (maritime air inland). Then the PW-980 remainder, PW-948 (needs the owner), showcase rebuild, tag v1.
+- Fun (10-29): megafauna PW-958/959/977 stage 1 and sapiens dates PW-978/971 merged. Lane 45 running: people density PW-974 + PW-977 stage 2 (peoples' and predators' share of the food). Owner decisions open: PW-948, PW-990, PW-987, PW-988.
 - Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1

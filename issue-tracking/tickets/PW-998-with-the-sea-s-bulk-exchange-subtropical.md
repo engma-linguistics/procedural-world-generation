@@ -1,9 +1,10 @@
 ---
+id: PW-998
 title: "With the sea's bulk exchange, subtropical east coasts and winter-rain coasts dry out (SE USA 482 vs 1328 mm, Pampas 294 vs 943, Japan 524 vs 1672, E Australia 488 vs 743): the instant refill had masked their winds"
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: l
 impact: med
@@ -11,6 +12,8 @@ found_by: lane25
 blocked_by: []
 relates: [PW-015, PW-026, PW-352]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/deserts/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -38,3 +41,6 @@ southerlies or its winter fetch is what dried.
 What to try: per region and half-year with `tools/moisture_budget.py` (kernel terms, wind), find which half lost the rain
 and from where the vapour comes; then fix the winds (PW-026), not the sea's exchange.
 - [ ] SE USA and Pampas each at least 60% of GPCC's annual rain without undoing the bulk exchange
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-subtropical-coasts-dry-after-bulk-evap.md (found by lane25).

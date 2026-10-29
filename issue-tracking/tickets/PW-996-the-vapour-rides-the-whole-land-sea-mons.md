@@ -1,5 +1,6 @@
 ---
-title: "The vapour rides the whole land-sea (monsoon) circulation with no return flow aloft, so land imports ~2x the vapour it should (runoff/rain 0.49 vs 0.38; the Sahel, Australia and S Africa rain 3-11x GPCC in summer)"
+id: PW-996
+title: The vapour rides the whole land-sea (monsoon) circulation with no return flow aloft, so land imports ~2x the vapour it should (runoff/rain 0.49 vs 0.38; the Sahel, Australia and S Africa rain 3-11x GPCC in summer)
 type: task
 status: todo
 parent: PW-013
@@ -11,6 +12,8 @@ found_by: lane25
 blocked_by: []
 relates: [PW-015, PW-228, PW-233]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/deserts/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -39,3 +42,6 @@ can't be the model's own rain (it is wet everywhere at the margins). Something l
 `tools/earth_check.py`, `tools/moisture_budget.py` (inland paths) and the paired judge
 (docs/review/base-climate/v1-finish-16/pjudge.py).
 - [ ] Earth B within ~3 points of 30% with log-rain corr not below main's, India not drier
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-land-sea-circulation-vapour-return-flow.md (found by lane25).
