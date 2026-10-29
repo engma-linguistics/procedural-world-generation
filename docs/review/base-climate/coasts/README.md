@@ -221,3 +221,18 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
 - **Next steps:**
   - Message the coordinator before running the round-2 judge.
   - The Andes jet waits until rounds 1 and 2 are judged.
+
+## Handoff (lane 26b, 2026-10-29 evening): the package judge, paused for the speed lane
+- **Committed:** round 2, the storm-lifted gate (c9b4990e, goldens 4d18c72c). Round 3, the storms' poleward drift
+  (e81915cd, goldens e0158fa2; the seam test now runs with the drift on, 142b81d2). The eddy-transport gate is above.
+- **The judge (coordinator, 10-29):** the coasts are judged as one package, A = main db7a178a against D = round 3
+  e0158fa2. Arms B and C were dropped. 15 finished B runs (round 1) are kept, for splitting the package if it fails.
+  The killed B runs left partial logs, so delete those before any re-run. Everything is in the lane's scratchpad:
+  `judge/<arm>_r<roll>_<tag>/`; the frozen code is in `code/{A,B,C,D}`.
+- **Paused** (SIGSTOP by the coordinator, ~17:10) at A 34/36, D 13/36. To finish: SIGCONT the paired.sh trees.
+  Then run `pjudge.py <scratch>/judge A D --table`.
+- **Preview (incomplete, 11 pairs, A vs D):** pass 8/11 against 5/11 (McNemar p 0.25), icebox 1 against 6; arid %
+  -4.9 [-7.3, -1.0] and hot desert % -3.8 [-5.3, -0.4] moved; end T -0.9 [-8.1, +1.6]. Round 1 alone (A vs B,
+  15 pairs): pass 11/15 against 14/15, icebox 2 against 5, end T -2.8 [-4.8, +3.2]. **Watch the iceboxes.** The
+  package seems to cool generated worlds. Candidate reasons (unverified): more vapour carried poleward means more
+  high-latitude snow, or the shallow domes change the winter continents' heat.
