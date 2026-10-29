@@ -41,5 +41,6 @@ Lean: A now; D later, since languages want both levels (family and dialect).
 
 ## Updates
 - 2026-10-29: Status todo -> in-progress. Owner 10-29: Mongolia-sized is too big. At least double the count. Show maps or numbers at 2-5x the current count. Some regions should stay one people and others fracture a lot. Dialects come later via zooms. A small lane is making the comparison maps (docs/review/lineages/deme-scale/).
+- 2026-10-29: Scale examples made: maps and tables for ~2x, 3x, 4x, 5x the 55 human demes on b69f51 (settings 4,300/2,450, 3,400/1,950, 2,850/1,630, 2,500/1,430) in docs/review/lineages/deme-scale/README.md. Median human deme 1.8 Mkm2 at 1x down to 0.38 at 5x; highland demes ~half the size of lowland, dry country only 15-25% smaller, islands small at every scale. `demes.derive` gained split_km/fuse_km keywords (defaults unchanged).
 - 2026-10-29: Status needs-decision -> todo. Owner 10-29: ~60 human demes (regional-sized, about Mongolia) for now, not set in stone, and never continent-sized. This is going to be vibes-based: the owner wants to see examples and pick. Note for the language project: dialects at an England-size scale would be a finer level nested inside demes, not a smaller deme size.
 - 2026-10-29: Created from inbox draft draft-demes-scale.md (found by fun46-demes).

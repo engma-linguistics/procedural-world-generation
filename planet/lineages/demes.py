@@ -635,8 +635,20 @@ def occupied(pw, ml, ms, mss, k) -> np.ndarray:
     return (pw == k) | (ml == k) | ((ms == k) & (mss >= SECOND_MIN))
 
 
-def derive(run_dir: Path, window_kyr: float = WINDOW_KYR) -> dict:
-    """The demes of a stored peoples run: {"layer": (frames, cells) uint16, "doc": demes.json, "summary": meta.demes}."""
+def derive(run_dir: Path, window_kyr: float = WINDOW_KYR, split_km: float | None = None, fuse_km: float | None = None) -> dict:
+    """The demes of a stored peoples run: {"layer": (frames, cells) uint16, "doc": demes.json, "summary": meta.demes}.
+    split_km / fuse_km override SPLIT_KM / FUSE_KM for this call only (deme-scale examples, PW-1015); None keeps the defaults."""
+    global SPLIT_KM, FUSE_KM
+    saved = SPLIT_KM, FUSE_KM
+    SPLIT_KM = saved[0] if split_km is None else float(split_km)
+    FUSE_KM = saved[1] if fuse_km is None else float(fuse_km)
+    try:
+        return _derive(run_dir, window_kyr)
+    finally:
+        SPLIT_KM, FUSE_KM = saved
+
+
+def _derive(run_dir: Path, window_kyr: float) -> dict:
     t0 = time.time()
     run_dir = Path(run_dir)
     run, arr = T.load_frames(run_dir, ("elevation", "ice", "precipitation", "climate", "tree_cover", "peoples_whole",

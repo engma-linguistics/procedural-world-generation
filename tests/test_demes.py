@@ -134,3 +134,18 @@ def test_document_names_and_contacts():
     assert len(doc["doc"]["pairs"]) == 1 and doc["doc"]["pairs"][0]["peak"] > 0 and not doc["doc"]["pairs"][0]["same_people"]
     assert doc["summary"]["alive"] == 2
     assert all(c.startswith("#") and len(c) == 7 for c in (d["color"] for d in doc["doc"]["demes"]))
+
+
+def test_derive_overrides_leave_defaults_unchanged(monkeypatch):
+    seen = []
+
+    def fake(run_dir, window_kyr):
+        seen.append((DM.SPLIT_KM, DM.FUSE_KM))
+        return {}
+
+    monkeypatch.setattr(DM, "_derive", fake)
+    s0, f0 = DM.SPLIT_KM, DM.FUSE_KM
+    DM.derive("x")
+    DM.derive("x", split_km=3000, fuse_km=1500)
+    assert seen == [(s0, f0), (3000.0, 1500.0)]
+    assert (DM.SPLIT_KM, DM.FUSE_KM) == (s0, f0) == (7000.0, 4000.0)
