@@ -181,6 +181,11 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
   +0.83 / +0.52), the same as on B. The tracks themselves peak there. (ii), acting on q minus the zonal-mean q, was
   dropped: transient eddies' q' is the anomaly from the *time* mean, not from the zonal mean, so its only merit
   would be sparing the deserts (coordinator).
+- **Round 3 as committed:** (i) at 1 m/s, faded within 15 deg of the equator. The storm tracks run on into the
+  tropics (track ~0.3 at the equator), and there the drift has no poleward direction and no eddies to make it. That
+  showed as a 2.4 C step in July across the equator in `test_july_stays_july_across_the_equator` (limit 2.0; 1.2
+  without the drift). Earth L6: SE USA 636 (48%), Pampas 401 (43%), Japan 42%, Amazon 3383, corr 0.722, exact 38.4,
+  B 25.2, BWh 12.7. Books: 30N +0.41, 30S -0.31, 40N +0.96.
 - **Open questions for E4's design (before the solves above):** (i) Should it ride the storm tracks only (the `track` part of B), to stop 40-60
   deg overshooting? (ii) Should it act on the vapour's anomaly from the zonal mean (v'q' needs q' ~ q - [q]) rather
   than on q, which would also stop it draining the deserts? (iii) It doesn't conserve dry air. That's fine for a

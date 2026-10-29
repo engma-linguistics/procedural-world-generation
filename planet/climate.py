@@ -1471,7 +1471,7 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
     return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, rhc=rhc, mse_t=mse_t, mse_thr=mse_thr, v=np.asarray(v, np.float64),
-                B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
+                B=B, track=B if track is None else track, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
 
 
 U_REF = 7.0  # m/s: wind speed 1 (a steady trade wind)
@@ -1490,14 +1490,30 @@ RAIN_CFL = 0.95  # the most of a cell's vapour that may leave it in one step (<=
 def face_winds(grid: Grid, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray]:
     """The vapour's wind through each face (_faces' order; m/s, + from ea to
     eb: the mean of the two cells' winds across the face's normal) and the
-    eddy mixing across it (m2/s), [season, face]."""
+    eddy mixing across it (m2/s), [season, face]. The vapour's wind adds
+    the storms' poleward drift (PW-998 round 3): along the storm tracks the
+    warm sectors carry moist air poleward and the cold air behind them
+    brings dry air back, a net poleward flux of vapour (v'q', most of what
+    crosses 30-40 deg; unverified) that mixing down the mean gradient
+    doesn't make. Its speed is eddy_drift (m/s) x the storm track's
+    storminess (_season_inputs' track), fading out within 15 deg of the
+    equator."""
     F = _faces(grid)
     ea, eb = F["ea"], F["eb"]
     S, ne = len(seasons_in), len(ea)
     un, kd = np.empty((S, ne)), np.empty((S, ne))
+    mid = grid.centers[ea] + grid.centers[eb]
+    mid = mid / np.linalg.norm(mid, axis=1)[:, None]
+    north = np.array([0.0, 0.0, 1.0])[None, :] - mid[:, 2:3] * mid
+    north = north / np.maximum(np.linalg.norm(north, axis=1)[:, None], 1e-12)
+    # the face normal's poleward part, faded within 15 deg of the equator, where the Earth's spin is too weak for
+    # the storms' eddies (as monsoon_wind's geostrophic share; the storm tracks run on into the tropics)
+    poleward = np.clip(np.abs(np.degrees(np.arcsin(np.clip(mid[:, 2], -1, 1)))) / 15.0, 0, 1) * np.sign(mid[:, 2]) \
+        * (F["n"] * north).sum(1)
     for k, d in enumerate(seasons_in):
         v = d["v"] * U_REF
-        un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1)
+        drift = tune["eddy_drift"] * np.clip(0.5 * (d["track"][ea] + d["track"][eb]), 0, 1.2)
+        un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1) + drift * poleward
         kd[k] = K_MIX * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
     return un, kd
 
@@ -1620,6 +1636,8 @@ TUNE = dict(
     belt_dry=0.3,  # how much the sinking subtropical air suppresses large-scale rain
     storm=0.6,  # large-scale rain from storms, per unit of storminess
     eddy=1.0,  # how much storms stir moisture around (x K_MIX), per unit of storminess
+    eddy_drift=1.0,  # m/s: the storms' poleward drift of the vapour at a storm track's storminess 1 (face_winds;
+    # ~ r x sigma_v x sigma_q / q ~ 0.5 x 6 m/s x 0.3, unverified back of the envelope, PW-998 round 3)
     storm_mix=1.0,  # share of the frontal rain spread over a storm's size, per unit of storminess
     storm_km=600.0,  # km: a storm's rain area
     cv=4.0,  # showers: rain-out per RATE_S at cv_scale C of instability, times base
