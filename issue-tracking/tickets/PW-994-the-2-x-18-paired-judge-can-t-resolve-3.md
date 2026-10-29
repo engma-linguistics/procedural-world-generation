@@ -39,5 +39,6 @@ Options:
 Lean: C, plus B whenever the pass rate is the deciding fact (merging against a fitted kernel's loss).
 
 ## Updates
+- 2026-10-29: Lane 25: built. docs/review/base-climate/v1-finish-16/pjudge.py (paired B-A medians with bootstrap 95% CI and sign test for end/moment T, late dT, late CO2, land, sink/source references, arid %, hot desert %, land rain, trees; pass count with both/A-only/B-only and McNemar p; SIM SUSPECT) and a generic paired.sh (any frozen code dir, any out root); README section on running and reading it, 4 rolls only when the pass count decides. First use: PW-015 round 1 (docs/review/base-climate/deserts/README.md).
 - 2026-10-29: Status needs-decision -> todo. Coordinator 10-29 (owner defers methodology): judge merges on paired continuous measures (end T, late CO2, land, sink reference) with the pass count as a check; use 4 rolls only when the pass count decides a merge. Build this into the v1-finish harness in the next physics lane.
 - 2026-10-29: Created from inbox draft draft-paired-judge-chaos-floor.md (found by lane24).

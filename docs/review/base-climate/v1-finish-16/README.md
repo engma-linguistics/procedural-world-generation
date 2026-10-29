@@ -73,5 +73,9 @@ count as a check (coordinator ruling, PW-994).
 4. Reading it: a mechanism change is judged by whether the measures it targets moved (interval excluding 0) in the
    intended direction, and whether the others (end T, CO2, land, the sink reference) stayed within their intervals
    or moved by an amount the change explains. The pass count is a check: a drop beyond ±3 of 36 asks for a look.
+   End T and moment T are single moments: read them against late dT. In lane 25's bulk-exchange arm end T "moved"
+   +1.5 C (26/10, p 0.01) while the paired dT means over 800-900, 900-950, 950-980 and 980-990 Myr were +0.5, -0.9,
+   -0.5 and -0.5, and true T - dT was unchanged: a finish-window excursion. With 11 measures at 95%, expect a false
+   "moved" now and then; trust a move that the change's mechanism predicts or that shows in the late windows too.
    **Use 4 rolls (add 0.0015 0.002) only when the pass count decides the merge**, e.g. a correct mechanism against
    a fitted kernel's loss.
