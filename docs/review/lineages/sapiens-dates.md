@@ -101,3 +101,49 @@ Generation scaling is also a poor fit for evolution in itself: evolutionary chan
 ## Unverified
 
 Marked inline above: the Irhoud 315 kyr figure; the Blombos beads date; the Konso date; the Wonderwerk and Gesher dates; the capuchin archaeology age; the Neanderthal/sapiens split date used by Dediu & Levinson; the existence of a dispute over the Dikika cut marks; and everything about big cat and bird-brain scaling. Everaert et al. 2017 was verified only for title, authors, journal and doi, not read. The papers listed in the wishlist (section "Sapience and language") would settle most of these.
+
+## Applied (PW-978, PW-971)
+
+Owner gut call 10-28, applied by fun lane 44 in `planet/lineages/samples/dnd.toml` (and `seven_meals.toml` where it has the same lines).
+
+Reading of the call: tools long before minds (the Lomekwi to Oldowan to Acheulean to sapiens shape, ~3 Myr in real life), nodes older than the first fossil are fine, generation scaling dropped, dragons at 5 Myr with a long mindful-but-techless stretch accepted, giantkin split well after the hominid node, reptilian splits spread, goblinoids on a shorter timeline.
+
+### Dates (dnd.toml; old -> new)
+
+| Line | Old | New |
+|---|---|---|
+| draconic node | 4 Myr | 5 Myr (seven_meals too) |
+| feline node (stem 4 Myr, tabaxi 1.2 Myr) | 1.5 Myr | 2 Myr |
+| goblinoid node (stem 2.5 Myr, first split 600 kyr) | 1 Myr | 1.2 Myr |
+| hominid stem start | 2 Myr | 4 Myr |
+| hominid node | 1.8 Myr | 1.6 Myr (knapping possible from 3.3 Myr, so ~1.7 Myr of bare-bones tools first) |
+| giantkin split | 1.5 Myr | 1.1 Myr (0.5 Myr after the node; a node plus 0.5 Myr, no intermediate split needed) |
+| true giants (child of giantkin) | 1.2 Myr | 1 Myr (kept after giantkin) |
+| avian node (stem 6 Myr, first split 900 kyr) | 1.2 Myr | 2 Myr |
+| tortle / troglodyte / lizardfolk (from reptilian) | 3 / 3 / 3 Myr | 3 / 2.6 / 2.3 Myr (kobold 2 Myr, dragonborn 300 kyr as before) |
+| seven_meals: lizardfolk / tortle / dragonborn | 3 / 3 / 2 Myr | 2.5 / 3 / 1.3 Myr (kobold 2) |
+
+The reptilian spread stops at 3 Myr because `test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome` and the file header's "within ~3 Myr" ruling cap it; widening is a draft (draft-reptilian-splits-capped-at-3-myr). The dragonborn's date in seven_meals stays above 1.1 Myr so they remain T2 to the dragons. No generation_yr or megafauna.py was touched (fun lane 43).
+
+### Tech gating (techtree.py, techtree.toml)
+
+- Under a stem with a `sapient` node, only techs marked `bare = true` arise, spread, or are inherited before the node: `knapping` and `handaxes` (Lomekwi/Oldowan, Acheulean). Everything else waits, gesture and call systems included (my choice: they are language's root, and the bare set stays tools only). Kits are not gated, so a dragon still has gesture and innate magic from its start, as body; dragons have no hands, so they get no bare tools and keep their own path.
+- Language now spreads by contact (`modern_contact`, spread 1.0) to any people under a stem with a node, bringing gesture with it. Peoples with no stem node above them (arrivals, test fixtures) behave as before: language is their own.
+- Dragons still cannot invent language before 2 Myr (`elder_kyr = 2000`, unchanged, a dating from the old file): so their mind stands for ~3 Myr before language. This matches the owner's "millions of years of a mind that never built tech" and was left.
+
+### Sweep (a light one)
+
+Worlds 2a7385 and 1df1c3, dnd, History seeds 7000-7003 (8 rolls, peoples history rerun with the new dates). "Old" is the same histories' tech tree built with the old gating (none), old techtree.toml, and the old stem and split dates applied to the lines, so the two columns differ only by this change. Medians over the 8 rolls, kyr before present (range); count is rolls where the stem got it.
+
+| Stem | Language old | Language new | First knapping old | new | Handaxes old | new |
+|---|---|---|---|---|---|---|
+| draconic | 1676 (1014-1867), 8/8 | 1834 (1801-1935), 8/8 | none (no hands) | none | none | none |
+| feline | none, 0/8 | 1801 (1801-1935), 7/8 | 3200 | 3200 | 1707 | 1676 |
+| goblinoid | 460, 1/8 | 1170, 7/8 | 2494 | 2494 | 1676 | 1676 |
+| hominid | 428, 3/8 | 1278 (878-1560), 8/8 | 1968 | 3089 (2489-3200) | 1676 | 1618 |
+| avian | 460 (428-460), 5/8 | 1801 (1801-1935), 8/8 | 3200 | 3200 | 1676 | 1676 |
+
+- Every stem's language now comes after its node (5 / 2 / 1.2 / 1.6 / 2 Myr), by the check (0 violations of the gate over 8 rolls). In the new run almost all language arrives by contact from the dragons or the first inventor, within a few hundred kyr of the node, so the stems no longer come to it at widely different times (the old file's "not everywhere at once" is gone by ruling). The stem-level times above are the stems (which end at their last split), not the peoples.
+- No people lacks language at present (old: halflings, once in 8). The stem times are for the stems before their splits; all leaves inherit.
+- The hominid bare-bones run is now ~1.5 Myr (first knapping 3.1 Myr, node 1.6 Myr); before there was none (knapping 2.0 Myr, no node). The felines and birds get the same knapping and handaxes (draft-bare-bones-tools-for-handless-and-bird-stems).
+- Not changed: run views do not draw the node (draft-sapiens-node-drawn-in-run-views).

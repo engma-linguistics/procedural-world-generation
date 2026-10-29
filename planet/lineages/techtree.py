@@ -237,12 +237,13 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             if l.get("origin") in ("split", "group") or l.get("group_of"):
                 src = l.get("group_of") or (l.get("parents") or [None])[0]
                 for tid, v in (known.get(src) or {}).items():
-                    if v[0] >= at - 1e-9:
+                    if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):  # (PW-971: a stem under a node inherits only bare tools from before it)
                         give(lid, tid, at, "inherited", src)
             elif l.get("origin") == "hybrid":
                 for src in l.get("parents") or []:
                     for tid in list((known.get(src) or {})):
-                        give(lid, tid, at, "inherited", src)
+                        if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):
+                            give(lid, tid, at, "inherited", src)
             kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
             for tid in [i for i in order if i in kit]:
                 give(lid, tid, at, "kit" if l.get("origin") == "arrival" else "inherited", None)
