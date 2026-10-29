@@ -170,10 +170,11 @@ FORAGER_KM2 = 0.1  # default meta.forager_km2: human foragers per km2, the giant
 # located source (PW-976): Hamilton et al. 2007's fit implies 0.03-0.09 for groups of 25-1,000, so 0.1 is the top of that; owner 10-28
 # made it a setting (option C) until Binford 2001 can be checked
 GIANT_MASS_KG = 2200.0  # a giant kind's ecological mass where the tree gives none: the hill giant's, the proposal's recommended column
-MEGAFAUNA_NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural (PW-957, PW-966): the megafauna's natural density from the
-# prey field (Carbone & Gittleman 2002), or uniform from mass on Marshall et al. 2021's mesotherm or mammal-carnivore Damuth line
-# (history.megafauna). Candidates: the owner chooses after the PW-967 review
-MEGAFAUNA_NATURAL_DEFAULT = "prey"
+MEGAFAUNA_NATURAL = ("food", "prey", "mesotherm", "mammal")  # meta.megafauna_natural (PW-957, PW-966, PW-990): the megafauna's natural density.
+# food (owner 10-29, PW-990 option B, the default): a dragon's from its part of the land's surplus after the peoples and the rest of the
+# predator guild (history.megafauna.budget), giants as under prey; prey: dragons on the prey field (Carbone & Gittleman 2002, now the
+# cross-check); mesotherm / mammal: uniform from mass on Marshall et al. 2021's Damuth lines
+MEGAFAUNA_NATURAL_DEFAULT = "food"
 # meta.dragon_ages (PW-958): the dragons' mortality schedule, lineages.dragon_ages.SCHEDULES (base | younger | harsher | gentler);
 # meta.dragon_generation (PW-959): schedule | schedule_mass | line. Both candidates until the PW-967 review
 
@@ -476,7 +477,7 @@ class Tree:
     dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 where peoples press them (PW-923, PW-957); overrides their lines' density
     forager_km2: float = FORAGER_KM2  # human foragers per km2, the giants' natural-density baseline (PW-976)
     giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2 where peoples press them (PW-963); overrides their lines' density
-    megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: prey | mesotherm | mammal (PW-957, PW-966)
+    megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: food | prey | mesotherm | mammal (PW-957, PW-966, PW-990)
     dragon_ages: str = "base"  # the dragons' age schedule (PW-958, lineages.dragon_ages)
     dragon_generation: str = "schedule"  # the dragons' generation time: from the schedule, with fecundity ~ mass, or the lines' own (PW-959)
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)

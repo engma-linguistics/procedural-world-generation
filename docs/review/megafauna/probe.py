@@ -1,4 +1,4 @@
-"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--food-natural] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
+"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--natural NAME] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
 
 Writes OUT.json: the peoples' cells, the megafauna's coverage and counts (present, and the deep-time peak), blue dragons in deserts,
 frost giants in tundra, the dragons' food use (PW-977 stage 1) and the counts over time. For the sweep (6 worlds x rolls 7000-7003):
@@ -11,7 +11,7 @@ schedule_mass), --gen-yr (the dragon lines' generation_yr), --no-cap (megafauna.
 --no-budget (megafauna.BUDGET off: the dragons get all the wild offtake and the stock, PW-977 stage 1), --no-people-prod (PW-974 off: a people's
 density is its way-of-life number everywhere), --no-press (a diagnostic, not a model setting: the peoples press the megafauna not at all, so the
 dragons stand at their natural density wherever the food budget lets them; it shows what the budget alone does through time).
---food-natural (megafauna.FOOD_NATURAL, PW-990 option B, a prototype: the dragons' natural density from their part of the food).
+--natural NAME (meta.megafauna_natural: food, the default since PW-990 B | prey | mesotherm | mammal).
 --eras 25,10,0 adds the budget sums at those eras to OUT.json; with --save it also writes DIR/ERAS.npz: the budget, presences and dragons at the steps nearest those kyr ago.
 
 --save DIR also writes DIR/RUN.npz and DIR/SERIES.json, the inputs of age_of_dragons.py (the PW-967 review): presences, the megafauna's
@@ -45,7 +45,7 @@ ap.add_argument("--no-cap", action="store_true")
 ap.add_argument("--no-budget", action="store_true")
 ap.add_argument("--no-people-prod", action="store_true")
 ap.add_argument("--no-press", action="store_true")
-ap.add_argument("--food-natural", action="store_true")
+ap.add_argument("--natural")
 ap.add_argument("--eras")
 ap.add_argument("--tree", default="dnd")
 ap.add_argument("--save")
@@ -55,14 +55,14 @@ if a.no_cap:
     MG.FOOD_CAP = False
 if a.no_budget and hasattr(MG, "BUDGET"):
     MG.BUDGET = False
-if a.food_natural:
-    MG.FOOD_NATURAL = True
 if a.no_press:
     MG.PRESS_N0 = 1e12
 if a.no_people_prod:
     import planet.lineages.history.model as _model
     _model.PEOPLE_PROD = False
 tree = LR.load_tree(a.tree)
+if a.natural:
+    tree.megafauna_natural = a.natural
 if a.ages:
     tree.dragon_ages = a.ages
 if a.gen:

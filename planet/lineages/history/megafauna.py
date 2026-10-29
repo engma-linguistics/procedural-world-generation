@@ -68,8 +68,8 @@ COUNTRY = {"wetland": "swamp", "forest": "forest", "jungle": "jungle", "volcanic
 DAMUTH_EXP = 0.75  # density ~ M^-0.75 (Damuth 1981)
 LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2021: log10 of Damuth's intercept (M in g, per km2); checked: Table 1 p. 284, mammal = 2.99 - log10(2.1) from the text
 # for dinosaur-like mesotherms, and for mammal carnivores (2.1x lower, the proposal's table)
-NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candidates
-NATURAL_DEFAULT = "prey"
+NATURAL = SP.MEGAFAUNA_NATURAL  # meta.megafauna_natural: food (the default, PW-990 B) | prey | mesotherm | mammal
+NATURAL_DEFAULT = SP.MEGAFAUNA_NATURAL_DEFAULT
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
 OFFTAKE = 0.1  # the share of the wild herds' standing biomass a predator can take a year and keep them (PW-967's rough figure, ~10%/yr). Bounded
 # by Farlow 1993 (Am J Sci 293:167): prey biomass turnover = 0.94 M^-0.28 per yr (M kg; eq. 6, p. 172, from Farlow 1990), 0.26 / 0.17 /
@@ -90,9 +90,6 @@ WILD_MEAT = (0.5, 0.05)  # the share of a people's food that is wild game: (a fo
 GUILD_CLASSES = ((20.6, 79.9), (58.3, 19.0), (1123.0, 0.9), (5347.0, 0.1))  # (mass kg, % of the guild's individuals)
 GUILD_APEX_KG = 1000.0  # the classes of this mass and up are the dragons' own size class (a dragon's ecological mass is ~2-3 t)
 GUILD_KLEIBER = 0.75
-FOOD_NATURAL = False  # PW-990 option B, a prototype (the owner has not ruled; off by default): a dragon's natural density from food, not Carbone & Gittleman.
-# The predator guild, dragons included, splits what the peoples and the giants leave by Carbone, Turvey & Bielby 2011's size classes (the
-# dragons 1 / (1 + guild_ratio), the smaller carnivores the rest), and the dragons' natural density is their part / a dragon's food
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring).
 # Cross-check: Jetz et al. 2004 (Science 306:266, Table 1 p. 268) fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70);
@@ -136,7 +133,7 @@ def natural_coef(h: History, line) -> float:
     m = eco_mass(h, line)
     if "flies" not in line.traits:
         return h.tree.forager_km2 * (m / FORAGER_KG) ** -DAMUTH_EXP
-    if FOOD_NATURAL and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's apex part / a dragon's food; the deep epoch's)
+    if h.mf_natural == "food" and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's apex part / a dragon's food; the deep epoch's)
         return OFFTAKE / (1.0 + guild_ratio()) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
     if h.mf_natural == "prey" and h.prey_wild is not None:
         return CARBONE_A * m ** -CARBONE_B / 10.0
@@ -210,7 +207,7 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> d
                 gi += x[k] * local_density(h, k, press, wild + live) * giant_cattle_yr(eco_mass(h, l)) * PR.HEAD_T
         gi = _reach(h, gi)
         out["giants"] = np.minimum(gi, pool)
-        if FOOD_NATURAL:  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
+        if h.mf_natural == "food":  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
             gd = guild_ratio() / (1.0 + guild_ratio()) * (pool - out["giants"])
         else:
             gd = guild_ratio() * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
@@ -239,9 +236,9 @@ def natural(h: History, k: int, prey: np.ndarray | None, food: np.ndarray | None
     prey None (the deep epoch, when the plates lay elsewhere and the present's prey field does not apply): uniform, a dragon at the
     land's median prey, a giant at its forager-scaled density."""
     l, c = h.lines[k], h.dens_nat[k]
-    if FOOD_NATURAL and "flies" in l.traits and h.prey_wild is not None:  # (PW-990 B: the dragons' part of the food / a dragon's food)
+    if h.mf_natural == "food" and "flies" in l.traits and h.prey_wild is not None:  # (PW-990 B: the dragons' part of the food / a dragon's food)
         return food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T) if food is not None else c * (prey if prey is not None else h.prey_ref)
-    if h.mf_natural != "prey" or h.prey_wild is None:
+    if h.mf_natural not in ("prey", "food") or h.prey_wild is None:
         return c
     if "flies" in l.traits:
         return c * (prey if prey is not None else h.prey_ref)
