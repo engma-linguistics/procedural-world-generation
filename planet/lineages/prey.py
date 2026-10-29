@@ -106,10 +106,11 @@ def productivity(wild_t: np.ndarray, land: np.ndarray) -> np.ndarray:
 # undercounts a forest forager's food; farmers' soil is already in their habitat K, so their share reads nothing. f is linear in the
 # layer: an assumption (Binford's forager densities rise with productivity over orders of magnitude, per the owner's PW-833 ruling;
 # Binford 2001 is not on file, and the linear form is not from it). The two references are not physical constants: they are the
-# layers' presence-weighted means over the country the peoples held on the 6 x 4 dnd sweep (rolls 7000-7003) with the factor off, so
-# each way's mean density over that sweep stays at its number (docs/review/megafauna/people_density.py fits them).
-FORAGE_REF = 0.877  # foraging score (0-5) at which a forager holds its way-of-life density
-GRAZE_REF = 314.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
+# layers' presence-weighted means over the country the peoples hold on the 6 x 4 dnd sweep (rolls 7000-7003), so each way's mean density
+# over that sweep stays near its number (docs/review/megafauna/people_density.py: --fit with the factor off, --refit with it on; these
+# are the refit on 6 runs at 0.877 / 314, the pure foragers' mean f 3.20 and the pure herders' 1.22 there; fun lane 45b, 10-29).
+FORAGE_REF = 2.81  # foraging score (0-5) at which a forager holds its way-of-life density
+GRAZE_REF = 382.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
 
 
 def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.ndarray | None) -> np.ndarray | None:

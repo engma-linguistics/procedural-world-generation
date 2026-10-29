@@ -16,6 +16,8 @@ import numpy as np
 DRAGONS = ("red", "blue", "green", "black", "white", "gold", "silver", "bronze", "copper", "brass")
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 FIT = "--fit" in sys.argv
+REFIT = [float(a.split("=")[1]) for a in sys.argv[1:] if a.startswith("--refit=")]  # --refit=FORAGE_REF --refit=GRAZE_REF: an arm run
+# with the factor on at those references; the pure foragers' and pure herders' mean f over their held country rescales them
 
 
 def load(d):
@@ -84,6 +86,19 @@ for d in args:
                     continue
                 held = pop / md  # (presence x km2 held)
                 for key, sh in (("forage", lm["forage"]), ("graze", lm["herd"])):
-                    acc[key][0] += held * sh / tot * lm[key]
+                    acc[key][0] += held * sh / tot * lm["L_" + key]
                     acc[key][1] += held * sh / tot
         print(f"  FIT: FORAGE_REF {acc['forage'][0] / acc['forage'][1]:.3f}  GRAZE_REF {acc['graze'][0] / acc['graze'][1]:.1f}")
+    if REFIT:
+        acc = {"forage": [0.0, 0.0], "herd": [0.0, 0.0]}
+        for r in R.values():
+            for lid, lm in r.get("lmean", {}).items():
+                pop, md = r["pop"].get(lid, 0) or 0, r["meand"].get(lid)
+                if not md or pop <= 0:
+                    continue
+                for key, other in (("forage", ("herd", "farm")), ("herd", ("forage", "farm"))):
+                    if lm[key] > 0 and all(lm[o] == 0 for o in other):
+                        acc[key][0] += pop / lm["dens"]  # (held x mean f = people / number)
+                        acc[key][1] += pop / md
+        ff, fg = (acc[k][0] / acc[k][1] if acc[k][1] else 1.0 for k in ("forage", "herd"))
+        print(f"  REFIT: mean f foragers {ff:.3f} herders {fg:.3f} -> FORAGE_REF {REFIT[0] * ff:.3f}  GRAZE_REF {REFIT[1] * fg:.1f}")

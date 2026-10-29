@@ -126,7 +126,7 @@ for lid in peoples:
     occ = P[k] >= EST
     if occ.any() and ps.forage is not None and ps.graze_npp is not None:
         w = P[k][occ]
-        lmean[lid] = {"forage": float((ps.forage[occ] * w).sum() / w.sum()), "graze": float((ps.graze_npp[occ] * w).sum() / w.sum()),
+        lmean[lid] = {"L_forage": float((ps.forage[occ] * w).sum() / w.sum()), "L_graze": float((ps.graze_npp[occ] * w).sum() / w.sum()),
                       "dens": float(h.dens[k]), **{s: float(v) for s, v in LU.shares(tree, h.lines[k]).items() if s in ("herd", "forage", "farm")}}
 mf = pres.get("megafauna", {})
 cov = {lid: r.get("suitable_reached") for lid, r in mf.items()}
