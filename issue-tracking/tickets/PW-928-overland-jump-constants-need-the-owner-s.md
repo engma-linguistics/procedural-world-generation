@@ -2,7 +2,7 @@
 id: PW-928
 title: "Overland jump constants need the owner's eye: JUMP_RATE 0.02/kyr, JUMP_HEMMED 5%, HOLD_MIN 0.25"
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -28,5 +28,6 @@ Fun lane 35 set these from the literature, not fitted to targets. Kernel shape c
 - [ ] owner/coordinator confirms or replaces JUMP_RATE, JUMP_HEMMED and HOLD_MIN
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: try JUMP_RATE at about one jump per 20 kyr when crowded (0.05/kyr) and run it a few times. Report what follows, e.g. 'the goblins left their last jungle and found a mostly-empty land'. Long, hard migrations under pressure every ~20 kyr are acceptable even if generous; show the ramifications before settling.
 - 2026-10-29: 2026-10-29: plain-language summary added at the top.
 - 2026-10-27: Created from inbox draft draft-jump-dispersal-constants.md (found by fun-lane-35).

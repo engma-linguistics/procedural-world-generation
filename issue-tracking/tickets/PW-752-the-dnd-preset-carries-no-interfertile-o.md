@@ -2,7 +2,7 @@
 id: PW-752
 title: "The dnd preset carries no [[interfertile]] overrides: the half-elf exemption and the Fae arrivals need the owner's list"
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -31,5 +31,6 @@ Options: (A) leave the preset to its split depths and add overrides only in the 
 (B) put the half-elf pair rows into `dnd.toml` now. Lean: A, since the table is the owner's.
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: realistic genetics decides who can interbreed, and for how long after a split (viable, then absorbed into a parent, then sterile, then impossible). Exception: half-elves and half-orcs are always possible; they're central to the genre. Don't track minor hybrid populations (no half-tortle-half-lizardfolk cells): this serves D&D peoples as we know them.
 - 2026-10-29: 2026-10-29: plain-language summary added at the top.
 - 2026-10-24: Created from inbox draft draft-dnd-interfertility-overrides.md (found by fun11).

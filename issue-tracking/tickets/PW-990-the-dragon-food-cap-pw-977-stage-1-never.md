@@ -2,7 +2,7 @@
 id: PW-990
 title: "The dragon food cap (PW-977 stage 1) never binds at the default densities: what limits dragons is the pressed 1 per 5,000 km2 and the natural prey density, not food"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -44,6 +44,7 @@ Options:
 Lean: A now, B with stage 2 (the budget is only a budget once hunters and herders draw on it too).
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: option B. Food sets how many dragons the land can hold (dragons' share of the surplus after peoples and other predators); peoples' persecution (societal pressure, like humans with wolves or tigers, not competition) sets how many survive near them. 1 per 5,000 km2 was a placeholder 'pulled out of thin air' and should retire. Coordinator plan: stage 3 replaces the fixed pressed endpoint with a persecution kill rate against the dragons' slow breeding (equilibrium = natural x (1 - kill/r_max)), the rate rising with people's density and means (weapons, organisation, PW-961). Tension to resolve: PRESS_N0 today lets a thin forager band press dragons ~2/3 of the way, while the PW-977 proposal said foragers can't kill dragons.
 - 2026-10-29: 2026-10-29: plain-language summary added at the top; to discuss with the owner.
 - 2026-10-29: Papers read 10-29 bearing on option B (density from food): Farlow 1993 (pp. 171-174) builds predator density exactly that way, predator density x mass x intake = prey density x mass x turnover (eqs. 1-5), with intake 48.87 M^-0.30 kg/kg/yr for endotherms (eq. 7, p. 172) and 3.81 M^-0.16 for reptiles (eq. 8, p. 187). His reptile density fit, 66.07 M^-1.01 per km2 (M kg, p. 187), gives ~1 per 50 km2 at 3.2 t, close to Marshall's mesotherm line (~1 per 65, all ages). Jetz et al. 2004 (Table 1, p. 268) puts a 3.2 t mammal carnivore's home range at ~8,400 km2 (~52 km radius), near FORAGE_KM = 60. Nothing here favours A over B; it shows B has a standard form.
 - 2026-10-29: Created from inbox draft draft-dragon-food-cap-does-not-bind.md (found by fun-lane-43).
