@@ -106,3 +106,22 @@ moves SE USA by only +4 points of GPCC and Pampas by 0. By the gate's rule 5 it 
   planet/climate.py. Not for merging.
 - `tools/moisture_budget.py`: Pampas, Japan, E Australia, Mediterranean, SE Brazil and Mexico N added to the probe
   regions.
+
+## Handoff (2026-10-29, machine restart)
+- **Option (b) chosen by the coordinator.** PW-998 is split into three drafts: winter frontal rain, the Pampas jet and
+  Japan's rain efficiency.
+- **Round 1 (the shallow cold domes) is committed: 261343c5, goldens 317a7608.** Earth L6: B 26.4, BWh 14.7, corr
+  0.704, exact 37.1, SE USA 525, Pampas 291. `pytest -m 'not slow'`: 714 passed.
+- **The paired judge was killed for the restart, with ~0-2 of 72 runs done.** Re-run it from scratch:
+  1. Freeze A = db7a178a and B = 317a7608 with `git archive`.
+  2. Run `paired.sh` for each arm with rolls 0.0005 and 0.001.
+  3. Run `pjudge.py`.
+- **Not yet run for round 1:** `test_envelopes` (slow), earth_check L7, the scorecard.
+- **Round 2 (winter frontal rain) is designed but not coded.** The idea is a storm-lifted humidity gate: per cell and
+  season, rh_c x exp(-q_k x LAPSE x lift_m x B), with B the storminess. A storm lifts air ~1-2 km (unverified), so
+  sub-saturated warm-sector air rains. rh_c becomes an [S, n] array in `climate._rain` and in
+  `tools/moisture_budget._probe`, which must match it bit for bit. Then one Earth solve per lift_m, and drop the form
+  if SE USA's and NE USA's winters don't move.
+- **Next steps:**
+  - Message the coordinator before running the round-2 judge.
+  - The Andes jet waits until rounds 1 and 2 are judged.
