@@ -25,10 +25,12 @@ from planet.lineages import dragon_ages as DA  # noqa: E402
 from planet.lineages import prey as PR  # noqa: E402
 from planet.lineages.history import megafauna as MG  # noqa: E402
 
-_args = [x for x in sys.argv[1:] if not x.startswith("--arm")]
-ARMS = [(a.split("=", 1)[0], Path(a.split("=", 1)[1])) for a in sys.argv[1:] if a.startswith("--arm=")]
+_args = [x for x in sys.argv[1:] if not x.startswith("--")]
+ARMS = [(a[6:].split("=", 1)[0], Path(a[6:].split("=", 1)[1])) for a in sys.argv[1:] if a.startswith("--arm=")]  # --arm=LABEL=SERIES.json
 NPZ, SERIES, OUT = Path(_args[0]), Path(_args[1]), Path(_args[2])
 ERAS = Path(_args[3]) if len(_args) > 3 else None
+_sm = [Path(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--summary=")]  # --summary=FILE: an HTML snippet (the sweep's plain summary) put first
+SUMMARY = _sm[0].read_text() if _sm else ""
 FIG = OUT / "age-of-dragons"
 FIG.mkdir(parents=True, exist_ok=True)
 z = np.load(NPZ, allow_pickle=False)
@@ -338,7 +340,7 @@ if ERAS is not None and ERAS.exists():
 <div class="mut">Per cell, in head of cattle-sized prey a year (1 head = {PR.HEAD_T} t): the supply is the wild herds' sustainable offtake ({MG.OFFTAKE:.0%}/yr, unverified) plus
 the herders' tolerable stock loss ({MG.STOCK_TOLERABLE:.0%}/yr, unverified). First the hunting peoples take their game (density x need: a person eats {MG.PERSON_KCAL_YR / 365:,.0f} kcal/day, {MG.WILD_MEAT[0]:.0%} of a
 forager's and {MG.WILD_MEAT[1]:.0%} of any other way's from wild game, unverified), then the giants (their own densities and food) and the rest of the predator guild
-(&times;{MG.guild_ratio():.1f} the dragons' own food at their natural density, derived from Carbone, Turvey &amp; Bielby 2011's size classes with a metabolic M<sup>0.75</sup>; see the ticket),
+(under the default "food" mode the smaller carnivores take {MG.guild_ratio() / (1 + MG.guild_ratio()):.0%} of what the peoples and giants leave and the dragons {1 / (1 + MG.guild_ratio()):.0%}: the size classes of Carbone, Turvey &amp; Bielby 2011, Table 1, weighted by a metabolic M<sup>0.75</sup> that is not from the paper; the dragons' natural density is their part over a dragon's food, PW-990 B),
 and the dragons get what is left; where they would need more, there are fewer. The squares are centred on the run's busiest ancient pocket ({cy}, {cx}).</div>
 <img src="{img_arms}" alt="arms" style="max-width:640px">
 <div class="wrap"><table><tr><th>era</th><th>area</th><th>km&sup2;</th><th>supply, head/yr</th><th>peoples</th><th>giants</th><th>guild</th><th>left for dragons</th><th>dragons there</th><th>...without the cap</th><th>need / their share</th></tr>{t7}</table></div>
@@ -381,8 +383,9 @@ td:first-child,th:first-child{{text-align:left}} .sw{{display:inline-block;width
 .wrap{{overflow-x:auto}}
 </style></head><body>
 <h1>The age of dragons: natural against present numbers</h1>
-<div class="mut">PW-967 review, for the owner. World 2a7385 (L7), dnd peoples, roll 7000, settings at their defaults (owner 10-28): natural density from the prey,
-{CUR} age schedule, dragon generation 430 yr, dragons held to their food (PW-977 stage 1), 1 dragon per {DKM2:,.0f} km² and 1 giant per 2,000 km² where peoples press them. The other candidates are
+{SUMMARY}
+<div class="mut">PW-967 review, for the owner. World 2a7385 (L7), dnd peoples, roll 7000, settings at their defaults (owner 10-28, 10-29): natural density from food (PW-990 B: the dragons' part of the land's surplus after the peoples and the rest of the predator guild),
+{CUR} age schedule, dragon generation 430 yr, dragons held to their food (PW-977 stages 1-2), 1 dragon per {DKM2:,.0f} km² and 1 giant per 2,000 km² where peoples press them. The other candidates are
 worked from the same run's fields. Nothing is picked: the settings are meta.megafauna_natural, meta.dragon_ages, meta.dragon_generation.</div>
 <h2>1. Before the peoples, and now</h2><img src="{img_maps}" alt="maps">
 <div class="row"><div class="wrap"><table><tr><th>natural density</th><th>schedule</th><th>per dragon</th><th>dragons in their country</th></tr>{dens_tbl}
