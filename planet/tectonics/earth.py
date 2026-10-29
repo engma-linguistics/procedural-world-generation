@@ -3,7 +3,7 @@ CO2, sea level, the climate model, and the surface processes that run on
 its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
-co2, rates, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice,
+co2, rates, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect (with sea_cont, cont_water_ref), ice,
 the vegetation (veg, veg_frac, veg_lai, npp, veg_type, tree_cover, flora,
 veg_niche), removed, the climate fields from climate.compute, the rivers
 (flow, down) and the lakes (lake_kind, lake_depth).
@@ -400,6 +400,26 @@ def ghg_icefree(sim, ice_frac: float, ice_ref: float) -> float:
     return max(land - ice_frac, 0.0) / max(land - ice_ref, 1e-6)
 
 
+def continent_water(sim, w) -> float:
+    """m of sea level from the water the continents hold (PW-980): the ocean's water is conserved, so the sea
+    the drowned continental crust (shelves, drowned margins, flooded interiors) holds at the ice-free sea level
+    against the run's start, less of it as the continents rise or thicken, goes into the ocean basins and raises
+    the sea there by (rho_m - rho_w) / rho_m of its depth over the ocean (the floor sinks under the load, as for
+    the basins' own part). Without it the continents could rise out of the sea with nowhere for their water to
+    go: thick crust made land and sea level was only the ocean floor's age (lane 23: land 31 -> 35%, the drowned
+    continent's median -1519 -> -819 m). Lagged by a step (the depths are the step before's, at its sea level):
+    each step solves it again from depths that already stand at the last rise (a rise floods ~A_submerged /
+    A_ocean ~0.1 of its own water back, so the iteration converges geometrically).
+    w: the cells' areas. Measured at the ice-free level (w_elev + sea_ice), so the shelves an ice age drains are
+    not counted as water set free (sea_ice already took it)."""
+    e = sim.w_elev + sim.sea_ice  # m above the ice-free sea level
+    held = float((np.where(sim.w_cont, np.maximum(-e, 0.0), 0.0) * w).sum() / w.sum())  # m over the whole surface
+    if sim.cont_water_ref is None:  # (the run's start: its continents' sea is the reference)
+        sim.cont_water_ref = held
+    ocean = max(float(((e < 0) * w).sum() / w.sum()), 1e-3)
+    return (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (sim.cont_water_ref - held) / ocean
+
+
 def global_temperature(sim, growth, newc, rng, plume=None):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Four things move it, slowly (tens of Myr):
@@ -499,8 +519,10 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     # crust and shallower ocean basins, so the same water stands higher
     # on the continents (one reason the young Earth was mostly sea).
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
-    sim.sea_level = sim.sea_ice + sim.sea_tect
     w = ocean_area(sim.grid)
+    sim.sea_cont = continent_water(sim, w)
+    sim.sea_tect += sim.sea_cont
+    sim.sea_level = sim.sea_ice + sim.sea_tect
     ice_frac = float(((sim.ice > 0) * w).sum() / w.sum())  # (area-weighted: cells differ by up to ~9%)
     ice_ref = earth_ice(sim.grid.level)
     # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
