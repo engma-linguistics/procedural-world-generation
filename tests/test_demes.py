@@ -55,13 +55,27 @@ def test_split_along_a_gap_keeps_the_larger_piece_and_dates_it():
     assert len(_alive(dm, 1)) == 1
     first = _alive(dm, 1)[0].id
     land_hi = big | small  # (the sea rises over the bridge)
-    lab = _frame(dm, 10.0, {1: land_hi.copy()}, land_hi)
+    for i in range(DM.PERSIST):  # (a split counts once it has held PERSIST frames, dated when it began)
+        assert len(_alive(dm, 1)) == 1
+        lab = _frame(dm, 10.0 - i, {1: land_hi.copy()}, land_hi)
     alive = _alive(dm, 1)
     assert len(alive) == 2
     assert lab[np.flatnonzero(big)[0]] == first  # (the larger piece keeps its id)
     new = [d for d in alive if d.id != first][0]
     assert new.parent == first and new.how == "split_gap" and new.born == 10.0 and new.settled == 20.0
-    assert any(e["kind"] == "split_gap" and e["deme"] == new.id for e in dm.events)
+    assert any(e["kind"] == "split_gap" and e["deme"] == new.id and e["ago_kyr"] == 10.0 and e["confirmed_kyr"] == 11.0 - DM.PERSIST for e in dm.events)
+
+
+def test_a_brief_gap_does_not_split():
+    g = _g()
+    big, small = _cap(g, 0, 0, 14), _cap(g, 0, 32, 10)
+    land = big | small | (_cap(g, 0, 16, 8) & (np.abs(g.lat) < 3))
+    dm = DM.Demes(g, LINES, 120.0)
+    _frame(dm, 20.0, {1: land.copy()}, land)
+    for i in range(DM.PERSIST - 1):
+        _frame(dm, 19.0 - i, {1: big | small}, big | small)
+    _frame(dm, 10.0, {1: land.copy()}, land)  # (the bridge back before the split held)
+    assert len(dm.demes) == 1 and not dm.apart
 
 
 def test_a_wide_range_becomes_a_chain_of_demes():
@@ -99,7 +113,8 @@ def test_two_small_demes_fuse_when_they_touch():
     dm = DM.Demes(g, LINES, 120.0)  # (land cut between them, not sea: two demes until they touch)
     _frame(dm, 10.0, {1: a | b}, land)
     assert len(_alive(dm, 1)) == 2
-    _frame(dm, 9.0, {1: a | b | (_cap(g, 0, 0, 6) & (np.abs(g.lat) < 3))}, land)
+    for i in range(DM.PERSIST):
+        _frame(dm, 9.0 - i, {1: a | b | (_cap(g, 0, 0, 6) & (np.abs(g.lat) < 3))}, land)
     alive = _alive(dm, 1)
     assert len(alive) == 1
     assert any(d.end_how == "fused" and d.into == alive[0].id for d in dm.demes)
