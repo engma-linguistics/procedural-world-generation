@@ -1097,7 +1097,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       (s);
     - plus large-scale rain (fronts, rising air) at a rate ls_rate (1/s)
       of the rest that needs fairly humid air (relative humidity near rh_c
-      or more);
+      [season, cell] or more: less where storms lift it, _season_inputs);
     - plus showers and thunderstorms, at cv_rate (1/s) per cv_scale C of
       instability: the moist static energy of the air near the ground (heat
       + height + latent heat of its vapour: mse_t + LQ * vapour) above that
@@ -1177,7 +1177,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                 else:
                     q += land_e[k, i]
                 excess = max(q - qs[k, i], 0.0)
-                rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
+                rh = min(q / max(qs[k, i], 1e-12) / rh_c[k, i], 1.0)
                 rate = ls_rate[k, i] * rh**rh_pow
                 r_ls = min(rate * dt, 1.0) * (q - excess)
                 inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale
@@ -1445,6 +1445,16 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     pole = np.clip((np.abs(lat) - 70) / 15, 0, 1)
     ls = tune["base"] * np.clip(tune["bg"] + tune["storm"] * B + tune["itcz_ls"] * itcz
                                 - tune["belt_dry"] * sink - 0.3 * pole, 0.05, None)
+    # Storms lift the air (PW-998 round 2): along the storm tracks the warm
+    # sector's air glides up over the fronts, so it rains at a surface
+    # humidity well below saturation (winter rain on the subtropical east
+    # coasts is frontal: Gulf or Kuroshio air lifted over the continent's
+    # cold air). A storminess of 1 lifts the air lift_m, so the large-scale
+    # rain's humidity gate rh_c falls by what that lift's cooling takes from
+    # saturation; not under the subtropics' sinking air, which holds the
+    # storms' fronts down (as clouds' cloud_storm).
+    lift = B * np.clip(1 - sink, 0, 1)
+    rhc = tune["rh_c"] * np.exp(-tune["q_k"] * LAPSE * tune["lift_m"] * lift)
     # Showers need unstable air: warm, moist air near the ground compared
     # with the air aloft. Within ~20-30 deg of the equator the air aloft has
     # the same temperature everywhere (the Earth's spin is too weak there to
@@ -1460,7 +1470,7 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     mse_thr = t_ref + LQ * tune["rh"] * _qsat(t_ref, tune["q_k"])
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
-    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, v=np.asarray(v, np.float64),
+    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, rhc=rhc, mse_t=mse_t, mse_thr=mse_thr, v=np.asarray(v, np.float64),
                 B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
 
 
@@ -1540,7 +1550,7 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     open_sea = np.ones(n) if open_sea is None else np.asarray(open_sea, np.float64)
     open_sea = np.ascontiguousarray(np.broadcast_to(open_sea, (len(seasons_in), n)), np.float64)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
-          ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr")}
+          ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr", "rhc")}
     c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
     open_sea = sea_uptake(seasons_in, open_sea, dt, tune)
     warm = start is not None and start["vap"].shape == st["qs"].shape
@@ -1550,7 +1560,7 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, c_self, c_in, nbr,
-            _faces(grid)["off"], steps, dt, tau_ex, tune["rh_c"], tune["rh_pow"], tune["cv_scale"],
+            _faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"], tune["cv_scale"],
             tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
             np.ascontiguousarray(ema0, np.float64), warm)
 def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[dict], tune: dict) -> np.ndarray:
@@ -1619,6 +1629,8 @@ TUNE = dict(
     wtg=20.0,  # deg: the tropics' even temperature aloft reaches this far (then fades over 15 deg)
     rh_c=0.8,  # relative humidity above which the large-scale rain runs at full rate...
     rh_pow=3.0,  # ...and how fast it falls off below it
+    lift_m=1500.0,  # m: how far a storm (storminess 1) lifts the air it rains from (PW-998 round 2; the
+    # warm conveyor belt's ascent is several km, unverified; a season-mean storminess of 1 is ~1-2 km of it)
     # humidity and clouds (vapour_mixed, clouds; diagnostics: they don't change the rain)
     vap_bg=0.5,  # the air keeps at least this share of the vapour around it ...
     vap_bg_km=2500.0,  # ... averaged over this far ...

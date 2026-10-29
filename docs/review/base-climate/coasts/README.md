@@ -99,9 +99,40 @@ moves SE USA by only +4 points of GPCC and Pampas by 0. By the gate's rule 5 it 
 - (c) Stop here: the bulk exchange is merged, and the coasts wait for v2's moisture-transport proposal
   (docs/proposals/moisture_transport.md).
 
+## Round 2 design note (lane 26b, 2026-10-29): winter frontal rain as a storm-lifted humidity gate
+The large-scale rain runs at ls x min(q/qs / rh_c, 1)^3 with rh_c 0.8. A storm lifts its warm sector's air over the
+front, so that air rains as air higher up would. The gate becomes rh_c x exp(-q_k x LAPSE x lift_m x lift) per cell
+and season, with lift = storminess (B) times a mask. rh_c is now an [S, n] array in `climate._rain` and in
+`tools/moisture_budget._probe` (`test_moisture_budget` checks they match bit for bit). One Earth L6 solve each, on
+round 1 (317a7608). Columns: SE USA, Pampas annual; SE USA, NE USA Oct-Mar (GPCC 1334, 932); Arabia; B; BWh; corr;
+exact.
+
+| form (mask on B) | lift_m | SE USA | Pampas | SE USA win | NE USA win | Arabia | B | BWh | corr | exact |
+|---|---|---|---|---|---|---|---|---|---|---|
+| round 1 (none) | 0 | 525 | 291 | 153 | 174 | 198 | 26.4 | 14.7 | 0.704 | 37.1 |
+| 1: B everywhere | 1000 / 2000 | 573 / 628 | 305 / 359 | 261 / 334 | 276 / 331 | 234 / 264 | 25.6 / 24.5 | 13.7 / 12.7 | 0.705 / 0.703 | 37.8 / 37.8 |
+| 2: over the cold dome (ground below its air mass, /5 C) | 1500 | 527 | 303 | 171 | 223 | 200 | 26.3 | 14.7 | 0.703 | 37.6 |
+| 3: in warm advection (-v.grad T, /1 C/day) | 1500 | 550 | 297 | 189 | 210 | 217 | 25.8 | 14.2 | 0.704 | 37.3 |
+| 4: land only | 1500 | 624 | 348 | 237 | 261 | 259 | 24.9 | 13.0 | 0.705 | 37.4 |
+| **5: not under the subtropics' sinking air, B x (1 - sink) (as clouds' cloud_storm)** | 1000 / **1500** / 2000 | 574 / **601** / 627 | 318 / **330** / 338 | 243 / **288** / 325 | 278 / **313** / 334 | 209 / **214** / 220 | 25.8 / **25.6** / 25.3 | 14.1 / **13.7** / 13.4 | 0.706 / **0.707** / 0.707 | 37.7 / **37.9** / 38.1 |
+
+- **Dropped:** 2 and 3 barely move SE USA's and NE USA's winters (+18-49 mm on 153-174). 1 and 4 wet the deserts
+  (Arabia +36-61) for the same gain as 5.
+- **Kept: 5 at lift_m 1500 m** (the middle of the design's 1-2 km, unverified; not fitted). SE USA winter 153 -> 288,
+  NE USA 174 -> 313, SE USA annual 40% -> 45% of GPCC, Pampas 31% -> 35%, Japan 36% -> 40%, Mediterranean 67% -> 72%,
+  corr +0.003, exact +0.8. Winter temperatures move by <= 0.1 C.
+- **B falls 26.4 -> 25.6, but mostly by losing wrong B.** `bflip.py lift_form=5 lift_m=1500`, run against lift_m=0 while the probe knobs were in (on the committed code,
+`bflip.py lift_m=0` gives the reverse): the land that
+  leaves B is 0.32% of land that Kottek calls B and 0.72% that it doesn't; 0.09% / 0.14% joins. So the per-cell match
+  gets better while the share moves away from Kottek's 30.1. North America accounts for 0.30% (0.12 / 0.18) of it.
+- **Still vapour-limited.** Even at 2000 m SE USA's winter is 25% of GPCC: its vapour is 7.7 mm against NCEP's 17.5.
+  The lift fixes the gate, not the supply. SE USA and Pampas can't reach 60% from this round. The rest is the return
+  flow's vapour (round 1 went part way) and the Pampas jet.
+
 ## Harness (here)
 - `quick.py [--level L] [k=v ...]`: Earth summary (regions by half-year, B, BWh, corr, winter T).
 - `winds.py [k=v ...]`: the rain's wind and vapour by box against NCEP 850/925 hPa.
+- `bflip.py [k=v ...]`: which land cells leave or join Koppen B under the overrides, against Kottek, by continent.
 - `probes.patch`: the probe knobs (`k_mix`, `lsw_f`, `sub_a`/`sub_one`/`sub_km`/`sub_lat`, `cold_col`) on
   planet/climate.py. Not for merging.
 - `tools/moisture_budget.py`: Pampas, Japan, E Australia, Mediterranean, SE Brazil and Mexico N added to the probe

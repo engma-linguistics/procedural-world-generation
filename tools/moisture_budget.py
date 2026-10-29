@@ -232,7 +232,7 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
                     if last:
                         acc_le[k, i] += land_e[k, i]
                 excess = max(q - qs[k, i], 0.0)
-                rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
+                rh = min(q / max(qs[k, i], 1e-12) / rh_c[k, i], 1.0)
                 rate = ls_rate[k, i] * rh**rh_pow
                 r_ls = min(rate * dt, 1.0) * (q - excess)
                 dry = mse_t[k, i] + tcor[k, i] - mse_thr[k, i]
