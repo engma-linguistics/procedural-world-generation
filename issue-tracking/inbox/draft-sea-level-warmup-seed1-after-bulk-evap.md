@@ -1,7 +1,7 @@
 ---
 title: "test_sea_level's warm-up per-seed bar fails after the sea's bulk exchange: L4 seed 1's basin mean is -55 m (bar -50; main +7)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v1
 subsystem: tectonics
@@ -33,3 +33,8 @@ Options:
 - C. Merge, and treat it as the warm-up's known chaos on L4.
 
 Lean: B (a 3-seed per-seed bar at L4 is a fixture, not a measure); then A if the wider sample also drops.
+
+## Updates
+- 2026-10-29: owner ruling, option B. The per-seed band is judged over seeds 1-10 at >=70%, assertions unchanged; marked slow
+  (about 5 min). L4 basin means, seeds 1-10: main 7, 38, 15, 31, 37, -23, 36, -31, -33, 55 (10/10, set mean +13); branch -55,
+  23, 35, 44, -17, -24, -8, -34, 52, 11 (9/10, set mean +3). The set mean sits lower, still inside its 0..150 bar.
