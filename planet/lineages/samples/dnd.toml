@@ -36,7 +36,7 @@ giant_km2 = 2000  # one true giant per this many km2 of its kind's country where
 megafauna_natural = "prey"  # the megafauna's natural density where no people presses them (PW-957, PW-966). Candidates, until the owner's
 # PW-967 review: "prey" (from the land's prey, wild herds and livestock: Carbone & Gittleman 2002, checked PDF p. 2; ~1 dragon per 530 km2 at 1 t/km2),
 # "mesotherm" (uniform from mass, Marshall et al. 2021's dinosaur line, checked Table 1; ~1 per 65 km2), "mammal" (the mammal-carnivore line: ~1 per 137)
-dragon_ages = "base"  # the dragons' age schedule (PW-958): base (ancients ~7%) | younger (young-heavy, ancients ~3%) | harsher | gentler
+dragon_ages = "younger"  # the dragons' age schedule (PW-958; owner 10-28: younger is the default): younger (annual mortality 20% wyrmling, 3% young, 0.5% adult, 0.1% ancient; ancients ~3%) | base (ancients ~7%) | harsher | gentler
 dragon_generation = "schedule"  # the dragons' generation time (PW-959): schedule (~430 yr at base) | schedule_mass (~700) | line (each line's generation_yr)
 mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
 portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)

@@ -6,9 +6,9 @@ reptile-style: snout-to-tail length through 0.8 m at hatching, 3 m at 5 yr, 8 m 
 Girard & Brown 1999, Annu Rev Nutr 19:247: 0.196 M^0.889 kJ/day, M in g; the slope is from the abstract, the intercept unverified,
 docs/references/megafauna/README.md), eaten as whole cattle (836 Mcal each, 85% assimilated).
 
-The schedules are candidates, not settled (owner, 10-28: the defaults wait on the PW-967 review). meta.dragon_ages picks one:
+Owner 10-28: younger is the default schedule; the others stay as options. meta.dragon_ages picks one:
 - base: the proposal's approved base case (ancients ~7% of dragons, ~1/3 of their biomass);
-- younger: PW-958's proposed young-heavy pyramid (the owner leans that way: ancients are the very best survivors);
+- younger (default): annual mortality 20% wyrmling, 3% young, 0.5% adult, 0.1% ancient: young-heavy, ancients are the very best survivors;
 - harsher: every rate up (PW-958's 'harsher' column of the review);
 - gentler: every rate down (scaling.py's third case).
 Each gives the stage shares, the ecological mass (survivorship-weighted mean mass past the wyrmling years, which sets the
@@ -32,7 +32,7 @@ SCHEDULES = {  # annual mortality per stage (wyrmling, young, adult, ancient)
     "harsher": (0.30, 0.03, 0.005, 0.008),
     "gentler": (0.10, 0.01, 0.001, 0.002),
 }
-DEFAULT = "base"
+DEFAULT = "younger"  # (owner 10-28, PW-958)
 GENERATION = ("schedule", "schedule_mass", "line")  # meta.dragon_generation: from the schedule (flat fecundity), with fecundity ~ mass, or each line's generation_yr
 GENERATION_DEFAULT = "schedule"
 CATTLE_MCAL = 836.0  # a whole carcass
