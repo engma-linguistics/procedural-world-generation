@@ -7,6 +7,8 @@
 # traded = true (taken up by contact without the goods: the metal comes by trade), spread (x the contact rate at which a neighbour takes it up), hands (false: a people without hands can know it: dragons),
 # era (the era it belongs to: the tree's meta.era caps what any people reaches), mode = "fantasy" (left out in real mode),
 # stock = "crops" | "animals" (also known by whoever first tames a crop or an animal in the history: crops.py, animals.py).
+# bare = true (PW-971): bare-bones tool use, allowed in a stem before its sapiens node (Lomekwi, Oldowan, Acheulean). Every other tech
+# waits for the node, gesture and language included. modern_contact = true: spreads by contact (x spread) to any people under a sapiens node.
 #
 # Dates are the real-world (Earth) archaeological firsts the ordering leans on, in kyr before the present. Sources are
 # given as author, year, journal; "unverified" marks a date the author of this file could not tie to a source it is sure
@@ -105,7 +107,8 @@ needs = ["gesture"]
 earliest_kyr = 500
 elder_kyr = 2000
 rate = 0.01     # mean wait ~100 kyr once possible: stems come to it at very different times
-spread = 0.0    # never learnt from neighbours here: each stem comes to it on its own (owner: not everywhere at once)
+spread = 1.0    # PW-971 (owner: almost any contact spreads language): taken up by contact, but only by peoples under a sapiens node
+modern_contact = true  # (without the node it is still each stem's own: owner, not everywhere at once)
 hands = false
 era = "stone age"
 source = "Dediu & Levinson 2013, Frontiers in Psychology 4:397 (On the antiquity of language: Neanderthal speech, >~0.5 Myr); the date is debated, many put it nearer 100-200 kyr"
@@ -327,6 +330,7 @@ track = "tools"
 earliest_kyr = 3300
 elder_kyr = 4000
 rate = 0.01
+bare = true
 era = "stone age"
 source = "Harmand et al. 2015, Nature 521:310 (Lomekwi 3, ~3.3 Myr); Semaw et al. 1997, Nature 385:333 (Oldowan, Gona, ~2.6 Myr)"
 
@@ -338,6 +342,7 @@ needs = ["knapping"]
 earliest_kyr = 1760
 elder_kyr = 3000
 rate = 0.005
+bare = true
 era = "stone age"
 source = "Lepre et al. 2011, Nature 477:82 (Acheulean, Kokiselei, ~1.76 Myr)"
 
