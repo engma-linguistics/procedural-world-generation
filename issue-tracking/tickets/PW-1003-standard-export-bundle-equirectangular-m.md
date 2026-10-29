@@ -20,4 +20,5 @@ updated: 2026-10-29
 Rock 3 and World Climate Lab both sell on 8K equirectangular exports. Check what PW-477's static maps already give; add a one-click bundle from the viewer at the zoom's or world's resolution (upsampled honestly, saying so).
 
 ## Updates
+- 2026-10-29: Owner 10-29: a late-v2 item.
 - 2026-10-29: Created from inbox draft draft-export-bundle.md (found by coordinator).
