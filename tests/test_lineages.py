@@ -2251,7 +2251,7 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     down to meta.dragon_km2 / meta.giant_km2, one rule for both, and the summary counts by it."""
     from planet.lineages.history import megafauna as MG
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    raw = {"meta": {"seed": 1}, "lineage": [
+    raw = {"meta": {"seed": 1, "dragon_ages": "base"}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "folk", "parents": ["stem"], "at": "1 Myr", "density": 1.0},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "mass_kg": 3200, "generation_yr": 200, "traits": ["flies"]},
@@ -2289,8 +2289,9 @@ def test_megafauna_natural_settings_and_prey(faketz):
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
         {"id": "hill", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "mass_kg": 2200}]}
+    assert (lambda x: (x.megafauna_natural, x.dragon_ages, x.dragon_generation))(SP.parse(raw)) == ("prey", "younger", "schedule")  # (owner 10-28)
+    raw = {**raw, "meta": {"seed": 1, "dragon_ages": "base"}}
     t = SP.parse(raw)
-    assert (t.megafauna_natural, t.dragon_ages, t.dragon_generation) == ("prey", "base", "schedule")
     t2 = SP.parse({**raw, "meta": {"seed": 1, "megafauna_natural": "mammal", "dragon_ages": "younger", "dragon_generation": "line"}})
     assert (SP.parse(SP.to_raw(t2)).megafauna_natural, SP.parse(SP.to_raw(t2)).dragon_ages) == ("mammal", "younger")
     for bad in ({"megafauna_natural": "x"}, {"dragon_ages": "x"}, {"dragon_generation": "x"}):
@@ -2326,6 +2327,51 @@ def test_megafauna_natural_settings_and_prey(faketz):
     assert sum(r["stages"]) == r["count"] > 0 and r["ages"] == "base" and "prey_t_km2" in r["pocket_list"][0]
     assert 500 <= r["natural_one_per_km2"] <= 560 and r["cattle_yr_each"] > 5
     assert "ancient" in MG.line_text("wyrm", "wyrms", r) or r["stages"][3] == 0
+
+
+def test_dragons_held_to_their_food(faketz):
+    """PW-977 stage 1: dragons crowded beyond the food a cell supplies (the wild herds' offtake plus the tolerable stock share) are
+    scaled down to it, together across kinds; where the food is ample, nothing changes; and the summary reports the use."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1, "dragon_km2": 100}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
+        {"id": "drake", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    t = SP.parse(raw)
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
+    ps.graze_npp = np.full(ps.grid.n, 0.2 * g1)  # (poor country: ~0.2 t/km2 of wild prey)
+    h = H.History(t, ps, 1)
+    del ps.graze_npp
+    n = h.grid.n
+    P = np.zeros((len(h.lines), n))
+    P[h.idx["wyrm"]] = P[h.idx["drake"]] = 1.0
+    w = h.idx["wyrm"]
+    s = np.ones(n)  # (fully pressed: 1 per dragon_km2 = 100, but the poor country's natural density is lower and is what stands)
+    ct = h.dragon_struct["cattle_yr"] * PR.HEAD_T
+    tags = {"land": np.ones(n, bool)}
+    prey, food, live = MG.prey_and_food(h, P, s * 0.0, tags)
+    assert np.allclose(food, MG.OFFTAKE * prey) and np.allclose(live, 0)
+    free = MG.local_density(h, w, s, prey, food, P)
+    assert np.allclose(free, MG._pressed(h, w, s, prey)) and 2 * free.max() * ct < food.min()  # (ample: untouched)
+    old = MG.OFFTAKE
+    MG.OFFTAKE = 0.0002  # (a land that can feed little: the two kinds together would need more than it supplies)
+    try:
+        prey, food, live = MG.prey_and_food(h, P, s * 0.0, tags)
+        d = MG.local_density(h, w, s, prey, food, P)
+        assert (2 * free * ct > food).all() and np.allclose(2 * d * ct, food, rtol=1e-6) and (d < free).all()  # (shared across the kinds)
+        P[h.idx["drake"]] = 0.0  # (one kind alone gets the whole supply)
+        assert np.allclose(MG.local_density(h, w, s, prey, food, P) * ct, food, rtol=1e-6)
+        MG.FOOD_CAP = False
+        try:
+            assert np.allclose(MG.local_density(h, w, s, prey, food, P), free)
+        finally:
+            MG.FOOD_CAP = True
+    finally:
+        MG.OFFTAKE = old
+    # the deep epoch has no food field: not held
+    assert np.allclose(MG.local_density(h, w, s, None, None, P), MG.local_density(h, w, s, None))
 
 
 def test_nomads_and_settled_compete_less(faketz):

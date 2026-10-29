@@ -17,14 +17,14 @@ class PeoplesMixin:
         if not self.lines[k].megafauna:
             return self.dens[k]
         if (P is None or P is self.p) and self._press is not None:
-            return MG.local_density(self, k, self._press, self._prey)
+            return MG.local_density(self, k, self._press, self._prey, self._food, self.p)
         P = self.p if P is None else P
         c = self.__dict__.get("_dens_memo")
         if c is None or c[0] is not P:  # (one pressure and prey per presence array: the summary asks for every line)
             s = MG.pressure(self, P, self._land_now)
-            prey = MG.prey_now(self, P, s, self._tags_now) if self._tags_now is not None and not self._deep_now else None
-            c = self._dens_memo = (P, s, prey)
-        return MG.local_density(self, k, c[1], c[2])
+            prey, food, _ = MG.prey_and_food(self, P, s, self._tags_now) if self._tags_now is not None and not self._deep_now else (None, None, None)
+            c = self._dens_memo = (P, s, prey, food)
+        return MG.local_density(self, k, c[1], c[2], c[3], P)
 
     def gen_yr(self, l) -> float:
         """A line's generation time, years: its own, or a dragon's from its age schedule (meta.dragon_generation, PW-959)."""

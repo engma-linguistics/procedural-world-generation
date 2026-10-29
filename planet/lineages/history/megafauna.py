@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from .. import prey as PR
 from .. import spec as SP
 from ..gridops import nbr_reduce
 from ..spread import EST, jump_reach, rings
@@ -65,6 +66,11 @@ LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2
 NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candidates
 NATURAL_DEFAULT = "prey"
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
+OFFTAKE = 0.1  # the share of the wild herds' standing biomass a predator can take a year and keep them (PW-967's rough figure, ~10%/yr; UNVERIFIED, no
+# source on file: wild ungulate populations of a few ten percent yearly production can be cropped sustainably, but not a figure for one predator guild)
+STOCK_TOLERABLE = 0.1  # the share of herders' stock the herders tolerate losing a year to dragons before they leave the range (UNVERIFIED; a model
+# assumption: herds turn over at ~15-25%/yr, so a tenth lost is a bad year they put up with, PW-977, to be sourced)
+FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
 FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring)
 FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per km2, PW-976) is for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
 PRESS_N0 = 0.05  # peoples press megafauna easily: the pressure is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell, so a
@@ -107,7 +113,7 @@ def setup(h: History) -> None:
     h.prey_ref = float(np.median(h.prey_wild[h.prey_wild > 0])) if h.prey_wild is not None and (h.prey_wild > 0).any() else 1.0
     h._herd = PR.herd_share(h.lines)
     h.dens_nat = np.array([natural_coef(h, l) if l.megafauna else h.dens[k] for k, l in enumerate(h.lines)])
-    h._press = h._prey = h._land_now = None
+    h._press = h._prey = h._food = h._land_now = None
     h._deep_now = False
 
 
@@ -119,20 +125,29 @@ def _to_shore(h: History, x: np.ndarray) -> np.ndarray:
     return np.where(land, x, nbr_reduce(g, np.maximum, np.where(land, x, 0.0)[g.nbr_idx]))
 
 
-def prey_now(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> np.ndarray | None:
+def prey_and_food(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> tuple:
     """The prey per cell, t/km2, under the peoples P and their pressure (lineages.prey.field: overkill outside refuges, livestock),
-    over a dragon's foraging reach and one ring out to sea; None without a prey field."""
+    over a dragon's foraging reach and one ring out to sea, and the food the dragons can live on there, t/km2/yr (PW-977 stage 1):
+    the sustainable offtake of the wild herds (OFFTAKE) plus the tolerable share of the herders' stock (STOCK_TOLERABLE). The smoothed livestock, t/km2, comes third. All None
+    without a prey field."""
     if h.prey_wild is None:
-        return None
-    from .. import prey as PR
+        return None, None, None
     from ..spread import EST as _E
     ref = PR.refuge(tags) if tags is not None else np.zeros(h.grid.n, bool)
-    x = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, _E))["total"]
+    f = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, _E))
     g = h.grid
     deg = np.diff(g.nbr_off).astype(float)
-    for _ in range(max(1, int(round(FORAGE_KM / h.cell_km)))):
-        x = (x + nbr_reduce(g, np.add, x[g.nbr_idx])) / (1.0 + deg)
-    return _to_shore(h, x)
+    parts = []
+    for x in (f["wild"], f["livestock"]):
+        for _ in range(max(1, int(round(FORAGE_KM / h.cell_km)))):
+            x = (x + nbr_reduce(g, np.add, x[g.nbr_idx])) / (1.0 + deg)
+        parts.append(_to_shore(h, x))
+    return parts[0] + parts[1], OFFTAKE * parts[0] + STOCK_TOLERABLE * parts[1], parts[1]
+
+
+def prey_now(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> np.ndarray | None:
+    """The prey per cell, t/km2 (prey_and_food's first); None without a prey field."""
+    return prey_and_food(h, P, press, tags)[0]
 
 
 def natural(h: History, k: int, prey: np.ndarray | None):
@@ -161,12 +176,34 @@ def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.nd
     return 1.0 - np.exp(-N / PRESS_N0)
 
 
-def local_density(h: History, k: int, s: np.ndarray, prey: np.ndarray | None = None) -> np.ndarray:
-    """Megafauna line k's density per cell, per km2, under pressure s (0..1): its natural density where s = 0, falling geometrically
-    to the pressed present-day value at s = 1. Where the natural density is already sparser (poor country), peoples do not raise it.
-    One rule for dragons and giants."""
+def _pressed(h: History, k: int, s: np.ndarray, prey: np.ndarray | None) -> np.ndarray:
     nat = np.maximum(natural(h, k, prey), 1e-12)
     return nat * np.minimum(1.0, h.dens[k] / nat) ** s
+
+
+def food_scale(h: History, P: np.ndarray, s: np.ndarray, prey: np.ndarray, food: np.ndarray) -> np.ndarray:
+    """PW-977 stage 1: per cell, 1 where the dragons there (every kind together, at their pressed densities) need no more than the
+    food there (the sustainable offtake of the wild herds plus the herders' tolerable stock share), else food / need: where the land
+    cannot feed them, fewer of them are born, survive or stay (starvation and emigration; the dragons' range grows until it holds
+    its food). Each dragon needs the age schedule's mean food, cattle a year (dragon_ages.structure)."""
+    need = np.zeros(h.grid.n)
+    for j, l in enumerate(h.lines):
+        if l.megafauna and "flies" in l.traits:
+            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, s, prey)
+    need = need * h.dragon_struct["cattle_yr"] * PR.HEAD_T
+    return np.minimum(1.0, food / np.maximum(need, 1e-12))
+
+
+def local_density(h: History, k: int, s: np.ndarray, prey: np.ndarray | None = None, food: np.ndarray | None = None,
+                  P: np.ndarray | None = None) -> np.ndarray:
+    """Megafauna line k's density per cell, per km2, under pressure s (0..1): its natural density where s = 0, falling geometrically
+    to the pressed present-day value at s = 1. Where the natural density is already sparser (poor country), peoples do not raise it.
+    One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
+    the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere)."""
+    d = _pressed(h, k, s, prey)
+    if FOOD_CAP and food is not None and P is not None and "flies" in h.lines[k].traits:
+        d = d * food_scale(h, P, s, prey, food)
+    return d
 
 
 def ages(h: History) -> dict:
@@ -281,7 +318,6 @@ def groups_note(line, n: int) -> str:
     return f"{st} steading{'s' if st > 1 else ''} of ~{max(int(lo), int(round(n / st)))}"
 
 
-OFFTAKE = 0.1  # the share of the prey's standing biomass a predator can take a year and keep it (PW-967's rough figure, ~10%/yr)
 
 
 def giant_cattle_yr(mass_kg: float) -> float:
@@ -289,12 +325,28 @@ def giant_cattle_yr(mass_kg: float) -> float:
     return 70.0 * mass_kg ** 0.75 * 1.7 * 365.0 / 625e3
 
 
+def food_state(h: History, P: np.ndarray, dens: dict, food, live) -> dict | None:
+    """PW-977 stage 1: per cell, in cattle a year, the dragons' expected food need (all kinds, at their densities `dens`), what the
+    land supplies them (the sustainable offtake of the wild herds plus the tolerable stock share `food`), the herders' stock there
+    (`live`, t/km2) and the part of the need that falls on it (the dragons take wild prey and stock in proportion to what each
+    supplies). None without a prey field."""
+    if food is None:
+        return None
+    area = h.cell_mkm2 * 1e6
+    dem = np.zeros(h.grid.n)
+    for k, d in dens.items():
+        if "flies" in h.lines[k].traits:
+            dem += np.where(P[k] >= EST, P[k], 0.0) * d * area
+    dem = dem * h.dragon_struct["cattle_yr"]
+    return {"demand": dem, "supply": food * area / PR.HEAD_T, "stock": live * area / PR.HEAD_T,
+            "stock_take": dem * STOCK_TOLERABLE * live / np.maximum(food, 1e-12)}
+
+
 def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     """Per megafauna line alive at the present: the count, its pockets (each with a count, place, country and groups; dragons by
     stage, with the prey, livestock and food there), counts by landmass, the densities (realised, natural, pressed) and the target
     (share of its suitable country reached)."""
     from .. import dragon_ages as DA
-    from .. import prey as PR
     g, out = h.grid, {}
     area = h.cell_mkm2 * 1e6
     S = h._suit() if getattr(h, "_K_now", None) else None
@@ -302,11 +354,13 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     if not any(l.megafauna for l in h.lines):
         return out
     press = pressure(h, P, h._land_now)
-    prey = prey_now(h, P, press, tags)
+    prey, food, live = prey_and_food(h, P, press, tags)
     lvs = None
     if h.prey_wild is not None:
         lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST))["livestock"]
     ds = h.dragon_struct
+    dens = {k: local_density(h, k, press, prey, food, P) for k, l in enumerate(h.lines) if l.megafauna}
+    fs = food_state(h, P, dens, food, live)
     for k, l in enumerate(h.lines):
         if not l.megafauna:
             continue
@@ -315,7 +369,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
             continue
         rng = np.random.default_rng((h.seed, 924, k))
         flies = "flies" in l.traits
-        dk = local_density(h, k, press, prey)  # (per cell: natural where no people presses them, PW-957)
+        dk = dens[k]  # (per cell: natural where no people presses them, PW-957; dragons held to their food, PW-977)
         nat = np.broadcast_to(np.asarray(natural(h, k, prey), float), dk.shape)
         exp = np.where(held, P[k], 0.0) * dk * area
         lab, n = g.components(held)
@@ -341,9 +395,14 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
                     pt = float(prey[sel].mean())
                     pk["prey_t_km2"] = round(pt, 2)
                     pk["livestock_head"] = int(round(float(lvs[sel].sum()) * area / PR.HEAD_T))
-                    pk["ancient_range_km2"] = int(round(ds["stage_cattle_yr"][3] * PR.HEAD_T / max(OFFTAKE * pt, 1e-6)))
+                    pk["ancient_range_km2"] = int(round(ds["stage_cattle_yr"][3] * PR.HEAD_T / max(float(food[sel].mean()), 1e-6)))
                     pk["ancient_cattle_yr"] = round(ds["stage_cattle_yr"][3], 1)
                 pk["cattle_yr"] = int(round(sum(n_ * f for n_, f in zip(pk["stages"], ds["stage_cattle_yr"]))))
+                if fs is not None:  # (all dragon kinds there together, expected numbers: the share of the food and of the stock they take)
+                    sup = float(fs["supply"][sel].sum())
+                    pk["food_use"] = round(float(fs["demand"][sel].sum()) / sup, 3) if sup > 0 else None
+                    stock = float(fs["stock"][sel].sum())
+                    pk["stock_take"] = round(float(fs["stock_take"][sel].sum()) / stock, 4) if stock > 0 else None
             pockets.append(pk)
         pockets.sort(key=lambda p: -p["count"])
         by: dict[str, int] = {}
