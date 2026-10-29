@@ -1,4 +1,5 @@
 ---
+id: PW-1001
 title: "Present-day dragon density's rationale ('large carnivores at a few percent of their potential, Ripple 2014') is not in Ripple 2014: find a source or restate it"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: papers-1029
 blocked_by: []
 relates: [PW-957, PW-963, PW-923, PW-938]
 refs: [planet/lineages/history/megafauna.py, docs/proposals/megafauna-scaling.md, docs/references/megafauna/ripple2014_large_carnivores_science.pdf]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 
 Lean: B now. A only if the owner wants the number defended.
 - [ ] the proposal's "Natural density, people pressure" bullet and PW-957's Description cite a figure that a paper on file supports, or say it is a judgement
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-ripple-few-percent-unsourced.md (found by papers-1029).

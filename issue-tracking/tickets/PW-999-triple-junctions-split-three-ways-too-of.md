@@ -1,4 +1,5 @@
 ---
+id: PW-999
 title: "Triple junctions split three ways too often: Burke & Dewey 1973 have one failed arm as the rule (32 of 40), our independent 0.3 per arm gives it 44%"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: papers-1029
 blocked_by: []
 relates: [PW-952]
 refs: [planet/tectonics/events.py, planet/tectonics/params.py, docs/review/tectonics/rifts/rifts.md, docs/references/tectonics/burke_dewey1973_plume_triple_junctions_jgeol.pdf]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Options. Each changes the plate breakups and needs paired L6 runs. No value has 
 Lean: B. It keeps the three-way feature, rarer, and matches the paper's rule of one failed arm. The expected effect is fewer three-piece splits per run (0-3 per 200 Myr today) and slightly larger largest plates. Check that PW-952's largest-plate gain (41 -> 26%) holds.
 - [ ] outcome shares of `triple_rift` near the paper's (within the sample's roughness)
 - [ ] largest plate share over 600-1000 Myr stays near PW-952's 26%; paired pass rate unchanged
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-aulacogen-odds-burke-dewey.md (found by papers-1029).

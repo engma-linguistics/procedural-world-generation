@@ -1,4 +1,5 @@
 ---
+id: PW-1000
 title: "Overkill depends on how long the fauna lived beside people (Sandom 2014: ~0.02 / 0.23 / 0.46 species lost), not one OVERKILL = 0.6 everywhere"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: papers-1029
 blocked_by: []
 relates: [PW-966, PW-975]
 refs: [planet/lineages/prey.py, docs/references/megafauna/sandom2014_megafauna_extinctions_humans_procb.pdf]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 - **C.** B, with the biomass-against-species step made explicit (a size-selective loss).
 
 Lean: A for v1/v2 tidiness and B as a v2 fun feature, because it gives the "Africa kept its giants" pattern for free. A value change needs a world run and the prey-map review.
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-overkill-by-hominin-history.md (found by papers-1029).
