@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech on the map · mockup</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+  #mapbox { overflow: auto; padding: 10px; position: relative; }
+  #stack { position: relative; width: 100%; }
+  #stack canvas, #stack svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #map { image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px; }
+  #side table.t tr { cursor: pointer; } #side table.t tr:hover td { background: #1d2532; }
+  #side table.t tr.future td { opacity: .35; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<div class="bar">
+  <span class="muted">tech</span><select id="tech"></select>
+  <span class="muted">colour</span><select id="colour"><option value="how">how it came</option><option value="when">how long known</option></select>
+  <button id="play" title="play the spread from its first invention to the present">▶ play</button>
+  <span class="muted">at</span><input type="range" id="at" min="0" max="1000" value="1000" style="width:340px"><b id="atLab"></b>
+  <span class="muted" id="mom"></span>
+  <span class="key" id="key"></span>
+</div>
+<main><div id="mapbox"><div id="stack"><canvas id="map"></canvas><svg id="ov"></svg></div><p class="muted" id="note" style="margin:8px 0 0"></p></div><div class="side" id="side"></div></main>
+<footer>The ranges are the peoples' real ranges from the run (the layer of who holds most of each cell), at 13 stored moments; the map shows the moment nearest the slider. Land a people holds is lit when that people knows the tech by then; grey land is held by peoples that do not yet; dark land is empty. Stars mark inventions; arrows run from giver to taker (by contact or shared). Equirectangular, 1° pixels.</footer>
+<script src="tech-data.js"></script>
+<script src="common.js"></script>
+<script>
+$('hdr').innerHTML = header('view3');
+for (const k of D.tracks) { const g = document.createElement('optgroup'); g.label = k.name; for (const t of D.techs.filter((t) => t.track === k.id)) g.insertAdjacentHTML('beforeend', `<option value="${t.id}">${esc(tname(t.id))}${D.firsts[t.id] ? '' : ' (nobody)'}</option>`); $('tech').appendChild(g); }
+const M = D.map, A = M.alphabet, CODE = {}; for (let i = 0; i < A.length; i++) CODE[A.charCodeAt(i)] = i;
+const IDX = Object.fromEntries(D.lines.map((l) => [l.index, l]));
+const moments = M.moments.map((m) => { const a = new Uint8Array(m.px.length); for (let i = 0; i < a.length; i++) a[i] = CODE[m.px.charCodeAt(i)]; return { kyr: m.kyr, a }; });
+// each people's centre at each moment (the mean of its pixels, longitude by its circular mean)
+for (const m of moments) {
+  const acc = {};
+  for (let i = 0; i < m.a.length; i++) { const v = m.a[i]; if (v < 2) continue; const x = i % M.w, y = (i / M.w) | 0, th = (x + 0.5) / M.w * 2 * Math.PI;
+    const s = (acc[v] ||= [0, 0, 0, 0]); s[0] += Math.cos(th); s[1] += Math.sin(th); s[2] += y + 0.5; s[3]++; }
+  m.centre = {}; for (const [v, s] of Object.entries(acc)) { const l = IDX[v - 2]; if (!l) continue; let th = Math.atan2(s[1], s[0]); if (th < 0) th += 2 * Math.PI; m.centre[l.id] = [th / (2 * Math.PI) * M.w, s[2] / s[3], s[3]]; }
+}
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const SEA = [10, 26, 42], EMPTY = [42, 46, 40], NOT = [70, 78, 90];
+let tech = 'pottery', at = 0, colour = 'how', playing = null;
+const oldestOf = (t) => Math.max(0.1, ...PEOPLES.map((l) => D.known[l.id][t]?.[0] ?? 0));
+let ax;
+function momentAt(k) {  // the stored moment nearest in log time
+  let best = moments[0], bd = 1e9;
+  for (const m of moments) { const d = Math.abs(Math.log10(Math.max(m.kyr, 0.05)) - Math.log10(Math.max(k, 0.05))); if (d < bd) { bd = d; best = m; } }
+  return best;
+}
+function centreAt(lid, k) {  // the people's centre at the moment nearest k it existed in
+  const order = [...moments].sort((a, b) => Math.abs(Math.log10(Math.max(a.kyr, .05) / Math.max(k, .05))) - Math.abs(Math.log10(Math.max(b.kyr, .05) / Math.max(k, .05))));
+  for (const m of order) if (m.centre[lid]) return m.centre[lid];
+  const c = LINE[lid]?.centroid; return c ? [(c[1] + 180) / 360 * M.w, (90 - c[0]) / 180 * M.h, 0] : null;
+}
+function setup() {
+  const old = oldestOf(tech);
+  ax = { lo: Math.log10(0.05), hi: Math.log10(old * 1.05) };
+  $('note').innerHTML = D.firsts[tech] ? '' : 'Nobody in this run came to this tech.';
+  draw();
+}
+const toK = (v) => (v >= 1000 ? 0 : 10 ** (ax.hi - (v / 1000) * (ax.hi - ax.lo)));
+function draw() {
+  const m = momentAt(at), cv = $('map'), ctx = cv.getContext('2d');
+  cv.width = M.w; cv.height = M.h;
+  const img = ctx.createImageData(M.w, M.h), old = oldestOf(tech);
+  const known = (lid) => { const v = D.known[lid]?.[tech]; return v && v[0] >= at ? v : null; };
+  const cache = {};
+  for (let i = 0; i < m.a.length; i++) {
+    const v = m.a[i]; let c;
+    if (v === 0) c = SEA; else if (v === 1) c = EMPTY;
+    else {
+      c = cache[v];
+      if (!c) { const l = IDX[v - 2], k = l && known(l.id);
+        if (!k) c = mix(NOT, hex(l?.color || '#888888'), 0.18);
+        else if (colour === 'how') c = hex(howCol(k[1]));
+        else { const u = Math.log10(Math.max(k[0] - at, 0.05) / 0.05) / Math.log10(Math.max(old, 0.1) / 0.05); c = mix([255, 236, 160], [214, 72, 40], Math.min(1, Math.max(0, u))); }
+        cache[v] = c; }
+    }
+    img.data.set([c[0], c[1], c[2], 255], i * 4);
+  }
+  ctx.putImageData(img, 0, 0);
+  // overlay: inventions and transfers up to the slider
+  const box = $('mapbox').clientWidth - 22, W = box, H = box / 2;
+  $('stack').style.height = H + 'px';
+  const sx = W / M.w, sy = H / M.h, ov = $('ov'); ov.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  let s = `<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#fff"/></marker></defs>`;
+  for (const g of [0, 30, 60, 90, 120, 150]) s += `<line x1="0" x2="${W}" y1="${g * sy}" y2="${g * sy}" stroke="#ffffff" opacity=".04"/>`;
+  const ev = events();
+  for (const e of ev) {
+    if (e.k < at) continue;
+    const b = centreAt(e.lid, e.k); if (!b) continue;
+    if (e.how === 'invented' || e.how === 'tamed' || e.how === 'kit') {
+      s += `<g transform="translate(${b[0] * sx},${b[1] * sy})"><path d="M0,-9 L2.6,-3 L9,-3 L4,1.5 L6,8 L0,4 L-6,8 L-4,1.5 L-9,-3 L-2.6,-3 z" fill="${howCol(e.how)}" stroke="#000" stroke-width="1"/></g>`;
+    } else if (e.from) {
+      const a = centreAt(e.from, e.k); if (!a) continue;
+      let ax0 = a[0], bx = b[0]; if (bx - ax0 > M.w / 2) ax0 += M.w; else if (ax0 - bx > M.w / 2) ax0 -= M.w;
+      const mx = (ax0 + bx) / 2 * sx, my = (a[1] + b[1]) / 2 * sy - Math.hypot(bx - ax0, b[1] - a[1]) * sx * 0.18;
+      s += `<path d="M${ax0 * sx},${a[1] * sy} Q${mx},${my} ${bx * sx},${b[1] * sy}" fill="none" stroke="${howCol(e.how)}" stroke-width="1.6" opacity=".85" marker-end="url(#ar)"/>`;
+    }
+  }
+  for (const e of ev) if (e.k >= at) { const b = centreAt(e.lid, e.k); if (b && b[2] > 30) s += `<text x="${b[0] * sx + 8}" y="${b[1] * sy + 12}" style="font-size:10px;paint-order:stroke;stroke:#000;stroke-width:3px">${esc(short(e.lid))}</text>`; }
+  ov.innerHTML = s;
+  $('atLab').textContent = ago(at);
+  $('mom').textContent = `(ranges as at ${ago(m.kyr)})`;
+  const n = PEOPLES.filter((l) => known(l.id)).length;
+  side(ev, n);
+}
+function events() {
+  return PEOPLES.map((l) => { const v = D.known[l.id][tech]; return v && { lid: l.id, k: v[0], how: v[1], from: v[2] }; }).filter(Boolean).sort((a, b) => b.k - a.k);
+}
+function side(ev, n) {
+  const t = TECH[tech];
+  $('side').innerHTML = `${techTip(tech)}<h3>${n} peoples know it ${at > 0 ? 'by ' + ago(at) : 'now'} · ${ev.length} ever</h3>
+    <table class="t"><tr><th>when</th><th>people</th><th>how</th></tr>${ev.map((e) => `<tr data-k="${e.k}" class="${e.k < at ? 'future' : ''}"><td class="n">${fmt(e.k)}</td><td>${sw(e.lid)}${esc(short(e.lid))}</td><td><span class="sw" style="background:${howCol(e.how)}"></span>${esc(e.how)}${e.from ? ' <span class="muted">from</span> ' + esc(short(e.from)) : ''}</td></tr>`).join('')}</table>`;
+  for (const tr of $('side').querySelectorAll('tr[data-k]')) tr.onclick = () => { at = +tr.dataset.k; $('at').value = Math.round(1000 * (ax.hi - Math.log10(Math.max(at, 0.05))) / (ax.hi - ax.lo)); draw(); };
+}
+function key() {
+  $('key').innerHTML = colour === 'how'
+    ? Object.keys(HOW_COL).map((h) => `<span><span class="sw" style="background:${HOW_COL[h]}"></span>${esc(h)}</span>`).join('') + `<span><span class="sw" style="background:rgb(${NOT})"></span>not yet</span><span><span class="sw" style="background:rgb(${EMPTY})"></span>empty</span>`
+    : `<span>new</span><span class="sw" style="width:80px;background:linear-gradient(90deg,#ffeca0,#d64828)"></span><span>long known</span><span><span class="sw" style="background:rgb(${NOT})"></span>not yet</span>`;
+}
+$('tech').onchange = (e) => { tech = e.target.value; at = 0; $('at').value = 1000; setup(); };
+$('colour').onchange = (e) => { colour = e.target.value; key(); draw(); };
+$('at').oninput = (e) => { at = toK(+e.target.value); draw(); };
+$('play').onclick = () => {
+  if (playing) { clearInterval(playing); playing = null; $('play').textContent = '▶ play'; return; }
+  let v = 0; $('play').textContent = '❚❚ stop';
+  playing = setInterval(() => { v += 8; $('at').value = v; at = toK(v); draw(); if (v >= 1000) { clearInterval(playing); playing = null; $('play').textContent = '▶ play'; } }, 60);
+};
+addEventListener('resize', draw);
+const q = new URLSearchParams(location.search); if (q.get('tech') && TECH[q.get('tech')]) tech = q.get('tech');
+$('tech').value = tech; key(); setup();
+if (q.get('at')) { at = +q.get('at'); $('at').value = Math.round(1000 * (ax.hi - Math.log10(Math.max(at, 0.05))) / (ax.hi - ax.lo)); draw(); }
+</script>
+</body>
+</html>

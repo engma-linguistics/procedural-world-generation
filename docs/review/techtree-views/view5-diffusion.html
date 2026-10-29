@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech diffusion · mockup</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+  #pane { overflow: auto; position: relative; }
+  #axis { position: sticky; top: 0; z-index: 3; background: var(--bg); display: block; }
+  .kpi { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; } .kpi div b { display: block; font-size: 17px; } .kpi div span { color: var(--muted); font-size: 11px; }
+  .nd { cursor: pointer; } path.ch { cursor: pointer; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<div class="bar">
+  <button id="mOne" class="on">one tech: its cascade</button><button id="mAll">all techs: who taught whom</button>
+  <span id="oneCtl"><span class="muted">tech</span> <select id="tech"></select></span>
+  <span id="allCtl" hidden><span class="muted">track</span> <select id="track"><option value="">all tracks</option></select>
+    <span class="muted">count</span> <select id="kinds"><option value="contact">contact only</option><option value="all">contact + shared</option></select>
+    <span class="muted">min</span> <input id="min" type="number" value="3" min="1" style="width:56px"></span>
+  <span class="key" id="key"></span>
+</div>
+<main><div id="pane"><svg id="axis"></svg><svg id="svg"></svg></div><div class="side" id="side"></div></main>
+<footer id="foot"></footer>
+<script src="tech-data.js"></script>
+<script src="common.js"></script>
+<script>
+$('hdr').innerHTML = header('view5');
+for (const k of D.tracks) { const g = document.createElement('optgroup'); g.label = k.name; for (const t of D.techs.filter((t) => t.track === k.id)) g.insertAdjacentHTML('beforeend', `<option value="${t.id}">${esc(tname(t.id))}</option>`); $('tech').appendChild(g); }
+for (const k of D.tracks) $('track').insertAdjacentHTML('beforeend', `<option value="${k.id}">${esc(k.name)}</option>`);
+let mode = 'one', tech = 'bronze', track = '', kinds = 'contact', minN = 3, focus = null;
+const KEY_HOW = () => Object.keys(HOW_COL).map((h) => `<span><span class="sw" style="background:${HOW_COL[h]}"></span>${esc(h)}</span>`).join('');
+// ---- one tech: the transmission tree, time left to right; a row per people, drawn under whoever passed it on
+function cascade() {
+  const recs = PEOPLES.map((l) => { const v = D.known[l.id][tech]; return v && { lid: l.id, k: v[0], how: v[1], from: v[2] }; }).filter(Boolean);
+  const by = Object.fromEntries(recs.map((r) => [r.lid, r])), kids = {};
+  const roots = [];
+  for (const r of recs) { if (r.from && by[r.from]) (kids[r.from] ||= []).push(r); else roots.push(r); }
+  const rows = [], seen = new Set();
+  const walk = (r, d) => { if (seen.has(r.lid)) return; seen.add(r.lid); r.d = d; rows.push(r); for (const c of (kids[r.lid] || []).sort((a, b) => b.k - a.k)) walk(c, d + 1); };
+  for (const r of roots.sort((a, b) => b.k - a.k)) walk(r, 0);
+  for (const r of recs) walk(r, 0);
+  const W = Math.max(860, $('pane').clientWidth - 4), LAB = 200, RH = 19, TOPH = 24, H = rows.length * RH + 16;
+  const oldest = Math.max(...recs.map((r) => r.k), 0.2), newest = Math.min(...recs.map((r) => r.k), oldest / 2);
+  const lo = Math.log10(Math.max(newest * 0.7, 0.05)), hi = Math.log10(oldest * 1.15);
+  const x = (k) => LAB + (1 - (Math.log10(Math.max(k, 0.05)) - lo) / (hi - lo)) * (W - LAB - 30);
+  const ticks = []; for (const k of [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]) if (Math.log10(k) >= lo && Math.log10(k) <= hi) ticks.push(k);
+  $('axis').setAttribute('width', W); $('axis').setAttribute('height', TOPH);
+  $('axis').innerHTML = `<g class="axis">${ticks.map((k) => `<line x1="${x(k)}" x2="${x(k)}" y1="17" y2="24" stroke="#3a4658"/><text x="${x(k)}" y="13" text-anchor="middle">${fmt(k)}</text>`).join('')}<text x="8" y="13">${esc(tname(tech))}: ago</text></g>`;
+  let s = ticks.map((k) => `<line x1="${x(k)}" x2="${x(k)}" y1="0" y2="${H}" stroke="#1a2230"/>`).join('');
+  const Y = {}; rows.forEach((r, i) => { Y[r.lid] = 8 + i * RH + RH / 2; });
+  rows.forEach((r, i) => { if (r.d === 0) s += `<rect x="0" y="${8 + i * RH}" width="${W}" height="1" fill="#2a3446"/>`; });
+  for (const r of rows) if (r.from && by[r.from]) {  // drop at the giver's time, run along the taker's row: the run is the wait
+    const p = by[r.from];
+    s += `<path d="M${x(p.k)},${Y[p.lid]} V${Y[r.lid]} H${x(r.k)}" fill="none" stroke="${howCol(r.how)}" stroke-width="1.4" opacity=".75"/>`;
+  }
+  for (const r of rows) {
+    const cx = x(r.k), y = Y[r.lid], root = !(r.from && by[r.from]);
+    s += `<g class="nd" data-l="${r.lid}"><text x="${8 + r.d * 9}" y="${y + 4}" style="${root ? 'font-weight:600' : ''}">${esc(short(r.lid))}</text>
+      <rect x="${LAB - 16}" y="${y - 5}" width="10" height="10" rx="2" fill="${LINE[r.lid].color}"/>
+      ${root ? `<path transform="translate(${cx},${y})" d="M0,-7 L2,-2.3 L7,-2.3 L3,1.2 L4.6,6.2 L0,3.2 L-4.6,6.2 L-3,1.2 L-7,-2.3 L-2,-2.3 z" fill="${howCol(r.how)}"/>` : `<circle cx="${cx}" cy="${y}" r="4" fill="${howCol(r.how)}"/>`}</g>`;
+  }
+  $('svg').setAttribute('width', W); $('svg').setAttribute('height', H); $('svg').innerHTML = s;
+  for (const g of $('svg').querySelectorAll('.nd')) {
+    g.onmouseenter = (e) => { const r = by[g.dataset.l], p = r.from && by[r.from];
+      showTip(e, `${sw(r.lid)}<b>${esc(short(r.lid))}</b>: ${ago(r.k)}, ${esc(howText(r.how))}${r.from ? ` from ${sw(r.from)}${esc(short(r.from))}` : ''}${p ? `<div class="muted">waited ${fmt(Math.max(p.k - r.k, 0.001))} after its giver had it</div>` : ''}${(kids[r.lid] || []).length ? `<div>passed it on to ${(kids[r.lid]).length}</div>` : ''}`); };
+    g.onmouseleave = hideTip;
+  }
+  // the side: the tech and its spread in numbers
+  const waits = rows.filter((r) => r.from && by[r.from] && r.how === 'contact').map((r) => by[r.from].k - r.k).sort((a, b) => a - b);
+  const med = waits.length ? waits[waits.length >> 1] : null;
+  const top = Object.entries(kids).map(([k, v]) => [k, v.length]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const cnt = {}; for (const r of recs) cnt[r.how] = (cnt[r.how] || 0) + 1;
+  $('side').innerHTML = `${techTip(tech)}<h3>The spread</h3><div class="kpi"><div><b>${recs.length}</b><span>peoples ever</span></div><div><b>${roots.filter((r) => r.how === 'invented').length}</b><span>independent inventions</span></div><div><b>${med != null ? fmt(med) : '—'}</b><span>median wait by contact</span></div></div>
+    <table class="t">${Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([h, n]) => `<tr><td><span class="sw" style="background:${howCol(h)}"></span>${esc(howText(h))}</td><td class="n">${n}</td></tr>`).join('')}</table>
+    <h3>Passed it on most</h3><table class="t">${top.map(([k, n]) => `<tr><td>${sw(k)}${esc(short(k))}</td><td class="n">${n}</td></tr>`).join('') || '<tr><td class="muted">nobody</td></tr>'}</table>`;
+  $('key').innerHTML = KEY_HOW() + '<span>★ a root: invented, brought or tamed</span>';
+  $('foot').innerHTML = 'Each row a people that came to the tech, placed under the people it came from (depth-first: a cascade reads downwards). Time runs left to right on a log axis. A line drops at the giver\'s date and runs along the taker\'s row to the taker\'s date: its length is how long the tech waited at the border. Stars are roots: independent inventions, brought kits, tamings.';
+}
+// ---- all techs: peoples on a ring (oldest first, clockwise from the top), chords for techs passed between them
+function network() {
+  const W = Math.max(700, $('pane').clientWidth - 4), H = Math.max(640, $('pane').clientHeight - 6), cx = W / 2, cy = H / 2 + 6, R = Math.min(W, H) / 2 - 120;
+  $('axis').setAttribute('height', 0); $('axis').innerHTML = '';
+  const ok = (h) => (kinds === 'all' ? h === 'contact' || h === 'shared' : h === 'contact');
+  const flow = {}, out = {}, inn = {};
+  for (const l of PEOPLES) for (const [t, v] of Object.entries(D.known[l.id])) {
+    if (!v[2] || !ok(v[1]) || (track && TECH[t].track !== track)) continue;
+    const k = v[2] + '>' + l.id; flow[k] = (flow[k] || 0) + 1; out[v[2]] = (out[v[2]] || 0) + 1; inn[l.id] = (inn[l.id] || 0) + 1;
+  }
+  const nodes = PEOPLES.filter((l) => out[l.id] || inn[l.id]);
+  const ang = {}; nodes.forEach((l, i) => { ang[l.id] = -Math.PI / 2 + (i / nodes.length) * 2 * Math.PI; });
+  const P = (id, r = R) => [cx + r * Math.cos(ang[id]), cy + r * Math.sin(ang[id])];
+  const mx = Math.max(1, ...Object.values(flow));
+  let s = '';
+  const edges = Object.entries(flow).filter(([, n]) => n >= minN).sort((a, b) => a[1] - b[1]);
+  for (const [k, n] of edges) {
+    const [a, b] = k.split('>'), [x1, y1] = P(a, R - 6), [x2, y2] = P(b, R - 6);
+    const on = !focus || focus === a || focus === b;
+    s += `<path class="ch" data-a="${a}" data-b="${b}" data-n="${n}" d="M${x1},${y1} Q${cx},${cy} ${x2},${y2}" fill="none" stroke="${LINE[a].color}" stroke-width="${0.6 + 5 * n / mx}" opacity="${on ? (focus ? 0.85 : 0.45) : 0.04}"/>`;
+  }
+  for (const l of nodes) {
+    const [x, y] = P(l.id), [tx, ty] = P(l.id, R + 10), a = ang[l.id], right = Math.cos(a) >= 0;
+    const deg = a * 180 / Math.PI + (right ? 0 : 180);
+    const sz = 3 + Math.sqrt((out[l.id] || 0) + (inn[l.id] || 0)) * 0.6;
+    s += `<g class="nd" data-l="${l.id}"><circle cx="${x}" cy="${y}" r="${sz}" fill="${l.color}" stroke="${focus === l.id ? '#fff' : '#0e1218'}"/>
+      <text transform="translate(${tx},${ty}) rotate(${deg})" text-anchor="${right ? 'start' : 'end'}" dy="4" style="${focus === l.id ? 'font-weight:700' : ''};opacity:${!focus || focus === l.id || flow[focus + '>' + l.id] >= minN || flow[l.id + '>' + focus] >= minN ? 1 : 0.35}">${esc(l.name)}${alive(l) ? '' : ' †'}</text></g>`;
+  }
+  $('svg').setAttribute('width', W); $('svg').setAttribute('height', H); $('svg').innerHTML = s;
+  for (const g of $('svg').querySelectorAll('.nd')) {
+    g.onclick = () => { focus = focus === g.dataset.l ? null : g.dataset.l; network(); };
+    g.onmouseenter = (e) => showTip(e, `${sw(g.dataset.l)}<b>${esc(short(g.dataset.l))}</b><div>passed on ${out[g.dataset.l] || 0} · took up ${inn[g.dataset.l] || 0}</div><div class="muted">click to focus</div>`);
+    g.onmouseleave = hideTip;
+  }
+  for (const p of $('svg').querySelectorAll('path.ch')) {
+    p.onmouseenter = (e) => { const a = p.dataset.a, b = p.dataset.b;
+      const list = Object.entries(D.known[b]).filter(([t, v]) => v[2] === a && ok(v[1]) && (!track || TECH[t].track === track)).sort((x, y) => y[1][0] - x[1][0]);
+      showTip(e, `${sw(a)}<b>${esc(short(a))}</b> → ${sw(b)}<b>${esc(short(b))}</b>: ${list.length} techs<div>${list.slice(0, 18).map(([t, v]) => `${esc(tname(t))} <span class="muted">${fmt(v[0])}</span>`).join(', ')}${list.length > 18 ? ' …' : ''}</div>`); };
+    p.onmouseleave = hideTip;
+  }
+  const rank = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, n]) => `<tr><td>${sw(k)}${esc(short(k))}</td><td class="n">${n}</td></tr>`).join('');
+  const f = focus;
+  $('side').innerHTML = f ? `<h2>${sw(f)}${esc(LINE[f].full)}</h2><h3>Gave to</h3><table class="t">${Object.entries(flow).filter(([k]) => k.startsWith(f + '>')).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td>${sw(k.split('>')[1])}${esc(short(k.split('>')[1]))}</td><td class="n">${n}</td></tr>`).join('') || '<tr><td class="muted">nobody</td></tr>'}</table>
+      <h3>Took from</h3><table class="t">${Object.entries(flow).filter(([k]) => k.endsWith('>' + f)).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td>${sw(k.split('>')[0])}${esc(short(k.split('>')[0]))}</td><td class="n">${n}</td></tr>`).join('') || '<tr><td class="muted">nobody</td></tr>'}</table><p class="muted">Click the people again to clear.</p>`
+    : `<h2>Who taught whom</h2><p class="muted">${Object.values(flow).reduce((a, b) => a + b, 0)} tech transfers between ${nodes.length} peoples; ${edges.length} pairs with ${minN} or more shown. Click a people to focus it; hover a chord for the techs it carried.</p>
+      <h3>Gave most</h3><table class="t">${rank(out)}</table><h3>Took up most</h3><table class="t">${rank(inn)}</table>`;
+  $('key').innerHTML = '<span>chord colour: the giver · width: techs passed · dot size: transfers in and out</span>';
+  $('foot').innerHTML = 'Every tech that passed from one people to another (by contact, and optionally shared between a people and its own ways of life), summed per pair. Peoples sit on the ring oldest first, clockwise from the top. Inheritance at a split is left out: it is descent, not diffusion.';
+}
+function draw() { $('oneCtl').hidden = mode !== 'one'; $('allCtl').hidden = mode !== 'all'; $('mOne').classList.toggle('on', mode === 'one'); $('mAll').classList.toggle('on', mode === 'all'); mode === 'one' ? cascade() : network(); }
+$('mOne').onclick = () => { mode = 'one'; draw(); };
+$('mAll').onclick = () => { mode = 'all'; draw(); };
+$('tech').onchange = (e) => { tech = e.target.value; draw(); };
+$('track').onchange = (e) => { track = e.target.value; draw(); };
+$('kinds').onchange = (e) => { kinds = e.target.value; draw(); };
+$('min').onchange = (e) => { minN = Math.max(1, +e.target.value || 1); draw(); };
+addEventListener('resize', draw);
+const q = new URLSearchParams(location.search); if (q.get('tech') && TECH[q.get('tech')]) tech = q.get('tech'); if (q.get('mode')) mode = q.get('mode');
+$('tech').value = tech; draw();
+</script>
+</body>
+</html>

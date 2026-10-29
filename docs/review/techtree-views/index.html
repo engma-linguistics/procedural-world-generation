@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech tree views · mockups</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  body { display: block; height: auto; }
+  main { overflow: visible; padding: 14px 16px 30px; max-width: 980px; }
+  .v { margin: 0 0 16px; } .v h2 { margin: 0 0 4px; } .v p { margin: 4px 0; }
+  .v .good { color: var(--ok); } .v .hides { color: #e3a26b; }
+</style>
+</head>
+<body>
+<header><b>Technology: five other ways to show it</b><span class="muted">mockups for the owner to compare; the Technology tab itself is unchanged</span></header>
+<main>
+<p>All five use the real tech output of run <b>3097e3</b> (<i>tech39-2a7385</i>, the D&amp;D peoples preset on world <b>2a7385</b>): 98 techs in 8 tracks, 63 peoples (including extinct stems and ways of life), 3,042 "people knows tech since" records. The data is copied read-only from the store into <code>tech-data.js</code> by <code>extract_data.py</code> (JSON in a script tag so every page opens straight from the file). Hover nearly anything for its details; each page links to the others along the top.</p>
+
+<div class="v card"><h2><a href="view1-civ-tree.html">1 · The tree (Civilization style)</a></h2>
+<p>Eras run left to right as columns (prerequisite depth inside each era), the eight tracks are lanes, and arrows join each tech to what it needs. Hover a tech to light its whole chain back (gold) and forward (blue); click it for who has it and how it came. Pick a people and the tree turns into that people's progress: known techs filled, the next possible ones dashed, the rest dimmed.</p>
+<p><span class="good">Good at:</span> the shape of the tree itself: what leads to what, how long a chain is, where the bottlenecks are (containers, pottery, villages). The one view that explains <i>why</i> a people has not got something.
+<span class="hides">Hides:</span> time and peoples. It shows one people at a time and no dates beyond a label; the stone age is most of the tree, so it is wide and needs panning.</p></div>
+
+<div class="v card"><h2><a href="view2-timeline.html">2 · Per-people timeline</a></h2>
+<p>A swimlane per people on a log time axis from 20 Myr to the present: the people's own span as a faint bar, a dot for each tech it came to (colour by track, filled for its own inventions, a ring for contact). Pick a tech and its dots stand out, with lines from giver to taker. Sortable by start, by techs known, by language date or as the family tree.</p>
+<p><span class="good">Good at:</span> when: who got language first and how long the gap was, who is ahead, the Holocene burst, how peoples' paces differ. Shows all 63 peoples at once.
+<span class="hides">Hides:</span> which tech a given dot is (hover to tell) and the tree's structure. Dots crowd in the last 20 kyr; inherited techs are folded into a +N count unless switched on.</p></div>
+
+<div class="v card"><h2><a href="view3-map.html">3 · On the map</a></h2>
+<p>Pick a tech and a moment: the world's land, coloured by the people holding it (from the run's own range layer at 13 stored moments), lit where that people knows the tech by then, grey where it does not yet. Stars mark inventions, arrows run giver to taker. Press play to watch it spread from its first invention to the present; the list on the right jumps to each event.</p>
+<p><span class="good">Good at:</span> where: tech as geography, the "this continent has bronze, that one does not" picture a game master wants. Spread as a story.
+<span class="hides">Hides:</span> everything but one tech at a time, and peoples that hold no land of their own (overlays, small groups). Ranges move between only 13 snapshots, and the map is flat equirectangular at 1° pixels, not the globe.</p></div>
+
+<div class="v card"><h2><a href="view4-inventory.html">4 · What a people has (inventory)</a></h2>
+<p>One people's kit as cards, one per track, a chip per tech: known (edge colour: how it came, with the date), could come next (dashed; hover says why not yet: a missing prerequisite, land its country lacks, or just waiting), out of reach. Hover a chip to light its prerequisites and what it leads to. Pick a second people to compare, and an earlier moment to see the kit as it was.</p>
+<p><span class="good">Good at:</span> reading one people as a culture, quickly: furthest era, what they made themselves versus borrowed, what they are about to get. Closest to what the culinary side needs (fuels, pots, ovens, herding).
+<span class="hides">Hides:</span> the other 61 peoples, and time beyond the snapshot picker. Prerequisite arrows are hover-only.</p></div>
+
+<div class="v card"><h2><a href="view5-diffusion.html">5 · Diffusion (cascade and who taught whom)</a></h2>
+<p>Two modes. <b>One tech:</b> its transmission tree: each people that got it, drawn under the people it came from, along a time axis, so the line length is how long it waited at the border; stars are independent inventions. <b>All techs:</b> peoples on a ring with chords for the techs passed between each pair (width: how many), filterable by track; click a people to see whom it taught and learned from.</p>
+<p><span class="good">Good at:</span> the social history of technology: hubs (humans gave 175 techs by contact in this run), isolates, independent reinvention, how fast things cross borders.
+<span class="hides">Hides:</span> geography and the tree's structure; the ring loses detail beyond a few dozen chords (raise the minimum), and inheritance at splits is left out on purpose.</p></div>
+
+<p class="muted">Not built: a radial or sunburst by track (a prettier but less informative cousin of view 1), and a peoples × techs matrix (the current tab already is one). Rebuild the data for another run: <code>uv run python docs/review/techtree-views/extract_data.py /path/to/runs/RUN</code>.</p>
+</main>
+</body>
+</html>
