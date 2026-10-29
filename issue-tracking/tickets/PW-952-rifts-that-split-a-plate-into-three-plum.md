@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-565, PW-827, PW-949]
 refs: [planet/tectonics/events.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -25,5 +25,6 @@ Try a plume-centred rift on a big plate: two or three arms from one point, with 
 - [ ] Before/after plate maps in docs/review/tectonics/.
 
 ## Updates
+- 2026-10-29: Burke & Dewey 1973 on file (read 10-29). Arms at about 120 degrees (abstract, p. 406). Of their 45 selected junctions, 32 spread on two arms with the third failed, 3 spread on all three, 5 failed on every arm, and 5 are too young to tell (p. 426). Rifting happens 'especially' where the lithosphere is at rest over the plume (p. 406, p. 429). The independent aulacogen_odds 0.3 per arm gives 34% three-way, 44% two-way and 22% none, against 3/40, 32/40 and 5/40: see inbox draft draft-aulacogen-odds-burke-dewey.md.
 - 2026-10-28: Status todo -> done. Merged (lane 22): largest plate 41 -> 26% over 600-1000 Myr, paired 31/36 vs 31/36; owner approved the examples 10-28.
 - 2026-10-28: Created from inbox draft draft-triple-junction-rifts.md (found by coordinator).

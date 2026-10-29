@@ -15,7 +15,7 @@ Owner and a side session, 2026-10-28. The owner approved everything here. The ti
 
   Scatter is ~240× across the 95% band (σ ≈ 0.61 in log10). (checked: Table 1, p. 284: 240× is the ratio of the 97.5% and 2.5% tails of the T. rex intercept, log10 a 1.80 to 4.18, which folds in the unknown physiology; the text, p. 284, gives 150× at ±1.96σ for flesh-eating mammals of one body mass, σ ≈ 0.55.) Apply the law to the **ecological mass**: the mean over the age structure, weighted by survivorship. Do not use the maximum size. (checked: p. 284; Marshall averages the postjuvenile cohorts only, weighted by cohort share from survivorship data.)
 - **Carbone & Gittleman** (2002, Science 295:2273), Carnivora from 0.14 to 310 kg: carnivores per 10 t of prey = 89.1·M^-1.05; density per 100 km² = 197.6·M^-0.88 (M in kg). (checked: PDF p. 2, Science p. 2274; both fits N = 25, and Table 1 spans least weasel 0.14 kg to polar bear 310 kg.)
-- **Field metabolic rate** (Nagy, Girard & Brown 1999), in kJ/day with M in grams:
+- **Field metabolic rate** (Nagy, Girard & Brown 1999, Annu Rev Nutr 19:247), in kJ/day with M in grams (checked: Table 2, p. 260; n = 79 mammals, 95 birds, 55 reptiles):
   - mammals 4.82 M^0.734
   - birds 10.5 M^0.681
   - reptiles 0.196 M^0.889
@@ -131,7 +131,7 @@ Natural density uses Damuth at the 3.2 t ecological mass, with that food budget 
 | mammal carnivore | 1 per 137 km² | 1 per 2,000 km² |
 
 1 per 5,000 km² is 35-75× below that, outside the 95% band for any physiology. The resolution the owner accepted:
-- real large carnivores in human-dominated land run at a few percent of their potential (tigers ~3-4% of their historical numbers; Ripple et al. 2014);
+- real large carnivores in human-dominated land run at a few percent of their potential (tigers ~3-4% of their historical numbers). (Checked 2026-10-29: Ripple et al. 2014 does not give this. It gives range, not numbers: 17 of the 31 largest carnivores hold on average 47% of their historical range, <1% to 73%, tiger 18%, lion 17%; p. 1241484-2 and Table 1. The density figure still needs a source; see the inbox draft draft-ripple-few-percent-unsourced.md.);
 - so dragons sit near their natural density before peoples spread ("the age of dragons");
 - they fall as peoples press them, to ~1 per 5,000 km² at the present in peopled country;
 - country no people holds keeps skies closer to natural.

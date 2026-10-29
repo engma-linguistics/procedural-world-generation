@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-966, PW-962, PW-957, PW-833]
 refs: [planet/lineages/prey.py, docs/references/megafauna/README.md]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -37,6 +37,7 @@ gameattrs) would bring that down.
 - [ ] re-run the PW-967 review page (docs/review/megafauna/age_of_dragons.py) so the owner sees the change
 
 ## Updates
+- 2026-10-29: Coe, Cumming & Phillipson 1976 now on file (read 10-29). Fig. 3, p. 349: log10 B = 1.094 log10 NAAP + 0.389 (B kg/km2 live weight, NAAP g dry/m2/yr predicted from rainfall by Rosenzweig 1968; r = 0.966, 12 wildlife areas under 700 mm rain); on rainfall, log10 B = 1.685 log10 P - 1.095 (Fig. 4, p. 349, N = 20). At prey.py's C_FRAC the NAAP fit gives 0.8/1.9/4.9 t/km2 at 90/200/470 g C/m2/yr against prey.py's 0.6/1.9/7.0: the same at a steppe, 1.4x lower at a rich savanna. The slope (1.09 against McNaughton's 1.52) is shallower over a narrower range. No change proposed: the fits agree within McNaughton's scatter. KJ_PER_G_LIVE (7 kJ/g live) is confirmed by Farlow 1993 p. 172 (citing Peters 1983, p. 33). C_FRAC and KJ_PER_G_DRY are still unverified (no batch paper gives them).
 - 2026-10-28: Status todo -> done. Merged 10-28 (fun lane 42): McNaughton slope and intercept outright; conversions (0.45 gC/g, 17.5 kJ/g dry, 7 kJ/g live) unverified, on the wishlist. Present dragons/giants ~-40% on roll 7000. Review page re-run folded into PW-977 stage 1 (lane 41's probe is gone).
 - 2026-10-28: Created from inbox draft draft-prey-fit-from-papers.md (found by fun-lane-41).
 - 2026-10-28: fun-lane-42: McNaughton 1989 fit read from the PDF and put in prey.py (slope 1.52, intercept -4.79; conversions C_FRAC 0.45, 17.5 kJ/g dry, 7 kJ/g live are unverified assumptions, wishlist item added). 470 g C gives ~7 t/km2 vs the old 10 anchor. 6 planets x roll 7000 present counts, before -> after: dragons 128k -> 73k, giants 48k -> 31k (blue 50k -> 23k, frost giants 25k -> 12k). Coe 1976 still open. Not closed: PW-973 is the owner's call.

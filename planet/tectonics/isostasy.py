@@ -68,8 +68,9 @@ def ice_load(grid, ice, ratio=ICE_SINK, km=FLEX_KM):
     return np.maximum(smooth(grid, ratio * ice, km), 0.0)
 
 
-SAG_KM = 2.2  # km: thermal subsidence after infinite stretching, air-loaded (McKenzie 1978's ~3.2 km under water)
-SAG_TIME = 63.0  # Myr: the stretched lithosphere's cooling time constant (McKenzie)
+SAG_KM = 2.2  # km: thermal subsidence after infinite stretching, air-loaded: McKenzie 1978 (EPSL 40:25) eq. 12, E0 = 4 a rho0 alpha T1 /
+# (pi^2 (rho0 - rho_w)) = 3.2 km under water (Table 1 p. 27, p. 28); with rho0 in place of rho0 - rho_w (3.33 against 2.33 g/cm3), 2.2 km. Checked.
+SAG_TIME = 63.0  # Myr: the stretched lithosphere's cooling time constant, tau = 62.8 My (McKenzie 1978, Table 1 p. 27). Checked.
 MOAT_MAX = 2500.0  # m: deepest a moat gets, smoothly (the Ganges foreland's basement is ~4-5 km down under its fill)
 ROOT = 1000.0 - ISO_LAND  # m of root per km of extra continental crust (Airy: the part that doesn't show)
 
@@ -89,7 +90,8 @@ def subsidence(grid, thick, cont, rec, t, flexure=0.15, sag=SAG_KM, sag_time=SAG
       keep their Airy height (the crust model makes their thickness), so
       the belt itself isn't held up by the plate.
     - Thermal sag after rifting: a stretched lithosphere starts hot and
-      buoyant and sinks as it cools (McKenzie 1978): sag x f(beta) of
+      buoyant and sinks as it cools (McKenzie 1978, eqs. 10-11, p. 28:
+      e(t) ~ E0 r exp(-t/tau), r = (beta/pi) sin(pi/beta)): sag x f(beta) of
       uplift, f = (beta/pi) sin(pi/beta), decaying over sag_time, beta =
       e^rift_strain from the record. Airy isostasy gives the thinned crust's
       final, cold height at once; this adds the hot start, so a rift's

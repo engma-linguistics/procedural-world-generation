@@ -10,8 +10,11 @@ the PW-967 review before any is fixed):
   mass-scaled foragers (below) x the land's productivity over its median (lineages.prey.productivity, the PW-833 rule).
 - "mesotherm": Damuth's law, density = a M^-0.75, on the intercept Marshall et al. (2021, Science 372:284) fit to dinosaurs,
   log10 a = 2.99 (M in g, per km2; checked: Marshall Table 1, p. 284), at the ecological mass, its food spread over every age: ~1 per 65 km2 for the base schedule,
-  uniform over the kind's country. Reptile field metabolic rate (Nagy, Girard & Brown 1999) at dragon size is ~0.55 of a mammal's,
-  about the factor between this and the mammal-carnivore intercept.
+  uniform over the kind's country. Reptile field metabolic rate (Nagy, Girard & Brown 1999, Annu Rev Nutr 19:247, Table 2 p. 260:
+  reptiles 0.196 M^0.889, mammals 4.82 M^0.734 kJ/day, M in g; checked) at dragon size is ~0.55 of a mammal's, about the factor
+  between this and the mammal-carnivore intercept. Farlow 1993 (Am J Sci 293:167, p. 187) fits reptile density = 66.07 M^-1.01
+  per km2 (M kg; Damuth 1987's reptile data plus Komodo dragons, from animals two orders of magnitude lighter), ~1 per 50 km2 at
+  3.2 t: the same order as this line.
 - "mammal": the same on the mammal-carnivore intercept (log10 a = 2.67): ~1 per 137 km2.
 The dragons' ecological mass, stage shares and generation time follow meta.dragon_ages (lineages.dragon_ages, PW-958, PW-959).
 Giants under "mesotherm" and "mammal" are uniform mass-scaled foragers: human foragers (~0.1 per km2, the proposal's median, whose source is
@@ -22,12 +25,14 @@ storm giants (7.3 t) ~1 per 345.
 The older note here ("an apex hunter two to three orders below the herbivore line", after Carbone & Gittleman) was unsupported:
 their carnivore line sits ~1.5 orders below the herbivores'.
 
-Peoples press both down easily (`pressure`, one suppression number: persecution, not hunting): large carnivores in human-held
-land run at a few percent of their potential (Ripple et al. 2014, Science 343:1241484). Where small folk hold the land a kind sits
+Peoples press both down easily (`pressure`, one suppression number: persecution, not hunting). Ripple et al. 2014 (Science
+343:1241484, on file) shows the large carnivores pushed back by people (17 of the 31 largest hold on average 47% of their historical
+range, from <1% to 73%: tiger 18%, lion 17%; p. 1241484-2 and Table 1); it gives no figure for density against potential, so the
+"few percent of their potential" behind the present-day value has no source on file. Where small folk hold the land a kind sits
 at the present-day value (`local_density`); where no people holds it, at its natural density. Before the peoples spread they were
 many more: the age of dragons (`ages`).
-Of these papers Marshall 2021, Carbone & Gittleman 2002 and Hamilton et al. 2007 are on file; Damuth, Nagy (slopes from its abstract), Binford and
-Ripple are cited as the proposal gives them and are still to be fetched (docs/references/megafauna/README.md, PW-962).
+Of these papers Marshall 2021, Carbone & Gittleman 2002, Hamilton et al. 2007, Nagy et al. 1999, Ripple et al. 2014 and Farlow 1993
+are on file; Damuth and Binford are cited as the proposal gives them and are not on file (docs/references/megafauna/README.md).
 
 They live long (dragons a few hundred years a generation, giants 50-80 yr), so few of them persist: their patches' viable number
 is smaller (History.line_mvp), and pockets within flight or long range of each other are one population (linked_pockets).
@@ -66,16 +71,21 @@ LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2
 NATURAL = ("prey", "mesotherm", "mammal")  # meta.megafauna_natural: the candidates
 NATURAL_DEFAULT = "prey"
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
-OFFTAKE = 0.1  # the share of the wild herds' standing biomass a predator can take a year and keep them (PW-967's rough figure, ~10%/yr; UNVERIFIED, no
-# source on file: wild ungulate populations of a few ten percent yearly production can be cropped sustainably, but not a figure for one predator guild)
+OFFTAKE = 0.1  # the share of the wild herds' standing biomass a predator can take a year and keep them (PW-967's rough figure, ~10%/yr). Bounded
+# by Farlow 1993 (Am J Sci 293:167): prey biomass turnover = 0.94 M^-0.28 per yr (M kg; eq. 6, p. 172, from Farlow 1990), 0.26 / 0.17 /
+# 0.14 per yr for 100 / 500 / 1000 kg prey, is what every predator together could take; real big predators get less (prey:predator
+# 100:1-200:1 in modern large-mammal faunas against his 50:1 best case, p. 176). 0.1 sits inside that; the value itself is a judgement
 STOCK_TOLERABLE = 0.1  # the share of herders' stock the herders tolerate losing a year to dragons before they leave the range (UNVERIFIED; a model
-# assumption: herds turn over at ~15-25%/yr, so a tenth lost is a bad year they put up with, PW-977, to be sourced)
+# assumption: herds turn over at ~15-25%/yr (Farlow 1993's eq. 6, p. 172, gives 0.17/yr for 500 kg animals), so a tenth lost is a bad
+# year they put up with, PW-977; the herders' tolerance itself is to be sourced)
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
-FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring)
+FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring).
+# Cross-check: Jetz et al. 2004 (Science 306:266, Table 1 p. 268) fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70);
+# at 3.2 t that is ~8,400 km2, a disc ~52 km in radius (a far extrapolation beyond the living carnivores)
 FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per km2, PW-976) is for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
 PRESS_N0 = 0.05  # peoples press megafauna easily: the pressure is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell, so a
 # thin forager band (0.1 per km2, held at half its habitat) presses ~2/3 of the way and any settled people all the way (owner, PW-963:
-# "pushed down easily by peoples"; large carnivores in human-held land at a few percent of their potential, Ripple et al. 2014)
+# "pushed down easily by peoples"; Ripple et al. 2014 shows large carnivores' ranges cut to ~half by people, not their density)
 
 
 def eco_mass(h: History, line) -> float:

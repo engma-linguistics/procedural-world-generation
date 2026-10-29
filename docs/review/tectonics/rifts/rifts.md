@@ -47,8 +47,12 @@ Each arm fails with odds `aulacogen_odds` (0.3): one failed arm leaves an aulaco
 along the other two arms; two failed arms split nothing (logged as an `aulacogen` event). Every piece must hold
 at least 10% of the plate and no continental sliver; of 4 arm geometries the first that qualifies is used.
 Logged as a `rift` event whose text names the triple junction. Literature: Burke & Dewey 1973, "Plume-generated
-triple-junctions: key indicators in applying plate tectonics to old rocks", J. Geol. 81:406-433 (title and pages
-checked); Afar and the Benue trough are the standard examples. The odds are a judgement: most of the big
+triple-junctions: key indicators in applying plate tectonics to old rocks", J. Geol. 81:406-433 (read 2026-10-29,
+PDF in docs/references/tectonics/: rifts at about 120 degrees, abstract p. 406; of their 45 selected junctions, 32
+spread on two arms with the third failed, 3 on all three, 5 on none, 5 too young to tell, p. 426; plumes rift
+"especially" lithosphere at rest over them, p. 429); Afar and the Benue trough are the standard examples. Against
+those counts the independent 0.3 per arm gives too many three-way splits (34% against 3 of 40); see the inbox
+draft draft-aulacogen-odds-burke-dewey.md. The odds are a judgement: most of the big
 continental flood basalts of the last 300 Myr came just before a breakup (CAMP, Karoo-Ferrar, Parana-Etendeka,
 Deccan, North Atlantic, Afar), some didn't (Siberia, Emeishan, Columbia River).
 In the examples: 0-3 triple junctions per 200 Myr per run, so they add breakups without dominating.
