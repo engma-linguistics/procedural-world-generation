@@ -170,7 +170,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._deep_now = deep
             self._dens_memo = None
             self._press = MG.pressure(self, self.p, env["land"]) if any(x.megafauna for x in L) else None
-            self._prey = MG.prey_now(self, self.p, self._press, tags) if self._press is not None and not deep else None
+            self._prey, self._food, _ = MG.prey_and_food(self, self.p, self._press, tags) if self._press is not None and not deep else (None, None, None)
             self._start_due(step, env, tags, Ks)
             if self.animals is not None:
                 self.animals.step(step, env, tags, self.p, self._native)

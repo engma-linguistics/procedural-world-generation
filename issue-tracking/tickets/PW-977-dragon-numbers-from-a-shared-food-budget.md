@@ -49,6 +49,7 @@ Options:
 Lean: C (A in stages), with the younger age schedule (PW-958), which halves food per dragon.
 
 ## Updates
+- 2026-10-29: fun-lane-43 stage 1 done: dragons of all kinds in a cell are held together to the food there (megafauna.food_scale: 10%/yr of the wild herds + 10%/yr of the herders' stock, both unverified, over the schedule's 5.4 cattle a year per dragon); wild prey and stock are taken in proportion to supply. meta.dragon_km2 still sets the pressed density; the cap applies on top as a minimum. Result: the cap never binds at the defaults (identical counts with it off on 4 of 4 checked runs; worst cell 16% of its supply, worst pocket stock loss 0.9%/yr); the old section 5 >100% was an artefact of putting an ancient's whole kill on the stock. Review page rebuilt (docs/review/megafauna/probe.py, age-of-dragons.html on 2a7385 L7, roll 7000). Drafts: cap does not bind (needs-decision), constants unsourced.
 - 2026-10-28: Stage 1 also re-runs the PW-967 review page (age_of_dragons.py; rebuild a probe that writes RUN.npz/SERIES.json, since lane 41's is gone) with the new prey and the younger schedule.
 - 2026-10-28: Status needs-decision -> todo. Owner 10-28: go with C (staged): 1) food cap against wild prey + stock, 2) peoples' share, 3) persecution. Younger schedule (PW-958). Stage 1 starts after the PW-975 McNaughton lane merges.
 - 2026-10-28: Created from inbox draft draft-megafauna-food-budget-equilibrium.md (found by coordinator).

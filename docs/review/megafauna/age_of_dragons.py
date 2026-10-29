@@ -50,6 +50,8 @@ dmask = np.zeros(g.n, bool)  # the dragons' own country: any kind's suitability 
 for lid in dragons:
     dmask |= S[mf_ids.index(lid)] >= MG.SUITABLE
 prey, wild0, wild, lvs, press = z["prey"], z["wild0"], z["wild"], z["livestock"], z["press"]
+supply, live, demand, stock_take, dens = z["supply"], z["live"], z["demand"], z["stock_take"], z["dens"]  # (PW-977: the food cap)
+CUR = next(r["ages"] for r in dragons.values() if r.get("ages"))  # the run's age schedule (the default, "younger")
 prey_med = float(np.median(prey[dmask])) if dmask.any() else 1.0
 
 
@@ -112,9 +114,9 @@ rd = (rd[0], rd[-1])
 
 # fig 1: maps. natural (prey, base) density over the dragons' country, and the present pockets
 fig, axs = plt.subplots(1, 2, figsize=(15, 3.9))
-natd = nat_density("base", "prey", prey) * dmask
+natd = nat_density(CUR, "prey", prey) * dmask
 raster(axs[0], natd, cmap="Blues", vmax=np.percentile(natd[dmask], 95))
-axs[0].set_title(f"The age of dragons: natural density from the prey (base schedule)\n~{dens_rows[0][3]:,.0f} dragons in their country; darker = more", fontsize=10)
+axs[0].set_title(f"The age of dragons: natural density from the prey ({CUR} schedule)\n~{natd.sum() * AREA:,.0f} dragons in their country; darker = more", fontsize=10)
 raster(axs[1], press * land, cmap="Oranges", vmax=2.5)
 for lid, r in dragons.items():
     ps = r["pocket_list"]
@@ -174,13 +176,11 @@ natmeso_rows = area_rows(lambda n: nat_density(n, "mesotherm"))
 
 # ---- food against livestock, in California-sized squares of dragon country --------------------------------------------------
 # expected dragons per cell: presence x the run's local density (MG.local_density with the run's prey and pressure) x area
-base = DA.structure("base")
-coef = MG.CARBONE_A * base["eco_mass_kg"] ** -MG.CARBONE_B / 10.0
-dloc = np.maximum(coef * prey, 1e-12)
-dloc = dloc * np.minimum(1.0, (1.0 / DKM2) / dloc) ** press  # (MG.local_density, as the run had it)
+base = DA.structure(CUR)
+dens_of = {lid: dens[mf_ids.index(lid)] for lid in dragons}  # (each kind's density as the run had it: pressed by the peoples, held to its food)
 expd = np.zeros(g.n)
 for lid in dragons:
-    expd += np.where(P[ids.index(lid)] >= 0.02, P[ids.index(lid)], 0.0) * dloc * AREA
+    expd += np.where(P[ids.index(lid)] >= 0.02, P[ids.index(lid)], 0.0) * dens_of[lid] * AREA
 side = np.sqrt(424000.0)  # km
 cand = np.flatnonzero(dmask & land)
 best = []
@@ -204,7 +204,9 @@ for c, sel in best:
     n_st = np.array(base["share"]) * n
     eaten = int(round(sum(x * f for x, f in zip(n_st, base["stage_cattle_yr"]))))
     head = float(lvs[sel].sum() * AREA / PR.HEAD_T)
-    food_rows.append((round(float(lat[c]), 1), round(float(lon[c]), 1), np.round(n_st).astype(int), eaten, head))
+    use = float(demand[sel].sum() / max(supply[sel].sum() * AREA / PR.HEAD_T, 1e-9))
+    take = float(stock_take[sel].sum() / max(live[sel].sum() * AREA / PR.HEAD_T, 1e-9))
+    food_rows.append((round(float(lat[c]), 1), round(float(lon[c]), 1), np.round(n_st).astype(int), eaten, head, use, take))
 
 # fig 5: ranges over herders' country. Around the pocket with the most ancients among livestock, a 500 km square: each cell's
 # expected adults and ancients (presence x the run's local density x area x the stage share) drawn as Poisson numbers, each a
@@ -225,11 +227,11 @@ n_circ = {2: 0, 3: 0}
 for lid in dragons:
     k = ids.index(lid)
     for c in np.flatnonzero(inb & (P[k] >= 0.02)):
-        e = float(P[k][c] * dloc[c] * AREA)
+        e = float(P[k][c] * dens_of[lid][c] * AREA)
         pt = max(float(prey[c]), 0.05)
         for s_ in (2, 3):
             for _ in range(rng.poisson(e * base["share"][s_])):
-                rkm = np.sqrt(base["stage_cattle_yr"][s_] * PR.HEAD_T / (MG.OFFTAKE * pt) / np.pi)
+                rkm = np.sqrt(base["stage_cattle_yr"][s_] * PR.HEAD_T / max(float(supply[c]), 0.02) / np.pi)
                 x = lon[c] + rng.uniform(-0.5, 0.5) * np.sqrt(AREA) / 111.0 / cl
                 y = lat[c] + rng.uniform(-0.5, 0.5) * np.sqrt(AREA) / 111.0
                 ax.add_patch(matplotlib.patches.Ellipse((x, y), 2 * rkm / 111.0 / cl, 2 * rkm / 111.0, fill=False, ec=KINDS[kind(lid)],
@@ -239,7 +241,11 @@ herd_here = float(lvs[inb].sum() * AREA / PR.HEAD_T)
 ax.set_title(f"An ancient's country: {n_circ[3]} ancients (solid), {n_circ[2]} adults (dashed)\n500 km square at {p0['lat']}, {p0['lon']};"
              f" livestock shaded, ~{herd_here:,.0f} head", fontsize=10)
 img_range = save(fig, "ranges.png")
-anc_rng = base["stage_cattle_yr"][3] * PR.HEAD_T / (MG.OFFTAKE * 1.0)
+anc_rng = base["stage_cattle_yr"][3] * PR.HEAD_T / (MG.OFFTAKE * 1.0)  # (at 1 t/km2 of wild prey)
+worst_cell = float((demand / np.maximum(supply * AREA / PR.HEAD_T, 1e-12)).max())
+pk_all = [p for r in dragons.values() for p in r["pocket_list"] if p.get("food_use") is not None]
+worst_pk = max((p["food_use"] for p in pk_all), default=0.0)
+worst_take = max((p["stock_take"] for p in pk_all if p.get("stock_take") is not None and p.get("livestock_head", 0) >= 20), default=0.0)
 
 # ---- per kind -------------------------------------------------------------------------------------------------------------------
 kind_rows = sorted(((kind(lid), r["count"], r.get("stages") or [0] * 4, r.get("natural_count"), r.get("peopled_share"),
@@ -250,8 +256,8 @@ for lid, r in dragons.items():
     for p in r["pocket_list"]:
         if p.get("stages") and p["stages"][3] and p.get("livestock_head"):
             bounties.append((p["livestock_head"], kind(lid), p))
-bounties = [b for b in bounties if b[0] / max(b[2]["km2"], 1) * b[2].get("ancient_range_km2", 0) >= 20]  # (at least a herd of 20 in its range)
-bounties.sort(key=lambda x: x[0] / max(x[2]["km2"], 1) * x[2].get("ancient_range_km2", 0))  # (the smallest herds under an ancient first: the ruined valleys)
+bounties = [b for b in bounties if b[0] >= 20 and b[2].get("stock_take") is not None]  # (at least a herd of 20 there)
+bounties.sort(key=lambda x: -x[2]["stock_take"])  # (the largest share of the stock taken first: the valleys that would pay tribute)
 
 # ---- html -----------------------------------------------------------------------------------------------------------------------
 T = lambda rows: "".join(f"<tr><td>{nm}</td><td>{km2:,}</td>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>" for nm, km2, cells in rows)
@@ -262,17 +268,15 @@ sched_tbl = "".join(
     f"<td>{DA.structure(n)['cattle_yr']:.1f}</td><td>{DA.structure(n)['stage_cattle_yr'][2]:.0f} / {DA.structure(n)['stage_cattle_yr'][3]:.0f}</td></tr>"
     for n in SCHED)
 dens_tbl = "".join(f"<tr><td>{lab}</td><td>{n}</td><td>1 per {inv:,.0f}</td><td>{cnt:,.0f}</td></tr>" for lab, n, inv, cnt in dens_rows)
-food_tbl = "".join(f"<tr><td>{a}, {b}</td><td>{DA.stages_text(list(st)) or '-'}</td><td>{e:,}</td><td>{h:,.0f}</td><td>{(e / h if h else float('nan')):.2%}</td></tr>"
-                   for a, b, st, e, h in food_rows)
+food_tbl = "".join(f"<tr><td>{a}, {b}</td><td>{DA.stages_text(list(st)) or '-'}</td><td>{e:,}</td><td>{h:,.0f}</td><td>{(f'{e / h:.2%}' if h else '-')}</td><td>{u:.1%}</td><td>{t:.2%}</td></tr>"
+                   for a, b, st, e, h, u, t in food_rows)
 kind_tbl = "".join(f"<tr><td><span class='sw' style='background:{KINDS[k]}'></span>{k}</td><td>{n:,}</td><td>{DA.stages_text(st)}</td>"
                    f"<td>{(nc or 0):,}</td><td>{(ps or 0):.0%}</td><td>{(sr or 0):.0%}</td></tr>" for k, n, st, nc, ps, sr in kind_rows)
 def _bounty_li(h, k, p):
-    dens_head = h / max(p["km2"], 1)  # head of stock per km2 in the pocket
-    herd = dens_head * p.get("ancient_range_km2", 0)
     eat = base["stage_cattle_yr"][3]
     return (f"<li>{p['stages'][3]} ancient {k} dragon{'s' if p['stages'][3] > 1 else ''} in the {p['country']} at {p['lat']}, {p['lon']}: each takes"
-            f" ~{eat:.0f} head a year; its ~{p.get('ancient_range_km2', 0):,} km² range holds ~{herd:,.0f} head of the herders' stock"
-            f" ({eat / max(herd, 1e-9):.0%} a year)</li>")
+            f" ~{eat:.0f} head a year; the dragons there use {p.get('food_use') or 0:.0%} of the food the land supplies and take"
+            f" {p.get('stock_take') or 0:.1%} of the {p['livestock_head']:,} head of the herders' stock</li>")
 
 
 bounty_li = "".join(_bounty_li(h, k, p) for h, k, p in bounties[:4])
@@ -290,8 +294,8 @@ td:first-child,th:first-child{{text-align:left}} .sw{{display:inline-block;width
 .wrap{{overflow-x:auto}}
 </style></head><body>
 <h1>The age of dragons: natural against present numbers</h1>
-<div class="mut">PW-967 review, for the owner. World 2a7385 (L7), dnd peoples, roll 7000, settings at their (not final) defaults: natural density from the prey,
-base age schedule, generation from the schedule, 1 dragon per {DKM2:,.0f} km² and 1 giant per 2,000 km² where peoples press them. The other candidates are
+<div class="mut">PW-967 review, for the owner. World 2a7385 (L7), dnd peoples, roll 7000, settings at their defaults (owner 10-28): natural density from the prey,
+{CUR} age schedule, dragon generation 430 yr, dragons held to their food (PW-977 stage 1), 1 dragon per {DKM2:,.0f} km² and 1 giant per 2,000 km² where peoples press them. The other candidates are
 worked from the same run's fields. Nothing is picked: the settings are meta.megafauna_natural, meta.dragon_ages, meta.dragon_generation.</div>
 <h2>1. Before the peoples, and now</h2><img src="{img_maps}" alt="maps">
 <div class="row"><div class="wrap"><table><tr><th>natural density</th><th>schedule</th><th>per dragon</th><th>dragons in their country</th></tr>{dens_tbl}
@@ -300,21 +304,26 @@ worked from the same run's fields. Nothing is picked: the settings are meta.mega
 Damuth rows are uniform. Present: 1 per {DKM2:,.0f} is {rp[0]:.0f}-{rp[1]:.0f}x below the prey-based values, {rd[0]:.0f}-{rd[1]:.0f}x below Damuth's.</div></div>
 <img src="{img_time}" alt="over time" style="max-width:520px"></div>
 <h2>2. What they eat from: wild herds and livestock</h2><img src="{img_prey}" alt="prey">
-<div class="mut">Wild herbivores proportional to grazing NPP through ~10 t/km² on rich savanna (the McNaughton 1989 / Coe 1976 fits are not on file yet);
+<div class="mut">Wild herbivores from grazing NPP by McNaughton et al. 1989's fit (conversion factors unverified, prey.py);
 small folk cut them by up to 60% outside tundra and mountains; livestock by way of life. A model, not a fit: see planet/lineages/prey.py.</div>
 <h2>3. Age schedules (PW-958)</h2><img src="{img_ages}" alt="schedules">
 <table><tr><th>schedule</th><th>mortality wy/yg/ad/anc</th><th>ancients</th><th>ecological mass</th><th>generation (flat / ~mass), yr</th><th>cattle/yr per dragon</th><th>adult / ancient cattle/yr</th></tr>{sched_tbl}</table>
 <h2>4. Counts over familiar areas (anc = ancients, ad = adults, yg = young, wy = wyrmlings)</h2>
-<div class="mut">Owner's hunch to compare, not a target: California ~2 ancients, ~10 adults, 30+ young.</div>
+<div class="mut">Counts for the dragon country as a whole are the run's; these are per area at the pressed or natural density, before the food cap. Owner's hunch to compare, not a target: California ~2 ancients, ~10 adults, 30+ young.</div>
 <div class="wrap"><b>Present, peopled dragon country (1 per {DKM2:,.0f} km²)</b><table><tr><th>area</th><th>km²</th>{sched_head}</tr>{T(present_rows)}</table></div>
 <div class="wrap"><b>Natural, from the prey (at the dragon country's median, {prey_med:.1f} t/km²)</b><table><tr><th>area</th><th>km²</th>{sched_head}</tr>{T(natprey_rows)}</table></div>
 <div class="wrap"><b>Natural, Damuth on Marshall's dinosaur line</b><table><tr><th>area</th><th>km²</th>{sched_head}</tr>{T(natmeso_rows)}</table></div>
-<h2>5. Food against the livestock beside them (present, base schedule)</h2>
-<div class="row"><div class="wrap"><table><tr><th>California-sized square at</th><th>dragons there</th><th>cattle eaten a year</th><th>livestock head there</th><th>share</th></tr>{food_tbl}</table>
+<h2>5. Food against the livestock beside them (present, {CUR} schedule)</h2>
+<div class="mut">PW-977 stage 1: the land feeds dragons from the sustainable offtake of the wild herds ({MG.OFFTAKE:.0%}/yr, unverified) plus the share of the herders' stock they
+tolerate losing ({MG.STOCK_TOLERABLE:.0%}/yr, unverified); where the dragons would need more, there are fewer. They take wild prey and stock in proportion to what each supplies.
+Worst case in this run: a cell's need is {worst_cell:.1%} of its supply, a pocket's {worst_pk:.1%}, and no pocket with a herd loses more than {worst_take:.2%} of its stock a year.
+The earlier version of this table put an ancient's whole yearly kill against the stock in its range, as if it ate only stock (the "eaten / stock if all from stock" column, kept
+for comparison): that is not what a dragon in wild country does, and it is not a limit.</div>
+<div class="row"><div class="wrap"><table><tr><th>California-sized square at</th><th>dragons there</th><th>cattle eaten a year</th><th>livestock head there</th><th>eaten / stock if all from stock</th><th>food use (need / supply)</th><th>stock taken</th></tr>{food_tbl}</table>
 <div class="mut">In aggregate small. Locally an ancient takes ~{base['stage_cattle_yr'][3]:.0f} head a year (~{base['stage_cattle_yr'][3] * PR.HEAD_T:.0f} t live): at 1 t/km² of prey and
-10%/yr offtake that is ~{anc_rng:,.0f} km² of wild country, or a valley of herders. That is where bounties come from (PW-961):</div><ul>{bounty_li or '<li>none in this run</li>'}</ul></div>
+10%/yr offtake that is ~{anc_rng:,.0f} km² of wild country. Where the herders' stock is the most of what is there, that is where bounties come from (PW-961):</div><ul>{bounty_li or '<li>none in this run</li>'}</ul></div>
 <img src="{img_range}" alt="ranges" style="max-width:460px"></div>
-<h2>6. Per kind (present, base)</h2><table><tr><th>kind</th><th>now</th><th>by stage</th><th>natural in the same country</th><th>in peopled country</th><th>of their country reached</th></tr>{kind_tbl}</table>
+<h2>6. Per kind (present, {CUR})</h2><table><tr><th>kind</th><th>now</th><th>by stage</th><th>natural in the same country</th><th>in peopled country</th><th>of their country reached</th></tr>{kind_tbl}</table>
 <div class="mut">Giants (no stages): {giant_line}.</div>
 <p class="mut">Made by docs/review/megafauna/age_of_dragons.py from one run; sources in docs/references/megafauna/README.md (Carbone &amp; Gittleman 2002 and Marshall et al. 2021 on file;
 Nagy et al. 1999's reptile intercept unverified).</p>
