@@ -2,7 +2,7 @@
 id: PW-1015
 title: How big is a regional population (deme)? ~20, ~60 or ~150 human demes on b69f51
 type: task
-status: todo
+status: in-progress
 parent: PW-981
 milestone: v2
 subsystem: timezoom
@@ -40,5 +40,6 @@ Options:
 Lean: A now; D later, since languages want both levels (family and dialect).
 
 ## Updates
+- 2026-10-29: Status todo -> in-progress. Owner 10-29: Mongolia-sized is too big. At least double the count. Show maps or numbers at 2-5x the current count. Some regions should stay one people and others fracture a lot. Dialects come later via zooms. A small lane is making the comparison maps (docs/review/lineages/deme-scale/).
 - 2026-10-29: Status needs-decision -> todo. Owner 10-29: ~60 human demes (regional-sized, about Mongolia) for now, not set in stone, and never continent-sized. This is going to be vibes-based: the owner wants to see examples and pick. Note for the language project: dialects at an England-size scale would be a finer level nested inside demes, not a smaller deme size.
 - 2026-10-29: Created from inbox draft draft-demes-scale.md (found by fun46-demes).
