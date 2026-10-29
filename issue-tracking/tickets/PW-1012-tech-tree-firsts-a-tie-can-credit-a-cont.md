@@ -1,8 +1,10 @@
 ---
+id: PW-1012
 title: "Tech tree firsts: a tie can credit a contact taker over the inventor"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: techtree-views
 blocked_by: []
 relates: [PW-675]
 refs: [planet/lineages/techtree.py, "run 3097e3", docs/review/techtree-views/]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -20,3 +24,6 @@ comes first in `meta.lineages` wins. In run 3097e3 (world 2a7385, D&D peoples), 
 mockup in docs/review/techtree-views/ show the taker as the first.
 Fix: on equal dates prefer `invented` (then `tamed`/kit) over `contact`/`shared`/`inherited`.
 - [ ] firsts[tid].how is never contact/shared/inherited when an inventor holds the same date
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-techtree-firsts-tie-prefers-taker.md (found by techtree-views).
