@@ -236,3 +236,21 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
   15 pairs): pass 11/15 against 14/15, icebox 2 against 5, end T -2.8 [-4.8, +3.2]. **Watch the iceboxes.** The
   package seems to cool generated worlds. Candidate reasons (unverified): more vapour carried poleward means more
   high-latitude snow, or the shallow domes change the winter continents' heat.
+- **Why might the package cool generated worlds toward iceboxes? Cheap hypotheses, each with the probe that tests it
+  (no sims; all unverified):**
+  - (a) **More land rain, more weathering, CO2 drawdown.** The preview says no: D's late CO2 +0.09 [-0.33, +0.41],
+    sink ref -0.06 [-0.15, +0.04], land rain +29 [-69, +125], none moved. Round 1 alone: late CO2 -0.21
+    [-0.39, +0.28]. Probe: on the finished pairs, compare the CO2 index and sink_raw histories A vs D, record by record,
+    over the 300-1000 Myr window and around each icebox's onset. Does CO2 fall before T, or after it (ice first)?
+  - (b) **More poleward vapour, more high-latitude snow, more albedo.** Rounds 2 and 3 both carry vapour poleward (40N
+    +0.74 -> +0.96 Sv on Earth). Probe: one Earth L6 solve per arm (quick.py, plus the snow and albedo fields that
+    climate.compute returns) comparing 50-70 deg land snowfall, winter snow cover and the albedo. Then the same on one
+    icebox draw's 600 Myr checkpoint, sliced once with A's code and once with D's.
+  - (c) **Round 1's cold domes cool the winter continents.** On Earth they don't: the winter T move is +0.7-0.9 C,
+    *warmer* (NE China, Japan, Quebec). But on a generated supercontinent the shallower high changes the winter
+    circulation. Probe: B's 15 finished runs already isolate round 1. Its icebox count is 5 vs A's 2 on the same 15
+    draws, so tabulate A / B / D icebox draws side by side. If B's iceboxes are D's, round 1 carries it, and the next
+    probe is a winter-T and ice-extent comparison of those draws' climate records.
+  - (d) (mine) **Less desert (arid % -4.9) means more vegetation and darker land, warmer, so it doesn't explain the
+    cooling.** But a wetter high-latitude interior raises the ice sheets' accumulation: the same probe as (b), on ice
+    mass balance.
