@@ -127,3 +127,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-28 (owner): demes PW-981 moved under the cultures epic PW-856, v2; PW-767 to v2 for an end-to-end language demo (PW-986), owner then rules demo vs accepted end state.
 - 2026-10-29: Merged PW-978/PW-971: dragons 5 Myr, hominid stem from 4 Myr (node 1.6 Myr, giantkin 1.1 Myr), reptilian splits 2-3 Myr; only knapping/handaxes before a node; language spreads by contact after it.
 - 2026-10-29: Merged PW-958 (younger default), PW-959 (430 yr), PW-977 stage 1 (food cap; does not bind at defaults, PW-990). Present dragons ~15.5k per run (12-run mean), up from ~10k: lighter dragons, more of them.
+- 2026-10-29: Merged lane 24 (water conservation for the continents' sea; null at L6, 29/36 vs 28/36). PW-880/PW-819 closed (fixes already on main). PW-994: judge on paired continuous measures, 4 rolls when passes decide. PW-995: weathering stays supply-limited for v1.

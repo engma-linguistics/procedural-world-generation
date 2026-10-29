@@ -1,7 +1,8 @@
 ---
+id: PW-994
 title: "The 2 x 18 paired judge can't resolve +-3 passes: a near-null change flipped 15 of 36 draws"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: lane24
 blocked_by: []
 relates: [PW-980, PW-948, PW-438]
 refs: [docs/review/base-climate/warm-drift/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -34,3 +37,7 @@ Options:
   null change: the sink and source references, late ln CO2, the land share. Lane 24's `decomp.py` already prints them.
 
 Lean: C, plus B whenever the pass rate is the deciding fact (merging against a fitted kernel's loss).
+
+## Updates
+- 2026-10-29: Status needs-decision -> todo. Coordinator 10-29 (owner defers methodology): judge merges on paired continuous measures (end T, late CO2, land, sink reference) with the pass count as a check; use 4 rolls only when the pass count decides a merge. Build this into the v1-finish harness in the next physics lane.
+- 2026-10-29: Created from inbox draft draft-paired-judge-chaos-floor.md (found by lane24).

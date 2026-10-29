@@ -2,7 +2,7 @@
 id: PW-880
 title: Weathering sink counts CO2 twice on planted ground (GEOCARB FERT law and the NPP it multiplies)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-865, PW-830, PW-646]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, "world 6909cb", docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-29
 ---
 
 ## Description
@@ -32,6 +32,7 @@ Coupling audit finding C1 (severity high for the Earth-like v1 finish; docs/revi
 **What to try:** Evaluate plant_factor on NPP at the balance pCO2 (the run already grows npp_pot at PCO2_BALANCE during the spin-up; keep a balance-CO2 NPP after REF_FREEZE too, or divide out the model's own CO2 response), so CO2 reaches the sink only through co2_law. Alternative: drop FERT on planted ground and let NPP carry the CO2 dependence (then NPP_WEATHER's saturation sets the slope, not the literature).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Closed 10-29: lane 24 measured the fix already on main working (see the ticket's previous update).
 - 2026-10-29: Lane 24 checked main b711afe6: the fix (1b52cdf, the sink reads sim.npp_w, the plants grown at PCO2_BALANCE) is merged and works. In the paired L6 set (36 draws, 600-1000 Myr) the planted sink's CO2 log-slope is 0.176 (diag w_a), with a bare share of 0.083: FERT's 0.2 at the balance, a little saturated above it, and no extra ~0.11. The spin-up reference reads npp_pot, also at the balance's CO2. Nothing left to change; ready to close.
 - 2026-10-25: v1-finish-13 (1b52cdf): the sink's plant factor reads sim.npp_w, the run's plants grown at PCO2_BALANCE (a second vegetation.model call per update), so CO2 reaches planted ground only through FERT. Cost follow-up: draft-weathering-plants-second-vegetation-call-cost.md. Pass rates re-measuring (cpl set). docs/review/base-climate/v1-finish-13/README.md
 - 2026-10-25: Created from inbox draft draft-weathering-co2-counted-twice-on-planted-ground.md (found by coupling-audit).
