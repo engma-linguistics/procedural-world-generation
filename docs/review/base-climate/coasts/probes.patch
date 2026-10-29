@@ -1,0 +1,65 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index ae78578c..432d4ec4 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -675,16 +675,33 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     warmth is the smoothed temperature excess, C (>0: rising air)."""
+     anom = t_sl - zonal_mean(grid, t_sl)
+     if column is not None:
++        if TUNE.get("cold_col", 0) > 0 and _PROBE.get("sea") is not None:  # PROBE (lane 26): shallow cold domes
++            cold = ~_PROBE["sea"] & (anom < 0)
++            column = np.where(cold, np.minimum(column, TUNE["cold_col"]), column)
+         anom = anom * column
+     warmth = smooth(grid, anom, 900.0)
+     if big > 0:
+         warmth = warmth + big * smooth_big(grid, anom, big_km)
+     P = -warmth  # warm -> low pressure
++    if TUNE.get("sub_a", 0) > 0 and _PROBE.get("sea") is not None:  # PROBE (lane 26): dynamic subtropical highs
++        sea_s = smooth_big(grid, _PROBE["sea"].astype(float), TUNE.get("sub_km", 1500.0))
++        sea_s = sea_s - zonal_mean(grid, sea_s)
++        if TUNE.get("sub_one", 0) > 0:
++            sea_s = np.maximum(sea_s, 0.0)
++        lat_s = _wind_lat(grid, shift)
++        P = P + TUNE["sub_a"] * sea_s * np.exp(-((np.abs(lat_s) - TUNE.get("sub_lat", 30.0)) / 12.0) ** 2)
+     g = gradient(grid, P) * 1000.0  # per 1000 km
+     up = grid.centers
+     geo = np.cross(up, g) * np.sign(grid.lat)[:, None]
+     w = np.clip(np.abs(grid.lat) / 15.0, 0, 1)[:, None]
+     v = w * (0.9 * geo - 0.45 * g) - (1 - w) * g
++    if TUNE.get("lsw_f", 0) > 0:  # PROBE (lane 26): Coriolis-drag balance poleward of 15 deg
++        f15 = np.sin(np.radians(15.0))
++        r = 0.5 * f15
++        fr = np.sin(np.radians(np.maximum(np.abs(grid.lat), 15.0)))[:, None]
++        cg = (fr / (r * r + fr * fr)) / (f15 / (r * r + f15 * f15))
++        cd = (r * r + f15 * f15) / (r * r + fr * fr)
++        v = w * (0.9 * cg * geo - 0.45 * cd * g) - (1 - w) * g
+     v = strength * 0.3 * v
+     # The land-sea circulation is shallow; it never fully overrides the big
+     # wind belts, least of all in the strong mid- and high-latitude westerlies.
+@@ -694,6 +711,9 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     return wind(grid, shift, front, belt) + v, warmth
+ 
+ 
++_PROBE = {}
++
++
+ def speed(v):
+     return np.linalg.norm(v, axis=1)
+ 
+@@ -1481,7 +1501,7 @@ def face_winds(grid: Grid, seasons_in: list[dict], tune: dict) -> tuple[np.ndarr
+     for k, d in enumerate(seasons_in):
+         v = d["v"] * U_REF
+         un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1)
+-        kd[k] = K_MIX * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
++        kd[k] = tune.get("k_mix", K_MIX) * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
+     return un, kd
+ 
+ 
+@@ -2249,6 +2269,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # the westerlies by season and hemisphere, from the first guess's contrast (westerly_belt); the land's
+     # lows and highs as deep as its air column's warmth (low_column)
+     col = low_column(grid, land, tune)
++    _PROBE["sea"] = ocean
+     b_jul, b_jan = westerly_belt(grid, t_sl_jul, t_sl_jan)
+     w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jul, col)
+     w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jan, col)

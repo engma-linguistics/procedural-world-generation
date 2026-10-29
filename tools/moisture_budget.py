@@ -120,7 +120,8 @@ SECTIONS = [
 
 PROBE_REGIONS = ["Sahara", "Sahel", "Arabia", "Australia interior", "Gobi/Mongolia", "Tibet", "Central Asia",
                  "Great Plains", "W Siberia", "European Russia", "W Europe", "India", "SE China", "Amazon",
-                 "Congo basin", "SE USA"]
+                 "Congo basin", "SE USA", "Pampas", "Japan", "E Australia", "Mediterranean", "SE Brazil",
+                 "Mexico N"]
 
 
 # --------------------------------------------------------------------------

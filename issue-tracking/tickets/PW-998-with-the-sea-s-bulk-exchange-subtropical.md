@@ -43,4 +43,5 @@ and from where the vapour comes; then fix the winds (PW-026), not the sea's exch
 - [ ] SE USA and Pampas each at least 60% of GPCC's annual rain without undoing the bulk exchange
 
 ## Updates
+- 2026-10-29: Lane 26 diagnosis (docs/review/base-climate/coasts/README.md): the winter half is lost (SE USA Oct-Mar 93 vs 1334 mm, PW 3.7 vs 17.5) because the model blows offshore where NCEP has the subtropical highs' onshore return flow; Japan rains its vapour at 0.3-0.4x; the Pampas lacks the Andes low-level jet. No single probed mechanism reaches 60% with B >= 26 (best combination SE USA 58%, Pampas 42%, B 23.7); plan choice in draft-subtropical-coasts-mechanism-choice.md.
 - 2026-10-29: Created from inbox draft draft-subtropical-coasts-dry-after-bulk-evap.md (found by lane25).
