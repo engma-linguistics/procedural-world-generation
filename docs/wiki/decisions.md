@@ -30,7 +30,8 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
-- 2026-10-27 (owner): the deep-time bar fails only a hellhouse; icebox and never-ice eras are reported, not failures. Pass = good finish moment + no hellhouse. The sim is suspect if nearly all worlds (>=80%) are iceboxes or nearly all hellhouses (fmtally prints it). Judge physics changes over two pooled offset rolls.
+- 2026-10-30 (owner, lane 65): ice terms are icehouse (permanent polar sheets), glacial maximum (ice-age peak, ~Earth's coldest) and frozen over (40%+ of land under ice); only frozen over fails, and it replaces the icebox flag in passrate4.judge / pjudge / fmtally (PW-1091). Viewer defaults applied: family-hue palette, current ramps (cloud included), docked legend, grouped picker (PW-1032/1027/1029/1026).
+- 2026-10-27 (owner): the deep-time bar fails only a hellhouse; icebox and never-ice eras are reported, not failures (superseded 10-30: frozen over now fails too). Pass = good finish moment + no hellhouse. The sim is suspect if nearly all worlds (>=80%) are frozen over (then "iceboxes") or nearly all hellhouses (fmtally prints it). Judge physics changes over two pooled offset rolls.
 - 2026-10-26: v1 finished world = latest habitable moment within the last 10 Myr (PW-866); judged there, flagged if none passes.
 - 2026-10-26 · Backlog workgroups (owner) · 19 workgroups as in the backlog doc; base climate (PW-570) on the physics lane early in v2; other planet kinds v3; phone viewing out of v2/v3 (PC only); progress bars added (PW-914) · PW-900
 - 2026-10-26 · Run length (owner) · v1 is judged on 1 Gyr runs; 2 Gyr runs are a post-v1 stretch goal and, when they return, are judged on their last 1 Gyr only (early snowball-era ice allowed) · PW-894, PW-895

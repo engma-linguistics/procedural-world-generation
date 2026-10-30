@@ -21,9 +21,10 @@ Measures (late = the window --late, default 600-1000 Myr, on the 2 Myr steps / t
   trees %      tree cover of land, likewise
 Add a measure: put a (name, function of the loaded record) pair in MEASURES.
 
-The pass definition is v1-finish-16's, unchanged: a good finish moment (highlights.finish_moment passes) and no
-hellhouse (passrate4.judge). Icebox is colour only. The set-level check: at >= 80% iceboxes or hellhouses in an arm,
-the sim is suspect. The pass table gives both / A only / B only / neither and an exact McNemar p on the discordant
+The pass definition is v1-finish-16's plus frozen over (PW-1091): a good finish moment (highlights.finish_moment passes) and no
+hellhouse and not frozen over (passrate4.judge; frozen over = 40%+ of the land under ice, owner 2026-10-30, PW-1091).
+The three ice terms (icehouse, glacial maximum, frozen over) are counted per arm. The set-level check: at >= 80%
+frozen-over worlds or hellhouses in an arm, the sim is suspect. The pass table gives both / A only / B only / neither and an exact McNemar p on the discordant
 draws. Use 2 rolls (72 runs for two arms); use 4 rolls only when the pass count decides the merge (README).
 Harness only."""
 import argparse
@@ -68,13 +69,13 @@ def _mean(rows, k):
 def load(p):
     raw = C.load(p)
     s = C.series(raw)
-    bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9)
+    bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"])
     steps = [r for r in raw["steps"] if r["t"] > 0]
     fm = H.finish_moment([{"t": r["t"], "stats": r} for r in steps], float(raw["params"].get("finish_window", 10.0)))
     at = next(r for r in steps if abs(r["t"] - fm["t"]) < 1e-9)
     late = [r for r in steps if T0 <= r["t"] < T1 and abs(r["t"] - round(r["t"])) < 1e-9]
     ups = [u for u in raw["updates"] if T0 <= u["t"] <= T1]
-    return dict(ok=bool(bar["ok"] and fm["passes"]), ice=bool(bar["icebox"]), hell=bool(bar["hell"]),
+    return dict(ok=bool(bar["ok"] and fm["passes"]), frozen=bool(bar["frozen"]), gmax=bool(bar["glacial_max"]), ihouse=bool(bar["icehouse"]), hell=bool(bar["hell"]),
                 steps=steps, late=late, ups=ups, at=at, fm=fm)
 
 
@@ -144,7 +145,7 @@ if args.table:
           f"{'B':>4} {'endT':>5} {'arid':>5} {'land':>5} {'co2':>5}")
     for k in keys:
         f = lambda z: (f"{'PASS' if z['ok'] else 'fail':>4} {z['m']['end T']:+5.1f} {z['m']['arid %']:5.1f} "
-                       f"{z['m']['land %']:5.1f} {z['m']['late CO2']:+5.2f}" + (" I" if z["ice"] else "  ") +
+                       f"{z['m']['land %']:5.1f} {z['m']['late CO2']:+5.2f}" + (" F" if z["frozen"] else "  ") +
                        (" H" if z["hell"] else "  "))
         print(f"{k[0]:>6} {k[1]:>6} {k[2]:>11} | {f(ra[k])} | {f(rb[k])}")
 
@@ -167,18 +168,19 @@ for name, _ in MEASURES:
     print(f"| {name} | {np.nanmedian(a):.3f} | {np.nanmedian(b):.3f} | {np.median(d[ok]):+.3f} | "
           f"[{lo:+.3f}, {hi:+.3f}] | {(d[ok] > 0).sum()} / {(d[ok] < 0).sum()} | {p:.3f} | {'*' if moved else ''} |")
 
-print("\n## Pass count (the check): pass = good finish moment and no hellhouse")
+print("\n## Pass count (the check): pass = good finish moment, no hellhouse, not frozen over")
 pc = {}
 for name, R in [(A, ra), (B, rb)]:
     parts = []
     for r in rolls:
         ks = [k for k in keys if k[0] == r]
         parts.append(f"r{r} {sum(R[k]['ok'] for k in ks)}/{len(ks)}")
-    n_ice, n_hell = sum(R[k]["ice"] for k in keys), sum(R[k]["hell"] for k in keys)
+    n_ice, n_hell = sum(R[k]["frozen"] for k in keys), sum(R[k]["hell"] for k in keys)
+    n_gm, n_ih = sum(R[k]["gmax"] for k in keys), sum(R[k]["ihouse"] for k in keys)
     sus = max(n_ice, n_hell) >= 0.8 * len(keys)
-    pc[name] = dict(passes=sum(R[k]["ok"] for k in keys), icebox=n_ice, hellhouse=n_hell, suspect=sus)
-    print(f"- {name}: {', '.join(parts)}; pooled {pc[name]['passes']}/{len(keys)}; icebox {n_ice}, hellhouse {n_hell}"
-          + ("  << SIM SUSPECT (>= 80% iceboxes or hellhouses)" if sus else ""))
+    pc[name] = dict(passes=sum(R[k]["ok"] for k in keys), frozen_over=n_ice, glacial_max=n_gm, icehouse=n_ih, hellhouse=n_hell, suspect=sus)
+    print(f"- {name}: {', '.join(parts)}; pooled {pc[name]['passes']}/{len(keys)}; icehouse {n_ih}, glacial maximum {n_gm}, frozen over {n_ice}, hellhouse {n_hell}"
+          + ("  << SIM SUSPECT (>= 80% frozen over or hellhouses)" if sus else ""))
 both = sum(ra[k]["ok"] and rb[k]["ok"] for k in keys)
 ao = sum(ra[k]["ok"] and not rb[k]["ok"] for k in keys)
 bo = sum(rb[k]["ok"] and not ra[k]["ok"] for k in keys)

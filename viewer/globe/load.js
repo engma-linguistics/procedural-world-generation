@@ -208,7 +208,7 @@ export async function loadRun(dir, wantT) {
   if (stale(tok)) return;
   await loadNeeded();
   if (stale(tok)) return;
-  applyPalette(S.V);  // (?palette=distinct|family: a preview of other peoples' colours, PW-1032)
+  applyPalette(S.V);  // (family hues, neighbours told apart, PW-1032)
   setFrame(f, false);
   buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();
   navSync(); loadOk();

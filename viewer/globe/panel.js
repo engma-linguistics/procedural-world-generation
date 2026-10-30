@@ -10,7 +10,7 @@ import { drawMarks, runTree, sourceLink, timezoomLink, zoomsOf } from './provena
 import { fillPfts, toast } from './pick.js';
 import { windKey } from './map2d.js';
 import { hasLayer } from './load.js';
-import { GROUPED, renderGroupedPicker } from './layerpick.js';
+import { renderGroupedPicker } from './layerpick.js';
 // ------------------------------------------------------------ UI
 // a colour bar for RAMPS[key]; labels (optional) replace the end values
 export function rampLegend(key, units, labels) {
@@ -296,17 +296,13 @@ export function renderLegend() {
       sw('#7f9fff', '- - deep return (schematic)') + sw('#5ff0c8', '◎ wells up');
 }
 
-// the layer button's hover text: what the layer shows, and its units
-const layerHint = (l) => { const d = layerDef(l); return d.hint + (d.units && d.hintUnits !== false ? ` Units: ${d.units}.` : ''); };
 export function renderLayerButtons() {
   fillPfts();
   fillRes();
   fillTechs();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) { state.wantLayer = state.layer; state.layer = layers[0]; }  // (wantLayer: a layer that arrives later, like a world's fuels, PW-845)
-  if (GROUPED) renderGroupedPicker(layers);
-  else $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
-    (layerDef(l).hint ? ` title="${esc(layerHint(l))}"` : '') + `>${l}</button>`).join('');
+  renderGroupedPicker(layers);
   $('arrowsLbl').style.display = hasLayer('plate') && !S.V.tz ? '' : 'none';
   document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = hasLayer(e.dataset.needs) ? '' : 'none'));
   $('windYear').style.display = hasLayer('wind_jul_e') ? 'none' : '';  // the season picker says it instead

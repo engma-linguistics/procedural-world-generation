@@ -6,6 +6,16 @@
 <title>Regional Zoom</title>
 <link rel="stylesheet" href="theme.css">
 <style>
+  /* the grouped layer picker (PW-1026): the same sections as the globe's (globe/layers.js SECTIONS) */
+  #layerFind { width: 100%; padding: 4px 8px; margin-bottom: 6px; }
+  #layerSeg .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .lpRecent { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .lpRecent .seg { flex: 1; }
+  .lpGroup { border-top: 1px solid var(--border); padding: 3px 0; }
+  .lpGroup summary { cursor: pointer; padding: 2px 0; list-style-position: inside; }
+  .lpGroup[open] > .seg { margin: 3px 0 4px; }
+  .lpOn { color: var(--accent); font-size: 11px; }
+  .lpHead { font-size: 11px; color: var(--muted); margin: 4px 0 2px; }
   html, body { height: 100%; overflow: hidden; }
   #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; }
   #c.drag { cursor: grabbing; }
@@ -93,7 +103,8 @@
   <div class="muted" style="margin-top:4px">To make one: on the Globe tab, click a cell and press Zoom (or double-click a cell).</div>
 
   <h2>Layer</h2>
-  <div class="row seg" id="layerSeg"></div>
+  <input type="search" id="layerFind" placeholder="Find a layer (rain, soil, rock…)" autocomplete="off" title="Type part of a layer's name; Enter picks the first match, Esc clears">
+  <div id="layerSeg"></div>
   <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
     season <select id="season" style="flex: none; width: auto; padding: 1px">
       <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
@@ -174,6 +185,20 @@ const LAYERS = [
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'],
   ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['land_use', 'Peoples\' land'], ['coarse', 'Coarse cells'],
 ];
+// the picker's sections: the same titles as the globe's (globe/layers.js SECTIONS)
+const SECTIONS = [
+  ['land', 'Land and rock', ['satellite', 'relief', 'height', 'shade', 'rock', 'surface_rock', 'landform', 'ice', 'permafrost', 'loess', 'valley_floor', 'floor_m', 'radiation_index', 'coarse']],
+  ['climate', 'Climate and air', ['climate', 'precipitation', 'temperature']],
+  ['water', 'Water and sea', ['rivers', 'twi', 'fresh_water', 'river_nav', 'harbour', 'coast_type', 'barrier_island', 'shore_form', 'coastal_life']],
+  ['life', 'Plants and soils', ['biome', 'vegetation', 'tree_cover', 'canopy_height', 'npp', 'fire_return', 'lai', 'soil', 'soil_depth', 'soil_water', 'soil_fertility', 'soil_carbon', 'peat_depth']],
+  ['use', 'Game and use', ['fertile', 'pass', 'travel', 'sightline', 'grazing', 'foraging', 'timber', 'fuel', 'building', 'mud_months']],
+  ['peoples', 'Peoples', ['land_use']],
+];
+const LAYER_NAME = Object.fromEntries(LAYERS);
+const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* not saved */ } };
+let lpOpen = lsGet('planetViewer.layerGroups', {}), lpRecent = lsGet('planetViewer.recentLayers.zoom', []);
+if (!Array.isArray(lpRecent)) lpRecent = [];
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
@@ -204,6 +229,54 @@ let START_MARK = new URLSearchParams(location.search).get('mark');  // (the firs
 let START_PX = new URLSearchParams(location.search).get('px');
 if (window.top !== window) document.body.classList.add('embedded');
 addPickerFilter($('zoomSel'), { placeholder: 'filter: zoom, run or world id, name' });  // (pickfilter.js, PW-407)
+
+// the grouped picker: a search box, the last few layers, and one folding section per kind of layer
+function buildLayerPicker() {
+  const find = $('layerFind'), box = $('layerSeg'), btn = (k) => `<button data-v="${k}">${LAYER_NAME[k]}</button>`;
+  const draw = () => {
+    const q = find.value.trim().toLowerCase();
+    let h = '';
+    if (q) {
+      for (const [, title, ks] of SECTIONS) {
+        const hit = ks.filter((k) => (LAYER_NAME[k] + ' ' + k).toLowerCase().includes(q));
+        if (hit.length) h += `<div class="lpHead">${title}</div><div class="row seg">${hit.map(btn).join('')}</div>`;
+      }
+      box.innerHTML = h || '<div class="muted">No layer matches.</div>';
+    } else {
+      if (lpRecent.length) h += `<div class="lpRecent"><span class="muted">recent</span> <span class="row seg">${lpRecent.slice(0, 4).map(btn).join('')}</span></div>`;
+      for (const [id, title, ks] of SECTIONS) {
+        const mine = ks.includes(state.layer), isOpen = id in lpOpen ? lpOpen[id] : mine;
+        h += `<details class="lpGroup" data-g="${id}"${isOpen ? ' open' : ''}><summary><b>${title}</b>${mine && !isOpen ? ` <span class="lpOn">${LAYER_NAME[state.layer]}</span>` : ''}</summary><div class="row seg">${ks.map(btn).join('')}</div></details>`;
+      }
+      box.innerHTML = h;
+    }
+    for (const b of box.querySelectorAll('button[data-v]')) b.classList.toggle('on', b.dataset.v === state.layer);
+    if (state.meta && state.L) hideAbsentLayers();
+  };
+  find.oninput = draw;
+  find.onkeydown = (e) => {
+    if (e.key === 'Escape') { find.value = ''; draw(); }
+    if (e.key === 'Enter') { const b = [...box.querySelectorAll('button[data-v]')].find((x) => x.style.display !== 'none'); if (b) b.click(); }
+  };
+  box.onclick = (e) => {
+    const b = e.target.closest('button[data-v]');
+    if (!b) return;
+    state.layer = b.dataset.v;
+    lpRecent = [state.layer, ...lpRecent.filter((x) => x !== state.layer)].slice(0, 8); lsSet('planetViewer.recentLayers.zoom', lpRecent);
+    draw(); render(); syncURL();
+  };
+  box.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (d.tagName === 'DETAILS' && d.dataset.g) { lpOpen[d.dataset.g] = d.open; lsSet('planetViewer.layerGroups', lpOpen); }
+  }, true);
+  draw();
+}
+// hides the layers this zoom has no data for, and sections left empty
+function hideAbsentLayers() {
+  const L = state.L;
+  for (const b of $('layerSeg').querySelectorAll('button[data-v]')) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
+  for (const d of $('layerSeg').querySelectorAll('details')) d.style.display = [...d.querySelectorAll('button')].every((b) => b.style.display === 'none') ? 'none' : '';
+}
 
 // ------------------------------------------------------------ helpers
 function hex(c) { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
@@ -266,8 +339,6 @@ function loadImage(url) {
 
 // ------------------------------------------------------------ loading
 async function init() {
-  // ?ramps=new (PW-1027, a preview): the globe's temperature, rain and fertility, and monotonic "how much" ramps (ramps.js)
-  if (new URLSearchParams(location.search).get('ramps') === 'new') window.zoomRampChanges = (await import('./ramps.js')).applyZoomRampSet(RAMPS, RAIN, TEMP);
   const idx = (await getJSON('../zooms/index.json')) || [];
   fine.idx = idx;
   $('fineHere').onclick = armFine;
@@ -308,8 +379,7 @@ async function init() {
     history.replaceState(null, '', '?');
     location.reload();
   };
-  $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
-  $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
+  buildLayerPicker();
   if (p.get('season') in SEASON_NAMES) state.season = p.get('season');
   // the overlays: only rivers and lakes on at first (PW-1028); the owner's ticks are remembered in this browser,
   // and the address overrides both (e.g. ?falls=1, ?rivers=0)
@@ -494,7 +564,7 @@ async function load(id) {
   if (!zd) { $('msg').innerHTML = `<b>Could not open zoom ${id}.</b><br>${why}<br>Pick another zoom in the list, or <a href="index.html" target="_top">go to the start page</a>.`; return; }
   for (const k of ZOOM_KEYS) state[k] = zd[k];
   const { meta, L } = zd;
-  for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
+  hideAbsentLayers();
   if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'satellite';
   hideTip();
   $('cloudsRow').style.display = L.cloud_jul ? '' : 'none';
@@ -1170,7 +1240,7 @@ function riversNow() { return $('rivers').checked && !state.bare; }
 function renderLayer() {
   const m = state.meta, L = state.L;
   if (!m) return;
-  for (const b of $('layerSeg').children) b.classList.toggle('on', b.dataset.v === state.layer);
+  for (const b of $('layerSeg').querySelectorAll('button[data-v]')) b.classList.toggle('on', b.dataset.v === state.layer);
   const nx = m.nx, ny = m.ny, n = nx * ny, off = state.off;
   off.width = nx; off.height = ny;
   const oc = off.getContext('2d');
