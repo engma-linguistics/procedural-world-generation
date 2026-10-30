@@ -11,6 +11,7 @@ import { unpick } from './zoom.js';
 import { showTab } from './tabs.js';
 import { frameToUrl, setFrame } from './load.js';
 import { openRun } from './select.js';
+import { frameAtPos } from './timeaxis.js';
 // ------------------------------------------------------------ playback
 export function stop() {
   const was = state.playing;
@@ -33,16 +34,17 @@ let scrubTo = null;
 $('frame').addEventListener('input', (e) => {
   stop();
   const wasIdle = scrubTo === null;
-  scrubTo = +e.target.value;
+  scrubTo = frameAtPos(+e.target.value);
   if (wasIdle) requestAnimationFrame(() => { const f = scrubTo; scrubTo = null; if (S.V?.kind === 'run' && f < S.V.run.frames.length) setFrame(f); });
 });
 addEventListener('keydown', (e) => {
-  if (!S.V || state.tab === 'zoom' || e.target.tagName === 'SELECT') return;
+  if (!S.V || state.tab === 'zoom' || e.target.tagName === 'SELECT' || e.target.matches('input[type=search], input[type=text], textarea')) return;
   if (e.code === 'KeyN' && !e.metaKey && !e.ctrlKey) northUp();
   if (e.code === 'Escape' && S.detailCell >= 0) return closeDetail();  // (the panel first, then the pick)
   if (e.code === 'Escape' && S.picked) unpick();
   if (S.V.kind !== 'run') return;
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code.startsWith('Arrow') && e.target.id === 'frame') e.preventDefault();  // (one stored moment a key, not one slider step)
   if (e.code === 'ArrowRight') { stop(); setFrame(Math.min(S.V.frame + 1, S.V.run.frames.length - 1)); }
   if (e.code === 'ArrowLeft') { stop(); setFrame(Math.max(S.V.frame - 1, 0)); }
 });

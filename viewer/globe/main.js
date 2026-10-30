@@ -19,6 +19,7 @@
 //   tabs.js      globe | regional zoom tabs, the world navigator (navigator.js)
 //   load.js      opening a world or a run, run layers loaded as needed
 //   playback.js  the replay
+//   timeaxis.js  the time slider's dated axis (log on a peoples run, with its eras)
 //   select.js    the run / world picker, URL options, favourites
 //   main.js      boot, planetViewer (headless checks), the render loop
 // every module runs its own top-level code once (its controls' wiring, its defaults), then the boot below
