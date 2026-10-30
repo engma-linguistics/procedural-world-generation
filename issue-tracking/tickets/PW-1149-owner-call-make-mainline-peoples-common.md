@@ -2,14 +2,14 @@
 id: PW-1149
 title: "Owner call: make mainline peoples common through their density and way of life, not a commonness weight"
 type: task
-status: needs-decision
+status: blocked
 parent: null
 milestone: v2
 subsystem: highlights
 effort: xs
 impact: high
 found_by: lane76
-blocked_by: []
+blocked_by: [PW-1155]
 relates: [PW-917, PW-650, PW-974]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/params.py]
 created: 2026-10-30
@@ -41,4 +41,5 @@ Options:
 Lean: B, measured after the portal-arrival and life-history drafts land. C only if B falls short of what you want.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> blocked. Owner 10-30: niche learning (peoples learn new country) comes first and may supersede the density rethink; revisit after it lands.
 - 2026-10-30: Created from inbox draft draft-mainline-peoples-density-rethink.md (found by lane76).
