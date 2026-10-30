@@ -1,4 +1,5 @@
 ---
+id: PW-1101
 title: The storm-track seas evaporate a third to a half of NCEP's in winter and 1.4-2.8x in summer
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane58
 blocked_by: []
 relates: [PW-1093, PW-1096]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ air from the subtropics arrives near saturation for the colder sea.
 NCEP's E is a reanalysis (high by ~10% globally), but the seasonal sign is the issue, not the size. This is PW-015's
 boundary-layer option (A). Not a v1 blocker.
 - [ ] storm-track seas' Oct-Mar E within 2x of NCEP and peaking in winter
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-storm-track-sea-evaporation-seasons.md (found by lane58).

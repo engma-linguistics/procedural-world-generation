@@ -1,4 +1,5 @@
 ---
+id: PW-1102
 title: The subtropics' sinking-air belt is the same all round the latitude, so the oceans' western flanks (SE USA) are as suppressed as their eastern ones
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane58
 blocked_by: []
 relates: [PW-1097, PW-1093]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ A small, sound gain for the humid subtropics' summers. It needs a rule for "west
 worlds, e.g. sink weighted by the sea's east-west position in its basin, or by monsoon_wind's subtropical-high
 warmth. It fits with the land-sea inflow drafts.
 - [ ] a generic form, one Earth solve, then a paired judge
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-subtropical-sink-belt-zonal.md (found by lane58).

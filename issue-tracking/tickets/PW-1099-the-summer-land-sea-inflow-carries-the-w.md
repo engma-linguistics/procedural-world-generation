@@ -1,4 +1,5 @@
 ---
+id: PW-1099
 title: The summer land-sea inflow carries the whole column's vapour past the coast and rains it 1000-2500 km inland (40-50 N too wet, monsoon coasts too dry)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane58
 blocked_by: []
 relates: [PW-1093, PW-1097, PW-1094, PW-026]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -48,3 +51,6 @@ What to do: one design round pairing two soundness changes, probed on Earth one 
 
 Don't just lower the 0.45: that's a retune, and it trades the interiors for the coasts.
 - [ ] land 40-50 N toward GPCC (now 1.8x), B not below 25, corr not below 0.70, SE USA and Pampas not below main
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-land-sea-inflow-overshoots-inland.md (found by lane58).

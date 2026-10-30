@@ -1,4 +1,5 @@
 ---
+id: PW-1098
 title: The rain kernel's own water cycle runs ~1.56x too fast (vapour lasts 4.1 days over land, 6.1 over sea, against ~9 observed); the global rescale hides it
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane58
 blocked_by: []
 relates: [PW-1093]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Earth L6/L7, 347b4374 (`tools/moisture_regions.py`):
 
 To decide: whether the rates should carry physical units (no rescale), and what holds the land's residence near the
 sea's. Low priority. It's a consistency check, and Earth's rain pattern doesn't need it now.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-kernel-rain-cycle-too-fast.md (found by lane58).

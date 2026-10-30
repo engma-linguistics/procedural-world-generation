@@ -1,4 +1,5 @@
 ---
+id: PW-1100
 title: The rain kernel's large-scale rain doesn't see where the wind converges (no ascent term)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane58
 blocked_by: []
 relates: [PW-1093, PW-1097, PW-026]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ So it is the right kind of term for the storm-track seas and the winter interior
 
 The scale c0 needs an anchor. Synoptic-scale convergence of ~1e-6 1/s is from memory, unverified: it needs a source.
 - [ ] a design note with candidate forms, each tried in one Earth solve, together with the inflow-depth change
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-rain-kernel-no-convergence-lift.md (found by lane58).
