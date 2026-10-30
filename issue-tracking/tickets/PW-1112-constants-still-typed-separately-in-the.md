@@ -1,4 +1,5 @@
 ---
+id: PW-1112
 title: Constants still typed separately in the ice time zoom, and year length and km-per-degree still disagree between files
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: refactor-lane-59
 blocked_by: []
 relates: [PW-1034, PW-445]
 refs: [planet/constants.py, planet/timezoom/kernels.py, planet/timezoom/sim.py, planet/timezoom/sources.py, planet/climate.py, planet/lineages/contacts.py, planet/lineages/demes.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -22,3 +25,6 @@ In plain words. Refactor 1 gave the model one file for the shared physical numbe
 
 - [ ] switch the time zoom's copies (no output change) once the ice lane is merged
 - [ ] decide the one year length and one km-per-degree, update goldens, and note it on PW-1034
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-refactor1-timezoom-constants-left.md (found by refactor-lane-59).

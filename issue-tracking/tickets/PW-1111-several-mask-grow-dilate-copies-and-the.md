@@ -1,4 +1,5 @@
 ---
+id: PW-1111
 title: Several mask-grow (dilate) copies and the tools' map-painting helpers are still separate
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: refactor-lane-59
 blocked_by: []
 relates: [PW-1048, PW-1049]
 refs: [planet/raster.py, planet/zoom/regional.py, planet/zoom/landforms.py, planet/zoom/coast.py, planet/resources.py, planet/lineages/history/dispersal.py, planet/highlights.py, tools/veg_check.py, tools/soil_check.py, tools/zoom_soil_check.py, tools/earth_check.py, tools/resources_check.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -21,3 +24,6 @@ The tools were left to the tools lane: `_rgb` (veg_check, soil_check, zoom_soil_
 - [ ] one non-wrapping `raster.dilate` and `raster.shift` (PW-1048), then the zoom callers
 - [ ] `Grid.dilate`, after proving each grid copy gives the same rings
 - [ ] tools switch to `images.hex_rgb`, `images.ramp_colour`, one `geo.area_mean`
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-refactor1-raster-dilate-and-tools-copies-left.md (found by refactor-lane-59).

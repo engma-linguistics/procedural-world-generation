@@ -1,4 +1,5 @@
 ---
+id: PW-1110
 title: A few copied helpers give slightly different last digits, so they were not merged (cell area, neighbour mean)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: refactor-lane-59
 blocked_by: []
 relates: [PW-444, PW-1043, PW-1025]
 refs: [planet/geo.py, planet/coast.py, planet/coastform.py, planet/lineages/brief.py, planet/highlights.py, planet/ocean.py, planet/timezoom/geometry.py, planet/timezoom/deposit.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -21,3 +24,6 @@ In plain words. Refactor 1 shares helpers only where the answer is bit-for-bit t
 - Box means with other edge rules: `zoom/resources._box` (clamped), `zoom/shoreforms._box` (zero-padded and renormalised) and `zoom/peoples._blur` (edge-padded) cannot share `raster.box_mean` without a choice per site.
 
 - [ ] move these onto `geo.cell_area_km2`, `Grid.nbr_mean_in` and `raster.box_mean` with a golden update, one per commit, reading the golden diff each time
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-refactor1-float-order-copies-left.md (found by refactor-lane-59).
