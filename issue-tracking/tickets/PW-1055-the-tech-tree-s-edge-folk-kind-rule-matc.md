@@ -1,8 +1,10 @@
 ---
+id: PW-1055
 title: The tech tree's edge_folk kind rule matches no people; which peoples should start with its kit?
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: fix-lane-49
 blocked_by: []
 relates: [PW-1041, PW-946]
 refs: [planet/lineages/samples/techtree.toml, planet/lineages/samples/dnd.toml, planet/lineages/samples/seven_meals.toml, planet/lineages/techtree.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -21,3 +25,6 @@ I couldn't tell from the code or the tickets which peoples the rule was meant fo
 - C. Make kind rules able to match an exonym, so every people that gets the "edge folk" nickname in a run starts with the kit. This is new behaviour, and it would depend on the run's reputation pass.
 
 Lean: A, unless the owner remembers a specific people for it. Also: Seven Meals has no `triton` and no saurian lines, so those rules warn there too. That's correct, since the tree doesn't have those peoples.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-edge-folk-kind-rule.md (found by fix-lane-49).

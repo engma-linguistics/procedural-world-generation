@@ -1,8 +1,10 @@
 ---
+id: PW-1054
 title: The peoples editor has no fields for a line's way of life, realm, megafauna kind, mass, group size or rivalry
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: fix-lane-49
 blocked_by: []
 relates: [PW-1033, PW-795, PW-723]
 refs: [viewer/lineages.html, planet/lineages/spec.py, planet/lineages/run.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -18,3 +22,6 @@ In plain words. You can set these things on a people in the tree files, but the 
 PW-1033 (fix lane 49) made the editor take its option lists from `GET /api/lineage-schema` (`planet/lineages/run.editor_schema`). The schema already sends `ways` and `realms`, so the two menus need no new copied lists. Adding the fields is new editor UI, which was out of scope for that fix lane. Check spec.py's parse for each key's valid values and whether it is inherited, then add the fields in the line panel next to traits, in the same style (an empty value means inherit or default).
 - [ ] way and realm menus built from the schema
 - [ ] megafauna, mass_kg, group_size, rivalry inputs; empty means the default
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-peoples-editor-missing-line-fields.md (found by fix-lane-49).
