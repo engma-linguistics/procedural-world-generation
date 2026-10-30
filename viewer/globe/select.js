@@ -39,6 +39,7 @@ addEventListener('drop', async (e) => {
 // URL options, e.g. ?run=19385e&t=120&layer=rainfall&arrows=1  or  ?world=ae28af.json&mode=map&pentas=1
 // (&lat=..&lon=..: turn to that place and pick its cell; clicking a cell copies such a link)
 // (&hl=N: open highlight number N once its list is found or cached)
+// (&settle=mines&lat=..&lon=..&dist=1.3: the mining districts around a place, e.g. a dwarf mining colony)
 // (6-hex ids; world= is the file name with .json; layer= is a viewer layer name, spaces URL-encoded: crust%20age)
 export function applyUrlOptions() {
   const p = urlp;
@@ -48,6 +49,8 @@ export function applyUrlOptions() {
   if (p.get('anthro') === '0') state.anthro = false;  // (peoples runs: no tint of cleared land)
   if (p.get('peopleswhole') === '1') state.peoplesWhole = true;  // (peoples runs: a people with groups as a whole)
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
+  // (&settle=mines: the settlements overlay showing only its mining districts ('only the mines'), for links to the mines; &settle=all: everything)
+  if (p.get('settle')) { $('settlements').checked = true; $('settleMines').checked = true; $('settleMinesOnly').checked = p.get('settle') === 'mines'; }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
   if (p.get('relief3d') === '1') {

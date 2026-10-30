@@ -56,6 +56,7 @@ from ..grid import shared_grid
 from . import landuse as LU
 from . import spec as SP
 from .demes import _place, landmass_rank
+from .spread import graph_dist
 
 # --- judgement constants (PW-1011 v0; see the docstring) -------------------------------------------------------------------
 CONST = {
@@ -100,6 +101,19 @@ CONST = {
     "MINE_EDGE": 0.2,       # a second people works a cell's deposit instead of the lead when its mining affinity (MINING_TRAIT) is this much higher (PW-1116)
     "MINE_SHARE": 0.004,    # a mine's people: this share of its cell's people. Ore is mined from 'copper' on (the first metalworking,
                             # owner 10-30), rock salt from 'mines'
+    # D12 (owner 10-30): mining follows need, not knowledge. A people opens mines where it wants their goods: its own farmers'
+    # and herders' metal tools and salt (MINE_NEED), a town's or city's market within two rings (trade), or its own way of life
+    # (a mining kind, MINE_KIND). Earth: the Archaic foragers of the Great Lakes hammered native copper from quarries for ~5 kyr
+    # and never smelted; the Andes smelted from ~700 BC (ice cores) and Mesoamerica only from AD 800; large copper mines such as
+    # the Great Orme open ~4 kyr ago, some three kyr after the first smelting (sources in docs/overview.md 2.25).
+    "MINE_NEED": 0.3,       # farmers' + herders' share of a cell's people (eraq farm + herd) from which it wants metal tools and salt (judgement)
+    "MINE_LAG_KYR": 1.0,    # median wait, per people (seeded, lognormal), from its copper smelting to its own first ore mines (judgement)
+    "MINE_LAG_SIGMA": 0.5,  # ... its spread (ln)
+    "MINE_EXPOSE_STEPS": 10,  # a people without the need takes mining up where a mine has stood within two rings this long (1 kyr): slow, by exposure
+    "MINE_KIND": 0.8,       # a mining affinity (MINING_TRAIT) from this is a mining kind (miner or subterranean: dwarves, kobolds,
+                            # gnomes): it mines for its own sake, at once, and sends colonies
+    "COLONY_KM": 300.0,     # a mining kind works the rich districts this far from its own country as a colony of incomers (mining.COLONY_KM, PW-854)
+    "COLONY_ORE": 0.5,      # ... an ore district this rich (the best ore good; mining.ORE_MIN: rich-only, 0.75, gave dwarves 0-5 colonies a run)
 }
 TIERS = ("none", "village", "town", "city")
 STAGES = ("nothing", "villages", "towns", "cities", "cities and roads")  # (PW-1114: what the holding people knows sets the size classes)
@@ -182,19 +196,42 @@ def _mining_affinity(m: dict, n_lines: int) -> np.ndarray:
     return out
 
 
-def _deposits(world: str | None, n: int) -> np.ndarray:
-    """(2, cells): an ore district, a rock-salt bed worth working (mining.ORE_MIN, SALT_MIN), from the world's goods."""
+ORE_NAMES = {"gold": "gold", "iron": "iron", "copper": "copper", "tin": "tin", "gems": "gem", "mithril": "mithril", "metal": "metal ore"}
+
+
+def _deposits(world: str | None, n: int) -> dict:
+    """{"dep": (2, cells) an ore district, a rock-salt bed worth working (mining.ORE_MIN, SALT_MIN); "ore": (cells,) the best ore
+    good (0..1); "name": cell -> what the district is worked for ('copper and gold', 'rock salt')}, from the world's goods."""
+    out = {"dep": np.zeros((2, n), bool), "ore": np.zeros(n), "G": None}
     if not world:
-        return np.zeros((2, n), bool)
+        return out
     from . import land as LD
     from . import mining as MN
     try:
         G = LD.goods(world)
     except SystemExit:
-        return np.zeros((2, n), bool)
+        return out
     if not G:
-        return np.zeros((2, n), bool)
-    return np.stack([MN.ore_cells(G) >= MN.ORE_MIN, MN.salt_cells(G) >= MN.SALT_MIN])
+        return out
+    ore = MN.ore_cells(G)
+    out.update(dep=np.stack([ore >= MN.ORE_MIN, MN.salt_cells(G) >= MN.SALT_MIN]), ore=ore, G=G)
+    return out
+
+
+def district_name(D: dict, cell: int) -> str:
+    """What a mining district is worked for: its ore goods at mining.ORE_MIN or more, richest first (the broad 'metal ore'
+    only when no named ore is), else rock salt."""
+    from . import mining as MN
+    G = D["G"]
+    if G is None:
+        return "ore"
+    got = sorted(((float(np.asarray(G[k])[cell]), ORE_NAMES[k]) for k in MN.ORE_GOODS if k in G and k != "metal"
+                  and float(np.asarray(G[k])[cell]) >= MN.ORE_MIN), reverse=True)[:2]
+    if got:
+        return " and ".join(n for _, n in got)
+    if D["dep"][0, cell]:
+        return "metal ore"
+    return "rock salt"
 
 
 def _mines_dates(m: dict, n_lines: int) -> np.ndarray:
@@ -279,9 +316,11 @@ def derive(run_dir: Path, **over) -> dict:
     n = g.n
     area = 4 * np.pi * R_KM ** 2 / n
     fidx, fago = list(eq["frames"]), [float(a) for a in eq["ago_kyr"]]
-    Q = {k: np.fromfile(run_dir / eq["layers"][k]["file"], np.uint8).reshape(eq["layers"][k]["shape"]) for k in ("dens", "farm")}
+    Q = {k: np.fromfile(run_dir / eq["layers"][k]["file"], np.uint8).reshape(eq["layers"][k]["shape"]) for k in ("dens", "farm", "herd")
+         if k in eq["layers"]}
     dens_f = 2.0 ** (Q["dens"].astype(float) * LU.PEOPLE_SCALE) - 1  # people / km2 per window frame
     farm_f = Q["farm"].astype(float) / 100
+    herd_f = Q["herd"].astype(float) / 100 if "herd" in Q else np.zeros_like(farm_f)
     rain_f = np.stack([T.frame(run, arr, "precipitation", j).astype(float) for j in fidx])
     W = _world_layers(m.get("world"), n)
     tech = _tech_dates(m, nl)
@@ -351,7 +390,20 @@ def derive(run_dir: Path, **over) -> dict:
     copper_any = np.r_[_known_dates(m, nl, "copper"), -1.0]
     miner_line = np.r_[_miner_lines(m, nl), False]
     affinity = np.r_[_mining_affinity(m, nl), 0.0]
-    deposit = _deposits(m.get("world"), n)
+    D = _deposits(m.get("world"), n)
+    deposit = D["dep"]
+    # D12: mining follows need. A mining kind (MINE_KIND) mines for its own sake; any other people waits a seeded lag after its
+    # copper smelting before it opens ore mines on its own initiative (MINE_LAG_KYR), and needs farmers and herders, a market or
+    # a neighbouring mine (exposure)
+    kind_x = affinity >= c["MINE_KIND"]
+    lag = np.exp(np.log(c["MINE_LAG_KYR"]) + c["MINE_LAG_SIGMA"] * np.random.default_rng((seed, 1131)).standard_normal(nl + 1)) if c["MINE_LAG_KYR"] > 0 else np.zeros(nl + 1)
+    ore_from = np.where(copper_any >= 0, copper_any - np.where(kind_x, 0.0, lag), -1.0)  # (kyr ago a people opens ore mines of its own will)
+    exp_run = np.zeros(n, np.int64)  # (steps a mine has stood within two rings of the cell)
+    # mining colonies (D12, the PW-854 rule for ore): a mining kind works the rich districts within COLONY_KM of its country
+    col_lines = [i for i in range(nl) if kind_x[i]]
+    col_rings = max(1, int(round(c["COLONY_KM"] / (g.spacing * R_KM))))
+    col_cache: dict[int, np.ndarray] = {}
+    rich = deposit[0] & (D["ore"] >= c["COLONY_ORE"])
     same_people = np.zeros((nl + 1, nl + 1), bool)
     for a in range(nl):
         for b in range(nl):
@@ -410,6 +462,28 @@ def derive(run_dir: Path, **over) -> dict:
         la2 = float(np.clip(la + r * sp_ * np.sin(ang), -89.9, 89.9))
         lo2 = float(((lo + r * sp_ * np.cos(ang) / cl) + 180) % 360 - 180)
         return round(la2, 3), round(lo2, 3)
+
+    def colony_line(jf, ago):
+        """(cells,): the mining kind whose colony would work a cell (NONE: none within COLONY_KM): of those that know 'mines'
+        and 'copper' now, the most inclined, then the nearest."""
+        if jf not in col_cache:  # (graph steps from each mining kind's country at frame jf: where it leads or is a second people of SECOND_MIN)
+            e_ = frame_env(jf)
+            Dl = np.full((len(col_lines), n), -1, np.int64)
+            for r, li in enumerate(col_lines):
+                own = (e_["mix_lead"] == li) | ((e_["mix_second"] == li) & (e_["mix_second_share"] >= 100 * c["SECOND_MIN"]))
+                if own.any():
+                    Dl[r] = graph_dist(own, col_rings, g.nbr_off, g.nbr_idx)
+            col_cache.clear()
+            col_cache[jf] = Dl
+        Dl = col_cache[jf]
+        out = np.full(n, NONE, np.int64)
+        if not col_lines:
+            return out
+        li = np.asarray(col_lines)
+        ok = (Dl >= 0) & ((mines_any[li] >= ago - 1e-9) & (copper_any[li] >= ago - 1e-9))[:, None]
+        score = np.where(ok, affinity[li][:, None] * 100 - Dl, -np.inf)
+        best = np.argmax(score, 0)
+        return np.where(np.isfinite(score.max(0)), li[best], NONE)
 
     for ago in steps:
         j = int(np.searchsorted(-np.asarray(fago), -ago, side="right") - 1)  # (the frame at or before this step)
@@ -475,10 +549,26 @@ def derive(run_dir: Path, **over) -> dict:
         stages = (stage0, stage1, None)
 
         # a mine (owner 10-30): a cell with an ore or rock-salt deposit, worked by its lead people if it knows 'mines', else
-        # by its second people; MINE_SHARE of the cell's people (the miners and those who feed them)
+        # by its second people; MINE_SHARE of the cell's people (the miners and those who feed them). D12: only where it is
+        # wanted: a mining kind; farmers and herders (MINE_NEED) or a town's market within two rings, for ore only once the
+        # people's own lag after its smelting is over; or a mine has stood within two rings for MINE_EXPOSE_STEPS (exposure)
+        mine_now = active[2] >= 0
+        exp_run = np.where(mine_now[R2].any(1), exp_run + 1, 0)
+        exposed = exp_run >= c["MINE_EXPOSE_STEPS"]
+        town_now = np.zeros(n, bool)
+        ac = np.flatnonzero(active[0] >= 0)
+        town_now[ac] = [sites[i]["tier"] >= 2 for i in active[0][ac].tolist()]
+        need = (farm + (1 - w) * herd_f[j] + w * herd_f[k2]) >= c["MINE_NEED"]
+        want_ = need | town_now[R2].any(1)
+
+        def ore_ok(li):
+            lx = np.minimum(li, nl)
+            return deposit[0] & (copper_any[lx] >= ago - 1e-9) & (kind_x[lx] | (want_ & (ore_from[lx] >= ago - 1e-9)) | exposed)
+
         def can_mine(li):
-            ok = (li != NONE) & (mines_any[np.minimum(li, nl)] >= ago - 1e-9)
-            return ok & (deposit[1] | (deposit[0] & (copper_any[np.minimum(li, nl)] >= ago - 1e-9)))
+            lx = np.minimum(li, nl)
+            ok = (li != NONE) & (mines_any[lx] >= ago - 1e-9)
+            return ok & ((deposit[1] & (kind_x[lx] | want_ | exposed)) | ore_ok(li))
         # PW-1116: the cell's mining-inclined people works the deposit even as a second people (SECOND_MIN of the heads, a
         # people of its own) when it is clearly more inclined than the lead (MINE_EDGE); else the lead, else the second
         sec_ok = (second != NONE) & (e["mix_second_share"] >= 100 * c["SECOND_MIN"]) & ~same_people[np.minimum(lead, nl), np.minimum(second, nl)]
@@ -486,7 +576,14 @@ def derive(run_dir: Path, **over) -> dict:
         lead_ok, sec_can = has & can_mine(lead), sec_ok & can_mine(second)
         take_sec = sec_can & (~lead_ok | (a_s >= a_l + c["MINE_EDGE"]))
         lm = np.where(take_sec, second, np.where(lead_ok, lead, NONE))
+        # a colony: the nearest of the most inclined mining kinds within COLONY_KM works a rich ore district held by others
+        # (settled ground, the cell's people feed it) when it is clearly more inclined than whoever would work it here
+        col = colony_line(j if w < 0.5 else k2, ago)
+        a_c, a_cur = affinity[np.minimum(col, nl)], np.where(lm != NONE, affinity[np.minimum(lm, nl)], 0.0)
+        take_col = rich & has & e["land"] & (col != NONE) & (a_c >= a_cur + c["MINE_EDGE"]) & (col != lead) & (col != second)
+        lm = np.where(take_col, col, lm)
         a_m = affinity[np.minimum(lm, nl)]
+        ore_m = (lm != NONE) & (take_col | ore_ok(lm))  # (worked for its ore, else for its rock salt)
         want = np.where(e["land"] & (lm != NONE), c["MINE_SHARE"] * (0.5 + a_m) * dens * area, 0.0)
         # one mining district per ring of cells (the best of it, as a town is): a seam is worked at a few pits, not in every cell
         mscore = want * tieb
@@ -511,6 +608,9 @@ def derive(run_dir: Path, **over) -> dict:
                 if s["ruin_of"] is not None:
                     sites[s["ruin_of"]]["resettled_as"] = s["id"]
                 s["_peak_who"] = who(cell, s["tier"], e, dens, ago) if k == 0 else ({h: 100}, [])
+                if k == 2:  # (the district it works; a colony: worked by incomers, its people neither leads nor is second here)
+                    s["district"] = district_name(D, cell) if ore_m[cell] else "rock salt"
+                    s["colony"] = bool(take_col[cell])
                 sites.append(s)
                 active[k, cell] = s["id"]
                 last_site[k, cell] = s["id"]
@@ -522,6 +622,10 @@ def derive(run_dir: Path, **over) -> dict:
                     continue
                 s["pop"] += (tgt[cell] - s["pop"]) * relax
                 s["series"].append([float(ago), round(s["pop"])])
+                if k == 2:
+                    s["colony"] = bool(take_col[cell])
+                    if ore_m[cell] and s["district"] == "rock salt":  # (a salt mine whose people came to smelt: now worked for its ore too)
+                        s["district"] = district_name(D, cell) + " and rock salt"
                 if hl[cell] != NONE and k != 1:  # (a minority's place stays its own people's)
                     h = people_of[int(hl[cell])]
                     if h != s["holder"]:
@@ -597,12 +701,14 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "pop_now": round(s["pop"]) if alive else 0, "peak_pop": round(s["peak_pop"]), "peak_kyr": round(s["peak_kyr"], 3),
                "who": who, "who_when": "now" if alive else "at its height", "quarters": quarters, "series": ser,
                "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if s["kind"] != "mine" else []}
+        if mine:  # (D12: what the district is worked for, and whether by a colony of incomers)
+            rec["district"], rec["colony"] = s.get("district"), bool(s.get("colony"))
         out.append(rec)
         for p, key in ((s["founded_by"], "founded"), (s["holder"] if alive else None, "alive")):
             if p is None:
                 continue
             b = by_people.setdefault(p, {"founded": 0, "alive": 0, "ruins": 0, "towns_now": 0, "cities_now": 0, "cities_ever": 0, "largest_now": 0,
-                                         "villages_now": 0, "own_places_now": 0, "mines_now": 0, "taken_now": 0})
+                                         "villages_now": 0, "own_places_now": 0, "mines_now": 0, "colonies_now": 0, "taken_now": 0})
             b[key] += 1
         b = by_people[s["founded_by"]]
         if not alive and s["why"] != MERGED:
@@ -612,6 +718,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
             bh = by_people[s["holder"]]
             bh["own_places_now"] += s["kind"] == "minority"
             bh["mines_now"] += mine
+            bh["colonies_now"] += mine and bool(s.get("colony"))
             if mine:
                 continue
             bh["taken_now"] += s["holder"] != s["founded_by"]  # (held now by another people than its founders)
@@ -633,6 +740,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "resettled": sum(r["ruin_of"] is not None for r in out),
                "now": {t: sum(r["tier_now"] == t for r in alive) for t in (*TIERS[1:], "mine")},
                "minority_now": sum(r["kind"] == "minority" for r in alive),
+               "colonies_now": sum(bool(r.get("colony")) for r in alive),
                "why": whys, "people_in_places_now": int(sum(r["pop_now"] for r in alive)),
                "by_people": dict(sorted(by_people.items(), key=lambda kv: -kv[1]["founded"])),
                "from_kyr": float(steps[0]), "cell_km2": round(area), "generated_in_s": round(secs, 1)}
@@ -658,12 +766,12 @@ def write(run_dir: Path, report: bool = True, **over) -> dict:
 
 def lines_for_report(sm: dict, doc: dict) -> list[str]:
     L = ["", f"## Settlements (PW-1011 v0): since {sm['from_kyr']:g} kyr ago, {sm['founded']} founded, {sm['alive']} alive now "
-             f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mines; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
+             f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mining districts, {sm.get('colonies_now', 0)} of them colonies; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
              f"{sm['resettled']} on older ruins; {sm['people_in_places_now']:,} people in them now ({sm['generated_in_s']} s)",
          "  why abandoned: " + (", ".join(f"{k} {v}" for k, v in sorted(sm["why"].items(), key=lambda kv: -kv[1])) or "none")]
     for p, b in sm["by_people"].items():
         L.append(f"  {p:<16} founded {b['founded']:>4}, alive {b['alive']:>4} ({b['towns_now']} towns, {b['cities_now']} cities; "
-                 f"largest {b['largest_now']:,}; {b['own_places_now']} own places among others, {b['mines_now']} mines), ruins {b['ruins']:>4}, cities ever {b['cities_ever']}")
+                 f"largest {b['largest_now']:,}; {b['own_places_now']} own places among others, {b['mines_now']} mining districts, {b.get('colonies_now', 0)} colonies), ruins {b['ruins']:>4}, cities ever {b['cities_ever']}")
     big = sorted((r for r in doc["sites"] if r["abandoned_kyr"] is None and r["kind"] != "mine"), key=lambda r: -r["pop_now"])[:8]
     L.append("  -- the largest now")
     L += [f"  {r['tier_now']} of the {r['holder']}, {r['place'] or '?'}: {r['pop_now']:,}, since {r['founded_kyr']:g} kyr; "
