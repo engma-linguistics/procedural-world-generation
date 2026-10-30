@@ -164,9 +164,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from numba import njit, prange
 
-from . import landform as LF
-from . import zoom_kernels as ZK
-from .geo import R_KM
+from .. import landform as LF
+from . import kernels as ZK
+from ..geo import R_KM
 
 # how well each rock (surface.ROCKS id) holds a lip or stands as a ridge (0..1);
 # zoom.KP_RESIST is this table
@@ -1108,7 +1108,7 @@ class Rift(Synth):
 
     def lakes(self, cx):
         # (the half-grabens' floors; whether a basin there fills is its water
-        # balance's call: zoom_landforms.basin_lakes)
+        # balance's call: zoom.landforms.basin_lakes)
         if "floor" not in cx.cache:
             self._z(cx, cx.base)
         return smoothstep(0.15, 0.4, cx.cache["floor"])
@@ -1592,7 +1592,7 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
 
 
 # the classes in landform.classify's order (the first that holds wins there; here: keeps its weight)
-GLACIATED = 20  # the class id of the glacial landforms (zoom_glacial): no coarse landform class, read from the imprint
+GLACIATED = 20  # the class id of the glacial landforms (zoom.glacial): no coarse landform class, read from the imprint
 PRIORITY = [LF.ARC_CLASS, LF.HOTSPOT_CLASS, LF.RIFT, LF.ESCARPMENT, LF.FOLD_BELT, LF.LAVA_PLATEAU, LF.DUNES, LF.KARST,
             LF.CAPROCK, LF.COASTAL_PLAIN, LF.SHIELD, LF.HILLS, LF.SEA]
 SYNTH = {LF.ESCARPMENT: Escarpment(), LF.CAPROCK: Caprock(), LF.LAVA_PLATEAU: LavaPlateau(),
@@ -1642,11 +1642,11 @@ DEFAULTS = {"rift_strain": 0.4, "glaciated_myr": LF.GLACIATED_NEVER, "crust_thic
             "wind_e": 1.0, "wind_n": 0.0, "glacial_outwash": 0.0, "glacial_loess": 0.0}
 
 
-# the glacial landforms (zoom_glacial): a class of their own, read from the world's glacial imprint
+# the glacial landforms (zoom.glacial): a class of their own, read from the world's glacial imprint
 DERIVED["iced"] = lambda L, sel: (np.asarray(L["ice_max"], float)[sel] >= 25.0).astype(float)
 for _k, _syn in SYNTH.items():
     _syn.cls = _k
-from .zoom_glacial import Glaciated, ice_flow  # noqa: E402  (zoom_glacial imports this module: import this one first)
+from .glacial import Glaciated, ice_flow  # noqa: E402  (zoom.glacial imports this module: import this one first)
 
 SYNTH[GLACIATED] = Glaciated()
 
@@ -1989,7 +1989,7 @@ class Landforms:
         return out
 
     def glacial(self):
-        """The glacial class's Ctx (or None): its cached fields and stats (zoom_glacial)."""
+        """The glacial class's Ctx (or None): its cached fields and stats (zoom.glacial)."""
         return self.ctxs.get(GLACIATED)
 
     def set_region(self, region: np.ndarray):
@@ -2007,7 +2007,7 @@ class Landforms:
 
 
 def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
-    """(glacial_form (uint8), loess (m), stats) of the zoom, from the glacial class (zoom_glacial) and the
+    """(glacial_form (uint8), loess (m), stats) of the zoom, from the glacial class (zoom.glacial) and the
     finished ground: the forms it drew, the fjords (flooded troughs), and the lakes in its overdeepened
     basins and behind its moraines. ({} stats: the zoom has no glacial class.)"""
     n = nx * ny
@@ -2044,7 +2044,7 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
     for nm, z in (("trough_lakes", zt), ("moraine_lakes", zm & ~zt)):
         m = lake & near(z)
         st[nm] = int(len(np.unique(ZK.label_components(m, nx, ny)[0][m & cnt]))) if (m & cnt).any() else 0
-    from .zoom_glacial import trough_metrics
+    from .glacial import trough_metrics
     st.update(trough_metrics(g.cache, h, nx, ny, res, cnt))
     form[lake & (near(zt) | near(zm))] = FM["lake"]
     form[fjord] = FM["fjord"]
@@ -2052,5 +2052,5 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
 
 
 def _glacial_forms():
-    from .zoom_glacial import FORM
+    from .glacial import FORM
     return FORM

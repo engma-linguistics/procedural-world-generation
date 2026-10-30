@@ -5,8 +5,8 @@ pixels. Nor on where the region ends (PW-321): no rough rim at its edge."""
 
 import numpy as np
 
-from planet import zoom
-from planet import zoom_kernels as ZK
+from planet.zoom import regional as zoom
+from planet.zoom import kernels as ZK
 
 
 def _hill(res, n_km=400.0, sigma_km=40.0, top=1000.0):

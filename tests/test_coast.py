@@ -1,10 +1,11 @@
 """Waves, tides and delta types (planet/coast.py, and the deltas in
-planet/zoom.py) on small synthetic worlds."""
+planet/zoom/regional.py) on small synthetic worlds."""
 
 import numpy as np
 import pytest
 
-from planet import coast, zoom
+from planet import coast
+from planet.zoom import regional as zoom
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 

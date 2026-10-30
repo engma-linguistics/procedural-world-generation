@@ -50,8 +50,8 @@ from . import highlights as H
 from . import store as S
 from . import timeline as T
 from . import world as W
-from . import zoom as Z
-from . import zoom_fine as ZF
+from .zoom import regional as Z
+from .zoom import fine as ZF
 
 ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
 # One computation at a time in this process (re-entrant: a job slices inside
@@ -107,8 +107,8 @@ def parse_zoom_request(req: dict) -> dict:
 
 
 def _parse_fine_request(req: dict) -> dict:
-    """A fine zoom (zoom_fine) of zoom `zoom`: size_km / res_km default to
-    zoom_fine.default_size of the parent's resolution; checked against the
+    """A fine zoom (zoom.fine) of zoom `zoom`: size_km / res_km default to
+    zoom.fine.default_size of the parent's resolution; checked against the
     parent (SystemExit: no such zoom)."""
     pid = str(req["zoom"])
     pmeta = json.loads((S.find_zoom(pid) / "zoom.json").read_text())
@@ -220,7 +220,7 @@ def _build_zoom(r: dict, world_path: Path, progress) -> dict:
 
 
 def _fine_zoom_job(r: dict, progress) -> dict:
-    """A fine zoom of zoom r["zoom"] (zoom_fine). Returns {"zoom", "world",
+    """A fine zoom of zoom r["zoom"] (zoom.fine). Returns {"zoom", "world",
     "parent_zoom"}; reuses an identical existing one."""
     pmeta = json.loads((S.find_zoom(r["zoom"]) / "zoom.json").read_text())
     wid = pmeta["source_world"]["id"]

@@ -10,9 +10,9 @@ cell's mean is restored after the landform pass, as for the other classes):
 the cell mean of the erosion is concentrated into a few troughs, the rest of
 the ground is left as the coarse cells have it.
 
-Import zoom_landforms, not this module first (it registers Glaciated there).
+Import zoom.landforms, not this module first (it registers Glaciated there).
 
-A Synth (zoom_landforms) that belongs to no coarse landform class: its cells
+A Synth (zoom.landforms) that belongs to no coarse landform class: its cells
 are the ones the ice reached, plus a ring round them (select()). Its pieces:
 
   troughs     the ice follows the big valleys (the zoom's drainage, trunks of
@@ -28,7 +28,7 @@ are the ones the ice reached, plus a ring round them (select()). Its pieces:
               floor ends below the sea and joins it, it is drowned: a fjord
               (drown()).
   cirques     bowls on the high slopes in the iced country, on a planet-fixed
-              lattice (zoom_landforms.blobs); the ridge left between two is
+              lattice (zoom.landforms.blobs); the ridge left between two is
               an arete.
   moraines    ridges along the margin: where the smooth share of iced cells
               passes 0.5 (the terminal belt) and 0.85 (a recessional one),
@@ -54,9 +54,9 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
-from . import zoom_kernels as ZK
-from . import zoom_landforms as ZL
-from .zoom_landforms import Synth, smoothstep
+from . import kernels as ZK
+from . import landforms as ZL
+from .landforms import Synth, smoothstep
 
 ICED_M = 25.0  # a coarse cell the ice reached with at least this much counts as iced
 QT = 25.0  # m^3/s: drainage this big is a trunk the ice followed
@@ -91,7 +91,7 @@ def ice_flow(grid, L) -> dict:
     the slope of the bed plus the thickest ice, (elevation + ice_max); zero
     where the ice was thinner than ICED_M. The world doesn't store the flow
     (PW-499); the surface of the thickest ice is where it came from."""
-    from .soils import _edges  # (the cells' edges: neighbour, east/north direction, km)
+    from ..soils import _edges  # (the cells' edges: neighbour, east/north direction, km)
     s = np.asarray(L["elevation"], float) + np.asarray(L["ice_max"], float)
     own, nb, de, dn, km = _edges(grid)
     deg = np.diff(grid.nbr_off).astype(float)

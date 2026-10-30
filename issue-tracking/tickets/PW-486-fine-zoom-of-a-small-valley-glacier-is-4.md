@@ -11,7 +11,7 @@ impact: low
 found_by: pw392-fine-forms
 blocked_by: []
 relates: [PW-392, PW-127]
-refs: [planet/zoom_fine_forms.py, "zoom de7be6 in e33c3d"]
+refs: [planet/zoom/fine_forms.py, "zoom de7be6 in e33c3d"]
 created: 2026-10-20
 updated: 2026-10-20
 ---
@@ -22,3 +22,4 @@ zoom_fine_forms.glaciers() runs zoom.glaciers() on the fine ground, with new ice
 
 ## Updates
 - 2026-10-20: Created from inbox draft draft-fine-zoom-glacier-margin-wider-than-parent.md (found by pw392-fine-forms).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -6,8 +6,8 @@ import numpy as np
 
 from planet import soils as SO
 from planet import vegetation as V
-from planet import zoom
-from planet import zoom_terrain as ZT
+from planet.zoom import regional as zoom
+from planet.zoom import terrain as ZT
 
 from test_zoom_vegetation import veg_world, veg_zoom  # noqa: F401  (fixtures: a synthetic world and its zoom)
 

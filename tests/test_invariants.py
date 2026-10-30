@@ -4,7 +4,8 @@ physically sane values, storage that doesn't clip, module interfaces."""
 import numpy as np
 import pytest
 
-from planet import climate, store as S, timeline as T, zoom
+from planet import climate, store as S, timeline as T
+from planet.zoom import regional as zoom
 from planet.grid import build_grid
 from planet.surface import ROCKS
 from planet.tectonics import MAX_KM, Params, Simulation

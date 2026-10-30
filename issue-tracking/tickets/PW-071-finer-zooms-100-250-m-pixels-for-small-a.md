@@ -11,7 +11,7 @@ impact: med
 found_by: daniel
 blocked_by: []
 relates: []
-refs: [planet/zoom.py]
+refs: [planet/zoom/regional.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -23,3 +23,4 @@ Allow 100–250 m pixels for small areas (50–125 km across), if the zoom pass 
 ## Updates
 - 2026-10-14: Status todo -> wontdo. Merged into PW-129 (same 100-250 m nested zoom feature).
 - 2026-10-14: Migrated from plan_next@bdc967f Backlog (owner notes 2026-10-14).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -11,7 +11,7 @@ impact: low
 found_by: physics-lane-21
 blocked_by: []
 relates: [PW-847]
-refs: [planet/zoom.py, planet/coast.py, "zoom 91bf86 of world 2a7385", docs/review/zoom/pw847/]
+refs: [planet/zoom/regional.py, planet/coast.py, "zoom 91bf86 of world 2a7385", docs/review/zoom/pw847/]
 created: 2026-10-28
 updated: 2026-10-28
 ---
@@ -36,3 +36,4 @@ lobe's rim scallops by it. Cite each source; any threshold that has none is judg
 
 ## Updates
 - 2026-10-28: Created from inbox draft draft-delta-form-from-load-calibre.md (found by physics-lane-21).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -11,7 +11,7 @@ impact: low
 found_by: agent-a9583a91061f51486
 blocked_by: []
 relates: [PW-552]
-refs: [viewer/zoom.html, planet/zoom_fine.py]
+refs: [viewer/zoom.html, planet/zoom/fine.py]
 created: 2026-10-21
 updated: 2026-10-23
 ---
@@ -30,3 +30,4 @@ then falls back to a coarser host (or is refused).
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-fine-pick-fit-check.md (found by agent-a9583a91061f51486).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

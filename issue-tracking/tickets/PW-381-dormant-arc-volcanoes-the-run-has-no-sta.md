@@ -11,7 +11,7 @@ impact: low
 found_by: volcano-highlights
 blocked_by: []
 relates: [PW-001, PW-116]
-refs: [planet/zoom_volcanoes.py, planet/tectonics/volcanism.py, viewer/index.html, "run a1d3b9"]
+refs: [planet/zoom/volcanoes.py, planet/tectonics/volcanism.py, viewer/index.html, "run a1d3b9"]
 created: 2026-10-16
 updated: 2026-10-16
 ---
@@ -38,3 +38,4 @@ last year from one quiet for 50,000 years. Options:
 ## Updates
 - 2026-10-16: Status needs-decision -> wontdo. Coordinator 2026-10-16: keep arcs active/extinct (the run's Myr steps can't tell a dormant arc cone from an active one); parked.
 - 2026-10-16: Created from inbox draft draft-arc-volcano-dormant-state.md (found by volcano-highlights).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

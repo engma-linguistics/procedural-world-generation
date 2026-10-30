@@ -24,7 +24,7 @@ Near hotspot vents on the sea floor, the zoom's terrain is replaced by
 the vents' floor (their sea floor, from the run) with the cones on it, so
 the sea between two vents is sea, whatever the coarse cells' means say
 (at level 6-7 a cell holds a vent and its neighbours' flanks): it is
-lowered by the cones' share of each cell's mean (zoom.py), so where the
+lowered by the cones' share of each cell's mean (zoom/regional.py), so where the
 cells stand higher than the floor plus the cones it stays ground. Elsewhere
 (arcs, continental hotspots) the cones are added to the terrain (max).
 
@@ -39,9 +39,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import zoom_kernels as ZK
-from .geo import R_KM, xyz
-from .tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
+from . import kernels as ZK
+from ..geo import R_KM, xyz
+from ..tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
 
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
 # minor cones along active arcs (arc_infill, PW-116)
@@ -208,7 +208,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
       reef      pixels of reef carbonate (rim, lagoon, fringing flat)
       rock      surface.ROCKS id of the volcano under each pixel (0: none)
       bump_minor  the bump there is a minor arc cone (arc_infill: no volume
-                of its own in the coarse cells; zoom.py takes it off their land)
+                of its own in the coarse cells; zoom/regional.py takes it off their land)
       list      the volcanoes drawn, for the zoom's stats (with each one's status: active,
                 dormant or extinct, statuses())"""
     V = table(world)
@@ -314,7 +314,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         # Near the summit the cone stands on its own floor (absolute heights:
         # sea level matters for reefs and planed tops); toward the edge of
         # its footprint it sits on whatever ground the zoom has there
-        # (zoom.py: z + (1 - abs) * (ground - floor)), so it has no step.
+        # (zoom/regional.py: z + (1 - abs) * (ground - floor)), so it has no step.
         # (a minor arc cone's floor is only its neighbours' interpolated: it sits
         # on the ground, wherever that is, PW-116)
         absw = _smooth(0.85 * reach, 0.35 * reach, rho) if not (cont or v.get("minor")) else np.zeros(len(win))

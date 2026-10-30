@@ -4,7 +4,7 @@ The fine landscape pass is a stream-power profile from the imposed
 courses: on its own it cuts a V straight down to a 1-px channel, even for a
 300 m^3/s river at 0.04%, so a meander train had no room (PW-405 limits
 its swing by the valley floor's half width). Here each alluvial reach
-(zoom_fine._courses: gentle for its rock, braided or single-thread) gets a
+(zoom.fine._courses: gentle for its rock, braided or single-thread) gets a
 floor round its valley axis (the smoothed course, before the meanders):
 
 - width FLOOR_W channel widths (w = 4 Q^0.5 m) x the reach's alluvial share
@@ -23,7 +23,7 @@ floor round its valley axis (the smoothed course, before the meanders):
 
 The floor is held through the landscape pass (the hillslopes are shaped
 from its edge) and counted in the parent's 3x3 block means: the volume cut
-for it goes back onto the block's hillslopes (zoom_fine.block_gap). Where
+for it goes back onto the block's hillslopes (zoom.fine.block_gap). Where
 a block is nearly all floor (a big river's plain) there is not enough
 hillslope to take it: those blocks keep the floor's level, their error in
 stats["floodplain"]["block_rms_error_m"]. A later time pass (PW-416)

@@ -5,7 +5,7 @@ between them."""
 import numpy as np
 
 from planet import timeline as T
-from planet import zoom, zoom_volcanoes as ZV
+from planet.zoom import regional as zoom, volcanoes as ZV
 from planet.geo import R_KM, xyz
 from planet.tectonics import volcanism as V
 
@@ -56,7 +56,7 @@ def test_volcano_table_in_world(sim4):
 
 
 def _flat_sea_world(vents):
-    """A world dict with just what zoom_volcanoes.fields reads."""
+    """A world dict with just what zoom.volcanoes.fields reads."""
     return {"meta": {"volcano_columns": list(V.COLUMNS), "volcanoes": vents}}
 
 
@@ -128,7 +128,7 @@ def test_zoom_fills_active_arcs_with_minor_cones():
         k = int(np.argmin(np.hypot(px - np.radians(m["lon"]) * R_KM, py - np.radians(m["lat"]) * R_KM)))
         assert f["bump"][k] > m["floor_m"] + 0.5 * m["height_m"]
         # (on the ground, not its interpolated floor; not held through the landscape pass;
-        # flagged, so zoom.py takes its volume off its cells' other land)
+        # flagged, so zoom/regional.py takes its volume off its cells' other land)
         assert f["bump_minor"][k] and f["bump_abs"][k] == 0 and not np.isfinite(f["pin"][k])
 
 

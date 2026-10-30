@@ -11,7 +11,7 @@ impact: low
 found_by: zoom-batch6
 blocked_by: []
 relates: [PW-363]
-refs: [planet/zoom.py, docs/review/zoom-polish/batch6.md, "world 592f2a"]
+refs: [planet/zoom/regional.py, docs/review/zoom-polish/batch6.md, "world 592f2a"]
 created: 2026-10-16
 updated: 2026-10-23
 ---
@@ -30,3 +30,4 @@ on a non-outlet stretch of the built area's edge (`_delta_forms` would need the 
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-zoom-finger-toward-inflow-edge.md (found by zoom-batch6).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -284,7 +284,7 @@ def world_layers(grid, L: dict, tilt: float = 23.4, raw: bool = False) -> dict:
 
 def zoom_layers(L: dict, res_km: float, lat, nu: np.ndarray | None = None, tilt: float = 23.4) -> dict:
     """A zoom's layers (ny, nx) from its decoded rasters L (2-D, real units); lat (ny*nx,) of the pixels;
-    nu (NP, ny*nx): the per-pixel plant fractions (zoom_vegetation, at build time), or None."""
+    nu (NP, ny*nx): the per-pixel plant fractions (zoom.vegetation, at build time), or None."""
     el = np.asarray(L["elevation"], float)
     ny, nx = el.shape
     a = lambda k, d=0.0: np.asarray(L[k], float).ravel() if k in L else np.full(ny * nx, d)

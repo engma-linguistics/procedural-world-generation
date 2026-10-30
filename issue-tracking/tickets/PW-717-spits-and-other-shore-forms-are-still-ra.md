@@ -11,7 +11,7 @@ impact: low
 found_by: fun5
 blocked_by: []
 relates: [PW-622, PW-621]
-refs: [planet/zoom_coast.py, planet/zoom_shoreforms.py, planet/zoom.py]
+refs: [planet/zoom/coast.py, planet/zoom/shoreforms.py, planet/zoom/regional.py]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -27,3 +27,4 @@ Lean B if the owner wants spits as terrain.
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-zoom-shore-forms-in-build.md (found by fun5).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

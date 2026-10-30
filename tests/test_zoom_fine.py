@@ -1,7 +1,7 @@
-"""Nested fine zooms (zoom_fine, PW-129) of a small synthetic parent zoom:
+"""Nested fine zooms (zoom.fine, PW-129) of a small synthetic parent zoom:
 a valley whose river drops 500 m over a scarp (a fall in the parent's
 stats) and a stratovolcano beside it, on a synthetic world for the climate.
-Checked: the parent's means kept (over 3x3 parent pixels: see zoom_fine's
+Checked: the parent's means kept (over 3x3 parent pixels: see zoom.fine's
 landscape pass), the fall's and the volcano's heights exactly, the edge
 on the parent's surface, a fine zoom of a fine zoom, the step limit, and
 saving / indexing / deleting with the parent."""
@@ -15,8 +15,8 @@ import pytest
 from planet import api
 from planet import store as S
 from planet import world as W
-from planet import zoom as Z
-from planet import zoom_fine as ZF
+from planet.zoom import regional as Z
+from planet.zoom import fine as ZF
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 
@@ -251,7 +251,7 @@ def test_volcano_form(fine):
 def test_volcano_edifices_by_kind():
     """PW-395: summit forms by kind and status, the rim at the edifice's
     height, a concave stratocone, gullies deeper on old volcanoes."""
-    from planet import zoom_fine_volcano as ZFV
+    from planet.zoom import fine_volcano as ZFV
     base = {"lat": 10.0, "lon": 20.0, "age_myr": 4.0}
     strato = ZFV.params({**base, "kind": "arc", "form": "active stratovolcano", "status": "active",
                          "height_m": 2000.0, "top_m": 2500.0}, None, 1000.0, 1)
@@ -430,7 +430,7 @@ def _main_river(z, qmin):
 def test_river_planform(world, kind):
     """No grid-aligned zigzags from the parent's D8 path: a steep bedrock
     river runs straight; a gentle alluvial one meanders at ~10-14 channel
-    widths, no bend tighter than ~1.5 widths (zoom_fine.planform)."""
+    widths, no bend tighter than ~1.5 widths (zoom.fine.planform)."""
     parent = _river_parent(kind)
     lat, lon = _at(parent[0], 75, 75)
     z = ZF.build(parent, world, lat, lon, size_km=8, res_km=0.025, log=lambda *a: None)
@@ -498,8 +498,8 @@ def test_forms_stats_and_lineage_seed(fine):
 
 
 def test_subpixel_takes_each_parent_pixels_mean_off(parent):
-    """zoom_fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
-    from planet import zoom_fine_forms as ZFF
+    """zoom.fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
+    from planet.zoom import fine_forms as ZFF
     meta, layers = parent
     pa = ZF._Parent(meta, {k: np.asarray(v) for k, v in layers.items()})
     lat, lon = _at(meta, 48, 53)
@@ -522,7 +522,7 @@ def test_subpixel_takes_each_parent_pixels_mean_off(parent):
 
 
 def test_size_menu_matches_check():
-    """PW-552: the viewer's size menu (zoom_fine.size_options, GET /api/fine-rules) offers only sizes
+    """PW-552: the viewer's size menu (zoom.fine.size_options, GET /api/fine-rules) offers only sizes
     check() accepts, includes the server default, and offers something finer in every 2-4 km zoom and in a 200 m fine zoom."""
     for rp in (4.0, 2.0, 1.0, 0.4, 0.25, 0.2, 0.1):
         out = ZF.size_options(rp)

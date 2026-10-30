@@ -60,7 +60,7 @@ const heights = [700, 650, 450, 430, 425, 420, 415, 410, 405, 400, 395, 390];
 let r = 1, c = 5; const path = [r * nx + c];
 for (const [dr, dc] of moves) {
   const s = 3 * (dr + 1) + (dc + 1);
-  L.receiver[r * nx + c] = s - (s > 4);  // (the zoom's D8 slot, planet/zoom.py d8_slots)
+  L.receiver[r * nx + c] = s - (s > 4);  // (the zoom's D8 slot, planet/zoom/regional.py d8_slots)
   r += dr; c += dc; path.push(r * nx + c);
 }
 path.forEach((i, k) => { L.elevation[i] = heights[k]; L.discharge[i] = 50 + k; L.drainage_area[i] = 1e4; });

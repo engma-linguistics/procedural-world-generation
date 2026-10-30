@@ -105,7 +105,7 @@
   <label title="Natural harbours (diamonds, bigger and redder = better), one per stretch of coast (humanuse.py)"><input type="checkbox" id="harb"> Harbours <span class="muted" id="harbN"></span></label>
   <label title="The saddle on each divide between drainage basins (bow-ties, coloured by the months it is open)"><input type="checkbox" id="passm"> Mountain passes <span class="muted" id="passN"></span></label>
   <label title="Springs at the foot of wetter high ground in dry country"><input type="checkbox" id="spring"> Springs <span class="muted" id="springN"></span></label>
-  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep"> Deposits <span class="muted" id="depN"></span></label>
+  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom/resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep"> Deposits <span class="muted" id="depN"></span></label>
     <select id="depSel" style="flex:1;min-width:0"></select></div>
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
@@ -188,10 +188,10 @@ const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_heigh
 const HU_SPARSE = ['river_nav', 'harbour', 'pass'], HU_AREA = ['fertile', 'fresh_water'];
 const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours at the coast', pass: 'mountain passes: how long they are open',
   fertile: 'farmland', fresh_water: 'fresh water within reach' };
-const COAST_SPARSE = ['coast_type', 'barrier_island', 'shore_form'];  // (zoom_coast.py, PW-097: the shore's form; barrier islands, lagoons, inlets)
+const COAST_SPARSE = ['coast_type', 'barrier_island', 'shore_form'];  // (zoom/coast.py, PW-097: the shore's form; barrier islands, lagoons, inlets)
 const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor', 'land_use', ...COAST_SPARSE,
   ...HU_SPARSE, ...HU_AREA];
-// a fine zoom's alluvial valley floors (zoom_fine_floodplain, PW-412; planet/zoom.py LAYER_DOC valley_floor)
+// a fine zoom's alluvial valley floors (zoom.fine_floodplain, PW-412; planet/zoom/regional.py LAYER_DOC valley_floor)
 const VALLEY_FLOOR = [{ id: 1, name: 'floodplain', color: '#c8d77a' }, { id: 2, name: 'meander belt', color: '#e0a650' },
   { id: 3, name: 'channel on the floor', color: '#2f6fd0' }];
 const FLOOR_M = [[0, [40, 110, 90]], [0.25, [140, 190, 110]], [0.5, [230, 220, 140]], [0.75, [210, 150, 80]], [1, [150, 80, 50]]];
@@ -608,12 +608,12 @@ function markers(m, L) {
   });
   const volc = (st.volcanoes || []).map((v) => ({ ...v, kindOf: 'volcano', active: v.active ?? /^active/.test(v.form || ''),
     c: v.x_km / res + nx / 2, r: ny / 2 - v.y_km / res }));
-  // mineral deposits (zoom_resources.py, PW-610): points, laterites, placers, kimberlite fields, seams, fields, beds
+  // mineral deposits (zoom/resources.py, PW-610): points, laterites, placers, kimberlite fields, seams, fields, beds
   const dep = ((m.resources || {}).deposits || []).map((d) => ({ ...d, kindOf: 'deposit', r: d.px[0], c: d.px[1] }));
   const belts = ((m.resources || {}).belts || []);
   return { falls, volc, dep, belts, ...huMarkers(m, L) };
 }
-// ------------------------------------------------------------ deposits (zoom_resources.py)
+// ------------------------------------------------------------ deposits (zoom/resources.py)
 const DEP_SIZE = { small: 3, medium: 4.5, large: 6.5, giant: 9 };
 const DEP_FORM = { point: 'hard-rock deposit', laterite: 'weathering blanket', placer: 'placer (river or beach)',
   pipes: 'kimberlite field', seam: 'coal measures', field: 'oil or gas field', bed: 'salt bed, dome or pan' };
@@ -704,7 +704,7 @@ function huPath(g, o, x, y) {
 }
 function fallSize(f) { return Math.min(13, 3.5 + 1.6 * Math.sqrt(f.height_m / 30)); }
 function volcSize(v) { return Math.min(12, 4 + 2.2 * Math.sqrt(Math.max(v.height_m, 0) / 1000)); }
-// status (zoom_volcanoes.status): active (fed now), dormant (a hotspot vent still over its plume's head:
+// status (zoom.volcanoes.status): active (fed now), dormant (a hotspot vent still over its plume's head:
 // it can erupt again), extinct; zooms made before it have only `active`
 function volcStatus(v) { return v.status || (v.active ? 'active' : 'extinct'); }
 function volcColors(v) {
@@ -849,13 +849,13 @@ function showTip(o, ev, pin) {
 function hideTip() { pinned = null; const t = $('tip'); t.style.display = 'none'; t.classList.remove('pinned'); }
 
 // ------------------------------------------------------------ fine zooms (PW-129, PW-393)
-// A zoom's fine zooms (zoom_fine.py: zooms/index.json `children`, and theirs) are outlined on the
+// A zoom's fine zooms (zoom/fine.py: zooms/index.json `children`, and theirs) are outlined on the
 // 2D map and drawn as finer tiles in the 3D view (zoom3d.js setFine); "Fine zoom here" asks the
 // server for one (POST /api/zoom {zoom, lat, lon[, size_km, res_km]}) and adds it when it's done.
 // fine.want: the ones the 3D view shows (&fine=a,b; default: defaultFine), fine.on: shown at all
 const fine = { idx: [], on: true, want: new Set(), data: new Map(), loading: new Set(), job: null, arm: false, at: null, flyTo: null };
 let START_FINE = new URLSearchParams(location.search).get('fine');  // (the first zoom loaded only)
-// The size rules are the server's (zoom_fine.size_options, GET /api/fine-rules?res_km=): per parent
+// The size rules are the server's (zoom.fine.size_options, GET /api/fine-rules?res_km=): per parent
 // resolution its default and the sizes it accepts (PW-552). fine.rules: max_step, edge_px, ...
 // fine.sizes: String(res_km) -> {default, options:[{size_km, res_km, default}]}
 fine.rules = null; fine.sizes = new Map(); fine.menuId = null;
@@ -872,7 +872,7 @@ async function loadFineSizes(resList) {
 const zoomEntry = (id) => fine.idx.find((z) => z.id === id);
 const kids = (id) => (zoomEntry(id)?.children || []).map(zoomEntry).filter(Boolean);
 function descendants(id, depth = 1, out = []) { for (const z of kids(id)) { out.push({ z, depth }); descendants(z.id, depth + 1, out); } return out; }
-// zoom frames (planet/zoom.py Frame): the plane's x east, y north (km) of lat, lon round `center`
+// zoom frames (planet/zoom/regional.py Frame): the plane's x east, y north (km) of lat, lon round `center`
 function frameOf(center) {
   const la = center.lat * Math.PI / 180, lo = center.lon * Math.PI / 180;
   const C = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
@@ -949,7 +949,7 @@ function fineSizeFor(z) {
   if (v && sz.options.some((o) => !o.default && sizeVal(o.size_km, o.res_km) === v && o.size_km < z.size_km)) return [...v.split(',').map(Number), false];
   return [sz.default.size_km, sz.default.res_km, true];
 }
-// whether a fine zoom of size [s, r] round lat, lon fits inside zoom z (as zoom_fine.check: the zoom's edge
+// whether a fine zoom of size [s, r] round lat, lon fits inside zoom z (as zoom.fine.check: the zoom's edge
 // margin plus the halo it builds round the region)
 function fineFitsIn(z, lat, lon, [s, r]) {
   const R = fine.rules || { edge_px: 3, halo_parent_px: 1 }, rp = z.res_km;
@@ -1268,11 +1268,11 @@ function renderLayer() {
         ? ` ${fmt(present.get(id) * m.res_km * m.res_km, k === 'valley_floor' ? 1 : 0)} km&sup2;`
         : k === 'river_nav' ? ` ~${fmt(present.get(id) * m.res_km)} km` : ''}</span>`).join('')
       + (HU_TEXT[k] ? `<span class="muted">(${HU_TEXT[k]}${k === 'harbour' ? '; diamonds under Overlays' : k === 'pass' ? '; bow-ties under Overlays' : ''}; hover a pixel for details)</span>` : '')
-      + (k === 'coast_type' ? '<span class="muted">(the shore\'s form, from the world\'s coast classes and the zoom\'s own relief, waves, rock and coastal life: zoom_coast.py; km of band)</span>'
-        : k === 'barrier_island' ? '<span class="muted">(sand islands off low barrier coasts, lagoons behind, tidal inlets between: zoom_coast.py)</span>'
-        : k === 'shore_form' ? '<span class="muted">(spits built by longshore drift, beach-ridge plains, tidal flats and their channels, reefs drowned since the last lowstand: zoom_shoreforms.py)</span>' : '')
-      + (k === 'land_use' ? `<span class="muted">(the cleared land of peoples run ${state.meta.peoples?.run || ''}: fields on flat fertile ground and along rivers, pasture round them, burned grass, managed woods, villages at water; zoom_peoples.py)</span>` : '')
-      + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>'
+      + (k === 'coast_type' ? '<span class="muted">(the shore\'s form, from the world\'s coast classes and the zoom\'s own relief, waves, rock and coastal life: zoom/coast.py; km of band)</span>'
+        : k === 'barrier_island' ? '<span class="muted">(sand islands off low barrier coasts, lagoons behind, tidal inlets between: zoom/coast.py)</span>'
+        : k === 'shore_form' ? '<span class="muted">(spits built by longshore drift, beach-ridge plains, tidal flats and their channels, reefs drowned since the last lowstand: zoom/shoreforms.py)</span>' : '')
+      + (k === 'land_use' ? `<span class="muted">(the cleared land of peoples run ${state.meta.peoples?.run || ''}: fields on flat fertile ground and along rivers, pasture round them, burned grass, managed woods, villages at water; zoom/peoples.py)</span>` : '')
+      + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom.coastal)</span>'
         : k === 'valley_floor' ? `<span class="muted">${present.size ? '(an alluvial river\'s valley floor: the meander belt is where its channel sweeps)' : 'no valley floors in this zoom'}</span>` : '');
   } else if (k === 'floor_m') {
     const g = FLOOR_M.map(([v, c]) => `rgb(${c}) ${100 * v}%`).join(',');
@@ -1525,7 +1525,7 @@ function huRows(i) {
   return rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 }
 
-// the zoom's vegetation at pixel i: named type, structure, productivity, fire (zoom_vegetation)
+// the zoom's vegetation at pixel i: named type, structure, productivity, fire (zoom.vegetation)
 function vegRows(i) {
   const L = state.L, lg = state.meta.legend;
   if (!L.vegetation || L.water[i] !== 0) return '';

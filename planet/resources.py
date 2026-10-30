@@ -8,7 +8,7 @@ cell's ground traced back frame by frame: where it was, what was happening
 there). Each resource follows a named deposit model; its rule is written next
 to it. A likelihood is "how likely a deposit of this kind lies in this cell
 (within prospecting depth)", not a grade: zooms site concrete deposits from it
-(stage 2, zoom_resources.py).
+(stage 2, zoom/resources.py).
 
     history(run_dir, t_myr, grid)        -> per-cell history arrays (traced keyframes)
     likelihoods(grid, L, meta, hist)     -> {key: 0..1 per cell}

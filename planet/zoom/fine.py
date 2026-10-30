@@ -26,7 +26,7 @@ Steps (the proposal's 1-6):
    ones don't; their beds on the parent's water surface;
    channels as wide as hydraulic geometry says (w ~ 4 Q^0.5 m). The
    parent's lakes at their surface, outlined by the warp. Alluvial
-   reaches get a valley floor round their axis (zoom_fine_floodplain,
+   reaches get a valley floor round their axis (zoom.fine_floodplain,
    PW-412): ~20 channel widths wide, a little above the channel and nearly
    flat across, its meander belt inside; held through step 5 and counted in
    the parent's means; a fine parent's floors are kept (layers
@@ -38,7 +38,7 @@ Steps (the proposal's 1-6):
    its falls as gorge_path; else a B-spline on the parent's chain), cut by
    the distance from it: a floor, cliff walls up to the rim, a held
    headwall above the face. Gorges are drawn features: left out of the
-   parent's means on both sides. Volcanoes (PW-395, zoom_fine_volcano):
+   parent's means on both sides. Volcanoes (PW-395, zoom.fine_volcano):
    the edifice's form below the parent's pixel scale (summit crater or
    caldera by kind and status, radial gullies by age and rain, lava flow
    lobes, parasitic cones) added to the parent's surface less its parent-
@@ -55,16 +55,16 @@ Steps (the proposal's 1-6):
    texture, talus aprons under faces steeper than 45 degrees. Within one
    parent pixel of the region's edge the result blends back to the target,
    so the edge meets the parent's surface (the 3D inset needs no stitching).
-6. Forms at this scale (PW-392, zoom_fine_forms; each reuses the regional zoom's code and keeps the
+6. Forms at this scale (PW-392, zoom.fine_forms; each reuses the regional zoom's code and keeps the
    parent's say): glaciers (zoom.glaciers on the fine ground, the parent's ice as the coarse ice: new ice
    only within a parent pixel of the parent's, its ice kept, its surface the least the fine ice stands to),
-   the karst and dune overlays (zoom_landforms.Landforms.finish, the lineage's seed: only the part below
-   the parent's pixels, each pixel's mean kept), the volcanoes' reefs (zoom_volcanoes.fields on the fine
-   pixels: atoll rims with their islets, fringing flats) and the coastal life (zoom_coastal.place on the
+   the karst and dune overlays (zoom.landforms.Landforms.finish, the lineage's seed: only the part below
+   the parent's pixels, each pixel's mean kept), the volcanoes' reefs (zoom.volcanoes.fields on the fine
+   pixels: atoll rims with their islets, fringing flats) and the coastal life (zoom.coastal.place on the
    fine shore and sea floor, each habitat kept to the parent's; reef flats raised, the lagoons deepened to
-   keep each parent pixel's mean). Then the climate (the world's, as the parent: zoom_vegetation.fine_fields,
+   keep each parent pixel's mean). Then the climate (the world's, as the parent: zoom.vegetation.fine_fields,
    lapse corrected to the fine ground, the ice's surface on glaciers; the parent's rain), vegetation and
-   soils (zoom_vegetation), the satellite view.
+   soils (zoom.vegetation), the satellite view.
 
 Not redone at this scale (inbox drafts): a delta's plain, coast and barriers (the parent's, interpolated;
 its distributaries are carried). The shore itself is drawn at this scale (PW-488): the parent's ground sampled
@@ -83,23 +83,23 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, icemass, vegetation
-from . import store as S
-from . import world as W
-from . import zoom as Z
-from . import zoom_coastal as ZCL
-from . import zoom_fine_floodplain as ZFP
-from . import zoom_fine_forms as ZFF
-from . import zoom_fine_meander as ZFM
-from . import zoom_fine_volcano as ZFV
-from . import zoom_falls as ZFL
-from . import zoom_kernels as ZK
-from . import zoom_vegetation as ZVG
-from . import satellite as SAT
-from . import surface as SURF
-from .climate import LAPSE
-from .geo import R_KM, latlon
-from .images import write_png
+from .. import climate, icemass, vegetation
+from .. import store as S
+from .. import world as W
+from . import regional as Z
+from . import coastal as ZCL
+from . import fine_floodplain as ZFP
+from . import fine_forms as ZFF
+from . import fine_meander as ZFM
+from . import fine_volcano as ZFV
+from . import falls as ZFL
+from . import kernels as ZK
+from . import vegetation as ZVG
+from .. import satellite as SAT
+from .. import surface as SURF
+from ..climate import LAPSE
+from ..geo import R_KM, latlon
+from ..images import write_png
 
 MAX_STEP = 20.0  # a fine zoom is at most this many times finer than its parent (owner, 2026-10-16)
 MIN_STEP = 2.0  # ... and at least this many (else it adds nothing)
@@ -673,7 +673,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         s1 = float(_path_dist(px[seq[1:2]], py[seq[1:2]], Q, S)[1][0])
         # the floor: the parent's drop split into tiers (the parent's own, kept in proportion) with ledged
         # faces, rapids between and a pool at each foot; the whole staircase held back downstream at the
-        # flanks, so its crests curve into a horseshoe round the gorge's head (zoom_falls.fine_profile, horseshoe; PW-522)
+        # flanks, so its crests curve into a horseshoe round the gorge's head (zoom.falls.fine_profile, horseshoe; PW-522)
         tiers = ZFL.tier_plan(top - bottom, sc_relief, f.get("tiers_m"))
         rng_f = np.random.default_rng(S_ + 7919 * k + 5)
         ks_, kz_, foots = ZFL.fine_profile(top, bottom, tiers, s_face, rng_f, 0.9 * max(L_ - s_face, 4 * res))
@@ -776,7 +776,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     vol_list = []
     core = np.zeros(npx, bool)
     vol_cap, vol_floor = np.full(npx, np.inf), np.full(npx, -np.inf)
-    # the volcanoes' edifices below the parent's pixel scale (PW-395, zoom_fine_volcano): their relief
+    # the volcanoes' edifices below the parent's pixel scale (PW-395, zoom.fine_volcano): their relief
     # less its parent-pixel means, on the parent's surface; the summit form held, the flanks kept near
     # it through the landscape pass (no closer than VOLC_CUT_M a little way down; free at the foot)
     ed, e_w = np.zeros(npx), np.zeros(npx)
@@ -906,7 +906,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     log(f"  conditioned on zoom {pa.id}: {len(links)} parent river links, {len(fall_list)} falls, "
         f"{len(vol_list)} volcanoes, {int(lake.sum())} lake px [{time.time() - t0:.1f}s]")
 
-    # --- 4b. valley floors (PW-412, zoom_fine_floodplain) ----------------
+    # --- 4b. valley floors (PW-412, zoom.fine_floodplain) ----------------
     # round each alluvial reach's axis: held through the landscape pass, the hillslopes shaped from
     # their edge; counted in the parent's means (the volume cut for them goes onto the hillslopes). A
     # parent's own floors (a fine parent's valley_floor, floor_m) are kept: its floor's level, its
@@ -1133,7 +1133,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     h = ground(hw)
     lake_depth = np.where(lake, level - lake_ground, np.where(pool, pool_d, 0.0))
 
-    # --- glaciers and landform overlays at this scale (PW-392, zoom_fine_forms) ----------
+    # --- glaciers and landform overlays at this scale (PW-392, zoom.fine_forms) ----------
     # (on the finished ground and its drainage, as the regional zoom: glaciers from each pixel's own
     # climate with the parent's ice as the coarse ice, then the karst and dune overlays, sub-parent-pixel)
     precip_b = (np.maximum(pa.bilinear("precipitation", pr, pc), 0.0) if "precipitation" in pa.L
@@ -1178,7 +1178,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     land = water == 0
 
     # --- 6. ice, climate, life -------------------------------------------
-    glacier = land & glacier_c  # (zoom_fine_forms.glaciers: the fine valleys' own, from the fine climate)
+    glacier = land & glacier_c  # (zoom.fine_forms.glaciers: the fine valleys' own, from the fine climate)
     ice = np.where(glacier, np.maximum(ice_th_c, 1.0), 0.0)
     P = fr.to_sphere(px, py)
     pix_lat = latlon(P)[0]
@@ -1441,11 +1441,11 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
     floor (PW-412): filled with each link's valley axis (the course
     before its meanders), sampled as its course: {link i: (axis (k, 2)
     parent plane km, floor half width km, meander belt half width km)}
-    (zoom_fine_floodplain). An alluvial reach's floor gives its meanders
+    (zoom.fine_floodplain). An alluvial reach's floor gives its meanders
     room where the parent's own floor is narrower (a parent made without
     floors cut a V down to its channel).
 
-    oxbows (PW-425): filled with the cut-off loops' arcs (zoom_fine_meander):
+    oxbows (PW-425): filled with the cut-off loops' arcs (zoom.fine_meander):
     [(points (k, 2) parent plane km, channel width km, discharge m^3/s)]."""
     rp = pa.rp
     nxp = pa.nx
@@ -1602,7 +1602,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             tg = _gauss(np.gradient(B, axis=0), max(1.0, 0.25 * float(np.median(lam)) * M / rp))
             tg /= np.maximum(np.hypot(*tg.T), 1e-12)[:, None]
             nm = np.column_stack([-tg[:, 1], tg[:, 0]])
-            # each bend its own (PW-425, zoom_fine_meander: Kinoshita bends, their swing, skew, flatness and
+            # each bend its own (PW-425, zoom.fine_meander: Kinoshita bends, their swing, skew, flatness and
             # length planet-fixed noise in the phase), within the floor's room and with no neck closing; then
             # no bend tighter than R_MIN (a loop meeting a valley bend folds on its inside: PW-424): there the
             # swing is let down over a wavelength
@@ -1787,7 +1787,7 @@ def planform(rec: np.ndarray, q: np.ndarray, h: np.ndarray, water: np.ndarray, n
 
 
 def latlon_to_xyz(lat: float, lon: float) -> np.ndarray:
-    from .geo import xyz
+    from ..geo import xyz
     return np.asarray(xyz(np.radians(lat), np.radians(lon)), float)
 
 

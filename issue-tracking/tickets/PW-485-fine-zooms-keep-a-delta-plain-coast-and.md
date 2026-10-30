@@ -11,7 +11,7 @@ impact: low
 found_by: pw392-fine-forms
 blocked_by: []
 relates: [PW-392, PW-129]
-refs: [planet/zoom_fine.py, planet/zoom.py, "zoom 38e327 in bdeca9"]
+refs: [planet/zoom/fine.py, planet/zoom/regional.py, "zoom 38e327 in bdeca9"]
 created: 2026-10-20
 updated: 2026-10-20
 ---
@@ -24,3 +24,4 @@ What is still the parent's, interpolated, is the delta's own forms: the lobe and
 
 ## Updates
 - 2026-10-20: Created from inbox draft draft-fine-zoom-delta-plain-not-redrawn.md (found by pw392-fine-forms).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

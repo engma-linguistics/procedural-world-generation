@@ -1,5 +1,5 @@
 """Shore forms in a regional zoom (PW-621; docs/proposals/coast_detail.md stage 2): what the waves and tides
-build from the sand and mud the rivers and cliffs give them. Part of `planet coast zoom:<id>` (zoom_coast.py):
+build from the sand and mud the rivers and cliffs give them. Part of `planet coast zoom:<id>` (zoom/coast.py):
 a new layer `shore_form` and spit features; the terrain changes only with --terrain (spits raised out of the
 sea), like the barrier islands.
 
@@ -44,7 +44,7 @@ import math
 
 import numpy as np
 
-from .geo import R_KM, latlon
+from ..geo import R_KM, latlon
 
 NORMAL_KM = 4.0  # smoothing of the land mask for the shore's normal
 SOURCE_RISE = 15.0  # m: a bluff or cliff that feeds the beach when it retreats
@@ -144,7 +144,7 @@ def _d8_channels(bed, flat, noise, res, min_km2):
 
 
 def build(world, meta, lay, ctx, terrain=False, seed=1):
-    """shore_form (ny, nx) u1, spit features and stats. ctx: zoom_coast.build's shore arrays (land, sea, shore,
+    """shore_form (ny, nx) u1, spit features and stats. ctx: zoom.coast.build's shore arrays (land, sea, shore,
     h, wave_sea, tide_sea, rise, hard, ct, cells, Pk, uniform)."""
     land, sea, shore, h = ctx["land"], ctx["sea"], ctx["shore"], ctx["h"]
     res, ct, Pk = ctx["res"], ctx["ct"], ctx["Pk"]
@@ -239,26 +239,26 @@ def build(world, meta, lay, ctx, terrain=False, seed=1):
                       "drift_kw_m": round(float(abs(drift[r0, c0])), 1), "supply": round(float(sup[k]), 2),
                       "end_px": list(path[-1])})
     # beach-ridge plains: low land behind beach/low shores with sand to spare
-    from .coastform import BEACH
+    from ..coastform import BEACH
     beachy = shore & (ct == BEACH)
     sup_r = max(1, int(round(SUPPLY_KM / res)))
     local = _box(src, sup_r) * (2 * sup_r + 1) ** 2
     seed_px = beachy & (local >= RIDGE_SUPPLY)
     ridges = np.zeros((ny, nx), bool)
     if seed_px.any():
-        from .zoom_coast import _distance
+        from .coast import _distance
         width = np.clip(RIDGE_KM * np.sqrt(np.where(seed_px, local, 0.0)), 0, RIDGE_MAX_KM)
         wmax = float(width.max())
         low_land = land & (h < RIDGE_M)
         d = _distance(seed_px, low_land, res, wmax)
         # (each plain pixel's width from its nearest seeds: the box max of the seeds' widths)
-        from .zoom_coastal import window_max
+        from .coastal import window_max
         wnear = window_max(np.where(seed_px, width, -np.inf), max(1, int(math.ceil(wmax / res))))
         ridges = low_land & np.isfinite(d) & (d <= wnear)
     # tidal flats and their channels: tide-dominated shores (the tide range >= TIDE_DOMINANT x the waves'
     # height, and >= FLAT_TIDE_M); the flat runs out over shallow floor as far as the tide range sets
-    from .coast import hs_te
-    from .zoom_coast import _dilate, _distance
+    from ..coast import hs_te
+    from .coast import _dilate, _distance
     tide = ctx["tide_sea"]
     hs = np.asarray(hs_te(np.maximum(ctx["wave_sea"], 0.0))[0], float)
     tidal_shore = shore & (tide >= FLAT_TIDE_M) & (tide >= TIDE_DOMINANT * hs)
@@ -302,7 +302,7 @@ def build(world, meta, lay, ctx, terrain=False, seed=1):
 
 
 def window_max_safe(a, r):
-    from .zoom_coastal import window_max
+    from .coastal import window_max
     m = window_max(a, r)
     return np.where(np.isfinite(m), m, 0.0)
 

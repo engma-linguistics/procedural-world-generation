@@ -54,7 +54,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api, family, favourites, make, thumbs
-from . import zoom_fine as ZF
+from .zoom import fine as ZF
 from . import parallel as P
 from . import store as S
 
@@ -443,7 +443,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*favourites_list(url.query))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
-        if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom_fine): the viewer's size menu
+        if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom.fine): the viewer's size menu
             q = dict(parse_qsl(url.query))
             try:
                 res = float(q["res_km"]) if "res_km" in q else None
