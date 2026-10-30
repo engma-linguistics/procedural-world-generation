@@ -28,6 +28,7 @@ from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
+from . import params as PM
 from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
                      MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
@@ -169,6 +170,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
         self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
+        self._adj_t = np.zeros((len(L), g.n), np.float32)  # (kyr each line has held or bordered each cell: params.ADAPT_KYR)
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
@@ -252,6 +254,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                 self._viable(l, k, self._mvp_dt[k], step)
                 self._mvp_dt[k] = 0.0
         self._hold_out(l, k, K, step)
+        if PM.ADAPT_KYR > 0 and not deep and not l.megafauna and not l.marine:
+            self._adj_t[k] += np.float32(step.dt) * self._dilate(self.p[k] >= EST, 1)
         if not (self.p[k] > EST).any() and not l.overlay:
             self.active[l.id] = False
             self.ended[l.id] = step.ago

@@ -227,10 +227,13 @@ def authored(path: Path) -> tuple[dict, dict]:
     return raw, info
 
 
-ARMS = ("range", "local", "local_vacate")  # params.SPLIT_FOUNDING settings
+ARMS = ("range", "local", "local_vacate", "adapt")  # params.SPLIT_FOUNDING settings; adapt: range founding, ADAPT_KYR on
+ARM_PARAMS = {"range": {}, "local": {}, "local_vacate": {}, "adapt": {"ADAPT_KYR": 2.0}}
+ARM_SEEDS = {"adapt": {7}}
 # (which families run under which arm, to keep the suite to ~3-4 h at 4 sims: everything under range; base, dnd's jitter, subset and
 # authored under local; base under local_vacate)
-ARM_FAMILIES = {"range": None, "local": {"base", "jitter-dnd", "subset", "authored"}, "local_vacate": {"base"}}
+ARM_FAMILIES = {"range": None, "local": {"base", "jitter-dnd", "subset", "authored"}, "local_vacate": {"base"},
+                "adapt": {"base", "subset", "authored"}}
 
 
 def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
@@ -244,6 +247,8 @@ def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
         allowed = ARM_FAMILIES[arm]
         sub = f"{fam}-{info.get('tree')}" if fam == "jitter" else fam
         if arm not in arms or allowed is not None and fam not in allowed and sub not in allowed:
+            return
+        if arm in ARM_SEEDS and info.get("seed") not in ARM_SEEDS[arm]:
             return
         tag = "" if arm == "range" else f"~{arm}"
         out.append({"family": fam, "name": f"{name}{tag}@{world}", "world": world, "raw": raw, "arm": arm, **info})
@@ -273,7 +278,18 @@ def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
             for lid in KNOB_PEOPLES:
                 for x in KNOB_X:
                     add("knob", f"dnd-{lid}x{x:g}-s7", with_seed(knob(dnd, lid, x), 7), w, arm, tree="dnd", seed=7, knob=lid, x=x)
+    if families and "screen" in families:  # (diagnostic screens, only on request: which competition rule makes a small tree a monopoly)
+        five = next(raw for name, raw, _ in trees if name == "five_peoples")
+        for w in worlds:
+            for tname, raw in (("five_peoples", five), ("dnd3", subset(dnd, ["human", "goblin", "kobold"])), ("dnd", dnd)):
+                for sname, prm in SCREENS.items():
+                    out.append({"family": "screen", "name": f"scr-{tname}-{sname}-s7@{w}", "world": w, "raw": with_seed(raw, 7),
+                                "arm": "range", "tree": tname, "seed": 7, "screen": sname, "params": prm})
     return out
+
+
+SCREENS = {"base": {}, "noinvade": {"INVADE": 0.0}, "nopush": {"DENSITY_PUSH": 0.0}, "closed1": {"ALPHA_CLOSED": 1.0},
+           "noinv_nopush": {"INVADE": 0.0, "DENSITY_PUSH": 0.0}, "nohold": {"HOLD_MIN": 0.0}}
 
 
 # ---------------------------------------------------------------- one run
@@ -347,7 +363,17 @@ def run_one(spec: dict) -> dict:
                 inh[c] = round(inh.get(c, 0.0) + (float((self.p[self.idx[c]] >= 0.12).sum()) - b) * self.cell_mkm2, 3)
 
     from planet.lineages.history import params as PM
-    PM.SPLIT_FOUNDING = spec.get("arm", "range")
+    arm = spec.get("arm", "range")
+    PM.SPLIT_FOUNDING = arm if arm in ("range", "local", "local_vacate") else "range"
+    spec = {**spec, "params": {**ARM_PARAMS.get(arm, {}), **spec.get("params", {})}}
+    if spec.get("params"):  # (a diagnostic screen: tuning constants overridden in every module of the history that imported them)
+        import importlib, pkgutil
+        from planet.lineages import history as HP, spread as SPR
+        mods = [importlib.import_module(f"planet.lineages.history.{m.name}") for m in pkgutil.iter_modules(HP.__path__)] + [SPR]
+        for k, v in spec["params"].items():
+            for mod in mods:
+                if hasattr(mod, k):
+                    setattr(mod, k, type(getattr(mod, k))(v) if not isinstance(getattr(mod, k), tuple) else tuple(v))
     t0 = time.time()
     tree = SP.parse(spec["raw"])
     tz, now0, world = R.resolve(spec["world"])
@@ -381,7 +407,7 @@ def run_all(out: Path, jobs: int, threads: int, max_load: float, families=None, 
             if pr[0].poll() is not None:
                 running.remove(pr)
                 print(f"  done {pr[1]['name']} rc={pr[0].returncode} {time.time() - pr[2]:.0f}s", flush=True)
-        if todo and len(running) < jobs and (os.getloadavg()[0] <= max_load or not running):
+        if todo and max(len(running), len(list(out.glob('*.spec.json')))) < jobs and (os.getloadavg()[0] <= max_load or not running):
             v = todo.pop(0)
             sp = out / f"{_slug(v['name'])}.spec.json"
             sp.write_text(json.dumps(v))
@@ -422,7 +448,7 @@ def report(out: Path) -> str:
     crashed = [r for r in runs if not r.get("ok")]
     ok = [r for r in runs if r.get("ok")]
     # -- invariants per run
-    lines += ["## Invariants per run", "", "| run | peoples | crash | lost (why) | top people | top share | mono | wall s |", "|---|---|---|---|---|---|---|---|"]
+    lines += ["## Invariants per run", "", "| run | peoples | crash | lost (why) | top people | top share | mono | most cells led | wall s |", "|---|---|---|---|---|---|---|---|---|"]
     fails = {a: {"runs": 0, "crash": 0, "extinct": 0, "mono": 0, "any": 0} for a in ARMS}
     for r in sorted(runs, key=lambda r: (r["family"], r["name"])):
         fa = fails[r.get("arm", "range")] if not r.get("info_only") else {}
@@ -440,7 +466,8 @@ def report(out: Path) -> str:
         fa["mono"] = fa.get("mono", 0) + mono
         fa["any"] = fa.get("any", 0) + bool(gone or mono)
         g = "; ".join(f"{k} ({(w or '')[:70]})" for k, w in gone.items()) or "-"
-        lines.append(f"| {r['name']} | {r['n_peoples']} | - | {g} | {top} | {_fmt(P[top]['share']) if top else '-'} | {'FAIL' if mono else 'ok'} | {r.get('wall_s')} |")
+        led_top = max(P, key=lambda k: P[k]["led"]) if P else None
+        lines.append(f"| {r['name']} | {r['n_peoples']} | - | {g} | {top} | {_fmt(P[top]['share']) if top else '-'} | {'FAIL' if mono else 'ok'} | {led_top} {_fmt(P[led_top]['led']) if led_top else '-'} | {r.get('wall_s')} |")
     lines += ["", "| founding arm | runs counted | any fail | crash | a people extinct | one people over %d%% |" % round(100 * MONO_MAX), "|---|---|---|---|---|---|"]
     for a, f in fails.items():
         if f["runs"]:
