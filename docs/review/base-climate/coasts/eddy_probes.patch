@@ -1,0 +1,55 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index 1d6343e9..27220905 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1471,7 +1471,7 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
+     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
+     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
+     return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, rhc=rhc, mse_t=mse_t, mse_thr=mse_thr, v=np.asarray(v, np.float64),
+-                B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
++                B=B, track=B if track is None else track, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
+ 
+ 
+ U_REF = 7.0  # m/s: wind speed 1 (a steady trade wind)
+@@ -1499,9 +1499,41 @@ def face_winds(grid: Grid, seasons_in: list[dict], tune: dict) -> tuple[np.ndarr
+         v = d["v"] * U_REF
+         un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1)
+         kd[k] = K_MIX * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
++        if _EDDY_PROBE(tune):  # PROBE (lane 26b): eddy vapour transport forms
++            Bf = 0.5 * (d["B"][ea] + d["B"][eb])
++            if tune.get("k_all", 1.0) != 1.0:  # E1: all mixing x k_all
++                kd[k] = kd[k] * tune["k_all"]
++            if tune.get("k_storm", 0.0) > 0:  # E2: + k_storm x K_MIX x B, the storms' part only
++                kd[k] = kd[k] + tune["k_storm"] * K_MIX * np.clip(Bf, 0, 1.2)
++            if tune.get("k_mer", 0.0) > 0:  # E3: + k_mer x K_MIX x B across the face's north-south part
++                c = grid.centers
++                mid = c[ea] + c[eb]
++                mid = mid / np.linalg.norm(mid, axis=1)[:, None]
++                north = np.array([0.0, 0.0, 1.0])[None, :] - mid[:, 2:3] * mid
++                north = north / np.maximum(np.linalg.norm(north, axis=1)[:, None], 1e-12)
++                nn = F["n"] / np.maximum(np.linalg.norm(F["n"], axis=1)[:, None], 1e-12)
++                cos2 = (nn * north).sum(1) ** 2
++                kd[k] = kd[k] + tune["k_mer"] * K_MIX * np.clip(Bf, 0, 1.2) * cos2
++            if tune.get("k_drift", 0.0) > 0:  # E4: the storms' v'q' as a poleward drift of the vapour, m/s x B
++                c = grid.centers
++                mid = c[ea] + c[eb]
++                mid = mid / np.linalg.norm(mid, axis=1)[:, None]
++                north = np.array([0.0, 0.0, 1.0])[None, :] - mid[:, 2:3] * mid
++                north = north / np.maximum(np.linalg.norm(north, axis=1)[:, None], 1e-12)
++                Bd = np.clip(Bf, 0, 1.2)
++                if tune.get("k_drift_track", 0) > 0:  # (i): the jet's storm tracks only
++                    Bd = np.clip(0.5 * (d["track"][ea] + d["track"][eb]), 0, 1.2)
++                if tune.get("k_drift_sink", 0) > 0:
++                    Bd = Bd * np.clip(1 - 0.5 * (d["sink"][ea] + d["sink"][eb]), 0, 1)
++                un[k] = un[k] + tune["k_drift"] * Bd * np.sign(mid[:, 2]) * (F["n"] * north).sum(1)
+     return un, kd
+ 
+ 
++def _EDDY_PROBE(tune):  # PROBE (lane 26b)
++    return (tune.get("k_all", 1.0) != 1.0 or tune.get("k_storm", 0.0) > 0 or tune.get("k_mer", 0.0) > 0
++            or tune.get("k_drift", 0.0) > 0)
++
++
+ def _transport(grid: Grid, un: np.ndarray, kd: np.ndarray) -> tuple:
+     """The finite-volume transport as each cell's share kept (c_self) and
+     gathered from each neighbour (c_in, per slot of _faces' CSR; nbr: that
