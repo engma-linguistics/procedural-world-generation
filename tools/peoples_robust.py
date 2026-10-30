@@ -1,0 +1,602 @@
+"""Peoples robustness suite (lane 77): does the peoples history hold up when the tree changes?
+
+    uv run python tools/peoples_robust.py plan                       # list the variants (no runs)
+    uv run python tools/peoples_robust.py run --out DIR [--jobs 4 --threads 4 --max-load 60] [--family base,jitter,...]
+    uv run python tools/peoples_robust.py report --out DIR           # tables from the runs in DIR (report.md, summary.json)
+    uv run python tools/peoples_robust.py one SPEC.json OUT.json     # one variant (the runner's worker)
+
+One try (no best-of-N) of each variant tree on each world, nothing saved under runs/ (the worker keeps only the numbers).
+Variant families, cut from the stock trees (planet/lineages/samples):
+  base    dnd and seven_meals at several seeds
+  jitter  every split and arrival date x a seeded factor in 0.5-2 (log-uniform), parents kept older than their children
+  subset  a 5-people and a 3-people tree cut from dnd (enabled = false on the rest, stems kept), and dnd plus an authored people
+  knob    three peoples (a mainline one, a minor one, a late arrival) at density x0.5 and x2 against the base at the same seed
+  portal  dnd with portal_mode = sites (1 and 3 portals) against off
+
+Per run, per people (a people with its groups rolled up; megafauna and overlays apart): its share of all people, its share of the
+peopled cells it leads (the most people there), its range, and whether it lives; a people that dies out is named with why (its
+events). The invariants (report): no crash; no authored people silently extinct; no people above MONO_MAX of all people unless the
+tree has <= 2; shares move with each people's own density knob. The spread: each people's share over the base, jitter and portal
+runs; a people whose share swings more than SWING x between them is a brittle point.
+
+How to judge a peoples change: docs/coordination.md ("How to judge a peoples change").
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import planet  # noqa: E402,F401  (thread defaults before numpy)
+
+import argparse
+import copy
+import json
+import math
+import os
+import subprocess
+import sys
+import time
+import tomllib
+import traceback
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parent.parent
+SAMPLES = ROOT / "planet" / "lineages" / "samples"
+WORLDS = ["4360a3", "af2677"]  # the L6 worlds with their time zooms on disk (2026-10-30)
+MONO_MAX = 0.85  # no people above this share of all people (trees of 3+ peoples)
+SWING = 10.0  # a people whose share swings more than this x across seeds and jitters is brittle
+SHARE_FLOOR = 1e-4  # (shares under this count as this in the swing ratio: an extinct people is reported apart)
+KNOB_PEOPLES = {"dwarf": "mainline", "bugbear": "minor", "gnome": "late arrival"}
+KNOB_X = (0.5, 2.0)
+
+
+# ---------------------------------------------------------------- variants
+
+def _load(name: str) -> dict:
+    with open(SAMPLES / f"{name}.toml", "rb") as f:
+        return tomllib.load(f)
+
+
+def _ago(v) -> float:
+    from planet.lineages import spec as SP
+    return SP.parse_ago(v)
+
+
+def _when_key(r: dict) -> str | None:
+    return next((k for k in ("at", "split", "appears", "arrives", "ago") if k in r), None)
+
+
+def _kyr(x: float) -> str:
+    return f"{x:.6g} kyr"
+
+
+def jitter(raw: dict, rng: np.random.Generator, lo: float = 0.5, hi: float = 2.0) -> dict:
+    """Every split and arrival date x a log-uniform factor in lo..hi; a child is kept younger than its parents (at most 0.9 of the
+    youngest parent's date), a stem's sapiens node between its kinds and its own start, an extinction after the line appears."""
+    raw = copy.deepcopy(raw)
+    rows = {r["id"]: r for r in raw["lineage"]}
+    old = {lid: _ago(r[_when_key(r)]) if _when_key(r) else None for lid, r in rows.items()}
+    new: dict[str, float] = {}
+
+    def pars(r):
+        p = r.get("parents") or ([r["parent"]] if r.get("parent") else [])
+        if r.get("group_of") and not p:
+            p = [r["group_of"]]
+        return list(p)
+
+    def date(lid):
+        if lid in new:
+            return new[lid]
+        r = rows[lid]
+        ps = pars(r)
+        origin = r.get("origin") or ("split" if ps else "root")
+        t = old[lid]
+        if t is None:  # (a group without a date: the parser's default)
+            new[lid] = None
+            return None
+        if origin in ("split", "arrival"):
+            t = t * math.exp(rng.uniform(math.log(lo), math.log(hi)))
+        cap = min([date(q) for q in ps if date(q) is not None], default=None)
+        if cap is not None and t >= 0.9 * cap:
+            t = 0.9 * cap
+        new[lid] = t
+        return t
+
+    for lid in rows:
+        date(lid)
+    for lid, r in rows.items():
+        k = _when_key(r)
+        if k and new[lid] is not None:
+            r[k] = _kyr(new[lid])
+    for lid, r in rows.items():
+        kids = [c for c, rc in rows.items() if lid in pars(rc) and (rc.get("origin") or "split") == "split"]
+        if "sapient" in r:
+            s = _ago(r["sapient"]) * (new[lid] / old[lid])
+            top = max([new[c] for c in kids], default=0.0)
+            r["sapient"] = _kyr(min(max(s, top * 1.0001 + 1e-6), new[lid] * 0.999))
+        if "extinct" in r and _ago(r["extinct"]) >= 0.9 * new[lid]:
+            r["extinct"] = _kyr(0.5 * new[lid])
+    return raw
+
+
+def subset(raw: dict, keep: list[str]) -> dict:
+    """The tree with only the peoples in `keep` (with their ancestors, groups, and the hybrids and templates of kept parents): the
+    rest switched off (enabled = false)."""
+    raw = copy.deepcopy(raw)
+    rows = {r["id"]: r for r in raw["lineage"]}
+    on: set[str] = set()
+    for lid in keep:
+        x = lid
+        while x and x not in on:
+            on.add(x)
+            r = rows[x]
+            p = r.get("parents") or []
+            x = p[0] if p and (r.get("origin") or "split") == "split" else None
+    for lid, r in rows.items():
+        o = r.get("origin") or ("split" if r.get("parents") else "root")
+        if o == "group" and r.get("group_of") in on:
+            on.add(lid)
+        if o in ("hybrid", "template") and all(q in on for q in r.get("parents", [])):
+            on.add(lid)
+    for lid, r in rows.items():
+        if lid not in on:
+            r["enabled"] = False
+    return raw
+
+
+ADDED_PEOPLE = {  # an author's own people, added to dnd: horned hill folk split from the hominids
+    "id": "minotaur", "name": "minotaurs (authored)", "parents": ["hominid"], "at": "600 kyr", "density": 1.5, "explore": 0.5,
+    "temp_c": [6, 24], "rain_mm": [350, 1400], "prefers": ["hills", "open"], "traits": ["hardy"],
+}
+
+
+def knob(raw: dict, lid: str, x: float) -> dict:
+    raw = copy.deepcopy(raw)
+    from planet.lineages import spec as SP
+    for r in raw["lineage"]:
+        if r["id"] == lid:
+            if "band_km2" in r:
+                r["band_km2"] = float(r["band_km2"]) / x
+            else:
+                d = r.get("density")
+                if d is None:  # (left out: the traits' default, spec.DEMOGRAPHY)
+                    d = SP.parse(raw).lines[lid].demo("density")
+                r["density"] = float(d) * x
+    return raw
+
+
+def with_seed(raw: dict, seed: int, **meta) -> dict:
+    raw = copy.deepcopy(raw)
+    raw.setdefault("meta", {})["seed"] = int(seed)
+    raw["meta"].update(meta)
+    return raw
+
+
+TREES = Path(__file__).resolve().parent / "peoples_robust" / "trees"  # authored alternative trees (edits of a sample, or whole trees)
+
+
+def all_at_once(raw: dict, when: str) -> dict:
+    """Every living people (and megafauna kind) of the tree as a root of its own at one moment: the stems switched off, the leaves
+    re-rooted at `when`, an arrival kept an arrival; groups, hybrids and templates as they were; authored extinctions off."""
+    raw = copy.deepcopy(raw)
+    from planet.lineages import spec as SP
+    t = SP.parse(raw)
+    leaves = {l.id for l in t.leaves()}
+    for r in raw["lineage"]:
+        o = r.get("origin") or ("split" if r.get("parents") else "root")
+        if o in ("group", "hybrid", "template"):
+            continue
+        if r["id"] not in leaves or "extinct" in r:
+            r["enabled"] = False
+            continue
+        for k in ("parents", "parent", "sapient", "split", "appears", "arrives", "ago"):
+            r.pop(k, None)
+        r["origin"] = "arrival" if o == "arrival" else "root"
+        r["at"] = when
+    return raw
+
+
+def authored(path: Path) -> tuple[dict, dict]:
+    """(the tree, its info) from a file under TREES: a whole tree, or `base` (a sample's name) with `keep` (a subset), `off` (lines
+    switched off), [edit.<id>] (fields set; `unset`: keys removed), [[lineage]] (lines added), [meta] (merged), `all_at_once` (a time)."""
+    with open(path, "rb") as f:
+        d = tomllib.load(f)
+    info = {"rationale": d.get("rationale", ""), "info_only": bool(d.get("info_only"))}
+    if "base" not in d:
+        return d, info
+    raw = _load(d["base"])
+    if d.get("keep"):
+        raw = subset(raw, list(d["keep"]))
+    rows = {r["id"]: r for r in raw["lineage"]}
+    for lid in d.get("off", []):
+        rows[lid]["enabled"] = False
+    for lid, e in d.get("edit", {}).items():
+        e = dict(e)
+        for k in e.pop("unset", []):
+            rows[lid].pop(k, None)
+        rows[lid].update(e)
+    raw["lineage"].extend(copy.deepcopy(d.get("lineage", [])))
+    raw.setdefault("meta", {}).update(d.get("meta", {}))
+    raw.setdefault("wish", []).extend(d.get("wish", []))
+    if d.get("all_at_once"):
+        raw = all_at_once(raw, d["all_at_once"])
+    return raw, info
+
+
+ARMS = ("range", "local", "local_vacate")  # params.SPLIT_FOUNDING settings
+# (which families run under which arm, to keep the suite to ~3-4 h at 4 sims: everything under range; base, dnd's jitter, subset and
+# authored under local; base under local_vacate)
+ARM_FAMILIES = {"range": None, "local": {"base", "jitter-dnd", "subset", "authored"}, "local_vacate": {"base"}}
+
+
+def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
+    """The variants, the range arm first (so a cut-short suite still has the whole of today's model)."""
+    dnd, sm = _load("dnd"), _load("seven_meals")
+    out = []
+
+    def add(fam, name, raw, world, arm, **info):
+        if families and fam not in families:
+            return
+        allowed = ARM_FAMILIES[arm]
+        sub = f"{fam}-{info.get('tree')}" if fam == "jitter" else fam
+        if arm not in arms or allowed is not None and fam not in allowed and sub not in allowed:
+            return
+        tag = "" if arm == "range" else f"~{arm}"
+        out.append({"family": fam, "name": f"{name}{tag}@{world}", "world": world, "raw": raw, "arm": arm, **info})
+
+    trees = [(p.stem, *authored(p)) for p in sorted(TREES.glob("*.toml"))]
+    for arm in ARMS:
+        for w in worlds:
+            for s in (7, 10, 13):
+                add("base", f"dnd-s{s}", with_seed(dnd, s), w, arm, tree="dnd", seed=s)
+                add("base", f"sm-s{s}", with_seed(sm, s), w, arm, tree="seven_meals", seed=s)
+            for j in range(1, 5):
+                add("jitter", f"dnd-j{j}", with_seed(jitter(dnd, np.random.default_rng(7700 + j)), 7), w, arm, tree="dnd", seed=7, jitter=j)
+            for j in range(1, 3):
+                add("jitter", f"sm-j{j}", with_seed(jitter(sm, np.random.default_rng(7800 + j)), 7), w, arm, tree="seven_meals", seed=7, jitter=j)
+            for s in (7, 10):
+                add("subset", f"dnd5-s{s}", with_seed(subset(dnd, ["human", "elf", "dwarf", "halfling", "orc"]), s), w, arm, tree="dnd5", seed=s)
+                add("subset", f"dnd3-s{s}", with_seed(subset(dnd, ["human", "goblin", "kobold"]), s), w, arm, tree="dnd3", seed=s)
+                plus = copy.deepcopy(dnd)
+                plus["lineage"].append(dict(ADDED_PEOPLE))
+                add("subset", f"dnd+1-s{s}", with_seed(plus, s), w, arm, tree="dnd+1", seed=s)
+                for name, raw, info in trees:
+                    if info["info_only"] and arm != "range":
+                        continue
+                    add("authored", f"{name}-s{s}", with_seed(raw, s), w, arm, tree=name, seed=s, **info)
+                for n in (1, 3):
+                    add("portal", f"dnd-sites{n}-s{s}", with_seed(dnd, s, portal_mode="sites", portals=n), w, arm, tree="dnd", seed=s, portals=n)
+            for lid in KNOB_PEOPLES:
+                for x in KNOB_X:
+                    add("knob", f"dnd-{lid}x{x:g}-s7", with_seed(knob(dnd, lid, x), 7), w, arm, tree="dnd", seed=7, knob=lid, x=x)
+    return out
+
+
+# ---------------------------------------------------------------- one run
+
+def measure(h, res, pres) -> dict:
+    """The numbers of one try: per people (groups rolled up; megafauna and overlays apart) share of people, of the cells led, range,
+    founding; the extinctions and their reasons."""
+    from planet.lineages.spread import EST
+    tree, P = h.tree, res["present"]
+    n = h.grid.n
+    peoples = [l for l in tree.leaves() if not l.group_of and not l.megafauna and not l.overlay]
+    pid = {l.id: i for i, l in enumerate(peoples)}
+    pop = np.zeros((len(peoples), n))
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna or l.marine and False:
+            continue
+        who = tree.people_of(l.id)
+        if who in pid:
+            pop[pid[who]] += h.population(k, P)
+    tot = pop.sum()
+    peopled = pop.sum(0) > 0
+    lead = np.argmax(pop, 0)
+    out = {}
+    ev_by = {}
+    for e in h.events:
+        ev_by.setdefault(e.get("line"), []).append(e)
+    for l in peoples:
+        i = pid[l.id]
+        held = (h.whole(l.id, P) >= EST)
+        alive = bool(pop[i].sum() > 0)
+        o = h.origins.get(l.id, {})
+        why = None
+        m_ext = l.extinct_kyr is not None  # (authored to die out: not a failure)
+        if not alive:
+            evs = [e for x in [l.id, *tree.groups_of(l.id)] for e in ev_by.get(x, []) if e.get("kind") in ("extinct", "unborn", "refuge")]
+            if l.id not in h.started:
+                why = "never founded"
+            elif evs:
+                why = "; ".join(f"{e.get('ago_kyr', e.get('ago'))} kyr: {e.get('text', e.get('kind'))}" for e in evs[-2:])
+            else:
+                why = f"faded patches {h.faded.get(l.id, 0)}; no event"
+        out[l.id] = {"share": float(pop[i].sum() / tot) if tot > 0 else 0.0,
+                     "led": float((peopled & (lead == i)).sum() / max(peopled.sum(), 1)),
+                     "area_mkm2": round(float(held.sum() * h.cell_mkm2), 3), "pop": float(pop[i].sum()), "alive": alive,
+                     "why_gone": why, "origin": {k: o.get(k) for k in ("ago_kyr", "why", "lat", "lon")} if o else None,
+                     "found_mkm2": h._found_mkm2.get(l.id), "inherit_mkm2": h._inherit_mkm2.get(l.id, 0.0),
+                     "jumps": h.jumps_n.get(l.id, 0), "crossings": h.crossings_n.get(l.id, 0), "faded": h.faded.get(l.id, 0),
+                     "refuged": l.id in h._refuged, "density": l.demo("density"), "authored_extinct": m_ext}
+    lost = [x for x in pres.get("lost", [])]
+    return {"peoples": out, "n_peoples": len(peoples), "lost": lost, "runtime_s": round(getattr(h, "runtime", 0.0), 1),
+            "total_pop": float(tot), "megafauna": {k: v.get("count") if isinstance(v, dict) else None for k, v in (pres.get("megafauna") or {}).items()}}
+
+
+def run_one(spec: dict) -> dict:
+    from planet.lineages import land as LD
+    from planet.lineages import recent as R
+    from planet.lineages import spec as SP
+    from planet.lineages.history import model as M
+    from planet.lineages.history.summary import present_summary
+
+    class Probe(M.History):  # (records each line's founding range and what it inherits from a stem's end; no change to the model)
+        def _record_origin(self, line, step, cell, why):
+            self.__dict__.setdefault("_found_mkm2", {})[line.id] = round(float((self.p[self.idx[line.id]] >= 0.12).sum() * self.cell_mkm2), 3)
+            return super()._record_origin(line, step, cell, why)
+
+        def _end_parent(self, line, step, env, tags):
+            before = {c: float((self.p[self.idx[c]] >= 0.12).sum()) for c in self._realm_kids(line)}
+            super()._end_parent(line, step, env, tags)
+            inh = self.__dict__.setdefault("_inherit_mkm2", {})
+            for c, b in before.items():
+                inh[c] = round(inh.get(c, 0.0) + (float((self.p[self.idx[c]] >= 0.12).sum()) - b) * self.cell_mkm2, 3)
+
+    from planet.lineages.history import params as PM
+    PM.SPLIT_FOUNDING = spec.get("arm", "range")
+    t0 = time.time()
+    tree = SP.parse(spec["raw"])
+    tz, now0, world = R.resolve(spec["world"])
+    rp = {"kyr": 30.0, "climate_every": 2.0, **spec.get("recent", {})}  # (the CLI defaults; a test passes its own)
+    ps = R.Pass(tz, spec.get("now", now0), R.RecentParams(**rp), world_ref=world)
+    goods = LD.goods(world) if world and tree.uses else None
+    h = Probe(tree, ps, tree.seed * 1000, goods=goods)
+    h._found_mkm2, h._inherit_mkm2 = {}, {}
+    res = h.run()
+    pres = present_summary(h, res["present"])
+    m = measure(h, res, pres)
+    m["wall_s"] = round(time.time() - t0, 1)
+    return m
+
+
+# ---------------------------------------------------------------- runner
+
+def _slug(name: str) -> str:
+    return name.replace("@", "_at_").replace("/", "_")
+
+
+def run_all(out: Path, jobs: int, threads: int, max_load: float, families=None, worlds=WORLDS):
+    out.mkdir(parents=True, exist_ok=True)
+    todo = [v for v in plan(worlds, families) if not (out / f"{_slug(v['name'])}.json").exists()
+            and not (out / f"{_slug(v['name'])}.spec.json").exists()]  # (a spec on disk: in flight, from another runner)
+    print(f"{len(todo)} variants to run in {out}", flush=True)
+    running: list[tuple[subprocess.Popen, dict, float]] = []
+    env = {**os.environ, "NUMBA_NUM_THREADS": str(threads)}
+    while todo or running:
+        for pr in list(running):
+            if pr[0].poll() is not None:
+                running.remove(pr)
+                print(f"  done {pr[1]['name']} rc={pr[0].returncode} {time.time() - pr[2]:.0f}s", flush=True)
+        if todo and len(running) < jobs and (os.getloadavg()[0] <= max_load or not running):
+            v = todo.pop(0)
+            sp = out / f"{_slug(v['name'])}.spec.json"
+            sp.write_text(json.dumps(v))
+            log = open(out / f"{_slug(v['name'])}.log", "w")
+            p = subprocess.Popen([sys.executable, __file__, "one", str(sp), str(out / f"{_slug(v['name'])}.json")],
+                                 stdout=log, stderr=subprocess.STDOUT, env=env, cwd=ROOT)
+            running.append((p, v, time.time()))
+            print(f"start {v['name']} (pid {p.pid}, load {os.getloadavg()[0]:.0f}, {len(todo)} left)", flush=True)
+            time.sleep(5)
+            continue
+        time.sleep(10)
+
+
+def one(spec_path: str, out_path: str):
+    spec = json.loads(Path(spec_path).read_text())
+    info = {k: v for k, v in spec.items() if k != "raw"}
+    try:
+        m = run_one(spec)
+        m.update(info, ok=True)
+    except Exception:
+        m = {**info, "ok": False, "error": traceback.format_exc()}
+    Path(out_path).write_text(json.dumps(m, indent=1))
+    try:
+        Path(spec_path).unlink()
+    except OSError:
+        pass
+
+
+# ---------------------------------------------------------------- report
+
+def _fmt(x, pct=True):
+    return "-" if x is None else f"{100 * x:.2g}%" if pct else f"{x:.3g}"
+
+
+def report(out: Path) -> str:
+    runs = [json.loads(p.read_text()) for p in sorted(out.glob("*.json")) if not p.name.endswith(".spec.json") and p.name != "summary.json"]
+    lines = [f"# Peoples robustness suite: {len(runs)} runs ({out})", ""]
+    crashed = [r for r in runs if not r.get("ok")]
+    ok = [r for r in runs if r.get("ok")]
+    # -- invariants per run
+    lines += ["## Invariants per run", "", "| run | peoples | crash | lost (why) | top people | top share | mono | wall s |", "|---|---|---|---|---|---|---|---|"]
+    fails = {a: {"runs": 0, "crash": 0, "extinct": 0, "mono": 0, "any": 0} for a in ARMS}
+    for r in sorted(runs, key=lambda r: (r["family"], r["name"])):
+        fa = fails[r.get("arm", "range")] if not r.get("info_only") else {}
+        fa["runs"] = fa.get("runs", 0) + 1
+        if not r.get("ok"):
+            fa["crash"] = fa.get("crash", 0) + 1
+            fa["any"] = fa.get("any", 0) + 1
+            lines.append(f"| {r['name']} | - | CRASH: {r['error'].strip().splitlines()[-1][:80]} | | | | | |")
+            continue
+        P = r["peoples"]
+        gone = {k: v["why_gone"] for k, v in P.items() if not v["alive"] and not v.get("authored_extinct")}
+        top = max(P, key=lambda k: P[k]["share"]) if P else None
+        mono = bool(top and r["n_peoples"] > 2 and P[top]["share"] > MONO_MAX)
+        fa["extinct"] = fa.get("extinct", 0) + bool(gone)
+        fa["mono"] = fa.get("mono", 0) + mono
+        fa["any"] = fa.get("any", 0) + bool(gone or mono)
+        g = "; ".join(f"{k} ({(w or '')[:70]})" for k, w in gone.items()) or "-"
+        lines.append(f"| {r['name']} | {r['n_peoples']} | - | {g} | {top} | {_fmt(P[top]['share']) if top else '-'} | {'FAIL' if mono else 'ok'} | {r.get('wall_s')} |")
+    lines += ["", "| founding arm | runs counted | any fail | crash | a people extinct | one people over %d%% |" % round(100 * MONO_MAX), "|---|---|---|---|---|---|"]
+    for a, f in fails.items():
+        if f["runs"]:
+            lines.append(f"| {a} | {f['runs']} | {f['any']} | {f['crash']} | {f['extinct']} | {f['mono']} |")
+    lines += ["", "(info-only trees, all_at_once, are not counted.)", ""]
+    # -- spread over base + jitter (the same families under each founding arm), per tree
+    summ = {"spread": {}, "knob": {}, "fails": fails}
+    stats = {}
+    for tree in ("dnd", "seven_meals"):
+        for arm in ARMS:
+            rs = [r for r in ok if r.get("tree") == tree and r.get("arm", "range") == arm and r["family"] in ("base", "jitter")]
+            if not rs:
+                continue
+            ids = sorted({k for r in rs for k in r["peoples"] if not r["peoples"][k].get("authored_extinct")})
+            lines += [f"## Share spread, {tree}, founding {arm} (base + jitter: {len(rs)} runs)", "",
+                      "| people | share min | median | max | swing x | led min | led median | led max | dead in | brittle |", "|---|---|---|---|---|---|---|---|---|---|"]
+            rows = []
+            for k in ids:
+                s = np.array([r["peoples"][k]["share"] for r in rs if k in r["peoples"]])
+                ld = np.array([r["peoples"][k]["led"] for r in rs if k in r["peoples"]])
+                dead = sum(not r["peoples"][k]["alive"] for r in rs if k in r["peoples"])
+                sw = float(max(s.max(), SHARE_FLOOR) / max(s.min(), SHARE_FLOOR))
+                rows.append((k, s, ld, dead, sw))
+            for k, s, ld, dead, sw in sorted(rows, key=lambda x: -np.median(x[1])):
+                br = sw > SWING or dead > 0
+                st = {"min": float(s.min()), "median": float(np.median(s)), "max": float(s.max()), "swing": sw,
+                      "led_median": float(np.median(ld)), "led_max": float(ld.max()), "dead": dead, "n": len(s), "brittle": br}
+                summ["spread"].setdefault(f"{tree}/{arm}", {})[k] = stats.setdefault((tree, arm), {})[k] = st
+                lines.append(f"| {k} | {_fmt(s.min())} | {_fmt(np.median(s))} | {_fmt(s.max())} | {sw:.3g} | {_fmt(ld.min())} | {_fmt(np.median(ld))} | {_fmt(ld.max())} | {dead}/{len(s)} | {'BRITTLE' if br else ''} |")
+            lines.append("")
+    # -- the founding arms side by side
+    for tree in ("dnd", "seven_meals"):
+        arms = [a for a in ARMS if (tree, a) in stats]
+        if len(arms) < 2:
+            continue
+        lines += [f"## Founding arms compared, {tree}: median share (swing x)", "", "| people | " + " | ".join(arms) + " |", "|---|" + "---|" * len(arms)]
+        ids = sorted({k for a in arms for k in stats[(tree, a)]}, key=lambda k: -stats[(tree, arms[0])].get(k, {"median": 0})["median"])
+        for k in ids:
+            cells = []
+            for a in arms:
+                st = stats[(tree, a)].get(k)
+                cells.append("-" if st is None else f"{_fmt(st['median'])} ({st['swing']:.2g}x{', dead ' + str(st['dead']) if st['dead'] else ''})")
+            lines.append(f"| {k} | " + " | ".join(cells) + " |")
+        nb = {a: sum(v["brittle"] for v in stats[(tree, a)].values()) for a in arms}
+        lines += ["", "Brittle peoples (swing over %gx or dead in a run): " % SWING + ", ".join(f"{a} {nb[a]}" for a in arms), ""]
+    # -- portals (dnd, founding range): the arrivals' share with portal_mode sites against off
+    pr = [r for r in ok if r["family"] == "portal"]
+    if pr:
+        lines += ["## Portals (dnd): arrivals' share, off vs sites", "", "| world, seed | portals | elf | gnome | triton |", "|---|---|---|---|---|"]
+        base = {(r["world"], r["seed"]): r for r in ok if r["family"] == "base" and r.get("tree") == "dnd" and r.get("arm", "range") == "range"}
+        for (w, s), b in sorted(base.items()):
+            for r in [b] + sorted([r for r in pr if r["world"] == w and r["seed"] == s], key=lambda r: r["portals"]):
+                lines.append(f"| {w} s{s} | {r.get('portals', 'off')} | " + " | ".join(_fmt(r["peoples"].get(x, {}).get("share")) for x in ("elf", "gnome", "triton")) + " |")
+        lines.append("")
+    # -- authored trees (and the info-only all-at-once tree beside dnd)
+    au = [r for r in ok if r["family"] == "authored"]
+    if au:
+        lines += ["## Authored trees (median over worlds and seeds; per arm: top people and share, peoples under 0.1%, dead)", "",
+                  "| tree | rationale | arm | runs | top | top share | median people >= 1% | under 0.1% | dead |", "|---|---|---|---|---|---|---|---|---|"]
+        for tree in sorted({r["tree"] for r in au}):
+            for arm in ARMS:
+                rs = [r for r in au if r["tree"] == tree and r.get("arm", "range") == arm]
+                if not rs:
+                    continue
+                ids = sorted({k for r in rs for k in r["peoples"] if not r["peoples"][k].get("authored_extinct")})
+                med = {k: float(np.median([r["peoples"][k]["share"] for r in rs if k in r["peoples"]])) for k in ids}
+                top = max(med, key=med.get)
+                big = np.median([sum(r["peoples"][k]["share"] >= 0.01 for k in ids if k in r["peoples"]) for r in rs])
+                small = sorted(k for k in ids if med[k] < 0.001)
+                dead = sorted({k for r in rs for k in ids if k in r["peoples"] and not r["peoples"][k]["alive"]})
+                lines.append(f"| {tree}{' (info only)' if rs[0].get('info_only') else ''} | {rs[0].get('rationale', '')[:90]} | {arm} | {len(rs)} | {top} | "
+                             f"{_fmt(med[top])} | {big:g} | {', '.join(small) or '-'} | {', '.join(dead) or '-'} |")
+        lines.append("")
+        aao = [r for r in au if r.get("info_only")]
+        dn = [r for r in ok if r["family"] == "base" and r.get("tree") == "dnd" and r.get("arm", "range") == "range"]
+        if aao and dn:
+            ids = sorted({k for r in aao + dn for k in r["peoples"] if not r["peoples"][k].get("authored_extinct")},
+                         key=lambda k: -np.median([r["peoples"].get(k, {"share": 0})["share"] for r in dn]))
+            lines += ["### All at once (info only) beside dnd (median share, range arm)", "", "| people | dnd | all at once |", "|---|---|---|"]
+            for k in ids:
+                a = [r["peoples"][k]["share"] for r in dn if k in r["peoples"]]
+                b = [r["peoples"][k]["share"] for r in aao if k in r["peoples"]]
+                lines.append(f"| {k} | {_fmt(float(np.median(a))) if a else '-'} | {_fmt(float(np.median(b))) if b else '-'} |")
+            lines.append("")
+    # -- knob response
+    kn = [r for r in ok if r["family"] == "knob"]
+    if kn:
+        lines += ["## Knob response (density x0.5 / x1 / x2, same world and seed)", "",
+                  "| people | world, seed | share x0.5 | x1 | x2 | led x0.5 | x1 | x2 | area x0.5 | x1 | x2 | monotone |", "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        base = {(r["world"], r["seed"]): r for r in ok if r["family"] == "base" and r.get("tree") == "dnd" and r.get("arm", "range") == "range"}
+        for lid in KNOB_PEOPLES:
+            for (w, s), b in sorted(base.items()):
+                got = {r["x"]: r for r in kn if r["knob"] == lid and r["world"] == w and r["seed"] == s}
+                if len(got) < 2:
+                    continue
+                trio = [got.get(0.5), b, got.get(2.0)]
+                if any(t is None for t in trio):
+                    continue
+                sh = [t["peoples"][lid]["share"] for t in trio]
+                le = [t["peoples"][lid]["led"] for t in trio]
+                ar = [t["peoples"][lid]["area_mkm2"] for t in trio]
+                mono = sh[0] <= sh[1] <= sh[2] and le[0] <= le[1] + 1e-9 and le[1] <= le[2] + 1e-9
+                summ["knob"].setdefault(lid, []).append({"world": w, "seed": s, "share": sh, "led": le, "area": ar, "monotone": mono})
+                lines.append(f"| {lid} ({KNOB_PEOPLES[lid]}) | {w} s{s} | " + " | ".join(_fmt(x) for x in sh) + " | " +
+                             " | ".join(_fmt(x) for x in le) + " | " + " | ".join(f"{x:.3g}" for x in ar) + f" | {'ok' if mono else 'NO'} |")
+        lines.append("")
+    # -- founding and inheritance (PW-1152): where a people's first range came from
+    arms = [a for a in ARMS if any(r.get("arm", "range") == a for r in ok)]
+    lines += ["## Founding range and stem inheritance (median over runs, Mkm2: founded / inherited at the stem's end / present)", "",
+              "| people | " + " | ".join(arms) + " |", "|---|" + "---|" * len(arms)]
+    ids = sorted({k for r in ok for k in r["peoples"]})
+    for k in ids:
+        cells = []
+        for arm in arms:
+            rr = [r for r in ok if r.get("arm", "range") == arm and k in r["peoples"]]
+            f = [r["peoples"][k]["found_mkm2"] for r in rr if r["peoples"][k]["found_mkm2"] is not None]
+            cells.append(f"{np.median(f):.3g} / {np.median([r['peoples'][k]['inherit_mkm2'] for r in rr]):.3g} / "
+                         f"{np.median([r['peoples'][k]['area_mkm2'] for r in rr]):.3g}" if f else "-")
+        lines.append(f"| {k} | " + " | ".join(cells) + " |")
+    lines.append("")
+    text = "\n".join(lines)
+    (out / "report.md").write_text(text)
+    (out / "summary.json").write_text(json.dumps(summ, indent=1))
+    return text
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    a = sub.add_parser("plan")
+    a.add_argument("--family", default=None)
+    a = sub.add_parser("run")
+    a.add_argument("--out", required=True)
+    a.add_argument("--jobs", type=int, default=4)
+    a.add_argument("--threads", type=int, default=4)
+    a.add_argument("--max-load", type=float, default=60.0)
+    a.add_argument("--family", default=None, help="comma-separated families (base,jitter,subset,knob,portal)")
+    a.add_argument("--worlds", default=",".join(WORLDS))
+    a = sub.add_parser("report")
+    a.add_argument("--out", required=True)
+    a = sub.add_parser("one")
+    a.add_argument("spec")
+    a.add_argument("result")
+    args = ap.parse_args(argv)
+    fam = set(args.family.split(",")) if getattr(args, "family", None) else None
+    if args.cmd == "plan":
+        for v in plan(families=fam):
+            print(v["family"], v["name"])
+    elif args.cmd == "run":
+        run_all(Path(args.out), args.jobs, args.threads, args.max_load, fam, args.worlds.split(","))
+        print(report(Path(args.out)))
+    elif args.cmd == "report":
+        print(report(Path(args.out)))
+    elif args.cmd == "one":
+        one(args.spec, args.result)
+
+
+if __name__ == "__main__":
+    main()

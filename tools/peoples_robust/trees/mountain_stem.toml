@@ -1,0 +1,23 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+rationale = "Dwarves split early (1.2 Myr) from a mountain-folk stem that leaves the hominids at 1.5 Myr; the goliaths are its later branch."
+base = "dnd"
+
+[[lineage]]
+id = "mountain_folk"
+name = "mountain-folk stem"
+parents = ["hominid"]
+at = "1.5 Myr"
+density = 1
+explore = 0.5
+temp_c = [-4, 18]
+rain_mm = [250, 1600]
+prefers = ["mountain", "hills"]
+traits = ["hardy", "mountain"]
+
+[edit.dwarf]
+parents = ["mountain_folk"]
+at = "1.2 Myr"
+
+[edit.goliath]
+parents = ["mountain_folk"]
+at = "800 kyr"

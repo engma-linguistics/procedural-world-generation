@@ -134,3 +134,9 @@ MAINLINE_Q = 0.0  # owner 10-30 (lane 73, option C), measured and NOT the chosen
 # people (spec `mainline`) feels its rivals' competition this much less, everywhere. On world 4360a3, seeds 7 and 10: at 0.4 orcs,
 # gnomes and halflings rise above 2% of people, elves reach ~2-3% of cells led at ~0.5% of people, dwarves stay ~0.3%; at 0.6 dwarves
 # 0.6-0.9%, elves 0.3-0.5%, humans fall to 55-63%. Off (0) until the demography pass decides
+SPLIT_FOUNDING = "range"  # lane 77 (owner ruling 10-30, PW-1152: a new people emerges at one spot and spreads from there), a switch to
+# measure, not yet chosen: "range" (as before: the founders also take the whole cut-off part of the parent's range they arise in, up to
+# POLY_MAX polycentric patches across it, and the stem's range is handed to its children at its end, PW-677); "local" (the founders hold
+# FOUNDER_KM about the origin only; at the stem's end its range passes only to children of its own kind, megafauna to megafauna, peoples to
+# peoples: a dragon range is not a population of proto-kobolds); "local_vacate" (local, and the stem's range is handed to no child: its
+# children spread into it)

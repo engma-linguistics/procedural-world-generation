@@ -1,0 +1,39 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+rationale = "A goblinoid-heavy world: the goblinoids split early and widely (goblins, hobgoblins, bugbears, cave grimlocks), the humans are fewer and the halflings and orcs absent."
+base = "dnd"
+off = ["halfling", "orc"]
+
+[edit.goblinoid]
+sapient = "2 Myr"
+
+[edit.greater_goblinoid]
+at = "1.2 Myr"
+
+[edit.goblin]
+at = "1 Myr"
+density = 6
+temp_c = [10, 30]
+rain_mm = [500, 4000]
+prefers = ["forest", "rainforest"]
+
+[edit.hobgoblin]
+at = "800 kyr"
+
+[edit.bugbear]
+at = "700 kyr"
+density = 1.5
+
+[[lineage]]
+id = "grimlock"
+name = "grimlocks (authored: blind cave goblinoids)"
+parents = ["goblinoid"]
+at = "600 kyr"
+density = 2
+explore = 0.4
+temp_c = [0, 24]
+rain_mm = [300, 2500]
+prefers = ["mountain", "hills"]
+traits = ["subterranean", "hunter"]
+
+[edit.human]
+density = 5

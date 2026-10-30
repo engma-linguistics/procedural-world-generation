@@ -1,0 +1,9 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+rationale = "The humans are latecomers: they arrive from outside the world 40 kyr ago into a world the other peoples have long held (the archaic stem still gives the halflings)."
+base = "dnd"
+
+[edit.human]
+origin = "arrival"
+at = "40 kyr"
+unset = ["parents"]
+name = "humans (arrived)"

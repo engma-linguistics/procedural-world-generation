@@ -1,0 +1,5 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys. Information only: not counted in the fails.
+rationale = "All at once: every dnd people (and dragon and giant kind) is placed at the same moment, 60 kyr ago, as a root of its own at its authored density; no stems, no splits."
+base = "dnd"
+all_at_once = "60 kyr"
+info_only = true
