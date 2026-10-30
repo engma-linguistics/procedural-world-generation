@@ -208,7 +208,7 @@ def tornado(t):
     ax.set_yticks(range(len(order))[::-1], [names[g] for g in order])
     ax.tick_params(axis="y", length=0)
     ax.grid(axis="x", color=T["grid"], lw=0.7)
-    ax.set_xlabel("factor on dragons per km² (log scale; 1 = the model's 1 per 159 km² at 1 t/km²)")
+    ax.set_xlabel("factor on dragons per km² at a given place (log scale; 1 = the model)")
     save(fig, "tornado", t)
 
 

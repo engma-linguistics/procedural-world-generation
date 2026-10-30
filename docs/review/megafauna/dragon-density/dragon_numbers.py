@@ -202,6 +202,19 @@ for e in ERAS:
             x = era_table(R).get(e, {}).get(c) if R else None
             row[nm] = x["per_1000km2"] if x else None
             row[nm + "_peoples_share"] = x["shares"]["peoples"] if x else None
+        # per world (roll 7000): persecution = on / noper, overkill = noper / off; the nobody's row is the arm's noise control
+        per_ = []
+        for k in sorted(NOPER):
+            if k not in on7 or k not in off7 or e not in NOPER[k]["eras"]:
+                continue
+            a, b, d = on7[k]["eras"][e][c], NOPER[k]["eras"][e][c], off7[k]["eras"][e][c]
+            if a["cells"] and b["cells"] and d["cells"] and b["dragons"] > 0 and d["dragons"] > 0:
+                x, y, z = a["dragons"] / a["cells"], b["dragons"] / b["cells"], d["dragons"] / d["cells"]
+                per_.append({"run": k, "persecution": x / y, "overkill": y / z})
+        for nm in ("persecution", "overkill"):
+            v = [p[nm] for p in per_]
+            row[nm + "_runs"] = {"n": len(v), "min": min(v, default=None), "median": float(np.median(v)) if v else None, "max": max(v, default=None),
+                                 "by_run": {p["run"]: p[nm] for p in per_}}
         ch[e][c] = row
 out["channels_7000"] = ch
 
@@ -245,7 +258,25 @@ def pooled(arm, keys, e):
     parts = [p for p in parts if p is not None]
     if not parts:
         return None
+    for i, p in enumerate(parts):
+        p["run"] = np.full(len(p["land"]), i)
+        p["run_dragons"] = np.full(len(p["land"]), float(p["dragons"][p["land"]].sum()))
     return {k: np.concatenate([p[k] for p in parts]) for k in parts[0]}, len(parts)
+
+
+def runstats(C, s, nrun):
+    """Per-run spread of a pooled cell set: runs with 30+ cells, their densities per 10,000 km2, and the largest share of a run's dragons
+    the set holds (does one place carry a run?)."""
+    per, top = [], 0.0
+    for i in range(nrun):
+        si = s & (C["run"] == i)
+        if si.sum() >= 30:
+            per.append(1e4 * float(C["dragons"][si].mean()))
+        tot = C["run_dragons"][C["run"] == i][:1]
+        if tot.size and tot[0] > 0:
+            top = max(top, float(C["dragons"][si].sum() / tot[0]))
+    return {"runs_30": len(per), "runs_n": nrun, "per_10000km2_run_median": float(np.median(per)) if per else None,
+            "per_10000km2_run_min": min(per, default=None), "per_10000km2_run_max": max(per, default=None), "top_run_dragon_share": top}
 
 
 CL = {0: "none", 1: "others", 2: "foragers", 3: "herders", 4: "farmers"}
@@ -316,7 +347,9 @@ for arm in ("on", "off", "noper"):
                     bs[bn][sn] = None if n < 30 else {
                         "cells": n, "km2": n * CELL_KM2, "per_10000km2": 1e4 * float(C["dragons"][s].mean()),
                         "food_fed_per_10000km2": 1e4 * float(C["food_fed"][s].mean()), "occupied_share": float((s & C["present"]).sum() / n),
-                        "people_km2_median": float(np.median(pe[s])), "prey_t_km2": float(C["prey"][s].mean())}
+                        "people_km2_median": float(np.median(pe[s])), "prey_t_km2": float(C["prey"][s].mean()),
+                        "lat_abs_median": float(np.median(np.abs(C["lat"][s]))), "press_mean": float(C["press"][s].mean()),
+                        "share_under_025_people": float((pe[s] < 0.25).mean()), **runstats(C, s, nrun)}
             land_n = int(land.sum())
             res["biome_situation"] = {"table": bs, "people_quantiles_peopled": [float(x) for x in q], "situations": SIT,
                                       "biome_land_share": {bn: float((land & (C["biome"] == bi)).sum() / land_n) for bi, bn in enumerate(BIOMES)},

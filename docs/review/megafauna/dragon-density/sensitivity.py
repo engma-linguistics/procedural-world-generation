@@ -63,9 +63,10 @@ def rows() -> list[dict]:
     """The sensitivity table: group, label, source, the factor on density, and 1 per X km2 at 1 t/km2."""
     out = []
 
-    def add(group, label, source, c=None, factor=None, note=""):
+    def add(group, label, source, c=None, factor=None, note="", per_prey=True):
         f = factor if factor is not None else c / C0
-        out.append({"group": group, "label": label, "source": source, "factor": f, "one_per_km2_at_1t": 1.0 / (C0 * f), "note": note})
+        out.append({"group": group, "label": label, "source": source, "factor": f, "one_per_km2_at_1t": 1.0 / (C0 * f) if per_prey else None,
+                    "note": note})
 
     # 1. intake: which field metabolic rate law, averaged over the same age schedule (Nagy et al. 1999, Table 2: all reptiles eq. 32,
     # lizards eq. 33, Varanidae eq. 36 on p. 261; mammals and birds on p. 260; McNab 2009: varanids p. 12185, dinosaurs at 31% of mammals p. 12187)
@@ -74,7 +75,7 @@ def rows() -> list[dict]:
         ("Varanid lizards, McNab's fit, 1.07 M^0.735", "McNab 2009, p. 12185", 1.07, 0.735, 1.0),
         ("All lizards, 0.190 M^0.916", "Nagy et al. 1999, Table 2, eq. 33, p. 261", 0.190, 0.916, 1.0),
         ("Varanidae, 0.208 M^0.915", "Nagy et al. 1999, Table 2, eq. 36, p. 261", 0.208, 0.915, 1.0),
-        ("Dinosaur-like mesotherm, 31% of a mammal", "McNab 2009, p. 12187 (on Nagy's mammal line)", 4.82, 0.734, 0.31),
+        ("Dinosaur-like mesotherm, 31% of a mammal (Barrick & Showers)", "Barrick & Showers 1999 as reported by McNab 2009, p. 12187 (on Nagy's mammal line); McNab's own figure is 22%", 4.82, 0.734, 0.31),
         ("Mammal, 4.82 M^0.734", "Nagy et al. 1999, Table 2, p. 260", 4.82, 0.734, 1.0),
         ("Bird (flying endotherms), 10.5 M^0.681", "Nagy et al. 1999, Table 2, p. 260", 10.5, 0.681, 1.0),
     ]
@@ -114,7 +115,7 @@ def rows() -> list[dict]:
     # share is f, the prey is f^1.52 of the model's (slope 1.52, McNaughton et al. 1989, p. 143). f has no source on file.
     for f in (0.7, 0.5, 0.4):
         add("Prey: above-ground share of the NPP fed to the fit", f"f = {f:g} (prey x f^1.52)", "McNaughton et al. 1989, pp. 142-143; f itself unsourced",
-            factor=f ** PR.PREY_EXP, note="scales prey, so density in every cell")
+            factor=f ** PR.PREY_EXP, note="scales prey, so density at a given place; not the per-prey coefficient", per_prey=False)
     return out
 
 
@@ -125,14 +126,19 @@ def combined() -> list[dict]:
     k_mam = mean_kcal(4.82, 0.734)
     cases = [
         ("The model", {}),
-        ("Literature-leaning: McNab's dinosaur intake (31% of a mammal's), 66% assimilation, 78% of a carcass eaten, b = 0.79, offtake kept at 10% (about half of Coe's median production)",
-         dict(kcal_day=k_meso, assim=0.66, carcass=0.78, share=apex_share(0.79))),
+        ("Literature-leaning: McNab's own dinosaur intake (22% of a mammal's, his varanid line), 66% assimilation, 78% of a carcass eaten, b = 0.79, offtake kept at 10% (about half of Coe's median production)",
+         dict(kcal_day=k_var, assim=0.66, carcass=0.78, share=apex_share(0.79))),
         ("Lowest: mammal intake, 66% assimilation, 65% of a carcass, b = 0.6, 5% offtake",
          dict(kcal_day=k_mam, assim=0.66, carcass=0.65, share=apex_share(0.6), offtake=0.05)),
         ("Highest (an upper bound): varanid intake, 85% assimilation, whole carcass, b = 0.889, offtake at Farlow's 100 kg turnover",
          dict(kcal_day=k_var, share=apex_share(0.889), offtake=0.259)),
     ]
-    return [{"label": lab, "factor": coef(**kw) / C0, "one_per_km2_at_1t": 1.0 / coef(**kw)} for lab, kw in cases]
+    out = [{"label": lab, "factor": coef(**kw) / C0, "one_per_km2_at_1t": 1.0 / coef(**kw)} for lab, kw in cases]
+    # the lowest case again with an above-ground share of 0.4: a factor on prey, so on density at a given place, not per t/km2 of prey
+    low = out[2]["factor"] * 0.4 ** PR.PREY_EXP
+    out.append({"label": "Lowest, adding an above-ground share of 0.4 (a factor on prey, so on density at a given place)", "factor": low,
+                "one_per_km2_at_1t": None})
+    return out
 
 
 def run() -> dict:
@@ -147,9 +153,9 @@ def run() -> dict:
 if __name__ == "__main__":
     r = run()
     for x in r["rows"]:
-        print(f"{x['group'][:28]:28} {x['label'][:62]:62} x{x['factor']:6.3f}  1 per {x['one_per_km2_at_1t']:7.0f} km2  {x['note']}")
+        print(f"{x['group'][:28]:28} {x['label'][:62]:62} x{x['factor']:6.3f}  1 per {x['one_per_km2_at_1t'] or 0:7.0f} km2  {x['note']}")
     for x in r["combined"]:
-        print(f"x{x['factor']:6.3f} 1 per {x['one_per_km2_at_1t']:7.0f}  {x['label']}")
+        print(f"x{x['factor']:6.3f} 1 per {x['one_per_km2_at_1t'] or 0:7.0f}  {x['label']}")
     print(json.dumps({k: r[k] for k in ("coe_pb", "mean_kcal", "fmr_at_eco_mass_kj")}, indent=1))
     if len(sys.argv) > 1:
         open(sys.argv[1], "w").write(json.dumps(r, indent=1))

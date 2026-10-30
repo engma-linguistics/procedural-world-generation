@@ -25,7 +25,7 @@ to Sections 1-6 (now 2-7; results 4.x are now 5.x); old Section 7 (what the mode
 | point | what was done |
 |---|---|
 | peer S2 ("others" drawn as nobody's) | **fixed** in `charts.py` and `dragon_numbers.py` (class 1 = others' country); map legend, boxes and every table carry it. Box land = land fraction × box area on the sphere. |
-| peer S1 (rich empty land: habitat, not pressure) | **fixed**: Section 4.3 measures pressure, occupancy and suitability over all runs; round 1's pressure explanation is withdrawn in the text. On the full sweep the habitat gap is mostly on poor, cold empty land (28% occupied; rich empty land 76%), so the text now says empty land is limited by poverty first and habitat second (33% of nobody's land occupied, 31% of its dragon food uneaten; wild forest 5.8%, grassland 25% occupied); `draft-dragon-habitat-coverage-rich-land.md` replaces `draft-rich-empty-land-holds-few-dragons.md`; Section 7 item 6. |
+| peer S1 (rich empty land: habitat, not pressure) | **fixed**: Section 4.3 measures pressure, occupancy and suitability over all runs; round 1's pressure explanation is withdrawn in the text. On the full sweep the habitat gap per km² is mostly on poor, cold empty land (28% occupied; rich empty land 76%), though counted in missing dragons rich land carries 47% (round-2 review M4), so the text now says empty land is limited by poverty first and habitat second (33% of nobody's land occupied, 31% of its dragon food uneaten; wild forest 5.8%, grassland 25% occupied); `draft-dragon-habitat-coverage-rich-land.md` replaces `draft-rich-empty-land-holds-few-dragons.md`; Section 7 item 6. |
 | peer M2 (127:1 vs the band drawn at 1.65 t) | **fixed**: both ratios given everywhere (96:1 at eco mass, 127:1 all ages); Figure 4's caption says the model sits just outside the band at 1.65 t. Abstract no longer offers the band as support. |
 | peer M3 (30 kyr jump, 300 kyr drop) | **fixed**: both steps measured in every run and both arms (Section 4.5, `steps`); eras 31 and 29 kyr added to the probe. The 30 kyr step is located on the empty land's food (×2.0 in both arms), which the pressure makes dominant; peer's "a pressure effect" is half right. The 300 kyr step, on the full sweep, is ×1.2 with the pressure off (median; ×0.37 to ×2.6 by run): round 1's "the deep past is overstated" is withdrawn; the flat rule is about right on the median and off by up to 2.7× per world (`draft-deep-epoch-dragon-budget.md`, rewritten). Cause beyond that deferred (`draft-dragon-count-step-at-recent-pass.md`, updated). |
 | peer M4 ("food alone" two meanings) | **fixed**: "pressure off" (the arm) and "food-fed density" (per cell) defined once in Section 3; the phrase "food alone" is gone. |
@@ -125,6 +125,37 @@ occupied; the gap is on poor land), Section 5.5 and Section 8 (the 300 kyr step)
 sentence (now computed from Table 5: wild wetland 260, grassland 33, desert 21 per 10,000 km2; farmed at most 7), the abstract's
 limiting factor, and Table 4's commentary (occupancy does not fall from middling to rich land in every class). The inbox drafts carry
 the final numbers.
+
+## Round-2 review (peer-r2, cites-r2; 10-30)
+
+Reports: coordinator scratchpad `dragon-review/peer-r2.md` (minor revisions) and `dragon-review/cites-r2.md` (2 wrong, 5 misleading).
+No new sims. `dragon_numbers.py` gained per-world channel ratios (`channels_7000.*.{persecution,overkill}_runs`) and per-run spread,
+latitude, pressure and thin-settlement shares for every biome × situation cell (`runstats`); `sensitivity.py` re-attributes the 31% and
+splits out the above-ground share; `build_page.py` gained `ser`, `wr`, `thin` and a floored `gpv`. Existing numbers are unchanged.
+
+| point | status |
+|---|---|
+| peer S1 (2a7385 at 10 kyr read from the six-world sum) | **fixed**: read from the run's own series (`ser`): 82,000 at 10 kyr, 61,000 at 5 kyr, 20,000 now; "two-thirds of the fall after 5 kyr". No other single-world use of `on_7000`/`off_7000`. |
+| peer S2 (wild wetland 260 = two worlds' swamps) | **fixed**: Table 5 dashes any cell that fewer than half the runs hold in 30+ cells (`thin`); wild wetland now a dash, explained in the caption (2,349 cells, 5 runs, two worlds, equatorial; one swamp holds 85% of a run's dragons); Table 6 marks thin cells †. Plain words leads with grassland, desert, mountains and mentions the swamps as an exception. |
+| peer M1 (third arm's noise; overkill) | **fixed**: Table 3 gives per-world ranges; nobody's row named as the control (×0.37 to ×1.0 persecution, up to ×3.4 overkill); foragers' overkill ÷4.7 (÷3.5 to ÷6.0) reported, others' ÷2.4; farmers' ×1.6 called noise (median world ×0.80). Abstract "almost all" → "most"; log-scale shares stated. Table 9 item 1 bound now the persecution-off arm (÷92, ÷26); item 9 gives foragers' and others'. Section 9.1 states the control row. |
+| peer M2 (above-ground share in the wrong units; low case omits it) | **fixed**: f row is a factor on prey (no "per t/km²" value); joint cases add "lowest with f = 0.4" (×0.016); Section 3, abstract and plain words agree: intake law the largest unknown for the per-prey headline, f a one-sided further factor up to four on grassland; "plausible range" → "range (the top an upper bound)". Figure 1's axis relabelled. |
+| peer M3 (floor premise fails for desert, tundra, mountain frontier; best guess below model) | **fixed**: step 1 now says which cells are at the floor (with shares under 0.25 people/km², medians and pressure); best guess floored at the model; Table 6 caption gives the persecution-off arm's per-run spread; mixed pools stated. |
+| peer M4 (rich land = half the missing dragons) | **fixed**: Section 5.3 adds the missing-dragon accounting (rich 47%, poor 39%; rich occupied-cell gap 18% of the whole); Table 9 item 6 names rich land and the tracing. |
+| peer M5 (formula vs realised density) | **fixed**: abstract and Discussion separate the formula from the realised 1.3 per 1,000 km² (just under Marshall's lower bound, 1.4); Section 5.1 compares at the mean prey (2.6 expected, half realised). |
+| peer M6 (wild = high latitude; run spread; excluded land) | **fixed**: latitudes (grassland 67°, forest 64°, desert 30°), run medians and ranges for wild grassland, desert and forest; the excluded 9.6% described correctly (mostly wild, 67°, 0.4 per 10,000 km²). Run spread given in the text, not as extra Table 6 columns (phone width). |
+| peer m1 (leaks, undefined terms) | **fixed**: "tech tree" removed; kyr, mesotherm, life stages and their shares and masses, viability test, land labels, chromatic (now "the D&D roster's evil, colour-coded dragon kinds"), "the model's own documentation" (→ description), Sword Coast glossed. No glossary added; each defined at first use. |
+| peer m2 (precision of paired medians) | **partly**: the text now says "about 1% ... 3% in herders'"; Table 2 keeps two figures with the range beside it. |
+| peer m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 | **fixed**: ratio vs density spread named; herders' cause "probably", untested; 30 kyr arm labelled and food+area ≈ 70% of the empty-land rise, occupancy the rest; 300 kyr "after" sample 4 to 50 kyr later and miss by world (×0.37–0.53 vs ×2.1–2.6); Figure 4 text "within a factor of two below"; Figure 5 caption names all three lines and Section 5.5 mentions the green one; Table 7 rows carry land shares; Box D explained; "not local pressure"; giants → Figure 3; Seymour step hedged "probably". |
+| peer m7 (plain words) | **fixed**: "typically 1% to 3% ... (up to a quarter in a few runs)"; "the model lets a tenth". |
+| peer m15 (claims.md numbering) | **fixed**: renumbered to the published page. |
+| cites 1 (McNab 31% is Barrick & Showers) | **fixed**: re-attributed everywhere; McNab's own 22% stated; literature-leaning case now uses McNab's own 22% (his varanid line): ×1.3 (was ×0.96); dependent text (Section 3 "close to the model", Discussion) reworded; Table 9 item 3 gives both. |
+| cites 2 (Burness 12× vs ectotherms) | **fixed**; "top species" defined as the one eating most. |
+| cites 3 (Carbone & Gittleman at −1) | **fixed**: −1 reading (1 per 185 km², model 1.2× denser) given first; the 1.7× named as the fitted-exponent reading; Section 3 says "1.2 to 1.7 times". |
+| cites 4 (Carbone 2011 "may"; age classes) | **fixed** in Table 9 item 8. |
+| cites 5 (McNaughton "insects") | **fixed**: the p. 142 "preponderance" quote; "invertebrates, on our reading". |
+| cites 6, 7 (Farlow "substituted"; 50:1 on p. 174) | **fixed**. |
+| cites caveats 8, 10, 11, 12 | **added**: count vs biomass ratios (p. 176 clause); Carbone 2007 values are mammalian, 78% a midpoint, Nagy's 16.8 kJ/g mammalian (Table 1 caption); Seymour inference ours; Burness top species. Caveat 9 (Marshall "M in g" not printed but right) and 13 (Woodroffe unread) need no change. |
+| coordinator item 4 (postscript) | **added**: a plain-words postscript on the later habitat change (open-country kinds, "tolerates" tier, spread within ~300 km; 12-run test 52% → 90%, peoples unchanged), saying the paper's numbers predate it. Not re-measured here; the 52%/90% are the coordinator's figures on that test's own measure, so the page says they are not directly comparable with Section 5.3's 76%. |
 
 ## Owner instruction 10-29: a standalone paper
 
