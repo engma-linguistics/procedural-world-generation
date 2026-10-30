@@ -25,8 +25,17 @@ PW-1106 (fun lane 61), the overlay clutter, same run 6553f1 and cell, taken 2026
 | Shot | What |
 |---|---|
 | [8-clutter-before-globe.png](8-clutter-before-globe.png) | main: at whole-globe view the villages carpet the land; the hover says "city of the human" |
-| [9-clutter-after-globe.png](9-clutter-after-globe.png) | the branch, same view: only towns, cities and city ruins; the hover says "city of the humans" |
-| [10-clutter-after-dist2.png](10-clutter-after-dist2.png) | `&dist=2.0`: zoomed in, the villages and the village and town ruins have faded in |
-| [11-clutter-after-dist1.6.png](11-clutter-after-dist1.6.png) | `&dist=1.6`: closer still (before the fix `dist` did nothing when `lat`/`lon` were also given) |
+| [9-clutter-after-globe.png](9-clutter-after-globe.png) | the branch, same view: only cities and city ruins (the owner, 10-30: the town dots were still far too many); the hover says "city of the humans" |
+| [10-clutter-after-dist2.3.png](10-clutter-after-dist2.3.png) | `&dist=2.3`: zoomed in, the towns have faded in, the villages not yet |
+| [11-clutter-after-dist1.6.png](11-clutter-after-dist1.6.png) | `&dist=1.6`, taken before the town fade and the later village fade: the villages and the village and town ruins in (before the fix, `dist` did nothing when `lat`/`lon` were also given) |
+
+PW-1105 (fun lane 61): a second people's own place, and mines. Run 488d7e (world 4360a3, D&D seed 7), cell 30132 on Gugiki, where a dwarf hold-town of ~10,000 stands beside a human town:
+
+| Shot | What |
+|---|---|
+| [12-holds-globe.png](12-holds-globe.png) | the default globe view: cities only. The hover lists the human town, the dwarves' own town ("their own place, as a second people here") and a human mine |
+| [13-dwarf-holds-dist2.3.png](13-dwarf-holds-dist2.3.png) | `&dist=2.3`: the towns, with the dwarf holds (magenta) along the hills among the human towns |
+| [14-dwarf-holds-and-mines-dist1.7.png](14-dwarf-holds-and-mines-dist1.7.png) | `&dist=1.7`: the villages and the mines (diamonds) are in too |
+| [15-peoples-tab-places.png](15-peoples-tab-places.png) | the workbench's Peoples tab with run 488d7e (PW-1103): a 'places now' column at the far right of the table, e.g. dwarves "29 towns, 52 villages, 10 mines; 49 among another people; 4 taken from others; 77 ruins" |
 
 Numbers and the judgement constants: see PW-1011's Updates and `planet/lineages/settlements.py` (CONST).
