@@ -1,7 +1,7 @@
 ---
 title: "Frozen-over fix: the warm-phase rule clears every frozen world on the screen, but it halves Earth's Greenland at today's climate"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -68,4 +68,10 @@ Options:
 Lean: C if a source for the retreat time can be found quickly; otherwise A, since the hard bar is frozen-over
 worlds and Earth is a plausibility anchor, not a target. Either way, run the full 18-draw judge and an L7 draw
 before merging.
-- [ ] Owner/coordinator: A, B or C
+- [x] Owner/coordinator: A, B or C. Coordinator 10-30 (lane 75): A, the kitchen sink. The coordinator overrode
+  their own Greenland guard rail: frozen-over is the owner's hard bar; Earth's present land ice at 8.6% (real 10.7)
+  stays plausible; Greenland really is fragile (Schaefer et al. 2016, Nature 540: 252: nearly ice-free for
+  extended Pleistocene spells). C was tried by lane 75 and fails the same way: thinning by the warm phase's extra
+  melt over a quarter precession cycle gives Greenland 83 cells, a full warm-then-cold cycle 85. The cause is the
+  missing ice flow, which can't resupply the margins (draft-ice-flow-resupplies-margins.md); restore Greenland
+  through flow, never by tuning the kitchen sink.
