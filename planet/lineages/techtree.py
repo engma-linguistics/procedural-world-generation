@@ -32,7 +32,11 @@ Rules, all seeded and simple:
   (openness = 1 - 0.7 insularity): fast for traded things, slow for language; x the taker's culture `take` on the tech's domains
   (an aggressive people takes war techs up twice as fast: military tech spread by connectivity, Turchin et al. 2021).
 - The crops and herd animals of the history count: a people that first cultivated a crop (crops.py) knows cultivation
-  from then, one that tamed or took up an animal (animals.py) knows herding.
+  from then, one that tamed or took up an animal (animals.py) knows herding. Each stock is also a tech of its own (stock
+  "crops:wheat", PW-1122: crop_wheat, animal_cattle...), known only that way (rate 0, spread 0): wine waits for the vine, the
+  ox-drawn plough for cattle. `needs_any` asks for one of a list (riding: a horse, a great elk or a riding lizard).
+- The tree holds the tech catalogue (PW-1122, docs/references/tech-catalogue/): ~550 techs; `earth_origins` is how many
+  independent origins Earth had, for checking the finds per world.
 - Language never passes between stems before their minds (below), but once a people is genetically modern (below a stem with a
   sapiens node) it takes language from any neighbour that has it, at the contact rate (modern_contact, PW-971; owner: almost any
   contact spreads language). The other within-a-people techs (spread = 0) never pass by contact.
@@ -73,7 +77,7 @@ def load_raw(raw: dict) -> dict:
     """The tree from its parsed TOML: checked, with the techs in prerequisite order."""
     techs = {t["id"]: t for t in raw["tech"]}
     for t in techs.values():
-        for n in t.get("needs", []):
+        for n in t.get("needs", []) + t.get("needs_any", []):
             if n not in techs:
                 raise ValueError(f"tech {t['id']} needs unknown tech {n}")
         if t["track"] not in {k["id"] for k in raw["track"]}:
@@ -103,7 +107,7 @@ def load_raw(raw: dict) -> dict:
             raise ValueError(f"tech cycle through {i}")
         if i in seen:
             return
-        for n in techs[i].get("needs", []):
+        for n in techs[i].get("needs", []) + techs[i].get("needs_any", []):
             visit(n, path + (i,))
         seen.add(i)
         order.append(i)
@@ -224,10 +228,15 @@ def pool_of(t: dict) -> str:
 
 
 def _earth_ready(T: dict, tid: str) -> float | None:
-    """When Earth had all of a tech's prerequisites, kyr (the latest of their dates); None: it needs nothing."""
+    """When Earth had all of a tech's prerequisites, kyr (the latest of their dates; of a needs_any list, its earliest); None: it
+    needs nothing."""
     t = T["techs"][tid]
     e = t.get("earliest_kyr", 0.0)
-    return min((T["techs"][n].get("earliest_kyr", e) for n in t.get("needs", [])), default=None)
+    ds = [T["techs"][n].get("earliest_kyr", e) for n in t.get("needs", [])]
+    real = [n for n in t.get("needs_any", []) if T["techs"][n].get("mode") != "fantasy"] or t.get("needs_any", [])
+    if real:  # (Earth's: the fantasy mounts and milk beasts left out)
+        ds.append(max(T["techs"][n].get("earliest_kyr", e) for n in real))
+    return min(ds, default=None)
 
 
 def floor_of(T: dict, tid: str, elder: bool = False) -> float | None:
@@ -425,17 +434,16 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     # forced knowledge: the first tamings of the history (crops.py, animals.py)
     forced: dict[str, list[tuple[float, str]]] = {}
     stock_tech = {t.get("stock"): i for i, t in techs.items() if t.get("stock")}
-    for key in ("crops", "animals"):
+    for key in ("crops", "animals"):  # (stock "crops": any crop; "crops:wheat": that one, PW-1122)
         st = ((pres or {}).get(key) or {}).get("stocks") or {}
-        if key not in stock_tech:
-            continue
-        for s in st.values():
+        for sid, s in st.items():
+            tids = [stock_tech[k] for k in (key, f"{key}:{sid}") if k in stock_tech]
             for tm in s.get("tamed") or []:
                 if tm.get("line") in L:
-                    forced.setdefault(tm["line"], []).append((float(tm["ago_kyr"]), stock_tech[key]))
+                    forced.setdefault(tm["line"], []).extend((float(tm["ago_kyr"]), tid) for tid in tids)
             for lid, ago in (s.get("took_up_kyr") or {}).items():
                 if lid in L and ago is not None:
-                    forced.setdefault(lid, []).append((float(ago), stock_tech[key]))
+                    forced.setdefault(lid, []).extend((float(ago), tid) for tid in tids)
     # contacts as intervals: (a, b, from kyr, to kyr, border km)
     links = []
     for p in (contacts or {}).get("pairs", []):
@@ -460,6 +468,8 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         t = techs[tid]
         k = kind[lid]
         if tid in known[lid] or (needs and any(n not in known[lid] for n in t.get("needs", []))):
+            return False
+        if needs and t.get("needs_any") and not any(n in known[lid] for n in t["needs_any"]):  # (one of them: a mount, a milk beast)
             return False
         if node[lid] is not None and ago > node[lid] and not t.get("bare"):  # (PW-971: before its stem's minds only bare-bones tools)
             return False
@@ -567,6 +577,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode,
             "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
             "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
+                       "needs_any": [n for n in techs[i].get("needs_any", []) if n in techs],
                        "env": techs[i].get("env", []), "env_any": techs[i].get("env_any", []),
                        "earliest_kyr": techs[i].get("earliest_kyr"), "elder_kyr": techs[i].get("elder_kyr"),
                        "era": techs[i].get("era", "stone age"), "fantasy": techs[i].get("mode") == "fantasy",

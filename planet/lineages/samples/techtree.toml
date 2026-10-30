@@ -4,13 +4,15 @@
 # in the stone age, "specialists" after). earliest_kyr is a hard floor only at gate_kyr or older; younger, it is a soft anchor that sets
 # the rate (leave `rate` out: techtree.rate_of). rate and elder_kyr below matter for the floored techs only, unless given as an override.
 #
-# A tech: id, name, track, needs (techs that must be known first), env (goods of the land, land.GOODS, that must be in the
+# A tech: id, name, track, needs (techs that must be known first), needs_any (at least one of them: a mount, a milk beast), env (goods of the land, land.GOODS, that must be in the
 # people's country: all of them), env_any (at least one of them), earliest_kyr (no ordinary people invents it before this,
 # kyr before the present: the real-world anchor, see `source`), elder_kyr (the same for the elder kinds, [[kind]] elder = true;
 # left out: as earliest_kyr), rate (chance per kyr a people that could invent it does, once possible; [defaults] by track),
 # traded = true (taken up by contact without the goods: the metal comes by trade), spread (x the contact rate at which a neighbour takes it up), hands (false: a people without hands can know it: dragons),
 # era (the era it belongs to: the tree's meta.era caps what any people reaches), mode = "fantasy" (left out in real mode),
-# stock = "crops" | "animals" (also known by whoever first tames a crop or an animal in the history: crops.py, animals.py).
+# stock = "crops" | "animals" (also known by whoever first tames a crop or an animal in the history: crops.py, animals.py), or
+# "crops:<id>" | "animals:<id>" (that one stock: crop_defs, animal_defs; PW-1122). earth_origins: Earth's independent origins (the tech
+# catalogue, docs/references/tech-catalogue/): the finds per world are checked against it.
 # bare = true (PW-971): bare-bones tool use, allowed in a stem before its sapiens node (Lomekwi, Oldowan, Acheulean). Every other tech
 # waits for the node, gesture and language included. Each body plan has its own (PW-987): knapping and handaxes need hands, found and
 # hooked tools take a beak (grip, below), so the bird stems use found tools before their minds and the cats, saurians and dragons none.
@@ -178,6 +180,7 @@ rate = 0.02
 hands = false
 spread = 0.0
 era = "stone age"
+earth_origins = 1
 source = "unverified (gestural-origins hypotheses; no dated record)"
 
 [[tech]]
@@ -193,6 +196,7 @@ spread = 1.0    # PW-971 (owner: almost any contact spreads language): taken up 
 modern_contact = true  # (without the node it is still each stem's own: owner, not everywhere at once)
 hands = false
 era = "stone age"
+earth_origins = 1
 source = "Dediu & Levinson 2013, Frontiers in Psychology 4:397 (On the antiquity of language: Neanderthal speech, >~0.5 Myr); the date is debated, many put it nearer 100-200 kyr"
 
 [[tech]]
@@ -205,6 +209,7 @@ earliest_kyr = 300
 elder_kyr = 1500
 hands = false
 era = "stone age"
+earth_origins = 1
 source = "unverified (no direct record before the flutes below)"
 
 [[tech]]
@@ -217,6 +222,7 @@ earliest_kyr = 150
 elder_kyr = 1500
 hands = false
 era = "stone age"
+earth_origins = 1
 source = "unverified (inferred; Everett 2017, Numbers and the Making of Us, Harvard UP, on peoples without exact number words)"
 
 [[tech]]
@@ -224,11 +230,12 @@ id = "marks"
 name = "abstract marks and engraving"
 track = "communication"
 domains = ["know"]
-needs = ["language"]
-earliest_kyr = 100
+needs = ["language", "engraved_marks"]
+earliest_kyr = 77
 elder_kyr = 1000
 era = "stone age"
-source = "Henshilwood et al. 2002, Science 295:1278 (engraved ochre, Blombos Cave, ~75 kyr); Henshilwood et al. 2009, J Hum Evol 57:27 (to ~100 kyr)"
+earth_origins = 1
+source = "Henshilwood et al. 2002, Science 295:1278-1280, doi:10.1126/science.1067575 (abstract: engraved ochre, TL mean 77 kyr; later d'Errico/Henshilwood work: tradition 100-75 kyr)"
 
 [[tech]]
 id = "tallies"
@@ -239,6 +246,7 @@ needs = ["marks", "counting"]
 earliest_kyr = 45
 elder_kyr = 800
 era = "stone age"
+earth_origins = 3
 source = "d'Errico et al. 2012, PNAS 109:13214 (notched bones, Border Cave, ~44 kyr); de Heinzelin 1962, Scientific American 206(6):105 (Ishango bone, ~20 kyr)"
 
 [[tech]]
@@ -249,6 +257,7 @@ domains = ["know", "trade"]
 needs = ["tallies", "pottery", "villages"]  # (the tokens came with the farming villages, Schmandt-Besserat)
 earliest_kyr = 10
 era = "stone age"
+earth_origins = 2
 source = "Schmandt-Besserat 1992, Before Writing, U of Texas Press (Near Eastern tokens from ~10 kyr)"
 
 [[tech]]
@@ -256,10 +265,11 @@ id = "writing"
 name = "writing"
 track = "communication"
 domains = ["know"]
-needs = ["tokens", "towns"]  # (Childe 1950 criterion 6, p. 14: invented by the temple administrators of the first cities)
-earliest_kyr = 5.4
+needs = ["tokens", "towns", "proto_writing"]
+earliest_kyr = 5.3
 era = "bronze age"
-source = "Schmandt-Besserat 1992 (proto-cuneiform from the tokens, Uruk, ~5.3 kyr); Egyptian writing of about the same age (unverified exact date)"
+earth_origins = 5
+source = "CDLI wiki 'proto-cuneiform' / 'The Late Uruk period' (cdli.ox.ac.uk): Uruk IV ca. 3350-3200 BCE; Englund 2015 ~3350, Nissen 2016 ~3300 BCE (as summarised by Wikipedia)."
 
 [[tech]]
 id = "alphabet"
@@ -269,6 +279,7 @@ domains = ["know"]
 needs = ["writing"]
 earliest_kyr = 3.8
 era = "classical"
+earth_origins = 1
 source = "unverified (Proto-Sinaitic, ~3.8 kyr, the usual textbook date)"
 
 [[tech]]
@@ -279,6 +290,7 @@ domains = ["know"]
 needs = ["writing", "towns"]
 earliest_kyr = 4.5
 era = "classical"
+earth_origins = 2
 source = "unverified (Ebla archives, ~4.3 kyr, textbook date)"
 
 [[tech]]
@@ -286,9 +298,10 @@ id = "printing"
 name = "block and movable-type printing"
 track = "communication"
 domains = ["know"]
-needs = ["libraries", "alphabet"]
+needs = ["libraries", "paper"]
 earliest_kyr = 1.3
 era = "renaissance"
+earth_origins = 2
 source = "unverified (woodblock printing in Tang China ~1.3 kyr; Gutenberg ~0.57 kyr)"
 
 # ---- fire and cooking ---------------------------------------------------------------------------------
@@ -303,6 +316,7 @@ earliest_kyr = 1000
 elder_kyr = 3000
 rate = 0.006
 era = "stone age"
+earth_origins = 2
 source = "Berna et al. 2012, PNAS 109:E1215 (burnt bone and ash in Wonderwerk Cave, ~1 Myr)"
 
 [[tech]]
@@ -314,6 +328,7 @@ needs = ["fire_control"]
 earliest_kyr = 400
 elder_kyr = 1500
 era = "stone age"
+earth_origins = 1
 source = "Shahack-Gross et al. 2014, J Archaeol Sci 44:12 (a central hearth used again and again, Qesem Cave, ~300 kyr); Wrangham 2009, Catching Fire (argues earlier; unverified as a date)"
 
 [[tech]]
@@ -324,6 +339,7 @@ domains = ["craft"]
 needs = ["fire_control", "knapping"]
 earliest_kyr = 50
 era = "stone age"
+earth_origins = 2
 source = "Sorensen et al. 2018, Scientific Reports 8:10065 (Neanderthal strike-a-light wear on bifaces, ~50 kyr)"
 
 [[tech]]
@@ -334,6 +350,7 @@ domains = ["food"]
 needs = ["cooking"]
 earliest_kyr = 40
 era = "stone age"
+earth_origins = 2
 source = "unverified (heated-stone cooking pits widespread in the Upper Palaeolithic; no single dated first known here)"
 
 [[tech]]
@@ -344,6 +361,7 @@ domains = ["food"]
 needs = ["cooking"]
 earliest_kyr = 40
 era = "stone age"
+earth_origins = 1
 source = "unverified (inferred from storage and fish remains; no direct early record)"
 
 [[tech]]
@@ -354,6 +372,7 @@ domains = ["food"]
 needs = ["pottery"]
 earliest_kyr = 20
 era = "stone age"
+earth_origins = 3
 source = "Craig et al. 2013, Nature 496:351 (fish and shellfish residues in Jomon pots, ~15 kyr); Wu et al. 2012, Science 336:1696 (pottery, Xianrendong, ~20 kyr)"
 
 [[tech]]
@@ -363,13 +382,14 @@ track = "fire"
 domains = ["food"]
 needs = ["grinding", "cooking"]
 env_any = ["fertile", "foraging"]
-earliest_kyr = 14.5
+earliest_kyr = 14.4
 era = "stone age"
-source = "Arranz-Otaegui et al. 2018, PNAS 115:7925 (charred flatbread, Shubayqa 1, Jordan, ~14.4 kyr, before farming)"
+earth_origins = 1
+source = "Arranz-Otaegui et al. 2018. Archaeobotanical evidence reveals the origins of bread 14,400 years ago in northeastern Jordan. PNAS. doi:10.1073/pnas.1801071115, https://discovery.ucl.ac.uk/10052964/ (flatbread-like charred remains, Shubayqa 1; 14.6-11.6 ka cal BP range; press 14.4)"
 
 [[tech]]
 id = "fermentation"
-name = "brewing and fermentation"
+name = "fermentation (sour foods and the first brewing)"
 track = "fire"
 domains = ["food"]
 needs = ["cooking", "containers"]
@@ -382,21 +402,23 @@ id = "cheese"
 name = "cheese and soured milk"
 track = "fire"
 domains = ["food"]
-needs = ["herding", "pottery"]
+needs = ["herding", "pottery", "milking"]
 env = ["grazing"]
 earliest_kyr = 8
 era = "stone age"
+earth_origins = 1
 source = "Evershed et al. 2008, Nature 455:528 (milk fats in pots, NW Anatolia, ~8.5 kyr); Salque et al. 2013, Nature 493:522 (cheese-strainer sieves, Kuyavia, ~7.2 kyr)"
 
 [[tech]]
 id = "salting"
-name = "salting and salt making"
+name = "salting and salt making (brine boiled in pots)"
 track = "fire"
 domains = ["food", "trade"]
-needs = ["cooking", "containers"]
+needs = ["boiling_pots", "villages"]
 env = ["salt"]
 earliest_kyr = 8
 era = "stone age"
+earth_origins = 3
 source = "unverified (briquetage at Poiana Slatinei, Romania, ~8 kyr, often cited; source not checked here)"
 
 [[tech]]
@@ -407,6 +429,7 @@ domains = ["craft"]
 needs = ["pottery", "villages"]
 earliest_kyr = 8
 era = "stone age"
+earth_origins = 2
 source = "unverified (updraft kilns in the Near East by ~8 kyr, textbook date)"
 
 [[tech]]
@@ -414,9 +437,10 @@ id = "distilling"
 name = "distilling"
 track = "fire"
 domains = ["craft", "food"]
-needs = ["fermentation", "copper"]
+needs = ["fermentation", "glass", "copper"]
 earliest_kyr = 2
 era = "medieval"
+earth_origins = 3
 source = "unverified (alembics in Roman Egypt ~1.7 kyr; spirits common in Europe by ~0.7 kyr)"
 
 # ---- tools and materials -------------------------------------------------------------------------------
@@ -455,6 +479,7 @@ elder_kyr = 4000
 rate = 0.01
 bare = true
 era = "stone age"
+earth_origins = 2
 source = "Harmand et al. 2015, Nature 521:310 (Lomekwi 3, ~3.3 Myr); Semaw et al. 1997, Nature 385:333 (Oldowan, Gona, ~2.6 Myr)"
 
 [[tech]]
@@ -468,6 +493,7 @@ elder_kyr = 3000
 rate = 0.005
 bare = true
 era = "stone age"
+earth_origins = 1
 source = "Lepre et al. 2011, Nature 477:82 (Acheulean, Kokiselei, ~1.76 Myr)"
 
 [[tech]]
@@ -479,6 +505,7 @@ needs = ["handaxes", "cordage"]
 earliest_kyr = 500
 elder_kyr = 1500
 era = "stone age"
+earth_origins = 2
 source = "Wilkins et al. 2012, Science 338:942 (hafted points, Kathu Pan 1, ~500 kyr)"
 
 [[tech]]
@@ -490,11 +517,12 @@ needs = ["knapping"]
 earliest_kyr = 500
 elder_kyr = 1500
 era = "stone age"
+earth_origins = 2
 source = "Hardy et al. 2020, Scientific Reports 10:4889 (three-ply cord, Abri du Maras, ~45 kyr: the oldest direct find; older is inferred from hafting, unverified)"
 
 [[tech]]
 id = "projectiles"
-name = "spear throwers and darts"
+name = "light spears and darts (projectile points)"
 track = "tools"
 domains = ["food", "war"]
 needs = ["hafting"]
@@ -521,6 +549,7 @@ domains = ["craft"]
 needs = ["cordage"]
 earliest_kyr = 45
 era = "stone age"
+earth_origins = 2
 source = "unverified (bone needles from Denisova Cave, ~50 kyr, are often cited; source not checked here)"
 
 [[tech]]
@@ -531,6 +560,7 @@ domains = ["food", "craft"]
 needs = ["knapping"]
 earliest_kyr = 40
 era = "stone age"
+earth_origins = 2
 source = "Piperno et al. 2004, Nature 430:670 (starch on a grinding stone, Ohalo II, ~23 kyr); Revedin et al. 2010, PNAS 107:18815 (flour on grinding stones, Europe, ~30 kyr)"
 
 [[tech]]
@@ -541,6 +571,7 @@ domains = ["craft"]
 needs = ["cordage"]
 earliest_kyr = 60
 era = "stone age"
+earth_origins = 2
 source = "Texier et al. 2010, PNAS 107:6180 (engraved ostrich-eggshell water flasks, Diepkloof, ~60 kyr)"
 
 [[tech]]
@@ -552,6 +583,8 @@ needs = ["fire_control", "containers"]
 env_any = ["fertile", "foraging", "building"]  # (clay: there is no clay layer yet; any soil-bearing country stands in, PW draft)
 earliest_kyr = 20
 era = "stone age"
+rate = 0.09  # (PW-1122: Earth's band, 7 origins from 20 to 5 kyr (median 11): a median wait ~9 kyr after the floor for the anchor people (1.46 / (9 x S 1.79)); the fire track's 0.02 gave 1-4 finds a world and once none before 0.06 kyr)
+earth_origins = 7
 source = "Wu et al. 2012, Science 336:1696 (pottery, Xianrendong Cave, ~20 kyr)"
 
 [[tech]]
@@ -563,6 +596,7 @@ needs = ["grinding"]
 env = ["stone"]
 earliest_kyr = 35
 era = "stone age"
+earth_origins = 3
 source = "unverified (edge-ground axes in Sahul ~35-46 kyr; Geneste et al. 2010 is often cited, not checked here)"
 
 [[tech]]
@@ -570,11 +604,12 @@ id = "copper"
 name = "copper smelting"
 track = "tools"
 domains = ["craft"]
-needs = ["kilns"]
+needs = ["native_copper", "kilns", "towns"]
 env = ["copper"]
-earliest_kyr = 7.0
+earliest_kyr = 6.95
 era = "bronze age"
-source = "Radivojevic et al. 2010, J Archaeol Sci 37:2775 (copper smelting, Belovode, Serbia, ~7 kyr)"
+earth_origins = 4
+source = "Radivojevic, Rehren, Pernicka, Sljivar, Brauns, Boric 2010. On the origins of extractive metallurgy: new evidence from Europe. J. Archaeol. Sci. doi:10.1016/j.jas.2010.06.012. (abstract as summarised by search tool: smelting at Belovode c. 5000 BC; UCL project page and 2021 monograph The Rise of Metallurgy in Eurasia: 49th century BC)"
 
 [[tech]]
 id = "arsenical_copper"
@@ -586,6 +621,7 @@ env = ["copper"]
 earliest_kyr = 6.5
 traded = true
 era = "bronze age"
+earth_origins = 2
 source = "unverified (arsenical copper precedes tin bronze in the Near East and the Caucasus, ~6 kyr; textbook ordering)"
 
 [[tech]]
@@ -599,6 +635,7 @@ earliest_kyr = 6.5
 spread = 2.0   # traded alloy: travels faster than the know-how to find tin
 traded = true  # taken up by contact without tin in the taker's own country
 era = "bronze age"
+earth_origins = 5
 source = "Radivojevic et al. 2013, Antiquity 87:1030 (tin bronze foil, Plocnik, ~6.5 kyr)"
 
 [[tech]]
@@ -611,6 +648,7 @@ env = ["iron"]
 traded = true
 earliest_kyr = 3.3
 era = "classical"
+earth_origins = 1
 source = "unverified (bloomery iron spreads from Anatolia ~3.2 kyr, textbook date)"
 
 [[tech]]
@@ -618,9 +656,10 @@ id = "steel"
 name = "steel and pattern welding"
 track = "tools"
 domains = ["craft", "war"]
-needs = ["iron"]
+needs = ["iron", "carburised_steel"]
 earliest_kyr = 2.5
 era = "medieval"
+earth_origins = 1
 source = "unverified (wootz and quenched steels by ~2.3 kyr, textbook date)"
 
 [[tech]]
@@ -643,6 +682,7 @@ domains = ["craft", "trade"]
 needs = ["kilns", "copper"]
 earliest_kyr = 4.5
 era = "classical"
+earth_origins = 2
 source = "unverified (glass beads in Mesopotamia ~4.5 kyr, textbook date)"
 
 # ---- food getting --------------------------------------------------------------------------------------
@@ -656,6 +696,7 @@ hands = false
 earliest_kyr = 500
 elder_kyr = 2000
 era = "stone age"
+earth_origins = 1
 source = "unverified (inferred: all known foragers; no dated first)"
 
 [[tech]]
@@ -677,6 +718,7 @@ needs = ["cordage"]
 env_any = ["fish", "shellfish"]
 earliest_kyr = 90
 era = "stone age"
+earth_origins = 1
 source = "Yellen et al. 1995, Science 268:553 (barbed bone points, Katanda, ~90 kyr; the date is debated)"
 
 [[tech]]
@@ -697,6 +739,7 @@ domains = ["food"]
 needs = ["cordage"]
 earliest_kyr = 60
 era = "stone age"
+earth_origins = 1
 source = "unverified (inferred from small-game remains; no direct early trap)"
 
 [[tech]]
@@ -707,6 +750,7 @@ domains = ["food"]
 needs = ["containers"]
 earliest_kyr = 11.5
 era = "stone age"
+earth_origins = 1
 source = "Kuijt & Finlayson 2009, PNAS 106:10966 (granaries at Dhra', Jordan, ~11.3 kyr, before domesticated grain)"
 
 [[tech]]
@@ -720,6 +764,7 @@ earliest_kyr = 11.5
 rate = 0.02  # (a fallback: the history's tamings, crops.py, decide who farms first; this lets a people the history left out invent it)
 stock = "crops"
 era = "stone age"
+earth_origins = 1
 source = "Zeder 2011, Current Anthropology 52:S221 (The origins of agriculture in the Near East: cultivation ~11.5 kyr, domestic forms by ~10.5)"
 
 [[tech]]
@@ -733,6 +778,7 @@ earliest_kyr = 11
 rate = 0.02  # (a fallback: the history's tamings, animals.py, decide who herds first; this lets a people the history left out invent it)
 stock = "animals"
 era = "stone age"
+earth_origins = 1
 source = "Zeder 2008, PNAS 105:11597 (domestic goats and sheep, Zagros and Taurus, ~10.5-11 kyr)"
 
 [[tech]]
@@ -743,6 +789,8 @@ domains = ["food"]
 needs = ["trapping"]
 earliest_kyr = 25
 era = "stone age"
+earth_origins = 2
+stock = "animals:dog"
 source = "unverified (dog domestication dates range ~15-30 kyr in the genetic literature)"
 
 [[tech]]
@@ -750,10 +798,11 @@ id = "plough"
 name = "ard and plough"
 track = "food"
 domains = ["food"]
-needs = ["cultivation", "herding"]
+needs = ["cultivation", "ox_traction"]
 env = ["fertile"]
 earliest_kyr = 6.5
 era = "bronze age"
+earth_origins = 3
 source = "unverified (ards in Mesopotamia ~6 kyr, textbook date)"
 
 [[tech]]
@@ -764,6 +813,7 @@ domains = ["food", "build"]
 needs = ["cultivation", "villages"]
 earliest_kyr = 8
 era = "bronze age"
+earth_origins = 3
 source = "unverified (canals at Choga Mami, Iraq, ~8 kyr, textbook date)"
 
 [[tech]]
@@ -778,12 +828,13 @@ source = "unverified (olive, date and fig cultivation ~6-7 kyr; grafting by ~3.8
 
 [[tech]]
 id = "watermill"
-name = "water and wind mills"
+name = "water mills"
 track = "food"
 domains = ["food", "build"]
 needs = ["wheel", "plough"]
 earliest_kyr = 2.3
 era = "medieval"
+earth_origins = 2
 source = "unverified (Greek watermills ~2.3 kyr, textbook date)"
 
 # ---- shelter and settlement -----------------------------------------------------------------------------
@@ -796,7 +847,8 @@ needs = ["cordage"]
 earliest_kyr = 400
 elder_kyr = 1500
 era = "stone age"
-source = "unverified (Terra Amata huts, ~400 kyr, are disputed; firm structures by ~23 kyr at Ohalo II: Nadel et al. 2004, PNAS 101:6821)"
+earth_origins = 2
+source = "Nadel et al. 2004. Stone Age hut in Israel yields world's oldest evidence of bedding. PNAS 101(17):6821-6826 (listing at cris.haifa.ac.il/en/publications/stone-age-hut-in-israel-yields-worlds-oldest-evidence-of-bedding/; Ohalo II: six brush huts, calibrated c.23 ka, 22.5-23.5 ka). Terra Amata: CENIEH press/abstract of García-Medrano et al. 2025 J Paleolithic Archaeol places occupation in MIS 11 (~400 ka) (investigacion.cenieh.es); Sage encyclopedia entry notes hut interpretation disputed after Villa 1983."
 
 [[tech]]
 id = "pit_houses"
@@ -806,6 +858,7 @@ domains = ["build"]
 needs = ["huts"]
 earliest_kyr = 30
 era = "stone age"
+earth_origins = 1
 source = "unverified (mammoth-bone dwellings, Mezhyrich, ~15 kyr; date not checked here)"
 
 [[tech]]
@@ -814,10 +867,11 @@ name = "year-round villages"
 track = "shelter"
 domains = ["build"]
 needs = ["huts", "storage"]
-earliest_kyr = 14.5
+earliest_kyr = 14.3
 rate = 0.12  # (PW-1011: with huts and storage a people settles within thousands of years; at the shelter track's 0.03 peoples waited ~30 kyr. A floored, Pleistocene-dated tech, so not anchored)
 era = "stone age"
-source = "Bar-Yosef 1998, Evolutionary Anthropology 6:159 (Natufian villages, ~14.5 kyr)"
+earth_origins = 3
+source = "Ain Mallaha/Eynan (en.wikipedia.org/wiki/ʿAin_Mallaha; Valla et al.): round stone houses, occupied c.14,326-12,180 cal BP; sedentism degree debated by Valla et al."
 
 [[tech]]
 id = "mudbrick"
@@ -826,9 +880,10 @@ track = "shelter"
 domains = ["build"]
 needs = ["villages"]
 env_any = ["building", "stone"]
-earliest_kyr = 11
+earliest_kyr = 10.3
 era = "stone age"
-source = "unverified (Jericho mudbrick ~10.5 kyr; Gobekli Tepe enclosures ~11.5 kyr: Schmidt 2010, Documenta Praehistorica 37:239)"
+earth_origins = 5
+source = "Mazurowski/PAM Tell Qaramel and Jericho notes (pcma.uw.edu.pl PAM21; digi.ub.uni-heidelberg.de/diglit/pam19/0601): oldest Levantine sun-dried mudbrick in Jericho PPNA, bricks also at Mureybet/Jerf el-Ahmar. Tell es-Sultan tower c.8300 BCE (carbon dates 1981/83). No exact brick-layer date read."
 
 [[tech]]
 id = "towns"
@@ -838,6 +893,7 @@ domains = ["build"]
 needs = ["mudbrick", "cultivation"]
 earliest_kyr = 9.5
 era = "stone age"
+earth_origins = 2
 source = "Hodder 2006, The Leopard's Tale (Catalhoyuk, ~9 kyr)"
 
 [[tech]]
@@ -848,7 +904,8 @@ domains = ["build"]
 needs = ["towns", "irrigation"]
 earliest_kyr = 6
 era = "bronze age"
-source = "unverified (Uruk, ~6 kyr; Algaze 2008, Ancient Mesopotamia at the Dawn of Civilization, is the usual reference, not checked here)"
+earth_origins = 6
+source = "Ur 2017 summary and Gibson/Maktash Antiquity (resolve.cambridge.org antiquity 54C97BC63333E3416D5A096FD70883A6; stonepages 001644): Tell Brak and Hamoukar large concurrent with or earlier than Uruk; Hamoukar 'big city' by 4500 BC or 3500 BC (sources conflict)."
 
 [[tech]]
 id = "fortifications"
@@ -858,6 +915,7 @@ domains = ["build", "war"]
 needs = ["towns"]
 earliest_kyr = 9
 era = "bronze age"
+earth_origins = 3
 source = "unverified (the Jericho wall and tower, ~10 kyr, function debated)"
 
 [[tech]]
@@ -881,6 +939,7 @@ needs = ["ground_stone"]
 env_any = ["metal", "stone", "salt_rock", "gems"]
 earliest_kyr = 40
 era = "stone age"
+earth_origins = 2
 source = "unverified (ochre mining at Lion Cave, Eswatini, ~40 kyr, often cited; flint mines in Neolithic Europe ~7 kyr)"
 
 # ---- travel ---------------------------------------------------------------------------------------------
@@ -892,6 +951,7 @@ domains = ["move"]
 needs = ["cordage"]
 earliest_kyr = 130
 era = "stone age"
+earth_origins = 2
 source = "Clarkson et al. 2017, Nature 547:306 (people in Sahul by ~65 kyr: open-water crossings); earlier island crossings are debated (unverified)"
 
 [[tech]]
@@ -903,6 +963,7 @@ needs = ["rafts", "ground_stone"]
 env_any = ["timber", "seals", "sea_mammals"]
 earliest_kyr = 12
 era = "stone age"
+earth_origins = 3
 source = "unverified (the Pesse canoe, ~10 kyr, is the oldest known boat; earlier boats are inferred)"
 
 [[tech]]
@@ -914,6 +975,7 @@ needs = ["huts", "cordage"]
 env = ["frost"]
 earliest_kyr = 10
 era = "stone age"
+earth_origins = 2
 source = "unverified (Vis I sledge runners, Russia, ~10 kyr, often cited)"
 
 [[tech]]
@@ -924,6 +986,7 @@ domains = ["move", "trade"]
 needs = ["herding"]
 earliest_kyr = 7
 era = "bronze age"
+earth_origins = 2
 source = "unverified (donkeys in NE Africa ~7 kyr; Rossel et al. 2008, PNAS 105:3715, ~5 kyr)"
 
 [[tech]]
@@ -931,10 +994,11 @@ id = "wheel"
 name = "wheel and cart"
 track = "travel"
 domains = ["move"]
-needs = ["pack_animals", "ground_stone"]
-earliest_kyr = 5.6
+needs = ["ox_traction", "carpentry_joints", "towns"]
+earliest_kyr = 5.5
 era = "bronze age"
-source = "Anthony 2007, The Horse, the Wheel, and Language, Princeton UP (wheeled vehicles appear ~5.5 kyr across Europe and Mesopotamia)"
+earth_origins = 3
+source = "Bronocice pot: pit bones 3635-3370 BCE (Wikipedia, historyofinformation.com seen); Ljubljana Marshes wheel c.3150 BCE (Guinness) / 3340-3030 BCE 2-sigma (Wikipedia); Uruk wagon signs 3500-3350 BCE"
 
 [[tech]]
 id = "riding"
@@ -945,6 +1009,8 @@ needs = ["pack_animals"]
 env = ["grazing"]
 earliest_kyr = 5.5
 era = "bronze age"
+needs_any = ["animal_horse", "animal_great_elk", "animal_riding_lizard"]
+earth_origins = 2
 source = "Outram et al. 2009, Science 323:1332 (Botai horses, ~5.5 kyr); Librado et al. 2021, Nature 598:634 (the modern domestic horse spreads from ~4.2 kyr)"
 
 [[tech]]
@@ -956,7 +1022,8 @@ needs = ["canoes", "sewing"]
 env_any = ["harbour", "fish"]
 earliest_kyr = 7
 era = "bronze age"
-source = "unverified (sail depicted on Ubaid pottery and in Egypt by ~5-7 kyr)"
+earth_origins = 2
+source = "Carter 2006, H3 As-Sabiyah (Wikipedia 'H3 (Kuwait)' and Antiquity page seen): painted disc with mast, Ubaid 3, c.5500-5000 BC; Brown Univ. course notes: Egypt Naqada II 3500-3200 BCE sail depictions"
 
 [[tech]]
 id = "outriggers"
@@ -966,6 +1033,7 @@ domains = ["move"]
 needs = ["sails"]
 earliest_kyr = 3.5
 era = "classical"
+earth_origins = 1
 source = "Kirch 2017, On the Road of the Winds, U of California Press (Lapita voyaging ~3.3 kyr)"
 
 [[tech]]
@@ -976,6 +1044,7 @@ domains = ["move", "build"]
 needs = ["wheel", "towns"]
 earliest_kyr = 4.5
 era = "classical"
+earth_origins = 2
 source = "unverified (paved roads in Egypt and Mesopotamia ~4.5 kyr, textbook date)"
 
 [[tech]]
@@ -986,6 +1055,7 @@ domains = ["move", "know"]
 needs = ["outriggers", "writing"]
 earliest_kyr = 1.0
 era = "medieval"
+earth_origins = 1
 source = "unverified (the magnetic compass at sea ~0.9 kyr in China, textbook date)"
 
 [[tech]]
@@ -1006,10 +1076,11 @@ name = "beads and body ornament"
 track = "social"
 domains = ["ritual"]
 needs = ["language"]
-earliest_kyr = 100
+earliest_kyr = 142
 elder_kyr = 1000
 era = "stone age"
-source = "Vanhaeren et al. 2006, Science 312:1785 (shell beads, Skhul and Oued Djebbana, ~100 kyr)"
+earth_origins = 3
+source = "Vanhaeren et al. 2006 Science 'Middle Palaeolithic shell beads in Israel and Algeria' (UCL press page): Skhul Nassarius bead ~100 kyr (Grun 2005 J Hum Evol: Skhul 100-135 kyr). Bizmoune Cave (Morocco) beads >=142 kyr, Sci. Adv. 2021 (sciadv.abi8620, PMC8457661; title not read)."
 
 [[tech]]
 id = "burial"
@@ -1021,6 +1092,7 @@ hands = false
 earliest_kyr = 120
 elder_kyr = 1500
 era = "stone age"
+earth_origins = 2
 source = "unverified (Skhul and Qafzeh burials ~90-120 kyr, textbook dates)"
 
 [[tech]]
@@ -1031,6 +1103,7 @@ domains = ["ritual"]
 needs = ["song", "knapping"]
 earliest_kyr = 43
 era = "stone age"
+earth_origins = 2
 source = "Conard et al. 2009, Nature 460:737 (bone and ivory flutes, Hohle Fels, ~40 kyr)"
 
 [[tech]]
@@ -1038,10 +1111,11 @@ id = "cave_art"
 name = "painting"
 track = "social"
 domains = ["ritual"]
-needs = ["marks"]
-earliest_kyr = 50
+needs = ["marks", "ochre_use"]
+earliest_kyr = 67.8
 era = "stone age"
-source = "Aubert et al. 2019, Nature 576:442 (hunting scene, Sulawesi, ~44 kyr)"
+earth_origins = 4
+source = "Oktaviana et al. 2026. Rock art from at least 67,800 years ago in Sulawesi. Nature (online 21 Jan 2026): laser-ablation U-series minimum age 67.8 kyr for hand stencil, Liang Metanduno, Muna (seen via Guinness/archaeologymag/stencilarchive summaries). Hoffmann et al. 2018, Science 359:912-915, doi:10.1126/science.aap7778: Iberian art >64.8 kyr (abstract), Neandertal attribution contested. Aubert et al. 2014 Nature: Sulawesi stencil >=39.9 kyr. Sulawesi figurative pig ~51.2 kyr."
 
 [[tech]]
 id = "spirit_ritual"
@@ -1063,6 +1137,7 @@ domains = ["ritual", "food"]
 needs = ["cooking", "spirit_ritual"]
 earliest_kyr = 12
 era = "stone age"
+earth_origins = 2
 source = "Munro & Grosman 2010, PNAS 107:15362 (a funerary feast, Hilazon Tachtit, ~12 kyr)"
 
 [[tech]]
@@ -1073,6 +1148,7 @@ domains = ["trade"]
 needs = ["ornament"]
 earliest_kyr = 100
 era = "stone age"
+earth_origins = 3
 source = "Brooks et al. 2018, Science 360:90 (obsidian moved 25-95 km, Olorgesailie, ~300 kyr; long trade by ~50 kyr: unverified)"
 
 [[tech]]
@@ -1083,6 +1159,7 @@ domains = ["know"]
 needs = ["villages", "feasting"]
 earliest_kyr = 9
 era = "stone age"
+earth_origins = 4
 source = "unverified (ranked burials of the Neolithic and Chalcolithic, no single first)"
 
 [[tech]]
@@ -1093,6 +1170,7 @@ domains = ["know"]
 needs = ["writing", "chiefdoms"]
 earliest_kyr = 4.1
 era = "bronze age"
+earth_origins = 6
 source = "unverified (Ur-Nammu ~4.1 kyr, Hammurabi ~3.75 kyr, textbook dates)"
 
 [[tech]]
@@ -1103,6 +1181,7 @@ domains = ["ritual", "build"]
 needs = ["towns", "spirit_ritual"]
 earliest_kyr = 8
 era = "bronze age"
+earth_origins = 5
 source = "unverified (Eridu temple sequence from ~7.5 kyr, textbook date)"
 
 [[tech]]
@@ -1113,6 +1192,7 @@ domains = ["trade"]
 needs = ["trade", "law", "copper"]
 earliest_kyr = 2.7
 era = "classical"
+earth_origins = 3
 source = "unverified (Lydian electrum coins ~2.65 kyr, textbook date)"
 
 [[tech]]
@@ -1120,10 +1200,11 @@ id = "calendar"
 name = "calendars and astronomy"
 track = "social"
 domains = ["know", "ritual"]
-needs = ["tallies", "spirit_ritual"]
-earliest_kyr = 10
+needs = ["tallies", "spirit_ritual", "villages"]
+earliest_kyr = 9.5
 era = "stone age"
-source = "unverified (lunar tallies and stone alignments; Warren Field pits, ~10 kyr, often cited)"
+earth_origins = 4
+source = "Gaffney et al. 2013. Time and a Place: a luni-solar 'time-reckoner' from 8th millennium BC Scotland. Internet Archaeology 34, intarch.ac.uk/journal/issue34/1/ (12 pits, midwinter sunrise alignment, 8th millennium BC)"
 
 [[tech]]
 id = "hoards"
@@ -1136,6 +1217,7 @@ earliest_kyr = 20
 elder_kyr = 500
 era = "stone age"
 mode = "fantasy"
+earth_origins = 1
 source = "fantasy (dragon hoards); real tribute is later and unverified here"
 
 # ---- magic and the arcane (fantasy only; D&D flavour, no citations) --------------------------------------
@@ -1274,10 +1356,11 @@ id = "war_chariot"
 name = "war chariot"
 track = "travel"
 domains = ["war"]
-needs = ["wheel", "pack_animals"]
+needs = ["wheel", "riding"]
 env = ["grazing"]
 earliest_kyr = 4.0
 era = "bronze age"
+earth_origins = 2
 source = "Anthony 2007, The Horse, the Wheel and Language (Sintashta chariot burials ~4 kyr; unverified, from the tech catalogue)"
 
 [[tech]]
@@ -1288,4 +1371,5263 @@ domains = ["war"]
 needs = ["mines", "fortifications"]
 earliest_kyr = 3.0
 era = "bronze age"
+earth_origins = 2
 source = "unverified (tech catalogue: Near East ~3 kyr)"
+
+# ==== the tech catalogue (PW-1122, fun lane 69: docs/references/tech-catalogue/, hunt pass 1), in prerequisite order per track ====
+# earth_origins: how many independent origins Earth had (the catalogue's `origins`, the hunt's where checked): finds per world are
+# checked against it. source: the hunt's where it verified the row, else the catalogue's own, marked (unverified).
+# crop_* and animal_* (stock = "crops:<id>"): the history's own crops and herd animals (crop_defs, animal_defs), known only from its
+# first cultivations and take-ups (rate 0, spread 0: never invented or passed on here); their dates are the history's anchors.
+
+# ---- catalogue: communication ---------------------------------------------------------------------------------------
+[[tech]]
+id = "engraved_marks"
+name = "deliberate engraved marks"
+track = "communication"
+domains = ["know"]
+needs = ["knapping"]
+earliest_kyr = 430
+era = "stone age"
+earth_origins = 2
+source = "Joordens et al. 2015. Homo erectus at Trinil on Java used shells for tool production and engraving. Nature 518:228-231 (UU/Naturalis records: 40Ar/39Ar + luminescence, max 0.54+-0.10 Ma, min 0.43+-0.05 Ma; authors say engraving meaning undetermined). Henshilwood et al. 2002. Emergence of modern human behavior: Middle Stone Age engravings from South Africa. Science 295:1278-1280, doi:10.1126/science.1067575 (abstract: TL mean 77 kyr, OSL 70 kyr)."
+
+[[tech]]
+id = "proto_writing"
+name = "proto-writing and pictograms"
+track = "communication"
+domains = ["know"]
+needs = ["tokens"]
+earliest_kyr = 8.6
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "paper"
+name = "paper"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "Tsien 1985, Paper and Printing (unverified) (unverified)"
+
+[[tech]]
+id = "ochre_use"
+name = "ochre pigment use"
+track = "communication"
+domains = ["ritual", "craft"]
+needs = ["gesture"]
+earliest_kyr = 300
+era = "stone age"
+earth_origins = 2
+source = "Watts 2002 / Henshilwood et al. 2011, Blombos ochre (unverified) (unverified)"
+
+[[tech]]
+id = "drums"
+name = "drums and percussion"
+track = "communication"
+domains = ["ritual", "war"]
+needs = ["song"]
+earliest_kyr = 30
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "string_instruments"
+name = "stringed instruments and lyres"
+track = "communication"
+domains = ["ritual"]
+needs = ["music", "cordage", "towns"]
+earliest_kyr = 4.6
+pool = "all"
+era = "bronze age"
+earth_origins = 2
+source = "Woolley 1934, Ur excavations (unverified) (unverified)"
+
+[[tech]]
+id = "drum_signalling"
+name = "drum and horn signalling"
+track = "communication"
+domains = ["war", "know"]
+needs = ["drums", "chiefdoms"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "smoke_signals"
+name = "smoke and beacon signals"
+track = "communication"
+domains = ["war", "know"]
+needs = ["fire_control", "chiefdoms"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "seals"
+name = "stamp and cylinder seals"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["tokens"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 4
+source = "Collon 1987, First Impressions (unverified) (unverified)"
+
+[[tech]]
+id = "bullae"
+name = "clay envelopes with tokens (bullae)"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["tokens"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 5.4
+era = "bronze age"
+earth_origins = 1
+source = "Schmandt-Besserat 1992 (unverified) (unverified)"
+
+[[tech]]
+id = "syllabary"
+name = "syllabaries"
+track = "communication"
+domains = ["know"]
+needs = ["writing"]
+earliest_kyr = 3.7
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "abjad_vowel_alphabet"
+name = "vowelled alphabet (Greek)"
+track = "communication"
+domains = ["know"]
+needs = ["alphabet"]
+earliest_kyr = 2.8
+era = "classical"
+earth_origins = 1
+source = "Powell 1991, Homer and the Origin of the Greek Alphabet (unverified) (unverified)"
+
+[[tech]]
+id = "abugida_alphabets"
+name = "abugida and featural scripts"
+track = "communication"
+domains = ["know"]
+needs = ["alphabet"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 2
+source = "Salomon 1998 (unverified) (unverified)"
+
+[[tech]]
+id = "papyrus"
+name = "papyrus"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 1
+source = "Lewis 1974, Papyrus in Classical Antiquity (unverified) (unverified)"
+
+[[tech]]
+id = "wax_tablets"
+name = "wax and wooden writing tablets"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+env = ["timber"]
+earliest_kyr = 3.3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "parchment"
+name = "parchment and vellum"
+track = "communication"
+domains = ["know"]
+needs = ["writing", "tanning"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "Reed 1972, Ancient Skins, Parchments and Leathers (unverified) (unverified)"
+
+[[tech]]
+id = "ink"
+name = "inks and pigments for writing"
+track = "communication"
+domains = ["know", "craft"]
+needs = ["writing"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "movable_type"
+name = "movable type"
+track = "communication"
+domains = ["know"]
+needs = ["printing"]
+earliest_kyr = 0.97
+era = "renaissance"
+earth_origins = 3
+source = "Tsien 1985 / Febvre & Martin 1976 (unverified) (unverified)"
+
+[[tech]]
+id = "postal_relay"
+name = "relay messengers and royal post"
+track = "communication"
+domains = ["know", "war", "trade"]
+needs = ["roads", "writing"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "number_notation"
+name = "place-value numerals"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["tallies", "writing"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 4
+source = "Ifrah 1998, Universal History of Numbers (unverified) (unverified)"
+
+[[tech]]
+id = "zero"
+name = "zero as a number"
+track = "communication"
+domains = ["know"]
+needs = ["number_notation"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 3
+source = "Plofker 2009, Mathematics in India (unverified) (unverified)"
+
+[[tech]]
+id = "geometry"
+name = "practical geometry and surveying"
+track = "communication"
+domains = ["know", "build"]
+needs = ["number_notation"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 4
+source = "Robson 2008, Mathematics in Ancient Iraq (unverified) (unverified)"
+
+[[tech]]
+id = "abacus"
+name = "abacus and counting boards"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["number_notation"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "algebra"
+name = "algebra and written arithmetic"
+track = "communication"
+domains = ["know"]
+needs = ["zero"]
+earliest_kyr = 1.2
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "balance_scale"
+name = "balance scale"
+track = "communication"
+domains = ["trade"]
+needs = ["trade", "villages"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "weights_measures"
+name = "standard weights and measures"
+track = "communication"
+domains = ["trade", "build"]
+needs = ["balance_scale", "tokens", "towns"]
+earliest_kyr = 4.8
+era = "bronze age"
+earth_origins = 3
+source = "Petruso 1981 / Hafford 2012 (unverified) (unverified)"
+
+[[tech]]
+id = "solar_calendar"
+name = "solar year calendar"
+track = "communication"
+domains = ["know", "food"]
+needs = ["calendar", "towns"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "astronomy"
+name = "systematic astronomy"
+track = "communication"
+domains = ["know", "ritual"]
+needs = ["calendar"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 4
+source = "Aveni 2001 (unverified) (unverified)"
+
+[[tech]]
+id = "sundial"
+name = "sundial and gnomon"
+track = "communication"
+domains = ["know"]
+needs = ["astronomy"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "water_clock"
+name = "water clock (clepsydra)"
+track = "communication"
+domains = ["know"]
+needs = ["sundial"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 3.4
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "mechanical_clock"
+name = "mechanical clock"
+track = "communication"
+domains = ["know"]
+needs = ["water_clock", "iron"]
+earliest_kyr = 0.7
+era = "medieval"
+earth_origins = 2
+source = "Needham et al. 1986, Heavenly Clockwork (unverified) (unverified)"
+
+[[tech]]
+id = "eclipse_prediction"
+name = "eclipse prediction"
+track = "communication"
+domains = ["know", "ritual"]
+needs = ["astronomy"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "astrolabe"
+name = "astrolabe and star tables"
+track = "communication"
+domains = ["know", "move"]
+needs = ["astronomy", "geometry"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "maps"
+name = "maps"
+track = "communication"
+domains = ["know", "move"]
+needs = ["writing"]
+earliest_kyr = 4.3
+era = "bronze age"
+earth_origins = 4
+source = "Harley & Woodward 1987, History of Cartography (unverified) (unverified)"
+
+[[tech]]
+id = "war_standards"
+name = "war standards and banners"
+track = "communication"
+domains = ["war"]
+needs = ["marks", "chiefdoms"]
+earliest_kyr = 5.1
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "signal_beacons"
+name = "beacon and smoke signals"
+track = "communication"
+domains = ["war"]
+needs = ["fire_control", "fortifications"]
+env = ["fuel"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "military_relay"
+name = "military courier and relay posts"
+track = "communication"
+domains = ["war"]
+needs = ["roads", "riding"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+
+# ---- catalogue: fire and cooking ------------------------------------------------------------------------------------
+[[tech]]
+id = "fire_hearth"
+name = "constructed hearth"
+track = "fire"
+domains = ["food", "build"]
+needs = ["fire_control"]
+earliest_kyr = 300
+era = "stone age"
+earth_origins = 2
+source = "Shahack-Gross et al. 2014. Evidence for the repeated use of a central hearth at Middle Pleistocene (300 ky ago) Qesem Cave, Israel. J Archaeol Sci 44:12-21. doi:10.1016/j.jas.2013.11.015, https://cris.tau.ac.il/en/publications/evidence-for-the-repeated-use-of-a-central-hearth-at-middle-pleis/ (hearth c. 300 ka; fire used across the 420-200 ka sequence)"
+
+[[tech]]
+id = "fire_hardening"
+name = "fire-hardening wood"
+track = "fire"
+domains = ["craft", "war"]
+needs = ["fire_control"]
+env = ["timber"]
+earliest_kyr = 300
+era = "stone age"
+earth_origins = 1
+source = "Thieme 1997; Schoeningen spears (unverified)"
+
+[[tech]]
+id = "heat_treating_stone"
+name = "heat-treating stone"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control", "knapping"]
+earliest_kyr = 164
+era = "stone age"
+earth_origins = 3
+source = "Brown et al. 2009. Fire as an engineering tool of early modern humans. Science 325:859-862 (citation seen at https://historyofinformation.com/detail.php?id=2306; date via https://www.sciencenews.org/?p=4973: Pinnacle Point silcrete c. 164 ka)"
+
+[[tech]]
+id = "birch_tar"
+name = "adhesives (birch tar, compound glues)"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control", "hafting"]
+env = ["timber"]
+earliest_kyr = 200
+era = "stone age"
+earth_origins = 2
+source = "Table at https://pmc.ncbi.nlm.nih.gov/articles/PMC6825292/table/t01 (Campitello flakes with birch tar >191 ka, micromammal biochronology; Koenigsaue >43 and 48 ka AMS). Leiden: https://www.universiteitleiden.nl/en/news/2019/10/neanderthal-glue-from-the-north-sea (tar c. 200 ka, oldest known)"
+
+[[tech]]
+id = "roasting"
+name = "roasting on embers or spits"
+track = "fire"
+domains = ["food"]
+needs = ["fire_control"]
+earliest_kyr = 800
+era = "stone age"
+earth_origins = 2
+source = "Alperson-Afil and Goren-Inbar 2010 (unverified)"
+
+[[tech]]
+id = "paunch_boiling"
+name = "boiling in animal-stomach or bark container"
+track = "fire"
+domains = ["food"]
+needs = ["earth_oven", "trapping"]
+earliest_kyr = 15
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "dung_fuel"
+name = "dung as fuel"
+track = "fire"
+domains = ["food", "craft"]
+needs = ["fire_control", "herding"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 2
+source = "Miller 1984; Shahack-Gross 2011 (unverified)"
+
+[[tech]]
+id = "charcoal_burning"
+name = "charcoal burning"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control"]
+env = ["timber"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "peat_fuel"
+name = "peat as fuel"
+track = "fire"
+domains = ["food", "craft"]
+needs = ["fire_control", "cultivation"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "coal_fuel"
+name = "coal as fuel"
+track = "fire"
+domains = ["craft"]
+needs = ["mines", "kilns"]
+env = ["coal"]
+earliest_kyr = 3.6
+era = "bronze age"
+earth_origins = 2
+source = "Qiu et al. 2023. Earliest systematic coal exploitation for fuel extended to 3600 BP (Jirentaigoukou, Xinjiang). Sci Adv. doi:10.1126/sciadv.adh0549, https://www.citedrive.com/en/discovery/earliest-systematic-coal-exploitation-for-fuel-extended-to-3600-bp/"
+
+[[tech]]
+id = "oil_lamps"
+name = "oil and fat lamps"
+track = "fire"
+domains = ["craft", "know"]
+needs = ["fire_control"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 3
+source = "Bahn and Vertut 1988 (unverified)"
+
+[[tech]]
+id = "lard_rendering"
+name = "fat rendering"
+track = "fire"
+domains = ["food"]
+needs = ["herding", "boiling_pots"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "candles"
+name = "tallow and beeswax candles"
+track = "fire"
+domains = ["craft"]
+needs = ["oil_lamps", "lard_rendering"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "slash_and_burn"
+name = "slash and burn clearing"
+track = "fire"
+domains = ["food"]
+needs = ["landscape_burning", "cultivation"]
+env = ["timber"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "terra_preta"
+name = "biochar-enriched soil"
+track = "fire"
+domains = ["food"]
+needs = ["slash_and_burn", "pottery"]
+earliest_kyr = 2.5
+pool = "all"
+era = "classical"
+earth_origins = 1
+source = "Glaser et al 2001 (unverified)"
+
+[[tech]]
+id = "lime_burning"
+name = "lime burning and plaster"
+track = "fire"
+domains = ["build", "craft"]
+needs = ["villages", "fire_hearth"]
+env = ["stone"]
+earliest_kyr = 12
+era = "stone age"
+earth_origins = 1
+source = "Friesem et al. 2019 per search summary (Natufian partially carbonated lime plaster on burials at Nahal Ein Gev II c. 12 ka; large-scale PPNB plaster from c. 10 ka); Goren & Goring-Morris 2008 experimental lime-plaster kilns, https://cris.huji.ac.il/en/publications/early-pyrotechnology-in-the-near-east-experimental-lime-plaster-p/"
+
+[[tech]]
+id = "lime_mortar"
+name = "lime mortar"
+track = "fire"
+domains = ["build"]
+needs = ["lime_burning"]
+env = ["stone"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "pozzolanic_cement"
+name = "hydraulic cement (Roman concrete)"
+track = "fire"
+domains = ["build"]
+needs = ["lime_mortar"]
+env = ["volcanic"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 1
+source = "Oleson 2008 (unverified)"
+
+[[tech]]
+id = "griddle_bread"
+name = "griddle and tava bread"
+track = "fire"
+domains = ["food"]
+needs = ["bread", "pottery"]
+earliest_kyr = 6
+pool = "all"
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "bread_oven"
+name = "bread oven (tannur, clay dome)"
+track = "fire"
+domains = ["food", "build"]
+needs = ["bread", "kilns"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "leavened_bread"
+name = "leavened bread (sourdough)"
+track = "fire"
+domains = ["food"]
+needs = ["bread_oven", "fermentation"]
+earliest_kyr = 5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "Samuel 1996 (unverified)"
+
+[[tech]]
+id = "oil_press"
+name = "oil pressing"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["crop_olive", "storage"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "Galili et al 1997 (unverified)"
+
+[[tech]]
+id = "deep_frying"
+name = "frying in oil and fat"
+track = "fire"
+domains = ["food"]
+needs = ["boiling_pots", "oil_press"]
+earliest_kyr = 3
+pool = "all"
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "wok_stirfry"
+name = "wok and stir-fry"
+track = "fire"
+domains = ["food"]
+needs = ["boiling_pots", "iron"]
+earliest_kyr = 2
+pool = "all"
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "steaming"
+name = "steaming (pot and basket)"
+track = "fire"
+domains = ["food"]
+needs = ["pottery", "cultivation"]
+earliest_kyr = 7
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "pit_roasting_whole"
+name = "whole-animal pit roast"
+track = "fire"
+domains = ["food", "ritual"]
+needs = ["earth_oven", "feasting"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "solar_salt"
+name = "solar salt pans"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["salting"]
+env = ["salt"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "faience"
+name = "faience"
+track = "fire"
+domains = ["craft", "ritual"]
+needs = ["kilns"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "glazes"
+name = "ceramic glazes"
+track = "fire"
+domains = ["craft"]
+needs = ["kilns", "faience"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "glassblowing"
+name = "glassblowing"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["glass"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 1
+source = "https://renvenetian.cmog.org/chapter/earliest-inflated-glass (Corning Museum: earliest inflated glass c. 50-40 BC, Avigad's Jewish Quarter, Jerusalem workshop refuse)"
+
+[[tech]]
+id = "porcelain"
+name = "porcelain and high-fire stoneware"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["glazes"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "tanning"
+name = "tanning (vegetable and brain)"
+track = "fire"
+domains = ["craft"]
+needs = ["hide_working"]
+earliest_kyr = 100
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "vegetable_tanning"
+name = "vegetable tanning (bark, tannins)"
+track = "fire"
+domains = ["craft"]
+needs = ["tanning", "herding"]
+env = ["timber"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "dyes"
+name = "plant, mineral and insect dyes"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["fire_control"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 2
+source = "Kvavadze et al 2009 (unverified)"
+
+[[tech]]
+id = "mordant_dyeing"
+name = "mordant dyeing (alum)"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes", "weaving"]
+env = ["salt"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "purple_dye"
+name = "tyrian purple"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes", "shellfish", "weaving"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 3.8
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "soap"
+name = "soap"
+track = "fire"
+domains = ["craft"]
+needs = ["lard_rendering"]
+earliest_kyr = 4.8
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "indigo_dyeing"
+name = "indigo dyeing"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes", "fermentation"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "rice_wine"
+name = "rice wine and saccharification starters (koji)"
+track = "fire"
+domains = ["food"]
+needs = ["fermentation", "crop_rice"]
+earliest_kyr = 4
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "alembic_spirits"
+name = "alembic spirits (brandy, whisky)"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["distilling", "wine"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "sugar_refining"
+name = "sugar boiling and refining"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["sugar_making", "kilns"]
+env = ["fertile"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "Daniels 1996 (unverified)"
+
+[[tech]]
+id = "maple_syrup"
+name = "maple/birch sap boiling"
+track = "fire"
+domains = ["food"]
+needs = ["boiling_pots", "crop_sap_sugar"]
+env = ["timber"]
+earliest_kyr = 0.8
+pool = "all"
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "ghee_butter"
+name = "butter and ghee clarifying"
+track = "fire"
+domains = ["food"]
+needs = ["milking", "pottery"]
+earliest_kyr = 6
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "mud_oven_hearth"
+name = "raised hearth/stove with chimney"
+track = "fire"
+domains = ["food", "build"]
+needs = ["fire_hearth", "mudbrick"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "coal_smelting"
+name = "coke from coal"
+track = "fire"
+domains = ["craft"]
+needs = ["coal_fuel", "charcoal_burning"]
+env = ["coal"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "cremation_pyre"
+name = "cremation"
+track = "fire"
+domains = ["ritual"]
+needs = ["fire_control"]
+earliest_kyr = 20
+era = "stone age"
+earth_origins = 2
+source = "Bowler 1970 (unverified)"
+
+[[tech]]
+id = "incense"
+name = "incense and smoke offerings"
+track = "fire"
+domains = ["ritual", "trade"]
+needs = ["fire_control", "temples"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "glass_lens"
+name = "lens and mirror glass"
+track = "fire"
+domains = ["know"]
+needs = ["glass"]
+earliest_kyr = 0.7
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "sealed_bake"
+name = "clay-wrapped cooking"
+track = "fire"
+domains = ["food"]
+needs = ["earth_oven", "pottery"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "ceramic_stove"
+name = "portable ceramic braziers"
+track = "fire"
+domains = ["food"]
+needs = ["kilns"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 4
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "malting"
+name = "malting"
+track = "fire"
+domains = ["food"]
+needs = ["beer", "cultivation"]
+earliest_kyr = 6
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "hopped_ale"
+name = "hopped beer"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["beer", "towns"]
+earliest_kyr = 1.2
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "vinegar"
+name = "vinegar"
+track = "fire"
+domains = ["food"]
+needs = ["wine"]
+earliest_kyr = 5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "chimneys"
+name = "chimneys and flues"
+track = "fire"
+domains = ["build", "craft"]
+needs = ["fire_hearth", "fired_brick"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "Wright 1962, Hearth and Chimney (best knowledge) (unverified)"
+
+[[tech]]
+id = "hypocaust"
+name = "hypocaust and kang underfloor heating"
+track = "fire"
+domains = ["build"]
+needs = ["fired_brick", "lime_mortar"]
+env = ["fuel"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 2.1
+era = "classical"
+earth_origins = 3
+source = "Roman hypocausts, Yegul (best knowledge) (unverified)"
+
+[[tech]]
+id = "bellows"
+name = "bellows and forced draught"
+track = "fire"
+domains = ["craft"]
+needs = ["kilns"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "gunpowder"
+name = "gunpowder"
+track = "fire"
+domains = ["war"]
+needs = ["fire_control", "salting"]
+earliest_kyr = 1.1
+era = "medieval"
+earth_origins = 1
+source = "Needham 1986, Science and Civilisation in China vol 5 (unverified)"
+
+
+# ---- catalogue: tools and materials ---------------------------------------------------------------------------------
+[[tech]]
+id = "native_copper"
+name = "native copper hammering"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["ground_stone", "villages"]
+env = ["copper"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 2
+source = "Maddin et al. 1980, Cayonu native copper (unverified)"
+
+[[tech]]
+id = "carburised_steel"
+name = "carburised steel"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["iron"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 2
+source = "Tylecote 1992, History of Metallurgy (unverified)"
+
+[[tech]]
+id = "woodworking"
+name = "woodworking (adze, wedge, plane)"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["handaxes"]
+env = ["timber"]
+earliest_kyr = 476
+era = "stone age"
+earth_origins = 2
+source = "Barham et al. 2023, Structural wood use at Kalambo Falls (unverified)"
+
+[[tech]]
+id = "carpentry_joints"
+name = "carpentry joints and planked boards"
+track = "tools"
+domains = ["craft", "build", "move"]
+needs = ["woodworking", "villages"]
+env = ["timber"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 2
+source = "Tegel et al. 2012, Early Neolithic water wells (unverified)"
+
+[[tech]]
+id = "potters_wheel"
+name = "potter's wheel"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["kilns"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 5.5
+era = "bronze age"
+earth_origins = 3
+source = "Roux and de Miroschedji 2009 (unverified)"
+
+[[tech]]
+id = "hide_working"
+name = "hide scraping and tanning"
+track = "tools"
+domains = ["craft"]
+needs = ["knapping"]
+earliest_kyr = 400
+era = "stone age"
+earth_origins = 2
+source = "Gilligan 2007, Clothing and early human colonisation (unverified)"
+
+[[tech]]
+id = "spinning"
+name = "spinning (spindle and whorl)"
+track = "tools"
+domains = ["craft"]
+needs = ["cordage"]
+earliest_kyr = 30
+era = "stone age"
+earth_origins = 2
+source = "Kvavadze et al. 2009, 30,000-year-old wild flax fibers (unverified)"
+
+[[tech]]
+id = "weaving"
+name = "weaving (backstrap and warp-weighted loom)"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning", "villages"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 3
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+
+[[tech]]
+id = "basketry"
+name = "basketry and matting"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["cordage"]
+earliest_kyr = 27
+era = "stone age"
+earth_origins = 3
+source = "Adovasio et al. 2007, Basketry, cordage and textile technologies (unverified)"
+
+[[tech]]
+id = "thrusting_spear"
+name = "thrusting spear"
+track = "tools"
+domains = ["war"]
+needs = ["hafting"]
+env = ["timber"]
+earliest_kyr = 500
+era = "stone age"
+earth_origins = 2
+source = "Wilkins, Schoville, Brown, Chazan 2012. Evidence for Early Hafted Hunting Technology. Science 338:942-946. doi 10.1126/science.1227608 (read via U Toronto release and summaries, not the abstract itself: Kathu Pan 1 point-bearing deposits ~500 ka, stone points hafted as spear tips by wear and thrust experiments)"
+
+[[tech]]
+id = "saddle_quern"
+name = "saddle quern"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["grinding", "wild_cereal_harvest"]
+earliest_kyr = 23
+era = "stone age"
+earth_origins = 1
+source = "Snir et al. 2015 PLoS ONE 10(7):e0131422, PMC4511808 (abstract: grinding slab on the floor of Brush Hut 1, Ohalo II ~23 ka, with wild-cereal starch granules)"
+
+[[tech]]
+id = "rotary_quern"
+name = "rotary quern"
+track = "tools"
+domains = ["food", "craft", "move"]
+needs = ["saddle_quern", "iron"]
+earliest_kyr = 2.6
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "sieving"
+name = "sieving and bolting flour"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["basketry", "saddle_quern", "cultivation"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "animal_mill"
+name = "animal-powered mill (hopper mill)"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["rotary_quern", "pack_animals"]
+earliest_kyr = 2.4
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "tide_mill"
+name = "tide mill"
+track = "tools"
+domains = ["food", "build"]
+needs = ["watermill"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "windmill"
+name = "windmill"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["watermill", "sails"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 2
+source = "Lucas 2006, Wind, water, work (unverified)"
+
+[[tech]]
+id = "wine_press"
+name = "wine press and treading vat"
+track = "tools"
+domains = ["food", "build"]
+needs = ["wine"]
+earliest_kyr = 6.1
+era = "bronze age"
+earth_origins = 1
+source = "Barnard et al. 2011, Areni-1 winery (unverified)"
+
+[[tech]]
+id = "prepared_core"
+name = "prepared-core (Levallois) technique"
+track = "tools"
+domains = ["craft"]
+needs = ["handaxes"]
+earliest_kyr = 400
+era = "stone age"
+earth_origins = 2
+source = "Wilkins and Chazan 2012, Blade production ~500 thousand years ago at Kathu Pan 1 (unverified)"
+
+[[tech]]
+id = "blade_industry"
+name = "blade and burin industries"
+track = "tools"
+domains = ["craft"]
+needs = ["prepared_core"]
+earliest_kyr = 50
+era = "stone age"
+earth_origins = 3
+source = "Bar-Yosef and Kuhn 1999, Upper Palaeolithic blade technology (unverified)"
+
+[[tech]]
+id = "pressure_flaking"
+name = "pressure flaking"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["blade_industry"]
+earliest_kyr = 24
+era = "stone age"
+earth_origins = 2
+source = "Mourre et al. 2010, Early use of pressure flaking in Africa (unverified)"
+
+[[tech]]
+id = "microliths"
+name = "microliths and composite tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["blade_industry", "hafting"]
+earliest_kyr = 35
+era = "stone age"
+earth_origins = 3
+source = "Mellars 2006, Why did modern human populations disperse from Africa (unverified)"
+
+[[tech]]
+id = "bone_tools"
+name = "bone, antler and ivory tools"
+track = "tools"
+domains = ["craft"]
+needs = ["knapping"]
+earliest_kyr = 1500
+era = "stone age"
+earth_origins = 2
+source = "d'Errico and Backwell 2003, possible evidence of bone tool shaping (unverified)"
+
+[[tech]]
+id = "awls_needles"
+name = "bone needles and awls"
+track = "tools"
+domains = ["craft"]
+needs = ["bone_tools"]
+earliest_kyr = 50
+era = "stone age"
+earth_origins = 2
+source = "Derevianko et al. 2012, bone needle from Denisova (unverified)"
+
+[[tech]]
+id = "netting"
+name = "nets and netmaking"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["cordage"]
+earliest_kyr = 29
+era = "stone age"
+earth_origins = 2
+source = "Soffer et al. 2000, Pavlov net impressions (unverified)"
+
+[[tech]]
+id = "tailored_clothing"
+name = "tailored and fitted clothing"
+track = "tools"
+domains = ["craft"]
+needs = ["sewing", "hide_working"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 1
+source = "Gilligan 2010, Clothing and hunter-gatherer adaptation (unverified)"
+
+[[tech]]
+id = "wool"
+name = "wool sheep and woolly fleece spinning"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning", "animal_caprine"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "Ryder 1983, Sheep and Man (unverified)"
+
+[[tech]]
+id = "felt"
+name = "felt"
+track = "tools"
+domains = ["craft"]
+needs = ["wool"]
+earliest_kyr = 4.7
+era = "bronze age"
+earth_origins = 2
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+
+[[tech]]
+id = "flax_linen"
+name = "flax and linen"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["weaving"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 2
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+
+[[tech]]
+id = "warp_weighted_loom"
+name = "warp-weighted loom"
+track = "tools"
+domains = ["craft"]
+needs = ["weaving"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 1
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+
+[[tech]]
+id = "cotton"
+name = "cotton"
+track = "tools"
+domains = ["craft"]
+needs = ["weaving"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 3
+source = "Moulherat et al. 2002, First evidence of cotton at Neolithic Mehrgarh (unverified)"
+
+[[tech]]
+id = "silk"
+name = "silk"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["weaving"]
+earliest_kyr = 5.5
+era = "bronze age"
+earth_origins = 1
+source = "Good 1995, Neolithic silk? (unverified)"
+
+[[tech]]
+id = "treadle_loom"
+name = "treadle and drawloom"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["warp_weighted_loom"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "Kuhn 1988, Chinese Science and Civilisation, Textiles (unverified)"
+
+[[tech]]
+id = "bow_drill"
+name = "bow drill and drilling"
+track = "tools"
+domains = ["craft"]
+needs = ["cordage", "woodworking", "villages"]
+env = ["timber"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "lathe"
+name = "lathe"
+track = "tools"
+domains = ["craft"]
+needs = ["bow_drill", "woodworking"]
+env = ["timber"]
+earliest_kyr = 3.3
+era = "classical"
+earth_origins = 1
+source = "Singer et al. 1954, A History of Technology (unverified)"
+
+[[tech]]
+id = "spinning_wheel"
+name = "spinning wheel"
+track = "tools"
+domains = ["craft"]
+needs = ["weaving", "lathe"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "knitting"
+name = "knitting"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning", "wool"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Rutt 1987, A History of Hand Knitting (unverified)"
+
+[[tech]]
+id = "sail_cloth"
+name = "sailcloth"
+track = "tools"
+domains = ["craft", "move"]
+needs = ["weaving"]
+earliest_kyr = 5.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "saw"
+name = "saws"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["bronze"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "iron_tools"
+name = "iron axes, saws and tool steel"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["iron", "woodworking"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "flint_mining"
+name = "flint mining"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["woodworking"]
+earliest_kyr = 60
+era = "stone age"
+earth_origins = 2
+source = "Beaumont and Vogel 2006, On a timescale for the past million years of human history in central S Africa (unverified)"
+
+[[tech]]
+id = "quarrying"
+name = "stone quarrying"
+track = "tools"
+domains = ["build", "craft"]
+needs = ["ground_stone"]
+env = ["stone"]
+earliest_kyr = 11.5
+era = "stone age"
+earth_origins = 2
+source = "Schmidt 2010, Gobekli Tepe (unverified)"
+
+[[tech]]
+id = "lead_silver_mining"
+name = "lead-silver mining and cupellation"
+track = "tools"
+domains = ["trade", "craft"]
+needs = ["mines", "copper"]
+env = ["metal"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 2
+source = "Pernicka et al. 1993, Prehistoric silver metallurgy (unverified)"
+
+[[tech]]
+id = "lever"
+name = "lever and fulcrum"
+track = "tools"
+domains = ["build", "craft"]
+needs = ["woodworking", "megaliths"]
+env = ["timber"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "pulley"
+name = "pulley and block-and-tackle"
+track = "tools"
+domains = ["build"]
+needs = ["lever", "cordage"]
+env = ["timber"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 2
+source = "Landels 1978 (unverified)"
+
+[[tech]]
+id = "underground_drainage"
+name = "mine drainage and ventilation"
+track = "tools"
+domains = ["craft"]
+needs = ["mines", "pulley"]
+env = ["metal"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "lost_wax"
+name = "lost-wax casting"
+track = "tools"
+domains = ["craft", "ritual"]
+needs = ["copper"]
+earliest_kyr = 6.5
+era = "bronze age"
+earth_origins = 5
+source = "Tadmor et al. 1995, Nahal Mishmar hoard (unverified)"
+
+[[tech]]
+id = "casting"
+name = "open and piece-mould casting"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["copper"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "gold_silver"
+name = "gold and silver working"
+track = "tools"
+domains = ["craft", "trade", "ritual"]
+needs = ["native_copper"]
+env = ["gold"]
+earliest_kyr = 6.6
+era = "bronze age"
+earth_origins = 2
+source = "Higham et al. 2007, Radiocarbon dating of Varna gold (unverified)"
+
+[[tech]]
+id = "lead"
+name = "lead working"
+track = "tools"
+domains = ["craft"]
+needs = ["native_copper", "kilns"]
+env = ["metal"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "tin_trade"
+name = "long-distance tin and ore trade"
+track = "tools"
+domains = ["trade"]
+needs = ["bronze"]
+env = ["tin"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 2
+source = "Pare 2000, Metals Make the World Go Round (unverified)"
+
+[[tech]]
+id = "brass"
+name = "brass and zinc alloys"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["bronze"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "Craddock 1978 (unverified)"
+
+[[tech]]
+id = "bloomery"
+name = "bloomery iron smelting"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["copper", "bellows"]
+env = ["iron"]
+earliest_kyr = 3.3
+era = "classical"
+earth_origins = 3
+source = "Killick 2014, Iron age in Africa (unverified)"
+
+[[tech]]
+id = "meteoric_iron"
+name = "meteoric iron"
+track = "tools"
+domains = ["craft", "ritual"]
+env = ["iron"]
+earliest_kyr = 5.3
+era = "bronze age"
+earth_origins = 1
+source = "Johnson et al. 2013, meteoritic iron beads (unverified)"
+
+[[tech]]
+id = "forge_welding"
+name = "forge welding and smithing"
+track = "tools"
+domains = ["craft"]
+needs = ["iron"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "quenching"
+name = "quenching and tempering"
+track = "tools"
+domains = ["craft"]
+needs = ["carburised_steel"]
+earliest_kyr = 2.8
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "crucible_steel"
+name = "crucible (wootz) steel"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["carburised_steel"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "Srinivasan and Ranganathan 2004, India's Legendary Wootz Steel (unverified)"
+
+[[tech]]
+id = "cast_iron"
+name = "cast iron"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["bloomery", "bellows"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "Needham 1958, The Development of Iron and Steel Technology in China (unverified)"
+
+[[tech]]
+id = "blast_furnace"
+name = "blast furnace"
+track = "tools"
+domains = ["craft"]
+needs = ["cast_iron"]
+earliest_kyr = 0.65
+era = "medieval"
+earth_origins = 2
+source = "Needham 1958 (unverified)"
+
+[[tech]]
+id = "windlass"
+name = "windlass and capstan"
+track = "tools"
+domains = ["build", "move"]
+needs = ["pulley"]
+env = ["timber"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "screw"
+name = "screw and screw press"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["lever"]
+env = ["timber"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "Oleson 1984 (unverified)"
+
+[[tech]]
+id = "gears"
+name = "gears and cogs"
+track = "tools"
+domains = ["craft"]
+needs = ["lathe"]
+env = ["timber"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "crank_cam"
+name = "crank, cam and treadle"
+track = "tools"
+domains = ["craft"]
+needs = ["gears"]
+env = ["timber"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "trip_hammer"
+name = "trip hammer and stamping mill"
+track = "tools"
+domains = ["craft"]
+needs = ["watermill"]
+earliest_kyr = 2
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "fulling_mill"
+name = "fulling mill"
+track = "tools"
+domains = ["craft"]
+needs = ["watermill", "wool"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Carus-Wilson 1941 (unverified)"
+
+[[tech]]
+id = "paper_mill"
+name = "papermaking"
+track = "tools"
+domains = ["know", "craft"]
+needs = ["watermill"]
+earliest_kyr = 2
+era = "medieval"
+earth_origins = 2
+source = "Tsien 1985, Paper and Printing (unverified)"
+
+[[tech]]
+id = "cranes_hoists"
+name = "cranes and treadwheel hoists"
+track = "tools"
+domains = ["build"]
+needs = ["pulley", "windlass"]
+env = ["timber"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "pump_bellows"
+name = "force pump and double-acting pump"
+track = "tools"
+domains = ["craft"]
+needs = ["lever"]
+env = ["metal"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "clock_escapement"
+name = "mechanical clock"
+track = "tools"
+domains = ["know"]
+needs = ["gears"]
+env = ["metal"]
+earliest_kyr = 0.7
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "wire_drawing"
+name = "wire drawing and files"
+track = "tools"
+domains = ["craft"]
+needs = ["iron"]
+earliest_kyr = 2.8
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "sawmill"
+name = "water-powered sawmill"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["watermill", "saw"]
+env = ["timber"]
+earliest_kyr = 1.7
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "throwing_spear"
+name = "throwing spear (javelin)"
+track = "tools"
+domains = ["war", "food"]
+needs = ["thrusting_spear"]
+env = ["timber"]
+earliest_kyr = 200
+era = "stone age"
+earth_origins = 1
+source = "Hutson et al 2025. Revised age for Schoningen hunting spears indicates intensification of Neanderthal cooperative behavior around 200,000 years ago. Science Advances 11(19). doi 10.1126/sciadv.adv0752 (read via Mainz/York press releases and search abstract excerpt: spears dated by amino acid geochronology to ~200 ka, previously ~300-337 ka by TL on underlying flints)"
+
+[[tech]]
+id = "atlatl"
+name = "spear-thrower (atlatl, woomera)"
+track = "tools"
+domains = ["war", "food"]
+needs = ["throwing_spear", "cordage"]
+env = ["timber"]
+earliest_kyr = 31
+era = "stone age"
+earth_origins = 3
+source = "Coppe, Taipale, Rots 2023. Terminal ballistic analysis of impact fractures reveals the use of spearthrower 31 ky ago at Maisieres-Canal, Belgium. Scientific Reports 13:18305. doi 10.1038/s41598-023-45554-w (abstract: spearthrower use ~31 ka, extends timeline by >10 kyr; introduction: oldest definite hooks are lower Magdalenian ~20 ka cal BP)"
+
+[[tech]]
+id = "throwing_stick"
+name = "throwing stick and boomerang"
+track = "tools"
+domains = ["war", "food"]
+needs = ["hafting"]
+env = ["timber"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 1
+source = "Talamo et al 2025. PLOS ONE. doi 10.1371/journal.pone.0324911 (read via Archaeology.org news 2025-06-30: Oblazowa Cave mammoth-tusk boomerang redated by radiocarbon to ~40 ka; earlier estimates 18-23 ka; Australian examples ~10 ka e.g. Wyrie Swamp per secondary sources). Title/author list not seen"
+
+[[tech]]
+id = "sling"
+name = "sling"
+track = "tools"
+domains = ["war", "food"]
+needs = ["cordage"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "war_club"
+name = "mace and stone mace-head"
+track = "tools"
+domains = ["war"]
+needs = ["ground_stone", "hafting", "villages"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "dagger"
+name = "dagger"
+track = "tools"
+domains = ["war"]
+needs = ["knapping", "hafting", "villages"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "battle_axe"
+name = "shaft-hole battle axe"
+track = "tools"
+domains = ["war"]
+needs = ["copper"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "shield"
+name = "shield"
+track = "tools"
+domains = ["war"]
+needs = ["cordage", "chiefdoms"]
+env = ["timber"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "bronze_sword"
+name = "bronze sword"
+track = "tools"
+domains = ["war"]
+needs = ["bronze", "dagger"]
+earliest_kyr = 5.3
+era = "bronze age"
+earth_origins = 3
+source = "Palumbi 2008 on Arslantepe arsenical copper swords (unverified)"
+
+[[tech]]
+id = "iron_sword"
+name = "iron sword"
+track = "tools"
+domains = ["war"]
+needs = ["iron", "bronze_sword"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "steel_sword"
+name = "steel and pattern-welded sword"
+track = "tools"
+domains = ["war"]
+needs = ["steel", "iron_sword"]
+earliest_kyr = 2.3
+era = "medieval"
+earth_origins = 3
+source = "Craddock 2003 on early steel (unverified)"
+
+[[tech]]
+id = "sabre"
+name = "curved sabre"
+track = "tools"
+domains = ["war"]
+needs = ["steel_sword", "riding"]
+env = ["metal"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "pike"
+name = "pike (sarissa)"
+track = "tools"
+domains = ["war"]
+needs = ["thrusting_spear", "iron"]
+env = ["timber"]
+earliest_kyr = 2.35
+era = "classical"
+earth_origins = 2
+source = "Sekunda on Macedonian armies (unverified)"
+
+[[tech]]
+id = "halberd"
+name = "halberd and polearm"
+track = "tools"
+domains = ["war"]
+needs = ["pike", "battle_axe"]
+env = ["metal", "timber"]
+earliest_kyr = 0.7
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "longbow"
+name = "longbow"
+track = "tools"
+domains = ["war"]
+needs = ["bow", "standing_army"]
+env = ["timber"]
+earliest_kyr = 0.8
+era = "medieval"
+earth_origins = 2
+source = "Hardy 1976, The Long Bow (unverified)"
+
+[[tech]]
+id = "composite_bow"
+name = "composite bow"
+track = "tools"
+domains = ["war"]
+needs = ["bow", "herding", "birch_tar"]
+env = ["timber"]
+earliest_kyr = 4.2
+pool = "all"
+era = "bronze age"
+earth_origins = 3
+source = "Miller et al 1986 (unverified); Naram-Sin stele c. 2250 BCE (unverified)"
+
+[[tech]]
+id = "crossbow"
+name = "crossbow"
+track = "tools"
+domains = ["war"]
+needs = ["bow", "bronze"]
+env = ["timber"]
+earliest_kyr = 2.55
+era = "classical"
+earth_origins = 2
+source = "Mechanical Sciences 11:437, 2020 (Copernicus): https://ms.copernicus.org/articles/11/437/2020/ (search summary: earliest unearthed crossbow trigger mechanism from Qufu, Shandong, 6th c BCE; Sun Tzu text ~498 BC). Authors/abstract not read"
+
+[[tech]]
+id = "bronze_cuirass"
+name = "bronze helmet and cuirass"
+track = "tools"
+domains = ["war"]
+needs = ["bronze"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "helmet"
+name = "helmet"
+track = "tools"
+domains = ["war"]
+needs = ["bronze"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "padded_armour"
+name = "padded and hardened-leather armour"
+track = "tools"
+domains = ["war"]
+needs = ["sewing", "chiefdoms"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "scale_armour"
+name = "scale armour"
+track = "tools"
+domains = ["war"]
+needs = ["bronze_cuirass"]
+env = ["metal"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "lamellar"
+name = "lamellar armour"
+track = "tools"
+domains = ["war"]
+needs = ["scale_armour"]
+env = ["metal"]
+earliest_kyr = 2.9
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "mail"
+name = "mail (chain armour)"
+track = "tools"
+domains = ["war"]
+needs = ["iron", "steel"]
+earliest_kyr = 2.3
+era = "medieval"
+earth_origins = 1
+source = "Rosenthal on chain mail (unverified)"
+
+[[tech]]
+id = "segmented_plate"
+name = "segmented plate armour"
+track = "tools"
+domains = ["war"]
+needs = ["steel"]
+earliest_kyr = 1.95
+era = "medieval"
+earth_origins = 1
+source = "Robinson 1975, Armour of Imperial Rome (unverified)"
+
+[[tech]]
+id = "plate_armour"
+name = "full plate armour"
+track = "tools"
+domains = ["war"]
+needs = ["mail", "steel"]
+earliest_kyr = 0.65
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "battering_ram"
+name = "battering ram"
+track = "tools"
+domains = ["war"]
+needs = ["fortifications", "woodworking"]
+env = ["timber", "metal"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "torsion_artillery"
+name = "torsion artillery (ballista, catapult)"
+track = "tools"
+domains = ["war"]
+needs = ["crossbow", "cordage"]
+env = ["timber"]
+earliest_kyr = 2.35
+era = "classical"
+earth_origins = 1
+source = "Marsden 1969, Historical Development of Artillery (unverified)"
+
+[[tech]]
+id = "traction_trebuchet"
+name = "traction trebuchet"
+track = "tools"
+domains = ["war"]
+needs = ["sling"]
+env = ["timber"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "Chevedden, Eigenbrod, Foley, Soedel 1995. The Trebuchet. Scientific American 273(1):66-71 (read via a hosted PDF title/search summary: invented in China between the 5th and 3rd centuries BCE; Mojing 4th c BCE; counterweight at Xiangyang/Fancheng 1273)"
+
+[[tech]]
+id = "counterweight_trebuchet"
+name = "counterweight trebuchet"
+track = "tools"
+domains = ["war"]
+needs = ["traction_trebuchet"]
+env = ["timber"]
+earliest_kyr = 0.85
+era = "medieval"
+earth_origins = 1
+source = "Chevedden 1995 (unverified)"
+
+[[tech]]
+id = "incendiary"
+name = "naval fire and Greek fire"
+track = "tools"
+domains = ["war"]
+needs = ["fire_control", "fortifications", "distilling"]
+earliest_kyr = 1.35
+era = "medieval"
+earth_origins = 2
+source = "Partington 1960, A History of Greek Fire and Gunpowder (unverified)"
+
+[[tech]]
+id = "fire_lance"
+name = "fire lance"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["timber", "metal"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Hall, 'The Mongol Empire: the first gunpowder empire' (Cambridge, J Royal Asiatic Soc? title seen via URL 1356186313000369; author not confirmed) and summary of Pelliot Dunhuang painting c. 950 CE in Musee Guimet (fire lance in Mara scene; hoard sealed c. 1036)"
+
+[[tech]]
+id = "grenade"
+name = "gunpowder bomb and grenade"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["iron"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 1
+source = "Needham 1986 (unverified)"
+
+[[tech]]
+id = "war_rocket"
+name = "war rocket"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["timber"]
+earliest_kyr = 0.8
+era = "medieval"
+earth_origins = 2
+source = "Needham 1986 (unverified)"
+
+[[tech]]
+id = "handgonne"
+name = "handgonne (hand cannon)"
+track = "tools"
+domains = ["war"]
+needs = ["fire_lance", "bronze"]
+earliest_kyr = 0.73
+era = "medieval"
+earth_origins = 1
+source = "Search summaries of Heilongjiang hand cannon (uninscribed, dated by 1287-88 battles to no later than 1288) and Xanadu Gun (inscribed, 1298); Wikipedia-based, primary reports not read"
+
+[[tech]]
+id = "cannon"
+name = "cannon and bombard"
+track = "tools"
+domains = ["war"]
+needs = ["handgonne", "kilns"]
+env = ["metal"]
+earliest_kyr = 0.72
+era = "medieval"
+earth_origins = 2
+source = "Needham 1986 (unverified)"
+
+[[tech]]
+id = "matchlock"
+name = "matchlock arquebus"
+track = "tools"
+domains = ["war"]
+needs = ["handgonne"]
+env = ["metal"]
+earliest_kyr = 0.55
+era = "renaissance"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "flintlock"
+name = "flintlock musket"
+track = "tools"
+domains = ["war"]
+needs = ["matchlock"]
+env = ["metal"]
+earliest_kyr = 0.4
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "bayonet"
+name = "bayonet"
+track = "tools"
+domains = ["war"]
+needs = ["matchlock", "pike"]
+env = ["metal"]
+earliest_kyr = 0.33
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+
+# ---- catalogue: food getting ----------------------------------------------------------------------------------------
+[[tech]]
+id = "animal_caprine"
+name = "sheep and goats"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 11
+stock = "animals:caprine"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py). Catalogue: Daly et al. 2021 PNAS (Ganj Dareh and Tepe Abdul Hosein goat genomes; managed goats by ~8200 BCE; per Copenhagen news summary) ; Zeder 2008 PNAS 105:11597; LMU Munich press release 'Long process of taming' (livestock incl. sheep, goats, cattle, pigs traced ~10,500 yr on the Upper Euphrates; seen as search summary); Zeder 2008 PNAS 105:11597 (animal domestication first steps ~12 ka, morphological ~1,000 yr later)"
+
+[[tech]]
+id = "animal_cattle"
+name = "cattle"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 10.5
+stock = "animals:cattle"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py). Catalogue: Liu et al. 2026 Animals 16(5):776 (taurine cattle ~10,500 yr, Fertile Crescent); Peters 2017 summary and LMU press release 'Long process of taming' (pigs, sheep, goats, cattle ~10,500 yr on the Upper Euphrates)"
+
+[[tech]]
+id = "animal_great_elk"
+name = "great elk"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 6
+pool = "all"
+stock = "animals:great_elk"
+rate = 0
+spread = 0
+era = "bronze age"
+mode = "fantasy"
+earth_origins = 1
+source = "fantasy (D&D flavour): date: the history's own anchor (animal_defs.py). No catalogue row."
+
+[[tech]]
+id = "milking"
+name = "milking and dairying"
+track = "food"
+domains = ["food"]
+needs = ["herding", "containers"]
+needs_any = ["animal_caprine", "animal_cattle", "animal_great_elk"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 2
+source = "Evershed et al. 2008. Earliest date for milk use in the Near East and southeastern Europe linked to cattle herding. Nature 455:528-531 (abstract: >2200 pots, milk fat by 7th millennium BC, strongest in NW Anatolia)"
+
+[[tech]]
+id = "ox_traction"
+name = "ox traction and yoke"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding", "cordage", "cultivation", "animal_cattle"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 2
+source = "Sherratt 1981, Plough and pastoralism: secondary products (unverified)"
+
+[[tech]]
+id = "animal_horse"
+name = "horses"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 5.5
+pool = "all"
+stock = "animals:horse"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py). Catalogue: Outram et al. 2009. The earliest horse harnessing and milking. Science 323:1332-1335 (Botai, ~3500 BC, mare's milk, bit wear). Librado et al. 2021. The origins and spread of domestic horses from the Western Eurasian steppes. Nature 598:634-640, doi 10.1038/s41586-021-04018-9 (modern domestic horses spread from ~2000 BC)"
+
+[[tech]]
+id = "animal_riding_lizard"
+name = "riding lizards"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 5
+pool = "all"
+stock = "animals:riding_lizard"
+rate = 0
+spread = 0
+era = "bronze age"
+mode = "fantasy"
+earth_origins = 1
+source = "fantasy (D&D flavour): date: the history's own anchor (animal_defs.py). No catalogue row."
+
+[[tech]]
+id = "landscape_burning"
+name = "landscape burning (fire-stick)"
+track = "food"
+domains = ["food", "know"]
+needs = ["fire_control", "foraging_lore"]
+env = ["timber"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 3
+source = "Bowman 1998, The impact of Aboriginal landscape burning (unverified)"
+
+[[tech]]
+id = "crop_olive"
+name = "olives"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 6.5
+pool = "all"
+stock = "crops:olive"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "wild_cereal_harvest"
+name = "wild grass-seed harvesting"
+track = "food"
+domains = ["food"]
+needs = ["foraging_lore", "grinding"]
+earliest_kyr = 23
+era = "stone age"
+earth_origins = 1
+source = "Snir et al. 2015. The origin of cultivation and proto-weeds, long before Neolithic farming. PLoS ONE 10(7):e0131422, PMC4511808 (Ohalo II ~23 ka; wild emmer, barley, oat; grinding slab with wild-cereal starch). Weiss et al. 2004 PNAS 101:9551, doi 10.1073/pnas.0402362101 (>90,000 plant remains, grass grains the staple, ~23 ka)"
+
+[[tech]]
+id = "beer"
+name = "beer"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation", "wild_cereal_harvest"]
+earliest_kyr = 13
+era = "stone age"
+earth_origins = 4
+source = "Liu et al. 2018. Fermented beverage and food storage in 13,000 y-old stone mortars at Raqefet Cave, Israel. J Archaeol Sci Reports. doi:10.1016/j.jasrep.2018.08.008, https://archaeology.org/news/2018/09/12/180912israel-beer-brewing/ (13.7-11.7 cal BP). McGovern 2004 PNAS Jiahu (https://news.upenn.edu/news/penn-museum-archaeochemist-and-international-scholars-confirm-9000-year-history-chinese-ferment): rice-honey-fruit drink c. 7000 BC"
+
+[[tech]]
+id = "crop_vine"
+name = "grapes and vines"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 8
+stock = "crops:vine"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: McGovern 2017 PNAS (unverified)"
+
+[[tech]]
+id = "wine"
+name = "wine"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["fermentation", "crop_vine"]
+env = ["fertile"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 2
+source = "McGovern et al. 2017. Early Neolithic wine of Georgia in the South Caucasus. PNAS. https://hal.inrae.fr/hal-02626990v1 (tartaric acid in jars, c. 6000-5800 BC = c. 8.0-7.8 ka); superseded Iran 5400-5000 BC"
+
+[[tech]]
+id = "mead"
+name = "mead and honey wine"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 1
+source = "McGovern 2004 (unverified)"
+
+[[tech]]
+id = "crop_maize"
+name = "maize"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 9
+stock = "crops:maize"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Piperno et al. 2009. Starch grain and phytolith evidence for early ninth millennium B.P. maize from the Central Balsas River Valley, Mexico. PNAS 106:5019-5024. Ranere et al. 2009 PNAS 106:5014-5018, doi 10.1073/pnas.0812590106, PMC2664064 (Xihuatoxtla shelter, maize and squash at/below ~8,700 cal BP)"
+
+[[tech]]
+id = "chicha"
+name = "chewed maize beer (chicha)"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation", "crop_maize"]
+earliest_kyr = 5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_rice"
+name = "rice"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 9
+stock = "crops:rice"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Zuo et al. 2017. Dating rice remains through phytolith carbon-14 study reveals domestication at the beginning of the Holocene. PNAS 114:6486-6491. doi 10.1073/pnas.1704304114, PMC5488950 (Shangshan ~9,400 cal BP, Hehuashan ~9,000; bulliform shapes suggest domestication began at Shangshan)"
+
+[[tech]]
+id = "crop_coconut"
+name = "coconut and oil palm"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 4.5
+pool = "all"
+stock = "crops:coconut"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "palm_wine"
+name = "palm and sap wines"
+track = "food"
+domains = ["food"]
+needs = ["fermentation", "crop_coconut"]
+env = ["fertile"]
+earliest_kyr = 8
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_cane"
+name = "sugar cane"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 8
+stock = "crops:cane"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "sugar_making"
+name = "sugar boiling and crystallising"
+track = "food"
+domains = ["food", "trade"]
+needs = ["crop_cane", "boiling_pots"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_sap_sugar"
+name = "sap sugar (maple and birch) and beet"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 1
+pool = "all"
+stock = "crops:sap_sugar"
+rate = 0
+spread = 0
+era = "medieval"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "pickling"
+name = "pickling and vinegar"
+track = "food"
+domains = ["food"]
+needs = ["salting", "fermentation"]
+env = ["salt"]
+earliest_kyr = 4.4
+pool = "all"
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "digging_stick"
+name = "digging stick"
+track = "food"
+domains = ["food", "craft"]
+needs = ["foraging_lore"]
+earliest_kyr = 39
+era = "stone age"
+earth_origins = 1
+source = "d'Errico et al. 2012. Early evidence of San material culture represented by organic artifacts from Border Cave, South Africa. PNAS 109:13214-13219. doi 10.1073/pnas.1204213109 (abstract: wooden digging sticks; one stick ~39,000 BP; modern hunter-gatherer adaptation ~44 ka by Bayesian model)"
+
+[[tech]]
+id = "acorn_leaching"
+name = "acorn and nut leaching"
+track = "food"
+domains = ["food"]
+needs = ["foraging_lore", "grinding", "basketry"]
+env = ["timber"]
+earliest_kyr = 13
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "plant_detox"
+name = "detoxifying bitter and poisonous plants"
+track = "food"
+domains = ["food", "know"]
+needs = ["foraging_lore", "grinding", "boiling_pots"]
+env = ["timber"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "honey_hunting"
+name = "honey hunting"
+track = "food"
+domains = ["food", "trade"]
+needs = ["foraging_lore", "fire_control"]
+env = ["timber"]
+earliest_kyr = 9
+era = "stone age"
+earth_origins = 2
+source = "Roffet-Salque et al. 2015. Widespread exploitation of the honeybee by early Neolithic farmers. Nature 527:226-230, doi 10.1038/nature15757 (abstract: beeswax in Neolithic pottery across Europe, Near East, N Africa from at least the 7th millennium cal BC)"
+
+[[tech]]
+id = "sickle"
+name = "sickle and reaping knife"
+track = "food"
+domains = ["food", "craft"]
+needs = ["wild_cereal_harvest", "hafting"]
+earliest_kyr = 15
+era = "stone age"
+earth_origins = 3
+source = "Groman-Yaroslavski et al. 2026. Natufian sickle blades (ca. 15,000-11,700 cal. BP) reveal cereal cultivation ca. 4.5 millennia before domestication. Sci Rep 16(1), doi 10.1038/s41598-026-54740-5 (Europe PMC abstract: use-wear on flint sickle blades from el-Wad Terrace and Salibiya I)"
+
+[[tech]]
+id = "game_drives"
+name = "game drives, surrounds and kites"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["thrusting_spear", "language"]
+earliest_kyr = 40
+era = "stone age"
+earth_origins = 3
+source = "Betts et al. 2018, Desert kites (unverified)"
+
+[[tech]]
+id = "arrow_poison"
+name = "arrow and dart poison"
+track = "food"
+domains = ["food", "war"]
+needs = ["projectiles"]
+env = ["timber"]
+earliest_kyr = 24
+era = "stone age"
+earth_origins = 3
+source = "d'Errico et al. 2012 PNAS 109:13214 (abstract: wooden poison applicator with castor-bean residues ~24,000 BP, Border Cave). Also Bradfield et al. 2024 iScience 27(12), doi 10.1016/j.isci.2024.111438 (Kruger Cave ~7 ka multi-ingredient arrow poison, cardiac glycosides)"
+
+[[tech]]
+id = "harpoon"
+name = "barbed harpoon"
+track = "food"
+domains = ["food"]
+needs = ["thrusting_spear", "knapping"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 90
+era = "stone age"
+earth_origins = 3
+source = "Yellen et al. 1995, A Middle Stone Age worked bone industry from Katanda (unverified)"
+
+[[tech]]
+id = "falconry"
+name = "falconry"
+track = "food"
+domains = ["food", "trade", "ritual"]
+needs = ["riding", "trapping"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 3
+source = "Epstein 1943, Falconry in the ancient world (unverified)"
+
+[[tech]]
+id = "whaling"
+name = "open-water whaling"
+track = "food"
+domains = ["food", "trade"]
+needs = ["harpoon", "canoes"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "fish_weirs"
+name = "fish weirs and fish traps"
+track = "food"
+domains = ["food", "build"]
+needs = ["fishing", "basketry", "villages"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 3
+source = "Bailey and Milner 2002, Coastal hunter-gatherers (unverified)"
+
+[[tech]]
+id = "fishing_nets"
+name = "fishing nets and sinkers"
+track = "food"
+domains = ["food", "craft"]
+needs = ["fishing", "cordage"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 23
+era = "stone age"
+earth_origins = 2
+source = "Nadel et al. 1994, Ohalo II fishing; Antrea net (unverified)"
+
+[[tech]]
+id = "fish_ponds"
+name = "fish ponds and aquaculture"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fishing_nets", "irrigation"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "eel_aquaculture"
+name = "eel traps and managed channels"
+track = "food"
+domains = ["food", "build"]
+needs = ["fish_weirs", "villages"]
+earliest_kyr = 6.6
+era = "bronze age"
+earth_origins = 1
+source = "McNiven et al. 2012, Budj Bim aquaculture (unverified)"
+
+[[tech]]
+id = "oyster_culture"
+name = "shellfish beds and oyster culture"
+track = "food"
+domains = ["food", "trade"]
+needs = ["shellfish", "villages", "sails"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 2.1
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "herring_fishery"
+name = "drift-net herring fishery"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fishing_nets", "sails", "salting"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Unger 2001, The role of herring (unverified)"
+
+[[tech]]
+id = "stockfish"
+name = "stockfish and dried-fish trade"
+track = "food"
+domains = ["food", "trade"]
+needs = ["smoking_drying", "fishing_nets", "sails"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 1.1
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "cellaring"
+name = "cellaring and cool storage"
+track = "food"
+domains = ["food", "build"]
+needs = ["storage", "mudbrick"]
+earliest_kyr = 5.2
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "ice_house"
+name = "ice houses and cold stores"
+track = "food"
+domains = ["food", "build", "trade"]
+needs = ["cellaring"]
+env = ["frost"]
+earliest_kyr = 3.8
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "raised_granary"
+name = "raised granary"
+track = "food"
+domains = ["food", "build"]
+needs = ["storage", "villages"]
+env = ["timber"]
+earliest_kyr = 11.3
+era = "stone age"
+earth_origins = 3
+source = "Kuijt & Finlayson 2009. Evidence for food storage and predomestication granaries 11,000 years ago in the Jordan Valley. PNAS 106:10966-10970. doi 10.1073/pnas.0812764106 (abstract via Europe PMC: Dhra', granaries ~11,300-11,175 cal BP, suspended floors)"
+
+[[tech]]
+id = "fermented_dairy"
+name = "fermented milk (yoghurt, kefir, kumis)"
+track = "food"
+domains = ["food"]
+needs = ["milking", "fermentation"]
+earliest_kyr = 6
+pool = "all"
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "fish_sauce"
+name = "fermented fish sauce"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fermentation", "salting", "fishing"]
+env_any = ["harbour", "fish", "shellfish"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_beans"
+name = "common beans"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7
+pool = "all"
+stock = "crops:beans"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 2
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "soy_ferment"
+name = "fermented soy and grain pastes (jiang, miso)"
+track = "food"
+domains = ["food"]
+needs = ["fermentation", "salting", "crop_beans"]
+earliest_kyr = 3
+pool = "all"
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "hoe_cultivation"
+name = "hoe and spade cultivation"
+track = "food"
+domains = ["food", "craft"]
+needs = ["cultivation", "digging_stick"]
+earliest_kyr = 11
+era = "stone age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "moldboard_plough"
+name = "mouldboard plough"
+track = "food"
+domains = ["food", "craft"]
+needs = ["plough", "iron"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 2
+source = "Needham 1965, Science and Civilisation vol. 4/2 (unverified)"
+
+[[tech]]
+id = "seed_drill"
+name = "seed drill"
+track = "food"
+domains = ["food", "craft"]
+needs = ["plough"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 2
+source = "Needham 1965, Science and Civilisation (unverified)"
+
+[[tech]]
+id = "terracing"
+name = "terraced fields"
+track = "food"
+domains = ["food", "build"]
+needs = ["cultivation", "stone_masonry"]
+env_any = ["hills", "peaks"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 4
+source = "none known (unverified)"
+
+[[tech]]
+id = "raised_fields"
+name = "raised fields and drained garden beds"
+track = "food"
+domains = ["food", "build"]
+needs = ["cultivation", "hoe_cultivation"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 1
+source = "Denham et al. 2003, Origins of agriculture at Kuk Swamp (unverified)"
+
+[[tech]]
+id = "shaduf"
+name = "shaduf (counterpoise well-lift)"
+track = "food"
+domains = ["food", "build"]
+needs = ["irrigation"]
+earliest_kyr = 4.3
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "noria"
+name = "noria and saqiya (water wheel)"
+track = "food"
+domains = ["food", "build", "move"]
+needs = ["irrigation", "wheel"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_pulses"
+name = "lentils and peas"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 10
+stock = "crops:pulses"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "manuring"
+name = "manuring and fertilising"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "herding"]
+earliest_kyr = 7.9
+era = "stone age"
+earth_origins = 2
+source = "Bogaard et al. 2013, as above (unverified)"
+
+[[tech]]
+id = "crop_rotation"
+name = "crop rotation with legumes"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "crop_pulses", "manuring"]
+earliest_kyr = 7
+pool = "all"
+era = "bronze age"
+earth_origins = 3
+source = "Bogaard et al. 2013, Crop manuring and intensive land management by Europe's first farmers (unverified)"
+
+[[tech]]
+id = "three_field"
+name = "three-field rotation"
+track = "food"
+domains = ["food"]
+needs = ["crop_rotation", "moldboard_plough"]
+earliest_kyr = 1.2
+pool = "all"
+era = "medieval"
+earth_origins = 1
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+
+[[tech]]
+id = "grafting"
+name = "grafting"
+track = "food"
+domains = ["food", "craft"]
+needs = ["orchards"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "hay_fodder"
+name = "hay and winter fodder"
+track = "food"
+domains = ["food"]
+needs = ["herding", "sickle"]
+earliest_kyr = 5
+pool = "all"
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "scythe"
+name = "scythe"
+track = "food"
+domains = ["food", "craft"]
+needs = ["iron", "hay_fodder"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "threshing_sledge"
+name = "threshing sledge and trampling floor"
+track = "food"
+domains = ["food"]
+needs = ["sickle", "herding"]
+earliest_kyr = 5.5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "winnowing"
+name = "winnowing tray and fan"
+track = "food"
+domains = ["food"]
+needs = ["sickle", "basketry"]
+earliest_kyr = 11
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "nixtamalisation"
+name = "nixtamalisation (lime-treating maize)"
+track = "food"
+domains = ["food"]
+needs = ["crop_maize", "boiling_pots"]
+earliest_kyr = 3.5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "beekeeping"
+name = "beekeeping"
+track = "food"
+domains = ["food", "trade"]
+needs = ["honey_hunting", "pottery", "villages"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "transhumance"
+name = "transhumance and pastoral nomadism"
+track = "food"
+domains = ["food", "move", "trade"]
+needs = ["herding", "milking"]
+earliest_kyr = 8
+pool = "all"
+era = "stone age"
+earth_origins = 3
+source = "Khazanov 1984, Nomads and the outside world (unverified)"
+
+[[tech]]
+id = "garden_vegetables"
+name = "garden vegetables (onion, garlic, cabbage)"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "irrigation"]
+earliest_kyr = 4.5
+pool = "all"
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "salt_mining"
+name = "salt mining and evaporation"
+track = "food"
+domains = ["food", "trade"]
+needs = ["mines", "salting"]
+env = ["salt"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 3
+source = "Weller 2002, Salt production in prehistoric Europe (unverified)"
+
+[[tech]]
+id = "campaign_rations"
+name = "campaign rations and field cookery"
+track = "food"
+domains = ["war", "food"]
+needs = ["smoking_drying", "bread", "standing_army"]
+env = ["fertile"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "crop_wheat"
+name = "wheat and barley"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 10.5
+stock = "crops:wheat"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Zeder 2011, The origins of agriculture in the Near East (unverified); Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "crop_foxtail_millet"
+name = "foxtail millet"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 10
+stock = "crops:foxtail_millet"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Lu et al. 2009. Earliest domestication of common millet in East Asia extended to 10,000 years ago. PNAS 106:7367-7372. Crawford 2009 PNAS 106:7271-7272, doi 10.1073/pnas.0903375106, PMC2678596 (Cishan pits ~10,400-10,100 cal BP)"
+
+[[tech]]
+id = "crop_sorghum"
+name = "sorghum and pearl millet"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5.5
+pool = "all"
+stock = "crops:sorghum"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Winchell et al. 2017. Evidence for sorghum domestication in fourth millennium BC eastern Sudan: spikelet morphology from ceramic impressions of the Butana Group. Curr Anthropol, doi 10.1086/693898 (3500-3000 BC); Manning et al. 2011 and Manning & Fuller 2014, as cited in Afr Archaeol Rev (Lower Tilemsi valley, Mali, pastoralism and pearl millet from 2500 BC)"
+
+[[tech]]
+id = "crop_potato"
+name = "potatoes and other cool tubers"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 8
+stock = "crops:potato"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "crop_roots"
+name = "yams, taro and cassava"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7.5
+stock = "crops:roots"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Denham et al. 2003 Science 301:189-193 (abstract: taro utilised in the early Holocene, phase 1 ~10,220-9910 cal BP)"
+
+[[tech]]
+id = "crop_banana"
+name = "bananas and plantains"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7
+pool = "all"
+stock = "crops:banana"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Denham et al. 2003. Origins of agriculture at Kuk Swamp in the highlands of New Guinea. Science 301:189-193 (abstract: bananas intensively cultivated by 6950-6440 cal BP; Kuk phases)"
+
+[[tech]]
+id = "crop_rye"
+name = "rye and oats"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 3.5
+pool = "all"
+stock = "crops:rye"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "crop_stonegrain"
+name = "stonegrain"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 6
+pool = "all"
+stock = "crops:stonegrain"
+rate = 0
+spread = 0
+era = "bronze age"
+mode = "fantasy"
+earth_origins = 1
+source = "fantasy (D&D flavour): date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_emberpod"
+name = "emberpods"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5
+pool = "all"
+stock = "crops:emberpod"
+rate = 0
+spread = 0
+era = "bronze age"
+mode = "fantasy"
+earth_origins = 1
+source = "fantasy (D&D flavour): date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_tree_fruit"
+name = "tree fruit and nuts"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7
+pool = "all"
+stock = "crops:tree_fruit"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Kislev, Hartmann & Bar-Yosef 2006. Early domesticated fig in the Jordan Valley. Science 312:1372-1374 (Gilgal I, 11,400-11,200 years ago, parthenocarpic figs); Zheng, Crawford & Chen 2014. Archaeological evidence for peach (Prunus persica) cultivation and domestication in China. PLoS ONE 9(9):e106595, PMC4156326 (Kuahuqiao stones ~8000-7000 BP; selection from at least ~7,500 yr; modern-like stones Liangzhu 5.3-4.3 ka)"
+
+[[tech]]
+id = "crop_oil_seeds"
+name = "oil seeds (sesame, flax, rape)"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 6
+pool = "all"
+stock = "crops:oil_seeds"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Zeder 2011, The origins of agriculture in the Near East (unverified); Fuller 2003 (unverified)"
+
+[[tech]]
+id = "crop_spice_tree"
+name = "pepper, cinnamon and other tropical spices"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 3.5
+pool = "all"
+stock = "crops:spice_tree"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_chili"
+name = "chili-like capsicum"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 6
+pool = "all"
+stock = "crops:chili"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Perry et al. 2007. Starch fossils and the domestication and dispersal of chili peppers in the Americas. Science 315:986-988, doi 10.1126/science.1136914 (abstract: seven sites from ~6,000 years ago to contact)"
+
+[[tech]]
+id = "crop_tea"
+name = "tea, coffee and other infusions"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 3
+pool = "all"
+stock = "crops:tea"
+rate = 0
+spread = 0
+era = "classical"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Lu et al. 2016. Earliest tea as evidence for one branch of the Silk Road across the Tibetan Plateau. Sci Rep 6:18955, doi 10.1038/srep18955 (tea grown ~2,100 years ago for Western Han; in Tibet by ~200 CE)"
+
+[[tech]]
+id = "crop_greens"
+name = "cooking greens (brassicas, leeks)"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5
+pool = "all"
+stock = "crops:greens"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_alliums"
+name = "onions and garlic"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 6
+pool = "all"
+stock = "crops:alliums"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_nightshade_fruit"
+name = "tomatoes and other nightshade fruits"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5
+pool = "all"
+stock = "crops:nightshade_fruit"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_squash"
+name = "squash and gourds"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 10
+stock = "crops:squash"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Smith 1997 (Guila Naquitz Cucurbita pepo seeds, AMS ~10,000 cal BP, per summary); Piperno & Stothert 2003. Phytolith evidence for early Holocene Cucurbita domestication in southwest Ecuador. Science 299:1054-1057 (phytoliths ~10 ka or older, per summaries); Lombardo et al. 2020 Nature 581:190-193 (Cucurbita ~10,250 cal BP in Llanos de Moxos)"
+
+[[tech]]
+id = "crop_cacao"
+name = "cacao"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5.3
+pool = "all"
+stock = "crops:cacao"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Lanaud et al. 2024. A revisited history of cacao domestication in pre-Columbian times revealed by archaeogenomic approaches. Sci Rep 14:2972, doi 10.1038/s41598-024-53010-6 (abstract: wide use in South America reaching back ~5,000 years)"
+
+[[tech]]
+id = "crop_vanilla"
+name = "vanilla"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 1
+pool = "all"
+stock = "crops:vanilla"
+rate = 0
+spread = 0
+era = "medieval"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_peanut"
+name = "peanuts"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7.6
+stock = "crops:peanut"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "crop_sweet_potato"
+name = "sweet potatoes"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5
+pool = "all"
+stock = "crops:sweet_potato"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Ioannidis et al. 2020 Nature (unverified)"
+
+[[tech]]
+id = "crop_pseudograin"
+name = "quinoa and amaranth"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 7
+pool = "all"
+stock = "crops:pseudograin"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). Catalogue: Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "crop_avocado"
+name = "avocados"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+earliest_kyr = 5.5
+pool = "all"
+stock = "crops:avocado"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 1
+source = "date: the history's own anchor (crop_defs.py). No catalogue row."
+
+[[tech]]
+id = "animal_fowl"
+name = "fowl"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 8
+stock = "animals:fowl"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (animal_defs.py). Catalogue: Peters et al. 2022. The biocultural origins and dispersal of domestic chickens. PNAS 119(24):e2121978119, doi 10.1073/pnas.2121978119, PMC9214543 (earliest unambiguous domestic chicken Ban Non Wat, Thailand, 1650-1250 BCE; not domesticated in India)"
+
+
+# ---- catalogue: shelter and settlement ------------------------------------------------------------------------------
+[[tech]]
+id = "stone_masonry"
+name = "dry-stone and coursed masonry"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["villages", "ground_stone"]
+env = ["stone"]
+earliest_kyr = 11.5
+era = "stone age"
+earth_origins = 4
+source = "Gobekli Tepe, Schmidt 2010 (best knowledge) (unverified)"
+
+[[tech]]
+id = "wells"
+name = "wells (dug shafts)"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["villages", "mines"]
+earliest_kyr = 9.2
+era = "stone age"
+earth_origins = 2
+source = "Galili & Nir 1993 study of the Atlit-Yam well, as summarised at agris.fao.org record 65de23f04c5aef494fda3803: well at Atlit-Yam, groundwater wells from beginning of 8th millennium BP or earlier; Atlit-Yam 9250-8000 BP (whitelevy.fas.harvard.edu). Kissonerga-Mylouthkia Cyprus: earliest occupation c.9.1-9.3 kyr BP, wells c.8740-6690 BP 14C, OSL to 9.6 ka (archaeologydataservice.ac.uk/archives/view/mylouthkia_ba_2009)."
+
+[[tech]]
+id = "qanat"
+name = "qanats (underground water tunnels)"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["wells", "mines"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 2
+source = "2026 French review citing Farnoud 2024 (academieoutremer.fr pdf 20260717): invention NW Iran 9th-7th c. BCE; Gonabad c.700-500 BCE (Wikipedia 'Traditional water sources of Persian antiquity'); worldhistory.org/qanat: alternative southern Arabia origin hypothesis."
+
+[[tech]]
+id = "tents_skin"
+name = "skin and hide tents"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["sewing", "huts"]
+earliest_kyr = 25
+era = "stone age"
+earth_origins = 2
+source = "Gravettian/Magdalenian tent rings, Leroi-Gourhan 1984 (best knowledge) (unverified)"
+
+[[tech]]
+id = "wattle_daub"
+name = "wattle and daub walls"
+track = "shelter"
+domains = ["build"]
+needs = ["huts"]
+env = ["timber"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 12
+era = "stone age"
+earth_origins = 3
+source = "Natufian/Neolithic wattle-and-daub finds, general (best knowledge) (unverified)"
+
+[[tech]]
+id = "thatch"
+name = "thatched roofing"
+track = "shelter"
+domains = ["build"]
+needs = ["huts"]
+earliest_kyr = 12
+era = "stone age"
+earth_origins = 1
+source = "none known; inferred from Natufian/Neolithic house reconstructions (unverified)"
+
+[[tech]]
+id = "bone_houses"
+name = "mammoth-bone houses"
+track = "shelter"
+domains = ["build"]
+needs = ["pit_houses", "tents_skin"]
+earliest_kyr = 18.2
+era = "stone age"
+earth_origins = 1
+source = "Chu, Shydlovskyi & Maier 2025. A revised radiocarbon chronology for the mammoth bone structures and associated features at Mezhyrich, Ukraine. Open Research Europe. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12639289/ (Structure 4: 18,248-17,764 cal BP). Mezinian/Gontsy c.14.4-14.6 kyr BP per Radiocarbon table (journals.uair.arizona.edu radiocarbon 3939); Iakovleva et al. UISPP J 1 2018."
+
+[[tech]]
+id = "snow_house"
+name = "snow houses (igloo)"
+track = "shelter"
+domains = ["build"]
+needs = ["tents_skin", "dog_sleds"]
+env = ["frost"]
+earliest_kyr = 1
+pool = "all"
+era = "medieval"
+earth_origins = 1
+source = "Arctic ethnography, Damas 1984 (best knowledge) (unverified)"
+
+[[tech]]
+id = "yurt"
+name = "felt tent and yurt"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["tents_skin", "herding"]
+env = ["timber"]
+earliest_kyr = 3
+pool = "all"
+era = "classical"
+earth_origins = 1
+source = "Archaeology of Scythian/Xiongnu felt tents, Rudenko 1970 (best knowledge) (unverified)"
+
+[[tech]]
+id = "longhouse"
+name = "timber longhouses"
+track = "shelter"
+domains = ["build"]
+needs = ["huts", "ground_stone", "cultivation"]
+env = ["timber"]
+earliest_kyr = 7.5
+era = "stone age"
+earth_origins = 2
+source = "Linearbandkeramik, Bradley 2001 (best knowledge) (unverified)"
+
+[[tech]]
+id = "post_frame"
+name = "post-and-beam timber framing"
+track = "shelter"
+domains = ["build"]
+needs = ["longhouse"]
+env = ["timber"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 3
+source = "Neolithic timber houses; Hemudu mortise-and-tenon, c.7 kyr (best knowledge) (unverified)"
+
+[[tech]]
+id = "timber_framing"
+name = "half-timber and joined frame carpentry"
+track = "shelter"
+domains = ["build"]
+needs = ["post_frame", "iron"]
+env = ["timber"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "log_construction"
+name = "log building (notched logs)"
+track = "shelter"
+domains = ["build"]
+needs = ["huts", "carpentry_joints"]
+env = ["timber"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "rammed_earth"
+name = "rammed earth walls"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 2
+source = "Longshan/Yangshao rammed earth, Chinese archaeology (best knowledge) (unverified)"
+
+[[tech]]
+id = "adobe_plaster"
+name = "lime and mud plaster floors and walls"
+track = "shelter"
+domains = ["build", "craft"]
+needs = ["mudbrick", "lime_burning"]
+env = ["stone"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "Kingery et al. 1988 on lime plaster, Ain Ghazal (best knowledge) (unverified)"
+
+[[tech]]
+id = "fired_brick"
+name = "fired brick"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick", "kilns"]
+env = ["fuel"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "Mesopotamian Uruk/Indus kiln bricks (best knowledge) (unverified)"
+
+[[tech]]
+id = "bitumen_mortar"
+name = "bitumen and clay mortar"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick"]
+earliest_kyr = 6
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "roof_tiles"
+name = "fired roof tiles"
+track = "shelter"
+domains = ["build"]
+needs = ["fired_brick"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 2
+source = "Wikipedia Roof tiles; Hesperia 78(2) article on Corinthian tile manufacture (ascsa.edu.gr/publications/hesperia/article/78/2/195-229): earliest securely dated fired roof tiles from Old Temple at Corinth, 7th c. BC (c.700-650 BC); Lerna 'House of Tiles' early claim insecure."
+
+[[tech]]
+id = "corbel_vault"
+name = "corbelled arch, vault and dome"
+track = "shelter"
+domains = ["build"]
+needs = ["stone_masonry"]
+env = ["stone"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 3
+source = "Newgrange; Mycenaean tholos tombs (best knowledge) (unverified)"
+
+[[tech]]
+id = "true_arch"
+name = "true arch (voussoirs)"
+track = "shelter"
+domains = ["build"]
+needs = ["fired_brick", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "Mesopotamian arches, Cunliffe general (best knowledge) (unverified)"
+
+[[tech]]
+id = "vaults_domes"
+name = "true vaults and domes"
+track = "shelter"
+domains = ["build"]
+needs = ["true_arch"]
+env = ["stone"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "Lancaster 2005, Concrete Vaulted Construction in Imperial Rome (best knowledge) (unverified)"
+
+[[tech]]
+id = "hydraulic_concrete"
+name = "roman hydraulic concrete (opus caementicium)"
+track = "shelter"
+domains = ["build"]
+needs = ["lime_mortar", "vaults_domes"]
+env = ["stone", "volcanic"]
+earliest_kyr = 2.1
+era = "classical"
+earth_origins = 1
+source = "Gianfrotta 2011 / Brandon, Hohlfelder, Oleson (ancientportsantiques.com BaiaeIulius-Brandon2008): structural hydraulic concrete probably born around Baiae/Puteoli; Cosa dated late 2nd - mid 1st c. BC; 3rd c. BC claim unverified."
+
+[[tech]]
+id = "pointed_gothic"
+name = "pointed arch and ribbed vault"
+track = "shelter"
+domains = ["build"]
+needs = ["vaults_domes"]
+env = ["stone"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "Gothic architecture, Frankl 1962 (best knowledge) (unverified)"
+
+[[tech]]
+id = "lifting_cranes"
+name = "cranes, levers, ramps and lifting gear"
+track = "shelter"
+domains = ["build"]
+needs = ["megaliths", "cordage"]
+env = ["timber"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 2
+source = "Coulton 1977, Greek Architects at Work; Egyptian ramps (best knowledge) (unverified)"
+
+[[tech]]
+id = "ziggurats"
+name = "stepped temple platforms (ziggurat, pyramid)"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["mudbrick", "temples", "cities"]
+env = ["stone"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 5.5
+era = "bronze age"
+earth_origins = 4
+source = "Standard Mesopotamian/Egyptian archaeology (best knowledge) (unverified)"
+
+[[tech]]
+id = "moats_ramparts"
+name = "ditches, ramparts and palisades"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["fortifications"]
+env = ["timber"]
+earliest_kyr = 7.5
+era = "bronze age"
+earth_origins = 2
+source = "Neolithic causewayed enclosures, Whittle (best knowledge) (unverified)"
+
+[[tech]]
+id = "bastion_towers"
+name = "towers, gates and masoned city walls"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["fortifications", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 3
+source = "Bronze Age city walls general (best knowledge) (unverified)"
+
+[[tech]]
+id = "citadel_castle"
+name = "castles and keeps"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["bastion_towers"]
+env = ["stone"]
+earliest_kyr = 1.1
+era = "medieval"
+earth_origins = 2
+source = "Medieval castles, Brown 1976 (best knowledge) (unverified)"
+
+[[tech]]
+id = "gunpowder_fort"
+name = "bastion fortresses (trace italienne)"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["citadel_castle"]
+env = ["stone"]
+earliest_kyr = 0.5
+era = "renaissance"
+earth_origins = 1
+source = "Duffy 1979, Siege Warfare (best knowledge) (unverified)"
+
+[[tech]]
+id = "planned_streets"
+name = "planned street grids and districts"
+track = "shelter"
+domains = ["build", "know"]
+needs = ["cities"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "Indus cities, Kenoyer 1998 (best knowledge) (unverified)"
+
+[[tech]]
+id = "pavements"
+name = "paved streets and plazas"
+track = "shelter"
+domains = ["build"]
+needs = ["planned_streets", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "cisterns"
+name = "cisterns and rainwater tanks"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["lime_mortar"]
+env = ["stone"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 3
+source = "Hellenistic/Iron Age cisterns (best knowledge) (unverified)"
+
+[[tech]]
+id = "aqueducts"
+name = "aqueducts and conduits"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["true_arch", "irrigation"]
+env = ["stone"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 3
+source = "Jerwan aqueduct, Sennacherib c.700 BCE (mcid.mcah.columbia.edu/mapping-mesopotamian-monuments/jerwan-aqueduct; en.wikipedia.org/wiki/Jerwan): 'probably the oldest known aqueduct'."
+
+[[tech]]
+id = "drains"
+name = "drains and sewers"
+track = "shelter"
+domains = ["build"]
+needs = ["pavements", "fired_brick"]
+env_any = ["fertile", "foraging", "building"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "Harappa.com Mohenjo-daro street drains (harappa.com/blog/mohenjo-daro-street-drains); Fridaytimes 2022 describes 4,500-year-old system. Wikipedia Sanitation of the IVC."
+
+[[tech]]
+id = "latrines"
+name = "latrines and cesspits"
+track = "shelter"
+domains = ["build"]
+needs = ["towns", "mudbrick"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 1
+source = "Skara Brae, Childe 1931 (best knowledge) (unverified)"
+
+[[tech]]
+id = "public_baths"
+name = "public baths"
+track = "shelter"
+domains = ["build"]
+needs = ["aqueducts", "fired_brick"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 3
+source = "Great Bath of Mohenjo-daro (best knowledge) (unverified)"
+
+[[tech]]
+id = "windows_glazing"
+name = "windows, shutters and glazing"
+track = "shelter"
+domains = ["build", "craft"]
+needs = ["glass", "timber_framing"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "Roman window glass, Allen (best knowledge) (unverified)"
+
+[[tech]]
+id = "doors_locks"
+name = "doors, hinges and locks"
+track = "shelter"
+domains = ["build"]
+needs = ["post_frame", "towns"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "builders_tools"
+name = "plumb line, level and measuring cord"
+track = "shelter"
+domains = ["build"]
+needs = ["cordage", "stone_masonry"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "surveying"
+name = "surveying and building plans"
+track = "shelter"
+domains = ["build", "know"]
+needs = ["builders_tools", "counting"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "Egyptian Merkhet, Lewis 2001 (best knowledge) (unverified)"
+
+[[tech]]
+id = "scaffolding_formwork"
+name = "scaffolding and formwork"
+track = "shelter"
+domains = ["build"]
+needs = ["lifting_cranes", "lime_mortar"]
+env = ["timber"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "terraced_building"
+name = "terraced platforms and stonework (Andean)"
+track = "shelter"
+domains = ["build"]
+needs = ["stone_masonry", "terracing"]
+env = ["stone"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Protzen 1993, Inca architecture (best knowledge) (unverified)"
+
+[[tech]]
+id = "pastoral_corral"
+name = "pens and animal housing"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["huts", "herding"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "monumental_art_arch"
+name = "colonnades and trabeated temples"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["megaliths", "temples"]
+env = ["stone"]
+earliest_kyr = 4.7
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "dams_reservoirs"
+name = "dams and reservoirs"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["irrigation"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 3
+source = "Jawa Dam Jordan c.3000 BC (en.wikipedia.com/wiki/Dam); Sadd el-Kafara c.2700-2600 BC (hydriaproject.info). Sources weak."
+
+[[tech]]
+id = "bridges"
+name = "bridges"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["woodworking", "villages"]
+env = ["timber"]
+earliest_kyr = 8
+era = "stone age"
+earth_origins = 1
+source = "Timber causeways, Sweet Track 5.8 kyr (best knowledge) (unverified)"
+
+[[tech]]
+id = "stone_arch_bridges"
+name = "stone arch bridges"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["true_arch", "bridges"]
+env = ["stone"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "sluices_locks"
+name = "pound locks and sluices"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["dams_reservoirs"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 2
+source = "Needham (best knowledge) (unverified)"
+
+[[tech]]
+id = "siege_tower"
+name = "siege tower and scaling ladders"
+track = "shelter"
+domains = ["war"]
+needs = ["battering_ram"]
+env = ["timber"]
+earliest_kyr = 2.8
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "marching_camp"
+name = "fortified marching camp"
+track = "shelter"
+domains = ["war"]
+needs = ["legion_tactics", "fortifications"]
+env = ["timber"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "frontier_walls"
+name = "frontier and defensive wall lines"
+track = "shelter"
+domains = ["war"]
+needs = ["fortifications", "cities"]
+earliest_kyr = 2.65
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "castle"
+name = "castle (motte-and-bailey, stone keep)"
+track = "shelter"
+domains = ["war"]
+needs = ["fortifications", "lime_mortar"]
+env = ["timber"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "concentric_castle"
+name = "concentric castle"
+track = "shelter"
+domains = ["war"]
+needs = ["castle"]
+earliest_kyr = 0.8
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "star_fort"
+name = "bastioned star fort (trace italienne)"
+track = "shelter"
+domains = ["war"]
+needs = ["castle", "cannon"]
+earliest_kyr = 0.5
+era = "renaissance"
+earth_origins = 1
+source = "Duffy 1979, Siege Warfare (unverified)"
+
+
+# ---- catalogue: travel ----------------------------------------------------------------------------------------------
+[[tech]]
+id = "dog_sleds"
+name = "dog sleds"
+track = "travel"
+domains = ["move"]
+needs = ["sledges", "dogs"]
+env = ["frost"]
+earliest_kyr = 9.5
+pool = "all"
+era = "stone age"
+earth_origins = 2
+source = "Sinding et al. 2020. Arctic-adapted dogs emerged at the Pleistocene-Holocene transition. Science (title seen; 9500-yr Zhokhov dog genome, sled-dog haplotypes by 9.5 ka); Archaeology.org 2017 news on Pitulko & Kasparov Zhokhov finds"
+
+[[tech]]
+id = "plank_boats"
+name = "sewn plank boats"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["canoes", "carpentry_joints"]
+env = ["timber"]
+earliest_kyr = 4.9
+era = "bronze age"
+earth_origins = 3
+source = "Abydos boats, Archaeology magazine archive 0105 abstracts: 14 boats early Dynasty I, 2950-2775 BCE (other sources 3000-2700 BCE); earliest planked boats known"
+
+[[tech]]
+id = "harbours"
+name = "harbours and quays"
+track = "travel"
+domains = ["build", "trade"]
+needs = ["plank_boats"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 2
+source = "Tallet & Marouard, Wadi al-Jarf Red Sea harbour, active c.2600-2500 BCE (Archaeology magazine / Merer logbook pages seen)"
+
+[[tech]]
+id = "lighthouses"
+name = "lighthouses"
+track = "travel"
+domains = ["build", "move"]
+needs = ["harbours"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 1
+source = "Britannica 'Lighthouse of Alexandria' and Guinness World Records 'First lighthouse' (seen via search): completed c.280 BCE"
+
+[[tech]]
+id = "paddles"
+name = "paddles"
+track = "travel"
+domains = ["move"]
+needs = ["rafts"]
+env = ["timber"]
+earliest_kyr = 11
+era = "stone age"
+earth_origins = 2
+source = "Milner et al. 2018, Star Carr paddle (unverified)"
+
+[[tech]]
+id = "bark_canoes"
+name = "bark and plank-sewn bark canoes"
+track = "travel"
+domains = ["move"]
+needs = ["rafts", "cordage", "canoes"]
+env = ["timber"]
+earliest_kyr = 8
+pool = "all"
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "reed_boats"
+name = "reed boats (bitumen-coated)"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["rafts", "cordage", "villages"]
+earliest_kyr = 7.5
+pool = "all"
+era = "stone age"
+earth_origins = 3
+source = "Carter et al. Antiquity, 'Boat remains and maritime trade in the Persian Gulf during the sixth and fifth millennia BC' (Cambridge abstract page seen): bitumen reed-boat remains at H3, As-Sabiyah, Kuwait, 5500-5000 BC"
+
+[[tech]]
+id = "skin_boats"
+name = "skin boats (kayak, umiak, coracle)"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["sewing", "canoes"]
+env = ["seals"]
+earliest_kyr = 8
+pool = "all"
+era = "stone age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "inflated_skin_floats"
+name = "inflated skin floats and keleks"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["rafts", "sewing", "herding"]
+earliest_kyr = 2.9
+era = "classical"
+earth_origins = 1
+source = "Assyrian reliefs (Nineveh) (unverified)"
+
+[[tech]]
+id = "clinker_hulls"
+name = "clinker (lapstrake) hulls"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats", "iron"]
+env = ["timber"]
+earliest_kyr = 1.7
+era = "classical"
+earth_origins = 2
+source = "Nydam boat finds (unverified)"
+
+[[tech]]
+id = "mortise_tenon_hulls"
+name = "mortise-and-tenon shell hulls"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["plank_boats"]
+earliest_kyr = 3.3
+era = "classical"
+earth_origins = 1
+source = "Pulak 1998, Uluburun shipwreck (unverified)"
+
+[[tech]]
+id = "keels"
+name = "keels"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "oars"
+name = "oars and rowing"
+track = "travel"
+domains = ["move", "war"]
+needs = ["paddles", "plank_boats"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 2
+source = "Casson 1971, Ships and Seamanship in the Ancient World (unverified)"
+
+[[tech]]
+id = "galleys"
+name = "war galleys (penteconter, trireme)"
+track = "travel"
+domains = ["war", "move"]
+needs = ["oars", "keels"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 2
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "steering_oar"
+name = "steering oar"
+track = "travel"
+domains = ["move"]
+needs = ["oars"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "square_rig"
+name = "square rig"
+track = "travel"
+domains = ["move"]
+needs = ["sails"]
+earliest_kyr = 5.1
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "crab_claw_sail"
+name = "crab-claw and tanja sail"
+track = "travel"
+domains = ["move"]
+needs = ["sails", "outriggers"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "Doran 1981, Polynesian Navigation (unverified)"
+
+[[tech]]
+id = "lateen_sail"
+name = "lateen and settee sail"
+track = "travel"
+domains = ["move"]
+needs = ["square_rig"]
+earliest_kyr = 1.8
+era = "classical"
+earth_origins = 2
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "lug_and_batten_sail"
+name = "lug and fully battened sail (junk rig)"
+track = "travel"
+domains = ["move"]
+needs = ["sails"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 1
+source = "Needham 1971, Science and Civilisation in China vol. 4:3 (unverified)"
+
+[[tech]]
+id = "double_hulled_canoes"
+name = "double canoes and catamarans"
+track = "travel"
+domains = ["move"]
+needs = ["outriggers"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "Doran 1981 (unverified)"
+
+[[tech]]
+id = "sternpost_rudder"
+name = "sternpost rudder"
+track = "travel"
+domains = ["move"]
+needs = ["keels", "steering_oar"]
+earliest_kyr = 1.9
+era = "classical"
+earth_origins = 2
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "watertight_bulkheads"
+name = "watertight bulkhead compartments"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats"]
+earliest_kyr = 1.7
+era = "classical"
+earth_origins = 1
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "carvel_hulls"
+name = "carvel (frame-first) hulls"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["mortise_tenon_hulls"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 2
+source = "Steffy 1994, Wooden Ship Building (unverified)"
+
+[[tech]]
+id = "cogs_and_carracks"
+name = "cogs and carracks"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["clinker_hulls", "sternpost_rudder", "square_rig"]
+earliest_kyr = 0.8
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "caravels"
+name = "caravels"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["carvel_hulls", "lateen_sail"]
+earliest_kyr = 0.56
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "full_rigged_ship"
+name = "full-rigged ship with multiple masts"
+track = "travel"
+domains = ["move", "war"]
+needs = ["cogs_and_carracks"]
+earliest_kyr = 0.5
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "chip_log"
+name = "chip log (speed by knots)"
+track = "travel"
+domains = ["move", "know"]
+needs = ["navigation"]
+earliest_kyr = 0.43
+era = "renaissance"
+earth_origins = 1
+source = "Bourne 1574, A Regiment for the Sea; Royal Museums Greenwich 'Log and line' and Wikipedia 'Chip log' (seen)"
+
+[[tech]]
+id = "dry_docks"
+name = "slipways, dry docks and haul-overs"
+track = "travel"
+domains = ["build", "move"]
+needs = ["harbours"]
+earliest_kyr = 2.6
+era = "classical"
+earth_origins = 2
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "coastal_pilotage"
+name = "coastal pilotage and sailing directions (periplus)"
+track = "travel"
+domains = ["move", "know"]
+needs = ["sails", "marks"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "Casson 1989, Periplus Maris Erythraei (unverified)"
+
+[[tech]]
+id = "star_paths"
+name = "star paths and wayfinding"
+track = "travel"
+domains = ["move", "know", "ritual"]
+needs = ["outriggers", "calendar"]
+earliest_kyr = 3
+pool = "all"
+era = "classical"
+earth_origins = 2
+source = "Lewis 1972, We the Navigators (unverified)"
+
+[[tech]]
+id = "stick_charts"
+name = "wave-pilot stick charts"
+track = "travel"
+domains = ["move", "know"]
+needs = ["star_paths"]
+earliest_kyr = 1
+pool = "all"
+era = "medieval"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "lead_line"
+name = "lead line (sounding)"
+track = "travel"
+domains = ["move"]
+needs = ["sails", "cordage"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 2
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "lodestone_compass"
+name = "magnetic compass"
+track = "travel"
+domains = ["know", "move"]
+needs = ["navigation", "iron"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "Needham 1962, Science and Civilisation in China vol. 4:1 (unverified)"
+
+[[tech]]
+id = "mariners_astrolabe"
+name = "mariner's astrolabe and quadrant"
+track = "travel"
+domains = ["move", "know"]
+needs = ["astrolabe"]
+earliest_kyr = 0.52
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "portolan_charts"
+name = "portolan charts"
+track = "travel"
+domains = ["move", "know"]
+needs = ["lodestone_compass", "maps"]
+earliest_kyr = 0.72
+era = "medieval"
+earth_origins = 1
+source = "Carta Pisana, BnF/Beinecke/Wikipedia pages (seen): oldest surviving portolan chart c.1280-1290; BnF Lisbon 2016 colloquium questions its age"
+
+[[tech]]
+id = "skis"
+name = "skis"
+track = "travel"
+domains = ["move"]
+needs = ["sledges"]
+env = ["frost"]
+earliest_kyr = 8
+pool = "all"
+era = "stone age"
+earth_origins = 1
+source = "Formozov 1969 / Scandinavian rock art (unverified)"
+
+[[tech]]
+id = "snowshoes"
+name = "snowshoes"
+track = "travel"
+domains = ["move"]
+needs = ["cordage"]
+env = ["frost"]
+earliest_kyr = 6
+pool = "all"
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "bone_skates"
+name = "bone ice skates"
+track = "travel"
+domains = ["move"]
+needs = ["found_tools"]
+env = ["frost"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "pack_saddle"
+name = "pack saddle"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["pack_animals"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "equid_wagons"
+name = "equid-drawn four-wheeled war cart"
+track = "travel"
+domains = ["war", "move"]
+needs = ["wheel", "riding"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 1
+source = "Standard of Ur (unverified)"
+
+[[tech]]
+id = "wheelbarrow"
+name = "wheelbarrow"
+track = "travel"
+domains = ["move", "build"]
+needs = ["wheel"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 3
+source = "Needham 1965, Science and Civilisation in China vol. 4:2 (unverified)"
+
+[[tech]]
+id = "iron_tyred_wheel"
+name = "iron-tyred wheels"
+track = "travel"
+domains = ["move", "war"]
+needs = ["wheel", "iron"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "bit_and_bridle"
+name = "bit and bridle"
+track = "travel"
+domains = ["move", "war"]
+needs = ["riding"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "saddles"
+name = "saddles (pad and tree)"
+track = "travel"
+domains = ["move", "war"]
+needs = ["riding", "sewing"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 2
+source = "Pazyryk finds (unverified)"
+
+[[tech]]
+id = "stirrups"
+name = "stirrups"
+track = "travel"
+domains = ["war", "move"]
+needs = ["saddles"]
+earliest_kyr = 1.7
+era = "classical"
+earth_origins = 1
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+
+[[tech]]
+id = "horse_collar"
+name = "horse collar and breast harness"
+track = "travel"
+domains = ["move", "food"]
+needs = ["riding"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 3
+source = "Needham 1965 (unverified)"
+
+[[tech]]
+id = "horseshoes"
+name = "horseshoes (hipposandals and nailed shoes)"
+track = "travel"
+domains = ["move"]
+needs = ["riding", "iron"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "timber_trackways"
+name = "timber trackways and corduroy roads"
+track = "travel"
+domains = ["build", "move"]
+needs = ["woodworking", "villages"]
+env = ["timber"]
+earliest_kyr = 5.8
+era = "bronze age"
+earth_origins = 2
+source = "Sweet Track: dendrochronology 3807/3806 BC; Post Track 3838 BC (Wikipedia 'Sweet Track' / Modern Antiquarian seen)"
+
+[[tech]]
+id = "log_bridges"
+name = "log and plank bridges"
+track = "travel"
+domains = ["build"]
+needs = ["cordage", "villages"]
+env = ["timber"]
+earliest_kyr = 7
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "segmental_arch_bridge"
+name = "segmental arch bridge"
+track = "travel"
+domains = ["build"]
+needs = ["stone_arch_bridges"]
+earliest_kyr = 1.4
+era = "medieval"
+earth_origins = 1
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "rope_bridges"
+name = "rope suspension bridges"
+track = "travel"
+domains = ["build"]
+needs = ["cordage", "roads"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "chain_suspension_bridge"
+name = "iron chain suspension bridges"
+track = "travel"
+domains = ["build"]
+needs = ["rope_bridges", "iron"]
+earliest_kyr = 2
+era = "classical"
+earth_origins = 1
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "pontoon_bridges"
+name = "pontoon bridges"
+track = "travel"
+domains = ["build", "war"]
+needs = ["plank_boats"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "paved_roads"
+name = "engineered paved roads (Roman, Persian, Inca)"
+track = "travel"
+domains = ["build", "trade", "war"]
+needs = ["roads", "stone_arch_bridges"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 3
+source = "Chevallier 1976, Roman Roads (unverified)"
+
+[[tech]]
+id = "milestones_waystations"
+name = "milestones, relay posts and waystations"
+track = "travel"
+domains = ["trade", "know"]
+needs = ["roads", "writing"]
+earliest_kyr = 2.5
+era = "classical"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "caravanserais"
+name = "caravanserais"
+track = "travel"
+domains = ["trade", "build"]
+needs = ["milestones_waystations"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "navigation_canals"
+name = "navigation canals"
+track = "travel"
+domains = ["build", "trade"]
+needs = ["irrigation", "plank_boats"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 2
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "flash_locks"
+name = "flash locks"
+track = "travel"
+domains = ["build"]
+needs = ["navigation_canals"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 1
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "pound_locks"
+name = "pound locks with mitre gates"
+track = "travel"
+domains = ["build"]
+needs = ["flash_locks"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 2
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "ferry_crossings"
+name = "ferries and cable ferries"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["rafts", "towns"]
+earliest_kyr = 4
+era = "bronze age"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "cavalry"
+name = "cavalry"
+track = "travel"
+domains = ["war"]
+needs = ["riding", "composite_bow"]
+earliest_kyr = 2.9
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "horse_archery"
+name = "horse archery"
+track = "travel"
+domains = ["war"]
+needs = ["cavalry", "composite_bow"]
+earliest_kyr = 2.7
+pool = "all"
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "stirrup"
+name = "stirrup"
+track = "travel"
+domains = ["war"]
+needs = ["riding", "tanning"]
+env = ["metal"]
+earliest_kyr = 1.7
+era = "classical"
+earth_origins = 1
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+
+[[tech]]
+id = "cataphract"
+name = "armoured horse (cataphract)"
+track = "travel"
+domains = ["war"]
+needs = ["cavalry", "scale_armour"]
+env = ["metal"]
+earliest_kyr = 2.2
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "heavy_cavalry"
+name = "heavy shock cavalry (stirrup and lance)"
+track = "travel"
+domains = ["war"]
+needs = ["stirrup", "cataphract"]
+earliest_kyr = 1.2
+era = "medieval"
+earth_origins = 1
+source = "White 1962 (unverified); disputed (unverified)"
+
+[[tech]]
+id = "ship_guns"
+name = "shipboard cannon (gunports)"
+track = "travel"
+domains = ["war"]
+needs = ["cannon", "sails"]
+env = ["timber", "metal"]
+earliest_kyr = 0.5
+era = "renaissance"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "war_galley"
+name = "war galley"
+track = "travel"
+domains = ["war"]
+needs = ["sails", "canoes"]
+env = ["timber"]
+earliest_kyr = 3.2
+era = "classical"
+earth_origins = 1
+source = "Casson 1971, Ships and Seamanship in the Ancient World (unverified)"
+
+[[tech]]
+id = "naval_ram"
+name = "naval ram"
+track = "travel"
+domains = ["war"]
+needs = ["war_galley", "bronze"]
+env = ["timber"]
+earliest_kyr = 2.75
+era = "classical"
+earth_origins = 1
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "trireme"
+name = "trireme"
+track = "travel"
+domains = ["war"]
+needs = ["naval_ram"]
+env = ["timber"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 1
+source = "Morrison and Coates 1986, The Athenian Trireme (unverified)"
+
+
+# ---- catalogue: social and ritual -----------------------------------------------------------------------------------
+[[tech]]
+id = "grave_goods"
+name = "grave goods and funerary rites"
+track = "social"
+domains = ["ritual"]
+needs = ["burial"]
+earliest_kyr = 34
+era = "stone age"
+earth_origins = 2
+source = "Pettitt 2011 (unverified) (unverified)"
+
+[[tech]]
+id = "megaliths"
+name = "megalithic tombs and monuments"
+track = "social"
+domains = ["ritual", "build"]
+needs = ["villages", "ground_stone", "spirit_ritual"]
+env = ["stone"]
+earliest_kyr = 11.6
+era = "stone age"
+earth_origins = 4
+source = "Dietrich/Notroff/Schmidt, DAI Goebekli Tepe project blog 'How old is it? Dating Goebekli Tepe' (dainst.blog 2016): Layer III PPNA 9600-8800 calBC, EPPNB/MPPNB 8800-8200 calBC; dates give a terminus ante quem for refilling, not building."
+
+[[tech]]
+id = "herbal_medicine"
+name = "herbal medicine and herbals"
+track = "social"
+domains = ["know", "food"]
+needs = ["foraging_lore"]
+earliest_kyr = 60
+era = "stone age"
+earth_origins = 1
+source = "Hardy 2012, Neanderthal medics (unverified) (unverified)"
+
+[[tech]]
+id = "trepanation"
+name = "trepanation"
+track = "social"
+domains = ["know", "ritual"]
+needs = ["knapping", "villages"]
+earliest_kyr = 10
+era = "stone age"
+earth_origins = 3
+source = "Lillie 1998 (unverified) (unverified)"
+
+[[tech]]
+id = "surgery"
+name = "wound surgery, sutures, instruments"
+track = "social"
+domains = ["know"]
+needs = ["bronze"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 3
+source = "Nunn 1996, Ancient Egyptian Medicine (unverified) (unverified)"
+
+[[tech]]
+id = "dentistry"
+name = "dentistry and tooth repair"
+track = "social"
+domains = ["know"]
+needs = ["knapping"]
+earliest_kyr = 14
+era = "stone age"
+earth_origins = 4
+source = "Oxilia et al. 'The earliest evidence of proto-dental treatment in the Late Upper Palaeolithic' (Monash research record / Am J Phys Anthropol): Riparo Villabruna, Italy, 14,160-13,820 BP, flint scratching/levering of a caries cavity. Mehrgarh: Coppa et al. 2006 Nature reports drilled teeth, Neolithic 9,000-7,500 BP (seen only via Oxilia et al. 2017 AJPA citation)."
+
+[[tech]]
+id = "inoculation"
+name = "variolation and inoculation"
+track = "social"
+domains = ["know"]
+needs = ["herbal_medicine", "cities"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "markets"
+name = "marketplaces and merchants"
+track = "social"
+domains = ["trade"]
+needs = ["trade", "towns"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 3
+source = "Polanyi 1957 (unverified) (unverified)"
+
+[[tech]]
+id = "commodity_money"
+name = "commodity money (grain, silver, cowrie)"
+track = "social"
+domains = ["trade"]
+needs = ["markets", "weights_measures"]
+env = ["metal"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 4
+source = "Graeber 2011 / Davies 2002, History of Money (unverified) (unverified)"
+
+[[tech]]
+id = "paper_money"
+name = "paper money"
+track = "social"
+domains = ["trade"]
+needs = ["paper", "coinage"]
+earliest_kyr = 1
+era = "medieval"
+earth_origins = 1
+source = "Von Glahn 1996 (unverified) (unverified)"
+
+[[tech]]
+id = "credit_debt"
+name = "credit, debt records and loans"
+track = "social"
+domains = ["trade"]
+needs = ["writing", "commodity_money"]
+earliest_kyr = 4.5
+era = "bronze age"
+earth_origins = 1
+source = "Graeber 2011 (unverified) (unverified)"
+
+[[tech]]
+id = "bills_of_exchange"
+name = "bills of exchange and banking"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt", "coinage"]
+earliest_kyr = 0.9
+era = "medieval"
+earth_origins = 3
+source = "Lopez & Raymond 1955 (unverified) (unverified)"
+
+[[tech]]
+id = "banking"
+name = "banks and temple deposits"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "insurance"
+name = "maritime loans and insurance"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt", "sails"]
+earliest_kyr = 3
+era = "classical"
+earth_origins = 1
+source = "none known (unverified)"
+
+[[tech]]
+id = "kingship"
+name = "kingship and divine rulers"
+track = "social"
+domains = ["war", "ritual"]
+needs = ["chiefdoms", "cities"]
+earliest_kyr = 5.2
+era = "bronze age"
+earth_origins = 4
+source = "Trigger 2003, Understanding Early Civilizations (unverified) (unverified)"
+
+[[tech]]
+id = "taxation"
+name = "taxation and tribute"
+track = "social"
+domains = ["trade", "war"]
+needs = ["kingship", "writing"]
+earliest_kyr = 5
+era = "bronze age"
+earth_origins = 4
+source = "Scott 2017, Against the Grain (unverified) (unverified)"
+
+[[tech]]
+id = "schools"
+name = "schools and formal teaching"
+track = "social"
+domains = ["know"]
+needs = ["writing"]
+earliest_kyr = 4.4
+era = "bronze age"
+earth_origins = 5
+source = "Veldhuis 2014 (unverified) (unverified)"
+
+[[tech]]
+id = "bureaucracy"
+name = "bureaucracy and civil service"
+track = "social"
+domains = ["trade", "war"]
+needs = ["taxation", "schools"]
+earliest_kyr = 4.4
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "universities"
+name = "universities and colleges"
+track = "social"
+domains = ["know"]
+needs = ["schools", "libraries"]
+earliest_kyr = 1.1
+era = "medieval"
+earth_origins = 4
+source = "none known (unverified)"
+
+[[tech]]
+id = "census"
+name = "census and population registers"
+track = "social"
+domains = ["trade", "war"]
+needs = ["taxation", "writing"]
+earliest_kyr = 4.6
+era = "bronze age"
+earth_origins = 4
+source = "none known (unverified)"
+
+[[tech]]
+id = "standing_army"
+name = "standing armies and conscription"
+track = "social"
+domains = ["war"]
+needs = ["taxation", "bronze"]
+earliest_kyr = 4.3
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "guilds"
+name = "craft guilds and professional associations"
+track = "social"
+domains = ["craft", "trade"]
+needs = ["markets"]
+earliest_kyr = 3.5
+era = "bronze age"
+earth_origins = 3
+source = "none known (unverified)"
+
+[[tech]]
+id = "phalanx"
+name = "phalanx and close formations"
+track = "social"
+domains = ["war"]
+needs = ["shield", "thrusting_spear", "chiefdoms"]
+env = ["timber"]
+earliest_kyr = 4.45
+era = "bronze age"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "military_drill"
+name = "military drill and discipline"
+track = "social"
+domains = ["war"]
+needs = ["phalanx"]
+env = ["fertile"]
+earliest_kyr = 2.7
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "legion_tactics"
+name = "manipular legion and combined arms"
+track = "social"
+domains = ["war"]
+needs = ["military_drill", "iron_sword"]
+env = ["fertile"]
+earliest_kyr = 2.3
+era = "classical"
+earth_origins = 2
+source = "none known (unverified)"
+
+[[tech]]
+id = "pike_and_shot"
+name = "pike-and-shot formations"
+track = "social"
+domains = ["war"]
+needs = ["pike", "matchlock"]
+env = ["metal"]
+earliest_kyr = 0.5
+era = "renaissance"
+earth_origins = 2
+source = "none known (unverified)"
