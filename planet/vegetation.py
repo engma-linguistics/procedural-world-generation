@@ -55,6 +55,7 @@ import numpy as np
 from numba import njit, prange
 
 from . import climate
+from .constants import SEC_PER_YR
 from .geo import R_KM, is_land
 
 # ---------------------------------------------------------------------------
@@ -810,7 +811,7 @@ def floodplain(grid, elev, flow, rel=None, flood_ratio=None) -> np.ndarray:
     rel = relief(grid, elev) if rel is None else rel
     flat = np.clip(1 - rel / 400.0, 0, 1)
     area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
-    q = np.asarray(flow, float) * area_m2 / 3.156e7 * flood_scale(flood_ratio)  # m3/s
+    q = np.asarray(flow, float) * area_m2 / SEC_PER_YR * flood_scale(flood_ratio)  # m3/s
     return 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
 
 

@@ -23,6 +23,7 @@ from . import vegetation as ZVG
 from .. import climate
 from .. import coast
 from .. import icemass
+from ..constants import SEC_PER_YR
 from ..geo import latlon
 from .. import vegetation
 from . import regional as RG
@@ -272,7 +273,7 @@ def stats(ctx):
         "deltas": [{"mouth_km": [round(d["x"], 1), round(d["y"], 1)], "discharge_m3s": round(d["q"]),
                     "plain_radius_km": round(d["R"]), "type": d["gw"]["type"], "weights": d["gw"]["weights"],
                     "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
-                    "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
+                    "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
                     "mouths": d["mouths"], "fingers": d.get("fingers", [0, 0]),
                     "depth_front_m": round(d["depth_front_m"]), "buoyant": round(d["buoy"], 2),

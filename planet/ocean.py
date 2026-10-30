@@ -78,6 +78,7 @@ from numba import njit
 
 from . import climate as C
 from . import kernels
+from .constants import RHO_C_SEA, SEC_PER_YR
 from .geo import R_KM, arc, is_land
 from .grid import Grid
 
@@ -538,7 +539,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
                           lon=round(float(np.degrees(np.arctan2(cx[1], cx[0]))), 1),
                           sv=round(float(psi), 2), drho=round(float((w * dr_all[cells]).sum() / psi), 3),
                           area_km2=round(float(area[cells].sum())),
-                          heat_pw=round(float(psi * SV * 4.1e6 * (t_low - (w * sst[cells]).sum() / psi) / 1e15), 3)))
+                          heat_pw=round(float(psi * SV * RHO_C_SEA * (t_low - (w * sst[cells]).sum() / psi) / 1e15), 3)))
     # All sites' routes at once. The inflow is a layer hundreds of m deep: it
     # gives its heat up to the air (moc_lambda W/m2 per C over moc_width km)
     # only slowly, and the rain and rivers on its way barely dilute it.
@@ -552,9 +553,9 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     Tr = _route(order, par, sinking)
     Q = Tr * SV
     hw = h * 1000.0 * tune["moc_width"] * 1000.0  # m2: the route's area per cell
-    mix = np.where(under, 0.0, tune["moc_lambda"] * hw / 4.1e6)  # m3/s per cell (none under the ice lid)
+    mix = np.where(under, 0.0, tune["moc_lambda"] * hw / RHO_C_SEA)  # m3/s per cell (none under the ice lid)
     t_in = _along(order, par, Q, t_eq, sst, mix, np.zeros(n))
-    s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / 3.156e7 * hw)
+    s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / SEC_PER_YR * hw)
     # spread over the route's width; where it carries more than ~moc_q0 Sv
     # per km of width, the surface water is mostly the inflow
     norm = np.maximum(_smooth(grid, sea.astype(float), tune["moc_km"]), 1e-6)

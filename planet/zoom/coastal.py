@@ -54,6 +54,7 @@ import numpy as np
 from .. import coastal as CL
 from .. import vegetation as V
 from . import kernels as ZK
+from ..constants import GRAV
 from ..geo import R_KM, ramp
 
 LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b2a"),
@@ -232,7 +233,7 @@ def closure(wave_kw_m: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """The shoreface's closure depth (m: CLOSURE_HS x the waves' mean
     significant height, from their power) and its distance off the shore
     on Dean's profile (km)."""
-    hs = np.sqrt(64 * np.pi * 1000.0 * np.maximum(wave_kw_m, 0.0) / (1025.0 * 9.81**2 * WAVE_T))
+    hs = np.sqrt(64 * np.pi * 1000.0 * np.maximum(wave_kw_m, 0.0) / (1025.0 * GRAV**2 * WAVE_T))
     hc = np.clip(CLOSURE_HS * hs, *CLOSURE_M)
     return hc, (hc / DEAN_A) ** 1.5 / 1000.0
 

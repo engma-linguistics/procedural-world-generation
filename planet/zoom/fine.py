@@ -87,6 +87,7 @@ from .. import climate, icemass, vegetation
 from .. import store as S
 from .. import world as W
 from . import regional as Z
+from ..constants import SEC_PER_YR
 from ..geo import smoothstep
 from . import coastal as ZCL
 from . import fine_floodplain as ZFP
@@ -132,7 +133,6 @@ DRAWN_M = 10.0  # m: a cone drawn over its parent's surface meets it over about 
 GORGE_WALL_DEG = (55.0, 75.0)  # a gorge's walls below a fall: soft .. rugged rock (cliffs over their talus)
 GORGE_FRAY_KM = 0.06  # km: its rims frayed by this much (spurs and alcoves)
 POOL_DEPTH = (0.15, 3.0, 60.0)  # a plunge pool without the parent's depth: share of the drop, min, max m
-SEC_PER_YR = Z.SEC_PER_YR
 
 
 # ---------------------------------------------------------------------------

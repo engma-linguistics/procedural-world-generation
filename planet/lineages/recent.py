@@ -29,6 +29,7 @@ import numpy as np
 
 from .. import store as S
 from .. import timeline as T
+from ..constants import T_REF_C
 from ..geo import R_KM
 from ..grid import Grid, build_grid
 from ..provenance import code_hash, code_version
@@ -183,7 +184,7 @@ class Pass:
         for k in keep:
             surf, ice = (T.frame(self.run, self.arr, n, k).astype(float) for n in ("elevation", "ice"))
             s = self.run["frames"][k]["stats"]
-            st = {"stats": s, "elevation": surf - ice, "ice": ice, "dT": s["global_temp_c"] - 14.5}
+            st = {"stats": s, "elevation": surf - ice, "ice": ice, "dT": s["global_temp_c"] - T_REF_C}
             orbit = finish.orbit_dt(self.run, st) if all(k in s for k in finish.ORBIT_STATS) else None  # (a time zoom stores its orbit)
             c = climate.compute(self.grid, st["elevation"], st["dT"], tilt, ice, orbit_dt=orbit)
             rain.append(np.asarray(c["precip"], float))

@@ -92,6 +92,7 @@ from numba import njit
 from . import coast
 from . import surface as SF
 from . import vegetation as V
+from .constants import GRAV, SEC_PER_YR
 from .geo import R_KM, cell_area_km2, ramp, world_land, xyz
 
 # turbidity and light
@@ -208,7 +209,7 @@ def river_loads(grid, L: dict) -> tuple[np.ndarray, np.ndarray]:
     ice = np.asarray(L.get("ice", np.zeros(n)), float)
     iced = np.add.reduceat((ice[cells] > 1).astype(float), start) / cnt
     area = cell_area_km2(n)
-    q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / coast.SEC_PER_YR
+    q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / SEC_PER_YR
     return mouths, coast.bqart(q, cnt * area, relief, temp, soft, iced)
 
 
@@ -271,12 +272,12 @@ def bed_stress(grid, L: dict) -> np.ndarray:
     x = np.where(hops > 0, hops - 0.5, 1e3) * grid.spacing * R_KM * 1e3  # m (unreached: far offshore)
     omega = 2 * np.pi / coast.T_M2
     a = 0.5 * np.asarray(L.get("tide_range", np.zeros(grid.n)), float)
-    u_tide = a * np.minimum(omega * x / h, np.sqrt(coast.GRAV / h))
+    u_tide = a * np.minimum(omega * x / h, np.sqrt(GRAV / h))
     # the waves: orbital velocity at the bed (linear theory; Eckart's 1952 dispersion approximation)
     hs, te = coast.hs_te(np.asarray(L.get("wave_power", np.zeros(grid.n)), float))
     hs = np.minimum(hs, HS_DEPTH * h)
     te = np.maximum(te, 1.0)
-    k0h = (2 * np.pi / te) ** 2 / coast.GRAV * h
+    k0h = (2 * np.pi / te) ** 2 / GRAV * h
     kh = k0h / np.sqrt(np.tanh(k0h))
     u_wave = np.pi * hs / (te * np.sinh(np.minimum(kh, 50.0)))
     tau = RHO_SEA * (CD_TIDE * u_tide ** 2 + 0.5 * FW_WAVE * u_wave ** 2)

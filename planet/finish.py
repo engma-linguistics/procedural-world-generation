@@ -47,6 +47,7 @@ from . import store as S
 from . import timeline as T
 from . import world as W
 from .grid import build_grid
+from .constants import T_REF_C
 from .geo import is_land
 from . import surface as SF
 from . import vegetation
@@ -137,7 +138,7 @@ def frame_state(tz_dir: Path, i: int) -> dict:
         tree = T.frame(run, S.read_layers(tz_dir, run["layers"], ("tree_cover",)), "tree_cover", i)
         veg = {"nu0": vegetation.start_from_tree_cover(np.asarray(tree, float) / 100.0), "held": True,
                **({"pco2": s["pco2"]} if "pco2" in s else {})}
-    return {"veg": veg, "elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
+    return {"veg": veg, "elevation": bed, "ice": ice, "dT": s["global_temp_c"] - T_REF_C, "sea_level": s["sea_level_m"],
             "tilt": s["obliquity"], "below_sea_cells": int(((ice > 0) & (bed <= 0)).sum()), "stats": s,
             "t": run["frames"][i]["t"], "glacial": glacial_imprint(tz_dir, i)}
 
@@ -269,7 +270,7 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
     ice = grounded(state["elevation"], state["ice"])  # (the true bed: land by its ice where that is below the sea)
     land = is_land(state["elevation"], ice)
     meta = {"method": "earth", "seed": 0, "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
-            "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),
+            "t_myr": 0.0, **prov, "global_temp_c": round(T_REF_C + state["dT"], 1),
             "sea_level_m": round(state["sea_level"], 1)}
     gl = state.get("glacial") or {}
     return W.finish(grid, state["elevation"], {"ice": ice, **earth_rock(grid, state["elevation"], ice),

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..constants import T_REF_C
 from .. import climate, hydrology, landform, surface
 from . import volcanism
 from .events import latlon
@@ -184,7 +185,7 @@ def stats(sim) -> dict:
         "landmasses": int((sizes >= 3).sum()),
         "largest_landmass_pct": round(100 * sizes.max() / g.n, 1),
         "max_elev_m": int(sim.bed().max()),
-        "global_temp_c": round(14.5 + sim.dT, 1),
+        "global_temp_c": round(T_REF_C + sim.dT, 1),
         "co2": round(float(sim.co2), 3),
         "pco2": round(climate.pco2(sim.co2), 1),  # ppm (PW-646)
         "sea_level_m": round(sim.sea_level, 1),

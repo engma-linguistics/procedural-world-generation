@@ -41,6 +41,7 @@ from numba import njit, prange
 
 from . import kernels
 from . import ocean as ocean_mod
+from .constants import GRAV, RHO_C_SEA
 from .geo import R_KM, arc, arc_km, cell_area_km2, is_land
 from .grid import Grid
 
@@ -1384,7 +1385,7 @@ def jet_stream(grid: Grid, t_sl: np.ndarray, tune: dict | None = None) -> tuple[
     gT = dzm[:, None] * G["north"] + tune["jet_anom"] * gradient(grid, anom)  # C per km
     a = np.abs(lat)
     f = 2 * OMEGA * np.maximum(np.sin(np.radians(a)), np.sin(np.radians(tune["jet_f_lat"])))
-    k = 9.81 * tune["jet_h"] / (f * 250.0) / 1000.0 * np.sign(lat)  # m/s per (C per km)
+    k = GRAV * tune["jet_h"] / (f * 250.0) / 1000.0 * np.sign(lat)  # m/s per (C per km)
     k *= np.clip(a / tune["jet_f_lat"], 0, 1) ** 2
     jet = k[:, None] * np.cross(grid.centers, gT)
     return jet, baro
@@ -2540,7 +2541,6 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     return t_warm, t_cold, temp, open_w
 
 
-RHO_C_SEA = 4.1e6  # J/m3 per C: sea water's heat capacity
 RHO_C_AIR = 1.2 * 1005.0  # J/m3 per C: air's, near the ground
 YEAR_S = 365.25 * 86400.0
 SEA_ALBEDO = 0.06

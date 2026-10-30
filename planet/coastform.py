@@ -55,6 +55,7 @@ import numpy as np
 
 from . import coast
 from . import coastal as CL
+from .constants import SEC_PER_YR
 from .geo import R_KM, cell_area_km2, latlon, ramp, world_land
 
 # barrier islands (Hayes 1979; Davis & Fitzgerald 2004)
@@ -170,7 +171,7 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     mouths, kgs = CL.river_loads(grid, L)
     load = np.zeros(n)
     load[mouths] = kgs
-    q = np.asarray(L["flow"], float) * (cell_area_km2(n)) * 1e6 / coast.SEC_PER_YR  # m^3/s
+    q = np.asarray(L["flow"], float) * (cell_area_km2(n)) * 1e6 / SEC_PER_YR  # m^3/s
     delta = (load >= DELTA_KGS) & (q >= DELTA_Q)
     load_near = np.maximum(load, _nbr_max(grid, load, land))
     sand = np.maximum(sand, ramp(load_near, 10.0, 100.0))

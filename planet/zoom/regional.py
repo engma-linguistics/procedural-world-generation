@@ -172,12 +172,12 @@ from . import stage_terrain as STG_T
 from . import stage_rivers as STG_R
 from . import stage_landscape as STG_L
 from . import stage_finish as STG_F
+from ..constants import GRAV, RHO_ICE, SEC_PER_YR
 from ..geo import R_KM, arc, arc_km, latlon, smoothstep, xyz
 from ..images import write_png
 from ..climate import LAPSE
 from ..tectonics.isostasy import land_view
 
-SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
 # How rugged the sub-cell detail is, by basement rock (surface.ROCKS ids).
@@ -445,7 +445,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         fixed |= (np.abs(r_ - a) <= 3) & (np.abs(c_ - b) <= 3) & (q[i] >= WF_DESIGNED_SHARE * q[int(p)])
     ok = fixed | (h / np.maximum(d, 1e-9) >= WF_CONTRAST * g_ctx)
     i, h, d, jj = i[ok], h[ok], d[ok], jj[ok]
-    gw = 1000 * 9.81 * q[i] * h / 1e9
+    gw = 1000 * GRAV * q[i] * h / 1e9
     out, sep = [], max(3, int(round(sep_km / res)))
     taken = np.zeros((ny, nx), bool)  # (spacing by a mask: the full list can be long)
     for k in np.argsort(-gw):
@@ -1056,7 +1056,7 @@ GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EX
 # terminus on land, L = 2 tau / (rho g) with a yield stress tau ~100 kPa
 # (H ~150 m 1 km back, ~330 m 5 km back): a tongue thins to its end instead of
 # stopping in an ice cliff (PW-350; calving fronts in water keep their height)
-GL_NYE_M = 2 * 1.0e5 / (917.0 * 9.81)  # m (~22)
+GL_NYE_M = 2 * 1.0e5 / (RHO_ICE * GRAV)  # m (~22)
 GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 
 

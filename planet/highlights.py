@@ -132,6 +132,7 @@ from . import coast, kernels
 from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
+from .constants import GRAV, SEC_PER_YR
 from .geo import R_KM, arc, arc_km, cell_area_km2, world_land
 from .grid import Grid
 from .landform import LAVA_PLATEAU
@@ -142,7 +143,6 @@ from .vegetation import TYPES as VEG_TYPES
 
 ZOOM_SIZES = (250, 500, 1000, 2000, 4000)  # the viewer's choices
 MAX_ZOOM = 2000  # suggested zooms stay detailed (4 km pixels); the viewer can go wider
-SEC_PER_YR = 3.156e7
 
 # Fixed priority per kind: how eye-catching a zoom there usually is.
 PRIORITY = {
@@ -588,7 +588,7 @@ def galloway_note(ctx: _Ctx, m: int, q: float) -> dict:
     w = gw["weights"]
     top = max(w, key=w.get)
     note = (f" Waves {gw['wave_power_kw_m']:.0f} kW/m, tides {gw['tide_range_m']:.1f} m, river sediment "
-            f"{gw['sediment_river_kgs'] * coast.SEC_PER_YR / 1e9:.0f} Mt/yr: {gw['type']} "
+            f"{gw['sediment_river_kgs'] * SEC_PER_YR / 1e9:.0f} Mt/yr: {gw['type']} "
             f"(river {100 * w['river']:.0f}%, wave {100 * w['wave']:.0f}%, tide {100 * w['tide']:.0f}%)"
             + (f", so {GALLOWAY_LOOK[top]}." if w[top] >= coast.RIVER_DOMINANT else "."))
     return {"delta_type": gw["type"], "galloway": w, "wave_power_kw_m": gw["wave_power_kw_m"],
@@ -1464,7 +1464,7 @@ def _link_km(ctx: _Ctx, i, j) -> np.ndarray:
 
 def _gw(q: float, h: float) -> float:
     """Power of falling water, GW (rho g Q H)."""
-    return 1000 * 9.81 * q * h / 1e9
+    return 1000 * GRAV * q * h / 1e9
 
 
 WF_MIN_Q, WF_MIN_DROP = 300.0, 300.0  # m^3/s, m: a big river, a big drop (over one or two ~110 km links)

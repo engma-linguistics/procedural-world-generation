@@ -28,7 +28,8 @@ import numpy as np
 from numba import njit
 
 from . import kernels
-from .geo import is_land
+from .constants import SEC_PER_YR
+from .geo import R_KM, is_land
 from .grid import Grid
 
 
@@ -107,7 +108,7 @@ VALLEY_MYR = 20.0
 
 def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
     """m^3/s from flow units (cells x m/yr of runoff)."""
-    return flow * (4 * np.pi * 6.371e6**2 / grid.n) / 3.156e7
+    return flow * (4 * np.pi * (R_KM * 1000) ** 2 / grid.n) / SEC_PER_YR
 
 
 def _bed(grid, ground, min_depth, min_slope):
