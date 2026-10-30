@@ -1,10 +1,14 @@
 # Claims ledger: Dragons and their food (index.html)
 
 Round 2, 2026-10-29. One row per cited claim; the id matches an `<!-- Cn -->` comment beside the sentence in `sections/*.html`
-(and so in `index.html`). Claims without a comment tag but with a citation in a table cell (Section 2's Table 1, Section 7's
-Table 7) are listed under "Table citations" below. PDFs: `docs/references/megafauna/` (gitignored; read in the main checkout).
+(and so in `index.html`). Claims without a comment tag but with a citation in a table cell (Section 3's Table 1, Section 9.2's
+Table 9) are listed under "Table citations" below. PDFs: `docs/references/megafauna/` (gitignored; read in the main checkout).
 Page numbers are the journal's printed page numbers, checked against the PDF page. Farlow 1993 is a scan with no text layer and
 was read as page images; every Farlow quote below was read on the image of its page in round 2.
+
+**Section numbers in the claim rows and table-citation rows are the pre-restructure draft's** (see `changes-r2.md`): add one to
+Sections 1-6 (results 4.x are now 5.x); old Section 7 is now 9.2, old Section 9 is 9.1, old Table 7 is Table 9. The run-derived
+map below uses the published numbers.
 
 Model code: main at b36c9581; the sweep ran from snapshot 8c7ce305 (main + the measuring script). `numbers.json` is written by
 `dragon_numbers.py` from the sweep in `/home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r2/`.
@@ -82,12 +86,12 @@ All are `{{ … }}` expressions in `sections/*.html` over `numbers.json`; the ma
 | on the page | numbers.json |
 |---|---|
 | Table 2, Figure 2 | `on.eras.{25,10,0}.{class}.per_1000km2`, `.land_share`, `.per_1000km2_runs_min/max`; `off.eras.0.*`; `paired.0.{class}.{median,min,max}` |
-| Section 3 area divergence | `paired.0.{class}.area_on_over_off_{min,max}` |
+| Section 4 area divergence | `paired.0.{class}.area_on_over_off_{min,max}` |
 | Table 3 | `channels_7000.0.{class}.{on,noper,off,noper_peoples_share}` |
-| Figure 3, Section 4.2 | `on.eras.{25,0}.{class}.shares` (`guild` = smaller predators, `food` = dragons' share, `dragons_need` = eaten) |
-| Section 4.3, Table 4, Figure 4 points | `cells.on.0.none_now`, `cells.on.0.rich_poor`, `cells.on.0.binned` |
-| Section 4.4 lines | `literature.*` |
-| Section 4.5, Figure 5 | `steps.{on,off}.{30,300}_summary`, `steps.on.peak`, `step30_eras`, `series` |
+| Figure 3, Section 5.2 | `on.eras.{25,0}.{class}.shares` (`guild` = smaller predators, `food` = dragons' share, `dragons_need` = eaten) |
+| Section 5.3, Table 4, Figure 4 points | `cells.on.0.none_now`, `cells.on.0.rich_poor`, `cells.on.0.binned` |
+| Section 5.4 lines | `literature.*` |
+| Section 5.5, Figure 5 | `steps.{on,off}.{30,300}_summary`, `steps.on.peak`, `step30_eras`, `series` |
 | Tables 5 and 6 | `cells.{on,noper,off}.0.biome_situation` (best guess: `build_page.gpv`) |
 | Tables 7, 8 | `sword_coast.counts`, `sword_coast.formula`, `sword_coast.largest_kind_share`; `charts/boxes.json` |
 | Table 1, Figure 1 | `sensitivity.rows`, `sensitivity.combined`, `sensitivity.coe_pb` |

@@ -25,9 +25,9 @@ to Sections 1-6 (now 2-7; results 4.x are now 5.x); old Section 7 (what the mode
 | point | what was done |
 |---|---|
 | peer S2 ("others" drawn as nobody's) | **fixed** in `charts.py` and `dragon_numbers.py` (class 1 = others' country); map legend, boxes and every table carry it. Box land = land fraction × box area on the sphere. |
-| peer S1 (rich empty land: habitat, not pressure) | **fixed**: Section 4.3 measures pressure, occupancy and suitability over all runs; round 1's pressure explanation is withdrawn in the text; `draft-dragon-habitat-coverage-rich-land.md` replaces `draft-rich-empty-land-holds-few-dragons.md`; Section 7 item 6. |
+| peer S1 (rich empty land: habitat, not pressure) | **fixed**: Section 4.3 measures pressure, occupancy and suitability over all runs; round 1's pressure explanation is withdrawn in the text. On the full sweep the habitat gap is mostly on poor, cold empty land (28% occupied; rich empty land 76%), so the text now says empty land is limited by poverty first and habitat second (33% of nobody's land occupied, 31% of its dragon food uneaten; wild forest 5.8%, grassland 25% occupied); `draft-dragon-habitat-coverage-rich-land.md` replaces `draft-rich-empty-land-holds-few-dragons.md`; Section 7 item 6. |
 | peer M2 (127:1 vs the band drawn at 1.65 t) | **fixed**: both ratios given everywhere (96:1 at eco mass, 127:1 all ages); Figure 4's caption says the model sits just outside the band at 1.65 t. Abstract no longer offers the band as support. |
-| peer M3 (30 kyr jump, 300 kyr drop) | **fixed**: both steps measured in every run and both arms (Section 4.5, `steps`); eras 31 and 29 kyr added to the probe. The 30 kyr step is located on the empty land's food (×3 in both arms), which the pressure makes dominant; peer's "a pressure effect" is half right. Cause beyond that deferred (`draft-dragon-count-step-at-recent-pass.md`, updated). |
+| peer M3 (30 kyr jump, 300 kyr drop) | **fixed**: both steps measured in every run and both arms (Section 4.5, `steps`); eras 31 and 29 kyr added to the probe. The 30 kyr step is located on the empty land's food (×2.0 in both arms), which the pressure makes dominant; peer's "a pressure effect" is half right. The 300 kyr step, on the full sweep, is ×1.2 with the pressure off (median; ×0.37 to ×2.6 by run): round 1's "the deep past is overstated" is withdrawn; the flat rule is about right on the median and off by up to 2.7× per world (`draft-deep-epoch-dragon-budget.md`, rewritten). Cause beyond that deferred (`draft-dragon-count-step-at-recent-pass.md`, updated). |
 | peer M4 ("food alone" two meanings) | **fixed**: "pressure off" (the arm) and "food-fed density" (per cell) defined once in Section 3; the phrase "food alone" is gone. |
 | peer M6 (order of eating; uneaten share; small predators unpressed) | **fixed** as Section 7 item 12; draft `draft-food-budget-uneaten-share-and-unpressed-small-predators.md`. |
 | peer M7 (young dragons eat in the apex class) | **fixed**: Section 1 step 5 and Section 7 item 8 (factor computed from the stage food shares); draft `draft-guild-weighting-exponent-and-young-dragons.md`. |
@@ -114,6 +114,17 @@ bounds, Farlow p. 176), and lands at ×0.96.
 | 2 game-present table | **fixed**: Section 5, Tables 5-6; method and the judgement stated; marked an extrapolation. |
 | 3 stance; examples | **fixed**: Section 7 (twelve changes) and Section 8; every example named in the note is on the page (whole-plant NPP, 2.7 t label, 85%, flat 60% overkill, reversed Farlow). |
 | 4 Woodroffe, Cardillo "to fetch" | **fixed**: `docs/references/wishlist.md`; listed on the page as "to fetch, not cited". |
+
+## Final sweep vs partial numbers
+
+The draft text was written on a partial sweep (the runs then finished). On the full 54 the density table matches round 1 to two figures
+(same worlds, rolls and dragon code: nobody's 1.30, others' 0.030, foragers' 0.013, herders' 0.155, farmers' 0.015, all land 0.34
+per 1,000 km2 now; 63,000 dragons per run), so round 2's changes are in the method, the pairing and the reading, not the densities.
+Wording that the partial sweep had got wrong and was rewritten on the final numbers: Section 5.3 (rich empty land is mostly
+occupied; the gap is on poor land), Section 5.5 and Section 8 (the 300 kyr step), Section 9.2 items 6 and 11, the plain-words game
+sentence (now computed from Table 5: wild wetland 260, grassland 33, desert 21 per 10,000 km2; farmed at most 7), the abstract's
+limiting factor, and Table 4's commentary (occupancy does not fall from middling to rich land in every class). The inbox drafts carry
+the final numbers.
 
 ## Owner instruction 10-29: a standalone paper
 

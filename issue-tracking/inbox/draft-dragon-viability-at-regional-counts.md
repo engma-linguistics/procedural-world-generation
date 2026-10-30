@@ -18,7 +18,7 @@ refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-densit
 kind only a fraction of that. Biologists put the smallest population that lasts at thousands. The model keeps such pockets alive by
 treating pockets of a kind within 7,500 km as one population; nobody has checked whether that test is strict enough at these numbers.
 
-Evidence (review round 2, sections 6, 7 item 7):
+Evidence (review round 2, sections 7, 9.2 item 7):
 - Marshall et al. 2021: "the loose consensus that at least thousands of individuals are needed for long-term persistence" (p. 285);
 - Burness et al. 2001: "frequent estimates are a few thousand to at least 10,000 individuals" (p. 14521);
 - the model: `metapop_km` = SCATTER_LINKS x LINK_KM = 7,500 km; viable number lowered for long-lived kinds (History.line_mvp).

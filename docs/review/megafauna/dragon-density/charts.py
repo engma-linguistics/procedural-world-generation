@@ -65,7 +65,12 @@ def density(t):
                 ax.plot(runs, [yy + dy] * len(runs), "|", color=col, ms=7, alpha=0.55, mew=1.2)
                 v = E[c]["per_1000km2"]
                 ax.plot([v], [yy + dy], "o", ms=8.5, color=col, mec=T["surface"], mew=2, label=lab if (c == ROWS[0] and ax is axs[0]) else None, zorder=3)
-                ax.text(v, yy + dy + (0.2 if dy > 0 else -0.2), f"{v:.2g}", ha="center", va="bottom" if dy > 0 else "top", fontsize=8, color=T["ink"])
+                other = N["off"]["eras"][e][c]["per_1000km2"]
+                if arm == "on" and other > 0 and 1 / 3 < v / other < 3:
+                    # the two dots sit together (nobody's country): label the model's to the left, clear of the next row's label
+                    ax.text(min(runs + [v]) / 1.6, yy + dy, f"{v:.2g}", ha="right", va="center", fontsize=8, color=T["ink"])
+                else:
+                    ax.text(v, yy + dy + (0.2 if dy > 0 else -0.2), f"{v:.2g}", ha="center", va="bottom" if dy > 0 else "top", fontsize=8, color=T["ink"])
         ax.set_xscale("log")
         ax.set_xlim(3e-5, 200)
         ax.set_title(title, fontsize=11)
