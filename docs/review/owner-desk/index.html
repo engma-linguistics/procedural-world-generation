@@ -93,9 +93,14 @@ it can't be the whole fix.</li>
 </ul>
 <p>The proper fix is to let a sheet's height count only where the sheet survives the cycle's warm phase. That touches the ice-age
 physics we parked for after v1 (PW-470), and it is a few rounds of work.</p>
-<div class="rec"><b>Recommend:</b> wait about 6 hours for the 72-world test, which is the first measurement of today's code (two ice
-fixes merged this morning). If frozen-over worlds are still about 10% or more, do the fix as v1 work; it is the thing a player would see
-as "this world is broken". If the test shows only a few, park it for v2.</div>
+<div class="note"><b>New, half the test in:</b> today's code freezes <b>4 of 17 worlds over (about 24%)</b>. That's more than
+the older build. The lane also found and fixed a plain bug: at the start of every run's final stretch, CO&#8322; crashed for one
+step, so every world's "present" came out colder than it should. That bug had been quietly <i>passing</i> three too-warm worlds
+(their present came out 3.5&ndash;5.3&deg;C above the allowed range, hidden by the crash). With the fix the honest pass count is 8 of 17,
+not 11. Neither number is good, but 8 is the true one.</div>
+<div class="rec"><b>Recommend:</b> do the sheet fix as v1 work. At about a quarter of worlds frozen over, players will see it. I'll
+merge the CO&#8322; bug fix regardless: it's a correctness fix, even though it lowers the pass count. The too-warm worlds are a second
+physics item to queue after the sheets.</div>
 <div class="answer">PW-470 · lane 67 draft "run sheets see warm orbits" · test running now</div></div>
 
 <div class="card"><div class="id">D11 · CLIMATE</div>
