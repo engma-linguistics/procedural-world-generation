@@ -14,7 +14,7 @@ VIEWER = Path(__file__).resolve().parent.parent / "viewer"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-@pytest.mark.parametrize("page", ["index.html", "zoom.html"])
+@pytest.mark.parametrize("page", ["index.html", "zoom.html", "lineages.html"])
 def test_viewer_scripts_parse(page, tmp_path):
     html = (VIEWER / page).read_text()
     scripts = re.findall(r'<script( type="module")?>(.*?)</script>', html, re.S)  # (not the importmap)
@@ -38,12 +38,14 @@ def test_viewer_modules_parse(script, tmp_path):
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-def test_viewer_classic_scripts_parse(tmp_path):
-    """The classic scripts both pages load with <script src> (pickfilter.js: the pickers' filter box, PW-407)."""
-    f = tmp_path / "pickfilter.cjs"
-    f.write_text((VIEWER / "pickfilter.js").read_text())
+@pytest.mark.parametrize("script", ["pickfilter.js", "techtab.js"])
+def test_viewer_classic_scripts_parse(script, tmp_path):
+    """The classic scripts the pages load with <script src> (pickfilter.js: the pickers' filter box, PW-407; techtab.js:
+    the peoples workbench's Technology tab, PW-913)."""
+    f = tmp_path / (Path(script).stem + ".cjs")
+    f.write_text((VIEWER / script).read_text())
     r = subprocess.run(["node", "--check", str(f)], capture_output=True, text=True)
-    assert r.returncode == 0, f"pickfilter.js:\n{r.stderr}"
+    assert r.returncode == 0, f"{script}:\n{r.stderr}"
 
 
 _GORGE_JS = r"""
