@@ -641,6 +641,16 @@ document.querySelector('main').addEventListener('click', (e) => {
 });
 
 // ---- tab 2: the peoples table ---------------------------------------------------------------------
+// a people's places now from the last run's settlement ledger (meta.settlements.by_people, PW-1103)
+function placesLine(id) {
+  const b = result?.settlements?.by_people?.[id];
+  if (!b) return '';
+  const n = (v, one, many) => (v ? `${num(v)} ${v === 1 ? one : many}` : '');
+  const held = [n(b.cities_now, 'city', 'cities'), n(b.towns_now, 'town', 'towns'), n(b.villages_now, 'village', 'villages'), n(b.mines_now, 'mine', 'mines')].filter(Boolean).join(', ');
+  const more = [b.own_places_now ? `${num(b.own_places_now)} among another people` : '', b.taken_now ? `${num(b.taken_now)} taken from others` : '',
+    b.ruins ? `${num(b.ruins)} ruins` : ''].filter(Boolean).join('; ');
+  return esc([held || 'none held', more].filter(Boolean).join('; ')) + (b.largest_now ? `<br>largest ~${num(b.largest_now)}` : '');
+}
 let peopleSort = '';
 const openGroups = new Set();  // peoples whose groups are shown in the Peoples tab
 function drawPeoples() {
@@ -669,7 +679,8 @@ function drawPeoples() {
     <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
     ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
-    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th></tr>`;
+    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th>
+    <th title="Its places now, from the last run's settlement ledger (settlements.py, PW-1011, PW-1103): cities, towns, villages and mines it holds; its places of its own as a second people among another (PW-1105); the places it holds that another people founded; the ruins of places it founded">places now</th></tr>`;
   for (const { r, d, dm, p, group } of rows) {
     const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [], gs = group ? [] : groupsOf(r.id);
     const whole = result?.present?.peoples?.[r.id];
@@ -688,7 +699,7 @@ function drawPeoples() {
       <td><input type="number" class="s" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}"></td>
       <td>${val(r, 'explore', 0.05, 's')}</td><td>${val(r, 'sea_share', 0.05, 's')}</td><td>${val(r, 'insularity', 0.05, 's')}</td>
       <td class="n">${p?.population != null ? num(p.population) : ''}${whole ? `<br><span class="muted" title="with its groups">all ${num(whole.population)}</span>` : ''}</td>
-      <td class="n">${p ? p.area_mkm2 : ''}${whole ? `<br><span class="muted">all ${whole.area_mkm2}</span>` : ''}</td><td class="n">${p ? p.patches : ''}</td></tr>`;
+      <td class="n">${p ? p.area_mkm2 : ''}${whole ? `<br><span class="muted">all ${whole.area_mkm2}</span>` : ''}</td><td class="n">${p ? p.patches : ''}</td><td class="muted" style="white-space:nowrap">${group ? '' : placesLine(r.id)}</td></tr>`;
   }
   $('tab-peoples').innerHTML = h + '</table>';
 }

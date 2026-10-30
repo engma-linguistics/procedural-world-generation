@@ -54,6 +54,7 @@ import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
 import { paletteReport } from './palettes.js';
 import { RAMP_CHANGES } from './layers.js';
+import { fadeSettlements } from './settlements.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 // ------------------------------------------------------------ boot
 // (after every module has run its own top-level code: the URL's options override their defaults)
@@ -194,6 +195,7 @@ renderer.setAnimationLoop((now) => {
   if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
   controls.update();
   fitClip();
+  fadeSettlements();  // (the villages fade in as the camera closes in, PW-1106)
   if (DIAG.offset && S.mesh) for (const m of S.mesh.userData.mats) if (!m.polygonOffset) Object.assign(m, { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 4 });
   DIAG.n.frames++;
   if (frameChanged() || DIAG.always) { renderer.render(scene, camera); DIAG.n.renders++; }

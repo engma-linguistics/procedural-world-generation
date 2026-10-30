@@ -13,16 +13,18 @@ from planet.lineages import settlements as ST
 LEVEL = 3
 
 
-def _run(tmp_path, dens, farm, elev, rain=None, lead=None, tech=None, overlay=None, lines=None):
+def _run(tmp_path, dens, farm, elev, rain=None, lead=None, tech=None, overlay=None, lines=None, second=None, second_share=0.0):
     """A peoples run directory with only what settlements.derive reads. dens, farm, elev: (frames, cells), the frames from
     12 kyr ago to the present every 1 kyr; lead: the people with most heads (index; 255 none)."""
     g = shared_grid(LEVEL)
     F, n = dens.shape
     ago = np.linspace(12, 0, F)
     lead = np.zeros((F, n), np.uint8) if lead is None else lead
+    second = np.full((F, n), 255, np.uint8) if second is None else second
+    lead_share = np.where(lead < 255, np.where(second < 255, 100 - second_share, 100), 0)
     arrays = {"elevation": elev, "ice": np.zeros((F, n)), "precipitation": np.full((F, n), 800.0) if rain is None else rain,
-              "mix_lead": lead, "mix_lead_share": np.where(lead < 255, 100, 0), "mix_second": np.full((F, n), 255),
-              "mix_second_share": np.zeros((F, n)), "mix_other_share": np.zeros((F, n)),
+              "mix_lead": lead, "mix_lead_share": lead_share, "mix_second": second,
+              "mix_second_share": np.where(second < 255, second_share, 0.0) * np.ones((F, n)), "mix_other_share": np.zeros((F, n)),
               "peoples_overlay": np.full((F, n), 255) if overlay is None else overlay}
     specs = {**O.TERRAIN, **O.PEOPLE_LAYERS}
     enc = {k: (np.stack([S.encode(v[j], specs[k]) for j in range(F)]) if k in O.TERRAIN else v) for k, v in arrays.items()}
@@ -97,11 +99,11 @@ def test_a_change_of_hands_is_recorded_and_a_people_without_villages_drives_out(
     lead = np.zeros((F, g.n), np.uint8)
     lead[6:, 0] = 1  # (people b takes cell 0 six kyr ago; b keeps no sites)
     lead[6:, 1] = 2  # (people c takes cell 1 and keeps it as a town)
-    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "b", "group_of": None}, {"index": 2, "id": "c", "group_of": None}]
+    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "b", "name": "bees (from the hive)", "group_of": None}, {"index": 2, "id": "c", "group_of": None}]
     tech = {"a": {"villages": [11.0, "x"], "towns": [6.0, "x"]}, "b": {}, "c": {"villages": [11.0, "x"]}}
     out, _ = _run(tmp_path, _flat(g, F, 40), _flat(g, F, 1.0), _flat(g, F, 200), lead=lead, lines=lines, tech=tech)
     sites = {s["cell"]: s for s in ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"] if s["ruin_of"] is None}
-    assert sites[0]["why"] == "driven out by the b"
+    assert sites[0]["why"] == "driven out by the bees"  # (the plural name, without its note: PW-1106)
     assert sites[1]["abandoned_kyr"] is None and sites[1]["holder"] == "c" and [h for _, h in sites[1]["holders"]] == ["a", "c"]
 
 
@@ -122,3 +124,59 @@ def test_write_adds_the_ledger_and_meta(tmp_path):
     sm = ST.write(out, report=False)
     assert (out / "settlements.json").exists()
     assert json.loads((out / "run.json").read_text())["meta"]["settlements"]["founded"] == sm["founded"] > 0
+
+
+def _two_peoples(tmp_path, share, dens=40):
+    g = shared_grid(LEVEL)
+    F = 13
+    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "d", "name": "dwarves", "group_of": None, "traits": ["miner"]}]
+    tech = {"a": {"villages": [11.0, "x"], "towns": [6.0, "x"]}, "d": {"villages": [11.0, "x"], "mines": [30.0, "x"]}}
+    out, _ = _run(tmp_path, _flat(g, F, dens), _flat(g, F, 0.5), _flat(g, F, 200), lines=lines, tech=tech,
+                  second=np.full((F, g.n), 1, np.uint8), second_share=share)
+    return out, g
+
+
+def test_a_second_people_has_its_own_place_amid_another(tmp_path):
+    out, g = _two_peoples(tmp_path, 20.0)
+    sites = ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"]
+    own = [s for s in sites if s["kind"] == "minority" and s["abandoned_kyr"] is None]
+    chief = {s["cell"] for s in sites if s["kind"] == "chief" and s["abandoned_kyr"] is None}
+    assert len(own) > g.n // 2 and all(s["holder"] == "d" and s["who"] == {"d": 100} for s in own)
+    assert {s["cell"] for s in own} & chief  # (beside the humans' place in the same cell)
+    assert all(s["tier_now"] in ("village", "town") for s in own)
+
+
+def test_a_small_minority_has_no_place_of_its_own(tmp_path):
+    out, _ = _two_peoples(tmp_path, 2.0)
+    assert not [s for s in ST.derive(out)["doc"]["sites"] if s["kind"] == "minority"]
+
+
+def test_mines_on_deposits_for_a_people_that_knows_mines(tmp_path, monkeypatch):
+    out, g = _two_peoples(tmp_path, 20.0, dens=400)
+    dep = np.zeros((2, g.n), bool)
+    dep[1, : g.n // 4] = True  # (rock salt in a quarter of the cells: 'mines' is enough; ore would want 'copper')
+    dep[0, g.n // 4: g.n // 2] = True
+    monkeypatch.setattr(ST, "_deposits", lambda world, n: dep)
+    sites = ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"]
+    mines = [s for s in sites if s["kind"] == "mine"]
+    assert mines and all(s["cell"] < g.n // 4 and s["holder"] == "d" and s["tier_now"] == "mine" for s in mines)
+
+
+def test_the_brief_reads_the_ledger(tmp_path):
+    from types import SimpleNamespace
+
+    from planet.lineages import brief as B
+    out, g = _two_peoples(tmp_path, 20.0)
+    ST.write(out, report=False)
+    meta = json.loads((out / "run.json").read_text())["meta"]
+    ctx = SimpleNamespace(meta=meta, dir=out, lines=[{**l, "name": l.get("name", l["id"])} for l in meta["lineages"]],
+                          idx={l["id"]: l["index"] for l in meta["lineages"]})
+    st = B._settlements(ctx, np.ones(g.n, bool), 0.0, "d")
+    alive = [x for x in json.loads((out / "settlements.json").read_text())["sites"] if x["abandoned_kyr"] is None]
+    assert sum(st["counts"].values()) == len(alive)
+    assert st["own_places_of_second_peoples"]["d"] == sum(x["kind"] == "minority" for x in alive)
+    assert st["people"]["own_places_among_others"] == st["own_places_of_second_peoples"]["d"]
+    md = "\n".join(B._settlements_md(st))
+    assert "## Towns and cities" in md and "The dwarves world-wide" in md
+    past = B._settlements(ctx, np.ones(g.n, bool), 13.0, None)  # (before any place was founded)
+    assert past["counts"] == {} and past["largest"] == []
