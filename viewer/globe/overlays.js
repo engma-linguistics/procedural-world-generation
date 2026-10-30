@@ -9,6 +9,7 @@ import { projOverlaysChanged, windKey } from './map2d.js';
 import { buildHighlightMarks } from './highlights.js';
 import { buildZoomOutlines } from './tabs.js';
 import { HU_LAYERS } from './layers.js';
+import { settlementOverlays } from './settlements.js';
 // ------------------------------------------------------------ clouds
 // The cloud overlay: an equirectangular texture whose patches cover each
 // place's cloud share (cloud_jul / cloud_jan, or their mean) of the sky.
@@ -177,6 +178,8 @@ export function buildOverlays() {
   }
   if (S.V.humanUse?.river_nav) Object.assign(S.overlays, huOverlays(globe, wraps));
   if ($('peopleTracks')?.checked && S.V.peopleTracks?.length) Object.assign(S.overlays, peopleOverlays(globe, wraps));
+  if ($('settlements')?.checked && S.V.settlements?.length)  // (villages, towns, cities and ruins at this moment, PW-1011; a picked people's only)
+    Object.assign(S.overlays, settlementOverlays(globe, wraps, ribbonObj, state.people != null ? S.V.run.meta.lineages[state.people]?.id : null));
   if (state.layer === 'technology' && techTree() && S.V.data.peoples) Object.assign(S.overlays, techOverlays(globe, wraps));
   if ($('hotspots').checked && S.V.hotspots) {
     const pts = [], globe_ = globe;

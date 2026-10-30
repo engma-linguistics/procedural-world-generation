@@ -381,7 +381,7 @@
       <span class="key" id="tt-mkey"></span>`;
     main.innerHTML = '<div class="tt-split" style="grid-template-columns:minmax(0,1fr) 360px"><div class="tt-map" id="tt-mapbox"></div><div class="tt-side" id="tt-side"></div></div>';
     $('tt-colour').value = st.colour;
-    const src = `index.html?run=${encodeURIComponent(D.id)}&layer=technology&tech=${encodeURIComponent(st.tech)}&techcol=${st.colour}&embed=tech&peopleTracks=0&events=0&t=0`;
+    const src = `index.html?run=${encodeURIComponent(D.id)}&layer=technology&tech=${encodeURIComponent(st.tech)}&techcol=${st.colour}&embed=tech&peopleTracks=0&settlements=0&events=0&t=0`;
     frame = document.createElement('iframe');
     frame.title = 'The technology on the globe';
     frame.src = src;

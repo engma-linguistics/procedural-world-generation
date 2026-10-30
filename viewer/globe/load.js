@@ -13,6 +13,7 @@ import { navSync } from './tabs.js';
 import { stop } from './playback.js';
 import { esc } from '../planets.js';
 import { applyPalette } from './palettes.js';
+import { loadSettlements } from './settlements.js';
 // ------------------------------------------------------------ latest wins (PW-1044)
 // Opening a run or world takes several awaits; picking another meanwhile must not let the slower one land last.
 let loadSeq = 0;
@@ -203,6 +204,7 @@ export async function loadRun(dir, wantT) {
   S.V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load
   await loadDemes();
+  await loadSettlements();  // (the settlement ledger, PW-1011)
   if (stale(tok)) return;
   await loadNeeded();
   if (stale(tok)) return;
