@@ -6,13 +6,16 @@ Opens http://127.0.0.1:PORT/viewer/?run=RUN_ID in Chrome (software GL; set CHROM
 the load fetched over the wire, then times, in the page, the interactions that make the peoples views feel
 slow: stepping and scrubbing frames, hovering, switching the colour layer, picking a people, playing for 3 s.
 Needs `planet serve --port PORT --no-open` already running (never the owner's port). The page's module
-scope is reached through a hook injected into the served index.html (nothing is written to viewer/).
+scope is reached through a hook injected into the served globe/main.js (nothing is written to viewer/): window.__pv
+holds every export of the globe modules (viewer/globe/) and the shared state's V. For a before/after, run each
+version's own server.
 """
 import json
 import re
 import os
 import sys
 import time
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -111,6 +114,8 @@ async () => {
 }
 """
 
+GLOBE = Path(__file__).resolve().parent.parent / "viewer" / "globe"
+
 
 def workbench(port, run):
     with sync_playwright() as p:
@@ -152,12 +157,15 @@ def main():
         cdp.on("Network.requestWillBeSent", lambda e: reqs.__setitem__(e["requestId"], e["request"]["url"]))
         pg.on("pageerror", lambda e: errs.append(str(e) + " | " + (e.stack or "")[:300].replace("\n", " ")))
 
-        def inject(route):
+        def inject(route):  # every export of every globe module, merged, plus the shared state's V
             r = route.fetch()
-            vf = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--viewer=")), None)  # --viewer=FILE: another index.html (the old one, for before/after)
-            body = (open(vf).read() if vf else r.text()).replace("window.planetViewer.diag = DIAG;", "window.planetViewer.diag = DIAG; window.__pv = { get V() { return V; }, state, setFrame, paint, cellColors, renderRunSummary, renderHover, refresh };")
+            mods = sorted(f.stem for f in GLOBE.glob("*.js") if f.name != "main.js")
+            head = "".join(f"import * as __{m} from './{m}.js';\n" for m in mods)
+            hook = (f"window.__pv = Object.assign({{}}, {', '.join('__' + m for m in mods)}, "
+                    "{ get V() { return __state.S.V; }, state: __state.state });")
+            body = head + r.text().replace("window.planetViewer.diag = DIAG;", "window.planetViewer.diag = DIAG; " + hook)
             route.fulfill(response=r, body=body)
-        pg.route(re.compile(r"/viewer/(index\.html)?(\?.*)?$"), inject)
+        pg.route(re.compile(r"/viewer/globe/main\.js$"), inject)
         t0 = time.time()
         pg.goto(f"{base}/viewer/?run={run}&layer=peoples")
         pg.wait_for_function("window.__pv && window.__pv.V && window.__pv.V.layers && !document.getElementById('tlabel').textContent.startsWith('loading')", timeout=120000)

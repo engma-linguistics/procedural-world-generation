@@ -14,7 +14,7 @@ VIEWER = Path(__file__).resolve().parent.parent / "viewer"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-@pytest.mark.parametrize("page", ["index.html", "zoom.html", "lineages.html"])
+@pytest.mark.parametrize("page", ["zoom.html", "lineages.html"])  # (index.html: its modules, test_viewer_globe.py)
 def test_viewer_scripts_parse(page, tmp_path):
     html = (VIEWER / page).read_text()
     scripts = re.findall(r'<script( type="module")?>(.*?)</script>', html, re.S)  # (not the importmap)
