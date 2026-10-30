@@ -1,4 +1,5 @@
 ---
+id: PW-1164
 title: "Owner call: the +3 C warm edge of the finish band, against Earth-like climate variance"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane80
 blocked_by: []
 relates: [PW-1161]
 refs: [docs/review/base-climate/finish-drift-l80/README.md, planet/highlights.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Numbers (lane 80, lane 75's K judge, L6, roll 0.0005), from a Gaussian at median
 - The finish window (10 Myr) can't rescue much: finish T is red (source autocorrelation 0.71 at 10 Myr), so the
   window holds only ~1 C of spread.
 - [ ] Owner: keep +3 C, or move the warm edge (e.g. +4 to +5 C)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-warm-finish-band-edge.md (found by lane80).

@@ -1,4 +1,5 @@
 ---
+id: PW-1163
 title: The weathering sink's reference counts potential plants' weathering but bare ground's erosion; fix it together with PW-1158
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane80
 blocked_by: []
 relates: [PW-1158, PW-1161, PW-980]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/finish-drift-l80/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -40,3 +43,6 @@ ground cover. Scale each cell's spin-up supply by `(1 + 0.6 wet (1 - veg_pot)) /
 the instantaneous ratio, which overstates the lasting step a little because relief re-grows (-0.27 at the step,
 -0.15 late), so measure the outcome rather than assume it.
 - [ ] Supply reference at potential cover, paired with PW-1158's source fix, on a screen; median end T within +-0.5 C of main
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-sink-supply-reference-learnt-bare.md (found by lane80).
