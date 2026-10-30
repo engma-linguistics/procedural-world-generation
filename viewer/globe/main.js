@@ -50,6 +50,7 @@ import { OVERLAY_IDS, reliefLabels } from './map2d.js';
 import { showTab } from './tabs.js';
 import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
+import { paletteReport } from './palettes.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 // ------------------------------------------------------------ boot
 // (after every module has run its own top-level code: the URL's options override their defaults)
@@ -73,6 +74,7 @@ if (startScreen) {
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
 // then frames drawn with the camera turning and nothing repainted
 window.planetViewer = {
+  paletteReport,  // (the peoples' colours on screen: neighbours alike, colours lost in the ocean; PW-1032)
   // random pointer positions: the globe's fast pick against three's full raycast (PW-679); {tested, hits, mismatches}
   pickCheck(count = 400) {
     const out = { tested: 0, hits: 0, mismatches: 0, undefinedPicks: 0, examples: [] };

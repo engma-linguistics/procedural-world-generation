@@ -11,6 +11,7 @@ import { renderZoomBox } from './zoom.js';
 import { navSync } from './tabs.js';
 import { stop } from './playback.js';
 import { esc } from '../planets.js';
+import { applyPalette } from './palettes.js';
 // ------------------------------------------------------------ latest wins (PW-1044)
 // Opening a run or world takes several awaits; picking another meanwhile must not let the slower one land last.
 let loadSeq = 0;
@@ -204,6 +205,7 @@ export async function loadRun(dir, wantT) {
   if (stale(tok)) return;
   await loadNeeded();
   if (stale(tok)) return;
+  applyPalette(S.V);  // (?palette=distinct|family: a preview of other peoples' colours, PW-1032)
   setFrame(f, false);
   buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();
   navSync(); loadOk();
