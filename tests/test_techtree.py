@@ -100,11 +100,30 @@ def test_sapiens_node_gates_all_but_bare_tools():  # PW-971, PW-978
         tt = TT.build(lines, None, None, seed=s, T=T)
         for lid in ("stem", "kid"):
             for tid, (ago, how, _) in tt["known"][lid].items():
-                if tid in ("knapping", "handaxes"):
+                if T["techs"][tid].get("bare"):
                     saw_bare_early |= ago > 1500.0
                 else:
                     assert ago <= 1500.0, (s, lid, tid, ago)  # (nothing else before the node)
     assert saw_bare_early
+
+
+def test_each_body_plan_has_its_own_bare_tools():  # PW-987 (owner 10-29)
+    """Before the node the bird stems use found and hooked tools, not knapped stone; the cats (hands from the node) and the
+    dragons (no hands) use none; a handed stem knaps; once modern the birds and cats have hands and may knap."""
+    lines = [line("mammalian", at=10000.0), line("avian", at=6000.0, sapient_kyr=2000.0),
+             line("feline", "split", at=4000.0, parents=["mammalian"], sapient_kyr=2000.0),
+             line("hominid", at=4000.0, sapient_kyr=1600.0), line("draconic", at=19500.0, sapient_kyr=5000.0)]
+    pre = {k: set() for k in ("avian", "feline", "hominid", "draconic")}
+    knap_after = 0
+    for s in range(6):
+        tt = TT.build(lines, None, None, seed=s, T=T)
+        for lid, node in (("avian", 2000.0), ("feline", 2000.0), ("hominid", 1600.0), ("draconic", 5000.0)):
+            pre[lid] |= {tid for tid, v in tt["known"][lid].items() if v[0] > node and v[1] in ("invented", "inherited")}  # (the cats inherit no found tools from the handed root)
+        knap_after += "knapping" in tt["known"]["avian"] and "knapping" in tt["known"]["feline"]
+    assert pre["avian"] and pre["avian"] <= {"found_tools", "hooked_tools"} and "hooked_tools" in pre["avian"]
+    assert not pre["feline"] and not {t for t in pre["draconic"] if T["techs"][t]["track"] == "tools"}  # (the dragons' kit, innate magic, is body)
+    assert "knapping" in pre["hominid"] and "hooked_tools" not in pre["hominid"] and "found_tools" in tt["known"]["mammalian"]
+    assert knap_after >= 3  # (hands with the node)
 
 
 def test_language_spreads_by_contact_to_peoples_under_a_node():

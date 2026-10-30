@@ -21,8 +21,11 @@ Rules, all seeded and simple:
   sapiens node) it takes language from any neighbour that has it, at the contact rate (modern_contact, PW-971; owner: almost any
   contact spreads language). The other within-a-people techs (spread = 0) never pass by contact.
 - The sapiens node gates (PW-971, PW-978): in a line under a stem with `sapient`, nothing arises or spreads before the node but the
-  techs marked `bare = true` (knapping, handaxes: Lomekwi/Oldowan/Acheulean). Gesture and call systems, language and everything
+  techs marked `bare = true` (knapping, handaxes: Lomekwi/Oldowan/Acheulean; found and hooked tools). Gesture and call systems, language and everything
   past them wait for the node. A kind's starting kit (the dragons' innate magic, with its gesture roots) is not gated: it is body.
+- Each body plan its own bare tools (PW-987): a tech's `grip` says what holds its tool (hands, beak or any); a kind's `hands` is
+  true, false (dragons) or "node" (hands only from its stem's sapiens node: cats, birds, saurians) and `beak` lets it hold one in its
+  beak. So before their minds the hominids and goblinoids knap, the bird stems use found and hooked tools, the cats and saurians none.
 - Nothing goes past the tree's era (meta.era), and the fantasy techs are left out in real mode.
 A stem that ends as animals (spec.Lineage.animals_end, PW-965: the dragons' wyverns, drakes and pseudodragons) is untracked past its end, so
 no animal line exists here to get language or techs.
@@ -56,6 +59,11 @@ def load(path: Path | str | None = None) -> dict:
             raise ValueError(f"tech {t['id']}: unknown track {t['track']}")
         if t.get("era", "stone age") not in ERAS:
             raise ValueError(f"tech {t['id']}: unknown era {t.get('era')}")
+        if t.get("grip", "hands") not in GRIPS:
+            raise ValueError(f"tech {t['id']}: unknown grip {t.get('grip')}")
+    for k in raw.get("kind", []):
+        if k.get("hands", True) not in (True, False, "node"):
+            raise ValueError(f"kind {k['of']}: hands must be true, false or \"node\"")
     order, seen = [], set()
 
     def visit(i, path=()):
@@ -108,6 +116,19 @@ def _node(line: dict, L: dict) -> float | None:
         up = cur.get("group_of") or (cur.get("parents") or [None])[0]
         cur = L.get(up)
     return None
+
+
+GRIPS = ("hands", "beak", "any")
+
+
+def _grips(t: dict, k: dict, node: float | None, ago: float) -> bool:
+    """Whether a kind can hold the tool of a tech that needs one (PW-987): its grip ("hands", "beak" or "any") against the
+    kind's hands (true; false: dragons; "node": from its stem's sapiens node on, or always without a node) and beak."""
+    h = k.get("hands", True)
+    hands = h is True or (h == "node" and (node is None or ago <= node))
+    beak = bool(k.get("beak"))
+    g = t.get("grip", "hands")
+    return hands if g == "hands" else beak if g == "beak" else hands or beak
 
 
 def _env_ok(t: dict, have: set | None) -> bool:
@@ -206,6 +227,10 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         if tid in techs and tid not in known[lid]:
             known[lid][tid] = [round(float(ago), 3), how, frm]
 
+    def held(lid, tid, at):  # (PW-987: a line cannot inherit a tool it cannot hold: the cats take no found tools from the mammal root)
+        t = techs[tid]
+        return not t.get("hands", True) or _grips(t, kind[lid], node[lid], at)
+
     def can(lid, tid, ago, inventing, needs=True):
         t = techs[tid]
         k = kind[lid]
@@ -213,7 +238,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             return False
         if node[lid] is not None and ago > node[lid] and not t.get("bare"):  # (PW-971: before its stem's minds only bare-bones tools)
             return False
-        if t.get("hands", True) and k.get("hands", True) is False:
+        if t.get("hands", True) and not _grips(t, k, node[lid], ago):
             return False
         if (inventing or not t.get("traded")) and not _env_ok(t, have[lid]):  # (a traded tech, bronze, comes without the ore)
             return False
@@ -237,12 +262,12 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             if l.get("origin") in ("split", "group") or l.get("group_of"):
                 src = l.get("group_of") or (l.get("parents") or [None])[0]
                 for tid, v in (known.get(src) or {}).items():
-                    if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):  # (PW-971: a stem under a node inherits only bare tools from before it)
+                    if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):  # (PW-971: a stem under a node inherits only bare tools from before it)
                         give(lid, tid, at, "inherited", src)
             elif l.get("origin") == "hybrid":
                 for src in l.get("parents") or []:
                     for tid in list((known.get(src) or {})):
-                        if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")):
+                        if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):
                             give(lid, tid, at, "inherited", src)
             kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
             for tid in [i for i in order if i in kit]:
