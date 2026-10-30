@@ -11,7 +11,7 @@ impact: low
 found_by: fun-lane-54
 blocked_by: []
 relates: [PW-889, PW-665, PW-856]
-refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/params.py, planet/lineages/history/cities.py]
+refs: [docs/review/lineages/kinship-cities/README.md, planet/lineages/samples/dnd.toml, planet/lineages/history/params.py, planet/lineages/history/cities.py]
 created: 2026-10-30
 updated: 2026-10-30
 ---

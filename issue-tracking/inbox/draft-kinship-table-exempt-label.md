@@ -1,6 +1,10 @@
 ---
 title: "Kinship table: exempt hybrids show 'impossible' under 'why possible'"
-type: bug
+type: task
+status: todo
+parent: PW-752
+blocked_by: []
+relates: [PW-889]
 subsystem: viewer
 effort: xs
 impact: low
