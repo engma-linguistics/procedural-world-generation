@@ -52,4 +52,6 @@ district on this reading.
 - [ ] Owner: A, B or C
 
 ## Updates
+- 2026-10-30: Status todo -> needs-decision. Lane 74 built option A (branch worktree-agent-a4362c33a7ce0035f, 7daa9d9f): 46.5% -> 7.7% of land; live districts 321 -> 107 on 488d7e; dwarf share 6% -> 3%. Held for the owner as desk D18 (merge / keep / both: rich districts plus small local pits; lean both). The seven runs were re-settled back to main.
+- 2026-10-30: Status needs-decision -> todo. Coordinator call (owner defers): option A - raise ORE_MIN to 0.75 for mines and districts, counted on the raw good without the reach. Settlements only, no history re-run. Shown on the owner's desk with an opt-out.
 - 2026-10-30: Created from inbox draft draft-ore-districts-cover-half-the-land.md (found by fun-lane-72).

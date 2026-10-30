@@ -66,7 +66,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · 30 October 2026 · evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. The one open item is D17, the
+  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D18 (mines, under "Mines are in") and D17, the
   "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
   when anything else needs you.</p>
   <nav class="toc"><a href="#decisions">Decisions</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
@@ -126,10 +126,27 @@ Each link below opens straight onto one, with its hover card showing.</p>
 <figure><img src="img2/m-23-gnome-iron-colony-488d7e.jpg" alt="A gnome mining colony in an iron district" loading="lazy"><figcaption><b>A gnome iron colony.</b> <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;layer=peoples&amp;lat=3.045&amp;lon=145.776&amp;dist=2.3">Open it</a> · also <a href="http://localhost:8765/viewer/?run=570701&amp;settle=mines&amp;layer=peoples&amp;lat=32.445&amp;lon=118.717&amp;dist=2.3">a kobold gold colony</a></figcaption></figure>
 <figure><img src="img2/m-24-mines-only-globe-488d7e.jpg" alt="The whole globe showing only mining districts" loading="lazy"><figcaption><b>The whole globe, mines only.</b> Mining districts per world went from 255–380 to 277–412, 38–81 of them colonies. The human share fell from 42–80% to 36–72%. Kobolds about doubled. <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;view=30,100">Open it</a></figcaption></figure>
 </div>
-<div class="note"><b>What's still thin, and my call on it.</b> Dwarves still run only 4–18 districts per world, because there are so few
-dwarves (D17 above). Also, "ore country" covers 46% of the land, because the code counts any 50% chance of a deposit in a big cell as a
-district. Real ore districts are rare and clustered. I'm having that tightened to about 8% of land, the rich deposits only. It's a
-settlements-only change, so no history re-runs. Say if you'd rather it stayed.</div>
+<div class="card"><div class="id">D18 · MINES · built, held for you</div>
+<h3>Fewer, truer mining districts, or keep the count?</h3>
+<p>"Ore country" covered 46% of the land, because the code counted any 50% chance of a deposit in a big map cell as a mining district.
+Real ore districts are rare and clustered. Lane 74 tightened it to rich deposits only, 7.7% of land. That's built and tested, but held
+from merging, because it cuts the count you already called low:</p>
+<ul>
+<li>Mining districts standing today (run 488d7e): <b>321 → 107</b>. Ever founded, over all seven runs: 4,349 → 1,173.</li>
+<li>Share of districts by kind is about the same (humans 35%, kobolds 19%, gnomes 8%), but dwarves fall from 6% to 3%, and to 0% on one
+run. Fewer rich deposits sit near the few dwarves.</li>
+<li>Tech is unaffected: smelting still only needs ordinary ore nearby. Tying it to rich ore would wipe out iron entirely, so I didn't.</li>
+</ul>
+<ol>
+<li><b>Merge it.</b> Mining districts are rare, like on Earth. Dwarves gain mines through D17's fixes (more dwarves), not through more ore.</li>
+<li><b>Keep today's count.</b> Mining country stays half the land.</li>
+<li><b>Both.</b> Rich deposits are big districts. Ordinary ore gets small local pits (a village's copper or iron pit), shown as
+smaller marks. More mines on the map, and the big districts stay special. One more small lane.</li>
+</ol>
+<div class="rec"><b>My lean: 3.</b> It matches how mining really looked: a few great districts like the Great Orme or Rio Tinto, and a
+scatter of small local pits everywhere metal was used. It also gives dwarf peoples somewhere to dig near home. If you'd rather keep it
+simple, 1.</div>
+<div class="answer">PW-1146 · lane 74 branch</div></div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
