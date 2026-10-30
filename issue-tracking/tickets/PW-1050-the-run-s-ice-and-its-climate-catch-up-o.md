@@ -1,9 +1,10 @@
 ---
+id: PW-1050
 title: The run's ice and its climate catch up one step per climate update, so how much ice a run grows depends on how often the climate is updated
 type: task
 status: needs-decision
 parent: PW-247
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: high
@@ -11,6 +12,8 @@ found_by: lane27b
 blocked_by: []
 relates: [PW-247, PW-470, PW-364]
 refs: [planet/tectonics/earth.py, docs/review/speed/README.md, docs/review/speed/iceprobe.py]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -50,3 +53,6 @@ per-update limit inside the ice passes; the outer ice-climate loop still has it.
 Decision needed: is this a v1 soundness gap (the owner's bar is "flag visible unsoundness"), or does it go
 under PW-470? Whichever fix is chosen, its success test is that arms at 2 and 4 Myr give the same icebox count
 on the paired judge.
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-ice-climate-loop-steps-per-update.md (found by lane27b).

@@ -1,4 +1,5 @@
 ---
+id: PW-1053
 title: Retire tools/zoom_soil_check.py once planet/soils.py stops citing it
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: housekeeping-52
 blocked_by: []
 relates: [PW-331, PW-345]
 refs: [tools/zoom_soil_check.py, planet/soils.py, docs/overview.md, docs/proposals/soils.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -24,3 +27,6 @@ commit that had it), drop its row in docs/overview.md section 2.17 and its menti
 (or make them `<sha>:` refs too), and note the removal on PW-331. Keep it instead if a lane is about to
 re-tune the zoom soils.
 - [ ] tool removed, comment and docs point at the history
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-retire-zoom-soil-check.md (found by housekeeping-52).
