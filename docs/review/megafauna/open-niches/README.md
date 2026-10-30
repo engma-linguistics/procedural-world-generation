@@ -1,6 +1,12 @@
 # Open niches: why rich land holds no dragons (PW-1024, fun lane 50)
 
-Step 0 of PW-1024, the diagnosis gate: what the probes found, and the plan for the owner's ruling (a mix of A and B), written before any sweep.
+Step 0 of PW-1024, the diagnosis gate: what the probes found, and the plan for the owner's ruling (a mix of A and B), written before any sweep (sections 1-3). Section 4 adds the paired sweep's results; its plain summary is first.
+
+The scripts are in this folder:
+- `diag.py`, `diag_read.py`, `gap.py`, `occ2.py`: the diagnosis;
+- `sweep.sh`, `compare.py`, `kind_country.py`, `maps.py`: the sweep, with its outputs `compare.txt` and `kind_country.txt`.
+
+Run them with `PYTHONPATH=. uv run python ...` from the repository root.
 
 ## In plain words
 
@@ -13,7 +19,7 @@ Step 0 of PW-1024, the diagnosis gate: what the probes found, and the plan for t
 
 Inputs:
 - lane 45b's saved run (`data/review-inputs/l45b/save2/run/ERAS.npz`, 2a7385 roll 7000);
-- three new diagnosis runs on the current main tree (2a7385/7000, 1df1c3/7000, e71172/7001). These save each megafauna kind's presence P and habitat K at 60, 30, 25, 20, 15, 10, 7, 5, 3, 2, 1 and 0 kyr, with the climate and the peoples' density. The script is `diag.py` in the lane's scratch folder; it is read-only and was not merged.
+- three new diagnosis runs on the main tree at 2cdf9641 (2a7385/7000, 1df1c3/7000, e71172/7001). `diag.py` saves each megafauna kind's presence P and habitat K at 60, 30, 25, 20, 15, 10, 7, 5, 3, 2, 1 and 0 kyr, with the climate and the peoples' density.
 
 "Rich empty" is the peer review's class: land with prey of at least 3 t/km² and fewer than 0.02 people per km².
 
@@ -93,7 +99,8 @@ At 0.5 the tolerated country counts as reachable for scatter and for the coverag
 1. **Habitat release (picked).** In a cell outside the kind's habitat tiers, the habitat is lifted to at most RELEASE_K = 0.3 x the edge climate fit x a prey factor x open.
    - The prey factor is 0 at or below the land's median wild prey and 1 at RELEASE_PREY = 2x it, linear between, read from the step's prey field.
    - "Open" means no other kind of the same sort (dragons for a dragon, giants for a giant) holds the cell.
-   - Released land is under scatter's SUITABLE (0.5), so no new pockets are founded in it. The kind can only walk or fly in from land it holds next door, which is the "neighbouring" in the ruling.
+   - Released land is under scatter's SUITABLE (0.5), so no new pockets are founded in it. The kind can only walk or fly in from land it holds next door.
+   - It applies only within RELEASE_KM = 300 km of the kind's own country (its habitat without release reaching the coverage target's "suitable"), which is the "neighbouring" in the ruling. This bound was added after a smoke run without it: there, fire giants spread from the volcanoes over warm grassland at 3x their count.
    - It holds them at about a third of the density.
    - It is not used in the deep epoch (no prey field for those plates).
    - The coverage target is computed without it.
@@ -113,4 +120,54 @@ A paired sweep, main (2cdf9641) against lane 50: 6 worlds x rolls 7000-7001, lan
 - remnants;
 - maps of each dragon kind before and after.
 
-Results are in section 4 below once run.
+## 4. Results: the paired sweep
+
+Both arms are on the same base, main 29c38f8b (after the speed merge, before the fix lane 45d51c3f): main as is, and lane 50 on top. 6 worlds (2a7385, 1df1c3, e71172, 6909cb, a12762, 067778) x rolls 7000-7001, 12 paired runs, `probe.py --eras 25,10,0 --save`. Full tables: `compare.txt`, `kind_country.txt`. Maps: `kinds-2a7385-7000.png` and `kinds-e71172-7000.png` (main on the left, lane 50 on the right, one row per kind; pale green is rich land).
+
+### In plain words
+
+**Rich land nobody holds now has dragons almost everywhere: 90% of it, up from 52%.** Dragons are up 7% per run and giants 24%. The peoples are untouched: 67.8% of peoples pass, against 67.0%, and there are fewer remnants. Most of the extra dragons are the new gold dragons on open grassland, and white dragons out on cold steppe and hills. Each kind still lives mainly in its own country.
+
+Where each kind lives now (per run, main to lane):
+- **Gold dragons** were the missing kind: absent in 4 of 12 runs and ~60 per run before. They are now in every run, ~800 per run, all on open grassland (warm-temperate and cool steppe, the land that was the gap). They reach 70% of their country, against 36%.
+- **Blue dragons** still mostly hold the deserts (37,550 per run there, unchanged). About 2,200 more are out on the cold, dry shortgrass steppe (Köppen BSk), with a few on the bluffs and hills by it.
+- **Brass dragons** stay on the hot steppe, somewhat fewer (8,700 against 11,500 per run). Gold and blue now share the open grassland round it, and the rivals close released land to each other.
+- **Copper dragons** have their new badlands and breaks country (~100 per run) beside their hills; 181 per run against 62.
+- **White dragons** grow most: 4,200 against 1,400 per run. They are still mostly in cold mountains and tundra, now also on the cold hills, open country and northern steppe next to them (the "harsh northern steppe").
+- **Green dragons** add forest and forest-edge country: 347 per run in forest, against 142.
+- **Silver dragons** are a few more in the mountains and onto the hills below them.
+- **Red dragons** shift from mountains towards volcano country (486 against 279) and **black dragons** stay in the swamps; both were left as they were (poor fits).
+- **Bronze dragons** still keep the coasts (no river or lake tag yet; draft).
+- **Giants:**
+  - Hill giants go from 1,621 to 1,935 per run, all in hills.
+  - Fire giants go from 1,339 to 2,165, mostly more volcano country plus some steppe next to it.
+  - Frost giants go from 1,326 to 1,508 (more tundra).
+  - Cloud giants go from 158 to 195.
+  - Storm giants are unchanged.
+
+### Numbers
+
+| | main | lane 50 |
+|---|---|---|
+| rich empty land holding any dragon (present) | 0.52 (398 cells per run) | **0.90** (362) |
+| the same at 25 kyr | 0.58 | 0.90 |
+| all rich land holding any dragon (present) | 0.32 | 0.35 |
+| dragons per run | 54,226 | 57,991 (+7%) |
+| giants per run | 5,625 | 6,997 (+24%) |
+| per-people pass (>= 300 cells) | 185/276 = 67.0% | 187/276 = 67.8% |
+| remnants (< 100 cells; absent) | 44 (12) | 40 (12) |
+
+- Rich empty occupancy rises in all 12 paired runs. Examples:
+  - e71172: 0.06 to 0.94 and 0.06 to 0.68;
+  - 2a7385: 0.27 to 0.79 and 0.28 to 0.80;
+  - 067778/7001: 0.24 to 0.99.
+- 2a7385 stays the lowest. Its rich empty land is partly the rain mismatch (section 1c), desert to every habitat.
+- Dragons per run rise in 11 of 12 paired runs. 1df1c3/7000 halves (120k to 62k). There red, black, bronze, storm giants and fire giants fall too, kinds that A does not touch, at densities 2-14x sparser. That is the peoples' history going another way on that roll (more pressure), not the change itself; its sister roll rises 107k to 151k.
+- Per-people pass by people changes by at most one run of 12 for any people except tritons (2 to 4 runs).
+
+The coverage target (share of a kind's country reached) falls for blue (1.00 to 0.86), brass (0.96 to 0.90) and black (0.85 to 0.79). Their country is larger now (blue), or rivals hold more of it. It rises for gold (0.36 to 0.70), copper (0.41 to 0.50), green and white.
+
+### Caveats
+
+- **A and B are not separated in this sweep.** The gold widening alone explains the gold dragons. The released land shows up in the pockets as "country" (no dominant land type: 17 to 1,018 per run) and as hills and steppe next to a kind's own country. A run with `megafauna.RELEASE = False` would split the two. It was not done, to keep the CPU light.
+- The dragon count is still dominated by blue dragons in the deserts (65%), as on main (PW-990's food budget).

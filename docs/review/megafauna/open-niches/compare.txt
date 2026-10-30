@@ -1,0 +1,60 @@
+paired runs: 12: 067778_7000, 067778_7001, 1df1c3_7000, 1df1c3_7001, 2a7385_7000, 2a7385_7001, 6909cb_7000, 6909cb_7001, a12762_7000, a12762_7001, e71172_7000, e71172_7001
+
+== main: per-people pass 185/276 = 67.0%; remnants (<100) 44 (absent 12)
+   dragons per run 54,226; giants per run 5,625
+   rich empty land occupied (any dragon), now 0.52 (mean 398 cells), 25 kyr 0.58; all rich land occupied now 0.32, 25 kyr 0.34
+
+== lane: per-people pass 187/276 = 67.8%; remnants (<100) 40 (absent 12)
+   dragons per run 57,991; giants per run 6,997
+   rich empty land occupied (any dragon), now 0.90 (mean 362 cells), 25 kyr 0.90; all rich land occupied now 0.35, 25 kyr 0.39
+
+== dragons by kind (count per run; cells held per run; target share of its country reached), main -> lane
+      red_dragon:      525 ->      626   cells     456 ->     455   target 0.58 -> 0.58   runs without 0 -> 0
+     blue_dragon:   37,602 ->   40,179   cells   6,752 ->   8,595   target 1.00 -> 0.86   runs without 0 -> 0
+    green_dragon:    1,610 ->    1,839   cells   7,180 ->   8,415   target 0.90 -> 0.94   runs without 0 -> 0
+    black_dragon:      338 ->      321   cells   2,374 ->   2,403   target 0.85 -> 0.79   runs without 0 -> 0
+    white_dragon:    1,372 ->    4,202   cells   2,004 ->   3,615   target 0.86 -> 0.92   runs without 0 -> 0
+     gold_dragon:       59 ->      803   cells     415 ->   2,918   target 0.36 -> 0.70   runs without 4 -> 0
+   silver_dragon:      153 ->      210   cells     444 ->     545   target 0.52 -> 0.49   runs without 0 -> 0
+   bronze_dragon:      959 ->      834   cells     755 ->   1,089   target 0.87 -> 0.88   runs without 0 -> 0
+   copper_dragon:       62 ->      181   cells     662 ->   1,349   target 0.41 -> 0.50   runs without 0 -> 0
+    brass_dragon:   11,545 ->    8,797   cells   3,231 ->   3,543   target 0.96 -> 0.90   runs without 0 -> 0
+
+== giants by kind (count per run; cells)
+     cloud_giant:      158 ->      195   cells     352 ->     380
+      fire_giant:    1,339 ->    2,165   cells     253 ->     324
+     frost_giant:    1,326 ->    1,508   cells     814 ->     860
+      hill_giant:    1,621 ->    1,935   cells   3,281 ->   3,639
+     storm_giant:    1,180 ->    1,193   cells     915 ->     915
+
+== dragons by country (per run)
+            desert:   37,602 ->   37,550
+            steppe:   11,545 ->   11,262
+         mountains:    1,602 ->    2,112
+            jungle:    1,467 ->    1,482
+             coast:      998 ->      898
+             swamp:      343 ->      320
+   volcano country:      282 ->      584
+            forest:      149 ->      391
+            tundra:      124 ->      484
+             hills:       97 ->      982
+           country:       17 ->    1,018
+      open country:        0 ->      803
+            breaks:        0 ->      104
+
+== paired per run: dragons, rich empty occupancy, per-people pass
+  067778_7000: dragons  31,644 ->  40,195; occ 0.62 -> 1.00; pass 52% -> 48%
+  067778_7001: dragons  19,945 ->  21,332; occ 0.24 -> 0.99; pass 61% -> 65%
+  1df1c3_7000: dragons 120,534 ->  61,754; occ 0.93 -> 0.99; pass 70% -> 70%
+  1df1c3_7001: dragons 107,807 -> 151,046; occ 0.93 -> 1.00; pass 65% -> 70%
+  2a7385_7000: dragons  78,736 ->  94,170; occ 0.27 -> 0.79; pass 70% -> 65%
+  2a7385_7001: dragons  72,595 ->  73,018; occ 0.28 -> 0.80; pass 65% -> 70%
+  6909cb_7000: dragons  33,907 ->  35,081; occ 0.95 -> 1.00; pass 83% -> 83%
+  6909cb_7001: dragons 126,008 -> 128,073; occ 0.97 -> 1.00; pass 83% -> 83%
+  a12762_7000: dragons  11,447 ->  21,558; occ 0.55 -> 0.83; pass 65% -> 65%
+  a12762_7001: dragons  19,152 ->  24,295; occ 0.35 -> 0.75; pass 61% -> 65%
+  e71172_7000: dragons  10,007 ->  18,292; occ 0.06 -> 0.94; pass 70% -> 70%
+  e71172_7001: dragons  18,928 ->  27,082; occ 0.06 -> 0.68; pass 61% -> 61%
+
+== per-people pass by people, main -> lane (runs passing of 12 )
+  changed: goblin 9->10, goliath 5->4, halfling 9->8, kenku 11->12, sea_elf 2->3, tabaxi 8->7, triton 2->4

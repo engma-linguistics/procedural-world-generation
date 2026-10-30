@@ -2285,7 +2285,7 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
 
 def test_megafauna_tolerated_tier_and_ecological_release(faketz):
     """PW-1024: a megafauna kind's `tolerates` country (and its own just past its comfort range) holds it at TOLERATE_K with the comfort
-    range's margin (EDGE_C...), never lowering its habitat anywhere; ecological release offers at most RELEASE_K of rich land no other kind of its sort holds, none on land no richer than
+    range's margin (EDGE_C...), never lowering its habitat anywhere; ecological release offers at most RELEASE_K of rich land near its own country that no other kind of its sort holds, none on land no richer than
     the median, and none in the deep epoch."""
     from planet.lineages.history import params as HP
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
@@ -2313,12 +2313,20 @@ def test_megafauna_tolerated_tier_and_ecological_release(faketz):
     h._prey = np.full(h.grid.n, 10.0 * h.prey_ref)
     h.active = {x.id: x.id == "wyrm" for x in h.lines}
     h.p = np.zeros((len(h.lines), h.grid.n))
+    h._K_own[k] = np.where(tags["land"], 1.0, 0.0)
     rel = MG.release(h, t.lines["wyrm"], k, env, tags, step)
     assert rel.max() <= MG.RELEASE_K + 1e-9 and (rel[tags["land"]] > 0).any()
     h.active["other"] = True
     h.p[j][tags["land"]] = 0.5  # (another dragon kind holds the land: nothing opens)
     assert not MG.release(h, t.lines["wyrm"], k, env, tags, step).any()
     h.p[j][:] = 0.0
+    lat = np.degrees(np.arcsin(ps.grid.centers[:, 2]))
+    h._K_own[k] = np.where(tags["land"] & (lat > 60), 1.0, 0.0)  # (its own country only in the far north: release only next to it)
+    rel = MG.release(h, t.lines["wyrm"], k, env, tags, step)
+    reach_km = (max(1, round(MG.RELEASE_KM / h.cell_km)) + 1) * 1.5 * h.cell_km
+    far = tags["land"] & (lat < 60 - reach_km / 111.0)
+    assert far.any() and not rel[far].any()
+    h._K_own[k] = np.where(tags["land"], 1.0, 0.0)
     h._prey = np.full(h.grid.n, h.prey_ref)  # (prey no better than the median: no release)
     assert not MG.release(h, t.lines["wyrm"], k, env, tags, step).any()
     assert MG.release(h, t.lines["wyrm"], k, env, tags, type("Step", (), {"epoch": "deep", "ago": 100.0})()) is None

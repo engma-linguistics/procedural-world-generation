@@ -326,13 +326,17 @@ RELEASE_K = 0.3  # the habitat such land offers at most: under scatter's SUITABL
 # in from land it holds next door) and under TOLERATE_K (the edge it accepts): a design judgement, "reduced density" as about a third
 RELEASE_PREY = 2.0  # the prey (the step's prey field over a forager's reach, wild herds and stock) over the land's median wild prey at which the
 # release is full; none at or below the median ("plentiful": better than the usual land), in proportion between. A design judgement
-RELEASE_RIVALS = "kind"  # whose presence closes the land: another kind of the same sort (dragons for a dragon, giants for a giant) holding it
+RELEASE_KM = 300.0  # "neighbouring land": only within this distance of the kind's own country (its habitat without release suits it at least
+# half, as for the coverage target: K >= SUITABLE x compose.SUIT_K), so a kind widens round its country rather than creeping across a continent.
+# About five of a dragon's foraging reaches (FORAGE_KM) or five L7 cells. A design judgement
+# (whose presence closes the land: another kind of the same sort, dragons for a dragon and giants for a giant, holding the cell)
 
 
 def release(h: History, l, k: int, env: dict, tags: dict, step) -> np.ndarray | None:
     """PW-1024 B: the habitat ecological release offers megafauna kind k this step, per cell: RELEASE_K x its climate at the edges
     (habitat.edge_fit: the comfort range widened as for its tolerated country) x how plentiful the prey is (RELEASE_PREY) x open (no
-    other kind of its sort holds the cell). None in the deep epoch (no prey field for the plates then) or with RELEASE off."""
+    other kind of its sort holds the cell) x near (within RELEASE_KM of its own country, h._K_own). None in the deep epoch (no prey field
+    for the plates then) or with RELEASE off."""
     if not RELEASE or l.marine or step.epoch == "deep" or getattr(h, "_prey", None) is None:
         return None
     from .habitat import edge_fit
@@ -341,7 +345,15 @@ def release(h: History, l, k: int, env: dict, tags: dict, step) -> np.ndarray | 
     riv = [j for j, x in enumerate(h.lines) if j != k and x.megafauna and not x.marine and ("flies" in x.traits) == flies
            and h.active.get(x.id)]
     open_ = ~(h.p[riv] >= EST).any(0) if riv else np.ones(h.grid.n, bool)
-    return RELEASE_K * edge_fit(l, env, tags) * rich * open_
+    from .. import compose as CP
+    own = getattr(h, "_K_own", {}).get(k)
+    if own is None:
+        return None
+    g = h.grid
+    near = own >= SUITABLE * CP.SUIT_K
+    for _ in range(max(1, int(round(RELEASE_KM / h.cell_km)))):
+        near = near | nbr_reduce(g, np.logical_or, near[g.nbr_idx])
+    return RELEASE_K * edge_fit(l, env, tags) * rich * (open_ & near)
 
 
 SCATTER_RATE = 1.0  # (PW-924 coverage: was 0.2) new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
