@@ -4,6 +4,8 @@
         [--moments 400 580] [--set k=v ...]
     uv run python tools/ice_diag.py --summary DIR/seed11_L6.json.gz [...]
     uv run python tools/ice_diag.py --plot DIR/seed11_L6.json.gz [...]     (PNG next to each file)
+    uv run python tools/ice_diag.py --seed 1 --tect [--myr 2000] ...         (+ sea level and supercontinent channels)
+    uv run python tools/ice_diag.py --run <run id> [--skip 300]             (a stored run's sea-level line)
 
 Runs a simulation in memory (nothing goes to the store) with tectonics/diag.Recorder switched on, which
 reads the run's state without changing it (the run is bit-identical to one without). Writes
@@ -18,6 +20,16 @@ tools/tz_mean.py and tools/ice_probe.py --source.
 The summary prints the whole-history criteria (tools/ice_criteria.py: old and new bars) and, for each
 deep cold era, what held it: the mean CO2 term (and how much its levelling off toward CO2_MAX withheld), the ice albedo
 term, the drift, the sheets' net budget, and the volume of sheets the rule kept in deficit.
+
+--tect (what tools/sealevel.py and tools/supercontinent.py measured; both folded in here, last present at
+aae96637) also records, every step, the sea level's parts with land and crust %, the mean ocean depth and its
+slow baseline, the ocean floor's mean age and its young (< 10 Myr) and capped-old (> 117 Myr) shares, the
+ocean's share and the plate count (`tect`); every GEO_EVERY Myr the geography (`geo`: the largest landmass
+and continental-crust mass, landmasses over 0.5%, plate speed, crust volume, the mantle under the largest
+continent); and every rift, new margin and suture with its cause and its pieces' continental area
+(`events`). The summary then adds a sea-level line (mean, sd, range, the 20 Myr swing, 4-point land drops,
+steps at the sea_tect limiter, ocean age) and a supercontinent line (assemblies above 25% of the surface,
+their spacing, landmass counts, rifts by cause); --plot draws the geography as a second PNG.
 """
 
 from __future__ import annotations
@@ -37,8 +49,11 @@ import planet  # noqa: E402,F401  (first: its thread caps)
 import numpy as np  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
+from planet.tectonics import earth  # noqa: E402
 from planet.tectonics.diag import Recorder  # noqa: E402
 from planet.tectonics.earth import CO2_MAX  # noqa: E402
+from planet.tectonics.isostasy import ocean_depth  # noqa: E402
+from planet.tectonics.plates import CMYR  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
 
@@ -51,17 +66,202 @@ def parse_sets(kvs):
     return sets
 
 
-def run(seed, myr, level, sets, out: Path, fields=False, moments=()):
+# ---------------------------------------------------------------- --tect: sea level and the supercontinent cycle
+
+TECT_EVENTS = ("rift", "subduction", "suture")
+GEO_EVERY = 10.0  # Myr between geography samples
+CLAMP = earth.SEA_TECT_MAX  # (the tanh limiter on sea_tect: a step "at" it is within 0.5 m)
+ASSEMBLED = 25.0  # % of the surface: the largest landmass of an assembly
+
+
+def tect_sample(sim) -> dict:
+    ocean = ~sim.w_cont
+    age = sim.w_age[ocean]
+    return {
+        "t": sim.t,
+        "land": round(100 * float((sim.w_elev > 0).mean()), 2),
+        "cont": round(100 * float(sim.w_cont.mean()), 2),
+        "sl": round(float(sim.sea_level), 1),
+        "ice": round(float(sim.sea_ice), 1),
+        "tect": round(float(sim.sea_tect), 1),
+        "depth": round(float(ocean_depth(age).mean()), 1) if age.size else 0.0,
+        "depth_ref": round(float(sim.depth_ref), 1) if sim.depth_ref is not None else 0.0,
+        "age": round(float(age.mean()), 1) if age.size else 0.0,
+        "young": round(100 * float((age < 10).mean()), 2) if age.size else 0.0,
+        "old": round(100 * float((age > 117).mean()), 2) if age.size else 0.0,
+        "ocean": round(100 * float(ocean.mean()), 2),
+        "plates": int(sim.plates.alive.sum()),
+    }
+
+
+def geo_sample(sim, v0) -> dict:
+    g = sim.grid
+    land = sim.w_elev > 0
+    lab, nl = g.components(land)
+    sizes = np.bincount(lab[lab >= 0]) if nl else np.zeros(1, int)
+    clab, ncl = g.components(sim.w_cont)
+    csizes = np.bincount(clab[clab >= 0]) if ncl else np.zeros(1, int)
+    big = clab == int(csizes.argmax()) if ncl else np.zeros(g.n, bool)
+    v = np.linalg.norm(sim.velocity(), axis=1) * CMYR
+    rec = {
+        "t": sim.t,
+        "largest": round(100 * sizes.max() / g.n, 2),
+        "largest_cont": round(100 * csizes.max() / g.n, 2),
+        "masses": int((sizes > 0.005 * g.n).sum()),
+        "land": round(100 * land.mean(), 2),
+        "speed": round(float(v.mean()), 2),
+        "ocean_age": round(float(sim.w_age[~sim.w_cont].mean()), 1),
+        "plates": int(sim.plates.alive.sum()),
+        "volume": round(float((sim.w_thick * sim.w_cont).sum()) / v0, 4),
+        "max_elev": int(sim.w_elev.max()),
+        "elev_p99": int(np.percentile(sim.w_elev[land], 99)) if land.any() else 0,
+    }
+    m = getattr(sim, "mantle", None)
+    if m is not None:
+        rec["mantle_under"] = round(float(m[big].mean()), 3) if big.any() else 0.0
+        rec["mantle_cont"] = round(float(m[sim.w_cont].mean()), 3)
+        rec["mantle_min"] = round(float(m.min()), 3)
+        rec["mantle_max"] = round(float(m.max()), 3)
+    return rec
+
+
+def rift_cause(e, mantle: bool) -> str:
+    """margin (new subduction), suture, or for rifts: without a mantle field heat / stress; with it, a
+    continental rift over warm / cold / neutral mantle (cont-warm, cont-cold, cont) or an oceanic plate
+    split (plate, plate-warm, plate-cold)."""
+    if e.kind in ("subduction", "suture"):
+        return "margin" if e.kind == "subduction" else "suture"
+    if not mantle:
+        return "heat" if "rifts apart" in e.text else "stress"
+    kind = "cont" if e.text.startswith("continent") else "plate"
+    for side in ("warm", "cold"):
+        if f"{side} mantle" in e.text:
+            return f"{kind}-{side}"
+    return kind
+
+
+class Tect:
+    """Reads the run like Recorder: per step tect_sample, every GEO_EVERY Myr geo_sample, and the events."""
+
+    def __init__(self, sim):
+        self.v0 = float((sim.w_thick * sim.w_cont).sum())
+        self.mantle = getattr(sim, "mantle", None) is not None
+        self.seen = len(sim.events)
+        self.tect, self.geo, self.events = [tect_sample(sim)], [geo_sample(sim, self.v0)], []
+
+    def step(self, s):
+        for e in s.events[self.seen:]:
+            if e.kind in TECT_EVENTS:
+                slots = {int(s.plates.label[k]): k for k in np.flatnonzero(s.plates.alive)}
+                pieces = [round(100 * float((s.w_cont & (s.owner == slots[lb])).mean()), 2) if lb in slots else 0
+                          for lb in e.plates]
+                self.events.append({"t": e.t, "kind": e.kind, "cause": rift_cause(e, self.mantle), "pieces": pieces})
+        self.seen = len(s.events)
+        self.tect.append(tect_sample(s))
+        if abs(s.t / GEO_EVERY - round(s.t / GEO_EVERY)) < 1e-6:
+            self.geo.append(geo_sample(s, self.v0))
+
+    def as_dict(self) -> dict:
+        return {"tect": self.tect, "geo": self.geo, "events": self.events}
+
+
+def from_run(run_id: str) -> dict:
+    """A stored run's keyframes as a `tect` record (land, sea level and its parts, plates)."""
+    d = json.loads((ROOT / "runs" / run_id / "run.json").read_text())
+    tr = [{"t": f["t"], "land": f["stats"]["land_pct"], "sl": f["stats"]["sea_level_m"], "ice": f["stats"]["sea_ice_m"],
+           "tect": f["stats"]["sea_tect_m"], "plates": f["stats"]["plates"]} for f in d["frames"]]
+    return {"seed": d["meta"].get("seed"), "run": run_id, "level": d["meta"].get("level"), "tect": tr}
+
+
+def sea_stats(d, skip: float = 0.0, every: float = 4.0, window: float = 20.0, drop: float = 4.0) -> dict:
+    """Sea level on `every` Myr samples after `skip`: mean, sd, range, the largest change within `window` Myr,
+    'land drops' (land falls by `drop` points of the surface within `window`; consecutive flags count once),
+    the share below -150 / -430 m of sea level from ice, steps at the sea_tect limiter, ocean age, plates."""
+    tr = [r for r in d["tect"] if r["t"] >= skip - 1e-9 and abs(r["t"] / every - round(r["t"] / every)) < 1e-6]
+    t = np.array([r["t"] for r in tr])
+    L = np.array([r["land"] for r in tr])
+    s = np.array([r["sl"] for r in tr])
+    k = int(round(window / every))
+    flag = np.array([i + 1 < len(L) and L[i + 1:i + k + 1].min() <= L[i] - drop for i in range(len(L))])
+    drops = int(flag[0]) + int((flag[1:] & ~flag[:-1]).sum()) if len(flag) else 0
+    swing = max((np.abs(s[i + 1:i + k + 1] - s[i]).max() for i in range(len(s) - 1)), default=0.0)
+    si = np.array([r["ice"] for r in tr])
+    te = np.array([r["tect"] for r in tr])
+    p = np.array([r["plates"] for r in tr])
+    out = {"n": len(tr), "sl_mean": round(float(s.mean())), "sl_sd": round(float(s.std())),
+           "sl_min": round(float(s.min())), "sl_max": round(float(s.max())), "swing20": round(float(swing)),
+           "land_drops": drops, "drop_times": [float(x) for x in t[flag & np.concatenate([[True], ~flag[:-1]])]],
+           "land_min": float(L.min()), "land_max": float(L.max()),
+           "below150": round(100 * float((si < -150).mean()), 1), "below430": round(100 * float((si < -430).mean()), 1),
+           "ice_mean": round(float(si.mean())), "ice_min": round(float(si.min())),
+           "clamp": int((np.abs(te) >= CLAMP - 0.5).sum()), "tect_sd": round(float(te.std())),
+           "plates_median": float(np.median(p)), "plates_min": int(p.min())}
+    if "age" in tr[0]:
+        ages = np.array([r["age"] for r in tr])
+        out["age_mean"], out["age_sd"] = round(float(ages.mean()), 1), round(float(ages.std()), 1)
+    return out
+
+
+def sea_line(d, skip=0.0) -> str:
+    st = sea_stats(d, skip)
+    name = f"run {d['run']}" if d.get("run") else f"seed {d['seed']} L{d['level']}"
+    age = f", ocean age {st['age_mean']}+-{st['age_sd']}" if "age_mean" in st else ""
+    return (f"{name} sea level (>= {skip:g} Myr) {st['sl_mean']}+-{st['sl_sd']} m [{st['sl_min']}, {st['sl_max']}],"
+            f" from ice mean {st['ice_mean']} (min {st['ice_min']}), below -150 / -430 m {st['below150']}% /"
+            f" {st['below430']}%; 20-Myr swing max {st['swing20']} m; land {st['land_min']}-{st['land_max']}%,"
+            f" 4-pt land drops {st['land_drops']} {st['drop_times']}; sea_tect sd {st['tect_sd']}, at the limiter"
+            f" {st['clamp']} samples{age}; plates median {st['plates_median']:g} min {st['plates_min']}")
+
+
+def assemblies(geo, thr=ASSEMBLED, gap=100.0):
+    """[start, end, peak] of spells with the largest landmass >= thr; spells under `gap` Myr apart are one."""
+    out = []
+    for r in geo:
+        if r["largest"] >= thr:
+            if out and r["t"] - out[-1][1] <= gap:
+                out[-1][1] = r["t"]
+                out[-1][2] = max(out[-1][2], r["largest"])
+            else:
+                out.append([r["t"], r["t"], r["largest"]])
+    return out
+
+
+def geo_line(d, thr=ASSEMBLED) -> str:
+    tr = d["geo"]
+    late = [r for r in tr if r["t"] >= 200] or tr
+    asm = assemblies(tr, thr)
+    starts = [a[0] for a in asm]
+    gaps = np.diff(starts).tolist() if len(starts) > 1 else []
+    masses = [r["masses"] for r in late]
+    between = [r["masses"] for r in late if r["largest"] < 20] or [0]
+    rifts = [e for e in d["events"] if e["kind"] != "suture"]
+    causes = {}
+    for e in rifts:
+        causes[e["cause"]] = causes.get(e["cause"], 0) + 1
+    small = sum(1 for e in rifts if e["kind"] == "rift" and any(0.3 < x < 3.0 for x in e["pieces"]))
+    return (f"supercontinent: assemblies>{thr:g}% at {[f'{a:g}-{b:g} ({c:.0f}%)' for a, b, c in asm]} gaps {gaps};"
+            f" largest max {max(r['largest'] for r in tr):.1f}% median {np.median([r['largest'] for r in late]):.1f}%;"
+            f" masses>0.5% median {np.median(masses):.0f} (range {min(masses)}-{max(masses)}; dispersed, largest<20%:"
+            f" {np.median(between):.0f}); volume x{tr[-1]['volume']}; ocean age median"
+            f" {np.median([r['ocean_age'] for r in late]):.0f}; speed median {np.median([r['speed'] for r in late]):.2f};"
+            f" rifts {causes} (continental pieces <3%: {small});"
+            f" sutures {sum(1 for e in d['events'] if e['kind'] == 'suture')}")
+
+
+def run(seed, myr, level, sets, out: Path, fields=False, moments=(), tect=False):
     from planet import timezoom as Z
     sets = {"run_end": float(myr), **sets}  # (as timeline.simulate: the run's end is now)
     sim = Simulation(build_grid(level), seed, Params(**sets), 2.0)
     sim.diag = Recorder(fields=fields)
+    tk = Tect(sim) if tect else None
     todo = sorted(float(m) for m in moments)
     tag = f"seed{seed}_L{level}"
     t0 = time.time()
 
     def on_step(s):
         s.diag.step(s)
+        if tk is not None:
+            tk.step(s)
         while todo and s.t >= todo[0] - 1e-9:
             src = Z.source_from_sim(s, f"seed {seed} L{level} @ {s.t:g} Myr")
             src = {k: v for k, v in src.items() if k != "grid"}
@@ -73,7 +273,7 @@ def run(seed, myr, level, sets, out: Path, fields=False, moments=()):
 
     sim.run(myr, on_step)
     d = {"seed": seed, "myr": myr, "level": level, "params": sets, "seconds": round(time.time() - t0),
-         **sim.diag.as_dict()}
+         **sim.diag.as_dict(), **(tk.as_dict() if tk is not None else {})}
     path = out / f"{tag}.json.gz"
     with gzip.open(path, "wt") as f:
         json.dump(d, f)
@@ -192,12 +392,16 @@ def gain_line(k: dict | None) -> str:
             f" the source), median erosion {1000 * k['rate']:.1f} m/Myr")
 
 
-def summary(path):
+def summary(path, skip=0.0):
     d = C.load(path)
     r = C.evaluate(d)
     print(C.line(Path(path).name.split(".")[0], r))
     k = gain(d)
     print("    " + gain_line(k))
+    if d.get("tect"):
+        print("    " + sea_line(d, skip))
+    if d.get("geo"):
+        print("    " + geo_line(d))
     for e in eras(d):
         print(f"    era {e['t0']:g}-{e['t1']:g} ({e['myr']:g} Myr) worst {e['worst']} m: dT {e['dT']:+.1f} = drift "
               f"{e['drift']:+.1f} + CO2 {e['co2_term']:+.1f} (index {e['co2']:+.2f}, beyond CO2_MAX / 2 {e['clipped_pct']:g}% of"
@@ -246,6 +450,54 @@ def plot(path):
     png = Path(str(path).replace(".json.gz", ".png"))
     fig.savefig(png, dpi=90)
     print(png)
+    if d.get("geo"):
+        plot_geo(d, Path(str(path).replace(".json.gz", "_geo.png")))
+
+
+def plot_geo(d, png: Path):
+    import matplotlib.pyplot as plt
+    tr = d["geo"]
+    t = np.array([r["t"] for r in tr])
+    has_m = "mantle_under" in tr[0]
+    fig, ax = plt.subplots(4 if has_m else 3, 1, figsize=(10, 11 if has_m else 8.5), sharex=True)
+    a = ax[0]
+    a.plot(t, [r["largest"] for r in tr], color="#1f6f8b", label="largest landmass (% surface)")
+    a.plot(t, [r["largest_cont"] for r in tr], color="#99c1b9", lw=1, label="largest continental-crust mass")
+    a.axhline(ASSEMBLED, color="#c44", lw=0.8, ls="--")
+    a.set_ylabel("% of surface")
+    a.legend(loc="upper right", fontsize=8)
+    a.set_title(f"seed {d['seed']}, level {d['level']}  {d.get('params') or ''}")
+    a = ax[1]
+    a.plot(t, [r["masses"] for r in tr], color="#444", label="landmasses > 0.5%")
+    a.axhspan(5, 15, color="#9c9", alpha=0.2)
+    a.set_ylabel("count")
+    a.legend(loc="upper right", fontsize=8)
+    a = ax[2]
+    a.plot(t, [r["land"] for r in tr], label="land %")
+    a.plot(t, [r["speed"] * 5 for r in tr], label="mean speed x5 (cm/yr)")
+    a.plot(t, [r["ocean_age"] / 2 for r in tr], label="ocean age / 2 (Myr)")
+    a.plot(t, [r["plates"] for r in tr], label="plates")
+    colors = {"heat": "#d62728", "stress": "#ff7f0e", "margin": "#2ca02c", "suture": "#8c564b",
+              "cont-warm": "#d62728", "cont": "#ff7f0e", "cont-cold": "#1f77b4"}
+    for e in d["events"]:
+        sut = e["kind"] == "suture"
+        a.axvline(e["t"], ymin=0.93 if sut else 0.0, ymax=1.0 if sut else 0.07, color=colors.get(e["cause"], "#7f7f7f"),
+                  lw=1)
+    a.legend(loc="upper right", fontsize=8, ncol=2)
+    a.set_ylabel("rifts (bottom ticks) / sutures (top)")
+    if has_m:
+        a = ax[3]
+        a.plot(t, [r["mantle_under"] for r in tr], color="#b22", label="mantle under largest continent")
+        a.plot(t, [r["mantle_cont"] for r in tr], color="#e88", lw=1, label="mantle under all continent")
+        a.fill_between(t, [r["mantle_min"] for r in tr], [r["mantle_max"] for r in tr], color="#ccc", alpha=0.4,
+                       label="mantle min..max")
+        a.axhline(0, color="k", lw=0.5)
+        a.set_ylabel("mantle T anomaly")
+        a.legend(loc="upper right", fontsize=8)
+    ax[-1].set_xlabel("Myr")
+    fig.tight_layout()
+    fig.savefig(png, dpi=90)
+    print(png)
 
 
 def main():
@@ -257,10 +509,15 @@ def main():
     ap.add_argument("--set", nargs="*", default=[])
     ap.add_argument("--fields", action="store_true")
     ap.add_argument("--moments", type=float, nargs="*", default=[])
+    ap.add_argument("--tect", action="store_true", help="also record sea level, geography and rifts (see above)")
     ap.add_argument("--summary", nargs="*")
     ap.add_argument("--plot", nargs="*")
+    ap.add_argument("--run", nargs="*", default=[], help="stored run ids: print their sea-level line")
+    ap.add_argument("--skip", type=float, default=0.0, help="Myr left out of the sea-level line")
     a = ap.parse_args()
-    rows = [summary(p) for p in a.summary or []]
+    for r in a.run:
+        print(sea_line(from_run(r), a.skip))
+    rows = [summary(p, a.skip) for p in a.summary or []]
     ks = [k for _, k in rows if k is not None]
     if len(rows) > 1:
         print(f"{len(rows)} runs: criteria N1-N4 pass on {sum(r['pass'] for r, _ in rows)}"
@@ -272,7 +529,7 @@ def main():
     out = Path(a.out)
     for s in a.seed:
         out.mkdir(parents=True, exist_ok=True)
-        summary(run(s, a.myr, a.level, parse_sets(a.set), out, a.fields, a.moments))
+        summary(run(s, a.myr, a.level, parse_sets(a.set), out, a.fields, a.moments, a.tect), a.skip)
 
 
 if __name__ == "__main__":

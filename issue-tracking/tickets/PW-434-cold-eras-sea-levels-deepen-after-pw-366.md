@@ -11,9 +11,9 @@ impact: high
 found_by: pw366
 blocked_by: []
 relates: [PW-240, PW-366, PW-364, PW-421]
-refs: [planet/icemass.py, planet/tectonics/earth.py, tools/sealevel.py]
+refs: [planet/icemass.py, planet/tectonics/earth.py, tools/ice_diag.py]
 created: 2026-10-19
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -42,6 +42,7 @@ Lean: B (it addresses how often the eras happen, not the ice physics PW-366 just
 - [ ] decide; re-run the 4-seed table after
 
 ## Updates
+- 2026-10-29: Removed tools/sealevel.py in cleanup; last present at aae96637. Folded into tools/ice_diag.py: --tect records its per-step channels and --summary prints its sea-level line; --run <id> reads a stored run.
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-19: Coordinator 2026-10-19: sd 2.0 not merged. It reshuffles which seed goes deep rather than fixing it (no clear net gain); the branch commit 4263f74 is dropped. Next try is the ice-albedo side, in the new ticket from the agent's draft, after PW-030 lands (run lane serial).

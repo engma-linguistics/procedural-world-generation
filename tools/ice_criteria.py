@@ -1,6 +1,6 @@
 """Whole-history ice-age criteria for a run (PW-555, docs/review/ice-v2-criteria.md).
 
-    uv run python tools/ice_criteria.py DIR/seed11.json[.gz] ...   (tools/ice_diag.py or tools/sealevel.py output)
+    uv run python tools/ice_criteria.py DIR/seed11.json[.gz] ...   (tools/ice_diag.py output)
 
 Judges a run's history the way docs/review/ice-v2-criteria.md section 3 lays out, on the climate updates
 (every 4 Myr) after a 300 Myr spin-up (SPINUP: the coupled systems settle into each other: the CO2
@@ -8,7 +8,7 @@ baselines learn fast at first, the climate drift needs ~40 Myr to reach its spre
 from none, the plants spread, the ocean basins start from a made-up floor), and the old bar beside it:
 
 - old (PW-434/449/514): the worst sea level from ice >= -450 m and <= 2% of the time below -430 m (from
-  t = 0, as tools/sealevel.py measured it);
+  t = 0, as the retired tools/sealevel.py measured it);
 - new, per run (section 3): N1 every cold era ends (deep, below DEEP m, within DEEP_MAX Myr; very deep,
   below VDEEP m, within VDEEP_MAX Myr; eras still on at the end are censored, not failed, if they started
   less than that before it); N2 the ice's sea level stays above FLOOR; N3 the planet spends between
@@ -28,9 +28,9 @@ interglacial era of its own).
 
 from __future__ import annotations
 
+import argparse
 import gzip
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -56,7 +56,8 @@ def load(path) -> dict:
 
 
 def series(d: dict) -> dict:
-    """t, sea_ice, sea_tect, iced_land, dT on the climate updates, from ice_diag's steps or sealevel's track."""
+    """t, sea_ice, sea_tect, iced_land, dT on the climate updates, from ice_diag's steps or a `track` of
+    keyframe stats (tools/health.py: t, ice, tect, dT, ice_frac, land)."""
     rows = d.get("steps") or d.get("track")
     rows = [r for r in rows if abs(r["t"] / EVERY - round(r["t"] / EVERY)) < 1e-6 and r["t"] > 0]
     get = lambda k, alt=None: np.array([r.get(k, r.get(alt)) if alt else r.get(k) for r in rows], dtype=float)
@@ -64,7 +65,7 @@ def series(d: dict) -> dict:
            "dT": get("dT_end", "dT")}
     if "iced_land" in rows[0]:
         out["iced_land"] = get("iced_land")
-    else:  # (sealevel.py's track: the iced share of the surface over the land's share)
+    else:  # (a track: the iced share of the surface over the land's share)
         out["iced_land"] = get("ice_frac") / 100.0 / np.maximum(get("land") / 100.0, 1e-6)
     return out
 
@@ -157,7 +158,9 @@ def line(name: str, r: dict) -> str:
 
 
 def main():
-    for p in sys.argv[1:]:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("files", nargs="+", help="tools/ice_diag.py output (DIR/seed11_L6.json.gz)")
+    for p in ap.parse_args().files:
         print(line(Path(p).name.split(".")[0], evaluate(load(p))))
 
 
