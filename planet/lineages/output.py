@@ -139,7 +139,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
               "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
               "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
-              "body": l.body, "way": l.way,
+              "body": l.body, "way": l.way, "generation_yr": h.gen_yr(l),
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     contacts = h.contacts.summary() if h.contacts is not None else None
     pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)

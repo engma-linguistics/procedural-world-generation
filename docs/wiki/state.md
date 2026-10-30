@@ -24,6 +24,15 @@
 
 v2 priorities: always one fun lane on peoples/lineages (PW-692 frames the end goal), then speed, resources (PW-155), zoom quality (PW-516). Roadmap: [plan_next.md](../plan_next.md).
 
+## Tech tree (PW-675; v1 invention model, lane 64, 2026-10-30)
+- planet/lineages/techtree.py + samples/techtree.toml: about 100 techs, still a prototype list (the 594-row catalogue in docs/references/tech-catalogue/ is not yet ingested: draft-techtree-catalogue-ingest-v1).
+- The hazard per people, per tech, per kyr: rate x kind rate_x (gnomes 1.5) x culture-domain match (cap 1.5) x S(pool) x ramp.
+  - S = ln(pool / 300) / ln(1e5 / 300), Henrich's log with a threshold.
+  - pool: the population at the time (from the tracks) x the learners factor (generation / 25 yr, capped at 20: dragons 17, elves 2, dwarves 1.6). For bronze-age-on techs it is x the specialist ladder (0.2% to 10%, a judgement after Childe) x a density term (a judgement after Bettencourt).
+  - Domains: the catalogue's eight tags. Aggressive peoples take war techs up by contact x2.
+- Band: dates at or before 11.6 kyr (and techs Earth got more than 10 kyr after their prerequisites) are hard floors. Younger techs are soft: their rate is set so a 10 M people meets Earth's lag after the prerequisites (techtree.anchor_check: towns, copper, writing, iron within ~20%). late_rate is gone.
+- Evidence: docs/references/techtree/README.md. Open: drafts for a planet-own glacial gate, the risk effect, contact pools, specialists from the settlement ledger (PW-946), and too many independent copper finds.
+
 ## Current showcases
 - Owner feedback world (2026-10-24): world 2a7385 (seed 11 L7, run 6b48f5, time zoom f778ab, zooms 1ab4c4 91bf86 cd4341 80a169), peoples b69f51 (seven_meals) and 6b5d0e (dnd). Feedback doc: https://claude.ai/artifact/GMaU7W2PynuiY9z5o71kDA
 - Runs: 6c652c, d30069, 99dc70, feaade.
