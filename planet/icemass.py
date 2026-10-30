@@ -292,7 +292,7 @@ def cycle_dq(tilt: float) -> np.ndarray:
 
 
 def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, tilt: float | None = None,
-            absorb=None, warm: bool = False):
+            absorb=None, warm: float = 0.0):
     """m of ice per year each land cell gains (> 0) or loses (< 0) under h m
     of ice (0: bare ground: snow that outlasts the summer). t_warm, t_cold:
     the bare ground's warmest and coldest month (C) at the bed (the ice's
@@ -303,9 +303,10 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
     summer than it falls in a cold one, so the cycle's average ice is less
     than the mean orbit's); None: at the mean orbit. absorb: the share
     (0..1) of an insolation change the surface feels (None: from the ice
-    itself, ICE_ABSORB on thick ice). warm: the cycle's warm phase instead
-    of its average, each cell's least balance over the states (the ice that
-    outlasts an interglacial: earth.ice_sheets' persistent ice, PW-1142).
+    itself, ICE_ABSORB on thick ice). warm (0..1): the cycle's warm phase
+    instead of its average, each cell's balance averaged over that share of
+    the states with the least (1/8: the warmest state alone): the ice that
+    outlasts an interglacial (earth.ice_sheets' persistent ice, PW-1142).
     Returns (smb, t_warm on the surface, at the mean orbit)."""
     from .timezoom.kernels import climate_step
     lat = np.asarray(lat, float)
@@ -320,14 +321,16 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
     band = np.clip(((lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
     a = 1 - f_alb * (1 - ICE_ABSORB) if absorb is None else np.broadcast_to(np.asarray(absorb, float), (n,))
     k_orb = np.where(land, INSOL_K, INSOL_K * INSOL_SEA) * a
-    tot, one, t_x = np.zeros(n), np.zeros(n), np.zeros(n)
-    low = np.full(n, np.inf)
+    one, t_x = np.zeros(n), np.zeros(n)
     states = cycle_dq(tilt)
-    for dq in states:
+    each = np.empty((len(states), n))
+    for k, dq in enumerate(states):
         climate_step(*args, k_orb, band, dq, *rest, one, t_x, t_x, t_x, p_scale, f_sum)
-        tot += one
-        np.minimum(low, one, out=low)
-    return (low if warm else tot / len(states)), t_w
+        each[k] = one
+    if warm > 0:
+        m = max(1, int(round(warm * len(states))))
+        return np.sort(each, axis=0)[:m].mean(axis=0), t_w
+    return each.mean(axis=0), t_w
 
 
 def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):

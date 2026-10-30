@@ -633,7 +633,7 @@ def update_climate(sim, e):
     if p.ice_warm_persist:  # (the ice that outlasts the cycle's warm phase seeds the time-mean sheets, PW-1142)
         warm0 = ice0 if sim.ice_warm is None else land_view(bed, np.where(crust > 0, sim.ice_warm, 0.0))[1]
         sim.ice_warm = ice_sheets(sim, land, e, c["ground"], np.where(land, warm0, 0.0), sim.ice_sink, {},
-                                  marine=marine, warm=True)
+                                  marine=marine, warm=float(p.ice_warm_persist))
         ice0 = sim.ice_warm
     sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine, reground=c["reground"])
     c["ground"] = info.get("ground", c["ground"])  # (under the settled ice's own carried air, PW-1050)
@@ -762,7 +762,7 @@ def marine_view(bed, c):
             "melt": icemass.MELT_K * np.maximum(sst_w - climate.FREEZE, 0.0)}
 
 
-def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine, reground=None, warm=False):
+def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine, reground=None, warm=0.0):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
@@ -802,9 +802,9 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine, reg
     The old
     ice's height still counts: a big sheet keeps itself colder than bare
     ground would be and can outlast the climate that made it (two states,
-    hysteresis), but not by tens of Myr of lag. warm: under the cycle's warm
-    phase (icemass.balance's warm) instead of its average: the persistent ice
-    (update_climate, PW-1142)."""
+    hysteresis), but not by tens of Myr of lag. warm (0..1): under the cycle's
+    warm phase (icemass.balance's warm, that share of its states) instead of
+    its average: the persistent ice (update_climate, PW-1142)."""
     g = sim.grid
     sink = ice_load(g, np.where(land, old, 0.0)) if sink is None else sink
 
@@ -871,7 +871,7 @@ def margin_band(g, bare):
     return band
 
 
-def _start(sim, land, ground, warm=False):
+def _start(sim, land, ground, warm=0.0):
     """Where a new cap can start: snow outlasting the summer on bare ground,
     on average over the ice-age cycle's orbits (icemass.balance at no ice;
     warm: through its warm phase)."""
@@ -880,7 +880,7 @@ def _start(sim, land, ground, warm=False):
     return smb0 > 0
 
 
-def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None, air=None, warm=False):
+def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None, air=None, warm=0.0):
     """One pass of ice_sheets: the ice under its climate given the old
     ice's extent and height.
       accumulation  where snow outlasts the summer: on bare ground (a new
