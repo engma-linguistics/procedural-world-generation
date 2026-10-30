@@ -159,6 +159,12 @@
   /* embedded in the peoples workbench's Technology tab (?embed=tech, PW-913): the globe with its legend, timeline and hover card only */
   body.embed #controls, body.embed #summary, body.embed #tiltInset, body.embed #tabs, body.embed #navBar, body.embed #navTree { display: none !important; }
   body.embed #legend { left: 12px; max-width: calc(100vw - 24px); }
+  /* ?legend=dock (PW-1029, a preview, not a default): the legend in the right-hand column, just above the summary */
+  body.dockLegend #rightCol > #legend { position: static; width: 320px; max-width: 100%; margin-top: auto; flex: 0 0 auto;
+    max-height: 30vh; font-size: 12px; }
+  body.dockLegend #rightCol > #legend:empty { display: none; }
+  body.dockLegend #summary { margin-top: 0; }
+  body.dockLegend #legend .grad, body.dockLegend #legend .grad + .row { width: 290px !important; }
   /* a load that failed: a plain card instead of half-built panels (PW-1044) */
   #errCard { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100vw - 32px)); z-index: 30; font-size: 13px; }
   #errCard h3 { margin: 0 0 6px; font-size: 15px; }

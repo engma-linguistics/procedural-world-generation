@@ -59,6 +59,8 @@ addEventListener('resize', () => { resize(); if (state.mode === 'map') fitMap();
 resize();
 OVERLAY_IDS.push('hlMarks');  // (highlights.js's markers: ?hlMarks=0 works in the URL)
 applyUrlOptions();
+// ?legend=dock (PW-1029, a preview for the owner, not a default): the legend docked in the right-hand column above the summary
+if (urlp.get('legend') === 'dock') { document.body.classList.add('dockLegend'); $('rightCol').insertBefore($('legend'), $('summary')); }
 if (urlp.get('tab') === 'zoom') showTab('zoom', urlp.get('zoom'));
 $('reliefVal').textContent = $('relief').value + '×';
 reliefLabels();
