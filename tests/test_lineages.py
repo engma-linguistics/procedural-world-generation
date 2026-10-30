@@ -2455,6 +2455,16 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     h._ago_now = 0.0
     dh = MG.local_density(h, hi, k0)
     assert (dh[half] / h.dens_nat[hi] < 1).all() and (dh[half] > 0).all()
+    # the viewer's pressure settings (owner D14): meta.press_early / press_late multiply the kill, blended by tech level
+    t5 = SP.parse({**raw, "meta": {**raw["meta"], "press_early": 0.25, "press_late": 4.0}})
+    assert (t5.press_early, t5.press_late) == (0.25, 4.0) and SP.parse(SP.to_raw(t5)).press_late == 4.0
+    assert MG.press_x(t5, 0.0) == 0.25 and MG.press_x(t5, 1.0) == 4.0 and MG.press_x(h.tree, 0.5) == 1.0
+    h5 = H.History(t5, ps, 1)
+    h5._ago_now = 0.0  # (the present, renaissance: mostly the late setting, harsher)
+    assert (MG.local_density(h5, w, k0)[half] < d[half]).all()
+    h5._ago_now = h._ago_now = 10.0  # (the stone age: the early setting, gentler)
+    assert (MG.local_density(h5, w, k0)[half] > MG.local_density(h, w, k0)[half]).all()
+    h._ago_now = 0.0
     # the nominal density (meta.giant_km2) no longer sets any density
     t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
     h4 = H.History(t4, ps, 1)

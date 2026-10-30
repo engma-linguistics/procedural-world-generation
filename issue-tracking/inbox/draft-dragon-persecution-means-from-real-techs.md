@@ -20,14 +20,17 @@ bronze 2.0, and stone age before that (`megafauna.tech_level`, `ERA_KYR`). This 
 bands. Every people gets the same tech level at the same moment, whatever it actually knows. A stone-age people beside a bronze-age
 one presses dragons just as hard as its neighbour.
 
-The fix is to feed `megafauna.means(h, ago)` from each people's real known techs, once techs can feed back into the history:
+The fix is to feed the tech level per line from each people's real known techs, once techs can feed back into the history. The
+level sets which age classes of dragons a people can reach (`megafauna.vulnerability`: wyrmlings always, the young a little more
+with tech, adults and ancients only at high tech; bronze age 0.15, owner 10-30):
 - weapons and metal (bronze, iron: reach);
 - horses and mounted hunting (reach over open country);
 - organised states and bounties (the motive and organisation part).
 Today the tech tree (`techtree.py`) is computed after the history, so this waits on lane 64's rework, or a pass that runs techs
 alongside the history (PW-946).
 
-`means()` is the one place to change: motive (herds to defend) x reach (weapons, organised hunts), per line, at a time. Keep KILL_Q's
+`means()` (motive: herds to defend; organisation: bands against settled folk) and `vulnerability(level)` are the two places to
+change, per line, at a time. Keep KILL_Q's
 calibration (dense renaissance farmers keep ~10% of their dragons) or re-calibrate it on the tech-fed means.
-- [ ] means() reads each line's known techs at the step, not the era calendar
+- [ ] the tech level (`vulnerability`) and `means()` read each line's known techs at the step, not the era calendar
 - [ ] the calendar proxy (`tech_level`, `ERA_LEVEL`, `ERA_KYR`) retires

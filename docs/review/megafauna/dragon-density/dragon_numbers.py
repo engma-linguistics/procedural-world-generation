@@ -229,7 +229,8 @@ for e in ERAS:
         pon, poff = out["on"]["eras"].get(e, {}).get(c, {}), out["off"]["eras"].get(e, {}).get(c, {})
         paired[e][c]["pooled"] = (pon["per_1000km2"] / poff["per_1000km2"]) if pon and poff and poff.get("per_1000km2") else None
 out["paired"] = paired
-# the three channels, roll 7000: on -> noper (persecution) -> off (overkill); hunting stays in all three
+# the three channels, roll 7000: on -> noper (persecution) -> off (overkill); the peoples' hunting of the wild offtake stays in all three
+# (its share: 1 - the peoples' share of the supply in the off arm)
 ch = {}
 for e in ERAS:
     ch[e] = {}
@@ -247,8 +248,10 @@ for e in ERAS:
             a, b, d = on7[k]["eras"][e][c], NOPER[k]["eras"][e][c], off7[k]["eras"][e][c]
             if a["cells"] and b["cells"] and d["cells"] and b["dragons"] > 0 and d["dragons"] > 0:
                 x, y, z = a["dragons"] / a["cells"], b["dragons"] / b["cells"], d["dragons"] / d["cells"]
-                per_.append({"run": k, "persecution": x / y, "overkill": y / z})
-        for nm in ("persecution", "overkill"):
+                # the peoples' wild offtake (in every arm): the share of the wild herds' surplus left after the peoples' hunters take
+                # theirs, in the off arm (no overkill, no kill); the dragons are held to their food, so ~ the share of their density kept
+                per_.append({"run": k, "persecution": x / y, "overkill": y / z, "offtake": 1.0 - d["peoples"]})
+        for nm in ("persecution", "overkill", "offtake"):
             v = [p[nm] for p in per_]
             row[nm + "_runs"] = {"n": len(v), "min": min(v, default=None), "median": float(np.median(v)) if v else None, "max": max(v, default=None),
                                  "by_run": {p["run"]: p[nm] for p in per_}}

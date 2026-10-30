@@ -96,6 +96,20 @@ def bs(arm, biome, sit, k, n=2):
     return sig(t[k], n)
 
 
+def chk(e, c, nm, k="median"):
+    """A channel's share kept (median over the six worlds at roll 7000) as a percentage, or an en dash where the class is empty."""
+    r = N["channels_7000"].get(e, {}).get(c, {}).get(nm + "_runs", {})
+    v = r.get(k) if r.get("n") else None
+    return "–" if v is None else pct(min(v, 9.99), 2)
+
+
+def chall(e, c):
+    """The three channels together (the product of the medians: persecution x overkill x offtake), or an en dash."""
+    r = N["channels_7000"].get(e, {}).get(c, {})
+    v = [r.get(nm + "_runs", {}).get("median") if r.get(nm + "_runs", {}).get("n") else None for nm in ("persecution", "overkill", "offtake")]
+    return "–" if None in v else pct(v[0] * v[1] * v[2], 2)
+
+
 def gpv(biome, sit):
     """The game-present best guess, dragons per 10,000 km2 (Section 6): the model's own value (round 3: the persecution rule now follows
     the owner's ruling, so the round-2 half-way adjustment toward the persecution-off arm is retired). None where a cell is empty or thin."""

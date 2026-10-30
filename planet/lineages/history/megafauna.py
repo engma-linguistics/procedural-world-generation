@@ -250,10 +250,18 @@ def dragon_kept(h: History, eps, lev: float) -> np.ndarray:
     return np.interp(np.log10(e + 1e-9), np.log10(_EPS + 1e-9), t)
 
 
+def press_x(tree, lev: float) -> float:
+    """The user's multiplier on the peoples' kill at tech level lev (owner 10-30, D14: the viewer's "how hard peoples press dragons and
+    giants"): meta.press_early at level 0, meta.press_late at level 1, blended linearly by level between."""
+    a, b = getattr(tree, "press_early", 1.0), getattr(tree, "press_late", 1.0)
+    return float(a + (b - a) * min(max(lev, 0.0), 1.0))
+
+
 def kept(h: History, k: int, eps, lev: float | None = None) -> np.ndarray:
     """Line k's share of its natural density kept under the kill effort eps: dragons by age class (`dragon_kept`), giants in the
     one-stage form with the adults' vulnerability, 1 / (1 + eps x v_adult / r)."""
     lev = tech_level(h.tree.era, getattr(h, "_ago_now", 0.0)) if lev is None else lev
+    eps = np.asarray(eps, float) * press_x(h.tree, lev)
     if "flies" in h.lines[k].traits and getattr(h, "dragon_struct", None) is not None:
         return dragon_kept(h, eps, lev)
     return 1.0 / (1.0 + np.asarray(eps, float) * vulnerability(lev)[2] / breed_r(h, h.lines[k]))
