@@ -97,6 +97,7 @@ CONST = {
     "MINORITY_SHARE": 0.1,  # ... gathering this share of its settled heads (a minority clusters in one place, where a cell's chief place
                             # gathers SHARE[1]: the rest live in hamlets), up to a village; a mining people's own place is its halls,
                             # HOLD_SHARE of its heads (+ MINORITY_SHARE of its farmers), up to a town (a hold) if it knows 'towns'
+    "MINE_EDGE": 0.2,       # a second people works a cell's deposit instead of the lead when its mining affinity (MINING_TRAIT) is this much higher (PW-1116)
     "MINE_SHARE": 0.004,    # a mine's people: this share of its cell's people. Ore is mined from 'copper' on (the first metalworking,
                             # owner 10-30), rock salt from 'mines'
 }
@@ -146,6 +147,38 @@ def _miner_lines(m: dict, n_lines: int) -> np.ndarray:
     for l in m["lineages"]:
         up = by_id.get(l.get("group_of") or "", {})
         out[l["index"]] = bool(MINERS & (set(l.get("traits") or []) | set(up.get("traits") or [])))
+    return out
+
+
+# How readily a people works a deposit (PW-1116), 0..1, from what its kind carries: the strongest of its traits' weights,
+# or its kin's (lore: orcs and goblinoids dig and delve in the D&D settings), less for light-boned flyers and sea folk.
+# A kind with no hands never knows 'mines' (the techtree's grip), so hands need no weight here.
+MINING_TRAIT = {"miner": 1.0, "subterranean": 0.8, "mountain": 0.25, "hardy": 0.1}
+MINING_KIN = {"orc": 0.4, "goblinoid": 0.4}  # (ancestor line -> weight)
+MINING_BASE = 0.05
+MINING_DAMP = {"flies": 0.3, "swims": 0.2}  # (brittle hollow bones; living in the water)
+
+
+def _mining_affinity(m: dict, n_lines: int) -> np.ndarray:
+    """(lines,): how readily each line works a deposit (see MINING_TRAIT); a group takes its people's traits too."""
+    by_id = {l["id"]: l for l in m["lineages"]}
+    out = np.full(n_lines, MINING_BASE)
+    for l in m["lineages"]:
+        up = by_id.get(l.get("group_of") or "", {})
+        tr = set(l.get("traits") or []) | set(up.get("traits") or [])
+        a = max([MINING_BASE] + [MINING_TRAIT[t] for t in tr if t in MINING_TRAIT])
+        seen, stack = set(), [l["id"], up.get("id", "")]
+        while stack:  # (ancestry: the kin table)
+            x = stack.pop()
+            if x in seen or x not in by_id:
+                continue
+            seen.add(x)
+            a = max(a, MINING_KIN.get(x, 0.0))
+            stack += list(by_id[x].get("parents") or [])
+        for t, f in MINING_DAMP.items():
+            if t in tr:
+                a *= f
+        out[l["index"]] = a
     return out
 
 
@@ -317,6 +350,7 @@ def derive(run_dir: Path, **over) -> dict:
     roads_x = np.r_[_known_dates(m, nl, "roads"), -1.0]
     copper_any = np.r_[_known_dates(m, nl, "copper"), -1.0]
     miner_line = np.r_[_miner_lines(m, nl), False]
+    affinity = np.r_[_mining_affinity(m, nl), 0.0]
     deposit = _deposits(m.get("world"), n)
     same_people = np.zeros((nl + 1, nl + 1), bool)
     for a in range(nl):
@@ -445,8 +479,18 @@ def derive(run_dir: Path, **over) -> dict:
         def can_mine(li):
             ok = (li != NONE) & (mines_any[np.minimum(li, nl)] >= ago - 1e-9)
             return ok & (deposit[1] | (deposit[0] & (copper_any[np.minimum(li, nl)] >= ago - 1e-9)))
-        lm = np.where(has & can_mine(lead), lead, np.where(can_mine(second), second, NONE))
-        target2 = np.where(e["land"] & (lm != NONE), c["MINE_SHARE"] * dens * area, 0.0)
+        # PW-1116: the cell's mining-inclined people works the deposit even as a second people (SECOND_MIN of the heads, a
+        # people of its own) when it is clearly more inclined than the lead (MINE_EDGE); else the lead, else the second
+        sec_ok = (second != NONE) & (e["mix_second_share"] >= 100 * c["SECOND_MIN"]) & ~same_people[np.minimum(lead, nl), np.minimum(second, nl)]
+        a_l, a_s = affinity[np.minimum(lead, nl)], affinity[np.minimum(second, nl)]
+        lead_ok, sec_can = has & can_mine(lead), sec_ok & can_mine(second)
+        take_sec = sec_can & (~lead_ok | (a_s >= a_l + c["MINE_EDGE"]))
+        lm = np.where(take_sec, second, np.where(lead_ok, lead, NONE))
+        a_m = affinity[np.minimum(lm, nl)]
+        want = np.where(e["land"] & (lm != NONE), c["MINE_SHARE"] * (0.5 + a_m) * dens * area, 0.0)
+        # one mining district per ring of cells (the best of it, as a town is): a seam is worked at a few pits, not in every cell
+        mscore = want * tieb
+        target2 = np.where(mscore >= mscore[R1].max(1) - 1e-9, want, 0.0)
 
         for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm)):
             r_ = rngs[k]
