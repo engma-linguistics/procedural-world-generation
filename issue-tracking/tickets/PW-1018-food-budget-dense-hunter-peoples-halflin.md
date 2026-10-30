@@ -1,4 +1,5 @@
 ---
+id: PW-1018
 title: "Food budget: dense 'hunter' peoples (halflings 12/km2, goblins 5, hobgoblins 4) take ~85% of the wild offtake in foragers' country, so dragons get almost nothing there before farming"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-45b
 blocked_by: []
 relates: [PW-977, PW-974, PW-990]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/landuse.py, docs/review/megafauna/age-of-dragons.html]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Options:
 - **C.** Treat the `hunter` trait as a part forage use (say 0.3) for lines with a farming or other use, not a full one.
 
 Lean: B. It follows from the energetics (game cannot feed people at those densities) and needs no per-people tuning.
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-dense-hunter-peoples-eat-the-wild-offtake.md (found by fun-lane-45b).

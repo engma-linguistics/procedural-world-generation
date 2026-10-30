@@ -2,7 +2,7 @@
 id: PW-974
 title: Read lineages.prey.productivity into people density (way-of-life factor x f(absolute NPP))
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -33,5 +33,6 @@ What is left:
 - Run the 6 x 4 dnd sweep (rolls 7000-7003) against main.
 
 ## Updates
+- 2026-10-29: Status todo -> done. Merged (fun lane 45b): density = way-of-life number x f, f from foraging layer / 2.85 and grazing NPP / 279 g C/m2/yr, fixed across worlds; farmers, fishers and megafauna f = 1. Judgement calls in PW-1020.
 - 2026-10-29: fun-lane-45b built it (option B, per-cell density through dens_at): density = way-of-life number x f, f = the foraging layer / FORAGE_REF (2.85) for the foraging share, the grazing NPP / GRAZE_REF (279 g C/m2/yr) for the herding share, 1 for farmers, fishers, megafauna; absolute (fixed references, not each world's mean), refit on the 6 x 4 dnd sweep so each way's mean stays (foragers 3.65 vs 3.66/km2 on main, herders 0.81 vs 0.76). Sweep vs main: per-people pass 69.0% both, remnants 84 vs 83 (60 vs 59 of peoples present). The deep epoch keeps the number. Judgement calls in inbox draft-people-density-productivity-form.
 - 2026-10-28: Created from inbox draft draft-people-density-reads-productivity.md (found by fun-lane-41).

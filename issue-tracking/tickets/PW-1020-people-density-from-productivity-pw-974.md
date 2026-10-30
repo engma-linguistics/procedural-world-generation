@@ -1,4 +1,5 @@
 ---
+id: PW-1020
 title: "People density from productivity (PW-974): judgement calls in the form of f - linear, absolute, farmers exempt, deep epoch flat"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-45b
 blocked_by: []
 relates: [PW-974, PW-833, PW-964]
 refs: [planet/lineages/prey.py, planet/lineages/history/model.py, docs/review/megafauna/people_density.py]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 - **C.** A concave f (e.g. square root) to soften poor-country densities if remnants rise.
 
 Lean: A. B is a small follow-up if the owner wants farmers to track productivity too.
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-people-density-productivity-form.md (found by fun-lane-45b).

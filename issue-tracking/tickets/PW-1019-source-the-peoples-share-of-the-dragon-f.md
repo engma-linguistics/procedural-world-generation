@@ -1,4 +1,5 @@
 ---
+id: PW-1019
 title: "Source the peoples' share of the dragon food budget: a person's food, the share of it that is wild game, and the guild's size-class rule"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-45b
 blocked_by: []
 relates: [PW-977, PW-991, PW-974]
 refs: [planet/lineages/history/megafauna.py, docs/references/megafauna/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Cross-checks already on file: Farlow 1993 (p. 172) 7 kJ per g live mass puts a 0
 - [ ] a source (or a range) for the forager's game share
 - [ ] a source for the daily food figure
 - [ ] the guild rule checked against a living large-mammal guild (e.g. Serengeti carnivore biomass by species)
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-food-budget-peoples-share-constants-unverified.md (found by fun-lane-45b).
