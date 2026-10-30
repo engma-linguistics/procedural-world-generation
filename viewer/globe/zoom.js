@@ -1,4 +1,4 @@
-import { postJob, trackJob } from '../planets.js';
+import { esc, postJob, trackJob } from '../planets.js';
 import { S } from './state.js';
 import { $ } from './scene.js';
 import { buildOverlays } from './overlays.js';
@@ -52,8 +52,12 @@ export function renderZoomBox() {
         <select id="zoomSize">${ZOOM_SIZES.map((k) => `<option value="${k}" ${k === S.zoomSize ? 'selected' : ''}>${k} km</option>`).join('')}</select>
         <button class="btn" data-act="go" ${zoomJob && !zoomJob.finished ? 'disabled' : ''}>Zoom</button></div>
         <div class="muted">${ZOOM_PX}×${ZOOM_PX} px at ${+(S.zoomSize / ZOOM_PX).toFixed(2)} km${S.V.kind === 'run' ? '; a full world is built from this frame first (a few seconds, once)' : ''}</div>`;
-    } else html += `<div class="muted">${S.V.tz ? 'No regional zooms of a time zoom; zoom into its source run instead.'
-      : 'Zooming needs a world sliced from a run (or a run). This one has no rock or climate layers.'}</div>`;
+    } else if (S.V.tz) {  // (a time zoom or a peoples run: zoom from what it came from, at this place; PW-1044)
+      const m = S.V.run.meta, at = `&lat=${S.picked.lat}&lon=${S.picked.lon}`;
+      html += `<div class="muted">A ${m.phase === 'lineages' ? 'peoples run' : 'time zoom'} can't be zoomed itself. Open what it was made from at this place, and zoom there:</div>
+        <div class="row" style="margin-top:4px">${m.world ? `<a class="btn" href="?world=${encodeURIComponent(m.world)}.json${at}" title="The finished world the peoples live on">Open world ${esc(m.world)} here</a>` : ''}
+        ${m.source_run && !S.V.tzEarth ? `<a class="btn" href="?run=${encodeURIComponent(m.source_run)}&t=${m.at_myr ?? ''}${at}" title="The tectonic run, at the moment this was taken from">Open the source run here</a>` : ''}</div>`;
+    } else html += `<div class="muted">Zooming needs a world sliced from a run (or a run). This one has no rock or climate layers.</div>`;
   }
   if (zoomJob) {
     const j = zoomJob;

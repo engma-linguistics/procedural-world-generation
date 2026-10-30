@@ -12,8 +12,8 @@ const CSS = `
 #start h1 { font-size: 20px; margin: 0; flex: 1; min-width: 160px; }
 #start h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
 #start .seg { display: flex; gap: 6px; flex-wrap: wrap; }
-#start .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
-#start .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
+#start .seg button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+#start .seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 #start .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
 #start .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 #start .card:hover { border-color: var(--accent); }
@@ -21,8 +21,16 @@ const CSS = `
 #start .card .pl-thumb { object-fit: contain; }
 #start .views { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 #start .views .lbl { color: var(--muted); font-size: 12px; }
-#start .views button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
-#start .views button[aria-pressed=true] { background: var(--accent); color: #06121f; border-color: var(--accent); }
+#start .views button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+#start .views button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+#start .find { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0 10px; }
+#start .find input[type=search] { flex: 1 1 220px; min-width: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: inherit; }
+#start .find select { width: auto; padding: 4px 6px; }
+#start .find .lbl { color: var(--muted); font-size: 12px; }
+#start .find button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 12px; cursor: pointer; font: inherit; font-size: 12px; }
+#start .find button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+#start .find .count { color: var(--muted); font-size: 12px; margin-left: auto; }
+#start .chip.peoples { color: var(--accent); border-color: var(--accent); }
 #start .card .nm { font-weight: 600; overflow-wrap: anywhere; }
 #start .card .meta { color: var(--muted); font-size: 12px; }
 #start .chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -35,13 +43,13 @@ const CSS = `
 #start fieldset { border: 1px solid var(--border); border-radius: 8px; margin: 0; padding: 8px 12px 12px; min-width: 0; }
 #start legend { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 0 6px; }
 #start .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-#start .preset { text-align: left; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
+#start .preset { text-align: left; background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
 #start .preset.on { border-color: var(--accent); background: #16263b; }
 #start .preset b { display: block; }
 #start .preset span { color: var(--muted); font-size: 12px; }
 #start .f { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 4px 12px; align-items: center; padding: 3px 0; }
 #start .f .hp { grid-column: 2; color: var(--muted); font-size: 11px; margin-top: -2px; }
-#start input[type=number], #start select { background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font: inherit; width: 100%; min-width: 0; }
+#start input[type=number], #start select { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font: inherit; width: 100%; min-width: 0; }
 #start input[type=range] { width: 100%; }
 #start .inl { display: flex; gap: 8px; align-items: center; }
 #start label.ck { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; flex-wrap: wrap; }
@@ -75,7 +83,11 @@ export async function showStart() {
   el.innerHTML = `<div class="wrap"><header><h1>Planet Viewer</h1>
     <div class="seg" id="stTabs"><button data-tab="gallery" class="on">Planets</button><button data-tab="new">New planet</button></div></header>
     <div id="stBanner"></div><section id="stGallery"><div class="views" hidden>
-      <span class="lbl">Show</span><button data-view="globe" aria-pressed="true">Globe</button><button data-view="list" aria-pressed="true">Map list</button></div>
+      <span class="lbl">Show</span><button data-view="both">Globe and list</button><button data-view="globe">Globe only</button><button data-view="list">List only</button></div>
+      <div class="find" hidden><input type="search" id="stQ" placeholder="Search by name, seed or id" aria-label="Search the planets">
+        <span class="lbl">Sort</span><select id="stSort" title="The order of the planets"><option value="newest">newest first</option><option value="starred">starred first</option><option value="name">by name</option></select>
+        <span class="lbl">Only</span><button data-f="peoples" title="Planets with at least one peoples run">has peoples</button><button data-f="l7" title="Showcase detail (grid level 7)">L7</button><button data-f="starred" title="Planets with anything starred">starred</button>
+        <span class="count" id="stCount"></span></div>
       <div id="stGlobe"></div><div id="stList"></div></section><section id="stNew" hidden></section></div>`;
   document.body.append(el);
   const $ = (s) => el.querySelector(s);
@@ -95,16 +107,47 @@ export async function showStart() {
   try { Object.assign(views, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch { /* private window */ }
   const saveViews = () => { try { localStorage.setItem(VIEW_KEY, JSON.stringify(views)); } catch { /* private window */ } };
   const metaOf = (p) => [p.seed != null && `seed ${p.seed}`, p.level != null && `L${p.level}`, p.myr && `${p.myr} Myr`, (p.updated || '').slice(0, 10)].filter(Boolean).join(' · ');
-  const picker = createGlobePicker($('#stGlobe'), () => planets, (p) => openUrl(p, primaryNode(p)), metaOf);
+  const picker = createGlobePicker($('#stGlobe'), () => shown, (p) => openUrl(p, primaryNode(p)), metaOf);
+  if (!views.globe && !views.list) views.list = true;  // (the old two toggles could turn both off)
   function applyViews() {
     $('#stList').hidden = !views.list;
-    $('#stGallery .views').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(!!views[b.dataset.view])));
-    if (views.globe && planets.length) { picker.show(); picker.refresh(); } else picker.hide();
+    const cur = views.globe && views.list ? 'both' : views.globe ? 'globe' : 'list';
+    $('#stGallery .views').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === cur)));
+    if (views.globe && shown.length) { picker.show(); picker.refresh(); } else picker.hide();
   }
   $('#stGallery .views').addEventListener('click', (e) => {
     const v = e.target.dataset.view;
     if (!v) return;
-    views[v] = !views[v]; saveViews(); applyViews();
+    views.globe = v !== 'list'; views.list = v !== 'globe'; saveViews(); applyViews();
+  });
+  // ------------------------------------------------------------ search, sort, filters (PW-1028; the sort and filters remembered per browser)
+  const FIND_KEY = 'planet.startFind';
+  const find = { q: '', sort: 'newest', only: [] };
+  try { Object.assign(find, JSON.parse(localStorage.getItem(FIND_KEY) || '{}')); } catch { /* private window */ }
+  const saveFind = () => { try { localStorage.setItem(FIND_KEY, JSON.stringify({ sort: find.sort, only: find.only })); } catch { /* private window */ } };
+  const peoplesOf = (p) => p.nodes.filter((n) => n.phase === 'lineages').length;
+  const starredOf = (p) => p.nodes.some((n) => favs.has(favKey(n)));
+  let shown = [];  // the planets that pass the search and filters, in the chosen order
+  function filterPlanets() {
+    const words = find.q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hay = (p) => [p.name, p.key, p.seed != null ? `seed ${p.seed}` : '', ...p.nodes.map((n) => `${n.id} ${n.name || ''}`)].join(' ').toLowerCase();
+    shown = planets.filter((p) => words.every((w) => hay(p).includes(w))
+      && (!find.only.includes('peoples') || peoplesOf(p)) && (!find.only.includes('l7') || p.level === 7) && (!find.only.includes('starred') || starredOf(p)));
+    const newest = (a, b) => (b.updated || b.created || '').localeCompare(a.updated || a.created || '');
+    shown.sort(find.sort === 'name' ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })
+      : find.sort === 'starred' ? (a, b) => (starredOf(b) - starredOf(a)) || newest(a, b) : newest);
+  }
+  $('#stQ').value = find.q;
+  $('#stSort').value = find.sort;
+  const syncFind = () => $('#stGallery .find').querySelectorAll('[data-f]').forEach((b) => b.setAttribute('aria-pressed', String(find.only.includes(b.dataset.f))));
+  syncFind();
+  $('#stQ').addEventListener('input', () => { find.q = $('#stQ').value; drawGallery(); });
+  $('#stSort').addEventListener('change', () => { find.sort = $('#stSort').value; saveFind(); drawGallery(); });
+  $('#stGallery .find').addEventListener('click', (e) => {
+    const f = e.target.dataset.f;
+    if (!f) return;
+    find.only = find.only.includes(f) ? find.only.filter((x) => x !== f) : [...find.only, f];
+    saveFind(); syncFind(); drawGallery();
   });
   async function loadGallery() {
     $('#stList').innerHTML = '<div class="empty">Loading...</div>';
@@ -113,20 +156,25 @@ export async function showStart() {
   }
   function drawGallery() {
     $('#stGallery .views').hidden = !planets.length;
+    $('#stGallery .find').hidden = !planets.length;
+    filterPlanets();
+    $('#stCount').textContent = shown.length === planets.length ? `${planets.length} planets` : `${shown.length} of ${planets.length} planets`;
     applyViews();
     if (!planets.length) {
       $('#stList').innerHTML = `<div class="empty">No planets yet. <button class="pl-btn primary" data-act="new">Make the first one</button>
-        <p>Or from a terminal: <code>uv run python -m planet make --seed 1</code>. You can also drop a world .json on this page's viewer.</p></div>`;
+        <p>You can also drop a world .json on this page's viewer.</p></div>`;
       return;
     }
-    $('#stList').innerHTML = `<div class="grid">${planets.map((p, i) => {
-      const c = p.counts, chips = [c.timezoom && `${c.timezoom} time zoom${c.timezoom > 1 ? 's' : ''}`, c.world && `${c.world} world${c.world > 1 ? 's' : ''}`,
+    if (!shown.length) { $('#stList').innerHTML = '<div class="empty">No planet matches. Clear the search or the filters above.</div>'; return; }
+    $('#stList').innerHTML = `<div class="grid">${shown.map((p) => {
+      const i = planets.indexOf(p), np = peoplesOf(p);
+      const c = p.counts, chips = [np && `${np} peoples run${np > 1 ? 's' : ''}`, c.timezoom && `${c.timezoom} time zoom${c.timezoom > 1 ? 's' : ''}`, c.world && `${c.world} world${c.world > 1 ? 's' : ''}`,
         (c.zoom + c.fine) && `${c.zoom + c.fine} zoom${c.zoom + c.fine > 1 ? 's' : ''}`].filter(Boolean);
       const meta = metaOf(p), starred = p.nodes.some((n) => favs.has(favKey(n)));
       return `<div class="card" data-i="${i}"><div class="pic" data-act="open"><img class="pl-thumb" src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
-        <div class="nm">${starHtml(favs.has(favKey(primaryNode(p))), 'data-act="star"')}${starred && !favs.has(favKey(primaryNode(p))) ? '<span title="Another part of this planet is starred (see All)" style="color:#ffc940"> \u2605</span> ' : ' '}${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
-        <div class="chips">${chips.map((x) => `<span class="chip">${x}</span>`).join('')}</div>
-        <div class="row"><button class="pl-btn primary" data-act="open">Open</button><button class="pl-btn" data-act="details">All ${p.nodes.length}</button></div></div>`;
+        <div class="nm">${starHtml(favs.has(favKey(primaryNode(p))), 'data-act="star"')}${starred && !favs.has(favKey(primaryNode(p))) ? '<span title="Another part of this planet is starred (see Family)" style="color:var(--star)"> \u2605</span> ' : ' '}${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
+        <div class="chips">${chips.map((x) => `<span class="chip${x.includes('peoples') ? ' peoples' : ''}">${x}</span>`).join('')}</div>
+        <div class="row"><button class="pl-btn primary" data-act="open">Open</button><button class="pl-btn" data-act="details" title="Everything made from this planet: its runs, time zooms, peoples runs, worlds and zooms">Family (${p.nodes.length})</button></div></div>`;
     }).join('')}</div>`;
   }
   $('#stGallery').addEventListener('click', async (e) => {
@@ -262,8 +310,7 @@ export async function showStart() {
         s.type === 'choice' ? `<select id="s_${s.key}" data-k="${s.key}">${s.choices.map((c) => `<option>${c}</option>`).join('')}</select>`
           : `<input id="s_${s.key}" data-k="${s.key}" type="number" min="${s.min}" max="${s.max}" step="${s.type === 'int' ? 1 : 0.1}">`}
         <div class="hp">${esc(s.help)}</div></div>`).join('')}</div>
-        <details style="margin-top:8px"><summary>Not configurable yet</summary><div class="gaps">The model has no parameter for: ${opt.unsupported.map(esc).join('; ')}.
-          Other tectonics settings are on the command line: <code>planet make --set KEY=VALUE</code>.</div></details></fieldset>
+        <details style="margin-top:8px"><summary>Not configurable yet</summary><div class="gaps">The model has no parameter for: ${opt.unsupported.map(esc).join('; ')}.</div></details></fieldset>
       <div class="est" id="fEst">...</div>
       <div><button type="submit" class="pl-btn primary" id="fGo" style="padding:8px 18px;font-size:14px">Make planet</button></div>
       <div id="fmProgress"></div></form>`;

@@ -5,13 +5,13 @@
 export const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const CSS = `
-.pl-thumb { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: #111827; border-radius: 4px; }
+.pl-thumb { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: var(--ctl); border-radius: 4px; }
 .pl-tree { margin: 0; padding: 0; list-style: none; }
 .pl-tree ul { margin: 0 0 0 14px; padding: 0 0 0 8px; list-style: none; border-left: 1px solid var(--border); }
 .pl-node { display: flex; gap: 8px; align-items: flex-start; padding: 4px; border-radius: 6px; margin: 2px 0; }
 .pl-node:hover { background: #1d2738; }
 .pl-node.cur { background: #223652; outline: 1px solid var(--accent); }
-.pl-node img { width: 64px; height: 32px; flex: none; object-fit: cover; border-radius: 3px; background: #111827; cursor: pointer; }
+.pl-node img { width: 64px; height: 32px; flex: none; object-fit: cover; border-radius: 3px; background: var(--ctl); cursor: pointer; }
 .pl-node .tx { min-width: 0; flex: 1; }
 .pl-node .tt { font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
 .pl-node .tt:hover { color: var(--accent); }
@@ -20,16 +20,16 @@ const CSS = `
 .pl-kind { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 0 5px; border-radius: 8px;
   border: 1px solid var(--border); color: var(--muted); margin-right: 5px; vertical-align: 1px; }
 .pl-kind.run { color: #ffd27c; } .pl-kind.timezoom { color: #9fd3ff; } .pl-kind.world { color: #b6f0a0; } .pl-kind.zoom, .pl-kind.fine { color: #e0b0ff; }
-.pl-bar { height: 6px; background: #111827; border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
+.pl-bar { height: 6px; background: var(--ctl); border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
 .pl-bar > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
 .pl-err { color: #ff8a80; }
-.pl-btn { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; }
+.pl-btn { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; }
 .pl-btn:hover:not(:disabled) { border-color: var(--accent); }
 .pl-btn:disabled { opacity: .5; cursor: default; }
-.pl-btn.primary { background: var(--accent); color: #06121f; border-color: var(--accent); font-weight: 600; }
+.pl-btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 .pl-btn.danger:hover:not(:disabled) { border-color: #ff8a80; color: #ff8a80; }
 .pl-btn.sm { padding: 1px 7px; font-size: 11px; }
-.pl-btn.star.on { color: #ffc940; border-color: #ffc940; }
+.pl-btn.star.on { color: var(--star); border-color: var(--star); }
 `;
 let cssDone = false;
 export function injectCss() {

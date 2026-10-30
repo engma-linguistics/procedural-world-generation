@@ -48,8 +48,10 @@ import { drawTint } from './provenance.js';
 import { mouse, pickGlobeCell, ray } from './pick.js';
 import { OVERLAY_IDS, reliefLabels } from './map2d.js';
 import { showTab } from './tabs.js';
-import { setFrame } from './load.js';
+import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
+import { paletteReport } from './palettes.js';
+import { RAMP_CHANGES } from './layers.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 // ------------------------------------------------------------ boot
 // (after every module has run its own top-level code: the URL's options override their defaults)
@@ -57,6 +59,8 @@ addEventListener('resize', () => { resize(); if (state.mode === 'map') fitMap();
 resize();
 OVERLAY_IDS.push('hlMarks');  // (highlights.js's markers: ?hlMarks=0 works in the URL)
 applyUrlOptions();
+// ?legend=dock (PW-1029, a preview for the owner, not a default): the legend docked in the right-hand column above the summary
+if (urlp.get('legend') === 'dock') { document.body.classList.add('dockLegend'); $('rightCol').insertBefore($('legend'), $('summary')); }
 if (urlp.get('tab') === 'zoom') showTab('zoom', urlp.get('zoom'));
 $('reliefVal').textContent = $('relief').value + '×';
 reliefLabels();
@@ -67,12 +71,14 @@ if (startScreen) {
   navBarHide();
   import('../start.js').then((m) => m.showStart()).then((s) => { if (location.hash === '#new') s.tab('new'); })
     .catch((err) => { console.error(err); document.body.insertAdjacentHTML('beforeend', `<div class="panel" style="top:60px;left:12px">Start screen failed: ${esc(err.message)}</div>`); });
-} else init().catch((err) => { S.infoHtml = null; $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+} else init().catch(loadFailed);  // (a plain error card, PW-1044)
 
 // headless timing (console: planetViewer.bench()): replay keyframes back to back, each
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
 // then frames drawn with the camera turning and nothing repainted
 window.planetViewer = {
+  rampReport: () => RAMP_CHANGES,  // (?ramps=new: the ramps rebuilt to run one way in lightness, before and after; PW-1027)
+  paletteReport,  // (the peoples' colours on screen: neighbours alike, colours lost in the ocean; PW-1032)
   // random pointer positions: the globe's fast pick against three's full raycast (PW-679); {tested, hits, mismatches}
   pickCheck(count = 400) {
     const out = { tested: 0, hits: 0, mismatches: 0, undefinedPicks: 0, examples: [] };

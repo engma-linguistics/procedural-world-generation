@@ -4,14 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Planet Viewer</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0b0f17; --panel: rgba(18, 24, 36, 0.92); --text: #dfe6f0; --muted: #8b97a8;
-    --accent: #7cc4ff; --border: #2a3446;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
-    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; }
   /* Explicit CSS size: the drawing buffer is devicePixelRatio x larger and the
      canvas would otherwise display at that size (2x too big on Retina). */
   #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
@@ -100,42 +95,28 @@
   .tree .sub { margin-left: 14px; }
   #tlabel { font-family: ui-monospace, Menlo, monospace; min-width: 92px; text-align: right; white-space: nowrap; }
   #play { width: 34px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent);
-    color: #06121f; font-size: 14px; cursor: pointer; }
+    color: var(--on-accent); font-size: 14px; cursor: pointer; }
   h1 { font-size: 14px; margin: 0 0 8px; }
   h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
   #controls select, #controls input[type=range] { width: 100%; }
-  select { background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px; }
+  select { padding: 4px; }
   label { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 1px 0; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
-    border-radius: 4px; cursor: pointer; font-size: 12px; }
-  .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
   .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-  .muted { color: var(--muted); }
-  code { background: #111827; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  code { word-break: break-all; }
   .grad { height: 10px; width: 260px; border-radius: 2px; }
   .ev { padding: 1px 4px; border-radius: 3px; cursor: pointer; display: grid; grid-template-columns: 30px 66px 1fr; gap: 4px; }
-  .ev:hover { background: #1d2738; }
-  .ev.now { background: #223652; }
+  .ev:hover { background: var(--ctl-hi); }
+  .ev.now { background: var(--ctl-sel); }
   .ev .tt { text-align: right; color: var(--muted); }
   #drop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
     background: rgba(10, 20, 40, .8); font-size: 20px; border: 3px dashed var(--accent); }
   #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--accent);
-    color: #06121f; padding: 6px 12px; border-radius: 6px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+    color: var(--on-accent); padding: 6px 12px; border-radius: 6px; opacity: 0; transition: opacity .3s; pointer-events: none; }
   details summary { cursor: pointer; color: var(--muted); }
-  .btn { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
-    border-radius: 4px; cursor: pointer; font-size: 12px; }
-  .btn:hover, .seg button:hover { border-color: var(--accent); }
-  .btn:disabled { opacity: .5; cursor: default; }
   /* collapsible sections of the control panel; open/closed is remembered */
   details.sec { margin-top: 8px; }
-  details.sec > summary { list-style: none; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
-    padding: 2px 0 4px; user-select: none; }
-  details.sec > summary::-webkit-details-marker { display: none; }
-  details.sec > summary::before { content: '\25B8'; display: inline-block; width: 14px; font-size: 13px;
-    line-height: 1; transition: transform .15s; }
-  details.sec[open] > summary::before { transform: rotate(90deg); }
-  details.sec > summary:hover { color: var(--text); }
+  /* (the summary line and its triangle: theme.css) */
   details.sec h2:first-child { margin-top: 2px; }
   details.sec p { margin: 4px 0 0; }
   .rbox { margin: 2px 0 0 18px; }
@@ -148,20 +129,20 @@
     font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   #zoomBox select { padding: 2px; }
   #zoomBox .x { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 2px; }
-  .bar { height: 6px; background: #111827; border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
+  .bar { height: 6px; background: var(--ctl); border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
   .bar > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
-  .err { color: #ff8a80; }
+  /* the command that remakes a run or world: out of the way, for scripts (PW-1047) */
+  details.cli { margin-top: 4px; font-size: 11px; } details.cli summary { font-size: 11px; } details.cli code { display: block; margin-top: 2px; }
   /* glacial time zoom: the "from here" box, and the sea-level chart of a time zoom */
   .tzBox { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
   .tzBox select { padding: 1px; }
   svg.tzchart { display: block; margin: 4px 0 2px; cursor: crosshair; }
   svg.tzchart text { font: 9px ui-monospace, Menlo, monospace; fill: #8b97a8; }
-  a { color: var(--accent); }
   /* highlights list */
   #hlList { max-height: 300px; overflow-y: auto; margin-top: 4px; }
   .hl { padding: 2px 4px; border-radius: 3px; cursor: pointer; }
-  .hl:hover { background: #1d2738; }
-  .hl.sel { background: #223652; }
+  .hl:hover { background: var(--ctl-hi); }
+  .hl.sel { background: var(--ctl-sel); }
   .hl .k { color: var(--muted); display: inline-block; min-width: 20px; }
   .hl .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
   #hlCats { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
@@ -178,6 +159,25 @@
   /* embedded in the peoples workbench's Technology tab (?embed=tech, PW-913): the globe with its legend, timeline and hover card only */
   body.embed #controls, body.embed #summary, body.embed #tiltInset, body.embed #tabs, body.embed #navBar, body.embed #navTree { display: none !important; }
   body.embed #legend { left: 12px; max-width: calc(100vw - 24px); }
+  /* ?legend=dock (PW-1029, a preview, not a default): the legend in the right-hand column, just above the summary */
+  body.dockLegend #rightCol > #legend { position: static; width: 320px; max-width: 100%; margin-top: auto; flex: 0 0 auto;
+    max-height: 30vh; font-size: 12px; }
+  body.dockLegend #rightCol > #legend:empty { display: none; }
+  body.dockLegend #summary { margin-top: 0; }
+  body.dockLegend #legend .grad, body.dockLegend #legend .grad + .row { width: 290px !important; }
+  /* a load that failed: a plain card instead of half-built panels (PW-1044) */
+  #errCard { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100vw - 32px)); z-index: 30; font-size: 13px; }
+  #errCard h3 { margin: 0 0 6px; font-size: 15px; }
+  #errCard ul { margin: 4px 0 8px; padding-left: 18px; }
+  body.failed #summary, body.failed #legend, body.failed #timeline, body.failed #info, body.failed #c, body.failed #tiltInset { visibility: hidden; }
+  /* a layer being fetched and painted (PW-1044) */
+  #busy { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 25; display: none; pointer-events: none;
+    background: var(--panel); border: 1px solid var(--accent); color: var(--text); border-radius: 14px; padding: 3px 12px 3px 28px; font-size: 12px; }
+  #busy::before { content: ''; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -6px; border: 2px solid var(--accent);
+    border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+  body.busy #busy { display: block; }
+  body.busy #layerSeg button.on { opacity: .6; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   body.embed #timeline { left: 12px; width: calc(100vw - 24px); }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
     #legend { left: 244px; max-width: calc(100vw - 256px); }

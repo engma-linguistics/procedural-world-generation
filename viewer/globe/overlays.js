@@ -27,9 +27,14 @@ function vnoise(x, y, z) {
   return l(l(l(hash3(xi, yi, zi), hash3(xi + 1, yi, zi), fu), l(hash3(xi, yi + 1, zi), hash3(xi + 1, yi + 1, zi), fu), fv),
            l(l(hash3(xi, yi, zi + 1), hash3(xi + 1, yi, zi + 1), fu), l(hash3(xi, yi + 1, zi + 1), hash3(xi + 1, yi + 1, zi + 1), fu), fv), fw);
 }
+// (kept per world or run frame and season, marked shared so disposeObj leaves it when the overlays are rebuilt;
+// the cache empties when another world or run is opened, and holds a few frames at most: PW-1045)
+let cloudOf = null;
 function cloudTexture(season) {
-  const key = `${S.V.id}|${season}`;
+  if (cloudOf !== S.V) { for (const t of cloudCache.values()) t.dispose(); cloudCache.clear(); cloudOf = S.V; }
+  const key = `${S.V.kind === 'run' ? S.V.frame : ''}|${season}`;
   if (cloudCache.has(key)) return cloudCache.get(key);
+  if (cloudCache.size >= 6) { const [k0, t0] = cloudCache.entries().next().value; t0.dispose(); cloudCache.delete(k0); }
   const L = S.V.layers, G = S.V.grid, W = CLOUD_W, H = CLOUD_H;
   // the cloud share per texel: cells drawn as polygons, blurred
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
@@ -75,6 +80,7 @@ function cloudTexture(season) {
   c2.filter = 'none'; c2.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(cv2);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.userData.shared = true;
   cloudCache.set(key, tex);
   return tex;
 }

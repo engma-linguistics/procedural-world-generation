@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Peoples workbench · Planet Viewer</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; --ok: #9fd18b; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid;
+  /* (the shared tokens are in theme.css; this page's panels are solid, and it calls the border "line") */
+  :root { --panel: var(--panel-solid); --line: var(--border); --acc: var(--accent); }
+  body { display: grid;
          grid-template-rows: auto auto 1fr auto; height: 100vh; }
   header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   header b { font-size: 15px; margin-right: 8px; }
@@ -27,17 +28,17 @@
   #tlctl select { margin: 4px 0 0 6px; max-width: 170px; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
   footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
-  button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  button, select, input { background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  .filebtn { display: inline-block; margin: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
+  .filebtn:hover { border-color: var(--acc); }
   button { cursor: pointer; } button:hover { border-color: var(--acc); }
   input[type=number] { width: 70px; } input.wide { width: 100%; }
   label { display: block; margin: 5px 0 2px; color: var(--muted); }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .muted { color: var(--muted); } .err { color: var(--err); } .ok { color: var(--ok); }
   .trait { display: inline-block; margin: 2px 8px 2px 0; color: var(--text); }
   svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
   .bar { cursor: grab; } .sel rect.bg { fill: #233047; }
   h3 { margin: 12px 0 4px; font-size: 13px; } h2 { font-size: 14px; margin: 4px 0 8px; }
-  a { color: var(--acc); }
   table.t { border-collapse: collapse; font-size: 12px; }
   table.t th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; color: var(--muted); padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.t td { padding: 2px 5px; border-bottom: 1px solid #1c2430; vertical-align: top; }
@@ -52,7 +53,8 @@
   .kpi div b { display: block; font-size: 17px; } .kpi div span { color: var(--muted); font-size: 11px; }
   pre.map { font: 10px/10px ui-monospace, monospace; margin: 0; letter-spacing: 0; background: #0a1a2a; padding: 6px; display: inline-block; }
   .bars { display: inline-block; height: 8px; background: var(--acc); opacity: .7; vertical-align: middle; border-radius: 2px; }
-  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  .lmcol { overflow-x: auto; }
   @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } #tab-tree.on { grid-template-columns: 1fr; } }
   .hint { max-width: 900px; color: var(--muted); margin: 0 0 8px; }
 </style>
@@ -65,7 +67,7 @@
   <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
   <button id="save">Save</button>
   <button id="download">Download JSON</button>
-  <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
+  <label class="filebtn" title="Open a tree saved with Download JSON">Open JSON…<input type="file" id="upload" accept=".json" hidden></label>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
   <span class="muted">world</span><button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here, and for agents: planet favourites)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
@@ -213,7 +215,7 @@ const FOOT = {
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  results: 'From a peoples run (meta.present). Numbers are presence x density x area: rough, for a game, not a census.',
+  results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1).split('/')[0];  // (#tech/map: the Technology tab's view, techtab.js)
 function showTab(t) {
@@ -221,7 +223,7 @@ function showTab(t) {
   tab = t;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('on', s.id === `tab-${t}`));
-  $('foot').innerHTML = FOOT[t] + ' Saved trees: <code>&lt;data&gt;/lineage_trees/</code>; CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.';
+  $('foot').innerHTML = FOOT[t];  // (no command lines here: the owner uses the viewer, PW-1047)
   history.replaceState(null, '', `${location.search}#${t}${t === 'tech' ? '/' + TechTab.view : ''}`);
   redraw();
 }
@@ -752,7 +754,7 @@ function drawResults() {
     <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
   // population table
   const maxPop = Math.max(1, ...living.map(([id, v]) => popOf(id, v)));
-  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th></th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
+  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th title="The bars use a log scale: each equal step along a bar is ten times more people, so 310 M and 1.6 M look closer than they are">bar (log scale)</th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
   const landsOf = (v) => Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
   for (const [id, v] of living) {
     const lands = landsOf(v), grp = L[id]?.group_of, w = W[id];
@@ -767,14 +769,18 @@ function drawResults() {
   h += '</table>';
   if (P.lost?.length) h += `<p class="err">lost: ${P.lost.map(nm).join(', ')}</p>`;
   // discovery timeline
-  h += `</div><div><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
+  // (short names, the full one on hover, so the rows stay one line high: PW-1047)
+  const short = (id) => (L[id]?.name || id).replace(/ \(.*$/, '');
+  const snm = (id) => `<span title="${esc(L[id]?.name || id)}">${esc(short(id))}</span>`;
+  const area = (a) => (a >= 10 ? Math.round(a) : a >= 1 ? a.toFixed(1) : a.toFixed(2));
+  h += `</div><div class="lmcol"><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>Mkm²</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
   for (const m of lms.filter((m) => m.area_mkm2 >= 0.05).slice(0, 18)) {
     const d = m.discovered;
-    h += `<tr><td>${esc(m.name.replace(/^the /, ''))}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
-      <td style="white-space:nowrap">${d ? sw(d.by) + nm(d.by) : '<span class="err">nobody</span>'}</td><td class="n">${d ? fmt(d.ago_kyr) : ''}</td>
+    h += `<tr><td style="white-space:nowrap">${esc(m.name.replace(/^the /, '').replace(/ \(.*\)$/, ''))}</td><td class="n">${area(m.area_mkm2)}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
+      <td style="white-space:nowrap">${d ? sw(d.by) + snm(d.by) : '<span class="err">nobody</span>'}</td><td class="n" style="white-space:nowrap">${d ? fmt(d.ago_kyr) : ''}</td>
       <td class="muted">${d ? esc(d.how) + (d.gap_km ? ` ${d.gap_km} km` : '') : ''}</td>
-      <td style="white-space:nowrap">${m.settled_by ? `${sw(m.settled_by.by)}${nm(m.settled_by.by)} ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
-      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${L[a.by]?.name || a.by} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
+      <td>${m.settled_by ? `<span style="white-space:nowrap">${sw(m.settled_by.by)}${snm(m.settled_by.by)}</span> ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
+      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${short(a.by)} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
   }
   h += '</table></div></div>';
   // animals (animals.py, PW-691) and the boats that carry them (PW-688)
@@ -835,7 +841,7 @@ function drawTech() {
     if (mine.length && !drawTech.busy) { drawTech.busy = true; showResult(mine[0].dir).finally(() => { drawTech.busy = false; }); }
     el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its technology.</p>'; return;
   }
-  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet: <code>uv run python -m planet techtree ${esc(result.id)}</code> adds it.</p>`; return; }
+  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet (it is older than the tree). Run the peoples again from the Tree tab to get one.</p>`; return; }
   TechTab.draw(el, result);
 }
 function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger
@@ -895,16 +901,14 @@ $('run').onclick = async () => {
   $('run').disabled = true;
   try {
     const r = await fetch('../api/lineages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
-    const j = await r.json();
+    const j = await r.json().catch(() => ({ error: `the server answered HTTP ${r.status}` }));
     if (!r.ok) return status(j.error, true);
-    for (;;) {  // queued on the server's job queue: poll it
-      await new Promise((res) => setTimeout(res, 1500));
-      const s = await (await fetch(`../api/jobs/${j.job}`, { cache: 'no-store' })).json();
-      if (s.status === 'error') return status(s.error, true);
-      if (s.status === 'done') { await listWorlds(); await showResult(s.run); showTab('results'); break; }
-      status(`${s.status}: ${Math.round(100 * (s.progress || 0))}% ${s.message || ''}`);
-    }
-  } finally { $('run').disabled = false; }
+    // queued on the server's job queue: follow it (planets.js trackJob rides out a server restart, PW-1044)
+    const { trackJob } = await import('./planets.js');
+    const s = await trackJob(j.job, (p) => { if (p.status !== 'done' && p.status !== 'error') status(`${p.status}: ${Math.round(100 * (p.progress || 0))}% ${p.message || ''}`); });
+    if (s.status === 'error') return status(s.error, true);
+    await listWorlds(); await showResult(s.run); showTab('results');
+  } catch (err) { status(`the run stopped: ${err.message}`, true); } finally { $('run').disabled = false; }
 };
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
@@ -922,7 +926,7 @@ async function getFavs() {
 }
 function syncFav() {
   const w = $('world').value, ok = /^[0-9a-zA-Z_-]+$/.test(w), on = ok && favs.has(w), b = $('favBtn');
-  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? 'var(--star)' : ''; b.setAttribute('aria-pressed', String(on));
 }
 $('favBtn').onclick = async () => {
   const id = $('world').value;

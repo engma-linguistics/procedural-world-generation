@@ -31,6 +31,7 @@ import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
 import { pftColor } from './pick.js';
 import { hasLayer } from './load.js';
+import { FERTILITY, PRECIPITATION, RAMPSET, TEMPERATURE, applyRampSet } from '../ramps.js';
 export function ramp(stops) {
   const cs = stops.map(([v, c]) => [v, new THREE.Color(c)]);
   return (v, out) => {
@@ -48,7 +49,6 @@ export function ramp(stops) {
 // ramps that colour something other than a layer of their own
 const ELEVATION = [[-8000, '#0a1a36'], [-4000, '#153766'], [-1000, '#2d68a3'], [-1, '#6aa7d8'],
   [0, '#3f7d3f'], [300, '#6f9a4b'], [1000, '#c4b56c'], [2000, '#a37a4a'], [3500, '#7d6656'], [5000, '#e6e2dc'], [8000, '#ffffff']];
-const PRECIPITATION = [[0, '#d9c49a'], [300, '#c9c27a'], [800, '#7fb35a'], [1600, '#2f8f5a'], [2500, '#1f6f8f'], [4000, '#203f8f']];
 const SCORE5 = [[0, '#efe6c8'], [1, '#e0cf8a'], [2, '#b9c260'], [3, '#7aa848'], [4, '#3f8a3a'], [5, '#1a5a2a']];
 const EXTRA_RAMPS = {
   'rock age': [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000, '#6e4f3a'], [3500, '#3a2a22']],  // (crust age: the continents)
@@ -175,7 +175,7 @@ const LAYERS = {
   // ---- climate
   rainfall: { group: 'climate', ramp: PRECIPITATION, units: 'mm/yr', seasonal: 'precipitation', needs: ['precipitation'], in: { run: RUN_ROCK() },
     hint: 'Precipitation (rain and snow as water).', color: onLand(({ sv, layer }) => (i, c) => rampFns[layer](sv[i], c)) },
-  temperature: { group: 'climate', ramp: [[-30, '#2b3f99'], [-10, '#5b8fd6'], [0, '#e6f0f5'], [12, '#f4d27a'], [24, '#e2703a'], [32, '#9e1c1c']],
+  temperature: { group: 'climate', ramp: TEMPERATURE,
     units: '°C mean annual', where: 'all', seasonal: 'temperature', obs: 'obs_temperature', needs: ['temperature'], in: { world: true, run: 'climate', tz: true },
     hint: 'Air temperature near the ground.' },
   precipitation: { group: 'climate', ramp: PRECIPITATION, units: 'mm/yr', where: 'all', seasonal: 'precipitation', obs: 'obs_precipitation', in: { world: true },
@@ -273,7 +273,7 @@ const LAYERS = {
       'Rootable soil above rock: thin on steep, young or wind-scoured ground, deep on old plains and soft deposits.'],
     ['soil water', 'soil_water', [[0, '#efe0b0'], [50, '#d9cf8a'], [120, '#9cc07a'], [200, '#4f9fa0'], [350, '#1f5f8a']], 'mm of water the soil holds for plants',
       'Water the soil holds for plants down to 1.5 m (available water capacity).'],
-    ['fertility', 'soil_fertility', [[0, '#d8c8a8'], [0.25, '#c9a86a'], [0.5, '#a9b85a'], [0.75, '#5f9f3a'], [1, '#1f5f22']], 'soil fertility, 0 poor to 1 rich',
+    ['fertility', 'soil_fertility', FERTILITY, 'soil fertility, 0 poor to 1 rich',
       'Nutrient and base status: rich on young ash, loess and alluvium, poor where old soils are leached.'],
     ['soil carbon', 'soil_carbon', [[0, '#efe6c8'], [3, '#d6c28a'], [8, '#a8844f'], [15, '#6a4a2a'], [30, '#3a2a1a'], [60, '#1a120a']], 'kg C/m² in the top metre',
       'Organic carbon in the top metre of soil, peat included.'],
@@ -509,6 +509,8 @@ export function cellColors(layer) {
 // ---- lookups derived from LAYERS, for the code that asks one question of many layers
 const pick = (f) => Object.fromEntries(Object.entries(LAYERS).filter(([, d]) => f(d) != null).map(([id, d]) => [id, f(d)]));
 const byGroup = (g) => pick((d) => (d.group === g && d.key ? d.key : null));
+// ?ramps=new (PW-1027, a preview): the "how much" ramps that get lighter and then darker again, rebuilt (ramps.js)
+export const RAMP_CHANGES = RAMPSET === 'new' ? applyRampSet({ ...pick((d) => d.ramp), ...EXTRA_RAMPS }) : [];
 export const RAMPS = { ...pick((d) => d.ramp), ...EXTRA_RAMPS };
 export const UNITS = { ...pick((d) => d.units), ...EXTRA_UNITS };
 export const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));

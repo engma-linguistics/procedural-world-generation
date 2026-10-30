@@ -323,7 +323,13 @@ export function ribbonObj(pts, color, opacity = 1, width = 1.5, cols = null) {
   o.raycast = () => {};  // (hovering picks the ground)
   return o;
 }
-export function disposeObj(o) { o.geometry?.dispose(); o.material.map?.dispose(); if (!o.material.userData.shared) o.material.dispose(); }
+// (shared materials and textures, e.g. the cached label sprites and cloud pictures, stay; a Sprite's geometry is three's
+// own, one for every sprite, so it stays too: PW-1045)
+export function disposeObj(o) {
+  if (!o.isSprite) o.geometry?.dispose();
+  if (o.material.map && !o.material.map.userData.shared) o.material.map.dispose();
+  if (!o.material.userData.shared) o.material.dispose();
+}
 // The other overlays stay 1-pixel GL lines (the plate outlines alone are ~1 M segments; fitClip
 // keeps them off the ground too); their materials are shared the same way.
 const LINE_MATS = new Map();
