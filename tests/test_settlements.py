@@ -156,7 +156,7 @@ def test_mines_on_deposits_for_a_people_that_knows_mines(tmp_path, monkeypatch):
     dep = np.zeros((2, g.n), bool)
     dep[1, : g.n // 4] = True  # (rock salt in a quarter of the cells: 'mines' is enough; ore would want 'copper')
     dep[0, g.n // 4: g.n // 2] = True
-    monkeypatch.setattr(ST, "_deposits", lambda world, n: dep)
+    monkeypatch.setattr(ST, "_deposits", lambda world, n: {"dep": dep, "ore": np.where(dep[0], 0.6, 0.0), "G": None})
     sites = ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"]
     mines = [s for s in sites if s["kind"] == "mine"]
     assert mines and all(s["cell"] < g.n // 4 and s["holder"] == "d" and s["tier_now"] == "mine" for s in mines)
@@ -190,3 +190,48 @@ def test_mining_affinity_follows_traits_and_kin():
     a = dict(zip([r[0] for r in rows], ST._mining_affinity(m, len(rows))))
     assert a["dwarf"] == 1.0 > a["kobold"] == 0.8 > a["goblin"] == a["orc"] == 0.4 > a["human"]
     assert a["aarakocra"] < a["orc"] and a["aarakocra"] < 0.1
+
+
+def _ore_everywhere(monkeypatch, g, value=0.8):
+    dep = np.zeros((2, g.n), bool)
+    dep[0] = True
+    monkeypatch.setattr(ST, "_deposits", lambda world, n: {"dep": dep, "ore": np.full(n, value), "G": None})
+
+
+def test_ore_mines_follow_need_not_knowledge(tmp_path, monkeypatch):
+    """D12: a people that knows mines and copper but has no farmers or herders, no market and no mine nearby opens no ore
+    mines; with farmers it opens them, but only MINE_LAG_KYR after its smelting."""
+    g = shared_grid(LEVEL)
+    F = 13
+    _ore_everywhere(monkeypatch, g)
+    tech = {"a": {"villages": [11.0, "x"], "mines": [30.0, "x"], "copper": [5.0, "x"]}}
+    for farm, expect in ((0.0, False), (0.5, True)):
+        (tmp_path / str(farm)).mkdir()
+        out, _ = _run(tmp_path / str(farm), _flat(g, F, 400), _flat(g, F, farm), _flat(g, F, 200), tech=tech)
+        mines = [s for s in ST.derive(out, RIVER_SHIFT=0.0, MINE_LAG_SIGMA=0.0)["doc"]["sites"] if s["kind"] == "mine"]
+        assert bool(mines) == expect, farm
+        if mines:
+            assert max(s["founded_kyr"] for s in mines) <= 5.0 - ST.CONST["MINE_LAG_KYR"] + 1e-9
+            assert all(s["district"] and not s["colony"] for s in mines)
+
+
+def test_a_mining_kind_sends_colonies_to_rich_districts_nearby(tmp_path, monkeypatch):
+    """D12: dwarves (a mining kind) work the rich ore districts within COLONY_KM of their own country, held by others, as
+    colonies of incomers; not farther off."""
+    from planet.lineages.spread import graph_dist
+    g = shared_grid(LEVEL)
+    F = 13
+    _ore_everywhere(monkeypatch, g)
+    lead = np.zeros((F, g.n), np.uint8)
+    lead[:, 0] = 1  # (the dwarves' country: one cell)
+    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "d", "name": "dwarves", "group_of": None, "traits": ["miner"]}]
+    tech = {"a": {"villages": [11.0, "x"]}, "d": {"villages": [11.0, "x"], "mines": [30.0, "x"], "copper": [6.0, "x"]}}
+    dens = _flat(g, F, 400)
+    dens[:, 0] = 100  # (their own hills are thinner: the richer neighbours' districts are their ring's best)
+    out, _ = _run(tmp_path, dens, _flat(g, F, 0.5), _flat(g, F, 200), lead=lead, tech=tech, lines=lines)
+    sites = ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"]
+    dist = graph_dist(np.arange(g.n) == 0, 10, g.nbr_off, g.nbr_idx)
+    col = [s for s in sites if s["kind"] == "mine" and s["colony"]]
+    rings = max(1, int(round(ST.CONST["COLONY_KM"] / (g.spacing * ST.R_KM))))
+    assert col and all(s["holder"] == "d" and 1 <= dist[s["cell"]] <= rings for s in col)
+    assert not [s for s in sites if s["kind"] == "mine" and dist[s["cell"]] > rings]  # (the others know no copper)
