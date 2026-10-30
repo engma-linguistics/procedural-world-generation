@@ -54,7 +54,7 @@ class Simulation:
     dt: float = 2.0
 
     # The earth system's state (earth.py). The climate fields come from
-    # climate.compute, every params.climate_every Myr (None before the first).
+    # climate.compute, at its updates (earth.climate_due; None before the first).
     EARTH_STATE: ClassVar[tuple[str, ...]] = (
         "dT",  # C: global temperature offset from today's Earth
         "drift",  # C: its random part
@@ -260,7 +260,7 @@ class Simulation:
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
 
-        # 6. climate, every climate_every Myr, on the ground as the events
+        # 6. climate, when due (earth.climate_due), on the ground as the events
         # left it: a keyframe shows the climate of the ground it shows, and
         # the next steps' erosion uses it
         if earth.climate_due(self) or self.step_no == 1:  # (the first step's ran mid-step too)

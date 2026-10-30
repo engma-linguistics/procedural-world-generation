@@ -123,7 +123,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
     frames, vframes, data = [], [], {k: [] for k in RUN_LAYERS}
-    jet = {"src": None, "v": None}  # the climate (and so the jet) changes only every climate_every Myr
+    jet = {"src": None, "v": None}  # the climate (and so the jet) changes only at its updates (earth.climate_due)
     run_id = S.new_id()
     out = S.runs_dir() / run_id
 

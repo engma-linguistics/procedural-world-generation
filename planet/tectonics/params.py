@@ -76,10 +76,11 @@ class Params:
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
     # Myr between climate (rain, ice, sea level) updates before the finish window: a ramp (PW-247, owner 10-29),
     # climate_every in the last climate_ramp Myr before it, twice that up to 10x as far back, and so on up to
-    # climate_every_max (4 / 8 / 16 Myr: the last 30 Myr, back to 300, earlier; earth.climate_cadence). A keyframe
+    # climate_every_max (4 / 8 Myr: the last 30 Myr, earlier; earth.climate_cadence; a 16 Myr step back from 300 Myr
+    # before the window ran colder, with more icebox excursions: docs/review/speed/README.md). A keyframe
     # between updates (every 4 Myr) shows the last update's climate, as the run's erosion, weathering and ice saw it.
     climate_every: float = 4.0
-    climate_every_max: float = 16.0
+    climate_every_max: float = 8.0
     climate_ramp: float = 30.0
     # The adaptive cadence (PW-247): an update comes early, at a step at least, once the global temperature offset
     # dT moved this many C since the last (CO2, the star and the ice's albedo all reach the climate through it; the

@@ -48,11 +48,11 @@ def test_cadence_ramps_to_climate_every_before_the_finish_window_and_comes_early
     p = Params(run_end=1000.0)
     sim = Simulation.__new__(Simulation)
     sim.params = p
-    for t, k in ((0, 16), (650, 16), (685, 16), (700, 8), (900, 8), (965, 4), (989, 4)):
+    for t, k in ((0, 8), (650, 8), (700, 8), (900, 8), (965, 4), (989, 4)):
         sim.t = float(t)
         assert earth.climate_cadence(sim) == k, t
     # the adaptive part: early once dT moved climate_adapt_dT since the last update
-    sim.t, sim.climate_t, sim.precip, sim.dT = 100.0, 96.0, np.zeros(1), 0.5
+    sim.t, sim.climate_t, sim.precip, sim.dT = 102.0, 96.0, np.zeros(1), 0.5
     sim.climate_in = {"dT": 0.0}
     assert not earth.climate_due(sim)
     sim.dT = -1.2

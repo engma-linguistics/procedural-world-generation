@@ -1,5 +1,11 @@
 # Run speed: the climate's cadence and grid (PW-247, lane 27, 2026-10-29)
 
+**Outcome.** The run's climate cadence is now an **8/4 Myr ramp plus a 1 C dT trigger**: arm C, the defaults on
+this branch. It passed the L6 paired judge (no measure moved; 16/18 against main's 14/18) at **1.5x per L6 run**,
+paired, under load. The first arm, B, stepped 16 Myr early and failed: it ran colder, with more icebox excursions.
+Still running at handoff: arm E (a convergence check: climate every 2 Myr) and the L7 set for the L6-grid
+spin-up climate (option 2). See "Handoff" at the end.
+
 The climate (`earth.update_climate`) is ~75% of a run's wall time ([profile-2026-10-29.md](profile-2026-10-29.md)).
 The owner's asks, for the run only (not the time zoom, zooms or world finishing): (1) the climate half as often,
 (2) an L7 run's spin-up climate on the L6 grid, (3) an adaptive cadence, and (4, added 10-29) a ramped cadence,
@@ -114,3 +120,45 @@ The judge's own paired run times are below.
 (18 draws x 2 rolls; at L6, (2) is a no-op). Then an L7 check of (2) on fewer draws, because L7 runs are 4x the
 cost. Split the arms only if B fails. Skipped: separate arms for (1) and for the bare ramp (timing only), 4 rolls,
 and an L7 determinism re-run (test_nest covers the coarse spin-up's resume at L4 on L3).
+
+## Judge results (L6, roll 0.0005, 18 paired draws each against main; pjudge.py and tco2.py)
+| arm | moved (CI excludes 0) | end T B-A | moment T B-A | late dT | late CO2 | sink ref | pass (main 14/18) | iceboxes (main 2) | dT sd 300-990 B-A | coldest dT 300-990 B-A | run s, median main / arm |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| B: 16/8/4 ramp + trigger | moment T | -3.4 | -3.4 * | -1.4 | -0.18 | -0.08 | 11/18 (p 0.51) | 6 | +0.45 (13/19) | -2.0 | 2500 / 1783 |
+| C: 8/4 ramp + trigger | none | -3.3 | -3.3 | -1.0 | -0.21 | +0.02 | 16/18 (p 0.69) | 3 | -0.01 (9/18) | +0.2 | 2566 / 1711 |
+
+- B's failure is the lag (risk 2). From 300 Myr on, its dT swings more and dips colder. Its erosion supply,
+  relative to its own spin-up, barely shifts (supply.py: within +-0.04 ln per window), so it is not the sink
+  reference (risk 3). C's swings match main's.
+- Both arms end ~3.3 C cooler than main. Main's finish moments run warm (median +2.8 C against the -6..+3 band,
+  PW-980), and C's -0.6 C is inside it. Whether main's warm end is itself a lag artefact is what arm E answers.
+- Main and B roll 0.001 (8 more pairs) ran too. Fold them in with `pjudge.py <J> main B` (all rolls).
+- Speed: the paired per-run medians come from runs launched back to back (judge2/3.sh start both arms of a draw
+  together), so load swings hit both. C is 1.5x at L6. B's 16 Myr step bought only ~5% more.
+- earth_check L6 and L7: bit-identical to main (the climate code is unchanged; the change is the run's cadence
+  and grid). tools/scorecard.py: not run (two more L6 1 Gyr sims; the judge's 18 draws cover its run measures).
+  Run it at merge if the coordinator wants the scorecard line.
+
+## Handoff (lane 27, at ~230k context)
+Outputs are in `<scratchpad>/lane27/`. The frozen code is in `code/<arm>` (main = 287ca3d0; B = 3da7ca1f; C, E
+and G = B's code with params edited: C `climate_every_max` 8; E `climate_every` 2, max 2, trigger off; G max 4,
+trigger off, `climate_level` 6). The L6 draws are in `judge/`, the L7 draws in `judge7/`.
+1. **Arm E (convergence; owner's ask 10-29).** 18 draws, launched by `judge4.sh`. Judge it with
+   `pjudge.py <J>/judge main E --rolls 0.0005` and `tco2.py <J>/judge main E`.
+   - If E is about main, 4 Myr is converged and B's problem was the lag alone.
+   - If E differs (fewer cold dips, a different end T or pass rate), main is under-resolved and partly tuned to
+     its own lag: report that plainly.
+   - E's cost is the `secs` row of tco2.py.
+2. **L7 set, option (2) alone.** Arm G (main's 4 Myr cadence, spin-up climate on L6) against main: the 4 l6fix
+   seeds, roll 0.0005, 1 Gyr. Launched by `judge7g.sh` and `judge7m.sh`, at most 4 at once. Judge with
+   `pjudge.py <J>/judge7 main G --level 7` and `tco2.py ... --level 7`. Four pairs can only catch a large shift:
+   read the paired direction of end T, land rain, arid % and trees %, and the run times. The bar at L7 is ~60%
+   passing (owner, v1).
+3. If G is clean, the branch's defaults (C's cadence plus `climate_level` 6) are what to merge. The L7 cadence
+   plus grid together was never judged at L7. C's cadence is judged at L6 only.
+4. **Task for 27b (owner, 10-29): a 2 Myr stage at the ramp's end**, 8 -> 4 -> 2 Myr before the finish window.
+   Make it a param (e.g. `climate_ramp_fine` = 10 Myr at 2 Myr, every tectonic step) in `earth.climate_cadence`,
+   with 4 Myr from there back to 30 Myr as now. It adds only ~3 updates per run. Don't run a new 18-pair set for
+   it: judge it with arm E's tally, as E shows the every-2 Myr limit. Its finish-moment T should land between
+   C's and E's.
+5. The lane 26b coasts judge was paused for this lane. Tell the coordinator when E and G no longer need the CPU.
