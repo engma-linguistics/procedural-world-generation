@@ -311,7 +311,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
     name = {l["id"]: re.sub(r" \(.*\)$", "", l["name"]) for l in ctx.lines}
 
     def tier(s, pop):
-        return "mine" if s.get("kind") == "mine" else "city" if pop >= city else "town" if pop >= town_min(s, era) else "village"
+        return s["kind"] if s.get("kind") in ("mine", "pit") else "city" if pop >= city else "town" if pop >= town_min(s, era) else "village"
 
     def row(s, pop):
         h = _holder_at(s, era)
@@ -333,7 +333,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
     count: dict = {}
     for s, pop in live:
         count[tier(s, pop)] = count.get(tier(s, pop), 0) + 1
-    places = [(s, p) for s, p in live if s.get("kind") != "mine"]
+    places = [(s, p) for s, p in live if s.get("kind") not in ("mine", "pit")]
     big = sorted(places, key=lambda sp: -sp[1])[:SETTLE_TOP]
     taken = [(s, p) for s, p in places if _holder_at(s, era) != s["founded_by"] and p >= town_min(s, era)]
     own: dict = {}
@@ -341,8 +341,12 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
         if s.get("kind") == "minority":
             own[s["founded_by"]] = own.get(s["founded_by"], 0) + 1
     mines: dict = {}
+    pits: dict = {}
     colonies: list = []
     for s, p in live:
+        if s.get("kind") == "pit":  # (PW-1146: a village's own pit on ordinary ore, counted apart from the districts)
+            h = _holder_at(s, era)
+            pits[h] = pits.get(h, 0) + 1
         if s.get("kind") == "mine":
             h = _holder_at(s, era)
             mines[h] = mines.get(h, 0) + 1
@@ -356,6 +360,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
                                                  for s, p in sorted(taken, key=lambda sp: -sp[1])[:SETTLE_TOP]]},
            "own_places_of_second_peoples": dict(sorted(own.items(), key=lambda kv: -kv[1])),
            "mines": dict(sorted(mines.items(), key=lambda kv: -kv[1])),
+           "pits": dict(sorted(pits.items(), key=lambda kv: -kv[1])),
            "mining_colonies": sorted(colonies, key=lambda r: -r["pop"])[:SETTLE_TOP],
            "ruins": {"count": len(ruins), "why": {}, "largest": [
                {"id": s["id"], "tier": s["tier_peak"], "peak_pop": s["peak_pop"], "people": _holder_at(s, s["abandoned_kyr"]),
@@ -371,13 +376,13 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
         cnt: dict = {}
         for s, p in mine_:
             cnt[tier(s, p)] = cnt.get(tier(s, p), 0) + 1
-        top = max((sp for sp in mine_ if sp[0].get("kind") != "mine"), key=lambda sp: sp[1], default=None)
+        top = max((sp for sp in mine_ if sp[0].get("kind") not in ("mine", "pit")), key=lambda sp: sp[1], default=None)
         out["people"] = {"id": people, "counts": cnt, "largest": row(*top) if top else None,
                          "own_places_among_others": sum(s.get("kind") == "minority" for s, _ in mine_),
-                         "taken_from_others": sum(s["founded_by"] != people and s.get("kind") != "mine" for s, _ in mine_),
+                         "taken_from_others": sum(s["founded_by"] != people and s.get("kind") not in ("mine", "pit") for s, _ in mine_),
                          "ruins_of_its_founding": sum(1 for s in doc["sites"] if s["founded_by"] == people and s["tier_now"] == "ruin"
                                                       and s["abandoned_kyr"] >= era - 1e-6)}
-    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | {r["people"] for r in colonies} | {r["people"] for r in out["ruins"]["largest"]}
+    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | set(pits) | {r["people"] for r in colonies} | {r["people"] for r in out["ruins"]["largest"]}
     out["names"] = {k: name.get(k, k) for k in sorted(used)}
     return out
 
@@ -1129,7 +1134,7 @@ def _settlements_md(st: dict | None) -> list[str]:
     nm = lambda k: st["names"].get(k, k)  # noqa: E731
     c = st["counts"]
     t = ["", "## Towns and cities", "",
-         f"- {c.get('city', 0)} cities, {c.get('town', 0)} towns, {c.get('village', 0)} villages, {c.get('mine', 0)} mining districts (one per ring of cells: the pits of one seam); "
+         f"- {c.get('city', 0)} cities, {c.get('town', 0)} towns, {c.get('village', 0)} villages, {c.get('mine', 0)} mining districts (one per ring of cells: the pits of one seam) and {c.get('pit', 0)} local pits (a village's own copper or iron pit on ordinary ore); "
          f"{st['people_in_places']:,} people in them; {st['ruins']['count']} ruins"]
     for r in st["largest"]:
         t += [f"- {r['tier']} of the {nm(r['people'])}" + (" (their own place among another people)" if r["kind"] == "minority" else "")
@@ -1154,7 +1159,7 @@ def _settlements_md(st: dict | None) -> list[str]:
     if pp:
         pc = pp["counts"]
         lg = pp["largest"]
-        t += [f"- The {nm(pp['id'])} world-wide: {pc.get('city', 0)} cities, {pc.get('town', 0)} towns, {pc.get('village', 0)} villages, {pc.get('mine', 0)} mines"
+        t += [f"- The {nm(pp['id'])} world-wide: {pc.get('city', 0)} cities, {pc.get('town', 0)} towns, {pc.get('village', 0)} villages, {pc.get('mine', 0)} mines, {pc.get('pit', 0)} local pits"
               f" ({pp['own_places_among_others']} of their own among another people, {pp['taken_from_others']} taken from others); "
               f"{pp['ruins_of_its_founding']} ruins of places they founded"
               + (f"; the largest a {lg['tier']} of ~{lg['pop']:,} at {lg['place'] or f'{lg['lat']}, {lg['lon']}'}" if lg else "")]

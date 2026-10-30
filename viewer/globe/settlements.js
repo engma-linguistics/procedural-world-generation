@@ -4,6 +4,7 @@
 // A second people's own place (kind 'minority', PW-1105: a dwarf hold in the humans' hills) is drawn like any other;
 // a mine (kind 'mine') is a mining district (the best deposit of a ring of cells: the pits and mining town of one seam), a
 // diamond in its holder's colour, in a white ring when it is a colony of incomers (D12); its own box, 'mines', fading in with the towns.
+// A pit (kind 'pit', PW-1146) is a village's own copper or iron pit on ordinary ore: a smaller diamond, drawn with the mines.
 // At whole-globe view only the cities and city ruins show; the towns fade in as the camera closes in, then the villages,
 // mines and lesser ruins (fadeSettlements, PW-1106: the owner found the towns too many at globe scale), and the 'villages'
 // box turns the villages and mines off altogether. The hover card lists everything at any scale.
@@ -56,11 +57,11 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
   };
   for (const s of d.sites) {
     if (ago > s.founded_kyr + 1e-6) continue;  // (not yet founded)
-    if (only && s.kind !== 'mine') continue;  // ('only the mines')
+    if (only && s.kind !== 'mine' && s.kind !== 'pit') continue;  // ('only the mines': districts and pits)
     if (isGone(s, ago) && !isRuin(s, ago)) continue;  // (merged)
     if (isRuin(s, ago)) {  // (a city's ruin at every scale; a town's or a village's with the villages)
       const out = s.tier_peak === 'city' ? ruins : vruins;  // (a mine's too)
-      if (out === vruins && !(s.kind === 'mine' ? showMines : minor)) continue;
+      if (out === vruins && !(s.kind === 'mine' || s.kind === 'pit' ? showMines : minor)) continue;
       const h = 0.18, cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
       for (const [a, b] of [[[-h, -h], [h, h]], [[-h, h], [h, -h]]]) {
         const p1 = llPos(s.lat + a[0], s.lon + a[1] / cl, r0), p2 = llPos(s.lat + b[0], s.lon + b[1] / cl, r0);
@@ -70,9 +71,17 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
     }
     const h = holderAt(s, ago);
     if (people != null && h !== people) continue;
-    const t = s.kind === 'mine' ? 'mine' : TIER(popAt(s, ago), d, s, ago), c = col.get(h) || '#dddddd';
-    if ((t === 'village' && !minor) || (t === 'mine' && !showMines)) continue;
+    const t = s.kind === 'mine' || s.kind === 'pit' ? s.kind : TIER(popAt(s, ago), d, s, ago), c = col.get(h) || '#dddddd';
+    if ((t === 'village' && !minor) || ((t === 'mine' || t === 'pit') && !showMines)) continue;
     const rgb = [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
+    if (t === 'pit') {  // (a small diamond: a village's own pit, smaller than a district's)
+      const cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
+      for (const m of (only ? [0.3, 0.2, 0.1] : [0.14, 0.07])) {
+        const P = [[m, 0], [0, m], [-m, 0], [0, -m], [m, 0]].map(([a, b]) => llPos(s.lat + a, s.lon + b / cl, r0));
+        for (let k = 0; k < 4; k++) if (!wraps(P[k], P[k + 1])) { mines.push(...P[k], ...P[k + 1]); mcols.push(...rgb, ...rgb); }
+      }
+      continue;
+    }
     if (t === 'mine') {  // (a diamond)
       const cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
       for (const m of (only ? [0.6, 0.45, 0.3, 0.15] : [0.3, 0.2, 0.1])) {  // (filled: diamonds within diamonds; larger alone)
@@ -151,6 +160,11 @@ export function settlementRows(i, R) {
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
     const q = s.quarters.map((x) => `a ${String(x.group).replace(/_/g, ' ')} quarter (${x.pct}%)`).join(', ');  // (the group's id: 'a city kobold quarter')
+    if (s.kind === 'pit') {  // (PW-1146: a village's own pit on ordinary ore, not a district)
+      R('place', '', `local pit of the ${name(h)}: a village's ${esc(s.district || 'ore')} pit, ~${n0(p)} diggers and those who feed them; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
+        + ' (ordinary ore: one pit for the best cell of a ring)', { lab: 'local pit', ess: true });
+      continue;
+    }
     if (s.kind === 'mine') {  // (D12: a district, not a pit; a colony's miners came from their own country nearby)
       R('place', '', `${s.colony ? `mining colony of the ${name(h)}: a mining ${p >= d.tiers.town_min_by_stage[1] ? 'town' : 'village'} of ~${n0(p)} incomers` : `mining district of the ${name(h)}, ~${n0(p)} miners and those who feed them`}`
         + `, working the ${esc(s.district || 'ore')} ${s.district === 'rock salt' ? 'beds' : 'district'}; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`

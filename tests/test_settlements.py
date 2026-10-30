@@ -243,3 +243,26 @@ def test_ore_district_reads_raw_layer_at_075():
     G = {"copper": np.array([0.0, 0.6, 0.8, 0.7]), "_raw": {"copper": np.array([0.0, 0.0, 0.8, 0.6])}}
     assert list(MN.ore_cells(G) >= MN.ORE_MIN) == [False, False, True, False]
     assert MN.ORE_MIN == 0.75
+
+
+def test_pits_on_ordinary_ore_follow_need_and_smelting(tmp_path, monkeypatch):
+    """PW-1146: ordinary ore (no district) gets small local pits where the lead people smelts copper and has the need; one per
+    ring of cells (denser than districts only because the ore bar is lower); no pit without need or without copper."""
+    g = shared_grid(LEVEL)
+    F = 13
+    dep = np.zeros((2, g.n), bool)
+    monkeypatch.setattr(ST, "_deposits", lambda world, n: {"dep": dep, "ore": np.full(n, 0.6), "G": None, "pit": np.ones(n, bool),
+                                                           "pit_iron": np.zeros(n, bool), "pit_name": np.full(n, "copper")})
+    for tag, farm, copper, expect in (("need", 0.5, 5.0, True), ("nofarm", 0.0, 5.0, False), ("nocopper", 0.5, None, False)):
+        (tmp_path / tag).mkdir()
+        tech = {"a": {"villages": [11.0, "x"], "mines": [30.0, "x"], **({"copper": [copper, "x"]} if copper else {})}}
+        out, _ = _run(tmp_path / tag, _flat(g, F, 400), _flat(g, F, farm), _flat(g, F, 200), tech=tech)
+        sites = ST.derive(out, RIVER_SHIFT=0.0, MINE_LAG_SIGMA=0.0)["doc"]["sites"]
+        pits = [s for s in sites if s["kind"] == "pit"]
+        assert bool(pits) == expect, tag
+        assert not [s for s in sites if s["kind"] == "mine"]
+        if pits:
+            assert max(s["founded_kyr"] for s in pits) <= 5.0 - ST.CONST["MINE_LAG_KYR"] + 1e-9
+            assert all(s["tier_now"] in ("pit", "ruin") and s["district"] == "copper" and not s["colony"] for s in pits)
+            cells = {s["cell"] for s in pits if s["abandoned_kyr"] is None}
+            assert len(cells) < g.n // 3  # (one per ring, not one per cell)

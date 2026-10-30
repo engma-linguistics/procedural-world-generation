@@ -646,7 +646,7 @@ function placesLine(id) {
   const b = result?.settlements?.by_people?.[id];
   if (!b) return '';
   const n = (v, one, many) => (v ? `${num(v)} ${v === 1 ? one : many}` : '');
-  const held = [n(b.cities_now, 'city', 'cities'), n(b.towns_now, 'town', 'towns'), n(b.villages_now, 'village', 'villages'), n(b.mines_now, 'mine', 'mines')].filter(Boolean).join(', ');
+  const held = [n(b.cities_now, 'city', 'cities'), n(b.towns_now, 'town', 'towns'), n(b.villages_now, 'village', 'villages'), n(b.mines_now, 'mine', 'mines'), n(b.pits_now, 'local pit', 'local pits')].filter(Boolean).join(', ');
   const more = [b.own_places_now ? `${num(b.own_places_now)} among another people` : '', b.taken_now ? `${num(b.taken_now)} taken from others` : '',
     b.ruins ? `${num(b.ruins)} ruins` : ''].filter(Boolean).join('; ');
   return esc([held || 'none held', more].filter(Boolean).join('; ')) + (b.largest_now ? `<br>largest ~${num(b.largest_now)}` : '');
