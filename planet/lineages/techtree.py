@@ -6,15 +6,31 @@ earliest date (sources in the file) and a rate. It is read after a peoples histo
 range and the world's goods), so it can be built in output.save and again for a stored run (`planet techtree RUN`).
 
 Rules, all seeded and simple:
-- A people may invent a tech once it knows the tech's needs, its country holds (its present range; a deposit, ore or salt, in a few cells) the goods the tech needs, it has hands if the
-  tech needs them, and the time is past the tech's earliest date (elder kinds, [[kind]] elder: the earlier elder date). The
-  chance per kyr is the tech's rate x the kind's rate_x x a size factor (bigger peoples invent more often). So language
-  arises in each stem on its own, at its own time; dragons, old by hundreds of kyr, get to it first.
+- A people may invent a tech once it knows the tech's needs, its country holds (its present range; a deposit, ore or salt, in a few
+  cells) the goods the tech needs, it can hold the tool, and, for a gated tech, the time is past its floor. The invention model
+  (PW-675 v1, lane 64; the evidence: docs/references/techtree/README.md) is a hazard per people, per tech, per kyr:
+      h = rate x rate_x (kind) x M (culture x domain) x S (pool) x ramp
+  - S, the pool's strength (Henrich 2004 eqs. 2-3: skill gains go as ln N, with a threshold N* below which skills are lost):
+    ln(pool / N*) / ln(N0 / N*), 0 below N*, at most pool_max. The pool is the tech's `pool`: "all" (the stone-age everyday techs:
+    the whole people, N(t)), "specialists" (bronze age on: the non-food-producers, N(t) x s; Childe 1950) or "none" (gesture and
+    language, biology gated by the sapiens node). N(t) is the line's population at the time, from its saved track; s is a
+    judgement ladder from the people's own techs (forager, villages, farming, towns, cities; [[specialists]]) x a density
+    term (Bettencourt et al. 2007: innovation per head rises with settlement size). Every pool is x the kind's learners, its
+    generation over a human's 25 yr (capped): skills are lost at each hand-off, so a long-lived kind loses less per kyr.
+  - M: the people's culture (its traits and way of life, [culture]) against the tech's `domains`: aggressive peoples war,
+    herders and seafarers moving, farmers food, miners craft, and so on; the best match over the tech's domains, capped.
+  - ramp = 1 - exp(-h tau), tau the time since the people first met the tech's conditions: the chance rises as the band goes on.
+  - The band: a tech whose real-world date is at least gate_kyr (12 kyr: the Pleistocene record and the glacial gate on farming,
+    Richerson et al. 2001) keeps it as a hard floor (elder kinds: elder_kyr). A younger tech has no floor: its prerequisites,
+    the specialists and the ramp time it, and its date is a soft anchor only. Its rate, unless given, is set so that a
+    well-placed people (anchor_pop, at anchor_dens, knowing what Earth knew then) takes as long after its prerequisites as Earth
+    did (anchor_rate).
 - A split inherits what its parent knew at the split, a hybrid what both parents knew; a group (a way of life within a
   people) shares its people's knowledge as it goes; an arrival brings its kind's kit (gnomes from the feywild).
 - Diffusion: while two peoples are in contact (contacts.Contacts: the first contact, the border length over time), each
   tech one knows and the other could use passes at contact_rate x spread x border/contact_full_km x openness per kyr
-  (openness = 1 - 0.7 insularity): fast for traded things, slow for language.
+  (openness = 1 - 0.7 insularity): fast for traded things, slow for language; x the taker's culture `take` on the tech's domains
+  (an aggressive people takes war techs up twice as fast: military tech spread by connectivity, Turchin et al. 2021).
 - The crops and herd animals of the history count: a people that first cultivated a crop (crops.py) knows cultivation
   from then, one that tamed or took up an animal (animals.py) knows herding.
 - Language never passes between stems before their minds (below), but once a people is genetically modern (below a stem with a
@@ -50,7 +66,11 @@ DEPOSITS = ("metal", "gold", "iron", "copper", "tin", "gems", "mithril", "coal",
 
 
 def load(path: Path | str | None = None) -> dict:
-    raw = tomllib.loads(Path(path or FILE).read_text())
+    return load_raw(tomllib.loads(Path(path or FILE).read_text()))
+
+
+def load_raw(raw: dict) -> dict:
+    """The tree from its parsed TOML: checked, with the techs in prerequisite order."""
     techs = {t["id"]: t for t in raw["tech"]}
     for t in techs.values():
         for n in t.get("needs", []):
@@ -62,6 +82,16 @@ def load(path: Path | str | None = None) -> dict:
             raise ValueError(f"tech {t['id']}: unknown era {t.get('era')}")
         if t.get("grip", "hands") not in GRIPS:
             raise ValueError(f"tech {t['id']}: unknown grip {t.get('grip')}")
+        if not domains_of(t) or any(d not in DOMAINS for d in domains_of(t)):
+            raise ValueError(f"tech {t['id']}: domains must be some of {DOMAINS}, got {domains_of(t)}")
+        if pool_of(t) not in POOLS:
+            raise ValueError(f"tech {t['id']}: unknown pool {t.get('pool')}")
+    for key, c in (raw.get("culture") or {}).items():
+        if any(d not in DOMAINS + ("take",) for d in c) or any(d not in DOMAINS for d in c.get("take", {})):
+            raise ValueError(f"culture {key}: domains must be some of {DOMAINS}")
+    for r in raw.get("specialists", []):
+        if any(n not in techs for n in r["needs"]):
+            raise ValueError(f"specialists rung {r}: unknown tech")
     for k in raw.get("kind", []):
         k["of"] = [k["of"]] if isinstance(k["of"], str) else list(k["of"])  # (one line id or several, PW-1041)
         if k.get("hands", True) not in (True, False, "node"):
@@ -120,6 +150,18 @@ def _node(line: dict, L: dict) -> float | None:
     return None
 
 
+def _gen(line: dict, L: dict) -> float | None:
+    """The line's generation, yr (meta.lineages generation_yr: history.gen_yr), else its nearest ancestor's; None: not known."""
+    seen, cur = set(), line
+    while cur is not None and cur["id"] not in seen:
+        seen.add(cur["id"])
+        if cur.get("generation_yr") is not None:
+            return float(cur["generation_yr"])
+        up = cur.get("group_of") or (cur.get("parents") or [None])[0]
+        cur = L.get(up)
+    return None
+
+
 GRIPS = ("hands", "beak", "any")
 
 
@@ -164,13 +206,188 @@ def goods_held(T: dict, present: np.ndarray | None, goods: dict | None, k: int) 
     return out
 
 
-def rate_of(t: dict, D: dict) -> float:
-    """Per kyr: the tech's own rate, else its track's; a late tech (earliest_kyr <= late_kyr) at least late_rate, so the
-    short Holocene chains (villages to writing) are climbed within thousands of years, not tens of thousands."""
-    r = t.get("rate", D["track_rate"].get(t["track"], D["rate"]))
-    if "rate" not in t and t.get("earliest_kyr", 1e9) <= D["late_kyr"]:
-        r = max(r, D["late_rate"])
-    return r
+DOMAINS = ("war", "food", "craft", "build", "move", "know", "ritual", "trade")  # (the same eight as docs/references/tech-catalogue)
+POOLS = ("all", "specialists", "none")
+GENERATION_REF_YR = 25.0  # (spec.GENERATION_YR: a human generation)
+# the median wait of the ramped hazard h (1 - exp(-h tau)) in units of 1 / h: x - 1 + exp(-x) = ln 2
+RAMP_MEDIAN = 1.4625
+
+
+def domains_of(t: dict) -> list[str]:
+    d = t.get("domains") or []
+    return [d] if isinstance(d, str) else list(d)
+
+
+def pool_of(t: dict) -> str:
+    """The pool a tech draws its inventors from: its own `pool`, else the whole people for the stone age and the specialists after."""
+    return t.get("pool") or ("all" if t.get("era", "stone age") == "stone age" else "specialists")
+
+
+def _earth_ready(T: dict, tid: str) -> float | None:
+    """When Earth had all of a tech's prerequisites, kyr (the latest of their dates); None: it needs nothing."""
+    t = T["techs"][tid]
+    e = t.get("earliest_kyr", 0.0)
+    return min((T["techs"][n].get("earliest_kyr", e) for n in t.get("needs", [])), default=None)
+
+
+def floor_of(T: dict, tid: str, elder: bool = False) -> float | None:
+    """A gated tech's hard floor, kyr (its real-world date, or the elder date for an elder kind); None: a soft tech, no floor.
+    Gated: dated gate_kyr or older (the Pleistocene and the glacial gate), or came on Earth more than lag_max_kyr after its
+    prerequisites (salting, sledges, the calendar: the tree lacks the real precondition, so the date is the only gate it has)."""
+    t = T["techs"][tid]
+    D = T["defaults"]
+    e = t.get("earliest_kyr")
+    if e is None:
+        return None
+    ready = _earth_ready(T, tid)
+    if e < D["gate_kyr"] and (ready is None or ready - e <= D["lag_max_kyr"]):
+        return None
+    return float(t.get("elder_kyr", e)) if elder else float(e)
+
+
+def strength(pool: float, D: dict) -> float:
+    """S: the pool's strength, Henrich's ln N with its threshold: 0 at N* (pool_threshold) or less, 1 at N0 (pool_ref), at most pool_max."""
+    n0, n1 = D["pool_threshold"], D["pool_ref"]
+    if pool <= n0:
+        return 0.0
+    return min(math.log(pool / n0) / math.log(n1 / n0), D["pool_max"])
+
+
+def specialist_share(T: dict, known) -> float:
+    """s: the share of a people not getting food, a judgement ladder after Childe 1950: the highest rung whose techs it knows."""
+    s = T["defaults"]["specialists_base"]
+    for r in T.get("specialists", []):
+        if all(n in known for n in r["needs"]):
+            s = max(s, float(r["share"]))
+    return s
+
+
+def density_x(dens: float | None, D: dict) -> float:
+    """The density term on the specialist pool: (people per km2 / dens_ref) ^ dens_exp, clipped (a judgement after Bettencourt et al.
+    2007, Table 1: innovation per head ~ settlement size ^ 0.15-0.3; density stands in for settlement size)."""
+    if dens is None or dens <= 0:
+        return 1.0
+    return float(np.clip((dens / D["dens_ref"]) ** D["dens_exp"], D["dens_x_min"], D["dens_x_max"]))
+
+
+def learners_x(gen_yr: float | None, D: dict) -> float:
+    """The kind's learners: its generation over a human's (Henrich: skill is lost at each hand-off, so a kind that hands on its
+    skills a tenth as often loses a tenth as much per kyr; the same as a pool that many times larger), clipped."""
+    g = GENERATION_REF_YR if gen_yr is None else float(gen_yr)
+    return float(np.clip(g / GENERATION_REF_YR, D["learners_min"], D["learners_max"]))
+
+
+def culture_of(T: dict, line: dict) -> tuple[dict, dict]:
+    """(invent, take): the people's culture (traits and way, [culture]) as a factor per domain, the best over them, capped."""
+    D = T["defaults"]
+    inv, take = {}, {}
+    for key in list(line.get("traits") or []) + ([line["way"]] if line.get("way") else []):
+        c = (T.get("culture") or {}).get(key) or {}
+        for d, x in c.items():
+            if d == "take":
+                for dd, xx in x.items():
+                    take[dd] = max(take.get(dd, 1.0), float(xx))
+            else:
+                inv[d] = max(inv.get(d, 1.0), float(x))
+    return ({d: min(x, D["culture_cap"]) for d, x in inv.items()}, take)
+
+
+def domain_x(c: dict, t: dict) -> float:
+    """The best culture factor over a tech's domains (1 without a match)."""
+    return max([c.get(d, 1.0) for d in domains_of(t)] + [1.0])
+
+
+def _anchor_ready(T: dict, tid: str) -> float | None:
+    """When Earth's anchor people could start on a Holocene tech, kyr: its prerequisites' date, but no earlier than the glacial gate
+    opened (gate_kyr): the whole Holocene package waited on the climate, whatever its old prerequisites."""
+    ready = _earth_ready(T, tid)
+    e = T["techs"][tid].get("earliest_kyr")
+    if ready is None or e is None:
+        return ready
+    return min(ready, T["defaults"]["gate_kyr"]) if e < T["defaults"]["gate_kyr"] else ready
+
+
+def anchor_lag(T: dict, tid: str) -> float | None:
+    """Earth's lag after the prerequisites, kyr: the tech's date less _anchor_ready, at least lag_min_kyr."""
+    e = T["techs"][tid].get("earliest_kyr")
+    ready = _anchor_ready(T, tid)
+    return None if ready is None or e is None else max(ready - e, T["defaults"]["lag_min_kyr"])
+
+
+def anchor_strength(T: dict, tid: str) -> float:
+    """S of the anchor people (anchor_pop at anchor_dens, a human generation) for a tech, knowing what Earth knew when it could
+    start on it (every tech dated then or earlier)."""
+    D = T["defaults"]
+    t = T["techs"][tid]
+    p = pool_of(t)
+    if p == "none":
+        return 1.0
+    n = D["anchor_pop"]
+    if p == "specialists":
+        ready = _anchor_ready(T, tid)
+        ready = t.get("earliest_kyr", 0.0) if ready is None else ready
+        earth = {i for i, u in T["techs"].items() if u.get("earliest_kyr") is not None and u["earliest_kyr"] >= ready
+                 and u.get("mode") != "fantasy"}
+        n *= specialist_share(T, earth) * density_x(D["anchor_dens"], D)
+    return strength(n, D)
+
+
+def rate_of(T: dict, tid: str) -> float:
+    """Per kyr at full strength: the tech's own rate; else, for a Holocene tech (dated after the gate), the anchor rate (the anchor
+    people's median wait after the prerequisites is Earth's lag: RAMP_MEDIAN / (lag x S)); else its track's."""
+    D = T["defaults"]
+    t = T["techs"][tid]
+    if "rate" in t:
+        return float(t["rate"])
+    if t.get("earliest_kyr") is not None and t["earliest_kyr"] < D["gate_kyr"]:
+        lag = anchor_lag(T, tid)
+        s = anchor_strength(T, tid)
+        if lag is not None and s > 0:
+            return RAMP_MEDIAN / (lag * s)
+    return float(D["track_rate"].get(t["track"], D["rate"]))
+
+
+def generations(tree_raw: dict | None) -> dict:
+    """{line id: generation, yr} from a stored run's meta.tree (a dragon's from its age schedule, as history.gen_yr), for runs
+    whose lines don't carry it."""
+    if not tree_raw:
+        return {}
+    from . import dragon_ages as DA
+    from . import spec as SP
+    t = SP.parse(tree_raw)
+    return {l.id: (DA.generation_yr(t.dragon_ages, t.dragon_generation, l.generation_yr) if l.megafauna and "flies" in l.traits
+                   else l.generation_yr) for l in t.lines.values()}
+
+
+def with_generations(lines: list[dict], tree_raw: dict | None) -> list[dict]:
+    """meta.lineages with each line's generation_yr, from meta.tree where a stored run's lines don't carry it."""
+    if all(l.get("generation_yr") is not None for l in lines):
+        return lines
+    g = generations(tree_raw)
+    return [{**l, "generation_yr": l.get("generation_yr", g.get(l["id"]))} for l in lines]
+
+
+def _series(line: dict, pops: dict) -> tuple | None:
+    """(ago, population, people per km2) through time from a line's saved track ([ago, lat, lon, area Mkm2, population] per
+    frame), oldest first; else its present population alone; None without either."""
+    tr = [r for r in (line.get("track") or []) if len(r) >= 5]
+    if tr:
+        a = np.array([float(r[0]) for r in tr])
+        p = np.array([float(r[4]) for r in tr])
+        ar = np.array([float(r[3]) for r in tr])
+        o = np.argsort(-a)
+        dens = np.where(ar > 0, p / np.maximum(ar, 1e-9) / 1e6, 0.0)
+        return a[o], p[o], dens[o]
+    q = pops.get(line["id"]) or {}
+    if q.get("population"):
+        return np.array([0.0]), np.array([float(q["population"])]), np.array([float(q.get("density") or 0.0)])
+    return None
+
+
+def _at(ser, ago: float) -> tuple[float, float]:
+    """(population, density) of a series at a time (linear between frames; the nearest end outside them)."""
+    a, p, d = ser
+    return float(np.interp(-ago, -a, p)), float(np.interp(-ago, -a, d))
 
 
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
@@ -196,10 +413,13 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
     have = {l["id"]: goods_held(T, present, goods, idx[l["id"]]) for l in people}
     pops = ((pres or {}).get("lines") or {})
-    size = {}
-    for l in people:
-        p = (pops.get(l["id"]) or {}).get("population")
-        size[l["id"]] = float(np.clip(math.log10(p + 1) / 5.0, 0.3, 1.5)) if p else 0.5
+    series = {l["id"]: _series(l, pops) for l in people}  # (population and density through time, from the saved tracks)
+    gens = {l["id"]: _gen(l, L) for l in people}
+    learn = {lid: learners_x(g, D) for lid, g in gens.items()}
+    culture = {l["id"]: culture_of(T, l) for l in people}
+    rates = {i: rate_of(T, i) for i in techs}
+    pool = {i: pool_of(techs[i]) for i in techs}
+    ready: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (when each people first met a tech's conditions: the ramp)
     start = {l["id"]: float(l.get("started_kyr") if l.get("started_kyr") is not None else l.get("ago_kyr", 0.0)) for l in people}
     end = {l["id"]: float(l["ended_kyr"]) if l.get("ended_kyr") is not None else -1.0 for l in people}
     # forced knowledge: the first tamings of the history (crops.py, animals.py)
@@ -248,9 +468,17 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         if (inventing or not t.get("traded")) and not _env_ok(t, have[lid]):  # (a traded tech, bronze, comes without the ore)
             return False
         if inventing:
-            first = t.get("elder_kyr", t.get("earliest_kyr", 0)) if k.get("elder") else t.get("earliest_kyr", 0)
-            return ago <= first
+            first = floor_of(T, tid, bool(k.get("elder")))  # (a gated tech's floor; a soft tech has none)
+            return first is None or ago <= first
         return True
+
+    def strengths(lid, ago):
+        """(S of the whole people, S of its specialists, s) now."""
+        ser = series[lid]
+        n, dens = _at(ser, ago) if ser is not None else (D["pool_default"], None)
+        n *= learn[lid]
+        s = specialist_share(T, known[lid])
+        return strength(n, D), strength(n * s * density_x(dens, D), D), s
 
     began = set()
     prev = grid[0]
@@ -287,12 +515,16 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             continue
         for l in alive:  # (inventing)
             lid = l["id"]
-            rx = kind[lid].get("rate_x", 1.0) * size[lid]
+            rx = kind[lid].get("rate_x", 1.0)
+            s_all, s_spec, _ = strengths(lid, ago)
             for tid in order:
                 if can(lid, tid, ago, True):
                     t = techs[tid]
-                    r = rate_of(t, D)
-                    if rng.random() < 1 - math.exp(-r * rx * dt):
+                    sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
+                    h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
+                    tau = ready[lid].setdefault(tid, ago) - ago
+                    h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
+                    if h > 0 and rng.random() < 1 - math.exp(-h * dt):
                         give(lid, tid, ago, "invented", None)
         for a, b, fr, to, km in links:  # (diffusion over borders)
             if not (fr >= ago >= to):
@@ -307,7 +539,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     if lang and node[y] is None:
                         continue
                     if tid in known[x] and known[x][tid][0] >= ago and can(y, tid, ago, False, needs=not lang):
-                        r = D["contact_rate"] * techs[tid].get("spread", D["spread"]) * w * op
+                        r = D["contact_rate"] * techs[tid].get("spread", D["spread"]) * w * op * domain_x(culture[y][1], techs[tid])
                         if r > 0 and rng.random() < 1 - math.exp(-r * dt):
                             for n in [i for i in order if lang and i in closure(T, [tid]) and i != tid]:
                                 give(y, n, ago, "with " + tid, x)  # (its roots, gesture, come with it)
@@ -320,14 +552,28 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                         if v[0] >= ago and tid not in known[y] and can(y, tid, ago, False):
                             give(y, tid, ago, "shared", x)
     firsts = firsts_of(known)
+    drivers = {}  # (what drove each living people's inventing at the present: for the report and the viewer)
+    for l in people:
+        lid = l["id"]
+        if end[lid] >= 0:
+            continue
+        s_all, s_spec, s = strengths(lid, 0.0)
+        ser = series[lid]
+        drivers[lid] = {"population": int(_at(ser, 0.0)[0]) if ser is not None else None, "specialists": s,
+                        "strength_all": round(s_all, 3), "strength_specialists": round(s_spec, 3),
+                        "generation_yr": gens[lid], "learners_x": round(learn[lid], 2), "rate_x": kind[lid].get("rate_x", 1.0),
+                        "culture": {d: round(x, 2) for d, x in culture[lid][0].items()},
+                        "take": {d: round(x, 2) for d, x in culture[lid][1].items()}}
     return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode,
             "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
             "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
                        "env": techs[i].get("env", []), "env_any": techs[i].get("env_any", []),
                        "earliest_kyr": techs[i].get("earliest_kyr"), "elder_kyr": techs[i].get("elder_kyr"),
                        "era": techs[i].get("era", "stone age"), "fantasy": techs[i].get("mode") == "fantasy",
-                       "source": techs[i].get("source", "")} for i in order],
-            "known": known, "firsts": firsts,
+                       "source": techs[i].get("source", ""), "domains": domains_of(techs[i]), "pool": pool[i],
+                       "floor_kyr": floor_of(T, i), "rate": round(rates[i], 4),
+                       "anchor_lag_kyr": None if floor_of(T, i) is not None else anchor_lag(T, i)} for i in order],
+            "known": known, "firsts": firsts, "drivers": drivers,
             "goods_checked": {lid: sorted(v) if v is not None else None for lid, v in have.items()}}
 
 
@@ -356,12 +602,48 @@ def firsts_of(known: dict) -> dict:
 def lines_for_report(tt: dict, lines: list[dict]) -> list[str]:
     """A few lines for run.txt: when each people came to language and how many techs each knows now."""
     alive = [l for l in lines if l.get("leaf") and l["id"] in tt["known"]]
-    out = [f"technology (techtree.py, PW-675 v0): {len(tt['techs'])} techs in {len(tt['tracks'])} tracks"]
+    out = [f"technology (techtree.py, PW-675 v1): {len(tt['techs'])} techs in {len(tt['tracks'])} tracks"]
     lang = sorted(((tt["known"][l["id"]].get("language") or [None])[0] or -1, l["id"]) for l in alive)
     out.append("  language: " + "; ".join(f"{lid} {'none' if a < 0 else f'{a:g} kyr ({tt['known'][lid]['language'][1]})'}"
                                          for a, lid in sorted(lang, key=lambda x: -x[0])))
     out.append("  techs known now: " + ", ".join(f"{l['id']} {len(tt['known'][l['id']])}" for l in
                                                  sorted(alive, key=lambda l: -len(tt["known"][l["id"]]))))
+    for k, ids in (("farming", ("cultivation", "herding")), ("metal", ("copper",)), ("writing", ("writing",)),
+                   ("cities", ("cities",))):
+        got = [(max(tt["known"][l["id"]][i][0] for i in ids if i in tt["known"][l["id"]]), l["id"]) for l in alive
+               if any(i in tt["known"][l["id"]] for i in ids)]
+        own = sum(1 for l in alive for i in ids[:1] if (tt["known"][l["id"]].get(i) or [0, ""])[1] in ("invented", "tamed"))
+        out.append(f"  {k}: {len(got)} of {len(alive)} peoples, {own} found it themselves; first "
+                   + (", ".join(f"{lid} {a:g} kyr" for a, lid in sorted(got, reverse=True)[:4]) if got else "none"))
+    return out
+
+
+def anchor_check(tids, seeds: int = 41, T: dict | None = None) -> dict:
+    """The soft anchor's check: for each tech, an isolated anchor people (anchor_pop at anchor_dens, a human generation, no
+    culture) that knows what Earth knew when the tech's prerequisites came; its median wait (kyr) for the tech over `seeds`
+    builds, against Earth's lag (anchor_lag). {tech: (median lag, Earth lag, share of draws that got it)}."""
+    T = T or load()
+    D = T["defaults"]
+    out = {}
+    for tid in tids:
+        ready = _anchor_ready(T, tid)
+        after = {i for i in T["techs"] if tid in closure(T, [i])}  # (the tech and everything that needs it)
+        kit = [i for i, u in T["techs"].items() if u.get("earliest_kyr") is not None and u["earliest_kyr"] >= ready
+               and i not in after and u.get("mode") != "fantasy"]
+        T2 = {**T, "kind": [{"of": ["anchor"], "kit": kit}]}
+        area = D["anchor_pop"] / D["anchor_dens"] / 1e6
+        line = {"id": "anchor", "origin": "root", "ago_kyr": ready, "started_kyr": ready, "ended_kyr": None, "parents": [],
+                "group_of": None, "overlay": False, "demography": {"insularity": 0.5}, "generation_yr": GENERATION_REF_YR,
+                "track": [[ready, 0, 0, area, D["anchor_pop"]], [0.0, 0, 0, area, D["anchor_pop"]]]}
+        waits = []
+        for s in range(seeds):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                tt = build([line], None, None, seed=s, T=T2, era=None)
+            v = tt["known"]["anchor"].get(tid)
+            waits.append(ready - v[0] if v and v[1] == "invented" else math.inf)
+        got = [w for w in waits if math.isfinite(w)]
+        out[tid] = (float(np.median(waits)), anchor_lag(T, tid), len(got) / seeds)
     return out
 
 
@@ -377,7 +659,8 @@ def for_run(run_dir: Path) -> dict:
     if pp:
         present = np.frombuffer((Path(run_dir) / pp["file"]).read_bytes(), np.uint8).reshape(pp["shape"]) / 100.0
     goods = LD.goods(m.get("world")) if m.get("world") else None
-    tt = build(m["lineages"], m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
+    lines = with_generations(m["lineages"], m.get("tree"))
+    tt = build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
                m.get("era"), int(m.get("try_seed") or 0))
     S.update_meta(run_dir, lambda r: r["meta"].__setitem__("techtree", tt))  # (re-read under the lock, PW-1040)
     return tt
