@@ -37,6 +37,7 @@ Not modelled in v0: war and raids (a change of hands is recorded, not a battle),
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -201,6 +202,7 @@ def derive(run_dir: Path, **over) -> dict:
     lms = (m.get("present") or {}).get("landmasses") or []
     ids = [l["id"] for l in lines]
     people_of = {l["index"]: (l.get("group_of") or l["id"]) for l in lines}
+    plural = {l["id"]: re.sub(r" \(.*\)$", "", l.get("name") or l["id"].replace("_", " ")) for l in lines}  # ('the humans', 'the elves')
 
     steps = np.round(np.arange(fago[0], -1e-9, -c["STEP_KYR"]), 3)
     if steps[-1] != 0:
@@ -339,9 +341,9 @@ def derive(run_dir: Path, **over) -> dict:
                 if rain[cell] < (1 - c["DROUGHT"]) * s["rain0"]:
                     why = "drought"
                 elif len(s["holders"]) > 1 and (s["holders"][-1][0] - ago <= c["HAND_KYR"] or tiers_allowed[cell] == 0):
-                    why = f"driven out by the {s['holder'].replace('_', ' ')}" if s["holder"] != s["founded_by"] else "its people left"
+                    why = f"driven out by the {plural.get(s['holder'], s['holder'])}" if s["holder"] != s["founded_by"] else "its people left"
                 elif tiers_allowed[cell] == 0 and has[cell]:
-                    why = f"driven out by the {people_of[int(lead[cell])].replace('_', ' ')}"
+                    why = f"driven out by the {plural.get(people_of[int(lead[cell])], '?')}"
                 else:
                     why = "its people left"
             if why:

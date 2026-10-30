@@ -2,7 +2,7 @@
 id: PW-1106
 title: "Settlements overlay: villages carpet the globe; show towns and cities at globe scale, villages when zoomed; fix 'the human' wording"
 type: task
-status: todo
+status: done
 parent: PW-1011
 milestone: null
 subsystem: viewer
@@ -27,4 +27,5 @@ Suggested:
 The hover card also says "city of the human" and "founded … by the human". It should use the people's plural name ("the humans").
 
 ## Updates
+- 2026-10-30: Status todo -> done. Fun lane 61: at whole-globe view the overlay shows only towns, cities and city ruins; villages and the ruins of villages and towns fade in as the camera closes in (fully hidden while neighbouring cells are under 14 px apart on screen, fully shown from 24 px; so the rule follows the grid level and the window, viewer/globe/settlements.js villageFade). A new box under the overlay, 'villages when zoomed in' (on; ?settleVillages=0), turns them off altogether. Hover and 'why' wording use the people's plural name without its note ('city of the humans', 'driven out by the elves'). ?dist= did nothing when lat/lon were also given (the turn's animation kept the old distance); turnTo now keeps the camera's current distance, so zoomed screenshots work. Before/after: docs/review/settlements/8-11.
 - 2026-10-30: Created from inbox draft draft-settlements-overlay-clutter.md (found by coordinator).

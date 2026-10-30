@@ -1,7 +1,10 @@
 // Settlements (planet/lineages/settlements.py, PW-1011): the villages, towns and cities of a peoples run, from settlements.json
 // beside run.json. At the slider's moment a living site is a dot in its holder's colour (bigger for a town, bigger again with a
 // white ring for a city), a ruin a small grey cross; the hover card lists the sites of the cell under the pointer.
-import { S } from './state.js';
+// At whole-globe view only the towns, cities and city ruins show; the villages and the lesser ruins fade in as the camera
+// closes in (fadeSettlements, PW-1106), and the 'villages' box turns them off altogether.
+import { S, state } from './state.js';
+import { $, camera } from './scene.js';
 import { llPos } from './geometry.js';
 import { esc } from '../planets.js';
 
@@ -33,9 +36,9 @@ const nowAgo = () => -(S.V.run.frames[S.V.frame]?.t ?? 0);
 const holderAt = (s, ago) => { let h = s.founded_by; for (const [a, p] of s.holders) if (a >= ago - 1e-6) h = p; return h; };
 
 export function settlementOverlays(globe, wraps, ribbonObj, people) {
-  const d = S.V.settleDoc, ago = nowAgo(), r0 = globe ? 1.013 : 1;
+  const d = S.V.settleDoc, ago = nowAgo(), r0 = globe ? 1.013 : 1, minor = $('settleVillages')?.checked !== false;
   const col = new Map((S.V.run.meta.lineages || []).map((l) => [l.id, l.color]));
-  const dots = [], dcols = [], rings = [], ruins = [], edges = [];
+  const dots = [], dcols = [], vdots = [], vcols = [], rings = [], ruins = [], vruins = [], edges = [];
   const ring = (la, lo, rad, out, cols, rgb) => {
     const cl = Math.max(Math.cos(la * Math.PI / 180), 0.2);
     let p1 = llPos(la + rad, lo, r0);
@@ -47,28 +50,65 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
   };
   for (const s of d.sites) {
     if (ago > s.founded_kyr + 1e-6) continue;  // (not yet founded)
-    if (isRuin(s, ago)) {
+    if (isRuin(s, ago)) {  // (a city's ruin at every scale; a town's or a village's with the villages)
+      const out = s.tier_peak === 'city' ? ruins : vruins;
+      if (out === vruins && !minor) continue;
       const h = 0.18, cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
       for (const [a, b] of [[[-h, -h], [h, h]], [[-h, h], [h, -h]]]) {
         const p1 = llPos(s.lat + a[0], s.lon + a[1] / cl, r0), p2 = llPos(s.lat + b[0], s.lon + b[1] / cl, r0);
-        if (!wraps(p1, p2)) ruins.push(...p1, ...p2);
+        if (!wraps(p1, p2)) out.push(...p1, ...p2);
       }
       continue;
     }
     const h = holderAt(s, ago);
     if (people != null && h !== people) continue;
     const t = TIER(popAt(s, ago), d), c = col.get(h) || '#dddddd';
+    if (t === 'village' && !minor) continue;
     const rgb = [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
     const rad = t === 'city' ? 0.55 : t === 'town' ? 0.33 : 0.14;
-    for (let k = 1; k <= (t === 'village' ? 1 : 3); k++) ring(s.lat, s.lon, rad * k / (t === 'village' ? 1 : 3), dots, dcols, rgb);  // (filled: rings within rings)
+    if (t === 'village') { ring(s.lat, s.lon, rad, vdots, vcols, rgb); continue; }
+    for (let k = 1; k <= 3; k++) ring(s.lat, s.lon, rad * k / 3, dots, dcols, rgb);  // (filled: rings within rings)
     if (t === 'city') ring(s.lat, s.lon, rad * 1.35, rings, null, null);
-    if (t !== 'village') ring(s.lat, s.lon, rad * 1.12, edges, null, null);  // (a dark edge: the dot reads on its own people's colour)
+    ring(s.lat, s.lon, rad * 1.12, edges, null, null);  // (a dark edge: the dot reads on its own people's colour)
   }
-  return { settleRuins: ribbonObj(ruins, 0x9a948a, 0.9, 1.5), settleEdges: ribbonObj(edges, 0x15120e, 0.9, 1.5),
+  const own = (o) => {  // (its own material: its opacity follows the camera, fadeSettlements)
+    o.material = o.material.clone(); o.material.userData = {}; o.material.transparent = true; o.userData.fade = o.material.opacity;
+    return o;
+  };
+  const out = { settleRuins: ribbonObj(ruins, 0x9a948a, 0.9, 1.5), settleEdges: ribbonObj(edges, 0x15120e, 0.9, 1.5),
     settleDots: ribbonObj(dots, 0xffffff, 1, 3, dcols), settleCities: ribbonObj(rings, 0xffffff, 1, 1.5) };
+  if (vdots.length) out.settleVillages = own(ribbonObj(vdots, 0xffffff, 1, 3, vcols));
+  if (vruins.length) out.settleVillageRuins = own(ribbonObj(vruins, 0x9a948a, 0.9, 1.5));
+  fadeSettlements(out);
+  return out;
 }
 
-const name = (id) => String(id).replace(/_/g, ' ');
+// The villages' (and lesser ruins') opacity at this camera: 0 while neighbouring cells are under FADE[0] pixels apart on
+// screen (the whole globe: they would carpet the land), 1 from FADE[1] pixels (zoomed in: each dot stands alone).
+const FADE = [14, 24];
+export function villageFade() {
+  if (!S.V?.n) return 0;
+  const spacing = Math.sqrt(4 * Math.PI / S.V.n) * 180 / Math.PI;  // (degrees between neighbouring cells)
+  const f = innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360);  // (pixels per unit of distance at 1 unit away)
+  const ppd = state.mode === 'globe' ? f / Math.max(camera.position.length() - 1, 1e-3) * Math.PI / 180 : f / Math.max(camera.position.z, 1e-3) / 90;
+  return Math.min(Math.max((ppd * spacing - FADE[0]) / (FADE[1] - FADE[0]), 0), 1);
+}
+export function fadeSettlements(o = S.overlays) {
+  if (!o || !(o.settleVillages || o.settleVillageRuins)) return;
+  const a = villageFade();
+  for (const x of [o.settleVillages, o.settleVillageRuins]) {
+    if (!x) continue;
+    x.visible = a > 0.01;
+    x.material.opacity = a * x.userData.fade;
+    x.material.resolution.set(innerWidth, innerHeight);
+  }
+}
+
+// a people's plural name ('the humans', 'the dwarves'), without its note in brackets ('elves (from the feywild)')
+const name = (id) => {
+  S.V.lineById ??= new Map((S.V.run.meta.lineages || []).map((x) => [x.id, x]));
+  return (S.V.lineById.get(id)?.name || String(id).replace(/_/g, ' ')).replace(/ \(.*\)$/, '');
+};
 const n0 = (x) => Math.round(x).toLocaleString('en-US');
 const yrs = (kyr) => (kyr >= 1 ? `${+kyr.toFixed(1)} kyr` : `${Math.max(100, Math.round(kyr * 10) * 100)} years`);
 // the hover card: the sites of cell i at the slider's moment (the living one first, then the ruins)
@@ -86,7 +126,7 @@ export function settlementRows(i, R) {
     }
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
-    const q = s.quarters.map((x) => `a ${name(x.group)} quarter (${x.pct}%)`).join(', ');
+    const q = s.quarters.map((x) => `a ${String(x.group).replace(/_/g, ' ')} quarter (${x.pct}%)`).join(', ');  // (the group's id: 'a city kobold quarter')
     R('place', '', `${TIER(p, d)} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
       + `${s.abandoned_kyr != null ? `; left ~${yrs(s.abandoned_kyr)} ago (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
     if (who) R('place', '', `${who}${q ? `; ${q}` : ''} (${s.who_when})`, { lab: 'its people', ess: true });

@@ -97,11 +97,11 @@ def test_a_change_of_hands_is_recorded_and_a_people_without_villages_drives_out(
     lead = np.zeros((F, g.n), np.uint8)
     lead[6:, 0] = 1  # (people b takes cell 0 six kyr ago; b keeps no sites)
     lead[6:, 1] = 2  # (people c takes cell 1 and keeps it as a town)
-    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "b", "group_of": None}, {"index": 2, "id": "c", "group_of": None}]
+    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "b", "name": "bees (from the hive)", "group_of": None}, {"index": 2, "id": "c", "group_of": None}]
     tech = {"a": {"villages": [11.0, "x"], "towns": [6.0, "x"]}, "b": {}, "c": {"villages": [11.0, "x"]}}
     out, _ = _run(tmp_path, _flat(g, F, 40), _flat(g, F, 1.0), _flat(g, F, 200), lead=lead, lines=lines, tech=tech)
     sites = {s["cell"]: s for s in ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"] if s["ruin_of"] is None}
-    assert sites[0]["why"] == "driven out by the b"
+    assert sites[0]["why"] == "driven out by the bees"  # (the plural name, without its note: PW-1106)
     assert sites[1]["abandoned_kyr"] is None and sites[1]["holder"] == "c" and [h for _, h in sites[1]["holders"]] == ["a", "c"]
 
 

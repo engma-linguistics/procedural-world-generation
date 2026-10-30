@@ -20,4 +20,13 @@ All shots are from world 4360a3 (seed 6001, L6, made on main 347b4374), D&D tree
 | [6-river-ruin-present.png](6-river-ruin-present.png) | the same cell today: two ruins, both abandoned when "the river moved away" (the city ~2.4 kyr ago), and a new town of ~2,550 on the ruins |
 | [7-kenku-town-taken-by-humans.png](7-kenku-town-taken-by-humans.png) | a town of ~5,550 founded by the kenku ~6.7 kyr ago and held by the humans since ~3.7 kyr ago (humans 90%, kenku 10%) |
 
+PW-1106 (fun lane 61), the overlay clutter, same run 6553f1 and cell, taken 2026-10-30 against a lane server on port 8797:
+
+| Shot | What |
+|---|---|
+| [8-clutter-before-globe.png](8-clutter-before-globe.png) | main: at whole-globe view the villages carpet the land; the hover says "city of the human" |
+| [9-clutter-after-globe.png](9-clutter-after-globe.png) | the branch, same view: only towns, cities and city ruins; the hover says "city of the humans" |
+| [10-clutter-after-dist2.png](10-clutter-after-dist2.png) | `&dist=2.0`: zoomed in, the villages and the village and town ruins have faded in |
+| [11-clutter-after-dist1.6.png](11-clutter-after-dist1.6.png) | `&dist=1.6`: closer still (before the fix `dist` did nothing when `lat`/`lon` were also given) |
+
 Numbers and the judgement constants: see PW-1011's Updates and `planet/lineages/settlements.py` (CONST).

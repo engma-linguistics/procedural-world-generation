@@ -140,7 +140,6 @@ export function turnTo(lat, lon) {
     camera.position.set(x, y, camera.position.z); controls.target.set(x, y, 0);
     return;
   }
-  const d = camera.position.distanceTo(controls.target);
   lat = Math.max(-80, Math.min(80, lat));  // looking straight down a pole confuses the orbit controls
   const to = new THREE.Vector3(...unitVec(lat, lon)).applyQuaternion(group.quaternion).normalize();
   const from = camera.position.clone().sub(controls.target).normalize();
@@ -150,7 +149,7 @@ export function turnTo(lat, lon) {
     const a = Math.min((now - t0) / ms, 1), e = a * a * (3 - 2 * a);
     const q = new THREE.Quaternion().setFromUnitVectors(from, to);
     const dir = from.clone().applyQuaternion(new THREE.Quaternion().slerp(q, e));
-    camera.position.copy(dir.multiplyScalar(d));
+    camera.position.copy(dir.multiplyScalar(camera.position.length()));  // (the distance as it is now: a zoom, or ?dist=, during the turn stays)
     camera.lookAt(0, 0, 0);
     if (a < 1) requestAnimationFrame(step);
   };
