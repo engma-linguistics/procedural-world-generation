@@ -4,7 +4,7 @@ title: The rain kernel's large-scale rain doesn't see where the wind converges (
 type: task
 status: todo
 parent: PW-015
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: med
@@ -39,6 +39,7 @@ The scale c0 needs an anchor. Synoptic-scale convergence of ~1e-6 1/s is from me
 - [ ] a design note with candidate forms, each tried in one Earth solve, together with the inflow-depth change
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 62 round 1. In plain words: rain where the low-level wind converges now has a form with no
   tuned scale. It is the right kind of term for the winter storm tracks. But it doesn't rain the summer inflow at
   the coasts, and on its own it moves the dry-climate share the wrong way. Kept as a patch

@@ -4,7 +4,7 @@ title: Fix moisture transport in the rain model
 type: story
 status: todo
 parent: PW-013
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: high
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 regional budget (docs/review/base-climate/moisture-budget/README.md): land imports 2.26 Sv net (published runoff ~1.15) through the
   summer land-sea inflow (monsoon_wind's cross-isobar 0.45). The kernel has no convergence lift. Its vapour lasts
   4.1 d over land vs 6.1 over sea (observed ~9 for both). Drafts: inflow depth, convergence lift, storm-track

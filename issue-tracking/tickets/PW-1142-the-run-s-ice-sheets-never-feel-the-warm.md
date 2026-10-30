@@ -1,9 +1,10 @@
 ---
-title: "The run's ice sheets never feel the warm orbital phases that end real ice ages, so they outlast the climate that made them"
+id: PW-1142
+title: The run's ice sheets never feel the warm orbital phases that end real ice ages, so they outlast the climate that made them
 type: task
-status: needs-decision
+status: in-progress
 parent: null
-milestone: null
+milestone: v1
 subsystem: climate
 effort: l
 impact: high
@@ -11,6 +12,8 @@ found_by: lane67
 blocked_by: []
 relates: [PW-470, PW-464, PW-471, PW-1091, PW-1115, PW-434]
 refs: [planet/tectonics/earth.py, planet/icemass.py, tools/ice_probe.py, planet/timezoom/cycle.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -47,3 +50,7 @@ Options:
 
 Lean: B, then judge. Option A changes how every run's ice behaves, so it needs the owner.
 - [ ] Owner: A, B or C
+
+## Updates
+- 2026-10-30: Owner 10-30 D10: back in v1 (about a quarter of worlds froze over: today's main 4/18 at roll 0.0005, judge stopped at 36/72). Owner asks whether an equation can let warm years and warm months melt more than cool ones do: average the melt over the orbital states rather than the temperature (PDD convexity).
+- 2026-10-30: Created from inbox draft draft-run-sheets-see-warm-orbits.md (found by lane67).

@@ -4,7 +4,7 @@ title: The summer land-sea inflow carries the whole column's vapour past the coa
 type: task
 status: todo
 parent: PW-015
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
@@ -53,6 +53,7 @@ Don't just lower the 0.45: that's a retune, and it trades the interiors for the 
 - [ ] land 40-50 N toward GPCC (now 1.8x), B not below 25, corr not below 0.70, SE USA and Pampas not below main
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 62 round 2 (partner probe, not committed). In plain words: adding lift where the air rises can't
   be the partner, because the coasts lack vapour, not lift. A western-flank ascent from the planet's spin (the
   model's along-isobar wind has no 1/f, so it never converges; real flow does, div = -(cot(lat)/a) v) moves SE USA
