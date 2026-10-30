@@ -33,3 +33,4 @@ Numbers: `cmp_holds`-style table in fun lane 61's report (PW-1105 Updates).
 
 ## Updates
 - 2026-10-30: Created from inbox draft draft-settlements-minority-churn-and-cap.md (found by fun-lane-61).
+- 2026-10-30: Fun lane 66: second-people places must stand 0.5 kyr before founding and 1 kyr low before ending; short-lived ones fell from ~800-1,050 to ~30-40 a run, no hold at the 9,999 cap (holds may be cities). See overview 2.25 and draft-hold-size-by-hierarchy.

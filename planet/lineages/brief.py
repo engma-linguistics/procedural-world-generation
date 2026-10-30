@@ -299,11 +299,19 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
     if not hasattr(ctx, "_settle"):
         ctx._settle = json.loads((ctx.dir / sm["file"]).read_text())
     doc = ctx._settle
-    town, city = doc["tiers"]["town"][0], doc["tiers"]["city"][0]
+    city = doc["tiers"]["city_min"]
+    town = doc["tiers"]["town_min_by_stage"][-1]
+
+    def town_min(s, at):  # the town's size class in force at `at` kyr ago (settlements.py bands, PW-1114: it follows what the holder knows)
+        t = town
+        for a, tm, _ in s.get("bands") or []:
+            if a >= at - 1e-6:
+                t = tm
+        return t
     name = {l["id"]: re.sub(r" \(.*\)$", "", l["name"]) for l in ctx.lines}
 
     def tier(s, pop):
-        return "mine" if s.get("kind") == "mine" else "city" if pop >= city else "town" if pop >= town else "village"
+        return "mine" if s.get("kind") == "mine" else "city" if pop >= city else "town" if pop >= town_min(s, era) else "village"
 
     def row(s, pop):
         h = _holder_at(s, era)
@@ -327,7 +335,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
         count[tier(s, pop)] = count.get(tier(s, pop), 0) + 1
     places = [(s, p) for s, p in live if s.get("kind") != "mine"]
     big = sorted(places, key=lambda sp: -sp[1])[:SETTLE_TOP]
-    taken = [(s, p) for s, p in places if _holder_at(s, era) != s["founded_by"] and p >= town]
+    taken = [(s, p) for s, p in places if _holder_at(s, era) != s["founded_by"] and p >= town_min(s, era)]
     own: dict = {}
     for s, _ in places:
         if s.get("kind") == "minority":
@@ -338,7 +346,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
             h = _holder_at(s, era)
             mines[h] = mines.get(h, 0) + 1
     out = {"basis": f"the settlement ledger (settlements.py, PW-1011) at {era:g} kyr ago: living places in the region's cells; "
-                    f"a village under {town:,} people, a town under {city:,}, a city above",
+                    f"size classes follow what the holding people knows (a town from {min(doc['tiers']['town_min_by_stage'][1:]):,} to {town:,} people, a city from {city:,})",
            "counts": count, "people_in_places": int(sum(p for s, p in places)),
            "largest": [row(s, p) for s, p in big],
            "taken": {"count": len(taken), "list": [{**row(s, p), "held_since_kyr": min(a for a, h in s["holders"] if a >= era - 1e-6)}

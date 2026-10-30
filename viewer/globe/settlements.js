@@ -24,7 +24,8 @@ export async function loadSettlements() {
     S.V.settleByCell = by;
   } catch (e) { console.error(e); }
 }
-const TIER = (pop, d) => (pop >= d.tiers.city[0] ? 'city' : pop >= d.tiers.town[0] ? 'town' : 'village');
+// the size classes in force at `ago` (settlements.py bands: the holder's techs set the town's size, PW-1114)
+const TIER = (pop, d, s, ago) => { let tm = d.tiers.town_min_by_stage.at(-1); for (const [a, t] of s.bands || []) if (a >= ago - 1e-6) tm = t; return pop >= d.tiers.city_min ? 'city' : pop >= tm ? 'town' : 'village'; };
 // the site's people at `ago` kyr (its series, newest last), 0 before its founding or after it was left
 export function popAt(s, ago) {
   if (ago > s.founded_kyr + 1e-6 || (s.abandoned_kyr != null && ago <= s.abandoned_kyr + 1e-6)) return 0;
@@ -67,7 +68,7 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
     }
     const h = holderAt(s, ago);
     if (people != null && h !== people) continue;
-    const t = s.kind === 'mine' ? 'mine' : TIER(popAt(s, ago), d), c = col.get(h) || '#dddddd';
+    const t = s.kind === 'mine' ? 'mine' : TIER(popAt(s, ago), d, s, ago), c = col.get(h) || '#dddddd';
     if ((t === 'village' || t === 'mine') && !minor) continue;
     const rgb = [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
     if (t === 'mine') {  // (a diamond)
@@ -144,7 +145,7 @@ export function settlementRows(i, R) {
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
     const q = s.quarters.map((x) => `a ${String(x.group).replace(/_/g, ' ')} quarter (${x.pct}%)`).join(', ');  // (the group's id: 'a city kobold quarter')
-    const what = s.kind === 'mine' ? 'mine' : s.kind === 'minority' ? `${TIER(p, d)} (their own place, as a second people here)` : TIER(p, d);
+    const what = s.kind === 'mine' ? 'mine' : s.kind === 'minority' ? `${TIER(p, d, s, ago)} (their own place, as a second people here)` : TIER(p, d, s, ago);
     R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
       + `${s.abandoned_kyr != null ? `; left ~${yrs(s.abandoned_kyr)} ago (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
     if (who) R('place', '', `${who}${q ? `; ${q}` : ''} (${s.who_when})`, { lab: 'its people', ess: true });

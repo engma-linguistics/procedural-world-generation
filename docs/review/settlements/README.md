@@ -38,4 +38,13 @@ PW-1105 (fun lane 61): a second people's own place, and mines. Run 488d7e (world
 | [14-dwarf-holds-and-mines-dist1.7.png](14-dwarf-holds-and-mines-dist1.7.png) | `&dist=1.7`: the villages and the mines (diamonds) are in too |
 | [15-peoples-tab-places.png](15-peoples-tab-places.png) | the workbench's Peoples tab with run 488d7e (PW-1103): a 'places now' column at the far right of the table, e.g. dwarves "29 towns, 52 villages, 10 mines; 49 among another people; 4 taken from others; 77 ruins" |
 
+PW-1114 and PW-1117 (fun lane 66), run 570701 (tech tree redone on main 644ac30c), lane server on port 8793, taken 2026-10-30:
+
+| Shot | What |
+|---|---|
+| [16-bands-globe-present.png](16-bands-globe-present.png) | the whole globe at the present |
+| [17-kobold-hold-city-present.png](17-kobold-hold-city-present.png) | a kobold warren grown into a city of ~30,958 (the hover); before, no second people's place could pass 9,999 |
+| [18-kobold-hold-city-1kyr-ago.png](18-kobold-hold-city-1kyr-ago.png) | the same cell 1 kyr ago |
+| [19-region-8kyr-ago.png](19-region-8kyr-ago.png), [20-region-4kyr-ago.png](20-region-4kyr-ago.png) | one region at 8 and 4 kyr ago, where the size classes are the era's (a town from 1,000 people) |
+
 Numbers and the judgement constants: see PW-1011's Updates and `planet/lineages/settlements.py` (CONST).
