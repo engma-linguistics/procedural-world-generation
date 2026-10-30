@@ -144,3 +144,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-30: Viewer lane 53 merged (fdc1de47): PW-1028/1044/1046 done, 1047/1045 partial; taste calls A palette / B ramps / C docked legend behind URL switches, side-by-sides published https://claude.ai/artifact/RehsSUDTcPbDMye377UVcN, awaiting owner picks (PW-1032/1027/1029 needs-decision).
 - 2026-10-30: Dragon density paper merged (24fc1543) after round-2 peer + citation re-verify; published https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ (standalone; trail in claims.md/changes-r2.md). Model-change drafts intaken.
 - 2026-10-30: Fun lane 50 merged (ac0cadae, PW-1024 done): owner's A+B mix for open dragon niches; dragon paper carries a postscript on it.
+- 2026-10-30: PW-1050 merged (7a49aa3f) before the Earth check (GPCC down upstream; main equally blocked); cadence independence achieved; passes 78%. Earth check + ice-sheet temps vs 3a58e00d owed.

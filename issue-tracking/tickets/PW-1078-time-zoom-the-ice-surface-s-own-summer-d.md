@@ -1,4 +1,5 @@
 ---
+id: PW-1078
 title: "Time zoom: the ice surface's own summer damping still counts the sheet's air twice"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane28
 blocked_by: []
 relates: [PW-1050, PW-336, PW-555]
 refs: [planet/timezoom/sim.py, planet/icemass.py, docs/review/base-climate/ice-loop/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ surface_share (PW-555 stage 1) scales a different effect and stays. It is parked
 ice-age physics (PW-470).
 - [ ] The time zoom's surface damping uses LOCAL x (1 - sheet_air) like the run
 - [ ] The time zoom tests and goldens updated
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-timezoom-surface-damping-on-sheet-air.md (found by lane28).
