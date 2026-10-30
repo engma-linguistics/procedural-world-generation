@@ -1,4 +1,5 @@
 ---
+id: PW-1082
 title: Owner review of the 'among' pairs, the city-minority shares and the PW-889 constants (all design judgements)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-54
 blocked_by: []
 relates: [PW-889, PW-665, PW-856]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/params.py, planet/lineages/history/cities.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Constants (history/params.py, each commented as a judgement):
 - CITY_REACH_KM 1000: a city minority lives only in towns within 1000 km of its own people's country
 
 - [ ] owner: keep, change or drop each among pair; set the city shares (should kobolds also live in dwarven towns only, say?)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-among-pairs-and-city-numbers-owner-review.md (found by fun-lane-54).

@@ -1,4 +1,5 @@
 ---
+id: PW-1084
 title: A city minority's share of the townsfolk is fixed; let it grow when its own people's country is squeezed
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-54
 blocked_by: []
 relates: [PW-889, PW-928]
 refs: [planet/lineages/history/cities.py, planet/lineages/history/pressure.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -19,3 +22,6 @@ their own people's country, whatever happens to that people. In the owner's pict
 drift into the towns. The model already measures how squeezed a people is (pressure.squeeze, used by the among/integration rule), so
 the share could rise with that squeeze, for example share x (1 + squeeze), and fall back when the people's own country is roomy again.
 - [ ] the city share follows its people's squeeze (owner to approve the form); show it in the Results tab's peoples table
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-city-minority-share-follows-pressure.md (found by fun-lane-54).

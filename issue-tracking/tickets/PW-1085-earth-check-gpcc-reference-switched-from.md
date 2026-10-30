@@ -1,4 +1,5 @@
 ---
+id: PW-1085
 title: "Earth check: GPCC reference switched from the v2018 long-term mean to v2020 1981-2010 (old source removed upstream)"
 type: task
 status: done
@@ -11,6 +12,8 @@ found_by: lane28
 blocked_by: []
 relates: [PW-998]
 refs: [tools/earth_data.py, tools/earth_check.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -79,3 +82,6 @@ the raws that no longer download reliably:
 - [x] the model's own Earth fields unchanged (earth_check on 3a58e00d gives bit-identical model numbers on the old and the new reference)
 - [x] no earth_check pass/fail flips from the reference change alone (L6 and L7)
 - [x] the main checkout's data/earth rebuilt, with the raws kept
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-earth-cache-gpcc-source-id-removed.md (found by lane28).

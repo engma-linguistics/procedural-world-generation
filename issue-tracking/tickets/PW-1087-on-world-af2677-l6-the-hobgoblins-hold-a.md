@@ -1,4 +1,5 @@
 ---
+id: PW-1087
 title: On world af2677 (L6) the hobgoblins hold about 10 cells in every roll, with room for 6,300
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-54
 blocked_by: []
 relates: [PW-889]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/competition.py, "world af2677"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -21,3 +24,6 @@ same (8 to 11 cells, room for 5,400). The new "among" wishes (bugbears and gobli
 never meets them. On the L7 world 2a7385 the hobgoblins hold about 7,000 cells, so it is this world's start, not the mechanism.
 - [ ] find where the hobgoblins and tabaxi start on af2677 and why they never spread (origin placement on a tiny landmass, or
       the crossing rules)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-hobgoblins-ten-cells-on-af2677.md (found by fun-lane-54).

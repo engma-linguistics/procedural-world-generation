@@ -1,4 +1,5 @@
 ---
+id: PW-1083
 title: City minorities share the globe's one "peoples overlay" slot with half-elves and tieflings; give them a layer of their own
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-54
 blocked_by: []
 relates: [PW-889, PW-752]
 refs: [viewer/globe/layers.js, planet/lineages/history/frame.py, planet/lineages/history/cities.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -23,3 +26,6 @@ What to try: store a per-cell bit mask, or a small "minorities" layer, holding e
 (history/frame.py), and draw it as a stack of coloured dots or a list in the cell's description, in the globe's peoples group.
 - [ ] a cell description lists every minority there, with its share of the townsfolk
 - [ ] a layer (or a toggle on "peoples overlay") shows city minorities on their own
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-city-minorities-own-globe-layer.md (found by fun-lane-54).
