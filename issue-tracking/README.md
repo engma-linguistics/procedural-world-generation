@@ -134,13 +134,18 @@ uv run python issue-tracking/board.py new --type task --title "..." --subsystem 
 uv run python issue-tracking/board.py update PW-014 "Fixed in a1b2c3d." [--status done]
 uv run python issue-tracking/board.py intake ...                              # see above
 uv run python issue-tracking/board.py check [--refs]                          # validate tickets and inbox drafts (--refs: list dangling run/world/zoom refs)
+uv run python issue-tracking/board.py review [--orphans]                      # each docs/review file with what keeps it (see "Lane evidence")
 ```
 
 `morning` prints to stdout; paste it where needed, but never commit a generated digest file. Its "updated in the last N hours" is day-granular (tickets carry dates, not times). Other edits (title, description, refs, links) are made directly in the file.
 
+## Lane evidence in docs/review
+
+Evidence a lane leaves behind (reports, tables, images, probe scripts) goes under `docs/review/<topic>/` and is cited from its tickets by path. It stays only while something live names it: an open ticket (anywhere in its file, including a partial path like `laneA10/x.txt` that ends exactly one review file), a core doc (any `.md` under `docs/` outside `review/`, `README.md`, `CLAUDE.md`), tracked code (`planet/ tools/ tests/ viewer/`), or a kept review page or script that names it (a `docs/review/` path, a relative link, or its path or folder relative to the page). `docs/review/*` names a rule, not files, and keeps nothing. When its tickets close it is deleted; the history keeps it. `board.py review [--orphans]` lists each file with what keeps it and the closed tickets that cite it; `check` warns with the orphans. Delete them with `git rm` and note each closed ticket that cited one: `board.py update PW-n "Removed <path> in cleanup; last present at <sha>."` (the last commit that had it). Don't re-note a removal a ticket already records. Large screenshot bundles stay outside the repo.
+
 ## Validation
 
-`check` also verifies that `docs/wiki/*.md` links and repo paths exist and its PW- ids are tickets, and warns when `docs/wiki/state.md` is over 3 days old. It enforces the exact field set; valid type, status, subsystem, effort, impact and milestone values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
+`check` also verifies that `docs/wiki/*.md` links and repo paths exist and its PW- ids are tickets, warns when `docs/wiki/state.md` is over 3 days old, and warns with the docs/review files nothing live names (above). It enforces the exact field set; valid type, status, subsystem, effort, impact and milestone values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
 
 Frontmatter is a small YAML subset (one `key: value` per line, flow lists `[a, "b c"]`, `#` comments), parsed by `board.py` itself, so it needs no dependencies.
 

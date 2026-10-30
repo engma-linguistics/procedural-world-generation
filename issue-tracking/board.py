@@ -17,12 +17,14 @@ Usage (from the repo root):
     uv run python issue-tracking/board.py intake --reject FILE "reason"
     uv run python issue-tracking/board.py intake --merge-into PW-NNN FILE
     uv run python issue-tracking/board.py check [--refs]
+    uv run python issue-tracking/board.py review [--orphans]
 
 Standard library only, so it also runs as plain `python3 issue-tracking/board.py`.
 """
 
 import argparse
 import datetime as dt
+import os
 import re
 import sys
 from pathlib import Path
@@ -700,6 +702,13 @@ def cmd_check(b, tickets, args):
     print("\n".join(problems) if problems else f"OK ({len(tickets)} tickets, {n_drafts} inbox drafts)")
     for w in wiki_warnings:
         print(f"warning: {w}")
+    # a warning, not a problem: lane evidence outlives its tickets until someone prunes it
+    orphans = review_orphans(b, tickets)
+    if orphans:
+        print(f"warning: {len(orphans)} docs/review files that no open ticket, core doc or code names; delete them"
+              f" and note it on their closed tickets (board.py review --orphans lists each with its tickets):")
+        print("\n".join(f"  {f}" for f in orphans[:REVIEW_SHOW])
+              + (f"\n  ... and {len(orphans) - REVIEW_SHOW} more" if len(orphans) > REVIEW_SHOW else ""))
     # a warning, not a problem: deleting a run/world/zoom leaves refs to it behind
     open_items = [(tid, t) for tid, t in tickets.items() if t.get("status") not in CLOSED]
     gone = dangling_refs(b, open_items if not args.refs else list(tickets.items()), body=args.refs)
@@ -709,6 +718,143 @@ def cmd_check(b, tickets, args):
         print(f"warning: {len(gone)} refs in open tickets to runs/worlds/zooms that no longer exist "
               f"(board.py check --refs lists them)")
     sys.exit(1 if problems else 0)
+
+
+# ---------------------------------------------------------------- docs/review retention
+
+# Lane evidence lives under docs/review/<topic>/ and is deleted when its tickets close (the history keeps
+# it). A review file stays while something live points at it: an open ticket (anywhere in its file), a
+# core doc (any .md under docs/ outside review/, README.md, CLAUDE.md), tracked code (planet/ tools/
+# tests/ viewer/), or a kept review page or script that names it (a docs/review/ path, a relative
+# src/href/markdown link, or its path relative to the page's folder).
+REVIEW_REF_RE = re.compile(r"(?:^|(?<=[\s\"'`(\[,:=|]))(?:\.\./|docs/)*review/((?:[\w.\-/*]|\{[^}\s]*\})+)", re.M)
+REVIEW_LINK_RE = re.compile(r"""(?:\b(?:src|href)\s*=\s*["']|\]\()([^"')\s#?]+)""")
+REVIEW_TOKEN_RE = re.compile(r"(?<![\w./-])([\w.-]+(?:/[\w.-]+)*\.[A-Za-z0-9]{1,5})(?![\w/-])")
+REVIEW_DIR_RE = re.compile(r"(?<![\w./-])([\w.-]+(?:/[\w.-]+)*/)(?![\w.-])")
+REVIEW_CODE_DIRS = ["planet", "tools", "tests", "viewer"]
+REVIEW_CODE_SUFFIXES = (".py", ".js", ".html", ".toml", ".md", ".sh", ".json")
+REVIEW_PAGE_SUFFIXES = (".md", ".html", ".htm", ".svg", ".py", ".sh", ".txt")
+REVIEW_CORE = ["README.md", "CLAUDE.md"]
+REVIEW_SHOW = 10  # orphans listed by check
+
+
+def _expand_braces(s):
+    m = re.search(r"\{([^{}]*)\}", s)
+    if not m:
+        return [s]
+    return [x for alt in m.group(1).split(",") for x in _expand_braces(s[:m.start()] + alt + s[m.end():])]
+
+
+def review_refs_in(text):
+    """docs/review/... paths (no trailing slash; may hold * globs) named in a text."""
+    out = set()
+    for raw in REVIEW_REF_RE.findall(text):
+        for r in _expand_braces(raw):
+            r = re.sub(r":\d+(-\d+)?$", "", r).rstrip("/.,;:")
+            if r and "/" not in r and "*" in r:
+                continue  # docs/review/* names the whole folder (a rule, not a reference): keeps nothing
+            if r:
+                out.add("docs/review/" + r)
+    return out
+
+
+def _match_review(files, ref):
+    import fnmatch
+    if "*" in ref:
+        return {f for f in files if fnmatch.fnmatch(f, ref) or fnmatch.fnmatch(f, ref + "/*")}
+    if ref in files:
+        return {ref}
+    return {f for f in files if f.startswith(ref + "/")}
+
+
+def review_index(b, tickets):
+    """(files, refs): every file under docs/review/ (repo-relative, sorted) and, for each, the set of
+    sources that name it: open ticket ids, core doc or code paths, 'via <review file>', and
+    'closed:PW-NNN' for closed tickets (listed so a prune can note them; they keep nothing)."""
+    repo = b.root.resolve().parent
+    rdir = repo / "docs" / "review"
+    if not rdir.is_dir():
+        return [], {}
+    files = sorted(p.relative_to(repo).as_posix() for p in rdir.rglob("*") if p.is_file())
+    fset = set(files)
+    refs = {f: set() for f in files}
+    # a ticket's partial path ("laneA10/climate_bias.txt") counts when it ends exactly one review file
+    by_tail = {}
+    for f in files:
+        parts = f.split("/")
+        for i in range(2, len(parts) - 1):
+            by_tail.setdefault("/".join(parts[i:]), set()).add(f)
+
+    def mark(text, source, tails=False):
+        for r in review_refs_in(text):
+            for f in _match_review(fset, r):
+                refs[f].add(source)
+        if tails:
+            for tok in set(REVIEW_TOKEN_RE.findall(text)):
+                hit = by_tail.get(tok, ())
+                if len(hit) == 1:
+                    refs[next(iter(hit))].add(source)
+
+    for tid, t in tickets.items():
+        mark(t["_path"].read_text(), tid if t.get("status") not in CLOSED else f"closed:{tid}", tails=True)
+    sources = [repo / p for p in REVIEW_CORE]
+    sources += [p for p in (repo / "docs").rglob("*.md") if rdir not in p.parents]
+    for d in REVIEW_CODE_DIRS:
+        if (repo / d).is_dir():
+            sources += [p for p in (repo / d).rglob("*") if p.suffix in REVIEW_CODE_SUFFIXES
+                        and "__pycache__" not in p.parts and "node_modules" not in p.parts]
+    for p in sources:
+        if p.is_file():
+            mark(p.read_text(errors="ignore"), p.relative_to(repo).as_posix())
+
+    def live(f):
+        return any(not s.startswith("closed:") for s in refs[f])
+
+    # kept pages and scripts keep what they name, to a fixed point
+    todo = [f for f in files if live(f)]
+    seen = set(todo)
+    while todo:
+        f = todo.pop()
+        if not f.endswith(REVIEW_PAGE_SUFFIXES):
+            continue
+        text = (repo / f).read_text(errors="ignore")
+        folder = f.rsplit("/", 1)[0] + "/"
+        hit = set()
+        for r in review_refs_in(text):
+            hit |= _match_review(fset, r)
+        for link in REVIEW_LINK_RE.findall(text):
+            if "://" in link or link.startswith(("mailto:", "data:", "/")):
+                continue
+            g = os.path.normpath(folder + link)
+            if g.startswith("docs/review/"):
+                hit |= _match_review(fset, g)
+        names = set(REVIEW_TOKEN_RE.findall(text))
+        dirs = {d.rstrip("/") + "/" for d in REVIEW_DIR_RE.findall(text)}
+        hit |= {g for g in files if g.startswith(folder) and (g[len(folder):] in names or
+                any(g[len(folder):].startswith(d) for d in dirs))}
+        for g in hit - {f}:
+            refs[g].add(f"via {f}")
+            if g not in seen:
+                seen.add(g)
+                todo.append(g)
+    return files, refs
+
+
+def review_orphans(b, tickets):
+    """docs/review files that nothing live names."""
+    files, refs = review_index(b, tickets)
+    return [f for f in files if not any(not s.startswith("closed:") for s in refs[f])]
+
+
+def cmd_review(b, tickets, args):
+    files, refs = review_index(b, tickets)
+    for f in files:
+        live = sorted(s for s in refs[f] if not s.startswith("closed:"))
+        if args.orphans and live:
+            continue
+        closed = sorted(s[7:] for s in refs[f] if s.startswith("closed:"))
+        shown = " ".join(live[:6]) + (" ..." if len(live) > 6 else "")
+        print(f"{'keep' if live else 'orphan'}\t{f}\t{shown}\t{' '.join(closed)}")
 
 
 def get(tickets, tid):
@@ -790,12 +936,15 @@ def main(argv=None):
     s.add_argument("--refs", action="store_true",
                    help="list refs to runs/worlds/zooms that no longer exist (all tickets, refs and Descriptions)")
 
+    s = sub.add_parser("review", help="docs/review files with what keeps them (open tickets, core docs, code)")
+    s.add_argument("--orphans", action="store_true", help="only files nothing live references")
+
     args = p.parse_args(argv)
     b = Board(args.root)
     tickets, args.load_errors = b.load(strict=args.cmd != "check")
     {"list": cmd_list, "next": cmd_next, "decisions": cmd_decisions, "morning": cmd_morning,
      "tree": cmd_tree, "milestones": cmd_milestones, "show": cmd_show, "new": cmd_new, "update": cmd_update,
-     "intake": cmd_intake, "check": cmd_check}[args.cmd](b, tickets, args)
+     "intake": cmd_intake, "check": cmd_check, "review": cmd_review}[args.cmd](b, tickets, args)
 
 
 if __name__ == "__main__":
