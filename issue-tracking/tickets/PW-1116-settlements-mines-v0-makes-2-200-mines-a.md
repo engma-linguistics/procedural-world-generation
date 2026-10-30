@@ -2,7 +2,7 @@
 id: PW-1116
 title: "Settlements: mines v0 makes ~2,200 mines a run, 95% of them human; check the count and the gate"
 type: task
-status: needs-decision
+status: done
 parent: PW-856
 milestone: v2
 subsystem: timezoom
@@ -33,5 +33,6 @@ Options:
 Lean: B + C, so mines read as a dwarf and kobold thing as well as a human industry.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> done. Merged lane 68 (3720522c): affinity-based miners, one mine per ring; 260-370 mines/run, human share 42-80%.
 - 2026-10-30: Owner 10-30: humans as nearly the only miners feels weird; dwarves, kobolds, orcs and similar should do their share (aarakocra less so). Literature search or think it through.
 - 2026-10-30: Created from inbox draft draft-settlements-mines-count.md (found by fun-lane-61).

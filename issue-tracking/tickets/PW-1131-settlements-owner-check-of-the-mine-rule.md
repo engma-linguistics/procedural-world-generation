@@ -1,4 +1,5 @@
 ---
+id: PW-1131
 title: "Settlements: owner check of the mine rule (ring size, orc/goblin kin weight, dwarves few)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-68
 blocked_by: []
 relates: [PW-1116]
 refs: [planet/lineages/settlements.py, docs/overview.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +23,6 @@ In plain words. Mines now go to the people in a cell who are most inclined to di
 - C: dwarves work only 3-12 mines a run. If the owner wants them to dominate, the cause is their range (mountains without ore districts, or few of them), not this rule.
 Lean: keep as is, look at one globe, then adjust MINING_KIN or the ring.
 - [ ] owner looks at the mines on the globe
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-mines-ring-and-affinity-review.md (found by fun-lane-68).
