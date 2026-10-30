@@ -566,15 +566,34 @@ def grid_path(level: int) -> Path:
     return grids_dir() / f"L{level}.json"
 
 
+def grid_digest(grid) -> str:
+    """A fingerprint of a grid's cells (centres, corners, neighbours), stored in its grid file (PW-1039)."""
+    import hashlib
+    h = hashlib.sha256()
+    cc = grid.cell_corners
+    for a in (grid.centers, grid.corners, grid.nbr_off, grid.nbr_idx, np.fromiter(map(len, cc), np.int64, len(cc)),
+              np.fromiter((i for c in cc for i in c), np.int64)):
+        a = np.ascontiguousarray(a)
+        h.update(f"{a.dtype.str}{a.shape}".encode() + a.tobytes())
+    return h.hexdigest()[:16]
+
+
 def write_grid(grid) -> Path:
-    """Geometry for the viewer, shared by every run and world at this level."""
+    """Geometry for the viewer, shared by every run and world at this level. Rewritten when the
+    file's digest (its second key, read from the file's start) isn't this grid's (PW-1039)."""
     path = grid_path(grid.level)
-    if path.exists() and '"nbr"' in path.read_text()[-200000:]:
-        return path
+    digest = grid_digest(grid)
+    try:
+        with open(path, "rb") as f:
+            m = re.search(rb'"digest":\s*"([0-9a-f]+)"', f.read(200))
+        if m and m.group(1).decode() == digest:
+            return path
+    except FileNotFoundError:
+        pass
     grids_dir().mkdir(parents=True, exist_ok=True)
     lat, lon = latlon_lists(grid.centers)
     clat, clon = latlon_lists(grid.corners)
-    write_atomic(path, json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
+    write_atomic(path, json.dumps({"level": grid.level, "digest": digest, "lat": lat, "lon": lon, "corner_lat": clat,
                                    "corner_lon": clon, "cells": grid.cell_corners,
                                    "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
                                   separators=(",", ":")))

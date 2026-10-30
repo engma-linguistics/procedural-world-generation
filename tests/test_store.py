@@ -280,6 +280,20 @@ def test_world_seasons():
     assert np.abs(0.5 * (L["precipitation_jul"] + L["precipitation_jan"]) - L["precipitation"]).max() <= 1
 
 
+def test_grid_file_rewritten_when_the_grid_changes(data_root):
+    """PW-1039: the shared grid file carries its grid's digest and is rewritten when the grid's cells differ."""
+    from planet.grid import build_grid
+    g = build_grid(3)
+    p = S.write_grid(g)
+    d = json.loads(p.read_text())
+    assert d["digest"] == S.grid_digest(g) and len(d["nbr"]) == g.n
+    t0 = p.stat().st_mtime_ns
+    assert S.write_grid(g) == p and p.stat().st_mtime_ns == t0  # (the same grid: left alone)
+    p.write_text(json.dumps({**d, "digest": "0" * 16, "lat": d["lat"][::-1]}))  # (made by other grid code)
+    S.write_grid(g)
+    assert json.loads(p.read_text()) == d
+
+
 def test_update_meta_keeps_concurrent_keys(data_root):
     """PW-1040: passes adding to the same run.json at once (threads here; processes share the flock) keep each
     other's keys: update_meta re-reads under the lock."""

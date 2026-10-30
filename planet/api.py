@@ -129,8 +129,11 @@ def world_header(path: Path) -> dict:
     return S.read_header(path, ("name", "id", "meta"))
 
 
-def find_slice(run_dir: Path, at: float) -> Path | None:
-    """An already saved world sliced from this run at this time, if any."""
+def find_slice(run_dir: Path, at: float, erosion: float = 0.3) -> Path | None:
+    """An already saved world sliced from this run at this time, if any, made by today's finishing code
+    with this erosion (meta.finish_key), with resources if they are on now, and not force-saved after a
+    replay that didn't match the keyframe (PW-1039)."""
+    key, want_resources = W.finish_key(erosion), W.resources_on()
     for p in sorted(S.worlds_dir().glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         if p.name == "index.json":
             continue
@@ -139,7 +142,9 @@ def find_slice(run_dir: Path, at: float) -> Path | None:
         except (OSError, ValueError):
             continue
         if (m.get("source_run") == run_dir.name and m.get("t_myr") is not None and abs(m["t_myr"] - at) < 1e-6
-                and not m.get("timezoom")):  # (not a world finished from a time zoom of that moment)
+                and not m.get("timezoom")  # (not a world finished from a time zoom of that moment)
+                and m.get("finish_key") == key and (m.get("resources") or not want_resources)
+                and m.get("replay_matches_keyframe") is not False):
             return p
     return None
 

@@ -2,7 +2,7 @@
 id: PW-1039
 title: The grid file is never rewritten once it exists, and the viewer reuses any world at the same moment even if old code or --no-resources made it
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: store
@@ -26,4 +26,5 @@ Fix: store a digest of centers+nbr in the grid file (or name it `L7-<digest>.jso
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: (1) store.grid_digest(grid) (centres, corners, neighbour CSR, cell corners; ~70 ms at L7) is written as the grid file's second key; write_grid reads the file's first 200 bytes and rewrites it when the digest differs or is missing (no more reading the whole ~20 MB file per world save). (2) world.finish stamps meta.finish_key = code_hash('finish') + final erosion; api.find_slice(run_dir, at, erosion=0.3) reuses a world only with the same finish_key, with meta.resources when resources are on now, and not replay_matches_keyframe false. Tests: test_store.test_grid_file_rewritten_when_the_grid_changes, test_api.test_find_slice_needs_the_same_finish. Existing L<n>.json grid files get rewritten once (no digest yet); existing worlds have no finish_key, so the viewer makes a fresh world at a moment once. Not-slow suite 738 passed.
 - 2026-10-29: Created from inbox draft draft-stale-grid-file-and-reused-worlds.md (found by code-audit-2026-10).

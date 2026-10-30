@@ -54,6 +54,26 @@ def test_zoom_job_from_run(dirs):
     assert len([p for p in (dirs / "worlds").glob("*.json") if p.name != "index.json"]) == 1
 
 
+def test_find_slice_needs_the_same_finish(dirs, monkeypatch):
+    """PW-1039: a saved world at the moment is reused only if today's finishing code made it with this erosion,
+    with resources when they are on, and not force-saved after a mismatching replay."""
+    run_dir = dirs / "runs" / "tiny01"
+    p = api.slice_run("tiny01", 20.0)
+    assert api.find_slice(run_dir, 20.0) == p
+    assert api.find_slice(run_dir, 20.0, erosion=0.5) is None
+    head = json.loads(p.read_text())
+    original = p.read_text()
+    try:
+        for change in ({"finish_key": "older code:0.3"}, {"replay_matches_keyframe": False}, {"resources": None}):
+            p.write_text(json.dumps({**head, "meta": {**head["meta"], **change}}))
+            assert api.find_slice(run_dir, 20.0) is None, change
+        with W.resources_off():  # (a world without resources does for a request without them)
+            assert api.find_slice(run_dir, 20.0) == p
+    finally:
+        p.write_text(original)
+    assert api.find_slice(run_dir, 20.0) == p
+
+
 def test_slice_error_reaches_caller(dirs, monkeypatch):
     """PW-1031: an error while building a world from a keyframe reaches the caller; it no longer
     turns into a silent replay from t=0."""
