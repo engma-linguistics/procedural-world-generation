@@ -48,7 +48,7 @@ def test_cadence_ramps_to_climate_every_before_the_finish_window_and_comes_early
     p = Params(run_end=1000.0)
     sim = Simulation.__new__(Simulation)
     sim.params = p
-    for t, k in ((0, 8), (650, 8), (700, 8), (900, 8), (965, 4), (989, 4)):
+    for t, k in ((0, 8), (650, 8), (700, 8), (900, 8), (965, 4), (979, 4), (980, 2), (989, 2)):
         sim.t = float(t)
         assert earth.climate_cadence(sim) == k, t
     # the adaptive part: early once dT moved climate_adapt_dT since the last update
@@ -57,9 +57,25 @@ def test_cadence_ramps_to_climate_every_before_the_finish_window_and_comes_early
     assert not earth.climate_due(sim)
     sim.dT = -1.2
     assert earth.climate_due(sim)
-    sim.params = Params(run_end=1000.0, climate_every=4.0, climate_every_max=4.0)
-    sim.t = 0.0
-    assert earth.climate_cadence(sim) == 4  # (main's fixed 4 Myr before PW-247)
+    sim.params = Params(run_end=1000.0, climate_every=4.0, climate_every_max=4.0, climate_ramp_fine=0.0)
+    for t in (0.0, 985.0):
+        sim.t = t
+        assert earth.climate_cadence(sim) == 4  # (main's fixed 4 Myr before PW-247)
+
+
+def test_fine_stage_updates_every_step_in_the_last_10_myr_before_the_finish_window():
+    """The ramp's fine end (owner 10-29): 8 -> 4 -> 2 Myr, so every 2 Myr step from 980 to the window at 990
+    gets its own climate; the 4 Myr stage from 960 and the 8 Myr one before it update on their multiples."""
+    sim = Simulation.__new__(Simulation)
+    sim.params = Params(run_end=1000.0, climate_adapt_dT=0.0)
+    sim.precip, sim.climate_in, sim.dT = np.zeros(1), None, 0.0
+    sim.climate_t, ups = 950.0, []
+    for t in np.arange(952.0, 992.0, 2.0):
+        sim.t = float(t)
+        if earth.climate_due(sim):
+            ups.append(int(t))
+            sim.climate_t = sim.t
+    assert ups == [952, 960, 964, 968, 972, 976, 980, 982, 984, 986, 988, 990]
 
 
 def test_coarse_spin_up_hands_over_to_the_run_grid_and_resumes_bit_identical():

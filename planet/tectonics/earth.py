@@ -548,13 +548,16 @@ def finishing(sim) -> bool:
 
 def climate_cadence(sim) -> float:
     """Myr between climate updates at this point of the run, before the finish window (PW-247's ramp):
-    Params.climate_every within climate_ramp Myr of the finish window's start, doubled for each further factor 10
-    back, at most climate_every_max. A run without an end (run_end 0) keeps climate_every_max."""
+    half Params.climate_every within climate_ramp_fine Myr of the finish window's start, climate_every within
+    climate_ramp Myr, doubled for each further factor 10 back, at most climate_every_max. A run without an end
+    (run_end 0) keeps climate_every_max."""
     p = sim.params
     k, kmax = p.climate_every, max(p.climate_every_max, p.climate_every)
     if p.run_end <= 0 or p.climate_ramp <= 0:
         return kmax
     left = p.run_end - p.finish_window - sim.t
+    if left <= p.climate_ramp_fine:
+        return k / 2.0
     if left <= p.climate_ramp:
         return k
     return min(kmax, k * 2.0 ** np.ceil(np.log10(left / p.climate_ramp) - 1e-12))

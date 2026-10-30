@@ -128,7 +128,7 @@ def water_now(sim) -> dict:
 
 
 def climate_now(sim) -> dict:
-    """Climate fields for a snapshot. They're updated every 4-8 Myr
+    """Climate fields for a snapshot. They're updated every 2-8 Myr
     (earth.climate_cadence); the sea/land pattern may have moved since, so cells that are now
     sea get the sea class and no ice."""
     n = sim.grid.n
