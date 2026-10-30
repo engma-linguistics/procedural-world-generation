@@ -384,7 +384,8 @@ def ground_from_surface(lat, tw_s, tc_s, p_jul, p_jan, h, cover, iters: int = 40
     lat = np.asarray(lat, float)
     tw_s, tc_s = np.asarray(tw_s, float), np.asarray(tc_s, float)
     h = np.broadcast_to(np.asarray(h, float), lat.shape)
-    up = climate.LAPSE * h + ICE_COOL * np.clip(h / ALBEDO_H, 0, 1) + SEASON_LAPSE * np.maximum(h, 0)
+    up = climate.LAPSE * h + ICE_COOL * np.clip(h / ALBEDO_H, 0, 1)
+    sw = SEASON_LAPSE * np.maximum(h, 0)  # (the seasonal lapse's most: it widens the bounds both ways)
 
     def solve(fn, target, lo, hi):
         for _ in range(iters):
@@ -393,12 +394,12 @@ def ground_from_surface(lat, tw_s, tc_s, p_jul, p_jan, h, cover, iters: int = 40
             lo, hi = np.where(below, mid, lo), np.where(below, hi, mid)
         return 0.5 * (lo + hi)
 
-    top = np.maximum(tw_s, tw_s / MELT_HOLD) + up + 80.0
+    top = np.maximum(tw_s, tw_s / MELT_HOLD) + up + sw + 80.0
     gw = top
     for _ in range(rounds):
         gc = solve(lambda x: surface(lat, gw, x, p_jul, p_jan, h, cover)[2], tc_s, tc_s + up - 3.0,
-                   np.maximum(tc_s, tc_s / MELT_HOLD) + up + 3.0)
+                   np.maximum(tc_s, tc_s / MELT_HOLD) + up + sw + 3.0)
         gw = solve(lambda x: surface(lat, x, gc, p_jul, p_jan, h, cover)[1], tw_s,
-                   np.maximum(gc, tw_s + up - 2 * SEASON_LAPSE * np.maximum(h, 0) - 3.0),
+                   np.maximum(gc, tw_s + up - sw - 3.0),
                    np.maximum(top, gc))
     return gw, gc

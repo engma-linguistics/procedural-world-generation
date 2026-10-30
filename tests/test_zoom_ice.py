@@ -243,7 +243,8 @@ def test_ice_surface_round_trip():
     cov = rng.uniform(icemass.LOCAL, 1, n)
     ta, tw, tc = icemass.surface(lat, gw, gc, pj, pn, h, cov)
     assert (tc <= ta + 1e-9).all() and (ta <= tw + 1e-9).all()
-    assert (tw <= gw - LAPSE * h + 1e-9).all()  # never warmer than the bare air at its height
+    # never warmer than the bare air at its height, by the melting ice's summer lapse (PW-1142: SEASON_LAPSE)
+    assert (tw <= gw - (LAPSE - icemass.SEASON_LAPSE) * h + 1e-9).all()
     a, b, c = climate.ice_surface(gw, gc, 0.5 * (gw + gc), h, cov, lat, pj, pn)
     assert np.allclose(a, tw) and np.allclose(b, tc) and np.allclose(c, ta)
     rw, rc = icemass.ground_from_surface(lat, tw, tc, pj, pn, h, cov)
