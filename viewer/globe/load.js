@@ -225,7 +225,7 @@ function worldVolcanoes(meta) {
   }
   return out;
 }
-// The volcano table as objects, each with its status as zoom_volcanoes.status (keep the two alike):
+// The volcano table as objects, each with its status as zoom.volcanoes.status (keep the two alike):
 // active: fed now (a hotspot vent over its plume, an arc volcano within its life); dormant: a hotspot
 // vent off its plume's centre but within DORMANT_KM (the plume's head, volcanism.PLUME_KM) of a live
 // plume, so it can erupt again; else extinct. The run has Myr steps, no eruptions: it can't tell a

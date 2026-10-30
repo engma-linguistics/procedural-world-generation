@@ -11,7 +11,7 @@ impact: low
 found_by: pw392-fine-forms
 blocked_by: []
 relates: [PW-392, PW-649]
-refs: [planet/zoom_fine_forms.py, planet/zoom_landforms.py, "zoom 7b0911 in dff894"]
+refs: [planet/zoom/fine_forms.py, planet/zoom/landforms.py, "zoom 7b0911 in dff894"]
 created: 2026-10-20
 updated: 2026-10-23
 ---
@@ -23,3 +23,4 @@ updated: 2026-10-23
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-20: Created from inbox draft draft-fine-zoom-karst-tower-hatching.md (found by pw392-fine-forms).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

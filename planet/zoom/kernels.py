@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit, prange
 
-from .kernels import _heap_pop, _heap_push
+from ..kernels import _heap_pop, _heap_push
 
 # ---------------------------------------------------------------------------
 # 3D gradient noise with a hashed lattice (no 256-period repeats, so it can be

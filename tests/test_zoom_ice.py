@@ -7,7 +7,8 @@ whole cells, 2-3 km below the summit)."""
 import numpy as np
 import pytest
 
-from planet import hydrology, zoom
+from planet import hydrology
+from planet.zoom import regional as zoom
 from planet.climate import LAPSE
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
@@ -113,7 +114,7 @@ def test_ice_thins_to_its_end_on_land(monkeypatch, res):
     the cliffs (at 3 km the zone's own edge, its outflow too narrow to draw).
     The last pixel holds the profile's mean over its length (~100 m at
     1 km, ~170 m at 3 km), the ice ~3 km back far more."""
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     monkeypatch.setattr(zoom, "GL_MAX_KM", 8.0)
     n = int(round(120 / res))
     yy, xx = np.mgrid[0:n, 0:n] * res  # km; row 0 the top of the slope
@@ -144,7 +145,7 @@ def test_tongue_along_the_zone_ends_by_melt():
     run from the last pixel the zone drains into, not from where its first
     feeder left the zone: it ends where its melt has used up its flux, not
     at max_km still carrying the cap's flux."""
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     nx, ny, res, max_km = 200, 21, 1.0, 100.0
     r, c = np.divmod(np.arange(nx * ny), nx)
     zone = (r < 20) & (c < 60)  # a 20 km band along the valley, 60 km long

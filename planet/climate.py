@@ -2322,7 +2322,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     precip = 0.5 * (p_jul + p_jan)
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
-               cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
+               cover=_sheet_cover(grid, np.where(land, ice, 0.0), ice_air, ice_cold), lat=grid.lat, tilt=tilt, fb=fb)
     qm_jul, qm_jan = (vapour_mixed(grid, q, d_["qs"], d_["t_air"], tune) for q, d_ in zip((q_jul, q_jan), s_in))
     (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [qm_jul, qm_jan], [p_jul, p_jan], tune,
                                                         ocean)
@@ -2404,7 +2404,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # lakes: Penman's open water, on the clouds and the air's humidity (PW-358)
     wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul,
                                                      cloud_jan, tilt, tune), 0.0)
-    return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
+
+    def reground(ice_new):
+        """The bare ground's (t_warm, t_cold, temp), as `ground`, under another land ice's carried air (its own
+        air mass, icemass.air_mass, carried on these winds), the rest of this climate held: its sea, rain,
+        clouds and summer energy split (PW-1050: the run's ice settles with its own air within an update)."""
+        a = np.where(land, ice_new, 0.0)
+        damp = air_mass(grid, a, cold=ice_cold) if (a > 1).any() else np.zeros(n)
+        t = _orbit(_air_temps(sst=sst, **{**air, "damp_air": damp}), orbit_dt, north)
+        return _land_finish(*t[:3], **fin)[3]
+
+    return dict(reground=reground, temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
                 t_jan=np.where(jul_warm, t_cold, t_warm), precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
                 rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, shade_jul=shade(sun_jul),
@@ -2823,7 +2833,7 @@ def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):
     """Temperatures on top of land ice (m; 0 = bare ground), from those of
     the bare ground under it, by the ice's own surface mass balance year
     (icemass.surface, PW-277: the one rule that also sets where the ice
-    is): the ice's height (lapse rate), thick ice ~2 C colder all year
+    is): the ice's height (lapse rate), thick ice ~2 C colder on the year's mean, in winter
     (inversion, katabatic air), the summer's warmth damped while snow lies
     (by the bright surface's own share: cover, icemass.sheet_cover; a big
     sheet's own air mass is in the ground's air already, carried along the
@@ -2846,7 +2856,11 @@ def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):
     return t_warm, t_cold, temp
 
 
-def _sheet_cover(grid: Grid, ice: np.ndarray) -> np.ndarray:
-    """icemass.sheet_cover (ice_surface's cover)."""
-    from .icemass import sheet_cover
-    return sheet_cover(grid, ice) if (np.asarray(ice) > 0).any() else np.zeros(grid.n)
+def _sheet_cover(grid: Grid, ice: np.ndarray, ice_air: np.ndarray, cold=None) -> np.ndarray:
+    """icemass.sheet_cover (ice_surface's cover), on the share of the air that isn't the sheets' own air mass
+    (icemass.sheet_air of ice_air, the ice whose air the winds carry: PW-1050)."""
+    from .icemass import sheet_air, sheet_cover
+    if not (np.asarray(ice) > 0).any():
+        return np.zeros(grid.n)
+    air = sheet_air(grid, ice_air, cold=cold) if (np.asarray(ice_air) > 1).any() else None
+    return sheet_cover(grid, ice, air=air)

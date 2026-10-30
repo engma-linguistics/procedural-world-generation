@@ -629,10 +629,11 @@ def update_climate(sim, e):
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
     marine, info = marine_view(bed, c), {}
-    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine)
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine, reground=c["reground"])
+    c["ground"] = info.get("ground", c["ground"])  # (under the settled ice's own carried air, PW-1050)
     ice = np.where(land, sim.ice, 0.0)
-    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
-                                                           sim.p_jul, sim.p_jan)
+    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice, info["air"]),
+                                                           g.lat, sim.p_jul, sim.p_jan)
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
     vol = (sim.ice / 1000.0).sum() * sim.cell_area * R_KM**2
     ocean_area = (~land).sum() * sim.cell_area * R_KM**2
@@ -755,7 +756,7 @@ def marine_view(bed, c):
             "melt": icemass.MELT_K * np.maximum(sst_w - climate.FREEZE, 0.0)}
 
 
-def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
+def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine, reground=None):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
@@ -779,9 +780,18 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     isostasy settles in ~10 kyr too), its bare ground warmer or colder by
     the lapse rate. (Before PW-364 a run made one pass per climate update:
     a sheet took ~20 updates, ~80 Myr, to shrink back after its cold era,
-    and as long to grow into one.) The rest of the climate (the sheet's
-    carried air, its albedo, the rain) follows at the next update, as CO2
-    does (computing it again within the step whenever margins moved cost
+    and as long to grow into one.) The sheets' own carried air (icemass.air_mass,
+    PW-336: a big sheet's cold summer air, carried onto its margins, its
+    steepest feedback) settles with them (PW-1050): with reground (climate.compute's:
+    the bare ground under another ice's carried air, the rest of the climate
+    held), the ground is re-made under the passes' ice every AIR_EVERY passes
+    while it moves and whenever it settles, until it settles having moved the
+    ice's sea level by less than AIR_SEA_TOL since the last re-making, at most
+    Params.ice_air_rounds times (info: "air_rounds", "air_capped" and the last
+    "ground"). Without it, an onset took 5-10 updates and the climate's cadence
+    decided how icy a planet got (docs/review/base-climate/ice-loop/). The rest
+    of the climate (the sheet's albedo, the rain) follows at the next update, as
+    CO2 does (computing it all again within the step whenever margins moved cost
     ~+80% of the climate at L5, mostly for a few margin cells shuffling).
     The old
     ice's height still counts: a big sheet keeps itself colder than bare
@@ -798,22 +808,46 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     # (once per fixed point, on the bed the old ice pressed down, not every pass (PW-514: +39% wall
     # otherwise): what the sea takes from each coastal cell, and where a new cap can start (snow
     # outlasting the summer on bare ground); the passes' settling moves the bed by tens of m at most)
-    kw = {"cost": coast_cost(sim, land, bed, marine), "start": _start(sim, land, ground)}
+    kw = {"cost": coast_cost(sim, land, bed, marine), "start": _start(sim, land, ground),
+          "air": icemass.sheet_air(g, np.where(land, old, 0.0))}  # (the air its ground was made under)
     ice = _ice_pass(sim, land, bed, ground, old, marine, **kw)
     seen = [np.asarray(old) > 0, ice > 0]
-    info["passes"] = 1
+    cap = int(sim.params.ice_air_rounds) if reground is not None else 0
+    info["passes"], info["air_rounds"], info["air_capped"] = 1, 0, False
+    last, since = ice_sea_level(sim, land, old), 1
     for _ in range(ICE_PASSES):
         new = _ice_pass(sim, land, *settled(ice), ice, marine, **kw)
         info["passes"] += 1
+        since += 1
         on = new > 0
         # (settled: as one of the last two passes but for a few margin cells shuffling; PW-514: with
         # coast_loss, exact repeats took ~21 passes per update against ~3.5 before)
         tol = max(2, int(PASS_TOL * on.sum()))
-        if (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol:
-            return new
-        seen = [seen[-1], on]
-        ice = new
+        still = (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol
+        seen, ice = [seen[-1], on], new
+        free = info["air_rounds"] < cap
+        if still and not (free and abs(ice_sea_level(sim, land, ice) - last) >= AIR_SEA_TOL):
+            info["air_capped"] = cap > 0 and not free
+            break
+        if free and (still or since >= AIR_EVERY):  # the ground under this ice's own air
+            last, since = ice_sea_level(sim, land, ice), 0
+            ground = reground(np.where(land, ice, 0.0))
+            kw["start"], kw["air"] = _start(sim, land, ground), icemass.sheet_air(g, np.where(land, ice, 0.0))
+            info["air_rounds"] += 1
+    info["air"] = kw["air"]
+    if reground is not None:
+        info["ground"] = ground
     return ice
+
+
+AIR_EVERY = 8  # passes: the moving ice's carried air is re-made this often (and whenever the ice settles) ...
+AIR_SEA_TOL = 0.5  # m: ... until the ice settles within this much sea level of its last re-making
+
+
+def ice_sea_level(sim, land, ice):
+    """The sea level change (m) that land ice (m) makes, by its volume over the sea's area (~0.9 g/cm3)."""
+    vol = (np.where(land, ice, 0.0) / 1000.0).sum() * sim.cell_area * R_KM**2
+    return -0.9 * vol / max((~land).sum() * sim.cell_area * R_KM**2, 1.0) * 1000.0
 
 
 def margin_band(g, bare):
@@ -837,7 +871,7 @@ def _start(sim, land, ground):
     return smb0 > 0
 
 
-def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None):
+def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None, air=None):
     """One pass of ice_sheets: the ice under its climate given the old
     ice's extent and height.
       accumulation  where snow outlasts the summer: on bare ground (a new
@@ -884,7 +918,8 @@ def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None):
     # ~800 m at L6, its own thickness would keep it as cold as the interior and the sheet would creep a ring a pass)
     band = margin_band(g, land & (old <= 0))
     h = np.where(old > 0, np.where(band, np.minimum(old, ICE_EDGE_M), old), ICE_EDGE_M)
-    cover = icemass.sheet_cover(g, old)
+    air = icemass.sheet_air(g, old) if air is None else air  # (the sheets' own air in the ground: icemass.sheet_cover)
+    cover = icemass.sheet_cover(g, old, air=air)
     # (as the time zoom's orbit_k, PW-114/PW-365: the air over bright ice brings the response of the land,
     # sea and ice around, each its own share of the land's: the sea INSOL_SEA, bright ice ICE_ABSORB; before,
     # the open sea counted as fully absorbing land, and coastal ice felt ~2x the time zoom's orbital swing)
@@ -912,7 +947,8 @@ def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None):
 
     snow = np.clip((mean(sim.precip) / 300.0) ** 0.125, 0.75, 1.15)
     h = np.where(iced, h, 0.0)
-    _, _, t_ice = climate.ice_surface(t_warm, t_cold, temp, h, icemass.sheet_cover(g, h), lat, sim.p_jul, sim.p_jan)
+    _, _, t_ice = climate.ice_surface(t_warm, t_cold, temp, h, icemass.sheet_cover(g, h, air=air), lat, sim.p_jul,
+                                      sim.p_jan)
     soft = 1.0 - 0.3 * np.clip((mean(t_ice) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
     fac = snow * soft
     surf = np.maximum(bed + ICE_EDGE_M * fac, bed_edge + nye * fac)

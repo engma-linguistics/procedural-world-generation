@@ -6,7 +6,7 @@ What the pixel adds to the coarse cell's climate:
 1. Temperature from the zoom's lapse-corrected fields (treelines, alpine
    belts, cloud forest on tropical mountains), on the bare ground's climate
    next to coarse ice (PW-160: zoom.ice_ground).
-2. Light: the slope's radiation index month by month (zoom_terrain): a
+2. Light: the slope's radiation index month by month (zoom.terrain): a
    poleward slope gets less light and less potential evaporation, and is
    cooler (SLOPE_DT C per unit of the index in summer and winter, at most
    SLOPE_DT_MAX), so it stays moister: north-facing forest and
@@ -62,14 +62,14 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from . import climate
-from . import soils as SO
-from . import store as S
-from . import vegetation as V
-from . import zoom_kernels as ZK
-from . import zoom_terrain as ZT
-from .climate import LAPSE
-from .geo import R_KM, latlon
+from .. import climate
+from .. import soils as SO
+from .. import store as S
+from .. import vegetation as V
+from . import kernels as ZK
+from . import terrain as ZT
+from ..climate import LAPSE
+from ..geo import R_KM, latlon
 
 SLOPE_DT = (4.0, 2.0)  # C per unit of radiation index, summer and winter half-year
 SLOPE_DT_MAX = 2.5  # C
@@ -121,7 +121,7 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     shade_jan (climate.shade, from the sunshine layers), runoff (mm/yr, the
     land's), and the world's vegetation fractions (NP, n; land without ice;
     None without)."""
-    from .zoom import ice_ground
+    from .regional import ice_ground
     g, L = world["grid"], world["layers"]
     tilt = float(world.get("meta", {}).get("params", {}).get("tilt", 23.4))
     sp = g.spacing * R_KM
@@ -262,7 +262,7 @@ def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold
         f, _ = ZK.gauss_interp(pxv, pyv, cx, cy, np.asarray(L["loess"], float)[sel][:, None],
                                (np.asarray(L["elevation"])[sel] > 0)[:, None].astype(float), 0.5 * g.spacing * R_KM)
         loess = np.nan_to_num(f[:, 0])
-    if glacial_loess is not None:  # (the zoom's own glacial loess, zoom_glacial, PW-884: the soils grow on it)
+    if glacial_loess is not None:  # (the zoom's own glacial loess, zoom.glacial, PW-884: the soils grow on it)
         loess = np.maximum(loess, np.asarray(glacial_loess, float).ravel()[idx])
     ice_km = ZT.nearest(np.asarray(glacier, bool), nx, ny)[0][idx] * res
     return SO.zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, slope, res, rock,
@@ -286,7 +286,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     as the zoom stores them; rock: the exposed rock (surface_rock) and
     landform (the coarse cells' class), for the soils. Returns {layers: the
     zoom layers (vegetation and soils), terrain:
-    zoom_terrain.indices, stats, nu (NP, n_veg) and idx when
+    zoom.terrain.indices, stats, nu (NP, n_veg) and idx when
     want_fractions}."""
     t0 = time.time()
     n = nx * ny
@@ -608,8 +608,8 @@ def fractions(zoom_ref) -> dict:
     """Per-type cover fractions of a saved zoom, recomputed (decision 9A:
     zooms store the summary layers only): {code: (ny, nx) fractions}, plus
     'vegetation' (the named types, as stored)."""
-    from . import world as W
-    from .zoom import Frame, find_world, load
+    from .. import world as W
+    from .regional import Frame, find_world, load
     meta, lay = load(zoom_ref, decode=True)
     world = W.load(find_world(meta["source_world"]["id"]))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
@@ -622,13 +622,13 @@ def fractions(zoom_ref) -> dict:
     nu = np.zeros((V.NP, nx * ny))
     nu[:, r["idx"]] = r["nu"]
     veg = r["layers"]["vegetation"]
-    if meta.get("peoples"):  # a zoom made with a peoples run's land use (zoom_peoples, PW-667): redone on the wild plants
-        from . import zoom_peoples as ZP
+    if meta.get("peoples"):  # a zoom made with a peoples run's land use (zoom.peoples, PW-667): redone on the wild plants
+        from . import peoples as ZP
         A = ZP.load(meta["peoples"]["run"], meta["source_world"]["id"])
         ref = {k: np.asarray(lay[k]).ravel() for k in ("elevation", "water", "ice", "temperature", "precipitation",
                                                       "fertile_score", "harbour", "pass", "river_dist", "coast_dist")}
         ref.update({k: np.asarray(v).ravel() for k, v in r["layers"].items()})
-        from .zoom import land_world
+        from .regional import land_world
         pe = ZP.apply(land_world(world)[0], fr, nx, ny, res, meta["size_km"], A, ref, nu, meta["seed"])
         nu, veg = pe["nu"], pe["layers"]["vegetation"]
     out = {}

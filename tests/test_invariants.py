@@ -4,7 +4,8 @@ physically sane values, storage that doesn't clip, module interfaces."""
 import numpy as np
 import pytest
 
-from planet import climate, store as S, timeline as T, zoom
+from planet import climate, store as S, timeline as T
+from planet.zoom import regional as zoom
 from planet.grid import build_grid
 from planet.surface import ROCKS
 from planet.tectonics import MAX_KM, Params, Simulation
@@ -132,6 +133,8 @@ def test_climate_same_on_any_thread_count(grid4):
     finally:
         numba.set_num_threads(before)
     def same(a, b):
+        if callable(a):  # (reground: a closure; its output is the ground's, checked here, test_ice_air)
+            return callable(b)
         if isinstance(a, dict):
             return a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
         if isinstance(a, list):

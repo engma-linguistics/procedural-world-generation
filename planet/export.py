@@ -775,7 +775,7 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
         ll_all = np.stack([lat, lon], 1)
         _human_use_features(feats, hu_tab, lambda idx: ll_all[np.asarray(idx)].copy(), "world",
                             3 * grid.spacing * R_KM, grid, L)
-    from . import zoom_volcanoes as ZV
+    from .zoom import volcanoes as ZV
     vols = ZV.table(world)
     if vols:
         for v, st in zip(vols, ZV.statuses(world, vols)):
@@ -1008,7 +1008,7 @@ def _zoom_products(A: dict, r_dx, r_dy) -> dict:
 
 def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, raw: bool, height_range,
                 river_min: float | None, with_highlights: bool, log, mv_args=None) -> dict:
-    from . import zoom as Z
+    from .zoom import regional as Z
     meta, L = Z.load(d, decode=True)
     nat = float(meta["res_km"])
     f = 1 if mv_args else max(int(round((res or nat) / nat)), 1)
@@ -1098,7 +1098,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         feats.point("volcano", v["lat"], v["lon"], status=v.get("status"), form=v.get("form"),
                     summit_m=v.get("top_m"), height_m=v.get("height_m"), age_myr=v.get("age_myr"),
                     volcano_type=v.get("kind"), minor=bool(v.get("minor")))
-    for dp in meta.get("resources", {}).get("deposits", []):  # (zoom_resources.py, PW-610)
+    for dp in meta.get("resources", {}).get("deposits", []):  # (zoom/resources.py, PW-610)
         feats.point("deposit", dp["lat"], dp["lon"], resource=dp["key"], name=dp["name"], form=dp["form"],
                     size=dp["size"], tonnage=dp["tonnage"], tonnage_unit=dp["tonnage_unit"], grade=dp.get("grade"),
                     grade_unit=dp.get("grade_unit"), depth_m=dp["depth_m"], host=dp["host"])

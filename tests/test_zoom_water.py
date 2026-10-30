@@ -4,7 +4,8 @@ a basin that fills into an open lake, and radial rivers to the sea."""
 import numpy as np
 import pytest
 
-from planet import hydrology, zoom
+from planet import hydrology
+from planet.zoom import regional as zoom
 from planet.geo import R_KM, latlon, xyz
 from planet.grid import build_grid
 
@@ -425,7 +426,7 @@ def test_tributary_near_a_designed_lip_is_tested_like_any_other():
 def test_local_base_starts_each_profile_in_its_own_cell():
     """PW-298: the relief a cell's own slopes make is measured from where
     its water leaves the cell (or a held point: a floor, a cap)."""
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     n = 6  # a chain 0 <- 1 <- ... <- 5, pixel 0 the outlet; cells {0, 1, 2} and {3, 4, 5}
     h = np.array([0.0, 10.0, 20.0, 35.0, 50.0, 65.0])
     rec = np.arange(n) - 1

@@ -473,7 +473,7 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
     annual moisture index mi = P/PET, Gaussen dry months (rain under twice
     the temperature), summer drought (Koppen's s) and the soil's water capacity (thinner on steep
     ground; relief: m to the steepest neighbour).
-    For zoom pixels (zoom_vegetation): light (12, n) scales each month's
+    For zoom pixels (zoom.vegetation): light (12, n) scales each month's
     light and potential evaporation (a slope's radiation index);
     extra_water (n,) mm/yr reaches the soil besides the rain, evenly over
     the year (groundwater in hollows); extra_pet (n,) adds that share of

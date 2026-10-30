@@ -11,7 +11,7 @@ impact: low
 found_by: pw405
 blocked_by: []
 relates: [PW-405, PW-390]
-refs: [planet/zoom_fine.py, viewer/zoom3d_mesh.js]
+refs: [planet/zoom/fine.py, viewer/zoom3d_mesh.js]
 created: 2026-10-16
 updated: 2026-10-23
 ---
@@ -24,3 +24,4 @@ What to try (only if the owner sees it): route the finished surface with a D-inf
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-small-streams-d8.md (found by pw405).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

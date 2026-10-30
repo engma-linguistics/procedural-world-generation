@@ -11,7 +11,7 @@ impact: low
 found_by: pw512
 blocked_by: []
 relates: [PW-512, PW-499, PW-470]
-refs: [planet/zoom_glacial.py, "zoom a44e9f", "zoom 9213a8"]
+refs: [planet/zoom/glacial.py, "zoom a44e9f", "zoom 9213a8"]
 created: 2026-10-21
 updated: 2026-10-23
 ---
@@ -23,3 +23,4 @@ Where a sheet's margin is out of view (Ungava a44e9f is 100% iced), the zoom put
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-glacial-recessional-moraine-contours.md (found by pw512).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

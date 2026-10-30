@@ -30,12 +30,12 @@ import json
 
 import numpy as np
 
-from . import store as S
-from . import vegetation as V
-from . import zoom_kernels as ZK
-from . import zoom_vegetation as ZVG
-from .geo import R_KM
-from .lineages import landuse as LU
+from .. import store as S
+from .. import vegetation as V
+from . import kernels as ZK
+from . import vegetation as ZVG
+from ..geo import R_KM
+from ..lineages import landuse as LU
 
 CROP, PASTURE, BURNED, MANAGED, TOWN = 1, 2, 3, 4, 5
 NAMES = ("wild", "cropland", "pasture", "burned grass", "managed woods", "settlement")

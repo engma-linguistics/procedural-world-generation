@@ -97,7 +97,7 @@ def test_zoom_builds_its_terrain_on_the_land_view(marine):
     (zoom.land_world), the coastline the world's; how far each cell's true
     bed lies below that is handed back, for the zoom to sink its bed under
     its glaciers (PW-356, tests/test_zoom_ice.py)."""
-    from planet.zoom import land_world
+    from planet.zoom.regional import land_world
     g, w, sub, d = marine
     view, sunk = land_world(w)
     L, Z = w["layers"], view["layers"]

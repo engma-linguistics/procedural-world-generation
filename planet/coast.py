@@ -119,7 +119,7 @@ al. 2015, 2020, Nature, who put numbers on Galloway's triangle):
   channels and the low delta plain at high tide (tidal_prism: none of the
   plain for a microtidal sea, a wide belt for a macrotidal one).
 Weights = each flux / their sum. They shape the zoom's delta continuously
-(zoom.py); the dominant type is the largest weight (and "mixed" when none
+(zoom/regional.py); the dominant type is the largest weight (and "mixed" when none
 reaches 0.5).
 """
 
@@ -577,7 +577,7 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
 # ---------------------------------------------------------------------------
 SEC_PER_YR = 3.156e7
 CHANNEL_SHARE = 0.002  # share of the delta plain that is tidal channel
-PLAIN_Z0, PLAIN_RISE = 0.8, 10.0  # m: the delta plain's height at the coast, and its rise to its edge (zoom.py)
+PLAIN_Z0, PLAIN_RISE = 0.8, 10.0  # m: the delta plain's height at the coast, and its rise to its edge (zoom/regional.py)
 SED_DENSITY = 1600.0  # kg/m^3: bulk density of deposited sand (2650 x (1 - porosity 0.4))
 RIVER_DOMINANT = 0.5  # a weight at least this large names the delta's type
 PLAIN_R0, PLAIN_R_MAX = 70.0, 350.0  # km: delta plain radius at 1,000 m^3/s (sf = 1/3), and its cap
@@ -629,7 +629,7 @@ def tidal_prism(tide_m: float, plain_km: float) -> float:
     (CHANNEL_SHARE of the plain) times the range, plus the low plain that
     high water floods. The plain is a half-disc of radius plain_km rising
     from PLAIN_Z0 at the coast to PLAIN_Z0 + PLAIN_RISE at its edge as
-    (r / R)^1.5 (zoom.py's delta plain); high water stands half the range
+    (r / R)^1.5 (zoom/regional.py's delta plain); high water stands half the range
     above mean sea level, so a microtidal sea floods none of it."""
     R2 = (plain_km * 1000.0) ** 2
     prism = CHANNEL_SHARE * 0.5 * np.pi * R2 * tide_m
@@ -661,7 +661,7 @@ def galloway(qs_kgs: float, q_m3s: float, wave_kw: float, tide_m: float, plain_k
 
 
 def plain_radius_km(q_m3s: float, sf: float) -> float:
-    """Radius of the delta plain a river builds (zoom.py's delta plain): grows
+    """Radius of the delta plain a river builds (zoom/regional.py's delta plain): grows
     with discharge and with the sediment factor sf (0..1, the coarse
     sediment cover offshore). Calibrated on Earth's big deltas, which sit on
     thick offshore sediment (sf ~0.5-1): Nile ~150 km of plain at 2,800 m^3/s,

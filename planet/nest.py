@@ -135,6 +135,17 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
     for k in air:
         out[k] = out[k] - climate.LAPSE * surf
     out["ground"] = tuple(t - climate.LAPSE * bed for t in out["ground"])
+
+    def reground(ice_new):  # (compute's reground on the coarse grid: the fine ice restricted as above, back up as "ground")
+        a = np.where(land, ice_new, 0.0)
+        for s, lf, lc in zip(steps, masks[:-1], masks[1:]):
+            a = np.where(lc, _restrict(s, a, lf), 0.0)
+        gr = tuple(climate.LAPSE * bed_c + t for t in c["reground"](a))
+        for i in range(len(steps) - 1, -1, -1):
+            gr = tuple(_prolong(steps[i], t, masks[i + 1], masks[i]) for t in gr)
+        return tuple(t - climate.LAPSE * bed for t in gr)
+
+    out["reground"] = reground
     p = fine.centers
     for k, v in out.items():  # vectors back onto the fine cells' tangent planes
         if isinstance(v, np.ndarray) and v.ndim == 2 and v.shape == (fine.n, 3):

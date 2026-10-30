@@ -11,7 +11,7 @@ impact: low
 found_by: pw425
 blocked_by: []
 relates: [PW-425, PW-416, PW-412]
-refs: [planet/zoom_fine_meander.py, planet/zoom_fine.py]
+refs: [planet/zoom/fine_meander.py, planet/zoom/fine.py]
 created: 2026-10-16
 updated: 2026-10-23
 ---
@@ -29,3 +29,4 @@ What I'd try:
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-oxbow-crescents-and-scroll-bars.md (found by pw425).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -32,8 +32,8 @@ from pathlib import Path
 import numpy as np
 from numba import njit
 
-from . import resources as RS
-from .geo import R_KM, latlon
+from .. import resources as RS
+from ..geo import R_KM, latlon
 
 SIZES = ("small", "medium", "large", "giant")
 SIZE_P = np.array([0.70, 0.22, 0.07, 0.01])  # share of deposits by size class
@@ -145,8 +145,8 @@ def _inherit(pmeta: dict, pres: dict, meta: dict, river: np.ndarray) -> list[dic
     """A fine zoom's deposits (PW-618): its parent's that lie inside it, the same deposits (name, size, grade) at
     this zoom's pixels. A placer moves to the nearest river pixel within a few parent pixels (the fine zoom's
     river runs a little differently), a kimberlite field's pipes follow."""
-    from .geo import xyz
-    from .zoom import Frame
+    from ..geo import xyz
+    from .regional import Frame
     nx, ny, res = int(meta["nx"]), int(meta["ny"]), float(meta["res_km"])
     fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
     pfr = Frame(pmeta["center"]["lat"], pmeta["center"]["lon"])
@@ -184,8 +184,8 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
     and the run's history (the coal and salt beds' depth; None: the world's strata only). inherit: (parent zoom's
     meta, its `resources`) for a fine zoom (PW-618): it keeps its parent's deposits that lie inside it (_inherit)
     and re-sites only what depends on its own ground (the coal outcrop belts)."""
-    from . import zoom_kernels as ZK
-    from .zoom import Frame
+    from . import kernels as ZK
+    from .regional import Frame
     t0 = time.time()
     g, L = world["grid"], world["layers"]
     nx, ny, res = int(meta["nx"]), int(meta["ny"]), float(meta["res_km"])
@@ -507,10 +507,10 @@ def add_to_zoom(ref, log=print, world: dict | None = None) -> Path:
     """(Re)makes a saved zoom's deposits in place: zoom.json gets `resources` (deposits, outcrop belts, summary).
     The world's likelihoods are its res_* layers when it has them, else made here (with the run's history when the
     run is stored; the world is not written). world: the loaded world, when the caller has it. Made by every
-    zoom build (zoom.zoom, zoom_fine.zoom; PW-618) unless the world has no resource layers."""
-    from . import store as S
-    from . import world as W
-    from . import zoom as Z
+    zoom build (zoom.zoom, zoom.fine.zoom; PW-618) unless the world has no resource layers."""
+    from .. import store as S
+    from .. import world as W
+    from . import regional as Z
     d = S.find_zoom(ref)
     meta, lay = Z.load(d, decode=True)
     sw = meta["source_world"]

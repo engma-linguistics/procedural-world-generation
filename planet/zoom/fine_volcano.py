@@ -1,12 +1,12 @@
 """Volcano edifices in the nested fine zoom (PW-395).
 
-A parent zoom draws a volcano as a smooth cone (zoom_volcanoes: a concave
+A parent zoom draws a volcano as a smooth cone (zoom.volcanoes: a concave
 exponential stratocone, a Gaussian shield, a caldera on a lava plain) at
 its own pixel scale. Bicubic at 25-200 m that is a needle-tipped cone with
 nothing on it. The fine zoom adds the edifice's form below the parent's
 pixel scale: its relief E here, less E as the parent's pixels see it (E
 averaged over each parent pixel, bicubic), so each parent pixel's mean is
-unchanged (zoom_fine adds it to the parent's surface and keeps the summit
+unchanged (zoom.fine adds it to the parent's surface and keeps the summit
 at top_m exactly):
 
 - stratovolcano (arc): flanks e-folding over r = H / ARC_SLOPE (concave,
@@ -32,9 +32,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import zoom as Z
-from . import zoom_kernels as ZK
-from .tectonics.volcanism import ARC_SLOPE
+from . import regional as Z
+from . import kernels as ZK
+from ..tectonics.volcanism import ARC_SLOPE
 
 CRATER_R = (0.08, 0.12, 0.6)  # a stratocone's crater rim radius: x r, min, max km
 CRATER_D = {"active": 0.4, "dormant": 0.3, "extinct": 0.15}  # its depth x its rim radius (fresh d/D ~0.2)
@@ -73,7 +73,7 @@ def params(v: dict, r_km: float | None, rain_mm: float, seed: int, rim_km: float
     the landscape pass; reach_km: how far out it draws. rim_km: the radius
     of a crater the parent already drew (a stratocone's is no smaller);
     base_m: the ground round its foot. An extinct volcano is eroded
-    (zoom_volcanoes lowers its part above the sea in proportion): its
+    (zoom.volcanoes lowers its part above the sea in proportion): its
     relief is top_m less that ground (or the sea), on the cone's shape."""
     kind, st = kind_of(v), status_of(v)
     H = max(float(v.get("height_m", 0.0)), 50.0)

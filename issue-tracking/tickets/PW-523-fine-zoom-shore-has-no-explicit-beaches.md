@@ -11,7 +11,7 @@ impact: low
 found_by: pw488-coast
 blocked_by: []
 relates: [PW-488, PW-392]
-refs: [planet/zoom_fine.py, tools/coast_steps.py, "zoom 24584e", "zoom 1b331e"]
+refs: [planet/zoom/fine.py, tools/coast_steps.py, "zoom 24584e", "zoom 1b331e"]
 created: 2026-10-21
 updated: 2026-10-21
 ---
@@ -23,3 +23,4 @@ PW-488 draws the fine shore by sampling the parent's ground through a fractal di
 
 ## Updates
 - 2026-10-21: Created from inbox draft draft-fine-coast-forms.md (found by pw488-coast).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.
