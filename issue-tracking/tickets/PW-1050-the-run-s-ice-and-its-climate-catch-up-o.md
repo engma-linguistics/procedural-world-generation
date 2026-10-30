@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-247, PW-470, PW-364]
 refs: [planet/tectonics/earth.py, docs/review/speed/README.md, docs/review/speed/iceprobe.py]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -55,4 +55,5 @@ under PW-470? Whichever fix is chosen, its success test is that arms at 2 and 4 
 on the paired judge.
 
 ## Updates
+- 2026-10-30: Lane 28 diagnosis (probes only, scratchpad lane28; write-up docs/review/base-climate/ice-loop/README.md). Repeating the update on the same ground and dT at 16 moments: the loop usually converges within 1-2 updates; the '2-3 m per update' is mostly +-0.5-1 m margin flicker, so the per-Myr ice path rises with the cadence trivially. The real gap is at onsets: seed 53669 at 700 Myr walks -74 -> -97 m over 6 updates and is still growing; holding the sheets' carried air (PW-336) makes the walk vanish. Frozen drivers: 2/4/8 Myr cadences end within a few m, but an onset takes ~3x longer at 8 Myr, and under a 10 Myr cold dip 2 Myr ends on the iced branch (-84 m) and 8 Myr not (-68 m). Fix chosen (coordinator 10-30): candidate 2, the carried air's rounds within the update (climate.compute's reground, earth.ice_air_rounds, Params.ice_air_rounds 4): the onset state reaches -102 m in one update. Dropped: ice re-settled between updates on temp_response-shifted ground (overshoots: -58 m vs the 2 Myr arm's -33). Candidate 1 (full re-solve) costed at +30-45% of a run.
 - 2026-10-29: Created from inbox draft draft-ice-climate-loop-steps-per-update.md (found by lane27b).

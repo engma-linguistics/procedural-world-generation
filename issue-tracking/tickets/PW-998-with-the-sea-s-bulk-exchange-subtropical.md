@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-015, PW-026, PW-352]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/deserts/README.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -43,5 +43,6 @@ and from where the vapour comes; then fix the winds (PW-026), not the sea's exch
 - [ ] SE USA and Pampas each at least 60% of GPCC's annual rain without undoing the bulk exchange
 
 ## Updates
+- 2026-10-30: Lane 28 diagnosis of the coasts judge's icebox rise (no new sims; A = db7a178a vs D = e0158fa2 records, and two shared states solved with each round's frozen code). The package grows more land ice at the SAME global temperature, from the first 30 Myr: in 36/36 draws sea_ice -19 -> -35 m, snow_land +40%, sheets' net accumulation +35%, dT only -0.14 C; over 300-990 Myr dT is unchanged (+0.09) while sea_ice is -39 m and ice_frac +0.014, so the extra iceboxes are mostly the sea-level icebox flag tripping on more ice. Cause: round 3's poleward eddy drift. On seed 957317 at 12 Myr and seed 53669 at 300 Myr, D gives +30-75% precipitation poleward of 60 deg (e.g. 70N 139 -> 205, 80N 118 -> 171, 70S 335 -> 439 mm/yr) and +15-20% at 40-60 deg; the bare ground's warm month moves only -0.2 to -0.5 C; rounds 1-2 add little (B/C within ~1 m of A's ice, D +4.5 to +11 m on the same state). So hypotheses (b)/(d) (more polar snow, more accumulation), not the cold domes (c) and not CO2 (a). Open: is the extra polar precipitation too much against GPCC (Greenland, Antarctica, Siberia, Canada)? Held until the Earth cache is rebuilt (GPCC upstream outage); no drift tuning before then (coordinator 10-30).
 - 2026-10-29: Coasts paired judge finished (A = db7a178a main vs D = e0158fa2 coasts, 36 L6 pairs, pre-speed cadence): passes 27/36 vs 27/36; iceboxes 8 vs 21; end T -2.8 C [-4.4, -0.9]; arid -2.8 pts, hot desert -2.8 (both moved, intended direction). Do not merge until the icebox rise is explained; likely interacts with PW-1050 (ice-climate loop one step per update).
 - 2026-10-29: Created from inbox draft draft-subtropical-coasts-dry-after-bulk-evap.md (found by lane25).

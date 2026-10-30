@@ -2404,7 +2404,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # lakes: Penman's open water, on the clouds and the air's humidity (PW-358)
     wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul,
                                                      cloud_jan, tilt, tune), 0.0)
-    return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
+
+    def reground(ice_new):
+        """The bare ground's (t_warm, t_cold, temp), as `ground`, under another land ice's carried air (its own
+        air mass, icemass.air_mass, carried on these winds), the rest of this climate held: its sea, rain,
+        clouds and summer energy split (PW-1050: the run's ice settles with its own air within an update)."""
+        a = np.where(land, ice_new, 0.0)
+        damp = air_mass(grid, a, cold=ice_cold) if (a > 1).any() else np.zeros(n)
+        t = _orbit(_air_temps(sst=sst, **{**air, "damp_air": damp}), orbit_dt, north)
+        return _land_finish(*t[:3], **fin)[3]
+
+    return dict(reground=reground, temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
                 t_jan=np.where(jul_warm, t_cold, t_warm), precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
                 rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, shade_jul=shade(sun_jul),

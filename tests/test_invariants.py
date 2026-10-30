@@ -132,6 +132,8 @@ def test_climate_same_on_any_thread_count(grid4):
     finally:
         numba.set_num_threads(before)
     def same(a, b):
+        if callable(a):  # (reground: a closure; its output is the ground's, checked here, test_ice_air)
+            return callable(b)
         if isinstance(a, dict):
             return a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
         if isinstance(a, list):

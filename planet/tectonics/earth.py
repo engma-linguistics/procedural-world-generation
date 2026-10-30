@@ -630,6 +630,7 @@ def update_climate(sim, e):
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
     marine, info = marine_view(bed, c), {}
     sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine)
+    sim.ice, c["ground"] = ice_air_rounds(sim, land, e, c, ice0, marine, info)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
                                                            sim.p_jul, sim.p_jan)
@@ -647,6 +648,34 @@ def update_climate(sim, e):
     update_vegetation(sim, e)
     sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
+
+
+AIR_TOL = 0.01  # ice_air_rounds stop once a round moves no more than this share of the iced cells (at least 2)
+
+
+def ice_air_rounds(sim, land, bed, c, old, marine, info):
+    """The sheets settled with their own carried air within the update (PW-1050): (ice, ground). The climate
+    saw the old ice's air (icemass.air_mass, PW-336): a sheet's cold air mass, carried onto its margins, is the
+    steepest of its feedbacks, and at an onset each update moved the ice only part of the way, so an onset took
+    5-10 updates (~40-80 Myr at an 8 Myr cadence) and the climate's cadence decided how icy a planet got
+    (docs/review/base-climate/ice-loop/). Each round re-makes the bare ground's temperatures under the new ice's
+    air (climate.compute's reground: its rain, sea and clouds held; the rain answers at the next update, as CO2
+    does) and settles the ice again on it, at most Params.ice_air_rounds times, until a round moves no more than
+    AIR_TOL of the iced cells or repeats the round before last (a margin cell or two flickering). info gets
+    "air_rounds"."""
+    ice, ground = sim.ice, c["ground"]
+    seen = [np.asarray(old) > 0] * 2
+    n = 0
+    for n in range(1, int(sim.params.ice_air_rounds) + 1):
+        on = ice > 0
+        tol = max(2, int(AIR_TOL * on.sum()))
+        if (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol:
+            n -= 1
+            break
+        ground = c["reground"](np.where(land, ice, 0.0))
+        seen, ice = [seen[-1], on], ice_sheets(sim, land, bed, ground, ice, sim.ice_sink, {}, marine=marine)
+    info["air_rounds"] = n
+    return ice, ground
 
 
 def bed_thawed(ice, t_s, precip, geo=0.065):
