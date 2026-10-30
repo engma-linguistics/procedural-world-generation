@@ -8,7 +8,7 @@ The package (PW-901; `History` is assembled from one mixin per concern):
   gridops    neighbour-reduction helpers on the grid
   tags       the place tags of an epoch
   habitat    a line's capacity K, its wishes and goods (HabitatMixin), niche overlap
-  pressure   pure competition rules (founding window, frontier invasion, crowding)
+  pressure   pure competition rules (momentum edge, expansive press, frontier invasion, crowding)
   steps      the time steps (deep, glacial, recent)
   origins    where and how a line originates (the landmass draw, founders, splits, arrivals, hybrids)
   portals    the arrivals' portals
@@ -33,7 +33,7 @@ from .gridops import _csr_gather, _depth, _isin, _soft  # noqa: F401
 from .habitat import WAYS, _land_view, capacity, hold_mask, marine_capacity, niche_overlap, same_way  # noqa: F401
 from .model import History
 from .params import *  # noqa: F401,F403
-from .pressure import crowding, invasion_weights, pioneer_factors  # noqa: F401
+from .pressure import crowding, expanse_factor, invasion_weights, surge, surge_q  # noqa: F401
 from .steps import Step  # noqa: F401
 from .summary import _niche_closeness, _within, people_rollup, present_summary, wish_scores  # noqa: F401
 from .tags import _tags, needs_chains  # noqa: F401

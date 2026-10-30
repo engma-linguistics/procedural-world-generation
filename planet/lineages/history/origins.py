@@ -7,7 +7,7 @@ import numpy as np
 from ...geo import arc_km
 from .. import spec as SP
 from ..crossing import modes, sea_gap
-from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
+from ..spread import EST, graph_dist, nearest_label, rings
 from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
@@ -85,8 +85,8 @@ class OriginsMixin:
         J = np.array([j for j in self._rivals[k] if self.active[self.lines[j].id]], np.int64)
         q = np.zeros(self.grid.n)
         if len(idx) and len(J):
-            q[idx] = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx,
-                                  (self._corr_now if self._corr_now is not None else np.full(self.grid.n, 0.5))[idx])
+            q[idx] = self._load(k, K, J, self.alpha[k], self.terr[k], idx,
+                                (self._corr_now if self._corr_now is not None else np.full(self.grid.n, 0.5))[idx])
         return q
 
     def _seed_blob(self, k, cell, K, mask, r):
@@ -123,14 +123,16 @@ class OriginsMixin:
             taken[np.unique(at)] = True
         return taken
 
-    def _by_landmass(self, line, score, K, env, reach=None, ago=0.0):
+    def _by_landmass(self, line, score, K, env, reach=None, ago=0.0, room=False):
         """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
         glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
         long-term viable population (ORIGIN_MVP_MULT x tree.viable_pop, as _viable counts people), draws with probability (habitable area)^SPECIES_AREA_Z; the
         habitat score then picks the cell within it. Without this the best cell of a heavy-tailed noise field wins wherever it
         falls, and one small continent held 13-15 peoples. The same rule for every people; nothing is drawn when only one
-        landmass qualifies."""
-        if SPECIES_AREA_Z <= 0:  # (0: off)
+        landmass qualifies. room (an arrival, lane 73): K is the free room, and a landmass draws in proportion to the founders its free
+        room would carry: the species-area rule is of peoples arising in the world, and an arrival from outside inherits no geography
+        (by area^z the gnomes landed on a 0.47 Mkm2 islet, or in a continent's leftovers)."""
+        if SPECIES_AREA_Z <= 0 and not room:  # (0: off)
             return score
         lab, n = self.grid.components(env["land"])
         suit = (K > EST) & (score > 0) & (lab >= 0)
@@ -153,7 +155,7 @@ class OriginsMixin:
                 cand = (founders > 0) & ~self._other_roots_land(line, lab, n)
                 if cand.any():  # (none free can carry the full horizon: the free one that carries most)
                     ok = cand & (founders >= founders[cand].max())
-        w = np.where(ok, cells, 0.0) ** SPECIES_AREA_Z
+        w = np.where(ok, founders, 0.0) if room else np.where(ok, cells, 0.0) ** SPECIES_AREA_Z
         if reach is not None:  # (founders carried over the sea: a landmass is drawn in proportion to how readily the crossing reaches it)
             top = np.zeros(n)
             np.maximum.at(top, lab[suit], reach[suit])
@@ -193,11 +195,24 @@ class OriginsMixin:
         why = "habitat"
         score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise
         pull = None
+        arrival_room, partnered = None, False
+        if line.origin == "arrival" and not line.place:
+            # (lane 73) an arrival settles where it can really live, as a split's founders do: its free room (habitat less what the
+            # peoples there already take, at their coexistence shares) about the place, not the bare habitat. On the bare habitat the
+            # gnomes and elves landed in country others held and were pressed into a pocket of a few cells at once
+            free = np.clip(K - self._rivals_here(line, K), 0, None) * (K > EST)
+            arrival_room = free if (free >= EST).any() else None
+            if arrival_room is not None:
+                pocket = free
+                for _ in range(ARRIVAL_POCKET_RINGS):
+                    pocket = self._smooth(pocket)
+                score = score * pocket / np.maximum(K, 1e-9)
         if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
             for h in self.tree.lines.values():
                 if h.origin == "hybrid" and line.id in h.parents and self._hybrid_factor(h)[0] > 0:  # (PW-752: a mixed people its stage allows)
                     other = [q for q in h.parents if q != line.id][0]
                     if self.active.get(other):  # (PW-852: within HYBRID_REACH_KM of its range, not just three cells: the two should meet soon)
+                        partnered = True
                         m = self._near_range(other)
                         # where the newcomer can really live: free room (habitat less what its rivals already hold there) of at
                         # least half its best; on a crowded continent it would be squeezed into a refuge (ALPHA_CLOSED), so it
@@ -219,7 +234,10 @@ class OriginsMixin:
                             pull = m if pull is None else pull * m
                             score = score * m
         if not line.place:
-            score = self._by_landmass(line, score, K, env, ago=step.ago)
+            if line.origin == "arrival" and arrival_room is not None and not partnered:  # (a wanted hybrid's partner sites it instead, PW-852, PW-861)
+                score = self._by_landmass(line, score, arrival_room, env, ago=step.ago, room=True)
+            else:
+                score = self._by_landmass(line, score, K, env, ago=step.ago)
         if line.place:
             d = dist_km(g, *line.place)
             score = score * np.exp(-(d / 600.0) ** 2) + 1e-9 * (d < 300)
@@ -251,7 +269,8 @@ class OriginsMixin:
                 for c, _ in near[1:]:
                     self._seed_blob(k, c, K, K > EST, 3)
                 why = f"through {'a portal' if len(near) == 1 else str(len(near)) + ' portals'} ({', '.join(sorted({f[1] for f in near}))})"
-        self._seed_blob(k, cell, K, K > EST, 3)
+        r = 3 if line.origin == "root" else max(3, int(round(FOUNDER_KM / self.cell_km)))  # (an arrival's founders: as a split's, lane 73)
+        self._seed_blob(k, cell, K, K > EST, r)
         return cell, why
 
     def _origin_split(self, line, step, env, tags, K, noise):

@@ -244,7 +244,8 @@ id = "kobold"
 name = "kobolds"
 body = { bitter = "low" }  # scavengers
 parents = ["draconic"]
-at = "2 Myr"
+at = "350 kyr"  # lane 73 (coordinator 10-30): a dragon-blooded people split off recently, as the dragonborn (300 kyr), not at 2 Myr: older
+# than the dwarves (500 kyr) in the same niche (mountain, underground), the kobolds held every range before the dwarves arose
 generation_yr = 25  # (a people of its own, not a great wyrm: the default)
 density = 4
 sea_share = 0.02
@@ -576,6 +577,7 @@ name = "orcs"
 body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
 at = "700 kyr"
+mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 1
 explore = 0.7
 temp_c = [2, 20]
@@ -616,8 +618,11 @@ generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): lo
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
+mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples, meant to be common (history.params.MAINLINE_Q)
 density = 4
-explore = 0.35
+explore = 0.5  # lane 73: was 0.35, which kept them in the hominid cradle (one continent with 9% of their country) for 500 kyr. The
+# mountain peoples that do range (goliaths 0.4, the mountain-and-coast avian stem's aarakocra 0.7) and the people default (0.5) sit
+# here; the homebodies (gnomes 0.3, firbolgs 0.3) are woodland folk. Dwarves follow ore and trade out to far holds
 sea_share = 0.05
 insularity = 0.75
 temp_c = [-2, 18]
@@ -746,6 +751,7 @@ id = "halfling"
 name = "halflings"
 parents = ["archaic_human"]
 at = "100 kyr"
+mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 12
 explore = 0.35
 sea_share = 0.1
@@ -763,6 +769,7 @@ generation_yr = 50  # years per generation (default 25, humans: Fenner 2005): lo
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
+mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 1
 explore = 0.8
 sea_share = 0.3
@@ -805,6 +812,7 @@ name = "gnomes (from the feywild)"
 generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 origin = "arrival"
 at = "50 kyr"  # owner 2026-10-27: an earlier arrival, so the fey folk settle hills and woods before the world fills (at 15 kyr they were remnants on 9 of 24 rolls)
+mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 12  # owner 2026-10-27: a normal people, insular, denser and less far-reaching than humans (density 10, explore 0.55, insularity 0.3)
 explore = 0.3
 insularity = 0.85
@@ -1407,3 +1415,10 @@ valence = ["exotic"]
 id = "edge_folk"
 label = "folk from beyond the edge"
 valence = ["edge"]
+
+# lane 73: the kobolds now split from the dragons at 350 kyr (above), near the dragonborn's 300 kyr; by split depth alone the two
+# would be T1, fully fertile kin. They keep the T2 they had at 2 Myr: two dragon-blooded peoples of the stem, hybrids mostly sterile
+[[interfertile]]
+a = "dragonborn"
+b = "kobold"
+tier = 2

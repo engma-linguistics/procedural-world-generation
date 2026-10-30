@@ -378,6 +378,7 @@ class Lineage:
     way_given: str | None = None  # of it, what the spec gave on this line itself
     realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
     persists: bool = False  # keeps living after its last split child
+    mainline: bool = False  # owner 10-30 (lane 73): one of the genre's core peoples, meant to be common (history.params.MAINLINE_Q); its groups inherit it
     megafauna: bool = False  # a handful per country (dragons): its range hardly takes room from the peoples that share it (history.MEGAFAUNA_PUSH, PW-855)
     group_size: tuple[float, float] | None = None  # megafauna (PW-924): how many live together, [least, most] (dragons [1, 3]: solitary, a pair with young; giants [5, 20]: a steading); inherited by splits and groups
     rivalry: float = 1.0  # megafauna (PW-924): x the competition the line feels and gives (metallic dragons 0.5: they coexist more readily); inherited by splits and groups
@@ -480,6 +481,8 @@ MODE_DEFAULT = "fantasy"  # meta.mode (PW-695): fantasy = every people and the f
 PORTAL_MODES = ("off", "random", "sites")
 PORTAL_SITES = ("forest", "desert", "reef", "volcano")  # (history.History.portal_sites: deepest forest, middle of a desert, a coral reef, the foot of a volcano)
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
+SURGE_X = (0.0, 0.5, 1.0, 2.0)  # the choices of meta.surge_early / meta.surge_late (owner 10-30, lane 73): how strongly a people on the upswing
+# contests land others hold, x history.params.SURGE_Q (0: no momentum edge); early before the farming onset, late at the present, blended between. Default 1, 1
 
 
 @dataclass
@@ -493,6 +496,8 @@ class Tree:
     disabled: list[str] = field(default_factory=list)  # lines switched off (enabled = false) and those that went with them
     uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
     land_pull: float = LAND_PULL
+    surge_early: float = 1.0  # the momentum edge's dial in the early eras (SURGE_X, lane 73)
+    surge_late: float = 1.0  # ... and at the present
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
     animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
@@ -819,7 +824,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     tolerates=[_check_tag(x, lid) for x in r.get("tolerates", base.tolerates)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), mainline=bool(r.get("mainline", base.mainline if (bases and origin == "group") else False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)), exempt=bool(r.get("exempt", False)),
@@ -969,6 +974,10 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         t.crops = [x for x in (CD.REAL_IDS if t.crops is None else t.crops) if not CD.BY_ID[x].fantasy]
         t.crops_force = [x for x in t.crops_force if not CD.BY_ID[x].fantasy]
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
+    for k in ("surge_early", "surge_late"):
+        setattr(t, k, float(meta.get(k, 1.0)))
+        if getattr(t, k) < 0:
+            raise ValueError(f"meta.{k} must be >= 0")
     t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
     if t.era not in ERAS:
         raise ValueError(f"meta.era must be one of {list(ERAS)}")
@@ -1034,6 +1043,8 @@ def to_raw(t: Tree) -> dict:
             r["color"] = l.color
         if l.persists:
             r["persists"] = True
+        if l.mainline:
+            r["mainline"] = True
         if l.megafauna:
             r["megafauna"] = True
         if l.group_size is not None:
@@ -1064,6 +1075,7 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
+                     "surge_early": t.surge_early, "surge_late": t.surge_late,
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
                      "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
