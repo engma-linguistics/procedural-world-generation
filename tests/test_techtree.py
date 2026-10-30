@@ -183,3 +183,123 @@ def test_kind_rules_take_several_ids_and_warn_on_none():  # PW-1041
     with pytest.warns(UserWarning, match="name no line of this tree: .*draconic") as got:
         TT.build(lines, None, None, seed=1, T=T)
     assert "giant" not in str(got[0].message)  # (a rule with one id present is not reported for its other ids)
+
+
+# ---- the invention model (PW-675 v1, lane 64) ------------------------------------------------------------------------------
+
+def _pop(n, area_mkm2=1.0, at=60.0):
+    """A track at a constant population: [ago, lat, lon, area Mkm2, population] at the start and the present."""
+    return [[at, 0.0, 0.0, area_mkm2, n], [0.0, 0.0, 0.0, area_mkm2, n]]
+
+
+def test_every_tech_has_domains_and_the_culture_table_is_checked():
+    for t in T["techs"].values():
+        assert TT.domains_of(t) and set(TT.domains_of(t)) <= set(TT.DOMAINS), t["id"]
+        assert TT.pool_of(t) in TT.POOLS
+    import copy
+    import pytest
+    bad = copy.deepcopy(T)
+    raw = {"defaults": bad["defaults"], "track": bad["track"], "tech": list(bad["techs"].values()), "kind": bad["kind"],
+           "culture": {"aggressive": {"warfare": 1.5}}}
+    with pytest.raises(ValueError):
+        TT.load_raw(raw)
+
+
+def test_strength_is_henrichs_log_with_a_threshold():
+    D = T["defaults"]
+    assert TT.strength(D["pool_threshold"], D) == 0.0 and TT.strength(10, D) == 0.0
+    assert abs(TT.strength(D["pool_ref"], D) - 1.0) < 1e-9
+    a, b, c = (TT.strength(n, D) for n in (1e4, 1e5, 1e6))
+    assert abs((c - b) - (b - a)) < 1e-9  # (each tenfold adds the same: ln N)
+    assert TT.strength(1e15, D) == D["pool_max"]
+
+
+def test_specialist_ladder_and_learners():
+    D = T["defaults"]
+    assert TT.specialist_share(T, set()) == D["specialists_base"]
+    assert TT.specialist_share(T, {"cultivation", "villages"}) == 0.02
+    assert TT.specialist_share(T, {"cultivation", "villages", "towns", "cities"}) == 0.10
+    assert TT.learners_x(25, D) == 1.0 and TT.learners_x(50, D) == 2.0  # (elves)
+    assert abs(TT.learners_x(430, D) - 17.2) < 1e-9  # (dragons: 430-yr generations)
+    assert TT.learners_x(5000, D) == D["learners_max"] and TT.learners_x(5, D) == D["learners_min"]
+    assert TT.density_x(D["dens_ref"], D) == 1.0 and TT.density_x(1e6, D) == D["dens_x_max"]
+
+
+def test_culture_matches_domains_capped_best_of():
+    inv, take = TT.culture_of(T, {"traits": ["aggressive", "nomadic"], "way": "pastoral_nomad"})
+    assert inv["war"] == 1.5 and inv["move"] == 1.3 and take["war"] == 2.0  # (the best per domain, not the product)
+    assert TT.domain_x(inv, T["techs"]["war_chariot"]) == 1.5 and TT.domain_x(inv, T["techs"]["writing"]) == 1.0
+    assert TT.domain_x(inv, T["techs"]["riding"]) == 1.5  # (move and war: the best of its domains)
+    assert all(x <= T["defaults"]["culture_cap"] for x in inv.values())
+
+
+def test_floors_only_for_the_gated_techs_and_anchor_rates():
+    assert TT.floor_of(T, "cultivation") is None and TT.floor_of(T, "storage") == 11.5  # (storage came 48 kyr after containers)
+    assert TT.floor_of(T, "villages") == 14.5 and TT.floor_of(T, "bow") == 64  # (the Pleistocene: hard)
+    assert TT.floor_of(T, "writing") is None and TT.floor_of(T, "copper") is None  # (the Holocene chain: soft)
+    assert TT.floor_of(T, "salting") == 8  # (Earth took 52 kyr after its prerequisites: the tree lacks the real one, so floored)
+    assert abs(TT.anchor_lag(T, "writing") - 4.1) < 1e-9  # (5.4 kyr after towns at 9.5)
+    assert abs(TT.anchor_lag(T, "kilns") - 3.6) < 1e-9  # (from the glacial gate, 11.6, not from villages at 14.5)
+    assert T["techs"]["writing"]["needs"] == ["tokens", "towns"]
+
+
+def test_anchor_check_meets_earths_lag():
+    got = TT.anchor_check(["towns", "copper", "writing"], seeds=31, T=T)
+    for tid, (lag, earth, share) in got.items():
+        assert 0.6 * earth <= lag <= 1.6 * earth, (tid, lag, earth)
+        assert share >= 0.8
+
+
+def test_small_peoples_rarely_invent_the_specialist_techs():
+    """Writing, the specialists' tech: a big town people finds it, a band of a thousand never does on its own (Childe; Henrich's
+    threshold), though both can take it up by contact."""
+    kit = ["language", "counting", "marks", "tallies", "fire_control", "containers", "cordage", "knapping", "huts", "storage",
+           "pottery", "villages", "grinding", "cultivation", "mudbrick", "towns", "tokens"]
+    T2 = {**T, "kind": [{"of": ["big", "band"], "kit": kit}]}
+    big = band = 0
+    for s in range(12):
+        lines = [line("big", at=8.0, track=_pop(5e7, 5.0, 8.0)), line("band", at=8.0, track=_pop(1000, 0.1, 8.0))]
+        tt = TT.build(lines, None, None, seed=s, T=T2)
+        big += "writing" in tt["known"]["big"]
+        band += "writing" in tt["known"]["band"]
+        assert tt["drivers"]["band"]["strength_specialists"] == 0.0
+    assert big >= 8 and band == 0
+
+
+def test_population_is_read_through_time():
+    """The size that counts is the people's at the time (its track), not today's: a people of a hundred until the last kyr
+    invents nothing of the specialists' before then."""
+    kit = ["language", "counting", "marks", "tallies", "fire_control", "containers", "cordage", "knapping", "huts", "storage",
+           "pottery", "villages", "grinding", "cultivation", "mudbrick", "towns", "tokens"]
+    T2 = {**T, "kind": [{"of": ["late"], "kit": kit}]}
+    track = [[8.0, 0, 0, 0.01, 100], [1.0, 0, 0, 0.01, 100], [0.9, 0, 0, 5.0, 5e7], [0.0, 0, 0, 5.0, 5e7]]
+    for s in range(6):
+        tt = TT.build([line("late", at=8.0, track=track)], None, None, seed=s, T=T2)
+        w = tt["known"]["late"].get("writing")
+        assert w is None or w[0] <= 1.0
+
+
+def test_long_lived_kinds_count_as_more_learners():
+    lines = [line("wyrm", at=100.0, generation_yr=430.0, track=_pop(200, 1.0, 100.0)),
+             line("folk", at=100.0, track=_pop(200, 1.0, 100.0))]
+    tt = TT.build(lines, None, None, seed=1, T=T)
+    assert tt["drivers"]["folk"]["strength_all"] == 0.0  # (200 people: under the threshold)
+    assert tt["drivers"]["wyrm"]["strength_all"] > 0.3  # (200 dragons hand on their skills 17 times less often)
+    assert TT._gen(line("x", "split", 10.0, ["wyrm"]), {l["id"]: l for l in lines}) == 430.0  # (inherited down the tree)
+
+
+def test_aggressive_peoples_take_up_war_techs_faster():
+    con = {"pairs": [{"a": "src", "b": "y", "first_contact_kyr": 3.0, "in_contact_now": True,
+                      "series": [[3.0, 400, 0.0], [0.0, 400, 0.0]]}]}
+    kit = ["wheel", "pack_animals", "war_chariot", "riding"]
+    T2 = {**T, "kind": [{"of": ["src"], "kit": kit}, {"of": ["y"], "kit": ["wheel", "pack_animals"]}]}
+    when = {}
+    for traits in ([], ["aggressive"]):
+        got = 0
+        for s in range(30):
+            lines = [line("src", at=3.0, track=_pop(100, 0.1, 3.0)),
+                     line("y", at=3.0, traits=traits, track=_pop(100, 0.1, 3.0))]
+            tt = TT.build(lines, con, None, seed=s, T=T2)
+            got += (tt["known"]["y"].get("war_chariot") or [0, ""])[1] == "contact"
+        when[bool(traits)] = got
+    assert when[True] > when[False]

@@ -1,0 +1,38 @@
+# Tech-tree references (invention model)
+
+The papers behind the invention hazard in `planet/lineages/techtree.py` (lane 64, PW-675): what drives the rate at which a people
+invents, and what sets a tech's "band" of time. The PDFs stay local: they are gitignored (`docs/references/**/*.pdf`) because of
+copyright. This README is the index, and it is committed.
+
+**Before citing a paper in code or a ticket, read it here, not from memory.** Everything below was read on 2026-10-30: the local PDFs in
+full, the rest through their open full text or abstract (marked).
+
+## Have (local PDF)
+
+| File | Citation | Used for |
+|---|---|---|
+| kremer1993_population_technological_change_qje.pdf | Kremer 1993, QJE 108(3):681-716, doi:10.2307/2118405 | Each person's chance to invent is independent of population, so tech growth is proportional to population (eq. 3, p. 686). Generalised to g P^psi A^phi, with per-capita research productivity rising with population through contact and specialisation (Kuznets) or falling through duplication (section II.C, p. 690). The regions cut off by the post-glacial seas rank in tech by 1500 AD the same as by land and population: Old World 407 M, Americas 14 M, Australia 0.2 M, Tasmania 1.2-5 k, Flinders Island 0 (Table VII, p. 710; text pp. 708-710). Tasmania lost bone tools (note 21, p. 709). |
+| henrich2004_demography_cultural_evolution_tasmania_amantiq.pdf | Henrich 2004, American Antiquity 69(2):197-214, doi:10.2307/4128416 | Average skill changes by -alpha + beta(eps + ln N) per generation, so cumulative gain needs N* > e^(alpha/beta - eps) social learners (eqs. 2-3, pp. 202-203). Gains are logarithmic in the pool of interacting learners; harder skills (larger alpha/beta) need a larger pool; below the threshold skills are lost. Tasmania was cut off 12-10 kyr ago, with about 4,000 people (p. 203); its bone tools were gone by about 3.5-3.8 kyr ago (pp. 198, 206). This is the S(pool) form. |
+| childe1950_urban_revolution_tpr.pdf | Childe 1950, Town Planning Review 21(1):3-17, doi:10.3828/tpr.21.1.k853061t614q42qh | While every member must hunt, gather or farm there are no full-time specialists; the Ona flint-worker still hunts most of the time (p. 6). Cities held full-time craftsmen, transport workers, merchants, officials and priests, fed by the surplus (criterion 2, p. 11). Writing and numerals were invented by the priests and officials who ran the temple revenues (criterion 6, p. 14). This is the specialist-pool ladder, and why writing needs towns. |
+
+## Read online (open full text or abstract; no local copy)
+
+| Citation | How read | Used for |
+|---|---|---|
+| Bettencourt, Lobo, Helbing, Kühnert & West 2007, PNAS 104(17):7301-7306, doi:10.1073/pnas.0610172104 | PMC full text (PMC1852329) | Table 1: new patents beta 1.27 [1.25, 1.29], inventors 1.25 [1.22, 1.27], private R&D employment 1.34, "supercreative" employment 1.15, total employment 1.01, housing 1.00 (US). Innovation per capita rises with city size (beta - 1 ~ 0.15-0.3). It is the density term on the specialist pool (density stands in for settlement size). |
+| Kline & Boyd 2010, Proc R Soc B 277(1693):2559-2564, doi:10.1098/rspb.2010.0452 | HRAF hypothesis summaries (publisher page blocked) | 10 Oceanic societies: toolkit size rises with population (supported, p. 2561; standardised beta 0.72-1.04, p 0.002-0.017); contact matters more for small populations (supported); mean tool complexity marginal. Contact is kept in the diffusion, not the pool. |
+| Collard, Kemery & Banks 2005, Canadian Journal of Archaeology 29:1-19 | AcaWiki summary; HRAF hypothesis records | Counter-evidence: in 20 hunter-gatherer groups, risk (effective temperature, plant productivity) explains food-getting toolkits, and population size does not. So the population effect is kept logarithmic and is strongest for specialist techs. Risk is not modelled (inbox draft). |
+| Vaesen, Collard, Cosgrove & Roebroeks 2016, PNAS 113(16):E2241-E2247, doi:10.1073/pnas.1520288113 | PMC full text | Counter-evidence: the population-size models hold only under narrow learning assumptions, and the Tasmanian and Upper Palaeolithic records fit them poorly. Reply (Henrich et al.): the effective, interacting pool matters, not the census. So S reads a threshold and a log, not a power law. |
+| Turchin et al. 2021, PLoS ONE 16(10):e0258161, doi:10.1371/journal.pone.0258161 ("Rise of the war machines") | Open full text | Seshat, ~10 kyr: military tech is driven by world population, centrality to the Afro-Eurasian routes, and iron plus cavalry (Table 1). Agricultural productivity is weakest. Polity population, territory and governance play "no major role". Warfare intensity was not tested. So aggression mostly raises contact uptake of war techs and only slightly raises invention. |
+| Turchin et al. 2022, Science Advances 8(25):eabn3517, doi:10.1126/sciadv.abn3517 | PMC full text (PMC9232109), first ~60% | Iron plus cavalry and agricultural productivity drive social complexity. Mounted warfare was "invented only once" by stateless Pontic-Caspian steppe people, then spread. There is a feedback loop between military technology and warfare. |
+| Ogburn & Thomas 1922, Political Science Quarterly 37(1):83-98, doi:10.2307/2142320 ("Are inventions inevitable?") | AcaWiki summary and secondary accounts (JSTOR not reached) | 148 inventions made independently by two or more people, mostly within the same decade. Once the preconditions are in place, invention follows. This is the case for timing by prerequisites rather than by calendar. |
+| Larson et al. 2014, PNAS 111(17):6139-6146, doi:10.1073/pnas.1323964111 | PMC full text (PMC4035915), text only | At least 11 independent centres of domestication. Domestication began 12-11 kyr ago, and most domesticates came in the middle Holocene (7-4 kyr ago). The timing is uneven, and some regions never had it. Fig. 1 dates not read (figure). |
+| Richerson, Boyd & Bettinger 2001, American Antiquity 66(3):387-411, doi:10.2307/2694241 | Abstract and UC Davis summary | Agriculture was impossible under glacial climates (dry, low CO2, very variable) and compulsory in the Holocene; there was a step change about 11.6 kyr ago. The rate of innovation, not population growth, limits intensification. So the farming techs' 11.5 kyr floor stands for a climate gate, which on another planet should be that planet's own (inbox draft). |
+| Independent inventions of writing: Mesopotamia ~3.4-3.2 kyr BCE, China ~1.2 kyr BCE, Mesoamerica ~0.9-0.4 kyr BCE (Egypt disputed) | Popular accounts (Discover; Diamond's summary; 1999 NYT meeting report); unverified against a specialist source | Writing arose a handful of times and never in most regions. The lag from farming to writing is roughly 6 kyr in all three clear cases. This is the soft anchor for writing's base rate. A specialist source (e.g. Houston 2004, *The First Writing*) is wanted. |
+
+## Wanted
+
+- Allen 2000, European Review of Economic History 4:1-26: the share of the labour force in agriculture, 1300-1800 (pp. 8-9). It would
+  anchor the specialist ladder's top rungs (s = 0.05 towns, 0.10 cities), which are judgement for now.
+- Kline & Boyd 2010 full text (the Royal Society page blocks agents).
+- Houston (ed.) 2004, *The First Writing* (Cambridge): the dates of independent writing.
