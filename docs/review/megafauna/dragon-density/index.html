@@ -1,0 +1,287 @@
+<title>Dragons and Their Food</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --paper: #eef1ec;
+  --card: #f7f9f5;
+  --ink: #1e2924;
+  --ink-2: #4a5752;
+  --muted: #6c7a74;
+  --rule: #c9d2cc;
+  --accent: #2c6a52;
+  --accent-soft: #dce9e1;
+  --warn: #8a4b2a;
+  --warn-soft: #f1e3d8;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141a18;
+    --card: #1b2320;
+    --ink: #dfe7e2;
+    --ink-2: #b4c1bb;
+    --muted: #8d9b95;
+    --rule: #34413c;
+    --accent: #7cc4a2;
+    --accent-soft: #20332b;
+    --warn: #e0a27f;
+    --warn-soft: #33251d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141a18;
+  --card: #1b2320;
+  --ink: #dfe7e2;
+  --ink-2: #b4c1bb;
+  --muted: #8d9b95;
+  --rule: #34413c;
+  --accent: #7cc4a2;
+  --accent-soft: #20332b;
+  --warn: #e0a27f;
+  --warn-soft: #33251d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: "Source Serif 4", "Iowan Old Style", Georgia, serif; font-size: 17px; line-height: 1.6; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.col { max-width: 46rem; margin: 0 auto; }
+.wide { max-width: 64rem; margin: 0 auto; }
+p, li { max-width: 65ch; }
+h1, h2, h3, .label, table, figcaption, .meta, .kicker { font-family: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; }
+.kicker { text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; color: var(--accent); font-weight: 600; margin: 0 0 6px; }
+h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.12; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em; }
+h2 { font-size: 23px; font-weight: 600; margin: 48px 0 10px; padding-top: 14px; border-top: 1px solid var(--rule); }
+h3 { font-size: 18px; font-weight: 600; margin: 28px 0 6px; color: var(--ink-2); }
+.meta { font-size: 14px; color: var(--muted); margin: 0 0 24px; }
+.plain { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+.plain h2 { margin-top: 0; border: 0; padding: 0; font-size: 20px; }
+.note { background: var(--warn-soft); border-left: 4px solid var(--warn); padding: 12px 18px; margin: 20px 0; border-radius: 0 6px 6px 0; }
+.abstract { font-style: italic; color: var(--ink-2); }
+figure { margin: 28px 0; }
+figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+figcaption { font-size: 14px; color: var(--ink-2); line-height: 1.45; margin-top: 8px; max-width: 70ch; }
+figcaption b { color: var(--ink); }
+.scroll { overflow-x: auto; margin: 18px 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); }
+table { border-collapse: collapse; font-size: 14.5px; width: 100%; min-width: 34rem; }
+th, td { padding: 7px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th { font-weight: 600; color: var(--ink-2); background: var(--paper); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.chain { counter-reset: step; list-style: none; padding: 0; }
+.chain li { counter-increment: step; position: relative; padding-left: 44px; margin: 0 0 16px; }
+.chain li::before { content: counter(step); position: absolute; left: 0; top: 2px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--paper); font-family: "IBM Plex Sans Condensed", Arial, sans-serif; font-weight: 600; text-align: center; line-height: 30px; font-size: 15px; }
+.big { font-family: "IBM Plex Sans Condensed", Arial, sans-serif; font-weight: 600; color: var(--accent); }
+.refs li { margin-bottom: 8px; font-size: 15.5px; }
+code { font-size: 0.86em; background: var(--card); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; }
+a { color: var(--accent); }
+.two { display: grid; grid-template-columns: 1fr; gap: 18px; }
+@media (min-width: 900px) { .two { grid-template-columns: 1fr 1fr; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+
+<div class="page">
+<div class="col">
+
+<p class="kicker">Field report · megafauna · fun lanes 43 to 45b</p>
+<h1>Dragons and their food</h1>
+<p class="meta">How many dragons the land holds where nobody lives, where foragers, herders and farmers live, and why. Model at main b86ed9d4 (fun lane 45b). Sweep: 6 worlds × 4 rolls (7000 to 7003), the dnd tree, L7 (one cell ≈ 3,113 km²). Round 1 draft, for review. 2026-10-29.</p>
+
+<div class="plain">
+<h2>In plain words</h2>
+<p>Dragons in this model are as many as the land can feed, minus what the peoples take, minus what the peoples' fear and spears take. Plants grow; grazers eat the plants; about a tenth of the grazers can be taken each year without the herds shrinking. The peoples' hunters eat first. Giants eat next. The rest of the hunters split what is left by body size. The small and middle-sized hunters get about 83% of it and the dragons about 17%. A dragon eats about 2.7 tonnes of meat a year, so on land with 1 tonne of grazers per km² there is about one dragon per 160 km².</p>
+<p>Where nobody lives, that gives about <span class="big">1 dragon per 770 km²</span> today, averaged over all the empty land in the sweep (much of it is poor desert and tundra). Rich empty grassland could feed one dragon per 23 km². Where peoples live, dragons are far scarcer: about 1 per 6,500 km² in herders' country and about 1 per 70,000 km² in foragers' or farmers' country. That is only 1% to 2% of what the food there would feed. Most of the loss comes from the peoples' pressure, a rule that is still a placeholder.</p>
+<p><b>A Sword Coast-sized region</b> (2,414 × 1,609 km, about 3.9 million km², roughly western Europe from Gibraltar to Denmark, Section 4) would hold about <b>5,000 dragons if empty</b>, about <b>600 if herders held it</b>, and about <b>50 to 60 if foragers or farmers held it</b>. With the peoples' pressure turned off, the food alone would feed 4,000 to 30,000 there, and up to about 170,000 if the whole area were rich grassland with nobody else eating.</p>
+<p>The weak links: several food numbers have no source yet (PW-1019), dense "hunter" peoples eat almost all the wild game (PW-1018), and the pressure rule is set by hand. Section 7 lists them.</p>
+</div>
+
+<h2>Abstract</h2>
+<p class="abstract">We describe how procgen_world sets dragon numbers from food (the PW-990 option B ruling) and measure the result on a 24-run sweep. Wild herbivore biomass follows net primary production through the McNaughton et al. (1989) fit. A fixed 10% a year of it, plus 10% a year of the herders' stock, is the year's supply. The peoples' hunters take first, then the giants, then the rest of the predator guild by the size classes of Carbone, Turvey &amp; Bielby (2011). The dragons get the apex class's 17%, and each needs 2.7 t of prey a year from a reptile field metabolic rate (Nagy, Girard &amp; Brown 1999). Where nobody else eats, this gives 1 dragon per 159 km² per t/km² of prey. That sits between Carbone &amp; Gittleman's (2002) carnivore line (1 per 269 km²) and Farlow's (1993) reptile density line (1 per 27 km²), and gives a prey to dragon biomass ratio of about 127:1 (dragons of every age), inside the 100:1 to 200:1 that Farlow gives for modern large-mammal communities. Across the sweep, land nobody holds carries 1.1 to 1.4 dragons per 1,000 km² at 25 kyr, 10 kyr and the present. Peopled land carries 0.010 to 0.16 per 1,000 km², 0.7% to 2% of what the food alone would feed there. Two model choices drive most of the gap: the peoples' hunting share (PW-1018) and the pressure rule (stage 3, not yet sourced).</p>
+
+<h2>1. The chain, step by step</h2>
+<p>Each step takes the one before it as input. The numbers are the model's own (from <code>planet/lineages/prey.py</code>, <code>dragon_ages.py</code> and <code>history/megafauna.py</code>), worked out in <code>dragon_numbers.py</code>.</p>
+
+<ol class="chain">
+<li><b>Plants to grazers.</b> The world's grazing net primary production (NPP, the herb layer plus browse, in g C/m²/yr) becomes standing herbivore biomass through McNaughton et al.'s fit across 51 ecosystems, log<sub>10</sub>&nbsp;B&nbsp;=&nbsp;1.52&nbsp;log<sub>10</sub>&nbsp;NAP&nbsp;−&nbsp;4.79, with B in kJ/m² and NAP in kJ/m²/yr (r² = 0.579, d.f. = 49; McNaughton et al. 1989, p. 143).<!-- C1 --> The paper says only that masses were turned into energy "using standard conversion factors" and does not give them (p. 143), so the model's three unit factors are its own: 0.45 g C per g dry plant and 17.5 kJ per g dry plant (both unsourced), and 7 kJ per g live animal, which is Farlow's figure (Farlow 1993, p. 172).<!-- C2 --><!-- C6 --> With these, a hot desert's median 90 g C/m²/yr holds 0.56 t/km² of grazers, a steppe's 200 holds 1.9 t/km², and a rich savanna's 470 holds 7.0 t/km². Coe, Cumming &amp; Phillipson's fit for semi-arid African parks, log<sub>10</sub>&nbsp;B&nbsp;=&nbsp;1.094&nbsp;log<sub>10</sub>&nbsp;NAAP&nbsp;+&nbsp;0.389 (B in kg/km², NAAP in g dry/m²/yr; Coe et al. 1976, Fig. 3, p. 349), gives 0.8, 1.9 and 4.9 t/km² for the same three places.<!-- C3 --> The two agree within a factor of 1.5. Coe's line is shallower, and the model keeps McNaughton's because it spans forests and tundra too.</li>
+
+<li><b>How much can be eaten a year.</b> The model lets the whole predator guild, the peoples included, take 10% of the standing wild biomass a year (<code>megafauna.OFFTAKE</code>), plus 10% of the herders' stock (<code>STOCK_TOLERABLE</code>). Neither figure has a source (PW-991). Two papers bound the first. Farlow gives prey turnover as 0.94&nbsp;M<sup>−0.28</sup> a year (M in kg; Farlow 1993, eq. 6, p. 172), which is 0.26, 0.16 and 0.14 a year for 100, 500 and 1,000 kg grazers.<!-- C5 --> McNaughton et al.'s own net secondary production fit, log<sub>10</sub>&nbsp;NSP&nbsp;=&nbsp;1.10&nbsp;log<sub>10</sub>&nbsp;NAP&nbsp;−&nbsp;3.27 (p. 143), set against their biomass fit, gives herbivore production of 1.1, 0.77 and 0.54 times the standing biomass a year at the three places above (our arithmetic).<!-- C4 --> So 10% a year is well inside what the herds make. It is a cautious, flat figure: the model does not vary it with prey size.</li>
+
+<li><b>The peoples eat first.</b> Each people's hunters take density × 2,200 kcal a day × the share of their food that is wild game: 50% for a forager, 5% for any other way of life (<code>PERSON_KCAL_YR</code>, <code>WILD_MEAT</code>), at 625,000 edible kcal per 0.5 t head. That is 0.32 t of live prey a year per forager and 0.032 t per farmer or herder. All three numbers are unsourced (PW-1019). The sum is taken over a dragon's 60 km reach and capped at the wild supply.</li>
+
+<li><b>Then the giants</b>, at their own densities and a Kleiber-based food need (<code>giant_cattle_yr</code>). They take 0.03% to 4% of the supply (Section 3).</li>
+
+<li><b>Then the predator guild, split by size.</b> Carbone, Turvey &amp; Bielby list the carnivorous theropods of Late Cretaceous North America in four size classes with their shares of the guild's individuals: 20.6 kg (79.9%), 58.3 kg (19.0%), 1,123 kg (0.9%) and 5,347 kg (0.1%) (Carbone et al. 2011, Table 1, p. 2683).<!-- C8 --> Those abundances come from a mammalian carnivore density line with constant 1.97 and exponent −0.88 (p. 2684).<!-- C9 --> The paper counts animals, not food. The model weights each class by M<sup>0.75</sup> (a Kleiber scaling, not from the paper) to get each class's food. The two classes of 1 t and up then eat 16.8% of the guild's food, and the smaller classes 83.2%: about 4.95 units for every unit the apex class eats (<code>guild_ratio()</code>).<!-- C10 --> The dragons are that apex class. One Cretaceous guild stands in for every world's guild (PW-1019). Farlow makes the same point in words: a community with dinosaur-sized predators would also hold smaller predators eating some of the same prey production (Farlow 1993, p. 176).<!-- C18 --></li>
+
+<li><b>A dragon's food.</b> Under the default "younger" age schedule (PW-958), the average dragon, wyrmlings to ancients, burns 10,400 kcal a day on the reptile field metabolic rate of Nagy, Girard &amp; Brown, 0.196&nbsp;M<sup>0.889</sup> kJ/day with M in g (Nagy et al. 1999, Table 2, pp. 260–261, all reptiles, n = 55).<!-- C7 --> Eaten as whole 0.5 t carcasses of 836 Mcal each (which is Farlow's 7 kJ/g), 85% assimilated, that is 5.35 head or <span class="big">2.7 t of prey a year</span>. The fit's largest reptile is the 45.2 kg Komodo dragon (Table 1, p. 258), so a 1.65 t dragon is a long extrapolation.</li>
+
+<li><b>Dragons per km².</b> Where nobody else eats, density = 10% × 16.8% × prey ÷ 2.7 t. That is <span class="big">1 dragon per 159 km² for each t/km² of prey</span>: 1 per 282 km² on a desert's 0.56 t/km², 1 per 84 km² on a steppe's 1.9 t/km², and 1 per 23 km² on a rich savanna's 7.0 t/km². Where peoples live, their share comes off first, and the pressure rule (Section 5) then presses the result toward the placeholder 1 dragon per 5,000 km² (<code>meta.dragon_km2</code>).</li>
+</ol>
+
+<div class="scroll"><table>
+<tr><th>Step</th><th>Model value</th><th>Source</th></tr>
+<tr><td>Grazers from NPP</td><td>log B = 1.52 log NAP − 4.79 (kJ)</td><td>McNaughton et al. 1989, p. 143; unit factors unsourced except 7 kJ/g (Farlow 1993, p. 172)</td></tr>
+<tr><td>Yearly offtake</td><td class="n">10% wild + 10% stock</td><td>unsourced (PW-991); bounded by Farlow 1993 eq. 6, p. 172</td></tr>
+<tr><td>A person's game</td><td class="n">0.32 t/yr forager, 0.032 t/yr others</td><td>unsourced (PW-1019)</td></tr>
+<tr><td>Guild split</td><td class="n">83.2% smaller, 16.8% dragons</td><td>Carbone et al. 2011, Table 1, p. 2683; M<sup>0.75</sup> weighting is the model's</td></tr>
+<tr><td>A dragon's food</td><td class="n">10,400 kcal/day = 2.7 t/yr</td><td>Nagy et al. 1999, Table 2, pp. 260–261, extrapolated</td></tr>
+<tr><td>Density, nobody else eating</td><td class="n">1 per 159 km² per t/km²</td><td>the product of the above</td></tr>
+</table></div>
+
+<h2>2. Methods: the sweep and the measures</h2>
+<p>All numbers come from fun lane 45b's probe runs (<code>docs/review/megafauna/probe.py</code>) on the dnd tree at L7. The default sweep is 6 worlds (2a7385, 1df1c3, e71172, 6909cb, a12762, 067778) × rolls 7000 to 7003, with the food budget and the peoples' pressure on. A diagnostic arm sets the pressure to zero (<code>--no-press</code>: <code>PRESS_N0</code> = 10<sup>12</sup>) on the same 6 worlds at roll 7000. That removes both the persecution and the overkill of wild herds, since both read the same pressure field. It is a measuring device, not a model setting.</p>
+<p>At the steps nearest 25 kyr, 10 kyr and the present, each land cell is put in one class. "Nobody's country" is land with fewer than 0.02 people per km², summed over every people. Otherwise the cell goes to foragers, herders or farmers, whichever way of life holds the most people there (from <code>landuse.shares</code>: a people with half or more of its use in herding is a herding people, and so on). "Dragons per 1,000 km²" is the expected number of dragons of every kind in a class's cells, summed over the runs, over the class's area. The cells where no dragon kind lives count as zero, as they would in a real survey. One run, 2a7385 roll 7000, also saved its per-cell fields, which give the rich-and-poor split and the maps.</p>
+
+<h2>3. Results</h2>
+
+<h3>3.1 Density by who lives there</h3>
+<figure><img src="charts/density.png" alt="Bar charts of dragons per 1,000 km² by country type at 25,000 years ago, 10,000 years ago and the present, with and without the peoples' pressure.">
+<figcaption><b>Figure 1.</b> Dragons per 1,000 km² (log scale) by who holds the land. Dark bars: the default model, 24 runs pooled. Pale bars: the pressure-off diagnostic, 6 runs (roll 7000). Script: <code>charts.py</code>; data: <code>numbers.json</code>, <code>sweep.eras</code> and <code>nopress.eras</code>.</figcaption></figure>
+
+<div class="scroll"><table>
+<tr><th>Country</th><th class="n">Share of land, now</th><th class="n">25 kyr</th><th class="n">10 kyr</th><th class="n">Now</th><th class="n">Now, range over 24 runs</th><th class="n">Now, pressure off</th></tr>
+<tr><td>Nobody's</td><td class="n">24%</td><td class="n">1.07</td><td class="n">1.44</td><td class="n">1.30</td><td class="n">0.15 to 3.98</td><td class="n">1.03</td></tr>
+<tr><td>Foragers'</td><td class="n">23%</td><td class="n">0.012</td><td class="n">0.010</td><td class="n">0.013</td><td class="n">0.001 to 0.037</td><td class="n">1.95</td></tr>
+<tr><td>Herders'</td><td class="n">7%</td><td class="n">0.079</td><td class="n">0.073</td><td class="n">0.155</td><td class="n">0.025 to 0.39</td><td class="n">7.77</td></tr>
+<tr><td>Farmers'</td><td class="n">20%</td><td class="n">0.023</td><td class="n">0.023</td><td class="n">0.015</td><td class="n">0.002 to 0.033</td><td class="n">1.87</td></tr>
+<tr><td>All land</td><td class="n">100%</td><td class="n">0.40</td><td class="n">0.47</td><td class="n">0.34</td><td class="n">0.05 to 0.91</td><td class="n">2.39</td></tr>
+</table></div>
+<p>Dragons per 1,000 km². The rest of the land (26% now) is held mostly by peoples of other ways of life (the probe's "others" class) and is left out of the four rows.</p>
+<p>Nobody's country holds 1.1 to 1.4 dragons per 1,000 km² at all three eras, about 1 per 700 to 950 km². That is far sparser than the 1 per 159 km² per t/km² of the formula because most empty land is poor: its average prey is 0.4 t/km² (Section 3.3). Peopled country holds 0.010 to 0.16 per 1,000 km². Comparing the same worlds and roll with the pressure on and off, the peoples' pressure leaves 0.7% to 0.8% of the food-fed dragons in farmers' country, 0.8% to 1.1% in foragers' country and 1.7% to 2.0% in herders' country (<code>pressure_keeps</code>). In nobody's country it leaves 90% to 95%. Herders' country keeps the most dragons of the peopled kinds because herders live thinly and their stock adds to the supply.</p>
+<p>Across the sweep there are 62,600 dragons per run at the present (8,260 to 162,000 by world and roll). With the pressure off, the 6 runs hold 174,000 to 604,000.</p>
+
+<h3>3.2 Who eats the prey</h3>
+<figure><img src="charts/shares.png" alt="Stacked bars of the share of the yearly prey supply taken by peoples' hunters, giants, smaller predators and dragons in each country type, 25,000 years ago and now.">
+<figcaption><b>Figure 2.</b> The year's supply (10% of the wild herds plus 10% of the herders' stock) and who takes it, supply-weighted over the 24 runs. The hatched part is the dragons' share that no dragon eats, because the pressure holds them below what it would feed. Data: <code>sweep.eras.*.shares</code>.</figcaption></figure>
+<p>Where nobody lives, the smaller predators take 78% of the supply and the dragons' share is 15.7%; the dragons eat 7.4% of the supply at 25 kyr and 8.6% now. In foragers' country the peoples' hunters take 90% at 25 kyr and 84% now. That leaves the dragons a share of 1.6% to 2.7%, of which they eat 0.02%. This is the PW-1018 problem: the dnd tree's dense "hunter" peoples (halflings at 12 per km², goblins at 5) eat the game. In farmers' country the peoples take 52% at 25 kyr and 36% now, as the herds of livestock grow. Over all land, the dragons eat 0.85% of the supply at 25 kyr and 0.52% now.</p>
+
+<h3>3.3 Rich land, poor land and the literature lines</h3>
+<figure><img src="charts/prey.png" alt="Log-log plot of dragons per 1,000 km² against prey biomass, with the model's line, three literature lines and binned points from one run.">
+<figcaption><b>Figure 3.</b> Density against prey biomass. Lines are evaluated at the dragons' ecological mass, 1.65 t. Points are one run (2a7385, roll 7000, the present), binned by prey biomass. Green dots: nobody's country. Open rust circles: what the dragons' food share would feed in peopled country if dragons lived everywhere and nobody pressed them. Filled rust dots: the dragons there with the pressure.</figcaption></figure>
+<p>The literature lines, all evaluated at 1.65 t:</p>
+<ul>
+<li><b>Carbone &amp; Gittleman (2002)</b>: carnivores per 10,000 kg of prey = 89.1&nbsp;M<sup>−1.05</sup> (M in kg; N = 25, R² = 0.83; p. 2274). That is 1 per 269 km² at 1 t/km², 1.7 times sparser than the model.<!-- C11 --> Their abstract puts it as 10,000 kg of prey supporting "about 90 kilograms of a given species of carnivore" (p. 2273). The model's dragons come to 104 kg per 10,000 kg of prey at the ecological mass, or 79 kg at the all-ages mean mass of 1.26 t.<!-- C12 --> The model keeps this line as its "prey" mode, a cross-check (PW-990).</li>
+<li><b>Jetz et al. (2004)</b>: area per individual for mammalian carnivores, N<sup>−1</sup> = 34.43 ha × M<sup>0.86</sup> (n = 38; Table 1, p. 268). That gives 1 per 202 km² at 1.65 t, whatever the prey.<!-- C13 --> The model's line crosses it at about 0.8 t/km² of prey. The same table's carnivore home range, 52.07 ha × M<sup>1.20</sup> (n = 70), gives 3,790 km² at 1.65 t, a disc of 35 km radius. The model's 60 km foraging reach covers about 11,300 km², three times more.<!-- C14 --></li>
+<li><b>Farlow (1993), reptiles</b>: density = 66.07&nbsp;M<sup>−1.01</sup> per km² (M in kg), from Damuth's reptile data with Komodo dragons added (p. 187). That gives 1 per 27 km² at 1.65 t. Farlow warns that the largest reptile in the data is more than two orders of magnitude lighter than his hypothetical predators (p. 187).<!-- C15 --> The model reaches this density only on prey of about 6 t/km².</li>
+<li><b>Farlow (1993), prey to predator biomass</b>: "usually somewhere between 200:1 and 100:1" in modern large-mammal communities, but "as low as 45:1" for a forest community (p. 176). His best-case calculations assume a prey to predator density ratio of 50:1.<!-- C16 --> The model's prey to dragon biomass ratio is 127:1, counting dragons of every age at their mean mass of 1.26 t (or 96:1 if each dragon is counted at the 1.65 t ecological mass). So the dragons alone sit inside the band Farlow gives for a whole modern guild of mammal predators. That is not out of line: Farlow's own ectotherm case finds a predator as large as its prey feasible at a prey to predator density ratio of only 10:1 (p. 187), and the model's dragons eat at a reptile's rate.<!-- C17 --></li>
+</ul>
+<p>In nobody's country the points follow the model line up to about 2.5 t/km², then fall away on the richest land. In peopled country the food left after the peoples (open circles) still sits close to the line, because livestock adds to the supply. The pressure (filled dots) cuts the dragons there to 0.01 to 0.1 per 1,000 km² whatever the prey.</p>
+<p>The rich-and-poor split for the same run shows the pattern by class (below). Poor is under 1 t/km² of prey, middling 1 to 3, rich 3 and over.</p>
+<div class="scroll"><table>
+<tr><th>Now, run 2a7385/7000</th><th class="n">Poor</th><th class="n">Middling</th><th class="n">Rich</th></tr>
+<tr><td>Nobody's: dragons (food alone)</td><td class="n">0.35 (0.86)</td><td class="n">6.8 (10.5)</td><td class="n">1.9 (36.9)</td></tr>
+<tr><td>Foragers'</td><td class="n">0.001 (0.07)</td><td class="n">0.064 (3.2)</td><td class="n">0.054 (10.5)</td></tr>
+<tr><td>Herders'</td><td class="n">0.26 (2.6)</td><td class="n">0.11 (10.6)</td><td class="n">0.041 (34.3)</td></tr>
+<tr><td>Farmers'</td><td class="n">0.009 (0.47)</td><td class="n">0.013 (7.4)</td><td class="n">0.011 (27.1)</td></tr>
+</table></div>
+<p>Dragons per 1,000 km² with the pressure, and in brackets what the dragons' food share alone would feed. Data: <code>cells_2a7385.0.by_class</code>. Nobody's rich land is only 190 cells (0.6 million km²) in this run.</p>
+<p>Two things stand out. Rich land feeds many more dragons than poor land, by 40 times in nobody's country. But on rich land the dragons actually there fall well short of that, even where nobody lives. The likely reason is that "nobody's country" still includes land that a few people visit (up to 0.02 per km²), and the pressure rule presses dragons part of the way down there: at 0.02 people per km² the pressure is 0.33, which on rich land cuts a dragon's density to about 0.18 of its natural value. Rich land is also where peoples live next door. This is an inference from the rule, not yet measured (inbox draft).</p>
+
+<h3>3.4 Dragons over time</h3>
+<figure><img src="charts/time.png" alt="Dragons on the planet over the last 296,000 years on one world, with and without the peoples' pressure.">
+<figcaption><b>Figure 4.</b> Dragons on world 2a7385, roll 7000, over the last 296 kyr (the present plates). Pale: pressure off. Dark: the default. The step at 30 kyr is where the run changes from its glacial pass to its finer last-30,000-year pass; its cause is not yet traced (inbox draft). Data: <code>series</code>.</figcaption></figure>
+<p>With the peoples' pressure, this world holds about 76,000 dragons at 25 kyr and 82,000 at 10 kyr, then falls to about 20,000 now, most of the fall coming after 5 kyr ago. With the pressure off it holds about 530,000 to 660,000 over the last 30 kyr. Before the present plates (the deep epoch, over 300 kyr ago) the model sets a flat density at the land's median prey, since the prey field of today's plates does not apply. That gives the "age of dragons" peak of 1.6 million dragons 10 million years ago on this world. That number rests on a flat rule and should be read as an order of magnitude.</p>
+
+<h3>3.5 Where they live</h3>
+<figure><img src="charts/viewer-peoples.jpg" alt="Screenshot of the viewer's globe coloured by the leading people in each cell, on world 2a7385.">
+<figcaption><b>Figure 5.</b> The viewer (<code>planet serve</code>, peoples layer, present) on world 2a7385, peoples run 3097e3. This run is from 2026-10-27, before lanes 43 to 45b, so its dragon counts follow the older density rule. It shows the world's peoples; Figure 6 shows the new densities. The viewer has no dragon-density layer yet, and picking a dragon kind in the peoples panel did not redraw in a headless browser (inbox draft). Script: <code>shot.py</code>, <code>crop.py</code>.</figcaption></figure>
+<figure class="wide"><img src="charts/map.png" alt="Two world maps: who lives where now, and dragons per 1,000 km² now, with four Sword Coast-sized boxes marked A to D.">
+<figcaption><b>Figure 6.</b> World 2a7385, roll 7000, the present (equirectangular). Top: the land by who holds it. Bottom: expected dragons of every kind per 1,000 km². Boxes A to D are Sword Coast-sized (2,414 × 1,609 km), placed automatically where one kind of country fills the box most (Section 4). Script: <code>charts.py</code>; box numbers: <code>charts/boxes.json</code>.</figcaption></figure>
+
+<h2>4. A Sword Coast-sized region</h2>
+<p>The owner gives the Sword Coast as roughly 1,500 miles north to south and 1,000 miles wide on most official maps. At 1.609 km to the mile that is <b>2,414 km × 1,609 km = 3.88 million km²</b>. The numbers below treat all of it as land.</p>
+<p><b>A real region of the same size and shape.</b> The Sword Coast is a long coast with the sea to the west. Western Europe has the same layout, so it fits better than the US eastern seaboard, whose sea lies to the east. A box of the same size centred on 47°N, 0.5°E runs from about <b>36.1°N to 57.9°N and 10.1°W to 11.1°E</b> (approximate: 2,414 km is 21.7° of latitude, and 1,609 km is 21.2° of longitude at 47°N). On a sphere of radius 6,371 km that box covers 3.86 million km². It reaches from the Strait of Gibraltar to about the latitude of the northern tip of Denmark, and from the Atlantic coasts of Ireland and Portugal to about the longitude of Munich. A large part of it is sea (the Bay of Biscay, the North Sea and part of the western Mediterranean), so its land is well under the full area. This page has not measured how much.</p>
+
+<div class="scroll"><table>
+<tr><th>A Sword Coast-sized area, if all of it were…</th><th class="n">With the peoples' pressure</th><th class="n">Pressure off</th></tr>
+<tr><td>Nobody's country, sweep average, now</td><td class="n">5,100</td><td class="n">4,000</td></tr>
+<tr><td>Nobody's country, 25 kyr ago</td><td class="n">4,200</td><td class="n">4,600</td></tr>
+<tr><td>Herders' country (lightly settled), now</td><td class="n">600</td><td class="n">30,200</td></tr>
+<tr><td>Foragers' country (lightly settled), now</td><td class="n">52</td><td class="n">7,600</td></tr>
+<tr><td>Farmers' country (densely settled), now</td><td class="n">58</td><td class="n">7,300</td></tr>
+<tr><td>Foragers' country, 25 kyr ago</td><td class="n">45</td><td class="n">5,900</td></tr>
+<tr><td>Farmers' country, 25 kyr ago</td><td class="n">90</td><td class="n">15,000</td></tr>
+</table></div>
+<p>Dragons in 3.88 million km² at the sweep's pooled density (<code>sword_coast.counts</code>). Pressure-off figures are from the 6-run diagnostic.</p>
+
+<div class="scroll"><table>
+<tr><th>Rich and poor, one run (2a7385/7000), now</th><th class="n">Poor</th><th class="n">Rich</th></tr>
+<tr><td>Nobody's country: dragons there (food alone)</td><td class="n">1,400 (3,400)</td><td class="n">7,300 (143,000)</td></tr>
+<tr><td>Foragers' country</td><td class="n">2 (280)</td><td class="n">210 (40,600)</td></tr>
+<tr><td>Herders' country</td><td class="n">1,000 (9,900)</td><td class="n">160 (133,000)</td></tr>
+<tr><td>Farmers' country</td><td class="n">34 (1,800)</td><td class="n">41 (105,000)</td></tr>
+<tr><td>The formula alone, nobody else eating, dragons everywhere</td><td class="n">14,600 at 0.6 t/km²</td><td class="n">171,000 at 7 t/km²</td></tr>
+</table></div>
+<p>"Poor" averages 0.10 to 0.46 t/km² of prey and "rich" 4.4 to 6.8 t/km², by class (<code>sword_coast.rich_poor.0</code>, <code>sword_coast.formula</code>).</p>
+
+<p><b>The same box on our world.</b> Figure 6's four boxes put a Sword Coast-sized area on 2a7385 where one kind of country fills it most, among boxes at least 70% land. The counts are the run's expected dragons on the box's land (<code>charts/boxes.json</code>):</p>
+<div class="scroll"><table>
+<tr><th>Box</th><th>Centre</th><th>Mostly</th><th class="n">Land in box</th><th class="n">Mean prey</th><th class="n">Dragons</th><th class="n">Food alone</th></tr>
+<tr><td>A</td><td>24°S, 54°E</td><td>nobody's (100%)</td><td class="n">2.59 M km²</td><td class="n">1.31 t/km²</td><td class="n">8,230</td><td class="n">19,200</td></tr>
+<tr><td>B</td><td>6°S, 54°W</td><td>foragers' (94%)</td><td class="n">4.13 M km²</td><td class="n">2.55 t/km²</td><td class="n">712</td><td class="n">26,100</td></tr>
+<tr><td>C</td><td>30°S, 156°E</td><td>herders' (94%)</td><td class="n">2.89 M km²</td><td class="n">3.39 t/km²</td><td class="n">334</td><td class="n">52,000</td></tr>
+<tr><td>D</td><td>33°S, 87°E</td><td>farmers' (100%)</td><td class="n">3.96 M km²</td><td class="n">4.94 t/km²</td><td class="n">0</td><td class="n">77,700</td></tr>
+</table></div>
+<p>Land is counted as cells × 3,113 km². The model's grid cells are not all the same size, so box B's land comes out 7% above the box's own area. Box D's farmers' country holds no dragon kind at all in this run.</p>
+<p>Canon dragon counts for the Sword Coast are not quoted here: none is on file, and the owner ruled on 10-29 that there is no external target for dragon numbers (PW-990).</p>
+
+<h2>5. Where the model follows the papers, and where it does not</h2>
+<div class="scroll"><table>
+<tr><th>Choice</th><th>Paper</th><th>Model</th><th>Why</th></tr>
+<tr><td>Herbivore biomass from NPP</td><td>McNaughton et al. 1989, p. 143: slope 1.52</td><td>Same fit; unit factors added</td><td>The paper gives no conversions. Coe et al. 1976 (slope 1.094) covers only semi-arid parks.</td></tr>
+<tr><td>Yearly offtake</td><td>Farlow 1993, eq. 6, p. 172: 0.14 to 0.26/yr turnover</td><td>Flat 10%/yr</td><td>A cautious share of turnover for the whole guild. Unsourced (PW-991).</td></tr>
+<tr><td>Guild split</td><td>Carbone et al. 2011, Table 1: share of individuals</td><td>Individuals × M<sup>0.75</sup></td><td>The budget needs food, not head counts. The exponent is Kleiber's, not the paper's (PW-1019).</td></tr>
+<tr><td>Dragon intake</td><td>Nagy et al. 1999, Table 2: reptiles</td><td>Same fit, up to an ancient's 24 t average</td><td>Dragons as reptile-rate eaters. The fit's largest animal is 45 kg.</td></tr>
+<tr><td>Density from prey</td><td>Carbone &amp; Gittleman 2002: 89.1 M<sup>−1.05</sup></td><td>Food budget; Carbone kept as a cross-check</td><td>Owner ruling PW-990 B: food decides. Result 1.7× denser.</td></tr>
+<tr><td>Density by mass alone</td><td>Jetz et al. 2004 (mammals); Farlow 1993 (reptiles)</td><td>Not used for density</td><td>Neither reads prey. The model falls between them on 0.8 to 6 t/km².</td></tr>
+<tr><td>Wild herds lost to peoples</td><td>Sandom et al. 2014, Fig. 3, p. 5: share of species lost</td><td>60% of biomass (<code>OVERKILL</code>)</td><td>The paper counts species, not biomass. 0.6 is a judgement.<!-- C19 --></td></tr>
+<tr><td>Pressure on dragons</td><td>Ripple et al. 2014, p. 1241484-1: ranges cut to 47% on average</td><td>Density pressed toward 1 per 5,000 km²</td><td>Ripple gives range, not density against potential. The rule has no source (stage 3).<!-- C20 --></td></tr>
+</table></div>
+
+<h2>6. Discussion</h2>
+<p>The chain is the standard form of a shared food budget. Farlow builds predator density the same way: predator density × mass × mass-specific intake = prey density × mass × turnover (Farlow 1993, eqs. 3 to 5, p. 172).<!-- C21 --> The model's departures are in what it puts at each step: a flat offtake, a fixed guild split borrowed from one Cretaceous fauna, and a reptile's metabolism for an animal about 37 times heavier than the heaviest reptile in the fit.</p>
+<p>The result lands in a defensible place where nobody lives. A 1.65 t dragon at 1 per 159 km² per t/km² sits between the mammal-carnivore lines and the reptile line. Its prey to dragon biomass ratio of about 127:1 falls inside what whole modern mammal predator guilds reach (Farlow's 100:1 to 200:1), which fits an animal that eats at a reptile's rate. A reviewer might argue the other way: the guild split gives the dragons only 17% of the food, yet the dragons alone reach a whole modern guild's biomass ratio, and the smaller predators come on top. If their biomass follows Carbone et al.'s classes (individuals × mass: the classes under 1 t hold 1.8 times the biomass of the classes of 1 t and up), the whole guild comes to about 46:1, at Farlow's lowest observed case (our arithmetic).<!-- C23 --> Both readings follow from the low reptile intake; neither is tested against a living guild (PW-1019 asks for a Serengeti-style check).</p>
+<p>Peopled country is where the model is weakest. Two separate things make it 50 to 150 times emptier of dragons than the food alone would allow:</p>
+<ul>
+<li><b>The peoples' hunting share.</b> In foragers' country the peoples take 84% to 90% of the wild supply. A forager band at real hunter-gatherer densities would not. Hamilton et al. (2007) fit the area a hunter-gatherer group uses against its size (all foragers: exponent 0.70, constant 4.44; Table 1, p. 4767). Reading the constant as a natural log of km², which reproduces <code>spec.py</code>'s note, groups of 25 to 1,000 live at 0.03 to 0.09 people per km².<!-- C22 --> The dnd tree's halflings live at 12 per km² and goblins at 5 while being treated as half-game eaters. The PW-1018 lean (the game share falls with density) would leave more for the dragons before farming.</li>
+<li><b>The pressure rule.</b> Pressure = 1 − exp(−N/0.05) with N people per km², pressing density geometrically toward 1 per 5,000 km². A forager band at 0.1 per km² presses dragons 86% of the way, and any settled people all of it. Both constants are hand-set. The owner's 10-29 note says this is tuned too high and should be softer, growing with technology but never species-ending.</li>
+</ul>
+
+<h2>7. Limitations and open tickets</h2>
+<ul>
+<li><b>Unsourced constants</b> (PW-1019, PW-991): the 10% wild offtake and 10% stock loss, 2,200 kcal a day, the 50% and 5% game shares, 625,000 kcal per head, the M<sup>0.75</sup> guild weighting, 0.45 g C per g dry plant and 17.5 kJ per g dry plant, the 60% overkill, the pressure constant 0.05 people per km², and the pressed endpoint of 1 dragon per 5,000 km².</li>
+<li><b>Dense hunter peoples</b> (PW-1018): they set the dragons' share in foragers' country to 1.6% to 2.7% of the supply.</li>
+<li><b>People density from productivity</b> (PW-1020): foragers and herders now follow the land's productivity, farmers do not. This moves where the peoples' share bites.</li>
+<li><b>The pressure-off diagnostic removes the overkill too</b>, so "food alone" also means "the wild herds at full strength". It is 6 runs at one roll.</li>
+<li><b>Per-cell results come from one run</b> (2a7385/7000). The rich-and-poor table and the boxes are illustrations, not sweep averages.</li>
+<li><b>"Nobody's country" is a threshold</b> (under 0.02 people per km²), and the pressure already bites below it (Section 3.3).</li>
+<li><b>The step at 30 kyr</b> in Figure 4 is not explained yet.</li>
+<li><b>The deep-epoch peak</b> is a flat density, not a food budget.</li>
+<li><b>The Sword Coast figures assume all land</b>, and the western Europe box is a rough comparison of size and shape only.</li>
+</ul>
+
+<h2>8. What's next</h2>
+<p>Stage 3 of PW-977 replaces the pressure rule with persecution as a kill rate set against the dragons' slow breeding. The equilibrium is the natural density × (1 − kill rate ÷ the dragons' maximum growth rate), with the kill rate rising with the peoples' numbers and means (weapons, organisation, PW-961). The fixed 1 per 5,000 km² then retires. Alongside it, the owner asked for a viewer control for dragon abundance, from "they're everywhere" to "one left somewhere", so a user can set how hard peoples push. A dragon-density layer in the viewer would let the owner see Figure 6 on any run.</p>
+
+<h2>References</h2>
+<p>Every detail below is taken from the PDF on file in <code>docs/references/megafauna/</code>. A DOI is given only where the PDF shows one.</p>
+<ol class="refs">
+<li>Carbone, C. &amp; Gittleman, J. L. (2002). A common rule for the scaling of carnivore density. <i>Science</i> 295, 2273–2276. doi:10.1126/science.1067994</li>
+<li>Carbone, C., Turvey, S. T. &amp; Bielby, J. (2011). Intra-guild competition and its implications for one of the biggest terrestrial predators, <i>Tyrannosaurus rex</i>. <i>Proceedings of the Royal Society B</i> 278, 2682–2690. doi:10.1098/rspb.2010.2497</li>
+<li>Coe, M. J., Cumming, D. H. &amp; Phillipson, J. (1976). Biomass and production of large African herbivores in relation to rainfall and primary production. <i>Oecologia (Berl.)</i> 22, 341–354.</li>
+<li>Farlow, J. O. (1993). On the rareness of big, fierce animals: speculations about the body sizes, population densities, and geographic ranges of predatory mammals and large carnivorous dinosaurs. <i>American Journal of Science</i> 293-A, 167–199.</li>
+<li>Hamilton, M. J., Milne, B. T., Walker, R. S. &amp; Brown, J. H. (2007). Nonlinear scaling of space use in human hunter–gatherers. <i>PNAS</i> 104 (11), 4765–4769. doi:10.1073/pnas.0611197104</li>
+<li>Jetz, W., Carbone, C., Fulford, J. &amp; Brown, J. H. (2004). The scaling of animal space use. <i>Science</i> 306, 266–268. doi:10.1126/science.1102138</li>
+<li>McNaughton, S. J., Oesterheld, M., Frank, D. A. &amp; Williams, K. J. (1989). Ecosystem-level patterns of primary productivity and herbivory in terrestrial habitats. <i>Nature</i> 341, 142–144.</li>
+<li>Nagy, K. A., Girard, I. A. &amp; Brown, T. K. (1999). Energetics of free-ranging mammals, reptiles, and birds. <i>Annual Review of Nutrition</i> 19, 247–277.</li>
+<li>Ripple, W. J., Estes, J. A., Beschta, R. L., Wilmers, C. C., Ritchie, E. G., Hebblewhite, M., Berger, J., Elmhagen, B., Letnic, M., Nelson, M. P., Schmitz, O. J., Smith, D. W., Wallach, A. D. &amp; Wirsing, A. J. (2014). Status and ecological effects of the world's largest carnivores. <i>Science</i> 343, 1241484. doi:10.1126/science.1241484</li>
+<li>Sandom, C., Faurby, S., Sandel, B. &amp; Svenning, J.-C. (2014). Global late Quaternary megafauna extinctions linked to humans, not climate change. <i>Proceedings of the Royal Society B</i> 281, 20133254. doi:10.1098/rspb.2013.3254</li>
+</ol>
+<p><b>On file, not used here.</b> Marshall et al. 2021 (dinosaur density intercepts; the model's "mesotherm" mode), Burness, Diamond &amp; Flannery 2001 (top species' mass against land area), Carbone, Teacher &amp; Rowcliffe 2007 (costs of carnivory), McNab 2009 and Seymour 2013 (dinosaur and crocodile energetics), Nagy 2005 (a restatement of the 1999 fits), Hamilton et al. 2009 (hunter-gatherer population stability), and the flight papers (Witton &amp; Habib 2010, Sato et al. 2009, Ksepka 2014, Chatterjee et al. 2007, Alexander 2007, Field et al. 2013). They bear on dragon size and flight, not on dragon numbers.</p>
+
+<h2>Reproducing this page</h2>
+<p>Every number here is in <code>numbers.json</code>, written by <code>dragon_numbers.py</code> from the 45b probe outputs. The charts come from <code>charts.py</code>, the screenshot from <code>shot.py</code> and <code>crop.py</code>. Every cited claim is listed with its page and its model counterpart in <code>claims.md</code>.</p>
+
+</div>
+</div>
