@@ -71,3 +71,15 @@ def test_criteria_spells_and_bars():
     si[150:] = -200.0
     r = C.evaluate(_track(si, il), spinup=100.0)
     assert not r["pass"] and any("deep era" in f for f in r["fails"]) and r["old"]["pass"]
+
+
+def test_ice_terms_icehouse_glacial_max_frozen_over():
+    """The owner's three ice terms (2026-10-30, PW-1091): frozen over is 40%+ of the land under ice."""
+    si = np.array([0.0, -30.0, -60.0, -10.0])
+    warm = C.ice_terms(si, np.array([0.02, 0.05, 0.1, 0.03]))
+    assert warm["icehouse"] and not warm["glacial_max"] and not warm["frozen_over"]
+    lgm = C.ice_terms(si, np.array([0.02, 0.25, 0.1, 0.03]))
+    assert lgm["glacial_max"] and not lgm["frozen_over"]
+    frozen = C.ice_terms(si, np.array([0.02, 0.3, 0.4, 0.03]))
+    assert frozen["frozen_over"] and frozen["glacial_max"] and frozen["land_ice_peak"] == 40.0
+    assert C.ice_terms(np.zeros(4), None)["never_ice"] and C.ice_terms(si, None)["frozen_over"] is None

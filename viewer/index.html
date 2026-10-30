@@ -174,7 +174,7 @@
   /* embedded in the peoples workbench's Technology tab (?embed=tech, PW-913): the globe with its legend, timeline and hover card only */
   body.embed #controls, body.embed #summary, body.embed #tiltInset, body.embed #tabs, body.embed #navBar, body.embed #navTree { display: none !important; }
   body.embed #legend { left: 12px; max-width: calc(100vw - 24px); }
-  /* ?legend=dock (PW-1029, a preview, not a default): the legend in the right-hand column, just above the summary */
+  /* PW-1029: the legend in the right-hand column, just above the summary */
   body.dockLegend #rightCol > #legend { position: static; width: 320px; max-width: 100%; margin-top: auto; flex: 0 0 auto;
     max-height: 30vh; font-size: 12px; }
   body.dockLegend #rightCol > #legend:empty { display: none; }
@@ -192,7 +192,7 @@
     border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
   body.busy #busy { display: block; }
   body.busy #layerSeg button.on, body.busy #layerPick button.on { opacity: .6; }
-  /* ?picker=grouped (PW-1026, a preview): search, recent, folding sections (globe/layerpick.js) */
+  /* PW-1026: the grouped layer picker: search, recent, folding sections (globe/layerpick.js) */
   #layerFind { width: 100%; padding: 4px 8px; margin-bottom: 6px; }
   #layerPick .seg { display: flex; flex-wrap: wrap; gap: 4px; }
   .lpRecent { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }

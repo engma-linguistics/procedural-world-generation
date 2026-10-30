@@ -1,4 +1,4 @@
-// The grouped layer picker (?picker=grouped, PW-1026, a preview; the flat row of buttons stays the default).
+// The grouped layer picker (PW-1026; the zoom page has the same sections in zoom.html).
 // A search box, a row of the last few layers used, and one folding section per kind of layer (layers.js SECTIONS,
 // from each layer's `group`). Crops, animals and body traits get one dropdown each instead of a button per item;
 // a search lists the matching ones as buttons. Which sections are open, and the recent layers, are remembered
@@ -11,7 +11,6 @@ import { animalStocks, cropStocks } from './colours.js';
 import { refresh } from './load.js';
 import { paint } from './geometry.js';
 
-export const GROUPED = new URLSearchParams(location.search).get('picker') === 'grouped';
 const OPEN_KEY = 'planetViewer.layerGroups', RECENT_KEY = 'planetViewer.recentLayers', RECENT_N = 4;
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* not saved */ } };

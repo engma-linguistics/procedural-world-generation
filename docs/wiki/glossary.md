@@ -26,8 +26,10 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **culinary-dnd**: the owner's north-star consumer repo (read-only here); PW-692 frames priorities.
 
 ## Bars and checks
-- **icehouse**: share of a run's time under ice-age conditions. Reported, not capped (owner 2026-10-25, PW-865; it was ~40% before).
-- **icehouse bar**: ~70% of seed-draws pass, not all (outlier worlds allowed; "not worse" means the pass share doesn't drop). Never-ice and always-icebox both fail for Earth-like worlds (PW-780; the star thermostat idea is PW-791).
+- **icehouse**: permanent polar ice sheets (Earth today): ice holding at least 20 m of sea level. A run's icehouse share is reported, not capped (owner 2026-10-25, PW-865; it was ~40% before).
+- **glacial maximum**: an ice-age peak, roughly Earth at its coldest (the Last Glacial Maximum, ~25% of land under ice). Reported (owner 2026-10-30, PW-1091).
+- **frozen over**: 40% or more of the LAND under ice. An instant fail for an Earth-like world and a loud warning that the climate is out of whack; the only ice term that fails a world (owner 2026-10-30, PW-1091). Replaces "icebox", which read ice volume (sea level) only.
+- **icehouse bar**: ~70% of seed-draws pass, not all (outlier worlds allowed; "not worse" means the pass share doesn't drop). Hellhouse and frozen over fail; never-ice is reported (PW-780, PW-1091; the star thermostat idea is PW-791).
 - **strict bar**: the stricter pass criteria in PW-780's sign-off (numbers in [state.md](state.md)).
 - **scorecard / earth_check**: `tools/scorecard.py` after model changes, `tools/earth_check.py` after climate changes. Earth is a plausibility anchor, never a parity target.
 - **golden**: stored test outputs in `tests/golden/`; update with `--update-golden` only for purposeful changes.

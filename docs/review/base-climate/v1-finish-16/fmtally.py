@@ -1,5 +1,5 @@
 """usage: fmtally.py DIAG_DIR [...] -> PW-866's measures side by side, per draw and tallied per queue:
-- the deep-time bar on 300 Myr to the end (passrate4.judge, PW-865 option C);
+- the deep-time bar on 300 Myr to the end (passrate4.judge, PW-865 option C; a frozen-over world, 40%+ of the land under ice, also fails, PW-1091);
 - the finish checks at the very end, as passrate4 judges them (true mean -6..+3 C, least land ice of the last 12 Myr
   1-25%, wet-eq trees >= 20%);
 - the finish moment (planet.highlights.finish_moment: the latest step of the finish window that passes
@@ -35,7 +35,7 @@ for d in map(Path, sys.argv[1:]):
     for p in sorted(d.glob("seed*_L*.json.gz")):
         raw = C.load(p)
         s = C.series(raw)
-        bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9)
+        bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"])
         steps = [r for r in raw["steps"] if r["t"] > 0]
         end = float(steps[-1]["t"])
         level = p.name.split("_")[1].split(".")[0]
@@ -86,8 +86,10 @@ if backs:
     print(f"look-back of passing moments (Myr): median {np.median(backs):g}, max {max(backs):g}, "
           f"at the end {sum(b == 0 for b in backs)}/{len(backs)}")
 
-# set-level sanity (owner 2026-10-27): nearly all worlds icebox, or nearly all hellhouse, means the sim is wrong
+# set-level sanity (owner 2026-10-27, wording 2026-10-30): nearly all worlds frozen over (40%+ of the land under ice),
+# or nearly all hellhouse, means the sim is wrong. The three ice terms are tallied beside it.
 for q in sorted({r[0] for r in rows}):
     rs = [r for r in rows if r[0] == q]
-    ib, hl = sum(bool((r[3] or {}).get("icebox")) for r in rs), sum(bool((r[3] or {}).get("hell")) for r in rs)
-    print(f"{q}: icebox {ib}/{len(rs)}, hellhouse {hl}/{len(rs)}" + ("  << SIM SUSPECT" if max(ib, hl) >= 0.8 * len(rs) else ""))
+    ib, hl = sum(bool((r[3] or {}).get("frozen")) for r in rs), sum(bool((r[3] or {}).get("hell")) for r in rs)
+    gm, ih = sum(bool((r[3] or {}).get("glacial_max")) for r in rs), sum(bool((r[3] or {}).get("icehouse")) for r in rs)
+    print(f"{q}: icehouse {ih}/{len(rs)}, glacial maximum {gm}/{len(rs)}, frozen over {ib}/{len(rs)}, hellhouse {hl}/{len(rs)}" + ("  << SIM SUSPECT" if max(ib, hl) >= 0.8 * len(rs) else ""))

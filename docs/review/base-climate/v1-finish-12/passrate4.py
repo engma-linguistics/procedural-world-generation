@@ -1,11 +1,14 @@
 """usage: passrate4.py DIAG_DIR [...] -- the v1 icehouse bar as ruled on PW-865 (owner, option C, 2026-10-25).
 
 The bar, judged on 300 Myr to the run's end (and per forward window 300-1000, 1000-1500, 1500-2000 Myr):
-- FAIL on always-icebox / snowball: icehouse share >= 90% or deep ice (< -150 m of sea level) >= 30% of the time;
+- FAIL on frozen over (owner 2026-10-30, PW-1091, replacing the old icebox rule): 40% or more of the LAND under ice
+  at any climate update (`iced_land`, the run's saved stat);
 - FAIL on hellhole: dT median > +10.5 C or max > +15.5 C;
-- FAIL on never-ice: icehouse share < 5%;
+- never-ice (icehouse share < 5%) and the old icebox rule (icehouse >= 90% of the time or deep ice < -150 m for 30%)
+  are reported, not failures (owner 2026-10-27);
 - no cap on the icehouse share (the old <= 40% is gone; the share is reported only).
-These are v1-signoff's / passrate3.py's definitions unchanged; removing the cap is the only change.
+The three ice terms (tools/ice_criteria.py ice_terms): icehouse (permanent polar sheets), glacial maximum (land ice
+>= 25%, Earth's coldest) and frozen over (>= 40%); judge / flags / line report all three.
 
 The finish checks, per run at its end:
 - true area mean temperature (the climate's mean, PW-822) within -6..+3 C of pre-industrial 13.8 C;
@@ -32,27 +35,33 @@ WET_TREES = 20.0  # % trees on the wet equatorial lowland (PW-806)
 PCO2_DIAG = (180.0, 600.0)  # ppm at the end (diagnostic)
 
 
-def judge(t, si, dT, a, b):
+def judge(t, si, dT, a, b, il=None):
+    """il: the share of land under ice (0..1) on the same samples (C.series(raw)["iced_land"]). Without it the
+    land terms are None and nothing is frozen over."""
     w = (t >= a) & (t < b)
     if not w.any():
         return None
-    share = 100 * float((si[w] <= C.ICEHOUSE_SL).mean())
-    deep = 100 * float((si[w] < -150).mean())
+    ice = C.ice_terms(si[w], None if il is None else il[w])
+    share, deep = ice["icehouse_pct"], ice["deep_pct"]
     med, mx = float(np.median(dT[w])), float(dT[w].max())
     hell = med > 10.5 or mx > 15.5
-    icebox = share >= 90 or deep >= 30
-    never = share < 5
-    # owner 2026-10-27: only a hellhouse fails a world; icebox and never-ice are reported as colour (life carries on).
-    # The set-level check (sanity in fmtally) flags the sim as wrong if nearly all worlds are iceboxes or nearly all hellhouses.
-    return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, icebox=icebox, never=never, ok=not hell)
+    frozen = bool(ice["frozen_over"])
+    # owner 2026-10-30 (PW-1091): a world fails on hellhouse or on frozen over (>= 40% of the land under ice).
+    # Never-ice and the old icebox rule (icehouse >= 90% or deep >= 30%) are reported only. The set-level check
+    # (fmtally, pjudge) flags the sim as wrong if nearly all worlds are frozen over or nearly all hellhouses.
+    return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, never=ice["never_ice"], frozen=frozen,
+                glacial_max=bool(ice["glacial_max"]), land_ice_peak=ice["land_ice_peak"],
+                icehouse=ice["icehouse"], always_icy=bool(share >= 90 or deep >= 30), ok=not hell and not frozen)
 
 
 def flags(j):
-    return (" HELL" if j["hell"] else "") + (" ICEBOX" if j["icebox"] else "") + (" NEVER-ICE" if j["never"] else "")
+    return ((" HELL" if j["hell"] else "") + (" FROZEN-OVER" if j["frozen"] else "") + (" GLACIAL-MAX" if j["glacial_max"] else "")
+            + (" ICEHOUSE" if j["icehouse"] else "") + (" NEVER-ICE" if j["never"] else ""))
 
 
 def line(j):
-    return (f"icehouse {j['share']:4.1f}% deep {j['deep']:4.1f}% dT med {j['med']:+.1f} max {j['mx']:+.1f}"
+    pk = "n/a" if j["land_ice_peak"] is None else f"{j['land_ice_peak']:.0f}%"
+    return (f"icehouse {j['share']:4.1f}% deep {j['deep']:4.1f}% land ice peak {pk} dT med {j['med']:+.1f} max {j['mx']:+.1f}"
             f"{flags(j)} -> {'ok' if j['ok'] else 'F'}")
 
 
@@ -72,7 +81,7 @@ for d in map(Path, sys.argv[1:]):
     for p in sorted(d.glob("seed*_L*.json.gz")):
         raw = C.load(p)
         s = C.series(raw)
-        t, si, dT = s["t"], s["sea_ice"], s["dT"]
+        t, si, dT, il_s = s["t"], s["sea_ice"], s["dT"], s["iced_land"]
         end = float(t.max())
         steps = [r for r in raw["steps"] if r["t"] > 0]
         st = np.array([r["t"] for r in steps])
@@ -83,15 +92,15 @@ for d in map(Path, sys.argv[1:]):
         last = raw["updates"][-1]
         q = queue(d, p.name.split("_")[1].split(".")[0], int(round(end / 100.0) * 100))
         seed = p.name.split("_")[0]
-        allj = judge(t, si, dT, 300, 1e9)
+        allj = judge(t, si, dT, 300, 1e9, il_s)
         add((q, "bar 300-end"), allj["ok"])
         print(f"{d.name:>14} {seed:>11} 300-{end:.0f}: {line(allj)}")
         for a, b in [(300, 1000), (1000, 1500), (1500, 2000.1)]:
-            j = judge(t, si, dT, a, b)
+            j = judge(t, si, dT, a, b, il_s)
             if j is not None and b <= end + 1:
                 print(f"{'':>27}{a:>4}-{min(b, 2000):.0f}: {line(j)}")
                 add((q, f"bar {a}-{min(b, 2000):.0f}"), j["ok"])
-        e540 = judge(t, si, dT, end - 540, 1e9)
+        e540 = judge(t, si, dT, end - 540, 1e9, il_s)
         print(f"{'':>27}last 540 ({end - 540:.0f}-{end:.0f}, diagnostic): {line(e540)}")
         corr = float(np.corrcoef(sdT[late], co2[late])[0, 1]) if late.sum() > 3 else float("nan")
         print(f"{'':>27}pCO2 after 300: median {np.median(pc[late]):.0f} (10-90% {np.percentile(pc[late], 10):.0f}-"
@@ -126,6 +135,6 @@ for q, dn, seed, j, rel, imin, wet, pe, ok in sorted(rows, key=lambda r: (r[0], 
     print(f"{q:>10} {dn:>14} {seed:>11} {j['share']:5.1f} {j['deep']:5.1f} {j['med']:+6.1f} "
           f"{'ok' if j['ok'] else flags(j).strip()[:4]:>4} {rel:+5.1f} {imin:7.1f} "
           f"{'-' if wet is None else f'{wet:.0f}':>5} {pe:5.0f} {'yes' if ok else 'no'}")
-print("\npass tallies (PW-865 bar, no icehouse cap):")
+print("\npass tallies (PW-865 bar, no icehouse cap; frozen over fails, PW-1091):")
 for k, v in sorted(tally.items()):
     print(f"  {k[0]:>10} {k[1]}: {sum(v)}/{len(v)}")

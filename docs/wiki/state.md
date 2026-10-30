@@ -10,7 +10,7 @@
 
 ## v1
 - Epic PW-244. PW-780 signed off. 15 open tickets in the v1 milestone (10-29): physics PW-998/026/015/821/969/980; release checks PW-825/932; docs PW-814/816; provenance PW-938/939/940/942. Older backlog grouping (workgroups A-D in the backlog doc https://claude.ai/artifact/8rxpMkD49iovLmeBzZmP4t).
-- Icehouse bar loosened 2026-10-25 (PW-865): icehouse share is uncapped; snowball, hellhole and never-ice fail. The old bar on main's forward star was L6 13/18 and L7 7/8. Rule: ~70% pass, never-ice and always-icebox both fail ([glossary](glossary.md), [decisions](decisions.md)).
+- Icehouse bar loosened 2026-10-25 (PW-865): icehouse share is uncapped; snowball, hellhole and never-ice fail. The old bar on main's forward star was L6 13/18 and L7 7/8. Rule: ~70% pass; since 2026-10-30 only hellhouse and "frozen over" (40%+ of land under ice) fail, and the judges report icehouse, glacial maximum and frozen over (PW-1091; [glossary](glossary.md), [decisions](decisions.md)).
 - Showcase remake (PW-202) done; the 4 L6 + 4 L7 showcases below.
 
 ## v2 and later (board.py milestones, 2026-10-26)
@@ -30,6 +30,7 @@ v2 priorities: always one fun lane on peoples/lineages (PW-692 frames the end go
 - Worlds: 6fbc2c, 067778, a12762, 6909cb.
 - Peoples run 104de8 (`seven_meals` preset) on world 6fbc2c.
 - Also kept: Earth world 577526 and the nine overturning reference worlds (119973 28442c 607540 81aced 7082f5 d14b89 a5a387 dad91b c00ebf), per PW-202.
+- Viewer defaults (2026-10-30, lane 65): family-hue peoples colours, the current ramps, the docked legend and the grouped "Colour by" picker (globe and zoom) are the only behaviour; the `?palette=`, `?ramps=`, `?legend=` and `?picker=` switches are gone (PW-1032/1027/1029/1026). Screenshots: docs/review/viewer-defaults-10-30/.
 - Viewer: http://127.0.0.1:8765/viewer/ (server notes in [coordination.md](../coordination.md)).
 
 ## Where to look next

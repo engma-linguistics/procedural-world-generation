@@ -31,7 +31,7 @@ import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
 import { pftColor } from './pick.js';
 import { hasLayer } from './load.js';
-import { FERTILITY, PRECIPITATION, RAMPSET, TEMPERATURE, applyRampSet } from '../ramps.js';
+import { FERTILITY, PRECIPITATION, TEMPERATURE } from '../ramps.js';
 export function ramp(stops) {
   const cs = stops.map(([v, c]) => [v, new THREE.Color(c)]);
   return (v, out) => {
@@ -484,7 +484,7 @@ export function availableLayers() {
   });
 }
 
-// The grouped layer picker (?picker=grouped, PW-1026, a preview): its sections, each made of some of the layers'
+// The grouped layer picker (PW-1026): its sections, each made of some of the layers'
 // groups (a layer's `group` above), in MENUS order; `also` moves single layers in from another section.
 // 'body: ', 'animal: ' and 'crop: ' layers get one dropdown each in their section (FAMILY_NAMES).
 export const SECTIONS = [
@@ -534,8 +534,6 @@ export function cellColors(layer) {
 // ---- lookups derived from LAYERS, for the code that asks one question of many layers
 const pick = (f) => Object.fromEntries(Object.entries(LAYERS).filter(([, d]) => f(d) != null).map(([id, d]) => [id, f(d)]));
 const byGroup = (g) => pick((d) => (d.group === g && d.key ? d.key : null));
-// ?ramps=new (PW-1027, a preview): the "how much" ramps that get lighter and then darker again, rebuilt (ramps.js)
-export const RAMP_CHANGES = RAMPSET === 'new' ? applyRampSet({ ...pick((d) => d.ramp), ...EXTRA_RAMPS }) : [];
 export const RAMPS = { ...pick((d) => d.ramp), ...EXTRA_RAMPS };
 export const UNITS = { ...pick((d) => d.units), ...EXTRA_UNITS };
 export const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));

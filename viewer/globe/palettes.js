@@ -1,15 +1,9 @@
-// Peoples' colours: preview palettes behind a URL switch (PW-1032; a taste call for the owner, not a default).
-//   ?palette=distinct  neighbours always distinct: peoples whose ranges touch or overlap (at any sampled moment of the
-//                      run) get colours far apart, for normal and red-green colour-blind sight alike
-//   ?palette=family    family hues + distinct neighbours: dragons in reds (a dragon named by a colour or metal in that
-//                      colour), giants in blues, fey in violets, every other branch its own hue; siblings told apart by
-//                      lightness; then neighbours that still look alike are pushed apart
-// Without the switch the run's stored colours stay (planet/lineages/output.py). The palette rewrites
-// run.meta.lineages[].color once, when the run opens, so the map, the legend, the summary and the rings all follow.
-// planetViewer.paletteReport() measures whichever palette is on screen (the comparison page's numbers).
+// Peoples' colours (PW-1032): family hues + distinct neighbours. Dragons in reds (a dragon named by a colour or metal
+// in that colour), giants in blues, fey in violets, every other branch its own hue; siblings told apart by lightness;
+// then neighbours that still look alike (to normal or red-green colour-blind sight) are pushed apart.
+// The palette rewrites run.meta.lineages[].color once, when the run opens, so the map, the legend, the summary and the
+// rings all follow. planetViewer.paletteReport() measures the colours on screen.
 import { S } from './state.js';
-
-export const PALETTE = new URLSearchParams(location.search).get('palette') || '';
 
 // ------------------------------------------------------------ colour maths (sRGB <-> CIELAB, D65; colour-blind sight)
 const lin = (u) => (u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4);
@@ -69,36 +63,6 @@ function neighbourSets(lines, W, min = 4) {
   const nb = lines.map(() => new Set());
   for (const [k, w] of W) if (w >= min) { const a = k >> 8, b = k & 255; if (nb[a] && nb[b]) { nb[a].add(b); nb[b].add(a); } }
   return nb;
-}
-
-// ------------------------------------------------------------ the candidates: bright enough for a dark map, in gamut
-function candidates() {
-  const out = [];
-  for (let h = 0; h < 360; h += 12) for (const L of [52, 64, 76, 88]) for (const C of [38, 55, 72]) {
-    const hex = labHex(lch(L, C, h), true);
-    if (hex && dEsight(hex, GROUND.ocean) > 22 && dEsight(hex, GROUND.nobody) > 16) out.push(hex);
-  }
-  return out;
-}
-
-// greedy: the most-touching peoples first, each the candidate farthest (to the worst sight) from its neighbours'
-// colours, and from every colour used so far as a tie-breaker
-function distinctColours(order, nb, fixed = {}, pool = candidates(), allow = () => true) {
-  const col = { ...fixed };
-  for (const u of order) {
-    if (col[u]) continue;
-    let best = null, bestS = -1;
-    for (const c of pool) {
-      if (!allow(u, c)) continue;
-      let near = 99, all = 99;
-      for (const v of nb[u]) if (col[v]) near = Math.min(near, dEsight(c, col[v]));
-      for (const v in col) all = Math.min(all, dE(lab(c), lab(col[v])));
-      const s = Math.min(near, 60) + 0.35 * Math.min(all, 30);
-      if (s > bestS) { bestS = s; best = c; }
-    }
-    col[u] = best;
-  }
-  return col;
 }
 
 // a group (a way of life inside a people) is its people's colour, lighter or darker by its place among the groups
@@ -174,20 +138,14 @@ function separate(order, nb, col, span) {
 }
 
 // ------------------------------------------------------------ apply, and measure
-export function applyPalette(V, mode = PALETTE) {
+export function applyPalette(V) {
   const lines = V.run.meta.lineages;
-  if (!mode || !lines?.length || V.run.meta.phase !== 'lineages') return;
+  if (!lines?.length || V.run.meta.phase !== 'lineages') return;
   const nb = neighbourSets(lines, contacts(V));
   const order = lines.map((l) => l.index).sort((a, b) => nb[b].size - nb[a].size);
-  let col;
-  if (mode === 'distinct') {
-    const top = order.filter((u) => !lines[u].group_of);
-    col = distinctColours(top, nb);
-  } else if (mode === 'family') col = familyColours(lines, nb, order);
-  else return;
+  const col = familyColours(lines, nb, order);
   groupColours(lines, col);
-  // (named colours keep their hue; others may move further in distinct mode, where hue carries no meaning)
-  separate(order, nb, col, mode === 'distinct' ? 36 : 18);
+  separate(order, nb, col, 18);
   for (const l of lines) if (col[l.index]) { l.color = col[l.index]; delete l._c; }
   V.paletteNb = nb;
 }
