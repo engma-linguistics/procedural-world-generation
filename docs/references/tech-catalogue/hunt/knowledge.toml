@@ -1,0 +1,1418 @@
+# group: knowledge (communication, knowledge, social institutions). Dates best knowledge, all sources unverified.
+
+[[tech]]
+id = "gesture"
+name = "Gesture communication"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = []
+env = []
+earliest_kyr = 2000
+origins = [{where = "Africa", kyr = 2000}]
+spread_note = "universal in hominins"
+confidence = "low"
+source = "none known (unverified)"
+exists = true
+note = "deep prehistory; date is a placeholder"
+
+[[tech]]
+id = "language"
+name = "Spoken language"
+group = "knowledge"
+track = "communication"
+domains = ["know", "ritual"]
+needs = ["gesture"]
+env = []
+earliest_kyr = 200
+origins = [{where = "Africa", kyr = 200}]
+spread_note = "universal in Homo sapiens"
+confidence = "low"
+source = "Dediu & Levinson 2013, On the antiquity of language (unverified)"
+exists = true
+note = "c. 500-50 kyr contested"
+verified = false
+source_checked = "Dediu & Levinson 2013. On the antiquity of language: the reinterpretation of Neandertal linguistic capacities and its consequences. Frontiers in Psychology 4:397. doi:10.3389/fpsyg.2013.00397 (abstract/search result: argues ~500 kyr rather than the usual 50-100 kyr; rebutted by Berwick, Hauser & Tattersall 2013, Front. Psychol., who say symbolic archaeology starts <=100 kyr)"
+hunt_note = "Citation exists and the 500 kyr claim is Dediu & Levinson's; the 200 kyr value is not supported by either side as a date, so unresolved."
+
+[[tech]]
+id = "song"
+name = "Song and chant"
+group = "knowledge"
+track = "communication"
+domains = ["ritual"]
+needs = ["language"]
+env = []
+earliest_kyr = 60
+origins = [{where = "Africa", kyr = 60}]
+spread_note = "universal"
+confidence = "low"
+source = "none known (unverified)"
+exists = true
+
+[[tech]]
+id = "ochre_use"
+name = "Ochre pigment use"
+group = "knowledge"
+track = "communication"
+domains = ["ritual", "craft"]
+needs = []
+env = ["ochre"]
+earliest_kyr = 300
+origins = [{where = "Africa (Kapthurin, Twin Rivers)", kyr = 300}, {where = "Levant", kyr = 100}]
+spread_note = "universal among sapiens and Neanderthals"
+confidence = "medium"
+source = "Watts 2002 / Henshilwood et al. 2011, Blombos ochre (unverified) (unverified)"
+note = "Blombos engraved ochre c. 100 kyr"
+
+[[tech]]
+id = "ornament"
+name = "Beads and body ornament"
+group = "knowledge"
+track = "communication"
+domains = ["ritual", "trade"]
+needs = ["ochre_use"]
+env = ["shell"]
+earliest_kyr = 135
+origins = [{where = "Africa (Pinnacle Point/Skhul shells)", kyr = 135}, {where = "Europe", kyr = 42}]
+spread_note = "widespread"
+confidence = "medium"
+source = "Bouzouggar et al. 2007, Grotte des Pigeons beads (unverified)"
+exists = true
+note = "Nassarius beads c. 82 kyr Morocco; Skhul c. 100-135"
+verified = true
+earliest_kyr_checked = 142
+origins_checked = [{where = "Africa (Bizmoune, Morocco)", kyr = 142}, {where = "Levant (Skhul)", kyr = 100}, {where = "Europe", kyr = 42}]
+source_checked = "Vanhaeren et al. 2006 Science 'Middle Palaeolithic shell beads in Israel and Algeria' (UCL press page): Skhul Nassarius bead ~100 kyr (Grun 2005 J Hum Evol: Skhul 100-135 kyr). Bizmoune Cave (Morocco) beads >=142 kyr, Sci. Adv. 2021 (sciadv.abi8620, PMC8457661; title not read)."
+hunt_note = "Oldest beads now >=142 kyr (Bizmoune) vs 135; Pinnacle Point shell 135 not checked."
+
+[[tech]]
+id = "cave_art"
+name = "Cave and rock art"
+group = "knowledge"
+track = "communication"
+domains = ["ritual", "know"]
+needs = ["ochre_use"]
+env = ["stone"]
+earliest_kyr = 51
+origins = [{where = "Sulawesi", kyr = 51}, {where = "Spain", kyr = 64}, {where = "Europe", kyr = 40}, {where = "Africa", kyr = 30}]
+spread_note = "independent and spread"
+confidence = "medium"
+source = "Aubert et al. 2019 / Hoffmann et al. 2018 (unverified) (unverified)"
+exists = true
+note = "Spanish red marks c. 64 kyr attributed to Neanderthals, disputed"
+verified = true
+earliest_kyr_checked = 67.8
+origins_checked = [{where = "Sulawesi stencil (Muna)", kyr = 67.8}, {where = "Spain (La Pasiega/Maltravieso, Neandertal)", kyr = 64.8}, {where = "Sulawesi figurative", kyr = 51.2}, {where = "Sulawesi Maros stencil", kyr = 39.9}]
+source_checked = "Oktaviana et al. 2026. Rock art from at least 67,800 years ago in Sulawesi. Nature (online 21 Jan 2026): laser-ablation U-series minimum age 67.8 kyr for hand stencil, Liang Metanduno, Muna (seen via Guinness/archaeologymag/stencilarchive summaries). Hoffmann et al. 2018, Science 359:912-915, doi:10.1126/science.aap7778: Iberian art >64.8 kyr (abstract), Neandertal attribution contested. Aubert et al. 2014 Nature: Sulawesi stencil >=39.9 kyr. Sulawesi figurative pig ~51.2 kyr."
+hunt_note = "Oldest claim moved from 51 to 67.8 kyr (minimum age, U-series; method questioned for uranium leaching). 51.2 is oldest figurative. Spain 64 -> 64.8 min."
+
+[[tech]]
+id = "engraved_marks"
+name = "Deliberate engraved marks"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["ochre_use"]
+env = []
+earliest_kyr = 430
+origins = [{where = "Java (Trinil shell)", kyr = 500}, {where = "Africa", kyr = 100}]
+spread_note = "possibly independent"
+confidence = "low"
+source = "Joordens et al. 2015, Trinil shell engraving (unverified)"
+note = "Trinil c. 500-430 kyr contested; Blombos 75 kyr is firmer"
+verified = true
+earliest_kyr_checked = 430
+origins_checked = [{where = "Java (Trinil shell)", kyr = 480}, {where = "Africa (Blombos)", kyr = 77}]
+source_checked = "Joordens et al. 2015. Homo erectus at Trinil on Java used shells for tool production and engraving. Nature 518:228-231 (UU/Naturalis records: 40Ar/39Ar + luminescence, max 0.54+-0.10 Ma, min 0.43+-0.05 Ma; authors say engraving meaning undetermined). Henshilwood et al. 2002. Emergence of modern human behavior: Middle Stone Age engravings from South Africa. Science 295:1278-1280, doi:10.1126/science.1067575 (abstract: TL mean 77 kyr, OSL 70 kyr)."
+hunt_note = "Trinil range 430-540 kyr confirmed (Trinil origin 500 is mid-range); Blombos 77 kyr (origin said 100 is loose)."
+
+[[tech]]
+id = "marks"
+name = "Symbolic marks and signs"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["engraved_marks"]
+env = []
+earliest_kyr = 75
+origins = [{where = "Africa", kyr = 75}]
+spread_note = "universal"
+confidence = "medium"
+source = "Henshilwood et al. 2002, Blombos engraved ochre (unverified)"
+exists = true
+verified = true
+earliest_kyr_checked = 77
+source_checked = "Henshilwood et al. 2002, Science 295:1278-1280, doi:10.1126/science.1067575 (abstract: engraved ochre, TL mean 77 kyr; later d'Errico/Henshilwood work: tradition 100-75 kyr)"
+hunt_note = "75 -> 77 kyr (TL), tradition 75-100 kyr."
+
+[[tech]]
+id = "tallies"
+name = "Tally marks on bone"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["marks"]
+env = ["bone"]
+earliest_kyr = 44
+origins = [{where = "Africa (Lebombo)", kyr = 44}, {where = "Congo (Ishango)", kyr = 20}, {where = "Europe", kyr = 30}]
+spread_note = "independent"
+confidence = "medium"
+source = "d'Errico 1998 / de Heinzelin 1962 (unverified) (unverified)"
+exists = true
+note = "Lebombo c. 43-44 kyr; Ishango c. 20-25 kyr"
+verified = false
+earliest_kyr_checked = 44
+source_checked = "Lebombo bone: 42-43 kyr from 24 radiocarbon dates per secondary summaries of d'Errico, Backwell et al. 2012 PNAS (Border Cave); primary paper page was 403, not read. Ishango c. 20-25 kyr per secondary sources."
+hunt_note = "Secondary sources only (Wikipedia 'Lebombo bone', CACM summary); 43 vs 44 trivial. Primary not read."
+
+[[tech]]
+id = "music_flute"
+name = "Bone and ivory flutes"
+group = "knowledge"
+track = "communication"
+domains = ["ritual"]
+needs = ["song"]
+env = ["bone"]
+earliest_kyr = 43
+origins = [{where = "Germany (Geissenklosterle)", kyr = 43}, {where = "China (Jiahu)", kyr = 9}]
+spread_note = "independent"
+confidence = "high"
+source = "Conard et al. 2009, Nature, Hohle Fels flute (unverified)"
+note = "Jiahu crane-bone flutes c. 9 kyr"
+verified = false
+earliest_kyr_checked = 42.5
+origins_checked = [{where = "Germany (Geissenklosterle)", kyr = 42.5}, {where = "China (Jiahu)", kyr = 9}]
+source_checked = "Geissenklosterle flutes 42-43 kyr (Higham et al. 2012 J Hum Evol, via secondary summaries, not read); Hohle Fels (Conard et al. 2009 Nature) ~40 kyr, some argue 32-35 kyr. Jiahu: Zhang et al. 1999 Nature 401:366-368 'Oldest playable musical instruments found at Jiahu early Neolithic site in China', 7-9 kyr, site 7000-5700 BCE (Nature page paywalled; seen via ScienceDaily/summary)."
+hunt_note = "Geissenklosterle 42-43 kyr is secondary-only; Jiahu range 7.7-9 kyr consistent with the 9 kyr entry."
+
+[[tech]]
+id = "music"
+name = "Musical instruments"
+group = "knowledge"
+track = "communication"
+domains = ["ritual"]
+needs = ["song"]
+env = []
+earliest_kyr = 43
+origins = [{where = "Germany", kyr = 43}, {where = "China", kyr = 9}]
+spread_note = "independent"
+confidence = "medium"
+source = "Conard et al. 2009 (unverified) (unverified)"
+exists = true
+
+[[tech]]
+id = "drums"
+name = "Drums and percussion"
+group = "knowledge"
+track = "communication"
+domains = ["ritual", "war"]
+needs = ["song"]
+env = ["hide"]
+earliest_kyr = 30
+origins = [{where = "Eurasia", kyr = 30}, {where = "Africa", kyr = 20}]
+spread_note = "independent, many"
+confidence = "low"
+source = "none known (unverified)"
+note = "archaeological record thin; Mezhyrich mammoth-bone set c. 20 kyr"
+
+[[tech]]
+id = "string_instruments"
+name = "Stringed instruments and lyres"
+group = "knowledge"
+track = "communication"
+domains = ["ritual"]
+needs = ["music", "cordage"]
+env = []
+earliest_kyr = 4.6
+origins = [{where = "Mesopotamia (Ur lyres)", kyr = 4.6}, {where = "Egypt (harp)", kyr = 4.6}]
+spread_note = "diffused"
+confidence = "medium"
+source = "Woolley 1934, Ur excavations (unverified) (unverified)"
+note = "musical bow older but undated"
+
+[[tech]]
+id = "drum_signalling"
+name = "Drum and horn signalling"
+group = "knowledge"
+track = "communication"
+domains = ["war", "know"]
+needs = ["drums"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Africa", kyr = 3}, {where = "Eurasia", kyr = 5}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "smoke_signals"
+name = "Smoke and beacon signals"
+group = "knowledge"
+track = "communication"
+domains = ["war", "know"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 4
+origins = [{where = "China", kyr = 3}, {where = "Mediterranean", kyr = 3}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "burial"
+name = "Deliberate burial"
+group = "knowledge"
+track = "social"
+domains = ["ritual"]
+needs = ["spirit_ritual"]
+env = []
+earliest_kyr = 100
+origins = [{where = "Levant (Qafzeh, Skhul)", kyr = 100}, {where = "Europe (Neanderthal)", kyr = 70}]
+spread_note = "independent"
+confidence = "medium"
+source = "Pettitt 2011, The Palaeolithic Origins of Human Burial (unverified) (unverified)"
+exists = true
+note = "earlier Sima de los Huesos c. 430 kyr contested"
+verified = false
+earliest_kyr_checked = 100
+origins_checked = [{where = "Levant (Qafzeh, Skhul)", kyr = 100}, {where = "Europe (Neanderthal, La Chapelle)", kyr = 50}]
+source_checked = "Grun et al. 2005 J Hum Evol 49: Skhul 100-135 kyr (ESR/U-series); Qafzeh older estimates 95-115 kyr. Rendu et al. PNAS (online Dec 2013): La Chapelle-aux-Saints Neanderthal burial ~50 kyr, intentionality disputed."
+hunt_note = "Skhul/Qafzeh 100 kyr okay; Neanderthal 70 kyr origin not supported by what I read (50 kyr is)."
+
+[[tech]]
+id = "grave_goods"
+name = "Grave goods and funerary rites"
+group = "knowledge"
+track = "social"
+domains = ["ritual"]
+needs = ["burial"]
+env = []
+earliest_kyr = 34
+origins = [{where = "Russia (Sungir)", kyr = 34}, {where = "Levant", kyr = 12}]
+spread_note = "widespread"
+confidence = "medium"
+source = "Pettitt 2011 (unverified) (unverified)"
+note = "Sungir c. 34 kyr; Natufian flower burials c. 13 kyr"
+verified = false
+earliest_kyr_checked = 30
+source_checked = "Nalawade-Chavan, McCullagh & Hedges 2014. New hydroxyproline radiocarbon dates from Sungir, Russia, confirm Early Mid Upper Palaeolithic burials in Eurasia. PLoS ONE (PMC3885387): ~30,000 BP for Sungir 2, 3. Kuzmin et al. Radiocarbon: puzzling dates 19-29 kyr for the site; Marom et al. 2012 PNAS (single amino acid) not read."
+hunt_note = "Sungir dates refuted at 34 kyr by sources read: ~30 kyr BP (14C, not calibrated; calibrated would be ~34 kyr cal BP, so the difference may be calibration). Needs a calibrated-age check."
+
+[[tech]]
+id = "megaliths"
+name = "Megalithic tombs and monuments"
+group = "knowledge"
+track = "social"
+domains = ["ritual", "build"]
+needs = ["grave_goods", "villages"]
+env = ["stone"]
+earliest_kyr = 11.6
+origins = [{where = "Anatolia (Gobekli Tepe)", kyr = 11.6}, {where = "Atlantic Europe", kyr = 7}, {where = "Sahara", kyr = 7}, {where = "Korea/Japan", kyr = 3}]
+spread_note = "independent clusters"
+confidence = "high"
+source = "Schmidt 2006 / Scarre 2007 (unverified) (unverified)"
+verified = true
+earliest_kyr_checked = 11.6
+source_checked = "Dietrich/Notroff/Schmidt, DAI Goebekli Tepe project blog 'How old is it? Dating Goebekli Tepe' (dainst.blog 2016): Layer III PPNA 9600-8800 calBC, EPPNB/MPPNB 8800-8200 calBC; dates give a terminus ante quem for refilling, not building."
+hunt_note = "11.6 kyr (9600 BCE) holds as the upper end; enclosures may be younger than fill."
+
+[[tech]]
+id = "tokens"
+name = "Clay tokens for counting goods"
+group = "knowledge"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["counting", "pottery"]
+env = ["clay"]
+earliest_kyr = 10
+origins = [{where = "Near East", kyr = 10}, {where = "Indus", kyr = 4.5}]
+spread_note = "diffused"
+confidence = "medium"
+source = "Schmandt-Besserat 1992, Before Writing (unverified) (unverified)"
+exists = true
+note = "her token-to-writing thesis is debated"
+
+[[tech]]
+id = "counting"
+name = "Counting and number words"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["language"]
+env = []
+earliest_kyr = 50
+origins = [{where = "Africa", kyr = 50}]
+spread_note = "universal"
+confidence = "low"
+source = "none known (unverified)"
+exists = true
+note = "body counting; Lebombo tally suggests c. 44 kyr"
+
+[[tech]]
+id = "seals"
+name = "Stamp and cylinder seals"
+group = "knowledge"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["tokens"]
+env = ["clay"]
+earliest_kyr = 8
+origins = [{where = "Near East stamp seals", kyr = 8}, {where = "Mesopotamia cylinder", kyr = 5.5}, {where = "Indus", kyr = 4.6}, {where = "China", kyr = 3.5}]
+spread_note = "diffused and independent"
+confidence = "medium"
+source = "Collon 1987, First Impressions (unverified) (unverified)"
+
+[[tech]]
+id = "bullae"
+name = "Clay envelopes with tokens (bullae)"
+group = "knowledge"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["tokens"]
+env = ["clay"]
+earliest_kyr = 5.4
+origins = [{where = "Susa/Mesopotamia", kyr = 5.4}]
+spread_note = "local"
+confidence = "medium"
+source = "Schmandt-Besserat 1992 (unverified) (unverified)"
+
+[[tech]]
+id = "proto_writing"
+name = "Proto-writing and pictograms"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["marks"]
+env = []
+earliest_kyr = 8.6
+origins = [{where = "China (Jiahu symbols)", kyr = 8.6}, {where = "Vinca", kyr = 7.5}, {where = "Mesopotamia (proto-cuneiform)", kyr = 5.3}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+note = "Jiahu and Vinca signs probably not full writing"
+
+[[tech]]
+id = "writing"
+name = "Full writing (logographic/syllabic)"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["proto_writing", "tokens"]
+env = ["clay"]
+earliest_kyr = 5.3
+origins = [{where = "Mesopotamia", kyr = 5.3}, {where = "Egypt", kyr = 5.2}, {where = "China", kyr = 3.3}, {where = "Mesoamerica", kyr = 2.6}, {where = "Indus (undeciphered)", kyr = 4.5}]
+spread_note = "4 or 5 independent origins"
+confidence = "high"
+source = "Houston (ed.) 2004, First Writing (unverified) (unverified)"
+exists = true
+note = "Uruk IV c. 3300 BCE"
+verified = true
+earliest_kyr_checked = 5.3
+source_checked = "CDLI wiki 'proto-cuneiform' / 'The Late Uruk period' (cdli.ox.ac.uk): Uruk IV ca. 3350-3200 BCE; Englund 2015 ~3350, Nissen 2016 ~3300 BCE (as summarised by Wikipedia)."
+hunt_note = "5.3 kyr holds (maybe up to 5.35); Egypt and others not checked."
+
+[[tech]]
+id = "cuneiform_scribal"
+name = "Scribal schools and cuneiform"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["writing", "schools"]
+env = ["clay"]
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia", kyr = 4.5}]
+spread_note = "local, spread to Elam, Hittites"
+confidence = "medium"
+source = "Veldhuis 2014 / Kramer 1963 (unverified) (unverified)"
+
+[[tech]]
+id = "syllabary"
+name = "Syllabaries"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["writing"]
+env = []
+earliest_kyr = 3.7
+origins = [{where = "Cyprus/Crete (Linear A)", kyr = 3.7}, {where = "Japan (kana)", kyr = 1.2}, {where = "Cherokee", kyr = 0.2}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+note = "Cherokee 1821 inventor Sequoyah, late but out of range for era cap"
+
+[[tech]]
+id = "alphabet"
+name = "Alphabet (consonantal then vowelled)"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+env = []
+earliest_kyr = 3.8
+origins = [{where = "Egypt/Sinai-Canaan", kyr = 3.8}]
+spread_note = "single origin, vast diffusion"
+confidence = "high"
+source = "Sass 1988 / Goldwasser 2010 (unverified) (unverified)"
+exists = true
+note = "Greek vowels c. 2.8 kyr"
+
+[[tech]]
+id = "abjad_vowel_alphabet"
+name = "Vowelled alphabet (Greek)"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["alphabet"]
+env = []
+earliest_kyr = 2.8
+origins = [{where = "Greece", kyr = 2.8}]
+spread_note = "diffused"
+confidence = "high"
+source = "Powell 1991, Homer and the Origin of the Greek Alphabet (unverified) (unverified)"
+
+[[tech]]
+id = "abugida_alphabets"
+name = "Abugida and featural scripts"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["alphabet"]
+env = []
+earliest_kyr = 2.3
+origins = [{where = "India (Brahmi)", kyr = 2.3}, {where = "Korea (hangul)", kyr = 0.58}]
+spread_note = "independent"
+confidence = "medium"
+source = "Salomon 1998 (unverified) (unverified)"
+
+[[tech]]
+id = "papyrus"
+name = "Papyrus"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+env = ["wetland"]
+earliest_kyr = 5.0
+origins = [{where = "Egypt", kyr = 5.0}]
+spread_note = "diffused through the Mediterranean"
+confidence = "high"
+source = "Lewis 1974, Papyrus in Classical Antiquity (unverified) (unverified)"
+note = "blank roll from c. 3000 BCE"
+
+[[tech]]
+id = "wax_tablets"
+name = "Wax and wooden writing tablets"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+env = ["timber"]
+earliest_kyr = 3.3
+origins = [{where = "Near East (Uluburun)", kyr = 3.3}]
+spread_note = "diffused"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "parchment"
+name = "Parchment and vellum"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["writing", "hide_tanning"]
+env = ["hide"]
+earliest_kyr = 2.2
+origins = [{where = "Pergamon (tradition)", kyr = 2.2}, {where = "Egypt leather rolls", kyr = 4.5}]
+spread_note = "diffused"
+confidence = "medium"
+source = "Reed 1972, Ancient Skins, Parchments and Leathers (unverified) (unverified)"
+note = "leather scrolls much older in Egypt"
+
+[[tech]]
+id = "paper"
+name = "Paper"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["writing"]
+env = ["fibre"]
+earliest_kyr = 2.2
+origins = [{where = "China", kyr = 2.2}, {where = "Mesoamerica (amate bark paper)", kyr = 1.5}]
+spread_note = "diffused west over 1 kyr"
+confidence = "medium"
+source = "Tsien 1985, Paper and Printing (unverified) (unverified)"
+note = "Cai Lun 105 CE traditional date; Fangmatan fragments c. 2.2 kyr"
+verified = false
+earliest_kyr_checked = 2.15
+source_checked = "Fangmatan Tomb 5 (Tianshui, Gansu) paper map fragment 179-141 BCE per secondary sources (Wikipedia 'Fangmatan'/'History of paper', China Daily Gansu); not a primary report."
+hunt_note = "Date c. 2.1-2.2 kyr matches the entry, secondary only."
+
+[[tech]]
+id = "ink"
+name = "Inks and pigments for writing"
+group = "knowledge"
+track = "communication"
+domains = ["know", "craft"]
+needs = ["writing"]
+env = ["soot"]
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 5}, {where = "China", kyr = 4.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+note = "carbon and iron-gall inks"
+
+[[tech]]
+id = "woodblock_printing"
+name = "Woodblock printing"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["paper"]
+env = ["timber"]
+earliest_kyr = 1.35
+origins = [{where = "China", kyr = 1.35}, {where = "Korea", kyr = 1.27}]
+spread_note = "diffused in East Asia"
+confidence = "high"
+source = "Tsien 1985 (unverified) (unverified)"
+note = "Diamond Sutra 868 CE; Mugujeonggwang dharani c. 751 CE"
+verified = false
+earliest_kyr_checked = 1.13
+source_checked = "Diamond Sutra (British Library), colophon 11 May 868 CE, earliest DATED printed book (cabinet.ox.ac.uk page). Same source says printing is older by 'some 200-300 years'; not confirmed with a primary source."
+hunt_note = "868 CE = 1.13 kyr is the earliest dated print; the 1.35 (650 CE) entry and 751 CE Korean dharani were not confirmed."
+
+[[tech]]
+id = "movable_type"
+name = "Movable type"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["woodblock_printing"]
+env = []
+earliest_kyr = 0.97
+origins = [{where = "China (Bi Sheng clay)", kyr = 0.98}, {where = "Korea metal type", kyr = 0.78}, {where = "Germany (Gutenberg)", kyr = 0.57}]
+spread_note = "independent twice"
+confidence = "high"
+source = "Tsien 1985 / Febvre & Martin 1976 (unverified) (unverified)"
+note = "Gutenberg c. 1450"
+
+[[tech]]
+id = "printing"
+name = "Printing"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["woodblock_printing"]
+env = []
+earliest_kyr = 1.35
+origins = [{where = "China", kyr = 1.35}]
+spread_note = "diffused"
+confidence = "high"
+source = "Tsien 1985 (unverified) (unverified)"
+exists = true
+
+[[tech]]
+id = "libraries"
+name = "Libraries and archives"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["writing"]
+env = []
+earliest_kyr = 4.6
+origins = [{where = "Ebla/Mesopotamia", kyr = 4.4}, {where = "Egypt", kyr = 4.0}]
+spread_note = "independent"
+confidence = "medium"
+source = "Casson 2001, Libraries in the Ancient World (unverified) (unverified)"
+exists = true
+note = "Ebla c. 2400 BCE"
+
+[[tech]]
+id = "postal_relay"
+name = "Relay messengers and royal post"
+group = "knowledge"
+track = "communication"
+domains = ["know", "war", "trade"]
+needs = ["roads", "writing"]
+env = []
+earliest_kyr = 2.5
+origins = [{where = "Persia (Royal Road)", kyr = 2.5}, {where = "China", kyr = 2.8}, {where = "Inca (chasqui)", kyr = 0.55}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "number_notation"
+name = "Place-value numerals"
+group = "knowledge"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["tallies", "writing"]
+env = []
+earliest_kyr = 4.0
+origins = [{where = "Mesopotamia (base 60)", kyr = 4.0}, {where = "China (rod numerals)", kyr = 2.5}, {where = "Maya (base 20)", kyr = 2.2}, {where = "India (decimal)", kyr = 1.6}]
+spread_note = "independent"
+confidence = "medium"
+source = "Ifrah 1998, Universal History of Numbers (unverified) (unverified)"
+
+[[tech]]
+id = "zero"
+name = "Zero as a number"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["number_notation"]
+env = []
+earliest_kyr = 1.4
+origins = [{where = "India (Bakhshali)", kyr = 1.4}, {where = "Maya (placeholder)", kyr = 2.0}, {where = "Mesopotamia placeholder", kyr = 2.3}]
+spread_note = "independent placeholders, one true number"
+confidence = "low"
+source = "Plofker 2009, Mathematics in India (unverified) (unverified)"
+note = "Bakhshali date contested c. 3rd-9th c.; Brahmagupta 628 CE"
+verified = false
+earliest_kyr_checked = 1.7
+source_checked = "Bodleian/Oxford ORAU 2017 (glam.ox.ac.uk 'Carbon dating finds Bakhshali manuscript contains oldest recorded origins of the symbol zero'): folio 16 224-383 CE (95.4%), other folios ~700, ~900 CE. Disputed in 'The Bakhshali Manuscript: A Response to the Bodleian Library Radiocarbon Dating' (HSSA, journals.library.ualberta.ca/hssa/article/view/22): treatise unified and later, zero already an operator."
+hunt_note = "Placeholder-dot zero ~1.7 kyr (3rd-4th c.) on the earliest leaf vs 1.4 listed; but treatise date and 'true zero' disputed. Brahmagupta 628 CE not checked."
+
+[[tech]]
+id = "geometry"
+name = "Practical geometry and surveying"
+group = "knowledge"
+track = "communication"
+domains = ["know", "build"]
+needs = ["number_notation"]
+env = []
+earliest_kyr = 4.0
+origins = [{where = "Egypt", kyr = 4.0}, {where = "Mesopotamia", kyr = 4.0}, {where = "India", kyr = 3.0}, {where = "China", kyr = 3.0}]
+spread_note = "independent"
+confidence = "medium"
+source = "Robson 2008, Mathematics in Ancient Iraq (unverified) (unverified)"
+note = "Plimpton 322 c. 1800 BCE"
+
+[[tech]]
+id = "abacus"
+name = "Abacus and counting boards"
+group = "knowledge"
+track = "communication"
+domains = ["trade", "know"]
+needs = ["number_notation"]
+env = []
+earliest_kyr = 2.5
+origins = [{where = "Mesopotamia/Greece", kyr = 2.5}, {where = "China", kyr = 1.8}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "algebra"
+name = "Algebra and written arithmetic"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["zero"]
+env = []
+earliest_kyr = 1.2
+origins = [{where = "Baghdad", kyr = 1.2}, {where = "Mesopotamia (problem texts)", kyr = 4.0}]
+spread_note = "diffused"
+confidence = "medium"
+source = "none known (unverified)"
+note = "al-Khwarizmi c. 820 CE"
+
+[[tech]]
+id = "weights_measures"
+name = "Standard weights and measures"
+group = "knowledge"
+track = "communication"
+domains = ["trade", "build"]
+needs = ["number_notation"]
+env = []
+earliest_kyr = 4.8
+origins = [{where = "Indus", kyr = 4.5}, {where = "Egypt", kyr = 5.0}, {where = "Mesopotamia", kyr = 4.8}]
+spread_note = "independent"
+confidence = "medium"
+source = "Petruso 1981 / Hafford 2012 (unverified) (unverified)"
+note = "Indus cubic weights c. 4.5 kyr"
+
+[[tech]]
+id = "balance_scale"
+name = "Balance scale"
+group = "knowledge"
+track = "communication"
+domains = ["trade"]
+needs = ["weights_measures"]
+env = []
+earliest_kyr = 7
+origins = [{where = "Egypt", kyr = 5.5}, {where = "Indus", kyr = 4.6}, {where = "Near East", kyr = 7}]
+spread_note = "diffused"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "calendar"
+name = "Calendars"
+group = "knowledge"
+track = "communication"
+domains = ["know", "food", "ritual"]
+needs = ["counting"]
+env = []
+earliest_kyr = 10
+origins = [{where = "Scotland (Warren Field lunar)", kyr = 10}, {where = "Egypt", kyr = 5}, {where = "Mesopotamia", kyr = 4.5}, {where = "Mesoamerica", kyr = 2.6}]
+spread_note = "independent"
+confidence = "low"
+source = "Murray et al. 2013 (unverified) (unverified)"
+exists = true
+note = "Lunar tallies on bone as old as c. 30 kyr (disputed)"
+verified = true
+earliest_kyr_checked = 9.5
+source_checked = "Gaffney et al. 2013. Time and a Place: a luni-solar 'time-reckoner' from 8th millennium BC Scotland. Internet Archaeology 34, intarch.ac.uk/journal/issue34/1/ (12 pits, midwinter sunrise alignment, 8th millennium BC)"
+hunt_note = "8th millennium BC = 9.0-10.0 kyr; Warren Field is an interpretation. Bone-tally lunar calendars not checked."
+
+[[tech]]
+id = "solar_calendar"
+name = "Solar year calendar"
+group = "knowledge"
+track = "communication"
+domains = ["know", "food"]
+needs = ["calendar", "astronomy"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 5}, {where = "Mesoamerica", kyr = 2.2}, {where = "Mesopotamia", kyr = 3.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+note = "civil year of 365 days in Egypt c. 3000 BCE"
+
+[[tech]]
+id = "astronomy"
+name = "Systematic astronomy"
+group = "knowledge"
+track = "communication"
+domains = ["know", "ritual"]
+needs = ["calendar"]
+env = []
+earliest_kyr = 4
+origins = [{where = "Mesopotamia", kyr = 4}, {where = "Egypt", kyr = 4.5}, {where = "China", kyr = 3.5}, {where = "Maya", kyr = 2.2}]
+spread_note = "independent"
+confidence = "medium"
+source = "Aveni 2001 (unverified) (unverified)"
+note = "Nabta Playa stone circle c. 7 kyr claimed"
+
+[[tech]]
+id = "sundial"
+name = "Sundial and gnomon"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["astronomy"]
+env = []
+earliest_kyr = 3.5
+origins = [{where = "Egypt", kyr = 3.5}, {where = "China", kyr = 2.5}, {where = "Mesopotamia", kyr = 3}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "water_clock"
+name = "Water clock (clepsydra)"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["sundial"]
+env = ["clay"]
+earliest_kyr = 3.4
+origins = [{where = "Egypt (Karnak)", kyr = 3.4}, {where = "Mesopotamia", kyr = 3}, {where = "China", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "mechanical_clock"
+name = "Mechanical clock"
+group = "knowledge"
+track = "communication"
+domains = ["know"]
+needs = ["water_clock", "iron"]
+env = []
+earliest_kyr = 0.7
+origins = [{where = "China (Su Song)", kyr = 0.93}, {where = "Europe (verge escapement)", kyr = 0.7}]
+spread_note = "independent"
+confidence = "medium"
+source = "Needham et al. 1986, Heavenly Clockwork (unverified) (unverified)"
+
+[[tech]]
+id = "eclipse_prediction"
+name = "Eclipse prediction"
+group = "knowledge"
+track = "communication"
+domains = ["know", "ritual"]
+needs = ["astronomy"]
+env = []
+earliest_kyr = 3.0
+origins = [{where = "Mesopotamia (Saros)", kyr = 2.7}, {where = "China", kyr = 2.5}, {where = "Maya", kyr = 1.3}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "astrolabe"
+name = "Astrolabe and star tables"
+group = "knowledge"
+track = "communication"
+domains = ["know", "move"]
+needs = ["astronomy", "geometry"]
+env = []
+earliest_kyr = 2.2
+origins = [{where = "Greece/Hellenistic", kyr = 2.2}, {where = "Islamic world", kyr = 1.2}]
+spread_note = "diffused"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "maps"
+name = "Maps"
+group = "knowledge"
+track = "communication"
+domains = ["know", "move"]
+needs = ["geometry"]
+env = []
+earliest_kyr = 4.3
+origins = [{where = "Mesopotamia", kyr = 4.3}, {where = "Egypt", kyr = 3.3}, {where = "China", kyr = 2.2}, {where = "Polynesia stick charts", kyr = 0.7}]
+spread_note = "independent"
+confidence = "medium"
+source = "Harley & Woodward 1987, History of Cartography (unverified) (unverified)"
+note = "Lascaux/Mezhyrich star-maps disputed c. 15-25 kyr"
+
+[[tech]]
+id = "herbal_medicine"
+name = "Herbal medicine and herbals"
+group = "knowledge"
+track = "social"
+domains = ["know", "food"]
+needs = ["foraging_lore"]
+env = []
+earliest_kyr = 60
+origins = [{where = "Neanderthal Iraq/Spain", kyr = 50}, {where = "Sumer", kyr = 4.5}, {where = "Egypt", kyr = 3.5}, {where = "China", kyr = 2.2}, {where = "India", kyr = 3}]
+spread_note = "independent"
+confidence = "low"
+source = "Hardy 2012, Neanderthal medics (unverified) (unverified)"
+note = "Shanidar yarrow claim contested; written herbals c. 4.5 kyr"
+verified = false
+earliest_kyr_checked = 50
+origins_checked = [{where = "Neanderthal El Sidron", kyr = 50}]
+source_checked = "Hardy et al. 2012. Neanderthal medics? Evidence for food, cooking, and medicinal plants entrapped in dental calculus. Naturwissenschaften (online 18 Jul 2012): El Sidron, occupation 47.3-50.6 kyr; yarrow/chamomile compounds, self-medication interpretation disputed (Antiquity exchange). Henry et al. 2011 PNAS: plant microfossils (starch, cooked grass seeds) in Shanidar III and Spy calculus."
+hunt_note = "Neanderthal origin 50 kyr supported as a claim only; 60 kyr earliest not supported. Real medicine is contested; written herbals not checked."
+
+[[tech]]
+id = "bone_setting"
+name = "Splints and bone-setting"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["language"]
+env = []
+earliest_kyr = 50
+origins = [{where = "Neanderthal Shanidar", kyr = 50}, {where = "Neolithic", kyr = 8}]
+spread_note = "universal"
+confidence = "low"
+source = "Trinkaus (unverified) (unverified)"
+note = "healed fractures show care"
+verified = false
+source_checked = "Shanidar 1 and 3 healed injuries argued as care (Trinkaus; Pomeroy via secondary summaries); flower-burial reading contested (Hunt et al.)."
+hunt_note = "Healed injuries imply care but not 'bone setting'; entry is an inference."
+
+[[tech]]
+id = "trepanation"
+name = "Trepanation"
+group = "knowledge"
+track = "social"
+domains = ["know", "ritual"]
+needs = ["knapping"]
+env = []
+earliest_kyr = 10
+origins = [{where = "Ukraine/Europe", kyr = 8}, {where = "Peru", kyr = 3}, {where = "Neolithic Europe", kyr = 7}]
+spread_note = "independent"
+confidence = "medium"
+source = "Lillie 1998 (unverified) (unverified)"
+note = "survival ~70-90 percent in Peruvian skulls; earliest Mesolithic Ukraine, disputed"
+verified = false
+earliest_kyr_checked = 10
+source_checked = "Nature report (nature.com/articles/36023): radiocarbon-redated Dnieper Rapids cemeteries; earliest trepanation with complete healing at Vasilyevka (Mesolithic); a later review names Vasilievka III. Survival rates 50-90% (reviews; Late Iron Age Swiss 78%, boris.unibe.ch/73182)."
+hunt_note = "Mesolithic Ukraine claim seen but year not read; Peru survival low early, 75-83% Inca."
+
+[[tech]]
+id = "surgery"
+name = "Wound surgery, sutures, instruments"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["bronze"]
+env = []
+earliest_kyr = 4.5
+origins = [{where = "Egypt (Edwin Smith)", kyr = 3.6}, {where = "India (Sushruta)", kyr = 2.6}, {where = "Greece", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "Nunn 1996, Ancient Egyptian Medicine (unverified) (unverified)"
+
+[[tech]]
+id = "dentistry"
+name = "Dentistry and tooth repair"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["knapping"]
+env = []
+earliest_kyr = 14
+origins = [{where = "Italy (Villabruna flint drilling)", kyr = 14}, {where = "Pakistan (Mehrgarh)", kyr = 9}, {where = "Egypt bridgework", kyr = 4.5}, {where = "Etruria", kyr = 2.7}]
+spread_note = "independent"
+confidence = "medium"
+source = "Oxilia et al. 2015 / Coppa 2006 (unverified) (unverified)"
+verified = true
+earliest_kyr_checked = 14
+source_checked = "Oxilia et al. 'The earliest evidence of proto-dental treatment in the Late Upper Palaeolithic' (Monash research record / Am J Phys Anthropol): Riparo Villabruna, Italy, 14,160-13,820 BP, flint scratching/levering of a caries cavity. Mehrgarh: Coppa et al. 2006 Nature reports drilled teeth, Neolithic 9,000-7,500 BP (seen only via Oxilia et al. 2017 AJPA citation)."
+hunt_note = "Villabruna 14 kyr confirmed; Mehrgarh 9 kyr supported secondarily (7.5-9)."
+
+[[tech]]
+id = "inoculation"
+name = "Variolation and inoculation"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["herbal_medicine"]
+env = []
+earliest_kyr = 0.9
+origins = [{where = "China/India", kyr = 0.5}, {where = "Ottoman", kyr = 0.3}]
+spread_note = "diffused"
+confidence = "low"
+source = "none known (unverified)"
+note = "c. 1500 CE China; Jenner 1796 out of range"
+
+[[tech]]
+id = "midwifery"
+name = "Midwifery and obstetric care"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["language"]
+env = []
+earliest_kyr = 20
+origins = [{where = "universal", kyr = 20}]
+spread_note = "universal"
+confidence = "low"
+source = "none known (unverified)"
+note = "date a placeholder, no direct record"
+
+[[tech]]
+id = "hygiene"
+name = "Latrines, sewers and hygiene"
+group = "knowledge"
+track = "social"
+domains = ["build", "know"]
+needs = ["towns"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Orkney Skara Brae", kyr = 5}, {where = "Indus", kyr = 4.5}, {where = "Crete", kyr = 4}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "kinship_exchange"
+name = "Gift exchange and alliance networks"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["language"]
+env = []
+earliest_kyr = 100
+origins = [{where = "Africa", kyr = 100}]
+spread_note = "universal"
+confidence = "low"
+source = "none known (unverified)"
+note = "shell ornaments moved 100+ km by c. 80 kyr"
+
+[[tech]]
+id = "barter_network"
+name = "Long-distance barter networks"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["kinship_exchange"]
+env = ["obsidian"]
+earliest_kyr = 100
+origins = [{where = "Africa (obsidian)", kyr = 200}, {where = "Europe", kyr = 40}, {where = "Near East", kyr = 20}]
+spread_note = "independent"
+confidence = "medium"
+source = "Brooks et al. 2018, Long-distance stone transport (unverified) (unverified)"
+note = "Olorgesailie obsidian 300 kyr"
+
+[[tech]]
+id = "trade"
+name = "Trade"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["barter_network"]
+env = []
+earliest_kyr = 100
+origins = [{where = "Africa", kyr = 100}]
+spread_note = "universal"
+confidence = "medium"
+source = "none known (unverified)"
+exists = true
+
+[[tech]]
+id = "markets"
+name = "Marketplaces and merchants"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["trade", "towns"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Mesopotamia", kyr = 5}, {where = "Egypt", kyr = 4.5}, {where = "Mesoamerica", kyr = 1.5}]
+spread_note = "independent"
+confidence = "low"
+source = "Polanyi 1957 (unverified) (unverified)"
+
+[[tech]]
+id = "commodity_money"
+name = "Commodity money (grain, silver, cowrie)"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["markets", "weights_measures"]
+env = ["silver"]
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia (silver shekel)", kyr = 4.5}, {where = "China (cowrie)", kyr = 3.6}, {where = "Africa (cowrie)", kyr = 2}, {where = "Mesoamerica (cacao)", kyr = 1.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "Graeber 2011 / Davies 2002, History of Money (unverified) (unverified)"
+
+[[tech]]
+id = "coinage"
+name = "Coinage"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["commodity_money", "metal_smelting"]
+env = ["silver"]
+earliest_kyr = 2.7
+origins = [{where = "Lydia/Ionia", kyr = 2.7}, {where = "China (spade/knife)", kyr = 2.6}, {where = "India (punch-marked)", kyr = 2.5}]
+spread_note = "independent"
+confidence = "high"
+source = "Kroll 2012 / Davies 2002 (unverified) (unverified)"
+exists = true
+verified = false
+earliest_kyr_checked = 2.65
+source_checked = "Artemision deposit electrum coins, Ephesus: first half 7th c. BCE (Wikipedia 'Electrum'), deposited before c. 640-620 BCE (auction note), or c. 600 BCE (Macquarie Univ. page 'The earliest coins at Ephesus'); described as controversial."
+hunt_note = "2.7 kyr within the disputed 2.55-2.65 range; no primary read."
+
+[[tech]]
+id = "paper_money"
+name = "Paper money"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["paper", "coinage"]
+env = []
+earliest_kyr = 1.0
+origins = [{where = "China (Song jiaozi)", kyr = 1.0}]
+spread_note = "diffused"
+confidence = "high"
+source = "Von Glahn 1996 (unverified) (unverified)"
+note = "c. 1000 CE jiaozi; Yuan empire 1260 CE"
+
+[[tech]]
+id = "credit_debt"
+name = "Credit, debt records and loans"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["writing", "commodity_money"]
+env = []
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia", kyr = 4.5}]
+spread_note = "diffused"
+confidence = "medium"
+source = "Graeber 2011 (unverified) (unverified)"
+
+[[tech]]
+id = "bills_of_exchange"
+name = "Bills of exchange and banking"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt", "coinage"]
+env = []
+earliest_kyr = 0.9
+origins = [{where = "Islamic world (suftaja)", kyr = 1.2}, {where = "Italy", kyr = 0.8}, {where = "China (flying money)", kyr = 1.2}]
+spread_note = "independent"
+confidence = "medium"
+source = "Lopez & Raymond 1955 (unverified) (unverified)"
+
+[[tech]]
+id = "banking"
+name = "Banks and temple deposits"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt"]
+env = []
+earliest_kyr = 3.5
+origins = [{where = "Mesopotamia temples", kyr = 4}, {where = "Greece", kyr = 2.5}]
+spread_note = "diffused"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "insurance"
+name = "Maritime loans and insurance"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["credit_debt", "sails"]
+env = []
+earliest_kyr = 3
+origins = [{where = "Babylonia/Greece", kyr = 3}]
+spread_note = "diffused"
+confidence = "low"
+source = "none known (unverified)"
+note = "bottomry loans; marine insurance Genoa 14th c."
+
+[[tech]]
+id = "chiefdoms"
+name = "Chiefdoms (ranked leadership)"
+group = "knowledge"
+track = "social"
+domains = ["war", "trade"]
+needs = ["villages", "feasting"]
+env = []
+earliest_kyr = 11
+origins = [{where = "Levant/Anatolia", kyr = 11}, {where = "Mesopotamia Ubaid", kyr = 7.5}, {where = "Andes", kyr = 5}, {where = "Polynesia", kyr = 3}]
+spread_note = "independent"
+confidence = "medium"
+source = "Earle 1997, How Chiefs Come to Power (unverified) (unverified)"
+exists = true
+
+[[tech]]
+id = "kingship"
+name = "Kingship and divine rulers"
+group = "knowledge"
+track = "social"
+domains = ["war", "ritual"]
+needs = ["chiefdoms", "cities"]
+env = []
+earliest_kyr = 5.2
+origins = [{where = "Egypt", kyr = 5.2}, {where = "Mesopotamia", kyr = 5}, {where = "China", kyr = 4}, {where = "Mesoamerica", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "Trigger 2003, Understanding Early Civilizations (unverified) (unverified)"
+
+[[tech]]
+id = "taxation"
+name = "Taxation and tribute"
+group = "knowledge"
+track = "social"
+domains = ["trade", "war"]
+needs = ["kingship", "writing"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Mesopotamia", kyr = 5}, {where = "Egypt", kyr = 4.7}, {where = "China", kyr = 4}, {where = "Inca mit'a", kyr = 0.6}]
+spread_note = "independent"
+confidence = "medium"
+source = "Scott 2017, Against the Grain (unverified) (unverified)"
+
+[[tech]]
+id = "bureaucracy"
+name = "Bureaucracy and civil service"
+group = "knowledge"
+track = "social"
+domains = ["trade", "war"]
+needs = ["taxation", "cuneiform_scribal"]
+env = []
+earliest_kyr = 4.4
+origins = [{where = "Mesopotamia", kyr = 4.4}, {where = "Egypt", kyr = 4.5}, {where = "China (examinations)", kyr = 1.4}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+note = "Sui/Tang exams c. 600 CE"
+
+[[tech]]
+id = "law"
+name = "Written law codes"
+group = "knowledge"
+track = "social"
+domains = ["war", "ritual"]
+needs = ["writing", "kingship"]
+env = []
+earliest_kyr = 4.1
+origins = [{where = "Mesopotamia (Ur-Nammu)", kyr = 4.1}, {where = "Mesopotamia (Hammurabi)", kyr = 3.8}, {where = "Greece", kyr = 2.6}, {where = "Rome XII Tables", kyr = 2.5}, {where = "India", kyr = 2.3}, {where = "China", kyr = 2.4}]
+spread_note = "independent"
+confidence = "high"
+source = "Roth 1997, Law Collections from Mesopotamia (unverified) (unverified)"
+exists = true
+note = "oral law long earlier"
+
+[[tech]]
+id = "temples"
+name = "Temples and priesthoods"
+group = "knowledge"
+track = "social"
+domains = ["ritual"]
+needs = ["spirit_ritual", "villages"]
+env = []
+earliest_kyr = 11.6
+origins = [{where = "Anatolia (Gobekli Tepe)", kyr = 11.6}, {where = "Mesopotamia (Eridu)", kyr = 7.5}, {where = "Egypt", kyr = 5.2}, {where = "Andes", kyr = 4.5}, {where = "Mesoamerica", kyr = 3.2}]
+spread_note = "independent"
+confidence = "medium"
+source = "Schmidt 2006 (unverified) (unverified)"
+exists = true
+verified = true
+earliest_kyr_checked = 11.6
+source_checked = "As megaliths: DAI Goebekli Tepe project blog, Layer III 9600-8800 calBC (dainst.blog 2016). 'Temple' is the excavators' interpretation."
+hunt_note = "Date holds; function interpretive."
+
+[[tech]]
+id = "schools"
+name = "Schools and formal teaching"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["writing"]
+env = []
+earliest_kyr = 4.4
+origins = [{where = "Mesopotamia edubba", kyr = 4.4}, {where = "Egypt", kyr = 4}, {where = "China", kyr = 3}, {where = "Greece", kyr = 2.5}, {where = "India gurukula", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "Veldhuis 2014 (unverified) (unverified)"
+
+[[tech]]
+id = "universities"
+name = "Universities and colleges"
+group = "knowledge"
+track = "social"
+domains = ["know"]
+needs = ["schools", "libraries"]
+env = []
+earliest_kyr = 1.1
+origins = [{where = "Morocco (al-Qarawiyyin)", kyr = 1.2}, {where = "Egypt (al-Azhar)", kyr = 1.1}, {where = "Italy (Bologna)", kyr = 0.9}, {where = "India (Nalanda)", kyr = 1.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "census"
+name = "Census and population registers"
+group = "knowledge"
+track = "social"
+domains = ["trade", "war"]
+needs = ["taxation", "number_notation"]
+env = []
+earliest_kyr = 4.6
+origins = [{where = "Egypt", kyr = 4.6}, {where = "Mesopotamia", kyr = 4}, {where = "China", kyr = 2.2}, {where = "Rome", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "oaths_ordeal"
+name = "Oaths, treaties and diplomacy"
+group = "knowledge"
+track = "social"
+domains = ["war", "trade"]
+needs = ["language"]
+env = []
+earliest_kyr = 10
+origins = [{where = "Near East (Kadesh treaty 1259 BCE)", kyr = 3.3}, {where = "universal", kyr = 10}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+note = "earliest written treaty Ebla c. 4.3 kyr; oral far older"
+
+[[tech]]
+id = "standing_army"
+name = "Standing armies and conscription"
+group = "knowledge"
+track = "social"
+domains = ["war"]
+needs = ["taxation", "bronze"]
+env = []
+earliest_kyr = 4.3
+origins = [{where = "Akkad", kyr = 4.3}, {where = "Egypt", kyr = 3.5}, {where = "China", kyr = 2.5}]
+spread_note = "independent"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "slavery_corvee"
+name = "Corvee labour and slavery"
+group = "knowledge"
+track = "social"
+domains = ["build", "trade"]
+needs = ["kingship"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Mesopotamia", kyr = 5}, {where = "Egypt", kyr = 4.6}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+note = "a social institution flagged for completeness"
+
+[[tech]]
+id = "guilds"
+name = "Craft guilds and professional associations"
+group = "knowledge"
+track = "social"
+domains = ["craft", "trade"]
+needs = ["markets"]
+env = []
+earliest_kyr = 3.5
+origins = [{where = "Mesopotamia", kyr = 4}, {where = "Rome collegia", kyr = 2.5}, {where = "Europe/China", kyr = 1}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "pilgrimage_festival"
+name = "Festivals and pilgrimage"
+group = "knowledge"
+track = "social"
+domains = ["ritual", "trade"]
+needs = ["temples", "calendar"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 5}, {where = "Mesoamerica", kyr = 2.5}, {where = "India", kyr = 3}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "feasting"
+name = "Communal feasting"
+group = "knowledge"
+track = "social"
+domains = ["food", "ritual"]
+needs = ["cooking"]
+env = []
+earliest_kyr = 12
+origins = [{where = "Levant (Hilazon Tachtit)", kyr = 12}, {where = "universal", kyr = 12}]
+spread_note = "independent"
+confidence = "medium"
+source = "Munro & Grosman 2010 (unverified) (unverified)"
+exists = true
+
+[[tech]]
+id = "hoards"
+name = "Hoarding and wealth storage"
+group = "knowledge"
+track = "social"
+domains = ["trade"]
+needs = ["storage"]
+env = []
+earliest_kyr = 10
+origins = [{where = "Near East", kyr = 10}]
+spread_note = "independent"
+confidence = "low"
+source = "none known (unverified)"
+exists = true

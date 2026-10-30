@@ -1,0 +1,1033 @@
+[[tech]]
+id = "windbreaks"
+name = "Windbreaks and brush shelters"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["cordage"]
+env = ["brush"]
+earliest_kyr = 400
+origins = [{where = "Europe/Africa", kyr = 400}, {where = "Levant", kyr = 23}]
+spread_note = "Simple; reinvented wherever people camp in open country."
+confidence = "low"
+source = "Terra Amata / Ohalo II huts, de Lumley 1969; Nadel et al. 2004 (unverified)"
+verified = false
+source_checked = "Same sources as huts (Ohalo II c.23 ka brush huts, PNAS 2004; Terra Amata disputed). Nothing read specifically on 'windbreaks'."
+hunt_note = "Could not confirm a windbreak as a distinct tech; Terra Amata 400 ka is disputed and merges with 'huts'. Consider merging into huts."
+
+[[tech]]
+id = "tents_skin"
+name = "Skin and hide tents"
+group = "shelter"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["sewing", "windbreaks"]
+env = ["hides"]
+earliest_kyr = 25
+origins = [{where = "Eurasian steppe/Europe", kyr = 25}, {where = "Arctic", kyr = 15}]
+spread_note = "Spread with mobile hunters; independent in Arctic and Plains."
+confidence = "low"
+source = "Gravettian/Magdalenian tent rings, Leroi-Gourhan 1984 (best knowledge) (unverified)"
+
+[[tech]]
+id = "huts"
+name = "Built huts and shelters"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["cordage"]
+earliest_kyr = 400
+origins = [{where = "Europe", kyr = 400}, {where = "Levant", kyr = 23}]
+spread_note = "Independent wherever timber/reed available."
+confidence = "low"
+source = "Nadel et al. 2004, PNAS, Ohalo II (unverified)"
+exists = true
+verified = true
+source_checked = "Nadel et al. 2004. Stone Age hut in Israel yields world's oldest evidence of bedding. PNAS 101(17):6821-6826 (listing at cris.haifa.ac.il/en/publications/stone-age-hut-in-israel-yields-worlds-oldest-evidence-of-bedding/; Ohalo II: six brush huts, calibrated c.23 ka, 22.5-23.5 ka). Terra Amata: CENIEH press/abstract of Garc\u00eda-Medrano et al. 2025 J Paleolithic Archaeol places occupation in MIS 11 (~400 ka) (investigacion.cenieh.es); Sage encyclopedia entry notes hut interpretation disputed after Villa 1983."
+hunt_note = "Ohalo II 23 ka confirmed. The 400 ka Terra Amata hut is disputed (redeposition; Villa 1983) so 400 is contested as the 'first hut'. Safer firm anchor 23 ka; keep 400 as contested."
+
+[[tech]]
+id = "wattle_daub"
+name = "Wattle and daub walls"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts"]
+env = ["clay", "timber"]
+earliest_kyr = 12
+origins = [{where = "Levant", kyr = 12}, {where = "Europe", kyr = 7.5}, {where = "Americas", kyr = 4}]
+spread_note = "Independent; rides on huts plus clay."
+confidence = "medium"
+source = "Natufian/Neolithic wattle-and-daub finds, general (best knowledge) (unverified)"
+
+[[tech]]
+id = "thatch"
+name = "Thatched roofing"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts"]
+env = ["reed", "grass"]
+earliest_kyr = 12
+origins = [{where = "Levant/Europe", kyr = 12}]
+spread_note = "Universal wherever grass or reed grows; undated in practice."
+confidence = "low"
+source = "none known; inferred from Natufian/Neolithic house reconstructions (unverified)"
+
+[[tech]]
+id = "pit_houses"
+name = "Pit houses and earth lodges"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts"]
+earliest_kyr = 30
+origins = [{where = "Eurasian steppe", kyr = 30}, {where = "Japan", kyr = 16}, {where = "North America", kyr = 12}]
+spread_note = "Independent in cold regions."
+confidence = "medium"
+source = "Mezhyrich/Kostenki pit dwellings (best knowledge) (unverified)"
+exists = true
+verified = false
+origins_checked = [{where = "Japan", kyr = 11.7}]
+source_checked = "Archaeology.jp Kiyotake Kami-Inoharu report (archaeology.jp/sites/2008/kiyotake.htm): 14 Incipient Jomon pit dwellings, c.11,700 BP radiocarbon. Mezhyrich: Chu, Shydlovskyi & Maier 2025, Open Research Europe, PMC12639289, revised dates 18,248-17,764 cal BP (bone structures, function debated)."
+hunt_note = "30 kyr unsupported: Mezhyrich is c.18 ka (not pit dwellings), Kostenki 11-Ia mammoth-bone structure ~25 ka rests on bone dates flagged as possibly contaminated. Japan Incipient Jomon pit dwellings seen at c.11.7 kyr BP; start of phase variously 16.5 ka. Needs a better primary source."
+
+[[tech]]
+id = "bone_houses"
+name = "Mammoth-bone houses"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["pit_houses", "tents_skin"]
+env = ["mammoth bone"]
+earliest_kyr = 20
+origins = [{where = "Ukraine/Russian Plain", kyr = 20}]
+spread_note = "Local to mammoth-steppe; ended with mammoth."
+confidence = "medium"
+source = "Pidoplichko 1998 / Mezhyrich studies (best knowledge) (unverified)"
+note = "Mezhyrich c.15 kyr; Mezin/Gontsy c.20 kyr"
+verified = true
+earliest_kyr_checked = 18.2
+source_checked = "Chu, Shydlovskyi & Maier 2025. A revised radiocarbon chronology for the mammoth bone structures and associated features at Mezhyrich, Ukraine. Open Research Europe. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12639289/ (Structure 4: 18,248-17,764 cal BP). Mezinian/Gontsy c.14.4-14.6 kyr BP per Radiocarbon table (journals.uair.arizona.edu radiocarbon 3939); Iakovleva et al. UISPP J 1 2018."
+hunt_note = "Mezhyrich is c.18 ka, not 15 (old 14.5 ka BP date superseded); Gontsy c.14.5 ka. Kostenki 11-Ia c.25 ka bone structure exists but dates flagged contamination-prone; Mezin >20 ka dates rejected. Whether they were dwellings is debated."
+
+[[tech]]
+id = "snow_house"
+name = "Snow houses (igloo)"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["tents_skin"]
+env = ["snow"]
+earliest_kyr = 1
+origins = [{where = "Central Arctic", kyr = 1}]
+spread_note = "Inuit-specific; late and local."
+confidence = "low"
+source = "Arctic ethnography, Damas 1984 (best knowledge) (unverified)"
+note = "Earlier dating poorly known; Dorset-era use possible c.2-3 kyr"
+verified = false
+source_checked = "Popular and scholarly snippets (journalhosting.ucalgary.ca arctic/67245; polarpedia.eu dorset-culture): Dorset snow knives suggest snowhouses; no direct dated Dorset snowhouse; Thule snowhouses winter use. Latest Dorset/earliest Thule at Nunguvik c.AD 1090."
+hunt_note = "No dated direct evidence read; 1 kyr cannot be confirmed; Dorset possibility remains hypothesis."
+
+[[tech]]
+id = "yurt"
+name = "Felt tent and yurt"
+group = "shelter"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["tents_skin", "herding"]
+env = ["wool", "timber"]
+earliest_kyr = 3
+origins = [{where = "Central Asian steppe", kyr = 3}]
+spread_note = "Pastoral nomads; lattice wall and felt cover spread across steppe."
+confidence = "low"
+source = "Archaeology of Scythian/Xiongnu felt tents, Rudenko 1970 (best knowledge) (unverified)"
+note = "Scholars debate; earliest depictions c.3 kyr, firm c.2 kyr"
+verified = false
+earliest_kyr_checked = 2.6
+source_checked = "Silk Road Journal 'On the Antiquity of the Yurt' (edspace.american.edu pdf): Arjan tomb bronze bowl depiction c.600 BCE; Rudenko view that Pazyryk used log houses; no direct archaeological yurt found."
+hunt_note = "Earliest depiction c.2.6 kyr (Arjan, ~600 BCE) not 3; firm archaeological yurt not found. Catalogue 3 kyr within hedge but unverified."
+
+[[tech]]
+id = "longhouse"
+name = "Timber longhouses"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts", "ground_stone"]
+env = ["timber"]
+earliest_kyr = 7.5
+origins = [{where = "Central Europe (LBK)", kyr = 7.5}, {where = "Eastern N America", kyr = 1}]
+spread_note = "LBK spread with farmers; other regions independent."
+confidence = "high"
+source = "Linearbandkeramik, Bradley 2001 (best knowledge) (unverified)"
+
+[[tech]]
+id = "post_frame"
+name = "Post-and-beam timber framing"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["longhouse"]
+env = ["timber"]
+earliest_kyr = 7
+origins = [{where = "Europe", kyr = 7}, {where = "China", kyr = 6.5}, {where = "Japan", kyr = 5}]
+spread_note = "Independent invention, then refined by carpentry traditions."
+confidence = "medium"
+source = "Neolithic timber houses; Hemudu mortise-and-tenon, c.7 kyr (best knowledge) (unverified)"
+note = "Hemudu tenons c.7 kyr"
+verified = false
+source_checked = "Hemudu mortise and tenon: sources say ~7,000 years, earliest in China (ancient-history-sites.com; no radiocarbon range given); not verified further."
+hunt_note = "~7 kyr not independently confirmed; only secondary/Chinese-language pages seen."
+
+[[tech]]
+id = "timber_framing"
+name = "Half-timber and joined frame carpentry"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["post_frame", "iron"]
+env = ["timber"]
+earliest_kyr = 2
+origins = [{where = "Europe", kyr = 2}, {where = "China", kyr = 3}]
+spread_note = "Regional carpentry schools."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "log_construction"
+name = "Log building (notched logs)"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts", "knapping"]
+env = ["timber"]
+earliest_kyr = 5
+origins = [{where = "Northern Europe", kyr = 5}, {where = "Russia", kyr = 4}]
+spread_note = "Boreal forest tradition."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "mudbrick"
+name = "Sun-dried mudbrick"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["villages"]
+env = ["clay"]
+earliest_kyr = 11
+origins = [{where = "Levant (Jericho)", kyr = 10.5}, {where = "Mesopotamia", kyr = 9}, {where = "Indus", kyr = 8}, {where = "Egypt", kyr = 7}, {where = "Andes", kyr = 5}]
+spread_note = "Independent in several river cultures."
+confidence = "medium"
+source = "Jericho PPNA; Hodder 2006 (best knowledge) (unverified)"
+exists = true
+verified = true
+earliest_kyr_checked = 10.3
+source_checked = "Mazurowski/PAM Tell Qaramel and Jericho notes (pcma.uw.edu.pl PAM21; digi.ub.uni-heidelberg.de/diglit/pam19/0601): oldest Levantine sun-dried mudbrick in Jericho PPNA, bricks also at Mureybet/Jerf el-Ahmar. Tell es-Sultan tower c.8300 BCE (carbon dates 1981/83). No exact brick-layer date read."
+hunt_note = "PPNA Jericho c.10-10.3 kyr BP (8300-8000 BCE) seen; catalogue's 11 and Jericho origin 10.5 not firmly confirmed; Tell Qaramel/Mureybet bricks possibly older (Qaramel 10,890-8780 cal BC span). Leave 11 unconfirmed."
+
+[[tech]]
+id = "rammed_earth"
+name = "Rammed earth walls"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick"]
+env = ["earth"]
+earliest_kyr = 6
+origins = [{where = "China", kyr = 6}, {where = "Near East", kyr = 6}]
+spread_note = "Spreads in arid zones; major in China."
+confidence = "medium"
+source = "Longshan/Yangshao rammed earth, Chinese archaeology (best knowledge) (unverified)"
+
+[[tech]]
+id = "adobe_plaster"
+name = "Lime and mud plaster floors and walls"
+group = "shelter"
+track = "shelter"
+domains = ["build", "craft"]
+needs = ["mudbrick", "kilns"]
+env = ["limestone"]
+earliest_kyr = 10
+origins = [{where = "Levant/Anatolia", kyr = 10}]
+spread_note = "Pre-pottery Neolithic Near East; carried by farming."
+confidence = "medium"
+source = "Kingery et al. 1988 on lime plaster, Ain Ghazal (best knowledge) (unverified)"
+
+[[tech]]
+id = "stone_masonry"
+name = "Dry-stone and coursed masonry"
+group = "shelter"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["villages", "ground_stone"]
+env = ["stone"]
+earliest_kyr = 11.5
+origins = [{where = "Anatolia", kyr = 11.5}, {where = "Levant", kyr = 11}, {where = "Peru", kyr = 5}, {where = "Mesoamerica", kyr = 3}]
+spread_note = "Multiple independent."
+confidence = "high"
+source = "Gobekli Tepe, Schmidt 2010 (best knowledge) (unverified)"
+
+[[tech]]
+id = "fired_brick"
+name = "Fired brick"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick", "kilns"]
+env = ["clay", "fuel"]
+earliest_kyr = 5
+origins = [{where = "Mesopotamia", kyr = 5}, {where = "Indus", kyr = 5}]
+spread_note = "Early Bronze Age riverine cultures; spread widely under Rome."
+confidence = "medium"
+source = "Mesopotamian Uruk/Indus kiln bricks (best knowledge) (unverified)"
+
+[[tech]]
+id = "kilns"
+name = "Kilns"
+group = "shelter"
+track = "tools"
+domains = ["craft"]
+needs = ["pottery"]
+env = ["clay"]
+earliest_kyr = 9
+origins = [{where = "China", kyr = 9}, {where = "Near East", kyr = 8}]
+spread_note = "See ceramics group."
+confidence = "low"
+source = "none known (unverified)"
+exists = true
+verified = false
+earliest_kyr_checked = 26
+source_checked = "Wikipedia Doln\u00ed V\u011bstonice archaeological site; Guinness 'oldest ceramic figurine': kilns with clay figurines ~26 ka (25-29 ka; 31-30 cal BP also cited); Wu et al. 2012 Science, Early pottery at 20,000 years ago in Xianrendong Cave, China (adsabs.harvard.edu/abs/2012Sci...336.1696W)."
+hunt_note = "Fired-clay kilns at Doln\u00ed V\u011bstonice ~26-30 ka precede catalogue's 9 kyr; pottery 20-19 ka cal BP (Xianrendong, sherds not kilns). 9 refers to pottery-kilns; reconsider definition."
+
+[[tech]]
+id = "lime_mortar"
+name = "Lime mortar and plaster"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["kilns", "mudbrick"]
+env = ["limestone", "fuel"]
+earliest_kyr = 12
+origins = [{where = "Levant", kyr = 12}, {where = "Egypt", kyr = 4.5}]
+spread_note = "Lime-burning kilns; ubiquitous after."
+confidence = "medium"
+source = "Kingery et al. 1988 (best knowledge) (unverified)"
+verified = false
+earliest_kyr_checked = 9.5
+source_checked = "'Ain Ghazal plasters: lime-based ~7500 BC; statues ~7200 BC (archaeology.yu.edu.jo; worldhistory.org/image/4872). 2003 petrographic study of Ain Ghazal floors found burnt lime minor vs unburnt crushed limestone/marl."
+hunt_note = "Lime plaster use ~9.5 kyr BP at Ain Ghazal read; catalogue 12 not confirmed (searched Nevali Cori, Kebara - nothing found). Burnt-lime status debated."
+
+[[tech]]
+id = "bitumen_mortar"
+name = "Bitumen and clay mortar"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick"]
+env = ["bitumen"]
+earliest_kyr = 6
+origins = [{where = "Mesopotamia", kyr = 6}]
+spread_note = "Local to bitumen seep regions."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "roof_tiles"
+name = "Fired roof tiles"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["fired_brick"]
+env = ["clay"]
+earliest_kyr = 4.0
+origins = [{where = "Greece (Corinth)", kyr = 2.7}, {where = "China", kyr = 3}]
+spread_note = "Greek tile roofs; Rome spread them widely."
+confidence = "medium"
+source = "Greek Archaic roof tiles, Hellenic archaeology (best knowledge) (unverified)"
+note = "Early tiles at Corinth c.700 BCE; Neolithic Chinese roof tiles contested"
+verified = true
+earliest_kyr_checked = 2.7
+source_checked = "Wikipedia Roof tiles; Hesperia 78(2) article on Corinthian tile manufacture (ascsa.edu.gr/publications/hesperia/article/78/2/195-229): earliest securely dated fired roof tiles from Old Temple at Corinth, 7th c. BC (c.700-650 BC); Lerna 'House of Tiles' early claim insecure."
+hunt_note = "Corinth c.2.7 kyr, not 4.0; the 4.0 (Lerna/Neolithic China) not confirmed."
+
+[[tech]]
+id = "corbel_vault"
+name = "Corbelled arch, vault and dome"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["stone_masonry"]
+env = ["stone"]
+earliest_kyr = 7
+origins = [{where = "Western Europe/Megalithic", kyr = 6}, {where = "Mesopotamia", kyr = 5.5}, {where = "Mycenae", kyr = 3.5}]
+spread_note = "Several independent."
+confidence = "medium"
+source = "Newgrange; Mycenaean tholos tombs (best knowledge) (unverified)"
+
+[[tech]]
+id = "true_arch"
+name = "True arch (voussoirs)"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["fired_brick", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia", kyr = 4.5}, {where = "Egypt", kyr = 4.3}, {where = "Etruria/Rome", kyr = 2.7}]
+spread_note = "Rome spread it everywhere."
+confidence = "medium"
+source = "Mesopotamian arches, Cunliffe general (best knowledge) (unverified)"
+verified = false
+source_checked = "Brick-history page tileheritage.org/THF-ENews4-06.html: Ur sun-baked-brick arch c.4000 BC but not surviving; Tel Dan mudbrick arches 18th c. BC oldest complete; Tell al-Rimah ~2000 BC."
+hunt_note = "Catalogue 4.5 not confirmed; best surviving true arches ~3.8 (Tel Dan), ~4 (al-Rimah) kyr BP; Ur 6 kyr claim uncertain."
+
+[[tech]]
+id = "vaults_domes"
+name = "True vaults and domes"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["true_arch"]
+env = ["stone"]
+earliest_kyr = 2.5
+origins = [{where = "Rome", kyr = 2.3}, {where = "Persia", kyr = 2}]
+spread_note = "Roman engineering diffused; Byzantine and Islamic refinements."
+confidence = "medium"
+source = "Lancaster 2005, Concrete Vaulted Construction in Imperial Rome (best knowledge) (unverified)"
+
+[[tech]]
+id = "hydraulic_concrete"
+name = "Roman hydraulic concrete (opus caementicium)"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["lime_mortar", "vaults_domes"]
+env = ["limestone", "volcanic ash"]
+earliest_kyr = 2.2
+origins = [{where = "Roman Italy", kyr = 2.2}]
+spread_note = "Lost in W Europe c.5th century CE; partly regained later."
+confidence = "high"
+source = "Oleson 2006; Jackson et al. 2014 (best knowledge) (unverified)"
+note = "Pozzolana mortar c.200 BCE; opus caementicium"
+verified = true
+earliest_kyr_checked = 2.1
+source_checked = "Gianfrotta 2011 / Brandon, Hohlfelder, Oleson (ancientportsantiques.com BaiaeIulius-Brandon2008): structural hydraulic concrete probably born around Baiae/Puteoli; Cosa dated late 2nd - mid 1st c. BC; 3rd c. BC claim unverified."
+hunt_note = "Date later than 200 BCE catalogued: late 2nd c. BC (c.2.1 kyr). 2.2 roughly OK; 3rd c. BC claim unconfirmed."
+
+[[tech]]
+id = "pointed_gothic"
+name = "Pointed arch and ribbed vault"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["vaults_domes"]
+env = ["stone"]
+earliest_kyr = 0.9
+origins = [{where = "Europe", kyr = 0.9}, {where = "Islamic world", kyr = 1.0}]
+spread_note = "Church builders; diffused across Europe."
+confidence = "medium"
+source = "Gothic architecture, Frankl 1962 (best knowledge) (unverified)"
+
+[[tech]]
+id = "megaliths"
+name = "Megalithic construction"
+group = "shelter"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["stone_masonry", "sledges"]
+env = ["stone"]
+earliest_kyr = 7
+origins = [{where = "Western Europe", kyr = 7}, {where = "Near East", kyr = 11.5}, {where = "Korea", kyr = 3}, {where = "India", kyr = 3}]
+spread_note = "Independent in many regions."
+confidence = "medium"
+source = "Carnac / Gobekli / Newgrange, Cunliffe 2001 (best knowledge) (unverified)"
+verified = true
+earliest_kyr_checked = 11.5
+origins_checked = [{where = "Anatolia (Göbekli Tepe)", kyr = 11.5}]
+source_checked = "UNESCO whc.unesco.org/document/168743 (G\u00f6bekli Tepe nomination): monumental phase (Layer III) 10th millennium BCE, PPNA/EPPNB, c.9600-8200 BC; 'among earliest evidence worldwide for megalithic buildings'."
+hunt_note = "G\u00f6bekli Tepe ~11.6-11.5 kyr BP precedes the catalogue's 7 (Atlantic megaliths ~7 kyr remain a separate origin). Earliest should be ~11.5."
+
+[[tech]]
+id = "lifting_cranes"
+name = "Cranes, levers, ramps and lifting gear"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["megaliths", "cordage"]
+env = ["timber"]
+earliest_kyr = 4.6
+origins = [{where = "Egypt", kyr = 4.6}, {where = "Greece", kyr = 2.6}]
+spread_note = "Greek treadwheel cranes; Rome scaled up."
+confidence = "medium"
+source = "Coulton 1977, Greek Architects at Work; Egyptian ramps (best knowledge) (unverified)"
+
+[[tech]]
+id = "ziggurats"
+name = "Stepped temple platforms (ziggurat, pyramid)"
+group = "shelter"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["fired_brick", "temples"]
+env = ["clay", "stone"]
+earliest_kyr = 5.5
+origins = [{where = "Mesopotamia", kyr = 5.5}, {where = "Egypt", kyr = 4.7}, {where = "Mesoamerica", kyr = 3.2}, {where = "Andes", kyr = 5}]
+spread_note = "Independent in Mesopotamia, Egypt, Americas."
+confidence = "high"
+source = "Standard Mesopotamian/Egyptian archaeology (best knowledge) (unverified)"
+
+[[tech]]
+id = "villages"
+name = "Year-round villages"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["huts", "storage"]
+earliest_kyr = 14.5
+origins = [{where = "Levant (Natufian)", kyr = 14.5}, {where = "China", kyr = 10}, {where = "Japan (Jomon)", kyr = 16}]
+spread_note = "Multiple."
+confidence = "high"
+source = "Bar-Yosef 1998 (best knowledge) (unverified)"
+exists = true
+verified = true
+earliest_kyr_checked = 14.3
+source_checked = "Ain Mallaha/Eynan (en.wikipedia.org/wiki/\u02bfAin_Mallaha; Valla et al.): round stone houses, occupied c.14,326-12,180 cal BP; sedentism degree debated by Valla et al."
+hunt_note = "Natufian Eynan village c.14.3 kyr cal BP consistent with 14.5; full sedentism debated."
+
+[[tech]]
+id = "towns"
+name = "Towns"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["mudbrick", "cultivation"]
+earliest_kyr = 9.5
+origins = [{where = "Anatolia", kyr = 9.5}, {where = "Levant", kyr = 11}]
+spread_note = "Diffusion plus independent invention."
+confidence = "medium"
+source = "Hodder 2006 (unverified)"
+exists = true
+
+[[tech]]
+id = "cities"
+name = "Cities"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["towns", "irrigation"]
+earliest_kyr = 6
+origins = [{where = "Mesopotamia", kyr = 6}, {where = "Indus", kyr = 4.6}, {where = "Egypt", kyr = 5}, {where = "China", kyr = 4}, {where = "Mesoamerica", kyr = 2.5}, {where = "Andes", kyr = 5}]
+spread_note = "Independent in 6+ cradles."
+confidence = "high"
+source = "Algaze 2008 (best knowledge) (unverified)"
+exists = true
+verified = true
+source_checked = "Ur 2017 summary and Gibson/Maktash Antiquity (resolve.cambridge.org antiquity 54C97BC63333E3416D5A096FD70883A6; stonepages 001644): Tell Brak and Hamoukar large concurrent with or earlier than Uruk; Hamoukar 'big city' by 4500 BC or 3500 BC (sources conflict)."
+hunt_note = "Uruk/Brak urbanism c.5.5-6.5 kyr BP; Hamoukar/Brak maybe 6.5; catalogue 6 plausible; dates not primary."
+
+[[tech]]
+id = "fortifications"
+name = "Walls and fortifications"
+group = "shelter"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["towns"]
+env = ["stone"]
+earliest_kyr = 10
+origins = [{where = "Levant (Jericho)", kyr = 10}, {where = "Mesopotamia", kyr = 5}, {where = "China", kyr = 5}]
+spread_note = "Diffusion plus independent invention."
+confidence = "low"
+source = "Jericho wall; function debated (unverified)"
+exists = true
+verified = false
+source_checked = "Tell es-Sultan (Jericho) tower c.8300 BCE per carbon dates 1981/83; Tell Qaramel towers 10,650-9,650 BCE but Wikipedia notes dates seen as too old, some samples rejected; Mazurowski 2009 Radiocarbon: occupation 10,890-8780 cal BC (cambridge.org S0033822200056083)."
+hunt_note = "Wall/tower function debated; Jericho tower ~10.3 kyr BP; Qaramel towers possibly ~12 kyr but dates disputed. Catalogue 10 is plausible but not confirmed."
+
+[[tech]]
+id = "moats_ramparts"
+name = "Ditches, ramparts and palisades"
+group = "shelter"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["fortifications"]
+env = ["earth", "timber"]
+earliest_kyr = 7.5
+origins = [{where = "Europe (Neolithic enclosures)", kyr = 7.5}, {where = "China", kyr = 8}]
+spread_note = "Hillforts later."
+confidence = "medium"
+source = "Neolithic causewayed enclosures, Whittle (best knowledge) (unverified)"
+
+[[tech]]
+id = "bastion_towers"
+name = "Towers, gates and masoned city walls"
+group = "shelter"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["fortifications", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 5
+origins = [{where = "Mesopotamia", kyr = 5}, {where = "Levant", kyr = 4}, {where = "China", kyr = 3.5}]
+spread_note = "Bronze Age diffusion."
+confidence = "medium"
+source = "Bronze Age city walls general (best knowledge) (unverified)"
+
+[[tech]]
+id = "citadel_castle"
+name = "Castles and keeps"
+group = "shelter"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["bastion_towers"]
+env = ["stone"]
+earliest_kyr = 1.1
+origins = [{where = "Europe", kyr = 1.1}, {where = "Japan", kyr = 0.5}]
+spread_note = "Feudal Europe."
+confidence = "medium"
+source = "Medieval castles, Brown 1976 (best knowledge) (unverified)"
+
+[[tech]]
+id = "gunpowder_fort"
+name = "Bastion fortresses (trace italienne)"
+group = "shelter"
+track = "shelter"
+domains = ["war", "build"]
+needs = ["citadel_castle"]
+env = ["stone"]
+earliest_kyr = 0.5
+origins = [{where = "Italy", kyr = 0.5}]
+spread_note = "Early modern."
+confidence = "medium"
+source = "Duffy 1979, Siege Warfare (best knowledge) (unverified)"
+late = true
+
+[[tech]]
+id = "planned_streets"
+name = "Planned street grids and districts"
+group = "shelter"
+track = "shelter"
+domains = ["build", "social"]
+needs = ["cities"]
+earliest_kyr = 4.5
+origins = [{where = "Indus (Mohenjo-daro)", kyr = 4.5}, {where = "Greece", kyr = 2.5}, {where = "China", kyr = 3}]
+spread_note = "Hippodamian grid; Roman colonies spread it."
+confidence = "medium"
+source = "Indus cities, Kenoyer 1998 (best knowledge) (unverified)"
+
+[[tech]]
+id = "pavements"
+name = "Paved streets and plazas"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["planned_streets", "stone_masonry"]
+env = ["stone"]
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia/Indus", kyr = 4.5}, {where = "Rome", kyr = 2.3}]
+spread_note = "Roman roads/streets."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "wells"
+name = "Wells (dug shafts)"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["mines"]
+env = ["groundwater"]
+earliest_kyr = 9.5
+origins = [{where = "Cyprus (Neolithic wells)", kyr = 9.5}, {where = "Levant", kyr = 8}, {where = "China", kyr = 7}]
+spread_note = "Independent; well-lining refinements."
+confidence = "medium"
+source = "Peltenburg et al. 2001, Cyprus wells (best knowledge) (unverified)"
+verified = true
+earliest_kyr_checked = 9.2
+origins_checked = [{where = "Cyprus", kyr = 9.2}, {where = "Levant (Atlit-Yam)", kyr = 9.0}]
+source_checked = "Galili & Nir 1993 study of the Atlit-Yam well, as summarised at agris.fao.org record 65de23f04c5aef494fda3803: well at Atlit-Yam, groundwater wells from beginning of 8th millennium BP or earlier; Atlit-Yam 9250-8000 BP (whitelevy.fas.harvard.edu). Kissonerga-Mylouthkia Cyprus: earliest occupation c.9.1-9.3 kyr BP, wells c.8740-6690 BP 14C, OSL to 9.6 ka (archaeologydataservice.ac.uk/archives/view/mylouthkia_ba_2009)."
+hunt_note = "Cyprus wells ~9.0-9.5 ka and Atlit-Yam ~9 ka both seen; 9.5 plausible upper end (OSL), 14C-based ~8.7-9.1. Mostly secondary summaries."
+
+[[tech]]
+id = "cisterns"
+name = "Cisterns and rainwater tanks"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["lime_mortar"]
+env = ["limestone"]
+earliest_kyr = 5
+origins = [{where = "Levant", kyr = 5}, {where = "Crete", kyr = 4}, {where = "Rome", kyr = 2.5}]
+spread_note = "Arid zone staple."
+confidence = "medium"
+source = "Hellenistic/Iron Age cisterns (best knowledge) (unverified)"
+
+[[tech]]
+id = "canals_ditches"
+name = "Water channels and gutters"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["irrigation"]
+earliest_kyr = 7
+origins = [{where = "Mesopotamia", kyr = 7}]
+spread_note = "See irrigation."
+confidence = "low"
+source = "none known (unverified)"
+verified = true
+earliest_kyr_checked = 8.0
+source_checked = "Choga Mami: Wikipedia/Guinness: first irrigation c.6000 or 5500 BCE; Cambridge chapter 'Alluvial Geoarchaeology' dates Choga Mami 7500 BP. (wikipedia.com/wiki/Choga_Mami; guinnessworldrecords.com/world-records/first-irrigation-canals)"
+hunt_note = "Choga Mami 7.5-8 kyr BP; catalogue 7 slightly young. Date range 5500-6000 BCE (7.5-8 kyr BP)."
+
+[[tech]]
+id = "qanat"
+name = "Qanats (underground water tunnels)"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["wells", "mines"]
+env = ["aquifer"]
+earliest_kyr = 3
+origins = [{where = "Persia", kyr = 3}, {where = "Oman", kyr = 2.7}]
+spread_note = "Spread across Eurasia/N Africa."
+confidence = "medium"
+source = "Wulff 1968 / Lightfoot 2000 (best knowledge) (unverified)"
+verified = true
+source_checked = "2026 French review citing Farnoud 2024 (academieoutremer.fr pdf 20260717): invention NW Iran 9th-7th c. BCE; Gonabad c.700-500 BCE (Wikipedia 'Traditional water sources of Persian antiquity'); worldhistory.org/qanat: alternative southern Arabia origin hypothesis."
+hunt_note = "3 kyr plausible (c.2.9-2.7 kyr); origin region contested (Iran vs Oman). No primary source read."
+
+[[tech]]
+id = "aqueducts"
+name = "Aqueducts and conduits"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["true_arch", "canals_ditches"]
+env = ["stone"]
+earliest_kyr = 2.7
+origins = [{where = "Assyria", kyr = 2.7}, {where = "Rome", kyr = 2.3}, {where = "Greece", kyr = 2.6}]
+spread_note = "Rome spread them widely."
+confidence = "high"
+source = "Hodge 2002, Roman Aqueducts (best knowledge) (unverified)"
+verified = true
+earliest_kyr_checked = 2.7
+source_checked = "Jerwan aqueduct, Sennacherib c.700 BCE (mcid.mcah.columbia.edu/mapping-mesopotamian-monuments/jerwan-aqueduct; en.wikipedia.org/wiki/Jerwan): 'probably the oldest known aqueduct'."
+hunt_note = "c.2.7 kyr confirmed."
+
+[[tech]]
+id = "drains"
+name = "Drains and sewers"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["pavements", "fired_brick"]
+env = ["clay"]
+earliest_kyr = 5
+origins = [{where = "Indus", kyr = 4.6}, {where = "Mesopotamia", kyr = 5}, {where = "Rome", kyr = 2.6}]
+spread_note = "Indus city drains earliest; Cloaca Maxima c.600 BCE."
+confidence = "medium"
+source = "Indus sanitation, Jansen / Wright (best knowledge) (unverified)"
+verified = true
+earliest_kyr_checked = 4.5
+source_checked = "Harappa.com Mohenjo-daro street drains (harappa.com/blog/mohenjo-daro-street-drains); Fridaytimes 2022 describes 4,500-year-old system. Wikipedia Sanitation of the IVC."
+hunt_note = "Mohenjo-daro drains c.4.5 kyr BP; catalogue 5 slightly early; earlier Mesopotamian drains not checked."
+
+[[tech]]
+id = "latrines"
+name = "Latrines and cesspits"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["drains"]
+earliest_kyr = 5
+origins = [{where = "Indus/Orkney", kyr = 5}]
+spread_note = "Skara Brae drains c.5 kyr."
+confidence = "medium"
+source = "Skara Brae, Childe 1931 (best knowledge) (unverified)"
+
+[[tech]]
+id = "public_baths"
+name = "Public baths"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["aqueducts", "hypocaust"]
+earliest_kyr = 2.3
+origins = [{where = "Indus (Great Bath)", kyr = 4.5}, {where = "Greece/Rome", kyr = 2.3}, {where = "Islamic", kyr = 1.3}]
+spread_note = "Roman thermae; hammam."
+confidence = "medium"
+source = "Great Bath of Mohenjo-daro (best knowledge) (unverified)"
+
+[[tech]]
+id = "hearth_house"
+name = "Hearths and smoke holes"
+group = "shelter"
+track = "fire"
+domains = ["build"]
+needs = ["huts", "fire_control"]
+earliest_kyr = 400
+origins = [{where = "Europe", kyr = 400}]
+spread_note = "Universal."
+confidence = "low"
+source = "Terra Amata hearth claims (best knowledge) (unverified)"
+
+[[tech]]
+id = "chimneys"
+name = "Chimneys and flues"
+group = "shelter"
+track = "fire"
+domains = ["build", "craft"]
+needs = ["hearth_house", "fired_brick"]
+env = ["clay"]
+earliest_kyr = 0.9
+origins = [{where = "Europe", kyr = 0.9}, {where = "China", kyr = 3}]
+spread_note = "Medieval Europe diffused."
+confidence = "medium"
+source = "Wright 1962, Hearth and Chimney (best knowledge) (unverified)"
+
+[[tech]]
+id = "hypocaust"
+name = "Hypocaust and kang underfloor heating"
+group = "shelter"
+track = "fire"
+domains = ["build"]
+needs = ["fired_brick", "lime_mortar"]
+env = ["clay", "fuel"]
+earliest_kyr = 2.1
+origins = [{where = "Rome", kyr = 2.1}, {where = "Korea/N China (ondol/kang)", kyr = 3}, {where = "Greece", kyr = 2.5}]
+spread_note = "Roman, Korean and Chinese independent forms."
+confidence = "medium"
+source = "Roman hypocausts, Yegul (best knowledge) (unverified)"
+
+[[tech]]
+id = "windows_glazing"
+name = "Windows, shutters and glazing"
+group = "shelter"
+track = "shelter"
+domains = ["build", "craft"]
+needs = ["glass", "timber_framing"]
+env = ["sand"]
+earliest_kyr = 2
+origins = [{where = "Rome (glass panes)", kyr = 2}, {where = "China (paper)", kyr = 2}]
+spread_note = "Rome, later Europe stained and clear glass."
+confidence = "medium"
+source = "Roman window glass, Allen (best knowledge) (unverified)"
+
+[[tech]]
+id = "doors_locks"
+name = "Doors, hinges and locks"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["post_frame", "iron"]
+earliest_kyr = 4
+origins = [{where = "Egypt", kyr = 4}, {where = "Near East", kyr = 4}]
+spread_note = "Wooden pin locks earliest."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "builders_tools"
+name = "Plumb line, level and measuring cord"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["cordage", "stone_masonry"]
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 5}, {where = "Mesopotamia", kyr = 5}]
+spread_note = "Standard."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "surveying"
+name = "Surveying and building plans"
+group = "shelter"
+track = "shelter"
+domains = ["build", "know"]
+needs = ["builders_tools", "counting"]
+earliest_kyr = 4.5
+origins = [{where = "Egypt", kyr = 4.5}, {where = "Greece", kyr = 2.4}, {where = "China", kyr = 2.2}]
+spread_note = "Mathematical surveying."
+confidence = "low"
+source = "Egyptian Merkhet, Lewis 2001 (best knowledge) (unverified)"
+
+[[tech]]
+id = "scaffolding_formwork"
+name = "Scaffolding and formwork"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["lifting_cranes", "hydraulic_concrete"]
+env = ["timber"]
+earliest_kyr = 2.5
+origins = [{where = "Rome", kyr = 2.5}, {where = "China", kyr = 3}]
+spread_note = "Paired with arches."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "terraced_building"
+name = "Terraced platforms and stonework (Andean)"
+group = "shelter"
+track = "shelter"
+domains = ["build"]
+needs = ["stone_masonry"]
+env = ["stone"]
+earliest_kyr = 1
+origins = [{where = "Andes (Inca)", kyr = 0.6}]
+spread_note = "Diffusion plus independent invention."
+confidence = "low"
+source = "Protzen 1993, Inca architecture (best knowledge) (unverified)"
+
+[[tech]]
+id = "storehouses"
+name = "Granaries and storehouses"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["villages"]
+earliest_kyr = 11.5
+origins = [{where = "Levant", kyr = 11.5}, {where = "China", kyr = 8}]
+spread_note = "Linked to storage."
+confidence = "medium"
+source = "Kuijt & Finlayson 2009, PNAS Dhra' (best knowledge) (unverified)"
+verified = true
+earliest_kyr_checked = 11.3
+source_checked = "Kuijt & Finlayson 2009. Evidence for food storage and predomestication granaries 11,000 years ago in the Jordan Valley. PNAS, doi:10.1073/pnas.0812764106 (reported at sciencedaily.com/releases/2009/06/090623150619.htm; Dhra' granaries c.11,300-11,175 cal BP)."
+hunt_note = "Confirms 11.3 kyr for purpose-built granaries (pre-domestication, wild barley)."
+
+[[tech]]
+id = "pastoral_corral"
+name = "Pens and animal housing"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["huts", "herding"]
+earliest_kyr = 10
+origins = [{where = "Near East", kyr = 10}]
+spread_note = "With herding."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "cellars_ice"
+name = "Ice houses and cold cellars"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["pit_houses"]
+env = ["ice"]
+earliest_kyr = 4
+origins = [{where = "Mesopotamia", kyr = 4}, {where = "Persia (yakhchal)", kyr = 2.4}, {where = "China", kyr = 3}]
+spread_note = "Persian yakhchal; later Europe."
+confidence = "low"
+source = "Ice storage, Mari 3.8 kyr (best knowledge) (unverified)"
+verified = false
+earliest_kyr_checked = 4.1
+source_checked = "Bigthink/Gevi/QDL summaries: first recorded icehouse Shulgi year 13 c.2081 BCE; Mari late 19th c. BCE; Persian yakhchal by 400 BCE. Tablet of Zimri-Lim 1780 BCE unverified."
+hunt_note = "Icehouse c.4.1 kyr (Shulgi) consistent with catalogue 4, though secondary sources."
+
+[[tech]]
+id = "monumental_art_arch"
+name = "Colonnades and trabeated temples"
+group = "shelter"
+track = "shelter"
+domains = ["build", "ritual"]
+needs = ["megaliths", "temples"]
+env = ["stone"]
+earliest_kyr = 4.7
+origins = [{where = "Egypt", kyr = 4.7}, {where = "Greece", kyr = 2.7}]
+spread_note = "Diffusion plus independent invention."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "dams_reservoirs"
+name = "Dams and reservoirs"
+group = "shelter"
+track = "shelter"
+domains = ["build", "food"]
+needs = ["canals_ditches"]
+env = ["earth"]
+earliest_kyr = 5
+origins = [{where = "Jawa (Jordan)", kyr = 5.1}, {where = "Egypt", kyr = 4.7}, {where = "Sri Lanka", kyr = 2.4}]
+spread_note = "Independent in many."
+confidence = "medium"
+source = "Jawa dam (best knowledge) (unverified)"
+verified = true
+source_checked = "Jawa Dam Jordan c.3000 BC (en.wikipedia.com/wiki/Dam); Sadd el-Kafara c.2700-2600 BC (hydriaproject.info). Sources weak."
+hunt_note = "Jawa c.5 kyr, Sadd el-Kafara 4.7 kyr; catalogue 5 consistent with Jawa; weak sources."
+
+[[tech]]
+id = "bridges"
+name = "Bridges"
+group = "shelter"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["post_frame"]
+env = ["timber"]
+earliest_kyr = 8
+origins = [{where = "Europe", kyr = 8}]
+spread_note = "Stone arch bridges later."
+confidence = "low"
+source = "Timber causeways, Sweet Track 5.8 kyr (best knowledge) (unverified)"
+verified = false
+earliest_kyr_checked = 6.1
+source_checked = "Sweet Track: dendro 3807/3806 BC (British Museum, en.wikipedia.org/wiki/Sweet_Track); Post Track 3838 BC; Plumstead trackway 4100 BC. These are trackways not bridges."
+hunt_note = "Catalogue 8 kyr bridge unsupported: oldest dated timber trackway read is ~6.1 kyr (Plumstead 4100 BC), Sweet Track 5.8. No bridge evidence read."
+
+[[tech]]
+id = "stone_arch_bridges"
+name = "Stone arch bridges"
+group = "shelter"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["true_arch", "bridges"]
+env = ["stone"]
+earliest_kyr = 2.7
+origins = [{where = "Rome", kyr = 2.4}, {where = "China", kyr = 1.4}]
+spread_note = "Diffusion plus independent invention."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "harbour_works"
+name = "Harbours, quays and moles"
+group = "shelter"
+track = "shelter"
+domains = ["build", "trade"]
+needs = ["stone_masonry"]
+env = ["coast"]
+earliest_kyr = 4.5
+origins = [{where = "Egypt/Levant", kyr = 4.5}, {where = "Rome", kyr = 2.1}]
+spread_note = "Roman marine concrete."
+confidence = "medium"
+source = "Wadi al-Jarf harbour 4.5 kyr (best knowledge) (unverified)"
+
+[[tech]]
+id = "lighthouses"
+name = "Lighthouses and beacon towers"
+group = "shelter"
+track = "shelter"
+domains = ["build", "trade"]
+needs = ["harbour_works"]
+env = ["coast"]
+earliest_kyr = 2.3
+origins = [{where = "Egypt", kyr = 2.3}]
+spread_note = "Diffusion plus independent invention."
+confidence = "medium"
+source = "Pharos of Alexandria (best knowledge) (unverified)"
+
+[[tech]]
+id = "sluices_locks"
+name = "Pound locks and sluices"
+group = "shelter"
+track = "shelter"
+domains = ["build", "move"]
+needs = ["dams_reservoirs"]
+earliest_kyr = 1
+origins = [{where = "China", kyr = 1.0}, {where = "Europe", kyr = 0.5}]
+spread_note = "Diffusion plus independent invention."
+confidence = "medium"
+source = "Needham (best knowledge) (unverified)"

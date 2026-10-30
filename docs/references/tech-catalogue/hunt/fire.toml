@@ -1,0 +1,1285 @@
+[[tech]]
+id = "fire_control"
+verified = true
+earliest_kyr_checked = 1000
+source_checked = "Berna et al. 2012. Microstratigraphic evidence of in situ fire in the Acheulean strata of Wonderwerk Cave. PNAS 109(20):E1215-E1220. https://pubmed.ncbi.nlm.nih.gov/22474385/ (abstract: burned bone and ashed plant remains, c. 1.0 Ma). Goren-Inbar et al. 2004. Evidence of hominin control of fire at Gesher Benot Ya'aqov, Israel. Science 304:725. https://cris.huji.ac.il/en/publications/evidence-of-hominin-control-of-fire-at-gesher-benot-yaaqov-israel/ (c. 790 ka)"
+hunt_note = "Confirmed: Wonderwerk c. 1.0 Ma (in situ burning, not proof of making fire); GBY c. 790 ka. Habitual use much later."
+name = "Controlled fire"
+group = "fire"
+track = "fire"
+domains = ["craft", "food"]
+needs = []
+env = []
+earliest_kyr = 1000
+origins = [ {where = "Africa (Gesher Benot Ya'aqov, Wonderwerk)", kyr = 1000}, {where = "Levant", kyr = 790} ]
+spread_note = "Single early origin, carried by hominins; habitual use later."
+confidence = "medium"
+source = "Goren-Inbar et al 2004; Berna et al 2012 (unverified)"
+exists = true
+note = "Habitual hearths c. 400-300 kyr in Europe/Levant; contested for the earliest."
+
+[[tech]]
+id = "fire_making"
+verified = true
+earliest_kyr_checked = 50
+source_checked = "Sorensen, Claud, Soressi 2018. Neandertal fire-making technology inferred from microwear analysis. Sci Rep 8:10065. doi:10.1038/s41598-018-28342-9, https://pmc.ncbi.nlm.nih.gov/articles/PMC6053370 (late Neandertal MTA bifaces c. 50 ka as strike-a-lights)"
+hunt_note = "Date supported but it is an inference from microwear on French bifaces; authors say not definitive and others sceptical. Friction drilling undated; keep low."
+name = "Fire making (striking, drilling)"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control"]
+env = ["timber"]
+earliest_kyr = 50
+origins = [ {where = "Europe (Neanderthal pyrite/flint, c.50)", kyr = 50}, {where = "Africa/Eurasia (friction drilling, undated)", kyr = 30} ]
+spread_note = "Probably reinvented; fire-drill and strike-a-light widespread by Holocene."
+confidence = "low"
+source = "Sorensen et al 2018, Neanderthal fire-making (unverified)"
+exists = true
+note = "Earliest firemaking contested; hearth-keeping may have preceded it for hundreds of kyr."
+
+[[tech]]
+id = "fire_hearth"
+verified = true
+earliest_kyr_checked = 300
+source_checked = "Shahack-Gross et al. 2014. Evidence for the repeated use of a central hearth at Middle Pleistocene (300 ky ago) Qesem Cave, Israel. J Archaeol Sci 44:12-21. doi:10.1016/j.jas.2013.11.015, https://cris.tau.ac.il/en/publications/evidence-for-the-repeated-use-of-a-central-hearth-at-middle-pleis/ (hearth c. 300 ka; fire used across the 420-200 ka sequence)"
+hunt_note = "Structured, repeatedly used central hearth is c. 300 ka; 400 ka only fits 'fire used at Qesem' (420-200 ka sequence). Lowered to 300."
+name = "Constructed hearth"
+group = "fire"
+track = "fire"
+domains = ["food", "build"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 400
+origins = [ {where = "Levant (Qesem Cave)", kyr = 400}, {where = "Europe", kyr = 300} ]
+spread_note = "Diffused with settled campsites."
+confidence = "medium"
+source = "Shahack-Gross et al 2014, Qesem hearth (unverified)"
+
+[[tech]]
+id = "fire_hardening"
+verified = false
+source_checked = "Searched Thieme 1997 / Schoeningen coverage (e.g. https://www.sciencenews.org/?p=9155): spears c. 400 ka (not 300), wood sharpening; no confirmation of deliberate fire-hardening"
+hunt_note = "Fire-hardening not confirmed in anything read; Schoeningen spears are ~400 ka and the catalogue's 300 is unsupported. Ennos & Chan experiments say charring may weaken wood. Candidate for removal or 'low'."
+name = "Fire-hardening wood"
+group = "fire"
+track = "fire"
+domains = ["craft", "war"]
+needs = ["fire_control"]
+env = ["timber"]
+earliest_kyr = 300
+origins = [ {where = "Europe (Schoeningen spears c.300)", kyr = 300} ]
+spread_note = "Likely independent and widespread."
+confidence = "low"
+source = "Thieme 1997; Schoeningen spears (unverified)"
+note = "Hardening of spear tips is inferred; may be older."
+
+[[tech]]
+id = "heat_treating_stone"
+verified = true
+earliest_kyr_checked = 164
+source_checked = "Brown et al. 2009. Fire as an engineering tool of early modern humans. Science 325:859-862 (citation seen at https://historyofinformation.com/detail.php?id=2306; date via https://www.sciencenews.org/?p=4973: Pinnacle Point silcrete c. 164 ka)"
+hunt_note = "164 ka confirmed through secondary coverage only; Shea disputes the gain. Australia/Solutrean 25 ka origins not checked."
+name = "Heat-treating stone"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control", "knapping"]
+env = ["stone"]
+earliest_kyr = 164
+origins = [ {where = "S Africa (Pinnacle Point silcrete)", kyr = 164}, {where = "Australia", kyr = 25}, {where = "Europe (Solutrean)", kyr = 25} ]
+spread_note = "Independent reinventions; skill-rich."
+confidence = "medium"
+source = "Brown et al 2009, Pinnacle Point heat treatment (unverified)"
+
+[[tech]]
+id = "birch_tar"
+verified = true
+earliest_kyr_checked = 200
+source_checked = "Table at https://pmc.ncbi.nlm.nih.gov/articles/PMC6825292/table/t01 (Campitello flakes with birch tar >191 ka, micromammal biochronology; Koenigsaue >43 and 48 ka AMS). Leiden: https://www.universiteitleiden.nl/en/news/2019/10/neanderthal-glue-from-the-north-sea (tar c. 200 ka, oldest known)"
+hunt_note = "Campitello c. 200 ka (>191) holds; Koenigsaue date is debated (43-48 ka AMS, press says up to 80 ka). Mazza 2006 itself not opened."
+name = "Birch-bark tar and pitch"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control", "hafting"]
+env = ["timber"]
+earliest_kyr = 200
+origins = [ {where = "Europe (Campitello c.200; Konigsaue c.50)", kyr = 200} ]
+spread_note = "Neanderthal origin; later pitch works elsewhere."
+confidence = "medium"
+source = "Mazza et al 2006 (unverified)"
+note = "Dry distillation of bark; the first synthetic adhesive."
+
+[[tech]]
+id = "adhesives"
+verified = false
+earliest_kyr_checked = 61
+source_checked = "Searched Wadley Sibudu coverage (https://www.livescience.com/7893-evidence-stone-age-multitasking.html): compound adhesive (gum + ochre) c. 61-70 ka; birch tar (see birch_tar) is older at c. 200 ka"
+hunt_note = "Duplicate with a tar row; the 'earliest adhesive' is ~200 ka birch tar not 70 ka Sibudu. Sibudu compound glue ~61 ka per secondary source; paper not opened."
+name = "Compound adhesives (resin and ochre)"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control", "hafting"]
+env = ["timber"]
+earliest_kyr = 70
+origins = [ {where = "S Africa (Sibudu c.70)", kyr = 70} ]
+spread_note = "Spread with hafting."
+confidence = "medium"
+source = "Wadley et al 2009, Sibudu glue (unverified)"
+
+[[tech]]
+id = "roasting"
+name = "Roasting on embers or spits"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 800
+origins = [ {where = "Levant", kyr = 780}, {where = "Africa", kyr = 1000} ]
+spread_note = "Universal wherever fire is held."
+confidence = "medium"
+source = "Alperson-Afil and Goren-Inbar 2010 (unverified)"
+note = "Cooked food debated from c.1 Myr; certain by 300 kyr."
+
+[[tech]]
+id = "cooking"
+name = "Cooking food"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 300
+origins = [ {where = "Africa/Eurasia", kyr = 300} ]
+spread_note = "Universal."
+confidence = "medium"
+source = "Wrangham 2009, Catching Fire (unverified)"
+exists = true
+note = "Wrangham argues c.1.8 Myr; archaeology weaker."
+
+[[tech]]
+id = "earth_oven"
+verified = false
+earliest_kyr_checked = 23
+source_checked = "Harvard Gazette 2004 https://news.harvard.edu/gazette/story/2004/09/researchers-find-earliest-known-oven/ (Ohalo II, Israel, c. 23 ka 'oven'); https://lithub.com/why-and-how-exactly-did-early-humans-start-cooking/ says no direct evidence of 30 ka earth ovens"
+hunt_note = "Dolni Vestonice 30 ka earth oven not supported. Ohalo II c. 23 ka is the supported earliest claim (press report; paper not read). New World earth ovens c. 8.5-8 ka per secondary sources."
+name = "Earth oven (pit baking with hot stones)"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["roasting"]
+env = []
+earliest_kyr = 30
+origins = [ {where = "Europe (Dolni Vestonice c.30)", kyr = 30}, {where = "Oceania/N America (umu, camas pit)", kyr = 12} ]
+spread_note = "Reinvented repeatedly among foragers."
+confidence = "medium"
+source = "Wandsnider 1997, earth ovens (unverified)"
+exists = true
+note = "Fire-cracked rock features from c.30 kyr; Paleolithic ovens for tubers and mammoth."
+
+[[tech]]
+id = "stone_boiling"
+verified = false
+source_checked = "Popular overviews only (https://www.thetakeout.com/2277594/ancient-cooking-methods-lost-history/): fire-cracked cobble hearths at Abri Pataud c. 32 ka suggest stone boiling; a research paper there says earth oven vs stone boiling cannot be told apart without hearth form"
+hunt_note = "No firm primary source; 30 ka is a hearth-interpretation claim, not proof of stone boiling."
+name = "Boiling with hot stones"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["roasting", "containers"]
+env = ["stone"]
+earliest_kyr = 30
+origins = [ {where = "E Asia/Europe (hide or skin pits)", kyr = 30}, {where = "N America", kyr = 10} ]
+spread_note = "Independent in many places; precedes pots."
+confidence = "low"
+source = "Speth 2015, stone boiling (unverified)"
+note = "Skin, bark or paunch container heated by dropped stones."
+
+[[tech]]
+id = "paunch_boiling"
+name = "Boiling in animal-stomach or bark container"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["stone_boiling"]
+env = ["herd"]
+earliest_kyr = 15
+origins = [ {where = "Eurasia/N America", kyr = 15} ]
+spread_note = "Ethnographic; archaeological traces faint."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "pottery"
+verified = true
+earliest_kyr_checked = 20
+source_checked = "Wu et al. 2012. Early pottery at 20,000 years ago in Xianrendong Cave, China. Science 336:1696-1700. https://ui.adsabs.harvard.edu/abs/2012Sci...336.1696W/abstract (abstract: 20,000-19,000 cal BP, used for cooking)"
+hunt_note = "Confirmed. Other origins not checked. Vandiver 1989 Dolni Vestonice fired clay is figurines, not vessels (26-29 ka)."
+name = "Pottery"
+group = "fire"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["fire_control", "containers"]
+env = ["clay"]
+earliest_kyr = 20
+origins = [ {where = "China (Xianrendong c.20)", kyr = 20}, {where = "Japan (Jomon c.16)", kyr = 16}, {where = "Russian Far East", kyr = 15}, {where = "Sahara/W Africa", kyr = 11}, {where = "Near East", kyr = 9}, {where = "Amazonia/S America", kyr = 10}, {where = "Mesoamerica", kyr = 5} ]
+spread_note = "Several independent origins; slow diffusion."
+confidence = "high"
+source = "Wu et al 2012, Science (unverified)"
+exists = true
+
+[[tech]]
+id = "pot_boiling"
+name = "Boiling in fired pots"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pottery"]
+env = ["clay"]
+earliest_kyr = 20
+origins = [ {where = "China", kyr = 20}, {where = "Japan (Jomon)", kyr = 16}, {where = "Sahara", kyr = 10} ]
+spread_note = "Came with pottery; Jomon pots show fish and shellfish cooking."
+confidence = "high"
+source = "Craig et al 2013 (unverified)"
+exists = true
+
+[[tech]]
+id = "boiling_pots"
+name = "Cooking pots (stews, porridge)"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pot_boiling"]
+env = []
+earliest_kyr = 16
+origins = [ {where = "Japan", kyr = 16} ]
+spread_note = "Spread with pottery."
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing id; alias of pot_boiling in tree."
+
+[[tech]]
+id = "dung_fuel"
+name = "Dung as fuel"
+group = "fire"
+track = "fire"
+domains = ["food", "craft"]
+needs = ["fire_control", "herding"]
+env = ["grass"]
+earliest_kyr = 8
+origins = [ {where = "Near East (steppe, Neolithic)", kyr = 8}, {where = "Central Asia", kyr = 5} ]
+spread_note = "Independent wherever wood is scarce and herds exist."
+confidence = "low"
+source = "Miller 1984; Shahack-Gross 2011 (unverified)"
+
+[[tech]]
+id = "charcoal_burning"
+name = "Charcoal burning"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control"]
+env = ["timber"]
+earliest_kyr = 40
+origins = [ {where = "Europe/Africa (charcoal cave art, c.30-40)", kyr = 40}, {where = "Near East (smelting, c.7)", kyr = 7} ]
+spread_note = "Pit then clamp kiln; spread with metal."
+confidence = "medium"
+source = "none known"
+note = "Charcoal drawing early; production for metallurgy later."
+
+[[tech]]
+id = "peat_fuel"
+name = "Peat as fuel"
+group = "fire"
+track = "fire"
+domains = ["food", "craft"]
+needs = ["fire_control"]
+env = ["wetland"]
+earliest_kyr = 3
+origins = [ {where = "N Europe/Ireland (Iron Age)", kyr = 3} ]
+spread_note = "Local."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "coal_fuel"
+verified = true
+earliest_kyr_checked = 3.6
+source_checked = "Qiu et al. 2023. Earliest systematic coal exploitation for fuel extended to 3600 BP (Jirentaigoukou, Xinjiang). Sci Adv. doi:10.1126/sciadv.adh0549, https://www.citedrive.com/en/discovery/earliest-systematic-coal-exploitation-for-fuel-extended-to-3600-bp/"
+hunt_note = "Systematic fuel use 3.6 ka; sporadic Paleolithic burning in France reported. Fushun 3.5 and Roman Britain 1.9 origins not checked."
+name = "Coal as fuel"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control"]
+env = ["coal"]
+earliest_kyr = 4
+origins = [ {where = "China (Fushun c.3.5)", kyr = 3.5}, {where = "Britain (Roman)", kyr = 1.9} ]
+spread_note = "Local, scaled with deforestation."
+confidence = "low"
+source = "Dodson 2013 (unverified)"
+
+[[tech]]
+id = "oil_lamps"
+verified = false
+source_checked = "https://archeologie.culture.gouv.fr/lascaux/en/lighting and https://donsmaps.com/lascauxlamp.html (Lascaux lamps c. 17 ka; de Beaune 1993 per secondary: earliest uncontested lamp Gravettian, Laugerie-Haute)"
+hunt_note = "40 ka unsupported; earliest uncontested lamp is Gravettian (c. 25-30 ka, date not read). Lascaux c. 17 ka."
+name = "Oil and fat lamps"
+group = "fire"
+track = "fire"
+domains = ["craft", "know"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 40
+origins = [ {where = "Europe (stone lamps, Lascaux c.17)", kyr = 17}, {where = "Near East (clay)", kyr = 5}, {where = "Mediterranean", kyr = 4} ]
+spread_note = "Spread widely; reinvented."
+confidence = "medium"
+source = "Bahn and Vertut 1988 (unverified)"
+note = "Stone lamps from c.40 kyr (Europe, tentative)."
+
+[[tech]]
+id = "candles"
+name = "Tallow and beeswax candles"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["oil_lamps"]
+env = ["herd"]
+earliest_kyr = 3
+origins = [ {where = "Rome/China", kyr = 2.5} ]
+spread_note = "Diffused."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "landscape_burning"
+name = "Landscape burning (fire-stick farming)"
+group = "fire"
+track = "fire"
+domains = ["food", "build"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 40
+origins = [ {where = "Australia (c.40-50)", kyr = 45}, {where = "N America", kyr = 10}, {where = "Africa", kyr = 100} ]
+spread_note = "Independent, ancient, grew with hunting economies."
+confidence = "medium"
+source = "Bowman 1998; Bird et al 2008 (unverified)"
+note = "Earliest Australia debated; Africa may precede."
+
+[[tech]]
+id = "slash_and_burn"
+name = "Slash and burn clearing"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["landscape_burning", "cultivation"]
+env = ["timber"]
+earliest_kyr = 9
+origins = [ {where = "Near East/Europe", kyr = 8}, {where = "New Guinea", kyr = 7}, {where = "Amazonia", kyr = 6} ]
+spread_note = "Independent with farming."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "terra_preta"
+verified = false
+source_checked = "https://thedebrief.org/2000-year-old-amazonian-dark-earth-causes-mysterious-plant-growth-at-accelerated-levels-baffling-researchers/ (secondary: 500-2500 BP; 2022 Nat Commun reply by Silva suggests older, natural, inputs at some sites)"
+hunt_note = "Dates roughly consistent with 2.5 but origin (deliberate or by-product) is disputed."
+name = "Biochar-enriched soil"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["slash_and_burn"]
+env = []
+earliest_kyr = 2.5
+origins = [ {where = "Amazonia", kyr = 2.5} ]
+spread_note = "Local."
+confidence = "low"
+source = "Glaser et al 2001 (unverified)"
+note = "Charcoal and waste for soil fertility."
+
+[[tech]]
+id = "lime_burning"
+verified = true
+earliest_kyr_checked = 12
+source_checked = "Friesem et al. 2019 per search summary (Natufian partially carbonated lime plaster on burials at Nahal Ein Gev II c. 12 ka; large-scale PPNB plaster from c. 10 ka); Goren & Goring-Morris 2008 experimental lime-plaster kilns, https://cris.huji.ac.il/en/publications/early-pyrotechnology-in-the-near-east-experimental-lime-plaster-p/"
+hunt_note = "12 ka (Natufian, small scale) and 10 ka (PPNB, industrial) both supported; pit kilns not identified archaeologically. Friesem paper itself not opened."
+name = "Lime burning and plaster"
+group = "fire"
+track = "fire"
+domains = ["build", "craft"]
+needs = ["kilns"]
+env = ["stone"]
+earliest_kyr = 12
+origins = [ {where = "Levant/Anatolia (Natufian, PPNB c.10-11)", kyr = 11} ]
+spread_note = "Spread with building; Roman concrete later."
+confidence = "medium"
+source = "Kingery et al 1988 (unverified)"
+note = "Plaster floors at Ain Mallaha c.12 kyr."
+
+[[tech]]
+id = "lime_mortar"
+name = "Lime mortar"
+group = "fire"
+track = "fire"
+domains = ["build"]
+needs = ["lime_burning"]
+env = ["stone"]
+earliest_kyr = 6
+origins = [ {where = "Near East", kyr = 6}, {where = "Greece", kyr = 3.5}, {where = "Mesopotamia", kyr = 5} ]
+spread_note = "Diffused with masonry."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "pozzolanic_cement"
+name = "Hydraulic cement (Roman concrete)"
+group = "fire"
+track = "fire"
+domains = ["build"]
+needs = ["lime_mortar"]
+env = ["volcanic"]
+earliest_kyr = 2.2
+origins = [ {where = "Rome", kyr = 2.2} ]
+spread_note = "Declined after Rome; revived later."
+confidence = "medium"
+source = "Oleson 2008 (unverified)"
+
+[[tech]]
+id = "bread"
+verified = true
+earliest_kyr_checked = 14.4
+source_checked = "Arranz-Otaegui et al. 2018. Archaeobotanical evidence reveals the origins of bread 14,400 years ago in northeastern Jordan. PNAS. doi:10.1073/pnas.1801071115, https://discovery.ucl.ac.uk/10052964/ (flatbread-like charred remains, Shubayqa 1; 14.6-11.6 ka cal BP range; press 14.4)"
+hunt_note = "Confirmed, wild cereals plus club-rush tubers; baked in ashes/hearth, no oven. Row 'bread_oven' is a different, later step."
+name = "Flat bread on hot stones"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["grinding", "fire_control"]
+env = ["grass"]
+earliest_kyr = 14.5
+origins = [ {where = "Levant (Shubayqa 1, Natufian)", kyr = 14.5} ]
+spread_note = "Cooked by grain peoples."
+confidence = "medium"
+source = "Arranz-Otaegui et al 2018 (unverified)"
+exists = true
+
+[[tech]]
+id = "griddle_bread"
+name = "Griddle and tava bread"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["bread", "pottery"]
+env = ["grass"]
+earliest_kyr = 6
+origins = [ {where = "Near East", kyr = 6}, {where = "Mesoamerica (comal, 3)", kyr = 3}, {where = "India", kyr = 4} ]
+spread_note = "Independent in various cereal zones."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "bread_oven"
+name = "Bread oven (tannur, clay dome)"
+group = "fire"
+track = "fire"
+domains = ["food", "build"]
+needs = ["bread", "kilns"]
+env = ["clay", "grass"]
+earliest_kyr = 8
+origins = [ {where = "Near East (tannur)", kyr = 8}, {where = "Egypt", kyr = 5} ]
+spread_note = "Diffused with settled life."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "leavened_bread"
+name = "Leavened bread (sourdough)"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["bread_oven", "fermentation"]
+env = ["grass"]
+earliest_kyr = 5
+origins = [ {where = "Egypt", kyr = 5} ]
+spread_note = "Spread with Egyptian and Greek bakers."
+confidence = "medium"
+source = "Samuel 1996 (unverified)"
+
+[[tech]]
+id = "deep_frying"
+name = "Frying in oil and fat"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pottery", "oil_press"]
+env = []
+earliest_kyr = 3
+origins = [ {where = "Near East/Mediterranean", kyr = 3}, {where = "China", kyr = 2.5} ]
+spread_note = "Needs oil; regional."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "oil_press"
+name = "Oil pressing"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["orchards"]
+env = ["olive"]
+earliest_kyr = 6
+origins = [ {where = "Levant/Mediterranean (olive)", kyr = 6} ]
+spread_note = "Spread with olive and sesame cultures."
+confidence = "medium"
+source = "Galili et al 1997 (unverified)"
+
+[[tech]]
+id = "wok_stirfry"
+name = "Wok and stir-fry"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["kilns", "iron"]
+env = []
+earliest_kyr = 2
+origins = [ {where = "China (Han)", kyr = 2} ]
+spread_note = "Needs cast iron; E Asian."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "steaming"
+name = "Steaming (pot and basket)"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pottery"]
+env = []
+earliest_kyr = 7
+origins = [ {where = "China (Neolithic zeng)", kyr = 7} ]
+spread_note = "E Asia and SE Asia."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "pit_roasting_whole"
+name = "Whole-animal pit roast"
+group = "fire"
+track = "fire"
+domains = ["food", "ritual"]
+needs = ["earth_oven"]
+env = ["herd"]
+earliest_kyr = 10
+origins = [ {where = "Near East", kyr = 10} ]
+spread_note = "Feast technique, widespread."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "smoking_drying"
+name = "Smoking and drying"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 20
+origins = [ {where = "Eurasia (c.20)", kyr = 20} ]
+spread_note = "Widespread preservation."
+confidence = "low"
+source = "none known"
+exists = true
+
+[[tech]]
+id = "salt_boiling"
+verified = true
+earliest_kyr_checked = 8.0
+source_checked = "Weller & Dumitroaia 2005. The earliest salt production in the world: an early Neolithic exploitation in Poiana Slatinei-Lunca, Romania. Antiquity project gallery 79(306). https://www.antiquity.ac.uk/projgall/weller306/ (6050-5500 BC)"
+hunt_note = "6050-5500 BC = c. 8.0-7.5 ka; text also quotes odd 1750-1630 BC dates for two hearths, so check the paper. China 5 ka not checked."
+name = "Salt boiling (briquetage)"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["pottery", "salting"]
+env = ["salt"]
+earliest_kyr = 7.5
+origins = [ {where = "Romania (Poiana Slatinei c.7.5)", kyr = 7.5}, {where = "China (Yuncheng, Sichuan)", kyr = 5} ]
+spread_note = "Independent in salt springs."
+confidence = "medium"
+source = "Weller 2002 (unverified)"
+
+[[tech]]
+id = "solar_salt"
+name = "Solar salt pans"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["salting"]
+env = ["salt", "coast"]
+earliest_kyr = 5
+origins = [ {where = "Mediterranean/Egypt", kyr = 4.5}, {where = "China", kyr = 5} ]
+spread_note = "Dryer coasts."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "kilns"
+name = "Kilns (closed updraught firing)"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["pottery"]
+env = ["clay"]
+earliest_kyr = 8
+origins = [ {where = "Near East (Halaf)", kyr = 7}, {where = "China", kyr = 6.5} ]
+spread_note = "Spread with pottery; metal smelting built on kilns."
+confidence = "medium"
+source = "Rice 1987 (unverified)"
+exists = true
+
+[[tech]]
+id = "pit_firing"
+name = "Open and pit firing of pots"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["pottery"]
+env = ["clay"]
+earliest_kyr = 20
+origins = [ {where = "China", kyr = 20} ]
+spread_note = "Earlier than kilns."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "potters_wheel"
+verified = false
+earliest_kyr_checked = 5.5
+source_checked = "Secondary summaries only (https://www.Wikipedia.com/wiki/Pottery_wheel): tournettes c. 3500 BC (5.5 ka); Ur wheel c. 3129 BC; Roux & de Miroschedji 2009 Levant 41(2) is the review to read"
+hunt_note = "6.5 ka not supported; slow wheel/tournette c. 5.5 ka, true wheel-thrown c. 5.1 ka. Tepe Pardis 7 ka claim unverified."
+name = "Potter's wheel"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["kilns"]
+env = ["clay"]
+earliest_kyr = 6.5
+origins = [ {where = "Mesopotamia (slow wheel c.6.5)", kyr = 6.5}, {where = "Indus", kyr = 5}, {where = "Egypt", kyr = 4.5} ]
+spread_note = "Diffused; fast wheel later."
+confidence = "medium"
+source = "Roux and de Miroschedji 2009 (unverified)"
+
+[[tech]]
+id = "glazes"
+name = "Ceramic glazes"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["kilns"]
+env = ["clay"]
+earliest_kyr = 4
+origins = [ {where = "Mesopotamia (lead)", kyr = 3.5}, {where = "China (Shang)", kyr = 3.5}, {where = "Egypt", kyr = 5} ]
+spread_note = "Independent."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "faience"
+name = "Faience"
+group = "fire"
+track = "fire"
+domains = ["craft", "ritual"]
+needs = ["kilns", "glazes"]
+env = ["clay", "sand"]
+earliest_kyr = 6
+origins = [ {where = "Near East/Egypt", kyr = 6} ]
+spread_note = "Spread across Bronze Age."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "glass"
+name = "Glass"
+group = "fire"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["kilns"]
+env = ["sand"]
+earliest_kyr = 3.5
+origins = [ {where = "Mesopotamia/Egypt", kyr = 3.5} ]
+spread_note = "Diffused with trade."
+confidence = "medium"
+source = "none known"
+exists = true
+
+[[tech]]
+id = "glassblowing"
+verified = true
+earliest_kyr_checked = 2.0
+source_checked = "https://renvenetian.cmog.org/chapter/earliest-inflated-glass (Corning Museum: earliest inflated glass c. 50-40 BC, Avigad's Jewish Quarter, Jerusalem workshop refuse)"
+hunt_note = "Confirmed c. 2.0 ka."
+name = "Glassblowing"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["glass"]
+env = ["sand"]
+earliest_kyr = 2.1
+origins = [ {where = "Syria/Judea (c.50 BCE)", kyr = 2.1} ]
+spread_note = "Spread rapidly through Rome."
+confidence = "high"
+source = "Stern 1999 (unverified)"
+
+[[tech]]
+id = "porcelain"
+verified = false
+earliest_kyr_checked = 1.8
+source_checked = "https://newworldencyclopedia.org/entry/Chinese_ceramics (common claim Eastern Han, firing 1260-1300 C; others Three Kingdoms to Tang); museum catalogue https://collections.artsmia.org/art/13682/bottle-china (Sui/early Tang Xing and Gongxian white wares arguably earliest porcelain)"
+hunt_note = "Definition-dependent: Eastern Han (c. 1.8 ka) vs Sui/Tang (c. 1.4 ka). Proto-porcelain from Shang c. 3 ka. Secondary sources only."
+name = "Porcelain and high-fire stoneware"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["glazes"]
+env = ["clay"]
+earliest_kyr = 1.4
+origins = [ {where = "China (Tang)", kyr = 1.4}, {where = "Korea", kyr = 0.9} ]
+spread_note = "Secret; Europe copied late."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "cast_iron_kiln"
+name = "Blast furnace and cast iron"
+group = "fire"
+track = "fire"
+domains = ["craft", "war"]
+needs = ["iron", "kilns"]
+env = ["ore"]
+earliest_kyr = 2.5
+origins = [ {where = "China (Zhou)", kyr = 2.5}, {where = "Europe (c.0.6)", kyr = 0.6} ]
+spread_note = "Independent late."
+confidence = "medium"
+source = "Wagner 2008 (unverified)"
+
+[[tech]]
+id = "tanning"
+name = "Tanning (vegetable and brain)"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["sewing"]
+env = ["herd"]
+earliest_kyr = 100
+origins = [ {where = "Africa/Eurasia", kyr = 100} ]
+spread_note = "Old, universal for hide users."
+confidence = "low"
+source = "none known"
+note = "Smoke and brain tanning older than leather chemistry."
+
+[[tech]]
+id = "vegetable_tanning"
+name = "Vegetable tanning (bark, tannins)"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["tanning"]
+env = ["timber"]
+earliest_kyr = 5
+origins = [ {where = "Near East/Europe", kyr = 5} ]
+spread_note = "Independent."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "dyes"
+name = "Plant, mineral and insect dyes"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 40
+origins = [ {where = "Africa (ochre c.100)", kyr = 100}, {where = "Neolithic textiles", kyr = 30} ]
+spread_note = "Independent."
+confidence = "medium"
+source = "Kvavadze et al 2009 (unverified)"
+note = "Ochre pigments much earlier; cloth dyes c.30 kyr (Dzudzuana)."
+
+[[tech]]
+id = "mordant_dyeing"
+name = "Mordant dyeing (alum)"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes"]
+env = ["salt"]
+earliest_kyr = 3
+origins = [ {where = "Egypt/Near East", kyr = 3} ]
+spread_note = "Diffused."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "purple_dye"
+verified = false
+earliest_kyr_checked = 3.9
+source_checked = "https://iaassyriology.com/wp-content/uploads/Soriga_2017_ATS30-1.pdf (Soriga 2017: molluscan purple from start of 2nd millennium BC, Crete/Aegean, Early Bronze Aegina); Levant Minet el-Beida 15th-14th c. BC"
+hunt_note = "Aegean evidence is indirect; start of 2nd millennium BC = c. 3.9 ka. Row's Levant 3.8 origin is later (Ugarit c. 3.4-3.5 ka)."
+name = "Tyrian purple"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes", "shellfish"]
+env = ["coast"]
+earliest_kyr = 3.8
+origins = [ {where = "Levant", kyr = 3.8} ]
+spread_note = "Phoenician monopoly."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "soap"
+verified = false
+source_checked = "Searched; nothing read on Babylonian soap"
+hunt_note = "Not confirmed."
+name = "Soap"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 4.8
+origins = [ {where = "Mesopotamia (c.2800 BCE)", kyr = 4.8} ]
+spread_note = "Spread slowly."
+confidence = "medium"
+source = "none known"
+note = "Tallow-ash soap; Aleppo olive soap later."
+
+[[tech]]
+id = "indigo_dyeing"
+name = "Indigo dyeing"
+group = "fire"
+track = "fire"
+domains = ["craft", "trade"]
+needs = ["dyes", "fermentation"]
+env = []
+earliest_kyr = 6
+origins = [ {where = "India/Peru", kyr = 6} ]
+spread_note = "Independent."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "beer"
+verified = true
+earliest_kyr_checked = 13
+source_checked = "Liu et al. 2018. Fermented beverage and food storage in 13,000 y-old stone mortars at Raqefet Cave, Israel. J Archaeol Sci Reports. doi:10.1016/j.jasrep.2018.08.008, https://archaeology.org/news/2018/09/12/180912israel-beer-brewing/ (13.7-11.7 cal BP). McGovern 2004 PNAS Jiahu (https://news.upenn.edu/news/penn-museum-archaeochemist-and-international-scholars-confirm-9000-year-history-chinese-ferment): rice-honey-fruit drink c. 7000 BC"
+hunt_note = "Raqefet is JAS Reports, not PNAS, and contested (Eitam: grinding/bread). Jiahu 9 ka is a mixed ferment, not beer proper. Mesopotamia 6 ka not checked."
+name = "Beer"
+group = "fire"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation", "grinding"]
+env = ["grass"]
+earliest_kyr = 13
+origins = [ {where = "Levant (Raqefet, c.13)", kyr = 13}, {where = "China", kyr = 9}, {where = "Mesopotamia", kyr = 6} ]
+spread_note = "Independent in grain areas."
+confidence = "medium"
+source = "Liu et al 2018 (unverified)"
+
+[[tech]]
+id = "wine"
+verified = true
+earliest_kyr_checked = 8.0
+source_checked = "McGovern et al. 2017. Early Neolithic wine of Georgia in the South Caucasus. PNAS. https://hal.inrae.fr/hal-02626990v1 (tartaric acid in jars, c. 6000-5800 BC = c. 8.0-7.8 ka); superseded Iran 5400-5000 BC"
+hunt_note = "Confirmed: ~8.0-7.8 ka. Jiahu 9 ka origin is a mixed drink, not grape wine."
+name = "Wine"
+group = "fire"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["fermentation", "orchards"]
+env = ["fruit"]
+earliest_kyr = 8
+origins = [ {where = "Georgia (c.8)", kyr = 8}, {where = "China (c.9 mixed ferment)", kyr = 9} ]
+spread_note = "Spread across Mediterranean."
+confidence = "high"
+source = "McGovern et al 2017 (unverified)"
+
+[[tech]]
+id = "mead"
+verified = false
+source_checked = "McGovern et al. 2004 PNAS Jiahu per https://news.upenn.edu/news/penn-museum-archaeochemist-and-international-scholars-confirm-9000-year-history-chinese-ferment (rice, honey, fruit mix)"
+hunt_note = "Honey was one ingredient of a mixed ferment; no source read for honey-only mead at 9 ka. Unconfirmed."
+name = "Mead and honey wine"
+group = "fire"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation"]
+env = []
+earliest_kyr = 9
+origins = [ {where = "China/Europe", kyr = 9} ]
+spread_note = "Likely independent."
+confidence = "low"
+source = "McGovern 2004 (unverified)"
+
+[[tech]]
+id = "chicha"
+name = "Chewed maize beer (chicha)"
+group = "fire"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["fermentation"]
+env = ["grass"]
+earliest_kyr = 5
+origins = [ {where = "Andes/Amazon", kyr = 5} ]
+spread_note = "Local."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "rice_wine"
+name = "Rice wine and saccharification starters (koji)"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["beer"]
+env = ["grass"]
+earliest_kyr = 4
+origins = [ {where = "China", kyr = 4} ]
+spread_note = "E Asia."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "palm_wine"
+name = "Palm and sap wines"
+group = "fire"
+track = "food"
+domains = ["food"]
+needs = ["fermentation"]
+env = ["fruit"]
+earliest_kyr = 8
+origins = [ {where = "Tropics", kyr = 8} ]
+spread_note = "Independent."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "distilling"
+verified = false
+earliest_kyr_checked = 0.85
+source_checked = "https://resolve.cambridge.org/core/services/aop-cambridge-core/content/view/F13F0672DBACC887AB6444D71A3A6340/S0003598X24001741a.pdf/deconstructing-the-gandhara-still-a-new-challenge-to-the-accepted-trajectory-of-early-distillation-technology.pdf (Groat 2024, Antiquity: Gandhara still did not distil); earliest explicit alcohol distillation c. 1200 CE Sanskrit text and S Italy late 1100s per https://en.wikipedia.org/wiki/Distillation"
+hunt_note = "Alcohol distillation is medieval (c. 0.8-0.85 ka); Gandhara/Taxila still contested. Perfume/Mesopotamia 3.8 ka and Alexandria 2 ka not checked."
+name = "Distillation (spirits)"
+group = "fire"
+track = "fire"
+domains = ["craft", "food"]
+needs = ["kilns", "glass"]
+env = []
+earliest_kyr = 3.8
+origins = [ {where = "Mesopotamia (perfume)", kyr = 3.8}, {where = "Greece/Alexandria (stills)", kyr = 2}, {where = "China (c.1)", kyr = 1} ]
+spread_note = "Independent claims for alcohol; arrives medieval."
+confidence = "medium"
+source = "Needham 1980 (unverified)"
+exists = true
+
+[[tech]]
+id = "alembic_spirits"
+name = "Alembic spirits (brandy, whisky)"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["distilling", "wine"]
+env = []
+earliest_kyr = 0.9
+origins = [ {where = "Europe (Salerno c.0.9)", kyr = 0.9}, {where = "India/China", kyr = 1.0} ]
+spread_note = "Slow diffusion."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "sugar_refining"
+verified = false
+earliest_kyr_checked = 1.65
+source_checked = "https://en.wikipedia.org/wiki/History_of_sugar (secondary summary) (granulated sugar India c. 350 CE; New Guinea cane c. 10 ka)"
+hunt_note = "Only weak secondary sources; Gupta c. 350 CE = 1.65 ka vs catalogue 2."
+name = "Sugar boiling and refining"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["pottery"]
+env = ["fruit"]
+earliest_kyr = 2
+origins = [ {where = "India (Gupta)", kyr = 2}, {where = "Persia", kyr = 1.4} ]
+spread_note = "Spread via Muslim world."
+confidence = "medium"
+source = "Daniels 1996 (unverified)"
+
+[[tech]]
+id = "maple_syrup"
+name = "Maple/birch sap boiling"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pot_boiling"]
+env = ["timber"]
+earliest_kyr = 0.8
+origins = [ {where = "NE N America", kyr = 0.8} ]
+spread_note = "Local."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "cheese"
+verified = true
+earliest_kyr_checked = 7.5
+source_checked = "Salque et al. 2013. Earliest evidence for cheese making in the sixth millennium BC in northern Europe. Nature 493:522-525. doi:10.1038/nature11698, https://research-information.bris.ac.uk/en/publications/earliest-evidence-for-cheese-making-in-the-sixth-millennium-bc-in/ (Kuyavia, Poland, dairy lipids in sieves)"
+hunt_note = "Confirmed c. 7.5 ka (6th millennium BC). Milk use itself is older: Evershed 2008 Nature 455:528 (doi:10.1038/nature07180) gives 7th millennium BC in NW Anatolia."
+name = "Cheesemaking (curdling and heating)"
+group = "fire"
+track = "food"
+domains = ["food"]
+needs = ["fermentation"]
+env = ["herd"]
+earliest_kyr = 7.5
+origins = [ {where = "Poland (Kuyavia c.7.5)", kyr = 7.5} ]
+spread_note = "Spread with dairy."
+confidence = "medium"
+source = "Salque et al 2013 (unverified)"
+exists = true
+
+[[tech]]
+id = "ghee_butter"
+name = "Butter and ghee clarifying"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["herding", "pottery"]
+env = ["herd"]
+earliest_kyr = 6
+origins = [ {where = "Near East/India", kyr = 6} ]
+spread_note = "Dairy lands."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "pressed_oil_lamp"
+name = "Oil lamp with wick"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["oil_lamps", "oil_press"]
+env = ["olive"]
+earliest_kyr = 5
+origins = [ {where = "Near East", kyr = 5} ]
+spread_note = "Diffused."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "mud_oven_hearth"
+name = "Raised hearth/stove with chimney"
+group = "fire"
+track = "fire"
+domains = ["food", "build"]
+needs = ["fire_hearth", "mudbrick"]
+env = []
+earliest_kyr = 4
+origins = [ {where = "Near East/Europe (open); China kang 3)", kyr = 3} ]
+spread_note = "Local."
+confidence = "low"
+source = "none known"
+note = "Smokeless stoves later."
+
+[[tech]]
+id = "coal_smelting"
+name = "Coke from coal"
+group = "fire"
+track = "fire"
+domains = ["craft"]
+needs = ["coal_fuel", "charcoal_burning"]
+env = ["coal"]
+earliest_kyr = 1
+origins = [ {where = "China (c.1)", kyr = 1} ]
+spread_note = "Late; Europe 1709."
+confidence = "low"
+source = "none known"
+note = "China Song c. 1000 CE."
+
+[[tech]]
+id = "brick_kiln"
+name = "Fired brick"
+group = "fire"
+track = "fire"
+domains = ["build"]
+needs = ["kilns", "mudbrick"]
+env = ["clay"]
+earliest_kyr = 5.5
+origins = [ {where = "Mesopotamia", kyr = 5.5}, {where = "Indus", kyr = 4.5} ]
+spread_note = "Diffused with cities."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "cremation_pyre"
+name = "Cremation"
+group = "fire"
+track = "fire"
+domains = ["ritual"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 20
+origins = [ {where = "Australia (Lake Mungo c.40)", kyr = 40}, {where = "Eurasia", kyr = 8} ]
+spread_note = "Independent."
+confidence = "low"
+source = "Bowler 1970 (unverified)"
+
+[[tech]]
+id = "incense"
+name = "Incense and smoke offerings"
+group = "fire"
+track = "fire"
+domains = ["ritual", "trade"]
+needs = ["fire_control"]
+env = []
+earliest_kyr = 6
+origins = [ {where = "Arabia/Egypt", kyr = 6} ]
+spread_note = "Trade driven."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "glass_lens"
+name = "Lens and mirror glass"
+group = "fire"
+track = "fire"
+domains = ["know"]
+needs = ["glass"]
+env = ["sand"]
+earliest_kyr = 0.7
+origins = [ {where = "Europe (spectacles c.1290)", kyr = 0.7} ]
+spread_note = "Diffusion."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "sealed_bake"
+name = "Clay-wrapped cooking"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["earth_oven"]
+env = ["clay"]
+earliest_kyr = 10
+origins = [ {where = "Eurasia", kyr = 10} ]
+spread_note = "Hedgehog baking etc."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "ceramic_stove"
+name = "Portable ceramic braziers"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["kilns"]
+env = ["clay"]
+earliest_kyr = 4
+origins = [ {where = "Near East/E Asia", kyr = 4} ]
+spread_note = "Diffused."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "lard_rendering"
+name = "Fat rendering"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["pottery", "herding"]
+env = ["herd"]
+earliest_kyr = 8
+origins = [ {where = "Eurasia", kyr = 8} ]
+spread_note = "Dairy-adjacent."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "malting"
+name = "Malting"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["beer"]
+env = ["grass"]
+earliest_kyr = 6
+origins = [ {where = "Mesopotamia", kyr = 6} ]
+spread_note = "Spread with brewers."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "hopped_ale"
+verified = false
+earliest_kyr_checked = 0.85
+source_checked = "https://zythophile.co.uk/2009/11/20/a-short-history-of-hops (Hildegard Physica c. 1150 earliest surviving hop-in-beer text; Corbie statutes 822 ambiguous); Dutch take-off c. 1390"
+hunt_note = "1.2 ka rests on the ambiguous Corbie statutes; secure date c. 0.85 ka, mass adoption c. 0.6 ka."
+name = "Hopped beer"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["beer"]
+env = ["grass"]
+earliest_kyr = 1.2
+origins = [ {where = "Germany", kyr = 1.2} ]
+spread_note = "Spread to Low Countries."
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "vinegar"
+name = "Vinegar"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["wine"]
+env = []
+earliest_kyr = 5
+origins = [ {where = "Near East", kyr = 5} ]
+spread_note = "Follows wine."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "pickling"
+name = "Brine and vinegar pickling"
+group = "fire"
+track = "fire"
+domains = ["food"]
+needs = ["salting"]
+env = []
+earliest_kyr = 4
+origins = [ {where = "Mesopotamia/Egypt", kyr = 4} ]
+spread_note = "Widespread."
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "sauce_garum"
+name = "Fermented fish sauce (garum)"
+group = "fire"
+track = "fire"
+domains = ["food", "trade"]
+needs = ["salting", "fermentation"]
+env = ["coast"]
+earliest_kyr = 2.7
+origins = [ {where = "Greece/Rome", kyr = 2.7}, {where = "SE Asia", kyr = 2} ]
+spread_note = "Independent."
+confidence = "low"
+source = "none known"
