@@ -4,7 +4,7 @@ title: The grid file is never rewritten once it exists, and the viewer reuses an
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: store
 effort: s
 impact: med
@@ -26,4 +26,5 @@ Fix: store a digest of centers+nbr in the grid file (or name it `L7-<digest>.jso
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-stale-grid-file-and-reused-worlds.md (found by code-audit-2026-10).
