@@ -174,7 +174,7 @@ from . import stage_landscape as STG_L
 from . import stage_finish as STG_F
 from ..constants import GRAV, RHO_ICE, SEC_PER_YR
 from ..geo import R_KM, arc, arc_km, latlon, smoothstep, xyz
-from ..images import write_png
+from ..images import ramp_colour, write_png
 from ..climate import LAPSE
 from ..tectonics.isostasy import land_view
 
@@ -1256,12 +1256,6 @@ def hillshade(h: np.ndarray, res_km: float, exaggeration: float = 2.0, azimuth: 
     return np.clip((-dzdx * lx - dzdy * ly + lz) / nrm, 0, 1)
 
 
-def _ramp(v, stops):
-    xs = np.array([s[0] for s in stops], float)
-    cols = np.array([s[1] for s in stops], float)
-    return np.stack([np.interp(v, xs, cols[:, k]) for k in range(3)], -1)
-
-
 LAND_WET = [(0, (92, 140, 78)), (300, (122, 160, 92)), (900, (176, 176, 118)), (1700, (160, 132, 96)),
             (2600, (136, 116, 104)), (3600, (184, 178, 170)), (4800, (224, 218, 208))]  # (bare rock: ice is tinted apart)
 LAND_DRY = [(0, (206, 188, 140)), (300, (196, 172, 124)), (900, (184, 154, 112)), (1700, (160, 128, 96)),
@@ -1272,8 +1266,8 @@ SEA = [(-7000, (12, 28, 70)), (-4000, (20, 48, 102)), (-1500, (34, 78, 140)), (-
 
 def tint(h: np.ndarray, precip: np.ndarray) -> np.ndarray:
     wet = np.clip((precip - 250) / 700, 0, 1)[..., None]
-    land = _ramp(h, LAND_WET) * wet + _ramp(h, LAND_DRY) * (1 - wet)
-    return np.where((h > 0)[..., None], land, _ramp(h, SEA))
+    land = ramp_colour(h, LAND_WET) * wet + ramp_colour(h, LAND_DRY) * (1 - wet)
+    return np.where((h > 0)[..., None], land, ramp_colour(h, SEA))
 
 
 RIVER_MIN_AREA = 500.0  # km^2 upstream for a river to be drawn (at 2 km pixels)
