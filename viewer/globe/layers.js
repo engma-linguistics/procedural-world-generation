@@ -84,7 +84,7 @@ const gameColor = onLand(({ L, layer }) => (i, c) => {
   else rampFns[layer](LAYERS[layer].months ? bits(v) : v, c);
 });
 const huLayer = ({ layer }) => (i, c) => huColor(layer, i, c);
-const resLayer = ({ layer }) => (i, c) => resColor(layer, i, c);
+const resLayer = ({ layer }) => resColor(layer);
 const coastLayer = ({ layer }) => (i, c) => coastColor(layer, i, c);
 const peoplesLayer = ({ layer }) => (i, c) => peoplesColor(layer, i, c);
 
@@ -250,7 +250,7 @@ const LAYERS = {
     units: 'years since the last stand-replacing fire', in: { world: 'vegetation' }, hint: 'Years since the last stand-replacing fire.', color: vegRamp },
   'plant type': { group: 'plants', ramp: [[0, '#2a2a2a'], [100, '#ffffff']], units: '% cover of the plant type', hintUnits: false, in: { world: 'vegetation' },
     hint: 'Cover of one plant functional type (PFT; pick it below).',
-    color: onLand(({ L }) => (i, c) => { const f = (L['veg_' + state.pft]?.[i] || 0) / 100; c.copy(BARE).lerp(pftColor(), Math.sqrt(f)); }),
+    color: onLand(({ L }) => { const v = L['veg_' + state.pft], col = pftColor(); return (i, c) => c.copy(BARE).lerp(col, Math.sqrt((v?.[i] || 0) / 100)); }),
     legend: () => {
       const p = S.V.pfts.find((q) => q.code === state.pft);
       return `<div><div class="grad" style="background:linear-gradient(90deg,#6b675f,${p?.color || '#fff'})"></div>

@@ -8,6 +8,7 @@ import { buildAxis, buildLandmassNames } from './axis.js';
 import { projOverlaysChanged, windKey } from './map2d.js';
 import { buildHighlightMarks } from './highlights.js';
 import { buildZoomOutlines } from './tabs.js';
+import { HU_LAYERS } from './layers.js';
 // ------------------------------------------------------------ clouds
 // The cloud overlay: an equirectangular texture whose patches cover each
 // place's cloud share (cloud_jul / cloud_jan, or their mean) of the sky.
@@ -125,8 +126,28 @@ function peopleOverlays(globe, wraps) {
   }
   return { peopleRings: ribbonObj(rings, 0xffffff, 1, 2.5, rcols) };
 }
+// What the overlays are built from (PW-1045): the view, its frame and layers, the mesh's shape, the choices they read
+// (mode, season, picked people, highlight filter, replay) and the side panel's switches outside "Colour by". The
+// colour layer counts only where an overlay depends on it (the satellite view's rivers, the human-use layers' marks,
+// the technology layer's stars and arrows). paint() rebuilds the overlays only when this changed, so picking another
+// colour layer, plant type or resource no longer redraws every river, label and mark. (Highlights, zoom outlines and
+// the overlay switches rebuild their own parts or call buildOverlays directly.)
+let ovSeq = 0, ovKey = '';
+const ovId = (o) => (o ? (o.__ov ||= ++ovSeq) : 0);
+function overlaysKey() {
+  const ctl = [...document.querySelectorAll('#controls details.sec:not([data-sec=layer]) :is(input, select)')]
+    .map((e) => (e.type === 'checkbox' ? +e.checked : e.value)).join('|');
+  const l = state.layer, lay = l === 'technology' ? `tech:${state.tech}:${state.techCol}` : l === 'satellite' ? 'sat' : HU_LAYERS[l] ? 'hu:' + l : '';
+  return [ovId(S.V), ovId(S.V.layers), ovId(S.topo), S.V.frame, reliefScale(), state.mode, state.season, state.people, state.playing,
+    state.hlCat, lay, S.picked ? `${S.picked.lat},${S.picked.lon},${S.zoomSize}` : '', ctl].join('/');
+}
+export function buildOverlaysIfChanged() {
+  if (overlaysKey() === ovKey) { DIAG.n.overlaySkips = (DIAG.n.overlaySkips || 0) + 1; return; }
+  buildOverlays();
+}
 export function buildOverlays() {
   DIAG.n.overlays++;
+  ovKey = overlaysKey();
   Object.values(S.overlays).forEach((o) => { group.remove(o); disposeObj(o); });
   S.overlays = {};
   const G = S.V.grid, L = S.V.layers, globe = state.mode === 'globe';

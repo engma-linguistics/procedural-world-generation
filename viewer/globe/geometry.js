@@ -6,7 +6,7 @@ import * as Relief from '../relief.js';
 import { S, proj, state } from './state.js';
 import { cellColors } from './layers.js';
 import { $, DIAG, RIBBON_MATS, R_EARTH, group, relief3d, seaFloorOn } from './scene.js';
-import { buildOverlays } from './overlays.js';
+import { buildOverlaysIfChanged } from './overlays.js';
 import { renderLegend } from './panel.js';
 import { drawProj } from './map2d.js';
 // ------------------------------------------------------------ geometry
@@ -179,7 +179,7 @@ export function paint() {
     else S.mesh.geometry.computeBoundingSphere();
     S.topo.posKey = posKey;
   }
-  buildOverlays();
+  buildOverlaysIfChanged();  // (only when something they show moved, PW-1045)
   renderLegend();
   if (proj.on) drawProj();
 }

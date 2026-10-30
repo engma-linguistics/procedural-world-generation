@@ -42,23 +42,24 @@ export function huColor(layer, i, c) {
 // its likelihood), 'resource' = one resource's likelihood (picker resSel, ?res=), 'building stone' = the best stone
 state.res = 'porphyry_cu';
 export function resInfo(key) { return S.V.resLeg?.resources.find((r) => r.key === key); }
-export function resColor(layer, i, c) {
-  const L = S.V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
+// (a factory: the legend's colours and the resource's layer are looked up once a paint, not once a cell, PW-1045)
+export function resColor(layer) {
+  const L = S.V.layers, leg = S.V.resLeg, elev = L.elevation, ice = L.ice;
+  const isLand = (i) => elev[i] > 0 || (ice && ice[i] > 0);
   if (layer === 'building stone') {
-    const e = S.V.resLeg.stone[L.stone[i]];
-    if (land && e && L.stone[i]) c.set(e.color); else c.copy(land ? BARE : OCEAN);
-    return;
+    const cols = leg.stone.map((e) => e && new THREE.Color(e.color));
+    return (i, c) => { const k = L.stone[i], land = isLand(i); if (land && k && cols[k]) c.copy(cols[k]); else c.copy(land ? BARE : OCEAN); };
   }
-  const base = land ? BARE : OCEAN;
   if (layer === 'resources') {
-    const id = L.resource[i], r = id ? S.V.resLeg.resources[id - 1] : null;
-    if (!r) { c.copy(base); return; }
-    const v = (L['res_' + r.key]?.[i] || 0);
-    c.copy(base).lerp(new THREE.Color(r.color), 0.35 + 0.65 * Math.min(1, v));
-    return;
+    const cols = leg.resources.map((r) => new THREE.Color(r.color)), vals = leg.resources.map((r) => L['res_' + r.key]);
+    return (i, c) => {
+      const id = L.resource[i], base = isLand(i) ? BARE : OCEAN;
+      if (!id || !cols[id - 1]) { c.copy(base); return; }
+      c.copy(base).lerp(cols[id - 1], 0.35 + 0.65 * Math.min(1, vals[id - 1]?.[i] || 0));
+    };
   }
-  const r = resInfo(state.res), v = r ? (L['res_' + r.key]?.[i] || 0) : 0;
-  c.copy(base).multiplyScalar(0.8).lerp(new THREE.Color(r?.color || '#fff'), Math.sqrt(Math.min(1, v)));
+  const r = resInfo(state.res), a = r && L['res_' + r.key], col = new THREE.Color(r?.color || '#fff');
+  return (i, c) => c.copy(isLand(i) ? BARE : OCEAN).multiplyScalar(0.8).lerp(col, Math.sqrt(Math.min(1, a?.[i] || 0)));
 }
 // coast form (coastform.py, PW-097): 'coasts' = each coastal land cell's class (legend.coast); the scores 0-1
 // (barrier islands, cliffs, seabird and seal colonies on the coast's land, hazards to ships at sea)
