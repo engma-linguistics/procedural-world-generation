@@ -1,0 +1,1148 @@
+# travel and transport catalogue (techcat agent: travel). Dates best-knowledge, kyr BP, unverified.
+
+[[tech]]
+id = "rafts"
+exists = true
+name = "Rafts"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["cordage"]
+earliest_kyr = 130
+origins = [ {where = "Sahul/Wallacea", kyr = 65}, {where = "Southeast Asia", kyr = 130} ]
+spread_note = "Independent in many places; simple to reinvent"
+confidence = "low"
+source = "Clarkson et al. 2017, Nature, Sahul by 65 kyr (unverified)"
+note = "Earlier island crossings (Flores, Crete c.130 kyr) are debated"
+
+[[tech]]
+id = "log_rafts"
+name = "Log and bundle rafts"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["rafts"]
+env = ["timber"]
+earliest_kyr = 65
+origins = [ {where = "Sahul", kyr = 65} ]
+spread_note = "Independent everywhere with timber or reeds"
+confidence = "low"
+source = "none known (unverified)"
+note = "Folded into rafts for early dates; here the lashed, steered raft"
+
+[[tech]]
+id = "paddles"
+name = "Paddles"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["found_tools"]
+env = ["timber"]
+earliest_kyr = 11
+origins = [ {where = "Europe (Star Carr)", kyr = 11}, {where = "Denmark (Tybrind Vig)", kyr = 7.5} ]
+spread_note = "Obvious companion to any boat"
+confidence = "medium"
+source = "Milner et al. 2018, Star Carr paddle (unverified)"
+
+[[tech]]
+id = "bark_canoes"
+name = "Bark and plank-sewn bark canoes"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["rafts", "cordage"]
+env = ["timber"]
+earliest_kyr = 8
+origins = [ {where = "N America", kyr = 8}, {where = "Australia", kyr = 8} ]
+spread_note = "Independent; perishable so undated"
+confidence = "low"
+source = "none known (unverified)"
+note = "Perishable; date is a guess from ethnography"
+
+[[tech]]
+id = "reed_boats"
+name = "Reed boats (bitumen-coated)"
+group = "travel"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["rafts", "cordage"]
+env = ["wetland", "reeds"]
+earliest_kyr = 7
+origins = [ {where = "Kuwait/Mesopotamia (As-Sabiyah)", kyr = 7.0}, {where = "Egypt", kyr = 6.0}, {where = "Peru/Titicaca", kyr = 5.0} ]
+spread_note = "Independent in wetland regions"
+confidence = "medium"
+source = "Carter 2006, As-Sabiyah bitumen boat remains (unverified)"
+
+[[tech]]
+id = "canoes"
+exists = true
+name = "Dugout and skin boats"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["rafts", "ground_stone"]
+earliest_kyr = 12
+origins = [ {where = "Netherlands (Pesse)", kyr = 10.2}, {where = "Nigeria (Dufuna)", kyr = 8.5}, {where = "Japan (Torihama)", kyr = 9} ]
+spread_note = "Independent wherever big trees stand"
+confidence = "medium"
+source = "Pesse canoe, none better (unverified)"
+
+[[tech]]
+id = "dugouts"
+name = "Dugout canoes"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["canoes", "hafting"]
+env = ["timber"]
+earliest_kyr = 10.2
+origins = [ {where = "Netherlands (Pesse)", kyr = 10.2}, {where = "Nigeria (Dufuna)", kyr = 8.5}, {where = "Japan", kyr = 9.0} ]
+spread_note = "Independent wherever big trees stand"
+confidence = "medium"
+source = "Pesse and Dufuna finds (unverified)"
+
+[[tech]]
+id = "skin_boats"
+name = "Skin boats (kayak, umiak, coracle)"
+group = "travel"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["sewing", "canoes"]
+env = ["seals", "hides"]
+earliest_kyr = 8
+origins = [ {where = "Arctic", kyr = 4.0}, {where = "Britain/Near East (coracle)", kyr = 3.5} ]
+spread_note = "Independent; framed hide boats are perishable, dating weak"
+confidence = "low"
+source = "none known (unverified)"
+note = "c. 8 kyr is a guess; Arctic kayak 4 kyr or older"
+
+[[tech]]
+id = "inflated_skin_floats"
+name = "Inflated skin floats and keleks"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["rafts", "sewing"]
+earliest_kyr = 2.9
+origins = [ {where = "Assyria", kyr = 2.9} ]
+spread_note = "Persisted along the Tigris and Himalayan rivers"
+confidence = "medium"
+source = "Assyrian reliefs (Nineveh) (unverified)"
+
+[[tech]]
+id = "plank_boats"
+name = "Sewn plank boats"
+group = "travel"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["canoes", "carpentry"]
+env = ["timber"]
+earliest_kyr = 5.1
+origins = [ {where = "Egypt (Abydos fleet)", kyr = 5.1}, {where = "Egypt (Khufu ship)", kyr = 4.6}, {where = "Britain (Ferriby)", kyr = 3.9} ]
+spread_note = "Independent in Egypt, Britain, Austronesia, Arabia"
+confidence = "medium"
+source = "Ward 2000, Abydos boats (unverified)"
+note = "Abydos boats c. 3000 BCE"
+
+[[tech]]
+id = "clinker_hulls"
+name = "Clinker (lapstrake) hulls"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats", "iron"]
+env = ["timber"]
+earliest_kyr = 1.7
+origins = [ {where = "Denmark (Nydam)", kyr = 1.7}, {where = "Scandinavia", kyr = 1.3} ]
+spread_note = "Spread across northern Europe"
+confidence = "medium"
+source = "Nydam boat finds (unverified)"
+note = "Sewn planks at Hjortspring c. 2.3 kyr; riveted by 1.7"
+
+[[tech]]
+id = "mortise_tenon_hulls"
+name = "Mortise-and-tenon shell hulls"
+group = "travel"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["plank_boats"]
+earliest_kyr = 3.3
+origins = [ {where = "Eastern Mediterranean (Uluburun)", kyr = 3.3} ]
+spread_note = "Spread with Phoenician and Greek shipbuilding"
+confidence = "medium"
+source = "Pulak 1998, Uluburun shipwreck (unverified)"
+
+[[tech]]
+id = "keels"
+name = "Keels"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats"]
+earliest_kyr = 4.6
+origins = [ {where = "Egypt (hogging truss, keel-less)", kyr = 4.6}, {where = "Mediterranean", kyr = 3.0}, {where = "Scandinavia (Skuldelev)", kyr = 1.0} ]
+spread_note = "Gradual; the true keel for sailing to windward arrives with sail rigs"
+confidence = "low"
+source = "none known (unverified)"
+note = "Egyptian ships lacked a keel; Mediterranean keel c. 3 kyr is soft"
+
+[[tech]]
+id = "oars"
+name = "Oars and rowing"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["paddles", "plank_boats"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5}, {where = "Mediterranean", kyr = 3.5} ]
+spread_note = "Spread with galleys"
+confidence = "medium"
+source = "Casson 1971, Ships and Seamanship in the Ancient World (unverified)"
+
+[[tech]]
+id = "galleys"
+name = "War galleys (penteconter, trireme)"
+group = "travel"
+track = "travel"
+domains = ["war", "move"]
+needs = ["oars", "keels"]
+earliest_kyr = 3.0
+origins = [ {where = "Phoenicia/Greece", kyr = 3.0}, {where = "Greece (trireme)", kyr = 2.6} ]
+spread_note = "Mediterranean-wide, copied by Carthage and Rome"
+confidence = "medium"
+source = "Casson 1971 (unverified)"
+note = "Bireme/trireme c. 2.7-2.6 kyr"
+
+[[tech]]
+id = "steering_oar"
+name = "Steering oar"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["oars"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5}, {where = "Mediterranean", kyr = 3.0} ]
+spread_note = "Universal in ancient river and sea craft"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "sails"
+exists = true
+name = "Sail"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["canoes", "sewing"]
+earliest_kyr = 7
+origins = [ {where = "Mesopotamia (Ubaid model)", kyr = 7.0}, {where = "Egypt", kyr = 5.5} ]
+spread_note = "Independent in Egypt, Mesopotamia, Austronesia, China"
+confidence = "medium"
+source = "Carter 2006 (unverified)"
+note = "Ubaid boat model from Kuwait c. 7 kyr"
+
+[[tech]]
+id = "square_rig"
+name = "Square rig"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sails"]
+earliest_kyr = 5.1
+origins = [ {where = "Egypt", kyr = 5.5}, {where = "Mesopotamia", kyr = 5.0} ]
+spread_note = "Standard Mediterranean and North Sea rig for millennia"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "crab_claw_sail"
+name = "Crab-claw and tanja sail"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sails", "outriggers"]
+earliest_kyr = 3.0
+origins = [ {where = "Island Southeast Asia/Oceania", kyr = 3.0} ]
+spread_note = "Spread with Lapita and Polynesian voyaging"
+confidence = "low"
+source = "Doran 1981, Polynesian Navigation (unverified)"
+note = "Perishable; date inferred"
+
+[[tech]]
+id = "lateen_sail"
+name = "Lateen and settee sail"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["square_rig"]
+earliest_kyr = 1.8
+origins = [ {where = "Mediterranean (Roman)", kyr = 1.8}, {where = "Indian Ocean (Arab dhow)", kyr = 1.4} ]
+spread_note = "Spread across Mediterranean and Indian Ocean"
+confidence = "low"
+source = "Casson 1971 (unverified)"
+note = "Roman lateen c. 2nd c. CE; Arab dhow later"
+
+[[tech]]
+id = "lug_and_batten_sail"
+name = "Lug and fully battened sail (junk rig)"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sails"]
+earliest_kyr = 2.0
+origins = [ {where = "China", kyr = 2.0} ]
+spread_note = "Spread along East and Southeast Asian coasts"
+confidence = "low"
+source = "Needham 1971, Science and Civilisation in China vol. 4:3 (unverified)"
+note = "Han ship models; battens c. 3rd c. CE"
+
+[[tech]]
+id = "outriggers"
+exists = true
+name = "Outriggers and ocean voyaging"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sails"]
+earliest_kyr = 3.5
+origins = [ {where = "Lapita, Near Oceania", kyr = 3.5} ]
+spread_note = "Fast eastwards across Polynesia"
+confidence = "medium"
+source = "Kirch 2017, On the Road of the Winds (unverified)"
+
+[[tech]]
+id = "double_hulled_canoes"
+name = "Double canoes and catamarans"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["outriggers"]
+earliest_kyr = 3.0
+origins = [ {where = "Oceania", kyr = 3.0} ]
+spread_note = "Austronesian ocean travel; spread to Polynesia"
+confidence = "low"
+source = "Doran 1981 (unverified)"
+
+[[tech]]
+id = "sternpost_rudder"
+name = "Sternpost rudder"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["keels", "steering_oar"]
+earliest_kyr = 1.9
+origins = [ {where = "China (Han model)", kyr = 1.9}, {where = "N Europe", kyr = 0.8} ]
+spread_note = "Chinese rudder reaches Europe by 12th c."
+confidence = "medium"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "watertight_bulkheads"
+name = "Watertight bulkhead compartments"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["plank_boats"]
+earliest_kyr = 1.7
+origins = [ {where = "China", kyr = 1.7} ]
+spread_note = "Chinese; Europeans copy much later"
+confidence = "low"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "carvel_hulls"
+name = "Carvel (frame-first) hulls"
+group = "travel"
+track = "travel"
+domains = ["move", "craft"]
+needs = ["mortise_tenon_hulls"]
+earliest_kyr = 1.4
+origins = [ {where = "Mediterranean (Yassi Ada 7th c.)", kyr = 1.4}, {where = "Atlantic Europe", kyr = 0.6} ]
+spread_note = "Gradual shift from shell-first to frame-first"
+confidence = "medium"
+source = "Steffy 1994, Wooden Ship Building (unverified)"
+note = "Full carvel in the north c. 1400s"
+
+[[tech]]
+id = "cogs_and_carracks"
+name = "Cogs and carracks"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["clinker_hulls", "sternpost_rudder", "square_rig"]
+earliest_kyr = 0.8
+origins = [ {where = "N Europe (cog)", kyr = 0.8}, {where = "Mediterranean/Iberia (carrack)", kyr = 0.6} ]
+spread_note = "Hanseatic and Iberian shipping"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "caravels"
+name = "Caravels"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["carvel_hulls", "lateen_sail"]
+earliest_kyr = 0.56
+origins = [ {where = "Portugal", kyr = 0.56} ]
+spread_note = "Iberian; carried the Atlantic voyages"
+confidence = "medium"
+source = "none known (unverified)"
+note = "c. 1440s"
+
+[[tech]]
+id = "full_rigged_ship"
+name = "Full-rigged ship with multiple masts"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["cogs_and_carracks"]
+earliest_kyr = 0.5
+origins = [ {where = "Atlantic Europe", kyr = 0.5} ]
+spread_note = "Gradual"
+confidence = "medium"
+source = "none known (unverified)"
+note = "c. 1500"
+
+[[tech]]
+id = "chip_log"
+name = "Chip log (speed by knots)"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["navigation"]
+earliest_kyr = 0.43
+origins = [ {where = "England", kyr = 0.43} ]
+spread_note = "Became universal on ships"
+confidence = "medium"
+source = "none known (unverified)"
+late = true
+note = "c. 1574-1600"
+
+[[tech]]
+id = "dry_docks"
+name = "Slipways, dry docks and haul-overs"
+group = "travel"
+track = "travel"
+domains = ["build", "move"]
+needs = ["harbours"]
+earliest_kyr = 2.6
+origins = [ {where = "Greece (Diolkos)", kyr = 2.6}, {where = "Egypt/Ptolemaic", kyr = 2.2} ]
+spread_note = "Mediterranean ports"
+confidence = "low"
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "coastal_pilotage"
+name = "Coastal pilotage and sailing directions (periplus)"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["sails", "marks"]
+earliest_kyr = 2.5
+origins = [ {where = "Greece/Phoenicia", kyr = 2.5}, {where = "Arabia/India (Periplus)", kyr = 2.0} ]
+spread_note = "Written pilot books spread with trade"
+confidence = "medium"
+source = "Casson 1989, Periplus Maris Erythraei (unverified)"
+
+[[tech]]
+id = "star_paths"
+name = "Star paths and wayfinding"
+group = "travel"
+track = "travel"
+domains = ["move", "know", "ritual"]
+needs = ["outriggers", "calendar"]
+earliest_kyr = 3.0
+origins = [ {where = "Oceania", kyr = 3.0}, {where = "Arabia", kyr = 1.5} ]
+spread_note = "Taught orally; independent in several seafaring peoples"
+confidence = "low"
+source = "Lewis 1972, We the Navigators (unverified)"
+
+[[tech]]
+id = "stick_charts"
+name = "Wave-pilot stick charts"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["star_paths"]
+earliest_kyr = 1.0
+origins = [ {where = "Micronesia (Marshall Is.)", kyr = 1.0} ]
+spread_note = "Local to Marshall Islands"
+confidence = "low"
+source = "none known (unverified)"
+note = "Historical date unclear"
+
+[[tech]]
+id = "lead_line"
+name = "Lead line (sounding)"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sails", "cordage"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5}, {where = "Greece", kyr = 2.5} ]
+spread_note = "Universal on ships"
+confidence = "medium"
+source = "Casson 1971 (unverified)"
+
+[[tech]]
+id = "lodestone_compass"
+name = "Magnetic compass"
+group = "travel"
+track = "travel"
+domains = ["know", "move"]
+needs = ["navigation", "iron"]
+earliest_kyr = 0.9
+origins = [ {where = "China (floating needle)", kyr = 0.9}, {where = "Europe", kyr = 0.8} ]
+spread_note = "Chinese; Arab and European uptake within a few centuries"
+confidence = "medium"
+source = "Needham 1962, Science and Civilisation in China vol. 4:1 (unverified)"
+note = "Lodestone divination spoons c. 2.2 kyr; at sea c. 12th c."
+
+[[tech]]
+id = "astrolabe"
+name = "Astrolabe"
+group = "travel"
+track = "travel"
+domains = ["know"]
+needs = ["navigation", "bronze"]
+earliest_kyr = 2.2
+origins = [ {where = "Greece (Hipparchus era)", kyr = 2.2}, {where = "Islamic world", kyr = 1.2} ]
+spread_note = "Mediterranean/Islamic scholarship"
+confidence = "medium"
+source = "King 1993, Astrolabes (unverified)"
+
+[[tech]]
+id = "mariners_astrolabe"
+name = "Mariner's astrolabe and quadrant"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["astrolabe"]
+earliest_kyr = 0.52
+origins = [ {where = "Portugal/Iberia", kyr = 0.52} ]
+spread_note = "European Atlantic voyages"
+confidence = "medium"
+source = "none known (unverified)"
+note = "c. 1480s"
+
+[[tech]]
+id = "portolan_charts"
+name = "Portolan charts"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["lodestone_compass", "maps"]
+earliest_kyr = 0.7
+origins = [ {where = "Italy/Mediterranean", kyr = 0.7} ]
+spread_note = "Mediterranean mariners"
+confidence = "medium"
+source = "Campbell 1987, Portolan Charts (unverified)"
+note = "Carta Pisana c. 1290"
+
+[[tech]]
+id = "maps"
+name = "Maps and plans"
+group = "travel"
+track = "travel"
+domains = ["know", "trade"]
+needs = ["marks"]
+earliest_kyr = 8.6
+origins = [ {where = "Anatolia (Catalhoyuk, contested)", kyr = 8.6}, {where = "Mesopotamia (Nippur plan)", kyr = 3.3}, {where = "Egypt", kyr = 3.1} ]
+spread_note = "Independent; mostly local"
+confidence = "low"
+source = "Delano-Smith 1987, Cartography in Prehistory (unverified)"
+
+[[tech]]
+id = "sledges"
+exists = true
+name = "Sledges and skis"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["huts", "cordage"]
+earliest_kyr = 10
+origins = [ {where = "N Eurasia (Vis I)", kyr = 10}, {where = "Baltic", kyr = 8.5} ]
+spread_note = "Spread across boreal Eurasia and Arctic America"
+confidence = "medium"
+source = "Burov 1998, Vis I runner finds (unverified)"
+
+[[tech]]
+id = "skis"
+name = "Skis"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sledges"]
+env = ["frost"]
+earliest_kyr = 8
+origins = [ {where = "Russia (Lake Sindor)", kyr = 8.0}, {where = "Scandinavia", kyr = 5.2} ]
+spread_note = "Spread through Fennoscandia and Siberia"
+confidence = "medium"
+source = "Formozov 1969 / Scandinavian rock art (unverified)"
+
+[[tech]]
+id = "snowshoes"
+name = "Snowshoes"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["cordage"]
+env = ["frost"]
+earliest_kyr = 6
+origins = [ {where = "Central Asia", kyr = 6.0}, {where = "N America", kyr = 6.0} ]
+spread_note = "Independent across the North"
+confidence = "low"
+source = "none known (unverified)"
+note = "Date is rock-art inference; hard to find in the ground"
+
+[[tech]]
+id = "bone_skates"
+name = "Bone ice skates"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["found_tools"]
+env = ["frost"]
+earliest_kyr = 5.0
+origins = [ {where = "Finland/Russia", kyr = 5.0} ]
+spread_note = "Local to the Baltic"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "dog_sleds"
+name = "Dog sleds"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sledges", "dogs"]
+env = ["frost"]
+earliest_kyr = 9.5
+origins = [ {where = "Siberia (Zhokhov)", kyr = 9.5}, {where = "N America", kyr = 1.0} ]
+spread_note = "Arctic peoples"
+confidence = "low"
+source = "Pitulko et al. 2017, Zhokhov Island dog remains (unverified)"
+
+[[tech]]
+id = "reindeer_draught"
+name = "Reindeer as draught and riding animals"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["sledges", "herding"]
+env = ["frost"]
+earliest_kyr = 1.5
+origins = [ {where = "Siberia (Sayan)", kyr = 1.5}, {where = "Fennoscandia", kyr = 0.5} ]
+spread_note = "Boreal herders"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "pack_animals"
+exists = true
+name = "Pack animals"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["herding"]
+earliest_kyr = 7
+origins = [ {where = "NE Africa (donkey)", kyr = 7}, {where = "Andes (llama)", kyr = 5.0} ]
+spread_note = "Spread with caravan trade"
+confidence = "medium"
+source = "Rossel et al. 2008, PNAS (unverified)"
+
+[[tech]]
+id = "pack_saddle"
+name = "Pack saddle"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["pack_animals"]
+earliest_kyr = 4.5
+origins = [ {where = "Near East", kyr = 4.5} ]
+spread_note = "With donkey caravans"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "donkey_caravans"
+name = "Donkey caravans"
+group = "travel"
+track = "travel"
+domains = ["trade", "move"]
+needs = ["pack_animals", "pack_saddle"]
+earliest_kyr = 4.0
+origins = [ {where = "Mesopotamia/Anatolia (Kanesh)", kyr = 4.0} ]
+spread_note = "Bronze Age trade"
+confidence = "medium"
+source = "Larsen 2015, Ancient Kanesh (unverified)"
+
+[[tech]]
+id = "llama_packs"
+name = "Llama pack trains"
+group = "travel"
+track = "travel"
+domains = ["trade", "move"]
+needs = ["pack_animals"]
+earliest_kyr = 5.0
+origins = [ {where = "Andes", kyr = 5.0} ]
+spread_note = "Andean highlands only"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "camel_packs"
+name = "Camel packing and caravans"
+group = "travel"
+track = "travel"
+domains = ["trade", "move"]
+needs = ["pack_animals"]
+env = ["desert"]
+earliest_kyr = 3.0
+origins = [ {where = "Arabia (dromedary)", kyr = 3.0}, {where = "Central Asia (Bactrian)", kyr = 4.5} ]
+spread_note = "Spread over Sahara and Silk Road"
+confidence = "medium"
+source = "Magee 2014, Archaeology of Prehistoric Arabia (unverified)"
+
+[[tech]]
+id = "camel_saddle"
+name = "Camel saddles"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["camel_packs", "saddles"]
+env = ["desert"]
+earliest_kyr = 2.5
+origins = [ {where = "N Arabia", kyr = 2.5}, {where = "S Arabia", kyr = 2.0} ]
+spread_note = "Arabia, then Sahara"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "ox_traction"
+name = "Cattle traction (yoke and ard)"
+group = "travel"
+track = "travel"
+domains = ["move", "food"]
+needs = ["herding"]
+earliest_kyr = 6.5
+origins = [ {where = "Near East", kyr = 7.0}, {where = "Europe", kyr = 6.0} ]
+spread_note = "Spread with plough farming"
+confidence = "medium"
+source = "Sherratt 1983, Secondary Products Revolution (unverified)"
+
+[[tech]]
+id = "wheel"
+exists = true
+name = "Wheel and cart"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["pack_animals", "ground_stone"]
+earliest_kyr = 5.6
+origins = [ {where = "Mesopotamia", kyr = 5.5}, {where = "Europe (Bronocice)", kyr = 5.4}, {where = "Caucasus", kyr = 5.5} ]
+spread_note = "Rapid across Eurasia"
+confidence = "medium"
+source = "Anthony 2007 (unverified)"
+
+[[tech]]
+id = "spoked_wheel_chariot"
+name = "Spoked wheel and chariot"
+group = "travel"
+track = "travel"
+domains = ["war", "move"]
+needs = ["wheel", "riding"]
+earliest_kyr = 4.0
+origins = [ {where = "Sintashta, Eurasian steppe", kyr = 4.0}, {where = "Anatolia", kyr = 3.8} ]
+spread_note = "Fast in Near East, Egypt, China"
+confidence = "medium"
+source = "Anthony 2007 (unverified)"
+note = "Also tagged war"
+
+[[tech]]
+id = "equid_wagons"
+name = "Equid-drawn four-wheeled war cart"
+group = "travel"
+track = "travel"
+domains = ["war", "move"]
+needs = ["wheel"]
+earliest_kyr = 4.6
+origins = [ {where = "Mesopotamia", kyr = 4.6} ]
+spread_note = "Near East"
+confidence = "medium"
+source = "Standard of Ur (unverified)"
+note = "Onager-drawn, solid wheels"
+
+[[tech]]
+id = "wheelbarrow"
+name = "Wheelbarrow"
+group = "travel"
+track = "travel"
+domains = ["move", "build"]
+needs = ["wheel"]
+earliest_kyr = 2.0
+origins = [ {where = "China (Han)", kyr = 2.0}, {where = "Greece", kyr = 2.4}, {where = "Europe", kyr = 0.8} ]
+spread_note = "Reinvented in China and Europe"
+confidence = "low"
+source = "Needham 1965, Science and Civilisation in China vol. 4:2 (unverified)"
+
+[[tech]]
+id = "iron_tyred_wheel"
+name = "Iron-tyred wheels"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["wheel", "iron"]
+earliest_kyr = 2.5
+origins = [ {where = "Celtic Europe", kyr = 2.5} ]
+spread_note = "Rapid in Iron Age Europe"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "riding"
+exists = true
+name = "Riding"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["pack_animals"]
+earliest_kyr = 5.5
+origins = [ {where = "Kazakhstan (Botai)", kyr = 5.5}, {where = "Pontic-Caspian", kyr = 4.2} ]
+spread_note = "Steppe herders first"
+confidence = "medium"
+source = "Outram 2009; Librado 2021 (unverified)"
+
+[[tech]]
+id = "bit_and_bridle"
+name = "Bit and bridle"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["riding"]
+earliest_kyr = 3.5
+origins = [ {where = "Steppe", kyr = 3.5}, {where = "Botai (bit wear, contested)", kyr = 5.5} ]
+spread_note = "Steppe spread"
+confidence = "low"
+source = "none known (unverified)"
+note = "Botai bit wear is disputed"
+
+[[tech]]
+id = "saddles"
+name = "Saddles (pad and tree)"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["riding", "sewing"]
+earliest_kyr = 2.7
+origins = [ {where = "Scythia (Pazyryk)", kyr = 2.7}, {where = "Rome/Sarmatia (horned)", kyr = 2.0} ]
+spread_note = "Steppe spread"
+confidence = "medium"
+source = "Pazyryk finds (unverified)"
+
+[[tech]]
+id = "stirrups"
+name = "Stirrups"
+group = "travel"
+track = "travel"
+domains = ["war", "move"]
+needs = ["saddles"]
+earliest_kyr = 1.7
+origins = [ {where = "China (Jin tomb)", kyr = 1.7} ]
+spread_note = "Spread west with the Avars, Hungarians"
+confidence = "medium"
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+
+[[tech]]
+id = "horse_collar"
+name = "Horse collar and breast harness"
+group = "travel"
+track = "travel"
+domains = ["move", "food"]
+needs = ["riding"]
+earliest_kyr = 2.0
+origins = [ {where = "China (breast strap)", kyr = 2.2}, {where = "China (collar, c. 5th c.)", kyr = 1.5}, {where = "Europe", kyr = 1.1} ]
+spread_note = "China to Europe by 10th c."
+confidence = "medium"
+source = "Needham 1965 (unverified)"
+
+[[tech]]
+id = "horseshoes"
+name = "Horseshoes (hipposandals and nailed shoes)"
+group = "travel"
+track = "travel"
+domains = ["move"]
+needs = ["riding", "iron"]
+earliest_kyr = 2.0
+origins = [ {where = "Rome (hipposandal)", kyr = 2.0}, {where = "Europe (nailed)", kyr = 1.1} ]
+spread_note = "Gradual"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "camel_riding"
+name = "Camel riding"
+group = "travel"
+track = "travel"
+domains = ["move", "war"]
+needs = ["camel_packs"]
+earliest_kyr = 3.0
+origins = [ {where = "Arabia", kyr = 3.0} ]
+spread_note = "Desert peoples"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "elephant_riding"
+name = "Elephant riding and war elephants"
+group = "travel"
+track = "travel"
+domains = ["war", "move"]
+needs = ["pack_animals"]
+earliest_kyr = 3.5
+origins = [ {where = "Indus Valley (seals)", kyr = 4.0}, {where = "India (Mauryan)", kyr = 2.4} ]
+spread_note = "South Asia, then Hellenistic armies"
+confidence = "low"
+source = "Trautmann 2015, Elephants and Kings (unverified)"
+note = "Domestication date disputed"
+
+[[tech]]
+id = "roads"
+exists = true
+name = "Roads and bridges"
+group = "travel"
+track = "travel"
+domains = ["build", "trade"]
+needs = ["wheel", "towns"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt (Widan el-Faras)", kyr = 4.6}, {where = "Mesopotamia", kyr = 4.5} ]
+spread_note = "Spread with states"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "timber_trackways"
+name = "Timber trackways and corduroy roads"
+group = "travel"
+track = "travel"
+domains = ["build", "move"]
+needs = ["roads"]
+env = ["wetland", "timber"]
+earliest_kyr = 5.8
+origins = [ {where = "England (Sweet Track)", kyr = 5.8}, {where = "N Europe bogs", kyr = 5.0} ]
+spread_note = "Wetland Europe"
+confidence = "high"
+source = "Coles & Coles 1986, Sweet Track (unverified)"
+
+[[tech]]
+id = "log_bridges"
+name = "Log and plank bridges"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["cordage"]
+env = ["timber"]
+earliest_kyr = 7.0
+origins = [ {where = "Europe (Neolithic)", kyr = 7.0} ]
+spread_note = "Obvious and independent"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "stone_arch_bridge"
+name = "Stone arch bridge"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["roads", "mortar"]
+earliest_kyr = 3.3
+origins = [ {where = "Greece (Arkadiko)", kyr = 3.3}, {where = "Rome", kyr = 2.2} ]
+spread_note = "Rome carries it widely"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "segmental_arch_bridge"
+name = "Segmental arch bridge"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["stone_arch_bridge"]
+earliest_kyr = 1.4
+origins = [ {where = "China (Anji)", kyr = 1.4} ]
+spread_note = "Europe later"
+confidence = "medium"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "rope_bridges"
+name = "Rope suspension bridges"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["cordage"]
+env = ["fibre"]
+earliest_kyr = 2.5
+origins = [ {where = "Himalaya", kyr = 2.5}, {where = "Andes", kyr = 0.6} ]
+spread_note = "Independent in mountains"
+confidence = "low"
+source = "none known (unverified)"
+note = "Perishable; Inca c. 1450 CE firmly known"
+
+[[tech]]
+id = "chain_suspension_bridge"
+name = "Iron chain suspension bridges"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["rope_bridges", "iron"]
+earliest_kyr = 2.0
+origins = [ {where = "China/Tibet", kyr = 2.0} ]
+spread_note = "Reached Europe in 17th century"
+confidence = "medium"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "pontoon_bridges"
+name = "Pontoon bridges"
+group = "travel"
+track = "travel"
+domains = ["build", "war"]
+needs = ["plank_boats"]
+earliest_kyr = 3.0
+origins = [ {where = "China (Zhou)", kyr = 3.0}, {where = "Persia", kyr = 2.5} ]
+spread_note = "Armies"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "paved_roads"
+name = "Engineered paved roads (Roman, Persian, Inca)"
+group = "travel"
+track = "travel"
+domains = ["build", "trade", "war"]
+needs = ["roads", "stone_arch_bridge"]
+earliest_kyr = 2.5
+origins = [ {where = "Persia (Royal Road)", kyr = 2.5}, {where = "Rome (Via Appia)", kyr = 2.3}, {where = "Andes (Qhapaq Nan)", kyr = 0.6} ]
+spread_note = "Independent in Persia, Rome, China and Andes"
+confidence = "medium"
+source = "Chevallier 1976, Roman Roads (unverified)"
+
+[[tech]]
+id = "milestones_waystations"
+name = "Milestones, relay posts and waystations"
+group = "travel"
+track = "travel"
+domains = ["trade", "know"]
+needs = ["roads", "writing"]
+earliest_kyr = 2.5
+origins = [ {where = "Persia", kyr = 2.5}, {where = "Rome", kyr = 2.1}, {where = "Andes (tambos)", kyr = 0.6} ]
+spread_note = "State-run"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "caravanserais"
+name = "Caravanserais"
+group = "travel"
+track = "travel"
+domains = ["trade", "build"]
+needs = ["milestones_waystations"]
+earliest_kyr = 0.9
+origins = [ {where = "Persia/Central Asia", kyr = 0.9}, {where = "Achaemenid stations", kyr = 2.5} ]
+spread_note = "Spread along Silk Road"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "harbours"
+name = "Harbours and quays"
+group = "travel"
+track = "travel"
+domains = ["build", "trade"]
+needs = ["plank_boats"]
+earliest_kyr = 4.6
+origins = [ {where = "Egypt (Wadi al-Jarf)", kyr = 4.6}, {where = "Indus (Lothal, contested)", kyr = 4.4} ]
+spread_note = "With trade"
+confidence = "medium"
+source = "Tallet 2017, Wadi al-Jarf (unverified)"
+
+[[tech]]
+id = "lighthouses"
+name = "Lighthouses"
+group = "travel"
+track = "travel"
+domains = ["build", "move"]
+needs = ["harbours"]
+earliest_kyr = 2.3
+origins = [ {where = "Egypt (Pharos)", kyr = 2.3} ]
+spread_note = "Spread around Mediterranean"
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "navigation_canals"
+name = "Navigation canals"
+group = "travel"
+track = "travel"
+domains = ["build", "trade"]
+needs = ["irrigation", "plank_boats"]
+earliest_kyr = 4.0
+origins = [ {where = "Egypt", kyr = 4.0}, {where = "China (Hangou, 486 BCE)", kyr = 2.5} ]
+spread_note = "Independent in Egypt, China, Mesopotamia"
+confidence = "low"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "flash_locks"
+name = "Flash locks"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["navigation_canals"]
+earliest_kyr = 2.2
+origins = [ {where = "China (Lingqu)", kyr = 2.2} ]
+spread_note = "China, then rest"
+confidence = "low"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "pound_locks"
+name = "Pound locks with mitre gates"
+group = "travel"
+track = "travel"
+domains = ["build"]
+needs = ["flash_locks"]
+earliest_kyr = 1.0
+origins = [ {where = "China (Qiao Weiyue)", kyr = 1.0}, {where = "Italy (mitre gates)", kyr = 0.55} ]
+spread_note = "China, then Europe 15th c."
+confidence = "medium"
+source = "Needham 1971 (unverified)"
+
+[[tech]]
+id = "navigation"
+exists = true
+name = "Star and compass navigation"
+group = "travel"
+track = "travel"
+domains = ["move", "know"]
+needs = ["outriggers", "writing"]
+earliest_kyr = 1.0
+origins = [ {where = "China", kyr = 1.0} ]
+spread_note = "Textbook"
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "ferry_crossings"
+name = "Ferries and cable ferries"
+group = "travel"
+track = "travel"
+domains = ["move", "trade"]
+needs = ["rafts"]
+earliest_kyr = 4.0
+origins = [ {where = "Mesopotamia", kyr = 4.0} ]
+spread_note = "Rivers worldwide"
+confidence = "low"
+source = "none known (unverified)"
