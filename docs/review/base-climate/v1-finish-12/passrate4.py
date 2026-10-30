@@ -35,13 +35,16 @@ WET_TREES = 20.0  # % trees on the wet equatorial lowland (PW-806)
 PCO2_DIAG = (180.0, 600.0)  # ppm at the end (diagnostic)
 
 
-def judge(t, si, dT, a, b, il=None):
+def judge(t, si, dT, a, b, il=None, star=None):
     """il: the share of land under ice (0..1) on the same samples (C.series(raw)["iced_land"]). Without it the
-    land terms are None and nothing is frozen over."""
+    land terms are None and nothing is frozen over. star: the star's forcing on them (C.series(raw)["star"]):
+    frozen over fails only in C.hard_window (the star near its final brightness, the run's last 300 Myr at most;
+    owner 2026-10-30); before it, frozen_any is reported only."""
     w = (t >= a) & (t < b)
     if not w.any():
         return None
-    ice = C.ice_terms(si[w], None if il is None else il[w])
+    hard, h0, which = C.hard_window(t[w], None if star is None else star[w])
+    ice = C.ice_terms(si[w], None if il is None else il[w], hard=hard)
     share, deep = ice["icehouse_pct"], ice["deep_pct"]
     med, mx = float(np.median(dT[w])), float(dT[w].max())
     hell = med > 10.5 or mx > 15.5
@@ -50,12 +53,13 @@ def judge(t, si, dT, a, b, il=None):
     # Never-ice and the old icebox rule (icehouse >= 90% or deep >= 30%) are reported only. The set-level check
     # (fmtally, pjudge) flags the sim as wrong if nearly all worlds are frozen over or nearly all hellhouses.
     return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, never=ice["never_ice"], frozen=frozen,
+                frozen_any=bool(ice["frozen_over_any"]), hard_from=h0, hard_by=which,
                 glacial_max=bool(ice["glacial_max"]), land_ice_peak=ice["land_ice_peak"],
                 icehouse=ice["icehouse"], always_icy=bool(share >= 90 or deep >= 30), ok=not hell and not frozen)
 
 
 def flags(j):
-    return ((" HELL" if j["hell"] else "") + (" FROZEN-OVER" if j["frozen"] else "") + (" GLACIAL-MAX" if j["glacial_max"] else "")
+    return ((" HELL" if j["hell"] else "") + (" FROZEN-OVER" if j["frozen"] else (" frozen-dim-star" if j.get("frozen_any") else "")) + (" GLACIAL-MAX" if j["glacial_max"] else "")
             + (" ICEHOUSE" if j["icehouse"] else "") + (" NEVER-ICE" if j["never"] else ""))
 
 

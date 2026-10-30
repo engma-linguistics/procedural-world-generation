@@ -11,7 +11,7 @@ impact: med
 found_by: lane76
 blocked_by: []
 relates: [PW-917, PW-887, PW-920]
-refs: [planet/lineages/history/dispersal.py, planet/lineages/history/competition.py, planet/lineages/history/pressure.py, planet/lineages/history/params.py]
+refs: [docs/review/peoples-demography/report.md, planet/lineages/history/dispersal.py, planet/lineages/history/competition.py, planet/lineages/history/pressure.py, planet/lineages/history/params.py]
 created: 2026-10-30
 updated: 2026-10-30
 ---

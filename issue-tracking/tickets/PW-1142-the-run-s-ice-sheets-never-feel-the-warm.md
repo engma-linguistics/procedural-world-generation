@@ -2,7 +2,7 @@
 id: PW-1142
 title: The run's ice sheets never feel the warm orbital phases that end real ice ages, so they outlast the climate that made them
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -52,5 +52,6 @@ Lean: B, then judge. Option A changes how every run's ice behaves, so it needs t
 - [ ] Owner: A, B or C
 
 ## Updates
+- 2026-10-30: Status in-progress -> done. Merged lane 75: kitchen-sink ice (melt-gated summer lapse, warm-phase persistence, bare-ice absorb); the hard bar counts only near the final Sun. 18-draw judge: 0/18 frozen in window, 12/18 pass (main 11/18); L7 draw passes. Earth Greenland 68 cells (owner accepted); ice flow is v2.
 - 2026-10-30: Owner 10-30 D10: back in v1 (about a quarter of worlds froze over: today's main 4/18 at roll 0.0005, judge stopped at 36/72). Owner asks whether an equation can let warm years and warm months melt more than cool ones do: average the melt over the orbital states rather than the temperature (PDD convexity).
 - 2026-10-30: Created from inbox draft draft-run-sheets-see-warm-orbits.md (found by lane67).
