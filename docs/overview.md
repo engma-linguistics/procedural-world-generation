@@ -806,6 +806,37 @@ A ledger of villages, towns and cities over the last ~12.5 kyr, read after a peo
 
 **Who works the mines (PW-1116, fun lane 68).** Each line has a mining affinity from what its kind carries (`MINING_TRAIT`: miner 1.0, subterranean 0.8, mountain 0.25, hardy 0.1, else 0.05; orc and goblinoid kin 0.4, D&D lore, since no trait says so; flyers x0.3 for their hollow bones, swimmers x0.2). Kinds without hands never learn 'mines' (the tech tree's grip), so hands need no weight. A deposit cell's mine goes to its second people (at least `SECOND_MIN` of the heads, a people of its own) when that people's affinity beats the lead's by `MINE_EDGE` (0.2), else to the lead, else to the second; so dwarves, kobolds, gnomes, orcs and goblinoids work deposits as minorities amid humans. A mine holds `MINE_SHARE` x (0.5 + affinity) of the cell's people, and only the best site of each ring of cells keeps one (a seam is worked at a few pits, not one per cell). Literature (open pages only; excerpts read, no figures from memory): Mitterberg has over 200 smelting sites over roughly a millennium in one district (Bergbau-Museum Bochum project page); Great Orme made up to 1,760 t of copper in some eight centuries with a "full-time mining community" (Wikipedia, Liverpool Univ. news 2019); Hallstatt salt was worked by "specialist workers" (Wikipedia); Schwaz had about 7,400 Knappen in a town of some 20,000 around 1500 (Austria-Forum); and Banska Stiavnica's thinly peopled district was settled by miners the Hungarian crown invited from Tyrol and Saxony (1235 charter), a foreign mining colony among another people. None gave a miner share of a whole population, so `MINE_SHARE` stays a judgement. On lane 61's four runs the live mines fell from 2,193-2,277 to 259-328 and the human share from 95% to 42-80% (dwarves 3-12, kobolds 15-42, gnomes 4-52, orcs 5-16, goblins and hobgoblins 38-84; dwarves stay few because they hold few ore cells in these worlds).
 
+**Mining follows need; mining kinds find ore (owner D12, fun lane 72).** A mine is a mining district, not a pit: the pits and the mining settlement of one seam, the best deposit of its ring of cells. The globe draws each as one diamond. Knowing 'mines' and 'copper' is no longer enough to open one.
+
+When a people opens a mine:
+- It needs demand: farmers' and herders' share of the cell's people (eraq farm + herd) at `MINE_NEED` (0.3) or more, a live town or city within two rings (a market), or a mining kind (affinity at `MINE_KIND`, 0.8, or more: dwarves, kobolds, gnomes, drow), which mines for its own sake.
+- Ore mines also wait a per-people seeded lag (`MINE_LAG_KYR`, median 1 kyr, lognormal sigma 0.5) after the people's copper smelting.
+- A people with no demand of its own takes mining up by exposure: once a mine has stood within two rings for `MINE_EXPOSE_STEPS` (1 kyr).
+
+Real-world grounding (pages read on 10-30):
+- The Old Copper complex of the Great Lakes worked native copper "by heating, annealing and hammering" from quarries on Isle Royale and the Keweenaw. Its artefacts date "from 6500 to 1580 BCE", and it never smelted (Wikipedia, Old Copper complex). The North American Archaic was a foraging economy "supported through the exploitation of nuts, seeds, and shellfish" (Wikipedia, Archaic period (North America)).
+- North of the Rio Grande, "no one has found evidence that points to the use of melting, smelting and casting", though there are "thousands of copper mining pits" along Lake Superior. The Andes had gold from 2155-1936 BC and copper smelting perhaps from 700 BC, and "Metallurgy only appears in Mesoamerica in 800 CE" (Wikipedia, Metallurgy in pre-Columbian America).
+- The Great Orme copper mines opened "around 4,000 years ago", some three millennia after the first smelting at Belovode (Wikipedia, Great Orme Mines; the tech tree's copper source).
+- None of these gives a number for MINE_NEED or the lag, so both are judgements. Native-copper pits without smelting (the Old Copper case) are not modelled.
+
+Mining colonies (the PW-854 salt-colony rule, for ore; the pattern of "a few big specialist centres worked by miners brought in" that the owner accepted):
+- A mining kind that knows 'mines' and 'copper' works an ore district (best ore good at `COLONY_ORE`, 0.5, or more) within `COLONY_KM` (300 km) of its own country, even where other peoples lead and second the cell, when it is clearly more inclined (`MINE_EDGE`) than the cell's own miner. The most inclined kind wins, then the nearest.
+- Such a mine carries `colony: true` and its `district` (the ore goods, e.g. 'copper and gold', or 'rock salt'). The hover card calls it "mining colony of the dwarves: a mining town of ~1,867 incomers, working the gold district". The brief lists the colonies under "Towns and cities", and run.txt counts them.
+- A rich-only rule (0.75) gave dwarves 0-5 colonies a run.
+
+Effect on the seven runs (488d7e 6128a3 114231 570701 6553f1 8d6884 e368d1):
+- Live mining districts rose from 255-380 to 277-412, 38-81 of them colonies.
+- Dwarves 3-12 -> 4-18, kobolds 15-43 -> 28-76, gnomes 3-52 -> 3-55, drow 0-7 -> 0-14.
+- The human share fell from 42-80% to 36-72%.
+- The need rule mostly delays mining: on 488d7e, 194 mines at 4 kyr ago became 36, and 257 at 3 kyr ago became 75. The present is about the same, because only dense farming cells reach a mine's 300 people anyway.
+
+Dwarves stay few because their range is small: present on 69-184 of ~14,100 land cells, 54% of them ore but only 3.8% rich ore. Ore 'districts' at ORE_MIN cover 46% of land. Both are inbox drafts.
+
+Viewer, under Overlays > Settlements:
+- A 'mines (mining districts)' box: the diamonds now fade in with the towns, and a colony gets a white ring.
+- An 'only the mines' box: the diamonds larger, at every scale.
+- `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
+
 ## 3. Calibration and validation
 
 **Tests** (`uv run pytest -q`, 180 tests): invariants (determinism, the crust budget closing, sane values, storage that doesn't clip, the sim → world → zoom chain), envelopes (plausible ranges: land 22–42%, dry climates 12–45% of land, continental crust 33–50%, plate speeds 2–9 cm/yr, 5–30 plates, ocean age 25–120 Myr, churn), and golden hashes of a short L4 run and one climate computation, so refactors can be shown not to change results.

@@ -47,4 +47,14 @@ PW-1114 and PW-1117 (fun lane 66), run 570701 (tech tree redone on main 644ac30c
 | [18-kobold-hold-city-1kyr-ago.png](18-kobold-hold-city-1kyr-ago.png) | the same cell 1 kyr ago |
 | [19-region-8kyr-ago.png](19-region-8kyr-ago.png), [20-region-4kyr-ago.png](20-region-4kyr-ago.png) | one region at 8 and 4 kyr ago, where the size classes are the era's (a town from 1,000 people) |
 
+D12 (fun lane 72), mining colonies and the mines view. Runs 488d7e and 570701 were rebuilt with this branch (tech tree and settlements); taken 2026-10-30 with headless Chrome against a lane server on port 8872. Each shot is the deep link shown (`/viewer/?...`), and the cell picked by `lat`/`lon` is a mining colony:
+
+| Shot | Link | What |
+|---|---|---|
+| [21-dwarf-gold-colony-488d7e.png](21-dwarf-gold-colony-488d7e.png) | `run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3` | 'only the mines', the peoples layer: the hover shows "mining colony of the dwarves: a mining town of ~1,867 incomers, working the gold district; founded ~2.6 kyr ago". A colony has a white ring |
+| [22-kobold-gold-colony-570701.png](22-kobold-gold-colony-570701.png) | `run=570701&settle=mines&layer=peoples&lat=32.445&lon=118.717&dist=2.3` | a kobold colony (orange diamonds) working the gold district, ~666 incomers, among human nomads and halflings |
+| [23-gnome-iron-colony-488d7e.png](23-gnome-iron-colony-488d7e.png) | `run=488d7e&settle=mines&layer=peoples&lat=3.045&lon=145.776&dist=2.3` | gnome colonies (lilac) in the iron and copper districts of Tenar |
+| [24-mines-only-globe-488d7e.png](24-mines-only-globe-488d7e.png) | `run=488d7e&settle=mines&view=30,100` | the whole globe with only the mining districts (321 on this run) |
+| [25-mines-among-towns-488d7e.png](25-mines-among-towns-488d7e.png) | `run=488d7e&settlements=1&layer=peoples&lat=39.77&lon=75.096&dist=2.3` | the same place with all settlements: the diamonds now fade in with the towns, not the villages |
+
 Numbers and the judgement constants: see PW-1011's Updates and `planet/lineages/settlements.py` (CONST).

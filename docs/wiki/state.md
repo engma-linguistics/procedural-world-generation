@@ -8,6 +8,12 @@
 - Fun (10-29): megafauna PW-958/959/977 stage 1 and sapiens dates PW-978/971 merged. Lane 45 running: people density PW-974 + PW-977 stage 2 (peoples' and predators' share of the food). Owner decisions open: PW-948, PW-990, PW-987, PW-988.
 - Fun lane 66 (10-30, branch worktree-agent-a6adfb4eb11252857): settlement size classes now follow the holder's techs (stages villages, towns, cities, cities+roads; town 1,000 or 2,000, city 10,000, city caps from Reba 2016's tables; village and town bands UNVERIFIED pending Fletcher 1995) and second peoples' places churn far less (PW-1114, PW-1117; overview 2.25). PW-1116 (mine count) still waits on the owner.
 - Fun lane 68 (10-30): PW-1116 done on its branch: mines go to the cell's most mining-inclined people even as a minority (affinity from traits and kin), one mining district per ring of cells; ~2,200 mines a run became 260-370, humans 95% -> 42-80%; overview 2.25. Rebuilt techtree and settlements on all seven runs with a settlements doc (488d7e 6128a3 114231 570701 6553f1 8d6884 e368d1).
+- Fun lane 72 (10-30, owner D12): mining follows need and dwarves find ore, both settlement-side (no history re-run).
+  - Mines open only where wanted: farmers and herders, a town's market within two rings, a mining kind, or slow exposure to a nearby mine. Ore mines wait a seeded ~1 kyr after smelting.
+  - Mining kinds (dwarves, kobolds, gnomes, drow) send colonies of incomers to ore districts within 300 km of their country.
+  - 255-380 mines a run became 277-412, 38-81 of them colonies. Dwarves 3-12 -> 4-18, kobolds 15-43 -> 28-76, humans 42-80% -> 36-72%. At 4 kyr ago 194 -> 36 mines on 488d7e.
+  - Viewer: a 'mines' box and an 'only the mines' box, a hover naming the district and colony, and the deep link `?settle=mines&lat=..&lon=..&dist=2.3`. Overview 2.25.
+  - Techtree and settlements rebuilt on the seven runs. 114231 and 8d6884 are the same seed (9000) on the same world, and so are 6128a3 and e368d1 (8000).
 - Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1
