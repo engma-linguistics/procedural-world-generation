@@ -53,3 +53,4 @@ district on this reading.
 
 ## Updates
 - 2026-10-30: Created from inbox draft draft-ore-districts-cover-half-the-land.md (found by fun-lane-72).
+- 2026-10-30: Option A built by fun-lane-74 (owner/coordinator approved): mining.ORE_MIN 0.75 on the raw layers (mining.ore_good/ore_cells read G['_raw']), so mines, districts, colonies and the miner kinds count rich deposits only; ore country 46.5% -> 7.7% of land on 4360a3. History pull untouched. Techtree deposit_min left at 0.5 (a 0.75 raw test removes iron from every people on 488d7e; see draft-techtree-deposit-test-on-raw-ore). Seven peoples runs re-settled: districts 4349 -> 1173 (-73%), colonies 652 -> 180.

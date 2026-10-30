@@ -12,7 +12,8 @@ from __future__ import annotations
 import numpy as np
 
 SALT_MIN = 0.25  # the rock-salt good (0..1, one ring inland) from this is a bed worth working (as seafood.SRC_MIN)
-ORE_MIN = 0.5  # an ore good from this is a district (land.DISTRICT_MIN)
+ORE_MIN = 0.75  # a RAW ore good (the per-cell deposit likelihood, no one-ring reach) from this is a worked district (PW-1146: at 0.5 with the
+# reach it was 46% of land; here ~8%, rare and clustered as on Earth). land.DISTRICT_MIN (0.5, the notes' districts) and the history's pull stay.
 ORE_GOODS = ("gold", "iron", "copper", "tin", "gems", "mithril", "metal")
 HELD_MIN = 0.05  # a share of a people's cells that must carry salt (or ore) for it to work it: a mine is a point, not a plain
 NEEDS = (("fertile", "grain and bread"), ("grazing", "meat, wool, hides and cheese"), ("timber", "timber and charcoal"),
@@ -30,9 +31,14 @@ def kind_of(salt_share: float, ore_share: float) -> str | None:
     return "salt and ore" if s and o else "salt" if s else "ore" if o else None
 
 
+def ore_good(G: dict, k: str) -> np.ndarray:
+    """An ore good per cell on its raw layer (the deposit likelihood in the cell itself; the good G[k] carries it a ring further)."""
+    return np.asarray(G.get("_raw", {}).get(k, G[k]), float)
+
+
 def ore_cells(G: dict) -> np.ndarray:
-    """Per cell: the best ore good (0..1)."""
-    return np.maximum.reduce([np.asarray(G[k], float) for k in ORE_GOODS if k in G])
+    """Per cell: the best ore good (0..1), raw: no reach, so a district is a cell with a deposit and not the country around it."""
+    return np.maximum.reduce([ore_good(G, k) for k in ORE_GOODS if k in G])
 
 
 def salt_cells(G: dict) -> np.ndarray:

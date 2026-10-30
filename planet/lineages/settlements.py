@@ -113,7 +113,7 @@ CONST = {
     "MINE_KIND": 0.8,       # a mining affinity (MINING_TRAIT) from this is a mining kind (miner or subterranean: dwarves, kobolds,
                             # gnomes): it mines for its own sake, at once, and sends colonies
     "COLONY_KM": 300.0,     # a mining kind works the rich districts this far from its own country as a colony of incomers (mining.COLONY_KM, PW-854)
-    "COLONY_ORE": 0.5,      # ... an ore district this rich (the best ore good; mining.ORE_MIN: rich-only, 0.75, gave dwarves 0-5 colonies a run)
+    "COLONY_ORE": 0.75,     # ... an ore district this rich (the raw best ore good; PW-1146: districts are now >= mining.ORE_MIN = 0.75, so this is no stricter)
 }
 TIERS = ("none", "village", "town", "city")
 STAGES = ("nothing", "villages", "towns", "cities", "cities and roads")  # (PW-1114: what the holding people knows sets the size classes)
@@ -225,8 +225,8 @@ def district_name(D: dict, cell: int) -> str:
     G = D["G"]
     if G is None:
         return "ore"
-    got = sorted(((float(np.asarray(G[k])[cell]), ORE_NAMES[k]) for k in MN.ORE_GOODS if k in G and k != "metal"
-                  and float(np.asarray(G[k])[cell]) >= MN.ORE_MIN), reverse=True)[:2]
+    got = sorted(((float(MN.ore_good(G, k)[cell]), ORE_NAMES[k]) for k in MN.ORE_GOODS if k in G and k != "metal"
+                  and float(MN.ore_good(G, k)[cell]) >= MN.ORE_MIN), reverse=True)[:2]
     if got:
         return " and ".join(n for _, n in got)
     if D["dep"][0, cell]:

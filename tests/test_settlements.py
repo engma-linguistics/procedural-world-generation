@@ -235,3 +235,11 @@ def test_a_mining_kind_sends_colonies_to_rich_districts_nearby(tmp_path, monkeyp
     rings = max(1, int(round(ST.CONST["COLONY_KM"] / (g.spacing * ST.R_KM))))
     assert col and all(s["holder"] == "d" and 1 <= dist[s["cell"]] <= rings for s in col)
     assert not [s for s in sites if s["kind"] == "mine" and dist[s["cell"]] > rings]  # (the others know no copper)
+
+
+def test_ore_district_reads_raw_layer_at_075():
+    """PW-1146: an ore district is the raw deposit likelihood at ORE_MIN (0.75), not the good with its one-ring reach at 0.5."""
+    from planet.lineages import mining as MN
+    G = {"copper": np.array([0.0, 0.6, 0.8, 0.7]), "_raw": {"copper": np.array([0.0, 0.0, 0.8, 0.6])}}
+    assert list(MN.ore_cells(G) >= MN.ORE_MIN) == [False, False, True, False]
+    assert MN.ORE_MIN == 0.75
