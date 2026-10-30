@@ -322,7 +322,7 @@ const LAYERS = {
       const L = S.V.layers, lines = S.V.run.meta.lineages || [], cnt = new Map(), ov = L.peoples_overlay;
       for (let i = 0; i < S.V.n; i++) { const d = ov ? ov[i] : 255; if (d !== 255 && lines[d]) cnt.set(d, (cnt.get(d) || 0) + 1); }
       return [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d].color, esc(lines[d].name))).join('') +
-        '<span class="muted">templates and contact hybrids; elsewhere the leading people</span>';
+        '<span class="muted">templates, contact hybrids (half-elves, half-orcs) and minorities in other peoples\' cities (PW-889); elsewhere the leading people</span>';
     } },
   '@body': {}, '@animal': {}, '@crop': {},  // (the families' places in the menus)
   'land use': { group: 'peoples', needs: ['tree_cover', 'ice'], in: { tz: (V) => !!V.run?.meta?.anthro },

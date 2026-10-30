@@ -6,8 +6,8 @@ import numpy as np
 
 from .. import spec as SP
 from ..spread import EST, rivals_load
-from .params import HOLD_MIN, INVADE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
-from .pressure import crowding, invasion_weights, pioneer_factors
+from .params import HOLD_MIN, INTEGRATE, INVADE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
+from .pressure import crowding, integration_weights, invasion_weights, pioneer_factors, squeeze
 
 
 class CompetitionMixin:
@@ -28,14 +28,22 @@ class CompetitionMixin:
             idx = np.flatnonzero(K >= EST)
             J = np.array([j for j in self._rivals[k] if self.active[L[j].id]], np.int64)
             c = corr[idx]
-            q = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx, c)
+            ak, tk = self.alpha[k], self.terr[k]
+            if INTEGRATE > 0 and not deep and not l.marine and len(J):
+                # integration under pressure (PW-889): a squeezed people feels its friendlier neighbours less, so it shares their land
+                sq = squeeze(self._crowd[k], int((self.p[k] >= EST).sum()), int((K >= 0.3).sum()))
+                if sq > 0:
+                    iw = integration_weights(self.cohab[k], sq)
+                    ak, tk = ak * iw, tk * iw
+            q = rivals_load(self.p, J, ak, tk, idx, c)
             if INVADE > 0 and not deep and not l.marine and len(J):
-                # frontier invasion: along the contact line a denser people weighs its thinner rivals less (PW-887)
+                # frontier invasion: along the contact line a denser people weighs its thinner rivals less (PW-887); not a people
+                # its rival lives among by a wish (PW-889)
                 front = self._dilate(self.p[k] >= EST, 1)[idx]
                 if front.any():
-                    w = invasion_weights(self.dens, k)
+                    w = np.where(self._among[k], 1.0, invasion_weights(self.dens, k))
                     fi = np.flatnonzero(front)
-                    q[fi] = rivals_load(self.p, J, self.alpha[k] * w, self.terr[k] * w, idx[fi], c[fi])
+                    q[fi] = rivals_load(self.p, J, ak * w, tk * w, idx[fi], c[fi])
             if "agricultural" in l.traits and step.ago <= FARM_KYR:
                 q = q * np.where(tags["farmland"][idx], 0.5, 1.0)  # farmers push into others' fertile lowland
             press = SP.WAY_PRESS.get(l.way) if l.way and self.animals is not None and self.goods is not None else None

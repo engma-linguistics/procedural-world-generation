@@ -35,7 +35,7 @@ from . import spec as SP
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 11  # 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 12  # 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -817,7 +817,7 @@ def _neighbours(ctx: Ctx, i: int, sel: np.ndarray, place: dict) -> dict:
         rows.append(row)
     rows.sort(key=lambda r: (-r["ring_cells"], r["id"]))
     return {"ring_km": RING_KM, "list": rows[:12],
-            "tier_note": "tier from split depth (T0 under 10 kyr or the same people, T1 under 1.1 Myr: fertile, T2 under 4 Myr: mostly sterile, else T3: no young); border_km is the border of the two peoples (cells of one that touch the other's range without being in it, x cell size), since_kyr their first contact"
+            "tier_note": "tier from split depth (T0 under 10 kyr or the same people: viable, T1 under 1.1 Myr: fertile young absorbed into a parent people, T2 under 4 Myr: mostly sterile, else T3: no young; PW-752); border_km is the border of the two peoples (cells of one that touch the other's range without being in it, x cell size), since_kyr their first contact"
             if ctx.meta.get("contacts") else "interfertility tiers: " + NOT_MODELLED}
 
 
@@ -889,14 +889,18 @@ def _people_contacts(ctx: Ctx, pid: str) -> dict | None:
     pairs = [r for r in c["pairs"] if pid in (r["a"], r["b"])]
     met = [{"id": r["b"] if r["a"] == pid else r["a"], "tier": r["tier"], "first_contact_kyr": r["first_contact_kyr"],
             "years_in_contact": r["years_in_contact"], "in_contact_now": r["in_contact_now"], "border_km_now": r["border_km_now"],
-            "border_km_peak": r["border_km_peak"], "mixed_pct_now": r["mixed_pct_now"], "kind": r["kind"], "series": r["series"]}
+            "border_km_peak": r["border_km_peak"], "mixed_pct_now": r["mixed_pct_now"], "kind": r["kind"], "series": r["series"],
+            **({"stage": r["stage"]} if "stage" in r else {}), **({"mixed_people": r["mixed_people"]} if r.get("mixed_people") else {})}
            for r in sorted(pairs, key=lambda r: (-r["first_contact_kyr"], r["a"], r["b"]))]
     tree = SP.parse(ctx.meta["tree"], ctx.meta.get("mode"))
     tiers: dict[str, list] = {}
+    stages: dict[str, list] = {}
     for l in ctx.lines:
         if l["id"] != pid and not l["group_of"] and l["id"] in tree.lines and pid in tree.lines:
             tiers.setdefault(f"T{tree.tier_of(pid, l['id'])}", []).append(l["id"])
-    return {"met": met, "children_with": tiers, "substrate": (c.get("substrate") or {}).get(pid),
+            stages.setdefault(tree.stage_of(pid, l["id"]), []).append(l["id"])
+    return {"met": met, "children_with": tiers, "children_by_stage": {s: stages[s] for s in SP.STAGES if s in stages},
+            "stage_notes": SP.STAGE_NOTES, "substrate": (c.get("substrate") or {}).get(pid),
             "tier_kyr": c["tier_kyr"], "basis": "stored epochs; years_in_contact sums the span each stored epoch stands for (half the gap to its neighbours) in which the two ranges touch"}
 
 
@@ -1125,8 +1129,10 @@ def markdown(b: dict) -> str:
               f"- Body: {'; '.join(SP.body_notes(q['body'])) or 'the human-like baseline'}", f"- Present: {_kv(q['present'])}", f"- Homeland: {q['homeland']}", f"- Story: {q['story']}"]
         c = q.get("contacts")
         if c:
-            t += ["- Can have children with: " + (", ".join(f"{k} {'/'.join(v)}" for k, v in sorted(c["children_with"].items())) or "none")
-                  + " (T0 the same people or under 10 kyr apart; T1 sister peoples; T2 distant; T3 not)"]
+            bs = c.get("children_by_stage") or {}
+            t += ["- Children with other peoples (by how long ago they split, PW-752): "
+                  + ("; ".join(f"{k} ({c['stage_notes'][k]}): {', '.join(v)}" for k, v in bs.items() if k != "impossible") or "none")
+                  + ("; impossible with the rest" if "impossible" in bs else "")]
             t += [f"- Met {m['id']} ({m['tier']}) {m['first_contact_kyr']} kyr ago, {m['years_in_contact']} yr in contact, border {m['border_km_now']} km now "
                   f"(peak {m['border_km_peak']}), mixed {m['mixed_pct_now']}%, along {m['kind']}" for m in c["met"]]
             sb = c.get("substrate")

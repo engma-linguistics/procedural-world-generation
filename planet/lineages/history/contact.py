@@ -1,4 +1,4 @@
-"""Contact hybrids (PW-613, PW-852): where their parents meet, lingering and fertility."""
+"""Contact hybrids (PW-613, PW-852): where their parents meet, lingering and fertility (by the parents' interfertility stage, PW-752)."""
 
 from __future__ import annotations
 
@@ -24,16 +24,20 @@ class ContactMixin:
         once it has appeared it lingers where they no longer meet, fading (LINGER_KYR) within its own habitat,
         and where they last met it lives on as a small people of its own (PW-613)."""
         g = self.grid
+        f, lingers = self._hybrid_factor(l)
+        if f <= 0:  # (absorbed or impossible, PW-752: no mixed people; never founded, see _start_due)
+            self.p[k][:] = 0
+            return
         a, b = (self.whole(q) for q in l.parents)
         O = self._meeting(a, b)
         meet = O >= EST
         old = self.p[k]
-        linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K) if l.linger else np.zeros(g.n)
+        linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K) if lingers else np.zeros(g.n)
         new = np.where(meet, np.maximum(O, linger), linger)
         if meet.any():
             self._last_meet[l.id] = meet & (K > EST)
             self._apart.discard(l.id)
-        elif l.linger and l.id in self._last_meet:
+        elif lingers and l.id in self._last_meet:
             last = self._last_meet[l.id]
             if not last.any():  # (the parents met only where its own habitat is poor: the best of it nearby)
                 near = self._dilate(old > 0, 2) if (old > 0).any() else np.ones(g.n, bool)
@@ -52,12 +56,14 @@ class ContactMixin:
         self.p[k] = new
         self._linger[k] = (new >= EST) & ~meet
 
-    def _fertility(self, l) -> float:
-        """A contact hybrid's share scales with how fertile its parents' hybrids are by their divergence (PW-851: fertile out to ~1-2 Myr, mostly
-        sterile to ~4, none beyond); 1 for a template, and where no divergence date is there to read (half-elves)."""
-        if l.origin != "hybrid":
-            return 1.0
+    def _hybrid_factor(self, l) -> tuple[float, bool]:
+        """A contact hybrid's share of its parents' meeting and whether it lingers, by its parents' interfertility stage (spec.Tree.hybrid_factor,
+        PW-752: exempt or viable 1; sterile the share of fertile matings, PW-851, never lingering; absorbed or impossible 0); (1, linger) for any
+        other line."""
         f = self.__dict__.setdefault("_fert", {})
         if l.id not in f:
-            f[l.id] = self.tree.fertility(*l.parents)
+            f[l.id] = self.tree.hybrid_factor(l)
         return f[l.id]
+
+    def _fertility(self, l) -> float:
+        return self._hybrid_factor(l)[0]

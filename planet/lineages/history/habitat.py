@@ -140,6 +140,8 @@ def niche_overlap(a: SP.Lineage, b: SP.Lineage, tree: SP.Tree) -> float:
 
 class HabitatMixin:
     def _K(self, l, env, tags, step, clip=True):
+        if l.cities:  # (a city minority: where it can be, its hosts' cities within reach, PW-889)
+            return np.where(self._city_mask(l)[0], 1.0, 0.0)
         if l.overlay and l.origin == "template":
             return np.max([self.whole(q) for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
         K = capacity(l, env, tags)
@@ -230,6 +232,8 @@ class HabitatMixin:
         m = np.ones(self.grid.n)
         g = self.grid
         for w in self.tree.wishes:
+            if w.want == "among":  # (PW-889: living among a people is a matter of competition and composition, not of the habitat)
+                continue
             # (apart acts on both peoples, PW-682: keeping out of each other's country is mutual; near on a, and at an
             # origin on either)
             other = w.b if w.a == line.id else w.a if (w.b == line.id and (w.want == "apart" or (origin and w.want == "near"))) else None

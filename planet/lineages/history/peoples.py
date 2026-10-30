@@ -91,7 +91,7 @@ class PeoplesMixin:
         if not l.overlay:
             return x * self.dens_at(k, P) * area
         dc = self.dens_cells()
-        hosts = sum(np.where(P[j] >= EST, P[j], 0.0) * dc[j]
-                    for q in l.parents for j in [self.idx[q], *self._groups.get(q, [])])
+        rows = self._city_hosts(l) if l.cities else [j for q in l.parents for j in [self.idx[q], *self._groups.get(q, [])]]
+        hosts = sum((np.where(P[j] >= EST, P[j], 0.0) * dc[j] for j in rows), np.zeros(self.grid.n))
         own = self._linger[k]
         return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * self._fertility(l) * hosts * area)

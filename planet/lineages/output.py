@@ -68,7 +68,7 @@ def colors(h: History) -> list[str]:
         if l.color:
             out.append(l.color)
         elif l.group_of:  # (a tint of its people's colour; the people comes first in the order)
-            out.append(tint(out[h.idx[l.group_of]], h.tree.groups_of(l.group_of).index(l.id)))
+            out.append(tint(out[h.idx[l.group_of]], (h.tree.groups_of(l.group_of) + h.tree.city_groups_of(l.group_of)).index(l.id)))
         else:
             out.append(PALETTE[used % len(PALETTE)])
             used += 1
@@ -131,7 +131,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     S.write_grid(g)
     cols = colors(h)
     lines = [{"index": k, "id": l.id, "name": l.label(), "origin": l.origin, "parents": l.parents, "ago_kyr": l.ago_kyr, "sapient_kyr": l.sapient_kyr,
-              "group_of": l.group_of, "groups": h.tree.groups_of(l.id),
+              "group_of": l.group_of, "groups": h.tree.groups_of(l.id) + h.tree.city_groups_of(l.id), "cities": l.cities,
               "extinct_kyr": l.extinct_kyr, "overlay": l.overlay, "realm": l.realm, "traits": l.traits, "color": cols[k],
               "leaf": l in h.tree.leaves(), "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id),
               "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],

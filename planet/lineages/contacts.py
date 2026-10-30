@@ -200,7 +200,8 @@ class Contacts:
             keep = s if len(s) <= SERIES_KEEP else [s[int(round(i))] for i in np.linspace(0, len(s) - 1, SERIES_KEEP)]
             kind = max(r["kinds"], key=lambda q: r["kinds"][q]) if r["kinds"] else None
             sk = T.split_kyr(ids[a], ids[b])
-            pairs.append({"a": ids[a], "b": ids[b], "tier": f"T{T.tier_of(ids[a], ids[b])}", "hybrid_fertility": round(T.fertility(ids[a], ids[b]), 3),
+            pairs.append({"a": ids[a], "b": ids[b], "tier": f"T{T.tier_of(ids[a], ids[b])}", "stage": T.stage_of(ids[a], ids[b]),
+                          "hybrid_fertility": round(T.fertility(ids[a], ids[b]), 3), "mixed_people": mixed_people(h, ids[a], ids[b]),
                           "split_kyr": None if sk is None else round(sk, 1),
                           "first_contact_kyr": round(r["first"], 3), "years_in_contact": int(round(years * 1000)),
                           "in_contact_now": now is not None, "border_km_now": now[1] if now else 0,
@@ -221,6 +222,14 @@ class Contacts:
             rows.sort(key=lambda q: -q["cells"])
             sub[l.id] = {"cells": n, "first_here_share": round(1 - sum(q["cells"] for q in rows) / n, 3), "held_before": rows[:6]}
         return {"pairs": pairs, "substrate": sub, "incursions": self.incursions(), "tier_kyr": list(T.tier_kyr)}
+
+
+def mixed_people(h, a: str, b: str) -> str | None:
+    """The mixed people of two peoples (a contact hybrid of theirs whose stage or exemption lets it be born, PW-752), or None."""
+    for l in h.lines:
+        if l.origin == "hybrid" and set(l.parents) == {a, b} and h.tree.hybrid_factor(l)[0] > 0:
+            return l.id
+    return None
 
 
 def cline(h, comp: dict, lead: np.ndarray, land: np.ndarray) -> int:
