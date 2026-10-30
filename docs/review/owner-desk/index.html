@@ -57,154 +57,165 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 th { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .done li::marker { color: var(--rec); }
+.pending { font: 500 12px var(--mono); color: var(--muted); background: var(--tag); padding: 2px 8px; border-radius: 999px; }
 footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; }
 </style>
 
+
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · 30 October 2026</div>
+  <div class="kicker">procgen_world · 30 October 2026 · afternoon</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Everything that needs you, in one place. Every decision has an id (D1, D2…), so you can answer as briefly as “D5: yes, D6: settlements, the rest your call”. Below the decisions: pictures worth a look, what your notes from this morning turned into, and what merged overnight.</p>
-  <nav class="toc"><a href="#decide">Decisions</a><a href="#papers">Next paper</a><a href="#look">Pictures</a><a href="#notes">Your notes → actions</a><a href="#merged">Overnight</a></nav>
+  <p class="lede">Everything that needs you since this morning, in one place. The new decisions carry ids D10 to D16, so you can answer as
+  briefly as "D10: wait, D12: keep". Below them: what your answers turned into, pictures worth a look, and what merged today. The viewer
+  links open your own viewer on this computer (port 8765).</p>
+  <nav class="toc"><a href="#decisions">Decisions</a><a href="#coming">Coming soon</a><a href="#see">Pictures</a><a href="#answers">Your answers → actions</a><a href="#merged">Merged today</a></nav>
 </header>
 
-<section id="decide">
-<h2>Decisions waiting on you</h2>
-<p class="sub">Each one comes with my recommendation. Saying “your call” on any of them is a fine answer.</p>
+<h2 id="decisions">Decisions waiting on you</h2>
+<p class="sub">Each one comes with my recommendation. "Your call" is a fine answer to any of them.</p>
 <div class="cards">
 
-<div class="card"><div class="id">D1 · VIEWER</div>
-<h3>Peoples' colours on the map</h3>
-<p>Today 4 pairs of neighbouring peoples share an identical colour, 37 pairs look alike to red-green colour-blind eyes, and 7 peoples vanish into the ocean or the empty-land grey. Two fixes are built. The first only keeps neighbours distinct, so red dragons can come out green. The second, “family hues”, colours each family by its own hue: dragons warm and named by their colour, giants blue, fey violet.</p>
-<div class="rec"><b>Recommend: family hues.</b> Both fixes bring all three counts to zero; family hues also keeps the names meaningful. Black dragons come out dark rose, because black can't show on a dark map.</div>
-<p class="answer">See: <a href="https://claude.ai/artifact/RehsSUDTcPbDMye377UVcN">side-by-sides 1</a>, section A · try <code>&amp;palette=family</code></p></div>
-
-<div class="card"><div class="id">D2 · VIEWER</div>
-<h3>Colour scales for “how much” maps</h3>
-<p>Twelve scales (wave power, floods, soil depth and others) get lighter and then darker again, so the least and the most look alike. The proposal keeps their hues but makes brightness run one way only. The regional zoom would also share the globe's temperature, rain and fertility colours.</p>
-<div class="rec"><b>Recommend:</b> take the shared zoom scales now, and approve the one-way rule scale by scale. Wave power, floods, building ground and soil depth are clear wins; fire frequency is better tuned by hand.</div>
-<p class="answer">See: side-by-sides 1, section B · try <code>&amp;ramps=new</code></p></div>
-
-<div class="card"><div class="id">D3 · VIEWER</div>
-<h3>Dock the legend in the right-hand column</h3>
-<p>The legend floats over the bottom of the globe and covers the map whenever the peoples or event switches are showing.</p>
-<div class="rec"><b>Recommend: dock it.</b> The map gets its bottom edge back.</div>
-<p class="answer">See: side-by-sides 1, section C · try <code>&amp;legend=dock</code></p></div>
-
-<div class="card"><div class="id">D4 · VIEWER</div>
-<h3>Grouped “Colour by” picker</h3>
-<p>Today “Colour by” is one wall of 51–73 buttons. The grouped version has six folding sections, a search box, a row of your last four layers, and dropdowns for crops, animals and body traits.</p>
-<div class="rec"><b>Recommend: make it the default</b>, then give the regional zoom the same picker.</div>
-<p class="answer">See: <a href="https://claude.ai/artifact/NwELDGdqbNCcYTXjBpmkYF">side-by-sides 2</a> · try <code>&amp;picker=grouped</code></p></div>
-
-<div class="card"><div class="id">D5 · CLIMATE · words matter</div>
-<h3>What “frozen over” means, and what fails a planet</h3>
-<p>You said “frozen over” should mean roughly 40%+ of the land under ice. I agree it should be a land share and not only sea level, because today's flag counts ice volume alone. Of the 8 “iceboxes” in the coastline test, 6 were warmer than their own run's start.</p>
-<p>One push-back to discuss. By the usual figures, Earth's worst Pleistocene glacial maximum covered roughly a quarter of the land with ice; that number still needs checking against a source, not my memory. If it holds, then by a 40% bar Earth's ice ages never froze over, and the label would only catch near-snowball worlds. That may be exactly what you want, but it's worth deciding on purpose. My proposal is three plain terms:</p>
-<ol>
-<li><b>Icehouse</b>: permanent polar ice sheets. Earth today, and most of the last 34 Myr.</li>
-<li><b>Glacial maximum</b>: ice-age peaks, roughly Earth at its coldest.</li>
-<li><b>Frozen over</b>: 40%+ of land under ice. Only this one fails a planet in the checks.</li>
-</ol>
-<div class="rec"><b>Recommend:</b> adopt the three terms, with only “frozen over” counting as a failure. The test reports would then show all three, and the pass rates would rise somewhat, because today's “icebox” flag would mostly turn into “icehouse”. If you'd like the historical background properly done, it would make a good small paper (P3 below).</div>
-<p class="answer">Ticket PW-1091</p></div>
-
-<div class="card"><div class="id">D6 · PAPERS</div>
-<h3>The next deep-dive paper</h3>
-<p>You found the dragon paper worthwhile, so it's now the first of a series, an epic of its own (PW-1113). The candidates are below, under <a href="#papers">Next paper</a>.</p>
-<div class="rec"><b>Recommend: P1, settlement sizes through history.</b> It answers your question about what counted as a city in each era directly, and its findings become the size rules.</div></div>
-
-<div class="card"><div class="id">D7 · PEOPLES</div>
-<h3>How big is a regional population (deme)?</h3>
-<p>Each people's range is cut into regional populations, its “cultures in waiting”. The cut sets how many rows the workbench tree draws, and later perhaps how many languages or dialects there are. On the test world, humans get:</p>
-<ul><li><b>A</b> ~60 demes (now), a typical one ~1.8 Mkm²;</li>
-<li><b>B</b> ~20, a cleaner tree and coarser cultures;</li>
-<li><b>C</b> ~150, fine-grained but busy, with many short-lived bands;</li>
-<li><b>D</b> two levels: big demes (B) with sub-demes (A) inside, which suits languages later (family and dialect).</li></ul>
-<div class="rec"><b>Recommend: A now, D when languages arrive.</b></div>
-<p class="answer">Ticket PW-1015</p></div>
-
-<div class="card"><div class="id">D8 · PEOPLES</div>
-<h3>Should farmers' numbers follow land productivity?</h3>
-<p>Herders and foragers now live densely on rich land and thinly on poor land, measured against fixed yardsticks, so a poorer planet holds fewer people. Farmers don't follow productivity yet; good soil already sets where they live.</p>
-<ul><li><b>A</b> keep as built;</li><li><b>B</b> farmers follow productivity too;</li><li><b>C</b> soften the effect so poor land isn't as empty.</li></ul>
-<div class="rec"><b>Recommend: A</b>, or fold it into P2 (how many people the land feeds) if you pick that paper.</div>
-<p class="answer">Ticket PW-1020</p></div>
-
-<div class="card"><div class="id">D9 · VIEWER</div>
-<h3>Technology tab: keep the old grid view?</h3>
-<p>The tab kept the old “every people × every tech” grid as a sixth view called “Table”. It also holds the “Firsts” list per track.</p>
-<div class="rec"><b>Recommend: keep it</b> as the last view. It costs nothing, and it's the quickest overview for a game master.</div>
-<p class="answer">Ticket PW-1021 · you may simply say “your call”</p></div>
-
-</div>
-</section>
-
-<section id="papers">
-<h2>Next paper: candidates</h2>
-<p class="sub">Each would follow the dragon paper's bar: standalone and cited from PDFs actually read, with a checker for each source paper, a peer review, a revision and a re-check, and a section on what the model should change. Each needs a new reading list. Your friend's literature fetch was the backbone last time, so I'd send a wishlist of 10–20 PDFs before starting.</p>
-<div class="tbl"><table>
-<thead><tr><th>#</th><th>Topic</th><th>What it would test</th><th>Why now</th></tr></thead>
-<tbody>
-<tr><td>P1</td><td><b>Settlement sizes through history</b></td><td>The biggest and typical towns and cities by era, rank-size patterns, and when cities appear, against urban archaeology</td><td>You asked for era-true sizes (PW-1114); it sets the rules the settlements need. Small and sharp.</td></tr>
-<tr><td>P2</td><td><b>How many people the land feeds</b></td><td>Forager, herder and farmer densities and carrying capacity, against ethnography and archaeology</td><td>Closest to the culinary north star; it also bears on D8 and on dragon pressure.</td></tr>
-<tr><td>P3</td><td><b>Ice ages: how often, how deep, how much land</b></td><td>The planets' ice histories against the paleoclimate record; terms for icehouse, glacial and frozen over</td><td>Settles D5 on evidence; the ice loop was just rebuilt.</td></tr>
-<tr><td>P4</td><td><b>The pace of civilisation</b></td><td>When peoples domesticate, settle, smelt, write and found cities, against the archaeological record</td><td>You flagged the tech tree as a prototype due for a deep rework. This would be its foundation.</td></tr>
-<tr><td>P5</td><td><b>Rivers and landforms</b></td><td>Drainage scaling laws, delta and floodplain sizes, waterfalls, against geomorphology</td><td>Exercises the zoom, which was just split into stages.</td></tr>
-</tbody></table></div>
-<div class="rec"><b>My order: P1, then P4, then P2.</b> P1 and P4 feed the two prototype areas you named this morning (settlements and the tech tree); P2 underpins food, the north star. P3 can be short if you settle D5 by taste.</div>
-</section>
-
-<section id="look">
-<h2>Pictures worth a look</h2>
-<p class="sub">The worktree folders I pointed you to last night were cleaned up after merging, sorry. All of these are now in main under <code>docs/review/</code> (settlements/, lineages/kinship-cities/, megafauna/open-niches/).</p>
-<div class="grid2">
-<figure><img src="img/settle-present.jpg" alt="Globe with settlement dots over the continents at the present"><figcaption><b>Towns and cities, present day.</b> Hovering a city shows ~78,000 people (humans 52%, halflings 47%), founded about 9,100 years ago. The village dots carpet the land; that's being fixed now (towns and cities only from orbit, villages as you zoom in).</figcaption></figure>
-<figure><img src="img/settle-9kyr.jpg" alt="Globe 9,000 years ago with the first villages"><figcaption><b>9,000 years ago:</b> the first villages.</figcaption></figure>
-<figure><img src="img/settle-river-city.jpg" alt="A river city 3,000 years ago"><figcaption><b>A river city, 3,000 years ago</b>…</figcaption></figure>
-<figure><img src="img/settle-river-ruin.jpg" alt="The same cell at present with two ruins and a new town"><figcaption>…<b>and the same place today:</b> two ruins and a new town built on them. Hover text example: “ruin of a city of the humans (at most ~41,761 people); abandoned ~2.4 kyr ago: the river moved away”.</figcaption></figure>
-<figure><img src="img/settle-kenku.jpg" alt="A kenku town taken over by humans"><figcaption><b>Change of hands:</b> a kenku town that humans took over.</figcaption></figure>
-<figure><img src="img/kin-table.jpg" alt="Who can have children together table"><figcaption><b>Who can have children together</b>, the new table in the workbench. One wording bug: half-elves show “impossible” under “why possible”; a fix is ticketed.</figcaption></figure>
-<figure><img src="img/kin-before.jpg" alt="Peoples overlay before"><figcaption><b>Peoples overlay, before</b> the living-among and city-minority changes…</figcaption></figure>
-<figure><img src="img/kin-after.jpg" alt="Peoples overlay after"><figcaption>…<b>and after:</b> half-elves cover 10.6 Mkm² instead of 7.4; half-orcs and city kobolds appear.</figcaption></figure>
-<figure><img src="img/dragons-kinds.jpg" alt="Before and after maps of each dragon kind"><figcaption><b>Dragons for the empty plains</b>, before (left) and after (right), kind by kind. Gold appears on the grasslands, blue adds cold steppe, white spreads.</figcaption></figure>
-</div>
-</section>
-
-<section id="notes">
-<h2>Your notes this morning → what I did</h2>
-<div class="tbl"><table>
-<thead><tr><th>You said</th><th>Done / where</th></tr></thead>
-<tbody>
-<tr><td>Losing ~99% of dragons in farmland is too fatal for low-tech peoples; early pressure should be very slight.</td><td>Agreed, and recorded on PW-1068 (“persecution has no source”). Pressure should come from things that grow with technology and history: weapons, organised hunts, settlement. A flat kill rate per person is wrong. It's first in the fun queue once the settlements follow-ups finish. The paper's numbers describe the current model, which is the point: they show the problem.</td></tr>
-<tr><td>Was I rate-limited by NOAA? Give me a URL; back the data up.</td><td>No action needed. The data is fully rebuilt from NOAA's 2020 rain release, with your OK. As a backup, a read-only copy of all 1.8 GB sits on the <i>other</i> drive at <code>/home/daniel/backups/procgen-earth/2026-10-30/</code>, and its checksums are committed in <code>tools/earth_data.SHA256SUMS</code>, with a restore recipe in <code>docs/coordination.md</code>. I didn't commit the data itself to git: 1.8 GB (and even the ~50 MB of irreplaceable pieces) would bloat every clone forever. Say so if you'd rather have them in git or git-lfs anyway. For reference, the GPCC source is the PSL THREDDS server, <code>psl.noaa.gov/thredds/…/gpcc/full_v2020/</code>.</td></tr>
-<tr><td>Any people that doesn't usually get along can live in a city if it plays nice; goblinoids cohabiting confirmed.</td><td>Recorded on PW-1082. City minorities generalise to any tolerated people once polities exist; kobolds and goblins were only examples.</td></tr>
-<tr><td>Screenshot folders don't work.</td><td>The worktrees were deleted after merging. Paths in main are given above.</td></tr>
-<tr><td>Frozen over = 40%+ of land.</td><td>See D5 for my one push-back and a three-term proposal.</td></tr>
-<tr><td>Mining sites existed since early metalworking (Yamnaya).</td><td>Sent to the settlements lane: mine sites become their own kind of place where a mining people, or known ore plus the mines tech, allows. Built now if cheap, otherwise a ticket.</td></tr>
-<tr><td>The tech tree is a placeholder; don't fuss over minor tweaks.</td><td>Stopped the bread/fermentation timing fix I'd queued; the tree stays as it is until its deep rework. P4 would be that rework's foundation.</td></tr>
-<tr><td>Dwarf holds / kobold warrens inside human land, even amid enemies.</td><td>Being built now. A minority can hold its own place in a cell even where it's hated, for example dwarves under a mountain in orc country.</td></tr>
-<tr><td>Village / town / city sizes should follow real-world sizes by era.</td><td>Ticketed as PW-1114, and the recommended next paper (P1).</td></tr>
-</tbody></table></div>
-</section>
-
-<section id="merged">
-<h2>What merged overnight</h2>
-<ul class="done">
-<li><b>Ice ages no longer depend on update timing.</b> The ice and the air above it now settle together inside each climate update; a summer cold double-count is removed; the cold layer over ice follows the seasons. Runs are about 12% slower. 78% of test planets pass.</li>
-<li><b>Coastline climate package.</b> Every Earth score improves and polar land gets about the right amount of rain and snow. Planets are icier (8 of 18 flagged, mostly snowier, not colder; see D5). 72% pass.</li>
-<li><b>Earth reference data rebuilt</b> after an agent deleted it through a shortcut (now forbidden in every brief), on NOAA's 2020 release. No pass/fail result changed.</li>
-<li><b>Dragon density paper</b>, reviewed twice and standalone: <a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">read it</a>.</li>
-<li><b>Dragons for the empty plains</b> (your A+B mix): rich empty land holding dragons went from 52% to 90%.</li>
-<li><b>Peoples:</b> who can have children together (realistic, with half-elves and half-orcs always possible); peoples living among each other; city minorities.</li>
-<li><b>Towns and cities that come and go</b>, with ruins and rebuilt sites; dwarves and miners fixed.</li>
-<li><b>Viewer:</b> code split into modules; first-look fixes; plain error cards; shared theme; dates on the time slider; a tidier workbench.</li>
-<li><b>Clean-ups you approved:</b> zoom code split into stages, and shared helpers and constants. Both proven bit-identical.</li>
-<li><b>Earth rain diagnosis.</b> One wind rule causes both the too-wet interiors and the too-dry SE USA and Pampas. The physics fix is the next physics lane.</li>
-<li><b>A slow sea-level test's floor</b> lowered from 0 to −30 m, as you chose.</li>
+<div class="card"><div class="id">D10 · CLIMATE · the big one</div>
+<h3>Ice sheets that never melt back: fix it now (v1) or later (v2)?</h3>
+<p>You asked for "frozen over" (40% or more of the land under ice) to fail a world. On the last stored test set, 7 of 36 worlds
+froze over. Lane 67 found out why.</p>
+<ul>
+<li>The cold spells themselves are plausible. They come from lulls in volcanic carbon, and reach Earth's last-ice-age cold or colder.
+This is not a runaway.</li>
+<li>The ice sheets then <b>outlast the cold that made them</b>. One world held 40%+ of its land under ice for about 60 million years
+after it had warmed back to normal. On a warming test, model-Earth still holds 1.5 times today's ice once it is back at today's temperature.</li>
+<li>The root cause is averaging. The run settles its sheets on a year averaged over the orbital cycles, so the sheets never feel the warm
+phases that end real ice ages. A sheet that is already high stays cold enough to keep itself.</li>
+<li>A second, smaller cause: ice surfaces cool too fast with height in summer. Greenland weather-station measurements put the summer
+rate at about 4°C per km; the model uses 6.5 plus extra terms. Fixing only that closes about half the gap and breaks Antarctica, so
+it can't be the whole fix.</li>
 </ul>
-<p><b>Running now:</b> the Antarctic-summer fix (its 18-planet test), and the settlements follow-ups (fixing the dot carpet, minority holds, mines, towns in the brief).</p>
-</section>
+<p>The proper fix is to let a sheet's height count only where the sheet survives the cycle's warm phase. That touches the ice-age
+physics we parked for after v1 (PW-470), and it is a few rounds of work.</p>
+<div class="rec"><b>Recommend:</b> wait about 6 hours for the 72-world test, which is the first measurement of today's code (two ice
+fixes merged this morning). If frozen-over worlds are still about 10% or more, do the fix as v1 work; it is the thing a player would see
+as "this world is broken". If the test shows only a few, park it for v2.</div>
+<div class="answer">PW-470 · lane 67 draft "run sheets see warm orbits" · test running now</div></div>
 
-<footer>Board ids are given for reference only; you never need them to answer. Reply in chat with ids such as “D1 yes, D5 three terms, D6 P1”.</footer>
+<div class="card"><div class="id">D11 · CLIMATE</div>
+<h3>Monsoon coasts and wet steppes: fetch a meteorology source, or park until v2?</h3>
+<p>Interior mid-latitudes (Mongolia, the Great Plains) get about 1.8 times too much rain. Lane 62 found the cause: inflowing air
+brings its whole moisture column inland. The fix for that also dries the monsoon coasts (south-east USA, India, the Pampas) by half,
+because their rain comes from the same moisture. A sound partner fix needs the coasts to get their moisture another way. The best
+candidate is the land slowing onshore wind so moisture piles up at the coast. That needs land-versus-sea surface drag numbers from a
+meteorology source, and we have none that I can cite.</p>
+<div class="rec"><b>Recommend:</b> park it for v2. "Wet steppe" is plausible-ish and no player would call it broken. The code is
+saved as a patch, so nothing is lost.</div>
+<div class="answer">PW-1120 · PW-1099 · PW-1100</div></div>
+
+<div class="card"><div class="id">D12 · PEOPLES</div>
+<h3>Mines: keep the new rule?</h3>
+<p>You found "humans as nearly the only miners" weird. Mines now go to the most mining-minded people in each cell, even a minority:
+miners and underground dwellers rank highest, orcs and goblinoids get a lore weight, and fliers like the aarakocra mine much less.
+Each ore seam gets a few pits, not one in every cell.</p>
+<p>The result: about 2,200 mines per world became 260 to 370, and the human share fell from 95% to between 42% and 80%. Hobgoblins,
+kobolds, orcs and gnomes now do real shares.</p>
+<p><b>Dwarves are still few</b>, with 3 to 12 mines per world, because in these worlds their lands barely touch ore. The rule favours
+them, so the cause is where they live.</p>
+<p>Real mining districts back this pattern: a few big specialist centres (Bronze Age Austria, Great Orme in Wales), often worked by
+miners invited in from elsewhere (German miners in medieval Hungary).</p>
+<div class="rec"><b>Recommend:</b> keep it. If you want more dwarven mining, the real lever is where dwarves settle, not the mine rule.</div>
+<div class="answer">PW-1131 · <a href="http://localhost:8765/viewer/?run=570701&amp;layer=peoples">open run 570701 in your viewer</a></div></div>
+
+<div class="card"><div class="id">D13 · PEOPLES · new idea of yours</div>
+<h3>End a history when cultures arrive, not after a fixed span?</h3>
+<p>You suggested the history could stop at the natural point where cultures are mostly where they need to be. Three shapes it could take:</p>
+<ol>
+<li><b>As now:</b> a fixed span, and wherever the peoples got to is the present.</li>
+<li><b>Stop on arrival:</b> run until the leading peoples reach the world's target era (e.g. medieval), and call that moment the present.</li>
+<li><b>Stop on arrival, with a cap:</b> as 2, but with a time limit, so a slow world still ends. Its present is then "behind", which is itself flavour.</li>
+</ol>
+<div class="rec"><b>Recommend:</b> 3. It keeps every world's present roughly in the era you asked for, and it never runs forever. The
+tech-catalogue lane is writing this up properly, and I'll put its version here once it lands.</div>
+<div class="answer">PW-675 · write-up in progress</div></div>
+
+<div class="card"><div class="id">D14 · DRAGONS</div>
+<h3>The "dragons per km²" dropdowns no longer set density. Repurpose them?</h3>
+<p>The new pressure rule makes dragon numbers come from food and from the peoples who live near them, so the two viewer dropdowns
+(dragon and giant density) no longer drive anything real.</p>
+<div class="rec"><b>Recommend:</b> turn them into "how hard peoples press dragons": a multiplier on the kill, from gentle to harsh.
+That gives you a dial for the thing you actually care about.</div>
+<div class="answer">PW-1068 · lane 63 will file the ticket</div></div>
+
+<div class="card"><div class="id">D15 · PAPERS · low priority</div>
+<h3>A library trip, if you ever pass one</h3>
+<p>No pressure. If you're ever near a university library, page photos would settle two open numbers:</p>
+<ul>
+<li>Fletcher 1995, <i>The Limits of Settlement Growth</i>: whichever table gives settlement sizes by stage, for the village and town bands.</li>
+<li>Binford 2001, <i>Constructing Frames of Reference</i>: the hunter-gatherer density tables, for paper P2.</li>
+</ul>
+<p>Until then everything uses open-access papers and the free Reba city dataset, and the unverified numbers are labelled.</p>
+<div class="rec"><b>Recommend:</b> ignore this unless it's convenient.</div>
+<div class="answer">PW-1130 · PW-1113 · docs/references/papers-ask-p1-p2.md</div></div>
+
+<div class="card"><div class="id">D16 · DRAGONS · heads-up, decision when the numbers land</div>
+<h3>Early peoples still cost dragons a lot, through food rather than hunting</h3>
+<p>With hunting now very light early on, as you ruled, forager country 25,000 years ago still kept only about 4% of the dragons it would
+hold without people. The loss comes from people overhunting the big herds and eating the game dragons also need. That's the same
+"too fatal" result by a different route. The dragon lane is breaking the loss down by cause, and checking whether the fantasy hunter
+peoples are denser than real foragers.</p>
+<div class="rec"><b>No decision yet.</b> It'll come with options when the paper's numbers are in.</div>
+<div class="answer">PW-1068 · PW-977</div></div>
+</div>
+
+<h2 id="coming">Coming soon <span class="pending">running now</span></h2>
+<div class="tbl"><table>
+<tr><th>What</th><th>Lane</th><th>When</th></tr>
+<tr><td>Dragon paper, revised: age-split mortality, bronze-age farmers weaker, the loss broken down by cause, the time course</td><td>63</td><td>re-runs about 8 h, then the paper's checks and peer review</td></tr>
+<tr><td>Frozen-over rate on today's code, before and after the CO₂ fix (72 worlds)</td><td>67</td><td>about 6 h</td></tr>
+<tr><td>Tech catalogue folded into the tree: about 600 techs, food chains first; copper reinvented a few times per world rather than ten</td><td>69</td><td>a few hours</td></tr>
+<tr><td>Source hunt, pass 2: about 425 dates still unchecked, starting with metals</td><td>–</td><td>once the web-search allowance refills</td></tr>
+</table></div>
+
+<h2 id="see">Pictures worth a look</h2>
+<p class="sub">Settlements after lanes 61 and 66, and the viewer with your D1–D4 picks as the defaults. Click a viewer link to explore it yourself.</p>
+<div class="grid2">
+<figure><img src="img2/s-globe-before.jpg" alt="Globe covered in settlement dots before the clutter fix" loading="lazy"><figcaption><b>Before:</b> the dot carpet you flagged on the river-city picture. Every village, at every zoom.</figcaption></figure>
+<figure><img src="img2/s-globe-cities.jpg" alt="Globe showing only cities" loading="lazy"><figcaption><b>Now:</b> the globe shows cities only. Towns fade in as you zoom, then villages and mines. The hover card still lists every place.</figcaption></figure>
+<figure><img src="img2/s-kobold-city.jpg" alt="A kobold city among humans with its hover card" loading="lazy"><figcaption>A <b>kobold warren grown into a city</b> of about 31,000, living as a second people among humans. Its hover card gives its whole history: founded about 2,000 years ago, on older ruins. <a href="http://localhost:8765/viewer/?run=570701&amp;layer=peoples&amp;lat=34.6&amp;lon=120.6&amp;dist=1.7">Open it</a></figcaption></figure>
+<figure><img src="img2/s-dwarf-holds.jpg" alt="Dwarf hold-towns among human towns" loading="lazy"><figcaption><b>Dwarf holds</b> strung through human land: a dwarf town of its own, inside a human cell. (Taken before lane 66, when holds were still capped at 9,999; they can now grow into cities.) <a href="http://localhost:8765/viewer/?run=488d7e&amp;lat=42.9&amp;lon=67.5&amp;dist=2.3">Open it</a></figcaption></figure>
+<figure><img src="img2/s-region-8k.jpg" alt="A region 8,000 years ago" loading="lazy"><figcaption>The same region <b>8,000 years ago</b>. Size classes now follow each people's own techs, not a calendar.</figcaption></figure>
+<figure><img src="img2/s-region-4k.jpg" alt="The same region 4,000 years ago" loading="lazy"><figcaption>…and <b>4,000 years ago</b>. City sizes are capped from the real 6,000-year city dataset: about 100,000 early on, rising to 1.5 million.</figcaption></figure>
+<figure><img src="img2/s-peoples-tab.jpg" alt="Peoples tab with a places column" loading="lazy"><figcaption>The workbench <b>Peoples tab</b> gains a "places now" column (towns, villages, mines, places among another people, ruins).</figcaption></figure>
+<figure><img src="img2/v-globe-peoples.jpg" alt="Viewer with grouped picker and docked legend" loading="lazy"><figcaption>Your D1–D4 picks, now the only behaviour: the <b>grouped picker with search</b> (left), the <b>docked legend</b> (right), family hues, and the current colour scales.</figcaption></figure>
+<figure><img src="img2/v-zoom-search.jpg" alt="Regional zoom page with the same grouped picker" loading="lazy"><figcaption>The <b>regional zoom page</b> got the same sections and search box.</figcaption></figure>
+</div>
+
+<h2 id="answers">Your answers → what happened</h2>
+<div class="tbl"><table>
+<tr><th>You said</th><th>What happened</th></tr>
+<tr><td>D1–D4: family hues, keep the current colour scales, docked legend, grouped picker</td><td>Done and merged (lane 65). The switches are gone, so this is now the only behaviour.</td></tr>
+<tr><td>D5: three terms; frozen over = 40% of land, an instant fail</td><td>Done (lane 65). The judges report all three terms. That surfaced the frozen-over worlds, which led to D10.</td></tr>
+<tr><td>Glacial maximum: 25% is fine as a placeholder</td><td>Kept at 25%, with a literature check queued (PW-1119).</td></tr>
+<tr><td>D7: deme scale A now, D with languages · D9: keep the Table view</td><td>Recorded on the tickets.</td></tr>
+<tr><td>D8: farmers follow land productivity, with a little softening</td><td>Built into the dragon lane, since farmer numbers drive dragon numbers.</td></tr>
+<tr><td>Dragon pressure first; farmers weaker even in the bronze age; split mortality by age</td><td>Lane 63 rebuilt it. Early peoples can mostly reach only hatchlings, which barely dents a long-lived population (turtle demography and the dragons' own life table agree). Dense bronze-age farmers now keep 64% of their dragons (was 24%); renaissance farmers 10%. Re-runs going.</td></tr>
+<tr><td>Tech: conditions not calendars; gnomes inventive; warlike cities invent war tech; density and cities mean more inventors</td><td>Merged (lane 64). Invention depends on pool size, specialists, culture and a ramp after the prerequisites. Small peoples now get writing from neighbours or not at all, gnomes find metal on their own in 5 of 8 runs, and Earth's timing is matched only as a check. War evidence says warlike peoples mostly <i>adopt</i> war tech fast, so that is how it works.</td></tr>
+<tr><td>A big tech list, one agent per type, then a source hunt</td><td>594 techs in seven groups. The first source pass checked 190 and confirmed 98 before the search allowance ran out (dogs move to about 15,000 years ago, kilns to about 26,000). Being folded into the tree now (lane 69).</td></tr>
+<tr><td>P2 first; ask before writing; no whole books</td><td>The verified ask list is in the repo. The P2 paper waits on open sources only (D15).</td></tr>
+<tr><td>P1: code best knowledge, find one source</td><td>Done (lane 66) with the free Reba city dataset for the top of the scale. Village and town bands are labelled unverified.</td></tr>
+<tr><td>Mines: more non-human miners</td><td>Done (lane 68). See D12.</td></tr>
+<tr><td>Too many dots; love the hover text</td><td>Done (lane 61). See the pictures.</td></tr>
+</table></div>
+
+<h2 id="merged">Merged today</h2>
+<ul class="done">
+<li><b>Lane 57:</b> Antarctica's interior keeps its winter-like cold air in summer. Warm month −14.0°C (observed −16.1).</li>
+<li><b>Lane 61:</b> settlements are uncluttered; minority holds and mines; settlements in the briefs and the Peoples tab.</li>
+<li><b>Lane 62:</b> write-ups only. The moisture fix is parked as a patch (D11).</li>
+<li><b>Lane 64:</b> tech invention model.</li>
+<li><b>Lane 65:</b> your viewer picks, and the three ice terms.</li>
+<li><b>Lane 66:</b> settlement sizes by tech stage; minority churn fixed (places lasting under 1,000 years dropped from about 900 to 35 per world).</li>
+<li><b>Lane 68:</b> who works the mines. Your seven peoples runs are rebuilt, so they open in the viewer again.</li>
+<li>The tech catalogue and the first source-hunt pass, saved in the repo.</li>
+<li>Every merge passed the full test suite (up to 824 tests).</li>
+</ul>
+
+<footer>Earlier desk (D1–D9) answered this morning · <a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">Dragon paper (to be revised)</a> · <a href="https://claude.ai/artifact/NwELDGdqbNCcYTXjBpmkYF">Viewer side-by-sides 2</a></footer>
 </div>
