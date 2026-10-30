@@ -1,4 +1,5 @@
 ---
+id: PW-1116
 title: "Settlements: mines v0 makes ~2,200 mines a run, 95% of them human; check the count and the gate"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-61
 blocked_by: []
 relates: [PW-1011, PW-1105]
 refs: [planet/lineages/settlements.py, viewer/globe/settlements.js, "run 488d7e", "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Options:
 - C: favour the mining peoples: a miner people works a deposit in its cells even as the second people, at its halls' size.
 
 Lean: B + C, so mines read as a dwarf and kobold thing as well as a human industry.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlements-mines-count.md (found by fun-lane-61).

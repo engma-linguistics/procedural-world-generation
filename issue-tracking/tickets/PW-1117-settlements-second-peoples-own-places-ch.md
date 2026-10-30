@@ -1,4 +1,5 @@
 ---
+id: PW-1117
 title: "Settlements: second peoples' own places churn (thousands of short-lived ones) and their holds pile up at the 9,999 town cap"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-61
 blocked_by: []
 relates: [PW-1105, PW-1011]
 refs: [planet/lineages/settlements.py, "run 488d7e", "run 6128a3", "run 114231", "run 570701", "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,6 @@ In plain words. Fun lane 61 (PW-1105) lets a cell's second people found a place 
 
 Numbers: `cmp_holds`-style table in fun lane 61's report (PW-1105 Updates).
 - [ ] fewer short-lived second-people places; holds not pinned at the cap
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlements-minority-churn-and-cap.md (found by fun-lane-61).
