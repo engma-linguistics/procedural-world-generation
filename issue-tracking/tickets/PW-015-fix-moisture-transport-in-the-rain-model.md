@@ -13,7 +13,7 @@ blocked_by: [PW-352]
 relates: [PW-019]
 refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/ (removed; see git d32f7fa), docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
 created: 2026-10-14
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -33,6 +33,10 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-30: Lane 58 regional budget (docs/review/base-climate/moisture-budget/README.md): land imports 2.26 Sv net (published runoff ~1.15) through the
+  summer land-sea inflow (monsoon_wind's cross-isobar 0.45). The kernel has no convergence lift. Its vapour lasts
+  4.1 d over land vs 6.1 over sea (observed ~9 for both). Drafts: inflow depth, convergence lift, storm-track
+  evaporation seasons, zonal sink belt, kernel cycle 1.56x fast.
 - 2026-10-29: Lane 25 merged the sea's bulk evaporation exchange: Earth B 20 -> 27-28% (obs 30), BWh 14.5% (14.8), log-rain corr 0.65 -> 0.69. Next: the dry subtropical coasts, PW-998 with PW-026 (v1, owner 10-29).
 - 2026-10-29: Lane 25 (branch, 5840dcc6): diagnosis + round 1 committed, round 2 dropped (docs/review/base-climate/deserts/README.md). Diagnosis: the Earth B deficit is summer land rain at the monsoon margins (Sahel, Australia, S Africa, Mongolia, W N America, C Asia, E Africa) with vapour near observed, supply-limited (insensitive to shower rates): land imports ~1.9x the net vapour. Round 1, sea evaporation as a bulk exchange (climate.sea_uptake: C_E 1.3e-3 x max(U, 3) / 500 m toward 0.98 q_sat(SST)): Earth L6 B 20.3 -> 27.3% (L7 19.6 -> 27.6), BWh 9.0 -> 14.5 (Kottek 14.8), exact 34 -> 36, group 71, log-rain corr 0.648 -> 0.691, land rain x1.42 -> x1.31; sea E pattern near NCEP; overturning unchanged. Costs: SE USA 482 (1328), Pampas 294, Japan 524, E Australia 488, Med 383. Paired judge (36 L6): arid +6.7 [5.6, 7.4], hot desert +4.6, trees -4.2, carbon terms unchanged, passes 29 -> 27. Known failure: test_sea_level warm-up bar on L4 seed 1 (-55 vs -50 m), draft. Round 2 (vapour's share of the land-sea circulation, return flow aloft): B 26-31 but log-rain corr down to 0.58-0.62 and India drier; needs a circulation-depth rule (draft, v2).
 - 2026-10-28: Owner 10-28: no per-world desert quota. Target only the Earth analogue: on Earth's own map, dry (B) climates should land near Earth's ~30% of land (now ~20%). Generated worlds get whatever deserts their geography and Hadley belts give.

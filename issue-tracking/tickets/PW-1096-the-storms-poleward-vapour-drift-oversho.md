@@ -33,4 +33,7 @@ subtropics' moisture divide is still at ~25N/~28S (NCEP ~18N/~12S). Open:
 Only after the package judge (draft-coasts-package-judge-icebox).
 
 ## Updates
+- 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): eddy_drift 0.8 brings 50 N to 0.61 Sv (40 N 0.91) but moves 50-60 N land only
+  -11 mm and polar land -20; no drift costs polar land 100 mm and the Pampas 70. The drift is ~15% of the 50-60 N
+  land excess; not worth a retune on its own.
 - 2026-10-30: Created from inbox draft draft-storm-drift-40n-overshoot.md (found by lane26b).

@@ -11,7 +11,7 @@ impact: med
 found_by: lane28
 blocked_by: []
 relates: [PW-998, PW-026, PW-821]
-refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/coasts/README.md]
+refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/coasts/README.md, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
 updated: 2026-10-30
 ---
@@ -80,4 +80,14 @@ which source carries the excess. Earth is a plausibility anchor, not a target: t
 - [ ] Any fix keeps the polar land (60-80 N) near GPCC and doesn't push Earth's B share further below Kottek's 30% (now 25.2%)
 
 ## Updates
+- 2026-10-30: Lane 58 budget (docs/review/base-climate/moisture-budget/README.md, tools/moisture_regions.py; kernel re-runs on the recorded Earth L6/L7
+  inputs). The excess is summer: 88% at 40-50 N, 70% at 50-60 N. It is imported sea vapour (land P - E 2.26 Sv,
+  published runoff ~1.15; land E about right, below NCEP in the summer interiors). None of 1-5 is the cause:
+  (1) storm-track sea rain x1.5 moves 40-60 N land -25 mm; (2) no drift -64 at 50-60 N but polar land 399 -> 299;
+  drift 0.8 -11; (3) land E -20% moves -35, ruled out; (4) showers x0.5 -73 / -4, supply-limited; (5) supported
+  for 50-60 N winter only (winter interiors import 3x observed; W Siberia winter 534 -> 399 at 0.7x wind).
+  The 40-50 N lever is monsoon_wind's cross-isobar inflow: whole-Earth solves 0.45 -> 0.2 give 40-50 N
+  952 -> 817, Gobi 601 -> 284, B 25.2 -> 31.5, but SE USA 636 -> 382, Pampas 401 -> 190, corr 0.721 -> 0.681.
+  Lean: one soundness round (inflow depth + convergence lift; drafts), no drift or shower retune. 50-60 N summer
+  (Siberia, Canada) resists every lever tried.
 - 2026-10-30: Created from inbox draft draft-midlatitude-land-too-wet.md (found by lane28).
