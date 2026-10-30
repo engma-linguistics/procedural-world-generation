@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { esc } from '../planets.js';
+import { esc, kyr } from '../planets.js';
 import { S, state } from './state.js';
 import { COAST_SCORES, HU_LAYERS, OBS_LAYERS, SEASONAL, UNITS, ramp, rampFns } from './layers.js';
 import { $ } from './scene.js';
@@ -704,7 +704,7 @@ export function peoplesPanel() {
   const mf = S.V.frame === S.V.run.frames.length - 1 ? (m.present?.megafauna || {}) : {};  // (counted megafauna at the present, PW-924)
   const kids = {}; lines.forEach((l) => (l.parents || []).forEach((p) => (kids[p] = kids[p] || []).push(l)));
   const hasGroups = lines.some((l) => l.group_of);
-  const fmt = (a) => (a >= 1000 ? `${+(a / 1000).toFixed(1)} Myr` : a >= 1 ? `${+a.toFixed(1)} kyr` : `${Math.round(a * 1000)} yr`);
+  const fmt = kyr;
   const row = (l, depth) => {
     const alive = s[l.id] != null, o = l.origin_place;
     const sea = isSeaPeople(l) ? ` <span class="muted">(${REALM_TEXT[l.realm] || 'sea people'})</span>` : '';

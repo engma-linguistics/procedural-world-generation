@@ -2,6 +2,10 @@
 // (GET /api/planets: planet/family.py), their provenance tree as HTML, and server jobs.
 // Styles use the viewer's own variables (--panel, --border, --accent, --muted).
 
+// the viewer's number formats (numfmt.js: a plain script, shared with the classic pages)
+import './numfmt.js';
+export const { num, count, kyr, ago } = globalThis.NumFmt;
+
 export const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const CSS = `

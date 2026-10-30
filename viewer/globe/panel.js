@@ -1,4 +1,4 @@
-import { esc } from '../planets.js';
+import { esc, num as fmtNum } from '../planets.js';
 import { S, state } from './state.js';
 import { COAST_SCORES, HU_LAYERS, LAKE_LAYERS, OBS_LAYERS, RAMPS, SEASONAL, UNITS, WORLD_TINTED, availableLayers, layerDef } from './layers.js';
 import { $ } from './scene.js';
@@ -39,7 +39,6 @@ function layerCats(layer) {  // {arr (ids), names, colors} for a categorical lay
   }
   return null;
 }
-function fmtNum(v) { const a = Math.abs(v); return a >= 100 ? Math.round(v).toLocaleString() : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toFixed(3); }
 // PW-864: the summary block and the tooltip value for the layers that are neither a category nor one number a cell: the peoples
 // layers (share of the land per people, mixing), animal: and crop: (wild range against where it is known), land use, resources, coasts.
 // Returns {sum: html, tip: (i) => text} or null.

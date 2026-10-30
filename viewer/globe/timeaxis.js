@@ -3,11 +3,11 @@
 // its slider is a log axis of time before the present, with "now" at the right end and the eras it was made from
 // as bands, like the workbench timeline (lineages.html drawTimeline). Every other run is linear in its own time
 // (a main run in Myr, a time zoom in kyr). The slider input runs 0..RES; a position picks the nearest moment.
+import { kyr as fmtKyr } from '../planets.js';
 import { S } from './state.js';
 import { $ } from './scene.js';
 
 export const RES = 1000;
-const fmtKyr = (k) => (k >= 1000 ? `${+(k / 1000).toFixed(1)} Myr` : k >= 1 ? `${+k.toFixed(1)} kyr` : `${Math.round(k * 1000)} yr`);
 // a round step giving about n ticks over span
 function niceStep(span, n = 6) {
   const raw = span / n, p = 10 ** Math.floor(Math.log10(raw));

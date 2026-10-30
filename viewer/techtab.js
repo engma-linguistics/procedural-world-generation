@@ -69,11 +69,7 @@
     const cut = s.slice(0, n - 1), sp = cut.lastIndexOf(' ');
     return (sp > n / 2 ? cut.slice(0, sp) : cut).replace(/[ ,;:-]+(and|or|of|the)?$/, '') + '…';
   };
-  function fmt(k) {  // (as lineages.html)
-    if (k >= 1000) return `${+(k / 1000).toFixed(k >= 10000 ? 0 : 2)} Myr`;
-    if (k >= 1) return `${+k.toFixed(k >= 100 ? 0 : 1)} kyr`;
-    return `${Math.round(k * 1000)} yr`;
-  }
+  const fmt = NumFmt.kyr;  // (numfmt.js, loaded first by lineages.html)
   const ago = (k) => (k <= 0 ? 'the present' : fmt(k) + ' ago');
   // how a people came to know a tech (the colours of the first tab and of the globe's 'technology' layer)
   const HOW_COL = { invented: '#ffd27a', contact: '#7fb0ff', kit: '#c79bff', inherited: '#8fa0b4', tamed: '#6bd6a0', shared: '#6bd6d0' };
