@@ -35,7 +35,7 @@ from functools import cache, cached_property
 import numpy as np
 
 from . import kernels
-from .geo import latlon
+from .geo import arc, latlon
 from .kernels import build_raster, locate, order_cells
 
 
@@ -102,7 +102,7 @@ class Grid:
     def spacing(self) -> float:
         """Mean centre-to-centre distance between neighbours, in radians."""
         a, b = self.centers[self.edges[:, 0]], self.centers[self.edges[:, 1]]
-        return float(np.mean(np.arccos(np.clip((a * b).sum(1), -1, 1))))
+        return float(np.mean(arc((a * b).sum(1))))
 
     def components(self, mask: np.ndarray) -> tuple[np.ndarray, int]:
         """Connected regions of mask: (label per cell, -1 outside mask; count).

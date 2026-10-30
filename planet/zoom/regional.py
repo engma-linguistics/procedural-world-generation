@@ -172,7 +172,7 @@ from . import stage_terrain as STG_T
 from . import stage_rivers as STG_R
 from . import stage_landscape as STG_L
 from . import stage_finish as STG_F
-from ..geo import R_KM, latlon, xyz
+from ..geo import R_KM, arc, arc_km, latlon, smoothstep, xyz
 from ..images import write_png
 from ..climate import LAPSE
 from ..tectonics.isostasy import land_view
@@ -243,7 +243,7 @@ class Frame:
         self.n = np.cross(self.c, self.e)
 
     def to_plane(self, p: np.ndarray):
-        rho = np.arccos(np.clip(p @ self.c, -1, 1))
+        rho = arc(p @ self.c)
         a, b = p @ self.e, p @ self.n
         s = np.hypot(a, b)
         k = np.where(s > 1e-12, rho * R_KM / np.maximum(s, 1e-12), 0.0)
@@ -269,11 +269,6 @@ def _count(items) -> dict:
     for k in items:
         out[k] = out.get(k, 0) + 1
     return out
-
-
-def smoothstep(e0, e1, x):
-    t = np.clip((x - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
 
 
 def softplus(x, s):
@@ -767,7 +762,7 @@ def outflow_grad(g, elev: np.ndarray, down: np.ndarray, lab: np.ndarray, lvl: np
         if e < 0:
             continue
         cc = np.flatnonzero(lab == k)
-        s = float(np.min(np.arccos(np.clip(g.centers[cc] @ g.centers[e], -1, 1)))) * R_KM
+        s = float(np.min(arc(g.centers[cc] @ g.centers[e]))) * R_KM
         c = int(e)
         for _ in range(64):
             if s > 0:
@@ -775,7 +770,7 @@ def outflow_grad(g, elev: np.ndarray, down: np.ndarray, lab: np.ndarray, lvl: np
             n = int(down[c])
             if n < 0 or lab[n] == k or s > reach_km:
                 break
-            s += float(np.arccos(np.clip(g.centers[c] @ g.centers[n], -1, 1))) * R_KM
+            s += float(arc(g.centers[c] @ g.centers[n])) * R_KM
             c = n
     return out
 
@@ -802,7 +797,7 @@ def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
         (ix, dx), (iy, dy) = fr.to_plane(g.centers[[i, d]])
         u = np.array([dx - ix, dy - iy])
         u /= max(np.linalg.norm(u), 1e-9)
-        near = np.arccos(np.clip(g.centers[sea_sel] @ (p / np.linalg.norm(p)), -1, 1)) * R_KM < 2.5 * sp
+        near = arc_km(g.centers[sea_sel] @ (p / np.linalg.norm(p))) < 2.5 * sp
         sf = float(smoothstep(0.5, 8.0, cover[sea_sel][near].max())) if near.any() else 0.0
         # the water the river runs out into, against its own depth (PW-847; Wright 1977): over a
         # shallow floor the outflow drags on the bed and drops its load in middle-ground bars that

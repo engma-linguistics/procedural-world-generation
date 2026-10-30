@@ -78,7 +78,7 @@ from numba import njit
 
 from . import climate as C
 from . import kernels
-from .geo import R_KM, is_land
+from .geo import R_KM, arc, is_land
 from .grid import Grid
 
 S0 = 34.7  # psu: the oceans' mean salinity
@@ -897,7 +897,7 @@ def _arc(lat1: float, lon1: float, lat2: float, lon2: float, step_deg: float = 1
     """Points along the great circle from (lat1, lon1) to (lat2, lon2), both ends included."""
     from .geo import latlon, xyz
     a, b = xyz(np.radians(lat1), np.radians(lon1)), xyz(np.radians(lat2), np.radians(lon2))
-    ang = float(np.arccos(np.clip(a @ b, -1, 1)))
+    ang = float(arc(a @ b))
     m = max(1, int(np.ceil(np.degrees(ang) / step_deg)))
     t = np.linspace(0, 1, m + 1)[:, None]
     v = a * np.sin((1 - t) * ang) + b * np.sin(t * ang) if ang > 1e-9 else np.repeat(a[None], m + 1, 0)
@@ -907,7 +907,7 @@ def _arc(lat1: float, lon1: float, lat2: float, lon2: float, step_deg: float = 1
 
 def _arc_deg(grid: Grid, i: int, lat: float, lon: float) -> float:
     from .geo import xyz
-    return float(np.degrees(np.arccos(np.clip(grid.centers[i] @ xyz(np.radians(lat), np.radians(lon)), -1, 1))))
+    return float(np.degrees(arc(grid.centers[i] @ xyz(np.radians(lat), np.radians(lon)))))
 
 
 def _nearest(grid: Grid, cells: np.ndarray, lat: float, lon: float) -> int:

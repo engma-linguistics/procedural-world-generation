@@ -56,7 +56,8 @@ from numba import njit
 
 from . import kernels as ZK
 from . import landforms as ZL
-from .landforms import Synth, smoothstep
+from ..geo import smoothstep
+from .landforms import Synth
 
 ICED_M = 25.0  # a coarse cell the ice reached with at least this much counts as iced
 QT = 25.0  # m^3/s: drainage this big is a trunk the ice followed

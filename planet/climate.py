@@ -41,7 +41,7 @@ from numba import njit, prange
 
 from . import kernels
 from . import ocean as ocean_mod
-from .geo import R_KM, is_land
+from .geo import R_KM, arc, arc_km, cell_area_km2, is_land
 from .grid import Grid
 
 PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
@@ -159,7 +159,7 @@ def _geom(grid: Grid):
         # the icosphere's cells are up to ~9% smaller or larger along the seams of
         # the icosahedron it was built from, and a gradient taken with the mean
         # spacing shows those seams as straight lines (in the winds, then the rain).
-        ln = np.arccos(np.clip((p[src] * p[dst]).sum(1), -1.0, 1.0)) * R_KM
+        ln = arc_km((p[src] * p[dst]).sum(1))
         c = ln[:, None] * d
         M = np.zeros((grid.n, 3, 3))
         np.add.at(M, src, c[:, :, None] * c[:, None, :])
@@ -218,7 +218,7 @@ def _faces(grid: Grid) -> dict:
         key, tri = key[o], tri[o]
         at = np.searchsorted(key, ea * n + eb)
         c1, c2 = grid.corners[tri[at]], grid.corners[tri[at + 1]]
-        L = np.arccos(np.clip((c1 * c2).sum(1), -1, 1)) * R_KM * 1000.0
+        L = arc_km((c1 * c2).sum(1)) * 1000.0
         mid = c1 + c2
         mid /= np.linalg.norm(mid, axis=1, keepdims=True)
         nrm = np.cross(c2 - c1, mid)
@@ -226,7 +226,7 @@ def _faces(grid: Grid) -> dict:
         nrm /= np.linalg.norm(nrm, axis=1, keepdims=True)
         p = grid.centers
         nrm *= np.where(((p[eb] - p[ea]) * nrm).sum(1) < 0, -1.0, 1.0)[:, None]
-        lc = np.arccos(np.clip((p[ea] * p[eb]).sum(1), -1, 1)) * R_KM * 1000.0
+        lc = arc_km((p[ea] * p[eb]).sum(1)) * 1000.0
         cells = np.concatenate([ea, eb])
         eid = np.tile(np.arange(len(ea), dtype=np.int64), 2)
         sg = np.concatenate([np.ones(len(ea)), -np.ones(len(ea))])
@@ -267,7 +267,7 @@ def _coarse(grid: Grid, level: int = 3):
         cand = ring[cidx]
         ok = cand >= 0
         cand = np.where(ok, cand, cidx[:, None])
-        d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
+        d = arc((cg.centers[cand] * grid.centers[:, None, :]).sum(-1))
         w = np.where(ok, np.maximum(0.0, 1 - (d / (COARSE_R * cg.spacing)) ** 2) ** 2, 0.0)
         w /= w.sum(1, keepdims=True)
         # the inverse map, coarse cell -> the (fine cell, candidate) pairs that count towards it, in
@@ -867,7 +867,7 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     lab, nlab = _components(grid, land)
     nl = max(nlab, 1)
     k = np.maximum(lab, 0)
-    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (4 * np.pi * R_KM**2 / grid.n)
+    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (cell_area_km2(grid.n))
     lo = np.full(nl, 90.0)
     hi = np.full(nl, -90.0)
     np.minimum.at(lo, lab[lab >= 0], lat[lab >= 0])

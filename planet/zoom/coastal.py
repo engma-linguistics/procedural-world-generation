@@ -54,7 +54,7 @@ import numpy as np
 from .. import coastal as CL
 from .. import vegetation as V
 from . import kernels as ZK
-from ..geo import R_KM
+from ..geo import R_KM, ramp
 
 LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b2a"),
         3: ("seagrass meadow", "#3fbf6a"), 4: ("mangrove", "#14d2b0"), 5: ("salt marsh", "#e3d65a")}
@@ -146,7 +146,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     r = max(1, int(round(ROCK_KM / res)))
     hl = np.where(water == 0, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
     rise = window_max(hl, r).ravel()
-    rocky = CL.ramp(rise, *ROCK_RISE)
+    rocky = ramp(rise, *ROCK_RISE)
     if surface_rock is not None:
         hard = (np.isin(surface_rock, CL.HARD_ROCKS) & (water == 0)).reshape(ny, nx).astype(float)
         rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())
@@ -221,7 +221,7 @@ def rocky_shore(h: np.ndarray, land: np.ndarray, surface_rock: np.ndarray | None
     ROCK_RISE m, or hard rock (coastal.HARD_ROCKS) at the shore."""
     r = max(1, int(round(ROCK_KM / res)))
     hl = np.where(land, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
-    rocky = CL.ramp(window_max(hl, r).ravel(), *ROCK_RISE)
+    rocky = ramp(window_max(hl, r).ravel(), *ROCK_RISE)
     if surface_rock is not None:
         hard = (np.isin(surface_rock, CL.HARD_ROCKS) & land).reshape(ny, nx).astype(float)
         rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())

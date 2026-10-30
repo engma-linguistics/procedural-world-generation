@@ -18,6 +18,7 @@ from . import falls as ZFL
 from . import kernels as ZK
 from . import landforms as ZL
 from . import regional as RG
+from ..geo import smoothstep
 
 
 def first_glaciers(ctx):
@@ -1022,14 +1023,14 @@ def landscape_loop(ctx):
         ctx.hf = np.where(ctx.active, np.maximum(ctx.h, ctx.hf), ctx.h)
         chan_ = (Qg * RG.KM2_M_PER_YR_TO_M3S >= RG.LF_CHANNEL_Q) | ~ctx.active
         q_ = ZK.accumulate(rec_, order_, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
-        mask_ = where * RG.smoothstep(wk + ctx.res, wk + 4 * ctx.res, dco)
+        mask_ = where * smoothstep(wk + ctx.res, wk + 4 * ctx.res, dco)
         # (cut only inside the classes' reach: a sill where a river leaves it
         # would otherwise be cut far down its course; and not across the
         # closed basins of a rift or a scoured shield, but for the big rivers
         # crossing them: those depressions are filled flat or hold lakes)
         fixed_ = ((mask_ <= 0) & ~(ctx.edge & ctx.land)) | (ctx.lf.weight() < 0.02)
         # (the shape hooks' structures die out over a few km towards those courses: a water gap)
-        mask_s = where * RG.smoothstep(wk + ctx.res, wk + max(4 * ctx.res, 5.0), dco)
+        mask_s = where * smoothstep(wk + ctx.res, wk + max(4 * ctx.res, 5.0), dco)
         hr = ctx.lf.remap(ctx.hf, mask_, rec_, order_, chan_, mask_s, q_)
         # (after the remap: the glacial class's basins, overdeepened troughs and moraine dams, come from it)
         keep_ = fixed_ | ((ctx.lf.basins() > 0.5) & (q_ < RG.BASIN_THROUGH_Q) & ctx.active)

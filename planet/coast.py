@@ -129,7 +129,7 @@ import numpy as np
 from numba import njit, prange
 
 from . import climate
-from .geo import R_KM, is_land
+from .geo import R_KM, cell_area_km2, is_land
 from .kernels import walk_nearest
 
 GRAV = 9.81
@@ -686,7 +686,7 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     marine = "wave_power" in L and "tide_range" in L and len(wet) > 0
     wave = float(np.mean(np.asarray(L["wave_power"], float)[wet])) if marine else 0.0
     tide = float(np.mean(np.asarray(L["tide_range"], float)[wet])) if marine else 0.0
-    cell_area = 4 * np.pi * R_KM ** 2 / grid.n
+    cell_area = cell_area_km2(grid.n)
     qs = river_sediment(L, upstream_cells(down, int(mouth)), q_m3s, cell_area)
     return {**galloway(qs, q_m3s, wave, tide, plain_km), "wave_power_kw_m": round(wave, 1),
             "tide_range_m": round(tide, 2), "marine": marine}

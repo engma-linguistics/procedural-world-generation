@@ -92,7 +92,7 @@ from numba import njit
 from . import coast
 from . import surface as SF
 from . import vegetation as V
-from .geo import R_KM, world_land, xyz
+from .geo import R_KM, cell_area_km2, ramp, world_land, xyz
 
 # turbidity and light
 SSC_BG = 0.5  # mg/L: clear coastal water's suspended matter, away from rivers
@@ -156,11 +156,6 @@ NAMES = {"reef": "coral reef", "mangrove": "mangrove", "salt_marsh": "salt marsh
          "seagrass": "seagrass meadow"}
 
 
-def ramp(x, a, b):
-    """0 at a, 1 at b, linear and clipped (a > b: a falling ramp)."""
-    return np.clip((np.asarray(x, float) - a) / (b - a), 0.0, 1.0)
-
-
 def _nbr_mean(grid, v, mask):
     """Mean of v over each cell's neighbours in mask (0 where none), and how many there are."""
     m = mask[grid.nbr_idx].astype(float)
@@ -212,7 +207,7 @@ def river_loads(grid, L: dict) -> tuple[np.ndarray, np.ndarray]:
             if "sediment_cover" in L else np.full(len(mouths), 0.3))
     ice = np.asarray(L.get("ice", np.zeros(n)), float)
     iced = np.add.reduceat((ice[cells] > 1).astype(float), start) / cnt
-    area = 4 * np.pi * R_KM ** 2 / n
+    area = cell_area_km2(n)
     q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / coast.SEC_PER_YR
     return mouths, coast.bqart(q, cnt * area, relief, temp, soft, iced)
 
@@ -486,7 +481,7 @@ def volcano_reefs(grid, meta: dict | None, sea: np.ndarray) -> np.ndarray:
                 continue
             i = nb[0]
         out[i] += a
-    return np.clip(out / (4 * np.pi * R_KM ** 2 / grid.n), 0, 1)
+    return np.clip(out / (cell_area_km2(grid.n)), 0, 1)
 
 
 def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict:
@@ -517,5 +512,5 @@ def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict
 def areas_km2(grid, layers: dict, percent: bool = True) -> dict:
     """Total area of each habitat (km^2) from its layer: % of each cell (as
     worlds store them), or shares 0..1 with percent=False."""
-    a = 4 * np.pi * R_KM ** 2 / grid.n / (100.0 if percent else 1.0)
+    a = cell_area_km2(grid.n) / (100.0 if percent else 1.0)
     return {k: round(float(np.asarray(layers[k], float).sum() * a)) for k in LAYERS if k in layers}

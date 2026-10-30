@@ -13,7 +13,7 @@ import time
 import numpy as np
 
 from ..climate import LAPSE
-from ..geo import R_KM
+from ..geo import R_KM, arc_km, cell_area_km2
 from . import coast as ZC
 from . import kernels as ZK
 from . import landforms as ZL
@@ -22,6 +22,7 @@ from . import vegetation as ZVG
 from .. import coast
 from .. import icemass
 from . import regional as RG
+from ..geo import smoothstep
 
 
 def frame_and_grid(ctx):
@@ -33,7 +34,7 @@ def frame_and_grid(ctx):
     ctx.world, ctx.sunk = RG.land_world(ctx.world)
     ctx.g, ctx.L = ctx.world["grid"], ctx.world["layers"]
     ctx.sp = ctx.g.spacing * R_KM  # coarse cell spacing, km
-    ctx.cell_area = 4 * np.pi * R_KM**2 / ctx.g.n
+    ctx.cell_area = cell_area_km2(ctx.g.n)
     ctx.n_in = max(16, int(round(ctx.size_km / ctx.res_km)))
     ctx.res = ctx.size_km / ctx.n_in
     # The terrain is built with a halo round the region, cropped off before
@@ -67,7 +68,7 @@ def coarse_fields(ctx):
     rel, rock, rug, runoff, sel."""
     # --- coarse cells around the region --------------------------------
     ctx.elev = ctx.L["elevation"].astype(float)
-    ang = np.arccos(np.clip(ctx.g.centers @ ctx.fr.c, -1, 1)) * R_KM
+    ang = arc_km(ctx.g.centers @ ctx.fr.c)
     ctx.sel = np.flatnonzero(ang < ctx.size_km * 0.7072 + 4 * ctx.sp)
     ctx.cx, ctx.cy = ctx.fr.to_plane(ctx.g.centers[ctx.sel])
     ctx.e_c = ctx.elev[ctx.sel]
@@ -88,7 +89,7 @@ def coarse_fields(ctx):
     bnd = ctx.L.get("plate_boundary", np.zeros(ctx.g.n))[ctx.sel]
     ctx.r_c = np.where(bnd > 0, np.maximum(ctx.r_c, 0.85), np.where(bnd < 0, np.maximum(ctx.r_c, 0.6), ctx.r_c))
     ctx.r_c = np.maximum(ctx.r_c, np.clip(relief[ctx.sel] / 2500, 0, 1))
-    ctx.r_c = np.maximum(ctx.r_c, 0.9 * RG.smoothstep(600, 3500, ctx.e_c))  # high ground is rugged whatever the rock
+    ctx.r_c = np.maximum(ctx.r_c, 0.9 * smoothstep(600, 3500, ctx.e_c))  # high ground is rugged whatever the rock
     ice_c = ctx.L.get("ice", np.zeros(ctx.g.n))[ctx.sel].astype(float)
     ctx.r_c = np.clip(ctx.r_c * np.exp(-ice_c / 500), 0.12, 1.0)
 
@@ -143,20 +144,20 @@ def delta_plains(ctx):
     ctx.deltas = RG._deltas(ctx.g, ctx.L, ctx.sel, ctx.fr, ctx.sp, ctx.size_km, ctx.elev, ctx.flow, ctx.down, ctx.cell_area)
     ctx.wD, ctx.zD, ctx.wS, ctx.zS, ctx.wC, ctx.lobe, ctx.cut, ctx.smooth_c, ctx.wR_f, ctx.wW_f = (np.zeros(ctx.npx) for _ in range(10))
     ctx.keep = np.full(ctx.npx, -9.0)
-    ctx.hf = 1 - RG.smoothstep(*RG.DELTA_PLAIN_GROUND, ctx.e_land)  # a plain only on low coarse ground
+    ctx.hf = 1 - smoothstep(*RG.DELTA_PLAIN_GROUND, ctx.e_land)  # a plain only on low coarse ground
     # ... and no prodelta over deep water: a delta builds out over its shelf
     # (a ~300 km plain's prodelta must not fill the trench off it)
-    shelf_f = RG.smoothstep(-1000.0, -200.0, ctx.e_sea)
+    shelf_f = smoothstep(-1000.0, -200.0, ctx.e_sea)
     for j, dl in enumerate(ctx.deltas):
         R = dl["R"]
         r = np.hypot(ctx.px - dl["x"], ctx.py - dl["y"])
-        w = RG.smoothstep(R, 0.55 * R, r) * ctx.hf
+        w = smoothstep(R, 0.55 * R, r) * ctx.hf
         ctx.zD = np.where(w > ctx.wD, coast.PLAIN_Z0 + coast.PLAIN_RISE * (r / R) ** 1.5, ctx.zD)
         ctx.wR_f, ctx.wW_f = np.where(w > ctx.wD, dl["wR"], ctx.wR_f), np.where(w > ctx.wD, dl["wW"], ctx.wW_f)
         ctx.wD = np.maximum(ctx.wD, w)
         ctx.zS = np.where(r < 1.2 * R, np.maximum(ctx.zS, -(2.0 + 50.0 * (r / R) ** 2)), ctx.zS)
-        ctx.wS = np.maximum(ctx.wS, RG.smoothstep(1.2 * R, 0.5 * R, r) * shelf_f)
-        ctx.wC = np.maximum(ctx.wC, RG.smoothstep(1.4 * R, 0.8 * R, r) * np.where(ctx.ind > 0, ctx.hf, shelf_f))
+        ctx.wS = np.maximum(ctx.wS, smoothstep(1.2 * R, 0.5 * R, r) * shelf_f)
+        ctx.wC = np.maximum(ctx.wC, smoothstep(1.4 * R, 0.8 * R, r) * np.where(ctx.ind > 0, ctx.hf, shelf_f))
         # its shape from the Galloway weights; the lobe lifts the land/sea
         # indicator at its centre to a little above the coast value
         f = RG._delta_forms(dl, ctx.px, ctx.py, ctx.res, np.random.default_rng(ctx.seed * 7919 + 101 + j), ctx.ind, ctx.nx, ctx.ny)
@@ -216,12 +217,12 @@ def coastline(ctx):
             # (the share of coastal plain among the land cells around: 1 along its coast)
             f_cp, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, cp_c[:, None].astype(float), ctx.land_c[:, None].astype(float),
                                       0.5 * ctx.sp)
-            ctx.w_cp = RG.smoothstep(0.3, 0.6, np.nan_to_num(f_cp[:, 0]))
+            ctx.w_cp = smoothstep(0.3, 0.6, np.nan_to_num(f_cp[:, 0]))
             mv, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, np.column_stack([np.asarray(ctx.L["tide_range"], float)[ctx.sel],
                                                                      np.asarray(ctx.L["wave_power"], float)[ctx.sel]]),
                                     np.column_stack([~ctx.land_c, ~ctx.land_c]).astype(float), 0.6 * ctx.sp)
-            wW_b = (ctx.w_cp * RG.smoothstep(*RG.BARRIER_WAVE, np.nan_to_num(mv[:, 1]))
-                    * RG.smoothstep(RG.BARRIER_TIDE[1], RG.BARRIER_TIDE[0], np.nan_to_num(mv[:, 0])) * (1 - ctx.wC))
+            wW_b = (ctx.w_cp * smoothstep(*RG.BARRIER_WAVE, np.nan_to_num(mv[:, 1]))
+                    * smoothstep(RG.BARRIER_TIDE[1], RG.BARRIER_TIDE[0], np.nan_to_num(mv[:, 0])) * (1 - ctx.wC))
             if np.any(wW_b > 0.3):
                 din = ZK.inside_distance(ctx.ind_n > 0, ctx.nx, ctx.ny, False) * ctx.res  # km inside the coast
                 gate = ZK.fbm(ctx.Pk, 30.0, 2, 0.5, ctx.S + 53) / 0.17
@@ -242,8 +243,8 @@ def coastline(ctx):
     if ctx.bi_island.any():
         ctx.log(f"  barrier islands: {int(ctx.bi_island.sum())} px, lagoons {int(ctx.isl['lagoon'].sum())} px, inlets {int(ctx.isl['inlet'].sum())} px")
     ctx.land = ctx.ind_n > 0
-    ramp_l = RG.smoothstep(0.0, 0.55, ctx.ind_n)
-    ramp_s = RG.smoothstep(0.0, 0.45, -ctx.ind_n)
+    ramp_l = smoothstep(0.0, 0.55, ctx.ind_n)
+    ramp_s = smoothstep(0.0, 0.45, -ctx.ind_n)
     ctx.base = np.where(ctx.land, ctx.e_land * ramp_l, ctx.e_sea * ramp_s)
     if ctx.bi_island.any():
         ctx.base = np.where(ctx.bi_island, ZC.ISLAND_M * (0.5 + 0.5 * ctx.isl["u"]), ctx.base)
@@ -270,7 +271,7 @@ def detail(ctx):
     ctx.detail = 2.2 * np.tanh(ctx.detail / 2.2) + 0.06 * tex  # no absurd spikes
     ctx.amp_land = (ctx.rug * (0.36 * np.maximum(ctx.base, 0) + 0.3 * np.nan_to_num(ctx.rel) + 25) + 12) * (1 - 0.9 * ctx.wD)
     amp_sea = (5 + 0.08 * np.abs(ctx.base)) * (1 - 0.7 * ctx.wS)
-    ctx.taper = np.where(ctx.land, RG.smoothstep(0.0, 0.35, ctx.ind_n), RG.smoothstep(0.0, 0.25, -ctx.ind_n)) * ~ctx.bi_island
+    ctx.taper = np.where(ctx.land, smoothstep(0.0, 0.35, ctx.ind_n), smoothstep(0.0, 0.25, -ctx.ind_n)) * ~ctx.bi_island
     ctx.h = ctx.base + ctx.taper * np.where(ctx.land, ctx.amp_land, amp_sea) * ctx.detail
 
     # soft floor/ceiling at the coast (the delta plain and prodelta get a much harder one)
@@ -325,7 +326,7 @@ def mean_correction(ctx):
         amp = np.where(ok_l & (fsum > 0.05 * cnt), np.maximum(ctx.e_c - m, 0.0) * cnt / np.maximum(fsum, 1e-9), 0.0)
         corr, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, amp[:, None], ok_l[:, None].astype(float), 0.5 * ctx.sp)
         ctx.h = ctx.clamp(ctx.h + f_s * np.nan_to_num(corr[:, 0]))
-    corr_taper = np.where(ctx.land, RG.smoothstep(0.0, 0.3, ctx.ind_n), RG.smoothstep(0.0, 0.3, -ctx.ind_n)) * (1 - ctx.wC)
+    corr_taper = np.where(ctx.land, smoothstep(0.0, 0.3, ctx.ind_n), smoothstep(0.0, 0.3, -ctx.ind_n)) * (1 - ctx.wC)
     # (each pass removes only part of a residual one cell wide, e.g. a trench,
     # because the correction is smooth over half a cell: MEAN_PASSES of them)
     # (a sea cell the fine coast leaves mostly land isn't held to its mean: its few sea pixels
@@ -346,7 +347,7 @@ def mean_correction(ctx):
         # beyond the plain (PW-349; a coastal cell's mean is left to the
         # delta, whose lobe and channels move its coast; the correction fades
         # out towards the coast, so it needs no clamp: clamp() isn't idempotent)
-        f_r = np.where(ctx.land, RG.smoothstep(0.0, 0.3, ctx.ind_n), 0.0) * (1 - ctx.wD)
+        f_r = np.where(ctx.land, smoothstep(0.0, 0.3, ctx.ind_n), 0.0) * (1 - ctx.wD)
         for _ in range(RG.MEAN_PASSES):
             m, cnt = ctx.cell_means(ctx.h)
             ok = cnt > 0.25 * ctx.full_px
@@ -372,7 +373,7 @@ def volcanoes(ctx):
         # limestone counts as continental crust in the run, so it stays in)
         ok_c = (np.asarray(ctx.L.get("crust", np.zeros(ctx.g.n)))[ctx.sel] == 0) | (ctx.rock[ctx.sel] == 1)
         oceanic, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, ok_c[:, None].astype(float), np.ones((len(ctx.sel), 1)), 0.35 * ctx.sp)
-        oceanic = RG.smoothstep(0.3, 0.7, np.nan_to_num(oceanic[:, 0]))
+        oceanic = smoothstep(0.3, 0.7, np.nan_to_num(oceanic[:, 0]))
         ctx.wv = ctx.vf["province"] * oceanic * np.isfinite(ctx.vf["floor"])
         # the vents' sea floor: the terrain lowered by the coarse cells'
         # share of the cones themselves (what they stand above the ground
@@ -429,7 +430,7 @@ def tides_and_flats(ctx):
         ctx.tide_f, ctx.wave_f = np.nan_to_num(mv[:, 0]), np.nan_to_num(mv[:, 1])
     ctx.delta_floor = np.full(ctx.npx, -np.inf)  # beach ridges and levees, held as floors in the landscape pass
     if ctx.barrier.any():  # (a coastal plain's barrier islands: a dune ridge a few metres high)
-        ctx.delta_floor = np.where(ctx.barrier & ctx.land, 2.0 + 2.5 * RG.smoothstep(-1.0, 1.0, ZK.fbm(ctx.Pk, 6.0, 2, 0.5, ctx.S + 54) / 0.17),
+        ctx.delta_floor = np.where(ctx.barrier & ctx.land, 2.0 + 2.5 * smoothstep(-1.0, 1.0, ZK.fbm(ctx.Pk, 6.0, 2, 0.5, ctx.S + 54) / 0.17),
                                ctx.delta_floor)
     if ctx.deltas:
         # Tidal flats: offshore of a tide-influenced delta, a band of sea floor

@@ -87,6 +87,7 @@ from .. import climate, icemass, vegetation
 from .. import store as S
 from .. import world as W
 from . import regional as Z
+from ..geo import smoothstep
 from . import coastal as ZCL
 from . import fine_floodplain as ZFP
 from . import fine_forms as ZFF
@@ -358,7 +359,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     d_edge = np.minimum(np.minimum(col - hb + 0.5, nb - hb - col - 0.5),
                         np.minimum(row - hb + 0.5, nb - hb - row - 0.5)) * res
     ramp = max(rp, 8 * res)
-    w_in = Z.smoothstep(0.5 * res, ramp, d_edge)
+    w_in = smoothstep(0.5 * res, ramp, d_edge)
     ring = (row == 0) | (row == nb - 1) | (col == 0) | (col == nb - 1)
 
     # --- 2. target surface -----------------------------------------------
@@ -694,7 +695,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         n1 = np.clip(ZK.fbm(Pk[ib], lam_g, 2, 0.5, S_ + 21) / 0.17, -1.25, 1.25)
         grad = 1000.0 * np.tan(np.radians(GORGE_WALL_DEG[0] + (GORGE_WALL_DEG[1] - GORGE_WALL_DEG[0]) * rug_g))
         e_ = d - hf
-        e_ = e_ + GORGE_FRAY_KM * n1 * Z.smoothstep(0.0, 4 * GORGE_FRAY_KM, e_)
+        e_ = e_ + GORGE_FRAY_KM * n1 * smoothstep(0.0, 4 * GORGE_FRAY_KM, e_)
         # round each tier's foot the walls open out (an amphitheatre: gentler scree-and-talus slopes), and
         # they stand in benches (strata: harder beds hold a ledge, softer ones step back)
         bowl = np.zeros(len(ib))
@@ -703,7 +704,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         u_ = np.maximum(e_, 0.0) * grad * (1.0 - 0.45 * bowl)
         B_ = float(np.clip(tiers[0] / 3.0, 15.0, 80.0)) * (1.0 + 0.3 * n1)
         q_ = u_ / B_
-        u_ = B_ * (np.floor(q_) + Z.smoothstep(0.55, 1.0, q_ - np.floor(q_)))
+        u_ = B_ * (np.floor(q_) + smoothstep(0.55, 1.0, q_ - np.floor(q_)))
         cut = zf + u_
         free = (sp_e >= s_face) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib] & ~gorge[ib]
         flo = free & (d <= hf)
@@ -833,7 +834,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         win = np.hypot(xb - vx, yb - vy) <= reach + 3 * rp
         e_p = np.zeros(pa.ny * pa.nx)
         e_p[np.flatnonzero(box)[win]] = ZFV.parent_view(pa, fr, rr_b[win], cc_b[win], prm, res)
-        wgt = 1.0 - Z.smoothstep(0.6 * reach, reach, ds)
+        wgt = 1.0 - smoothstep(0.6 * reach, reach, ds)
         E = ZFV.relief(P[sel], prm)
         e_bar = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel])
         fine_e = wgt * (E - e_bar)
@@ -845,7 +846,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # floor is a guess (the ground there is the parent's: its valleys aren't filled)
         if prm["kind"] != "caldera":
             e_p[np.flatnonzero(box)[win]] += float(v["top_m"]) - prm["H"] - hp.ravel()[np.flatnonzero(box)[win]]
-            body = Z.smoothstep(0.5 * DRAWN_BODY, DRAWN_BODY, e_bar / prm["H"])
+            body = smoothstep(0.5 * DRAWN_BODY, DRAWN_BODY, e_bar / prm["H"])
             short = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel]) - VOLC_CUT_M
             up = body * Z.softplus(short, DRAWN_M)  # (faded, not cut off: a cut stood as a wall)
             drawn[sel] |= up > 2 * DRAWN_M
@@ -855,7 +856,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # form toned down round the summit (its pixel means still the parent's); below it (a parent
         # pixel's mean of a summit): raised as one, the shift fading out over a parent pixel round it
         hs = ds <= hold
-        lift = 1.0 - Z.smoothstep(hold, hold + max(rp, hold), ds)
+        lift = 1.0 - smoothstep(hold, hold + max(rp, hold), ds)
         top = float(v["top_m"])
         if s1[hs].max() > top and (s1 - fine_e * lift)[hs].max() < top:
             lo_, hi_ = 0.0, 1.0  # (the share of the edifice's form kept at the summit)
@@ -870,8 +871,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         ed[sel] = s1 - target_f[sel]
         e_w[sel] = np.maximum(e_w[sel], wgt)
         f0, f1 = max(prm["free_km"][0], hold), max(prm["free_km"][1], hold + 4 * res)
-        e_cut[sel] = np.minimum(e_cut[sel], VOLC_CUT_M * Z.smoothstep(f0, f1, ds)
-                                + 1e4 * Z.smoothstep(max(0.5 * reach, f1), max(reach, 2 * f1), ds))
+        e_cut[sel] = np.minimum(e_cut[sel], VOLC_CUT_M * smoothstep(f0, f1, ds)
+                                + 1e4 * smoothstep(max(0.5 * reach, f1), max(reach, 2 * f1), ds))
         hold_i = sel[hs]
         hold_i = hold_i[~(course | pool | gorge)[hold_i] & (target_f[hold_i] + ed[hold_i] > 0)]
         core[hold_i] = True
@@ -1495,7 +1496,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         tw /= np.maximum(np.hypot(*tw.T), 1e-12)[:, None]
         Pb = np.ascontiguousarray(pa.fr.to_sphere(B[:, 0], B[:, 1]) * R_KM)
         wan = (WANDER_PX * rp * np.clip(ZK.fbm(Pb, 4 * rp, 2, 0.5, seed) / 0.17, -1.25, 1.25)
-               * Z.smoothstep(0.0, rp, s_b) * Z.smoothstep(0.0, rp, s_b[-1] - s_b))
+               * smoothstep(0.0, rp, s_b) * smoothstep(0.0, rp, s_b[-1] - s_b))
         wan = wan[:, None] * np.column_stack([-tw[:, 1], tw[:, 0]])  # (added below: none under meanders)
         # per node: discharge, width, wavelength (km), bed slope, rock
         qn = np.maximum(q[ch], 0.0)
@@ -1510,15 +1511,15 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
                                             ).ravel()[ch].astype(int), 0, len(SURF.ROCK_K) - 1)] \
             if ("surface_rock" in pa.L or "rock" in pa.L) else np.ones(len(ch))
         s_hi = ALLUVIAL_SLOPE * np.clip(kr, 0.3, 2.0)
-        alluv = 1.0 - Z.smoothstep(0.25 * s_hi, s_hi, slope)
+        alluv = 1.0 - smoothstep(0.25 * s_hi, s_hi, slope)
         s_lw = 0.013 * np.maximum(qn, 1e-3) ** -0.44
-        single = 1.0 - Z.smoothstep(1.5 * s_lw, 3.0 * s_lw, slope)
+        single = 1.0 - smoothstep(1.5 * s_lw, 3.0 * s_lw, slope)
         # the valley floor this zoom builds round the axis (PW-412; the rock's share evened over a couple of
         # parent px: a rock's edge isn't a step in the valley's width)
         hf_n = ZFP.half_width(wn, alluv, _gauss(np.sqrt(np.clip(kr, 0.3, 2.0)), 2.0) ** 2)
         lam_lo = np.minimum(lam, np.minimum(np.r_[lam[:1], lam[:-1]], np.r_[lam[1:], lam[-1:]]))  # (a jump in Q:
         # none across it, its phase runs at the smaller wavelength's rate)
-        drawn = Z.smoothstep(lo, hi, lam_lo / res) * (1.0 - (Z.smoothstep(lo, hi, lam / rp) if parent_fine else 0.0))
+        drawn = smoothstep(lo, hi, lam_lo / res) * (1.0 - (smoothstep(lo, hi, lam / rp) if parent_fine else 0.0))
         om = MEANDER_OMEGA * alluv * single * drawn
         if diag is not None:
             for k_c, v_c in (("alluvial", alluv * single >= 0.5), ("braided", (alluv >= 0.5) & (single < 0.5)),
@@ -1579,7 +1580,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         # down the course: the meanders' phase, swing (tapering out at its ends) and offset
         s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(B, axis=0).T))]
         lam_u = np.interp(u, np.arange(K + 1), lam)
-        taper = (Z.smoothstep(0.0, 0.5, s_ / lam_u) * Z.smoothstep(0.0, 0.5, (s_[-1] - s_) / lam_u))
+        taper = (smoothstep(0.0, 0.5, s_ / lam_u) * smoothstep(0.0, 0.5, (s_[-1] - s_) / lam_u))
         om_u = np.interp(u, np.arange(K + 1), om) * taper
         # (the wander only where no meanders are drawn: at a fine parent its bends are shorter than a meander
         # wavelength, and its curvature on theirs made hairpins, PW-424)

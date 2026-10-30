@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..geo import R_KM, arc
+
 EST = 0.12  # (history.EST: presence below which a people is not there)
 PRESENT_OVERLAP = 0.25  # a people holds a cell for the substrate where its presence is at least this
 CLINE_KM = 300.0  # how far a body share spreads over a T0/T1 border (in rings of the cell size)
@@ -32,7 +34,6 @@ INCURSION_MIN_MKM2 = 0.05
 LOCAL_KM = 1000.0
 DIR_KM = 2000.0
 INCURSION_KEEP = 200  # incursions kept in the run's meta (the largest)
-R_KM = 6371.0
 
 
 def kind_of(tags: dict, corr: np.ndarray, cells: np.ndarray) -> str:
@@ -166,7 +167,7 @@ class Contacts:
                 deg = None
                 if first.get("from_n", 0) >= 3:
                     f = first["from"] / max(float(np.linalg.norm(first["from"])), 1e-9)
-                    if np.degrees(np.arccos(np.clip(c @ f, -1, 1))) * 111.0 > h.cell_km:  # (the taker's older cells are not the ground taken)
+                    if np.degrees(arc(c @ f)) * 111.0 > h.cell_km:  # (the taker's older cells are not the ground taken)
                         la1, la2 = np.radians(lat), np.arcsin(np.clip(f[2], -1, 1))
                         dl = np.arctan2(f[1], f[0]) - np.radians(lon)
                         deg = float(np.degrees(np.arctan2(np.sin(dl) * np.cos(la2), np.cos(la1) * np.sin(la2) - np.sin(la1) * np.cos(la2) * np.cos(dl))) % 360)

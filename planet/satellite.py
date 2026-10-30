@@ -52,7 +52,7 @@ import numpy as np
 from . import climate
 from . import soils as SO
 from . import vegetation as V
-from .geo import world_land
+from .geo import smoothstep, world_land
 from .surface import ROCKS
 
 SEASONS = ("jul", "jan", "year")
@@ -85,8 +85,7 @@ def _mix(a, b, t):
 
 
 def _smooth(e0, e1, x):
-    t = np.clip((np.asarray(x, float) - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
+    return smoothstep(e0, e1, np.asarray(x, float))
 
 
 def _ramp(v, stops) -> np.ndarray:

@@ -166,17 +166,12 @@ from numba import njit, prange
 
 from .. import landform as LF
 from . import kernels as ZK
-from ..geo import R_KM
+from ..geo import R_KM, arc, arc_km, smoothstep
 
 # how well each rock (surface.ROCKS id) holds a lip or stands as a ridge (0..1);
 # zoom.KP_RESIST is this table
 RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3,
           11: 1.0, 12: 0.95, 13: 0.9, 14: 0.85, 15: 0.5}
-
-
-def smoothstep(e0, e1, x):
-    t = np.clip((x - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
 
 
 @dataclass
@@ -537,7 +532,7 @@ def build_frames(Pk, seed, cells, ind, vals: dict, cues: dict, sp, axis: str) ->
     ax2 = np.zeros((npch, 2))
     out = {name: np.zeros(npch) for name in vals}
     for p in range(npch):
-        d = np.arccos(np.clip(cells @ C[p], -1, 1)) * R_KM
+        d = arc_km(cells @ C[p])
         sig = 1.5 * sp
         m = d < 3.5 * sig
         w = np.exp(-0.5 * (d[m] / sig) ** 2)
@@ -636,8 +631,8 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     for z in zs:
         c = np.flatnonzero(lab == z)
         e = elev[c]
-        ref = c[np.argmin(np.arccos(np.clip(grid.centers[c] @ grid.centers[c].mean(0) / max(
-            np.linalg.norm(grid.centers[c].mean(0)), 1e-12), -1, 1)))]  # (the cell nearest the zone's centroid)
+        ref = c[np.argmin(arc(grid.centers[c] @ grid.centers[c].mean(0) / max(
+            np.linalg.norm(grid.centers[c].mean(0)), 1e-12)))]  # (the cell nearest the zone's centroid)
         p50, p85, p95 = np.percentile(e, [50, 85, 95])
         tab[z] = (p50, p85, p95, np.median(top[c]), np.median(dip[c]), ZONE_RELIEF[0] * p50 + ZONE_RELIEF[1],
                   _down_dip(grid.centers[c], e, grid.centers[ref]))
@@ -656,7 +651,7 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     loc = np.zeros(len(mine))
     for j, c in enumerate(sel[mine]):
         zc = np.flatnonzero(lab == lab[c])
-        d = np.arccos(np.clip(grid.centers[zc] @ grid.centers[c], -1, 1)) * R_KM
+        d = arc_km(grid.centers[zc] @ grid.centers[c])
         m = d < 3 * ZONE_LOCAL_KM
         loc[j] = _wmedian(elev[zc][m], np.exp(-0.5 * (d[m] / ZONE_LOCAL_KM) ** 2))
     ind = np.zeros((len(sel), 1))

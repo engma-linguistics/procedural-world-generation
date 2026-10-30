@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 
 from .. import store as S
-from ..geo import R_KM
+from ..geo import cell_area_km2
 from . import animal_defs as AD
 from . import land as LD
 from . import spec as SP
@@ -161,7 +161,7 @@ def derive(run_dir: Path) -> dict:
     n = m["cells"]
     goods = LD.goods(m["world"])
     land = goods["_land"]
-    area_km2 = 4 * np.pi * R_KM ** 2 / n
+    area_km2 = cell_area_km2(n)
     pp = m["presence_present"]
     P = np.fromfile(run_dir / pp["file"], np.uint8).reshape(pp["shape"]).astype(float) / 100.0
     # the present's tree cover (last frame)
