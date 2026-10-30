@@ -888,7 +888,7 @@ def _volcano_forms(ctx: _Ctx) -> list[dict]:
     (what it looks like now: island, atoll, guyot...) and status (active,
     dormant or extinct: zoom_volcanoes.status); [] without one."""
     if getattr(ctx, "_vforms", None) is None:
-        from .zoom_volcanoes import form, statuses, table
+        from .zoom.volcanoes import form, statuses, table
         V = table({"meta": ctx.meta})
         ctx._vforms = [dict(v, form=form(v), status=s) for v, s in zip(V, statuses({"meta": ctx.meta}, V))]
     return ctx._vforms

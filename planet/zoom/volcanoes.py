@@ -39,9 +39,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import zoom_kernels as ZK
-from .geo import R_KM, xyz
-from .tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
+from . import kernels as ZK
+from ..geo import R_KM, xyz
+from ..tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
 
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
 # minor cones along active arcs (arc_infill, PW-116)

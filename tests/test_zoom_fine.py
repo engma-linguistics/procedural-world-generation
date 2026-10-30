@@ -15,8 +15,8 @@ import pytest
 from planet import api
 from planet import store as S
 from planet import world as W
-from planet import zoom as Z
-from planet import zoom_fine as ZF
+from planet.zoom import regional as Z
+from planet.zoom import fine as ZF
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 
@@ -251,7 +251,7 @@ def test_volcano_form(fine):
 def test_volcano_edifices_by_kind():
     """PW-395: summit forms by kind and status, the rim at the edifice's
     height, a concave stratocone, gullies deeper on old volcanoes."""
-    from planet import zoom_fine_volcano as ZFV
+    from planet.zoom import fine_volcano as ZFV
     base = {"lat": 10.0, "lon": 20.0, "age_myr": 4.0}
     strato = ZFV.params({**base, "kind": "arc", "form": "active stratovolcano", "status": "active",
                          "height_m": 2000.0, "top_m": 2500.0}, None, 1000.0, 1)
@@ -499,7 +499,7 @@ def test_forms_stats_and_lineage_seed(fine):
 
 def test_subpixel_takes_each_parent_pixels_mean_off(parent):
     """zoom_fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
-    from planet import zoom_fine_forms as ZFF
+    from planet.zoom import fine_forms as ZFF
     meta, layers = parent
     pa = ZF._Parent(meta, {k: np.asarray(v) for k, v in layers.items()})
     lat, lon = _at(meta, 48, 53)

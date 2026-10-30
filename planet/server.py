@@ -54,7 +54,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api, family, favourites, make, thumbs
-from . import zoom_fine as ZF
+from .zoom import fine as ZF
 from . import parallel as P
 from . import store as S
 

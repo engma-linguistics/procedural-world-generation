@@ -164,9 +164,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from numba import njit, prange
 
-from . import landform as LF
-from . import zoom_kernels as ZK
-from .geo import R_KM
+from .. import landform as LF
+from . import kernels as ZK
+from ..geo import R_KM
 
 # how well each rock (surface.ROCKS id) holds a lip or stands as a ridge (0..1);
 # zoom.KP_RESIST is this table
@@ -1646,7 +1646,7 @@ DEFAULTS = {"rift_strain": 0.4, "glaciated_myr": LF.GLACIATED_NEVER, "crust_thic
 DERIVED["iced"] = lambda L, sel: (np.asarray(L["ice_max"], float)[sel] >= 25.0).astype(float)
 for _k, _syn in SYNTH.items():
     _syn.cls = _k
-from .zoom_glacial import Glaciated, ice_flow  # noqa: E402  (zoom_glacial imports this module: import this one first)
+from .glacial import Glaciated, ice_flow  # noqa: E402  (zoom_glacial imports this module: import this one first)
 
 SYNTH[GLACIATED] = Glaciated()
 
@@ -2044,7 +2044,7 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
     for nm, z in (("trough_lakes", zt), ("moraine_lakes", zm & ~zt)):
         m = lake & near(z)
         st[nm] = int(len(np.unique(ZK.label_components(m, nx, ny)[0][m & cnt]))) if (m & cnt).any() else 0
-    from .zoom_glacial import trough_metrics
+    from .glacial import trough_metrics
     st.update(trough_metrics(g.cache, h, nx, ny, res, cnt))
     form[lake & (near(zt) | near(zm))] = FM["lake"]
     form[fjord] = FM["fjord"]
@@ -2052,5 +2052,5 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
 
 
 def _glacial_forms():
-    from .zoom_glacial import FORM
+    from .glacial import FORM
     return FORM

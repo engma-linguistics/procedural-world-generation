@@ -580,7 +580,7 @@ def valley_floor(river_q, river_km, slope, rock, res_km: float) -> np.ndarray | 
     if river_q is None:
         return 0.0
     from .surface import ROCK_K
-    from .zoom_fine_floodplain import half_width
+    from .zoom.fine_floodplain import half_width
     d = np.abs(np.asarray(river_km, float))
     k = ROCK_K[np.clip(np.asarray(rock, int), 0, len(ROCK_K) - 1)]
     w_km = 4.0 * np.sqrt(np.maximum(np.asarray(river_q, float), 0.0)) / 1000.0

@@ -28,7 +28,7 @@ import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, pl
 import numpy as np  # noqa: E402
 from planet import soils as SO  # noqa: E402
 from planet import world as W  # noqa: E402
-from planet import zoom as Z  # noqa: E402
+from planet.zoom import regional as Z  # noqa: E402
 from planet.geo import R_KM  # noqa: E402
 from planet.images import write_png  # noqa: E402
 from tools.soil_check import TYPE_GROUP  # noqa: E402
@@ -61,7 +61,7 @@ def check(world: dict, lat: float, lon: float, size_km: float, res_km: float, pn
     s_cell = SO.cell_slope(g, elev)  # (the soils' own: the sea at sea level)
     P_cell = np.asarray(L["precipitation"], float)
     # the pixels' terrain (as zoom_vegetation computes it)
-    from planet import zoom_terrain as ZT
+    from planet.zoom import terrain as ZT
     from planet.geo import latlon
     lat_px = latlon(fr.to_sphere(X.ravel(), Y.ravel()))[0]
     h = zl["elevation"].astype(float)

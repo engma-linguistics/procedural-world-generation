@@ -110,7 +110,7 @@ def cmd_slice(args):
 
 
 def cmd_zoom(args):
-    from . import zoom as Z
+    from .zoom import regional as Z
     kind, _, ref = args.world.rpartition(":")
     if kind == "zoom" or (not kind and S.exists("zoom", ref) and not S.exists("world", ref)):
         return _fine_zoom(args, ref)
@@ -136,7 +136,7 @@ def cmd_zoom(args):
 
 def _fine_zoom(args, parent: str):
     """planet zoom <zoom id>: a fine zoom (zoom_fine, PW-129) of that zoom."""
-    from . import zoom_fine as ZF
+    from .zoom import fine as ZF
     out = ZF.zoom(parent, args.lat, args.lon, args.size_km, args.res_km, args.seed)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
@@ -155,7 +155,7 @@ def _fine_zoom(args, parent: str):
 def cmd_satellite(args):
     """Adds (or redoes) the satellite view of saved worlds and zooms in place."""
     from . import satellite as SAT
-    from . import zoom as Z
+    from .zoom import regional as Z
     for ref in args.ids:
         kind, _, rid = ref.rpartition(":")
         kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
@@ -181,7 +181,7 @@ def cmd_coast(args):
         if len(kinds) != 1:
             raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
         if kinds[0] == "zoom":
-            from . import zoom_coast as ZC
+            from .zoom import coast as ZC
             d = ZC.add_to_zoom(rid, terrain=args.terrain)
             print(S.rel(d))
             print("\n".join(ZC.text_lines(json.loads((d / "zoom.json").read_text())["coast"])))
@@ -194,7 +194,7 @@ def cmd_coast(args):
 def cmd_humanuse(args):
     """Adds (or redoes) the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms in place."""
     from . import humanuse as HU
-    from . import zoom as Z
+    from .zoom import regional as Z
     for ref in args.ids:
         kind, _, rid = ref.rpartition(":")
         kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
@@ -214,7 +214,7 @@ def cmd_game(args):
     with --satellite also the satellite view (its bare ground follows the soils)."""
     from . import gameattrs as GA
     from . import satellite as SAT
-    from . import zoom as Z
+    from .zoom import regional as Z
     for ref in args.ids:
         kind, _, rid = ref.rpartition(":")
         kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
@@ -238,7 +238,7 @@ def cmd_resources(args):
     """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place, or sites concrete
     deposits in saved zooms (PW-610: zoom_resources.py; the world is not written)."""
     from . import resources as RS
-    from . import zoom_resources as ZR
+    from .zoom import resources as ZR
     for ref in args.ids:
         kind, _, rid = ref.rpartition(":")
         kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]

@@ -51,7 +51,7 @@ def test_running_mean_and_streaks():
 
 
 def test_zoom_receivers_and_box():
-    from planet import zoom_resources as ZR
+    from planet.zoom import resources as ZR
     slots = np.array([[4, 6], [255, 1]], np.uint8)  # E, S; none, N
     rec = ZR._receivers(slots, 2, 2)
     assert rec.tolist() == [1, 3, -1, 1]
@@ -61,7 +61,7 @@ def test_zoom_receivers_and_box():
 
 
 def test_zoom_models_cover_resources():
-    from planet import zoom_resources as ZR
+    from planet.zoom import resources as ZR
     assert set(ZR.KEYS) <= set(RS.KEYS)
     assert abs(ZR.SIZE_P.sum() - 1) < 1e-9
     for k, (form, *_rest) in ZR.MODELS.items():

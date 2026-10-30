@@ -8,8 +8,8 @@ import pytest
 from planet import coastal as C
 from planet import vegetation as V
 from planet import world as W
-from planet import zoom
-from planet import zoom_coastal as ZC
+from planet.zoom import regional as zoom
+from planet.zoom import coastal as ZC
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 

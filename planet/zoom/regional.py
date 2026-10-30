@@ -153,26 +153,26 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, icemass, kernels
-from . import humanuse as HU
-from . import gameattrs as GA
-from . import store as S
-from . import world as W
-from . import zoom_kernels as ZK
-from . import zoom_landforms as ZL
-from . import zoom_volcanoes as ZV
-from . import satellite as SAT
-from . import vegetation
-from . import zoom_vegetation as ZVG
-from . import zoom_peoples as ZP
-from . import zoom_coastal as ZCL
-from . import zoom_coast as ZC
-from . import zoom_falls as ZFL
-from .geo import R_KM, latlon, xyz
-from .images import write_png
-from .climate import LAPSE
-from .surface import ROCK_K
-from .tectonics.isostasy import land_view
+from .. import climate, coast, icemass, kernels
+from .. import humanuse as HU
+from .. import gameattrs as GA
+from .. import store as S
+from .. import world as W
+from . import kernels as ZK
+from . import landforms as ZL
+from . import volcanoes as ZV
+from .. import satellite as SAT
+from .. import vegetation
+from . import vegetation as ZVG
+from . import peoples as ZP
+from . import coastal as ZCL
+from . import coast as ZC
+from . import falls as ZFL
+from ..geo import R_KM, latlon, xyz
+from ..images import write_png
+from ..climate import LAPSE
+from ..surface import ROCK_K
+from ..tectonics.isostasy import land_view
 
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
@@ -1089,7 +1089,7 @@ def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, c
     April-September half; ice_c: the interpolated coarse ice (m); lat (deg);
     noise: ~unit fbm; tilt: the planet's (the balance is the ice-age cycle's
     average, as the run's)."""
-    from .tectonics.earth import ICE_MAX
+    from ..tectonics.earth import ICE_MAX
     hl = np.maximum(h, 0)
     tw = warm_sl - LAPSE * hl + GL_NOISE_C * noise
     tc = np.minimum(cold_sl - LAPSE * hl, tw)
@@ -3774,5 +3774,5 @@ def add_deposits(zoom_dir: Path, world: dict) -> None:
     world's resource layers and the history kept with it (~1 s). Left out when the world has no resource layers
     (`--no-resources`, or a world not from a run)."""
     if W._RESOURCES.get() and "resource" in world["layers"]:
-        from . import zoom_resources as ZR
+        from . import resources as ZR
         ZR.add_to_zoom(zoom_dir.name, log=lambda *a: None, world=world)

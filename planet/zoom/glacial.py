@@ -54,9 +54,9 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
-from . import zoom_kernels as ZK
-from . import zoom_landforms as ZL
-from .zoom_landforms import Synth, smoothstep
+from . import kernels as ZK
+from . import landforms as ZL
+from .landforms import Synth, smoothstep
 
 ICED_M = 25.0  # a coarse cell the ice reached with at least this much counts as iced
 QT = 25.0  # m^3/s: drainage this big is a trunk the ice followed
@@ -91,7 +91,7 @@ def ice_flow(grid, L) -> dict:
     the slope of the bed plus the thickest ice, (elevation + ice_max); zero
     where the ice was thinner than ICED_M. The world doesn't store the flow
     (PW-499); the surface of the thickest ice is where it came from."""
-    from .soils import _edges  # (the cells' edges: neighbour, east/north direction, km)
+    from ..soils import _edges  # (the cells' edges: neighbour, east/north direction, km)
     s = np.asarray(L["elevation"], float) + np.asarray(L["ice_max"], float)
     own, nb, de, dn, km = _edges(grid)
     deg = np.diff(grid.nbr_off).astype(float)

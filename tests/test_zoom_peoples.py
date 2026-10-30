@@ -7,8 +7,8 @@ import pytest
 from planet import satellite as SAT
 from planet import vegetation as V
 from planet import world as W
-from planet import zoom
-from planet import zoom_peoples as ZP
+from planet.zoom import regional as zoom
+from planet.zoom import peoples as ZP
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 

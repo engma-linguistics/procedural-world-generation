@@ -32,9 +32,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import zoom as Z
-from . import zoom_kernels as ZK
-from .tectonics.volcanism import ARC_SLOPE
+from . import regional as Z
+from . import kernels as ZK
+from ..tectonics.volcanism import ARC_SLOPE
 
 CRATER_R = (0.08, 0.12, 0.6)  # a stratocone's crater rim radius: x r, min, max km
 CRATER_D = {"active": 0.4, "dormant": 0.3, "extinct": 0.15}  # its depth x its rim radius (fresh d/D ~0.2)

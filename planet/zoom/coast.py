@@ -48,9 +48,9 @@ import time
 
 import numpy as np
 
-from . import coastal as CL
-from . import coastform as CF
-from .geo import R_KM, latlon
+from .. import coastal as CL
+from .. import coastform as CF
+from ..geo import R_KM, latlon
 
 RISE_KM = 2.0
 FJORD_RISE = 300.0  # m within RISE_KM
@@ -112,7 +112,7 @@ def _distance(src, mask, res, max_km):
 
 def _pixel_cells(meta, grid):
     """Planet-fixed points (km) of each pixel, and its nearest world cell."""
-    from .zoom import Frame
+    from .regional import Frame
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
     c, r = np.meshgrid(np.arange(nx), np.arange(ny))
@@ -159,7 +159,7 @@ def islands(world: dict, Pk: np.ndarray, P: np.ndarray, ind: np.ndarray, e_land:
     the interpolated coarse heights, taken: pixels the delta and coastal-plain barriers already use, sel: the coarse
     cells around (their mean tide sets how far apart the inlets lie).
     Returns {"island", "lagoon", "inlet"}: flat bool arrays."""
-    from .zoom_coastal import _uniform, window_max
+    from .coastal import _uniform, window_max
     g, L = world["grid"], world["layers"]
     none = np.zeros(nx * ny, bool)
     if "barrier" not in L:  # (a world without coast layers, e.g. a hand-made test world: no coast data, no islands)
@@ -195,7 +195,7 @@ def islands(world: dict, Pk: np.ndarray, P: np.ndarray, ind: np.ndarray, e_land:
 def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int | None = None) -> dict:
     """The zoom's coast layers (flat arrays are (ny, nx) here) and its point features. lay: the zoom's
     layers decoded (elevation, water, coastal_life, wave_power, tide_range, surface_rock or rock, ice)."""
-    from .zoom_coastal import _uniform, window_max
+    from .coastal import _uniform, window_max
     g, L = world["grid"], world["layers"]
     if "coast_type" not in L:
         L.update(CF.world_layers(g, L, world["meta"]))
@@ -290,7 +290,7 @@ def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int |
     hazard = sea & ((life == 1) | ((depth < SHOAL_M) & ~np.isfinite(d_shore)) | (bi == 3))
     out = {"coast_type": band_ct, "barrier_island": bi, "nav_hazard": hazard.astype(np.uint8)}
     # spits, beach ridges, tidal channels, drowned reefs (zoom_shoreforms.py, PW-621)
-    from . import zoom_shoreforms as SF
+    from . import shoreforms as SF
     ctx = {"land": land, "sea": sea, "shore": shore, "h": h, "res": res, "ct": ct, "Pk": Pk, "cells": cells,
            "wave_sea": wave_sea, "tide_sea": tide_sea, "rise": rise, "hard": hard,
            "uniform": lambda km, sd: _uniform(Pk, km, res, sd).reshape(ny, nx)}
@@ -340,9 +340,9 @@ LAYER_SPECS = {
 
 def add_to_zoom(ref, terrain: bool = False, world: dict | None = None):
     """(Re)makes a saved zoom's coast layers in place; with terrain, also its elevation and water."""
-    from . import store as S
-    from . import world as W
-    from . import zoom as Z
+    from .. import store as S
+    from .. import world as W
+    from . import regional as Z
     d = S.find_zoom(ref)
     meta, lay = Z.load(d, decode=True)
     w = world or W.load(S.find_world(meta["source_world"]["id"]))
@@ -356,7 +356,7 @@ def add_to_zoom(ref, terrain: bool = False, world: dict | None = None):
             meta["layers"].update(S.write_layers(d, {k: S.encode(new[k], spec)}, {k: spec}))
     meta.setdefault("legend", {})["coast"] = CF.legend()
     meta["legend"]["barrier_island"] = BARRIER_LEGEND
-    from .zoom_shoreforms import LEGEND as SHORE_FORM_LEGEND
+    from .shoreforms import LEGEND as SHORE_FORM_LEGEND
     meta["legend"]["shore_form"] = SHORE_FORM_LEGEND
     meta["coast"] = {"features": r["features"], "stats": r["stats"], "created": time.strftime("%Y-%m-%d %H:%M:%S")}
     S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))

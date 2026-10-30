@@ -27,7 +27,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit, prange
 
-from . import climate
+from .. import climate
 
 RIVER_Q = 1.0  # m^3/s: a stream carrying this much (mean) counts as a river for the distances
 DIFFUSE = 0.3  # share of the light that comes diffusely from the sky (clear to partly cloudy)

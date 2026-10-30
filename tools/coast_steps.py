@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np  # noqa: E402
 
-from planet import zoom as Z  # noqa: E402
-from planet import zoom_fine as ZF  # noqa: E402
+from planet.zoom import regional as Z  # noqa: E402
+from planet.zoom import fine as ZF  # noqa: E402
 
 
 def _runs(m, kmin):

@@ -3,8 +3,8 @@ from the imprint, and the Glaciated synthesiser on a synthetic valley."""
 
 import numpy as np
 
-from planet import zoom_landforms as ZL
-from planet import zoom_glacial as ZG
+from planet.zoom import landforms as ZL
+from planet.zoom import glacial as ZG
 from planet.grid import build_grid
 
 

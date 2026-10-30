@@ -25,14 +25,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import icemass
-from . import zoom as Z
-from . import zoom_coastal as ZCL
-from . import zoom_kernels as ZK
-from . import zoom_landforms as ZL
-from . import zoom_volcanoes as ZV
-from . import zoom_vegetation as ZVG
-from .geo import R_KM, latlon
+from .. import icemass
+from . import regional as Z
+from . import coastal as ZCL
+from . import kernels as ZK
+from . import landforms as ZL
+from . import volcanoes as ZV
+from . import vegetation as ZVG
+from ..geo import R_KM, latlon
 
 OVERLAY_CLASSES = (8, 9)  # landform.KARST, landform.DUNES: the classes with overlays (Synth.overlay)
 HABITAT_KEEP = 0.25  # a fine habitat pixel stands where the parent's habitat (bilinear) is at least this

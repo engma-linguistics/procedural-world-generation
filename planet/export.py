@@ -775,7 +775,7 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
         ll_all = np.stack([lat, lon], 1)
         _human_use_features(feats, hu_tab, lambda idx: ll_all[np.asarray(idx)].copy(), "world",
                             3 * grid.spacing * R_KM, grid, L)
-    from . import zoom_volcanoes as ZV
+    from .zoom import volcanoes as ZV
     vols = ZV.table(world)
     if vols:
         for v, st in zip(vols, ZV.statuses(world, vols)):
@@ -1008,7 +1008,7 @@ def _zoom_products(A: dict, r_dx, r_dy) -> dict:
 
 def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, raw: bool, height_range,
                 river_min: float | None, with_highlights: bool, log, mv_args=None) -> dict:
-    from . import zoom as Z
+    from .zoom import regional as Z
     meta, L = Z.load(d, decode=True)
     nat = float(meta["res_km"])
     f = 1 if mv_args else max(int(round((res or nat) / nat)), 1)

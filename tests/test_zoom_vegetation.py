@@ -7,9 +7,9 @@ import pytest
 
 from planet import vegetation as V
 from planet import world as W
-from planet import zoom
-from planet import zoom_terrain as ZT
-from planet import zoom_vegetation as ZVG
+from planet.zoom import regional as zoom
+from planet.zoom import terrain as ZT
+from planet.zoom import vegetation as ZVG
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 

@@ -83,23 +83,23 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, icemass, vegetation
-from . import store as S
-from . import world as W
-from . import zoom as Z
-from . import zoom_coastal as ZCL
-from . import zoom_fine_floodplain as ZFP
-from . import zoom_fine_forms as ZFF
-from . import zoom_fine_meander as ZFM
-from . import zoom_fine_volcano as ZFV
-from . import zoom_falls as ZFL
-from . import zoom_kernels as ZK
-from . import zoom_vegetation as ZVG
-from . import satellite as SAT
-from . import surface as SURF
-from .climate import LAPSE
-from .geo import R_KM, latlon
-from .images import write_png
+from .. import climate, icemass, vegetation
+from .. import store as S
+from .. import world as W
+from . import regional as Z
+from . import coastal as ZCL
+from . import fine_floodplain as ZFP
+from . import fine_forms as ZFF
+from . import fine_meander as ZFM
+from . import fine_volcano as ZFV
+from . import falls as ZFL
+from . import kernels as ZK
+from . import vegetation as ZVG
+from .. import satellite as SAT
+from .. import surface as SURF
+from ..climate import LAPSE
+from ..geo import R_KM, latlon
+from ..images import write_png
 
 MAX_STEP = 20.0  # a fine zoom is at most this many times finer than its parent (owner, 2026-10-16)
 MIN_STEP = 2.0  # ... and at least this many (else it adds nothing)
@@ -1787,7 +1787,7 @@ def planform(rec: np.ndarray, q: np.ndarray, h: np.ndarray, water: np.ndarray, n
 
 
 def latlon_to_xyz(lat: float, lon: float) -> np.ndarray:
-    from .geo import xyz
+    from ..geo import xyz
     return np.asarray(xyz(np.radians(lat), np.radians(lon)), float)
 
 

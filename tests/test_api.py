@@ -7,7 +7,8 @@ import time
 
 import pytest
 
-from planet import api, server, store as S, timeline as T, world as W, zoom as Z
+from planet import api, server, store as S, timeline as T, world as W
+from planet.zoom import regional as Z
 from planet.tectonics import Params
 
 

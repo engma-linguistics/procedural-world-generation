@@ -51,10 +51,10 @@ import math
 
 import numpy as np
 
-from . import coastal as CL
-from . import vegetation as V
-from . import zoom_kernels as ZK
-from .geo import R_KM
+from .. import coastal as CL
+from .. import vegetation as V
+from . import kernels as ZK
+from ..geo import R_KM
 
 LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b2a"),
         3: ("seagrass meadow", "#3fbf6a"), 4: ("mangrove", "#14d2b0"), 5: ("salt marsh", "#e3d65a")}
@@ -120,7 +120,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     sea), surface_rock (ROCKS ids), volcano_reef (bool: zoom_volcanoes' reef
     pixels); all flat (ny*nx). Returns {"layer": coastal_life (uint8, LIFE),
     "stats": km^2 of each habitat}."""
-    from .zoom_vegetation import _sel
+    from .vegetation import _sel
     g, L, meta = world["grid"], world["layers"], world["meta"]
     npx = nx * ny
     if not all(k in L for k in NEEDS):  # (a world without the sea's layers: hand-made in tests)

@@ -611,7 +611,7 @@ def legends() -> dict:
     from .resources import legend as resources_legend
     from .coastform import legend as coast_legend
     from .vegetation import legend as veg_legend
-    from .zoom_coastal import legend as coastal_legend
+    from .zoom.coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
             "soils": soil_legend(), "human_use": human_use_legend(), "game": game_legend(), "resources": resources_legend(),

@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from planet import landform as LF
-from planet import zoom
-from planet import zoom_landforms as ZL
+from planet.zoom import regional as zoom
+from planet.zoom import landforms as ZL
 
 from test_zoom_water import _escarpment_world
 
@@ -380,7 +380,7 @@ def test_cut_widens_a_breach_into_a_gap():
 
 
 def ZK_order(rec):
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     return ZK.receiver_order(rec)
 
 
@@ -427,7 +427,7 @@ def test_zone_levels_are_the_same_in_overlapping_zooms():
     resolution."""
     from planet.grid import build_grid
     from planet.geo import latlon, R_KM, xyz
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     g = build_grid(5)
     lat, lon = latlon(g.centers)
     xk, yk = lon * 111.2, lat * 111.2
@@ -472,7 +472,7 @@ def test_dipping_caprock_is_a_plane_in_a_big_zone():
     from types import SimpleNamespace
     from planet.grid import build_grid
     from planet.geo import latlon, R_KM
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     g = build_grid(5)
     lat, lon = latlon(g.centers)
     xk, yk = lon * 111.2, lat * 111.2
@@ -518,7 +518,7 @@ def test_basin_lakes_follow_the_water_balance():
     evaporation: wet, all three bowls are lakes to the brim, each spilling
     into the next; dry, a closed lake below the spill or a dry flat, and the
     streams end there."""
-    from planet import zoom_kernels as ZK
+    from planet.zoom import kernels as ZK
     nx, ny, res = 100, 40, 0.5
     h = _bowls(nx, ny)
     outlet = np.zeros(nx * ny, bool)

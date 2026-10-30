@@ -5,7 +5,7 @@ between them."""
 import numpy as np
 
 from planet import timeline as T
-from planet import zoom, zoom_volcanoes as ZV
+from planet.zoom import regional as zoom, volcanoes as ZV
 from planet.geo import R_KM, xyz
 from planet.tectonics import volcanism as V
 

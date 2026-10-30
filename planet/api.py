@@ -50,8 +50,8 @@ from . import highlights as H
 from . import store as S
 from . import timeline as T
 from . import world as W
-from . import zoom as Z
-from . import zoom_fine as ZF
+from .zoom import regional as Z
+from .zoom import fine as ZF
 
 ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
 # One computation at a time in this process (re-entrant: a job slices inside
