@@ -17,13 +17,14 @@ class PeoplesMixin:
         if not self.lines[k].megafauna:
             return self.dens[k] if self._dmap is None or self._deep_now else self._dmap[k]
         if (P is None or P is self.p) and self._press is not None:
-            return MG.local_density(self, k, self._press, self._prey, self._food, self.p)
+            return MG.local_density(self, k, self._kill, self._prey, self._food, self.p)
         P = self.p if P is None else P
         c = self.__dict__.get("_dens_memo")
         if c is None or c[0] is not P:  # (one pressure and prey per presence array: the summary asks for every line)
             s = MG.pressure(self, P, self._land_now)
-            prey, food, _ = MG.prey_and_food(self, P, s, self._tags_now) if self._tags_now is not None and not self._deep_now else (None, None, None)
-            c = self._dens_memo = (P, s, prey, food)
+            kl = MG.kill(self, P, self._land_now)
+            prey, food, _ = MG.prey_and_food(self, P, s, self._tags_now, kl) if self._tags_now is not None and not self._deep_now else (None, None, None)
+            c = self._dens_memo = (P, kl, prey, food)
         return MG.local_density(self, k, c[1], c[2], c[3], P)
 
     def dens_cells(self) -> np.ndarray:

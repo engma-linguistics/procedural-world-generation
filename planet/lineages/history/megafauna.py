@@ -25,14 +25,17 @@ storm giants (7.3 t) ~1 per 345.
 The older note here ("an apex hunter two to three orders below the herbivore line", after Carbone & Gittleman) was unsupported:
 their carnivore line sits ~1.5 orders below the herbivores'.
 
-Peoples press both down easily (`pressure`, one suppression number: persecution, not hunting). Ripple et al. 2014 (Science
-343:1241484, on file) shows the large carnivores pushed back by people (17 of the 31 largest hold on average 47% of their historical
-range, from <1% to 73%: tiger 18%, lion 17%; p. 1241484-2 and Table 1); it gives no figure for density against potential, so the
-"few percent of their potential" behind the present-day value has no source on file. Where small folk hold the land a kind sits
-at the present-day value (`local_density`); where no people holds it, at its natural density. Before the peoples spread they were
-many more: the age of dragons (`ages`).
-Of these papers Marshall 2021, Carbone & Gittleman 2002, Hamilton et al. 2007, Nagy et al. 1999, Ripple et al. 2014 and Farlow 1993
-are on file; Damuth and Binford are cited as the proposal gives them and are not on file (docs/references/megafauna/README.md).
+Peoples press both down by persecution (`kill`, PW-1068): a kill against their slow breeding, rising with the peoples' numbers and
+`means` (herds to defend, and weapons and organised hunts by the era's tech level), so they settle at natural x 1 / (1 + kill / r)
+(`local_density`): never zero, near natural beside early foragers and farmers, a tenth or so of it in dense renaissance farmland
+(constants below). Ripple et al. 2014 (Science 343:1241484, on file) shows the large carnivores pushed back by people (17 of the 31
+largest hold on average 47% of their historical range, from <1% to 73%: tiger 18%, lion 17%; p. 1241484-2 and Table 1), gives no
+figure for density against potential, and ties their vulnerability to persecution to their slow reproduction (p. 1241484-1).
+Cardillo et al. 2004 (PLoS Biol 2:e197, on file) finds carnivore extinction risk tied to slow life history where people are dense
+(>= 10 per km2; Tables 2-3, pp. 0911-0912). The peoples also cut the wild herds by overkill (`pressure`, prey.field), a separate
+channel. Before the peoples spread the megafauna were many more: the age of dragons (`ages`).
+Of these papers Marshall 2021, Carbone & Gittleman 2002, Hamilton et al. 2007, Nagy et al. 1999, Ripple et al. 2014, Cardillo et al. 2004
+and Farlow 1993 are on file; Damuth and Binford are cited as the proposal gives them and are not on file (docs/references/megafauna/README.md).
 
 They live long (dragons a few hundred years a generation, giants 50-80 yr), so few of them persist: their patches' viable number
 is smaller (History.line_mvp), and pockets within flight or long range of each other are one population (linked_pockets).
@@ -95,9 +98,27 @@ FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey 
 # Cross-check: Jetz et al. 2004 (Science 306:266, Table 1 p. 268) fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70);
 # at 3.2 t that is ~8,400 km2, a disc ~52 km in radius (a far extrapolation beyond the living carnivores)
 FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per km2, PW-976) is for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
-PRESS_N0 = 0.05  # peoples press megafauna easily: the pressure is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell, so a
-# thin forager band (0.1 per km2, held at half its habitat) presses ~2/3 of the way and any settled people all the way (owner, PW-963:
-# "pushed down easily by peoples"; Ripple et al. 2014 shows large carnivores' ranges cut to ~half by people, not their density)
+PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild big herbivores where small folk live, after Sandom et al.
+# 2014) is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell: a thin forager band already cuts the herds most of the way. It no
+# longer presses the megafauna themselves; that is the persecution kill below (PW-1068)
+# Persecution (PW-1068 option A, owner 10-30): a kill against the megafauna's slow breeding. Where the peoples kill k of them a year per head
+# and they could add at most r a year, they settle at natural x 1 / (1 + k / r): never zero (never species-ending, owner 10-29), never
+# above natural. k = KILL_Q x the sum over peoples of (their people per km2 x their `means`): how many there are, how well armed and
+# organised, and how much they have to defend. Large carnivores' slow reproduction leaves them "poorly able to respond to persecution"
+# (Ripple et al. 2014, Science 343:1241484, p. 1241484-1), and among carnivores slow life history predicts extinction risk where people
+# are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912). Neither gives the kill's size: KILL_Q
+# is a judgement.
+BREED_X = 2.0  # births could at most double over a generation where persecution thins them (a judgement): r = ln(BREED_X) / generation
+KILL_Q = 0.0026  # megafauna killed a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
+# 10 per km2, keep 10% of their dragons, each dragon there facing a ~1.5% chance a year of being killed. The evidence read would allow
+# local extirpation in dense farmland, Ripple 2014's tiger at 18% and lion at 17% of their range, Table 1; 10% respects "never fatal")
+MOTIVE0 = 0.25  # means: a people with no herds still kills what threatens it, at this share of one with herds everywhere (judgement)
+REACH0 = 0.02  # means: bands with stone and bone kill at this share of a people at the top tech level (judgement)
+# The tech level by era: a calendar proxy for weapons, metal, horses and organised hunts until the peoples' own techs can feed the history
+# (the technology tree, techtree.py, is made after it). The present is meta.era; the eras before it are counted back from the present
+# on Earth-like spans (kyr each, a judgement); before them, the stone age. Levels interpolate linearly between the eras' midpoints.
+ERA_LEVEL = {"stone age": 0.0, "bronze age": 0.3, "classical": 0.55, "medieval": 0.75, "renaissance": 0.9, "industrial": 1.0}
+ERA_KYR = {"industrial": 0.25, "renaissance": 0.35, "medieval": 1.0, "classical": 1.3, "bronze age": 2.0}
 
 
 def guild_ratio() -> float:
@@ -142,8 +163,58 @@ def natural_coef(h: History, line) -> float:
 
 
 def pressed_density(line, tree) -> float:
-    """The present-day density in peopled country, per km2: one per meta.dragon_km2 (dragons) or meta.giant_km2 (giants)."""
+    """A kind's nominal density, per km2: one per meta.dragon_km2 (dragons) or meta.giant_km2 (giants). Since PW-1068 it no longer sets
+    the density anywhere (that is the natural density under the persecution kill, `local_density`); it is the number the competition
+    between lines and the viable-population check take."""
     return 1.0 / (tree.dragon_km2 if "flies" in line.traits else tree.giant_km2)
+
+
+def tech_level(era: str, ago: float) -> float:
+    """0..1: the peoples' tech level ago kyr before the present, whose era is `era` (meta.era): ERA_LEVEL at the end of each era, rising
+    linearly through it, the eras counted back from the present on ERA_KYR's spans; the stone age (0) before them. A calendar proxy."""
+    order = list(ERA_LEVEL)
+    i = order.index(era) if era in order else order.index(SP.ERA_DEFAULT)
+    xs, ys, t = [0.0], [ERA_LEVEL[order[i]]], 0.0
+    for j in range(i, 0, -1):
+        t += ERA_KYR[order[j]]
+        xs.append(t)
+        ys.append(ERA_LEVEL[order[j - 1]])
+    return float(np.interp(max(ago, 0.0), xs, ys))
+
+
+def means(h: History, ago: float) -> np.ndarray:
+    """Per line, 0..1: how hard one person of it kills megafauna (PW-1068), motive x reach. Motive: MOTIVE0 + (1 - MOTIVE0) x the share of
+    its country it stocks (prey.LIVESTOCK; herds to defend). Reach: its wild-food share at REACH0 (bands), the rest (settled and
+    herding) at REACH0 + (1 - REACH0) x the tech level then (`tech_level`). 0 for megafauna and overlays. The one place a later ticket
+    feeds the peoples' real techs in (weapons, metal, horses, organised hunts)."""
+    from .. import landuse as LU
+    lev = tech_level(h.tree.era, ago)
+    out = np.zeros(len(h.lines))
+    for k, l in enumerate(h.lines):
+        if l.megafauna or l.overlay:
+            continue
+        f = min(1.0, LU.shares(h.tree, l)["forage"])
+        reach = f * REACH0 + (1.0 - f) * (REACH0 + (1.0 - REACH0) * lev)
+        out[k] = (MOTIVE0 + (1.0 - MOTIVE0) * h._herd[k]) * reach
+    return out
+
+
+def breed_r(h: History, line) -> float:
+    """A megafauna kind's most added a year where persecution thins it, per head: ln(BREED_X) over its generation (History.gen_yr)."""
+    return float(np.log(BREED_X) / max(h.gen_yr(line), 1.0))
+
+
+def kill(h: History, P: np.ndarray, land: np.ndarray | None = None, ago: float | None = None) -> np.ndarray:
+    """Per cell, the peoples' kill of the megafauna there, per head a year (PW-1068): KILL_Q x the sum over peoples of their people per km2
+    (presence x density) x their `means` at `ago` (kyr; default the step's, else the present). A sea cell takes the most of the land next
+    to it (storm giants on the shore ring)."""
+    ago = getattr(h, "_ago_now", 0.0) if ago is None else ago
+    m = means(h, ago)
+    N = (np.where(P >= EST, P, 0.0) * h.dens_cells() * m[:, None]).sum(0)
+    if land is not None:
+        g = h.grid
+        N = np.where(land, N, np.maximum(N, nbr_reduce(g, np.maximum, np.where(land, N, 0.0)[g.nbr_idx])))
+    return KILL_Q * N
 
 
 def setup(h: History) -> None:
@@ -158,8 +229,9 @@ def setup(h: History) -> None:
     h._herd = PR.herd_share(h.lines)
     h._meat = np.array([meat_need(h, l) for l in h.lines])
     h.dens_nat = np.array([natural_coef(h, l) if l.megafauna else h.dens[k] for k, l in enumerate(h.lines)])
-    h._press = h._prey = h._food = h._land_now = None
+    h._press = h._kill = h._prey = h._food = h._land_now = None
     h._deep_now = False
+    h._ago_now = 0.0
 
 
 def _to_shore(h: History, x: np.ndarray) -> np.ndarray:
@@ -179,15 +251,15 @@ def _reach(h: History, x: np.ndarray) -> np.ndarray:
     return _to_shore(h, x)
 
 
-def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> dict | None:
-    """The food budget per cell, t/km2/yr (PW-977): the prey under the peoples P and their pressure (lineages.prey.field: overkill outside
+def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: np.ndarray | None = None) -> dict | None:
+    """The food budget per cell, t/km2/yr (PW-977): the prey under the peoples P and their overkill pressure (lineages.prey.field: overkill outside
     refuges, livestock), over a dragon's foraging reach and one ring out to sea, and what the land supplies: the sustainable offtake of
     the wild herds (OFFTAKE) plus the tolerable share of the herders' stock (STOCK_TOLERABLE). Stage 2 (BUDGET): the peoples' hunters
     (density x their game need, `h._meat`) take first from the wild offtake; the giants and the rest of the predator guild (guild_ratio x
     the dragons' own food at the Carbone density of the prey there) take next, from what is left of the wild offtake and the stock;
     the dragons get the rest, `food`. Keys: prey, wild, stock (the supply's two parts), peoples, giants, guild (what each took, at most
     what was there), pool (the supply left after the peoples), food (the dragons'), live (the smoothed livestock, t/km2). None without
-    a prey field."""
+    a prey field. kl: the peoples' kill on the giants (`kill`; default from P at the step's time)."""
     if h.prey_wild is None:
         return None
     ref = PR.refuge(tags) if tags is not None else np.zeros(h.grid.n, bool)
@@ -202,9 +274,11 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> d
         out["peoples"] = take_p = np.minimum(hunt, W)
         pool = W - take_p + L
         gi = np.zeros_like(W)
+        if kl is None and any(l.megafauna and "flies" not in l.traits for l in h.lines):
+            kl = kill(h, P, h._land_now)
         for k, l in enumerate(h.lines):
             if l.megafauna and "flies" not in l.traits:
-                gi += x[k] * local_density(h, k, press, wild + live) * giant_cattle_yr(eco_mass(h, l)) * PR.HEAD_T
+                gi += x[k] * local_density(h, k, kl, wild + live) * giant_cattle_yr(eco_mass(h, l)) * PR.HEAD_T
         gi = _reach(h, gi)
         out["giants"] = np.minimum(gi, pool)
         if h.mf_natural == "food":  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
@@ -219,10 +293,10 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> d
     return out
 
 
-def prey_and_food(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None) -> tuple:
+def prey_and_food(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: np.ndarray | None = None) -> tuple:
     """(prey per cell, t/km2; the food the dragons can live on there, t/km2/yr; the smoothed livestock, t/km2): `budget`'s prey, food and
     live. All None without a prey field."""
-    b = budget(h, P, press, tags)
+    b = budget(h, P, press, tags, kl)
     return (None, None, None) if b is None else (b["prey"], b["food"], b["live"])
 
 
@@ -246,9 +320,9 @@ def natural(h: History, k: int, prey: np.ndarray | None, food: np.ndarray | None
 
 
 def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.ndarray:
-    """Per cell, 0..1: how hard the peoples press the megafauna there, 1 - exp(-N / PRESS_N0) with N the small folk per km2 (every
-    line that is not megafauna nor an overlay, at its presence x density). A sea cell takes the most of the land next to it (storm
-    giants on the shore ring are pressed by the coast's peoples)."""
+    """Per cell, 0..1: the peoples' overkill pressure on the wild herds there (prey.field), 1 - exp(-N / PRESS_N0) with N the small folk
+    per km2 (every line that is not megafauna nor an overlay, at its presence x density); also what marks peopled country (summary).
+    It does not press the megafauna themselves (`kill`, PW-1068). A sea cell takes the most of the land next to it."""
     w = getattr(h, "_press_w", None)
     if w is None:
         w = h._press_w = np.array([0.0 if (l.megafauna or l.overlay) else 1.0 for k, l in enumerate(h.lines)])
@@ -259,33 +333,33 @@ def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.nd
     return 1.0 - np.exp(-N / PRESS_N0)
 
 
-def _pressed(h: History, k: int, s: np.ndarray, prey: np.ndarray | None, food: np.ndarray | None = None) -> np.ndarray:
+def _pressed(h: History, k: int, kl, prey: np.ndarray | None, food: np.ndarray | None = None) -> np.ndarray:
+    """Line k's natural density under the peoples' kill kl (per head a year): natural x 1 / (1 + kl / r), r its breeding (`breed_r`)."""
     nat = np.maximum(natural(h, k, prey, food), 1e-12)
-    return nat * np.minimum(1.0, h.dens[k] / nat) ** s
+    return nat / (1.0 + np.asarray(kl, float) / breed_r(h, h.lines[k]))
 
 
-def food_scale(h: History, P: np.ndarray, s: np.ndarray, prey: np.ndarray, food: np.ndarray) -> np.ndarray:
-    """PW-977 stage 1: per cell, 1 where the dragons there (every kind together, at their pressed densities) need no more than the
+def food_scale(h: History, P: np.ndarray, kl: np.ndarray, prey: np.ndarray, food: np.ndarray) -> np.ndarray:
+    """PW-977 stage 1: per cell, 1 where the dragons there (every kind together, under the peoples' kill kl) need no more than the
     food there (the sustainable offtake of the wild herds plus the herders' tolerable stock share), else food / need: where the land
     cannot feed them, fewer of them are born, survive or stay (starvation and emigration; the dragons' range grows until it holds
     its food). Each dragon needs the age schedule's mean food, cattle a year (dragon_ages.structure)."""
     need = np.zeros(h.grid.n)
     for j, l in enumerate(h.lines):
         if l.megafauna and "flies" in l.traits:
-            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, s, prey, food)
+            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, kl, prey, food)
     need = need * h.dragon_struct["cattle_yr"] * PR.HEAD_T
     return np.minimum(1.0, food / np.maximum(need, 1e-12))
 
 
-def local_density(h: History, k: int, s: np.ndarray, prey: np.ndarray | None = None, food: np.ndarray | None = None,
+def local_density(h: History, k: int, kl, prey: np.ndarray | None = None, food: np.ndarray | None = None,
                   P: np.ndarray | None = None) -> np.ndarray:
-    """Megafauna line k's density per cell, per km2, under pressure s (0..1): its natural density where s = 0, falling geometrically
-    to the pressed present-day value at s = 1. Where the natural density is already sparser (poor country), peoples do not raise it.
-    One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
+    """Megafauna line k's density per cell, per km2, under the peoples' kill kl (per head a year, `kill`; PW-1068): its natural density
+    x 1 / (1 + kl / r), r its breeding (`breed_r`): natural where nobody kills them, never zero, never above natural. One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
     the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere)."""
-    d = _pressed(h, k, s, prey, food if "flies" in h.lines[k].traits else None)
+    d = _pressed(h, k, kl, prey, food if "flies" in h.lines[k].traits else None)
     if FOOD_CAP and food is not None and P is not None and "flies" in h.lines[k].traits:
-        d = d * food_scale(h, P, s, prey, food)
+        d = d * food_scale(h, P, kl, prey, food)
     return d
 
 
@@ -480,13 +554,14 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     if not any(l.megafauna for l in h.lines):
         return out
     press = pressure(h, P, h._land_now)
-    bud = budget(h, P, press, tags)
+    kl = kill(h, P, h._land_now, 0.0)
+    bud = budget(h, P, press, tags, kl)
     prey, food, live, pool = (bud["prey"], bud["food"], bud["live"], bud["pool"]) if bud is not None else (None, None, None, None)
     lvs = None
     if h.prey_wild is not None:
         lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST))["livestock"]
     ds = h.dragon_struct
-    dens = {k: local_density(h, k, press, prey, food, P) for k, l in enumerate(h.lines) if l.megafauna}
+    dens = {k: local_density(h, k, kl, prey, food, P) for k, l in enumerate(h.lines) if l.megafauna}
     fs = food_state(h, P, dens, food, live, pool)
     for k, l in enumerate(h.lines):
         if not l.megafauna:
@@ -543,7 +618,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
             return int(round(float(x[sel].sum()) / max(float((x * d)[sel].sum()), 1e-12))) if sel.any() else None
         count = int(sum(p["count"] for p in pockets))
         r = {"count": count, "pockets": len(pockets), "per_km2": round(float(h.dens[k]), 6),
-             "one_per_km2": one_per(held), "pressed_one_per_km2": int(round(1.0 / h.dens[k])),
+             "one_per_km2": one_per(held),
              "natural_one_per_km2": one_per(held, nat), "natural_count": int(round(float((x * nat).sum()) * area)),
              "natural_mode": h.mf_natural if (h.prey_wild is not None or h.mf_natural != "prey") else "prey (no prey field: uniform)",
              "peopled_one_per_km2": one_per(ppl),
@@ -570,7 +645,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
 
 def line_text(lid: str, name: str, r: dict, n: int = 3) -> str:
     """One line for the report and the brief: '~12 black dragons in 9 pockets (1 per 3,100 km2 over their country: 1 per 5,000 where
-    peoples press them, 1 per 65 where none do): 2 in the swamp at 3.1, 10.2 ...'."""
+    peoples live, 1 per 65 where none hunt them): 2 in the swamp at 3.1, 10.2 ...'."""
     tops = "; ".join(f"{p['count']} in the {p['country']} at {p['lat']:g}, {p['lon']:g}"
                      + (f" ({p['landmass_name']})" if p.get("landmass_name") else "") for p in r["pocket_list"][:n])
     tgt = f", in {round(100 * r['suitable_reached'])}% of their country" if "suitable_reached" in r else ""
@@ -585,8 +660,8 @@ def stages_of(r: dict) -> str:
 
 
 def density_text(r: dict) -> str:
-    """'1 per 3,100 km² (1 per 5,000 where peoples press them, 1 per 65 where none do)'."""
+    """'1 per 3,100 km² (1 per 5,000 where peoples live, 1 per 65 where none hunt them)'."""
     s = f"1 per {r['one_per_km2']:,} km²" if r.get("one_per_km2") else "?"
-    if "pressed_one_per_km2" in r:
-        s += f" (1 per {r['pressed_one_per_km2']:,} where peoples press them, 1 per {r['natural_one_per_km2'] or 0:,} where none do)"
+    if r.get("peopled_one_per_km2") and r.get("natural_one_per_km2"):
+        s += f" (1 per {r['peopled_one_per_km2']:,} where peoples live, 1 per {r['natural_one_per_km2']:,} where none hunt them)"
     return s

@@ -124,6 +124,7 @@ class Pass:
         self.world_seed = None  # ...and its seed: the landmasses' names (names.py, PW-853)
         self.world_names: dict = {}  # ...and the owner's own names for some of them (planet name, PW-867)
         self.graze_npp = None  # ...and its grazing NPP, g C/m2/yr (gameattrs, raw): the static prey field's base (lineages.prey, PW-966)
+        self.npp = None  # ...and its total NPP, g C/m2/yr (world layer): the farmers' productivity (lineages.prey.people_fields, PW-1020 B)
         self.forage = None  # ...and its foraging layer (0-5, wild food for people): the foragers' productivity (lineages.prey.people_fields, PW-974)
         if world_ref:
             from .. import world as W
@@ -139,6 +140,7 @@ class Pass:
             tilt = float(m.get("params", {}).get("tilt", 23.4))
             gl = GA.world_layers(self.grid, w["layers"], tilt, raw=True)
             self.graze_npp, self.forage = gl.get("grazing_npp"), gl.get("foraging")
+            self.npp = w["layers"]["npp"].astype(float) if "npp" in w["layers"] else None
             return
         if m.get("source_run") and m["source_run"] != "earth":
             src = S.find_run(m["source_run"])

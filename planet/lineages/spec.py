@@ -174,8 +174,8 @@ GENERATION_YR = 25.0  # default generation time of a people, years: human forage
 VIABLE_POP = 500.0  # default meta.viable_pop
 DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923, PW-957): one dragon per this many km2 where peoples press them, every kind
 GIANT_KM2 = 2000.0  # default meta.giant_km2 (owner, PW-963 option C): one true giant per this many km2 where peoples press them, every
-# kind that does not fly. Both are the present-day density in peopled country; away from the peoples each kind keeps nearer its natural
-# density, from its body mass (`mass_kg`, history.megafauna.natural_density)
+# kind that does not fly. Both are nominal since PW-1068: the competition between lines and the viable-population check take them, but
+# no density is set by them (each kind stands at its natural density under the peoples' persecution kill, history.megafauna.kill)
 FORAGER_KM2 = 0.1  # default meta.forager_km2: human foragers per km2, the giants' natural-density baseline (scaled by mass^-0.75). No
 # located source (PW-976): Hamilton et al. 2007's fit implies 0.03-0.09 for groups of 25-1,000, so 0.1 is the top of that; owner 10-28
 # made it a setting (option C) until Binford 2001 can be checked
@@ -505,9 +505,9 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
-    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2 where peoples press them (PW-923, PW-957); overrides their lines' density
+    dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2, nominal (PW-923, PW-957; PW-1068: competition and viable numbers only)
     forager_km2: float = FORAGER_KM2  # human foragers per km2, the giants' natural-density baseline (PW-976)
-    giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2 where peoples press them (PW-963); overrides their lines' density
+    giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2, nominal (PW-963; PW-1068: competition and viable numbers only)
     megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: food | prey | mesotherm | mammal (PW-957, PW-966, PW-990)
     dragon_ages: str = "base"  # the dragons' age schedule (PW-958, lineages.dragon_ages)
     dragon_generation: str = "schedule"  # the dragons' generation time: from the schedule, with fecundity ~ mass, or the lines' own (PW-959)

@@ -27,8 +27,12 @@ seed = 7
 mixing_start = "3 kyr"
 era = "renaissance"
 viable_pop = 500
-dragon_km2 = 5000  # one dragon per this many km2 of its country where peoples press them (PW-957; natural, meta.megafauna_natural, where none do). 5000: the default, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies thick with them
-giant_km2 = 2000  # one true giant per this many km2 of its country where peoples press them (PW-963; natural ~1 per 130-345 km2 by kind where none do). 2000: the default; 5000, 10000: rarer; 1000: giant country
+dragon_km2 = 5000  # NOMINAL since PW-1068: no longer the density where peoples press them (that is the natural density under the peoples' kill,
+# history.megafauna.kill); only the number the competition between lines and the viable-population check take (inbox draft: repurpose).
+# Was: one dragon per this many km2 of its country where peoples press them (PW-957; natural, meta.megafauna_natural, where none do). 5000: the default, a few per swamp or range; 10000: rarer, a lone dragon per region; 1000: the skies thick with them
+giant_km2 = 2000  # NOMINAL since PW-1068: no longer the density where peoples press them (that is the natural density under the peoples' kill,
+# history.megafauna.kill); only the number the competition between lines and the viable-population check take (inbox draft: repurpose).
+# Was: one true giant per this many km2 of its country where peoples press them (PW-963; natural ~1 per 130-345 km2 by kind where none do). 2000: the default; 5000, 10000: rarer; 1000: giant country
 megafauna_natural = "prey"  # the megafauna's natural density where no people presses them (PW-957, PW-966). Candidates, until the owner's
 # PW-967 review: "prey" (from the land's prey, wild herds and livestock: Carbone & Gittleman 2002; ~1 dragon per 530 km2 at 1 t/km2),
 # "mesotherm" (uniform from mass, Marshall et al. 2021's dinosaur line: ~1 per 65 km2), "mammal" (the mammal-carnivore line: ~1 per 137)
