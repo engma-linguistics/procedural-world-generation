@@ -1,5 +1,7 @@
 """The technology tree, v0 (planet/lineages/techtree.py, PW-675): the data file, acquisition, kits, inheritance, diffusion."""
 
+import math
+
 import numpy as np
 
 from planet.lineages import techtree as TT
@@ -259,7 +261,8 @@ def test_small_peoples_rarely_invent_the_specialist_techs():
     T2 = {**T, "kind": [{"of": ["big", "band"], "kit": kit}]}
     big = band = 0
     for s in range(12):
-        lines = [line("big", at=8.0, track=_pop(5e7, 5.0, 8.0)), line("band", at=8.0, track=_pop(1000, 0.1, 8.0))]
+        # (16 kyr, was 8: lane 70's first-of-anchor_peers rates make one isolated people slower than Earth's first finder)
+        lines = [line("big", at=16.0, track=_pop(5e7, 5.0, 16.0)), line("band", at=16.0, track=_pop(1000, 0.1, 16.0))]
         tt = TT.build(lines, None, None, seed=s, T=T2)
         big += "writing" in tt["known"]["big"]
         band += "writing" in tt["known"]["band"]
@@ -347,3 +350,46 @@ def test_needs_any_one_of_them():
             got += "riding" in tt["known"]["x"]
         assert (got >= 5) if ok else got == 0, (mount, got)
     assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
+
+
+def test_contact_is_a_front_at_the_neolithic_speed():
+    """Lane 70 (PW-1137): a neighbour takes a tech up at 2 ln 2 v / width per kyr (half its people have it once a front at
+    contact_speed_km_yr has gone half its width): a 1 Mkm2 people at ~1.4 a kyr, a 9 Mkm2 one at a third of that."""
+    D = T["defaults"]
+    assert D["contact_speed_km_yr"] == 1.0  # (the Neolithic wave of advance, 0.6-1.3 km/yr: Pinhasi et al. 2005)
+    assert abs(TT.contact_rate(1.0, D) - 2 * math.log(2)) < 1e-9
+    assert abs(TT.contact_rate(9.0, D) - 2 * math.log(2) / 3) < 1e-9
+    assert TT.contact_rate(1e-6, D) == TT.contact_rate(1e-4, D)  # (at least contact_width_min_km wide)
+    assert TT.contact_rate(None, D) == TT.contact_rate(D["anchor_pop"] / D["anchor_dens"] / 1e6, D)
+    assert abs(TT.ramp_first(1) - TT.RAMP_MEDIAN) < 0.01 and TT.ramp_first(4) < TT.ramp_first(1) / 2
+
+
+def test_a_package_travels_together():
+    """Lane 70 (PW-1137): a people that gets a tech's prerequisites from a neighbour who has long known the tech takes the tech
+    with them (the front has already crossed its country), instead of inventing it itself at the soft anchor's quick rate."""
+    have = TT.closure(T, ["copper"])
+    kit_y = sorted(have - {"kilns", "copper"})
+    T2 = {**T, "kind": [{"of": ["src"], "kit": sorted(have)}, {"of": ["y"], "kit": kit_y}]}
+    con = {"pairs": [{"a": "src", "b": "y", "first_contact_kyr": 10.0, "in_contact_now": True,
+                      "series": [[10.0, 3000, 0.0], [0.0, 3000, 0.0]]}]}
+    took = together = 0
+    for s in range(20):
+        lines = [line("src", at=10.0, track=_pop(1e7, 1.0, 10.0)), line("y", at=10.0, track=_pop(1e7, 1.0, 10.0))]
+        tt = TT.build(lines, con, None, seed=s, T=T2)
+        ky = tt["known"]["y"]
+        assert "kilns" in ky and "copper" in ky
+        took += ky["copper"][1] == "contact"
+        together += ky["copper"][1] == "contact" and ky["kilns"][0] - ky["copper"][0] < 0.3
+    assert took >= 16 and together >= 12, (took, together)
+
+
+def test_pleistocene_techs_take_their_band():
+    """PW-1138: a floored tech with two or more dated origins (origins_kyr, the catalogue's) has the band's rate: the anchor
+    people waits, at the median, the median origin's date less the floor; one dated origin (bread) keeps its track's rate,
+    and so does a row whose catalogue origins all postdate the tree's date (cordage: 500 kyr, origins 52 and 40)."""
+    assert TT.band_wait(T, "pottery") == 9.0 and "rate" not in T["techs"]["pottery"]  # (20 kyr; origins 20 to 5, median 11)
+    assert abs(TT.rate_of(T, "pottery") - 0.091) < 0.002  # (lane 69's hand rate, 0.09, now from the rule)
+    assert TT.band_wait(T, "beer") == 4.0 and TT.rate_of(T, "beer") > 5 * T["defaults"]["track_rate"]["food"]
+    assert TT.band_wait(T, "bread") is None and TT.rate_of(T, "bread") == T["defaults"]["track_rate"]["fire"]
+    assert TT.band_wait(T, "cordage") is None
+    assert TT.band_wait(T, "writing") is None  # (a soft tech: its lag after its prerequisites sets it)
