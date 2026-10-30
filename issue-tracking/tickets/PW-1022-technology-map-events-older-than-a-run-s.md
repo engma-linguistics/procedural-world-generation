@@ -1,4 +1,5 @@
 ---
+id: PW-1022
 title: "Technology map: events older than a run's first stored moment are drawn on that moment's ranges"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-47
 blocked_by: []
 relates: [PW-913]
 refs: [viewer/index.html, "run 3097e3"]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -18,3 +21,6 @@ In plain words: the map view of the Technology tab (the globe's "technology" lay
 
 What to try: draw old events at the people's `origin_place` when it is older than the first frame, or grey them out with a note "before the stored history"; check on a run whose frames start late (a recent-pass run).
 - [ ] an event older than the first stored moment is drawn where the people was, or plainly marked as approximate
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-techtab-map-before-first-stored-moment.md (found by fun-lane-47).

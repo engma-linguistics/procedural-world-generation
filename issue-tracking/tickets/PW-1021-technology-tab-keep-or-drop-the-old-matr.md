@@ -1,4 +1,5 @@
 ---
+id: PW-1021
 title: "Technology tab: keep or drop the old matrix (the 'Table' view)?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-47
 blocked_by: []
 relates: [PW-913, PW-675]
 refs: [viewer/techtab.js, docs/review/techtree-tab/]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Options:
 
 Lean: A. It costs nothing to keep and is the quickest overview for a game master.
 - [ ] owner picks A, B or C
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-techtab-keep-or-drop-table-view.md (found by fun-lane-47).
