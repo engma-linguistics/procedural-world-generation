@@ -4,7 +4,7 @@ title: Some worlds finish too warm (+3.5 to +5.3 C) now that the finish-window C
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
@@ -45,4 +45,13 @@ carbon-balance warmth with less ice to hide it.
 - [ ] A cause (or "chaos, accept") sent to the coordinator before any change
 
 ## Updates
+- 2026-10-30: Lane 80 split (docs/review/base-climate/finish-drift-l80/README.md; coordinator: climate done for v1,
+  so moved to v2). The warmth is physical red variance of a sound loop. End T has median +0.1 C and sd 3.7 C over
+  the 18-draw K judge. F = ln source - ln erosion supply (last 10 Myr, against the references) explains R2 0.52 at
+  11.3 C per e-fold. Adding the ice-albedo term gives R2 0.93 (albedo/CH4 amplify ~1.4x). Source variance is slow
+  (autocorrelation 0.71 at 10 Myr, 0.1 at 50), so it is not jitter. Warm draws: 639472 l6c_p +7.3, 958504 l6c_p +6.0
+  and 639472 l6fix +3.9 have the source near reference (+0.02..+0.05) and erosion supply down 0.23-0.33 e-folds
+  (erosion rate -0.27..-0.45); 583167 l6fix +3.6 has the source high (+0.19). No finish-window bias: the window
+  minus the 20 Myr before gives ln src +0.025 +- 0.03 and T -0.04 C. Two systematic drifts cancel in the median
+  (draft-sink-supply-reference-learnt-bare.md, with PW-1158). Band question for the owner: draft-warm-finish-band-edge.md.
 - 2026-10-30: Created from inbox draft draft-too-warm-finishes-after-co2-fix.md (found by lane71).
