@@ -21,16 +21,25 @@ Rules, all seeded and simple:
     herders and seafarers moving, farmers food, miners craft, and so on; the best match over the tech's domains, capped.
   - ramp = 1 - exp(-h tau), tau the time since the people first met the tech's conditions: the chance rises as the band goes on.
   - The band: a tech whose real-world date is at least gate_kyr (12 kyr: the Pleistocene record and the glacial gate on farming,
-    Richerson et al. 2001) keeps it as a hard floor (elder kinds: elder_kyr). A younger tech has no floor: its prerequisites,
-    the specialists and the ramp time it, and its date is a soft anchor only. Its rate, unless given, is set so that a
-    well-placed people (anchor_pop, at anchor_dens, knowing what Earth knew then) takes as long after its prerequisites as Earth
-    did (anchor_rate).
+    Richerson et al. 2001) keeps it as a hard floor (elder kinds: elder_kyr). Its rate, unless given, is set from Earth's dated
+    independent origins (`origins_kyr`, the tech catalogue's): the anchor people's median wait after the floor is the median
+    origin's date less the floor (band_wait, PW-1138: pottery, 7 origins from 20 to 5 kyr, waits 9 kyr); with one dated origin
+    it is its track's slow rate, and contact carries it (bread, wild cereals: found once on Earth, then spread). A younger tech has no floor: its prerequisites,
+    the specialists and the ramp time it, and its date is a soft anchor only. Its rate, unless given, is set so that the first of
+    anchor_peers well-placed peoples (anchor_pop, at anchor_dens, knowing what Earth knew then) takes as long after its
+    prerequisites as Earth did (Earth's date is its first find, not a typical people's; lane 70, PW-1137).
 - A split inherits what its parent knew at the split, a hybrid what both parents knew; a group (a way of life within a
   people) shares its people's knowledge as it goes; an arrival brings its kind's kit (gnomes from the feywild).
 - Diffusion: while two peoples are in contact (contacts.Contacts: the first contact, the border length over time), each
-  tech one knows and the other could use passes at contact_rate x spread x border/contact_full_km x openness per kyr
-  (openness = 1 - 0.7 insularity): fast for traded things, slow for language; x the taker's culture `take` on the tech's domains
-  (an aggressive people takes war techs up twice as fast: military tech spread by connectivity, Turchin et al. 2021).
+  tech one knows and the other could use passes at contact_rate(taker's range) x spread x border/contact_full_km x openness per
+  kyr (openness = 1 - 0.7 insularity): fast for traded things, slow for language; x the taker's culture `take` on the tech's
+  domains (an aggressive people takes war techs up twice as fast: military tech spread by connectivity, Turchin et al. 2021).
+  contact_rate is a front crossing the taker's country at ~1 km/yr (the Neolithic wave of advance, Pinhasi et al. 2005): half
+  its people have the tech once the front has gone half its width, so a 1 Mkm2 people takes ~1.4 per kyr, a 9 Mkm2 one ~0.46
+  (lane 70, PW-1137; it was a flat 0.15). The front sets out when the giver knows the tech and they are in touch, with a delay
+  drawn once, and once it has arrived the taker takes the tech up as soon as it can use it: a package travels together (the
+  plough right behind the ox) instead of the taker's clock restarting at each prerequisite. A tech arriving within a step can
+  still be invented first over the part of the step before it arrived.
 - The crops and herd animals of the history count: a people that first cultivated a crop (crops.py) knows cultivation
   from then, one that tamed or took up an animal (animals.py) knows herding. Each stock is also a tech of its own (stock
   "crops:wheat", PW-1122: crop_wheat, animal_cattle...), known only that way (rate 0, spread 0): wine waits for the vine, the
@@ -217,6 +226,16 @@ GENERATION_REF_YR = 25.0  # (spec.GENERATION_YR: a human generation)
 RAMP_MEDIAN = 1.4625
 
 
+def ramp_first(n: float) -> float:
+    """The median wait, in units of 1 / h, of the first of n peoples on the ramped hazard: x - 1 + exp(-x) = ln 2 / n (n = 1:
+    RAMP_MEDIAN). Solved by bisection."""
+    lo, hi, c = 0.0, 50.0, math.log(2) / max(float(n), 1.0)
+    for _ in range(80):
+        x = 0.5 * (lo + hi)
+        lo, hi = (x, hi) if x - 1 + math.exp(-x) < c else (lo, x)
+    return 0.5 * (lo + hi)
+
+
 def domains_of(t: dict) -> list[str]:
     d = t.get("domains") or []
     return [d] if isinstance(d, str) else list(d)
@@ -341,18 +360,34 @@ def anchor_strength(T: dict, tid: str) -> float:
     return strength(n, D)
 
 
+def band_wait(T: dict, tid: str) -> float | None:
+    """A floored tech's band (PW-1138): its date less the median of Earth's dated independent origins (`origins_kyr`, the tech
+    catalogue's; one older than the date counts at it), kyr, at least lag_min_kyr: how long a people that could invent it waited
+    after the floor, at the median. None: fewer than two dated origins (one find, which then spread: its track's rate), or the
+    catalogue's first origin is younger than the tree's date (the two disagree on the find the floor stands for: cordage 500
+    kyr in the tree, origins 52 and 40; mines 40, origins 7.5 to 6), so the band does not belong to the floor."""
+    t = T["techs"][tid]
+    e, ks = t.get("earliest_kyr"), [float(k) for k in t.get("origins_kyr") or []]
+    if e is None or len(ks) < 2 or max(ks) < float(e):
+        return None
+    return max(float(e) - float(np.median([min(k, float(e)) for k in ks])), T["defaults"]["lag_min_kyr"])
+
+
 def rate_of(T: dict, tid: str) -> float:
     """Per kyr at full strength: the tech's own rate; else, for a Holocene tech (dated after the gate), the anchor rate (the anchor
-    people's median wait after the prerequisites is Earth's lag: RAMP_MEDIAN / (lag x S)); else its track's."""
+    people's median wait after the prerequisites is Earth's lag: RAMP_MEDIAN / (lag x S)); for a Pleistocene one with a band
+    (band_wait), the same with the band's wait after the floor (PW-1138); else its track's."""
     D = T["defaults"]
     t = T["techs"][tid]
     if "rate" in t:
         return float(t["rate"])
-    if t.get("earliest_kyr") is not None and t["earliest_kyr"] < D["gate_kyr"]:
-        lag = anchor_lag(T, tid)
+    e = t.get("earliest_kyr")
+    soft = e is not None and e < D["gate_kyr"]
+    lag = None if e is None else anchor_lag(T, tid) if soft else band_wait(T, tid)
+    if lag is not None:
         s = anchor_strength(T, tid)
-        if lag is not None and s > 0:
-            return RAMP_MEDIAN / (lag * s)
+        if s > 0:  # (a soft tech: Earth's date is the first of anchor_peers peoples' finds; a band: a typical origin's wait)
+            return ramp_first(D["anchor_peers"] if soft else 1) / (lag * s)
     return float(D["track_rate"].get(t["track"], D["rate"]))
 
 
@@ -377,8 +412,8 @@ def with_generations(lines: list[dict], tree_raw: dict | None) -> list[dict]:
 
 
 def _series(line: dict, pops: dict) -> tuple | None:
-    """(ago, population, people per km2) through time from a line's saved track ([ago, lat, lon, area Mkm2, population] per
-    frame), oldest first; else its present population alone; None without either."""
+    """(ago, population, people per km2, area Mkm2) through time from a line's saved track ([ago, lat, lon, area Mkm2,
+    population] per frame), oldest first; else its present population alone (area from it and its density); None without either."""
     tr = [r for r in (line.get("track") or []) if len(r) >= 5]
     if tr:
         a = np.array([float(r[0]) for r in tr])
@@ -386,17 +421,38 @@ def _series(line: dict, pops: dict) -> tuple | None:
         ar = np.array([float(r[3]) for r in tr])
         o = np.argsort(-a)
         dens = np.where(ar > 0, p / np.maximum(ar, 1e-9) / 1e6, 0.0)
-        return a[o], p[o], dens[o]
+        return a[o], p[o], dens[o], ar[o]
     q = pops.get(line["id"]) or {}
     if q.get("population"):
-        return np.array([0.0]), np.array([float(q["population"])]), np.array([float(q.get("density") or 0.0)])
+        n, d = float(q["population"]), float(q.get("density") or 0.0)
+        return np.array([0.0]), np.array([n]), np.array([d]), np.array([n / d / 1e6 if d > 0 else 0.0])
     return None
 
 
 def _at(ser, ago: float) -> tuple[float, float]:
     """(population, density) of a series at a time (linear between frames; the nearest end outside them)."""
-    a, p, d = ser
+    a, p, d = ser[:3]
     return float(np.interp(-ago, -a, p)), float(np.interp(-ago, -a, d))
+
+
+def _area_at(ser, ago: float) -> float | None:
+    """The range, Mkm2, of a series at a time; None: not known."""
+    if ser is None:
+        return None
+    v = float(np.interp(-ago, -ser[0], ser[3]))
+    return v if v > 0 else None
+
+
+def contact_rate(area_mkm2: float | None, D: dict) -> float:
+    """Per kyr, the rate at which a people takes up a tech its neighbour knows (before spread, border, openness and culture):
+    the tech's front crosses the taker's country at contact_speed_km_yr, so half its people have it when the front has gone
+    half its width (sqrt of its range); as a hazard with that median, 2 ln 2 v / sqrt(area). The width is at least
+    contact_width_min_km. Without a range, the anchor people's (anchor_pop / anchor_dens). Speed: the Neolithic front, 0.6-1.3
+    km/yr (Pinhasi, Fort & Ammerman 2005); pottery's among foragers, 0.2-0.5 off and 1.2-3.3 km/yr along favoured corridors
+    (Jordan et al. 2016, Table 1)."""
+    a = area_mkm2 if area_mkm2 else D["anchor_pop"] / D["anchor_dens"] / 1e6
+    width = max(math.sqrt(a * 1e6), D["contact_width_min_km"])
+    return 2 * math.log(2) * D["contact_speed_km_yr"] * 1e3 / width
 
 
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
@@ -491,6 +547,8 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         return strength(n, D), strength(n * s * density_x(dens, D), D), s
 
     began = set()
+    arrive: dict[tuple, float | None] = {}  # ((giver, taker, tech): when its front reaches the taker's middle, kyr; None: never)
+    unit: dict[tuple, float] = {}  # ((giver, taker): the pair's front delay, in units of 1 / the contact rate)
     prev = grid[0]
     for ago in grid:
         dt = max(prev - ago, 1e-6) if ago != grid[0] else 0.0
@@ -523,19 +581,12 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     give(l["id"], tid, when, "tamed", None)
         if dt <= 0:
             continue
-        for l in alive:  # (inventing)
-            lid = l["id"]
-            rx = kind[lid].get("rate_x", 1.0)
-            s_all, s_spec, _ = strengths(lid, ago)
-            for tid in order:
-                if can(lid, tid, ago, True):
-                    t = techs[tid]
-                    sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
-                    h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
-                    tau = ready[lid].setdefault(tid, ago) - ago
-                    h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
-                    if h > 0 and rng.random() < 1 - math.exp(-h * dt):
-                        give(lid, tid, ago, "invented", None)
+        # taking up by contact (lane 70, PW-1137): a tech's know-how is a front that sets out into a neighbour's country when the
+        # giver knows it and they are in touch, and reaches its middle after a delay (median width / 2v, contact_rate) drawn once
+        # per pair, so the techs the giver knew alike arrive together (x 1 / spread: language lags, traded bronze leads);
+        # once it has, the neighbour takes it up as soon as it can use it, so a package travels together (the plough behind the
+        # ox) instead of the taker's clock restarting at each prerequisite
+        cand: dict[tuple, tuple] = {}
         for a, b, fr, to, km in links:  # (diffusion over borders)
             if not (fr >= ago >= to):
                 continue
@@ -543,17 +594,50 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             for x, y in ((a, b), (b, a)):
                 if x not in began or y not in began:
                     continue
-                op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
+                cr = None
                 for tid in order:
-                    lang = bool(techs[tid].get("modern_contact"))  # (language: to any genetically modern people, PW-971)
-                    if lang and node[y] is None:
+                    if tid not in known[x] or tid in known[y] or known[x][tid][0] < ago:
                         continue
-                    if tid in known[x] and known[x][tid][0] >= ago and can(y, tid, ago, False, needs=not lang):
-                        r = D["contact_rate"] * techs[tid].get("spread", D["spread"]) * w * op * domain_x(culture[y][1], techs[tid])
-                        if r > 0 and rng.random() < 1 - math.exp(-r * dt):
-                            for n in [i for i in order if lang and i in closure(T, [tid]) and i != tid]:
-                                give(y, n, ago, "with " + tid, x)  # (its roots, gesture, come with it)
-                            give(y, tid, ago, "contact", x)
+                    k3 = (x, y, tid)
+                    if k3 not in arrive:
+                        if techs[tid].get("modern_contact") and node[y] is None:  # (language: to any genetically modern people, PW-971)
+                            arrive[k3] = None
+                            continue
+                        if cr is None:
+                            op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
+                            cr = contact_rate(_area_at(series[y], ago), D) * w * op
+                        r = cr * techs[tid].get("spread", D["spread"]) * domain_x(culture[y][1], techs[tid])
+                        if (x, y) not in unit:  # (the pair's draw: one front, for all its techs, slower for a slow-spreading one)
+                            unit[(x, y)] = float(rng.exponential(1.0))
+                        arrive[k3] = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
+                    at = arrive[k3]
+                    if at is not None and at >= ago and at > cand.get((y, tid), (-1.0,))[0]:
+                        cand[(y, tid)] = (at, x)
+        # inventing, and the arrivals: a tech that arrives within the step may still be invented first, over the part of the step
+        # before it arrived (neither is tried first)
+        for l in alive:
+            lid = l["id"]
+            rx = kind[lid].get("rate_x", 1.0)
+            s_all, s_spec, _ = strengths(lid, ago)
+            for tid in order:
+                arr = cand.get((lid, tid))
+                lang = bool(techs[tid].get("modern_contact"))
+                took = arr is not None and can(lid, tid, ago, False, needs=not lang)
+                h = 0.0
+                if can(lid, tid, ago, True):
+                    t = techs[tid]
+                    sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
+                    h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
+                    tau = ready[lid].setdefault(tid, ago) - ago
+                    h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
+                span = min(max(ago + dt - arr[0], 0.0), dt) if took else dt
+                if h > 0 and span > 0 and rng.random() < 1 - math.exp(-h * span):
+                    give(lid, tid, ago, "invented", None)
+                elif took:
+                    if lang:
+                        for n in [i for i in order if i in closure(T, [tid]) and i != tid]:
+                            give(lid, n, ago, "with " + tid, arr[1])  # (its roots, gesture, come with it)
+                    give(lid, tid, ago, "contact", arr[1])
         for l in alive:  # (a group and its people share what they know as they go)
             g = l.get("group_of")
             if g and g in known:
@@ -629,30 +713,33 @@ def lines_for_report(tt: dict, lines: list[dict]) -> list[str]:
     return out
 
 
-def anchor_check(tids, seeds: int = 41, T: dict | None = None) -> dict:
-    """The soft anchor's check: for each tech, an isolated anchor people (anchor_pop at anchor_dens, a human generation, no
-    culture) that knows what Earth knew when the tech's prerequisites came; its median wait (kyr) for the tech over `seeds`
-    builds, against Earth's lag (anchor_lag). {tech: (median lag, Earth lag, share of draws that got it)}."""
+def anchor_check(tids, seeds: int = 41, T: dict | None = None, peers: int | None = None) -> dict:
+    """The soft anchor's check: for each tech, a world of `peers` (anchor_peers) isolated anchor peoples (anchor_pop at
+    anchor_dens, a human generation, no culture) that know what Earth knew when the tech's prerequisites came; the median wait
+    (kyr) of the FIRST of them to find the tech over `seeds` builds, against Earth's lag (anchor_lag). {tech: (median lag,
+    Earth lag, share of draws in which one got it)}."""
     T = T or load()
     D = T["defaults"]
+    n = int(peers or D["anchor_peers"])
     out = {}
     for tid in tids:
         ready = _anchor_ready(T, tid)
         after = {i for i in T["techs"] if tid in closure(T, [i])}  # (the tech and everything that needs it)
         kit = [i for i, u in T["techs"].items() if u.get("earliest_kyr") is not None and u["earliest_kyr"] >= ready
                and i not in after and u.get("mode") != "fantasy"]
-        T2 = {**T, "kind": [{"of": ["anchor"], "kit": kit}]}
+        ids = [f"anchor{k}" for k in range(n)]
+        T2 = {**T, "kind": [{"of": ids, "kit": kit}]}
         area = D["anchor_pop"] / D["anchor_dens"] / 1e6
-        line = {"id": "anchor", "origin": "root", "ago_kyr": ready, "started_kyr": ready, "ended_kyr": None, "parents": [],
-                "group_of": None, "overlay": False, "demography": {"insularity": 0.5}, "generation_yr": GENERATION_REF_YR,
-                "track": [[ready, 0, 0, area, D["anchor_pop"]], [0.0, 0, 0, area, D["anchor_pop"]]]}
+        lines = [{"id": i, "origin": "root", "ago_kyr": ready, "started_kyr": ready, "ended_kyr": None, "parents": [],
+                  "group_of": None, "overlay": False, "demography": {"insularity": 0.5}, "generation_yr": GENERATION_REF_YR,
+                  "track": [[ready, 0, 0, area, D["anchor_pop"]], [0.0, 0, 0, area, D["anchor_pop"]]]} for i in ids]
         waits = []
         for s in range(seeds):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                tt = build([line], None, None, seed=s, T=T2, era=None)
-            v = tt["known"]["anchor"].get(tid)
-            waits.append(ready - v[0] if v and v[1] == "invented" else math.inf)
+                tt = build(lines, None, None, seed=s, T=T2, era=None)
+            got = [ready - v[0] for i in ids for v in [tt["known"][i].get(tid)] if v and v[1] == "invented"]
+            waits.append(min(got) if got else math.inf)
         got = [w for w in waits if math.isfinite(w)]
         out[tid] = (float(np.median(waits)), anchor_lag(T, tid), len(got) / seeds)
     return out
