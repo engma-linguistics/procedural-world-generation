@@ -82,7 +82,7 @@ class Simulation:
         "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (names the cloud forests)
         "shade_jul", "shade_jan",  # 0..1 the cloud as the light sees it per half-year (climate.shade; the plants' light)
         "removed",  # km of crust eroded per cell in the last step
-        "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
+        "weathered",  # ... of it from ground bare of ice during that erosion, per step of dt (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
         "climate_t",  # Myr: when the climate fields were computed
         "climate_in",  # what that climate saw (earth.climate_moved: {"dT"}; None before the first)

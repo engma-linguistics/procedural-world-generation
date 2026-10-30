@@ -317,7 +317,7 @@ def weathering(sim, land):
     (sim.weathered: not under land ice, where glaciers grind their beds fast but the rock flour hardly
     weathers chemically in the cold, and counting it made a cold era draw down more CO2 the more ice it grew).
     The bare part is the sink of the cell's unplanted ground, which goes as X^WEATHER_CO2_BARE."""
-    supply = sim.weathered * land * (sim.dt / sim.dt_now)  # (per dt step: the references are learnt in those)
+    supply = sim.weathered * land  # (per dt step, as erode keeps it: the references are learnt in those)
     # chemical weathering: faster when warm and when wet (the weathering thermostat, Walker et al. 1981: a cold
     # planet weathers slower, CO2 builds up and warms it back, PW-235): the kinetics on the local temperature,
     # and the cell's own land runoff (WEATHER_RUNOFF; PW-881)
@@ -1149,8 +1149,11 @@ def erode(sim, col):
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)
     # what bare ground lost, for the weathering sink: masked by the ice this erosion ran under (the next
     # step's sink sees the ice after a climate update; ground the ice left in it counted its glacial
-    # erosion, the 3x buzzsaw, as weathering, PW-438)
-    sim.weathered = np.where(sim.ice > 0, 0.0, sim.removed)
+    # erosion, the 3x buzzsaw, as weathering, PW-438). Kept per step of dt (the run's step, which the
+    # sink's references are learnt in): scaled here, by the length of the step it was eroded in, not where
+    # the sink reads it (the next step's global_temperature runs before this step's erosion, so the first
+    # short finish-window step read a 2 Myr step's erosion x dt / dt_now = 4: a 4x sink for a step, lane 67)
+    sim.weathered = np.where(sim.ice > 0, 0.0, sim.removed) * (sim.dt / dt)
     sim.lake_kind, sim.lake_depth = lk["kind"], lk["depth"]
     return dep, lk["kind"]
 

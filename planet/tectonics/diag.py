@@ -96,7 +96,7 @@ class Recorder:
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
-        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt_now, 5)
+        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)  # (the supply is per step of dt)
         return out
 
     def step(self, sim) -> None:

@@ -89,3 +89,18 @@ def test_references_are_kept_after_the_spin_up():
     ref = s.refs.copy()
     s.run(s.t + 20)
     assert np.array_equal(s.refs, ref)
+
+
+def test_sink_is_continuous_into_the_finish_window():
+    """The sink's erosion supply is kept per step of dt by the step it was eroded in (earth.erode): the first
+    0.5 Myr finish-window step must not read the last 2 Myr step's erosion x dt / dt_now = 4 (lane 67: a 4.3x
+    sink for one step crashed every run's CO2 to 3-50 ppm at the window's start)."""
+    from helpers import run_sim
+
+    s = run_sim(level=4, seed=2, myr=32.0, run_end=44.0)  # (the window starts at 34)
+    s.step()
+    assert s.dt_now == 2.0 and abs(s.t - 34.0) < 1e-9
+    before = s.rates[1]
+    s.step()
+    assert s.dt_now == 0.5
+    assert 0.7 < s.rates[1] / before < 1.4
