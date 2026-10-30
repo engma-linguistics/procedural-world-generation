@@ -874,7 +874,7 @@ async function loadTree(name) {
 $('load').onclick = () => loadTree($('trees').value);
 $('save').onclick = async () => {
   const name = $('saveName').value.trim();
-  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(T) });
+  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(T) });
   const j = await r.json();
   if (!r.ok) return status(j.error, true);
   status(`saved ${name}`); listTrees(name);
@@ -896,7 +896,7 @@ $('run').onclick = async () => {
   status('running… (~20 s a try at L6, ~1 min at L7)');
   $('run').disabled = true;
   try {
-    const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
+    const r = await fetch('../api/lineages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
     const j = await r.json();
     if (!r.ok) return status(j.error, true);
     for (;;) {  // queued on the server's job queue: poll it
@@ -928,7 +928,7 @@ function syncFav() {
 }
 $('favBtn').onclick = async () => {
   const id = $('world').value;
-  const r = await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind: 'world', id, starred: !favs.has(id) }) }).catch(() => null);
+  const r = await fetch('../api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'world', id, starred: !favs.has(id) }) }).catch(() => null);
   if (!r || !r.ok) return status('could not save the favourite', true);
   await listWorlds(); $('world').value = id; syncFav();
 };

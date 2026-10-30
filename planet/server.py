@@ -24,6 +24,11 @@ Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip).
 
+Every POST must say `Content-Type: application/json`, and one that carries an
+Origin must come from this server's own address (Handler.post_refused, PW-1037):
+any other web page open in the browser can't start jobs. (A cross-site JSON POST
+needs a preflight, which this server never answers.)
+
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
 serving. Zooms, time zooms and finished worlds run on the job queue, up to
@@ -449,7 +454,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"error": str(e)}, 404)
         return True
 
+    def post_refused(self) -> str | None:
+        """Why this POST is refused, or None (PW-1037): it must be JSON, and an Origin, if sent,
+        must be this server's own address (http://127.0.0.1:<port> or http://localhost:<port>)."""
+        if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
+            return "POST needs Content-Type: application/json"
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            port = self.server.server_address[1]
+            if origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+                return f"cross-site POST refused (Origin {origin})"
+        return None
+
     def do_POST(self):
+        refused = self.post_refused()
+        if refused:
+            return self.send_json({"error": refused}, 403)
         if self.lineages_api("POST"):
             return
         if self.path == "/api/favourites":

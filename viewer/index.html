@@ -5161,7 +5161,7 @@ function syncFav() {
 $('favBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;
   const [kind, ...id] = favKeyOf(v).split(':');
-  const r = await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind, id: id.join(':'), starred: !FAVS.has(favKeyOf(v)) }) }).catch(() => null);
+  const r = await fetch('../api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: id.join(':'), starred: !FAVS.has(favKeyOf(v)) }) }).catch(() => null);
   if (!r || !r.ok) { alert('Could not save the favourite. Is the viewer running via planet serve?'); return; }
   await fillSelector();
 });
