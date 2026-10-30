@@ -34,11 +34,13 @@ class PeoplesMixin:
         return self._dmap
 
     def gen_yr(self, l) -> float:
-        """A line's generation time, years: its own, or a dragon's from its age schedule (meta.dragon_generation, PW-959)."""
+        """A line's generation time, years: a dragon's from its age schedule (meta.dragon_generation, PW-959); a people's from its
+        canon ages (life_history: T under the forager schedule, PW-1148), else its own generation_yr."""
         if l.megafauna and "flies" in l.traits:
             from .. import dragon_ages as DA
             return DA.generation_yr(self.tree.dragon_ages, self.tree.dragon_generation, l.generation_yr)
-        return l.generation_yr
+        from .. import life_history as LH
+        return LH.generation_yr(l)
 
     def whole(self, lid: str, P: np.ndarray | None = None) -> np.ndarray:
         """A people's presence with its groups (their sum, at most 1); a line without groups, its own."""

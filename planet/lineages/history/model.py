@@ -25,6 +25,7 @@ from .dispersal import DispersalMixin
 from .events import EventsMixin
 from .frame import FrameMixin
 from .groups import GroupsMixin
+from .growth import GrowthMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
@@ -37,10 +38,11 @@ from .tags import _tags, needs_chains
 
 
 class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
-              ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin):
+              ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
-                 goods: dict | None = None):
+                 goods: dict | None = None, knobs: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
+        self.knobs = knobs or {}  # lane 78: {people id: {"density": x, "founders": x}}, the share bands' nudges (history.bands)
         self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
         self._land_m: dict[str, tuple] = {}
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
@@ -92,6 +94,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
         # numbers: a denser rival weighs more (DENSITY_PUSH)
         self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else l.demo("density") for l in self.lines])
+        for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own density, its groups' with it; history.bands)
+            if kn.get("density", 1.0) != 1.0 and lid in self.idx:
+                for j in [self.idx[lid], *self._groups.get(lid, [])]:
+                    self.dens[j] *= kn["density"]
         # (dragons, the flying megafauna: one per meta.dragon_km2 where peoples press them, owner PW-923, PW-957; the true giants, the rest
         # of the megafauna: one per meta.giant_km2, PW-963; both user options. Away from the peoples they keep nearer their natural
         # density (meta.megafauna_natural: from the prey, PW-966, or from mass): MG.local_density, read through dens_at. The competition
@@ -172,6 +178,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
+        self._growth_setup()
         frames = []
         nsteps = len(self.steps)
         t0 = time.time()
@@ -194,6 +201,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                 self.animals.step(step, env, tags, self.p, self._native)
             if self.crops is not None:
                 self.crops.step(step, env, tags, self.p, self._native)
+            self._note_eras(step)  # (each people's mortality schedule: forager, horticulturalist, agrarian; history.growth)
+            self._waves(step, env, tags, Ks)  # (an arrival's later waves, and the wandering portals: history.portals)
             mix = self._mix_ramp(step.ago)
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)

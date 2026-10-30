@@ -593,3 +593,51 @@ presence is on sea cells only, so the land-facing layers (composition, mixing, l
 the contact record pairs a marine line with the land peoples whose cells its sea cells touch (`Contacts.update`), and the brief has a
 `sea_peoples` block (goods, foods, contacts). A preset without marine lines is byte-identical to before (checked on seven_meals at L7).
 The deep folk stay authored: see the drafts for the viewer and habitat limits.
+
+## Life stages, share bands, arrivals in force and wandering portals (fun lane 78, PW-1148, PW-1147, PW-1150; built 2026-10-30)
+- **Life stages** (`planet/lineages/life_history.py`, built like `dragon_ages.py`).
+  - Spec fields:
+    - `adult_yr`, `lifespan_yr`: canon ages, from lane 76's table;
+    - `breeding`: slow, mammal or brood, i.e. Rmax per generation 2, 3.5 or 7;
+    - `fertile_yr`;
+    - `survival`: normal or harsh;
+    - `mortality`: four annual rates that override the schedules.
+    - Splits and groups inherit them.
+  - Four stages: infancy, childhood, adulthood, elder.
+  - Stage mortality comes from Gurven & Kaplan 2007 Table 2's Siler fits:
+    - forager: the average hunter-gatherer row;
+    - horticulturalist: the average forager-horticulturalist row;
+    - agrarian: Sweden 1751-59.
+  - A people's stages stretch with its canon ages.
+  - Fecundity is closed so that R0 = Rmax under the people's own forager schedule. A gentler schedule then raises r.
+  - Which schedule a people lives under is a condition in the history (`history/growth.py`), not a date:
+    - horticulturalist once it has taken up a staple crop;
+    - agrarian once farming is its main food (farm share >= 0.5) and it has taken up a plough animal.
+  - `gen_yr` returns the derived generation time where a line has ages. Dragons keep `dragon_ages`.
+  - The run output and the workbench show T, r, x = r / r_human, each stage's mortality and the sustainable loss (r / 2).
+- **Growth rates** (`meta.growth_rates`, PW-1147). x scales:
+  - the spread speed, by sqrt(x) (Fisher-KPP);
+  - the displacement e-folding, by the load-weighted x of the rivals taking the land;
+  - the small-patch fade (MVP_TAU_KYR / x);
+  - the far jumps (JUMP_RATE x x).
+  - SURGE_KYR stays in years. A line without ages has x = 1.
+- **Share bands** (`band_pct = [min, max]` per people; `history/bands.py`). These are soft targets, never a clamp.
+  - When the best try lands a people outside its band, the run nudges that people's own density (or an arrival's founders). The nudge is x target/share, then a secant step, held within x1/4..x4.
+  - It re-runs the best seed up to `meta.band_rounds` times and keeps the round with the least miss.
+  - `present.bands` reports the share, met or not, why, and the nudge.
+  - The spec and the workbench warn when the minimums add up past 100% or the maximums fall under it.
+- **Arrivals in force** (PW-1150). Per arrival:
+  - `founders`: people in all its waves;
+  - `waves`, `meta.wave_kyr` apart;
+  - `portals`: how many it comes through;
+  - `plane`.
+  - Each portal's share holds the country round it ring by ring until it carries that many people (`history/founding.py`).
+- **Wandering portals** (`meta.portal_mode = "wandering"`, `history/portals.py`). This is the hotspot pattern turned round.
+  - A plane's thinnings are points fixed in the plane's frame, which rotates over the world about a seeded pole at `portal_drift_kmkyr`.
+  - Births are Poisson, keeping about `portals` open. Each stays open U(0.4, 1.6) x `portal_open_kyr`, and is placed on the site scores with ~100 km of scatter.
+  - Arrivals and their waves come through the open thinnings that stand over land they can live on. The first wave waits up to PORTAL_WAIT_KYR.
+- **D&D preset.**
+  - Canon ages for 23 peoples; kobolds and goblins are brood breeders with harsh survival.
+  - `growth_rates = true`.
+  - Portals at 8 sites; elves 1e6 founders in 2 waves, gnomes 4e6.
+  - Measured on 4360a3 at L6 (lane 78 report). Still to be judged on the stress suite (inbox draft).

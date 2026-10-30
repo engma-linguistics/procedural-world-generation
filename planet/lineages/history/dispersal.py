@@ -79,7 +79,7 @@ class DispersalMixin:
         if not small.any():
             return
         sel = held & small[np.maximum(lab, 0)]
-        self.p[k][sel] *= np.exp(-dt / MVP_TAU_KYR)
+        self.p[k][sel] *= np.exp(-dt / MVP_TAU_KYR * (self.growth_x(k) if self.tree.growth_rates else 1.0))  # (PW-1147: per generation, so x r)
         self.p[k][self.p[k] < EST] = 0
         self.faded[l.id] = self.faded.get(l.id, 0) + int(small.sum())
 
@@ -87,7 +87,9 @@ class DispersalMixin:
         """The line's spread over its room this step: the passes its speed buys, then the pioneers into empty country."""
         g = self.grid
         deep = step.epoch == "deep"
-        speed =l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
+        speed = l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
+        if self.tree.growth_rates:  # (PW-1147: the front speed goes as sqrt(r), Fisher-KPP; history.growth)
+            speed *= np.sqrt(self.growth_x(k))
         if self.animals is not None and not l.marine:  # riders and herders spread faster (animals.py)
             speed *= self.animals.speed_mult(k)
         if step.epoch == "deep":
@@ -171,7 +173,7 @@ class DispersalMixin:
         rng = self.__dict__.setdefault("_jrng", {}).get(l.id)
         if rng is None:  # (a generator of its own: the other draws of the line stay as they were)
             rng = self._jrng[l.id] = np.random.default_rng((self.seed, 920, zlib.crc32(l.id.encode())))
-        lam = JUMP_RATE * step.dt
+        lam = JUMP_RATE * step.dt * (self.growth_x(k) if self.tree.growth_rates else 1.0)  # (PW-1147: far founders are surplus emigrants, x r)
         n_ev = min(int(rng.poisson(lam)), 3)  # (thinned below: crowding, hemmed in, the best place's weight)
         if n_ev == 0:
             return

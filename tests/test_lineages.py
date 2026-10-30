@@ -2373,7 +2373,8 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
                 assert 1000 <= tr.dragon_km2 <= 10000 and l.generation_yr >= 150 and l.group_size[1] <= 3
             if l.megafauna and "giant" in l.id:
                 assert 1000 <= tr.giant_km2 <= 10000 and 50 <= l.generation_yr <= 80 and l.group_size == (5.0, 20.0)
-        assert tr.lines["dragonborn"].generation_yr == 25 and tr.lines["metallic_dragon"].rivalry < 1
+        from planet.lineages import life_history as LH  # (lane 78: a people's generation from its canon ages where given, else its own)
+        assert 20 <= LH.generation_yr(tr.lines["dragonborn"]) <= 30 and tr.lines["metallic_dragon"].rivalry < 1  # (not the wyrms' 430)
 
 
 def test_denser_people_weighs_thinner_rivals_less_at_the_front():
@@ -2783,3 +2784,109 @@ def test_samples_dragons_have_one_node_and_animal_end():
         assert d.animals_end and d.sapient_kyr is not None and 2500 < d.sapient_kyr < d.ago_kyr  # before the chromatic/metallic split
         assert not any(t.lines[i].sapient_kyr or t.lines[i].animals_end for i in ("chromatic_dragon", "metallic_dragon", "red_dragon"))
         assert d not in t.leaves()  # (the animals are no line of the tree: nothing for peoples, techs or megafauna to count)
+
+
+# ---- lane 78: life stages (PW-1148, PW-1147), share bands, portals in force (PW-1150) and wandering --------------------------------
+def test_life_tables_give_canon_paced_generations_and_rates():
+    from planet.lineages import life_history as LH
+    hu = LH.table(*LH.HUMAN)
+    f = hu["by_era"]["forager"]
+    assert hu["stage_end"] == [1.0, 18.0, 45.0, 80.0]
+    assert 26 < f["T"] < 30 and abs(f["R0"] - 3.5) < 0.01 and 0.5 < f["adult_share"] < 0.6  # (Gurven & Kaplan's l15 0.57)
+    # a gentler schedule (fewer children die) raises r; the schedules are Gurven & Kaplan's rows
+    assert hu["by_era"]["horticulturalist"]["r"] > f["r"]
+    kob = LH.table(6, 120, "brood", None, "harsh")["by_era"]["forager"]
+    elf = LH.table(100, 750, "slow", (100, 200))["by_era"]["forager"]
+    dw = LH.table(50, 350, "mammal", (50, 100))["by_era"]["forager"]
+    rh = LH.r_human()
+    assert kob["r"] / rh > 2 and kob["adult_share"] < 0.3  # brood breeders, harsh survival
+    assert elf["r"] / rh < 0.2 and 120 < elf["T"] < 170 and 0.3 < dw["r"] / rh < 0.5
+    with pytest.raises(ValueError):
+        LH.table(10, 50, "eggs")
+
+
+def test_life_history_band_and_arrival_fields_parse_inherit_and_round_trip():
+    raw = _mode_raw(portal_mode="wandering", portals=3, growth_rates=True, wave_kyr=1.5)
+    rows = {r["id"]: r for r in raw["lineage"]}
+    rows["stem"].update(adult_yr=12, lifespan_yr=50, breeding="brood", survival="harsh", band_pct=[5, 60])
+    rows["elf"].update(adult_yr=100, lifespan_yr=750, breeding="slow", fertile_yr=[100, 200], founders=1e6, waves=3, portals=2,
+                       plane="feywild")
+    t = SP.parse(raw)
+    assert t.lines["human"].adult_yr == 12 and t.lines["human"].breeding == "brood"  # (a split inherits its life history)
+    assert t.lines["human"].band_pct == (0.0, 100.0)  # (not its band)
+    e = t.lines["elf"]
+    assert (e.founders, e.waves, e.portal_n, e.plane, e.fertile_yr) == (1e6, 3, 2, "feywild", (100.0, 200.0))
+    assert t.growth_rates and t.portal_mode == "wandering" and t.wave_kyr == 1.5
+    b = SP.parse(SP.to_raw(t))
+    assert (b.lines["elf"].founders, b.lines["elf"].plane, b.lines["stem"].band_pct, b.growth_rates) == (1e6, "feywild", (5.0, 60.0), True)
+    from planet.lineages import life_history as LH
+    assert abs(LH.generation_yr(e) - LH.table(100, 750, "slow", (100, 200))["by_era"]["forager"]["T"]) < 1e-9
+    for bad in ({"founders": 10}, {"adult_yr": 10}, {"band_pct": [50, 10]}):
+        r2 = _mode_raw()
+        {x["id"]: x for x in r2["lineage"]}["ork"].update(bad)
+        with pytest.raises(ValueError):
+            SP.parse(r2)
+    r3 = _mode_raw()
+    for x in r3["lineage"]:
+        if x["id"] in ("stem", "elf"):
+            x["band_pct"] = [60, 100]
+    assert SP.band_warnings(SP.parse(r3)) and not SP.band_warnings(SP.parse(_mode_raw()))
+
+
+def test_an_arrival_in_force_founds_its_people_at_several_portals_in_waves(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = _mode_raw(portal_mode="random", portals=3, wave_kyr=1.0)
+    {x["id"]: x for x in raw["lineage"]}["elf"].update(founders=2e6, waves=2)
+    h = H.History(SP.parse(raw), ps, 1)
+    h.run()
+    log = h.wave_log["elf"]
+    assert len(log) == 2 and log[0]["portals"] >= 2 and log[0]["people"] == 1e6
+    assert log[0]["carried"] >= 0.9e6  # (each portal's share founded in full)
+    assert any(e["kind"] == "wave" for e in h.events)
+
+
+def test_wandering_thinnings_drift_open_and_close(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = _mode_raw(portal_mode="wandering", portals=2, portal_open_kyr=3, portal_drift_kmkyr=300)
+    h = H.History(SP.parse(raw), ps, 1)
+    h.run()
+    assert h.started.get("elf") is not None
+    log = h.portal_report()["beyond"]
+    assert any("opened_kyr" in x for x in log) and any("closed_kyr" in x for x in log)
+    P = h._planes["beyond"]
+    t = {"pos": P["thin"][0]["pos"], "born": 10.0}
+    a, b = h._thin_cell(P, t, 10.0), h._thin_cell(P, t, 0.0)
+    d = np.arccos(np.clip(h.grid.centers[a] @ h.grid.centers[b], -1, 1)) * H.R_KM
+    assert d < 3000 + 2 * h.cell_km  # (300 km/kyr x 10 kyr along a small circle about the pole: at most 3000 km)
+    assert h.portal_cells() == []
+
+
+def test_growth_rates_off_by_default_and_x_one_without_canon_ages(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = _mode_raw(growth_rates=True)
+    {x["id"]: x for x in raw["lineage"]}["ork"].update(adult_yr=12, lifespan_yr=50)
+    h = H.History(SP.parse(raw), ps, 1)
+    h.run()
+    assert h.growth_x(h.idx["human"]) == 1.0 and h.growth_x(h.idx["ork"]) > 1.3
+    assert set(h.life_eras["ork"]) <= {"forager", "horticulturalist", "agrarian"}
+    h2 = H.History(SP.parse(_mode_raw()), ps, 1)
+    h2.run()
+    assert h2.growth_x(h2.idx["human"]) == 1.0
+
+
+def test_share_bands_nudge_a_peoples_own_density_and_never_clamp(faketz):
+    from planet.lineages.history import bands as B
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = _mode_raw(band_rounds=2)
+    h0 = H.History(SP.parse(raw), ps, 1000)
+    res0 = h0.run()
+    sh0 = B.shares(h0, H.present_summary(h0, res0["present"]))
+    lo = min(99.0, sh0["ork"] * 2 + 5)
+    {x["id"]: x for x in raw["lineage"]}["ork"]["band_pct"] = [lo, 100]
+    tree = SP.parse(raw)
+    h, res, pres = H.simulate(tree, ps, tries=1)
+    b = pres["bands"]["ork"]
+    assert b["knob"] == "density" and b["x"] > 1  # (nudged up its own density)
+    assert len(pres["band_rounds"]) >= 2
+    assert b["met"] or b["why"]
+    assert b["share_pct"] == pytest.approx(B.shares(h, pres)["ork"], abs=1e-3)  # (the outcome as run, not set)

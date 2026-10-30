@@ -8,7 +8,7 @@ from ...geo import arc_km
 from .. import spec as SP
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings
-from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
+from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
 
@@ -246,29 +246,17 @@ class OriginsMixin:
         if K[cell] <= EST:
             cell = int(np.argmax(np.where(hold_mask(line, tags), K + 1e-6, 0) * noise))
             why += " (poor habitat)"
-        if line.origin == "arrival" and not line.place and self.tree.portal_mode != "off" and self.portal_cells():
-            # through the portals (PW-697): at each where the people can live within PORTAL_KM (else, within
-            # PORTAL_FAR_KM of the nearest that can hold it; else at its best habitat anywhere, as without portals)
-            near, far = [], []
-            for pt in self.portal_cells():
-                d = arc_km(g.centers @ g.centers[pt["cell"]])
-                ok = (d < PORTAL_KM) & (K > EST)
-                if ok.any():
-                    near.append((int(np.argmax(np.where(ok, K * noise, 0))), pt["kind"]))
-                    continue
-                ok = (d < PORTAL_FAR_KM) & (K > EST)
-                if ok.any():
-                    far.append((float(d[ok].min()), int(np.argmax(np.where(ok, K * noise * np.exp(-d / 1000), 0))), pt["kind"]))
-            if not near and far:
-                f = min(far)
-                near = [(f[1], f[2])]
-            if near:
-                if pull is not None:  # (the portal nearest the other parent first: PW-852)
-                    near.sort(key=lambda x: -pull[x[0]])
-                cell = near[0][0]
-                for c, _ in near[1:]:
-                    self._seed_blob(k, c, K, K > EST, 3)
-                why = f"through {'a portal' if len(near) == 1 else str(len(near)) + ' portals'} ({', '.join(sorted({f[1] for f in near}))})"
+        if line.origin == "arrival" and not line.place:
+            # through the portals (PW-697; in force and wandering, PW-1150, lane 78: history.portals): at each where the people can
+            # live within PORTAL_KM (else, within PORTAL_FAR_KM of the nearest that can hold it; else at its best habitat anywhere,
+            # as without portals); False: wait for a wandering thinning over its land
+            got = self._through_portals(line, k, K, noise, pull, step)
+            if got is False:
+                return False
+            if got is not None:
+                cell, why, seeded = got
+                if seeded:  # (its founders are founded in full at every portal)
+                    return cell, why
         r = 3 if line.origin == "root" else max(3, int(round(FOUNDER_KM / self.cell_km)))  # (an arrival's founders: as a split's, lane 73)
         self._seed_blob(k, cell, K, K > EST, r)
         return cell, why

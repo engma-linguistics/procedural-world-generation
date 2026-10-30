@@ -123,6 +123,9 @@ BREAKS_RAIN = 1100.0  # over an L7 cell) with under this much rain, below the mo
 PORTAL_SEP_KM = 1800.0  # portals are at least this far apart
 PORTAL_KM = 700.0  # an arriving people founds at a portal if it can live within this of it...
 PORTAL_FAR_KM = 2500.0  # ...else within this of it (the portal opens onto bad ground for it); else at its best habitat anywhere
+PORTAL_WAIT_KYR = 5.0  # lane 78: an arrival (or a later wave) waits up to this long for a wandering thinning over land it can live on; then
+# the first wave comes at its best habitat (as without portals) and a later one does not come. A design judgement: about one opening
+SCATTER_KM = 100.0  # lane 78: a wandering thinning is placed this far (rms) off its site, as volcanism.hotspots scatters a new plume by ~100 km
 
 PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does
 COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two peoples' competition is under 1 both ways (Lotka-Volterra

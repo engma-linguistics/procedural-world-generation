@@ -77,9 +77,18 @@ class CompetitionMixin:
             over = self.p[k] > room  # displacement: held above its room, a people dwindles there
             if over.any():
                 held = (self.p[k] >= EST).sum() * self.cell_mkm2
-                r = (1 - np.exp(-step.dt / TAU_KYR)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1)
+                tau = TAU_KYR
+                if self.tree.growth_rates and len(J):  # (PW-1147: the rivals grow into the room at their own rate: their load-weighted x)
+                    oi = np.flatnonzero(over[idx])
+                    if len(oi):
+                        qx = self._load(k, K, J, ak * self._xs, tk * self._xs, idx[oi], c[oi])
+                        q0 = self._load(k, K, J, ak, tk, idx[oi], c[oi])
+                        xt = np.ones(g.n)
+                        xt[idx[oi]] = np.where(q0 > 1e-12, qx / np.maximum(q0, 1e-12), 1.0)
+                        tau = TAU_KYR / np.clip(xt[over], 1e-3, None)
+                r = (1 - np.exp(-step.dt / tau)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1)
                 self.p[k][over] -= r * (self.p[k][over] - room[over])
-                if r > 0 and HOLD_MIN > 0:  # (the hold lapses where it is thinned under HOLD_MIN x K, the range kept above the refuge floor)
+                if np.any(r > 0) and HOLD_MIN > 0:  # (the hold lapses where it is thinned under HOLD_MIN x K, the range kept above the refuge floor)
                     lapse = np.flatnonzero(over & (self.p[k] >= EST) & (self.p[k] < HOLD_MIN * K))
                     spare = int((self.p[k] >= EST).sum() - np.ceil(REFUGE_MKM2 / self.cell_mkm2))
                     if len(lapse) and spare > 0:
