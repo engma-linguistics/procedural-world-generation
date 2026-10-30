@@ -97,6 +97,9 @@ class Params:
     # time, each with a climate update and a keyframe, so the finished world can be taken at the latest
     # human-habitable one of those candidate moments (highlights.representative_time). 0: none.
     finish_window: float = 10.0
+    # Require permanent ice (owner D19, PW-1164): the finish moment must hold permanent ice (highlights.has_permanent_ice);
+    # `planet make` re-rolls the seed when no moment of the window does. Off: no behaviour change.
+    finish_require_ice: bool = False
     finish_step: float = 0.5
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are

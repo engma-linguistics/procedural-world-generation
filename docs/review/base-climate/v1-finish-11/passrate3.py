@@ -15,8 +15,7 @@ from planet import climate  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
 OWNER_BAR = 40.0
-PREIND_T = 13.8  # C: Earth's pre-industrial (1850-1900) area mean (Berkeley Earth / HadCRUT ~13.7-13.9)
-HUMAN_RANGE = (-6.0, 3.0)  # C against it: the finished world's true mean within what modern humans lived through
+from planet.highlights import HUMAN_RANGE, PREIND_T  # noqa: E402  (the finish band's one definition, PW-1164: now -6..+5 C)
 # (LGM to Pliocene-ish; coordinator 2026-10-25, owner feedback). Diagnostic only
 EARTH_LAND_ICE = (10.0, 25.0)  # % of land under ice: Earth pre-industrial ~10, LGM ~25. Diagnostic only
 
@@ -86,7 +85,7 @@ for d in sys.argv[1:]:
         print(f"{'':>27}end: dT {last['dT']:+.1f}, true mean T {last['temp']:.1f} C (14.5 + dT = {14.5 + last['dT']:.1f}), "
               f"trees {last.get('trees')}% of land, wet-eq lowland trees "
               f"{'none' if wet is None else f'{wet:.0f}%'} ({last.get('wet_eq_cells')} cells)")
-        print(f"{'':>27}finish: true mean {rel:+.1f} C vs pre-industrial ({'inside' if inside else 'OUTSIDE'} -6..+3); "
+        print(f"{'':>27}finish: true mean {rel:+.1f} C vs pre-industrial ({'inside' if inside else 'OUTSIDE'} -6..+5); "
               f"land ice {ice_end:.1f}% at the end, {ice_min:.1f}% least in the last 12 Myr (Earth ~10, LGM ~25){iflag}")
 print("\npass tallies (strict bar):")
 for k, v in sorted(tally.items(), key=lambda kv: str(kv[0])):

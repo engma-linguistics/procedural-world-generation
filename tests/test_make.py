@@ -104,6 +104,49 @@ def test_cli_rejects_bad_settings(monkeypatch):
         cli.main()
 
 
+def test_require_ice_parses_and_defaults_off():
+    r = make.parse_make_request({"seed": 1})
+    assert r["require_ice"] is False and r["tries"] == 3  # (default off: no change)
+    r = make.parse_make_request({"seed": 1, "require_ice": True, "tries": 5})
+    assert r["require_ice"] and r["tries"] == 5
+    with pytest.raises(api.BadRequest, match="tries"):
+        make.parse_make_request({"tries": 0})
+
+
+def _fake_simulate(has_ice, calls):
+    """A stand-in for timeline.simulate: writes a run.json whose finish moment has permanent ice per has_ice[seed]."""
+    def sim(seed, level, myr, dt, every, name, params, progress=None, **kw):
+        calls.append((seed, params.finish_require_ice))
+        d = S.root() / "runs" / f"fake{seed}"
+        d.mkdir(parents=True, exist_ok=True)
+        fm = {"t": 100.0, "passes": True, "why": "fake", "no_permanent_ice": not has_ice(len(calls))}
+        (d / "run.json").write_text(json.dumps({"id": f"fake{seed}", "frames": [], "meta": {"finish_moment": fm}}))
+        return d
+    return sim
+
+
+def test_require_ice_rerolls_the_seed_until_a_roll_has_permanent_ice(data_root, monkeypatch):
+    from planet import timeline as T
+    calls = []
+    monkeypatch.setattr(T, "simulate", _fake_simulate(lambda n: n >= 3, calls))
+    out = make.make({"seed": 5, "level": 4, "myr": 40, "finish": False, "timezoom": False, "require_ice": True})
+    assert [c[0] for c in calls] == [5, make.reroll_seed(5, 1), make.reroll_seed(5, 2)] and all(c[1] for c in calls)
+    assert [r["permanent_ice"] for r in out["rolls"]] == [False, False, True] and out["seed"] == calls[-1][0]
+    assert out["run"] == f"fake{calls[-1][0]}"
+
+
+def test_require_ice_gives_up_after_the_tries_and_off_never_rerolls(data_root, monkeypatch):
+    from planet import timeline as T
+    calls = []
+    monkeypatch.setattr(T, "simulate", _fake_simulate(lambda n: False, calls))
+    with pytest.raises(RuntimeError, match="no roll had permanent ice in 2 tries"):
+        make.make({"seed": 5, "level": 4, "myr": 40, "finish": False, "timezoom": False, "require_ice": True, "tries": 2})
+    assert len(calls) == 2
+    calls.clear()
+    out = make.make({"seed": 5, "level": 4, "myr": 40, "finish": False, "timezoom": False})  # off: one run, ice ignored
+    assert len(calls) == 1 and not calls[0][1] and "rolls" not in out and "seed" not in out
+
+
 # ---------------------------------------------------------------- the chain, tiny
 @pytest.fixture(scope="module")
 def made(tmp_path_factory):

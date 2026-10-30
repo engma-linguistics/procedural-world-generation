@@ -156,13 +156,16 @@ def wet_eq_lowland(lat, land, precip, e) -> np.ndarray:
 def habitability(sim) -> dict:
     """What the finish checks read at a moment (PW-866, highlights.habitable): the climate's true area mean
     temperature (C), the land under ice (% of land) and the trees on the wet equatorial lowland (% cover;
-    None without any). Empty before the first climate."""
+    None without any), and the % of the surface under permanent ice (land ice, or sea whose warmest month is below
+    freezing: PW-1164). Empty before the first climate."""
     if sim.temp is None:
         return {}
     land = sim.land()
     wet = wet_eq_lowland(sim.grid.lat, land, sim.precip, sim.bed())
     tc = np.asarray(sim.tree_cover, float)
-    return {"true_temp_c": round(float(np.mean(sim.temp)), 2),
+    perm = (sim.ice > 0) | (~land & (np.asarray(sim.t_warm) < climate.FREEZE))  # (highlights.PERM_ICE_MIN_PCT)
+    return {"perm_ice_pct": round(100 * float(perm.mean()), 2),
+            "true_temp_c": round(float(np.mean(sim.temp)), 2),
             "iced_land_pct": round(100 * float((land & (sim.ice > 0)).sum()) / max(int(land.sum()), 1), 2),
             "wet_eq_trees_pct": round(100 * float(tc[wet].mean()), 1) if wet.any() else None}
 

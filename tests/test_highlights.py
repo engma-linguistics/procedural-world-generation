@@ -191,7 +191,7 @@ def test_most_varied(world4):
 
 def test_finish_moment_is_the_latest_habitable_candidate():
     # PW-866 (owner): the finished world is the latest human-habitable keyframe of the finish window (the
-    # finish checks: true mean -6..+3 C of 13.8, land ice 1-25% of land, wet-tropics trees >= 20%), else the end,
+    # finish checks: true mean -6..+5 C of 13.8, land ice 1-25% of land, wet-tropics trees >= 20%), else the end,
     # flagged
     def fr(t, temp=14.0, ice=8.0, wet=40.0):
         return {"t": t, "stats": {"true_temp_c": temp, "iced_land_pct": ice, "wet_eq_trees_pct": wet}}
@@ -510,3 +510,32 @@ def test_carbonate_bank_and_barrier_reef(gen4):
     assert [f for f in feats if f["kind"] == "coral_coast"]
 
 
+
+
+def test_finish_band_warm_edge_is_plus_5():
+    # PW-1164 (owner D19): the warm edge moved from +3 to +5 C; one definition, the judges import it
+    assert H.HUMAN_RANGE == (-6.0, 5.0)
+    hot = lambda rel: {"true_temp_c": H.PREIND_T + rel, "iced_land_pct": 8.0, "wet_eq_trees_pct": 40.0}
+    assert H.habitable(hot(4.9)) == [] and H.habitable(hot(5.1)) == ["temperature"]
+    assert H.habitable(hot(3.5)) == []  # (failed before)
+
+
+def test_require_permanent_ice_refuses_no_ice_and_falls_back_to_the_latest_with_ice():
+    # PW-1164 (owner D19): with the setting, the finish is the latest candidate of the window that holds permanent ice
+    # (>= PERM_ICE_MIN_PCT of the surface); with none, the finish says so (no_permanent_ice) for the re-roll
+    def fr(t, perm):
+        return {"t": t, "stats": {"true_temp_c": 14.0, "iced_land_pct": 8.0, "wet_eq_trees_pct": 40.0, "perm_ice_pct": perm}}
+    frames = [fr(990 + 0.5 * k, 0.0) for k in range(21)]
+    off = H.finish_moment(frames, 10.0)  # default: off, ice not looked at
+    assert off["t"] == 1000 and off["passes"] and not off["no_permanent_ice"]
+    on = H.finish_moment(frames, 10.0, require_ice=True)  # no ice anywhere: refused
+    assert on["no_permanent_ice"] and not on["passes"] and "permanent ice" in on["fails_at_end"]
+    frames[7]["stats"]["perm_ice_pct"] = H.PERM_ICE_MIN_PCT  # one moment (993.5) with just enough
+    frames[3]["stats"]["perm_ice_pct"] = 4.0
+    on = H.finish_moment(frames, 10.0, require_ice=True)
+    assert on["passes"] and not on["no_permanent_ice"] and on["t"] == 993.5 and on["before_end_myr"] == 6.5
+    frames[7]["stats"]["perm_ice_pct"] = H.PERM_ICE_MIN_PCT - 0.01
+    assert H.finish_moment(frames, 10.0, require_ice=True)["t"] == 991.5  # (the threshold is a floor)
+    frames[-1]["stats"]["perm_ice_pct"] = 2.0
+    assert H.finish_moment(frames, 10.0, require_ice=True)["t"] == 1000
+    assert H.ice_of({"params": {"finish_require_ice": True}}) and not H.ice_of({})
