@@ -112,8 +112,8 @@ class Stock:
             if self.boat_dt >= BOAT_EVERY_KYR:
                 self._sail(step, env, tags, p, peopled, sea, self.boat_dt)
                 self.boat_dt = 0.0
-            lab = tags["label"]
-            for c in np.unique(lab[(self.rd >= EST) & (lab >= 0)]):
+            lab = self.h.cross.label  # (the present's landmasses, as the summary names them: the step's own land components are numbered
+            for c in np.unique(lab[(self.rd >= EST) & (lab >= 0)]):  # otherwise, and a glacial bridge's merged label read as another landmass, lane 73)
                 self.reached.setdefault(int(c), round(step.ago, 3))
 
     def _tame(self, step, p, peopled, first: bool) -> None:

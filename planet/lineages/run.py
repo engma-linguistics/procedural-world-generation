@@ -34,7 +34,9 @@ def editor_schema() -> dict:
         "defaults": {"era": SP.ERA_DEFAULT, "mode": SP.MODE_DEFAULT, "portal_mode": SP.Tree.portal_mode,
                      "megafauna_natural": SP.MEGAFAUNA_NATURAL_DEFAULT, "dragon_ages": DA.DEFAULT,
                      "dragon_generation": DA.GENERATION_DEFAULT, "dragon_km2": SP.DRAGON_KM2, "giant_km2": SP.GIANT_KM2,
-                     "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL},
+                     "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL,
+                     "surge_early": 1.0, "surge_late": 1.0},
+        "surge_x": list(SP.SURGE_X),  # (the momentum edge's dial per era, lane 73)
     }
 
 
