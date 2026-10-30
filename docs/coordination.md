@@ -79,3 +79,10 @@ Multi-seed criteria pass when ~70% of seeds pass, not all; outlier worlds are al
 
 ## Current state
 See [wiki/state.md](wiki/state.md) (one overwritten page) and [wiki/index.md](wiki/index.md). The dated journals of 2026-10-15 to 2026-10-21 were removed from this file; they are in its git history.
+
+## Earth reference data backup
+`data/earth` (git-ignored, ~1.8 GB) holds the downloaded Earth datasets and the caches built from them. On 10-30 a lane's `rm -rf` through a scratch symlink deleted it; it took hours to rebuild, and one source (GPCC v2018) had vanished upstream. Since then:
+- a read-only full copy lives off the repo disk at `/home/daniel/backups/procgen-earth/<date>/` (other NVMe), with `SHA256SUMS`;
+- `tools/earth_data.SHA256SUMS` (committed) lists the expected checksums.
+
+To restore: `cp -a /home/daniel/backups/procgen-earth/<latest>/* data/earth/ && (cd data/earth && sha256sum -c ../../tools/earth_data.SHA256SUMS)`. Take a fresh dated copy whenever `tools/earth_data.py` changes a source.
