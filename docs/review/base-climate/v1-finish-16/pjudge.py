@@ -54,6 +54,7 @@ ap.add_argument("b")
 ap.add_argument("--rolls", nargs="*", help="default: every roll both arms have")
 ap.add_argument("--late", nargs=2, type=float, default=(600.0, 1000.0))
 ap.add_argument("--json")
+ap.add_argument("--level", type=int, default=6, help="the draws' grid level (paired.sh LEVEL)")
 ap.add_argument("--table", action="store_true", help="print the per-draw table")
 args = ap.parse_args()
 T0, T1 = args.late
@@ -103,7 +104,7 @@ def arm(name):
         roll, tag = d.name[len(name) + 2:].split("_", 1)
         if args.rolls and roll not in args.rolls:
             continue
-        for p in d.glob("seed*_L6.json.gz"):
+        for p in d.glob(f"seed*_L{args.level}.json.gz"):
             r = load(p)
             r["m"] = {k: f(r) for k, f in MEASURES}
             out[(roll, tag, p.name.split("_")[0])] = r

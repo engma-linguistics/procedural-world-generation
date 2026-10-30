@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-750, PW-368, PW-240, PW-564, PW-708, PW-558, PW-559]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/base-climate/v1-finish-6/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -57,6 +57,7 @@ history. Remeasuring any option needs >= ~40 draws to tell 30% from 50%.
 - [ ] coordinator decision recorded on PW-750
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-6/, docs/review/base-climate/v1-finish-7/ in cleanup; last present at 9861e2df.
 - 2026-10-24: Status in-progress -> done. Merged 35bfaff: star_brightening 0.45 x Gough default; L6 16/18, L7 7/8; showcase remade (PW-202). Sign-off and 2 Gyr check on PW-780.
 - 2026-10-24: Lane v1-finish-7 (C'): the thermostat is within the literature's range (WEATHER_K 0.09/C = Ea ~63 kJ/mol; WEATHER_CO2 0.4; 3 C per doubling = 5.35 ln ratio at 0.81 C per W/m2; realised global e-folding ~21-38 K, between Walker/GEOCARB 10-20 K and Krissansen-Totton & Catling 2017's ~22-45 K), so not tuned. A Sun-like Gough star on it overshoots (L6 18/18 pass but 16 never-ice, dT +7.8). With the owner's lever, a slower K-type star (star_brightening 0.45, now the default, earth.star_forcing): L6 16/18 pass (89%), icehouse median 20% (early/late 14/16), 3 never-ice; L7 showcase seeds x 2 draws 7/8, median 25% (base 3/8, 45%). docs/review/base-climate/v1-finish-7/; draft-star-brightening-default-signoff.md.
 - 2026-10-24: Status needs-decision -> in-progress. Coordinator: one bounded lane on C' (brightening star + a thermostat that absorbs Gyr-long forcing) at L6; fallback A (accept ~46%) needs the owner since it's under the bar.

@@ -3,12 +3,15 @@ pixel grid lines, the share in long straight axis-aligned runs, and the land sha
 
     uv run python tools/coast_steps.py <fine-zoom-id> [more ids]
 """
+import argparse
 import sys
+from pathlib import Path
 
-import numpy as np
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import numpy as np  # noqa: E402
 
-from planet import zoom as Z
-from planet import zoom_fine as ZF
+from planet import zoom as Z  # noqa: E402
+from planet import zoom_fine as ZF  # noqa: E402
 
 
 def _runs(m, kmin):
@@ -51,5 +54,7 @@ def measure(zid: str) -> dict:
 
 
 if __name__ == "__main__":
-    for z in sys.argv[1:]:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("zooms", nargs="+", help="fine zoom ids")
+    for z in ap.parse_args().zooms:
         print(measure(z))

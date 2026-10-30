@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-643, PW-623]
 refs: [tests/test_timezoom_consistency.py, docs/review/tests/multiseed-fixtures.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -37,6 +37,7 @@ Options:
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/merge-1024/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Widened the L5 cold-moment window to seeds 25-75 (tests/test_timezoom_consistency.py SEEDS; MIN_SHEETED, _plausible and every assertion unchanged). Main 52f25a9, three draws (climate_offset 0 / +0.001 / -0.001): sheeted of plausible 13 of 27 / 15 of 24 / 12 of 22 (was 7/10/5 on 25-50); every drift test green. Module ~13 min wall at PW_SEED_WORKERS=6 with three draws side by side; full pytest -q 603 passed in 541 s on a loaded machine (a health sweep alongside). docs/review/base-climate/merge-1024/.
 - 2026-10-23: Status needs-decision -> todo. Coordinator (owner's harness rule: a wider search window with assertions unchanged is OK): widen the L5 cold-moment window (more plausible seeds) so main sits well above MIN_SHEETED = 5; MIN_SHEETED and every assertion unchanged. Do it in the next physics lane before merging A20.
 - 2026-10-23: Created from inbox draft draft-min-sheeted-at-mains-tail.md (found by tests-multiseed-rulings).

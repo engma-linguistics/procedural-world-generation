@@ -4,7 +4,7 @@ title: A restart during the tectonic simulation of a make job still starts the s
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med
@@ -23,6 +23,7 @@ Check first how much of the keyframe history the checkpoints can regenerate; if 
 - [ ] a killed L5 make resumes mid-run and the finished run is identical to an uninterrupted one (golden-style check)
 
 ## Updates
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Merged inbox draft draft-run-interrupt-keeps-checkpoints.md ("A crash or Ctrl-C during a run deletes the whole run folder, checkpoints included", found by code-audit-2026-10).
   In plain words. If a long simulation is stopped near the end (a crash, a cancelled job, Ctrl-C), the code deletes everything it wrote, including the saved checkpoints that a future "resume" could restart from. Hours of work go.
   

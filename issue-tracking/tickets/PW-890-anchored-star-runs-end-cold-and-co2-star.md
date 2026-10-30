@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-809, PW-815, PW-791, PW-810, PW-812, PW-708, PW-830, PW-806]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish-10/]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-29
 ---
 
 ## Description
@@ -58,5 +58,6 @@ and end pCO2 still spreads 90-990 with the drift; the remaining question is in d
 - [x] option chosen (A)
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-10/passrate_a045.txt, docs/review/base-climate/v1-finish-10/passrate_g10.txt, docs/review/base-climate/v1-finish-10/passrate_t10.txt in cleanup; last present at 9861e2df.
 - 2026-10-26: Status needs-decision -> done. Superseded by the end-anchored balance (v1-finish-11) merged in 1c41ec0; residual weak thermostat is PW-894.
 - 2026-10-26: Created from inbox draft draft-anchored-run-ends-co2-starved.md (found by v1-finish-10).

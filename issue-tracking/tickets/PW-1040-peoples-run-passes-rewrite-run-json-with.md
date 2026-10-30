@@ -4,7 +4,7 @@ title: Peoples-run passes rewrite run.json without a lock (lost updates); two ca
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: store
 effort: s
 impact: med
@@ -27,4 +27,5 @@ Fix: `store.update_meta(run_dir, fn)` (take `lock(runs_dir, "meta-<id>")`, re-re
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-store-concurrent-writes-lose-data.md (found by code-audit-2026-10).

@@ -54,7 +54,7 @@ class Simulation:
     dt: float = 2.0
 
     # The earth system's state (earth.py). The climate fields come from
-    # climate.compute, every params.climate_every Myr (None before the first).
+    # climate.compute, at its updates (earth.climate_due; None before the first).
     EARTH_STATE: ClassVar[tuple[str, ...]] = (
         "dT",  # C: global temperature offset from today's Earth
         "drift",  # C: its random part
@@ -85,6 +85,7 @@ class Simulation:
         "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
         "climate_t",  # Myr: when the climate fields were computed
+        "climate_in",  # what that climate saw (earth.climate_moved: {"dT"}; None before the first)
         "rain_state",  # the rain kernel's end state at that update (climate.compute's; None before the first)
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
         "sst",  # C: the sea surface's annual mean (the reefs', PW-876)
@@ -165,6 +166,7 @@ class Simulation:
         self.weathered = np.zeros(n)
         self.thermo = np.zeros(2)
         self.climate_t = 0.0
+        self.climate_in = None
         self.rain_state = None
         self.temp = self.t_warm = self.t_cold = None
         self.sst = None  # C, the climate's sea-surface temperature (earth.update_climate)
@@ -258,7 +260,7 @@ class Simulation:
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
 
-        # 6. climate, every climate_every Myr, on the ground as the events
+        # 6. climate, when due (earth.climate_due), on the ground as the events
         # left it: a keyframe shows the climate of the ground it shows, and
         # the next steps' erosion uses it
         if earth.climate_due(self) or self.step_no == 1:  # (the first step's ran mid-step too)
@@ -275,6 +277,7 @@ class Simulation:
         earth.update_climate(self, e)
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
                                 sediment_km(self.w_cover, self.w_extra))
+        self.climate_in = {"dT": float(self.dT)}  # (what this climate saw: earth.climate_moved)
 
     def _resolve(self):
         """Decide which plate owns each world cell (plate_kernels.resolve).

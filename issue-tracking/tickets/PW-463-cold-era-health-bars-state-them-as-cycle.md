@@ -1,6 +1,6 @@
 ---
 id: PW-463
-title: "Cold-era health bars: state them as cycle means and add the cycle's glacial and interglacial bounds to tools/sealevel.py"
+title: "Cold-era health bars: state them as cycle means and add the cycle's glacial and interglacial bounds to tools/ice_diag.py --tect"
 type: task
 status: todo
 parent: PW-470
@@ -11,9 +11,9 @@ impact: low
 found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-438, PW-452, PW-461]
-refs: [tools/health.py, tools/sealevel.py, docs/review/audit/ice-framing-deep-dive.md]
+refs: [tools/health.py, tools/ice_diag.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -33,5 +33,6 @@ the cycle mean (draft-run-ice-cycle-mean.md):
 - [ ] reference texts updated; bounds printed
 
 ## Updates
+- 2026-10-29: Removed tools/sealevel.py in cleanup; last present at aae96637. Folded into tools/ice_diag.py: --tect records its per-step channels and --summary prints its sea-level line; --run <id> reads a stored run. The cycle bounds this ticket wants go there now; title and refs retargeted.
 - 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-cold-era-bars-as-cycle-mean.md (found by pw462).

@@ -4,7 +4,7 @@ title: Slicing replays from t=0 after any edit under planet/, and four cache-key
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: store
 effort: s
 impact: high
@@ -28,4 +28,5 @@ Fix: (1) always try the latest checkpoint; fall back to t=0 only if loading it r
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-replay-from-checkpoint-and-one-code-hash.md (found by code-audit-2026-10).

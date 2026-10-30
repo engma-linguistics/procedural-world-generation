@@ -245,9 +245,10 @@ where that copy currently sits. Every step (default 2 Myr, `--dt`):
 3. ocean floor sinks as it ages (~sqrt(age)), subduction builds arcs, collisions
    build big ranges, rifts stretch continents thin; rivers and erosion wear
    the land down and lay down sediment (every step). The climate (temperature,
-   rain, ice, sea level from the ice) is recomputed only every
-   `climate_every` = 4 Myr, matching the default keyframes, and the rivers use
-   the latest one in between;
+   rain, ice, sea level from the ice) is recomputed on a ramp, every 8 Myr
+   early to every 4 Myr (`climate_every`) in the 30 Myr before the finish
+   window, sooner when the global temperature moves 1 C (PW-247), and the
+   rivers use the latest one in between;
 4. forces -> velocities: slab pull, ridge push, collision resistance, basal
    traction from the mantle, plus a small, slowly wandering drag term
    (meandering), give each plate a target angular velocity (the force balance,
@@ -273,10 +274,10 @@ Main knobs (`--set`): `n_plates`, `start` (`supercontinent`|`scattered`),
 `mantle_noise`, `mantle_timescale`, `mobility`, `max_speed`, `arc_growth`,
 `crust_flow`, `erosion_timescale`, `suture_after`, `rift_timescale`,
 `rift_stress`, `warm_rift`, `rift_min_piece`, `ridge_time`, `max_plates`. Defaults live in `Params`.
-`uv run python tools/supercontinent.py --seed 1 2` tracks the largest landmass,
-landmass count, mantle temperature and rifts over 2 Gyr (`--plot` draws them).
-`PYTHONPATH=. uv run python tools/sealevel.py --seed 1 2` (or `--run <id>`) tracks
-sea level and its parts (ice, ocean basins, mean ocean age) and counts fast land drops.
+`uv run python tools/ice_diag.py --seed 1 2 --myr 2000 --tect` tracks, beside the ice and
+climate terms, sea level and its parts (ice, ocean basins, mean ocean age), fast land drops, the
+largest landmass, landmass count, mantle temperature and rifts, and reports assembly spells
+(`--plot` draws them; `--run <id>` gives a stored run's sea-level line).
 
 The package's docstring (`planet/tectonics/__init__.py`) maps its modules:
 `simulation` (state, step), `plates`, `motion` (forces), `crust` (the crust

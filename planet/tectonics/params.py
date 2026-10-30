@@ -74,7 +74,26 @@ class Params:
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
-    climate_every: float = 4.0  # Myr between climate (rain, ice, sea level) updates; keyframes (every 4) match
+    # Myr between climate (rain, ice, sea level) updates before the finish window: a ramp (PW-247, owner 10-29),
+    # climate_every in the last climate_ramp Myr before it, twice that up to 10x as far back, and so on up to
+    # climate_every_max (4 / 8 Myr: the last 30 Myr, earlier; earth.climate_cadence; a 16 Myr step back from 300 Myr
+    # before the window ran colder, with more icebox excursions: docs/review/speed/README.md), and half
+    # climate_every (2 Myr, every step) in the last climate_ramp_fine Myr (0: off), so the finished world's last
+    # shaping before the window is at the finest cadence (owner 10-29). A keyframe between updates (every 4 Myr)
+    # shows the last update's climate, as the run's erosion, weathering and ice saw it.
+    climate_every: float = 4.0
+    climate_every_max: float = 8.0
+    climate_ramp: float = 30.0
+    climate_ramp_fine: float = 10.0
+    # The adaptive cadence (PW-247): an update comes early, at a step at least, once the global temperature offset
+    # dT moved this many C since the last (CO2, the star and the ice's albedo all reach the climate through it; the
+    # land's layout and height move steadily, ~4% of the surface and ~170 m a 4 Myr interval at L6, so they set
+    # the ramp, not a trigger: docs/review/speed/README.md). The ramp's cadence is the longest interval. 0: off.
+    climate_adapt_dT: float = 1.0
+    # grid level the climate is computed on before the finish window, when the run's own is finer (PW-247: an L7
+    # run's spin-up climate on L6, nest.climate_coarse; ice and plants stay on the run's grid). The finish window,
+    # and so every world's own climate, is at the run's level. 0: always the run's level.
+    climate_level: int = 6
     # The finish window (PW-866, owner 2026-10-25): the run's last finish_window Myr step finish_step Myr at a
     # time, each with a climate update and a keyframe, so the finished world can be taken at the latest
     # human-habitable one of those candidate moments (highlights.representative_time). 0: none.

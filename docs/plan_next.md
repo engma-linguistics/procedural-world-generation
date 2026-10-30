@@ -26,4 +26,4 @@ Conventions, the inbox for subagents, and effort/impact definitions: `issue-trac
 - `docs/coordination.md`: worktrees, merging, the server, run costs, showcase recipes.
 - `docs/wiki/`: the coordinator wiki (start at `index.md`: current state, rulings, glossary, playbook).
 - `docs/proposals/`: design write-ups.
-- `docs/review/`: investigations kept for open tickets (physics audit in `audit/`, base-climate stages, ice v2, health sweep reports) and the images the overview links. Cleaned 2026-10-23: see `docs/cleanup-2026-10-23.md`.
+- `docs/review/`: lane evidence kept while an open ticket, a core doc or code names it (physics audit in `audit/`, base-climate stages, health sweep reports, the images the overview links). Retention rule: `docs/coordination.md`, "docs/review retention".

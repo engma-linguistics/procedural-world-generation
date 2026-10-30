@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-646, PW-611, PW-576, PW-636, PW-644]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, tools/ice_diag.py, docs/review/base-climate/thermostat.md, docs/review/base-climate/laneA23/htable.txt]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -41,6 +41,7 @@ band, icehouse median 54%).
 - [ ] ice_diag --summary on the 10 seeds at 3 C per doubling, recorded in thermostat.md, with the CO2 answer and the icehouse share
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/merge-1024/, docs/review/base-climate/thermostat-1024/handoff.md in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Lane v1-finish: ice_diag on the 10 seeds, canonical basis (PW-693): sink's own fb +0.48 (A23 expected ~0.51-0.56), CO2 answer trends out median +0.39 C/C, 7/10 in band; with the balance at 500 ppm (PW-559 B) sink fb +0.58, answer +0.47. thermostat-1024's s3 0.59 vs s4 0.43 was the draw (the canonical draw of s4's physics gives 0.48). Icehouse share 1 Gyr median 47% -> 36%. docs/review/base-climate/v1-finish/README.md.
 - 2026-10-23: Thermostat lane 1024 (in progress): ice_diag on the 10 seeds, main (PW-627): CO2 answer +0.24 C/C trends out, 2/10 in band, sink's own fb +0.43, source +0.17; c13b567 (before PW-627): +0.42, 5/10, sink fb +0.59 (A23's expected ~0.5). The climate's static sink sensitivity is the same on both trees (Earth and 3 L5 moments, to 1%), so the drop is the runs' or chaos. docs/review/base-climate/thermostat-1024/handoff.md.
 - 2026-10-23: Merge lane 1024, step 4 (main + A23 real pCO2 + A20 shelf air + PW-627): health --quick pooled keyframes with ice sea level below -150 m, main 4.2 / 3.4%, step 4 4.4 / 20.1% (defaults / 101-108); 5 of 8 seeds of 101-108 deep, median icehouse 57%, old ice bar fails 3 of 16 (main 0). The thermostat's gain is the next lever. docs/review/base-climate/merge-1024/.

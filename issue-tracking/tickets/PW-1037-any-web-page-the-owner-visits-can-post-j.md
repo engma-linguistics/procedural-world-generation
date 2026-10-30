@@ -4,7 +4,7 @@ title: Any web page the owner visits can POST jobs to the local server (/api/mak
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: infra
 effort: xs
 impact: med
@@ -26,4 +26,5 @@ Fix: refuse a POST whose `Origin` is present and isn't the server's own host:por
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-server-rejects-cross-site-posts.md (found by code-audit-2026-10).

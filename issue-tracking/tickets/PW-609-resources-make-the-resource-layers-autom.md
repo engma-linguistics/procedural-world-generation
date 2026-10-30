@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-155]
 refs: [planet/resources.py, planet/timeline.py, docs/proposals/resources.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -31,6 +31,7 @@ Lean: **B** once the owner has looked at the maps (docs/review/resources/), sinc
 feature and the cost is small.
 
 ## Updates
+- 2026-10-29: Removed docs/review/resources/handoff-1.md in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. fun5: B built. world.finish makes the resource layers (with the run's history pass, kept beside the world in worlds/history/<id>.npz) for every world from a stored run; --no-resources on slice / finish / make skips them; planet resources redoes them.
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): B: resource layers in every world saved from a run, with a skip flag.
 - 2026-10-23: Created from inbox draft draft-resources-when.md (found by resources).
