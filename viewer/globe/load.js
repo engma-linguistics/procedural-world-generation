@@ -5,6 +5,7 @@ import { loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
 import { buildTopology, paint, prepareGrid } from './geometry.js';
 import { renderLayerButtons, renderRunSummary, renderSummary } from './panel.js';
 import { timeLabel } from './timezoom.js';
+import { drawAxis, timeAxis } from './timeaxis.js';
 import { drawMarks, drawTint } from './provenance.js';
 import { renderHover, toast } from './pick.js';
 import { renderZoomBox } from './zoom.js';
@@ -194,7 +195,7 @@ export async function loadRun(dir, wantT) {
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
         ...legendFields(run.legend) };
   document.title = `${run.name} · Planet Viewer`;
-  $('frame').max = run.frames.length - 1;
+  S.V.axis = timeAxis(run); drawAxis();  // (the slider's dated axis, PW-1042)
   let f = 0;
   if (wantT == null && !tz && run.meta.finish_moment) wantT = run.meta.finish_moment.t;  // (PW-866: open at the finish moment)
   if (wantT == null && run.meta?.phase === 'lineages') wantT = run.frames.at(-1).t;  // (a peoples run opens at the present, PW-1028)
@@ -294,7 +295,7 @@ export function setFrame(f, repaint = true) {
   iceBed(S.V.layers);
   S.V.hotspots = r.frames[f].hotspots;
   S.V.volcanoes = r.frames[f].volcanoes;
-  $('frame').value = f;
+  $('frame').value = S.V.axis.pos[f];
   $('tlabel').textContent = timeLabel(S.V.t);
   S.navUi?.time(S.V.t);
   // (the cell under the pointer stays the one it was: no new ray through the globe each frame)

@@ -2,7 +2,7 @@
 id: PW-1047
 title: "Viewer text shows internals and a few layouts break: \'Time zoom and events\' on peoples runs, a stale floating tooltip, unlabelled log bars, cut-off tech names, CLI lines in owner-facing help"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: viewer
@@ -26,10 +26,11 @@ Fix:
 - [x] hide the tooltip on pointerleave; on the globe use the card, not both
 - [x] linear bars or a labelled log scale
 - [x] ellipsis + full name on hover for tech boxes; landmass table rows size themselves, short names
-- [ ] workbench header in two groups (Tree: picker, Save, Save as, Import/Export; Run: world, tries, Run, status); help text in "?" popovers without CLI lines
+- [x] workbench header in two groups (Tree: picker, Save, Save as, Import/Export; Run: world, tries, Run, status); help text in "?" popovers without CLI lines
 
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-30: Status todo -> done. Viewer lane 56: the workbench header is two framed groups, Tree (picker, Open, name, Save, an Import / Export menu with Download as file and Open a file…) and Run (star, world, starred only, tries, the Run button in the accent colour, status); the tab's help moved from the always-on footer into a '?' popover at the right of the tabs (closed by '?', Esc or a click elsewhere; the Technology tab's views write into the same box). One number formatter: viewer/numfmt.js (num, count, kyr, ago), a plain script loaded by lineages.html and re-exported by planets.js; it replaces the copies in lineages.html, techtab.js, globe/panel.js, globe/colours.js and globe/timeaxis.js. (agoLabel and the tech layer's finer ago text keep their own wording.) Pictures in docs/review/viewer-ux-sides-2/.
 - 2026-10-29: Created from inbox draft draft-viewer-text-and-layout-polish.md (found by code-audit-2026-10).
 - 2026-10-30: Viewer lane 53: the summary is titled 'Peoples and events' on a peoples run ('Recent pass and events', 'Ice ages and events' for the others); the floating tip shows only while the pointer is over the globe or map canvas and hides over panels or off the page; the population bars' column says 'bar (log scale)' with a tooltip; tech boxes cut names at a word with an ellipsis and carry the full name as a hover title; the landmass table uses short people names (full name on hover), its own Mkm² column instead of '(1.3e+02 Mkm²)' in the name, and the two Results columns no longer share row heights (the 340 px gap is gone). Command lines are gone from owner-facing help (zoom page, start page, workbench footers and tech notices, navigator, empty globe); the remake commands in the summaries sit in a collapsed 'command line (for scripts)' box. Not done here: the workbench header regroup (Tree / Run groups) and the '?' help popovers; one shared number formatter.

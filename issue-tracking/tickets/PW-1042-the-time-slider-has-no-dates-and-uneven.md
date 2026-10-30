@@ -2,7 +2,7 @@
 id: PW-1042
 title: "The time slider has no dates and uneven steps (15 moments for 19 Myr take as much room as 21 in the last 10 kyr): give it the workbench's log axis"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: viewer
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-918]
 refs: [viewer/index.html, viewer/lineages.html, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,4 +26,5 @@ Fix (mock-up §3): reuse the workbench timeline's log axis with era bands (`line
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-30: Status todo -> done. Viewer lane 56: the time slider has a dated axis (new viewer/globe/timeaxis.js), the default. A peoples run's slider is a log axis of time before the present (ticks 10 Myr .. 1 kyr, the oldest moment at the left, 'now' at the right) with the three eras it was made from as bands (deep time, ice ages, recent; from meta.now_kyr and meta.recent.kyr), like the workbench timeline; main runs and glacial time zooms stay linear in Myr / kyr with round ticks. The slider runs 0..1000 and snaps to the nearest stored moment; the arrow keys still step one moment; the cold-era tint and the world / time zoom / plant-group marks sit on the same axis. A 'Space play · ← → step' hint sits under the time label. Not a look change beyond the added axis, so no switch; before/after pictures in docs/review/viewer-ux-sides-2/.
 - 2026-10-29: Created from inbox draft draft-time-slider-axis.md (found by code-audit-2026-10).

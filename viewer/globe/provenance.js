@@ -9,6 +9,7 @@ import { buildZoomOutlines } from './tabs.js';
 import { setFrame } from './load.js';
 import { nearestFrame, stop } from './playback.js';
 import { fillSelector, loadSelection, syncFav } from './select.js';
+import { RES } from './timeaxis.js';
 // ------------------------------------------------------------ provenance (PW-128)
 // What came from what, from the indexes: each world's source run and time
 // (worlds/index.json), each zoom's world (zooms/index.json) and each time
@@ -75,7 +76,7 @@ export function drawMarks() {
   el.innerHTML = '';
   if (S.V?.kind !== 'run') return;
   const fr = S.V.run.frames, t0 = fr[0].t, t1 = fr[fr.length - 1].t;
-  const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * (t - t0) / (t1 - t0 || 1)).toFixed(2)}%" data-t="${t}"
+  const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * S.V.axis.at(t)).toFixed(2)}%" data-t="${t}"
     title="${t} ${S.V.tz ? 'kyr' : 'Myr'}: ${names.join(', ')} (click to go there)"></span>`;
   if (S.V.tz) {  // a time zoom: its finished worlds
     el.innerHTML = finishedOf(S.V.run.id || S.V.dir).map((w) => tick(w.timezoom_kyr, [`finished world ${w.id}`], 'fin')).join('');
@@ -92,7 +93,7 @@ export function drawMarks() {
     let last = -1e9, row = 0;
     for (const g of S.V.run.meta.plant_groups || []) {
       if (g.t == null || g.t < t0 || g.t > t1) continue;
-      const xf = 100 * (g.t - t0) / (t1 - t0 || 1), x = xf.toFixed(2), title = `${g.t} Myr: ${esc(g.name)} appear (${g.pfts.join(', ')})`;
+      const xf = 100 * S.V.axis.at(g.t), x = xf.toFixed(2), title = `${g.t} Myr: ${esc(g.name)} appear (${g.pfts.join(', ')})`;
       row = xf - last < 12 ? (row + 1) % 3 : 0;  // close labels step up through three rows
       last = xf;
       el.innerHTML += `<span class="veg" style="left:${x}%" data-t="${g.t}" title="${title}"></span>` +
@@ -144,14 +145,14 @@ export function drawTint() {
     const sl = fr.map((f) => f.stats.sea_level_change_m), hi = Math.max(...sl), lo = Math.min(...sl);
     val = sl.map((v) => (hi - lo > 1 ? (hi - v) / (hi - lo) : 0));
   }
-  const dx = w / Math.max(fr.length - 1, 1);
+  const px = S.V.axis.pos.map((p) => p / RES * w);  // (each moment where the slider puts it, PW-1042)
   val.forEach((c, i) => {
     if (c < 0.01) return;
     // ramps in from 0 so a value wobbling near the bottom doesn't switch on and off
     const a = c < 0.1 ? 2.2 * c : 0.15 + 0.7 * c;
     g.fillStyle = `rgba(120, 190, 255, ${a.toFixed(2)})`;
     // abutting, not overlapping: overlapped translucent rects doubled the alpha in thin stripes
-    const x0 = Math.max(0, Math.round((i - 0.5) * dx)), x1 = Math.round((i + 0.5) * dx);
+    const x0 = Math.max(0, Math.round(i ? (px[i - 1] + px[i]) / 2 : 0)), x1 = Math.round(i < px.length - 1 ? (px[i] + px[i + 1]) / 2 : w);
     g.fillRect(x0, 0, Math.max(x1 - x0, 1), 1);
   });
   $('track').title = S.V.tz ? 'Blue under the slider: how much ice there is (darkest = the largest ice volume of this time zoom)' : COLD_HELP;

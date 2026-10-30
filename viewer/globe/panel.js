@@ -1,4 +1,4 @@
-import { esc } from '../planets.js';
+import { esc, num as fmtNum } from '../planets.js';
 import { S, state } from './state.js';
 import { COAST_SCORES, HU_LAYERS, LAKE_LAYERS, OBS_LAYERS, RAMPS, SEASONAL, UNITS, WORLD_TINTED, availableLayers, layerDef } from './layers.js';
 import { $ } from './scene.js';
@@ -10,6 +10,7 @@ import { drawMarks, runTree, sourceLink, timezoomLink, zoomsOf } from './provena
 import { fillPfts, toast } from './pick.js';
 import { windKey } from './map2d.js';
 import { hasLayer } from './load.js';
+import { GROUPED, renderGroupedPicker } from './layerpick.js';
 // ------------------------------------------------------------ UI
 // a colour bar for RAMPS[key]; labels (optional) replace the end values
 export function rampLegend(key, units, labels) {
@@ -39,7 +40,6 @@ function layerCats(layer) {  // {arr (ids), names, colors} for a categorical lay
   }
   return null;
 }
-function fmtNum(v) { const a = Math.abs(v); return a >= 100 ? Math.round(v).toLocaleString() : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toFixed(3); }
 // PW-864: the summary block and the tooltip value for the layers that are neither a category nor one number a cell: the peoples
 // layers (share of the land per people, mixing), animal: and crop: (wild range against where it is known), land use, resources, coasts.
 // Returns {sum: html, tip: (i) => text} or null.
@@ -304,7 +304,8 @@ export function renderLayerButtons() {
   fillTechs();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) { state.wantLayer = state.layer; state.layer = layers[0]; }  // (wantLayer: a layer that arrives later, like a world's fuels, PW-845)
-  $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
+  if (GROUPED) renderGroupedPicker(layers);
+  else $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
     (layerDef(l).hint ? ` title="${esc(layerHint(l))}"` : '') + `>${l}</button>`).join('');
   $('arrowsLbl').style.display = hasLayer('plate') && !S.V.tz ? '' : 'none';
   document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = hasLayer(e.dataset.needs) ? '' : 'none'));

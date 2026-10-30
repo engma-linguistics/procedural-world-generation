@@ -9,7 +9,7 @@
   /* (the shared tokens are in theme.css; this page's panels are solid, and it calls the border "line") */
   :root { --panel: var(--panel-solid); --line: var(--border); --acc: var(--accent); }
   body { display: grid;
-         grid-template-rows: auto auto 1fr auto; height: 100vh; }
+         grid-template-rows: auto auto 1fr; height: 100vh; }
   header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   header b { font-size: 15px; margin-right: 8px; }
   nav { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
@@ -27,7 +27,24 @@
   #lab { position: sticky; left: 0; z-index: 2; } #tlctl { position: sticky; top: 0; left: 0; z-index: 4; height: 0; }
   #tlctl select { margin: 4px 0 0 6px; max-width: 170px; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
-  footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
+  .hgroup { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 3px 8px 3px 6px; border: 1px solid var(--line); border-radius: 6px; }
+  .hgroup + .hgroup { margin-left: 4px; }
+  .hlabel { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 2px; }
+  header label { display: inline; margin: 0; }
+  #world { max-width: 360px; }
+  button.primary { background: var(--acc); color: var(--on-accent); border-color: var(--acc); }
+  .hmenu { position: relative; }
+  .hmenu summary { list-style: none; cursor: pointer; background: var(--ctl); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; }
+  .hmenu summary::-webkit-details-marker { display: none; }
+  .hmenu summary::after { content: ' \25BE'; color: var(--muted); }
+  .hmenu .hpop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; display: flex; flex-direction: column; gap: 4px; padding: 6px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); white-space: nowrap; }
+  /* the tab's help: a "?" at the right of the tabs opens it (PW-1047; it used to be a footer, always on) */
+  nav { align-items: center; }
+  nav .qbtn { width: 24px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-weight: 600; }
+  nav .qbtn[aria-expanded="true"] { color: var(--on-accent); background: var(--acc); border-color: var(--acc); }
+  .helpPop { position: fixed; right: 12px; z-index: 40; width: min(560px, calc(100vw - 24px)); max-height: 60vh; overflow: auto;
+    padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); color: var(--text); }
   button, select, input { background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
   .filebtn { display: inline-block; margin: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
   .filebtn:hover { border-color: var(--acc); }
@@ -60,21 +77,29 @@
 </style>
 </head>
 <body>
+<!-- two groups (PW-1047): the tree being edited (pick, save, import / export), and the run (world, tries, Run, status) -->
 <header>
   <b>Peoples workbench</b>
-  <select id="trees" title="presets and saved trees"></select>
-  <button id="load">Load</button>
-  <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
-  <button id="save">Save</button>
-  <button id="download">Download JSON</button>
-  <label class="filebtn" title="Open a tree saved with Download JSON">Open JSON…<input type="file" id="upload" accept=".json" hidden></label>
+  <div class="hgroup" role="group" aria-label="Tree">
+    <span class="hlabel">Tree</span>
+    <select id="trees" title="Presets and saved trees"></select>
+    <button id="load" title="Open the tree picked on the left (unsaved changes to the current one are lost)">Open</button>
+    <input id="saveName" size="12" placeholder="my-peoples" title="The name the tree is saved under (a new name saves a copy)">
+    <button id="save" title="Save the tree under the name on the left">Save</button>
+    <details class="hmenu"><summary title="Download the tree as a file, or open one">Import / Export</summary>
+      <div class="hpop"><button id="download" title="Save the tree as a .json file on this computer">Download as file</button>
+        <label class="filebtn" title="Open a tree saved with Download as file">Open a file…<input type="file" id="upload" accept=".json" hidden></label></div></details>
+  </div>
+  <div class="hgroup" role="group" aria-label="Run">
+    <span class="hlabel">Run</span>
+    <button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
+    <label class="muted" title="List only the worlds you starred (when there are any)"><input type="checkbox" id="favOnly"> starred only</label>
+    <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8" title="How many tries to make; the one that best meets the wishes is kept">
+    <button id="run" class="primary">Run on world</button>
+    <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
+  </div>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
-  <span class="muted">world</span><button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here, and for agents: planet favourites)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
-  <label class="muted" title="List only the worlds you starred (when there are any)"><input type="checkbox" id="favOnly"> favourites only</label>
-  <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8">
-  <button id="run">Run on world</button>
-  <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
 </header>
 <nav id="tabs">
   <button data-tab="tree">Tree &amp; timeline</button>
@@ -83,6 +108,8 @@
   <button data-tab="wishes">Wishes</button>
   <button data-tab="results">Results</button>
   <button data-tab="tech">Technology</button>
+  <span style="flex:1"></span>
+  <button id="helpBtn" class="qbtn" aria-expanded="false" aria-controls="foot" title="What this tab shows and how to use it">?</button>
 </nav>
 <main>
   <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option><option value="demes" title="each people's regional populations (demes, PW-981) from the picked peoples run: where sea, hard country or distance cut a people, dated splits, fusions and ends">species + regional populations</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
@@ -92,7 +119,8 @@
   <section class="tab" id="tab-results"></section>
   <section class="tab" id="tab-tech"></section>
 </main>
-<footer id="foot"></footer>
+<div id="foot" class="helpPop" role="note" hidden></div>
+<script src="numfmt.js"></script>
 <script src="techtab.js"></script>
 <script>
 'use strict';
@@ -144,12 +172,7 @@ function kyrOf(v) {  // "8 Myr" / "450 kyr" / "12000 yr" / a bare number (kyr) -
   const x = +m[1], u = (m[2] || 'kyr').toLowerCase();
   return ['myr', 'ma', 'mya'].includes(u) ? x * 1000 : ['yr', 'y', 'year', 'years', 'bp'].includes(u) ? x / 1000 : x;
 }
-function fmt(k) {
-  if (k >= 1000) return `${+(k / 1000).toFixed(k >= 10000 ? 0 : 2)} Myr`;
-  if (k >= 1) return `${+k.toFixed(k >= 100 ? 0 : 1)} kyr`;
-  return `${Math.round(k * 1000)} yr`;
-}
-const num = (n) => n >= 1e6 ? `${+(n / 1e6).toPrecision(2)} M` : n >= 1e3 ? `${+(n / 1e3).toPrecision(2)} k` : `${Math.round(n)}`;
+const { kyr: fmt, count: num } = NumFmt;  // (the viewer's shared number formats, numfmt.js)
 const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.group_of ? [r.group_of] : r.parent ? [r.parent] : [];
 const groupsOf = (id) => T.lineage.filter((x) => originOf(x) === 'group' && parentsOf(x)[0] === id);  // (ways of life within a people, PW-665)
 const originOf = (r) => r.origin || (parentsOf(r).length ? 'split' : 'root');
@@ -228,6 +251,17 @@ function showTab(t) {
   redraw();
 }
 $('tabs').onclick = (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); };
+// the "?" help popover: under the tabs, closed by "?", Esc or a click elsewhere
+function showHelp(on) {
+  $('foot').hidden = !on; $('helpBtn').setAttribute('aria-expanded', on);
+  if (on) $('foot').style.top = `${$('tabs').getBoundingClientRect().bottom + 4}px`;
+}
+$('helpBtn').onclick = (e) => { e.stopPropagation(); showHelp($('foot').hidden); };
+addEventListener('click', (e) => {
+  if (!$('foot').hidden && !$('foot').contains(e.target)) showHelp(false);
+  document.querySelectorAll('details.hmenu[open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('foot').hidden) showHelp(false); });
 function redraw() {
   if (!T) return;
   if (tab === 'tree') { drawTimeline(); drawSide(); }

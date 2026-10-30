@@ -70,7 +70,22 @@
   #timeline { bottom: 12px; left: max(294px, calc(50vw - 360px)); width: min(720px, calc(100vw - 306px));
     display: none; align-items: center; gap: 10px; }
   body.run #timeline { display: flex; }
-  body.run #legend { bottom: 76px; }
+  body.run #legend { bottom: 92px; }
+  /* the dated axis under the time slider (globe/timeaxis.js, PW-1042): ticks, and on a peoples run the eras as bands */
+  body.run #timeline { padding-bottom: 22px; }
+  body.run #timeline:has(#taxis.banded) { padding-bottom: 34px; }
+  #taxis { position: absolute; left: 7px; right: 7px; top: calc(100% + 1px); height: 30px; pointer-events: none;
+    font: 10px var(--mono); color: var(--muted); }
+  #taxis span { position: absolute; top: 5px; transform: translateX(-50%); white-space: nowrap; line-height: 12px; }
+  #taxis span::before { content: ''; position: absolute; left: 50%; top: -5px; height: 4px; border-left: 1px solid var(--muted); }
+  #taxis span.start { transform: none; } #taxis span.start::before { left: 0; }
+  #taxis span.end { transform: translateX(-100%); } #taxis span.end::before { left: auto; right: 0; }
+  #taxis.banded span { top: 17px; }
+  #taxis i { position: absolute; top: 1px; height: 10px; font: 9px/10px var(--mono); font-style: normal; text-align: center; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis; border-radius: 2px; color: var(--text); }
+  #taxis i.deep { background: rgba(59, 77, 107, .55); } #taxis i.ice { background: rgba(47, 90, 90, .55); } #taxis i.recent { background: rgba(90, 74, 47, .6); }
+  #tside { display: flex; flex-direction: column; align-items: flex-end; }
+  #tkeys { font-size: 10px; color: var(--muted); white-space: nowrap; }
   /* the time slider sits on a strip tinted where the run is cold (drawn on #tint) */
   #track { flex: 1; position: relative; display: flex; align-items: center; }
   #track input { flex: 1; position: relative; margin: 0; height: 18px; background: transparent; -webkit-appearance: none; appearance: none; }
@@ -176,7 +191,23 @@
   #busy::before { content: ''; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -6px; border: 2px solid var(--accent);
     border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
   body.busy #busy { display: block; }
-  body.busy #layerSeg button.on { opacity: .6; }
+  body.busy #layerSeg button.on, body.busy #layerPick button.on { opacity: .6; }
+  /* ?picker=grouped (PW-1026, a preview): search, recent, folding sections (globe/layerpick.js) */
+  #layerFind { width: 100%; padding: 4px 8px; margin-bottom: 6px; }
+  #layerPick .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .lpRecent { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .lpRecent .seg { flex: 1; }
+  .lpGroup { border-top: 1px solid var(--border); padding: 3px 0; }
+  .lpGroup summary { cursor: pointer; padding: 2px 0; list-style-position: inside; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lpGroup summary .muted { font-size: 11px; }
+  .lpGroup[open] summary .muted { display: none; }
+  .lpGroup[open] > .seg { margin: 3px 0 4px; }
+  .lpOn { color: var(--accent); }
+  .lpFam { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .lpFam span, .lpFam { color: var(--muted); }
+  .lpFam select { flex: 1; min-width: 0; padding: 1px; color: var(--text); }
+  .lpHit { margin-bottom: 6px; }
+  .lpHead { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   body.embed #timeline { left: 12px; width: calc(100vw - 24px); }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
@@ -312,8 +343,8 @@
 <div id="legend" class="panel"></div>
 <div id="timeline" class="panel">
   <button id="play" title="Play / pause (space)">&#9654;</button>
-  <div id="track"><canvas id="tint"></canvas><div id="marks"></div><input type="range" id="frame" min="0" max="0" value="0"></div>
-  <span id="tlabel"></span>
+  <div id="track"><canvas id="tint"></canvas><div id="marks"></div><input type="range" id="frame" min="0" max="0" value="0"><div id="taxis"></div></div>
+  <div id="tside"><span id="tlabel"></span><span id="tkeys" title="Keys: Space plays or pauses; the left and right arrows step one stored moment">Space play · ← → step</span></div>
 </div>
 <div id="drop">Drop world .json</div>
 <div id="toast"></div>

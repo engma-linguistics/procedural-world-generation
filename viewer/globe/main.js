@@ -9,6 +9,7 @@
 //   overlays.js  rivers, winds, currents, volcanoes, events, clouds, the overturning
 //   axis.js      spin axis and tilt, continent names
 //   panel.js     layer buttons, legend, summaries, the layer tooltip
+//   layerpick.js the grouped layer picker (?picker=grouped, a preview): search, recent, folding sections
 //   timezoom.js  glacial time zooms and finished worlds (jobs)
 //   provenance.js where a run / world / zoom came from, the timeline's marks
 //   describe.js  the cell's description (info box, More detail)
@@ -19,6 +20,7 @@
 //   tabs.js      globe | regional zoom tabs, the world navigator (navigator.js)
 //   load.js      opening a world or a run, run layers loaded as needed
 //   playback.js  the replay
+//   timeaxis.js  the time slider's dated axis (log on a peoples run, with its eras)
 //   select.js    the run / world picker, URL options, favourites
 //   main.js      boot, planetViewer (headless checks), the render loop
 // every module runs its own top-level code once (its controls' wiring, its defaults), then the boot below
