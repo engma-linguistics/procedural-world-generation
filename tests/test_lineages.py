@@ -2676,6 +2676,28 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     assert np.allclose(b3["food"] * r, b3["guild"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])
     nat = MG.natural(h, w, b3["prey"], b3["food"])
     assert np.allclose(nat * h.dragon_struct["cattle_yr"] * PR.HEAD_T, b3["food"])
+    # the competition settings (coordinator 10-30, the paper's reframe): meta.rivals, meta.game_share, meta.overkill; defaults as before
+    assert (t.rivals, t.game_share, t.overkill) == (1.0, 1.0, PR.OVERKILL) and np.isclose(MG.guild_ratio(h), r)
+    P[hu] = 1.0
+    b4 = MG.budget(h, P, np.ones(n), tags)  # (full overkill pressure)
+    for k, v in (("rivals", 0.0), ("game_share", 0.0), ("overkill", 0.0)):
+        old = getattr(h.tree, k)
+        setattr(h.tree, k, v)
+        try:
+            b5 = MG.budget(h, P, np.ones(n), tags)
+        finally:
+            setattr(h.tree, k, old)
+        assert (b5["food"] > b4["food"]).all(), k  # (less competition, more food for the dragons)
+        if k == "rivals":
+            assert np.allclose(b5["guild"], 0)
+        if k == "game_share":
+            assert np.allclose(b5["peoples"], 0)
+        if k == "overkill":
+            assert (b5["wild"] > b4["wild"]).all()
+    t6 = SP.parse({**raw, "meta": {"seed": 1, "rivals": 0.5, "game_share": 0.25, "overkill": 0.23}})
+    assert (SP.parse(SP.to_raw(t6)).rivals, t6.game_share, t6.overkill) == (0.5, 0.25, 0.23)
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"seed": 1, "game_share": 1.5}})
 
 
 def test_people_density_reads_productivity(faketz):

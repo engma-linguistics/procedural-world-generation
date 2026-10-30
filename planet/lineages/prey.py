@@ -79,10 +79,10 @@ def herd_share(lines) -> np.ndarray:
     return np.array([0.0 if (l.megafauna or l.overlay) else LIVESTOCK.get(l.way or "", 0.0) for l in lines])
 
 
-def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None) -> dict:
+def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None, overkill: float = OVERKILL) -> dict:
     """The prey per cell, t/km2: the wild herds after overkill (press 0..1, the peoples' pressure; none in refuge country), the
     livestock (stocked 0..1, the share of the cell stocked) and their sum."""
-    w = wild_t * np.where(refuge_mask, 1.0, 1.0 - OVERKILL * np.clip(press, 0, 1))
+    w = wild_t * np.where(refuge_mask, 1.0, 1.0 - overkill * np.clip(press, 0, 1))  # (overkill: meta.overkill, default OVERKILL)
     lv = wild_t * LIVESTOCK_X * np.clip(stocked, 0, 1) if stocked is not None else np.zeros_like(wild_t)
     return {"wild": w, "livestock": lv, "total": w + lv}
 

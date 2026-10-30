@@ -1,0 +1,28 @@
+<h2 id="headline">The headline: dragons by scale and competition</h2>
+<p>How many dragons can a world, a region and a biome hold, and how does that change as other mouths compete for the same food? Each row below adds one kind of competition, and each is a setting in the code (the lineages settings in the viewer), with the default marked. The numbers are for the present, as medians over the six worlds at roll 7000. Dragons of every kind and age are counted, wyrmlings included. A Sword Coast-sized region ({{ sig(N['headline']['region_km2']/1e6,2) }} million km²) is taken at the whole land's average density.</p>
+
+<p><b>What the food would feed,</b> if dragons lived in every land cell:</p>
+<div class="scroll"><table>
+<tr><th>Competition (each row adds one)</th><th>Setting (default)</th><th class="n">World</th><th class="n">Region</th><th class="n">Empty land, per 10,000 km²</th><th class="n">Peopled land</th><th class="n">Grassland</th><th class="n">Forest</th><th class="n">Desert</th></tr>
+{{ ''.join(f"<tr><td>{lab}</td><td>{st}</td>" + ''.join(f"<td class='n'>{sig(N['headline']['rows'][r]['capacity'][c],2) if N['headline']['rows'][r]['capacity'] and N['headline']['rows'][r]['capacity'][c] is not None else '–'}</td>" for c in ('world','region','none','peopled','grassland','forest','desert')) + "</tr>" for r, lab, st in (('alone','Dragons alone: no rival predators, no peoples','rivals none'),('rivals','+ rival predators (the smaller carnivores of the guild) and giants','rivals ×1 <b>(default)</b>'),('hunt',"+ the peoples' hunters take their game first","game share all <b>(default)</b>"),('overkill',"+ the peoples have overkilled the wild herds","overkill 60% <b>(default)</b>"))) }}
+</table></div>
+<p class="tcap">Table H1. Dragons the yearly food would feed, from the model's own food budget on the pressure-off and persecution-off runs. World and region: dragons. The rest: dragons per 10,000 km². Persecution kills dragons but does not change their food, so it has no row here.</p>
+
+<p><b>What the model's worlds hold,</b> once the dragon kinds' habitats, their viability and the peoples' killing are counted:</p>
+<div class="scroll"><table>
+<tr><th>Competition</th><th>Setting (default)</th><th class="n">World</th><th class="n">Region</th><th class="n">Empty land, per 10,000 km²</th><th class="n">Peopled land</th><th class="n">Grassland</th><th class="n">Forest</th><th class="n">Desert</th></tr>
+{{ ''.join(f"<tr><td>{lab}</td><td>{st}</td>" + ''.join(f"<td class='n'>{('<b>' if r == 'persecution' else '') + (sig(N['headline']['rows'][r]['realised'][c],2) if N['headline']['rows'][r]['realised'][c] is not None else '–') + ('</b>' if r == 'persecution' else '')}</td>" for c in ('world','region','none','peopled','grassland','forest','desert')) + "</tr>" for r, lab, st in (('hunt',"Peoples hunt, but neither overkill nor kill (pressure off)","overkill 0%, press ×0"),('overkill',"+ overkill of the wild herds (persecution off)","overkill 60%, press ×0"),('persecution',"+ the peoples kill dragons: <b>the model as it stands</b>","press early ×1, late ×1 <b>(default)</b>"),('press_0.25',"… if the peoples kill more gently","press ×0.25 (estimated)"),('press_4',"… if they kill harder","press ×4 (estimated)"))) }}
+</table></div>
+<p class="tcap">Table H2. Dragons the model's worlds hold now, in the three arms of runs. The last two rows were not run: they rescale each cell of the model's runs by what the dragons' life table keeps under a gentler or harsher kill, holding everything else fixed. In bold: the defaults, the world as the code sets it.</p>
+
+<p>Three things set the numbers.</p>
+<ul>
+<li><b>Rival predators matter most to what the food can feed.</b> The guild of smaller carnivores eats about {{ sig(N['headline']['guild_ratio'],2) }} times what the dragons eat, so dragons alone would be about {{ sig(1+N['headline']['guild_ratio'],2) }} times as many.</li>
+<li><b>Habitat and viability matter most to what the worlds hold.</b> The model's worlds hold about {{ pct(N['headline']['rows']['hunt']['realised']['world']/N['headline']['rows']['hunt']['capacity']['world'],2) }} of what the food would feed even with the pressure off. Each dragon kind lives only in its own kinds of country, and a pocket too small to last fades out (Section 5.3).</li>
+<li><b>Among the peoples' channels:</b>
+<ul>
+<li>the hunters' take and the overkill each roughly halve the food, and they hit hunters' country hardest (Table 4);</li>
+<li>the kill matters only in the late eras, and then mostly in farmed land. At the default it takes the world from {{ sig(N['headline']['rows']['overkill']['realised']['world'],2) }} dragons to {{ sig(N['headline']['rows']['persecution']['realised']['world'],2) }}. A gentler or harsher setting moves that to {{ sig(N['headline']['rows']['press_0.25']['realised']['world'],2) }} or {{ sig(N['headline']['rows']['press_4']['realised']['world'],2) }}.</li>
+</ul></li>
+</ul>
+<p>The rest of the paper explains each row. Section 2 sets out the food chain and the age-by-age kill. Section 5 splits the loss by cause, era and way of life. Section 9 lists what the literature says should change.</p>

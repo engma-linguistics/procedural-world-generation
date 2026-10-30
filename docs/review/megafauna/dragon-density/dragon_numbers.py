@@ -475,6 +475,67 @@ sc["largest_kind_share"] = {"min": min(kind_share, default=None), "median": floa
                             "max": max(kind_share, default=None)}
 out["sword_coast"] = sc
 
+# ---- the headline (owner's reframe, 10-30): density by scale x competition, roll 7000's six worlds, now -------------------------------
+# Rows add competition one setting at a time (each a meta setting in the code; defaults marked on the page). Capacity: what the food
+# would feed with dragons in every land cell (the budget's own algebra on the pressure-off and persecution-off cells); realised: the
+# model's dragons in that arm. Persecution x0.25 / x4: the model's cells rescaled by kept(m x kill) / kept(kill) (estimated, not run).
+LEV0 = MG.tech_level("renaissance", 0.0)
+G = MG.guild_ratio()
+
+
+def lad_load(arm, key):
+    f = SRC / arm / "cells" / f"{key}.npz"
+    if not f.exists():
+        return None
+    z = np.load(f)
+    c = cell_load(arm, key, "0")
+    fpd = float(z["food_t_per_dragon"])
+    a = {k: z[f"{k}_0"].astype(float) for k in ("wild", "stock", "giants", "food", "kill")}
+    c.update({"fpd": fpd, **a})
+    return c
+
+
+SCALES = (("world", None), ("region", None), ("none", 0), ("peopled", -1), ("grassland", "b1"), ("forest", "b0"), ("desert", "b2"))
+
+
+def scales(d, dens):
+    """dens: dragons per km2 per cell; d: the arm's cells (land, cls, biome). World and region in dragons, the rest per 10,000 km2."""
+    L = d["land"]
+    o = {"world": float(dens[L].sum() * CELL_KM2), "region": float(dens[L].mean() * SC_KM2)}
+    for nm, sel in SCALES[2:]:
+        m = L & ((d["cls"] == 0) if sel == 0 else (d["cls"] >= 1) if sel == -1 else (d["biome"] == int(sel[1:])))
+        o[nm] = float(dens[m].mean() * 1e4) if m.any() else None
+    return o
+
+
+LADDER = ("alone", "rivals", "hunt", "overkill", "persecution", "press_0.25", "press_4")
+lad = {r: {"capacity": [], "realised": []} for r in LADDER}
+for k in sorted(NOPER):
+    on_, off_, no_ = lad_load("on", k), lad_load("off", k), lad_load("noper", k)
+    if on_ is None or off_ is None or no_ is None:
+        continue
+    S = off_["wild"] + off_["stock"]
+    lad["alone"]["capacity"].append(scales(off_, S / off_["fpd"]))
+    lad["rivals"]["capacity"].append(scales(off_, np.maximum(S - off_["giants"], 0) / (1 + G) / off_["fpd"]))
+    lad["hunt"]["capacity"].append(scales(off_, off_["food"] / off_["fpd"]))
+    lad["hunt"]["realised"].append(scales(off_, off_["dragons"]))
+    lad["overkill"]["capacity"].append(scales(no_, no_["food"] / no_["fpd"]))
+    lad["overkill"]["realised"].append(scales(no_, no_["dragons"]))
+    lad["persecution"]["capacity"].append(scales(on_, on_["food"] / on_["fpd"]))
+    lad["persecution"]["realised"].append(scales(on_, on_["dragons"]))
+    base = MG.dragon_kept(_h, on_["kill"], LEV0)
+    for m in (0.25, 4.0):
+        lad[f"press_{m:g}"]["realised"].append(scales(on_, on_["dragons"] * MG.dragon_kept(_h, m * on_["kill"], LEV0) / np.maximum(base, 1e-12)))
+head = {}
+for r in LADDER:
+    head[r] = {}
+    for kind in ("capacity", "realised"):
+        rows = lad[r][kind]
+        head[r][kind] = {nm: (float(np.median([x[nm] for x in rows if x[nm] is not None])) if any(x[nm] is not None for x in rows) else None)
+                         for nm, _ in SCALES} if rows else None
+        head[r][kind + "_n"] = len(rows)
+out["headline"] = {"rows": head, "guild_ratio": G, "tech_level_now": LEV0, "region_km2": SC_KM2}
+
 OUT.write_text(json.dumps(out, indent=1, default=float))
 for arm in ("on", "off"):
     for e in ("25", "10", "5", "0"):

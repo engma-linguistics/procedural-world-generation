@@ -176,6 +176,13 @@ DRAGON_KM2 = 5000.0  # default meta.dragon_km2 (owner, PW-923, PW-957): one drag
 GIANT_KM2 = 2000.0  # default meta.giant_km2 (owner, PW-963 option C): one true giant per this many km2 where peoples press them, every
 # kind that does not fly. Both are nominal since PW-1068: the competition between lines and the viable-population check take them, but
 # no density is set by them (each kind stands at its natural density under the peoples' persecution kill, history.megafauna.kill)
+RIVALS_X = (0.0, 0.5, 1.0, 2.0)  # meta.rivals: x the rest of the predator guild's share of the food (history.megafauna.guild_ratio; 0: dragons
+# eat alone, no rival predators). Default 1: Carbone, Turvey & Bielby 2011's Cretaceous size classes
+GAME_SHARE_X = (0.0, 0.25, 0.5, 1.0)  # meta.game_share: the share of the peoples' wild game that comes out of the dragons' own (cattle-sized)
+# prey, the rest being small game a dragon would not live on. Default 1 (all of it; no source either way: inbox draft forager-offtake)
+OVERKILL_X = (0.0, 0.1, 0.23, 0.46, 0.6)  # meta.overkill: the share of the wild big herbivores lost where peoples press the land fully
+# (prey.field). Default 0.6 (prey.OVERKILL); Sandom et al. 2014 (Fig. 3, p. 5; species lost, not biomass): about 0.46 where modern humans
+# arrived first, 0.23 where archaic hominins were there before, near 0 in Africa (at most 13%)
 PRESS_X = (0.25, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.press_early / meta.press_late (owner 10-30, D14: the viewer's "how hard peoples
 # press dragons and giants", one setting for the early eras and one for the late): multipliers on the peoples' kill (history.megafauna.KILL_Q);
 # early holds at the stone age (tech level 0), late at the top (tech level 1), the eras between blend them by their tech level. Default 1, 1
@@ -513,6 +520,9 @@ class Tree:
     giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2, nominal (PW-963; PW-1068: competition and viable numbers only)
     press_early: float = 1.0  # how hard peoples press dragons and giants in the early eras: x the kill at tech level 0 (PRESS_X, owner D14)
     press_late: float = 1.0  # ... and in the late eras: x the kill at tech level 1 (blended by tech level between)
+    rivals: float = 1.0  # x the rival predator guild's share of the dragons' food (RIVALS_X)
+    game_share: float = 1.0  # the share of the peoples' wild game taken from the dragons' prey (GAME_SHARE_X)
+    overkill: float = 0.6  # the share of wild big herbivores lost where peoples press the land fully (OVERKILL_X; prey.OVERKILL)
     megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: food | prey | mesotherm | mammal (PW-957, PW-966, PW-990)
     dragon_ages: str = "base"  # the dragons' age schedule (PW-958, lineages.dragon_ages)
     dragon_generation: str = "schedule"  # the dragons' generation time: from the schedule, with fecundity ~ mass, or the lines' own (PW-959)
@@ -986,10 +996,12 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.giant_km2 = float(meta.get("giant_km2", GIANT_KM2))
     if t.giant_km2 <= 0:
         raise ValueError("meta.giant_km2 must be > 0")
-    for k in ("press_early", "press_late"):
-        setattr(t, k, float(meta.get(k, 1.0)))
+    for k, d in (("press_early", 1.0), ("press_late", 1.0), ("rivals", 1.0), ("game_share", 1.0), ("overkill", 0.6)):
+        setattr(t, k, float(meta.get(k, d)))
         if getattr(t, k) < 0:
             raise ValueError(f"meta.{k} must be >= 0")
+    if t.game_share > 1 or t.overkill > 1:
+        raise ValueError("meta.game_share and meta.overkill must be <= 1")
     t.forager_km2 = float(meta.get("forager_km2", FORAGER_KM2))
     if t.forager_km2 <= 0:
         raise ValueError("meta.forager_km2 must be > 0")
@@ -1074,7 +1086,7 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
-                     "press_early": t.press_early, "press_late": t.press_late, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
+                     "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"reputation": t.reputation} if t.reputation else {}),

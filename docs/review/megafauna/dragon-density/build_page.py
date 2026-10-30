@@ -103,6 +103,14 @@ def chk(e, c, nm, k="median"):
     return "–" if v is None else pct(min(v, 9.99), 2)
 
 
+def chr_(e, c, nm):
+    """A channel's median with its range over the worlds in small type, for Table 4."""
+    m = chk(e, c, nm)
+    if m == "–":
+        return m
+    return f"{m} <small>({chk(e, c, nm, 'min')} to {chk(e, c, nm, 'max')})</small>"
+
+
 def chall(e, c):
     """The three channels together (the product of the medians: persecution x overkill x offtake), or an en dash."""
     r = N["channels_7000"].get(e, {}).get(c, {})
@@ -148,11 +156,11 @@ def gp(biome, sit):
 
 B = json.loads((HERE / "charts" / "boxes.json").read_text()) if (HERE / "charts" / "boxes.json").exists() else []
 
-E = {k: v for k, v in globals().items() if k in ("sig", "f0", "f1", "f2", "pct", "per", "rng", "math", "S", "X", "era", "P", "sc", "cells", "rp", "bs", "B", "gp", "gpv", "thin", "ser", "wr")}
+E = {k: v for k, v in globals().items() if k in ("sig", "f0", "f1", "f2", "pct", "per", "rng", "math", "S", "X", "era", "P", "sc", "cells", "rp", "bs", "B", "gp", "gpv", "thin", "ser", "wr", "chk", "chall", "chr_")}
 E["N"] = N
 src = (HERE / "page.tmpl.html").read_text()
 SEC = HERE / "sections"  # page fragments: plain.html, abstract.html, and the body's numbered NN-name.html in order
-src = src.replace("@@PLAIN@@", (SEC / "plain.html").read_text()).replace("@@ABSTRACT@@", (SEC / "abstract.html").read_text())
+src = src.replace("@@HEADLINE@@", (SEC / "headline.html").read_text()).replace("@@PLAIN@@", (SEC / "plain.html").read_text()).replace("@@ABSTRACT@@", (SEC / "abstract.html").read_text())
 src = src.replace("@@BODY@@", "\n".join(p.read_text() for p in sorted(SEC.glob("[0-9]*.html"))))
 bad = []
 

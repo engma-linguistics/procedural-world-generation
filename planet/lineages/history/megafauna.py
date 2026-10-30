@@ -106,9 +106,10 @@ PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild b
 # `means`: how many there are, how organised, how much they have to defend); a stage s of dragons loses effort x VULNERABILITY_s(tech) of
 # its number a year. Wyrmlings are reachable with spears, traps and bait; the young less so; adults and ancients hardly at all until the
 # tech level is high, so the adults' share of the kill rises with tech. On the dragons' age schedule (dragon_ages: the survival by stage,
-# fecundity flat from BREED_FROM) the kill lowers lifetime births R0; births can rise at most BREED_X-fold where the dragons thin, so they
-# settle at natural x 1 / (1 + (F - 1) / (BREED_X - 1)), F = R0 / R0 under the kill (`dragon_kept`): never zero (never species-ending,
-# owner 10-29), never above natural; ~1 / (1 + k / r) for a small kill k on every stage, r = ln(BREED_X) / generation. Giants (no age
+# fecundity flat from BREED_FROM) the kill lowers lifetime births R0 by a factor F (R0 / R0 under the kill); the dragons settle at
+# natural x 1 / (1 + (F - 1) / (BREED_X - 1)) (`dragon_kept`), a saturating form, a judgement: where births would have to rise BREED_X-fold
+# the dragons are halved, and the thinned dragons are assumed to breed back ever harder, so it is never zero (never species-ending,
+# owner 10-29, built in, not derived: a strict life table with births capped at BREED_X-fold dies out once F > BREED_X), never above natural; ~1 / (1 + k / r) for a small kill k on every stage, r = ln(BREED_X) / generation. Giants (no age
 # schedule) take the adults' vulnerability in that one-stage form, r = ln(BREED_X) / their generation.
 # Evidence: in long-lived, slow-breeding animals growth is far less sensitive to first-year survival than to the long juvenile and adult
 # stages (loggerheads: Crouse, Crowder & Caswell 1987, Ecology 68:1412, p. 1416 and Fig. 1; protecting eggs alone "could not prevent the
@@ -117,10 +118,12 @@ PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild b
 # respond to persecution" (Ripple et al. 2014, Science 343:1241484, p. 1241484-1), and among carnivores slow life history predicts
 # extinction risk where people are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912). None gives
 # the kill's size or the vulnerabilities: KILL_Q, VULNERABILITY and the means are judgements.
-BREED_X = 2.0  # births could at most double where persecution thins the megafauna (a judgement)
+BREED_X = 2.0  # the births' rise at which persecution halves the megafauna (the half-point of `dragon_kept`'s form; a judgement. Crouse 1987
+# p. 1417: loggerheads could recover by fecundity only "if they could more than double egg production, which seems unlikely")
 KILL_Q = 0.0028  # kill effort a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
 # 10 per km2, keep 10% of their dragons. The evidence read would allow local extirpation in dense farmland, Ripple 2014's tiger at 18% and
-# lion at 17% of their range, Table 1; 10% respects the owner's "never fatal")
+# lion at 17% of their historical range, Table 1, a range share, not density kept; the form is never fatal at any KILL_Q, so 10% is a
+# reading of how hard late peoples should press, not a bound)
 MOTIVE0 = 0.25  # means: a people with no herds still kills what threatens it, at this share of one with herds everywhere (judgement)
 FORAGER_ORG = 0.3  # means: a forager band's organised killing against a settled or herding people's (judgement)
 VULNERABILITY = {"wyrmling": (1.0, 0.0, 1.0), "young": (0.05, 0.45, 1.0), "adult": (0.01, 0.99, 2.0)}  # (a, b, p): a + b x level^p
@@ -132,14 +135,14 @@ ERA_LEVEL = {"stone age": 0.0, "bronze age": 0.15, "classical": 0.55, "medieval"
 ERA_KYR = {"industrial": 0.25, "renaissance": 0.35, "medieval": 1.0, "classical": 1.3, "bronze age": 2.0}
 
 
-def guild_ratio() -> float:
+def guild_ratio(h: History | None = None) -> float:
     """The rest of the predator guild's food over the apex class's, (1 - s) / s: s the share of the guild's food (abundance x M^0.75)
     that falls to the classes of GUILD_APEX_KG and up, from Carbone, Turvey & Bielby 2011's size classes (GUILD_CLASSES): ~5.0, so
     wherever dragons take a unit of food, the smaller carnivores take about five (UNVERIFIED as a general rule: one Cretaceous guild
-    standing for the dragons' world; PW-977 stage 2)."""
+    standing for the dragons' world; PW-977 stage 2). With h, x its tree's meta.rivals (0: no rival predators; default 1)."""
     f = np.array([n * m ** GUILD_KLEIBER for m, n in GUILD_CLASSES])
     top = np.array([m >= GUILD_APEX_KG for m, _ in GUILD_CLASSES])
-    return float(f[~top].sum() / f[top].sum())
+    return float(f[~top].sum() / f[top].sum()) * (getattr(h.tree, "rivals", 1.0) if h is not None else 1.0)
 
 
 def meat_need(h: History, line) -> float:
@@ -166,7 +169,7 @@ def natural_coef(h: History, line) -> float:
     if "flies" not in line.traits:
         return h.tree.forager_km2 * (m / FORAGER_KG) ** -DAMUTH_EXP
     if h.mf_natural == "food" and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's apex part / a dragon's food; the deep epoch's)
-        return OFFTAKE / (1.0 + guild_ratio()) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
+        return OFFTAKE / (1.0 + guild_ratio(h)) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
     if h.mf_natural == "prey" and h.prey_wild is not None:
         return CARBONE_A * m ** -CARBONE_B / 10.0
     la = LOG_A["mammal" if h.mf_natural == "mammal" else "mesotherm"]
@@ -243,7 +246,7 @@ def _kept_table(h: History, lev: float) -> np.ndarray:
 
 def dragon_kept(h: History, eps, lev: float) -> np.ndarray:
     """The share of their natural density dragons keep under the peoples' kill effort eps (per head a year, `kill`) at tech level lev: each
-    stage loses eps x vulnerability(lev) a year; births rise to make up the lost lifetime births R0, at most BREED_X-fold; kept =
+    stage loses eps x vulnerability(lev) a year; lifetime births R0 fall by a factor F; kept (a saturating judgement form, BREED_X its half-point) =
     1 / (1 + (F - 1) / (BREED_X - 1)), F the births' rise needed. Interpolated on a table per level."""
     e = np.clip(np.asarray(eps, float), 0.0, _EPS[-1])
     t = _kept_table(h, lev)
@@ -323,14 +326,15 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: 
     if h.prey_wild is None:
         return None
     ref = PR.refuge(tags) if tags is not None else np.zeros(h.grid.n, bool)
-    f = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, EST))
+    f = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, EST), overkill=getattr(h.tree, "overkill", PR.OVERKILL))
     wild, live = _reach(h, f["wild"]), _reach(h, f["livestock"])
     W, L = OFFTAKE * wild, STOCK_TOLERABLE * live
     z = np.zeros_like(W)
     out = {"prey": wild + live, "wild": W, "stock": L, "peoples": z, "giants": z, "guild": z, "live": live}
     if BUDGET:
         x = np.where(P >= EST, P, 0.0)
-        hunt = _reach(h, (x * h.dens_cells() * h._meat[:, None]).sum(0))
+        hunt = _reach(h, (x * h.dens_cells() * h._meat[:, None]).sum(0)) * getattr(h.tree, "game_share", 1.0)  # (meta.game_share: the part of
+        # the peoples' game that is the dragons' own prey)
         out["peoples"] = take_p = np.minimum(hunt, W)
         pool = W - take_p + L
         gi = np.zeros_like(W)
@@ -342,9 +346,9 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: 
         gi = _reach(h, gi)
         out["giants"] = np.minimum(gi, pool)
         if h.mf_natural == "food":  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
-            gd = guild_ratio() / (1.0 + guild_ratio()) * (pool - out["giants"])
+            gd = guild_ratio(h) / (1.0 + guild_ratio(h)) * (pool - out["giants"])
         else:
-            gd = guild_ratio() * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
+            gd = guild_ratio(h) * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
         out["guild"] = np.minimum(gd, pool - out["giants"])
         out["pool"] = pool
         out["food"] = pool - out["giants"] - out["guild"]
@@ -619,7 +623,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     prey, food, live, pool = (bud["prey"], bud["food"], bud["live"], bud["pool"]) if bud is not None else (None, None, None, None)
     lvs = None
     if h.prey_wild is not None:
-        lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST))["livestock"]
+        lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST), overkill=getattr(h.tree, "overkill", PR.OVERKILL))["livestock"]
     ds = h.dragon_struct
     dens = {k: local_density(h, k, kl, prey, food, P) for k, l in enumerate(h.lines) if l.megafauna}
     fs = food_state(h, P, dens, food, live, pool)
