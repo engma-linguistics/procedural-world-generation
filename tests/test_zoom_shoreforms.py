@@ -1,4 +1,4 @@
-"""zoom_shoreforms (PW-621): the tidal flats' D8 channels and the layer's spec/legend."""
+"""zoom.shoreforms (PW-621): the tidal flats' D8 channels and the layer's spec/legend."""
 import numpy as np
 
 from planet.zoom import coast as ZC

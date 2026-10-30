@@ -1,4 +1,4 @@
-"""Landform synthesis in the zoom (zoom_landforms): the bench map, cuestas
+"""Landform synthesis in the zoom (zoom.landforms): the bench map, cuestas
 from dipping caprock, and a synthetic great escarpment that steps up to a
 plateau with falls where its rivers cross it."""
 

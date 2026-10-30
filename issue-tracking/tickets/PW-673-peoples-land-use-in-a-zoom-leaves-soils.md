@@ -11,7 +11,7 @@ impact: low
 found_by: zoompeoples
 blocked_by: []
 relates: [PW-667, PW-661]
-refs: [planet/zoom_peoples.py, planet/zoom_vegetation.py, planet/soils.py, planet/vegetation.py]
+refs: [planet/zoom/peoples.py, planet/zoom/vegetation.py, planet/soils.py, planet/vegetation.py]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -24,3 +24,4 @@ What to try: a `land_use` input to soils.organic (carbon x 0.6 under fields, x 0
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-zoom-peoples-soils-and-names.md (found by zoompeoples).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

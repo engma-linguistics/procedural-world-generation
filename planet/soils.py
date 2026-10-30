@@ -562,7 +562,7 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
 # (a plain ~6x, a dry range ~13x at 1 km): the zoom's terrain, kept (PW-345 A).
 PX_SLOPE, PX_SLOPE_EXP, PX_SLOPE_EXP_COARSE = 10.0, 0.6, 0.3
 H_MIN_PX = 0.06  # m: a pixel's thinnest soil on old land (thin stony soil, not bare rock: pockets between the stones)
-PLAIN_FULL = 0.5  # a pixel whose floodplain share (zoom_vegetation) is this is all river-laid alluvium
+PLAIN_FULL = 0.5  # a pixel whose floodplain share (zoom.vegetation) is this is all river-laid alluvium
 COLLUVIUM_M = 1.0  # m of soil washed down into the wettest hollows and slope feet
 FOREFIELD_KM, FOREFIELD_MYR = 4.0, 0.005  # ground this near a zoom glacier was under it this recently (its forefield)
 
@@ -570,7 +570,7 @@ FOREFIELD_KM, FOREFIELD_MYR = 4.0, 0.005  # ground this near a zoom glacier was 
 def valley_floor(river_q, river_km, slope, rock, res_km: float) -> np.ndarray | float:
     """The share of each pixel on its nearest river's valley floor: the
     alluvium the river has laid down as it swings across it (fluvisols). Its
-    width is the fine zoom's (zoom_fine_floodplain.half_width: FLOOR_W
+    width is the fine zoom's (zoom.fine_floodplain.half_width: FLOOR_W
     channel widths, w = 4 Q^0.5 m, x sqrt of the rock's erodibility),
     narrowing to none on steep ground (slope in the cells' measure, m/km; a
     gorge keeps no floor). It grows with the channel, a power of the flow,
@@ -602,7 +602,7 @@ def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul
     (n,): the pixel's own climate (lapse- and slope-corrected); slope_tan;
     rock: the exposed rock (the zoom's surface_rock); landform,
     landform_age, glaciated_myr: the pixel's coarse cell's; plain: the
-    share of the pixel a big river floods (zoom_vegetation), strip: the
+    share of the pixel a big river floods (zoom.vegetation), strip: the
     share inside a smaller river's strip (alluvium too); hollow: 0..1, the
     topographic wetness of hollows and valley floors (colluvium there);
     loess_m: the cells' loess, interpolated; salt_near_: a salt lake or pan

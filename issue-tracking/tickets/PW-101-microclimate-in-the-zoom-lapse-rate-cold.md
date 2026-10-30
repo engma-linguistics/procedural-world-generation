@@ -11,7 +11,7 @@ impact: med
 found_by: daniel
 blocked_by: []
 relates: []
-refs: [planet/zoom.py, planet/climate.py]
+refs: [planet/zoom/regional.py, planet/climate.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -22,3 +22,4 @@ At 1 km pixels, recompute temperature with the lapse rate on the fine elevation,
 
 ## Updates
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

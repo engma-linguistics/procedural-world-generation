@@ -224,7 +224,7 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     landform: class ids; soil: soils.TYPES ids (bare ground takes their colour); wet: flooded share (0..1). mo: climate.months of
     these places, when the caller has it. coastal: coastal life's shares
     (0..1; coastal.py) "reef", "kelp", "seagrass" (sea), "mangrove",
-    "salt_marsh" (land). landuse: the peoples' land use of a zoom (zoom_peoples.py, PW-667): "use" (ids 0 wild, 1
+    "salt_marsh" (land). landuse: the peoples' land use of a zoom (zoom/peoples.py, PW-667): "use" (ids 0 wild, 1
     cropland, 2 pasture, 3 burned grass, 4 managed woods, 5 settlement) and "tone" (0..1 per field parcel)."""
     n = len(lat)
     if mo is None:
@@ -306,7 +306,7 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     return c
 
 
-# the peoples' land use on a zoom (zoom_peoples.py, PW-667): fields (plough, crop, stubble), pasture, burned ground, villages
+# the peoples' land use on a zoom (zoom/peoples.py, PW-667): fields (plough, crop, stubble), pasture, burned ground, villages
 FIELD = {"plough": "#8c6d4b", "crop": "#a3b24a", "ripe": "#d3b45c"}
 PASTURE_COL = ("#8f9a5a", "#a9bf62")  # (dormant, growing)
 BURNED_COL = "#a98a52"
@@ -385,7 +385,7 @@ def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
 
 
 COASTAL = ("reef", "kelp", "seagrass", "mangrove", "salt_marsh")  # coastal.LAYERS
-ZOOM_COASTAL = {"reef": 1, "kelp": 2, "seagrass": 3, "mangrove": 4, "salt_marsh": 5}  # zoom_coastal.LIFE ids
+ZOOM_COASTAL = {"reef": 1, "kelp": 2, "seagrass": 3, "mangrove": 4, "salt_marsh": 5}  # zoom.coastal.LIFE ids
 
 
 def parcel_tone(ny: int, nx: int, res_km: float, parcel_km: float = 3.0) -> np.ndarray:
@@ -400,7 +400,7 @@ def parcel_tone(ny: int, nx: int, res_km: float, parcel_km: float = 3.0) -> np.n
 def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4, res_km: float = 1.0) -> dict:
     """{'jul', 'jan', 'year'}: (ny, nx, 3) uint8 unshaded colours of a zoom.
     Lz: its layers (real units; (ny, nx)); nu (NP, ny*nx): the per-pixel
-    plant fractions (zoom_vegetation); lat (ny*nx,)."""
+    plant fractions (zoom.vegetation); lat (ny*nx,)."""
     ny, nx = Lz["elevation"].shape
     f = {k: np.asarray(v).ravel() for k, v in Lz.items()}
     tj, tn = f["temperature_jul"].astype(float), f["temperature_jan"].astype(float)

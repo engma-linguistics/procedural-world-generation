@@ -11,7 +11,7 @@ impact: low
 found_by: code-audit-2026-10
 blocked_by: []
 relates: [PW-516]
-refs: [planet/zoom.py, planet/zoom_fine.py, planet/climate.py, planet/vegetation.py, docs/review/code-audit-2026-10/index.html]
+refs: [planet/zoom/regional.py, planet/zoom/fine.py, planet/climate.py, planet/vegetation.py, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-29
 updated: 2026-10-29
 ---
@@ -27,3 +27,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-zoom-fine-finish-climate-drift.md (found by code-audit-2026-10).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

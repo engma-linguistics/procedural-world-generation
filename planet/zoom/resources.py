@@ -507,7 +507,7 @@ def add_to_zoom(ref, log=print, world: dict | None = None) -> Path:
     """(Re)makes a saved zoom's deposits in place: zoom.json gets `resources` (deposits, outcrop belts, summary).
     The world's likelihoods are its res_* layers when it has them, else made here (with the run's history when the
     run is stored; the world is not written). world: the loaded world, when the caller has it. Made by every
-    zoom build (zoom.zoom, zoom_fine.zoom; PW-618) unless the world has no resource layers."""
+    zoom build (zoom.zoom, zoom.fine.zoom; PW-618) unless the world has no resource layers."""
     from .. import store as S
     from .. import world as W
     from . import regional as Z

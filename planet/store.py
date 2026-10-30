@@ -745,7 +745,7 @@ def zooms_of(world_id: str) -> list[Path]:
 
 
 def children_of(zoom_id: str) -> list[Path]:
-    """The fine zooms made from this zoom (zoom_fine: parent_zoom.id)."""
+    """The fine zooms made from this zoom (zoom.fine: parent_zoom.id)."""
     out = []
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
@@ -769,7 +769,7 @@ def descendants_of(zoom_id: str) -> list[Path]:
 def delete(kind: str, item_id: str) -> list[Path]:
     """Delete one run, world or zoom; returns what was removed (empty: no
     such item). A world takes its highlights cache and its zooms with it;
-    a zoom its fine zooms (zoom_fine), theirs too.
+    a zoom its fine zooms (zoom.fine), theirs too.
     Runs and worlds don't cascade into each other: a world sliced from a
     run is self-contained."""
     if not exists(kind, item_id) and not (kind == "run" and _ID.fullmatch(item_id or "")
@@ -860,7 +860,7 @@ def _zoom_item(p: Path) -> dict:
     item = {"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
             "world_name": sw.get("name"), "source_run": sw.get("source_run"), "t_myr": sw.get("t_myr"),
             "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]}
-    if m.get("parent_zoom"):  # a fine zoom (zoom_fine): the zoom it was made from
+    if m.get("parent_zoom"):  # a fine zoom (zoom.fine): the zoom it was made from
         item["parent_zoom"] = m["parent_zoom"]["id"]
     return item
 

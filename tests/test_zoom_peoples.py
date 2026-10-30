@@ -1,4 +1,4 @@
-"""The peoples' land use on a regional zoom (zoom_peoples.py, PW-667), on the synthetic world of test_zoom_vegetation:
+"""The peoples' land use on a regional zoom (zoom/peoples.py, PW-667), on the synthetic world of test_zoom_vegetation:
 fields on flat fertile ground, villages at water, trees out where land is cleared, and a zoom without peoples as it was."""
 
 import numpy as np

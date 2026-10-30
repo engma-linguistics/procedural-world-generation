@@ -11,7 +11,7 @@ impact: low
 found_by: fun5
 blocked_by: []
 relates: [PW-622, PW-099]
-refs: [planet/humanuse.py, planet/zoom_coast.py, "zoom f4d05d (fun5 test, barrier coast near -18, 144 on world 726047)"]
+refs: [planet/humanuse.py, planet/zoom/coast.py, "zoom f4d05d (fun5 test, barrier coast near -18, 144 on world 726047)"]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -26,3 +26,4 @@ sheltered water of 2-6 m next to a lagoon-coast; C lower the depth threshold for
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-lagoon-harbour-depth.md (found by fun5).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

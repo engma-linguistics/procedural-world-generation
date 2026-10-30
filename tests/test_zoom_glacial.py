@@ -1,4 +1,4 @@
-"""The glacial landforms of the regional zoom (zoom_glacial, PW-092): kernels, the ice's flow
+"""The glacial landforms of the regional zoom (zoom.glacial, PW-092): kernels, the ice's flow
 from the imprint, and the Glaciated synthesiser on a synthetic valley."""
 
 import numpy as np

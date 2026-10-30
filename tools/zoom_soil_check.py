@@ -60,7 +60,7 @@ def check(world: dict, lat: float, lon: float, size_km: float, res_km: float, pn
     elev = np.asarray(L["elevation"], float)
     s_cell = SO.cell_slope(g, elev)  # (the soils' own: the sea at sea level)
     P_cell = np.asarray(L["precipitation"], float)
-    # the pixels' terrain (as zoom_vegetation computes it)
+    # the pixels' terrain (as zoom.vegetation computes it)
     from planet.zoom import terrain as ZT
     from planet.geo import latlon
     lat_px = latlon(fr.to_sphere(X.ravel(), Y.ravel()))[0]

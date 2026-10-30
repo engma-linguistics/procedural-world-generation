@@ -11,7 +11,7 @@ impact: med
 found_by: zoomland2
 blocked_by: []
 relates: [PW-011, PW-008]
-refs: [planet/zoom_landforms.py, planet/tectonics/record.py]
+refs: [planet/zoom/landforms.py, planet/tectonics/record.py]
 created: 2026-10-14
 updated: 2026-10-26
 ---
@@ -37,3 +37,4 @@ direction), which now use the long axis of the rift's band of cells.
 ## Updates
 - 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-14: Created from inbox draft draft-fold-strike-in-record.md (found by zoomland2).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

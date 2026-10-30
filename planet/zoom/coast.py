@@ -289,7 +289,7 @@ def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int |
     d_shore = _distance(land, sea, res, SHOAL_KM + res)
     hazard = sea & ((life == 1) | ((depth < SHOAL_M) & ~np.isfinite(d_shore)) | (bi == 3))
     out = {"coast_type": band_ct, "barrier_island": bi, "nav_hazard": hazard.astype(np.uint8)}
-    # spits, beach ridges, tidal channels, drowned reefs (zoom_shoreforms.py, PW-621)
+    # spits, beach ridges, tidal channels, drowned reefs (zoom/shoreforms.py, PW-621)
     from . import shoreforms as SF
     ctx = {"land": land, "sea": sea, "shore": shore, "h": h, "res": res, "ct": ct, "Pk": Pk, "cells": cells,
            "wave_sea": wave_sea, "tide_sea": tide_sea, "rise": rise, "hard": hard,
@@ -330,11 +330,11 @@ LAYER_SPECS = {
     "coast_type": {"dtype": "u1", "units": "id", "description": "coast form along the shore (coastform.CLASSES; "
                                                                  "legend 'coast'): the shore pixels and the sea next to them"},
     "barrier_island": {"dtype": "u1", "units": "enum", "description": "1 barrier island, 2 lagoon, 3 tidal inlet "
-                                                                      "(zoom_coast.py)"},
+                                                                      "(zoom/coast.py)"},
     "nav_hazard": {"dtype": "u1", "units": "0/1", "description": "hazard to ships: reefs, shoals off the shore, "
                                                                  "barrier inlets"},
     "shore_form": {"dtype": "u1", "units": "enum", "description": "1 spit, 2 beach-ridge plain, 3 tidal channel, "
-                                                                 "4 tidal flat, 5 drowned reef (zoom_shoreforms.py)"},
+                                                                 "4 tidal flat, 5 drowned reef (zoom/shoreforms.py)"},
 }
 
 
@@ -365,7 +365,7 @@ def add_to_zoom(ref, terrain: bool = False, world: dict | None = None):
 
 def text_lines(c: dict) -> list[str]:
     s = c["stats"]
-    out = ["coast (zoom_coast.py, PW-097): " + ", ".join(f"{k} {v:g} km" for k, v in
+    out = ["coast (zoom/coast.py, PW-097): " + ", ".join(f"{k} {v:g} km" for k, v in
                                                          sorted(s["shore_km"].items(), key=lambda kv: -kv[1]))]
     out.append(f"  barrier islands {s['barrier_islands_km2']:g} km2, lagoons {s['lagoons_km2']:g} km2, "
                f"{s['inlets']} inlets (~{s['inlet_spacing_km']:g} km apart); hazards {s['hazard_km2']:g} km2"

@@ -1,5 +1,5 @@
 """Shore forms in a regional zoom (PW-621; docs/proposals/coast_detail.md stage 2): what the waves and tides
-build from the sand and mud the rivers and cliffs give them. Part of `planet coast zoom:<id>` (zoom_coast.py):
+build from the sand and mud the rivers and cliffs give them. Part of `planet coast zoom:<id>` (zoom/coast.py):
 a new layer `shore_form` and spit features; the terrain changes only with --terrain (spits raised out of the
 sea), like the barrier islands.
 
@@ -144,7 +144,7 @@ def _d8_channels(bed, flat, noise, res, min_km2):
 
 
 def build(world, meta, lay, ctx, terrain=False, seed=1):
-    """shore_form (ny, nx) u1, spit features and stats. ctx: zoom_coast.build's shore arrays (land, sea, shore,
+    """shore_form (ny, nx) u1, spit features and stats. ctx: zoom.coast.build's shore arrays (land, sea, shore,
     h, wave_sea, tide_sea, rise, hard, ct, cells, Pk, uniform)."""
     land, sea, shore, h = ctx["land"], ctx["sea"], ctx["shore"], ctx["h"]
     res, ct, Pk = ctx["res"], ctx["ct"], ctx["Pk"]

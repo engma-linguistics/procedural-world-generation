@@ -11,7 +11,7 @@ impact: low
 found_by: fun5
 blocked_by: []
 relates: [PW-618, PW-610]
-refs: [planet/zoom_resources.py, planet/zoom_fine.py, "zoom c7eff5 (fun5 test, fine zoom of 875af2)"]
+refs: [planet/zoom/resources.py, planet/zoom/fine.py, "zoom c7eff5 (fun5 test, fine zoom of 875af2)"]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -29,3 +29,4 @@ to the parent's deposits by key and nearest position. Lean A until the lines are
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-fine-zoom-deposits-resite.md (found by fun5).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -11,7 +11,7 @@ impact: low
 found_by: soilveg2
 blocked_by: []
 relates: [PW-330, PW-649]
-refs: [planet/zoom_vegetation.py, planet/soils.py]
+refs: [planet/zoom/vegetation.py, planet/soils.py]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -23,3 +23,4 @@ updated: 2026-10-23
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-soil-zoom-salt-pixels.md (found by soilveg2).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

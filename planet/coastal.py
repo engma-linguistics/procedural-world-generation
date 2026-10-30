@@ -1,6 +1,6 @@
 """Coastal and shallow-sea life (PW-188): coral reefs, mangroves, salt
 marsh, kelp forests and seagrass meadows, as world layers (% of a cell)
-and the inputs the regional zoom places them with (zoom_coastal.py).
+and the inputs the regional zoom places them with (zoom/coastal.py).
 
 Each habitat is a suitability from the water and the coast (0..1, the
 "environment": warm or cool enough, salty enough, clear enough, sheltered
@@ -44,7 +44,7 @@ the cell, so the share shallower than z is z / (2 depth); an offshore cell
 heights are taken as exponentially distributed about its mean (much low
 ground near the sea, a few hills: the simplest skewed hypsometry), so the
 share below the high-tide line h (half the tidal range, plus SETUP for
-wind and wave set-up) is 1 - e^(-h / elevation). The zoom (zoom_coastal)
+wind and wave set-up) is 1 - e^(-h / elevation). The zoom (zoom.coastal)
 instead uses each pixel's own depth and height.
 
 The habitats (environment x geometry):

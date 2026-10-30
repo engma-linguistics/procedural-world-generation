@@ -1,4 +1,4 @@
-"""Coastal and shallow-sea life (planet/coastal.py, zoom_coastal.py; PW-188,
+"""Coastal and shallow-sea life (planet/coastal.py, zoom/coastal.py; PW-188,
 PW-209): the rules on hand-made layers, and the layers through world.finish
 and the zoom on a small synthetic world."""
 

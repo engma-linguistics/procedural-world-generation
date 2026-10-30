@@ -1098,7 +1098,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         feats.point("volcano", v["lat"], v["lon"], status=v.get("status"), form=v.get("form"),
                     summit_m=v.get("top_m"), height_m=v.get("height_m"), age_myr=v.get("age_myr"),
                     volcano_type=v.get("kind"), minor=bool(v.get("minor")))
-    for dp in meta.get("resources", {}).get("deposits", []):  # (zoom_resources.py, PW-610)
+    for dp in meta.get("resources", {}).get("deposits", []):  # (zoom/resources.py, PW-610)
         feats.point("deposit", dp["lat"], dp["lon"], resource=dp["key"], name=dp["name"], form=dp["form"],
                     size=dp["size"], tonnage=dp["tonnage"], tonnage_unit=dp["tonnage_unit"], grade=dp.get("grade"),
                     grade_unit=dp.get("grade_unit"), depth_m=dp["depth_m"], host=dp["host"])

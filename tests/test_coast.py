@@ -1,5 +1,5 @@
 """Waves, tides and delta types (planet/coast.py, and the deltas in
-planet/zoom.py) on small synthetic worlds."""
+planet/zoom/regional.py) on small synthetic worlds."""
 
 import numpy as np
 import pytest

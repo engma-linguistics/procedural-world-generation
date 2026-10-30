@@ -10,9 +10,9 @@ cell's mean is restored after the landform pass, as for the other classes):
 the cell mean of the erosion is concentrated into a few troughs, the rest of
 the ground is left as the coarse cells have it.
 
-Import zoom_landforms, not this module first (it registers Glaciated there).
+Import zoom.landforms, not this module first (it registers Glaciated there).
 
-A Synth (zoom_landforms) that belongs to no coarse landform class: its cells
+A Synth (zoom.landforms) that belongs to no coarse landform class: its cells
 are the ones the ice reached, plus a ring round them (select()). Its pieces:
 
   troughs     the ice follows the big valleys (the zoom's drainage, trunks of
@@ -28,7 +28,7 @@ are the ones the ice reached, plus a ring round them (select()). Its pieces:
               floor ends below the sea and joins it, it is drowned: a fjord
               (drown()).
   cirques     bowls on the high slopes in the iced country, on a planet-fixed
-              lattice (zoom_landforms.blobs); the ridge left between two is
+              lattice (zoom.landforms.blobs); the ridge left between two is
               an arete.
   moraines    ridges along the margin: where the smooth share of iced cells
               passes 0.5 (the terminal belt) and 0.85 (a recessional one),

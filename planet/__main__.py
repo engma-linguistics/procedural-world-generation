@@ -135,7 +135,7 @@ def cmd_zoom(args):
 
 
 def _fine_zoom(args, parent: str):
-    """planet zoom <zoom id>: a fine zoom (zoom_fine, PW-129) of that zoom."""
+    """planet zoom <zoom id>: a fine zoom (zoom.fine, PW-129) of that zoom."""
     from .zoom import fine as ZF
     out = ZF.zoom(parent, args.lat, args.lon, args.size_km, args.res_km, args.seed)
     m = json.loads((out / "zoom.json").read_text())
@@ -173,7 +173,7 @@ def cmd_satellite(args):
 def cmd_coast(args):
     """Adds (or redoes) the coast layers (PW-097: coast form, barrier and cliff scores, seabird and seal
     colonies, navigation hazards) of saved worlds in place; on saved zooms, draws them per pixel
-    (zoom_coast.py)."""
+    (zoom/coast.py)."""
     from . import coastform as CF
     for ref in args.ids:
         kind, _, rid = ref.rpartition(":")
@@ -236,7 +236,7 @@ def cmd_game(args):
 
 def cmd_resources(args):
     """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place, or sites concrete
-    deposits in saved zooms (PW-610: zoom_resources.py; the world is not written)."""
+    deposits in saved zooms (PW-610: zoom/resources.py; the world is not written)."""
     from . import resources as RS
     from .zoom import resources as ZR
     for ref in args.ids:
@@ -618,7 +618,7 @@ def main():
     z.add_argument("--peoples", metavar="RUN", default=None,
                    help="a peoples run of this world (planet lineages; planet landuse RUN): the zoom's plants follow "
                         "its cleared land (fields, pasture, burned grass, managed woods, villages); a zoom of its own "
-                        "(zoom_peoples.py, PW-667); without it the zoom is as it always was")
+                        "(zoom/peoples.py, PW-667); without it the zoom is as it always was")
     z.set_defaults(func=cmd_zoom)
 
     sa = sub.add_parser("satellite", help="add or redo the satellite view of saved worlds and zooms (in place)")

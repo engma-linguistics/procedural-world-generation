@@ -406,7 +406,7 @@ def _with_volcanoes(w, rows, plumes):
 
 
 def test_volcano_status():
-    """zoom_volcanoes.status: active (fed now); dormant: a hotspot vent off its
+    """zoom.volcanoes.status: active (fed now); dormant: a hotspot vent off its
     plume but within DORMANT_KM of it; extinct otherwise (and every arc
     volcano past its life)."""
     from planet.zoom import volcanoes as ZV

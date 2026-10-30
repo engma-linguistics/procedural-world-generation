@@ -9,7 +9,7 @@ mud and the light's attenuation Kd), and the place's part, from the pixel:
   reef        sea pixels shallower than the reefs' light depth (10% of the
               surface light, at most coastal.REEF_MAX_M); patches cover
               coastal.REEF_SHARE x the water's suitability of that floor.
-              Plus the world's volcanoes' living reefs (zoom_volcanoes'
+              Plus the world's volcanoes' living reefs (zoom.volcanoes'
               fringing flats, barrier reefs and atoll rims).
   kelp        sea pixels above the kelp's light depth (1%, at most
               coastal.KELP_MAX_M) by a rocky shore: land rising ROCK_RISE m
@@ -117,7 +117,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
           surface_rock: np.ndarray | None = None, volcano_reef: np.ndarray | None = None) -> dict:
     """The zoom's coastal life. h: elevation (m; sea floor < 0), water (0
     land, 1 sea, 2 lake), glacier (bool), d_sea (km from land pixels to the
-    sea), surface_rock (ROCKS ids), volcano_reef (bool: zoom_volcanoes' reef
+    sea), surface_rock (ROCKS ids), volcano_reef (bool: zoom.volcanoes' reef
     pixels); all flat (ny*nx). Returns {"layer": coastal_life (uint8, LIFE),
     "stats": km^2 of each habitat}."""
     from .vegetation import _sel

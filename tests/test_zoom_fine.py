@@ -1,7 +1,7 @@
-"""Nested fine zooms (zoom_fine, PW-129) of a small synthetic parent zoom:
+"""Nested fine zooms (zoom.fine, PW-129) of a small synthetic parent zoom:
 a valley whose river drops 500 m over a scarp (a fall in the parent's
 stats) and a stratovolcano beside it, on a synthetic world for the climate.
-Checked: the parent's means kept (over 3x3 parent pixels: see zoom_fine's
+Checked: the parent's means kept (over 3x3 parent pixels: see zoom.fine's
 landscape pass), the fall's and the volcano's heights exactly, the edge
 on the parent's surface, a fine zoom of a fine zoom, the step limit, and
 saving / indexing / deleting with the parent."""
@@ -430,7 +430,7 @@ def _main_river(z, qmin):
 def test_river_planform(world, kind):
     """No grid-aligned zigzags from the parent's D8 path: a steep bedrock
     river runs straight; a gentle alluvial one meanders at ~10-14 channel
-    widths, no bend tighter than ~1.5 widths (zoom_fine.planform)."""
+    widths, no bend tighter than ~1.5 widths (zoom.fine.planform)."""
     parent = _river_parent(kind)
     lat, lon = _at(parent[0], 75, 75)
     z = ZF.build(parent, world, lat, lon, size_km=8, res_km=0.025, log=lambda *a: None)
@@ -498,7 +498,7 @@ def test_forms_stats_and_lineage_seed(fine):
 
 
 def test_subpixel_takes_each_parent_pixels_mean_off(parent):
-    """zoom_fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
+    """zoom.fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
     from planet.zoom import fine_forms as ZFF
     meta, layers = parent
     pa = ZF._Parent(meta, {k: np.asarray(v) for k, v in layers.items()})
@@ -522,7 +522,7 @@ def test_subpixel_takes_each_parent_pixels_mean_off(parent):
 
 
 def test_size_menu_matches_check():
-    """PW-552: the viewer's size menu (zoom_fine.size_options, GET /api/fine-rules) offers only sizes
+    """PW-552: the viewer's size menu (zoom.fine.size_options, GET /api/fine-rules) offers only sizes
     check() accepts, includes the server default, and offers something finer in every 2-4 km zoom and in a 200 m fine zoom."""
     for rp in (4.0, 2.0, 1.0, 0.4, 0.25, 0.2, 0.1):
         out = ZF.size_options(rp)
