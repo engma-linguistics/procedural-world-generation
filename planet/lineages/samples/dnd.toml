@@ -46,13 +46,18 @@ portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' 
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
-# Stems are the last common ancestor of the peoples under them, not the first reptiles or mammals (owner ruling): roots are no older than ~20 Myr
-# and the named peoples are fully realized within ~3 Myr, as the avian line is. The draconic stem IS the dragons, the elder line among the
-# reptilian peoples (the ur-dragon, ~19.5 Myr, against 2-3 Myr for the kobolds, lizardfolk, troglodytes and tortles, PW-978): extant megafauna at very low density (as the true
-# giants), minds arriving at the stem's sapiens node (PW-965, a marker: sapient = ...; the stem ends as animals, animals = true: wyverns, drakes and pseudodragons, untracked; the dragonborn and kobolds are its dragon-blooded humanoid
-# peoples, split off recently; the stem ends at its last split, PW-924). Its two great kinds, chromatic and metallic, split ~2.5 Myr ago (owner), and the kinds of dragon split from those, each in its own country (below; PW-924: the stems end, no dragon is of no set colour). Interfertility
-# follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people (T3); the lizardfolk,
-# tortles and troglodytes, 0.3-1 Myr apart, are held T3 to one another by [[interfertile]] rows at the end, as they were when they were deeper.
+# Stems are the last common ancestor of the peoples under them, not the first reptiles or mammals (owner ruling): roots are no older than ~20 Myr.
+# (The earlier "named peoples within ~3 Myr" was a placeholder like the rest of the timeline; owner 10-29, PW-988.) The reptilian root
+# splits near its start into two branches. The draconic stem IS the dragons, the elder line among the reptilian peoples (the ur-dragon,
+# ~19.5 Myr, PW-978): extant megafauna at very low density (as the true giants), minds arriving at the stem's sapiens node (PW-965, a marker:
+# sapient = ...; the stem ends as animals, animals = true: wyverns, drakes and pseudodragons, untracked; the dragonborn and kobolds are its
+# dragon-blooded humanoid peoples, split off recently; the stem ends at its last split, PW-924). Its two great kinds, chromatic and metallic,
+# split ~2.5 Myr ago (owner), and the kinds of dragon split from those, each in its own country (below; PW-924: the stems end, no dragon is
+# of no set colour). The saurian stem (PW-988, owner 10-29: their own branch) holds the tortles, lizardfolk and troglodytes: minds at
+# 4.5 Myr (after the dragons' 5 Myr: the dragons stay the elder line), the tortles off first at 4.2 Myr (the slow, deep, ocean-going branch,
+# shelled and beaked), then the lizardfolk and troglodytes from each other at 2.5 Myr (the troglodytes the later, cave-going split).
+# Interfertility follows the split depths (PW-851): dragons are kin of dragonborn and kobolds, and of no saurian people (T3); the tortles are
+# T3 to the lizardfolk and troglodytes (4.2 Myr), the lizardfolk and troglodytes T2 (2.5 Myr: hybrids born, mostly sterile).
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
@@ -217,6 +222,17 @@ temp_c = [18, 40]
 rain_mm = [100, 700]
 prefers = ["steppe"]  # PW-924: hot dry grassland and scrub at the desert edges (the blues hold the deserts)
 
+[[lineage]]  # PW-988 (owner 10-29): the tortles, lizardfolk and troglodytes are their own branch off the reptilian line
+id = "saurian"
+sapient = "4.5 Myr"  # PW-965 sapiens node: minds arrive for the whole saurian stem, 0.3 Myr before the tortles split; after the dragons' 5 Myr
+name = "saurian stem (tortles, lizardfolk, troglodytes)"
+parents = ["reptilian"]
+at = "19.5 Myr"  # beside the dragons: the reptilian root splits into its two branches near its start
+temp_c = [18, 32]
+rain_mm = [700, 4000]
+prefers = ["tropical", "wetland", "coast"]
+traits = ["swims"]
+
 [[lineage]]
 id = "kobold"
 name = "kobolds"
@@ -235,8 +251,8 @@ near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 [[lineage]]
 id = "troglodyte"
 name = "troglodytes (extinct)"
-parents = ["reptilian"]
-at = "2.6 Myr"  # PW-978: the reptilian peoples split spread out within the ~3 Myr cap (tortle 3, troglodyte 2.6, lizardfolk 2.3, kobold 2 Myr)
+parents = ["saurian"]
+at = "2.5 Myr"  # PW-988: split from the lizardfolk (the saurian stem's last split), after the tortles left at 4.2 Myr
 extinct = "60 kyr"
 temp_c = [12, 28]
 traits = ["subterranean"]
@@ -245,8 +261,8 @@ traits = ["subterranean"]
 id = "lizardfolk"
 name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
-parents = ["reptilian"]
-at = "2.3 Myr"
+parents = ["saurian"]
+at = "2.5 Myr"  # PW-988: the saurian stem ends here, in the lizardfolk and the troglodytes
 density = 1.5
 explore = 0.4
 sea_share = 0.25
@@ -259,8 +275,8 @@ traits = ["swims"]
 id = "tortle"
 name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
-parents = ["reptilian"]
-at = "3 Myr"
+parents = ["saurian"]
+at = "4.2 Myr"  # PW-988: the saurian stem's first split, the deep branch (T3 to the lizardfolk and troglodytes by depth)
 density = 1
 explore = 0.7
 sea_share = 0.8
@@ -1321,17 +1337,3 @@ valence = ["exotic"]
 id = "edge_folk"
 label = "folk from beyond the edge"
 valence = ["edge"]
-
-# the reptilian peoples, formerly hundreds of Myr apart, kept unable to hybridize now that they all branch ~3 Myr ago (T3)
-[[interfertile]]
-a = "lizardfolk"
-b = "tortle"
-tier = 3
-[[interfertile]]
-a = "lizardfolk"
-b = "troglodyte"
-tier = 3
-[[interfertile]]
-a = "tortle"
-b = "troglodyte"
-tier = 3

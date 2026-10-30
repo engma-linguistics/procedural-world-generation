@@ -8,7 +8,9 @@
 # era (the era it belongs to: the tree's meta.era caps what any people reaches), mode = "fantasy" (left out in real mode),
 # stock = "crops" | "animals" (also known by whoever first tames a crop or an animal in the history: crops.py, animals.py).
 # bare = true (PW-971): bare-bones tool use, allowed in a stem before its sapiens node (Lomekwi, Oldowan, Acheulean). Every other tech
-# waits for the node, gesture and language included. modern_contact = true: spreads by contact (x spread) to any people under a sapiens node.
+# waits for the node, gesture and language included. Each body plan has its own (PW-987): knapping and handaxes need hands, found and
+# hooked tools take a beak (grip, below), so the bird stems use found tools before their minds and the cats, saurians and dragons none.
+# grip (PW-987): what a tech needs to hold its tool, when it needs one (hands not false): "hands" (the default), "beak" or "any" (either). modern_contact = true: spreads by contact (x spread) to any people under a sapiens node.
 #
 # Dates are the real-world (Earth) archaeological firsts the ordering leans on, in kyr before the present. Sources are
 # given as author, year, journal; "unverified" marks a date the author of this file could not tie to a source it is sure
@@ -54,7 +56,9 @@ name = "Magic and the arcane"
 
 # ---- kinds: who starts with what -----------------------------------------------------------------------
 # of = a line id; the rule applies to it and every line below it in the tree. elder: an old kind (elder_kyr applies).
-# hands = false: cannot knap, haft, pot or forge (dragons). kit: what it knows from its start (an arrival brings it from
+# hands = false: cannot knap, haft, pot or forge (dragons); hands = "node": hands only from its stem's sapiens node, once
+# genetically modern (owner 10-29, PW-987: the cats and the bird-peoples; the saurians likewise), no tool before it but what a beak can
+# hold. beak = true: can hold a tool in its beak (grip "beak" or "any"). kit: what it knows from its start (an arrival brings it from
 # elsewhere: the feywild, the sea; a split or group otherwise inherits its parent's). rate_x scales its own inventing.
 [[kind]]
 of = "draconic"
@@ -62,6 +66,16 @@ elder = true
 hands = false
 rate_x = 0.6   # few and long-lived: slow to invent, but they have had a long time
 kit = ["innate_magic"]  # breath and flight-craft are part of being a dragon
+[[kind]]
+of = "avian"  # PW-987: birds probe and hook with the beak before their minds (crows); hands with the sapiens node
+hands = "node"
+beak = true
+[[kind]]
+of = "feline"  # PW-987: paws until the sapiens node; cats use no tools before it
+hands = "node"
+[[kind]]
+of = "saurian"  # PW-988: the tortles, lizardfolk and troglodytes: clawed feet until the sapiens node, as the cats
+hands = "node"
 [[kind]]
 of = "kobold"  # (dragon-blooded, but neither elder nor handless: the rule of the nearest kind holds)
 [[kind]]
@@ -323,6 +337,29 @@ era = "medieval"
 source = "unverified (alembics in Roman Egypt ~1.7 kyr; spirits common in Europe by ~0.7 kyr)"
 
 # ---- tools and materials -------------------------------------------------------------------------------
+[[tech]]
+id = "found_tools"
+name = "found tools (stones as hammers and anvils, sticks as probes)"
+track = "tools"
+earliest_kyr = 20000  # animal behaviour, no archaeological floor: as old as any stem
+rate = 0.02
+grip = "any"   # (a hand or a beak)
+bare = true
+era = "stone age"
+source = "unverified (living tool users: New Caledonian crows probe with sticks, chimpanzees and capuchins crack nuts with stones; no paper on file)"
+
+[[tech]]
+id = "hooked_tools"
+name = "hooked and shaped probes (twigs and leaf strips worked into hooks)"
+track = "tools"
+needs = ["found_tools"]
+earliest_kyr = 20000
+rate = 0.01
+grip = "beak"  # (the bird stems' own: crows shape hooks; no primate does it before stone tools)
+bare = true
+era = "stone age"
+source = "UNVERIFIED (New Caledonian crow hook-making: Hunt 1996, Nature; Weir, Chappell & Kacelnik 2002, Science, hook bending; neither on file in docs/references, references from memory)"
+
 [[tech]]
 id = "knapping"
 name = "knapped stone tools"

@@ -1956,11 +1956,16 @@ def test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome():
         assert set(kinds) == chromatic | metallic and all(l.megafauna for l in kinds.values())
         assert all(l.parents == ["chromatic_dragon" if l.id.removesuffix("_dragon") in chromatic else "metallic_dragon"] and l.prefers and 500 <= l.ago_kyr <= 1_000 for l in kinds.values())
         assert len({tuple(l.prefers) for l in kinds.values()}) >= 8  # (kinds differ by biome)
-        for k in ("lizardfolk", "tortle"):
-            assert t.lines[k].ago_kyr <= 3_000 and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3
+        for k in ("lizardfolk", "tortle"):  # (PW-988: the old 3 Myr cap was a placeholder; they split after the dragons' minds, the elder line)
+            assert t.lines[k].ago_kyr < d.sapient_kyr and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3
         assert t.tier_of("dragonborn", "kobold") == 2 and t.tier_of("draconic", "dragonborn") <= 2
         for k in ("dragonborn", "kobold"):
             assert t.lines[k].parents == ["draconic"] and t.lines[k].start_near == ["draconic"]
+    t = LR.load_tree("dnd")  # PW-988 (owner 10-29): the tortles, lizardfolk and troglodytes are a branch of their own, the troglodytes the later split
+    s = t.lines["saurian"]
+    assert s.parents == ["reptilian"] and not s.persists and s.sapient_kyr < t.lines["draconic"].sapient_kyr
+    assert all(t.lines[k].parents == ["saurian"] for k in ("tortle", "lizardfolk", "troglodyte"))
+    assert t.split_kyr("lizardfolk", "troglodyte") < t.split_kyr("lizardfolk", "tortle") == t.split_kyr("troglodyte", "tortle")
 
 
 def test_landmasses_are_named_from_the_worlds_seed_and_rank():

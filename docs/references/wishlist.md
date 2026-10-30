@@ -72,5 +72,9 @@ For the sapiens-node dates (PW-971, docs/review/lineages/sapiens-dates.md). Read
 - [ ] Emery & Clayton 2004, Science 306:1903-1907, "The mentality of crows". The full corvid cognition review; reference from memory, unverified.
 - [ ] Olkowicz et al. 2016, PNAS. Bird pallium neuron counts, for the avian stem; reference from memory, unverified.
 - [ ] A big-cat cognition review (none found), for the feline stem.
+- [ ] Hunt 1996, Nature, and Weir, Chappell & Kacelnik 2002, Science. New Caledonian crow hook-making and hook bending, for the bird stems'
+  bare tools (techtree.toml `hooked_tools`, PW-987); references from memory, unverified.
+- [ ] A review of tool use in living animals (stone hammers and anvils in chimpanzees and capuchins, probing sticks), for `found_tools`
+  (PW-987); none chosen yet.
 - [ ] The Dikika cut-mark dispute (a rebuttal to McPherron et al. 2010), no reference yet.
 - [ ] Dediu & Levinson 2013 full text for the Neanderthal/sapiens split date they use.
