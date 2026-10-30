@@ -1,4 +1,5 @@
 ---
+id: PW-1081
 title: regional.py still holds about 1,100 lines of helpers and 400 lines of I/O; split them by topic as the audit proposed, and split zoom.fine.build the same way
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: refactor-lane-55
 blocked_by: []
 relates: [PW-1048, PW-1049]
 refs: [planet/zoom/regional.py, planet/zoom/fine.py, docs/review/code-audit-2026-10/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -19,3 +22,6 @@ In plain words. The zoom code now lives in `planet/zoom/` and its main build is 
 Do it with PW-1048 (the two zoom dilate helpers and the falls code) and PW-1049 (the drifted finish copies), since both touch the same helpers. The stage modules reach these helpers as `RG.name`, so a move only needs those references updated.
 - [ ] regional.py is only `ZoomCtx`, `build()` and the I/O
 - [ ] `fine.build` split into named stages
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-zoom-regional-helpers-into-topic-modules.md (found by refactor-lane-55).
