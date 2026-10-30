@@ -130,6 +130,7 @@ COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two pe
 # at its full habitat left a newcomer K(1 - alpha) of room, under the establishment threshold (EST) and the hold (HOLD_MIN) wherever
 # alpha_eff > ~0.75, so whoever reached a niche first kept it (kobolds held the mountains 1.5 Myr before the dwarves split, and the
 # dwarves never got in). Off only to measure what it does
-MAINLINE_Q = 0.4  # owner 10-30 (lane 73, option C): a mainline people (spec `mainline`: the genre's core peoples) feels its rivals' competition
-# this much less, everywhere: an authored commonness, not a mechanism. 0.4 (lane 73, world 4360a3, seeds 7 and 10): orcs, gnomes and
-# halflings above 2% of people and orcs above 2% of cells led; the elves (density 1) and the dwarves (stranded on one continent: inbox draft dwarves-stranded-in-hominid-cradle) stay under 1%
+MAINLINE_Q = 0.0  # owner 10-30 (lane 73, option C), measured and NOT the chosen design (the owner prefers demography: lane 76): a mainline
+# people (spec `mainline`) feels its rivals' competition this much less, everywhere. On world 4360a3, seeds 7 and 10: at 0.4 orcs,
+# gnomes and halflings rise above 2% of people, elves reach ~2-3% of cells led at ~0.5% of people, dwarves stay ~0.3%; at 0.6 dwarves
+# 0.6-0.9%, elves 0.3-0.5%, humans fall to 55-63%. Off (0) until the demography pass decides
