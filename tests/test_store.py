@@ -267,3 +267,49 @@ def test_world_seasons():
     assert np.abs(L["temperature_jul"][s] - L["cold_month"][s]).max() <= 0.51
     assert np.abs(L["temperature_jan"][n] - L["cold_month"][n]).max() <= 0.51
     assert np.abs(0.5 * (L["precipitation_jul"] + L["precipitation_jan"]) - L["precipitation"]).max() <= 1
+
+
+def test_update_meta_keeps_concurrent_keys(data_root):
+    """PW-1040: passes adding to the same run.json at once (threads here; processes share the flock) keep each
+    other's keys: update_meta re-reads under the lock."""
+    import threading
+    d = S.runs_dir() / "abc123"
+    d.mkdir(parents=True)
+    S.write_json(d / "run.json", {"id": "abc123", "meta": {}})
+    go = threading.Barrier(8)
+
+    def add(k):
+        go.wait()
+        for j in range(5):
+            S.update_meta(d, lambda run: run["meta"].__setitem__(f"{k}-{j}", j))
+
+    ts = [threading.Thread(target=add, args=(k,)) for k in range(8)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert len(json.loads((d / "run.json").read_text())["meta"]) == 40
+
+
+def test_new_id_skips_taken_ids(data_root, monkeypatch):
+    """PW-1040: a new id never lands on an existing run (its folder is made at once) or world."""
+    (S.runs_dir() / "aaaaaa").mkdir(parents=True)
+    S.worlds_dir().mkdir(parents=True, exist_ok=True)
+    (S.worlds_dir() / "bbbbbb.json").write_text("{}")
+    draws = iter(["aaaaaa", "cccccc", "bbbbbb", "dddddd"])
+    monkeypatch.setattr(S.secrets, "token_hex", lambda n: next(draws))
+    assert S.new_id() == "cccccc" and (S.runs_dir() / "cccccc").is_dir()
+    assert S.new_id("world") == "dddddd"
+
+
+def test_atomic_path(tmp_path):
+    """PW-1040: np.savez through atomic_path lands at the path; the temporary name is unique and goes on failure."""
+    p = tmp_path / "goods.npz"
+    with S.atomic_path(p) as tmp:
+        assert tmp.name.startswith(".goods.") and tmp.suffix == ".npz"
+        np.savez(tmp, a=np.arange(3))
+    assert np.load(p)["a"].tolist() == [0, 1, 2] and sorted(x.name for x in tmp_path.iterdir()) == ["goods.npz"]
+    with pytest.raises(RuntimeError), S.atomic_path(p) as tmp:
+        np.savez(tmp, a=np.arange(4))
+        raise RuntimeError
+    assert np.load(p)["a"].tolist() == [0, 1, 2] and sorted(x.name for x in tmp_path.iterdir()) == ["goods.npz"]

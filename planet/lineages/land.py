@@ -243,9 +243,8 @@ def _disk_write(world_ref: str, key: str, out: dict) -> None:
             arrs[k] = np.asarray(v)
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
-        tmp = p.with_name(p.stem + ".tmp.npz")
-        np.savez(tmp, **arrs)
-        tmp.replace(p)
+        with S.atomic_path(p) as tmp:  # (a unique temporary name, PW-1040)
+            np.savez(tmp, **arrs)
     except OSError:
         pass
 

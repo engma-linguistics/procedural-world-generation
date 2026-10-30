@@ -214,9 +214,8 @@ class Pass:
     def _clim_write(self, key: str) -> None:
         p = self.tz_dir / "recent_rain.npz"
         try:
-            tmp = p.with_name("recent_rain.tmp.npz")
-            np.savez(tmp, _key=np.array(key), tn=self._clim[0], rain=self._clim[1])
-            tmp.replace(p)
+            with S.atomic_path(p) as tmp:  # (a unique temporary name, PW-1040)
+                np.savez(tmp, _key=np.array(key), tn=self._clim[0], rain=self._clim[1])
         except OSError:
             pass
 

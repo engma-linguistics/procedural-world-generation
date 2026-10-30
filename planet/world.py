@@ -473,7 +473,7 @@ _np = S.jsonable  # json.dumps default= for numpy values
 def save(world: dict, name: str, file_id: str | None = None) -> Path:
     """Saves worlds/<id>.json (+ .txt); `name` is the human-readable label."""
     S.worlds_dir().mkdir(parents=True, exist_ok=True)
-    file_id = file_id or S.new_id()
+    file_id = file_id or S.new_id("world")
     g: Grid = world["grid"]
     world["name"] = name
     summary = summarize(world)

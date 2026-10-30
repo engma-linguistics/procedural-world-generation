@@ -141,9 +141,8 @@ def goods_path(world_id: str) -> Path:
 def write_history(world_id: str, hist: dict) -> None:
     p = history_path(world_id)
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.stem + ".tmp.npz")
-    np.savez_compressed(tmp, **{k: np.asarray(v) for k, v in hist.items()})
-    tmp.replace(p)
+    with atomic_path(p) as tmp:
+        np.savez_compressed(tmp, **{k: np.asarray(v) for k, v in hist.items()})
 
 
 def read_history(world_id: str) -> dict | None:
@@ -154,9 +153,21 @@ def read_history(world_id: str) -> dict | None:
         return {k: (z[k].item() if z[k].ndim == 0 else z[k]) for k in z.files}
 
 
-def new_id() -> str:
-    """Short random id for a run or world (6 hex characters)."""
-    return secrets.token_hex(3)
+def new_id(kind: str = "run") -> str:
+    """Short random id for a new run or world (6 hex characters), one no item of that kind has yet (PW-1040).
+    A run's folder is made here (mkdir, which fails if another process just took the id), so the id is reserved."""
+    while True:
+        item_id = secrets.token_hex(3)
+        path = path_of(kind, item_id)
+        if kind == "run":
+            path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                path.mkdir()
+            except FileExistsError:
+                continue
+            return item_id
+        if not path.exists():
+            return item_id
 
 
 def rel(path: Path) -> str:
@@ -187,6 +198,36 @@ def write_atomic(path: Path, data: str | bytes) -> Path:
         tmp.unlink(missing_ok=True)
         raise
     return path
+
+
+@contextlib.contextmanager
+def atomic_path(path: Path):
+    """A temporary path in path's folder (unique to this process and thread) to write a file to, renamed
+    into place when the block ends without an error (removed if it fails), for writers such as
+    np.savez that take a path rather than bytes (write_atomic). The temporary name keeps path's suffix
+    (np.savez adds .npz to a name without it), so <stem>.<pid>.<thread>.tmp<suffix>."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.stem}.{os.getpid()}.{threading.get_ident()}.tmp{path.suffix}")
+    try:
+        yield tmp
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def update_meta(run_dir: Path, fn) -> dict:
+    """Read-modify-write of a run's run.json under a lock (PW-1040): fn(run) edits the freshly re-read
+    run.json dict in place, and it is written back atomically, so two passes adding to the same run
+    (land use, fuels, demes, the tech tree; a viewer job and a command) can't drop each other's keys.
+    Returns the run dict as written."""
+    run_dir = Path(run_dir)
+    p = run_dir / "run.json"
+    with lock(run_dir.parent, f"meta-{run_dir.name}"):
+        run = json.loads(p.read_text())
+        fn(run)
+        write_json(p, run)
+    return run
 
 
 _locks: dict[str, list] = {}  # lock file -> [RLock, depth, fd] (this process's holders)

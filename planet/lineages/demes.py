@@ -816,12 +816,13 @@ def write(run_dir: Path, report: bool = True) -> dict:
     d = derive(run_dir)
     S.write_atomic(run_dir / "layers" / "demes.bin", d["layer"].astype("<u2").tobytes())
     S.write_atomic(run_dir / "demes.json", json.dumps(d["doc"], separators=(",", ":")))
-    p = run_dir / "run.json"
-    run = json.loads(p.read_text())
-    run["layers"]["demes"] = {"file": "layers/demes.bin", "dtype": "uint16", "shape": list(d["layer"].shape), "scale": 1, "offset": 0,
-                              "transform": None, "units": "", "description": "the deme (regional population, demes.py, PW-981) of the cell's leading people: index into demes.json demes; 65535 none"}
-    run["meta"]["demes"] = d["summary"]
-    S.write_json(p, run)
+
+    def add(run):
+        run["layers"]["demes"] = {"file": "layers/demes.bin", "dtype": "uint16", "shape": list(d["layer"].shape), "scale": 1, "offset": 0,
+                                  "transform": None, "units": "", "description": "the deme (regional population, demes.py, PW-981) of the cell's leading people: index into demes.json demes; 65535 none"}
+        run["meta"]["demes"] = d["summary"]
+
+    S.update_meta(run_dir, add)
     if report:
         with open(run_dir / "run.txt", "a") as f:
             f.write("\n".join(lines_for_report(d["summary"], d["doc"])) + "\n")

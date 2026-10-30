@@ -374,6 +374,5 @@ def for_run(run_dir: Path) -> dict:
     goods = LD.goods(m.get("world")) if m.get("world") else None
     tt = build(m["lineages"], m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
                m.get("era"), int(m.get("try_seed") or 0))
-    m["techtree"] = tt
-    S.write_json(p, run)
+    S.update_meta(run_dir, lambda r: r["meta"].__setitem__("techtree", tt))  # (re-read under the lock, PW-1040)
     return tt
