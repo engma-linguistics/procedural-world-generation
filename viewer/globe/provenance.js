@@ -1,7 +1,7 @@
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
+import { VEG_VIEWS } from './layers.js';
 import { $ } from './scene.js';
-import { VEG_VIEWS } from './colours.js';
 import { renderSummary } from './panel.js';
 import { finishedOf } from './timezoom.js';
 import { projOverlaysChanged } from './map2d.js';

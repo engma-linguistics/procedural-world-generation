@@ -1,6 +1,7 @@
 import { S, state } from './state.js';
+import { SEASONAL, layerNeeds } from './layers.js';
 import { $ } from './scene.js';
-import { SEASONAL, loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
+import { loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
 import { buildTopology, paint, prepareGrid } from './geometry.js';
 import { renderLayerButtons, renderRunSummary, renderSummary } from './panel.js';
 import { timeLabel } from './timezoom.js';
@@ -57,17 +58,7 @@ export async function setWorld(w) {
 // target cell in the cell's neighbour list, 255 = none -> -1).
 // Only the layers the picture needs are downloaded (layersNeeded), when needed.
 const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, uint64: BigUint64Array, int8: Int8Array, float32: Float32Array };
-// colour layer / overlay -> the run layers it draws from (elevation is always loaded)
-const LAKE_NEEDS = ['lake_kind', 'lake_depth'];
-const COLOUR_NEEDS = {
-  elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
-  'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
-  rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  'land use': ['tree_cover', 'ice'], technology: ['peoples'], fuels: ['tree_cover', 'ice'], demes: ['demes'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
-  'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
-  landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
-  vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
-};
+// overlay -> the run layers it draws from (a colour layer's: layerNeeds, layers.js)
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],
                         arrows: ['plate'] };
@@ -75,11 +66,10 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
   // ice, which says which cells are land (see iceBed)
-  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || []), ...(state.layer.startsWith('animal: ') ? ['animal_wild', 'animal_known'] : []), ...(state.layer.startsWith('crop: ') ? ['crop_wild', 'crop_known'] : [])];
-  if (state.layer.startsWith('body: ')) want.push('peoples_whole', 'body_' + state.layer.slice(6));
+  const want = ['elevation', 'lake_kind', 'ice', ...layerNeeds(state.layer)];  // (layers.js: each layer's needs)
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (S.V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', 'animal_wild', 'animal_known', 'crop_wild', 'crop_known', 'mix_lead', 'mix_lead_share', 'mix_second',
+  if (S.V.run.meta?.phase === 'lineages') want.push(...layerNeeds('peoples'), 'peoples_overlay', 'animal_wild', 'animal_known', 'crop_wild', 'crop_known', 'mix_lead', 'mix_lead_share', 'mix_second',
     'mix_second_share', 'mix_other_share', ...Object.keys(S.V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);

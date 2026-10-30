@@ -1,17 +1,18 @@
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
+import { COAST_SCORES, HU_LAYERS, LAKE_LAYERS, OBS_LAYERS, RAMPS, SEASONAL, UNITS, WORLD_TINTED, availableLayers, layerDef } from './layers.js';
 import { $ } from './scene.js';
-import { ANIMAL_COLS, COASTAL, COAST_LAYERS, COAST_SCORES, CROP_COLS, GAME_LAYERS, HU_LAYERS, HU_OVERLAY, LAKE_KINDS, LAKE_LAYERS, OBS_LAYERS, RAMPS, RES_LAYERS, SEASONAL, SEA_LAYERS, SOIL_LAYERS, TECH_HOW, TECH_HOW_TEXT, UNITS, VEG_LAYERS, WORLD_TINTED, animalStocks, anthroOn, anthroSrc, availableLayers, coastLegend, coastText, cropBit, cropStocks, fillRes, fillTechs, fuelRows, fuelSrc, huSwatches, isSeaPeople, lakeKind, obsView, peoplesIdx, resInfo, resLegend, seasonUnits, seasonalData, techHowText, techId, techName, techOldest, techTree, worldAnthroOn, worldAnthroPanel } from './colours.js';
+import { HU_OVERLAY, LAKE_KINDS, animalStocks, anthroOn, anthroSrc, coastText, cropBit, cropStocks, fillRes, fillTechs, fuelRows, fuelSrc, huSwatches, lakeKind, obsView, peoplesIdx, resInfo, seasonUnits, seasonalData, techTree, worldAnthroOn, worldAnthroPanel } from './colours.js';
 import { EVENT_COLORS, eventWindow, hexColor } from './overlays.js';
 import { buildLandmassNames, rankLetter } from './axis.js';
-import { agoLabel, finishBox, finishMomentLine, timezoomBox, timezoomSummary } from './timezoom.js';
+import { finishBox, finishMomentLine, timezoomBox, timezoomSummary } from './timezoom.js';
 import { drawMarks, runTree, sourceLink, timezoomLink, zoomsOf } from './provenance.js';
 import { fillPfts, toast } from './pick.js';
 import { windKey } from './map2d.js';
 import { hasLayer } from './load.js';
 // ------------------------------------------------------------ UI
 // a colour bar for RAMPS[key]; labels (optional) replace the end values
-function rampLegend(key, units, labels) {
+export function rampLegend(key, units, labels) {
   const stops = RAMPS[key], lo = stops[0][0], hi = stops[stops.length - 1][0];
   const g = stops.map(([v, c]) => `${c} ${((v - lo) / (hi - lo) * 100).toFixed(1)}%`).join(',');
   const [a, b] = labels || [lo, hi];
@@ -21,20 +22,16 @@ function rampLegend(key, units, labels) {
 
 // ------------------------------------------------------------ what the colour layer says about the whole world (PW-840)
 // and about the cell under the cursor: a summary under the world's own, and a small tooltip by the pointer.
-const CAT_LAYERS = () => ({ biome: ['biome', S.V.biomes], climate: ['climate', S.V.koppen], 'rock type': ['rock', S.V.rocks], 'surface rock': ['surface_rock', S.V.rocks],
-  vegetation: ['vegetation', S.V.vegTypes], soils: ['soil', S.V.soilTypes], landforms: ['landform', S.V.landforms] });
-// where a numeric layer has values: 'sea', 'all', or land
-const NUM_ALL = new Set(['elevation', 'temperature', 'precipitation', 'humidity', 'dew point', 'cloud', 'sunshine', 'crust age', 'crust thickness', 'sediment']);
+const NUM_GROUPS = new Set(['sea', 'plants', 'soil', 'game']);  // (their per-cell number is their key)
 function layerNumbers(layer) {  // {arr, key, where} for a ramp layer with one number a cell, or null
-  const L = S.V.layers, sv = seasonalData(layer);
-  const key = SEA_LAYERS[layer] || VEG_LAYERS[layer] || SOIL_LAYERS[layer] || GAME_LAYERS[layer]
-    || { 'crust age': 'crust_age', 'crust thickness': 'crust_thickness', sediment: 'sediment_cover', 'leaf area': 'lai_jul', 'river floods': 'flood_ratio' }[layer] || layer;
+  const L = S.V.layers, sv = seasonalData(layer), d = layerDef(layer);
+  const key = d.num || (NUM_GROUPS.has(d.group) && d.key) || layer;
   const arr = sv || L[key];
-  if (!arr || !arr.length || typeof arr[0] === 'bigint' || !(layer in UNITS) && !RAMPS[layer]) return null;
-  return { arr, where: SEA_LAYERS[layer] ? 'sea' : NUM_ALL.has(layer) ? 'all' : 'land' };
+  if (!arr || !arr.length || typeof arr[0] === 'bigint' || !d.units && !d.ramp) return null;
+  return { arr, where: d.where || 'land' };
 }
 function layerCats(layer) {  // {arr (ids), names, colors} for a categorical layer, fuels included
-  const L = S.V.layers, c = CAT_LAYERS()[layer];
+  const L = S.V.layers, c = layerDef(layer).cat?.(S.V);
   if (c && L[c[0]] && c[1]?.length) return { arr: L[c[0]], names: c[1].map((e) => e.name || e.code || String(e)), colors: c[1].map((e) => e.color || '#888'), land: true, none: c[0] === 'soil' || c[0] === 'landform' ? 0 : -1 };
   if (layer === 'fuels' && fuelSrc()) {
     const { F, A } = fuelSrc();
@@ -253,133 +250,9 @@ export function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
-  } else if (state.layer === 'technology' && techTree()) {
-    const tt = techTree(), id = techId(), f = tt.firsts[id], now = -S.V.t, lines = S.V.run.meta.lineages || [];
-    const knew = lines.filter((l) => (tt.known[l.id]?.[id]?.[0] ?? -1) >= now - 1e-9).length;
-    el.innerHTML = `<b>${esc(techName(id))}</b>` + (state.techCol === 'when'
-      ? `<span>new</span><span class="sw" style="width:70px;background:linear-gradient(90deg,#ffeca0,#d64828)"></span><span>long known</span>`
-      : Object.keys(TECH_HOW).map((h) => sw(TECH_HOW[h], TECH_HOW_TEXT[h])).join('')) + sw('#464e5a', 'not yet') + sw('#2a2e28', 'nobody') +
-      `<span class="muted">${knew} peoples know it by ${now <= 0 ? 'the present' : agoLabel(S.V.t)}; first: ${f ? `${esc((lines.find((l) => l.id === f.line)?.name || f.line).split(' (')[0])}, ${agoLabel(-f.ago_kyr)} (${esc(techHowText(f.how))})` : 'nobody'}. Stars: inventions, tamings, kits; arrows: giver to taker${techOldest(id) > -S.V.run.frames[0].t ? `; older events are drawn on the ranges of the first stored moment (${agoLabel(S.V.run.frames[0].t)})` : ''}.</span>`;
-  } else if (state.layer.startsWith('body: ')) {
-    el.innerHTML = rampLegend('body', `% of the cell's people with it (${state.layer.slice(6)}: each people's share, mixed by who lives there)`, ['0%', '100%']) + sw('#5a5a52', 'nobody');
-  } else if (state.layer === 'demes') {
-    // the regional populations of this frame (planet/lineages/demes.py, PW-981), the largest first
-    const L = S.V.layers, D = S.V.demes?.demes || [], cnt = new Map();
-    if (L.demes) for (let i = 0; i < S.V.n; i++) { const d = L.demes[i]; if (d !== 65535) cnt.set(d, (cnt.get(d) || 0) + 1); }
-    const rows = [...cnt.entries()].filter(([d]) => D[d]).sort((a, b) => b[1] - a[1]);
-    el.innerHTML = rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
-      sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations of the leading peoples here: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${S.V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
-  } else if (state.layer === 'peoples' || state.layer === 'peoples mix' || state.layer === 'peoples overlay' || state.layer === 'peoples blend') {
-    // the peoples present in this frame (planet/lineages/), by the land they lead
-    const L = S.V.layers, lines = S.V.run.meta.lineages || [], cnt = new Map();
-    if (state.layer === 'peoples overlay') {  // (it fell through to the ramp legend, which threw: PW-679)
-      const ov = L.peoples_overlay;
-      for (let i = 0; i < S.V.n; i++) { const d = ov ? ov[i] : 255; if (d !== 255 && lines[d]) cnt.set(d, (cnt.get(d) || 0) + 1); }
-      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d].color, esc(lines[d].name))).join('') +
-        '<span class="muted">templates and contact hybrids; elsewhere the leading people</span>';
-    } else if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
-    else {
-      for (let i = 0; i < S.V.n; i++) { const d = L.peoples ? peoplesIdx(i) : null; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
-      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d) + (isSeaPeople(lines[d]) ? ' (at sea)' : ''))).join('') +
-        sw('#5a5a52', 'nobody') + (state.layer === 'peoples blend' ? '<span class="muted">(each cell blends its leading people\'s colour, the second\'s and grey for all the others, by their shares)</span>' : '<span class="muted">(whitened: mixed)</span>');
-    }
-  } else if (state.layer.startsWith('animal: ')) {
-    const id = state.layer.slice(8), h = animalStocks()[id], t = h?.tamed?.[0];
-    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % 8], 'tamed and known') +
-      `<span class="muted">${h?.fantasy ? `fantasy animal (${S.V.run.meta.mode} mode); ` : ''}${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
-  } else if (state.layer.startsWith('crop: ')) {
-    const id = state.layer.slice(6), h = cropStocks()[id], t = h?.tamed?.[0];
-    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % CROP_COLS.length], 'cultivated and known') +
-      `<span class="muted">${h?.fantasy ? `fantasy crop (${S.V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
-  } else if (state.layer === 'fuels') {
-    const F = S.V.kind === 'world' ? S.V.wAnthroRun.fuels : S.V.run.meta.fuels;
-    el.innerHTML = F.names.map((k) => sw(F.colors[k], F.phrases[k])).join('') + sw('#5a5a52', 'nobody') +
-      `<span class="muted">${S.V.kind === 'world' ? `the leading fuel of peoples run ${S.V.wAnthroRun.id}, paler where it is a smaller share (the 'fuel' layer is the land's firewood score, 0-5)` : anthroOn() ? 'the leading fuel at the present, paler where it is a smaller share' : 'step to the last frame (the present) to see it'}</span>`;
-  } else if (state.layer === 'land use') {
-    el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
-      sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
-      `<span class="muted">${anthroOn() ? 'the present, from the peoples and their ways of life' : 'step to the last frame (the present) to see it'}</span>`;
-  } else if (state.layer === 'vegetation') {
-    // the named types present, grouped (forest, savanna, desert, ...), with their share of the land
-    const L = S.V.layers, cnt = new Map();
-    let land = 0;
-    for (let i = 0; i < S.V.n; i++) if (L.elevation[i] > 0) { cnt.set(L.vegetation[i], (cnt.get(L.vegetation[i]) || 0) + 1); land++; }
-    const groups = [];
-    for (const t of S.V.vegTypes) if (cnt.has(t.id) && t.id > 0) {
-      if (!groups.length || groups[groups.length - 1][0] !== t.group) groups.push([t.group, []]);
-      groups[groups.length - 1][1].push(t);
-    }
-    const share = (k) => 100 * cnt.get(k) / land, pct = (k) => (share(k) < 1 ? share(k).toFixed(1) : share(k).toFixed(0));
-    // the types covering at least 0.5% of the land, by group; the rest only counted (hover a cell for them)
-    let rare = 0;
-    el.innerHTML = groups.map(([g, ts]) => {
-      const big = ts.filter((t) => share(t.id) >= 0.5 || t.id >= 57);
-      rare += ts.length - big.length;
-      return big.length ? `<span><b class="muted" style="font-weight:600">${g}:</b></span>` +
-        big.map((t) => `<span title="${esc(t.text || t.name)}">${sw(t.color, '')}${t.name} ${pct(t.id)}%</span>`).join('') : '';
-    }).join('') + `<span class="muted">(named vegetation types, % of land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
-  } else if (state.layer === 'soils') {
-    // the soil types present with their share of the land
-    const L = S.V.layers, cnt = new Map();
-    let land = 0;
-    for (let i = 0; i < S.V.n; i++) if (L.elevation[i] > 0) { cnt.set(L.soil[i], (cnt.get(L.soil[i]) || 0) + 1); land++; }
-    el.innerHTML = S.V.soilTypes.filter((t) => cnt.has(t.id)).map((t) => {
-      const p = 100 * cnt.get(t.id) / land;
-      return `<span title="${esc(`${t.wrb} / ${t.usda}: ${t.desc}`)}">${sw(t.color, '')}${t.name} ${p < 1 ? p.toFixed(1) : p.toFixed(0)}%</span>`;
-    }).join('') + '<span class="muted">(soil types, % of land; hover a type for its WRB / USDA name)</span>';
-  } else if (state.layer === 'coastal life') {
-    const L = S.V.layers, cell = 4 * Math.PI * 6371 ** 2 / S.V.n / 100;
-    const km2 = (k) => { let t = 0; for (let i = 0; i < S.V.n; i++) t += L[k][i]; return t * cell; };
-    el.innerHTML = COASTAL.map(([k, n, c]) => sw(c, `${n} ${Math.round(km2(k)).toLocaleString()} km²`)).join('') +
-      `<span class="muted">(${UNITS['coastal life']}; reefs, kelp, seagrass at sea, mangroves and salt marsh between the tides; hover a cell for its shares)</span>`;
-  } else if (state.layer === 'satellite') {
-    el.innerHTML = `<span>${seasonUnits('satellite')}: plants by type and season, bare ground, snow, ice, lakes and sea</span>` +
-      '<span class="muted">(satellite.py; season picker: year = each hemisphere\'s summer; tick Clouds under Overlays)</span>';
-  } else if (state.layer === 'plant type') {
-    const p = S.V.pfts.find((q) => q.code === state.pft);
-    el.innerHTML = `<div><div class="grad" style="background:linear-gradient(90deg,#6b675f,${p?.color || '#fff'})"></div>
-      <div class="row" style="justify-content:space-between;width:260px"><span>0</span><span class="muted">% cover</span><span>100</span></div></div>
-      <span>${p ? `${p.code}: ${esc(p.name)}` : '?'}</span><span class="muted">(${p ? 'its group: ' + esc(p.group) : ''})</span>`;
-  } else if (state.layer === 'biome') {
-    const present = new Set(S.V.layers.biome);
-    el.innerHTML = S.V.biomes.filter((b) => present.has(b.id) && !(b.name === 'lake' && S.V.layers.lake_kind))
-      .map((b) => `<span><span class="sw" style="background:${b.color}"></span>${b.name}</span>`).join('');
-  } else if (state.layer === 'rock type' || state.layer === 'surface rock') {
-    const surf = state.layer === 'surface rock';
-    const present = new Set(surf ? S.V.layers.surface_rock : S.V.layers.rock);
-    el.innerHTML = S.V.rocks.filter((r) => present.has(r.id))
-      .map((r) => `<span><span class="sw" style="background:${r.color}"></span>${r.name}</span>`).join('') +
-      (surf ? '<span class="muted">(what you would walk on: sediment where it covers the basement; faded = under the sea)</span>'
-            : '<span class="muted">(basement rock; faded = under the sea; see "sediment" for what covers it)</span>');
-  } else if (state.layer === 'landforms') {
-    const L = S.V.layers, cnt = new Map();
-    let land = 0;
-    for (let i = 0; i < S.V.n; i++) if (L.elevation[i] > 0 && L.landform[i]) { cnt.set(L.landform[i], (cnt.get(L.landform[i]) || 0) + 1); land++; }
-    el.innerHTML = S.V.landforms.filter((f) => cnt.has(f.id))
-      .map((f) => sw(f.color, `${f.name} ${(() => { const p = 100 * cnt.get(f.id) / land; return p < 1 ? p.toFixed(1) : p.toFixed(0); })()}%`)).join('') +
-      '<span class="muted">(landform classes from each cell\'s geological record: rifting, folding, strata, eruptions; % of land)</span>';
-  } else if (state.layer === 'climate') {
-    const present = new Set(ov ? ov.obs : S.V.layers.climate);
-    el.innerHTML = S.V.koppen.filter((k) => present.has(k.id) && k.code !== '-')
-      .map((k) => `<span title="${k.name}"><span class="sw" style="background:${k.color}"></span>${k.code} ${k.name}</span>`).join('') +
-      `<span class="muted">(Köppen climate classes${ov ? ', observed: Kottek et al. 2006; grey = no data' : ''})</span>`;
-  } else if (RES_LAYERS.has(state.layer)) {
-    el.innerHTML = resLegend(state.layer, sw);
-  } else if (COAST_LAYERS.has(state.layer)) {
-    el.innerHTML = coastLegend(state.layer, sw);
-  } else if (HU_LAYERS[state.layer]) {
-    const k = HU_LAYERS[state.layer];
-    el.innerHTML = huSwatches(k) + `<span class="muted">(${{ river_nav: 'ribbons follow the rivers; also under Overlays', harbour: 'diamonds mark them; also under Overlays',
-      pass: 'bow-ties mark the saddle cells; also under Overlays', fertile: 'soil, water, growing season and slope', fresh_water: 'nearest perennial stream, lake, wetland or spring' }[k]}; hover a cell for details)</span>`;
-  } else if (state.layer === 'plates') {
-    el.innerHTML = `<span>Each colour = one plate (bright = continental crust, dark = oceanic)</span>
-      <span><span class="sw" style="background:#ff3b3b"></span>converging boundary</span>
-      <span><span class="sw" style="background:#3bf0ff"></span>diverging boundary</span>`;
   } else {
-    el.innerHTML = rampLegend(state.layer, seasonUnits(state.layer) + (ov ? ' (observed)' : '')) +
-      (state.layer === 'crust age' ? '<div class="muted">continents: age of the rock since it last formed or was remade <span class="sw" style="background:#f2e6d0"></span>0 <span class="sw" style="background:#a87d5a"></span>1 Gyr <span class="sw" style="background:#3a2a22"></span>3.5 Gyr</div>' : '') +
-      (state.layer === 'dew point' ? '<span class="muted">(above ~20 °C feels muggy)</span>' : '') +
-      (state.layer === 'elevation' && S.V.tz ? '<span class="muted">(ice surface included; heights above that moment\'s sea level)</span>' : '');
+    const d = layerDef(state.layer);
+    el.innerHTML = d.legend?.(sw, ov) ?? (rampLegend(state.layer, seasonUnits(state.layer) + (ov ? ' (observed)' : '')) + (d.note?.() || ''));
   }
   if (LAKE_LAYERS.has(state.layer) && !ov && (S.V.layers.lake_kind || S.V.layers.lake)) {
     const kinds = new Set();
@@ -415,77 +288,8 @@ export function renderLegend() {
       sw('#7f9fff', '- - deep return (schematic)') + sw('#5ff0c8', '◎ wells up');
 }
 
-// what each colour layer shows (the button's hover hint; the units from UNITS are added)
-const LAYER_HINTS = {
-  satellite: 'True colour, as seen from space: plants, bare ground, snow and sea, by season.',
-  biome: 'Biome class from the climate (worlds without the vegetation model).',
-  elevation: 'Height above sea level; sea floor depth below it. Lakes cyan (fresh) and pink (salt), ice white.',
-  plates: 'Tectonic plates (light: continental crust, dark: oceanic); red converging and cyan diverging boundaries.',
-  'crust age': 'Age of the sea floor since it formed at a ridge (continents: age of their rock).',
-  'bed under ice': 'The ground with the ice taken off, pressed down by its load.',
-  'ice thickness': 'Thickness of the land ice.',
-  'surface rock': 'The rock exposed at the surface (the top stratum of the rock record).',
-  'rock type': 'The bulk rock of the crust.',
-  'crust thickness': 'Thickness of the crust (continents ~35 km, ocean floor ~7 km).',
-  sediment: 'Thickness of sediment on top of the basement rock.',
-  rainfall: 'Precipitation (rain and snow as water).', precipitation: 'Precipitation (rain and snow as water).',
-  temperature: 'Air temperature near the ground.',
-  climate: 'Köppen climate classes (A tropical, B dry, C temperate, D continental, E polar).',
-  landforms: 'Landform classes: what shaped the ground here (folds, rifts, volcanoes, plains, glacial forms...).',
-  vegetation: 'Vegetation types from the mix of plant functional types that grow in this climate.',
-  'tree cover': 'Tree canopy cover: the share of the ground under tree crowns.',
-  fuels: 'Peoples runs, at the present: what each cell burns to cook and heat (wood, charcoal, dung, peat, straw, grass, driftwood, coal), from the trees left, the herds, the peat, the crops and the coal (planet/lineages/fuels.py).',
-  technology: 'Peoples runs with a technology tree: where one tech (picked under the layers) was known at this moment. Each people\'s land is lit when it knew it by then, in the colour of how it came (or how long it was known); grey: not yet. Stars: inventions; arrows: giver to taker (planet/lineages/techtree.py).',
-  'land use': 'Peoples runs, at the present: cropland, pasture, burned grassland and managed woods around the peoples there, settlement density in red (planet/lineages/landuse.py).',
-  'plant cover': 'Plant cover: the share of the ground shaded by plants of any kind.',
-  'canopy height': 'Height of the tallest plant layer.',
-  'leaf area': 'Leaf area index (LAI): m² of leaf per m² of ground (0 bare, 1-2 grassland, 4-6 dense forest).',
-  NPP: 'Net primary productivity: the carbon plants fix by photosynthesis in a year, less what they respire themselves, in g C/m²/yr (grams of carbon per m² of ground per year). Earth: rainforest ~800-1000, desert < 100.',
-  biomass: 'Carbon in living plants, in t C/ha (tonnes of carbon per hectare).',
-  'fire return': 'Fire return interval: the mean number of years between fires.',
-  'stand age': 'Years since the last stand-replacing fire.',
-  'plant type': 'Cover of one plant functional type (PFT; pick it below).',
-  soils: 'Soil types, from parent rock, slope, surface age, climate, plants and wind-blown silt (WRB groups with player names).',
-  'soil depth': 'Rootable soil above rock: thin on steep, young or wind-scoured ground, deep on old plains and soft deposits.',
-  'soil water': 'Water the soil holds for plants down to 1.5 m (available water capacity).',
-  fertility: 'Nutrient and base status: rich on young ash, loess and alluvium, poor where old soils are leached.',
-  'soil carbon': 'Organic carbon in the top metre of soil, peat included.',
-  peat: 'Peat thickness, where peat lies (waterlogged ground where plant remains pile up).',
-  permafrost: 'Permanently frozen ground: sporadic, discontinuous or continuous.',
-  loess: 'Wind-blown silt, from deserts and glacier margins, laid down downwind.',
-  'river floods': 'How seasonal the rivers are: the peak month over the mean month.',
-  travel: 'How slow walking is, off roads in the snow-free season: stems and undergrowth, wet ground and bogs, deadfall in old forest, rough or steep ground (gameattrs.py).',
-  sightline: 'How far you can see at eye level through the plants: tens of metres in forest, to the horizon on open ground.',
-  grazing: 'Pasture for herds: the herb layer\'s growth plus browse from shrubs, less where the ground is frozen or snowed in.',
-  foraging: 'Wild food for people: mast and fruit trees, game, wetlands (waterfowl, wild grain, roots) and river fish.',
-  timber: 'Building timber: woody biomass and height; straight conifers score higher.',
-  fuel: 'Firewood and fuel: wood, shrubs, cut peat from bogs, dung on pasture.',
-  'building ground': 'How good the ground is to build on: firm rock or gravel best; loose sand, soft clay, loess, waterlogged ground, salt, swelling clay, peat, permafrost and slopes worse.',
-  'mud season': 'Months the ground turns to mud: wet, thawed months on clay, silt or poorly drained soil, and the summer thaw over permafrost.',
-  'fire season': 'Months of fire weather (dry litter, warm, no snow), where the place burns at all.',
-  'green season': 'Months the plants are in leaf and free of snow (each plant type\'s leaf habit, weighted by its cover).',
-  'navigable rivers': 'Rivers by what can float on them: small boats, barges, sea-going ships (depth from the mean discharge, rapids, months frozen).',
-  harbours: 'Natural harbours at the coast: sheltered, deep water, or an estuary (anchorage, harbour, fine harbour).',
-  passes: 'The lowest crossings of divides between drainage basins separated by real relief, by the months they are open.',
-  farmland: 'Farmland quality from soil fertility and depth, water, growing season and slope, less permafrost, peat and flooding.',
-  'fresh water': 'How far perennial fresh water is: on site, close by, a day or two away, or none within reach.',
-  'wave power': 'Mean wave power per metre of wave crest (at sea).',
-  'tide range': 'Tidal range: the height between high and low tide (at sea).',
-  'sea temperature': 'Sea surface temperature.',
-  salinity: 'Sea surface salinity in psu (practical salinity units, ≈ grams of salt per kg of sea water).',
-  humidity: 'Relative humidity near the ground.', 'dew point': 'Dew point: the temperature at which the air would be saturated.',
-  cloud: 'Cloud cover: the share of the sky covered.', sunshine: 'Hours of bright sunshine a day.',
-  'coastal life': 'Coral reefs, kelp forests and seagrass on the shallow sea floor, mangroves and salt marsh between the tides: each cell in its biggest habitat\'s colour.',
-  coasts: 'The form of each coast: ice fronts, fjords, deltas, mangrove and coral coasts, tidal flats, barrier islands, cliffs, rocky shores, beaches (planet/coastform.py).',
-  'barrier islands': 'How likely the coast is fronted by barrier islands and lagoons: low land, a gentle shelf, waves and small tides.',
-  cliffs: 'How likely the coast is cliffed: high or hard land under strong waves.',
-  seabirds: 'How likely seabird colonies are: rich water nearby and cliffs or predator-free islands to nest on.',
-  seals: 'How likely seals and sea lions haul out here: rich, cool water and rocky shores, island beaches or sea ice.',
-  'sea hazards': 'Hazards to ships: coral reefs, shallow banks away from the coast, sea ice much of the year.',
-  turbidity: 'River mud suspended in the sea (it takes the light reefs and seagrass need).',
-  upwelling: 'Cold, nutrient-rich water welling up along coasts and the equator: how much it cools the sea.',
-};
-const HINT_HAS_UNITS = new Set(['NPP', 'biomass', 'leaf area', 'salinity', 'river floods', 'plant type']);
+// the layer button's hover text: what the layer shows, and its units
+const layerHint = (l) => { const d = layerDef(l); return d.hint + (d.units && d.hintUnits !== false ? ` Units: ${d.units}.` : ''); };
 export function renderLayerButtons() {
   fillPfts();
   fillRes();
@@ -493,7 +297,7 @@ export function renderLayerButtons() {
   const layers = availableLayers();
   if (!layers.includes(state.layer)) { state.wantLayer = state.layer; state.layer = layers[0]; }  // (wantLayer: a layer that arrives later, like a world's fuels, PW-845)
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
-    (LAYER_HINTS[l] ? ` title="${esc(LAYER_HINTS[l] + (UNITS[l] && !HINT_HAS_UNITS.has(l) ? ` Units: ${UNITS[l]}.` : ''))}"` : '') + `>${l}</button>`).join('');
+    (layerDef(l).hint ? ` title="${esc(layerHint(l))}"` : '') + `>${l}</button>`).join('');
   $('arrowsLbl').style.display = hasLayer('plate') && !S.V.tz ? '' : 'none';
   document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = hasLayer(e.dataset.needs) ? '' : 'none'));
   $('windYear').style.display = hasLayer('wind_jul_e') ? 'none' : '';  // the season picker says it instead

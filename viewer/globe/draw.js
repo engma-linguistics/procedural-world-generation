@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-
 // Drawing helpers shared by the overlays.
 
 // A text label as a sprite: the text centred at (w / 2, y) on a w x h canvas, bold, outlined (line, stroke) and filled

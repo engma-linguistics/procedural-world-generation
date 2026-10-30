@@ -2,7 +2,9 @@
 //   state.js     the shared state (S: what is shown, the mesh, the pick...; state: the view's choices)
 //   scene.js     renderer, camera, controls, lights, the clip planes
 //   draw.js      drawing helpers (text label sprites)
-//   colours.js   colour ramps and every colour layer's per-cell colours (cellColors), peoples / tech / resources
+//   layers.js    LAYERS: every colour layer's label, group, ramp, units, hint, legend, the run layers it needs, which menus show it;
+//                cellColors, availableLayers and the lookups derived from the table
+//   colours.js   colour helpers the layers use: peoples / tech / resources / fuels colours, lakes, the tints
 //   geometry.js  the globe and map meshes (paint), cell positions, ribbons
 //   overlays.js  rivers, winds, currents, volcanoes, events, clouds, the overturning
 //   axis.js      spin axis and tilt, continent names
@@ -21,6 +23,7 @@
 //   main.js      boot, planetViewer (headless checks), the render loop
 // every module runs its own top-level code once (its controls' wiring, its defaults), then the boot below
 import './scene.js';
+import './layers.js';
 import './colours.js';
 import './geometry.js';
 import './overlays.js';

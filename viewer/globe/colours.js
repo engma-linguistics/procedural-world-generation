@@ -1,104 +1,19 @@
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
+import { COAST_SCORES, HU_LAYERS, OBS_LAYERS, SEASONAL, UNITS, ramp, rampFns } from './layers.js';
 import { $ } from './scene.js';
 import { cellPositions, llMode, llPoint, llPos, llPosPt, paint, ribbonObj, unitVec } from './geometry.js';
 import { buildOverlays } from './overlays.js';
 import { renderLayerButtons, renderLegend, renderRunSummary, renderSummary } from './panel.js';
-import { pftColor, toast, updateHover } from './pick.js';
+import { toast, updateHover } from './pick.js';
 import { renderZoomBox } from './zoom.js';
 import { turnTo } from './highlights.js';
-import { hasLayer, setFrame } from './load.js';
+import { setFrame } from './load.js';
 import { stop } from './playback.js';
 // ------------------------------------------------------------ colours
-function ramp(stops) {
-  const cs = stops.map(([v, c]) => [v, new THREE.Color(c)]);
-  return (v, out) => {
-    if (v <= cs[0][0]) return out.copy(cs[0][1]);
-    for (let i = 1; i < cs.length; i++) {
-      if (v <= cs[i][0]) {
-        const t = (v - cs[i - 1][0]) / (cs[i][0] - cs[i - 1][0]);
-        return out.copy(cs[i - 1][1]).lerp(cs[i][1], t);
-      }
-    }
-    return out.copy(cs[cs.length - 1][1]);
-  };
-}
-export const RAMPS = {
-  elevation: [[-8000, '#0a1a36'], [-4000, '#153766'], [-1000, '#2d68a3'], [-1, '#6aa7d8'],
-              [0, '#3f7d3f'], [300, '#6f9a4b'], [1000, '#c4b56c'], [2000, '#a37a4a'],
-              [3500, '#7d6656'], [5000, '#e6e2dc'], [8000, '#ffffff']],
-  temperature: [[-30, '#2b3f99'], [-10, '#5b8fd6'], [0, '#e6f0f5'], [12, '#f4d27a'], [24, '#e2703a'], [32, '#9e1c1c']],
-  precipitation: [[0, '#d9c49a'], [300, '#c9c27a'], [800, '#7fb35a'], [1600, '#2f8f5a'], [2500, '#1f6f8f'], [4000, '#203f8f']],
-  'crust age': [[0, '#d7301f'], [15, '#fc8d59'], [40, '#fee08b'], [80, '#91bfdb'], [140, '#4575b4'], [200, '#313695']],
-  'crust thickness': [[0, '#08306b'], [8, '#2171b5'], [20, '#9ecae1'], [30, '#c7e9c0'], [38, '#74c476'],
-                      [50, '#fd8d3c'], [65, '#d94801'], [80, '#7f2704']],
-  sediment: [[0, '#3a3a3a'], [0.5, '#7d6b4f'], [2, '#c9a464'], [6, '#f0d58c'], [15, '#fff7dc']],
-};
-RAMPS['rock age'] = [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000, '#6e4f3a'], [3500, '#3a2a22']];
-RAMPS.rainfall = RAMPS.precipitation;
-RAMPS['wave power'] = [[0, '#1d2f55'], [5, '#2f6f8f'], [15, '#4fae9b'], [30, '#b8d66b'], [60, '#f2c14e'], [100, '#e8603c']];  // kW/m
-RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];  // m
-// the rivers' year (worlds, PW-028): the peak month's flow over the mean month's (1 = steady)
-RAMPS['river floods'] = [[1, '#2f5f8f'], [1.5, '#4f9fb0'], [2, '#9fd0a0'], [3, '#f0d36b'], [4.5, '#ef8a3a'], [7, '#b8283a']];
-// the glacial imprint of a time zoom (PW-037): m of bed the ice eroded, m of till and moraine it dropped
-RAMPS['glacial erosion'] = [[0, '#f4f1ea'], [5, '#e9d9b8'], [30, '#e0a96d'], [100, '#cc6b3d'], [300, '#9c2f2a'], [1000, '#4a1020']];
-RAMPS['glacial outwash'] = [[0, '#f4f1ea'], [1, '#f1e3b5'], [5, '#e0c26a'], [15, '#c99a2e'], [40, '#8a5a12']];
-RAMPS['glacial loess'] = [[0, '#f4f1ea'], [0.5, '#f3e9c0'], [2, '#e8cf7a'], [6, '#d1a63a'], [15, '#9a6b14']];
-RAMPS['glacial till'] = [[0, '#f4f1ea'], [5, '#dfe8c8'], [20, '#a9cc86'], [60, '#5fa05a'], [150, '#2f6f45'], [400, '#123f2a']];
-RAMPS['bed under ice'] = RAMPS.elevation;  // (runs, time zooms: the bed pressed down by the ice, PW-189)
-RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
-// the sea and the air's moisture (worlds): sea-surface temperature (C), salinity (psu), relative humidity (%), dew point (C)
-RAMPS['sea temperature'] = [[-2, '#3b3a8f'], [4, '#3f74c0'], [10, '#5fb6c8'], [16, '#bfe3b0'], [21, '#f2d77a'], [26, '#ef8f45'], [30, '#b8282a']];
-RAMPS.salinity = [[31, '#3b2a78'], [33, '#3f6fb5'], [34.2, '#8fc3d8'], [34.9, '#e9eee6'], [35.8, '#f0c870'], [37, '#d9783a'], [39, '#9e2a1e']];
-// coastal life (worlds, coastal.py, PW-188): river mud in the sea (mg/L, log-like stops) and upwelling (C of cooling)
-RAMPS.turbidity = [[0, '#0f3a5f'], [1, '#2f6f8f'], [3, '#6fa88a'], [10, '#c9b26a'], [30, '#a8743a'], [100, '#6b4424']];
-RAMPS.upwelling = [[0, '#1d2f55'], [0.5, '#2f5f8f'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];
-RAMPS.humidity = [[15, '#b98a4f'], [35, '#e3cf94'], [55, '#d9e7c4'], [70, '#7fc3b0'], [82, '#3f8fb0'], [95, '#244f8f']];
-RAMPS['dew point'] = [[-25, '#5b4f9a'], [-5, '#9fb0d0'], [5, '#d8e6e0'], [12, '#b9dc8a'], [17, '#f2d55e'], [21, '#ef8a3a'], [25, '#b8283a']];
-// the sky (worlds): cloud cover (% of the sky) and bright sunshine (hours a day)
-RAMPS.cloud = [[0, '#f2c14e'], [20, '#efe0a6'], [40, '#d3dade'], [60, '#a3b1bf'], [80, '#6f7f93'], [100, '#454e5e']];
-RAMPS.sunshine = [[0, '#2e3348'], [2, '#4d5674'], [4, '#8a93a6'], [6, '#d3d3c0'], [8, '#efd98a'], [10, '#f3b33d'], [12, '#e57a22'], [14, '#c4461a']];
-// model minus observed (Earth reference world): temperature in C, rainfall as log2 of the ratio
-RAMPS['temperature difference'] = [[-10, '#2b5fb3'], [-5, '#7fa8de'], [-1, '#eef1f4'], [1, '#eef1f4'], [5, '#e8956b'], [10, '#b2262b']];
-RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], [0.2, '#f0ece2'], [1, '#80cdc1'], [2, '#018571']];
-RAMPS['sunshine difference'] = [[-4, '#4d5674'], [-2, '#a3b1bf'], [-0.5, '#f0ece2'], [0.5, '#f0ece2'], [2, '#efd98a'], [4, '#e57a22']];
-// vegetation (worlds; tree cover and NPP also in runs)
-RAMPS['tree cover'] = [[0, '#e8dcb0'], [10, '#cdd28a'], [30, '#8fb85f'], [60, '#3f8f3f'], [90, '#1f5a2a']];
-RAMPS['body'] = [[0, '#ece6d6'], [25, '#e6c98a'], [50, '#d8a24a'], [75, '#b9712a'], [100, '#7a3b14']];  // (peoples runs: a body trait as a share of the cell's people, PW-701)
-RAMPS['plant cover'] =[[0, '#efe0b0'], [25, '#d8cf8a'], [50, '#a9c46a'], [75, '#5f9f4a'], [100, '#2f6f3a']];
-RAMPS['canopy height'] = [[0, '#efe6c8'], [2, '#c9cf8a'], [8, '#8fb85f'], [20, '#4f8f45'], [35, '#2a6a3a'], [50, '#123f2a']];
-RAMPS['leaf area'] = [[0, '#efe6c8'], [1, '#cfd28a'], [2.5, '#8fbf5a'], [4, '#4f9a45'], [6, '#1f6a32']];
-RAMPS.NPP = [[0, '#f2ead0'], [100, '#e3d28a'], [300, '#b9c85f'], [600, '#6faf45'], [900, '#2f8a3a'], [1300, '#0f5a2a']];
-RAMPS.biomass = [[0, '#f2ead0'], [10, '#d8d28a'], [50, '#9cc060'], [120, '#4f9a45'], [250, '#1f6a32'], [400, '#0a3f22']];
-RAMPS['fire return'] = [[0, '#3a2a2a'], [1, '#e8503a'], [3, '#f09a3a'], [10, '#f2d36a'], [50, '#c9d6a0'], [300, '#8fb0a0'], [3000, '#4f6f80']];
-RAMPS['stand age'] = [[0, '#f2d36a'], [20, '#c9cf8a'], [80, '#7fb05a'], [200, '#3f8a45'], [600, '#1f5a3a'], [2000, '#0f3a2a']];
-RAMPS['plant type'] = [[0, '#2a2a2a'], [100, '#ffffff']];  // (drawn in the PFT's own colour)
-// soils (worlds; soils.py, PW-185)
-RAMPS['soil depth'] = [[0, '#8a7f6e'], [0.25, '#c9b48a'], [0.75, '#d9c27a'], [1.5, '#a8743f'], [3, '#5a3a22']];
-RAMPS['soil water'] = [[0, '#efe0b0'], [50, '#d9cf8a'], [120, '#9cc07a'], [200, '#4f9fa0'], [350, '#1f5f8a']];
-RAMPS.fertility = [[0, '#d8c8a8'], [0.25, '#c9a86a'], [0.5, '#a9b85a'], [0.75, '#5f9f3a'], [1, '#1f5f22']];
-RAMPS['soil carbon'] = [[0, '#efe6c8'], [3, '#d6c28a'], [8, '#a8844f'], [15, '#6a4a2a'], [30, '#3a2a1a'], [60, '#1a120a']];
-RAMPS.peat = [[0, '#efe6c8'], [0.3, '#b9a57a'], [1, '#7a5a3a'], [3, '#3a2a1a'], [8, '#120a05']];
-RAMPS.permafrost = [[0, '#e8dcc0'], [1, '#bcd0dc'], [2, '#7fa8c8'], [3, '#3a6a9a']];
-RAMPS.loess = [[0, '#ece6d6'], [1, '#e6d49a'], [5, '#d9b45a'], [20, '#b5852f'], [60, '#7a5418']];
-export const SOIL_LAYERS = { 'soil depth': 'soil_depth', 'soil water': 'soil_water', fertility: 'soil_fertility',
-                      'soil carbon': 'soil_carbon', peat: 'peat_depth', permafrost: 'permafrost', loess: 'loess' };
-// game attributes of the plants and soils (gameattrs.py, PW-206): ramps on land; the month masks as month counts
-const SCORE5 = [[0, '#efe6c8'], [1, '#e0cf8a'], [2, '#b9c260'], [3, '#7aa848'], [4, '#3f8a3a'], [5, '#1a5a2a']];
-RAMPS.travel = [[1, '#f2ead0'], [1.5, '#e8d38a'], [2, '#e0a85a'], [3, '#c9703a'], [5, '#9a3a2a'], [8, '#5a1a1a']];
-RAMPS.sightline = [[15, '#1a3a22'], [50, '#3f7a3a'], [150, '#8fb05a'], [500, '#d9cf8a'], [5000, '#f5efdc']];
-RAMPS.grazing = SCORE5; RAMPS.foraging = SCORE5; RAMPS.timber = SCORE5;
-RAMPS.fuel = [[0, '#efe6c8'], [1, '#e8cf8a'], [2, '#d9a65a'], [3, '#b8743a'], [4, '#8a4a2a'], [5, '#4a2a1a']];
-RAMPS['building ground'] = [[0, '#6a3a3a'], [1, '#a8603f'], [2, '#d9a65a'], [3, '#e3d28a'], [4, '#b5c9a0'], [5, '#7f9fb0']];
-RAMPS['mud season'] = [[0, '#efe6c8'], [2, '#d9c08a'], [4, '#a8844f'], [7, '#6a4a2a'], [12, '#3a2a1a']];
-RAMPS['fire season'] = [[0, '#dfe6d8'], [1, '#f2d36a'], [3, '#f09a3a'], [6, '#e8503a'], [9, '#8a2a2a']];
-RAMPS['green season'] = [[0, '#c9b38a'], [3, '#d9cf8a'], [6, '#a9c26a'], [9, '#5f9f45'], [12, '#1f6a32']];
-export const GAME_LAYERS = { travel: 'travel', sightline: 'sightline', grazing: 'grazing', foraging: 'foraging', timber: 'timber',
-                      fuel: 'fuel', 'building ground': 'building', 'mud season': 'mud_months', 'fire season': 'fire_months',
-                      'green season': 'green_months' };
-const bits = (m) => { let n = 0; for (let k = 0; k < 12; k++) n += (m >> k) & 1; return n; };
-const GAME_MASKS = new Set(['fire season', 'green season']);
+// The colour layers themselves are in layers.js (LAYERS); here, the colours and texts of the layers that need more than a ramp.
+export const bits = (m) => { let n = 0; for (let k = 0; k < 12; k++) n += (m >> k) & 1; return n; };
 // month ranges of a 12-bit mask ("Jun–Sep, Dec"; "all year"), runs wrapping round the year
 export function monthRuns(m) {
   const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], on = (k) => (m >> ((k + 12) % 12)) & 1;
@@ -111,14 +26,13 @@ export function monthRuns(m) {
 }
 // human use (humanuse.py, PW-099/505): class maps coloured from the legend (legend.human_use); the first three also
 // draw ribbons / markers (overlays huRivers, huHarbours, huPasses), which a layer of the same name switches on by itself
-export const HU_LAYERS = { 'navigable rivers': 'river_nav', harbours: 'harbour', passes: 'pass', farmland: 'fertile', 'fresh water': 'fresh_water' };
 export const HU_OVERLAY = { river_nav: 'huRivers', harbour: 'huHarbours', pass: 'huPasses' };
 const huOn = (k) => $(HU_OVERLAY[k]).checked || HU_LAYERS[state.layer] === k;
 function huCols(k) {  // legend colours as THREE.Colors (null: the legend's transparent "nothing" class)
   S.V.huCols ??= {};
   return (S.V.huCols[k] ??= (S.V.humanUse?.[k] || []).map((e) => (e.color.length > 7 ? null : new THREE.Color(e.color))));
 }
-function huColor(layer, i, c) {
+export function huColor(layer, i, c) {
   const k = HU_LAYERS[layer], land = S.V.layers.elevation[i] > 0, col = huCols(k)[S.V.layers[k][i]];
   // (rivers are drawn as ribbons over plain ground: a filled cell would make every small river look like a plain)
   if (col && k !== 'river_nav' && (k === 'harbour' ? !land : land)) c.copy(col); else c.copy(land ? BARE : OCEAN);
@@ -126,10 +40,9 @@ function huColor(layer, i, c) {
 }
 // resources (resources.py, PW-155): 'resources' = the most likely metal/gem/energy/salt resource per cell (faded by
 // its likelihood), 'resource' = one resource's likelihood (picker resSel, ?res=), 'building stone' = the best stone
-export const RES_LAYERS = new Set(['resources', 'resource', 'building stone']);
 state.res = 'porphyry_cu';
 export function resInfo(key) { return S.V.resLeg?.resources.find((r) => r.key === key); }
-function resColor(layer, i, c) {
+export function resColor(layer, i, c) {
   const L = S.V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
   if (layer === 'building stone') {
     const e = S.V.resLeg.stone[L.stone[i]];
@@ -149,10 +62,8 @@ function resColor(layer, i, c) {
 }
 // coast form (coastform.py, PW-097): 'coasts' = each coastal land cell's class (legend.coast); the scores 0-1
 // (barrier islands, cliffs, seabird and seal colonies on the coast's land, hazards to ships at sea)
-export const COAST_SCORES = { 'barrier islands': 'barrier', cliffs: 'cliff', seabirds: 'seabirds', seals: 'seals', 'sea hazards': 'nav_hazard' };
-export const COAST_LAYERS = new Set(['coasts', ...Object.keys(COAST_SCORES)]);
 const COAST_RAMP = ramp([[0, '#3a4250'], [0.25, '#3f7f9f'], [0.5, '#8fc89a'], [0.75, '#f2c45a'], [1, '#e8503c']]);
-function coastColor(layer, i, c) {
+export function coastColor(layer, i, c) {
   const L = S.V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
   if (layer === 'coasts') {
     const e = S.V.coastLeg?.[L.coast_type[i]];
@@ -298,44 +209,12 @@ export function huMapFeatures() {
     for (const { i, cls } of f.passes) feats.marks.push({ lat: G.lat[i], lon: G.lon[i], shape: 'hourglass', color: col('pass', cls), size: 5 });
   return feats;
 }
-export const VEG_LAYERS = { 'tree cover': 'tree_cover', 'plant cover': 'plant_cover', 'canopy height': 'canopy_height',
-                     NPP: 'npp', biomass: 'biomass', 'fire return': 'fire_return', 'stand age': 'stand_age' };
-export const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.keys(VEG_LAYERS)]);
-export const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
-                'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
-                'ice thickness': 'm of land ice (bare land grey)', 'glacial erosion': 'm of bed the ice has eroded so far (time zoom)',
-                'glacial till': 'm of till and moraine the ice has dropped so far (time zoom)', 'glacial outwash': 'm of outwash (sandur) the meltwater has laid down so far (time zoom)', 'glacial loess': 'm of loess the wind has laid down so far (time zoom)', 'bed under ice': 'm, the ground with the ice taken off (pressed down by its load; ice faintly outlined)', 'temperature difference': '°C, model minus observed',
-                'navigable rivers': 'class: 1 small boats, 2 barges, 3 sea-going', harbours: 'class: 1 anchorage, 2 harbour, 3 fine harbour',
-                passes: 'class: open most of the year, seasonal, snow-bound', farmland: 'class: 0 not arable .. 4 prime',
-                'fresh water': 'class: 0 none .. 3 on site',
-                'river floods': "x: the rivers' peak month over their mean month (1 = steady; Arctic spring floods 3-5); grey: frozen half the year or more",
-                'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
-                'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
-                humidity: '% rel. humidity, year', 'dew point': '°C dew point, year',
-                cloud: '% cloud cover, year', sunshine: 'hours of bright sunshine a day, year',
-                'tree cover': '% tree canopy cover', 'plant cover': '% of the ground shaded by plants',
-                'canopy height': 'm, tallest layer', 'leaf area': 'm² of leaf per m² (LAI), year',
-                NPP: 'g C/m²/yr net primary productivity', biomass: 't C/ha in living plants',
-                'fire return': 'years between fires (log scale; dark = never)', 'stand age': 'years since the last stand-replacing fire',
-                'plant type': '% cover of the plant type',
-                'soil depth': 'm of rootable soil', 'soil water': 'mm of water the soil holds for plants',
-                fertility: 'soil fertility, 0 poor to 1 rich', 'soil carbon': 'kg C/m² in the top metre',
-                peat: 'm of peat where peat lies', permafrost: '0 none, 1 sporadic, 2 discontinuous, 3 continuous',
-                loess: 'm of wind-blown silt',
-                travel: "x the time of walking open level ground (snow-free, off roads)", sightline: 'm you can see at eye level (log scale)',
-                grazing: '0-5 pasture for herds', foraging: '0-5 wild food for people', timber: '0-5 building timber',
-                fuel: '0-5 firewood and fuel', 'building ground': '0-5: 0 peat or swelling clay .. 5 firm, dry rock',
-                'mud season': 'months the ground is mud', 'fire season': 'fire-weather months (where it burns)',
-                'green season': 'months the plants are in leaf and snow-free',
-                turbidity: 'mg/L of river mud at the sea surface (clear sea ~0.5; reefs need under ~10)',
-                upwelling: '°C the sea surface is cooled by upwelling (nutrients for kelp and fisheries)',
-                'coastal life': '% of the cell: the biggest habitat\'s colour, stronger = more' };
 // coastal life (coastal.py): layer, name, colour (as zoom_coastal.LIFE), sea or land
 export const COASTAL = [['reef', 'coral reef', '#ff6fa8'], ['kelp', 'kelp forest', '#9a7b2a'], ['seagrass', 'seagrass meadow', '#3fbf6a'],
                  ['mangrove', 'mangrove', '#14d2b0'], ['salt_marsh', 'salt marsh', '#e3d65a']];
-const COASTAL_COLS = Object.fromEntries(COASTAL.map(([k, , c]) => [k, new THREE.Color(c)]));
+export const COASTAL_COLS = Object.fromEntries(COASTAL.map(([k, , c]) => [k, new THREE.Color(c)]));
 // the habitat with the biggest share of cell i (and the share, %), or null
-function coastalTop(i) {
+export function coastalTop(i) {
   let best = null, v = 0;
   for (const [k] of COASTAL) { const x = S.V.layers[k]?.[i] || 0; if (x > v) { v = x; best = k; } }
   return best && v >= 0.5 ? [best, v] : null;
@@ -346,12 +225,11 @@ export function coastalText(i) {
   return COASTAL.filter(([k]) => (L[k]?.[i] || 0) >= 0.5)
     .map(([k, n]) => `${n} ${L[k][i] < 10 ? L[k][i].toFixed(1) : Math.round(L[k][i])}%`).join(', ');
 }
-const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
-const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
-const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
-const BARE = new THREE.Color('#6b675f'), NODATA = new THREE.Color('#4a4f57');
+export const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
+export const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
+export const BARE = new THREE.Color('#6b675f'), NODATA = new THREE.Color('#4a4f57');
 
-function plateColor(id, continental, out) {
+export function plateColor(id, continental, out) {
   return out.setHSL((id * 0.618034) % 1, 0.55, continental ? 0.55 : 0.32);
 }
 
@@ -359,8 +237,6 @@ function plateColor(id, continental, out) {
 // model's and as observed (obs_* layers). state.obs picks which to colour by:
 // 'model', 'obs', or 'diff' (model minus observed). Returns null when the
 // layer on screen has no observed counterpart.
-export const OBS_LAYERS = { temperature: 'obs_temperature', precipitation: 'obs_precipitation', climate: 'obs_climate',
-                     sunshine: 'obs_sunshine' };
 export function obsView(layer) {
   if (!S.V || S.V.kind !== 'world' || !OBS_LAYERS[layer] || !S.V.layers[OBS_LAYERS[layer]] || state.obs === 'model') return null;
   return { layer, model: S.V.layers[layer], obs: S.V.layers[OBS_LAYERS[layer]], diff: state.obs === 'diff' };
@@ -368,9 +244,6 @@ export function obsView(layer) {
 // Seasons (PW-126): worlds store July and January temperature and rain
 // (temperature_jul, precipitation_jan, ...). state.season ('' = the year,
 // 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
-export const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation',
-                   'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint', cloud: 'cloud',
-                   sunshine: 'sunshine', 'leaf area': 'lai', satellite: 'sat' };
 export const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
@@ -402,7 +275,7 @@ export function setSeason(s) {
 }
 const koppenGroup = (id) => S.V.koppen[id]?.code[0];  // A tropical, B dry, C temperate, D continental, E polar
 
-function obsColor(ov, i, c) {
+export function obsColor(ov, i, c) {
   const m = ov.model[i], o = ov.obs[i];
   if (S.V.layers.elevation[i] <= 0) return c.copy(OCEAN);
   if (o == null || (ov.layer === 'climate' && o < 0)) return c.copy(NODATA);  // no observation here
@@ -424,7 +297,6 @@ export const LAKE_KINDS = { 1: ['fresh lake', '#38c8f0'], 2: ['salt lake', '#e58
 const LAKE_COLS = Object.fromEntries(Object.entries(LAKE_KINDS).map(([k, [, c]]) => [k, new THREE.Color(c)]));
 const DEEP_LAKE = { 1: new THREE.Color('#137fb0'), 2: new THREE.Color('#a8508a') };  // (deep water stays its kind's hue)
 // the colour layers lakes are drawn on (not rainfall or climate: their own blues and greens would read as lakes)
-export const LAKE_LAYERS = new Set(['biome', 'elevation']);
 export function lakeKind(i) {
   const L = S.V.layers;
   if (L.elevation[i] <= 0) return 0;
@@ -435,7 +307,7 @@ function lakeDepth(i) {
   return L.lake_depth ? L.lake_depth[i] : L.lake_level ? L.lake_level[i] - L.elevation[i] : null;
 }
 // colours cell i's lake into c (deeper water darker); false where there's none
-function lakeColor(i, c) {
+export function lakeColor(i, c) {
   const k = lakeKind(i);
   if (!k || !LAKE_COLS[k]) return false;
   c.copy(LAKE_COLS[k]);
@@ -452,21 +324,18 @@ export function lakeLine(i) {
 }
 
 // colour layers drawn at sea only -> their world layer
-export const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst',
-                     turbidity: 'turbidity', upwelling: 'upwelling' };
-// fills a Float32Array(3n) with per-cell colours
 // Peoples (planet/lineages/, meta.phase 'lineages'): the leading people's colour, paler where it holds
 // less of the land, whitened where two or more mix; 'peoples mix' counts them. A picked line
 // (state.people, from the panel) shows only its own range. state.peoplesWhole (the panel's toggle): a people with groups
 // (ways of life, PW-665) as a whole, from the peoples_whole layer, instead of by group.
 export const peoplesIdx = (i) => (state.peoplesWhole && S.V.layers.peoples_whole ? S.V.layers.peoples_whole : S.V.layers.peoples)[i];
-const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
+export const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
 // (each line's THREE.Color once: parsing its CSS string per cell was a third of the recolour, PW-679)
 const lineColor = (l) => (l ? (l._c ||= new THREE.Color(l.color)) : NOBODY);
 // A marine people (realm 'coast': the shore ring, 'sea': open water; PW-775/778) is drawn on sea cells, its colour over the ocean's blue
 export const isSeaPeople = (l) => !!l && (l.realm || 'land') !== 'land';
 const REALM_TEXT = { coast: 'sea people, shore ring', sea: 'sea people, open sea' };
-function peoplesColor(layer, i, c) {
+export function peoplesColor(layer, i, c) {
   const L = S.V.layers, elev = L.elevation;
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) {
     const sl = (S.V.run.meta.lineages || [])[layer === 'peoples blend' && L.mix_lead ? L.mix_lead[i] : layer === 'peoples mix' ? 255 : peoplesIdx(i)];
@@ -503,7 +372,7 @@ function peoplesColor(layer, i, c) {
 // Demes (planet/lineages/demes.py, PW-981): the regional population of each cell's leading people, each a shade of its
 // people's colour (layer demes: index into demes.json, V.demes, loaded with the run; 65535 nobody)
 export function demeOf(i) { const d = S.V.layers.demes?.[i]; return d == null || d === 65535 ? null : S.V.demes?.demes?.[d] || null; }
-function demesColor(i, c) {
+export function demesColor(i, c) {
   const L = S.V.layers, elev = L.elevation;
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
   const d = demeOf(i);
@@ -524,7 +393,7 @@ export async function loadDemes() {  // (demes.json beside run.json: the tree, n
 const ANIMAL_WILD = new THREE.Color('#3f9d4a');
 export const ANIMAL_COLS = ['#e8a23a', '#c4553a', '#d9d4c2', '#8a5a2b', '#e6c829', '#3a7bd5', '#9b59b6', '#16a085'];
 export function animalStocks() { return S.V.run?.meta?.animals?.stocks || {}; }
-function animalsColor(i, c, id) {
+export function animalsColor(i, c, id) {
   const L = S.V.layers, elev = L.elevation, st = animalStocks()[id];
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
@@ -542,7 +411,7 @@ export const CROP_COLS = ['#e6c829', '#7aa650', '#d6b25e', '#4aa3c7', '#c9a227',
   '#d9532b', '#5b8c3a', '#9bb86a', '#5a3b2e', '#e9e2c4', '#c79a5a', '#e08a4a', '#a3a3d1', '#6e9b3f'];  // (24-32: the regional foods, PW-765)
 export function cropBit(a, i, bit) { const v = a?.[i]; return v ? Number((BigInt(v) >> BigInt(bit)) & 1n) : 0; }  // (the crop layers are uint64: BigInt)
 export function cropStocks() { return S.V.run?.meta?.crops?.stocks || {}; }
-function cropsColor(i, c, id) {
+export function cropsColor(i, c, id) {
   const L = S.V.layers, elev = L.elevation, st = cropStocks()[id];
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
@@ -585,7 +454,7 @@ export function techId() {  // the tech shown: state.tech if the run has it, els
 const techAgoText = (k) => (k >= 1000 ? `${+(k / 1000).toFixed(2)} Myr ago` : k >= 1 ? `${+k.toFixed(k >= 100 ? 0 : 2)} kyr ago` : k > 0 ? `${Math.round(k * 1000)} years ago` : 'the present');  // (finer than agoLabel: a frame and an event a few years apart)
 export const techName = (id) => (techTree()?.techs.find((t) => t.id === id)?.name || id || '').split(' (')[0];
 export const techOldest = (id) => Math.max(0.1, ...Object.values(techTree().known).map((k) => k[id]?.[0] ?? 0));
-function techFrameColors() {  // per line index: the colour of its land this frame
+export function techFrameColors() {  // per line index: the colour of its land this frame
   const tt = techTree(), id = techId(), now = -S.V.t, old = techOldest(id);
   return (S.V.run.meta.lineages || []).map((l) => {
     const v = tt.known[l.id]?.[id];
@@ -595,7 +464,7 @@ function techFrameColors() {  // per line index: the colour of its land this fra
     return TECH_NEW.clone().lerp(TECH_OLD, Math.min(1, Math.max(0, u)));
   });
 }
-function techColor(i, c, cols) {
+export function techColor(i, c, cols) {
   const L = S.V.layers, d = L.peoples[i], ice = L.ice && L.ice[i] > 0;
   if (L.elevation[i] <= 0 && !ice) return isSeaPeople((S.V.run.meta.lineages || [])[d]) && cols[d] ? c.copy(OCEAN).lerp(cols[d], 0.75) : c.copy(OCEAN);
   if (ice) return c.copy(ICE);
@@ -720,7 +589,7 @@ export function fuelSrc() {
   if (S.V.kind === 'world') return S.V.wAnthroRun?.fuels && S.V.wAnthro?.fuel_lead && worldAnthroOn() ? { F: S.V.wAnthroRun.fuels, A: S.V.wAnthro } : null;
   return S.V.run?.meta?.fuels && anthroOn() && S.V.anthro?.fuel_lead ? { F: S.V.run.meta.fuels, A: S.V.anthro } : null;
 }
-function fuelColor(i, c) {
+export function fuelColor(i, c) {
   const L = S.V.layers, fs = fuelSrc();
   if (L.elevation[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
@@ -741,11 +610,9 @@ export function fuelRows(i, R) {
 // (meta.anthro: cropland, pasture, burned grassland, managed woods, settlement density, tree cover left) as the
 // 'land use' layer, and as a tint on the vegetation colours (tree cover, vegetation, satellite) where land is
 // cleared (state.anthro, the panel's checkbox; &anthro=0 turns it off). Only the last frame (the present) shows it.
-const ANTHRO_TINTED = new Set(['tree cover', 'vegetation', 'satellite']);
-export const WORLD_TINTED = new Set(['vegetation', 'satellite', 'biome']);  // (a finished world, PW-669)
 const A_CROP = new THREE.Color('#f0b429'), A_PAST = new THREE.Color('#b9d36a'), A_BURN = new THREE.Color('#c98a3c'),
   A_MAN = new THREE.Color('#2d6a4a'), A_TOWN = new THREE.Color('#9c3b2a');
-function anthroLoad() {
+export function anthroLoad() {
   const a = S.V.run.meta.anthro, id = S.V.run.id;
   S.V.anthroFor = id; S.V.anthro = {};
   const fl = S.V.run.meta.fuels?.layers || {};  // (the fuel layers ride along: V.anthro.fuel_<name>)
@@ -792,14 +659,14 @@ export function worldAnthroPanel() {
 // the present's overlay is ready and this frame is the present (the last)
 export const anthroOn = () => !!(S.V.run?.meta?.anthro && S.V.anthroReady === S.V.run.id && S.V.frame === S.V.run.frames.length - 1);
 export const anthroSrc = () => (S.V.kind === 'world' ? S.V.wAnthro : S.V.anthro);
-function anthroTint(i, c) {
+export function anthroTint(i, c) {
   const A = anthroSrc(), cr = A.crop[i] / 100, pa = A.pasture[i] / 100, bu = A.burned[i] / 100, ma = A.managed[i] / 100;
   if (cr + pa + bu + ma <= 0.004) return c;
   c.lerp(A_PAST, Math.min(0.85, 1.6 * Math.sqrt(pa))).lerp(A_BURN, Math.min(0.85, 2.5 * Math.sqrt(bu)));
   c.lerp(A_MAN, Math.min(0.5, 2 * ma)).lerp(A_CROP, Math.min(0.95, 2.2 * Math.sqrt(cr)));
   return c;
 }
-function landUseColor(i, c) {
+export function landUseColor(i, c) {
   const L = S.V.layers;
   if (L.elevation[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
@@ -935,151 +802,4 @@ document.addEventListener('click', (e) => {
   paint(); buildOverlays(); renderRunSummary();
 });
 
-export function cellColors(layer) {
-  const L = S.V.layers, n = S.V.n, out = new Float32Array(3 * n), c = new THREE.Color();
-  const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
-  const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
-  if (S.V.run?.meta?.anthro && S.V.anthroFor !== S.V.run.id) anthroLoad();  // (peoples change the land, PW-662)
-  const tint = state.anthro !== false && (ANTHRO_TINTED.has(layer) && anthroOn() || WORLD_TINTED.has(layer) && worldAnthroOn());
-  const techCols = layer === 'technology' && techTree() && L.peoples ? techFrameColors() : null;  // (each line's colour this frame, once)
-  for (let i = 0; i < n; i++) {
-    if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
-    else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
-    else if (ov) obsColor(ov, i, c);
-    else if (layer === 'biome') c.set(S.V.biomeColors[L.biome[i]]);
-    else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') peoplesColor(layer, i, c);
-    else if (layer === 'demes') demesColor(i, c);
-    else if (layer.startsWith('body: ')) {
-      if (L.ice && L.ice[i] > 0) c.copy(ICE); else if (elev[i] <= 0) c.copy(OCEAN);
-      else if (L.peoples_whole[i] === 255) c.copy(NOBODY); else rampFns.body(L['body_' + layer.slice(6)][i], c);
-    }
-    else if (layer === 'land use') landUseColor(i, c);
-    else if (layer.startsWith('animal: ')) animalsColor(i, c, layer.slice(8));
-    else if (layer.startsWith('crop: ')) cropsColor(i, c, layer.slice(6));
-    else if (layer === 'technology') { if (techCols) techColor(i, c, techCols); else c.copy(NODATA); }
-    else if (layer === 'fuels') fuelColor(i, c);
-    else if (layer === 'vegetation') {
-      if (elev[i] <= 0) c.copy(OCEAN); else c.set(S.V.vegColors[L.vegetation[i]] || '#888');
-    } else if (layer === 'plant type') {
-      if (elev[i] <= 0) c.copy(OCEAN);
-      else { const f = (L['veg_' + state.pft]?.[i] || 0) / 100; c.copy(BARE).lerp(pftColor(), Math.sqrt(f)); }
-    } else if (VEG_LAYERS[layer] || layer === 'leaf area') {
-      if (elev[i] <= 0) c.copy(OCEAN);
-      else if (layer === 'fire return') { const y = L.fire_return[i]; rampFns[layer](y > 0 ? y : 3000, c); if (!y) c.copy(BARE).lerp(OCEAN, 0.1); }
-      else rampFns[layer]((sv || L[VEG_LAYERS[layer]])[i], c);
-    }
-    else if (layer === 'soils') {
-      if (elev[i] <= 0) c.copy(OCEAN); else c.set(S.V.soilColors[L.soil[i]] || '#888');
-    } else if (SOIL_LAYERS[layer]) {
-      if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L[SOIL_LAYERS[layer]][i], c);
-    } else if (GAME_LAYERS[layer]) {
-      const v = L[GAME_LAYERS[layer]][i];
-      if (elev[i] <= 0) c.copy(OCEAN);
-      else if (layer === 'travel' && !v) c.copy(BARE);  // (lakes)
-      else rampFns[layer](GAME_MASKS.has(layer) ? bits(v) : v, c);
-    }
-    else if (HU_LAYERS[layer]) huColor(layer, i, c);
-    else if (RES_LAYERS.has(layer)) resColor(layer, i, c);
-    else if (COAST_LAYERS.has(layer)) coastColor(layer, i, c);
-    else if (layer === 'bed under ice') {
-      rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
-      if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
-    }
-    else if (layer === 'ice thickness') {
-      if (L.ice[i] > 0) rampFns[layer](L.ice[i], c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
-    }
-    else if (layer === 'plates') {
-      plateColor(L.plate[i], L.crust[i], c);
-      if (L.plate_boundary[i] > 0) c.lerp(RED, 0.75);
-      else if (L.plate_boundary[i] < 0) c.lerp(CYAN, 0.75);
-    } else if (layer === 'crust age') {
-      if (L.crust[i]) rampFns['rock age'](L.crust_age[i], c); else rampFns[layer](L.crust_age[i], c);
-    } else if (layer === 'rock type') {
-      c.set(S.V.rockColors[L.rock[i]]);
-      if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
-    } else if (layer === 'climate') {
-      c.set(S.V.koppenColors[L.climate[i]] || '#1d3f6e');
-    } else if (layer === 'surface rock') {
-      c.set(S.V.rockColors[L.surface_rock[i]]);
-      if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
-    } else if (layer === 'landforms') {
-      if (elev[i] <= 0 || !L.landform[i]) c.copy(OCEAN); else c.set(S.V.landformColors[L.landform[i]] || '#888');
-    } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
-    else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
-    else if (layer === 'glacial erosion') rampFns[layer](L.glacial_erosion[i], c);
-    else if (layer === 'glacial till') rampFns[layer](L.glacial_till[i], c);
-    else if (layer === 'glacial outwash') rampFns[layer](L.glacial_outwash[i], c);
-    else if (layer === 'glacial loess') rampFns[layer](L.glacial_loess[i], c);
-    else if (layer === 'coastal life') {  // the biggest habitat's colour over land or sea
-      c.copy(elev[i] > 0 ? BARE : OCEAN);
-      const t = coastalTop(i);
-      if (t) c.lerp(COASTAL_COLS[t[0]], 0.25 + 0.75 * Math.min(Math.sqrt(t[1] / 30), 1));
-    }
-    else if (SEA_LAYERS[layer]) {  // at sea only
-      if (elev[i] > 0) c.copy(BARE).lerp(OCEAN, 0.15);
-      else rampFns[layer]((sv || L[SEA_LAYERS[layer]])[i], c);
-    }
-    else if (layer === 'humidity' || layer === 'dew point') {  // land and sea (land a little greyed, for the coasts)
-      rampFns[layer](sv[i], c);
-      if (elev[i] > 0) c.lerp(BARE, 0.3);
-    }
-    else if (layer === 'cloud' || layer === 'sunshine') {  // land and sea (the sea a little bluer, for the coasts)
-      rampFns[layer](sv[i], c);
-      if (elev[i] <= 0) c.lerp(OCEAN, 0.25);
-    }
-    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](sv[i], c); }
-    else if (layer === 'river floods') {
-      if (elev[i] <= 0) c.copy(OCEAN);
-      else { rampFns[layer](L.flood_ratio[i], c); if (L.river_frozen && L.river_frozen[i] >= 6) c.lerp(ICE, 0.35); }
-    }
-    else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
-    else {
-      rampFns[layer]((sv || L[layer])[i], c);
-      if (layer === 'elevation' && L.ice && L.ice[i] > 0 && elev[i] > 0) c.lerp(ICE, 0.75);
-    }
-    if (tint && elev[i] > 0 && !(L.ice && L.ice[i] > 0)) anthroTint(i, c);
-    out[3 * i] = c.r; out[3 * i + 1] = c.g; out[3 * i + 2] = c.b;
-  }
-  return out;
-}
 
-export function availableLayers() {
-  // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
-  if (S.V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(S.V.tzEarth ? [] : ['plates', 'crust age'],
-    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
-    hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), ...(hasLayer('demes') ? ['demes'] : []), 'peoples mix', 'peoples overlay'].concat(
-      Object.keys(S.V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], hasLayer('crop_wild') ? Object.keys(cropStocks()).map((k) => 'crop: ' + k) : [],
-    S.V.run?.meta?.anthro ? ['land use'] : [], S.V.run?.meta?.fuels ? ['fuels'] : [], S.V.run?.meta?.techtree && hasLayer('peoples') ? ['technology'] : []);
-  if (S.V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
-    hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
-    hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
-    hasLayer('vegetation') ? ['vegetation', 'tree cover', 'NPP'] : []);
-  const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
-  if (S.V.layers.sat) ls.unshift('satellite');  // true colour (satellite.py, PW-083)
-  if (S.V.layers.ice) ls.push('bed under ice');
-  if (S.V.layers.plate) ls.push('plates');
-  if (S.V.layers.crust_age) ls.push('crust age');
-  if (S.V.layers.climate) ls.push('climate');
-  if (S.V.layers.surface_rock) ls.push('surface rock');
-  if (S.V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
-  if (S.V.layers.landform) ls.push('landforms');
-  if (S.V.layers.glacial_erosion) ls.push('glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess');
-  if (S.V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
-                                   'fire return', 'stand age', 'plant type');
-  if (S.V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
-  if (S.V.layers.travel) ls.push(...Object.keys(GAME_LAYERS));
-  if (S.V.wAnthroRun?.fuels) ls.push('fuels');  // (the peoples run's lead fuel, as in its own view: PW-845)
-  if (S.V.layers.flood_ratio) ls.push('river floods');
-  for (const [name, k] of Object.entries(HU_LAYERS)) if (S.V.layers[k] && S.V.humanUse?.[k]) ls.push(name);
-  if (S.V.layers.resource && S.V.resLeg) ls.push('resources', 'resource', 'building stone');
-  if (S.V.layers.coast_type && S.V.coastLeg) ls.push('coasts', ...Object.keys(COAST_SCORES));
-  if (S.V.layers.wave_power) ls.push('wave power');
-  if (S.V.layers.tide_range) ls.push('tide range');
-  if (S.V.layers.sst) ls.push('sea temperature');
-  if (S.V.layers.salinity) ls.push('salinity');
-  if (S.V.layers.reef) ls.push('coastal life', 'turbidity');
-  if (S.V.layers.upwelling) ls.push('upwelling');
-  if (S.V.layers.humidity) ls.push('humidity', 'dew point');
-  if (S.V.layers.cloud) ls.push('cloud', 'sunshine');
-  return ls;
-}
