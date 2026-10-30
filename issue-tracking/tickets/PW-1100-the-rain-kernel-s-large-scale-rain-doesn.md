@@ -11,7 +11,7 @@ impact: med
 found_by: lane58
 blocked_by: []
 relates: [PW-1093, PW-1097, PW-026]
-refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+refs: [planet/climate.py, docs/review/base-climate/moisture-inflow-ascent/, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
 updated: 2026-10-30
 ---
@@ -39,4 +39,23 @@ The scale c0 needs an anchor. Synoptic-scale convergence of ~1e-6 1/s is from me
 - [ ] a design note with candidate forms, each tried in one Earth solve, together with the inflow-depth change
 
 ## Updates
+- 2026-10-30: Lane 62 round 1. In plain words: rain where the low-level wind converges now has a form with no
+  tuned scale. It is the right kind of term for the winter storm tracks. But it doesn't rain the summer inflow at
+  the coasts, and on its own it moves the dry-climate share the wrong way. Kept as a patch
+  (docs/review/base-climate/moisture-inflow-ascent/: TUNE ascent, climate.convergence, _season_inputs' ascent), not
+  merged: it rides with PW-1099's inflow depth once that has its coastal partner (coordinator 10-30).
+  - Form: by continuity, the friction layer's converging air rises out of it with that layer's vapour. So the extra
+    large-scale rain per unit of column vapour is inflow_share x max(convergence, 0) (1/s), on the same humidity
+    gate, x (1 - sink) as the storm lift. The convergence is that of monsoon_wind's cross-isobar inflow, through
+    the kernel's own faces. The zonal belts' ascent and subsidence stay itcz and sink. There is no c0, so the "~1e-6
+    1/s" scale is no longer needed: the rate is the convergence itself (Earth L6: median ~0, 90% 3e-7, 99% 1.7e-6).
+  - A variant on the whole land-sea wind's convergence (with the tropics' down-gradient flow) wetted the
+    tropical heat lows' margins more (B 23.9) and was dropped.
+  - L6, obs / main / ascent alone: N Atlantic storm track Oct-Mar 1651 / 1197 / 1379, N Pacific 1465 / 1214 /
+    1335; sea 40-50N 1285 / 1010 / 1067, 50-60N 1140 / 947 / 985; W Europe 911 / 1147 / 1103; European Russia 590 /
+    909 / 891; W Siberia Oct-Mar 368 / 534 / 518; summer and the monsoon coasts about unchanged (SE USA 642,
+    Pampas 413). Costs: B 25.2 -> 24.3, r 0.721 -> 0.705, exact 38.4 -> 37.5. The B lost is the subtropical heat
+    lows' margins (S Africa ~570k km2, N Africa ~290k, Australia, S America; draft on the sink mask).
+  - With the inflow depth (PW-1099) it changes little. The summer convergence sits at the heat lows' centres, not
+    the coasts, because the wind has no land-sea friction contrast.
 - 2026-10-30: Created from inbox draft draft-rain-kernel-no-convergence-lift.md (found by lane58).
