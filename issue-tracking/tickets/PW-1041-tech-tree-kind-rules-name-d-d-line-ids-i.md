@@ -2,7 +2,7 @@
 id: PW-1041
 title: "Tech-tree kind rules name D&D line ids: in Seven Meals the giants aren't an elder kind, and the edge_folk rule matches nothing"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: timezoom
@@ -26,4 +26,5 @@ Fix now: techtree warns on an `of` that matches no line, and `of` accepts a list
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: a [[kind]] of may be one id or a list (techtree.load normalises to a list; _kind maps each id); techtree.build warns 'tech tree [[kind]] rules name no line of this tree: ...' for each rule none of whose ids is a line of the tree. Seven Meals' giant is clearly the D&D true_giant's counterpart (the giants stem, steadings, generation 65 yr, megafauna), so the rule is now of = ["true_giant", "giant"] (elder). The D&D tree's outputs are unchanged (it has no 'giant' line). edge_folk (an exonym, not a line) left as is: intent unclear, needs-decision inbox draft. The warning also fires for Seven Meals' missing triton and saurian lines, correctly. Test: test_techtree.test_kind_rules_take_several_ids_and_warn_on_none.
 - 2026-10-29: Created from inbox draft draft-techtree-kind-rules-match-preset-ids.md (found by code-audit-2026-10).

@@ -14,7 +14,7 @@ VIEWER = Path(__file__).resolve().parent.parent / "viewer"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-@pytest.mark.parametrize("page", ["index.html", "zoom.html", "lineages.html"])
+@pytest.mark.parametrize("page", ["zoom.html", "lineages.html"])  # (index.html: its modules, test_viewer_globe.py)
 def test_viewer_scripts_parse(page, tmp_path):
     html = (VIEWER / page).read_text()
     scripts = re.findall(r'<script( type="module")?>(.*?)</script>', html, re.S)  # (not the importmap)
@@ -241,3 +241,30 @@ def test_brief_endpoint_rejects_bad_requests():
     assert server.brief("people=x")[1] == 400
     assert server.brief("run=nope")[1] == 400
     assert server.brief("run=no-such-run-xyz&people=orc")[1] == 404
+
+
+def test_peoples_editor_has_no_copied_option_lists():
+    """PW-1033: the peoples editor (viewer/lineages.html) takes its option lists and defaults from GET /api/lineage-schema
+    (planet/lineages/run.editor_schema, from spec.py, land.GOODS and dragon_ages), so none may be copied into it:
+    no two neighbouring values of any list appear as a literal sequence, no goods label is copied, and the stale
+    "candidates" and "nothing reads it yet" texts are gone. The schema itself answers for every list."""
+    from planet.lineages import run as LR
+    from planet.lineages import spec as SP
+    from planet.lineages import land as LD
+    d = LR.editor_schema()
+    assert set(d["traits"]) == set(SP.TRAITS) and {"aggressive", "hunter"} <= set(d["traits"])
+    assert {"fish", "shellfish", "salt", "salt_rock", "sea_mammals"} <= set(d["goods"]) == set(LD.GOODS)
+    assert [k for k, _ in d["megafauna_natural"]] == list(SP.MEGAFAUNA_NATURAL) and d["defaults"]["megafauna_natural"] == "food"
+    assert "grain" in d["body_choices"] and set(d["body_default"]) == set(SP.BODY_DEFAULT)
+    html = (VIEWER / "lineages.html").read_text()
+    lists = [d[k] for k in ("traits", "places", "groups", "ways", "realms", "toxins", "eras", "modes", "portal_modes",
+                            "dragon_ages", "dragon_generation")]
+    lists += [[k for k, _ in d["megafauna_natural"]], list(d["goods"])] + list(d["body_choices"].values())
+    for vals in lists:
+        for a, b in zip(vals, vals[1:]):
+            assert not re.search(rf"""['"]{re.escape(a)}['"]\s*,\s*['"]{re.escape(b)}['"]""", html), (a, b)
+    for k, label in d["goods"].items():
+        assert f"'{label}'" not in html, k
+    assert "fertile: 'farmland'" not in html
+    assert "density: 2.0" not in html and "Candidates until" not in html and "nothing reads it yet" not in html
+    assert "/api/lineage-schema" in html

@@ -25,7 +25,7 @@
 name = "D&D peoples (preset)"
 seed = 7
 mixing_start = "3 kyr"
-era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). A PLACEHOLDER: stored, not yet read; the technology tree (PW-675) will use it. The history is not run past the present.
+era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). The technology tree caps what the peoples know by the present at it (techtree.py). The history is not run past the present.
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
 dragon_km2 = 5000  # one dragon per this many km2 of its kind's country where peoples press them (PW-957). Where no people holds the
 # land they keep nearer their natural density (meta.megafauna_natural below), and were many more before the peoples spread (the age of dragons). 5000: the default, a few per swamp or range in peopled country; 10000: rarer,

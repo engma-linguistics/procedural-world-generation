@@ -2,7 +2,7 @@
 id: PW-1033
 title: Peoples editor keeps hand-copied option lists that have gone stale (no \"food\" setting, two traits and five goods missing)
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: viewer
@@ -29,4 +29,5 @@ Fix: a `GET /api/lineage-schema` built from spec (TRAITS, PLACES, GROUPS, WAYS, 
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: GET /api/lineage-schema (lineages.run.editor_schema: spec TRAITS, PLACES, GROUPS, WAYS, REALMS, BAND, DEMO_DEFAULT, DEMOGRAPHY, BODY_DEFAULT, BODY_CHOICES, TOXINS, ERAS, MODES, PORTAL_MODES, MEGAFAUNA_NATURAL with new spec.MEGAFAUNA_NATURAL_LABELS, dragon_ages SCHEDULES and GENERATION, land.GOODS labels, and the defaults). viewer/lineages.html loads it first (loadSchema) and renders traits (aggressive and hunter now there), goods (33, with fish, shellfish, salt, salt_rock, sea_mammals), body fields (grain and milks now there), era, mode, arrivals, megafauna density (food, the default), dragon ages (younger, the default: the editor said base), dragon generation, and the density / viable population / land pull defaults from it; only menu wording stays in the page. Stale 'Candidates until the owner's review' and 'nothing reads it yet' texts rewritten (also spec.ERA_DEFAULT's comment and dnd.toml's era comment). Test: test_viewer.test_peoples_editor_has_no_copied_option_lists (no two neighbouring values of any schema list appear as a literal sequence). Checked live (test server, headless Chrome): no page errors, dnd tree shows food and younger selected. Fields for way, realm, megafauna, mass_kg, group_size, rivalry: inbox draft (new UI).
 - 2026-10-29: Created from inbox draft draft-peoples-editor-reads-spec-schema.md (found by code-audit-2026-10).

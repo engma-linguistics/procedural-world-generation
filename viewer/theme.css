@@ -1,0 +1,53 @@
+/* The viewer's shared look (PW-1046): colour and type tokens and the base controls, linked by index.html,
+   zoom.html, ringworld.html and lineages.html (and so by the start screen, the navigator and the Technology tab,
+   which draw inside those pages). Each page keeps only its own layout in its own <style>.
+   Colours used for data (ramps, legends, peoples) are not here: globe/layers.js and globe/colours.js. */
+:root {
+  --bg: #0b0f17;                       /* the page behind everything */
+  --panel: rgba(18, 24, 36, 0.92);     /* floating panels over the globe or map */
+  --panel-solid: #161c25;              /* panels that must hide what scrolls under them (sticky headers, side bars) */
+  --text: #dfe6f0;
+  --muted: #8b97a8;
+  --accent: #7cc4ff;
+  --on-accent: #06121f;                /* text on an accent-filled button */
+  --border: #2a3446;
+  --ctl: #111827;                      /* buttons, selects and inputs */
+  --ctl-hi: #1d2738;                   /* a hovered row */
+  --ctl-sel: #223652;                  /* a picked row */
+  --err: #ff8a80;
+  --ok: #9fd18b;
+  --star: #ffc940;
+  --font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, Menlo, monospace;
+  /* checkboxes, radios, sliders and progress bars in the accent, not the browser's default bright blue */
+  accent-color: var(--accent);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: var(--font); }
+a { color: var(--accent); }
+select { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; }
+input[type=text], input[type=number], input[type=search], textarea { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; }
+code { background: var(--ctl); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+.muted { color: var(--muted); }
+.err { color: var(--err); }
+.ok { color: var(--ok); }
+/* buttons: a plain one and a pick-one group (.seg), lit in the accent when on */
+.btn, .seg button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
+.btn:hover, .seg button:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+a.btn { display: inline-block; text-decoration: none; }
+.seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+/* a file input as a button ("Choose File / No file chosen" otherwise) */
+input[type=file] { color: var(--muted); font-size: 12px; }
+input[type=file]::file-selector-button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px;
+  padding: 3px 8px; margin-right: 6px; cursor: pointer; font: inherit; }
+input[type=file]::file-selector-button:hover { border-color: var(--accent); }
+/* a section heading: small capitals, muted */
+.eyebrow, h2.eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
+/* collapsible sections (details.sec): the triangle centred on the heading's text, not raised above it */
+details.sec > summary { list-style: none; display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 0 4px; user-select: none; }
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary::before { content: '\25B8'; display: inline-block; width: 10px; font-size: 10px; line-height: 1; text-align: center; }
+details.sec[open] > summary::before { content: '\25BE'; }
+details.sec > summary:hover { color: var(--text); }

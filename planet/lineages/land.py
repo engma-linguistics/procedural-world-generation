@@ -22,6 +22,7 @@ import time
 import numpy as np
 
 from ..geo import R_KM, world_land
+from ..provenance import code_hash
 from .gridops import nbr_reduce
 
 REACH = 0.7  # an ore district's or a coast's good reaches one cell ring inland at this share (a people settles around it)
@@ -193,9 +194,7 @@ def _disk_key(world_ref: str) -> str:
     if hp.exists():
         hs = hp.stat()
         h.update(f"h:{hs.st_size}:{hs.st_mtime_ns}".encode())
-    h.update(S.code_digest().encode())
-    h.update(Path(__file__).read_bytes())  # (this file's own source)
-    h.update((Path(__file__).parent / "seafood.py").read_bytes())
+    h.update(code_hash("lineages").encode())  # (this file, seafood.py and the model they read; PW-1035)
     return h.hexdigest()
 
 
@@ -243,9 +242,8 @@ def _disk_write(world_ref: str, key: str, out: dict) -> None:
             arrs[k] = np.asarray(v)
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
-        tmp = p.with_name(p.stem + ".tmp.npz")
-        np.savez(tmp, **arrs)
-        tmp.replace(p)
+        with S.atomic_path(p) as tmp:  # (a unique temporary name, PW-1040)
+            np.savez(tmp, **arrs)
     except OSError:
         pass
 

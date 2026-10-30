@@ -1,0 +1,120 @@
+<title>Viewer UX side-by-sides</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --text: #1d2129; --muted: #5d6470; --line: #dcd9d0; --accent: #2f6fb0;
+  --good: #1e7a46; --warn: #a3471a; --tag: #e7e5de; --tagnew: #d6e8f7; --shot: #0c1018;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1218; --card: #171b23; --text: #e4e7ec; --muted: #9aa3b0; --line: #2b313c; --accent: #7fb5ea;
+    --good: #6fd39a; --warn: #f0a070; --tag: #262c36; --tagnew: #1d3550; --shot: #0c1018;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1218; --card: #171b23; --text: #e4e7ec; --muted: #9aa3b0; --line: #2b313c; --accent: #7fb5ea;
+  --good: #6fd39a; --warn: #f0a070; --tag: #262c36; --tagnew: #1d3550; --shot: #0c1018;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; overflow-x: hidden; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--font); }
+main { max-width: 1400px; margin: 0 auto; padding: 28px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)); }
+h1 { font-size: 26px; margin: 0 0 6px; }
+h2 { font-size: 20px; margin: 44px 0 6px; padding-top: 16px; border-top: 1px solid var(--line); }
+h3 { font-size: 16px; margin: 24px 0 8px; }
+p, li { max-width: 80ch; }
+.muted { color: var(--muted); }
+code { font: 13px ui-monospace, Menlo, monospace; background: var(--tag); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.rec { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--good); border-radius: 8px; padding: 12px 16px; margin: 14px 0; max-width: 90ch; }
+.rec b:first-child { color: var(--good); }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin: 12px 0; }
+.opt { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.opt h4 { margin: 0 0 4px; font-size: 15px; }
+.opt p { margin: 0 0 8px; font-size: 13.5px; color: var(--muted); }
+img { display: block; width: 100%; height: auto; border-radius: 6px; background: var(--shot); }
+.pair { margin: 0 0 18px; }
+.pair figcaption { font-weight: 600; margin-bottom: 6px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 10px; }
+.two > div { position: relative; min-width: 0; }
+.tag { position: absolute; top: 6px; left: 6px; background: var(--tag); color: var(--text); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+.tag.new { background: var(--tagnew); }
+.tablewrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; font-size: 13.5px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.strip { display: inline-block; width: 220px; height: 14px; border-radius: 3px; vertical-align: middle; }
+.ls { display: block; font: 11px ui-monospace, Menlo, monospace; color: var(--muted); }
+.bad { color: var(--warn); font-weight: 600; }
+.good { color: var(--good); font-weight: 600; }
+details { margin: 10px 0; }
+summary { cursor: pointer; font-weight: 600; }
+</style>
+<main>
+<h1>Viewer UX side-by-sides</h1>
+<p class="muted">Lane 53, 2026-10-30. Three looks for you to choose between. Each option is built and working behind a switch you add
+to the viewer's address, and none of them is the default yet. Pictures are of planet 3097e3 (a peoples run on world 2a7385),
+world 2a7385 and zoom 80a169.</p>
+
+<h2>A. Peoples' colours (PW-1032)</h2>
+<p>The peoples layer gives each people a colour. Today several neighbours share a colour, and some colours vanish into the ocean blue or the grey of empty land.
+Try it in the viewer: add <code>&amp;palette=distinct</code> or <code>&amp;palette=family</code> to a peoples run's address.</p>
+<div class="opts">
+  <div class="opt"><h4>1. Current</h4><p>The palette as it is: 35 colours for 66 peoples, picked by hand.</p><img src="img/pal-current.jpg" alt="Peoples map, current colours" loading="lazy"></div>
+  <div class="opt"><h4>2. Neighbours always distinct</h4><p>Each people gets the colour furthest from its neighbours', checked for colour-blind sight too. Names are ignored, so red dragons can come out green.</p><img src="img/pal-distinct.jpg" alt="Peoples map, neighbours distinct" loading="lazy"></div>
+  <div class="opt"><h4>3. Family hues + distinct neighbours</h4><p>Dragons warm, giants blue, fey violet; colour-named peoples keep their colour (red dragons red, gold dragons gold); then neighbours are pushed apart.</p><img src="img/pal-family.jpg" alt="Peoples map, family hues" loading="lazy"></div>
+</div>
+<h3>The same three as someone with red-green colour blindness (deuteranopia) sees them</h3>
+<div class="opts">
+  <div class="opt"><h4>1. Current</h4><img src="img/pal-current-deutan.jpg" alt="Current colours, deuteranopia" loading="lazy"></div>
+  <div class="opt"><h4>2. Neighbours distinct</h4><img src="img/pal-distinct-deutan.jpg" alt="Neighbours distinct, deuteranopia" loading="lazy"></div>
+  <div class="opt"><h4>3. Family hues</h4><img src="img/pal-family-deutan.jpg" alt="Family hues, deuteranopia" loading="lazy"></div>
+</div>
+<div class="tablewrap"><table>
+<thead><tr><th>66 peoples, 411 neighbouring pairs</th><th>Current</th><th>Neighbours distinct</th><th>Family hues</th></tr></thead>
+<tbody>
+<tr><td>different colours used</td><td class="n">35</td><td class="n">62</td><td class="n">66</td></tr>
+<tr><td>neighbours with the very same colour</td><td class="n bad">4</td><td class="n good">0</td><td class="n good">0</td></tr>
+<tr><td>neighbours that look alike (normal sight)</td><td class="n bad">6</td><td class="n good">0</td><td class="n good">0</td></tr>
+<tr><td>neighbours that look alike (colour-blind sight)</td><td class="n bad">37</td><td class="n good">0</td><td class="n good">0</td></tr>
+<tr><td>colours lost in the ocean or the empty-land grey</td><td class="n bad">7</td><td class="n good">0</td><td class="n good">0</td></tr>
+<tr><td>closest neighbouring pair (colour difference, higher is better)</td><td class="n">—</td><td class="n">14.3 (humans / human herders)</td><td class="n">12.1 (brass dragons / kenku)</td></tr>
+</tbody></table></div>
+<p class="muted">"Look alike" means a colour difference (CIELAB ΔE) under 10 for peoples that share a border or overlap at any time in the run; colour-blind sight is simulated for red- and green-blindness (Machado et al. 2009). Current's lost colours include red dragons, elves and tritons.</p>
+<div class="rec"><b>Recommendation: option 3, family hues.</b> It fixes every clash the distinct palette fixes and keeps the meaning in the names: red dragons are red, the giants read as one family.
+One wrinkle: black dragons cannot be black on a dark map, so the clash pass gives them a dark rose. If you prefer, they can be a fixed charcoal with a light outline instead.</div>
+
+<h2>B. Colour ramps (PW-1027)</h2>
+<p>For "how much" maps the eye reads brightness as the amount. Several ramps get lighter and then darker again, so the least and the most look alike
+(the darkest wave-power red is about as dark as the calmest sea). The proposal keeps each ramp's hues and makes its brightness run one way only.
+The zoom also switches to the globe's temperature, rain and fertility ramps, so the same place looks the same in both.
+Try it: add <code>&amp;ramps=new</code> to the globe's or the zoom's address.</p>
+<h3>Every ramp the rule changes (brightness, 0 black to 100 white, under each strip)</h3>
+<div class="tablewrap"><table><thead><tr><th>ramp</th><th>current</th><th>proposed</th></tr></thead><tbody><tr><th scope="row">fire return</th><td><span class="strip" style="background:linear-gradient(90deg,#3a2a2a 0%,#e8503a 17%,#f09a3a 33%,#f2d36a 50%,#c9d6a0 67%,#8fb0a0 83%,#4f6f80 100%)"></span><span class="ls">19 55 71 85 83 69 45</span></td><td><span class="strip" style="background:linear-gradient(90deg,#3a2a2a 0%,#920708 17%,#8e5304 33%,#917b0c 50%,#919e6b 67%,#9cbdad 83%,#b8d9ec 100%)"></span><span class="ls">19 30 41 52 63 74 85</span></td></tr><tr><th scope="row">soil depth</th><td><span class="strip" style="background:linear-gradient(90deg,#8a7f6e 0%,#c9b48a 25%,#d9c27a 50%,#a8743f 75%,#5a3a22 100%)"></span><span class="ls">54 74 79 53 28</span></td><td><span class="strip" style="background:linear-gradient(90deg,#cec2b0 0%,#b39f76 25%,#927f3a 50%,#855622 75%,#5b3b23 100%)"></span><span class="ls">79 66 54 41 28</span></td></tr><tr><th scope="row">building ground</th><td><span class="strip" style="background:linear-gradient(90deg,#6a3a3a 0%,#a8603f 20%,#d9a65a 40%,#e3d28a 60%,#b5c9a0 80%,#7f9fb0 100%)"></span><span class="ls">30 48 71 84 79 64</span></td><td><span class="strip" style="background:linear-gradient(90deg,#693939 0%,#924e2e 20%,#9f7329 40%,#a59753 60%,#a7ba92 80%,#b6d6e8 100%)"></span><span class="ls">30 41 52 62 73 84</span></td></tr><tr><th scope="row">green season</th><td><span class="strip" style="background:linear-gradient(90deg,#c9b38a 0%,#d9cf8a 25%,#a9c26a 50%,#5f9f45 75%,#1f6a32 100%)"></span><span class="ls">74 82 75 60 39</span></td><td><span class="strip" style="background:linear-gradient(90deg,#e0c99f 0%,#b9b06d 25%,#829b46 50%,#45852d 75%,#1e6931 100%)"></span><span class="ls">82 71 60 50 39</span></td></tr><tr><th scope="row">river floods</th><td><span class="strip" style="background:linear-gradient(90deg,#2f5f8f 0%,#4f9fb0 20%,#9fd0a0 40%,#f0d36b 60%,#ef8a3a 80%,#b8283a 100%)"></span><span class="ls">39 61 79 85 67 41</span></td><td><span class="strip" style="background:linear-gradient(90deg,#2e5f8e 0%,#267d8d 20%,#669568 40%,#baa13a 60%,#fea767 80%,#fac9c6 100%)"></span><span class="ls">39 48 57 67 76 85</span></td></tr><tr><th scope="row">wave power</th><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#2f6f8f 20%,#4fae9b 40%,#b8d66b 60%,#f2c14e 80%,#e8603c 100%)"></span><span class="ls">20 44 65 81 80 58</span></td><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#09526e 20%,#007766 40%,#74922a 60%,#cfa12d 80%,#ffb9a3 100%)"></span><span class="ls">20 32 44 57 69 81</span></td></tr><tr><th scope="row">tide range</th><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#2c5d8a 20%,#3f9bb0 40%,#8fd19e 60%,#f0d36b 80%,#e8603c 100%)"></span><span class="ls">20 38 60 78 85 58</span></td><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#1b517d 20%,#00788c 40%,#5c9c6c 60%,#c9af49 80%,#facabb 100%)"></span><span class="ls">20 33 46 59 72 85</span></td></tr><tr><th scope="row">turbidity</th><td><span class="strip" style="background:linear-gradient(90deg,#0f3a5f 0%,#2f6f8f 20%,#6fa88a 40%,#c9b26a 60%,#a8743a 80%,#6b4424 100%)"></span><span class="ls">24 44 64 73 53 33</span></td><td><span class="strip" style="background:linear-gradient(90deg,#113b60 0%,#045674 20%,#3a7256 40%,#927e39 60%,#c58e53 80%,#dba984 100%)"></span><span class="ls">24 34 44 53 63 73</span></td></tr><tr><th scope="row">upwelling</th><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#2f5f8f 20%,#3f9bb0 40%,#8fd19e 60%,#f0d36b 80%,#e8603c 100%)"></span><span class="ls">20 39 60 78 85 58</span></td><td><span class="strip" style="background:linear-gradient(90deg,#1d2f55 0%,#1a507f 20%,#00788c 40%,#5c9c6c 60%,#c9af49 80%,#facabb 100%)"></span><span class="ls">20 33 46 59 72 85</span></td></tr><tr><th scope="row">humidity</th><td><span class="strip" style="background:linear-gradient(90deg,#b98a4f 0%,#e3cf94 20%,#d9e7c4 40%,#7fc3b0 60%,#3f8fb0 80%,#244f8f 100%)"></span><span class="ls">61 83 90 74 56 34</span></td><td><span class="strip" style="background:linear-gradient(90deg,#fdddbb 0%,#d6c288 20%,#9caa88 40%,#509382 60%,#177493 80%,#244f8f 100%)"></span><span class="ls">90 79 68 56 45 34</span></td></tr><tr><th scope="row">cloud</th><td><span class="strip" style="background:linear-gradient(90deg,#f2c14e 0%,#efe0a6 20%,#d3dade 40%,#a3b1bf 60%,#6f7f93 80%,#454e5e 100%)"></span><span class="ls">80 89 87 72 53 33</span></td><td><span class="strip" style="background:linear-gradient(90deg,#ffdb98 0%,#cfc088 20%,#9ca3a7 40%,#798694 60%,#5a6a7d 80%,#454e5e 100%)"></span><span class="ls">89 78 67 55 44 33</span></td></tr><tr><th scope="row">sunshine</th><td><span class="strip" style="background:linear-gradient(90deg,#2e3348 0%,#4d5674 14%,#8a93a6 29%,#d3d3c0 43%,#efd98a 57%,#f3b33d 71%,#e57a22 86%,#c4461a 100%)"></span><span class="ls">22 37 61 84 87 77 62 47</span></td><td><span class="strip" style="background:linear-gradient(90deg,#2f3449 0%,#404966 14%,#576072 29%,#787867 43%,#a08e43 57%,#d89c23 71%,#feae77 86%,#fad1c3 100%)"></span><span class="ls">22 31 41 50 59 68 78 87</span></td></tr></tbody></table></div>
+<p class="muted">Left alone on purpose: ramps with a meant light middle (temperature, the model-minus-observed and wetter/drier maps, salinity, crust age and thickness), the elevation tints and the category maps.</p>
+<h3>Ramps shared with the zoom</h3>
+<div class="tablewrap"><table><thead><tr><th>zoom ramp</th><th>zoom today</th><th>globe's (proposed for both)</th></tr></thead><tbody><tr><th scope="row">temperature</th><td><span class="strip" style="background:linear-gradient(90deg,#3c288c 0%,#5078dc 20%,#bee6fa 40%,#78c878 60%,#f0d25a 80%,#dc4628 100%)"></span></td><td><span class="strip" style="background:linear-gradient(90deg,#2b3f99 0%,#5b8fd6 20%,#e6f0f5 40%,#f4d27a 60%,#e2703a 80%,#9e1c1c 100%)"></span></td></tr><tr><th scope="row">rain</th><td><span class="strip" style="background:linear-gradient(90deg,#965a28 0%,#d7b46e 20%,#bed278 40%,#50aa6e 60%,#1e6ea0 80%,#28288c 100%)"></span></td><td><span class="strip" style="background:linear-gradient(90deg,#d9c49a 0%,#c9c27a 20%,#7fb35a 40%,#2f8f5a 60%,#1f6f8f 80%,#203f8f 100%)"></span></td></tr><tr><th scope="row">soil fertility</th><td><span class="strip" style="background:linear-gradient(90deg,#c8785a 0%,#e2c482 33%,#a0be64 67%,#286e32 100%)"></span></td><td><span class="strip" style="background:linear-gradient(90deg,#d8c8a8 0%,#c9a86a 25%,#a9b85a 50%,#5f9f3a 75%,#1f5f22 100%)"></span></td></tr></tbody></table></div>
+<h3>On the globe's flat map (world 2a7385)</h3>
+<figure class="pair"><figcaption>Wave power</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-wave_power-cur.jpg" alt="Wave power, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-wave_power-new.jpg" alt="Wave power, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>River floods</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-river_floods-cur.jpg" alt="River floods, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-river_floods-new.jpg" alt="River floods, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Soil depth</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-soil_depth-cur.jpg" alt="Soil depth, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-soil_depth-new.jpg" alt="Soil depth, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Fire return</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-fire_return-cur.jpg" alt="Fire return, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-fire_return-new.jpg" alt="Fire return, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Building ground</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-building_ground-cur.jpg" alt="Building ground, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-building_ground-new.jpg" alt="Building ground, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Cloud cover</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-cloud-cur.jpg" alt="Cloud cover, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-cloud-new.jpg" alt="Cloud cover, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Rainfall (unchanged on the globe)</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-rainfall-cur.jpg" alt="Rainfall (unchanged on the globe), current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-rainfall-new.jpg" alt="Rainfall (unchanged on the globe), proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Fertility (unchanged on the globe)</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/g-fertility-cur.jpg" alt="Fertility (unchanged on the globe), current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/g-fertility-new.jpg" alt="Fertility (unchanged on the globe), proposed" loading="lazy"></div></div></figure>
+<h3>In the regional zoom (80a169)</h3>
+<figure class="pair"><figcaption>Zoom: temperature (now the globe's ramp)</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-temperature-cur.jpg" alt="Zoom: temperature (now the globe's ramp), current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-temperature-new.jpg" alt="Zoom: temperature (now the globe's ramp), proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Zoom: rain (now the globe's ramp)</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-precipitation-cur.jpg" alt="Zoom: rain (now the globe's ramp), current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-precipitation-new.jpg" alt="Zoom: rain (now the globe's ramp), proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Zoom: fertility (now the globe's ramp)</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-soil_fertility-cur.jpg" alt="Zoom: fertility (now the globe's ramp), current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-soil_fertility-new.jpg" alt="Zoom: fertility (now the globe's ramp), proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Zoom: fire return</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-fire_return-cur.jpg" alt="Zoom: fire return, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-fire_return-new.jpg" alt="Zoom: fire return, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Zoom: soil depth</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-soil_depth-cur.jpg" alt="Zoom: soil depth, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-soil_depth-new.jpg" alt="Zoom: soil depth, proposed" loading="lazy"></div></div></figure><figure class="pair"><figcaption>Zoom: building ground</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/z-building-cur.jpg" alt="Zoom: building ground, current" loading="lazy"></div><div><span class="tag new">Proposed</span><img src="img/z-building-new.jpg" alt="Zoom: building ground, proposed" loading="lazy"></div></div></figure>
+<div class="rec"><b>Recommendation: take the shared zoom ramps now, and the one-way rule ramp by ramp.</b>
+Wave power, river floods, tide range, upwelling, building ground and soil depth read better straight away. Cloud and humidity barely change. Fire return comes out muddy
+(its "never burns" stop sits at one end of a log scale, and the rule darkens its reds): that one is better hand-tuned than rebuilt by the rule.</div>
+
+<h2>C. Docked legend (PW-1029)</h2>
+<p>Today the legend floats at the bottom of the map and can cover the map, especially with peoples or event switches showing. The option moves it into the right-hand column, just above the summary.
+Try it: add <code>&amp;legend=dock</code> to the globe's address.</p>
+<figure class="pair"><figcaption>Peoples run 3097e3, 1600 × 1000</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/dock-run-cur.jpg" alt="Peoples run 3097e3, 1600 × 1000, current" loading="lazy"></div><div><span class="tag new">Docked</span><img src="img/dock-run-dock.jpg" alt="Peoples run 3097e3, 1600 × 1000, docked" loading="lazy"></div></div></figure>
+<figure class="pair"><figcaption>Same, on a 1280 × 800 screen</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/dock-run-cur-1280.jpg" alt="Same, on a 1280 × 800 screen, current" loading="lazy"></div><div><span class="tag new">Docked</span><img src="img/dock-run-dock-1280.jpg" alt="Same, on a 1280 × 800 screen, docked" loading="lazy"></div></div></figure>
+<figure class="pair"><figcaption>World 2a7385, temperature</figcaption><div class="two"><div><span class="tag">Current</span><img src="img/dock-world-cur.jpg" alt="World 2a7385, temperature, current" loading="lazy"></div><div><span class="tag new">Docked</span><img src="img/dock-world-dock.jpg" alt="World 2a7385, temperature, docked" loading="lazy"></div></div></figure>
+<div class="rec"><b>Recommendation: dock it.</b> The map gets its bottom edge back and the legend sits next to the summary that explains the same layer.
+The cost is a shorter summary on small screens; the summary already folds away with its title button.</div>
+
+<h2>What comes next</h2>
+<ul>
+<li>PW-1026: the grouped layer picker (the long wall of layer buttons on the left).</li>
+<li>PW-1042: a time axis with labels under the run's time slider.</li>
+</ul>
+</main>

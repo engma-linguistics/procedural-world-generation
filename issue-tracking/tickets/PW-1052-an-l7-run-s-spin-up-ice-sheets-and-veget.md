@@ -1,4 +1,5 @@
 ---
+id: PW-1052
 title: An L7 run's spin-up ice sheets and vegetation on the L6 grid too (the coarse update is still half of an L7 one)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane27
 blocked_by: []
 relates: [PW-247, PW-252]
 refs: [planet/nest.py, planet/tectonics/earth.py, docs/review/speed/README.md]
+created: 2026-10-29
+updated: 2026-10-29
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
   stacked field array would cut it to ~0.1 s. This is bit-for-bit only if the arithmetic order is kept.
 - [ ] measure the vegetation-on-L6 variant's update time, and its NPP and tree-cover bias on one state
 - [ ] judge it with the L7 set of docs/review/speed/README.md if it changes outputs
+
+## Updates
+- 2026-10-29: Created from inbox draft draft-l7-spinup-ice-and-plants-on-l6.md (found by lane27).
