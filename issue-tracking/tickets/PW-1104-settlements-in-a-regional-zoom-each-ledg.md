@@ -23,4 +23,5 @@ What to try: when a zoom covers ledger sites, move each one to the best pixel of
 - [ ] a zoom draws the ledger's sites of the cells it covers, each on its best pixel; ruins shown
 
 ## Updates
+- 2026-10-30: Owner 10-30: mines in particular are hard to read on the globe (a cell is ~110 km across); the zoom is where districts and pits should land on their actual ore, outcrop or valley. Include mine districts and lane 74's local pits: each at the best ore pixel in its cell (raw deposit layers at km scale).
 - 2026-10-30: Created from inbox draft draft-settlements-in-zooms.md (found by fun-lane-60).

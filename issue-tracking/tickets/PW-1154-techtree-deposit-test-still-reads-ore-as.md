@@ -1,4 +1,5 @@
 ---
+id: PW-1154
 title: Techtree deposit test still reads ore as ore-bearing country (reach good at 0.5), not a deposit
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-74
 blocked_by: []
 relates: [PW-1146]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, planet/lineages/mining.py, "run 488d7e"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options: A. keep as is (ore-bearing country; smelting needs the metal in reach, 
 ores only (small knock-on, needs a golden/scorecard look). C. a middle threshold, e.g. raw 0.6.
 Lean: A until the next history re-run, then B with the scorecard.
 - [ ] Owner: A, B or C
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-deposit-test-on-raw-ore.md (found by fun-lane-74).
