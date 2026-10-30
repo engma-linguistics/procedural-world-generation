@@ -1,4 +1,5 @@
 ---
+id: PW-1144
 title: "Peoples history: miner kinds lean harder toward rich ore (and copper, tin, rock salt) at the next history re-run"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-72
 blocked_by: []
 relates: [PW-1116, PW-1131]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/habitat.py, planet/lineages/settlements.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -35,3 +38,6 @@ What to change at the next planned history re-run (not on its own: it means re-r
 Expected effect: small, because the dwarves are few (present on 69-184 cells of ~14,100 land cells). Most of their
 mines will still be colonies. If the owner wants dwarves to be many, that is a range and density question for the
 history, not a mining one.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dwarves-lean-to-rich-ore-in-history.md (found by fun-lane-72).

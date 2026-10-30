@@ -1,4 +1,5 @@
 ---
+id: PW-1145
 title: "Settlements: owner look at the mining colonies and the 'mining follows need' rule (D12)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-72
 blocked_by: []
 relates: [PW-1131, PW-1116]
 refs: [planet/lineages/settlements.py, viewer/globe/settlements.js, docs/review/settlements/README.md, "run 488d7e", "run 570701"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Judgement calls (CONST in settlements.py; `planet settlements RUN --set K=V` tri
   question (see the companion draft on miners leaning to rich ore).
 Lean: keep as is.
 - [ ] Owner looks at the links
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-mining-colonies-owner-look.md (found by fun-lane-72).

@@ -69,7 +69,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. The one open item is D17, the
   "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
   when anything else needs you.</p>
-  <nav class="toc"><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
+  <nav class="toc"><a href="#decisions">Decisions</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
 </header>
 
 <h2 id="decisions">Decisions waiting on you</h2>
@@ -112,6 +112,24 @@ behaves on its own.</div>
 <div class="answer">lane 73 · ticket to follow</div></div>
 </div>
 
+<h2 id="mines">Mines are in: have a look</h2>
+<p class="sub">Lane 72 (your D12) is merged. Peoples who live by mining (dwarves, kobolds, gnomes, drow) now send mining towns of incomers
+to rich ore within 300 km of their own land, like German miners invited into medieval Hungary. Everyone else opens a mine only when
+they need one: they farm or herd, or there's a town nearby to sell to, or they have seen a mine work next door for about 1,000 years.
+That last rule is your point about First Nations peoples knowing copper without opening mines. Each diamond is a whole mining
+<i>district</i>, the pits and town of one seam, not a single pit. That's why there are a few hundred per world.</p>
+<p>In the viewer: <b>Overlays → Settlements → "only the mines"</b> shows every district at any zoom. Mining colonies have a white ring.
+Each link below opens straight onto one, with its hover card showing.</p>
+<div class="grid2">
+<figure><img src="img2/m-21-dwarf-gold-colony-488d7e.jpg" alt="A dwarf mining colony in a gold district, with its hover card" loading="lazy"><figcaption><b>A dwarf gold colony</b>, a mining town of about 1,900 incomers, founded about 2,600 years ago. <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;layer=peoples&amp;lat=39.77&amp;lon=75.096&amp;dist=2.3">Open it</a></figcaption></figure>
+<figure><img src="img2/m-23-gnome-iron-colony-488d7e.jpg" alt="A gnome mining colony in an iron district" loading="lazy"><figcaption><b>A gnome iron colony.</b> <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;layer=peoples&amp;lat=3.045&amp;lon=145.776&amp;dist=2.3">Open it</a> · also <a href="http://localhost:8765/viewer/?run=570701&amp;settle=mines&amp;layer=peoples&amp;lat=32.445&amp;lon=118.717&amp;dist=2.3">a kobold gold colony</a></figcaption></figure>
+<figure><img src="img2/m-24-mines-only-globe-488d7e.jpg" alt="The whole globe showing only mining districts" loading="lazy"><figcaption><b>The whole globe, mines only.</b> Mining districts per world went from 255–380 to 277–412, 38–81 of them colonies. The human share fell from 42–80% to 36–72%. Kobolds about doubled. <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;view=30,100">Open it</a></figcaption></figure>
+</div>
+<div class="note"><b>What's still thin, and my call on it.</b> Dwarves still run only 4–18 districts per world, because there are so few
+dwarves (D17 above). Also, "ore country" covers 46% of the land, because the code counts any 50% chance of a deposit in a big cell as a
+district. Real ore districts are rare and clustered. I'm having that tightened to about 8% of land, the rich deposits only. It's a
+settlements-only change, so no history re-runs. Say if you'd rather it stayed.</div>
+
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>What</th><th>Lane</th><th>Where it stands</th></tr>
@@ -119,8 +137,6 @@ behaves on its own.</div>
 melting ice edges, bare ice absorbing more sun, and ice lasting only if it survives the warm orbital phase. On the Earth test, stuck ice
 fell from 5.3 to 1.6 points. Today's Earth comes out a bit light on ice (8.6% of land against the real ~10.7%).</td><td>71</td><td>Building
 it, checking Greenland and Antarctica, then investigating one frozen world closely, then the 7-world screen</td></tr>
-<tr><td><b>Dwarves find ore</b> (D12): mining colonies within 300 km of a people's land, mines opened only when needed, a mines toggle
-in the viewer, and desk links that open straight onto the mines</td><td>72</td><td>Building</td></tr>
 <tr><td><b>Why mainline peoples are rare</b> (D17)</td><td>73</td><td>Testing two batches</td></tr>
 <tr><td><b>Dragon paper, revised</b> (D14, D16): mortality split by age, a pressure setting per tech era, and the food-channel loss
 broken down by cause</td><td>63</td><td>Re-runs, then checks and peer review</td></tr>
@@ -139,7 +155,7 @@ single fixes, the full test once before merging.</td></tr>
 <tr><td>D10: stop the 72-world test; ice sheets back in v1; can warm months melt more?</td><td>Stopped. The model already averaged melt over the orbit.
 The real gap was that warm phases barely reached the ice. Lane 71 is fixing that (above).</td></tr>
 <tr><td>D11: park monsoons for v2, find a source</td><td>Parked. The land and sea drag sources are saved in the repo.</td></tr>
-<tr><td>D12: dwarves find ore, the least forced way; links must open the right view</td><td>Lane 72 (above).</td></tr>
+<tr><td>D12: dwarves find ore, the least forced way; links must open the right view</td><td>Merged (lane 72). See "Mines are in". Every link on it was tested to open on a mine.</td></tr>
 <tr><td>D13: end the history at "D", extend if nobody's arrived</td><td>On the ticket (PW-1134). Built after the current lanes.</td></tr>
 <tr><td>D14/D16: dragon pressure as a setting; dragons press back on small folk</td><td>Lane 63 (above). The setting, and a draft for dragons
 eating small folk to keep game plentiful. Metallic versus chromatic temperament comes later.</td></tr>

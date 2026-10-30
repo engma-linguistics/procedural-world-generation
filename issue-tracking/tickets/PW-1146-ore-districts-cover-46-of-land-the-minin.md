@@ -1,4 +1,5 @@
 ---
+id: PW-1146
 title: "Ore 'districts' cover ~46% of land: the mining threshold reads a deposit likelihood as a district"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-72
 blocked_by: []
 relates: [PW-1116, PW-1131]
 refs: [planet/lineages/mining.py, planet/lineages/land.py, planet/resources.py, planet/lineages/settlements.py, planet/lineages/techtree.py, "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -47,3 +50,6 @@ Lean: A now, B at the next history re-run. Owner check: is ~150-250 mining distr
 ~350 km ring, plausible? No source gives a world count. Mitterberg, the Great Orme, Hallstatt and Schwaz are each one
 district on this reading.
 - [ ] Owner: A, B or C
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-ore-districts-cover-half-the-land.md (found by fun-lane-72).
