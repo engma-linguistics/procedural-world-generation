@@ -69,15 +69,31 @@ def test_the_surface_damps_only_the_air_that_isnt_the_sheets(sim4_60):
     assert np.allclose(icemass.sheet_cover(g, sheet, air=np.zeros(g.n)), plain)
 
 
-def test_the_inversion_is_a_winter_feature():
-    """(b): thick ice's ICE_COOL follows the season with the same annual mean: none at midsummer, twice it at
-    midwinter (the kernel shared by the run, the worlds, the zoom and the time zoom)."""
+def _year(t_mean, half, cool=2.0):
     from planet.timezoom.kernels import climate_step
-    n, cool = 2, 2.0
+    n = 2
     z, o = np.zeros(n), np.ones(n)
     out = [np.zeros(n) for _ in range(6)]  # smb, t_ann, t_warm, t_cold, p_scale, f_sum
-    climate_step(np.zeros(n, bool), np.array([True, False]), np.full(n, -10.0), np.full(n, 10.0), z, z, z, z,
+    climate_step(np.zeros(n, bool), np.array([True, False]), np.full(n, t_mean), np.full(n, half), z, z, z, z,
                  z, np.zeros(n, np.int64), np.zeros((1, 12)), o, z, cool, z, 0.5, 0.3, 30.0, 5.0, 3.0, 8.0, 0.6,
                  0.07, *out)
-    _, t_ann, t_warm, t_cold, _, _ = out
-    assert np.allclose(t_warm, 0.0) and np.allclose(t_cold, -24.0) and np.allclose(t_ann, -12.0)
+    return out[1:4]
+
+
+def test_the_inversion_follows_the_season_only_where_the_summer_melts():
+    """PW-1050 (b), PW-1095: thick ice's ICE_COOL keeps its annual mean everywhere. Its seasonal swing (none at
+    midsummer, twice it at midwinter) is scaled by the share of the warmest month's days the air reaching the
+    surface is above freezing: a melting margin loses its inversion in summer, a plateau that never melts keeps
+    it all year (the kernel shared by the run, the worlds, the zoom and the time zoom)."""
+    # a melting margin: the air's warmest month +20 C, share ~1: (b)'s full swing
+    t_ann, t_warm, t_cold = _year(0.0, 20.0)
+    assert np.allclose(t_warm, 20.0, atol=1e-3) and np.allclose(t_cold, -24.0, atol=1e-3) and np.allclose(t_ann, -2.0)
+    # a plateau: the air's warmest month -30 C, share ~0: the same inversion all year
+    t_ann, t_warm, t_cold = _year(-40.0, 10.0)
+    assert np.allclose(t_warm, -32.0, atol=1e-3) and np.allclose(t_cold, -52.0, atol=1e-3)
+    assert np.allclose(t_ann, -42.0)
+    # in between (warmest month at 0 C: half its days above freezing), half the swing; the annual mean is kept
+    t_ann, t_warm, t_cold = _year(-10.0, 10.0)
+    s = 0.5  # (erfc(0) = 1)
+    assert np.allclose(t_warm, -2.0 * (1 - s)) and np.allclose(t_cold, -20.0 - 2.0 * (1 + s))
+    assert np.allclose(t_ann, -12.0)
