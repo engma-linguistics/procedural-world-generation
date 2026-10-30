@@ -2,7 +2,7 @@
 id: PW-1164
 title: "Owner call: the +3 C warm edge of the finish band, against Earth-like climate variance"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v2
 subsystem: climate
@@ -35,4 +35,5 @@ Numbers (lane 80, lane 75's K judge, L6, roll 0.0005), from a Gaussian at median
 - [ ] Owner: keep +3 C, or move the warm edge (e.g. +4 to +5 C)
 
 ## Updates
+- 2026-10-30: Status needs-decision -> in-progress. Owner D19 (2026-10-30): the warm edge of the finish band moves to +5 C. Caveat: a user setting that refuses worlds with no permanent ice (rerolling as needed; a reroll or three is fine).
 - 2026-10-30: Created from inbox draft draft-warm-finish-band-edge.md (found by lane80).
