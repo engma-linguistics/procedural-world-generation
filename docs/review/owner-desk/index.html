@@ -66,7 +66,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · 30 October 2026 · evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D18 (mines, under "Mines are in") and D17, the
+  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D19 (how warm a finished world may be) and D17, the
   "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
   when anything else needs you.</p>
   <nav class="toc"><a href="#decisions">Decisions</a><a href="#robust">Robust, not tuned</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
@@ -75,6 +75,18 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <h2 id="decisions">Decisions waiting on you</h2>
 <p class="sub">"Your call" or "wait for the numbers" are fine answers.</p>
 <div class="cards">
+
+<div class="card"><div class="id">D19 · CLIMATE · for information, no rush</div>
+<h3>How warm may a finished Earth-like be?</h3>
+<p>Climate is done for v1. Worlds finish at a median of about today's temperature, but spread ±3.7 °C. That's slow volcanic
+wander in CO₂, not a bug, and it's narrower than Earth's own past (the last 66 million years alone ran from about +14 °C to −6 °C
+against today). The test calls a world too warm above +3 °C, so about a fifth of worlds will always fail on warmth, however good the
+physics.</p>
+<ol><li><b>Keep +3 °C.</b> Strictly today-like. About 1 in 5 worlds fails as too warm.</li>
+<li><b>Allow up to about +4.7 °C.</b> Warm Earth-likes, like Earth a few million years ago, count as passing. About 1 in 10 fails.</li></ol>
+<div class="rec"><b>My lean: 2.</b> A world 4 °C warmer than ours is still plainly Earth-like, with more forest and less ice. But you're the one asking
+for Earth-likes, so it's your line to draw.</div>
+<div class="answer">PW-1164 · lane 80's analysis: docs/review/base-climate/finish-drift-l80/</div></div>
 
 <div class="card"><div class="id">D17 · PEOPLES · the research is back</div>
 <h3>How do the mainline peoples get common: density, portals, or the flag?</h3>
@@ -179,9 +191,8 @@ simple, 1.</div>
 <tr><th>What</th><th>Lane</th><th>Where it stands</th></tr>
 <tr><td><b>Climate: v1 bar met, merged.</b> Under your ruling (frozen over counts only near the final Sun): <b>0 of 18</b> worlds frozen over,
 <b>12 of 18</b> pass (main had 11), and the L7 check world passes. Earth's Greenland is smaller, as you accepted; ice flow is in v2. The
-carbon thermostat checks out against published Earth estimates. One last, time-boxed round looks at the biggest remaining failure: 4 worlds
-finish 3.6–7 °C too warm and 2 too cold. If nothing clearly beats today's code, climate is called done for v1.</td><td>80</td><td>Short
-written diagnosis first</td></tr>
+carbon thermostat checks out against published Earth estimates. The last round (lane 80) found that the remaining too-warm and too-cold finishes are
+natural variation. Two small real biases cancel each other, so they're fixed together in v2. <b>Climate is done for v1.</b> See D19.</td><td>80</td><td>Done</td></tr>
 <tr><td><b>Peoples learn new country</b> (PW-1155): body limits fixed, plus a list of never-livable places per people (merfolk out of
 water, drow in desert); habits widen slowly at the frontier when pressed; demes split off once they've adapted (tundra elves, desert
 aarakocra)</td><td>79</td><td>Design approved, building</td></tr>
