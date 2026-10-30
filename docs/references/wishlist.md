@@ -41,6 +41,19 @@ remaining unticked items are not expected.
 - [ ] Grady et al. 2014, Science 344:1268, and the Myhrvold comment and reply (Science 348:982, 2015). Dinosaur mesothermy.
 - [ ] Greenewalt 1975, Trans Am Philos Soc 65(4):1-67; Rayner 1988, Current Ornithology 5:1-66. Wing size against mass in birds.
 - [ ] McMahon 1973, Science 179:1201; Biewener 1989, Science 245:45. How robust a giant's bones must be.
+- [ ] Cardillo et al. 2004, "Human population density and extinction risk in the world's carnivores", PLoS Biol 2:e197 (cited as
+  ref. 9 by Ripple et al. 2014, p. 1241484-9; to fetch). The candidate source for how the peoples' pressure on dragons should grow with
+  people per km² (megafauna.PRESS_N0, PW-977 stage 3). Named on the dragon-density review (round 1); not yet cited anywhere.
+- [ ] Woodroffe 2000, "Predators and people: using human densities to interpret declines of large carnivores", Animal Conservation
+  (volume and pages as a reviewer recalled them, from memory and unverified: 3:165-173). Human-density thresholds for large-carnivore
+  persistence: the most direct candidate for PRESS_N0. To fetch; do not cite until read.
+- [ ] A sourced above-ground share of grassland net primary production (root:shoot production), to turn the model's whole-plant
+  herb-layer NPP into McNaughton et al. 1989's above-ground NAP before their fit (dragon-density review r2, inbox draft). McNaughton's
+  own data are above-ground only (p. 142); the share is wanted per biome.
+- [ ] A source for rural population densities of late-medieval farming country (people per km²), for the dragon-density page's
+  "game present" table, which now borrows the model's own densities.
+- [ ] Golley 1961, Ecology 42:581-584 (energy values of ecological materials), cited by McNaughton et al. 1989 for their conversion
+  factors (ref. 41, p. 144). Would source prey.KJ_PER_G_DRY (17.5 kJ/g) and C_FRAC (0.45).
 
 The megafauna folder's own index (docs/references/megafauna/README.md) has what we already hold.
 

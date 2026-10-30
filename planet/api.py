@@ -129,8 +129,11 @@ def world_header(path: Path) -> dict:
     return S.read_header(path, ("name", "id", "meta"))
 
 
-def find_slice(run_dir: Path, at: float) -> Path | None:
-    """An already saved world sliced from this run at this time, if any."""
+def find_slice(run_dir: Path, at: float, erosion: float = 0.3) -> Path | None:
+    """An already saved world sliced from this run at this time, if any, made by today's finishing code
+    with this erosion (meta.finish_key), with resources if they are on now, and not force-saved after a
+    replay that didn't match the keyframe (PW-1039)."""
+    key, want_resources = W.finish_key(erosion), W.resources_on()
     for p in sorted(S.worlds_dir().glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         if p.name == "index.json":
             continue
@@ -139,7 +142,9 @@ def find_slice(run_dir: Path, at: float) -> Path | None:
         except (OSError, ValueError):
             continue
         if (m.get("source_run") == run_dir.name and m.get("t_myr") is not None and abs(m["t_myr"] - at) < 1e-6
-                and not m.get("timezoom")):  # (not a world finished from a time zoom of that moment)
+                and not m.get("timezoom")  # (not a world finished from a time zoom of that moment)
+                and m.get("finish_key") == key and (m.get("resources") or not want_resources)
+                and m.get("replay_matches_keyframe") is not False):
             return p
     return None
 
@@ -156,9 +161,9 @@ def keyframe_t(run_dir: Path, t: float) -> float:
 
 def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
     """A world at the run's keyframe nearest t, built straight from the stored
-    keyframe (a few seconds, and exactly what the viewer shows). Runs too old
-    for that are replayed from t=0 instead, which refuses if the code has
-    changed since. Reuses an existing slice."""
+    keyframe (a few seconds, and exactly what the viewer shows). A run made
+    by older code raises (delete it and re-run; PW-1031), as does any other
+    error building the world. Reuses an existing slice."""
     with COMPUTE:
         return _slice_run(run_ref, t, progress)
 
@@ -177,14 +182,7 @@ def _slice_locked(run_dir: Path, at: float, progress) -> Path:
         progress(1.0, f"using world {found.stem} (already sliced at {at:g} Myr)")
         return found
     progress(0.1, "building the world from the keyframe (climate, rivers, biomes)")
-    try:
-        world = T.world_from_frame(run_dir, at)
-    except ValueError:
-        progress(0.1, f"old run: replaying {run_dir.name} to {at:g} Myr (can take a minute)")
-        try:
-            return T.slice_world(run_dir, at)
-        except T.ReplayMismatch as e:
-            raise BadRequest(str(e)) from None
+    world = T.world_from_frame(run_dir, at)  # (a run made by older code raises: delete and re-run, PW-1031)
     path = W.save(world, f"{run['name']} @ {at:g} Myr")
     progress(1.0, f"saved world {path.stem}")
     return path

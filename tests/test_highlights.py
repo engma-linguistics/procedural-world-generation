@@ -216,9 +216,11 @@ def test_finish_moment_is_the_latest_habitable_candidate():
 def test_ago_time():
     # --ago: Ma before now, now being the run's end less star_now_offset_myr
     frames = [{"t": t, "stats": {}} for t in range(0, 1004, 4)]
-    meta = {"params": {"run_end": 1000.0}}
+    from dataclasses import asdict
+    from planet.tectonics import Params
+    meta = {"params": asdict(Params(run_end=1000.0))}
     assert H.ago_time(frames, meta, 70) == 930.0
-    assert H.ago_time(frames, {"params": {"run_end": 1000.0, "star_now_offset_myr": 100.0}}, 70) == 830.0
+    assert H.ago_time(frames, {"params": asdict(Params(run_end=1000.0, star_now_offset_myr=100.0))}, 70) == 830.0
     with pytest.raises(ValueError):
         H.ago_time(frames, meta, 1200)
 

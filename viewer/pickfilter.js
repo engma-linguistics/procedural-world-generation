@@ -7,7 +7,7 @@
 (() => {
   const css = document.createElement('style');
   css.textContent = `.pickFilter { display: flex; gap: 6px; align-items: center; margin: 0 0 4px; }
-    .pickFilter input { flex: 1; min-width: 0; background: #111827; color: var(--text, #dfe6f0);
+    .pickFilter input { flex: 1; min-width: 0; background: var(--ctl); color: var(--text, #dfe6f0);
       border: 1px solid var(--border, #2a3446); border-radius: 4px; padding: 3px 6px; font: inherit; font-size: 12px; }
     .pickFilter input:focus { outline: none; border-color: var(--accent, #7cc4ff); }
     .pickFilter .n { color: var(--muted, #8b97a8); font-size: 11px; white-space: nowrap; }

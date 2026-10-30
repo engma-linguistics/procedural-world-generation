@@ -4,14 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Regional Zoom</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0b0f17; --panel: rgba(18, 24, 36, 0.92); --text: #dfe6f0; --muted: #8b97a8;
-    --accent: #7cc4ff; --border: #2a3446;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
-    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; }
   #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; }
   #c.drag { cursor: grabbing; }
   .panel { position: fixed; background: var(--panel); border: 1px solid var(--border);
@@ -31,20 +26,15 @@
   #scale .bar { height: 6px; border: 1px solid var(--text); border-top: none; margin-top: 2px; }
   h1 { font-size: 14px; margin: 0 0 8px; }
   h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
-  select { width: 100%; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px; }
+  select { width: 100%; padding: 4px; }
   label { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 1px 0; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
-    border-radius: 4px; cursor: pointer; font-size: 12px; }
-  .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
   .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-  .muted { color: var(--muted); }
-  code { background: #111827; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  code { word-break: break-all; }
   .grad { height: 10px; width: 220px; border-radius: 2px; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; }
   td { padding: 1px 0; vertical-align: top; }
   td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
-  a { color: var(--accent); }
   #msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; }
   #tip { position: fixed; z-index: 5; pointer-events: none; display: none; max-width: 300px;
     font-size: 12px; padding: 8px 10px; }
@@ -79,7 +69,7 @@
   #fallList { margin-top: 4px; font-size: 12px; max-height: 150px; overflow-y: auto; }
   #fallList div { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
   #fallList div:hover, #fallList div.on { background: #1d2a40; }
-  #btn3d.on, #fineHere.on { background: var(--accent); color: #06121f; }
+  #btn3d.on, #fineHere.on { background: var(--accent); color: var(--on-accent); }
   @media (max-width: 800px) { #info { display: none; } #legend { left: 12px; bottom: 60px; max-width: calc(100vw - 24px); } }
 </style>
 <script type="importmap">
@@ -100,8 +90,7 @@
     <button id="btn3d" title="A 3D view of this zoom (heights, water, rivers, waterfalls)">3D</button>
     <button id="delBtn" title="Delete this zoom from disk">Delete</button></div>
   <div class="muted" id="srcNote" style="margin-top:4px"></div>
-  <div class="muted" style="margin-top:4px">make one: on the Globe tab, click a cell and press Zoom (or double-click a cell), or
-    <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code></div>
+  <div class="muted" style="margin-top:4px">To make one: on the Globe tab, click a cell and press Zoom (or double-click a cell).</div>
 
   <h2>Layer</h2>
   <div class="row seg" id="layerSeg"></div>
@@ -111,12 +100,12 @@
 
   <h2>Overlays</h2>
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
-  <label><input type="checkbox" id="falls" checked> Waterfalls <span class="muted" id="fallsN"></span></label>
-  <label><input type="checkbox" id="volc" checked> Volcanoes <span class="muted" id="volcN"></span></label>
+  <label><input type="checkbox" id="falls"> Waterfalls <span class="muted" id="fallsN"></span></label>
+  <label><input type="checkbox" id="volc"> Volcanoes <span class="muted" id="volcN"></span></label>
   <label title="Natural harbours (diamonds, bigger and redder = better), one per stretch of coast (humanuse.py)"><input type="checkbox" id="harb"> Harbours <span class="muted" id="harbN"></span></label>
   <label title="The saddle on each divide between drainage basins (bow-ties, coloured by the months it is open)"><input type="checkbox" id="passm"> Mountain passes <span class="muted" id="passN"></span></label>
   <label title="Springs at the foot of wetter high ground in dry country"><input type="checkbox" id="spring"> Springs <span class="muted" id="springN"></span></label>
-  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep" checked> Deposits <span class="muted" id="depN"></span></label>
+  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep"> Deposits <span class="muted" id="depN"></span></label>
     <select id="depSel" style="flex:1;min-width:0"></select></div>
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
@@ -266,12 +255,19 @@ const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixe
 async function getJSON(url) {
   try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : null; } catch { return null; }
 }
+// the overlay switches remembered between visits (localStorage; PW-1028)
+const OVERLAY_KEY = 'planet.zoomOverlays', ZOOM_OVERLAYS = ['rivers', 'falls', 'volc', 'harb', 'passm', 'spring', 'dep', 'clouds'];
+function saveOverlays() {
+  try { localStorage.setItem(OVERLAY_KEY, JSON.stringify(Object.fromEntries(ZOOM_OVERLAYS.map((o) => [o, $(o).checked])))); } catch { /* private window */ }
+}
 function loadImage(url) {
   return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = url; });
 }
 
 // ------------------------------------------------------------ loading
 async function init() {
+  // ?ramps=new (PW-1027, a preview): the globe's temperature, rain and fertility, and monotonic "how much" ramps (ramps.js)
+  if (new URLSearchParams(location.search).get('ramps') === 'new') window.zoomRampChanges = (await import('./ramps.js')).applyZoomRampSet(RAMPS, RAIN, TEMP);
   const idx = (await getJSON('../zooms/index.json')) || [];
   fine.idx = idx;
   $('fineHere').onclick = armFine;
@@ -280,7 +276,7 @@ async function init() {
   const sel = $('zoomSel');
   if (!idx.length) {
     sel.innerHTML = '<option>(no zooms yet)</option>';
-    $('msg').innerHTML = 'No zooms found in <code>zooms/</code>.<br>Make one with <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code>';
+    $('msg').innerHTML = 'No regional zooms yet.<br>On the <a href="index.html" target="_top">Globe</a>, click a cell and press Zoom (or double-click a cell).';
     return;
   }
   // grouped by where each zoom came from: a run at some time (via a sliced world), or a world
@@ -315,17 +311,22 @@ async function init() {
   $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
   if (p.get('season') in SEASON_NAMES) state.season = p.get('season');
-  for (const o of ['rivers', 'falls', 'volc']) if (p.get(o) === '0') $(o).checked = false;  // e.g. ?rivers=0
-  for (const o of ['harb', 'passm', 'spring']) if (p.get(o) === '1') $(o).checked = true;  // e.g. ?harb=1
+  // the overlays: only rivers and lakes on at first (PW-1028); the owner's ticks are remembered in this browser,
+  // and the address overrides both (e.g. ?falls=1, ?rivers=0)
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(OVERLAY_KEY) || '{}') || {}; } catch { /* private window */ }
+  for (const o of ZOOM_OVERLAYS) {
+    if (typeof saved[o] === 'boolean') $(o).checked = saved[o];
+    if (p.has(o)) $(o).checked = p.get(o) === '1';
+    $(o).addEventListener('change', saveOverlays);
+  }
   $('season').value = state.season;
   $('season').onchange = () => { state.season = $('season').value; render(); syncURL(); };
   $('rivers').onchange = render;
-  if (p.get('clouds') === '1') $('clouds').checked = true;
   $('clouds').onchange = () => { render(); syncURL(); };
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
   for (const o of ['harb', 'passm', 'spring']) $(o).onchange = () => { render(); hideTip(); };
-  if (p.get('dep') === '0') $('dep').checked = false;
   $('dep').onchange = () => { render(); hideTip(); };
   $('depSel').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
@@ -455,7 +456,9 @@ async function fetchZoom(id) {
   // one file per layer (zooms/<id>/layers/<name>.bin), all small: load them all
   const L = {};
   await Promise.all(Object.entries(meta.layers).map(async ([k, spec]) => {
-    const buf = await (await fetch(base + spec.file, { cache: 'no-store' })).arrayBuffer();
+    const r = await fetch(base + spec.file, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(`layer ${k} of zoom ${id}: HTTP ${r.status}`);  // (never decode an error page as data, PW-1044)
+    const buf = await r.arrayBuffer();
     const raw = new (DECODE[spec.dtype] || Uint8Array)(buf), sc = spec.scale ?? 1, of = spec.offset ?? 0;
     // (scaled layers: real units, store.decode)
     L[k] = sc === 1 && !of ? raw : Float32Array.from(raw, (v) => v * sc + of);
@@ -481,10 +484,14 @@ function withZoom(zd, fn) {
   try { return fn(); } finally { for (const k of ZOOM_KEYS) { zd[k] = state[k]; state[k] = keep[k]; } }
 }
 
+let loadSeq = 0;  // (latest wins: a zoom picked while another loads, PW-1044)
 async function load(id) {
-  $('msg').textContent = 'loading ' + id + '...';
-  const zd = await fetchZoom(id);
-  if (!zd) { $('msg').textContent = `could not read ../zooms/${id}/zoom.json`; return; }
+  const tok = ++loadSeq;
+  $('msg').textContent = 'Loading zoom ' + id + '…';
+  let zd = null, why = 'It may have been deleted, or the link has a typo.';
+  try { zd = await fetchZoom(id); } catch (err) { console.error(err); why = `Part of it could not be read (${err.message}).`; }
+  if (tok !== loadSeq) return;
+  if (!zd) { $('msg').innerHTML = `<b>Could not open zoom ${id}.</b><br>${why}<br>Pick another zoom in the list, or <a href="index.html" target="_top">go to the start page</a>.`; return; }
   for (const k of ZOOM_KEYS) state[k] = zd[k];
   const { meta, L } = zd;
   for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
@@ -1306,7 +1313,7 @@ const RIVER_RGB = [40, 72, 92];
 function satellite(oc) {
   const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
   const src = state.sat[state.season] || state.sat[''];
-  if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view: <code>planet satellite ' + m.id + '</code></span>'; return; }
+  if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view (it was made before satellite views; make it again from the Globe)</span>'; return; }
   const img = oc.createImageData(nx, ny), px = img.data, sh = shadeNow(), water = L.water, q = L.discharge, area = L.drainage_area;
   const rivers = riversNow(), minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
   const cl = $('clouds').checked && L.cloud_jul ? cloudAlpha() : null;

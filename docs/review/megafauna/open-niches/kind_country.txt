@@ -1,0 +1,15 @@
+  black_dragon: swamp 338->319; jungle 0->1; coast 0->1
+   blue_dragon: desert 37,602->37,550; steppe 0->2,222; mountains 0->257; country 0->89; hills 0->47
+  brass_dragon: steppe 11,545->8,725; country 0->39; mountains 0->16; coast 0->12; hills 0->5
+ bronze_dragon: coast 959->833; jungle 0->0; hills 0->0
+   cloud_giant: mountains 158->195
+ copper_dragon: hills 63->74; breaks 0->104; coast 0->1; steppe 0->1; volcano country 0->0
+    fire_giant: volcano country 1,339->1,819; steppe 0->321; desert 0->11; coast 0->10; hills 0->4
+   frost_giant: tundra 654->807; mountains 652->697; hills 12->0; forest 7->3; volcano country 2->1
+   gold_dragon: open country 0->803; hills 20->0; coast 17->0; country 17->0; swamp 5->0
+  green_dragon: jungle 1,467->1,481; forest 142->347; mountains 1->4; hills 1->3; country 0->3
+    hill_giant: hills 1,621->1,931; forest 0->1; country 0->1; steppe 0->1; jungle 0->0
+    red_dragon: volcano country 279->486; mountains 240->126; steppe 0->8; coast 6->0; country 0->4
+ silver_dragon: mountains 153->199; hills 0->10; tundra 0->1; country 0->0; volcano country 0->0
+   storm_giant: coastal sea 1,180->1,193
+  white_dragon: mountains 1,208->1,510; country 0->884; hills 14->841; tundra 124->483; steppe 0->306

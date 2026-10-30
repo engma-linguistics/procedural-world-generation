@@ -239,18 +239,23 @@ def test_world_and_zoom(sim4):
 
 
 def test_params_from_old_run():
-    """run.json from older code: removed params are dropped (with a warning),
-    missing ones take today's defaults."""
-    stored = {"n_plates": 9, "some_removed_param": 1.0}
-    with pytest.warns(UserWarning, match="some_removed_param"):
-        p = Params.from_stored(stored)
-    assert p.n_plates == 9 and p.tilt == Params().tilt
+    """run.json from older code (a removed or a missing param) raises, asking for a re-run
+    (no backward compatibility, PW-1031); today's params round-trip."""
+    from dataclasses import asdict
+    stored = asdict(Params(n_plates=9))
+    assert Params.from_stored(stored) == Params(n_plates=9)
+    with pytest.raises(ValueError, match="some_removed_param.*delete it and re-run"):
+        Params.from_stored({**stored, "some_removed_param": 1.0})
+    del stored["tilt"]
+    with pytest.raises(ValueError, match="missing: \\['tilt'\\]"):
+        Params.from_stored(stored)
 
 
 def test_simulate_slice_provenance(data_root):
     """simulate stamps the code into run.json; slicing at a keyframe must
     reproduce it, and refuses to save a world when it doesn't (unless forced).
-    Runs without the stamp (older runs) still slice."""
+    Runs without the stamp (older runs) still slice; one with a param this code no longer
+    has raises (PW-1031)."""
     import json
     out = T.simulate(1, 4, 8.0, 2.0, 4.0, "t", Params())
     run = json.loads((out / "run.json").read_text())
@@ -258,12 +263,16 @@ def test_simulate_slice_provenance(data_root):
     world = json.loads(T.slice_world(out, 8.0).read_text())
     assert world["meta"]["replay_matches_keyframe"] is True
 
-    # an older run: no code stamp, plus a param this code no longer has
-    del run["meta"]["code"]
+    # an older run: a param this code no longer has
     run["meta"]["params"]["long_gone_param"] = 1
     (out / "run.json").write_text(json.dumps(run))
-    with pytest.warns(UserWarning):
+    with pytest.raises(ValueError, match="delete it and re-run"):
         T.slice_world(out, 4.0)
+    del run["meta"]["params"]["long_gone_param"]
+    # no code stamp
+    del run["meta"]["code"]
+    (out / "run.json").write_text(json.dumps(run))
+    T.slice_world(out, 4.0)
 
     # the stored keyframe no longer matches what the code computes
     spec = run["layers"]["elevation"]
@@ -271,10 +280,9 @@ def test_simulate_slice_provenance(data_root):
     elev[-1] += 1
     elev.flush()
     del elev
-    with pytest.warns(UserWarning), pytest.raises(T.ReplayMismatch):
+    with pytest.raises(T.ReplayMismatch):
         T.slice_world(out, 8.0)
-    with pytest.warns(UserWarning):
-        world = json.loads(T.slice_world(out, 8.0, force=True).read_text())
+    world = json.loads(T.slice_world(out, 8.0, force=True).read_text())
     assert world["meta"]["replay_matches_keyframe"] is False
 
 

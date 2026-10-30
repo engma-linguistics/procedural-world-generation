@@ -2,7 +2,7 @@
 id: PW-1040
 title: Peoples-run passes rewrite run.json without a lock (lost updates); two caches use fixed temp names; new ids aren't checked for collisions
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: store
@@ -27,5 +27,6 @@ Fix: `store.update_meta(run_dir, fn)` (take `lock(runs_dir, "meta-<id>")`, re-re
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: store.update_meta(run_dir, fn) (lock 'meta-<id>' under the run's parent folder, re-read run.json, apply fn, write_json atomically) now does the run.json edit in land use, fuels, demes and the tech tree (techtree.for_run computes outside the lock and sets meta.techtree inside). store.atomic_path(path): a per-process, per-thread temporary name (.<stem>.<pid>.<thread>.tmp<suffix>, removed on failure) for the npz writers (lineages/recent.py recent_rain, lineages/land.py goods, store.write_history). store.new_id(kind) loops until unused; for a run it reserves the id by mkdir (fails if taken); world.save asks for a world id. Tests: test_store.test_update_meta_keeps_concurrent_keys (8 threads x 5 keys all survive), test_new_id_skips_taken_ids, test_atomic_path. Area tests (api, demes, lineages, server, store, techtree, viewer) 172 passed.
 - 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-store-concurrent-writes-lose-data.md (found by code-audit-2026-10).

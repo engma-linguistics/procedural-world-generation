@@ -31,8 +31,11 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
     changed surface, global temperature change), the orbital anomaly
     k_orb * dq[band, m] (dq: insolation change, W/m2, averaged with the month
     before: the ground lags the sun). An ice sheet keeps itself cold (as in
-    climate.compute): `cool` C colder all year, phased in by f_ice (0..1,
-    with thickness). The year runs from the autumn after the summer: snow
+    climate.compute): `cool` C colder on the year's mean, phased in by f_ice
+    (0..1, with thickness), following the season: none at midsummer, twice
+    that at midwinter (an inversion is the surface's radiative cooling, a
+    polar-night feature, weak under the summer sun and over a melting
+    surface; PW-1050). The year runs from the autumn after the summer: snow
     falls below ~0 C and lies on the ground; while it lies (bright: its
     water equivalent / snow_w, up to 1) the summer's warmth above the
     annual mean is damped by damp[i] (bright snow takes little of the
@@ -79,7 +82,9 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
                 fs += f
                 ns += 1
                 sw *= 1.0 - f * damp[i]
-            t = t_mean[i] + dt_base[i] + sw + d_orb - f_ice[i] * cool
+            # (the inversion follows the season, the same annual mean: none at midsummer, 2x at midwinter, PW-1050)
+            inv = 1.0 - math.cos(2 * math.pi * (m - peak) / 12.0)
+            t = t_mean[i] + dt_base[i] + sw + d_orb - f_ice[i] * cool * inv
             if f > 0.0 and t > 0.0:
                 t *= 1.0 - f * (1.0 - hold)
             tsum += t

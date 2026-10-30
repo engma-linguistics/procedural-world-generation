@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Peoples workbench · Planet Viewer</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; --ok: #9fd18b; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid;
+  /* (the shared tokens are in theme.css; this page's panels are solid, and it calls the border "line") */
+  :root { --panel: var(--panel-solid); --line: var(--border); --acc: var(--accent); }
+  body { display: grid;
          grid-template-rows: auto auto 1fr auto; height: 100vh; }
   header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   header b { font-size: 15px; margin-right: 8px; }
@@ -27,17 +28,17 @@
   #tlctl select { margin: 4px 0 0 6px; max-width: 170px; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
   footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
-  button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  button, select, input { background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  .filebtn { display: inline-block; margin: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
+  .filebtn:hover { border-color: var(--acc); }
   button { cursor: pointer; } button:hover { border-color: var(--acc); }
   input[type=number] { width: 70px; } input.wide { width: 100%; }
   label { display: block; margin: 5px 0 2px; color: var(--muted); }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .muted { color: var(--muted); } .err { color: var(--err); } .ok { color: var(--ok); }
   .trait { display: inline-block; margin: 2px 8px 2px 0; color: var(--text); }
   svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
   .bar { cursor: grab; } .sel rect.bg { fill: #233047; }
   h3 { margin: 12px 0 4px; font-size: 13px; } h2 { font-size: 14px; margin: 4px 0 8px; }
-  a { color: var(--acc); }
   table.t { border-collapse: collapse; font-size: 12px; }
   table.t th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; color: var(--muted); padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.t td { padding: 2px 5px; border-bottom: 1px solid #1c2430; vertical-align: top; }
@@ -52,7 +53,8 @@
   .kpi div b { display: block; font-size: 17px; } .kpi div span { color: var(--muted); font-size: 11px; }
   pre.map { font: 10px/10px ui-monospace, monospace; margin: 0; letter-spacing: 0; background: #0a1a2a; padding: 6px; display: inline-block; }
   .bars { display: inline-block; height: 8px; background: var(--acc); opacity: .7; vertical-align: middle; border-radius: 2px; }
-  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  .lmcol { overflow-x: auto; }
   @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } #tab-tree.on { grid-template-columns: 1fr; } }
   .hint { max-width: 900px; color: var(--muted); margin: 0 0 8px; }
 </style>
@@ -65,7 +67,7 @@
   <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
   <button id="save">Save</button>
   <button id="download">Download JSON</button>
-  <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
+  <label class="filebtn" title="Open a tree saved with Download JSON">Open JSON…<input type="file" id="upload" accept=".json" hidden></label>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
   <span class="muted">world</span><button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here, and for agents: planet favourites)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
@@ -97,31 +99,29 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ORIGIN_COL = { split: '#9fd18b', root: '#e3c26b', arrival: '#c79bff', hybrid: '#ff9d6b', template: '#ff6b9a', group: '#6bd6d0' };
-// (mirrors of planet/lineages/spec.py TRAITS, PLACES, DEMOGRAPHY and land.py GOODS)
-const TRAITS = ['flies', 'swims', 'coastal', 'seafaring', 'agricultural', 'nomadic', 'mountain', 'hardy', 'insular', 'cosmopolitan', 'subterranean', 'miner'];
-const PLACES = ['coast', 'island', 'island_chain', 'mountain', 'lowland', 'inland', 'forest', 'open', 'wetland', 'jungle', 'steppe', 'desert', 'tundra', 'volcanic', 'hills'];
-const WANTS = ['near', 'apart', ...PLACES];
-const GOODS = { fertile: 'farmland', grazing: 'pasture', foraging: 'wild food', timber: 'timber', fuel: 'firewood', building: 'firm building ground',
-  stone: 'good building stone', metal: 'metal ores', gold: 'gold', iron: 'iron', copper: 'copper', tin: 'tin', gems: 'gems', mithril: 'mithril and adamant',
-  coal: 'coal', harbour: 'natural harbours', nav_hazard: 'reefs, shoals, sea ice offshore', coral: 'coral coast', lagoon: 'lagoons', mangrove: 'mangrove coast',
-  cliff: 'sea cliffs', seabirds: 'seabird cliffs', seals: 'seal haul-outs', volcanic: 'volcanoes, young volcanic ground', hills: 'rolling hill country',
-  peaks: 'high peaks', frost: 'frozen ground, ice margins', storm_coast: 'storm-beaten coasts' };
-const GROUPS = ['tropical', 'rainforest', 'savanna', 'arid', 'desert', 'steppe', 'mediterranean', 'temperate', 'subtropical', 'oceanic', 'continental', 'subarctic', 'polar', 'tundra'];
-const BAND = 25;
-const DEMO_DEFAULT = { density: 2.0, explore: 0.5, sea_share: 0.03, insularity: 0.5 };
-const DEMOGRAPHY = { agricultural: { density: 10 }, nomadic: { density: 0.6, explore: 0.7 }, subterranean: { density: 3, explore: 0.35 },
-  miner: { density: 3 }, flies: { density: 0.6, explore: 0.65 }, seafaring: { sea_share: 0.6, explore: 0.7 }, swims: { sea_share: 0.4 },
-  coastal: { sea_share: 0.3, density: 3 }, cosmopolitan: { insularity: 0.2, explore: 0.7 }, insular: { insularity: 0.85, explore: 0.25 } };
-const DEMO_KEYS = Object.keys(DEMO_DEFAULT);
-// senses and bodies (PW-694; mirrors spec.BODY_DEFAULT): for the future cuisine pass, nothing in the run reads them
-const BODY_DEFAULT = { sweet: true, milk: false, milks: true, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [], suction: 'normal', teeth: 'grinding', gut: 'simple', salt: 'normal', display: 'none', shed: 'none', display_sex: 'both', hours: 'diurnal', thermo: 'endo', fire: true, grain: 'normal' };
-const BODY_FIELDS = [['sweet', 'tastes sweet', [true, false]], ['milk', 'digests milk as an adult (or the share of the people that does)', [true, false, 0.1, 0.25, 0.5, 0.75]], ['capsaicin', 'feels capsaicin heat', [true, false]],
-  ['bitter', 'bitter sensitivity', ['low', 'normal', 'high']], ['smell', 'smell acuity', ['low', 'normal', 'keen']],
-  ['diet', 'diet', ['herbivore', 'omnivore', 'carnivore', 'obligate_carnivore']], ['raw_meat', 'tolerates raw meat', [true, false]], ['cellulose', 'digests cellulose', [true, false]],
-  ['suction', 'suction (sucking a drink)', ['none', 'poor', 'normal']], ['teeth', 'teeth', ['grinding', 'conical', 'dental_pad', 'beak']], ['gut', 'gut', ['simple', 'hindgut', 'foregut']],
-  ['salt', 'salt', ['normal', 'craving']], ['display', 'display organ', ['none', 'horns', 'antlers']], ['shed', 'who sheds the display', ['none', 'both', 'males']], ['display_sex', 'who carries the display', ['both', 'males']],
-  ['hours', 'active hours', ['diurnal', 'crepuscular', 'nocturnal']], ['thermo', 'body heat', ['endo', 'ecto']], ['fire', 'cooks with fire', [true, false]]];
-const TOXINS = [['alliums', 'alliums (onion, garlic)'], ['theobromine', 'theobromine (chocolate)']];
+// The option lists and defaults come from the server (GET /api/lineage-schema: planet/lineages/spec.py, land.GOODS,
+// dragon_ages; PW-1033), so they can't drift from what a tree may say; loadSchema() fills these before anything renders.
+// Only the wording of the menus lives here.
+let SCHEMA, TRAITS, PLACES, WANTS, GOODS, GROUPS, BAND, DEMO_DEFAULT, DEMOGRAPHY, DEMO_KEYS, BODY_DEFAULT, BODY_FIELDS, TOXINS, DEFAULTS;
+// senses and bodies (PW-694, spec.BODY_DEFAULT / BODY_CHOICES): the culinary brief reads them; fire = false is read by the fuels
+const BODY_LABELS = { sweet: 'tastes sweet', milk: 'digests milk as an adult (or the share of the people that does)', milks: 'milks its animals', capsaicin: 'feels capsaicin heat',
+  bitter: 'bitter sensitivity', smell: 'smell acuity', diet: 'diet', raw_meat: 'tolerates raw meat', cellulose: 'digests cellulose',
+  suction: 'suction (sucking a drink)', teeth: 'teeth', gut: 'gut', salt: 'salt', display: 'display organ', shed: 'who sheds the display', display_sex: 'who carries the display',
+  hours: 'active hours', thermo: 'body heat', fire: 'cooks with fire', grain: 'grain in the diet' };
+const MILK_SHARES = [0.1, 0.25, 0.5, 0.75];
+const PORTAL_LABELS = { off: 'at their best habitat', random: 'through portals at random', sites: 'through portals at interesting sites' };
+const GENERATION_LABELS = { schedule: 'from the schedule', schedule_mass: 'fecundity ~ size', line: 'the lines\' own' };  // (milk may also be the lactase share of the people)
+const TOXIN_LABELS = { alliums: 'alliums (onion, garlic)', theobromine: 'theobromine (chocolate)' };
+async function loadSchema() {
+  const r = await fetch('../api/lineage-schema');
+  if (!r.ok) throw new Error(`lineage-schema: HTTP ${r.status}`);
+  const d = SCHEMA = await r.json();
+  TRAITS = d.traits; PLACES = d.places; WANTS = ['near', 'apart', ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
+  DEMO_DEFAULT = d.demo_default; DEMOGRAPHY = d.demography; DEMO_KEYS = Object.keys(DEMO_DEFAULT); BODY_DEFAULT = d.body_default; DEFAULTS = d.defaults;
+  const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic')].filter((k) => k in BODY_DEFAULT);
+  BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : [true, false])]);
+  TOXINS = d.toxins.map((t) => [t, TOXIN_LABELS[t] || t]);
+}
 function bodyOf(r, seen = new Set()) {  // the body a line runs with: its own keys over its first parent's (spec.parse)
   if (seen.has(r.id)) return { ...BODY_DEFAULT };
   seen.add(r.id);
@@ -215,7 +215,7 @@ const FOOT = {
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  results: 'From a peoples run (meta.present). Numbers are presence x density x area: rough, for a game, not a census.',
+  results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1).split('/')[0];  // (#tech/map: the Technology tab's view, techtab.js)
 function showTab(t) {
@@ -223,7 +223,7 @@ function showTab(t) {
   tab = t;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('on', s.id === `tab-${t}`));
-  $('foot').innerHTML = FOOT[t] + ' Saved trees: <code>&lt;data&gt;/lineage_trees/</code>; CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.';
+  $('foot').innerHTML = FOOT[t];  // (no command lines here: the owner uses the viewer, PW-1047)
   history.replaceState(null, '', `${location.search}#${t}${t === 'tech' ? '/' + TechTab.view : ''}`);
   redraw();
 }
@@ -459,6 +459,7 @@ function drawSide() {
       <div class="muted">empty fields are inherited from the first parent</div>
       ${field('prefers (Köppen codes or groups, places: ' + PLACES.join(', ') + ')', `<input class="wide" data-k="prefers" value="${esc((r.prefers || []).join(', '))}">`)}
       ${field('avoids', `<input class="wide" data-k="avoids" value="${esc((r.avoids || []).join(', '))}">`)}
+      ${r.megafauna ? field('tolerates (megafauna: country it accepts at the edges, at half suitability)', `<input class="wide" data-k="tolerates" value="${esc((r.tolerates || []).join(', '))}">`) : ''}
       ${field('traits', TRAITS.map((t) => `<label class="trait"><input type="checkbox" data-trait="${t}" ${(r.traits || []).includes(t) ? 'checked' : ''}> ${t}</label>`).join(''))}
       <h3>Senses and body <span class="muted" style="font-weight:normal">(for the future cuisine pass; the bracketed value is inherited)</span></h3>
       <div class="row">${BODY_FIELDS.map(([k, lab, opts]) => field(lab, bodyInput(r, k, opts))).join('')}</div>
@@ -483,11 +484,11 @@ function drawSide() {
   const onAn = T.meta?.animals || ANIMALS.filter(([id]) => !id.match(/great_elk|riding_lizard/)).map(([id]) => id);
   h += `<h3>Tree</h3><div class="row">${ANIMALS.map(([id, nmx]) => `<label class="trait" title="Domesticated animals (animals.py): wild range from the land, a taming homeland and date, and use spreading with the peoples who take it up, over the sea only in boats able to carry it. The fantasy animals are rare, and only in fantasy mode."><input type="checkbox" data-animal="${id}" ${onAn.includes(id) ? 'checked' : ''}> ${esc(nmx)}</label>`).join('')}</div>
     <div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
-    <div class="row">${field('world mode', `<select data-m="mode" title="Fantasy (default): all the peoples, the fantasy goods (mithril, adamant, star-iron). Real world: humans only (the peoples marked real), real materials. Magic is a later setting (PW-696).">${['fantasy', 'real'].map((e) => `<option value="${e}"${(T.meta?.mode || 'fantasy') === e ? ' selected' : ''}>${e === 'real' ? 'real world (humans only)' : 'fantasy'}</option>`).join('')}</select>`)}
-      ${field('arrivals from outside come', `<select data-m="portal_mode" title="Peoples with origin 'arrival' (elves, gnomes, tritons...): each at its best habitat (off), or through portals placed at random or at interesting places (PW-697)">${[['off', 'at their best habitat'], ['random', 'through portals at random'], ['sites', 'through portals at interesting sites']].map(([e, t]) => `<option value="${e}"${(T.meta?.portal_mode || 'off') === e ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}
+    <div class="row">${field('world mode', `<select data-m="mode" title="Fantasy (default): all the peoples, the fantasy goods (mithril, adamant, star-iron). Real world: humans only (the peoples marked real), real materials. Magic is a later setting (PW-696).">${SCHEMA.modes.map((e) => `<option value="${e}"${(T.meta?.mode || DEFAULTS.mode) === e ? ' selected' : ''}>${e === 'real' ? 'real world (humans only)' : e}</option>`).join('')}</select>`)}
+      ${field('arrivals from outside come', `<select data-m="portal_mode" title="Peoples with origin 'arrival' (elves, gnomes, tritons...): each at its best habitat (off), or through portals placed at random or at interesting places (PW-697)">${SCHEMA.portal_modes.map((e) => `<option value="${e}"${(T.meta?.portal_mode || DEFAULTS.portal_mode) === e ? ' selected' : ''}>${PORTAL_LABELS[e] || e}</option>`).join('')}</select>`)}
       ${(T.meta?.portal_mode || 'off') !== 'off' ? field('portals', `<input type="number" min="1" max="12" data-m="portals" value="${T.meta?.portals ?? 1}" style="width:50px">`) : ''}
       ${T.meta?.portal_mode === 'sites' ? ['forest', 'desert', 'reef', 'volcano'].map((s) => `<label class="trait" title="${({ forest: 'the deepest part of a large forest', desert: 'the middle of a desert', reef: 'a coral reef coast', volcano: 'the foot of a volcano' })[s]}"><input type="checkbox" data-ps="${s}" ${(T.meta?.portal_sites || ['forest', 'desert', 'reef', 'volcano']).includes(s) ? 'checked' : ''}> ${s}</label>`).join('') : ''}</div>
-    <div class="row">${field('target era', `<select data-m="era" title="The era the peoples' present is meant to be: population, spread, mixing and technology around it. A placeholder setting stored with the tree and the run; nothing reads it yet. The technology tree (epic PW-675, v3) will, and the history is not run forward past the present for it.">${['stone age', 'bronze age', 'classical', 'medieval', 'renaissance', 'industrial'].map((e) => `<option${(T.meta?.era || 'renaissance') === e ? ' selected' : ''}>${e}</option>`).join('')}</select>`)} <span class="muted" title="Placeholder: the technology tree (PW-675) will read it">(placeholder, not yet used)</span></div>
+    <div class="row">${field('target era', `<select data-m="era" title="The era the peoples' present is meant to be: the technology tree caps what the peoples know by the present at it (techtree.py). The history is not run forward past the present for it.">${SCHEMA.eras.map((e) => `<option value="${e}"${(T.meta?.era || DEFAULTS.era) === e ? ' selected' : ''}>${e}${e === DEFAULTS.era ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
     <div class="muted">Land use and its pull: the Places tab; all wishes: the Wishes tab.</div>`;
   side.innerHTML = h;
 }
@@ -517,7 +518,7 @@ function editLine(r, el) {
   } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
   else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
   else if (k === 'group_of') { r.group_of = el.value; delete r.parents; }
-  else if (k === 'prefers' || k === 'avoids' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+  else if (k === 'prefers' || k === 'avoids' || k === 'tolerates' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
   else if (['share', 'sites', 'speed_kmyr', ...DEMO_KEYS, 'band_km2'].includes(k)) {
     if (el.value === '') delete r[k]; else r[k] = +el.value;
     if (k === 'band_km2' && el.value !== '') { r.density = +(BAND / +el.value).toPrecision(3); delete r.band_km2; }
@@ -620,13 +621,13 @@ function drawPeoples() {
     return `<input type="number" class="${cls}" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
   let h = `<p class="hint">Each people's demography and movement. Giants are sparse (a band roams thousands of km²) and insular; farmers dense; seafarers
     and explorers find the empty lands first. Click a name to open it in the tree; click a numeric heading to sort. ${result ? `Last run: <b>${esc(result.id)}</b> (${esc(result.world || '')}).` : 'Run on a world to fill population and area.'}</p>
-    <div class="row" style="margin-bottom:6px">${field('viable population (a separate patch with fewer fades)', `<input type="number" step="50" data-m="viable_pop" value="${T.meta?.viable_pop ?? ''}" placeholder="500">`)}</div>
-    <div class="row" style="margin-bottom:6px" title="One dragon per this many km² of its kind's country where peoples press them. Where no people holds the land they keep nearer their natural density (the next setting), and before the peoples spread there were many more: the age of dragons. 5,000: the default, a few per swamp or range in peopled country. 10,000: rarer, a lone dragon per region. 1,000: the skies are thick with them, dozens in every forest.">${field('dragons where peoples press them: one per km²', `<select data-m="dragon_km2" data-num="1">${[1000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.dragon_km2 ?? 5000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 5000 ? ' (default)' : v === 1000 ? ' (thick)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="One true giant per this many km² of its kind's country (hill, cloud, frost, fire, storm) where peoples press them. Where few small folk hold the land they keep nearer their natural density, from their mass (about 1 per 130-345 km² by kind; x the land's productivity under 'from the prey'). 2,000: the default, a steading of 10 to some 20,000 km². 5,000 and 10,000: rarer, a lone steading per region. 1,000: giant country, steadings in every upland.">${field('giants where peoples press them: one per km²', `<select data-m="giant_km2" data-num="1">${[1000, 2000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.giant_km2 ?? 2000) === v ? ' selected' : ''}>${v.toLocaleString()}${v === 2000 ? ' (default)' : v === 1000 ? ' (many)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="The giants' natural density is scaled from human foragers of 65 kg, by body mass^-0.75. 0.1 per km²: the default, the top of what Hamilton et al. 2007's fit implies (0.03-0.09 for groups of 25-1,000); no published median located yet (PW-976). Lower gives fewer giants in wild country.">${field('forager baseline for giants: people per km²', `<select data-m="forager_km2" data-num="1">${[0.03, 0.05, 0.1].map(v => `<option value="${v}"${+(T.meta?.forager_km2 ?? 0.1) === v ? ' selected' : ''}>${v}${v === 0.1 ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="The megafauna's natural density, where no people presses them (PW-957, PW-966). Candidates until the owner's review (PW-967): from the prey (wild herds from the land's grazing NPP plus livestock; Carbone &amp; Gittleman 2002: a dragon per ~530 km² at 1 t/km² of prey, more on rich savanna, fewer in forest); uniform on Marshall et al. 2021's dinosaur line (~1 per 65 km²); uniform on the mammal-carnivore line (~1 per 137 km²).">${field('megafauna natural density', `<select data-m="megafauna_natural">${[['prey', 'from the prey (default)'], ['mesotherm', 'dinosaur line, ~1/65 km²'], ['mammal', 'mammal carnivores, ~1/137 km²']].map(([v, t]) => `<option value="${v}"${(T.meta?.megafauna_natural ?? 'prey') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="The dragons' age schedule (PW-958): annual mortality of wyrmlings, young, adults and ancients. It sets the stage shares, the ecological mass (and so the natural density) and the generation time. Base: ancients ~7% of dragons, a third of their biomass. Younger: young-heavy, ancients ~3% (the very best survivors). Harsher: ancients rare (~0.3%). Gentler: ancients ~26%.">${field('dragon age schedule', `<select data-m="dragon_ages">${[['base', 'base (default)'], ['younger', 'younger'], ['harsher', 'harsher'], ['gentler', 'gentler']].map(([v, t]) => `<option value="${v}"${(T.meta?.dragon_ages ?? 'base') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
-    <div class="row" style="margin-bottom:6px" title="The dragons' generation time (PW-959), which sets how few of them persist: from the age schedule with flat fecundity (~430 yr at base), with fecundity growing with size (~700 yr), or each line's own generation_yr (200).">${field('dragon generation', `<select data-m="dragon_generation">${[['schedule', 'from the schedule (default)'], ['schedule_mass', 'fecundity ~ size'], ['line', 'the lines\' own']].map(([v, t]) => `<option value="${v}"${(T.meta?.dragon_generation ?? 'schedule') === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px">${field('viable population (a separate patch with fewer fades)', `<input type="number" step="50" data-m="viable_pop" value="${T.meta?.viable_pop ?? ''}" placeholder="${DEFAULTS.viable_pop}">`)}</div>
+    <div class="row" style="margin-bottom:6px" title="One dragon per this many km² of its kind's country where peoples press them. Where no people holds the land they keep nearer their natural density (the next setting), and before the peoples spread there were many more: the age of dragons. 5,000: the default, a few per swamp or range in peopled country. 10,000: rarer, a lone dragon per region. 1,000: the skies are thick with them, dozens in every forest.">${field('dragons where peoples press them: one per km²', `<select data-m="dragon_km2" data-num="1">${[1000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.dragon_km2 ?? DEFAULTS.dragon_km2) === v ? ' selected' : ''}>${v.toLocaleString()}${v === DEFAULTS.dragon_km2 ? ' (default)' : v === 1000 ? ' (thick)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="One true giant per this many km² of its kind's country (hill, cloud, frost, fire, storm) where peoples press them. Where few small folk hold the land they keep nearer their natural density, from their mass (about 1 per 130-345 km² by kind; x the land's productivity under 'from the prey'). 2,000: the default, a steading of 10 to some 20,000 km². 5,000 and 10,000: rarer, a lone steading per region. 1,000: giant country, steadings in every upland.">${field('giants where peoples press them: one per km²', `<select data-m="giant_km2" data-num="1">${[1000, 2000, 5000, 10000].map(v => `<option value="${v}"${+(T.meta?.giant_km2 ?? DEFAULTS.giant_km2) === v ? ' selected' : ''}>${v.toLocaleString()}${v === DEFAULTS.giant_km2 ? ' (default)' : v === 1000 ? ' (many)' : ' (rare)'}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The giants' natural density is scaled from human foragers of 65 kg, by body mass^-0.75. 0.1 per km²: the default, the top of what Hamilton et al. 2007's fit implies (0.03-0.09 for groups of 25-1,000); no published median located yet (PW-976). Lower gives fewer giants in wild country.">${field('forager baseline for giants: people per km²', `<select data-m="forager_km2" data-num="1">${[0.03, 0.05, 0.1].map(v => `<option value="${v}"${+(T.meta?.forager_km2 ?? DEFAULTS.forager_km2) === v ? ' selected' : ''}>${v}${v === DEFAULTS.forager_km2 ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The megafauna's natural density, where no people presses them (PW-957, PW-966, PW-990). From the food (the default, owner 10-29): a dragon's from its part of the land's surplus once the peoples' hunters and the rest of the predator guild have taken theirs; giants as under the prey. The others are cross-checks: from the prey (wild herds from the land's grazing NPP plus livestock; Carbone &amp; Gittleman 2002: a dragon per ~530 km² at 1 t/km² of prey, more on rich savanna, fewer in forest); uniform on Marshall et al. 2021's dinosaur line (~1 per 65 km²); uniform on the mammal-carnivore line (~1 per 137 km²).">${field('megafauna natural density', `<select data-m="megafauna_natural">${SCHEMA.megafauna_natural.map(([v, t]) => `<option value="${v}"${(T.meta?.megafauna_natural ?? DEFAULTS.megafauna_natural) === v ? ' selected' : ''}>${t}${v === DEFAULTS.megafauna_natural ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The dragons' age schedule (PW-958): annual mortality of wyrmlings, young, adults and ancients. It sets the stage shares, the ecological mass (and so the natural density) and the generation time. Younger (the default, owner 10-28): young-heavy, ancients ~3% (the very best survivors). Base: ancients ~7% of dragons, a third of their biomass. Harsher: ancients rare (~0.3%). Gentler: ancients ~26%.">${field('dragon age schedule', `<select data-m="dragon_ages">${SCHEMA.dragon_ages.map((v) => `<option value="${v}"${(T.meta?.dragon_ages ?? DEFAULTS.dragon_ages) === v ? ' selected' : ''}>${v}${v === DEFAULTS.dragon_ages ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
+    <div class="row" style="margin-bottom:6px" title="The dragons' generation time (PW-959), which sets how few of them persist: from the age schedule with flat fecundity (~430 yr at base), with fecundity growing with size (~700 yr), or each line's own generation_yr (200).">${field('dragon generation', `<select data-m="dragon_generation">${SCHEMA.dragon_generation.map((v) => `<option value="${v}"${(T.meta?.dragon_generation ?? DEFAULTS.dragon_generation) === v ? ' selected' : ''}>${GENERATION_LABELS[v] || v}${v === DEFAULTS.dragon_generation ? ' (default)' : ''}</option>`).join('')}</select>`)}</div>
     <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
     ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
@@ -663,7 +664,7 @@ function drawPlaces() {
   let h = `<div class="cols"><div><h2>Land use</h2><p class="hint">A line's habitat is x(1 − pull + pull G), G the best of its favoured goods in the cell (by weight ÷ its
     largest weight), renormalised to a mean of 1 over its country unless strict (strict: cut off its goods, not lifted back). Negative weight: avoids. Living goods
     (farmland, pasture, forest, coasts) count from 10 kyr ago; the geology also in the ice ages.</p>
-    <div class="row" style="margin-bottom:6px">${field('land pull (default for every use)', `<input type="number" step="0.05" min="0" max="1" data-m="land_pull" value="${T.meta?.land_pull ?? 0.5}">`)}</div>
+    <div class="row" style="margin-bottom:6px">${field('land pull (default for every use)', `<input type="number" step="0.05" min="0" max="1" data-m="land_pull" value="${T.meta?.land_pull ?? DEFAULTS.land_pull}">`)}</div>
     <table class="t"><tr><th>by (trait, place, climate or a line)</th><th>good</th><th>weight</th><th>pull</th><th>strict</th><th>applies to</th><th></th></tr>`;
   (T.use || []).forEach((u, i) => {
     const who = usesOf(u).map((r) => r.name || r.id);
@@ -754,7 +755,7 @@ function drawResults() {
     <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
   // population table
   const maxPop = Math.max(1, ...living.map(([id, v]) => popOf(id, v)));
-  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th></th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
+  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th title="The bars use a log scale: each equal step along a bar is ten times more people, so 310 M and 1.6 M look closer than they are">bar (log scale)</th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
   const landsOf = (v) => Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
   for (const [id, v] of living) {
     const lands = landsOf(v), grp = L[id]?.group_of, w = W[id];
@@ -769,14 +770,18 @@ function drawResults() {
   h += '</table>';
   if (P.lost?.length) h += `<p class="err">lost: ${P.lost.map(nm).join(', ')}</p>`;
   // discovery timeline
-  h += `</div><div><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
+  // (short names, the full one on hover, so the rows stay one line high: PW-1047)
+  const short = (id) => (L[id]?.name || id).replace(/ \(.*$/, '');
+  const snm = (id) => `<span title="${esc(L[id]?.name || id)}">${esc(short(id))}</span>`;
+  const area = (a) => (a >= 10 ? Math.round(a) : a >= 1 ? a.toFixed(1) : a.toFixed(2));
+  h += `</div><div class="lmcol"><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>Mkm²</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
   for (const m of lms.filter((m) => m.area_mkm2 >= 0.05).slice(0, 18)) {
     const d = m.discovered;
-    h += `<tr><td>${esc(m.name.replace(/^the /, ''))}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
-      <td style="white-space:nowrap">${d ? sw(d.by) + nm(d.by) : '<span class="err">nobody</span>'}</td><td class="n">${d ? fmt(d.ago_kyr) : ''}</td>
+    h += `<tr><td style="white-space:nowrap">${esc(m.name.replace(/^the /, '').replace(/ \(.*\)$/, ''))}</td><td class="n">${area(m.area_mkm2)}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
+      <td style="white-space:nowrap">${d ? sw(d.by) + snm(d.by) : '<span class="err">nobody</span>'}</td><td class="n" style="white-space:nowrap">${d ? fmt(d.ago_kyr) : ''}</td>
       <td class="muted">${d ? esc(d.how) + (d.gap_km ? ` ${d.gap_km} km` : '') : ''}</td>
-      <td style="white-space:nowrap">${m.settled_by ? `${sw(m.settled_by.by)}${nm(m.settled_by.by)} ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
-      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${L[a.by]?.name || a.by} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
+      <td>${m.settled_by ? `<span style="white-space:nowrap">${sw(m.settled_by.by)}${snm(m.settled_by.by)}</span> ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
+      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${short(a.by)} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
   }
   h += '</table></div></div>';
   // animals (animals.py, PW-691) and the boats that carry them (PW-688)
@@ -837,7 +842,7 @@ function drawTech() {
     if (mine.length && !drawTech.busy) { drawTech.busy = true; showResult(mine[0].dir).finally(() => { drawTech.busy = false; }); }
     el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its technology.</p>'; return;
   }
-  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet: <code>uv run python -m planet techtree ${esc(result.id)}</code> adds it.</p>`; return; }
+  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet (it is older than the tree). Run the peoples again from the Tree tab to get one.</p>`; return; }
   TechTab.draw(el, result);
 }
 function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger
@@ -874,7 +879,7 @@ async function loadTree(name) {
 $('load').onclick = () => loadTree($('trees').value);
 $('save').onclick = async () => {
   const name = $('saveName').value.trim();
-  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(T) });
+  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(T) });
   const j = await r.json();
   if (!r.ok) return status(j.error, true);
   status(`saved ${name}`); listTrees(name);
@@ -896,17 +901,15 @@ $('run').onclick = async () => {
   status('running… (~20 s a try at L6, ~1 min at L7)');
   $('run').disabled = true;
   try {
-    const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
-    const j = await r.json();
+    const r = await fetch('../api/lineages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
+    const j = await r.json().catch(() => ({ error: `the server answered HTTP ${r.status}` }));
     if (!r.ok) return status(j.error, true);
-    for (;;) {  // queued on the server's job queue: poll it
-      await new Promise((res) => setTimeout(res, 1500));
-      const s = await (await fetch(`../api/jobs/${j.job}`, { cache: 'no-store' })).json();
-      if (s.status === 'error') return status(s.error, true);
-      if (s.status === 'done') { await listWorlds(); await showResult(s.run); showTab('results'); break; }
-      status(`${s.status}: ${Math.round(100 * (s.progress || 0))}% ${s.message || ''}`);
-    }
-  } finally { $('run').disabled = false; }
+    // queued on the server's job queue: follow it (planets.js trackJob rides out a server restart, PW-1044)
+    const { trackJob } = await import('./planets.js');
+    const s = await trackJob(j.job, (p) => { if (p.status !== 'done' && p.status !== 'error') status(`${p.status}: ${Math.round(100 * (p.progress || 0))}% ${p.message || ''}`); });
+    if (s.status === 'error') return status(s.error, true);
+    await listWorlds(); await showResult(s.run); showTab('results');
+  } catch (err) { status(`the run stopped: ${err.message}`, true); } finally { $('run').disabled = false; }
 };
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
@@ -924,11 +927,11 @@ async function getFavs() {
 }
 function syncFav() {
   const w = $('world').value, ok = /^[0-9a-zA-Z_-]+$/.test(w), on = ok && favs.has(w), b = $('favBtn');
-  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? 'var(--star)' : ''; b.setAttribute('aria-pressed', String(on));
 }
 $('favBtn').onclick = async () => {
   const id = $('world').value;
-  const r = await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind: 'world', id, starred: !favs.has(id) }) }).catch(() => null);
+  const r = await fetch('../api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'world', id, starred: !favs.has(id) }) }).catch(() => null);
   if (!r || !r.ok) return status('could not save the favourite', true);
   await listWorlds(); $('world').value = id; syncFav();
 };
@@ -956,6 +959,7 @@ async function listWorlds() {
   syncFav();
 }
 (async () => {
+  await loadSchema().catch((e) => status('could not load the editor\'s option lists: ' + e.message, true));
   await listTrees(q.get('tree') || 'dnd');
   await listWorlds();
   await loadTree(q.get('tree') || 'dnd').catch(() => status('could not load the tree', true));

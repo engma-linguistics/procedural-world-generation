@@ -2,7 +2,7 @@
 id: PW-1050
 title: The run's ice and its climate catch up one step per climate update, so how much ice a run grows depends on how often the climate is updated
 type: task
-status: needs-decision
+status: done
 parent: PW-247
 milestone: v1
 subsystem: climate
@@ -55,5 +55,7 @@ under PW-470? Whichever fix is chosen, its success test is that arms at 2 and 4 
 on the paired judge.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> done. Merged 7a49aa3f: carried air settles inside the sheet passes (B), summer double count removed (a), seasonal inversion (b). Judge 18 L6: F vs F@2Myr iceboxes 5/4, deep-ice share 0.10/0.10; passes 14/18 vs main 17/18 (p 0.375). Earth check owed when GPCC returns (lane 28b).
+- 2026-10-30: Lane 28, later. The first fix (rounds, fdd9b595) was right but cost 2.09x main per run (4 draws, 2.76 rounds/update, 37% at the cap), and its worlds sat much icier (share of 300-990 Myr below -150 m 0.21-0.36 vs main 0.00-0.20), so the judge was stopped. Replaced by option B (dc87e5ee: the carried air re-made inside ice_sheets' passes, to a 0.5 m sea-level stop, cap 8). The converged loop exposed a double count in the ice's summer chill (margins ~1.5-2x the Greenland reference, outer ice ring's July -8..-12 C). Coordinator ruled both fixes physics, not retunes: (a) ca897435, the surface's own damping only on the air that isn't the sheet's (LOCAL x (1 - sheet_air)); (b) ICE_COOL follows the season (none at midsummer, 2x at midwinter, same annual mean; the shared timezoom kernel). On 4 probe states, B+a+b brings the margins' non-height summer drop from 7.4-9.2 C to 5.0-6.6 C against the ~5 C reference, and pins the 819014 retreat (within ~1.5 m from the 3rd re-making). Judge running (main vs F = B+a+b vs F2 = F every 2 Myr, 18 draws each): docs/review/base-climate/ice-loop/README.md. Earth check after (b) is still owed (GPCC outage).
 - 2026-10-30: Lane 28 diagnosis (probes only, scratchpad lane28; write-up docs/review/base-climate/ice-loop/README.md). Repeating the update on the same ground and dT at 16 moments: the loop usually converges within 1-2 updates; the '2-3 m per update' is mostly +-0.5-1 m margin flicker, so the per-Myr ice path rises with the cadence trivially. The real gap is at onsets: seed 53669 at 700 Myr walks -74 -> -97 m over 6 updates and is still growing; holding the sheets' carried air (PW-336) makes the walk vanish. Frozen drivers: 2/4/8 Myr cadences end within a few m, but an onset takes ~3x longer at 8 Myr, and under a 10 Myr cold dip 2 Myr ends on the iced branch (-84 m) and 8 Myr not (-68 m). Fix chosen (coordinator 10-30): candidate 2, the carried air's rounds within the update (climate.compute's reground, earth.ice_air_rounds, Params.ice_air_rounds 4): the onset state reaches -102 m in one update. Dropped: ice re-settled between updates on temp_response-shifted ground (overshoots: -58 m vs the 2 Myr arm's -33). Candidate 1 (full re-solve) costed at +30-45% of a run.
 - 2026-10-29: Created from inbox draft draft-ice-climate-loop-steps-per-update.md (found by lane27b).

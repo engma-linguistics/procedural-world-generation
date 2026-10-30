@@ -30,7 +30,6 @@ stalks. Crude on purpose: relative yields of a pre-industrial land, an anchor an
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
@@ -219,16 +218,17 @@ def write(run_dir: Path, report: bool = True) -> dict:
         specs[k] = {"file": f"layers/fuel_{k}.bin", "dtype": "uint8", "shape": [1, n], "units": "index" if k == "lead" else "% of the cell's fuel",
                     "description": "the leading fuel of the cell (index into meta.fuels.names; 255 none)" if k == "lead" else f"share of the cell's fuel that is {k}"}
     sm = d["summary"]
-    p = run_dir / "run.json"
-    run = json.loads(p.read_text())
-    run["meta"]["fuels"] = {"layers": specs, "names": list(FUELS), "colors": COLORS, "phrases": PHRASE, "summary": sm,
-                            "constants": {"coal_era": COAL_ERA, "heath_t": HEATH_T, "pref": PREF, "charcoal": CHARCOAL, "char_dens": CHAR_DENS, "peat_full_m": PEAT_FULL_M}}
-    for ln in run["meta"]["lineages"]:
-        bl = sm["by_line"].get(ln["id"])
-        if bl and ln.get("story"):
-            ln["story"] = ln["story"].split(" It cooks ")[0] + " " + bl["sentence"]
-            run["meta"]["present"].setdefault("stories", {})[ln["id"]] = ln["story"]
-    S.write_json(p, run)
+
+    def add(run):
+        run["meta"]["fuels"] = {"layers": specs, "names": list(FUELS), "colors": COLORS, "phrases": PHRASE, "summary": sm,
+                                "constants": {"coal_era": COAL_ERA, "heath_t": HEATH_T, "pref": PREF, "charcoal": CHARCOAL, "char_dens": CHAR_DENS, "peat_full_m": PEAT_FULL_M}}
+        for ln in run["meta"]["lineages"]:
+            bl = sm["by_line"].get(ln["id"])
+            if bl and ln.get("story"):
+                ln["story"] = ln["story"].split(" It cooks ")[0] + " " + bl["sentence"]
+                run["meta"]["present"].setdefault("stories", {})[ln["id"]] = ln["story"]
+
+    S.update_meta(run_dir, add)
     if report:
         with open(run_dir / "run.txt", "a") as f:
             f.write("\n".join(lines_for_report(sm)) + "\n")

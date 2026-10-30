@@ -38,6 +38,12 @@ EXPANSE_FILL = 0.5  # share (1 - its range / (this x the country with K >= 0.3))
 PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted is this much likelier (x1 + this) on the partner's own coast (PW-861)
 MEGAFAUNA_OFF = 0.1  # PW-924: a megafauna line's habitat outside its own country (its prefers), against 0.4 for a people: dragons and giants
 # lair in their kind's country (swamp for black dragons, volcanoes for red), not anywhere they could survive
+TOLERATE_K = 0.5  # PW-1024 (owner 10-29, option A): a megafauna kind's habitat in the country it tolerates (spec `tolerates`: the edge fits, green
+# dragons in forest-steppe, white on the harsh northern steppe), against 1 in its own country and MEGAFAUNA_OFF elsewhere. A design judgement,
+# not a measured number: half, so the edge holds them at half their density and counts as reachable country (history.megafauna SUITABLE)
+EDGE_C, EDGE_OCT, EDGE_ELEV_M = 5.0, 0.5, 1000.0  # PW-1024: in that tier (and in ecological release, megafauna.release) the kind's comfort range is
+# widened by this much on each side: degrees C of the annual mean, octaves of the rain (x1.4), metres of its height band. A design judgement: "at
+# the edges" means a few degrees and a wetter or drier margin past where it lairs (silver dragons ranging down from the peaks over high steppe)
 MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
@@ -87,6 +93,9 @@ PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#4
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
 
 CHAIN_CELLS = 4
+BREAKS_RISE = 2.0  # PW-1024: 'breaks' (badlands, buttes, river breaks) is open country rising at least this many m per km to a neighbour (~120 m
+BREAKS_RAIN = 1100.0  # over an L7 cell) with under this much rain, below the mountains. Badlands are far finer than a cell, so this is a proxy:
+# rugged open grassland, about a third of the open land under 1,100 mm on world 2a7385 (lane 50 probe). A design judgement
 PORTAL_SEP_KM = 1800.0  # portals are at least this far apart
 PORTAL_KM = 700.0  # an arriving people founds at a portal if it can live within this of it...
 PORTAL_FAR_KM = 2500.0  # ...else within this of it (the portal opens onto bad ground for it); else at its best habitat anywhere

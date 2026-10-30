@@ -5,13 +5,13 @@
 export const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const CSS = `
-.pl-thumb { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: #111827; border-radius: 4px; }
+.pl-thumb { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; background: var(--ctl); border-radius: 4px; }
 .pl-tree { margin: 0; padding: 0; list-style: none; }
 .pl-tree ul { margin: 0 0 0 14px; padding: 0 0 0 8px; list-style: none; border-left: 1px solid var(--border); }
 .pl-node { display: flex; gap: 8px; align-items: flex-start; padding: 4px; border-radius: 6px; margin: 2px 0; }
 .pl-node:hover { background: #1d2738; }
 .pl-node.cur { background: #223652; outline: 1px solid var(--accent); }
-.pl-node img { width: 64px; height: 32px; flex: none; object-fit: cover; border-radius: 3px; background: #111827; cursor: pointer; }
+.pl-node img { width: 64px; height: 32px; flex: none; object-fit: cover; border-radius: 3px; background: var(--ctl); cursor: pointer; }
 .pl-node .tx { min-width: 0; flex: 1; }
 .pl-node .tt { font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
 .pl-node .tt:hover { color: var(--accent); }
@@ -20,16 +20,16 @@ const CSS = `
 .pl-kind { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 0 5px; border-radius: 8px;
   border: 1px solid var(--border); color: var(--muted); margin-right: 5px; vertical-align: 1px; }
 .pl-kind.run { color: #ffd27c; } .pl-kind.timezoom { color: #9fd3ff; } .pl-kind.world { color: #b6f0a0; } .pl-kind.zoom, .pl-kind.fine { color: #e0b0ff; }
-.pl-bar { height: 6px; background: #111827; border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
+.pl-bar { height: 6px; background: var(--ctl); border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
 .pl-bar > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
 .pl-err { color: #ff8a80; }
-.pl-btn { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; }
+.pl-btn { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; }
 .pl-btn:hover:not(:disabled) { border-color: var(--accent); }
 .pl-btn:disabled { opacity: .5; cursor: default; }
-.pl-btn.primary { background: var(--accent); color: #06121f; border-color: var(--accent); font-weight: 600; }
+.pl-btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 .pl-btn.danger:hover:not(:disabled) { border-color: #ff8a80; color: #ff8a80; }
 .pl-btn.sm { padding: 1px 7px; font-size: 11px; }
-.pl-btn.star.on { color: #ffc940; border-color: #ffc940; }
+.pl-btn.star.on { color: var(--star); border-color: var(--star); }
 `;
 let cssDone = false;
 export function injectCss() {
@@ -98,25 +98,39 @@ export function primaryNode(planet) {
   return w[0] || planet.nodes.find((n) => n.kind === 'run') || planet.nodes[0];
 }
 
-export async function postJob(path, body) {
+// POST /api/<path>: the server's answer ({job: id}), or {error}. what (optional, e.g. 'zoom'): a server that answers
+// 501, or 404 with no error of its own, predates that API, and the error says to restart it.
+export async function postJob(path, body, what) {
   try {
     const r = await fetch('../api/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const out = await r.json().catch(() => ({}));
+    if (what && (r.status === 501 || (r.status === 404 && !out.error))) return { error: `The server has no ${what} API. Restart it: uv run python -m planet serve` };
     return r.ok ? out : { error: out.error || `HTTP ${r.status}` };
   } catch (e) { return { error: 'The server is not reachable: ' + e.message }; }
 }
 
-// polls a job until it ends; onUpdate(job) on every poll. Keeps trying while the server restarts.
-export async function trackJob(id, onUpdate, every = 1500) {
-  for (let miss = 0; ;) {
-    let j = null;
-    try { j = await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); miss = 0; } catch { if (++miss > 40) j = { status: 'error', error: 'lost the server' }; }
-    if (j) {
-      onUpdate(j);
-      if (j.status === 'done' || j.status === 'error') return j;
+// a job's state from the server. While it can't be reached (restarting: its jobs survive that, PW-085) keep
+// asking, every 1.5 s for up to a minute.
+async function fetchJob(id) {
+  for (let k = 0; ; k++) {
+    try { return await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); }
+    catch (err) {
+      if (k >= 40) return { status: 'error', error: 'lost the server: ' + err.message };
+      await new Promise((ok) => setTimeout(ok, 1500));
     }
+  }
+}
+
+// polls a job until it ends (returns its last state, done or error); onUpdate(job) on every poll, every `every` ms.
+// alive (optional): checked before each poll; once it says no (another job took this one's place), stops and returns null.
+export async function trackJob(id, onUpdate, every = 1500, alive = () => true) {
+  while (alive()) {
+    const j = await fetchJob(id);
+    onUpdate(j);
+    if (j.status === 'done' || j.status === 'error') return j;
     await new Promise((ok) => setTimeout(ok, every));
   }
+  return null;
 }
 
 // stops a queued or running job (DELETE /api/jobs/<id>); what a make job already finished stays
@@ -140,6 +154,6 @@ export async function getFavourites() {
 }
 export async function setFavourite(key, starred) {
   const [kind, ...id] = key.split(':');
-  try { return (await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind, id: id.join(':').replace(/\.json$/, ''), starred }) })).ok; } catch { return false; }
+  try { return (await fetch('../api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: id.join(':').replace(/\.json$/, ''), starred }) })).ok; } catch { return false; }
 }
 export const starHtml = (on, attrs = '') => `<button class="pl-btn sm star${on ? ' on' : ''}" ${attrs} title="${on ? 'Favourite: click to remove the star' : 'Star as a favourite (the default world for peoples runs)'}" aria-pressed="${on}">${on ? '\u2605' : '\u2606'}</button>`;

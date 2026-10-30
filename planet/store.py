@@ -116,18 +116,6 @@ def history_path(world_id: str) -> Path:
     return worlds_dir() / "history" / f"{world_id}.npz"
 
 
-def code_digest() -> str:
-    """A digest of the model's source (planet/*.py and planet/timezoom/*.py; not the lineages package), for caches that
-    must not outlive a change to the code that made them (PW-740)."""
-    import hashlib
-    root = Path(__file__).resolve().parent
-    h = hashlib.sha256()
-    for f in sorted(root.glob("*.py")) + sorted((root / "timezoom").glob("*.py")):
-        h.update(f.name.encode())
-        h.update(f.read_bytes())
-    return h.hexdigest()
-
-
 def names_path(world_id: str) -> Path:
     """The owner's names for a world's landmasses (names.py, PW-867), in a subfolder: world listings don't see it."""
     return worlds_dir() / "names" / f"{world_id}.json"
@@ -141,9 +129,8 @@ def goods_path(world_id: str) -> Path:
 def write_history(world_id: str, hist: dict) -> None:
     p = history_path(world_id)
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.stem + ".tmp.npz")
-    np.savez_compressed(tmp, **{k: np.asarray(v) for k, v in hist.items()})
-    tmp.replace(p)
+    with atomic_path(p) as tmp:
+        np.savez_compressed(tmp, **{k: np.asarray(v) for k, v in hist.items()})
 
 
 def read_history(world_id: str) -> dict | None:
@@ -154,9 +141,21 @@ def read_history(world_id: str) -> dict | None:
         return {k: (z[k].item() if z[k].ndim == 0 else z[k]) for k in z.files}
 
 
-def new_id() -> str:
-    """Short random id for a run or world (6 hex characters)."""
-    return secrets.token_hex(3)
+def new_id(kind: str = "run") -> str:
+    """Short random id for a new run or world (6 hex characters), one no item of that kind has yet (PW-1040).
+    A run's folder is made here (mkdir, which fails if another process just took the id), so the id is reserved."""
+    while True:
+        item_id = secrets.token_hex(3)
+        path = path_of(kind, item_id)
+        if kind == "run":
+            path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                path.mkdir()
+            except FileExistsError:
+                continue
+            return item_id
+        if not path.exists():
+            return item_id
 
 
 def rel(path: Path) -> str:
@@ -187,6 +186,36 @@ def write_atomic(path: Path, data: str | bytes) -> Path:
         tmp.unlink(missing_ok=True)
         raise
     return path
+
+
+@contextlib.contextmanager
+def atomic_path(path: Path):
+    """A temporary path in path's folder (unique to this process and thread) to write a file to, renamed
+    into place when the block ends without an error (removed if it fails), for writers such as
+    np.savez that take a path rather than bytes (write_atomic). The temporary name keeps path's suffix
+    (np.savez adds .npz to a name without it), so <stem>.<pid>.<thread>.tmp<suffix>."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.stem}.{os.getpid()}.{threading.get_ident()}.tmp{path.suffix}")
+    try:
+        yield tmp
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def update_meta(run_dir: Path, fn) -> dict:
+    """Read-modify-write of a run's run.json under a lock (PW-1040): fn(run) edits the freshly re-read
+    run.json dict in place, and it is written back atomically, so two passes adding to the same run
+    (land use, fuels, demes, the tech tree; a viewer job and a command) can't drop each other's keys.
+    Returns the run dict as written."""
+    run_dir = Path(run_dir)
+    p = run_dir / "run.json"
+    with lock(run_dir.parent, f"meta-{run_dir.name}"):
+        run = json.loads(p.read_text())
+        fn(run)
+        write_json(p, run)
+    return run
 
 
 _locks: dict[str, list] = {}  # lock file -> [RLock, depth, fd] (this process's holders)
@@ -537,15 +566,34 @@ def grid_path(level: int) -> Path:
     return grids_dir() / f"L{level}.json"
 
 
+def grid_digest(grid) -> str:
+    """A fingerprint of a grid's cells (centres, corners, neighbours), stored in its grid file (PW-1039)."""
+    import hashlib
+    h = hashlib.sha256()
+    cc = grid.cell_corners
+    for a in (grid.centers, grid.corners, grid.nbr_off, grid.nbr_idx, np.fromiter(map(len, cc), np.int64, len(cc)),
+              np.fromiter((i for c in cc for i in c), np.int64)):
+        a = np.ascontiguousarray(a)
+        h.update(f"{a.dtype.str}{a.shape}".encode() + a.tobytes())
+    return h.hexdigest()[:16]
+
+
 def write_grid(grid) -> Path:
-    """Geometry for the viewer, shared by every run and world at this level."""
+    """Geometry for the viewer, shared by every run and world at this level. Rewritten when the
+    file's digest (its second key, read from the file's start) isn't this grid's (PW-1039)."""
     path = grid_path(grid.level)
-    if path.exists() and '"nbr"' in path.read_text()[-200000:]:
-        return path
+    digest = grid_digest(grid)
+    try:
+        with open(path, "rb") as f:
+            m = re.search(rb'"digest":\s*"([0-9a-f]+)"', f.read(200))
+        if m and m.group(1).decode() == digest:
+            return path
+    except FileNotFoundError:
+        pass
     grids_dir().mkdir(parents=True, exist_ok=True)
     lat, lon = latlon_lists(grid.centers)
     clat, clon = latlon_lists(grid.corners)
-    write_atomic(path, json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
+    write_atomic(path, json.dumps({"level": grid.level, "digest": digest, "lat": lat, "lon": lon, "corner_lat": clat,
                                    "corner_lon": clon, "cells": grid.cell_corners,
                                    "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
                                   separators=(",", ":")))
@@ -590,10 +638,60 @@ def path_of(kind: str, item_id: str) -> Path:
 
 
 def exists(kind: str, item_id: str) -> bool:
+    """Whether a finished item of this kind has this id (a run still running or interrupted is not one: run_status)."""
     if not _ID.fullmatch(item_id or "") or item_id == "index":
         return False
     p = path_of(kind, item_id)
-    return {"run": p / "run.json", "world": p, "zoom": p / "zoom.json"}[kind].is_file()
+    if kind == "run":
+        return run_status(p) == "done"
+    return {"world": p, "zoom": p / "zoom.json"}[kind].is_file()
+
+
+# A simulation writes its run.json header at the start with "status": "running" and the process that runs it, and the
+# whole run.json (no status) at the end; on an error or Ctrl-C the header says "interrupted" and the folder, with its
+# checkpoints, is kept (PW-508). A running header whose process is gone (a hard kill) counts as interrupted.
+def _proc_start(pid: int) -> str | None:
+    """When process pid started (Linux /proc: clock ticks since boot), to tell it from a later process with its pid."""
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rpartition(")")[2].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def process_stamp() -> dict:
+    """{"pid", "pid_start"} of this process, for a running run's header."""
+    return {"pid": os.getpid(), "pid_start": _proc_start(os.getpid())}
+
+
+def _alive(meta: dict) -> bool:
+    pid = meta.get("pid")
+    if not isinstance(pid, int):
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        pass
+    return meta.get("pid_start") is None or _proc_start(pid) == meta.get("pid_start")
+
+
+def run_status(run_dir: Path) -> str | None:
+    """"done" (a finished run.json), "running" (its simulation is under way), "interrupted" (stopped by an error,
+    Ctrl-C or a kill: its folder and checkpoints are kept, PW-508), or None (no run.json)."""
+    p = Path(run_dir) / "run.json"
+    try:
+        head = read_header(p, ("status", "meta"))
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError):
+        return "interrupted"  # (half-written or foreign)
+    st = head.get("status")
+    if st is None:
+        return "done"
+    if st == "running" and not _alive(head.get("meta") or {}):
+        return "interrupted"
+    return st
 
 
 def find(kind: str, ref: str | Path) -> Path:
@@ -601,11 +699,19 @@ def find(kind: str, ref: str | Path) -> Path:
     Returns the run/zoom directory or the world file; SystemExit if none."""
     p = Path(ref)
     marker = {"run": "run.json", "world": None, "zoom": "zoom.json"}[kind]
-    if (p / marker).is_file() if marker else (p.is_file() and p.suffix == ".json"):
+    if kind == "run" and run_status(p) == "done":
+        return p
+    if kind != "run" and ((p / marker).is_file() if marker else (p.is_file() and p.suffix == ".json")):
         return p
     item_id = p.name.removesuffix(".json") if kind == "world" else p.name
     if exists(kind, item_id):
         return path_of(kind, item_id)
+    for q in (p, path_of(kind, item_id) if _ID.fullmatch(item_id or "") else None):
+        st = run_status(q) if kind == "run" and q is not None else None
+        if st in ("running", "interrupted"):
+            raise SystemExit(f"run {q.name} is still running" if st == "running" else
+                             f"run {q.name} is unfinished (interrupted); delete it with `planet delete run:{q.name}`"
+                             " (or `planet delete --orphans`)")
     raise SystemExit(f"no {kind} {str(ref)!r} (see: uv run python -m planet list)")
 
 
@@ -666,8 +772,9 @@ def delete(kind: str, item_id: str) -> list[Path]:
     a zoom its fine zooms (zoom_fine), theirs too.
     Runs and worlds don't cascade into each other: a world sliced from a
     run is self-contained."""
-    if not exists(kind, item_id):
-        return []
+    if not exists(kind, item_id) and not (kind == "run" and _ID.fullmatch(item_id or "")
+                                          and run_status(path_of(kind, item_id)) == "interrupted"):
+        return []  # (a run still running is left alone)
     p = path_of(kind, item_id)
     gone = []
     if kind == "world":
@@ -695,10 +802,11 @@ def delete(kind: str, item_id: str) -> list[Path]:
 
 def orphans() -> list[Path]:
     """Zooms whose world (or parent zoom) is gone, highlight caches of
-    deleted worlds, and run folders without a run.json (a simulate that was
-    killed)."""
+    deleted worlds, and run folders of a simulation that was interrupted
+    (run_status; or without a run.json at all). A run still running is
+    not an orphan."""
     out = [p for p in sorted(runs_dir().glob("*"))
-           if p.is_dir() and not p.name.startswith(".") and not (p / "run.json").exists()]
+           if p.is_dir() and not p.name.startswith(".") and run_status(p) in (None, "interrupted")]
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
             m = json.loads(p.read_text())
@@ -764,8 +872,8 @@ def items(kind: str) -> list[tuple[Path, dict]]:
                         "zoom": (zooms_dir(), "*/zoom.json", _zoom_item)}[kind]
     out = []
     for p in sorted(d.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True):
-        if p.name == "index.json":
-            continue
+        if p.name == "index.json" or (kind == "run" and run_status(p.parent) != "done"):
+            continue  # (a run still running or interrupted isn't listed: orphans() has the interrupted ones)
         try:
             out.append((p, item(p)))
         except (OSError, ValueError, KeyError, TypeError):

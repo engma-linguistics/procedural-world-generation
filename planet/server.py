@@ -24,6 +24,11 @@ Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip).
 
+Every POST must say `Content-Type: application/json`, and one that carries an
+Origin must come from this server's own address (Handler.post_refused, PW-1037):
+any other web page open in the browser can't start jobs. (A cross-site JSON POST
+needs a preflight, which this server never answers.)
+
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
 serving. Zooms, time zooms and finished worlds run on the job queue, up to
@@ -36,6 +41,7 @@ so they don't wait for the jobs or for each other. Job state is kept in
 
 from __future__ import annotations
 
+import email.utils
 import http.server
 import json
 import os
@@ -268,6 +274,20 @@ def prune_gz() -> None:
             p.unlink(missing_ok=True)
 
 
+def etag(st: os.stat_result, gz: bool = False) -> str:
+    """A data file's validator: its size and modification time (PW-1045). The gzipped answer is a
+    different body, so it gets its own tag."""
+    return f'"{st.st_size:x}-{st.st_mtime_ns:x}{"-gz" if gz else ""}"'
+
+
+def etag_matches(header: str | None, tag: str) -> bool:
+    """If-None-Match names tag (or *); weak tags (W/"...") count, as for a GET they should."""
+    if not header:
+        return False
+    tags = [t.strip().removeprefix("W/") for t in header.split(",")]
+    return "*" in tags or tag in tags
+
+
 def accepts_gzip(header: str | None) -> bool:
     """Accept-Encoding names gzip (and not with q=0)."""
     for a in (header or "").split(","):
@@ -311,9 +331,50 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.directory = str(S.REPO if parts[0] == "viewer" or parts[:2] == ["docs", "review"] else S.root())
         return super().translate_path(path)
 
+    # Caching (PW-1045): the viewer's own files and every API answer are no-store (a code change shows on reload);
+    # data files (runs, worlds, zooms, grids: up to ~100 MB a run) are no-cache with an ETag, so the browser keeps
+    # its copy and asks again, and an unchanged file costs a 304 instead of a download.
+    data_etag: str | None = None
+
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        if self.data_etag:
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("ETag", self.data_etag)
+            self.send_header("Vary", "Accept-Encoding")
+            self.data_etag = None
+        else:
+            self.send_header("Cache-Control", "no-store")
         super().end_headers()
+
+    def data_file(self) -> Path | None:
+        """The data file this GET names (not the viewer, the review pages or the API), when it exists."""
+        parts = urlsplit(self.path).path.lstrip("/").split("/")
+        if parts[0] in ("viewer", "api") or parts[:2] == ["docs", "review"]:
+            return None
+        p = Path(self.translate_path(self.path))
+        try:
+            return p if p.is_file() else None
+        except OSError:
+            return None
+
+    def not_modified(self, tag: str, mtime: float) -> bool:
+        """Answer 304 when the browser's copy is this one: If-None-Match names the tag, or (with no If-None-Match)
+        If-Modified-Since is not older than the file. This server speaks HTTP/1.0, and to a 1.0 server Chrome
+        revalidates by date only, so both are needed."""
+        inm, ims = self.headers.get("If-None-Match"), self.headers.get("If-Modified-Since")
+        if inm is not None:
+            fresh = etag_matches(inm, tag)
+        else:
+            try:
+                fresh = ims is not None and int(mtime) <= email.utils.parsedate_to_datetime(ims).timestamp()
+            except (TypeError, ValueError, IndexError, OverflowError):
+                fresh = False
+        if not fresh:
+            return False
+        self.send_response(304)
+        self.data_etag = tag
+        self.end_headers()
+        return True
 
     def send_json(self, obj, code=200):
         body = json.dumps(obj).encode()
@@ -331,6 +392,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", self.guess_type(str(src)))
         self.send_header("Content-Encoding", "gzip")
+        self.send_header("Last-Modified", self.date_time_string(src.stat().st_mtime))
         if cache.exists():
             self.send_header("Content-Length", str(cache.stat().st_size))
             self.end_headers()
@@ -408,15 +470,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.wfile.write(body)
         gz = self.gzippable()
         if gz:
+            st = gz.stat()
+            tag = etag(st, gz=True)
+            if self.not_modified(tag, st.st_mtime):
+                return
+            self.data_etag = tag
             return self.send_gzip(gz)
         m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", url.path)
         if m:
             job = self.jobs.get(m.group(1))
             return self.send_json(job if job else {"error": "no such job"}, 200 if job else 404)
+        f = self.data_file()
+        if f:
+            st = f.stat()
+            tag = etag(st)
+            if self.not_modified(tag, st.st_mtime):
+                return
+            self.data_etag = tag
         return super().do_GET()
 
     def lineages_api(self, method: str) -> bool:
-        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-trees, GET or POST
+        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-schema (its option lists,
+        lineages.run.editor_schema), GET /api/lineage-trees, GET or POST
         /api/lineage-tree?name=N (the tree as JSON; POST validates and saves it), POST /api/lineages
         {world | timezoom, tree | raw, tries} (queued on the job queue like a time zoom, ~20 s a try at L6;
         answers {job}; GET /api/jobs/<id> has its progress, and {run} when done)."""
@@ -426,7 +501,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         from .lineages import run as LR
         q = dict(parse_qsl(url.query))
         try:
-            if method == "GET" and url.path == "/api/lineage-trees":
+            if method == "GET" and url.path == "/api/lineage-schema":
+                self.send_json(LR.editor_schema())
+            elif method == "GET" and url.path == "/api/lineage-trees":
                 self.send_json({"trees": [{k: v for k, v in t.items() if k != "file"} for t in LR.list_trees()]})
             elif method == "GET" and url.path == "/api/lineage-tree":
                 self.send_json(LR.read_raw(q.get("name", "")))
@@ -449,7 +526,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"error": str(e)}, 404)
         return True
 
+    def post_refused(self) -> str | None:
+        """Why this POST is refused, or None (PW-1037): it must be JSON, and an Origin, if sent,
+        must be this server's own address (http://127.0.0.1:<port> or http://localhost:<port>)."""
+        if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
+            return "POST needs Content-Type: application/json"
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            port = self.server.server_address[1]
+            if origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+                return f"cross-site POST refused (Origin {origin})"
+        return None
+
     def do_POST(self):
+        refused = self.post_refused()
+        if refused:
+            return self.send_json({"error": refused}, 403)
         if self.lineages_api("POST"):
             return
         if self.path == "/api/favourites":

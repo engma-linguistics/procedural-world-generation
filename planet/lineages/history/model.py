@@ -45,6 +45,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
         self._portals = None  # (the arrivals' portals, portal_cells)
         self._K_now: dict[int, np.ndarray] = {}  # (each line's habitat this step, and the contact value: the composition's reach)
+        self._K_own: dict[int, np.ndarray] = {}  # (a megafauna kind's habitat without ecological release, PW-1024: its own country, for its target)
         self._corr_now = None
         self._tags_now = None
         self._deg = np.diff(self.grid.nbr_off)

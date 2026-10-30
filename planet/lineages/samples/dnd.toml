@@ -25,7 +25,7 @@
 name = "D&D peoples (preset)"
 seed = 7
 mixing_start = "3 kyr"
-era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). A PLACEHOLDER: stored, not yet read; the technology tree (PW-675) will use it. The history is not run past the present.
+era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). The technology tree caps what the peoples know by the present at it (techtree.py). The history is not run past the present.
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
 dragon_km2 = 5000  # one dragon per this many km2 of its kind's country where peoples press them (PW-957). Where no people holds the
 # land they keep nearer their natural density (meta.megafauna_natural below), and were many more before the peoples spread (the age of dragons). 5000: the default, a few per swamp or range in peopled country; 10000: rarer,
@@ -139,9 +139,10 @@ name = "blue dragons (chromatic)"
 parents = ["chromatic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [14, 40]
-rain_mm = [60, 600]
-prefers = ["desert"]
+temp_c = [4, 40]  # PW-1024 (owner 10-29, A): was [14, 40]; down into the cool continental shortgrass
+rain_mm = [60, 800]  # PW-1024: was [60, 600]
+prefers = ["desert", "BSk"]  # PW-1024: deserts, and the dry shortgrass and storm country (cold steppe, Köppen BSk; lairs in loess bluffs)
+tolerates = ["open"]  # PW-1024: the moister open grassland at the edges
 
 [[lineage]]
 id = "green_dragon"
@@ -152,6 +153,7 @@ at = "750 kyr"
 temp_c = [8, 30]
 rain_mm = [900, 3000]
 prefers = ["forest", "jungle"]
+tolerates = ["open"]  # PW-1024 (owner 10-29, an edge fit): forest-steppe, gallery forest and parkland, the open country next to the woods
 
 [[lineage]]
 id = "black_dragon"
@@ -171,6 +173,7 @@ megafauna = true
 at = "750 kyr"
 temp_c = [-20, 6]
 prefers = ["mountain", "tundra", "polar"]  # PW-924: cold mountains
+tolerates = ["steppe", "open"]  # PW-1024 (owner 10-29, an edge fit): the harsh northern steppe, as winter visitors
 
 [[lineage]]
 id = "gold_dragon"
@@ -178,9 +181,9 @@ name = "gold dragons (metallic)"
 parents = ["metallic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [16, 32]
-rain_mm = [500, 1500]
-prefers = ["savanna"]  # PW-924: warm grassland and open woodland
+temp_c = [5, 32]  # PW-1024 (owner 10-29, A): was [16, 32]; down into the cool open steppe
+rain_mm = [400, 1500]  # PW-1024: was [500, 1500]
+prefers = ["savanna", "open"]  # PW-924: warm grassland and open woodland; PW-1024: and the cool open steppe, roaming over herders' country
 
 [[lineage]]
 id = "silver_dragon"
@@ -192,6 +195,7 @@ elev_m = [2000, 7000]  # PW-924: the high peaks, beside the cloud giants
 temp_c = [-12, 10]
 rain_mm = [300, 2000]
 prefers = ["mountain"]
+tolerates = ["steppe", "open"]  # PW-1024 (owner 10-29, an edge fit): lairs in the mountains, ranging over the high steppe below them
 
 [[lineage]]
 id = "bronze_dragon"
@@ -201,6 +205,7 @@ megafauna = true
 at = "750 kyr"
 temp_c = [6, 28]
 prefers = ["coast"]  # PW-924: sea coasts, beside the storm giants
+tolerates = ["wetland"]  # PW-1024 (owner 10-29, an edge fit): big rivers and steppe lakes (no river or lake tag yet: the wet lowlands stand in)
 
 [[lineage]]
 id = "copper_dragon"
@@ -208,9 +213,9 @@ name = "copper dragons (metallic)"
 parents = ["metallic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [10, 30]
+temp_c = [5, 30]  # PW-1024 (owner 10-29, A): was [10, 30]
 rain_mm = [300, 1100]
-prefers = ["hills"]  # PW-924: dry rocky uplands
+prefers = ["hills", "breaks"]  # PW-924: dry rocky uplands; PW-1024: and the badlands, buttes and river breaks cutting through grassland
 
 [[lineage]]
 id = "brass_dragon"
@@ -221,6 +226,7 @@ at = "750 kyr"
 temp_c = [18, 40]
 rain_mm = [100, 700]
 prefers = ["steppe"]  # PW-924: hot dry grassland and scrub at the desert edges (the blues hold the deserts)
+tolerates = ["open"]  # PW-1024 (owner 10-29, an edge fit): the hot dry margins of the plains, in summer
 
 [[lineage]]  # PW-988 (owner 10-29): the tortles, lizardfolk and troglodytes are their own branch off the reptilian line
 id = "saurian"

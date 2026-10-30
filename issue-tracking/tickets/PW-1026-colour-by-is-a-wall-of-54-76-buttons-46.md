@@ -27,3 +27,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-colour-by-grouped-picker.md (found by code-audit-2026-10).
+- 2026-10-29: Viewer lane 51 split index.html's script into viewer/globe/ modules. Every layer is now one entry in `LAYERS` (globe/layers.js), with a `group` (surface, geology, ice, glacial, climate, air, water, plants, soil, game, humanuse, resources, coasts, sea, peoples). `MENUS` gives the button order, and the 'body:', 'animal:' and 'crop:' families are expanded in one place (FAMILIES). The grouped picker can read groups, labels and hints straight from the table; panel.js `renderLayerButtons` is the only place to change. zoom.html still has its own list.

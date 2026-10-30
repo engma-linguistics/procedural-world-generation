@@ -2,7 +2,7 @@
 id: PW-1032
 title: Neighbouring peoples share a colour on the map (66 lines, 35 colours; kobolds and dragonborn both brown on the same continent)
 type: task
-status: todo
+status: needs-decision
 parent: null
 milestone: null
 subsystem: viewer
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1023]
 refs: [planet/lineages/history/params.py, planet/lineages/output.py, "run 3097e3", docs/review/code-audit-2026-10/img/, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +29,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-peoples-distinct-colours.md (found by code-audit-2026-10).
+- 2026-10-30: lane 53: three palettes built behind ?palette=distinct or ?palette=family (viewer/globe/palettes.js, planetViewer.paletteReport()). On 3097e3 current has 4 same-colour neighbour pairs, 37 look-alike under colour-blind sight and 7 colours lost in the ocean or grey; both new options 0. Side-by-sides and colour-blind views in docs/review/viewer-ux-sides/. Lean: family hues + distinct neighbours (black dragons come out dark rose). Needs the owner's pick before it becomes the default.
