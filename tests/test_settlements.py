@@ -180,3 +180,13 @@ def test_the_brief_reads_the_ledger(tmp_path):
     assert "## Towns and cities" in md and "The dwarves world-wide" in md
     past = B._settlements(ctx, np.ones(g.n, bool), 13.0, None)  # (before any place was founded)
     assert past["counts"] == {} and past["largest"] == []
+
+
+def test_mining_affinity_follows_traits_and_kin():
+    """PW-1116: miners and delvers rank above hardy folk, orc/goblin kin sit between, flyers are damped."""
+    rows = [("goblinoid", [], []), ("goblin", ["hunter"], ["goblinoid"]), ("orc", ["hardy"], ["goblinoid"]), ("dwarf", ["mountain", "subterranean", "miner"], []),
+            ("kobold", ["subterranean", "hardy"], []), ("human", ["agricultural"], []), ("aarakocra", ["flies", "mountain"], [])]
+    m = {"lineages": [{"index": i, "id": n, "traits": t, "parents": p} for i, (n, t, p) in enumerate(rows)]}
+    a = dict(zip([r[0] for r in rows], ST._mining_affinity(m, len(rows))))
+    assert a["dwarf"] == 1.0 > a["kobold"] == 0.8 > a["goblin"] == a["orc"] == 0.4 > a["human"]
+    assert a["aarakocra"] < a["orc"] and a["aarakocra"] < 0.1

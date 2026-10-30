@@ -7,6 +7,7 @@
 - Physics (10-29): lanes 23-25 merged (weld ratchet PW-970; continents' sea water PW-980 part; sea bulk evaporation PW-015 with Earth B 27-28%; paired judge PW-994). Lane 26 running: dry subtropical coasts PW-998 with PW-026 (maritime air inland). Then the PW-980 remainder, PW-948 (needs the owner), showcase rebuild, tag v1.
 - Fun (10-29): megafauna PW-958/959/977 stage 1 and sapiens dates PW-978/971 merged. Lane 45 running: people density PW-974 + PW-977 stage 2 (peoples' and predators' share of the food). Owner decisions open: PW-948, PW-990, PW-987, PW-988.
 - Fun lane 66 (10-30, branch worktree-agent-a6adfb4eb11252857): settlement size classes now follow the holder's techs (stages villages, towns, cities, cities+roads; town 1,000 or 2,000, city 10,000, city caps from Reba 2016's tables; village and town bands UNVERIFIED pending Fletcher 1995) and second peoples' places churn far less (PW-1114, PW-1117; overview 2.25). PW-1116 (mine count) still waits on the owner.
+- Fun lane 68 (10-30): PW-1116 done on its branch: mines go to the cell's most mining-inclined people even as a minority (affinity from traits and kin), one mining district per ring of cells; ~2,200 mines a run became 260-370, humans 95% -> 42-80%; overview 2.25. Rebuilt techtree and settlements on all seven runs with a settlements doc (488d7e 6128a3 114231 570701 6553f1 8d6884 e368d1).
 - Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1
