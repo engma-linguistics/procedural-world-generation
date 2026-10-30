@@ -170,7 +170,7 @@ export function createNavigator(host) {
     const dis = busy() ? 'disabled' : '', row = (what, name, has) => `<div>${name}: ${has ? '<span class="muted">present</span>'
       : `<span class="muted">missing</span> <button class="pl-btn sm" data-do="enrich" data-what="${what}" data-id="${esc(l.world)}" ${dis}>Add ${name}</button>`}</div>`;
     return `<div class="pp"><b>Layers of world ${esc(l.world)}</b>${row('resources', 'resources', l.resources)}${row('coast', 'coasts', l.coast)}
-      <div class="muted">Same as <code>planet resources</code> / <code>planet coast</code>; the world is rewritten in place and reopened.</div></div>`;
+      <div class="muted">The world is rewritten in place and reopened.</div></div>`;
   }
   function renderPeoples(p, cur) {
     const t = peoplesTarget(p, cur);

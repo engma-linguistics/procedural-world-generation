@@ -52,7 +52,8 @@
   .kpi div b { display: block; font-size: 17px; } .kpi div span { color: var(--muted); font-size: 11px; }
   pre.map { font: 10px/10px ui-monospace, monospace; margin: 0; letter-spacing: 0; background: #0a1a2a; padding: 6px; display: inline-block; }
   .bars { display: inline-block; height: 8px; background: var(--acc); opacity: .7; vertical-align: middle; border-radius: 2px; }
-  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  .lmcol { overflow-x: auto; }
   @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } #tab-tree.on { grid-template-columns: 1fr; } }
   .hint { max-width: 900px; color: var(--muted); margin: 0 0 8px; }
 </style>
@@ -213,7 +214,7 @@ const FOOT = {
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  results: 'From a peoples run (meta.present). Numbers are presence x density x area: rough, for a game, not a census.',
+  results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1).split('/')[0];  // (#tech/map: the Technology tab's view, techtab.js)
 function showTab(t) {
@@ -221,7 +222,7 @@ function showTab(t) {
   tab = t;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('on', s.id === `tab-${t}`));
-  $('foot').innerHTML = FOOT[t] + ' Saved trees: <code>&lt;data&gt;/lineage_trees/</code>; CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.';
+  $('foot').innerHTML = FOOT[t];  // (no command lines here: the owner uses the viewer, PW-1047)
   history.replaceState(null, '', `${location.search}#${t}${t === 'tech' ? '/' + TechTab.view : ''}`);
   redraw();
 }
@@ -752,7 +753,7 @@ function drawResults() {
     <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
   // population table
   const maxPop = Math.max(1, ...living.map(([id, v]) => popOf(id, v)));
-  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th></th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
+  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th title="The bars use a log scale: each equal step along a bar is ten times more people, so 310 M and 1.6 M look closer than they are">bar (log scale)</th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
   const landsOf = (v) => Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
   for (const [id, v] of living) {
     const lands = landsOf(v), grp = L[id]?.group_of, w = W[id];
@@ -767,14 +768,18 @@ function drawResults() {
   h += '</table>';
   if (P.lost?.length) h += `<p class="err">lost: ${P.lost.map(nm).join(', ')}</p>`;
   // discovery timeline
-  h += `</div><div><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
+  // (short names, the full one on hover, so the rows stay one line high: PW-1047)
+  const short = (id) => (L[id]?.name || id).replace(/ \(.*$/, '');
+  const snm = (id) => `<span title="${esc(L[id]?.name || id)}">${esc(short(id))}</span>`;
+  const area = (a) => (a >= 10 ? Math.round(a) : a >= 1 ? a.toFixed(1) : a.toFixed(2));
+  h += `</div><div class="lmcol"><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>Mkm²</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
   for (const m of lms.filter((m) => m.area_mkm2 >= 0.05).slice(0, 18)) {
     const d = m.discovered;
-    h += `<tr><td>${esc(m.name.replace(/^the /, ''))}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
-      <td style="white-space:nowrap">${d ? sw(d.by) + nm(d.by) : '<span class="err">nobody</span>'}</td><td class="n">${d ? fmt(d.ago_kyr) : ''}</td>
+    h += `<tr><td style="white-space:nowrap">${esc(m.name.replace(/^the /, '').replace(/ \(.*\)$/, ''))}</td><td class="n">${area(m.area_mkm2)}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
+      <td style="white-space:nowrap">${d ? sw(d.by) + snm(d.by) : '<span class="err">nobody</span>'}</td><td class="n" style="white-space:nowrap">${d ? fmt(d.ago_kyr) : ''}</td>
       <td class="muted">${d ? esc(d.how) + (d.gap_km ? ` ${d.gap_km} km` : '') : ''}</td>
-      <td style="white-space:nowrap">${m.settled_by ? `${sw(m.settled_by.by)}${nm(m.settled_by.by)} ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
-      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${L[a.by]?.name || a.by} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
+      <td>${m.settled_by ? `<span style="white-space:nowrap">${sw(m.settled_by.by)}${snm(m.settled_by.by)}</span> ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
+      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${short(a.by)} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
   }
   h += '</table></div></div>';
   // animals (animals.py, PW-691) and the boats that carry them (PW-688)
@@ -835,7 +840,7 @@ function drawTech() {
     if (mine.length && !drawTech.busy) { drawTech.busy = true; showResult(mine[0].dir).finally(() => { drawTech.busy = false; }); }
     el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its technology.</p>'; return;
   }
-  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet: <code>uv run python -m planet techtree ${esc(result.id)}</code> adds it.</p>`; return; }
+  if (!result.techtree) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no technology tree yet (it is older than the tree). Run the peoples again from the Tree tab to get one.</p>`; return; }
   TechTab.draw(el, result);
 }
 function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger

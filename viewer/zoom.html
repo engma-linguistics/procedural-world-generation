@@ -100,8 +100,7 @@
     <button id="btn3d" title="A 3D view of this zoom (heights, water, rivers, waterfalls)">3D</button>
     <button id="delBtn" title="Delete this zoom from disk">Delete</button></div>
   <div class="muted" id="srcNote" style="margin-top:4px"></div>
-  <div class="muted" style="margin-top:4px">make one: on the Globe tab, click a cell and press Zoom (or double-click a cell), or
-    <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code></div>
+  <div class="muted" style="margin-top:4px">To make one: on the Globe tab, click a cell and press Zoom (or double-click a cell).</div>
 
   <h2>Layer</h2>
   <div class="row seg" id="layerSeg"></div>
@@ -285,7 +284,7 @@ async function init() {
   const sel = $('zoomSel');
   if (!idx.length) {
     sel.innerHTML = '<option>(no zooms yet)</option>';
-    $('msg').innerHTML = 'No zooms found in <code>zooms/</code>.<br>Make one with <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code>';
+    $('msg').innerHTML = 'No regional zooms yet.<br>On the <a href="index.html" target="_top">Globe</a>, click a cell and press Zoom (or double-click a cell).';
     return;
   }
   // grouped by where each zoom came from: a run at some time (via a sliced world), or a world
@@ -1322,7 +1321,7 @@ const RIVER_RGB = [40, 72, 92];
 function satellite(oc) {
   const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
   const src = state.sat[state.season] || state.sat[''];
-  if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view: <code>planet satellite ' + m.id + '</code></span>'; return; }
+  if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view (it was made before satellite views; make it again from the Globe)</span>'; return; }
   const img = oc.createImageData(nx, ny), px = img.data, sh = shadeNow(), water = L.water, q = L.discharge, area = L.drainage_area;
   const rivers = riversNow(), minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
   const cl = $('clouds').checked && L.cloud_jul ? cloudAlpha() : null;

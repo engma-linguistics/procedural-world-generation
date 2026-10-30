@@ -127,8 +127,7 @@ export async function openRun(id, t) {
 
 export async function init() {
   if (!await fillSelector()) {
-    S.infoHtml = null; $('infoText').innerHTML = `No runs or worlds found.<br>Run <code>uv run python -m planet simulate</code> then
-      <code>uv run python -m planet serve</code>, or drop a world .json here.`;
+    S.infoHtml = null; $('infoText').innerHTML = `No planets yet. <a href="./#new">Make one on the start page</a>, or drop a world .json here.`;
     return;
   }
   let want = urlp.get('run') ? 'run:' + urlp.get('run') : urlp.get('world') ? 'world:' + urlp.get('world') : $('worldSel').value;

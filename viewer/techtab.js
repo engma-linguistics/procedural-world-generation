@@ -63,6 +63,12 @@
   document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // a name cut to n characters at a word, with an ellipsis (never mid-word: "bread and flatbread bakin", PW-1047)
+  const clipWords = (s, n) => {
+    if (s.length <= n) return s;
+    const cut = s.slice(0, n - 1), sp = cut.lastIndexOf(' ');
+    return (sp > n / 2 ? cut.slice(0, sp) : cut).replace(/[ ,;:-]+(and|or|of|the)?$/, '') + '…';
+  };
   function fmt(k) {  // (as lineages.html)
     if (k >= 1000) return `${+(k / 1000).toFixed(k >= 10000 ? 0 : 2)} Myr`;
     if (k >= 1) return `${+k.toFixed(k >= 100 ? 0 : 1)} kyr`;
@@ -92,8 +98,7 @@
       With a second people picked, a dot on each chip says who else has it (<span style="color:#9fd18b">●</span> both, <span style="color:#ff7b7b">●</span> only the compared people).`,
     cascade: `Each row a people that came to the tech, placed under the people it came from (depth-first: a cascade reads downwards). Time runs left to right on a log axis.
       A line drops at the giver's date and runs along the taker's row to the taker's date: its length is how long the tech waited at the border. Stars are roots: independent inventions, brought kits, tamings.`,
-    table: `Peoples down (oldest first), techs across by track: a square per known tech in the colour of how it came. Drag the time slider: what was not yet known then is greyed.
-      Older runs: <code>uv run python -m planet techtree RUN</code> adds the record.`,
+    table: `Peoples down (oldest first), techs across by track: a square per known tech in the colour of how it came. Drag the time slider: what was not yet known then is greyed.`,
   };
   const st = { view: (location.hash.split('/')[1] || 'tree'), tech: null, who: '', fant: true, picked: null,
     tl: { track: '', tech: '', sort: 'start', inh: false, gone: true }, inv: { who: null, vs: '', at: 0 },
@@ -243,7 +248,7 @@
       const share = (nowKnow[t.id] || 0) / nAlive;
       s += `<g class="${cls}" data-id="${t.id}" transform="translate(${x},${y})"><rect class="bg" width="${BW}" height="${BH}" rx="4"/>
         <rect width="4" height="${BH}" rx="2" fill="${trackCol(t.track)}"/>
-        <text x="10" y="13">${esc(tname(t.id).slice(0, 25))}${t.fantasy ? ' ✦' : ''}</text>
+        <title>${esc(tname(t.id))}</title><text x="10" y="13">${esc(clipWords(tname(t.id), t.fantasy ? 24 : 26))}${t.fantasy ? ' ✦' : ''}</text>
         <text class="when" x="10" y="25">${v ? `${fmt(v[0])} ago · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
         <rect x="${BW - 26}" y="${BH - 7}" width="22" height="3" fill="#2a3446"/><rect x="${BW - 26}" y="${BH - 7}" width="${22 * share}" height="3" fill="${trackCol(t.track)}"/></g>`;
     }

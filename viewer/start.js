@@ -162,7 +162,7 @@ export async function showStart() {
     applyViews();
     if (!planets.length) {
       $('#stList').innerHTML = `<div class="empty">No planets yet. <button class="pl-btn primary" data-act="new">Make the first one</button>
-        <p>Or from a terminal: <code>uv run python -m planet make --seed 1</code>. You can also drop a world .json on this page's viewer.</p></div>`;
+        <p>You can also drop a world .json on this page's viewer.</p></div>`;
       return;
     }
     if (!shown.length) { $('#stList').innerHTML = '<div class="empty">No planet matches. Clear the search or the filters above.</div>'; return; }
@@ -310,8 +310,7 @@ export async function showStart() {
         s.type === 'choice' ? `<select id="s_${s.key}" data-k="${s.key}">${s.choices.map((c) => `<option>${c}</option>`).join('')}</select>`
           : `<input id="s_${s.key}" data-k="${s.key}" type="number" min="${s.min}" max="${s.max}" step="${s.type === 'int' ? 1 : 0.1}">`}
         <div class="hp">${esc(s.help)}</div></div>`).join('')}</div>
-        <details style="margin-top:8px"><summary>Not configurable yet</summary><div class="gaps">The model has no parameter for: ${opt.unsupported.map(esc).join('; ')}.
-          Other tectonics settings are on the command line: <code>planet make --set KEY=VALUE</code>.</div></details></fieldset>
+        <details style="margin-top:8px"><summary>Not configurable yet</summary><div class="gaps">The model has no parameter for: ${opt.unsupported.map(esc).join('; ')}.</div></details></fieldset>
       <div class="est" id="fEst">...</div>
       <div><button type="submit" class="pl-btn primary" id="fGo" style="padding:8px 18px;font-size:14px">Make planet</button></div>
       <div id="fmProgress"></div></form>`;

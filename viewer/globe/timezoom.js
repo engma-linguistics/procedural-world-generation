@@ -36,7 +36,7 @@ function phaseSummary() {
     <b>${agoLabel(S.V.t)}</b>${s.variability_c != null ? ` · centennial anomaly ${sign(s.variability_c, 2)} °C` : ''}<br>${stat}<br>
     ${m.phase === 'lineages' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
     <span class="muted">Present = </span>${tzl}${m.world ? ` (finished world <a href="?world=${m.world}.json" data-world="${m.world}.json">${m.world}</a>)` : ''}<br>
-    <span class="muted">Remake:</span> <code>${remake}</code>`;
+    <details class="cli"><summary>command line (for scripts)</summary><code>${remake}</code></details>`;
 }
 
 export function timezoomSummary() {
@@ -55,7 +55,7 @@ export function timezoomSummary() {
     ${iceSun() ? `summer sun at ${iceSun().name} ${sign(s.insol_ice_summer_anom, 1)} W/m² · ` : ''}65°N July sun ${sign(s.insol_65n_jul_anom, 1)} W/m² <span class="muted" title="vs. ${S.V.tzEarth ? "today's orbit" : 'a circular orbit at the mean tilt'}; precession index e·sin(perihelion) ${s.precession_index}">(?)</span>
     ${timezoomChart()}
     ${S.V.tzEarth ? '' : `<span class="muted">From</span> ${sourceLink(m.source_run, m.at_myr)}<br>`}
-    <span class="muted">Remake:</span> <code>uv run python -m planet timezoom ${src}${opts}</code>
+    <details class="cli"><summary>command line (for scripts)</summary><code>uv run python -m planet timezoom ${src}${opts}</code></details>
     ${finishBox()}`;
 }
 
@@ -193,9 +193,8 @@ export function finishBox() {
     const fins = finishedOf(S.V.run.id || S.V.dir);
     if (fins.length) html += `<span class="muted">Finished worlds of this time zoom:</span> ${fins.map((w) =>
       `<a href="?world=${w.file}" data-world="${w.file}" title="sea level ${Math.round(w.sea_level_change_m)} m vs the start">+${w.timezoom_kyr} kyr</a>`).join(', ')}<br>`;
-    html += `<span class="muted">CLI:</span> <code>uv run python -m planet finish ${S.V.run.id || S.V.dir} --kyr ${S.V.t}</code>`;
-  } else html += `<span class="muted">CLI:</span> <code>uv run python -m planet finish ${S.V.run.id || S.V.dir} --at ${S.V.t}</code>
-    <span class="muted">(or <code>slice</code>: replayed, exact)</span>`;
+    html += `<details class="cli"><summary>command line (for scripts)</summary><code>uv run python -m planet finish ${S.V.run.id || S.V.dir} --kyr ${S.V.t}</code></details>`;
+  } else html += `<details class="cli"><summary>command line (for scripts)</summary><code>uv run python -m planet finish ${S.V.run.id || S.V.dir} --at ${S.V.t}</code></details>`;
   return html + '</div>';
 }
 

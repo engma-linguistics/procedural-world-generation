@@ -207,7 +207,15 @@ const tipEl = document.createElement('div');
 tipEl.style.cssText = 'position:fixed;z-index:30;pointer-events:none;display:none;max-width:260px;padding:5px 8px;border-radius:6px;font-size:12px;line-height:1.35;background:rgba(14,19,30,0.94);border:1px solid var(--border);color:var(--text, #e6edf3)';
 document.body.append(tipEl);
 let tipXY = [0, 0];
-addEventListener('pointermove', (e) => { tipXY = [e.clientX, e.clientY]; if (tipEl.style.display !== 'none') placeTip(); }, true);
+// only while the pointer is over the globe or the map itself: over a panel (or off the page) it goes, rather than
+// following the pointer with the last cell's text (PW-1047)
+let tipOverMap = false;
+addEventListener('pointermove', (e) => {
+  tipXY = [e.clientX, e.clientY];
+  tipOverMap = e.target instanceof HTMLCanvasElement;
+  if (!tipOverMap) tipEl.style.display = 'none'; else if (tipEl.style.display !== 'none') placeTip();
+}, true);
+document.documentElement.addEventListener('pointerleave', () => { tipOverMap = false; tipEl.style.display = 'none'; });
 function placeTip() { const w = tipEl.offsetWidth; tipEl.style.left = Math.min(innerWidth - w - 8, tipXY[0] + 14) + 'px'; tipEl.style.top = Math.min(innerHeight - tipEl.offsetHeight - 8, tipXY[1] + 14) + 'px'; }
 function tipHtml(i) {
   const layer = state.layer, L = S.V.layers, G = S.V.grid, land = L.elevation[i] > 0;
@@ -220,7 +228,7 @@ function tipHtml(i) {
   return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
 }
 export function renderTip() {
-  if (!S.V || S.hovered < 0 || !S.V.layers) { tipEl.style.display = 'none'; return; }
+  if (!S.V || S.hovered < 0 || !S.V.layers || !tipOverMap) { tipEl.style.display = 'none'; return; }
   try { tipEl.innerHTML = tipHtml(S.hovered); } catch (e) { tipEl.style.display = 'none'; return; }
   tipEl.style.display = 'block'; placeTip();
 }
@@ -366,7 +374,7 @@ export function renderSummary() {
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
     <span class="muted">Landmasses (click a name to rename it):</span> ${landmassRows(s)}<br>
     ${overturningLine(m.overturning)}
-    <span class="muted">Remake:</span> <code>${cmd}</code>`;
+    <details class="cli"><summary>command line (for scripts)</summary><code>${cmd}</code></details>`;
 }
 
 // the overturning's strength and its main sinking sites (world meta, ocean.loop_schematic)
@@ -392,7 +400,8 @@ export function renderRunSummary() {
     ${finishMomentLine()}
     ${finishBox()}
     ${timezoomBox()}`;
-  $('sumTitle').textContent = S.V.tz ? 'Time zoom and events' : 'Run and events';
+  $('sumTitle').textContent = S.V.run.meta?.phase === 'lineages' ? 'Peoples and events' : S.V.run.meta?.phase === 'recent' ? 'Recent pass and events'
+    : S.V.tz ? 'Ice ages and events' : 'Run and events';  // (plain titles, PW-1047)
   $('summaryBody').innerHTML = `${head}${S.V.tz ? '' : runTree()}
     <h2>Events <span class="muted">(click to jump${S.V.tz ? '; t in kyr' : ''})</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;
   const now = $('summary').querySelector('.ev.now');
