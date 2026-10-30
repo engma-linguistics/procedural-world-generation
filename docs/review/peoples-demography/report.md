@@ -100,9 +100,12 @@ Real-world anchors (all read):
 
 - **Implied fertility.** If dwarves are to persist rather than explode, a dwarf woman bears about 6.6 children at about 24-year intervals; an elf, at about 39-year intervals. This is the fertility canon leaves out.
 - **Steady losses.** At an extra 0.5%/yr of raiding or predation, an equilibrium people keeps N*/K = 1 − h/r of its numbers:
-  - humans about 43%;
-  - kobolds and goblins 65–70%;
-  - dwarves, gnomes and elves 0.
+  - humans about 88%;
+  - kobolds and goblins about 93–94%;
+  - dwarves and gnomes about 55%;
+  - elves about 18%.
+
+  (Corrected 2026-10-30 by the coordinator from section 3's own r_max column, h = 0.005/yr, after lane 82 caught the slip (PW-1168). The first version said 43% / 65–70% / 0, which implied r ≈ 0.9%/yr for humans.)
 
   Slow peoples persist only where little kills them. This is the real-ecology form of "breed fast, survive worse".
 

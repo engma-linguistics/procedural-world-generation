@@ -2,7 +2,7 @@
 id: PW-1168
 title: "Lane 76 report: the kept shares under a 0.5%/yr loss (humans 43%) disagree with its own r of ~4.3%/yr (94%)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: docs
@@ -29,4 +29,5 @@ only where little kills them" stands.
 - [ ] fix or annotate report.md section 3 "Steady losses"
 
 ## Updates
+- 2026-10-30: Status todo -> done. Fixed in report.md section 3 and on the owner's desk: 88% / 93-94% / ~55% / ~18% from the report's own r_max at h=0.005.
 - 2026-10-30: Created from inbox draft draft-lane76-sustainable-loss-figures.md (found by lane-82).
