@@ -69,7 +69,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D18 (mines, under "Mines are in") and D17, the
   "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
   when anything else needs you.</p>
-  <nav class="toc"><a href="#decisions">Decisions</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
+  <nav class="toc"><a href="#decisions">Decisions</a><a href="#robust">Robust, not tuned</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
 </header>
 
 <h2 id="decisions">Decisions waiting on you</h2>
@@ -105,10 +105,35 @@ ecological number, not a weight, and roughly triples the elves.</li>
 <div class="rec"><b>My lean: 1 and 2 together, flag off.</b> Slow-breeding peoples being somewhat rarer is honest and on-canon. If
 they're denser where they live and arrive in force, they should still be a real presence. Tell me rough densities if you have a feel
 for them (e.g. "dwarves like a farming people, elves a third of that"), and how big the portal waves should be.</div>
-<div class="note"><b>Still running:</b> lane 73's batches (the kobold date, fair starts for late arrivals, sharing, dwarves migrating
-like other mountain peoples). Their numbers land here when done.</div>
+<div class="note"><b>Lane 73 is merged.</b> Peoples who should share land now share it, a growing people gets a fading edge on
+held land, and late arrivals land where there's free room. The flag is built but switched off. On its own this barely moved dwarves
+(0.15–0.4% of people), but elves doubled to about 0.2–0.4% and gnomes reached 2% on one seed. Two general causes turned up, and
+they'd hit any tree, not just this one:
+(1) <b>a slow people stays stranded on the continent where its parent lived</b>. Dwarves sit on a continent with only 9% of good dwarf
+country;
+(2) <b>a people split off from the dragons inherits the dragons' worldwide range on day one</b>. That's how kobolds got everywhere
+first. Your seven runs still show the history before lane 73. I'll rebuild them once the robustness work below settles, so you
+aren't looking at a moving target.</div>
 <div class="answer">lane 73 · lane 76 report · drafts: life history, growth rate, portal arrivals, density rethink</div></div>
 </div>
+
+<h2 id="robust">Robust, not tuned</h2>
+<p class="sub">Your point: a preset that only works at one set of values is useless for Seven Meals, a five-race world, or a world with
+different races made common.</p>
+<div class="card"><div class="id">PEOPLES · new lane 77 · no decision needed</div>
+<h3>A stress test for the peoples history, before any more tuning</h3>
+<p>Each peoples change used to be judged on one or two seeds of one tree. That's how you end up with something that "barely works".
+Lane 77 builds the test every future change will have to pass instead:</p>
+<ul>
+<li><b>Several trees:</b> the D&amp;D preset, the Seven Meals tree, a 5-people and a 3-people cut, and one with a people added.</li>
+<li><b>Re-timed:</b> every split and arrival date moved by a random factor between ½ and 2×.</li>
+<li><b>Knobs that behave:</b> make a people denser, or its portal wave bigger, and its share must go up, smoothly, without collapsing
+anything else.</li>
+<li><b>No silent extinctions</b>, no people swallowing the world, several seeds each.</li>
+</ul>
+<p>The lane then reports which of today's fixes are general mechanisms and which were point fixes that only helped D&amp;D at one seed
+(the kobold date and dwarf mobility are suspects). It also ranks the general bugs, like the two above. Life history and density
+(D17) get judged on the same test.</p></div>
 
 <h2 id="mines">Mines are in: have a look</h2>
 <p class="sub">Lane 72 (your D12) is merged. Peoples who live by mining (dwarves, kobolds, gnomes, drow) now send mining towns of incomers
@@ -155,7 +180,7 @@ CO₂ drop. None is polar geography. So the next round goes after the root cause
 weathering, so CO₂ should build back) doesn't pull it out. Also, "ice must survive the warmest phase" is being softened to "thick
 enough to outlast it", as Greenland did in the last warm interglacial.</td><td>75</td><td>Short written diagnosis first, then a
 7-world screen with a combined batch</td></tr>
-<tr><td><b>Why mainline peoples are rare</b> (D17)</td><td>73</td><td>Testing two batches</td></tr>
+<tr><td><b>Peoples stress test</b>: robustness across trees, dates and knobs</td><td>77</td><td>Building and running, about 4 h</td></tr>
 <tr><td><b>Dragon paper, revised</b> (D14, D16): mortality split by age, a pressure setting per tech era, and the food-channel loss
 broken down by cause</td><td>63</td><td>Re-runs, then checks and peer review</td></tr>
 <tr><td>Source hunt, pass 2 (about 425 tech dates)</td><td>–</td><td>Once the web-search allowance refills</td></tr>
