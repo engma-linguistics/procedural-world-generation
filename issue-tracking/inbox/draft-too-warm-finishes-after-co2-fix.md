@@ -34,5 +34,9 @@ What to look at: the end-anchored balance (PW-865 option C keeps PCO2_BALANCE 50
 finish window's weathering. Is the late-window CO2 index sitting above 0 because the sink's reference was learnt
 during an icier, less weatherable stretch? Also look at the drift's share of the end T. The PW-1142 lane will
 show whether its ice fix changes the two ice-linked cases.
+Lane 71's screen (7 draws, 3 of them controls that finished in range on main) makes it worse with the ice
+fixes: with the warm-phase kitchen sink, two controls finish at +6.0 and +3.6 C; with the seasonal lapse alone,
+three finish at +4.1, +5.8 and +11.0 C. Less ice means a weaker albedo term at the end, so it may be the same
+carbon-balance warmth with less ice to hide it.
 - [ ] A written split of each warm finish's end T into CO2 term, albedo term and drift
 - [ ] A cause (or "chaos, accept") sent to the coordinator before any change
