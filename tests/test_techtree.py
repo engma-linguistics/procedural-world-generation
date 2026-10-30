@@ -235,12 +235,13 @@ def test_culture_matches_domains_capped_best_of():
 
 def test_floors_only_for_the_gated_techs_and_anchor_rates():
     assert TT.floor_of(T, "cultivation") is None and TT.floor_of(T, "storage") == 11.5  # (storage came 48 kyr after containers)
-    assert TT.floor_of(T, "villages") == 14.5 and TT.floor_of(T, "bow") == 64  # (the Pleistocene: hard)
+    assert TT.floor_of(T, "villages") == 14.3 and TT.floor_of(T, "bow") == 64  # (the Pleistocene: hard)
     assert TT.floor_of(T, "writing") is None and TT.floor_of(T, "copper") is None  # (the Holocene chain: soft)
-    assert TT.floor_of(T, "salting") == 8  # (Earth took 52 kyr after its prerequisites: the tree lacks the real one, so floored)
-    assert abs(TT.anchor_lag(T, "writing") - 4.1) < 1e-9  # (5.4 kyr after towns at 9.5)
+    assert TT.floor_of(T, "sledges") == 10  # (Earth took 390 kyr after its prerequisites: the tree lacks the real one, so floored)
+    assert TT.floor_of(T, "salting") is None  # (PW-1122: its real precondition, brine boiled in pots by villagers, made it soft)
+    assert abs(TT.anchor_lag(T, "writing") - 3.3) < 1e-9  # (5.3 kyr after proto-writing at 8.6)
     assert abs(TT.anchor_lag(T, "kilns") - 3.6) < 1e-9  # (from the glacial gate, 11.6, not from villages at 14.5)
-    assert T["techs"]["writing"]["needs"] == ["tokens", "towns"]
+    assert T["techs"]["writing"]["needs"] == ["tokens", "towns", "proto_writing"]
 
 
 def test_anchor_check_meets_earths_lag():
@@ -292,7 +293,7 @@ def test_aggressive_peoples_take_up_war_techs_faster():
     con = {"pairs": [{"a": "src", "b": "y", "first_contact_kyr": 3.0, "in_contact_now": True,
                       "series": [[3.0, 400, 0.0], [0.0, 400, 0.0]]}]}
     kit = ["wheel", "pack_animals", "war_chariot", "riding"]
-    T2 = {**T, "kind": [{"of": ["src"], "kit": kit}, {"of": ["y"], "kit": ["wheel", "pack_animals"]}]}
+    T2 = {**T, "kind": [{"of": ["src"], "kit": kit}, {"of": ["y"], "kit": ["wheel", "pack_animals", "riding"]}]}
     when = {}
     for traits in ([], ["aggressive"]):
         got = 0
@@ -303,3 +304,46 @@ def test_aggressive_peoples_take_up_war_techs_faster():
             got += (tt["known"]["y"].get("war_chariot") or [0, ""])[1] == "contact"
         when[bool(traits)] = got
     assert when[True] > when[False]
+
+
+def test_catalogue_ingested_with_domains_origins_and_honest_sources():
+    """PW-1122: the tech catalogue folded in: ~550 techs, every one with domains and a source; the catalogue rows carry Earth's
+    independent origins; a row the hunt did not verify says so."""
+    assert len(T["techs"]) >= 500
+    cat = [t for t in T["techs"].values() if "earth_origins" in t]
+    assert len(cat) >= 450 and all(t["earth_origins"] >= 1 for t in cat)
+    assert T["techs"]["copper"]["earth_origins"] == 4 and T["techs"]["writing"]["earth_origins"] == 5
+    for t in T["techs"].values():
+        assert TT.domains_of(t) and t.get("source")
+    assert "unverified" in T["techs"]["sling"]["source"]  # (the hunt looked and could not confirm it)
+    assert T["techs"]["copper"]["earliest_kyr"] == 6.95  # (the hunt's verified date for an existing tech)
+    # the food chains reach the history's own crops and herds
+    assert "crop_vine" in T["techs"]["wine"]["needs"] and "animal_cattle" in T["techs"]["ox_traction"]["needs"]
+
+
+def test_stock_techs_come_only_from_the_history():
+    """PW-1122: crop_<id> and animal_<id> are known from the history's first cultivation or take-up of that stock, never invented
+    or passed on by the tree; the generic cultivation still comes with any crop."""
+    lines = [line("human", at=200.0), line("orc", at=200.0)]
+    pres = {"crops": {"stocks": {"vine": {"tamed": [{"line": "human", "ago_kyr": 8.0}], "took_up_kyr": {"orc": 6.0}},
+                                 "rice": {"tamed": []}}}}
+    for s in range(3):
+        tt = TT.build(lines, None, pres, seed=s, T=T)
+        h, o = tt["known"]["human"], tt["known"]["orc"]
+        assert h["crop_vine"][:2] == [8.0, "tamed"] and h["cultivation"][0] == 8.0
+        assert o["crop_vine"][:2] == [6.0, "tamed"]
+        assert "crop_rice" not in h and "crop_rice" not in o  # (rate 0: no people invents a crop the history did not give it)
+        assert "wine" not in o or o["wine"][0] <= 6.0  # (wine waits for the vine)
+
+
+def test_needs_any_one_of_them():
+    """PW-1122: riding needs a mount (horse, great elk or riding lizard): one will do, none blocks it."""
+    assert "animal_horse" in T["techs"]["riding"]["needs_any"]
+    for mount, ok in (([], False), (["animal_horse"], True), (["animal_riding_lizard"], True)):
+        got = 0
+        for s in range(6):
+            T2 = {**T, "kind": [{"of": ["x"], "kit": ["pack_animals"] + mount}]}
+            tt = TT.build([line("x", at=6.0, track=_pop(1e7, 1.0, 6.0))], None, None, seed=s, T=T2)
+            got += "riding" in tt["known"]["x"]
+        assert (got >= 5) if ok else got == 0, (mount, got)
+    assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
