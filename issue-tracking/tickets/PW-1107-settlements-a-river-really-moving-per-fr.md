@@ -1,4 +1,5 @@
 ---
+id: PW-1107
 title: "Settlements: a river really moving (per-frame drainage) instead of the seeded stand-in"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-60
 blocked_by: []
 relates: [PW-1011, PW-908]
 refs: [planet/lineages/settlements.py, planet/lineages/history/model.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +23,6 @@ What to try: store a coarse drainage per recent frame, or at least a per-frame w
 - a reach whose flow falls under the navigable threshold strands its towns ("the river dried up");
 - a delta or floodplain cell where the sea level or sediment shifts the channel moves its site to the neighbouring cell. That could also be done in a regional zoom, at km scale.
 - [ ] settlements read a per-frame river signal; RIVER_SHIFT goes, or is kept only for floodplain avulsion with a cited rate
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlements-rivers-moving.md (found by fun-lane-60).

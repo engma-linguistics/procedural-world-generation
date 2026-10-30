@@ -1,4 +1,5 @@
 ---
+id: PW-1105
 title: "Settlements: a minority's own place inside another people's land (a dwarf hold in the humans' hills), not only the cell's chief place"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-60
 blocked_by: []
 relates: [PW-1011, PW-929, PW-910]
 refs: [planet/lineages/settlements.py, "run 6553f1", "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -24,3 +27,6 @@ What remains is that the dwarves seldom lead a cell (also PW-929: dwarves are re
 
 What to try: let a cell hold a second site for its second people (mix_second, at least ~15% of the heads) when that people can build. It would be a hamlet, hold or quarter town at its own spot (dwarves' on the highest ground of the cell). The globe would then show the dwarf holds and the kobold warrens inside the humans' country. Check against the PW-910 mixing preset (realistic vs fantasy-neat).
 - [ ] second-people sites; dwarves hold 20+ live sites on 4360a3 where they live mixed with humans
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlements-minority-holds.md (found by fun-lane-60).

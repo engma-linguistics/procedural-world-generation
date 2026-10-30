@@ -1,4 +1,5 @@
 ---
+id: PW-1108
 title: "Settlements: sacked, razed and walled: war and raids as a cause of a site's fall"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-60
 blocked_by: []
 relates: [PW-1011, PW-661, PW-961]
 refs: [planet/lineages/settlements.py, planet/lineages/contacts.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Then:
 
 Owner (PW-856, 10-25): crowding on a small landmass leads to conflict over resources. This belongs to the civilization epic.
 - [ ] a "sacked by" and "razed by" reason in the ledger, from stored contacts; walls matter
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlements-war-and-raids.md (found by fun-lane-60).

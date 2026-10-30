@@ -1,4 +1,5 @@
 ---
+id: PW-1109
 title: "Tech tree: bread (14.5 kyr) and fermentation (13 kyr) also miss the late-chain rate floor (late_kyr = 12), as villages did"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-60
 blocked_by: []
 relates: [PW-1011]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Options:
 - C: move late_kyr to 15, which catches all three and any later addition.
 
 Lean: C, but it shifts the dates of every people's bread and beer, so it is a call for the owner.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-late-chain-cutoff.md (found by fun-lane-60).
