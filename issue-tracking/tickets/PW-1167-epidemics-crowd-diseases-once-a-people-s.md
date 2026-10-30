@@ -1,4 +1,5 @@
 ---
+id: PW-1167
 title: "Epidemics: crowd diseases once a people's towns pass a few hundred thousand, virgin-soil losses at first contact, rare plague waves"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: []
 relates: [PW-917, PW-1108, PW-661]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/contacts.py, planet/lineages/history/cities.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Design: docs/review/peoples-counterpressures/design.md, section (c). Depends on 
 - [ ] plague pulses in the recent epoch; events for settlements (PW-1108) and the brief
 - [ ] meta.plague_early / plague_late / virgin_soil, per-line plague_x and crowd_disease, viewer controls
 - [ ] lane 77 arms (off / default / x4; virgin_soil 0 / 0.6 / 0.9) with post-pulse cell flips reported
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-epidemics-counterpressure.md (found by lane-82).

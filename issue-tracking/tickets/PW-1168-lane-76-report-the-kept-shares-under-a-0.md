@@ -1,4 +1,5 @@
 ---
+id: PW-1168
 title: "Lane 76 report: the kept shares under a 0.5%/yr loss (humans 43%) disagree with its own r of ~4.3%/yr (94%)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: []
 relates: [PW-917, PW-1148]
 refs: [docs/review/peoples-demography/report.md, docs/review/peoples-counterpressures/design.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Correct the report's bullets, or note which r they used, so later designs don't 
 only where little kills them" stands.
 
 - [ ] fix or annotate report.md section 3 "Steady losses"
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-lane76-sustainable-loss-figures.md (found by lane-82).

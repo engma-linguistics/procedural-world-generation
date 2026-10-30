@@ -1,4 +1,5 @@
 ---
+id: PW-1170
 title: Check the "require permanent ice" threshold (0.5% of the surface) and the existing 1% land-ice floor
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane81
 blocked_by: []
 relates: [PW-1164]
 refs: [planet/highlights.py, planet/tectonics/output.py, planet/make.py, viewer/start.js]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Two things to know:
 
 - [ ] Owner: keep 0.5% of the surface, or pick another floor
 - [ ] Decide whether the 1% land-ice floor of the standard finish should stay now that the setting exists
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-permanent-ice-threshold.md (found by lane81).

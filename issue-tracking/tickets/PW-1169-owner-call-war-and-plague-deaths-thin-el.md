@@ -1,4 +1,5 @@
 ---
+id: PW-1169
 title: "Owner call: war and plague deaths thin elves and dwarves long before kobolds; the brake on fast breeders has to be land, not deaths"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: []
 relates: [PW-917, PW-1108, PW-661, PW-1149]
 refs: [docs/review/peoples-counterpressures/design.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -41,3 +44,6 @@ Questions:
 3. What fall in the commonest people's share should the lane 77 suite expect at the default dials? That threshold is yours.
 
 Design and tables: docs/review/peoples-counterpressures/design.md.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-owner-thermostats-hit-slow-breeders.md (found by lane-82).

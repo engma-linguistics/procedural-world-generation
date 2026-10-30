@@ -1,5 +1,6 @@
 ---
-title: "Counter-pressures enter the history as one cut to carrying capacity, from the life tables (war, plague, famine, predation)"
+id: PW-1165
+title: Counter-pressures enter the history as one cut to carrying capacity, from the life tables (war, plague, famine, predation)
 type: task
 status: todo
 parent: PW-917
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: [PW-1148]
 relates: [PW-917, PW-1147, PW-1148, PW-1068, PW-1108, PW-661]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/history/model.py, planet/lineages/history/competition.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Design: docs/review/peoples-counterpressures/design.md, "The shared plug".
 - [ ] CounterMixin and the K multiplier, inert with every pressure at 0 (golden unchanged)
 - [ ] lost.* in the run output and the workbench
 - [ ] lane 77 suite reports lost.* and post-pulse cell flips
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-counterpressure-plug.md (found by lane-82).

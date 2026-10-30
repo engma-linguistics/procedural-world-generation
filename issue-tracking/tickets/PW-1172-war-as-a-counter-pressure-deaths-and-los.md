@@ -1,4 +1,5 @@
 ---
+id: PW-1172
 title: "War as a counter-pressure: deaths and lost land where peoples are crowded, stateless or ringed by enemies, with a per-era dial"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: []
 relates: [PW-917, PW-1108, PW-661, PW-1068]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/history/competition.py, planet/lineages/compose.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -45,3 +48,6 @@ Settlements (PW-1108) read the war intensity for sacking and walls. PW-661 build
 - [ ] h_war and the two kept factors in CounterMixin
 - [ ] meta.war_early / war_late / war_external, per-line war_x, viewer controls
 - [ ] lane 77 arms off / default / x2: slow breeders not lower than off; commonest people's share falls; no new brittle peoples
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-war-counterpressure.md (found by lane-82).

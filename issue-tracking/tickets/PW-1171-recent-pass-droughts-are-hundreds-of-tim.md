@@ -1,5 +1,6 @@
 ---
-title: "Recent-pass droughts are hundreds of times rarer than Earth's and run long; add shorter, smaller, more frequent ones (and a viewer dial)"
+id: PW-1171
+title: Recent-pass droughts are hundreds of times rarer than Earth's and run long; add shorter, smaller, more frequent ones (and a viewer dial)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane-82
 blocked_by: []
 relates: [PW-917, PW-661]
 refs: [planet/lineages/recent.py, docs/review/peoples-counterpressures/design.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -38,3 +41,6 @@ What to try (sizes from Cook & Seager's megadrought manuscript and Weiss 2016; r
 - [ ] drought class with Earth-like rate, duration and size; active-episode loop
 - [ ] bad_years dial and viewer control
 - [ ] episode statistics check against the design's table
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-recent-droughts-earthlike-rate.md (found by lane-82).
