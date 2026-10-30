@@ -2,7 +2,7 @@
 id: PW-1024
 title: "Rich temperate plains and lowland woods hold almost no dragons or giants: no kind's niche covers them; open niches should get filled"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -28,4 +28,5 @@ Lean: B, maybe with C as a preset choice. B is the systemic fix and works for ow
 Also check the 25 kyr -> present contraction of dragon range (46% -> 16% of rich empty cells occupied), which looks like a climate-driven range shift; find out why before building B.
 
 ## Updates
+- 2026-10-29: Status needs-decision -> todo. Owner 10-29: a mixture of A and B. In plain words: widen some kinds' climate ranges by hand where it suits them (A), and also let open niches fill on their own (B). The owner shared an outside note (another Claude's suggestion, not a sourced reference) on how D&D dragon kinds might fit cool continental plains Strong fits: blue (open dry shortgrass, storm country, lairs in loess bluffs); gold (cool open steppe, roaming over herders' country); copper (badlands, buttes and river breaks cutting through grassland). Accept it at the edges: green (forest-steppe, gallery forest, parkland); silver (lairs in distant mountains, ranging over the steppe); bronze (big rivers, steppe lakes, coasts); brass (hot dry margins, in summer); white (the harsh northern steppe, as winter visitors). Poor fits: red and black. Plan: (A) widen blue's rain/temperature range into dry continental grassland, gold's into cooler steppe, and add broken ground and badlands to copper's places; add a lower-suitability 'tolerates' tier for the edge fits. (B) ecological release for any kind, at reduced density, into neighbouring land no rival kind holds when prey is plentiful. Check the 25 kyr -> present range contraction first.
 - 2026-10-29: Created.

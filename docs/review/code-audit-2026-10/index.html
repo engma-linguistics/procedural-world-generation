@@ -1,0 +1,572 @@
+<title>Codebase Health Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column (~68ch) inside a wider frame; tables and figures may use the full frame width. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap");
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#18202c; --muted:#5a6475; --rule:#d9dee6;
+  --accent:#2c5aa8; --accent-soft:#e6edf8;
+  --high:#b42318; --high-bg:#fdecea; --med:#a15c07; --med-bg:#fdf3e2; --low:#4b5565; --low-bg:#eef0f3;
+  --ok:#25704a; --ok-bg:#e6f4ec;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1a2029; --ink:#e3e8ef; --muted:#9aa5b5; --rule:#2c3440;
+  --accent:#86aef0; --accent-soft:#1f2c42;
+  --high:#ff8a80; --high-bg:#3a1d1c; --med:#f0b45a; --med-bg:#3a2a12; --low:#b6bfcc; --low-bg:#262d37;
+  --ok:#7fd3a3; --ok-bg:#16301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1a2029; --ink:#e3e8ef; --muted:#9aa5b5; --rule:#2c3440;
+  --accent:#86aef0; --accent-soft:#1f2c42;
+  --high:#ff8a80; --high-bg:#3a1d1c; --med:#f0b45a; --med-bg:#3a2a12; --low:#b6bfcc; --low-bg:#262d37;
+  --ok:#7fd3a3; --ok-bg:#16301f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.col{max-width:68ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5vw,2.9rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.65rem;font-weight:600;margin-top:64px;padding-top:20px;border-top:2px solid var(--ink)}
+h3{font-size:1.15rem;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+.eyebrow{font:500 .75rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{display:grid;gap:14px;margin-top:22px}
+.lede p{font-size:1.06rem}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font:.8rem/1.4 var(--f-mono);color:var(--muted)}
+.intro{margin-top:12px;color:var(--muted)}
+.ref{font:.76rem/1.5 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.tk{font:500 .72rem/1 var(--f-mono);color:var(--accent);background:var(--accent-soft);padding:2px 5px;border-radius:3px;white-space:nowrap}
+.chip{display:inline-block;font:600 .68rem/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:3px;white-space:nowrap}
+.chip.high{color:var(--high);background:var(--high-bg)} .chip.med{color:var(--med);background:var(--med-bg)} .chip.low{color:var(--low);background:var(--low-bg)}
+.chip.yes{color:var(--ok);background:var(--ok-bg)} .chip.nv{color:var(--muted);background:var(--low-bg)}
+.chip.ref-y{color:var(--accent);background:var(--accent-soft)}
+/* findings */
+.list{display:grid;gap:14px;margin-top:22px}
+.item{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px 20px;display:grid;gap:10px;min-width:0}
+.item header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 10px}
+.item header h3{flex:1 1 320px;min-width:0}
+.item .chips{display:flex;gap:6px;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:7.5em 1fr;gap:6px 14px;max-width:80ch}
+.kv dt{font:600 .74rem/1.6 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.kv dd{margin:0;min-width:0}
+@media (max-width:560px){.kv{grid-template-columns:1fr}.kv dt{padding-top:6px}}
+/* figures */
+figure{margin:22px 0 0;display:grid;gap:8px}
+figure img{max-width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:4px}
+figcaption{font-size:.86rem;color:var(--muted);max-width:80ch}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.pair{grid-template-columns:1fr}}
+/* tables */
+.tbl{overflow-x:auto;margin-top:20px;border:1px solid var(--rule);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--rule)}
+th{font:600 .72rem/1.3 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--f-mono);white-space:nowrap}
+/* ux ranking */
+.rank{font:700 1.4rem/1 var(--f-display);color:var(--accent);min-width:1.6em}
+.ux header{flex-wrap:nowrap}
+.ux header h3{flex:1}
+ol.plain,ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.q{display:grid;gap:8px}
+.rec{border-left:3px solid var(--accent);padding:2px 0 2px 12px;font-size:.95rem}
+.rec b{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+details{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 16px;margin-top:14px}
+summary{cursor:pointer;font-weight:600}
+details > *:not(summary){margin-top:10px}
+.batch{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;margin-top:22px}
+.batch .step{font:700 .78rem/1.6 var(--f-mono);color:var(--accent);padding-top:3px;white-space:nowrap}
+.batch > div{padding-bottom:18px;border-bottom:1px solid var(--rule);min-width:0}
+.batch > div:nth-last-child(-n+1){border-bottom:0}
+.keep{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:20px}
+.keep div{border-top:2px solid var(--ok);padding-top:10px;min-width:0}
+.keep b{display:block;margin-bottom:4px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:26px;font:.82rem/1.5 var(--f-mono)}
+.toc a{text-decoration:none}
+.toc a:hover,.toc a:focus-visible{text-decoration:underline}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow">procgen_world · codebase audit · 29 Oct 2026 · main at b36c9581</p>
+<h1 style="margin-top:12px">Codebase Health Check</h1>
+
+<div class="col lede">
+  <p>Short version: the codebase is in good shape for a project that has grown this fast. The physics is careful, nearly every number says where it came from, and there's a strong safety net: 744 tests, plus "golden" checks that catch any accidental change to a simulation. The layers are cleanly separated, and an automatic code checker finds only 26 problems in 55,000 lines of Python. A lot of this is worth keeping exactly as it is.</p>
+  <p>The debt is the usual kind for prototypes that kept getting built on. Small helpers have been copied into each new file, and some copies have since drifted, so two parts of the model now give different answers to the same question. A few storage paths can quietly lose work or keep showing something stale. Four or five files have grown so large that changing one part risks breaking another. The viewer gained a button for every new feature, so it now shows you everything at once rather than what you came to see.</p>
+  <p>Nothing here is on fire. About a dozen straight fixes are worth doing soon because they cost you time or data in practice. The viewer redos would change your day-to-day experience the most. The bigger reorganisations are optional, and each one waits for your yes.</p>
+</div>
+<div class="meta"><span>9 auditors · merged and spot-checked</span><span>~92k lines (py / js / html)</span><span>25 inbox drafts filed</span></div>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#fix">Fix soon</a><a href="#ux">Viewer look and feel</a><a href="#consolidate">Consolidate</a><a href="#split">Split</a><a href="#design">Design decisions</a><a href="#house">Housekeeping</a><a href="#keep">Keep doing this</a><a href="#questions">Questions for you</a><a href="#order">Order of work</a><a href="#notes">Audit notes</a>
+</nav>
+
+<!-- ============================================================ FIX SOON -->
+<h2 id="fix">Fix soon: real bugs and risks</h2>
+<p class="col intro">These are straight fixes with no design choice involved, and none needs a refactor approval. The <span class="chip yes">verified</span> chip means I re-checked the cited code on main myself. <span class="chip nv">read</span> means the auditor read the code but nobody re-ran it. Each item has an inbox draft (<span class="mono">issue-tracking/inbox/draft-…</span>).</p>
+
+<div class="list">
+
+<article class="item">
+  <header><h3>The peoples editor's option lists are stale, and your "food" setting isn't offered</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>You can't tick the traits "aggressive" and "hunter", and five land goods are missing (fish, shellfish, salt, rock salt, sea mammals). The dragon-density menu has no "food" option. When you open the D&amp;D tree, which is set to food, the menu shows "from the prey (default)", and its tooltip still says the choice is waiting on your review. The "target era" field says nothing reads it, but the tech tree does. Nothing has been lost yet, because the editor only writes a setting when you change it. What it shows you is still wrong.</dd>
+    <dt>Fix</dt><dd>The server sends the editor its lists (traits, goods, modes, defaults) straight from the Python spec, so they can't drift again. A test checks that no hand-copied lists are left.</dd>
+    <dt>Effort</dt><dd>small (under 2 h)</dd>
+  </dl>
+  <p class="ref">viewer/lineages.html:100-123, :490, :627 · spec.MEGAFAUNA_NATURAL = (food, prey, mesotherm, mammal), default food · <span class="tk">PW-795</span> <span class="tk">PW-990</span> · draft-peoples-editor-reads-spec-schema</p>
+</article>
+
+<article class="item">
+  <header><h3>Slicing a world replays from the very start after almost any code edit</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>A run keeps checkpoints so it can rebuild any moment quickly. But the "has the code changed?" test covers every Python file, including the web server and the zoom, so in practice every merge makes every run ignore its checkpoints. Rebuilding a moment then costs 30–40 minutes per billion years at L7. Meanwhile three other caches use their own, narrower definitions of "changed", so some miss edits that do matter. The highlights cache, for example, ignores changes to the world itself.</dd>
+    <dt>Fix</dt><dd>Always try the latest checkpoint, and fall back to the start only if it won't load. The existing keyframe comparison already refuses a wrong replay. Then use one hashing function with named scopes (simulation, finish, lineages, highlights) for every cache.</dd>
+    <dt>Effort</dt><dd>small</dd>
+  </dl>
+  <p class="ref">provenance.py:28 source_sha · timeline.py:304-321 · store.py:119 code_digest · highlights.py:145 VERSION · <span class="tk">PW-089</span> (closed on the warning message alone; reopen) · draft-replay-from-checkpoint-and-one-code-hash</p>
+</article>
+
+<article class="item">
+  <header><h3>A crash or Ctrl-C near the end of a run deletes the whole run, checkpoints included</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>If a 1 Gyr L7 run is cancelled at 95%, the folder is wiped, including the checkpoints a future "resume" (<span class="tk">PW-508</span>) would restart from.</dd>
+    <dt>Fix</dt><dd>Write the run's header with a "running" status at the start, and keep the folder on interrupt. The cleanup tools already know how to clear unfinished runs. Do this as part of PW-508, not as a stopgap.</dd>
+    <dt>Effort</dt><dd>small for the keep-the-folder part; medium with streaming keyframes to disk (<span class="tk">PW-801</span>)</dd>
+  </dl>
+  <p class="ref">timeline.py:155-163 <code>except BaseException: shutil.rmtree(out)</code> · draft-run-interrupt-keeps-checkpoints (suggest <code>intake --merge-into PW-508</code>)</p>
+</article>
+
+<article class="item">
+  <header><h3>Peoples-run passes can silently undo each other</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>Land use, fuels, demes and the tech tree each rewrite the whole <code>run.json</code> with no lock. If a viewer job and a command touch the same peoples run at once, the later one drops the earlier one's results. Two caches also write to fixed temporary file names, so two processes can swap each other's half-written files. And new ids are never checked for a clash with an existing one.</dd>
+    <dt>Fix</dt><dd>Add one <code>store.update_meta</code> helper that locks, re-reads, applies and writes atomically, and use it in all four passes. Give temporary files unique names, and loop new ids until one is free.</dd>
+    <dt>Effort</dt><dd>small</dd>
+  </dl>
+  <p class="ref">landuse.py:253-258 · fuels.py:223-231 · demes.py:820-824 · techtree.py:343-353 · recent.py:217 · land.py:246 · store.new_id · draft-store-concurrent-writes-lose-data</p>
+</article>
+
+<article class="item">
+  <header><h3>Any programming error while building a world turns into a silent hour-long replay</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>The viewer says "old run: replaying…" and spins for up to an hour, then fails or saves something different. The real error is never shown. The catch was meant for "this run is too old", but any ValueError from numpy anywhere in the finish (climate, soils, vegetation) lands there too. Several other "if it's missing, pretend" defaults turn an old run into a subtly different world instead of an error.</dd>
+    <dt>Fix</dt><dd>Delete the fallback (or raise a dedicated <code>RunTooOld</code>), and make the old-run defaults strict with a "delete and re-run" message. This follows your no-backward-compatibility rule.</dd>
+    <dt>Effort</dt><dd>under 30 min</dd>
+  </dl>
+  <p class="ref">api.py:180-185 · timeline.py:206-210, 403-412 · params.py:198-208 from_stored · draft-old-run-fallbacks-hide-bugs</p>
+</article>
+
+<article class="item">
+  <header><h3>Any web page you visit can start jobs on the local server</h3><div class="chips"><span class="chip high">high</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>Nothing, which is the problem. The server accepts "make a planet / zoom / peoples run" requests from any site open in your browser, and those requests write files and use CPU.</dd>
+    <dt>Fix</dt><dd>Refuse a POST whose <code>Origin</code> isn't the server itself, and require a JSON content type.</dd>
+    <dt>Effort</dt><dd>under 30 min</dd>
+  </dl>
+  <p class="ref">server.py:452 do_POST (no Origin or Content-Type check; a text/plain POST needs no CORS preflight) · draft-server-rejects-cross-site-posts</p>
+</article>
+
+<article class="item">
+  <header><h3>Stale geometry and stale worlds are served without a warning</h3><div class="chips"><span class="chip med">medium</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>(1) The globe's cell layout file is written once per grid level and never refreshed. If the grid code changes (<span class="tk">PW-444</span> plans to touch it), everything gets drawn onto the wrong cells with no error. (2) Asking for a world at a moment reuses any world made at that moment, including ones made by older code, with resources switched off, or force-saved after a mismatch. After a climate change merges, you keep seeing the old world.</dd>
+    <dt>Fix</dt><dd>Store a fingerprint in the grid file and rewrite it when the fingerprint differs. Store a "finish key" (code, erosion, resources) in each world and match on it.</dd>
+    <dt>Effort</dt><dd>small</dd>
+  </dl>
+  <p class="ref">store.py:540-552 write_grid (also reads the whole ~20 MB L7 file on every save) · api.py:132-144 find_slice · draft-stale-grid-file-and-reused-worlds</p>
+</article>
+
+<article class="item">
+  <header><h3>Random-number streams that are meant to be separate are the same stream</h3><div class="chips"><span class="chip med">medium</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What happens</dt><dd>The starting rock ages draw exactly the numbers that step 7 uses for volcanoes and rifts. Likewise the mantle eddies share step 11's numbers and the reef date shares step 13's. Zoom seeds made by adding small integers (seed + 7) collide across seeds, and two noise "salts" each feed two unrelated features. Runs stay repeatable, but these draws are correlated by accident, and every new "spare" number can clash again.</dd>
+    <dt>Fix</dt><dd>Add a tiny <code>planet/rng.py</code> that names every stream (<code>stream(seed, "setup.rock_ages")</code>) and mixes a hash of the name in. This is the pattern lineages already uses (<span class="tk">PW-779</span>). Outputs change once, on purpose.</dd>
+    <dt>Effort</dt><dd>small</dd>
+  </dl>
+  <p class="ref">simulation.py:238 [seed, step_no] vs setup.py:159 [seed, 7], mantle.py:185 [seed, 11], earth.py:1126 [seed, 13] · zoom.py:2381, 1306 · zoom_volcanoes.py:267/290 vs zoom.py:1950/2054 · draft-rng-named-streams</p>
+</article>
+
+<article class="item">
+  <header><h3>River flow assumes every cell is the same size; real cells range from 0.67× to 1.21× the average</h3><div class="chips"><span class="chip med">medium</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What happens</dt><dd>Near the grid's 12 corner points, rivers carry up to a third too little water, or a fifth too much. That feeds floodplains, deltas, navigable rivers and the culinary fish and salt thresholds (<span class="tk">PW-820</span>). The island and sea size tests that steer currents and tides lean the same way. The code comment claims "about 9%".</dd>
+    <dt>Fix</dt><dd>Use the true cell area, which already exists in <code>ocean.py</code>, and make one <code>discharge()</code> function that every caller uses. Goldens move a little; re-run the scorecard.</dd>
+    <dt>Effort</dt><dd>small, plus a medium sweep of the ~25 copies</dd>
+  </dl>
+  <p class="ref">probe on L6: min/mean 0.675, max/mean 1.206 · hydrology.py:110 · vegetation.py:812 · coast.py:534/541/688 · climate.py:863 · <span class="tk">PW-444</span> · draft-true-cell-areas-in-river-flow</p>
+</article>
+
+<article class="item">
+  <header><h3>Zoom copies have drifted: the same island gets different climates at two zoom levels, and two helpers wrap around the map edge</h3><div class="chips"><span class="chip med">medium</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>A small volcanic island, which the world map treats as sea, can be any of eight climate types in a regional zoom but only three in a fine zoom. Separately, two "grow this shape by N pixels" helpers wrap around: something touching the left edge also grows on the right. That mostly lands in the margin that gets cropped off, but the preview image can show it. A third copy of the climate step patches biome rules whose output is thrown away a few lines later.</dd>
+    <dt>Fix</dt><dd>One shared finish-climate function for both zooms, and non-wrapping <code>dilate</code>/<code>shift</code> helpers. Delete the dead biome patch.</dd>
+    <dt>Effort</dt><dd>small each</dd>
+  </dl>
+  <p class="ref">zoom.py:3204 vs zoom_fine.py:1218 · zoom.py:3447 and zoom_landforms.py:1415 use np.roll · zoom_falls.py:183-190 · zoom.py:3215 / zoom_fine.py:1223 dead patch · draft-zoom-fine-finish-climate-drift, draft-zoom-dilate-wraps-at-edges</p>
+</article>
+
+<article class="item">
+  <header><h3>Climate helpers that disagree: five rules for "is the sea frozen?", and two evaporation rules</h3><div class="chips"><span class="chip med">medium</span><span class="chip nv">read</span></div></header>
+  <dl class="kv">
+    <dt>What happens</dt><dd>Waves, tides, kelp, the sea-ice colour, the rain and the deep ocean each decide "frozen" their own way, so a coast can be frozen for its waves and open for its rain. The soils use a fixed evaporation constant while the rivers use the vegetation's own, so a forest's soil and its rivers see different water balances.</dd>
+    <dt>Fix</dt><dd>One sea-ice layer computed once and read everywhere, and one evaporation function that takes the vegetation's value. Same family of problem as <span class="tk">PW-877</span>/<span class="tk">PW-934</span> (snow and permafrost).</dd>
+    <dt>Effort</dt><dd>small to medium</dd>
+  </dl>
+  <p class="ref">climate.py ~2618, :2130, :2395 · ocean.py:216 · coast.py:390 · soils.py:171/200 FU_W = 2.6 · draft-climate-copies-drifted</p>
+</article>
+
+<article class="item">
+  <header><h3>Peoples model: tech rules miss your giants, and defaults are written in three places</h3><div class="chips"><span class="chip med">medium</span><span class="chip nv">read</span></div></header>
+  <dl class="kv">
+    <dt>What happens</dt><dd>The tech tree's "who starts with what" rules use the D&amp;D preset's names. Seven Meals calls its giants <code>giant</code>, not <code>true_giant</code>, so they silently aren't an elder kind, and the edge_folk rule matches nothing at all. The dragon defaults live in three places that disagree. Dragons and giants are fed from differently sized cows (711 vs 625 Mcal a head).</dd>
+    <dt>Fix</dt><dd>Warn when a rule matches no people and let rules list several names. Keep one source of defaults, one "head of cattle" record, and import the constants that are currently copied.</dd>
+    <dt>Effort</dt><dd>under 30 min to small</dd>
+  </dl>
+  <p class="ref">samples/techtree.toml:59-87 · techtree.py:88 · Tree.dragon_ages "base" vs DA.DEFAULT "younger" · dragon_ages.py:39 vs megafauna.py:83 · <span class="tk">PW-946</span> <span class="tk">PW-992</span> · draft-techtree-kind-rules-match-preset-ids, draft-lineages-defaults-and-constants-drifted</p>
+</article>
+
+<article class="item">
+  <header><h3>Seconds-per-year and other physical constants are typed out many times, with two different values</h3><div class="chips"><span class="chip low">low</span><span class="chip yes">verified</span></div></header>
+  <dl class="kv">
+    <dt>What happens</dt><dd>Seconds per year is <code>3.156e7</code> in six files and <code>365.25 × 86400</code> (3.15576e7) in two. That's a 0.005% difference, so the result barely moves. The real cost comes later: gravity, ice density, Earth's radius and the 14.5 °C reference are copied the same way, and other planets (<span class="tk">PW-481</span>) will need each of them to be one knob.</dd>
+    <dt>Fix</dt><dd>A <code>planet/constants.py</code>. About 30 minutes.</dd>
+    <dt>Effort</dt><dd>under 30 min</dd>
+  </dl>
+  <p class="ref">coast.py:578, zoom.py:177, highlights.py:148, ocean.py:557, vegetation.py:813, hydrology.py:110 vs climate.py:2498, timezoom/kernels.py:337 · 9.81 ×16, 917 ×11 (auditor counts) · draft-physical-constants-module</p>
+</article>
+
+<article class="item">
+  <header><h3>The viewer redraws and re-downloads more than it needs to</h3><div class="chips"><span class="chip med">medium</span><span class="chip nv">read</span></div></header>
+  <dl class="kv">
+    <dt>What you see</dt><dd>Likely part of the peoples "chug" (<span class="tk">PW-679</span>): every frame of a replay repaints every label and re-uploads the cloud picture. The server also tells the browser never to keep a copy of anything, so every reload, and every embedded globe in the Technology tab, downloads a ~100 MB run again.</dd>
+    <dt>Fix</dt><dd>Cache the labels and only move them. Stop disposing the cached texture. Let the browser revalidate data files instead of re-fetching them (ETag / 304).</dd>
+    <dt>Effort</dt><dd>small</dd>
+  </dl>
+  <p class="ref">server.py:314-316 Cache-Control: no-store (verified) · index.html paint → buildOverlays ~1678, disposeObj ~1822, cloudCache ~1919 · draft-viewer-redraw-and-reload-waste</p>
+</article>
+
+</div>
+
+<!-- ============================================================ UX -->
+<h2 id="ux">Viewer look and feel</h2>
+<p class="col intro">Ranked by how much each would improve daily use. These are UI changes, not code refactors. The mock-up at the end shows the top four as before and after. A UX auditor drove its own copy of the server with headless Chrome to take the screenshots.</p>
+
+<div class="list">
+
+<article class="item ux">
+  <header><span class="rank">1</span><h3>Neighbouring peoples share a colour</h3><span class="chip high">high</span></header>
+  <p>In the D&amp;D run, 66 peoples use only 35 colours. Kobolds and dragonborn are the identical brown and live side by side on Hizam. Leonin and firbolgs share a navy that almost vanishes against the ocean. Green dragons are tan. The peoples map is your main view, and here it reads two peoples as one. The fix: pick colours when a run is saved, so that peoples whose ranges touch never share one. Give each family a hue (dragons in the reds, named by their own colour; giants in the blues; fey in the violets) and tell siblings apart by lightness.</p>
+  <p class="ref">history/params.py PALETTE (27 colours) · output.py:73 PALETTE[used % 27] (verified) · <span class="tk">PW-1023</span> · draft-peoples-distinct-colours</p>
+</article>
+
+<figure>
+  <img src="img/g2-2-hover.jpg" alt="Globe on a peoples run: the left panel has a long column of Colour by buttons, the peoples legend covers the lower part of the globe, and several legend swatches repeat the same brown and grey." loading="lazy">
+  <figcaption>Peoples run 3097e3. Three problems at once: the 54-button "Colour by" column (left), the 45-entry legend over the bottom of the globe with unlabelled event checkboxes at its end, and repeated swatches (dragonborn and kobolds, for example).</figcaption>
+</figure>
+
+<article class="item ux">
+  <header><span class="rank">2</span><h3>"Colour by" is a wall of 54–76 buttons</h3><span class="chip high">high</span></header>
+  <p>A peoples run shows 54 flat buttons and a finished world 76, and the zoom has another 46 with different names. Thirty of them are "crop: …" and "animal: …", some still in code spelling (crop: foxtail_millet). The panel is so tall that Overlays sits below the fold. The fix: a search box, a "recent" row, collapsible groups (Land and sea, Climate, Plants and soils, Peoples, Food and kit, Game and use, Coast), and a single dropdown each for crop, animal and body trait, the way tech and resource already work. Use the same groups and names on the zoom page. Existing links keep working.</p>
+  <p class="ref">index.html #layerSeg · zoom.html #layerSeg · draft-colour-by-grouped-picker</p>
+</article>
+
+<article class="item ux">
+  <header><span class="rank">3</span><h3>The legend covers the globe</h3><span class="chip high">high</span></header>
+  <p>The climate (30 entries) and peoples (45 entries) legends hide about a third of the globe. Ten event checkboxes sit inside the legend with no heading, and the rings they control are never explained. The fix: dock the legend in the empty right column, starting with name, season and unit and a bar with ticks. Mark the hovered value on the bar. Show the top 8 categories with "+N more", and move the event filters under Overlays, each with its ring colour.</p>
+  <p class="ref">index.html #legend ~2790 · <span class="tk">PW-409</span> (done) took the first step · draft-legend-docked-out-of-the-map</p>
+</article>
+
+<article class="item ux">
+  <header><span class="rank">4</span><h3>First look: wrong moment, buried zoom, unsearchable start page</h3><span class="chip high">high</span></header>
+  <p>A peoples run opens 20 million years ago, when nobody exists yet, so the peoples map is grey. A regional zoom opens with waterfalls, volcanoes and 984 deposit symbols switched on over the satellite picture. The start page lists 59 cards in creation order with names like <code>desert-new-s2</code>, with no search or sort and no sign of which planets have peoples. The fix: open peoples runs at the present. Turn only rivers on in the zoom by default and remember your choices. Add search, sort and a "has peoples" filter to the start page, and rename "All 1" to "Family (1)".</p>
+  <p class="ref">zoom.html:114-119 falls/volc/dep checked (verified) · start.js:123 · <span class="tk">PW-551</span> · draft-first-look-opens-where-the-interest-is</p>
+</article>
+
+<div class="pair">
+  <figure><img src="img/z-1-default.jpg" alt="Regional zoom as it opens: the map is covered in deposit symbols and waterfall triangles." loading="lazy"><figcaption>Zoom 80a169 as it opens.</figcaption></figure>
+  <figure><img src="img/z-2-clean.jpg" alt="The same zoom with waterfalls, volcanoes and deposits switched off, showing the satellite landscape." loading="lazy"><figcaption>The same zoom with three checkboxes off.</figcaption></figure>
+</div>
+
+<article class="item ux">
+  <header><span class="rank">5</span><h3>The time slider has no dates, and its steps are uneven</h3><span class="chip med">medium</span></header>
+  <p>The slider moves one stored moment per step. On a peoples run, 15 moments cover the first 19 million years and 21 cover the last 10,000, so they take about the same room. Where the handle sits says nothing about when you are. The fix: reuse the workbench's log time axis with era bands and ticks at 10 Myr, 1 Myr, 100 kyr, 10 kyr and 1 kyr, with the event marks on it. Main runs keep a linear axis with ticks.</p>
+  <p class="ref">index.html:312-317, timeLabel ~3133 · lineages.html:244-296 · <span class="tk">PW-918</span> · draft-time-slider-axis</p>
+</article>
+
+<article class="item ux">
+  <header><span class="rank">6</span><h3>Colour ramps don't match between globe and zoom, and many fold back on themselves</h3><span class="chip med">medium</span></header>
+  <p>Temperature on the globe runs blue → white at 0 °C → yellow → red. In the zoom, 10 °C is green. Rain and soil fertility differ too, because each page keeps its own copy of the colours. Separately, about 15 "how much" ramps (wave power, tides, floods, sunshine, fire, soil depth, building ground, humidity…) get lighter and then darker again, so the lowest and the highest values both look dark. The fix: one shared ramp file for both pages, and rebuild those ramps so lightness only rises or only falls. The diverging ramps, elevation and Köppen stay as they are. This is a matter of taste, so you'd get before/after pictures.</p>
+  <p class="ref">index.html:452 vs zoom.html:235 TEMP (verified) · lightness re-checked: wave power L* 20→81→58, river floods 39→85→41, soil depth 54→79→28 · draft-colour-ramps-shared-and-monotonic</p>
+</article>
+
+<div class="pair">
+  <figure><img src="img/g1-L-temperature.jpg" alt="Globe coloured by annual temperature from blue through pale yellow to red." loading="lazy"><figcaption>Temperature on the globe: the warm half runs pale yellow to red.</figcaption></figure>
+  <figure><img src="img/z-L-Temperature.jpg" alt="Regional zoom coloured by temperature, mostly green and yellow." loading="lazy"><figcaption>Temperature in a zoom: green in the middle, on a fixed −30…30 °C range, so a region spanning a few degrees reads as nearly flat.</figcaption></figure>
+</div>
+
+<article class="item ux">
+  <header><span class="rank">7</span><h3>Errors, loading and dead ends</h3><span class="chip med">medium</span></header>
+  <p>A bad link shows "Unexpected token '&lt;' … is not valid JSON" in the small hover box, leaves half-built panels behind, and keeps Delete enabled. Switching layers lights the new button straight away, but the old picture stays for seconds with no sign that anything is loading. Clicking a cell on a peoples run offers "Zoom into this region", then says it can't, with no button to go where it can. Behind the scenes, picking two runs quickly lets the slower one win, and a server restart during a peoples run stops its progress display without a word. The fix: a plain error card, a spinner, an "open the source run" button, and guards on the loads.</p>
+  <p class="ref">index.html:4371 · lineages.html:898-909 · zoom.html:458 (no r.ok) · <span class="tk">PW-914</span> · draft-viewer-error-and-loading-states</p>
+</article>
+
+<div class="pair">
+  <figure><img src="img/g2-3-click.jpg" alt="Hover card after clicking a cell on a peoples run, offering a zoom and then saying no regional zooms of a time zoom." loading="lazy"><figcaption>The dead end: the zoom offer on a peoples run (top right card).</figcaption></figure>
+  <figure><img src="img/e-2-badrun.jpg" alt="Viewer after loading a non-existent run id, with a raw JSON parse error message." loading="lazy"><figcaption>A bad run id: a raw parser error and an enabled Delete.</figcaption></figure>
+</div>
+
+<article class="item ux">
+  <header><span class="rank">8</span><h3>Text that shows internals, and small layout breaks</h3><span class="chip low">low</span></header>
+  <p>A peoples run's summary is titled "TIME ZOOM AND EVENTS". The floating hover tip follows the mouse onto the side panel and keeps showing old text. The population bars are on a log scale without saying so, which makes 310 million and 1.6 million look almost equal. Tech names are cut mid-word ("bread and flatbread bakin"), and a results table leaves a 340 px gap. Several help paragraphs tell you to type <code>uv run python -m planet …</code>, though you use the viewer. All of these are small fixes.</p>
+  <p class="ref">index.html:3122 · lineages.html:762, 61-76 · <span class="tk">PW-841</span> · draft-viewer-text-and-layout-polish</p>
+</article>
+
+<div class="pair">
+  <figure><img src="img/l-tech.jpg" alt="Technology tree view with tech names truncated mid-word in fixed-width boxes." loading="lazy"><figcaption>Tech names cut mid-word.</figcaption></figure>
+  <figure><img src="img/l-results.jpg" alt="Workbench results tab with scientific notation and a stretched landmass table." loading="lazy"><figcaption>Workbench results: "1.3e+02 Mkm²" and stretched rows.</figcaption></figure>
+</div>
+
+<article class="item ux">
+  <header><span class="rank">9</span><h3>One look, defined four times</h3><span class="chip low">low</span></header>
+  <p>Each viewer page defines its own colours and button styles, slightly differently. Sliders and checkboxes show the browser's default bright blue in places, and the workbench has a raw "Choose File" box. One shared style file fixes these together and makes every later redo cheaper.</p>
+  <p class="ref">:root tokens copied in index.html, zoom.html, ringworld.html; lineages.html has its own set · 165 hex literals in index.html · draft-viewer-shared-theme</p>
+</article>
+
+<article class="item ux">
+  <header><span class="rank">10</span><h3>Three ways to navigate on one page</h3><span class="chip low">low</span><span class="chip ref-y">needs your yes</span></header>
+  <p>There's the left-panel picker, the breadcrumb, and the Globe/Regional zoom tabs. Delete is the third control on the page. The breadcrumb, with its Family dropdown, is the best of the three: make it the one navigator, put Delete in a "⋯" menu, and give the freed space to the layer picker. This touches navigation code, so it isn't drafted. It's listed for your decision.</p>
+  <p class="ref">index.html:190-196 · navigator.js</p>
+</article>
+
+</div>
+
+<figure>
+  <img src="img/mock-redo.jpg" alt="Static mock-up comparing before and after for four redos: grouped Colour by picker, docked legend, time slider with a log axis, and a plain-words error card." loading="lazy" style="max-width:760px">
+  <figcaption>The UX auditor's static mock-up of redos 2, 3, 5 and 7, built from the viewer's own colours. Sketches only: no data, no behaviour.</figcaption>
+</figure>
+
+<!-- ============================================================ CONSOLIDATE -->
+<h2 id="consolidate">Consolidate: things written more than once</h2>
+<p class="col intro">Each copy works today. The cost shows up when someone fixes one copy and not the others, which has already happened several times (ramps, zoom climate, sea ice, the editor lists). Most rows are mechanical refactors that need your yes; the bug parts are already under "Fix soon".</p>
+
+<div class="tbl"><table>
+<thead><tr><th>What</th><th>Copies</th><th>Proposed shared home</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Cell area <code>4πR²/n</code></td><td class="n">~25</td><td><code>Grid.cell_area_km2</code></td><td>Also wrong (cells differ in size). <span class="tk">PW-444</span></td></tr>
+<tr><td>Great-circle distance, written inline</td><td class="n">57 + 2 helpers</td><td><code>geo.gc_km</code> / <code>Grid.dist_km</code></td><td>14 in highlights.py alone</td></tr>
+<tr><td>Connected regions (<code>climate._label</code> = <code>kernels.components</code>)</td><td class="n">2</td><td><code>grid.components</code></td><td>Code-identical (verified); delete one</td></tr>
+<tr><td>Neighbour mean / max</td><td class="n">6</td><td><code>Grid.nbr_mean</code></td><td>climate, coastal, coastform, highlights, generators, lineages</td></tr>
+<tr><td>Flow accumulation; river discharge units</td><td class="n">3; 1 + 5 inline</td><td><code>kernels.accumulate</code>; <code>hydrology.discharge</code></td><td></td></tr>
+<tr><td>Box blur (zoom)</td><td class="n">6, 3 edge rules</td><td><code>planet/raster.py</code></td><td>Three are byte-identical (verified)</td></tr>
+<tr><td>Dilate a mask</td><td class="n">~7</td><td><code>raster.dilate</code> / <code>Grid.dilate</code></td><td>Two wrap at the edge (Fix soon)</td></tr>
+<tr><td>Smoothstep; clipped ramp</td><td class="n">7; 2</td><td><code>planet/mathx.py</code></td><td></td></tr>
+<tr><td>Zoom pixel grid; coarse-cell selection</td><td class="n">8; 3</td><td><code>Frame.pixels</code>, <code>Frame.coarse_cells</code></td><td>Unnamed √2/2 and margin</td></tr>
+<tr><td>Colour ramps (globe JS, zoom JS, thumbs, satellite, zoom.py)</td><td class="n">4 tables, 3 ramp functions</td><td><code>viewer/ramps.js</code> + <code>planet/ramps.py</code></td><td>Already disagree (UX 6)</td></tr>
+<tr><td>A viewer layer's definition</td><td class="n">~8 places</td><td>one <code>LAYERS</code> table in the viewer</td><td>"river floods" appears on 7 lines of index.html</td></tr>
+<tr><td>"Post a job, then poll it" (JS)</td><td class="n">6</td><td><code>planets.js postJob/trackJob</code></td><td>The lineages copy breaks on a server restart</td></tr>
+<tr><td>kyr/Myr formatting; HTML escape; label sprites</td><td class="n">5; 4; 4</td><td><code>viewer/util.js</code></td><td>Different rounding each</td></tr>
+<tr><td>Atomic file write</td><td class="n">7</td><td><code>store.atomic_path</code></td><td>Two use fixed temp names (Fix soon)</td></tr>
+<tr><td>"Which run do you mean?" id resolver (CLI)</td><td class="n">6</td><td><code>store.resolve_ref</code></td><td></td></tr>
+<tr><td>Code-changed hashes</td><td class="n">4 schemes</td><td><code>provenance.code_hash(scope)</code></td><td>Fix soon</td></tr>
+<tr><td>Sea-ice rule; Budyko evaporation</td><td class="n">5; 4</td><td>ocean.py layer; one <code>budyko()</code></td><td>Fix soon</td></tr>
+<tr><td>Way-of-life facts (herders, foragers, fishers)</td><td class="n">6 modules</td><td>one <code>WAYS</code> table in spec</td><td>A 9th way would touch 6 files</td></tr>
+<tr><td>Peoples editor lists (JS mirror of Python)</td><td class="n">2</td><td><code>/api/lineage-schema</code></td><td>Fix soon</td></tr>
+<tr><td>D&amp;D and Seven Meals presets</td><td class="n">15 identical lines, 24 rows</td><td>shared "dragons and giants" include</td><td>Already drifted (food vs prey)</td></tr>
+<tr><td><code>--set k=v</code> parsing in tools; <code>sys.path</code> hacks</td><td class="n">6; 20</td><td><code>tools/_common.py</code>; <code>python -m tools.x</code></td><td>Only one parser handles booleans</td></tr>
+<tr><td>Test "island world" fixture; <code>_dist_km</code></td><td class="n">~6; 6</td><td><code>tests/helpers.py</code> + conftest</td><td>Breaks in 6 places when <code>W.finish</code> changes</td></tr>
+</tbody></table></div>
+<p class="ref" style="margin-top:8px">Counts are the auditors'. I re-counted cell area (25), great-circle distance (57), the box-blur trio and <code>_label</code>.</p>
+
+<!-- ============================================================ SPLIT -->
+<h2 id="split">Split: too much in one place</h2>
+<p class="col intro">Every row here is a refactor, so <strong>every one needs your yes</strong> (house rule). They change no outputs: the goldens prove that nothing moved. Time each one between lanes, because they cause merge pain for work in flight.</p>
+
+<div class="tbl"><table>
+<thead><tr><th>What</th><th>Size</th><th>Seams</th><th>Effort</th><th></th></tr></thead>
+<tbody>
+<tr><td><code>zoom.build</code>: one function builds the whole regional zoom</td><td class="n">2,227 lines, 18 closures</td><td>Stages already named in its docstring: project → fields → deltas → coast → rivers → lakes → landscape → glaciers → finish → render. Copy the time-zoom split (<span class="tk">PW-442</span>). Ends the 33-name crop tuple.</td><td>l</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td>The globe viewer: one inline script in <code>index.html</code></td><td class="n">5,030 lines</td><td>Section banners already mark ~16 parts. Move to <code>viewer/globe/*.js</code> ES modules with no build step, as relief.js and navigator.js already are. Do it in 4–6 small steps. This makes the UX redos and viewer tests cheap.</td><td>l</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>climate.py</code> as the whole repo's grid toolbox</td><td class="n">2,852 lines</td><td>gridops (smooth, gradient, areas), calendar (insolation, PET, Budyko), classes (Köppen/biome tables). Currents move to ocean. Breaks the climate⇄ocean import cycle.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>highlights.py</code></td><td class="n">2,817 lines</td><td>ctx toolkit, detectors grouped by theme, the "representative moment" rule (which isn't about highlights), cache.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>tests/test_lineages.py</code></td><td class="n">2,536 lines, 102 tests</td><td>By topic, with the fake time zoom moved to conftest. Also stops it serialising on one test worker.</td><td>s–m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>zoom_fine.build</code></td><td class="n">1,048 lines</td><td>Same treatment as zoom.build, afterwards.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td>Peoples <code>History</code> object and its competition matrix</td><td class="n">~58 + 16 attached attributes; 9 stacked patches</td><td>One pure <code>competition_matrices()</code> with a named factor per row, testable alone (<code>pressure.py</code> shows the way).</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>lineages/brief.py</code> (what culinary-dnd reads)</td><td class="n">1,185 lines</td><td>ctx / sections / suggestions / markdown. Salt model constants move out of the presentation code. Add the end-to-end test first.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>__main__.py</code> CLI</td><td class="n">831 lines, 28 commands</td><td>Group the 7 peoples commands; one "redo pass" registry. Agent ergonomics only.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>tectonics/earth.py</code>; <code>export.py</code></td><td class="n">1,159; 1,298</td><td>star / carbon / ice sheet / sediment; raster / features / world / zoom.</td><td>s each</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>tools/earth_data.py</code>, which the product imports</td><td class="n">1,547 lines</td><td>Move to <code>planet/earthdata/</code>; the time zoom depends on it.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td>Flat <code>planet/</code> folder</td><td class="n">54 modules, 25 <code>zoom_*</code></td><td><code>planet/zoom/</code>, <code>planet/coast/</code> (coast / coastal / coastform can't be told apart by name). Best done together with the zoom.build split.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+<tr><td><code>docs/overview.md</code></td><td class="n">1,054 lines</td><td>One file per subsystem with an index. Pairs with <span class="tk">PW-816</span>.</td><td>m</td><td><span class="chip ref-y">needs yes</span></td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ DESIGN -->
+<h2 id="design">Design decisions not to assume are perfect</h2>
+<p class="col intro">Prototype choices that work today but will cost more as v2 adds layers, peoples and planets. Each comes with the alternative and its price.</p>
+
+<div class="list">
+<article class="item">
+  <header><h3>Worlds are 113 MB JSON files; runs and zooms are compact binary layers</h3><span class="chip med">medium</span></header>
+  <p>A world is one text file (verified: <code>worlds/7813a1.json</code>, 113 MB). Every "redo the coast / satellite / game layers" pass rewrites the whole file, and the browser parses all of it even though it draws one or two layers. Runs and zooms already use self-describing <code>.bin</code> layers, which the viewer loads lazily. <b>Alternative:</b> a world becomes a folder (header plus <code>layers/*.bin</code> plus its sidecars), and delete becomes "remove the folder". <b>Cost:</b> a day or more (viewer loader, server, export, tests). Old worlds get deleted. Best done before v2 adds more world layers.</p>
+</article>
+<article class="item">
+  <header><h3>Peoples data lives in the run's header, and peoples runs pretend to be time zooms</h3><span class="chip med">medium</span></header>
+  <p>A peoples run's <code>run.json</code> is 1.75 MB, 1.63 MB of it in <code>meta</code>, which every listing re-reads. Peoples runs are stored as <code>kind: timezoom</code> with a hidden <code>phase</code>, and every new feature has to know that trick. <b>Alternative:</b> explicit kinds (<code>run | timezoom | recent | peoples</code>) and big documents as sidecar files, the way demes already does it. <b>Cost:</b> half a day plus a coordinated viewer change.</p>
+</article>
+<article class="item">
+  <header><h3>The storage layer imports the physics</h3><span class="chip low">low</span></header>
+  <p><code>store.py</code> imports four feature modules for their layer specs, and <code>legends()</code> imports ten more, so every new layer family means editing store.py in two or three places. That also feeds a large knot of lazy imports. <b>Alternative:</b> a small layer registry that each module registers itself with. <b>Cost:</b> a few hours; the thing to watch is import order.</p>
+</article>
+<article class="item">
+  <header><h3>Untyped knobs: the climate's <code>TUNE</code> dict and the params</h3><span class="chip med">medium</span></header>
+  <p>A misspelt climate override is silently ignored. <code>relax_km</code> is read as a tune key but isn't one, and it's hard-coded twice more. <code>Params.from_stored</code> drops unknown keys and fills in today's defaults. <code>--set n_plates=12.5</code> reaches the simulation as a float. Nothing in production passes a tune today, so this is a trap waiting for the next calibration lane. <b>Alternative:</b> a frozen <code>ClimateTune</code> dataclass, so a bad key raises, and type coercion on <code>--set</code>. <b>Cost:</b> a few hours.</p>
+</article>
+<article class="item">
+  <header><h3>Library code ends the program (<code>SystemExit</code>) for "not found"</h3><span class="chip low">low</span></header>
+  <p>There are 41 <code>raise SystemExit</code> outside the command line (verified). The server and job runner have to catch <code>(Exception, SystemExit)</code> to survive, and any new caller that catches only <code>Exception</code> can lose a thread silently. <b>Alternative:</b> <code>NotFound</code> / <code>BadInput</code> errors, turned into exit messages in one place. <b>Cost:</b> a few hours, every catch site in one change. The auditors split on whether this is a fix or a refactor; I'd treat it as a fix.</p>
+</article>
+<article class="item">
+  <header><h3>Format version strings are written but never checked</h3><span class="chip low">low</span></header>
+  <p>Files carry <code>"procgen-run/2"</code>, <code>"procgen-zoom/2"</code> and so on, but no reader looks at them. An old file fails later as a confusing error, or worse, slips through one of the silent fallbacks. <b>Alternative:</b> check the version on read, refuse with "made by an older format; delete it", and bump it when a layer is renamed. <b>Cost:</b> under an hour. It enforces your no-backward-compatibility rule cheaply.</p>
+</article>
+<article class="item">
+  <header><h3>Silent fallbacks everywhere: 94 "use this layer, or else that one" reads, Earth's tilt as a default</h3><span class="chip med">medium</span></header>
+  <p>Examples: "warmest month = annual mean" if missing, and "rain stands in for runoff". The default <code>tilt=23.4</code> appears on ~20 function signatures and ~10 zoom reads. Several fallbacks exist only so the hand-built test worlds work, which means the tests partly check code that real worlds never run. <b>Alternative:</b> one declared list of genuinely optional layers, strict reads for everything else, and test fixtures that build complete worlds. <b>Cost:</b> half a day. It may expose real missing layers, which is the point.</p>
+</article>
+<article class="item">
+  <header><h3>Megafauna mode flags, with defaults set in three places</h3><span class="chip med">medium</span></header>
+  <p>There are four density modes, four age schedules, three generation-time rules, and three hidden "off only to measure" switches that tests flip by assigning module globals. The defaults disagree, and every new rule has to be threaded through four branches. You ruled for "food" on 10-29. <b>Alternative:</b> keep food, and keep prey as the named cross-check. Move mesotherm and mammal into the probe script, and make the switches arguments. <b>Cost:</b> a couple of hours. This is a code-path retirement, so it waits for your yes (Questions, Q1).</p>
+</article>
+<article class="item">
+  <header><h3>Where do the numbers come from? About 208 peoples constants have no source</h3><span class="chip med">medium</span></header>
+  <p>The lineages auditor scanned ~284 numeric constants. About 29 cite literature, ~34 cite a ruling or ticket, ~13 are flagged unverified, ~168 are described but unsourced, and ~40 are bare. About 20 works are cited with no paper on file, so in effect they're from memory. The dragon, prey and food numbers are the exception: checked against PDFs with page numbers. That's the model. In the tech tree, 50 of 98 sources say "unverified", and the other 48 were written from memory (<span class="tk">PW-943</span>). Most constants are knobs and need no paper, but today nothing marks a knob apart from an unchecked fact. <b>Alternative:</b> a one-word tag on every constant (<code># knob</code>, <code># ruling PW-x</code>, <code># src:ref checked</code>, <code># UNVERIFIED</code>) and a checker (<span class="tk">PW-942</span>). <b>Cost:</b> a couple of hours for this area. Not drafted, because the provenance epic already owns it.</p>
+</article>
+<article class="item">
+  <header><h3>Earth anchors to revisit after v1</h3><span class="chip low">low</span></header>
+  <p>Global rainfall is renormalised to Earth's 1,000 mm a year (fine for Earth-likes; it will mislead for water worlds, <span class="tk">PW-563</span>). Runs and worlds run different fire physics (<code>crown=False</code> in runs). The Hadley-cell latitudes are hard-coded. All of these are labelled in the code, none is a hidden hack, and none blocks v1.</p>
+</article>
+</div>
+
+<!-- ============================================================ HOUSEKEEPING -->
+<h2 id="house">Housekeeping</h2>
+<div class="list">
+<article class="item"><h3>Tools to retire or fold</h3>
+<p>Of the 30 scripts in <code>tools/</code>, the core ones (earth_check, scorecard, health, moisture_budget, earth_data, ice_diag and ice_criteria, cleanup_outputs, churn, earth_world) deserve hardening. Candidates to retire, with git keeping the history: <code>sealevel</code> and <code>supercontinent</code> (fold them into ice_diag's recorder; check <span class="tk">PW-463</span> first), <code>ice_probe</code>, <code>coast_view</code>, <code>coast_steps</code>, <code>zoom_soil_check</code> and <code>viewer_perf</code>. Four tools mishandle <code>--help</code>: coast_view, coast_steps and coast_check treat it as a zoom id, and ice_criteria crashes. <code>tz_mean</code> imports a test fixture.</p></article>
+<article class="item"><h3>docs/review needs a standing retention rule</h3>
+<p>It was cleaned to 18.6 MB on 10-23 and is back to 71 MB and 1,231 tracked files (verified). The proposed rule: lane evidence lives under <code>docs/review/&lt;ticket&gt;/</code> and is deleted when the ticket closes, with git keeping it. Add a <code>board.py check</code> warning that lists review files no open ticket references. Large screenshot bundles go outside git. This report adds 1.4 MB, so it should follow the same rule.</p></article>
+<article class="item"><h3>Docs drift</h3>
+<p>coordination.md says both "~4.7 min" and "~30 min" for the test suite. Nine doc paths cited from code and docs no longer exist. Some comments are stale: vegetation's column table names 18 of 20 columns, the star-thermostat comment (<span class="tk">PW-810</span>) is out of date, and so is "era is a placeholder". The fix: a link checker in <code>board.py check</code>.</p></article>
+<article class="item"><h3>Test configuration</h3>
+<p>The 51-seed consistency fixture takes ~29 of the ~30 full-suite minutes, so lanes never run it. Add a medium tier, or <code>--seeds N</code>. Only 4 of 75 files carry the <code>slow</code> marker, and there's no <code>--strict-markers</code>, so a typo like <code>@pytest.mark.slwo</code> silently runs in the fast tier. Also: register markers in pyproject, use <code>-n auto</code> instead of a hard-coded 16, and add <code>--durations=25</code>. A minimal ruff config (F-codes only) would keep the lint count at today's 26.</p></article>
+<article class="item"><h3>Test gaps that matter</h3>
+<ul class="plain">
+<li>The culinary brief, the contract culinary-dnd reads, is never built end to end in a test.</li>
+<li><code>zoom_fine.py</code> (2,040 lines) has one test file. The meander, floodplain and falls modules are never named in a test, and export is thin. A small fixed-zoom golden would cover them.</li>
+<li>No test that two overlapping zooms agree away from their edges.</li>
+<li>About 25 of 45 highlight finders have no direct test; one parametrised smoke test would cover them.</li>
+<li>No logic test touches <code>index.html</code> (only a syntax check). This becomes cheap once the viewer is in modules.</li>
+</ul></article>
+<article class="item"><h3>Small leftovers</h3>
+<p>Eight diagnostic URL switches from the shimmer hunt (<span class="tk">PW-408</span>/<span class="tk">PW-415</span>, done) are still wired into the render loop. Zoom debug snapshots are always kept, about 670 MB at 4096² for nothing; make them opt-in. A few compatibility shims for old zooms remain in the viewer. Best-of-N peoples tries run one after another while 48 cores sit idle.</p></article>
+</div>
+
+<!-- ============================================================ KEEP -->
+<h2 id="keep">Keep doing this</h2>
+<div class="keep">
+  <div><b>Determinism as a tested property</b>Bit-identical resume, identical results at any thread count, and keyframe checks that refuse a wrong replay. Per-line random streams in lineages.</div>
+  <div><b>Comments that give the reason and the source</b>Nearly every constant says what it is, its units and where it came from. The checked megafauna citations, with page numbers and PDFs on file, are the standard to spread.</div>
+  <div><b>Physics-property tests</b>"Salt is conserved", "the overturning moves heat without making it", "water books close", and zooms that keep their cells' means. These are what make the refactors above safe.</div>
+  <div><b>Self-describing binary layers</b>Header-first JSON and lazy, droppable layer loading in the viewer. The right pattern to extend to worlds.</div>
+  <div><b>Clean layering and hygiene</b>Physics never imports the server or viewer. 26 lint hits and 3 dead functions in 55k lines. <code>log=</code> callbacks instead of global logging, plus atomic writes and locks.</div>
+  <div><b>Small ES modules with parity tests</b><code>relief.js</code>, <code>navigator.js</code>, <code>zoom3d_*.js</code>, and <code>test_projection_js.py</code>, which checks the JS port against Python. The model for every JS mirror.</div>
+  <div><b>Viewer screens that work</b>The Technology Inventory stat strip, the workbench's log timeline, plain-words tooltips, and deep links for every view.</div>
+  <div><b>The board and the wiki</b>A stdlib-only <code>board.py</code> with its own check and hook, intake-after-merge numbering, and short overwrite-not-append wiki pages.</div>
+</div>
+
+<!-- ============================================================ QUESTIONS -->
+<h2 id="questions">Questions for you</h2>
+<p class="col intro">Only the calls that are yours to make. Each has my recommendation.</p>
+<div class="list">
+<article class="item q"><h3>Q1. Should Seven Meals move to the "food" dragon density, and the other modes retire?</h3>
+<p>Your own world still uses the older "prey" setting, with a comment saying it's waiting on your review. D&amp;D uses "food", which is what you chose on 10-29. The "dinosaur line" and "mammal line" modes are kept code paths for a decision you've already made.</p>
+<p class="rec"><b>Recommend</b>Yes. Move Seven Meals to food, keep prey as the named cross-check, and move the other two modes into the probe script.</p></article>
+
+<article class="item q"><h3>Q2. Which refactors do you green-light, and in what order?</h3>
+<p>All of them preserve behaviour, with the goldens as proof. My order, cheapest and most enabling first:</p>
+<ol class="plain">
+<li>Shared helpers and constants (one raster module, grid geometry on <code>Grid</code>, one ramp file, one job-poll helper).</li>
+<li>Split <code>zoom.build</code> into stages, with the zoom subfolder at the same time.</li>
+<li>The viewer into modules with one layer table (see Q3).</li>
+<li>Split <code>climate.py</code>'s toolbox out, coordinated with the speed lane.</li>
+<li>Highlights package; split test_lineages; split brief.py once its test exists.</li>
+<li>The rest (CLI, earth.py, export.py, overview.md) as lanes free up.</li>
+</ol>
+<p class="rec"><b>Recommend</b>Yes to 1–3 now. Decide the rest after seeing how 2 goes.</p></article>
+
+<article class="item q"><h3>Q3. Split the 5,000-line viewer script into modules?</h3>
+<p>It's the biggest single lever on how cheap the viewer redos are, and it's what makes viewer tests possible. It's also a day or more of careful, step-by-step moving with no visible change.</p>
+<p class="rec"><b>Recommend</b>Yes. Land the small UX fixes first, then do the split before the bigger redos (the grouped picker, the docked legend, the slider axis).</p></article>
+
+<article class="item q"><h3>Q4. Should worlds move to binary layer folders like runs and zooms?</h3>
+<p>Today a world is a 113 MB text file that every pass rewrites in full. The change takes a day or more, and existing worlds would be deleted.</p>
+<p class="rec"><b>Recommend</b>Yes, before v2 adds more world layers. Not urgent for v1.</p></article>
+
+<article class="item q"><h3>Q5. A standing rule for docs/review, and permission to retire the one-off tools?</h3>
+<p>docs/review has grown back to 71 MB in six days. The seven tools listed under Housekeeping are single-ticket experiments.</p>
+<p class="rec"><b>Recommend</b>Yes to both. Evidence is deleted when its ticket closes (git keeps it), and the seven tools retire after a check of <span class="tk">PW-463</span>.</p></article>
+
+<article class="item q"><h3>Q6. People colours by family hue?</h3>
+<p>The fix for shared colours can either just keep neighbours distinct, or also colour by family: dragons in the reds, named by their own colour; giants in the blues; fey in the violets. It's a matter of taste, and it changes how every peoples map looks.</p>
+<p class="rec"><b>Recommend</b>Family hues plus distinct neighbours, shown to you as before/after pictures on the D&amp;D run before merging.</p></article>
+</div>
+
+<!-- ============================================================ ORDER -->
+<h2 id="order">Suggested order of work</h2>
+<div class="batch">
+  <span class="step">Batch 1</span>
+  <div><h3>Straight fixes, one lane, ~1–2 days</h3><p>The server POST guard, the silent ValueError and old-run fallbacks, the run.json lock with temp names and ids, replay from checkpoint with one code hash, stale grid and world reuse, named RNG streams, the dilate wrap, the editor schema endpoint, tech-tree rule warnings, and the constants module. Update the goldens once at the end. Fold the interrupt fix into <span class="tk">PW-508</span>.</p></div>
+  <span class="step">Batch 2</span>
+  <div><h3>UX quick wins, parallel viewer lane</h3><p>First look (peoples at the present, quiet zoom, start-page search), error and loading states, text polish, shared theme, then the docked legend. People colours and ramps come with before/after pictures for you.</p></div>
+  <span class="step">Batch 3</span>
+  <div><h3>Physics consistency, in the serial physics lane</h3><p>True cell areas in river flow, one sea-ice rule, one evaporation rule, the zoom climate step. These move outputs: re-run the scorecard and Earth check.</p></div>
+  <span class="step">Batch 4</span>
+  <div><h3>Refactors, on your yes (Q2 order)</h3><p>Between lanes, one at a time, goldens unchanged. Then the bigger UX redos on the modular viewer: the grouped picker, the slider axis, one navigator.</p></div>
+</div>
+
+<!-- ============================================================ NOTES -->
+<h2 id="notes">Audit notes</h2>
+<details>
+<summary>Where auditors disagreed, and how I resolved it</summary>
+<ul class="plain">
+<li><b>Replay from t=0.</b> The architecture auditor wanted to narrow the hash; the store auditor wanted to always try the checkpoint. Both are right, for different jobs: the checkpoint fix is cheaper and solves the slice cost, and the scoped hash is for caches. Both are in one draft.</li>
+<li><b>Peoples-run poll on server restart.</b> The viewer-code report said it leaves the Run button stuck. In fact a <code>finally</code> re-enables the button. The real effect is that progress stops with no message, and the text above says that.</li>
+<li><b>Interrupt deletes the run.</b> Raised as a stopgap fix by one auditor and as part of PW-508 by another. Your "no temporary fixes" rule settles it: it belongs in PW-508.</li>
+<li><b><code>SystemExit</code>.</b> Called a straight fix by two auditors and a refactor by one. I've put it under design decisions, with a lean to treat it as a fix.</li>
+<li><b>Counts.</b> Cell-area copies were reported as 23 in 14 and 23 in 16 files; my grep finds about 25. Seconds-per-year was reported as "6 definitions": it's 6 literal <code>3.156e7</code> and 2 of <code>3.15576e7</code>.</li>
+<li><b>Lightness check.</b> Re-running the auditor's script also flags temperature, elevation, salinity and the difference ramps. Those are meant to be diverging, and they stay.</li>
+</ul>
+</details>
+<details>
+<summary>Not re-verified (taken from the reports as read)</summary>
+<ul class="plain">
+<li>The five sea-ice rules and the four Budyko copies (file:lines cited by the physics auditor).</li>
+<li>The viewer repaint and cloud-texture findings (from reading the code; not profiled).</li>
+<li>The tech-tree rule mismatch and the provenance counts (the lineages auditor's probes and heuristic scan).</li>
+<li>The highlights cache serving a stale result after an in-place world re-save (the auditor didn't reproduce a stale hit).</li>
+<li>Button and legend counts, and run 3097e3's 27 shared colour pairs (from the UX auditor's screenshots; the palette mechanism is verified).</li>
+</ul>
+</details>
+<details>
+<summary>Inbox drafts filed (25)</summary>
+<p class="ref">Fix soon: peoples-editor-reads-spec-schema · replay-from-checkpoint-and-one-code-hash · run-interrupt-keeps-checkpoints · store-concurrent-writes-lose-data · old-run-fallbacks-hide-bugs · server-rejects-cross-site-posts · stale-grid-file-and-reused-worlds · rng-named-streams · true-cell-areas-in-river-flow · zoom-fine-finish-climate-drift · zoom-dilate-wraps-at-edges · climate-copies-drifted · techtree-kind-rules-match-preset-ids · lineages-defaults-and-constants-drifted · physical-constants-module · viewer-redraw-and-reload-waste<br>UX: peoples-distinct-colours · colour-by-grouped-picker · legend-docked-out-of-the-map · first-look-opens-where-the-interest-is · time-slider-axis · colour-ramps-shared-and-monotonic · viewer-error-and-loading-states · viewer-text-and-layout-polish · viewer-shared-theme</p>
+</details>
+<p class="ref" style="margin-top:20px">Sources: nine audit reports (architecture, physics-surface, tectonics-store, zoom, lineages, highlights-tools, viewer-code, viewer-ux, tests-infra), 2026-10-29. Spot checks run read-only against main b36c9581.</p>
+
+</div>
