@@ -1,4 +1,5 @@
 ---
+id: PW-1074
 title: "Viewer: no dragon-density layer, and no stored peoples run with the food-budget dragons (lanes 43-45b) to show one"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: dragon-density-doc
 blocked_by: []
 relates: [PW-977, PW-990]
 refs: [viewer/index.html, docs/review/megafauna/dragon-density/shot.py, docs/review/megafauna/dragon-density/charts.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,6 @@ the peoples layer, as in the report's Figure 6 (charts/map.png). It also serves 
 - [ ] the run stores expected dragons per cell at each frame (or the present)
 - [ ] a viewer layer for it, matching the peoples layer's style
 - [ ] a fresh dnd run on 2a7385 with the current model, for the showcase
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-viewer-dragon-density-layer.md (found by dragon-density-doc).

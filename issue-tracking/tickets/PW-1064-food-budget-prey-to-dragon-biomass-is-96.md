@@ -1,4 +1,5 @@
 ---
+id: PW-1064
 title: "Food budget: prey to dragon biomass is 96-127:1, inside the band Farlow gives for whole modern mammal guilds; on Farlow's own reasoning a guild eating below a mammal's rate should sit lower, so check against a living guild"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990, PW-1019]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/dragon_ages.py, docs/review/megafauna/dragon-density/claims.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Options:
 - **C.** Split the guild by biomass rather than food (a different reading of Carbone 2011's table; no source).
 
 Lean: A now, B as part of PW-1019.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-guild-biomass-ratio-check.md (found by dragon-density-r2).

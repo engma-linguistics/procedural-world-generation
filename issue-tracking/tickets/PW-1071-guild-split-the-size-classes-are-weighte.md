@@ -1,4 +1,5 @@
 ---
+id: PW-1071
 title: "Guild split: the size classes are weighted by M^0.75 while the dragons eat at M^0.889, and young dragons (79% of them, under 1 t) still eat only from the apex class's share"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-1019, PW-977, PW-958]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/sensitivity.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -31,3 +34,6 @@ Evidence:
 
 Direction and size on dragons: the exponent x0.59 to x1.56; letting wyrmlings and young eat from the smaller classes' share about +19%.
 - [ ] owner: one exponent for both (which?), and whether young dragons draw on the smaller classes
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-guild-weighting-exponent-and-young-dragons.md (found by dragon-density-r2).

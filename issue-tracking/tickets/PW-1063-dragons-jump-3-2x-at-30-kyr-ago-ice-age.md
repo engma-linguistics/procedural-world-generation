@@ -1,4 +1,5 @@
 ---
+id: PW-1063
 title: "Dragons jump ~3.2x at 30 kyr ago (ice-age pass to recent pass): the empty land's food-fed density doubles at the hand-over"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990]
 refs: [docs/review/megafauna/dragon-density/index.html, docs/review/megafauna/dragon-density/numbers.json, planet/lineages/recent.py, planet/lineages/history/steps.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Candidates: the ice-age pass's last step feeds a different climate or grazing NP
 prey field built from different fields in the two passes.
 - [ ] compare grazing NPP on empty land at the ice-age pass's last step and the recent pass's first
 - [ ] make the passes agree, or say why they differ
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-count-step-at-recent-pass.md (found by dragon-density-r2).

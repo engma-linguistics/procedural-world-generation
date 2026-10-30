@@ -1,4 +1,5 @@
 ---
+id: PW-1067
 title: "Dragon food conversion: 85% assimilation is unsourced (Carbone et al. 2007 use 66%) and the whole 0.5 t carcass counts as eaten (they give 65-91%)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-1019, PW-991]
 refs: [planet/lineages/dragon_ages.py, planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/sensitivity.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Evidence:
 Direction and size on dragons: fewer. 66% alone x0.78; Nagy's route x0.85; carcass use 65-91% x0.65 to x0.91; together down to about x0.5.
 - [ ] pick a sourced assimilation (Carbone 2007's 0.66, or Nagy's route) and a carcass-use share by prey mass
 - [ ] one edible-energy figure per head for peoples and dragons
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-kill-conversion-assimilation-carcass.md (found by dragon-density-r2).

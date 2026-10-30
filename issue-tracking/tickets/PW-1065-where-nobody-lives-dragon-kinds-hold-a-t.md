@@ -1,4 +1,5 @@
 ---
+id: PW-1065
 title: "Where nobody lives, dragon kinds hold a third of the land and 31% of the dragons' food goes uneaten (wild forest 6%, grassland 25% occupied): habitat, not pressure"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990, PW-924]
 refs: [docs/review/megafauna/dragon-density/index.html, docs/review/megafauna/dragon-density/numbers.json, planet/lineages/history/megafauna.py, planet/lineages/history/habitat.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 Lean: owner's call (design: which dragons live in forest and grassland). Then trace the residual gap in occupied rich cells.
 - [ ] decide A/B/C
 - [ ] trace occupied rich cells' density vs food-fed density
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-habitat-coverage-rich-land.md (found by dragon-density-r2).

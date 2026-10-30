@@ -1,4 +1,5 @@
 ---
+id: PW-1073
 title: "Prey from NPP: the model feeds whole-plant herb NPP (roots in) to McNaughton et al.'s above-ground fit, and reads its whole-herbivore biomass (insects in) as big game"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, planet/vegetation.py, docs/review/megafauna/dragon-density/index.html, docs/review/megafauna/dragon-density/sensitivity.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Options:
 Lean: A once a source is read; note it on the page meanwhile (done in round 2).
 - [ ] fetch a root:shoot production source (wishlist)
 - [ ] decide A/B/C
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-prey-fit-fed-whole-plant-npp.md (found by dragon-density-r2).

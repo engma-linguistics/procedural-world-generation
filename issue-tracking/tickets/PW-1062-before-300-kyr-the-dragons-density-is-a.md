@@ -1,4 +1,5 @@
 ---
+id: PW-1062
 title: "Before 300 kyr the dragons' density is a flat rule at the land's median prey: right on the median but off by up to 2.7x per world at the hand-over, ignores peoples"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Evidence (review round 2, section 5.5; `numbers.json` `steps.{on,off}.300_summar
 Options: **A.** scale the flat rule to the food budget's planet mean at the hand-over; **B.** build a coarse prey field for deep epochs
 from their climate. Lean: A (cheap, removes the per-world step); impact low because the median already agrees.
 - [ ] decide A/B
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-deep-epoch-dragon-budget.md (found by dragon-density-r2).

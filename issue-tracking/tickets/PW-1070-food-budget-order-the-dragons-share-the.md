@@ -1,4 +1,5 @@
 ---
+id: PW-1070
 title: "Food budget order: the dragons' share the pressure leaves uneaten goes to nobody, and the smaller predators are never pressed by peoples (they keep ~50% of the supply in farmers' country)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,3 +29,6 @@ herders tolerate losing "to dragons", but 83% of it goes to the smaller predator
 
 Direction and size on dragons: none directly. A mesopredator release would cut the herds in peopled country (fewer prey for dragons there).
 - [ ] decide whether the smaller predators are pressed too, and where the uneaten share goes
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-food-budget-uneaten-share-and-unpressed-small-predators.md (found by dragon-density-r2).

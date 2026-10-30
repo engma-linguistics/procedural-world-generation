@@ -1,5 +1,6 @@
 ---
-title: "Regional dragon counts (tens to hundreds in a Sword Coast-sized peopled region) are far below the thousands a viable population needs"
+id: PW-1069
+title: Regional dragon counts (tens to hundreds in a Sword Coast-sized peopled region) are far below the thousands a viable population needs
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-936, PW-977]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Evidence (review round 2, sections 7, 9.2 item 7):
 Direction: fewer dragons, locally none, if the test is tightened; or explicitly a planet-wide metapopulation.
 - [ ] count each kind's linked population per run against its viable number
 - [ ] decide whether a regional pocket should need a regional viable number
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-viability-at-regional-counts.md (found by dragon-density-r2).

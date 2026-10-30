@@ -1,4 +1,5 @@
 ---
+id: PW-1068
 title: "Dragon persecution has no source: 1 - exp(-N/0.05) presses every dragon to 1 per 5,000 km2 at any settled density"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-1001, PW-961]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html, docs/references/wishlist.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 Lean: A (it is PW-977 stage 3); read the two wishlist papers first.
 - [ ] fetch Cardillo 2004, Woodroffe 2000
 - [ ] decide A/B
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-pressure-source.md (found by dragon-density-r2).
