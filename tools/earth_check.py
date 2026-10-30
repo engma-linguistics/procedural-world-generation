@@ -10,7 +10,7 @@ onto the same cells:
   Koppen   Kottek et al. 2006 (0.5 deg, 1951-2000; same -3 C C/D rule and
            aridity thresholds as the model; As scored as Aw). Peel et al.
            2007 published group shares are printed alongside for reference.
-  precip   GPCC v2018 1 deg (land), GPCP v2.3 2.5 deg (land + ocean)
+  precip   GPCC v2020 1981-2010 1 deg (land), GPCP v2.3 2.5 deg (land + ocean)
   temp     NCEP/NCAR reanalysis 2 m air temperature 1981-2010 (surface,
            so it already includes the altitude effect, like the model)
 
