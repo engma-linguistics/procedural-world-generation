@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555]
 refs: [planet/orbit.py, planet/tectonics/earth.py, docs/review/ice-v2-criteria.md]
 created: 2026-10-22
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -29,6 +29,7 @@ scales, so a "solar help" lever is a world-builder control unless the star is se
 - [ ] 10-seed 2 Gyr L6 check: CO2 index trends down, icehouse share within N3
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-6/c_run.py in cleanup; last present at 9861e2df.
 - 2026-10-24: Correction to the Description (v1-finish-8): the model's sensitivity is co2_sensitivity / (5.35 ln 2) = 3 / 3.71 = 0.81 C per W/m2, not ~0.6 (3 C is per doubling, not per e-fold). With it, 238 W/m2 x dL/L gives ~+13 C over a Sun-like star's first Gyr; earth.star_forcing uses 0.81.
 - 2026-10-24: Status todo -> done. Merged as the default star term (v1-finish-7). Note: model sensitivity is 0.81 C/(W/m2), not 0.6.
 - 2026-10-24: Lane v1-finish-7: brightening star in the code (earth.star_forcing; params star_brightening, star_age; Gough 1981 against the run's start, 238 W/m2 x dL/L at the model's own 0.81 C per W/m2, not 0.6). Default 0.45 x a Sun-like rate (a ~0.75 solar-mass K star: the Sun-like 1.0 warms 1 Gyr runs ice-free on the in-range thermostat). L6 16/18, L7 7/8 on the bar. 2 Gyr runs unchecked (draft-star-brightening-default-signoff.md).
