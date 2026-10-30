@@ -111,12 +111,12 @@
 
   <h2>Overlays</h2>
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
-  <label><input type="checkbox" id="falls" checked> Waterfalls <span class="muted" id="fallsN"></span></label>
-  <label><input type="checkbox" id="volc" checked> Volcanoes <span class="muted" id="volcN"></span></label>
+  <label><input type="checkbox" id="falls"> Waterfalls <span class="muted" id="fallsN"></span></label>
+  <label><input type="checkbox" id="volc"> Volcanoes <span class="muted" id="volcN"></span></label>
   <label title="Natural harbours (diamonds, bigger and redder = better), one per stretch of coast (humanuse.py)"><input type="checkbox" id="harb"> Harbours <span class="muted" id="harbN"></span></label>
   <label title="The saddle on each divide between drainage basins (bow-ties, coloured by the months it is open)"><input type="checkbox" id="passm"> Mountain passes <span class="muted" id="passN"></span></label>
   <label title="Springs at the foot of wetter high ground in dry country"><input type="checkbox" id="spring"> Springs <span class="muted" id="springN"></span></label>
-  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep" checked> Deposits <span class="muted" id="depN"></span></label>
+  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep"> Deposits <span class="muted" id="depN"></span></label>
     <select id="depSel" style="flex:1;min-width:0"></select></div>
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
@@ -266,6 +266,11 @@ const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixe
 async function getJSON(url) {
   try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : null; } catch { return null; }
 }
+// the overlay switches remembered between visits (localStorage; PW-1028)
+const OVERLAY_KEY = 'planet.zoomOverlays', ZOOM_OVERLAYS = ['rivers', 'falls', 'volc', 'harb', 'passm', 'spring', 'dep', 'clouds'];
+function saveOverlays() {
+  try { localStorage.setItem(OVERLAY_KEY, JSON.stringify(Object.fromEntries(ZOOM_OVERLAYS.map((o) => [o, $(o).checked])))); } catch { /* private window */ }
+}
 function loadImage(url) {
   return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = url; });
 }
@@ -315,17 +320,22 @@ async function init() {
   $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
   if (p.get('season') in SEASON_NAMES) state.season = p.get('season');
-  for (const o of ['rivers', 'falls', 'volc']) if (p.get(o) === '0') $(o).checked = false;  // e.g. ?rivers=0
-  for (const o of ['harb', 'passm', 'spring']) if (p.get(o) === '1') $(o).checked = true;  // e.g. ?harb=1
+  // the overlays: only rivers and lakes on at first (PW-1028); the owner's ticks are remembered in this browser,
+  // and the address overrides both (e.g. ?falls=1, ?rivers=0)
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(OVERLAY_KEY) || '{}') || {}; } catch { /* private window */ }
+  for (const o of ZOOM_OVERLAYS) {
+    if (typeof saved[o] === 'boolean') $(o).checked = saved[o];
+    if (p.has(o)) $(o).checked = p.get(o) === '1';
+    $(o).addEventListener('change', saveOverlays);
+  }
   $('season').value = state.season;
   $('season').onchange = () => { state.season = $('season').value; render(); syncURL(); };
   $('rivers').onchange = render;
-  if (p.get('clouds') === '1') $('clouds').checked = true;
   $('clouds').onchange = () => { render(); syncURL(); };
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
   for (const o of ['harb', 'passm', 'spring']) $(o).onchange = () => { render(); hideTip(); };
-  if (p.get('dep') === '0') $('dep').checked = false;
   $('dep').onchange = () => { render(); hideTip(); };
   $('depSel').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;

@@ -137,6 +137,7 @@ export async function loadRun(dir, wantT) {
   $('frame').max = run.frames.length - 1;
   let f = 0;
   if (wantT == null && !tz && run.meta.finish_moment) wantT = run.meta.finish_moment.t;  // (PW-866: open at the finish moment)
+  if (wantT == null && run.meta?.phase === 'lineages') wantT = run.frames.at(-1).t;  // (a peoples run opens at the present, PW-1028)
   if (wantT != null) f = run.frames.reduce((b, fr, i) => (Math.abs(fr.t - wantT) < Math.abs(run.frames[b].t - wantT) ? i : b), 0);
   S.V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load
