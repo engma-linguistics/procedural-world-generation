@@ -125,12 +125,18 @@ def air_mass(grid, ice, km: float = SHEET_KM, cold=None):
     outflow, so a big sheet's margins, ice shelves and the land beside it
     get its cold summers, a lone cap's surroundings don't. Antarctica
     ~0.6..1, Greenland ~0.3..0.5, a valley glacier ~0."""
+    return np.where(np.asarray(ice) > 1, sheet_air(grid, ice, km, cold), 0.0)
+
+
+def sheet_air(grid, ice, km: float = SHEET_KM, cold=None):
+    """air_mass's share (0..1) at every cell, off the ice too: how much of the air around is the sheets' own
+    cold air mass (the land just beyond a margin, where a new margin would be, sits in it as its edge does)."""
     from . import climate
     on = np.asarray(ice) > 1
     src = on.astype(float) if cold is None else np.where(on, np.clip(cold, 0.0, 1.0), 0.0)
     a = climate.smooth_big(grid, src, km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
-    return np.where(on, np.clip(a, 0.0, 1.0) * polar, 0.0)
+    return np.clip(a, 0.0, 1.0) * polar
 
 
 def cold_share(t_warm, sigma: float = PDD_SIGMA):
@@ -156,14 +162,20 @@ def surface_share(grid, ice, km: float = SURFACE_KM):
     return np.clip(climate.smooth_big(grid, on, km), 0.0, 1.0)
 
 
-def sheet_cover(grid, ice):
+def sheet_cover(grid, ice, air=None):
     """How much (0..1) of SUMMER_DAMP an ice surface at each cell gets on
     top of the air it sits in (for ice only: bare ground's snow gets 0, in
     the run, the time zoom and the zoom alike, PW-275): LOCAL, its own
     bright surface, however small the patch. A big sheet's own air mass is
     in the climate's air already (air_mass, carried along the winds,
-    PW-336), so it isn't counted here again."""
-    return np.full(grid.n, LOCAL)
+    PW-336), so it isn't counted here again. air (sheet_air, None: 0): the
+    share of the air that is a sheet's own air mass; the surface damps only
+    the rest, LOCAL x (1 - air) (PW-1050): the sheet's own air got its damped
+    summer over the same bright ice, and damping it again at the surface
+    counted the ice's summer chill twice (docs/review/base-climate/ice-loop/)."""
+    if air is None:
+        return np.full(grid.n, LOCAL)
+    return LOCAL * (1.0 - np.clip(np.broadcast_to(np.asarray(air, float), (grid.n,)), 0.0, 1.0))
 
 
 _NODES = np.array([0.5 - 0.5 / np.sqrt(3.0), 0.5 + 0.5 / np.sqrt(3.0)])  # 2-point Gauss-Legendre on 0..1

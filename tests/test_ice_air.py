@@ -52,3 +52,18 @@ def test_ice_sheets_remake_the_air_at_most_the_cap_and_off_is_the_plain_fixed_po
                 assert info["air_rounds"] >= 1  # (the sheet shrank by far more than AIR_SEA_TOL)
     finally:
         s.params.ice_air_rounds = keep
+
+
+def test_the_surface_damps_only_the_air_that_isnt_the_sheets(sim4_60):
+    """(a): air_mass is sheet_air on the ice; the surface's own damping is LOCAL x (1 - sheet air), so a big
+    sheet's margin takes less of its summer off twice, and with no sheet air it is LOCAL as before."""
+    from planet import icemass
+    s = sim4_60
+    g, e, land, ice, sheet = _ground_sheet(s)
+    a = icemass.sheet_air(g, sheet)
+    on = sheet > 1
+    assert np.array_equal(icemass.air_mass(g, sheet), np.where(on, a, 0.0))
+    assert a[on].max() > 0.2
+    plain, fixed = icemass.sheet_cover(g, sheet), icemass.sheet_cover(g, sheet, air=a)
+    assert np.allclose(plain, icemass.LOCAL) and np.allclose(fixed, icemass.LOCAL * (1 - a))
+    assert np.allclose(icemass.sheet_cover(g, sheet, air=np.zeros(g.n)), plain)

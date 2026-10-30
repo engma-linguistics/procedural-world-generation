@@ -152,7 +152,7 @@ class Recorder:
         rec["snow_land_free"] = round(float((land & (smb0 > 0) & ~iced).sum()) / max(int(land.sum()), 1), 4)
         sheets = []
         if iced.any():
-            cover = icemass.sheet_cover(g, ice)
+            cover = icemass.sheet_cover(g, ice, info.get("air"))
             smb, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, ice, cover,
                                      tilt=sim.params.tilt)
             calve, _ = earth.coast_cost(sim, land, e, marine)

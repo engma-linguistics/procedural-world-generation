@@ -2322,7 +2322,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     precip = 0.5 * (p_jul + p_jan)
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
-               cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
+               cover=_sheet_cover(grid, np.where(land, ice, 0.0), ice_air, ice_cold), lat=grid.lat, tilt=tilt, fb=fb)
     qm_jul, qm_jan = (vapour_mixed(grid, q, d_["qs"], d_["t_air"], tune) for q, d_ in zip((q_jul, q_jan), s_in))
     (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [qm_jul, qm_jan], [p_jul, p_jan], tune,
                                                         ocean)
@@ -2856,7 +2856,11 @@ def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):
     return t_warm, t_cold, temp
 
 
-def _sheet_cover(grid: Grid, ice: np.ndarray) -> np.ndarray:
-    """icemass.sheet_cover (ice_surface's cover)."""
-    from .icemass import sheet_cover
-    return sheet_cover(grid, ice) if (np.asarray(ice) > 0).any() else np.zeros(grid.n)
+def _sheet_cover(grid: Grid, ice: np.ndarray, ice_air: np.ndarray, cold=None) -> np.ndarray:
+    """icemass.sheet_cover (ice_surface's cover), on the share of the air that isn't the sheets' own air mass
+    (icemass.sheet_air of ice_air, the ice whose air the winds carry: PW-1050)."""
+    from .icemass import sheet_air, sheet_cover
+    if not (np.asarray(ice) > 0).any():
+        return np.zeros(grid.n)
+    air = sheet_air(grid, ice_air, cold=cold) if (np.asarray(ice_air) > 1).any() else None
+    return sheet_cover(grid, ice, air=air)
