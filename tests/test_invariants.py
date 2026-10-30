@@ -183,7 +183,10 @@ def test_no_icosphere_seams():
     # nearly the same way everywhere; further poleward east and north turn, a real convergence: at
     # 30 deg ~0.6% of the vapour crossing a cell.)
     v = G["east"] + 0.5 * G["north"]
-    un, kd = climate.face_winds(g, [dict(v=v, B=np.zeros(g.n))], dict(eddy=0.0))
+    # (with the storms' poleward drift on, at a storm track's full storminess: its fade within 15 deg of the
+    # equator and its spread poleward are real divergences, smaller than the bound)
+    un, kd = climate.face_winds(g, [dict(v=v, B=np.zeros(g.n), track=np.ones(g.n))],
+                                dict(eddy=0.0, eddy_drift=climate.TUNE["eddy_drift"]))
     c_self, c_in, nbr, dt = climate._transport(g, un, 0.0 * kd)
     F = climate._faces(g)
     gain = c_self[0] + np.add.reduceat(c_in[:, 0], F["off"][:-1]) - 1.0  # what a step does to q = 1

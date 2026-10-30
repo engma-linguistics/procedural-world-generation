@@ -76,6 +76,14 @@ was sure of, and journal references written from memory (PW-943). A general arch
 - [x] McKenzie 1978, Earth Planet Sci Lett 40:25-32. Stretched margins thin and subside (the shelves work, PW-950). Read 10-29:
   tau 62.8 My and E0 3.2 km water-loaded (Table 1, p. 27) confirm SAG_TIME 63 and SAG_KM 2.2 air-loaded.
 
+## Climate: moisture transport
+
+- [ ] **A source on the transient eddies' poleward moisture flux** (v'q' by latitude, Sv or kg/m/s, and its split from the
+  mean meridional circulation), e.g. Peixoto & Oort 1992, *Physics of Climate* (AIP), ch. 12, or a reanalysis study such as
+  Trenberth & Stepaniak 2003 (J Climate). Lane 26b's poleward vapour drift (PW-998, docs/review/base-climate/coasts/README.md)
+  uses u_e ~ 1 m/s x storminess from a back-of-envelope r x sigma_v x sigma_q / q ~ 0.5 x 6 m/s x 0.3 (all unverified).
+  The claim that most of the observed transport at 30-40 deg is transient eddies is also unverified.
+
 ## Sapience and language
 
 For the sapiens-node dates (PW-971, docs/review/lineages/sapiens-dates.md). Reading these would settle the "unverified" marks there.
