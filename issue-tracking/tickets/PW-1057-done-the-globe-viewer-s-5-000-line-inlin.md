@@ -1,8 +1,10 @@
 ---
+id: PW-1057
 title: "Done: the globe viewer's 5,000-line inline script is now ES modules (viewer/globe/) with one LAYERS table"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: l
 impact: med
@@ -10,6 +12,8 @@ found_by: viewer-lane-51
 blocked_by: []
 relates: [PW-1026, PW-1045, PW-1046, PW-685]
 refs: [viewer/index.html, viewer/globe/, viewer/globe/layers.js, viewer/planets.js, tests/test_viewer_globe.py, tools/viewer_perf.py, docs/review/code-audit-2026-10/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -44,3 +48,6 @@ Small differences, all on error paths:
 - An unreachable server says "not reachable" instead of "no API, restart it".
 
 Follow-ups are in their own drafts (draft-viewer-time-formatters, draft-globe-draw-helpers, draft-viewer-module-order-check).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-globe-viewer-modules-done.md (found by viewer-lane-51).

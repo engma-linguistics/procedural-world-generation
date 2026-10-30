@@ -1,8 +1,10 @@
 ---
+id: PW-1058
 title: "Viewer tests: catch a module that touches another before it has loaded (the blank-page error a circular import can cause)"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: viewer-lane-51
 blocked_by: []
 relates: []
 refs: [tests/test_viewer_globe.py, viewer/globe/main.js]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,3 +30,6 @@ Options:
 - C. **Evaluate the modules for real** in node vm, with stand-ins for three and the DOM. This is close to what test_layers_table_consistent does for layers.js alone. The stand-ins for the DOM are the fiddly part.
 
 Lean A. It is also the logic test the audit asked for, and clicking every layer button would have caught the peoples-run Plates / Crust age error that lane 51 fixed.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-viewer-module-order-check.md (found by viewer-lane-51).

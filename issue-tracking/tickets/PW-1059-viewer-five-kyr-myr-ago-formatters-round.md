@@ -1,8 +1,10 @@
 ---
+id: PW-1059
 title: "Viewer: five 'kyr / Myr ago' formatters round differently; pick one and share it"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: viewer-lane-51
 blocked_by: []
 relates: [PW-1046]
 refs: [viewer/globe/colours.js, viewer/globe/timezoom.js, viewer/globe/panel.js, viewer/techtab.js, viewer/lineages.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +33,6 @@ Fix:
 - Lean: 1 decimal by default, 2 when fine.
 
 - [ ] one formatter, every copy removed
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-viewer-time-formatters.md (found by viewer-lane-51).

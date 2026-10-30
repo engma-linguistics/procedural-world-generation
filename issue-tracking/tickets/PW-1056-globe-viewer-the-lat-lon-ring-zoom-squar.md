@@ -1,8 +1,10 @@
 ---
+id: PW-1056
 title: "Globe viewer: the lat/lon ring, zoom square and arrow-head code is still copied 2-5 times; share it in globe/draw.js"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: viewer-lane-51
 blocked_by: []
 relates: [PW-1045, PW-685]
 refs: [viewer/globe/draw.js, viewer/globe/overlays.js, viewer/globe/highlights.js, viewer/globe/zoom.js, viewer/globe/geometry.js, viewer/projmap.js]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -33,3 +37,6 @@ Fix:
 Related cleanups to the same code that already have owners:
 - Sprite caching and the cloud-texture dispose: PW-1045.
 - Hoisting per-cell lookups (pftColor, resColor, cropBit) out of the colour loops: PW-1045, and later PW-685. The new `color` factories in layers.js are where that hoisting goes.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-globe-draw-helpers.md (found by viewer-lane-51).
