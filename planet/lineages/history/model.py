@@ -156,6 +156,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._last_meet: dict[str, np.ndarray] = {}  # contact hybrids: where their parents last met
         self._apart: set[str] = set()  # ...and those whose parents no longer meet anywhere
         self._lingered: set[str] = set()
+        self._unborn: set[str] = set()  # ...and those never born: their parents' young are absorbed into a parent people, or none (PW-752)
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         self._budget = np.zeros(len(L))
         self.contacts = CT.Contacts(self)

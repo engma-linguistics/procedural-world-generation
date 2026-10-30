@@ -121,7 +121,7 @@ def _raw():
         {"id": "a", "parents": ["stem"], "at": "20 kyr"},
         {"id": "b", "parents": ["stem"], "at": "15 kyr", "traits": ["swims"]},
         {"id": "fey", "origin": "arrival", "at": "10 kyr", "place": [0, 120]},
-        {"id": "half", "origin": "hybrid", "parents": ["a", "fey"], "at": "8 kyr"},
+        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["a", "fey"], "at": "8 kyr"},
         {"id": "tmpl", "origin": "template", "parents": ["a"], "at": "4 kyr", "share": 0.05},
         {"id": "gone", "parents": ["a"], "at": "12 kyr", "extinct": "5 kyr"}],
         "wish": [{"a": "b", "want": "coast"}]}
@@ -421,7 +421,7 @@ def test_contact_hybrid_lingers_when_its_parents_part(faketz):
     raw = {"meta": {"seed": 1},
            "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
                        {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-                       {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr"}]}
+                       {"id": "ab", "origin": "hybrid", "exempt": True, "parents": ["a", "b"], "at": "20 kyr"}]}
     tree = SP.parse(raw)
     h = H.History(tree, ps, 1)
     g = h.grid
@@ -454,7 +454,7 @@ def test_contact_hybrid_without_linger_vanishes_when_its_parents_part(faketz):
     raw = {"meta": {"seed": 1},
            "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
                        {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-                       {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr", "linger": False}]}
+                       {"id": "ab", "origin": "hybrid", "exempt": True, "parents": ["a", "b"], "at": "20 kyr", "linger": False}]}
     tree = SP.parse(raw)
     assert tree.lines["ab"].linger is False and SP.to_raw(tree)["lineage"][2]["linger"] is False
     h = H.History(tree, ps, 1)
@@ -613,7 +613,7 @@ def test_groups_within_a_people(faketz):
            "lineage": [{"id": "orc", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000], "density": 1.5},
                        {"id": "warm_orc", "origin": "group", "group_of": "orc", "at": "10 kyr", "temp_c": [16, 32]},
                        {"id": "elf", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000]},
-                       {"id": "half", "origin": "hybrid", "parents": ["orc", "elf"], "at": "5 kyr"}],
+                       {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["orc", "elf"], "at": "5 kyr"}],
            "wish": [{"a": "elf", "b": "orc", "want": "apart"}]}
     t = SP.parse(raw)
     g = t.lines["warm_orc"]
@@ -923,7 +923,7 @@ def _mode_raw(**meta):
         {"id": "stem", "origin": "root", "at": "9 kyr", "real": True},
         {"id": "human", "parents": ["stem"], "at": "6 kyr", "real": True},
         {"id": "elf", "origin": "arrival", "at": "4 kyr"},
-        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "2 kyr"},
+        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "2 kyr"},
         {"id": "ork", "parents": ["stem"], "at": "5 kyr"}],
         "wish": [{"a": "human", "b": "elf", "want": "near"}],
         "use": [{"by": "human", "good": "mithril"}, {"by": "human", "good": "iron"}]}
@@ -1305,18 +1305,87 @@ def test_hybrid_fertility_follows_divergence_times():
     t = SP.parse(raw)
     assert t.fertility("a", "a") == 1.0 and t.fertility("a", "stem") == 1.0
     assert 0 < t.fertility("a", "b") < 0.1 and t.fertility("b", "c") == 0.0  # (2.5 and 8 Myr)
-    assert t.fertility("a", "c") == 1.0 and t.fertility("a", "fey") == 1.0  # (an override; no date to read: the fantasy exemption)
+    assert t.fertility("a", "c") == 1.0 and t.fertility("a", "fey") == 0.0  # (an override; no common ancestor: no young, PW-752)
+
+
+def test_interfertility_stages_follow_realistic_genetics_with_the_genre_exemption(faketz):
+    """PW-752 (owner 10-29): by split depth a pair's young are viable, absorbed into a parent people, sterile, or impossible; a declared hybrid
+    exists only where that allows it, unless it is `exempt` (half-elves, half-orcs); [[interfertile]] rows set a stage by name."""
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr"},
+        {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "2.5 Myr"},
+        {"id": "a2", "parents": ["a"], "at": "6 kyr"}, {"id": "c", "parents": ["stem"], "at": "8 Myr"},
+        {"id": "fey", "origin": "arrival", "at": "20 kyr"}, {"id": "fey2", "parents": ["fey"], "at": "12 kyr"},
+        {"id": "viable", "origin": "hybrid", "parents": ["a", "a2"], "at": "5 kyr"},
+        {"id": "absorbed", "origin": "hybrid", "parents": ["a", "stem"], "at": "5 kyr"},
+        {"id": "sterile", "origin": "hybrid", "parents": ["a", "b"], "at": "5 kyr"},
+        {"id": "sterile_own", "origin": "hybrid", "parents": ["a", "b"], "at": "5 kyr", "contact": False},
+        {"id": "none", "origin": "hybrid", "parents": ["a", "fey"], "at": "5 kyr"},
+        {"id": "genre", "origin": "hybrid", "parents": ["a", "fey"], "at": "5 kyr", "exempt": True}],
+        "interfertile": [{"a": "b", "b": "c", "stage": "absorbed"}]}
+    t = SP.parse(raw)
+    assert [t.stage_of(*p) for p in (("a", "a2"), ("a", "stem"), ("a", "b"), ("a", "c"), ("a", "fey"))] == [*SP.STAGES, "impossible"]
+    assert t.stage_of("b", "c") == "absorbed" and t.tier_of("b", "c") == 1  # (a row by stage name)
+    assert t.split_kyr("fey", "fey2") == 12 and t.stage_of("fey", "fey2") == "absorbed"  # (an arrival's own split child is its kin)
+    hf = {k: t.hybrid_factor(t.lines[k]) for k in ("viable", "absorbed", "sterile", "sterile_own", "none", "genre")}
+    assert hf["viable"] == (1.0, True) and hf["genre"] == (1.0, True)
+    assert hf["absorbed"] == (0.0, False) and hf["none"] == (0.0, False) and hf["sterile_own"] == (0.0, False)
+    assert 0 < hf["sterile"][0] < 0.1 and hf["sterile"][1] is False  # (born where the parents meet, mostly sterile, never a people)
+    r2 = SP.to_raw(t)
+    assert next(x for x in r2["lineage"] if x["id"] == "genre")["exempt"] is True and SP.parse(r2).tiers == t.tiers
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "interfertile": [{"a": "b", "b": "c", "stage": "kin"}]})
+    # in a run: the absorbed and impossible hybrids are never born (an event says why, and they are lost); the exempt one is
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw2 = {"meta": {"seed": 1}, "lineage": [
+        {"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "none", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr"},
+        {"id": "genre", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr", "exempt": True}]}
+    tree2 = SP.parse(raw2)
+    h = H.History(tree2, ps, 1)
+    g = h.grid
+    h.run()  # (sets up the run's state; the parents may never meet on this coarse grid, so they are made to meet below)
+    h.p[:] = 0.0
+    h.started = {"a": 30.0, "b": 30.0}
+    h.active = {"a": True, "b": True, "none": False, "genre": False}
+    h.events, h.origins, h._unborn = [], {}, set()
+    step = h.steps[-1]
+    env = step.get()
+    land = env["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    zone = H.rings(cell, land, 1, g.nbr_off, g.nbr_idx)
+    h.p[h.idx["a"]][zone] = h.p[h.idx["b"]][zone] = 0.6
+    h._start_due(step, env, H._tags(g, env), {})
+    assert "genre" in h.origins and (h.p[h.idx["genre"]][zone] >= H.EST).all()
+    assert "none" not in h.origins and not h.p[h.idx["none"]].any()
+    assert [e for e in h.events if e["kind"] == "unborn" and e["line"] == "none" and "impossible" in e["text"]]
+    h._hybrid(tree2.lines["none"], h.idx["none"], np.where(land, 0.9, 0.0), step)
+    assert not h.p[h.idx["none"]].any()
+
+
+def test_dnd_half_elves_and_half_orcs_are_the_only_mixed_peoples_and_always_possible():
+    """PW-752: the shared preset tracks no minor mixed peoples; half-elves (no common ancestor with humans: impossible by descent) and
+    half-orcs (700 kyr: absorbed by descent) are its genre exemptions, and elves and drow are kin."""
+    for name in ("dnd", "seven_meals"):
+        t = LR.load_tree(name)
+        hy = {l.id for l in t.lines.values() if l.origin == "hybrid"}
+        assert hy == {"half_elf", "half_orc"}, (name, hy)
+        assert all(t.lines[x].exempt and t.hybrid_factor(t.lines[x])[0] == 1.0 for x in hy)
+        assert t.stage_of("human", "elf") == "impossible" and t.stage_of("human", "orc") == "absorbed"
+    t = LR.load_tree("dnd")
+    assert t.stage_of("elf", "drow") == "absorbed" and t.stage_of("lizardfolk", "troglodyte") == "sterile"
 
 
 def test_a_contact_hybrid_of_distant_parents_is_a_thinner_share(faketz):
     """PW-851: the hybrid's share of its hosts' people scales with its parents' fertility, so the same cell holds fewer hybrids of a
-    mostly sterile pair than of a fertile one."""
+    mostly sterile pair than of a fertile one (PW-752: the fertile pair's, absorbed by descent, made exempt here)."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "600 kyr"},
         {"id": "far", "parents": ["stem"], "at": "2.5 Myr"},
-        {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr", "share": 0.2},
+        {"id": "ab", "origin": "hybrid", "exempt": True, "parents": ["a", "b"], "at": "20 kyr", "share": 0.2},
         {"id": "afar", "origin": "hybrid", "parents": ["a", "far"], "at": "20 kyr", "share": 0.2}]}
     h = H.History(SP.parse(raw), ps, 1)
     P = np.zeros((len(h.lines), h.grid.n))
@@ -1853,7 +1922,7 @@ def test_a_frontier_is_contact_two_ranges_that_only_touch_make_a_hybrid_where_th
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr"}]}
+        {"id": "ab", "origin": "hybrid", "exempt": True, "parents": ["a", "b"], "at": "20 kyr"}]}
     h = H.History(SP.parse(raw), ps, 1)
     g = h.grid
     land = ps.fields(0.0, variability=False)["land"]
@@ -1878,7 +1947,7 @@ def test_a_contact_hybrid_appears_soon_after_both_parents_hold_one_continent(fak
     raw = {"meta": {"seed": 3}, "lineage": [
         {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
     h = H.History(SP.parse(raw), ps, 3)
     seen = {}
     orig = H.History._frame
@@ -1915,7 +1984,7 @@ def test_an_arrival_whose_hybrid_is_wanted_comes_down_within_reach_of_the_other_
     raw = {"meta": {"seed": 3}, "lineage": [
         {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
     tree = SP.parse(raw)
     far = []
     for seed in range(1, 13):
@@ -2071,7 +2140,7 @@ def test_an_arrival_near_its_partner_takes_the_freest_country_when_none_is_free(
         {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "crowd", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 1},
         {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
     tree = SP.parse(raw)
     far = []
     for seed in range(1, 11):

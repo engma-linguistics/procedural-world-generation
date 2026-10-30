@@ -8,7 +8,10 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
 - arrival:  comes from outside the world (feywild, the planes) at `place = [lat, lon]` or where its habitat is best
 - hybrid:   of two `parents`, where their ranges overlap; `contact = true` (default): it exists only where both
             parents meet (half-elves); false: it founds a people of its own. `linger = false` (contact only): it never
-            outlives the meeting (no people of its own where the parents part: the half-elves of the canon)
+            outlives the meeting (no people of its own where the parents part: the half-elves of the canon). Whether it
+            exists at all follows its parents' interfertility stage (STAGES, PW-752: only a viable pair makes a mixed
+            people, a sterile one makes sterile young where they meet) unless `exempt = true` (the genre's half-elves
+            and half-orcs). [[interfertile]] rows (a, b, tier 0..3 or stage) set a pair's stage by hand.
 - template: an overlay on `parents` (hosts) from `at` on (tieflings): a `share` of the hosts' people,
             spreading from a few `sites` through the hosts' range only
 - group:    a way of life within a people (`group_of = <people>`, default `at` GROUP_KYR): steppe and forest orcs,
@@ -305,6 +308,17 @@ def body_notes(b: dict) -> list[str]:
 
 TIER_KYR = (10.0, 1100.0, 4000.0)  # split depths under which peoples are T0, T1, T2 (else T3): interfertility tiers, PW-727. Real hybrids: fertile out to ~1-2 Myr of divergence (horse x donkey is ~4 Myr and mostly sterile; wolf x dog, bison x cattle fertile), mostly sterile to ~4 Myr, none beyond (PW-851)
 TIER_FERTILITY = (1.0, 1.0, 0.1, 0.0)  # share of hybrid matings that bear fertile young at each tier (T2: 0.2 at the edge of T1 falling to 0.02 at the edge of T3, see fertility_at)
+# PW-752 (owner 10-29): realistic genetics decides who can have children together and for how long after a split. The tiers are four
+# stages, in the order a split passes through them: viable (T0: the young are one people with both parents), absorbed (T1: fertile
+# young, raised in one parent's people; no mixed people of their own, the genes flow across the border as a cline), sterile (T2: young
+# are born where the parents meet, mostly sterile: they never live on as a people) and impossible (T3: no young; also two lines with no
+# common ancestor, an arrival from outside and the natives). A hybrid line marked `exempt` (the genre's half-elves and half-orcs) is a
+# people of its own whatever its parents' stage; a preset's [[interfertile]] rows set a pair's stage by hand.
+STAGES = ("viable", "absorbed", "sterile", "impossible")
+STAGE_NOTES = {"viable": "children together, of either people or a mixed people",
+               "absorbed": "fertile children, raised in one parent's people (no mixed people of their own)",
+               "sterile": "children born, mostly sterile (no lasting mixed people)",
+               "impossible": "no children together"}
 REALMS = ("land", "coast", "sea")
 def fertility_at(d_kyr: float, tier_kyr: tuple = TIER_KYR) -> float:
     """Share of hybrid matings bearing fertile young after d_kyr of divergence: 1 under the T1 limit (fertile, with the
@@ -373,6 +387,7 @@ class Lineage:
     share: float = 0.1  # template / contact hybrid: share of the hosts' people
     contact: bool = True  # hybrid: exists only where both parents meet
     linger: bool = True  # contact hybrid: lives on as a small people of its own where its parents last met (False: never, PW-758)
+    exempt: bool = False  # hybrid (PW-752): the genre exemption, a mixed people whatever its parents' interfertility stage (half-elves, half-orcs)
     sites: int = 3  # template: incursion sites
     extinct_kyr: float | None = None  # gone by this long before the present (dwindles over the time before)
     sapient_kyr: float | None = None  # a stem: the dated "sapiens" node where minds arrive for it (PW-965); not inherited. A marker, not simulated
@@ -489,7 +504,7 @@ class Tree:
     exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
     events: list = field(default_factory=list)  # [[event]]: dated conquests the reputation pass remembers (reputation.parse_events, PW-730)
     reputation: dict = field(default_factory=dict)  # meta.reputation: knobs of the reputation pass (reputation.params)
-    tiers: list = field(default_factory=list)  # [[interfertile]]: per-pair overrides [a, b, tier 0..3] (the half-elf exemption...)
+    tiers: list = field(default_factory=list)  # [[interfertile]]: per-pair overrides [a, b, tier 0..3] (`tier`, or `stage` by name: STAGES)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
         """The goods a line looks for (from its traits and preferred places), weights summed per good."""
@@ -543,7 +558,7 @@ class Tree:
         return [k for k in BODY_BOOLS if any(not isinstance(l.body.get(k), bool) for l in self.lines.values() if not l.overlay)]
 
     def split_kyr(self, a: str, b: str) -> float | None:
-        """Kyr since two lines last shared a population (None: no common ancestor, or an arrival from outside).
+        """Kyr since two lines last shared a population (None: no common ancestor, e.g. an arrival from outside and a native).
         A line splits from its parent when it appears, so the depth is the older of the two branchings below the
         common ancestor (0: the same people or one of its groups; a parent and its child: the child's age).
         An overlay (template, contact hybrid) counts as its closest parent (it is interfertile with its hosts)."""
@@ -556,9 +571,8 @@ class Tree:
             ds = [self.split_kyr(x, y) for x in ca for y in cb]
             ds = [d for d in ds if d is not None]
             return min(ds) if ds else None
-        if la.origin == "arrival" or lb.origin == "arrival":
-            return None
-        ca = [a, *self.ancestors(a)]
+        ca = [a, *self.ancestors(a)]  # (an arrival from outside has no ancestor in the world: none in common with the natives, but its own
+        # split children descend from it: elves and drow are kin, PW-752)
         cb = [b, *self.ancestors(b)]
         common = next((x for x in ca if x in cb), None)
         if common is None:
@@ -580,13 +594,31 @@ class Tree:
 
     def fertility(self, a: str, b: str) -> float:
         """Share of hybrid matings of two lines that bear fertile young, from their split depth (PW-851). An [[interfertile]]
-        row gives its tier's nominal share; no common ancestor (an arrival from outside, another root: the fantasy exemptions,
-        half-elves) gives 1, since no divergence date is there to read."""
+        row gives its tier's nominal share; no common ancestor (an arrival from outside, another root) gives 0: no young
+        (PW-752: realistic genetics; the genre's half-elves are a hybrid line's `exempt`, not a fertility)."""
         for x, y, t in self.tiers:
             if {x, y} == {a, b}:
                 return TIER_FERTILITY[t]
         d = self.split_kyr(a, b)
-        return 1.0 if d is None else fertility_at(d, self.tier_kyr)
+        return 0.0 if d is None else fertility_at(d, self.tier_kyr)
+
+    def stage_of(self, a: str, b: str) -> str:
+        """The interfertility stage of two lines (STAGES, from tier_of): viable, absorbed, sterile or impossible (PW-752)."""
+        return STAGES[self.tier_of(a, b)]
+
+    def hybrid_factor(self, l: Lineage) -> tuple[float, bool]:
+        """(the share of its parents' meeting a hybrid line's people make up, x its `share`; whether it can live on where they part)
+        by its parents' stage (PW-752): exempt or viable (1, its own linger); absorbed or impossible (0: no mixed people; absorbed
+        young are counted in a parent's people); sterile (the share of matings bearing fertile young, fertility_at; never lingers:
+        sterile young leave no people behind). 1 and its linger for any other line."""
+        if l.origin != "hybrid" or l.exempt:
+            return 1.0, l.linger
+        st = self.stage_of(*l.parents)
+        if st == "viable":
+            return 1.0, l.linger
+        if st == "sterile":  # (born where the parents meet; sterile young found no people of their own, contact = false)
+            return (self.fertility(*l.parents) if l.contact else 0.0), False
+        return 0.0, False
 
     def groups_of(self, lid: str) -> list[str]:
         """The groups (ways of life) within a people, oldest first."""
@@ -774,7 +806,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
-                    linger=bool(r.get("linger", True)),
+                    linger=bool(r.get("linger", True)), exempt=bool(r.get("exempt", False)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None,
                     sapient_kyr=parse_ago(r["sapient"]) if r.get("sapient") not in (None, "") else None,
@@ -871,10 +903,14 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.tier_kyr = tk
     for r in raw.get("interfertile", []):
         a, b, tr = str(r.get("a", "")), str(r.get("b", "")), r.get("tier")
+        if r.get("stage") not in (None, ""):  # (the stage by name: viable, absorbed, sterile or impossible, PW-752)
+            if r["stage"] not in STAGES or (tr is not None and tr != STAGES.index(r["stage"])):
+                raise ValueError(f"interfertile {r}: stage must be one of {list(STAGES)} (and agree with tier if both are given)")
+            tr = STAGES.index(r["stage"])
         if a in off or b in off:
             continue
         if a not in lines or b not in lines or a == b or tr not in (0, 1, 2, 3):
-            raise ValueError(f"interfertile {r}: a and b must be two lines of the tree and tier 0..3")
+            raise ValueError(f"interfertile {r}: a and b must be two lines of the tree and a tier 0..3 or a stage {list(STAGES)}")
         t.tiers.append((a, b, int(tr)))
     from . import reputation as RP
     t.exonyms = RP.parse_rows(raw.get("exonym"), BODY_DEFAULT, BODY_CHOICES)
@@ -990,6 +1026,8 @@ def to_raw(t: Tree) -> dict:
             r["contact"] = l.contact
             if not l.linger:
                 r["linger"] = False
+            if l.exempt:
+                r["exempt"] = True
         if l.origin == "template":
             r["sites"] = l.sites
         out.append(r)
@@ -1006,6 +1044,6 @@ def to_raw(t: Tree) -> dict:
                      **({"crops_force": t.crops_force} if t.crops_force else {}),
                      **({"crops_at": {k: f"{v:g} kyr" for k, v in t.crops_at.items()}} if t.crops_at else {})},
             "lineage": out, "exonym": t.exonyms,
-            "event": [{**e, "at": f"{e['at']:g} kyr"} for e in t.events], "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
+            "event": [{**e, "at": f"{e['at']:g} kyr"} for e in t.events], "interfertile": [{"a": a, "b": b, "tier": x, "stage": STAGES[x]} for a, b, x in t.tiers],
             "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

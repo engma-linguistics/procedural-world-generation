@@ -829,6 +829,12 @@ prefers = ["island", "coast"]
 traits = ["swims", "coastal", "insular"]
 
 # ---- hybrids: only where both parents meet ------------------------------------------------
+# Who can have children together follows realistic genetics (PW-752, owner 10-29): by how long ago two peoples split (meta.tier_kyr,
+# spec.STAGES) their young are viable (under 10 kyr: one people), absorbed into a parent people (under 1.1 Myr: fertile, but no mixed
+# people of their own, as the archaic humans' genes in the moderns), sterile (under 4 Myr) or impossible (deeper, or no common ancestor:
+# the elves came from outside). No minor mixed peoples are tracked (no half-tortle-half-lizardfolk): the only mixed peoples are the two
+# the genre is built on, half-elves and half-orcs, which are always possible (`exempt = true`): human-elf is impossible by descent and
+# human-orc absorbed (700 kyr). A preset of its own can mark other hybrids exempt or set a pair's stage with an [[interfertile]] row.
 [[lineage]]
 id = "half_elf"
 name = "half-elves"
@@ -836,6 +842,7 @@ origin = "hybrid"
 parents = ["human", "elf"]
 at = "10 kyr"
 contact = true
+exempt = true  # (the genre exemption: humans and elves share no ancestor in this world, PW-752)
 insularity = 0.3  # (at home in neither parent group, not as aloof as their elven parents; it feeds the composition's cohabitation. A contact hybrid spreads nowhere itself, so no explore, PW-758)
 
 [[lineage]]
@@ -845,6 +852,7 @@ origin = "hybrid"
 parents = ["human", "orc"]
 at = "10 kyr"
 contact = true
+exempt = true  # (the genre exemption: by their 700 kyr split the young would be absorbed into a parent people, PW-752)
 insularity = 0.3  # (like the half-elves; no explore: a contact hybrid does not spread itself, PW-758)
 
 # ---- templates: overlays on existing peoples ----------------------------------------------

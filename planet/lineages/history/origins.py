@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ...geo import R_KM
+from .. import spec as SP
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
 from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
@@ -63,6 +64,7 @@ class OriginsMixin:
         right at the range of the other parent of each such hybrid, falling off over HYBRID_REACH_KM; None when no hybrid is wanted or the
         partners hold nothing. Hybrids happen on a frontier, so a people that sails over should come down where its partner already is."""
         partners = [q for h in self.tree.lines.values() if h.origin == "hybrid" and line.id in h.parents and h.contact
+                    and self._hybrid_factor(h)[0] > 0
                     for q in h.parents if q != line.id and self.active.get(q)]
         if not partners:
             return None
@@ -191,7 +193,7 @@ class OriginsMixin:
         pull = None
         if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
             for h in self.tree.lines.values():
-                if h.origin == "hybrid" and line.id in h.parents:
+                if h.origin == "hybrid" and line.id in h.parents and self._hybrid_factor(h)[0] > 0:  # (PW-752: a mixed people its stage allows)
                     other = [q for q in h.parents if q != line.id][0]
                     if self.active.get(other):  # (PW-852: within HYBRID_REACH_KM of its range, not just three cells: the two should meet soon)
                         m = self._near_range(other)
@@ -432,6 +434,13 @@ class OriginsMixin:
             if l.id in self.started or l.ago_kyr < step.ago - 1e-9:
                 continue
             if l.origin == "hybrid" and step.ago > HYBRID_FROM_KYR + 1e-9:  # (no hybrid people before the farming onset, whatever its date)
+                continue
+            if l.origin == "hybrid" and self._hybrid_factor(l)[0] <= 0:  # (its parents' young are absorbed into a parent people, or none are
+                if l.id not in self._unborn:  # born: no mixed people, PW-752; logged once, and listed as lost)
+                    self._unborn.add(l.id)
+                    st = self.tree.stage_of(*l.parents)
+                    self._event(step.ago, "unborn", l, f"no {l.label()}: {' and '.join(self.tree.lines[q].label() for q in l.parents)} are "
+                                f"{st} ({SP.STAGE_NOTES[st]})")
                 continue
             if l.extinct_kyr is not None and step.ago <= l.extinct_kyr:
                 self.started[l.id] = step.ago
