@@ -1075,7 +1075,7 @@ def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if len(i):
         p = np.asarray(L["precipitation"], float)
         pj, pn = (np.asarray(L.get(k, p), float) for k in ("precipitation_jul", "precipitation_jan"))
-        cov = icemass.sheet_cover(g, ice)
+        cov = icemass.sheet_cover(g, ice, air=icemass.sheet_air(g, ice))  # (as climate.compute's own, PW-1050)
         gw[i], gc[i] = icemass.ground_from_surface(g.lat[i], tw[i], tc[i], pj[i], pn[i], ice[i], cov[i])
     return gw, gc
 
@@ -1247,7 +1247,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # share in the July half-year)
     ice_all = L.get("ice", np.zeros(g.n)).astype(float)
     gw, gc = (v[sel] for v in ice_ground(g, L, ice_all))
-    cov_c = icemass.sheet_cover(g, np.where(elev > 0, ice_all, 0.0))[sel]
+    ice_l = np.where(elev > 0, ice_all, 0.0)
+    cov_c = icemass.sheet_cover(g, ice_l, air=icemass.sheet_air(g, ice_l))[sel]
     if "precipitation_jul" in L and "precipitation_jan" in L:
         pj_c, pn_c = (np.asarray(L[k], float)[sel] for k in ("precipitation_jul", "precipitation_jan"))
         jul_c = np.where(pj_c + pn_c > 0, pj_c / np.maximum(pj_c + pn_c, 1e-9), 0.5)
