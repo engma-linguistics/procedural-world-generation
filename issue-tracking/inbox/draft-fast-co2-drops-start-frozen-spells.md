@@ -9,7 +9,7 @@ effort: m
 impact: high
 found_by: lane71
 blocked_by: []
-relates: [PW-1142, PW-865]
+relates: [PW-865]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py]
 ---
 
@@ -29,7 +29,7 @@ ice's own extent is 40%+ of the land even when grown from bare ground.
 - 583167 l6c_p: frozen 632-664 at dT -4.6..-6.3 (true -8 C). The CO2 index falls 1.3 -> -0.45 from 602 to 632.
 - 819014 l6c_p: a long cold era from ~760 to the end at dT -5..-8.5 (true -8..-10 C), CO2 index -1 to -1.8.
 - 619496 l6fix is the exception, a persistence/feedback case: the land ice goes 24% -> 45% at 402-426 with dT only
-  -0.1..-1.8 (the albedo term reaches -1.7). That one is PW-1142's.
+  -0.1..-1.8 (the albedo term reaches -1.7). That one is the warm-orbits draft's (draft-run-sheets-see-warm-orbits.md, called PW-1142 by the coordinator).
 
 Question: are swings of 2 e-folds of CO2 in 12 Myr from a source dip plausible (the Cenozoic fell ~4-5x over
 ~50 Myr)? If not, the carbon cycle's response time or the source's volatility is the lever, not the ice.

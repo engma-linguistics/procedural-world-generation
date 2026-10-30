@@ -9,7 +9,7 @@ effort: m
 impact: high
 found_by: lane71
 blocked_by: []
-relates: [PW-1142, PW-464, PW-1115, PW-1095]
+relates: [PW-464, PW-1115, PW-1095]
 refs: [planet/icemass.py, planet/tectonics/earth.py, planet/tectonics/params.py, "branch worktree-agent-ad490796ec6c59e7a f38b7931"]
 ---
 

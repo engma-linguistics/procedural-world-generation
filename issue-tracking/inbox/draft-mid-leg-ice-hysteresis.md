@@ -9,7 +9,7 @@ effort: m
 impact: med
 found_by: lane71
 blocked_by: []
-relates: [PW-1142, PW-464]
+relates: [PW-464]
 refs: [tools/ice_probe.py, planet/tectonics/earth.py]
 ---
 
