@@ -2,7 +2,8 @@
 // beside run.json. At the slider's moment a living site is a dot in its holder's colour (bigger for a town, bigger again with a
 // white ring for a city), a ruin a small grey cross; the hover card lists the sites of the cell under the pointer.
 // A second people's own place (kind 'minority', PW-1105: a dwarf hold in the humans' hills) is drawn like any other;
-// a mine (kind 'mine') is a small diamond in its holder's colour, shown with the villages.
+// a mine (kind 'mine') is a mining district (the best deposit of a ring of cells: the pits and mining town of one seam), a
+// diamond in its holder's colour, in a white ring when it is a colony of incomers (D12); its own box, 'mines', fading in with the towns.
 // At whole-globe view only the cities and city ruins show; the towns fade in as the camera closes in, then the villages,
 // mines and lesser ruins (fadeSettlements, PW-1106: the owner found the towns too many at globe scale), and the 'villages'
 // box turns the villages and mines off altogether. The hover card lists everything at any scale.
@@ -41,9 +42,9 @@ const nowAgo = () => -(S.V.run.frames[S.V.frame]?.t ?? 0);
 const holderAt = (s, ago) => { let h = s.founded_by; for (const [a, p] of s.holders) if (a >= ago - 1e-6) h = p; return h; };
 
 export function settlementOverlays(globe, wraps, ribbonObj, people) {
-  const d = S.V.settleDoc, ago = nowAgo(), r0 = globe ? 1.013 : 1, minor = $('settleVillages')?.checked !== false;
+  const d = S.V.settleDoc, ago = nowAgo(), r0 = globe ? 1.013 : 1, minor = $('settleVillages')?.checked !== false, showMines = $('settleMines')?.checked !== false || $('settleMinesOnly')?.checked, only = $('settleMinesOnly')?.checked;
   const col = new Map((S.V.run.meta.lineages || []).map((l) => [l.id, l.color]));
-  const dots = [], dcols = [], tdots = [], tcols = [], vdots = [], vcols = [], rings = [], ruins = [], vruins = [], edges = [], tedges = [], mines = [], mcols = [];
+  const dots = [], dcols = [], tdots = [], tcols = [], vdots = [], vcols = [], rings = [], ruins = [], vruins = [], edges = [], tedges = [], mines = [], mcols = [], mrings = [];
   const ring = (la, lo, rad, out, cols, rgb) => {
     const cl = Math.max(Math.cos(la * Math.PI / 180), 0.2);
     let p1 = llPos(la + rad, lo, r0);
@@ -55,10 +56,11 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
   };
   for (const s of d.sites) {
     if (ago > s.founded_kyr + 1e-6) continue;  // (not yet founded)
+    if (only && s.kind !== 'mine') continue;  // ('only the mines')
     if (isGone(s, ago) && !isRuin(s, ago)) continue;  // (merged)
     if (isRuin(s, ago)) {  // (a city's ruin at every scale; a town's or a village's with the villages)
       const out = s.tier_peak === 'city' ? ruins : vruins;  // (a mine's too)
-      if (out === vruins && !minor) continue;
+      if (out === vruins && !(s.kind === 'mine' ? showMines : minor)) continue;
       const h = 0.18, cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
       for (const [a, b] of [[[-h, -h], [h, h]], [[-h, h], [h, -h]]]) {
         const p1 = llPos(s.lat + a[0], s.lon + a[1] / cl, r0), p2 = llPos(s.lat + b[0], s.lon + b[1] / cl, r0);
@@ -69,12 +71,15 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
     const h = holderAt(s, ago);
     if (people != null && h !== people) continue;
     const t = s.kind === 'mine' ? 'mine' : TIER(popAt(s, ago), d, s, ago), c = col.get(h) || '#dddddd';
-    if ((t === 'village' || t === 'mine') && !minor) continue;
+    if ((t === 'village' && !minor) || (t === 'mine' && !showMines)) continue;
     const rgb = [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
     if (t === 'mine') {  // (a diamond)
-      const m = 0.2, cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
-      const P = [[m, 0], [0, m], [-m, 0], [0, -m], [m, 0]].map(([a, b]) => llPos(s.lat + a, s.lon + b / cl, r0));
-      for (let k = 0; k < 4; k++) if (!wraps(P[k], P[k + 1])) { mines.push(...P[k], ...P[k + 1]); mcols.push(...rgb, ...rgb); }
+      const cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.2);
+      for (const m of (only ? [0.6, 0.45, 0.3, 0.15] : [0.3, 0.2, 0.1])) {  // (filled: diamonds within diamonds; larger alone)
+        const P = [[m, 0], [0, m], [-m, 0], [0, -m], [m, 0]].map(([a, b]) => llPos(s.lat + a, s.lon + b / cl, r0));
+        for (let k = 0; k < 4; k++) if (!wraps(P[k], P[k + 1])) { mines.push(...P[k], ...P[k + 1]); mcols.push(...rgb, ...rgb); }
+      }
+      if (s.colony) ring(s.lat, s.lon, only ? 0.9 : 0.45, mrings, null, null);  // (a colony of incomers: a white ring)
       continue;
     }
     const rad = t === 'city' ? 0.55 : t === 'town' ? 0.33 : 0.14;
@@ -94,7 +99,8 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
   if (tdots.length) { out.settleTowns = own(ribbonObj(tdots, 0xffffff, 1, 3, tcols), FADE_TOWN); out.settleTownEdges = own(ribbonObj(tedges, 0x15120e, 0.9, 1.5), FADE_TOWN); }
   if (vdots.length) out.settleVillages = own(ribbonObj(vdots, 0xffffff, 1, 3, vcols), FADE);
   if (vruins.length) out.settleVillageRuins = own(ribbonObj(vruins, 0x9a948a, 0.9, 1.5), FADE);
-  if (mines.length) out.settleMines = own(ribbonObj(mines, 0xffffff, 1, 2.5, mcols), FADE);
+  if (mines.length) out.settleMines = only ? ribbonObj(mines, 0xffffff, 1, 2.5, mcols) : own(ribbonObj(mines, 0xffffff, 1, 2.5, mcols), FADE_TOWN);
+  if (mrings.length) out.settleMineRings = only ? ribbonObj(mrings, 0xffffff, 1, 2) : own(ribbonObj(mrings, 0xffffff, 1, 1.5), FADE_TOWN);
   fadeSettlements(out);
   return out;
 }
@@ -103,7 +109,7 @@ export function settlementOverlays(globe, wraps, ribbonObj, people) {
 // screen (the whole globe: they would carpet the land), 1 from FADE[1] pixels (zoomed in: each dot stands alone). The towns
 // (two cells apart or more) between FADE_TOWN's: at the default globe view (~9 px) they are still hidden.
 const FADE = [18, 28], FADE_TOWN = [10, 16];
-const FADED = ['settleTowns', 'settleTownEdges', 'settleVillages', 'settleVillageRuins', 'settleMines'];
+const FADED = ['settleTowns', 'settleTownEdges', 'settleVillages', 'settleVillageRuins', 'settleMines', 'settleMineRings'];
 export function villageFade(range = FADE) {
   if (!S.V?.n) return 0;
   const spacing = Math.sqrt(4 * Math.PI / S.V.n) * 180 / Math.PI;  // (degrees between neighbouring cells)
@@ -114,7 +120,7 @@ export function villageFade(range = FADE) {
 export function fadeSettlements(o = S.overlays) {
   if (!o || !FADED.some((k) => o[k])) return;
   for (const x of FADED.map((k) => o[k])) {
-    if (!x) continue;
+    if (!x || x.userData.range == null) continue;  // (not faded: the mines alone, "only the mines")
     const a = villageFade(x.userData.range);
     x.visible = a > 0.01;
     x.material.opacity = a * x.userData.fade;
@@ -145,7 +151,13 @@ export function settlementRows(i, R) {
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
     const q = s.quarters.map((x) => `a ${String(x.group).replace(/_/g, ' ')} quarter (${x.pct}%)`).join(', ');  // (the group's id: 'a city kobold quarter')
-    const what = s.kind === 'mine' ? 'mine' : s.kind === 'minority' ? `${TIER(p, d, s, ago)} (their own place, as a second people here)` : TIER(p, d, s, ago);
+    if (s.kind === 'mine') {  // (D12: a district, not a pit; a colony's miners came from their own country nearby)
+      R('place', '', `${s.colony ? `mining colony of the ${name(h)}: a mining ${p >= d.tiers.town_min_by_stage[1] ? 'town' : 'village'} of ~${n0(p)} incomers` : `mining district of the ${name(h)}, ~${n0(p)} miners and those who feed them`}`
+        + `, working the ${esc(s.district || 'ore')} ${s.district === 'rock salt' ? 'beds' : 'district'}; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
+        + ' (one district: the pits of one seam, the best deposit of its ring of cells)', { lab: 'mine', ess: true });
+      continue;
+    }
+    const what = s.kind === 'minority' ? `${TIER(p, d, s, ago)} (their own place, as a second people here)` : TIER(p, d, s, ago);
     R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
       + `${s.abandoned_kyr != null ? `; left ~${yrs(s.abandoned_kyr)} ago (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
     if (who) R('place', '', `${who}${q ? `; ${q}` : ''} (${s.who_when})`, { lab: 'its people', ess: true });

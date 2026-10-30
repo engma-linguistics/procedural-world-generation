@@ -36,7 +36,7 @@ from . import spec as SP
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 13  # 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 14  # 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -341,10 +341,13 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
         if s.get("kind") == "minority":
             own[s["founded_by"]] = own.get(s["founded_by"], 0) + 1
     mines: dict = {}
-    for s, _ in live:
+    colonies: list = []
+    for s, p in live:
         if s.get("kind") == "mine":
             h = _holder_at(s, era)
             mines[h] = mines.get(h, 0) + 1
+            if s.get("colony") and h == s["holder"]:  # (D12: a mining town of incomers; the flag is the present's)
+                colonies.append({**row(s, p), "district": s.get("district"), "size": "town" if p >= doc["tiers"]["town_min_by_stage"][1] else "village"})
     out = {"basis": f"the settlement ledger (settlements.py, PW-1011) at {era:g} kyr ago: living places in the region's cells; "
                     f"size classes follow what the holding people knows (a town from {min(doc['tiers']['town_min_by_stage'][1:]):,} to {town:,} people, a city from {city:,})",
            "counts": count, "people_in_places": int(sum(p for s, p in places)),
@@ -353,6 +356,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
                                                  for s, p in sorted(taken, key=lambda sp: -sp[1])[:SETTLE_TOP]]},
            "own_places_of_second_peoples": dict(sorted(own.items(), key=lambda kv: -kv[1])),
            "mines": dict(sorted(mines.items(), key=lambda kv: -kv[1])),
+           "mining_colonies": sorted(colonies, key=lambda r: -r["pop"])[:SETTLE_TOP],
            "ruins": {"count": len(ruins), "why": {}, "largest": [
                {"id": s["id"], "tier": s["tier_peak"], "peak_pop": s["peak_pop"], "people": _holder_at(s, s["abandoned_kyr"]),
                 "founded_kyr": s["founded_kyr"], "abandoned_kyr": s["abandoned_kyr"], "why": s["why"], "lat": s["lat"], "lon": s["lon"]}
@@ -373,7 +377,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
                          "taken_from_others": sum(s["founded_by"] != people and s.get("kind") != "mine" for s, _ in mine_),
                          "ruins_of_its_founding": sum(1 for s in doc["sites"] if s["founded_by"] == people and s["tier_now"] == "ruin"
                                                       and s["abandoned_kyr"] >= era - 1e-6)}
-    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | {r["people"] for r in out["ruins"]["largest"]}
+    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | {r["people"] for r in colonies} | {r["people"] for r in out["ruins"]["largest"]}
     out["names"] = {k: name.get(k, k) for k in sorted(used)}
     return out
 
@@ -1125,7 +1129,7 @@ def _settlements_md(st: dict | None) -> list[str]:
     nm = lambda k: st["names"].get(k, k)  # noqa: E731
     c = st["counts"]
     t = ["", "## Towns and cities", "",
-         f"- {c.get('city', 0)} cities, {c.get('town', 0)} towns, {c.get('village', 0)} villages, {c.get('mine', 0)} mines; "
+         f"- {c.get('city', 0)} cities, {c.get('town', 0)} towns, {c.get('village', 0)} villages, {c.get('mine', 0)} mining districts (one per ring of cells: the pits of one seam); "
          f"{st['people_in_places']:,} people in them; {st['ruins']['count']} ruins"]
     for r in st["largest"]:
         t += [f"- {r['tier']} of the {nm(r['people'])}" + (" (their own place among another people)" if r["kind"] == "minority" else "")
@@ -1138,7 +1142,10 @@ def _settlements_md(st: dict | None) -> list[str]:
     if st["own_places_of_second_peoples"]:
         t += ["- Places of their own among another people: " + ", ".join(f"{nm(k)} {v}" for k, v in st["own_places_of_second_peoples"].items())]
     if st["mines"]:
-        t += ["- Mines worked by: " + ", ".join(f"{nm(k)} {v}" for k, v in st["mines"].items())]
+        t += ["- Mining districts worked by: " + ", ".join(f"{nm(k)} {v}" for k, v in st["mines"].items())]
+    for r in st.get("mining_colonies") or []:
+        t += [f"  - a mining {r.get('size', 'town')} of {nm(r['people'])}, {r['pop']:,} incomers working the {r.get('district') or 'ore'} district"
+              + (f" ({r['place']})" if r.get("place") else "") + f", since {r['founded_kyr']:g} kyr ago"]
     if st["ruins"]["count"]:
         t += ["- Ruins, why abandoned: " + ", ".join(f"{k} {v}" for k, v in sorted(st["ruins"]["why"].items(), key=lambda kv: -kv[1]))]
         t += [f"  - the ruin of a {r['tier']} of the {nm(r['people'])} (at most ~{r['peak_pop']:,} people), {r['lat']}, {r['lon']}: "

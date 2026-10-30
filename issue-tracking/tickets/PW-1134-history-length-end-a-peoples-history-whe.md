@@ -41,4 +41,5 @@ Options:
 Lean: D first (it costs no simulation change and shows whether the stopping test is meaningful), B if it is.
 
 ## Updates
+- 2026-10-30: Owner 10-30 D13: D first (pick the present afterwards); if nobody has crossed the finish line, extend the span instead.
 - 2026-10-30: Created from inbox draft draft-history-ends-when-cultures-settle.md (found by fun-lane-69).
