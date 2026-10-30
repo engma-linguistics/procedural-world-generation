@@ -17,6 +17,26 @@ SAMPLES = Path(__file__).parent / "samples"
 _NAME = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 
 
+def editor_schema() -> dict:
+    """GET /api/lineage-schema: the peoples editor's option lists and defaults, from spec.py, land.GOODS and dragon_ages
+    (viewer/lineages.html renders its menus from it, so they can't drift from what a tree may say; PW-1033)."""
+    from . import dragon_ages as DA
+    return {
+        "traits": list(SP.TRAITS), "places": list(SP.PLACES), "groups": list(SP.GROUPS), "ways": list(SP.WAYS),
+        "realms": list(SP.REALMS), "goods": {k: label for k, (label, _) in LD.GOODS.items()},
+        "band": SP.BAND, "demo_default": SP.DEMO_DEFAULT, "demography": SP.DEMOGRAPHY,
+        "body_default": SP.BODY_DEFAULT, "body_choices": {k: list(v) for k, v in SP.BODY_CHOICES.items()},
+        "body_bools": [k for k, v in SP.BODY_DEFAULT.items() if isinstance(v, bool)], "toxins": list(SP.TOXINS),
+        "eras": list(SP.ERAS), "modes": list(SP.MODES), "portal_modes": list(SP.PORTAL_MODES),
+        "megafauna_natural": [[k, SP.MEGAFAUNA_NATURAL_LABELS[k]] for k in SP.MEGAFAUNA_NATURAL],
+        "dragon_ages": list(DA.SCHEDULES), "dragon_generation": list(DA.GENERATION),
+        "defaults": {"era": SP.ERA_DEFAULT, "mode": SP.MODE_DEFAULT, "portal_mode": SP.Tree.portal_mode,
+                     "megafauna_natural": SP.MEGAFAUNA_NATURAL_DEFAULT, "dragon_ages": DA.DEFAULT,
+                     "dragon_generation": DA.GENERATION_DEFAULT, "dragon_km2": SP.DRAGON_KM2, "giant_km2": SP.GIANT_KM2,
+                     "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL},
+    }
+
+
 def trees_dir() -> Path:
     return S.root() / "lineage_trees"
 

@@ -11,7 +11,7 @@ impact: med
 found_by: base-climate-laneA21
 blocked_by: []
 relates: [PW-450, PW-640]
-refs: [planet/timezoom/plants.py, planet/vegetation.py, docs/review/base-climate/laneA21/fpool.txt, docs/review/base-climate/laneA21/fearth_L6.txt]
+refs: [planet/timezoom/plants.py, planet/vegetation.py, docs/review/base-climate/laneA21/README.md]
 created: 2026-10-23
 updated: 2026-10-23
 ---

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-662]
 refs: [planet/lineages/landuse.py, planet/zoom_vegetation.py, "run 8bac4d", "run c646ea"]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -29,6 +29,7 @@ Keep it opt-in, written as a second vegetation layer or a flag on the zoom, so w
 - [ ] a zoom made without a peoples run is unchanged
 
 ## Updates
+- 2026-10-29: Removed docs/review/lineages/anthro-zoom-*.png in cleanup; last present at 9861e2df.
 - 2026-10-23: Fix (coordinator, 2026-10-24): fertile_score is stored as a percent and was read as 0..1, so FERT_MIN never applied and fertility swamped the village sites (villages ignored rivers). Now /100; villages are drawn weighted without replacement. Demo zoom 859e74 predates the fix and should be remade.
 - 2026-10-23: Status todo -> done. Merged (7219756): planet zoom --peoples RUN; demo zoom 859e74 (1df1c3, run d489d0). Follow-ups PW-672..674.
 - 2026-10-23: Created from inbox draft draft-anthro-feedback-zoom-plants.md (found by anthro).

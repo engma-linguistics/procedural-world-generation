@@ -40,6 +40,18 @@ from .grid import Grid, build_grid
 _RESOURCES = contextvars.ContextVar("resources", default=True)
 
 
+def finish_key(erosion: float) -> str:
+    """What a finished world was made with, for reusing it (api.find_slice, PW-1039): the finishing code
+    (provenance.code_hash "finish") and the final erosion. (Whether it has resources is meta.resources.)"""
+    from .provenance import code_hash
+    return f"{code_hash('finish')}:{float(erosion):g}"
+
+
+def resources_on() -> bool:
+    """Whether finish() makes the resource layers here (not within resources_off())."""
+    return _RESOURCES.get()
+
+
 @contextlib.contextmanager
 def resources_off():
     """Within this block finish() leaves the resource layers out (`planet resources <world>` adds them later)."""
@@ -224,6 +236,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                        "from_history": veg.get("nu0") is not None, "reef_builders": reef_ok},
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "finish_key": finish_key(erosion),  # (what api.find_slice matches, PW-1039)
     }
     # the coast-form layers (coastform.py, PW-097, PW-620) and, for a world from a stored run, the resource layers
     # with the run's history pass (resources.py, PW-155, PW-609); the history is kept beside the world (save()) for
@@ -473,7 +486,7 @@ _np = S.jsonable  # json.dumps default= for numpy values
 def save(world: dict, name: str, file_id: str | None = None) -> Path:
     """Saves worlds/<id>.json (+ .txt); `name` is the human-readable label."""
     S.worlds_dir().mkdir(parents=True, exist_ok=True)
-    file_id = file_id or S.new_id()
+    file_id = file_id or S.new_id("world")
     g: Grid = world["grid"]
     world["name"] = name
     summary = summarize(world)

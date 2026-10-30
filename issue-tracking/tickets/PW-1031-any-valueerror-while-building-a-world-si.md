@@ -2,9 +2,9 @@
 id: PW-1031
 title: Any ValueError while building a world silently becomes an hour-long \"old run\" replay; other old-run fallbacks quietly change the world
 type: task
-status: todo
+status: done
 parent: null
-milestone: null
+milestone: v1
 subsystem: store
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-813]
 refs: [planet/api.py, planet/timeline.py, planet/tectonics/params.py, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,4 +26,8 @@ Fix: delete the ValueError fallback (or raise a dedicated `RunTooOld`), make the
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-30: Merged 10-30. Consequence: 40 of 57 stored runs (all showcases, incl. 6b48f5 and its time zoom f778ab) were made by older code and now refuse slicing, zooming and time-zoom finishing with 'delete and re-run'. Saved worlds still open. Rebuild the showcases on final v1 code (release step); fun lanes needing a fresh base run make one on current main.
+- 2026-10-29: Note for the merge (fix lane 49): 40 of the 57 runs in the main data root, including every showcase run (6b48f5 and its time zoom f778ab, 6c652c, d30069, 99dc70, feaade), store params that differ from today's (flora_end, plants_from, star_age gone; star_thermostat, run_end, finish_window, triple_odds and others added since). They were slicing with today's defaults for those; now slicing, zooming from the run or finishing a time zoom of them says 'made by older code; delete it and re-run'. Saved worlds stay viewable. Time the merge with the showcase rebuild.
+- 2026-10-29: Status todo -> done. Fix lane 49: api._slice_locked no longer catches ValueError and replays: any error building a world from a keyframe reaches the caller (test_api.test_slice_error_reaches_caller). Made strict with 'made by older code; delete it and re-run': Params.from_stored (removed or missing params), timeline.keyframe_vegetation (no plant_groups, reef_builders_t or keyframe pco2), world_from_frame (no keyframe layers or sea level; missing or mismatched volcano table). test_invariants' old-run tests and test_highlights.test_ago_time (it passed partial params) updated to match. Not-slow suite 731 passed.
+- 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-old-run-fallbacks-hide-bugs.md (found by code-audit-2026-10).

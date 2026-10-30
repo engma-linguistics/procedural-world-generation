@@ -21,7 +21,6 @@ time asked for) and builds a complete world there (climate, rivers, biomes);
 from __future__ import annotations
 
 import json
-import shutil
 import time
 from dataclasses import asdict, fields, replace
 from pathlib import Path
@@ -123,7 +122,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
     frames, vframes, data = [], [], {k: [] for k in RUN_LAYERS}
-    jet = {"src": None, "v": None}  # the climate (and so the jet) changes only every climate_every Myr
+    jet = {"src": None, "v": None}  # the climate (and so the jet) changes only at its updates (earth.climate_due)
     run_id = S.new_id()
     out = S.runs_dir() / run_id
 
@@ -152,6 +151,11 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             progress(min(1.0, s.t / myr))
 
     out.mkdir(parents=True, exist_ok=True)
+    # the header first, "running" (store.run_status): an interrupted run keeps its folder and checkpoints (PW-508)
+    head = {"format": "procgen-run/2", "id": run_id, "name": name, "status": "running",
+            "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr, "params": asdict(params),
+                     "code": code_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S"), **S.process_stamp()}}
+    S.write_json(out / "run.json", head)
     try:
         with writer:
             keep(sim)
@@ -159,8 +163,10 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS},
                                     {k: S.run_spec(k) for k in RUN_LAYERS})
             S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
-    except BaseException:
-        shutil.rmtree(out, ignore_errors=True)
+    except BaseException as e:
+        head["status"] = "interrupted"
+        head["meta"].update(stopped_at_myr=round(float(sim.t), 3), error=f"{type(e).__name__}: {e}"[:500])
+        S.write_json(out / "run.json", head)
         raise
     S.write_grid(grid)
     S.write_json(out / "run.json", {
@@ -203,11 +209,15 @@ def plant_groups(sim: Simulation) -> list:
 def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray) -> dict:
     """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
     cover (%, forest or savanna) as a warm start, its CO2 (ppm), and the plant groups by then."""
-    groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
+    missing = [k for k in ("plant_groups", "reef_builders_t") if k not in meta] + \
+        (["pco2"] if "pco2" not in fr["stats"] else [])
+    if missing:  # (no backward compatibility, PW-1031)
+        raise ValueError(f"this run was made by older code (no {', '.join(missing)}); delete it and re-run")
+    groups = [g.get("t") for g in meta["plant_groups"]]
     t_fr = float(fr["t"])
-    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
+    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"]["pco2"],
             "unlocked": VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr),
-            "groups": groups, "reef_builders": t_fr >= float(meta.get("reef_builders_t", -np.inf)) - 1e-9}
+            "groups": groups, "reef_builders": t_fr >= float(meta["reef_builders_t"]) - 1e-9}
 
 
 def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
@@ -305,17 +315,22 @@ def snap_time(run: dict, at: float) -> float:
 
 def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) -> Simulation:
     """The run's simulation at time `at`: from the latest checkpoint at or
-    before it when the run was made by this same code (else from t=0)."""
+    before it, or from t=0 if that checkpoint won't load (PW-1035). Whether
+    the replay reproduces the run is slice_world's keyframe check, not a
+    guess from the code's hash."""
     run = S.read_header(Path(run_dir) / "run.json")
     m = run["meta"]
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])
-    made_by = m.get("code") or {}
     usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
-    if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
-        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
-        log(f"replaying from the checkpoint at t={usable[-1]:g}")
-    else:
+    sim = None
+    if use_checkpoints and usable:
+        try:
+            sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
+            log(f"replaying from the checkpoint at t={usable[-1]:g}")
+        except Exception as e:  # (a checkpoint of older code may not unpickle or fit this Simulation)
+            log(f"the checkpoint at t={usable[-1]:g} won't load ({type(e).__name__}: {e}); replaying from t=0")
+    if sim is None:
         sim = Simulation(grid, m["seed"], params, m["dt"])
     sim.run(at)
     return sim
@@ -339,7 +354,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     if not 0 <= at <= m["myr"] + 1e-9:
         raise SystemExit(f"--at must be between 0 and {m['myr']}")
     made_by, now = m.get("code"), code_version()
-    same_code = bool(made_by) and made_by.get("planet_src_sha") == now["planet_src_sha"]
+    same_code = bool(made_by) and made_by.get("sim_sha") == now["sim_sha"]
     if not same_code:
         print(f"WARNING: run {run_dir.name} was made by {describe(made_by)}; this is {describe(now)}. "
               f"The replay may not reproduce it.")
@@ -402,14 +417,17 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     m = run["meta"]
     missing = [k for k in FRAME_LAYERS if k not in run["layers"]]
     if missing or "sea_level_m" not in run["frames"][0]["stats"]:
-        raise ValueError(f"run {run_dir.name} is too old to build worlds from its keyframes "
-                         f"(missing {', '.join(missing) or 'sea level'}); use `planet slice`")
+        raise ValueError(f"run {run_dir.name} was made by older code (its keyframes have no "
+                         f"{', '.join(missing) or 'sea level'}); delete it and re-run")
     arr = S.read_layers(run_dir, run["layers"], FRAME_LAYERS)
     times = np.array([f["t"] for f in run["frames"]])
     i = int(np.argmin(np.abs(times - at)))
     fr = run["frames"][i]
     vt = S.read_volcanoes(run_dir)
-    vols = vt["frames"][i] if vt and vt["columns"] == list(VOLCANO_COLUMNS) else []
+    if not vt or vt["columns"] != list(VOLCANO_COLUMNS):
+        raise ValueError(f"run {run_dir.name} was made by older code (its volcano table is "
+                         f"{'missing' if not vt else 'of columns ' + str(vt['columns'])}); delete it and re-run")
+    vols = vt["frames"][i]
     a = {k: frame(run, arr, k, i) for k in FRAME_LAYERS}
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])

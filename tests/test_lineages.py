@@ -1030,7 +1030,7 @@ def test_land_goods_are_kept_on_disk_keyed_by_world_and_code(tmp_path, monkeypat
         w.write_text('{\n"format": "y",\n"meta": {}\n}\n')  # (the world changed)
         k2 = LD._disk_key("abc123")
         assert k2 != k and LD._disk_read("abc123", k2) is None
-        monkeypatch.setattr(S, "code_digest", lambda: "another model")
+        monkeypatch.setattr(LD, "code_hash", lambda scope: "another model")
         assert LD._disk_key("abc123") != k2
     finally:
         S.set_root(old)

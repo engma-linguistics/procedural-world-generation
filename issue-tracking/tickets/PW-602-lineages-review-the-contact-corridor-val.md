@@ -32,7 +32,7 @@ The values are first guesses:
 - ALPHA_CLOSED 1.4
 - same_way: x0.5 per difference in way of life
 
-- [ ] look at the showcase maps (docs/review/lineages/) and decide whether plains should mix less (contact 0.4) or rivers more
+- [ ] look at the showcase maps (docs/review/lineages/showcase-2.md, docs/review/lineages/showcase-3.md, docs/review/lineages/showcase-4.md) and decide whether plains should mix less (contact 0.4) or rivers more
 - [ ] the river field is the world's present flow, used for all glacial and recent epochs, so rivers on shelves exposed at low sea level are missing; deep epochs have no rivers
 
 ## Updates

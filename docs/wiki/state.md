@@ -9,7 +9,7 @@
 - Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1
-- Epic PW-244. Only the owner sign-off PW-780 is open (default `star_brightening` 0.45, a K-type star; provisional owner OK 2026-10-24). 42 open tickets in the v1 milestone (workgroups A-D in the backlog doc https://claude.ai/artifact/8rxpMkD49iovLmeBzZmP4t).
+- Epic PW-244. PW-780 signed off. 15 open tickets in the v1 milestone (10-29): physics PW-998/026/015/821/969/980; release checks PW-825/932; docs PW-814/816; provenance PW-938/939/940/942. Older backlog grouping (workgroups A-D in the backlog doc https://claude.ai/artifact/8rxpMkD49iovLmeBzZmP4t).
 - Icehouse bar loosened 2026-10-25 (PW-865): icehouse share is uncapped; snowball, hellhole and never-ice fail. The old bar on main's forward star was L6 13/18 and L7 7/8. Rule: ~70% pass, never-ice and always-icebox both fail ([glossary](glossary.md), [decisions](decisions.md)).
 - Showcase remake (PW-202) done; the 4 L6 + 4 L7 showcases below.
 

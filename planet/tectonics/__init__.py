@@ -26,8 +26,8 @@ Each step (Simulation.step):
     margins. Continental crust is conserved through all of it, so the
     continents neither leak away nor swell over billions of years.
     Erosion and sediment run every step; the climate (temperature, rain,
-    ice, the ice's sea level) is recomputed only every climate_every Myr
-    (4), and the steps in between use the latest one.
+    ice, the ice's sea level) is recomputed on a ramp of 8 to 4 to 2 Myr
+    (earth.climate_cadence), and the steps in between use the latest one.
  5. Forces -> velocities. Plate motion is basically very slow Stokes flow,
     so the force balance gives each plate a target angular velocity:
     slab pull (dominant), ridge push, collision resistance, basal traction

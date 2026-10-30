@@ -31,7 +31,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM
 from ..grid import Grid, build_grid
-from ..provenance import code_version
+from ..provenance import code_hash, code_version
 from .gridops import dist_km
 
 TZ_LAYERS = ("elevation", "ice", "temperature", "climate", "tree_cover")
@@ -199,7 +199,7 @@ class Pass:
         st = (self.tz_dir / "run.json").stat()
         h = hashlib.sha256(f"{self.run['id']}:{st.st_size}:{st.st_mtime_ns}:{self.now!r}:{self.start!r}:"
                            f"{self.params.climate_every!r}".encode())
-        h.update(S.code_digest().encode())
+        h.update(code_hash("lineages").encode())
         return h.hexdigest()
 
     def _clim_read(self, key: str):
@@ -214,9 +214,8 @@ class Pass:
     def _clim_write(self, key: str) -> None:
         p = self.tz_dir / "recent_rain.npz"
         try:
-            tmp = p.with_name("recent_rain.tmp.npz")
-            np.savez(tmp, _key=np.array(key), tn=self._clim[0], rain=self._clim[1])
-            tmp.replace(p)
+            with S.atomic_path(p) as tmp:  # (a unique temporary name, PW-1040)
+                np.savez(tmp, _key=np.array(key), tn=self._clim[0], rain=self._clim[1])
         except OSError:
             pass
 

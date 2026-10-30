@@ -154,6 +154,6 @@ export async function getFavourites() {
 }
 export async function setFavourite(key, starred) {
   const [kind, ...id] = key.split(':');
-  try { return (await fetch('../api/favourites', { method: 'POST', body: JSON.stringify({ kind, id: id.join(':').replace(/\.json$/, ''), starred }) })).ok; } catch { return false; }
+  try { return (await fetch('../api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: id.join(':').replace(/\.json$/, ''), starred }) })).ok; } catch { return false; }
 }
 export const starHtml = (on, attrs = '') => `<button class="pl-btn sm star${on ? ' on' : ''}" ${attrs} title="${on ? 'Favourite: click to remove the star' : 'Star as a favourite (the default world for peoples runs)'}" aria-pressed="${on}">${on ? '\u2605' : '\u2606'}</button>`;

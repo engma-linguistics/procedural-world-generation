@@ -9,6 +9,7 @@ does. The world's layers are computed in memory, the world is not written.
     uv run python tools/coast_check.py [world id, default: the newest Earth world]
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -99,4 +100,6 @@ def main(ref=None):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("world", nargs="?", help="world id (default: the newest Earth world)")
+    main(ap.parse_args().world)

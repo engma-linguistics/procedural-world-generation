@@ -43,4 +43,5 @@ and from where the vapour comes; then fix the winds (PW-026), not the sea's exch
 - [ ] SE USA and Pampas each at least 60% of GPCC's annual rain without undoing the bulk exchange
 
 ## Updates
+- 2026-10-29: Coasts paired judge finished (A = db7a178a main vs D = e0158fa2 coasts, 36 L6 pairs, pre-speed cadence): passes 27/36 vs 27/36; iceboxes 8 vs 21; end T -2.8 C [-4.4, -0.9]; arid -2.8 pts, hot desert -2.8 (both moved, intended direction). Do not merge until the icebox rise is explained; likely interacts with PW-1050 (ice-climate loop one step per update).
 - 2026-10-29: Created from inbox draft draft-subtropical-coasts-dry-after-bulk-evap.md (found by lane25).

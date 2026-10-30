@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-635]
 refs: []
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
 Owner (2026-10-24): giants should be far fewer in number with larger roaming areas; some peoples insular, some exploratory; landmasses with few or no peoples should be found by the more exploratory or seafaring peoples; not 'no dwarves sail the seas' but a smaller proportion of them would. Model side: per-people density (people per km2 / range per band), growth or expansion rate, exploration propensity and a seafaring share (a fraction of a people's frontier that crosses water, scaled by trait), insularity (resistance to mixing and to leaving home). Owner: this is getting beyond the genetic-tree approach; peoples likely need to be their own multi-tab / multi-screen thing (tree, demographics and traits, places and land use, wishes, results and stories). Next lineages lane after the viewer entry (peoples discoverable) and the preset changes (felines, giants, stems, volcanic and rolling-hills goods) merge.
 
 ## Updates
+- 2026-10-29: Removed docs/review/lineages/workbench-*.png in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Merged: density/roaming, explore, sea share, insularity per people (trait defaults); population and landmass discovery outputs; the five-tab workbench at viewer/lineages.html; preset knobs (giants 0.005-0.01/km2, humans 10). PW-655 resolved by density. Groups designed only: PW-665.
 - 2026-10-23: Created.
 - 2026-10-23: Workbench lane built the model and the page (docs/proposals/lineages.md, "Workbench lane").

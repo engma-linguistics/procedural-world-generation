@@ -19,7 +19,8 @@ def api(data_root):
 
     def call(method, path, body=None):
         c = http.client.HTTPConnection("127.0.0.1", httpd.server_address[1], timeout=30)
-        c.request(method, path, body=json.dumps(body) if body is not None else None)
+        c.request(method, path, body=json.dumps(body) if body is not None else None,
+                  headers={"Content-Type": "application/json"} if body is not None else {})
         r = c.getresponse()
         out = r.status, json.loads(r.read() or b"{}")
         c.close()

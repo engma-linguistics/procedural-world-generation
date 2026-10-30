@@ -1,6 +1,0 @@
-   passrate_base.txt: n 18, deep mean 12.1%, deep>=20% 5, share<=40 5, 40-50 7, >=60 5, mean share 47%
-        passrate.txt: n 18, deep mean 17.3%, deep>=20% 8, share<=40 9, 40-50 0, >=60 7, mean share 50%
-      passrate_D.txt: n 18, deep mean  9.7%, deep>=20% 3, share<=40 8, 40-50 4, >=60 4, mean share 43%
-     passrate_DB.txt: n 18, deep mean  9.8%, deep>=20% 4, share<=40 7, 40-50 3, >=60 4, mean share 46%
-    passrate_O15.txt: n 18, deep mean  7.8%, deep>=20% 2, share<=40 10, 40-50 2, >=60 3, mean share 41%
-      passrate_C.txt: n 18, deep mean  0.1%, deep>=20% 0, share<=40 18, 40-50 0, >=60 0, mean share 2%

@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-187]
 refs: []
 created: 2026-10-15
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
 PW-187 changes the run (vegetation's ground cover in erosion, NPP in weathering; goldens updated), so every existing run replays differently (`slice` refuses), and their keyframes lack the `tree_cover`/`vegetation`/`npp` layers that `timeline.world_from_frame` (the viewer's Zoom button) now reads: building a world from an old run fails with "too old". Remake the showcases (docs/coordination.md recipes) and delete the old ones; remake the Earth world (the veg branch made fe2af4 with vegetation layers; dc3732 has none) and point docs at it.
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-4/, docs/review/base-climate/v1-finish-7/ in cleanup; last present at 9861e2df.
 - 2026-10-24: Lane v1-finish-7: v1 L7 showcase remade on 9852149 (brightening star, star_brightening 0.45; planet make --level 7, earthlike, 1 Gyr, 300 kyr tz, now = interglacial, resources; planet coast on the worlds): seed 957317 run 6c652c @744 tz ddc091 world 6fbc2c zooms 471429 edac2e 9cd9e4 3eb133 (http://127.0.0.1:8765/viewer/?world=6fbc2c.json); seed 619496 run d30069 @892 tz 606a1b world 067778 zooms b4a10e 17a86d aaa670 82f703 (http://127.0.0.1:8765/viewer/?world=067778.json); seed 583167 run 99dc70 @972 tz 41a7a4 world a12762 zooms b47502 e1d5ea 6b3ee8 0eb5f0 (http://127.0.0.1:8765/viewer/?world=a12762.json); seed 639472 run feaade @796 tz fd187b world 6909cb zooms 1bcbb9 b0c5b6 ab86cf 030abb (http://127.0.0.1:8765/viewer/?world=6909cb.json). Icehouse 300-1000 Myr 15/25/34/38% (bar 4/4; v1-finish-4's 64/42/22/60%). Superseded, not deleted (coordinator): v1-finish-4's runs 656f66 fdb41e 9882e7 27929a, tz ad26f3 bd6c87 06667e 21b68b, worlds bacb95 c6c24f f2a9a4 61ac61 and their zooms. docs/review/base-climate/v1-finish-7/.
 - 2026-10-24: Lane v1-finish-4: v1 L7 showcase on PW-725 + PW-736 (planet make --level 7, random seeds, 1 Gyr; time zooms/worlds/zooms remade after the PW-736 fix, pre-fix ones deleted; resources + coast layers; now = interglacial): seed 957317 run 656f66 @964 tz ad26f3 world bacb95 zooms 5397aa e2c8db 8f040a a7081c (http://127.0.0.1:8765/viewer/?world=bacb95.json); seed 619496 run fdb41e @1000 tz bd6c87 world c6c24f zooms baab22 81fd07 4b8885 fd3051 70fe22 (http://127.0.0.1:8765/viewer/?world=c6c24f.json); seed 583167 run 9882e7 @936 tz 06667e world f2a9a4 zooms d0951d 7b8ddc 9e74dd 1b1daa (http://127.0.0.1:8765/viewer/?world=f2a9a4.json); seed 639472 run 27929a @944 tz 21b68b world 61ac61 zooms 103ed4 8c58d0 c2c627 2c2557 (http://127.0.0.1:8765/viewer/?world=61ac61.json). Icehouse 300-1000 Myr 64/42/22/60% (bar 1/4, 2/4 counting 42%; same seeds at L6 48/23/0/32%, 3/4): draft-l7-runs-still-icier-same-seeds.md. Superseded, not deleted: runs 89c2ab 6ca373 8b1617 7f4f06, tz 04e831 d07f9f 7ff0cd 0e0301, worlds a95cdc 09262b 730669 d86d34. docs/review/base-climate/v1-finish-4/.
 - 2026-10-24: Status todo -> done. Showcase remade by v1-finish-2 on 2ac35b4 (ids in Updates); old showcase deleted except 1df1c3/3e9e7d (fun lane in use).

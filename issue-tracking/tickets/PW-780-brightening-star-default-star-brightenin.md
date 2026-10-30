@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-761, PW-750, PW-564, PW-576, PW-708, PW-202]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/base-climate/v1-finish-7/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -47,6 +47,7 @@ points:
   co2_sensitivity / (5.35 ln 2) = 0.81: 3 C is per doubling, not per e-fold. star_forcing uses 0.81.
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-7/ in cleanup; last present at 9861e2df.
 - 2026-10-24: Status needs-decision -> done. Owner 2026-10-24: 0.45 is fine as the base rate; the star thermostat (PW-791) handles the long run.
 - 2026-10-24: Sign-off page docs/review/base-climate/v1-signoff/README.md. Coordinator: v1 bar is 1 Gyr (13/18 L6, 7/8 L7); the 2 Gyr late window (4/13, one hellhole) goes with PW-791 after v1.
 - 2026-10-24: v1 sign-off summary docs/review/base-climate/v1-signoff/README.md (Earth-like only). Strict: L6 1 Gyr 13/18, L7 1 Gyr 7/8 (unchanged code since v1-finish-8); L6 2 Gyr whole run 10/13 with 6 new draws, but the 1500-2000 window only 4/13 (6 ice-free, 1 hellhole: 957317 +0.001 at +10.5 / 15.5); one new L7 2 Gyr draw stopped at 1500 Myr (warm, ~15% icehouse samples). Main open question: the star-warmed L7 showcases are nearly treeless (1.7-20%, wet tropics 1-8%): low pCO2 plus warmth on too-steep plant responses; draft-treeless-tropics-co2-heat.md.

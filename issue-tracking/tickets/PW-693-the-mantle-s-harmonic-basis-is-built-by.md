@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-680, PW-643]
 refs: [planet/tectonics/mantle.py, docs/review/base-climate/thermostat-1024/]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -45,5 +45,6 @@ physics lane, merged on its own. Until then a lane can copy the main checkout's 
 - [ ] canonical basis; goldens regenerated; health and Earth re-baselined
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/thermostat-1024/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Lane v1-finish step 1: mantle._build_basis is now the real spherical harmonics by definition (Legendre recurrence in z, Re/Im (x+iy)^m, no trig, no SVD), made orthonormal on the cells by a sequential compiled Gram-Schmidt: the same bits at any thread count or load (L4-L7 digests equal at 1/24 threads and six concurrent builds). test_basis_is_canonical pins the L4 digest. Goldens regenerated on purpose; 613 passed. Every run is a new draw. docs/review/base-climate/v1-finish/.
 - 2026-10-23: Created from inbox draft draft-mantle-basis-cache-picks-the-world.md (found by thermostat-1024).

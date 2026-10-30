@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-559, PW-681, PW-653]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish/]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -45,6 +45,7 @@ Lean: A first (one measurement pass; the scripts exist), and C only if the trend
 - [ ] the 1 Gyr pass rate against the owner's bar on >= 16 seeds after the decision
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-2/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Lane v1-finish-2 (docs/review/base-climate/v1-finish-2/): measured; decision B (accept), made by the lane under the coordinator's delegation. The source is flat (heat_start 1.0: no heat fade; the ridge part falls late but arcs are ~95% and rise). The late cooling is weatherability: the weathering supply is ~12-20% higher late (ln +0.11..+0.18, tracks the land's relief, bed p90 +400 m median, to Earth-like hypsometry) and the plant factor +4% (the flora arriving, by design); the thermostat answers as it should. A real mechanism (uplift and plant weathering), counted because the reference is frozen at 300 Myr, as intended. Its size is mostly the draw: the re-rolled draw has almost none (dT late-early +0.02 against -0.91). 1 Gyr pass on the owner's bar (icehouse <= ~40%, no always-icebox, no hellhole, 300-1000 Myr): 11/16 (69%) and 13/16 (81%) on two draws, pooled 24/32 (75%); icehouse median 33%; 1 always-icebox draw, 0 hellholes. Balance unchanged (C not taken).
 - 2026-10-23: Status needs-decision -> todo. Coordinator's call: A first (one measurement pass, source/sink split over 300-1000 Myr) so the choice between B and C is informed; then decide and go to PW-202.
 - 2026-10-23: Created from inbox draft draft-late-history-cooling-1gyr.md (found by v1-finish).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-346, PW-570, PW-015, PW-575, PW-017]
 refs: [planet/climate.py, docs/review/base-climate/stages.md, docs/review/base-climate/stage2/attempt2.patch, tools/climate_bias.py, tools/earth_check.py, docs/review/base-climate/stage2b/]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-29
 ---
 
 ## Description
@@ -69,6 +69,7 @@ but it is a split, not a mechanism.
 - [ ] the stage-2 bars (stages.md) pass, with earth_check's log-rain correlation and Köppen group not worse than main
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/stage2b/cb_a2.txt, docs/review/base-climate/stage2b/cb_main.txt, docs/review/base-climate/stage2b/ot_a2.txt, docs/review/base-climate/stage2b/ot_main.txt and 1 more in cleanup; last present at 9861e2df.
 - 2026-10-22: Status needs-decision -> done. 2026-10-22 merged with stage 2b: rain back to r 0.619 (stable summer land air over coastal seas).
 - 2026-10-22: Merged inbox draft draft-stage2b-landed-rain-regression.md ("Stage 2b landed attempt 2 with the rain regression accepted; the rain reacts through the sea's evaporation source (qs / src_q), and the water's swing near land is too big", found by base-climate-laneA3).
   For PW-578 (`--merge-into PW-578`).

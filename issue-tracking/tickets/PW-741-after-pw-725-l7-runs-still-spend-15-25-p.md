@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-725, PW-736, PW-460, PW-202]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-4/, docs/review/base-climate/v1-finish-3/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -46,5 +46,6 @@ eqcurve.py (v1-finish-3) on one of these runs, e.g. 27929a or 656f66 at a cold m
 - [ ] re-judge the L7 pass rate on a few more draws after any fix (seed-pass-rate rule: several re-rolled draws)
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-4/ in cleanup; last present at 9861e2df.
 - 2026-10-24: v1-finish-5 (docs/review/base-climate/v1-finish-5/): not the ice rule or the relief (eqcurve L7/L7s/L6 at fixed dT agree within ~25% with no sign; from ice L7 deglaciates as fast or faster). Cause: the CO2 source counted the arcs' crust growth with the volume thermostat's gain, which climbs to ~2.2-3.5 at L6 but stays ~1.1-1.7 at L7, so L6's outgassing ran ~17% over its reference (~1 C warmer). Fix: the arcs outgas at their nominal rate (crust.arc_growth's nominal). Levels now agree (L6 5/18, median 46%; L7 3/8, median 45%): L6 got colder, not L7 warmer. Remaining calibration: draft-icehouse-share-both-levels-after-pw741.md (needs-decision). Showcase not remade (after the decision). Goldens updated on purpose.
 - 2026-10-24: Created from inbox draft draft-l7-runs-still-icier-same-seeds.md (found by v1-finish-4).

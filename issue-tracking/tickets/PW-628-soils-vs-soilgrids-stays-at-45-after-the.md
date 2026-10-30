@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-330, PW-185]
 refs: [planet/soils.py, tools/soil_check.py, docs/review/soilveg/earth_soils_pw330.png]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -25,5 +25,6 @@ What remains has no model signal at L6 (observed climate; diagnostics in docs/re
 Options: accept ~45% as plausible (group shares now within ~1.5x of Earth's except young and caliche), or add an argic-horizon age (clay illuviation needs ~1e4-1e5 yr of seasonal wetting) so dry-margin Luvisols and Calcisols separate. Owner's call whether that is worth it.
 
 ## Updates
+- 2026-10-29: Removed docs/review/soilveg/earth_soils_pw330.png, docs/review/soilveg/handoff-2.md in cleanup; last present at 9861e2df.
 - 2026-10-23: Status needs-decision -> done. Coordinator (owner delegates geophysics; Earth is a plausibility anchor): 45% group agreement with the documented reasons is plausible enough; no further soil tuning toward SoilGrids. Group shares moved toward Earth's in lane 2.
 - 2026-10-23: Created from inbox draft draft-soil-agreement-remaining.md (found by soilveg2).

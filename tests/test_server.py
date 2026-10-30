@@ -127,3 +127,34 @@ def test_rename_landmass(http_root):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_post_refuses_cross_site(data_root):
+    """PW-1037: a POST must be JSON, and an Origin, if sent, must be the server's own address;
+    so another web page open in the browser can't start jobs (a text/plain POST needs no preflight)."""
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    port = httpd.server_address[1]
+
+    def post(headers):
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
+        c.request("POST", "/api/favourites", body=json.dumps({"kind": "world", "id": "gone"}), headers=headers)
+        r = c.getresponse()
+        out = r.status, json.loads(r.read() or b"{}")
+        c.close()
+        return out
+
+    try:
+        js = {"Content-Type": "application/json"}
+        assert post({"Content-Type": "text/plain"})[0] == 403
+        assert post({})[0] == 403
+        st, d = post({**js, "Origin": "https://evil.example"})
+        assert st == 403 and "cross-site" in d["error"]
+        assert post({**js, "Origin": f"http://127.0.0.1:{port + 1}"})[0] == 403
+        # the viewer's own requests (and scripts, which send no Origin) go through: 404 is favourites' "no such world"
+        assert post({**js, "Origin": f"http://127.0.0.1:{port}"})[0] == 404
+        assert post({"Content-Type": "application/json; charset=utf-8", "Origin": f"http://localhost:{port}"})[0] == 404
+        assert post(js)[0] == 404
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
