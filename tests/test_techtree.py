@@ -121,3 +121,33 @@ def test_language_spreads_by_contact_to_peoples_under_a_node():
             hit += 1
             assert lang[0] <= 800.0 and "gesture" in k  # (the roots come along)
     assert hit >= 1
+
+
+def _taker_on_an_inventors_date(tt_known, firsts):
+    """The techs whose first is a taker (contact, shared, inherited) although some people invented it on that date."""
+    return [tid for tid, v in firsts.items() if v["how"] in ("contact", "shared", "inherited")
+            and any(kn.get(tid, [None, ""])[0] == v["ago_kyr"] and kn[tid][1] == "invented" for kn in tt_known.values())]
+
+
+def test_firsts_tie_credits_the_inventor_not_the_taker():  # PW-1012
+    # (run 3097e3: firbolgs took pottery from halflings by contact on the grid step halflings invented it, and came
+    # first in the lines, so they were credited as the first)
+    known = {"firbolg": {"pottery": [18.782, "contact", "halfling"], "herding": [9.0, "shared", "x"]},
+             "halfling": {"pottery": [18.782, "invented", None]},
+             "orc": {"pottery": [16.862, "contact", "bugbear"], "herding": [9.0, "tamed", None]},
+             "elf": {"knapping": [900.0, "inherited", "stem"]}, "stem": {"knapping": [900.0, "kit", None]}}
+    f = TT.firsts_of(known)
+    assert f["pottery"] == {"line": "halfling", "ago_kyr": 18.782, "how": "invented"}
+    assert f["herding"]["line"] == "orc"  # (a taming beats a share on the same date)
+    assert f["knapping"]["line"] == "stem"  # (a kit beats an inheritance)
+    assert TT.firsts_of(dict(reversed(list(known.items())))) == f  # (the order of the lines no longer matters)
+    assert not _taker_on_an_inventors_date(known, f)
+
+
+def test_build_firsts_never_a_taker_on_an_inventors_date():  # PW-1012, on whole builds
+    lines = [line("a", at=60.0), line("b", at=60.0), line("c", at=60.0)]
+    pairs = [{"a": x, "b": y, "first_contact_kyr": 60.0, "in_contact_now": True, "series": [[60.0, 3000, 0.0], [0.0, 3000, 0.0]]}
+             for x, y in (("a", "b"), ("b", "c"), ("a", "c"))]
+    for s in range(4):
+        tt = TT.build(lines, {"pairs": pairs}, None, seed=s, T=T)
+        assert not _taker_on_an_inventors_date(tt["known"], tt["firsts"]), s
