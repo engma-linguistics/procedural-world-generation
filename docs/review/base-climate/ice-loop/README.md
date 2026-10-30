@@ -179,3 +179,17 @@ Branch worktree-agent-a2381af405c341835:
   re-merging onto the final PW-1050 branch before its judge, and is held for GPCC.
 - The main checkout's data/earth is still empty. lane28/rebuild has the raw ETOPO, Kottek and GFED files, and
   rebuild.sh reruns the build once GPCC is back.
+
+### B's cost check (4 l6fix draws, finished 10-30 ~04:00)
+- B's run time against main's on the same draws: 1.14x (median; mean 1.15). The load was ~80-170 during B's runs
+  and ~110 during main's.
+- Re-makings of the air per update: mean 2.01, max 8. The cap of 8 was hit on 4.1% of updates, and 12% needed
+  none. Passes per update: 13.4 against main's 12.6.
+- Ice over 300-990 Myr: share of steps below -150 m, median 0.09 (mean 0.16), against main's 18 draws at median
+  0.00 (mean 0.09).
+
+### Handoff update (~04:05)
+- (b) is committed: b74bd0e2. The judge's frozen F code is identical to it (diff -rq).
+- The not-slow suite passes on (a) (737) and on (b) (739). (a)'s area tests passed (32, including the time zoom
+  consistency tests).
+- (b)'s area tests and the full time zoom tests are still running: lane28/t_b_area.txt.
