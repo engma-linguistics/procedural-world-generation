@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +36,7 @@ from . import spec as SP
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 12  # 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 13  # 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -249,6 +250,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["substrate"] = _substrate(ctx, brief["peoples"])
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
     brief["mining"] = _mining(ctx, i, sel, land, brief)
+    brief["settlements"] = _settlements(ctx, sel, era, people)
     brief["trade_reach"] = None
     brief["events"] = _events(ctx, place, era)
     brief["reputation"] = _reputation(ctx, brief)
@@ -264,6 +266,110 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
 
 
 # -- the parts -----------------------------------------------------------------------------------------
+SETTLE_TOP = 6  # places and ruins listed by name in the brief's towns-and-cities block
+
+
+def _pop_at(s: dict, ago: float) -> float:
+    """A ledger site's people at `ago` kyr (its series, oldest first), 0 before its founding or once it was left."""
+    if ago > s["founded_kyr"] + 1e-6 or (s["abandoned_kyr"] is not None and ago <= s["abandoned_kyr"] + 1e-6):
+        return 0.0
+    sr = s["series"]
+    for k in range(1, len(sr)):
+        if sr[k][0] <= ago:
+            (a0, p0), (a1, p1) = sr[k - 1], sr[k]
+            return float(p1 if a0 == a1 else p0 + (p1 - p0) * (a0 - ago) / (a0 - a1))
+    return float(sr[-1][1])
+
+
+def _holder_at(s: dict, ago: float) -> str:
+    h = s["founded_by"]
+    for a, p in s["holders"]:
+        if a >= ago - 1e-6:
+            h = p
+    return h
+
+
+def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> dict | None:
+    """The towns and cities of the region at the era, from the settlement ledger (settlements.json, PW-1011): how many of each
+    kind, the largest with who lives in them and their quarters, the towns held by another people than their founders, the
+    places of second peoples and the mines, the ruins and what ended them; for a people's brief also its places world-wide."""
+    sm = ctx.meta.get("settlements")
+    if not sm:
+        return None
+    if not hasattr(ctx, "_settle"):
+        ctx._settle = json.loads((ctx.dir / sm["file"]).read_text())
+    doc = ctx._settle
+    town, city = doc["tiers"]["town"][0], doc["tiers"]["city"][0]
+    name = {l["id"]: re.sub(r" \(.*\)$", "", l["name"]) for l in ctx.lines}
+
+    def tier(s, pop):
+        return "mine" if s.get("kind") == "mine" else "city" if pop >= city else "town" if pop >= town else "village"
+
+    def row(s, pop):
+        h = _holder_at(s, era)
+        r = {"id": s["id"], "kind": s.get("kind", "chief"), "tier": tier(s, pop), "people": h, "pop": round(pop), "lat": s["lat"], "lon": s["lon"],
+             "place": s.get("place"), "founded_kyr": s["founded_kyr"], "founded_by": s["founded_by"]}
+        if abs(era) <= 1e-6:
+            r["who"], r["quarters"] = s["who"], s["quarters"]
+        return r
+
+    live, ruins = [], []
+    for s in doc["sites"]:
+        if not sel[s["cell"]] or era > s["founded_kyr"] + 1e-6:
+            continue
+        if s["abandoned_kyr"] is not None and era <= s["abandoned_kyr"] + 1e-6:
+            if s["tier_now"] == "ruin":
+                ruins.append(s)
+            continue
+        live.append((s, _pop_at(s, era)))
+    count: dict = {}
+    for s, pop in live:
+        count[tier(s, pop)] = count.get(tier(s, pop), 0) + 1
+    places = [(s, p) for s, p in live if s.get("kind") != "mine"]
+    big = sorted(places, key=lambda sp: -sp[1])[:SETTLE_TOP]
+    taken = [(s, p) for s, p in places if _holder_at(s, era) != s["founded_by"] and p >= town]
+    own: dict = {}
+    for s, _ in places:
+        if s.get("kind") == "minority":
+            own[s["founded_by"]] = own.get(s["founded_by"], 0) + 1
+    mines: dict = {}
+    for s, _ in live:
+        if s.get("kind") == "mine":
+            h = _holder_at(s, era)
+            mines[h] = mines.get(h, 0) + 1
+    out = {"basis": f"the settlement ledger (settlements.py, PW-1011) at {era:g} kyr ago: living places in the region's cells; "
+                    f"a village under {town:,} people, a town under {city:,}, a city above",
+           "counts": count, "people_in_places": int(sum(p for s, p in places)),
+           "largest": [row(s, p) for s, p in big],
+           "taken": {"count": len(taken), "list": [{**row(s, p), "held_since_kyr": min(a for a, h in s["holders"] if a >= era - 1e-6)}
+                                                 for s, p in sorted(taken, key=lambda sp: -sp[1])[:SETTLE_TOP]]},
+           "own_places_of_second_peoples": dict(sorted(own.items(), key=lambda kv: -kv[1])),
+           "mines": dict(sorted(mines.items(), key=lambda kv: -kv[1])),
+           "ruins": {"count": len(ruins), "why": {}, "largest": [
+               {"id": s["id"], "tier": s["tier_peak"], "peak_pop": s["peak_pop"], "people": _holder_at(s, s["abandoned_kyr"]),
+                "founded_kyr": s["founded_kyr"], "abandoned_kyr": s["abandoned_kyr"], "why": s["why"], "lat": s["lat"], "lon": s["lon"]}
+               for s in sorted(ruins, key=lambda s: -s["peak_pop"])[:SETTLE_TOP]]},
+           "names": {}}
+    for s in ruins:
+        k = "driven out" if (s["why"] or "").startswith("driven out") else s["why"]
+        out["ruins"]["why"][k] = out["ruins"]["why"].get(k, 0) + 1
+    if people:  # (the people's own places world-wide, at the era; a group's are its people's)
+        people = ctx.lines[ctx.idx[people]].get("group_of") or people
+        mine_ = [(s, _pop_at(s, era)) for s in doc["sites"] if _holder_at(s, era) == people and _pop_at(s, era) > 0]
+        cnt: dict = {}
+        for s, p in mine_:
+            cnt[tier(s, p)] = cnt.get(tier(s, p), 0) + 1
+        top = max((sp for sp in mine_ if sp[0].get("kind") != "mine"), key=lambda sp: sp[1], default=None)
+        out["people"] = {"id": people, "counts": cnt, "largest": row(*top) if top else None,
+                         "own_places_among_others": sum(s.get("kind") == "minority" for s, _ in mine_),
+                         "taken_from_others": sum(s["founded_by"] != people and s.get("kind") != "mine" for s, _ in mine_),
+                         "ruins_of_its_founding": sum(1 for s in doc["sites"] if s["founded_by"] == people and s["tier_now"] == "ruin"
+                                                      and s["abandoned_kyr"] >= era - 1e-6)}
+    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | {r["people"] for r in out["ruins"]["largest"]}
+    out["names"] = {k: name.get(k, k) for k in sorted(used)}
+    return out
+
+
 def _land(ctx: Ctx, i: int, land: np.ndarray, sel: np.ndarray) -> dict:
     L, leg = ctx.world, ctx.legend
     out: dict = {}
@@ -1005,6 +1111,42 @@ def _pc(v) -> str:
     return f"{100 * v:.0f}%"
 
 
+def _settlements_md(st: dict | None) -> list[str]:
+    if not st:
+        return []
+    nm = lambda k: st["names"].get(k, k)  # noqa: E731
+    c = st["counts"]
+    t = ["", "## Towns and cities", "",
+         f"- {c.get('city', 0)} cities, {c.get('town', 0)} towns, {c.get('village', 0)} villages, {c.get('mine', 0)} mines; "
+         f"{st['people_in_places']:,} people in them; {st['ruins']['count']} ruins"]
+    for r in st["largest"]:
+        t += [f"- {r['tier']} of the {nm(r['people'])}" + (" (their own place among another people)" if r["kind"] == "minority" else "")
+              + f", {r['place'] or f'{r['lat']}, {r['lon']}'}: ~{r['pop']:,} people, founded ~{r['founded_kyr']:g} kyr ago by the {nm(r['founded_by'])}"
+              + ("; " + ", ".join(f"{nm(k)} {v}%" for k, v in r["who"].items()) if r.get("who") else "")
+              + ("; " + ", ".join(f"a {q['group'].replace('_', ' ')} quarter ({q['pct']}%)" for q in r["quarters"]) if r.get("quarters") else "")]
+    if st["taken"]["count"]:
+        t += [f"- {st['taken']['count']} towns and cities held by another people than their founders: " + "; ".join(
+              f"a {r['tier']} of the {nm(r['founded_by'])} held by the {nm(r['people'])} since ~{r['held_since_kyr']:g} kyr ago" for r in st["taken"]["list"])]
+    if st["own_places_of_second_peoples"]:
+        t += ["- Places of their own among another people: " + ", ".join(f"{nm(k)} {v}" for k, v in st["own_places_of_second_peoples"].items())]
+    if st["mines"]:
+        t += ["- Mines worked by: " + ", ".join(f"{nm(k)} {v}" for k, v in st["mines"].items())]
+    if st["ruins"]["count"]:
+        t += ["- Ruins, why abandoned: " + ", ".join(f"{k} {v}" for k, v in sorted(st["ruins"]["why"].items(), key=lambda kv: -kv[1]))]
+        t += [f"  - the ruin of a {r['tier']} of the {nm(r['people'])} (at most ~{r['peak_pop']:,} people), {r['lat']}, {r['lon']}: "
+              f"founded ~{r['founded_kyr']:g} kyr ago, abandoned ~{r['abandoned_kyr']:g} kyr ago ({r['why']})" for r in st["ruins"]["largest"]]
+    pp = st.get("people")
+    if pp:
+        pc = pp["counts"]
+        lg = pp["largest"]
+        t += [f"- The {nm(pp['id'])} world-wide: {pc.get('city', 0)} cities, {pc.get('town', 0)} towns, {pc.get('village', 0)} villages, {pc.get('mine', 0)} mines"
+              f" ({pp['own_places_among_others']} of their own among another people, {pp['taken_from_others']} taken from others); "
+              f"{pp['ruins_of_its_founding']} ruins of places they founded"
+              + (f"; the largest a {lg['tier']} of ~{lg['pop']:,} at {lg['place'] or f'{lg['lat']}, {lg['lon']}'}" if lg else "")]
+    t += [f"- ({st['basis']})"]
+    return t
+
+
 def markdown(b: dict) -> str:
     pl, land = b["place"], b["land"]
     t = [f"# Culinary brief: {pl['lat']}, {pl['lon']} (r {pl['radius_km']:g} km), {b['era_kyr']:g} kyr ago", "",
@@ -1057,6 +1199,7 @@ def markdown(b: dict) -> str:
             t += [f"- {m['name']} ({m['id']}): {m['kind']} miners (rock salt on {_pc(m['salt_share'])} of their cells, ore on {_pc(m['ore_share'])})"
                   + (f"; sells {m['sells']}; buys back {', '.join(m['gets_back'])}; trades with {', '.join(m['trades_with']) or 'no one named here'}" if m.get("sells") else "")]
         t += [f"- ({mi['basis']})"]
+    t += _settlements_md(b.get("settlements"))
     for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),
                              ("animals", "Animals known", None)):
         t += ["", f"## {title}", ""]

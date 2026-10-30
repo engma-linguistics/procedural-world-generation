@@ -161,3 +161,22 @@ def test_mines_on_deposits_for_a_people_that_knows_mines(tmp_path, monkeypatch):
     mines = [s for s in sites if s["kind"] == "mine"]
     assert mines and all(s["cell"] < g.n // 4 and s["holder"] == "d" and s["tier_now"] == "mine" for s in mines)
 
+
+def test_the_brief_reads_the_ledger(tmp_path):
+    from types import SimpleNamespace
+
+    from planet.lineages import brief as B
+    out, g = _two_peoples(tmp_path, 20.0)
+    ST.write(out, report=False)
+    meta = json.loads((out / "run.json").read_text())["meta"]
+    ctx = SimpleNamespace(meta=meta, dir=out, lines=[{**l, "name": l.get("name", l["id"])} for l in meta["lineages"]],
+                          idx={l["id"]: l["index"] for l in meta["lineages"]})
+    st = B._settlements(ctx, np.ones(g.n, bool), 0.0, "d")
+    alive = [x for x in json.loads((out / "settlements.json").read_text())["sites"] if x["abandoned_kyr"] is None]
+    assert sum(st["counts"].values()) == len(alive)
+    assert st["own_places_of_second_peoples"]["d"] == sum(x["kind"] == "minority" for x in alive)
+    assert st["people"]["own_places_among_others"] == st["own_places_of_second_peoples"]["d"]
+    md = "\n".join(B._settlements_md(st))
+    assert "## Towns and cities" in md and "The dwarves world-wide" in md
+    past = B._settlements(ctx, np.ones(g.n, bool), 13.0, None)  # (before any place was founded)
+    assert past["counts"] == {} and past["largest"] == []
