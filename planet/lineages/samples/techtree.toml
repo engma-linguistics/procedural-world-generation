@@ -55,7 +55,8 @@ id = "arcane"
 name = "Magic and the arcane"
 
 # ---- kinds: who starts with what -----------------------------------------------------------------------
-# of = a line id; the rule applies to it and every line below it in the tree. elder: an old kind (elder_kyr applies).
+# of = a line id, or a list of ids (the same kind under another tree's name); the rule applies to them and every line below
+# them in the tree, and the tech tree warns about an id the peoples tree doesn't have (PW-1041). elder: an old kind (elder_kyr applies).
 # hands = false: cannot knap, haft, pot or forge (dragons); hands = "node": hands only from its stem's sapiens node, once
 # genetically modern (owner 10-29, PW-987: the cats and the bird-peoples; the saurians likewise), no tool before it but what a beak can
 # hold. beak = true: can hold a tool in its beak (grip "beak" or "any"). kit: what it knows from its start (an arrival brings it from
@@ -81,7 +82,7 @@ of = "kobold"  # (dragon-blooded, but neither elder nor handless: the rule of th
 [[kind]]
 of = "dragonborn"
 [[kind]]
-of = "true_giant"
+of = ["true_giant", "giant"]  # (the D&D tree's true giants; Seven Meals' giants stem, PW-1041)
 elder = true
 [[kind]]
 of = "elf"

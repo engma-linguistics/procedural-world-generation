@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import math
 import tomllib
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +63,7 @@ def load(path: Path | str | None = None) -> dict:
         if t.get("grip", "hands") not in GRIPS:
             raise ValueError(f"tech {t['id']}: unknown grip {t.get('grip')}")
     for k in raw.get("kind", []):
+        k["of"] = [k["of"]] if isinstance(k["of"], str) else list(k["of"])  # (one line id or several, PW-1041)
         if k.get("hands", True) not in (True, False, "node"):
             raise ValueError(f"kind {k['of']}: hands must be true, false or \"node\"")
     order, seen = [], set()
@@ -95,7 +97,7 @@ def closure(T: dict, ids) -> set:
 
 def _kind(T: dict, line: dict, L: dict) -> dict:
     """The [[kind]] rules that hold for a line (its own, else its nearest ancestor's; first parent up the tree)."""
-    kinds = {k["of"]: k for k in T.get("kind", [])}
+    kinds = {i: k for k in T.get("kind", []) for i in k["of"]}
     seen, cur = set(), line
     while cur is not None and cur["id"] not in seen:
         seen.add(cur["id"])
@@ -187,6 +189,9 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     L = {l["id"]: l for l in lines}
     people = [l for l in lines if not (l.get("overlay") and l.get("origin") == "template")]
     idx = {l["id"]: l.get("index", k) for k, l in enumerate(lines)}
+    unmatched = [" | ".join(k["of"]) for k in T.get("kind", []) if not set(k["of"]) & set(L)]
+    if unmatched:  # (a rule none of whose ids is a line of this tree applies to nothing, PW-1041)
+        warnings.warn(f"tech tree [[kind]] rules name no line of this tree: {', '.join(unmatched)}", stacklevel=2)
     kind = {l["id"]: _kind(T, l, L) for l in people}
     node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
     have = {l["id"]: goods_held(T, present, goods, idx[l["id"]]) for l in people}
