@@ -77,8 +77,8 @@ CONST = {
                             # Neolithic village is up to ~1,000 and a few thousand is a town; 2,000 once roads and long trade feed larger markets
     "CITY_MIN": 10000,      # people: a city (needs 'cities'). Anchor: the ancient-city cutoff of Reba et al. 2016 (Modelski: 10,000 for 3500-1000 BC)
     "TOWN_CAP": 5000,       # people: the largest a town can be where the people lack 'cities' (UNVERIFIED: the largest Neolithic towns were a few thousand)
-    "CITY_CAP": (0, 0, 0, 160000, 1500000),  # people: the largest a city can be, by stage. Anchor (Reba et al. 2016 tables, figshare 2059494/2059497/2059500):
-                            # largest listed city 100,000 (3000-2000 BC), 160,000 (2000-1000 BC); 1.0-1.5 million from 0 to AD 1800
+    "CITY_CAP": (0, 0, 0, 100000, 1500000),  # people: the largest a city can be, by stage. Anchor (Reba et al. 2016 tables, figshare 2059494/2059497/2059500):
+                            # largest listed city 100,000 (3000-2000 BC; 160,000 in 2000-1000 BC, which the roads stage covers); 1.0-1.5 million from 0 to AD 1800
     "TAU_KYR": 0.3,         # a site's people relax toward the target with this time constant
     "ABANDON": 120,         # people: a site whose target stays under this ...
     "ABANDON_STEPS": 3,     # ... for this many steps is abandoned
@@ -429,9 +429,9 @@ def derive(run_dir: Path, **over) -> dict:
         heads1 = dens * area * sh1
         own1 = c["MINORITY_SHARE"] * heads1 * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside)
         own1 = own1 * c["MINORITY_MAX"] / (own1 + c["MINORITY_MAX"])  # (a minority gathers in one place only so far, the rest live in hamlets: it saturates smoothly, so no pile at a cap)
-        hall1 = c["HOLD_SHARE"] * heads1 * hold1
+        hall1 = c["HOLD_SHARE"] * heads1 * hold1 * e["q"]
         hall1 = hall1 / np.sqrt(1 + (hall1 / c["HOLD_MAX"]) ** 2)  # (a hold feeds from its mountain like a city from its hinterland: it levels off smoothly, no pile at a cap)
-        set1 = (own1 + hall1) * e["q"]
+        set1 = own1 * e["q"] + hall1
         ti1 = np.where(hold1, al1, np.minimum(al1, 2))
         target1 = np.where(e["land"] & (al1 >= 1), np.minimum(set1, np.select([ti1 == 1, ti1 == 2, ti1 >= 3], [cap1[1], cap1[2], cap1[3]], 0.0)), 0.0)
         # (PW-1117) a second people must have been the cell's second people for MINORITY_STEPS before it founds a place

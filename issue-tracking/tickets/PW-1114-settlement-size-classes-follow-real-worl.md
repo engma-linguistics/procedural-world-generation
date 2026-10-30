@@ -23,3 +23,4 @@ The sizes must come from sourced archaeology and urban history, not memory: the 
 
 ## Updates
 - 2026-10-30: Created from inbox draft draft-settlement-sizes-by-era.md (found by owner).
+- 2026-10-30: Fun lane 66 built it: size classes by the holder's techs (towns 1,000 / 2,000, cities 10,000, caps from Reba 2016's tables; village and town bands UNVERIFIED pending Fletcher 1995). See overview 2.25 and draft-settlement-bands-fletcher-and-early-cities.
