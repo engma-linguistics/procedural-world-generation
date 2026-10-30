@@ -2437,15 +2437,24 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     assert s[: h.grid.n // 2].min() > 0.99 and s[h.grid.n // 2:].max() == 0
     # persecution (PW-1068): a kill against slow breeding, natural x 1 / (1 + kill / r); none on empty land, never zero, never above
     # natural; it rises with the era's tech level (MG.means), and a kind that breeds faster (the giants' shorter generation) loses less
-    k0, k10 = MG.kill(h, P, None, 0.0), MG.kill(h, P, None, 10.0)
-    assert k0[h.grid.n // 2:].max() == 0 and k0[: h.grid.n // 2].min() > 10 * k10[: h.grid.n // 2].max() > 0
+    # the kill falls by age class (owner 10-30): wyrmlings reachable early, adults only at high tech, so a stone-age people barely dents them
+    k0 = MG.kill(h, P)
+    half = np.s_[: h.grid.n // 2]
+    assert k0[h.grid.n // 2:].max() == 0 and k0[half].min() > 0
+    h._ago_now = 0.0  # (the present: meta.era, renaissance)
     d = MG.local_density(h, w, k0)
-    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w])
-    assert np.allclose(d[: h.grid.n // 2], h.dens_nat[w] / (1 + k0[: h.grid.n // 2] / MG.breed_r(h, h.lines[w])))
-    assert (d > 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
-    assert (MG.local_density(h, w, k10)[: h.grid.n // 2] > 0.9 * h.dens_nat[w]).all()  # (stone-age folk at 0.5 per km2 press very slightly)
+    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d > 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
+    h._ago_now = 10.0  # (the stone age)
+    d10 = MG.local_density(h, w, k0)
+    assert (d10[half] > 0.9 * h.dens_nat[w]).all() and (d10[half] > d[half]).all()
+    v0, v9 = MG.vulnerability(0.0), MG.vulnerability(0.9)
+    assert v0[0] == v9[0] == 1 and v0[2] < 0.02 < 0.5 < v9[2] and (v0 <= v9).all()  # (the adults' share of the kill rises with tech)
+    for e in (1e-4, 1e-3, 1e-2):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
+        assert MG.dragon_kept(h, e, 0.0) > MG.dragon_kept(h, e, 0.9) > 0
+    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) > 0
+    h._ago_now = 0.0
     dh = MG.local_density(h, hi, k0)
-    assert (dh[: h.grid.n // 2] / h.dens_nat[hi] > d[: h.grid.n // 2] / h.dens_nat[w]).all()
+    assert (dh[half] / h.dens_nat[hi] < 1).all() and (dh[half] > 0).all()
     # the nominal density (meta.giant_km2) no longer sets any density
     t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
     h4 = H.History(t4, ps, 1)
@@ -2575,7 +2584,7 @@ def test_dragons_held_to_their_food(faketz):
     P = np.zeros((len(h.lines), n))
     P[h.idx["wyrm"]] = P[h.idx["drake"]] = 1.0
     w = h.idx["wyrm"]
-    s = np.full(n, MG.breed_r(h, h.lines[w]))  # (the peoples' kill at the dragons' breeding: half their natural density, PW-1068)
+    s = np.full(n, 1e-3)  # (a kill effort on every age class, PW-1068)
     ct = h.dragon_struct["cattle_yr"] * PR.HEAD_T
     tags = {"land": np.ones(n, bool)}
     MG.BUDGET = False

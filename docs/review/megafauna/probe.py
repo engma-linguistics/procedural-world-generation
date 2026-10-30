@@ -183,7 +183,7 @@ food = {"worst_food_use": max(fu, default=None), "worst_stock_take": max(st, def
         "pockets": len(fu)}
 # cell level: every cell where dragons are expected
 press = MG.pressure(h, P, h._land_now)
-kl = MG.kill(h, P, h._land_now, 0.0)
+kl = MG.kill(h, P, h._land_now)
 bud = MG.budget(h, P, press, h._tags_now, kl)
 prey, supply, live = bud["prey"], bud["food"], bud["live"]
 dens = {k: MG.local_density(h, k, kl, prey, supply, P) for k, l in enumerate(h.lines) if l.megafauna}

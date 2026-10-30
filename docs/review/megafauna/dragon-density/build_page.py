@@ -97,18 +97,12 @@ def bs(arm, biome, sit, k, n=2):
 
 
 def gpv(biome, sit):
-    """The game-present best guess, dragons per 10,000 km2 (Section 5): the model's value for wild land and city hinterland; for frontier
-    and farmed land the geometric mean of the model and the persecution-off arm (half-way on a log scale). None where a cell is empty."""
+    """The game-present best guess, dragons per 10,000 km2 (Section 6): the model's own value (round 3: the persecution rule now follows
+    the owner's ruling, so the round-2 half-way adjustment toward the persecution-off arm is retired). None where a cell is empty or thin."""
     t = N["cells"]["on"]["0"]["biome_situation"]["table"][biome][sit]
     if t is None or thin(biome, sit):
         return None
-    if sit in ("wild", "city hinterland"):
-        return t["per_10000km2"]
-    q = N["cells"].get("noper", {}).get("0", {}).get("biome_situation", {}).get("table", {}).get(biome, {}).get(sit)
-    if q is None:
-        return None
-    # half-way on a log scale, floored at the model: the rule exists because persecution looks too harsh, so it never lowers a value
-    return max(t["per_10000km2"], math.sqrt(max(t["per_10000km2"], 1e-9) * max(q["per_10000km2"], 1e-9)))
+    return t["per_10000km2"]
 
 
 def ser(arm, ago):

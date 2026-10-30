@@ -34,7 +34,7 @@ THEMES = {  # page tokens (index.html): ink-2 for text, muted for ticks, rule fo
 ROWS = ("none", "others", "foragers", "herders", "farmers")
 LABEL = {"none": "Nobody's country", "others": "Others' country", "foragers": "Foragers' country", "herders": "Herders' country",
          "farmers": "Farmers' country", "all": "All land"}
-ERAS = (("25", "25,000 years ago"), ("10", "10,000 years ago"), ("0", "the present"))
+ERAS = (("25", "25,000 years ago"), ("10", "10,000 years ago"), ("5", "5,000 years ago"), ("0", "the present"))
 
 
 def theme(t):
@@ -55,7 +55,7 @@ def save(fig, name, t):
 def density(t):
     T = theme(t)
     on_c, off_c = T["cat"][0], T["cat"][1]
-    fig, axs = plt.subplots(1, 3, figsize=(11, 3.9), sharey=True)
+    fig, axs = plt.subplots(1, 4, figsize=(14, 3.9), sharey=True)
     for ax, (e, title) in zip(axs, ERAS):
         y = np.arange(len(ROWS))[::-1].astype(float)
         for arm, col, dy, lab in (("off", off_c, 0.17, "pressure off (no persecution, no overkill)"), ("on", on_c, -0.17, "the model (pressure on)")):
@@ -78,7 +78,7 @@ def density(t):
         ax.set_yticks(y, [LABEL[c] for c in ROWS])
         ax.tick_params(axis="y", length=0)
         ax.set_ylim(-0.75, len(ROWS) - 0.3)
-    axs[1].set_xlabel("dragons per 1,000 km² (log scale): dot = 24 runs pooled, ticks = each run")
+    fig.supxlabel("dragons per 1,000 km² (log scale): dot = 24 runs pooled, ticks = each run", y=0.02, fontsize=10.5)
     fig.legend(loc="lower center", bbox_to_anchor=(0.55, -0.1), ncol=2)
     save(fig, "density", t)
 

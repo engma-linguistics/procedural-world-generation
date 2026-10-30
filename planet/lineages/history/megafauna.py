@@ -101,23 +101,34 @@ FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per k
 PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild big herbivores where small folk live, after Sandom et al.
 # 2014) is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell: a thin forager band already cuts the herds most of the way. It no
 # longer presses the megafauna themselves; that is the persecution kill below (PW-1068)
-# Persecution (PW-1068 option A, owner 10-30): a kill against the megafauna's slow breeding. Where the peoples kill k of them a year per head
-# and they could add at most r a year, they settle at natural x 1 / (1 + k / r): never zero (never species-ending, owner 10-29), never
-# above natural. k = KILL_Q x the sum over peoples of (their people per km2 x their `means`): how many there are, how well armed and
-# organised, and how much they have to defend. Large carnivores' slow reproduction leaves them "poorly able to respond to persecution"
-# (Ripple et al. 2014, Science 343:1241484, p. 1241484-1), and among carnivores slow life history predicts extinction risk where people
-# are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912). Neither gives the kill's size: KILL_Q
-# is a judgement.
-BREED_X = 2.0  # births could at most double over a generation where persecution thins them (a judgement): r = ln(BREED_X) / generation
-KILL_Q = 0.0026  # megafauna killed a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
-# 10 per km2, keep 10% of their dragons, each dragon there facing a ~1.5% chance a year of being killed. The evidence read would allow
-# local extirpation in dense farmland, Ripple 2014's tiger at 18% and lion at 17% of their range, Table 1; 10% respects "never fatal")
+# Persecution (PW-1068 option A, owner 10-30): a kill against the megafauna's slow breeding, by age class (owner 10-30: "separate out by age
+# class of dragons for mortality"). The peoples' kill effort per cell is KILL_Q x the sum over peoples of (their people per km2 x their
+# `means`: how many there are, how organised, how much they have to defend); a stage s of dragons loses effort x VULNERABILITY_s(tech) of
+# its number a year. Wyrmlings are reachable with spears, traps and bait; the young less so; adults and ancients hardly at all until the
+# tech level is high, so the adults' share of the kill rises with tech. On the dragons' age schedule (dragon_ages: the survival by stage,
+# fecundity flat from BREED_FROM) the kill lowers lifetime births R0; births can rise at most BREED_X-fold where the dragons thin, so they
+# settle at natural x 1 / (1 + (F - 1) / (BREED_X - 1)), F = R0 / R0 under the kill (`dragon_kept`): never zero (never species-ending,
+# owner 10-29), never above natural; ~1 / (1 + k / r) for a small kill k on every stage, r = ln(BREED_X) / generation. Giants (no age
+# schedule) take the adults' vulnerability in that one-stage form, r = ln(BREED_X) / their generation.
+# Evidence: in long-lived, slow-breeding animals growth is far less sensitive to first-year survival than to the long juvenile and adult
+# stages (loggerheads: Crouse, Crowder & Caswell 1987, Ecology 68:1412, p. 1416 and Fig. 1; protecting eggs alone "could not prevent the
+# eventual extinction of the model population", p. 1417); the dragons' own schedule agrees (the elasticity of R0 to a stage's survival,
+# summed over its years: wyrmlings 6, young 95, adults 242, ancients 92). Large carnivores' slow reproduction leaves them "poorly able to
+# respond to persecution" (Ripple et al. 2014, Science 343:1241484, p. 1241484-1), and among carnivores slow life history predicts
+# extinction risk where people are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912). None gives
+# the kill's size or the vulnerabilities: KILL_Q, VULNERABILITY and the means are judgements.
+BREED_X = 2.0  # births could at most double where persecution thins the megafauna (a judgement)
+KILL_Q = 0.0028  # kill effort a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
+# 10 per km2, keep 10% of their dragons. The evidence read would allow local extirpation in dense farmland, Ripple 2014's tiger at 18% and
+# lion at 17% of their range, Table 1; 10% respects the owner's "never fatal")
 MOTIVE0 = 0.25  # means: a people with no herds still kills what threatens it, at this share of one with herds everywhere (judgement)
-REACH0 = 0.02  # means: bands with stone and bone kill at this share of a people at the top tech level (judgement)
+FORAGER_ORG = 0.3  # means: a forager band's organised killing against a settled or herding people's (judgement)
+VULNERABILITY = {"wyrmling": (1.0, 0.0, 1.0), "young": (0.05, 0.45, 1.0), "adult": (0.01, 0.99, 2.0)}  # (a, b, p): a + b x level^p
+ANCIENT_X = 0.5  # ancients are this much less vulnerable than adults (judgement)
 # The tech level by era: a calendar proxy for weapons, metal, horses and organised hunts until the peoples' own techs can feed the history
 # (the technology tree, techtree.py, is made after it). The present is meta.era; the eras before it are counted back from the present
-# on Earth-like spans (kyr each, a judgement); before them, the stone age. Levels interpolate linearly between the eras' midpoints.
-ERA_LEVEL = {"stone age": 0.0, "bronze age": 0.3, "classical": 0.55, "medieval": 0.75, "renaissance": 0.9, "industrial": 1.0}
+# on Earth-like spans (kyr each, a judgement); before them, the stone age. Bronze-age peoples are still far from adult dragons (owner 10-30).
+ERA_LEVEL = {"stone age": 0.0, "bronze age": 0.15, "classical": 0.55, "medieval": 0.75, "renaissance": 0.9, "industrial": 1.0}
 ERA_KYR = {"industrial": 0.25, "renaissance": 0.35, "medieval": 1.0, "classical": 1.3, "bronze age": 2.0}
 
 
@@ -182,40 +193,81 @@ def tech_level(era: str, ago: float) -> float:
     return float(np.interp(max(ago, 0.0), xs, ys))
 
 
-def means(h: History, ago: float) -> np.ndarray:
-    """Per line, 0..1: how hard one person of it kills megafauna (PW-1068), motive x reach. Motive: MOTIVE0 + (1 - MOTIVE0) x the share of
-    its country it stocks (prey.LIVESTOCK; herds to defend). Reach: its wild-food share at REACH0 (bands), the rest (settled and
-    herding) at REACH0 + (1 - REACH0) x the tech level then (`tech_level`). 0 for megafauna and overlays. The one place a later ticket
-    feeds the peoples' real techs in (weapons, metal, horses, organised hunts)."""
+def means(h: History) -> np.ndarray:
+    """Per line, 0..1: how hard one person of it presses megafauna, before the tech level (PW-1068): motive x organisation. Motive:
+    MOTIVE0 + (1 - MOTIVE0) x the share of its country it stocks (prey.LIVESTOCK; herds to defend). Organisation: its wild-food share at
+    FORAGER_ORG (bands), the rest (settled and herding) at 1. 0 for megafauna and overlays. With `vulnerability` (the tech level by era),
+    the one place a later ticket feeds the peoples' own techs in (weapons, metal, horses, organised hunts)."""
+    m = getattr(h, "_means", None)
+    if m is not None:
+        return m
     from .. import landuse as LU
-    lev = tech_level(h.tree.era, ago)
     out = np.zeros(len(h.lines))
     for k, l in enumerate(h.lines):
         if l.megafauna or l.overlay:
             continue
         f = min(1.0, LU.shares(h.tree, l)["forage"])
-        reach = f * REACH0 + (1.0 - f) * (REACH0 + (1.0 - REACH0) * lev)
-        out[k] = (MOTIVE0 + (1.0 - MOTIVE0) * h._herd[k]) * reach
+        out[k] = (MOTIVE0 + (1.0 - MOTIVE0) * h._herd[k]) * (f * FORAGER_ORG + (1.0 - f))
+    h._means = out
     return out
 
 
+def vulnerability(lev: float) -> np.ndarray:
+    """Per dragon stage (dragon_ages.STAGES), the share of the peoples' kill effort that falls on it at tech level lev (VULNERABILITY)."""
+    v = [a + b * lev ** p for a, b, p in (VULNERABILITY[x] for x in ("wyrmling", "young", "adult"))]
+    return np.array(v + [ANCIENT_X * v[2]])
+
+
 def breed_r(h: History, line) -> float:
-    """A megafauna kind's most added a year where persecution thins it, per head: ln(BREED_X) over its generation (History.gen_yr)."""
+    """A megafauna kind's most added a year per head where persecution thins it (one-stage form): ln(BREED_X) over its generation."""
     return float(np.log(BREED_X) / max(h.gen_yr(line), 1.0))
 
 
-def kill(h: History, P: np.ndarray, land: np.ndarray | None = None, ago: float | None = None) -> np.ndarray:
-    """Per cell, the peoples' kill of the megafauna there, per head a year (PW-1068): KILL_Q x the sum over peoples of their people per km2
-    (presence x density) x their `means` at `ago` (kyr; default the step's, else the present). A sea cell takes the most of the land next
-    to it (storm giants on the shore ring)."""
-    ago = getattr(h, "_ago_now", 0.0) if ago is None else ago
-    m = means(h, ago)
-    N = (np.where(P >= EST, P, 0.0) * h.dens_cells() * m[:, None]).sum(0)
+_EPS = np.concatenate([[0.0], np.geomspace(1e-7, 1.0, 241)])  # (the kill-effort grid of dragon_kept's table, per head a year)
+
+
+def _kept_table(h: History, lev: float) -> np.ndarray:
+    """dragon_kept over _EPS at tech level lev, on the dragons' age schedule (cached per level)."""
+    from .. import dragon_ages as DA
+    c = h.__dict__.setdefault("_kept_cache", {})
+    key = round(lev, 4)
+    if key not in c:
+        mort = np.asarray(DA.SCHEDULES[h.dragon_struct["name"]], float)[DA.STAGE_OF]
+        breed = DA.AGES >= DA.BREED_FROM
+        ks = _EPS[:, None] * vulnerability(lev)[DA.STAGE_OF][None, :]
+        l = np.concatenate([np.ones((len(_EPS), 1)), np.cumprod((1.0 - mort)[None, :] * np.exp(-ks), axis=1)[:, :-1]], axis=1)
+        F = (l[0] * breed).sum() / (l * breed).sum(1)
+        c[key] = 1.0 / (1.0 + (F - 1.0) / (BREED_X - 1.0))
+    return c[key]
+
+
+def dragon_kept(h: History, eps, lev: float) -> np.ndarray:
+    """The share of their natural density dragons keep under the peoples' kill effort eps (per head a year, `kill`) at tech level lev: each
+    stage loses eps x vulnerability(lev) a year; births rise to make up the lost lifetime births R0, at most BREED_X-fold; kept =
+    1 / (1 + (F - 1) / (BREED_X - 1)), F the births' rise needed. Interpolated on a table per level."""
+    e = np.clip(np.asarray(eps, float), 0.0, _EPS[-1])
+    t = _kept_table(h, lev)
+    return np.interp(np.log10(e + 1e-9), np.log10(_EPS + 1e-9), t)
+
+
+def kept(h: History, k: int, eps, lev: float | None = None) -> np.ndarray:
+    """Line k's share of its natural density kept under the kill effort eps: dragons by age class (`dragon_kept`), giants in the
+    one-stage form with the adults' vulnerability, 1 / (1 + eps x v_adult / r)."""
+    lev = tech_level(h.tree.era, getattr(h, "_ago_now", 0.0)) if lev is None else lev
+    if "flies" in h.lines[k].traits and getattr(h, "dragon_struct", None) is not None:
+        return dragon_kept(h, eps, lev)
+    return 1.0 / (1.0 + np.asarray(eps, float) * vulnerability(lev)[2] / breed_r(h, h.lines[k]))
+
+
+def kill(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.ndarray:
+    """Per cell, the peoples' kill effort on the megafauna there, per head a year at full vulnerability (PW-1068): KILL_Q x the sum over
+    peoples of their people per km2 (presence x density) x their `means`. A sea cell takes the most of the land next to it (storm giants
+    on the shore ring). What it costs each kind and age class: `kept`."""
+    N = (np.where(P >= EST, P, 0.0) * h.dens_cells() * means(h)[:, None]).sum(0)
     if land is not None:
         g = h.grid
         N = np.where(land, N, np.maximum(N, nbr_reduce(g, np.maximum, np.where(land, N, 0.0)[g.nbr_idx])))
     return KILL_Q * N
-
 
 def setup(h: History) -> None:
     """The natural-density state on a new History: the setting, the dragons' age structure, the static prey and productivity."""
@@ -334,9 +386,9 @@ def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.nd
 
 
 def _pressed(h: History, k: int, kl, prey: np.ndarray | None, food: np.ndarray | None = None) -> np.ndarray:
-    """Line k's natural density under the peoples' kill kl (per head a year): natural x 1 / (1 + kl / r), r its breeding (`breed_r`)."""
+    """Line k's natural density under the peoples' kill effort kl (per head a year, `kill`): natural x `kept`."""
     nat = np.maximum(natural(h, k, prey, food), 1e-12)
-    return nat / (1.0 + np.asarray(kl, float) / breed_r(h, h.lines[k]))
+    return nat * kept(h, k, kl)
 
 
 def food_scale(h: History, P: np.ndarray, kl: np.ndarray, prey: np.ndarray, food: np.ndarray) -> np.ndarray:
@@ -355,7 +407,7 @@ def food_scale(h: History, P: np.ndarray, kl: np.ndarray, prey: np.ndarray, food
 def local_density(h: History, k: int, kl, prey: np.ndarray | None = None, food: np.ndarray | None = None,
                   P: np.ndarray | None = None) -> np.ndarray:
     """Megafauna line k's density per cell, per km2, under the peoples' kill kl (per head a year, `kill`; PW-1068): its natural density
-    x 1 / (1 + kl / r), r its breeding (`breed_r`): natural where nobody kills them, never zero, never above natural. One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
+    x `kept` (by age class for dragons): natural where nobody kills them, never zero, never above natural. One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
     the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere)."""
     d = _pressed(h, k, kl, prey, food if "flies" in h.lines[k].traits else None)
     if FOOD_CAP and food is not None and P is not None and "flies" in h.lines[k].traits:
@@ -554,7 +606,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     if not any(l.megafauna for l in h.lines):
         return out
     press = pressure(h, P, h._land_now)
-    kl = kill(h, P, h._land_now, 0.0)
+    kl = kill(h, P, h._land_now)
     bud = budget(h, P, press, tags, kl)
     prey, food, live, pool = (bud["prey"], bud["food"], bud["live"], bud["pool"]) if bud is not None else (None, None, None, None)
     lvs = None
