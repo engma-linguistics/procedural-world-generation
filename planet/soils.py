@@ -28,7 +28,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import climate
-from .geo import R_KM
+from .geo import R_KM, arc_km
 from .hydrology import CLOSED_LAKE, OPEN_LAKE, SALT_PAN
 
 # ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ def _edges(grid):
     d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-12)
     G = climate._geom(grid)
     de, dn = (d * G["east"][own]).sum(1), (d * G["north"][own]).sum(1)
-    km = np.arccos(np.clip((p[own] * p[nb]).sum(1), -1, 1)) * R_KM
+    km = arc_km((p[own] * p[nb]).sum(1))
     return own, nb, de, dn, km
 
 

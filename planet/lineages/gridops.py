@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..geo import R_KM
+from ..geo import arc_km
 
 
 def nbr_reduce(grid, ufunc, vals):
@@ -17,4 +17,4 @@ def dist_km(grid, lat: float, lon: float) -> np.ndarray:
     """Great-circle distance (km) of every cell centre from a point (degrees)."""
     la, lo = np.radians(lat), np.radians(lon)
     c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
-    return np.arccos(np.clip(grid.centers @ c, -1, 1)) * R_KM
+    return arc_km(grid.centers @ c)

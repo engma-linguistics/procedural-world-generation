@@ -27,3 +27,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-climate-copies-drifted.md (found by code-audit-2026-10).
+- 2026-10-30: Refactor 1 (lane 59) deleted climate._label/_components (a byte copy of kernels.components); ocean no longer reaches into climate._components. The sea-ice and Budyko parts are physics changes and stay open.

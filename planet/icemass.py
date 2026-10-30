@@ -36,6 +36,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .constants import GRAV, RHO_ICE
+
 SNOW_H = 20.0  # m: perennial snow / ice this thick is bright (phased in from 0)
 SUMMER_DAMP = 0.6  # share of the summer's warmth above the annual mean taken away (x sheet_cover on the ice's
 # surface, x air_mass in the air over a sheet)
@@ -47,7 +49,7 @@ ICE_COOL = 2.0  # C: thick ice is this much colder on the year's mean (inversion
 ALBEDO_H = 800.0  # ... in full from this thickness (m)
 SHEET_TAU = 75e3  # Pa: yield stress of ice, sets a sheet's steady (Nye) profile (PW-366: Antarctica's real extent
 # and bed hold ETOPO1's 25 Mkm3 at ~75 kPa, 50 kPa gave 20; real sheets fit ~70-100 kPa)
-EDGE_H = float(np.sqrt(2 * SHEET_TAU / (917.0 * 9.81) * 10e3))  # m (~400): a sheet's margin (its Nye profile 10 km
+EDGE_H = float(np.sqrt(2 * SHEET_TAU / (RHO_ICE * GRAV) * 10e3))  # m (~400): a sheet's margin (its Nye profile 10 km
 # in from its edge): at ~110 km cells a margin cell's snow and melt are its edge's
 PDD_SIGMA = 5.0  # C: day-to-day spread of temperature around the monthly mean
 DDF_SNOW = 3.0  # mm w.e. melted per positive degree-day, snow (Braithwaite 1995)
@@ -62,7 +64,7 @@ SURFACE_KM = 500.0  # km: the fetch over which the air touching an ice surface t
 
 # The sea's side of a sheet (PW-367), the time zoom's (TZParams take these as defaults) and the run's
 # (coast_loss, PW-465): see TZParams for the sources.
-RHO_I, RHO_W = 917.0, 1028.0
+RHO_I, RHO_W = RHO_ICE, 1028.0
 FLOW_A = 1e-16  # Pa^-3 yr^-1: Glen's rate factor (~-10 C ice) ...
 ENHANCEMENT = 3.0  # ... times this (also stands in for sliding)
 D_CAP = 3e8  # m2/yr: cap on the ice diffusivity (unresolved steep margins)
@@ -102,7 +104,7 @@ def coast_loss(h, s, depth, dist, elen, t_air, melt, area):
     kyr): the sea beside the sheets takes ~1-2e5 m2/yr per m of coast from
     deep water and ~1e3-5e4 from shallow, where the run used to charge 5e4
     everywhere and nothing to a sheet's accumulation zone."""
-    gamma = 2 * FLOW_A * ENHANCEMENT * (RHO_I * 9.81) ** 3 / 5
+    gamma = 2 * FLOW_A * ENHANCEMENT * (RHO_I * GRAV) ** 3 / 5
     slope = np.maximum(s, 0.0) / dist
     q = 0.5 * np.minimum(gamma * h ** 5 * slope ** 2, D_CAP) * slope * elen  # m3/yr
     floats = depth * RHO_W > h * RHO_I
@@ -209,7 +211,7 @@ def margin_ramp(H, width_m: float, n: int = 0):
     PW-460 a margin cell's balance was its edge's at any cell size, so a
     ~110 km cell melted as if all of it were its outermost 10 km, PW-115)."""
     H = np.maximum(np.atleast_1d(np.asarray(H, float)), 0.0)
-    top = np.sqrt(2 * SHEET_TAU / (917.0 * 9.81) * width_m)
+    top = np.sqrt(2 * SHEET_TAU / (RHO_ICE * GRAV) * width_m)
     f = np.clip(H / (2.0 / 3.0 * top), 0.0, 1.0) ** (2.0 / 3.0)
     x, _ = ramp_rule(n)
     return f, top * np.sqrt(f)[None, :] * np.sqrt(x)[:, None]

@@ -129,12 +129,12 @@ import numpy as np
 from numba import njit, prange
 
 from . import climate
-from .geo import R_KM, is_land
+from .constants import GRAV, SEC_PER_YR
+from .geo import R_KM, cell_area_km2, is_land
 from .kernels import walk_nearest
 
-GRAV = 9.81
 # waves
-U_TRADE = 7.0  # m/s (mean) for a climate wind vector of length 1
+U_TRADE = climate.U_REF  # m/s (mean) for a climate wind vector of length 1
 U_STORM = 7.0  # m/s (mean) added at storminess 1 (a mid-latitude winter storm track)
 N_DIR = 24  # wave ray directions
 N_DIR_TIDE = 16  # directions for the tides' openness and funnelling
@@ -575,7 +575,6 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
 # ---------------------------------------------------------------------------
 # Galloway weights at a river mouth
 # ---------------------------------------------------------------------------
-SEC_PER_YR = 3.156e7
 CHANNEL_SHARE = 0.002  # share of the delta plain that is tidal channel
 PLAIN_Z0, PLAIN_RISE = 0.8, 10.0  # m: the delta plain's height at the coast, and its rise to its edge (zoom/regional.py)
 SED_DENSITY = 1600.0  # kg/m^3: bulk density of deposited sand (2650 x (1 - porosity 0.4))
@@ -686,7 +685,7 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     marine = "wave_power" in L and "tide_range" in L and len(wet) > 0
     wave = float(np.mean(np.asarray(L["wave_power"], float)[wet])) if marine else 0.0
     tide = float(np.mean(np.asarray(L["tide_range"], float)[wet])) if marine else 0.0
-    cell_area = 4 * np.pi * R_KM ** 2 / grid.n
+    cell_area = cell_area_km2(grid.n)
     qs = river_sediment(L, upstream_cells(down, int(mouth)), q_m3s, cell_area)
     return {**galloway(qs, q_m3s, wave, tide, plain_km), "wave_power_kw_m": round(wave, 1),
             "tide_range_m": round(tide, 2), "marine": marine}

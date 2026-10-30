@@ -132,7 +132,8 @@ from . import coast, kernels
 from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
-from .geo import R_KM, world_land
+from .constants import GRAV, SEC_PER_YR
+from .geo import R_KM, arc, arc_km, cell_area_km2, world_land
 from .grid import Grid
 from .landform import LAVA_PLATEAU
 from .surface import DOLOMITE, FLOOD_BASALT, LIMESTONE
@@ -142,7 +143,6 @@ from .vegetation import TYPES as VEG_TYPES
 
 ZOOM_SIZES = (250, 500, 1000, 2000, 4000)  # the viewer's choices
 MAX_ZOOM = 2000  # suggested zooms stay detailed (4 km pixels); the viewer can go wider
-SEC_PER_YR = 3.156e7
 
 # Fixed priority per kind: how eye-catching a zoom there usually is.
 PRIORITY = {
@@ -191,14 +191,14 @@ class _Ctx:
         g = self.g
         self.n = g.n
         self.cell_km = g.spacing * R_KM
-        self.area = 4 * np.pi * R_KM**2 / g.n  # km^2 per cell (cells are near-equal)
+        self.area = cell_area_km2(g.n)  # km^2 per cell (cells are near-equal)
         self.elev = self.L["elevation"].astype(float)
         self.land = world_land(self.L)  # (a bed below the sea under grounded ice is land, PW-307)
         self.a, self.b = g.edges[:, 0], g.edges[:, 1]
 
     def dist(self, i: int, idx) -> np.ndarray:
         """Great-circle km from cell i to cells idx."""
-        return np.arccos(np.clip(self.g.centers[idx] @ self.g.centers[i], -1, 1)) * R_KM
+        return arc_km(self.g.centers[idx] @ self.g.centers[i])
 
     def filled(self) -> np.ndarray:
         """The pit-filled elevation (hydrology.priority_flood's filled surface alone)."""
@@ -456,7 +456,7 @@ def _rivers(ctx: _Ctx) -> dict:
     has = (down >= 0) & land
     link = np.zeros(ctx.n)
     idx = np.flatnonzero(has)
-    link[idx] = np.arccos(np.clip((g.centers[idx] * g.centers[down[idx]]).sum(1), -1, 1)) * R_KM
+    link[idx] = arc_km((g.centers[idx] * g.centers[down[idx]]).sum(1))
     mouth = has & ~land[np.maximum(down, 0)]
     # distance to the sea and the outlet, by relaxing along the links
     flows_on = has & ~mouth
@@ -588,7 +588,7 @@ def galloway_note(ctx: _Ctx, m: int, q: float) -> dict:
     w = gw["weights"]
     top = max(w, key=w.get)
     note = (f" Waves {gw['wave_power_kw_m']:.0f} kW/m, tides {gw['tide_range_m']:.1f} m, river sediment "
-            f"{gw['sediment_river_kgs'] * coast.SEC_PER_YR / 1e9:.0f} Mt/yr: {gw['type']} "
+            f"{gw['sediment_river_kgs'] * SEC_PER_YR / 1e9:.0f} Mt/yr: {gw['type']} "
             f"(river {100 * w['river']:.0f}%, wave {100 * w['wave']:.0f}%, tide {100 * w['tide']:.0f}%)"
             + (f", so {GALLOWAY_LOOK[top]}." if w[top] >= coast.RIVER_DOMINANT else "."))
     return {"delta_type": gw["type"], "galloway": w, "wave_power_kw_m": gw["wave_power_kw_m"],
@@ -824,7 +824,7 @@ def _chains(ctx: _Ctx, pts: list, link_km: float) -> list[list[int]]:
         return []
     la, lo = np.radians(np.array(pts, float)).T
     v = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], 1)
-    d = np.arccos(np.clip(v @ v.T, -1, 1)) * R_KM
+    d = arc_km(v @ v.T)
     lab = np.arange(len(pts))
     changed = True
     while changed:
@@ -873,7 +873,7 @@ def _unit(lat, lon):
 def _extent(ctx: _Ctx, cells) -> float:
     """km between the two farthest-apart cells, plus a cell."""
     C = ctx.g.centers[np.asarray(cells)]
-    return float(np.arccos(np.clip(C @ C.T, -1, 1)).max()) * R_KM + ctx.cell_km
+    return float(arc(C @ C.T).max()) * R_KM + ctx.cell_km
 
 
 CHAIN_LINK_KM = 250.0  # vents of one hotspot track are 60-195 km apart (volcanism.vent_gap)...
@@ -910,7 +910,7 @@ def _best_window(ctx: _Ctx, vs: list[dict], show) -> tuple[int, float]:
     show(v) within WINDOW_KM (so they fit a 1000 km zoom), and the km across
     those. Returns (index into vs, km)."""
     P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
-    d = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM
+    d = arc_km(P @ P.T)
     vis = np.array([bool(show(v)) for v in vs])
     near = (d <= WINDOW_KM) & vis[None, :]
     k = int(np.argmax(near.sum(1) + 0.01 * vis))
@@ -926,7 +926,7 @@ def _tracks(vents: list[dict]) -> list[list[int]]:
         return []
     P = np.array([_unit(v["lat"], v["lon"]) for v in vents])
     age = np.array([v["age"] for v in vents], float)
-    link = (np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM <= CHAIN_LINK_KM) & (np.abs(age[:, None] - age[None, :]) <= CHAIN_LINK_MYR)
+    link = (arc_km(P @ P.T) <= CHAIN_LINK_KM) & (np.abs(age[:, None] - age[None, :]) <= CHAIN_LINK_MYR)
     lab = np.arange(len(vents))
     while True:
         new = np.where(link, lab[None, :], len(vents)).min(1)
@@ -962,7 +962,7 @@ def _chain_hotspot_islands(ctx: _Ctx, top: int) -> list[dict]:
         k, span = _best_window(ctx, vs, lambda v: v["top_m"] > 0 or v["form"] == "atoll")
         cell = int(ctx.g.locate(np.array([_unit(vs[k]["lat"], vs[k]["lon"])]))[0])
         P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
-        length = float(np.arccos(np.clip(P @ P.T, -1, 1)).max()) * R_KM
+        length = float(arc(P @ P.T).max()) * R_KM
         young, peak = vs[0], max(vs, key=lambda v: v["top_m"])
         parts = ([f"{isl} island{'s' if isl != 1 else ''}"] if isl else []) \
             + ([f"{atl} atoll{'s' if atl != 1 else ''}"] if atl else []) \
@@ -992,7 +992,7 @@ def _archipelagos(vs: list[dict], weight: np.ndarray) -> list[list[int]]:
     half that takes them all, then the same among the rest. Indices into vs,
     heaviest first."""
     P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
-    near = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM <= ARCHIPELAGO_KM / 2
+    near = arc_km(P @ P.T) <= ARCHIPELAGO_KM / 2
     left = np.ones(len(vs), bool)
     out = []
     while left.any():
@@ -1129,8 +1129,8 @@ def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
         cell = _vcell(ctx, young)
         P = np.array([_unit(v["lat"], v["lon"]) for v in cal])
         p0 = np.array(_unit(young["lat"], young["lon"]))
-        reach = float(np.arccos(np.clip(np.array([_unit(v["lat"], v["lon"]) for v in live]) @ p0, -1, 1)).max()) * R_KM
-        length = float(np.arccos(np.clip(P @ P.T, -1, 1)).max()) * R_KM
+        reach = float(arc(np.array([_unit(v["lat"], v["lon"]) for v in live]) @ p0).max()) * R_KM
+        length = float(arc(P @ P.T).max()) * R_KM
         n_act = sum(v["status"] == "active" for v in live)
         n_dor = len(live) - n_act
         ext = [v for v in cal if v["status"] == "extinct"]
@@ -1161,7 +1161,7 @@ def stratovolcano(ctx: _Ctx) -> list[dict]:
     v = max(arcs, key=lambda v: (v["top_m"], v["top_m"] - v["floor_m"]))
     cell = _vcell(ctx, v)
     p0 = np.array(_unit(v["lat"], v["lon"]))
-    near = sum(1 for u in arcs if u is not v and np.arccos(np.clip(np.array(_unit(u["lat"], u["lon"])) @ p0, -1, 1)) * R_KM < 300)
+    near = sum(1 for u in arcs if u is not v and arc_km(np.array(_unit(u["lat"], u["lon"])) @ p0) < 300)
     setting = "on a continent's edge (like the Andes)" if v["floor_m"] > 0 and ("crust" not in ctx.L or ctx.L["crust"][cell] > 0) \
         else "in an island arc (like Japan)" if v["floor_m"] > -1000 else "rising from the sea in an island arc"
     blurb = (f"{_m(v['top_m'])}: the highest active volcano, a steep stratocone of andesite and ash standing "
@@ -1208,7 +1208,7 @@ def volcanic_field(ctx: _Ctx) -> list[dict]:
     St = np.array([v["status"] for v in vs])
     best = None
     for k in range(len(vs)):
-        near = np.flatnonzero(np.arccos(np.clip(P @ P[k], -1, 1)) * R_KM <= FIELD_KM)
+        near = np.flatnonzero(arc_km(P @ P[k]) <= FIELD_KM)
         types = set(T[near])
         if len(types) < 2:
             continue
@@ -1459,12 +1459,12 @@ def _water_surface(ctx: _Ctx) -> np.ndarray:
 
 def _link_km(ctx: _Ctx, i, j) -> np.ndarray:
     C = ctx.g.centers
-    return np.arccos(np.clip((C[i] * C[j]).sum(-1), -1, 1)) * R_KM
+    return arc_km((C[i] * C[j]).sum(-1))
 
 
 def _gw(q: float, h: float) -> float:
     """Power of falling water, GW (rho g Q H)."""
-    return 1000 * 9.81 * q * h / 1e9
+    return 1000 * GRAV * q * h / 1e9
 
 
 WF_MIN_Q, WF_MIN_DROP = 300.0, 300.0  # m^3/s, m: a big river, a big drop (over one or two ~110 km links)
@@ -2815,7 +2815,7 @@ def pick_zooms(features: list[dict], n: int) -> list[dict]:
         if not f.get("zoomable", True):
             continue
         v = np.array(_unit(f["lat"], f["lon"]))
-        if any(np.arccos(np.clip(v @ np.array(_unit(o["lat"], o["lon"])), -1, 1)) * R_KM < 0.4 * o["size_km"]
+        if any(arc_km(v @ np.array(_unit(o["lat"], o["lon"]))) < 0.4 * o["size_km"]
                for o in out):
             continue
         out.append(f)

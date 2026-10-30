@@ -52,7 +52,8 @@ import numpy as np
 from . import climate
 from . import soils as SO
 from . import vegetation as V
-from .geo import world_land
+from .geo import smoothstep, world_land
+from .images import hex_rgb, ramp_colour
 from .surface import ROCKS
 
 SEASONS = ("jul", "jan", "year")
@@ -63,7 +64,7 @@ YEAR_BLEND = 10.0  # deg of latitude over which 'year' blends the hemispheres' s
 
 
 def _hex(c: str) -> np.ndarray:
-    return np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)], float) / 255.0
+    return np.array(hex_rgb(c), float) / 255.0
 
 
 def lin(c) -> np.ndarray:
@@ -85,16 +86,12 @@ def _mix(a, b, t):
 
 
 def _smooth(e0, e1, x):
-    t = np.clip((np.asarray(x, float) - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
+    return smoothstep(e0, e1, np.asarray(x, float))
 
 
 def _ramp(v, stops) -> np.ndarray:
     """Linear-light colours (n, 3) along value stops [(v, hex)]."""
-    xs = np.array([s[0] for s in stops], float)
-    cs = np.array([lin(s[1]) for s in stops])
-    v = np.asarray(v, float)
-    return np.stack([np.interp(v, xs, cs[:, k]) for k in range(3)], -1)
+    return ramp_colour(np.asarray(v, float), [(s[0], lin(s[1])) for s in stops])
 
 
 # ---------------------------------------------------------------------------

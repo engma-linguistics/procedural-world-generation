@@ -7,7 +7,7 @@ import zlib
 
 import numpy as np
 
-from ...geo import R_KM
+from ...geo import R_KM, cell_area_km2
 from .. import compose as CP
 from .. import contacts as CT
 from .. import landuse as LU
@@ -55,7 +55,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.rng = np.random.default_rng(seed)
         self.seed = seed
         self.cell_km = g.spacing * R_KM
-        self.cell_mkm2 = 4 * np.pi * R_KM ** 2 / g.n / 1e6
+        self.cell_mkm2 = cell_area_km2(g.n) / 1e6
         self.lines = tree.order()
         # (a generator per line, seeded from the run seed and the line's id: no line's draws depend on how many others are alive, so a
         # marine line, or a parent kept alive by one, leaves the land peoples' draws as they were, PW-779)

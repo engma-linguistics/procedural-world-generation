@@ -16,17 +16,13 @@ from pathlib import Path
 import numpy as np
 
 from . import store as S
-from .images import write_png
+from .images import hex_rgb, ramp_colour, write_png
 
 W = 192
 CACHE = ".thumbs"
 PROJECTIONS = {"equal-earth": "ee", "equirect": "eq"}  # name -> short tag in the cache file name
 WIDTHS = (192, 512, 1024)
 _idx: dict = {}  # (level, projection, width) -> (nearest-cell map, valid mask)
-
-
-def _hex(c: str) -> tuple:
-    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
 
 
 def _cells(level: int, proj: str, width: int):
@@ -42,19 +38,13 @@ def _cells(level: int, proj: str, width: int):
     return _idx[key]
 
 
-def _lerp(stops, v):
-    """Piecewise-linear colour of values v (array) through [(value, (r, g, b)), ...]."""
-    xs = [s[0] for s in stops]
-    return np.stack([np.interp(v, xs, [s[1][c] for s in stops]) for c in range(3)], -1)
-
-
 OCEAN = [(-6000, (10, 28, 62)), (-2500, (24, 62, 112)), (0, (70, 130, 185))]
 LAND = [(0, (86, 130, 70)), (800, (150, 140, 90)), (2500, (130, 105, 80)), (5000, (235, 235, 235))]
 
 
 def elevation_image(elev: np.ndarray) -> np.ndarray:
     land = elev >= 0
-    img = np.where(land[..., None], _lerp(LAND, elev), _lerp(OCEAN, elev))
+    img = np.where(land[..., None], ramp_colour(elev, LAND), ramp_colour(elev, OCEAN))
     return img.astype(np.uint8)
 
 
@@ -68,7 +58,7 @@ def _render(kind: str, item_id: str, proj: str, width: int) -> np.ndarray:
         from . import climate
         pal = np.zeros((max(b[0] for b in climate.BIOMES) + 1, 3), np.uint8)
         for b in climate.BIOMES:
-            pal[b[0]] = _hex(b[3])
+            pal[b[0]] = hex_rgb(b[3])
         idx, valid = _cells(level, proj, width)
         img = pal[cols["biome"].astype(int)[idx]]
         # a little relief shading so mountains read: darken low land, lighten high

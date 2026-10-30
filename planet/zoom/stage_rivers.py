@@ -11,9 +11,10 @@ import time
 
 import numpy as np
 
-from ..geo import R_KM
+from ..geo import R_KM, arc_km
 from . import kernels as ZK
 from . import regional as RG
+from ..geo import smoothstep
 
 
 def coarse_rivers(ctx):
@@ -113,7 +114,7 @@ def coarse_rivers(ctx):
         # (no meanders near a delta's mouth: the river must arrive at its delta)
         for dl in ctx.deltas:
             dd = np.hypot(allp[:, 0] - dl["x"], allp[:, 1] - dl["y"])
-            damp = RG.smoothstep(0.3 * dl["R"], 1.5 * dl["R"], dd)
+            damp = smoothstep(0.3 * dl["R"], 1.5 * dl["R"], dd)
             wx, wy = wx * damp, wy * damp
         allp = allp + np.column_stack([wx, wy])
         k = 0
@@ -127,7 +128,7 @@ def coarse_rivers(ctx):
         cover_all = ctx.L.get("sediment_cover", np.zeros(ctx.g.n))
         srock = ctx.L.get("surface_rock", ctx.L["rock"])
         ctx.kps = RG.knickpoints(ws_c, ctx.down, riv, ctx.elev > 0, ctx.flow * ctx.cell_area * RG.KM2_M_PER_YR_TO_M3S,
-                          {c: float(np.arccos(np.clip(ctx.g.centers[c] @ ctx.g.centers[ctx.down[c]], -1, 1)) * R_KM)
+                          {c: float(arc_km(ctx.g.centers[c] @ ctx.g.centers[ctx.down[c]]))
                            for c in polys}, polys,
                           {c: (int(srock[c]), int(ctx.rock[c]), float(cover_all[c]),
                                *((float(ctx.L["strata_top_km"][c]), int(ctx.L["strata_next"][c])) if "strata_next" in ctx.L else ()))

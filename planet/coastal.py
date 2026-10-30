@@ -92,7 +92,8 @@ from numba import njit
 from . import coast
 from . import surface as SF
 from . import vegetation as V
-from .geo import R_KM, world_land, xyz
+from .constants import GRAV, SEC_PER_YR
+from .geo import R_KM, cell_area_km2, ramp, world_land, xyz
 
 # turbidity and light
 SSC_BG = 0.5  # mg/L: clear coastal water's suspended matter, away from rivers
@@ -156,24 +157,6 @@ NAMES = {"reef": "coral reef", "mangrove": "mangrove", "salt_marsh": "salt marsh
          "seagrass": "seagrass meadow"}
 
 
-def ramp(x, a, b):
-    """0 at a, 1 at b, linear and clipped (a > b: a falling ramp)."""
-    return np.clip((np.asarray(x, float) - a) / (b - a), 0.0, 1.0)
-
-
-def _nbr_mean(grid, v, mask):
-    """Mean of v over each cell's neighbours in mask (0 where none), and how many there are."""
-    m = mask[grid.nbr_idx].astype(float)
-    s = np.add.reduceat(np.asarray(v, float)[grid.nbr_idx] * m, grid.nbr_off[:-1])
-    k = np.add.reduceat(m, grid.nbr_off[:-1])
-    return np.where(k > 0, s / np.maximum(k, 1), 0.0), k
-
-
-def _nbr_max(grid, v, mask):
-    m = mask[grid.nbr_idx]
-    return np.maximum.reduceat(np.where(m, np.asarray(v, float)[grid.nbr_idx], -np.inf), grid.nbr_off[:-1])
-
-
 # ---------------------------------------------------------------------------
 # River mud and light
 # ---------------------------------------------------------------------------
@@ -212,8 +195,8 @@ def river_loads(grid, L: dict) -> tuple[np.ndarray, np.ndarray]:
             if "sediment_cover" in L else np.full(len(mouths), 0.3))
     ice = np.asarray(L.get("ice", np.zeros(n)), float)
     iced = np.add.reduceat((ice[cells] > 1).astype(float), start) / cnt
-    area = 4 * np.pi * R_KM ** 2 / n
-    q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / coast.SEC_PER_YR
+    area = cell_area_km2(n)
+    q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / SEC_PER_YR
     return mouths, coast.bqart(q, cnt * area, relief, temp, soft, iced)
 
 
@@ -276,12 +259,12 @@ def bed_stress(grid, L: dict) -> np.ndarray:
     x = np.where(hops > 0, hops - 0.5, 1e3) * grid.spacing * R_KM * 1e3  # m (unreached: far offshore)
     omega = 2 * np.pi / coast.T_M2
     a = 0.5 * np.asarray(L.get("tide_range", np.zeros(grid.n)), float)
-    u_tide = a * np.minimum(omega * x / h, np.sqrt(coast.GRAV / h))
+    u_tide = a * np.minimum(omega * x / h, np.sqrt(GRAV / h))
     # the waves: orbital velocity at the bed (linear theory; Eckart's 1952 dispersion approximation)
     hs, te = coast.hs_te(np.asarray(L.get("wave_power", np.zeros(grid.n)), float))
     hs = np.minimum(hs, HS_DEPTH * h)
     te = np.maximum(te, 1.0)
-    k0h = (2 * np.pi / te) ** 2 / coast.GRAV * h
+    k0h = (2 * np.pi / te) ** 2 / GRAV * h
     kh = k0h / np.sqrt(np.tanh(k0h))
     u_wave = np.pi * hs / (te * np.sinh(np.minimum(kh, 50.0)))
     tau = RHO_SEA * (CD_TIDE * u_tide ** 2 + 0.5 * FW_WAVE * u_wave ** 2)
@@ -381,7 +364,7 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     tide = np.asarray(L["tide_range"], float)
     # the coast's land: rocky (high or rugged, hard rock or fresh glacial scour, not a coastal
     # plain), as the sea cells next to it see it
-    land_rel = _nbr_max(grid, elev, land)
+    land_rel = grid.nbr_max_in(elev, land)
     h_coast = np.where(land, np.maximum(elev, 0.5 * np.maximum(land_rel - elev, 0)), 0.0)
     rocky_l = ramp(h_coast, *ROCK_COAST)
     hard = np.zeros(n, bool)
@@ -393,8 +376,8 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     if "landform" in L:
         from .landform import COASTAL_PLAIN
         rocky_l *= np.where(np.asarray(L["landform"]) == COASTAL_PLAIN, 0.3, 1.0)
-    coastal_sea = sea & (_nbr_mean(grid, np.ones(n), land)[1] > 0)
-    rocky = np.where(coastal_sea, _nbr_mean(grid, rocky_l, land)[0], 0.0) * (1 - ramp(ssc, 5.0, 30.0))
+    coastal_sea = sea & (grid.nbr_mean_in(np.ones(n), land)[1] > 0)
+    rocky = np.where(coastal_sea, grid.nbr_mean_in(rocky_l, land)[0], 0.0) * (1 - ramp(ssc, 5.0, 30.0))
     mud = ramp(ssc, *MUD)
     # coral reefs
     t0 = reef_temp(meta)
@@ -407,12 +390,12 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     seag_w = ramp(sal, *SG_SALT) * ramp(s_warm, *SG_SUMMER) * (1 - ramp(ice_y, *SG_ICE)) * _gate(unlocked, "TrBE")
     # the intertidal zone, on coastal land: the sea next to it (inland: its own air for the sea's
     # winter, for the zoom's interpolation)
-    near = land & (_nbr_mean(grid, np.ones(n), sea)[1] > 0)
-    tide_l = np.where(near, _nbr_mean(grid, tide, sea)[0], 0.0)
-    wave_l = np.where(near, _nbr_mean(grid, wave, sea)[0], 0.0)
-    cold_sea = np.where(sea, s_cold, np.where(near, _nbr_mean(grid, s_cold, sea)[0], tc))
-    mud_l = np.where(near, _nbr_max(grid, mud, sea), 0.0)
-    ice_l = np.where(sea, ice_y, np.where(near, _nbr_mean(grid, ice_y, sea)[0], 0.0))
+    near = land & (grid.nbr_mean_in(np.ones(n), sea)[1] > 0)
+    tide_l = np.where(near, grid.nbr_mean_in(tide, sea)[0], 0.0)
+    wave_l = np.where(near, grid.nbr_mean_in(wave, sea)[0], 0.0)
+    cold_sea = np.where(sea, s_cold, np.where(near, grid.nbr_mean_in(s_cold, sea)[0], tc))
+    mud_l = np.where(near, grid.nbr_max_in(mud, sea), 0.0)
+    ice_l = np.where(sea, ice_y, np.where(near, grid.nbr_mean_in(ice_y, sea)[0], 0.0))
     tmin = 0.006 * tc ** 2 + 1.316 * tc - 21.9  # (vegetation.site's BIOME4 estimate)
     warm = ramp(tmin, *MANG_TMIN) * ramp(cold_sea, *MANG_SEA)
     rain = 0.25 + 0.75 * ramp(np.asarray(L["precipitation"], float), *MANG_RAIN)
@@ -486,7 +469,7 @@ def volcano_reefs(grid, meta: dict | None, sea: np.ndarray) -> np.ndarray:
                 continue
             i = nb[0]
         out[i] += a
-    return np.clip(out / (4 * np.pi * R_KM ** 2 / grid.n), 0, 1)
+    return np.clip(out / (cell_area_km2(grid.n)), 0, 1)
 
 
 def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict:
@@ -517,5 +500,5 @@ def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict
 def areas_km2(grid, layers: dict, percent: bool = True) -> dict:
     """Total area of each habitat (km^2) from its layer: % of each cell (as
     worlds store them), or shares 0..1 with percent=False."""
-    a = 4 * np.pi * R_KM ** 2 / grid.n / (100.0 if percent else 1.0)
+    a = cell_area_km2(grid.n) / (100.0 if percent else 1.0)
     return {k: round(float(np.asarray(layers[k], float).sum() * a)) for k in LAYERS if k in layers}

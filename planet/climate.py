@@ -41,7 +41,8 @@ from numba import njit, prange
 
 from . import kernels
 from . import ocean as ocean_mod
-from .geo import R_KM, is_land
+from .constants import GRAV, RHO_C_SEA
+from .geo import R_KM, arc, arc_km, cell_area_km2, is_land
 from .grid import Grid
 
 PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
@@ -159,7 +160,7 @@ def _geom(grid: Grid):
         # the icosphere's cells are up to ~9% smaller or larger along the seams of
         # the icosahedron it was built from, and a gradient taken with the mean
         # spacing shows those seams as straight lines (in the winds, then the rain).
-        ln = np.arccos(np.clip((p[src] * p[dst]).sum(1), -1.0, 1.0)) * R_KM
+        ln = arc_km((p[src] * p[dst]).sum(1))
         c = ln[:, None] * d
         M = np.zeros((grid.n, 3, 3))
         np.add.at(M, src, c[:, :, None] * c[:, None, :])
@@ -218,7 +219,7 @@ def _faces(grid: Grid) -> dict:
         key, tri = key[o], tri[o]
         at = np.searchsorted(key, ea * n + eb)
         c1, c2 = grid.corners[tri[at]], grid.corners[tri[at + 1]]
-        L = np.arccos(np.clip((c1 * c2).sum(1), -1, 1)) * R_KM * 1000.0
+        L = arc_km((c1 * c2).sum(1)) * 1000.0
         mid = c1 + c2
         mid /= np.linalg.norm(mid, axis=1, keepdims=True)
         nrm = np.cross(c2 - c1, mid)
@@ -226,7 +227,7 @@ def _faces(grid: Grid) -> dict:
         nrm /= np.linalg.norm(nrm, axis=1, keepdims=True)
         p = grid.centers
         nrm *= np.where(((p[eb] - p[ea]) * nrm).sum(1) < 0, -1.0, 1.0)[:, None]
-        lc = np.arccos(np.clip((p[ea] * p[eb]).sum(1), -1, 1)) * R_KM * 1000.0
+        lc = arc_km((p[ea] * p[eb]).sum(1)) * 1000.0
         cells = np.concatenate([ea, eb])
         eid = np.tile(np.arange(len(ea), dtype=np.int64), 2)
         sg = np.concatenate([np.ones(len(ea)), -np.ones(len(ea))])
@@ -267,7 +268,7 @@ def _coarse(grid: Grid, level: int = 3):
         cand = ring[cidx]
         ok = cand >= 0
         cand = np.where(ok, cand, cidx[:, None])
-        d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
+        d = arc((cg.centers[cand] * grid.centers[:, None, :]).sum(-1))
         w = np.where(ok, np.maximum(0.0, 1 - (d / (COARSE_R * cg.spacing)) ** 2) ** 2, 0.0)
         w /= w.sum(1, keepdims=True)
         # the inverse map, coarse cell -> the (fine cell, candidate) pairs that count towards it, in
@@ -507,11 +508,6 @@ def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width:
     allm = np.bincount(bins, f, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
     zm = np.where(cnt > 0, tot / np.maximum(cnt, 1), allm)
     return np.interp(lat, -90 + width * (np.arange(nb) + 0.5), zm)
-
-
-def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
-    """Mean of f over each cell's neighbours."""
-    return np.add.reduceat(f[grid.nbr_idx], grid.nbr_off[:-1]) / np.diff(grid.nbr_off)
 
 
 # --------------------------------------------------------------------------
@@ -864,10 +860,10 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     # Sakhalin, Luzon: the Pacific's gyre closes on New Zealand, and the
     # Tasman Sea between it and Australia has only its own; PW-594).
     land = ~ocean
-    lab, nlab = _components(grid, land)
+    lab, nlab = grid.components(land)
     nl = max(nlab, 1)
     k = np.maximum(lab, 0)
-    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (4 * np.pi * R_KM**2 / grid.n)
+    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (cell_area_km2(grid.n))
     lo = np.full(nl, 90.0)
     hi = np.full(nl, -90.0)
     np.minimum.at(lo, lab[lab >= 0], lat[lab >= 0])
@@ -912,36 +908,6 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     s = np.maximum(speed(v), 1e-12)[:, None]
     v = v * 2.5 * np.tanh(s / 2.5) / s
     return np.where(ocean[:, None], v, 0.0), np.where(near[:, None], away, 0.0)
-
-
-def _components(grid: Grid, mask: np.ndarray) -> tuple[np.ndarray, int]:
-    """Connected components of mask: label per cell (-1 outside), count."""
-    return _label(mask, grid.nbr_off, grid.nbr_idx)
-
-
-@njit(cache=True)
-def _label(mask, nbr_off, nbr_idx):
-    n = mask.shape[0]
-    lab = np.full(n, -1, np.int64)
-    q = np.empty(n, np.int64)
-    k = 0
-    for s in range(n):
-        if not mask[s] or lab[s] >= 0:
-            continue
-        lab[s] = k
-        q[0] = s
-        head, tail = 0, 1
-        while head < tail:
-            i = q[head]
-            head += 1
-            for e in range(nbr_off[i], nbr_off[i + 1]):
-                j = nbr_idx[e]
-                if mask[j] and lab[j] < 0:
-                    lab[j] = k
-                    q[tail] = j
-                    tail += 1
-        k += 1
-    return lab, k
 
 
 def upwelling_cooling(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, away: np.ndarray,
@@ -1271,7 +1237,7 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         c0, c1 = tune["cloud_cu_c"]
         cu = np.where(ocean, 0.0, tune["cloud_cu"] * np.clip((inst + c0) / c1, 0, 1) * np.sqrt(rh))
         # the stratocumulus deck drifts over low coasts (the garua of Lima, the Namib's fog)
-        drift = np.clip(_nbr_mean(grid, np.where(ocean, deck, 0.0)) * coastal, 0, 1)
+        drift = np.clip(grid.nbr_mean(np.where(ocean, deck, 0.0)) * coastal, 0, 1)
         layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 - tune["cloud_polar"] * pole) * (1 - drift), 0, 1)
         low = np.where(ocean, sea, layer)
         clear = np.where(ocean, 0.0, tune["cloud_clear"] * sink * np.exp(-p / tune["cloud_clear_mm"]))
@@ -1384,7 +1350,7 @@ def jet_stream(grid: Grid, t_sl: np.ndarray, tune: dict | None = None) -> tuple[
     gT = dzm[:, None] * G["north"] + tune["jet_anom"] * gradient(grid, anom)  # C per km
     a = np.abs(lat)
     f = 2 * OMEGA * np.maximum(np.sin(np.radians(a)), np.sin(np.radians(tune["jet_f_lat"])))
-    k = 9.81 * tune["jet_h"] / (f * 250.0) / 1000.0 * np.sign(lat)  # m/s per (C per km)
+    k = GRAV * tune["jet_h"] / (f * 250.0) / 1000.0 * np.sign(lat)  # m/s per (C per km)
     k *= np.clip(a / tune["jet_f_lat"], 0, 1) ** 2
     jet = k[:, None] * np.cross(grid.centers, gT)
     return jet, baro
@@ -2526,10 +2492,10 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     t_warm = carry(grid, v_sum, (1 - k_s) * eq_s, k_s, 4 * float(np.max(km_s)), 0.25)
     t_cold, open_w = _winter_air(grid, ocean, sst, t_land, half_l, half_w, sea_sum, v_win, h, tune, lift)
     # right at a coast the sea's air mixes in anyway (sea breezes, fog; on land)
-    sea_n, open_n = _nbr_mean(grid, ocean.astype(float)), _nbr_mean(grid, open_w)
+    sea_n, open_n = grid.nbr_mean(ocean.astype(float)), grid.nbr_mean(open_w)
     c_s, c_w = tune["coast"] * sea_n, np.where(ocean, 0.0, tune["coast"] * open_n)
-    sea_s = _nbr_mean(grid, np.where(ocean, eq_s, 0.0)) / np.maximum(sea_n, 1e-9)
-    sea_w = _nbr_mean(grid, np.where(ocean, np.maximum(sst - half_w, FREEZE), 0.0) * open_w) / np.maximum(
+    sea_s = grid.nbr_mean(np.where(ocean, eq_s, 0.0)) / np.maximum(sea_n, 1e-9)
+    sea_w = grid.nbr_mean(np.where(ocean, np.maximum(sst - half_w, FREEZE), 0.0) * open_w) / np.maximum(
         open_n, 1e-9)
     t_warm = (1 - c_s) * t_warm + c_s * sea_s - lift
     t_cold = (1 - c_w) * t_cold + c_w * sea_w - lift
@@ -2540,7 +2506,6 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     return t_warm, t_cold, temp, open_w
 
 
-RHO_C_SEA = 4.1e6  # J/m3 per C: sea water's heat capacity
 RHO_C_AIR = 1.2 * 1005.0  # J/m3 per C: air's, near the ground
 YEAR_S = 365.25 * 86400.0
 SEA_ALBEDO = 0.06

@@ -33,7 +33,7 @@ import numpy as np
 from numba import njit
 
 from .. import resources as RS
-from ..geo import R_KM, latlon
+from ..geo import arc_km, cell_area_km2, latlon
 
 SIZES = ("small", "medium", "large", "giant")
 SIZE_P = np.array([0.70, 0.22, 0.07, 0.01])  # share of deposits by size class
@@ -195,12 +195,12 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
     X, Y = np.meshgrid(xs, ys)
     P = fr.to_sphere(X.ravel(), Y.ravel())
     own = g.locate(P)
-    sp = float(meta.get("params", {}).get("coarse_spacing_km") or np.sqrt(4 * np.pi * R_KM ** 2 / g.n))
+    sp = float(meta.get("params", {}).get("coarse_spacing_km") or np.sqrt(cell_area_km2(g.n)))
     size_km = float(meta["size_km"])
-    ang = np.arccos(np.clip(g.centers @ fr.c, -1, 1)) * R_KM
+    ang = arc_km(g.centers @ fr.c)
     sel = np.flatnonzero(ang < size_km * 0.7072 + 4 * sp)
     cx, cy = fr.to_plane(g.centers[sel])
-    cell_area = 4 * np.pi * R_KM ** 2 / g.n
+    cell_area = cell_area_km2(g.n)
     px_area = res * res
 
     # the world's fields on the pixels: likelihoods (Gaussian-weighted, as the zoom interpolates its world)

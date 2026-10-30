@@ -31,3 +31,30 @@ def is_land(elev, ice=None) -> np.ndarray:
 def world_land(L: dict) -> np.ndarray:
     """is_land of a world's layers (elevation, and ice where it has any)."""
     return is_land(L["elevation"], L.get("ice"))
+
+
+def arc(dots) -> np.ndarray:
+    """Great-circle angle (radians) from the dot products of unit vectors. The caller forms the dot
+    product (a @ b or (a * b).sum(1)), which keeps each call site's float order."""
+    return np.arccos(np.clip(dots, -1, 1))
+
+
+def arc_km(dots) -> np.ndarray:
+    """Great-circle distance (km) from the dot products of unit vectors (see arc)."""
+    return arc(dots) * R_KM
+
+
+def cell_area_km2(n: int) -> float:
+    """Area of one of n equal-area cells on the sphere, km^2."""
+    return 4 * np.pi * R_KM ** 2 / n
+
+
+def smoothstep(e0, e1, x):
+    """0 below e0, 1 above e1, cubic Hermite between (e0 > e1 gives a falling step)."""
+    t = np.clip((x - e0) / (e1 - e0), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def ramp(x, a, b):
+    """0 at a, 1 at b (either direction), linear and clipped."""
+    return np.clip((np.asarray(x, float) - a) / (b - a), 0.0, 1.0)
