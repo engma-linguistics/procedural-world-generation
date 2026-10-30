@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import spec as SP
 from ..spread import EST, graph_dist
-from .params import HOLOCENE_KYR, MEGAFAUNA_OFF, NEAR_KM, NEAR_ORIGIN, NEAR_ORIGIN_KM, NEAR_RANGE
+from .params import EDGE_C, EDGE_ELEV_M, EDGE_OCT, HOLOCENE_KYR, MEGAFAUNA_OFF, NEAR_KM, TOLERATE_K, NEAR_ORIGIN, NEAR_ORIGIN_KM, NEAR_RANGE
 from .gridops import _isin, _soft
 from .tags import _tags
 
@@ -22,6 +22,29 @@ def _land_view(env: dict, tags: dict) -> dict:
     return v
 
 
+def _fit(line: SP.Lineage, v: dict, edge: bool = False) -> np.ndarray:
+    """How well the land cells' climate (and height) fits a line's comfort range, 0..1, soft-edged; edge (PW-1024, megafauna's
+    tolerated tier and ecological release): the range widened by EDGE_C, EDGE_OCT and EDGE_ELEV_M on both sides."""
+    w = line.trait("widen", 1.0)
+    dc, do, de = (EDGE_C, EDGE_OCT, EDGE_ELEV_M) if edge else (0.0, 0.0, 0.0)
+    lo, hi = line.temp_c
+    mid, half = (lo + hi) / 2, (hi - lo) / 2 * w + dc
+    K = _soft(v["temp"], mid - half, mid + half, 4.0 * w)
+    rlo, rhi = line.rain_mm
+    K = K * _soft(v["lr"], np.log2(max(rlo, 1)) - (w - 1) - do, np.log2(max(rhi, 1)) + (w - 1) + do, 1.0 * w)
+    if line.elev_m:
+        K = K * _soft(v["elev"], line.elev_m[0] - de, line.elev_m[1] + de, 600.0 * w)
+    return K
+
+
+def edge_fit(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
+    """_fit(edge=True) on the whole grid (0 off the land): the climate a megafauna kind can live in at the edges (ecological release)."""
+    v = _land_view(env, tags)
+    out = np.zeros(len(tags["land"]))
+    out[v["li"]] = _fit(line, v, edge=True)
+    return out
+
+
 def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
     """Carrying capacity K in [0, 1] of a line's own habitat (worked out on the land cells only; a marine line's, on its
     realm's sea cells, marine_capacity)."""
@@ -29,14 +52,7 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
         return marine_capacity(line, env, tags)
     v = _land_view(env, tags)
     li = v["li"]
-    w = line.trait("widen", 1.0)
-    lo, hi = line.temp_c
-    mid, half = (lo + hi) / 2, (hi - lo) / 2 * w
-    K = _soft(v["temp"], mid - half, mid + half, 4.0 * w)
-    rlo, rhi = line.rain_mm
-    K = K * _soft(v["lr"], np.log2(max(rlo, 1)) - (w - 1), np.log2(max(rhi, 1)) + (w - 1), 1.0 * w)
-    if line.elev_m:
-        K = K * _soft(v["elev"], line.elev_m[0], line.elev_m[1], 600.0 * w)
+    K = _fit(line, v)
 
     def has(tag):
         m = v["has"].get(tag)
@@ -53,6 +69,11 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
         for t in line.prefers:
             match |= has(t)
         K = K * np.where(match, 1.0, MEGAFAUNA_OFF if line.megafauna else 0.4)
+        if line.tolerates and line.megafauna:  # (PW-1024: the edge tier, the better of the two: never lowers the own country)
+            tol = match.copy()
+            for t in line.tolerates:
+                tol |= has(t)
+            K = np.maximum(K, TOLERATE_K * np.where(tol, _fit(line, v, edge=True), 0.0))
     for t in line.avoids:
         K = K * np.where(has(t), 0.25, 1.0)
     cb = line.trait("coast", 0.0)
@@ -131,6 +152,12 @@ class HabitatMixin:
                 K = K * self.animals.k_mult(self.idx[l.id])
             if self.crops is not None and not l.overlay and self.goods is not None and step.epoch != "deep":  # crops feed more farmers
                 K = K * self.crops.k_mult(self.idx[l.id])
+        if l.megafauna and not l.marine:  # (PW-1024 B: ecological release into rich land no rival kind holds; the kind's own habitat kept apart
+            from . import megafauna as MG  # for its coverage target, megafauna.summary)
+            self._K_own[self.idx[l.id]] = K
+            rel = MG.release(self, l, self.idx[l.id], env, tags, step)
+            if rel is not None:
+                K = np.maximum(K, rel)
         if l.extinct_kyr is not None:  # dwindles toward its end
             span = min(0.3 * (l.ago_kyr - l.extinct_kyr), 20.0)
             if span > 0 and step.ago < l.extinct_kyr + span:

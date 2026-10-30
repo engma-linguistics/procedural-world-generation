@@ -319,6 +319,31 @@ def ages_text(a: dict) -> list[str]:
     return out
 
 
+RELEASE = True  # PW-1024 B (owner 10-29): ecological release. A kind spreads, at reduced density, into land outside its own country where the
+# prey is plentiful and no rival kind holds it, so open niches fill on any world and preset (off only to measure it). The idea is competitive release, a species
+# freed of its competitors widening its niche; the form and numbers here are a design judgement, not fitted to any data
+RELEASE_K = 0.3  # the habitat such land offers at most: under scatter's SUITABLE (no new pockets are founded there, the kind walks or flies
+# in from land it holds next door) and under TOLERATE_K (the edge it accepts): a design judgement, "reduced density" as about a third
+RELEASE_PREY = 2.0  # the prey (the step's prey field over a forager's reach, wild herds and stock) over the land's median wild prey at which the
+# release is full; none at or below the median ("plentiful": better than the usual land), in proportion between. A design judgement
+RELEASE_RIVALS = "kind"  # whose presence closes the land: another kind of the same sort (dragons for a dragon, giants for a giant) holding it
+
+
+def release(h: History, l, k: int, env: dict, tags: dict, step) -> np.ndarray | None:
+    """PW-1024 B: the habitat ecological release offers megafauna kind k this step, per cell: RELEASE_K x its climate at the edges
+    (habitat.edge_fit: the comfort range widened as for its tolerated country) x how plentiful the prey is (RELEASE_PREY) x open (no
+    other kind of its sort holds the cell). None in the deep epoch (no prey field for the plates then) or with RELEASE off."""
+    if not RELEASE or l.marine or step.epoch == "deep" or getattr(h, "_prey", None) is None:
+        return None
+    from .habitat import edge_fit
+    rich = np.clip((h._prey / max(h.prey_ref, 1e-9) - 1.0) / (RELEASE_PREY - 1.0), 0.0, 1.0)
+    flies = "flies" in l.traits
+    riv = [j for j, x in enumerate(h.lines) if j != k and x.megafauna and not x.marine and ("flies" in x.traits) == flies
+           and h.active.get(x.id)]
+    open_ = ~(h.p[riv] >= EST).any(0) if riv else np.ones(h.grid.n, bool)
+    return RELEASE_K * edge_fit(l, env, tags) * rich * open_
+
+
 SCATTER_RATE = 1.0  # (PW-924 coverage: was 0.2) new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
 SCATTER_MAX = 3  # stays a mystery), in free suitable country within SCATTER_LINKS of its reach (link_km) of a pocket it holds; they do not
 SCATTER_LINKS = 5.0  # wait for crowding as a people's jump does (History._jump), and they settle beside peoples, whom they hardly press
@@ -434,6 +459,11 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     g, out = h.grid, {}
     area = h.cell_mkm2 * 1e6
     S = h._suit() if getattr(h, "_K_now", None) else None
+    if S is not None:  # (PW-1024: the target is over the kind's own country and what it tolerates, not the land open to it by ecological release)
+        from .. import compose as CP
+        for k, K in getattr(h, "_K_own", {}).items():
+            if h.active[h.lines[k].id]:
+                S[k] = np.where(K >= EST, np.clip(K / CP.SUIT_K, 0.0, 1.0), 0.0)
     lm, names = h.cross.label, {nm["rank"]: nm["name"] for nm in h.cross.names}
     if not any(l.megafauna for l in h.lines):
         return out

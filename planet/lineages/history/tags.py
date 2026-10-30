@@ -6,7 +6,7 @@ import numpy as np
 
 from ...geo import R_KM
 from .. import land as LD, spec as SP
-from .params import CHAIN_CELLS
+from .params import BREAKS_RAIN, BREAKS_RISE, CHAIN_CELLS
 from ..gridops import nbr_reduce
 from .gridops import _isin
 
@@ -46,12 +46,15 @@ def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = No
     farm = land & _isin(cl, SP.GROUPS["temperate"] + [2, 20, 24]) & (rain > 500) & (elev < 1000)
     hills = land & ~mountain & (LD._window(dh / (grid.spacing * R_KM), LD.HILL_SLOPE) * LD._window(elev, LD.HILL_ELEV) >= 0.5)
     volc = land & (volcanic >= 0.5) if volcanic is not None else np.zeros(grid.n, bool)
+    opn = land & (trees < 20) & (rain > 200)
+    # breaks (PW-1024: copper dragons' badlands, buttes and river breaks): open, dry-ish grassland cut by relief, under the mountains
+    breaks = opn & ~mountain & (rain < BREAKS_RAIN) & (dh / (grid.spacing * R_KM) >= BREAKS_RISE)
     return {"farmland": farm, "jungle": land & _isin(cl, [0, 1]), "steppe": land & _isin(cl, [5, 6]),
             "desert": land & _isin(cl, [3, 4]), "tundra": land & (cl == 28), "island_chain": chain,
-            "hills": hills, "volcanic": volc,
+            "hills": hills, "volcanic": volc, "breaks": breaks,
             "land": land, "sea": sea, "shore": sea & nbr_reduce(grid, np.logical_or, env["land"][ni]), "coast": land & sea_nbr, "island": island, "mountain": mountain,
             "lowland": land & (elev < 500), "inland": land & ~sea_nbr, "forest": land & (trees >= 35),
-            "open": land & (trees < 20) & (rain > 200), "wetland": land & (elev < 300) & (rain > 1600),
+            "open": opn, "wetland": land & (elev < 300) & (rain > 1600),
             "elev": elev, "label": lab, "sizes": sizes}
 
 
