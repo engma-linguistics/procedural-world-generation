@@ -30,6 +30,7 @@ def http_root(data_root):
         c.close()
         return out
 
+    get.port = httpd.server_address[1]
     yield data_root, get
     httpd.shutdown()
     httpd.server_close()
@@ -62,6 +63,49 @@ def test_gzip_files(http_root):
     assert gzip.decompress(get("/runs/r1/layers/x.bin")[2]) == raw2
     assert [p for p in (root / server.GZIP_DIR).rglob("*.gz")] != cached and len(list((root / server.GZIP_DIR).rglob("*.gz"))) == 1
     assert server.accepts_gzip("gzip;q=0.5, br") and not server.accepts_gzip("gzip;q=0") and not server.accepts_gzip("deflate")
+
+
+def test_data_files_revalidate(http_root):
+    """Data files carry an ETag and answer 304 when unchanged; the viewer's files stay no-store (PW-1045)."""
+    root, get = http_root
+    d = root / "runs" / "r2" / "layers"
+    d.mkdir(parents=True)
+    raw = np.repeat(np.arange(400_000, dtype=np.int8), 2).tobytes()
+    (d / "x.bin").write_bytes(raw)
+    (root / "runs" / "r2" / "run.json").write_text('{"a": 1}')
+
+    def cond(path, tag, gz=True):
+        c = http.client.HTTPConnection("127.0.0.1", get.port, timeout=60)
+        c.request("GET", path, headers={"If-None-Match": tag, **({"Accept-Encoding": "gzip"} if gz else {})})
+        r = c.getresponse()
+        out = r.status, dict(r.getheaders()), r.read()
+        c.close()
+        return out
+
+    for path, gz in (("/runs/r2/layers/x.bin", True), ("/runs/r2/layers/x.bin", False), ("/runs/r2/run.json", True)):
+        status, h, body = get(path, gz=gz)
+        assert status == 200 and h["Cache-Control"] == "no-cache" and h["ETag"].startswith('"')
+        tag = h["ETag"]
+        status, h2, body2 = cond(path, tag, gz)
+        assert status == 304 and body2 == b"" and h2["ETag"] == tag
+        assert cond(path, '"stale"', gz)[0] == 200
+    # gzipped and plain answers are different bodies: different tags
+    assert get("/runs/r2/layers/x.bin")[1]["ETag"] != get("/runs/r2/layers/x.bin", gz=False)[1]["ETag"]
+    # the file changed: a new tag, a full answer
+    old = get("/runs/r2/run.json")[1]["ETag"]
+    (root / "runs" / "r2" / "run.json").write_text('{"a": 22}')
+    status, h, body = cond("/runs/r2/run.json", old)
+    assert status == 200 and h["ETag"] != old and body == b'{"a": 22}'
+    # by date too (Chrome revalidates an HTTP/1.0 server's answers with If-Modified-Since only), gzipped or not
+    for gz in (True, False):
+        h = get("/runs/r2/layers/x.bin", gz=gz)[1]
+        c = http.client.HTTPConnection("127.0.0.1", get.port, timeout=60)
+        c.request("GET", "/runs/r2/layers/x.bin", headers={"If-Modified-Since": h["Last-Modified"], **({"Accept-Encoding": "gzip"} if gz else {})})
+        r = c.getresponse()
+        assert r.status == 304 and r.read() == b""
+        c.close()
+    # API answers stay no-store
+    assert get("/api/planets")[1]["Cache-Control"] == "no-store"
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")  # (a level-3 world's rough water balance)

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-679, PW-687, PW-685]
 refs: [viewer/index.html, planet/server.py, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -28,3 +28,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 ## Updates
 - 2026-10-29: Created from inbox draft draft-viewer-redraw-and-reload-waste.md (found by code-audit-2026-10).
 - 2026-10-29: Viewer lane 51 split the code into modules. The code paths named here now live in globe/geometry.js (`paint`), globe/overlays.js (`buildOverlays`, `disposeObj`, `cloudTexture` / `cloudCache`) and globe/draw.js. draw.js has `canvasSprite`: one sprite factory instead of four, the natural place for a text|colour cache. The per-cell colour code is now one `color` factory per layer in globe/layers.js (cellColors), which is where the pftColor/resColor lookups should be hoisted out of the loop. Nothing in this ticket is fixed yet.
+- 2026-10-30: Viewer lane 53: label sprites are cached (globe/draw.js canvasSprite keeps one SpriteMaterial and canvas texture per text, colour and style, marked shared), so a repaint makes only new Sprite objects, with no canvas drawing or texture upload; disposeObj leaves shared textures and three's sprite geometry alone. The cloud texture is marked shared (no longer disposed and re-uploaded on every overlay rebuild), keyed by the world or run frame and season, emptied when another world or run opens, and capped at 6. Server: data files (anything outside /viewer/, /api/ and /docs/review/) answer Cache-Control: no-cache with an ETag (size-mtime, its own tag for the gzipped body), Last-Modified and Vary: Accept-Encoding, and 304 on If-None-Match or If-Modified-Since. The second check matters: Chrome revalidates an HTTP/1.0 server's answers by date only (checked in headless Chrome, where a run.json and a layer reload now cost a 300-byte 304). The viewer's run, grid and layer fetches use cache: 'no-cache' instead of 'no-store'. The main server on 8765 needs a restart after the merge. Not done: skipping buildOverlays when nothing moved, and hoisting the per-cell pft/resource lookups.
