@@ -17,6 +17,8 @@ updated: 2026-10-29
 ---
 
 ## Description
+**In plain words.** Some fantasy peoples are tagged as hunters but live as densely as farmers: halflings at 12 per km², goblins at 5. Real hunter-gatherers live at well under 1 per km². Because the model lets every hunter people get half its food from wild game, these dense peoples eat nearly all the wild animals in their country, and dragons there starve. Before farming, dragons end up living only where no people live. The question: should a dense people get less of its food from hunting (they must be gathering or growing most of it), which leaves game for the dragons? Coordinator's lean: yes (B). Physically, game can't feed that many people.
+
 PW-977 stage 2 lets each people's hunters take their game first: density x a person's food x the game share (WILD_MEAT: 50% for
 a forager, 5% for any other way; `landuse.shares(...)["forage"]` decides which, and the `hunter` trait counts as a full forage use).
 In dnd several lines with that trait sit at farmer-like densities: halflings 12/km2, gnomes 12 (half forage), goblins 5,

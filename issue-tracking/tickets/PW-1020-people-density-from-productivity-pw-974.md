@@ -17,6 +17,8 @@ updated: 2026-10-29
 ---
 
 ## Description
+**In plain words.** People now live more densely on rich land and more thinly on poor land: herders follow how much grass grows, and foragers follow how much wild food there is. This is measured against fixed yardsticks, so a poorer planet holds fewer people overall. Farmers don't follow this yet; their numbers already depend on good soil. The question: keep it like this (A), make farmers follow land productivity too (B), or soften the effect so poor land isn't as empty (C)? Coordinator's lean: keep it (A). B is a small add-on if you want it.
+
 Fun lanes 45/45b built PW-974 as density = way-of-life number x f per cell (`prey.people_fields`, read through `History.dens_at`).
 The choices below are the lane's, not the owner's:
 1. **Layers.** Herders read the grazing NPP (g C/m2/yr). Foragers read the `foraging` layer (0-5: mast and fruit, game, wetlands,
