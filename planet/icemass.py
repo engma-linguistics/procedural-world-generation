@@ -10,7 +10,7 @@ higher: the lapse rate). Snow falls in the months below ~0 C; positive
 degree-days (Reeh 1991, days scattered with sd PDD_SIGMA around each
 month's mean) melt the year's snow first (DDF_SNOW, a share REFREEZE of it
 refreezes in the snowpack), then ice (DDF_ICE). On ice:
-  - thick ice (ALBEDO_H) is ICE_COOL (2 C) colder all year (inversion,
+  - thick ice (ALBEDO_H) is ICE_COOL (2 C) colder on the year's mean, in winter (inversion,
     katabatic air);
   - where perennial snow lies (bright: last year's snow outlasted the
     summer; bare ice keeps BARE_SHARE of this), temperatures above 0 C are
@@ -42,7 +42,8 @@ SUMMER_DAMP = 0.6  # share of the summer's warmth above the annual mean taken aw
 MELT_HOLD = 0.5  # temperatures above 0 C on snow / ice are scaled by this
 SNOW_W = 30.0  # mm w.e.: lying snow this deep is fully bright
 BARE_SHARE = 0.3  # bare ice keeps this share of the snow's effects
-ICE_COOL = 2.0  # C: thick ice is this much colder all year (inversion, katabatic air) ...
+ICE_COOL = 2.0  # C: thick ice is this much colder on the year's mean (inversion, katabatic air: none at
+# midsummer, 2x at midwinter, PW-1050) ...
 ALBEDO_H = 800.0  # ... in full from this thickness (m)
 SHEET_TAU = 75e3  # Pa: yield stress of ice, sets a sheet's steady (Nye) profile (PW-366: Antarctica's real extent
 # and bed hold ETOPO1's 25 Mkm3 at ~75 kPa, 50 kPa gave 20; real sheets fit ~70-100 kPa)
@@ -339,7 +340,7 @@ def surface(lat, t_warm, t_cold, p_jul, p_jan, h, cover):
     """(annual mean, warmest, coldest month) C on the surface of h m of land
     ice, from the bare ground's warmest and coldest month at its bed, by the
     mass balance's own year at the mean orbit (climate_step: the ice's height,
-    thick ice ICE_COOL colder all year, the summer damped
+    thick ice ICE_COOL colder on the year's mean, in winter, the summer damped
     while snow lies by SUMMER_DAMP x cover (sheet_cover), a melting surface
     held near 0 C). The one ice-surface climate of the run's keyframes, the
     worlds and the zooms (climate.ice_surface), the time zoom's frames and

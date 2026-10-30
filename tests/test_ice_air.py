@@ -67,3 +67,17 @@ def test_the_surface_damps_only_the_air_that_isnt_the_sheets(sim4_60):
     plain, fixed = icemass.sheet_cover(g, sheet), icemass.sheet_cover(g, sheet, air=a)
     assert np.allclose(plain, icemass.LOCAL) and np.allclose(fixed, icemass.LOCAL * (1 - a))
     assert np.allclose(icemass.sheet_cover(g, sheet, air=np.zeros(g.n)), plain)
+
+
+def test_the_inversion_is_a_winter_feature():
+    """(b): thick ice's ICE_COOL follows the season with the same annual mean: none at midsummer, twice it at
+    midwinter (the kernel shared by the run, the worlds, the zoom and the time zoom)."""
+    from planet.timezoom.kernels import climate_step
+    n, cool = 2, 2.0
+    z, o = np.zeros(n), np.ones(n)
+    out = [np.zeros(n) for _ in range(6)]  # smb, t_ann, t_warm, t_cold, p_scale, f_sum
+    climate_step(np.zeros(n, bool), np.array([True, False]), np.full(n, -10.0), np.full(n, 10.0), z, z, z, z,
+                 z, np.zeros(n, np.int64), np.zeros((1, 12)), o, z, cool, z, 0.5, 0.3, 30.0, 5.0, 3.0, 8.0, 0.6,
+                 0.07, *out)
+    _, t_ann, t_warm, t_cold, _, _ = out
+    assert np.allclose(t_warm, 0.0) and np.allclose(t_cold, -24.0) and np.allclose(t_ann, -12.0)
