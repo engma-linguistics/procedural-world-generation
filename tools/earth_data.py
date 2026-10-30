@@ -41,8 +41,13 @@ Observed Koppen-Geiger classes
     savanna) has no counterpart in the model and is scored as Aw.
 
 Observed precipitation
-    GPCC Full Data Reanalysis v2018, 1.0 deg monthly long-term mean
-    (land only; Schneider et al.), ERDDAP id noaa_psl_7959_51e3_b7dd.
+    GPCC Full Data Reanalysis v2020, 1.0 deg monthly totals (land only;
+    Schneider et al.), each calendar month's mean over 1981-2010 (GPCC_YEARS),
+    from NOAA PSL THREDDS:
+      https://psl.noaa.gov/thredds/dodsC/Datasets/gpcc/full_v2020/precip.mon.total.1x1.v2020.nc
+    (Until 2026-10-30 this was the v2018 long-term mean, ERDDAP id
+    noaa_psl_7959_51e3_b7dd, since removed upstream; in earth_check L6 v2020
+    1981-2010 scores the land mean 0.2% and the 90th percentile 0.9% below it.)
     GPCP v2.3 combined land+ocean, 2.5 deg monthly long-term mean 1991-2020
     (mm/day; Adler et al. 2018), from NOAA PSL THREDDS (the ERDDAP copies of
     the GPCP/CMAP climatologies have a broken precip variable):
@@ -151,7 +156,6 @@ KOTTEK_URL = "https://koeppen-geiger.vu-wien.ac.at/data/Koeppen-Geiger-ASCII.zip
 RASTERS = {
     "etopo_bed": ("etopo1_bedrock", "z", "[0:10:10800][0:10:21600]"),
     "etopo_ice": ("etopo1_ice", "z", "[0:10:10800][0:10:21600]"),
-    "gpcc": ("noaa_psl_7959_51e3_b7dd", "precip", "[0:1:11][0:1:179][0:1:359]"),
     "gpcp": ("https://psl.noaa.gov/thredds/dodsC/Datasets/gpcp/precip.mon.ltm.1991-2020.nc",
              "precip", "[0:1:11][0:1:71][0:1:143]"),
     "ncep_t2m": ("noaa_psl_4835_64f9_2242", "air", "[0:1:11][0:1:93][0:1:191]"),
@@ -161,6 +165,12 @@ RASTERS = {
     "ncep_tcdc": ("https://psl.noaa.gov/thredds/dodsC/Datasets/ncep.reanalysis.derived/other_gauss/"
                   "tcdc.eatm.mon.ltm.1991-2020.nc", "tcdc", "[0:1:11][0:1:93][0:1:191]"),
 }
+# raster("gpcc"): GPCC Full Data Reanalysis v2020 1.0 deg monthly totals 1891-2019 (mm/month; NOAA PSL THREDDS),
+# averaged by calendar month over GPCC_YEARS (_gpcc_from_monthly). PSL's own long-term mean files are no use: the
+# v2018 one's ERDDAP id is gone and full_v2025's ltm was all fill values on 2026-10-30.
+GPCC_MONTHLY = ("https://psl.noaa.gov/thredds/dodsC/Datasets/gpcc/full_v2020/precip.mon.total.1x1.v2020.nc",
+                "precip", 1891)  # (url, variable, first year)
+GPCC_YEARS = (1981, 2010)
 # Whole netCDF-4 files (read with tools/h5_reader), for the moisture budget (tools/moisture_budget.py):
 # NCEP/NCAR reanalysis 1991-2020 long-term monthly means, NOAA PSL (public domain; ~1 MB each):
 # surface latent heat flux (W/m2, upward > 0: evaporation), precipitation rate (kg/m2/s) and the
@@ -216,7 +226,46 @@ def parse_dods(raw: bytes) -> list[tuple[str, np.ndarray]]:
     return out
 
 
+def _gpcc_from_monthly() -> dict:
+    """GPCC's 12-month climatology: each calendar month's mean of GPCC_MONTHLY over GPCC_YEARS, NaN where any year
+    lacks the cell. The months themselves are kept in raw_gpcc_monthly.npz, so a rebuild needs no download. Fetched
+    5 years per request with retries (PSL's OPeNDAP rate-limits, 429, and cuts responses short)."""
+    url, var, first = GPCC_MONTHLY
+    y0, y1 = GPCC_YEARS
+    f = DATA / "raw_gpcc_monthly.npz"
+    if f.exists() and tuple(np.load(f)["years"]) == (y0, y1):
+        z = np.load(f)
+        vals, lat, lon = z["val"], z["lat"], z["lon"]
+    else:
+        parts, lat, lon = [], None, None
+        for a in range(y0, y1 + 1, 5):
+            i0, i1 = (a - first) * 12, (min(a + 4, y1) - first) * 12 + 11
+            q = f"{url}.dods?{var}[{i0}:1:{i1}][0:1:179][0:1:359],lat[0:1:179],lon[0:1:359]"
+            for k in range(6):
+                try:
+                    arrs = dict(parse_dods(_get(q.replace("[", "%5B").replace("]", "%5D"))))
+                    break
+                except Exception as e:  # rate limit or a short read: wait and retry
+                    if k == 5:
+                        raise RuntimeError(f"could not download gpcc {a}: {e}")
+                    time.sleep(20)
+            v = arrs[var]
+            assert v.shape == (i1 - i0 + 1, 180, 360), v.shape
+            parts.append(v.astype(np.float32))
+            lat, lon = arrs["lat"], arrs["lon"]
+            time.sleep(2.0)
+        vals = np.concatenate(parts)
+        np.savez_compressed(f, val=vals, lat=lat, lon=lon, years=np.array([y0, y1]))
+        print(f"  gpcc: {y1 - y0 + 1} years of monthly totals from {url.split('/')[2]}")
+    ok = np.abs(vals) < 1e30
+    v = np.where(ok, vals, 0.0).reshape(-1, 12, *vals.shape[1:])
+    n = ok.reshape(v.shape).sum(0)
+    return {"val": np.where(n == v.shape[0], v.sum(0) / np.maximum(n, 1), np.nan), "lat": lat, "lon": lon}
+
+
 def _fetch_raster(key: str) -> dict:
+    if key == "gpcc":
+        return _gpcc_from_monthly()
     if key in NC_FILES:
         from tools.h5_reader import read_variable
         from tools.tiff_reader import BytesSource

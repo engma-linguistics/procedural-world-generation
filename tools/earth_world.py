@@ -107,7 +107,7 @@ def build(level: int = 6) -> dict:
     meta = {"method": "earth", "seed": 0, "level": level, "source": "ETOPO1 + observations (tools/earth_data.py)",
             "remake": "uv run python tools/earth_world.py",
             "observed": {"obs_temperature": "NCEP/NCAR reanalysis 2 m air temperature, 1981-2010",
-                         "obs_precipitation": "GPCC v2018 (land), GPCP v2.3 where GPCC has none",
+                         "obs_precipitation": "GPCC v2020 1981-2010 (land), GPCP v2.3 where GPCC has none",
                          "obs_climate": "Kottek et al. 2006 Koppen-Geiger, 1951-2000 (As scored as Aw)",
                          "obs_sunshine": "CRU CL 2.0 sunshine duration (New et al. 2002), 1961-90, land"},
             "global_temp_c": 14.5, "sea_level_m": 0.0}
