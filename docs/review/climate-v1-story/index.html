@@ -1,0 +1,162 @@
+<title>Climate v1: what it was</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+:root {
+  --bg: #f3f1ea; --card: #fbfaf6; --ink: #22241f; --ink2: #4a4d44; --muted: #6c6f63;
+  --rule: #d8d4c6; --accent: #8a5a1c; --accent-soft: #f1e4cf; --rec: #2f6a4c; --rec-soft: #dfeee4;
+  --tag: #e8e4d8;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+    --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --rec: #7cc79c; --rec-soft: #1f3328;
+    --tag: #2a2c32; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+  --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --rec: #7cc79c; --rec-soft: #1f3328;
+  --tag: #2a2c32; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); margin: 0; overflow-x: hidden; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { border-bottom: 2px solid var(--ink); padding-bottom: 12px; margin-bottom: 18px; }
+.kicker { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(26px, 5vw, 36px)/1.1 var(--serif); margin: 8px 0 6px; text-wrap: balance; }
+.lede { color: var(--ink2); margin: 0; max-width: 70ch; }
+h2 { font: 700 22px/1.2 var(--serif); margin: 26px 0 4px; }
+h2 + .sub { color: var(--muted); margin: 0 0 12px; }
+h3 { font: 600 16px/1.3 var(--serif); margin: 0 0 3px; }
+h4 { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 14px 0 4px; }
+p { margin: 0; max-width: 74ch; }
+code, .id { font: 12.5px var(--mono); }
+.id { color: var(--accent); }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; margin: 8px 0; min-width: 0; }
+.card .n { font: 600 12px var(--mono); color: var(--muted); }
+.note { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 6px 12px; margin-top: 8px; border-radius: 0 4px 4px 0; }
+.rec { background: var(--rec-soft); border-left: 3px solid var(--rec); padding: 6px 12px; margin-top: 8px; border-radius: 0 4px 4px 0; }
+ul.log { list-style: none; padding: 0; margin: 0; }
+ul.log li { padding: 3px 0; border-bottom: 1px solid var(--rule); }
+ul.log li:last-child { border-bottom: 0; }
+.lane { font: 11px var(--mono); color: var(--muted); background: var(--tag); padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.dead { color: var(--ink2); }
+ul.plain { margin: 6px 0; padding-left: 1.2em; }
+ul.plain li { margin: 3px 0; }
+@media print { body { font-size: 12.5px; } .wrap { padding-block: 0; } h2 { margin-top: 16px; } .card { break-inside: avoid; } }
+</style>
+<div class="wrap">
+<header>
+  <div class="kicker">Climate v1, in two parts</div>
+  <h1>Why Earth-likes weren't reliably Earth-like</h1>
+  <p class="lede">Part 1 is the short answer, ranked by how much each cause mattered. Part 2 is the week as a log, for when you want to check a detail. Every line comes from the board, the decisions page or the lane notes.</p>
+</header>
+
+<h2>Part 1: What it was</h2>
+<p class="sub">Four findings from the last day, then the earlier ones.</p>
+
+<div class="card">
+  <h3><span class="n">1.</span> Worlds froze over and could not thaw <span class="id">PW-1142, PW-1156, PW-1162</span></h3>
+  <p><b>What was wrong.</b> About a quarter of the test worlds went "frozen over" (40% or more of the land under ice): 4 of 18 on the old code. Real ice ages end because the orbit periodically gives the northern summers extra sun, and the big sheets melt. The long run cannot step through those orbits, so it used the average orbit. A big sheet is high and bright and makes its own cold air, so under the average it never got the warm summer that starts a melt. The sheets outlasted the climate that made them. Lane 71 also found that in three of the four frozen worlds the freeze began with CO2 falling about 8-fold in roughly 12 Myr, deep enough to reach ice-age cold whatever the sheet did.</p>
+  <p class="rec"><b>What fixed it.</b> Three changes together (PW-1142, built as PW-1162): the cooling-with-height rate is gentler where ice is melting; a sheet carried from a cold era keeps only what would survive the warm phase of the orbit; melting ice is dark bare ice and takes in more sun. On 18 test worlds: 0 frozen over in the window that counts, 12 of 18 pass (the old code passed 11). One cost: Earth's own Greenland shrinks to 68 cells (from 165). You accepted that. Ice flow is the real cure and is v2.</p>
+</div>
+
+<div class="card">
+  <h3><span class="n">2.</span> Freezes under the dim young Sun are Earth-like history <span class="id">your ruling, 10-30</span></h3>
+  <p><b>What was wrong.</b> Not the physics but the bar. The Sun was dimmer when the planet was young, and the early freezes it allows are the kind real Earth history has. Failing a world for them was failing it for being like Earth.</p>
+  <p class="rec"><b>What fixed it.</b> You ruled that frozen over is a hard fail only while the Sun is near its final brightness (within about 2 C of the finish, or the last 300 Myr, whichever window is narrower). Earlier frozen spells are allowed. Also, only "frozen over" fails a world now; "icehouse" and "glacial maximum" are reported, not failed (PW-1091).</p>
+</div>
+
+<div class="card">
+  <h3><span class="n">3.</span> A CO2 crash at the start of every run's last stretch <span class="id">lane 67</span></h3>
+  <p><b>What was wrong.</b> A bookkeeping bug. The rock-weathering supply was kept per time step, but the first step of the finish window read a 2 Myr step's erosion times 4. Every run's CO2 crashed to 3 to 50 ppm at 990.5 Myr, so every world's "present" came out colder than it should. That also <i>hid</i> the worlds that were really too warm.</p>
+  <p class="rec"><b>What fixed it.</b> The supply is now kept by the step it was eroded in. With the crash gone, some worlds finish 3.5 to 5.3 C too warm (PW-1161), which led to finding 4.</p>
+</div>
+
+<div class="card">
+  <h3><span class="n">4.</span> The remaining spread is natural, not a bug <span class="id">PW-1158, PW-1163, PW-1161, PW-1164, lane 80</span></h3>
+  <p><b>What it is.</b> Finish temperatures centre near 0 C with a spread of about 3.7 C. Lane 80 traced it to slow, Earth-like wandering of volcanic CO2 and of erosion, made bigger by ice and methane feedback. Earth's own record swings more. No model change. Two real biases remain, and they cancel: the volcanic supply sinks late in some runs (about 1.6 C too cold, PW-1158), and the weathering reference is learnt on bare ground before plants exist, which erodes up to 1.6x faster (about 1.6 C too warm, PW-1163). Fixing only one would swap warm failures for cold ones, so they are fixed together in v2.</p>
+  <p class="note"><b>One decision is yours:</b> keep the +3 C warm edge of the finish band, or move it to about +4.7 C (PW-1164, desk D19). At +3 C roughly 1 world in 5 lands too warm; at about +4.7 C, about 1 in 10.</p>
+</div>
+
+<h4>Earlier causes, roughly by weight</h4>
+<div class="card">
+  <h3><span class="n">5.</span> Ice sheets depended on the step size; Antarctica's summer overshot <span class="id">PW-1050, PW-1095</span></h3>
+  <p>The ice-climate loop advanced one step per update, so the number of iceboxes depended on how often climate ran. It now settles inside each update, a double-counted summer was removed, and a winter-only sheet inversion was added (passes 78%). That left Antarctica's interior summer too warm. Scaling the summer loss by the melt share fixed it: warmest month -12.3 to -14.0 C (observed -16.1); 14 of 18 pass vs 13.</p>
+</div>
+<div class="card">
+  <h3><span class="n">6.</span> Dry coasts and the sea's water <span class="id">PW-998, PW-015, PW-980</span></h3>
+  <p>A coast package with poleward eddy drift (Earth improved; passes 72%; more realistic polar snow made 8 of 18 worlds "iceboxes", mostly Earth-warm ones). Sea evaporation became a bulk exchange (Earth sea share 27 to 28% vs 30 observed). The continents' sea water is now conserved (null at L6, 29/36 vs 28/36).</p>
+</div>
+<div class="card">
+  <h3><span class="n">7.</span> Thin-crust continents and plates that never split <span class="id">PW-970, PW-565, PW-952</span></h3>
+  <p>The weld fix: a welded plate now needs an inlet on its own grid and at least 20 km of surrounding crust, because a sampling ratchet was growing continents with thin crust (pass 31/36 to 28/36, every loss warm). Stress rifts stopped dying out, so the largest plate went from 41% to 26%.</p>
+</div>
+<div class="card">
+  <h3><span class="n">8.</span> Monsoons and mid-latitude wetness: understood, parked <span class="id">PW-1093, PW-1099, PW-1100</span></h3>
+  <p>One mechanism makes both rain errors: the summer sea-to-land inflow carries the whole vapour column inland. A patch is written up, but the coasts lack vapour supply, not lift, so it waits for a partner in v2. Retuning (0.45, drift, rain rates) was declined.</p>
+</div>
+
+<h2>Part 2: The great many things</h2>
+<p class="sub">The week of climate, ice, carbon and tectonics, one line per merge or ruling. The grey tag is the lane.</p>
+
+<h4>10-24 to 10-27: set the frame</h4>
+<ul class="log">
+<li>10-24 Star brightening anchored at the run end, the carbon balance anchored there too; star thermostat opt-in <span class="id">PW-791, PW-809</span> <span class="lane">v1-finish-9</span></li>
+<li>10-25 Plants' CO2 response softened; methane and other gases tracked as CO2-equivalent; plumes outgas CO2 <span class="id">PW-806, PW-859, PW-875</span></li>
+<li>10-25 Your "option C" for icehouses: keep the physics, no cap on a run's icehouse share, finish checks stay <span class="id">PW-865</span></li>
+<li>10-26 Worlds finish at the latest habitable moment in the last 10 Myr <span class="id">PW-866</span> <span class="lane">v1-finish-16</span></li>
+<li>10-27 Coupling tail merged; paired with main it was indistinguishable <span class="id">PW-871..915</span> <span class="lane">v1-finish-17</span></li>
+</ul>
+<h4>10-28</h4>
+<ul class="log">
+<li>Geology tail: relief cap, plate metrics, clinoforms; paired 29/36 vs 29/36 <span class="id">PW-826, 827, 818</span> <span class="lane">lane 19</span></li>
+<li>Rifts no longer die out; plume triple junctions; largest plate 41% to 26% <span class="id">PW-565, PW-952</span> <span class="lane">lane 22</span></li>
+<li>Weld fix: own-grid inlets and 20 km of crust; pass 31/36 to 28/36, all losses warm <span class="id">PW-970</span> <span class="lane">lane 23</span></li>
+<li>Your triage: leftover climate to v2 under the ice-age epic, timeboxed <span class="id">PW-470</span></li>
+</ul>
+<h4>10-29</h4>
+<ul class="log">
+<li>Water conservation for the continents' sea; null at L6 <span class="id">PW-980</span> <span class="lane">lane 24</span></li>
+<li>Sea evaporation as a bulk exchange; the paired judge on continuous measures <span class="id">PW-015, PW-994</span> <span class="lane">lane 25</span></li>
+<li>Weathering stays supply-limited for v1 <span class="id">PW-995</span></li>
+<li>Speed: climate every 8 Myr, then 4, then 2 near the end; L6 1.5x faster, L7 2 to 3x. Finish about 3 C cooler than main, whose warm finish was its own lag <span class="id">PW-247</span> <span class="lane">lanes 27, 27b</span></li>
+<li>Your ruling: PW-948 at about 60% at L7 is fine for v1; 70%+ is v2 <span class="id">PW-948, PW-1009</span></li>
+</ul>
+<h4>10-30</h4>
+<ul class="log">
+<li>Ice loop settles inside each update; summer double count removed; seasonal sheet inversion <span class="id">PW-1050</span> <span class="lane">lane 28</span></li>
+<li>Coasts package merged: Earth improves, passes 72% <span class="id">PW-998</span> <span class="lane">lane 28</span></li>
+<li>Moisture budget diagnosed: one kernel causes both rain errors <span class="id">PW-1093</span> <span class="lane">lane 58</span></li>
+<li>Sheet inversion's summer loss scaled by melt share; Antarctica's warm month -12.3 to -14.0 C <span class="id">PW-1095</span> <span class="lane">lane 57</span></li>
+<li>Moisture patch parked with its write-up <span class="id">PW-1099, PW-1100</span> <span class="lane">lane 62</span></li>
+<li>Ice terms in the judges: icehouse, glacial maximum (25% of land, placeholder), frozen over; only frozen over fails <span class="id">PW-1091, PW-1119</span> <span class="lane">lane 65</span></li>
+<li>Finish-window CO2 crash fixed; 4 of 18 worlds found frozen over, so PW-1142 returns to v1 <span class="id">PW-1115</span> <span class="lane">lane 67</span></li>
+<li>Your two-tier bar: hard failures (frozen over, boiled, oceans lost, CO2 crash) must pass 100%; the soft scorecard stays at ~60 to 70%</li>
+<li>Your frozen-over ruling (near-final Sun only); ice flow is v2; smaller Greenland accepted <span class="id">PW-1142</span></li>
+<li>Ice sheets feel the warm orbit: 0/18 frozen in window, 12/18 pass <span class="id">PW-1142</span> <span class="lane">lane 75</span></li>
+<li>Finish drift is natural variance, no model change; climate done for v1 <span class="id">PW-1158, 1163, 1161, 1164</span> <span class="lane">lane 80</span></li>
+</ul>
+
+<h4>Dead ends worth knowing</h4>
+<ul class="plain dead">
+<li><b>"Option C" for the ice fix</b> (a gentler warm phase) was tried and failed the same way: Greenland still 83 to 85 cells. The missing ice flow is the cause <span class="id">PW-1162</span>.</li>
+<li><b>Seafloor weathering</b> as a CO2 sink was parked as too small: about 2% of the sink in a cold era (about 7% on modern Earth) <span class="id">PW-1160</span>.</li>
+<li><b>The 72-world judge</b> was stopped at 36 of 72 once main showed 4 of 18 frozen <span class="id">PW-1142</span>.</li>
+</ul>
+
+<h4>What's left for v2</h4>
+<ul class="plain">
+<li>Fix the two cancelling carbon biases together: the late volcanic decline and the bare-ground weathering reference <span class="id">PW-1158, PW-1163</span>.</li>
+<li>Ice flow, so Greenland comes back without tuning <span class="id">PW-1157</span>; Greenland is still too cold all year <span class="id">PW-1115</span>.</li>
+<li>Rain on the coasts (vapour supply) and mid-latitude wetness <span class="id">PW-1099, PW-1100</span>.</li>
+<li>Your call on the +3 C warm edge and the 25% glacial-maximum line <span class="id">PW-1164, PW-1119</span>.</li>
+<li>Pass rate beyond ~60% at L7 <span class="id">PW-1009</span>; the ice-age redo, timeboxed <span class="id">PW-470</span>.</li>
+</ul>
+</div>
