@@ -1,5 +1,5 @@
 ---
-title: "Food budget: the dragons alone reach a whole modern predator guild's prey:predator biomass (127:1), and the guild with them comes to ~46:1; check against a living guild"
+title: "Food budget: prey to dragon biomass is 96-127:1, inside the band Farlow gives for whole modern mammal guilds; on Farlow's own reasoning a guild eating below a mammal's rate should sit lower, so check against a living guild"
 type: task
 status: needs-decision
 parent: null
@@ -7,24 +7,32 @@ milestone: v2
 subsystem: timezoom
 effort: s
 impact: low
-found_by: dragon-density-doc
+found_by: dragon-density-r2
 blocked_by: []
 relates: [PW-977, PW-990, PW-1019]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/dragon_ages.py, docs/review/megafauna/dragon-density/claims.md]
 ---
 
 ## Description
-**In plain words.** The model's dragons are cheap to feed, because they burn energy like reptiles. So even though they get only a sixth of the food, their weight per km² is as high as a whole pack of modern mammal hunters put together. Is that what we want?
+**In plain words.** For every tonne of dragon, the model's empty land carries about 100 to 130 tonnes of grazers. That is what whole
+packs of modern mammal hunters reach, all species together. Round 1 of the review read that as a good fit for a cheap-to-feed,
+reptile-like dragon; that reading was backwards. On the source paper's own logic an animal that eats less than a mammal should be denser
+for the same prey, so the ratio should be lower, not the same. The model's whole guild (dragons and smaller hunters) does come out lower,
+about 35-46:1. Whether those numbers are right wants a check against a real, living predator guild.
 
-Numbers (docs/review/megafauna/dragon-density/numbers.json): where nobody else eats, prey:dragon biomass is 127:1 counting every age at
-the mean mass 1.26 t (96:1 at the 1.65 t ecological mass). Farlow 1993 (p. 176) gives 200:1 to 100:1 for modern large-mammal
-communities, as low as 45:1. If the smaller predators' biomass follows Carbone, Turvey & Bielby 2011's classes (Table 1, p. 2683:
-individuals x mass, 1.8 times the apex classes' biomass), the whole guild comes to ~46:1 (claims.md C23). Farlow's ectotherm case
-(p. 187) finds a predator as large as its prey feasible at 10:1, so a reptile-rate guild can be that dense.
+Evidence:
+- Farlow 1993: modern large-mammal communities "usually somewhere between 200:1 and 100:1 ... but can get as low as 45:1" (p. 176);
+  his best case needs at least 50:1 for an endotherm as large as its prey (pp. 172-174) and at least 10:1 for an ectotherm (p. 187),
+  which he treats as "a limiting, extreme case" (p. 187). Real communities sit 2-4x above his best case (p. 176).
+- His fossil ratios for apex theropods alone run from about 10:1 (articulated Judith River specimens, p. 189) to about 100:1 (Brinkman's
+  screen-washed samples, mean 115:1, cumulative 97:1, p. 189); "we cannot confidently conclude much ... from such ratios" (p. 190).
+- Model (round-2 numbers.json): 127:1 at the all-ages mean mass 1.26 t, 96:1 at the 1.65 t ecological mass; whole guild 46:1 / 35:1 if the
+  smaller classes' biomass follows Carbone et al. 2011's Table 1 (individuals x mass). The model's 1.65 t dragon eats about 2.1x Farlow's
+  ectotherm rate (eq. 8) and 0.46x his endotherm rate (eq. 7): between his two cases.
 
 Options:
-- **A.** Keep: dragons are reptile-rate eaters, and a dense guild follows (no change).
-- **B.** Check the guild split against a living guild (PW-1019's Serengeti item) and adjust `guild_ratio` only if a sourced figure disagrees.
-- **C.** Split the guild by biomass rather than by food (a different reading of Carbone 2011's table).
+- **A.** Keep, with the page saying the dragons alone sit at the top of Farlow's fossil range and the guild below the mammal band.
+- **B.** Check the guild split against a living guild (PW-1019's Serengeti item) and adjust guild_ratio only if a sourced figure disagrees.
+- **C.** Split the guild by biomass rather than food (a different reading of Carbone 2011's table; no source).
 
-Lean: A now, B as part of PW-1019. C is a reading change without a source.
+Lean: A now, B as part of PW-1019.
