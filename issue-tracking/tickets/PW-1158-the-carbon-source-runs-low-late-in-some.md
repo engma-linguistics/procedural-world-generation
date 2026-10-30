@@ -1,4 +1,5 @@
 ---
+id: PW-1158
 title: "The carbon source runs low late in some runs (819014 l6c_p: 0.57 of its reference over 850-1000 Myr), giving a long cold finish"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane75
 blocked_by: []
 relates: [PW-969, PW-980, PW-1142]
 refs: [planet/tectonics/earth.py, docs/overview.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ docs/overview.md already notes that stress rifts die out after ~600 Myr (10-16 t
 floor ages. If the ridges die off, the source falls. PW-969's giant welded plates may be the same cause.
 - [ ] The source split into ridge / arc / plume over 600-1000 Myr for 819014 l6c_p and two controls
       (a diag field per part), and whether the decline tracks the rift count or the largest plate
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-late-run-outgassing-decline.md (found by lane75).

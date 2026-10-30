@@ -1,4 +1,5 @@
 ---
+id: PW-1162
 title: "Frozen-over fix: the warm-phase rule clears every frozen world on the screen, but it halves Earth's Greenland at today's climate"
 type: task
 status: done
@@ -11,6 +12,8 @@ found_by: lane71
 blocked_by: []
 relates: [PW-1142, PW-464, PW-1115, PW-1095]
 refs: [planet/icemass.py, planet/tectonics/earth.py, planet/tectonics/params.py, "branch worktree-agent-ad490796ec6c59e7a f38b7931"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -75,3 +78,6 @@ before merging.
   melt over a quarter precession cycle gives Greenland 83 cells, a full warm-then-cold cycle 85. The cause is the
   missing ice flow, which can't resupply the margins (draft-ice-flow-resupplies-margins.md); restore Greenland
   through flow, never by tuning the kitchen sink.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-warm-phase-ice-unfreezes-but-shrinks-greenland.md (found by lane71).

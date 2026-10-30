@@ -1,5 +1,6 @@
 ---
-title: "The run's sheets still keep about 10 points of extra land ice at dT -4 on the way back up"
+id: PW-1159
+title: The run's sheets still keep about 10 points of extra land ice at dT -4 on the way back up
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: lane71
 blocked_by: []
 relates: [PW-1142, PW-464]
 refs: [tools/ice_probe.py, planet/tectonics/earth.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,6 @@ over the states can't touch it. Candidates: isostatic lag, which the run settles
 credit it for terminations; not read here); the sheets' carried air (lane 67: with it turned off the gap shrinks
 20-50%).
 - [ ] The staircase gap at -4 within ~3 points, with the down-leg still ~25% at -8
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-mid-leg-ice-hysteresis.md (found by lane71).

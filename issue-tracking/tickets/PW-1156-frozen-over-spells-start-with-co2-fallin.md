@@ -1,5 +1,6 @@
 ---
-title: "Frozen-over spells start with CO2 falling about 8-fold in ~12 Myr, deep enough to reach LGM cold or colder"
+id: PW-1156
+title: Frozen-over spells start with CO2 falling about 8-fold in ~12 Myr, deep enough to reach LGM cold or colder
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane71
 blocked_by: []
 relates: [PW-865]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ ice's own extent is 40%+ of the land even when grown from bare ground.
 Question: are swings of 2 e-folds of CO2 in 12 Myr from a source dip plausible (the Cenozoic fell ~4-5x over
 ~50 Myr)? If not, the carbon cycle's response time or the source's volatility is the lever, not the ice.
 - [ ] A written read of the source's variance per 10 Myr against Earth's record, sent to the coordinator
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-fast-co2-drops-start-frozen-spells.md (found by lane71).

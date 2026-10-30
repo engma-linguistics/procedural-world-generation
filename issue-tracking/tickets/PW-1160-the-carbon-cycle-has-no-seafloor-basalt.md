@@ -1,5 +1,6 @@
 ---
-title: "The carbon cycle has no seafloor (basalt) weathering sink"
+id: PW-1160
+title: The carbon cycle has no seafloor (basalt) weathering sink
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane75
 blocked_by: []
 relates: [PW-1142, PW-865]
 refs: [planet/tectonics/earth.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Their same posterior gives the continental Te as 34 K (17-48). That's ~0.03/K, a
 continental slope (0.04-0.05 per C of dT, lane 75's l75/fd.py) is already as strong. So don't make the land's
 kinetics steeper to compensate.
 - [ ] A seafloor term in co2_stock's sink behind a Params switch, normalised to the balance so its share is ~7%
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-seafloor-weathering-sink.md (found by lane75).

@@ -1,4 +1,5 @@
 ---
+id: PW-1157
 title: "Run ice sheets have no flow: a sheet's margins can't be resupplied from its interior, so Earth's Greenland halves under the warm-orbit rule"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane75
 blocked_by: []
 relates: [PW-1142, PW-464, PW-1115]
 refs: [planet/tectonics/earth.py, planet/icemass.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Options:
   budget) and touches every ice test.
 - Accept for v1 and move it to v2.
 - [ ] Owner: draw-down for v1, SIA later, or accept
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-ice-flow-resupplies-margins.md (found by lane75).

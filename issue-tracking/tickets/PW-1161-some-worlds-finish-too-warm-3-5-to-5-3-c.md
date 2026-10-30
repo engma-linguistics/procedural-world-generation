@@ -1,5 +1,6 @@
 ---
-title: "Some worlds finish too warm (+3.5 to +5.3 C) now that the finish-window CO2 crash is fixed"
+id: PW-1161
+title: Some worlds finish too warm (+3.5 to +5.3 C) now that the finish-window CO2 crash is fixed
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane71
 blocked_by: []
 relates: [PW-865, PW-1091]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-16/pjudge.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -40,3 +43,6 @@ three finish at +4.1, +5.8 and +11.0 C. Less ice means a weaker albedo term at t
 carbon-balance warmth with less ice to hide it.
 - [ ] A written split of each warm finish's end T into CO2 term, albedo term and drift
 - [ ] A cause (or "chaos, accept") sent to the coordinator before any change
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-too-warm-finishes-after-co2-fix.md (found by lane71).
