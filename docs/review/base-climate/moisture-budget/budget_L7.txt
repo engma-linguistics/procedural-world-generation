@@ -1,0 +1,148 @@
+# Regional moisture budget, Earth L7
+
+probe reproduces the model's rain: True; worst box closure (E + inflow - P_kernel): 3.6 mm/yr
+
+| box | half | P / obs | E / obs | wind in (W, E, S, N) | drift in | mix in | spread | conv / obs | PW / obs | P/PW per day / obs | own % | land % | ex/ls/cv % | q/qs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| W Europe | Apr-Sep | 761 / 902 | 723 / 1045 | +53 (+1779, -1583, -756, +612) | +4 | -7 | -13 | +50 / -143 | 12.9 / 19.5 | 0.161 / 0.127 | 22 | 23 | 0/51/49 | 0.56 |
+| W Europe | Oct-Mar | 1539 / 904 | 161 / 505 | +1476 (+2881, -2561, +3941, -2785) | -49 | -48 | -1 | +1379 / +399 | 15.3 / 11.9 | 0.276 / 0.209 | 3 | 7 | 56/34/10 | 1.22 |
+| European Russia | Apr-Sep | 774 / 681 | 680 / 1068 | +168 (+1545, -1429, -47, +99) | -59 | -4 | -12 | +105 / -387 | 9.4 / 19.7 | 0.226 / 0.095 | 27 | 64 | 0/32/68 | 0.42 |
+| European Russia | Oct-Mar | 988 / 500 | 48 / 216 | +828 (+1663, -1210, +544, -169) | +89 | +11 | +12 | +928 / +284 | 9.6 / 9.0 | 0.281 / 0.152 | 2 | 17 | 62/38/-0 | 1.24 |
+| W Siberia | Apr-Sep | 850 / 641 | 687 / 1061 | +160 (+373, -311, -183, +281) | +41 | +2 | -40 | +203 / -420 | 8.4 / 17.2 | 0.279 / 0.102 | 39 | 93 | 0/34/66 | 0.42 |
+| W Siberia | Oct-Mar | 542 / 370 | 13 / 200 | +373 (+384, -334, +460, -136) | +156 | -3 | +2 | +527 / +171 | 6.3 / 6.3 | 0.234 / 0.161 | 1 | 26 | 52/48/0 | 1.14 |
+| E Siberia | Apr-Sep | 764 / 421 | 482 / 722 | +168 (+198, -201, +214, -43) | +75 | +10 | +29 | +252 / -301 | 6.5 / 13.3 | 0.322 / 0.087 | 39 | 97 | 0/29/71 | 0.41 |
+| E Siberia | Oct-Mar | 108 / 168 | 1 / 75 | +35 (+105, -78, -44, +53) | +42 | +16 | +15 | +93 / +93 | 2.6 / 2.9 | 0.114 / 0.159 | 0 | 37 | 1/99/0 | 0.65 |
+| Gobi/Mongolia | Apr-Sep | 997 / 274 | 580 / 295 | +301 (+660, -461, +1761, -1659) | +21 | +50 | +43 | +372 / -21 | 9.5 / 12.5 | 0.287 / 0.060 | 15 | 72 | 0/11/89 | 0.30 |
+| Gobi/Mongolia | Oct-Mar | 60 / 35 | 38 / 151 | +8 (+213, -192, +38, -52) | -21 | +6 | +25 | -7 / -116 | 2.2 / 3.7 | 0.076 / 0.026 | 3 | 61 | 0/100/0 | 0.27 |
+| Central Asia | Apr-Sep | 322 / 173 | 390 / 253 | -72 (+1285, -883, -540, +65) | +29 | -31 | +7 | -74 / -80 | 10.5 / 15.9 | 0.084 / 0.030 | 21 | 55 | 0/20/80 | 0.32 |
+| Central Asia | Oct-Mar | 346 / 244 | 168 / 174 | +288 (+1074, -480, +416, -722) | -76 | -13 | -24 | +199 / +70 | 9.1 / 9.3 | 0.104 / 0.072 | 8 | 33 | 0/100/0 | 0.70 |
+| NE USA | Apr-Sep | 2411 / 1134 | 1318 / 1414 | +1157 (+723, -1016, +5836, -4387) | -64 | +2 | -1 | +1095 / -280 | 20.6 / 24.1 | 0.321 / 0.129 | 15 | 32 | 0/19/81 | 0.55 |
+| NE USA | Oct-Mar | 347 / 934 | 217 / 577 | -175 (+920, -1189, +1, +93) | +52 | +140 | +113 | +17 / +357 | 5.8 / 11.1 | 0.165 / 0.230 | 8 | 47 | 0/100/0 | 0.41 |
+| Great Plains | Apr-Sep | 1600 / 808 | 1013 / 1078 | +673 (+1822, -1426, +1786, -1509) | -15 | -62 | -10 | +596 / -270 | 18.1 / 21.8 | 0.242 / 0.102 | 19 | 50 | 0/17/83 | 0.51 |
+| Great Plains | Oct-Mar | 308 / 293 | 147 / 352 | +141 (+1245, -967, +505, -642) | +9 | +9 | +2 | +159 / -59 | 7.0 / 9.2 | 0.120 / 0.087 | 4 | 20 | 0/100/0 | 0.60 |
+| SE USA | Apr-Sep | 868 / 1326 | 694 / 1683 | +251 (+611, +36, +4239, -4635) | -72 | -39 | +35 | +140 / -357 | 25.1 / 33.5 | 0.095 / 0.108 | 10 | 13 | 0/19/81 | 0.56 |
+| SE USA | Oct-Mar | 367 / 1332 | 283 / 960 | -498 (+358, -645, -10, -202) | +234 | +231 | +117 | -33 / +373 | 8.7 / 17.5 | 0.116 / 0.208 | 15 | 26 | 0/100/0 | 0.40 |
+| Pampas | Apr-Sep | 160 / 563 | 86 / 463 | -127 (+730, -590, -426, +160) | -30 | +106 | +124 | -51 / +100 | 5.8 / 16.5 | 0.075 / 0.094 | 5 | 31 | 0/100/0 | 0.27 |
+| Pampas | Oct-Mar | 638 / 1323 | 458 / 1125 | -14 (-1531, +2042, +226, -751) | +99 | -27 | +121 | +58 / +199 | 23.2 / 24.5 | 0.075 / 0.148 | 14 | 29 | 0/34/66 | 0.51 |
+| Patagonia | Apr-Sep | 639 / 495 | 182 / 396 | +431 (+4013, -2143, -2806, +1366) | +39 | -11 | -2 | +459 / +98 | 14.2 / 10.8 | 0.123 / 0.126 | 2 | 5 | 25/75/0 | 0.99 |
+| Patagonia | Oct-Mar | 1190 / 277 | 845 / 783 | +279 (+3008, -1697, -997, -35) | +69 | +18 | -22 | +366 / -506 | 16.7 / 14.0 | 0.195 / 0.054 | 13 | 20 | 0/45/55 | 0.67 |
+| Amazon | Apr-Sep | 2359 / 1892 | 1280 / 1540 | +1247 (-2103, +3498, +557, -706) | -112 | -33 | -22 | +1101 / +353 | 41.0 / 43.7 | 0.158 / 0.119 | 22 | 42 | 0/47/53 | 0.87 |
+| Amazon | Oct-Mar | 4506 / 2714 | 1617 / 1680 | +2999 (-1354, +3470, -395, +1278) | -93 | -3 | -14 | +2902 / +1034 | 44.2 / 47.6 | 0.279 / 0.156 | 28 | 45 | 0/32/68 | 0.84 |
+| S Brazil/Paraguay | Apr-Sep | 193 / 792 | 345 / 858 | -348 (-654, +814, +68, -577) | +62 | +72 | +60 | -214 / -66 | 14.8 / 25.8 | 0.036 / 0.084 | 21 | 30 | 0/100/0 | 0.47 |
+| S Brazil/Paraguay | Oct-Mar | 2714 / 2008 | 1332 / 1653 | +1522 (-2849, +4698, +58, -385) | -135 | -3 | -2 | +1384 / +355 | 37.7 / 36.5 | 0.197 / 0.151 | 19 | 28 | 0/33/67 | 0.72 |
+| Canada 45-60N | Apr-Sep | 1788 / 766 | 895 / 1092 | +840 (+623, -527, +990, -247) | +65 | +7 | -19 | +911 / -325 | 13.2 / 16.3 | 0.370 / 0.129 | 33 | 54 | 0/26/74 | 0.55 |
+| Canada 45-60N | Oct-Mar | 714 / 513 | 44 / 287 | +578 (+584, -462, +453, +4) | +64 | +18 | +10 | +660 / +226 | 7.7 / 6.9 | 0.253 / 0.203 | 2 | 5 | 50/47/3 | 1.02 |
+| N Atlantic storm track | Apr-Sep | 822 / 1058 | 854 / 610 | -46 (+611, -835, +534, -355) | +56 | -3 | -39 | +7 / +448 | 15.6 / 21.6 | 0.145 / 0.134 | 40 | 8 | 10/69/21 | 0.87 |
+| N Atlantic storm track | Oct-Mar | 1239 / 1653 | 494 / 1341 | +636 (+1273, -1150, +615, -101) | +145 | -8 | -29 | +774 / +312 | 14.1 / 15.2 | 0.241 / 0.297 | 29 | 6 | 2/55/42 | 0.92 |
+| N Pacific storm track | Apr-Sep | 917 / 1092 | 780 / 268 | +107 (+793, -833, +269, -121) | +62 | -4 | -29 | +166 / +823 | 16.6 / 21.2 | 0.151 / 0.141 | 41 | 5 | 6/61/33 | 0.88 |
+| N Pacific storm track | Oct-Mar | 1253 / 1463 | 473 / 882 | +693 (+1049, -794, +463, -25) | +122 | -9 | -26 | +806 / +581 | 14.6 / 12.3 | 0.235 / 0.327 | 31 | 4 | 6/54/40 | 0.93 |
+| Gulf of Mexico | Apr-Sep | 518 / 1270 | 1588 / 1421 | -1045 (-1567, +2338, -76, -1740) | -7 | -24 | +6 | -1076 / -151 | 32.0 / 38.9 | 0.044 / 0.089 | 34 | 2 | 0/100/0 | 0.71 |
+| Gulf of Mexico | Oct-Mar | 476 / 921 | 1943 / 2157 | -1157 (-136, -56, -1266, +301) | +8 | -254 | -64 | -1403 / -1236 | 24.7 / 29.0 | 0.053 / 0.087 | 92 | 3 | 0/100/0 | 0.66 |
+| W Atlantic subtropics | Apr-Sep | 499 / 1332 | 2069 / 1406 | -1558 (-151, +496, -300, -1603) | -44 | +2 | +31 | -1600 / -74 | 25.2 / 32.6 | 0.054 / 0.112 | 74 | 0 | 0/69/31 | 0.67 |
+| W Atlantic subtropics | Oct-Mar | 1056 / 1504 | 2494 / 2568 | -1230 (+469, -992, -290, -417) | -42 | -72 | -93 | -1345 / -1065 | 22.4 / 24.1 | 0.129 / 0.171 | 75 | 6 | 0/72/28 | 0.71 |
+| E Atlantic subtropics | Apr-Sep | 441 / 392 | 2182 / 1250 | -1773 (-1224, +375, -938, +14) | +18 | -8 | +21 | -1763 / -857 | 23.3 / 27.1 | 0.052 / 0.040 | 92 | 0 | 0/100/0 | 0.71 |
+| E Atlantic subtropics | Oct-Mar | 741 / 758 | 1263 / 1781 | -419 (+694, -980, +243, -377) | -54 | -28 | -21 | -501 / -1023 | 23.4 / 23.9 | 0.087 / 0.087 | 55 | 1 | 0/89/11 | 0.82 |
+| NW Pacific subtropics | Apr-Sep | 704 / 1902 | 1988 / 1135 | -1287 (-1111, +912, +148, -1237) | -23 | +2 | +24 | -1309 / +767 | 29.7 / 39.0 | 0.065 / 0.133 | 71 | 1 | 1/82/18 | 0.75 |
+| NW Pacific subtropics | Oct-Mar | 840 / 1266 | 2097 / 2554 | -1122 (+729, -1338, -624, +111) | -6 | -71 | -59 | -1199 / -1288 | 23.9 / 25.3 | 0.096 / 0.137 | 90 | 5 | 0/83/17 | 0.70 |
+| SW Atlantic | Apr-Sep | 775 / 1348 | 1830 / 1522 | -974 (+286, -933, -54, -273) | +19 | -70 | -31 | -1024 / -174 | 21.7 / 22.6 | 0.098 / 0.163 | 84 | 5 | 0/77/23 | 0.70 |
+| SW Atlantic | Oct-Mar | 725 / 1530 | 1850 / 1192 | -1187 (-1732, +736, -371, +179) | +44 | -6 | +25 | -1149 / +338 | 25.8 / 28.6 | 0.077 / 0.146 | 63 | 1 | 0/82/18 | 0.69 |
+| Tropical Atlantic | Apr-Sep | 1468 / 866 | 1649 / 1543 | -51 (-1322, +981, +200, +89) | -115 | -14 | -1 | -180 / -677 | 39.2 / 36.0 | 0.103 / 0.066 | 67 | 7 | 0/70/30 | 0.84 |
+| Tropical Atlantic | Oct-Mar | 1293 / 724 | 1760 / 1567 | -319 (-1532, +878, +271, +64) | -111 | -33 | -5 | -463 / -843 | 39.5 / 35.8 | 0.090 / 0.055 | 56 | 18 | 0/84/16 | 0.85 |
+
+Origin of each box's rain (% of its kernel rain, sources >= 2%):
+- W Europe, Apr-Sep: N Atlantic storm track 46, W Europe 22, other sea 18, E Atlantic subtropics 9, W Atlantic subtropics 3
+- W Europe, Oct-Mar: E Atlantic subtropics 65, W Atlantic subtropics 11, other sea 11, other land 4, W Europe 3, Tropical Atlantic 3, N Atlantic storm track 2
+- European Russia, Apr-Sep: other land 28, European Russia 27, N Atlantic storm track 19, other sea 11, W Europe 8, W Atlantic subtropics 4, E Atlantic subtropics 3
+- European Russia, Oct-Mar: other sea 43, E Atlantic subtropics 35, other land 13, W Atlantic subtropics 3
+- W Siberia, Apr-Sep: other land 43, W Siberia 39, European Russia 9, other sea 3, N Atlantic storm track 3
+- W Siberia, Oct-Mar: other sea 68, other land 22, E Atlantic subtropics 6, Central Asia 2
+- E Siberia, Apr-Sep: other land 53, E Siberia 39, Gobi/Mongolia 3, other sea 2
+- E Siberia, Oct-Mar: other sea 61, other land 30, Central Asia 5
+- Gobi/Mongolia, Apr-Sep: other land 54, other sea 22, Gobi/Mongolia 15, NW Pacific subtropics 5, Central Asia 2
+- Gobi/Mongolia, Oct-Mar: other land 52, other sea 39, Central Asia 6, Gobi/Mongolia 3
+- Central Asia, Apr-Sep: other sea 38, other land 25, Central Asia 21, W Europe 6, N Atlantic storm track 6, European Russia 2
+- Central Asia, Oct-Mar: other sea 67, other land 25, Central Asia 8
+- NE USA, Apr-Sep: W Atlantic subtropics 36, NE USA 15, Gulf of Mexico 12, other sea 11, SE USA 10, E Atlantic subtropics 8, other land 7
+- NE USA, Oct-Mar: other sea 45, other land 28, NE USA 8, Gulf of Mexico 7, Great Plains 5, SE USA 4
+- Great Plains, Apr-Sep: other land 28, other sea 27, N Pacific storm track 23, Great Plains 19, Canada 45-60N 2
+- Great Plains, Oct-Mar: other sea 77, other land 16, Great Plains 4, Gulf of Mexico 3
+- SE USA, Apr-Sep: Gulf of Mexico 35, W Atlantic subtropics 23, other sea 19, E Atlantic subtropics 10, SE USA 10, other land 3
+- SE USA, Oct-Mar: Gulf of Mexico 63, SE USA 15, other land 11, other sea 10
+- Pampas, Apr-Sep: other sea 68, other land 17, S Brazil/Paraguay 9, Pampas 5
+- Pampas, Oct-Mar: SW Atlantic 47, other sea 23, Pampas 14, other land 11, S Brazil/Paraguay 3
+- Patagonia, Apr-Sep: other sea 95, other land 3, Patagonia 2
+- Patagonia, Oct-Mar: other sea 80, Patagonia 13, other land 7
+- Amazon, Apr-Sep: Tropical Atlantic 50, Amazon 22, other land 19, other sea 5, SW Atlantic 2
+- Amazon, Oct-Mar: Tropical Atlantic 54, Amazon 28, other land 16
+- S Brazil/Paraguay, Apr-Sep: SW Atlantic 60, S Brazil/Paraguay 21, other land 8, Tropical Atlantic 7, other sea 3
+- S Brazil/Paraguay, Oct-Mar: Tropical Atlantic 35, other sea 23, S Brazil/Paraguay 19, SW Atlantic 14, other land 9
+- Canada 45-60N, Apr-Sep: Canada 45-60N 33, N Pacific storm track 20, other sea 12, other land 12, W Atlantic subtropics 7, NE USA 4, Gulf of Mexico 4, Great Plains 3, SE USA 2
+- Canada 45-60N, Oct-Mar: other sea 90, NW Pacific subtropics 3, other land 3, Canada 45-60N 2
+- N Atlantic storm track, Apr-Sep: N Atlantic storm track 40, W Atlantic subtropics 27, E Atlantic subtropics 19, other sea 7, other land 4, Canada 45-60N 3
+- N Atlantic storm track, Oct-Mar: other sea 29, N Atlantic storm track 29, W Atlantic subtropics 20, E Atlantic subtropics 15, other land 3
+- N Pacific storm track, Apr-Sep: N Pacific storm track 41, NW Pacific subtropics 32, other sea 22, other land 5
+- N Pacific storm track, Oct-Mar: other sea 43, N Pacific storm track 31, NW Pacific subtropics 21, other land 4
+- Gulf of Mexico, Apr-Sep: other sea 34, Gulf of Mexico 34, E Atlantic subtropics 20, W Atlantic subtropics 9, other land 2
+- Gulf of Mexico, Oct-Mar: Gulf of Mexico 92, other sea 4, other land 3
+- W Atlantic subtropics, Apr-Sep: W Atlantic subtropics 74, E Atlantic subtropics 23, other sea 3
+- W Atlantic subtropics, Oct-Mar: W Atlantic subtropics 75, Gulf of Mexico 12, other sea 8, SE USA 3, other land 2
+- E Atlantic subtropics, Apr-Sep: E Atlantic subtropics 92, N Atlantic storm track 6
+- E Atlantic subtropics, Oct-Mar: E Atlantic subtropics 55, W Atlantic subtropics 28, other sea 9, Tropical Atlantic 4
+- NW Pacific subtropics, Apr-Sep: NW Pacific subtropics 71, other sea 28
+- NW Pacific subtropics, Oct-Mar: NW Pacific subtropics 90, other land 5, other sea 5
+- SW Atlantic, Apr-Sep: SW Atlantic 84, other sea 11, S Brazil/Paraguay 2
+- SW Atlantic, Oct-Mar: SW Atlantic 63, other sea 33, Tropical Atlantic 3
+- Tropical Atlantic, Apr-Sep: Tropical Atlantic 67, other sea 12, E Atlantic subtropics 12, other land 7
+- Tropical Atlantic, Oct-Mar: Tropical Atlantic 56, other sea 26, other land 18
+
+The kernel's own global rain (vapour units x 9.8 mm, the open-sea PW fit): 1544 mm/yr; compute rescales it to 1000 (x0.65)
+- land (to 60S), Apr-Sep: vapour residence (PW / P) model 4.1 d (kernel's own rate), observed 9.9 d; P 1111 vs 834 mm/yr
+- land (to 60S), Oct-Mar: vapour residence (PW / P) model 4.1 d (kernel's own rate), observed 8.7 d; P 995 vs 748 mm/yr
+- sea, Apr-Sep: vapour residence (PW / P) model 6.1 d (kernel's own rate), observed 9.2 d; P 994 vs 1062 mm/yr
+- sea, Oct-Mar: vapour residence (PW / P) model 6.1 d (kernel's own rate), observed 8.8 d; P 1012 vs 1080 mm/yr
+
+## Sensitivities (annual mm/yr; kernel only, global mean held)
+| | obs | base | c1_sea_ls | c2_drift8 | c2_drift0 | c3_recyc | c4_cv | c4_aloft | c5_reach | c6_summer_wind | c7_land_eff | c1b_sea_ls_20_60 | c1c_sea_all | c8_no_sink_west | c9_slower_all | c10_land_slower |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| land 40-50N | 538 | 933 | 908 | 931 | 927 | 900 | 861 | 922 | 1009 | 964 | 807 | 887 | 838 | 924 | 962 | 875 |
+| land 50-60N | 587 | 967 | 944 | 957 | 910 | 931 | 960 | 993 | 935 | 936 | 986 | 925 | 874 | 964 | 1122 | 992 |
+| land 60-80N | 383 | 393 | 383 | 373 | 293 | 377 | 402 | 404 | 391 | 386 | 407 | 381 | 356 | 392 | 463 | 404 |
+| sea 40-50N | 1285 | 1052 | 1136 | 1048 | 1032 | 1055 | 1063 | 1055 | 1051 | 1049 | 1052 | 1111 | 1099 | 1048 | 1009 | 1061 |
+| sea 50-60N | 1133 | 956 | 993 | 938 | 864 | 956 | 1023 | 1032 | 945 | 913 | 1028 | 958 | 941 | 953 | 1060 | 1005 |
+| W Siberia | 506 | 696 | 677 | 673 | 572 | 645 | 706 | 689 | 624 | 668 | 759 | 668 | 644 | 695 | 844 | 743 |
+| E Siberia | 294 | 436 | 433 | 423 | 360 | 408 | 491 | 466 | 423 | 390 | 498 | 425 | 412 | 435 | 503 | 473 |
+| Gobi/Mongolia | 155 | 528 | 517 | 528 | 536 | 501 | 454 | 503 | 529 | 566 | 409 | 509 | 488 | 527 | 565 | 519 |
+| NE USA | 1034 | 1379 | 1368 | 1383 | 1405 | 1330 | 1147 | 1341 | 1384 | 1445 | 1055 | 1323 | 1247 | 1275 | 1329 | 1198 |
+| W Europe | 903 | 1150 | 1107 | 1152 | 1157 | 1131 | 1096 | 1197 | 1269 | 1300 | 1075 | 1079 | 996 | 1146 | 1242 | 1114 |
+| European Russia | 591 | 881 | 842 | 876 | 838 | 837 | 831 | 843 | 758 | 896 | 866 | 828 | 790 | 879 | 1009 | 885 |
+| Great Plains | 551 | 954 | 922 | 950 | 934 | 902 | 850 | 858 | 960 | 924 | 771 | 899 | 863 | 955 | 926 | 836 |
+| SE USA | 1329 | 617 | 602 | 607 | 579 | 611 | 544 | 476 | 620 | 999 | 513 | 564 | 530 | 684 | 542 | 482 |
+| Pampas | 943 | 399 | 403 | 382 | 317 | 381 | 383 | 309 | 398 | 343 | 359 | 378 | 355 | 366 | 378 | 342 |
+| Patagonia | 386 | 914 | 891 | 903 | 857 | 891 | 829 | 871 | 913 | 1009 | 786 | 868 | 820 | 917 | 919 | 843 |
+| land 40-50N Apr-Sep | 630 | 1320 | 1282 | 1317 | 1306 | 1257 | 1177 | 1294 | 1325 | 1381 | 1119 | 1256 | 1196 | 1304 | 1366 | 1231 |
+| land 40-50N Oct-Mar | 447 | 546 | 535 | 546 | 548 | 543 | 546 | 550 | 693 | 546 | 495 | 518 | 480 | 544 | 559 | 520 |
+| land 50-60N Apr-Sep | 714 | 1245 | 1224 | 1239 | 1202 | 1174 | 1230 | 1279 | 1243 | 1183 | 1247 | 1206 | 1157 | 1242 | 1375 | 1261 |
+| land 50-60N Oct-Mar | 460 | 689 | 663 | 676 | 618 | 687 | 689 | 706 | 628 | 688 | 725 | 643 | 591 | 686 | 868 | 723 |
+| land 60-80N Apr-Sep | 452 | 553 | 541 | 529 | 423 | 519 | 571 | 569 | 551 | 538 | 583 | 538 | 510 | 552 | 631 | 575 |
+| land 60-80N Oct-Mar | 315 | 233 | 224 | 217 | 162 | 234 | 234 | 239 | 231 | 233 | 232 | 223 | 202 | 233 | 295 | 232 |
+| W Siberia Apr-Sep | 641 | 850 | 839 | 835 | 742 | 751 | 869 | 833 | 845 | 794 | 923 | 836 | 820 | 849 | 939 | 899 |
+| W Siberia Oct-Mar | 370 | 542 | 516 | 511 | 403 | 540 | 542 | 545 | 402 | 541 | 596 | 501 | 469 | 540 | 750 | 588 |
+| Gobi/Mongolia Apr-Sep | 274 | 996 | 975 | 995 | 1001 | 945 | 849 | 947 | 999 | 1073 | 774 | 959 | 922 | 995 | 1065 | 981 |
+| Gobi/Mongolia Oct-Mar | 35 | 60 | 59 | 61 | 71 | 58 | 59 | 59 | 59 | 60 | 45 | 58 | 55 | 59 | 64 | 58 |
+| SE USA Apr-Sep | 1326 | 868 | 841 | 865 | 863 | 857 | 725 | 591 | 867 | 1629 | 690 | 731 | 688 | 970 | 777 | 640 |
+| SE USA Oct-Mar | 1332 | 366 | 364 | 349 | 295 | 365 | 363 | 360 | 372 | 369 | 337 | 398 | 372 | 398 | 308 | 324 |
+| Pampas Apr-Sep | 563 | 160 | 181 | 161 | 166 | 159 | 160 | 158 | 160 | 158 | 138 | 180 | 167 | 163 | 130 | 140 |
+| Pampas Oct-Mar | 1323 | 637 | 625 | 603 | 469 | 603 | 606 | 459 | 637 | 529 | 580 | 576 | 543 | 568 | 626 | 544 |
+| transport 30N | | 0.40 | 0.38 | 0.35 | 0.19 | 0.40 | 0.40 | 0.40 | 0.40 | 0.40 | 0.40 | 0.36 | 0.33 | 0.39 | 0.49 | 0.41 |
+| transport 40N | | 0.95 | 0.90 | 0.91 | 0.74 | 0.96 | 0.97 | 0.98 | 0.95 | 0.92 | 0.98 | 0.87 | 0.80 | 0.94 | 1.17 | 0.99 |
+| transport 50N | | 0.65 | 0.61 | 0.61 | 0.46 | 0.65 | 0.68 | 0.67 | 0.62 | 0.61 | 0.71 | 0.59 | 0.54 | 0.65 | 0.85 | 0.70 |
+| B share | | 25.23 | 25.42 | 25.35 | 25.54 | 25.49 | 25.63 | 26.35 | 25.01 | 24.67 | 27.48 | 25.81 | 26.92 | 25.07 | 27.06 | 28.39 |
+| land P | | 1052.39 | 1026.34 | 1052.22 | 1050.84 | 1042.98 | 1039.27 | 1049.27 | 1057.76 | 1062.76 | 1032.30 | 1005.90 | 943.48 | 1050.40 | 1133.50 | 1014.79 |
+| land E | | 523.24 | 517.53 | 522.70 | 519.56 | 509.10 | 519.75 | 516.01 | 523.44 | 526.67 | 511.11 | 511.13 | 496.09 | 523.87 | 518.06 | 493.09 |
+| residence d | | 5.55 | 5.27 | 5.54 | 5.50 | 5.57 | 5.58 | 5.60 | 5.54 | 5.54 | 5.63 | 5.09 | 4.67 | 5.52 | 6.71 | 5.67 |
+| land residence d | | 4.09 | 4.07 | 4.08 | 4.02 | 4.13 | 4.21 | 4.17 | 4.07 | 4.05 | 4.38 | 4.04 | 4.03 | 4.07 | 4.63 | 4.54 |
+| sea residence d | | 6.11 | 5.70 | 6.10 | 6.05 | 6.11 | 6.09 | 6.15 | 6.11 | 6.12 | 6.08 | 5.46 | 4.87 | 6.07 | 7.61 | 6.08 |
+| land P-E (Sv) | | 2.32 | 2.22 | 2.31 | 2.30 | 2.34 | 2.28 | 2.34 | 2.34 | 2.35 | 2.29 | 2.17 | 1.96 | 2.31 | 2.70 | 2.29 |
+| scale vs base | | 1.000 | 0.958 | 0.996 | 0.981 | 1.004 | 1.002 | 1.007 | 0.948 | 0.998 | 1.006 | 0.931 | 0.864 | 0.997 | 1.168 | 1.013 |
+
+(264 s)

@@ -46,5 +46,9 @@ vapour in mm against NCEP:
   vapour-limited (7.7 mm vs NCEP 17.5): what's left is the return flow's supply.
 
 ## Updates
+- 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): SE USA Oct-Mar budget: mean wind -455 mm/yr (offshore), drift +198, mixing
+  +214; the Gulf exports the right amount (-1354 vs -1261) but southward. In summer SE USA rains at the observed
+  rate per mm but is flushed north (S face +3853, N -4189) into NE USA (2634 vs 1132): the land-sea inflow draft.
+  A convergence lift makes SE USA's winter worse (361 -> 125-163) until this ticket's return flow is right.
 - 2026-10-30: Coordinator: moved to v2; regional Earth-fidelity refinement, Earth is a plausibility anchor.
 - 2026-10-30: Created from inbox draft draft-winter-return-flow-frontal-rain.md (found by lane26).

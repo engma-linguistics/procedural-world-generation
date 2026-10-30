@@ -43,5 +43,9 @@ To do: a mountain-channelled flow, where the part of the wind that `deflect` tur
 downstream along it, not only within block_km. It waits until lane 26's rounds 1 and 2 are judged (coordinator).
 
 ## Updates
+- 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): Pampas Oct-Mar vapour is right (23.2 vs 24.5 mm) but rains at 0.51x the observed
+  rate per mm (66% showers, weak trigger). 45% of it is SW Atlantic vapour, so more sea rain or no sinking air
+  there makes the Pampas drier. Only the drift feeds it (no drift: 401 -> 330). Nothing in PW-1093's five
+  candidates helps; the jet stays the mechanism.
 - 2026-10-30: Coordinator: moved to v2; regional Earth-fidelity refinement, Earth is a plausibility anchor.
 - 2026-10-30: Created from inbox draft draft-pampas-andes-low-level-jet.md (found by lane26).
