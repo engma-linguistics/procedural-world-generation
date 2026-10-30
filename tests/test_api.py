@@ -54,6 +54,18 @@ def test_zoom_job_from_run(dirs):
     assert len([p for p in (dirs / "worlds").glob("*.json") if p.name != "index.json"]) == 1
 
 
+def test_slice_error_reaches_caller(dirs, monkeypatch):
+    """PW-1031: an error while building a world from a keyframe reaches the caller; it no longer
+    turns into a silent replay from t=0."""
+    def broken(run_dir, at):
+        raise ValueError("operands could not be broadcast together")
+
+    monkeypatch.setattr(T, "world_from_frame", broken)
+    monkeypatch.setattr(T, "slice_world", lambda *a, **k: pytest.fail("replayed"))
+    with pytest.raises(ValueError, match="broadcast"):
+        api.slice_run("tiny01", 40.0)
+
+
 def test_jobs_queue(dirs):
     def fake(req, progress):
         progress(0.5, "half")

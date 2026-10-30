@@ -2,7 +2,7 @@
 id: PW-1031
 title: Any ValueError while building a world silently becomes an hour-long \"old run\" replay; other old-run fallbacks quietly change the world
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: store
@@ -26,4 +26,5 @@ Fix: delete the ValueError fallback (or raise a dedicated `RunTooOld`), make the
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: api._slice_locked no longer catches ValueError and replays: any error building a world from a keyframe reaches the caller (test_api.test_slice_error_reaches_caller). Made strict with 'made by older code; delete it and re-run': Params.from_stored (removed or missing params), timeline.keyframe_vegetation (no plant_groups, reef_builders_t or keyframe pco2), world_from_frame (no keyframe layers or sea level; missing or mismatched volcano table). test_invariants' old-run tests and test_highlights.test_ago_time (it passed partial params) updated to match. Not-slow suite 731 passed.
 - 2026-10-29: Created from inbox draft draft-old-run-fallbacks-hide-bugs.md (found by code-audit-2026-10).

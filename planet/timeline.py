@@ -203,11 +203,15 @@ def plant_groups(sim: Simulation) -> list:
 def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray) -> dict:
     """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
     cover (%, forest or savanna) as a warm start, its CO2 (ppm), and the plant groups by then."""
-    groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
+    missing = [k for k in ("plant_groups", "reef_builders_t") if k not in meta] + \
+        (["pco2"] if "pco2" not in fr["stats"] else [])
+    if missing:  # (no backward compatibility, PW-1031)
+        raise ValueError(f"this run was made by older code (no {', '.join(missing)}); delete it and re-run")
+    groups = [g.get("t") for g in meta["plant_groups"]]
     t_fr = float(fr["t"])
-    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
+    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"]["pco2"],
             "unlocked": VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr),
-            "groups": groups, "reef_builders": t_fr >= float(meta.get("reef_builders_t", -np.inf)) - 1e-9}
+            "groups": groups, "reef_builders": t_fr >= float(meta["reef_builders_t"]) - 1e-9}
 
 
 def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
@@ -402,14 +406,17 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     m = run["meta"]
     missing = [k for k in FRAME_LAYERS if k not in run["layers"]]
     if missing or "sea_level_m" not in run["frames"][0]["stats"]:
-        raise ValueError(f"run {run_dir.name} is too old to build worlds from its keyframes "
-                         f"(missing {', '.join(missing) or 'sea level'}); use `planet slice`")
+        raise ValueError(f"run {run_dir.name} was made by older code (its keyframes have no "
+                         f"{', '.join(missing) or 'sea level'}); delete it and re-run")
     arr = S.read_layers(run_dir, run["layers"], FRAME_LAYERS)
     times = np.array([f["t"] for f in run["frames"]])
     i = int(np.argmin(np.abs(times - at)))
     fr = run["frames"][i]
     vt = S.read_volcanoes(run_dir)
-    vols = vt["frames"][i] if vt and vt["columns"] == list(VOLCANO_COLUMNS) else []
+    if not vt or vt["columns"] != list(VOLCANO_COLUMNS):
+        raise ValueError(f"run {run_dir.name} was made by older code (its volcano table is "
+                         f"{'missing' if not vt else 'of columns ' + str(vt['columns'])}); delete it and re-run")
+    vols = vt["frames"][i]
     a = {k: frame(run, arr, k, i) for k in FRAME_LAYERS}
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])
