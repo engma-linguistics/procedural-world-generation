@@ -148,3 +148,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-30: Refactor 2 merged (4e51d8dd): zoom code in planet/zoom/, regional.build in 25 named stages on ZoomCtx; bit-identical on 4 test regions.
 - 2026-10-30: Fun lane 54 merged: PW-752 (interfertility by split depth; half-elves/orcs exempt) and PW-889 (among pairs, squeeze integration, city minorities) done; constants await owner review (draft).
 - 2026-10-30: Earth reference GPCC switched to v2020 1981-2010 (v2018 LTM gone upstream); data/earth rebuilt with permanent raws; no pass/fail flips. PW-1050's (b) ice-sheet seasonality: Greenland summer better, Antarctic interior summer overshoots (follow-up draft).
+- 2026-10-30: Viewer lane 56 merged (e0099121): time axis default, workbench header/help/numfmt, overlay rebuild skip; grouped picker behind ?picker=grouped awaiting owner (side-by-sides 2: https://claude.ai/artifact/NwELDGdqbNCcYTXjBpmkYF).

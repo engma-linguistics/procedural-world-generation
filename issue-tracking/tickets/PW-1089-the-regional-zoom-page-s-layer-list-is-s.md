@@ -1,4 +1,5 @@
 ---
+id: PW-1089
 title: The regional zoom page's layer list is still a flat block with its own names; give it the globe's grouped picker once PW-1026 is decided
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: viewer-lane-56
 blocked_by: [PW-1026]
 relates: [PW-1026]
 refs: [viewer/zoom.html, viewer/globe/layerpick.js, viewer/globe/layers.js, docs/review/viewer-ux-sides-2/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +23,6 @@ Where: `viewer/zoom.html` `#layerSeg` and its own layer list. The globe's picker
 - [ ] the zoom page uses the same sections, search and recent row as the globe
 - [ ] a layer shown on both pages has the same name on both
 - [ ] `?layer=` links on the zoom page keep working
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-zoom-page-grouped-layer-picker.md (found by viewer-lane-56).
