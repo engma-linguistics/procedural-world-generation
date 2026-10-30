@@ -421,7 +421,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def lineages_api(self, method: str) -> bool:
-        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-trees, GET or POST
+        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-schema (its option lists,
+        lineages.run.editor_schema), GET /api/lineage-trees, GET or POST
         /api/lineage-tree?name=N (the tree as JSON; POST validates and saves it), POST /api/lineages
         {world | timezoom, tree | raw, tries} (queued on the job queue like a time zoom, ~20 s a try at L6;
         answers {job}; GET /api/jobs/<id> has its progress, and {run} when done)."""
@@ -431,7 +432,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         from .lineages import run as LR
         q = dict(parse_qsl(url.query))
         try:
-            if method == "GET" and url.path == "/api/lineage-trees":
+            if method == "GET" and url.path == "/api/lineage-schema":
+                self.send_json(LR.editor_schema())
+            elif method == "GET" and url.path == "/api/lineage-trees":
                 self.send_json({"trees": [{k: v for k, v in t.items() if k != "file"} for t in LR.list_trees()]})
             elif method == "GET" and url.path == "/api/lineage-tree":
                 self.send_json(LR.read_raw(q.get("name", "")))
