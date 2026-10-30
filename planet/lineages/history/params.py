@@ -46,11 +46,19 @@ SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (i
 ORIGIN_MVP_MULT = 8.0  # PW-888: the census minimum viable population over the REFERENCE horizon, this many times tree.viable_pop (500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500, for about MVP_REF_GEN generations
 MVP_REF_GEN = 40.0  # ...Traill et al. 2007 take persistence over ~40 generations
 PERSIST_EXP = 1.0  # PW-888: a daughter must persist from its origin to the present, so the population it needs grows with the horizon. Lande 1993 (environmental stochasticity): mean persistence time T ~ K^c with c = 2r/sigma_e^2 - 1 (Foley 1994 for vertebrate data), so the K needed for T goes as T^(1/c). c = 1 is r = sigma_e^2, a population growing as fast as its environment fluctuates; the literature gives a spread of c, this is its middle, not a fit to any target. K_req = ORIGIN_MVP_MULT x viable_pop x (horizon in generations / MVP_REF_GEN)^(1/c)
-PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
-PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
+SURGE_Q = 0.5  # owner 10-30 (lane 73; in place of PW-869's founding window): a people on the upswing feels the competition of the peoples
+# whose land it contests up to this much less (x the era's dial, meta.surge_early / surge_late), by its momentum (pressure.surge). The
+# window's half, kept: at 0.5 a surging people takes room where its rivals stand at under twice its own claim, and an expansion that is
+# not followed by holding the land fades back (failed forays: the edge goes once growth stalls). A design judgement
+SURGE_KYR = 4.0  # ...its momentum: the range mass against its own mass lagged by this e-folding time, ~160 generations; half the old
+# 8 kyr window's length scale, so the edge of a newcomer lasts a few kyr (the window's span) and an expansion's for as long as it grows:
+# the Bantu, Austronesian and steppe expansions ran for 1-4 kyr each (Phillipson 2005; Gray et al. 2009, Science 323; Haak et al. 2015,
+# Nature 522). The momentum is full at SURGE_FULL x the lagged mass
+SURGE_FULL = 2.0
+SURGE_LATE_FROM_KYR = 12.0  # the early dial holds before this (the farming onset, as HYBRID_FROM_KYR), the late at the present, blended between
 EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
 EXPANSE_FROM, EXPANSE_SPAN = 0.4, 0.3  # ...presses into country others hold: the competition it feels falls by up to this x its expansiveness x the unfilled
-EXPANSE_FILL = 0.5  # share (1 - its range / (this x the country with K >= 0.3)); alone the founding window left the elves at 2 of 8 tries with 500 cells
+EXPANSE_FILL = 0.5  # share (1 - its range / (this x the country with K >= 0.3)); alone the founding window (PW-869, now the momentum edge) left the elves at 2 of 8 tries with 500 cells
 PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted is this much likelier (x1 + this) on the partner's own coast (PW-861)
 MEGAFAUNA_OFF = 0.1  # PW-924: a megafauna line's habitat outside its own country (its prefers), against 0.4 for a people: dragons and giants
 # lair in their kind's country (swamp for black dragons, volcanoes for red), not anywhere they could survive
@@ -117,3 +125,11 @@ PORTAL_KM = 700.0  # an arriving people founds at a portal if it can live within
 PORTAL_FAR_KM = 2500.0  # ...else within this of it (the portal opens onto bad ground for it); else at its best habitat anywhere
 
 PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does
+COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two peoples' competition is under 1 both ways (Lotka-Volterra
+# coexistence), each feels the other at most at its coexistence share (spread.coexist_cap), whichever came first: before, an incumbent
+# at its full habitat left a newcomer K(1 - alpha) of room, under the establishment threshold (EST) and the hold (HOLD_MIN) wherever
+# alpha_eff > ~0.75, so whoever reached a niche first kept it (kobolds held the mountains 1.5 Myr before the dwarves split, and the
+# dwarves never got in). Off only to measure what it does
+MAINLINE_Q = 0.4  # owner 10-30 (lane 73, option C): a mainline people (spec `mainline`: the genre's core peoples) feels its rivals' competition
+# this much less, everywhere: an authored commonness, not a mechanism. 0.4 (lane 73, world 4360a3, seeds 7 and 10): orcs, gnomes and
+# halflings above 2% of people and orcs above 2% of cells led; the elves (density 1) and the dwarves (stranded on one continent: inbox draft dwarves-stranded-in-hominid-cradle) stay under 1%

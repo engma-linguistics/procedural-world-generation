@@ -132,6 +132,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                             if w.want == "among":
                                 self._among[x, y] = True
         self._chains = needs_chains(tree)
+        self._aT, self._tT = np.ascontiguousarray(self.alpha.T), np.ascontiguousarray(self.terr.T)  # (how each rival feels line k: column k)
+        self._Kmat = np.zeros((len(self.lines), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
         self.events: list[dict] = []
@@ -165,6 +167,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         self._budget = np.zeros(len(L))
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
+        self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
+        self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
@@ -220,6 +224,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         if K is None:
             K = self._K(l, env, tags, step)
         self._K_now[k] = K  # (the composition's reach: where a people could live, CP.reach)
+        self._Kmat[k] = K
         if l.overlay and l.origin == "hybrid":
             self._hybrid(l, k, K, step)
             return
