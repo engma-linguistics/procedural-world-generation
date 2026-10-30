@@ -617,6 +617,7 @@ origin = "hybrid"
 parents = ["human", "orc"]
 at = "10 kyr"
 contact = false
+exempt = true  # (PW-752: by their 300 kyr split the young would be absorbed into a parent people; the canon keeps them, as the dnd preset)
 
 [[lineage]]  # the canon's exemption (PW-758): no people, no cline, no community; exists only inside the human and elf groups
 id = "half_elf"
@@ -626,6 +627,7 @@ parents = ["human", "elf"]
 at = "10 kyr"
 contact = true
 linger = false
+exempt = true  # (PW-752: humans and elves share no ancestor here, so no young by descent; the canon's exemption)
 
 # ---- the reptilian line ---------------------------------------------------------------------------------
 [[lineage]]

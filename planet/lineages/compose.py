@@ -34,19 +34,19 @@ MIN_SHARE = 0.03  # a second people below this share is left in the 'other'
 def cohabitation(tree: SP.Tree, lines: list, idx: dict) -> np.ndarray:
     """H[i, j] in 0..1: how readily people i lives beside people j. sqrt((1 - insularity_i)(1 - insularity_j)) (0.5 for
     two peoples of default openness, 0.8 for cosmopolitans, 0.15 for insular ones), then the wishes: a 'near' pair
-    closes APART_FACTOR x weight of the gap to 1, an 'apart' pair loses that share (weight capped at 1)."""
+    closes APART_FACTOR x weight of the gap to 1 (an 'among' pair too, PW-889), an 'apart' pair loses that share (weight capped at 1)."""
     n = len(lines)
     t = np.array([1.0 - l.demo("insularity") for l in lines])
     H = np.sqrt(np.outer(t, t))
     for w in tree.wishes:
-        if w.want not in ("near", "apart") or w.a not in tree.lines or w.b not in tree.lines:
+        if w.want not in ("near", "apart", "among") or w.a not in tree.lines or w.b not in tree.lines:
             continue
         i, j = idx[tree.people_of(w.a)], idx[tree.people_of(w.b)]
         if i == j:
             continue
         f = APART_FACTOR * min(w.weight, 1.0)
         for x, y in ((i, j), (j, i)):
-            H[x, y] = H[x, y] + (1 - H[x, y]) * f if w.want == "near" else H[x, y] * (1 - f)
+            H[x, y] = H[x, y] + (1 - H[x, y]) * f if w.want in ("near", "among") else H[x, y] * (1 - f)
     np.fill_diagonal(H, 1.0)
     return H
 

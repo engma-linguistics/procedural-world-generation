@@ -144,7 +144,7 @@ async function loadSchema() {
   const r = await fetch('../api/lineage-schema');
   if (!r.ok) throw new Error(`lineage-schema: HTTP ${r.status}`);
   const d = SCHEMA = await r.json();
-  TRAITS = d.traits; PLACES = d.places; WANTS = ['near', 'apart', ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
+  TRAITS = d.traits; PLACES = d.places; WANTS = [...d.pair_wants, ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
   DEMO_DEFAULT = d.demo_default; DEMOGRAPHY = d.demography; DEMO_KEYS = Object.keys(DEMO_DEFAULT); BODY_DEFAULT = d.body_default; DEFAULTS = d.defaults;
   const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic')].filter((k) => k in BODY_DEFAULT);
   BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : [true, false])]);
@@ -486,8 +486,10 @@ function drawSide() {
         ${ids.map((x) => `<option ${parentsOf(r).includes(x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
       ${o === 'arrival' ? `<div class="row">${field('arrives at lat', `<input type="number" data-k="place.0" value="${r.place?.[0] ?? ''}">`)}${field('lon', `<input type="number" data-k="place.1" value="${r.place?.[1] ?? ''}">`)}<span class="muted">(empty: through the portals if the tree has them, else best habitat, near any hybrid partner; a place on an empty continent peoples it)</span></div>` : ''}
       <label class="trait" title="Real-world mode keeps only the peoples marked here (humans and their ways of life); everything else is left out (PW-695)"><input type="checkbox" data-k="real" ${r.real ? 'checked' : ''}> lives in the real-world mode too</label>
-      ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>` : ''}
-      ${['hybrid', 'template'].includes(o) ? `<div class="row">${field('share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
+      ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>
+        <label class="trait" title="Who can have children together follows realistic genetics: by how long ago the parents split, their young are viable (a mixed people), absorbed into a parent people, sterile or impossible (PW-752). Ticked: a mixed people of its own whatever that says, the genre's half-elves and half-orcs."><input type="checkbox" data-k="exempt" ${r.exempt ? 'checked' : ''}> always possible (genre exemption)</label>` : ''}
+      ${o === 'group' ? `<label class="trait" title="A minority of its people living in other peoples' cities (goblins and kobolds in the towns of humans), beside its own wild country: present in the densest settled cells within reach of its people, a share of the townsfolk there; it counts in its people's numbers, not its range (PW-889)"><input type="checkbox" data-k="cities" ${r.cities ? 'checked' : ''}> lives in other peoples' cities</label>` : ''}
+      ${['hybrid', 'template'].includes(o) || (o === 'group' && r.cities) ? `<div class="row">${field(o === 'group' ? 'share of the townsfolk' : 'share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
       <div class="row">${field('temperature °C', `<input type="number" data-k="temp_c.0" value="${r.temp_c?.[0] ?? ''}"> – <input type="number" data-k="temp_c.1" value="${r.temp_c?.[1] ?? ''}">`)}</div>
       <div class="row">${field('rain mm/yr', `<input type="number" data-k="rain_mm.0" value="${r.rain_mm?.[0] ?? ''}"> – <input type="number" data-k="rain_mm.1" value="${r.rain_mm?.[1] ?? ''}">`)}</div>
       <div class="muted">empty fields are inherited from the first parent</div>
@@ -559,6 +561,8 @@ function editLine(r, el) {
   } else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
   else if (k === 'sapient') { if (el.value.trim()) r.sapient = el.value.trim(); else delete r.sapient; }
   else if (k === 'animals') { if (el.checked) r.animals = true; else delete r.animals; }
+  else if (k === 'exempt') { if (el.checked) r.exempt = true; else delete r.exempt; }
+  else if (k === 'cities') { if (el.checked) r.cities = true; else delete r.cities; }
   else if (k === 'id') {
     const old = r.id; r.id = el.value.trim();
     for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
@@ -749,6 +753,36 @@ function drawWishes() {
 }
 
 // ---- tab 5: results ----------------------------------------------------------------------------------
+// PW-752: who can have children together, from the run's contact record (meta.contacts): the peoples in contact now by interfertility
+// stage (realistic genetics: viable, absorbed into a parent people, sterile, impossible), and the mixed peoples born of a pair
+function kinship(res, nm, sw) {
+  const STAGES = SCHEMA?.stages || [], NOTES = SCHEMA?.stage_notes || {};
+  const pairs = (res.contacts?.pairs || []).filter((p) => p.in_contact_now && res.present?.lines?.[p.a] && res.present?.lines?.[p.b]);
+  if (!pairs.length) return '';
+  const stOf = (p) => p.stage || STAGES[+String(p.tier).slice(1)];
+  const tree = Object.fromEntries((res.tree?.lineage || []).map((r) => [r.id, r]));
+  const hyb = (res.lineages || []).filter((l) => l.origin === 'hybrid');
+  const lp = res.present?.lines || {};
+  let h = `<h2>Who can have children together <span class="muted" style="font-weight:normal;font-size:12px">(peoples in contact today, by how long ago they split: realistic genetics, PW-752)</span></h2>`;
+  if (hyb.length) {
+    h += '<table class="t"><tr><th>mixed people</th><th>parents</th><th>why possible</th><th>people</th><th>Mkm²</th><th>own land Mkm²</th></tr>';
+    for (const l of hyb) {
+      const p = pairs.find((q) => [q.a, q.b].sort().join() === [...l.parents].sort().join());
+      const st = p ? stOf(p) : null, v = lp[l.id];
+      h += `<tr><td>${sw(l.id)}${nm(l.id)}</td><td>${l.parents.map(nm).join(' + ')}</td><td class="muted">${tree[l.id]?.exempt ? 'genre exemption' + (st ? ` (by descent: ${st})` : '') : st || 'parents not in contact'}</td>
+        <td class="n">${v ? num(v.population ?? 0) : '<span class="err">none</span>'}</td><td class="n">${v?.area_mkm2 ?? ''}</td><td class="n">${v?.own_mkm2 ?? ''}</td></tr>`;
+    }
+    h += '</table>';
+  }
+  h += '<table class="t"><tr><th>stage</th><th>what it means</th><th>pairs in contact today</th></tr>';
+  for (const st of STAGES) {
+    const ps = pairs.filter((p) => stOf(p) === st);
+    if (!ps.length) continue;
+    const show = st === 'impossible' ? `${ps.length} pairs` : ps.map((p) => `<span style="white-space:nowrap">${sw(p.a)}${nm(p.a)} + ${sw(p.b)}${nm(p.b)}${p.split_kyr != null ? ` <span class="muted">(${fmt(p.split_kyr)})</span>` : ''}</span>`).join('; ');
+    h += `<tr><td><b>${st}</b></td><td class="muted">${esc(NOTES[st] || '')}</td><td>${show}</td></tr>`;
+  }
+  return h + '</table>';
+}
 let peoplesRuns = [], resAll = false;
 // PW-842: the Results tab lists the current world's peoples runs (the world picker's choice, or a time zoom's), newest first;
 // "all worlds" lists every run, and the run on show is always in the list. With none open, the newest of the world's is opened.
@@ -796,7 +830,7 @@ function drawResults() {
     if (w) h += `<tr style="border-top:1px solid var(--line)"><td style="white-space:nowrap">${sw(id)}<b>${nm(id)}, all</b> <span class="muted">(${w.living.length - 1} group${w.living.length > 2 ? 's' : ''})</span></td>
       <td class="n"><b>${num(w.population)}</b></td><td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + w.population) / Math.log10(1 + maxPop)))}px"></span></td>
       <td></td><td class="n">${w.area_mkm2}</td><td class="n">${w.patches}</td><td class="muted">${landsOf(w)}</td></tr>`;
-    h += `<tr><td style="white-space:nowrap;${grp || w ? 'padding-left:16px' : ''}">${grp ? '<span class="muted">↳ </span>' : ''}${sw(id)}${nm(id)}${v.overlay ? ' <span class="muted">(overlay)</span>' : ''}${w ? ' <span class="muted">(old ways)</span>' : ''}${grp && W[grp]?.shares?.[id] != null ? ` <span class="muted">${Math.round(100 * W[grp].shares[id])}%</span>` : ''}</td><td class="n">${num(v.population ?? 0)}</td>
+    h += `<tr><td style="white-space:nowrap;${grp || w ? 'padding-left:16px' : ''}">${grp ? '<span class="muted">↳ </span>' : ''}${sw(id)}${nm(id)}${L[id]?.cities ? ' <span class="muted">(a minority in other peoples\' cities)</span>' : v.overlay ? ' <span class="muted">(overlay)</span>' : ''}${w ? ' <span class="muted">(old ways)</span>' : ''}${grp && W[grp]?.shares?.[id] != null ? ` <span class="muted">${Math.round(100 * W[grp].shares[id])}%</span>` : ''}</td><td class="n">${num(v.population ?? 0)}</td>
       <td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + (v.population ?? 0)) / Math.log10(1 + maxPop)))}px"></span></td>
       <td class="n">${v.density ?? ''}</td><td class="n">${v.area_mkm2}</td><td class="n">${v.patches}${v.faded_patches ? ` <span class="muted" title="times a small patch was fading below the viable population (patches x checks, about one a kyr)">(fades ${v.faded_patches})</span>` : ''}</td>
       <td class="muted">${lands}</td></tr>`;
@@ -861,6 +895,7 @@ function drawResults() {
   h += `<div class="cols"><div><h2>Mixing zones</h2><table class="t"><tr><th>Mkm²</th><th>where</th><th>peoples</th></tr>
     ${(P.mixing_zones || []).slice(0, 12).map((z) => `<tr><td class="n">${z.area_mkm2}</td><td class="muted">${z.lat}, ${z.lon}</td><td>${z.lines.map(nm).join(', ')}</td></tr>`).join('')}</table></div>
     <div><h2>Wishes</h2><table class="t">${(P.wishes || []).map((w) => `<tr><td>${nm(w.a)} ${esc(w.want)} ${w.b ? nm(w.b) : ''}</td><td><span class="bars" style="width:${Math.round(60 * w.score)}px"></span> ${w.score}</td></tr>`).join('')}</table></div></div>`;
+  h += kinship(result, nm, sw);
   // stories
   h += `<h2>Stories</h2><div class="cards">${lines.filter((l) => l.story).map((l) => `<div class="card"><b>${sw(l.id)}${esc(l.name)}</b>
     <div class="muted" style="font-size:11px">${l.leaf ? 'lives today' : l.ended_kyr != null ? `gone ${fmt(l.ended_kyr)} ago` : ''} · ${esc(Object.entries(l.demography || {}).map(([k, v]) => `${k} ${v}`).join(', '))}</div>

@@ -18,6 +18,7 @@ from ..animals import Animals
 from ..crops import Crops
 from ..crossing import Crossings, corridor
 from ..spread import EST
+from .cities import CitiesMixin
 from .competition import CompetitionMixin
 from .contact import ContactMixin
 from .dispersal import DispersalMixin
@@ -27,8 +28,8 @@ from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
-from .params import (PEOPLE_PROD, ALPHA_CLOSED, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH, MVP_EVERY_KYR,
-                     NEAR_TOLERANCE)
+from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
+                     MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
 from .portals import PortalsMixin
 from .steps import StepsMixin
@@ -36,7 +37,7 @@ from .tags import _tags, needs_chains
 
 
 class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
-              ContactMixin, PeoplesMixin, FrameMixin):
+              ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
                  goods: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
@@ -117,15 +118,19 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.alpha *= rv
         self.terr *= rv
         # each line's rivals: the lines whose presence enters its competition
-        for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
-            if w.want == "near" and w.a in self.idx and w.b in self.idx:
-                f = 1 - NEAR_TOLERANCE * min(w.weight, 1.0)
+        self._crowd = np.zeros(len(self.lines))  # (each line's crowding at its last step; reset by run)
+        self._among = np.zeros((len(self.lines),) * 2, bool)  # (pairs of an 'among' wish: no frontier invasion between them, PW-889)
+        for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border); 'among', more (they share cells)
+            if w.want in ("near", "among") and w.a in self.idx and w.b in self.idx:
+                f = 1 - (NEAR_TOLERANCE if w.want == "near" else AMONG_TOLERANCE) * min(w.weight, 1.0)
                 # (a people named in a wish counts with its groups, PW-665)
                 for i in [self.idx[w.a], *self._groups[w.a]]:
                     for j in [self.idx[w.b], *self._groups[w.b]]:
                         for x, y in ((i, j), (j, i)):
                             self.alpha[x, y] *= f
                             self.terr[x, y] *= f
+                            if w.want == "among":
+                                self._among[x, y] = True
         self._chains = needs_chains(tree)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
@@ -156,8 +161,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._last_meet: dict[str, np.ndarray] = {}  # contact hybrids: where their parents last met
         self._apart: set[str] = set()  # ...and those whose parents no longer meet anywhere
         self._lingered: set[str] = set()
+        self._unborn: set[str] = set()  # ...and those never born: their parents' young are absorbed into a parent people, or none (PW-752)
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         self._budget = np.zeros(len(L))
+        self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
@@ -216,6 +223,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         if l.overlay and l.origin == "hybrid":
             self._hybrid(l, k, K, step)
             return
+        if l.cities:  # (a people's minority in others' cities, PW-889)
+            self._city(l, k, step)
+            return
         self.p[k] = np.minimum(self.p[k], K)
         self.p[k][self.p[k] < EST] = 0
         if l.group_of and not deep:
@@ -225,6 +235,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                 self._sync(self.idx[l.group_of])  # (it moved some of its people's range over to the group)
                 self._div_dt[k] = 0.0
         room, crowd = self._compete(l, k, K, step, tags, corr, mix, deep)
+        self._crowd[k] = crowd
         self._disperse(l, k, K, room, crowd, step, env, tags)
         self._sail(l, k, K, room, crowd, step, env, tags)
         self._jump(l, k, K, room, step, env, tags)

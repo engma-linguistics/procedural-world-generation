@@ -2,7 +2,7 @@
 id: PW-889
 title: Hobgoblins end at 80-140 cells at the present on the small-continent tries once the humans invade the front (PW-887)
 type: task
-status: needs-decision
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -21,6 +21,7 @@ With the frontier-invasion term (history.INVADE 0.5, floor 0.3) the humans on th
 - [ ] decide on a hobgoblin refuge floor or a lower INVADE; re-measure over 8 seeds
 
 ## Updates
+- 2026-10-30: Status needs-decision -> done. Fun lane 54: done, as two mechanisms. (1) Cohabitation: a new pair wish 'among' (a people lives readily inside a friendly people's country: competition between them cut by AMONG_TOLERANCE 0.7 x weight, and no frontier invasion), and pressure-driven integration (a squeezed people feels up to INTEGRATE 0.5 less competition from each neighbour, scaled by its squeeze and the cohabitation matrix). dnd: bugbears among goblins and hobgoblins, goblins among hobgoblins 0.8, halflings among humans 0.8, gnomes among dwarves 0.6. (2) City minorities: a group with cities = true lives as a share of the townsfolk in its hosts' densest settled cells (top 5% of the peopled land, at least 5/km2) within 1000 km of its own country, counted in its people's numbers, not its range; dnd city goblins 3%, city kobolds 2%, since 5 kyr. Both editable in the lineages editor (Wishes: 'among'; Peoples: 'lives in other peoples' cities', 'share of the townsfolk'). Paired run against b8dcfb2d, world af2677 (L6), 8 rolls: per-people pass (300+ cells) 93/184 = 50.5% -> 97/184 = 52.7%; bugbears median 152 -> 497 cells (pass 2 -> 6), halflings 768 -> 1209, orcs 971 -> 1037, goliaths 86 -> 96, elves 536 -> 450 (pass 6 -> 5). City kobolds in 8 of 8 rolls (77-238 cells, 0.41-0.80 M people), city goblins in 4 of 8 (the goblins' country is over 1000 km from any big town in the others). World 2a7385 (L7), 2 rolls: pass 31/46 both; the refuges of roll 7000 stay refuges (orcs 5 -> 9, halflings 7 -> 4: cut off across the sea from the humans; goliaths 111 -> 154). Troglodytes 0 in every run: the preset makes them extinct at 60 kyr (in one roll they died out at 900 kyr with 4,000 cells of good habitat: competition, not habitat). Hobgoblins on af2677 stay at ~10 cells in both arms (an island start; draft).
 - 2026-10-29: Owner 10-29: also 'stuff can be two things'. One species can live as a persecuted, untrusted minority inside big cities (goblins, kobolds, as in the Forgotten Realms) and in caves in the countryside at once. Build on the existing groups-within-a-people (PW-665): an urban-minority group of a people living in another people's settlements, beside its own wild country. Relates PW-928's pressure-driven moves and PW-856's predominant species per settlement.
 - 2026-10-29: Owner 10-29: an occasional refuge group (~100 cells) is fine; worlds needn't end balanced. Idea: cohabitation preferences between peoples (bugbears happy among goblins and hobgoblins, and others similarly), so a squeezed people can share a friendly people's land instead of losing it. A stronger form: under pressure a people grows more willing to integrate with a neighbour, as a survival strategy. Coordinator to design.
 - 2026-10-25: (fun-lane-30) With PW-888 origins, hobgoblins at the present on tries 7000/7005/7006 of 2a7385: 7406/12479/6317 cells (82/92/141 before); the other five tries 3.1-8.5k. Different draws of origin, so not the same worlds of peoples as before.

@@ -18,6 +18,22 @@ HOLD_MIN = 0.25  # PW-920 (kept, PW-928: crude but sound): a people displaced be
 # staying held by a thin remnant. Never below the refuge floor: the lapse takes cells only while the range exceeds REFUGE_MKM2 (displacement's own gate)
 NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0.5 w) at the other's border, e-folding 300 km
 NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
+AMONG_TOLERANCE = 0.7  # PW-889: an 'among' wish (a lives readily inside b's country, bugbears among goblins) cuts the pair's competition by
+# this x its weight, both ways, and b's frontier does not invade a's cells. A design judgement: more than a 'near' pair's border tolerance, so
+# alike peoples in closed country (ALPHA_CLOSED 1.4) fall to ~0.4, well under the 1 at which the larger excludes the other: they share cells
+INTEGRATE = 0.5  # PW-889 (owner 10-29): under pressure a people grows more willing to live among a neighbour, as a survival strategy. The
+# competition a squeezed people feels from each rival falls by up to this x its squeeze x how readily the two live side by side (the
+# cohabitation matrix, compose.cohabitation: openness, near/among/apart wishes), so it shares a friendly neighbour's land rather than lose it,
+# and hardly an enemy's. Squeeze = its crowding (pressure.crowding, the last step's) x how little of the country it could hold it holds
+# (1 - held / (SQUEEZE_FILL x potential), as EXPANSE_FILL). A design judgement: at most half, so a squeezed people persists thinly inside
+# the friendly range rather than taking it over
+SQUEEZE_FILL = 0.5
+CITY_TOP, CITY_MIN_KM2 = 0.05, 5.0  # PW-889: a city-minority group lives in its hosts' town country: the cells among the densest CITY_TOP of the
+# peopled land this step by the hosts' settlement (people per km2 of the host peoples there, presence x density), and settled at least
+# CITY_MIN_KM2. A design judgement, relative because a world's peak settlement varies (on world af2677 the 20 /km2 first tried was reached
+# by 0-200 cells, none near the goblins in most rolls): the densest twentieth of the peopled land is where the towns are; the floor keeps
+# a world of foragers townless
+CITY_REACH_KM = 1000.0  # ...within this, over land, of its own people's range: the city minority comes in from its people's country
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
 APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches would put at least this share of a's habitat near b's
