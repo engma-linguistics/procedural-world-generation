@@ -254,3 +254,23 @@ kernel's faces (Sv; `moisture_budget`'s table) against what NCEP E - GPCP P impl
   - (d) (mine) **Less desert (arid % -4.9) means more vegetation and darker land, warmer, so it doesn't explain the
     cooling.** But a wetter high-latitude interior raises the ice sheets' accumulation: the same probe as (b), on ice
     mass balance.
+
+## Earth check and re-judge on PW-1050 (lane 28b, 2026-10-30; merged as 53807d76)
+Code: lane28-coasts 79c8c289 (the package on main c97a0d10, PW-1050 included). Earth data rebuilt with GPCC v2020
+1981-2010 (the v2018 source is gone; see the inbox draft on the GPCC source).
+- **The polar-rain finding against GPCC.** It holds, and it's right for Earth's land (L6, main / coasts / GPCC, mm/yr):
+  60-70 N 332 / 442 / 425; 70-80 N 152 / 233 / 228; 80-90 N 134 / 201 / 173; Greenland 241 / 327 / 360; Alaska 362 /
+  488 / 467. L7 agrees within a few percent. The polar seas stay too dry against GPCP (70-80 N 147 vs 346; 60-70 S
+  419 vs 723).
+- **What it costs on Earth.** Mid-latitude land that was already too wet gets wetter: 50-60 N 906 / 971 / 582; W
+  Siberia 609 / 703 / 503; Patagonia 856 / 921 / 405. That's the inbox draft on mid-latitude land being too wet.
+  Northward vapour at 50 N is 0.46 / 0.65 Sv against 0.52 implied. B share 27.3 / 25.2% (Kottek 30.1). Atlantic minus
+  Pacific E-P-R -20 / -50 mm/yr.
+- **Headlines, L6.** Point exact 33 / 38; Koppen exact cells 36.1 / 38.4%; log-rain corr 0.691 / 0.721. SE USA 482 /
+  636 (48% of GPCC); Pampas 294 / 401 (42%). This ticket's 60% isn't reached.
+- **Judge.** 18 L6 draws, roll 0.0005, against F (PW-1050's code; run physics unchanged since). Passes 13/18 vs 14/18;
+  iceboxes 8 vs 5. The paired ice sea-level difference over 300-990 Myr is -27 m; arid -2.5 points (moved); late dT
+  +0.2 (not moved). The 8 iceboxes have a median global temperature of 12.8 C (the other draws 15.2 C): they're
+  Earth-warm worlds with big sheets. See the inbox draft on whether an icebox should also be cold.
+- **Coordinator, 10-30.** Merged under the global-optima rule: the mechanism is right, Earth improves on every headline,
+  and the deeper ice comes from realistic polar snow.
