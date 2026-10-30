@@ -510,11 +510,6 @@ def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width:
     return np.interp(lat, -90 + width * (np.arange(nb) + 0.5), zm)
 
 
-def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
-    """Mean of f over each cell's neighbours."""
-    return np.add.reduceat(f[grid.nbr_idx], grid.nbr_off[:-1]) / np.diff(grid.nbr_off)
-
-
 # --------------------------------------------------------------------------
 # Wind
 # --------------------------------------------------------------------------
@@ -865,7 +860,7 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     # Sakhalin, Luzon: the Pacific's gyre closes on New Zealand, and the
     # Tasman Sea between it and Australia has only its own; PW-594).
     land = ~ocean
-    lab, nlab = _components(grid, land)
+    lab, nlab = grid.components(land)
     nl = max(nlab, 1)
     k = np.maximum(lab, 0)
     sizes = np.bincount(lab[lab >= 0], minlength=nl) * (cell_area_km2(grid.n))
@@ -913,36 +908,6 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     s = np.maximum(speed(v), 1e-12)[:, None]
     v = v * 2.5 * np.tanh(s / 2.5) / s
     return np.where(ocean[:, None], v, 0.0), np.where(near[:, None], away, 0.0)
-
-
-def _components(grid: Grid, mask: np.ndarray) -> tuple[np.ndarray, int]:
-    """Connected components of mask: label per cell (-1 outside), count."""
-    return _label(mask, grid.nbr_off, grid.nbr_idx)
-
-
-@njit(cache=True)
-def _label(mask, nbr_off, nbr_idx):
-    n = mask.shape[0]
-    lab = np.full(n, -1, np.int64)
-    q = np.empty(n, np.int64)
-    k = 0
-    for s in range(n):
-        if not mask[s] or lab[s] >= 0:
-            continue
-        lab[s] = k
-        q[0] = s
-        head, tail = 0, 1
-        while head < tail:
-            i = q[head]
-            head += 1
-            for e in range(nbr_off[i], nbr_off[i + 1]):
-                j = nbr_idx[e]
-                if mask[j] and lab[j] < 0:
-                    lab[j] = k
-                    q[tail] = j
-                    tail += 1
-        k += 1
-    return lab, k
 
 
 def upwelling_cooling(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, away: np.ndarray,
@@ -1272,7 +1237,7 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         c0, c1 = tune["cloud_cu_c"]
         cu = np.where(ocean, 0.0, tune["cloud_cu"] * np.clip((inst + c0) / c1, 0, 1) * np.sqrt(rh))
         # the stratocumulus deck drifts over low coasts (the garua of Lima, the Namib's fog)
-        drift = np.clip(_nbr_mean(grid, np.where(ocean, deck, 0.0)) * coastal, 0, 1)
+        drift = np.clip(grid.nbr_mean(np.where(ocean, deck, 0.0)) * coastal, 0, 1)
         layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 - tune["cloud_polar"] * pole) * (1 - drift), 0, 1)
         low = np.where(ocean, sea, layer)
         clear = np.where(ocean, 0.0, tune["cloud_clear"] * sink * np.exp(-p / tune["cloud_clear_mm"]))
@@ -2527,10 +2492,10 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     t_warm = carry(grid, v_sum, (1 - k_s) * eq_s, k_s, 4 * float(np.max(km_s)), 0.25)
     t_cold, open_w = _winter_air(grid, ocean, sst, t_land, half_l, half_w, sea_sum, v_win, h, tune, lift)
     # right at a coast the sea's air mixes in anyway (sea breezes, fog; on land)
-    sea_n, open_n = _nbr_mean(grid, ocean.astype(float)), _nbr_mean(grid, open_w)
+    sea_n, open_n = grid.nbr_mean(ocean.astype(float)), grid.nbr_mean(open_w)
     c_s, c_w = tune["coast"] * sea_n, np.where(ocean, 0.0, tune["coast"] * open_n)
-    sea_s = _nbr_mean(grid, np.where(ocean, eq_s, 0.0)) / np.maximum(sea_n, 1e-9)
-    sea_w = _nbr_mean(grid, np.where(ocean, np.maximum(sst - half_w, FREEZE), 0.0) * open_w) / np.maximum(
+    sea_s = grid.nbr_mean(np.where(ocean, eq_s, 0.0)) / np.maximum(sea_n, 1e-9)
+    sea_w = grid.nbr_mean(np.where(ocean, np.maximum(sst - half_w, FREEZE), 0.0) * open_w) / np.maximum(
         open_n, 1e-9)
     t_warm = (1 - c_s) * t_warm + c_s * sea_s - lift
     t_cold = (1 - c_w) * t_cold + c_w * sea_w - lift

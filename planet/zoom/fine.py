@@ -89,6 +89,7 @@ from .. import world as W
 from . import regional as Z
 from ..constants import SEC_PER_YR
 from ..geo import smoothstep
+from ..kernels import accumulate
 from . import coastal as ZCL
 from . import fine_floodplain as ZFP
 from . import fine_forms as ZFF
@@ -101,6 +102,7 @@ from .. import satellite as SAT
 from .. import surface as SURF
 from ..climate import LAPSE
 from ..geo import R_KM, latlon
+from ..kernels import accumulate
 from ..images import write_png
 
 MAX_STEP = 20.0  # a fine zoom is at most this many times finer than its parent (owner, 2026-10-16)
@@ -1047,7 +1049,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     lg = fine_of(logC)
     for it in range(ITERATIONS):
         _, rec, order, dist = routing(np.where(active, hw + detail, hw), fixed)
-        area = ZK.accumulate(rec, order, np.full(npx, px_area))
+        area = accumulate(rec, order, np.full(npx, px_area))
         s = np.minimum(thr, np.exp(lg + var) * np.maximum(area, a_head) ** -0.5)
         hn = hw.copy()
         ZK.integrate(hn, rec, order, s, dist, fixed, floor, soft, scale, cap)
@@ -1129,8 +1131,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     runoff_px = fields_b["runoff"] / 1000.0 * px_area * 1e6 / SEC_PER_YR  # m^3/s from each pixel
     src_q = runoff_px + q_in
     src_a = np.full(npx, px_area) + a_in
-    discharge = ZK.accumulate(rec, order, src_q)
-    area = ZK.accumulate(rec, order, src_a)
+    discharge = accumulate(rec, order, src_q)
+    area = accumulate(rec, order, src_a)
     h = ground(hw)
     lake_depth = np.where(lake, level - lake_ground, np.where(pool, pool_d, 0.0))
 

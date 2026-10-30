@@ -167,6 +167,7 @@ from numba import njit, prange
 from .. import landform as LF
 from . import kernels as ZK
 from ..geo import R_KM, arc, arc_km, smoothstep
+from ..kernels import accumulate
 from ..raster import box_mean
 
 # how well each rock (surface.ROCKS id) holds a lip or stands as a ridge (0..1);
@@ -1519,7 +1520,7 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
         return surf, lake, depth, sink, counts
     on = lab >= 0
     L = lab[on]
-    Q = ZK.accumulate(rec, order, src)
+    Q = accumulate(rec, order, src)
     qx = np.zeros(nb)
     np.maximum.at(qx, L, Q[on])
     nxt_px = _next_basin(rec, order, lab)

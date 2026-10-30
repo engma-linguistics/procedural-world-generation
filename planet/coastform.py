@@ -130,14 +130,6 @@ def legend() -> list:
     return [{"id": i, "key": k, "name": nm, "color": col, "about": ab} for i, k, nm, col, ab in CLASSES]
 
 
-def _nbr_mean(grid, v, mask):
-    return CL._nbr_mean(grid, v, mask)
-
-
-def _nbr_max(grid, v, mask):
-    return CL._nbr_max(grid, v, mask)
-
-
 def scores(grid, L: dict, meta: dict | None = None) -> dict:
     """Per cell, 0..1 scores and the fields the classes use (module docstring)."""
     n = grid.n
@@ -148,9 +140,9 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     near = env["coastal_land"]
     wave, tide = env["wave_land"], env["tide_land"]
     depth = np.where(sea, -elev, 0.0)
-    d_mean = np.where(near, _nbr_mean(grid, depth, sea)[0], 0.0)
-    d_max = np.where(near, _nbr_max(grid, depth, sea), 0.0)
-    rel = _nbr_max(grid, elev, land)
+    d_mean = np.where(near, grid.nbr_mean_in(depth, sea)[0], 0.0)
+    d_max = np.where(near, grid.nbr_max_in(depth, sea), 0.0)
+    rel = grid.nbr_max_in(elev, land)
     relief = np.where(land, np.maximum(elev, 0.5 * np.maximum(rel - elev, 0)), 0.0)
     rocky = env["rocky_land"]
     hard = env["hard"]
@@ -173,14 +165,14 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     load[mouths] = kgs
     q = np.asarray(L["flow"], float) * (cell_area_km2(n)) * 1e6 / SEC_PER_YR  # m^3/s
     delta = (load >= DELTA_KGS) & (q >= DELTA_Q)
-    load_near = np.maximum(load, _nbr_max(grid, load, land))
+    load_near = np.maximum(load, grid.nbr_max_in(load, land))
     sand = np.maximum(sand, ramp(load_near, 10.0, 100.0))
     barrier = (ramp(relief, *BAR_RELIEF) * ramp(d_mean, *BAR_DEPTH) * ramp(wave, *BAR_WAVE) * ramp(tide, *BAR_TIDE)
                * sand * (1 - 0.8 * scour) * (ice <= 0))
     cliff = np.clip(rocky * (0.7 + 0.3 * hard) * ramp(wave, *CLIFF_WAVE) * ramp(relief, *CLIFF_RELIEF) * 1.3, 0, 1)
     fjord = (scour * ramp(relief, *FJORD_RELIEF) * ramp(d_max, *FJORD_DEPTH)
              * ramp(np.asarray(L["temperature"], float), *FJORD_TEMP))
-    mud = np.where(near, _nbr_max(grid, env["mud"], sea), 0.0)
+    mud = np.where(near, grid.nbr_max_in(env["mud"], sea), 0.0)
     # food in the water: upwelling, cool nutrient-rich water, tidal mixing (the sea neighbours' best)
     sj, sn = np.asarray(L["sst_jul"], float), np.asarray(L["sst_jan"], float)
     s_warm = np.maximum(sj, sn)
@@ -191,9 +183,9 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     prod_sea = np.where(sea, np.maximum.reduce([ramp(up, *PROD_UPWELL), ramp(s_warm, *PROD_COLD),
                                                 0.6 * ramp(tr, *PROD_TIDE)]) * (1 - 0.8 * ramp(ice_y, 0.6, 0.98)), 0)
     cool_sea = np.where(sea, ramp(s_warm, *SEAL_WARM), 0)
-    prod = np.where(near, _nbr_max(grid, prod_sea, sea), 0.0)
-    cool = np.where(near, _nbr_max(grid, cool_sea, sea), 0.0)
-    ice_l = np.where(near, _nbr_max(grid, ice_y, sea), 0.0)
+    prod = np.where(near, grid.nbr_max_in(prod_sea, sea), 0.0)
+    cool = np.where(near, grid.nbr_max_in(cool_sea, sea), 0.0)
+    ice_l = np.where(near, grid.nbr_max_in(ice_y, sea), 0.0)
     label, k = grid.components(land)
     size = np.bincount(label[label >= 0], minlength=k)
     island = land & (label >= 0) & (size[np.maximum(label, 0)] <= ISLAND_CELLS)
@@ -211,7 +203,7 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     return {"near": near, "barrier": np.where(near, barrier, z), "cliff": np.where(near, cliff, z),
             "fjord": np.where(near, fjord, z), "rocky": rocky, "wave": wave, "tide": tide, "relief": relief,
             "delta": delta, "seabirds": seabirds, "seals": seals, "nav_hazard": hazard,
-            "mud": mud, "reef_nbr": np.where(near, _nbr_max(grid, reef, sea), 0.0), "depth_front": d_mean}
+            "mud": mud, "reef_nbr": np.where(near, grid.nbr_max_in(reef, sea), 0.0), "depth_front": d_mean}
 
 
 def classify(L: dict, s: dict) -> np.ndarray:

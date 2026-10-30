@@ -640,7 +640,7 @@ def _circumpolar(grid: Grid, sea: np.ndarray, tune: dict) -> np.ndarray:
     """Cells in latitude bands (2 deg) that are sea all the way round
     (islands smaller than island_km2 don't block them, as for the currents)."""
     land = ~sea
-    lab, k = C._components(grid, land)
+    lab, k = grid.components(land)
     area = cell_area_km2(grid)
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
@@ -858,7 +858,7 @@ def _west_distance(grid: Grid, land: np.ndarray, max_km: float, min_km2: float) 
     """km due west from each cell to land (a landmass of at least min_km2,
     not an island in mid-ocean), at most max_km: the deep western boundary
     currents hug the continental slope on a basin's west side."""
-    lab, k = C._components(grid, land)
+    lab, k = grid.components(land)
     area = cell_area_km2(grid)
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     land = land & (sizes[np.maximum(lab, 0)] >= min_km2)

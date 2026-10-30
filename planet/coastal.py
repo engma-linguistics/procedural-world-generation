@@ -157,19 +157,6 @@ NAMES = {"reef": "coral reef", "mangrove": "mangrove", "salt_marsh": "salt marsh
          "seagrass": "seagrass meadow"}
 
 
-def _nbr_mean(grid, v, mask):
-    """Mean of v over each cell's neighbours in mask (0 where none), and how many there are."""
-    m = mask[grid.nbr_idx].astype(float)
-    s = np.add.reduceat(np.asarray(v, float)[grid.nbr_idx] * m, grid.nbr_off[:-1])
-    k = np.add.reduceat(m, grid.nbr_off[:-1])
-    return np.where(k > 0, s / np.maximum(k, 1), 0.0), k
-
-
-def _nbr_max(grid, v, mask):
-    m = mask[grid.nbr_idx]
-    return np.maximum.reduceat(np.where(m, np.asarray(v, float)[grid.nbr_idx], -np.inf), grid.nbr_off[:-1])
-
-
 # ---------------------------------------------------------------------------
 # River mud and light
 # ---------------------------------------------------------------------------
@@ -377,7 +364,7 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     tide = np.asarray(L["tide_range"], float)
     # the coast's land: rocky (high or rugged, hard rock or fresh glacial scour, not a coastal
     # plain), as the sea cells next to it see it
-    land_rel = _nbr_max(grid, elev, land)
+    land_rel = grid.nbr_max_in(elev, land)
     h_coast = np.where(land, np.maximum(elev, 0.5 * np.maximum(land_rel - elev, 0)), 0.0)
     rocky_l = ramp(h_coast, *ROCK_COAST)
     hard = np.zeros(n, bool)
@@ -389,8 +376,8 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     if "landform" in L:
         from .landform import COASTAL_PLAIN
         rocky_l *= np.where(np.asarray(L["landform"]) == COASTAL_PLAIN, 0.3, 1.0)
-    coastal_sea = sea & (_nbr_mean(grid, np.ones(n), land)[1] > 0)
-    rocky = np.where(coastal_sea, _nbr_mean(grid, rocky_l, land)[0], 0.0) * (1 - ramp(ssc, 5.0, 30.0))
+    coastal_sea = sea & (grid.nbr_mean_in(np.ones(n), land)[1] > 0)
+    rocky = np.where(coastal_sea, grid.nbr_mean_in(rocky_l, land)[0], 0.0) * (1 - ramp(ssc, 5.0, 30.0))
     mud = ramp(ssc, *MUD)
     # coral reefs
     t0 = reef_temp(meta)
@@ -403,12 +390,12 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     seag_w = ramp(sal, *SG_SALT) * ramp(s_warm, *SG_SUMMER) * (1 - ramp(ice_y, *SG_ICE)) * _gate(unlocked, "TrBE")
     # the intertidal zone, on coastal land: the sea next to it (inland: its own air for the sea's
     # winter, for the zoom's interpolation)
-    near = land & (_nbr_mean(grid, np.ones(n), sea)[1] > 0)
-    tide_l = np.where(near, _nbr_mean(grid, tide, sea)[0], 0.0)
-    wave_l = np.where(near, _nbr_mean(grid, wave, sea)[0], 0.0)
-    cold_sea = np.where(sea, s_cold, np.where(near, _nbr_mean(grid, s_cold, sea)[0], tc))
-    mud_l = np.where(near, _nbr_max(grid, mud, sea), 0.0)
-    ice_l = np.where(sea, ice_y, np.where(near, _nbr_mean(grid, ice_y, sea)[0], 0.0))
+    near = land & (grid.nbr_mean_in(np.ones(n), sea)[1] > 0)
+    tide_l = np.where(near, grid.nbr_mean_in(tide, sea)[0], 0.0)
+    wave_l = np.where(near, grid.nbr_mean_in(wave, sea)[0], 0.0)
+    cold_sea = np.where(sea, s_cold, np.where(near, grid.nbr_mean_in(s_cold, sea)[0], tc))
+    mud_l = np.where(near, grid.nbr_max_in(mud, sea), 0.0)
+    ice_l = np.where(sea, ice_y, np.where(near, grid.nbr_mean_in(ice_y, sea)[0], 0.0))
     tmin = 0.006 * tc ** 2 + 1.316 * tc - 21.9  # (vegetation.site's BIOME4 estimate)
     warm = ramp(tmin, *MANG_TMIN) * ramp(cold_sea, *MANG_SEA)
     rain = 0.25 + 0.75 * ramp(np.asarray(L["precipitation"], float), *MANG_RAIN)

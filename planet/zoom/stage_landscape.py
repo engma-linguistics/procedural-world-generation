@@ -19,6 +19,7 @@ from . import kernels as ZK
 from . import landforms as ZL
 from . import regional as RG
 from ..geo import smoothstep
+from ..kernels import accumulate
 from ..raster import box_mean
 
 
@@ -445,7 +446,7 @@ def drainage_tools(ctx):
         big lake's catchment inside it, and only the rivers entering the
         region bring in the rest (PW-060). The outlet is that of the lake's
         fragment nearest its coarse exit, taken last of its level."""
-        q = ZK.accumulate(rec, order, src)
+        q = accumulate(rec, order, src)
         tot = np.zeros(len(ctx.lakes))
         main = {}  # coarse lake -> its fine fragment draining to its exit
         for j, lk in enumerate(ctx.lakes):
@@ -1023,7 +1024,7 @@ def landscape_loop(ctx):
         ctx.hf, rec_, order_ = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
         ctx.hf = np.where(ctx.active, np.maximum(ctx.h, ctx.hf), ctx.h)
         chan_ = (Qg * RG.KM2_M_PER_YR_TO_M3S >= RG.LF_CHANNEL_Q) | ~ctx.active
-        q_ = ZK.accumulate(rec_, order_, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
+        q_ = accumulate(rec_, order_, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
         mask_ = where * smoothstep(wk + ctx.res, wk + 4 * ctx.res, dco)
         # (cut only inside the classes' reach: a sill where a river leaves it
         # would otherwise be cut far down its course; and not across the
@@ -1064,7 +1065,7 @@ def landscape_loop(ctx):
     ctx.h = np.where(ctx.active, np.maximum(ctx.h, 0.5), ctx.h)  # creep mustn't pull the coast below the sea
     if ctx.lakes:
         _, rec_s, order_s = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
-        q_s = ZK.accumulate(rec_s, order_s, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S
+        q_s = accumulate(rec_s, order_s, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S
         ctx.h, shore_px = RG.shore_apron(ctx.h, ctx.lake, ctx.lakes, ctx.active & ~ctx.glacier & ~solid, ctx.ring | ctx.rapids, ctx.c_idx,
                                   rec_s, order_s, q_s, ctx.nx, ctx.ny, ctx.res)
         if shore_px:

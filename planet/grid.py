@@ -104,6 +104,22 @@ class Grid:
         a, b = self.centers[self.edges[:, 0]], self.centers[self.edges[:, 1]]
         return float(np.mean(arc((a * b).sum(1))))
 
+    def nbr_mean(self, f: np.ndarray) -> np.ndarray:
+        """Mean of f over each cell's neighbours."""
+        return np.add.reduceat(f[self.nbr_idx], self.nbr_off[:-1]) / np.diff(self.nbr_off)
+
+    def nbr_mean_in(self, v: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Mean of v over each cell's neighbours in mask (0 where none), and how many there are."""
+        m = mask[self.nbr_idx].astype(float)
+        s = np.add.reduceat(np.asarray(v, float)[self.nbr_idx] * m, self.nbr_off[:-1])
+        k = np.add.reduceat(m, self.nbr_off[:-1])
+        return np.where(k > 0, s / np.maximum(k, 1), 0.0), k
+
+    def nbr_max_in(self, v: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """Largest v among each cell's neighbours in mask (-inf where none)."""
+        m = mask[self.nbr_idx]
+        return np.maximum.reduceat(np.where(m, np.asarray(v, float)[self.nbr_idx], -np.inf), self.nbr_off[:-1])
+
     def components(self, mask: np.ndarray) -> tuple[np.ndarray, int]:
         """Connected regions of mask: (label per cell, -1 outside mask; count).
         Labels are numbered in order of each region's lowest cell id."""
