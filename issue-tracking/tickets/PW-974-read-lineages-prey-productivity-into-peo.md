@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-833, PW-966, PW-964]
 refs: [planet/lineages/prey.py, planet/lineages/history/megafauna.py, planet/lineages/history/model.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Description
@@ -33,4 +33,5 @@ What is left:
 - Run the 6 x 4 dnd sweep (rolls 7000-7003) against main.
 
 ## Updates
+- 2026-10-29: fun-lane-45b built it (option B, per-cell density through dens_at): density = way-of-life number x f, f = the foraging layer / FORAGE_REF (2.85) for the foraging share, the grazing NPP / GRAZE_REF (279 g C/m2/yr) for the herding share, 1 for farmers, fishers, megafauna; absolute (fixed references, not each world's mean), refit on the 6 x 4 dnd sweep so each way's mean stays (foragers 3.65 vs 3.66/km2 on main, herders 0.81 vs 0.76). Sweep vs main: per-people pass 69.0% both, remnants 84 vs 83 (60 vs 59 of peoples present). The deep epoch keeps the number. Judgement calls in inbox draft-people-density-productivity-form.
 - 2026-10-28: Created from inbox draft draft-people-density-reads-productivity.md (found by fun-lane-41).

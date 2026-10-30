@@ -10,6 +10,8 @@ import numpy as np
 from ...geo import R_KM
 from .. import compose as CP
 from .. import contacts as CT
+from .. import landuse as LU
+from .. import prey as PR
 from .. import recent as R
 from .. import spec as SP
 from ..animals import Animals
@@ -25,7 +27,7 @@ from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
-from .params import (ALPHA_CLOSED, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH, MVP_EVERY_KYR,
+from .params import (PEOPLE_PROD, ALPHA_CLOSED, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH, MVP_EVERY_KYR,
                      NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
 from .portals import PortalsMixin
@@ -92,7 +94,11 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         # of the megafauna: one per meta.giant_km2, PW-963; both user options. Away from the peoples they keep nearer their natural
         # density (meta.megafauna_natural: from the prey, PW-966, or from mass): MG.local_density, read through dens_at. The competition
         # below takes the pressed value)
+        self._dmap = None  # (the peoples' density per cell, PW-974: PR.people_fields; set below, once the dens are known)
         MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
+        F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None))
+        if F is not None and PEOPLE_PROD:
+            self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push

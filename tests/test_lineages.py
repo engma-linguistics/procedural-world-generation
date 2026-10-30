@@ -2289,7 +2289,7 @@ def test_megafauna_natural_settings_and_prey(faketz):
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
         {"id": "hill", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "mass_kg": 2200}]}
-    assert (lambda x: (x.megafauna_natural, x.dragon_ages, x.dragon_generation))(SP.parse(raw)) == ("prey", "younger", "schedule")  # (owner 10-28)
+    assert (lambda x: (x.megafauna_natural, x.dragon_ages, x.dragon_generation))(SP.parse(raw)) == ("food", "younger", "schedule")  # (owner 10-28; food: owner 10-29, PW-990 B)
     raw = {**raw, "meta": {"seed": 1, "dragon_ages": "base"}}
     t = SP.parse(raw)
     t2 = SP.parse({**raw, "meta": {"seed": 1, "megafauna_natural": "mammal", "dragon_ages": "younger", "dragon_generation": "line"}})
@@ -2311,11 +2311,15 @@ def test_megafauna_natural_settings_and_prey(faketz):
     from planet.lineages import prey as PR
     g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C  # (g C/m2/yr that McNaughton's fit gives 1 t/km2 of wild prey)
     ps.graze_npp = np.full(ps.grid.n, g1)
-    h3 = H.History(t, ps, 1)
+    h3 = H.History(SP.parse({**raw, "meta": {**raw["meta"], "megafauna_natural": "prey"}}), ps, 1)
+    hf = H.History(t, ps, 1)  # (the default, "food": PW-990 B)
     del ps.graze_npp
     assert np.allclose(h3.prey_wild, 1.0)
     d = MG.natural(h3, w, h3.prey_wild)
     assert 500 <= 1 / d.mean() <= 560
+    # food mode without a budget (the deep epoch): the wild offtake's apex part / a dragon's food, per t/km2 of prey
+    df = MG.natural(hf, w, hf.prey_wild)
+    assert np.allclose(df, MG.OFFTAKE / (1 + MG.guild_ratio()) / (hf.dragon_struct["cattle_yr"] * PR.HEAD_T))
     assert np.allclose(MG.natural(h3, hi, h3.prey_wild), h3.dens_nat[hi])  # (giants: productivity 1 at the median)
     P = np.zeros((len(h3.lines), h3.grid.n))
     P[w] = 0.5
@@ -2335,7 +2339,7 @@ def test_dragons_held_to_their_food(faketz):
     from planet.lineages import prey as PR
     from planet.lineages.history import megafauna as MG
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    raw = {"meta": {"seed": 1, "dragon_km2": 100}, "lineage": [
+    raw = {"meta": {"seed": 1, "dragon_km2": 100, "megafauna_natural": "prey"}, "lineage": [  # (stage 1's cap, on the Carbone density)
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
         {"id": "drake", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
@@ -2351,11 +2355,15 @@ def test_dragons_held_to_their_food(faketz):
     s = np.ones(n)  # (fully pressed: 1 per dragon_km2 = 100, but the poor country's natural density is lower and is what stands)
     ct = h.dragon_struct["cattle_yr"] * PR.HEAD_T
     tags = {"land": np.ones(n, bool)}
-    prey, food, live = MG.prey_and_food(h, P, s * 0.0, tags)
+    MG.BUDGET = False
+    try:
+        prey, food, live = MG.prey_and_food(h, P, s * 0.0, tags)
+    finally:
+        MG.BUDGET = True
     assert np.allclose(food, MG.OFFTAKE * prey) and np.allclose(live, 0)
     free = MG.local_density(h, w, s, prey, food, P)
     assert np.allclose(free, MG._pressed(h, w, s, prey)) and 2 * free.max() * ct < food.min()  # (ample: untouched)
-    old = MG.OFFTAKE
+    old, MG.BUDGET = MG.OFFTAKE, False  # (stage 1 alone: the peoples' and the guild's shares are test_food_budget's)
     MG.OFFTAKE = 0.0002  # (a land that can feed little: the two kinds together would need more than it supplies)
     try:
         prey, food, live = MG.prey_and_food(h, P, s * 0.0, tags)
@@ -2369,9 +2377,95 @@ def test_dragons_held_to_their_food(faketz):
         finally:
             MG.FOOD_CAP = True
     finally:
-        MG.OFFTAKE = old
+        MG.OFFTAKE, MG.BUDGET = old, True
     # the deep epoch has no food field: not held
     assert np.allclose(MG.local_density(h, w, s, None, None, P), MG.local_density(h, w, s, None))
+
+
+def test_food_budget_peoples_then_guild_then_dragons(faketz):
+    """PW-977 stage 2: per cell the wild offtake goes first to the peoples' hunters (density x game need), the giants and the rest of the
+    predator guild (guild_ratio x the dragons' own natural food) take next, and the dragons get the rest; the guild ratio follows Carbone,
+    Turvey & Bielby 2011's size classes."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    assert 4.5 < MG.guild_ratio() < 5.5  # (the 1,123 and 5,347 kg classes hold ~17% of the guild's food: the rest takes ~5 times theirs)
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", "parents": ["stem"], "at": "5 Myr", "way": "forager", "traits": ["hunter"], "density": 0.2, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    t = SP.parse(raw)
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
+    ps.graze_npp = np.full(ps.grid.n, 3.0 * g1)  # (~3 t/km2 of wild prey)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    h = H.History(t, ps, 1)
+    del ps.graze_npp, ps.forage
+    n = h.grid.n
+    hu, fa, w = h.idx["hunt"], h.idx["farm"], h.idx["wyrm"]
+    assert h._meat[hu] > 5 * h._meat[fa] > 0 and h._meat[w] == 0  # (a forager lives on game, a farmer hardly hunts)
+    tags = {"land": np.ones(n, bool)}
+    P = np.zeros((len(h.lines), n))
+    P[w] = 1.0
+    h.mf_natural = "prey"  # (first under "prey", where the guild is a multiple of the dragons' own Carbone food)
+    b0 = MG.budget(h, P, np.zeros(n), tags)
+    assert np.allclose(b0["peoples"], 0) and np.allclose(b0["giants"], 0) and (b0["guild"] > 0).all()
+    assert np.allclose(b0["food"], b0["wild"] + b0["stock"] - b0["guild"]) and (b0["food"] > 0).all()
+    own = MG.guild_ratio() * MG.CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -MG.CARBONE_B / 10 \
+        * h.dragon_struct["cattle_yr"] * PR.HEAD_T * b0["prey"]  # (the guild: ratio x the dragons' natural food)
+    assert np.allclose(b0["guild"], own)
+    P[hu] = 1.0  # a forager people on the land: its hunters take before the guild and the dragons
+    b1 = MG.budget(h, P, np.zeros(n), tags)
+    need = h.dens_at(hu) * h._meat[hu]
+    assert np.allclose(b1["peoples"], need, rtol=0.05) and np.allclose(b1["food"], b0["food"] - b1["peoples"])
+    P[hu] = 0.0
+    MG.BUDGET = False
+    try:
+        b2 = MG.budget(h, P, np.zeros(n), tags)
+        assert np.allclose(b2["food"], b2["wild"] + b2["stock"]) and np.allclose(b2["guild"], 0)
+    finally:
+        MG.BUDGET = True
+    h.mf_natural = h.tree.megafauna_natural
+    # meta.megafauna_natural = "food" (the default, owner 10-29, PW-990 B): the guild splits the rest by size class, and the dragons'
+    # natural density is their part / a dragon's food; under "prey" the guild is a multiple of the dragons' Carbone food (above)
+    assert h.mf_natural == "food"
+    b3 = MG.budget(h, P, np.zeros(n), tags)
+    r = MG.guild_ratio()
+    assert np.allclose(b3["food"] * r, b3["guild"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])
+    nat = MG.natural(h, w, b3["prey"], b3["food"])
+    assert np.allclose(nat * h.dragon_struct["cattle_yr"] * PR.HEAD_T, b3["food"])
+
+
+def test_people_density_reads_productivity(faketz):
+    """PW-974: a people's density per cell is its number x f, f absolute (the foraging layer over FORAGE_REF for foragers, the grazing
+    NPP over GRAZE_REF for herders; farmers none): a poorer world holds fewer; with no world, a number; in the deep epoch, a number."""
+    from planet.lineages import landuse as LU
+    from planet.lineages import prey as PR
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", **base, "way": "forager", "traits": ["hunter"]}, {"id": "herd", **base, "way": "pastoral_nomad"},
+        {"id": "farm", **base, "way": "farmer"}]}
+    h0 = H.History(SP.parse(raw), ps, 1)
+    assert h0._dmap is None and np.ndim(h0.dens_at(h0.idx["hunt"])) == 0  # (no world: the number)
+    rng = np.random.default_rng(3)
+    ps.graze_npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.GRAZE_REF
+    ps.forage = rng.uniform(0.1, 1.9, ps.grid.n) * PR.FORAGE_REF
+    fo = ps.forage.copy()
+    h = H.History(SP.parse(raw), ps, 1)
+    ps.graze_npp, ps.forage = ps.graze_npp * 0.5, ps.forage * 0.5  # (a world half as productive)
+    hp = H.History(SP.parse(raw), ps, 1)
+    del ps.graze_npp, ps.forage
+    hu, he, fa = (h.idx[x] for x in ("hunt", "herd", "farm"))
+    ff = h.dens_at(hu) / h.dens[hu]
+    sh = LU.shares(h.tree, h.lines[he])
+    assert np.allclose(hp.dens_at(hu), 0.5 * h.dens_at(hu)) and np.allclose(hp.dens_at(he), 0.5 * h.dens_at(he))  # (absolute: half the food, half the people)
+    assert abs(np.corrcoef(h.dens_at(hu), h.dens_at(he))[0, 1]) < 0.5 and ff.std() > 0 and h.dens_at(he).std() > 0
+    assert np.allclose(ff, fo / PR.FORAGE_REF) and sh["herd"] > 0  # (a forager: the foraging layer over its reference)
+    assert np.allclose(h.dens_at(fa), h.dens[fa])  # (the farmers' soil is in the habitat already)
+    h._deep_now = True
+    assert np.ndim(h.dens_at(hu)) == 0  # (the deep epoch's plates lay elsewhere: the number)
 
 
 def test_nomads_and_settled_compete_less(faketz):
