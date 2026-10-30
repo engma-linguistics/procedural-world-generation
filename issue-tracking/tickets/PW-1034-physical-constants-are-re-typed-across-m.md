@@ -28,3 +28,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 ## Updates
 - 2026-10-29: Created from inbox draft draft-physical-constants-module.md (found by code-audit-2026-10).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.
+- 2026-10-30: Refactor 1 (lane 59) added planet/constants.py (SEC_PER_YR 3.156e7, GRAV, RHO_ICE, RHO_C_SEA, T_REF_C) and pointed every same-valued copy at it (outside timezoom/), no output change; contacts.py imports R_KM; coast.U_TRADE is climate.U_REF. Still open: the different year lengths (3.15576e7, 365.25*86400), 111.0/111.2 km per degree, and the timezoom copies; see draft-refactor1-timezoom-constants-left.md.
