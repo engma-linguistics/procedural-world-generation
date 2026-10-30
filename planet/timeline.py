@@ -21,7 +21,6 @@ time asked for) and builds a complete world there (climate, rivers, biomes);
 from __future__ import annotations
 
 import json
-import shutil
 import time
 from dataclasses import asdict, fields, replace
 from pathlib import Path
@@ -152,6 +151,11 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             progress(min(1.0, s.t / myr))
 
     out.mkdir(parents=True, exist_ok=True)
+    # the header first, "running" (store.run_status): an interrupted run keeps its folder and checkpoints (PW-508)
+    head = {"format": "procgen-run/2", "id": run_id, "name": name, "status": "running",
+            "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr, "params": asdict(params),
+                     "code": code_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S"), **S.process_stamp()}}
+    S.write_json(out / "run.json", head)
     try:
         with writer:
             keep(sim)
@@ -159,8 +163,10 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS},
                                     {k: S.run_spec(k) for k in RUN_LAYERS})
             S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
-    except BaseException:
-        shutil.rmtree(out, ignore_errors=True)
+    except BaseException as e:
+        head["status"] = "interrupted"
+        head["meta"].update(stopped_at_myr=round(float(sim.t), 3), error=f"{type(e).__name__}: {e}"[:500])
+        S.write_json(out / "run.json", head)
         raise
     S.write_grid(grid)
     S.write_json(out / "run.json", {

@@ -157,6 +157,32 @@ def test_orphans(data_root):
     assert S.orphans() == [] and S.exists("zoom", "z1") and S.highlights_path("w1").exists()
 
 
+def test_interrupted_run_keeps_its_folder(data_root):
+    """PW-508: simulate writes a "running" header first; an error or Ctrl-C keeps the folder and its checkpoints
+    (header "interrupted"). Unfinished runs aren't listed, found or reused; an interrupted one is an orphan and can be
+    deleted, a running one is neither."""
+    def stop(f):
+        if f >= 0.5:
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        T.simulate(1, 3, 20.0, 2.0, 4.0, "cut short", Params(), checkpoint_every=4.0, progress=stop)
+    (d,) = [p for p in S.runs_dir().iterdir() if p.is_dir() and not p.name.startswith(".")]
+    head = S.read_header(d / "run.json", ("status", "meta"))
+    assert head["status"] == "interrupted" and "KeyboardInterrupt" in head["meta"]["error"]
+    assert S.checkpoints(d) and S.run_status(d) == "interrupted"
+    assert not S.exists("run", d.name) and S.items("run") == [] and S.orphans() == [d]
+    with pytest.raises(SystemExit, match="interrupted"):
+        S.find_run(d.name)
+    # a header whose process is alive is running: not an orphan, not deletable; once its process is gone, interrupted
+    run = json.loads((d / "run.json").read_text())
+    S.write_json(d / "run.json", {**run, "status": "running", "meta": {**run["meta"], **S.process_stamp()}})
+    assert S.run_status(d) == "running" and S.orphans() == [] and S.delete("run", d.name) == []
+    S.write_json(d / "run.json", {**run, "status": "running", "meta": {**run["meta"], "pid": 2 ** 22 + 1}})
+    assert S.run_status(d) == "interrupted"
+    assert S.delete("run", d.name) and not d.exists()
+
+
 def test_checkpoint_resume_bit_identical(sim4_60):
     """Restoring the state saved at t and running on to t' gives exactly the
     straight run's state at t' (all arrays, events, budget, scalars)."""

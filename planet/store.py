@@ -638,10 +638,60 @@ def path_of(kind: str, item_id: str) -> Path:
 
 
 def exists(kind: str, item_id: str) -> bool:
+    """Whether a finished item of this kind has this id (a run still running or interrupted is not one: run_status)."""
     if not _ID.fullmatch(item_id or "") or item_id == "index":
         return False
     p = path_of(kind, item_id)
-    return {"run": p / "run.json", "world": p, "zoom": p / "zoom.json"}[kind].is_file()
+    if kind == "run":
+        return run_status(p) == "done"
+    return {"world": p, "zoom": p / "zoom.json"}[kind].is_file()
+
+
+# A simulation writes its run.json header at the start with "status": "running" and the process that runs it, and the
+# whole run.json (no status) at the end; on an error or Ctrl-C the header says "interrupted" and the folder, with its
+# checkpoints, is kept (PW-508). A running header whose process is gone (a hard kill) counts as interrupted.
+def _proc_start(pid: int) -> str | None:
+    """When process pid started (Linux /proc: clock ticks since boot), to tell it from a later process with its pid."""
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rpartition(")")[2].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def process_stamp() -> dict:
+    """{"pid", "pid_start"} of this process, for a running run's header."""
+    return {"pid": os.getpid(), "pid_start": _proc_start(os.getpid())}
+
+
+def _alive(meta: dict) -> bool:
+    pid = meta.get("pid")
+    if not isinstance(pid, int):
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        pass
+    return meta.get("pid_start") is None or _proc_start(pid) == meta.get("pid_start")
+
+
+def run_status(run_dir: Path) -> str | None:
+    """"done" (a finished run.json), "running" (its simulation is under way), "interrupted" (stopped by an error,
+    Ctrl-C or a kill: its folder and checkpoints are kept, PW-508), or None (no run.json)."""
+    p = Path(run_dir) / "run.json"
+    try:
+        head = read_header(p, ("status", "meta"))
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError):
+        return "interrupted"  # (half-written or foreign)
+    st = head.get("status")
+    if st is None:
+        return "done"
+    if st == "running" and not _alive(head.get("meta") or {}):
+        return "interrupted"
+    return st
 
 
 def find(kind: str, ref: str | Path) -> Path:
@@ -649,11 +699,19 @@ def find(kind: str, ref: str | Path) -> Path:
     Returns the run/zoom directory or the world file; SystemExit if none."""
     p = Path(ref)
     marker = {"run": "run.json", "world": None, "zoom": "zoom.json"}[kind]
-    if (p / marker).is_file() if marker else (p.is_file() and p.suffix == ".json"):
+    if kind == "run" and run_status(p) == "done":
+        return p
+    if kind != "run" and ((p / marker).is_file() if marker else (p.is_file() and p.suffix == ".json")):
         return p
     item_id = p.name.removesuffix(".json") if kind == "world" else p.name
     if exists(kind, item_id):
         return path_of(kind, item_id)
+    for q in (p, path_of(kind, item_id) if _ID.fullmatch(item_id or "") else None):
+        st = run_status(q) if kind == "run" and q is not None else None
+        if st in ("running", "interrupted"):
+            raise SystemExit(f"run {q.name} is still running" if st == "running" else
+                             f"run {q.name} is unfinished (interrupted); delete it with `planet delete run:{q.name}`"
+                             " (or `planet delete --orphans`)")
     raise SystemExit(f"no {kind} {str(ref)!r} (see: uv run python -m planet list)")
 
 
@@ -714,8 +772,9 @@ def delete(kind: str, item_id: str) -> list[Path]:
     a zoom its fine zooms (zoom_fine), theirs too.
     Runs and worlds don't cascade into each other: a world sliced from a
     run is self-contained."""
-    if not exists(kind, item_id):
-        return []
+    if not exists(kind, item_id) and not (kind == "run" and _ID.fullmatch(item_id or "")
+                                          and run_status(path_of(kind, item_id)) == "interrupted"):
+        return []  # (a run still running is left alone)
     p = path_of(kind, item_id)
     gone = []
     if kind == "world":
@@ -743,10 +802,11 @@ def delete(kind: str, item_id: str) -> list[Path]:
 
 def orphans() -> list[Path]:
     """Zooms whose world (or parent zoom) is gone, highlight caches of
-    deleted worlds, and run folders without a run.json (a simulate that was
-    killed)."""
+    deleted worlds, and run folders of a simulation that was interrupted
+    (run_status; or without a run.json at all). A run still running is
+    not an orphan."""
     out = [p for p in sorted(runs_dir().glob("*"))
-           if p.is_dir() and not p.name.startswith(".") and not (p / "run.json").exists()]
+           if p.is_dir() and not p.name.startswith(".") and run_status(p) in (None, "interrupted")]
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
             m = json.loads(p.read_text())
@@ -812,8 +872,8 @@ def items(kind: str) -> list[tuple[Path, dict]]:
                         "zoom": (zooms_dir(), "*/zoom.json", _zoom_item)}[kind]
     out = []
     for p in sorted(d.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True):
-        if p.name == "index.json":
-            continue
+        if p.name == "index.json" or (kind == "run" and run_status(p.parent) != "done"):
+            continue  # (a run still running or interrupted isn't listed: orphans() has the interrupted ones)
         try:
             out.append((p, item(p)))
         except (OSError, ValueError, KeyError, TypeError):
