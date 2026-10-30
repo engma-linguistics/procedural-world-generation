@@ -116,18 +116,6 @@ def history_path(world_id: str) -> Path:
     return worlds_dir() / "history" / f"{world_id}.npz"
 
 
-def code_digest() -> str:
-    """A digest of the model's source (planet/*.py and planet/timezoom/*.py; not the lineages package), for caches that
-    must not outlive a change to the code that made them (PW-740)."""
-    import hashlib
-    root = Path(__file__).resolve().parent
-    h = hashlib.sha256()
-    for f in sorted(root.glob("*.py")) + sorted((root / "timezoom").glob("*.py")):
-        h.update(f.name.encode())
-        h.update(f.read_bytes())
-    return h.hexdigest()
-
-
 def names_path(world_id: str) -> Path:
     """The owner's names for a world's landmasses (names.py, PW-867), in a subfolder: world listings don't see it."""
     return worlds_dir() / "names" / f"{world_id}.json"

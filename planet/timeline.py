@@ -309,17 +309,22 @@ def snap_time(run: dict, at: float) -> float:
 
 def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) -> Simulation:
     """The run's simulation at time `at`: from the latest checkpoint at or
-    before it when the run was made by this same code (else from t=0)."""
+    before it, or from t=0 if that checkpoint won't load (PW-1035). Whether
+    the replay reproduces the run is slice_world's keyframe check, not a
+    guess from the code's hash."""
     run = S.read_header(Path(run_dir) / "run.json")
     m = run["meta"]
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])
-    made_by = m.get("code") or {}
     usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
-    if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
-        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
-        log(f"replaying from the checkpoint at t={usable[-1]:g}")
-    else:
+    sim = None
+    if use_checkpoints and usable:
+        try:
+            sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
+            log(f"replaying from the checkpoint at t={usable[-1]:g}")
+        except Exception as e:  # (a checkpoint of older code may not unpickle or fit this Simulation)
+            log(f"the checkpoint at t={usable[-1]:g} won't load ({type(e).__name__}: {e}); replaying from t=0")
+    if sim is None:
         sim = Simulation(grid, m["seed"], params, m["dt"])
     sim.run(at)
     return sim
@@ -343,7 +348,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     if not 0 <= at <= m["myr"] + 1e-9:
         raise SystemExit(f"--at must be between 0 and {m['myr']}")
     made_by, now = m.get("code"), code_version()
-    same_code = bool(made_by) and made_by.get("planet_src_sha") == now["planet_src_sha"]
+    same_code = bool(made_by) and made_by.get("sim_sha") == now["sim_sha"]
     if not same_code:
         print(f"WARNING: run {run_dir.name} was made by {describe(made_by)}; this is {describe(now)}. "
               f"The replay may not reproduce it.")

@@ -31,7 +31,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM
 from ..grid import Grid, build_grid
-from ..provenance import code_version
+from ..provenance import code_hash, code_version
 from .gridops import dist_km
 
 TZ_LAYERS = ("elevation", "ice", "temperature", "climate", "tree_cover")
@@ -199,7 +199,7 @@ class Pass:
         st = (self.tz_dir / "run.json").stat()
         h = hashlib.sha256(f"{self.run['id']}:{st.st_size}:{st.st_mtime_ns}:{self.now!r}:{self.start!r}:"
                            f"{self.params.climate_every!r}".encode())
-        h.update(S.code_digest().encode())
+        h.update(code_hash("lineages").encode())
         return h.hexdigest()
 
     def _clim_read(self, key: str):

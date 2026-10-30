@@ -46,9 +46,8 @@ cell, then "Zoom" in the info box, to refine the region around it: the server
 builds a world straight from the run's keyframe nearest that time
 (`timeline.world_from_frame`, a few seconds, exactly what the viewer shows;
 once per keyframe) and zooms in, then opens the result in the "Regional zoom" tab (also on its own at
-`http://127.0.0.1:8765/viewer/zoom.html`). Only runs too old to build from
-their keyframes fall back to replaying the simulation (`slice`, which can take
-minutes). The globe shows the spin axis and
+`http://127.0.0.1:8765/viewer/zoom.html`). A run made by older code says so
+(delete it and re-run). The globe shows the spin axis and
 the tilt; tick "Equator, tropics, polar circles" for those, and press N (or
 "North up") to level the view.
 

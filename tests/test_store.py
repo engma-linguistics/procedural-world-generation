@@ -186,6 +186,17 @@ def test_simulate_checkpoints_and_replay(data_root, sim4_60):
     # a world sliced through a checkpoint still matches the stored keyframe
     world = json.loads(T.slice_world(out, 40.0).read_text())
     assert world["meta"]["replay_matches_keyframe"] is True
+    # PW-1035: a run stamped by other code still replays from its checkpoint (the keyframe check judges the replay)
+    run = json.loads((out / "run.json").read_text())
+    run["meta"]["code"]["planet_src_sha"] = run["meta"]["code"]["sim_sha"] = "other code"
+    S.write_json(out / "run.json", run)
+    said = []
+    assert T.replay(out, 50.0, log=said.append).t == 50.0 and said == ["replaying from the checkpoint at t=40"]
+    # a checkpoint that won't load: from t=0
+    S.checkpoint_path(out, 40.0).write_bytes(b"not a checkpoint")
+    said = []
+    sim = T.replay(out, 50.0, log=said.append)
+    assert sim.t == 50.0 and len(said) == 1 and "won't load" in said[0] and "from t=0" in said[0]
 
 
 def test_shrunk_checkpoint_resumes_bit_identical(sim4_60):
@@ -313,3 +324,32 @@ def test_atomic_path(tmp_path):
         np.savez(tmp, a=np.arange(4))
         raise RuntimeError
     assert np.load(p)["a"].tolist() == [0, 1, 2] and sorted(x.name for x in tmp_path.iterdir()) == ["goods.npz"]
+
+
+def test_code_hash_scopes():
+    """PW-1035: one hashing rule, each cache naming its scope (the import closure of entry modules): the server
+    and the zoom are in no cache's scope; each scope holds the code its cache reads."""
+    from planet import provenance as P
+    names = {s: {p.relative_to(P.PLANET).as_posix() for p in P.scope_files(s)} for s in P.SCOPES}
+    for s in ("sim", "finish", "lineages", "highlights"):
+        assert not {"server.py", "api.py", "zoom.py", "zoom_fine.py", "__main__.py"} & names[s], s
+    assert {"tectonics/simulation.py", "climate.py", "tectonics/earth.py"} <= names["sim"]
+    assert {"world.py", "finish.py", "soils.py", "vegetation.py"} <= names["finish"]
+    assert {"lineages/land.py", "lineages/seafood.py", "lineages/recent.py", "resources.py"} <= names["lineages"]
+    assert "highlights.py" in names["highlights"] and "server.py" in names["all"]
+    assert len({P.code_hash(s) for s in P.SCOPES}) == len(P.SCOPES)
+
+
+def test_highlights_cache_follows_the_world_file(data_root, monkeypatch):
+    """PW-1035: a world saved again in place (enriched, say) doesn't keep its old highlights."""
+    import os
+    from planet import highlights as H
+    w = S.worlds_dir() / "abc123.json"
+    w.parent.mkdir(parents=True, exist_ok=True)
+    w.write_text("{}")
+    H.cache_path(w).parent.mkdir(parents=True, exist_ok=True)
+    H.cache_path(w).write_text(json.dumps({"version": H.version(w), "features": []}))
+    assert H.cached(w) is not None
+    st = w.stat()
+    os.utime(w, ns=(st.st_atime_ns, st.st_mtime_ns + 10**9))
+    assert H.cached(w) is None
