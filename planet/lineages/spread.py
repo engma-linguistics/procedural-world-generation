@@ -146,6 +146,52 @@ def rivals_load(p, rows, a, t, idx, contact):
 
 
 @njit(cache=True)
+def coexist_cap(p, rows, a0, t0, ab, tb, Km, Kk, idx, contact):
+    """The rivals' presences as line k feels them on the cells idx, each capped at its Lotka-Volterra coexistence share with k
+    (mutual invasibility, lane 73). Where the pair's effective coefficients (a0 + (1 - contact) t0: k from j; ab + (1 - contact) tb:
+    j from k) are both under 1, two peoples coexist at p_j* = (K_j - a_jk K_k) / (1 - a_kj a_jk) whichever came first, so the
+    load k feels from j is at most a_kj p_j*: its room is then its own share p_k*, and an incumbent above its share does not lock the
+    newcomer out (without the cap the newcomer's room under a full incumbent, K_k - a_kj K_j, sat under the establishment threshold).
+    Where either coefficient is 1 or more one excludes the other and the presence counts as it is. Returns (len(rows), len(idx))."""
+    m = idx.shape[0]
+    out = np.empty((rows.shape[0], m))
+    for r in range(rows.shape[0]):
+        j = rows[r]
+        for x in range(m):
+            i = idx[x]
+            v = p[j, i]
+            c = 1.0 - contact[x]
+            akj = a0[j] + c * t0[j]
+            ajk = ab[j] + c * tb[j]
+            if v > 0.0 and akj < 1.0 and ajk < 1.0:
+                kj = Km[j, i] if Km[j, i] > v else v  # (K_j >= p_j: a row not yet set reads as the presence)
+                s = (kj - ajk * Kk[i]) / (1.0 - akj * ajk)
+                if s < 0.0:
+                    s = 0.0
+                if v > s:
+                    v = s
+            out[r, x] = v
+    return out
+
+
+@njit(cache=True)
+def load_rows(P, a, t, rows, contact):
+    """sum_j a_j P[r] + (1 - contact) sum_j t_j P[r], P as from coexist_cap (row r is rival rows[r])."""
+    m = P.shape[1]
+    qa = np.zeros(m)
+    qt = np.zeros(m)
+    for r in range(rows.shape[0]):
+        j = rows[r]
+        aj, tj = a[j], t[j]
+        for x in range(m):
+            qa[x] += aj * P[r, x]
+            qt[x] += tj * P[r, x]
+    for x in range(m):
+        qa[x] += (1.0 - contact[x]) * qt[x]
+    return qa
+
+
+@njit(cache=True)
 def graph_dist(mask, maxd, nbr_off, nbr_idx):
     """Graph steps from the mask cells (0 on them), over land and sea alike; -1 beyond maxd."""
     n = mask.shape[0]

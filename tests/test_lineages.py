@@ -254,20 +254,54 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     assert hits == 0
 
 
-def test_newcomers_and_expansive_peoples_press_into_held_country():
-    """PW-869: a newcomer feels less competition (and is not displaced) during its founding window; an expansive people with little of
-    its country filled presses on; a homebody or a people that has filled its country does neither. Before, the factor was always 1."""
-    f = H.pioneer_factors
-    assert f(None, 0.9, 0, 1000) == (1.0, 0.0)  # (a deep step: nothing)
-    q0, pio0 = f(0.0, 0.25, 1000, 1000)  # (a homebody, just arrived, filled: only the founding window)
-    assert pio0 == 1.0 and q0 == pytest.approx(1 - H.PIONEER_Q)
-    q1, pio1 = f(H.PIONEER_KYR, 0.25, 1000, 1000)
-    assert pio1 == 0.0 and q1 == 1.0
-    assert 1 - H.PIONEER_Q < f(H.PIONEER_KYR / 2, 0.25, 1000, 1000)[0] < 1.0  # (the window ramps back)
-    young = f(100.0, 0.7, 10, 1000)[0]  # (long settled, expansive, a sliver of its country: presses)
+def test_expansive_peoples_press_into_held_country():
+    """PW-869: an expansive people with little of its country filled presses on; a homebody or a people that has filled its country does not."""
+    f = H.expanse_factor
+    assert f(0.25, 10, 1000) == 1.0
+    young = f(0.7, 10, 1000)  # (expansive, a sliver of its country: presses)
     assert young == pytest.approx(1 - H.EXPANSE_PRESS * (1 - 10 / (H.EXPANSE_FILL * 1000)))
-    assert f(100.0, 0.7, 10, 1000)[0] < f(100.0, 0.5, 10, 1000)[0] < f(100.0, 0.4, 10, 1000)[0] == 1.0  # (the more expansive, the more)
-    assert f(100.0, 0.7, int(H.EXPANSE_FILL * 1000), 1000)[0] == 1.0  # (filled: no more pressing)
+    assert f(0.7, 10, 1000) < f(0.5, 10, 1000) < f(0.4, 10, 1000) == 1.0  # (the more expansive, the more)
+    assert f(0.7, int(H.EXPANSE_FILL * 1000), 1000) == 1.0  # (filled: no more pressing)
+
+
+def test_a_people_on_the_upswing_has_an_edge_that_fades_when_it_stalls():
+    """Owner 10-30 (lane 73): momentum, not a founding window. A newcomer (no lagged mass yet) and a people that has doubled against its
+    lagged mass have the full edge; growth stalling lets the reference catch up and the edge fades; a shrinking people has none. The
+    edge's strength is the era's dial, early before the farming onset and late at the present."""
+    mo, ref = H.surge(10.0, 0.0, 0.1)
+    assert mo == 1.0 and 0 < ref < 10.0
+    for _ in range(200):  # (40 kyr at a stalled mass)
+        mo, ref = H.surge(10.0, ref, 0.2)
+    assert mo < 0.01
+    assert H.surge(20.0, 10.0, 0.0)[0] == pytest.approx(1.0)  # (twice its lagged mass: full)
+    assert H.surge(5.0, 10.0, 0.1)[0] == 0.0  # (shrinking)
+    assert H.surge(10.0, 0.0, 400.0)[0] < 0.01  # (a deep step: long caught up)
+    assert H.surge_q(1.0, 1.0, 100.0) == pytest.approx(H.SURGE_Q) and H.surge_q(1.0, 0.0, 0.0) == 0.0
+    assert H.surge_q(2.0, 0.0, H.SURGE_LATE_FROM_KYR / 2) == pytest.approx(H.SURGE_Q)  # (half way: the blend)
+
+
+def test_peoples_that_would_coexist_can_invade_each_other_whoever_came_first():
+    """Lane 73 (mutual invasibility): where a pair competes under 1 both ways (Lotka-Volterra coexistence), an incumbent at its full
+    habitat weighs on a newcomer only at its coexistence share, so the newcomer's room is its own share (before: K(1 - a), under the
+    establishment threshold, and the first comer kept the niche). Over 1 (exclusion) nothing changes."""
+    from planet.lineages.spread import coexist_cap, load_rows
+    n = 3
+    p = np.zeros((2, n))
+    p[1] = 0.72  # (the incumbent, row 1, at its full habitat)
+    Km = np.full((2, n), 0.72)
+    rows, idx, c = np.array([1]), np.arange(n), np.zeros(n)
+    a = np.array([0.0, 0.35])
+    t = np.array([0.0, 0.52])  # (closed country: 0.87 both ways, the dwarves and kobolds)
+    P = coexist_cap(p, rows, a, t, a, t, Km, Km[0], idx, c)
+    share = 0.72 * (1 - 0.87) / (1 - 0.87 ** 2)
+    assert P[0] == pytest.approx(share)
+    room = Km[0] - load_rows(P, a, t, rows, c)
+    assert room == pytest.approx(share) and (room > H.EST).all() and (0.72 - 0.87 * 0.72) < H.EST  # (was locked out)
+    assert load_rows(p[1:2], a, t, rows, c) == pytest.approx(H.rivals_load(p, rows, a, t, idx, c))
+    t2 = np.array([0.0, 0.9])  # (1.25: exclusion, the presence counts in full)
+    assert (coexist_cap(p, rows, a, t2, a, t2, Km, Km[0], idx, c)[0] == p[1]).all()
+    Km0 = np.zeros((2, n))  # (a row not yet set reads K_j as the presence)
+    assert coexist_cap(p, rows, a, t, a, t, Km0, Km[0], idx, c)[0] == pytest.approx(share)
 
 
 def test_rafts_and_dugouts_give_coastal_peoples_an_early_rung():

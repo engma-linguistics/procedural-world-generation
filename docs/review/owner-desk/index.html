@@ -76,41 +76,38 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <p class="sub">"Your call" or "wait for the numbers" are fine answers.</p>
 <div class="cards">
 
-<div class="card"><div class="id">D17 · PEOPLES · discussion, numbers to come</div>
-<h3>Should mainline peoples carry a "commonness" weight?</h3>
-<p><b>Why it came up.</b> Dwarves, elves and gnomes each make up well under 1% of people on all five distinct histories
-(dwarves 0.15–0.5%, elves 0.1–0.3%, gnomes 0.1–0.4%). Humans are 59–72%, kobolds and kenku 5–8% each. Lane 73 found the cause.
-It isn't habitat: about 15% of the land suits dwarves. It's that the land is already taken when these peoples appear.</p>
-<ul>
-<li><b>Dwarves.</b> Kobolds, with nearly the same mountain niche, are dated 2 million years ago, so they hold the mountains
-first. The setup file's own comment says kobolds split off "recently", so that date is a mistake.</li>
-<li><b>Elves and gnomes</b> arrive 50,000 and 25,000 years ago into a full world, so they start in leftover scraps. Gnomes
-start in the coldest corner, the only room left.</li>
-<li><b>A model bug.</b> When a people already holds a niche, a newcomer can never establish itself there, even where the
-two should share it about half and half. First come keeps it for good.</li>
-</ul>
-<p><b>Being fixed first, with no weight:</b> the kobold date; a fair start for late arrivals (a fading head start: for a few thousand
-years a new people feels less pressure, then keeps only what it can hold); and letting peoples that should share a region share it.
-Real expansions worked like this. Modern humans out of Africa, the Bantu, the Austronesians and the steppe herders each won ground
-through an edge, and some early forays failed.</p>
-<p><b>The question.</b> Even with those fixes, physics alone may leave the mainline peoples rarer than a D&amp;D world wants. The
-setup has no way to say "this people should be common". Options:</p>
+<div class="card"><div class="id">D17 · PEOPLES · the research is back</div>
+<h3>How do the mainline peoples get common: density, portals, or the flag?</h3>
+<p><b>What you asked:</b> instead of a weight or min/max caps, let birth rates, lifespans and survival drive the numbers, and let
+Feywild peoples arrive in force. A research pass read the 5e age traits for every people in the tree and real human demography.
+The full report is <code>docs/review/peoples-demography/report.md</code>.</p>
+<p><b>The finding you won't love:</b> breeding rate decides how fast a people <i>grows, spreads and recovers</i>, not how many it
+ends up with. Once land is full, births balance deaths for everyone. How many live there comes from how many people a km² feeds
+and how much land they hold. On canon ages, kobolds, goblins and orcs grow about 1.5–3× as fast as humans, dwarves and gnomes about
+¼, elves about ⅐. So life history, done properly, makes dwarves and elves <b>rarer</b>, not commoner. They lose races for empty land,
+recover slowly, and can't take steady losses: at 0.5% a year lost to raids or dragons, humans keep ~43% of their numbers, kobolds
+~65–70%, and dwarves, gnomes and elves nothing. That fits canon (long-lived, few), and your kobold and goblin picture fits exactly:
+breed fast, die young, shrug off losses. Canon gives no birth rates at all. Lifespans imply a dwarf woman bears ~6–7 children about
+24 years apart, an elf about 39 years apart.</p>
+<p><b>I'll build these regardless, since they're sound:</b> ages, breeding class (slow, mammal, brood) and a fertile window per
+people in the setup, driving spread speed, recovery and how quickly a people takes land. Also portal arrivals: portals already exist
+in the model, and the D&amp;D setup just has them switched off. Arrivals would come through 6–10 portals with a founding size you set
+per people ("a million elves through ten portals").</p>
+<p><b>Your call: what makes mainline peoples common?</b></p>
 <ol>
-<li><b>No weight.</b> Accept whatever the fixed physics gives. Rare stays rare.</li>
-<li><b>One "mainline" flag.</b> Dwarf, elf, halfling, gnome, orc (half-orc too?) feel a bit less pressure from rivals, about
-1.5–2×. That gives them more founding room and more land held. One switch, shown in the workbench.</li>
-<li><b>A weight per people</b> (default 1), set freely. The most control, and the most tuning.</li>
-<li><b>Plus, separately: an "expander" setting.</b> The head start above, made longer or stronger for chosen peoples
-(e.g. humans or orcs as the ones who "explode onto the scene").</li>
+<li><b>Density by way of life.</b> Elves are set at 1 person per km², humans at 10. That's why elves lead 2–3% of the land but are
+only 0.5% of the people. Make elves forest gardeners at 3–5 per km², and dwarves mountain farmer-miners at 6–8. It changes an
+ecological number, not a weight, and roughly triples the elves.</li>
+<li><b>Portals in force</b> for elves and gnomes (being built anyway). How big a wave is your number.</li>
+<li><b>The mainline flag</b>, kept in reserve. Tested at a modest strength, it brought dwarves only to 0.6–0.9% and elves to
+0.3–0.5%.</li>
 </ol>
-<div class="rec"><b>My lean: wait for lane 73's numbers, then option 2 if the mainline peoples are still under about 1% of people.</b>
-It's an authored thumb on the scale. But this is your world, and "mainline peoples are common" is a design intent, not a physics
-claim, so one visible switch is the honest way to say it. I'd hold the expander setting until we see how the head start
-behaves on its own.</div>
-<div class="rec"><b>Your answer (comment):</b> option 2, one mainline flag. "First to hold it keeps it forever" goes. A people on the upswing gets a temporary edge on land that's already held, and the edge fades when its growth stalls; one dial per era, like the dragon pressure. Both are now in lane 73's next tests. <b>Still open:</b> do half-orcs get the mainline flag, or follow their parent peoples? (Reply in the comment thread.)</div>
-<div class="note"><b>Interim:</b> the first test of fix (2) on one world helped elves a little, but not dwarves. A bigger cause turned up: dwarves are born on the continent where the hominid family lives, and only 9% of good dwarf country is there. As homebodies, they never cross the sea in 500,000 years. Kobolds also start spread across three continents at birth, which looks like a bug in how new peoples are founded. A third test adds two fixes: dwarves that migrate like other mountain peoples, and late arrivals placed by free room. <b>Lane 73 results:</b> <span class="pending">pending</span> Two batches: (1) the kobold date and fair starts,
-(2) the same plus sharing. For each people: share of people, cells led, cells present, before and after.</div>
-<div class="answer">lane 73 · ticket to follow</div></div>
+<div class="rec"><b>My lean: 1 and 2 together, flag off.</b> Slow-breeding peoples being somewhat rarer is honest and on-canon. If
+they're denser where they live and arrive in force, they should still be a real presence. Tell me rough densities if you have a feel
+for them (e.g. "dwarves like a farming people, elves a third of that"), and how big the portal waves should be.</div>
+<div class="note"><b>Still running:</b> lane 73's batches (the kobold date, fair starts for late arrivals, sharing, dwarves migrating
+like other mountain peoples). Their numbers land here when done.</div>
+<div class="answer">lane 73 · lane 76 report · drafts: life history, growth rate, portal arrivals, density rethink</div></div>
 </div>
 
 <h2 id="mines">Mines are in: have a look</h2>
@@ -151,10 +148,13 @@ simple, 1.</div>
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>What</th><th>Lane</th><th>Where it stands</th></tr>
-<tr><td><b>Ice sheets that never melt back</b> (D10). Three sourced fixes together: a gentler summer temperature drop with height on
-melting ice edges, bare ice absorbing more sun, and ice lasting only if it survives the warm orbital phase. On the Earth test, stuck ice
-fell from 5.3 to 1.6 points. Today's Earth comes out a bit light on ice (8.6% of land against the real ~10.7%).</td><td>71</td><td>Building
-it, checking Greenland and Antarctica, then investigating one frozen world closely, then the 7-world screen</td></tr>
+<tr><td><b>Frozen-over worlds</b> (D10). The 7-world screen is done. The three ice fixes together froze <b>0 of 7</b> (main: 4),
+but they shrank Earth's real Greenland from 165 map cells to 68, which breaks my guard rail. The gentle fix alone keeps Greenland but
+leaves 2 frozen. Looking at each frozen world closely: in 3 of 4, the climate itself got very cold (6–10 °C below today) after a fast
+CO₂ drop. None is polar geography. So the next round goes after the root cause: why the planet's carbon thermostat (cold slows rock
+weathering, so CO₂ should build back) doesn't pull it out. Also, "ice must survive the warmest phase" is being softened to "thick
+enough to outlast it", as Greenland did in the last warm interglacial.</td><td>75</td><td>Short written diagnosis first, then a
+7-world screen with a combined batch</td></tr>
 <tr><td><b>Why mainline peoples are rare</b> (D17)</td><td>73</td><td>Testing two batches</td></tr>
 <tr><td><b>Dragon paper, revised</b> (D14, D16): mortality split by age, a pressure setting per tech era, and the food-channel loss
 broken down by cause</td><td>63</td><td>Re-runs, then checks and peer review</td></tr>
