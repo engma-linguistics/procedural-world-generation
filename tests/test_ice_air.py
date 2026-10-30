@@ -1,4 +1,5 @@
-"""The sheets' carried air within a climate update (PW-1050): climate.compute's reground and earth.ice_air_rounds."""
+"""The sheets' carried air within a climate update (PW-1050): climate.compute's reground and earth.ice_sheets'
+re-making of it."""
 
 import numpy as np
 
@@ -30,18 +31,24 @@ def test_reground_of_the_climates_own_ice_is_its_ground_and_a_bigger_sheet_chill
         assert (warm <= c["ground"][0] + 1e-9).all()
 
 
-def test_ice_air_rounds_stop_at_the_cap_and_off_keeps_the_first_settling(sim4_60):
+def test_ice_sheets_remake_the_air_at_most_the_cap_and_off_is_the_plain_fixed_point(sim4_60):
     s = sim4_60
     g, e, land, ice, sheet = _ground_sheet(s)
     c = climate.compute(g, e, s.dT, s.params.tilt, sheet)  # (the climate saw a sheet the ice will shrink from)
     marine = earth.marine_view(e, c)
-    first = earth.ice_sheets(s, land, e, c["ground"], sheet, s.ice_sink, {}, marine=marine)
-    keep = s.ice  # (a session fixture: put its ice and params back)
-    for rounds in (0, 1, 4):
-        s.params.ice_air_rounds = float(rounds)
-        s.ice, info = first.copy(), {}
-        out, ground = earth.ice_air_rounds(s, land, e, c, sheet, marine, info)
-        assert 0 <= info["air_rounds"] <= rounds
-        if rounds == 0:
-            assert np.array_equal(out, first) and ground is c["ground"]
-    s.params.ice_air_rounds, s.ice = 4.0, keep
+    plain = earth.ice_sheets(s, land, e, c["ground"], sheet, s.ice_sink, {}, marine=marine)
+    keep = s.params.ice_air_rounds  # (a session fixture: put its params back)
+    try:
+        for rounds in (0, 1, 8):
+            s.params.ice_air_rounds = float(rounds)
+            info = {}
+            out = earth.ice_sheets(s, land, e, c["ground"], sheet, s.ice_sink, info, marine=marine,
+                                   reground=c["reground"])
+            assert 0 <= info["air_rounds"] <= rounds
+            assert info["air_capped"] == (rounds > 0 and info["air_rounds"] == rounds)
+            if rounds == 0:
+                assert np.array_equal(out, plain) and info["ground"] is c["ground"]
+            else:
+                assert info["air_rounds"] >= 1  # (the sheet shrank by far more than AIR_SEA_TOL)
+    finally:
+        s.params.ice_air_rounds = keep

@@ -629,8 +629,8 @@ def update_climate(sim, e):
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
     marine, info = marine_view(bed, c), {}
-    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine)
-    sim.ice, c["ground"] = ice_air_rounds(sim, land, e, c, ice0, marine, info)
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine, reground=c["reground"])
+    c["ground"] = info.get("ground", c["ground"])  # (under the settled ice's own carried air, PW-1050)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
                                                            sim.p_jul, sim.p_jan)
@@ -648,34 +648,6 @@ def update_climate(sim, e):
     update_vegetation(sim, e)
     sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
-
-
-AIR_TOL = 0.01  # ice_air_rounds stop once a round moves no more than this share of the iced cells (at least 2)
-
-
-def ice_air_rounds(sim, land, bed, c, old, marine, info):
-    """The sheets settled with their own carried air within the update (PW-1050): (ice, ground). The climate
-    saw the old ice's air (icemass.air_mass, PW-336): a sheet's cold air mass, carried onto its margins, is the
-    steepest of its feedbacks, and at an onset each update moved the ice only part of the way, so an onset took
-    5-10 updates (~40-80 Myr at an 8 Myr cadence) and the climate's cadence decided how icy a planet got
-    (docs/review/base-climate/ice-loop/). Each round re-makes the bare ground's temperatures under the new ice's
-    air (climate.compute's reground: its rain, sea and clouds held; the rain answers at the next update, as CO2
-    does) and settles the ice again on it, at most Params.ice_air_rounds times, until a round moves no more than
-    AIR_TOL of the iced cells or repeats the round before last (a margin cell or two flickering). info gets
-    "air_rounds"."""
-    ice, ground = sim.ice, c["ground"]
-    seen = [np.asarray(old) > 0] * 2
-    n = 0
-    for n in range(1, int(sim.params.ice_air_rounds) + 1):
-        on = ice > 0
-        tol = max(2, int(AIR_TOL * on.sum()))
-        if (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol:
-            n -= 1
-            break
-        ground = c["reground"](np.where(land, ice, 0.0))
-        seen, ice = [seen[-1], on], ice_sheets(sim, land, bed, ground, ice, sim.ice_sink, {}, marine=marine)
-    info["air_rounds"] = n
-    return ice, ground
 
 
 def bed_thawed(ice, t_s, precip, geo=0.065):
@@ -784,7 +756,7 @@ def marine_view(bed, c):
             "melt": icemass.MELT_K * np.maximum(sst_w - climate.FREEZE, 0.0)}
 
 
-def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
+def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine, reground=None):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
@@ -808,9 +780,18 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     isostasy settles in ~10 kyr too), its bare ground warmer or colder by
     the lapse rate. (Before PW-364 a run made one pass per climate update:
     a sheet took ~20 updates, ~80 Myr, to shrink back after its cold era,
-    and as long to grow into one.) The rest of the climate (the sheet's
-    carried air, its albedo, the rain) follows at the next update, as CO2
-    does (computing it again within the step whenever margins moved cost
+    and as long to grow into one.) The sheets' own carried air (icemass.air_mass,
+    PW-336: a big sheet's cold summer air, carried onto its margins, its
+    steepest feedback) settles with them (PW-1050): with reground (climate.compute's:
+    the bare ground under another ice's carried air, the rest of the climate
+    held), the ground is re-made under the passes' ice every AIR_EVERY passes
+    while it moves and whenever it settles, until it settles having moved the
+    ice's sea level by less than AIR_SEA_TOL since the last re-making, at most
+    Params.ice_air_rounds times (info: "air_rounds", "air_capped" and the last
+    "ground"). Without it, an onset took 5-10 updates and the climate's cadence
+    decided how icy a planet got (docs/review/base-climate/ice-loop/). The rest
+    of the climate (the sheet's albedo, the rain) follows at the next update, as
+    CO2 does (computing it all again within the step whenever margins moved cost
     ~+80% of the climate at L5, mostly for a few margin cells shuffling).
     The old
     ice's height still counts: a big sheet keeps itself colder than bare
@@ -830,19 +811,41 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     kw = {"cost": coast_cost(sim, land, bed, marine), "start": _start(sim, land, ground)}
     ice = _ice_pass(sim, land, bed, ground, old, marine, **kw)
     seen = [np.asarray(old) > 0, ice > 0]
-    info["passes"] = 1
+    cap = int(sim.params.ice_air_rounds) if reground is not None else 0
+    info["passes"], info["air_rounds"], info["air_capped"] = 1, 0, False
+    last, since = ice_sea_level(sim, land, old), 1
     for _ in range(ICE_PASSES):
         new = _ice_pass(sim, land, *settled(ice), ice, marine, **kw)
         info["passes"] += 1
+        since += 1
         on = new > 0
         # (settled: as one of the last two passes but for a few margin cells shuffling; PW-514: with
         # coast_loss, exact repeats took ~21 passes per update against ~3.5 before)
         tol = max(2, int(PASS_TOL * on.sum()))
-        if (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol:
-            return new
-        seen = [seen[-1], on]
-        ice = new
+        still = (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol
+        seen, ice = [seen[-1], on], new
+        free = info["air_rounds"] < cap
+        if still and not (free and abs(ice_sea_level(sim, land, ice) - last) >= AIR_SEA_TOL):
+            info["air_capped"] = cap > 0 and not free
+            break
+        if free and (still or since >= AIR_EVERY):  # the ground under this ice's own air
+            last, since = ice_sea_level(sim, land, ice), 0
+            ground = reground(np.where(land, ice, 0.0))
+            kw["start"] = _start(sim, land, ground)
+            info["air_rounds"] += 1
+    if reground is not None:
+        info["ground"] = ground
     return ice
+
+
+AIR_EVERY = 8  # passes: the moving ice's carried air is re-made this often (and whenever the ice settles) ...
+AIR_SEA_TOL = 0.5  # m: ... until the ice settles within this much sea level of its last re-making
+
+
+def ice_sea_level(sim, land, ice):
+    """The sea level change (m) that land ice (m) makes, by its volume over the sea's area (~0.9 g/cm3)."""
+    vol = (np.where(land, ice, 0.0) / 1000.0).sum() * sim.cell_area * R_KM**2
+    return -0.9 * vol / max((~land).sum() * sim.cell_area * R_KM**2, 1.0) * 1000.0
 
 
 def margin_band(g, bare):

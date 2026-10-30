@@ -11,7 +11,7 @@ to one without (tests/test_ice_diag.py). It records:
   level and its two parts (the ice's, sea_ice, and the ocean basins', sea_tect), the iced share;
 - every climate update (`updates`): the global climate (mean temperature, rain, rain on the ice,
   frozen sea share, the land poleward of the snowline, the land's Koppen B and hot-desert shares and
-  mean rain), how many passes the ice's fixed point took (and its carried air's rounds, PW-1050),
+  mean rain), how many passes the ice's fixed point took (and its carried air's re-makings, whether it hit the cap: PW-1050),
   and every ice sheet's budget at the ice it settled to: area, volume (m of sea level), mean and
   highest surface, centroid latitude and its most equatorward cell, the snow it gains where its
   balance is positive, the melt where it is negative, what the sea takes at its coast
@@ -126,7 +126,7 @@ class Recorder:
         t_warm, t_cold, _ = c["ground"]
         iced = ice > 0
         rec = {"t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "passes": int(info.get("passes", 0)),
-               "air_rounds": int(info.get("air_rounds", 0)),
+               "air_rounds": int(info.get("air_rounds", 0)), "air_capped": bool(info.get("air_capped", False)),
                "temp": round(float(np.mean(sim.temp)), 3), "precip": round(float(np.mean(sim.precip)), 1),
                "precip_ice": round(float(sim.precip[iced].mean()), 1) if iced.any() else 0.0,
                "sea_frozen": round(float(((~land) & (c["sea_ice_growth"] > 0.05)).sum()) / max(int((~land).sum()), 1), 4),

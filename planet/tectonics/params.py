@@ -160,9 +160,9 @@ class Params:
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
     # from Earth's ice, so an ice-free planet is ~1.4 C warmer) ...
     ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)
-    # rounds of the sheets' carried air within a climate update (earth.ice_air_rounds, PW-1050): the ice settles
-    # again on the ground its own new air leaves, at most this many times (0: off, the air follows at the next update)
-    ice_air_rounds: float = 4.0
+    # times the sheets' carried air is re-made within a climate update's ice passes (earth.ice_sheets, PW-1050):
+    # the ice settles with its own air, at most this many re-makings (0: off, the air follows at the next update)
+    ice_air_rounds: float = 8.0
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # rocks
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
