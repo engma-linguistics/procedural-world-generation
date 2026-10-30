@@ -1,4 +1,5 @@
 ---
+id: PW-1133
 title: "History: no pigs, camelids, reindeer, yaks, buffalo or donkeys among the herd animals (and no soy or teff), so their tech rows were dropped"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1122, PW-692]
 refs: [planet/lineages/animal_defs.py, planet/lineages/crop_defs.py, planet/lineages/samples/techtree.toml, docs/references/tech-catalogue/food.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,6 @@ several verified), then add their tech rows (stock = "animals:pig" etc.) and let
 `needs_any`.
 - [ ] pigs, camelids, reindeer, yak, buffalo in the history's animals (with their ranges)
 - [ ] the tech rows and needs_any entries
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-history-animals-crops-missing-for-catalogue.md (found by fun-lane-69).

@@ -1,4 +1,5 @@
 ---
+id: PW-1135
 title: "Technology tab: the tree view of 547 techs is a 4,300 x 4,700 px pan; add a track filter or fold the eras"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1122]
 refs: [viewer/techtab.js, "run 488d7e"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +23,6 @@ In plain words: with the tech catalogue in (547 techs), the Technology tab still
 
 Ideas: a track picker on the Tree view (the Timeline view has one), folding each era to a summary column until clicked, or a
 search box that pans to a tech. Only the tree view needs it; the others filter already.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtab-tree-view-547-techs.md (found by fun-lane-69).

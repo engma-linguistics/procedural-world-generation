@@ -1,4 +1,5 @@
 ---
+id: PW-1132
 title: "Tech tree: taming dogs counts as herding, so herding's world first is ~14 kyr (Earth 11) and the plough and cheese chains start early"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1122]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -22,3 +25,6 @@ people dogs. Since PW-1122 the dog stock is its own tech (`dogs`, stock "animals
 Fix: in techtree.build, skip the generic "animals" stock (herding) for the dog stock (or give each stock a flag in animal_defs:
 herd = false for dogs). Check: herding's world first and finds per world before/after on the four runs; settlements unchanged
 (they read villages, towns, cities).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-herding-from-dog-taming.md (found by fun-lane-69).

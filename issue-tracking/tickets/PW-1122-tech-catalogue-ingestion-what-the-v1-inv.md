@@ -2,7 +2,7 @@
 id: PW-1122
 title: "Tech catalogue ingestion: what the v1 invention model needs from each row"
 type: task
-status: todo
+status: done
 parent: PW-675
 milestone: null
 subsystem: timezoom
@@ -30,4 +30,5 @@ Notes for merging the 594-row catalogue (docs/references/tech-catalogue/) into t
   finds per world, against Earth's independent origins (the catalogue's `origins`).
 
 ## Updates
+- 2026-10-30: Status todo -> done. Merged lane 69 (04b87e0c): 547 techs; seven peoples runs rebuilt.
 - 2026-10-30: Created from inbox draft draft-techtree-catalogue-ingest-v1.md (found by fun-lane-64).

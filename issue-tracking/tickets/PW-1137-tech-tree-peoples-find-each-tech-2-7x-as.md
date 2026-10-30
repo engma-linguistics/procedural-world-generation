@@ -1,4 +1,5 @@
 ---
+id: PW-1137
 title: "Tech tree: peoples find each tech ~2.7x as often as Earth's independent origins (copper ~12 a world vs 4); better needs do not fix it"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1124, PW-1122]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, docs/references/tech-catalogue/]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -53,3 +56,6 @@ Options:
   finder's neighbours learn it before they find it. Changes every tech's spread.
 - D: check finds against origins in tests (a band per tech) and fix outliers one by one.
 Lean: A for v1 (dates are fine), B as a v2 experiment with the world-first check.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-finds-per-world-vs-earth-origins.md (found by fun-lane-69).

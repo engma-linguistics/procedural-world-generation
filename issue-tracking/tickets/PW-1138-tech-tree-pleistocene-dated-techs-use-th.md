@@ -1,4 +1,5 @@
 ---
+id: PW-1138
 title: "Tech tree: Pleistocene-dated techs use their track's rate (0.02-0.03 a kyr), so bread, fermentation and beer reach few peoples"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1109, PW-1011, PW-1122]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
   origins_checked give the band; the anchor check can test it.
 - C: leave it: these are old techs and contact carries them.
 Lean: B (one rule, uses the catalogue as intended: the brief called the origins "the band").
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-floored-techs-track-rate-slow.md (found by fun-lane-69).

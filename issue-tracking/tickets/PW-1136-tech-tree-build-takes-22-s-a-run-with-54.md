@@ -1,5 +1,6 @@
 ---
-title: "Tech tree build takes ~22 s a run with 547 techs (was ~5 s with 102)"
+id: PW-1136
+title: Tech tree build takes ~22 s a run with 547 techs (was ~5 s with 102)
 type: task
 status: todo
 parent: PW-675
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-1122]
 refs: [planet/lineages/techtree.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -19,3 +22,6 @@ the catalogue ingested (547 techs) a D&D run's build went from ~5 s to ~20-24 s 
 machine. It runs once per peoples run (output.save) and on `planet techtree`, and anchor_check builds once per seed per tech
 (~2 s per tech at 21 seeds). Fine for now; if it bites: skip techs whose needs are not all known (keep a per-people frontier set
 instead of scanning `order`), and in diffusion loop only the giver's known techs.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-build-time-547.md (found by fun-lane-69).

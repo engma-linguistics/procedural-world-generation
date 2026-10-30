@@ -1,4 +1,5 @@
 ---
+id: PW-1134
 title: "History length: end a peoples history when cultures are mostly where they need to be, not after a fixed span?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-69
 blocked_by: []
 relates: [PW-675, PW-1122, PW-1124]
 refs: [planet/lineages/techtree.py, planet/lineages/history/, docs/references/tech-catalogue/]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Options:
   runner, only to which frame the briefs and the viewer call "now". Cheapest to try.
 
 Lean: D first (it costs no simulation change and shows whether the stopping test is meaningful), B if it is.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-history-ends-when-cultures-settle.md (found by fun-lane-69).
