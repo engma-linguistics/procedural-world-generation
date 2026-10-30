@@ -191,7 +191,23 @@
   #busy::before { content: ''; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -6px; border: 2px solid var(--accent);
     border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
   body.busy #busy { display: block; }
-  body.busy #layerSeg button.on { opacity: .6; }
+  body.busy #layerSeg button.on, body.busy #layerPick button.on { opacity: .6; }
+  /* ?picker=grouped (PW-1026, a preview): search, recent, folding sections (globe/layerpick.js) */
+  #layerFind { width: 100%; padding: 4px 8px; margin-bottom: 6px; }
+  #layerPick .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .lpRecent { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .lpRecent .seg { flex: 1; }
+  .lpGroup { border-top: 1px solid var(--border); padding: 3px 0; }
+  .lpGroup summary { cursor: pointer; padding: 2px 0; list-style-position: inside; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lpGroup summary .muted { font-size: 11px; }
+  .lpGroup[open] summary .muted { display: none; }
+  .lpGroup[open] > .seg { margin: 3px 0 4px; }
+  .lpOn { color: var(--accent); }
+  .lpFam { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .lpFam span, .lpFam { color: var(--muted); }
+  .lpFam select { flex: 1; min-width: 0; padding: 1px; color: var(--text); }
+  .lpHit { margin-bottom: 6px; }
+  .lpHead { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   body.embed #timeline { left: 12px; width: calc(100vw - 24px); }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }

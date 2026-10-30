@@ -484,6 +484,31 @@ export function availableLayers() {
   });
 }
 
+// The grouped layer picker (?picker=grouped, PW-1026, a preview): its sections, each made of some of the layers'
+// groups (a layer's `group` above), in MENUS order; `also` moves single layers in from another section.
+// 'body: ', 'animal: ' and 'crop: ' layers get one dropdown each in their section (FAMILY_NAMES).
+export const SECTIONS = [
+  { id: 'land', title: 'Land and rock', groups: ['surface', 'ice', 'geology', 'glacial'] },
+  { id: 'climate', title: 'Climate and air', groups: ['climate', 'air'] },
+  { id: 'water', title: 'Water and sea', groups: ['water', 'coasts', 'sea'] },
+  { id: 'life', title: 'Plants and soils', groups: ['plants', 'soil'], also: ['biome'] },
+  { id: 'use', title: 'Game and use', groups: ['game', 'humanuse', 'resources'] },
+  { id: 'peoples', title: 'Peoples', groups: ['peoples'] },
+];
+export const FAMILY_NAMES = { 'body: ': 'body trait', 'animal: ': 'animal', 'crop: ': 'crop' };
+// the family a layer belongs to ('crop: ' for 'crop: wheat'), or null
+export const familyOf = (layer) => Object.keys(FAMILIES).find((p) => layer.startsWith(p)) || null;
+// the available layers by section: [{ ...section, layers: [plain layers], families: { 'crop: ': [layers] } }]
+export function layerSections(layers = availableLayers()) {
+  const secOf = (l) => SECTIONS.find((s) => s.also?.includes(l)) || SECTIONS.find((s) => s.groups.includes(layerDef(l).group)) || SECTIONS[0];
+  const out = SECTIONS.map((s) => ({ ...s, layers: [], families: {} }));
+  for (const l of layers) {
+    const sec = out[SECTIONS.indexOf(secOf(l))], fam = familyOf(l);
+    if (fam) (sec.families[fam] ||= []).push(l); else sec.layers.push(l);
+  }
+  return out.filter((s) => s.layers.length || Object.keys(s.families).length);
+}
+
 // the run layers a colour layer draws from (load.js: layersNeeded)
 export function layerNeeds(layer) {
   const d = layerDef(layer);

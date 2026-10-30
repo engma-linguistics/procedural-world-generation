@@ -9,6 +9,7 @@
 //   overlays.js  rivers, winds, currents, volcanoes, events, clouds, the overturning
 //   axis.js      spin axis and tilt, continent names
 //   panel.js     layer buttons, legend, summaries, the layer tooltip
+//   layerpick.js the grouped layer picker (?picker=grouped, a preview): search, recent, folding sections
 //   timezoom.js  glacial time zooms and finished worlds (jobs)
 //   provenance.js where a run / world / zoom came from, the timeline's marks
 //   describe.js  the cell's description (info box, More detail)
