@@ -50,4 +50,5 @@ Placement (coordinator 10-30): v2, unless the owner asks for (i), which would be
 - [ ] with the inflow depth on: SE USA and the Pampas not below main, log-rain r not below 0.70, B not below 25
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Created from inbox draft draft-monsoon-coasts-need-vapour-supply-not-lift.md (found by lane62).

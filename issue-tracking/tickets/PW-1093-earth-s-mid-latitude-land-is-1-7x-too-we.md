@@ -4,7 +4,7 @@ title: Earth's mid-latitude land is ~1.7x too wet (40-60 N, Siberia, Mongolia) w
 type: task
 status: todo
 parent: PW-015
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: med
@@ -80,6 +80,7 @@ which source carries the excess. Earth is a plausibility anchor, not a target: t
 - [ ] Any fix keeps the polar land (60-80 N) near GPCC and doesn't push Earth's B share further below Kottek's 30% (now 25.2%)
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 budget (docs/review/base-climate/moisture-budget/README.md, tools/moisture_regions.py; kernel re-runs on the recorded Earth L6/L7
   inputs). The excess is summer: 88% at 40-50 N, 70% at 50-60 N. It is imported sea vapour (land P - E 2.26 Sv,
   published runoff ~1.15; land E about right, below NCEP in the summer interiors). None of 1-5 is the cause:

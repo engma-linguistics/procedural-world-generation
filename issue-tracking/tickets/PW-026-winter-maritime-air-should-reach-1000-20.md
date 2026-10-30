@@ -4,7 +4,7 @@ title: Winter maritime air should reach 1000-2000 km inland under westerlies
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
@@ -25,6 +25,7 @@ westerlies (and the reverse on east coasts). Also check the old continental-wint
 Alaska, Quebec, NE China 5–10 °C off) with the same change.
 
 ## Updates
+- 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): the winter westerlies bring ~3x the observed net vapour into Europe and Russia
   (W Europe +1345 vs +411, European Russia +962 vs +284, W Siberia +518 vs +168 mm/yr), and it rains as
   oversaturation inland (51-62%). The excess is the import across the coast, not the speed inland: a 0.7x winter
