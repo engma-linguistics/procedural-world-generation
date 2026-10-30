@@ -27,3 +27,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-viewer-redraw-and-reload-waste.md (found by code-audit-2026-10).
+- 2026-10-29: Viewer lane 51 split the code into modules. The code paths named here now live in globe/geometry.js (`paint`), globe/overlays.js (`buildOverlays`, `disposeObj`, `cloudTexture` / `cloudCache`) and globe/draw.js. draw.js has `canvasSprite`: one sprite factory instead of four, the natural place for a text|colour cache. The per-cell colour code is now one `color` factory per layer in globe/layers.js (cellColors), which is where the pftColor/resColor lookups should be hoisted out of the loop. Nothing in this ticket is fixed yet.

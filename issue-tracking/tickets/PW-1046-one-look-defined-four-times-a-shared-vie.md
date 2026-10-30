@@ -27,3 +27,4 @@ Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
 - 2026-10-29: Created from inbox draft draft-viewer-shared-theme.md (found by code-audit-2026-10).
+- 2026-10-29: Viewer lane 51 split the code into modules. index.html is now markup and CSS only (330 lines, its `<style>` unchanged), so a shared theme.css only has to touch the `<style>` blocks of the four pages. Colours used in JS are in globe/layers.js (ramps, legend swatches) and globe/colours.js.
