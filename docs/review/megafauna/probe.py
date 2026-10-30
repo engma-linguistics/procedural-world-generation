@@ -1,4 +1,4 @@
-"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--natural NAME] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
+"""probe.py WORLD ROLL OUT.json [--ages NAME] [--gen MODE] [--gen-yr YR] [--no-cap] [--no-budget] [--no-people-prod] [--no-press] [--no-persecute] [--natural NAME] [--eras 25,10,0] [--save DIR]: one dnd history run of a world at a roll.
 
 Writes OUT.json: the peoples' cells, the megafauna's coverage and counts (present, and the deep-time peak), blue dragons in deserts,
 frost giants in tundra, the dragons' food use (PW-977 stage 1) and the counts over time. For the sweep (6 worlds x rolls 7000-7003):
@@ -11,6 +11,10 @@ schedule_mass), --gen-yr (the dragon lines' generation_yr), --no-cap (megafauna.
 --no-budget (megafauna.BUDGET off: the dragons get all the wild offtake and the stock, PW-977 stage 1), --no-people-prod (PW-974 off: a people's
 density is its way-of-life number everywhere), --no-press (a diagnostic, not a model setting: the peoples press the megafauna not at all, so the
 dragons stand at their natural density wherever the food budget lets them; it shows what the budget alone does through time).
+--no-persecute (a diagnostic: the dragons are not pressed toward meta.dragon_km2, but the peoples' overkill still cuts the wild herds; with
+the default and --no-press it splits the pressure's two channels). --cells DIR writes DIR/WORLD_ROLL.npz, float32 per-cell fields at each
+--eras step (the budget, the peoples by way of life, the dragons, their presence, biome tag bits) and the dragons' suitability now (review r2).
+PROBE_REV in the environment is recorded in OUT.json as "rev".
 --natural NAME (meta.megafauna_natural: food, the default since PW-990 B | prey | mesotherm | mammal).
 --eras 25,10,0 adds the budget sums at those eras to OUT.json; with --save it also writes DIR/ERAS.npz: the budget, presences and dragons at the steps nearest those kyr ago.
 
@@ -45,6 +49,8 @@ ap.add_argument("--no-cap", action="store_true")
 ap.add_argument("--no-budget", action="store_true")
 ap.add_argument("--no-people-prod", action="store_true")
 ap.add_argument("--no-press", action="store_true")
+ap.add_argument("--no-persecute", action="store_true")
+ap.add_argument("--cells")
 ap.add_argument("--natural")
 ap.add_argument("--eras")
 ap.add_argument("--tree", default="dnd")
@@ -57,9 +63,16 @@ if a.no_budget and hasattr(MG, "BUDGET"):
     MG.BUDGET = False
 if a.no_press:
     MG.PRESS_N0 = 1e12
+if a.no_persecute:  # (the dragons are not pressed toward meta.dragon_km2, but the overkill still cuts the wild herds: the third arm)
+    _pressed0 = MG._pressed
+
+    def _pressed_np(h, k, s, prey, food=None, _o=_pressed0):
+        return _o(h, k, 0.0 * s if "flies" in h.lines[k].traits else s, prey, food)
+    MG._pressed = _pressed_np
 if a.no_people_prod:
     import planet.lineages.history.model as _model
     _model.PEOPLE_PROD = False
+BIOME_TAGS = ("mountain", "tundra", "desert", "wetland", "forest", "jungle", "steppe", "open", "farmland", "hills", "coast", "island", "lowland")
 tree = LR.load_tree(a.tree)
 if a.natural:
     tree.megafauna_natural = a.natural
@@ -97,7 +110,12 @@ if a.eras:
                         sh = LU.shares(tree, l)
                         c = "herders" if sh["herd"] >= 0.5 else "farmers" if sh["farm"] >= 0.5 else "foragers" if (sh["forage"] > 0 or l.way in ("fisher_forager", "sea_nomad")) else "others"
                         cls[c] += np.where(h.p[k] >= EST, h.p[k], 0.0) * dm[k]
-                    eras[e] = {"ago": step.ago, "press": h._press.copy(), "land": np.asarray(env["land"]), "dragons": nd, "dragons_uncapped": gd,
+                    pres_any = np.max([np.where(h.p[k] >= EST, 1.0, 0.0) for k in fl], axis=0) if fl else np.zeros(h.grid.n)
+                    bits = np.zeros(h.grid.n, np.uint16)
+                    for bi, tg in enumerate(BIOME_TAGS):
+                        if tg in tags:
+                            bits |= (np.asarray(tags[tg], bool).astype(np.uint16) << bi)
+                    eras[e] = {"ago": step.ago, "dragon_present": pres_any, "biome_bits": bits, "press": h._press.copy(), "land": np.asarray(env["land"]), "dragons": nd, "dragons_uncapped": gd,
                                **{"people_" + c: v for c, v in cls.items()}, **{k: np.asarray(v, float) for k, v in b.items()}}
         return _o(step, env, tags, Ks)
     h._start_due = _start
@@ -186,13 +204,16 @@ for e, r in eras.items():
     row = {"ago": float(r["ago"]), "dragons": tot(r["dragons"]), "dragons_uncapped": tot(r["dragons_uncapped"])}
     for cn, m in [("all", lnd)] + list(cls.items()):
         sup = tot(r["wild"] + r["stock"], m)
+        occ = m & (r["dragon_present"] > 0)
         row[cn] = {"cells": int(m.sum()), "supply_t": sup, "dragons": tot(r["dragons"], m),
+                   "occupied_cells": int(occ.sum()), "food_t": tot(r["food"], m), "food_t_occupied": tot(r["food"], occ),
                    **{k: (tot(r[k], m) / sup if sup > 0 else 0.0) for k in ("stock", "peoples", "giants", "guild", "food")},
                    "dragons_need": tot(need, m) / sup if sup > 0 else 0.0}
     eras_sum[f"{e:g}"] = row
 extra = {lid: {k: r.get(k) for k in ("count", "one_per_km2", "pressed_one_per_km2", "natural_one_per_km2", "peopled_one_per_km2",
                                      "wild_one_per_km2", "peopled_share", "stages")} for lid, r in mf.items()}
-json.dump({"world": a.world, "roll": a.roll, "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "lmean": lmean, "eras": eras_sum, "mf_cov": cov, "mf_count": cnt,
+import os
+json.dump({"world": a.world, "roll": a.roll, "rev": os.environ.get("PROBE_REV"), "secs": round(time.time() - t0), "args": vars(a), "peoples": peoples, "pop": pop, "patches": patches, "meand": meand, "lmean": lmean, "eras": eras_sum, "mf_cov": cov, "mf_count": cnt,
            "present": present, "stages": stages, "blue_desert": in_country("blue_dragon", "desert"), "blue": cnt.get("blue_dragon", 0),
            "frost_tundra": in_country("frost_giant", "tundra"), "frost": cnt.get("frost_giant", 0), "food": food, "peak": peak,
            "series": {str(t): by_t[t] for t in ts}, "mf_extra": extra, "lost": pres.get("lost"),
@@ -221,3 +242,24 @@ if a.save:
         np.savez_compressed(d / "ERAS.npz", targets=np.array(sorted(eras)), **{f"{k}_{e:g}": v for e, r in eras.items() for k, v in r.items()})
     (d / "SERIES.json").write_text(json.dumps({"series": {str(t): by_t[t] for t in ts}}))
     print("saved", d)
+
+if a.cells:  # (review r2: compact per-cell fields at each era, float32, for the dragon-density page's per-cell tables)
+    d = Path(a.cells)
+    d.mkdir(parents=True, exist_ok=True)
+    fl = [k for k, l in enumerate(h.lines) if l.megafauna and "flies" in l.traits]
+    S = h._suit() if getattr(h, "_K_now", None) else np.zeros((len(h.lines), h.grid.n))
+    out = {"targets": np.array(sorted(eras)), "biome_tags": np.array(BIOME_TAGS), "lat": np.asarray(h.grid.lat, np.float32),
+           "lon": np.asarray(h.grid.lon, np.float32), "dragon_ids": np.array([h.lines[k].id for k in fl]),
+           "S_dragons_now": S[fl].astype(np.float16), "P_dragons_now": P[fl].astype(np.float16), "food_t_per_dragon": np.array(h.dragon_struct["cattle_yr"] * PR.HEAD_T)}
+    for e, r in eras.items():
+        for k, v in r.items():
+            if k in ("ago",):
+                out[f"{k}_{e:g}"] = np.array(v)
+            elif k in ("land",):
+                out[f"{k}_{e:g}"] = np.asarray(v, bool)
+            elif k == "biome_bits":
+                out[f"{k}_{e:g}"] = v
+            else:
+                out[f"{k}_{e:g}"] = np.asarray(v, np.float32)
+    np.savez_compressed(d / f"{a.world}_{a.roll}.npz", **out)
+    print("cells", d)
