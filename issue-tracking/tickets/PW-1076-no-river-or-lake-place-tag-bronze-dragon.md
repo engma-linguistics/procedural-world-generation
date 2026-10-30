@@ -1,4 +1,5 @@
 ---
+id: PW-1076
 title: "No river or lake place tag: bronze dragons' big rivers and steppe lakes stand in as 'wetland'"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-50
 blocked_by: []
 relates: [PW-1024]
 refs: [planet/lineages/history/tags.py, planet/lineages/crossing.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -24,3 +27,6 @@ What to try:
 - The copper dragons' `breaks` could then include river breaks: open dry country next to a big river.
 
 - [ ] bronze dragons present along big steppe rivers on at least one sweep world
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-river-and-lake-place-tags.md (found by fun-lane-50).

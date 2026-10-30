@@ -1,4 +1,5 @@
 ---
+id: PW-1077
 title: "The time zoom's present rain disagrees with its world's in places (70 mm against 570 mm): prey is read from one, habitats from the other"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-50
 blocked_by: []
 relates: [PW-1024, PW-966, PW-599]
 refs: [planet/lineages/recent.py, planet/lineages/prey.py, docs/review/megafauna/open-niches/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -32,3 +35,6 @@ What to try:
 
 - [ ] cells where world and env rain differ more than 3x at the present: under ~1% of land on the 6 sweep worlds
 - [ ] the rich empty class re-measured afterwards
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-time-zoom-rain-vs-world-rain.md (found by fun-lane-50).

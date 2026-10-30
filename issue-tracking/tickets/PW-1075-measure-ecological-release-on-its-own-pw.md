@@ -1,4 +1,5 @@
 ---
+id: PW-1075
 title: "Measure ecological release on its own (PW-1024 B): lane 50's sweep changed A and B together"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-50
 blocked_by: []
 relates: [PW-1024]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/open-niches/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -32,3 +35,6 @@ The knobs are design judgements, with no sweep behind their values:
 - RELEASE_KM 300 km.
 
 - [ ] A-only and A+B numbers side by side in docs/review/megafauna/open-niches/README.md
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-ecological-release-measured-alone.md (found by fun-lane-50).
