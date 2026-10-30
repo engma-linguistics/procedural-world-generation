@@ -249,13 +249,11 @@ def write(run_dir: Path) -> dict:
         S.write_atomic(run_dir / "layers" / f"anthro_{k}.bin", q[k].tobytes())
         specs[k] = {"file": f"layers/anthro_{k}.bin", "dtype": "uint8", "shape": [1, n], "units": UNITS[k], "description": DOC[k],
                     **({"scale": PEOPLE_SCALE, "transform": "log2p1"} if k == "people" else {"scale": 1, "transform": None})}
-    p = run_dir / "run.json"
-    run = json.loads(p.read_text())
-    run["meta"]["anthro"] = {"layers": specs, "summary": d["summary"],
-                             "constants": {"crop_km2": CROP_KM2, "herd_km2": HERD_KM2, "meadow_km2": MEADOW_KM2,
-                                           "burn_km2": BURN_KM2, "wood_base_km2": WOOD_BASE_KM2, "wood_use_km2": WOOD_USE_KM2,
-                                           "thin": THIN}}
-    S.write_json(p, run)
+    S.update_meta(run_dir, lambda run: run["meta"].__setitem__("anthro", {
+        "layers": specs, "summary": d["summary"],
+        "constants": {"crop_km2": CROP_KM2, "herd_km2": HERD_KM2, "meadow_km2": MEADOW_KM2,
+                      "burn_km2": BURN_KM2, "wood_base_km2": WOOD_BASE_KM2, "wood_use_km2": WOOD_USE_KM2,
+                      "thin": THIN}}))
     return d["summary"]
 
 

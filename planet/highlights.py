@@ -121,7 +121,6 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 
 from __future__ import annotations
 
-import hashlib
 import heapq
 import json
 import time
@@ -141,8 +140,6 @@ from .tectonics.volcanism import ARC as ARC_VOLCANO
 from .vegetation import T as VEG_T
 from .vegetation import TYPES as VEG_TYPES
 
-# cached lists are recomputed whenever this file changes
-VERSION = hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:10]
 ZOOM_SIZES = (250, 500, 1000, 2000, 4000)  # the viewer's choices
 MAX_ZOOM = 2000  # suggested zooms stay detailed (4 km pixels); the viewer can go wider
 SEC_PER_YR = 3.156e7
@@ -2767,13 +2764,21 @@ def cache_path(world_path: Path) -> Path:
     return highlights_path(world_path.stem)
 
 
+def version(world_path: Path) -> str:
+    """What a world's cached highlights must match (PW-1035): the code they depend on (provenance.code_hash
+    "highlights") and the world file itself (its size and time: a world enriched or saved again in place)."""
+    from .provenance import code_hash
+    st = Path(world_path).stat()
+    return f"{code_hash('highlights')}:{st.st_size}:{st.st_mtime_ns}"
+
+
 def cached(world_path: Path) -> dict | None:
     p = cache_path(world_path)
     try:
         d = json.loads(p.read_text())
+        return d if d.get("version") == version(world_path) else None
     except (OSError, ValueError):
         return None
-    return d if d.get("version") == VERSION else None
 
 
 def for_world(world_path: Path, refresh: bool = False) -> dict:
@@ -2792,7 +2797,7 @@ def _compute(world_path: Path) -> dict:
     world = W.load(world_path)
     feats = find(world)
     m = world["meta"]
-    d = {"version": VERSION, "world": world_path.stem, "name": world.get("name"),
+    d = {"version": version(world_path), "world": world_path.stem, "name": world.get("name"),
          "source_run": m.get("source_run"), "t_myr": m.get("t_myr"), "level": m.get("level"),
          "computed_in_s": round(time.time() - t0, 2), "features": feats}
     cache_path(world_path).parent.mkdir(parents=True, exist_ok=True)

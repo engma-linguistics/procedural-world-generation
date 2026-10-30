@@ -175,6 +175,8 @@ MEGAFAUNA_NATURAL = ("food", "prey", "mesotherm", "mammal")  # meta.megafauna_na
 # predator guild (history.megafauna.budget), giants as under prey; prey: dragons on the prey field (Carbone & Gittleman 2002, now the
 # cross-check); mesotherm / mammal: uniform from mass on Marshall et al. 2021's Damuth lines
 MEGAFAUNA_NATURAL_DEFAULT = "food"
+MEGAFAUNA_NATURAL_LABELS = {"food": "from the food: their share of the land's surplus", "prey": "from the prey (cross-check)",
+                            "mesotherm": "dinosaur line, ~1/65 km²", "mammal": "mammal carnivores, ~1/137 km²"}  # (the peoples editor's menu)
 # meta.dragon_ages (PW-958): the dragons' mortality schedule, lineages.dragon_ages.SCHEDULES (base | younger | harsher | gentler);
 # meta.dragon_generation (PW-959): schedule | schedule_mass | line. Both candidates until the PW-967 review
 
@@ -439,9 +441,8 @@ class Use:
 
 
 ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
-ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present. A PLACEHOLDER (PW-690): nothing reads it yet; the
-# technology tree (epic PW-675, v3) will, to say how far population, spread, mixing and technology climb by the present.
-# The history is not run forward past the present for it.
+ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present (PW-690). The technology tree (techtree.py) caps what
+# the peoples know by the present at it; the history is not run forward past the present for it.
 
 FANTASY_GOODS = ("mithril",)  # land.GOODS entries that are not geology (resources group 'fantasy'); real mode ignores them
 MODES = ("fantasy", "real")

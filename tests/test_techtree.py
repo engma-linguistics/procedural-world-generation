@@ -170,3 +170,16 @@ def test_build_firsts_never_a_taker_on_an_inventors_date():  # PW-1012, on whole
     for s in range(4):
         tt = TT.build(lines, {"pairs": pairs}, None, seed=s, T=T)
         assert not _taker_on_an_inventors_date(tt["known"], tt["firsts"]), s
+
+
+def test_kind_rules_take_several_ids_and_warn_on_none():  # PW-1041
+    """A [[kind]] of may list several ids (Seven Meals' giants stem `giant` is an elder kind, as the D&D tree's
+    true_giant); a rule that names no line of the tree warns."""
+    import pytest
+    gk = next(k for k in T["kind"] if "true_giant" in k["of"])
+    assert gk.get("elder") and "giant" in gk["of"]
+    lines = [line("giant", at=3000.0), line("hill_giant", origin="split", at=1000.0, parents=["giant"])]
+    assert TT._kind(T, lines[1], {l["id"]: l for l in lines}) is gk
+    with pytest.warns(UserWarning, match="name no line of this tree: .*draconic") as got:
+        TT.build(lines, None, None, seed=1, T=T)
+    assert "giant" not in str(got[0].message)  # (a rule with one id present is not reported for its other ids)

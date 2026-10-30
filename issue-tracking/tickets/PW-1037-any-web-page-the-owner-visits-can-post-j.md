@@ -2,7 +2,7 @@
 id: PW-1037
 title: Any web page the owner visits can POST jobs to the local server (/api/make, /api/lineages ...); add an Origin / Content-Type check
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: infra
@@ -26,5 +26,6 @@ Fix: refuse a POST whose `Origin` is present and isn't the server's own host:por
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-29: Status todo -> done. Fix lane 49: server.Handler.post_refused: every POST must be Content-Type application/json (403 otherwise), and an Origin, if sent, must be http://127.0.0.1:<port> or http://localhost:<port>. The five viewer fetches that sent no Content-Type (lineages.html x3, index.html favourites, planets.js setFavourite) now send it. Test: test_server.test_post_refuses_cross_site. Checked live on a test server (port 8791) with headless Chrome: the viewer's postJob and favourites POSTs pass; a cross-origin JSON POST is blocked by the failed preflight, a text/plain one gets 403.
 - 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Created from inbox draft draft-server-rejects-cross-site-posts.md (found by code-audit-2026-10).

@@ -24,6 +24,11 @@ Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip).
 
+Every POST must say `Content-Type: application/json`, and one that carries an
+Origin must come from this server's own address (Handler.post_refused, PW-1037):
+any other web page open in the browser can't start jobs. (A cross-site JSON POST
+needs a preflight, which this server never answers.)
+
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
 serving. Zooms, time zooms and finished worlds run on the job queue, up to
@@ -416,7 +421,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def lineages_api(self, method: str) -> bool:
-        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-trees, GET or POST
+        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-schema (its option lists,
+        lineages.run.editor_schema), GET /api/lineage-trees, GET or POST
         /api/lineage-tree?name=N (the tree as JSON; POST validates and saves it), POST /api/lineages
         {world | timezoom, tree | raw, tries} (queued on the job queue like a time zoom, ~20 s a try at L6;
         answers {job}; GET /api/jobs/<id> has its progress, and {run} when done)."""
@@ -426,7 +432,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         from .lineages import run as LR
         q = dict(parse_qsl(url.query))
         try:
-            if method == "GET" and url.path == "/api/lineage-trees":
+            if method == "GET" and url.path == "/api/lineage-schema":
+                self.send_json(LR.editor_schema())
+            elif method == "GET" and url.path == "/api/lineage-trees":
                 self.send_json({"trees": [{k: v for k, v in t.items() if k != "file"} for t in LR.list_trees()]})
             elif method == "GET" and url.path == "/api/lineage-tree":
                 self.send_json(LR.read_raw(q.get("name", "")))
@@ -449,7 +457,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"error": str(e)}, 404)
         return True
 
+    def post_refused(self) -> str | None:
+        """Why this POST is refused, or None (PW-1037): it must be JSON, and an Origin, if sent,
+        must be this server's own address (http://127.0.0.1:<port> or http://localhost:<port>)."""
+        if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
+            return "POST needs Content-Type: application/json"
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            port = self.server.server_address[1]
+            if origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+                return f"cross-site POST refused (Origin {origin})"
+        return None
+
     def do_POST(self):
+        refused = self.post_refused()
+        if refused:
+            return self.send_json({"error": refused}, 403)
         if self.lineages_api("POST"):
             return
         if self.path == "/api/favourites":
