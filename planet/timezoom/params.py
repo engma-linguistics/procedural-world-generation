@@ -67,7 +67,7 @@ class TZParams:
     snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
     # year's snow lies, then bare: icemass)
     bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
-    ice_cool: float = M.ICE_COOL  # C: thick ice is this much colder on the year's mean (in winter: none at midsummer) ...
+    ice_cool: float = M.ICE_COOL  # C: thick ice is this much colder on the year's mean (in winter where the summer melts, all year where it never does) ...
     albedo_h: float = M.ALBEDO_H  # ... in full from this thickness (m)
     sheet_air: str = "all"  # the air the sheets make (climate.compute's ice_air, icemass.air_mass, PW-336):
     # 'cold', from the share of each ice cell's summer its surface stays frozen (icemass.cold_share: an ablating

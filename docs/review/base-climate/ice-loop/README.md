@@ -193,3 +193,51 @@ Branch worktree-agent-a2381af405c341835:
 - The not-slow suite passes on (a) (737) and on (b) (739). (a)'s area tests passed (32, including the time zoom
   consistency tests).
 - (b)'s area tests and the full time zoom tests are still running: lane28/t_b_area.txt.
+
+## PW-1095: the inversion's swing only where the summer melts (lane 57, 10-30)
+**Diagnosis.** (b) gave every thick-ice cell the full swing: ICE_COOL x (1 - cos phase), +2 C at midsummer. Its
+physical case is a melting surface. A surface held at 0 C can't chill the air above it. A plateau that never melts
+has no such limit, so it got a summer that was too warm and a range that was too wide.
+
+**Rule (C1, chosen).** inv = 1 - s cos(phase). Here s is the share of the warmest month's days on which the air
+reaching the surface (t_mean + dt_base + half + the peak month's orbital anomaly: before the surface's own damping,
+hold and inversion) is above 0 C. The days are scattered by PDD_SIGMA, as in the degree-day melt and
+icemass.cold_share. The annual mean is ICE_COOL everywhere. No new constant, and it isn't circular. Dropped: C2,
+the same s from the surface's own warm month (a first pass of the year). It runs the kernel twice and lands within
+~0.1-0.2 C and ~1 m of C1. The zoom's inverse (icemass.ground_from_surface) now alternates its two bisections,
+because the coldest month depends weakly on the warmest through s.
+
+**earth_check** (main 347b4374 / C1; obs NCEP). L6:
+- Antarctica warm month -12.3 / -14.0 (-16.1); cold month -50.9 / -49.2 (-48.7).
+- Vostok warm month -20.8 / -22.8 (-22.7).
+- Land seasonal range at 60-70 / 70-80 / 80-90 S: 36/38/40 / 33/35/36 (23/32/34).
+- Greenland warm month -9.8 / -11.4 (-5.0); cold month -48.5 / -46.9 (-33.0).
+- Summit warm month -16.3 / -18.3 (-8.1).
+- Annual means unchanged.
+
+L7 is the same to within ~0.4 C. Greenland keeps ~0.9 of (b)'s 2.5 C summer gain. Its interior never melts and is
+too cold in every season (Summit -10 in summer, -14 in winter), an error in the air, not the inversion (inbox
+draft: Greenland's all-season cold bias; coordinator ruling 10-30: no Greenland discriminator).
+
+**Probes** (the 4 states rebuilt from main at roll 0.0005, 4 repeated updates; last update, main / C1):
+
+| state | ice sea level, m | interior (>=1500 m) Tw | interior range | outer ice ring Tw | ring share Tw > 0 |
+|---|---|---|---|---|---|
+| 53669@300 | -45.9 / -47.4 | -13.4 / -15.0 | 36.9 / 33.1 | -6.4 / -7.7 | 0.22 / 0.19 |
+| 53669@700 | -94.0 / -97.3 | -11.3 / -12.7 | 36.6 / 33.1 | -1.6 / -2.0 | 0.47 / 0.46 |
+| 957317@700 | -90.4 / -94.0 | -13.0 / -15.2 | 37.6 / 33.7 | -3.1 / -4.1 | 0.32 / 0.25 |
+| 819014@700 | -136.2 / -137.7 | -11.6 / -13.3 | 36.6 / 33.0 | -1.9 / -2.6 | 0.44 / 0.40 |
+
+Update cost is the same as main's.
+
+**Judge** (18 L6 draws, roll 0.0005, main 347b4374 vs C1; pjudge.py, lane 57's scratchpad `l57/judge`):
+- Passes: main 13/18, C1 14/18 (both 9, main only 4, C1 only 5; McNemar p 1.0).
+- Iceboxes: main 8, C1 7. Hellhouses: none.
+- End T median: main -0.2, C1 +1.3 C (paired +0.7, CI -4.4..+4.7). Late dT: paired +0.3 (CI -2.2..+2.6).
+- Arid share: 21.9 vs 22.3% (paired +0.9, CI -1.5..+2.0).
+- Deep-ice share (steps over 300-990 Myr with ice sea level < -150 m): median 0.19 vs 0.12, mean 0.19 vs 0.17.
+- Mean ice sea level: paired median -2.0 m (C1 slightly icier, as in the probes).
+- Run cost: 0.86x main (load noise).
+- Only the source reference "moved" (-0.06, 3/15). That is a small carbon-cycle drift that C1's mechanism doesn't
+  predict, so it is read as one of the expected false moves.
+- The rest sits within its intervals.
