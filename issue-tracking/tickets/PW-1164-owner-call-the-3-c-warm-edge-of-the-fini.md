@@ -11,7 +11,7 @@ impact: med
 found_by: lane80
 blocked_by: []
 relates: [PW-1161]
-refs: [docs/review/base-climate/finish-drift-l80/README.md, planet/highlights.py]
+refs: [docs/review/base-climate/finish-drift-l80/README.md, planet/highlights.py, docs/review/base-climate/warm-edge-l81/]
 created: 2026-10-30
 updated: 2026-10-30
 ---
@@ -35,5 +35,6 @@ Numbers (lane 80, lane 75's K judge, L6, roll 0.0005), from a Gaussian at median
 - [ ] Owner: keep +3 C, or move the warm edge (e.g. +4 to +5 C)
 
 ## Updates
+- 2026-10-30: lane81 (branch): warm edge +5 C in `highlights.HUMAN_RANGE` (passrate3/4 and screen.py import it); setting "require permanent ice" (Params.finish_require_ice; `planet make --require-ice --tries N`; New planet form checkbox); lane 75's K judge re-scored: 13/18 pass at +5 (12/18 at +3), scripts in docs/review/base-climate/warm-edge-l81/.
 - 2026-10-30: Status needs-decision -> in-progress. Owner D19 (2026-10-30): the warm edge of the finish band moves to +5 C. Caveat: a user setting that refuses worlds with no permanent ice (rerolling as needed; a reroll or three is fine).
 - 2026-10-30: Created from inbox draft draft-warm-finish-band-edge.md (found by lane80).

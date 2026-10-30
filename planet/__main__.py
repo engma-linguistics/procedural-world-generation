@@ -524,7 +524,8 @@ def cmd_make(args):
     from . import api, make as M
     req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr, "now": args.now,
            "set": _parse_set(args.set), "timezoom": args.timezoom, "finish": args.finish,
-           "highlights": args.highlights, "zooms": args.zooms, "name": args.name}
+           "highlights": args.highlights, "zooms": args.zooms, "name": args.name,
+           "require_ice": args.require_ice, "tries": args.tries}
     req = {k: v for k, v in req.items() if v is not None}
     try:
         spec = M.parse_make_request(req)
@@ -550,6 +551,8 @@ def cmd_make(args):
     except RuntimeError as e:
         raise SystemExit(f"ERROR: {e}")
     print(json.dumps(out))
+    for k, r in enumerate(out.get("rolls") or [], 1):
+        print(f"roll {k}: seed {r['seed']}, run {r['run']}, {'permanent ice' if r['permanent_ice'] else 'NO permanent ice'}")
     if out.get("world"):
         print(f"view: http://127.0.0.1:8765/viewer/?world={out['world']}.json")
     elif out.get("timezoom"):
@@ -798,6 +801,9 @@ def main():
     mk.add_argument("--highlights", action=argparse.BooleanOptionalAction, help="find the world's highlights (default on)")
     mk.add_argument("--zooms", type=int, metavar="N", help=f"regional zooms of the top N highlights (default {MD['zooms']})")
     mk.add_argument("--name", "-n")
+    mk.add_argument("--require-ice", action=argparse.BooleanOptionalAction, help="refuse a finished world with no permanent "
+                    "ice (default off): the latest finish candidate of the last 10 Myr that has it, else a re-roll of the seed")
+    mk.add_argument("--tries", type=int, metavar="N", help=f"with --require-ice: runs to try before giving up (default {MD['tries']})")
     mk.add_argument("--dry-run", action="store_true", help="print the plan and the time estimate only")
     mk.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     mk.set_defaults(func=cmd_make)
