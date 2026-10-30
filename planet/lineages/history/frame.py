@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import compose as CP, contacts as CT, landuse as LU
 from ..spread import EST
-from .params import COMPOSITION_TWO_PCT, HYBRID_FROM_KYR
+from .params import COMPOSITION_TWO_PCT, HYBRID_FROM_KYR, LEARNED_MIN
 
 
 class FrameMixin:
@@ -50,14 +50,37 @@ class FrameMixin:
                 self.tracks[l.id].append([round(step.ago, 3), round(float(np.degrees(np.arcsin(v[2]))), 2),
                                           round(float(np.degrees(np.arctan2(v[1], v[0]))), 2), areas.get(l.id, 0),
                                           pops.get(l.id, 0)])
+        learned, lstats = self._learned_frame(whole, env)
         G = np.where(np.array([l.origin == "group" for l in self.lines])[:, None] & own, self.p, 0.0)  # (the groups' own ranges: PW-742)
         gp = G.max(0)
         eraq = LU.frame_inputs(self, P, land) if step.ago <= LU.ERA_WINDOW_KYR and self.goods is not None else None
         return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "eraq": eraq,
                 "groups_best": np.where(gp >= EST, G.argmax(0), 255).astype(np.uint8),
-                "groups_best_pct": np.where(gp >= EST, np.round(gp * 100), 0).astype(np.uint8), "peoples_mix": mixn,
+                "groups_best_pct": np.where(gp >= EST, np.round(gp * 100), 0).astype(np.uint8), "peoples_mix": mixn, "peoples_learned": learned,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
                 "peoples_overlay": ov, "peoples_whole": whole, **comp,
                 **(self.animals.frame_layers() if self.animals is not None else {}),
                 **(self.crops.frame_layers() if self.crops is not None else {}),
-                "stats": {**step.stats, "peoples": areas, "population": pops, **cstats}}
+                "stats": {**step.stats, "peoples": areas, "population": pops, **cstats, **({"learned": lstats} if lstats else {})}}
+
+    def _learned_frame(self, whole, env):
+        """Niche learning in a frame (PW-1155): the learned acceptance per cell, % (peoples_learned), of the people leading it as a whole
+        (peoples_whole; the most any of its lines, the people or its groups, has learned there), and per line the Mkm² it holds on
+        learned country (L >= LEARNED_MIN where its preference alone gives K0 < 0.3) by biome class (habitat.BIOMES)."""
+        from .habitat import BIOMES, biome_class
+        out = np.zeros(self.grid.n, np.uint8)
+        stats = {}
+        if not self._L or self._tags_now is None:
+            return out, stats
+        b = biome_class(env, self._tags_now)
+        for k, L in self._L.items():
+            sel = whole == self.idx[self.tree.people_of(self.lines[k].id)]
+            out[sel] = np.maximum(out[sel], np.round(np.clip(L[sel], 0, 1) * 100).astype(np.uint8))
+            got = self._learn_in.get(k)
+            if got is None or not self.active.get(self.lines[k].id):
+                continue
+            m = (self.p[k] >= EST) & (L >= LEARNED_MIN) & (got[0] < 0.3) & (b >= 0)
+            if m.any():
+                cnt = np.bincount(b[m], minlength=len(BIOMES))
+                stats[self.lines[k].id] = {BIOMES[i]: round(float(c * self.cell_mkm2), 3) for i, c in enumerate(cnt) if c}
+        return out, stats

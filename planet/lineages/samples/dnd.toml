@@ -238,6 +238,8 @@ temp_c = [18, 32]
 rain_mm = [700, 4000]
 prefers = ["tropical", "wetland", "coast"]
 traits = ["swims"]
+limits = { cold_c = 1 }  # PW-1155: ectotherms, the body cannot be clothed against the cold: learning stretches their country toward the heat, hardly the cold
+never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30: "tortles really don't like the frozen north"): never the tundra or the ice
 
 [[lineage]]
 id = "kobold"
@@ -577,7 +579,6 @@ name = "orcs"
 body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
 at = "700 kyr"
-mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 1
 explore = 0.7
 temp_c = [2, 20]
@@ -618,7 +619,6 @@ generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): lo
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
-mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples, meant to be common (history.params.MAINLINE_Q)
 density = 4
 explore = 0.5  # lane 73: was 0.35, which kept them in the hominid cradle (one continent with 9% of their country) for 500 kyr. The
 # mountain peoples that do range (goliaths 0.4, the mountain-and-coast avian stem's aarakocra 0.7) and the people default (0.5) sit
@@ -751,7 +751,6 @@ id = "halfling"
 name = "halflings"
 parents = ["archaic_human"]
 at = "100 kyr"
-mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 12
 explore = 0.35
 sea_share = 0.1
@@ -769,7 +768,6 @@ generation_yr = 50  # years per generation (default 25, humans: Fenner 2005): lo
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
-mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 1
 explore = 0.8
 sea_share = 0.3
@@ -792,6 +790,7 @@ insularity = 0.9
 temp_c = [4, 24]
 prefers = ["mountain"]
 traits = ["subterranean", "insular"]
+never = [{ what = "desert", is = "present" }, { what = "open", is = "present" }]  # PW-1155 (owner 10-30): the drow shun open sun, the desert and the treeless land
 
 [[lineage]]
 id = "sea_elf"
@@ -805,6 +804,7 @@ sea_share = 0.85
 temp_c = [8, 26]
 prefers = ["coast", "island"]
 traits = ["swims", "coastal"]
+never = [{ what = "coast", is = "absent" }]  # PW-1155 (owner 10-30): sea folk never live away from the water
 
 [[lineage]]
 id = "gnome"
@@ -812,7 +812,6 @@ name = "gnomes (from the feywild)"
 generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 origin = "arrival"
 at = "50 kyr"  # owner 2026-10-27: an earlier arrival, so the fey folk settle hills and woods before the world fills (at 15 kyr they were remnants on 9 of 24 rolls)
-mainline = true  # owner 10-30 (lane 73): one of the genre's core peoples
 density = 12  # owner 2026-10-27: a normal people, insular, denser and less far-reaching than humans (density 10, explore 0.55, insularity 0.3)
 explore = 0.3
 insularity = 0.85
@@ -835,6 +834,7 @@ insularity = 0.8
 temp_c = [12, 28]
 prefers = ["island", "coast"]
 traits = ["swims", "coastal", "insular"]
+never = [{ what = "coast", is = "absent" }]  # PW-1155 (owner 10-30): sea folk never live away from the water
 
 # ---- minorities in other peoples' cities (PW-889, owner 10-29: "stuff can be two things") ----------------------
 # A people can live in its own wild country and, at once, as an untrusted, persecuted minority in the towns of others (goblins and

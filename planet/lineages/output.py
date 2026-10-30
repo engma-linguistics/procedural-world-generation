@@ -27,6 +27,7 @@ U8 = lambda d: {"dtype": "uint8", "scale": 1, "offset": 0, "transform": None, "u
 PEOPLE_LAYERS = {
     "peoples": U8("the people holding most of the cell (index into meta.lineages; 255 none)"),
     "peoples_mix": U8("how many peoples hold 25% or more of the cell"),
+    "peoples_learned": U8("niche learning (PW-1155): % learned acceptance of the cell's leading people as a whole (peoples_whole; the most any of its lines learned here): 0 its culture's own country or none learned, 100 fully at home there up to its body limits"),
     "peoples_share": U8("% of the cell's habitat the leading people holds"),
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
     "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),

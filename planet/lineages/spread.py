@@ -245,3 +245,43 @@ def jump_reach(src, cost, maxd, nbr_off, nbr_idx):
                 d[j] = v
                 heapq.heappush(hq, (v, j))
     return np.where(np.isfinite(d), d, -1.0)
+
+
+@njit(cache=True)
+def carry_max(L, held, cls, idx, nbr_off, nbr_idx):
+    """For each cell idx[x]: the largest L over its held neighbours of the same class (cls; PW-1155, the learned country a people
+    carries into frontier cells of the same biome), 0 where none."""
+    out = np.zeros(idx.shape[0], np.float32)
+    for x in range(idx.shape[0]):
+        i = idx[x]
+        best = 0.0
+        for k in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[k]
+            if held[j] and cls[j] == cls[i] and L[j] > best:
+                best = L[j]
+        out[x] = best
+    return out
+
+
+@njit(cache=True)
+def learned_load(p, rows, dA, dT, Lm, k, idx, contact):
+    """The extra load line k feels on the cells idx where it or a rival lives on learned country (history.habitat._learned_load,
+    PW-1155): sum_j max(L_k, L_j) p_j (dA_j + (1 - contact) dT_j) over the rival rows."""
+    m = idx.shape[0]
+    out = np.zeros(m)
+    for r in range(rows.shape[0]):
+        j = rows[r]
+        a, t = dA[j], dT[j]
+        if a <= 0.0 and t <= 0.0:
+            continue
+        for x in range(m):
+            i = idx[x]
+            v = p[j, i]
+            if v <= 0.0:
+                continue
+            w = Lm[k, i]
+            if Lm[j, i] > w:
+                w = Lm[j, i]
+            if w > 0.0:
+                out[x] += w * v * (a + (1.0 - contact[x]) * t)
+    return out
