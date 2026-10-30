@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Peoples workbench · Planet Viewer</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; --ok: #9fd18b; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid;
+  /* (the shared tokens are in theme.css; this page's panels are solid, and it calls the border "line") */
+  :root { --panel: var(--panel-solid); --line: var(--border); --acc: var(--accent); }
+  body { display: grid;
          grid-template-rows: auto auto 1fr auto; height: 100vh; }
   header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   header b { font-size: 15px; margin-right: 8px; }
@@ -27,17 +28,17 @@
   #tlctl select { margin: 4px 0 0 6px; max-width: 170px; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
   footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
-  button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  button, select, input { background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  .filebtn { display: inline-block; margin: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
+  .filebtn:hover { border-color: var(--acc); }
   button { cursor: pointer; } button:hover { border-color: var(--acc); }
   input[type=number] { width: 70px; } input.wide { width: 100%; }
   label { display: block; margin: 5px 0 2px; color: var(--muted); }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .muted { color: var(--muted); } .err { color: var(--err); } .ok { color: var(--ok); }
   .trait { display: inline-block; margin: 2px 8px 2px 0; color: var(--text); }
   svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
   .bar { cursor: grab; } .sel rect.bg { fill: #233047; }
   h3 { margin: 12px 0 4px; font-size: 13px; } h2 { font-size: 14px; margin: 4px 0 8px; }
-  a { color: var(--acc); }
   table.t { border-collapse: collapse; font-size: 12px; }
   table.t th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; color: var(--muted); padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.t td { padding: 2px 5px; border-bottom: 1px solid #1c2430; vertical-align: top; }
@@ -66,7 +67,7 @@
   <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
   <button id="save">Save</button>
   <button id="download">Download JSON</button>
-  <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
+  <label class="filebtn" title="Open a tree saved with Download JSON">Open JSON…<input type="file" id="upload" accept=".json" hidden></label>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
   <span class="muted">world</span><button id="favBtn" title="Star this world as a favourite (kept by the server; the default world here, and for agents: planet favourites)" aria-pressed="false" disabled>&#9734;</button><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history). Starred ones (&#9733;) are your favourites; the first one is the default."></select>
@@ -925,7 +926,7 @@ async function getFavs() {
 }
 function syncFav() {
   const w = $('world').value, ok = /^[0-9a-zA-Z_-]+$/.test(w), on = ok && favs.has(w), b = $('favBtn');
-  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+  b.disabled = !ok; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? 'var(--star)' : ''; b.setAttribute('aria-pressed', String(on));
 }
 $('favBtn').onclick = async () => {
   const id = $('world').value;

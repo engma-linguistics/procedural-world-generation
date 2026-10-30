@@ -12,8 +12,8 @@ const CSS = `
 #start h1 { font-size: 20px; margin: 0; flex: 1; min-width: 160px; }
 #start h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
 #start .seg { display: flex; gap: 6px; flex-wrap: wrap; }
-#start .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
-#start .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
+#start .seg button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+#start .seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 #start .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
 #start .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 #start .card:hover { border-color: var(--accent); }
@@ -21,14 +21,14 @@ const CSS = `
 #start .card .pl-thumb { object-fit: contain; }
 #start .views { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 #start .views .lbl { color: var(--muted); font-size: 12px; }
-#start .views button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
-#start .views button[aria-pressed=true] { background: var(--accent); color: #06121f; border-color: var(--accent); }
+#start .views button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+#start .views button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 #start .find { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0 10px; }
-#start .find input[type=search] { flex: 1 1 220px; min-width: 0; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: inherit; }
+#start .find input[type=search] { flex: 1 1 220px; min-width: 0; background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: inherit; }
 #start .find select { width: auto; padding: 4px 6px; }
 #start .find .lbl { color: var(--muted); font-size: 12px; }
-#start .find button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 12px; cursor: pointer; font: inherit; font-size: 12px; }
-#start .find button[aria-pressed=true] { background: var(--accent); color: #06121f; border-color: var(--accent); }
+#start .find button { background: var(--ctl); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 12px; cursor: pointer; font: inherit; font-size: 12px; }
+#start .find button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 #start .find .count { color: var(--muted); font-size: 12px; margin-left: auto; }
 #start .chip.peoples { color: var(--accent); border-color: var(--accent); }
 #start .card .nm { font-weight: 600; overflow-wrap: anywhere; }
@@ -43,13 +43,13 @@ const CSS = `
 #start fieldset { border: 1px solid var(--border); border-radius: 8px; margin: 0; padding: 8px 12px 12px; min-width: 0; }
 #start legend { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 0 6px; }
 #start .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-#start .preset { text-align: left; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
+#start .preset { text-align: left; background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
 #start .preset.on { border-color: var(--accent); background: #16263b; }
 #start .preset b { display: block; }
 #start .preset span { color: var(--muted); font-size: 12px; }
 #start .f { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 4px 12px; align-items: center; padding: 3px 0; }
 #start .f .hp { grid-column: 2; color: var(--muted); font-size: 11px; margin-top: -2px; }
-#start input[type=number], #start select { background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font: inherit; width: 100%; min-width: 0; }
+#start input[type=number], #start select { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font: inherit; width: 100%; min-width: 0; }
 #start input[type=range] { width: 100%; }
 #start .inl { display: flex; gap: 8px; align-items: center; }
 #start label.ck { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; flex-wrap: wrap; }
@@ -172,7 +172,7 @@ export async function showStart() {
         (c.zoom + c.fine) && `${c.zoom + c.fine} zoom${c.zoom + c.fine > 1 ? 's' : ''}`].filter(Boolean);
       const meta = metaOf(p), starred = p.nodes.some((n) => favs.has(favKey(n)));
       return `<div class="card" data-i="${i}"><div class="pic" data-act="open"><img class="pl-thumb" src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
-        <div class="nm">${starHtml(favs.has(favKey(primaryNode(p))), 'data-act="star"')}${starred && !favs.has(favKey(primaryNode(p))) ? '<span title="Another part of this planet is starred (see Family)" style="color:#ffc940"> \u2605</span> ' : ' '}${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
+        <div class="nm">${starHtml(favs.has(favKey(primaryNode(p))), 'data-act="star"')}${starred && !favs.has(favKey(primaryNode(p))) ? '<span title="Another part of this planet is starred (see Family)" style="color:var(--star)"> \u2605</span> ' : ' '}${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
         <div class="chips">${chips.map((x) => `<span class="chip${x.includes('peoples') ? ' peoples' : ''}">${x}</span>`).join('')}</div>
         <div class="row"><button class="pl-btn primary" data-act="open">Open</button><button class="pl-btn" data-act="details" title="Everything made from this planet: its runs, time zooms, peoples runs, worlds and zooms">Family (${p.nodes.length})</button></div></div>`;
     }).join('')}</div>`;

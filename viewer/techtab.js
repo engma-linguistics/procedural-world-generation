@@ -43,7 +43,7 @@
 #tab-tech .row:hover rect.bg { fill: #182131; }
 #tab-tech .tt-map { position: relative; height: 100%; }
 #tab-tech .tt-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
-#tab-tech .tt-side table.t tr[data-k] { cursor: pointer; } #tab-tech .tt-side table.t tr[data-k]:hover td { background: #1d2532; }
+#tab-tech .tt-side table.t tr[data-k] { cursor: pointer; } #tab-tech .tt-side table.t tr[data-k]:hover td { background: var(--ctl-hi); }
 #tab-tech .tt-side table.t tr.future td { opacity: .35; }
 #tab-tech .kpi { display: flex; gap: 22px; flex-wrap: wrap; margin: 2px 0 10px; align-items: flex-end; }
 #tab-tech .kpi div b { display: block; font-size: 17px; } #tab-tech .kpi div span { color: var(--muted); font-size: 11px; }

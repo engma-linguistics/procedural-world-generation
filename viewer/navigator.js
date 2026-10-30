@@ -14,12 +14,12 @@ const CSS = `
 #navBar .crumb { display: flex; align-items: center; gap: 5px; flex: none; padding: 2px 6px 2px 2px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; white-space: nowrap; font-size: 12px; }
 #navBar .crumb:hover { background: #1d2738; }
 #navBar .crumb.cur { border-color: var(--accent); background: #223652; }
-#navBar .crumb img { width: 36px; height: 18px; object-fit: cover; border-radius: 3px; background: #111827; }
-#navBar .nsel { flex: none; margin-left: 6px; padding: 1px 4px; font-size: 11px; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; }
+#navBar .crumb img { width: 36px; height: 18px; object-fit: cover; border-radius: 3px; background: var(--ctl); }
+#navBar .nsel { flex: none; margin-left: 6px; padding: 1px 4px; font-size: 11px; background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; }
 #navBar .sep { color: var(--muted); flex: none; }
 #navBar [hidden] { display: none; }
 #navTree .zf { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 3px; font-size: 11px; }
-#navTree .zf input, #navTree .zf select { background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; font: inherit; width: 64px; }
+#navTree .zf input, #navTree .zf select { background: var(--ctl); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; font: inherit; width: 64px; }
 #navTree .zf select { width: auto; }
 #navBar .job { font-size: 11px; color: var(--muted); flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #navTree { top: 56px; left: 294px; width: min(460px, calc(100vw - 306px)); max-height: calc(100vh - 140px); overflow-y: auto; z-index: 21; }

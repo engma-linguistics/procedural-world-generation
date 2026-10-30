@@ -101,7 +101,7 @@ export async function fillSelector() {
 // the star button shows whether the run or world on show is a favourite; a click stars or unstars it (POST /api/favourites)
 export function syncFav() {
   const v = $('worldSel').value, b = $('favBtn'), on = !!v && S.FAVS.has(favKeyOf(v));
-  b.disabled = !v; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? '#ffc940' : ''; b.setAttribute('aria-pressed', String(on));
+  b.disabled = !v; b.textContent = on ? '\u2605' : '\u2606'; b.style.color = on ? 'var(--star)' : ''; b.setAttribute('aria-pressed', String(on));
 }
 $('favBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;
