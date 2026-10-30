@@ -11,7 +11,7 @@ impact: low
 found_by: pw405
 blocked_by: []
 relates: [PW-405]
-refs: [planet/zoom_fine.py, _courses]
+refs: [planet/zoom/fine.py, _courses]
 created: 2026-10-16
 updated: 2026-10-23
 ---
@@ -28,3 +28,4 @@ Approach: in braided reaches, widen the active belt to ~3-5 w and draw 2-4 threa
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-braided-rivers.md (found by pw405).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

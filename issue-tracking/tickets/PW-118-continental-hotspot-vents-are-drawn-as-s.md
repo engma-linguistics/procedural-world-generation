@@ -11,7 +11,7 @@ impact: low
 found_by: volcanoes
 blocked_by: []
 relates: [PW-004, PW-010, PW-649]
-refs: [planet/zoom_volcanoes.py, planet/tectonics/volcanism.py, docs/review/zoom-polish/pw118_caldera_after.png]
+refs: [planet/zoom/volcanoes.py, planet/tectonics/volcanism.py, docs/review/zoom-polish/pw118_caldera_after.png]
 created: 2026-10-14
 updated: 2026-10-26
 ---
@@ -43,3 +43,4 @@ and lower their height limit in the run (`volcanism.new_vent`, hmax ~3 km now).
   `radius_km`) and note it in docs/overview.md.
 - 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-continental-hotspot-calderas.md (found by volcanoes).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

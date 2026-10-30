@@ -1,7 +1,7 @@
 """Forms a fine zoom draws at its own scale (PW-392): glaciers, landform
 overlays (karst, dunes) and coastal life with the reefs as terrain. Each reuses the regional
-zoom's code (zoom.glaciers, zoom_landforms.Landforms.finish,
-zoom_coastal.place) on the fine pixels, with the parent's say kept:
+zoom's code (zoom.glaciers, zoom.landforms.Landforms.finish,
+zoom.coastal.place) on the fine pixels, with the parent's say kept:
 
   glaciers   zoom.glaciers() on the fine ground (its drainage, the fine
              climate's lapse), the parent's ice as the "coarse ice" (the
@@ -14,8 +14,8 @@ zoom_coastal.place) on the fine pixels, with the parent's say kept:
              change is taken off again, so the parent's own (resolved at its
              scale) isn't drawn twice and the pixel means stay.
   reefs      the volcanoes' reefs (atoll rims and their islets, fringing flats)
-             by zoom_volcanoes.fields on the fine pixels, same seed.
-  coastal    zoom_coastal.place on the fine sea floor and shore, each
+             by zoom.volcanoes.fields on the fine pixels, same seed.
+  coastal    zoom.coastal.place on the fine sea floor and shore, each
              habitat kept to where the parent has it; reef pixels raised to
              their flats, the lagoons around deepened to keep each parent
              pixel's mean.
@@ -25,14 +25,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import icemass
-from . import zoom as Z
-from . import zoom_coastal as ZCL
-from . import zoom_kernels as ZK
-from . import zoom_landforms as ZL
-from . import zoom_volcanoes as ZV
-from . import zoom_vegetation as ZVG
-from .geo import R_KM, latlon
+from .. import icemass
+from . import regional as Z
+from . import coastal as ZCL
+from . import kernels as ZK
+from . import landforms as ZL
+from . import volcanoes as ZV
+from . import vegetation as ZVG
+from ..geo import R_KM, latlon
 
 OVERLAY_CLASSES = (8, 9)  # landform.KARST, landform.DUNES: the classes with overlays (Synth.overlay)
 HABITAT_KEEP = 0.25  # a fine habitat pixel stands where the parent's habitat (bilinear) is at least this
@@ -65,7 +65,7 @@ def subpixel(dz: np.ndarray, mask: np.ndarray, pa, own: np.ndarray, pr, pc) -> n
 def glaciers(world: dict, pa, pr, pc, Pk, P, h, land, sea, ring, nb: int, res: float, fields: dict, S: int,
              precip: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """(mask, thickness m) of the zoom's glaciers on the finished ground h (all flat, nb x nb): zoom.glaciers()
-    with the fine climate (fields: zoom_vegetation.fine_fields) and the parent's ice as its coarse ice."""
+    with the fine climate (fields: zoom.vegetation.fine_fields) and the parent's ice as its coarse ice."""
     g = world["grid"]
     sp = g.spacing * R_KM
     ice_c = np.maximum(pa.bilinear("ice", pr, pc), 0.0) if "ice" in pa.L else np.zeros(len(h))
@@ -96,7 +96,7 @@ def glaciers(world: dict, pa, pr, pc, Pk, P, h, land, sea, ring, nb: int, res: f
 # ---------------------------------------------------------------------------
 def landform_overlay(world: dict, fr, pa, pr, pc, own, Pk, px, py, nb: int, res: float, S: int, h, land, rec, order,
                      discharge, water, ice, active, region):
-    """The karst and dune overlays on the finished fine ground (zoom_landforms.Landforms.finish), as sub-parent-
+    """The karst and dune overlays on the finished fine ground (zoom.landforms.Landforms.finish), as sub-parent-
     pixel detail. All arrays flat on the nb x nb pixels (the halo included; region: the part the stats count).
     Returns None where no such class is near, else {"h", "q", "pond", "pond_depth", "stats"}."""
     g, L = world["grid"], world["layers"]
@@ -136,7 +136,7 @@ def landform_overlay(world: dict, fr, pa, pr, pc, own, Pk, px, py, nb: int, res:
 # ---------------------------------------------------------------------------
 def coastal(world: dict, fr, pa, pr, pc, own, Pk, px, py, n: int, res: float, rseed: int, h, water, glacier,
             surf_rock, volcano_reef=None) -> dict:
-    """The fine zoom's coastal life (zoom_coastal.place on the fine shore and sea floor, with the lineage's seed) kept
+    """The fine zoom's coastal life (zoom.coastal.place on the fine shore and sea floor, with the lineage's seed) kept
     to where the parent has each habitat, and its reef flats as terrain. All arrays flat on the n x n pixels.
     Returns {"layer", "h" (reef flats raised, the lagoons deepened to keep each parent pixel's mean), "stats",
     "reef_forms"}."""
@@ -151,7 +151,7 @@ def coastal(world: dict, fr, pa, pr, pc, own, Pk, px, py, n: int, res: float, rs
     for k in (ZCL.REEF, ZCL.KELP, ZCL.SEAGRASS, ZCL.MANGROVE, ZCL.SALT_MARSH):
         pk = pa.bilinear((p_cl == k).astype(float), pr, pc) >= HABITAT_KEEP
         keep |= (layer == k) & pk
-    if volcano_reef is not None:  # (a volcano's own reef: zoom_volcanoes' rim, drawn here at the fine scale)
+    if volcano_reef is not None:  # (a volcano's own reef: zoom.volcanoes' rim, drawn here at the fine scale)
         keep |= (layer == ZCL.REEF) & volcano_reef
     layer = np.where(keep, layer, 0).astype(np.uint8)
     on = keep & (layer == ZCL.REEF) & np.isfinite(cz["reef_top"])
@@ -173,7 +173,7 @@ def coastal(world: dict, fr, pa, pr, pc, own, Pk, px, py, n: int, res: float, rs
 
 def volcano_reefs(world: dict, fr, px, py, n: int, res: float, Pk, rseed: int):
     """The volcanoes' reefs (fringing flats, barrier reefs, atoll rims with their islets) at the fine scale:
-    zoom_volcanoes.fields on the fine pixels with the lineage's seed draws the same planet-fixed forms the regional
+    zoom.volcanoes.fields on the fine pixels with the lineage's seed draws the same planet-fixed forms the regional
     zoom did, now at the pixel size. Returns {"reef": mask, "h": their heights (m)} or None."""
     g = world["grid"]
     vf = ZV.fields(world, fr, px, py, res, g.spacing * R_KM, Pk, rseed, n * res)

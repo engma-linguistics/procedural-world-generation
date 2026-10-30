@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from planet import zoom
-from planet import zoom_coastal as ZCL
-from planet import zoom_kernels as ZK
+from planet.zoom import regional as zoom
+from planet.zoom import coastal as ZCL
+from planet.zoom import kernels as ZK
 
 
 def test_dean_profile_and_closure_depth():

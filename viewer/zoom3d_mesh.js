@@ -225,7 +225,7 @@ export function hugChaikin(p, H, n = 2, tol = 1) {
   return out;
 }
 
-// D8 slot (the zoom's `receiver` layer, planet/zoom.py d8_slots: 0 NW, 1 N,
+// D8 slot (the zoom's `receiver` layer, planet/zoom/regional.py d8_slots: 0 NW, 1 N,
 // 2 NE, 3 W, 4 E, 5 SW, 6 S, 7 SE; rows run south) -> [dr, dc]; 255: none
 export const D8 = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 

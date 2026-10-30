@@ -12,7 +12,7 @@
 // centre at 0) and placed in the scene by its group's matrix. Heights are
 // stored in metres and the tiles' group is scaled by exag / 1000, so the
 // vertical exaggeration is one scale. The first tile is the zoom opened; its
-// fine zooms (PW-129, zoom_fine.py), and theirs, are more tiles, placed by
+// fine zooms (PW-129, zoom/fine.py), and theirs, are more tiles, placed by
 // reprojection (each fine pixel -> lat/lon -> the first zoom's frame, fitted
 // as one affine map: place()) and drawn over it: each cuts a hole in the
 // coarser tiles' ground, sea, lakes and shadows (zoom3d_look.js holes), its

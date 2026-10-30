@@ -1,10 +1,10 @@
 // Placing fine zooms (PW-129) in the zoom 3D view (zoom3d.js): the zooms'
-// azimuthal equidistant projection (planet/zoom.py Frame) and the affine map
+// azimuthal equidistant projection (planet/zoom/regional.py Frame) and the affine map
 // that puts a fine zoom's frame into the first zoom's. No three.js, so the
 // tests can import it (tests/test_viewer.py).
 const R_KM = 6371;
 
-// the zooms' projection (planet/zoom.py Frame): azimuthal equidistant round
+// the zooms' projection (planet/zoom/regional.py Frame): azimuthal equidistant round
 // (lat, lon); plane x east, y north, km
 export function aeFrame(lat, lon) {
   const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;

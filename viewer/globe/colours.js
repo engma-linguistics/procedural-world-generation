@@ -209,7 +209,7 @@ export function huMapFeatures() {
     for (const { i, cls } of f.passes) feats.marks.push({ lat: G.lat[i], lon: G.lon[i], shape: 'hourglass', color: col('pass', cls), size: 5 });
   return feats;
 }
-// coastal life (coastal.py): layer, name, colour (as zoom_coastal.LIFE), sea or land
+// coastal life (coastal.py): layer, name, colour (as zoom.coastal.LIFE), sea or land
 export const COASTAL = [['reef', 'coral reef', '#ff6fa8'], ['kelp', 'kelp forest', '#9a7b2a'], ['seagrass', 'seagrass meadow', '#3fbf6a'],
                  ['mangrove', 'mangrove', '#14d2b0'], ['salt_marsh', 'salt marsh', '#e3d65a']];
 export const COASTAL_COLS = Object.fromEntries(COASTAL.map(([k, , c]) => [k, new THREE.Color(c)]));

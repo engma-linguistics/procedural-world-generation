@@ -11,7 +11,7 @@ impact: low
 found_by: fun4
 blocked_by: []
 relates: [PW-695, PW-607]
-refs: [planet/resources.py, planet/zoom_resources.py, viewer/index.html, viewer/zoom.html, planet/__main__.py]
+refs: [planet/resources.py, planet/zoom/resources.py, viewer/index.html, viewer/zoom.html, planet/__main__.py]
 created: 2026-10-23
 updated: 2026-10-23
 ---
@@ -33,3 +33,4 @@ Options: A. leave as built; B. add the creation flag; C. B plus the viewer filte
 ## Updates
 - 2026-10-23: Status needs-decision -> wontdo. Coordinator's call: as built (mode on the tree and on planet resources); revisit if the owner asks for a viewer toggle.
 - 2026-10-23: Created from inbox draft draft-mode-viewer-toggle-and-world-option.md (found by fun4).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

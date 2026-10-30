@@ -11,7 +11,7 @@ impact: med
 found_by: pw092
 blocked_by: []
 relates: [PW-092, PW-499, PW-037]
-refs: [planet/zoom_glacial.py, planet/zoom_fine.py, "zoom b03a2b", "zoom bf3c88", "world 577526"]
+refs: [planet/zoom/glacial.py, planet/zoom/fine.py, "zoom b03a2b", "zoom bf3c88", "world 577526"]
 created: 2026-10-21
 updated: 2026-10-21
 ---
@@ -24,3 +24,4 @@ Two gaps left by PW-092.
 
 ## Updates
 - 2026-10-21: Created from inbox draft draft-glacial-zoom-fine-and-alpine.md (found by pw092).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

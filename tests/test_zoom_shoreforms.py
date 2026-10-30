@@ -1,8 +1,8 @@
-"""zoom_shoreforms (PW-621): the tidal flats' D8 channels and the layer's spec/legend."""
+"""zoom.shoreforms (PW-621): the tidal flats' D8 channels and the layer's spec/legend."""
 import numpy as np
 
-from planet import zoom_coast as ZC
-from planet import zoom_shoreforms as SF
+from planet.zoom import coast as ZC
+from planet.zoom import shoreforms as SF
 
 
 def test_flat_channels_gather_toward_the_sea():

@@ -11,7 +11,7 @@ impact: med
 found_by: pw395-volcano-form
 blocked_by: []
 relates: [PW-395, PW-394]
-refs: [planet/zoom.py, planet/zoom_volcanoes.py, "zoom 193d10"]
+refs: [planet/zoom/regional.py, planet/zoom/volcanoes.py, "zoom 193d10"]
 created: 2026-10-16
 updated: 2026-10-16
 ---
@@ -34,3 +34,4 @@ in the coarse zoom so nested zooms are consistent.
 
 ## Updates
 - 2026-10-16: Created from inbox draft draft-coarse-zoom-cone-below-summit.md (found by pw395-volcano-form).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

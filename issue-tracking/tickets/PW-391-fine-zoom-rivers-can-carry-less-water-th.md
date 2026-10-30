@@ -11,7 +11,7 @@ impact: low
 found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129]
-refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", "zoom 97b3e7"]
+refs: [planet/zoom/fine.py, "zoom 3e74b0", "zoom b3c260", "zoom 97b3e7"]
 created: 2026-10-16
 updated: 2026-10-16
 ---
@@ -34,3 +34,4 @@ widths aren't.
 
 ## Updates
 - 2026-10-16: Created from inbox draft draft-fine-zoom-inflow-accounting.md (found by pw129-fine-zoom).
+- 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

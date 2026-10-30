@@ -9,8 +9,8 @@ import pytest
 from planet import store as S
 from planet import timeline as T
 from planet import world as W
-from planet import zoom as Z
-from planet import zoom_resources as ZR
+from planet.zoom import regional as Z
+from planet.zoom import resources as ZR
 from planet.tectonics import Params
 
 

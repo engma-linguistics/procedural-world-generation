@@ -145,3 +145,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-30: Dragon density paper merged (24fc1543) after round-2 peer + citation re-verify; published https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ (standalone; trail in claims.md/changes-r2.md). Model-change drafts intaken.
 - 2026-10-30: Fun lane 50 merged (ac0cadae, PW-1024 done): owner's A+B mix for open dragon niches; dragon paper carries a postscript on it.
 - 2026-10-30: PW-1050 merged (7a49aa3f) before the Earth check (GPCC down upstream; main equally blocked); cadence independence achieved; passes 78%. Earth check + ice-sheet temps vs 3a58e00d owed.
+- 2026-10-30: Refactor 2 merged (4e51d8dd): zoom code in planet/zoom/, regional.build in 25 named stages on ZoomCtx; bit-identical on 4 test regions.

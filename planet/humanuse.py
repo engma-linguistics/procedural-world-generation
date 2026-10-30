@@ -328,7 +328,7 @@ def harbours(net: Net, depth, land, sea_ice_months, q_mouth, fetch_eff, reach_km
 def open_sea(sea, res_km: float):
     """(ny, nx) bool: the sea pixels of a zoom that ships reach from outside it: their (8-connected)
     water touches the zoom's edge, or is a sea of its own at least HARBOUR_FETCH_KM across (area)."""
-    from .zoom_kernels import label_components
+    from .zoom.kernels import label_components
     if not sea.any():
         return sea
     ny, nx = sea.shape

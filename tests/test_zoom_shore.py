@@ -1,8 +1,8 @@
 """Lake shores rise from the water instead of lying as a table (PW-531)."""
 import numpy as np
 
-from planet import zoom as Z
-from planet import zoom_kernels as ZK
+from planet.zoom import regional as Z
+from planet.zoom import kernels as ZK
 
 
 def _plain(n=60, rise=0.2):

@@ -372,7 +372,7 @@ def test_code_hash_scopes():
     from planet import provenance as P
     names = {s: {p.relative_to(P.PLANET).as_posix() for p in P.scope_files(s)} for s in P.SCOPES}
     for s in ("sim", "finish", "lineages", "highlights"):
-        assert not {"server.py", "api.py", "zoom.py", "zoom_fine.py", "__main__.py"} & names[s], s
+        assert not {"server.py", "api.py", "zoom/regional.py", "zoom/fine.py", "__main__.py"} & names[s], s
     assert {"tectonics/simulation.py", "climate.py", "tectonics/earth.py"} <= names["sim"]
     assert {"world.py", "finish.py", "soils.py", "vegetation.py"} <= names["finish"]
     assert {"lineages/land.py", "lineages/seafood.py", "lineages/recent.py", "resources.py"} <= names["lineages"]

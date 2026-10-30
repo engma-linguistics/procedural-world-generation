@@ -1,4 +1,4 @@
-"""Coastal and shallow-sea life (planet/coastal.py, zoom_coastal.py; PW-188,
+"""Coastal and shallow-sea life (planet/coastal.py, zoom/coastal.py; PW-188,
 PW-209): the rules on hand-made layers, and the layers through world.finish
 and the zoom on a small synthetic world."""
 
@@ -8,8 +8,8 @@ import pytest
 from planet import coastal as C
 from planet import vegetation as V
 from planet import world as W
-from planet import zoom
-from planet import zoom_coastal as ZC
+from planet.zoom import regional as zoom
+from planet.zoom import coastal as ZC
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 

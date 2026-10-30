@@ -1,6 +1,6 @@
 """Terrain indices of a regional zoom (PW-196): what the finished heightmap
 does to the light and the water a pixel gets, for the zoom's vegetation
-(zoom_vegetation, PW-214) and later soils (PW-185) and microclimate (PW-101).
+(zoom.vegetation, PW-214) and later soils (PW-185) and microclimate (PW-101).
 
 - Radiation index: the sunshine a pixel's slope receives over a day, as a
   share of what flat ground at the same place gets, month by month: the
@@ -27,7 +27,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit, prange
 
-from . import climate
+from .. import climate
 
 RIVER_Q = 1.0  # m^3/s: a stream carrying this much (mean) counts as a river for the distances
 DIFFUSE = 0.3  # share of the light that comes diffusely from the sky (clear to partly cloudy)

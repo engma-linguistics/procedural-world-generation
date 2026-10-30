@@ -1,6 +1,6 @@
 """Meander trains of a fine zoom's alluvial rivers (PW-425).
 
-zoom_fine._courses draws a single-thread alluvial reach as its valley axis
+zoom.fine._courses draws a single-thread alluvial reach as its valley axis
 plus a meander train. PW-405 drew it as a sine-generated curve (Langbein &
 Leopold 1966) of one wavelength and one swing: the same bend over and over,
 a drawn wave. Here each bend is its own:
@@ -21,7 +21,7 @@ a drawn wave. Here each bend is its own:
   phi(psi) keeps the mean wavelength over every BLOCK wavelengths, which
   keeps it local (a point's phi depends only on psi near it);
 - the swing is capped where the valley floor leaves no room (its amplitude),
-  where a loop's neck would close (NECK) and, in zoom_fine._courses, where
+  where a loop's neck would close (NECK) and, in zoom.fine._courses, where
   the centreline would bend tighter than R_MIN (a loop meeting a valley
   bend: PW-424).
 

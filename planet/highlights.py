@@ -45,7 +45,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   less than 600 km apart. Hotspot island chain: from the same volcano table,
   a plume's vents on the sea floor linked when within CHAIN_LINK_KM and
   CHAIN_LINK_MYR of each other, ranked by how many islands, atolls and guyots
-  they show (zoom_volcanoes.form), zoomed where most islands and atolls are;
+  they show (zoom.volcanoes.form), zoomed where most islands and atolls are;
   worlds without a table fall back to land of hotspot basalt on oceanic crust
   within 1500 km of a live hotspot. Atolls: the biggest group of atolls
   (hotspot or arc, linked within ATOLL_LINK_KM, cut into archipelagos at most
@@ -83,7 +83,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   a big landmass (>= BIG_LAND_KM2) on the outer half of its shelf (no more
   links from deeper sea than from the shore), >= BARRIER_MIN_KM long. A
   coral coast's tract holding a shown bank or barrier reef is left to them.
-- volcano kinds (from the volcano table, with zoom_volcanoes.status: active,
+- volcano kinds (from the volcano table, with zoom.volcanoes.status: active,
   dormant, extinct): supervolcano, a continental plume's caldera track
   (Yellowstone) with a caldera still active or dormant; the highest active
   arc stratovolcano; the great shield, the oceanic hotspot volcano standing
@@ -884,11 +884,11 @@ WINDOW_KM = 350.0  # a chain's or group's zoom: the most islands within this of 
 
 
 def _volcano_forms(ctx: _Ctx) -> list[dict]:
-    """The world's volcano table (zoom_volcanoes.table) with each one's form
+    """The world's volcano table (zoom.volcanoes.table) with each one's form
     (what it looks like now: island, atoll, guyot...) and status (active,
-    dormant or extinct: zoom_volcanoes.status); [] without one."""
+    dormant or extinct: zoom.volcanoes.status); [] without one."""
     if getattr(ctx, "_vforms", None) is None:
-        from .zoom_volcanoes import form, statuses, table
+        from .zoom.volcanoes import form, statuses, table
         V = table({"meta": ctx.meta})
         ctx._vforms = [dict(v, form=form(v), status=s) for v, s in zip(V, statuses({"meta": ctx.meta}, V))]
     return ctx._vforms
@@ -1100,7 +1100,7 @@ def _vcell(ctx: _Ctx, v: dict) -> int:
 
 def _vtype(v: dict) -> str:
     """The edifice type: arc stratovolcano, hotspot shield (at sea) or
-    caldera (a hotspot vent on a continent: zoom_volcanoes._caldera)."""
+    caldera (a hotspot vent on a continent: zoom.volcanoes._caldera)."""
     return "stratovolcano" if v["kind"] == ARC_VOLCANO else "caldera" if v["floor_m"] > 0 else "shield volcano"
 
 
@@ -1110,7 +1110,7 @@ def _plural(n: int, word: str) -> str:
 
 def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
     """A caldera system (Yellowstone): the track of a plume under a
-    continent (hotspot vents on land, zoom_volcanoes draws each as a caldera
+    continent (hotspot vents on land, zoom.volcanoes draws each as a caldera
     on a lava plain), linked as the island chains are (_tracks), with at
     least one caldera still active or dormant (over the plume's head).
     Ranked by how many calderas the plume left; the zoom frames the live
@@ -1135,7 +1135,7 @@ def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
         n_dor = len(live) - n_act
         ext = [v for v in cal if v["status"] == "extinct"]
         state = "active" if n_act else "dormant"
-        across = 2 * float(young["radius_km"])  # (zoom_volcanoes: the caldera is CALDERA_R = 1 x the vent's radius)
+        across = 2 * float(young["radius_km"])  # (zoom.volcanoes: the caldera is CALDERA_R = 1 x the vent's radius)
         parts = ([f"{_plural(n_act, 'active caldera')} over the plume now"] if n_act else []) \
             + ([f"{_plural(n_dor, 'dormant caldera')} still over its head (quiet, but able to erupt again)"] if n_dor else [])
         blurb = (f"A supervolcano: a caldera system where a mantle plume rises under a continent, like Yellowstone. "
