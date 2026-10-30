@@ -140,9 +140,3 @@ SPLIT_FOUNDING = "range"  # lane 77 (owner ruling 10-30, PW-1152: a new people e
 # FOUNDER_KM about the origin only; at the stem's end its range passes only to children of its own kind, megafauna to megafauna, peoples to
 # peoples: a dragon range is not a population of proto-kobolds); "local_vacate" (local, and the stem's range is handed to no child: its
 # children spread into it)
-ADAPT_KYR = 0.0  # lane 77 (owner 10-30, a candidate measured as an arm, not chosen; 0: off): cultural preference widening toward hard
-# tolerance. A people's habitat on a cell it has held or bordered for t kyr (glacial and recent steps) rises toward its tolerance there,
-# K -> max(K, ADAPT_MAX x (1 - exp(-t / ADAPT_KYR)) x T), T the climate fit widened by EDGE_C / EDGE_OCT / EDGE_ELEV_M (the megafauna's
-# edge tier, habitat.edge_fit) and free of its preferred places: elves and gnomes can come to live in tundra or desert next to their
-# country, as humans did into the Arctic; tortles still not in the frozen north (outside their widened fit). Not megafauna, not marine
-ADAPT_MAX = 0.8

@@ -9,7 +9,6 @@ from ..spread import EST, graph_dist
 from .params import EDGE_C, EDGE_ELEV_M, EDGE_OCT, HOLOCENE_KYR, MEGAFAUNA_OFF, NEAR_KM, TOLERATE_K, NEAR_ORIGIN, NEAR_ORIGIN_KM, NEAR_RANGE
 from .gridops import _isin, _soft
 from .tags import _tags
-from . import params as PM
 
 
 def _land_view(env: dict, tags: dict) -> dict:
@@ -155,11 +154,6 @@ class HabitatMixin:
                 K = K * self.animals.k_mult(self.idx[l.id])
             if self.crops is not None and not l.overlay and self.goods is not None and step.epoch != "deep":  # crops feed more farmers
                 K = K * self.crops.k_mult(self.idx[l.id])
-        if PM.ADAPT_KYR > 0 and not l.megafauna and not l.marine and not l.overlay and step.epoch != "deep":
-            at = getattr(self, "_adj_t", None)  # (lane 77 arm: preference widening toward tolerance where the people has lived next door)
-            if at is not None and at[self.idx[l.id]].any():
-                a = PM.ADAPT_MAX * (1.0 - np.exp(-at[self.idx[l.id]] / PM.ADAPT_KYR))
-                K = np.maximum(K, a * edge_fit(l, env, tags))
         if l.megafauna and not l.marine:  # (PW-1024 B: ecological release into rich land no rival kind holds; the kind's own habitat kept apart
             from . import megafauna as MG  # for its coverage target, megafauna.summary)
             self._K_own[self.idx[l.id]] = K

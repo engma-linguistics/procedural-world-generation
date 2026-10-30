@@ -48,4 +48,4 @@ def test_one_run_per_founding_arm(faketz):  # noqa: F811
             if arm == "local_vacate":
                 assert all(v["inherit_mkm2"] == 0.0 for v in P.values())
     finally:
-        PM.SPLIT_FOUNDING, PM.ADAPT_KYR = "range", 0.0
+        PM.SPLIT_FOUNDING = "range"

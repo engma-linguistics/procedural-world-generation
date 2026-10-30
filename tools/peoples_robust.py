@@ -2,6 +2,7 @@
 
     uv run python tools/peoples_robust.py plan                       # list the variants (no runs)
     uv run python tools/peoples_robust.py run --out DIR [--jobs 4 --threads 4 --max-load 60] [--family base,jitter,...]
+    uv run python tools/peoples_robust.py run --out DIR2 --arms range --trees dnd,even_six --seeds 7 --params '{"INVADE": 0}' --tag noinv
     uv run python tools/peoples_robust.py report --out DIR           # tables from the runs in DIR (report.md, summary.json)
     uv run python tools/peoples_robust.py one SPEC.json OUT.json     # one variant (the runner's worker)
 
@@ -12,6 +13,9 @@ Variant families, cut from the stock trees (planet/lineages/samples):
   subset  a 5-people and a 3-people tree cut from dnd (enabled = false on the rest, stems kept), and dnd plus an authored people
   knob    three peoples (a mainline one, a minor one, a late arrival) at density x0.5 and x2 against the base at the same seed
   portal  dnd with portal_mode = sites (1 and 3 portals) against off
+  authored  the trees under tools/peoples_robust/trees/ (edits of a sample; each says why it exists; all_at_once is information only)
+Arms (ARMS): params overrides each variant runs under; range is today's model, local is SPLIT_FOUNDING = local (range runs every
+family, local base, dnd's jitter, subset and authored). --params adds overrides of your own to every variant.
 
 Per run, per people (a people with its groups rolled up; megafauna and overlays apart): its share of all people, its share of the
 peopled cells it leads (the most people there), its range, and whether it lives; a people that dies out is named with why (its
@@ -227,34 +231,38 @@ def authored(path: Path) -> tuple[dict, dict]:
     return raw, info
 
 
-ARMS = ("range", "local", "local_vacate", "adapt")  # params.SPLIT_FOUNDING settings; adapt: range founding, ADAPT_KYR on
-ARM_PARAMS = {"range": {}, "local": {}, "local_vacate": {}, "adapt": {"ADAPT_KYR": 2.0}}
-ARM_SEEDS = {"adapt": {7}}
-# (which families run under which arm, to keep the suite to ~3-4 h at 4 sims: everything under range; base, dnd's jitter, subset and
-# authored under local; base under local_vacate)
-ARM_FAMILIES = {"range": None, "local": {"base", "jitter-dnd", "subset", "authored"}, "local_vacate": {"base"},
-                "adapt": {"base", "subset", "authored"}}
+# the arms: params overrides (planet/lineages/history/params.py names) a variant runs under; "range" is today's model
+ARMS = {"range": {}, "local": {"SPLIT_FOUNDING": "local"}, "local_vacate": {"SPLIT_FOUNDING": "local_vacate"}}
+DEFAULT_ARMS = ("range", "local")
+LOCAL_FAMILIES = {"base", "jitter-dnd", "subset", "authored"}  # (the local arm's share of the suite; range runs every family)
+ONE_SEED = {"menagerie": 7}  # (the scale test: one seed)
 
 
-def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
-    """The variants, the range arm first (so a cut-short suite still has the whole of today's model)."""
+def plan(worlds=WORLDS, families=None, arms=DEFAULT_ARMS, seeds=None, trees=None, params=None, tag=None) -> list[dict]:
+    """The variants, the range arm first (so a cut-short suite still has the whole of today's model). Filters: families, arms, seeds,
+    trees (names as in the report: dnd, seven_meals, dnd5, dnd3, dnd+1, or an authored tree's file name); params: overrides added to
+    every variant (its name gets ~<tag>), to judge a change without editing the code."""
     dnd, sm = _load("dnd"), _load("seven_meals")
     out = []
 
     def add(fam, name, raw, world, arm, **info):
-        if families and fam not in families:
+        if families and fam not in families or arm not in arms:
             return
-        allowed = ARM_FAMILIES[arm]
-        sub = f"{fam}-{info.get('tree')}" if fam == "jitter" else fam
-        if arm not in arms or allowed is not None and fam not in allowed and sub not in allowed:
+        if arm != "range" and fam not in LOCAL_FAMILIES and f"{fam}-{info.get('tree')}" not in LOCAL_FAMILIES:
             return
-        if arm in ARM_SEEDS and info.get("seed") not in ARM_SEEDS[arm]:
+        if seeds and info.get("seed") not in seeds or trees and info.get("tree") not in trees:
             return
-        tag = "" if arm == "range" else f"~{arm}"
-        out.append({"family": fam, "name": f"{name}{tag}@{world}", "world": world, "raw": raw, "arm": arm, **info})
+        if info.get("tree") in ONE_SEED and info.get("seed") != ONE_SEED[info["tree"]]:
+            return
+        if info.get("info_only") and arm != "range":
+            return
+        prm = {**ARMS[arm], **(params or {})}
+        suffix = "".join(f"~{x}" for x in ([arm] if arm != "range" else []) + ([tag or "p"] if params else []))
+        out.append({"family": fam, "name": f"{name}{suffix}@{world}", "world": world, "raw": raw, "arm": arm, "params": prm,
+                    "tag": tag if params else None, **info})
 
-    trees = [(p.stem, *authored(p)) for p in sorted(TREES.glob("*.toml"))]
-    for arm in ARMS:
+    authored_trees = [(p.stem, *authored(p)) for p in sorted(TREES.glob("*.toml"))]
+    for arm in arms:
         for w in worlds:
             for s in (7, 10, 13):
                 add("base", f"dnd-s{s}", with_seed(dnd, s), w, arm, tree="dnd", seed=s)
@@ -269,9 +277,7 @@ def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
                 plus = copy.deepcopy(dnd)
                 plus["lineage"].append(dict(ADDED_PEOPLE))
                 add("subset", f"dnd+1-s{s}", with_seed(plus, s), w, arm, tree="dnd+1", seed=s)
-                for name, raw, info in trees:
-                    if info["info_only"] and arm != "range":
-                        continue
+                for name, raw, info in authored_trees:
                     add("authored", f"{name}-s{s}", with_seed(raw, s), w, arm, tree=name, seed=s, **info)
                 for n in (1, 3):
                     add("portal", f"dnd-sites{n}-s{s}", with_seed(dnd, s, portal_mode="sites", portals=n), w, arm, tree="dnd", seed=s, portals=n)
@@ -279,12 +285,14 @@ def plan(worlds=WORLDS, families=None, arms=ARMS) -> list[dict]:
                 for x in KNOB_X:
                     add("knob", f"dnd-{lid}x{x:g}-s7", with_seed(knob(dnd, lid, x), 7), w, arm, tree="dnd", seed=7, knob=lid, x=x)
     if families and "screen" in families:  # (diagnostic screens, only on request: which competition rule makes a small tree a monopoly)
-        five = next(raw for name, raw, _ in trees if name == "five_peoples")
+        five = next(raw for name, raw, _ in authored_trees if name == "five_peoples")
         for w in worlds:
             for tname, raw in (("five_peoples", five), ("dnd3", subset(dnd, ["human", "goblin", "kobold"])), ("dnd", dnd)):
+                if trees and tname not in trees:
+                    continue
                 for sname, prm in SCREENS.items():
                     out.append({"family": "screen", "name": f"scr-{tname}-{sname}-s7@{w}", "world": w, "raw": with_seed(raw, 7),
-                                "arm": "range", "tree": tname, "seed": 7, "screen": sname, "params": prm})
+                                "arm": "range", "tree": tname, "seed": 7, "screen": sname, "params": {**prm, **(params or {})}})
     return out
 
 
@@ -363,9 +371,8 @@ def run_one(spec: dict) -> dict:
                 inh[c] = round(inh.get(c, 0.0) + (float((self.p[self.idx[c]] >= 0.12).sum()) - b) * self.cell_mkm2, 3)
 
     from planet.lineages.history import params as PM
-    arm = spec.get("arm", "range")
-    PM.SPLIT_FOUNDING = arm if arm in ("range", "local", "local_vacate") else "range"
-    spec = {**spec, "params": {**ARM_PARAMS.get(arm, {}), **spec.get("params", {})}}
+    PM.SPLIT_FOUNDING = "range"
+    spec = {**spec, "params": {**ARMS.get(spec.get("arm", "range"), {}), **(spec.get("params") or {})}}
     if spec.get("params"):  # (a diagnostic screen: tuning constants overridden in every module of the history that imported them)
         import importlib, pkgutil
         from planet.lineages import history as HP, spread as SPR
@@ -395,9 +402,9 @@ def _slug(name: str) -> str:
     return name.replace("@", "_at_").replace("/", "_")
 
 
-def run_all(out: Path, jobs: int, threads: int, max_load: float, families=None, worlds=WORLDS):
+def run_all(out: Path, jobs: int, threads: int, max_load: float, plan_args: dict | None = None):
     out.mkdir(parents=True, exist_ok=True)
-    todo = [v for v in plan(worlds, families) if not (out / f"{_slug(v['name'])}.json").exists()
+    todo = [v for v in plan(**(plan_args or {})) if not (out / f"{_slug(v['name'])}.json").exists()
             and not (out / f"{_slug(v['name'])}.spec.json").exists()]  # (a spec on disk: in flight, from another runner)
     print(f"{len(todo)} variants to run in {out}", flush=True)
     running: list[tuple[subprocess.Popen, dict, float]] = []
@@ -594,30 +601,45 @@ def report(out: Path) -> str:
     return text
 
 
+def _filters(a):
+    a.add_argument("--family", default=None, help="comma-separated families: base,jitter,subset,authored,knob,portal (screen: on request only)")
+    a.add_argument("--arms", default=",".join(DEFAULT_ARMS), help=f"comma-separated arms of {list(ARMS)}")
+    a.add_argument("--seeds", default=None, help="comma-separated seeds (default: each family's own)")
+    a.add_argument("--trees", default=None, help="comma-separated trees: dnd, seven_meals, dnd5, dnd3, dnd+1, or authored file names")
+    a.add_argument("--params", default=None, help='JSON of params overrides for every variant, e.g. \'{"INVADE": 0}\'')
+    a.add_argument("--tag", default=None, help="the overrides' name in the variant names (default p)")
+    a.add_argument("--worlds", default=",".join(WORLDS))
+
+
+def _plan_args(args) -> dict:
+    sp = lambda x: [v for v in x.split(",") if v] if x else None  # noqa: E731
+    return {"worlds": sp(args.worlds), "families": set(sp(args.family)) if args.family else None, "arms": tuple(sp(args.arms)),
+            "seeds": {int(x) for x in sp(args.seeds)} if args.seeds else None, "trees": set(sp(args.trees)) if args.trees else None,
+            "params": json.loads(args.params) if args.params else None, "tag": args.tag}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("plan")
-    a.add_argument("--family", default=None)
+    _filters(a)
     a = sub.add_parser("run")
     a.add_argument("--out", required=True)
     a.add_argument("--jobs", type=int, default=4)
     a.add_argument("--threads", type=int, default=4)
     a.add_argument("--max-load", type=float, default=60.0)
-    a.add_argument("--family", default=None, help="comma-separated families (base,jitter,subset,knob,portal)")
-    a.add_argument("--worlds", default=",".join(WORLDS))
+    _filters(a)
     a = sub.add_parser("report")
     a.add_argument("--out", required=True)
     a = sub.add_parser("one")
     a.add_argument("spec")
     a.add_argument("result")
     args = ap.parse_args(argv)
-    fam = set(args.family.split(",")) if getattr(args, "family", None) else None
     if args.cmd == "plan":
-        for v in plan(families=fam):
+        for v in plan(**_plan_args(args)):
             print(v["family"], v["name"])
     elif args.cmd == "run":
-        run_all(Path(args.out), args.jobs, args.threads, args.max_load, fam, args.worlds.split(","))
+        run_all(Path(args.out), args.jobs, args.threads, args.max_load, _plan_args(args))
         print(report(Path(args.out)))
     elif args.cmd == "report":
         print(report(Path(args.out)))
