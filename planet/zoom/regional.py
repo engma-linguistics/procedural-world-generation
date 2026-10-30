@@ -317,16 +317,6 @@ def smin(a, b, k):
     return np.minimum(a, b) - hh * hh * k / 4
 
 
-def _box_mean(a, w, r):
-    """Weighted box-filter mean of a (2D) with weights w over a (2r+1)^2 window."""
-    def box(x):
-        c = np.cumsum(np.pad(x, ((r + 1, r), (0, 0)), mode="edge"), 0)
-        x = c[2 * r + 1:] - c[:-2 * r - 1]
-        c = np.cumsum(np.pad(x, ((0, 0), (r + 1, r)), mode="edge"), 1)
-        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
-    return box(a) / np.maximum(box(w), 1e-9)
-
-
 def find_world(ref: str) -> Path:
     return S.find_world(ref)
 

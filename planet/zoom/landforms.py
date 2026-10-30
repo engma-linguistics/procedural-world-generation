@@ -167,6 +167,7 @@ from numba import njit, prange
 from .. import landform as LF
 from . import kernels as ZK
 from ..geo import R_KM, arc, arc_km, smoothstep
+from ..raster import box_mean
 
 # how well each rock (surface.ROCKS id) holds a lip or stands as a ridge (0..1);
 # zoom.KP_RESIST is this table
@@ -264,18 +265,9 @@ class Ctx:
         r = max(1, int(round(radius_km / self.res)))
         wm = self.land.reshape(self.ny, self.nx).astype(float)
         hh = np.maximum(h, 0).reshape(self.ny, self.nx)
-        m = _box_mean(hh * wm, wm, r)
-        v = _box_mean(hh * hh * wm, wm, r) - m * m
+        m = box_mean(hh * wm, wm, r)
+        v = box_mean(hh * hh * wm, wm, r) - m * m
         return (m + k * np.sqrt(np.maximum(v, 0))).ravel()
-
-
-def _box_mean(a, w, r):
-    def box(x):
-        c = np.cumsum(np.pad(x, ((r + 1, r), (0, 0)), mode="edge"), 0)
-        x = c[2 * r + 1:] - c[:-2 * r - 1]
-        c = np.cumsum(np.pad(x, ((0, 0), (r + 1, r)), mode="edge"), 1)
-        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
-    return box(a) / np.maximum(box(w), 1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -1801,13 +1793,13 @@ class Landforms:
             # pixels (a steep valley side) the benches fade out rather than
             # stipple it.
             gy, gx = np.gradient(sv.reshape(c.ny, c.nx), c.res)
-            gs = _box_mean(np.hypot(gx, gy), np.ones((c.ny, c.nx)), 1).ravel()
+            gs = box_mean(np.hypot(gx, gy), np.ones((c.ny, c.nx)), 1).ravel()
             bw = np.maximum(st.period, 1.0) / np.maximum(gs * c.res, 1e-6)  # px per band
             face = np.clip(FACE_PX / bw, st.face, FACE_MAX)
             fade = smoothstep(BAND_MIN_PX[0], BAND_MIN_PX[1], bw)
             # (the cliffs follow the smoothed stratigraphic height, the land's
             # texture added back: a scarp's line isn't jittered pixel by pixel)
-            ss = _box_mean(sv.reshape(c.ny, c.nx), np.ones((c.ny, c.nx)), FACE_SMOOTH).ravel()
+            ss = box_mean(sv.reshape(c.ny, c.nx), np.ones((c.ny, c.nx)), FACE_SMOOTH).ravel()
             if c.chan is not None:  # (but a river falls over the cliff in one step: a waterfall)
                 face, fade = np.where(c.chan, st.face, face), np.where(c.chan, 1.0, fade)
                 ss = np.where(c.chan, sv, ss)
@@ -1867,7 +1859,7 @@ class Landforms:
             c0 = next(iter(self.ctxs.values()))
             rr = max(1, int(round(RELIEF_KM / c0.res)))
             wl = c0.land.reshape(c0.ny, c0.nx).astype(float)
-            dref = np.maximum(_box_mean(d.reshape(c0.ny, c0.nx) * wl, wl, rr).ravel(), 2.0)
+            dref = np.maximum(box_mean(d.reshape(c0.ny, c0.nx) * wl, wl, rr).ravel(), 2.0)
             wt, Aw, Gw = np.zeros(len(h)), np.zeros(len(h)), np.zeros(len(h))
             for k, c in self.ctxs.items():
                 rl = SYNTH[k].relief(c)
@@ -1956,7 +1948,7 @@ class Landforms:
             # lowered by their mean, around dolines raised: the cell means stay)
             rr = max(1, int(round(0.25 * c.sp / res)))
             wl = (m > 0).reshape(ny, nx).astype(float)
-            mean = _box_mean((m * dz).reshape(ny, nx), wl, rr).ravel()
+            mean = box_mean((m * dz).reshape(ny, nx), wl, rr).ravel()
             tot += m * dz - np.where(m > 0, mean, 0.0)
             if SYNTH[k].ponds:
                 pondw = np.maximum(pondw, m)

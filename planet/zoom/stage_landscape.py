@@ -19,6 +19,7 @@ from . import kernels as ZK
 from . import landforms as ZL
 from . import regional as RG
 from ..geo import smoothstep
+from ..raster import box_mean
 
 
 def first_glaciers(ctx):
@@ -867,7 +868,7 @@ def fit_setup(ctx):
     rad = max(1, int(round(0.3 * ctx.sp / ctx.res)))
     wmask = ctx.land.reshape(ctx.ny, ctx.nx).astype(float)
     ctx.t_fit = np.maximum(np.where(ctx.lake, ctx.target, ctx.target - ctx.carved), 0)
-    tmean = RG._box_mean(ctx.t_fit.reshape(ctx.ny, ctx.nx) * wmask, wmask, rad).ravel()
+    tmean = box_mean(ctx.t_fit.reshape(ctx.ny, ctx.nx) * wmask, wmask, rad).ravel()
     var = np.exp(0.35 * ZK.fbm(ctx.Pk, 0.25 * ctx.sp, 3, 0.5, ctx.S + 6) / 0.17)
     ctx.logC = np.full(ctx.npx, np.log(30.0))
     ctx.fit_log = []  # (debug: per pass, the cells' summed |mean error| x pixels, and the largest C)

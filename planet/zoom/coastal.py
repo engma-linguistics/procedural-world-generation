@@ -56,6 +56,7 @@ from .. import vegetation as V
 from . import kernels as ZK
 from ..constants import GRAV
 from ..geo import R_KM, ramp
+from ..raster import box_mean
 
 LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b2a"),
         3: ("seagrass meadow", "#3fbf6a"), 4: ("mangrove", "#14d2b0"), 5: ("salt marsh", "#e3d65a")}
@@ -173,7 +174,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     fringing = ok & ~wide & (x_shore <= band)
     barrier = ok & wide & (d_deep <= band) & (x_shore > 2 * band)
     r_b = max(1, int(round(REEF_BUDGET_KM / res)))
-    taken = _box_mean((fringing | barrier).reshape(ny, nx).astype(float), shelf.reshape(ny, nx).astype(float),
+    taken = box_mean((fringing | barrier).reshape(ny, nx).astype(float), shelf.reshape(ny, nx).astype(float),
                       r_b).ravel()
     patch = shelf & ~fringing & ~barrier & (u[REEF] < CL.REEF_SHARE * f["reef"] - taken)
     reef = patch | fringing | barrier
@@ -246,16 +247,6 @@ def shoreface_depth(x_km: np.ndarray, wave_kw_m: np.ndarray) -> np.ndarray:
     return np.where(x <= xc, DEAN_A * (1000.0 * x) ** (2 / 3), hc + SHELF_GRAD * (x - xc))
 
 
-def _box_mean(a: np.ndarray, w: np.ndarray, r: int) -> np.ndarray:
-    """Weighted mean of a over (2r+1)^2 windows (2-D a, w)."""
-    def box(v):
-        c = np.cumsum(np.pad(v, ((r + 1, r), (0, 0)), mode="edge"), 0)
-        v = c[2 * r + 1:] - c[:-2 * r - 1]
-        c = np.cumsum(np.pad(v, ((0, 0), (r + 1, r)), mode="edge"), 1)
-        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
-    return box(a) / np.maximum(box(w), 1e-9)
-
-
 def shoreface(h: np.ndarray, sea: np.ndarray, rocky: np.ndarray, wave_kw_m: np.ndarray, nx: int, ny: int,
               res: float, keep: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """The sea floor h with a shoreface (PW-327): no deeper than
@@ -277,7 +268,7 @@ def shoreface(h: np.ndarray, sea: np.ndarray, rocky: np.ndarray, wave_kw_m: np.n
     sp = np.pad(s2, 1)
     coast = ~s2 & (sp[:-2, 1:-1] | sp[2:, 1:-1] | sp[1:-1, :-2] | sp[1:-1, 2:])
     r = int(np.ceil((float(np.max(xc, initial=0.0)) + span) / res)) + 1
-    rk = _box_mean(np.where(coast, rocky.reshape(ny, nx), 0.0), coast.astype(float), r).ravel()
+    rk = box_mean(np.where(coast, rocky.reshape(ny, nx), 0.0), coast.astype(float), r).ravel()
     w = (1 - np.clip(rk, 0, 1)) * (1 - (0.0 if keep is None else keep)) * reach
     return np.where(sea, h + w * np.maximum(z - h, 0.0), h), np.where(sea, reach, 0.0)
 
