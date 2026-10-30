@@ -289,11 +289,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     for tid, v in list(known[x].items()):
                         if v[0] >= ago and tid not in known[y] and can(y, tid, ago, False):
                             give(y, tid, ago, "shared", x)
-    firsts = {}
-    for lid, kn in known.items():
-        for tid, v in kn.items():
-            if tid not in firsts or v[0] > firsts[tid]["ago_kyr"]:
-                firsts[tid] = {"line": lid, "ago_kyr": v[0], "how": v[1]}
+    firsts = firsts_of(known)
     return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode,
             "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
             "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
@@ -303,6 +299,28 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                        "source": techs[i].get("source", "")} for i in order],
             "known": known, "firsts": firsts,
             "goods_checked": {lid: sorted(v) if v is not None else None for lid, v in have.items()}}
+
+
+def _source_rank(how: str) -> int:
+    """How much a record says the people found the tech itself: invented, then tamed or brought (a kit, or the roots
+    that come with a taming), then got from someone else (contact, shared, inherited)."""
+    if how == "invented":
+        return 0
+    if how in ("tamed", "kit") or how.startswith("with "):
+        return 1
+    return 2
+
+
+def firsts_of(known: dict) -> dict:
+    """Each tech's first people: the oldest date; on a tie (two records on the same grid step) the one that found it
+    itself, so a same-step contact taker is never credited over its giver (PW-1012)."""
+    firsts = {}
+    for lid, kn in known.items():
+        for tid, v in kn.items():
+            f = firsts.get(tid)
+            if f is None or v[0] > f["ago_kyr"] or (v[0] == f["ago_kyr"] and _source_rank(v[1]) < _source_rank(f["how"])):
+                firsts[tid] = {"line": lid, "ago_kyr": v[0], "how": v[1]}
+    return firsts
 
 
 def lines_for_report(tt: dict, lines: list[dict]) -> list[str]:

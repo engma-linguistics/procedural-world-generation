@@ -175,6 +175,10 @@
   #zoomFrame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: none; z-index: 10; background: var(--bg); }
   body.zoomTab #zoomFrame { display: block; }
   body.zoomTab .panel:not(#tabs):not(#navBar):not(#navTree), body.zoomTab #toast { display: none !important; }
+  /* embedded in the peoples workbench's Technology tab (?embed=tech, PW-913): the globe with its legend, timeline and hover card only */
+  body.embed #controls, body.embed #summary, body.embed #tiltInset, body.embed #tabs, body.embed #navBar, body.embed #navTree { display: none !important; }
+  body.embed #legend { left: 12px; max-width: calc(100vw - 24px); }
+  body.embed #timeline { left: 12px; width: calc(100vw - 24px); }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
     #legend { left: 244px; max-width: calc(100vw - 256px); }
     #timeline { left: 244px; width: calc(100vw - 256px); } }
@@ -231,6 +235,10 @@
     <!-- the resource the 'resource' layer shows (resources.py, PW-155; ?res=) -->
     <label id="resRow" style="margin-top:6px;display:none" title="Likelihood of one resource per cell, from the deposit model in its tooltip">
       resource <select id="resSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
+    <!-- the technology the 'technology' layer shows (peoples runs with a tech tree, PW-913; ?tech=, ?techcol=) -->
+    <label id="techRow" style="margin-top:6px;display:none" title="Where one technology was known at this moment: the land of each people that knew it by then, coloured by how it came to them or by how long they had known it">
+      tech <select id="techSel" style="flex: 1; min-width: 0; padding: 1px"></select>
+      <select id="techColSel" style="flex: none; width: auto; padding: 1px"><option value="how">how it came</option><option value="when">how long known</option></select></label>
     <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
       season <select id="layerSeason" style="flex: none; width: auto; padding: 1px">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
@@ -977,6 +985,156 @@ function cropRows(i, R) {  // the crops known in this frame's cell, and the wild
   if (known.length) R('place', '', known.join(', '), { lab: 'crops known', ess: true });
   if (wild.length) R('place', '', wild.join(', '), { lab: 'wild range of (crops)' });
 }
+// Technology (planet/lineages/techtree.py, PW-675; the map view of the workbench's Technology tab, PW-913): one tech
+// (state.tech) on the frame's ranges. Each cell takes its leading people (the peoples layer): lit in the colour of how the
+// tech came to that people (state.techCol 'how') or of how long it had known it ('when') if it knew it by the frame's
+// time, else grey with a trace of the people's colour. Stars mark inventions (and tamings, kits) and arrows run giver
+// to taker, each at the peoples' ranges of the moment it happened (overlays: techOverlays).
+const TECH_HOW = { invented: '#ffd27a', contact: '#7fb0ff', kit: '#c79bff', inherited: '#8fa0b4', tamed: '#6bd6a0', shared: '#6bd6d0' };
+const TECH_HOW_TEXT = { invented: 'invented', contact: 'by contact', kit: 'brought along (kit)', inherited: 'inherited at the split', tamed: 'by taming', shared: 'shared within its people' };
+const techHowCol = (how) => TECH_HOW[how] || (String(how).startsWith('with ') ? TECH_HOW.tamed : '#aaaaaa');
+const techHowText = (how) => TECH_HOW_TEXT[how] || (String(how).startsWith('with ') ? `with ${how.slice(5)}` : how);
+const TECH_NOT = new THREE.Color('#464e5a'), TECH_EMPTY = new THREE.Color('#2a2e28'), TECH_NEW = new THREE.Color('#ffeca0'), TECH_OLD = new THREE.Color('#d64828');
+state.tech = null; state.techCol = 'how';
+const techTree = () => V?.run?.meta?.techtree || null;
+function techId() {  // the tech shown: state.tech if the run has it, else pottery, else the first tech anybody came to
+  const tt = techTree();
+  if (!tt) return null;
+  if (tt.techs.some((t) => t.id === state.tech)) return state.tech;
+  return tt.techs.find((t) => t.id === 'pottery' && tt.firsts.pottery)?.id || tt.techs.find((t) => tt.firsts[t.id])?.id || tt.techs[0]?.id;
+}
+const techAgoText = (k) => (k >= 1000 ? `${+(k / 1000).toFixed(2)} Myr ago` : k >= 1 ? `${+k.toFixed(k >= 100 ? 0 : 2)} kyr ago` : k > 0 ? `${Math.round(k * 1000)} years ago` : 'the present');  // (finer than agoLabel: a frame and an event a few years apart)
+const techName = (id) => (techTree()?.techs.find((t) => t.id === id)?.name || id || '').split(' (')[0];
+const techOldest = (id) => Math.max(0.1, ...Object.values(techTree().known).map((k) => k[id]?.[0] ?? 0));
+function techFrameColors() {  // per line index: the colour of its land this frame
+  const tt = techTree(), id = techId(), now = -V.t, old = techOldest(id);
+  return (V.run.meta.lineages || []).map((l) => {
+    const v = tt.known[l.id]?.[id];
+    if (!v || v[0] < now - 1e-9) return TECH_NOT.clone().lerp(lineColor(l), 0.18);
+    if (state.techCol !== 'when') return new THREE.Color(techHowCol(v[1]));
+    const u = Math.log10(Math.max(v[0] - now, 0.05) / 0.05) / Math.log10(Math.max(old, 0.1) / 0.05);
+    return TECH_NEW.clone().lerp(TECH_OLD, Math.min(1, Math.max(0, u)));
+  });
+}
+function techColor(i, c, cols) {
+  const L = V.layers, d = L.peoples[i], ice = L.ice && L.ice[i] > 0;
+  if (L.elevation[i] <= 0 && !ice) return isSeaPeople((V.run.meta.lineages || [])[d]) && cols[d] ? c.copy(OCEAN).lerp(cols[d], 0.75) : c.copy(OCEAN);
+  if (ice) return c.copy(ICE);
+  return d === 255 || !cols[d] ? c.copy(TECH_EMPTY) : c.copy(cols[d]);
+}
+function techRows(i, R) {  // the hover card: what the cell's leading people knew of the tech by this frame
+  const tt = techTree(), d = V.layers.peoples[i], l = (V.run.meta.lineages || [])[d], id = techId();
+  if (!tt || !l) return;
+  const v = tt.known[l.id]?.[id], now = -V.t;
+  R('place', '', v && v[0] >= now - 1e-9 ? `${techName(id)}: since ${techAgoText(v[0])}, ${techHowText(v[1])}${v[2] ? ' from ' + ((V.run.meta.lineages.find((x) => x.id === v[2])?.name || v[2]).split(' (')[0]) : ''}`
+    : `${techName(id)}: not yet${v ? ` (comes ${techAgoText(v[0])})` : ''}`, { lab: 'technology (this people)', ess: true });
+}
+// each people's centre (its cells' mean direction) in frame f, by line index: [lat, lon, cells]; cached per run
+function techCentres(f) {
+  const cache = V.techCent ||= new Map();
+  if (cache.has(f)) return cache.get(f);
+  const n = V.n, raw = V.data.peoples, G = V.grid, acc = new Map(), out = new Map();
+  if (!raw) return out;
+  const U = V.techU ||= (() => { const u = new Float32Array(3 * n); for (let i = 0; i < n; i++) u.set(unitVec(G.lat[i], G.lon[i]), 3 * i); return u; })();
+  const a = raw.length === n ? raw : raw.subarray(f * n, (f + 1) * n);
+  for (let i = 0; i < n; i++) {
+    const d = a[i]; if (d === 255) continue;
+    let s = acc.get(d); if (!s) acc.set(d, s = [0, 0, 0, 0]);
+    s[0] += U[3 * i]; s[1] += U[3 * i + 1]; s[2] += U[3 * i + 2]; s[3]++;
+  }
+  for (const [d, s] of acc) {  // (three.js axes: x through 0N 0E, y north, z = -east: unitVec)
+    const r = Math.hypot(s[0], s[1], s[2]) || 1;
+    out.set(d, [Math.asin(s[1] / r) * 180 / Math.PI, Math.atan2(-s[2], s[0]) * 180 / Math.PI, s[3]]);
+  }
+  cache.set(f, out);
+  return out;
+}
+// where a people was when something happened k kyr ago: its centre in the stored frame nearest that time (the run's first
+// frame for older events), else the nearest frame it held land in, else its present centre or its origin
+function techWhere(l, k) {
+  const fr = V.run.frames, t = -k;
+  let f0 = 0;
+  for (let f = 0; f < fr.length; f++) if (Math.abs(fr[f].t - t) < Math.abs(fr[f0].t - t)) f0 = f;
+  for (let s = 0; s < fr.length; s++) for (const f of s ? [f0 - s, f0 + s] : [f0]) {
+    if (f < 0 || f >= fr.length) continue;
+    const c = techCentres(f).get(l.index);
+    if (c) return c;
+  }
+  const p = V.run.meta.present?.lines?.[l.id]?.centroid;
+  if (p) return [p[0], p[1], 0];
+  return l.origin_place ? [l.origin_place.lat, l.origin_place.lon, 0] : null;
+}
+function techOverlays(globe, wraps) {
+  const tt = techTree(), id = techId(), now = -V.t, lines = V.run.meta.lineages || [], byId = Object.fromEntries(lines.map((l) => [l.id, l]));
+  const pts = [], cols = [], c = new THREE.Color(), mode = llMode(), r0 = globe ? 1.016 : 1;
+  const seg = (p1, p2) => { if (!wraps(p1, p2)) { pts.push(...p1, ...p2); cols.push(c.r, c.g, c.b, c.r, c.g, c.b); } };
+  const P = (la, lo, lift = 1) => llPosPt(llPoint(la, lo), r0 * lift, mode);
+  for (const l of lines) {
+    const v = tt.known[l.id]?.[id];
+    if (!v || v[0] < now - 1e-9) continue;
+    const b = techWhere(l, v[0]);
+    if (!b) continue;
+    c.set(techHowCol(v[1]));
+    if (v[1] === 'invented' || v[1] === 'tamed' || v[1] === 'kit') {  // a five-pointed star, ~2.4 degrees across
+      const cl = Math.max(Math.cos(b[0] * Math.PI / 180), 0.2), ring = [];
+      for (let k = 0; k <= 10; k++) { const a = Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 1.0 : 2.4; ring.push(P(b[0] + r * Math.sin(a), b[1] + r * Math.cos(a) / cl)); }
+      for (let k = 0; k < 10; k++) seg(ring[k], ring[k + 1]);
+    } else if (v[2] && byId[v[2]]) {  // an arrow from the giver, arching over the surface on the globe
+      const a = techWhere(byId[v[2]], v[0]);
+      if (!a) continue;
+      const ua = unitVec(a[0], a[1]), ub = unitVec(b[0], b[1]);
+      const om = Math.acos(Math.min(1, Math.max(-1, ua[0] * ub[0] + ua[1] * ub[1] + ua[2] * ub[2])));
+      if (om < 1e-4) continue;
+      const N = Math.max(4, Math.ceil(om * 40)), arc = [];
+      for (let k = 0; k <= N; k++) {
+        const s = k / N, wa = Math.sin((1 - s) * om) / Math.sin(om), wb = Math.sin(s * om) / Math.sin(om);
+        const x = wa * ua[0] + wb * ub[0], y = wa * ua[1] + wb * ub[1], z = wa * ua[2] + wb * ub[2];
+        arc.push(P(Math.asin(Math.max(-1, Math.min(1, y))) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI, globe ? 1 + 0.035 * om * Math.sin(Math.PI * s) : 1));
+      }
+      for (let k = 0; k < N; k++) seg(arc[k], arc[k + 1]);
+      const e = arc[N], q = arc[N - 1], d = [e[0] - q[0], e[1] - q[1], e[2] - q[2]], dl = Math.hypot(...d) || 1;
+      const up = globe ? e.map((x) => x / (Math.hypot(...e) || 1)) : [0, 0, 1], h = globe ? 0.025 : 0.035;
+      const sd = [d[1] * up[2] - d[2] * up[1], d[2] * up[0] - d[0] * up[2], d[0] * up[1] - d[1] * up[0]].map((x) => x / dl);
+      for (const sg of [1, -1]) seg(e, [0, 1, 2].map((j) => e[j] - d[j] / dl * h + sg * sd[j] * h * 0.6));
+    }
+  }
+  return { techMarks: ribbonObj(pts, 0xffffff, 1, 2.2, cols) };
+}
+function fillTechs() {
+  const tt = techTree();
+  if (!tt) return;
+  const id = techId();
+  $('techSel').innerHTML = tt.tracks.map((k) => `<optgroup label="${esc(k.name)}">` + tt.techs.filter((t) => t.track === k.id)
+    .map((t) => `<option value="${t.id}"${t.id === id ? ' selected' : ''}>${esc(t.name.split(' (')[0])}${tt.firsts[t.id] ? '' : ' (nobody)'}</option>`).join('') + '</optgroup>').join('');
+  $('techColSel').value = state.techCol;
+}
+function setTech(id, col) {
+  if (id) state.tech = id;
+  if (col) state.techCol = col;
+  const u = new URL(location); u.searchParams.set('tech', techId()); u.searchParams.set('techcol', state.techCol); history.replaceState(null, '', u);
+  if (state.layer === 'technology') { fillTechs(); paint(); updateHover(); }
+}
+$('techSel').addEventListener('change', () => setTech($('techSel').value));
+$('techColSel').addEventListener('change', () => setTech(null, $('techColSel').value));
+// embedded (?embed=tech): the workbench picks the tech, the colour mode and the moment, and hears of each frame shown
+addEventListener('message', (e) => {
+  if (e.origin !== location.origin || e.source !== parent || !V?.run || !e.data) return;
+  if (e.data.techSet) setTech(e.data.techSet.tech, e.data.techSet.col);
+  if (e.data.techAgo != null) {
+    const t = -e.data.techAgo, fr = V.run.frames;  // (the first stored moment at or after it, so the event shows)
+    let f = fr.findIndex((x) => x.t >= t - 1e-6); if (f < 0) f = fr.length - 1;
+    stop(); setFrame(f);
+  }
+  if (e.data.techLine) {  // (turn the globe to where that people was then: {techLine: id, techLineAgo: kyr})
+    const l = (V.run.meta.lineages || []).find((x) => x.id === e.data.techLine), b = l && techWhere(l, e.data.techLineAgo ?? -V.t);
+    if (b) { $('spin').checked = false; turnTo(b[0], b[1]); }
+  }
+});
+function techTellParent() {
+  if (parent === window || !document.body.classList.contains('embed') || !V?.run) return;
+  parent.postMessage({ techFrame: { ago: -V.t, first: -V.run.frames[0].t, frames: V.run.frames.length, tech: techId() } }, location.origin);
+}
+
 // Fuels (planet/lineages/fuels.py, PW-722): what the cell burns to cook, at the present (meta.fuels: the lead fuel and each fuel's share)
 // (PW-845: the same layer on a run's present and on a finished world with a peoples run: fuelSrc gives {F: meta.fuels, A: the layers})
 function fuelSrc() {
@@ -1204,6 +1362,7 @@ function cellColors(layer) {
   const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
   if (V.run?.meta?.anthro && V.anthroFor !== V.run.id) anthroLoad();  // (peoples change the land, PW-662)
   const tint = state.anthro !== false && (ANTHRO_TINTED.has(layer) && anthroOn() || WORLD_TINTED.has(layer) && worldAnthroOn());
+  const techCols = layer === 'technology' && techTree() && L.peoples ? techFrameColors() : null;  // (each line's colour this frame, once)
   for (let i = 0; i < n; i++) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
@@ -1218,6 +1377,7 @@ function cellColors(layer) {
     else if (layer === 'land use') landUseColor(i, c);
     else if (layer.startsWith('animal: ')) animalsColor(i, c, layer.slice(8));
     else if (layer.startsWith('crop: ')) cropsColor(i, c, layer.slice(6));
+    else if (layer === 'technology') { if (techCols) techColor(i, c, techCols); else c.copy(NODATA); }
     else if (layer === 'fuels') fuelColor(i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
@@ -1310,7 +1470,7 @@ function availableLayers() {
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
     hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), ...(hasLayer('demes') ? ['demes'] : []), 'peoples mix', 'peoples overlay'].concat(
       Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], hasLayer('crop_wild') ? Object.keys(cropStocks()).map((k) => 'crop: ' + k) : [],
-    V.run?.meta?.anthro ? ['land use'] : [], V.run?.meta?.fuels ? ['fuels'] : []);
+    V.run?.meta?.anthro ? ['land use'] : [], V.run?.meta?.fuels ? ['fuels'] : [], V.run?.meta?.techtree && hasLayer('peoples') ? ['technology'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -1833,6 +1993,7 @@ function buildOverlays() {
   }
   if (V.humanUse?.river_nav) Object.assign(overlays, huOverlays(globe, wraps));
   if ($('peopleTracks')?.checked && V.peopleTracks?.length) Object.assign(overlays, peopleOverlays(globe, wraps));
+  if (state.layer === 'technology' && techTree() && V.data.peoples) Object.assign(overlays, techOverlays(globe, wraps));
   if ($('hotspots').checked && V.hotspots) {
     const pts = [], globe_ = globe;
     for (const [la, lo] of V.hotspots) {
@@ -2607,6 +2768,7 @@ function renderLegend() {
   $('seasonRow').style.display = sk && (V.layers[sk] || (V.kind === 'run' && V.run.layers[sk])) && !ov ? '' : 'none';
   $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
   $('resRow').style.display = state.layer === 'resource' && V.resLeg ? '' : 'none';
+  $('techRow').style.display = state.layer === 'technology' && techTree() ? '' : 'none';
   drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
   if (ov && ov.diff && state.layer === 'climate') {
@@ -2621,6 +2783,13 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
+  } else if (state.layer === 'technology' && techTree()) {
+    const tt = techTree(), id = techId(), f = tt.firsts[id], now = -V.t, lines = V.run.meta.lineages || [];
+    const knew = lines.filter((l) => (tt.known[l.id]?.[id]?.[0] ?? -1) >= now - 1e-9).length;
+    el.innerHTML = `<b>${esc(techName(id))}</b>` + (state.techCol === 'when'
+      ? `<span>new</span><span class="sw" style="width:70px;background:linear-gradient(90deg,#ffeca0,#d64828)"></span><span>long known</span>`
+      : Object.keys(TECH_HOW).map((h) => sw(TECH_HOW[h], TECH_HOW_TEXT[h])).join('')) + sw('#464e5a', 'not yet') + sw('#2a2e28', 'nobody') +
+      `<span class="muted">${knew} peoples know it by ${now <= 0 ? 'the present' : agoLabel(V.t)}; first: ${f ? `${esc((lines.find((l) => l.id === f.line)?.name || f.line).split(' (')[0])}, ${agoLabel(-f.ago_kyr)} (${esc(techHowText(f.how))})` : 'nobody'}. Stars: inventions, tamings, kits; arrows: giver to taker${techOldest(id) > -V.run.frames[0].t ? `; older events are drawn on the ranges of the first stored moment (${agoLabel(V.run.frames[0].t)})` : ''}.</span>`;
   } else if (state.layer.startsWith('body: ')) {
     el.innerHTML = rampLegend('body', `% of the cell's people with it (${state.layer.slice(6)}: each people's share, mixed by who lives there)`, ['0%', '100%']) + sw('#5a5a52', 'nobody');
   } else if (state.layer === 'demes') {
@@ -2796,6 +2965,7 @@ const LAYER_HINTS = {
   vegetation: 'Vegetation types from the mix of plant functional types that grow in this climate.',
   'tree cover': 'Tree canopy cover: the share of the ground under tree crowns.',
   fuels: 'Peoples runs, at the present: what each cell burns to cook and heat (wood, charcoal, dung, peat, straw, grass, driftwood, coal), from the trees left, the herds, the peat, the crops and the coal (planet/lineages/fuels.py).',
+  technology: 'Peoples runs with a technology tree: where one tech (picked under the layers) was known at this moment. Each people\'s land is lit when it knew it by then, in the colour of how it came (or how long it was known); grey: not yet. Stars: inventions; arrows: giver to taker (planet/lineages/techtree.py).',
   'land use': 'Peoples runs, at the present: cropland, pasture, burned grassland and managed woods around the peoples there, settlement density in red (planet/lineages/landuse.py).',
   'plant cover': 'Plant cover: the share of the ground shaded by plants of any kind.',
   'canopy height': 'Height of the tallest plant layer.',
@@ -2849,6 +3019,7 @@ const HINT_HAS_UNITS = new Set(['NPP', 'biomass', 'leaf area', 'salinity', 'rive
 function renderLayerButtons() {
   fillPfts();
   fillRes();
+  fillTechs();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) { state.wantLayer = state.layer; state.layer = layers[0]; }  // (wantLayer: a layer that arrives later, like a world's fuels, PW-845)
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
@@ -3471,7 +3642,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
   if (V.kind === 'world' && V.wAnthro && state.anthro !== false) { anthroRows(i, R); fuelRows(i, R); }
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
@@ -4640,7 +4811,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  'land use': ['tree_cover', 'ice'], fuels: ['tree_cover', 'ice'], demes: ['demes'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
+  'land use': ['tree_cover', 'ice'], technology: ['peoples'], fuels: ['tree_cover', 'ice'], demes: ['demes'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4823,6 +4994,7 @@ function setFrame(f, repaint = true) {
   // (the cell under the pointer stays the one it was: no new ray through the globe each frame)
   if (repaint) { paint(); renderRunSummary(); renderHover(); if (picked) renderZoomBox(); }
   if (!state.playing) frameToUrl();  // (while playing: when it stops)
+  techTellParent();
 }
 function frameToUrl() { const u = new URL(location); u.searchParams.set('t', V.t); history.replaceState(null, '', u); }
 
@@ -4940,6 +5112,9 @@ function applyUrlOptions() {
   }
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
+  if (p.get('tech')) state.tech = p.get('tech');  // (the 'technology' layer's tech and colour mode, PW-913)
+  if (p.get('techcol')) state.techCol = p.get('techcol');
+  if (p.get('embed')) document.body.classList.add('embed');  // (?embed=tech: inside the workbench's Technology tab)
   if (p.get('res')) state.res = p.get('res');
   if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
