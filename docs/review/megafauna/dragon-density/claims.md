@@ -91,3 +91,35 @@ All are `{{ … }}` expressions in `sections/*.html` over `numbers.json`; the ma
 | Tables 5 and 6 | `cells.{on,noper,off}.0.biome_situation` (best guess: `build_page.gpv`) |
 | Tables 7, 8 | `sword_coast.counts`, `sword_coast.formula`, `sword_coast.largest_kind_share`; `charts/boxes.json` |
 | Table 1, Figure 1 | `sensitivity.rows`, `sensitivity.combined`, `sensitivity.coe_pb` |
+
+## Code map (repo-side only; the published page carries no code names or ticket ids)
+
+| on the page | code | ticket / draft |
+|---|---|---|
+| McNaughton fit, unit factors (0.45, 17.5, 7 kJ/g) | `planet/lineages/prey.py`: `wild`, `C_FRAC`, `KJ_PER_G_DRY`, `KJ_PER_G_LIVE` | PW-966; `draft-prey-fit-fed-whole-plant-npp.md` |
+| Grazing NPP fed to the fit (herb NPP + 30% shrub browse, open-months factor) | vegetation's `grazing_npp` game attribute (`planet/gameattrs.py`), read in `planet/lineages/recent.py` | same draft |
+| Overkill 60%, refuges (tundra, mountain) | `prey.OVERKILL`, `prey.REFUGE`, `prey.field` | PW-1000 |
+| 10% offtake, 10% stock | `planet/lineages/history/megafauna.py`: `OFFTAKE`, `STOCK_TOLERABLE` | PW-991; `draft-offtake-from-prey-production.md` |
+| Peoples' game (2,200 kcal/day, 50% / 5%, 625,000 kcal a head) | `PERSON_KCAL_YR`, `WILD_MEAT`, `HEAD_KCAL` | PW-1018, PW-1019 |
+| Guild split | `GUILD_CLASSES`, `GUILD_APEX_KG`, `GUILD_KLEIBER`, `guild_ratio()` | PW-1019; `draft-guild-weighting-exponent-and-young-dragons.md` |
+| Dragon intake (reptile FMR, 85%, 836 Mcal carcass; "younger" age schedule) | `planet/lineages/dragon_ages.py`: `fmr_kcal`, `ASSIMILATED`, `CATTLE_MCAL` | `draft-dragon-intake-law-and-label.md`, `draft-dragon-kill-conversion-assimilation-carcass.md` |
+| Food budget (peoples, giants, guild, 60 km reach) | `megafauna.budget`, `BUDGET`, `FOOD_CAP`, `FORAGE_KM` | PW-977 stage 2; `draft-food-budget-uneaten-share-and-unpressed-small-predators.md` |
+| Pressure 1 − exp(−N/0.05), toward 1 per 5,000 km² | `megafauna.pressure`, `PRESS_N0`, `_pressed`; endpoint `meta.dragon_km2` | PW-977 stage 3, PW-1001; `draft-dragon-pressure-source.md` |
+| Habitat, occupancy, viability, 7,500 km linking | `SUITABLE`, `LINK_KM`, `SCATTER_LINKS`, `metapop_km`, `History._viable`, `History.line_mvp` | PW-924, PW-936; `draft-dragon-habitat-coverage-rich-land.md`, `draft-dragon-viability-at-regional-counts.md` |
+| Natural-density modes (food default; prey; mesotherm; mammal) | `NATURAL`, `LOG_A` (Marshall intercepts) | PW-990 |
+| Deep-epoch flat density | `megafauna` deep-epoch rule | `draft-deep-epoch-dragon-budget.md` |
+| 30 kyr step | glacial / recent pass hand-over (`planet/lineages/history/steps.py`, `RecentParams.kyr`) | `draft-dragon-count-step-at-recent-pass.md` |
+| Dense hunter peoples; people density from productivity | dnd tree line densities; `prey.GRAZE_REF` = 279 | PW-1018, PW-1020 |
+| "The setting's roster" | the dnd tree; "global grid of ~3,113 km² cells" = grid level 7 | — |
+| Viewer layer (not on the page) | — | `draft-viewer-dragon-density-layer.md` |
+
+## Reproducing the page
+
+- Inputs (persistent, outside the repo): `/home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r2/`.
+  `run.sh` runs `jobs.txt` (54 jobs, 6 at a time) through `job.sh`, which exports the model at commit 8c7ce305 (main b36c9581 +
+  `probe.py`'s round-2 options) and runs `docs/review/megafauna/probe.py WORLD ROLL OUT.json --eras 31,29,25,10,0 --cells DIR`, with
+  `--no-press` (pressure off) or `--no-persecute` (persecution off). Each output records `rev`.
+- Numbers: `PYTHONPATH=. uv run python docs/review/megafauna/dragon-density/dragon_numbers.py DIR docs/review/megafauna/dragon-density/numbers.json` (imports `sensitivity.py`, analytic).
+- Charts: `PYTHONPATH=. uv run --with matplotlib python docs/review/megafauna/dragon-density/charts.py docs/review/megafauna/dragon-density/numbers.json DIR docs/review/megafauna/dragon-density/charts` (light and dark copies; `charts/boxes.json`).
+- Page: `uv run python docs/review/megafauna/dragon-density/build_page.py` fills every `{{ … }}` in `page.tmpl.html` and `sections/*.html` (plain, abstract, then `NN-*.html` in order).
+- Check: `uv run --with playwright python <check script>` at 1200 and 390 px, light and dark, on `file://` (no server needed).

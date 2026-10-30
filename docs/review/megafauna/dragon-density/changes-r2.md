@@ -5,7 +5,11 @@ jetz-hamilton-sandom-ripple (jhsr), coverage; plus the owner's notes (OWNER-NOTE
 in the PDF (text layers searched for the exact phrase; Farlow pp. 172, 176, 187-190, Hamilton 2007 Fig. 1, Hamilton 2009 Fig. 2,
 Marshall Tables 1-2, Coe Fig. 3 and Nagy 1999 Table 2 read as page images). No reviewer quote failed that check.
 
-Status: **fixed** (where), **declined** (why), **deferred** (to which inbox draft). Section numbers are round 2's.
+Status: **fixed** (where), **declined** (why), **deferred** (to which inbox draft).
+
+**Section numbers below are those of the round-2 draft before the standalone restructure** (owner instruction, 10-29, below): add one
+to Sections 1-6 (now 2-7; results 4.x are now 5.x); old Section 7 (what the model should change) is now 9.2; old Section 9
+(limitations) is now 9.1; old Table 7 (model changes) is now Table 9.
 
 ## Numbers and provenance
 
@@ -110,6 +114,18 @@ bounds, Farlow p. 176), and lands at ×0.96.
 | 2 game-present table | **fixed**: Section 5, Tables 5-6; method and the judgement stated; marked an extrapolation. |
 | 3 stance; examples | **fixed**: Section 7 (twelve changes) and Section 8; every example named in the note is on the page (whole-plant NPP, 2.7 t label, 85%, flat 60% overkill, reversed Farlow). |
 | 4 Woodroffe, Cardillo "to fetch" | **fixed**: `docs/references/wishlist.md`; listed on the page as "to fetch, not cited". |
+
+## Owner instruction 10-29: a standalone paper
+
+The owner overrode brief step 7 (a "For the developers" appendix): the page must stand alone for an outside reader. Done:
+- the appendix is gone; its code map and the reproduction steps moved to `claims.md` (sections "Code map" and "Reproducing");
+- no file, function or constant names, ticket ids, lane numbers, branch or commit ids remain on the page (checked by grep over
+  `sections/` and the template); "the dnd tree" is "a D&D-style roster", grid level 7 is "cells of about 3,100 km²";
+- a new Section 1 ("The question") frames the question and describes the generator in prose;
+- "What the model should change" became Section 9, "Limitations and model revisions" (9.1 limits of the analysis, 9.2 revisions);
+- references to "round 1" and "the owner" in the body are rewritten in the paper's own terms (the corrections themselves stay:
+  Farlow's reading, the habitat explanation);
+- "on file" / "wishlist" wording replaced by "consulted" / "not yet read".
 
 ## Declined (collected)
 
