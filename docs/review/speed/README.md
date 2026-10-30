@@ -1,10 +1,18 @@
 # Run speed: the climate's cadence and grid (PW-247, lane 27, 2026-10-29)
 
-**Outcome.** The run's climate cadence is now an **8/4 Myr ramp plus a 1 C dT trigger**: arm C, the defaults on
-this branch. It passed the L6 paired judge (no measure moved; 16/18 against main's 14/18) at **1.5x per L6 run**,
-paired, under load. The first arm, B, stepped 16 Myr early and failed: it ran colder, with more icebox excursions.
-Still running at handoff: arm E (a convergence check: climate every 2 Myr) and the L7 set for the L6-grid
-spin-up climate (option 2). See "Handoff" at the end.
+**Outcome (lane 27b, final).** The run's climate cadence is an **8/4/2 Myr ramp plus a 1 C dT trigger**: every
+8 Myr, then 4 Myr in the 30 Myr before the finish window, then every 2 Myr step in the last 10 (the owner's fine
+end, `climate_ramp_fine`). An L7 run's spin-up climate is solved on the L6 grid. These are the branch defaults.
+- **L6:** the 8/4 ramp (arm C) passed the 18-pair paired judge: no measure moved, 16/18 passes against main's 14/18,
+  at **1.5x per L6 run**. The fine end changes only the last 10 Myr. On 6 of the draws it sits right next to C.
+- **L7 (4 seeds, 1 Gyr):** the full default passes 3/4 against main's 4/4, with 1 icebox each. Its runs took
+  3279 s against main's 11591 s (medians). That is not a same-load comparison; see below.
+- **Convergence (arm E, every 2 Myr):** main's warm finish (+2.8 C) is mostly its own 4 Myr lag. E finishes 4.1 C
+  cooler than main, and C is within 0.3 C of E. But E has **10 iceboxes in 18 against main's 2 and C's 3**: the
+  ice and the climate catch up one step per update, so the amount of ice depends on the update rate. Neither main
+  nor C is converged in ice. That is a separate soundness gap, written up as an inbox draft
+  (draft-ice-climate-loop-steps-per-update.md), not a reason to hold this branch: iceboxes are colour, not
+  failures, and C's ice is close to main's.
 
 The climate (`earth.update_climate`) is ~75% of a run's wall time ([profile-2026-10-29.md](profile-2026-10-29.md)).
 The owner's asks, for the run only (not the time zoom, zooms or world finishing): (1) the climate half as often,
@@ -18,6 +26,9 @@ rare early and back to 4 Myr toward the end. All are output-changing, so they go
   16 Myr to 690 Myr, 8 to 960, 4 to 990, then the finish window's every 0.5 Myr step. Updates sit on multiples of
   the cadence. The 2 Myr step that ends at the window's start (990) now gets its own update too (`earth.finishing`;
   main showed 988's climate there), so all 21 candidate moments see their own climate.
+  **Defaults now (lane 27b, cfbed283):** `climate_every_max` = 8 (arm C), and a fine end, `climate_ramp_fine` =
+  10 Myr at half `climate_every` (2 Myr, every step). For a 1 Gyr run: 8 Myr to 960, 4 to 980, 2 to 990, then
+  the window. That is 2 more updates a run (982 and 986).
 - **(3) Adaptive, folded into the ramp**: an update comes early, at any 2 Myr step, once dT has moved
   `climate_adapt_dT` = 1 C since the last update (`earth.climate_moved`, state `sim.climate_in`). The ramp is its
   longest interval. Only dT is a trigger, because the other drivers move steadily, not in episodes. Main's L6 1 Gyr
@@ -139,7 +150,84 @@ and an L7 determinism re-run (test_nest covers the coarse spin-up's resume at L4
   and grid). tools/scorecard.py: not run (two more L6 1 Gyr sims; the judge's 18 draws cover its run measures).
   Run it at merge if the coordinator wants the scorecard line.
 
-## Handoff (lane 27, at ~230k context)
+## Lane 27b results (2026-10-29)
+All on roll 0.0005. pjudge.py and tco2.py as in the handoff below; the frozen code of the new default is
+`code/F` (the branch at cfbed283), and its draws are `F_*` under `judge/` and `judge7/`.
+
+**1. The fine end (cfbed283).** `Params.climate_ramp_fine` = 10 Myr: `earth.climate_cadence` returns half of
+`climate_every` (2 Myr) in the last 10 Myr before the finish window. Updates now fall at ..., 976, 980, 982, 984,
+986, 988, 990 (C: 980, 984, 988, 990): 2 more per run (186 against C's 184 on seed 957317). Goldens unchanged
+(no golden run reaches a finish window). Tests: `test_nest.py` checks the cadence at 979/980/989 and the update times
+from 952 to 990.
+
+**2. Arm E, every 2 Myr (18 draws).** Does main's warm finish come from its own 4 Myr lag? Mostly, yes.
+
+| arm | climate | finish-moment T, median | moment T vs main (95% CI) | passes | iceboxes | land-ice share of 300-990 (iced10) | coldest dT 300-990 | run s, median |
+|---|---|---|---|---|---|---|---|---|
+| main | 4 Myr | +2.8 C | - | 14/18 | 2 | 0.32 | -5.2 | 2566 |
+| C | 8/4 + trigger | -0.6 C | -3.3 [-4.4, +0.7] | 16/18 | 3 | 0.25 | -5.1 | 1711 |
+| E | 2 Myr | -0.8 C | **-4.1 [-5.6, -0.7] \*** | 13/18 | **10** | 0.50 | -6.4 | 4088 |
+
+- E against C: moment T -0.3 C (CI -6.2 to +3.5; 9 up, 9 down), so on temperature C is close to the 2 Myr limit
+  and main is the outlier. E has more trees than C (+1.6 points, CI excludes 0). No other measure moved.
+- E's iceboxes are real, not a sampling effect: the icebox flag is a time share (90% of 300 Myr+ below the
+  icehouse sea level, or 30% below -150 m), and E spends 17% of its late steps below -150 m against main's 7%
+  and C's 0%.
+- **Why (cheap probe, iceprobe.py):** every update moves the ice's sea level by about the same amount in
+  all three arms (median 2.2-3.4 m per update that moved it). So the ice moves faster per Myr when updates come
+  more often: 1.8 m/Myr in E, 1.1 in main, 0.8 in C. `earth.ice_sheets` settles the sheets under each update's
+  climate, but that climate saw the previous update's ice, so the ice-climate loop takes one step per update.
+  E's albedo term runs at -0.28 C against main's +0.12. Candidates and the decision are in
+  draft-ice-climate-loop-steps-per-update.md. No new sims were run for it.
+- E costs 1.6x main per run.
+
+**3. The fine end on 6 draws (l6fix x4, l6c_0 819014 and 958504; no new main runs).** It lands between C and E,
+right next to C, as it should: F and C are identical up to 980 Myr.
+
+| on these 6 draws | main | C | F (default) | E |
+|---|---|---|---|---|
+| finish-moment T, median | +2.9 | +1.2 | +1.0 | -3.7 |
+| passes | 4/6 | 5/6 | 5/6 | 5/6 |
+| iceboxes | 1 | 2 | 2 | 2 |
+
+F - C: moment T -0.16 C (5 of 6 cooler, sign p 0.22); late dT, CO2, arid, rain and trees all within +-0.1. The
+fine end cannot reach E's ice: E's extra ice is built over hundreds of Myr, and the fine end covers only 10.
+Verdict: no change to the judge's picture, so no more runs. F's run times (median 738 s) are not comparable to
+C's (1680 s): F ran later, at load ~22 against ~100. The 2 extra updates cost about 1% of a run.
+
+**4. Arm G at L7 (4 seeds): main's 4 Myr cadence plus the L6-grid spin-up climate.**
+**5. The full default at L7 (arm F, same 4 seeds; main's runs reused).** Four pairs can catch only a large
+shift. The bar at L7 is ~60% passing.
+
+| L7, 4 pairs | main | G (L6 grid) | F (default: ramp + L6 grid) |
+|---|---|---|---|
+| passes | 4/4 | 4/4 | 3/4 (seed 619496 fails, warm: end T +6.4) |
+| iceboxes | 1 | 2 | 1 |
+| finish-moment T, median (vs main, paired) | +0.8 | -1.8 (-1.8; 1 up / 3 down) | +1.5 (+2.0; 2 / 2) |
+| late dT vs main | | -3.3 (1 / 3) | -1.3 (1 / 3) |
+| arid % vs main | | -2.2 (0 / 4) | -2.1 (0 / 4) |
+| hot desert % vs main | | -3.3 (0 / 4) | -2.3 (0 / 4) |
+| land rain, trees, land %, sink ref | | no direction | no direction |
+| land-ice share 300-990 (iced10), median | 0.20 | 0.59 | 0.40 |
+| run wall, median | 11591 s | 6512 s (1.8x) | 3279 s (3.5x) |
+
+- The arid and hot-desert drop (0 of 4 up, sign p 0.125) is in the spin-up records only. pjudge averages the
+  climate updates 600-1000 Myr, and for G and F those are mostly the L6-grid solve's Koppen classes. Over the
+  native L7 finish window, which is what the worlds get, the arid share is main 21.9%, G 24.0%, F 23.4% (means of
+  the 4 seeds; aridwin.py). So the finished worlds are not drier. The coarse solve classes a little less
+  land as desert in the spin-up, which fits its smoothed rain and temperature fields.
+- Nothing else has a direction across the 4 pairs. G's extra land ice (0.59 against 0.20, 3 of 4) is the same
+  ice-loop sensitivity as arm E's, at 4 pairs; F's is 0.40.
+- **Speed:** the run times are not paired under the same load. main's 4 L7 runs ran at load 60-150. G's
+  overlapped them. F's ran later, at load 22-110. G at 1.8x is the fairer number for the grid alone; F's 3.5x
+  overstates the default somewhat. The expected per-Gyr gain from the per-update costs is ~2.9x (Speed, above).
+  An L7 speed figure under equal load needs F and main launched together. That costs no judge draws:
+  `planet simulate` timings at merge would do.
+
+**What to merge.** The branch defaults: the 8/4/2 ramp, the 1 C trigger and the L6-grid spin-up. They passed at
+L6 (18 pairs, arm C; the fine end is a 10 Myr change on top) and showed no large shift at L7 (4 pairs).
+
+## Handoff (lane 27, at ~230k context; items 1-5 are done above, by lane 27b)
 Outputs are in `<scratchpad>/lane27/`. The frozen code is in `code/<arm>` (main = 287ca3d0; B = 3da7ca1f; C, E
 and G = B's code with params edited: C `climate_every_max` 8; E `climate_every` 2, max 2, trigger off; G max 4,
 trigger off, `climate_level` 6). The L6 draws are in `judge/`, the L7 draws in `judge7/`.
