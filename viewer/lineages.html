@@ -459,6 +459,7 @@ function drawSide() {
       <div class="muted">empty fields are inherited from the first parent</div>
       ${field('prefers (Köppen codes or groups, places: ' + PLACES.join(', ') + ')', `<input class="wide" data-k="prefers" value="${esc((r.prefers || []).join(', '))}">`)}
       ${field('avoids', `<input class="wide" data-k="avoids" value="${esc((r.avoids || []).join(', '))}">`)}
+      ${r.megafauna ? field('tolerates (megafauna: country it accepts at the edges, at half suitability)', `<input class="wide" data-k="tolerates" value="${esc((r.tolerates || []).join(', '))}">`) : ''}
       ${field('traits', TRAITS.map((t) => `<label class="trait"><input type="checkbox" data-trait="${t}" ${(r.traits || []).includes(t) ? 'checked' : ''}> ${t}</label>`).join(''))}
       <h3>Senses and body <span class="muted" style="font-weight:normal">(for the future cuisine pass; the bracketed value is inherited)</span></h3>
       <div class="row">${BODY_FIELDS.map(([k, lab, opts]) => field(lab, bodyInput(r, k, opts))).join('')}</div>
@@ -517,7 +518,7 @@ function editLine(r, el) {
   } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
   else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
   else if (k === 'group_of') { r.group_of = el.value; delete r.parents; }
-  else if (k === 'prefers' || k === 'avoids' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+  else if (k === 'prefers' || k === 'avoids' || k === 'tolerates' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
   else if (['share', 'sites', 'speed_kmyr', ...DEMO_KEYS, 'band_km2'].includes(k)) {
     if (el.value === '') delete r[k]; else r[k] = +el.value;
     if (k === 'band_km2' && el.value !== '') { r.density = +(BAND / +el.value).toPrecision(3); delete r.band_km2; }

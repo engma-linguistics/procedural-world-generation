@@ -25,7 +25,10 @@ Megafauna (PW-855, PW-924: `megafauna = true`, the dragons and the true giants) 
 of their own country (history.megafauna), exempt from the peoples' range targets; `generation_yr` lowers their viable number,
 `group_size = [least, most]` says how many live together and `rivalry` (0..1) weakens the competition they feel and give;
 `mass_kg` (a giant kind's ecological mass; dragons' comes from meta.dragon_ages) sets the kind's natural density with
-meta.megafauna_natural, which peoples press down to meta.dragon_km2 / meta.giant_km2 (PW-957, PW-963).
+meta.megafauna_natural, which peoples press down to meta.dragon_km2 / meta.giant_km2 (PW-957, PW-963). A megafauna kind's habitat has
+tiers (PW-1024, history.habitat): its own country (`prefers`, within `temp_c` and `rain_mm`) in full; `tolerates = [tags]`, places or
+climates it accepts at the edges, at reduced suitability and with a margin round its comfort range; elsewhere a tenth; and, by
+ecological release (history.megafauna.release), rich neighbouring land that no rival kind holds, at reduced density.
 Sapience (PW-965): a stem may say `sapient = "T"`, the one dated "sapiens" node where minds arrive for the whole stem (it must lie
 between the stem's start and its first split child: the kinds split after it and inherit it, they do not evolve minds apart).
 `animals = true` (a non-persisting stem with split children) gives it a new kind of end, not extinction: at its last split the stem is
@@ -326,9 +329,9 @@ GROUPS = {  # Köppen groups usable in prefers / avoids (climate.KOPPEN ids)
     "polar": [28, 29], "tundra": [28],
 }
 PLACES = ("coast", "island", "mountain", "lowland", "inland", "forest", "open", "wetland",
-          "jungle", "steppe", "desert", "tundra", "island_chain", "volcanic", "hills")
+          "jungle", "steppe", "desert", "tundra", "island_chain", "volcanic", "hills", "breaks")
 # (history._tags; all usable as place wishes. volcanic: the world's volcanoes and young volcanic ground, land.goods,
-# glacial and recent epochs only; hills: rolling country, moderate relief under the mountains)
+# glacial and recent epochs only; hills: rolling country, moderate relief under the mountains; breaks: rugged open dry grassland, PW-1024)
 
 
 @dataclass
@@ -343,6 +346,7 @@ class Lineage:
     elev_m: tuple[float, float] | None = None
     prefers: list[str] = field(default_factory=list)
     avoids: list[str] = field(default_factory=list)
+    tolerates: list[str] = field(default_factory=list)  # megafauna (PW-1024): places or climates held at reduced suitability (history.habitat TOLERATE_K), with a margin round the comfort range
     traits: list[str] = field(default_factory=list)
     generation_yr: float = GENERATION_YR  # years per generation (history.origin_mvp scales a daughter's founding floor with the generations it must persist)
     speed_kmyr: float = 0.5  # expansion: how fast the frontier advances, km/yr (x the traits' speed)
@@ -764,6 +768,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     elev_m=_pair(r.get("elev_m"), "elev_m") if "elev_m" in r else base.elev_m,
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
+                    tolerates=[_check_tag(x, lid) for x in r.get("tolerates", base.tolerates)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
                     body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
@@ -938,7 +943,7 @@ def to_raw(t: Tree) -> dict:
         elif l.parents:
             r["parents"] = l.parents
         r.update(temp_c=list(l.temp_c), rain_mm=list(l.rain_mm), prefers=l.prefers, avoids=l.avoids,
-                 traits=l.traits, speed_kmyr=l.speed_kmyr, generation_yr=l.generation_yr, **l.given_demo())
+                 **({"tolerates": l.tolerates} if l.tolerates else {}), traits=l.traits, speed_kmyr=l.speed_kmyr, generation_yr=l.generation_yr, **l.given_demo())
         if l.elev_m is not None:
             r["elev_m"] = list(l.elev_m)
         if l.marine or (l.origin == "split" and t.lines[l.parents[0]].marine):  # (a land tree's raw stays as it was)

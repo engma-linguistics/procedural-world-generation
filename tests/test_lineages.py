@@ -2283,6 +2283,55 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     assert np.allclose(MG.local_density(h4, h4.idx["hill"], np.ones(h4.grid.n)), h4.dens_nat[h4.idx["hill"]])
 
 
+def test_megafauna_tolerated_tier_and_ecological_release(faketz):
+    """PW-1024: a megafauna kind's `tolerates` country (and its own just past its comfort range) holds it at TOLERATE_K with the comfort
+    range's margin (EDGE_C...), never lowering its habitat anywhere; ecological release offers at most RELEASE_K of rich land near its own country that no other kind of its sort holds, none on land no richer than
+    the median, and none in the deep epoch."""
+    from planet.lineages.history import params as HP
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(ps.grid, env)
+    row = {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "traits": ["flies"], "temp_c": [10, 30], "rain_mm": [100, 9000],
+           "prefers": ["coast"]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        dict(row, tolerates=["inland"]), dict(row, id="other", tolerates=[]), {"id": "folk", "parents": ["stem"], "at": "1 Myr", "density": 1.0}]}
+    t = SP.parse(raw)
+    assert t.lines["wyrm"].tolerates == ["inland"] and SP.parse(SP.to_raw(t)).lines["wyrm"].tolerates == ["inland"]
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "lineage": raw["lineage"][:1] + [dict(row, tolerates=["nowhere"])]})
+    Kt, Kp = H.capacity(t.lines["wyrm"], env, tags), H.capacity(t.lines["other"], env, tags)
+    own = tags["coast"]
+    full = own & (Kp >= HP.TOLERATE_K)
+    assert full.any() and np.allclose(Kt[full], Kp[full])  # (its own country as before, but past its comfort range's edge: there the margin holds it at half)
+    edge = tags["inland"] & ~own & tags["land"]
+    assert edge.any() and Kt[edge].max() <= HP.TOLERATE_K + 1e-9 and (Kt[edge] > Kp[edge] + 1e-9).any()
+    assert np.all(Kt >= Kp - 1e-12)
+    h = H.History(t, ps, 1)
+    k, j = h.idx["wyrm"], h.idx["other"]
+    step = type("Step", (), {"epoch": "recent", "ago": 1.0})()
+    h._prey = np.full(h.grid.n, 10.0 * h.prey_ref)
+    h.active = {x.id: x.id == "wyrm" for x in h.lines}
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    h._K_own[k] = np.where(tags["land"], 1.0, 0.0)
+    rel = MG.release(h, t.lines["wyrm"], k, env, tags, step)
+    assert rel.max() <= MG.RELEASE_K + 1e-9 and (rel[tags["land"]] > 0).any()
+    h.active["other"] = True
+    h.p[j][tags["land"]] = 0.5  # (another dragon kind holds the land: nothing opens)
+    assert not MG.release(h, t.lines["wyrm"], k, env, tags, step).any()
+    h.p[j][:] = 0.0
+    lat = np.degrees(np.arcsin(ps.grid.centers[:, 2]))
+    h._K_own[k] = np.where(tags["land"] & (lat > 60), 1.0, 0.0)  # (its own country only in the far north: release only next to it)
+    rel = MG.release(h, t.lines["wyrm"], k, env, tags, step)
+    reach_km = (max(1, round(MG.RELEASE_KM / h.cell_km)) + 1) * 1.5 * h.cell_km
+    far = tags["land"] & (lat < 60 - reach_km / 111.0)
+    assert far.any() and not rel[far].any()
+    h._K_own[k] = np.where(tags["land"], 1.0, 0.0)
+    h._prey = np.full(h.grid.n, h.prey_ref)  # (prey no better than the median: no release)
+    assert not MG.release(h, t.lines["wyrm"], k, env, tags, step).any()
+    assert MG.release(h, t.lines["wyrm"], k, env, tags, type("Step", (), {"epoch": "deep", "ago": 100.0})()) is None
+
+
 def test_megafauna_natural_settings_and_prey(faketz):
     """PW-957, PW-958, PW-959, PW-966: meta.megafauna_natural picks the natural density (prey: Carbone & Gittleman on the prey field;
     mesotherm / mammal: Damuth at the ecological mass), meta.dragon_ages the schedule (ecological mass, stages), meta.dragon_generation
