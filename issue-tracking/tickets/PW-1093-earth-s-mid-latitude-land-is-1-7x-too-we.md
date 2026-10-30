@@ -1,5 +1,6 @@
 ---
-title: "Earth's mid-latitude land is ~1.7x too wet (40-60 N, Siberia, Mongolia) while the sea under the same storm tracks is too dry"
+id: PW-1093
+title: Earth's mid-latitude land is ~1.7x too wet (40-60 N, Siberia, Mongolia) while the sea under the same storm tracks is too dry
 type: task
 status: todo
 parent: PW-015
@@ -11,6 +12,8 @@ found_by: lane28
 blocked_by: []
 relates: [PW-998, PW-026, PW-821]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/coasts/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -75,3 +78,6 @@ which source carries the excess. Earth is a plausibility anchor, not a target: t
 - [ ] Per region (W/E Siberia, Mongolia, NE USA, W Europe) and half-year: where the excess rain comes from (sea vapour brought in vs land recycling) and in which half
 - [ ] A written diagnosis choosing among candidates 1-5, before any change
 - [ ] Any fix keeps the polar land (60-80 N) near GPCC and doesn't push Earth's B share further below Kottek's 30% (now 25.2%)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-midlatitude-land-too-wet.md (found by lane28).

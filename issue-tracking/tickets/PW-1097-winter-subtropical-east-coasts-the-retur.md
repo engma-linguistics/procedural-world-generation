@@ -1,9 +1,10 @@
 ---
+id: PW-1097
 title: "Winter subtropical east coasts: the return flow's vapour arrives but doesn't rain (no frontal / overrunning lift at low surface humidity)"
 type: task
 status: todo
 parent: PW-013
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: med
@@ -11,6 +12,8 @@ found_by: lane26
 blocked_by: []
 relates: [PW-998, PW-026]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -41,3 +44,7 @@ vapour in mm against NCEP:
   1500 m (c9b4990e). Of five forms, two didn't move the winters (cold-dome mask, warm-advection mask) and two wet the
   deserts (unmasked, land-only); see the coasts README's round 2 note. SE USA winter 153 -> 288 (GPCC 1334) is still
   vapour-limited (7.7 mm vs NCEP 17.5): what's left is the return flow's supply.
+
+## Updates
+- 2026-10-30: Coordinator: moved to v2; regional Earth-fidelity refinement, Earth is a plausibility anchor.
+- 2026-10-30: Created from inbox draft draft-winter-return-flow-frontal-rain.md (found by lane26).

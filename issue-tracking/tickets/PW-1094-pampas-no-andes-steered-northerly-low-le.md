@@ -1,9 +1,10 @@
 ---
+id: PW-1094
 title: "Pampas: no Andes-steered northerly low-level jet, so no Amazon vapour reaches it (Paraguay winter PW 6 vs 25 mm)"
 type: task
 status: todo
 parent: PW-013
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: med
@@ -11,6 +12,8 @@ found_by: lane26
 blocked_by: []
 relates: [PW-998]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -38,3 +41,7 @@ What didn't help:
 
 To do: a mountain-channelled flow, where the part of the wind that `deflect` turns along a range carries on
 downstream along it, not only within block_km. It waits until lane 26's rounds 1 and 2 are judged (coordinator).
+
+## Updates
+- 2026-10-30: Coordinator: moved to v2; regional Earth-fidelity refinement, Earth is a plausibility anchor.
+- 2026-10-30: Created from inbox draft draft-pampas-andes-low-level-jet.md (found by lane26).

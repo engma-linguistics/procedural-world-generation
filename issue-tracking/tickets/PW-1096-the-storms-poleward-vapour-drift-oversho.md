@@ -1,5 +1,6 @@
 ---
-title: "The storms' poleward vapour drift overshoots at 40-50N (0.96 / 0.65 Sv vs NCEP-implied 0.83 / 0.52) while 30S stays at a quarter"
+id: PW-1096
+title: The storms' poleward vapour drift overshoots at 40-50N (0.96 / 0.65 Sv vs NCEP-implied 0.83 / 0.52) while 30S stays at a quarter
 type: task
 status: todo
 parent: PW-013
@@ -11,6 +12,8 @@ found_by: lane26b
 blocked_by: []
 relates: [PW-998]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -28,3 +31,6 @@ subtropics' moisture divide is still at ~25N/~28S (NCEP ~18N/~12S). Open:
 - The southern hemisphere's shortfall may be its storm track's strength over the open Southern Ocean.
 
 Only after the package judge (draft-coasts-package-judge-icebox).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-storm-drift-40n-overshoot.md (found by lane26b).

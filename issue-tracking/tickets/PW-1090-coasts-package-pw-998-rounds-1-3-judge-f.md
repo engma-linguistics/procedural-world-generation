@@ -1,7 +1,8 @@
 ---
+id: PW-1090
 title: "Coasts package (PW-998 rounds 1-3) judge: finish A vs D and check whether it cools generated worlds into iceboxes"
 type: task
-status: todo
+status: done
 parent: PW-013
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: lane26b
 blocked_by: []
 relates: [PW-998, PW-026]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -27,3 +30,7 @@ Preview (incomplete):
 
 Hypotheses and probes for the iceboxes: the coasts README's last handoff. If the package fails, split it round-wise,
 starting with round 1's 15 B runs.
+
+## Updates
+- 2026-10-30: Status todo -> done. Superseded: the coasts judge ran on lane 28b (vs F, 18 L6): passes 13/18 vs 14/18, iceboxes 8 vs 5; merged 53807d76.
+- 2026-10-30: Created from inbox draft draft-coasts-package-judge-icebox.md (found by lane26b).

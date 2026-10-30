@@ -1,4 +1,5 @@
 ---
+id: PW-1095
 title: "Ice sheets: the seasonal inversion overshoots the interiors' summers (Antarctic plateau, Vostok)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane28
 blocked_by: []
 relates: [PW-1050, PW-336]
 refs: [planet/timezoom/kernels.py, planet/icemass.py, tools/earth_check.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -50,3 +53,6 @@ earth_check, since margin summers set the sheets' extent.
 - [ ] The inversion's seasonal amplitude made to depend on whether the ice melts (margin vs interior), still one rule shared by the run, worlds, zoom and time zoom
 - [ ] earth_check: Antarctic and Vostok warmest month and the south polar seasonal range back near observed, with Greenland's summer no worse than after PW-1050
 - [ ] Run judge: passes and ice paths not worse than PW-1050's (14/18 at L6, roll 0.0005)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-sheet-interior-inversion-seasonality.md (found by lane28).

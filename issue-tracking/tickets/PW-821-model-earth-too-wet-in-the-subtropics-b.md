@@ -2,7 +2,7 @@
 id: PW-821
 title: "Model Earth too wet in the subtropics (B climates 20% vs 30%, hot desert 3-5%): add hot-desert and B share to earth_check; declare it a v1 limitation or pull PW-228's dryness part into v1"
 type: task
-status: blocked
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -13,13 +13,14 @@ blocked_by: [PW-015]
 relates: []
 refs: []
 created: 2026-10-24
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
 From the pre-v1 assumptions audit (docs/review/assumptions-audit/README.md, findings.json): Model Earth too wet in the subtropics (B climates 20% vs 30%, hot desert 3-5%): add hot-desert and B share to earth_check; declare it a v1 limitation or pull PW-228's dryness part into v1.
 
 ## Updates
+- 2026-10-30: Status blocked -> done. Closed as a v1 limitation (Earth is a plausibility anchor): B share 25.2% vs Kottek 30.1% after coasts; further dryness work lives in PW-015 and PW-1093.
 - 2026-10-29: Lane 25 (merged) brought Earth's B share to 27-28% of land; the Sahel and E Africa are still 3-4x too wet (PW-996, v2).
 - 2026-10-29: Lane 25: earth_check now prints the dry-land line (B, BWh, BSh shares of land excl. Antarctica, land rain vs GPCC), and its Kottek codes per point/region are fixed (a reused variable showed Af/Am). PW-015 round 1 (bulk sea exchange, branch 5840dcc6) gives Earth B 27.3 / BWh 14.5 against 30.1 / 14.8 (docs/review/base-climate/deserts/README.md).
 - 2026-10-28: Status todo -> blocked. Paired 2-roll L6 set (36 per arm, new bar): rain fix 24/36 vs main 29/36 finish-moment passes, icebox 7 vs 7, no hellhouse; Earth log-rain corr 0.637 vs 0.648, Tibet drier. No gain, so not merged. Kept on branch worktree-agent-a27927a0e29b0cbdf for the record; fold into PW-015 (ocean evaporation, the root cause, v2).

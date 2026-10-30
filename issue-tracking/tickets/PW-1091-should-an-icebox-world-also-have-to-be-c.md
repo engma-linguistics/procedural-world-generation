@@ -1,5 +1,6 @@
 ---
-title: "Should an \"icebox\" world also have to be cold? The flag reads ice volume (sea level) only, and flags Earth-warm worlds"
+id: PW-1091
+title: Should an \"icebox\" world also have to be cold? The flag reads ice volume (sea level) only, and flags Earth-warm worlds
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: lane28
 blocked_by: []
 relates: [PW-998, PW-1050, PW-865]
 refs: [docs/review/base-climate/v1-finish-12/passrate4.py, docs/review/base-climate/v1-finish-16/pjudge.py, tools/ice_criteria.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -63,3 +66,6 @@ wanted, pick the margin (dT or absolute T) and the window (300 Myr to end, as no
 
 - [ ] Owner: icebox = ice volume only (as now), or ice volume AND globally cold (which margin)?
 - [ ] If changed: passrate4.judge and pjudge/fmtally updated together, with a cold-world count reported either way
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-icebox-flag-needs-global-cold.md (found by lane28).
