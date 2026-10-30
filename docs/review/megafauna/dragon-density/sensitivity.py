@@ -125,11 +125,11 @@ def combined() -> list[dict]:
     k_mam = mean_kcal(4.82, 0.734)
     cases = [
         ("The model", {}),
-        ("Literature-leaning mesotherm: McNab's 31%-of-mammal intake, 66% assimilation, 78% of a carcass eaten, b = 0.79, offtake at Coe's median",
-         dict(kcal_day=k_meso, assim=0.66, carcass=0.78, share=apex_share(0.79), offtake=float(np.median(COE_PB)))),
+        ("Literature-leaning: McNab's dinosaur intake (31% of a mammal's), 66% assimilation, 78% of a carcass eaten, b = 0.79, offtake kept at 10% (about half of Coe's median production)",
+         dict(kcal_day=k_meso, assim=0.66, carcass=0.78, share=apex_share(0.79))),
         ("Lowest: mammal intake, 66% assimilation, 65% of a carcass, b = 0.6, 5% offtake",
          dict(kcal_day=k_mam, assim=0.66, carcass=0.65, share=apex_share(0.6), offtake=0.05)),
-        ("Highest: varanid intake, 85% assimilation, whole carcass, b = 0.889, offtake at Farlow's 100 kg turnover",
+        ("Highest (an upper bound): varanid intake, 85% assimilation, whole carcass, b = 0.889, offtake at Farlow's 100 kg turnover",
          dict(kcal_day=k_var, share=apex_share(0.889), offtake=0.259)),
     ]
     return [{"label": lab, "factor": coef(**kw) / C0, "one_per_km2_at_1t": 1.0 / coef(**kw)} for lab, kw in cases]

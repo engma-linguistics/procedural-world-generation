@@ -1,81 +1,93 @@
-# Claims ledger: Dragons and Their Food (index.html)
+# Claims ledger: Dragons and their food (index.html)
 
-Round 1, 2026-10-29. One row per cited claim; the id matches an `<!-- Cn -->` comment beside the sentence in `index.html`.
-PDFs: `docs/references/megafauna/` (gitignored; the copies read are in the main checkout). Page numbers are the journal's
-printed page numbers, checked against the PDF page (Farlow 1993 is a scan with no text layer: read as page images).
+Round 2, 2026-10-29. One row per cited claim; the id matches an `<!-- Cn -->` comment beside the sentence in `sections/*.html`
+(and so in `index.html`). Claims without a comment tag but with a citation in a table cell (Section 2's Table 1, Section 7's
+Table 7) are listed under "Table citations" below. PDFs: `docs/references/megafauna/` (gitignored; read in the main checkout).
+Page numbers are the journal's printed page numbers, checked against the PDF page. Farlow 1993 is a scan with no text layer and
+was read as page images; every Farlow quote below was read on the image of its page in round 2.
 
-Code paths are at main b86ed9d4. `numbers.json` is written by `dragon_numbers.py` (see "Reproducing" at the end).
+Model code: main at b36c9581; the sweep ran from snapshot 8c7ce305 (main + the measuring script). `numbers.json` is written by
+`dragon_numbers.py` from the sweep in `/home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r2/`.
+Every model number on the page is a `{{ expression }}` over `numbers.json` (or `charts/boxes.json`) in `sections/*.html`; the
+expression beside each sentence is its source. Round-1 changes are marked **r2**.
 
 ## Cited claims
 
-| id | sentence (as written, shortened) | paper, location | what the paper says there | how the model uses it | model number's source |
-|---|---|---|---|---|---|
-| C1 | Grazing NPP becomes herbivore biomass by log10 B = 1.52 log10 NAP − 4.79, B kJ/m², NAP kJ/m²/yr (r² = 0.579, d.f. = 49) | McNaughton et al. 1989, p. 143 | "Herbivore biomass (B) was related (coefficient of determination r2 = 0.579, P < 0.00001, degrees of freedom (d.f.) = 49) to net primary productivity (NAP) by log B = 1.52 (log NAP) − 4.79"; B in kJ m⁻², production in kJ m⁻² yr⁻¹ | **Adapted**: same slope and intercept (`prey.PREY_EXP`, `prey.PREY_LOG_A`, `prey.wild`), fed with the model's grazing NPP (herb layer plus browse, season-weighted), which is not exactly McNaughton's NAP | 0.56 / 1.90 / 6.97 t/km² at 90 / 200 / 470 g C/m²/yr: `numbers.json` `prey_anchor` |
-| C2 | The paper does not give its conversion factors | McNaughton et al. 1989, p. 143 | "…of mass were converted to energy using standard conversion factors 41–43" (no values given) | **Differs** (model adds its own): `prey.C_FRAC` = 0.45 g C/g dry and `prey.KJ_PER_G_DRY` = 17.5 kJ/g dry, both unsourced; `prey.KJ_PER_G_LIVE` = 7.0 from Farlow (C6) | constants in `planet/lineages/prey.py` |
-| C3 | Coe et al.'s fit log10 B = 1.094 log10 NAAP + 0.389 gives 0.8 / 1.9 / 4.9 t/km² for the same three places | Coe, Cumming & Phillipson 1976, Fig. 3, p. 349 | Fig. 3: "Relationship between large herbivore biomass and predicted NAAP for wildlife ecosystems where annual precipitation is less than 700 mm"; the plot's equation reads y = 1.094 x + 0.389, N = 12 (scan; the r value is hard to read, so it is not quoted) | **Not used**; cross-check only. Our arithmetic: NAAP (g dry) = g C / 0.45 (the model's C_FRAC), B in kg/km² | 90→200 g dry: 10^(1.094·2.301+0.389) = 805 kg/km²; 200→444: 1,932; 470→1,044: 4,920 (hand arithmetic, repeatable from the formula) |
-| C4 | McNaughton's NSP fit log10 NSP = 1.10 log10 NAP − 3.27 against the biomass fit gives production of 1.1, 0.77 and 0.54 × standing biomass a year | McNaughton et al. 1989, p. 143 | "net secondary productivity (NSP) was related (r2 = 0.364, P < 0.0001, d.f. = 34) to NAP by log NSP = 1.10 (log NAP) − 3.27" | **Differs**: the model's `megafauna.OFFTAKE` = 0.1/yr is a flat, unsourced share (PW-991), far below these ratios. The ratio is our arithmetic, with NAP = g C × 38.9 kJ/g C (prey.KJ_PER_G_C) | `numbers.json` `mcnaughton_nsp.*.NSP_over_B` = 1.075 / 0.769 / 0.537 |
-| C5 | Prey turnover is 0.94 M^−0.28 a year, 0.26 / 0.16 / 0.14 for 100 / 500 / 1,000 kg | Farlow 1993, eq. 6, p. 172 | "Equation 6.—Prey turnover rate = 0.94 * mass^(−0.28) where mass is in kg, and turnover rate is in yr^(−1)" (from Farlow 1990, eq. 3) | **Differs**: the model's OFFTAKE is one number (0.1), not by prey mass; it sits below this turnover, as a share every predator together can take | `numbers.json` `literature.farlow_turnover` = 0.259 / 0.165 / 0.136 |
-| C6 | 7 kJ per g live animal is Farlow's figure; 836 Mcal per 0.5 t carcass is the same | Farlow 1993, p. 172 | "the energy content of animal tissue approximates 7 * 10^6 joules/kg live mass (Peters, 1983, p. 33)" | **Identical**: `prey.KJ_PER_G_LIVE` = 7.0; `dragon_ages.CATTLE_MCAL` = 836 (0.5 t × 7 kJ/g = 3.5 × 10⁶ kJ = 836.5 Mcal) | constants |
-| C7 | Reptile FMR 0.196 M^0.889 kJ/day (M g), all reptiles, n = 55; the fit's largest reptile is the 45.2 kg Komodo dragon | Nagy, Girard & Brown 1999, Table 2, pp. 260–261 (the "All reptiles" row is on p. 261); Table 1, p. 258 | Table 2 row "All reptiles 0.196 0.889 55 0.945 <0.0001"; Table 1 row "Varanus … Komodo dragon 45,200 … 2,430" (mass g, FMR kJ/day) | **Adapted**: same fit (`dragon_ages.fmr_kcal`), extrapolated to a dragon of every age (to 52 t at 3,000 yr); the dragons are assumed to eat at a reptile's rate. Note: the code comments cite "Table 2, p. 260"; the reptile row is on p. 261 | 10,417 kcal/day mean over all ages, 5.35 head/yr, 2.68 t/yr: `numbers.json` `chain.kcal_day`, `chain.cattle_yr`, `chain.food_t_yr` |
-| C8 | Size classes 20.6 kg (79.9%), 58.3 kg (19.0%), 1,123 kg (0.9%), 5,347 kg (0.1%) of the guild's individuals | Carbone, Turvey & Bielby 2011, Table 1, p. 2683 | Table 1 column "mass categories, kg (with estimated %)": 20.6 (79.9%), 58.3 (19.0%), 1123 (0.9%), 5347 (0.1%); legend: "the estimated percentage that each size category contributes to the total carnivore guild" | **Identical** values in `megafauna.GUILD_CLASSES` | constant |
-| C9 | Those abundances come from a mammalian carnivore line, constant 1.97 and exponent −0.88 | Carbone et al. 2011, p. 2684 (section 2) | "Estimates of carnivorous theropod dinosaur abundances were derived from mammalian carnivore data [47], where e = 1.97 and f = −0.88" | Not used directly; context for C8 | — |
-| C10 | Weighting classes by M^0.75, the classes of 1 t and up eat 16.8% and the rest 83.2% (4.95 : 1) | model arithmetic on C8 | The paper gives abundance, not food | **Adapted**: `megafauna.guild_ratio()` multiplies each class's share by M^`GUILD_KLEIBER` (0.75, Kleiber; not from the paper); apex = classes ≥ `GUILD_APEX_KG` (1,000 kg). Unsourced as a general rule (PW-1019) | `numbers.json` `chain.guild_ratio` = 4.949, `chain.dragon_share` = 0.168, `chain.guild_food_weights` |
-| C11 | Carnivores per 10,000 kg of prey = 89.1 M^−1.05 (N = 25, R² = 0.83): 1 per 269 km² at 1 t/km² at 1.65 t, 1.7× sparser than the model | Carbone & Gittleman 2002, p. 2274 | "number per 10,000 kg of prey = 89.1 × (carnivore mass)^−1.05; N = 25, R² = 0.83, P < 0.0001" | **Cross-check only** since PW-990 B: kept as `meta.megafauna_natural = "prey"` (`megafauna.CARBONE_A`, `CARBONE_B`, `natural_coef`) | `numbers.json` `literature.carbone_one_per_km2_at_1t` = 268.9; model `chain.one_per_km2_at_1t` = 159.1 |
-| C12 | "10,000 kilograms of prey supports about 90 kilograms of a given species of carnivore"; the model's dragons are 104 kg (ecological mass) or 79 kg (all-ages mean) per 10,000 kg | Carbone & Gittleman 2002, p. 2273 (abstract) | "We find that 10,000 kilograms of prey supports about 90 kilograms of a given species of carnivore, irrespective of body mass" | Comparison only. Our arithmetic: 0.006284 dragons/km² per t/km² × 10 t × 1,654 kg (or 1,255 kg) | `chain.per_km2_per_t`, `chain.eco_mass_kg`, `chain.mean_mass_all_stages_kg` |
-| C13 | Mammalian carnivores: N^−1 = 34.43 ha × M^0.86 (n = 38), 1 per 202 km² at 1.65 t; crosses the model's line at ~0.8 t/km² | Jetz, Carbone, Fulford & Brown 2004, Table 1, p. 268 | Table 1, row Carn, N^−1: n = 38, intercept "Area (ha) at M = 1" 34.43 (4.03), slope 0.86 (0.20), r² 0.65 | **Not used** in the model (no prey term); cross-check | `literature.jetz_carn_km2_each` = 201.8; crossing 1/(201.8 × 0.006284) = 0.79 t/km² |
-| C14 | Carnivore home range 52.07 ha × M^1.20 (n = 70): 3,790 km² at 1.65 t, a 35 km disc; the model's 60 km reach covers ~11,300 km² | Jetz et al. 2004, Table 1, p. 268 | Table 1, row Carn, H: n = 70, 52.07 (10.87), slope 1.20 (0.19), r² 0.70 | **Differs**: `megafauna.FORAGE_KM` = 60 (a judgement; the code comment cross-checks it at 3.2 t, the older schedule's mass) | `literature.jetz_carn_home_range_km2` = 3,791; π·60² = 11,310 km² |
-| C15 | Reptile density = 66.07 M^−1.01 per km², 1 per 27 km² at 1.65 t; the largest reptile in the data is over two orders lighter | Farlow 1993, p. 187 | "density = 66.07 * mass^−1.01 … density is in animals/km², and mass is in kilograms"; "the largest reptile in Damuth's data sample has a mass more than 2 orders of magnitude less than our hypothetical tyrannosaur-sized predators" | **Not used**; cross-check | `literature.farlow_reptile_one_per_km2` = 26.96 |
-| C16 | Prey:predator biomass "usually somewhere between 200:1 and 100:1", "as low as 45:1"; best-case calculations assume a 50:1 density ratio; the model's prey:dragon biomass is 127:1 (96:1 at the ecological mass) | Farlow 1993, p. 176 | "the prey:predator biomass ratio … in modern large-mammal communities is usually somewhere between 200:1 and 100:1 (East, 1984; Farlow, 1990) but can get as low as 45:1 (compare Prins and Reitsma, 1989, for a forest community …)"; "The calculations presented thus far assume a prey:predator density ratio of 50:1" | Comparison only. Our arithmetic: 1 / (per_km2_per_t × mass in t) | `chain.prey_dragon_biomass_ratio_mean` = 126.8, `chain.prey_dragon_biomass_ratio_eco` = 96.2 |
-| C17 | An ectothermic predator as large as its prey is feasible at a prey:predator density ratio of only 10:1 | Farlow 1993, p. 187 | "An ectothermic tyrannosaur comparable in body mass to its prey species is energetically feasible if the prey density:predator density ratio is at least 10:1 (fig. 3)" | Context (the model's dragons eat at a reptile rate, C7) | — |
-| C18 | A community with dinosaur-sized predators would also hold smaller predators eating some of the same prey production | Farlow 1993, p. 176 | "It is unrealistic to suppose that an ecological community that included dinosaur-sized carnivorous mammals would not also include smaller predators that could consume at least some of the prey productivity also sought by their larger predatory neighbors" | Support for the guild split's existence (C10), not its size | — |
-| C19 | Sandom et al. count the share of large-mammal species lost per country; the model's 60% biomass loss is a judgement | Sandom, Faurby, Sandel & Svenning 2014, Fig. 3, p. 5 | Fig. 3: "Box plot of proportion of large mammals lost per TWDG country in hominin palaeobiogeographic regions" (Homo-origin, Archaic-combined, H. sapiens-only); species ≥ 10 kg (abstract, p. 1) | **Differs**: `prey.OVERKILL` = 0.6 of wild biomass where pressure is full; species share ≠ biomass share | constant |
-| C20 | Ripple et al.: ranges cut to 47% on average; no density against potential, so the pressure rule has no source | Ripple et al. 2014, p. 1241484-1 | "Estimates of range contractions for 17 of the 31 species revealed that they currently occupy on average only 47% (minimum <1%, maximum 73%) of their historical ranges (Table 1)" | **Differs**: `megafauna.PRESS_N0` = 0.05 and `spec.DRAGON_KM2` = 5,000 have no source; Ripple measures range, not density | constants |
-| C21 | Farlow builds predator density the same way: predator density × mass × intake = prey density × mass × turnover | Farlow 1993, eqs. 3–5, p. 172 | "Equations 3.—Predator consumption rate = prey productivity rate"; "Equation 4.—(Predator density) * (average predator mass) * (predator mass-specific food consumption rate) = (prey density) * (average prey mass) * (prey turnover rate)" | **Adapted**: the model's `megafauna.budget` + `natural` (food / 2.7 t) is this form with a flat turnover share and a guild split | — |
-| C22 | Hamilton et al.: all foragers, exponent 0.70, constant 4.44; read as ln km², groups of 25–1,000 live at 0.03–0.09 people/km² | Hamilton, Milne, Walker & Brown 2007, Table 1, p. 4767 | Table 1 "Summary of scaling relations for area of space used as a function of group size": All foragers β_N = 0.70 (SE 0.07), C0 = 4.44 (SE 0.47), r² 0.24. The table does not state C0's log base or area unit in the extracted text | **Reading, not a model input**: C0 as ln(km²) reproduces `spec.py`'s forager_km2 note (25 / (e^4.44 · 25^0.70) = 0.031; 1,000 / (e^4.44 · 1,000^0.70) = 0.093). The reviewer should confirm the unit from the paper's Methods | hand arithmetic |
-| C23 | If the smaller predators' biomass follows Carbone et al.'s classes (under-1 t classes hold 1.8× the biomass of the ≥ 1 t classes), the whole guild comes to ~46:1 | model arithmetic on C8 and C16 | Table 1 shares × class masses (individuals × mass) | Our arithmetic: Σ n·M under 1 t = 2,754, ≥ 1 t = 1,545, ratio 1.78; 126.8 / 2.78 = 45.6. Assumes the guild's biomass split follows its head-count split × mass, which the model does not use (it splits food) | hand arithmetic |
+| id | claim on the page (shortened) | paper, location | what the paper says there | how the model uses it |
+|---|---|---|---|---|
+| C1 | Grazing NPP becomes herbivore biomass by log10 B = 1.52 log10 NAP − 4.79 (51 points, r² = 0.579) | McNaughton et al. 1989, p. 143 | "Herbivore biomass (B) was related (coefficient of determination r2 = 0.579, P < 0.00001, degrees of freedom (d.f.) = 49) to net primary productivity (NAP) by log B = 1.52 (log NAP) − 4.79"; slope "significantly greater than 1" | **Adapted**: same fit in `prey.wild`, fed the model's grazing NPP (C24) |
+| C2 | The paper converts masses "using standard conversion factors" without giving them; cites Golley 1961, Schroeder 1977, Whitfield 1977 | McNaughton et al. 1989, pp. 142–143 (**r2**: was p. 143) | the sentence runs across the page break; refs 41–43 | **Differs**: model adds `prey.C_FRAC` 0.45 and `KJ_PER_G_DRY` 17.5 (unsourced), `KJ_PER_G_LIVE` 7.0 (C6) |
+| C3 | Coe et al.'s fit, log10 B = 1.094 log10 NAAP + 0.389 (r = 0.966; B large herbivores kg/km² live weight; NAAP g dry/m²/yr predicted from rainfall by Rosenzweig 1968; 12 areas under 700 mm), gives 0.8 / 1.9 / 4.9 t/km² | Coe, Cumming & Phillipson 1976, Fig. 3, p. 349; p. 347 (NAAP from rainfall) | Fig. 3: "y = 1.094 (± 0.206) x + 0.389 (± 0.571), r = 0.966, P < 0.001, N = 12" (**r2**: r now quoted; read on the page) | **Not used**; cross-check |
+| C4 | McNaughton's NSP fit against the biomass fit gives 1.1 / 0.77 / 0.54 × standing biomass a year; a ratio of two fits to different data, both including insects, so a weak bound | McNaughton et al. 1989, p. 143 | "net secondary productivity (NSP) was related (r2 = 0.364, P < 0.0001, d.f. = 34) to NAP by log NSP = 1.10 (log NAP) − 3.27" | **Differs**: flat `OFFTAKE` 0.1 (**r2**: caveat added per reviewer) |
+| C5 | Prey turnover 0.94 M^−0.28 a year: 0.26 / 0.16 / 0.14 at 100 / 500 / 1,000 kg | Farlow 1993, eq. 6, p. 172 | "Prey turnover rate = 0.94 * mass^(−0.28)", mass in kg, rate in yr⁻¹ | **Differs**: one number, 0.1 |
+| C6 | 7 kJ per g live animal | Farlow 1993, p. 172 | "the energy content of animal tissue approximates 7 * 10^6 joules/kg live mass" | **Identical**: `KJ_PER_G_LIVE`, `CATTLE_MCAL` 836 |
+| C7 | Reptile FMR 0.196 M^0.889 kJ/day (M g), all reptiles, n = 55 | Nagy, Girard & Brown 1999, Table 2, eq. 32, p. 261 (**r2**: page narrowed) | Table 2 row "All reptiles 0.196 0.889 55" | **Adapted**: `dragon_ages.fmr_kcal`, extrapolated to every age (C27, C28) |
+| C8 | Size classes 20.6 kg (79.9%), 58.3 (19.0%), 1,123 (0.9%), 5,347 (0.1%), the guild's *predicted* shares of individuals | Carbone, Turvey & Bielby 2011, Table 1, p. 2683 | "mass categories, kg (with estimated %)" | **Identical**: `GUILD_CLASSES` (**r2**: "predicted") |
+| C9 | The shares come from Carbone & Gittleman's mammalian line 1.97 M^−0.88 per km² (197.6 M^−0.88 per 100 km², their Fig. 2B), summed over each class's species | Carbone et al. 2011, p. 2685 (**r2**: was p. 2684) | "Estimates of carnivorous theropod dinosaur abundances were derived from mammalian carnivore data [47], where e = 1.97 and f = −0.88" | Context for C8 |
+| C10 | The M^0.75 weighting has a source: carnivores per unit of prey production expected as M^−0.75, fitted −0.66 (CL −0.48 to −0.85), "not significantly different from −0.75" | Carbone & Gittleman 2002, p. 2274; note 10, p. 2275 (**r2**: was "Kleiber, not from the paper") | as quoted | **Adapted**: `GUILD_KLEIBER` 0.75 → apex share 16.8% |
+| C11 | Carnivores per 10,000 kg prey = 89.1 M^−1.05 (N = 25, R² = 0.83): 1 per 269 km² at 1 t/km² for a 1.65 t carnivore; fit's heaviest species 310 kg; prey = main prey species (≥ 70% of diet) | Carbone & Gittleman 2002, p. 2274; Table 1; note 21, p. 2275 | as quoted | **Cross-check** (`natural = "prey"` mode) |
+| C12 | "about 90 kilograms" is the fit's value at 1 kg; at 1.65 t the fit gives 62 kg per 10,000 kg of prey, the model's dragons 104 kg (1.7×) | Carbone & Gittleman 2002, p. 2273 (abstract) | "10,000 kilograms of prey supports about 90 kilograms of a given species of carnivore" | **r2**: compared against the fit at 1.65 t, not the constant (reviewer `carbone` item 1) |
+| C13 | Mammalian carnivores N⁻¹ = 34.43 ha × M^0.86 (n = 38): 1 per 202 km²; crosses the model at 0.79 t/km² | Jetz et al. 2004, Table 1, p. 268 | Table 1 row Carn, N⁻¹ | **Not used**; cross-check |
+| C14 | Carnivore home range 52.07 ha × M^1.20 (n = 70): 3,800 km² at 1.65 t, a 35 km radius disc; the model's 60 km reach ≈ 11,300 km² | Jetz et al. 2004, Table 1, p. 268 | Table 1 row Carn, H | **Differs**: `FORAGE_KM` 60 (**r2**: "radius" made explicit) |
+| C15 | Reptile density 66.07 M^−1.01 per km², Damuth's data with Komodo dragon data added: 1 per 27 km² at 1.65 t; largest reptile > 2 orders lighter | Farlow 1993, p. 187 | as quoted (**r2**: "Komodo dragon data added", reviewer `farlow` item 6) | **Not used**; cross-check |
+| C16 | Mammal communities "usually somewhere between 200:1 and 100:1", "can get as low as 45:1"; 50:1 and 10:1 are best-case minima; model 127:1 (96:1 at eco mass) | Farlow 1993, p. 176; pp. 171–172; p. 187 | as quoted; p. 187 "a limiting, extreme case" | Comparison (our arithmetic) |
+| C17 | Round 1's reading reversed: reptile-like food needs + a high ratio ⇒ populations held "considerably smaller than their food requirements alone would have dictated" | Farlow 1993, p. 190 | "If the ornithischian:tyrannosaur ratio was high as suggested by Brinkman's (1990) study, and if we want to argue that tyrannosaurs were more reptile-like than mammal-like or bird-like in their food requirements, we must then conclude that tyrannosaur populations were regulated by some factor(s) that kept them considerably smaller than their food requirements alone would have dictated." (read on the page image) | **r2**: argument reversed (reviewer `farlow` item 1; owner note 3) |
+| C18 | Smaller predators share the prey production; Farlow's own correction halves the apex predator (50:1 → 100:1), milder than the model's 16.8% | Farlow 1993, p. 176 | "It is unrealistic to suppose that an ecological community that included dinosaur-sized carnivorous mammals would not also include smaller predators…" | Support for the split's existence, not its size (**r2**: Farlow's milder correction added) |
+| C19 | Overkill: species lost depends on co-evolution, medians ~2% / ~23% / ~46%; "universally low extinctions in sub-Saharan Africa (maximum 13%)"; species, not biomass | Sandom et al. 2014, Fig. 3, p. 5; p. 6 | Fig. 3 box plot; p. 6 as quoted | **Differs**: flat `prey.OVERKILL` 0.6 |
+| C20 | Ripple: "17 of the 31" with estimates hold on average 47% of historical range; pumas tolerate more human land use than wolves | Ripple et al. 2014, p. 1241484-1; p. 1241484-6 | "Estimates of range contractions for 17 of the 31 species revealed that they currently occupy on average only 47%…"; "pumas are able to persist in areas with much higher levels of human land use than are gray wolves" | **Differs**: `PRESS_N0`, `meta.dragon_km2` unsourced (**r2**: "17 of 31" wording) |
+| C21 | Farlow's food budget form: predator density × mass × intake = prey density × mass × turnover | Farlow 1993, eqs. 3–5, p. 172 | "Equation 4.—(Predator density) * (average predator mass) * (predator mass-specific food consumption rate) = (prey density) * (average prey mass) * (prey turnover rate)" | **Adapted** |
+| C22 | Hamilton 2007: all foragers exponent 0.70; C0 is ln(km²); Table 1 prints 4.44, Fig. 1 prints 4.14; groups of 25–1,000 at 0.03–0.09 (4.44) or 0.04–0.13 (4.14) people/km² | Hamilton et al. 2007, Table 1, p. 4767; Fig. 1, p. 4766 | Table 1 All foragers β_N = 0.70, C0 = 4.44; Fig. 1 fit ln A = 0.70 ln N + 4.14 | Reading (**r2**: unit settled, both constants given) |
+| C23 | Whole guild ≈ 46:1 (all ages), 35:1 (eco mass) | our arithmetic on C8, C16 | Σ n·M under 1 t / ≥ 1 t = 1.78 | **r2**: eco-mass figure added (reviewer `carbone` item 6) |
+| C24 | McNaughton's NAP is above-ground only; the model's NPP is whole-plant; 2× input → 2^1.52 = 2.9× biomass | McNaughton et al. 1989, p. 142; Fig. 1 caption | "Only processes occurring above ground were included"; "net above-ground primary productivity" | **Differs**: whole-plant herb NPP + 30% shrub browse (vegetation's grazing NPP). New in r2 |
+| C25 | McNaughton's B includes insects | McNaughton et al. 1989, p. 143 | "dominance by heterotherm herbivores in forests and homeotherms in grasslands" | **Differs**: read as big game. New |
+| C26 | Coe: production 0.085–0.26 of biomass a year across 24 areas (median 0.20), from assumed P/B 0.05 / 0.20 / 0.35 | Coe et al. 1976, Table 1, pp. 344–345; pp. 343–344 | Table 1 biomass and production columns (transcribed in `sensitivity.py` `COE_B`, `COE_P`) | Bound on `OFFTAKE`. New |
+| C27 | 2.7 t is the all-ages mean (a single ~1.0 t reptile's rate); a 1.65 t dragon kills 4.1 t; adults and ancients eat 84% of the food | model arithmetic (Nagy eq. 32) | — | **r2**: mass framing fixed (reviewer `nagy` item 1; owner note 3) |
+| C28 | The fit's largest reptile is the 45.2 kg Komodo dragon; outside the masses the 95% interval "will be larger" | Nagy et al. 1999, Table 1, p. 258; p. 262 | Table 1 row Varanus komodoensis 45,200 g; p. 262 as quoted | New |
+| C29 | A species' FMR can be "as low as 30% of predicted or as high as 170%"; food equations leave out growth | Nagy 2005, p. 1622; p. 1624 | as quoted; growth not counted | New |
+| C30 | Varanids 1.07 M^0.735 kJ/day (2.2–45.2 kg), 22% of mammals; dinosaurs "31% of mammals" | McNab 2009, p. 12185; p. 12187 | as quoted | New (sensitivity rows) |
+| C31 | Marshall's "ecological body mass" (survivorship-weighted, post-juvenile); "midway" physiology | Marshall et al. 2021, p. 284 | "physiology midway between that of mammalian carnivores and that of large varanid lizards" | `chain.eco_mass_kg` is this measure. New |
+| C32 | One-at-a-time factors and joint cases | our arithmetic, `sensitivity.py` | — | New (Section 2) |
+| C33 | Farlow's ectotherm intake (eq. 8, 3.81 M^−0.16 kg/kg/yr) gives 1.9 t/yr at 1.65 t, endotherm (eq. 7, 48.87 M^−0.30) 8.7 t; model 4.1 t at that mass | Farlow 1993, eq. 7, p. 172; eq. 8, p. 187 | equations as printed | Cross-check. New |
+| C34 | Damuth's law a M^−0.75 (M g), log10 a = 2.99 (95%: 1.80–4.18): 1 per 47 km² at 1.65 t (1 per 730 to 1 per 3.0); model matches at 3.4 t/km² | Marshall et al. 2021, Table 1, p. 284 | Table 1 intercepts | `megafauna.LOG_A["mesotherm"]` = 2.99 (the `mesotherm` mode). New |
+| C35 | Top species' mass vs land area: endothermic carnivore 0.05 A^0.47, ectothermic 0.25 A^0.47 kg → 63 / 310 kg on 3.88 M km²; dinosaurs ~12× heavier for the same area → ~3.8 t | Burness et al. 2001, p. 14520 (fits); p. 14523 (dinosaur offset) | as printed | Comparison (our arithmetic). New |
+| C36 | Big-theropod fauna ratios 10:1 (Judith River articulated) to Brinkman's mean 115:1; "could have been as low as 10:1 or as high as 100:1" | Farlow 1993, p. 189; p. 190 | as quoted (page images) | Comparison. New |
+| C37 | ~20,000 post-juvenile *T. rex* on 2.3 ± 0.88 M km² (95%: 1,300–328,000); "the loose consensus that at least thousands of individuals are needed for long-term persistence" | Marshall et al. 2021, p. 285; Table 2 | as quoted | Viability comparison. New |
+| C38 | MVP: "frequent estimates are a few thousand to at least 10,000 individuals" | Burness et al. 2001, p. 14521 | as quoted | Viability comparison. New |
+| C39 | A 200 kg crocodile produces "only 14% of that for a mammal"; crocodiles "lack not only the absolute power for exercise, but also the endurance" | Seymour 2013, abstract, p. 1 (e69361) | as quoted | Argument on flight and intake. New |
+| C40 | Hamilton 2009 forager densities (groups of 25–1,000) ~0.03–0.11 people/km² | Hamilton et al. 2009, Fig. 2, p. 12257 | Fig. 2 fit 0.72x + 0.61 (log10 area against log10 N; our arithmetic for densities) | Reading. New |
+
+## Table citations (no comment tag)
+
+| where | claim | paper, location |
+|---|---|---|
+| Table 1, Section 7 | Assimilation 0.66 | Carbone, Teacher & Rowcliffe 2007, p. 364 |
+| Table 1, Section 7 | "only a proportion of large-vertebrate prey are consumed (65%–91% depending on their mass)" | Carbone et al. 2007, p. 367 |
+| Table 1, Section 7 | Exponent 0.79 across carnivores; 0.6 within large-prey hunters | Carbone et al. 2007, Table 1 and p. 364 |
+| Table 1 | Nagy's food conversion 16.8 kJ/g dry matter, 30% dry matter → 5.04 kJ/g fresh | Nagy et al. 1999, pp. 263–264 |
+| Table 1 | All lizards 0.190 M^0.916 (eq. 33), Varanidae 0.208 M^0.915 (eq. 36); mammals 4.82 M^0.734, birds 10.5 M^0.681 | Nagy et al. 1999, p. 261; Table 2, p. 260 |
+| Section 7 item 8 | Juvenile *T. rex* "relatively abundant"; the classes use adult masses | Carbone et al. 2011, p. 2683 |
+| Section 4.4 | "We might expect ectothermic theropods to obtain higher densities for a given density of prey/carcasses" | Carbone et al. 2011, p. 2687 |
+| Section 4.4 | Home ranges overlap, so area per animal is far below home range | Jetz et al. 2004, p. 268 |
 
 ## Unsourced constants named on the page
 
-All in `planet/lineages/history/megafauna.py` unless noted: `OFFTAKE` 0.1 and `STOCK_TOLERABLE` 0.1 (PW-991); `PERSON_KCAL_YR` 2,200 kcal/day,
-`WILD_MEAT` (0.5, 0.05), `HEAD_KCAL` 625,000, `GUILD_KLEIBER` 0.75 (PW-1019); `PRESS_N0` 0.05; `spec.DRAGON_KM2` 5,000 (`meta.dragon_km2`);
-`prey.OVERKILL` 0.6; `prey.C_FRAC` 0.45 and `prey.KJ_PER_G_DRY` 17.5; `FORAGE_KM` 60; `dragon_ages.ASSIMILATED` 0.85; `prey.HEAD_T` 0.5 t.
+`planet/lineages/history/megafauna.py`: `OFFTAKE` 0.1, `STOCK_TOLERABLE` 0.1, `PERSON_KCAL_YR` (2,200 kcal/day), `WILD_MEAT` (0.5, 0.05),
+`HEAD_KCAL` 625,000, `PRESS_N0` 0.05, `FORAGE_KM` 60; `meta.dragon_km2` 5,000; `planet/lineages/prey.py`: `OVERKILL` 0.6, `C_FRAC` 0.45,
+`KJ_PER_G_DRY` 17.5; `planet/lineages/dragon_ages.py`: `ASSIMILATED` 0.85. (`GUILD_KLEIBER` 0.75 now has a source, C10.)
 
-## Every run-derived number on the page
+## Run-derived numbers
 
-Source files: `L45B` = `/tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l45b`
-(fun lane 45b's sweep outputs from probe.py at git c32e89f8: `new2/` 24 runs, `nopress/` 6 runs, `save2/run/ERAS.npz` one run's per-cell
-fields). They live on tmpfs: if they are gone, re-run the lane's `sweep.sh new2 c32e89f8 --eras 25,10,0`, `nopress.sh` and
-`one.sh save2 c32e89f8 2a7385 7000 --eras 25,10,0 --save .../save2/run` (copies of those shell scripts are in that folder).
+All are `{{ … }}` expressions in `sections/*.html` over `numbers.json`; the main keys:
 
-| page number(s) | JSON field (numbers.json unless noted) |
+| on the page | numbers.json |
 |---|---|
-| 1 per 159 km² per t/km²; 1 per 282 / 84 / 23 km² on 0.56 / 1.9 / 7.0 t/km² | `chain.one_per_km2_at_1t`; `prey_anchor` × `chain.per_km2_per_t` |
-| 2.7 t/yr, 5.35 head, 10,400 kcal/day, 1.65 t, 1.26 t | `chain.food_t_yr`, `chain.cattle_yr`, `chain.kcal_day`, `chain.eco_mass_kg`, `chain.mean_mass_all_stages_kg` |
-| 0.32 / 0.032 t of game a year per person | `chain.forager_game_t_yr`, `chain.other_game_t_yr` |
-| Table 3.1 densities, land shares, ranges over runs | `sweep.eras.{25,10,0}.{none,foragers,herders,farmers,all}.per_1000km2`, `.land_share`, `.per_1000km2_runs_min/max`; pressure off: `nopress.eras.*` |
-| 1 per 770 / 6,500 / 70,000 km² (plain words) | 1000 / `sweep.eras.0.*.per_1000km2` |
-| pressure leaves 0.7–0.8% / 0.8–1.1% / 1.7–2.0% / 90–95% | `pressure_keeps.{25,10,0}.*` (roll-7000 default runs over the no-press runs, same worlds) |
-| 62,600 per run (8,260 to 162,000); 174,000–604,000 pressure off | mean and range of `sweep.present_dragons_per_run`; `nopress.present_dragons_per_run` |
-| Figure 2 and its text (shares) | `sweep.eras.{25,0}.*.shares` (supply-weighted; "eaten" = `dragons_need`, dragons' share = `food`) |
-| average prey 0.4 t/km² in nobody's country | `sweep.eras.*.none.supply_t_km2_yr` / 0.1 (0.39 / 0.46 / 0.41) |
-| Rich/poor table (per 1,000 km²) and nobody's rich land 190 cells | `cells_2a7385.0.by_class.*.{per_1000km2, food_allows_per_1000km2, cells}` |
-| pressure 0.33 at 0.02 people/km²; ×0.18 on rich land | 1 − exp(−0.02/0.05); (26.5 km² / 5,000 km²)^0.33, hand arithmetic from `PRESS_N0`, `DRAGON_KM2` and the rich-land natural density |
-| Figure 4 numbers: 76,000 (25 kyr), 82,000 (10 kyr), ~20,000 now; 530,000–660,000 pressure off; 1.6 million at 10 Myr | `series.with_pressure`, `series.no_pressure` (keys in kyr ago) |
-| Sword Coast 2,414 × 1,609 km, 3.88 M km²; box 36.1–57.9°N, 10.1°W–11.1°E, 3.86 M km² | `sword_coast.{ns_km, ew_km, km2, box}` |
-| Sword Coast scenario table | `sword_coast.counts.{0,25}.*` |
-| Sword Coast rich/poor table; formula row 14,600 / 171,000 | `sword_coast.rich_poor.0.*`, `sword_coast.formula` |
-| Boxes A–D | `charts/boxes.json` (written by charts.py) |
-| Figure 3 points | `cells_2a7385.0.binned` |
-
-## Reproducing
-
-```sh
-L45B=/tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l45b
-D=docs/review/megafauna/dragon-density
-PYTHONPATH=. uv run python $D/dragon_numbers.py $L45B $D/numbers.json
-PYTHONPATH=. uv run --with matplotlib python $D/charts.py $D/numbers.json $L45B/save2/run/ERAS.npz $D/charts
-# viewer screenshot: a server of your own on another port, then
-PLANET_DATA=/data/personal/repos/procedural-world-generation uv run python -m planet serve --port 8791 --no-open --jobs 1
-uv run --with playwright python $D/shot.py 8791 3097e3 /tmp/.../shots green_dragon
-uv run --with pillow python $D/crop.py /tmp/.../shots/peoples.png $D/charts/viewer-peoples.jpg
-```
+| Table 2, Figure 2 | `on.eras.{25,10,0}.{class}.per_1000km2`, `.land_share`, `.per_1000km2_runs_min/max`; `off.eras.0.*`; `paired.0.{class}.{median,min,max}` |
+| Section 3 area divergence | `paired.0.{class}.area_on_over_off_{min,max}` |
+| Table 3 | `channels_7000.0.{class}.{on,noper,off,noper_peoples_share}` |
+| Figure 3, Section 4.2 | `on.eras.{25,0}.{class}.shares` (`guild` = smaller predators, `food` = dragons' share, `dragons_need` = eaten) |
+| Section 4.3, Table 4, Figure 4 points | `cells.on.0.none_now`, `cells.on.0.rich_poor`, `cells.on.0.binned` |
+| Section 4.4 lines | `literature.*` |
+| Section 4.5, Figure 5 | `steps.{on,off}.{30,300}_summary`, `steps.on.peak`, `step30_eras`, `series` |
+| Tables 5 and 6 | `cells.{on,noper,off}.0.biome_situation` (best guess: `build_page.gpv`) |
+| Tables 7, 8 | `sword_coast.counts`, `sword_coast.formula`, `sword_coast.largest_kind_share`; `charts/boxes.json` |
+| Table 1, Figure 1 | `sensitivity.rows`, `sensitivity.combined`, `sensitivity.coe_pb` |

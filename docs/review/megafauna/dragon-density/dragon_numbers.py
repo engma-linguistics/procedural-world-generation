@@ -250,8 +250,8 @@ def pooled(arm, keys, e):
 
 CL = {0: "none", 1: "others", 2: "foragers", 3: "herders", 4: "farmers"}
 cells_out = {}
-for arm in ("on", "off"):
-    keys = sorted(ON if arm == "on" else OFF)
+for arm in ("on", "off", "noper"):
+    keys = sorted({"on": ON, "off": OFF, "noper": NOPER}[arm])
     cells_out[arm] = {}
     for e in ("25", "0"):
         P = pooled(arm, keys, e)

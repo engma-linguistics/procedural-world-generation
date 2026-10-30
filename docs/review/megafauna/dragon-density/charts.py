@@ -160,16 +160,17 @@ def time_(t):
         ax.plot([max(tt, 0.0) for tt, _ in ts], [v for _, v in ts], color=col, lw=2, label=lab, drawstyle="steps-post")
     for x, txt in ((30, "30 kyr: glacial pass\nhands over to recent pass"), (300, "300 kyr: the deep\nepoch's flat rule ends")):
         ax.axvline(x, color=T["muted"], lw=0.8, ls="--")
-        ax.text(x * (0.93 if x == 300 else 1.04), 2.6e6, txt, fontsize=8, va="top", ha="right" if x == 300 else "left")
+        ax.text(x * (0.93 if x == 300 else 1.04), 1.3e7, txt, fontsize=8, va="top", ha="right" if x == 300 else "left")
     ax.set_xscale("symlog", linthresh=30)
     ax.set_xlim(400, 0)
     ax.set_xticks([400, 300, 200, 100, 30, 20, 10, 0], ["400", "300", "200", "100", "30", "20", "10", "now"])
     ax.set_yscale("log")
-    ax.set_ylim(5e3, 3e6)
+    ax.set_ylim(5e3, 1.6e7)
+    ax.set_yticks([1e4, 1e5, 1e6])
     ax.set_xlabel("thousands of years ago (linear from 30 kyr to now, logarithmic beyond)")
     ax.set_ylabel("dragons on the planet")
     ax.grid(color=T["grid"], lw=0.7)
-    ax.legend(loc="lower left", fontsize=9)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=9, frameon=False)
     save(fig, "time", t)
 
 

@@ -80,7 +80,44 @@ def cells(arm, e, *path):
     return x
 
 
-E = {k: v for k, v in globals().items() if k in ("sig", "f0", "f1", "f2", "pct", "per", "rng", "math", "S", "X", "era", "P", "sc", "cells")}
+def rp(arm, c, band, k, n=2, scale=1.0, e="0"):
+    """A rich/poor cell (pooled cells), or an en dash where the band has too few cells."""
+    r = N["cells"][arm][e]["rich_poor"][c][band]
+    if r is None or r.get(k) is None:
+        return "–"
+    return sig(r[k] * scale, n)
+
+
+def bs(arm, biome, sit, k, n=2):
+    """A biome x situation cell of the game-present table, or an en dash."""
+    t = N["cells"].get(arm, {}).get("0", {}).get("biome_situation", {}).get("table", {}).get(biome, {}).get(sit)
+    if t is None or t.get(k) is None:
+        return "–"
+    return sig(t[k], n)
+
+
+def gpv(biome, sit):
+    """The game-present best guess, dragons per 10,000 km2 (Section 5): the model's value for wild land and city hinterland; for frontier
+    and farmed land the geometric mean of the model and the persecution-off arm (half-way on a log scale). None where a cell is empty."""
+    t = N["cells"]["on"]["0"]["biome_situation"]["table"][biome][sit]
+    if t is None:
+        return None
+    if sit in ("wild", "city hinterland"):
+        return t["per_10000km2"]
+    q = N["cells"].get("noper", {}).get("0", {}).get("biome_situation", {}).get("table", {}).get(biome, {}).get(sit)
+    if q is None:
+        return None
+    return math.sqrt(max(t["per_10000km2"], 1e-9) * max(q["per_10000km2"], 1e-9))
+
+
+def gp(biome, sit):
+    v = gpv(biome, sit)
+    return "–" if v is None else sig(v, 2)
+
+
+B = json.loads((HERE / "charts" / "boxes.json").read_text()) if (HERE / "charts" / "boxes.json").exists() else []
+
+E = {k: v for k, v in globals().items() if k in ("sig", "f0", "f1", "f2", "pct", "per", "rng", "math", "S", "X", "era", "P", "sc", "cells", "rp", "bs", "B", "gp", "gpv")}
 E["N"] = N
 src = (HERE / "page.tmpl.html").read_text()
 SEC = HERE / "sections"  # page fragments: plain.html, abstract.html, and the body's numbered NN-name.html in order
