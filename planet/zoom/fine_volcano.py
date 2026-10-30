@@ -33,6 +33,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import regional as Z
+from ..geo import smoothstep
 from . import kernels as ZK
 from ..tectonics.volcanism import ARC_SLOPE
 
@@ -171,10 +172,10 @@ def relief(P: np.ndarray, p: dict) -> np.ndarray:
             u, w = x * np.cos(a) + y * np.sin(a), -x * np.sin(a) + y * np.cos(a)
             rc = np.hypot(u / np.sqrt(ell), w * np.sqrt(ell))
             ww = max(0.06 * Rr, d / 1000.0 / np.tan(np.radians(CALDERA_WALL_DEG)))
-            pit = d * (1.0 - Z.smoothstep(Rr - ww, Rr, rc))
+            pit = d * (1.0 - smoothstep(Rr - ww, Rr, rc))
         else:
             ww = (0.25 if p["caldera"] else 1.0 - CRATER_FLOOR) * Rr
-            pit = d * (1.0 - Z.smoothstep(Rr - ww, Rr, rho_e))
+            pit = d * (1.0 - smoothstep(Rr - ww, Rr, rho_e))
         # the rim notched: lower in places (never higher: top_m is its highest point)
         nt = ZK.fbm(np.ascontiguousarray(np.column_stack([Rr * np.cos(th), Rr * np.sin(th), np.zeros(n)]) + 70.0),
                     max(0.8 * Rr, 0.2), 2, 0.5, S + 2) / 0.17
@@ -188,11 +189,11 @@ def relief(P: np.ndarray, p: dict) -> np.ndarray:
         v = np.exp(-(ng / 0.35) ** 2)  # (rounded V troughs, broad interfluves)
         # deepest on the lower-mid flank, fading out on the fans at the foot and toward the rim
         fz = np.clip(_flank(p, rho_e) / H, 0.0, 1.0)
-        start = Z.smoothstep(Rr, Rr + 0.15 * r, rho_e)
+        start = smoothstep(Rr, Rr + 0.15 * r, rho_e)
         # no deeper than its walls stand at ~35 degrees (a trough ~0.15 of the spacing wide, which grows
         # down the flank as rho / R0) nor than 0.4 of the cone's height there
         d_max = np.minimum(GULLY_WALL_M * rho / R0, 0.4 * fz * H)
-        g = np.minimum(p["gully_m"] * Z.smoothstep(0.03, 0.3, fz) * (1.0 - fz) / 0.7, d_max) * v * start
+        g = np.minimum(p["gully_m"] * smoothstep(0.03, 0.3, fz) * (1.0 - fz) / 0.7, d_max) * v * start
     else:
         g = np.zeros(n)
     # lava flow lobes: tongues down the flank, steep sided, a lobed front; younger than the gullies
@@ -204,8 +205,8 @@ def relief(P: np.ndarray, p: dict) -> np.ndarray:
         lat = rho * np.sin(dth) - 0.3 * w_ * np.sin(2 * np.pi * nw * s_ / max(L, 0.1) + ph)
         fwd = (np.cos(dth) > 0) & (s_ > -0.1)
         end = L * (1.0 + 0.1 * np.cos(np.pi * lat / np.maximum(w_, 1e-3)))
-        tongue = ((1.0 - Z.smoothstep(0.7 * w_, w_, np.abs(lat))) * Z.smoothstep(-0.1, 0.1, s_)
-                  * (1.0 - Z.smoothstep(end - 0.6 * w_, end, s_)))
+        tongue = ((1.0 - smoothstep(0.7 * w_, w_, np.abs(lat))) * smoothstep(-0.1, 0.1, s_)
+                  * (1.0 - smoothstep(end - 0.6 * w_, end, s_)))
         tongue = np.where(fwd, tongue, 0.0)
         z = z + T * tongue
         cover = np.maximum(cover, tongue)
@@ -218,8 +219,8 @@ def relief(P: np.ndarray, p: dict) -> np.ndarray:
         dc = np.hypot(x - cx, y - cy)
         rb = hc / 1000.0 / 0.36
         rt = 0.25 * rb
-        body = hc * Z.smoothstep(rb, rt, dc)
-        cr = 0.3 * hc * (1.0 - Z.smoothstep(0.3 * rt, rt, dc))
+        body = hc * smoothstep(rb, rt, dc)
+        cr = 0.3 * hc * (1.0 - smoothstep(0.3 * rt, rt, dc))
         z = z + body - cr
     return z
 

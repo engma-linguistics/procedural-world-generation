@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 from numba import njit
 
-from .geo import R_KM, world_land
+from .geo import R_KM, ramp, world_land
 
 # ---------------------------------------------------------------------------
 # The resources: (key, name, group, colour, model). Groups: metal, gem,
@@ -463,11 +463,6 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
 def sat(x, s):
     """0..1, saturating: 1 - exp(-x/s)."""
     return 1.0 - np.exp(-np.maximum(np.asarray(x, float), 0.0) / s)
-
-
-def ramp(x, a, b):
-    """0 at a, 1 at b (either direction), clipped."""
-    return np.clip((np.asarray(x, float) - a) / (b - a), 0.0, 1.0)
 
 
 def _flow_accumulate(down, flow, src, keep):

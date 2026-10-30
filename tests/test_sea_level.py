@@ -81,7 +81,9 @@ def test_sea_level_starts_at_zero_and_reads_high_in_the_warm_up(grid4):
             s.step()
             st.append(s.sea_tect)
         means.append(np.mean(st))
-    assert 0 < np.mean(means) < 150, means
+    # Owner 10-30: floor -30 m, not 0. The ten-seed mean wanders about +-15 m around ~+5 m between
+    # near-null climate changes (lane 57 bisect), so a floor at 0 sat inside the chaos.
+    assert -30 < np.mean(means) < 150, means
     assert np.mean([-50 < m < 200 for m in means]) >= 0.7, means
 
 

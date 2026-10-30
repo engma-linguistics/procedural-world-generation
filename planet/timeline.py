@@ -34,6 +34,7 @@ from . import highlights as H
 from . import vegetation as VEG
 from . import world as W
 from .provenance import code_version, describe
+from .constants import T_REF_C
 from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
@@ -440,7 +441,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     s = fr["stats"]
     t_fr = float(fr["t"])
     veg = keyframe_vegetation(m, fr, a["tree_cover"])
-    st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
+    st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - T_REF_C,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
     if st.get("veg"):  # a time zoom's plants (finish.py): its cover and CO2 instead of the keyframe's
         veg = {**veg, **st["veg"]}
@@ -534,7 +535,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
                                         else float) for k, v in landforms.items()}}
     meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
             "hotspots": hotspots, "volcanoes": volcanoes, "volcano_columns": list(VOLCANO_COLUMNS)}
-    meta["global_temp_c"] = round(14.5 + dT, 1)
+    meta["global_temp_c"] = round(T_REF_C + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
     meta["ice_bed_below_sea_cells"] = int(below.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},

@@ -326,17 +326,6 @@ def flood_d8(h, outlet, nx, ny, eps, jitter):
 
 
 @njit(cache=True)
-def accumulate(rec, order, src):
-    q = src.copy()
-    for t in range(order.shape[0] - 1, -1, -1):
-        i = order[t]
-        d = rec[i]
-        if d >= 0:
-            q[d] += q[i]
-    return q
-
-
-@njit(cache=True)
 def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
     """Steady-state profile: walking outlet -> headwater, each pixel sits
     s_i (m per km) x dist_i (km) above its receiver (or above floor_i, if

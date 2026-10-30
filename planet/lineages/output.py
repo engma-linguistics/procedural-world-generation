@@ -17,6 +17,7 @@ from . import fuels as FU
 from . import land as LD
 from . import landuse as LU
 from . import reputation as RP
+from . import settlements as ST
 from . import spec as SP
 from . import techtree as TT
 from .history import COMPOSITION_TWO_PCT, EST, PALETTE, History
@@ -174,6 +175,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             f.write("\n".join(LU.lines_for_report(sm)) + "\n")
         FU.write(out)  # (what each people burns to cook: fuels.py, PW-722; adds a line to the stories and run.txt)
     DM.write(out)  # (the regional populations and their tree: demes.py, PW-981; demes.json, layers/demes.bin, meta.demes)
+    if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
+        ST.write(out)
     T.update_index()
     return out
 

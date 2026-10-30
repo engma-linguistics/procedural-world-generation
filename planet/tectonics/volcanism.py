@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..geo import R_KM, latlon
+from ..geo import R_KM, arc, cell_area_km2, latlon
 from . import mantle
 from .isostasy import ISO_LAND, ISO_VOLCANO, LAVA, LAVA_MAX_KM, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
 from ..surface import HOTSPOT
@@ -102,7 +102,7 @@ def hotspots(sim, rng, bd):
     n = g.n
     head, apron, vents, dome = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
     r = PLUME_KM / R_KM  # radians
-    area = 4 * np.pi * R_KM**2 / n  # km2 per cell
+    area = cell_area_km2(n)  # km2 per cell
     by_id = {}
     for v in sim.volcanoes:
         if v["kind"] == VENT:
@@ -134,7 +134,7 @@ def hotspots(sim, rng, bd):
             h["run"], h["gap"] = 0.0, vent_gap(sim, vrng, c)
             segs = [(cur, 1.0)]
         else:
-            d = float(np.arccos(np.clip(h["ppos"] @ p_now, -1, 1))) * R_KM  # km the plate moved
+            d = float(arc(h["ppos"] @ p_now)) * R_KM  # km the plate moved
             segs, at = [], 0.0
             while d > 0 and at + h["gap"] - h["run"] < d:
                 at += h["gap"] - h["run"]
@@ -173,7 +173,7 @@ def hotspots(sim, rng, bd):
 
 
 def _slerp(a, b, f):
-    om = np.arccos(np.clip(a @ b, -1, 1))
+    om = arc(a @ b)
     if om < 1e-12:
         return a.copy()
     q = (np.sin((1 - f) * om) * a + np.sin(f * om) * b) / np.sin(om)
@@ -473,7 +473,7 @@ def volcanoes(sim, growth, t, rng):
     out (params.volcano_spacing) so that only a representative few show,
     not every vent. In place on t (km of crust); returns t."""
     p, g, dt = sim.params, sim.grid, sim.dt_now
-    area = 4 * np.pi * R_KM**2 / g.n
+    area = cell_area_km2(g.n)
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
     near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.datum(),

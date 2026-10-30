@@ -14,6 +14,7 @@ from __future__ import annotations
 import numpy as np
 
 from .. import climate, hydrology, icemass, kernels, nest, surface, vegetation
+from ..constants import GRAV, RHO_ICE
 from ..geo import R_KM
 from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
@@ -969,7 +970,7 @@ def sheet_surface(g, iced, bed):
     best margin one hop further in)."""
     n = g.n
     off, idx = g.nbr_off, g.nbr_idx
-    k_m = 2 * ICE_TAU / (917.0 * 9.81) * g.spacing * R_KM * 1000.0  # m2 per hop
+    k_m = 2 * ICE_TAU / (RHO_ICE * GRAV) * g.spacing * R_KM * 1000.0  # m2 per hop
 
     def rise(d):
         # the profile's mean over the cell, which spans d..d+1 hops in from the edge (PW-366: its inner
@@ -1011,7 +1012,7 @@ def coast_cost(sim, land, bed, marine):
     from ..timezoom.geometry import geometry
     g = sim.grid
     G = geometry(g)
-    k_m = 2 * ICE_TAU / (917.0 * 9.81) * g.spacing * R_KM * 1000.0
+    k_m = 2 * ICE_TAU / (RHO_ICE * GRAV) * g.spacing * R_KM * 1000.0
     h = (2.0 / 3.0) * np.sqrt(k_m)
     depth = marine["depth"]
     true_bed = np.where(land & (depth > 0), -depth, bed)

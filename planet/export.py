@@ -59,7 +59,7 @@ from . import hydrology
 from . import projection as PJ
 from . import store as S
 from . import world as W
-from .geo import R_KM, is_land, latlon, xyz
+from .geo import R_KM, arc, arc_km, cell_area_km2, is_land, latlon, smoothstep, xyz
 from .images import write_png
 from .provenance import code_version
 
@@ -96,7 +96,7 @@ class CellSampler:
         ok = j < off[c + 1][:, None]
         cand = np.where(ok, idx[np.minimum(j, len(idx) - 1)], c[:, None])
         self.cand = np.concatenate([c[:, None], cand], 1)
-        d = np.arccos(np.clip((grid.centers[self.cand] * pts[:, None, :]).sum(2), -1, 1))
+        d = arc((grid.centers[self.cand] * pts[:, None, :]).sum(2))
         w = np.clip(1 - d / (1.3 * grid.spacing), 0, None) ** 2
         w[:, 1:] *= ok
         self.w = w / np.maximum(w.sum(1, keepdims=True), 1e-12)
@@ -111,11 +111,6 @@ class CellSampler:
 # ---------------------------------------------------------------------------
 # Derived layers
 # ---------------------------------------------------------------------------
-def _smooth01(x, lo, hi):
-    t = np.clip((x - lo) / (hi - lo), 0, 1)
-    return t * t * (3 - 2 * t)
-
-
 def slope_deg(elev: np.ndarray, dx_m, dy_m) -> np.ndarray:
     """Ground slope in degrees of an (ny, nx) raster, rows running south;
     dx_m, dy_m: metres per pixel across / down (scalars or arrays that
@@ -134,7 +129,7 @@ def splat_weights(slope, ice, tree, plant, precip, temp, wet, water) -> np.ndarr
     and soil elsewhere, plants are forest by tree cover and grass (tundra
     where cold) by the rest, wetland takes its share, ice and cold bare
     ground are snow."""
-    rock = _smooth01(slope, 25, 45)
+    rock = smoothstep(25, 45, slope)
     rest = 1 - rock
     tree = np.clip(tree, 0, 1)
     plant = np.clip(np.maximum(plant, tree), 0, 1)
@@ -147,7 +142,7 @@ def splat_weights(slope, ice, tree, plant, precip, temp, wet, water) -> np.ndarr
     wet = 0.6 * np.clip(wet, 0, 1)
     w *= (1 - wet)[..., None]
     w[..., 5] = wet
-    snow = np.maximum(np.clip(ice / 5, 0, 1), _smooth01(-temp, 8, 14) * bare)
+    snow = np.maximum(np.clip(ice / 5, 0, 1), smoothstep(8, 14, -temp) * bare)
     w *= (1 - snow)[..., None]
     w[..., 7] = snow
     w /= np.maximum(w.sum(-1, keepdims=True), 1e-9)
@@ -279,7 +274,7 @@ def lake_polygon(rings_ll: list[np.ndarray]) -> list[np.ndarray]:
 
 def _path_km(ll: np.ndarray) -> float:
     p = xyz(np.radians(ll[:, 0]), np.radians(ll[:, 1]))
-    return float(np.arccos(np.clip((p[:-1] * p[1:]).sum(1), -1, 1)).sum() * R_KM)
+    return float(arc((p[:-1] * p[1:]).sum(1)).sum() * R_KM)
 
 
 # ---------------------------------------------------------------------------
@@ -669,7 +664,7 @@ def _greedy(order: np.ndarray, ll: np.ndarray, min_km: float) -> list[int]:
     p = xyz(np.radians(ll[:, 0]), np.radians(ll[:, 1]))
     kept: list[int] = []
     for i in range(len(order)):
-        if not kept or (np.arccos(np.clip(p[kept] @ p[i], -1, 1)) * R_KM >= min_km).all():
+        if not kept or (arc_km(p[kept] @ p[i]) >= min_km).all():
             kept.append(i)
     return kept
 
@@ -718,7 +713,7 @@ def _human_use_features(feats: Features, tab: dict, node_ll, kind: str, min_km: 
     if kind == "world" and grid is not None and L is not None and "fertile" in L:
         comp, n = grid.components(np.asarray(L["fertile"]) >= 3)
         score = np.asarray(L["fertile_score"], float) / 100
-        area = 4 * np.pi * R_KM**2 / grid.n
+        area = cell_area_km2(grid.n)
         for k in range(n):
             cells = np.flatnonzero(comp == k)
             if len(cells) < 3:
@@ -747,7 +742,7 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
     if "lake" in L or "lake_kind" in L:
         lake = np.asarray(L["lake"] if "lake" in L else L["lake_kind"]) > 0
         comps, n = grid.components(lake)
-        area = 4 * np.pi * R_KM**2 / grid.n
+        area = cell_area_km2(grid.n)
         kinds = {1: "fresh", 2: "salt", 3: "salt pan"}
         for k in range(n):
             cells = np.flatnonzero(comps == k)

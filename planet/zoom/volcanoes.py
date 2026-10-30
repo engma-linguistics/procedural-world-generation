@@ -40,7 +40,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import kernels as ZK
-from ..geo import R_KM, xyz
+from ..geo import R_KM, arc, arc_km, smoothstep, xyz
 from ..tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
 
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
@@ -104,7 +104,7 @@ def status(v: dict, plume_xyz: np.ndarray) -> str:
     if v["kind"] == ARC or not len(plume_xyz):
         return "extinct"
     p = xyz(np.radians(v["lat"]), np.radians(v["lon"]))
-    d = float(np.arccos(np.clip(plume_xyz @ p, -1, 1)).min()) * R_KM
+    d = float(arc(plume_xyz @ p).min()) * R_KM
     return "dormant" if d <= DORMANT_KM else "extinct"
 
 
@@ -129,7 +129,7 @@ def arc_infill(V: list[dict], seed: int) -> list[dict]:
     if len(idx) < 2:
         return []
     P = xyz(np.radians([V[j]["lat"] for j in idx]), np.radians([V[j]["lon"] for j in idx]))
-    D = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM
+    D = arc_km(P @ P.T)
     np.fill_diagonal(D, np.inf)
     edges = set()
     for a in range(len(idx)):
@@ -310,14 +310,14 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
             zz = np.maximum(zz, c)
         if prov:
             floors.append((vx[j], vy[j], f))
-            out["province"][win] = np.maximum(out["province"][win], _smooth(rin + FADE * sp, rin, rho))
+            out["province"][win] = np.maximum(out["province"][win], smoothstep(rin + FADE * sp, rin, rho))
         # Near the summit the cone stands on its own floor (absolute heights:
         # sea level matters for reefs and planed tops); toward the edge of
         # its footprint it sits on whatever ground the zoom has there
         # (zoom/regional.py: z + (1 - abs) * (ground - floor)), so it has no step.
         # (a minor arc cone's floor is only its neighbours' interpolated: it sits
         # on the ground, wherever that is, PW-116)
-        absw = _smooth(0.85 * reach, 0.35 * reach, rho) if not (cont or v.get("minor")) else np.zeros(len(win))
+        absw = smoothstep(0.85 * reach, 0.35 * reach, rho) if not (cont or v.get("minor")) else np.zeros(len(win))
         zm = np.where((cone > f + 10) | reefpx, zz, -np.inf)
         key = "z" if prov else "bump"
         # (the highest edifice wins, but a younger caldera sinks into an older
@@ -362,18 +362,15 @@ def _caldera(rho_e, dx, dy, r: float, H: float, rs) -> np.ndarray:
     Returns (relief, inside the caldera's rim)."""
     Rp = PLAIN_R * r
     Hp = H / PLAIN_R**2
-    plain = Hp * (1 - _smooth(0.75 * Rp, 1.25 * Rp, rho_e))
+    plain = Hp * (1 - smoothstep(0.75 * Rp, 1.25 * Rp, rho_e))
     a = rs.uniform(0, np.pi)
     ell = rs.uniform(1.0, CALDERA_OVAL)
     u, w = dx * np.cos(a) + dy * np.sin(a), -dx * np.sin(a) + dy * np.cos(a)
     Rc = CALDERA_R * r
     rc = np.hypot(u / np.sqrt(ell), w * np.sqrt(ell))  # (the same area as a circle of Rc)
     rim = CALDERA_RIM * Hp * np.exp(-((rc - Rc) / (0.15 * Rc)) ** 2)
-    sunk = CALDERA_DEPTH * Hp * (1 - _smooth(0.85 * Rc, Rc, rc))
+    sunk = CALDERA_DEPTH * Hp * (1 - smoothstep(0.85 * Rc, Rc, rc))
     dome = CALDERA_DOME * Hp * np.exp(-(rc / (0.3 * Rc)) ** 2)
     return plain + rim - sunk + dome, rc < Rc
 
 
-def _smooth(e0, e1, x):
-    t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
-    return t * t * (3 - 2 * t)

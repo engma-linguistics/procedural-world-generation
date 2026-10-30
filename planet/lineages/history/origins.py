@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...geo import R_KM
+from ...geo import arc_km
 from .. import spec as SP
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, nearest_label, rings, rivals_load
@@ -233,7 +233,7 @@ class OriginsMixin:
             # PORTAL_FAR_KM of the nearest that can hold it; else at its best habitat anywhere, as without portals)
             near, far = [], []
             for pt in self.portal_cells():
-                d = np.arccos(np.clip(g.centers @ g.centers[pt["cell"]], -1, 1)) * R_KM
+                d = arc_km(g.centers @ g.centers[pt["cell"]])
                 ok = (d < PORTAL_KM) & (K > EST)
                 if ok.any():
                     near.append((int(np.argmax(np.where(ok, K * noise, 0))), pt["kind"]))

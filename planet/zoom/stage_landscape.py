@@ -18,6 +18,9 @@ from . import falls as ZFL
 from . import kernels as ZK
 from . import landforms as ZL
 from . import regional as RG
+from ..geo import smoothstep
+from ..kernels import accumulate
+from ..raster import box_mean
 
 
 def first_glaciers(ctx):
@@ -443,7 +446,7 @@ def drainage_tools(ctx):
         big lake's catchment inside it, and only the rivers entering the
         region bring in the rest (PW-060). The outlet is that of the lake's
         fragment nearest its coarse exit, taken last of its level."""
-        q = ZK.accumulate(rec, order, src)
+        q = accumulate(rec, order, src)
         tot = np.zeros(len(ctx.lakes))
         main = {}  # coarse lake -> its fine fragment draining to its exit
         for j, lk in enumerate(ctx.lakes):
@@ -866,7 +869,7 @@ def fit_setup(ctx):
     rad = max(1, int(round(0.3 * ctx.sp / ctx.res)))
     wmask = ctx.land.reshape(ctx.ny, ctx.nx).astype(float)
     ctx.t_fit = np.maximum(np.where(ctx.lake, ctx.target, ctx.target - ctx.carved), 0)
-    tmean = RG._box_mean(ctx.t_fit.reshape(ctx.ny, ctx.nx) * wmask, wmask, rad).ravel()
+    tmean = box_mean(ctx.t_fit.reshape(ctx.ny, ctx.nx) * wmask, wmask, rad).ravel()
     var = np.exp(0.35 * ZK.fbm(ctx.Pk, 0.25 * ctx.sp, 3, 0.5, ctx.S + 6) / 0.17)
     ctx.logC = np.full(ctx.npx, np.log(30.0))
     ctx.fit_log = []  # (debug: per pass, the cells' summed |mean error| x pixels, and the largest C)
@@ -1021,15 +1024,15 @@ def landscape_loop(ctx):
         ctx.hf, rec_, order_ = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
         ctx.hf = np.where(ctx.active, np.maximum(ctx.h, ctx.hf), ctx.h)
         chan_ = (Qg * RG.KM2_M_PER_YR_TO_M3S >= RG.LF_CHANNEL_Q) | ~ctx.active
-        q_ = ZK.accumulate(rec_, order_, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
-        mask_ = where * RG.smoothstep(wk + ctx.res, wk + 4 * ctx.res, dco)
+        q_ = accumulate(rec_, order_, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
+        mask_ = where * smoothstep(wk + ctx.res, wk + 4 * ctx.res, dco)
         # (cut only inside the classes' reach: a sill where a river leaves it
         # would otherwise be cut far down its course; and not across the
         # closed basins of a rift or a scoured shield, but for the big rivers
         # crossing them: those depressions are filled flat or hold lakes)
         fixed_ = ((mask_ <= 0) & ~(ctx.edge & ctx.land)) | (ctx.lf.weight() < 0.02)
         # (the shape hooks' structures die out over a few km towards those courses: a water gap)
-        mask_s = where * RG.smoothstep(wk + ctx.res, wk + max(4 * ctx.res, 5.0), dco)
+        mask_s = where * smoothstep(wk + ctx.res, wk + max(4 * ctx.res, 5.0), dco)
         hr = ctx.lf.remap(ctx.hf, mask_, rec_, order_, chan_, mask_s, q_)
         # (after the remap: the glacial class's basins, overdeepened troughs and moraine dams, come from it)
         keep_ = fixed_ | ((ctx.lf.basins() > 0.5) & (q_ < RG.BASIN_THROUGH_Q) & ctx.active)
@@ -1062,7 +1065,7 @@ def landscape_loop(ctx):
     ctx.h = np.where(ctx.active, np.maximum(ctx.h, 0.5), ctx.h)  # creep mustn't pull the coast below the sea
     if ctx.lakes:
         _, rec_s, order_s = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
-        q_s = ZK.accumulate(rec_s, order_s, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S
+        q_s = accumulate(rec_s, order_s, ctx.srcq) * RG.KM2_M_PER_YR_TO_M3S
         ctx.h, shore_px = RG.shore_apron(ctx.h, ctx.lake, ctx.lakes, ctx.active & ~ctx.glacier & ~solid, ctx.ring | ctx.rapids, ctx.c_idx,
                                   rec_s, order_s, q_s, ctx.nx, ctx.ny, ctx.res)
         if shore_px:

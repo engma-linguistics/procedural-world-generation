@@ -54,7 +54,9 @@ import numpy as np
 from .. import coastal as CL
 from .. import vegetation as V
 from . import kernels as ZK
-from ..geo import R_KM
+from ..constants import GRAV
+from ..geo import R_KM, ramp
+from ..raster import box_mean
 
 LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b2a"),
         3: ("seagrass meadow", "#3fbf6a"), 4: ("mangrove", "#14d2b0"), 5: ("salt marsh", "#e3d65a")}
@@ -146,7 +148,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     r = max(1, int(round(ROCK_KM / res)))
     hl = np.where(water == 0, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
     rise = window_max(hl, r).ravel()
-    rocky = CL.ramp(rise, *ROCK_RISE)
+    rocky = ramp(rise, *ROCK_RISE)
     if surface_rock is not None:
         hard = (np.isin(surface_rock, CL.HARD_ROCKS) & (water == 0)).reshape(ny, nx).astype(float)
         rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())
@@ -172,7 +174,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     fringing = ok & ~wide & (x_shore <= band)
     barrier = ok & wide & (d_deep <= band) & (x_shore > 2 * band)
     r_b = max(1, int(round(REEF_BUDGET_KM / res)))
-    taken = _box_mean((fringing | barrier).reshape(ny, nx).astype(float), shelf.reshape(ny, nx).astype(float),
+    taken = box_mean((fringing | barrier).reshape(ny, nx).astype(float), shelf.reshape(ny, nx).astype(float),
                       r_b).ravel()
     patch = shelf & ~fringing & ~barrier & (u[REEF] < CL.REEF_SHARE * f["reef"] - taken)
     reef = patch | fringing | barrier
@@ -221,7 +223,7 @@ def rocky_shore(h: np.ndarray, land: np.ndarray, surface_rock: np.ndarray | None
     ROCK_RISE m, or hard rock (coastal.HARD_ROCKS) at the shore."""
     r = max(1, int(round(ROCK_KM / res)))
     hl = np.where(land, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
-    rocky = CL.ramp(window_max(hl, r).ravel(), *ROCK_RISE)
+    rocky = ramp(window_max(hl, r).ravel(), *ROCK_RISE)
     if surface_rock is not None:
         hard = (np.isin(surface_rock, CL.HARD_ROCKS) & land).reshape(ny, nx).astype(float)
         rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())
@@ -232,7 +234,7 @@ def closure(wave_kw_m: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """The shoreface's closure depth (m: CLOSURE_HS x the waves' mean
     significant height, from their power) and its distance off the shore
     on Dean's profile (km)."""
-    hs = np.sqrt(64 * np.pi * 1000.0 * np.maximum(wave_kw_m, 0.0) / (1025.0 * 9.81**2 * WAVE_T))
+    hs = np.sqrt(64 * np.pi * 1000.0 * np.maximum(wave_kw_m, 0.0) / (1025.0 * GRAV**2 * WAVE_T))
     hc = np.clip(CLOSURE_HS * hs, *CLOSURE_M)
     return hc, (hc / DEAN_A) ** 1.5 / 1000.0
 
@@ -243,16 +245,6 @@ def shoreface_depth(x_km: np.ndarray, wave_kw_m: np.ndarray) -> np.ndarray:
     hc, xc = closure(wave_kw_m)
     x = np.maximum(x_km, 0.0)
     return np.where(x <= xc, DEAN_A * (1000.0 * x) ** (2 / 3), hc + SHELF_GRAD * (x - xc))
-
-
-def _box_mean(a: np.ndarray, w: np.ndarray, r: int) -> np.ndarray:
-    """Weighted mean of a over (2r+1)^2 windows (2-D a, w)."""
-    def box(v):
-        c = np.cumsum(np.pad(v, ((r + 1, r), (0, 0)), mode="edge"), 0)
-        v = c[2 * r + 1:] - c[:-2 * r - 1]
-        c = np.cumsum(np.pad(v, ((0, 0), (r + 1, r)), mode="edge"), 1)
-        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
-    return box(a) / np.maximum(box(w), 1e-9)
 
 
 def shoreface(h: np.ndarray, sea: np.ndarray, rocky: np.ndarray, wave_kw_m: np.ndarray, nx: int, ny: int,
@@ -276,7 +268,7 @@ def shoreface(h: np.ndarray, sea: np.ndarray, rocky: np.ndarray, wave_kw_m: np.n
     sp = np.pad(s2, 1)
     coast = ~s2 & (sp[:-2, 1:-1] | sp[2:, 1:-1] | sp[1:-1, :-2] | sp[1:-1, 2:])
     r = int(np.ceil((float(np.max(xc, initial=0.0)) + span) / res)) + 1
-    rk = _box_mean(np.where(coast, rocky.reshape(ny, nx), 0.0), coast.astype(float), r).ravel()
+    rk = box_mean(np.where(coast, rocky.reshape(ny, nx), 0.0), coast.astype(float), r).ravel()
     w = (1 - np.clip(rk, 0, 1)) * (1 - (0.0 if keep is None else keep)) * reach
     return np.where(sea, h + w * np.maximum(z - h, 0.0), h), np.where(sea, reach, 0.0)
 

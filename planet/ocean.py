@@ -78,7 +78,8 @@ from numba import njit
 
 from . import climate as C
 from . import kernels
-from .geo import R_KM, is_land
+from .constants import RHO_C_SEA, SEC_PER_YR
+from .geo import R_KM, arc, is_land
 from .grid import Grid
 
 S0 = 34.7  # psu: the oceans' mean salinity
@@ -538,7 +539,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
                           lon=round(float(np.degrees(np.arctan2(cx[1], cx[0]))), 1),
                           sv=round(float(psi), 2), drho=round(float((w * dr_all[cells]).sum() / psi), 3),
                           area_km2=round(float(area[cells].sum())),
-                          heat_pw=round(float(psi * SV * 4.1e6 * (t_low - (w * sst[cells]).sum() / psi) / 1e15), 3)))
+                          heat_pw=round(float(psi * SV * RHO_C_SEA * (t_low - (w * sst[cells]).sum() / psi) / 1e15), 3)))
     # All sites' routes at once. The inflow is a layer hundreds of m deep: it
     # gives its heat up to the air (moc_lambda W/m2 per C over moc_width km)
     # only slowly, and the rain and rivers on its way barely dilute it.
@@ -552,9 +553,9 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     Tr = _route(order, par, sinking)
     Q = Tr * SV
     hw = h * 1000.0 * tune["moc_width"] * 1000.0  # m2: the route's area per cell
-    mix = np.where(under, 0.0, tune["moc_lambda"] * hw / 4.1e6)  # m3/s per cell (none under the ice lid)
+    mix = np.where(under, 0.0, tune["moc_lambda"] * hw / RHO_C_SEA)  # m3/s per cell (none under the ice lid)
     t_in = _along(order, par, Q, t_eq, sst, mix, np.zeros(n))
-    s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / 3.156e7 * hw)
+    s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / SEC_PER_YR * hw)
     # spread over the route's width; where it carries more than ~moc_q0 Sv
     # per km of width, the surface water is mostly the inflow
     norm = np.maximum(_smooth(grid, sea.astype(float), tune["moc_km"]), 1e-6)
@@ -639,7 +640,7 @@ def _circumpolar(grid: Grid, sea: np.ndarray, tune: dict) -> np.ndarray:
     """Cells in latitude bands (2 deg) that are sea all the way round
     (islands smaller than island_km2 don't block them, as for the currents)."""
     land = ~sea
-    lab, k = C._components(grid, land)
+    lab, k = grid.components(land)
     area = cell_area_km2(grid)
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
@@ -857,7 +858,7 @@ def _west_distance(grid: Grid, land: np.ndarray, max_km: float, min_km2: float) 
     """km due west from each cell to land (a landmass of at least min_km2,
     not an island in mid-ocean), at most max_km: the deep western boundary
     currents hug the continental slope on a basin's west side."""
-    lab, k = C._components(grid, land)
+    lab, k = grid.components(land)
     area = cell_area_km2(grid)
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     land = land & (sizes[np.maximum(lab, 0)] >= min_km2)
@@ -897,7 +898,7 @@ def _arc(lat1: float, lon1: float, lat2: float, lon2: float, step_deg: float = 1
     """Points along the great circle from (lat1, lon1) to (lat2, lon2), both ends included."""
     from .geo import latlon, xyz
     a, b = xyz(np.radians(lat1), np.radians(lon1)), xyz(np.radians(lat2), np.radians(lon2))
-    ang = float(np.arccos(np.clip(a @ b, -1, 1)))
+    ang = float(arc(a @ b))
     m = max(1, int(np.ceil(np.degrees(ang) / step_deg)))
     t = np.linspace(0, 1, m + 1)[:, None]
     v = a * np.sin((1 - t) * ang) + b * np.sin(t * ang) if ang > 1e-9 else np.repeat(a[None], m + 1, 0)
@@ -907,7 +908,7 @@ def _arc(lat1: float, lon1: float, lat2: float, lon2: float, step_deg: float = 1
 
 def _arc_deg(grid: Grid, i: int, lat: float, lon: float) -> float:
     from .geo import xyz
-    return float(np.degrees(np.arccos(np.clip(grid.centers[i] @ xyz(np.radians(lat), np.radians(lon)), -1, 1))))
+    return float(np.degrees(arc(grid.centers[i] @ xyz(np.radians(lat), np.radians(lon)))))
 
 
 def _nearest(grid: Grid, cells: np.ndarray, lat: float, lon: float) -> int:

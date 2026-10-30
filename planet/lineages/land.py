@@ -21,7 +21,7 @@ import time
 
 import numpy as np
 
-from ..geo import R_KM, world_land
+from ..geo import R_KM, arc_km, world_land
 from ..provenance import code_hash
 from .gridops import nbr_reduce
 
@@ -367,7 +367,7 @@ def place_of(grid, cells: np.ndarray, marks: list[dict], fallback: str | None = 
     for f in marks:
         la, lo = np.radians([f["lat"], f["lon"]])
         v = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
-        d = float(np.arccos(np.clip(v @ c, -1, 1)) * R_KM)
+        d = float(arc_km(v @ c))
         if d < 0.6 * f.get("size_km", 1000) and d < bd:
             best, bd = f, d
     if best is not None:

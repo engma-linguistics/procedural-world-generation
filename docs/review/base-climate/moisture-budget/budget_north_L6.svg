@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1516" font-family="sans-serif" font-size="11">
+<rect width="900" height="1516" fill="#fcfcfb"/>
+<text x="10" y="18" font-size="14">Vapour budget by box and half-year, Earth L6 (mm/yr over the box)</text>
+<rect x="10" y="28" width="10" height="10" fill="#1baf7a"/><text x="24" y="37" fill="#333">evaporation in the box</text>
+<rect x="220" y="28" width="10" height="10" fill="#2a78d6"/><text x="234" y="37" fill="#333">mean-wind inflow</text>
+<rect x="430" y="28" width="10" height="10" fill="#eb6834"/><text x="444" y="37" fill="#333">storm drift inflow</text>
+<rect x="640" y="28" width="10" height="10" fill="#6250d6"/><text x="654" y="37" fill="#333">eddy-mixing inflow</text>
+<text x="10" y="54" fill="#333">solid black line: model P; dashed: observed P (GPCC on land, GPCP at sea)</text>
+<line x1="296.39198671147767" y1="68" x2="296.39198671147767" y2="1512" stroke="#999"/>
+<text x="10" y="104" fill="#222">W Europe, Apr-Sep</text>
+<rect x="296.4" y="73" width="163.6" height="13" rx="2" fill="#1baf7a"><title>E: 738 mm/yr</title></rect>
+<rect x="296.4" y="89" width="10.4" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 47 mm/yr</title></rect>
+<rect x="296.4" y="105" width="1.8" height="13" rx="2" fill="#eb6834"><title>conv_drift: 8 mm/yr</title></rect>
+<rect x="296.4" y="121" width="1.0" height="13" rx="2" fill="#6250d6"><title>conv_mix: 4 mm/yr</title></rect>
+<line x1="470.3" y1="72" x2="470.3" y2="136" stroke="#111" stroke-width="2"/>
+<line x1="497.6" y1="72" x2="497.6" y2="136" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="122" text-anchor="end" fill="#555">P 785 / 908</text>
+<text x="10" y="194" fill="#222">W Europe, Oct-Mar</text>
+<rect x="296.4" y="163" width="37.0" height="13" rx="2" fill="#1baf7a"><title>E: 167 mm/yr</title></rect>
+<rect x="296.4" y="179" width="315.0" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 1422 mm/yr</title></rect>
+<rect x="287.9" y="195" width="8.5" height="13" rx="2" fill="#eb6834"><title>conv_drift: -38 mm/yr</title></rect>
+<rect x="288.0" y="211" width="8.4" height="13" rx="2" fill="#6250d6"><title>conv_mix: -38 mm/yr</title></rect>
+<line x1="630.8" y1="162" x2="630.8" y2="226" stroke="#111" stroke-width="2"/>
+<line x1="498.7" y1="162" x2="498.7" y2="226" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="212" text-anchor="end" fill="#555">P 1509 / 913</text>
+<text x="10" y="284" fill="#222">European Russia, Apr-Sep</text>
+<rect x="296.4" y="253" width="154.1" height="13" rx="2" fill="#1baf7a"><title>E: 696 mm/yr</title></rect>
+<rect x="296.4" y="269" width="33.7" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 152 mm/yr</title></rect>
+<rect x="286.6" y="285" width="9.8" height="13" rx="2" fill="#eb6834"><title>conv_drift: -44 mm/yr</title></rect>
+<rect x="296.4" y="301" width="0.5" height="13" rx="2" fill="#6250d6"><title>conv_mix: 1 mm/yr</title></rect>
+<line x1="472.7" y1="252" x2="472.7" y2="316" stroke="#111" stroke-width="2"/>
+<line x1="447.2" y1="252" x2="447.2" y2="316" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="302" text-anchor="end" fill="#555">P 796 / 681</text>
+<text x="10" y="374" fill="#222">European Russia, Oct-Mar</text>
+<rect x="296.4" y="343" width="11.0" height="13" rx="2" fill="#1baf7a"><title>E: 50 mm/yr</title></rect>
+<rect x="296.4" y="359" width="187.4" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 846 mm/yr</title></rect>
+<rect x="296.4" y="375" width="23.7" height="13" rx="2" fill="#eb6834"><title>conv_drift: 107 mm/yr</title></rect>
+<rect x="296.4" y="391" width="2.0" height="13" rx="2" fill="#6250d6"><title>conv_mix: 9 mm/yr</title></rect>
+<line x1="523.1" y1="342" x2="523.1" y2="406" stroke="#111" stroke-width="2"/>
+<line x1="406.9" y1="342" x2="406.9" y2="406" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="392" text-anchor="end" fill="#555">P 1023 / 499</text>
+<text x="10" y="464" fill="#222">W Siberia, Apr-Sep</text>
+<rect x="296.4" y="433" width="154.3" height="13" rx="2" fill="#1baf7a"><title>E: 696 mm/yr</title></rect>
+<rect x="296.4" y="449" width="35.7" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 161 mm/yr</title></rect>
+<rect x="296.4" y="465" width="9.9" height="13" rx="2" fill="#eb6834"><title>conv_drift: 45 mm/yr</title></rect>
+<rect x="296.4" y="481" width="0.8" height="13" rx="2" fill="#6250d6"><title>conv_mix: 4 mm/yr</title></rect>
+<line x1="489.4" y1="432" x2="489.4" y2="496" stroke="#111" stroke-width="2"/>
+<line x1="437.7" y1="432" x2="437.7" y2="496" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="482" text-anchor="end" fill="#555">P 871 / 638</text>
+<text x="10" y="554" fill="#222">W Siberia, Oct-Mar</text>
+<rect x="296.4" y="523" width="3.0" height="13" rx="2" fill="#1baf7a"><title>E: 13 mm/yr</title></rect>
+<rect x="296.4" y="539" width="82.6" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 373 mm/yr</title></rect>
+<rect x="296.4" y="555" width="32.6" height="13" rx="2" fill="#eb6834"><title>conv_drift: 147 mm/yr</title></rect>
+<rect x="296.1" y="571" width="0.5" height="13" rx="2" fill="#6250d6"><title>conv_mix: -1 mm/yr</title></rect>
+<line x1="414.8" y1="522" x2="414.8" y2="586" stroke="#111" stroke-width="2"/>
+<line x1="377.8" y1="522" x2="377.8" y2="586" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="572" text-anchor="end" fill="#555">P 534 / 368</text>
+<text x="10" y="644" fill="#222">Gobi/Mongolia, Apr-Sep</text>
+<rect x="296.4" y="613" width="146.4" height="13" rx="2" fill="#1baf7a"><title>E: 661 mm/yr</title></rect>
+<rect x="296.4" y="629" width="83.2" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 375 mm/yr</title></rect>
+<rect x="296.4" y="645" width="3.7" height="13" rx="2" fill="#eb6834"><title>conv_drift: 17 mm/yr</title></rect>
+<rect x="296.4" y="661" width="8.9" height="13" rx="2" fill="#6250d6"><title>conv_mix: 40 mm/yr</title></rect>
+<line x1="547.9" y1="612" x2="547.9" y2="676" stroke="#111" stroke-width="2"/>
+<line x1="357.9" y1="612" x2="357.9" y2="676" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="662" text-anchor="end" fill="#555">P 1135 / 277</text>
+<text x="10" y="734" fill="#222">Gobi/Mongolia, Oct-Mar</text>
+<rect x="296.4" y="703" width="9.0" height="13" rx="2" fill="#1baf7a"><title>E: 41 mm/yr</title></rect>
+<rect x="296.4" y="719" width="2.8" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 12 mm/yr</title></rect>
+<rect x="291.3" y="735" width="5.0" height="13" rx="2" fill="#eb6834"><title>conv_drift: -23 mm/yr</title></rect>
+<rect x="296.4" y="751" width="1.6" height="13" rx="2" fill="#6250d6"><title>conv_mix: 7 mm/yr</title></rect>
+<line x1="311.2" y1="702" x2="311.2" y2="766" stroke="#111" stroke-width="2"/>
+<line x1="304.3" y1="702" x2="304.3" y2="766" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="752" text-anchor="end" fill="#555">P 67 / 36</text>
+<text x="10" y="824" fill="#222">NE USA, Apr-Sep</text>
+<rect x="296.4" y="793" width="305.2" height="13" rx="2" fill="#1baf7a"><title>E: 1377 mm/yr</title></rect>
+<rect x="296.4" y="809" width="291.0" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 1313 mm/yr</title></rect>
+<rect x="283.4" y="825" width="13.0" height="13" rx="2" fill="#eb6834"><title>conv_drift: -59 mm/yr</title></rect>
+<rect x="296.4" y="841" width="0.5" height="13" rx="2" fill="#6250d6"><title>conv_mix: 1 mm/yr</title></rect>
+<line x1="880.0" y1="792" x2="880.0" y2="856" stroke="#111" stroke-width="2"/>
+<line x1="547.1" y1="792" x2="547.1" y2="856" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="842" text-anchor="end" fill="#555">P 2634 / 1132</text>
+<text x="10" y="914" fill="#222">NE USA, Oct-Mar</text>
+<rect x="296.4" y="883" width="49.4" height="13" rx="2" fill="#1baf7a"><title>E: 223 mm/yr</title></rect>
+<rect x="260.0" y="899" width="36.4" height="13" rx="2" fill="#2a78d6"><title>conv_wind: -164 mm/yr</title></rect>
+<rect x="296.4" y="915" width="11.4" height="13" rx="2" fill="#eb6834"><title>conv_drift: 51 mm/yr</title></rect>
+<rect x="296.4" y="931" width="26.0" height="13" rx="2" fill="#6250d6"><title>conv_mix: 118 mm/yr</title></rect>
+<line x1="372.9" y1="882" x2="372.9" y2="946" stroke="#111" stroke-width="2"/>
+<line x1="503.0" y1="882" x2="503.0" y2="946" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="932" text-anchor="end" fill="#555">P 345 / 933</text>
+<text x="10" y="1004" fill="#222">Great Plains, Apr-Sep</text>
+<rect x="296.4" y="973" width="214.3" height="13" rx="2" fill="#1baf7a"><title>E: 967 mm/yr</title></rect>
+<rect x="296.4" y="989" width="129.9" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 586 mm/yr</title></rect>
+<rect x="293.0" y="1005" width="3.4" height="13" rx="2" fill="#eb6834"><title>conv_drift: -15 mm/yr</title></rect>
+<rect x="284.2" y="1021" width="12.2" height="13" rx="2" fill="#6250d6"><title>conv_mix: -55 mm/yr</title></rect>
+<line x1="623.5" y1="972" x2="623.5" y2="1036" stroke="#111" stroke-width="2"/>
+<line x1="475.1" y1="972" x2="475.1" y2="1036" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1022" text-anchor="end" fill="#555">P 1476 / 807</text>
+<text x="10" y="1094" fill="#222">Great Plains, Oct-Mar</text>
+<rect x="296.4" y="1063" width="33.0" height="13" rx="2" fill="#1baf7a"><title>E: 149 mm/yr</title></rect>
+<rect x="296.4" y="1079" width="32.3" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 146 mm/yr</title></rect>
+<rect x="296.4" y="1095" width="1.5" height="13" rx="2" fill="#eb6834"><title>conv_drift: 7 mm/yr</title></rect>
+<rect x="296.4" y="1111" width="2.6" height="13" rx="2" fill="#6250d6"><title>conv_mix: 12 mm/yr</title></rect>
+<line x1="366.2" y1="1062" x2="366.2" y2="1126" stroke="#111" stroke-width="2"/>
+<line x1="361.4" y1="1062" x2="361.4" y2="1126" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1112" text-anchor="end" fill="#555">P 315 / 293</text>
+<text x="10" y="1184" fill="#222">N Atlantic storm track, Apr-Sep</text>
+<rect x="296.4" y="1153" width="187.5" height="13" rx="2" fill="#1baf7a"><title>E: 846 mm/yr</title></rect>
+<rect x="284.4" y="1169" width="12.0" height="13" rx="2" fill="#2a78d6"><title>conv_wind: -54 mm/yr</title></rect>
+<rect x="296.4" y="1185" width="12.2" height="13" rx="2" fill="#eb6834"><title>conv_drift: 55 mm/yr</title></rect>
+<rect x="295.5" y="1201" width="0.9" height="13" rx="2" fill="#6250d6"><title>conv_mix: -4 mm/yr</title></rect>
+<line x1="474.7" y1="1152" x2="474.7" y2="1216" stroke="#111" stroke-width="2"/>
+<line x1="530.6" y1="1152" x2="530.6" y2="1216" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1202" text-anchor="end" fill="#555">P 805 / 1057</text>
+<text x="10" y="1274" fill="#222">N Atlantic storm track, Oct-Mar</text>
+<rect x="296.4" y="1243" width="99.3" height="13" rx="2" fill="#1baf7a"><title>E: 448 mm/yr</title></rect>
+<rect x="296.4" y="1259" width="141.3" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 638 mm/yr</title></rect>
+<rect x="296.4" y="1275" width="31.7" height="13" rx="2" fill="#eb6834"><title>conv_drift: 143 mm/yr</title></rect>
+<rect x="295.4" y="1291" width="1.0" height="13" rx="2" fill="#6250d6"><title>conv_mix: -4 mm/yr</title></rect>
+<line x1="561.6" y1="1242" x2="561.6" y2="1306" stroke="#111" stroke-width="2"/>
+<line x1="662.2" y1="1242" x2="662.2" y2="1306" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1292" text-anchor="end" fill="#555">P 1197 / 1651</text>
+<text x="10" y="1364" fill="#222">N Pacific storm track, Apr-Sep</text>
+<rect x="296.4" y="1333" width="168.2" height="13" rx="2" fill="#1baf7a"><title>E: 759 mm/yr</title></rect>
+<rect x="296.4" y="1349" width="22.5" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 101 mm/yr</title></rect>
+<rect x="296.4" y="1365" width="14.5" height="13" rx="2" fill="#eb6834"><title>conv_drift: 65 mm/yr</title></rect>
+<rect x="294.8" y="1381" width="1.6" height="13" rx="2" fill="#6250d6"><title>conv_mix: -7 mm/yr</title></rect>
+<line x1="493.4" y1="1332" x2="493.4" y2="1396" stroke="#111" stroke-width="2"/>
+<line x1="539.0" y1="1332" x2="539.0" y2="1396" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1382" text-anchor="end" fill="#555">P 889 / 1095</text>
+<text x="10" y="1454" fill="#222">N Pacific storm track, Oct-Mar</text>
+<rect x="296.4" y="1423" width="95.2" height="13" rx="2" fill="#1baf7a"><title>E: 430 mm/yr</title></rect>
+<rect x="296.4" y="1439" width="153.3" height="13" rx="2" fill="#2a78d6"><title>conv_wind: 692 mm/yr</title></rect>
+<rect x="296.4" y="1455" width="28.1" height="13" rx="2" fill="#eb6834"><title>conv_drift: 127 mm/yr</title></rect>
+<rect x="294.5" y="1471" width="1.9" height="13" rx="2" fill="#6250d6"><title>conv_mix: -9 mm/yr</title></rect>
+<line x1="565.4" y1="1422" x2="565.4" y2="1486" stroke="#111" stroke-width="2"/>
+<line x1="621.0" y1="1422" x2="621.0" y2="1486" stroke="#111" stroke-width="2" stroke-dasharray="3,2"/>
+<text x="252" y="1472" text-anchor="end" fill="#555">P 1214 / 1465</text>
+<text x="296" y="1510" fill="#777" text-anchor="middle">0</text>
+<text x="442" y="1510" fill="#777" text-anchor="middle">659</text>
+<text x="588" y="1510" fill="#777" text-anchor="middle">1317</text>
+<text x="734" y="1510" fill="#777" text-anchor="middle">1976</text>
+<text x="880" y="1510" fill="#777" text-anchor="middle">2634</text>
+</svg>

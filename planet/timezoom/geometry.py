@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..geo import arc
 from ..grid import Grid
 from .params import R_M
 
@@ -19,7 +20,7 @@ def geometry(grid: Grid) -> dict:
     n, p = grid.n, grid.centers
     src = grid.nbr_src
     dst = grid.nbr_idx
-    dist = np.arccos(np.clip((p[src] * p[dst]).sum(1), -1, 1)) * R_M
+    dist = arc((p[src] * p[dst]).sum(1)) * R_M
     u = grid.edge_dir
     # the side between two cells joins the two triangle centroids (corners)
     # of the two icosphere triangles that contain both of them
@@ -31,7 +32,7 @@ def geometry(grid: Grid) -> dict:
     o = np.argsort(k, kind="stable")
     k, face = k[o], face[o]
     ukeys, c1, c2 = k[0::2], face[0::2], face[1::2]
-    side = np.arccos(np.clip((grid.corners[c1] * grid.corners[c2]).sum(1), -1, 1)) * R_M
+    side = arc((grid.corners[c1] * grid.corners[c2]).sum(1)) * R_M
     ek = np.minimum(src, dst).astype(np.int64) * n + np.maximum(src, dst)
     elen = side[np.searchsorted(ukeys, ek)]
     # cell area: fan of triangles from the centre over its ordered corners

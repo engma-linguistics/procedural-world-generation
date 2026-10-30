@@ -1,4 +1,4 @@
-"""Minimal PNG writer (no image library needed)."""
+"""Minimal PNG writer (no image library needed) and small colour helpers."""
 
 from __future__ import annotations
 
@@ -33,3 +33,15 @@ def write_png(path: Path, img: np.ndarray) -> None:
 
     Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
                            + chunk(b"IDAT", zlib.compress(data, 6)) + chunk(b"IEND", b""))
+
+
+def hex_rgb(c: str) -> tuple:
+    """'#rrggbb' -> (r, g, b) as 0..255 ints."""
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def ramp_colour(v, stops) -> np.ndarray:
+    """Piecewise-linear colour (..., 3) of values v through [(value, (r, g, b)), ...]."""
+    xs = np.array([s[0] for s in stops], float)
+    cols = np.array([s[1] for s in stops], float)
+    return np.stack([np.interp(v, xs, cols[:, k]) for k in range(3)], -1)

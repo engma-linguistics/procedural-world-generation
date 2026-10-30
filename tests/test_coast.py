@@ -6,6 +6,7 @@ import pytest
 
 from planet import coast
 from planet.zoom import regional as zoom
+from planet.constants import GRAV, SEC_PER_YR
 from planet.geo import R_KM, xyz
 from planet.grid import build_grid
 
@@ -160,7 +161,7 @@ def test_tide_sloping_shelf_resonance(tide_world):
     g, elev = tide_world
     _, det = coast.tide_range(g, elev, detail=True)
     iw = _coastal(g, elev, -25, -1)
-    lam = np.sqrt(coast.GRAV * 80.0) * coast.T_M2 / 1000.0
+    lam = np.sqrt(GRAV * 80.0) * coast.T_M2 / 1000.0
     amps = {}
     for extra in (0.25, 1.5):  # the same shelf, wider by this many wavelengths
         dlon = 360 * (extra * lam) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
@@ -216,7 +217,7 @@ def test_plain_radius_earth():
              "Mississippi": (17000, 400, 3, 0.4, "river"), "Sao Francisco": (3000, 6, 10, 2.0, "wave")}
     for name, (q, qs, wave, tide, kind) in cases.items():
         for sf in (0.5, 1.0):
-            g = coast.galloway(qs * 1e9 / coast.SEC_PER_YR, q, wave, tide, coast.plain_radius_km(q, sf))
+            g = coast.galloway(qs * 1e9 / SEC_PER_YR, q, wave, tide, coast.plain_radius_km(q, sf))
             assert g["type"] == f"{kind}-dominated", (name, sf, g)
 
 

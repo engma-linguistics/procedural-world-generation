@@ -19,7 +19,7 @@ import re
 
 import numpy as np
 
-from .geo import R_KM, xyz
+from .geo import R_KM, arc, xyz
 
 NAMES = ("equirect", "equal-earth", "mollweide", "laea", "aeqd", "ortho", "stereo")
 WORLD_PROJECTIONS = ("equirect", "equal-earth", "mollweide")  # (whole world in one outline)
@@ -259,7 +259,7 @@ def pixel_size_m(pts: np.ndarray, valid: np.ndarray, shape: tuple) -> tuple[np.n
     p = pts.reshape(ny, nx, 3)
 
     def dist(a, b):
-        return R_KM * 1000 * np.arccos(np.clip((a * b).sum(-1), -1, 1))
+        return R_KM * 1000 * arc((a * b).sum(-1))
 
     dx, dy = np.empty(shape), np.empty(shape)
     dx[:, :-1] = dist(p[:, 1:], p[:, :-1])

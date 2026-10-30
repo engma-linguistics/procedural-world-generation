@@ -172,12 +172,12 @@ from . import stage_terrain as STG_T
 from . import stage_rivers as STG_R
 from . import stage_landscape as STG_L
 from . import stage_finish as STG_F
-from ..geo import R_KM, latlon, xyz
-from ..images import write_png
+from ..constants import GRAV, RHO_ICE, SEC_PER_YR
+from ..geo import R_KM, arc, arc_km, latlon, smoothstep, xyz
+from ..images import ramp_colour, write_png
 from ..climate import LAPSE
 from ..tectonics.isostasy import land_view
 
-SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
 # How rugged the sub-cell detail is, by basement rock (surface.ROCKS ids).
@@ -243,7 +243,7 @@ class Frame:
         self.n = np.cross(self.c, self.e)
 
     def to_plane(self, p: np.ndarray):
-        rho = np.arccos(np.clip(p @ self.c, -1, 1))
+        rho = arc(p @ self.c)
         a, b = p @ self.e, p @ self.n
         s = np.hypot(a, b)
         k = np.where(s > 1e-12, rho * R_KM / np.maximum(s, 1e-12), 0.0)
@@ -269,11 +269,6 @@ def _count(items) -> dict:
     for k in items:
         out[k] = out.get(k, 0) + 1
     return out
-
-
-def smoothstep(e0, e1, x):
-    t = np.clip((x - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
 
 
 def softplus(x, s):
@@ -320,16 +315,6 @@ def smin(a, b, k):
     """Polynomial smooth minimum (rounded crease where a and b cross)."""
     hh = np.clip(k - np.abs(a - b), 0, None) / k
     return np.minimum(a, b) - hh * hh * k / 4
-
-
-def _box_mean(a, w, r):
-    """Weighted box-filter mean of a (2D) with weights w over a (2r+1)^2 window."""
-    def box(x):
-        c = np.cumsum(np.pad(x, ((r + 1, r), (0, 0)), mode="edge"), 0)
-        x = c[2 * r + 1:] - c[:-2 * r - 1]
-        c = np.cumsum(np.pad(x, ((0, 0), (r + 1, r)), mode="edge"), 1)
-        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
-    return box(a) / np.maximum(box(w), 1e-9)
 
 
 def find_world(ref: str) -> Path:
@@ -450,7 +435,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         fixed |= (np.abs(r_ - a) <= 3) & (np.abs(c_ - b) <= 3) & (q[i] >= WF_DESIGNED_SHARE * q[int(p)])
     ok = fixed | (h / np.maximum(d, 1e-9) >= WF_CONTRAST * g_ctx)
     i, h, d, jj = i[ok], h[ok], d[ok], jj[ok]
-    gw = 1000 * 9.81 * q[i] * h / 1e9
+    gw = 1000 * GRAV * q[i] * h / 1e9
     out, sep = [], max(3, int(round(sep_km / res)))
     taken = np.zeros((ny, nx), bool)  # (spacing by a mask: the full list can be long)
     for k in np.argsort(-gw):
@@ -767,7 +752,7 @@ def outflow_grad(g, elev: np.ndarray, down: np.ndarray, lab: np.ndarray, lvl: np
         if e < 0:
             continue
         cc = np.flatnonzero(lab == k)
-        s = float(np.min(np.arccos(np.clip(g.centers[cc] @ g.centers[e], -1, 1)))) * R_KM
+        s = float(np.min(arc(g.centers[cc] @ g.centers[e]))) * R_KM
         c = int(e)
         for _ in range(64):
             if s > 0:
@@ -775,7 +760,7 @@ def outflow_grad(g, elev: np.ndarray, down: np.ndarray, lab: np.ndarray, lvl: np
             n = int(down[c])
             if n < 0 or lab[n] == k or s > reach_km:
                 break
-            s += float(np.arccos(np.clip(g.centers[c] @ g.centers[n], -1, 1))) * R_KM
+            s += float(arc(g.centers[c] @ g.centers[n])) * R_KM
             c = n
     return out
 
@@ -802,7 +787,7 @@ def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
         (ix, dx), (iy, dy) = fr.to_plane(g.centers[[i, d]])
         u = np.array([dx - ix, dy - iy])
         u /= max(np.linalg.norm(u), 1e-9)
-        near = np.arccos(np.clip(g.centers[sea_sel] @ (p / np.linalg.norm(p)), -1, 1)) * R_KM < 2.5 * sp
+        near = arc_km(g.centers[sea_sel] @ (p / np.linalg.norm(p))) < 2.5 * sp
         sf = float(smoothstep(0.5, 8.0, cover[sea_sel][near].max())) if near.any() else 0.0
         # the water the river runs out into, against its own depth (PW-847; Wright 1977): over a
         # shallow floor the outflow drags on the bed and drops its load in middle-ground bars that
@@ -1061,7 +1046,7 @@ GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EX
 # terminus on land, L = 2 tau / (rho g) with a yield stress tau ~100 kPa
 # (H ~150 m 1 km back, ~330 m 5 km back): a tongue thins to its end instead of
 # stopping in an ice cliff (PW-350; calving fronts in water keep their height)
-GL_NYE_M = 2 * 1.0e5 / (917.0 * 9.81)  # m (~22)
+GL_NYE_M = 2 * 1.0e5 / (RHO_ICE * GRAV)  # m (~22)
 GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 
 
@@ -1271,12 +1256,6 @@ def hillshade(h: np.ndarray, res_km: float, exaggeration: float = 2.0, azimuth: 
     return np.clip((-dzdx * lx - dzdy * ly + lz) / nrm, 0, 1)
 
 
-def _ramp(v, stops):
-    xs = np.array([s[0] for s in stops], float)
-    cols = np.array([s[1] for s in stops], float)
-    return np.stack([np.interp(v, xs, cols[:, k]) for k in range(3)], -1)
-
-
 LAND_WET = [(0, (92, 140, 78)), (300, (122, 160, 92)), (900, (176, 176, 118)), (1700, (160, 132, 96)),
             (2600, (136, 116, 104)), (3600, (184, 178, 170)), (4800, (224, 218, 208))]  # (bare rock: ice is tinted apart)
 LAND_DRY = [(0, (206, 188, 140)), (300, (196, 172, 124)), (900, (184, 154, 112)), (1700, (160, 128, 96)),
@@ -1287,8 +1266,8 @@ SEA = [(-7000, (12, 28, 70)), (-4000, (20, 48, 102)), (-1500, (34, 78, 140)), (-
 
 def tint(h: np.ndarray, precip: np.ndarray) -> np.ndarray:
     wet = np.clip((precip - 250) / 700, 0, 1)[..., None]
-    land = _ramp(h, LAND_WET) * wet + _ramp(h, LAND_DRY) * (1 - wet)
-    return np.where((h > 0)[..., None], land, _ramp(h, SEA))
+    land = ramp_colour(h, LAND_WET) * wet + ramp_colour(h, LAND_DRY) * (1 - wet)
+    return np.where((h > 0)[..., None], land, ramp_colour(h, SEA))
 
 
 RIVER_MIN_AREA = 500.0  # km^2 upstream for a river to be drawn (at 2 km pixels)

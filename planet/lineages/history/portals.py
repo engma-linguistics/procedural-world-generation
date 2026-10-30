@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...geo import R_KM
+from ...geo import arc_km
 from .params import PORTAL_SEP_KM
 from .gridops import _depth
 
@@ -33,7 +33,7 @@ class PortalsMixin:
                 return False
             c = int(np.argmax(sc + 1e-6 * noise * (sc > 0)))
             out.append({"cell": c, "kind": kind, "lat": round(float(g.lat[c]), 2), "lon": round(float(g.lon[c]), 2)})
-            d = np.arccos(np.clip(g.centers @ g.centers[c], -1, 1)) * R_KM
+            d = arc_km(g.centers @ g.centers[c])
             free[d < PORTAL_SEP_KM] = False
             return True
 

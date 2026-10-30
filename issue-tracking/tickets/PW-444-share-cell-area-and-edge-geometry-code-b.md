@@ -27,3 +27,4 @@ PW-442 added `Grid.nbr_src` (the cell each CSR edge leaves) and `Grid.edge_dir` 
 ## Updates
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-20: Created from inbox draft draft-pw442-grid-geometry-dupes.md (found by pw442).
+- 2026-10-30: Refactor 1 (lane 59) shared geo.arc/arc_km (about 50 inline great-circle distances), geo.cell_area_km2 (18 inline cell areas), geo.smoothstep/ramp, Grid.components (climate._label deleted), Grid.nbr_mean/nbr_mean_in/nbr_max_in, kernels.accumulate (zoom copy deleted), raster.box_mean; goldens unchanged. Left, with reasons: draft-refactor1-float-order-copies-left.md.

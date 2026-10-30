@@ -346,6 +346,19 @@ def cmd_demes(args):
         print(ref, "\n".join(DM.lines_for_report(sm, json.loads((d / "demes.json").read_text()))))
 
 
+def cmd_settlements(args):
+    """Adds (or redoes) a peoples run's settlement ledger in place (PW-1011): settlements.json, meta.settlements."""
+    from .lineages import settlements as ST
+    over = {}
+    for kv in args.set or []:
+        k, v = kv.split("=", 1)
+        over[k] = json.loads(v)
+    for ref in args.runs:
+        d = S.find_run(ref)
+        sm = ST.write(d, **over)
+        print(ref, "\n".join(ST.lines_for_report(sm, json.loads((d / "settlements.json").read_text()))))
+
+
 def cmd_brief(args):
     """The culinary brief of a peoples run's region or people at an era (PW-728): JSON and Markdown."""
     from .lineages import brief as BR
@@ -737,6 +750,13 @@ def main():
                                       "(by sea gaps, hard country and distance) and their dated tree of splits, fusions and contacts, in place (PW-981)")
     dm.add_argument("runs", nargs="+", help="peoples run ids")
     dm.set_defaults(func=cmd_demes)
+
+    se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
+                                             "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "
+                                             "driven out, left), leaving ruins; in place (PW-1011)")
+    se.add_argument("runs", nargs="+", help="peoples run ids")
+    se.add_argument("--set", nargs="*", metavar="KEY=VALUE", help="override settlements.CONST for this call (JSON values), e.g. FOUND=500")
+    se.set_defaults(func=cmd_settlements)
 
     ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
                                        "class maps, GeoJSON features, manifest.json -> exports/<id>/")
