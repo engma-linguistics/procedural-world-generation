@@ -51,6 +51,7 @@ import { showTab } from './tabs.js';
 import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
 import { paletteReport } from './palettes.js';
+import { RAMP_CHANGES } from './layers.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 // ------------------------------------------------------------ boot
 // (after every module has run its own top-level code: the URL's options override their defaults)
@@ -74,6 +75,7 @@ if (startScreen) {
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
 // then frames drawn with the camera turning and nothing repainted
 window.planetViewer = {
+  rampReport: () => RAMP_CHANGES,  // (?ramps=new: the ramps rebuilt to run one way in lightness, before and after; PW-1027)
   paletteReport,  // (the peoples' colours on screen: neighbours alike, colours lost in the ocean; PW-1032)
   // random pointer positions: the globe's fast pick against three's full raycast (PW-679); {tested, hits, mismatches}
   pickCheck(count = 400) {

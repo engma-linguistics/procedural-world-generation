@@ -266,6 +266,8 @@ function loadImage(url) {
 
 // ------------------------------------------------------------ loading
 async function init() {
+  // ?ramps=new (PW-1027, a preview): the globe's temperature, rain and fertility, and monotonic "how much" ramps (ramps.js)
+  if (new URLSearchParams(location.search).get('ramps') === 'new') window.zoomRampChanges = (await import('./ramps.js')).applyZoomRampSet(RAMPS, RAIN, TEMP);
   const idx = (await getJSON('../zooms/index.json')) || [];
   fine.idx = idx;
   $('fineHere').onclick = armFine;
