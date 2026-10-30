@@ -98,25 +98,39 @@ export function primaryNode(planet) {
   return w[0] || planet.nodes.find((n) => n.kind === 'run') || planet.nodes[0];
 }
 
-export async function postJob(path, body) {
+// POST /api/<path>: the server's answer ({job: id}), or {error}. what (optional, e.g. 'zoom'): a server that answers
+// 501, or 404 with no error of its own, predates that API, and the error says to restart it.
+export async function postJob(path, body, what) {
   try {
     const r = await fetch('../api/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const out = await r.json().catch(() => ({}));
+    if (what && (r.status === 501 || (r.status === 404 && !out.error))) return { error: `The server has no ${what} API. Restart it: uv run python -m planet serve` };
     return r.ok ? out : { error: out.error || `HTTP ${r.status}` };
   } catch (e) { return { error: 'The server is not reachable: ' + e.message }; }
 }
 
-// polls a job until it ends; onUpdate(job) on every poll. Keeps trying while the server restarts.
-export async function trackJob(id, onUpdate, every = 1500) {
-  for (let miss = 0; ;) {
-    let j = null;
-    try { j = await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); miss = 0; } catch { if (++miss > 40) j = { status: 'error', error: 'lost the server' }; }
-    if (j) {
-      onUpdate(j);
-      if (j.status === 'done' || j.status === 'error') return j;
+// a job's state from the server. While it can't be reached (restarting: its jobs survive that, PW-085) keep
+// asking, every 1.5 s for up to a minute.
+async function fetchJob(id) {
+  for (let k = 0; ; k++) {
+    try { return await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); }
+    catch (err) {
+      if (k >= 40) return { status: 'error', error: 'lost the server: ' + err.message };
+      await new Promise((ok) => setTimeout(ok, 1500));
     }
+  }
+}
+
+// polls a job until it ends (returns its last state, done or error); onUpdate(job) on every poll, every `every` ms.
+// alive (optional): checked before each poll; once it says no (another job took this one's place), stops and returns null.
+export async function trackJob(id, onUpdate, every = 1500, alive = () => true) {
+  while (alive()) {
+    const j = await fetchJob(id);
+    onUpdate(j);
+    if (j.status === 'done' || j.status === 'error') return j;
     await new Promise((ok) => setTimeout(ok, every));
   }
+  return null;
 }
 
 // stops a queued or running job (DELETE /api/jobs/<id>); what a make job already finished stays

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { S, state } from './state.js';
+import { canvasSprite } from './draw.js';
 import { $, camera, controls, fitMap, group } from './scene.js';
 import { disposeObj, lineObj, llPos } from './geometry.js';
 // ------------------------------------------------------------ spin axis and tilt
@@ -12,35 +13,17 @@ function planetTilt() {
   return p && p.tilt != null ? +p.tilt : 23.4;
 }
 
-export function textSprite(text, color) {
-  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
-  const g = cv.getContext('2d');
-  g.font = 'bold 44px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 32, 34);
-  g.fillStyle = color; g.fillText(text, 32, 34);
-  // (PW-839: drawn after the 3D relief's translucent sea (renderOrder 1), which would otherwise blend over it; the transparent
-  // corners of the square canvas neither write depth nor hide what is behind: alphaTest, depthWrite false)
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05 }));
-  sp.renderOrder = 5;
-  sp.scale.set(0.11, 0.11, 1);
-  return sp;
-}
+// (PW-839: drawn after the 3D relief's translucent sea (renderOrder 1), which would otherwise blend over it; the transparent
+// corners of the square canvas neither write depth nor hide what is behind: alphaTest, depthWrite false)
+export const textSprite = (text, color) => canvasSprite(text, color, { w: 64, px: 44, mat: { depthWrite: false, alphaTest: 0.05 }, order: 5, scale: [0.11, 0.11] });
 
 // Continent names (PW-867): a label at each continent's centre. A world's own summary (landmasses[].name, centre; the owner's names from
 // worlds/names/<id>.json replace the generated ones, `planet name`), or a peoples run's present landmasses (the names its history used).
 export const lmGroup = new THREE.Group();
 group.add(lmGroup);
 export const rankLetter = (r) => { let s = '', i = r + 1; while (i) { const k = (i - 1) % 26; s = String.fromCharCode(65 + k) + s; i = Math.floor((i - 1) / 26); } return s; };
-function wordSprite(text, color) {
-  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96;
-  const g = cv.getContext('2d');
-  g.font = 'bold 56px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 9; g.lineJoin = 'round'; g.strokeStyle = 'rgba(8,12,20,0.85)'; g.strokeText(text, 256, 50);
-  g.fillStyle = color; g.fillText(text, 256, 50);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05, transparent: true, opacity: 0.92 }));
-  sp.renderOrder = 6;
-  return sp;
-}
+const wordSprite = (text, color) => canvasSprite(text, color, { w: 512, h: 96, px: 56, line: 9, join: 'round', stroke: 'rgba(8,12,20,0.85)', y: 50,
+  mat: { depthWrite: false, alphaTest: 0.05, transparent: true, opacity: 0.92 }, order: 6 });
 function landmassLabels() {  // [{name, lat, lon, area}] of the continents (a share of the surface of at least ~1%)
   if (!S.V) return [];
   if (S.V.kind === 'world' && S.V.summary?.landmasses?.length)

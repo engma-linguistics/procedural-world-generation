@@ -1,9 +1,9 @@
 import * as THREE from 'three';
+import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { $, DIAG, camera, controls, fitMap, group, relief3d, renderer } from './scene.js';
 import { buildTopology, nearestCellU, paint } from './geometry.js';
 import { renderTip } from './panel.js';
-import { esc } from './provenance.js';
 import { closeDetail, describe, infoBoxHtml, openDetail, renderDetail } from './describe.js';
 import { syncProj } from './map2d.js';
 import { pickCell, startZoom } from './zoom.js';

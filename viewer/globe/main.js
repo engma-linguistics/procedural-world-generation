@@ -1,6 +1,7 @@
 // The globe viewer (index.html): three.js globe and flat map of a run's frame or a finished world. ES modules, no build:
 //   state.js     the shared state (S: what is shown, the mesh, the pick...; state: the view's choices)
 //   scene.js     renderer, camera, controls, lights, the clip planes
+//   draw.js      drawing helpers (text label sprites)
 //   colours.js   colour ramps and every colour layer's per-cell colours (cellColors), peoples / tech / resources
 //   geometry.js  the globe and map meshes (paint), cell positions, ribbons
 //   overlays.js  rivers, winds, currents, volcanoes, events, clouds, the overturning
@@ -37,9 +38,10 @@ import './load.js';
 import './playback.js';
 import './select.js';
 import * as THREE from 'three';
+import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { $, DIAG, camera, controls, fitClip, fitMap, group, relief3d, renderer, resize, scene } from './scene.js';
-import { drawTint, esc } from './provenance.js';
+import { drawTint } from './provenance.js';
 import { mouse, pickGlobeCell, ray } from './pick.js';
 import { OVERLAY_IDS, reliefLabels } from './map2d.js';
 import { showTab } from './tabs.js';

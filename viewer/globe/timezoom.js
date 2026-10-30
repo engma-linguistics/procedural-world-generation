@@ -1,9 +1,9 @@
+import { esc, postJob, trackJob } from '../planets.js';
 import { S, state } from './state.js';
 import { peoplesPanel } from './colours.js';
 import { EVENT_COLORS, hexColor } from './overlays.js';
 import { renderRunSummary } from './panel.js';
-import { COLD_HELP, coldness, esc, openWorld, sourceLink } from './provenance.js';
-import { fetchJob } from './zoom.js';
+import { COLD_HELP, coldness, openWorld, sourceLink } from './provenance.js';
 import { viewKey } from './highlights.js';
 import { fillSelector, openRun } from './select.js';
 // ------------------------------------------------------------ glacial time zooms
@@ -139,25 +139,14 @@ export async function startTimezoom() {
   const req = { run: S.V.dir, t: S.V.t, kyr: S.tzKyr };
   const job = S.tzJob = { label: `${S.tzKyr} kyr from ${S.V.dir} @ ${S.V.t} Myr`, status: 'starting', progress: 0 };
   renderRunSummary();
-  let r = null, out = {};
-  try {
-    r = await fetch('../api/timezoom', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
-    out = await r.json().catch(() => ({}));
-  } catch (err) { r = null; }
-  if (!r || r.status === 501 || (r.status === 404 && !out.error)) {
-    Object.assign(job, { status: 'error', finished: true, error: 'The server has no time zoom API. Restart it: uv run python -m planet serve' });
-  } else if (!r.ok) Object.assign(job, { status: 'error', finished: true, error: out.error || `HTTP ${r.status}` });
-  if (job.finished) { if (S.V.kind === 'run' && !S.V.tz) renderRunSummary(); return; }
-  while (job === S.tzJob) {
-    let j;
-    j = await fetchJob(out.job);
+  const out = await postJob('timezoom', req, 'time zoom');
+  if (out.error) { Object.assign(job, { status: 'error', finished: true, error: out.error }); if (S.V.kind === 'run' && !S.V.tz) renderRunSummary(); return; }
+  const j = await trackJob(out.job, (j) => {
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (S.V.kind === 'run' && !S.V.tz && !state.playing) renderRunSummary();
-    if (j.status === 'done') { await openRun(j.run); return; }
-    if (job.finished) return;
-    await new Promise((ok) => setTimeout(ok, 1500));
-  }
+  }, 1500, () => job === S.tzJob);
+  if (j?.status === 'done') await openRun(j.run);
 }
 
 // "Finish world here" (PW-091/193): a full world (climate, rivers, lakes,
@@ -215,23 +204,12 @@ export async function startFinish() {
   const req = S.V.tz ? { timezoom: S.V.dir, kyr: S.V.t } : { run: S.V.dir, t: S.V.t };
   const job = finJob = { label: S.V.tz ? `world at +${S.V.t} kyr` : `world at ${S.V.t} Myr`, view: viewKey(), status: 'starting', progress: 0 };
   renderRunSummary();
-  let r = null, out = {};
-  try {
-    r = await fetch('../api/finish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
-    out = await r.json().catch(() => ({}));
-  } catch (err) { r = null; }
-  if (!r || r.status === 501 || (r.status === 404 && !out.error)) {
-    Object.assign(job, { status: 'error', finished: true, error: 'The server has no finish API. Restart it: uv run python -m planet serve' });
-  } else if (!r.ok) Object.assign(job, { status: 'error', finished: true, error: out.error || `HTTP ${r.status}` });
-  if (job.finished) { if (S.V.kind === 'run') renderRunSummary(); return; }
-  while (job === finJob) {
-    let j;
-    j = await fetchJob(out.job);
+  const out = await postJob('finish', req, 'finish');
+  if (out.error) { Object.assign(job, { status: 'error', finished: true, error: out.error }); if (S.V.kind === 'run') renderRunSummary(); return; }
+  const j = await trackJob(out.job, (j) => {
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (S.V.kind === 'run' && !state.playing) renderRunSummary();
-    if (j.status === 'done') { await fillSelector(); await openWorld(j.world + '.json'); return; }
-    if (job.finished) return;
-    await new Promise((ok) => setTimeout(ok, 1000));
-  }
+  }, 1000, () => job === finJob);
+  if (j?.status === 'done') { await fillSelector(); await openWorld(j.world + '.json'); }
 }

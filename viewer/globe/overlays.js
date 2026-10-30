@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { S, state } from './state.js';
+import { canvasSprite } from './draw.js';
 import { $, DIAG, group } from './scene.js';
 import { huOverlays, techOverlays, techTree } from './colours.js';
 import { cellPos, cellPositions, disposeObj, lineObj, llMode, llPoint, llPos, llPosPt, plateVelocity, reliefScale, ribbonObj, select, toThree, unitVec } from './geometry.js';
@@ -477,16 +478,7 @@ function streamOverlay(ke, kn) {
 // sites as rings sized by their Sv, the warm surface inflow along the route
 // the model sends it (solid), and the deep return flow (dashed: a schematic,
 // the model has no deep ocean) to where deep water comes back up.
-function labelSprite(text, color) {
-  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
-  const g = cv.getContext('2d');
-  g.font = 'bold 36px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 7; g.strokeStyle = '#0b0f17'; g.strokeText(text, 128, 34);
-  g.fillStyle = color; g.fillText(text, 128, 34);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false }));
-  sp.scale.set(0.2, 0.05, 1);
-  return sp;
-}
+const labelSprite = (text, color) => canvasSprite(text, color, { line: 7, mat: { depthTest: false }, scale: [0.2, 0.05] });
 const MOC_COLORS = { sink: 0xbfe0ff, surface: 0xff8a3a, deep: 0x7f9fff, up: 0x5ff0c8 };
 function overturningOverlay(meta, labels) {
   const globe = state.mode === 'globe', r0 = globe ? 1.007 : 1;

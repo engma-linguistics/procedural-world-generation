@@ -1,3 +1,4 @@
+import { postJob, trackJob } from '../planets.js';
 import { S } from './state.js';
 import { $ } from './scene.js';
 import { buildOverlays } from './overlays.js';
@@ -83,46 +84,13 @@ export async function startZoom() {
   if (zoomJob && !zoomJob.finished) return;
   zoomJob = { label: `${S.zoomSize} km around ${S.picked.lat}, ${S.picked.lon}`, status: 'starting', progress: 0 };
   renderZoomBox();
-  let r;
-  try {
-    r = await fetch('../api/zoom', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
-  } catch (err) { r = null; }
-  if (!r || r.status === 501 || r.status === 404) {
-    Object.assign(zoomJob, { status: 'error', finished: true,
-      error: 'The server has no zoom API. Restart it: uv run python -m planet serve' });
-    return renderZoomBox();
-  }
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) { Object.assign(zoomJob, { status: 'error', finished: true, error: out.error || `HTTP ${r.status}` }); return renderZoomBox(); }
-  zoomJob.job = out.job;
-  pollJob(out.job);
-}
-
-// a job's state from the server. While it can't be reached (restarting: its
-// jobs survive that, PW-085) keep asking, every 1.5 s for up to a minute.
-export async function fetchJob(id) {
-  for (let k = 0; ; k++) {
-    try { return await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); }
-    catch (err) {
-      if (k >= 40) return { status: 'error', error: 'lost the server: ' + err.message };
-      await new Promise((ok) => setTimeout(ok, 1500));
-    }
-  }
-}
-
-async function pollJob(id) {
-  const job = zoomJob;
-  while (job === zoomJob) {
-    let j;
-    j = await fetchJob(id);
+  const job = zoomJob, out = await postJob('zoom', req, 'zoom');
+  if (out.error) { Object.assign(job, { status: 'error', finished: true, error: out.error }); return renderZoomBox(); }
+  job.job = out.job;
+  const j = await trackJob(out.job, (j) => {
     Object.assign(job, j);
-    if (j.status === 'done' || j.status === 'error') {
-      job.finished = true;
-      renderZoomBox();
-      if (j.status === 'done') { showTab('zoom', j.zoom); refreshIndex(); }
-      return;
-    }
+    if (j.status === 'done' || j.status === 'error') job.finished = true;
     renderZoomBox();
-    await new Promise((ok) => setTimeout(ok, 1000));
-  }
+  }, 1000, () => job === zoomJob);
+  if (j?.status === 'done') { showTab('zoom', j.zoom); refreshIndex(); }
 }

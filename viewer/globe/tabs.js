@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createNavigator } from '../navigator.js';
 import { S, state } from './state.js';
+import { canvasSprite } from './draw.js';
 import { $, group } from './scene.js';
 import { disposeObj, lineObj, llPos } from './geometry.js';
 import { openWorld } from './provenance.js';
@@ -87,16 +88,8 @@ function zoomsOnScreen() {
   const worlds = S.V.kind === 'world' ? [S.V.id] : S.V.tz ? [] : S.IDX.worlds.filter((w) => w.source_run === S.V.dir && w.t_myr === S.V.t && !w.timezoom).map((w) => w.id);
   return S.IDX.zooms.filter((z) => worlds.includes(z.world) && !z.parent_zoom && z.center);
 }
-function wideSprite(text, color) {  // (a label of a few words: textSprite's canvas is square)
-  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
-  const g = cv.getContext('2d');
-  g.font = 'bold 32px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 128, 34);
-  g.fillStyle = color; g.fillText(text, 128, 34);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05 }));
-  sp.renderOrder = 5;  // (after the 3D relief's translucent sea: PW-839)
-  return sp;
-}
+// (a label of a few words: textSprite's canvas is square; renderOrder 5: after the 3D relief's translucent sea, PW-839)
+const wideSprite = (text, color) => canvasSprite(text, color, { px: 32, mat: { depthWrite: false, alphaTest: 0.05 }, order: 5 });
 export function buildZoomOutlines() {
   zoomOutlines.children.forEach(disposeObj);
   zoomOutlines.clear();

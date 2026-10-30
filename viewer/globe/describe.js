@@ -1,9 +1,9 @@
+import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { $, CMYR } from './scene.js';
 import { SEASON_NAMES, animalStocks, anthroRows, coastText, coastalText, cropRows, demeOf, fuelRows, isSeaPeople, lakeLine, monthRuns, resRows, techRows } from './colours.js';
 import { plateVelocity } from './geometry.js';
 import { timeLabel } from './timezoom.js';
-import { esc } from './provenance.js';
 import { volcLine } from './load.js';
 // ------------------------------------------------------------ the cell's description
 // cellInfo(i) lists what is known about cell i as rows { g: group, k: label, v: value,

@@ -1,3 +1,4 @@
+import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { $ } from './scene.js';
 import { VEG_VIEWS } from './colours.js';
@@ -16,7 +17,6 @@ import { fillSelector, loadSelection, syncFav } from './select.js';
 try { $('favMode').value = localStorage.getItem('planet.favMode') || 'all'; } catch { /* private window */ }
 if (!$('favMode').value) $('favMode').value = 'all';
 export const favKeyOf = (v) => v.replace(/\.json$/, '');  // option value -> favourites key
-export const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const runOf = (id) => S.IDX.runs.find((r) => r.dir === id || r.id === id);
 // a world from a run is "<run name> @ T Myr"; others go by their name
 export function worldTitle(w) {
