@@ -1,4 +1,5 @@
 ---
+id: PW-1119
 title: Glacial maximum is reported at 25% of land under ice; confirm the number
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane65
 blocked_by: []
 relates: [PW-1091]
 refs: [tools/ice_criteria.py, docs/review/base-climate/v1-finish-12/passrate4.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +23,6 @@ On the 18 L6 draws of the D arm (roll 0.001) it flags 14, with frozen over 3, be
 
 - [ ] Owner or coordinator: keep 25% of land as the glacial-maximum line, or give another number or rule
 - [ ] Verify Earth's LGM land-ice share from a source and note it in the glossary
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-glacial-maximum-threshold.md (found by lane65).

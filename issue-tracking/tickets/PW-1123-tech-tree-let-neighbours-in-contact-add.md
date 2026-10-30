@@ -1,8 +1,10 @@
 ---
+id: PW-1123
 title: "Tech tree: let neighbours in contact add to a people's pool of learners (Kline & Boyd 2010; Henrich's effective size)"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: []
 refs: [planet/lineages/techtree.py, docs/references/techtree/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -23,3 +27,6 @@ judgement) and only on the "all" pool. Check that firbolgs and goliaths beside b
 peoples barely change (log form).
 - [ ] contact pool term, off by default until checked
 - [ ] firsts table before and after on two runs
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-contact-pools.md (found by fun-lane-64).

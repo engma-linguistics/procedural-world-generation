@@ -1,8 +1,10 @@
 ---
+id: PW-1124
 title: "Tech tree: copper is found independently ~10 times per world (Earth: a few); check independent origins against the catalogue"
 type: task
 status: needs-decision
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: []
 refs: [planet/lineages/techtree.py, docs/references/tech-catalogue/, docs/references/techtree/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +33,6 @@ Options:
   check reporting finds per world against them. Adjust needs (copper's real precondition is a hot-enough kiln and a smelting
   culture, not just kilns), not rates.
 Lean: C at catalogue ingestion.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-independent-finds.md (found by fun-lane-64).

@@ -1,4 +1,5 @@
 ---
+id: PW-1118
 title: The convergence lift (PW-1100) wets the subtropical heat lows' margins at 15-25 S, where the sinking-air mask is weak
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane62
 blocked_by: []
 relates: [PW-1100, PW-1099]
 refs: [planet/climate.py, docs/review/base-climate/moisture-inflow-ascent/]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +33,6 @@ What to try, without tuning the mask's width:
 - (b) Let the trade inversion follow the sea temperature, rather than a zonal belt.
 Check it once PW-1099's inflow depth has its coastal partner, since the term rides with that.
 - [ ] with the ascent on, Earth's B share no lower than with it off
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-ascent-wets-subtropical-heat-low-margins.md (found by lane62).

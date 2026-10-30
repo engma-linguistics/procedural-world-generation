@@ -1,4 +1,5 @@
 ---
+id: PW-1120
 title: The monsoon coasts need their own vapour supply before the land-sea inflow can carry only its low layer's vapour (PW-1099's partner)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane62
 blocked_by: []
 relates: [PW-1099, PW-1100, PW-1094, PW-1097]
 refs: [planet/climate.py, docs/review/base-climate/moisture-inflow-ascent/, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -45,3 +48,6 @@ everything as one.
 
 Placement (coordinator 10-30): v2, unless the owner asks for (i), which would be the next single round.
 - [ ] with the inflow depth on: SE USA and the Pampas not below main, log-rain r not below 0.70, B not below 25
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-monsoon-coasts-need-vapour-supply-not-lift.md (found by lane62).

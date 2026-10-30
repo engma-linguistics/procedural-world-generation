@@ -1,8 +1,10 @@
 ---
+id: PW-1122
 title: "Tech catalogue ingestion: what the v1 invention model needs from each row"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: []
 refs: [docs/references/tech-catalogue/, planet/lineages/samples/techtree.toml, planet/lineages/techtree.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -24,3 +28,6 @@ Notes for merging the 594-row catalogue (docs/references/tech-catalogue/) into t
 - Bring the ids the lane already used: war_chariot and siege_mining are in the tree already, with the catalogue's ids.
 - After ingesting, re-run the anchor check (techtree.anchor_check) and a firsts table on two runs. Report the world firsts and the
   finds per world, against Earth's independent origins (the catalogue's `origins`).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-catalogue-ingest-v1.md (found by fun-lane-64).

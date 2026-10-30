@@ -1,8 +1,10 @@
 ---
+id: PW-1127
 title: "Tech tree: a people that only knows of cities by contact counts as a city people (specialists 10%); read the settlement ledger instead"
 type: task
 status: todo
 parent: PW-946
+milestone: null
 subsystem: timezoom
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: [PW-946, PW-1011]
 refs: [planet/lineages/techtree.py, planet/lineages/settlements.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,3 +30,6 @@ read today, because it is built after the tech tree and from it (its tiers come 
 - A: only a tech the people invented, or held for some kyr, counts for the ladder (cheap, still a proxy).
 - B: step the tree and the ledger together (PW-946), with s = the share of the people living in towns and cities at the time.
 Lean: B, as part of PW-946; A as a stopgap only if PW-946 slips.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-specialists-from-settlements.md (found by fun-lane-64).

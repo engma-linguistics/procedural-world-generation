@@ -1,8 +1,10 @@
 ---
+id: PW-1128
 title: "Technology tab: show what drives each people's inventing (population, specialists, learners, culture)"
 type: task
 status: todo
 parent: PW-913
+milestone: null
 subsystem: viewer
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: [PW-913]
 refs: [viewer/techtab.js, planet/lineages/techtree.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -20,3 +24,6 @@ show any of these yet. The owner uses the viewer, not the CLI, so a per-people l
 specialists, x1.6 learners, craft x1.3") would make the unevenness readable.
 - [ ] per-people drivers in the people view of the tab
 - [ ] domains and soft or hard floor in the tech tooltip
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-viewer-drivers.md (found by fun-lane-64).

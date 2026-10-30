@@ -1,8 +1,10 @@
 ---
+id: PW-1126
 title: "Tech tree: environmental risk (cold, seasonal land) should speed up food-getting gear, as Collard et al. 2005 found"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: []
 refs: [planet/lineages/techtree.py, docs/references/techtree/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -22,3 +26,6 @@ seasonality from the world's climate, read like goods_held from the present rang
 Keep it modest (at most 1.5x) and on the stone-age food techs only.
 - [ ] a risk measure per people (cold and seasonal share of its cells)
 - [ ] x on food-domain stone-age techs; a test that a cold people gets traps and hooks earlier than a warm one of the same size
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-risk-food-toolkits.md (found by fun-lane-64).

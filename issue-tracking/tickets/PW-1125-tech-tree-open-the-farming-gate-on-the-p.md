@@ -1,8 +1,10 @@
 ---
+id: PW-1125
 title: "Tech tree: open the farming gate on the planet's own climate, not on Earth's 11.6 kyr"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: fun-lane-64
 blocked_by: []
 relates: [PW-946, PW-470]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, docs/references/techtree/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -30,3 +34,6 @@ What to try:
 
 - [ ] a saved climate-stability signal
 - [ ] gate_kyr read from it per run, with 11.6 as the fallback
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-planet-glacial-gate.md (found by fun-lane-64).
