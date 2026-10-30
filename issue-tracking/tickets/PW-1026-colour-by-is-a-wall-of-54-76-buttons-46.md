@@ -2,7 +2,7 @@
 id: PW-1026
 title: "\'Colour by\' is a wall of 54-76 buttons (46 on the zoom): group it, add search and recent, one picker each for crops/animals/body traits"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: null
 subsystem: viewer
@@ -31,6 +31,7 @@ Options (built by viewer lane 56; pictures in docs/review/viewer-ux-sides-2/inde
 Lean: option 2 as the default, then the same sections on the zoom page and the flat block removed.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> todo. Owner 10-30 D4: grouped picker with search becomes the default; loves the labelled time sliders. Next: zoom page same sections, drop the flat block.
 - 2026-10-30: Status todo -> needs-decision. Viewer lane 56: the grouped picker is built behind ?picker=grouped (new viewer/globe/layerpick.js; sections from layers.js SECTIONS, which map the LAYERS table's group field, and 'also' moves biome to Plants and soils). Search matches a layer's name and its description (Enter picks the first hit, Esc clears); family items (crop / animal / body trait) are dropdowns, listed as buttons when a search matches them, with display names from the stock labels ('crop: wheat and barley'). Open sections and the recent layers are kept in localStorage inside try/catch. Every layer stays reachable; the flat block stays the default until the owner picks. Side-by-sides with a recommendation (make it the default): docs/review/viewer-ux-sides-2/index.html. Not done: zoom.html's picker (it keeps its own list).
 - 2026-10-29: Created from inbox draft draft-colour-by-grouped-picker.md (found by code-audit-2026-10).
 - 2026-10-29: Viewer lane 51 split index.html's script into viewer/globe/ modules. Every layer is now one entry in `LAYERS` (globe/layers.js), with a `group` (surface, geology, ice, glacial, climate, air, water, plants, soil, game, humanuse, resources, coasts, sea, peoples). `MENUS` gives the button order, and the 'body:', 'animal:' and 'crop:' families are expanded in one place (FAMILIES). The grouped picker can read groups, labels and hints straight from the table; panel.js `renderLayerButtons` is the only place to change. zoom.html still has its own list.

@@ -2,7 +2,7 @@
 id: PW-1068
 title: "Dragon persecution has no source: 1 - exp(-N/0.05) presses every dragon to 1 per 5,000 km2 at any settled density"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -39,5 +39,6 @@ Lean: A (it is PW-977 stage 3); read the two wishlist papers first.
 - [ ] decide A/B
 
 ## Updates
+- 2026-10-30: Status needs-decision -> in-progress. Owner 10-30: start immediately (it may rewrite the dragon paper). Lane 63.
 - 2026-10-30: Owner 10-30: losing ~99% of dragons in farmland is too fatal for low-tech peoples. Early peoples' pressure should be very slight everywhere, rising with tech and history. Pressure must come from a source that scales with tech (weapons, organised hunts, settlement), not a flat per-capita kill rate. Next fun lane after 61.
 - 2026-10-30: Created from inbox draft draft-dragon-pressure-source.md (found by dragon-density-r2).

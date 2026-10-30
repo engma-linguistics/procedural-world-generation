@@ -2,7 +2,7 @@
 id: PW-1027
 title: Globe and zoom draw the same quantity in different colours (10 C is green in the zoom, pale yellow on the globe), and 15+ \"more of something\" ramps rise then fall in lightness
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: null
 subsystem: viewer
@@ -26,5 +26,6 @@ Fix: one `viewer/ramps.js` (name, unit, kind sequential/diverging/categorical, h
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-30: Status needs-decision -> todo. Owner 10-30 D2: keep the current ramps (incl. cloud); drop the ramps=new option. Owner dislikes the new pink end colour and skin-tone fertility.
 - 2026-10-29: Created from inbox draft draft-colour-ramps-shared-and-monotonic.md (found by code-audit-2026-10).
 - 2026-10-30: lane 53: preview behind ?ramps=new (viewer/ramps.js). The zoom draws temperature, rain and fertility with the globe's ramps, and 12 rise-then-fall ramps are rebuilt to run one way in lightness with the same hues (planetViewer.rampReport()). Side-by-sides in docs/review/viewer-ux-sides/. Lean: take the shared zoom ramps, take the one-way rule per ramp, hand-tune fire return. Needs the owner's pick.
