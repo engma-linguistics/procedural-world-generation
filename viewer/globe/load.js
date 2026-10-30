@@ -10,6 +10,55 @@ import { renderHover, toast } from './pick.js';
 import { renderZoomBox } from './zoom.js';
 import { navSync } from './tabs.js';
 import { stop } from './playback.js';
+import { esc } from '../planets.js';
+// ------------------------------------------------------------ latest wins (PW-1044)
+// Opening a run or world takes several awaits; picking another meanwhile must not let the slower one land last.
+let loadSeq = 0;
+export const beginLoad = () => ++loadSeq;
+const stale = (tok) => tok !== loadSeq;
+// a JSON file the viewer must have, with a plain error when it isn't there (a missing run answers with the
+// server's HTML 404 page, which JSON.parse turned into "Unexpected token '<'")
+export class LoadError extends Error {}
+async function needJSON(url, what) {
+  let r;
+  try { r = await fetch(url, { cache: 'no-cache' }); } catch { throw new LoadError(`The viewer's server did not answer while opening ${what}. Is planet serve still running?`); }
+  if (r.status === 404) throw new LoadError(`There is no ${what}. It may have been deleted, or the link has a typo.`);
+  if (!r.ok) throw new LoadError(`The server could not send ${what} (HTTP ${r.status}).`);
+  try { return await r.json(); } catch { throw new LoadError(`${what[0].toUpperCase() + what.slice(1)} could not be read: its file is damaged or unfinished.`); }
+}
+// The error card (PW-1044): what failed in plain words, with the newest planets and the start page to go on from.
+// Nothing half-built stays behind it, and Delete and the star are off while nothing is open.
+export function loadFailed(err) {
+  console.error(err);
+  const plain = err instanceof LoadError ? err.message : `Something went wrong while opening this: ${err.message}`;
+  let card = $('errCard');
+  if (!card) { card = document.createElement('div'); card.id = 'errCard'; card.className = 'panel'; document.body.append(card); }
+  const recent = [...(S.IDX.runs || []).map((r) => ({ when: r.created, href: `?run=${r.dir}`, label: `${r.name} (${r.phase === 'lineages' ? 'peoples' : r.kind === 'timezoom' ? 'time zoom' : 'run'})` })),
+                  ...(S.IDX.worlds || []).map((w) => ({ when: w.created, href: `?world=${w.file}`, label: `${w.name} (world)` }))]
+    .sort((a, b) => (b.when || '').localeCompare(a.when || '')).slice(0, 5);
+  card.innerHTML = `<h3>Could not open this</h3><p>${esc(plain)}</p>
+    ${recent.length ? `<div class="muted">Newest planets:</div><ul>${recent.map((x) => `<li><a href="${esc(x.href)}">${esc(x.label)}</a></li>`).join('')}</ul>` : ''}
+    <p><a class="btn" href="./">Go to the start page</a></p>`;
+  document.body.classList.add('failed');
+  S.infoHtml = null; $('infoText').textContent = '';
+  for (const id of ['delBtn', 'favBtn']) $(id).disabled = true;
+}
+function loadOk() {
+  document.body.classList.remove('failed');
+  $('errCard')?.remove();
+  $('delBtn').disabled = false;
+}
+// "Loading <layer>…" while a picked layer or overlay is fetched and painted (PW-1044): the button lights at once,
+// the picture follows
+let busyN = 0;
+const nextPaint = () => new Promise((ok) => requestAnimationFrame(() => setTimeout(ok, 0)));
+function busy(on) {
+  busyN = Math.max(0, busyN + (on ? 1 : -1));
+  let el = $('busy');
+  if (!el) { el = document.createElement('div'); el.id = 'busy'; el.setAttribute('role', 'status'); document.body.append(el); }
+  el.textContent = `Loading ${state.layer}…`;
+  document.body.classList.toggle('busy', busyN > 0);
+}
 // ------------------------------------------------------------ loading
 // The legends (rock, Köppen and biome ids -> names and colours) come with every run and world.
 function legendFields(leg) {
@@ -30,12 +79,15 @@ export function hasLayer(k) { return S.V.kind === 'run' ? !!S.V.run.layers[k] : 
 
 // A world file names its grid file ("../grids/L6.json", relative to worlds/),
 // shared with the runs at that level.
-export async function setWorld(w) {
+export async function setWorld(w, tok = beginLoad()) {
+  if (stale(tok)) return;
   stop(); S.picked = null; renderZoomBox();
-  const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
+  const G = typeof w.grid === 'string' ? await needJSON(new URL(w.grid, new URL('../worlds/', location.href)), `the grid of world ${w.id || w.name}`) : w.grid;
+  if (stale(tok)) return;
   const pg = prepareGrid(G);
   // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
   const nm = w.id ? await fetch(`/api/names?world=${w.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;  // (the server's: the owner's names, else the generated; PW-886)
+  if (stale(tok)) return;
   (w.summary?.landmasses || []).forEach((m, i) => { const o = nm?.names?.[i]?.name; if (o) m.name = o; });
   S.lmEdit = -1;
   for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
@@ -46,7 +98,7 @@ export async function setWorld(w) {
   iceBed(S.V.layers);
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
-  navSync();
+  navSync(); loadOk();
   worldAnthroLoad();  // (peoples change the land on a finished world, PW-669)
 }
 
@@ -89,7 +141,7 @@ async function loadNeeded() {
   if (!want.length) return;
   $('tlabel').textContent = `loading ${want.join(', ')}…`;
   await Promise.all(want.map(async (k) => {
-    const p = v.pending[k] ||= fetch(v.base + v.run.layers[k].file, { cache: 'no-store' }).then((r) => {
+    const p = v.pending[k] ||= fetch(v.base + v.run.layers[k].file, { cache: 'no-cache' }).then((r) => {
       if (!r.ok) throw new Error(`${v.run.layers[k].file}: HTTP ${r.status}`);
       return r.arrayBuffer();
     });
@@ -103,8 +155,12 @@ async function loadNeeded() {
 
 // redraw after something that may need more layers (colour layer, overlay ticked)
 export async function refresh(draw) {
-  try { await loadNeeded(); } catch (err) { toast('Load failed: ' + err.message); console.error(err); return; }
-  draw();
+  busy(true);
+  try {
+    await nextPaint();  // (so the pill shows before a long paint)
+    try { await loadNeeded(); } catch (err) { toast(`Could not load that layer (${err.message})`); console.error(err); return; }
+    draw();
+  } finally { busy(false); }
 }
 
 // layer k of frame f in real units (see the encoding above)
@@ -124,10 +180,13 @@ function decodeFrame(k, f) {
 }
 
 export async function loadRun(dir, wantT) {
+  const tok = beginLoad();
   stop(); S.picked = null; renderZoomBox();
   const base = `../runs/${dir}/`;
-  const run = await (await fetch(base + 'run.json', { cache: 'no-store' })).json();
-  const grid = await (await fetch(new URL(run.grid, new URL(base, location.href)))).json();
+  const run = await needJSON(base + 'run.json', `run "${dir}"`);
+  if (stale(tok)) return;
+  const grid = await needJSON(new URL(run.grid, new URL(base, location.href)), `the grid of run "${dir}"`);
+  if (stale(tok)) return;
   const pg = prepareGrid(grid);
   const tz = run.kind === 'timezoom';  // glacial time zoom: time in kyr
   S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, cornerCells: pg.cornerCells,
@@ -142,10 +201,12 @@ export async function loadRun(dir, wantT) {
   S.V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load
   await loadDemes();
+  if (stale(tok)) return;
   await loadNeeded();
+  if (stale(tok)) return;
   setFrame(f, false);
   buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();
-  navSync();
+  navSync(); loadOk();
 }
 
 // A world's volcano table (tectonics.volcanism.COLUMNS) -> [lat, lon, kind, mark]

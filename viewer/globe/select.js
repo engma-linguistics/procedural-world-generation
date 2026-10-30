@@ -7,7 +7,7 @@ import { favKeyOf, worldTitle } from './provenance.js';
 import { canRotate, goToLatLon } from './pick.js';
 import { OVERLAY_IDS, applyProjUrl, setLights } from './map2d.js';
 import { HL_CATS, turnTo } from './highlights.js';
-import { loadRun, setWorld } from './load.js';
+import { LoadError, beginLoad, loadFailed, loadRun, setWorld } from './load.js';
 // ------------------------------------------------------------ index / URL
 export async function loadSelection(value) {
   const [kind, id] = value.split(':');
@@ -16,12 +16,16 @@ export async function loadSelection(value) {
   u.searchParams.set(kind, id); history.replaceState(null, '', u);
   if (kind === 'run') await loadRun(id);
   else {
-    const r = await fetch('../worlds/' + id);
-    if (!r.ok) throw new Error(`${id}: HTTP ${r.status}`);
-    await setWorld(await r.json());
+    const tok = beginLoad();
+    const r = await fetch('../worlds/' + id, { cache: 'no-cache' });
+    const what = `world "${id.replace(/\.json$/, '')}"`;
+    if (r.status === 404) throw new LoadError(`There is no ${what}. It may have been deleted, or the link has a typo.`);
+    if (!r.ok) throw new LoadError(`The server could not send ${what} (HTTP ${r.status}).`);
+    const w = await r.json().catch(() => { throw new LoadError(`The file of ${what} could not be read.`); });
+    await setWorld(w, tok);
   }
 }
-$('worldSel').addEventListener('change', (e) => loadSelection(e.target.value));
+$('worldSel').addEventListener('change', (e) => loadSelection(e.target.value).catch(loadFailed));
 addPickerFilter($('worldSel'), { placeholder: 'filter: run / world id or name' });  // (pickfilter.js, PW-407)
 
 // drag & drop (works even when opened as a plain file://)

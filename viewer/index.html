@@ -127,6 +127,7 @@
     border-radius: 4px; cursor: pointer; font-size: 12px; }
   .btn:hover, .seg button:hover { border-color: var(--accent); }
   .btn:disabled { opacity: .5; cursor: default; }
+  a.btn { display: inline-block; text-decoration: none; }
   /* collapsible sections of the control panel; open/closed is remembered */
   details.sec { margin-top: 8px; }
   details.sec > summary { list-style: none; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
@@ -178,6 +179,19 @@
   /* embedded in the peoples workbench's Technology tab (?embed=tech, PW-913): the globe with its legend, timeline and hover card only */
   body.embed #controls, body.embed #summary, body.embed #tiltInset, body.embed #tabs, body.embed #navBar, body.embed #navTree { display: none !important; }
   body.embed #legend { left: 12px; max-width: calc(100vw - 24px); }
+  /* a load that failed: a plain card instead of half-built panels (PW-1044) */
+  #errCard { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100vw - 32px)); z-index: 30; font-size: 13px; }
+  #errCard h3 { margin: 0 0 6px; font-size: 15px; }
+  #errCard ul { margin: 4px 0 8px; padding-left: 18px; }
+  body.failed #summary, body.failed #legend, body.failed #timeline, body.failed #info, body.failed #c, body.failed #tiltInset { visibility: hidden; }
+  /* a layer being fetched and painted (PW-1044) */
+  #busy { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 25; display: none; pointer-events: none;
+    background: var(--panel); border: 1px solid var(--accent); color: var(--text); border-radius: 14px; padding: 3px 12px 3px 28px; font-size: 12px; }
+  #busy::before { content: ''; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -6px; border: 2px solid var(--accent);
+    border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+  body.busy #busy { display: block; }
+  body.busy #layerSeg button.on { opacity: .6; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   body.embed #timeline { left: 12px; width: calc(100vw - 24px); }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
     #legend { left: 244px; max-width: calc(100vw - 256px); }

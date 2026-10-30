@@ -895,16 +895,14 @@ $('run').onclick = async () => {
   $('run').disabled = true;
   try {
     const r = await fetch('../api/lineages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
-    const j = await r.json();
+    const j = await r.json().catch(() => ({ error: `the server answered HTTP ${r.status}` }));
     if (!r.ok) return status(j.error, true);
-    for (;;) {  // queued on the server's job queue: poll it
-      await new Promise((res) => setTimeout(res, 1500));
-      const s = await (await fetch(`../api/jobs/${j.job}`, { cache: 'no-store' })).json();
-      if (s.status === 'error') return status(s.error, true);
-      if (s.status === 'done') { await listWorlds(); await showResult(s.run); showTab('results'); break; }
-      status(`${s.status}: ${Math.round(100 * (s.progress || 0))}% ${s.message || ''}`);
-    }
-  } finally { $('run').disabled = false; }
+    // queued on the server's job queue: follow it (planets.js trackJob rides out a server restart, PW-1044)
+    const { trackJob } = await import('./planets.js');
+    const s = await trackJob(j.job, (p) => { if (p.status !== 'done' && p.status !== 'error') status(`${p.status}: ${Math.round(100 * (p.progress || 0))}% ${p.message || ''}`); });
+    if (s.status === 'error') return status(s.error, true);
+    await listWorlds(); await showResult(s.run); showTab('results');
+  } catch (err) { status(`the run stopped: ${err.message}`, true); } finally { $('run').disabled = false; }
 };
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();

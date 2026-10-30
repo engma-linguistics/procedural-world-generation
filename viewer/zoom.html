@@ -465,7 +465,9 @@ async function fetchZoom(id) {
   // one file per layer (zooms/<id>/layers/<name>.bin), all small: load them all
   const L = {};
   await Promise.all(Object.entries(meta.layers).map(async ([k, spec]) => {
-    const buf = await (await fetch(base + spec.file, { cache: 'no-store' })).arrayBuffer();
+    const r = await fetch(base + spec.file, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(`layer ${k} of zoom ${id}: HTTP ${r.status}`);  // (never decode an error page as data, PW-1044)
+    const buf = await r.arrayBuffer();
     const raw = new (DECODE[spec.dtype] || Uint8Array)(buf), sc = spec.scale ?? 1, of = spec.offset ?? 0;
     // (scaled layers: real units, store.decode)
     L[k] = sc === 1 && !of ? raw : Float32Array.from(raw, (v) => v * sc + of);
@@ -491,10 +493,14 @@ function withZoom(zd, fn) {
   try { return fn(); } finally { for (const k of ZOOM_KEYS) { zd[k] = state[k]; state[k] = keep[k]; } }
 }
 
+let loadSeq = 0;  // (latest wins: a zoom picked while another loads, PW-1044)
 async function load(id) {
-  $('msg').textContent = 'loading ' + id + '...';
-  const zd = await fetchZoom(id);
-  if (!zd) { $('msg').textContent = `could not read ../zooms/${id}/zoom.json`; return; }
+  const tok = ++loadSeq;
+  $('msg').textContent = 'Loading zoom ' + id + '…';
+  let zd = null, why = 'It may have been deleted, or the link has a typo.';
+  try { zd = await fetchZoom(id); } catch (err) { console.error(err); why = `Part of it could not be read (${err.message}).`; }
+  if (tok !== loadSeq) return;
+  if (!zd) { $('msg').innerHTML = `<b>Could not open zoom ${id}.</b><br>${why}<br>Pick another zoom in the list, or <a href="index.html" target="_top">go to the start page</a>.`; return; }
   for (const k of ZOOM_KEYS) state[k] = zd[k];
   const { meta, L } = zd;
   for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';

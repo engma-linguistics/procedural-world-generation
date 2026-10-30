@@ -48,7 +48,7 @@ import { drawTint } from './provenance.js';
 import { mouse, pickGlobeCell, ray } from './pick.js';
 import { OVERLAY_IDS, reliefLabels } from './map2d.js';
 import { showTab } from './tabs.js';
-import { setFrame } from './load.js';
+import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 // ------------------------------------------------------------ boot
@@ -67,7 +67,7 @@ if (startScreen) {
   navBarHide();
   import('../start.js').then((m) => m.showStart()).then((s) => { if (location.hash === '#new') s.tab('new'); })
     .catch((err) => { console.error(err); document.body.insertAdjacentHTML('beforeend', `<div class="panel" style="top:60px;left:12px">Start screen failed: ${esc(err.message)}</div>`); });
-} else init().catch((err) => { S.infoHtml = null; $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+} else init().catch(loadFailed);  // (a plain error card, PW-1044)
 
 // headless timing (console: planetViewer.bench()): replay keyframes back to back, each
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
