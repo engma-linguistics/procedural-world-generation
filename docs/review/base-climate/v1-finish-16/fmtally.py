@@ -35,7 +35,7 @@ for d in map(Path, sys.argv[1:]):
     for p in sorted(d.glob("seed*_L*.json.gz")):
         raw = C.load(p)
         s = C.series(raw)
-        bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"])
+        bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"], s["star"])
         steps = [r for r in raw["steps"] if r["t"] > 0]
         end = float(steps[-1]["t"])
         level = p.name.split("_")[1].split(".")[0]

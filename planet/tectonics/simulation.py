@@ -68,6 +68,8 @@ class Simulation:
         "sea_cont",  # m: the part of sea_tect from the water the continents hold (earth.continent_water)
         "cont_water_ref",  # m: the sea the start's continents held, over the whole surface (None before the first step)
         "ice",  # m of land ice per cell
+        "ice_warm",  # m: the persistent ice, what outlasts the ice-age cycle's warm phase (earth.update_climate,
+        # PW-1142; None before the first climate update or with Params.ice_warm_persist off)
         "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
@@ -151,6 +153,7 @@ class Simulation:
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
         self.sea_cont, self.cont_water_ref = 0.0, None
         self.ice = np.zeros(n)
+        self.ice_warm = None
         self.ice_sink = np.zeros(n)
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
