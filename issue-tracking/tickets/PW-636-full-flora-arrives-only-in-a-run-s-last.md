@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-634, PW-434]
 refs: [planet/vegetation.py, planet/highlights.py, planet/timeline.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -40,6 +40,7 @@ level is fixed or if late-run geography turns out atypical.
 - [ ] owner picks an option
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/thermostat-1024/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Status todo -> done. Landed in main via thermostat lane 1024 (a99cd2c, merged with fd21d15): FLORA_PACE 0.8; health no signal (12.3 -> 12.0% pooled deep share, 16 seeds).
 - 2026-10-23: Thermostat lane 1024 step 2: fd7c174 re-applied on main + PW-680's fixed bed test. 611 passed; health (16 seeds) pooled deep share 12.3 -> 12.0%, icehouse +1.5 +- 9.3 points paired (no signal); golden regenerated; scorecard Earth 71.1%. Green to merge. docs/review/base-climate/thermostat-1024/.
 - 2026-10-23: Merge lane 1024 step 5: red on test_bed_settles_under_the_ice (47.1 m vs 46.2 m tolerance, one world, both re-rolled draws); not merged, held on PW-680. Branch worktree-agent-a7d7d62cbdfbcd691 kept.

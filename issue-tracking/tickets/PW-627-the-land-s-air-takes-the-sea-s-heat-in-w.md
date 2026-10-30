@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-595, PW-593, PW-594, PW-578, PW-592]
 refs: [planet/climate.py, docs/review/base-climate/laneA17/step2_stable_summer.diff, docs/review/base-climate/laneA17/bars.md, docs/review/base-climate/stages.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -65,6 +65,7 @@ Options:
 - [ ] the endings test crossed (`laneA16/xzoom.sh`) on step 2's climate
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/merge-1024/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): merged in main (merge lane 1024); decided by merging under the owner's mechanism rule.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Merge lane 1024, step 4: the diff on main + A22/A23 + A20, A17's change lines exactly (A20's PW-633 shelf_probe left out). Tests green on three draws. Earth L6: rain log-r 0.649, SH coastal 12.2, W Europe warmest -1.4 (from -0.4 on shelf air), North Sea annual SST 8.5 to 7.9. Health pooled keyframes below -150 m: 7.6 to 4.4% (defaults), 7.3 to 20.1% (101-108); old ice bar fails 2 to 3 of 16. Deeper icehouses, recorded on PW-653. docs/review/base-climate/merge-1024/.

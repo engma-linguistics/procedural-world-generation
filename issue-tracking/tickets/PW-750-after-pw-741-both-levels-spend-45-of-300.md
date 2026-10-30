@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-741, PW-368, PW-558, PW-564, PW-611]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-5/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -36,6 +36,7 @@ Options (owner's call; not a resolution question any more):
 No per-level factor needed: the levels agree.
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/v1-finish-6/ in cleanup; last present at 9861e2df.
 - 2026-10-24: Status needs-decision -> done. Measured in v1-finish-6: B and D don't reach the bar; continues on PW-761.
 - 2026-10-24: Lane v1-finish-6 (docs/review/base-climate/v1-finish-6/): measured at L6 on the same 18 seed-draws. B (drift 2 C) 9/18 pass, median 46%, more deep ice (17% vs 12%); D (source reference = its causal running mean) 8/18, 46%: the 200-300 Myr reference is only ~4% above the long run, no causal D warms; D+B 7/18; probe +1.5 C 10/18 (36%, early 2% late 54%); C (star +0.9%/100 Myr, measurement) 17/18 but 16 never-ice, dT +7.4. None reaches ~70%; nothing merged, showcase not remade. Gap is the late weatherability trend (PW-708). Decision draft: draft-icehouse-bar-late-trend-after-pw750.md (lean: accept for v1, do not apply B).
 - 2026-10-24: Coordinator (geophysics delegated): measure B (drift 3->2 C, already decided on PW-240) first at L6 multi-seed, then D if short; owner signs off v1 on the outcome.

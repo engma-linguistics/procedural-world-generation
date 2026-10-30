@@ -17,13 +17,13 @@ Code map by file: [overview section 6](../overview.md). This page is the operati
 ## Docs
 - `docs/overview.md`: how it works. `docs/coordination.md`: worktrees, merging, costs, recipes. `docs/plan_next.md`: roadmap pointer.
 - `docs/proposals/`: design write-ups (lineages, resources, soils, vegetation, culinary-dnd intake).
-- `docs/review/`: investigations kept for open tickets and the images the overview links; subfolders audit/, base-climate/, ice-v2/, health*/, lineages/ (with briefs/), screens/. Cleanup log: [cleanup-2026-10-23.md](../cleanup-2026-10-23.md).
+- `docs/review/`: lane evidence, under `docs/review/<topic>/`, kept only while an open ticket, a core doc or code points at it; deleted when its tickets close (the history has it). `board.py review` lists what keeps each file; `board.py check` warns about the rest. Rule: [coordination.md](../coordination.md), "docs/review retention".
 - `docs/scorecard.jsonl`: scorecard history (written by `tools/scorecard.py`).
 - `docs/wiki/`: this folder.
 
 ## Tools and checks
 - `tools/scorecard.py` (~11 min; after model changes), `tools/earth_check.py` (after climate changes), `tools/health.py` (multi-seed sweep; `--quick` ~6 min), `tools/cleanup_outputs.py`.
-- Tests: `uv run pytest -q` (~5 min; `-m 'not slow'`), goldens in `tests/golden/`.
+- Tests: lanes run `uv run pytest -q -m 'not slow'`; the full `uv run pytest -q` (13–22 min under load) runs at merge. Goldens in `tests/golden/`.
 
 ## Server
 - `planet serve --no-open` on port **8765**, viewer at http://127.0.0.1:8765/viewer/. Restart only after `planet/server.py` or `planet/api.py` change; recipe in [coordination.md](../coordination.md). Subagents never touch it.

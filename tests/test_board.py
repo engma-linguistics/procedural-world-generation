@@ -317,3 +317,30 @@ def test_check_wiki_links_ids_and_staleness(tmp_path, capsys):
     assert check(root) == 1
     out = capsys.readouterr().out
     assert "broken link ../nope.md" in out and "no such file docs/gone.md" in out and "unknown ticket PW-999" in out
+
+
+def test_review_retention_warns_on_orphans(tmp_path, capsys):
+    """docs/review files stay while an open ticket, a core doc, code or a kept review page names them;
+    the rest are listed as a warning (closed tickets keep nothing)."""
+    repo = tmp_path / "repo"
+    root = repo / "issue-tracking"
+    (root / "tickets").mkdir(parents=True)
+    (root / "inbox").mkdir()
+    rev = repo / "docs" / "review"
+    for f in ("a/README.md", "a/fig.png", "a/probe.py", "b/old.txt", "c/x.txt", "d/y.txt", "e/z.txt", "e/w.txt"):
+        (rev / f).parent.mkdir(parents=True, exist_ok=True)
+        (rev / f).write_text("")
+    (rev / "a" / "README.md").write_text("![](fig.png) Run `probe.py`.")
+    (repo / "docs" / "plan.md").write_text("Stages: `docs/review/c/x.txt`.")
+    (repo / "tools").mkdir()
+    (repo / "tools" / "t.py").write_text('P = "docs/review/d/y.txt"')
+    new(root, "Open", "s", "med", "zoom", "--ref", "docs/review/a/README.md", "--desc", "Also e/w.txt and docs/review/*.")
+    new(root, "Closed", "s", "med", "zoom", "--ref", "docs/review/b/", "--status", "done")
+    files, refs = board.review_index(board.Board(root), tickets(root))
+    keep = {f for f in files if any(not s.startswith("closed:") for s in refs[f])}
+    assert keep == {f"docs/review/{f}" for f in ("a/README.md", "a/fig.png", "a/probe.py", "c/x.txt", "d/y.txt", "e/w.txt")}
+    assert refs["docs/review/b/old.txt"] == {"closed:PW-002"}
+    capsys.readouterr()
+    assert check(root) == 0  # a warning, not a failure
+    out = capsys.readouterr().out
+    assert "warning: 2 docs/review files" in out and "docs/review/b/old.txt" in out and "docs/review/e/z.txt" in out

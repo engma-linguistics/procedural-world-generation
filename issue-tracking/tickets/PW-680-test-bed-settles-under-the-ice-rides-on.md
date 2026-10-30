@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-636, PW-623, PW-638, PW-640, PW-643]
 refs: [tests/test_timezoom.py, tests/seeds.py, docs/review/base-climate/merge-1024/]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-29
 ---
 
 ## Description
@@ -36,5 +36,6 @@ Options:
 - [x] A / B / C (C: the lag term fixed)
 
 ## Updates
+- 2026-10-29: Removed docs/review/base-climate/merge-1024/, docs/review/base-climate/thermostat-1024/ in cleanup; last present at 9861e2df.
 - 2026-10-23: Thermostat lane 1024, option C: the lag term was the wrong quantity. It counted the sheet's net volume change over the last iso_tau; the bed lags each cell's own load (replayed relaxation matches bed - want to 0.7 m). On PW-636's sim4 the volume is flat but the cells' load moved a median 32 m, so 47.1 m against 46.2. Fixed in the test: the lag is each grown cell's own load change over the last iso_tau (median); 5% dip, 20 m and the other assertions unchanged. Seeds 1-24 x 3 draws, main and PW-636: new 143/144 pass (the miss is the pressed-down assertion), old 139/144; both isostasy breaks caught on 23-24 of 24. Also found: sim4's world depends on the per-checkout mantle basis cache (draft-mantle-basis-cache-picks-the-world). docs/review/base-climate/thermostat-1024/.
 - 2026-10-23: Created from inbox draft draft-bed-settles-single-world.md (found by merge-1024).

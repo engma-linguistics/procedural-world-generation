@@ -11,7 +11,7 @@ impact: low
 found_by: fun-lane-22
 blocked_by: []
 relates: [PW-794, PW-793]
-refs: [planet/lineages/animals.py, "run 9a2aae"]
+refs: [planet/lineages/animals.py, "run 9a2aae", docs/review/lineages/showcase-peoples/README.md]
 created: 2026-10-24
 updated: 2026-10-26
 ---

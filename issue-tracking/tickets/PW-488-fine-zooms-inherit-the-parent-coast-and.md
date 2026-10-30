@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-392, PW-129]
 refs: [planet/zoom_fine.py, "zoom a0097b in 3ac681"]
 created: 2026-10-20
-updated: 2026-10-21
+updated: 2026-10-29
 ---
 
 ## Description
@@ -21,5 +21,6 @@ Seen on a0097b (100 m in 3ac681, 1 km): the large ring of islands round the lago
 - [ ] a fine zoom's coast without the parent's pixel staircase; each parent pixel's land share kept
 
 ## Updates
+- 2026-10-29: Removed tools/coast_view.py (the PNG dump used while fixing this) in cleanup; last present at aae96637.
 - 2026-10-20: Created from inbox draft draft-fine-zoom-parent-coast-steps.md (found by pw392-fine-forms).
 - 2026-10-21: Done. Fine zoom shore = parent ground sampled through a fractal displacement near the coast (zoom_fine.COAST_PX 0.38 parent px). Straight-run share of coast 0.13 to 0.02 (Norway, 100 m), 0.21 to 0.015 (tropical, 50 m); land area within 0.5 percent. Zooms 24584e, 1b331e. tools/coast_steps.py measures it.

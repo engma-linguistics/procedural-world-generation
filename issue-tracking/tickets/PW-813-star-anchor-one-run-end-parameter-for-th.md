@@ -11,9 +11,9 @@ impact: med
 found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-807, PW-557]
-refs: [planet/tectonics/params.py, planet/timeline.py, tests/helpers.py, tools/scorecard.py, tools/ice_diag.py, tools/sealevel.py, tools/supercontinent.py, docs/review/base-climate/star-anchor-audit/]
+refs: [planet/tectonics/params.py, planet/timeline.py, tests/helpers.py, tools/scorecard.py, tools/ice_diag.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 ## Description
@@ -44,5 +44,6 @@ re-anchoring would change the run's past.
 - [ ] PW-557 note added on intake
 
 ## Updates
+- 2026-10-29: Removed tools/sealevel.py and tools/supercontinent.py in cleanup; last present at aae96637. Their channels moved into tools/ice_diag.py --tect, which sets run_end = --myr, so that item is gone.
 - 2026-10-24: v1-finish-10: done in the branch. params.run_end (0: the run's length, set by timeline.simulate; earth.now_myr the one reader, RUN_END_DEFAULT 1000 for direct callers) replaces flora_end for star and flora, stored in run meta params; check_star refuses runs longer than the star's age; direct callers (tests/helpers, scorecard, ice_diag, health, test_store) set it. PW-557 note: an extension keeps run_end (the extra time is star_now_offset_myr's future). docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-run-end-param-star-and-flora.md (found by star-anchor-audit).
