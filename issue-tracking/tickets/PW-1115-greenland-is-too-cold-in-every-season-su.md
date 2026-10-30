@@ -1,4 +1,5 @@
 ---
+id: PW-1115
 title: "Greenland is too cold in every season (Summit 8 C too cold in summer, 16 C in winter): a diagnosis"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane57
 blocked_by: []
 relates: [PW-1095, PW-1050, PW-039]
 refs: [tools/earth_check.py, planet/climate.py, planet/icemass.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -37,3 +40,6 @@ North Atlantic or Baffin Bay, the sea ice around Greenland in winter, or the car
 1000 km) on a sheet ~1000 km wide. Earth is a plausibility anchor here, not a target.
 - [ ] Written split of Summit's and the region's summer and winter error into the parts above
 - [ ] A physical candidate (or a "leave it" with the reason), sent to the coordinator before any change
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-greenland-all-season-cold-bias.md (found by lane57).
