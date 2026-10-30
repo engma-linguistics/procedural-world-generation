@@ -1,8 +1,10 @@
 ---
+id: PW-1130
 title: "Settlement size bands: verify village and town sizes (Fletcher 1995) and check the first cities against Earth"
 type: task
 status: todo
 parent: PW-1011
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-66
 blocked_by: []
 relates: [PW-1114]
 refs: [planet/lineages/settlements.py, docs/references/papers-ask-p1-p2.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -18,3 +22,6 @@ In plain words. Fun lane 66 made village, town and city sizes follow what each p
 Also: after the tech-tree rework (main 644ac30c) some peoples learn 'cities' early, and on lane 61's four runs the biggest chief place 8 to 12.5 kyr ago is up to ~23,000 people (Reba's first cities are ~5.7 kyr ago, 10,000 to 40,000). Earth is a check, not a target, so this is only worth a look if it shows in the viewer.
 - [ ] town and village bands checked against Fletcher 1995
 - [ ] early-city sizes judged (keep, or tie CITY_CAP's first stage lower)
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-settlement-bands-fletcher-and-early-cities.md (found by fun-lane-66).

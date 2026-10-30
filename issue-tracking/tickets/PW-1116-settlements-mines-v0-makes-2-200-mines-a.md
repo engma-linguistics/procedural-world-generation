@@ -33,4 +33,5 @@ Options:
 Lean: B + C, so mines read as a dwarf and kobold thing as well as a human industry.
 
 ## Updates
+- 2026-10-30: Owner 10-30: humans as nearly the only miners feels weird; dwarves, kobolds, orcs and similar should do their share (aarakocra less so). Literature search or think it through.
 - 2026-10-30: Created from inbox draft draft-settlements-mines-count.md (found by fun-lane-61).

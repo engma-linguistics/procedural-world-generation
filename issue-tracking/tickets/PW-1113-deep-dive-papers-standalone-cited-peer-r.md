@@ -29,6 +29,7 @@ Each paper follows the same bar:
 The owner picks the next topic; the candidates are listed on the owner's desk page.
 
 ## Updates
+- 2026-10-30: Owner 10-30: whole books (Binford 2001, Fletcher 1995) are out of reach; at most a few page photos from a library trip. Rely on open-access sources and open datasets.
 - 2026-10-30: P2/P1 ask list for the owner: docs/references/papers-ask-p1-p2.md (verified online 10-30).
 - 2026-10-30: Owner 10-30: P2 (how many people the land feeds) first; start each paper by asking the owner for specific papers after searching. P1 needs no paper: code best knowledge into PW-1114 and find one source to settle it. P4 becomes a tech catalogue (one agent per track, best-knowledge dates) then a source hunt; papers are for things that need simulating (megafauna, ice ages, tectonics).
 - 2026-10-30: Created from inbox draft draft-epic-deep-dive-papers.md (found by owner).

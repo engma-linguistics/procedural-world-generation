@@ -25,4 +25,5 @@ On the 18 L6 draws of the D arm (roll 0.001) it flags 14, with frozen over 3, be
 - [ ] Verify Earth's LGM land-ice share from a source and note it in the glossary
 
 ## Updates
+- 2026-10-30: Owner 10-30: 25% is a good placeholder; a literature search should confirm it.
 - 2026-10-30: Created from inbox draft draft-glacial-maximum-threshold.md (found by lane65).
