@@ -113,11 +113,21 @@ CONST = {
     "MINE_KIND": 0.8,       # a mining affinity (MINING_TRAIT) from this is a mining kind (miner or subterranean: dwarves, kobolds,
                             # gnomes): it mines for its own sake, at once, and sends colonies
     "COLONY_KM": 300.0,     # a mining kind works the rich districts this far from its own country as a colony of incomers (mining.COLONY_KM, PW-854)
-    "COLONY_ORE": 0.5,      # ... an ore district this rich (the best ore good; mining.ORE_MIN: rich-only, 0.75, gave dwarves 0-5 colonies a run)
+    # PW-1146 (owner D18, option 3): small local pits on ordinary ore. A district is a rich seam (raw ore >= mining.ORE_MIN, one per ring);
+    # a pit is a village's own copper or iron pit on ordinary ore (raw >= PIT_ORE, the old 0.5), opened by the lead people where it
+    # smelts the metal and has the same need rule as a mine (farmers and herders, a market within two rings, a mining kind, exposure;
+    # a mining kind at once, so its pits come first and near home). Denser than districts: the lower ore bar admits ~5x the cells, and
+    # one pit per cell stands where the cell feeds it (PIT_SHARE of its people; PIT_FOUND), or one per ring of PIT_RINGS (0: every cell).
+    "PIT_SHARE": 0.002,     # a pit's people: this share of its cell's people (a quarter or a half of a mine's) (judgement)
+    "PIT_FOUND": 25,        # people: a pit is opened where its target holds this many (a mine: FOUND 300), for FOUND_STEPS running ...
+    "PIT_ABANDON": 10,      # ... and is given up under this
+    "PIT_RINGS": 1,         # 0: a pit in every eligible cell (2500 a run, ~17x the districts: too many); 1: only the best of a cell and its ring of 1 (~7x the districts)
+    "COLONY_ORE": 0.75,     # ... an ore district this rich (the raw best ore good; PW-1146: districts are now >= mining.ORE_MIN = 0.75, so this is no stricter)
 }
 TIERS = ("none", "village", "town", "city")
 STAGES = ("nothing", "villages", "towns", "cities", "cities and roads")  # (PW-1114: what the holding people knows sets the size classes)
-KINDS = ("chief", "minority", "mine")
+PIT_ORE = 0.5  # a raw ore good from this, and under mining.ORE_MIN, is ordinary ore a village can dig (the old 'ore country')
+KINDS = ("chief", "minority", "mine", "pit")
 MERGED = "merged into the main place"  # (a minority's place whose people came to lead its cell: gone, but not a ruin)  # a cell's chief place, a second people's own place, a mine
 TECH = ("villages", "towns", "cities")
 NONE = 255
@@ -202,7 +212,8 @@ ORE_NAMES = {"gold": "gold", "iron": "iron", "copper": "copper", "tin": "tin", "
 def _deposits(world: str | None, n: int) -> dict:
     """{"dep": (2, cells) an ore district, a rock-salt bed worth working (mining.ORE_MIN, SALT_MIN); "ore": (cells,) the best ore
     good (0..1); "name": cell -> what the district is worked for ('copper and gold', 'rock salt')}, from the world's goods."""
-    out = {"dep": np.zeros((2, n), bool), "ore": np.zeros(n), "G": None}
+    out = {"dep": np.zeros((2, n), bool), "ore": np.zeros(n), "G": None, "pit": np.zeros(n, bool), "pit_iron": np.zeros(n, bool),
+           "pit_name": np.full(n, "ore")}
     if not world:
         return out
     from . import land as LD
@@ -215,6 +226,15 @@ def _deposits(world: str | None, n: int) -> dict:
         return out
     ore = MN.ore_cells(G)
     out.update(dep=np.stack([ore >= MN.ORE_MIN, MN.salt_cells(G) >= MN.SALT_MIN]), ore=ore, G=G)
+    # ordinary ore (PW-1146): raw best ore from PIT_ORE up to the districts' bar; named for its best named ore good ('metal ore': none)
+    named = [k for k in MN.ORE_GOODS if k in G and k != "metal"]
+    if named:
+        vals = np.stack([MN.ore_good(G, k) for k in named])
+        best = vals.argmax(0)
+        out["pit"] = (ore >= PIT_ORE) & (ore < MN.ORE_MIN)
+        out["pit_name"] = np.where(vals.max(0) >= PIT_ORE, np.array([ORE_NAMES[k] for k in named])[best], "metal ore")
+        out["pit_iron"] = np.array(named)[best] == "iron"
+        out["pit_iron"] &= vals.max(0) >= PIT_ORE
     return out
 
 
@@ -225,8 +245,8 @@ def district_name(D: dict, cell: int) -> str:
     G = D["G"]
     if G is None:
         return "ore"
-    got = sorted(((float(np.asarray(G[k])[cell]), ORE_NAMES[k]) for k in MN.ORE_GOODS if k in G and k != "metal"
-                  and float(np.asarray(G[k])[cell]) >= MN.ORE_MIN), reverse=True)[:2]
+    got = sorted(((float(MN.ore_good(G, k)[cell]), ORE_NAMES[k]) for k in MN.ORE_GOODS if k in G and k != "metal"
+                  and float(MN.ore_good(G, k)[cell]) >= MN.ORE_MIN), reverse=True)[:2]
     if got:
         return " and ".join(n for _, n in got)
     if D["dep"][0, cell]:
@@ -364,13 +384,13 @@ def derive(run_dir: Path, **over) -> dict:
     sites: list[dict] = []
     # three slots per cell (KINDS): the chief place, a second people's own place, a mine; each with its live site, its
     # founding streak, its low streak and its last site (the ruin a new one is founded on)
-    active = np.full((3, n), -1, np.int64)
-    streak = np.zeros((3, n), np.int64)
-    low = np.zeros((3, n), np.int64)
-    last_site = np.full((3, n), -1, np.int64)
-    line_of = np.full((3, n), NONE, np.int64)  # (the line a minority's place belongs to)
+    active = np.full((4, n), -1, np.int64)
+    streak = np.zeros((4, n), np.int64)
+    low = np.zeros((4, n), np.int64)
+    last_site = np.full((4, n), -1, np.int64)
+    line_of = np.full((4, n), NONE, np.int64)  # (the line a minority's place belongs to)
     seed = int(m.get("try_seed") or 0)
-    rngs = (rng, np.random.default_rng((seed, 1105)), np.random.default_rng((seed, 1105, 2)))  # (the chief places' draws as before)
+    rngs = (rng, np.random.default_rng((seed, 1105)), np.random.default_rng((seed, 1105, 2)), np.random.default_rng((seed, 1105, 3)))  # (the chief places' draws as before)
     lead_since = np.full(n, np.inf)  # kyr ago the cell's lead line last changed
     cand_run = np.zeros(n, np.int64)  # steps the cell's second people has been the same one (PW-1117)
     prev_cand = np.full(n, NONE, np.int64)
@@ -388,10 +408,13 @@ def derive(run_dir: Path, **over) -> dict:
     mines_any = np.r_[_known_dates(m, nl, "mines"), -1.0]  # (anyone's 'mines')
     roads_x = np.r_[_known_dates(m, nl, "roads"), -1.0]
     copper_any = np.r_[_known_dates(m, nl, "copper"), -1.0]
+    iron_any = np.r_[_known_dates(m, nl, "iron"), -1.0]
     miner_line = np.r_[_miner_lines(m, nl), False]
     affinity = np.r_[_mining_affinity(m, nl), 0.0]
     D = _deposits(m.get("world"), n)
     deposit = D["dep"]
+    for k_, v_ in (("pit", np.zeros(n, bool)), ("pit_iron", np.zeros(n, bool)), ("pit_name", np.full(n, "ore"))):
+        D.setdefault(k_, v_)
     # D12: mining follows need. A mining kind (MINE_KIND) mines for its own sake; any other people waits a seeded lag after its
     # copper smelting before it opens ore mines on its own initiative (MINE_LAG_KYR), and needs farmers and herders, a market or
     # a neighbouring mine (exposure)
@@ -545,8 +568,8 @@ def derive(run_dir: Path, **over) -> dict:
         # (PW-1117) a second people must have been the cell's second people for MINORITY_STEPS before it founds a place
         cand_run = np.where(cand != NONE, np.where(cand == prev_cand, cand_run + 1, 1), 0)
         prev_cand = cand.copy()
-        ready = (np.ones(n, bool), cand_run >= c["MINORITY_STEPS"], np.ones(n, bool))
-        stages = (stage0, stage1, None)
+        ready = (np.ones(n, bool), cand_run >= c["MINORITY_STEPS"], np.ones(n, bool), np.ones(n, bool))
+        stages = (stage0, stage1, None, None)
 
         # a mine (owner 10-30): a cell with an ore or rock-salt deposit, worked by its lead people if it knows 'mines', else
         # by its second people; MINE_SHARE of the cell's people (the miners and those who feed them). D12: only where it is
@@ -589,14 +612,24 @@ def derive(run_dir: Path, **over) -> dict:
         mscore = want * tieb
         target2 = np.where(mscore >= mscore[R1].max(1) - 1e-9, want, 0.0)
 
-        for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm)):
+        # a pit (PW-1146): ordinary ore, dug by the lead people where it smelts that metal (iron: iron) and wants it, as a mine
+        pit_ok = (D["pit"] & has & (lead != NONE) & e["land"]
+                  & (np.where(D["pit_iron"], iron_any[np.minimum(lead, nl)], copper_any[np.minimum(lead, nl)]) >= ago - 1e-9)
+                  & (kind_x[np.minimum(lead, nl)] | (want_ & (ore_from[np.minimum(lead, nl)] >= ago - 1e-9)) | exposed))
+        pwant = np.where(pit_ok, c["PIT_SHARE"] * (0.5 + affinity[np.minimum(lead, nl)]) * dens * area, 0.0)
+        pscore = pwant * tieb
+        target3 = pwant if c["PIT_RINGS"] <= 0 else np.where(pscore >= pscore[R1].max(1) - 1e-9, pwant, 0.0)
+        pl = np.where(pit_ok, lead, NONE)
+
+        for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm), (3, target3, pl)):
             r_ = rngs[k]
             free = active[k] < 0
-            streak[k] = np.where(free & (tgt >= c["FOUND"]) & ready[k], streak[k] + 1, 0)
+            fnd, aban = (c["PIT_FOUND"], c["PIT_ABANDON"]) if k == 3 else (c["FOUND"], c["ABANDON"])
+            streak[k] = np.where(free & (tgt >= fnd) & ready[k], streak[k] + 1, 0)
             for cell in np.flatnonzero(free & (streak[k] >= c["FOUND_STEPS"]) & (hl != NONE)).tolist():
                 h = people_of[int(hl[cell])]
                 la2, lo2 = spot(k, cell, e)
-                pop = float(max(c["FOUND"], min(tgt[cell], c["FOUND"] * 2)))
+                pop = float(max(fnd, min(tgt[cell], fnd * 2)))
                 s = {"id": len(sites), "kind": KINDS[k], "cell": cell, "lat": la2, "lon": lo2, "founded_kyr": float(ago), "founded_by": h,
                      "holder": h, "holders": [[float(ago), h]], "abandoned_kyr": None, "why": None,
                      "ruin_of": int(last_site[k, cell]) if last_site[k, cell] >= 0 else None, "resettled_as": None,
@@ -608,6 +641,8 @@ def derive(run_dir: Path, **over) -> dict:
                 if s["ruin_of"] is not None:
                     sites[s["ruin_of"]]["resettled_as"] = s["id"]
                 s["_peak_who"] = who(cell, s["tier"], e, dens, ago) if k == 0 else ({h: 100}, [])
+                if k == 3:  # (a pit: what it digs)
+                    s["district"], s["colony"] = D["pit_name"][cell], False
                 if k == 2:  # (the district it works; a colony: worked by incomers, its people neither leads nor is second here)
                     s["district"] = district_name(D, cell) if ore_m[cell] else "rock salt"
                     s["colony"] = bool(take_col[cell])
@@ -642,7 +677,7 @@ def derive(run_dir: Path, **over) -> dict:
                         s["tier_pk"] = s["tier"]
                 if s["pop"] > s["peak_pop"]:
                     s["peak_pop"], s["peak_kyr"] = s["pop"], float(ago)
-                low[k, cell] = low[k, cell] + 1 if tgt[cell] < c["ABANDON"] else 0
+                low[k, cell] = low[k, cell] + 1 if tgt[cell] < aban else 0
                 why = None
                 if e["sea"][cell]:
                     why = "the sea rose over it"
@@ -692,15 +727,15 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
         if len(ser) > c["SERIES_KEEP"]:
             keep = np.unique(np.r_[np.linspace(0, len(ser) - 1, c["SERIES_KEEP"]).round().astype(int), int(np.argmax([p for _, p in ser]))])
             ser = [ser[i] for i in keep]
-        mine = s["kind"] == "mine"
+        mine = s["kind"] in ("mine", "pit")  # (the two small-works kinds: no town sizes)
         rec = {"id": s["id"], "kind": s["kind"], "cell": s["cell"], "lat": s["lat"], "lon": s["lon"], "place": place,
-               "tier_peak": "mine" if mine else TIERS[max(tier_peak, 1)], "tier_now": ("mine" if mine else TIERS[tier_now]) if alive else "merged" if s["why"] == MERGED else "ruin",
+               "tier_peak": s["kind"] if mine else TIERS[max(tier_peak, 1)], "tier_now": (s["kind"] if mine else TIERS[tier_now]) if alive else "merged" if s["why"] == MERGED else "ruin",
                "founded_kyr": round(s["founded_kyr"], 3), "founded_by": s["founded_by"], "holder": s["holder"],
                "holders": [[round(a, 3), h] for a, h in s["holders"]], "abandoned_kyr": None if alive else round(s["abandoned_kyr"], 3),
                "why": s["why"], "ruin_of": s["ruin_of"], "resettled_as": s["resettled_as"],
                "pop_now": round(s["pop"]) if alive else 0, "peak_pop": round(s["peak_pop"]), "peak_kyr": round(s["peak_kyr"], 3),
                "who": who, "who_when": "now" if alive else "at its height", "quarters": quarters, "series": ser,
-               "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if s["kind"] != "mine" else []}
+               "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if not mine else []}
         if mine:  # (D12: what the district is worked for, and whether by a colony of incomers)
             rec["district"], rec["colony"] = s.get("district"), bool(s.get("colony"))
         out.append(rec)
@@ -708,7 +743,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
             if p is None:
                 continue
             b = by_people.setdefault(p, {"founded": 0, "alive": 0, "ruins": 0, "towns_now": 0, "cities_now": 0, "cities_ever": 0, "largest_now": 0,
-                                         "villages_now": 0, "own_places_now": 0, "mines_now": 0, "colonies_now": 0, "taken_now": 0})
+                                         "villages_now": 0, "own_places_now": 0, "mines_now": 0, "pits_now": 0, "colonies_now": 0, "taken_now": 0})
             b[key] += 1
         b = by_people[s["founded_by"]]
         if not alive and s["why"] != MERGED:
@@ -717,7 +752,8 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
         if alive:
             bh = by_people[s["holder"]]
             bh["own_places_now"] += s["kind"] == "minority"
-            bh["mines_now"] += mine
+            bh["mines_now"] += s["kind"] == "mine"
+            bh["pits_now"] += s["kind"] == "pit"
             bh["colonies_now"] += mine and bool(s.get("colony"))
             if mine:
                 continue
@@ -738,7 +774,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
            "sites": out}
     summary = {"file": "settlements.json", "founded": len(out), "alive": len(alive), "ruins": sum(r["tier_now"] == "ruin" for r in out), "merged": sum(r["tier_now"] == "merged" for r in out),
                "resettled": sum(r["ruin_of"] is not None for r in out),
-               "now": {t: sum(r["tier_now"] == t for r in alive) for t in (*TIERS[1:], "mine")},
+               "now": {t: sum(r["tier_now"] == t for r in alive) for t in (*TIERS[1:], "mine", "pit")},
                "minority_now": sum(r["kind"] == "minority" for r in alive),
                "colonies_now": sum(bool(r.get("colony")) for r in alive),
                "why": whys, "people_in_places_now": int(sum(r["pop_now"] for r in alive)),
@@ -766,13 +802,13 @@ def write(run_dir: Path, report: bool = True, **over) -> dict:
 
 def lines_for_report(sm: dict, doc: dict) -> list[str]:
     L = ["", f"## Settlements (PW-1011 v0): since {sm['from_kyr']:g} kyr ago, {sm['founded']} founded, {sm['alive']} alive now "
-             f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mining districts, {sm.get('colonies_now', 0)} of them colonies; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
+             f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mining districts, {sm['now']['pit']} local pits, {sm.get('colonies_now', 0)} of them colonies; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
              f"{sm['resettled']} on older ruins; {sm['people_in_places_now']:,} people in them now ({sm['generated_in_s']} s)",
          "  why abandoned: " + (", ".join(f"{k} {v}" for k, v in sorted(sm["why"].items(), key=lambda kv: -kv[1])) or "none")]
     for p, b in sm["by_people"].items():
         L.append(f"  {p:<16} founded {b['founded']:>4}, alive {b['alive']:>4} ({b['towns_now']} towns, {b['cities_now']} cities; "
-                 f"largest {b['largest_now']:,}; {b['own_places_now']} own places among others, {b['mines_now']} mining districts, {b.get('colonies_now', 0)} colonies), ruins {b['ruins']:>4}, cities ever {b['cities_ever']}")
-    big = sorted((r for r in doc["sites"] if r["abandoned_kyr"] is None and r["kind"] != "mine"), key=lambda r: -r["pop_now"])[:8]
+                 f"largest {b['largest_now']:,}; {b['own_places_now']} own places among others, {b['mines_now']} mining districts, {b.get('pits_now', 0)} pits, {b.get('colonies_now', 0)} colonies), ruins {b['ruins']:>4}, cities ever {b['cities_ever']}")
+    big = sorted((r for r in doc["sites"] if r["abandoned_kyr"] is None and r["kind"] not in ("mine", "pit")), key=lambda r: -r["pop_now"])[:8]
     L.append("  -- the largest now")
     L += [f"  {r['tier_now']} of the {r['holder']}, {r['place'] or '?'}: {r['pop_now']:,}, since {r['founded_kyr']:g} kyr; "
           + ", ".join(f"{k} {v}%" for k, v in r["who"].items()) + ("; quarters " + ", ".join(f"{q['group']} {q['pct']}%" for q in r["quarters"]) if r["quarters"] else "")

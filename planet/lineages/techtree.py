@@ -211,7 +211,7 @@ def goods_held(T: dict, present: np.ndarray | None, goods: dict | None, k: int) 
         a = np.asarray(v, float)
         if a.shape[0] != sel.shape[0]:
             continue
-        if g in DEPOSITS:  # (a deposit is a point: a district, mining.ORE_MIN, in a few of the people's cells will do)
+        if g in DEPOSITS:  # (a deposit is a point: ore-bearing country, the reach good at deposit_min, in a few of the people's cells will do; PW-1146: not the mines' rich-district test, mining.ORE_MIN 0.75 raw, which would take iron from every people)
             if int((a[sel] >= d["deposit_min"]).sum()) >= max(2, d["deposit_share"] * sel.sum()):
                 out.add(g)
         elif float((a[sel] >= d["env_min"]).mean()) >= d["env_share"]:
