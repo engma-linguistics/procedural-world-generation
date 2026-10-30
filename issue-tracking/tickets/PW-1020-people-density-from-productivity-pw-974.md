@@ -2,7 +2,7 @@
 id: PW-1020
 title: "People density from productivity (PW-974): judgement calls in the form of f - linear, absolute, farmers exempt, deep epoch flat"
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-974, PW-833, PW-964]
 refs: [planet/lineages/prey.py, planet/lineages/history/model.py, docs/review/megafauna/people_density.py]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 ## Description
@@ -42,4 +42,5 @@ Options:
 Lean: A. B is a small follow-up if the owner wants farmers to track productivity too.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> todo. Owner 10-30 D8: B (farmers follow land productivity too) first, with a smidge of C (a concave f so poor land isn't empty: humans live nearly anywhere); fold the evidence into paper P2.
 - 2026-10-29: Created from inbox draft draft-people-density-productivity-form.md (found by fun-lane-45b).

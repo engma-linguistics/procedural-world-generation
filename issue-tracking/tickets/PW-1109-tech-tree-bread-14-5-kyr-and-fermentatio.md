@@ -2,7 +2,7 @@
 id: PW-1109
 title: "Tech tree: bread (14.5 kyr) and fermentation (13 kyr) also miss the late-chain rate floor (late_kyr = 12), as villages did"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -31,4 +31,5 @@ Options:
 Lean: C, but it shifts the dates of every people's bread and beer, so it is a call for the owner.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> wontdo. Owner 10-30: tech tree is a placeholder; superseded by the tech rework (catalogue + inventiveness model).
 - 2026-10-30: Created from inbox draft draft-techtree-late-chain-cutoff.md (found by fun-lane-60).

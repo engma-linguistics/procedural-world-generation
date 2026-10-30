@@ -2,7 +2,7 @@
 id: PW-1029
 title: The legend sits over the globe (Koppen and peoples legends hide a third of it) and has the event filters mixed in without a heading
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: null
 subsystem: viewer
@@ -26,5 +26,6 @@ Fix (mock-up §2): dock the legend in the right column above the summary; start 
 Source: codebase audit 2026-10-29 (docs/review/code-audit-2026-10/index.html).
 
 ## Updates
+- 2026-10-30: Status needs-decision -> todo. Owner 10-30 D3: docked legend becomes the default.
 - 2026-10-29: Created from inbox draft draft-legend-docked-out-of-the-map.md (found by code-audit-2026-10).
 - 2026-10-30: lane 53: preview behind ?legend=dock, which moves the legend into the right-hand column above the summary. Side-by-sides at 1600x1000 and 1280x800 in docs/review/viewer-ux-sides/. Lean: dock it. The event filters stay in the legend for now. Needs the owner's pick.

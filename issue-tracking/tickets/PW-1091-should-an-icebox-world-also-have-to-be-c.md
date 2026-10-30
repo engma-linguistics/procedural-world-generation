@@ -2,7 +2,7 @@
 id: PW-1091
 title: Should an \"icebox\" world also have to be cold? The flag reads ice volume (sea level) only, and flags Earth-warm worlds
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: climate
@@ -68,4 +68,6 @@ wanted, pick the margin (dT or absolute T) and the window (300 Myr to end, as no
 - [ ] If changed: passrate4.judge and pjudge/fmtally updated together, with a cold-world count reported either way
 
 ## Updates
+- 2026-10-30: Status needs-decision -> todo. Owner 10-30 D5: three terms (icehouse / glacial maximum / frozen over). Frozen over = 40%+ of land under ice: instant fail for an Earth-like and a loud warning that the climate is out of whack; the other two are reported, not failed.
+- 2026-10-30: Owner 10-30: 'frozen over' means roughly 40%+ of LAND under ice. Coordinator note: Earth's Last Glacial Maximum is commonly put at roughly a quarter of land under ice (to be verified from a source), so by that bar no Pleistocene ice age qualifies. Proposal for owner: three terms, icehouse (permanent polar sheets, Earth today), glacial maximum, frozen-over (>=40% land); then the judges report all three. Discussion with owner pending.
 - 2026-10-30: Created from inbox draft draft-icebox-flag-needs-global-cold.md (found by lane28).

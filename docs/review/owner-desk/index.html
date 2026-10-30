@@ -1,0 +1,210 @@
+<title>Owner's Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+:root {
+  --bg: #f3f1ea; --card: #fbfaf6; --ink: #22241f; --ink2: #4a4d44; --muted: #6c6f63;
+  --rule: #d8d4c6; --accent: #8a5a1c; --accent-soft: #f1e4cf; --rec: #2f6a4c; --rec-soft: #dfeee4;
+  --tag: #e8e4d8; --shot: #111418;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+    --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --rec: #7cc79c; --rec-soft: #1f3328;
+    --tag: #2a2c32; --shot: #0b0d10; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+  --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --rec: #7cc79c; --rec-soft: #1f3328;
+  --tag: #2a2c32; --shot: #0b0d10; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); margin: 0; overflow-x: hidden; }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 28px; }
+.kicker { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(30px, 5vw, 44px)/1.1 var(--serif); margin: 10px 0 8px; text-wrap: balance; }
+.lede { color: var(--ink2); max-width: 68ch; margin: 0; }
+h2 { font: 700 26px/1.2 var(--serif); margin: 56px 0 6px; text-wrap: balance; }
+h2 + .sub { color: var(--muted); margin: 0 0 18px; max-width: 70ch; }
+h3 { font: 600 19px/1.3 var(--serif); margin: 0 0 6px; text-wrap: balance; }
+p, li { max-width: 72ch; }
+a { color: var(--accent); }
+code { font: 13px var(--mono); background: var(--tag); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+nav.toc a { font: 500 13px var(--sans); text-decoration: none; color: var(--ink); background: var(--tag); padding: 5px 10px; border-radius: 999px; }
+.cards { display: grid; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; min-width: 0; }
+.card .id { font: 600 12px var(--mono); color: var(--accent); letter-spacing: .06em; }
+.card ol, .card ul { padding-left: 1.2em; margin: 8px 0; }
+.card li { margin: 3px 0; }
+.rec { background: var(--rec-soft); border-left: 3px solid var(--rec); padding: 8px 12px; margin-top: 10px; border-radius: 0 4px 4px 0; }
+.rec b { color: var(--rec); }
+.note { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 8px 12px; margin-top: 10px; border-radius: 0 4px 4px 0; }
+.answer { font: 13px var(--mono); color: var(--muted); margin-top: 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+figure { margin: 0; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; background: var(--shot); }
+figcaption { font-size: 14px; color: var(--ink2); padding: 10px 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.tbl { overflow-x: auto; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.done li::marker { color: var(--rec); }
+footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">procgen_world · 30 October 2026</div>
+  <h1>Owner's Desk</h1>
+  <p class="lede">Everything that needs you, in one place. Every decision has an id (D1, D2…), so you can answer as briefly as “D5: yes, D6: settlements, the rest your call”. Below the decisions: pictures worth a look, what your notes from this morning turned into, and what merged overnight.</p>
+  <nav class="toc"><a href="#decide">Decisions</a><a href="#papers">Next paper</a><a href="#look">Pictures</a><a href="#notes">Your notes → actions</a><a href="#merged">Overnight</a></nav>
+</header>
+
+<section id="decide">
+<h2>Decisions waiting on you</h2>
+<p class="sub">Each one comes with my recommendation. Saying “your call” on any of them is a fine answer.</p>
+<div class="cards">
+
+<div class="card"><div class="id">D1 · VIEWER</div>
+<h3>Peoples' colours on the map</h3>
+<p>Today 4 pairs of neighbouring peoples share an identical colour, 37 pairs look alike to red-green colour-blind eyes, and 7 peoples vanish into the ocean or the empty-land grey. Two fixes are built. The first only keeps neighbours distinct, so red dragons can come out green. The second, “family hues”, colours each family by its own hue: dragons warm and named by their colour, giants blue, fey violet.</p>
+<div class="rec"><b>Recommend: family hues.</b> Both fixes bring all three counts to zero; family hues also keeps the names meaningful. Black dragons come out dark rose, because black can't show on a dark map.</div>
+<p class="answer">See: <a href="https://claude.ai/artifact/RehsSUDTcPbDMye377UVcN">side-by-sides 1</a>, section A · try <code>&amp;palette=family</code></p></div>
+
+<div class="card"><div class="id">D2 · VIEWER</div>
+<h3>Colour scales for “how much” maps</h3>
+<p>Twelve scales (wave power, floods, soil depth and others) get lighter and then darker again, so the least and the most look alike. The proposal keeps their hues but makes brightness run one way only. The regional zoom would also share the globe's temperature, rain and fertility colours.</p>
+<div class="rec"><b>Recommend:</b> take the shared zoom scales now, and approve the one-way rule scale by scale. Wave power, floods, building ground and soil depth are clear wins; fire frequency is better tuned by hand.</div>
+<p class="answer">See: side-by-sides 1, section B · try <code>&amp;ramps=new</code></p></div>
+
+<div class="card"><div class="id">D3 · VIEWER</div>
+<h3>Dock the legend in the right-hand column</h3>
+<p>The legend floats over the bottom of the globe and covers the map whenever the peoples or event switches are showing.</p>
+<div class="rec"><b>Recommend: dock it.</b> The map gets its bottom edge back.</div>
+<p class="answer">See: side-by-sides 1, section C · try <code>&amp;legend=dock</code></p></div>
+
+<div class="card"><div class="id">D4 · VIEWER</div>
+<h3>Grouped “Colour by” picker</h3>
+<p>Today “Colour by” is one wall of 51–73 buttons. The grouped version has six folding sections, a search box, a row of your last four layers, and dropdowns for crops, animals and body traits.</p>
+<div class="rec"><b>Recommend: make it the default</b>, then give the regional zoom the same picker.</div>
+<p class="answer">See: <a href="https://claude.ai/artifact/NwELDGdqbNCcYTXjBpmkYF">side-by-sides 2</a> · try <code>&amp;picker=grouped</code></p></div>
+
+<div class="card"><div class="id">D5 · CLIMATE · words matter</div>
+<h3>What “frozen over” means, and what fails a planet</h3>
+<p>You said “frozen over” should mean roughly 40%+ of the land under ice. I agree it should be a land share and not only sea level, because today's flag counts ice volume alone. Of the 8 “iceboxes” in the coastline test, 6 were warmer than their own run's start.</p>
+<p>One push-back to discuss. By the usual figures, Earth's worst Pleistocene glacial maximum covered roughly a quarter of the land with ice; that number still needs checking against a source, not my memory. If it holds, then by a 40% bar Earth's ice ages never froze over, and the label would only catch near-snowball worlds. That may be exactly what you want, but it's worth deciding on purpose. My proposal is three plain terms:</p>
+<ol>
+<li><b>Icehouse</b>: permanent polar ice sheets. Earth today, and most of the last 34 Myr.</li>
+<li><b>Glacial maximum</b>: ice-age peaks, roughly Earth at its coldest.</li>
+<li><b>Frozen over</b>: 40%+ of land under ice. Only this one fails a planet in the checks.</li>
+</ol>
+<div class="rec"><b>Recommend:</b> adopt the three terms, with only “frozen over” counting as a failure. The test reports would then show all three, and the pass rates would rise somewhat, because today's “icebox” flag would mostly turn into “icehouse”. If you'd like the historical background properly done, it would make a good small paper (P3 below).</div>
+<p class="answer">Ticket PW-1091</p></div>
+
+<div class="card"><div class="id">D6 · PAPERS</div>
+<h3>The next deep-dive paper</h3>
+<p>You found the dragon paper worthwhile, so it's now the first of a series, an epic of its own (PW-1113). The candidates are below, under <a href="#papers">Next paper</a>.</p>
+<div class="rec"><b>Recommend: P1, settlement sizes through history.</b> It answers your question about what counted as a city in each era directly, and its findings become the size rules.</div></div>
+
+<div class="card"><div class="id">D7 · PEOPLES</div>
+<h3>How big is a regional population (deme)?</h3>
+<p>Each people's range is cut into regional populations, its “cultures in waiting”. The cut sets how many rows the workbench tree draws, and later perhaps how many languages or dialects there are. On the test world, humans get:</p>
+<ul><li><b>A</b> ~60 demes (now), a typical one ~1.8 Mkm²;</li>
+<li><b>B</b> ~20, a cleaner tree and coarser cultures;</li>
+<li><b>C</b> ~150, fine-grained but busy, with many short-lived bands;</li>
+<li><b>D</b> two levels: big demes (B) with sub-demes (A) inside, which suits languages later (family and dialect).</li></ul>
+<div class="rec"><b>Recommend: A now, D when languages arrive.</b></div>
+<p class="answer">Ticket PW-1015</p></div>
+
+<div class="card"><div class="id">D8 · PEOPLES</div>
+<h3>Should farmers' numbers follow land productivity?</h3>
+<p>Herders and foragers now live densely on rich land and thinly on poor land, measured against fixed yardsticks, so a poorer planet holds fewer people. Farmers don't follow productivity yet; good soil already sets where they live.</p>
+<ul><li><b>A</b> keep as built;</li><li><b>B</b> farmers follow productivity too;</li><li><b>C</b> soften the effect so poor land isn't as empty.</li></ul>
+<div class="rec"><b>Recommend: A</b>, or fold it into P2 (how many people the land feeds) if you pick that paper.</div>
+<p class="answer">Ticket PW-1020</p></div>
+
+<div class="card"><div class="id">D9 · VIEWER</div>
+<h3>Technology tab: keep the old grid view?</h3>
+<p>The tab kept the old “every people × every tech” grid as a sixth view called “Table”. It also holds the “Firsts” list per track.</p>
+<div class="rec"><b>Recommend: keep it</b> as the last view. It costs nothing, and it's the quickest overview for a game master.</div>
+<p class="answer">Ticket PW-1021 · you may simply say “your call”</p></div>
+
+</div>
+</section>
+
+<section id="papers">
+<h2>Next paper: candidates</h2>
+<p class="sub">Each would follow the dragon paper's bar: standalone and cited from PDFs actually read, with a checker for each source paper, a peer review, a revision and a re-check, and a section on what the model should change. Each needs a new reading list. Your friend's literature fetch was the backbone last time, so I'd send a wishlist of 10–20 PDFs before starting.</p>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Topic</th><th>What it would test</th><th>Why now</th></tr></thead>
+<tbody>
+<tr><td>P1</td><td><b>Settlement sizes through history</b></td><td>The biggest and typical towns and cities by era, rank-size patterns, and when cities appear, against urban archaeology</td><td>You asked for era-true sizes (PW-1114); it sets the rules the settlements need. Small and sharp.</td></tr>
+<tr><td>P2</td><td><b>How many people the land feeds</b></td><td>Forager, herder and farmer densities and carrying capacity, against ethnography and archaeology</td><td>Closest to the culinary north star; it also bears on D8 and on dragon pressure.</td></tr>
+<tr><td>P3</td><td><b>Ice ages: how often, how deep, how much land</b></td><td>The planets' ice histories against the paleoclimate record; terms for icehouse, glacial and frozen over</td><td>Settles D5 on evidence; the ice loop was just rebuilt.</td></tr>
+<tr><td>P4</td><td><b>The pace of civilisation</b></td><td>When peoples domesticate, settle, smelt, write and found cities, against the archaeological record</td><td>You flagged the tech tree as a prototype due for a deep rework. This would be its foundation.</td></tr>
+<tr><td>P5</td><td><b>Rivers and landforms</b></td><td>Drainage scaling laws, delta and floodplain sizes, waterfalls, against geomorphology</td><td>Exercises the zoom, which was just split into stages.</td></tr>
+</tbody></table></div>
+<div class="rec"><b>My order: P1, then P4, then P2.</b> P1 and P4 feed the two prototype areas you named this morning (settlements and the tech tree); P2 underpins food, the north star. P3 can be short if you settle D5 by taste.</div>
+</section>
+
+<section id="look">
+<h2>Pictures worth a look</h2>
+<p class="sub">The worktree folders I pointed you to last night were cleaned up after merging, sorry. All of these are now in main under <code>docs/review/</code> (settlements/, lineages/kinship-cities/, megafauna/open-niches/).</p>
+<div class="grid2">
+<figure><img src="img/settle-present.jpg" alt="Globe with settlement dots over the continents at the present"><figcaption><b>Towns and cities, present day.</b> Hovering a city shows ~78,000 people (humans 52%, halflings 47%), founded about 9,100 years ago. The village dots carpet the land; that's being fixed now (towns and cities only from orbit, villages as you zoom in).</figcaption></figure>
+<figure><img src="img/settle-9kyr.jpg" alt="Globe 9,000 years ago with the first villages"><figcaption><b>9,000 years ago:</b> the first villages.</figcaption></figure>
+<figure><img src="img/settle-river-city.jpg" alt="A river city 3,000 years ago"><figcaption><b>A river city, 3,000 years ago</b>…</figcaption></figure>
+<figure><img src="img/settle-river-ruin.jpg" alt="The same cell at present with two ruins and a new town"><figcaption>…<b>and the same place today:</b> two ruins and a new town built on them. Hover text example: “ruin of a city of the humans (at most ~41,761 people); abandoned ~2.4 kyr ago: the river moved away”.</figcaption></figure>
+<figure><img src="img/settle-kenku.jpg" alt="A kenku town taken over by humans"><figcaption><b>Change of hands:</b> a kenku town that humans took over.</figcaption></figure>
+<figure><img src="img/kin-table.jpg" alt="Who can have children together table"><figcaption><b>Who can have children together</b>, the new table in the workbench. One wording bug: half-elves show “impossible” under “why possible”; a fix is ticketed.</figcaption></figure>
+<figure><img src="img/kin-before.jpg" alt="Peoples overlay before"><figcaption><b>Peoples overlay, before</b> the living-among and city-minority changes…</figcaption></figure>
+<figure><img src="img/kin-after.jpg" alt="Peoples overlay after"><figcaption>…<b>and after:</b> half-elves cover 10.6 Mkm² instead of 7.4; half-orcs and city kobolds appear.</figcaption></figure>
+<figure><img src="img/dragons-kinds.jpg" alt="Before and after maps of each dragon kind"><figcaption><b>Dragons for the empty plains</b>, before (left) and after (right), kind by kind. Gold appears on the grasslands, blue adds cold steppe, white spreads.</figcaption></figure>
+</div>
+</section>
+
+<section id="notes">
+<h2>Your notes this morning → what I did</h2>
+<div class="tbl"><table>
+<thead><tr><th>You said</th><th>Done / where</th></tr></thead>
+<tbody>
+<tr><td>Losing ~99% of dragons in farmland is too fatal for low-tech peoples; early pressure should be very slight.</td><td>Agreed, and recorded on PW-1068 (“persecution has no source”). Pressure should come from things that grow with technology and history: weapons, organised hunts, settlement. A flat kill rate per person is wrong. It's first in the fun queue once the settlements follow-ups finish. The paper's numbers describe the current model, which is the point: they show the problem.</td></tr>
+<tr><td>Was I rate-limited by NOAA? Give me a URL; back the data up.</td><td>No action needed. The data is fully rebuilt from NOAA's 2020 rain release, with your OK. As a backup, a read-only copy of all 1.8 GB sits on the <i>other</i> drive at <code>/home/daniel/backups/procgen-earth/2026-10-30/</code>, and its checksums are committed in <code>tools/earth_data.SHA256SUMS</code>, with a restore recipe in <code>docs/coordination.md</code>. I didn't commit the data itself to git: 1.8 GB (and even the ~50 MB of irreplaceable pieces) would bloat every clone forever. Say so if you'd rather have them in git or git-lfs anyway. For reference, the GPCC source is the PSL THREDDS server, <code>psl.noaa.gov/thredds/…/gpcc/full_v2020/</code>.</td></tr>
+<tr><td>Any people that doesn't usually get along can live in a city if it plays nice; goblinoids cohabiting confirmed.</td><td>Recorded on PW-1082. City minorities generalise to any tolerated people once polities exist; kobolds and goblins were only examples.</td></tr>
+<tr><td>Screenshot folders don't work.</td><td>The worktrees were deleted after merging. Paths in main are given above.</td></tr>
+<tr><td>Frozen over = 40%+ of land.</td><td>See D5 for my one push-back and a three-term proposal.</td></tr>
+<tr><td>Mining sites existed since early metalworking (Yamnaya).</td><td>Sent to the settlements lane: mine sites become their own kind of place where a mining people, or known ore plus the mines tech, allows. Built now if cheap, otherwise a ticket.</td></tr>
+<tr><td>The tech tree is a placeholder; don't fuss over minor tweaks.</td><td>Stopped the bread/fermentation timing fix I'd queued; the tree stays as it is until its deep rework. P4 would be that rework's foundation.</td></tr>
+<tr><td>Dwarf holds / kobold warrens inside human land, even amid enemies.</td><td>Being built now. A minority can hold its own place in a cell even where it's hated, for example dwarves under a mountain in orc country.</td></tr>
+<tr><td>Village / town / city sizes should follow real-world sizes by era.</td><td>Ticketed as PW-1114, and the recommended next paper (P1).</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="merged">
+<h2>What merged overnight</h2>
+<ul class="done">
+<li><b>Ice ages no longer depend on update timing.</b> The ice and the air above it now settle together inside each climate update; a summer cold double-count is removed; the cold layer over ice follows the seasons. Runs are about 12% slower. 78% of test planets pass.</li>
+<li><b>Coastline climate package.</b> Every Earth score improves and polar land gets about the right amount of rain and snow. Planets are icier (8 of 18 flagged, mostly snowier, not colder; see D5). 72% pass.</li>
+<li><b>Earth reference data rebuilt</b> after an agent deleted it through a shortcut (now forbidden in every brief), on NOAA's 2020 release. No pass/fail result changed.</li>
+<li><b>Dragon density paper</b>, reviewed twice and standalone: <a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">read it</a>.</li>
+<li><b>Dragons for the empty plains</b> (your A+B mix): rich empty land holding dragons went from 52% to 90%.</li>
+<li><b>Peoples:</b> who can have children together (realistic, with half-elves and half-orcs always possible); peoples living among each other; city minorities.</li>
+<li><b>Towns and cities that come and go</b>, with ruins and rebuilt sites; dwarves and miners fixed.</li>
+<li><b>Viewer:</b> code split into modules; first-look fixes; plain error cards; shared theme; dates on the time slider; a tidier workbench.</li>
+<li><b>Clean-ups you approved:</b> zoom code split into stages, and shared helpers and constants. Both proven bit-identical.</li>
+<li><b>Earth rain diagnosis.</b> One wind rule causes both the too-wet interiors and the too-dry SE USA and Pampas. The physics fix is the next physics lane.</li>
+<li><b>A slow sea-level test's floor</b> lowered from 0 to −30 m, as you chose.</li>
+</ul>
+<p><b>Running now:</b> the Antarctic-summer fix (its 18-planet test), and the settlements follow-ups (fixing the dot carpet, minority holds, mines, towns in the brief).</p>
+</section>
+
+<footer>Board ids are given for reference only; you never need them to answer. Reply in chat with ids such as “D1 yes, D5 three terms, D6 P1”.</footer>
+</div>

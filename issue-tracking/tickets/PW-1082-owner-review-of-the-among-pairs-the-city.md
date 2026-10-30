@@ -2,7 +2,7 @@
 id: PW-1082
 title: Owner review of the 'among' pairs, the city-minority shares and the PW-889 constants (all design judgements)
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -37,4 +37,5 @@ Constants (history/params.py, each commented as a judgement):
 - [ ] owner: keep, change or drop each among pair; set the city shares (should kobolds also live in dwarven towns only, say?)
 
 ## Updates
+- 2026-10-30: Owner 10-30: goblinoid cohabitation confirmed. City minorities generalise: any people that doesn't usually get along with a city's or polity's people can live there as a minority if it 'promises to play nice' (tolerated, dirty looks). Kobolds and goblins were only examples. Build once polities exist.
 - 2026-10-30: Created from inbox draft draft-among-pairs-and-city-numbers-owner-review.md (found by fun-lane-54).

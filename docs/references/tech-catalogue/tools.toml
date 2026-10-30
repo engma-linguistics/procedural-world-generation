@@ -1,0 +1,1249 @@
+[[tech]]
+id = "knapping"
+name = "Stone knapping (Lomekwian, then Oldowan flakes)"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft"]
+needs = []
+env = ["stone"]
+earliest_kyr = 3300
+origins = [{where = "Lomekwi 3, Kenya", kyr = 3300}, {where = "Gona, Ethiopia (Oldowan)", kyr = 2600}]
+spread_note = "Spread with hominins out of Africa"
+confidence = "high"
+source = "Semaw et al. 1997, 2.5-2.6 million-year-old stone tools from Gona (unverified)"
+note = "Existing tree anchors knapping at 3300 (Lomekwian); Oldowan proper c. 2.6 Myr"
+
+[[tech]]
+id = "handaxes"
+name = "Acheulean handaxes"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "war"]
+needs = ["knapping"]
+env = ["stone"]
+earliest_kyr = 1760
+origins = [{where = "Konso/Kokiselei, E Africa", kyr = 1760}]
+spread_note = "Carried by Homo erectus across Africa and Eurasia"
+confidence = "high"
+source = "Lepre et al. 2011, Earliest Acheulean at Kokiselei (unverified)"
+
+[[tech]]
+id = "prepared_core"
+name = "Prepared-core (Levallois) technique"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["handaxes"]
+env = ["stone"]
+earliest_kyr = 400
+origins = [{where = "Africa/Levant, Middle Palaeolithic", kyr = 400}, {where = "Europe", kyr = 300}]
+spread_note = "Probably convergent or diffused among Neanderthals and early sapiens; c. 300-500 kyr"
+confidence = "medium"
+source = "Wilkins and Chazan 2012, Blade production ~500 thousand years ago at Kathu Pan 1 (unverified)"
+note = "Earliest Levallois-like at Kapthurin c. 500 kyr; true Levallois 300-400 kyr"
+
+[[tech]]
+id = "blade_industry"
+name = "Blade and burin industries"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["prepared_core"]
+env = ["stone"]
+earliest_kyr = 50
+origins = [{where = "Levant (Initial Upper Palaeolithic)", kyr = 50}, {where = "Europe Aurignacian", kyr = 43}, {where = "S Africa Howiesons Poort", kyr = 65}]
+spread_note = "Independent and diffused; blades appear repeatedly"
+confidence = "medium"
+source = "Bar-Yosef and Kuhn 1999, Upper Palaeolithic blade technology (unverified)"
+note = "Early blades at Kathu Pan 500 kyr are isolated; stable blade industries c. 50 kyr"
+
+[[tech]]
+id = "pressure_flaking"
+name = "Pressure flaking"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["blade_industry"]
+env = ["stone"]
+earliest_kyr = 24
+origins = [{where = "Solutrean, SW Europe", kyr = 24}, {where = "Africa Still Bay", kyr = 75}]
+spread_note = "Rediscovered several times; Still Bay c. 75 kyr heat-treated silcrete"
+confidence = "medium"
+source = "Mourre et al. 2010, Early use of pressure flaking in Africa (unverified)"
+
+[[tech]]
+id = "heat_treatment"
+name = "Heat-treating stone"
+group = "tools"
+track = "tools"
+domains = ["craft", "fire"]
+needs = ["knapping", "fire_control"]
+env = ["stone"]
+earliest_kyr = 164
+origins = [{where = "Pinnacle Point, S Africa", kyr = 164}]
+spread_note = "Repeated in Solutrean, Mesolithic Europe, N America"
+confidence = "medium"
+source = "Brown et al. 2009, Fire as an engineering tool of early modern humans (unverified)"
+
+[[tech]]
+id = "microliths"
+name = "Microliths and composite tools"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["blade_industry", "hafting"]
+env = ["stone"]
+earliest_kyr = 35
+origins = [{where = "Africa/India (Sri Lanka, Batadomba-lena)", kyr = 35}, {where = "Europe Mesolithic", kyr = 11.7}, {where = "Levant Kebaran", kyr = 23}]
+spread_note = "Independently and widely; later in Europe"
+confidence = "medium"
+source = "Mellars 2006, Why did modern human populations disperse from Africa (unverified)"
+note = "Africa 70+ kyr (Howiesons Poort backed segments c. 65-60 kyr)"
+
+[[tech]]
+id = "hafting"
+name = "Hafting stone to handles"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "war"]
+needs = ["handaxes", "cordage"]
+env = ["stone", "timber"]
+earliest_kyr = 500
+origins = [{where = "Kathu Pan, S Africa", kyr = 500}, {where = "Neanderthal Europe", kyr = 200}]
+spread_note = "Adhesive-hafting convergent; wide spread"
+confidence = "medium"
+source = "Wilkins et al. 2012, Evidence for early hafted hunting technology (unverified)"
+
+[[tech]]
+id = "adhesives"
+name = "Pitch and resin adhesives"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["hafting", "fire_control"]
+env = ["timber"]
+earliest_kyr = 200
+origins = [{where = "Campitello, Italy (birch pitch, Neanderthal)", kyr = 200}, {where = "Africa ochre-resin compound adhesives", kyr = 70}]
+spread_note = "Neanderthal birch tar c. 200 kyr; Sibudu compound glues c. 70 kyr"
+confidence = "medium"
+source = "Mazza et al. 2006, A new Palaeolithic discovery: tar-hafted stone tools (unverified)"
+note = "Beeswax, sap and ochre mixes later"
+
+[[tech]]
+id = "ground_stone"
+name = "Ground and polished stone tools"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "build"]
+needs = ["grinding"]
+env = ["stone"]
+earliest_kyr = 35
+origins = [{where = "Australia, Japan (edge-ground axes)", kyr = 35}, {where = "Levant, Neolithic polished axes", kyr = 11}, {where = "China", kyr = 10}]
+spread_note = "Independently; polished axes tied to clearing farmland"
+confidence = "medium"
+source = "Hiscock et al. 2016, Edge-ground axes in Australia (unverified)"
+
+[[tech]]
+id = "grinding"
+name = "Grindstones and grinding"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["food", "craft"]
+needs = ["knapping"]
+env = ["stone"]
+earliest_kyr = 40
+origins = [{where = "Australia/Africa", kyr = 40}, {where = "Levant Kebaran", kyr = 23}]
+spread_note = "Seed grinding widespread; Ohalo II 23 kyr"
+confidence = "medium"
+source = "Revedin et al. 2010, Thirty thousand-year-old evidence of plant food processing (unverified)"
+
+[[tech]]
+id = "bone_tools"
+name = "Bone, antler and ivory tools"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["knapping"]
+env = ["bone"]
+earliest_kyr = 1500
+origins = [{where = "Olduvai bone tools", kyr = 1500}, {where = "Africa Blombos bone awls", kyr = 77}]
+spread_note = "Common after 100 kyr; barbed points Katanda 90 kyr"
+confidence = "medium"
+source = "d'Errico and Backwell 2003, possible evidence of bone tool shaping (unverified)"
+
+[[tech]]
+id = "awls_needles"
+name = "Bone needles and awls"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["bone_tools"]
+env = ["bone"]
+earliest_kyr = 50
+origins = [{where = "Denisova Cave, Siberia", kyr = 50}, {where = "Europe/Asia, Gravettian eyed needles", kyr = 30}]
+spread_note = "Spread across cold Eurasia"
+confidence = "medium"
+source = "Derevianko et al. 2012, bone needle from Denisova (unverified)"
+note = "Eyed needles c. 40-50 kyr"
+
+[[tech]]
+id = "antler_working"
+name = "Antler and ivory carving (harpoons, spear-throwers)"
+group = "tools"
+track = "tools"
+domains = ["craft", "war", "food"]
+needs = ["bone_tools"]
+env = ["bone"]
+earliest_kyr = 40
+origins = [{where = "Aurignacian Europe", kyr = 40}, {where = "Magdalenian", kyr = 17}]
+spread_note = "Europe-centred; Katanda barbed points c. 90 kyr"
+confidence = "low"
+source = "Yellen et al. 1995, 90000-year-old bone harpoons (unverified)"
+
+[[tech]]
+id = "cordage"
+name = "Cordage and string"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft"]
+needs = ["knapping"]
+env = ["fibre"]
+earliest_kyr = 500
+origins = [{where = "Abri du Maras, Neanderthal twisted fibre", kyr = 52}, {where = "direct evidence Upper Palaeolithic", kyr = 40}]
+spread_note = "Universal; indirect traces (beads, hafting) much older"
+confidence = "low"
+source = "Hardy et al. 2020, Direct evidence of Neanderthal fibre technology (unverified)"
+note = "Earliest string fragment c. 52 kyr; inferred 100+ kyr or older; 500 is hafting-based"
+
+[[tech]]
+id = "netting"
+name = "Nets and netmaking"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["cordage"]
+env = ["fibre"]
+earliest_kyr = 29
+origins = [{where = "Czech Pavlov (net impressions)", kyr = 26}, {where = "Finland Antrea net (c. 10 kyr)", kyr = 10}]
+spread_note = "Widespread hunter-gatherer; independent"
+confidence = "medium"
+source = "Soffer et al. 2000, Pavlov net impressions (unverified)"
+note = "Nets inferred from fired clay impressions; Pavlov and Dolni Vestonice c. 29-26 kyr"
+
+[[tech]]
+id = "basketry"
+name = "Basketry and matting"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["cordage"]
+env = ["fibre"]
+earliest_kyr = 27
+origins = [{where = "Near East", kyr = 12}, {where = "Dolni Vestonice impressions", kyr = 26}, {where = "Spirit Cave and Americas", kyr = 10}]
+spread_note = "Universal; perishable, so earliest finds sparse"
+confidence = "low"
+source = "Adovasio et al. 2007, Basketry, cordage and textile technologies (unverified)"
+note = "Oldest actual basketry c. 10-12 kyr; impressions 27 kyr"
+
+[[tech]]
+id = "containers"
+name = "Skin, gourd and bark containers"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "food"]
+needs = ["cordage"]
+env = ["hides"]
+earliest_kyr = 60
+origins = [{where = "Africa ostrich eggshell flasks", kyr = 60}, {where = "Levant, Americas", kyr = 12}]
+spread_note = "Universal"
+confidence = "medium"
+source = "Texier et al. 2010, A Howiesons Poort tradition of engraving ostrich eggshell (unverified)"
+
+[[tech]]
+id = "sewing"
+name = "Sewing (needle and thread)"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft"]
+needs = ["awls_needles"]
+env = ["hides"]
+earliest_kyr = 45
+origins = [{where = "Siberia/Europe", kyr = 45}, {where = "Northern Eurasia eyed needle", kyr = 40}]
+spread_note = "Spread with cold-climate peoples"
+confidence = "medium"
+source = "Gilligan 2010, Clothing and hunter-gatherer adaptation (unverified)"
+note = "Existing id; first needle 50 kyr Denisova"
+
+[[tech]]
+id = "hide_working"
+name = "Hide scraping and tanning"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["knapping"]
+env = ["hides"]
+earliest_kyr = 400
+origins = [{where = "Schoningen/Africa scrapers", kyr = 400}, {where = "Brain/smoke tanning world-wide", kyr = 30}]
+spread_note = "Universal"
+confidence = "low"
+source = "Gilligan 2007, Clothing and early human colonisation (unverified)"
+note = "Scrapers old, but tanning proper uncertain"
+
+[[tech]]
+id = "tailored_clothing"
+name = "Tailored and fitted clothing"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["sewing", "hide_working"]
+env = ["hides"]
+earliest_kyr = 40
+origins = [{where = "Europe/Siberia (Sungir c. 30 kyr beaded garments)", kyr = 30}]
+spread_note = "Northern Eurasia; follows cold-climate dispersal"
+confidence = "medium"
+source = "Gilligan 2010, Clothing and hunter-gatherer adaptation (unverified)"
+note = "Lice-genetics suggest clothing 170 kyr; sewing 40-45 kyr"
+
+[[tech]]
+id = "felt"
+name = "Felt"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["hide_working"]
+env = ["wool"]
+earliest_kyr = 4.7
+origins = [{where = "Altai Pazyryk and steppe (Bronze Age)", kyr = 4.7}, {where = "Anatolia, Neolithic (Catalhoyuk?)", kyr = 9}]
+spread_note = "Steppe peoples; spread along herding frontiers"
+confidence = "low"
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+note = "Earliest felt claims c. 8-9 kyr are weak; steppe felt solid by c. 2.5 kyr (Pazyryk)"
+
+[[tech]]
+id = "spinning"
+name = "Spinning (spindle and whorl)"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["cordage"]
+env = ["fibre"]
+earliest_kyr = 30
+origins = [{where = "Dzudzuana Cave, flax (Georgia)", kyr = 34}, {where = "Near East spindle whorls", kyr = 9}]
+spread_note = "Whorls everywhere in Neolithic; independent"
+confidence = "medium"
+source = "Kvavadze et al. 2009, 30,000-year-old wild flax fibers (unverified)"
+note = "Dzudzuana fibres twisted/dyed c. 34-30 kyr"
+
+[[tech]]
+id = "weaving"
+name = "Weaving (backstrap and warp-weighted loom)"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning"]
+env = ["fibre"]
+earliest_kyr = 9
+origins = [{where = "Near East (Catalhoyuk, Nahal Hemar)", kyr = 9}, {where = "Americas", kyr = 6}, {where = "China", kyr = 7}]
+spread_note = "Probably independent in Old/New World"
+confidence = "medium"
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+note = "Earliest fabrics 9-10 kyr; loom parts 7 kyr"
+
+[[tech]]
+id = "flax_linen"
+name = "Flax and linen"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["weaving"]
+env = ["flax"]
+earliest_kyr = 9
+origins = [{where = "Near East", kyr = 9}, {where = "Egypt Fayum", kyr = 7}]
+spread_note = "Neolithic Near East and Europe"
+confidence = "medium"
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+note = "Flax oil seed use also"
+
+[[tech]]
+id = "wool"
+name = "Wool sheep and woolly fleece spinning"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning", "herding"]
+env = ["sheep"]
+earliest_kyr = 6.0
+origins = [{where = "Near East", kyr = 6.0}]
+spread_note = "Woolly sheep bred c. 6-4 kyr; spread across Eurasia"
+confidence = "medium"
+source = "Ryder 1983, Sheep and Man (unverified)"
+note = "Wool breeds replaced hair sheep"
+
+[[tech]]
+id = "warp_weighted_loom"
+name = "Warp-weighted loom"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["weaving"]
+env = ["fibre"]
+earliest_kyr = 7
+origins = [{where = "Anatolia/Balkans", kyr = 7}]
+spread_note = "Europe-wide, Neolithic to Iron Age"
+confidence = "medium"
+source = "Barber 1991, Prehistoric Textiles (unverified)"
+
+[[tech]]
+id = "cotton"
+name = "Cotton"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["weaving"]
+env = ["cotton"]
+earliest_kyr = 7
+origins = [{where = "Mehrgarh, Indus", kyr = 7}, {where = "Peru (Huaca Prieta)", kyr = 6}, {where = "Mexico, Africa", kyr = 5}]
+spread_note = "Several species domesticated independently"
+confidence = "medium"
+source = "Moulherat et al. 2002, First evidence of cotton at Neolithic Mehrgarh (unverified)"
+
+[[tech]]
+id = "silk"
+name = "Silk"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["weaving"]
+env = ["mulberry"]
+earliest_kyr = 5.5
+origins = [{where = "China (Liangzhu/Hemudu)", kyr = 5.5}]
+spread_note = "Secret held in China c. 2-3 kyr; reached Byzantium 1.5 kyr"
+confidence = "medium"
+source = "Good 1995, Neolithic silk? (unverified)"
+note = "Earliest silk fabric c. 5.5 kyr"
+
+[[tech]]
+id = "dyeing"
+name = "Dyeing and pigments for cloth"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["weaving"]
+env = ["plants"]
+earliest_kyr = 34
+origins = [{where = "Dzudzuana (dyed fibres)", kyr = 34}, {where = "Indigo, madder, murex dyes", kyr = 3.5}]
+spread_note = "Skilled craft diffused with trade"
+confidence = "low"
+source = "Kvavadze et al. 2009 (unverified)"
+
+[[tech]]
+id = "treadle_loom"
+name = "Treadle and drawloom"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["warp_weighted_loom"]
+env = ["fibre"]
+earliest_kyr = 2.2
+origins = [{where = "China (Han)", kyr = 2.2}, {where = "Roman Egypt, Syria", kyr = 1.8}]
+spread_note = "Slow; Europe 1 kyr"
+confidence = "medium"
+source = "Kuhn 1988, Chinese Science and Civilisation, Textiles (unverified)"
+
+[[tech]]
+id = "spinning_wheel"
+name = "Spinning wheel"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning"]
+env = ["fibre"]
+earliest_kyr = 1.0
+origins = [{where = "India/China", kyr = 1.2}, {where = "Europe", kyr = 0.7}]
+spread_note = "Slow diffusion west by c. 1300"
+confidence = "medium"
+source = "none known"
+note = "Indian wheel perhaps 500-1000 CE"
+
+[[tech]]
+id = "knitting"
+name = "Knitting"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["spinning"]
+env = ["wool"]
+earliest_kyr = 1.0
+origins = [{where = "Egypt (Coptic socks) c. 1000 CE", kyr = 1.0}]
+spread_note = "Spread across Islamic world to Europe by 1300"
+confidence = "medium"
+source = "Rutt 1987, A History of Hand Knitting (unverified)"
+
+[[tech]]
+id = "sail_cloth"
+name = "Sailcloth"
+group = "tools"
+track = "tools"
+domains = ["craft", "move"]
+needs = ["weaving"]
+env = ["fibre"]
+earliest_kyr = 5.5
+origins = [{where = "Egypt", kyr = 5.5}, {where = "Austronesia", kyr = 3.5}]
+spread_note = "Linked with sails"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "woodworking"
+name = "Woodworking (adze, wedge, plane)"
+group = "tools"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["ground_stone"]
+env = ["timber"]
+earliest_kyr = 476
+origins = [{where = "Kalambo Falls (Zambia)", kyr = 476}, {where = "Schoningen", kyr = 300}]
+spread_note = "Prehistoric; ground-stone axes make big timber work possible"
+confidence = "medium"
+source = "Barham et al. 2023, Structural wood use at Kalambo Falls (unverified)"
+
+[[tech]]
+id = "carpentry_joints"
+name = "Carpentry joints and planked boards"
+group = "tools"
+track = "tools"
+domains = ["craft", "build", "move"]
+needs = ["woodworking"]
+env = ["timber"]
+earliest_kyr = 7
+origins = [{where = "Egypt/Near East", kyr = 7}, {where = "Neolithic Europe well linings (Altscherbitz)", kyr = 7.2}]
+spread_note = "Spread with building traditions"
+confidence = "medium"
+source = "Tegel et al. 2012, Early Neolithic water wells (unverified)"
+
+[[tech]]
+id = "bow_drill"
+name = "Bow drill and drilling"
+group = "tools"
+track = "tools"
+domains = ["craft", "fire"]
+needs = ["cordage", "woodworking"]
+env = ["timber"]
+earliest_kyr = 10
+origins = [{where = "Near East and Europe (Mesolithic beads)", kyr = 10}]
+spread_note = "Probably independent for fire and holes"
+confidence = "low"
+source = "none known"
+note = "Fire drill older than bow drill"
+
+[[tech]]
+id = "saw"
+name = "Saws"
+group = "tools"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["bronze"]
+env = ["metal"]
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 4.6}, {where = "Mesopotamia", kyr = 5}]
+spread_note = "Metal saws; stone saws earlier"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "lathe"
+name = "Lathe"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["bow_drill", "woodworking"]
+env = ["timber"]
+earliest_kyr = 3.3
+origins = [{where = "Egypt (Pharaonic bow lathe)", kyr = 3.3}]
+spread_note = "Reaches Greece, then Rome"
+confidence = "medium"
+source = "Singer et al. 1954, A History of Technology (unverified)"
+
+[[tech]]
+id = "iron_tools"
+name = "Iron axes, saws and tool steel"
+group = "tools"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["iron", "woodworking"]
+env = ["metal"]
+earliest_kyr = 3
+origins = [{where = "Anatolia", kyr = 3.2}]
+spread_note = "Iron tool edges give more capable carpentry"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "flint_mining"
+name = "Flint mining"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["woodworking"]
+env = ["stone"]
+earliest_kyr = 60
+origins = [{where = "Lion Cave, Eswatini (ochre)", kyr = 43}, {where = "Neolithic Europe (Spiennes, Grimes Graves)", kyr = 6.5}]
+spread_note = "Ochre mines 40 kyr in Africa; Europe Neolithic mine shafts"
+confidence = "medium"
+source = "Beaumont and Vogel 2006, On a timescale for the past million years of human history in central S Africa (unverified)"
+note = "Ochre mining at Lion Cave c. 43 kyr"
+
+[[tech]]
+id = "quarrying"
+name = "Stone quarrying"
+group = "tools"
+track = "tools"
+domains = ["build", "craft"]
+needs = ["ground_stone"]
+env = ["stone"]
+earliest_kyr = 11.5
+origins = [{where = "Gobekli Tepe, Turkey", kyr = 11.5}, {where = "Egypt", kyr = 5}]
+spread_note = "Megalithic spread across Europe, then Egypt"
+confidence = "medium"
+source = "Schmidt 2010, Gobekli Tepe (unverified)"
+
+[[tech]]
+id = "mines"
+name = "Hard-rock mining and shafts"
+group = "tools"
+track = "shelter"
+exists = true
+domains = ["build", "craft", "trade"]
+needs = ["woodworking"]
+env = ["ore"]
+earliest_kyr = 7
+origins = [{where = "Serbia (Rudna Glava)", kyr = 7.5}, {where = "Balkan/Carpathian copper mines", kyr = 7}, {where = "Sinai and Timna", kyr = 6}]
+spread_note = "Copper mines parallel smelting"
+confidence = "medium"
+source = "Jovanovic 1982, Rudna Glava (unverified)"
+note = "The owner notes mining sites existed from early metalworking, e.g. Yamnaya era: Kargaly (Urals), Mednikarovo, Mount Gabriel (Ireland), Great Orme (Wales) c. 3.5-4 kyr; Rudna Glava ore mining c. 7.5 kyr"
+
+[[tech]]
+id = "salt_mining"
+name = "Salt mining and evaporation"
+group = "tools"
+track = "food"
+domains = ["food", "trade"]
+needs = ["mines"]
+env = ["salt"]
+earliest_kyr = 8
+origins = [{where = "Hallstatt (Austria)", kyr = 3.5}, {where = "Poiana Slatinei, Romania (brine boiling)", kyr = 8}, {where = "China Yuncheng", kyr = 6}]
+spread_note = "Salt boiling Neolithic; rock-salt mines Bronze Age"
+confidence = "medium"
+source = "Weller 2002, Salt production in prehistoric Europe (unverified)"
+note = "Brine and boiling c. 8 kyr; Hallstatt mine 3.5 kyr"
+
+[[tech]]
+id = "lead_silver_mining"
+name = "Lead-silver mining and cupellation"
+group = "tools"
+track = "tools"
+domains = ["trade", "craft"]
+needs = ["mines", "copper"]
+env = ["ore"]
+earliest_kyr = 6
+origins = [{where = "Anatolia/Taurus", kyr = 6}, {where = "Laurion, Greece", kyr = 2.5}]
+spread_note = "Spread to Greek and Roman era"
+confidence = "medium"
+source = "Pernicka et al. 1993, Prehistoric silver metallurgy (unverified)"
+
+[[tech]]
+id = "underground_drainage"
+name = "Mine drainage and ventilation"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["mines"]
+env = ["ore"]
+earliest_kyr = 2.2
+origins = [{where = "Roman Spain (Rio Tinto)", kyr = 2.0}, {where = "Agricola's Germany", kyr = 0.5}]
+spread_note = "Ellis writing about Archimedean screws"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "native_copper"
+name = "Native copper hammering"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = []
+env = ["copper"]
+earliest_kyr = 10
+origins = [{where = "Cayonu, Anatolia", kyr = 10}, {where = "Great Lakes, N America", kyr = 8}]
+spread_note = "Cold-hammered, annealed; independent in Americas"
+confidence = "medium"
+source = "Maddin et al. 1980, Cayonu native copper (unverified)"
+note = "Cold working precedes smelting"
+
+[[tech]]
+id = "copper"
+name = "Copper smelting"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "trade"]
+needs = ["native_copper", "kilns"]
+env = ["ore"]
+earliest_kyr = 7.0
+origins = [{where = "Serbia (Pločnik/Belovode)", kyr = 7.0}, {where = "Iran Tal-i-Iblis", kyr = 7}, {where = "Peru", kyr = 3.3}, {where = "W Mexico", kyr = 1.3}]
+spread_note = "Maybe independent Balkans/Iran; later Americas"
+confidence = "medium"
+source = "Radivojevic et al. 2010, On the origins of extractive metallurgy (unverified)"
+note = "Belovode 7 kyr is a contested earliest"
+
+[[tech]]
+id = "arsenical_copper"
+name = "Arsenical copper alloy"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft"]
+needs = ["copper"]
+env = ["ore"]
+earliest_kyr = 6.5
+origins = [{where = "Iran/Anatolia", kyr = 6.5}, {where = "Andes", kyr = 2}]
+spread_note = "Preceded tin bronze"
+confidence = "medium"
+source = "Thornton 2009 (unverified)"
+
+[[tech]]
+id = "bronze"
+name = "Tin bronze"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "war", "trade"]
+needs = ["arsenical_copper"]
+env = ["ore", "tin"]
+earliest_kyr = 5.5
+origins = [{where = "Near East", kyr = 5.5}, {where = "Thailand Ban Chiang (disputed)", kyr = 5}, {where = "China", kyr = 4}]
+spread_note = "Tin trade routes; spread with Bronze Age"
+confidence = "medium"
+source = "Roberts et al. 2009, Tin bronze (unverified)"
+note = "Earliest tin bronze c. 5.5 kyr Vinca? disputed; mainstream c. 5 kyr"
+
+[[tech]]
+id = "lost_wax"
+name = "Lost-wax casting"
+group = "tools"
+track = "tools"
+domains = ["craft", "ritual"]
+needs = ["copper"]
+env = ["ore"]
+earliest_kyr = 6.5
+origins = [{where = "Nahal Mishmar, Levant", kyr = 6.5}, {where = "Indus", kyr = 4.5}, {where = "China Shang", kyr = 3.3}]
+spread_note = "Independently possible; wide spread"
+confidence = "medium"
+source = "Tadmor et al. 1995, Nahal Mishmar hoard (unverified)"
+
+[[tech]]
+id = "casting"
+name = "Open and piece-mould casting"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["copper"]
+env = ["ore"]
+earliest_kyr = 6
+origins = [{where = "Near East", kyr = 6}, {where = "China Erlitou (piece-mould)", kyr = 3.8}]
+spread_note = "Piece-mould in China produced ritual vessels"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "gold_silver"
+name = "Gold and silver working"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade", "ritual"]
+needs = ["native_copper"]
+env = ["gold"]
+earliest_kyr = 6.6
+origins = [{where = "Varna, Bulgaria (gold)", kyr = 6.5}, {where = "Mesopotamia", kyr = 5.5}]
+spread_note = "Gold-working widespread"
+confidence = "medium"
+source = "Higham et al. 2007, Radiocarbon dating of Varna gold (unverified)"
+
+[[tech]]
+id = "lead"
+name = "Lead working"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["copper"]
+env = ["ore"]
+earliest_kyr = 8
+origins = [{where = "Catalhoyuk lead beads", kyr = 9}, {where = "Mesopotamia", kyr = 5.5}]
+spread_note = "Included in cupellation"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "tin_trade"
+name = "Long-distance tin and ore trade"
+group = "tools"
+track = "tools"
+domains = ["trade"]
+needs = ["bronze"]
+env = ["tin"]
+earliest_kyr = 4.5
+origins = [{where = "Afghanistan-Mesopotamia", kyr = 4.5}, {where = "Cornwall-Atlantic", kyr = 3.5}]
+spread_note = "Powered Bronze Age"
+confidence = "medium"
+source = "Pare 2000, Metals Make the World Go Round (unverified)"
+
+[[tech]]
+id = "brass"
+name = "Brass and zinc alloys"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["bronze"]
+env = ["ore"]
+earliest_kyr = 2.3
+origins = [{where = "Anatolia/Mediterranean (cementation)", kyr = 2.3}]
+spread_note = "Roman brass; Indian zinc distillation 1 kyr"
+confidence = "medium"
+source = "Craddock 1978 (unverified)"
+
+[[tech]]
+id = "bloomery"
+name = "Bloomery iron smelting"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["copper", "bellows"]
+env = ["ore"]
+earliest_kyr = 3.3
+origins = [{where = "Anatolia/Caucasus", kyr = 3.3}, {where = "Sub-Saharan Africa (independent?)", kyr = 2.8}, {where = "China", kyr = 2.7}]
+spread_note = "Rapid diffusion; Africa debated"
+confidence = "medium"
+source = "Killick 2014, Iron age in Africa (unverified)"
+note = "Meteoric iron beads far older (c. 5.3 kyr)"
+
+[[tech]]
+id = "meteoric_iron"
+name = "Meteoric iron"
+group = "tools"
+track = "tools"
+domains = ["craft", "ritual"]
+needs = []
+env = ["iron"]
+earliest_kyr = 5.3
+origins = [{where = "Gerzeh, Egypt", kyr = 5.3}]
+spread_note = "Curiosity; ornament only"
+confidence = "high"
+source = "Johnson et al. 2013, meteoritic iron beads (unverified)"
+
+[[tech]]
+id = "bellows"
+name = "Bellows and forced draught"
+group = "tools"
+track = "fire"
+domains = ["craft"]
+needs = ["kilns"]
+env = []
+earliest_kyr = 5
+origins = [{where = "Egypt", kyr = 3.5}, {where = "Near East", kyr = 5}]
+spread_note = "Part of smelting"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "iron"
+name = "Iron bloomery working"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "war"]
+needs = ["bloomery"]
+env = ["ore"]
+earliest_kyr = 3.3
+origins = [{where = "Hittite Anatolia", kyr = 3.3}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Wertime 1980 (unverified)"
+
+[[tech]]
+id = "forge_welding"
+name = "Forge welding and smithing"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["iron"]
+env = ["metal"]
+earliest_kyr = 3
+origins = [{where = "Anatolia", kyr = 3}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "carburised_steel"
+name = "Carburised steel"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["iron"]
+env = ["metal"]
+earliest_kyr = 3.0
+origins = [{where = "Anatolia/Cyprus", kyr = 3.0}, {where = "Africa Haya", kyr = 2.0}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Tylecote 1992, History of Metallurgy (unverified)"
+
+[[tech]]
+id = "steel"
+name = "Quench-hardened steel"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "war"]
+needs = ["carburised_steel"]
+env = ["metal"]
+earliest_kyr = 2.5
+origins = [{where = "Near East", kyr = 2.5}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Tylecote 1992 (unverified)"
+
+[[tech]]
+id = "quenching"
+name = "Quenching and tempering"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["steel"]
+env = ["metal"]
+earliest_kyr = 2.8
+origins = [{where = "Near East/Greece", kyr = 2.8}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "crucible_steel"
+name = "Crucible (wootz) steel"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["carburised_steel"]
+env = ["ore"]
+earliest_kyr = 2.0
+origins = [{where = "South India (wootz)", kyr = 2.0}, {where = "Sri Lanka, Central Asia (Merv)", kyr = 1.2}]
+spread_note = "Spread to Damascus swords"
+confidence = "medium"
+source = "Srinivasan and Ranganathan 2004, India's Legendary Wootz Steel (unverified)"
+
+[[tech]]
+id = "cast_iron"
+name = "Cast iron"
+group = "tools"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["bloomery", "bellows"]
+env = ["ore"]
+earliest_kyr = 2.5
+origins = [{where = "China, Zhou", kyr = 2.5}, {where = "Europe 15th c.", kyr = 0.6}]
+spread_note = "China 2 kyr ahead of Europe"
+confidence = "high"
+source = "Needham 1958, The Development of Iron and Steel Technology in China (unverified)"
+
+[[tech]]
+id = "blast_furnace"
+name = "Blast furnace"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["cast_iron"]
+env = ["ore"]
+earliest_kyr = 0.65
+origins = [{where = "China (Han) tall furnaces", kyr = 2.0}, {where = "Europe Lapphyttan/Sweden", kyr = 0.85}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Needham 1958 (unverified)"
+note = "China water-bellows blast c. 2 kyr"
+
+[[tech]]
+id = "glass"
+name = "Glassmaking"
+group = "tools"
+track = "tools"
+exists = true
+domains = ["craft", "trade"]
+needs = ["kilns"]
+env = ["sand"]
+earliest_kyr = 4.5
+origins = [{where = "Mesopotamia", kyr = 4.5}, {where = "Egypt", kyr = 3.5}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Moorey 1994 (unverified)"
+
+[[tech]]
+id = "glass_blowing"
+name = "Glassblowing"
+group = "tools"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["glass"]
+env = ["sand"]
+earliest_kyr = 2.1
+origins = [{where = "Syria/Roman", kyr = 2.1}]
+spread_note = "Diffused from the first centres"
+confidence = "high"
+source = "Stern 1999 (unverified)"
+
+[[tech]]
+id = "lever"
+name = "Lever and fulcrum"
+group = "tools"
+track = "tools"
+domains = ["build", "craft"]
+needs = ["woodworking"]
+env = ["timber"]
+earliest_kyr = 10
+origins = [{where = "Egypt shaduf c. 4.5 kyr", kyr = 4.5}]
+spread_note = "Diffused from the first centres"
+confidence = "low"
+source = "none known"
+note = "Used earlier informally"
+
+[[tech]]
+id = "pulley"
+name = "Pulley and block-and-tackle"
+group = "tools"
+track = "tools"
+domains = ["build"]
+needs = ["lever", "cordage"]
+env = ["timber"]
+earliest_kyr = 4
+origins = [{where = "Mesopotamia", kyr = 3.7}, {where = "Greece", kyr = 2.5}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Landels 1978 (unverified)"
+
+[[tech]]
+id = "windlass"
+name = "Windlass and capstan"
+group = "tools"
+track = "tools"
+domains = ["build", "move"]
+needs = ["pulley"]
+env = ["timber"]
+earliest_kyr = 2.7
+origins = [{where = "Greece", kyr = 2.7}]
+spread_note = "Diffused from the first centres"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "screw"
+name = "Screw and screw press"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["lever"]
+env = ["timber"]
+earliest_kyr = 2.3
+origins = [{where = "Greek (Archimedean screw, Archytas)", kyr = 2.3}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Oleson 1984 (unverified)"
+note = "Olive/wine presses"
+
+[[tech]]
+id = "gears"
+name = "Gears and cogs"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["lathe"]
+env = ["timber"]
+earliest_kyr = 2.2
+origins = [{where = "Greece", kyr = 2.3}, {where = "Antikythera", kyr = 2.1}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "crank_cam"
+name = "Crank, cam and treadle"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["gears"]
+env = ["timber"]
+earliest_kyr = 2.0
+origins = [{where = "China", kyr = 2.0}, {where = "Roman", kyr = 1.8}]
+spread_note = "Diffused from the first centres"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "waterwheel"
+name = "Water wheel for industry"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["gears", "woodworking"]
+env = ["river"]
+earliest_kyr = 2.1
+origins = [{where = "Greek/Roman", kyr = 2.1}, {where = "China", kyr = 2.0}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Wikander 2000 (unverified)"
+
+[[tech]]
+id = "windmill"
+name = "Windmill"
+group = "tools"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["gears"]
+env = ["wind"]
+earliest_kyr = 1.4
+origins = [{where = "Persia (Seistan)", kyr = 1.4}, {where = "N Europe", kyr = 0.85}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Lucas 2006, Wind, water, work (unverified)"
+
+[[tech]]
+id = "trip_hammer"
+name = "Trip hammer and stamping mill"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["waterwheel"]
+env = ["river"]
+earliest_kyr = 2.0
+origins = [{where = "China (Han)", kyr = 2.0}, {where = "Europe", kyr = 0.8}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "fulling_mill"
+name = "Fulling mill"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["waterwheel", "wool"]
+env = ["river"]
+earliest_kyr = 1.0
+origins = [{where = "Europe", kyr = 1.0}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Carus-Wilson 1941 (unverified)"
+
+[[tech]]
+id = "paper_mill"
+name = "Papermaking"
+group = "tools"
+track = "tools"
+domains = ["communication", "craft"]
+needs = ["waterwheel"]
+env = ["fibre"]
+earliest_kyr = 2.0
+origins = [{where = "China Han", kyr = 2.0}, {where = "Islamic, 1.25 kyr", kyr = 1.25}]
+spread_note = "Diffused from the first centres"
+confidence = "high"
+source = "Tsien 1985, Paper and Printing (unverified)"
+
+[[tech]]
+id = "cranes_hoists"
+name = "Cranes and treadwheel hoists"
+group = "tools"
+track = "tools"
+domains = ["build"]
+needs = ["pulley", "windlass"]
+env = ["timber"]
+earliest_kyr = 2.5
+origins = [{where = "Greece", kyr = 2.5}, {where = "Roman", kyr = 2.0}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "pump_bellows"
+name = "Force pump and double-acting pump"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["lever"]
+env = ["metal"]
+earliest_kyr = 2.3
+origins = [{where = "Alexandria Ctesibius", kyr = 2.3}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "potters_wheel"
+name = "Potter's wheel"
+group = "tools"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["kilns"]
+env = ["clay"]
+earliest_kyr = 5.5
+origins = [{where = "Mesopotamia slow wheel", kyr = 6.5}, {where = "Fast wheel", kyr = 5.2}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "Roux and de Miroschedji 2009 (unverified)"
+note = "Related to pottery"
+
+[[tech]]
+id = "clock_escapement"
+name = "Mechanical clock"
+group = "tools"
+track = "tools"
+domains = ["know"]
+needs = ["gears"]
+env = ["metal"]
+earliest_kyr = 0.7
+origins = [{where = "Europe", kyr = 0.7}, {where = "China Su Song", kyr = 0.9}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "wire_drawing"
+name = "Wire drawing and files"
+group = "tools"
+track = "tools"
+domains = ["craft"]
+needs = ["iron"]
+env = ["metal"]
+earliest_kyr = 2.8
+origins = [{where = "Egypt, Mesopotamia wire", kyr = 4}, {where = "Drawn wire c. 0.8 kyr Europe", kyr = 0.8}]
+spread_note = "Diffused from the first centres"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "sawmill"
+name = "Water-powered sawmill"
+group = "tools"
+track = "tools"
+domains = ["craft", "build"]
+needs = ["waterwheel", "saw"]
+env = ["river", "timber"]
+earliest_kyr = 1.7
+origins = [{where = "Hierapolis, Roman Asia Minor", kyr = 1.7}, {where = "Europe 13th c.", kyr = 0.7}]
+spread_note = "Diffused from the first centres"
+confidence = "medium"
+source = "none known"

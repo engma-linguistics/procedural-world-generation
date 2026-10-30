@@ -2835,8 +2835,8 @@ def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):
     """Temperatures on top of land ice (m; 0 = bare ground), from those of
     the bare ground under it, by the ice's own surface mass balance year
     (icemass.surface, PW-277: the one rule that also sets where the ice
-    is): the ice's height (lapse rate), thick ice ~2 C colder on the year's mean, in winter
-    (inversion, katabatic air), the summer's warmth damped while snow lies
+    is): the ice's height (lapse rate), thick ice ~2 C colder on the year's mean (in winter
+    where the summer melts, all year where it never does: inversion, katabatic air), the summer's warmth damped while snow lies
     (by the bright surface's own share: cover, icemass.sheet_cover; a big
     sheet's own air mass is in the ground's air already, carried along the
     winds: icemass.air_mass, PW-336) and a melting surface held near 0 C.

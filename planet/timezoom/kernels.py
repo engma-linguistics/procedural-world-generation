@@ -32,10 +32,15 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
     k_orb * dq[band, m] (dq: insolation change, W/m2, averaged with the month
     before: the ground lags the sun). An ice sheet keeps itself cold (as in
     climate.compute): `cool` C colder on the year's mean, phased in by f_ice
-    (0..1, with thickness), following the season: none at midsummer, twice
-    that at midwinter (an inversion is the surface's radiative cooling, a
-    polar-night feature, weak under the summer sun and over a melting
-    surface; PW-1050). The year runs from the autumn after the summer: snow
+    (0..1, with thickness). Where the summer melts the surface it follows
+    the season: none at midsummer, twice that at midwinter (a melting
+    surface is held at 0 C and can't chill the air above it; PW-1050). A
+    surface that never melts keeps it all year (a plateau's weak sun and
+    strong longwave loss hold its inversion through the summer; PW-1095):
+    the swing is scaled by the share of the warmest month's days the air
+    reaching the surface is above freezing (t_mean + dt_base + half and the
+    month's orbital anomaly, its days scattered by sigma, as the degree-day
+    melt and icemass.cold_share), so the annual mean is the same. The year runs from the autumn after the summer: snow
     falls below ~0 C and lies on the ground; while it lies (bright: its
     water equivalent / snow_w, up to 1) the summer's warmth above the
     annual mean is damped by damp[i] (bright snow takes little of the
@@ -72,6 +77,10 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
         lying, snow, lost, ice_melt = 0.0, 0.0, 0.0, 0.0
         fs, ns = 0.0, 0
         bare = bare_share * f_alb[i]
+        # the inversion's seasonal share: the share of the warmest month's days the air reaching the surface
+        # is above freezing (its days scattered by sigma, the degree-day rule's own spread), PW-1095
+        t_pk = t_mean[i] + dt_base[i] + half[i] + k_orb[i] * 0.5 * (dq[b, peak] + dq[b, (peak + 11) % 12])
+        s_inv = 0.5 * math.erfc(-t_pk / (sigma * math.sqrt(2.0)))
         for k in range(12):
             m = (peak + 3 + k) % 12
             d_orb = k_orb[i] * 0.5 * (dq[b, m] + dq[b, (m + 11) % 12])
@@ -82,8 +91,9 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
                 fs += f
                 ns += 1
                 sw *= 1.0 - f * damp[i]
-            # (the inversion follows the season, the same annual mean: none at midsummer, 2x at midwinter, PW-1050)
-            inv = 1.0 - math.cos(2 * math.pi * (m - peak) / 12.0)
+            # (the inversion: the same annual mean; where the summer melts, none at midsummer and 2x at midwinter,
+            # PW-1050; where it doesn't, all year, PW-1095)
+            inv = 1.0 - s_inv * math.cos(2 * math.pi * (m - peak) / 12.0)
             t = t_mean[i] + dt_base[i] + sw + d_orb - f_ice[i] * cool * inv
             if f > 0.0 and t > 0.0:
                 t *= 1.0 - f * (1.0 - hold)

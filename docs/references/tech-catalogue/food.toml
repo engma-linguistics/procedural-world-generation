@@ -1,0 +1,2003 @@
+[[tech]]
+id = "foraging_lore"
+name = "Foraging lore"
+group = "food"
+track = "food"
+domains = ["food", "know"]
+needs = ["language"]
+env = []
+earliest_kyr = 500
+origins = [ {where = "Africa", kyr = 500} ]
+spread_note = "Universal; accumulated by every people"
+confidence = "low"
+source = "none known"
+exists = true
+note = "Existing tech; the date is a project anchor."
+
+[[tech]]
+id = "digging_stick"
+name = "Digging stick"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["foraging_lore"]
+env = ["grass"]
+earliest_kyr = 44
+origins = [ {where = "southern Africa (Border Cave)", kyr = 44} ]
+spread_note = "Independent everywhere; trivially reinvented"
+confidence = "medium"
+source = "d'Errico et al. 2012, Border Cave early San material culture (unverified)"
+note = "Use certainly far older; 44 kyr is the oldest surviving wood."
+
+[[tech]]
+id = "basketry"
+name = "Basketry and gathering baskets"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["cordage"]
+env = ["grass"]
+earliest_kyr = 27
+origins = [ {where = "Moravia (Pavlov, impressions)", kyr = 27}, {where = "Near East (Nahal Hemar)", kyr = 10} ]
+spread_note = "Reinvented widely; survives poorly so earliest is a lower bound"
+confidence = "medium"
+source = "Adovasio et al. 1996, Upper Palaeolithic fibre technology (unverified)"
+note = "Impressions in clay; woven remains only from c. 10 kyr."
+
+[[tech]]
+id = "wild_cereal_harvest"
+name = "Wild grass-seed harvesting"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["foraging_lore", "grinding"]
+env = ["grass"]
+earliest_kyr = 23
+origins = [ {where = "Levant (Ohalo II)", kyr = 23} ]
+spread_note = "Parallel in every region with big-seeded grasses"
+confidence = "high"
+source = "Snir et al. 2015, The origin of cultivation and proto-weeds (unverified)"
+note = "Ohalo II wild barley/wheat and grinding slab."
+
+[[tech]]
+id = "acorn_leaching"
+name = "Acorn and nut leaching"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["foraging_lore", "grinding", "containers"]
+env = ["forest"]
+earliest_kyr = 13
+origins = [ {where = "Levant (Natufian)", kyr = 13}, {where = "California", kyr = 5} ]
+spread_note = "Independent in oak/chestnut regions; California gathering-society staple"
+confidence = "low"
+source = "none known"
+note = "Dates are guesses; tannin leaching in water is the technique."
+
+[[tech]]
+id = "plant_detox"
+name = "Detoxifying bitter and poisonous plants"
+group = "food"
+track = "food"
+domains = ["food", "know"]
+needs = ["foraging_lore", "cooking"]
+env = ["forest"]
+earliest_kyr = 10
+origins = [ {where = "southwest Amazon (manioc)", kyr = 8}, {where = "Mesoamerica", kyr = 7}, {where = "Australia (cycad)", kyr = 10} ]
+spread_note = "Local, tied to a staple (manioc, cycads, bitter acorns, camas)"
+confidence = "low"
+source = "none known"
+note = "Grating, soaking, pounding, steaming; early dates for manioc come from starch grains."
+
+[[tech]]
+id = "landscape_burning"
+name = "Landscape burning (fire-stick)"
+group = "food"
+track = "food"
+domains = ["food", "know"]
+needs = ["fire_control", "foraging_lore"]
+env = ["grass", "forest"]
+earliest_kyr = 40
+origins = [ {where = "Australia", kyr = 40}, {where = "North America", kyr = 13}, {where = "southern Africa", kyr = 50} ]
+spread_note = "Independent among hunter-gatherers; managed burning of grassland"
+confidence = "low"
+source = "Bowman 1998, The impact of Aboriginal landscape burning (unverified)"
+note = "Earliest dates contested; treated as plausible."
+
+[[tech]]
+id = "honey_hunting"
+name = "Honey hunting"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["foraging_lore", "fire_control"]
+env = ["forest"]
+earliest_kyr = 9
+origins = [ {where = "Anatolia (beeswax in pottery)", kyr = 9}, {where = "Spain (rock art)", kyr = 8} ]
+spread_note = "Everywhere bees are; probably far older than the record"
+confidence = "medium"
+source = "Roffet-Salque et al. 2015, Widespread exploitation of the honeybee by early Neolithic farmers (unverified)"
+note = "Hadza and others hunt honey; record starts with beeswax residue."
+
+[[tech]]
+id = "sickle"
+name = "Sickle and reaping knife"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["wild_cereal_harvest", "hafting"]
+env = ["grass"]
+earliest_kyr = 15
+origins = [ {where = "Levant (Natufian)", kyr = 15}, {where = "northern China", kyr = 9}, {where = "Nile", kyr = 8} ]
+spread_note = "Spread with cereal farming; reinvented where grasses were reaped"
+confidence = "medium"
+source = "Bar-Yosef 1998, The Natufian culture (unverified)"
+note = "Flint blades with silica gloss, then sickles of wood/bone/stone."
+
+[[tech]]
+id = "hunting_spear"
+name = "Hunting spear"
+group = "food"
+track = "food"
+domains = ["food", "war"]
+needs = ["foraging_lore"]
+env = ["forest"]
+earliest_kyr = 300
+origins = [ {where = "Europe (Schoningen)", kyr = 300}, {where = "Africa", kyr = 500} ]
+spread_note = "Universal among hominins; thrusting, then thrown"
+confidence = "high"
+source = "Thieme 1997, Lower Palaeolithic hunting spears from Germany (unverified)"
+note = "Wooden throwing spears 300 kyr; Clacton spear tip c. 400 kyr."
+
+[[tech]]
+id = "spear_thrower"
+name = "Spear-thrower (atlatl)"
+group = "food"
+track = "food"
+domains = ["food", "war"]
+needs = ["projectiles", "hafting"]
+env = []
+earliest_kyr = 21
+origins = [ {where = "Europe (Solutrean/Magdalenian)", kyr = 21}, {where = "Americas", kyr = 13}, {where = "Australia (woomera)", kyr = 10} ]
+spread_note = "Reinvented in Europe, Americas and Australia; superseded by the bow"
+confidence = "low"
+source = "Cattelain 1997, Hunting in the Magdalenian: spearthrower and bow (unverified)"
+note = "Gravettian examples c. 30 kyr claimed; dated hooks mostly 17-21 kyr."
+
+[[tech]]
+id = "game_drives"
+name = "Game drives, surrounds and kites"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["hunting_spear", "language"]
+env = ["grass"]
+earliest_kyr = 40
+origins = [ {where = "Levant (desert kites)", kyr = 9}, {where = "North America (buffalo jumps)", kyr = 10}, {where = "Europe (reindeer)", kyr = 40} ]
+spread_note = "Independent wherever herds follow predictable routes"
+confidence = "low"
+source = "Betts et al. 2018, Desert kites (unverified)"
+note = "Cooperative drive hunting is old; desert kites dated c. 9 kyr onward; earliest here is a guess."
+
+[[tech]]
+id = "arrow_poison"
+name = "Arrow and dart poison"
+group = "food"
+track = "food"
+domains = ["food", "war"]
+needs = ["projectiles"]
+env = ["forest"]
+earliest_kyr = 24
+origins = [ {where = "southern Africa (Border Cave)", kyr = 24}, {where = "Amazon (curare)", kyr = 3}, {where = "SE Asia", kyr = 3} ]
+spread_note = "Independent; tied to local toxic plants, frogs and beetle larvae"
+confidence = "low"
+source = "d'Errico et al. 2012, Border Cave; Backwell et al. 2012 (unverified)"
+note = "Residue on a bone point; contested."
+
+[[tech]]
+id = "harpoon"
+name = "Barbed harpoon"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["hunting_spear", "knapping"]
+env = ["coast", "wetland"]
+earliest_kyr = 90
+origins = [ {where = "Congo (Katanda)", kyr = 90}, {where = "Europe (Magdalenian)", kyr = 16}, {where = "Japan/Arctic", kyr = 12} ]
+spread_note = "Reinvented with bone barbs; toggling heads later in the Arctic"
+confidence = "low"
+source = "Yellen et al. 1995, A Middle Stone Age worked bone industry from Katanda (unverified)"
+note = "Katanda dating is disputed; secure barbed points c. 16-17 kyr."
+
+[[tech]]
+id = "falconry"
+name = "Falconry"
+group = "food"
+track = "food"
+domains = ["food", "trade", "ritual"]
+needs = ["riding", "trade"]
+env = ["grass"]
+earliest_kyr = 3.5
+origins = [ {where = "Central Asia", kyr = 3.5}, {where = "Mesopotamia", kyr = 2.7}, {where = "China", kyr = 2.5} ]
+spread_note = "Spread by steppe peoples and courts"
+confidence = "low"
+source = "Epstein 1943, Falconry in the ancient world (unverified)"
+note = "Mesopotamian relief c. 2.7 kyr is the firmest anchor."
+
+[[tech]]
+id = "whaling"
+name = "Open-water whaling"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["harpoon", "canoes"]
+env = ["coast", "ocean"]
+earliest_kyr = 7
+origins = [ {where = "Korea (Bangudae petroglyphs)", kyr = 7}, {where = "Arctic Alaska", kyr = 2.5}, {where = "Biscay", kyr = 1} ]
+spread_note = "Arctic, Pacific Northwest and Basque lines largely independent"
+confidence = "low"
+source = "none known"
+note = "Dates are rock-art and bone-count judgments."
+
+[[tech]]
+id = "fishing"
+name = "Fishing"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cordage"]
+env = ["wetland"]
+earliest_kyr = 90
+origins = [ {where = "Africa", kyr = 90} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "fish_weirs"
+name = "Fish weirs and fish traps"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["fishing", "basketry"]
+env = ["wetland", "coast"]
+earliest_kyr = 10
+origins = [ {where = "Karelia", kyr = 10}, {where = "Denmark (Tybrind Vig)", kyr = 7.5}, {where = "Levant", kyr = 9} ]
+spread_note = "Independent in rivers, estuaries and tidal flats"
+confidence = "medium"
+source = "Bailey and Milner 2002, Coastal hunter-gatherers (unverified)"
+note = "Stakes and wattle traps; survive in waterlogged sites."
+
+[[tech]]
+id = "fishing_nets"
+name = "Fishing nets and sinkers"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["fishing", "cordage"]
+env = ["wetland", "coast"]
+earliest_kyr = 23
+origins = [ {where = "Levant (Ohalo II)", kyr = 23}, {where = "Karelia (Antrea net)", kyr = 10.5} ]
+spread_note = "Reinvented; net-making knots persist"
+confidence = "medium"
+source = "Nadel et al. 1994, Ohalo II fishing; Antrea net (unverified)"
+note = "Weights from 23 kyr; the Antrea net is the oldest actual net."
+
+[[tech]]
+id = "fish_ponds"
+name = "Fish ponds and aquaculture"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fishing_nets", "irrigation"]
+env = ["wetland"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt (tilapia)", kyr = 4.5}, {where = "China (carp)", kyr = 2.5}, {where = "Rome", kyr = 2.1} ]
+spread_note = "Independent in Nile, Yangtze and Mediterranean; carp ponds spread to Europe in the Middle Ages"
+confidence = "low"
+source = "none known"
+note = "Tomb scenes show tilapia ponds; Chinese carp text c. 475 BCE."
+
+[[tech]]
+id = "eel_aquaculture"
+name = "Eel traps and managed channels"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["fish_weirs", "mines"]
+env = ["wetland"]
+earliest_kyr = 6.6
+origins = [ {where = "Australia (Budj Bim)", kyr = 6.6} ]
+spread_note = "Single development; large stone channel systems"
+confidence = "medium"
+source = "McNiven et al. 2012, Budj Bim aquaculture (unverified)"
+note = "A strong case of settled aquaculture without agriculture."
+
+[[tech]]
+id = "oyster_culture"
+name = "Shellfish beds and oyster culture"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["shellfish"]
+env = ["coast"]
+earliest_kyr = 2.1
+origins = [ {where = "Italy (Roman beds)", kyr = 2.1}, {where = "Japan", kyr = 1.5} ]
+spread_note = "Roman tradition fades; revived medieval; independent in East Asia"
+confidence = "low"
+source = "none known"
+note = "Sergius Orata beds c. 90 BCE."
+
+[[tech]]
+id = "herring_fishery"
+name = "Drift-net herring fishery"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fishing_nets", "sails", "salting"]
+env = ["coast", "ocean"]
+earliest_kyr = 1.0
+origins = [ {where = "North Sea", kyr = 1.0} ]
+spread_note = "North Sea trade; Dutch dominance later"
+confidence = "medium"
+source = "Unger 2001, The role of herring (unverified)"
+note = "Salted barrels give a trade good."
+
+[[tech]]
+id = "stockfish"
+name = "Stockfish and dried-fish trade"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["smoking_drying", "fishing_nets"]
+env = ["coast", "ocean"]
+earliest_kyr = 1.1
+origins = [ {where = "Norway (Lofoten)", kyr = 1.1} ]
+spread_note = "Cold-climate air drying; trade to Mediterranean"
+confidence = "medium"
+source = "none known"
+note = "Wind-dried cod; keeps for years."
+
+[[tech]]
+id = "smoking_drying"
+name = "Smoking and drying"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cooking"]
+env = []
+earliest_kyr = 40
+origins = [ {where = "Africa/Europe", kyr = 40} ]
+spread_note = "Existing tech"
+confidence = "low"
+source = "none known"
+exists = true
+note = "Existing tech; sun, wind and smoke drying are separate acts but one id."
+
+[[tech]]
+id = "salting"
+name = "Salting"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cooking", "containers"]
+env = ["salt"]
+earliest_kyr = 8
+origins = [ {where = "Romania", kyr = 7.5} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "salt_pans"
+name = "Salt boiling and solar pans"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["salting", "boiling_pots"]
+env = ["salt", "coast"]
+earliest_kyr = 7.5
+origins = [ {where = "Romania (Poiana Slatinei)", kyr = 7.5}, {where = "China (Yuncheng)", kyr = 6}, {where = "Mesoamerica", kyr = 3} ]
+spread_note = "Independent; rock-salt and brine sources"
+confidence = "medium"
+source = "Weller 2002, Salt in prehistory; Poiana Slatinei (unverified)"
+note = "Boiling brine in pottery at Poiana Slatinei."
+
+[[tech]]
+id = "pickling"
+name = "Pickling and vinegar"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["salting", "fermentation"]
+env = ["salt"]
+earliest_kyr = 4.4
+origins = [ {where = "Mesopotamia", kyr = 4.4}, {where = "China", kyr = 3}, {where = "Egypt", kyr = 4} ]
+spread_note = "Spread with wine and brine"
+confidence = "low"
+source = "none known"
+note = "Vinegar from wine; early dates inferred from texts."
+
+[[tech]]
+id = "cellaring"
+name = "Cellaring and cool storage"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["storage_pits", "mudbrick"]
+env = []
+earliest_kyr = 5.2
+origins = [ {where = "Egypt (wine jars)", kyr = 5.2}, {where = "Near East", kyr = 7} ]
+spread_note = "Cellars follow from pits and cool basements"
+confidence = "low"
+source = "none known"
+note = "Underground cool stores; the exact first is unknowable."
+
+[[tech]]
+id = "ice_house"
+name = "Ice houses and cold stores"
+group = "food"
+track = "food"
+domains = ["food", "build", "trade"]
+needs = ["cellaring", "mines"]
+env = ["cold"]
+earliest_kyr = 3.8
+origins = [ {where = "Mesopotamia (Mari)", kyr = 3.8}, {where = "China", kyr = 3}, {where = "Persia (yakhchal)", kyr = 2.4} ]
+spread_note = "Independent in Mesopotamia/China/Persia; Europe via Islamic world"
+confidence = "medium"
+source = "none known"
+note = "Mari ice houses c. 1780 BCE."
+
+[[tech]]
+id = "storage_pits"
+name = "Storage pits and silos"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["storage"]
+env = []
+earliest_kyr = 14
+origins = [ {where = "Levant", kyr = 14} ]
+spread_note = "Followed cereal use; independent elsewhere"
+confidence = "low"
+source = "none known"
+note = "Natufian pits; parched-grain stores."
+
+[[tech]]
+id = "raised_granary"
+name = "Raised granary"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["storage", "villages"]
+env = ["timber"]
+earliest_kyr = 11.4
+origins = [ {where = "Jordan Valley (Dhra')", kyr = 11.4}, {where = "China", kyr = 8}, {where = "Europe", kyr = 6} ]
+spread_note = "Spread with farming"
+confidence = "medium"
+source = "Kuijt & Finlayson 2009, Evidence for food storage and predomestication granaries 11,000 years ago in the Jordan Valley (unverified)"
+note = "Raised floors keep rodents and damp off."
+
+[[tech]]
+id = "cheese"
+name = "Cheese"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["herding", "pottery"]
+env = []
+earliest_kyr = 8
+origins = [ {where = "Anatolia", kyr = 8} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "butter_churning"
+name = "Butter and ghee"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["milking"]
+env = []
+earliest_kyr = 4.5
+origins = [ {where = "Mesopotamia", kyr = 4.5} ]
+spread_note = "Spread with dairying; Indian ghee tradition separate"
+confidence = "low"
+source = "none known"
+note = "Ubaid friezes show churning-like work."
+
+[[tech]]
+id = "fermented_dairy"
+name = "Fermented milk (yoghurt, kefir, kumis)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["milking", "fermentation"]
+env = []
+earliest_kyr = 6
+origins = [ {where = "Near East", kyr = 6}, {where = "Central Asia", kyr = 4} ]
+spread_note = "Pastoral heartlands; kefir residues c. 3.6 kyr in Tarim"
+confidence = "low"
+source = "none known"
+note = "Dates are loose."
+
+[[tech]]
+id = "fish_sauce"
+name = "Fermented fish sauce"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["fermentation", "salting"]
+env = ["coast"]
+earliest_kyr = 2.7
+origins = [ {where = "Mediterranean (garum)", kyr = 2.7}, {where = "SE Asia", kyr = 3} ]
+spread_note = "Independent; Roman and SE Asian lines"
+confidence = "low"
+source = "none known"
+note = "Phoenician/Greek origins before Rome."
+
+[[tech]]
+id = "soy_ferment"
+name = "Fermented soy and grain pastes (jiang, miso)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["fermentation", "soybean"]
+env = []
+earliest_kyr = 3
+origins = [ {where = "China", kyr = 3}, {where = "Korea", kyr = 2} ]
+spread_note = "China to Korea, Japan, SE Asia"
+confidence = "low"
+source = "none known"
+note = "Jiang appears in Zhou texts."
+
+[[tech]]
+id = "beer_brewing"
+name = "Beer brewing"
+group = "food"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["fermentation", "wild_cereal_harvest"]
+env = ["grass"]
+earliest_kyr = 13
+origins = [ {where = "Levant (Raqefet)", kyr = 13}, {where = "China (Jiahu)", kyr = 9}, {where = "Mesopotamia/Egypt", kyr = 5.5}, {where = "Andes (chicha)", kyr = 1.5} ]
+spread_note = "Independent in many grain/maize regions"
+confidence = "medium"
+source = "Liu et al. 2018, Fermented beverage and food storage in 13,000 y-old stone mortars at Raqefet Cave (unverified)"
+note = "Raqefet is an inference from starch residue."
+
+[[tech]]
+id = "winemaking"
+name = "Wine"
+group = "food"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["grape", "fermentation"]
+env = ["grass"]
+earliest_kyr = 8
+origins = [ {where = "Georgia (Gadachrili)", kyr = 8}, {where = "China (Jiahu mixed)", kyr = 9} ]
+spread_note = "Spread from the Caucasus with the vine"
+confidence = "high"
+source = "McGovern et al. 2017, Early Neolithic wine of Georgia (unverified)"
+note = "Presence of tartaric acid residues in pottery."
+
+[[tech]]
+id = "sugar_making"
+name = "Sugar boiling and crystallising"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["sugarcane", "boiling_pots"]
+env = []
+earliest_kyr = 2.5
+origins = [ {where = "India", kyr = 2.5} ]
+spread_note = "India to Persia and China; Arab spread medieval"
+confidence = "low"
+source = "none known"
+note = "Crystals Gupta c. 1.5 kyr; earlier syrup."
+
+[[tech]]
+id = "cultivation"
+name = "Cultivation"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["storage", "grinding"]
+env = ["grass"]
+earliest_kyr = 11.5
+origins = [ {where = "Levant", kyr = 11.5} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "herding"
+name = "Herding"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["trapping"]
+env = ["grass"]
+earliest_kyr = 11
+origins = [ {where = "Zagros", kyr = 11} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "hoe_cultivation"
+name = "Hoe and spade cultivation"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["cultivation", "digging_stick"]
+env = ["grass"]
+earliest_kyr = 11
+origins = [ {where = "Levant", kyr = 11}, {where = "Yangtze", kyr = 9}, {where = "New Guinea", kyr = 8} ]
+spread_note = "Independent in every cultivation hearth"
+confidence = "medium"
+source = "none known"
+note = "Stone, bone or wood hoes."
+
+[[tech]]
+id = "slash_burn"
+name = "Swidden (slash and burn)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "fire_control"]
+env = ["forest"]
+earliest_kyr = 9
+origins = [ {where = "Europe (LBK)", kyr = 7.5}, {where = "SE Asia", kyr = 9}, {where = "Amazon", kyr = 6} ]
+spread_note = "Independent in forest regions"
+confidence = "low"
+source = "none known"
+note = "Clear, burn, crop, fallow."
+
+[[tech]]
+id = "ox_traction"
+name = "Ox traction and yoke"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding", "cordage"]
+env = ["grass"]
+earliest_kyr = 7
+origins = [ {where = "Mesopotamia", kyr = 7}, {where = "Europe", kyr = 6} ]
+spread_note = "Spread with cattle"
+confidence = "low"
+source = "Sherratt 1981, Plough and pastoralism: secondary products (unverified)"
+note = "Sherratt's 'secondary products revolution'."
+
+[[tech]]
+id = "plough"
+name = "Ard plough"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["cultivation", "herding"]
+env = ["grass"]
+earliest_kyr = 6.5
+origins = [ {where = "Mesopotamia", kyr = 6.5}, {where = "Europe", kyr = 5.5}, {where = "China", kyr = 4} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "moldboard_plough"
+name = "Mouldboard plough"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["plough", "iron"]
+env = ["grass"]
+earliest_kyr = 2.3
+origins = [ {where = "China (Han)", kyr = 2.3}, {where = "Europe (Slavic/N Gaul)", kyr = 1.4} ]
+spread_note = "Chinese line independent of the heavy plough of northern Europe"
+confidence = "medium"
+source = "Needham 1965, Science and Civilisation vol. 4/2 (unverified)"
+note = "Turns heavy clay soils."
+
+[[tech]]
+id = "seed_drill"
+name = "Seed drill"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["plough"]
+env = ["grass"]
+earliest_kyr = 2.2
+origins = [ {where = "China (Han multi-tube)", kyr = 2.2}, {where = "Europe", kyr = 0.4} ]
+spread_note = "China first; Europe reinvented late"
+confidence = "medium"
+source = "Needham 1965, Science and Civilisation (unverified)"
+note = "Tull 1701 is later."
+
+[[tech]]
+id = "terracing"
+name = "Terraced fields"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["cultivation", "mines"]
+env = ["mountain"]
+earliest_kyr = 5
+origins = [ {where = "Levant", kyr = 5}, {where = "Andes", kyr = 3}, {where = "Yemen", kyr = 5}, {where = "SE Asia", kyr = 2} ]
+spread_note = "Independent in many mountain regions"
+confidence = "low"
+source = "none known"
+note = "Dates are low confidence."
+
+[[tech]]
+id = "raised_fields"
+name = "Raised fields and drained garden beds"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["cultivation", "hoe_cultivation"]
+env = ["wetland"]
+earliest_kyr = 8
+origins = [ {where = "New Guinea (Kuk)", kyr = 8}, {where = "Andes", kyr = 3}, {where = "Mesoamerica (chinampa)", kyr = 1.5} ]
+spread_note = "Independent; very productive wetland farming"
+confidence = "low"
+source = "Denham et al. 2003, Origins of agriculture at Kuk Swamp (unverified)"
+note = "Includes chinampas."
+
+[[tech]]
+id = "irrigation"
+name = "Irrigation"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["cultivation", "villages"]
+env = ["river"]
+earliest_kyr = 8
+origins = [ {where = "Mesopotamia", kyr = 8}, {where = "Egypt", kyr = 5}, {where = "Peru", kyr = 5} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "qanat"
+name = "Qanat (underground channel)"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["irrigation", "mines"]
+env = ["desert"]
+earliest_kyr = 2.7
+origins = [ {where = "Persia/Urartu", kyr = 2.7} ]
+spread_note = "Spread across the dry Old World"
+confidence = "medium"
+source = "Wulff 1968, The qanats of Iran (unverified)"
+
+[[tech]]
+id = "shaduf"
+name = "Shaduf (counterpoise well-lift)"
+group = "food"
+track = "food"
+domains = ["food", "build"]
+needs = ["irrigation"]
+env = ["river"]
+earliest_kyr = 4.3
+origins = [ {where = "Mesopotamia", kyr = 4.3} ]
+spread_note = "Spread to Egypt and India"
+confidence = "medium"
+source = "none known"
+note = "Akkadian seal c. 2300 BCE."
+
+[[tech]]
+id = "noria"
+name = "Noria and saqiya (water wheel)"
+group = "food"
+track = "food"
+domains = ["food", "build", "move"]
+needs = ["irrigation", "wheel"]
+env = ["river"]
+earliest_kyr = 2.3
+origins = [ {where = "Hellenistic Egypt", kyr = 2.3}, {where = "Syria/Persia", kyr = 2} ]
+spread_note = "Spread to China and Spain"
+confidence = "medium"
+source = "none known"
+note = "Powered by animals or river current."
+
+[[tech]]
+id = "crop_rotation"
+name = "Crop rotation with legumes"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "lentil_pea_chickpea"]
+env = ["grass"]
+earliest_kyr = 7
+origins = [ {where = "Europe", kyr = 7}, {where = "Rome", kyr = 2}, {where = "China", kyr = 2} ]
+spread_note = "Gradual; formalised in Roman agronomists"
+confidence = "low"
+source = "Bogaard et al. 2013, Crop manuring and intensive land management by Europe's first farmers (unverified)"
+note = "Early date inferred from isotope analysis."
+
+[[tech]]
+id = "three_field"
+name = "Three-field rotation"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["crop_rotation", "moldboard_plough"]
+env = ["grass"]
+earliest_kyr = 1.2
+origins = [ {where = "Carolingian Europe", kyr = 1.2} ]
+spread_note = "Northern Europe over a few centuries"
+confidence = "medium"
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+note = "Adds spring-sown oats and legumes."
+
+[[tech]]
+id = "manuring"
+name = "Manuring and fertilising"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "herding"]
+env = ["grass"]
+earliest_kyr = 7.9
+origins = [ {where = "Europe", kyr = 7.9}, {where = "China (night soil)", kyr = 2} ]
+spread_note = "Independent as farmers observed animal dung and ash"
+confidence = "low"
+source = "Bogaard et al. 2013, as above (unverified)"
+note = "Includes night soil, ash and marling later."
+
+[[tech]]
+id = "grafting"
+name = "Grafting"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["orchards"]
+env = []
+earliest_kyr = 3
+origins = [ {where = "China", kyr = 3}, {where = "Greece", kyr = 2.3} ]
+spread_note = "Independent in China and Mediterranean"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "hay_fodder"
+name = "Hay and winter fodder"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding", "sickle"]
+env = ["grass"]
+earliest_kyr = 5
+origins = [ {where = "Switzerland (leaf fodder)", kyr = 6}, {where = "Europe", kyr = 3}, {where = "Rome", kyr = 2} ]
+spread_note = "Needed in cold winters"
+confidence = "low"
+source = "none known"
+note = "Leaf hay, then scythe-mown hay."
+
+[[tech]]
+id = "scythe"
+name = "Scythe"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["iron", "hay_fodder"]
+env = ["grass"]
+earliest_kyr = 2.5
+origins = [ {where = "Europe (La Tene)", kyr = 2.5} ]
+spread_note = "Europe then Asia"
+confidence = "medium"
+source = "none known"
+note = "Iron-age long blades."
+
+[[tech]]
+id = "threshing_sledge"
+name = "Threshing sledge and trampling floor"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["sickle", "herding"]
+env = ["grass"]
+earliest_kyr = 5.5
+origins = [ {where = "Near East", kyr = 5.5} ]
+spread_note = "Spread across Old World"
+confidence = "low"
+source = "none known"
+note = "Flail and animal trampling alternatives."
+
+[[tech]]
+id = "winnowing"
+name = "Winnowing tray and fan"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["sickle", "basketry"]
+env = ["grass"]
+earliest_kyr = 11
+origins = [ {where = "Levant", kyr = 11} ]
+spread_note = "With cereals"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "grinding"
+name = "Grinding"
+group = "food"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["knapping"]
+env = []
+earliest_kyr = 40
+origins = [ {where = "Australia/Africa", kyr = 40} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "mortar_pestle"
+name = "Mortar and pestle"
+group = "food"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["grinding"]
+env = []
+earliest_kyr = 30
+origins = [ {where = "Levant", kyr = 30}, {where = "Pacific", kyr = 5} ]
+spread_note = "Everywhere"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "saddle_quern"
+name = "Saddle quern"
+group = "food"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["grinding", "wild_cereal_harvest"]
+env = ["stone"]
+earliest_kyr = 23
+origins = [ {where = "Levant", kyr = 23} ]
+spread_note = "With cereals; slow flour"
+confidence = "medium"
+source = "none known"
+
+[[tech]]
+id = "rotary_quern"
+name = "Rotary quern"
+group = "food"
+track = "tools"
+domains = ["food", "craft", "move"]
+needs = ["saddle_quern", "iron"]
+env = ["stone"]
+earliest_kyr = 2.6
+origins = [ {where = "Iberia/Carthage", kyr = 2.6} ]
+spread_note = "Mediterranean then Europe"
+confidence = "medium"
+source = "none known"
+note = "Rotation saves labour over saddle."
+
+[[tech]]
+id = "sieving"
+name = "Sieving and bolting flour"
+group = "food"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["basketry", "saddle_quern"]
+env = []
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5} ]
+spread_note = "With bread"
+confidence = "low"
+source = "none known"
+note = "Fine flour for sweet bread."
+
+[[tech]]
+id = "animal_mill"
+name = "Animal-powered mill (hopper mill)"
+group = "food"
+track = "tools"
+domains = ["food", "craft"]
+needs = ["rotary_quern", "pack_animals"]
+env = ["stone"]
+earliest_kyr = 2.4
+origins = [ {where = "Greece (Olynthus)", kyr = 2.4}, {where = "Rome", kyr = 2.2} ]
+spread_note = "Mediterranean"
+confidence = "medium"
+source = "none known"
+note = "Donkey mill."
+
+[[tech]]
+id = "watermill"
+name = "Water mill"
+group = "food"
+track = "tools"
+domains = ["food", "craft", "build"]
+needs = ["wheel", "plough"]
+env = ["river"]
+earliest_kyr = 2.3
+origins = [ {where = "Hellenistic", kyr = 2.3} ]
+spread_note = "Existing tech"
+confidence = "medium"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "tide_mill"
+name = "Tide mill"
+group = "food"
+track = "tools"
+domains = ["food", "build"]
+needs = ["watermill"]
+env = ["coast"]
+earliest_kyr = 1.4
+origins = [ {where = "Ireland (Nendrum)", kyr = 1.4} ]
+spread_note = "Atlantic coasts"
+confidence = "medium"
+source = "none known"
+note = "Nendrum 619-21 CE."
+
+[[tech]]
+id = "windmill"
+name = "Windmill"
+group = "food"
+track = "tools"
+domains = ["food", "build"]
+needs = ["watermill", "sails"]
+env = ["plain"]
+earliest_kyr = 1.3
+origins = [ {where = "Persia (Sistan)", kyr = 1.3}, {where = "N Europe", kyr = 0.85} ]
+spread_note = "Independent Persian and later European lines"
+confidence = "low"
+source = "none known"
+note = "Horizontal vs vertical sails."
+
+[[tech]]
+id = "oil_press"
+name = "Oil and beam press"
+group = "food"
+track = "tools"
+domains = ["food", "build"]
+needs = ["storage", "plough"]
+env = ["olive"]
+earliest_kyr = 4.5
+origins = [ {where = "Levant/Crete", kyr = 4.5} ]
+spread_note = "Mediterranean"
+confidence = "low"
+source = "none known"
+note = "Kfar Samir olive crushing c. 7 kyr."
+
+[[tech]]
+id = "wine_press"
+name = "Wine press and treading vat"
+group = "food"
+track = "tools"
+domains = ["food", "build"]
+needs = ["winemaking"]
+env = []
+earliest_kyr = 6.1
+origins = [ {where = "Armenia (Areni)", kyr = 6.1} ]
+spread_note = "With wine"
+confidence = "medium"
+source = "Barnard et al. 2011, Areni-1 winery (unverified)"
+note = "Treading vat."
+
+[[tech]]
+id = "nixtamalisation"
+name = "Nixtamalisation (lime-treating maize)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["maize", "pottery"]
+env = ["limestone"]
+earliest_kyr = 3.5
+origins = [ {where = "Mesoamerica", kyr = 3.5} ]
+spread_note = "Spread with maize across Americas"
+confidence = "low"
+source = "none known"
+note = "Makes niacin available."
+
+[[tech]]
+id = "dogs"
+name = "Dogs"
+group = "food"
+track = "food"
+domains = ["food", "war", "move"]
+needs = ["trapping"]
+env = []
+earliest_kyr = 25
+origins = [ {where = "Eurasia", kyr = 25} ]
+spread_note = "Existing tech"
+confidence = "low"
+source = "none known"
+exists = true
+note = "Existing tech; genetic range 15-40 kyr."
+
+[[tech]]
+id = "trapping"
+name = "Trapping and snaring"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cordage"]
+env = []
+earliest_kyr = 60
+origins = [ {where = "Africa", kyr = 60} ]
+spread_note = "Existing tech"
+confidence = "low"
+source = "none known"
+exists = true
+note = "Existing tech."
+
+[[tech]]
+id = "milking"
+name = "Milking and dairying"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = ["grass"]
+earliest_kyr = 9
+origins = [ {where = "Anatolia", kyr = 9}, {where = "Africa Sahara", kyr = 7} ]
+spread_note = "Spread with cattle, sheep, goats; lactase persistence follows"
+confidence = "medium"
+source = "Evershed et al. 2008, Earliest date for milk use (unverified)"
+note = "Residues on pottery."
+
+[[tech]]
+id = "goat"
+name = "Goat"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = ["mountain"]
+earliest_kyr = 10.5
+origins = [ {where = "Zagros", kyr = 10.5}, {where = "Anatolia", kyr = 10.2} ]
+spread_note = "Spread with Neolithic"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "sheep"
+name = "Sheep"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "Upper Mesopotamia", kyr = 10.5} ]
+spread_note = "Spread with Neolithic"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "cattle"
+name = "Cattle (taurine)"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding"]
+env = ["grass"]
+earliest_kyr = 10.3
+origins = [ {where = "Anatolia/Fertile Crescent", kyr = 10.3}, {where = "Africa (possible)", kyr = 8} ]
+spread_note = "Fertile Crescent; separate African line debated"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "zebu"
+name = "Zebu cattle"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding"]
+env = ["grass"]
+earliest_kyr = 8
+origins = [ {where = "Indus (Mehrgarh)", kyr = 8} ]
+spread_note = "South Asia then Africa"
+confidence = "medium"
+source = "Larson & Fuller 2014, The evolution of animal domestication (unverified)"
+
+[[tech]]
+id = "pig"
+name = "Pig"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = ["forest", "wetland"]
+earliest_kyr = 10.3
+origins = [ {where = "Anatolia", kyr = 10.3}, {where = "China", kyr = 8.6} ]
+spread_note = "Independent Near East and China"
+confidence = "medium"
+source = "Larson & Fuller 2014, The evolution of animal domestication (unverified)"
+
+[[tech]]
+id = "chicken"
+name = "Chicken"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["herding"]
+env = ["forest"]
+earliest_kyr = 3.5
+origins = [ {where = "SE Asia", kyr = 3.5} ]
+spread_note = "Spread across Eurasia, Africa; Pacific"
+confidence = "low"
+source = "Peters et al. 2022, Rethinking the origins of chicken domestication (unverified)"
+note = "Earlier claims of 8 kyr in China are discounted."
+
+[[tech]]
+id = "waterfowl"
+name = "Goose and duck"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = ["wetland"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5}, {where = "China", kyr = 3.5} ]
+spread_note = "Independent in Egypt and China"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "horse"
+name = "Horse"
+group = "food"
+track = "food"
+domains = ["food", "move", "war"]
+needs = ["herding"]
+env = ["grass"]
+earliest_kyr = 5.5
+origins = [ {where = "Botai", kyr = 5.5}, {where = "Pontic-Caspian", kyr = 4.2} ]
+spread_note = "Steppe; modern lineage from c. 4.2 kyr"
+confidence = "low"
+source = "Librado et al. 2021, The origins and spread of domestic horses (unverified)"
+note = "Botai horses are not ancestral; milk use c. 5.5."
+
+[[tech]]
+id = "donkey"
+name = "Donkey"
+group = "food"
+track = "food"
+domains = ["move", "food"]
+needs = ["herding"]
+env = ["desert"]
+earliest_kyr = 7
+origins = [ {where = "Northeast Africa", kyr = 7} ]
+spread_note = "Spread to Near East"
+confidence = "medium"
+source = "Todd et al. 2022, Ancient DNA donkeys (unverified)"
+
+[[tech]]
+id = "dromedary"
+name = "Dromedary camel"
+group = "food"
+track = "food"
+domains = ["move", "food"]
+needs = ["herding"]
+env = ["desert"]
+earliest_kyr = 3.5
+origins = [ {where = "Arabia", kyr = 3.5} ]
+spread_note = "Spread with caravan trade"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "bactrian_camel"
+name = "Bactrian camel"
+group = "food"
+track = "food"
+domains = ["move", "food"]
+needs = ["herding"]
+env = ["steppe"]
+earliest_kyr = 4.5
+origins = [ {where = "Central Asia", kyr = 4.5} ]
+spread_note = "Steppe and Silk Road"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "llama_alpaca"
+name = "Llama and alpaca"
+group = "food"
+track = "food"
+domains = ["move", "food"]
+needs = ["herding"]
+env = ["mountain"]
+earliest_kyr = 6
+origins = [ {where = "Andes", kyr = 6} ]
+spread_note = "Andes only"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "guinea_pig"
+name = "Guinea pig"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["herding"]
+env = ["mountain"]
+earliest_kyr = 7
+origins = [ {where = "Andes", kyr = 7} ]
+spread_note = "Andes then Ecuador"
+confidence = "low"
+source = "none known"
+note = "Contested 5-7 kyr."
+
+[[tech]]
+id = "reindeer"
+name = "Reindeer herding"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding"]
+env = ["cold"]
+earliest_kyr = 2
+origins = [ {where = "Sayan", kyr = 2}, {where = "Fennoscandia", kyr = 1} ]
+spread_note = "Siberia and Fennoscandia, possibly independent"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "yak"
+name = "Yak"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding"]
+env = ["mountain"]
+earliest_kyr = 4.5
+origins = [ {where = "Tibetan plateau", kyr = 4.5} ]
+spread_note = "High plateau only"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "water_buffalo"
+name = "Water buffalo"
+group = "food"
+track = "food"
+domains = ["food", "move"]
+needs = ["herding"]
+env = ["wetland"]
+earliest_kyr = 5
+origins = [ {where = "Indus", kyr = 5}, {where = "China", kyr = 4.5} ]
+spread_note = "Independent river and swamp buffalo"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "cat"
+name = "Cat"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["storage"]
+env = []
+earliest_kyr = 9.5
+origins = [ {where = "Cyprus", kyr = 9.5}, {where = "Egypt", kyr = 4} ]
+spread_note = "Followed granaries; Near East then world"
+confidence = "low"
+source = "Vigne et al. 2004 (unverified)"
+note = "Burial association at Shillourokambos."
+
+[[tech]]
+id = "turkey"
+name = "Turkey"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["desert"]
+earliest_kyr = 2.1
+origins = [ {where = "Ancestral Pueblo", kyr = 2}, {where = "Mexico", kyr = 2.3} ]
+spread_note = "Southwest US and Mesoamerica"
+confidence = "low"
+source = "none known"
+
+[[tech]]
+id = "rabbit"
+name = "Rabbit"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+env = []
+earliest_kyr = 1.5
+origins = [ {where = "France (monasteries)", kyr = 1.5} ]
+spread_note = "Medieval Europe"
+confidence = "low"
+source = "none known"
+note = "Roman leporaria."
+
+[[tech]]
+id = "pigeon_dovecote"
+name = "Pigeon and dovecote"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["herding", "mudbrick"]
+env = []
+earliest_kyr = 5
+origins = [ {where = "Mesopotamia", kyr = 5} ]
+spread_note = "Mediterranean and Europe"
+confidence = "low"
+source = "none known"
+note = "Dung as manure."
+
+[[tech]]
+id = "beekeeping"
+name = "Beekeeping"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["honey_hunting", "herding"]
+env = []
+earliest_kyr = 4.5
+origins = [ {where = "Egypt", kyr = 4.5} ]
+spread_note = "Spread slowly"
+confidence = "medium"
+source = "none known"
+note = "Sun temple of Niuserre."
+
+[[tech]]
+id = "transhumance"
+name = "Transhumance and pastoral nomadism"
+group = "food"
+track = "food"
+domains = ["food", "move", "trade"]
+needs = ["herding", "milking"]
+env = ["grass"]
+earliest_kyr = 8
+origins = [ {where = "Zagros/Near East", kyr = 8}, {where = "Eurasian steppe", kyr = 5}, {where = "Sahel", kyr = 5} ]
+spread_note = "Many independent"
+confidence = "low"
+source = "Khazanov 1984, Nomads and the outside world (unverified)"
+
+[[tech]]
+id = "wheat"
+name = "Emmer and einkorn wheat"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "Levant/southeast Anatolia", kyr = 10.5} ]
+spread_note = "Fertile Crescent to Europe, Asia"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "barley"
+name = "Barley"
+group = "food"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "Levant/Zagros", kyr = 10.5} ]
+spread_note = "Fertile Crescent to Eurasia"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "lentil_pea_chickpea"
+name = "Lentil, pea, chickpea and bitter vetch"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "Levant", kyr = 10.5} ]
+spread_note = "Founder pulses"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "flax"
+name = "Flax"
+group = "food"
+track = "food"
+domains = ["food", "craft"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "Levant", kyr = 10.5} ]
+spread_note = "Oil and fibre"
+confidence = "medium"
+source = "Zeder 2011, The origins of agriculture in the Near East (unverified)"
+
+[[tech]]
+id = "rye_oats"
+name = "Rye and oats"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["wheat"]
+env = ["cold"]
+earliest_kyr = 5
+origins = [ {where = "Europe", kyr = 5} ]
+spread_note = "Secondary crops from weeds in cold fields"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "rice"
+name = "Asian rice"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["cultivation"]
+env = ["wetland"]
+earliest_kyr = 9
+origins = [ {where = "Yangtze", kyr = 9}, {where = "Ganges", kyr = 4} ]
+spread_note = "Independent japonica and indica lines"
+confidence = "low"
+source = "Fuller et al. 2009, The domestication process of rice (unverified)"
+note = "Domestic traits c. 7 kyr."
+
+[[tech]]
+id = "millet"
+name = "Foxtail and broomcorn millet"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10.5
+origins = [ {where = "northern China", kyr = 10.5} ]
+spread_note = "North China to Europe"
+confidence = "medium"
+source = "Lu et al. 2009 PNAS (unverified)"
+
+[[tech]]
+id = "maize"
+name = "Maize"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 9
+origins = [ {where = "Balsas", kyr = 9} ]
+spread_note = "Mexico to the Americas"
+confidence = "medium"
+source = "Piperno et al. 2009 PNAS (unverified)"
+note = "Large cobs c. 6 kyr."
+
+[[tech]]
+id = "squash"
+name = "Squash and pumpkin"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 10
+origins = [ {where = "Oaxaca", kyr = 10}, {where = "Ecuador", kyr = 10} ]
+spread_note = "Independent in Americas"
+confidence = "medium"
+source = "Smith 1997 Science (unverified)"
+
+[[tech]]
+id = "common_bean"
+name = "Common bean"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 4.5
+origins = [ {where = "Andes", kyr = 4.5}, {where = "Mesoamerica", kyr = 4} ]
+spread_note = "Two independent"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "potato"
+name = "Potato"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["mountain"]
+earliest_kyr = 7
+origins = [ {where = "Titicaca basin", kyr = 7} ]
+spread_note = "Andes then world"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "manioc"
+name = "Manioc (cassava)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "plant_detox"]
+env = ["forest"]
+earliest_kyr = 8
+origins = [ {where = "southwest Amazon", kyr = 8} ]
+spread_note = "Amazon then tropics"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "sweet_potato"
+name = "Sweet potato"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = []
+earliest_kyr = 5
+origins = [ {where = "Andes", kyr = 5}, {where = "Polynesia", kyr = 0.8} ]
+spread_note = "Peru then Polynesia"
+confidence = "low"
+source = "Ioannidis et al. 2020 Nature (unverified)"
+note = "Polynesian arrival disputed."
+
+[[tech]]
+id = "sorghum"
+name = "Sorghum"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 5
+origins = [ {where = "Sahel/Sudan", kyr = 5} ]
+spread_note = "Africa to India"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "pearl_millet"
+name = "Pearl millet"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["desert"]
+earliest_kyr = 4
+origins = [ {where = "Sahel", kyr = 4} ]
+spread_note = "Africa to India"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "african_rice"
+name = "African rice"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["wetland"]
+earliest_kyr = 3
+origins = [ {where = "Niger delta", kyr = 3} ]
+spread_note = "West Africa only"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "yam"
+name = "Yams"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["forest"]
+earliest_kyr = 7
+origins = [ {where = "New Guinea", kyr = 7}, {where = "West Africa", kyr = 5} ]
+spread_note = "Independent"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "taro"
+name = "Taro"
+group = "food"
+track = "food"
+domains = ["food", "ritual"]
+needs = ["cultivation"]
+env = ["wetland"]
+earliest_kyr = 10
+origins = [ {where = "New Guinea", kyr = 10}, {where = "SE Asia", kyr = 8} ]
+spread_note = "Pacific"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "banana"
+name = "Banana"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["forest"]
+earliest_kyr = 7
+origins = [ {where = "New Guinea", kyr = 7} ]
+spread_note = "Pacific and Africa"
+confidence = "medium"
+source = "Denham et al. 2003 Science (unverified)"
+
+[[tech]]
+id = "sugarcane"
+name = "Sugarcane"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["wetland"]
+earliest_kyr = 8
+origins = [ {where = "New Guinea", kyr = 8} ]
+spread_note = "India then world"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "soybean"
+name = "Soybean"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 5
+origins = [ {where = "Northeast Asia", kyr = 5} ]
+spread_note = "China to Korea, Japan"
+confidence = "low"
+source = "Lee et al. 2011 (unverified)"
+
+[[tech]]
+id = "date_palm"
+name = "Date palm"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["orchards", "irrigation"]
+env = ["desert"]
+earliest_kyr = 7
+origins = [ {where = "Gulf", kyr = 7} ]
+spread_note = "Oasis crop"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "olive"
+name = "Olive"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["orchards"]
+env = ["mediterranean"]
+earliest_kyr = 7
+origins = [ {where = "Levant", kyr = 7} ]
+spread_note = "Mediterranean"
+confidence = "medium"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "grape"
+name = "Grape"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["orchards"]
+env = ["grass"]
+earliest_kyr = 8
+origins = [ {where = "Caucasus", kyr = 8} ]
+spread_note = "Eurasia"
+confidence = "medium"
+source = "McGovern 2017 PNAS (unverified)"
+
+[[tech]]
+id = "fig"
+name = "Fig"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["orchards"]
+env = ["mediterranean"]
+earliest_kyr = 11.4
+origins = [ {where = "Jordan Valley", kyr = 11.4} ]
+spread_note = "Mediterranean"
+confidence = "medium"
+source = "Kislev et al. 2006 Science (unverified)"
+note = "Parthenocarpic figs."
+
+[[tech]]
+id = "apple"
+name = "Apple"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["orchards", "grafting"]
+env = ["mountain"]
+earliest_kyr = 4.5
+origins = [ {where = "Tien Shan", kyr = 4.5} ]
+spread_note = "Silk Road to Europe"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "peach"
+name = "Peach"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["orchards"]
+env = ["forest"]
+earliest_kyr = 7.5
+origins = [ {where = "Zhejiang", kyr = 7.5} ]
+spread_note = "China to Persia"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "citrus"
+name = "Citrus"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["orchards"]
+env = ["forest"]
+earliest_kyr = 2.5
+origins = [ {where = "southern China", kyr = 2.5} ]
+spread_note = "Asia to Mediterranean"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "chili"
+name = "Chili pepper"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = []
+earliest_kyr = 6
+origins = [ {where = "Mexico/Bolivia", kyr = 6} ]
+spread_note = "Americas then world"
+confidence = "medium"
+source = "Perry et al. 2007 Science (unverified)"
+
+[[tech]]
+id = "cacao"
+name = "Cacao"
+group = "food"
+track = "food"
+domains = ["food", "ritual", "trade"]
+needs = ["cultivation"]
+env = ["forest"]
+earliest_kyr = 5.3
+origins = [ {where = "Ecuador (Mayo-Chinchipe)", kyr = 5.3} ]
+spread_note = "Amazon to Mesoamerica"
+confidence = "medium"
+source = "Zarrillo et al. 2018 (unverified)"
+
+[[tech]]
+id = "tea"
+name = "Tea"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["forest"]
+earliest_kyr = 2.1
+origins = [ {where = "southwest China", kyr = 2.1} ]
+spread_note = "China to the world"
+confidence = "low"
+source = "none known"
+note = "Han tomb residues."
+
+[[tech]]
+id = "coffee"
+name = "Coffee"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["mountain"]
+earliest_kyr = 0.6
+origins = [ {where = "Yemen/Ethiopia", kyr = 0.6} ]
+spread_note = "Highlands to the Arab world"
+confidence = "low"
+source = "none known"
+note = "15th century Sufi use."
+
+[[tech]]
+id = "quinoa"
+name = "Quinoa"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["mountain"]
+earliest_kyr = 5
+origins = [ {where = "Andes", kyr = 5} ]
+spread_note = "Andes"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "eastern_agricultural_complex"
+name = "Eastern Agricultural Complex"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["wetland"]
+earliest_kyr = 4.5
+origins = [ {where = "eastern North America", kyr = 4.5} ]
+spread_note = "Local"
+confidence = "medium"
+source = "Smith 2006 (unverified)"
+note = "Sumpweed, goosefoot, sunflower."
+
+[[tech]]
+id = "teff_enset"
+name = "Teff and enset"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation"]
+env = ["mountain"]
+earliest_kyr = 3.5
+origins = [ {where = "Ethiopia", kyr = 3.5} ]
+spread_note = "Highlands"
+confidence = "low"
+source = "Fuller et al. 2014-2017, archaeobotanical reviews of crop origins (unverified)"
+
+[[tech]]
+id = "sesame"
+name = "Sesame and oil seeds"
+group = "food"
+track = "food"
+domains = ["food", "trade"]
+needs = ["cultivation"]
+env = ["grass"]
+earliest_kyr = 4.5
+origins = [ {where = "Indus", kyr = 4.5} ]
+spread_note = "Spread by trade"
+confidence = "low"
+source = "Fuller 2003 (unverified)"
+
+[[tech]]
+id = "garden_vegetables"
+name = "Garden vegetables (onion, garlic, cabbage)"
+group = "food"
+track = "food"
+domains = ["food"]
+needs = ["cultivation", "irrigation"]
+env = ["grass"]
+earliest_kyr = 4.5
+origins = [ {where = "Egypt/Mesopotamia", kyr = 4.5} ]
+spread_note = "Spread with irrigation"
+confidence = "low"
+source = "none known"
+

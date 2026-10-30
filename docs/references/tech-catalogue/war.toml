@@ -1,0 +1,1036 @@
+# War technologies catalogue. Dates are best-knowledge Earth firsts, unverified.
+
+[[tech]]
+id = "thrusting_spear"
+name = "Thrusting spear"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["hafting"]
+env = ["timber"]
+earliest_kyr = 400
+origins = [ {where = "Europe/Africa", kyr = 400} ]
+spread_note = "Old and widespread; hand-held spears reinvented wherever hafting is known."
+confidence = "medium"
+source = "Thieme 1997 (Schoningen); Wilkins et al 2012, Kathu Pan hafted points (unverified)"
+note = "c. 500 kyr hafted points at Kathu Pan are possibly spear tips; Clacton spear tip c. 400 kyr."
+
+[[tech]]
+id = "throwing_spear"
+name = "Throwing spear (javelin)"
+group = "war"
+track = "tools"
+domains = ["war", "food"]
+needs = ["thrusting_spear", "projectiles"]
+env = ["timber"]
+earliest_kyr = 300
+origins = [ {where = "Germany (Schoningen)", kyr = 300} ]
+spread_note = "Deep antiquity; used in hunting before war."
+confidence = "medium"
+source = "Thieme 1997, Nature, Lethal spears (unverified)"
+note = "Schoningen spears c. 300-337 kyr; whether thrown is debated."
+
+[[tech]]
+id = "atlatl"
+name = "Spear-thrower (atlatl, woomera)"
+group = "war"
+track = "tools"
+domains = ["war", "food"]
+needs = ["throwing_spear", "cordage"]
+env = ["timber"]
+earliest_kyr = 21
+origins = [ {where = "Europe (Solutrean)", kyr = 21}, {where = "Australia", kyr = 20}, {where = "Americas", kyr = 13} ]
+spread_note = "Independent in Old World, Australia and Americas; mostly replaced by the bow."
+confidence = "medium"
+source = "Cattelain 1997 on Upper Palaeolithic spear-throwers (unverified)"
+note = "Europe dates c. 17-21 kyr; bone hooks; Australian woomera date poorly fixed."
+
+[[tech]]
+id = "throwing_stick"
+name = "Throwing stick and boomerang"
+group = "war"
+track = "tools"
+domains = ["war", "food"]
+needs = ["hafting"]
+env = ["timber"]
+earliest_kyr = 23
+origins = [ {where = "Poland (Oblazowa)", kyr = 23}, {where = "Australia", kyr = 10} ]
+spread_note = "Independent in several places; the returning kind is mainly Australian."
+confidence = "medium"
+source = "Valde-Nowak et al 1987 (Oblazowa boomerang) (unverified)"
+note = "Mammoth-ivory boomerang c. 23 kyr; Tutankhamun-era Egypt has throw-sticks too."
+
+[[tech]]
+id = "arrow_poison"
+name = "Arrow poison"
+group = "war"
+track = "tools"
+domains = ["war", "food"]
+needs = ["bow"]
+env = ["plants"]
+earliest_kyr = 24
+origins = [ {where = "Southern Africa", kyr = 24}, {where = "Amazonia", kyr = 3}, {where = "Southeast Asia", kyr = 3} ]
+spread_note = "Several independent plant poisons; spread with the bow."
+confidence = "low"
+source = "d'Errico et al 2012 and Backwell et al 2008, Border Cave (unverified)"
+note = "Border Cave poison-applicator c. 24 kyr is contested; arrow poison is archaeologically hard to prove."
+
+[[tech]]
+id = "sling"
+name = "Sling"
+group = "war"
+track = "tools"
+domains = ["war", "food"]
+needs = ["cordage"]
+env = ["stone"]
+earliest_kyr = 10
+origins = [ {where = "Near East", kyr = 10}, {where = "Europe", kyr = 8}, {where = "Andes", kyr = 4} ]
+spread_note = "Cheap, reinvented often; sling bullets of clay and lead later."
+confidence = "low"
+source = "none known (unverified)"
+note = "Date is when sling stones appear in Neolithic sites (Jericho, Catal Hoyuyk); likely much older in perishable form."
+
+[[tech]]
+id = "war_club"
+name = "Mace and stone mace-head"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["ground_stone", "hafting"]
+env = ["stone"]
+earliest_kyr = 8
+origins = [ {where = "Near East", kyr = 8}, {where = "Egypt", kyr = 6.5}, {where = "China", kyr = 5} ]
+spread_note = "Widespread and independent; becomes a badge of rank (macehead)."
+confidence = "low"
+source = "none known (unverified)"
+note = "Perforated stone mace-heads from Neolithic Near East; plain clubs far older."
+
+[[tech]]
+id = "dagger"
+name = "Dagger"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["knapping", "hafting"]
+env = ["flint"]
+earliest_kyr = 7
+origins = [ {where = "Anatolia/Near East (copper)", kyr = 6.5}, {where = "Europe (flint daggers)", kyr = 5} ]
+spread_note = "Copper then bronze daggers spread with metal; flint daggers imitate them."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Long flint blades older; true daggers copied in metal from c. 6.5 kyr."
+
+[[tech]]
+id = "battle_axe"
+name = "Shaft-hole battle axe"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["copper"]
+env = ["ore"]
+earliest_kyr = 6
+origins = [ {where = "Near East", kyr = 6}, {where = "Steppe/Europe (Corded Ware)", kyr = 5}, {where = "China", kyr = 4} ]
+spread_note = "Spread across Eurasia with metallurgy; stone copies in Neolithic Europe."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "shield"
+name = "Shield"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["cordage"]
+env = ["timber", "hides"]
+earliest_kyr = 8
+origins = [ {where = "Near East/Spain (rock art)", kyr = 8}, {where = "Egypt", kyr = 5.5}, {where = "Europe", kyr = 3.5} ]
+spread_note = "Independent in many places; rock-art and found examples are later than first use."
+confidence = "low"
+source = "none known (unverified)"
+note = "Shields in Levantine rock art c. 8 kyr; surviving wooden shields only Bronze Age."
+
+[[tech]]
+id = "bronze_sword"
+name = "Bronze sword"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bronze", "dagger"]
+env = ["ore"]
+earliest_kyr = 5.3
+origins = [ {where = "Anatolia (Arslantepe)", kyr = 5.3}, {where = "Aegean/Europe", kyr = 4.0}, {where = "China", kyr = 3.5} ]
+spread_note = "Long swords need cast alloys and travelled from Anatolia/Near East."
+confidence = "medium"
+source = "Palumbi 2008 on Arslantepe arsenical copper swords (unverified)"
+note = "Arslantepe arsenical swords c. 3300 BCE; true long bronze swords by c. 1700 BCE."
+
+[[tech]]
+id = "iron_sword"
+name = "Iron sword"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["iron", "bronze_sword"]
+env = ["ore"]
+earliest_kyr = 3.0
+origins = [ {where = "Anatolia/Near East", kyr = 3.2}, {where = "Central Europe (Hallstatt)", kyr = 2.8}, {where = "China", kyr = 2.7} ]
+spread_note = "Iron swords spread with ironworking; soft wrought iron before steel."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Early iron blades were often worse than bronze until carburising."
+
+[[tech]]
+id = "steel_sword"
+name = "Steel and pattern-welded sword"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["steel", "iron_sword"]
+env = ["ore"]
+earliest_kyr = 2.3
+origins = [ {where = "India (wootz)", kyr = 2.3}, {where = "China (Han)", kyr = 2.2}, {where = "Celtic/Roman Europe", kyr = 2.0} ]
+spread_note = "Independent steel traditions; crucible and folded steel prized trade goods."
+confidence = "medium"
+source = "Craddock 2003 on early steel (unverified)"
+note = "Dates c. 2.3 kyr crucible steel in South Asia; Han steel swords c. 2.2 kyr."
+
+[[tech]]
+id = "sabre"
+name = "Curved sabre"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["steel_sword", "riding"]
+env = ["ore"]
+earliest_kyr = 1.4
+origins = [ {where = "Central Asia (Turkic)", kyr = 1.4} ]
+spread_note = "Cavalry blade spreading from steppe peoples."
+confidence = "low"
+source = "none known (unverified)"
+note = "Early curved cavalry sabres c. 7th-9th c CE."
+
+[[tech]]
+id = "pike"
+name = "Pike (sarissa)"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["thrusting_spear", "iron"]
+env = ["timber"]
+earliest_kyr = 2.35
+origins = [ {where = "Macedon", kyr = 2.35}, {where = "Swiss", kyr = 0.7} ]
+spread_note = "Macedonian invention, later reinvented by Swiss pikemen."
+confidence = "high"
+source = "Sekunda on Macedonian armies (unverified)"
+note = "Sarissa under Philip II c. 359 BCE; pike square revived c. 1300 CE."
+
+[[tech]]
+id = "halberd"
+name = "Halberd and polearm"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["pike", "battle_axe"]
+env = ["ore", "timber"]
+earliest_kyr = 0.7
+origins = [ {where = "Switzerland/Europe", kyr = 0.7}, {where = "China (ge, ji)", kyr = 3.0} ]
+spread_note = "Polearms arise independently; European halberd c. 14th c."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Chinese ge (dagger-axe) and ji are far older; the European halberd is c. 1300s CE."
+
+[[tech]]
+id = "longbow"
+name = "Longbow"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bow"]
+env = ["timber"]
+earliest_kyr = 0.8
+origins = [ {where = "Wales/England (war use)", kyr = 0.8}, {where = "Mesolithic Europe (bows)", kyr = 8.5} ]
+spread_note = "Long self bows are old; the massed war longbow is a medieval English/Welsh skill."
+confidence = "medium"
+source = "Hardy 1976, The Long Bow (unverified)"
+note = "Holmegaard bows c. 8.5 kyr; massed war use c. 1300s CE."
+
+[[tech]]
+id = "composite_bow"
+name = "Composite bow"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bow"]
+env = ["horn", "sinew", "timber"]
+earliest_kyr = 4.2
+origins = [ {where = "Near East/Egypt", kyr = 4.2}, {where = "Steppe", kyr = 3.5}, {where = "China", kyr = 3.5} ]
+spread_note = "Needs horn, sinew and glue; spread with horse peoples."
+confidence = "medium"
+source = "Miller et al 1986 (unverified); Naram-Sin stele c. 2250 BCE (unverified)"
+note = "Earliest firm depiction c. 2250 BCE; steppe traditions possibly older."
+
+[[tech]]
+id = "crossbow"
+name = "Crossbow"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bow"]
+env = ["timber"]
+earliest_kyr = 2.4
+origins = [ {where = "China", kyr = 2.5}, {where = "Greece (gastraphetes)", kyr = 2.4} ]
+spread_note = "Independent in China and Greece; revived in medieval Europe."
+confidence = "medium"
+source = "Needham 1994 on crossbows (unverified)"
+note = "Chinese bronze trigger locks from c. 5th c BCE."
+
+[[tech]]
+id = "bronze_cuirass"
+name = "Bronze helmet and cuirass"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bronze"]
+env = ["ore"]
+earliest_kyr = 4.5
+origins = [ {where = "Mesopotamia", kyr = 4.5}, {where = "Aegean (Dendra)", kyr = 3.5}, {where = "China", kyr = 3.0} ]
+spread_note = "Elite metal armour spread by trade and imitation."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Copper helmets in Ur royal tombs c. 2600 BCE; Dendra panoply c. 1450 BCE."
+
+[[tech]]
+id = "helmet"
+name = "Helmet"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bronze"]
+env = ["ore"]
+earliest_kyr = 4.6
+origins = [ {where = "Mesopotamia", kyr = 4.6}, {where = "Egypt", kyr = 3.5} ]
+spread_note = "Leather or felt caps older; metal helmets spread with bronze."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Leather/felt helmets likely far older but perishable."
+
+[[tech]]
+id = "padded_armour"
+name = "Padded and hardened-leather armour"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["sewing"]
+env = ["hides", "fibre"]
+earliest_kyr = 4.0
+origins = [ {where = "Mesopotamia/Egypt", kyr = 4.0}, {where = "Aegean (linothorax)", kyr = 3.4}, {where = "Mesoamerica (ichcahuipilli)", kyr = 2.5} ]
+spread_note = "Cheap armour reinvented by many peoples."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "scale_armour"
+name = "Scale armour"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["bronze_cuirass"]
+env = ["ore"]
+earliest_kyr = 3.5
+origins = [ {where = "Mesopotamia/Egypt", kyr = 3.5}, {where = "China", kyr = 3.0} ]
+spread_note = "Scales on a backing; spread across Eurasia."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Nuzi scale armour c. 1500 BCE."
+
+[[tech]]
+id = "lamellar"
+name = "Lamellar armour"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["scale_armour"]
+env = ["ore"]
+earliest_kyr = 2.9
+origins = [ {where = "Assyria", kyr = 2.9}, {where = "China", kyr = 2.4}, {where = "Steppe/Japan", kyr = 1.5} ]
+spread_note = "Lashed plates; long-lived Eurasian tradition."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "mail"
+name = "Mail (chain armour)"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["iron", "steel"]
+env = ["ore"]
+earliest_kyr = 2.3
+origins = [ {where = "Celts (Central Europe)", kyr = 2.3} ]
+spread_note = "Celtic invention (probable), adopted by Romans, then everyone."
+confidence = "medium"
+source = "Rosenthal on chain mail (unverified)"
+note = "Vaies find c. 3rd c BCE; labour-intensive."
+
+[[tech]]
+id = "segmented_plate"
+name = "Segmented plate armour"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["steel"]
+env = ["ore"]
+earliest_kyr = 1.95
+origins = [ {where = "Rome (lorica segmentata)", kyr = 1.95} ]
+spread_note = "Roman army issue; lost in late antiquity."
+confidence = "medium"
+source = "Robinson 1975, Armour of Imperial Rome (unverified)"
+
+[[tech]]
+id = "plate_armour"
+name = "Full plate armour"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["mail", "steel"]
+env = ["ore"]
+earliest_kyr = 0.65
+origins = [ {where = "Italy/Western Europe", kyr = 0.65} ]
+spread_note = "Articulated plate c. 1300s CE; made obsolete by firearms."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Plate 'harness' by the 15th c."
+
+[[tech]]
+id = "war_chariot"
+name = "War chariot"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["wheel", "pack_animals"]
+env = ["grass"]
+earliest_kyr = 4.0
+origins = [ {where = "Steppe (Sintashta)", kyr = 4.0}, {where = "Near East", kyr = 3.7}, {where = "China", kyr = 3.3} ]
+spread_note = "Spread rapidly across Eurasia from the Sintashta/Andronovo world; spoked wheel and horse needed."
+confidence = "medium"
+source = "Anthony 2007, The Horse, the Wheel and Language (unverified)"
+note = "Sintashta chariot burials c. 2000 BCE; Mesopotamian onager wagons older but not true chariots."
+
+[[tech]]
+id = "cavalry"
+name = "Cavalry"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["riding", "composite_bow"]
+env = ["grass"]
+earliest_kyr = 2.9
+origins = [ {where = "Assyria", kyr = 2.9}, {where = "Steppe", kyr = 3.0} ]
+spread_note = "Chariots replaced by mounted troops across Eurasia."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Mounted warriors from c. 9th c BCE; saddle-less for centuries."
+
+[[tech]]
+id = "horse_archery"
+name = "Horse archery"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["cavalry", "composite_bow"]
+env = ["grass"]
+earliest_kyr = 2.7
+origins = [ {where = "Steppe (Scythian)", kyr = 2.7} ]
+spread_note = "Steppe confederations; many conquests rest on it."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "camel_cavalry"
+name = "Camel cavalry"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["riding"]
+env = ["desert"]
+earliest_kyr = 3.0
+origins = [ {where = "Arabia/Near East", kyr = 3.0} ]
+spread_note = "Desert peoples ride camels in raids; Arabia the centre."
+confidence = "low"
+source = "none known (unverified)"
+note = "Biblical Midianite camel raiders c. 1100 BCE; Assyrian records of Arab camelry c. 850 BCE."
+
+[[tech]]
+id = "war_elephants"
+name = "War elephants"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["pack_animals"]
+env = ["jungle"]
+earliest_kyr = 3.0
+origins = [ {where = "India", kyr = 3.0}, {where = "Hellenistic world", kyr = 2.3} ]
+spread_note = "Indian origin; Hellenistic and Carthaginian adoption."
+confidence = "low"
+source = "none known (unverified)"
+note = "Earliest dates uncertain; certain by 326 BCE (Hydaspes)."
+
+[[tech]]
+id = "stirrup"
+name = "Stirrup"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["riding", "leatherwork"]
+env = ["metal"]
+earliest_kyr = 1.7
+origins = [ {where = "China", kyr = 1.7} ]
+spread_note = "Diffused across Eurasia with horse peoples; reached Europe c. 700s CE."
+confidence = "medium"
+source = "White 1962, Medieval Technology and Social Change (unverified)"
+note = "Metal stirrups c. 4th c CE China; earlier mounting loops."
+
+[[tech]]
+id = "cataphract"
+name = "Armoured horse (cataphract)"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["cavalry", "scale_armour"]
+env = ["grass", "ore"]
+earliest_kyr = 2.2
+origins = [ {where = "Parthia/Persia", kyr = 2.2} ]
+spread_note = "Iranian steppe tradition; copied by Rome and Byzantium."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "heavy_cavalry"
+name = "Heavy shock cavalry (stirrup and lance)"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["stirrup", "cataphract"]
+env = ["grass"]
+earliest_kyr = 1.2
+origins = [ {where = "Franks/Europe", kyr = 1.2} ]
+spread_note = "Couched lance and stirrup; knightly cavalry."
+confidence = "medium"
+source = "White 1962 (unverified); disputed (unverified)"
+note = "Contested whether stirrup caused the shock charge; c. 1000 CE."
+
+[[tech]]
+id = "battering_ram"
+name = "Battering ram"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["thrusting_spear"]
+env = ["timber", "metal"]
+earliest_kyr = 4.0
+origins = [ {where = "Egypt", kyr = 4.0}, {where = "Assyria", kyr = 2.9} ]
+spread_note = "Reinvented where walled cities needed breaching."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Beni Hasan tomb c. 2000 BCE depicts a ram; Assyrian wheeled rams c. 9th c BCE."
+
+[[tech]]
+id = "siege_mining"
+name = "Siege mining and sapping"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["mines", "fortifications"]
+env = ["ore"]
+earliest_kyr = 3.0
+origins = [ {where = "Near East", kyr = 3.0}, {where = "Greece/Rome", kyr = 2.4} ]
+spread_note = "Followed city walls everywhere."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "siege_tower"
+name = "Siege tower and scaling ladders"
+group = "war"
+track = "build"
+domains = ["war"]
+needs = ["battering_ram"]
+env = ["timber"]
+earliest_kyr = 2.8
+origins = [ {where = "Assyria", kyr = 2.8}, {where = "Greece (Demetrius)", kyr = 2.3}, {where = "China", kyr = 2.5} ]
+spread_note = "Spreads with organised siegecraft."
+confidence = "low"
+source = "none known (unverified)"
+note = "Assyrian reliefs c. 9th c BCE show tower-like rams; Hellenistic helepolis c. 305 BCE."
+
+[[tech]]
+id = "torsion_artillery"
+name = "Torsion artillery (ballista, catapult)"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["crossbow", "cordage"]
+env = ["sinew", "timber"]
+earliest_kyr = 2.35
+origins = [ {where = "Syracuse/Greece", kyr = 2.4} ]
+spread_note = "Twisted sinew or hair springs; Greek then Roman."
+confidence = "high"
+source = "Marsden 1969, Historical Development of Artillery (unverified)"
+note = "Gastraphetes and catapult at Syracuse 399 BCE."
+
+[[tech]]
+id = "traction_trebuchet"
+name = "Traction trebuchet"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["sling"]
+env = ["timber"]
+earliest_kyr = 2.3
+origins = [ {where = "China", kyr = 2.3} ]
+spread_note = "Diffused west via Avars/Byzantines."
+confidence = "low"
+source = "Needham 1994 (unverified)"
+note = "Mozi mentions c. 4th c BCE; Avars carry it to the Mediterranean by 580s CE."
+
+[[tech]]
+id = "counterweight_trebuchet"
+name = "Counterweight trebuchet"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["traction_trebuchet"]
+env = ["timber"]
+earliest_kyr = 0.85
+origins = [ {where = "Mediterranean/Near East", kyr = 0.85} ]
+spread_note = "12th c; spread quickly with sieges."
+confidence = "medium"
+source = "Chevedden 1995 (unverified)"
+
+[[tech]]
+id = "incendiary"
+name = "Naval fire and Greek fire"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["fire_control"]
+env = ["resin", "naphtha"]
+earliest_kyr = 1.35
+origins = [ {where = "Byzantium", kyr = 1.35}, {where = "China", kyr = 1.0} ]
+spread_note = "Secret recipe, Byzantine monopoly; Chinese flame fuel."
+confidence = "medium"
+source = "Partington 1960, A History of Greek Fire and Gunpowder (unverified)"
+note = "Siphon fire at Constantinople 672 CE; incendiary arrows and pots much older."
+
+[[tech]]
+id = "pontoon_bridge"
+name = "Pontoon bridge"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["rafts", "roads"]
+env = ["timber"]
+earliest_kyr = 2.5
+origins = [ {where = "Persia", kyr = 2.5}, {where = "China", kyr = 3.0} ]
+spread_note = "Imperial armies invent."
+confidence = "medium"
+source = "Herodotus on Xerxes' bridge (unverified)"
+note = "Hellespont bridge 480 BCE; Chinese pontoon c. 1000 BCE."
+
+[[tech]]
+id = "gunpowder"
+name = "Gunpowder"
+group = "war"
+track = "fire"
+domains = ["war"]
+needs = ["fire_control", "salting"]
+env = ["saltpetre", "sulphur"]
+earliest_kyr = 1.1
+origins = [ {where = "China", kyr = 1.1} ]
+spread_note = "Chinese; weapon uses spread westward in 13th c."
+confidence = "high"
+source = "Needham 1986, Science and Civilisation in China vol 5 (unverified)"
+note = "Alchemists' recipe c. 850 CE; may also be listed by a chemistry group."
+
+[[tech]]
+id = "fire_lance"
+name = "Fire lance"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["bamboo", "metal"]
+earliest_kyr = 1.0
+origins = [ {where = "China", kyr = 1.0} ]
+spread_note = "Chinese; ancestor of the hand cannon."
+confidence = "high"
+source = "Needham 1986 (unverified)"
+note = "Dunhuang paintings c. 950 CE."
+
+[[tech]]
+id = "grenade"
+name = "Gunpowder bomb and grenade"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["clay", "iron"]
+earliest_kyr = 0.9
+origins = [ {where = "China", kyr = 0.9} ]
+spread_note = "Chinese; spread with Mongols."
+confidence = "medium"
+source = "Needham 1986 (unverified)"
+
+[[tech]]
+id = "war_rocket"
+name = "War rocket"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["gunpowder"]
+env = ["bamboo"]
+earliest_kyr = 0.8
+origins = [ {where = "China", kyr = 0.8}, {where = "India (Mysore)", kyr = 0.25} ]
+spread_note = "Chinese fire arrows c. 1200s; spread via Mongols."
+confidence = "medium"
+source = "Needham 1986 (unverified)"
+
+[[tech]]
+id = "handgonne"
+name = "Handgonne (hand cannon)"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["fire_lance", "bronze"]
+env = ["ore"]
+earliest_kyr = 0.73
+origins = [ {where = "China", kyr = 0.73} ]
+spread_note = "Chinese then Europe and Islamic world by 14th c."
+confidence = "medium"
+source = "Needham 1986 (unverified)"
+note = "Heilongjiang gun dated c. 1288 CE."
+
+[[tech]]
+id = "cannon"
+name = "Cannon and bombard"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["handgonne", "kilns"]
+env = ["ore"]
+earliest_kyr = 0.72
+origins = [ {where = "China", kyr = 0.74}, {where = "Europe", kyr = 0.68} ]
+spread_note = "Spread over Eurasia by 1350s."
+confidence = "medium"
+source = "Needham 1986 (unverified)"
+note = "Wuwei bronze cannon c. 1227? contested; European guns by 1326."
+
+[[tech]]
+id = "matchlock"
+name = "Matchlock arquebus"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["handgonne"]
+env = ["ore"]
+earliest_kyr = 0.55
+origins = [ {where = "Europe/Ottoman", kyr = 0.55}, {where = "Japan", kyr = 0.46} ]
+spread_note = "Fast adoption in Eurasia; Japan in 1543."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "flintlock"
+name = "Flintlock musket"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["matchlock"]
+env = ["flint", "ore"]
+earliest_kyr = 0.4
+origins = [ {where = "France", kyr = 0.4} ]
+spread_note = "Replaces match; European states."
+confidence = "medium"
+source = "none known (unverified)"
+late = true
+
+[[tech]]
+id = "bayonet"
+name = "Bayonet"
+group = "war"
+track = "tools"
+domains = ["war"]
+needs = ["matchlock", "pike"]
+env = ["ore"]
+earliest_kyr = 0.33
+origins = [ {where = "France", kyr = 0.33} ]
+spread_note = "Ends the pike."
+confidence = "medium"
+source = "none known (unverified)"
+late = true
+
+[[tech]]
+id = "ship_guns"
+name = "Shipboard cannon (gunports)"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["cannon", "sails"]
+env = ["timber", "ore"]
+earliest_kyr = 0.5
+origins = [ {where = "Europe", kyr = 0.5} ]
+spread_note = "Atlantic powers."
+confidence = "medium"
+source = "none known (unverified)"
+late = true
+
+[[tech]]
+id = "war_galley"
+name = "War galley"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["sails", "canoes"]
+env = ["timber"]
+earliest_kyr = 3.2
+origins = [ {where = "Eastern Mediterranean", kyr = 3.2} ]
+spread_note = "Oared warships spread with seafaring."
+confidence = "medium"
+source = "Casson 1971, Ships and Seamanship in the Ancient World (unverified)"
+note = "Sea Peoples reliefs of Medinet Habu c. 1177 BCE."
+
+[[tech]]
+id = "naval_ram"
+name = "Naval ram"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["war_galley", "bronze"]
+env = ["timber", "ore"]
+earliest_kyr = 2.75
+origins = [ {where = "Greece/Phoenicia", kyr = 2.75} ]
+spread_note = "Mediterranean; vanishes with later boarding tactics."
+confidence = "medium"
+source = "Casson 1971 (unverified)"
+note = "Bronze rams from c. 8th c BCE."
+
+[[tech]]
+id = "trireme"
+name = "Trireme"
+group = "war"
+track = "travel"
+domains = ["war"]
+needs = ["naval_ram"]
+env = ["timber"]
+earliest_kyr = 2.7
+origins = [ {where = "Phoenicia/Greece", kyr = 2.7} ]
+spread_note = "Three banks of oars; spread across the Mediterranean."
+confidence = "medium"
+source = "Morrison and Coates 1986, The Athenian Trireme (unverified)"
+note = "Corinth or Phoenicia c. 700 BCE."
+
+[[tech]]
+id = "standing_army"
+name = "Standing army"
+group = "war"
+track = "social"
+domains = ["war"]
+needs = ["cities", "chiefdoms"]
+env = ["grain"]
+earliest_kyr = 4.3
+origins = [ {where = "Mesopotamia (Akkad)", kyr = 4.3}, {where = "Egypt", kyr = 3.5}, {where = "China", kyr = 3.0} ]
+spread_note = "Arises with states; later fiscal-military systems."
+confidence = "medium"
+source = "Kuhrt 1995, The Ancient Near East (unverified)"
+note = "Sargon of Akkad c. 2300 BCE; earlier city guards plausible."
+
+[[tech]]
+id = "phalanx"
+name = "Phalanx and close formations"
+group = "war"
+track = "social"
+domains = ["war"]
+needs = ["shield", "thrusting_spear", "chiefdoms"]
+env = ["timber"]
+earliest_kyr = 4.45
+origins = [ {where = "Sumer (Lagash)", kyr = 4.45}, {where = "Greece (hoplites)", kyr = 2.7} ]
+spread_note = "Reinvented by Sumer and Greece."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Stele of the Vultures c. 2450 BCE."
+
+[[tech]]
+id = "military_drill"
+name = "Military drill and discipline"
+group = "war"
+track = "social"
+domains = ["war"]
+needs = ["phalanx"]
+env = ["grain"]
+earliest_kyr = 2.7
+origins = [ {where = "Greece (Sparta)", kyr = 2.7}, {where = "China", kyr = 2.5} ]
+spread_note = "Spreads with professional armies."
+confidence = "low"
+source = "none known (unverified)"
+
+[[tech]]
+id = "legion_tactics"
+name = "Manipular legion and combined arms"
+group = "war"
+track = "social"
+domains = ["war"]
+needs = ["military_drill", "iron_sword"]
+env = ["grain"]
+earliest_kyr = 2.3
+origins = [ {where = "Rome", kyr = 2.3}, {where = "China (Qin)", kyr = 2.25} ]
+spread_note = "Roman and Chinese systems each independent."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "pike_and_shot"
+name = "Pike-and-shot formations"
+group = "war"
+track = "social"
+domains = ["war"]
+needs = ["pike", "matchlock"]
+env = ["ore"]
+earliest_kyr = 0.5
+origins = [ {where = "Spain (tercio)", kyr = 0.5}, {where = "Switzerland", kyr = 0.7} ]
+spread_note = "Spanish tercio then Dutch drill."
+confidence = "medium"
+source = "none known (unverified)"
+late = true
+
+[[tech]]
+id = "war_standards"
+name = "War standards and banners"
+group = "war"
+track = "communication"
+domains = ["war"]
+needs = ["marks", "chiefdoms"]
+env = ["cloth"]
+earliest_kyr = 5.1
+origins = [ {where = "Egypt", kyr = 5.1}, {where = "Mesopotamia", kyr = 4.5}, {where = "China", kyr = 4} ]
+spread_note = "Everywhere states form."
+confidence = "low"
+source = "none known (unverified)"
+note = "Standards on Narmer palette c. 3100 BCE."
+
+[[tech]]
+id = "signal_beacons"
+name = "Beacon and smoke signals"
+group = "war"
+track = "communication"
+domains = ["war"]
+needs = ["fire_control"]
+env = ["fuel"]
+earliest_kyr = 3.0
+origins = [ {where = "Near East (Mari)", kyr = 3.8}, {where = "Greece", kyr = 2.7}, {where = "China", kyr = 2.8} ]
+spread_note = "Many cultures use fire signals; networks with states."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Mari letters c. 1800 BCE mention beacon signals."
+
+[[tech]]
+id = "military_relay"
+name = "Military courier and relay posts"
+group = "war"
+track = "communication"
+domains = ["war"]
+needs = ["roads", "riding"]
+env = ["grass"]
+earliest_kyr = 2.5
+origins = [ {where = "Persia", kyr = 2.5}, {where = "Mongols", kyr = 0.8}, {where = "Inca", kyr = 0.6} ]
+spread_note = "Imperial systems each independent."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Royal Road courier relays under Darius c. 500 BCE."
+
+[[tech]]
+id = "marching_camp"
+name = "Fortified marching camp"
+group = "war"
+track = "shelter"
+domains = ["war"]
+needs = ["legion_tactics", "fortifications"]
+env = ["timber"]
+earliest_kyr = 2.3
+origins = [ {where = "Rome", kyr = 2.3} ]
+spread_note = "Roman standard."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "frontier_walls"
+name = "Frontier and defensive wall lines"
+group = "war"
+track = "shelter"
+domains = ["war"]
+needs = ["fortifications", "cities"]
+env = ["stone"]
+earliest_kyr = 2.65
+origins = [ {where = "China", kyr = 2.65}, {where = "Rome", kyr = 1.9}, {where = "Persia", kyr = 1.5} ]
+spread_note = "Great walls and frontier barriers."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Chu and Qi walls c. 7th c BCE."
+
+[[tech]]
+id = "castle"
+name = "Castle (motte-and-bailey, stone keep)"
+group = "war"
+track = "shelter"
+domains = ["war"]
+needs = ["fortifications", "mortar"]
+env = ["stone", "timber"]
+earliest_kyr = 1.0
+origins = [ {where = "Europe", kyr = 1.0}, {where = "Japan", kyr = 0.5} ]
+spread_note = "Feudal Europe; overlaps shelter group."
+confidence = "medium"
+source = "none known (unverified)"
+note = "Motte-and-bailey 10th c; stone keeps 11th c."
+
+[[tech]]
+id = "concentric_castle"
+name = "Concentric castle"
+group = "war"
+track = "shelter"
+domains = ["war"]
+needs = ["castle"]
+env = ["stone"]
+earliest_kyr = 0.8
+origins = [ {where = "Crusader states/Europe", kyr = 0.8} ]
+spread_note = "High medieval."
+confidence = "medium"
+source = "none known (unverified)"
+
+[[tech]]
+id = "star_fort"
+name = "Bastioned star fort (trace italienne)"
+group = "war"
+track = "shelter"
+domains = ["war"]
+needs = ["castle", "cannon"]
+env = ["stone", "earth"]
+earliest_kyr = 0.5
+origins = [ {where = "Italy", kyr = 0.5} ]
+spread_note = "Responding to cannon."
+confidence = "high"
+source = "Duffy 1979, Siege Warfare (unverified)"
+late = true
+
+[[tech]]
+id = "campaign_rations"
+name = "Campaign rations and field cookery"
+group = "war"
+track = "food"
+domains = ["war", "food"]
+needs = ["smoking_drying", "bread"]
+env = ["grain"]
+earliest_kyr = 2.3
+origins = [ {where = "Rome (bucellatum)", kyr = 2.3}, {where = "Steppe (borts, dried milk)", kyr = 2.5}, {where = "China", kyr = 2.3} ]
+spread_note = "Every army builds its own; shapes cuisine."
+confidence = "low"
+source = "none known (unverified)"
+note = "Portable hard breads, dried meat and milk solids; Roman posca and hardtack."
