@@ -71,11 +71,21 @@ CONST = {
     "SITE_PASS": 0.1,       # added for a pass
     "FOUND": 300,           # people: a village is founded where the target holds this many ...
     "FOUND_STEPS": 2,       # ... for this many steps running
-    "TOWN_MIN": 2000,       # people: a town (needs the 'towns' tech)
-    "CITY_MIN": 10000,      # people: a city (needs the 'cities' tech)
+    # PW-1114: the size classes follow the era, keyed to what the holding people knows, not to the date (Earth dates are only the check).
+    # Stage 0..4 = nothing, 'villages', 'towns', 'cities', 'cities' + 'roads' (the classical city: roads carry its food).
+    "TOWN_MIN": (1000, 1000, 1000, 1000, 2000),  # people: a town, by stage (needs 'towns'). UNVERIFIED best knowledge (Fletcher 1995 pending): a
+                            # Neolithic village is up to ~1,000 and a few thousand is a town; 2,000 once roads and long trade feed larger markets
+    "CITY_MIN": 10000,      # people: a city (needs 'cities'). Anchor: the ancient-city cutoff of Reba et al. 2016 (Modelski: 10,000 for 3500-1000 BC)
+    "TOWN_CAP": 5000,       # people: the largest a town can be where the people lack 'cities' (UNVERIFIED: the largest Neolithic towns were a few thousand)
+    "CITY_CAP": (0, 0, 0, 160000, 1500000),  # people: the largest a city can be, by stage. Anchor (Reba et al. 2016 tables, figshare 2059494/2059497/2059500):
+                            # largest listed city 100,000 (3000-2000 BC), 160,000 (2000-1000 BC); 1.0-1.5 million from 0 to AD 1800
     "TAU_KYR": 0.3,         # a site's people relax toward the target with this time constant
     "ABANDON": 120,         # people: a site whose target stays under this ...
     "ABANDON_STEPS": 3,     # ... for this many steps is abandoned
+    "MINORITY_MAX": 2000,   # people: a second people's own (non-hold) place saturates toward this (x*K/(x+K)): the rest of a dense cell's minority lives in hamlets
+    "HOLD_MAX": 80000,      # people: a hold's halls level off toward this (about the chief cities' largest in these runs, 70-80k)
+    "MINORITY_STEPS": 5,   # PW-1117: a cell's second people must have been the same people for this many steps (0.5 kyr) before it may found a place
+    "MINORITY_ABANDON_STEPS": 10,  # ... and its place is abandoned only after its target stays low this long (1 kyr): a second people's share moves often
     "DROUGHT": 0.25,        # rain this far below the rain at its founding makes an abandonment 'drought'
     "RIVER_SHIFT": 0.03,    # per kyr: chance a lowland river site is left because the river moved (a stand-in, see the docstring)
     "RIVER_LOW_M": 300.0,   # m: river sites below this are on a floodplain that can shift
@@ -91,14 +101,16 @@ CONST = {
                             # owner 10-30), rock salt from 'mines'
 }
 TIERS = ("none", "village", "town", "city")
+STAGES = ("nothing", "villages", "towns", "cities", "cities and roads")  # (PW-1114: what the holding people knows sets the size classes)
 KINDS = ("chief", "minority", "mine")
 MERGED = "merged into the main place"  # (a minority's place whose people came to lead its cell: gone, but not a ruin)  # a cell's chief place, a second people's own place, a mine
 TECH = ("villages", "towns", "cities")
 NONE = 255
 
 
-def tier_of(pop: float, c: dict) -> int:
-    return 3 if pop >= c["CITY_MIN"] else 2 if pop >= c["TOWN_MIN"] else 1 if pop >= c["ABANDON"] else 0
+def tier_of(pop: float, c: dict, stage: int = 4) -> int:
+    """0 none, 1 village, 2 town, 3 city for `pop` people held by a people at `stage` (see CONST TOWN_MIN)."""
+    return 3 if pop >= c["CITY_MIN"] else 2 if pop >= c["TOWN_MIN"][stage] else 1 if pop >= c["ABANDON"] else 0
 
 
 def _tech_dates(m: dict, n_lines: int) -> np.ndarray:
@@ -240,6 +252,9 @@ def derive(run_dir: Path, **over) -> dict:
     rain_f = np.stack([T.frame(run, arr, "precipitation", j).astype(float) for j in fidx])
     W = _world_layers(m.get("world"), n)
     tech = _tech_dates(m, nl)
+    # a mining people's fortified halls count as its city tech (fortifications, or the fantasy delving): its holds may grow past a town (PW-1117)
+    dlv, mnr = np.maximum(_known_dates(m, nl, "delving"), _known_dates(m, nl, "fortifications")), _miner_lines(m, nl)
+    tech[:, 2] = np.where(mnr & (dlv >= 0), np.maximum(tech[:, 2], dlv), tech[:, 2])
     mines = _mines_dates(m, nl)
     tree = SP.parse(m["tree"]) if m.get("tree") else None
     city_groups = {l["index"]: (l["group_of"], float(tree.lines[l["id"]].share) if tree is not None and l["id"] in tree.lines else 0.03)
@@ -285,17 +300,21 @@ def derive(run_dir: Path, **over) -> dict:
     seed = int(m.get("try_seed") or 0)
     rngs = (rng, np.random.default_rng((seed, 1105)), np.random.default_rng((seed, 1105, 2)))  # (the chief places' draws as before)
     lead_since = np.full(n, np.inf)  # kyr ago the cell's lead line last changed
+    cand_run = np.zeros(n, np.int64)  # steps the cell's second people has been the same one (PW-1117)
+    prev_cand = np.full(n, NONE, np.int64)
     prev_lead = None
     dt = c["STEP_KYR"]
     relax = 1 - np.exp(-dt / c["TAU_KYR"])
     SHARE = np.asarray(c["SHARE"], float)
-    caps = np.array([0.0, c["TOWN_MIN"] - 1, c["CITY_MIN"] - 1, np.inf])
+    TOWN_MIN = np.asarray(c["TOWN_MIN"], float)
+    CITY_CAP = np.asarray(c["CITY_CAP"], float)
     R1, R2 = _ring_index(g, 1), _ring_index(g, 2)  # (n, k) padded with the cell itself
     tieb = 1 + 1e-6 * np.random.default_rng((seed, 1011, 1)).random(n)
     # indexed by line, with one more row for NONE (np.minimum(line, nl)): never
     tech_x = np.r_[tech, np.full((1, 3), -1.0)]
     mines_x = np.r_[mines, -1.0]  # (a mining people's 'mines')
     mines_any = np.r_[_known_dates(m, nl, "mines"), -1.0]  # (anyone's 'mines')
+    roads_x = np.r_[_known_dates(m, nl, "roads"), -1.0]
     copper_any = np.r_[_known_dates(m, nl, "copper"), -1.0]
     miner_line = np.r_[_miner_lines(m, nl), False]
     deposit = _deposits(m.get("world"), n)
@@ -332,6 +351,15 @@ def derive(run_dir: Path, **over) -> dict:
         lt = tech_x[np.minimum(li, nl)]
         return np.minimum((lt >= ago - 1e-9).sum(1) * (lt[:, 0] >= ago - 1e-9), 3)
 
+    def stage_of(li, ago):  # (n,) line index -> 0 nothing, 1 villages, 2 towns, 3 cities, 4 cities + roads (PW-1114)
+        al = allowed(li, ago)
+        return al + ((al >= 3) & (roads_x[np.minimum(li, nl)] >= ago - 1e-9))
+
+    def caps_of(stage):  # (n,) stage -> the largest a village, town, city can be there (0 where the people can't build one)
+        vc = TOWN_MIN[stage] - 1
+        tc = np.where(stage >= 3, c["CITY_MIN"] - 1, c["TOWN_CAP"])
+        return (np.zeros(len(stage)), vc, tc, CITY_CAP[stage])
+
     def spot(k, cell, e):
         """A seeded spot in the cell: anywhere for a chief place or a mine; a mining people's own place leans to the
         cell's highest neighbour (the holds in the hills)."""
@@ -366,6 +394,8 @@ def derive(run_dir: Path, **over) -> dict:
             lead_since = np.where(lead != prev_lead, ago, lead_since)
         prev_lead = lead
         tiers_allowed = np.where(has, allowed(lead, ago), 0)
+        stage0 = np.where(has, stage_of(lead, ago), 0)
+        capc = caps_of(stage0)
         hold = np.where(has, mines_x[np.minimum(lead, nl)] >= ago - 1e-9, False) * e["mix_lead_share"] / 100  # (a mining holder's halls)
         waterside = ((W["harbour"] > 0) & e["coastal"] | (W["river_nav"] > 0))
         settled_p = dens * area * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside + c["HOLD_SHARE"] * hold)
@@ -379,7 +409,7 @@ def derive(run_dir: Path, **over) -> dict:
             else:
                 best = np.ones(n, bool)
             tt = np.where(best & (tiers_allowed >= t), SHARE[t] * hin * e["q"], 0.0)
-            target = np.maximum(target, np.minimum(tt, caps[t]))
+            target = np.maximum(target, np.minimum(tt, capc[t]))
         target = np.where(e["land"], target, 0.0)
 
         # a second people's own place (PW-1105): while the slot is free its line is the cell's second people (SECOND_MIN
@@ -392,11 +422,23 @@ def derive(run_dir: Path, **over) -> dict:
         line_of[1] = np.where(active[1] >= 0, line_of[1], cand)
         l1 = line_of[1]
         sh1 = np.where(l1 == NONE, 0.0, np.where(lead == l1, e["mix_lead_share"], np.where(second == l1, e["mix_second_share"], 0.0))) / 100
-        al1 = np.where(l1 != NONE, np.minimum(allowed(l1, ago), 2), 0)
+        al1 = np.where(l1 != NONE, allowed(l1, ago), 0)  # (a hold may grow into a city of its own: PW-1117)
+        stage1 = np.where(l1 != NONE, stage_of(l1, ago), 0)
+        cap1 = caps_of(stage1)
         hold1 = mines_x[np.minimum(l1, nl)] >= ago - 1e-9
         heads1 = dens * area * sh1
-        set1 = (c["MINORITY_SHARE"] * heads1 * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside) + c["HOLD_SHARE"] * heads1 * hold1) * e["q"]
-        target1 = np.where(e["land"] & (al1 >= 1), np.minimum(set1, caps[np.where(hold1, al1, np.minimum(al1, 1))]), 0.0)
+        own1 = c["MINORITY_SHARE"] * heads1 * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside)
+        own1 = own1 * c["MINORITY_MAX"] / (own1 + c["MINORITY_MAX"])  # (a minority gathers in one place only so far, the rest live in hamlets: it saturates smoothly, so no pile at a cap)
+        hall1 = c["HOLD_SHARE"] * heads1 * hold1
+        hall1 = hall1 / np.sqrt(1 + (hall1 / c["HOLD_MAX"]) ** 2)  # (a hold feeds from its mountain like a city from its hinterland: it levels off smoothly, no pile at a cap)
+        set1 = (own1 + hall1) * e["q"]
+        ti1 = np.where(hold1, al1, np.minimum(al1, 2))
+        target1 = np.where(e["land"] & (al1 >= 1), np.minimum(set1, np.select([ti1 == 1, ti1 == 2, ti1 >= 3], [cap1[1], cap1[2], cap1[3]], 0.0)), 0.0)
+        # (PW-1117) a second people must have been the cell's second people for MINORITY_STEPS before it founds a place
+        cand_run = np.where(cand != NONE, np.where(cand == prev_cand, cand_run + 1, 1), 0)
+        prev_cand = cand.copy()
+        ready = (np.ones(n, bool), cand_run >= c["MINORITY_STEPS"], np.ones(n, bool))
+        stages = (stage0, stage1, None)
 
         # a mine (owner 10-30): a cell with an ore or rock-salt deposit, worked by its lead people if it knows 'mines', else
         # by its second people; MINE_SHARE of the cell's people (the miners and those who feed them)
@@ -409,7 +451,7 @@ def derive(run_dir: Path, **over) -> dict:
         for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm)):
             r_ = rngs[k]
             free = active[k] < 0
-            streak[k] = np.where(free & (tgt >= c["FOUND"]), streak[k] + 1, 0)
+            streak[k] = np.where(free & (tgt >= c["FOUND"]) & ready[k], streak[k] + 1, 0)
             for cell in np.flatnonzero(free & (streak[k] >= c["FOUND_STEPS"]) & (hl != NONE)).tolist():
                 h = people_of[int(hl[cell])]
                 la2, lo2 = spot(k, cell, e)
@@ -419,9 +461,12 @@ def derive(run_dir: Path, **over) -> dict:
                      "ruin_of": int(last_site[k, cell]) if last_site[k, cell] >= 0 else None, "resettled_as": None,
                      "pop": pop, "peak_pop": pop, "peak_kyr": float(ago), "series": [[float(ago), round(pop)]],
                      "rain0": float(rain[cell]), "_peak_who": None}
+                tm = float(TOWN_MIN[int(stages[k][cell])]) if k < 2 else 0.0
+                s["bands"] = [[float(ago), tm, float(c["CITY_MIN"])]]  # (the size classes in force, PW-1114: [kyr ago, town min, city min])
+                s["tier"] = s["tier_pk"] = max(tier_of(pop, c, int(stages[k][cell])), 1) if k < 2 else 1
                 if s["ruin_of"] is not None:
                     sites[s["ruin_of"]]["resettled_as"] = s["id"]
-                s["_peak_who"] = who(cell, max(tier_of(pop, c), 1), e, dens, ago) if k == 0 else ({h: 100}, [])
+                s["_peak_who"] = who(cell, s["tier"], e, dens, ago) if k == 0 else ({h: 100}, [])
                 sites.append(s)
                 active[k, cell] = s["id"]
                 last_site[k, cell] = s["id"]
@@ -438,9 +483,16 @@ def derive(run_dir: Path, **over) -> dict:
                     if h != s["holder"]:
                         s["holder"] = h
                         s["holders"].append([float(ago), h])
+                if k < 2:  # (the size class at this date: the holder's stage sets the town's size, PW-1114)
+                    tm = float(TOWN_MIN[int(stages[k][cell])])
+                    if tm != s["bands"][-1][1]:
+                        s["bands"].append([float(ago), tm, float(c["CITY_MIN"])])
+                    s["tier"] = tier_of(s["pop"], c, int(stages[k][cell]))
+                    if s["tier"] > s["tier_pk"]:
+                        if k == 0:
+                            s["_peak_who"] = who(cell, s["tier"], e, dens, ago)
+                        s["tier_pk"] = s["tier"]
                 if s["pop"] > s["peak_pop"]:
-                    if k == 0 and tier_of(s["pop"], c) > tier_of(s["peak_pop"], c):
-                        s["_peak_who"] = who(cell, tier_of(s["pop"], c), e, dens, ago)
                     s["peak_pop"], s["peak_kyr"] = s["pop"], float(ago)
                 low[k, cell] = low[k, cell] + 1 if tgt[cell] < c["ABANDON"] else 0
                 why = None
@@ -452,7 +504,7 @@ def derive(run_dir: Path, **over) -> dict:
                     why = MERGED
                 elif k < 2 and W["river_nav"][cell] > 0 and e["elev"][cell] < c["RIVER_LOW_M"] and r_.random() < c["RIVER_SHIFT"] * dt:
                     why = "the river moved away"
-                elif low[k, cell] >= c["ABANDON_STEPS"]:
+                elif low[k, cell] >= (c["MINORITY_ABANDON_STEPS"] if k == 1 else c["ABANDON_STEPS"]):
                     lp = plural.get(people_of[int(lead[cell])], "?") if has[cell] else "?"
                     if rain[cell] < (1 - c["DROUGHT"]) * s["rain0"]:
                         why = "drought"
@@ -475,7 +527,7 @@ def derive(run_dir: Path, **over) -> dict:
     e_now = frame_env(len(fago) - 1)
     for s in sites:
         if s["abandoned_kyr"] is None:
-            s["_end_who"] = (who(s["cell"], max(tier_of(s["pop"], c), 1), e_now, dens_f[-1], 0.0) if s["kind"] == "chief"
+            s["_end_who"] = (who(s["cell"], max(s["tier"], 1), e_now, dens_f[-1], 0.0) if s["kind"] == "chief"
                              else ({s["holder"]: 100}, []))
     return _document(sites, c, g, ids, rank, lms, steps, area, time.time() - t0)
 
@@ -485,7 +537,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
     by_people: dict[str, dict] = {}
     for s in sites:
         alive = s["abandoned_kyr"] is None
-        tier_peak, tier_now = tier_of(s["peak_pop"], c), (tier_of(s["pop"], c) if alive else 0)
+        tier_peak, tier_now = s["tier_pk"], (max(s["tier"], 1) if alive else 0)
         place = _place((s["lat"], s["lon"], int(rank[s["cell"]])), lms)
         who, quarters = (s["_end_who"] if alive else s["_peak_who"]) or ({}, [])
         ser = s["series"]
@@ -499,7 +551,8 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "holders": [[round(a, 3), h] for a, h in s["holders"]], "abandoned_kyr": None if alive else round(s["abandoned_kyr"], 3),
                "why": s["why"], "ruin_of": s["ruin_of"], "resettled_as": s["resettled_as"],
                "pop_now": round(s["pop"]) if alive else 0, "peak_pop": round(s["peak_pop"]), "peak_kyr": round(s["peak_kyr"], 3),
-               "who": who, "who_when": "now" if alive else "at its height", "quarters": quarters, "series": ser}
+               "who": who, "who_when": "now" if alive else "at its height", "quarters": quarters, "series": ser,
+               "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if s["kind"] != "mine" else []}
         out.append(rec)
         for p, key in ((s["founded_by"], "founded"), (s["holder"] if alive else None, "alive")):
             if p is None:
@@ -529,7 +582,8 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
             whys[k] = whys.get(k, 0) + 1
     alive = [r for r in out if r["abandoned_kyr"] is None]
     doc = {"format": "procgen-settlements/1", "from_kyr": float(steps[0]), "step_kyr": c["STEP_KYR"], "constants": c,
-           "tiers": {"village": [c["ABANDON"], c["TOWN_MIN"]], "town": [c["TOWN_MIN"], c["CITY_MIN"]], "city": [c["CITY_MIN"], None]},
+           "tiers": {"village_min": c["ABANDON"], "town_min_by_stage": list(c["TOWN_MIN"]), "city_min": c["CITY_MIN"],
+                     "city_cap_by_stage": list(c["CITY_CAP"]), "stages": STAGES},
            "sites": out}
     summary = {"file": "settlements.json", "founded": len(out), "alive": len(alive), "ruins": sum(r["tier_now"] == "ruin" for r in out), "merged": sum(r["tier_now"] == "merged" for r in out),
                "resettled": sum(r["ruin_of"] is not None for r in out),
