@@ -258,8 +258,8 @@ def test_peoples_editor_has_no_copied_option_lists():
     assert "grain" in d["body_choices"] and set(d["body_default"]) == set(SP.BODY_DEFAULT)
     html = (VIEWER / "lineages.html").read_text()
     lists = [d[k] for k in ("traits", "places", "groups", "ways", "realms", "toxins", "eras", "modes", "portal_modes",
-                            "dragon_ages", "dragon_generation", "stages")]
-    assert d["stages"] == list(SP.STAGES) and set(d["stage_notes"]) == set(SP.STAGES)
+                            "dragon_ages", "dragon_generation", "pair_wants", "stages")]
+    assert d["pair_wants"] == list(SP.PAIR_WANTS) and d["stages"] == list(SP.STAGES) and set(d["stage_notes"]) == set(SP.STAGES)
     lists += [[k for k, _ in d["megafauna_natural"]], list(d["goods"])] + list(d["body_choices"].values())
     for vals in lists:
         for a, b in zip(vals, vals[1:]):

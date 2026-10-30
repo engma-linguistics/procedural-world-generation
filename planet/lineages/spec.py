@@ -16,7 +16,11 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
             spreading from a few `sites` through the hosts' range only
 - group:    a way of life within a people (`group_of = <people>`, default `at` GROUP_KYR): steppe and forest orcs,
             human seafarers and farmers. Not a split: it appears where its own niche beats its people's, never
-            ends its people, mixes freely with it and its sister groups, and rolls up into it in the summaries
+            ends its people, mixes freely with it and its sister groups, and rolls up into it in the summaries.
+            `cities = true` (PW-889): a minority of its people living in other peoples' cities (goblins and kobolds in
+            the towns of humans), beside its own wild country: an overlay, a `share` of the hosts' people in their
+            densest settled cells (history.params.CITY_TOP) within reach of its people's range (`hosts = [ids]`: whose cities; default any land
+            people's). It rolls up into its people's numbers, not its range
 A root, arrival or split may say where its origin is placed (PW-763; soft multipliers on the origin's score, never forced):
 `near = [ids]` / `far_from = [ids]` (relative to those lines' ranges when it starts; ones not yet alive are ignored),
 `lat_band = [south, north]`, `landmass = "largest" | "elsewhere"`.
@@ -388,6 +392,8 @@ class Lineage:
     contact: bool = True  # hybrid: exists only where both parents meet
     linger: bool = True  # contact hybrid: lives on as a small people of its own where its parents last met (False: never, PW-758)
     exempt: bool = False  # hybrid (PW-752): the genre exemption, a mixed people whatever its parents' interfertility stage (half-elves, half-orcs)
+    cities: bool = False  # group (PW-889): a minority of its people in other peoples' cities (an overlay on its hosts), beside its own wild country
+    hosts: list[str] = field(default_factory=list)  # ...whose cities (empty: any land people's but its own)
     sites: int = 3  # template: incursion sites
     extinct_kyr: float | None = None  # gone by this long before the present (dwindles over the time before)
     sapient_kyr: float | None = None  # a stem: the dated "sapiens" node where minds arrive for it (PW-965); not inherited. A marker, not simulated
@@ -412,8 +418,8 @@ class Lineage:
 
     @property
     def overlay(self) -> bool:
-        """Lives on others' ranges, not a range of its own (templates, contact hybrids)."""
-        return self.origin == "template" or (self.origin == "hybrid" and self.contact)
+        """Lives on others' ranges, not a range of its own (templates, contact hybrids, a people's minority in others' cities)."""
+        return self.origin == "template" or (self.origin == "hybrid" and self.contact) or self.cities
 
     def trait(self, key: str, default=None):
         """The strongest value of a trait knob over the line's traits."""
@@ -437,10 +443,15 @@ class Lineage:
         return {k: getattr(self, k) for k in DEMO_KEYS if getattr(self, k) is not None}
 
 
+PAIR_WANTS = ("near", "apart", "among")  # wishes between two peoples. among (PW-889): a lives readily among b, inside b's country
+# (bugbears among goblins and hobgoblins): the pair competes much less (history.params.AMONG_TOLERANCE), b's frontier does not invade a's
+# cells, and they live beside each other in a cell's composition as a 'near' pair do; no pull on the habitat
+
+
 @dataclass
 class Wish:
     a: str
-    want: str  # near | apart | one of PLACES
+    want: str  # near | apart | among | one of PLACES
     b: str | None = None
     weight: float = 1.0
 
@@ -621,8 +632,13 @@ class Tree:
         return 0.0, False
 
     def groups_of(self, lid: str) -> list[str]:
-        """The groups (ways of life) within a people, oldest first."""
-        return [l.id for l in self.order() if l.group_of == lid]
+        """The groups (ways of life) within a people, oldest first: the ones holding country of its own (not its minorities in others'
+        cities, city_groups_of)."""
+        return [l.id for l in self.order() if l.group_of == lid and not l.cities]
+
+    def city_groups_of(self, lid: str) -> list[str]:
+        """A people's minorities in other peoples' cities (groups with `cities`, PW-889), oldest first."""
+        return [l.id for l in self.order() if l.group_of == lid and l.cities]
 
     def people_of(self, lid: str) -> str:
         """The people a line belongs to: its people for a group, else itself."""
@@ -807,10 +823,18 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)), exempt=bool(r.get("exempt", False)),
+                    cities=bool(r.get("cities", False)), hosts=[str(x) for x in r.get("hosts", [])],
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None,
                     sapient_kyr=parse_ago(r["sapient"]) if r.get("sapient") not in (None, "") else None,
                     animals_end=bool(r.get("animals", False)))
+        if (l.cities or l.hosts) and origin != "group":
+            raise ValueError(f"{lid}: cities / hosts are for a group (a people's minority in others' cities)")
+        if l.megafauna and l.cities:
+            raise ValueError(f"{lid}: megafauna live in no cities")
+        for q in l.hosts:
+            if q not in rows or q == lid or q == pars[0]:
+                raise ValueError(f"{lid}: hosts names an unknown line or its own people {q!r}")
         if l.sapient_kyr is not None and (origin == "group" or not 0 < l.sapient_kyr < ago):
             raise ValueError(f"{lid}: sapient ({l.sapient_kyr:g} kyr) must come after the stem appears ({ago:g} kyr) and before the present")
         if l.extinct_kyr is not None and not 0 <= l.extinct_kyr < ago:
@@ -847,6 +871,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
             l.parents = [p.id]
     disabled = sorted(off)
     lines = {k: v for k, v in lines.items() if k not in off}
+    for l in lines.values():  # (a city group's hosts that are switched off leave its list)
+        if l.hosts:
+            l.hosts = [q for q in l.hosts if q in lines]
     for l in lines.values():
         if l.origin == "split":
             lines[l.parents[0]].children.append(l.id)
@@ -864,10 +891,10 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
             continue
         if w["a"] not in lines or (w.get("b") and w["b"] not in lines):
             raise ValueError(f"wish {w}: unknown lineage")
-        if want in ("near", "apart") and not w.get("b"):
+        if want in PAIR_WANTS and not w.get("b"):
             raise ValueError(f"wish {w}: '{want}' needs b")
-        if want not in ("near", "apart") and want not in PLACES:
-            raise ValueError(f"wish {w}: want must be near, apart or one of {PLACES}")
+        if want not in PAIR_WANTS and want not in PLACES:
+            raise ValueError(f"wish {w}: want must be near, apart, among or one of {PLACES}")
         wishes.append(Wish(str(w["a"]), want, w.get("b") or None, float(w.get("weight", 1.0))))
     from .land import GOODS
     uses = []
@@ -976,6 +1003,11 @@ def to_raw(t: Tree) -> dict:
         r = {"id": l.id, "name": l.name, "origin": l.origin, "at": f"{l.ago_kyr:g} kyr"}
         if l.origin == "group":
             r["group_of"] = l.group_of
+            if l.cities:
+                r["cities"] = True
+                r["share"] = l.share
+            if l.hosts:
+                r["hosts"] = l.hosts
         elif l.parents:
             r["parents"] = l.parents
         r.update(temp_c=list(l.temp_c), rain_mm=list(l.rain_mm), prefers=l.prefers, avoids=l.avoids,

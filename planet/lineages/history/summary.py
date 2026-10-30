@@ -125,7 +125,7 @@ def people_rollup(h: History, P: np.ndarray, lines: dict) -> dict:
     out = {}
     g = h.grid
     for l in h.lines:
-        gs = h.tree.groups_of(l.id)
+        gs = h.tree.groups_of(l.id) + h.tree.city_groups_of(l.id)  # (a city minority counts in the numbers, not the range, PW-889)
         if not gs:
             continue
         parts = [x for x in [l.id, *gs] if x in lines]
@@ -191,6 +191,13 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
             b = h.whole(w.b, P) >= EST
             near = _within(g, b, h.cell_km)
             close = float(near[a].mean()) if b.any() else 0.0
+            if w.want == "among":  # (PW-889: the share of a's range that b holds too, half of it full marks; counted where the niches meet)
+                shared = float(b[a].mean()) if b.any() else 0.0
+                s = min(1.0, 2.0 * shared)
+                base = _niche_closeness(h, w, tags)
+                out.append({**vars(w), "score": round(s, 3), "baseline": round(base, 3), "contested": base >= APART_CONTESTED, "raw": round(s, 3),
+                            "shared": round(shared, 3), **({} if base >= APART_CONTESTED else {"note": "niches rarely meet: not counted"})})
+                continue
             if w.want == "near":
                 s = min(1.0, 2.5 * close)
                 # (PW-699: as 'apart', a 'near' wish counts only where the two niches can reach each other)

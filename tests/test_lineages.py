@@ -661,6 +661,98 @@ def test_groups_within_a_people(faketz):
     assert (ga["groups_best_pct"][-1][gl == 255] == 0).all() and (ga["groups_best_pct"][-1][gl == h.idx["warm_orc"]] >= 12).all()
 
 
+def test_an_among_wish_lets_a_people_share_a_friendly_peoples_country_and_a_squeezed_people_integrates(faketz):
+    """PW-889: 'among' (a lives readily inside b's country) cuts the pair's competition by AMONG_TOLERANCE both ways, more than 'near', with
+    no frontier invasion between them, raises their cohabitation and leaves the habitat alone; a squeezed people (crowded and holding
+    little of its country) feels its friendlier rivals less, in proportion to how readily they live side by side."""
+    from planet.lineages import compose as CP
+    from planet.lineages.history import pressure as PR
+    base = {"meta": {"seed": 1}, "lineage": [
+        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 5},
+        {"id": "bug", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 1},
+        {"id": "elf", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}]}
+    near = {**base, "wish": [{"a": "bug", "b": "gob", "want": "near"}]}
+    among = {**base, "wish": [{"a": "bug", "b": "gob", "want": "among"}]}
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h0, hn, ha = (H.History(SP.parse(r), ps, 1) for r in (base, near, among))
+    b, gb, e = ha.idx["bug"], ha.idx["gob"], ha.idx["elf"]
+    assert ha.alpha[b, gb] == pytest.approx(h0.alpha[b, gb] * (1 - H.AMONG_TOLERANCE)) and ha.alpha[gb, b] == pytest.approx(h0.alpha[gb, b] * (1 - H.AMONG_TOLERANCE))
+    assert ha.alpha[b, gb] < hn.alpha[b, gb] < h0.alpha[b, gb] and ha.alpha[b, e] == h0.alpha[b, e]
+    assert ha._among[b, gb] and ha._among[gb, b] and not ha._among[b, e] and not hn._among.any()
+    assert ha.cohab[b, gb] > h0.cohab[b, gb] and ha.cohab[b, gb] == pytest.approx(hn.cohab[b, gb])
+    t = SP.parse(among)
+    env = ps.fields(0.0, variability=False)
+    ha.active = {x: True for x in ("gob", "bug", "elf")}
+    ha.p = np.zeros((3, ha.grid.n))
+    ha.p[gb] = 0.5
+    assert np.array_equal(ha._wish_near(t.lines["bug"]), np.ones(ha.grid.n))  # (no pull or push on the habitat)
+    with pytest.raises(ValueError):
+        SP.parse({**base, "wish": [{"a": "bug", "want": "among"}]})
+    assert SP.parse(SP.to_raw(t)).wishes[0].want == "among"
+    # the squeeze: crowding x how little of its country a people holds
+    assert PR.squeeze(0.8, 100, 2000) == pytest.approx(0.8 * (1 - 100 / (H.SQUEEZE_FILL * 2000)))
+    assert PR.squeeze(0.8, 1500, 2000) == 0.0 and PR.squeeze(0.0, 10, 2000) == 0.0
+    w = PR.integration_weights(np.array([1.0, 0.5, 0.0]), 1.0)
+    assert w[0] == pytest.approx(1 - H.INTEGRATE) and w[1] == pytest.approx(1 - 0.5 * H.INTEGRATE) and w[2] == 1.0
+    assert CP.cohabitation(t, ha.lines, ha.idx)[b, gb] > CP.cohabitation(SP.parse(base), h0.lines, h0.idx)[b, gb]
+
+
+def test_a_city_minority_lives_in_its_neighbours_dense_towns_and_counts_in_its_peoples_numbers(faketz):
+    """PW-889 (owner 10-29): a group with `cities` is its people's minority in other peoples' cities: an overlay present only in the
+    hosts' densest settled cells (CITY_TOP of the peopled land, at least CITY_MIN_KM2), within CITY_REACH_KM over land of its people's range; a share of the townsfolk there; in its
+    people's numbers (people_rollup), not in its range or the map's peoples."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 30},
+        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 2},
+        {"id": "town_gob", "origin": "group", "group_of": "gob", "at": "5 kyr", "cities": True, "share": 0.05}]}
+    t = SP.parse(raw)
+    c = t.lines["town_gob"]
+    assert c.overlay and c.cities and t.groups_of("gob") == [] and t.city_groups_of("gob") == ["town_gob"]
+    r2 = SP.to_raw(t)
+    assert next(x for x in r2["lineage"] if x["id"] == "town_gob")["cities"] is True and SP.parse(r2).lines["town_gob"].cities
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "lineage": [*raw["lineage"][:2], {"id": "x", "origin": "root", "at": "5 kyr", "cities": True}]})
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "lineage": [*raw["lineage"][:2], {**raw["lineage"][2], "hosts": ["gob"]}]})
+    h = H.History(t, ps, 1)
+    g = h.grid
+    env = ps.fields(0.0, variability=False)
+    land = env["land"]
+    h._land_now = land
+    h._dmap = None
+    hu, gb, k = h.idx["human"], h.idx["gob"], h.idx["town_gob"]
+    h.p = np.zeros((3, g.n))
+    h._linger = np.zeros((3, g.n), bool)
+    h.active = {"human": True, "gob": True, "town_gob": True}
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    gob_home = H.rings(cell, land, 1, g.nbr_off, g.nbr_idx)
+    town = land & ~gob_home & h._dilate(gob_home, 1)  # (the humans' towns next door, within reach on any grid)
+    far = land & ~h._dilate(gob_home, int(np.ceil(H.CITY_REACH_KM / h.cell_km)) + 2)
+    h.p[gb][gob_home] = 0.8
+    h.p[hu][town] = 0.9  # (30/km2 x 0.9 = 27: the densest)
+    h.p[hu][far] = 0.9
+    h.p[hu][land & ~town & ~far & ~gob_home] = 0.15  # (4.5/km2, under CITY_MIN_KM2: farmland, no towns)
+    city, hp = h._city_mask(c)
+    assert town.any() and city.any() and not (city & ~town).any() and (city & town).sum() == town.sum()
+    assert not (city & far).any()  # (out of the minority's reach)
+    step = H.Step(2.0, 1.0, "recent", True, None)
+    h._city(c, k, step)
+    assert (h.p[k][town] >= H.EST).all() and not h.p[k][~town].any()
+    pop = h.population(k)
+    hosts = h.population(hu)
+    assert pop[town].sum() == pytest.approx(0.05 * hosts[town].sum()) and not pop[~town].any()
+    assert np.array_equal(h.whole("gob") >= H.EST, gob_home)  # (not the people's range)
+    f = h._frame(step, env)
+    assert not (f["peoples_whole"] == k).any() and (f["peoples_overlay"][town] == k).all()
+    lines = {"gob": {"population": int(h.population(gb).sum())}, "town_gob": {"population": int(pop.sum())}}
+    w = H.people_rollup(h, h.p, lines)["gob"]
+    assert w["groups"] == ["town_gob"] and w["population"] == lines["gob"]["population"] + lines["town_gob"]["population"] > lines["gob"]["population"]
+    assert w["area_mkm2"] == pytest.approx(gob_home.sum() * h.cell_mkm2, abs=0.01)  # (its range is its own country's)
+    from planet.lineages import output as O
+    assert len(O.colors(h)) == len(h.lines)  # (a city group takes a tint of its people's colour too)
+
+
 def test_peoples_change_the_land_from_their_ways_of_life():
     """PW-662: shares come from the [[use]] table, not names; fields, pasture, fire and woods follow the people."""
     from planet.lineages import landuse as LU

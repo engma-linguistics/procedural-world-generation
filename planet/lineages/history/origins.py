@@ -172,6 +172,8 @@ class OriginsMixin:
             res = self._origin_split(line, step, env, tags, K, noise)
         elif line.origin == "hybrid":
             res = self._origin_hybrid(line, K, noise)
+        elif line.origin == "group" and line.cities:
+            res = self._origin_city(line)
         elif line.origin == "group":
             res = self._group_origin(line, step, env, tags, K)
             if res is None:
@@ -387,7 +389,8 @@ class OriginsMixin:
                 self.origins[line.id]["shares_landmass"] = bool(self._other_roots_land(line, lab, n)[lab[cell]])
         verb = {"root": "arises", "split": f"splits from {line.parents[0] if line.parents else '?'}", "arrival": "arrives",
                 "hybrid": f"appears where {' and '.join(line.parents)} meet", "template": f"appears among {', '.join(line.parents)}",
-                "group": f"becomes a way of life among the {self.tree.lines[line.parents[0]].label() if line.parents else '?'}"}
+                "group": f"becomes a way of life among the {self.tree.lines[line.parents[0]].label() if line.parents else '?'}"
+                if not line.cities else f"settle as a minority in other peoples' cities, beside the {self.tree.lines[line.parents[0]].label()}' own country"}
         self._event(step.ago, line.origin, line, f"{line.label()} {verb[line.origin]} ({why})",
                     self.origins[line.id]["lat"], self.origins[line.id]["lon"])
 

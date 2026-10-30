@@ -116,7 +116,7 @@ async function loadSchema() {
   const r = await fetch('../api/lineage-schema');
   if (!r.ok) throw new Error(`lineage-schema: HTTP ${r.status}`);
   const d = SCHEMA = await r.json();
-  TRAITS = d.traits; PLACES = d.places; WANTS = ['near', 'apart', ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
+  TRAITS = d.traits; PLACES = d.places; WANTS = [...d.pair_wants, ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
   DEMO_DEFAULT = d.demo_default; DEMOGRAPHY = d.demography; DEMO_KEYS = Object.keys(DEMO_DEFAULT); BODY_DEFAULT = d.body_default; DEFAULTS = d.defaults;
   const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic')].filter((k) => k in BODY_DEFAULT);
   BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : [true, false])]);
@@ -454,7 +454,8 @@ function drawSide() {
       <label class="trait" title="Real-world mode keeps only the peoples marked here (humans and their ways of life); everything else is left out (PW-695)"><input type="checkbox" data-k="real" ${r.real ? 'checked' : ''}> lives in the real-world mode too</label>
       ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>
         <label class="trait" title="Who can have children together follows realistic genetics: by how long ago the parents split, their young are viable (a mixed people), absorbed into a parent people, sterile or impossible (PW-752). Ticked: a mixed people of its own whatever that says, the genre's half-elves and half-orcs."><input type="checkbox" data-k="exempt" ${r.exempt ? 'checked' : ''}> always possible (genre exemption)</label>` : ''}
-      ${['hybrid', 'template'].includes(o) ? `<div class="row">${field('share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
+      ${o === 'group' ? `<label class="trait" title="A minority of its people living in other peoples' cities (goblins and kobolds in the towns of humans), beside its own wild country: present in the densest settled cells within reach of its people, a share of the townsfolk there; it counts in its people's numbers, not its range (PW-889)"><input type="checkbox" data-k="cities" ${r.cities ? 'checked' : ''}> lives in other peoples' cities</label>` : ''}
+      ${['hybrid', 'template'].includes(o) || (o === 'group' && r.cities) ? `<div class="row">${field(o === 'group' ? 'share of the townsfolk' : 'share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
       <div class="row">${field('temperature °C', `<input type="number" data-k="temp_c.0" value="${r.temp_c?.[0] ?? ''}"> – <input type="number" data-k="temp_c.1" value="${r.temp_c?.[1] ?? ''}">`)}</div>
       <div class="row">${field('rain mm/yr', `<input type="number" data-k="rain_mm.0" value="${r.rain_mm?.[0] ?? ''}"> – <input type="number" data-k="rain_mm.1" value="${r.rain_mm?.[1] ?? ''}">`)}</div>
       <div class="muted">empty fields are inherited from the first parent</div>
@@ -527,6 +528,7 @@ function editLine(r, el) {
   else if (k === 'sapient') { if (el.value.trim()) r.sapient = el.value.trim(); else delete r.sapient; }
   else if (k === 'animals') { if (el.checked) r.animals = true; else delete r.animals; }
   else if (k === 'exempt') { if (el.checked) r.exempt = true; else delete r.exempt; }
+  else if (k === 'cities') { if (el.checked) r.cities = true; else delete r.cities; }
   else if (k === 'id') {
     const old = r.id; r.id = el.value.trim();
     for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
@@ -794,7 +796,7 @@ function drawResults() {
     if (w) h += `<tr style="border-top:1px solid var(--line)"><td style="white-space:nowrap">${sw(id)}<b>${nm(id)}, all</b> <span class="muted">(${w.living.length - 1} group${w.living.length > 2 ? 's' : ''})</span></td>
       <td class="n"><b>${num(w.population)}</b></td><td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + w.population) / Math.log10(1 + maxPop)))}px"></span></td>
       <td></td><td class="n">${w.area_mkm2}</td><td class="n">${w.patches}</td><td class="muted">${landsOf(w)}</td></tr>`;
-    h += `<tr><td style="white-space:nowrap;${grp || w ? 'padding-left:16px' : ''}">${grp ? '<span class="muted">↳ </span>' : ''}${sw(id)}${nm(id)}${v.overlay ? ' <span class="muted">(overlay)</span>' : ''}${w ? ' <span class="muted">(old ways)</span>' : ''}${grp && W[grp]?.shares?.[id] != null ? ` <span class="muted">${Math.round(100 * W[grp].shares[id])}%</span>` : ''}</td><td class="n">${num(v.population ?? 0)}</td>
+    h += `<tr><td style="white-space:nowrap;${grp || w ? 'padding-left:16px' : ''}">${grp ? '<span class="muted">↳ </span>' : ''}${sw(id)}${nm(id)}${L[id]?.cities ? ' <span class="muted">(a minority in other peoples\' cities)</span>' : v.overlay ? ' <span class="muted">(overlay)</span>' : ''}${w ? ' <span class="muted">(old ways)</span>' : ''}${grp && W[grp]?.shares?.[id] != null ? ` <span class="muted">${Math.round(100 * W[grp].shares[id])}%</span>` : ''}</td><td class="n">${num(v.population ?? 0)}</td>
       <td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + (v.population ?? 0)) / Math.log10(1 + maxPop)))}px"></span></td>
       <td class="n">${v.density ?? ''}</td><td class="n">${v.area_mkm2}</td><td class="n">${v.patches}${v.faded_patches ? ` <span class="muted" title="times a small patch was fading below the viable population (patches x checks, about one a kyr)">(fades ${v.faded_patches})</span>` : ''}</td>
       <td class="muted">${lands}</td></tr>`;
