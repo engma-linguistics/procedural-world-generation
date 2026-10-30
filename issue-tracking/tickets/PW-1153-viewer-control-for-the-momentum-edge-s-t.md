@@ -1,4 +1,5 @@
 ---
+id: PW-1153
 title: Viewer control for the momentum edge's two dials (meta.surge_early, surge_late)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane73
 blocked_by: []
 relates: []
 refs: [planet/lineages/spec.py, planet/lineages/run.py, planet/lineages/history/pressure.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -23,3 +26,6 @@ meta.surge_early / meta.surge_late take the choices in spec.SURGE_X (0, 0.5, 1, 
 history.params.SURGE_Q, the competition cut at full momentum. The editor schema already carries the defaults and `surge_x`
 (run.editor_schema).
 - [ ] two dropdowns in viewer/lineages.html, labelled in plain words ("how hard a growing people pushes into held land: early eras / late eras")
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-surge-dials-viewer-control.md (found by lane73).

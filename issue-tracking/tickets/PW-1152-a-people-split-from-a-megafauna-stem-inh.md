@@ -1,4 +1,5 @@
 ---
+id: PW-1152
 title: A people split from a megafauna stem inherits the dragons' world-wide range at once (kobolds, dragonborn)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane73
 blocked_by: []
 relates: [PW-677, PW-888, PW-937]
 refs: [planet/lineages/history/origins.py, "peoples runs e6ca59 (lane 73 arm 2), 488d7e"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -41,3 +44,6 @@ Options:
   (owner-approved: the stem's isolated stock is its children's ancestors), so it needs the owner.
 - Lean: A. The megafauna range is not a population of proto-kobolds.
 - [ ] decide A or B; implement; re-run one peoples run and compare the kobolds' and dragonborn's founding area and present share
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-split-inherits-megafauna-stem-range.md (found by lane73).

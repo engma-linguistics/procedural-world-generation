@@ -1,4 +1,5 @@
 ---
+id: PW-1151
 title: Dwarves stay on the continent where they split off, which holds 9% of their country
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane73
 blocked_by: []
 relates: []
 refs: [planet/lineages/history/origins.py, planet/lineages/samples/dnd.toml, "world 4360a3; peoples runs 488d7e 570701 097797 ae4d0b"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -31,3 +34,6 @@ Options:
   "across the sea", weighted by the parent's crossing reach; at 500 kyr that reach is drift rafts only). Model change.
 - C. Accept it: dwarves are a one-continent people on worlds like this one, common where they are.
 - Lean: A as data, checked on 2-3 worlds, since the date is a placeholder.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dwarves-stranded-in-hominid-cradle.md (found by lane73).
