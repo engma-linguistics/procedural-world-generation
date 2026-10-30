@@ -29,7 +29,7 @@ TERMS = ["co2", "co2_term", "albedo_term", "drift", "src", "sink", "w_area", "w_
 def one(p):
     raw = C.load(p)
     s = C.series(raw)
-    bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"])
+    bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"], s["star"])
     steps = [r for r in raw["steps"] if r["t"] > 0]
     fm = H.finish_moment([{"t": r["t"], "stats": r} for r in steps], float(raw["params"].get("finish_window", 10.0)))
     at = next(r for r in steps if abs(r["t"] - fm["t"]) < 1e-9)

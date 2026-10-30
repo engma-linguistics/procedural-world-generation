@@ -83,3 +83,24 @@ def test_ice_terms_icehouse_glacial_max_frozen_over():
     frozen = C.ice_terms(si, np.array([0.02, 0.3, 0.4, 0.03]))
     assert frozen["frozen_over"] and frozen["glacial_max"] and frozen["land_ice_peak"] == 40.0
     assert C.ice_terms(np.zeros(4), None)["never_ice"] and C.ice_terms(si, None)["frozen_over"] is None
+
+
+def test_frozen_over_counts_only_under_a_near_final_star():
+    """Owner 2026-10-30 (PW-1142): frozen over fails only where the star's forcing is within FINAL_STAR_C of the
+    finish's and within the run's last FINAL_MYR, whichever starts later; earlier frozen spells are reported."""
+    t = np.arange(300.0, 1001.0, 4.0)
+    star = -11.0 * (1000.0 - t) / 1000.0  # (brightening to 0 at the end: within 2 C from ~818 Myr)
+    hard, start, which = C.hard_window(t, star)
+    assert which == "star" and 815 < start < 822 and hard[-1] and not hard[0]
+    hard, start, which = C.hard_window(t, None)  # (no star recorded: the last 300 Myr)
+    assert which == "last 300 Myr" and start == 700.0
+    hard, start, which = C.hard_window(t, np.zeros_like(t))  # (a steady star: the last 300 Myr is narrower)
+    assert which == "last 300 Myr" and start == 700.0
+    si = np.full(len(t), -30.0)
+    il = np.full(len(t), 0.1)
+    il[(t >= 600) & (t < 640)] = 0.45  # a dim-star frozen spell
+    terms = C.ice_terms(si, il, hard=C.hard_window(t, star)[0])
+    assert not terms["frozen_over"] and terms["frozen_over_any"]
+    il[-3:] = 0.42  # frozen at the end, under a near-final star
+    terms = C.ice_terms(si, il, hard=C.hard_window(t, star)[0])
+    assert terms["frozen_over"] and terms["frozen_over_any"]

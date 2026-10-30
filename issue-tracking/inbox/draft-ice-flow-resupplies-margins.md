@@ -1,9 +1,9 @@
 ---
 title: "Run ice sheets have no flow: a sheet's margins can't be resupplied from its interior, so Earth's Greenland halves under the warm-orbit rule"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
