@@ -2,7 +2,7 @@
 id: PW-1138
 title: "Tech tree: Pleistocene-dated techs use their track's rate (0.02-0.03 a kyr), so bread, fermentation and beer reach few peoples"
 type: task
-status: needs-decision
+status: done
 parent: PW-675
 milestone: null
 subsystem: timezoom
@@ -34,6 +34,7 @@ Options:
 Lean: B (one rule, uses the catalogue as intended: the brief called the origins "the band").
 
 ## Updates
+- 2026-10-30: Status needs-decision -> done. Merged lane 70.
 - 2026-10-30: Fun lane 70: option B built. band_wait: a floored tech with 2+ dated Earth origins (`origins_kyr`, added from the catalogue on 61 rows) waits after its floor as the median origin did (42 rows qualify; pottery's hand rate 0.09 is now the rule's; beer 4 kyr, 0.20/kyr).
   One origin (bread, wild cereals) keeps the track rate and spreads by the faster contact. Living peoples knowing bread 62% -> 72%, fermentation 62% -> 74%, beer 0% -> 73% (the tree's ceiling here ~72-74%). Bread's world first stays late (9.7 kyr vs 14.4): draft.
 - 2026-10-30: Created from inbox draft draft-techtree-floored-techs-track-rate-slow.md (found by fun-lane-69).

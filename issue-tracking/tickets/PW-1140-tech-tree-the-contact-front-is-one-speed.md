@@ -1,8 +1,10 @@
 ---
+id: PW-1140
 title: "Tech tree: the contact front is one speed everywhere; corridors and barriers (habitat, seas, mountains) should change it"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-70
 blocked_by: []
 relates: [PW-1137]
 refs: [planet/lineages/techtree.py, docs/references/techtree/README.md]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -29,3 +33,6 @@ What would make it better:
 - Overlapping peoples (contacts' mixed_pct high; most pairs here share many cells) should learn faster than ones that only
   touch. Today the taker's whole width counts either way.
 - A readable source on copper smelting's spread across Eurasia, to check the speed on a craft tech (none open was found).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-contact-front-geography.md (found by fun-lane-70).

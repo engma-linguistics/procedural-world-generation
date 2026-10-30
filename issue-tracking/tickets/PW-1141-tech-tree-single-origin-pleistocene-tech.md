@@ -1,8 +1,10 @@
 ---
+id: PW-1141
 title: "Tech tree: single-origin Pleistocene techs (bread, wild cereals, fermentation) are first found ~5 kyr after Earth's date"
 type: task
 status: todo
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-70
 blocked_by: []
 relates: [PW-1138]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -26,3 +30,6 @@ the ceiling across the tree in these runs), but the world first is late: bread 9
 Try: the real precondition as a need (bread and beer on intensive wild cereal use: wild_cereal_harvest with grinding slabs and
 storage, the Natufian package), then the soft-anchor rule applies above the floor; or the catalogue's second origins, if the
 source hunt finds them (pass 2).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-single-origin-floored-late.md (found by fun-lane-70).

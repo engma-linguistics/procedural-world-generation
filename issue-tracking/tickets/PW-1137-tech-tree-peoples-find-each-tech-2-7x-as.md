@@ -2,7 +2,7 @@
 id: PW-1137
 title: "Tech tree: peoples find each tech ~2.7x as often as Earth's independent origins (copper ~12 a world vs 4); better needs do not fix it"
 type: task
-status: needs-decision
+status: done
 parent: PW-675
 milestone: null
 subsystem: timezoom
@@ -58,6 +58,7 @@ Options:
 Lean: A for v1 (dates are fine), B as a v2 experiment with the world-first check.
 
 ## Updates
+- 2026-10-30: Status needs-decision -> done. Merged lane 70.
 - 2026-10-30: Fun lane 70: fixed in the mechanism, not per tech. (1) Contact is a front at contact_speed_km_yr = 1 km/yr (Neolithic 0.6-1.3, Pinhasi et al. 2005; pottery 0.3-0.8, corridors 1.2-3.3, Jordan et al. 2016): rate 2 ln2 v / sqrt(taker's range), 3-10x the old flat ~0.1.
   (2) The front sets out when the giver knows the tech and they touch, one delay per pair, and hands over whatever the taker can use once arrived, so packages travel together (the copper and plough finders had been re-inventing techs a neighbour had held for 1-6 kyr).
   (3) Inventing no longer goes first within a step. (4) anchor_peers = 4: Earth's date is the first of four peoples' finds (needs-decision draft). 4 runs x 2 draws: finds/origins median 2.75x -> 1.3x; copper 11.8 -> 5.6, writing 7.2 -> 2.5, towns 15.2 -> 6.4;

@@ -1,8 +1,10 @@
 ---
+id: PW-1139
 title: "Tech tree: anchor_peers = 4 (Earth's date is the first of four peoples' finds) is a judgement; confirm or pick another"
 type: task
 status: needs-decision
 parent: PW-675
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: fun-lane-70
 blocked_by: []
 relates: [PW-1137, PW-1124]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -32,3 +36,6 @@ world firsts hold. The value sets one per-people number for every soft tech; the
 Options: A keep 4. B tie it to something in the world (e.g. how many peoples are ready within a kyr of the world's first), so
 a world of few big peoples is not held to Earth's many small ones. C 3 or 5, to tune the finds a little.
 Lean: A for v1.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-techtree-anchor-peers-judgement.md (found by fun-lane-70).
