@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .. import climate, hydrology, icemass, kernels, surface, vegetation
+from .. import climate, hydrology, icemass, kernels, nest, surface, vegetation
 from ..geo import R_KM
 from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
@@ -540,19 +540,72 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
+def finishing(sim) -> bool:
+    """The run is in its finish window (Simulation.step_length), counting the 2 Myr step that ends at its start."""
+    p = sim.params
+    return p.finish_window > 0 and p.run_end > 0 and sim.t >= p.run_end - p.finish_window - 1e-9
+
+
+def climate_cadence(sim) -> float:
+    """Myr between climate updates at this point of the run, before the finish window (PW-247's ramp):
+    half Params.climate_every within climate_ramp_fine Myr of the finish window's start, climate_every within
+    climate_ramp Myr, doubled for each further factor 10 back, at most climate_every_max. A run without an end
+    (run_end 0) keeps climate_every_max."""
+    p = sim.params
+    k, kmax = p.climate_every, max(p.climate_every_max, p.climate_every)
+    if p.run_end <= 0 or p.climate_ramp <= 0:
+        return kmax
+    left = p.run_end - p.finish_window - sim.t
+    if left <= p.climate_ramp_fine:
+        return k / 2.0
+    if left <= p.climate_ramp:
+        return k
+    return min(kmax, k * 2.0 ** np.ceil(np.log10(left / p.climate_ramp) - 1e-12))
+
+
 def climate_due(sim) -> bool:
-    """The climate is updated on the first step and then at every multiple of
-    climate_every Myr, so keyframes on those multiples show current climate; in the finish window
-    (Simulation.step_length) at every step."""
-    if sim.in_finish_window():
+    """The climate is updated on the first step and then at every multiple of the cadence (climate_cadence);
+    from the finish window's start (finishing) at every step. A keyframe between updates shows the last
+    update's climate."""
+    if finishing(sim) or sim.precip is None:
         return True
-    k = sim.params.climate_every
-    return sim.precip is None or (sim.t + 1e-9) // k > (sim.climate_t + 1e-9) // k
+    k = climate_cadence(sim)
+    return (sim.t + 1e-9) // k > (sim.climate_t + 1e-9) // k or climate_moved(sim) >= 1.0
+
+
+def climate_moved(sim) -> float:
+    """How far the global temperature offset moved since the last update (sim.climate_in), in units of the
+    adaptive cadence's threshold (Params.climate_adapt_dT; 0 when it is off)."""
+    p, ref = sim.params, sim.climate_in
+    if ref is None or p.climate_adapt_dT <= 0:
+        return 0.0
+    return abs(sim.dT - ref["dT"]) / p.climate_adapt_dT
 
 
 def climate_interval(sim) -> float:
-    """Myr between this climate update and the last: climate_every, or the finish window's step."""
-    return sim.dt_now if sim.in_finish_window() else sim.params.climate_every
+    """Myr between this climate update and the last."""
+    return sim.t - sim.climate_t if sim.t > sim.climate_t else sim.dt_now
+
+
+def climate_level(sim) -> int:
+    """The grid level this climate update is computed on: Params.climate_level when it is coarser than the
+    run's grid and the run isn't finishing (PW-247), else the run's own."""
+    lv = sim.params.climate_level
+    return lv if 0 < lv < sim.grid.level and not finishing(sim) else sim.grid.level
+
+
+def _climate(sim, e, ice, veg):
+    """climate.compute for update_climate, on the run's grid or a coarser nested one (climate_level,
+    nest.climate_coarse). sim.rain_state is the last update's rain kernel state on whichever grid it ran: a
+    fine update after coarse ones (the finish window's first) starts from it prolonged."""
+    g, p = sim.grid, sim.params
+    lv = climate_level(sim)
+    if lv < g.level:
+        return nest.climate_coarse(g, lv, e, sim.dT, p.tilt, ice, veg=veg, rain_start=sim.rain_state)
+    rs = sim.rain_state
+    if rs is not None and rs["vap"].shape[-1] != g.n:
+        rs = nest.prolong_rain_state(g, rs)
+    return climate.compute(g, e, sim.dT, p.tilt, ice, veg=veg, rain_start=rs)
 
 
 def update_climate(sim, e):
@@ -567,8 +620,7 @@ def update_climate(sim, e):
     bed = e - sim.ice_sink
     e, ice0, _ = land_view(bed, np.where(e > 0, sim.ice, 0.0))
     land = e > 0
-    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, ice0, 0.0), veg=veg_feedback(sim),
-                        rain_start=sim.rain_state)
+    c = _climate(sim, e, np.where(land, ice0, 0.0), veg_feedback(sim))
     sim.rain_state = c["rain_state"]  # the next update's rain starts from it (PW-387)
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
     sim.sst = c["sst"]  # (the sea's own surface temperature: the reefs', PW-876)

@@ -245,9 +245,10 @@ where that copy currently sits. Every step (default 2 Myr, `--dt`):
 3. ocean floor sinks as it ages (~sqrt(age)), subduction builds arcs, collisions
    build big ranges, rifts stretch continents thin; rivers and erosion wear
    the land down and lay down sediment (every step). The climate (temperature,
-   rain, ice, sea level from the ice) is recomputed only every
-   `climate_every` = 4 Myr, matching the default keyframes, and the rivers use
-   the latest one in between;
+   rain, ice, sea level from the ice) is recomputed on a ramp, every 8 Myr
+   early to every 4 Myr (`climate_every`) in the 30 Myr before the finish
+   window, sooner when the global temperature moves 1 C (PW-247), and the
+   rivers use the latest one in between;
 4. forces -> velocities: slab pull, ridge push, collision resistance, basal
    traction from the mantle, plus a small, slowly wandering drag term
    (meandering), give each plate a target angular velocity (the force balance,
