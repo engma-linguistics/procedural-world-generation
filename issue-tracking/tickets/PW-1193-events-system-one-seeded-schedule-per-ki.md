@@ -1,4 +1,5 @@
 ---
+id: PW-1193
 title: "Events system: one seeded schedule per kind (drought, eruption, quake, plague, cull), placed by the planet's physics, coupled through climate / K / the log, shown in the viewer"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: [PW-1165]
 relates: [PW-1165, PW-1166, PW-1167, PW-1171, PW-1172, PW-1108, PW-756]
 refs: [docs/review/peoples-events/design.md, planet/lineages/history/events.py, planet/lineages/recent.py, planet/lineages/reputation.py, planet/lineages/settlements.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -40,3 +43,6 @@ Work:
 - [ ] authored drought / plague / cull
 - [ ] viewer track, footprints, lost-to bars, controls
 - [ ] judged on tools/peoples_robust.py, arms off / default
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-events-system-schedule-and-viewer.md (found by lane-85).

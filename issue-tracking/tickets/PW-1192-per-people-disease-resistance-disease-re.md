@@ -1,4 +1,5 @@
 ---
+id: PW-1192
 title: "Per-people disease resistance (disease_resist 0..1, inherited like the body): dwarves 0.5 halve their plague losses but still carry plague"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: []
 relates: [PW-1167]
 refs: [docs/review/peoples-events/design.md, planet/lineages/spec.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,3 +32,6 @@ plague and epidemics. Design: docs/review/peoples-events/design.md, section 3.
 - [ ] spec field, inheritance, validation
 - [ ] used by the plague code; a test that 0.5 halves a pulse
 - [ ] shown on the peoples tab beside the life history
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-disease-resistance-per-people.md (found by lane-85).

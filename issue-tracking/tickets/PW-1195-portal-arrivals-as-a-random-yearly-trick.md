@@ -1,5 +1,6 @@
 ---
-title: "Portal arrivals as a random yearly trickle (compound Poisson) that averages to the set founders over a few kyr; pooled to viable size before founding"
+id: PW-1195
+title: Portal arrivals as a random yearly trickle (compound Poisson) that averages to the set founders over a few kyr; pooled to viable size before founding
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: [PW-1185]
 relates: [PW-1150, PW-1185, PW-1191]
 refs: [docs/review/peoples-events/design.md, planet/lineages/history/portals.py, planet/lineages/history/founding.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -27,3 +30,6 @@ docs/review/peoples-events/design.md, section 4.
 
 - [ ] stream option beside today's waves (meta switch), default waves until D21 settles
 - [ ] a test that the 50 kyr mean is within 5% of founders
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-portal-arrival-stream.md (found by lane-85).

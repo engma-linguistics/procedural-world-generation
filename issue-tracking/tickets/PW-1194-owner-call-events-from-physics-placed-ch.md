@@ -1,4 +1,5 @@
 ---
+id: PW-1194
 title: "Owner call: events from physics-placed chance; fast-breeder brake = raid losses + culling wars on top of land; dwarves' disease resistance"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: []
 relates: [PW-1169, PW-1167, PW-1185]
 refs: [docs/review/peoples-events/design.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -39,3 +42,6 @@ refs: [docs/review/peoples-events/design.md]
 5. **Still open from D22:** how far should the commonest people's share fall at the default dials? Your number.
 
 Recorded: virgin-soil epidemics stay off (your 10-31 ruling). That belongs in PW-1167's Updates.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-owner-call-events-brakes-resistance.md (found by lane-85).

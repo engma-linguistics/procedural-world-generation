@@ -1,4 +1,5 @@
 ---
+id: PW-1197
 title: "Short cited note: after conflict, are long-lived slow breeders (elves, dwarves) a few percent of people, or should they breed more?"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: [PW-1165]
 relates: [PW-1149, PW-1169]
 refs: [docs/review/peoples-events/design.md, docs/review/peoples-demography/report.md, planet/lineages/life_history.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -26,3 +29,6 @@ mammal breeding for elves and dwarves, and read the median shares against 2–4%
 - [ ] note with sources read
 - [ ] suite runs, two arms
 - [ ] owner card
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-slow-breeders-share-note.md (found by lane-85).

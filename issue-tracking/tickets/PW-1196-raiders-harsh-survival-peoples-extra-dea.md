@@ -1,4 +1,5 @@
 ---
+id: PW-1196
 title: "Raiders: harsh-survival peoples' extra deaths rise on hostile frontiers, plus culling wars that cut a crowded raider border to 40% and let it bounce back"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-85
 blocked_by: [PW-1165]
 relates: [PW-1169, PW-1172, PW-1149, PW-1165]
 refs: [docs/review/peoples-events/design.md, planet/lineages/life_history.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -40,3 +43,6 @@ Slow peoples have no such losses and are untouched. Design: docs/review/peoples-
 - [ ] cull sawtooth; a test that its mean is 0.28 whatever x is
 - [ ] events logged ("the hill folk hunted the goblins of X back to their warrens")
 - [ ] lane 77 suite, arms off / default / ×2: kobold and goblin median share falls; elf, dwarf and gnome medians not below off
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-raiders-raid-losses-and-culling-wars.md (found by lane-85).
