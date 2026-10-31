@@ -2,7 +2,7 @@
 id: PW-1155
 title: "Peoples learn new country: fixed body limits, widening cultural preference (niche learning)"
 type: task
-status: in-progress
+status: done
 parent: PW-917
 milestone: v1
 subsystem: timezoom
@@ -31,6 +31,7 @@ Supersedes the density rethink (PW-1149) and the mainline flag as the main lever
 - [x] judged on the stress suite; even_six and human share reported
 
 ## Updates
+- 2026-10-30: Status in-progress -> done. Merged lane 79: LEARN on; body limits + never list; T_LEARN 5 kyr (Rademaker 2014, Zhang 2018, Chen 2015, Pitulko 2016); learned capacity capped at 0.6 of the way to the body limit (judgement, anti-homogenisation); adapted demes split (ADAPT_DIV 0.4, ADAPT_MIN_CELLS 20, judgement). Humans 73->66/60/70% on dnd seeds; homogenisation flat; menagerie 51/52 alive.
 - 2026-10-30: Lane 79 built it (params.LEARN on). Spec has `limits` (the soft body envelope) and `never` (hard limits). Each people
   and cell keeps a learned acceptance L, with K = K0 + 0.6 L (T - K0). T_LEARN_KYR is 5, sourced from the Andes, Tibet and Arctic
   peopling. Learning is gated by pressure and by the cell being empty, and carries within a biome class. On learned country the

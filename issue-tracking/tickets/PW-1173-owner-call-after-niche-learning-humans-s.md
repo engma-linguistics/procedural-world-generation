@@ -1,4 +1,5 @@
 ---
+id: PW-1173
 title: "Owner call: after niche learning humans still hold about two thirds of people in the even-six tree; what next?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane79
 blocked_by: []
 relates: [PW-1155, PW-1149, PW-1152]
 refs: [planet/lineages/history/params.py, tools/peoples_robust/trees/even_six.toml, "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -37,3 +40,6 @@ Options:
   empty continent then took the lowlands and the peoples' biome mixes converged. Not recommended.
 
 Lean: B, then re-measure. Only C if B is short.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-even-six-after-niche-learning.md (found by lane79).

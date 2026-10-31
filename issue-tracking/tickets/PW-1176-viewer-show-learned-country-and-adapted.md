@@ -1,4 +1,5 @@
 ---
+id: PW-1176
 title: "Viewer: show learned country and adapted demes (niche learning)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane79
 blocked_by: []
 relates: [PW-1155, PW-981]
 refs: [planet/lineages/output.py, planet/lineages/demes.py, planet/lineages/history/frame.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -28,3 +31,6 @@ Wanted in the viewer:
 - the layer as a peoples overlay, e.g. a hatch or tint over the peoples map where learned >= 50%;
 - deme labels that show "adapted: tundra" in the demes panel;
 - the `split_adapted` events in the deme timeline.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-viewer-learned-country.md (found by lane79).

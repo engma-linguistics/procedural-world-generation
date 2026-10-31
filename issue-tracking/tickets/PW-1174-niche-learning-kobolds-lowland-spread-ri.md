@@ -1,4 +1,5 @@
 ---
+id: PW-1174
 title: "Niche learning: kobolds' lowland spread rides on the range they inherit from the draconic stem (read with PW-1152)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane79
 blocked_by: []
 relates: [PW-1155, PW-1152]
 refs: [planet/lineages/history/habitat.py, planet/lineages/history/params.py, "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -28,3 +31,6 @@ under local.
 So the kobolds' gain under learning is mostly a head start on an inherited range, not learning as such. If the owner picks local
 founding, re-check that the minor draconic peoples are not lost outright: 0.1% is a remnant. That is a founding question, not a
 learning one.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-kobold-lowlands-and-range-founding.md (found by lane79).
