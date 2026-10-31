@@ -1,4 +1,5 @@
 ---
+id: PW-1182
 title: Losing peoples are pinned at the refuge floor (~0.5 Mkm²) instead of finding a niche of their own
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane77
 blocked_by: []
 relates: [PW-920, PW-928]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/params.py, tools/peoples_robust.py, tools/peoples_robust/trees/menagerie.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -32,3 +35,6 @@ Options: (A) a refuge-bound people's jumps ignore JUMP_HEMMED and weigh places b
 so a squeezed people relocates to where it does better. (B) The floor shrinks with how long a people has been at it, so a hopeless
 remnant can end. That is honest extinction with a stated reason, which the owner allows for a reason. (C) Leave it: slivers are
 survivors. Lean: A; judge it on the suite's menagerie and knob rows (the area should move with the knob).
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-peoples-pinned-at-refuge-floor.md (found by lane77).

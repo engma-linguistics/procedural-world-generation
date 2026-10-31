@@ -1,4 +1,5 @@
 ---
+id: PW-1180
 title: With few peoples the humans take nearly everything; contests go to the denser people wherever niches overlap
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane77
 blocked_by: []
 relates: [PW-887, PW-1147, PW-1152]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/pressure.py, planet/lineages/history/model.py, planet/lineages/history/habitat.py, tools/peoples_robust.py, tools/peoples_robust/trees/five_peoples.toml, tools/peoples_robust/trees/even_six.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -61,3 +64,6 @@ Options (general, least forced first):
 - C. Leave the rules and give each people a share band (lane 78's soft targets). That is a target, not a mechanism. Better as a
   guard rail over A/B.
 - Lean: A (the screens rule out density as the lever), then B, judged on the suite (even_six, five_peoples, dnd3, dnd5 against today), with C as the guard rail.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dense-broad-people-takes-small-trees.md (found by lane77).

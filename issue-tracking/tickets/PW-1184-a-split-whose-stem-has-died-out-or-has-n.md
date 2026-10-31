@@ -1,4 +1,5 @@
 ---
+id: PW-1184
 title: A split whose stem has died out, or has no room nearby, is founded at the best habitat anywhere in the world
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane77
 blocked_by: []
 relates: [PW-1151, PW-1152, PW-677]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, tools/peoples_robust.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -39,3 +42,6 @@ unstarted children as living; (3) the "no room" fallback founds at the best habi
 (the across-sea weighting already in _origin_split), not at the world's best cell. With SPLIT_FOUNDING = local (PW-1152), this keeps
 "one spot, near the parent" true for every split.
 - [ ] fallback counts in the suite's origins ("why") drop to ~0 for parent-gone; the brittle peoples' swing (leonin, goblin, halfling) narrows
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-split-teleports-when-stem-gone.md (found by lane77).

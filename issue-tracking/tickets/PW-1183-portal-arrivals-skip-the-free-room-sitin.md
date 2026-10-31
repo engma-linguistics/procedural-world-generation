@@ -1,4 +1,5 @@
 ---
+id: PW-1183
 title: Portal arrivals skip the free-room siting, so the gnomes shrink 10-60x when portals are on
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane77
 blocked_by: []
 relates: [PW-697, PW-1150]
 refs: [planet/lineages/history/origins.py, tools/peoples_robust.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -25,3 +28,6 @@ the bare habitat. Suite (lane 77, dnd, seed 7/10, gnome share off / 1 portal / 3
 0.073% / 0.065%; af2677 s7 5.6% / 1.1% / 5.7%. Elves and tritons move less (their country is emptier).
 Fix: inside the portal branch, score the cells within PORTAL_KM (and PORTAL_FAR_KM) by the same free-room pocket as without portals.
 Lane 78 builds wandering portals: whoever touches the portal block first should fold this in.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-portal-arrivals-skip-free-room-siting.md (found by lane77).

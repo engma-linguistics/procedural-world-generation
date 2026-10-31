@@ -1,4 +1,5 @@
 ---
+id: PW-1181
 title: Make one-spot founding the default (SPLIT_FOUNDING = local); decide whether a stem's range still passes to its children at its end
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane77
 blocked_by: []
 relates: [PW-1152, PW-677, PW-888]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/params.py, tools/peoples_robust.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -45,3 +48,6 @@ Options: A. Default local now (the ruling), keeping PW-677's same-kind handover.
 re-measure it on the full suite first (`--arms local_vacate`). Lean: A now, B measured next. Either way, pair it with the
 split-teleport fix (draft "split whose stem has died out ... best habitat anywhere"). That fix is what keeps "one spot" near the
 parent when the parent is gone.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-local-founding-default-and-stem-handover.md (found by lane77).
