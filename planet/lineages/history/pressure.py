@@ -1,10 +1,10 @@
-"""The pure rules of competition between peoples: the momentum edge, the expansive press, frontier invasion, crowding."""
+"""The pure rules of competition between peoples: the momentum edge, the expansive press, crowding."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from .params import (EXPANSE_FILL, EXPANSE_FROM, EXPANSE_PRESS, EXPANSE_SPAN, INTEGRATE, INVADE, INVADE_FLOOR, SQUEEZE_FILL, SURGE_FULL, SURGE_KYR,
+from .params import (EXPANSE_FILL, EXPANSE_FROM, EXPANSE_PRESS, EXPANSE_SPAN, INTEGRATE, SQUEEZE_FILL, SURGE_FULL, SURGE_KYR,
                      SURGE_LATE_FROM_KYR, SURGE_Q)
 
 
@@ -36,13 +36,6 @@ def surge_q(early: float, late: float, ago_kyr: float) -> float:
     blended linearly to late by the present (the farming eras on: the owner's one dial per era, modelled on the megafauna press)."""
     w = min(1.0, max(0.0, 1.0 - ago_kyr / SURGE_LATE_FROM_KYR))
     return min(1.0, max(0.0, SURGE_Q * ((1 - w) * early + w * late)))
-
-
-def invasion_weights(dens: np.ndarray, k: int) -> np.ndarray:
-    """What each rival j weighs in line k's competition on the cells next to k's own range: 1 for a rival as dense or denser than k,
-    exp(-INVADE x ln(dens_k / dens_j)) (not under INVADE_FLOOR) for a thinner one. Every people by the same rule (PW-887)."""
-    adv = np.log(np.maximum(dens[k], 1e-9) / np.maximum(dens, 1e-9))
-    return np.clip(np.exp(-INVADE * np.maximum(adv, 0.0)), INVADE_FLOOR, 1.0)
 
 
 def squeeze(crowd: float, held_cells: int, potential_cells: int) -> float:

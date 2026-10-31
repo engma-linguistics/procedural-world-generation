@@ -86,7 +86,10 @@ TRAITS = {
     "insular": {},  # (insularity and exploration: DEMOGRAPHY)
     "cosmopolitan": {},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
-    "aggressive": {"push": 0.7},  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
+    "aggressive": {"push": 0.7},
+    "denning": {"den": 0.75},  # (lane 83, owner D20: a people of dense dens and warrens in rock, kobolds and goblins: its habitat off broken
+    # country (mountain, hills, breaks) x0.25, so it holds a narrow country densely, not a cover of whole open or forested cells; history.habitat)
+    "martial": {},  # (lane 83: its contest strength, DEMOGRAPHY: a disciplined, warlike people that holds and takes land, dwarves, hobgoblins)  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
@@ -153,16 +156,18 @@ RAFT_KYR = 100.0
 # (the strongest value among its traits; 'insular' sets exploration and insularity whatever else).
 # density: people per km² of full habitat (K = 1); a people's number is the sum of presence x density x area.
 #   Also: a separate patch with fewer than meta.viable_pop people fades (history.MVP_TAU_KYR), so a sparse people
-#   (giants: a band roaming thousands of km²) needs a large piece of good country to hold a land at all; and
-#   in competition a denser people weighs more (history.DENSITY_PUSH: farmers press on foragers; giants
-#   barely dent anyone's room, and anyone dents theirs).
+#   (giants: a band roaming thousands of km²) needs a large piece of good country to hold a land at all. Who holds a land is
+#   not the density's: the contest goes by fit (history.params.FIT_Q, lane 83).
 # explore 0..1: how readily the frontier pushes into marginal land and over the sea (long crossings x 2 explore).
 # sea_share 0..1: the share of the frontier that tries water crossings (BOATS; short hops over straits from
 #   LATE_SEA_KYR at >= SHORT_HOP_SHARE).
 # insularity 0..1: resistance to mixing (the late relaxing of competition x 2 (1 - insularity)) and to leaving
 #   home (long crossings x (1.25 - 0.5 insularity)).
+# contest > 0 (lane 83, owner D20): martial strength where it contests land with a rival, x on its contest strength (history.params.FIT_Q:
+#   x1.5 presses x1.5 harder on its rivals and feels them x1/1.5, within the fit clip). 1 is a people that fights for land as most do; the
+#   'martial' trait gives 1.5 (owner: dwarves and hobgoblins, "rather capable and fighty"). A design dial, not a measured number
 BAND = 25  # people in a band: band_km2 = BAND / density, the land a band roams
-DEMO_DEFAULT = {"density": 2.0, "explore": 0.5, "sea_share": 0.03, "insularity": 0.5}
+DEMO_DEFAULT = {"density": 2.0, "explore": 0.5, "sea_share": 0.03, "insularity": 0.5, "contest": 1.0}
 DEMOGRAPHY = {
     "agricultural": {"density": 10.0},
     "nomadic": {"density": 0.6, "explore": 0.7},
@@ -174,6 +179,7 @@ DEMOGRAPHY = {
     "coastal": {"sea_share": 0.3, "density": 3.0},
     "cosmopolitan": {"insularity": 0.2, "explore": 0.7},
     "insular": {"insularity": 0.85, "explore": 0.25},
+    "martial": {"contest": 1.5},
 }
 DEMO_KEYS = tuple(DEMO_DEFAULT)
 GENERATION_YR = 25.0  # default generation time of a people, years: human foragers 25-30 (Fenner 2005; Langergraber et al. 2012); per line `generation_yr`, inherited by splits and groups
@@ -413,6 +419,7 @@ class Lineage:
     explore: float | None = None  # 0..1, how readily it pushes into new land and over the sea
     sea_share: float | None = None  # 0..1, the share of its frontier that tries water crossings
     insularity: float | None = None  # 0..1, resistance to mixing and to leaving home
+    contest: float | None = None  # > 0, its martial strength in a contest for land (lane 83; None: from the traits, DEMOGRAPHY)
     body: dict = field(default_factory=lambda: {**BODY_DEFAULT, "toxic": []})  # senses and body, resolved (BODY_DEFAULT)
     body_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
     way: str | None = None  # way of life (WAYS), inherited from the parent (a group's people) where not given; None: from the traits
@@ -895,17 +902,20 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         if r.get("band_km2") not in (None, "") and r.get("density") in (None, ""):
             r = {**r, "density": BAND / float(r["band_km2"])}
         demo = {}
+        # (lane 83b: a people split from a megafauna stem, the kobolds and dragonborn of the dragons, takes no demography from it: the stem's
+        # numbers are a handful of solitary flying animals' (the dragons' explore 0.3, insularity 0.85), not a people's)
+        off_mega = origin == "split" and bases and base.megafauna and not r.get("megafauna", False)
         for k in DEMO_KEYS:
             v = r.get(k)
             if v in (None, ""):
                 # inherited from a split's parent where given there (else from its own traits); a hybrid's,
                 # an arrival's or a template's from its own (merged) traits unless given
-                demo[k] = getattr(base, k) if origin in ("split", "group") else None
+                demo[k] = getattr(base, k) if origin in ("split", "group") and not off_mega else None
                 continue
             v = float(v)
-            if k == "density" and not v > 0:
-                raise ValueError(f"{lid}: density must be > 0 (people per km²)")
-            if k != "density" and not 0 <= v <= 1:
+            if k in ("density", "contest") and not v > 0:
+                raise ValueError(f"{lid}: {k} must be > 0")
+            if k not in ("density", "contest") and not 0 <= v <= 1:
                 raise ValueError(f"{lid}: {k} must be within 0..1")
             demo[k] = v
         lgiven = dict(r.get("limits") or {})

@@ -30,7 +30,7 @@ from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
 from . import params as PM
-from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
+from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
                      MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
 from .portals import PortalsMixin
@@ -87,18 +87,21 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             across = mar[:, None] != mar[None, :]
             self.alpha[across] = 0.0
             self.terr[across] = 0.0
-        # a group and its people (and its sister groups) are one people: they mix freely (GROUP_KIN, no exclusion)
+        # a group and its people (and its sister groups) are one people with one capacity (lane 83, PW-1205 A): per cell its lines
+        # together hold at most the habitat of the way of life the land suits best (each line feels its kin in full, alpha 1, no
+        # closed-country term, no fit weight), so a people's ways of life split its land and its people instead of stacking on them
+        self._kin = np.zeros((len(self.lines), len(self.lines)), bool)
         for a in self.lines:
             for b in self.lines:
                 if a.id != b.id and not a.overlay and not b.overlay and (a.group_of or b.group_of) \
                         and tree.people_of(a.id) == tree.people_of(b.id):
                     i, j = self.idx[a.id], self.idx[b.id]
-                    self.alpha[i, j] *= GROUP_KIN
+                    self.alpha[i, j] = 1.0
                     self.terr[i, j] = 0.0
+                    self._kin[i, j] = True
         self._groups = {l.id: [self.idx[x] for x in tree.groups_of(l.id)] for l in self.lines}
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
-        # numbers: a denser rival weighs more (DENSITY_PUSH)
         self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else l.demo("density") for l in self.lines])
         for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own density, its groups' with it; history.bands)
             if kn.get("density", 1.0) != 1.0 and lid in self.idx:
@@ -112,11 +115,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
         F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None),
                                getattr(ps, "npp", None))
+        self._dens0 = self.dens.copy()  # (the tree's numbers: a farming people's at its own way of life; history.growth's era sets dens)
+        self._Fprod = F if (F is not None and PEOPLE_PROD) else None
         if F is not None and PEOPLE_PROD:
             self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
-        push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
-        self.alpha *= push
-        self.terr *= push
         mega = np.array([l.megafauna for l in self.lines])
         for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855);
             if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
@@ -132,7 +134,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.terr *= rv
         # each line's rivals: the lines whose presence enters its competition
         self._crowd = np.zeros(len(self.lines))  # (each line's crowding at its last step; reset by run)
-        self._among = np.zeros((len(self.lines),) * 2, bool)  # (pairs of an 'among' wish: no frontier invasion between them, PW-889)
+        self._among = np.zeros((len(self.lines),) * 2, bool)  # (pairs of an 'among' wish, PW-889)
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border); 'among', more (they share cells)
             if w.want in ("near", "among") and w.a in self.idx and w.b in self.idx:
                 f = 1 - (NEAR_TOLERANCE if w.want == "near" else AMONG_TOLERANCE) * min(w.weight, 1.0)
@@ -144,9 +146,15 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                             self.terr[x, y] *= f
                             if w.want == "among":
                                 self._among[x, y] = True
+        self.alpha[self._kin] = 1.0  # (one capacity among kin, whatever the nomads' overlap or a wish: PW-1205)
+        self.terr[self._kin] = 0.0
         self._chains = needs_chains(tree)
         self._aT, self._tT = np.ascontiguousarray(self.alpha.T), np.ascontiguousarray(self.terr.T)  # (how each rival feels line k: column k)
         self._Kmat = np.zeros((len(self.lines), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
+        self._breadth = np.ones(len(self.lines))  # (its fit and breadth then: the contest, params.FIT_Q)
+        self._Fmat = np.zeros((len(self.lines), g.n))
+        self._fit_now: dict[int, np.ndarray] = {}
+        self._martial = np.array([1.0 if l.megafauna or l.overlay else l.demo("contest") for l in self.lines])  # (each line's martial strength in the contest, spec contest, lane 83)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
         self.events: list[dict] = []
@@ -170,6 +178,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._div_dt = np.zeros(len(L))
         self._native = np.array([i for i, x in enumerate(L) if not x.overlay and not x.marine], np.int64)  # (land peoples: the sea ones leave the animals, crops and counts as they were)
         self._nat_set = set(self._native.tolist())
+        # (lane 83b: ...and the peoples among them: a cell only megafauna hold is free country for a people's pioneers and jumps; the
+        # dragons are a handful per country and hardly take room from the peoples, MEGAFAUNA_PUSH, so their range is not 'taken')
+        self._ppl_set = {i for i in self._nat_set if not L[i].megafauna}
         self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
@@ -181,6 +192,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._budget = np.zeros(len(L))
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
+        self._Fmat = np.zeros((len(L), g.n))  # (...its fit, and breadth, the fit's sum: the contest, params.FIT_Q, lane 83)
+        self._breadth = np.ones(len(L))
+        self._fit_now: dict[int, np.ndarray] = {}
+        self._last_held: dict[int, np.ndarray] = {}  # (a line's last land when it ended: a split whose parent is gone founds by it, PW-1184)
         self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
         self._L: dict[int, np.ndarray] = {}  # (each learning line's learned acceptance per cell, float32, PW-1155: habitat._learn)
         self._Lm = None
@@ -219,6 +234,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             mix = self._mix_ramp(step.ago)
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
+            self._cntp = self._pm[sorted(self._ppl_set)].sum(0, dtype=np.int16)
             order = [l for l in L if self.active[l.id]]
             keys = {l.id: self._lrng[l.id].random() for l in order}  # (the order: a random key per line from its own generator)
             order.sort(key=lambda l: (l.marine, keys[l.id]))
@@ -236,6 +252,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         deep = step.epoch == "deep"
         k = self.idx[l.id]
         if l.extinct_kyr is not None and step.ago <= l.extinct_kyr + 1e-9:
+            if (self.p[k] >= EST).any():
+                self._last_held[k] = self.p[k] >= EST
             self.p[k][:] = 0
             self.active[l.id] = False
             self.ended[l.id] = step.ago
@@ -246,13 +264,14 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         if K is None:
             K = self._K(l, env, tags, step)
         self._K_now[k] = K  # (the composition's reach: where a people could live, CP.reach)
-        self._Kmat[k] = K
+        self._note_K(k, K)
         if l.overlay and l.origin == "hybrid":
             self._hybrid(l, k, K, step)
             return
         if l.cities:  # (a people's minority in others' cities, PW-889)
             self._city(l, k, step)
             return
+        held0 = self.p[k] >= EST  # (its land at the step's start: kept if it ends now, PW-1184)
         self.p[k] = np.minimum(self.p[k], K)
         self.p[k][self.p[k] < EST] = 0
         if l.group_of and not deep:
@@ -277,6 +296,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._learn(l, k, step, tags)
         self._hold_out(l, k, K, step)
         if not (self.p[k] > EST).any() and not l.overlay:
+            if held0.any():
+                self._last_held[k] = held0
             self.active[l.id] = False
             self.ended[l.id] = step.ago
             self._event(step.ago, "extinct", l, f"{l.label()} dies out (no habitat left)")

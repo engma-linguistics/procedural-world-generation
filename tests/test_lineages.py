@@ -174,9 +174,9 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     assert arr["peoples"].shape[0] == len(run["frames"])
 
 
-def test_a_stem_cut_off_from_its_children_carries_on_as_one_of_them(faketz):
-    """PW-677: when a stem ends, the part of its range joined to no child (another landmass) goes to the child
-    whose niche suits it, instead of vanishing with the stem."""
+def test_a_stem_s_land_lies_empty_at_its_end(faketz):
+    """Owner D20 (PW-1181, superseding PW-677's handover): when a stem ends at its last split its remaining range passes to no child, of
+    its own kind or any other; it lies empty for the children to spread into. Its last land is kept (PW-1184: a later split founds by it)."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     h = H.History(SP.parse(_raw()), ps, 1)
     h.p = np.zeros((len(h.lines), h.grid.n))
@@ -190,11 +190,14 @@ def test_a_stem_cut_off_from_its_children_carries_on_as_one_of_them(faketz):
     east = tags["land"] & (lon > 90) & (lon < 150)
     assert west.any() and east.any()
     h.p[h.idx["stem"]][west | east] = 1.0
-    h.p[h.idx["a"]][west] = 1.0  # the child 'a' lives on the west continent only; 'b' is not yet alive
+    h.p[h.idx["a"]][west & (lon < 0)] = 1.0  # the child 'a' lives on part of the west continent only; 'b' is not yet alive
     h.active["stem"] = h.active["a"] = True
+    h._last_held = {}
+    a0 = h.p[h.idx["a"]].copy()
     h._end_parent(h.tree.lines["stem"], step, env, tags)
     assert not (h.p[h.idx["stem"]] > 0).any()
-    assert (h.p[h.idx["a"]][east] > H.EST).mean() > 0.5  # the cut-off east stock carried on as 'a'
+    assert (h.p[h.idx["a"]] == a0).all()  # (nothing handed over, joined to its land or cut off)
+    assert (h._last_held[h.idx["stem"]] == (west | east)).all()
 
 
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
@@ -292,16 +295,17 @@ def test_peoples_that_would_coexist_can_invade_each_other_whoever_came_first():
     rows, idx, c = np.array([1]), np.arange(n), np.zeros(n)
     a = np.array([0.0, 0.35])
     t = np.array([0.0, 0.52])  # (closed country: 0.87 both ways, the dwarves and kobolds)
-    P = coexist_cap(p, rows, a, t, a, t, Km, Km[0], idx, c)
+    W = np.ones((1, n))  # (no fit weight: the pair suits the cells alike)
+    P = coexist_cap(p, rows, a, t, a, t, Km, Km[0], idx, c, W)
     share = 0.72 * (1 - 0.87) / (1 - 0.87 ** 2)
     assert P[0] == pytest.approx(share)
     room = Km[0] - load_rows(P, a, t, rows, c)
     assert room == pytest.approx(share) and (room > H.EST).all() and (0.72 - 0.87 * 0.72) < H.EST  # (was locked out)
     assert load_rows(p[1:2], a, t, rows, c) == pytest.approx(H.rivals_load(p, rows, a, t, idx, c))
     t2 = np.array([0.0, 0.9])  # (1.25: exclusion, the presence counts in full)
-    assert (coexist_cap(p, rows, a, t2, a, t2, Km, Km[0], idx, c)[0] == p[1]).all()
+    assert (coexist_cap(p, rows, a, t2, a, t2, Km, Km[0], idx, c, W)[0] == p[1]).all()
     Km0 = np.zeros((2, n))  # (a row not yet set reads K_j as the presence)
-    assert coexist_cap(p, rows, a, t, a, t, Km0, Km[0], idx, c)[0] == pytest.approx(share)
+    assert coexist_cap(p, rows, a, t, a, t, Km0, Km[0], idx, c, W)[0] == pytest.approx(share)
 
 
 def test_rafts_and_dugouts_give_coastal_peoples_an_early_rung():
@@ -665,13 +669,14 @@ def test_groups_within_a_people(faketz):
     h = H.History(t, ps, 1)
     i, j, e = h.idx["warm_orc"], h.idx["orc"], h.idx["elf"]
     assert h.terr[i, j] == 0 and h.terr[j, i] == 0 and h.terr[j, e] > 0
-    assert h.alpha[i, j] < H.niche_overlap(g, t.lines["orc"], t)  # (kin: GROUP_KIN of the overlap)
+    assert h.alpha[i, j] == 1.0 and h.alpha[j, i] == 1.0  # (kin: one capacity, PW-1205)
     h, res, pres = H.simulate(t, ps, tries=1)
     assert "orc" not in h.ended and "warm_orc" in h.origins
     assert h.origins["warm_orc"]["why"].startswith("where its way of life")
     P = res["present"]
     po, pg = P[h.idx["orc"]] >= H.EST, P[h.idx["warm_orc"]] >= H.EST
     assert po.any() and pg.any()
+    assert (P[h.idx["orc"]] + P[h.idx["warm_orc"]] <= 1.0 + 1e-9).all()  # (one people, one capacity: its ways of life never stack, PW-1205)
     temp = ps.fields(0.0, variability=False)["temperature"]
     assert temp[pg].mean() > temp[po].mean() + 3  # (each holds the land its way of life suits)
     w = pres["peoples"]["orc"]
@@ -2377,17 +2382,6 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
         assert 20 <= LH.generation_yr(tr.lines["dragonborn"]) <= 30 and tr.lines["metallic_dragon"].rivalry < 1  # (not the wyrms' 430)
 
 
-def test_denser_people_weighs_thinner_rivals_less_at_the_front():
-    """PW-887: along the contact line a denser people feels a thinner rival less (frontier invasion); an equal or denser rival weighs in full,
-    and the same rule holds for every pair. Before, a rival weighed the same at the front as anywhere."""
-    dens = np.array([10.0, 5.0, 0.5, 10.0, 20.0])
-    w = H.invasion_weights(dens, 0)
-    assert w[0] == 1.0 and w[3] == 1.0 and w[4] == 1.0  # (itself, an equal, a denser one: in full)
-    assert H.INVADE_FLOOR <= w[2] < w[1] < 1.0  # (the thinner the rival, the less it weighs, down to the floor)
-    assert w[1] == pytest.approx(0.5 ** H.INVADE)
-    assert H.invasion_weights(dens, 2)[0] == 1.0  # (the thin people gets no such relief against the dense one)
-
-
 def test_crowding_measures_the_share_of_habitat_rivals_take():
     """PW-887: crowding (0 free, 1 squeezed out) is the mean share of K over the held cells that rivals take; it drives exploration."""
     K = np.array([1.0, 1.0, 0.5, 1.0])
@@ -2950,3 +2944,168 @@ def test_share_bands_nudge_a_peoples_own_density_and_never_clamp(faketz):
     assert len(pres["band_rounds"]) >= 2
     assert b["met"] or b["why"]
     assert b["share_pct"] == pytest.approx(B.shares(h, pres)["ork"], abs=1e-3)  # (the outcome as run, not set)
+
+
+def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
+    """Lane 83 (owner D20, PW-1180 A): where two peoples suit a cell alike, the narrower (the specialist) presses harder (breadth^-1/2);
+    the one the cell suits better presses harder there; a martial people (spec contest) harder still; all within x FIT_CLIP."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "broad", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "narrow", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "contest": 1.5}]}
+    tree = SP.parse(raw)
+    assert tree.lines["narrow"].demo("contest") == 1.5 and tree.lines["broad"].demo("contest") == 1.0
+    m = SP.parse({"lineage": [{"id": "m", "origin": "root", "at": "1 kyr", "traits": ["martial"]}]})
+    assert m.lines["m"].demo("contest") == 1.5
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "z", "origin": "root", "at": "1 kyr", "contest": 0}]})
+    h = H.History(tree, ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    n = h.grid.n
+    b, s = h.idx["broad"], h.idx["narrow"]
+    Kb, Ks = np.ones(n), np.where(np.arange(n) < n // 4, 1.0, 0.0)
+    h._note_K(b, Kb)
+    h._note_K(s, Ks)
+    idx = np.arange(n // 4)
+    assert (h._fit_w(s, Ks, np.array([b]), idx) < 1).all() and (h._fit_w(b, Kb, np.array([s]), idx) > 1).all()
+    narrow_on_broad = h._fit_w(b, Kb, np.array([s]), idx)[0, 0]
+    assert narrow_on_broad == pytest.approx(min(H.FIT_CLIP, 1.5 * np.sqrt(n / (n // 4))))
+    h._martial[s] = 1.0
+    assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(np.sqrt(n / (n // 4)))
+    h._note_K(s, 0.5 * Ks)  # (the cells suit it half as well: it presses half as hard there, its breadth halved too)
+    assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
+
+
+def test_a_denning_people_holds_mostly_broken_country(faketz):
+    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(ps.grid, env)
+    plain = SP.Lineage("p", temp_c=(-20, 40), rain_mm=(1, 9000))
+    den = SP.Lineage("d", temp_c=(-20, 40), rain_mm=(1, 9000), traits=["denning"])
+    Kp, Kd = H.capacity(plain, env, tags), H.capacity(den, env, tags)
+    broken = tags["mountain"] | tags["hills"] | tags["breaks"]
+    ok = Kp > 0
+    assert (ok & ~broken).any()
+    assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
+
+
+def test_a_farming_people_lives_at_forager_density_until_it_farms(faketz):
+    """Lane 83 (PW-1203 A): a farming people's density follows its era: a forager's (at most 0.35 /km2, Binford) before it has crops, a
+    gardener's (at most 5) with a crop and no plough, its own number as farmers; foragers keep theirs; no crops modelled: no change."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "farmer", "origin": "root", "at": "30 kyr", "way": "farmer", "density": 10, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunter", "origin": "root", "at": "30 kyr", "way": "forager", "density": 0.3, "temp_c": [-20, 40], "rain_mm": [1, 9000]}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    f, u = h.idx["farmer"], h.idx["hunter"]
+    h.crops = None
+    h._growth_setup()
+    assert h.dens[f] == 10 and h.dens[u] == pytest.approx(0.3)  # (no crops in the history: the tree's numbers)
+    h.crops = object()
+    h._growth_setup()
+    assert h.dens[f] == pytest.approx(0.35) and h.dens[u] == pytest.approx(0.3)
+    h._era[f] = "horticulturalist"
+    h._set_era_density(f)
+    assert h.dens[f] == pytest.approx(5.0)
+    h._era[f] = "agrarian"
+    h._set_era_density(f)
+    assert h.dens[f] == 10
+
+
+def test_a_split_founds_by_its_parent_s_last_land(faketz):
+    """PW-1184: a split whose parent holds nothing founds by the parent's last land (exp(-d / FOUNDER_KM)), not at its best
+    habitat anywhere."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    step = h.steps[-1]
+    env = step.get()
+    tags = H._tags(h.grid, env)
+    g = h.grid
+    a = h.tree.lines["a"]
+    K = H.capacity(a, env, tags)
+    last = tags["land"] & (g.lon > 100) & (g.lon < 140) & (np.abs(g.lat) < 20)
+    far = tags["land"] & (np.abs(g.lon) < 50)
+    assert last.any() and K[far].max() >= K[last].max() * 0.9
+    assert h._origin_fallback(a, step, env, tags, K, "parent gone: near its last land", near=last)
+    cell = h.origins["a"]["cell"]
+    assert g.lon[cell] > 85  # (on the east continent, by the last land; the west one is as good but far)
+
+
+def _mega_raw():
+    """A worldwide flying megafauna stem (the dragons) with a walking people split from it (the kobolds)."""
+    return {"meta": {"name": "t", "seed": 2}, "lineage": [
+        {"id": "wyrm", "origin": "root", "at": "30 kyr", "megafauna": True, "explore": 0.3, "insularity": 0.85, "sea_share": 0.02,
+         "temp_c": [-10, 40], "rain_mm": [50, 6000], "traits": ["flies", "insular"]},
+        {"id": "kin", "parents": ["wyrm"], "at": "20 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000], "traits": ["hardy"]},
+        {"id": "wyrmling", "parents": ["wyrm"], "at": "15 kyr", "megafauna": True}]}
+
+
+def test_a_people_of_a_megafauna_stem_takes_no_demography_from_it():
+    """Lane 83b: the dragons' explore and insularity are a handful of solitary fliers' numbers, not a people's: a people split from a
+    megafauna stem takes them from its own traits; a megafauna child still inherits them."""
+    t = SP.parse(_mega_raw())
+    assert t.lines["kin"].demos()["explore"] == SP.demography(["hardy"])["explore"]
+    assert t.lines["kin"].demos()["insularity"] == SP.DEMO_DEFAULT["insularity"]
+    assert t.lines["wyrmling"].demos()["insularity"] == 0.85 and t.lines["wyrmling"].demos()["explore"] == 0.3
+
+
+def test_a_people_of_a_megafauna_stem_founds_where_its_own_country_lies(faketz):
+    """Lane 83b: a split of a worldwide megafauna stem founds as an arrival settles: its landmass drawn by the founders its own country
+    (free room) would carry, not by the stem's range; the stem's range at the spot is cleared, as for any one-spot split (D20)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_mega_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    h.active = {l.id: False for l in h.lines}
+    step = h.steps[-1]
+    env = step.get()
+    tags = H._tags(h.grid, env)
+    h._corr_now = None
+    h.p[h.idx["wyrm"]][tags["land"]] = 0.5
+    h.active["wyrm"] = True
+    kin = h.tree.lines["kin"]
+    K = H.capacity(kin, env, tags)
+    cell, why = h._origin_split(kin, step, env, tags, K, np.ones(h.grid.n))
+    assert "megafauna stem" in why and K[cell] > 0.3
+    held = h.p[h.idx["kin"]] > 0
+    assert held.any() and not (h.p[h.idx["wyrm"]][held] > 0).any()
+
+
+def test_pioneers_and_jumps_count_megafauna_land_as_free(faketz):
+    """Lane 83b: a cell only megafauna hold is free country to a people's pioneers and jumps (the dragons hardly take room from the
+    peoples); to another megafauna kind it is taken, as before."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_mega_raw()), ps, 1)
+    L = h.lines
+    h.p = np.zeros((len(L), h.grid.n))
+    h._native = np.arange(len(L))
+    h._nat_set = set(range(len(L)))
+    h._ppl_set = {i for i in h._nat_set if not L[i].megafauna}
+    h.p[h.idx["wyrm"]][:10] = 1.0
+    h._pm = h.p >= 0.12
+    h._cnt = h._pm.sum(0, dtype=np.int16)
+    h._cntp = h._pm[sorted(h._ppl_set)].sum(0, dtype=np.int16)
+    assert (h._taken_cnt(h.tree.lines["kin"])[:10] == 0).all()
+    assert (h._taken_cnt(h.tree.lines["wyrmling"])[:10] == 1).all()
+    h.p[h.idx["kin"]][5:15] = 1.0
+    h._sync(h.idx["kin"])
+    assert (h._cntp[5:15] == 1).all() and (h._cnt[5:10] == 2).all()
+
+
+def test_a_people_that_filled_its_patch_pushes_founders_out(faketz):
+    """Lane 83b (PW-920): a hemmed-in people sends out founders when rivals crowd it or when it has filled the land it holds; a narrow
+    people alone on its patch of country used to have no push at all."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    k = h.idx["a"]
+    K = np.full(h.grid.n, 0.8)
+    held = np.zeros(h.grid.n, bool)
+    held[:20] = True
+    h.p[k][held] = 0.8
+    assert h._jump_push(k, K, K.copy(), held) == pytest.approx(1.0)  # (filled, no rival: full push)
+    h.p[k][held] = 0.2
+    assert h._jump_push(k, K, K.copy(), held) == pytest.approx(0.25)  # (a quarter filled)
+    room = np.full(h.grid.n, 0.2)
+    assert h._jump_push(k, K, room, held) == pytest.approx(1.0)  # (crowded to its room by rivals)

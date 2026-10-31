@@ -6,7 +6,6 @@ from __future__ import annotations
 import numpy as np
 
 from planet.lineages import spec as SP
-from planet.lineages.history import params as PM
 from tests.test_lineages import _raw, faketz  # noqa: F401 (the fixture)
 from tools import peoples_robust as PR
 
@@ -35,17 +34,14 @@ def test_variants_stay_valid_trees():
         assert SP.parse(raw).lines and info["rationale"]
 
 
-def test_one_run_per_founding_arm(faketz):  # noqa: F811
-    try:
-        for arm in PR.ARMS:
-            m = PR.run_one({"raw": _tree(), "world": faketz, "arm": arm, "now": 40.0, "recent": {"kyr": 20, "seed": 1, "climate_every": 0}})
-            P = m["peoples"]
-            assert {"a", "b", "c", "fey"} <= P.keys()
-            assert abs(sum(v["share"] for v in P.values()) - 1.0) < 1e-6
-            assert all(0.0 <= v["led"] <= 1.0 for v in P.values())
-            assert P["a"]["found_mkm2"] is not None and P["a"]["origin"]["why"]
-            assert not P["gone"]["alive"] and P["gone"]["authored_extinct"]
-            if arm == "local_vacate":
-                assert all(v["inherit_mkm2"] == 0.0 for v in P.values())
-    finally:
-        PM.SPLIT_FOUNDING = "range"
+def test_one_run_per_arm(faketz):  # noqa: F811
+    for arm in PR.ARMS:
+        m = PR.run_one({"raw": _tree(), "world": faketz, "arm": arm, "now": 40.0, "recent": {"kyr": 20, "seed": 1, "climate_every": 0}})
+        P = m["peoples"]
+        assert {"a", "b", "c", "fey"} <= P.keys()
+        assert abs(sum(v["share"] for v in P.values()) - 1.0) < 1e-6
+        assert all(0.0 <= v["led"] <= 1.0 for v in P.values())
+        assert P["a"]["found_mkm2"] is not None and P["a"]["origin"]["why"]
+        assert not P["gone"]["alive"] and P["gone"]["authored_extinct"]
+        assert all(v["inherit_mkm2"] == 0.0 for v in P.values())  # (owner D20: a stem's land passes to no child at its end)
+        assert isinstance(m["blocs"], list)

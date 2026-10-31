@@ -472,7 +472,7 @@ window.addEventListener('resize', () => { if (tab === 'tree') drawTimeline(); })
 function field(label, html) { return `<label>${label}</label>${html}`; }
 const demoInput = (r, k, step, w = 62) => {
   const [v, how] = demoOf(r)[k];
-  return `<input type="number" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" style="width:${w}px" value="${r[k] ?? ''}"
+  return `<input type="number" step="${step}" min="0" ${['density', 'contest'].includes(k) ? '' : 'max="1"'} data-k="${k}" style="width:${w}px" value="${r[k] ?? ''}"
     placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : `${+v.toPrecision(3)} (${how}); type to set`}">`;
 };
 function drawSide() {
@@ -516,7 +516,7 @@ function drawSide() {
       ${field('toxic to it', TOXINS.map(([t, lab]) => `<label class="trait"><input type="checkbox" data-btox="${t}" ${bodyOf(r).toxic.includes(t) ? 'checked' : ''}> ${lab}</label>`).join(''))}
       <h3>Demography (grey: from traits or parent)</h3>
       <div class="row">${field('density /km²', demoInput(r, 'density', 'any'))}${field('expansion km/yr', `<input type="number" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}">`)}</div>
-      <div class="row">${field('explore', demoInput(r, 'explore', 0.05, 55))}${field('sea share', demoInput(r, 'sea_share', 0.05, 55))}${field('insularity', demoInput(r, 'insularity', 0.05, 55))}</div>
+      <div class="row">${field('explore', demoInput(r, 'explore', 0.05, 55))}${field('sea share', demoInput(r, 'sea_share', 0.05, 55))}${field('insularity', demoInput(r, 'insularity', 0.05, 55))}${field('contest', demoInput(r, 'contest', 0.1, 55))}</div>
       ${field('colour', `<input type="color" data-k="color" value="${r.color || '#888888'}">`)}
       <h3>Its land use <a href="#" data-tabgo="places" style="font-weight:normal">(edit in the Places tab)</a></h3>
       ${(T.use || []).filter((u) => usesOf(u).includes(r)).map((u) => `<div>${esc(u.good)} <span class="muted">by ${esc(u.by)} · w ${u.weight ?? 1}${u.pull != null ? ` · pull ${u.pull}` : ''}${u.strict ? ' · strict' : ''}</span></div>`).join('') || '<div class="muted">none</div>'}
@@ -689,7 +689,7 @@ function drawPeoples() {
     .map((g) => ({ r: g, d: x.d + 1, dm: demoOf(g), p: resPres(g.id), group: true })) : [])]);
   const th = (k, label, tip) => `<th ${k ? `data-sort="${k}" style="cursor:pointer"` : ''} title="${esc(tip || '')}">${label}${peopleSort.replace('-', '') === k && k ? (peopleSort.startsWith('-') ? ' ▴' : ' ▾') : ''}</th>`;
   const val = (r, k, step, cls = '') => { const [v, how] = demoOf(r)[k];
-    return `<input type="number" class="${cls}" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
+    return `<input type="number" class="${cls}" step="${step}" min="0" ${['density', 'contest'].includes(k) ? '' : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
   let h = `<p class="hint">Each people's demography and movement. Giants are sparse (a band roams thousands of km²) and insular; farmers dense; seafarers
     and explorers find the empty lands first. Click a name to open it in the tree; click a numeric heading to sort. ${result ? `Last run: <b>${esc(result.id)}</b> (${esc(result.world || '')}).` : 'Run on a world to fill population and area.'}</p>
     ${bandWarnings().map((w) => `<p class="hint" style="color:var(--bad,#c33)">Share bands: ${esc(w)}</p>`).join('')}
@@ -708,7 +708,7 @@ function drawPeoples() {
     <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
     ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
-    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}<th title="Canon age of adulthood, yr (life history, PW-1148)">adult yr</th><th title="Canon lifespan, yr">lifespan</th><th title="Breeding class: Rmax per generation (slow 2, mammal 3.5, brood 7); survival: harsh = few reach adulthood">breeding</th><th title="From the last run: generation time T (yr) and growth rate r relative to humans, under the forager schedule (the farming schedules: hover)">T · r×</th><th title="Soft target for its share of the world's people, % [min, max] (the run nudges its own density to meet it; never a clamp)">share band %</th>${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th>
+    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('contest', 'contest', 'martial strength where it contests land with a rival: 1 as most peoples, 1.5 martial (dwarves, hobgoblins); it presses that much harder and feels its rivals that much less')}<th title="Canon age of adulthood, yr (life history, PW-1148)">adult yr</th><th title="Canon lifespan, yr">lifespan</th><th title="Breeding class: Rmax per generation (slow 2, mammal 3.5, brood 7); survival: harsh = few reach adulthood">breeding</th><th title="From the last run: generation time T (yr) and growth rate r relative to humans, under the forager schedule (the farming schedules: hover)">T · r×</th><th title="Soft target for its share of the world's people, % [min, max] (the run nudges its own density to meet it; never a clamp)">share band %</th>${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th>
     <th title="Its places now, from the last run's settlement ledger (settlements.py, PW-1011, PW-1103): cities, towns, villages and mines it holds; its places of its own as a second people among another (PW-1105); the places it holds that another people founded; the ruins of places it founded">places now</th></tr>`;
   for (const { r, d, dm, p, group } of rows) {
     const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [], gs = group ? [] : groupsOf(r.id);
@@ -726,7 +726,7 @@ function drawPeoples() {
       <td>${val(r, 'density', 'any')}</td>
       <td><input type="number" data-k="band_km2" step="any" min="1" placeholder="${+(BAND / dm.density[0]).toPrecision(3)}" title="km² a band of ${BAND} roams (sets density)"></td>
       <td><input type="number" class="s" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}"></td>
-      <td>${val(r, 'explore', 0.05, 's')}</td><td>${val(r, 'sea_share', 0.05, 's')}</td><td>${val(r, 'insularity', 0.05, 's')}</td>
+      <td>${val(r, 'explore', 0.05, 's')}</td><td>${val(r, 'sea_share', 0.05, 's')}</td><td>${val(r, 'insularity', 0.05, 's')}</td><td>${val(r, 'contest', 0.1, 's')}</td>
       <td><input type="number" class="s" min="0.1" step="any" data-k="adult_yr" value="${r.adult_yr ?? ''}" placeholder="${inherited(r, 'adult_yr') ?? ''}"></td>
       <td><input type="number" class="s" min="1" step="any" data-k="lifespan_yr" value="${r.lifespan_yr ?? ''}" placeholder="${inherited(r, 'lifespan_yr') ?? ''}"></td>
       <td><select data-k="breeding"><option value="">${esc(inherited(r, 'breeding') ?? 'mammal')}</option>${(SCHEMA.breeding || []).map((v) => `<option value="${v}"${r.breeding === v ? ' selected' : ''}>${BREEDING_LABELS[v] || v}</option>`).join('')}</select>

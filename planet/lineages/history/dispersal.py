@@ -47,7 +47,14 @@ class DispersalMixin:
         now = self.p[k] >= EST
         if k in self._nat_set:
             self._cnt += now.astype(np.int16) - self._pm[k]
+        if k in self._ppl_set:
+            self._cntp += now.astype(np.int16) - self._pm[k]
         self._pm[k] = now
+
+    def _taken_cnt(self, l):
+        """Per cell, how many lines hold it that a pioneer or jump of `l` counts as taking it: every native line for megafauna, the
+        peoples for a people (lane 83b: a cell only dragons or giants hold is free country to a people)."""
+        return self._cnt if l.megafauna else self._cntp
 
     def line_mvp(self, l) -> float:
         """The viable number of a line's patch: tree.viable_pop for a people of GENERATION_YR, smaller for a longer-lived one. Over the
@@ -121,7 +128,7 @@ class DispersalMixin:
                 # pioneers: a people crowded at home still settles empty country next to its range, at the
                 # pressure of the habitat there, not of its own (competition-thinned) presence (PW-683/684)
                 src = np.where(self.p[k] >= EST, np.maximum(self.p[k], np.minimum(K, PIONEER_P)), 0.0)
-                taken = (self._cnt - self._pm[k] + (self.p[k] >= EST)) > 0  # (== any native line holds it, now)
+                taken = (self._taken_cnt(l) - self._pm[k] + (self.p[k] >= EST)) > 0  # (== any native line holds it, now; for a people, any people)
                 new = spread(src, np.where(taken, 0.0, room), enter, tags["elev"], relief, sea, land_any,
                              g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
                 fill = (new >= EST) & ~taken & (self.p[k] < EST)
@@ -149,9 +156,10 @@ class DispersalMixin:
                 self.cross.note(l.id, blob, step.ago, way, self.events, l.label(), gap)
 
     def _hold_out(self, l, k, K, step):
-        """A line given as living at the present isn't lost: at its lowest it holds out in a refuge."""
+        """A line given as living at the present isn't lost: at its lowest it holds out in a refuge; so is a stem with splits still to
+        come (PW-1184: it is as much given as living until its last split, so its children arise by it)."""
         g = self.grid
-        if not l.overlay and l.extinct_kyr is None and l.id in self._living and (self.p[k] >= EST).sum() < 3 \
+        if not l.overlay and l.extinct_kyr is None and (l.id in self._living or self._unsplit(l)) and (self.p[k] >= EST).sum() < 3 \
                 and K.max() > 2 * EST:
             # a line given as living at the present isn't lost: at its lowest it holds out in a refuge,
             # its best habitat near where it was (as the ice-age refugia did)
@@ -163,10 +171,21 @@ class DispersalMixin:
                 self._refuged.add(l.id)
                 self._event_at(step.ago, "refuge", l, f"{l.label()} hold out in a refuge", cell)
 
+    def _jump_push(self, k, K, room, held) -> float:
+        """How hard a hemmed-in people pushes founders out, 0..1 (PW-920): its crowding by rivals, or the share of the land it holds that
+        it has filled (presence over room) where that is more (lane 83b: hemmed in by rivals or by country it cannot live in alike. By
+        its rivals alone, a narrow people, the denning kobolds, that had filled its patch of broken country never left it: no one crowded
+        it there)."""
+        if not held.any():
+            return 0.0
+        p = self.p[k][held]
+        full = float(np.clip(p / np.maximum(np.maximum(room[held], p), EST), 0.0, 1.0).mean())
+        return max(crowding(K, room, held), full)
+
     def _jump(self, l, k, K, room, step, env, tags):
         """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
-        chance JUMP_RATE x crowding x dt, the place drawn by a fat-tailed kernel exp(-D^JUMP_SHAPE) over D, the distance in the people's
-        own jump lengths (land, water: by mobility, params), times the room there. Displaced peoples and those seeking new country."""
+        chance JUMP_RATE x dt x its push (_jump_push: crowded, or its land filled), the place drawn by a fat-tailed kernel
+        exp(-D^JUMP_SHAPE) over D, the distance in the people's own jump lengths (land, water: by mobility, params), times the room there. Displaced peoples and those seeking new country."""
         if l.overlay or l.megafauna or JUMP_RATE <= 0:  # (megafauna: counted pockets, PW-924, not grown by jumps)
             return
         g = self.grid
@@ -180,7 +199,6 @@ class DispersalMixin:
         held = self.p[k] >= EST
         if not held.any():
             return
-        crowd = crowding(K, room, held)
         ring = self._dilate(held, 1) & ~held
         realm = hold_mask(l, tags) if l.marine else env["land"]
         ring &= realm
@@ -197,12 +215,13 @@ class DispersalMixin:
         else:
             Ls = max([m[2] for m in modes(l, step.ago) if m[0] != "raft"], default=0.0)
             cost = np.where(land, cell / JUMP_KM, cell / Ls if Ls > 0 else np.inf)
+        push = self._jump_push(k, K, room, held)
         for _ in range(n_ev):
-            if rng.random() >= crowd:
+            if rng.random() >= push:
                 continue
             D = jump_reach(held, cost, JUMP_MAX, g.nbr_off, g.nbr_idx)
             # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one)
-            taken = (self._cnt - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
+            taken = (self._taken_cnt(l) - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
             cand = good & realm & ~taken & ~self._dilate(held, 1) & (D > 0)
             if not cand.any():
                 return

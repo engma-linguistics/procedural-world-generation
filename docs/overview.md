@@ -846,6 +846,33 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
+### 2.26 Peoples history: founding and the contest for land (`lineages/history/`, lane 83, owner D20)
+
+The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.
+- **One-spot founding** (`origins._origin_split`, PW-1152, PW-1181): a split's founders hold the suitable country within `FOUNDER_KM` of one origin cell in or by its parent's range. They take neither a cut-off part of the parent's range nor patches across it, so the kobolds of the worldwide dragon stem start as one people of one country. When a stem ends at its last split (`_end_parent`), its remaining land lies empty for its children to spread into; it passes to no child (this replaces PW-677's handover). A stem ends only once every child of its realm has started, the ones authored to die out included, and a stem with splits still to come holds out in a refuge as a living people does (PW-1184). A split whose parent is gone founds near the parent's last land, and one with no room by its parent at the nearest country it can live in (`_origin_fallback`, a distance kernel of `FOUNDER_KM`), never at the best habitat anywhere.
+- **Fit decides the contest** (`competition._fit_w`, `params.FIT_Q`, PW-1180 option A): the competition line k feels from rival j on a cell is weighted by clip(S_j / S_k, 1/3, 3), S = fit x breadth^-1/2 x contest. The fit is how well the cell suits the people's body and ways (habitat before the goods, herds and crops, learned country in); the breadth is the fit's sum over the world, so a people that lives everywhere is weaker in any one country than the specialist of it; contest is the spec's martial strength (`contest`, 1, or 1.5 from the `martial` trait; stage 2). The coexistence cap (`spread.coexist_cap`) uses the weighted coefficients. Density no longer enters the contest (PW-887's frontier invasion by density and `DENSITY_PUSH` are gone): it sets how many people a land holds, not who holds it.
+- **One capacity per people** (`competition._compete`, `model._kin`, PW-1205 A): a people's groups (its farmers, herders, seafarers...)
+  and the people itself share one capacity per cell. Each feels its kin's presence in full (alpha 1, before any edge or discount), so the
+  ways of life split a people's land and its people instead of stacking (they had held ~1.3 K a cell at PW-665's GROUP_KIN 0.5).
+- **Density follows the era** (`growth._set_era_density`, `growth.ERA_DENSITY`, PW-1203 A): the tree's density is a people's number at
+  its own way of life. A farming people lives at most at forager density (0.35 /km², Binford 2001's upper quartile) until it has a staple
+  crop, and at most at 5 /km² (the top of the owner's range for forest gardeners) until it farms with the plough. Foragers and herders
+  keep their number, and so does every people when the history models no crops. Since the contest reads fit and not density, density
+  sets head counts, not who holds the land.
+- **Densities by way of life in the dnd tree** (owner D20 (4), PW-1149 B): foragers at 0.3 /km² (Binford 2001 Table 5.01 via D-PLACE
+  B008, upper quartile 0.35), arctic foragers 0.05, elves 4 (forest gardeners), dwarves 7 and hill dwarves 8. Kobolds and goblins are
+  'denning': habitat x0.25 off mountains, hills and breaks, and learning new country at a quarter of the rate.
+- **A people of a megafauna stem** (`origins._origin_off_megafauna`, spec, lane 83b): the kobolds and dragonborn split from the dragons, a
+  handful of animals per country over a range that spans the world, so the stem's range says nothing about where its people's country
+  lies. Such a people founds at one spot as an arrival settles: on a landmass the stem's range reaches, drawn in proportion to the founders
+  its free room would carry, at its roomiest habitat there. It takes no demography (explore, insularity, sea share, density) from the
+  stem: the dragons' numbers are solitary fliers', not a people's.
+- **Free country and the jump** (`dispersal._taken_cnt`, `dispersal._jump_push`, lane 83b): a cell only megafauna hold is free
+  country to a people's pioneers and jumps (the dragons hardly take room; before, a dragon's range barred them). A hemmed-in people sends
+  founders out over its jump kernel (PW-920) when rivals crowd it or when it has filled the land it holds: by crowding alone a narrow
+  people, the denning kobolds on their patch of broken country, never left it.
+- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md.
+
 ## 3. Calibration and validation
 
 *Every number in this section was generated on 2026-10-31 by the tool named with it, at the commit of that day (main 69ac92a5), not typed from memory. Earth is a test analogue and a plausibility anchor, never a parity target. Re-run the tools after a model change and update the block; where this section and a tool disagree, the tool wins.*

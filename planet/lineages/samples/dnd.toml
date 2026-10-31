@@ -252,6 +252,7 @@ never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30: "tortles r
 
 [[lineage]]
 id = "kobold"
+limits = { learn = 0.25 }  # lane 83 (owner D20): much less adaptive to open country and forest: learns new country at a quarter of the rate
 adult_yr = 6  # VGtM: 6; up to 120 'but rarely do so': brood breeders, harsh survival  # PW-1148 (lane 78): canon ages, lane 76's table (docs/review/peoples-demography/report.md section 2)
 lifespan_yr = 120
 breeding = "brood"
@@ -266,7 +267,7 @@ sea_share = 0.02
 temp_c = [5, 25]
 rain_mm = [300, 2000]
 prefers = ["mountain"]
-traits = ["subterranean", "hardy"]
+traits = ["subterranean", "hardy", "denning"]  # lane 83 (owner D20): dense dens and warrens, a narrow country (spec 'denning')
 near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 
 [[lineage]]
@@ -286,7 +287,7 @@ name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["saurian"]
 at = "2.5 Myr"  # PW-988: the saurian stem ends here, in the lizardfolk and the troglodytes
-density = 1.5
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.4
 sea_share = 0.25
 temp_c = [20, 30]
@@ -302,7 +303,7 @@ name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["saurian"]
 at = "4.2 Myr"  # PW-988: the saurian stem's first split, the deep branch (T3 to the lizardfolk and troglodytes by depth)
-density = 1
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 sea_share = 0.8
 temp_c = [20, 30]
@@ -355,7 +356,7 @@ lifespan_yr = 80
 name = "tabaxi"
 parents = ["feline"]
 at = "1.2 Myr"
-density = 1.5
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.8
 temp_c = [18, 30]
 rain_mm = [900, 3500]
@@ -370,7 +371,7 @@ lifespan_yr = 80
 name = "leonin"
 parents = ["feline"]
 at = "900 kyr"
-density = 0.5
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.6
 temp_c = [16, 32]
 rain_mm = [300, 1400]
@@ -400,6 +401,7 @@ prefers = ["temperate", "open", "forest"]
 
 [[lineage]]
 id = "goblin"
+limits = { learn = 0.25 }  # lane 83 (owner D20): much less adaptive to open country and forest: learns new country at a quarter of the rate
 adult_yr = 8  # VGtM: 8; up to 60: brood breeders, harsh survival (lane 76's rethink)
 lifespan_yr = 60
 breeding = "brood"
@@ -411,10 +413,12 @@ density = 5
 temp_c = [18, 30]
 rain_mm = [1200, 4000]
 prefers = ["rainforest"]
-traits = ["hunter"]
+traits = ["hunter", "denning"]  # lane 83 (owner D20): dense dens and warrens, a narrow country (spec 'denning')
 
 [[lineage]]
 id = "hobgoblin"
+contest = 1.5  # lane 83 (owner D20: 'make the militaristic buggers compete hard back'): martial, as the spec's 'martial' trait; its groups inherit it. A design dial
+way = "agro_pastoral"  # lane 83: a settled warrior people with fields and herds (as in seven_meals), not foragers: its density 4 is kept, a judgement
 adult_yr = 18  # VGtM: as humans
 lifespan_yr = 80
 name = "hobgoblins"
@@ -435,7 +439,7 @@ name = "bugbears"
 body = { smell = "keen", diet = "carnivore" }  # ambush hunters
 parents = ["greater_goblinoid"]
 at = "200 kyr"
-density = 0.8
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.4
 temp_c = [3, 20]
 rain_mm = [500, 2000]
@@ -614,7 +618,7 @@ name = "orcs"
 body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
 at = "700 kyr"
-density = 1
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 temp_c = [2, 20]
 rain_mm = [200, 900]
@@ -623,6 +627,7 @@ traits = ["nomadic", "hardy"]
 
 [[lineage]]  # horse-and-herd raiders of the dry grassland
 id = "steppe_orc"
+density = 0.8  # lane 83: a pastoral nomad group, as the human nomads (0.8): kept apart from its forager people's number
 name = "steppe orcs"
 body = { milk = 0.1 }  # most deep-steppe herders lack lactase (Mongolia): their dairy is soured and fermented (kumis, airag, aaruul), PW-723 / intake 3.6
 origin = "group"
@@ -649,6 +654,7 @@ way = "farmer"
 
 [[lineage]]
 id = "dwarf"
+contest = 1.5  # lane 83 (owner D20: 'make the militaristic buggers compete hard back'): martial, as the spec's 'martial' trait; its groups inherit it. A design dial
 adult_yr = 50  # PHB: young until 50; ~350; fertile 50-100 (lane 76's rethink)
 lifespan_yr = 350
 fertile_yr = [50, 100]
@@ -656,7 +662,7 @@ name = "dwarves"
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
-density = 4
+density = 7  # lane 83 (owner D20, PW-1149 B): mountain farmer-miners at 6-8 /km² (the owner's range; middle taken), was 4
 explore = 0.5  # lane 73: was 0.35, which kept them in the hominid cradle (one continent with 9% of their country) for 500 kyr. The
 # mountain peoples that do range (goliaths 0.4, the mountain-and-coast avian stem's aarakocra 0.7) and the people default (0.5) sit
 # here; the homebodies (gnomes 0.3, firbolgs 0.3) are woodland folk. Dwarves follow ore and trade out to far holds
@@ -673,7 +679,7 @@ name = "hill dwarves"
 origin = "group"
 group_of = "dwarf"
 at = "8 kyr"
-density = 6
+density = 8  # lane 83 (owner D20): hill farmer-miners, the top of the dwarves' 6-8 (richer land than the peaks), was 6
 elev_m = [100, 1800]
 prefers = ["hills"]
 traits = ["subterranean", "miner"]
@@ -686,7 +692,7 @@ real = true  # (kept in the real-world mode)
 name = "archaic humans stem"
 parents = ["hominid"]
 at = "400 kyr"
-density = 2
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 temp_c = [6, 26]
 rain_mm = [350, 2200]
 prefers = ["temperate", "subtropical", "lowland"]
@@ -764,7 +770,7 @@ name = "human seafarers"
 origin = "group"
 group_of = "human"
 at = "6 kyr"
-density = 4
+density = 0.7  # lane 83: fisher-foragers at the top tenth of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies) (0.67 /km²); a judgement that the rich-coast fishers stand there
 explore = 0.8
 sea_share = 0.85
 prefers = ["coast", "island"]
@@ -778,7 +784,7 @@ name = "human arctic hunters"
 origin = "group"
 group_of = "human"
 at = "30 kyr"
-density = 0.3
+density = 0.05  # lane 83: arctic and boreal foragers, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies) above 55 degrees: 0.049 /km² (median 0.016)
 explore = 0.7
 sea_share = 0.5  # kayaks and skin boats: the Thule crossed Smith Sound, the Inuit settled Greenland
 temp_c = [-14, 8]
@@ -807,6 +813,7 @@ traits = ["agricultural", "cosmopolitan"]
 # ---- from outside the world -------------------------------------------------------------
 [[lineage]]
 id = "elf"
+way = "horticulturalist"  # lane 83: forest gardeners (gardens and swidden, half gathered)
 founders = 1000000  # PW-1150 (lane 78; coordinator 10-30, the owner's "a million through ten portals"): about 3x today's founding patch
 # (~0.3 M elves at density 1, lane 76 section 6), in two waves through the portals they can live near
 waves = 2
@@ -819,7 +826,7 @@ name = "elves (from the feywild)"
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
-density = 1
+density = 4  # lane 83 (owner D20, PW-1149 B): forest gardeners at 3-5 /km² (the owner's range; middle taken), was 1
 explore = 0.8
 sea_share = 0.3
 insularity = 0.7
@@ -1001,7 +1008,7 @@ name = "aarakocra"
 body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
 parents = ["avian"]
 at = "900 kyr"
-density = 0.5
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 prefers = ["mountain", "island"]
 traits = ["flies", "mountain"]
@@ -1013,7 +1020,7 @@ lifespan_yr = 60
 name = "kenku"
 parents = ["avian"]
 at = "400 kyr"
-density = 3
+density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.5
 temp_c = [12, 26]
 prefers = ["forest"]

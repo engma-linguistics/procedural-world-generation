@@ -7,11 +7,10 @@ import numpy as np
 from ...geo import arc_km
 from .. import spec as SP
 from ..crossing import modes, sea_gap
-from ..spread import EST, graph_dist, nearest_label, rings
-from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
+from ..spread import EST, graph_dist, rings
+from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
-from . import params as PM
 
 
 class OriginsMixin:
@@ -268,8 +267,11 @@ class OriginsMixin:
         g, k = self.grid, self.idx[line.id]
         pk = self.idx[line.parents[0]]
         P = self.p[pk] > EST
-        if not P.any():
-            return self._origin_fallback(line, step, env, tags, K, "parent gone")
+        if not P.any():  # (PW-1184: near the parent's last land, not at the best habitat anywhere)
+            last = self._last_held.get(pk)
+            return self._origin_fallback(line, step, env, tags, K, "parent gone: near its last land", last)
+        if self.tree.lines[line.parents[0]].megafauna and not line.megafauna:
+            return self._origin_off_megafauna(line, step, env, tags, K, noise, P)
         lab, n = g.components(P)
         sizes = np.bincount(lab[P], minlength=n)
         big = int(np.argmax(sizes))
@@ -297,8 +299,8 @@ class OriginsMixin:
                 reach = np.where(across, np.where(d > 0, f, 0.0), 1.0)
         score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, np.where(across, 0.6 * K * reach, 0))) * self._place_mult(line, tags) \
             * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
-        if score.max() <= 0:
-            return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
+        if score.max() <= 0:  # (PW-1184: the nearest country it can live in, not the best anywhere)
+            return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: nearest habitat", P)
         score = self._by_landmass(line, score, K, env, reach, step.ago)
         cell = int(np.argmax(score))
         why = ("isolated part of the parent's range" if lab[cell] != big else
@@ -306,47 +308,43 @@ class OriginsMixin:
             else "across the sea from the parent's range (founders carried over)" if across[cell] \
             else "beside the parent's range (new niche)"
         # the founders hold the country around the origin that suits them at least half as well as it
-        # suits the parent (FOUNDER_KM), or the whole cut-off part of the parent's range they arose in
+        # suits the parent (FOUNDER_KM)
         pK = self._K(self.tree.lines[line.parents[0]], env, tags, step)
         r = max(2, int(round(FOUNDER_KM / self.cell_km)))
         blob = self._seed_blob(k, cell, K, (K > EST) & ((K >= 0.5 * pK) | ~P), r)
-        local = PM.SPLIT_FOUNDING != "range"  # (lane 77: one origin, no takeover of the parent's cut-off part, no polycentric patches)
-        if P[cell] and lab[cell] != big and not local:
-            part = (lab == lab[cell]) & (K > EST)
-            self.p[k][part] = np.maximum(self.p[k][part], np.minimum(K[part], np.maximum(self.p[pk][part], 0.3)))
-            blob = blob | part
-        if not local:
-            blob = blob | self._polycentric(line, k, K, pK, P, blob, r)
+        # (owner 10-30 and D20, PW-1152, PW-1181: a new people emerges at one spot and spreads from there; it takes neither the cut-off
+        # part of the parent's range it arises in nor patches across it, so a split of a worldwide stem, the kobolds of the dragons, starts
+        # as one people of one country)
         self.p[pk][blob & P] = 0.0
         return cell, why
 
-    def _polycentric(self, line, k, K, pK, P, blob, r):
-        """Owner 2026-10-27: a daughter people emerges in several patches of its own kind of country at once, but only where its parent
-        held ground at the split (no founders on land the parent never touched). Modern humans arose across a web of linked African
-        populations, not in one cradle (Scerri et al. 2018, "Did our species evolve in subdivided populations across Africa", TREE 33),
-        and the same adaptation arises apart in separate patches of one kind of country (high altitude: Tibetans, Andeans and Ethiopian
-        highlanders, Beall 2007, PNAS 104). A few patches, more for a wider parent (one per POLY_MKM2 of its range, at most POLY_MAX in
-        all), the best first, each needing a viable population (line_mvp, PW-937) of its own; still one line."""
-        g = self.grid
-        n_more = min(POLY_MAX, int(P.sum() * self.cell_mkm2 / POLY_MKM2)) - 1
-        if n_more <= 0:
-            return np.zeros(g.n, bool)
-        own = P & (K >= 0.5) & (K >= 0.5 * pK) & ~self._dilate(blob, r)
-        if not own.any():
-            return np.zeros(g.n, bool)
-        lab, n = g.components(own)
-        area = self.cell_mkm2 * 1e6
-        w = np.bincount(lab[own], weights=K[own], minlength=n)
-        d = self.dens_at(k)
-        wd = np.bincount(lab[own], weights=K[own] * (d[own] if np.ndim(d) else d), minlength=n)
-        out = np.zeros(g.n, bool)
-        for c in np.argsort(-w)[:n_more]:
-            if wd[c] * area * 0.5 < self.line_mvp(line):
-                break
-            sel = lab == c
-            cell = int(np.argmax(np.where(sel, K, -1.0)))
-            out |= self._seed_blob(k, cell, K, sel, r)
-        return out
+    def _origin_off_megafauna(self, line, step, env, tags, K, noise, P):
+        """A people split from a megafauna stem (lane 83b: the kobolds and the dragonborn of the dragons). The stem is a handful of
+        animals per country over a range that may span the world, so where it lives says nothing about where its people's own country
+        lies: drawn by the stem's range (area^z, x3 on a cut-off part of it) the kobolds started on a landmass with a sixth of their
+        country, and stayed there. Such a people arises at one spot (D20) as an arrival settles (lane 73): on a landmass within reach of
+        the stem's range, drawn in proportion to the founders its free room (habitat less what its rivals take) would carry
+        (_by_landmass, room), at its roomiest habitat there. Returns (cell, why)."""
+        g, k, pk = self.grid, self.idx[line.id], self.idx[line.parents[0]]
+        ll, _ = g.components(env["land"])
+        touched = np.zeros(ll.max() + 2, bool)
+        touched[ll[self._dilate(P, 4) & (ll >= 0)]] = True
+        ok = hold_mask(line, tags) & (ll >= 0) & touched[ll] & (K > 2 * EST)
+        free = np.clip(K - self._rivals_here(line, K), 0, None) * (K > EST)
+        room = free if (free * ok >= EST).any() else K
+        pocket = room
+        for _ in range(ARRIVAL_POCKET_RINGS):
+            pocket = self._smooth(pocket)
+        score = np.where(ok, pocket, 0.0) * self._place_mult(line, tags) * self._wish_near(line, origin=True) \
+            * self._start_hints(line, env, tags) * noise
+        if score.max() <= 0:
+            return self._origin_fallback(line, step, env, tags, K, "no room for it in the stem's country: nearest habitat", P)
+        score = self._by_landmass(line, score, room, env, ago=step.ago, room=True)
+        cell = int(np.argmax(score))
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        blob = self._seed_blob(k, cell, K, K > EST, r)
+        self.p[pk][blob & P] = 0.0
+        return cell, "where its own country lies, within the stem's range (a people of a megafauna stem)"
 
     def _origin_hybrid(self, line, K, noise):
         """A hybrid where its parents meet: (cell, why), or False while they have not met."""
@@ -380,9 +378,20 @@ class OriginsMixin:
         why = f"{len(cells)} incursion sites in the hosts' range"
         return cell, why
 
-    def _origin_fallback(self, line, step, env, tags, K, why):
+    def _origin_fallback(self, line, step, env, tags, K, why, near=None):
+        """Found `line` at its best habitat (K x noise); with `near` (a mask: its parent's range, or its last land, PW-1184) at the
+        habitat it can found on (K > 2 EST, else K > EST) weighted by exp(-d / FOUNDER_KM), d the distance from `near` over land and sea:
+        a split arises by its parent, wherever the parent went."""
         k = self.idx[line.id]
-        cell = int(np.argmax(K * self._noise(line)))
+        score = K * self._noise(line)
+        if near is not None and near.any():
+            g = self.grid
+            maxd = int(np.ceil(20 * FOUNDER_KM / self.cell_km))
+            d = graph_dist(near, maxd, g.nbr_off, g.nbr_idx)
+            d = np.where(d < 0, maxd + 1, d) * self.cell_km
+            ok = K > 2 * EST if (K > 2 * EST).any() else K > EST
+            score = np.where(ok, score * np.exp(-d / FOUNDER_KM), 0.0)
+        cell = int(np.argmax(score))
         self._seed_blob(k, cell, K, K > EST, 3)
         self._record_origin(line, step, cell, why)
         return True
@@ -404,41 +413,23 @@ class OriginsMixin:
         self._event(step.ago, line.origin, line, f"{line.label()} {verb[line.origin]} ({why})",
                     self.origins[line.id]["lat"], self.origins[line.id]["lon"])
 
-    def _realm_kids(self, line) -> list:
-        """The living split children in the line's own realm: a land people ends and hands its range over among its land children
-        only (a marine child never takes its land, nor holds the parent's end back, PW-779)."""
-        return [c for c in self.tree.living_children(line.id) if self.tree.lines[c].marine == line.marine]
+    def _realm_kids(self, line, living: bool = True) -> list:
+        """The split children in the line's own realm (living: only those not set to die out): a marine child never holds the parent's
+        end back (PW-779)."""
+        kids = self.tree.living_children(line.id) if living else self.tree.lines[line.id].children
+        return [c for c in kids if self.tree.lines[c].marine == line.marine]
+
+    def _unsplit(self, line) -> bool:
+        """Whether the line still has split children to come in its realm (PW-1184): it is as much given as living until its last split."""
+        return any(c not in self.started for c in self._realm_kids(line, living=False))
 
     def _end_parent(self, line, step, env, tags):
-        """After its last split: the parent's remaining range is shared among its children. Country joined to
-        a child's land goes to the nearest child; a part cut off from every child (the stem held other
-        landmasses too) carries on as the child whose niche suits it best (mean habitat over the part): the
-        stem's isolated stock is that people's own ancestors there, not lost with the stem (PW-677)."""
-        g, k = self.grid, self.idx[line.id]
-        P = self.p[k] > EST
-        lab = np.full(g.n, -1, np.int64)
-        kids = [c for c in self._realm_kids(line) if self.active.get(c)]
-        if PM.SPLIT_FOUNDING == "local":  # (lane 77: the stem's range passes only to children of its own kind)
-            kids = [c for c in kids if self.tree.lines[c].megafauna == line.megafauna]
-        elif PM.SPLIT_FOUNDING == "local_vacate":  # (...or to none: its children spread into it)
-            kids = []
-        for ci, c in enumerate(kids):
-            lab[self.p[self.idx[c]] > EST] = ci
-        if kids and P.any():
-            near = nearest_label(lab, P | (lab >= 0), g.nbr_off, g.nbr_idx)
-            orphan = P & (near < 0)
-            if orphan.any():
-                Kk = [self._K(self.tree.lines[c], env, tags, step) for c in kids]
-                comp, nco = g.components(orphan)
-                for z in range(nco):
-                    part = comp == z
-                    best = int(np.argmax([float(K[part].mean()) for K in Kk]))
-                    if Kk[best][part].max() > EST:
-                        near[part] = best
-            for ci, c in enumerate(kids):
-                sel = P & (near == ci)
-                kc = self.idx[c]
-                self.p[kc][sel] = np.maximum(self.p[kc][sel], self.p[k][sel])
+        """After its last split the stem ends, and its remaining range lies empty for its children to spread into (owner D20, PW-1181:
+        it passes to no child, of its own kind or any other; the humans out-spread the other apes into the country that suited them,
+        and the jungles still hold the orangutans). Its last land is kept for a split whose parent is gone (PW-1184)."""
+        k = self.idx[line.id]
+        if (self.p[k] > EST).any():
+            self._last_held[k] = self.p[k] > EST
         self.p[k][:] = 0
         self.active[line.id] = False
         self.ended[line.id] = step.ago
@@ -466,8 +457,9 @@ class OriginsMixin:
             if self._origin(l, step, env, tags, K):
                 self.started[l.id] = step.ago
                 self.active[l.id] = True
+                self._note_K(self.idx[l.id], K)  # (its rivals see its habitat from its first step: the contest's fit, lane 83)
                 if l.parent:
                     par = self.tree.lines[l.parent]
-                    kin = self._realm_kids(par)
-                    if not par.persists and kin and all(c in self.started for c in kin) and self.active.get(par.id):
+                    kin = self._realm_kids(par)  # (PW-1184: the stem ends once every child of its realm has started, the ones set to
+                    if not par.persists and kin and not self._unsplit(par) and self.active.get(par.id):  # die out included)
                         self._end_parent(par, step, env, tags)
