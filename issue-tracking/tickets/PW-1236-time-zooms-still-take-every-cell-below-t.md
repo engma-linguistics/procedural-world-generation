@@ -1,4 +1,5 @@
 ---
+id: PW-1236
 title: Time zooms still take every cell below their moment's sea level for sea, even cut off from the ocean
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane98
 blocked_by: []
 relates: [PW-1229]
 refs: [planet/timezoom/sim.py, planet/geo.py, viewer/globe/load.js]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -23,3 +26,6 @@ sea level is sea there, and a lowstand can't drain one. The viewer's time-zoom f
 What I'd try: build the time zoom's sea mask with `geo.is_land(bed - sl, ice, grid)` once per step (or per kyr
 chunk: cost ~20 ms at L7), and let `landView` apply `seaMask` to time-zoom frames on `elevation - ice` vs 0.
 - [ ] a time zoom of a world with a cut-off pocket keeps it land at every frame
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-timezoom-sea-ignores-connection.md (found by lane98).

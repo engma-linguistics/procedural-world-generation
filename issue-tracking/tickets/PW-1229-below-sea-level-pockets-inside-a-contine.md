@@ -2,9 +2,9 @@
 id: PW-1229
 title: Below-sea-level pockets inside a continent count as sea, so big rivers (the L8 world's largest) end in 1-7-cell inland puddles
 type: task
-status: todo
+status: done
 parent: null
-milestone: v2
+milestone: v1
 subsystem: hydrology
 effort: m
 impact: high
@@ -42,5 +42,6 @@ finish) so the coast, highlights, peoples and zooms all agree. Helps L7 too (its
 - [ ] the largest-river highlight's mouth is on the ocean or on a lake
 
 ## Updates
+- 2026-10-31: Status todo -> done. Lane 98 merged (e61b423c): planet/geo.py is_land; a below-0 m body is sea only if it is the ocean, >= 0.3 Mkm2, or joined through a <=10 m sill. Moved to v1 per D30. Stored worlds a16f5a/2a7385 need re-slicing; follow-ups PW-1233..1237. Report docs/review/v1-cut/inland-pits.md.
 - 2026-10-31: Daniel 10-31 (D30): v1 if resolved quickly (lane 98 building).
 - 2026-10-31: Created from inbox draft draft-below-sea-pockets-inside-land-count-as-sea.md (found by lane96).

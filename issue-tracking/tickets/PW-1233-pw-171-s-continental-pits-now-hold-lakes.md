@@ -1,4 +1,5 @@
 ---
+id: PW-1233
 title: PW-171's continental pits now hold lakes up to ~7 km deep (they were inland "sea" before PW-1229)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane98
 blocked_by: []
 relates: [PW-171, PW-1229]
 refs: [planet/tectonics/crust.py, planet/hydrology.py, docs/review/v1-cut/inland-pits.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Measured on scratch worlds at 1000 Myr: pockets' floor median −1129 m (L6 s1),
 This feeds PW-171 (probably `--merge-into PW-171`). That ticket fixes the source. Nothing in the hydrology
 should clamp lake depth.
 - [ ] pockets deeper than 1 km per world (count) reported by the scorecard or the health tool
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-pw171-pits-hold-deep-lakes.md (found by lane98).

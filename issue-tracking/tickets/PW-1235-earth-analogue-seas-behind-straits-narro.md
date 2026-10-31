@@ -1,5 +1,6 @@
 ---
-title: Earth analogue: seas behind straits narrower than a cell (Puget Sound, Maracaibo, Ob gulf, Amazon mouth) become land pockets
+id: PW-1235
+title: "Earth analogue: seas behind straits narrower than a cell (Puget Sound, Maracaibo, Ob gulf, Amazon mouth) become land pockets"
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane98
 blocked_by: []
 relates: [PW-1229, PW-386]
 refs: [planet/geo.py, tools/earth_data.py, docs/review/v1-cut/inland-pits.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -26,3 +29,6 @@ What I'd try if it matters: earth_data could mark cells that HydroSHEDS or ETOPO
 ocean at full resolution, and pass that to `is_land` as a seed of known sea. Only the Earth analogue has
 that information, so generated worlds would be unaffected.
 - [ ] decide whether the Earth analogue needs known-sea seeds (owner's earth-as-anchor rule says probably not)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-subcell-straits-earth.md (found by lane98).

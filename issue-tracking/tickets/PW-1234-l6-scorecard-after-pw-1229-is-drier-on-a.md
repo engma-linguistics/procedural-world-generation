@@ -1,4 +1,5 @@
 ---
+id: PW-1234
 title: L6 scorecard after PW-1229 is drier on average (dry 18.8 → 22.9%, NPP 412 → 364); re-rolled draws needed to call it chaos or a shift
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane98
 blocked_by: []
 relates: [PW-1229]
 refs: [tools/scorecard.py, docs/review/v1-cut/inland-pits.md, docs/review/v1-cut/scorecard_L6.txt]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -28,3 +31,6 @@ What to do: run two or three re-rolled seed sets (e.g. seeds 7–12, 13–18) on
 merge and compare the means and spreads. If the drying holds, look for the run-side mechanism (the run's
 erosion or lakes now filling pits that used to be sea).
 - [ ] dry/NPP/trees means over ≥ 3 seed sets, old vs new, within their spread (or a mechanism found)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-scorecard-shift-after-pw1229.md (found by lane98).
