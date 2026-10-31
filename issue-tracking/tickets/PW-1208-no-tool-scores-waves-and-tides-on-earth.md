@@ -1,4 +1,5 @@
 ---
+id: PW-1208
 title: No tool scores waves and tides on Earth any more; docs/overview.md section 2.10 still quotes old waves and tides counts
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane88-docs
 blocked_by: []
 relates: [PW-816]
 refs: [tools/coast_check.py, docs/overview.md, README.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -26,3 +29,6 @@ before the coast form rewrite) as `tools/wave_tide_check.py`, run it on the Eart
 3. Earth stays a plausibility anchor; this is a regression guard, not a fit target.
 - [ ] a tool that prints waves and tides against named observed coasts
 - [ ] overview section 2.10 and section 3 quote its output, dated
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-waves-tides-check-tool.md (found by lane88-docs).
