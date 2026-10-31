@@ -739,8 +739,9 @@ def groups_note(line, n: int) -> str:
 
 
 def giant_cattle_yr(mass_kg: float) -> float:
-    """A giant's food, head of cattle a year: Kleiber BMR x 1.7 (a working human's level), 625 Mcal edible a head (the proposal)."""
-    return 70.0 * mass_kg ** 0.75 * 1.7 * 365.0 / 625e3
+    """A giant's food, head of cattle a year: Kleiber BMR x 1.7 (a working human's level) over a head's edible kcal, `HEAD_KCAL`, the one
+    figure the peoples and the dragons use (PW-1067; was the proposal's 625 Mcal)."""
+    return 70.0 * mass_kg ** 0.75 * 1.7 * 365.0 / HEAD_KCAL
 
 
 def food_state(h: History, P: np.ndarray, dens: dict, food, live, pool=None) -> dict | None:
