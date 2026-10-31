@@ -3026,8 +3026,11 @@ def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
     assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
 
 
-def test_a_denning_people_holds_mostly_broken_country(faketz):
-    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25."""
+def test_a_denning_people_holds_mostly_broken_country(faketz, monkeypatch):
+    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25. Lane 97
+    (D27 C, params.DEN_THIN, the default): thin dens instead, the habitat uncut and the density cut there (model.run)."""
+    from planet.lineages.history import params as PM
+    monkeypatch.setattr(PM, "DEN_THIN", False)
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     env = ps.fields(0.0, variability=False)
     tags = H._tags(ps.grid, env)
@@ -3038,6 +3041,8 @@ def test_a_denning_people_holds_mostly_broken_country(faketz):
     ok = Kp > 0
     assert (ok & ~broken).any()
     assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
+    monkeypatch.setattr(PM, "DEN_THIN", True)
+    assert np.allclose(H.capacity(den, env, tags), Kp)
 
 
 def test_a_farming_people_lives_at_forager_density_until_it_farms(faketz):
@@ -3159,3 +3164,33 @@ def test_a_people_that_filled_its_patch_pushes_founders_out(faketz):
     assert h._jump_push(k, K, K.copy(), held) == pytest.approx(0.25)  # (a quarter filled)
     room = np.full(h.grid.n, 0.2)
     assert h._jump_push(k, K, room, held) == pytest.approx(1.0)  # (crowded to its room by rivals)
+
+
+def test_a_new_people_is_founded_at_a_few_sites_spread_over_one_landmass(faketz, monkeypatch):
+    """Lane 97 (owner D27): a root or a split is founded at FOUND_SITES seed sites on its origin's landmass, within FOUND_SPREAD jump
+    lengths of the first and clear of each other, the founders' area shared among them; with one site, the one blob of before."""
+    from planet.lineages.history import params as PM
+    from planet.lineages.gridops import dist_km
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    env = h.steps[-1].get()
+    g, k, line = h.grid, h.idx["a"], h.tree.lines["a"]
+    K = np.where(env["land"], 0.8, 0.0)
+    cell = int(np.flatnonzero(env["land"] & (np.abs(g.lon) < 15) & (np.abs(g.lat) < 15))[0])
+    monkeypatch.setattr(PM, "FOUND_SPREAD", 6.0)  # (the test grid's cells are ~1,000 km: a spread of a few cells)
+    blob, sites = h._found_spread(line, k, cell, K.copy(), K, K > 0.12, 2, env)
+    assert len(sites) == PM.FOUND_SITES == 3 and sites[0] == cell
+    ll, _ = g.components(env["land"])
+    d0 = dist_km(g, float(g.lat[cell]), float(g.lon[cell]))
+    assert all(ll[c] == ll[cell] for c in sites) and all(d0[c] <= PM.FOUND_SPREAD * PM.JUMP_KM for c in sites)
+    assert min(dist_km(g, float(g.lat[a]), float(g.lon[a]))[b] for a in sites for b in sites if a != b) > 2 * h.cell_km
+    h.p[k][:] = 0
+    one = h._seed_blob(k, cell, K, K > 0.12, 2).sum()
+    assert 0.3 * one <= blob.sum() <= 1.5 * one  # (the founders' area shared among the sites, about as before)
+    monkeypatch.setattr(PM, "FOUND_SITES", 1)
+    h.p[k][:] = 0
+    blob1, sites1 = h._found_spread(line, k, cell, K.copy(), K, K > 0.12, 2, env)
+    assert sites1 == [cell] and blob1.sum() == one
+
+

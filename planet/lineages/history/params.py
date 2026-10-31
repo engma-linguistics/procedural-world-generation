@@ -169,3 +169,20 @@ LEARN_GAIN = 0.6  # learned country holds a people at most this share of the way
 # 0.63 -> 0.73); at 0.6 kobolds 11%, humans 73% -> 67%, homogenisation 0.62 as without learning
 # (lane 77's SPLIT_FOUNDING switch is gone: lane 83, owner D20, made one-spot founding the rule, with the stem's land left empty at its
 # end, origins._origin_split and _end_parent; PW-1152, PW-1181)
+# Founding spread (lane 97, owner D27, 2026-10-31: "plausibly-spread-out instances on one landmass ... like humans merged from a few
+# hominids from over a semi-wide area"). A new people (a root or a split) is founded at FOUND_SITES seed sites on the landmass of its
+# origin, each within FOUND_SPREAD walking jump lengths (JUMP_KM, the owner's ~800 km of 10-27) of the first: the demes of a forming people
+# stay one people while each lies within one long relocation of the others, so the founder region spans up to ~1,600 km (the owner's
+# "a few hundred to ~1,500 km"). The founders' area is shared among the sites (each blob's radius / sqrt(sites)), so a people starts
+# with as many founders as before, over a wider country. The human case: the earliest H. sapiens are scattered over Africa (Jebel
+# Irhoud ~315 ka, Florisbad ~260 ka, Omo Kibish ~230 ka; Scerri et al. 2018, TREE 33:582, "Did our species evolve in subdivided
+# populations across Africa?"), a weakly structured stem of a few connected populations (Ragsdale et al. 2023, Nature 617:755), so 3
+# sites is a judgement in the spirit of those few regional groups; the span is smaller than Africa's because a split here is one
+# people of one country, not a species' whole range.
+FOUND_SITES = 3
+FOUND_SPREAD = 1.0  # (in walking jump lengths, JUMP_KM)
+# D27 option C (PW-1218 C, lane 97): a denning people (kobolds, goblins) off broken country lives in thin dens, its density there
+# x (1 - den), instead of hardly at all (its habitat x (1 - den), lane 83). "Dense but narrow" read as density: kobolds keep to caves and
+# warrens but forage and raid out of them. Screened (docs/review/peoples-brakes/report.md, stage 1): it brought the stranded kobolds of
+# the three-people tree from 1-2% to 17-20% in two of four tries without lifting them in the full tree. False: lane 83's habitat cut
+DEN_THIN = True

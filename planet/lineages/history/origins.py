@@ -8,6 +8,7 @@ from ...geo import arc_km
 from .. import spec as SP
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, rings
+from . import params as PM
 from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
@@ -95,6 +96,35 @@ class OriginsMixin:
         blob[cell] = True
         self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 0.3, 1))
         return blob
+
+    def _found_spread(self, line, k, cell, score, K, mask, r, env):
+        """Lane 97 (owner D27): found line k at FOUND_SITES seed sites, the first at `cell`, the others drawn by `score` (in proportion,
+        with the line's own generator) on the same landmass within FOUND_SPREAD x JUMP_KM of it and clear of the earlier sites' blobs, each
+        site holding the country within r / sqrt(sites) rings of it through `mask` (the founders' area shared among the sites). Returns
+        (the union of the blobs, the site cells). With one site, or no room for more, the one blob of radius r, as before."""
+        n = max(1, int(PM.FOUND_SITES))
+        if n == 1 or PM.FOUND_SPREAD <= 0:
+            return self._seed_blob(k, cell, K, mask, r), [cell]
+        g = self.grid
+        ll, _ = g.components(env["land"])
+        ri = max(1, int(round(r / np.sqrt(n))))
+        d0 = dist_km(g, float(g.lat[cell]), float(g.lon[cell]))
+        cand = (score > 0) & (ll == ll[cell]) & (d0 <= PM.FOUND_SPREAD * PM.JUMP_KM) & (K > 2 * EST)
+        sites, blob = [cell], self._seed_blob(k, cell, K, mask, ri)
+        clear = 2.0 * (ri + 0.5) * self.cell_km
+        cand &= d0 > clear
+        rng = self._lrng[line.id]
+        for _ in range(n - 1):
+            if not cand.any():
+                break
+            w = np.where(cand, score, 0.0)
+            c = int(rng.choice(g.n, p=w / w.sum()))
+            sites.append(c)
+            blob |= self._seed_blob(k, c, K, mask, ri)
+            cand &= dist_km(g, float(g.lat[c]), float(g.lon[c])) > clear
+        if len(sites) == 1:  # (no room for a second site: the one founding blob, at its full size)
+            blob = self._seed_blob(k, cell, K, mask, r)
+        return blob, sites
 
     def origin_mvp(self, line, ago):
         """PW-888: the people a landmass must carry for the line's origin to persist from `ago` (kyr before the present) to the present:
@@ -258,7 +288,10 @@ class OriginsMixin:
                 if seeded:  # (its founders are founded in full at every portal)
                     return cell, why
         r = 3 if line.origin == "root" else max(3, int(round(FOUNDER_KM / self.cell_km)))  # (an arrival's founders: as a split's, lane 73)
-        self._seed_blob(k, cell, K, K > EST, r)
+        if line.origin == "root" and not line.place and not line.marine:  # (a stem forms over a region: lane 97, D27; an arrival lands where it lands)
+            self._found_spread(line, k, cell, score, K, K > EST, r, env)
+        else:
+            self._seed_blob(k, cell, K, K > EST, r)
         return cell, why
 
     def _origin_split(self, line, step, env, tags, K, noise):
@@ -311,7 +344,7 @@ class OriginsMixin:
         # suits the parent (FOUNDER_KM)
         pK = self._K(self.tree.lines[line.parents[0]], env, tags, step)
         r = max(2, int(round(FOUNDER_KM / self.cell_km)))
-        blob = self._seed_blob(k, cell, K, (K > EST) & ((K >= 0.5 * pK) | ~P), r)
+        blob, _ = self._found_spread(line, k, cell, score, K, (K > EST) & ((K >= 0.5 * pK) | ~P), r, env)  # (a few sites over one country, D27)
         # (owner 10-30 and D20, PW-1152, PW-1181: a new people emerges at one spot and spreads from there; it takes neither the cut-off
         # part of the parent's range it arises in nor patches across it, so a split of a worldwide stem, the kobolds of the dragons, starts
         # as one people of one country)
@@ -342,7 +375,7 @@ class OriginsMixin:
         score = self._by_landmass(line, score, room, env, ago=step.ago, room=True)
         cell = int(np.argmax(score))
         r = max(2, int(round(FOUNDER_KM / self.cell_km)))
-        blob = self._seed_blob(k, cell, K, K > EST, r)
+        blob, _ = self._found_spread(line, k, cell, score, K, K > EST, r, env)  # (a few sites over its own country, D27)
         self.p[pk][blob & P] = 0.0
         return cell, "where its own country lies, within the stem's range (a people of a megafauna stem)"
 

@@ -203,6 +203,14 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
+        if PM.DEN_THIN and self._Fprod is not None:  # (D27 C screen: a denning people's density, not its habitat, falls off broken country)
+            env0 = self.steps[-1].get()
+            t0 = _tags(g, env0, self._chains, self._volcanic(False))
+            broken = t0["mountain"] | t0["hills"] | t0["breaks"]
+            for k, l in enumerate(L):
+                if l.trait("den", 0.0) and not l.megafauna:
+                    self._Fprod[k] = self._Fprod[k] * np.where(broken, 1.0, 1.0 - l.trait("den", 0.0))
+                    self._dmap[k] = self.dens[k] * self._Fprod[k]
         self._growth_setup()
         frames = []
         nsteps = len(self.steps)
