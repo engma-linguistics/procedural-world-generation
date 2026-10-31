@@ -4,7 +4,7 @@ title: Viewer control for the momentum edge's two dials (meta.surge_early, surge
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/lineages/spec.py, planet/lineages/run.py, planet/lineages/history/pressure.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## In plain words
@@ -28,4 +28,5 @@ history.params.SURGE_Q, the competition cut at full momentum. The editor schema 
 - [ ] two dropdowns in viewer/lineages.html, labelled in plain words ("how hard a growing people pushes into held land: early eras / late eras")
 
 ## Updates
+- 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-surge-dials-viewer-control.md (found by lane73).

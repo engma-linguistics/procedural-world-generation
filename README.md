@@ -331,7 +331,7 @@ Sliced and one-shot terrain then go through the shared pipeline:
    pans, and their rivers end there. A river leaving a lake has cut its
    outlet down (deeper the bigger the river), so big through-flowing lakes
    drain to it.
-3. **Biomes**: a Whittaker-style lookup on temperature and rainfall.
+3. **Biomes**: worlds group the vegetation model's named types (`vegetation.py`, `docs/overview.md` §2.18) into the coarse biome classes; the zoom still uses a Whittaker-style lookup on temperature and rainfall per pixel.
 
 Knobs: `--erosion <strength>` (`generate` and `slice`); `generate` also takes
 `--set erosion_iterations=12 dT=2 tilt=30` (`dT`: global temperature offset
@@ -372,10 +372,9 @@ Every world gets two marine layers on its sea cells (0 on land):
   own), shelf resonance (a quarter-wavelength shelf amplifies the tide,
   very wide ones damp it) and funnelling into narrowing embayments.
 
-`PYTHONPATH=. uv run python tools/coast_check.py` scores both on today's
-Earth against known values. Waves come out within 2x at 25 of 30 coasts
-(9 in range), and tides within 2x at 21 of 23 (13 in range). It also
-prints the Galloway weights of real deltas.
+`PYTHONPATH=. uv run python tools/coast_check.py` scores the coast form on the
+Earth world against named places (21 of 32 right on 2026-10-31). No tool scores
+the waves and tides against observed coasts any more.
 
 At each big river mouth the zoom weighs the river's sediment (BQART)
 against what the waves can carry along the shore (CERC) and what the tides

@@ -3,7 +3,7 @@ id: PW-1008
 title: "A global detail mesh for the globe view: terrain synthesized at L9-L10 from the run's own records, consistent with the zooms"
 type: task
 status: todo
-parent: null
+parent: PW-1198
 milestone: v2
 subsystem: viewer
 effort: m

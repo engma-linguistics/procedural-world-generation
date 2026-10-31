@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { S, state } from './state.js';
-import { $, camera, controls, fitMap, group } from './scene.js';
+import { $, DIAG, camera, controls, fitMap, group } from './scene.js';
 import { setSeason } from './colours.js';
 import { unitVec } from './geometry.js';
 import { favKeyOf, worldTitle } from './provenance.js';
 import { canRotate, goToLatLon } from './pick.js';
 import { OVERLAY_IDS, applyProjUrl, setLights } from './map2d.js';
 import { HL_CATS, turnTo } from './highlights.js';
-import { LoadError, beginLoad, loadFailed, loadRun, setWorld } from './load.js';
+import { LoadError, beginLoad, gridOf, loadFailed, loadRun, setWorld } from './load.js';
 // ------------------------------------------------------------ index / URL
 export async function loadSelection(value) {
   const [kind, id] = value.split(':');
@@ -17,11 +17,15 @@ export async function loadSelection(value) {
   if (kind === 'run') await loadRun(id);
   else {
     const tok = beginLoad();
+    DIAG.mark('world: fetch');
+    const lvl = S.IDX.worlds?.find((x) => x.file === id)?.level;  // (its grid meanwhile: load.js gridOf)
+    if (lvl) gridOf(new URL(`../grids/L${lvl}.json`, location.href), `the grid of world ${id.replace(/\.json$/, '')}`).catch(() => {});
     const r = await fetch('../worlds/' + id, { cache: 'no-cache' });
     const what = `world "${id.replace(/\.json$/, '')}"`;
     if (r.status === 404) throw new LoadError(`There is no ${what}. It may have been deleted, or the link has a typo.`);
     if (!r.ok) throw new LoadError(`The server could not send ${what} (HTTP ${r.status}).`);
     const w = await r.json().catch(() => { throw new LoadError(`The file of ${what} could not be read.`); });
+    DIAG.mark('world: parsed');
     await setWorld(w, tok);
   }
 }

@@ -21,7 +21,9 @@ export const DIAG = (() => {
   const p = new URLSearchParams(location.search), on = (k) => p.get(k) === '1';
   return { logdepth: on('logdepth'), noaa: !on('aa'), pdb: on('pdb'), dpr: p.has('dpr') ? +p.get('dpr') : 0, nodamp: on('nodamp'),
            fixclip: on('fixclip'), offset: on('offset'), always: on('always'), dbg: on('dbg'), blur: on('blur'), rehover: on('rehover'), wheel: on('wheel'),
-           n: { frames: 0, renders: 0, cam: 0, clip: 0, paints: 0, overlays: 0, uploads: 0, info: 0 } };
+           n: { frames: 0, renders: 0, cam: 0, clip: 0, paints: 0, overlays: 0, uploads: 0, info: 0 },
+           // the last load's stages, [name, ms since the page opened] (planetViewer.diag.load; tools/viewer_perf_globe.py)
+           load: [], mark(name) { this.load.push([name, Math.round(performance.now())]); } };
 })();
 export const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: !DIAG.noaa, logarithmicDepthBuffer: DIAG.logdepth, preserveDrawingBuffer: DIAG.pdb });
 renderer.setPixelRatio(DIAG.dpr || Math.min(devicePixelRatio, 2));

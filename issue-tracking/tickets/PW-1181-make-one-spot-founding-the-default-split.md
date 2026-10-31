@@ -4,7 +4,7 @@ title: Make one-spot founding the default (SPLIT_FOUNDING = local); decide wheth
 type: task
 status: needs-decision
 parent: null
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: xs
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1152, PW-677, PW-888]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/params.py, tools/peoples_robust.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## In plain words
@@ -50,4 +50,5 @@ split-teleport fix (draft "split whose stem has died out ... best habitat anywhe
 parent when the parent is gone.
 
 ## Updates
+- 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-local-founding-default-and-stem-handover.md (found by lane77).

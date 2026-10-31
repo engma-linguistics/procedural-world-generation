@@ -87,7 +87,7 @@ SETTINGS = [
     {"key": "continental_start", "label": "Starting land share", "type": "float", "min": -1, "max": 0.7,
      "help": "Start with this share of continental crust and grow toward the continental fraction (-1: start at it)."},
 ]
-UNSUPPORTED = ["orbit (distance, eccentricity)", "star brightness", "day length", "ocean fraction / water inventory",
+UNSUPPORTED = ["orbit (distance, eccentricity)", "a different star (always Sun-like, and the run ends at today's Sun)", "day length", "ocean fraction / water inventory",
                "atmosphere (pressure, CO2 level)", "planet size / gravity"]
 
 NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},

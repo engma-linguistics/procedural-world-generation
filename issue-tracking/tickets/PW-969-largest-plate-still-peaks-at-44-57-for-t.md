@@ -4,7 +4,7 @@ title: "Largest plate still peaks at 44-57% for tens of Myr: at the start, at th
 type: task
 status: todo
 parent: PW-244
-milestone: v1
+milestone: v2
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-827, PW-565, PW-952]
 refs: [planet/tectonics/events.py, planet/tectonics/setup.py, docs/review/tectonics/rifts/rifts.md]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-31
 ---
 
 ## Description
@@ -33,4 +33,5 @@ ocean floor fails by margin subduction soon enough. Measure: largest plate share
 - [ ] time with the largest plate above 40% after 300 Myr falls to < ~10% of the run on ~70% of seeds
 
 ## Updates
+- 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-28: Created from inbox draft draft-giant-plate-peaks-after-sutures.md (found by lane22).

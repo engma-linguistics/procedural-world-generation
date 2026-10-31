@@ -64,7 +64,7 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 | Water world, land emerges | 13 | 2000 | `continental_start=0.1 heat_start=2` |
 | Land-heavy | 14 | 1000 | `continental_fraction=0.6` |
 | Cold world | 15 | 1000 | `tilt=15 climate_offset=-6` |
-| Hothouse | 16 | 1000 | `tilt=45 climate_offset=3` (5 before the brightening star, v1-finish-8) |
+| Hothouse | 16 | 1000 | `tilt=45 climate_offset=3` (5 under the old star that started at the present Sun and brightened, v1-finish-8; the star now ends at the present Sun, so a run adds no late warming from it) |
 
 Current showcase ids: [wiki/state.md](wiki/state.md). After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
@@ -96,3 +96,7 @@ See [wiki/state.md](wiki/state.md) (one overwritten page) and [wiki/index.md](wi
 - `tools/earth_data.SHA256SUMS` (committed) lists the expected checksums.
 
 To restore: `cp -a /home/daniel/backups/procgen-earth/<latest>/* data/earth/ && (cd data/earth && sha256sum -c ../../tools/earth_data.SHA256SUMS)`. Take a fresh dated copy whenever `tools/earth_data.py` changes a source.
+
+## D&D rulebooks (local only)
+
+The owner's PHB and DMG PDFs sit in `docs/references/dnd/` (gitignored, as is the text cache). Search them with `uv run python tools/rulebook.py index|search|page` and cite book plus printed page. Never commit the PDFs or text extracted from them. Details and page offsets: `docs/references/dnd/README.md`.
