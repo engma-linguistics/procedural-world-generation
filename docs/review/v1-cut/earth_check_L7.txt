@@ -1,0 +1,297 @@
+  probe 1: 26 s
+  probe 2: 42 s
+=== Earth check, level 7 (data 0.6s, climate 28.1s, moisture budget 68.7s) ===
+
+Koppen main-group shares of land (%), model vs Kottek 2006 (same cells) and Peel 2007
+                             A      B      C      D      E
+model   excl. Antarct.    20.2   25.2   19.0   23.6   12.0
+Kottek  excl. Antarct.    21.9   30.1   15.9   24.8    7.3
+model   incl. Antarct.    18.4   23.0   17.4   21.6   19.6
+Kottek  incl. Antarct.    20.1   27.5   14.5   22.6   15.3
+Peel07  incl. Antarct.    19.0   30.2   13.4   24.6   12.8
+cell-by-cell agreement with Kottek (land excl. Antarctica, area-weighted): exact code 38%, main group 71%
+group confusion (row = observed, % of row area going to each model group):
+            A     B     C     D     E
+  obs A    78     8    14     0     0
+  obs B    10    62    17    10     1
+  obs C     1    28    59     8     3
+  obs D     0     1     5    76    18
+  obs E     0     1     1     8    90
+largest codes (% land excl. Ant.), model/obs: BWh 13.1/14.8, Aw 6.6/13.3, Dfc 5.1/11.7, ET 9.9/6.1, Cwa 8.9/3.1, Am 8.7/3.7, Dwc 7.6/1.9, BSh 5.1/6.6, Dfb 2.0/6.3, BSk 4.8/5.5, Cfa 1.4/5.2, Af 4.9/4.9, Dwb 4.2/1.0, Cwb 3.4/1.2
+dry land (PW-821; % land excl. Ant., model/obs): B 25.2/30.1, hot desert BWh 13.1/14.8, hot steppe BSh 5.1/6.6; land rain x1.33 GPCC's mean
+
+By 10-degree band, land only: group shares model | Kottek (%), group match
+     band land%    A   B   C   D   E |   A   B   C   D   E  match
+   80..90    10    0   0   0   0 100 |   0   0   0   0 100   100%
+   70..80    31    0   0   0   9  91 |   0   0   0  28  72    79%
+   60..70    71    0   0   0  49  51 |   0   0   0  72  27    69%
+   50..60    57    0   0   5  84  11 |   0   1   7  88   3    87%
+   40..50    50    0  13  22  61   4 |   0  32  19  49   1    62%
+   30..40    42    0  47  24  16  13 |   0  41  36  12  11    67%
+   20..30    37    0  79  17   1   2 |   7  65  26   1   2    81%
+   10..20    26   42  35  23   0   0 |  36  61   3   0   0    53%
+    0..10    23   89   2   8   0   1 |  85  11   3   0   0    82%
+   -10..0    24   87   1  12   0   1 |  92   4   3   0   0    86%
+ -20..-10    22   44   7  45   0   5 |  57  26  15   0   2    59%
+ -30..-20    23    2  47  47   1   3 |   9  64  25   0   2    59%
+ -40..-30    11    0  82  15   2   1 |   0  46  53   0   1    55%
+ -50..-40     3    0   0  87   5   8 |   0  31  65   0   4    60%
+ -60..-50     1    0   0  74   0  26 |   0  28  20   0  52    37%
+ -70..-60     9    0   0   0   0 100 |   0   0   0   0 100   100%
+ -80..-70    65    0   0   0   0 100 |   0   0   0   0 100   100%
+ -90..-80    89    0   0   0   0 100 |   0   0   0   0 100   100%
+
+Land precipitation excl. Antarctica (mm/yr; cells with GPCC data)
+           mean    p10  median    p90
+model      1053    118     744   2660
+gpcc        791    111     548   1798
+log-rain correlation with GPCC, cell by cell (log(P + 10)): 0.717; neighbouring cells' rain ratio (median, wetter / drier): flat lowland 1.036, all land 1.050 (PW-019)
+global mean P: model 996, GPCP 983 mm/yr;  global mean T: model 13.9, NCEP 14.0 C
+share of land rain falling in local summer half-year: model 0.68, GPCC 0.65
+
+Zonal means by band. P mm/yr (land: model vs GPCC; ocean: model vs GPCP); T C vs NCEP 2 m; Trange = warmest - coldest month, land
+     band |      P land |     P ocean |      T land |     T ocean | Trange land
+   80..90 |   211   178 |    71   196 | -19.1 -20.8 | -14.0 -16.9 |    33    34
+   70..80 |   229   225 |   145   349 | -17.6 -16.4 | -11.8 -10.9 |    35    33
+   60..70 |   437   425 |   392   897 |  -8.8  -7.4 |  -1.4  -1.1 |    36    35
+   50..60 |   967   587 |   956  1148 |   0.4  -0.1 |   5.5   5.2 |    32    32
+   40..50 |   934   538 |  1053  1300 |   6.5   5.6 |  12.4  11.0 |    28    30
+   30..40 |   388   521 |   667  1158 |  10.5  10.8 |  17.5  18.4 |    26    24
+   20..30 |   324   563 |   588   716 |  21.0  21.0 |  22.1  23.5 |    22    17
+   10..20 |  1291   768 |  1048  1067 |  23.0  25.5 |  25.2  26.3 |    10    10
+    0..10 |  2362  1728 |  2114  1937 |  22.8  23.6 |  26.7  27.0 |     1     3
+   -10..0 |  2775  1911 |  2145  1257 |  22.8  23.3 |  26.7  26.4 |     1     2
+ -20..-10 |  1849  1129 |  1064   831 |  19.7  22.0 |  25.2  25.0 |     7     7
+ -30..-20 |   757   610 |   606   762 |  18.9  20.0 |  21.9  21.7 |    17    14
+ -40..-30 |   411   610 |   605   997 |  17.0  15.8 |  17.0  16.8 |    21    15
+ -50..-40 |   963   861 |   848  1068 |   8.3   7.6 |  11.0   9.9 |    13    11
+ -60..-50 |  1086   922 |   763  1121 |   5.5   4.3 |   3.8   3.2 |    11     8
+ -70..-60 |     -     - |   424   723 | -22.7 -21.4 |  -9.3  -6.1 |    35    23
+ -80..-70 |     -     - |   180   406 | -30.3 -35.4 | -14.6 -17.3 |    36    32
+ -90..-80 |     -     - |    46   195 | -32.8 -40.1 | -16.8 -23.1 |    37    34
+
+Point check: 41/78 exact, 17/78 group only, 20/78 wrong group (* = city in a sea cell, nearest land cell used; elev = model cell surface m, often far above a coastal city's)
+place                  true Kott model  elev     T  Tobs    Tc Tcobs    Tw Twobs      P  Pobs  score
+Manaus                Af/Am   Af    Af    30  25.5  25.0  24.7  24.6  26.3  25.3   3777  2289  exact
+Singapore                Af   Af    Af    29  27.5  25.8  27.3  25.1  27.7  26.5   1904  2454  exact
+Kisangani                Af   Af    Af   455  23.5  23.1  22.9  22.6  24.0  23.7   1137  1707  exact
+Jakarta               Am/Af   Af    Am    30  25.3  26.4  24.9  25.9  25.6  26.7   1588  3211  exact
+Miami*                   Am   Am   BSh     6  21.8  23.4  16.7  19.3  26.8  26.6    438  1414  miss
+Mumbai*                  Am   Aw   BWh    79  27.5  27.6  17.8  24.7  37.2  33.0    177  2397  miss
+Lagos                    Aw   Aw    Aw    22  25.5  25.8  24.6  23.9  26.4  28.1   1809  1534  exact
+Kinshasa                 Aw   Aw    Aw   416  22.6  24.0  22.4  23.4  22.8  25.7   2400  1491  exact
+Darwin                   Aw   Aw    Aw    22  24.8  27.2  23.0  24.8  26.6  29.9   1898  1775  exact
+Bangkok                  Aw   Aw    Aw     4  24.5  26.4  21.8  24.4  27.3  28.4   1158  1422  exact
+Kolkata                  Aw   Aw   BWh     6  26.6  25.4  15.3  18.6  38.0  31.1    193  1725  miss
+Brasilia                 Aw   Aw   Cwb  1094  17.4  20.5  13.7  18.7  21.1  24.0   2413  1478  miss
+Riyadh                  BWh  BWh   BWh   729  22.9  24.0   9.5  12.1  36.3  33.3    115   110  exact
+Cairo                   BWh  BWh   BWh   218  20.9  19.9   9.6  11.8  32.1  26.8     86    10  exact
+Timbuktu                BWh  BWh   BWh   267  27.8  28.1  17.9  20.6  37.8  34.2     68   195  exact
+Karachi                 BWh  BWh   BWh    76  24.9  26.9  14.3  18.7  35.6  32.7    145   185  exact
+Lima                    BWh  BWk   BWh   292  21.9  20.1  20.1  18.8  23.7  22.1    310   233  exact
+Alice Springs           BWh  BWh   Cwa   662  18.9  21.7  10.6  11.2  27.2  30.3   1226   291  miss
+Phoenix                 BWh  BSh   BSh   470  19.2  19.7   8.5   8.6  30.0  31.6    310   342  group
+Las Vegas               BWh  BWk   Csa   847  12.3  14.1   2.5   1.9  22.2  27.3    425   162  miss
+Kashgar                 BWk  BWk   BWk  1439   6.7   6.0  -9.5  -7.4  22.8  19.3    116   132  exact
+Niamey                  BSh  BSh    Am   237  24.2  27.9  20.0  22.4  28.3  33.5   2843   463  miss
+Dakar*                  BSh  BSh   BWh    45  24.3  24.6  20.2  21.9  28.4  27.9    134   343  group
+Windhoek                BSh  BWh   BSk  1677  13.9  18.3   5.2   9.8  22.7  24.7    395   291  group
+Ulaanbaatar     BSk/Dwb/Dwc  Dwc   Dwc  1654  -1.2  -3.3 -20.3 -22.7  17.8  16.6    458   281  exact
+Denver                  BSk  Dfb   Dfb  1722   3.1   7.7 -10.9  -4.4  17.2  22.7    527   468  miss
+Madrid              BSk/Csa  Csa   Csb   676  12.5  11.7   4.4   1.8  20.7  23.1    775   487  group
+Tehran          BSk/BSh/Csa  Csa   Dsc  1909   2.8   7.4  -8.1  -4.7  13.7  18.4    183   275  miss
+Kabul               BSk/Dsa  Dsb   BSk  2250   6.5   8.7  -9.2  -5.1  22.3  21.0    110   372  exact
+Los Angeles     Csb/Csa/BSh  Csb   Csb   682  14.2  14.0   8.7   8.4  19.7  20.9    439   377  exact
+Rome                    Csa  Csa   Csb   151  11.0  16.9   3.6   9.9  18.5  25.5    321   791  group
+Athens              Csa/BSh  Csa   BSh   326  18.0  15.8   6.4   7.9  29.7  24.9    255   465  exact
+Tashkent            Csa/BSk  Csa   BSk   496  14.1  12.0  -2.2  -0.7  30.4  25.6    169   597  exact
+Cape Town               Csb  Csa   BSh    55  20.1  18.0  15.9  14.0  24.2  22.2    454   569  miss
+Perth*                  Csa  Csa   BSh   232  20.0  18.0  13.8  11.5  26.2  24.5    338   697  miss
+Santiago            Csb/BSk   ET   Cfb  1488  10.2   8.0   2.1   1.3  18.3  15.9    345   464  group
+Shanghai                Cfa  Cfa   Cfa     4  16.7  16.1   9.4   6.1  24.0  26.7    527  1192  exact
+Tokyo                   Cfa  Cfa   Csa    14  16.3  15.5   8.4   5.6  24.1  25.8    591  1547  group
+Buenos Aires            Cfa  Cfa   BSk    17  16.2  17.5   7.4  10.0  25.1  25.0    252  1106  miss
+Atlanta                 Cfa  Cfa   Cfa   302  18.4  14.3   4.9   3.5  31.9  23.6    564  1272  exact
+Houston                 Cfa  Cfa   BWh    19  21.0  21.1  10.7  12.7  31.3  28.6    260  1274  miss
+Sydney*                 Cfa  Cfb   BSk   220  16.8  17.1   7.2  11.3  26.4  22.7    349   918  miss
+Sao Paulo           Cfa/Cwa  Cfa   Cwa   765  19.4  18.2  16.3  15.5  22.5  20.6   1018  1756  exact
+Istanbul*           Csa/Cfa  Csa   Csb   194  10.6  13.5   3.5   3.2  17.8  24.3    269   730  group
+London                  Cfb  Cfb   Cfb    89   9.9  10.5   3.6   4.8  16.3  16.6   1261   649  exact
+Paris                   Cfb  Cfb   Cfb   116  10.8  10.8   4.2   2.9  17.3  19.3   1330   702  exact
+Seattle             Csb/Cfb  Csb   Cfb   101  10.2  10.8   5.1   3.2  15.3  20.6   1189  1180  exact
+Vancouver*          Cfb/Csb  Cfb   Cfb   295   7.8   7.8   1.6   0.3  13.9  17.8   1338  2302  exact
+Auckland                Cfb  Cfb   Cfb    94  15.2  15.1  11.4  11.9  19.0  19.0    612  1336  exact
+Hobart                  Cfb  Cfb   Cfb   309  14.4  11.5   8.5   9.6  20.2  14.0   1206   588  exact
+Bogota                  Cfb  Cfb   Cfb  2173  11.8  13.4  11.4  12.9  12.2  13.8   1917  1410  exact
+Hong Kong               Cwa  Cwa   Cwa    49  21.5  22.4  16.3  16.4  26.8  26.9    747  1961  exact
+Delhi               Cwa/BSh  BSh   BWh   223  24.8  24.1   9.6  14.4  40.0  35.0     53   706  group
+Lusaka                  Cwa  Cwa   Cwb  1207  16.6  19.2  12.8  14.2  20.4  25.1   2619   786  group
+Mexico City             Cwb  Cwb   Cfc  2626   6.7  12.4   1.8   9.0  11.6  15.8    911   911  group
+Nairobi                 Cwb  Cfb   Cfb  1746  15.1  18.0  14.0  16.3  16.2  19.6   3598   705  group
+Addis Ababa             Cwb  Cwb   Cfb  2475   9.8  12.8   8.6  11.7  11.0  14.4   1272  1190  group
+Johannesburg            Cwb  Cwb   Cwb  1617  11.0  13.3   2.7   4.7  19.3  18.5   1025   667  exact
+Kunming                 Cwb  Cwb   Cwb  2026   9.3  13.4   1.0   6.7  17.6  17.8   1030   912  exact
+Lhasa           Dwb/Cwb/BSk  Dwc    ET  4503  -6.6  -3.1 -19.4 -14.3   6.2   8.2    166   413  miss
+Beijing             Dwa/BSk  Dwa   Cwa    79  14.3  10.3  -0.5  -9.5  29.0  26.6   1121   517  miss
+Seoul                   Dwa  Dwa   Cfa   126  15.3  11.3   7.2  -2.2  23.4  23.7    829  1377  miss
+Chicago                 Dfa  Dfa   Cwa   132  12.4   9.4  -2.0  -5.6  26.8  23.0   1692   959  miss
+Moscow                  Dfb  Dfb   Dfb   154   2.5   4.2 -12.7  -9.2  17.6  19.0   1054   662  exact
+Montreal                Dfb  Dfb   Dwa    51   9.4   4.9  -5.0 -11.0  23.9  19.3   1401  1006  group
+Winnipeg                Dfb  Dfb   Dwb   243   4.8   2.5 -11.8 -15.8  21.5  19.5   1127   538  group
+Stockholm           Dfb/Cfb  Dfb   Dfc    32   4.1   6.8  -4.8  -1.6  12.9  16.8    783   578  group
+Astana              Dfb/BSk  Dfb   Dfb   369   6.9   3.8  -8.0 -13.0  21.9  21.2    650   296  exact
+Novosibirsk             Dfb  Dfb   Dfb   145   3.9   0.6 -13.2 -16.6  20.9  19.0    738   442  exact
+Yakutsk                 Dfd  Dfd   Dwc   138  -4.2  -7.6 -25.8 -32.0  17.4  19.0    529   258  group
+Anchorage           Dfc/Dsc  Dfc    ET   459 -11.8  -1.1 -25.6  -8.1   2.1   8.9    404  1325  miss
+Fairbanks       Dfc/Dwc/Dsc  Dfc    ET   300 -10.1  -3.8 -28.6 -17.0   8.5  13.0    400   333  miss
+Reykjavik            Cfc/ET  Cfc    ET   122   4.2   4.1   0.5   0.5   7.9   9.7    339  1076  exact
+Ushuaia              Cfc/ET   ET   Cfc   393   4.4   3.9  -1.7   0.0  10.5   7.7   1331   475  exact
+Nuuk                     ET   ET    ET   347   0.5  -6.7  -5.1 -15.5   6.1   1.7    274   670  exact
+Utqiagvik*               ET   ET    ET    12 -12.2 -11.9 -25.4 -26.8   1.0   4.0    172   120  exact
+Summit GL                EF   EF    EF  3172 -35.4 -27.2 -53.7 -39.9 -18.1  -8.4    133   159  exact
+Vostok                   EF   EF    EF  3465 -40.1 -51.0 -57.7 -64.7 -22.6 -22.6     12     -  exact
+
+Regions (land; P model vs GPCC mm/yr, T/Tcold/Twarm model vs NCEP, dominant code model vs Kottek)
+region                   P  Pobs      T  Tobs     Tc Tcobs    Tw Twobs        model      Kottek grp%
+Amazon                3433  2303   24.6  24.4   23.8  23.7  25.4  25.3    Am  67%     Am  52%  100
+Congo basin           1757  1653   22.7  22.7   22.1  22.1  23.3  23.6    Aw  49%     Aw  54%   96
+Borneo/Sumatra        2604  3008   25.2  24.2   24.6  23.7  25.9  24.7    Af  96%     Af 100%   99
+West Africa coast     2543  1455   23.5  25.0   22.8  23.1  24.2  27.7    Am  62%     Aw  82%   98
+Sahel                 2087   596   23.5  26.6   19.3  21.8  27.7  31.6    Am  50%    BSh  42%   34
+Sahara                  61    35   24.0  22.6   11.9  11.8  36.1  31.5   BWh  99%    BWh 100%  100
+Arabia                 251    97   23.7  25.7   12.8  15.4  34.7  33.9   BWh  76%    BWh  99%   93
+India                  630  1126   24.0  24.8   14.7  18.5  33.3  32.6   BWh  57%     Aw  49%   33
+Indochina             1617  1712   22.0  23.4   18.4  19.9  25.7  26.0    Aw  57%     Aw  59%   80
+SE China              1052  1460   18.1  16.5    9.0   6.6  27.2  24.6   Cwa  95%    Cfa  77%  100
+NE China/Korea        1130   614    8.3   6.1   -4.4 -12.9  21.0  22.7   Dwb  50%    Dwa  43%   66
+Japan                  673  1683   14.3  12.4    8.2   2.1  20.4  23.3   Cfb  81%    Cfa  76%   78
+Tibet                   83   301  -10.7  -9.2  -25.6 -21.4   4.3   3.8    ET  97%     ET  96%   96
+Central Asia           334   208   11.7   9.8   -2.7  -6.4  26.0  26.3   BSk  52%    BWk  41%   59
+Gobi/Mongolia          528   155    4.0   2.5  -13.8 -18.3  21.8  22.2   Dwb  35%    BWk  51%   51
+W Siberia              696   506   -1.7  -1.3  -20.9 -18.0  17.5  17.7   Dfc  67%    Dfc  75%  100
+E Siberia              436   294   -7.7 -10.2  -28.9 -31.9  13.5  15.3   Dwc  87%    Dfd  54%   89
+European Russia        881   591    3.7   4.3  -11.4  -9.8  18.8  19.7   Dfb  39%    Dfb  91%   99
+W Europe              1150   903    7.6   9.1   -1.3   0.8  16.6  18.1   Cfb  43%    Cfb  88%   76
+Mediterranean          400   545   12.7  14.3    3.4   6.1  22.0  23.7   BSk  37%    Csa  59%   57
+SE USA                 617  1329   18.6  16.1    6.4   5.6  30.8  25.3   BSh  44%    Cfa  98%   52
+NE USA                1379  1034   11.0   8.5   -2.2  -5.1  24.3  21.3   Cwa  45%    Dfb  56%   75
+Great Plains           954   551    8.6  10.6   -5.6  -3.5  22.8  24.9   Dwa  29%    BSk  51%   39
+US Southwest           415   285   12.3  15.0    1.4   3.7  23.2  27.0   Dfb  24%    BSk  44%   39
+Pacific NW            1750  1530    6.4   7.7    0.7   0.4  12.0  17.5   Cfb  29%    Csb  75%   73
+N Canada               672   410   -4.5  -6.7  -22.7 -25.7  13.7  12.7   Dwc  62%    Dfc  75%   87
+Alaska                 461   448  -12.1  -6.5  -29.5 -19.3   5.3  10.5    ET  93%    Dfc  67%   28
+Mexico N               204   482   16.1  18.0    3.8   9.7  28.3  25.7   BSk  42%    BSh  43%   78
+Central America       1348  2240   22.0  22.8   20.3  21.7  23.7  24.4    Aw  78%     Am  42%   87
+NE Brazil             1876   760   24.4  24.9   24.0  23.4  24.9  27.2    Af 100%     Aw  67%   68
+SE Brazil             1277  1422   19.9  20.6   15.6  17.9  24.2  22.6   Cwa  69%     Aw  52%   62
+Pampas                 399   943   19.0  17.3    6.4   9.0  31.5  25.1   BSh  53%    Cfa  82%    4
+Patagonia              915   386    7.5   7.2   -0.5   0.5  15.6  13.9   Cfb  61%    BSk  53%   43
+Peru/Atacama coast    1727  1457   14.8  16.0   12.9  14.5  16.8  17.2    Am  33%     Af  31%   74
+East Africa           2708   657   21.0  22.6   20.3  20.7  21.7  24.9    Af  49%     Aw  53%   50
+Southern Africa        824   395   15.2  18.5    6.6   9.9  23.8  24.9   Cwa  48%    BSh  52%   41
+Australia interior     634   292   21.5  22.6   11.9  12.5  31.2  31.1   Cwa  40%    BWh  85%   60
+E Australia            532   737   18.6  17.5    8.3  10.4  28.9  23.7   BSh  48%    Cfa  62%   37
+Greenland              326   359  -28.4 -21.3  -47.2 -32.8 -10.5  -5.0    EF  96%     EF  88%  100
+Antarctica               -     -  -31.1 -36.9  -49.5 -48.6 -13.2 -16.1    EF 100%     EF 100%  100
+
+Rivers: runoff / rain on land excl. Antarctica 0.50 (Earth ~0.35-0.40; 0.37 with GPCC rain). Discharge at the mouth, m3/s:
+river                 observed     model  ratio     obs P  ratio  gauge->sea km
+Amazon                  209000    372507   1.78    180378   0.86     617
+Congo                    41000    153491   3.74     58167   1.42    1006
+Ganges-Brahmaputra       38000      9533   0.25     34576   0.91     662
+Orinoco                  37000     42505   1.15     32580   0.88     543
+Yangtze                  30000     14659   0.49     18811   0.63     590
+Yenisei                  19600     54279   2.77     29795   1.52    1330
+Mississippi              17000     53675   3.16     28858   1.70     330
+Lena                     17000     23787   1.40     10479   0.62     768
+Mekong                   15000     10972   0.73     12513   0.83     519
+Ob                       12500         -      -         -      -    1152  (model drains into the Yenisei)  (obs P drains into the Yenisei)
+Mackenzie                10000     28859   2.89     11226   1.12    1007
+Nile                      2800     79763  28.49     12318   4.40    1746
+Murray                     800       984   1.23       764   0.96     278
+lakes: 29 open, 85 closed, 201 salt-pan cells (898 lake cells); land draining to closed basins 23% (26% with GPCC rain; Earth ~18%, excl. Antarctica).
+Known closed basins, cells within 350 km (model | GPCC rain):
+  Caspian Sea                    open 0, closed 73, pan 0  |  open 0, closed 77, pan 0
+  Aral Sea                       open 0, closed 1, pan 10  |  open 0, closed 0, pan 0
+  Great Salt Lake / Great Basin  open 0, closed 12, pan 0  |  open 0, closed 6, pan 15
+  Lake Eyre                      open 0, closed 0, pan 4  |  open 0, closed 4, pan 1
+  Lake Chad                      open 0, closed 21, pan 0  |  open 0, closed 15, pan 1
+  Lake Balkhash                  open 0, closed 26, pan 7  |  open 0, closed 3, pan 0
+  Tarim / Lop Nur                open 0, closed 10, pan 0  |  open 0, closed 2, pan 0
+  Okavango / Makgadikgadi        open 0, closed 15, pan 0  |  open 0, closed 8, pan 0
+  Dead Sea                       open 0, closed 0, pan 0  |  open 0, closed 0, pan 0
+  Altiplano (Titicaca, Uyuni)    open 0, closed 7, pan 0  |  open 0, closed 6, pan 1
+
+Clouds (annual mean of the two half-years): global 67% (sea 72%, land 56%; Earth ~67%, NCEP reanalysis 52%). RMS error: sea cloud vs ICOADS 12 points, land sunshine vs CRU 15 points
+     band |     sea cloud | land sunshine   (% model / observed: ICOADS ship cloud, CRU sunshine)
+ +80..+90 |     77     72 |     33     23
+ +70..+80 |     80     76 |     40     25
+ +60..+70 |     86     77 |     38     34
+ +50..+60 |     88     78 |     34     41
+ +40..+50 |     81     74 |     46     55
+ +30..+40 |     66     64 |     68     64
+ +20..+30 |     62     56 |     77     68
+ +10..+20 |     63     56 |     58     67
+  +0..+10 |     74     62 |     35     54
+  -10..+0 |     74     58 |     31     48
+ -20..-10 |     62     59 |     49     61
+ -30..-20 |     66     61 |     64     71
+ -40..-30 |     64     68 |     67     63
+ -50..-40 |     77     75 |     32     50
+ -60..-50 |     85     81 |     25     42
+ -70..-60 |     87     80 |      -      -
+ -80..-70 |      -      - |      -      -
+ -90..-80 |      -      - |      -      -
+region                    target  model   obs  ncep   (obs: ICOADS cloud at sea, CRU sunshine % on land)
+ITCZ E Pacific            70-80      72    68    61   ok
+ITCZ Atlantic             70-80      69    66    53   ok
+W Pacific warm pool       70-80      74    64    64   ok
+Peru Sc deck              60-80      66    75    50   ok
+California Sc deck        60-80      72    70    66   ok
+Namibia Sc deck           60-80      67    71    56   ok
+Canary Sc deck            50-70      68    51    50   ok
+Trade cumulus (Hawaii)    50-65      72    58    50   OFF
+Southern Ocean            80-90      86    81    63   ok
+N Atlantic storm track    75-85      87    80    65   ok
+N Pacific storm track     75-85      82    83    68   ok
+Arctic Ocean              60-85      78    74    46   ok
+Sahara                    10-20      11    80    19   ok
+Arabia                    10-25      21    75    23   ok
+Australia interior        20-35      37    79    30   ok
+Amazon                    65-80      87    43    74   OFF
+Congo basin               70-80      71    45    68   ok
+W Europe                  60-75      79    38    45   ok
+Siberia                   60-70      68    37    53   ok
+Antarctica                40-60      62     -    25   ok
+India                    July 46% (target 60-75), January 22% (target 10-25)
+E Mediterranean          July 38% (target 5-25), January 69% (target 40-60)
+dry winter air, January relative humidity: Delhi 39% (45-70), Timbuktu 31% (20-40), Riyadh 47% (40-60), Kashgar 50% (55-75)
+
+Moisture budget (tools/moisture_budget.py; PW-015's acceptance numbers):
+  E-P-R (Sv; + loses water; obs = NCEP E - GPCP P before runoff, an upper bound; literature E-P-R Atlantic+Arctic +0.3..+0.6): Atlantic +0.54 (obs +1.13), Pacific +0.50 (obs +0.73), Indian +0.44 (obs +0.87); Atlantic minus Pacific +137 mm/yr per area (PW-016 needs >= +100, Atlantic >= +0.25)
+  northward vapour transport (Sv): 40S -0.95 (implied -1.39), 50N +0.65 (implied +0.52); sea P at 50-60S 763 mm/yr (GPCP 1121)
+  rain efficiency (P/PW over observed) in the probe regions: median 1.30, worst 8.93 (Sahara jan); kernel mass residue -0.08 / -0.09% of rain (Apr-Sep / Oct-Mar)
+
+Largest systematic errors (auto-ranked):
+  - Greenland: coldest month too cold -47.2 vs -32.8 C (-14.4)
+  - Alaska: coldest month too cold -29.5 vs -19.3 C (-10.2)
+  - NE China/Korea: coldest month too warm -4.4 vs -12.9 C (+8.5)
+  - band -90..-80: ocean precip 46 vs 195 mm (x0.24)
+  - East Africa: precip too wet 2708 vs 657 mm (x4.12); model Af vs obs Aw
+  - Tibet: precip too dry 83 vs 301 mm (x0.28); model ET vs obs ET
+  - band -40..-30: group B share of land 82% vs 46% obs
+  - Sahel: precip too wet 2087 vs 596 mm (x3.50); model Am vs obs BSh
+  - Greenland: annual T too cold -28.4 vs -21.3 C (-7.1)
+  - Gobi/Mongolia: precip too wet 528 vs 155 mm (x3.41); model Dwb vs obs BWk
+  - Pampas: warmest month too warm 31.5 vs 25.1 C (+6.4)
+  - band -50..-40: group B share of land 0% vs 31% obs
+  - Japan: coldest month too warm 8.2 vs 2.1 C (+6.1)
+  - Mexico N: coldest month too cold 3.8 vs 9.7 C (-5.9)
+  - band 80..90: ocean precip 71 vs 196 mm (x0.36)
+  - Antarctica: annual T too warm -31.1 vs -36.9 C (+5.8)
+  - Alaska: annual T too cold -12.1 vs -6.5 C (-5.6)
+  - band -60..-50: group B share of land 0% vs 28% obs
+  - Greenland: warmest month too cold -10.5 vs -5.0 C (-5.6)
+  - SE USA: warmest month too warm 30.8 vs 25.3 C (+5.5)
+
+wrote /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l92/earth7.json
