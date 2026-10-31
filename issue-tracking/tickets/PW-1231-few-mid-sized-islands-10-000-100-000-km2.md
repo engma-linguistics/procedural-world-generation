@@ -1,5 +1,6 @@
 ---
-title: Few mid-sized islands (10,000-100,000 km2): 11 on the L8 world vs 44 on Earth at the same grid
+id: PW-1231
+title: "Few mid-sized islands (10,000-100,000 km2): 11 on the L8 world vs 44 on Earth at the same grid"
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane96
 blocked_by: []
 relates: [PW-116, PW-117]
 refs: [planet/tectonics/crust.py, planet/tectonics/events.py, "world a16f5a", "world 2a7385", docs/review/l8-world/explore.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Tasmania, Sardinia-Corsica, New Caledonia), mature island arcs (Japan, Philippin
 (Iceland). Candidate levers: rifting's minimum continental piece (pieces of 0.3-3% of the surface are forbidden,
 overview 2.2), island arcs staying blocky (PW-116), hotspot islands sub-cell (PW-117).
 Count on a few L7 seeds before acting; one world each is thin.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-few-mid-sized-islands.md (found by lane96).

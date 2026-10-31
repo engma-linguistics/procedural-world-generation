@@ -1,4 +1,5 @@
 ---
+id: PW-1228
 title: 3D relief draws a regular lattice of diamond-shaped dimples over shallow seas (L8 world a16f5a)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane96
 blocked_by: []
 relates: []
 refs: [viewer/relief.js, "world a16f5a", docs/review/l8-world/explore/02_spot_step_relief.jpg]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -23,3 +26,6 @@ cell-to-cell noise; single-cell dips are small (in a16f5a's shallow continental 
 deep, p90 26 m) and not on a lattice. The dimples are regularly spaced every few cells, so likely the sea-floor
 mesh (vertex sharing or the translucent sea plane meeting floor vertices near 0 m) rather than the elevations.
 Not checked at L7 (it has almost no shallow sea to show it).
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-3d-relief-diamond-lattice-on-shallow-seas.md (found by lane96).

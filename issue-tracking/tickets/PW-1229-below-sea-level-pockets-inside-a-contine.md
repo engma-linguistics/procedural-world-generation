@@ -1,4 +1,5 @@
 ---
+id: PW-1229
 title: Below-sea-level pockets inside a continent count as sea, so big rivers (the L8 world's largest) end in 1-7-cell inland puddles
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane96
 blocked_by: []
 relates: [PW-171, PW-950]
 refs: [planet/geo.py, planet/hydrology.py, planet/highlights.py, "world a16f5a", "world 2a7385", "zoom 652c1a", docs/review/l8-world/explore.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -37,3 +40,6 @@ closed hollows (they fill to a lake or stay a dry pan by the water balance). One
 finish) so the coast, highlights, peoples and zooms all agree. Helps L7 too (its 41 deep pits).
 - [ ] no river with flow >= 300 ends in a sea body that isn't connected to the ocean (a16f5a, 2a7385 re-sliced)
 - [ ] the largest-river highlight's mouth is on the ocean or on a lake
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-below-sea-pockets-inside-land-count-as-sea.md (found by lane96).

@@ -59,6 +59,10 @@ th { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercas
 .done li::marker { color: var(--rec); }
 .pending { font: 500 12px var(--mono); color: var(--muted); background: var(--tag); padding: 2px 8px; border-radius: 999px; }
 footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; }
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin:12px 0}
+.shots figure{margin:0}
+.shots img{width:100%;border-radius:6px;display:block}
+.shots figcaption{font-size:.85em;opacity:.8;margin-top:4px}
 </style>
 
 
@@ -69,7 +73,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <p class="lede">Good morning, Daniel. Overnight: your D20–D24 answers went into lanes, v1 is down to its release checks, and the
   "why so many humans" question has measured answers (your hunch about the human offshoots was right). Two calls for you below:
   the events system and one war question. The L8 world is at the top.</p>
-  <nav class="toc"><a href="#l8">L8 world</a><a href="#v1">v1.0</a><a href="#why">Why humans</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
+  <nav class="toc"><a href="#l8">L8 world</a><a href="#l8learn">L8 lessons</a><a href="#v1">v1.0</a><a href="#why">Why humans</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
 </header>
 
 <h2 id="l8">The L8 world</h2>
@@ -98,6 +102,46 @@ code. Orcs have 28, bugbears 21, half-orcs and steppe orcs 20 each, lizardfolk 1
 <a href="http://localhost:8765/viewer/?run=57b95b&amp;layer=peoples">run 57b95b</a>.
 Notes: <code>docs/review/l8-world/notes.md</code>.</p>
 </div>
+
+<h2 id="l8learn">What the L8 world taught us (lane 96)</h2>
+<p class="sub">A read-only look around world a16f5a, compared with the L7 world and with Earth's own relief resampled to the same grids. Full write-up:
+<code>docs/review/l8-world/explore.md</code>.</p>
+<div class="shots">
+<figure><img src="l8/01_spot_flooded_platform_sat.jpg" alt="Daniel's spot: a shallow sea over continental crust, true colour"><figcaption>Your spot: a flooded part of a continent.</figcaption></figure>
+<figure><img src="l8/02_spot_step_relief.jpg" alt="The same spot in 3D relief, showing a one-cell cliff from shelf to abyss"><figcaption>Its edge in 3D relief: a one-cell, 4 km cliff.</figcaption></figure>
+<figure><img src="l8/05_largest_river_ends_inland.jpg" alt="A young rift sea and the biggest river ending in an inland below-sea-level pocket"><figcaption>A young Red Sea-like rift, and the biggest river ending in an inland "sea".</figcaption></figure>
+<figure><img src="l8/04_giant_salt_lake_sat.jpg" alt="A giant salt lake ringed by volcanoes"><figcaption>A giant salt lake (1.15 Mkm², ringed by volcanoes).</figcaption></figure>
+</div>
+<ul>
+<li><b>Your spot</b> is a shallow sea flooding part of a whole continent, like Hudson Bay or the old American inland seaway. It isn't a sunken
+plateau like Zealandia. The sea rose 312 m over this run, because young ocean floor rides high after a supercontinent breaks up. That part
+is plausible and looks good.</li>
+<li><b>The sharp edge is a real gap, and it's in L7 too.</b> The continent ends in one cell: 26 km of crust at −441 m, then ocean floor at −4,200 m.
+On Earth, resampled to the same grid, 18% of the ocean lies between 200 and 3,000 m deep (the slope and rise). Here it's 5%, and the L7 world has 11%.
+The coast is 90 km from 3 km depth here, against 360 km on Earth. Stretched crust that thins over 50–200 km, and a mud apron at the foot
+of the slope, are missing (PW-950).</li>
+<li><b>A bug that L8 exposed: inland pits count as sea.</b> Ground below 0 m counts as ocean even 800 km inland, so the world's
+"largest river" ends in a puddle, and so does its highlight and regional zoom. L8 has 225 such pockets. The L7 world has 41, drawn as deep pits of ocean (PW-1229).</li>
+<li><b>Good at L8:</b> rivers branch like real drainage, 9.5% of land drains inland (Earth ~18%, L7 2%), small islands match Earth's count, and
+the coasts are ragged with mangroves and tidal flats.</li>
+<li><b>Off:</b> the land rose with the sea, so 6% of land is within 10 m of sea level (Earth 1.4%) (PW-1230). Mid-sized islands
+(10,000–100,000 km²) number 11 here against Earth's 44 (PW-1231). 3D relief draws a fake diamond lattice on shallow seas (PW-1228).
+The "40 times L7's lakes" figure is mostly one giant salt lake.</li>
+</ul>
+
+<div class="card"><div class="id">D30 · TWO L8 FINDINGS: v1 OR v2?</div>
+<h3>Fix the inland "seas" and the cliff-edged continents before the tag?</h3>
+<p>Both are visible in L7 too, and a geologist would spot both. Neither is a crash.</p>
+<ol>
+<li><b>Inland pits as sea (PW-1229):</b> <b>A</b> v1: a pocket below 0 m that doesn't connect to the ocean becomes a lake or a dry basin, like the Dead Sea or the
+Caspian lowland. It's a bug fix, probably a day including a check that climate and rivers still pass. <b>B</b> v2.</li>
+<li><b>Continental slope (PW-950):</b> <b>A</b> v1: try thinning the crust gradually at continent edges, screened on a few seeds first. It's tectonics, with a risk of weeds.
+<b>B</b> v2, as filed.</li>
+</ol>
+<div class="rec"><b>My lean: 1 = A, 2 = A only as a one-day screen; if the screen isn't clean, v2.</b> The pits are a plain bug: a sea 800 km inland
+fails your "fool a layman" bar, and the fix is contained. The slope is what you noticed yourself on first look, so a geologist will too. But it's real
+tectonics work, so I'd give it a bounded try rather than let it hold the tag open.</div>
+<div class="answer">PW-1229 · PW-950</div></div>
 
 <h2 id="v1">v1.0: where it stands</h2>
 <p class="sub">Your ruling: v1.0 is the planet, physics good enough to fool a layman and impress a climatologist or geologist.
@@ -174,7 +218,6 @@ stress test, with a "who holds each continent" measure.</td></tr>
 
 <tr><td>90 · dragons</td><td><b>Merged, see D28</b> (868 tests pass).</td></tr>
 <tr><td>95 · plant floor</td><td>Your D29 = C: plants that starve for CO2 stop speeding up weathering. Screen of the 6 low draws, then the full tally with every draw's lowest CO2, so you can set the crash line. If it fails, it goes to v2.</td></tr>
-<tr><td>96 · L8 explore</td><td>Learning from the L8 world, starting with your drowned block and its sharp shelf edge (-27.3, -88.2). Good, bad, off and cool, and whether any of it would help L7.</td></tr>
 <tr><td>97 · peoples</td><td>D27: founding spread over a few sites on one landmass (your idea), then D25's brakes (land, raids, culling wars, plus in-fighting, dwarves 0.75), D26 B, and the graphs you asked for on how far the commonest people should fall.</td></tr>
 <tr><td>93 · dragons + D20</td><td>Re-measuring the dragons on the combined peoples and dragon code.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
