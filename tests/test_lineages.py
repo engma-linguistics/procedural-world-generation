@@ -2448,7 +2448,7 @@ def test_dragon_km2_sets_every_dragon_density(faketz):
 def test_megafauna_natural_density_pressed_by_peoples(faketz):
     """PW-957, PW-963: a megafauna kind's natural density comes from its mass (dragons on Marshall et al. 2021's mesotherm line over
     every age, ~1 per 65 km2 at 3.2 t; giants as mass-scaled foragers, ~1 per 140 km2 at 2.2 t, 1 per 345 at 7.3 t); peoples press it
-    down to meta.dragon_km2 / meta.giant_km2, one rule for both, and the summary counts by it."""
+    down by the persecution kill (PW-1068), one rule for both, and the summary counts by it."""
     from planet.lineages.history import megafauna as MG
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1, "dragon_ages": "base"}, "lineage": [
@@ -2469,13 +2469,40 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     P[f, : h.grid.n // 2] = 0.5
     s = MG.pressure(h, P)
     assert s[: h.grid.n // 2].min() > 0.99 and s[h.grid.n // 2:].max() == 0
-    d = MG.local_density(h, w, s)
-    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and np.allclose(d[: h.grid.n // 2], h.dens[w], rtol=0.05)
-    assert np.isclose(MG.local_density(h, w, np.full(h.grid.n, 0.5)), np.sqrt(h.dens_nat[w] * h.dens[w])).all()
-    # a user value denser than the natural one: peoples never raise a kind above its natural density
+    # persecution (PW-1068): a kill against slow breeding, natural x 1 / (1 + kill / r); none on empty land, never zero, never above
+    # natural; it rises with the era's tech level (MG.means), and a kind that breeds faster (the giants' shorter generation) loses less
+    # the kill falls by age class (owner 10-30): wyrmlings reachable early, adults only at high tech, so a stone-age people barely dents them
+    k0 = MG.kill(h, P)
+    half = np.s_[: h.grid.n // 2]
+    assert k0[h.grid.n // 2:].max() == 0 and k0[half].min() > 0
+    h._ago_now = 0.0  # (the present: meta.era, renaissance)
+    d = MG.local_density(h, w, k0)
+    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d > 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
+    h._ago_now = 10.0  # (the stone age)
+    d10 = MG.local_density(h, w, k0)
+    assert (d10[half] > 0.9 * h.dens_nat[w]).all() and (d10[half] > d[half]).all()
+    v0, v9 = MG.vulnerability(0.0), MG.vulnerability(0.9)
+    assert v0[0] == v9[0] == 1 and v0[2] < 0.02 < 0.5 < v9[2] and (v0 <= v9).all()  # (the adults' share of the kill rises with tech)
+    for e in (1e-4, 1e-3, 1e-2):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
+        assert MG.dragon_kept(h, e, 0.0) > MG.dragon_kept(h, e, 0.9) > 0
+    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) > 0
+    h._ago_now = 0.0
+    dh = MG.local_density(h, hi, k0)
+    assert (dh[half] / h.dens_nat[hi] < 1).all() and (dh[half] > 0).all()
+    # the viewer's pressure settings (owner D14): meta.press_early / press_late multiply the kill, blended by tech level
+    t5 = SP.parse({**raw, "meta": {**raw["meta"], "press_early": 0.25, "press_late": 4.0}})
+    assert (t5.press_early, t5.press_late) == (0.25, 4.0) and SP.parse(SP.to_raw(t5)).press_late == 4.0
+    assert MG.press_x(t5, 0.0) == 0.25 and MG.press_x(t5, 1.0) == 4.0 and MG.press_x(h.tree, 0.5) == 1.0
+    h5 = H.History(t5, ps, 1)
+    h5._ago_now = 0.0  # (the present, renaissance: mostly the late setting, harsher)
+    assert (MG.local_density(h5, w, k0)[half] < d[half]).all()
+    h5._ago_now = h._ago_now = 10.0  # (the stone age: the early setting, gentler)
+    assert (MG.local_density(h5, w, k0)[half] > MG.local_density(h, w, k0)[half]).all()
+    h._ago_now = 0.0
+    # the nominal density (meta.giant_km2) no longer sets any density
     t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
     h4 = H.History(t4, ps, 1)
-    assert np.allclose(MG.local_density(h4, h4.idx["hill"], np.ones(h4.grid.n)), h4.dens_nat[h4.idx["hill"]])
+    assert np.allclose(MG.local_density(h4, h4.idx["hill"], np.zeros(h4.grid.n)), h4.dens_nat[h4.idx["hill"]])
 
 
 def test_megafauna_tolerated_tier_and_ecological_release(faketz):
@@ -2601,7 +2628,7 @@ def test_dragons_held_to_their_food(faketz):
     P = np.zeros((len(h.lines), n))
     P[h.idx["wyrm"]] = P[h.idx["drake"]] = 1.0
     w = h.idx["wyrm"]
-    s = np.ones(n)  # (fully pressed: 1 per dragon_km2 = 100, but the poor country's natural density is lower and is what stands)
+    s = np.full(n, 1e-3)  # (a kill effort on every age class, PW-1068)
     ct = h.dragon_struct["cattle_yr"] * PR.HEAD_T
     tags = {"land": np.ones(n, bool)}
     MG.BUDGET = False
@@ -2683,11 +2710,34 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     assert np.allclose(b3["food"] * r, b3["guild"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])
     nat = MG.natural(h, w, b3["prey"], b3["food"])
     assert np.allclose(nat * h.dragon_struct["cattle_yr"] * PR.HEAD_T, b3["food"])
+    # the competition settings (coordinator 10-30, the paper's reframe): meta.rivals, meta.game_share, meta.overkill; defaults as before
+    assert (t.rivals, t.game_share, t.overkill) == (1.0, 1.0, PR.OVERKILL) and np.isclose(MG.guild_ratio(h), r)
+    P[hu] = 1.0
+    b4 = MG.budget(h, P, np.ones(n), tags)  # (full overkill pressure)
+    for k, v in (("rivals", 0.0), ("game_share", 0.0), ("overkill", 0.0)):
+        old = getattr(h.tree, k)
+        setattr(h.tree, k, v)
+        try:
+            b5 = MG.budget(h, P, np.ones(n), tags)
+        finally:
+            setattr(h.tree, k, old)
+        assert (b5["food"] > b4["food"]).all(), k  # (less competition, more food for the dragons)
+        if k == "rivals":
+            assert np.allclose(b5["guild"], 0)
+        if k == "game_share":
+            assert np.allclose(b5["peoples"], 0)
+        if k == "overkill":
+            assert (b5["wild"] > b4["wild"]).all()
+    t6 = SP.parse({**raw, "meta": {"seed": 1, "rivals": 0.5, "game_share": 0.25, "overkill": 0.23}})
+    assert (SP.parse(SP.to_raw(t6)).rivals, t6.game_share, t6.overkill) == (0.5, 0.25, 0.23)
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"seed": 1, "game_share": 1.5}})
 
 
 def test_people_density_reads_productivity(faketz):
-    """PW-974: a people's density per cell is its number x f, f absolute (the foraging layer over FORAGE_REF for foragers, the grazing
-    NPP over GRAZE_REF for herders; farmers none): a poorer world holds fewer; with no world, a number; in the deep epoch, a number."""
+    """PW-974, PW-1020 B: a people's density per cell is its number x f, f absolute and mildly concave ((the foraging layer over
+    FORAGE_REF)^PEOPLE_EXP for foragers, the grazing NPP over GRAZE_REF for herders, the total NPP over NPP_REF for farmers): a poorer
+    world holds fewer, poor land fewer but not none; with no world, a number; in the deep epoch, a number."""
     from planet.lineages import landuse as LU
     from planet.lineages import prey as PR
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
@@ -2701,18 +2751,24 @@ def test_people_density_reads_productivity(faketz):
     rng = np.random.default_rng(3)
     ps.graze_npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.GRAZE_REF
     ps.forage = rng.uniform(0.1, 1.9, ps.grid.n) * PR.FORAGE_REF
-    fo = ps.forage.copy()
+    ps.npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.NPP_REF
+    fo, npp = ps.forage.copy(), ps.npp.copy()
     h = H.History(SP.parse(raw), ps, 1)
-    ps.graze_npp, ps.forage = ps.graze_npp * 0.5, ps.forage * 0.5  # (a world half as productive)
+    ps.graze_npp, ps.forage, ps.npp = ps.graze_npp * 0.5, ps.forage * 0.5, ps.npp * 0.5  # (a world half as productive)
     hp = H.History(SP.parse(raw), ps, 1)
+    del ps.npp
+    hn = H.History(SP.parse(raw), ps, 1)  # (no NPP layer: the farmers keep their number)
     del ps.graze_npp, ps.forage
     hu, he, fa = (h.idx[x] for x in ("hunt", "herd", "farm"))
     ff = h.dens_at(hu) / h.dens[hu]
     sh = LU.shares(h.tree, h.lines[he])
-    assert np.allclose(hp.dens_at(hu), 0.5 * h.dens_at(hu)) and np.allclose(hp.dens_at(he), 0.5 * h.dens_at(he))  # (absolute: half the food, half the people)
+    x = 0.5 ** PR.PEOPLE_EXP  # (absolute: half the food, fewer people; concave: more than half of them)
+    assert np.allclose(hp.dens_at(hu), x * h.dens_at(hu)) and np.allclose(hp.dens_at(he), x * h.dens_at(he)) and np.allclose(hp.dens_at(fa), x * h.dens_at(fa))
+    assert 0.5 < x < 1
     assert abs(np.corrcoef(h.dens_at(hu), h.dens_at(he))[0, 1]) < 0.5 and ff.std() > 0 and h.dens_at(he).std() > 0
-    assert np.allclose(ff, fo / PR.FORAGE_REF) and sh["herd"] > 0  # (a forager: the foraging layer over its reference)
-    assert np.allclose(h.dens_at(fa), h.dens[fa])  # (the farmers' soil is in the habitat already)
+    assert np.allclose(ff, (fo / PR.FORAGE_REF) ** PR.PEOPLE_EXP) and sh["herd"] > 0  # (a forager: the foraging layer over its reference)
+    assert np.allclose(h.dens_at(fa), h.dens[fa] * (npp / PR.NPP_REF) ** PR.PEOPLE_EXP)  # (farmers: the total NPP, PW-1020 B)
+    assert np.allclose(hn.dens_at(fa), hn.dens[fa])
     h._deep_now = True
     assert np.ndim(h.dens_at(hu)) == 0  # (the deep epoch's plates lay elsewhere: the number)
 

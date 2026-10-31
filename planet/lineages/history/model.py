@@ -104,7 +104,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         # below takes the pressed value)
         self._dmap = None  # (the peoples' density per cell, PW-974: PR.people_fields; set below, once the dens are known)
         MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
-        F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None))
+        F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None),
+                               getattr(ps, "npp", None))
         if F is not None and PEOPLE_PROD:
             self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
@@ -197,8 +198,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._land_now = env["land"]  # (the peoples' pressure on the megafauna this step, PW-957)
             self._deep_now = deep
             self._dens_memo = None
+            self._ago_now = step.ago  # (the peoples' means against the megafauna follow the era, MG.means, PW-1068)
             self._press = MG.pressure(self, self.p, env["land"]) if any(x.megafauna for x in L) else None
-            self._prey, self._food, _ = MG.prey_and_food(self, self.p, self._press, tags) if self._press is not None and not deep else (None, None, None)
+            self._kill = MG.kill(self, self.p, env["land"]) if self._press is not None else None
+            self._prey, self._food, _ = MG.prey_and_food(self, self.p, self._press, tags, self._kill) if self._press is not None and not deep else (None, None, None)
             self._start_due(step, env, tags, Ks)
             if self.animals is not None:
                 self.animals.step(step, env, tags, self.p, self._native)

@@ -11,7 +11,7 @@ schedule_mass), --gen-yr (the dragon lines' generation_yr), --no-cap (megafauna.
 --no-budget (megafauna.BUDGET off: the dragons get all the wild offtake and the stock, PW-977 stage 1), --no-people-prod (PW-974 off: a people's
 density is its way-of-life number everywhere), --no-press (a diagnostic, not a model setting: the peoples press the megafauna not at all, so the
 dragons stand at their natural density wherever the food budget lets them; it shows what the budget alone does through time).
---no-persecute (a diagnostic: the dragons are not pressed toward meta.dragon_km2, but the peoples' overkill still cuts the wild herds; with
+--no-persecute (a diagnostic: the peoples do not kill the dragons (megafauna.kill, PW-1068), but the peoples' overkill still cuts the wild herds; with
 the default and --no-press it splits the pressure's two channels). --cells DIR writes DIR/WORLD_ROLL.npz, float32 per-cell fields at each
 --eras step (the budget, the peoples by way of life, the dragons, their presence, biome tag bits) and the dragons' suitability now (review r2).
 PROBE_REV in the environment is recorded in OUT.json as "rev".
@@ -61,9 +61,10 @@ if a.no_cap:
     MG.FOOD_CAP = False
 if a.no_budget and hasattr(MG, "BUDGET"):
     MG.BUDGET = False
-if a.no_press:
+if a.no_press:  # (neither overkill nor persecution)
     MG.PRESS_N0 = 1e12
-if a.no_persecute:  # (the dragons are not pressed toward meta.dragon_km2, but the overkill still cuts the wild herds: the third arm)
+    MG.KILL_Q = 0.0
+if a.no_persecute:  # (the dragons are not killed by the peoples (MG.kill, PW-1068), but the overkill still cuts the wild herds: the third arm)
     _pressed0 = MG._pressed
 
     def _pressed_np(h, k, s, prey, food=None, _o=_pressed0):
@@ -98,10 +99,10 @@ if a.eras:
         if step.epoch != "deep" and h._press is not None:
             for e in targets:
                 if e not in eras or abs(step.ago - e) < abs(eras[e]["ago"] - e):
-                    b = MG.budget(h, h.p, h._press, tags)
+                    b = MG.budget(h, h.p, h._press, tags, h._kill)
                     fl = [k for k, l in enumerate(h.lines) if l.megafauna and "flies" in l.traits]
-                    nd = sum((np.where(h.p[k] >= EST, h.p[k], 0.0) * MG.local_density(h, k, h._press, b["prey"], b["food"], h.p) for k in fl), np.zeros(h.grid.n))
-                    gd = sum((np.where(h.p[k] >= EST, h.p[k], 0.0) * MG.local_density(h, k, h._press, b["prey"]) for k in fl), np.zeros(h.grid.n))
+                    nd = sum((np.where(h.p[k] >= EST, h.p[k], 0.0) * MG.local_density(h, k, h._kill, b["prey"], b["food"], h.p) for k in fl), np.zeros(h.grid.n))
+                    gd = sum((np.where(h.p[k] >= EST, h.p[k], 0.0) * MG.local_density(h, k, h._kill, b["prey"]) for k in fl), np.zeros(h.grid.n))
                     cls = {"foragers": np.zeros(h.grid.n), "herders": np.zeros(h.grid.n), "farmers": np.zeros(h.grid.n), "others": np.zeros(h.grid.n)}
                     dm = h.dens_cells()
                     for k, l in enumerate(h.lines):  # (the peoples' density per cell by how the people lives: its larger share of use)
@@ -115,7 +116,7 @@ if a.eras:
                     for bi, tg in enumerate(BIOME_TAGS):
                         if tg in tags:
                             bits |= (np.asarray(tags[tg], bool).astype(np.uint16) << bi)
-                    eras[e] = {"ago": step.ago, "dragon_present": pres_any, "biome_bits": bits, "press": h._press.copy(), "land": np.asarray(env["land"]), "dragons": nd, "dragons_uncapped": gd,
+                    eras[e] = {"ago": step.ago, "dragon_present": pres_any, "biome_bits": bits, "press": h._press.copy(), "kill": np.asarray(h._kill, float).copy(), "land": np.asarray(env["land"]), "dragons": nd, "dragons_uncapped": gd,
                                **{"people_" + c: v for c, v in cls.items()}, **{k: np.asarray(v, float) for k, v in b.items()}}
         return _o(step, env, tags, Ks)
     h._start_due = _start
@@ -182,9 +183,10 @@ food = {"worst_food_use": max(fu, default=None), "worst_stock_take": max(st, def
         "pockets": len(fu)}
 # cell level: every cell where dragons are expected
 press = MG.pressure(h, P, h._land_now)
-bud = MG.budget(h, P, press, h._tags_now)
+kl = MG.kill(h, P, h._land_now)
+bud = MG.budget(h, P, press, h._tags_now, kl)
 prey, supply, live = bud["prey"], bud["food"], bud["live"]
-dens = {k: MG.local_density(h, k, press, prey, supply, P) for k, l in enumerate(h.lines) if l.megafauna}
+dens = {k: MG.local_density(h, k, kl, prey, supply, P) for k, l in enumerate(h.lines) if l.megafauna}
 fs = MG.food_state(h, P, dens, supply, live, bud["pool"])
 if fs is not None:
     use = fs["demand"] / np.maximum(fs["supply"], 1e-12)

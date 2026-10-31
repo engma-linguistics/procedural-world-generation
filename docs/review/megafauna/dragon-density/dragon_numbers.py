@@ -1,6 +1,6 @@
 """dragon_numbers.py R2_DIR OUT.json: every model number on the dragon-density page (index.html), from the review's round-2 sweep.
 
-R2_DIR (persistent: /home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r2/, written by its run.sh) holds
+SRC_DIR (persistent: /home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r3/, round 3) holds
 docs/review/megafauna/probe.py outputs run from a snapshot of git 8c7ce305 (main b36c9581 plus this review's probe.py; planet/ as on main,
 prey.FORAGE_REF 2.85, GRAZE_REF 279), all with --eras 31,29,25,10,0 --cells:
   on/WORLD_ROLL.json      6 worlds x rolls 7000-7003, the default model (food budget on, the peoples' pressure on)
@@ -31,7 +31,7 @@ SRC, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 CELL_KM2 = 4 * math.pi * R_KM ** 2 / 163842  # an L7 cell (all runs are L7: 163,842 cells; the model treats every cell as this size)
 CLASSES = ("none", "others", "foragers", "herders", "farmers", "all")
 PEOPLED = ("others", "foragers", "herders", "farmers")
-ERAS = ("31", "29", "25", "10", "0")
+ERAS = ("31", "29", "25", "10", "5", "0")
 WORLDS = ("2a7385", "1df1c3", "e71172", "6909cb", "a12762", "067778")
 out: dict = {"cell_km2": CELL_KM2}
 
@@ -44,7 +44,7 @@ mean_mass = float(np.dot(ds["share"], ds["stage_mass_kg"]))
 m = ds["eco_mass_kg"]
 out["chain"] = {
     "schedule": ds["name"], "eco_mass_kg": m, "mean_mass_all_stages_kg": mean_mass, "kcal_day": ds["kcal_day"],
-    "cattle_yr": ds["cattle_yr"], "head_t": PR.HEAD_T, "food_t_yr": food_t, "offtake": MG.OFFTAKE, "stock_tolerable": MG.STOCK_TOLERABLE,
+    "cattle_yr": ds["cattle_yr"], "generation_yr": ds["generation_yr"], "head_t": PR.HEAD_T, "food_t_yr": food_t, "offtake": MG.OFFTAKE, "stock_tolerable": MG.STOCK_TOLERABLE,
     "guild_ratio": g, "dragon_share": 1.0 / (1.0 + g), "per_km2_per_t": coef, "one_per_km2_at_1t": 1.0 / coef,
     "prey_dragon_biomass_ratio_eco": 1.0 / (coef * m / 1000.0), "prey_dragon_biomass_ratio_mean": 1.0 / (coef * mean_mass / 1000.0),
     "person_kcal_day": MG.PERSON_KCAL_YR / 365.0, "wild_meat": list(MG.WILD_MEAT), "head_kcal": MG.HEAD_KCAL,
@@ -52,7 +52,8 @@ out["chain"] = {
     "other_game_t_yr": MG.WILD_MEAT[1] * MG.PERSON_KCAL_YR / MG.HEAD_KCAL * PR.HEAD_T,
     "guild_classes": [list(c) for c in MG.GUILD_CLASSES],
     "guild_food_weights": [n * mm ** MG.GUILD_KLEIBER for mm, n in MG.GUILD_CLASSES],
-    "press_n0": MG.PRESS_N0, "overkill": PR.OVERKILL,
+    "press_n0": MG.PRESS_N0, "overkill": PR.OVERKILL, "kill_q": MG.KILL_Q, "breed_x": MG.BREED_X, "motive0": MG.MOTIVE0, "forager_org": MG.FORAGER_ORG, "vulnerability": MG.VULNERABILITY, "ancient_x": MG.ANCIENT_X,
+    "era_level": MG.ERA_LEVEL, "era_kyr": MG.ERA_KYR, "people_exp": PR.PEOPLE_EXP, "forage_ref": PR.FORAGE_REF, "graze_ref": PR.GRAZE_REF, "npp_ref": PR.NPP_REF,
     "stage_share": ds["share"], "stage_food_share": ds["food_share"], "stage_mass_kg": ds["stage_mass_kg"],
     "kill_t_at_eco_mass": float(DA.cattle_per_yr(DA.fmr_kcal(m))) * PR.HEAD_T,
     "single_reptile_mass_for_mean_intake_kg": float((ds["kcal_day"] * DA.KJ_PER_KCAL / 0.196) ** (1 / 0.889) / 1000.0),
@@ -101,6 +102,42 @@ lit["whole_guild_ratio_eco"] = out["chain"]["prey_dragon_biomass_ratio_eco"] / (
 lit["hamilton"] = {f"{c0}": {str(n): n / (math.exp(c0) * n ** 0.70) for n in (25, 1000)} for c0 in (4.44, 4.14)}
 lit["hamilton2009"] = {str(n): {str(mm): n / 10 ** (0.72 * math.log10(n * mm) + 0.61) for mm in (45, 55)} for n in (25, 1000)}
 lit["pressure_at"] = {str(n): 1 - math.exp(-n / MG.PRESS_N0) for n in (0.02, 0.03, 0.05, 0.09, 0.1, 0.25)}
+# the persecution kill (PW-1068, by age class): the model's own functions (megafauna.dragon_kept, vulnerability), by people and era
+class _H:  # (the two attributes dragon_kept reads)
+    dragon_struct = ds
+
+
+_h = _H()
+r_dragon = math.log(MG.BREED_X) / ds["generation_yr"]
+r_giant = math.log(MG.BREED_X) / 65.0
+CASES = (("forager band", 0.3, 1.0, 0.0), ("dense foragers", 6.0, 1.0, 0.0), ("nomads", 0.8, 0.0, 1.0), ("transhumant herders", 3.0, 0.0, 0.9),
+         ("farmers", 3.0, 0.0, 0.5), ("dense farmers", 10.0, 0.0, 0.5))
+kt = {"r_dragon": r_dragon, "r_giant": r_giant, "rows": [], "vulnerability": {}}
+for ago in (25.0, 10.0, 5.0, 3.0, 2.0, 1.0, 0.5, 0.0):
+    lev = MG.tech_level("renaissance", ago)
+    kt["vulnerability"][str(ago)] = {"level": lev, "stages": [float(x) for x in MG.vulnerability(lev)]}
+    for nm, n_, f_, st in CASES:
+        mn = (MG.MOTIVE0 + (1 - MG.MOTIVE0) * st) * (f_ * MG.FORAGER_ORG + (1 - f_))
+        e_ = MG.KILL_Q * n_ * mn
+        kt["rows"].append({"ago": ago, "level": lev, "case": nm, "people_km2": n_, "means": mn, "effort_yr": e_,
+                           "dragons_kept": float(MG.dragon_kept(_h, e_, lev)), "giants_kept": 1 / (1 + e_ * MG.vulnerability(lev)[2] / r_giant)})
+# elasticity of R0 to each stage's survival, summed over the stage's years, on the dragons' schedule
+mort = np.asarray(DA.SCHEDULES[ds["name"]], float)[DA.STAGE_OF]
+breed = DA.AGES >= DA.BREED_FROM
+l0 = np.concatenate([[1.0], np.cumprod(1 - mort)[:-1]])
+el = {}
+for si, nm in enumerate(DA.STAGES):
+    p2 = (1 - mort) * np.where(DA.STAGE_OF == si, 1 + 1e-5, 1.0)
+    l2 = np.concatenate([[1.0], np.cumprod(p2)[:-1]])
+    el[nm] = float((np.log((l2 * breed).sum()) - np.log((l0 * breed).sum())) / 1e-5)
+kt["elasticity_R0"] = el
+kt["one_stage_0p2pct"] = {nm: float(MG.dragon_kept(_h, 0.002, 0.0) if False else 0.0) for nm in DA.STAGES}
+for si, nm in enumerate(DA.STAGES):
+    ks = np.where(DA.STAGE_OF == si, 0.002, 0.0)
+    lk = np.concatenate([[1.0], np.cumprod((1 - mort) * np.exp(-ks))[:-1]])
+    F = (l0 * breed).sum() / (lk * breed).sum()
+    kt["one_stage_0p2pct"][nm] = 1 / (1 + (F - 1) / (MG.BREED_X - 1))
+lit["kill_table"] = kt
 SC_KM2 = (1500 * 1.609344) * (1000 * 1.609344)
 lit["burness_sc"] = {k: f(SC_KM2) for k, f in lit.pop("burness").items()}
 lit["burness_sc"]["dino_offset_x12"] = 12 * lit["burness_sc"]["ecto_carn"]
@@ -192,7 +229,8 @@ for e in ERAS:
         pon, poff = out["on"]["eras"].get(e, {}).get(c, {}), out["off"]["eras"].get(e, {}).get(c, {})
         paired[e][c]["pooled"] = (pon["per_1000km2"] / poff["per_1000km2"]) if pon and poff and poff.get("per_1000km2") else None
 out["paired"] = paired
-# the three channels, roll 7000: on -> noper (persecution) -> off (overkill); hunting stays in all three
+# the three channels, roll 7000: on -> noper (persecution) -> off (overkill); the peoples' hunting of the wild offtake stays in all three
+# (its share: 1 - the peoples' share of the supply in the off arm)
 ch = {}
 for e in ERAS:
     ch[e] = {}
@@ -210,8 +248,10 @@ for e in ERAS:
             a, b, d = on7[k]["eras"][e][c], NOPER[k]["eras"][e][c], off7[k]["eras"][e][c]
             if a["cells"] and b["cells"] and d["cells"] and b["dragons"] > 0 and d["dragons"] > 0:
                 x, y, z = a["dragons"] / a["cells"], b["dragons"] / b["cells"], d["dragons"] / d["cells"]
-                per_.append({"run": k, "persecution": x / y, "overkill": y / z})
-        for nm in ("persecution", "overkill"):
+                # the peoples' wild offtake (in every arm): the share of the wild herds' surplus left after the peoples' hunters take
+                # theirs, in the off arm (no overkill, no kill); the dragons are held to their food, so ~ the share of their density kept
+                per_.append({"run": k, "persecution": x / y, "overkill": y / z, "offtake": 1.0 - d["peoples"]})
+        for nm in ("persecution", "overkill", "offtake"):
             v = [p[nm] for p in per_]
             row[nm + "_runs"] = {"n": len(v), "min": min(v, default=None), "median": float(np.median(v)) if v else None, "max": max(v, default=None),
                                  "by_run": {p["run"]: p[nm] for p in per_}}
@@ -411,7 +451,7 @@ la1, la2 = lat_c - dlat / 2, lat_c + dlat / 2
 box_km2 = R_KM ** 2 * math.radians(dlon) * (math.sin(math.radians(la2)) - math.sin(math.radians(la1)))
 sc["box"] = {"lat_s": la1, "lat_n": la2, "lon_w": lon_c - dlon / 2, "lon_e": lon_c + dlon / 2, "km2": box_km2}
 counts = {}
-for e in ("25", "10", "0"):
+for e in ("25", "10", "5", "0"):
     counts[e] = {}
     for c in CLASSES:
         a, b = out["on"]["eras"].get(e, {}).get(c), out["off"]["eras"].get(e, {}).get(c)
@@ -435,9 +475,70 @@ sc["largest_kind_share"] = {"min": min(kind_share, default=None), "median": floa
                             "max": max(kind_share, default=None)}
 out["sword_coast"] = sc
 
+# ---- the headline (owner's reframe, 10-30): density by scale x competition, roll 7000's six worlds, now -------------------------------
+# Rows add competition one setting at a time (each a meta setting in the code; defaults marked on the page). Capacity: what the food
+# would feed with dragons in every land cell (the budget's own algebra on the pressure-off and persecution-off cells); realised: the
+# model's dragons in that arm. Persecution x0.25 / x4: the model's cells rescaled by kept(m x kill) / kept(kill) (estimated, not run).
+LEV0 = MG.tech_level("renaissance", 0.0)
+G = MG.guild_ratio()
+
+
+def lad_load(arm, key):
+    f = SRC / arm / "cells" / f"{key}.npz"
+    if not f.exists():
+        return None
+    z = np.load(f)
+    c = cell_load(arm, key, "0")
+    fpd = float(z["food_t_per_dragon"])
+    a = {k: z[f"{k}_0"].astype(float) for k in ("wild", "stock", "giants", "food", "kill")}
+    c.update({"fpd": fpd, **a})
+    return c
+
+
+SCALES = (("world", None), ("region", None), ("none", 0), ("peopled", -1), ("grassland", "b1"), ("forest", "b0"), ("desert", "b2"))
+
+
+def scales(d, dens):
+    """dens: dragons per km2 per cell; d: the arm's cells (land, cls, biome). World and region in dragons, the rest per 10,000 km2."""
+    L = d["land"]
+    o = {"world": float(dens[L].sum() * CELL_KM2), "region": float(dens[L].mean() * SC_KM2)}
+    for nm, sel in SCALES[2:]:
+        m = L & ((d["cls"] == 0) if sel == 0 else (d["cls"] >= 1) if sel == -1 else (d["biome"] == int(sel[1:])))
+        o[nm] = float(dens[m].mean() * 1e4) if m.any() else None
+    return o
+
+
+LADDER = ("alone", "rivals", "hunt", "overkill", "persecution", "press_0.25", "press_4")
+lad = {r: {"capacity": [], "realised": []} for r in LADDER}
+for k in sorted(NOPER):
+    on_, off_, no_ = lad_load("on", k), lad_load("off", k), lad_load("noper", k)
+    if on_ is None or off_ is None or no_ is None:
+        continue
+    S = off_["wild"] + off_["stock"]
+    lad["alone"]["capacity"].append(scales(off_, S / off_["fpd"]))
+    lad["rivals"]["capacity"].append(scales(off_, np.maximum(S - off_["giants"], 0) / (1 + G) / off_["fpd"]))
+    lad["hunt"]["capacity"].append(scales(off_, off_["food"] / off_["fpd"]))
+    lad["hunt"]["realised"].append(scales(off_, off_["dragons"]))
+    lad["overkill"]["capacity"].append(scales(no_, no_["food"] / no_["fpd"]))
+    lad["overkill"]["realised"].append(scales(no_, no_["dragons"]))
+    lad["persecution"]["capacity"].append(scales(on_, on_["food"] / on_["fpd"]))
+    lad["persecution"]["realised"].append(scales(on_, on_["dragons"]))
+    base = MG.dragon_kept(_h, on_["kill"], LEV0)
+    for m in (0.25, 4.0):
+        lad[f"press_{m:g}"]["realised"].append(scales(on_, on_["dragons"] * MG.dragon_kept(_h, m * on_["kill"], LEV0) / np.maximum(base, 1e-12)))
+head = {}
+for r in LADDER:
+    head[r] = {}
+    for kind in ("capacity", "realised"):
+        rows = lad[r][kind]
+        head[r][kind] = {nm: (float(np.median([x[nm] for x in rows if x[nm] is not None])) if any(x[nm] is not None for x in rows) else None)
+                         for nm, _ in SCALES} if rows else None
+        head[r][kind + "_n"] = len(rows)
+out["headline"] = {"rows": head, "guild_ratio": G, "tech_level_now": LEV0, "region_km2": SC_KM2}
+
 OUT.write_text(json.dumps(out, indent=1, default=float))
 for arm in ("on", "off"):
-    for e in ("25", "10", "0"):
+    for e in ("25", "10", "5", "0"):
         E = out[arm]["eras"].get(e)
         if E:
             print(arm, e, {c: (round(E[c]["per_1000km2"] or 0, 3), round(E[c]["land_share"], 3)) for c in CLASSES})

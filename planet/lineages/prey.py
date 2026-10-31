@@ -79,10 +79,10 @@ def herd_share(lines) -> np.ndarray:
     return np.array([0.0 if (l.megafauna or l.overlay) else LIVESTOCK.get(l.way or "", 0.0) for l in lines])
 
 
-def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None) -> dict:
+def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None, overkill: float = OVERKILL) -> dict:
     """The prey per cell, t/km2: the wild herds after overkill (press 0..1, the peoples' pressure; none in refuge country), the
     livestock (stocked 0..1, the share of the cell stocked) and their sum."""
-    w = wild_t * np.where(refuge_mask, 1.0, 1.0 - OVERKILL * np.clip(press, 0, 1))
+    w = wild_t * np.where(refuge_mask, 1.0, 1.0 - overkill * np.clip(press, 0, 1))  # (overkill: meta.overkill, default OVERKILL)
     lv = wild_t * LIVESTOCK_X * np.clip(stocked, 0, 1) if stocked is not None else np.zeros_like(wild_t)
     return {"wild": w, "livestock": lv, "total": w + lv}
 
@@ -103,24 +103,32 @@ def productivity(wild_t: np.ndarray, land: np.ndarray) -> np.ndarray:
 # is its way-of-life number (the spec's `density`) times f per cell, f = the layer / a fixed reference: absolute, so a poor planet holds
 # fewer people than a rich one, not the same number spread differently. Herders read the grazing NPP (what their stock eats); foragers
 # read the foraging layer (gameattrs `foraging`, 0-5: mast and fruit trees, game, wetlands, river fish), not the grazing, which
-# undercounts a forest forager's food; farmers' soil is already in their habitat K, so their share reads nothing. f is linear in the
-# layer: an assumption (Binford's forager densities rise with productivity over orders of magnitude, per the owner's PW-833 ruling;
-# Binford 2001 is not on file, and the linear form is not from it). The two references are not physical constants: they are the
-# layers' presence-weighted means over the country the peoples hold on the 6 x 4 dnd sweep (rolls 7000-7003), so each way's mean density
-# over that sweep stays near its number (docs/review/megafauna/people_density.py: --fit with the factor off, --refit with it on; these
-# are the refit on all 24 runs at 2.81 / 382, where the pure foragers' mean f was 1.01 and the pure herders' 0.73; fun lane 45b, 10-29).
-FORAGE_REF = 2.85  # foraging score (0-5) at which a forager holds its way-of-life density
-GRAZE_REF = 279.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
+# undercounts a forest forager's food; farmers read the total NPP (world layer `npp`: the climate's productivity; their soil class is
+# already in their habitat K, so the fertile layer would count it twice; PW-1020 B, owner D8). f = (layer / reference)^PEOPLE_EXP, mildly
+# concave (owner, PW-1020: "a smidge of C", poor land is thinly peopled, not empty: "humans tend to live damn near anywhere"); the
+# exponent is a judgement (Binford's forager densities rise with productivity over orders of magnitude, per the owner's PW-833 ruling;
+# Binford 2001 is not on file). The references are not physical constants: each is the power mean (at PEOPLE_EXP) of its layer over the
+# country its way held at the present on the dragon-density review's 6 x 4 dnd sweep (rolls 7000-7003, the pressure-off arm, weighted by
+# the way's people with the old linear factor undone), so each way's mean density over that sweep stays near its number (fun lane 63,
+# 10-30; the plain means were 2.79 / 291 / 338, the power means 2.77 / 275 / 330; the forager and herder references keep fun lane 45b's
+# refit, 2.85 / 279, scaled by power mean over plain mean).
+PEOPLE_EXP = 0.75  # f = (layer / reference)^PEOPLE_EXP for every way that reads a layer
+FORAGE_REF = 2.83  # foraging score (0-5) at which a forager holds its way-of-life density
+GRAZE_REF = 263.0  # grazing NPP, g C/m2/yr, at which a herder holds its way-of-life density
+NPP_REF = 330.0  # total NPP, g C/m2/yr, at which a farmer holds its way-of-life density
 
 
-def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.ndarray | None) -> np.ndarray | None:
+def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.ndarray | None,
+                  npp: np.ndarray | None = None) -> np.ndarray | None:
     """Per line (L x cells), the productivity factor f of its density: its herding share reads the grazing NPP over GRAZE_REF, its
-    wild-food share the foraging layer over FORAGE_REF, its farming share 1 (weighted by the shares). 1 for megafauna, overlays, marine
-    peoples, fishers and lines whose way uses none of these goods. `shares_of(line)` is landuse.shares. None without a world."""
+    wild-food share the foraging layer over FORAGE_REF, its farming share the total NPP over NPP_REF (1 without it), each to the
+    PEOPLE_EXP, weighted by the shares. 1 for megafauna, overlays, marine peoples, fishers and lines whose way uses none of these goods.
+    `shares_of(line)` is landuse.shares. None without a world."""
     if graze_npp is None or forage is None:
         return None
-    fg = np.maximum(np.asarray(graze_npp, float), 0.0) / GRAZE_REF
-    ff = np.maximum(np.asarray(forage, float), 0.0) / FORAGE_REF
+    fg = (np.maximum(np.asarray(graze_npp, float), 0.0) / GRAZE_REF) ** PEOPLE_EXP
+    ff = (np.maximum(np.asarray(forage, float), 0.0) / FORAGE_REF) ** PEOPLE_EXP
+    fa = 1.0 if npp is None else (np.maximum(np.asarray(npp, float), 0.0) / NPP_REF) ** PEOPLE_EXP
     out = np.ones((len(lines), len(fg)))
     for k, l in enumerate(lines):
         if l.megafauna or l.overlay or l.marine or l.way in ("fisher_forager", "sea_nomad"):
@@ -128,5 +136,5 @@ def people_fields(lines, shares_of, graze_npp: np.ndarray | None, forage: np.nda
         sh = shares_of(l)
         tot = sh["herd"] + sh["forage"] + sh["farm"]
         if tot > 0:
-            out[k] = (sh["herd"] * fg + sh["forage"] * ff + sh["farm"]) / tot
+            out[k] = (sh["herd"] * fg + sh["forage"] * ff + sh["farm"] * fa) / tot
     return out

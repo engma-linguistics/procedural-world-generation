@@ -14,6 +14,7 @@
   - 255-380 mines a run became 277-412, 38-81 of them colonies. Dwarves 3-12 -> 4-18, kobolds 15-43 -> 28-76, humans 42-80% -> 36-72%. At 4 kyr ago 194 -> 36 mines on 488d7e.
   - Viewer: a 'mines' box and an 'only the mines' box, a hover naming the district and colony, and the deep link `?settle=mines&lat=..&lon=..&dist=2.3`. Overview 2.25.
   - Techtree and settlements rebuilt on the seven runs. 114231 and 8d6884 are the same seed (9000) on the same world, and so are 6128a3 and e368d1 (8000).
+- Fun lane 63 (10-30): PW-1068 persecution as a kill by dragon age class against slow breeding (wyrmlings reachable early, adults at high tech; tech level a calendar proxy behind `megafauna.vulnerability`/`means`); PW-1020 B people density follows NPP^0.75; viewer "how hard peoples press dragons and giants", early/late (owner D14; dragon_km2/giant_km2 nominal). Competition settings in code + viewer: meta.rivals (guild share), game_share (peoples' hunt from dragon prey), overkill (default 0.6). Dragon-density paper round 3 (r3 sweep), reframed as "how many dragons a world/region/biome holds, by competition" (headline tables H1/H2; world ~120k at defaults, food alone ~23M); checkers + peer review + revision done. Drafts: forager offtake overstated (needs-decision, incl. dragons pressing back D16), metallic/chromatic temperament, persecution means from real techs.
 - Up to ~12 sims with >=40 GB free in /tmp.
 
 ## v1
