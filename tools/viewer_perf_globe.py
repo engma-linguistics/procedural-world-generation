@@ -214,6 +214,8 @@ def main():
         if prof:
             print("load, top self time (ms):")
             top_self(cdp.send("Profiler.stop")["profile"])
+        if "--load-only" in sys.argv:
+            return b.close()
         pg.wait_for_timeout(1500)
         gl = pg.evaluate("(() => { const gl = window.__pv.renderer.getContext(), e = gl.getExtension('WEBGL_debug_renderer_info'); return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : ''; })()")
         print("GPU:", gl)

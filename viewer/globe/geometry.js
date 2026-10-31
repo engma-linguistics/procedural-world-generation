@@ -89,7 +89,20 @@ export function buildTopology() {
     if (globe) put(i, c, UC[3 * c], UC[3 * c + 1], UC[3 * c + 2]);
     else put(i, c, (lonU[q0 + k] + s) / 90, G.corner_lat[c] / 90, 0);
   };
-  for (let i = 0, q0 = 0; i < n; q0 += cells[i].length, i++) {
+  // the globe (the common case) in one plain loop: a centre and its corners per cell, one triangle per corner
+  // (its own counters: v and t live in the closures' context, slower to reach)
+  if (globe) for (let i = 0, w = 0, u = 0; i < n; i++) {
+    const cs = cells[i], m = cs.length, w0 = w;
+    triStart[i] = u; triStart[i + 1] = u + m;
+    vCell[w] = i; vCorner[w] = -1; base[3 * w] = U[3 * i]; base[3 * w + 1] = U[3 * i + 1]; base[3 * w + 2] = U[3 * i + 2]; w++;
+    for (let k = 0; k < m; k++) {
+      const c = cs[k];
+      vCell[w] = i; vCorner[w] = c; base[3 * w] = UC[3 * c]; base[3 * w + 1] = UC[3 * c + 1]; base[3 * w + 2] = UC[3 * c + 2]; w++;
+      index[3 * u] = w0; index[3 * u + 1] = w0 + 1 + k; index[3 * u + 2] = k + 1 < m ? w0 + 2 + k : w0 + 1;
+      triCell[u++] = i;
+    }
+  }
+  else for (let i = 0, q0 = 0; i < n; q0 += cells[i].length, i++) {
     const cs = cells[i], m = cs.length;
     for (const s of shifts ? SHIFTS[shifts[i]] : SHIFTS[0]) {
       const cx = globe ? U[3 * i] : (G.lon[i] + s) / 90, cy = globe ? U[3 * i + 1] : G.lat[i] / 90, cz = globe ? U[3 * i + 2] : 0;
