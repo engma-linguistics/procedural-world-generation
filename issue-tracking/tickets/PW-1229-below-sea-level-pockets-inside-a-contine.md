@@ -42,4 +42,5 @@ finish) so the coast, highlights, peoples and zooms all agree. Helps L7 too (its
 - [ ] the largest-river highlight's mouth is on the ocean or on a lake
 
 ## Updates
+- 2026-10-31: Daniel 10-31 (D30): v1 if resolved quickly (lane 98 building).
 - 2026-10-31: Created from inbox draft draft-below-sea-pockets-inside-land-count-as-sea.md (found by lane96).
