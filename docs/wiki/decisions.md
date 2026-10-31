@@ -50,7 +50,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-22 · v1 scope · sim-physics (ice, rain, winds, base climate, epic PW-470) stays under v1; v1 is an arbitrary point · PW-244
 - 2026-10-22 · Start and CO2 · mature start, set-once reference; CO2 as a stock; accept ~0.35-0.5 C/C; default run 1 Gyr, 300 Myr warm-up kept · PW-576
 - 2026-10-22 · Base-climate plan · order approved; lane A stages 1-3 serial, lane B stage 4 · PW-570
-- 2026-10-22 · Weathering · smooth saturating law, no hard cutoff · PW-574
+- 2026-10-22 · Weathering · SUPERSEDED the same day (PW-576 option C): the saturating weathering law (PW-574 A) did not help, and was never built as a supply ceiling. The sink is unsaturated in erosion (supply = the eroded mass, no lithology weighting; that is v2) and fixed through the CO2 stock and a set-once start reference; its CO2 factor is a power law on bare ground and a saturating one only on planted ground (v1-finish-11) · PW-574, PW-576
 - 2026-10-21 · Sea-level band · leave the first ~100 Myr (warm-up) out · PW-549
 - 2026-10-21 · Ice batch · park PW-460/459/464 batch; take PW-465 coast_loss with the cost cut if it holds; v2 starts with a holistic ice review · PW-526, PW-514
 - 2026-10-20 · Run moments · v1 bar is "cycles at ~100 kyr without runaway"; coastal-ice physics post-v1 · PW-492
