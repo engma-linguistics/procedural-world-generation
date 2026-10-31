@@ -21,7 +21,8 @@ Per run, per people (a people with its groups rolled up; megafauna and overlays 
 peopled cells it leads (the most people there), its range, and whether it lives; a people that dies out is named with why (its
 events). The invariants (report): no crash; no authored people silently extinct; no people above MONO_MAX of all people unless the
 tree has <= 2; shares move with each people's own density knob. The spread: each people's share over the base, jitter and portal
-runs; a people whose share swings more than SWING x between them is a brittle point.
+runs; a people whose share swings more than SWING x between the seeds, or the jitters, of one world is a brittle point (PW-1207: the
+pooled swing, also reported, mixes the two worlds' geography).
 
 How to judge a peoples change: docs/coordination.md ("How to judge a peoples change").
 """
@@ -52,7 +53,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "planet" / "lineages" / "samples"
 WORLDS = ["4360a3", "af2677"]  # the L6 worlds with their time zooms on disk (2026-10-30)
 MONO_MAX = 0.85  # no people above this share of all people (trees of 3+ peoples)
-SWING = 10.0  # a people whose share swings more than this x across seeds and jitters is brittle
+SWING = 10.0  # a people whose share swings more than this x across the seeds, or the jitters, on one world is brittle (PW-1207)
 SHARE_FLOOR = 1e-4  # (shares under this count as this in the swing ratio: an extinct people is reported apart)
 KNOB_PEOPLES = {"dwarf": "mainline", "bugbear": "minor", "gnome": "late arrival"}
 KNOB_X = (0.5, 2.0)
@@ -350,7 +351,10 @@ def measure(h, res, pres) -> dict:
     lost = [x for x in pres.get("lost", [])]
     # continental blocs (lane 83, owner D20: different landmasses led by different sets of peoples): per landmass of the present land
     # of at least BLOC_MIN_MKM2 with people on it, its leading people and that people's share of the landmass's people, and the humans'
+    # (and lane 84's measures, PW-1202: the peoples making 90% of its people, n90, and its mix's distance from the world's, half the
+    # summed share differences, dist)
     lab, nl = h.grid.components(h.steps[-1].get()["land"])
+    world = pop.sum(1) / max(float(pop.sum()), 1e-12)
     blocs = []
     hum = pid.get("human")
     for z in range(nl):
@@ -363,7 +367,9 @@ def measure(h, res, pres) -> dict:
         t = int(np.argmax(ps))
         blocs.append({"mkm2": round(area, 2), "top": peoples[t].id, "top_share": float(ps[t]),
                       "human_share": float(ps[hum]) if hum is not None else 0.0,
-                      "n_over_10pct": int((ps >= 0.1).sum())})
+                      "n_over_10pct": int((ps >= 0.1).sum()),
+                      "n90": int(np.searchsorted(np.cumsum(np.sort(ps)[::-1]), 0.9) + 1), "dist": float(0.5 * np.abs(ps - world).sum()),
+                      "pop": ptot})
     return {"peoples": out, "n_peoples": len(peoples), "lost": lost, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
             "total_pop": float(tot), "megafauna": {k: v.get("count") if isinstance(v, dict) else None for k, v in (pres.get("megafauna") or {}).items()}}
 
@@ -514,14 +520,18 @@ def report(out: Path) -> str:
     if bl:
         lines += [f"## Continental blocs (landmasses of {BLOC_MIN_MKM2:g}+ Mkm² with people)", "",
                   "| run | landmasses | led by a non-human people | non-human majority (>50%) | humans under 50% | distinct leaders | "
-                  "leaders (share of the landmass's people, largest landmass first) |", "|---|---|---|---|---|---|---|"]
+                  "median peoples making 90% | mix distance from the world's (people-weighted) | "
+                  "leaders (share of the landmass's people, largest landmass first) |", "|---|---|---|---|---|---|---|---|---|"]
         for r in sorted(bl, key=lambda r: (r["family"], r["name"])):
             B = sorted(r["blocs"], key=lambda b: -b["mkm2"])
             nh = sum(b["top"] != "human" for b in B)
             nm = sum(b["top"] != "human" and b["top_share"] > 0.5 for b in B)
             hu = sum(b["human_share"] < 0.5 for b in B)
             lead = ", ".join(f"{b['top']} {_fmt(b['top_share'])}" for b in B[:6])
-            lines.append(f"| {r['name']} | {len(B)} | {nh} | {nm} | {hu} | {len({b['top'] for b in B})} | {lead} |")
+            n90 = f"{np.median([b['n90'] for b in B]):g}" if B and "n90" in B[0] else "-"
+            wt = sum(b.get("pop", 0) for b in B)
+            dist = f"{sum(b['dist'] * b['pop'] for b in B) / wt:.2f}" if B and "dist" in B[0] and wt > 0 else "-"
+            lines.append(f"| {r['name']} | {len(B)} | {nh} | {nm} | {hu} | {len({b['top'] for b in B})} | {n90} | {dist} | {lead} |")
         lines.append("")
     # -- spread over base + jitter (the same families under each founding arm), per tree
     summ = {"spread": {}, "knob": {}, "fails": fails}
@@ -533,20 +543,28 @@ def report(out: Path) -> str:
                 continue
             ids = sorted({k for r in rs for k in r["peoples"] if not r["peoples"][k].get("authored_extinct")})
             lines += [f"## Share spread, {tree}, founding {arm} (base + jitter: {len(rs)} runs)", "",
-                      "| people | share min | median | max | swing x | led min | led median | led max | dead in | brittle |", "|---|---|---|---|---|---|---|---|---|---|"]
+                      "(swing x pooled over both worlds; the worst swing within one world and one family, seeds or jitter, PW-1207, decides"
+                      " 'brittle': the pooled one also holds the two worlds' different geography)", "",
+                      "| people | share min | median | max | swing x | worst x in one world and family | led min | led median | led max | dead in | brittle |",
+                      "|---|---|---|---|---|---|---|---|---|---|---|"]
             rows = []
             for k in ids:
                 s = np.array([r["peoples"][k]["share"] for r in rs if k in r["peoples"]])
                 ld = np.array([r["peoples"][k]["led"] for r in rs if k in r["peoples"]])
                 dead = sum(not r["peoples"][k]["alive"] for r in rs if k in r["peoples"])
                 sw = float(max(s.max(), SHARE_FLOOR) / max(s.min(), SHARE_FLOOR))
-                rows.append((k, s, ld, dead, sw))
-            for k, s, ld, dead, sw in sorted(rows, key=lambda x: -np.median(x[1])):
-                br = sw > SWING or dead > 0
-                st = {"min": float(s.min()), "median": float(np.median(s)), "max": float(s.max()), "swing": sw,
+                grp = {}
+                for r in rs:
+                    if k in r["peoples"]:
+                        grp.setdefault((r["world"], r["family"]), []).append(r["peoples"][k]["share"])
+                sw1 = max((max(max(v), SHARE_FLOOR) / max(min(v), SHARE_FLOOR) for v in grp.values() if len(v) > 1), default=1.0)
+                rows.append((k, s, ld, dead, sw, float(sw1)))
+            for k, s, ld, dead, sw, sw1 in sorted(rows, key=lambda x: -np.median(x[1])):
+                br = sw1 > SWING or dead > 0
+                st = {"min": float(s.min()), "median": float(np.median(s)), "max": float(s.max()), "swing": sw, "swing_one_world": sw1,
                       "led_median": float(np.median(ld)), "led_max": float(ld.max()), "dead": dead, "n": len(s), "brittle": br}
                 summ["spread"].setdefault(f"{tree}/{arm}", {})[k] = stats.setdefault((tree, arm), {})[k] = st
-                lines.append(f"| {k} | {_fmt(s.min())} | {_fmt(np.median(s))} | {_fmt(s.max())} | {sw:.3g} | {_fmt(ld.min())} | {_fmt(np.median(ld))} | {_fmt(ld.max())} | {dead}/{len(s)} | {'BRITTLE' if br else ''} |")
+                lines.append(f"| {k} | {_fmt(s.min())} | {_fmt(np.median(s))} | {_fmt(s.max())} | {sw:.3g} | {sw1:.3g} | {_fmt(ld.min())} | {_fmt(np.median(ld))} | {_fmt(ld.max())} | {dead}/{len(s)} | {'BRITTLE' if br else ''} |")
             lines.append("")
     # -- the founding arms side by side
     for tree in ("dnd", "seven_meals"):

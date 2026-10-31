@@ -38,7 +38,8 @@ class CompetitionMixin:
             w = (np.maximum(Fj, 1e-3) / np.maximum(Fk, 1e-3)[None, :]) ** PM.FIT_Q * s[:, None]
         else:
             w = np.repeat(s[:, None], len(idx), axis=1)
-        return np.clip(w, 1.0 / PM.FIT_CLIP, PM.FIT_CLIP)
+        w = np.clip(w, 1.0 / PM.FIT_CLIP, PM.FIT_CLIP)
+        return w
 
     def _load(self, k, K, J, a, t, idx, c, W=None):
         """The competition line k (habitat K) feels on the cells idx from its rivals J (coefficients a, t: the pair's own, or as
@@ -70,6 +71,11 @@ class CompetitionMixin:
             # elsewhere is never used, so this is exact and ~5x cheaper than over every cell and line)
             idx = np.flatnonzero(K >= EST)
             J = np.array([j for j in self._rivals[k] if self.active[L[j].id]], np.int64)
+            # (its own people's other ways of life take their share of its one capacity in full, before any edge or discount below:
+            # PW-1205 A; the rest of this is the contest with other peoples)
+            kin = self._kin[k, J] if len(J) else np.zeros(0, bool)
+            qk = self.p[np.ix_(J[kin], idx)].sum(0) if kin.any() else 0.0
+            J = J[~kin]
             c = corr[idx]
             ak, tk = self.alpha[k], self.terr[k]
             if INTEGRATE > 0 and not deep and not l.marine and len(J):
@@ -99,7 +105,7 @@ class CompetitionMixin:
                 q = q * (1.0 - surge_q(self.tree.surge_early, self.tree.surge_late, step.ago) * mo)
             f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * c, 0.05, 1)
             room = np.zeros(g.n)
-            room[idx] = np.clip(K[idx] - f * q, 0, None)
+            room[idx] = np.clip(K[idx] - f * q - qk, 0, None)
             over = self.p[k] > room  # displacement: held above its room, a people dwindles there
             if over.any():
                 held = (self.p[k] >= EST).sum() * self.cell_mkm2

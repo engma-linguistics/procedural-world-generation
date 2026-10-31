@@ -30,7 +30,7 @@ from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
 from . import params as PM
-from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
+from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
                      MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
 from .portals import PortalsMixin
@@ -87,14 +87,18 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             across = mar[:, None] != mar[None, :]
             self.alpha[across] = 0.0
             self.terr[across] = 0.0
-        # a group and its people (and its sister groups) are one people: they mix freely (GROUP_KIN, no exclusion)
+        # a group and its people (and its sister groups) are one people with one capacity (lane 83, PW-1205 A): per cell its lines
+        # together hold at most the habitat of the way of life the land suits best (each line feels its kin in full, alpha 1, no
+        # closed-country term, no fit weight), so a people's ways of life split its land and its people instead of stacking on them
+        self._kin = np.zeros((len(self.lines), len(self.lines)), bool)
         for a in self.lines:
             for b in self.lines:
                 if a.id != b.id and not a.overlay and not b.overlay and (a.group_of or b.group_of) \
                         and tree.people_of(a.id) == tree.people_of(b.id):
                     i, j = self.idx[a.id], self.idx[b.id]
-                    self.alpha[i, j] *= GROUP_KIN
+                    self.alpha[i, j] = 1.0
                     self.terr[i, j] = 0.0
+                    self._kin[i, j] = True
         self._groups = {l.id: [self.idx[x] for x in tree.groups_of(l.id)] for l in self.lines}
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
@@ -111,6 +115,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
         F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None),
                                getattr(ps, "npp", None))
+        self._dens0 = self.dens.copy()  # (the tree's numbers: a farming people's at its own way of life; history.growth's era sets dens)
+        self._Fprod = F if (F is not None and PEOPLE_PROD) else None
         if F is not None and PEOPLE_PROD:
             self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
         mega = np.array([l.megafauna for l in self.lines])
@@ -140,6 +146,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                             self.terr[x, y] *= f
                             if w.want == "among":
                                 self._among[x, y] = True
+        self.alpha[self._kin] = 1.0  # (one capacity among kin, whatever the nomads' overlap or a wish: PW-1205)
+        self.terr[self._kin] = 0.0
         self._chains = needs_chains(tree)
         self._aT, self._tT = np.ascontiguousarray(self.alpha.T), np.ascontiguousarray(self.terr.T)  # (how each rival feels line k: column k)
         self._Kmat = np.zeros((len(self.lines), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)

@@ -103,8 +103,8 @@ JUMP_HEMMED = 0.05  # 'no room next door': under this share of the cells next to
 EXPLORE_MARGIN = (0.25, 0.5)  # into marginal land (K < 0.3) the spread keeps a + (1 - a) K / 0.3, a = [0] + [1] x explore
 MVP_TAU_KYR = 2.0  # a separate patch of a people with fewer than meta.viable_pop people fades with this e-folding time
 MVP_EVERY_KYR = 1.0  # (looked at about this often; a people's largest patch is never faded: its refuges hold)
-GROUP_KIN = 0.5  # a group, its people and its sister groups compete at this share of their niche overlap, with no
-# closed-country exclusion (terr 0): one people, mixing freely where their ways of life overlap (PW-665)
+# (a group, its people and its sister groups share one capacity: alpha 1 among them, no closed-country term, lane 83, PW-1205 A;
+# PW-665's GROUP_KIN 0.5 let them stack to ~1.35 K a cell)
 GROUP_MARGIN = 0.15  # a group appears where its own habitat beats its people's by this share (its niche exists there)
 COMPOSITION_TWO_PCT = 10  # a cell holds 2+ peoples when its second people has at least this share (percent)
 PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c",

@@ -669,13 +669,14 @@ def test_groups_within_a_people(faketz):
     h = H.History(t, ps, 1)
     i, j, e = h.idx["warm_orc"], h.idx["orc"], h.idx["elf"]
     assert h.terr[i, j] == 0 and h.terr[j, i] == 0 and h.terr[j, e] > 0
-    assert h.alpha[i, j] < H.niche_overlap(g, t.lines["orc"], t)  # (kin: GROUP_KIN of the overlap)
+    assert h.alpha[i, j] == 1.0 and h.alpha[j, i] == 1.0  # (kin: one capacity, PW-1205)
     h, res, pres = H.simulate(t, ps, tries=1)
     assert "orc" not in h.ended and "warm_orc" in h.origins
     assert h.origins["warm_orc"]["why"].startswith("where its way of life")
     P = res["present"]
     po, pg = P[h.idx["orc"]] >= H.EST, P[h.idx["warm_orc"]] >= H.EST
     assert po.any() and pg.any()
+    assert (P[h.idx["orc"]] + P[h.idx["warm_orc"]] <= 1.0 + 1e-9).all()  # (one people, one capacity: its ways of life never stack, PW-1205)
     temp = ps.fields(0.0, variability=False)["temperature"]
     assert temp[pg].mean() > temp[po].mean() + 3  # (each holds the land its way of life suits)
     w = pres["peoples"]["orc"]
@@ -2987,6 +2988,29 @@ def test_a_denning_people_holds_mostly_broken_country(faketz):
     ok = Kp > 0
     assert (ok & ~broken).any()
     assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
+
+
+def test_a_farming_people_lives_at_forager_density_until_it_farms(faketz):
+    """Lane 83 (PW-1203 A): a farming people's density follows its era: a forager's (at most 0.35 /km2, Binford) before it has crops, a
+    gardener's (at most 5) with a crop and no plough, its own number as farmers; foragers keep theirs; no crops modelled: no change."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "farmer", "origin": "root", "at": "30 kyr", "way": "farmer", "density": 10, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunter", "origin": "root", "at": "30 kyr", "way": "forager", "density": 0.3, "temp_c": [-20, 40], "rain_mm": [1, 9000]}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    f, u = h.idx["farmer"], h.idx["hunter"]
+    h.crops = None
+    h._growth_setup()
+    assert h.dens[f] == 10 and h.dens[u] == pytest.approx(0.3)  # (no crops in the history: the tree's numbers)
+    h.crops = object()
+    h._growth_setup()
+    assert h.dens[f] == pytest.approx(0.35) and h.dens[u] == pytest.approx(0.3)
+    h._era[f] = "horticulturalist"
+    h._set_era_density(f)
+    assert h.dens[f] == pytest.approx(5.0)
+    h._era[f] = "agrarian"
+    h._set_era_density(f)
+    assert h.dens[f] == 10
 
 
 def test_a_split_founds_by_its_parent_s_last_land(faketz):
