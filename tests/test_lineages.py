@@ -3275,3 +3275,45 @@ def test_a_cull_sawtooth_averages_the_same_for_any_growth_rate():
         t = np.linspace(0, tau * np.log(D / A), 20001)
         assert np.mean(D * np.exp(-t / tau)) == pytest.approx((D - A) / np.log(D / A), rel=1e-3)
     assert (D - A) / np.log(D / A) == pytest.approx(0.28, abs=0.005)
+
+
+def test_old_enemies_hunt_each_other_on_their_border_as_story_only(faketz, monkeypatch):
+    """Lane 97 (D26 B): a pair the tree names as enemies ('apart') logs 'hunt' events at cells where their lands meet; a pair
+    without that wish never does, and the hunts change nobody's numbers. (The apart wish itself keeps the two apart on the coarse
+    test grid, so the lands are set by hand.)"""
+    import types
+    from planet.lineages.gridops import nbr_reduce
+    from planet.lineages.history import params as HP
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "c", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}],
+           "wish": [{"a": "a", "b": "b", "want": "apart"}]}
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(raw), ps, 1)
+    g = h.grid
+    land = np.flatnonzero(ps.fields(0.0, variability=False)["land"])
+    h.p = np.zeros((3, g.n))
+    h.p[h.idx["a"]][land[:150]] = 0.8
+    h.p[h.idx["b"]][land[150:300]] = 0.8
+    h.p[h.idx["c"]][land[300:450]] = 0.8
+    h.active = {"a": True, "b": True, "c": True}
+    h._pm = h.p >= H.EST
+    A, B = h._pm[h.idx["a"]], h._pm[h.idx["b"]]
+    border = (A & nbr_reduce(g, np.logical_or, B[g.nbr_idx])) | (B & nbr_reduce(g, np.logical_or, A[g.nbr_idx]))
+    assert border.any()
+    P0 = h.p.copy()
+    monkeypatch.setattr(HP, "HUNT_PER_KYR", 50.0)  # (a hunt every step)
+    for i in range(20):
+        h._hunts(types.SimpleNamespace(epoch="recent", ago=2.0 - 0.1 * i, dt=0.1))
+    hunts = [e for e in h.events if e["kind"] == "hunt"]
+    assert len(hunts) == 20 and {e["line"] for e in hunts} <= {"a", "b"}
+    at = {(round(float(g.lat[c]), 2), round(float(g.lon[c]), 2)) for c in np.flatnonzero(border)}
+    assert all((e["lat"], e["lon"]) in at for e in hunts)  # (on the border between the enemies)
+    assert not any("c" in e["text"].split() for e in hunts)  # (c, with no enmity, is never in one)
+    assert np.array_equal(h.p, P0)  # (story only: nobody's numbers change)
+    h.events = []
+    h._hunts(types.SimpleNamespace(epoch="deep", ago=30.0, dt=0.1))
+    monkeypatch.setattr(HP, "HUNT_PER_KYR", 0.0)
+    h._hunts(types.SimpleNamespace(epoch="recent", ago=0.1, dt=0.1))
+    assert not h.events  # (none in the deep epoch, none with the rate at 0)

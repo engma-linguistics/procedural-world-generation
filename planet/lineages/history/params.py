@@ -212,3 +212,6 @@ STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify 
 H_WAY = {"forager": 0.0007, "fisher_forager": 0.0007, "sea_nomad": 0.0007, "horticulturalist": 0.005, "agro_pastoral": 0.005,
          "pastoral_nomad": 0.008, "transhumant": 0.008, "farmer": 0.0012}
 H_ERA = {"forager": 0.0007, "horticulturalist": 0.005, "agrarian": 0.0012}
+# Enemies hunting each other on their borders (lane 97, owner D26 B: history.hunts). Story on the map, not a brake: a pair the tree
+# names as enemies ('apart' wish of weight w) with a shared border logs a 'hunt' event with chance HUNT_PER_KYR x w a kyr (judgement)
+HUNT_PER_KYR = 0.5

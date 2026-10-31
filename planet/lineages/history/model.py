@@ -28,6 +28,7 @@ from .frame import FrameMixin
 from .groups import GroupsMixin
 from .growth import GrowthMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
+from .hunts import HuntsMixin
 from .origins import OriginsMixin
 from . import megafauna as MG
 from . import params as PM
@@ -39,7 +40,7 @@ from .steps import StepsMixin
 from .tags import _tags, needs_chains
 
 
-class History(EventsMixin, CounterMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
+class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
               ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
                  goods: dict | None = None, knobs: dict | None = None):
@@ -254,6 +255,7 @@ class History(EventsMixin, CounterMixin, StepsMixin, HabitatMixin, OriginsMixin,
             order.sort(key=lambda l: (l.marine, keys[l.id]))
             for l in order:
                 self._advance(l, step, env, tags, corr, mix, Ks)
+            self._hunts(step)  # (the old enmities hunt each other where their lands meet: events only, history.hunts)
             if step.store or si == nsteps - 1:
                 frames.append(self._frame(step, env))
             if si % 25 == 0:
