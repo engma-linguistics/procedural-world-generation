@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 from numba import njit
 
-from .geo import R_KM, ramp, world_land
+from .geo import R_KM, is_land, ramp, world_land
 
 # ---------------------------------------------------------------------------
 # The resources: (key, name, group, colour, model). Groups: metal, gem,
@@ -374,7 +374,7 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
             near_pl = (p @ hv.T).max(1) >= np.cos(PLUME_KM / R_KM)
         else:
             near_pl = np.zeros(n, bool)
-        land = elev > 0
+        land = is_land(elev)
         tmp = dec("temperature", k)[idx] if "temperature" in arr else np.zeros(n)
         pr = dec("precipitation", k)[idx] if "precipitation" in arr else np.zeros(n)
         sets = {"arc": (lf == 11) | (cr & near_conv & ~land & (lf != 3)),

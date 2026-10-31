@@ -19,18 +19,87 @@ def xyz(lat_rad, lon_rad) -> np.ndarray:
     return np.stack([np.cos(lat_rad) * np.cos(lon_rad), np.cos(lat_rad) * np.sin(lon_rad), np.sin(lat_rad)], -1)
 
 
-def is_land(elev, ice=None) -> np.ndarray:
-    """Land: ground above sea level, or under grounded ice, whose bed may lie
-    below the sea (pressed down by the ice's load, or a marine ice sheet), as
-    a run's Simulation.land(). Worlds store the true bed (PW-307), so every
-    world consumer tells land from sea with this, never with elevation > 0."""
-    land = np.asarray(elev) > 0
-    return land if ice is None else land | (np.asarray(ice) > 0)
+# The sea is the water that reaches the world ocean (PW-1229). Ground below sea level that is cut off from it is
+# land: a closed hollow the rivers and lakes fill to a lake (the Dead Sea) or leave a dry depression
+# (Qattara, Death Valley, Lake Eyre's basin). Two rules stand in for the straits a grid of 30-110 km cells can't
+# resolve:
+# - SEA_MIN_KM2: a body this large is sea even with no link the grid sees. On Earth's L6 and L7 grids the
+#   Baltic (0.39 Mkm2 there), the Black Sea (0.40-0.42) and the Red Sea (0.47-0.49) are such bodies, joined to the
+#   ocean by straits of 1-30 km; the Caspian (0.62-0.66 with its shores) is the one lake that big, and it was a
+#   sea (Paratethys) until a few Myr ago: at this size a cut-off body is a remnant sea or an enclosed ocean (some
+#   worlds wall off ocean basins of 10-80 Mkm2), which the climate's ocean, not a lake, should carry. The pockets
+#   PW-1229 is about are far smaller: 1-7 cells of a lowland at sea level, or the PW-171 pits (L7: up to ~0.1 Mkm2).
+# - SILL_M: a body joins the sea it is one land cell away from when that cell's bed is no higher than this: a
+#   lowland cell between two waters whose mean is within a few metres of the sea is mostly shore and shallows,
+#   and a strait narrower than the cell (the Danish straits, the Kerch strait) can cross it. A higher cell is a
+#   real divide at the grid's scale (Qattara's 200 m plateau to the Mediterranean, the Dead Sea's hills).
+SEA_MIN_KM2 = 0.3e6
+SILL_M = 10.0
 
 
-def world_land(L: dict) -> np.ndarray:
+def _grid_of(n: int, grid=None):
+    """The (unwalled) sphere grid of n cells: grid's own base if given, else the shared grid of that size."""
+    if grid is not None:
+        return getattr(grid, "base", grid)
+    from .grid import shared_grid
+    level = int(round(np.log((n - 2) / 10) / np.log(4))) if n > 12 else 0
+    if 10 * 4 ** level + 2 != n:
+        raise ValueError(f"is_land: {n} cells is no sphere grid; pass grid=")
+    return shared_grid(level)
+
+
+def is_land(elev, ice=None, grid=None) -> np.ndarray:
+    """Land: everything but the sea. The sea is ground at or below sea level,
+    not under grounded ice, that reaches the world ocean (its largest body
+    of water, along the grid's links), with the rules above for straits the
+    grid can't resolve (SEA_MIN_KM2, SILL_M). So land is ground above sea
+    level, ground under grounded ice, whose bed may lie below the sea
+    (pressed down by the ice's load, or a marine ice sheet; PW-307), and
+    ground below sea level cut off from the ocean (PW-1229). Worlds and runs
+    store the true bed, so every consumer tells land from sea with this,
+    never with elevation > 0. grid: the cells' grid (default: the shared
+    sphere grid with as many cells; a walled grid's base is used)."""
+    elev = np.asarray(elev)
+    wet = elev <= 0
+    if ice is not None:
+        wet &= ~(np.asarray(ice) > 0)
+    if not wet.any():
+        return ~wet
+    g = _grid_of(elev.shape[0], grid)
+    from . import kernels
+    lab, k = kernels.components(wet, g.nbr_off, g.nbr_idx)
+    size = np.bincount(lab[wet], minlength=k)
+    sea = size * cell_area_km2(g.n) >= SEA_MIN_KM2
+    sea[np.argmax(size)] = True
+    if not sea.all():
+        # bodies one low cell apart join (union-find over the bodies), and any group with a sea in it is sea
+        src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
+        dst = g.nbr_idx
+        sill = ~wet & (elev <= SILL_M)
+        e = sill[src] & wet[dst]
+        s, b = src[e], lab[dst[e]]  # (sill cell, a body beside it)
+        low = np.full(g.n, k)
+        np.minimum.at(low, s, b)
+        pair = b != low[s]  # (each other body beside a sill joins its lowest-numbered one)
+        parent = np.arange(k)
+
+        def root(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        for x, y in set(zip(low[s][pair].tolist(), b[pair].tolist())):
+            rx, ry = root(x), root(y)
+            if rx != ry:
+                parent[rx] = ry
+        roots = np.array([root(x) for x in range(k)])
+        sea = np.bincount(roots, weights=sea, minlength=k)[roots] > 0
+    return ~(wet & sea[np.maximum(lab, 0)])
+
+
+def world_land(L: dict, grid=None) -> np.ndarray:
     """is_land of a world's layers (elevation, and ice where it has any)."""
-    return is_land(L["elevation"], L.get("ice"))
+    return is_land(L["elevation"], L.get("ice"), grid)
 
 
 def arc(dots) -> np.ndarray:

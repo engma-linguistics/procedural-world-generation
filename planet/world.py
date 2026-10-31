@@ -96,8 +96,9 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
     (its mangrove forest and salt marsh from coastal life; biomes from it). dT: global temperature offset from
     today's Earth; elev: the true bed, m above sea level; ice: m of
-    grounded land ice (isostasy.grounded): land is elevation > 0 or ice > 0
-    (geo.is_land: a bed below sea level under the ice is land, PW-307); veg: the vegetation's history and
+    grounded land ice (isostasy.grounded): land is geo.is_land's (a bed below
+    sea level under the ice is land, PW-307; so is ground below it cut off from
+    the ocean, a lake's or a dry depression's, PW-1229); veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), pco2 (the run's CO2, ppm: climate.pco2), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
@@ -125,7 +126,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed, valley=valley)
-    land = is_land(elev, ice)
+    land = is_land(elev, ice, grid)
     sea = ~land
     flood = _flood(grid, down, lk, c, sea)
     # whole metres, but land stays land: a cell at +0.4 m would round to 0, which readers take for sea (elevation
@@ -212,7 +213,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
     layers.update(soils.world_layers(sm, soils.organic(sm, vg)))
     # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
-    layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"], ice))
+    layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"], ice, land))
     # the satellite view (satellite.py, PW-083): true colour, 0xRRGGBB, each hemisphere's summer / July / January
     layers.update(satellite.world_layers(grid, layers, tilt))
     # human-use layers (humanuse.py, PW-099): navigable rivers, harbours, passes, farmland, fresh water

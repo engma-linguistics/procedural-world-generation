@@ -51,7 +51,7 @@ import numpy as np
 from numba import njit
 
 from . import hydrology, kernels
-from .geo import R_KM
+from .geo import R_KM, is_land
 
 # id, key, name, erodibility (relative), colour
 ROCKS = [
@@ -314,8 +314,8 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
     lakes): lakes is hydrology.lakes' dict (on the terrain before this
     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
-    land = elev > 0
-    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley)
+    land = is_land(elev, grid=grid)  # (ground below the sea cut off from it is land: a hollow to fill, PW-1229)
+    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land)
     flow, down, order, filled = hydrology.route(grid, elev, lk)
 
     c = np.maximum(cover, 1e-9)
@@ -366,7 +366,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     pool_left = pool_room.copy()
     # a hollow's room below its spill point (as _closed_basins fills it):
     # what a floodplain inside it may keep (PW-299)
-    spill, pf_down, _ = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
+    spill, pf_down, _ = kernels.priority_flood(elev.astype(float), ~land, grid.nbr_off, grid.nbr_idx, 0.01)
     fp_room = np.where(land & (spill > elev), np.maximum(spill - 5.0 - elev, 0) / iso_dep, np.inf)
     dep = _route(down, order, removed, pit_room, pool, pool_left, ~land, h, d_km, alluvial, fp_room)
     lake_room = np.where(lk["wet"] & lk["sink"], np.maximum(lk["level"] - elev, 0) / iso_dep, 0.0)
