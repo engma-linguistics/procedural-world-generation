@@ -2821,11 +2821,15 @@ def test_life_history_band_and_arrival_fields_parse_inherit_and_round_trip():
     assert (b.lines["elf"].founders, b.lines["elf"].plane, b.lines["stem"].band_pct, b.growth_rates) == (1e6, "feywild", (5.0, 60.0), True)
     from planet.lineages import life_history as LH
     assert abs(LH.generation_yr(e) - LH.table(100, 750, "slow", (100, 200))["by_era"]["forager"]["T"]) < 1e-9
-    for bad in ({"founders": 10}, {"adult_yr": 10}, {"band_pct": [50, 10]}):
+    for who, bad in (("elf", {"founders": 0}), ("ork", {"adult_yr": 10}), ("ork", {"band_pct": [50, 10]})):
         r2 = _mode_raw()
-        {x["id"]: x for x in r2["lineage"]}["ork"].update(bad)
+        {x["id"]: x for x in r2["lineage"]}[who].update(bad)
         with pytest.raises(ValueError):
             SP.parse(r2)
+    r2 = _mode_raw()  # (an arrival's fields left on a row whose origin changed, as the workbench leaves them: ignored, not refused)
+    {x["id"]: x for x in r2["lineage"]}["ork"].update(founders=10, waves=2, portals=2, plane="feywild")
+    o = SP.parse(r2).lines["ork"]
+    assert (o.founders, o.waves, o.portal_n, o.plane) == (None, 1, None, "beyond")
     r3 = _mode_raw()
     for x in r3["lineage"]:
         if x["id"] in ("stem", "elf"):

@@ -622,7 +622,7 @@ The deep folk stay authored: see the drafts for the viewer and habitat limits.
   - the far jumps (JUMP_RATE x x).
   - SURGE_KYR stays in years. A line without ages has x = 1.
 - **Share bands** (`band_pct = [min, max]` per people; `history/bands.py`). These are soft targets, never a clamp.
-  - When the best try lands a people outside its band, the run nudges that people's own density (or an arrival's founders). The nudge is x target/share, then a secant step, held within x1/4..x4.
+  - When the best try lands a people outside its band, the run nudges that people's own density (an arrival's too: lane 78b found founders barely move a share). The nudge is x target/share, then a secant step over a real move of its own knob, held within x1/4..x4.
   - It re-runs the best seed up to `meta.band_rounds` times and keeps the round with the least miss.
   - `present.bands` reports the share, met or not, why, and the nudge.
   - The spec and the workbench warn when the minimums add up past 100% or the maximums fall under it.
@@ -640,4 +640,4 @@ The deep folk stay authored: see the drafts for the viewer and habitat limits.
   - Canon ages for 23 peoples; kobolds and goblins are brood breeders with harsh survival.
   - `growth_rates = true`.
   - Portals at 8 sites; elves 1e6 founders in 2 waves, gnomes 4e6.
-  - Measured on 4360a3 at L6 (lane 78 report). Still to be judged on the stress suite (inbox draft).
+  - Measured on 4360a3 at L6 (lane 78 report), then on lane 77's stress suite after niche learning (lane 78b report).

@@ -43,7 +43,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
                  goods: dict | None = None, knobs: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
-        self.knobs = knobs or {}  # lane 78: {people id: {"density": x, "founders": x}}, the share bands' nudges (history.bands)
+        self.knobs = knobs or {}  # lane 78: {people id: {"density": x}}, the share bands' nudges (history.bands)
         self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
         self._land_m: dict[str, tuple] = {}
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)

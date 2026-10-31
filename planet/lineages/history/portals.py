@@ -168,7 +168,7 @@ class PortalsMixin:
     def _wave_share(self, line) -> float | None:
         if line.founders is None:
             return None
-        return line.founders * self.knobs.get(line.id, {}).get("founders", 1.0) / max(1, line.waves)  # (x a share band's nudge)
+        return line.founders / max(1, line.waves)
 
     def _land_wave(self, line, k, K, noise, step, pull=None, first=True):
         """One wave of an arrival through the portals it can live near (PW-697, PW-1150): at each within PORTAL_KM of country it can

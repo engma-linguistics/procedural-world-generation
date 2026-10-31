@@ -1,10 +1,11 @@
 """Share bands as soft targets (lane 78, owner 10-30): each people's share of the world's people kept within [min, max] %.
 
 Never a clamp on the outcome (the owner called hard caps a kludge). When the best try lands a people outside its band, the run
-nudges that people's own ecological knob and runs the best try's seed again, up to meta.band_rounds times:
-- an arrival with `founders` (and portals on): how many come through (x the knob);
-- any other people: its density (people per km² at full habitat, x the knob; its groups' with it), the lever demography says sets
-  numbers (docs/review/peoples-demography/report.md section 4).
+nudges that people's own ecological knob and runs the best try's seed again, up to meta.band_rounds times: its density (people
+per km² at full habitat, x the knob; its groups' with it), the lever demography says sets numbers
+(docs/review/peoples-demography/report.md section 4). An arrival's `founders` are not a knob: lane 78b measured them on the even_six
+tree, and x4 founders moved the elves from 0.7% to 1.0% while x0.25 left the gnomes at 32%; the landing sets where a people starts,
+its density sets how many it ends.
 The knob moves by target / share (a secant in log space after the first round), the target BAND_INSIDE of the band's width inside
 its edge, and stays within BAND_KNOB: a bound on the lever, not on the share. The round with the least total miss is kept (ties:
 the wish score). A band that is not met is reported with why.
@@ -19,6 +20,7 @@ from ..spread import EST
 BAND_KNOB = (0.25, 4.0)  # a design judgement: a nudge of at most x4 either way on a people's own number; past it the band is reported unmet
 BAND_INSIDE = 0.1  # ...aimed this share of the band's width inside the edge it missed, so the next round lands inside rather than on it
 SLOPE_CLIP = (0.2, 5.0)  # the secant's d ln(share) / d ln(knob), kept sane (a share that hardly moves, or leaps)
+SECANT_MIN = 0.05  # ...measured only over a move of the knob of at least this in log (5%); below it the step assumes share ~ knob
 
 
 def peoples(tree) -> list:
@@ -49,7 +51,7 @@ def miss(tree, sh: dict) -> float:
 
 
 def knob_of(h, l) -> str:
-    return "founders" if l.origin == "arrival" and l.founders is not None and h.tree.portal_mode != "off" else "density"
+    return "density"
 
 
 def why_unmet(h, l, share: float, knob: float, warnings: list[str]) -> str:
@@ -81,7 +83,8 @@ def calibrate(make, run_one, tree, best, best_pres, best_score) -> tuple:
     if not want:
         return h0, res0, best_pres
     sh = shares(h0, best_pres)
-    rounds = [{"round": 0, "miss": round(miss(tree, sh), 3), "wish_score": best_score, "knobs": {}}]
+    rounds = [{"round": 0, "miss": round(miss(tree, sh), 3), "wish_score": best_score, "knobs": {},
+               "shares": {l.id: round(sh.get(l.id, 0.0), 2) for l in want}}]
     keep = (miss(tree, sh), -best_score, h0, res0, best_pres, sh, {})
     knobs: dict = {}
     hist: dict = {l.id: [(0.0, np.log(max(sh.get(l.id, 0.0), 1e-4)))] for l in want}
@@ -97,9 +100,13 @@ def calibrate(make, run_one, tree, best, best_pres, best_score) -> tuple:
             target = lo + BAND_INSIDE * (hi - lo) if s < lo else hi - BAND_INSIDE * (hi - lo)
             target = max(target, 1e-3)
             pts = hist[l.id]
-            slope = 1.0
-            if len(pts) >= 2 and abs(pts[-1][0] - pts[-2][0]) > 1e-6:
-                slope = float(np.clip((pts[-1][1] - pts[-2][1]) / (pts[-1][0] - pts[-2][0]), *SLOPE_CLIP))
+            slope = 1.0  # (the secant only over a real move of the people's own knob, and only when the share went its way: the other
+            # peoples' knobs move in the same round, so a small own move or a share moving against it is their doing, not this lever's;
+            # lane 78b saw a clipped 0.2 slope there throw a x0.4 step and the round's miss double)
+            if len(pts) >= 2 and abs(pts[-1][0] - pts[-2][0]) > SECANT_MIN:
+                sl = (pts[-1][1] - pts[-2][1]) / (pts[-1][0] - pts[-2][0])
+                if sl > 0:
+                    slope = float(np.clip(sl, *SLOPE_CLIP))
             lk = pts[-1][0] + (np.log(target) - np.log(max(s, 1e-4))) / slope
             lk = float(np.clip(lk, np.log(BAND_KNOB[0]), np.log(BAND_KNOB[1])))
             if abs(lk - pts[-1][0]) < 1e-6:
@@ -116,7 +123,8 @@ def calibrate(make, run_one, tree, best, best_pres, best_score) -> tuple:
             if hist[l.id][-1][1] is None:
                 hist[l.id][-1] = (hist[l.id][-1][0], np.log(max(sh.get(l.id, 0.0), 1e-4)))
         m = miss(tree, sh)
-        rounds.append({"round": rd, "miss": round(m, 3), "wish_score": score, "knobs": {k: dict(v) for k, v in knobs.items()}})
+        rounds.append({"round": rd, "miss": round(m, 3), "wish_score": score, "knobs": {k: dict(v) for k, v in knobs.items()},
+                       "shares": {l.id: round(sh.get(l.id, 0.0), 2) for l in want}})
         if (m, -score) < keep[:2]:
             keep = (m, -score, h, res, pres, sh, {k: dict(v) for k, v in knobs.items()})
     _, _, h, res, pres, sh, kn = keep

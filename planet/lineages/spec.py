@@ -779,8 +779,9 @@ def _life(r: dict, base, origin: str, lid: str) -> dict:
     pn = r.get("portals")
     out["portal_n"] = int(pn) if pn not in (None, "") else None
     out["plane"] = str(r.get("plane") or "beyond")
-    if origin != "arrival" and (out["founders"] is not None or out["waves"] != 1 or out["portal_n"] is not None or r.get("plane")):
-        raise ValueError(f"{lid}: founders, waves, portals and plane are for an arrival")
+    if origin != "arrival":  # (an arrival's own fields mean nothing on a root or split: left in a row whose origin was changed, as
+        # the workbench and the peoples suite's edits do, they are ignored rather than refused; lane 78b)
+        out.update(founders=None, waves=1, portal_n=None, plane="beyond")
     if out["founders"] is not None and not out["founders"] > 0:
         raise ValueError(f"{lid}: founders must be > 0")
     if not 1 <= out["waves"] <= 20:

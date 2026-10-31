@@ -30,4 +30,10 @@ They do hold about as much land, or more. Elves, by contrast, gain a lot from ar
   - (a) the gnomes get `portals = 2` or `3`, a few strong landings;
   - (b) one wave per portal, staggered;
   - (c) leave it, since canon has gnomes few and scattered.
-- [ ] pick an option; screen gnomes' share on lane 77's suite
+- 2026-10-30 (lane 78b, after merging niche learning; lane 77's suite, 4360a3, one try; main -> lane 78):
+  - dnd seeds 7/10/13: 4.3 -> 3.7, 0.9 -> 5.0, 5.7 -> 5.5% (spread x6.7 -> x1.5); land 5-10 -> 11-13 Mkm²;
+  - even_six 4.8 -> 14.7 and 3.2 -> 11.1; five_peoples 9.3 -> 15.7; goblin_world and mountain_stem level;
+  - menagerie 5.0 -> 2.2 (one seed);
+  - late_humans 8.1 -> 0.2: the humans land at 7 portals there (draft-arrivals-without-founders-land-at-every-portal).
+  - So the regression lane 78 saw is gone on dnd once learning is in. Only the menagerie, at one seed, still shows it.
+- [ ] pick an option (lean now: c, leave it); re-check menagerie at a second seed
