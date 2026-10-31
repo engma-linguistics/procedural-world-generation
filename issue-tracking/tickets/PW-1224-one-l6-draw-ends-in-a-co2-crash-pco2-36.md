@@ -35,4 +35,5 @@ the source's dip and the PW-1158 / PW-1163 pair.
 - [ ] a ruling on whether it blocks the tag
 
 ## Updates
+- 2026-10-31: lane 92: confirmed hard failure (CO2 crash) in the pooled 36-draw L6 tally; see docs/review/v1-cut/checks.md. Bar not loosened.
 - 2026-10-31: Created from inbox draft draft-l6-co2-crash-639472-roll001.md (found by lane92).
