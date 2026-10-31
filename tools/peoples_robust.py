@@ -352,11 +352,7 @@ def measure(h, res, pres) -> dict:
 
 
 def run_one(spec: dict) -> dict:
-    from planet.lineages import land as LD
-    from planet.lineages import recent as R
-    from planet.lineages import spec as SP
     from planet.lineages.history import model as M
-    from planet.lineages.history.summary import present_summary
 
     class Probe(M.History):  # (records each line's founding range and what it inherits from a stem's end; no change to the model)
         def _record_origin(self, line, step, cell, why):
@@ -373,6 +369,7 @@ def run_one(spec: dict) -> dict:
     from planet.lineages.history import params as PM
     PM.SPLIT_FOUNDING = "range"
     spec = {**spec, "params": {**ARMS.get(spec.get("arm", "range"), {}), **(spec.get("params") or {})}}
+    saved = []
     if spec.get("params"):  # (a diagnostic screen: tuning constants overridden in every module of the history that imported them)
         import importlib, pkgutil
         from planet.lineages import history as HP, spread as SPR
@@ -380,7 +377,21 @@ def run_one(spec: dict) -> dict:
         for k, v in spec["params"].items():
             for mod in mods:
                 if hasattr(mod, k):
+                    saved.append((mod, k, getattr(mod, k)))
                     setattr(mod, k, type(getattr(mod, k))(v) if not isinstance(getattr(mod, k), tuple) else tuple(v))
+    try:
+        return _run_spec(spec, Probe)
+    finally:  # (put the constants back, so runs in one process don't leak overrides into each other)
+        for mod, k, v in reversed(saved):
+            setattr(mod, k, v)
+        PM.SPLIT_FOUNDING = "range"
+
+
+def _run_spec(spec: dict, Probe) -> dict:
+    from planet.lineages import land as LD
+    from planet.lineages import recent as R
+    from planet.lineages import spec as SP
+    from planet.lineages.history.summary import present_summary
     t0 = time.time()
     tree = SP.parse(spec["raw"])
     tz, now0, world = R.resolve(spec["world"])
@@ -393,6 +404,8 @@ def run_one(spec: dict) -> dict:
     pres = present_summary(h, res["present"])
     m = measure(h, res, pres)
     m["wall_s"] = round(time.time() - t0, 1)
+    import resource
+    m["max_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)
     return m
 
 
@@ -446,11 +459,13 @@ def one(spec_path: str, out_path: str):
 # ---------------------------------------------------------------- report
 
 def _fmt(x, pct=True):
-    return "-" if x is None else f"{100 * x:.2g}%" if pct else f"{x:.3g}"
+    return "-" if x is None else (f"{100 * x:.0f}%" if x >= 0.995 else f"{100 * x:.2g}%") if pct else f"{x:.3g}"
 
 
 def report(out: Path) -> str:
     runs = [json.loads(p.read_text()) for p in sorted(out.glob("*.json")) if not p.name.endswith(".spec.json") and p.name != "summary.json"]
+    screens = [r for r in runs if r.get("family") == "screen"]
+    runs = [r for r in runs if r.get("family") != "screen"]
     lines = [f"# Peoples robustness suite: {len(runs)} runs ({out})", ""]
     crashed = [r for r in runs if not r.get("ok")]
     ok = [r for r in runs if r.get("ok")]
@@ -559,6 +574,21 @@ def report(out: Path) -> str:
                 b = [r["peoples"][k]["share"] for r in aao if k in r["peoples"]]
                 lines.append(f"| {k} | {_fmt(float(np.median(a))) if a else '-'} | {_fmt(float(np.median(b))) if b else '-'} |")
             lines.append("")
+    # -- diagnostic screens: the same tree with one competition rule switched off
+    if screens:
+        lines += ["## Diagnostic screens (seed 7): one rule off at a time", "",
+                  "| tree | world | screen | top | top share | top cells led | others' median share | smallest people |", "|---|---|---|---|---|---|---|---|"]
+        for r in sorted(screens, key=lambda r: (r["tree"], r["world"], list(SCREENS).index(r["screen"]) if r["screen"] in SCREENS else 99)):
+            if not r.get("ok"):
+                lines.append(f"| {r['tree']} | {r['world']} | {r['screen']} | CRASH | | | | |")
+                continue
+            P = {k: v for k, v in r["peoples"].items() if not v.get("authored_extinct")}
+            top = max(P, key=lambda k: P[k]["share"])
+            rest = [v["share"] for k, v in P.items() if k != top]
+            lo = min(P, key=lambda k: P[k]["share"])
+            lines.append(f"| {r['tree']} | {r['world']} | {r['screen']} | {top} | {_fmt(P[top]['share'])} | {_fmt(P[top]['led'])} | "
+                         f"{_fmt(float(np.median(rest))) if rest else '-'} | {lo} {_fmt(P[lo]['share'])} |")
+        lines.append("")
     # -- knob response
     kn = [r for r in ok if r["family"] == "knob"]
     if kn:
