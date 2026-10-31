@@ -170,7 +170,7 @@ def test_milestone_filters_counts_and_check(root, capsys):
     out = capsys.readouterr().out
     assert "PW-001" in out and "PW-002" not in out
     run(root, "milestones")
-    rows = {ln.split()[0]: ln.split()[1:4] for ln in capsys.readouterr().out.splitlines()[1:6]}
+    rows = {ln.split()[0]: ln.split()[1:4] for ln in capsys.readouterr().out.splitlines()[1:7]}
     assert rows == {"v1": ["0", "0", "0"], "v2": ["1", "1", "2"], "v3": ["0", "0", "0"], "v4": ["0", "0", "0"], "later": ["0", "0", "0"],
                     "unscheduled": ["1", "0", "1"]}
     run(root, "milestones", "v2")
