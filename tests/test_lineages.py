@@ -2943,3 +2943,67 @@ def test_share_bands_nudge_a_peoples_own_density_and_never_clamp(faketz):
     assert len(pres["band_rounds"]) >= 2
     assert b["met"] or b["why"]
     assert b["share_pct"] == pytest.approx(B.shares(h, pres)["ork"], abs=1e-3)  # (the outcome as run, not set)
+
+
+def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
+    """Lane 83 (owner D20, PW-1180 A): where two peoples suit a cell alike, the narrower (the specialist) presses harder (breadth^-1/2);
+    the one the cell suits better presses harder there; a martial people (spec contest) harder still; all within x FIT_CLIP."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "broad", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "narrow", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "contest": 1.5}]}
+    tree = SP.parse(raw)
+    assert tree.lines["narrow"].demo("contest") == 1.5 and tree.lines["broad"].demo("contest") == 1.0
+    m = SP.parse({"lineage": [{"id": "m", "origin": "root", "at": "1 kyr", "traits": ["martial"]}]})
+    assert m.lines["m"].demo("contest") == 1.5
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "z", "origin": "root", "at": "1 kyr", "contest": 0}]})
+    h = H.History(tree, ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    n = h.grid.n
+    b, s = h.idx["broad"], h.idx["narrow"]
+    Kb, Ks = np.ones(n), np.where(np.arange(n) < n // 4, 1.0, 0.0)
+    h._note_K(b, Kb)
+    h._note_K(s, Ks)
+    idx = np.arange(n // 4)
+    assert (h._fit_w(s, Ks, np.array([b]), idx) < 1).all() and (h._fit_w(b, Kb, np.array([s]), idx) > 1).all()
+    narrow_on_broad = h._fit_w(b, Kb, np.array([s]), idx)[0, 0]
+    assert narrow_on_broad == pytest.approx(min(H.FIT_CLIP, 1.5 * np.sqrt(n / (n // 4))))
+    h._martial[s] = 1.0
+    assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(np.sqrt(n / (n // 4)))
+    h._note_K(s, 0.5 * Ks)  # (the cells suit it half as well: it presses half as hard there, its breadth halved too)
+    assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
+
+
+def test_a_denning_people_holds_mostly_broken_country(faketz):
+    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(ps.grid, env)
+    plain = SP.Lineage("p", temp_c=(-20, 40), rain_mm=(1, 9000))
+    den = SP.Lineage("d", temp_c=(-20, 40), rain_mm=(1, 9000), traits=["denning"])
+    Kp, Kd = H.capacity(plain, env, tags), H.capacity(den, env, tags)
+    broken = tags["mountain"] | tags["hills"] | tags["breaks"]
+    ok = Kp > 0
+    assert (ok & ~broken).any()
+    assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
+
+
+def test_a_split_founds_by_its_parent_s_last_land(faketz):
+    """PW-1184: a split whose parent holds nothing founds by the parent's last land (exp(-d / FOUNDER_KM)), not at its best
+    habitat anywhere."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    step = h.steps[-1]
+    env = step.get()
+    tags = H._tags(h.grid, env)
+    g = h.grid
+    a = h.tree.lines["a"]
+    K = H.capacity(a, env, tags)
+    last = tags["land"] & (g.lon > 100) & (g.lon < 140) & (np.abs(g.lat) < 20)
+    far = tags["land"] & (np.abs(g.lon) < 50)
+    assert last.any() and K[far].max() >= K[last].max() * 0.9
+    assert h._origin_fallback(a, step, env, tags, K, "parent gone: near its last land", near=last)
+    cell = h.origins["a"]["cell"]
+    assert g.lon[cell] > 85  # (on the east continent, by the last land; the west one is as good but far)
