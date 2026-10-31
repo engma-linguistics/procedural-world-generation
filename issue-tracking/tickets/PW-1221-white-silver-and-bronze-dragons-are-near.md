@@ -43,4 +43,5 @@ Options:
 Lean: B for v1 if the owner wants white dragons to be met in play; else A, with B in v2.
 
 ## Updates
+- 2026-10-31: Daniel 10-31 (D28): B (sea food for cold/coast kinds) for now, maybe A. Not closed: wants dragon numbers before people vs after people, per kind and biome, against real analogues (lions in Africa), before settling the right number.
 - 2026-10-31: Created from inbox draft draft-cold-dragons-thin-after-above-ground-prey.md (found by lane-90).

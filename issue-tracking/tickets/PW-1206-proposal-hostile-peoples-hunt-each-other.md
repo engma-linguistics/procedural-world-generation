@@ -40,4 +40,5 @@ Options:
 Lean: B first (cheap, readable, shows on the map), A with the war ticket.
 
 ## Updates
+- 2026-10-31: Daniel 10-31 (D26): B (enemy pairs, as visible story) first, then A inside the war ticket PW-1172.
 - 2026-10-31: Created from inbox draft draft-peoples-persecute-peoples.md (found by lane84).
