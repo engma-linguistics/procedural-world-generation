@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1068, PW-946, PW-961, PW-977]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/techtree.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -39,4 +39,5 @@ calibration (dense renaissance farmers keep ~10% of their dragons) or re-calibra
 - [ ] the calendar proxy (`tech_level`, `ERA_LEVEL`, `ERA_KYR`) retires
 
 ## Updates
+- 2026-10-31: Lane 90 (partial): means read the history's herds (animals.herding) and riding (stocks with speed > 1, MOUNTED_X 0.5); KILL_Q re-calibrated 0.0028 -> 0.00187 to keep the dense-farmer anchor. Weapons and metal still from the era calendar until PW-946. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-dragon-persecution-means-from-real-techs.md (found by fun-lane-63).

@@ -6,6 +6,10 @@ field metabolic rate x 365 / (836 Mcal per 0.5 t carcass x assimilation)). Each 
 density and the resulting "1 dragon per X km2 at 1 t/km2". A last group changes the prey itself (the above-ground fraction of the NPP fed
 to McNaughton's fit), which scales density through prey, not through the coefficient.
 
+Lane 90 (2026-10-31) revised the model along this table (docs/review/dragon-food-chain/report.md): the base is now the revised chain
+(mesotherm intake, 66% assimilation, 78% of a carcass, one exponent 0.734 with the young dragons in the smaller classes, offtake from
+production), so every factor below is against it; rows whose label says "round 3" give the value the paper's round 3 had.
+
 Sources are the PDFs in docs/references/megafauna/ (page numbers as printed). Imported by dragon_numbers.py; runs standalone too:
     uv run python docs/review/megafauna/dragon-density/sensitivity.py
 """
@@ -37,7 +41,12 @@ def apex_share(b: float) -> float:
     return float(f[top].sum() / f.sum())
 
 
-BASE = {"kcal_day": DS["kcal_day"], "assim": DA.ASSIMILATED, "carcass": 1.0, "share": apex_share(MG.GUILD_KLEIBER), "offtake": MG.OFFTAKE}
+def dragon_share(b: float) -> float:
+    """The dragons' share at exponent b: the apex share over 1 - the young's share of the dragons' food (megafauna.dragon_share)."""
+    return min(1.0, apex_share(b) / (1.0 - MG.young_share()))
+
+
+BASE = {"kcal_day": DS["kcal_day"], "assim": DA.ASSIMILATED, "carcass": DA.CARCASS_USE, "share": dragon_share(MG.GUILD_EXP), "offtake": MG.OFFTAKE}
 
 
 def coef(kcal_day=None, assim=None, carcass=None, share=None, offtake=None) -> float:
@@ -49,7 +58,7 @@ def coef(kcal_day=None, assim=None, carcass=None, share=None, offtake=None) -> f
 
 
 C0 = coef()
-assert abs(C0 - MG.OFFTAKE / (1.0 + MG.guild_ratio()) / (DS["cattle_yr"] * PR.HEAD_T)) < 1e-12  # the model's own number
+assert abs(C0 - MG.OFFTAKE * MG.dragon_share() / (DS["cattle_yr"] * PR.HEAD_T)) < 1e-12  # the model's own number
 
 # Coe, Cumming & Phillipson 1976, Table 1 (pp. 344-345), the 24 wildlife areas: large-herbivore biomass and production, kg/km2 (/yr), live
 # weight. (Transcribed from the PDF; production there comes from assumed size-class P/B ratios of 0.05 / 0.20 / 0.35, p. 343-344.)
@@ -71,7 +80,8 @@ def rows() -> list[dict]:
     # 1. intake: which field metabolic rate law, averaged over the same age schedule (Nagy et al. 1999, Table 2: all reptiles eq. 32,
     # lizards eq. 33, Varanidae eq. 36 on p. 261; mammals and birds on p. 260; McNab 2009: varanids p. 12185, dinosaurs at 31% of mammals p. 12187)
     laws = [
-        ("All reptiles, 0.196 M^0.889 (the model)", "Nagy et al. 1999, Table 2, eq. 32, p. 261", 0.196, 0.889, 1.0),
+        ("Mesotherm, Nagy's mammal line / 2.1 (the model since lane 90)", "Nagy et al. 1999 eq. 1 p. 260; Marshall et al. 2021 p. 284", DA.FMR_A, DA.FMR_B, 1.0 / DA.MESO_X),
+        ("All reptiles, 0.196 M^0.889 (round 3)", "Nagy et al. 1999, Table 2, eq. 32, p. 261", 0.196, 0.889, 1.0),
         ("Varanid lizards, McNab's fit, 1.07 M^0.735", "McNab 2009, p. 12185", 1.07, 0.735, 1.0),
         ("All lizards, 0.190 M^0.916", "Nagy et al. 1999, Table 2, eq. 33, p. 261", 0.190, 0.916, 1.0),
         ("Varanidae, 0.208 M^0.915", "Nagy et al. 1999, Table 2, eq. 36, p. 261", 0.208, 0.915, 1.0),
@@ -88,22 +98,25 @@ def rows() -> list[dict]:
     # 2. the guild's food weighting exponent b
     for b, src in ((0.6, "Carbone et al. 2007, p. 364: intake within large-prey hunters, 0.6 +/- 0.09"),
                    (0.66, "Carbone & Gittleman 2002, p. 2274: fitted, -0.66 (CI -0.48 to -0.85)"),
-                   (0.75, "Kleiber; the model's value"),
+                   (0.734, "Nagy et al. 1999's mammal slope: the model's one exponent since lane 90"),
+                   (0.75, "Kleiber; round 3's value"),
                    (0.79, "Carbone et al. 2007, Table 1: intake across carnivores, 0.79 +/- 0.09"),
                    (0.85, "Carbone & Gittleman 2002, p. 2274: lower confidence limit"),
-                   (0.889, "Nagy et al. 1999, eq. 32: the reptile exponent the dragons' own intake uses")):
-        add("Guild weighting exponent", f"b = {b:g} (apex share {100 * apex_share(b):.1f}%)", src, coef(share=apex_share(b)))
+                   (0.889, "Nagy et al. 1999, eq. 32: round 3's reptile exponent")):
+        add("Guild weighting exponent", f"b = {b:g} (apex share {100 * apex_share(b):.1f}%)", src, coef(share=dragon_share(b)))
     # 3. assimilation
-    add("Assimilation", "85% (the model; unsourced)", "dragon_ages.ASSIMILATED", coef())
+    add("Assimilation", "85% (round 3; unsourced)", "round 3's dragon_ages.ASSIMILATED", coef(assim=0.85))
     add("Assimilation", "Nagy's conversion: 16.8 kJ/g dry matter at 30% dry matter", "Nagy et al. 1999, pp. 263-264",
-        factor=(16.8 * 0.30) / (7.0 * DA.ASSIMILATED), note="5.04 kJ metabolised per g of fresh meat against the model's 5.95")
-    add("Assimilation", "66%", "Carbone et al. 2007, p. 364", coef(assim=0.66))
+        factor=(16.8 * 0.30) / (7.0 * DA.ASSIMILATED), note="5.04 kJ metabolised per g of fresh meat against the model's 4.62")
+    add("Assimilation", "66% (the model since lane 90)", "Carbone et al. 2007, p. 364", coef(assim=0.66))
     # 4. carcass use
+    add("Share of a large carcass eaten", "100% (round 3)", "round 3 counted whole carcasses", coef(carcass=1.0))
     for u in (0.91, 0.78, 0.65):
         add("Share of a large carcass eaten", f"{100 * u:.0f}%", "Carbone et al. 2007, p. 367: 65% to 91% by prey mass", coef(carcass=u))
     # 5. offtake: the share of standing wild biomass the whole guild (peoples included) can take a year
     pb = sorted(COE_PB)
-    for v, lab, src in ((0.05, "5% a year", "illustrative"), (0.10, "10% a year (the model; unsourced)", "megafauna.OFFTAKE"),
+    for v, lab, src in ((0.05, "5% a year", "illustrative"), (0.10, "10% a year (round 3; unsourced)", "round 3's megafauna.OFFTAKE"),
+                        (MG.OFFTAKE, f"{100 * MG.OFFTAKE:.1f}% (the model since lane 90: 0.45 of the production at 500 kg)", "Farlow 1993 pp. 172, 176"),
                         (0.136, "13.6%: Farlow's turnover at 1,000 kg", "Farlow 1993, eq. 6, p. 172"),
                         (0.165, "16.5%: Farlow's turnover at 500 kg", "Farlow 1993, eq. 6, p. 172"),
                         (float(np.median(pb)), f"{100 * np.median(pb):.1f}%: Coe's median production/biomass, 24 areas",
@@ -112,9 +125,10 @@ def rows() -> list[dict]:
                         (0.259, "25.9%: Farlow's turnover at 100 kg", "Farlow 1993, eq. 6, p. 172")):
         add("Yearly offtake", lab, src, coef(offtake=v), note="all of the production, the predators' best case" if v > 0.11 else "")
     # 6. the prey itself: McNaughton's NAP is above-ground; the model feeds whole-plant herb NPP (roots in). If the true above-ground
-    # share is f, the prey is f^1.52 of the model's (slope 1.52, McNaughton et al. 1989, p. 143). f has no source on file.
+    # share is f, the prey is f^1.52 of round 3's (slope 1.52, McNaughton et al. 1989, p. 143). Since lane 90 the model applies f from
+    # Gherardi & Sala 2020 (prey.above: ~0.3 at 250 mm, 0.5 at 1,000 mm, 0.6 at 2,000 mm of rain); these rows are against round 3.
     for f in (0.7, 0.5, 0.4):
-        add("Prey: above-ground share of the NPP fed to the fit", f"f = {f:g} (prey x f^1.52)", "McNaughton et al. 1989, pp. 142-143; f itself unsourced",
+        add("Prey: above-ground share of the NPP fed to the fit", f"f = {f:g} (prey x f^1.52)", "McNaughton et al. 1989, pp. 142-143; Gherardi & Sala 2020",
             factor=f ** PR.PREY_EXP, note="scales prey, so density at a given place; not the per-prey coefficient", per_prey=False)
     return out
 

@@ -8,13 +8,30 @@ from planet.lineages import prey as PR
 
 
 def test_wild_prey_follows_mcnaughton_fit():
-    w = PR.wild(np.array([0.0, 100.0, 200.0, -5.0]))
+    rain = np.full(4, 600.0)
+    w = PR.wild(np.array([0.0, 100.0, 200.0, -5.0]), rain)
     assert w[0] == 0 and w[3] == 0
     assert np.isclose(w[2] / w[1], 2.0 ** 1.52)  # (log-log slope 1.52, McNaughton et al. 1989)
-    nap = 200.0 * PR.C_FRAC ** -1 * PR.KJ_PER_G_DRY  # kJ/m2/yr
+    nap = 200.0 * PR.above(600.0) * PR.C_FRAC ** -1 * PR.KJ_PER_G_DRY  # kJ/m2/yr, above ground (lane 90, PW-1073)
     assert np.isclose(w[2], 10 ** (1.52 * np.log10(nap) - 4.79) / PR.KJ_PER_G_LIVE)  # (the paper's equation, kJ/m2 -> t/km2)
-    assert 5 < PR.wild(np.array([470.0]))[0] < 15  # (a rich savanna: PW-966's ~10 t/km2 anchor, within the conversions' error)
+    # (a rich savanna, 470 g C/m2/yr: PW-966's ~10 t/km2 anchor was for the whole-plant input; the above-ground part at its rain gives f^1.52 of it)
+    whole = 10 ** (1.52 * np.log10(470.0 * PR.KJ_PER_G_C) - 4.79) / PR.KJ_PER_G_LIVE
+    assert 5 < whole < 15 and np.isclose(PR.wild(np.array([470.0]), np.array([1000.0]))[0], whole * PR.above(1000.0) ** 1.52)
     assert PR.wild(None) is None
+
+
+def test_above_ground_share_follows_gherardi_sala():
+    """Gherardi & Sala 2020: F-BNPP ~70% in arid ecosystems, ~35% in humid ones (Fig. 3's fit, read as ln of MAP in mm)."""
+    a = PR.above(np.array([230.0, 2900.0]))
+    assert np.allclose(1 - a, [0.70, 0.35], atol=0.01)
+    assert (np.diff(PR.above(np.array([50.0, 300.0, 1000.0, 5000.0]))) > 0).all()
+
+
+def test_overkill_by_coevolution_follows_sandom():
+    """Sandom et al. 2014 Fig. 3: losses ~0.46 / 0.23 / 0.02 by hominin history, as shares of the naive value (lane 90, PW-1000)."""
+    c = PR.coevolved_loss(np.array([0.0, 50.0, 1000.0, 3000.0, 1e5]))
+    assert np.allclose(c, [1.0, 1.0, 0.5, 0.02 / 0.46, 0.02 / 0.46])
+    assert (np.diff(PR.coevolved_loss(np.geomspace(1, 1e4, 20))) <= 0).all()
 
 
 def test_overkill_spares_refuges_and_livestock_adds():

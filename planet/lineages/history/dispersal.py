@@ -69,7 +69,7 @@ class DispersalMixin:
         MVP_TAU_KYR): a sparse people (a band roaming thousands of km²) needs a large piece of good country to
         hold a land. Only for lines sparse enough that the viable number needs more than 2 cells; never the
         largest patch (a people's last land is the refuge logic's)."""
-        mvp = self.line_mvp(l)
+        mvp = MG.linked_mvp(self, l) if l.megafauna else self.line_mvp(l)  # (megafauna: a linked population's floor, PW-1069)
         area = self.cell_mkm2 * 1e6
         if mvp <= 0 or mvp / (self.dens[k] * area * 0.5) <= 2:
             return

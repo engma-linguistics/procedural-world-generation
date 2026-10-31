@@ -2,10 +2,25 @@
 
 From docs/proposals/megafauna-scaling.md and docs/review/megafauna/scaling.py (the owner-approved sums). A dragon grows all its life,
 reptile-style: snout-to-tail length through 0.8 m at hatching, 3 m at 5 yr, 8 m at 100, 16 m at 800, 22 m at 1,500 and 28 m at
-3,000 (the oldest); mass is a Komodo build (70 kg at 2.6 m, ~ L^3), x0.6 for flight. Food is reptile field metabolic rate (Nagy,
-Girard & Brown 1999, Annu Rev Nutr 19:247: 0.196 M^0.889 kJ/day, M in g; checked: Table 2, p. 260, all reptiles, n = 55; its
-largest reptile is the Komodo dragon, 45.2 kg at 2,430 kJ/day, Table 1 p. 258, where the fit gives ~2,700), eaten as whole cattle
-(836 Mcal each, 85% assimilated).
+3,000 (the oldest); mass is a Komodo build (70 kg at 2.6 m, ~ L^3), x0.6 for flight.
+
+**The intake law (PW-1066, lane 90; owner 10-31: one stated law).** A dragon's field metabolic rate is a mesotherm's: the mammal line of
+Nagy, Girard & Brown 1999 (Annu Rev Nutr 19:247, Table 2 p. 260, eq. 1: all mammals 4.82 M^0.734 kJ/day, M in g, n = 79) divided by
+MESO_X = 2.1. Why: Marshall et al. 2021 (Science 372:284, p. 284), the paper the ecological mass comes from, "assumed a physiology midway
+between that of mammalian carnivores and that of large varanid lizards", which they translate into "population densities 2.1 times as
+large as the population densities of the average mammalian carnivore": at a given food that is an energy use 1/2.1 of a mammal's. It
+is also the geometric middle of McNab 2009's varanid line (PNAS 106:12184, p. 12185: 1.07 g^0.735, "22% of mammalian FEEs of equal
+size"; sqrt(1/0.22) = 2.1). The mammal line rather than Nagy's "Carnivores" fit (2.23 M^0.85, eq. 12, n = 13) because Nagy et al. warn
+that the diet comparison "must be interpreted with caution" (p. 267: confounded by taxonomy); the all-mammal slope 0.734 is also the
+one exponent the predator guild's split uses (history.megafauna.GUILD_EXP, PW-1071). The earlier law (all reptiles, 0.196 M^0.889)
+was stretched 60-1,100x past its heaviest animal and only behaved as a mesotherm's by accident. Left out, as Nagy 2005 (J Exp Biol
+208:1621, p. 1624) says the food equations leave out growth: the cost of growing, and any extra for flight.
+**Food per kill (PW-1067).** A head of cattle-sized prey holds CATTLE_MCAL live (Farlow 1993, Am J Sci 293:167, p. 172: 7 kJ per g live
+mass, 0.5 t); a predator eats CARCASS_USE of it and assimilates ASSIMILATED of what it eats (Carbone, Teacher & Rowcliffe 2007, PLoS
+Biol 5:e22: assimilation 0.66, p. 364; "only a proportion of large-vertebrate prey are consumed (65%-91% depending on their mass)",
+p. 367). The same edible energy per head serves the peoples (history.megafauna.HEAD_KCAL).
+**The all-ages mean.** `cattle_yr` (x 0.5 t: ~F t a year) is the survivorship-weighted mean over every age, wyrmlings included, not
+what a dragon of the ecological mass eats (`stage_cattle_yr`, and fmr_kcal at the mass, are those).
 
 Owner 10-28: younger is the default schedule; the others stay as options. meta.dragon_ages picks one:
 - base: the proposal's approved base case (ancients ~7% of dragons, ~1/3 of their biomass);
@@ -36,9 +51,13 @@ SCHEDULES = {  # annual mortality per stage (wyrmling, young, adult, ancient)
 DEFAULT = "younger"  # (owner 10-28, PW-958)
 GENERATION = ("schedule", "schedule_mass", "line")  # meta.dragon_generation: from the schedule (flat fecundity), with fecundity ~ mass, or each line's generation_yr
 GENERATION_DEFAULT = "schedule"
-CATTLE_MCAL = 836.0  # a whole carcass
-ASSIMILATED = 0.85
+CATTLE_MCAL = 836.0  # a whole 0.5 t carcass, live: Farlow 1993 p. 172, 7 kJ per g live mass (500 kg x 7,000 kJ / 4.184)
+CARCASS_USE = 0.78  # the share of a large carcass eaten: Carbone et al. 2007 p. 367 give 65-91% "depending on their mass" without saying which
+# way; the middle of their range, a judgement within it
+ASSIMILATED = 0.66  # Carbone et al. 2007 p. 364: "DEI = DEE/0.66 ... an estimate of proportional assimilation efficiency" (was 0.85, unsourced)
 KJ_PER_KCAL = 4.184
+FMR_A, FMR_B = 4.82, 0.734  # Nagy et al. 1999 Table 2 p. 260, eq. 1, all mammals: kJ/day = 4.82 M^0.734, M in g (checked)
+MESO_X = 2.1  # a mesotherm uses 1/MESO_X of a mammal's energy: Marshall et al. 2021 p. 284 (midway physiology, densities x2.1)
 
 AGES = np.arange(OLDEST + 1)
 LENGTH_M = np.interp(AGES, [0, 5, 100, 800, 1500, 3000], [0.8, 3, 8, 16, 22, 28])
@@ -47,12 +66,18 @@ STAGE_OF = np.select([AGES <= STAGE_END[0], AGES <= STAGE_END[1], AGES <= STAGE_
 
 
 def fmr_kcal(mass_kg):
-    """Reptile field metabolic rate, kcal/day (Nagy et al. 1999, Table 2 p. 260: 0.196 M^0.889 kJ/day, M in g)."""
-    return 0.196 * (np.asarray(mass_kg, float) * 1000.0) ** 0.889 / KJ_PER_KCAL
+    """A dragon's field metabolic rate, kcal/day: a mesotherm's, Nagy et al.'s mammal line over MESO_X (module docstring, PW-1066)."""
+    return FMR_A * (np.asarray(mass_kg, float) * 1000.0) ** FMR_B / MESO_X / KJ_PER_KCAL
+
+
+def edible_kcal() -> float:
+    """The kcal a predator (or a people) eats from one head of cattle-sized prey: CATTLE_MCAL x CARCASS_USE."""
+    return CATTLE_MCAL * 1000.0 * CARCASS_USE
 
 
 def cattle_per_yr(kcal_day):
-    return np.asarray(kcal_day, float) * 365.0 / (CATTLE_MCAL * 1000.0 * ASSIMILATED)
+    """Head of cattle-sized prey killed a year for a field metabolic rate (kcal/day): eaten CARCASS_USE, assimilated ASSIMILATED."""
+    return np.asarray(kcal_day, float) * 365.0 / (edible_kcal() * ASSIMILATED)
 
 
 @lru_cache(maxsize=None)

@@ -14,15 +14,29 @@ turned to energy "using standard conversion factors" (its refs 41-43: Golley 196
 three factors below are this module's own, each marked: carbon to dry matter (C_FRAC), dry plant to kJ (KJ_PER_G_DRY) and live animal
 to kJ (KJ_PER_G_LIVE). With them 470 g C/m2/yr (a rich savanna, PW-966's anchor) gives ~7 t/km2, against PW-966's ~10: the paper's fit
 and the old anchor agree to within the factors' uncertainty, so the paper's intercept is used outright. The scatter is wide (r2 0.58:
-a factor of a few either way), and the fit is across ecosystems, not for one grazer guild. The model's grazing NPP (herb layer plus
-browse, season-weighted) is not exactly McNaughton's NAP (above-ground, all plant parts, annual), a stated approximation. Coe, Cumming &
+a factor of a few either way), and the fit is across ecosystems, not for one grazer guild. The fit is above-ground only ("Only processes
+occurring above ground were included", p. 142), while the model's NPP is whole-plant (vegetation's net includes the fine roots), so
+the grazing NPP is cut to its above-ground part first (ABOVE, PW-1073, lane 90): the share of NPP below ground from Gherardi & Sala
+2020 (PNAS 117:20038, PMC7443884; read 2026-10-31 on the PMC page): F-BNPP = 146 - 13.95 log(MAP) (Fig. 3 legend), "ranging from ~70%
+in arid ecosystems to ~35% in humid ecosystems" (Results); grasslands average 64% (Table 1). The legend names neither the log's base
+nor MAP's unit; the natural log with MAP in mm is the reading that reproduces their 70% and 35%, so that is the one used (a reading,
+marked). With the fit's slope 1.52, a herd on open grassland is ~x0.25-0.4 of what the whole-plant input gave. Coe, Cumming &
 Phillipson 1976 (Oecologia 22:341, on file, read 2026-10-29) is not used but agrees: for twelve semi-arid African wildlife areas
 (rain < 700 mm) it fits log10 B = 1.094 log10 NAAP + 0.389 (B kg/km2 live weight, NAAP g dry matter/m2/yr predicted from rainfall
 by Rosenzweig 1968; r = 0.966; Fig. 3, p. 349), which at this module's C_FRAC gives ~0.8 / ~1.9 / ~4.9 t/km2 for the three anchors
 below: a shallower slope (1.09 against 1.52) on a narrower range. With the fit, grazing NPP of 90 / 200 / 470 g C/m2/yr
 (a hot desert's median / a steppe / a rich savanna) holds ~0.6 / ~1.9 / ~7 t/km2 of wild herbivores.
 
-**Overkill.** Where small folk press the land (the megafauna pressure, history.megafauna.pressure) the wild big herbivores fall
+**Overkill by how long the fauna knew people (PW-1000 B, owner 10-30; lane 90).** The loss is no longer one OVERKILL everywhere: it
+follows how long the land's herds have lived beside small folk (`coevolved`), after Sandom et al.'s three classes of hominin history
+(medians read off Fig. 3, p. 5: ~0.02 where hominins evolved, ~0.23 where archaic hominins came first, ~0.46 where modern humans were
+the first; "universally low extinctions in sub-Saharan Africa (maximum 13%)", p. 6). They count species, not biomass: the largest go
+first, so the biomass lost is more than the species share; meta.overkill (OVERKILL, 0.6, a judgement) stays the biomass loss where the
+fauna is naive, and the other classes keep Sandom's ratios to it (x 0.23/0.46, x 0.02/0.46). The years that mark the classes are
+judgements (COEVOL_KYR): Sandom et al. date the archaic arrival only as "possibly as early as the Late Pliocene or Early Pleistocene"
+(p. 2), and the modern arrivals in the Americas and Australia are recent.
+
+**Overkill (the old flat rule's text, still the form).** Where small folk press the land (the megafauna pressure, history.megafauna.pressure) the wild big herbivores fall
 to (1 - OVERKILL x pressure) of their potential, the late-Pleistocene pattern after people arrive (Sandom et al. 2014, Proc R Soc B
 281:20133254; on file, read 2026-10-29: it counts the share of large-mammal SPECIES (>= 10 kg) lost per country, not biomass, and the
 loss depends on how long the fauna lived beside hominins: median ~0.46 where modern humans were the first to arrive, ~0.23 where
@@ -47,6 +61,11 @@ KJ_PER_G_DRY = 17.5  # kJ per g dry plant matter (assumption: ~17-20 for plant t
 KJ_PER_G_LIVE = 7.0  # kJ per g live weight of an animal: Farlow 1993, Am J Sci 293:167, p. 172 ("the energy content of animal tissue
 # approximates 7 x 10^6 joules/kg live mass", citing Peters 1983, p. 33). Checked.
 KJ_PER_G_C = KJ_PER_G_DRY / C_FRAC  # kJ of NAP per g C (~39)
+BNPP_A, BNPP_B = 146.0, 13.95  # Gherardi & Sala 2020, Fig. 3 legend: F-BNPP (%) = 146 - 13.95 log(MAP); read as ln, MAP in mm (docstring)
+MAP_CLIP = (50.0, 5000.0)  # mm: the rainfall the fit is read over (its F stays within ~27%-91%); a guard, not from the paper
+# Sandom et al. 2014 Fig. 3 p. 5, medians: the share of large-mammal species lost by how long hominins and the fauna lived together
+SANDOM_LOSS = (0.46, 0.23, 0.02)  # (modern humans first: naive fauna; archaic hominins first; where hominins evolved)
+COEVOL_KYR = (50.0, 1000.0, 3000.0)  # the years beside small folk that stand for those three classes (judgements; log-interpolated between)
 OVERKILL = 0.6  # the share of the wild big herbivores lost where small folk press the land fully (a judgement, after Sandom et al. 2014,
 # whose figure is species lost, not biomass, and varies with how long the fauna knew hominins: see the module docstring)
 REFUGE = ("tundra", "mountain")  # places (history.tags) hostile to small folk, where the wild herds persist (and the sea)
@@ -56,13 +75,28 @@ LIVESTOCK_X = 1.0  # stocked country carries livestock at the pasture's wild her
 HEAD_T = 0.5  # t live weight per head of cattle (PW-967: an ancient's ~100 head a year is ~50 t)
 
 
-def wild(graze_npp: np.ndarray | None) -> np.ndarray | None:
-    """Wild herbivore biomass, t/km2, per cell, from the grazing NPP (g C/m2/yr) by McNaughton's fit; None without a world."""
+def above(rain_mm) -> np.ndarray:
+    """The above-ground share of NPP at an annual rainfall (mm): 1 - F-BNPP (Gherardi & Sala 2020, PW-1073)."""
+    r = np.clip(np.asarray(rain_mm, float), *MAP_CLIP)
+    return 1.0 - np.clip(BNPP_A - BNPP_B * np.log(r), 0.0, 100.0) / 100.0
+
+
+def wild(graze_npp: np.ndarray | None, rain_mm: np.ndarray | None = None) -> np.ndarray | None:
+    """Wild herbivore biomass, t/km2, per cell, from the grazing NPP (g C/m2/yr, whole-plant) by McNaughton's fit, its above-ground
+    part only (`above`, at the annual rain; without rain, the grassland mean of Gherardi & Sala's Table 1, 1 - 0.64); None without a world."""
     if graze_npp is None:
         return None
-    nap = np.maximum(np.asarray(graze_npp, float), 0.0) * KJ_PER_G_C  # kJ/m2/yr
+    f = above(rain_mm) if rain_mm is not None else 1.0 - 0.64
+    nap = np.maximum(np.asarray(graze_npp, float), 0.0) * f * KJ_PER_G_C  # kJ/m2/yr above ground
     b_kj = 10.0 ** PREY_LOG_A * nap ** PREY_EXP  # kJ/m2 of herbivores
     return b_kj / KJ_PER_G_LIVE  # g/m2 live weight = t/km2
+
+
+def coevolved_loss(years_kyr) -> np.ndarray:
+    """The overkill's share of meta.overkill by the years (kyr) the fauna has lived beside small folk: SANDOM_LOSS over its naive value,
+    log-interpolated over COEVOL_KYR (1 for a newly reached land, ~0.5 after a million years, ~0.04 where small folk evolved)."""
+    t = np.log10(np.maximum(np.asarray(years_kyr, float), COEVOL_KYR[0]))
+    return np.interp(t, np.log10(COEVOL_KYR), np.array(SANDOM_LOSS) / SANDOM_LOSS[0])
 
 
 def refuge(tags: dict) -> np.ndarray:
@@ -79,8 +113,9 @@ def herd_share(lines) -> np.ndarray:
     return np.array([0.0 if (l.megafauna or l.overlay) else LIVESTOCK.get(l.way or "", 0.0) for l in lines])
 
 
-def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None, overkill: float = OVERKILL) -> dict:
-    """The prey per cell, t/km2: the wild herds after overkill (press 0..1, the peoples' pressure; none in refuge country), the
+def field(wild_t: np.ndarray, press: np.ndarray, refuge_mask: np.ndarray, stocked: np.ndarray | None = None, overkill=OVERKILL) -> dict:
+    """The prey per cell, t/km2: the wild herds after overkill (overkill: a number or per cell, `coevolved_loss` x meta.overkill;
+    press 0..1, the peoples' pressure; none in refuge country), the
     livestock (stocked 0..1, the share of the cell stocked) and their sum."""
     w = wild_t * np.where(refuge_mask, 1.0, 1.0 - overkill * np.clip(press, 0, 1))  # (overkill: meta.overkill, default OVERKILL)
     lv = wild_t * LIVESTOCK_X * np.clip(stocked, 0, 1) if stocked is not None else np.zeros_like(wild_t)

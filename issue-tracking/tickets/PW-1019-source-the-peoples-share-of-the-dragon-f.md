@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-991, PW-974]
 refs: [planet/lineages/history/megafauna.py, docs/references/megafauna/README.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-31
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Cross-checks already on file: Farlow 1993 (p. 172) 7 kJ per g live mass puts a 0
 - [ ] the guild rule checked against a living large-mammal guild (e.g. Serengeti carnivore biomass by species)
 
 ## Updates
+- 2026-10-31: Lane 90: the peoples' game take now uses the shared edible figure HEAD_KCAL (Carbone 2007 carcass use); WILD_MEAT still unsourced. docs/review/dragon-food-chain/report.md
 - 2026-10-29: Created from inbox draft draft-food-budget-peoples-share-constants-unverified.md (found by fun-lane-45b).

@@ -2543,9 +2543,11 @@ def test_megafauna_tolerated_tier_and_ecological_release(faketz):
     reach_km = (max(1, round(MG.RELEASE_KM / h.cell_km)) + 1) * 1.5 * h.cell_km
     far = tags["land"] & (lat < 60 - reach_km / 111.0)
     assert far.any() and not rel[far].any()
-    h._K_own[k] = np.where(tags["land"], 1.0, 0.0)
-    h._prey = np.full(h.grid.n, h.prey_ref)  # (prey no better than the median: no release)
-    assert not MG.release(h, t.lines["wyrm"], k, env, tags, step).any()
+    h._prey = np.full(h.grid.n, h.prey_ref)  # (prey no better than the median: a dragon still hunts its range, HUNT_KM, but no farther; lane 90)
+    rel = MG.release(h, t.lines["wyrm"], k, env, tags, step)
+    hunt_km = (max(1, round(MG.HUNT_KM / h.cell_km)) + 1) * 1.5 * h.cell_km
+    far = tags["land"] & (lat < 60 - hunt_km / 111.0)
+    assert far.any() and not rel[far].any() and rel.max() <= MG.RELEASE_K + 1e-9
     assert MG.release(h, t.lines["wyrm"], k, env, tags, type("Step", (), {"epoch": "deep", "ago": 100.0})()) is None
 
 
@@ -2581,7 +2583,7 @@ def test_megafauna_natural_settings_and_prey(faketz):
     # prey mode with a prey field: dragons per Carbone & Gittleman, ~1 per 530 km2 at 1 t/km2 of prey (base schedule)
     from planet.lineages import prey as PR
     g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C  # (g C/m2/yr that McNaughton's fit gives 1 t/km2 of wild prey)
-    ps.graze_npp = np.full(ps.grid.n, g1)
+    ps.graze_npp = g1 / PR.above(ps.rain0)  # (the fit reads the above-ground part, at each cell's rain: lane 90, PW-1073)
     h3 = H.History(SP.parse({**raw, "meta": {**raw["meta"], "megafauna_natural": "prey"}}), ps, 1)
     hf = H.History(t, ps, 1)  # (the default, "food": PW-990 B)
     del ps.graze_npp
@@ -2590,7 +2592,8 @@ def test_megafauna_natural_settings_and_prey(faketz):
     assert 500 <= 1 / d.mean() <= 560
     # food mode without a budget (the deep epoch): the wild offtake's apex part / a dragon's food, per t/km2 of prey
     df = MG.natural(hf, w, hf.prey_wild)
-    assert np.allclose(df, MG.OFFTAKE / (1 + MG.guild_ratio()) / (hf.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    assert np.allclose(df, MG.OFFTAKE * MG.dragon_share(hf) / (hf.dragon_struct["cattle_yr"] * PR.HEAD_T))  # (young dragons eat in the
+    # smaller classes: the dragons' share is the apex class's over 1 - the young's share of their food, lane 90, PW-1071)
     assert np.allclose(MG.natural(h3, hi, h3.prey_wild), h3.dens_nat[hi])  # (giants: productivity 1 at the median)
     P = np.zeros((len(h3.lines), h3.grid.n))
     P[w] = 0.5
@@ -2668,7 +2671,7 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
     t = SP.parse(raw)
     g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
-    ps.graze_npp = np.full(ps.grid.n, 3.0 * g1)  # (~3 t/km2 of wild prey)
+    ps.graze_npp = 3.0 ** (1 / PR.PREY_EXP) * g1 / PR.above(ps.rain0)  # (~3 t/km2 of wild prey)
     ps.forage = np.full(ps.grid.n, 2.0)
     h = H.History(t, ps, 1)
     del ps.graze_npp, ps.forage
@@ -2682,13 +2685,14 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     b0 = MG.budget(h, P, np.zeros(n), tags)
     assert np.allclose(b0["peoples"], 0) and np.allclose(b0["giants"], 0) and (b0["guild"] > 0).all()
     assert np.allclose(b0["food"], b0["wild"] + b0["stock"] - b0["guild"]) and (b0["food"] > 0).all()
-    own = MG.guild_ratio() * MG.CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -MG.CARBONE_B / 10 \
-        * h.dragon_struct["cattle_yr"] * PR.HEAD_T * b0["prey"]  # (the guild: ratio x the dragons' natural food)
+    own = (1 - MG.dragon_share(h)) * (b0["wild"] + b0["stock"])  # (the guild: its size classes' share, in every mode since lane 90)
     assert np.allclose(b0["guild"], own)
     P[hu] = 1.0  # a forager people on the land: its hunters take before the guild and the dragons
     b1 = MG.budget(h, P, np.zeros(n), tags)
     need = h.dens_at(hu) * h._meat[hu]
-    assert np.allclose(b1["peoples"], need, rtol=0.05) and np.allclose(b1["food"], b0["food"] - b1["peoples"])
+    assert np.allclose(b1["peoples"], need, rtol=0.05)  # (their take comes out of what the guild and the dragons share; lane 90: the guild is a share,
+    # no longer a fixed multiple, so the dragons no longer bear all of it)
+    assert np.allclose(b1["food"] + b1["guild"], b0["food"] + b0["guild"] - b1["peoples"]) and (b1["food"] < b0["food"]).all()
     P[hu] = 0.0
     MG.BUDGET = False
     try:
@@ -2702,7 +2706,8 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     assert h.mf_natural == "food"
     b3 = MG.budget(h, P, np.zeros(n), tags)
     r = MG.guild_ratio()
-    assert np.allclose(b3["food"] * r, b3["guild"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])
+    assert np.allclose(b3["food"], MG.dragon_share(h) * b3["pool"]) and np.allclose(b3["food"] + b3["guild"], b3["pool"])  # (nobody
+    # kills here, so the guild is unpressed; the young dragons' food is inside the smaller classes' share, lane 90)
     nat = MG.natural(h, w, b3["prey"], b3["food"])
     assert np.allclose(nat * h.dragon_struct["cattle_yr"] * PR.HEAD_T, b3["food"])
     # the competition settings (coordinator 10-30, the paper's reframe): meta.rivals, meta.game_share, meta.overkill; defaults as before
@@ -2727,6 +2732,51 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     assert (SP.parse(SP.to_raw(t6)).rivals, t6.game_share, t6.overkill) == (0.5, 0.25, 0.23)
     with pytest.raises(ValueError):
         SP.parse({**raw, "meta": {"seed": 1, "game_share": 1.5}})
+
+
+def test_food_chain_revisions_lane90(faketz):
+    """Lane 90 (the dragon-density paper's Table 10): overkill follows how long small folk have held the land (Sandom 2014, PW-1000);
+    the deep epoch has a planet food budget (PW-1062); the peoples press the smaller predators too (PW-1070); a linked population needs
+    LINKED_MVP (PW-1069); the dragons' share counts the young in the smaller classes (PW-1071)."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    assert 0.15 < MG.dragon_share() < 0.25 and MG.dragon_share() > 1 / (1 + MG.guild_ratio())
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "density": 5.0, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
+    ps.graze_npp = 3.0 ** (1 / PR.PREY_EXP) * g1 / PR.above(ps.rain0)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    h = H.History(SP.parse(raw), ps, 1)
+    del ps.graze_npp, ps.forage
+    n, fa, w = h.grid.n, h.idx["farm"], h.idx["wyrm"]
+    land = np.ones(n, bool)
+    P = np.zeros((len(h.lines), n))
+    P[fa, : n // 2] = 1.0
+    # the overkill's clock: land held 1 kyr is naive (meta.overkill), land held 3 Myr nearly spared
+    h._ago_now = 3000.0
+    MG.note_settled(h, P, 3000.0)
+    h._ago_now = 0.0
+    ok_old = np.asarray(MG.overkill(h))
+    assert np.allclose(ok_old[: n // 2], PR.OVERKILL * 0.02 / 0.46)
+    h._first_ago[:] = -1.0
+    MG.note_settled(h, P, 1.0)
+    assert np.allclose(np.asarray(MG.overkill(h))[: n // 2], PR.OVERKILL)
+    # the deep epoch: one planet figure, less with peoples on half the land than with none
+    MG.deep_budget(h, np.zeros_like(P), land)
+    empty = h._deep_food
+    assert np.isclose(empty, MG.OFFTAKE * h._wild_mean * MG.dragon_share(h))
+    MG.deep_budget(h, P, land)
+    assert 0 < h._deep_food < empty
+    nat = MG.natural(h, w, None, None)
+    assert np.isclose(nat, h._deep_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    # the smaller predators: kept below 1 where the farmers kill, 1 where nobody does
+    gk = MG.guild_kept(h, MG.kill(h, P, land))
+    assert gk[: n // 2].max() < 1.0 and np.allclose(gk[n // 2:], 1.0)
+    # a linked population's floor
+    assert MG.linked_mvp(h, h.lines[w]) == max(h.line_mvp(h.lines[w]), MG.LINKED_MVP) >= MG.LINKED_MVP
 
 
 def test_people_density_reads_productivity(faketz):

@@ -2,7 +2,7 @@
 id: PW-1072
 title: "Yearly offtake: the flat 10% of standing wild biomass is about half of large herbivores' production (Coe 1976: median 0.20/yr; Farlow 1993: 0.14-0.26/yr); make it follow prey production"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-991, PW-977]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/sensitivity.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -38,4 +38,5 @@ Options:
 - [ ] decide A/B (fold into PW-991 if the coordinator prefers)
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 90: OFFTAKE = Farlow 1993 turnover at the 0.5 t head (eq. 6 p. 172: 0.165/yr) x 0.45 of production killed (p. 176's 100-200:1 vs 50:1, over the carcass share): 7.5%/yr. Coe 1976 Table 1 as a cross-check. Prey-size-dependent turnover: inbox draft prey-size-field-for-herd-turnover. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-offtake-from-prey-production.md (found by dragon-density-r2).

@@ -2,7 +2,7 @@
 id: PW-1073
 title: "Prey from NPP: the model feeds whole-plant herb NPP (roots in) to McNaughton et al.'s above-ground fit, and reads its whole-herbivore biomass (insects in) as big game"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-990]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, planet/vegetation.py, docs/review/megafauna/dragon-density/index.html, docs/review/megafauna/dragon-density/sensitivity.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -48,4 +48,5 @@ Lean: A once a source is read; note it on the page meanwhile (done in round 2).
 - [ ] decide A/B/C
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 90: prey.wild feeds McNaughton only the above-ground share, prey.above(rain) from Gherardi & Sala 2020 (PNAS 117:20038, Fig. 3 fit; ~70% below ground arid, ~35% humid; ln/mm a marked reading). The largest effect of the lane: dry and cold land x0.16-0.35 prey. Cold kinds thin: inbox draft cold-dragons-thin. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-prey-fit-fed-whole-plant-npp.md (found by dragon-density-r2).
