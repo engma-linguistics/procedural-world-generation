@@ -208,6 +208,10 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._ago_now = step.ago  # (the peoples' means against the megafauna follow the era, MG.means, PW-1068)
             self._press = MG.pressure(self, self.p, env["land"]) if any(x.megafauna for x in L) else None
             self._kill = MG.kill(self, self.p, env["land"]) if self._press is not None else None
+            if self._press is not None:  # (lane 90: the overkill's clock, PW-1000; the deep epoch's food budget, PW-1062)
+                MG.note_settled(self, self.p, step.ago)
+                if deep:
+                    MG.deep_budget(self, self.p, env["land"])
             self._prey, self._food, _ = MG.prey_and_food(self, self.p, self._press, tags, self._kill) if self._press is not None and not deep else (None, None, None)
             self._start_due(step, env, tags, Ks)
             if self.animals is not None:

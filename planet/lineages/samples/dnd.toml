@@ -139,8 +139,8 @@ name = "red dragons (chromatic)"
 parents = ["chromatic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [12, 40]
-prefers = ["volcanic", "mountain"]
+temp_c = [4, 40]  # lane 90 (PW-1065, owner 10-31: closer to A, fix their biomes, widen as needed): was [12, 40]
+prefers = ["volcanic", "mountain", "hills"]  # lane 90: the DMG (5e) Appendix B, Monsters by Environment lists red dragons under hill (p. 304) and mountain (p. 304)
 
 [[lineage]]
 id = "blue_dragon"
@@ -150,7 +150,8 @@ megafauna = true
 at = "750 kyr"
 temp_c = [4, 40]  # PW-1024 (owner 10-29, A): was [14, 40]; down into the cool continental shortgrass
 rain_mm = [60, 800]  # PW-1024: was [60, 600]
-prefers = ["desert", "BSk"]  # PW-1024: deserts, and the dry shortgrass and storm country (cold steppe, Köppen BSk; lairs in loess bluffs)
+prefers = ["desert", "BSk", "coast"]  # PW-1024: deserts, and the dry shortgrass and storm country (cold steppe, Köppen BSk; lairs in loess bluffs);
+# lane 90: and dry coasts, as the DMG (5e) Appendix B, Monsters by Environment lists blue dragons under desert and coastal (p. 302); the rain range keeps them to dry shores
 tolerates = ["open"]  # PW-1024: the moister open grassland at the edges
 
 [[lineage]]
@@ -159,9 +160,9 @@ name = "green dragons (chromatic)"
 parents = ["chromatic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [8, 30]
-rain_mm = [900, 3000]
-prefers = ["forest", "jungle"]
+temp_c = [-4, 30]  # lane 90 (PW-1065): was [8, 30], which left the boreal and much temperate forest without dragons (6% of wild forest held)
+rain_mm = [450, 3000]  # lane 90: was [900, 3000]
+prefers = ["forest", "jungle"]  # the DMG (5e) Appendix B, Monsters by Environment: forest (pp. 302-303) lists green and gold dragons
 tolerates = ["open"]  # PW-1024 (owner 10-29, an edge fit): forest-steppe, gallery forest and parkland, the open country next to the woods
 
 [[lineage]]
@@ -170,9 +171,9 @@ name = "black dragons (chromatic)"
 parents = ["chromatic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [14, 34]
-rain_mm = [1000, 3000]
-prefers = ["wetland"]
+temp_c = [2, 34]  # lane 90 (PW-1065): was [14, 34]; temperate marsh and bog too
+rain_mm = [600, 3000]  # lane 90: was [1000, 3000]
+prefers = ["wetland"]  # the DMG (5e) Appendix B, Monsters by Environment: swamp (p. 304) lists black dragons
 
 [[lineage]]
 id = "white_dragon"
@@ -181,8 +182,9 @@ parents = ["chromatic_dragon"]
 megafauna = true
 at = "750 kyr"
 temp_c = [-20, 6]
-prefers = ["mountain", "tundra", "polar"]  # PW-924: cold mountains
-tolerates = ["steppe", "open"]  # PW-1024 (owner 10-29, an edge fit): the harsh northern steppe, as winter visitors
+prefers = ["mountain", "tundra", "polar"]  # PW-924: cold mountains; the DMG (5e) Appendix B, Monsters by Environment: arctic (p. 302) lists white dragons
+tolerates = ["steppe", "open", "subarctic"]  # PW-1024 (owner 10-29, an edge fit): the harsh northern steppe, as winter visitors; lane 90 (owner 10-31:
+# cold, poor empty land holds white and silver dragons, fewer where it is poor): and the taiga's edge
 
 [[lineage]]
 id = "gold_dragon"
@@ -190,9 +192,10 @@ name = "gold dragons (metallic)"
 parents = ["metallic_dragon"]
 megafauna = true
 at = "750 kyr"
-temp_c = [5, 32]  # PW-1024 (owner 10-29, A): was [16, 32]; down into the cool open steppe
-rain_mm = [400, 1500]  # PW-1024: was [500, 1500]
-prefers = ["savanna", "open"]  # PW-924: warm grassland and open woodland; PW-1024: and the cool open steppe, roaming over herders' country
+temp_c = [0, 32]  # PW-1024 (owner 10-29, A): was [16, 32]; down into the cool open steppe; lane 90: was [5, 32]
+rain_mm = [250, 2000]  # PW-1024: was [500, 1500]; lane 90: was [400, 1500]
+prefers = ["savanna", "open", "steppe", "forest"]  # PW-924: warm grassland and open woodland; PW-1024: and the cool open steppe, roaming over herders'
+# country; lane 90: the DMG (5e) Appendix B, Monsters by Environment lists gold dragons alone under grassland (p. 303) and with green ones under forest (pp. 302-303), so every grassland and forest
 
 [[lineage]]
 id = "silver_dragon"
@@ -200,11 +203,12 @@ name = "silver dragons (metallic)"
 parents = ["metallic_dragon"]
 megafauna = true
 at = "750 kyr"
-elev_m = [2000, 7000]  # PW-924: the high peaks, beside the cloud giants
+elev_m = [1000, 7000]  # PW-924: the high peaks, beside the cloud giants; lane 90: was [2000, 7000], so the tolerated tier (1,000 m wider) reaches the lowland tundra
 temp_c = [-12, 10]
 rain_mm = [300, 2000]
-prefers = ["mountain"]
-tolerates = ["steppe", "open"]  # PW-1024 (owner 10-29, an edge fit): lairs in the mountains, ranging over the high steppe below them
+prefers = ["mountain"]  # the DMG (5e) Appendix B, Monsters by Environment: mountain (p. 304) and urban (p. 305; no tag for it: they live among the peoples in disguise)
+tolerates = ["steppe", "open", "tundra"]  # PW-1024 (owner 10-29, an edge fit): lairs in the mountains, ranging over the high steppe below them; lane 90 (owner
+# 10-31): and the cold, poor tundra
 
 [[lineage]]
 id = "bronze_dragon"
@@ -213,7 +217,7 @@ parents = ["metallic_dragon"]
 megafauna = true
 at = "750 kyr"
 temp_c = [6, 28]
-prefers = ["coast"]  # PW-924: sea coasts, beside the storm giants
+prefers = ["coast"]  # PW-924: sea coasts, beside the storm giants (DMG 5e Appendix B: coastal, p. 302)
 tolerates = ["wetland"]  # PW-1024 (owner 10-29, an edge fit): big rivers and steppe lakes (no river or lake tag yet: the wet lowlands stand in)
 
 [[lineage]]
@@ -224,7 +228,7 @@ megafauna = true
 at = "750 kyr"
 temp_c = [5, 30]  # PW-1024 (owner 10-29, A): was [10, 30]
 rain_mm = [300, 1100]
-prefers = ["hills", "breaks"]  # PW-924: dry rocky uplands; PW-1024: and the badlands, buttes and river breaks cutting through grassland
+prefers = ["hills", "breaks"]  # PW-924: dry rocky uplands; PW-1024: and the badlands, buttes and river breaks cutting through grassland (DMG 5e Appendix B: hill, p. 304)
 
 [[lineage]]
 id = "brass_dragon"
@@ -234,7 +238,8 @@ megafauna = true
 at = "750 kyr"
 temp_c = [18, 40]
 rain_mm = [100, 700]
-prefers = ["steppe"]  # PW-924: hot dry grassland and scrub at the desert edges (the blues hold the deserts)
+prefers = ["steppe", "desert"]  # PW-924: hot dry grassland and scrub at the desert edges; lane 90: and the deserts, as the DMG (5e) Appendix B, Monsters by Environment
+# lists brass dragons under desert (p. 302), beside the blues
 tolerates = ["open"]  # PW-1024 (owner 10-29, an edge fit): the hot dry margins of the plains, in summer
 
 [[lineage]]  # PW-988 (owner 10-29): the tortles, lizardfolk and troglodytes are their own branch off the reptilian line

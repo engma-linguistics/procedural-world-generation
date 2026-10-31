@@ -10,13 +10,18 @@ the PW-967 review before any is fixed):
   mass-scaled foragers (below) x the land's productivity over its median (lineages.prey.productivity, the PW-833 rule).
 - "mesotherm": Damuth's law, density = a M^-0.75, on the intercept Marshall et al. (2021, Science 372:284) fit to dinosaurs,
   log10 a = 2.99 (M in g, per km2; checked: Marshall Table 1, p. 284), at the ecological mass, its food spread over every age: ~1 per 65 km2 for the base schedule,
-  uniform over the kind's country. Reptile field metabolic rate (Nagy, Girard & Brown 1999, Annu Rev Nutr 19:247, Table 2 p. 260:
-  reptiles 0.196 M^0.889, mammals 4.82 M^0.734 kJ/day, M in g; checked) at dragon size is ~0.55 of a mammal's, about the factor
-  between this and the mammal-carnivore intercept. Farlow 1993 (Am J Sci 293:167, p. 187) fits reptile density = 66.07 M^-1.01
+  uniform over the kind's country. The dragons' intake law is the same physiology: Nagy et al. 1999's mammal line over Marshall's 2.1
+  (dragon_ages, PW-1066). Farlow 1993 (Am J Sci 293:167, p. 187) fits reptile density = 66.07 M^-1.01
   per km2 (M kg; Damuth 1987's reptile data plus Komodo dragons, from animals two orders of magnitude lighter), ~1 per 50 km2 at
   3.2 t: the same order as this line.
 - "mammal": the same on the mammal-carnivore intercept (log10 a = 2.67): ~1 per 137 km2.
 The dragons' ecological mass, stage shares and generation time follow meta.dragon_ages (lineages.dragon_ages, PW-958, PW-959).
+The food chain after the dragon-density paper's revisions (lane 90, docs/review/dragon-food-chain/report.md): the prey from the above-ground
+NPP (prey.above, PW-1073); the yearly offtake from the herds' production (OFFTAKE, PW-1072); a sourced intake law, assimilation and carcass
+share (dragon_ages, PW-1066, PW-1067); one metabolic exponent for the guild, the young dragons eating in its smaller classes (dragon_share,
+PW-1071); the smaller predators pressed by the peoples too (guild_kept, PW-1070); overkill by how long the fauna knew people (overkill,
+PW-1000); a food budget in the deep epoch (deep_budget, PW-1062); a linked population's viable number (linked_mvp, PW-1069); the peoples'
+means from the herds and horses the history gives them (means, PW-1177); and the hunting range (HUNT_KM, release, PW-1065).
 Giants under "mesotherm" and "mammal" are uniform mass-scaled foragers: human foragers (~0.1 per km2, the proposal's median, whose source is
 not yet found: Hamilton et al. 2007 reuses Binford 2001's data but fits area against group size, not density, and its fit implies
 0.03-0.09 per km2 for groups of 25-1000, PNAS 104:4765, Table 1, p. 4767; the M^-0.75 body-mass scaling is Damuth/Kleiber, not
@@ -49,6 +54,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from .. import dragon_ages as DA
 from .. import prey as PR
 from .. import spec as SP
 from ..gridops import nbr_reduce
@@ -74,29 +80,50 @@ LOG_A = {"mesotherm": 2.99, "mammal": 2.99 - np.log10(2.1)}  # Marshall et al. 2
 NATURAL = SP.MEGAFAUNA_NATURAL  # meta.megafauna_natural: food (the default, PW-990 B) | prey | mesotherm | mammal
 NATURAL_DEFAULT = SP.MEGAFAUNA_NATURAL_DEFAULT
 CARBONE_A, CARBONE_B = 89.1, 1.05  # Carbone & Gittleman 2002: carnivores per 10,000 kg of prey = 89.1 M^-1.05, M in kg (checked: PDF p. 2)
-OFFTAKE = 0.1  # the share of the wild herds' standing biomass a predator can take a year and keep them (PW-967's rough figure, ~10%/yr). Bounded
-# by Farlow 1993 (Am J Sci 293:167): prey biomass turnover = 0.94 M^-0.28 per yr (M kg; eq. 6, p. 172, from Farlow 1990), 0.26 / 0.17 /
-# 0.14 per yr for 100 / 500 / 1000 kg prey, is what every predator together could take; real big predators get less (prey:predator
-# 100:1-200:1 in modern large-mammal faunas against his 50:1 best case, p. 176). 0.1 sits inside that; the value itself is a judgement
+# The yearly offtake follows the herds' production (PW-1072, lane 90): Farlow 1993 (Am J Sci 293:167, eq. 6, p. 172): prey turnover =
+# 0.94 M^-0.28 per yr (M kg), at the cattle-sized head the dragons and the peoples take (prey.HEAD_T): 0.165 per yr, against Coe, Cumming
+# & Phillipson 1976's 24 African wildlife areas, production / biomass 0.085-0.26, median 0.20 (Table 1, pp. 344-345). Farlow's best case
+# lets the predators eat all of it (eq. 3, p. 172); real large-mammal communities run at prey:predator 100:1 to 200:1 against his 50:1
+# (p. 176), "the difference between conditions prevailing in real ecological communities and the ideal conditions assumed", and he takes
+# that gap to cover the inedible skeleton too. So the predators eat 1/2 to 1/4 of the production's energy (geometric middle 1/2.83); since
+# the carcass share is counted on its own (dragon_ages.CARCASS_USE), the share of production killed is that over CARCASS_USE.
+TURNOVER = 0.94 * (PR.HEAD_T * 1000.0) ** -0.28  # the herds' production / biomass a year at the head's mass (Farlow eq. 6)
+PRODUCTION_KILLED = (1.0 / np.sqrt(8.0)) / DA.CARCASS_USE  # ~0.45: the share of the herds' production all hunters together kill a year
+OFFTAKE = PRODUCTION_KILLED * TURNOVER  # ~0.074 of the standing wild biomass a year (was a flat 0.1, unsourced)
 STOCK_TOLERABLE = 0.1  # the share of herders' stock the herders tolerate losing a year to dragons before they leave the range (UNVERIFIED; a model
 # assumption: herds turn over at ~15-25%/yr (Farlow 1993's eq. 6, p. 172, gives 0.17/yr for 500 kg animals), so a tenth lost is a bad
 # year they put up with, PW-977; the herders' tolerance itself is to be sourced)
 BUDGET = True  # PW-977 stage 2: the peoples' hunters, the giants and the rest of the predator guild draw on the wild offtake before the dragons do (off only to measure it: the dragons then get all of it, stage 1)
 PERSON_KCAL_YR = 2200.0 * 365.0  # a person's food, kcal a year (a working adult's ~2,200 kcal a day; the proposal's Kleiber x 1.7 figure for a 65 kg forager is ~1,900; UNVERIFIED round number)
-HEAD_KCAL = 625e3  # edible kcal in a head of cattle-sized prey (the proposal's figure, as giant_cattle_yr; it also serves wild game of that size). Cross-check: at
-# Farlow 1993's 7 kJ per g live mass (p. 172) a 0.5 t head (prey.HEAD_T) holds ~840,000 kcal, so 625,000 is ~3/4 of it eaten
+HEAD_KCAL = DA.edible_kcal()  # edible kcal in a head of cattle-sized prey, ~652,000: one figure for peoples, giants and dragons (PW-1067): Farlow
+# 1993's 7 kJ per g live mass (p. 172) x a 0.5 t head x the share of a large carcass eaten (Carbone et al. 2007, p. 367; dragon_ages.CARCASS_USE)
 WILD_MEAT = (0.5, 0.05)  # the share of a people's food that is wild game: (a forager's, any other way's). UNVERIFIED round numbers, no source on file: a
 # forager eats much of its food as game, herders, farmers and gardeners hunt little (the ethnographic figure is wanted; inbox draft)
 # Carbone, Turvey & Bielby 2011, Proc R Soc B 278:2682 (PDF p. 2683-2684, Fig. 1 and Table 1; read 10-29): the carnivorous theropod guild of Late Cretaceous North America by
 # size class, as the share of the guild's individuals (their abundances follow the mammalian carnivore line N ~ 1.97 M^-0.88, their Table 3): 20.6 kg 79.9%, 58.3 kg 19.0%, 1,123 kg
-# 0.9%, 5,347 kg 0.1%. They give the abundance, not the food; the guild's food by class is that times a metabolic M^0.75 (Kleiber; the exponent is not from the paper).
+# 0.9%, 5,347 kg 0.1%. They give the abundance, not the food; the guild's food by class is that times M^GUILD_EXP: one metabolic exponent for the
+# guild and the dragons (PW-1071, lane 90): the dragons' own intake law's (dragon_ages.FMR_B, Nagy et al. 1999's mammal slope 0.734), inside Carbone &
+# Gittleman 2002's fitted -0.66 (CI -0.48 to -0.85, p. 2274) and Carbone et al. 2007's 0.6-0.79 (Table 1, p. 364).
+# Young dragons eat in the smaller classes (PW-1071): Carbone et al. 2011 built the classes from adult masses but name "juvenile and sub-adult T. rex
+# individuals, which may have been relatively abundant compared with adults" among T. rex's competitors (p. 2683). So the apex class's share feeds the
+# adults and ancients, and the wyrmlings and young (dragon_ages: ~1/4 of the dragons' food) eat inside the smaller classes' share (`dragon_share`).
 GUILD_CLASSES = ((20.6, 79.9), (58.3, 19.0), (1123.0, 0.9), (5347.0, 0.1))  # (mass kg, % of the guild's individuals)
 GUILD_APEX_KG = 1000.0  # the classes of this mass and up are the dragons' own size class (a dragon's ecological mass is ~2-3 t)
-GUILD_KLEIBER = 0.75
+GUILD_EXP = DA.FMR_B
+YOUNG_IN_GUILD = True  # (off only to measure it)
+GUILD_GEN_YR = 7.0  # the smaller predators' generation, years, for the peoples' kill on them (a wolf- to leopard-sized carnivore's; a judgement)
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
-FORAGE_KM = 60.0  # a dragon takes its prey from about this far round (the prey field is averaged over neighbours this far; >= 1 ring).
-# Cross-check: Jetz et al. 2004 (Science 306:266, Table 1 p. 268) fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70);
-# at 3.2 t that is ~8,400 km2, a disc ~52 km in radius (a far extrapolation beyond the living carnivores)
+# Hunting ranges (PW-1065, lane 90; owner 10-31: "dragons have very large hunting ranges"). Jetz et al. 2004 (Science 306:266, Table 1 p. 268)
+# fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70; a far extrapolation past the living carnivores). Over the age schedule's
+# stage masses that is a disc of ~2 / 12 / 46 / 173 km radius for wyrmlings / young / adults / ancients.
+def _jetz_km(m_kg):
+    return float(np.sqrt(52.07 * np.asarray(m_kg, float) ** 1.20 / 100.0 / np.pi))
+
+
+_DS0 = DA.structure()
+FORAGE_KM = float(np.dot(_DS0["food_share"], [_jetz_km(m) for m in _DS0["stage_mass_kg"]]))  # ~77 km: the dragons take their prey from about
+# this far round, the food-weighted mean of the stages' ranges (the prey field is averaged over neighbours this far; >= 1 ring)
+HUNT_KM = _jetz_km(_DS0["stage_mass_kg"][3])  # ~173 km: the ancients' range; a kind hunts this far out of its own country (`release`)
 FORAGER_KG = 65.0  # the giants' baseline (meta.forager_km2 human foragers per km2, PW-976) is for a forager of this mass, scaled by M^-0.75 (proposal, forager-scaled column)
 PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild big herbivores where small folk live, after Sandom et al.
 # 2014) is 1 - exp(-N / PRESS_N0), N the small folk per km2 in the cell: a thin forager band already cuts the herds most of the way. It no
@@ -120,8 +147,9 @@ PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild b
 # the kill's size or the vulnerabilities: KILL_Q, VULNERABILITY and the means are judgements.
 BREED_X = 2.0  # the births' rise at which persecution halves the megafauna (the half-point of `dragon_kept`'s form; a judgement. Crouse 1987
 # p. 1417: loggerheads could recover by fecundity only "if they could more than double egg production, which seems unlikely")
-KILL_Q = 0.0028  # kill effort a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
-# 10 per km2, keep 10% of their dragons. The evidence read would allow local extirpation in dense farmland, Ripple 2014's tiger at 18% and
+KILL_Q = 0.00187  # kill effort a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
+# 10 per km2, keep 10% of their dragons; lane 90 re-calibrated it for the means read from the history (PW-1177): such farmers keep their herds and
+# ride, means 0.94 against the old 0.625, so 0.0028 x 0.625 / 0.94, the same kill on them. The evidence read would allow local extirpation in dense farmland, Ripple 2014's tiger at 18% and
 # lion at 17% of their historical range, Table 1, a range share, not density kept; the form is never fatal at any KILL_Q, so 10% is a
 # reading of how hard late peoples should press, not a bound)
 MOTIVE0 = 0.25  # means: a people with no herds still kills what threatens it, at this share of one with herds everywhere (judgement)
@@ -136,13 +164,37 @@ ERA_KYR = {"industrial": 0.25, "renaissance": 0.35, "medieval": 1.0, "classical"
 
 
 def guild_ratio(h: History | None = None) -> float:
-    """The rest of the predator guild's food over the apex class's, (1 - s) / s: s the share of the guild's food (abundance x M^0.75)
+    """The rest of the predator guild's food over the apex class's, (1 - s) / s: s the share of the guild's food (abundance x M^GUILD_EXP)
     that falls to the classes of GUILD_APEX_KG and up, from Carbone, Turvey & Bielby 2011's size classes (GUILD_CLASSES): ~5.0, so
     wherever dragons take a unit of food, the smaller carnivores take about five (UNVERIFIED as a general rule: one Cretaceous guild
     standing for the dragons' world; PW-977 stage 2). With h, x its tree's meta.rivals (0: no rival predators; default 1)."""
-    f = np.array([n * m ** GUILD_KLEIBER for m, n in GUILD_CLASSES])
+    f = np.array([n * m ** GUILD_EXP for m, n in GUILD_CLASSES])
     top = np.array([m >= GUILD_APEX_KG for m, _ in GUILD_CLASSES])
     return float(f[~top].sum() / f[top].sum()) * (getattr(h.tree, "rivals", 1.0) if h is not None else 1.0)
+
+
+def young_share(h: History | None = None) -> float:
+    """The share of the dragons' food eaten by wyrmlings and the young, who hunt in the smaller classes (YOUNG_IN_GUILD; 0 when off)."""
+    if not YOUNG_IN_GUILD:
+        return 0.0
+    fs = (h.dragon_struct if h is not None and getattr(h, "dragon_struct", None) is not None else DA.structure())["food_share"]
+    return float(fs[0] + fs[1])
+
+
+def dragon_share(h: History | None = None) -> float:
+    """The dragons' share of the guild's food (PW-1071): the apex class's 1 / (1 + guild_ratio) feeds the adults and ancients, and the
+    young's share of the dragons' food comes out of the smaller classes': D = apex / (1 - young_share), at most 1."""
+    return min(1.0, 1.0 / (1.0 + guild_ratio(h)) / (1.0 - young_share(h)))
+
+
+def guild_kept(h: History, kl, lev: float | None = None):
+    """The smaller predators' share of their food-fed number kept under the peoples' kill kl (PW-1070, lane 90): Ripple et al. 2014's 31
+    persecuted large carnivores (Science 343:1241484, Table 1) include the wolf- and leopard-sized members of the guild, so the peoples press
+    them too, at the wyrmlings' vulnerability (spears, traps and poison reach them at any tech) in the one-stage form, r = ln(BREED_X) /
+    GUILD_GEN_YR."""
+    lev = tech_level(h.tree.era, getattr(h, "_ago_now", 0.0)) if lev is None else lev
+    v = vulnerability(lev)[0] * press_x(h.tree, lev)
+    return 1.0 / (1.0 + np.asarray(kl, float) * v / (np.log(BREED_X) / GUILD_GEN_YR))
 
 
 def meat_need(h: History, line) -> float:
@@ -168,8 +220,8 @@ def natural_coef(h: History, line) -> float:
     m = eco_mass(h, line)
     if "flies" not in line.traits:
         return h.tree.forager_km2 * (m / FORAGER_KG) ** -DAMUTH_EXP
-    if h.mf_natural == "food" and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's apex part / a dragon's food; the deep epoch's)
-        return OFFTAKE / (1.0 + guild_ratio(h)) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
+    if h.mf_natural == "food" and h.prey_wild is not None:  # (PW-990 B: per t/km2 of prey, the wild offtake's dragons' part / a dragon's food)
+        return OFFTAKE * dragon_share(h) / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
     if h.mf_natural == "prey" and h.prey_wild is not None:
         return CARBONE_A * m ** -CARBONE_B / 10.0
     la = LOG_A["mammal" if h.mf_natural == "mammal" else "mesotherm"]
@@ -196,22 +248,43 @@ def tech_level(era: str, ago: float) -> float:
     return float(np.interp(max(ago, 0.0), xs, ys))
 
 
+MOUNTED_X = 0.5  # means: a people that rides hunts dragons over open country this much harder (PW-1177; a judgement)
+
+
+def _known(h: History) -> tuple[np.ndarray, np.ndarray]:
+    """Per line, at the step, what the history itself knows a people has (PW-1177, lane 90): herds (animals.herding: the best adoption
+    of a herd animal it has tamed or taken up, 0..1) and riding (the best adoption of an animal that speeds it over open country, horses).
+    Without the animals pass, herds as its way of life says and no riding."""
+    L = len(h.lines)
+    A = getattr(h, "animals", None)
+    if A is None:
+        return np.ones(L), np.zeros(L)
+    herds = np.array([A.herding(k) for k in range(L)])
+    rides = np.zeros(L)
+    for st in A.stocks:
+        if st.a.speed > 1.0:
+            rides = np.maximum(rides, st.adopt)
+    return herds, rides
+
+
 def means(h: History) -> np.ndarray:
-    """Per line, 0..1: how hard one person of it presses megafauna, before the tech level (PW-1068): motive x organisation. Motive:
-    MOTIVE0 + (1 - MOTIVE0) x the share of its country it stocks (prey.LIVESTOCK; herds to defend). Organisation: its wild-food share at
-    FORAGER_ORG (bands), the rest (settled and herding) at 1. 0 for megafauna and overlays. With `vulnerability` (the tech level by era),
-    the one place a later ticket feeds the peoples' own techs in (weapons, metal, horses, organised hunts)."""
+    """Per line, 0..1.5: how hard one person of it presses megafauna, before the tech level (PW-1068): motive x organisation x reach.
+    Motive: MOTIVE0 + (1 - MOTIVE0) x the share of its country it stocks (prey.LIVESTOCK) x how far it has the herds yet (`_known`: herds to
+    defend only once it keeps them). Organisation: its wild-food share at FORAGER_ORG (bands), the rest (settled and herding) at 1. Reach:
+    1 + MOUNTED_X x how far it rides (`_known`). 0 for megafauna and overlays. Read from the history at each step (PW-1177); the weapons
+    and metal still come from the era calendar (`tech_level`), as the technology tree is made after the history (PW-946)."""
     m = getattr(h, "_means", None)
-    if m is not None:
-        return m
+    if m is not None and m[0] == getattr(h, "_ago_now", 0.0):
+        return m[1]
     from .. import landuse as LU
+    herds, rides = _known(h)
     out = np.zeros(len(h.lines))
     for k, l in enumerate(h.lines):
         if l.megafauna or l.overlay:
             continue
         f = min(1.0, LU.shares(h.tree, l)["forage"])
-        out[k] = (MOTIVE0 + (1.0 - MOTIVE0) * h._herd[k]) * (f * FORAGER_ORG + (1.0 - f))
-    h._means = out
+        out[k] = (MOTIVE0 + (1.0 - MOTIVE0) * h._herd[k] * herds[k]) * (f * FORAGER_ORG + (1.0 - f)) * (1.0 + MOUNTED_X * rides[k])
+    h._means = (getattr(h, "_ago_now", 0.0), out)
     return out
 
 
@@ -286,7 +359,7 @@ def setup(h: History) -> None:
     from .. import prey as PR
     h.mf_natural = h.tree.megafauna_natural
     h.dragon_struct = DA.structure(h.tree.dragon_ages)
-    h.prey_wild = PR.wild(getattr(h.ps, "graze_npp", None))  # (made for any tree: the people density reads it too, PW-974)
+    h.prey_wild = PR.wild(getattr(h.ps, "graze_npp", None), getattr(h.ps, "rain0", None))  # (the above-ground part, PW-1073)
     h.prey_prod = None if h.prey_wild is None else _to_shore(h, PR.productivity(h.prey_wild, h.prey_wild > 0))
     h.prey_ref = float(np.median(h.prey_wild[h.prey_wild > 0])) if h.prey_wild is not None and (h.prey_wild > 0).any() else 1.0
     h._herd = PR.herd_share(h.lines)
@@ -295,6 +368,65 @@ def setup(h: History) -> None:
     h._press = h._kill = h._prey = h._food = h._land_now = None
     h._deep_now = False
     h._ago_now = 0.0
+    h._first_ago = np.full(h.grid.n, -1.0)  # (per cell, kyr ago small folk first lived there; -1 never: `note_settled`, PW-1000)
+    h._overkill = None
+    h._deep_food = None  # (the deep epoch's food budget, t/km2/yr for the dragons: `deep_budget`, PW-1062)
+    h._wild_mean = None if h.prey_wild is None else float(h.prey_wild[h.prey_wild > 0].mean()) if (h.prey_wild > 0).any() else 0.0
+
+
+COEVOL_KM = 300.0  # the herds' own range: a land's fauna has known people as long as the longest-peopled land this near (a judgement, = RELEASE_KM)
+
+
+def note_settled(h: History, P: np.ndarray, ago: float) -> None:
+    """Each step (History.run): the cells small folk hold for the first time get `_first_ago` = ago (PW-1000 B, the overkill's clock)."""
+    N = (np.where(P >= EST, P, 0.0) * _small_w(h)[:, None]).sum(0)
+    new = (N > 0) & (h._first_ago < 0)
+    if new.any():
+        h._first_ago[new] = ago
+        h._overkill = None
+
+
+def overkill(h: History) -> np.ndarray | float:
+    """Per cell, the share of the wild big herbivores lost where small folk press the land fully (prey.field): meta.overkill x
+    prey.coevolved_loss of the years the fauna there has lived beside small folk (the longest-peopled land within COEVOL_KM; PW-1000 B).
+    A number (meta.overkill) on a History without the clock."""
+    base = getattr(h.tree, "overkill", PR.OVERKILL)
+    fa = getattr(h, "_first_ago", None)
+    if fa is None:
+        return base
+    c = getattr(h, "_overkill", None)
+    if c is not None and c[0] == (h._ago_now, base):
+        return c[1]
+    g = h.grid
+    x = fa.copy()
+    for _ in range(max(1, int(round(COEVOL_KM / h.cell_km)))):
+        x = np.maximum(x, nbr_reduce(g, np.maximum, x[g.nbr_idx]))
+    yrs = np.where(x >= 0, x - h._ago_now, 0.0)
+    out = base * PR.coevolved_loss(yrs)
+    h._overkill = ((h._ago_now, base), out)
+    return out
+
+
+def deep_budget(h: History, P: np.ndarray, land: np.ndarray) -> None:
+    """The deep epoch's food budget (PW-1062 A, lane 90): the plates lay elsewhere, so the present's prey field holds only as a planet
+    figure. The dragons' food per km2 = the land's mean wild offtake (OFFTAKE x the present's mean wild prey, after the overkill at the
+    step's mean pressure on its land), less the peoples' mean game take there, plus the herders' tolerated stock, x the dragons' share of
+    what is left after the pressed guild. Giants are left out (a few per cent of the food). Sets h._deep_food (t/km2/yr)."""
+    if h.prey_wild is None or not land.any():
+        h._deep_food = None
+        return
+    press = pressure(h, P, land)[land]
+    ok = overkill(h)
+    ok = ok[land] if np.ndim(ok) else ok
+    W = OFFTAKE * h._wild_mean * float(np.mean(1.0 - ok * press))
+    x = np.where(P >= EST, P, 0.0)[:, land]
+    hunt = float(((x * h.dens_cells()[:, land] * h._meat[:, None]).sum(0)).mean()) * getattr(h.tree, "game_share", 1.0) if BUDGET else 0.0
+    L = STOCK_TOLERABLE * h._wild_mean * PR.LIVESTOCK_X * float(np.clip(x.T @ h._herd, 0, 1).mean())
+    pool = W - min(hunt, W) + L
+    if BUDGET and h.mf_natural == "food":
+        kl = kill(h, P, land)[land]
+        pool = pool * (1.0 - (1.0 - dragon_share(h)) * float(np.mean(guild_kept(h, kl))))
+    h._deep_food = pool
 
 
 def _to_shore(h: History, x: np.ndarray) -> np.ndarray:
@@ -326,7 +458,7 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: 
     if h.prey_wild is None:
         return None
     ref = PR.refuge(tags) if tags is not None else np.zeros(h.grid.n, bool)
-    f = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, EST), overkill=getattr(h.tree, "overkill", PR.OVERKILL))
+    f = PR.field(h.prey_wild, press, ref, PR.stocked(P, h._herd, EST), overkill=overkill(h))
     wild, live = _reach(h, f["wild"]), _reach(h, f["livestock"])
     W, L = OFFTAKE * wild, STOCK_TOLERABLE * live
     z = np.zeros_like(W)
@@ -345,10 +477,13 @@ def budget(h: History, P: np.ndarray, press: np.ndarray, tags: dict | None, kl: 
                 gi += x[k] * local_density(h, k, kl, wild + live) * giant_cattle_yr(eco_mass(h, l)) * PR.HEAD_T
         gi = _reach(h, gi)
         out["giants"] = np.minimum(gi, pool)
-        if h.mf_natural == "food":  # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left)
-            gd = guild_ratio(h) / (1.0 + guild_ratio(h)) * (pool - out["giants"])
-        else:
-            gd = guild_ratio(h) * CARBONE_A * h.dragon_struct["eco_mass_kg"] ** -CARBONE_B / 10.0 * h.dragon_struct["cattle_yr"] * PR.HEAD_T * (wild + live)
+        if kl is None:
+            kl = kill(h, P, h._land_now)
+        # (PW-990 B: the guild's smaller carnivores take their size classes' part of what is left, less what the young dragons eat inside it
+        # (dragon_share, PW-1071), and only as many as the peoples' kill leaves them (guild_kept, PW-1070): what a pressed guild leaves, the
+        # dragons can take, the release running both ways. Every natural mode alike (lane 90): under "prey" the guild was guild_ratio x the
+        # dragons' Carbone food, which at the sourced intake law asks ~1.3x the whole offtake and starved the dragons)
+        gd = (1.0 - dragon_share(h)) * (pool - out["giants"]) * guild_kept(h, kl)
         out["guild"] = np.minimum(gd, pool - out["giants"])
         out["pool"] = pool
         out["food"] = pool - out["giants"] - out["guild"]
@@ -375,6 +510,8 @@ def natural(h: History, k: int, prey: np.ndarray | None, food: np.ndarray | None
     land's median prey, a giant at its forager-scaled density."""
     l, c = h.lines[k], h.dens_nat[k]
     if h.mf_natural == "food" and "flies" in l.traits and h.prey_wild is not None:  # (PW-990 B: the dragons' part of the food / a dragon's food)
+        if food is None and prey is None and getattr(h, "_deep_food", None) is not None:  # (the deep epoch's budget, PW-1062)
+            return h._deep_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
         return food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T) if food is not None else c * (prey if prey is not None else h.prey_ref)
     if h.mf_natural not in ("prey", "food") or h.prey_wild is None:
         return c
@@ -387,14 +524,19 @@ def pressure(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.nd
     """Per cell, 0..1: the peoples' overkill pressure on the wild herds there (prey.field), 1 - exp(-N / PRESS_N0) with N the small folk
     per km2 (every line that is not megafauna nor an overlay, at its presence x density); also what marks peopled country (summary).
     It does not press the megafauna themselves (`kill`, PW-1068). A sea cell takes the most of the land next to it."""
-    w = getattr(h, "_press_w", None)
-    if w is None:
-        w = h._press_w = np.array([0.0 if (l.megafauna or l.overlay) else 1.0 for k, l in enumerate(h.lines)])
-    N = (np.where(P >= EST, P, 0.0) * h.dens_cells() * w[:, None]).sum(0)
+    N = (np.where(P >= EST, P, 0.0) * h.dens_cells() * _small_w(h)[:, None]).sum(0)
     if land is not None:
         g = h.grid
         N = np.where(land, N, np.maximum(N, nbr_reduce(g, np.maximum, np.where(land, N, 0.0)[g.nbr_idx])))
     return 1.0 - np.exp(-N / PRESS_N0)
+
+
+def _small_w(h: History) -> np.ndarray:
+    """Per line, 1 for the small folk (every line that is not megafauna nor an overlay), else 0."""
+    w = getattr(h, "_press_w", None)
+    if w is None:
+        w = h._press_w = np.array([0.0 if (l.megafauna or l.overlay) else 1.0 for l in h.lines])
+    return w
 
 
 def _pressed(h: History, k: int, kl, prey: np.ndarray | None, food: np.ndarray | None = None) -> np.ndarray:
@@ -489,9 +631,15 @@ def release(h: History, l, k: int, env: dict, tags: dict, step) -> np.ndarray | 
         return None
     g = h.grid
     near = own >= SUITABLE * CP.SUIT_K
-    for _ in range(max(1, int(round(RELEASE_KM / h.cell_km)))):
+    hunt = None
+    for i in range(max(1, int(round(RELEASE_KM / h.cell_km)), int(round(HUNT_KM / h.cell_km)) if flies else 0)):
         near = near | nbr_reduce(g, np.logical_or, near[g.nbr_idx])
-    return RELEASE_K * edge_fit(l, env, tags) * rich * (open_ & near)
+        if flies and i + 1 == max(1, int(round(HUNT_KM / h.cell_km))):
+            hunt = near.copy()
+    # (PW-1065, lane 90: a dragon hunts its whole range, HUNT_KM out of its own country, rich prey or poor: there at RELEASE_K, the food
+    # then setting how many it feeds; farther, to RELEASE_KM, only where the prey is plentiful, as before)
+    reach = rich if hunt is None else np.maximum(rich, hunt.astype(float))
+    return RELEASE_K * edge_fit(l, env, tags) * reach * (open_ & near)
 
 
 SCATTER_RATE = 1.0  # (PW-924 coverage: was 0.2) new pockets a megafauna line founds per kyr, at most SCATTER_MAX a step: "new dragons just turn up now and then" (owner: breeding
@@ -538,6 +686,18 @@ def metapop_km(line) -> float:
     colonisation persist together though each alone would wink out (Levins 1969; Hanski 1998, "Metapopulation dynamics", Nature 396).
     Linked only within one reach, a pocket scatter founded farther off was faded as an isolate (most of the red and black dragons' losses)."""
     return SCATTER_LINKS * link_km(line)
+
+
+LINKED_MVP = 1000.0  # PW-1069 (lane 90): the fewest a megafauna kind's linked population (its pockets within metapop_km) needs to last: "the
+# loose consensus that at least thousands of individuals are needed for long-term persistence" (Marshall et al. 2021, Science 372:284, p. 285);
+# "frequent estimates are a few thousand to at least 10,000 individuals" (Burness et al. 2001, PNAS 98:14518, p. 14521). The bottom of that
+# range: a regional pocket of tens lasts only as part of a linked population of a thousand or more, never alone
+
+
+def linked_mvp(h: History, l) -> float:
+    """The viable number of a megafauna kind's linked population (History._viable): the long-lived line's own number (line_mvp), at least
+    LINKED_MVP. Only the fade reads it; founding and origins keep line_mvp."""
+    return max(float(h.line_mvp(l)), LINKED_MVP)
 
 
 def linked_pockets(h: History, held: np.ndarray, km: float) -> tuple[np.ndarray, int]:
@@ -623,7 +783,7 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
     prey, food, live, pool = (bud["prey"], bud["food"], bud["live"], bud["pool"]) if bud is not None else (None, None, None, None)
     lvs = None
     if h.prey_wild is not None:
-        lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST), overkill=getattr(h.tree, "overkill", PR.OVERKILL))["livestock"]
+        lvs = PR.field(h.prey_wild, press, PR.refuge(tags), PR.stocked(P, h._herd, EST), overkill=overkill(h))["livestock"]
     ds = h.dragon_struct
     dens = {k: local_density(h, k, kl, prey, food, P) for k, l in enumerate(h.lines) if l.megafauna}
     fs = food_state(h, P, dens, food, live, pool)
@@ -638,6 +798,8 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
         dk = dens[k]  # (per cell: natural where no people presses them, PW-957; dragons held to their food, PW-977)
         nat = np.broadcast_to(np.asarray(natural(h, k, prey, food if flies else None), float), dk.shape)
         exp = np.where(held, P[k], 0.0) * dk * area
+        llab, ln_ = linked_pockets(h, held, metapop_km(l))  # (PW-1069: each pocket's linked population against the viable number)
+        lpop = np.bincount(llab[held], weights=exp[held], minlength=ln_) if ln_ else np.zeros(0)
         lab, n = g.components(held)
         pockets = []
         for z in range(n):
@@ -655,6 +817,10 @@ def summary(h: History, P: np.ndarray, tags: dict) -> dict:
                   "lat": round(float(np.degrees(np.arcsin(v[2]))), 1), "lon": round(float(np.degrees(np.arctan2(v[1], v[0]))), 1),
                   "country": _country(l, tags, sel), "landmass": land, "landmass_name": names.get(land),
                   "groups": groups_note(l, c)}
+            lk = int(np.bincount(llab[sel & held]).argmax()) if (sel & held).any() and ln_ else None
+            if lk is not None:
+                pk["linked_pop"] = int(round(float(lpop[lk])))
+                pk["viable"] = bool(lpop[lk] >= linked_mvp(h, l))
             if flies:  # (PW-958 stages; PW-967 food in cattle against the livestock there, an ancient's range from its food)
                 pk["stages"] = DA.split(c, ds["name"], rng)
                 if prey is not None:
