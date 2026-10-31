@@ -97,7 +97,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             arrays[k].append(S.encode(np.round(v) if k != "climate" else v, spec))
         for k in (*PEOPLE_LAYERS, *animal_layers):
             arrays[k].append(f[k])
-        st = {kk: vv for kk, vv in f["stats"].items() if not isinstance(vv, (list, dict)) or kk == "peoples"}
+        st = {kk: vv for kk, vv in f["stats"].items() if not isinstance(vv, (list, dict)) or kk in ("peoples", "learned")}  # (learned: PW-1155, Mkm² of learned country per line by biome)
         st["t"] = -round(f["ago"], 3)
         out_frames.append({"t": -round(f["ago"], 3), "stats": st, "omega": {}, "hotspots": [], "volcanoes": []})
     arrays = {k: np.stack(v) for k, v in arrays.items()}
