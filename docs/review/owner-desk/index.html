@@ -73,10 +73,25 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 </header>
 
 <h2 id="l8">The L8 world</h2>
-<div class="card" id="l8card"><p><span class="pending">still building</span> Lane 86 is making "Earth-like A" (seed 11, 1 Gyr) at
-level 8, about 655,000 cells of ~28 km, with the D&amp;D peoples on it and a side-by-side against the L7 seed-11 world. Links and
-what looks better or worse will land here. The L8 seed won't share the L7 world's continents: the two grids evolve differently, so
-it's the same recipe, not the same map.</p></div>
+<div class="card" id="l8card">
+<p><b>Ready to open.</b> <a href="http://localhost:8765/viewer/?world=a16f5a.json">L8 world a16f5a</a> (655,000 cells of ~30 km,
+seed 11) · <a href="http://localhost:8765/viewer/?run=2c0c5d">its run 2c0c5d</a> · compare with the
+<a href="http://localhost:8765/viewer/?world=2a7385.json">L7 seed-11 world 2a7385</a>. Four regional zooms and 75 highlights are in it.</p>
+<p><b>What changed from the plan:</b> it's a 100 Myr world, not 1 Gyr. The last 10 Myr, where climate is redone every 0.5 Myr, cost 90 of the
+132 minutes. 1 Gyr would have run past your 8 hours. So read it as a resolution demo: same seed as L7, but different continents.</p>
+<p><b>What L8 buys:</b> far more small water. Lakes go from 44 cells to 1,913. Big rivers are 3x longer in total (107,000 km against 35,000).
+Coastline is 30% longer, with 50 small islands against 7. The finer grid makes small basins and pits that L7 smooths away.
+It's also cooler (13 °C mean against 19.5) and lower (highest peak 3,250 m against 5,730), but that's mostly its young age, not the grid.</p>
+<p><b>Viewer:</b> it doesn't chug. The globe holds 60 fps while turning. It's on screen in ~5 s (L7: 1.6 s), and a layer switch takes about
+0.1 s. Switching to the flat map or relief takes ~1.2 s. Drawing only the visible half would gain nothing: the GPU is ~0.5 ms a frame,
+and the real costs were mesh building and the flat map, both fixed last night. L8 is about as big as one file can get in Chrome (440 of ~536 M
+characters), so L9 would need the binary layers ticket.</p>
+<p><b>Cost:</b> 132 min to simulate, then 14 min to slice and 39 min for a 60 kyr ice-age pass. Peak memory 15–18 GB. The make estimates were ~5x low (now a ticket).</p>
+<p><span class="pending">still running</span> The D&amp;D peoples on the L8 world (run <code>l86-l8-dnd-s11</code>). It started at 06:07, expected to land
+around 10:30–11:00. It will show up in the lineages list under that name. For comparison, the L7 peoples are
+<a href="http://localhost:8765/viewer/?run=57b95b&amp;layer=peoples">run 57b95b</a>.
+Notes: <code>docs/review/l8-world/notes.md</code>.</p>
+</div>
 
 <h2 id="v1">v1.0: where it stands</h2>
 <p class="sub">Your ruling: v1.0 is the planet, physics good enough to fool a layman and impress a climatologist or geologist.
@@ -171,9 +186,9 @@ with white and silver holding the cold poor land at lower numbers. Anything that
 teleport fix, no inherited ranges, a dying stem's land left empty, density by era and way of life, one capacity per people,
 sister peoples on different continents, a home-ground edge, dwarves fighting back; bands only if still needed. Judged on the
 stress test, with a "who holds each continent" measure.</td></tr>
-<tr><td>86 · L8 world</td><td>See the top.</td></tr>
+<tr><td>86 · L8 peoples</td><td>D&amp;D peoples on the L8 world, landing ~10:30–11:00; shares go in the card at the top.</td></tr>
 <tr><td>90 · dragons</td><td>The literature fixes above, then the paper's headline table regenerated.</td></tr>
-<tr><td>Next</td><td>v1 release checks and tally once the CPUs free up; then the space-to-ground globe's first try (PW-1198) after the tag.</td></tr>
+<tr><td>v1 checks</td><td>Release checks and the frozen-over tally, starting now that the L8 simulation is done (kept to part of the CPUs so the L8 peoples run isn&#39;t slowed much); then the space-to-ground globe's first try (PW-1198) after the tag.</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
 <a href="http://localhost:8765/viewer/?run=622c00&amp;layer=peoples">622c00</a> (s8) ·
@@ -190,6 +205,7 @@ portals for now; D22 virgin soil off, events designed (D25); D24 keeps 0.5%.</li
 <b>v4</b> milestone.</li>
 <li><b>Your PHB and DMG</b> are in <code>docs/references/dnd/</code> (git-ignored, never committed), searchable by page with
 <code>tools/rulebook.py</code>.</li>
+<li><b>Viewer at L8</b> merged: globe mesh built once into typed arrays, layer switches recolour only, the flat map built on first use (layer switch on the L8 flat map 2.7–5.3 s → ~0.1 s).</li>
 <li>The finest-timescale drought gap is a v2 physics ticket (PW-1171).</li>
 </ul>
 
