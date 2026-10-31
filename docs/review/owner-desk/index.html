@@ -108,7 +108,7 @@ Peoples ship as a preview. Plan: <code>docs/review/v1-cut/plan.md</code>.</p>
 <tr><td>Docs: star section, overview section 3 regenerated, 2.6 rewritten (PW-814, PW-816)</td><td>Merged, 858 tests pass</td></tr>
 <tr><td>Release checks (PW-825): L7 Earth check (71% climate-group agreement, global 13.9 °C and 996 mm against 14.0 and 983 observed);
 scorecard on 6 seeds (71%); the L7-drier pairs (L7 only ~2 points drier now)</td><td>Done, all as expected</td></tr>
-<tr><td>Hard-bar tally: 36 L6 + 6 L7 draws. Frozen over 0, boiled 0, ocean loss 0, <b>CO2 crash 1</b> (L6). Soft pass 78% at L6, 5 of 6 at L7</td><td><b>One hard failure, see D29</b></td></tr>
+<tr><td>Hard-bar tally: 36 L6 + 6 L7 draws (cause found). Frozen over 0, boiled 0, ocean loss 0, <b>CO2 crash 1</b> (L6). Soft pass 78% at L6, 5 of 6 at L7</td><td><b>One hard failure, see D29</b></td></tr>
 <tr><td>Showcases rebuilt on final code, full test suite, state page, close PW-244 and PW-1119, tag v1.0</td><td>After the checks</td></tr>
 </table></div>
 <p>Report: <code>docs/review/v1-cut/checks.md</code>. Everything passed except one world in 42, so the tag waits on D29.</p>
@@ -177,20 +177,29 @@ the light version of it.</div>
 <div class="answer">PW-1206</div></div>
 
 <div class="card"><div class="id">D29 · THE v1 TAG GATE · PW-1224</div>
-<h3>One world in 42 crashed its CO2. Hold the tag for it?</h3>
-<p>Your bar is zero hard failures, and the tally found one. One L6 world (seed 639472) sits at 373 ppm of CO2 at 952 Myr and falls to 36 ppm by
-1,000 Myr, ending about 10 °C colder than the pre-industrial reference. Ice reaches a third of the land, short of the 40% frozen-over line. In those last 70 Myr the
-volcanoes' CO2 drops to about a quarter, while rock weathering keeps drawing it down as if nothing had changed. A working thermostat
-would slow the weathering as the world cools. It's the known "carbon source runs low late" weakness (PW-1156, PW-1158), now caught
-on a world. A diagnosis lane (94) is running now: a written cause and candidate fixes, no sweeps, back to you before any fix.</p>
+<h3>One world in 42 crashed its CO2. The cause is found. Hold the tag for it?</h3>
+<p>Your bar is zero hard failures, and the tally found one. One L6 world (seed 639472) falls from 373 ppm of CO2 at 952 Myr to 36 ppm at
+1,000 Myr, ending about 10 °C colder than the pre-industrial reference. Ice reaches a third of the land, short of the 40% frozen-over line.</p>
+<p><b>Why (lane 94):</b> in the last 70 Myr the continents weld into one, taking the largest from 21% to 37% of the surface. That
+roughly halves the subduction trenches and slows the plates, and arc volcanoes are 92% of this model's CO2. So the source drops 3.6×. The
+weathering thermostat works, but it's weak here, because most weathering is on fresh tropical rock that barely cools. The direction is real:
+CO2 does follow subduction length (Mills et al. 2017), and an outgassing low has been tied to Snowball Earth (Müller et al. 2024). <b>The depth
+is a model defect.</b> Earth's 3–4× swings take far longer than 70 Myr. And plants starving for CO2 kept Earth above ~180 ppm (Pagani et al. 2009),
+which this model lacks: at 36 ppm its plants still weather rock at almost half speed. The same world dipped to 110 ppm earlier and recovered.</p>
 <ol>
-<li><b>A</b> hold the tag. Diagnose, then fix the mechanism, about 1–3 days.</li>
-<li><b>B</b> tag now, with "about 1 in 40 worlds can crash its CO2 late" as a known limit in the release notes, and fix it first in v2.</li>
+<li><b>A</b> hold the tag and fix the plants first: below 124 ppm, plant-driven weathering slows by the model's own leaf physiology (no new
+constant). This is a sound and cheap fix, a few hours plus a re-judge of the 6 draws that dipped low. It takes this world to ~65–73 ppm, so alone
+it doesn't clear the 100 ppm line.</li>
+<li><b>B</b> tag now, with "about 1 in 40 worlds can draw its CO2 down hard when its continents weld" as a known limit in the release notes. The plant fix and
+the plate-speed question go into v2, with the source-runs-low tickets (PW-1158, PW-1163).</li>
+<li><b>C</b> A's fix, then tag. If it lands at ~70 ppm, call that a deep cold spell, not a crash. That means setting the crash line
+(PW-1223) at, say, 50 ppm.</li>
 </ol>
-<div class="rec"><b>My lean: A.</b> The bar is yours, and a 10 °C late crash is exactly what would bother a climatologist. If the diagnosis shows
-the cause is a real tectonic event (the volcanoes really do go quiet) and only the weathering response is wrong, the fix should be small.
-Also yours to set (PW-1223): lane 92 had to define two of the hard failures itself. It called ocean loss under 40% of the surface,
-and a CO2 crash under 100 ppm after 300 Myr. I'd keep both. 100 ppm is well under the ice-age low of ~180.</div>
+<div class="rec"><b>My lean: C.</b> The plant fix is the missing mechanism, not a clamp. It should be in the planet a climatologist looks at,
+and it's hours of work, not days. After it, the world is a cold, ice-heavy one that never freezes over. That's a legitimate world, so the
+honest step is to set the crash line below where a real feedback holds CO2, not to tune toward 100. The diagnosis lane leaned B, and it
+wouldn't be wrong. The plate-speed question is v2 either way. Diagnosis: <code>docs/review/v1-cut/co2-crash-diagnosis.md</code>.
+Also yours (PW-1223): the checks lane set ocean loss as under 40% of the surface. I'd keep that.</div>
 <div class="answer">PW-1224 · PW-1223</div></div>
 
 <div class="card"><div class="id">D27 · YOUR D20 PEOPLES FIXES, MEASURED · lane 83</div>
@@ -258,7 +267,7 @@ sister peoples on different continents, a home-ground edge, dwarves fighting bac
 stress test, with a "who holds each continent" measure.</td></tr>
 
 <tr><td>90 · dragons</td><td><b>Merged, see D28</b> (868 tests pass).</td></tr>
-<tr><td>94 · CO2 crash</td><td>Diagnosis of the one crashed world (D29). Written cause and candidates, no fix yet.</td></tr>
+<tr><td>94 · CO2 crash</td><td><b>Diagnosed, see D29.</b> No fix started; waiting on you.</td></tr>
 <tr><td>93 · dragons + D20</td><td>Re-measuring the dragons on the combined peoples and dragon code.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>

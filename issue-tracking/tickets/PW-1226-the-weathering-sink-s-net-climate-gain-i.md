@@ -1,4 +1,5 @@
 ---
+id: PW-1226
 title: The weathering sink's net climate gain is 0.044 per C of dT in a cold episode, against the design's 0.070
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane94
 blocked_by: []
 relates: [PW-1224, PW-235, PW-881]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/v1-cut/co2-crash-diagnosis.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Cheapest check: on one terrain, `climate.compute` at dT 0 and -8 (seconds). Comp
 with `temp_response` (and the runoff's with RUNOFF_PER_C). Act only if the climate model's tropical land cools much less
 than 0.5 per C.
 - [ ] The fixed-terrain comparison, with a yes/no on whether the climate model or the geography explains the gap
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-weathering-land-temperature-response.md (found by lane94).

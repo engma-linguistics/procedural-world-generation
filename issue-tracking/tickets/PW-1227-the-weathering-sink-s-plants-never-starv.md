@@ -1,4 +1,5 @@
 ---
+id: PW-1227
 title: The weathering sink's plants never starve at low CO2, so nothing stops a source dip short of tens of ppm
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane94
 blocked_by: []
 relates: [PW-1224, PW-1158, PW-1163, PW-880, PW-1156]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, docs/review/v1-cut/co2-crash-diagnosis.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -36,3 +39,6 @@ constant. Watch for a double count with FERT above the floor.
 - [ ] The law as a unit test against the doc's offline table
 - [ ] Screen: 639472 l6fix r0.001 plus the 5 draws with minima < 124 ppm, arm against main. Minima rise; median end T
       moves under 0.3 C
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-weathering-plants-starve-below-co2-floor.md (found by lane94).
