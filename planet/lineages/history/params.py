@@ -160,3 +160,9 @@ LEARN_GAIN = 0.6  # learned country holds a people at most this share of the way
 # judgement, measured (lane 79, world 4360a3, dnd seed 7, one try): at 1 the first people into an empty continent (kobolds, ~100 kyr before
 # the humans) learned the temperate lowlands and kept them (6.5% -> 27% of people; the peoples' biome mixes converged, homogenisation
 # 0.63 -> 0.73); at 0.6 kobolds 11%, humans 73% -> 67%, homogenisation 0.62 as without learning
+SPLIT_FOUNDING = "range"  # lane 77 (owner ruling 10-30, PW-1152: a new people emerges at one spot and spreads from there), a switch to
+# measure, not yet chosen: "range" (as before: the founders also take the whole cut-off part of the parent's range they arise in, up to
+# POLY_MAX polycentric patches across it, and the stem's range is handed to its children at its end, PW-677); "local" (the founders hold
+# FOUNDER_KM about the origin only; at the stem's end its range passes only to children of its own kind, megafauna to megafauna, peoples to
+# peoples: a dragon range is not a population of proto-kobolds); "local_vacate" (local, and the stem's range is handed to no child: its
+# children spread into it)

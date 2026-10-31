@@ -77,6 +77,16 @@ Current showcase ids: [wiki/state.md](wiki/state.md). After making a showcase: s
 Multi-seed criteria pass when ~70% of seeds pass, not all; outlier worlds are allowed. Use 6-10 seeds when 4 is too few to judge. "Not worse" means the share of seeds passing doesn't drop.
 
 
+## How to judge a peoples change
+A change to the peoples history (planet/lineages/history/, the spread, the sample trees) is judged on many trees, not on dnd at one seed (owner 10-30: the preset must survive other dates, other peoples, more or fewer of them). `tools/peoples_robust.py` (lane 77) runs one try of each variant tree at L6 on the L6 worlds with time zooms (4360a3, af2677) and keeps only the numbers (nothing goes under runs/):
+- **base**: dnd and seven_meals at seeds 7, 10, 13; **jitter**: every split and arrival date x a seeded 0.5-2; **subset**: a 5-people and a 3-people cut of dnd, and dnd plus an authored people; **knob**: dwarves, bugbears, gnomes at density x0.5 and x2; **portal**: portal_mode sites (1 and 3 portals); **authored**: the trees in `tools/peoples_robust/trees/*.toml` (each with a one-line rationale: native_fey, mountain_stem, goblin_world, five_peoples, late_humans, even_six, menagerie at one seed; all_at_once is information only and never fails the suite).
+- **arms** are named params overrides (`ARMS`: range = today, local = `SPLIT_FOUNDING = "local"`, local_vacate); base, the dnd jitters, subset and authored run under each arm in `--arms` (default range,local).
+- `uv run python tools/peoples_robust.py run --out <scratch dir> --jobs 4 --threads 4 --max-load 60` (~145 runs, ~3.5 h at load ~40; 2 jobs if the box is busy; it waits for the load; re-running skips the finished ones), then `report --out <dir>` writes report.md and summary.json. `plan` lists the variants without running them.
+- Filters for one arm or a quick screen: `--family base,authored --trees dnd,even_six --seeds 7 --worlds 4360a3 --arms range --params '{"INVADE": 0}' --tag noinv` (`--params` overrides any constant in the history modules and spread, for that run only; `--tag` keeps its results apart).
+- To test a change, run it on main and on the branch (or add an arm, as SPLIT_FOUNDING does) into two directories and compare the reports.
+
+What passes: no crash; no authored people dead at the present without a stated reason (authored extinctions excepted); no people over 85% of all people in a tree of 3+; each knob people's share and cells led rising with its own density (x0.5 <= x1 <= x2); and fewer brittle peoples (share swinging over 10x across seeds and jitters, or dead in a run) than before. Shares are of people (presence x density x area, groups rolled up; megafauna and overlays apart), so a sparse people is small by construction: judge it by its swing and its range, not its share. `tests/test_peoples_robust.py` checks the variant builders and one run per arm on the small fake time zoom.
+
 ## Current state
 See [wiki/state.md](wiki/state.md) (one overwritten page) and [wiki/index.md](wiki/index.md). The dated journals of 2026-10-15 to 2026-10-21 were removed from this file; they are in its git history.
 

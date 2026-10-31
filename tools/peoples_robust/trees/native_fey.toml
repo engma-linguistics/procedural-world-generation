@@ -1,0 +1,16 @@
+# A peoples-robustness tree (tools/peoples_robust.py): an edit of a stock sample. Keys: rationale, base (a sample's name), off (lines
+# switched off), [edit.<id>] (fields set on a line; unset = [keys to remove]), [[lineage]] (lines added), [meta] (merged).
+rationale = "Elves and gnomes are native: elves split from the hominids early, gnomes from the archaic humans, instead of arriving late from the feywild."
+base = "dnd"
+
+[edit.elf]
+origin = "split"
+parents = ["hominid"]
+at = "700 kyr"
+name = "elves (native)"
+
+[edit.gnome]
+origin = "split"
+parents = ["archaic_human"]
+at = "250 kyr"
+name = "gnomes (native)"

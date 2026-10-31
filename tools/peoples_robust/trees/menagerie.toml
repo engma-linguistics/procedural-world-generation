@@ -1,0 +1,437 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys. A scale test: dnd's 23 peoples plus 29 more
+# D&D kinds (52 peoples, with dnd's dragons and giants). Stems and dates are plausible, not canon; each kind's habitat and way of life
+# copy an existing template's. Its rationale line per kind is the comment on its id.
+rationale = "The menagerie: dnd plus 29 more D&D kinds on plausible stems (52 peoples): does the history scale, and do many peoples crowd into slivers or die out?"
+base = "dnd"
+
+[edit.dwarf]
+persists = true  # (duergar split from it)
+[edit.gnome]
+persists = true  # (svirfneblin split from it)
+
+# -- new stems
+[[lineage]]
+id = "ungulate"  # hoofed-folk stem: centaurs, minotaurs, loxodons, giff
+name = "ungulate-folk stem"
+parents = ["mammalian"]
+at = "4 Myr"
+sapient = "2 Myr"
+temp_c = [4, 28]
+rain_mm = [250, 2000]
+prefers = ["open", "steppe"]
+
+[[lineage]]
+id = "hyaenid"  # gnoll stem (hyena-kin)
+name = "hyaenid stem"
+parents = ["mammalian"]
+at = "4 Myr"
+sapient = "1.5 Myr"
+temp_c = [14, 32]
+rain_mm = [150, 1200]
+prefers = ["savanna", "open"]
+
+[[lineage]]
+id = "aquatic"  # sea-mammal stem: merfolk
+name = "aquatic stem"
+parents = ["mammalian"]
+at = "4 Myr"
+sapient = "3 Myr"
+temp_c = [4, 28]
+rain_mm = [400, 4000]
+prefers = ["coast"]
+traits = ["swims", "coastal"]
+
+[[lineage]]
+id = "amphibian"  # a root of its own: grung, bullywugs, kuo-toa, sahuagin, locathah
+name = "amphibian stem"
+origin = "root"
+at = "8 Myr"
+temp_c = [12, 32]
+rain_mm = [900, 4000]
+prefers = ["wetland", "coast"]
+traits = ["swims"]
+
+[[lineage]]
+id = "insectoid"  # a root of its own: thri-kreen
+name = "insectoid stem"
+origin = "root"
+at = "7 Myr"
+temp_c = [16, 36]
+rain_mm = [50, 800]
+prefers = ["desert", "arid"]
+traits = ["hardy"]
+
+[[lineage]]
+id = "fungal"  # a root of its own: myconids
+name = "fungal stem"
+origin = "root"
+at = "9 Myr"
+temp_c = [4, 26]
+rain_mm = [600, 3000]
+prefers = ["forest", "wetland"]
+traits = ["subterranean"]
+
+# -- the kinds
+[[lineage]]
+id = "centaur"  # steppe herd-runners, as the human herders
+name = "centaurs"
+parents = ["ungulate"]
+at = "900 kyr"
+density = 0.8
+explore = 0.7
+temp_c = [2, 24]
+rain_mm = [250, 900]
+prefers = ["steppe", "open"]
+way = "pastoral_nomad"
+
+[[lineage]]
+id = "minotaur"  # hill and labyrinth folk, as the goliaths but warmer
+name = "minotaurs"
+parents = ["ungulate"]
+at = "700 kyr"
+density = 1.5
+explore = 0.5
+temp_c = [6, 24]
+rain_mm = [350, 1400]
+prefers = ["hills", "mountain"]
+traits = ["hardy"]
+
+[[lineage]]
+id = "loxodon"  # elephant-folk of the savanna, few and slow
+name = "loxodons"
+parents = ["ungulate"]
+at = "1.2 Myr"
+density = 0.5
+explore = 0.4
+generation_yr = 30
+temp_c = [16, 32]
+rain_mm = [300, 1500]
+prefers = ["savanna"]
+way = "agro_pastoral"
+
+[[lineage]]
+id = "giff"  # hippo-folk of rivers and wetlands
+name = "giff"
+parents = ["ungulate"]
+at = "600 kyr"
+density = 2
+explore = 0.5
+temp_c = [16, 32]
+rain_mm = [600, 3000]
+prefers = ["wetland", "lowland"]
+traits = ["swims"]
+
+[[lineage]]
+id = "gnoll"  # savanna raiders, as the hobgoblins
+name = "gnolls"
+parents = ["hyaenid"]
+at = "800 kyr"
+density = 1.5
+explore = 0.7
+temp_c = [14, 32]
+rain_mm = [150, 1000]
+prefers = ["savanna", "open"]
+traits = ["hunter", "aggressive"]
+
+[[lineage]]
+id = "merfolk"  # shallow-sea folk, as Seven Meals' merfolk
+name = "merfolk"
+parents = ["aquatic"]
+at = "2 Myr"
+density = 2
+explore = 0.7
+sea_share = 0.7
+realm = "coast"
+temp_c = [8, 28]
+elev_m = [-600, 0]
+traits = ["swims", "coastal"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "grung"  # poison-frog folk of the rainforest
+name = "grung"
+parents = ["amphibian"]
+at = "1 Myr"
+density = 3
+explore = 0.4
+temp_c = [20, 32]
+rain_mm = [1500, 4500]
+prefers = ["rainforest", "jungle"]
+
+[[lineage]]
+id = "bullywug"  # marsh frog-folk
+name = "bullywugs"
+parents = ["amphibian"]
+at = "1.2 Myr"
+density = 2
+explore = 0.4
+temp_c = [10, 30]
+rain_mm = [800, 3000]
+prefers = ["wetland"]
+traits = ["swims"]
+
+[[lineage]]
+id = "kuo_toa"  # cave-shore fish-folk, as the merfolk on dark coasts
+name = "kuo-toa"
+parents = ["amphibian"]
+at = "2 Myr"
+density = 1.5
+explore = 0.4
+sea_share = 0.6
+realm = "coast"
+temp_c = [2, 22]
+elev_m = [-400, 0]
+traits = ["swims", "coastal", "subterranean"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "sahuagin"  # shark-folk of the warm shelf seas
+name = "sahuagin"
+parents = ["amphibian"]
+at = "2.5 Myr"
+density = 1
+explore = 0.7
+sea_share = 0.9
+realm = "coast"
+temp_c = [16, 30]
+elev_m = [-1500, -50]
+traits = ["swims", "coastal", "aggressive"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "locathah"  # reef fish-folk
+name = "locathah"
+parents = ["amphibian"]
+at = "1.5 Myr"
+density = 1.5
+explore = 0.5
+sea_share = 0.8
+realm = "coast"
+temp_c = [18, 30]
+elev_m = [-300, 0]
+traits = ["swims", "coastal"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "yuan_ti"  # serpent-folk of the jungle temples
+name = "yuan-ti"
+parents = ["saurian"]
+at = "1.5 Myr"
+density = 1.5
+explore = 0.4
+temp_c = [20, 32]
+rain_mm = [1200, 4000]
+prefers = ["jungle", "rainforest"]
+
+[[lineage]]
+id = "thri_kreen"  # desert mantis-folk, as nomads
+name = "thri-kreen"
+parents = ["insectoid"]
+at = "1.5 Myr"
+density = 0.5
+explore = 0.7
+temp_c = [16, 36]
+rain_mm = [50, 700]
+prefers = ["desert", "arid"]
+traits = ["hardy", "hunter"]
+
+[[lineage]]
+id = "myconid"  # fungus-folk of damp forests and caves
+name = "myconids"
+parents = ["fungal"]
+at = "2 Myr"
+density = 2
+explore = 0.2
+insularity = 0.9
+temp_c = [4, 24]
+rain_mm = [700, 3000]
+prefers = ["forest", "wetland"]
+traits = ["subterranean"]
+
+[[lineage]]
+id = "owlin"  # owl-folk of the night forests
+name = "owlin"
+parents = ["avian"]
+at = "600 kyr"
+density = 0.8
+explore = 0.6
+temp_c = [-2, 20]
+rain_mm = [500, 2000]
+prefers = ["forest"]
+traits = ["flies", "hunter"]
+
+[[lineage]]
+id = "hadozee"  # gliding ape-folk, deck-hands of the tropics
+name = "hadozee"
+parents = ["hominid"]
+at = "1.2 Myr"
+density = 2
+explore = 0.7
+sea_share = 0.6
+temp_c = [18, 32]
+rain_mm = [1000, 4000]
+prefers = ["coast", "forest"]
+traits = ["seafaring"]
+
+[[lineage]]
+id = "quaggoth"  # pale cave-apes of the cold north
+name = "quaggoths"
+parents = ["hominid"]
+at = "900 kyr"
+density = 0.5
+explore = 0.4
+temp_c = [-10, 10]
+rain_mm = [200, 1200]
+prefers = ["subarctic", "tundra"]
+traits = ["hardy", "subterranean"]
+
+[[lineage]]
+id = "ogre"  # big hill raiders, as the goliaths
+name = "ogres"
+parents = ["giantkin"]
+at = "600 kyr"
+density = 0.3
+explore = 0.4
+temp_c = [-2, 20]
+rain_mm = [300, 1500]
+prefers = ["hills"]
+traits = ["hardy", "hunter"]
+
+[[lineage]]
+id = "shifter"  # beast-blooded forest hunters off the archaic humans
+name = "shifters"
+parents = ["archaic_human"]
+at = "150 kyr"
+density = 1
+explore = 0.6
+temp_c = [0, 20]
+rain_mm = [400, 2000]
+prefers = ["forest"]
+traits = ["hunter"]
+way = "forager"
+
+[[lineage]]
+id = "duergar"  # grey dwarves of the deep, off the dwarves
+name = "duergar"
+parents = ["dwarf"]
+at = "150 kyr"
+density = 2
+explore = 0.3
+insularity = 0.9
+temp_c = [-4, 16]
+rain_mm = [200, 1400]
+prefers = ["mountain"]
+traits = ["mountain", "subterranean", "miner"]
+
+[[lineage]]
+id = "svirfneblin"  # deep gnomes, off the gnomes
+name = "svirfneblin"
+parents = ["gnome"]
+at = "20 kyr"
+density = 4
+explore = 0.3
+insularity = 0.9
+temp_c = [0, 18]
+rain_mm = [400, 2000]
+prefers = ["mountain"]
+traits = ["subterranean", "miner"]
+
+[[lineage]]
+id = "eladrin"  # seasonal fey elves, off the elves
+name = "eladrin"
+parents = ["elf"]
+at = "15 kyr"
+density = 1
+explore = 0.7
+temp_c = [4, 22]
+rain_mm = [700, 2600]
+prefers = ["forest"]
+
+[[lineage]]
+id = "shadar_kai"  # grim elves of the cold margins, off the elves
+name = "shadar-kai"
+parents = ["elf"]
+at = "10 kyr"
+density = 0.8
+explore = 0.5
+temp_c = [-6, 12]
+rain_mm = [300, 1500]
+prefers = ["subarctic", "tundra"]
+
+[[lineage]]
+id = "githyanki"  # astral raiders, arrivals
+name = "githyanki (arrived)"
+origin = "arrival"
+at = "15 kyr"
+density = 1
+explore = 0.8
+temp_c = [-2, 24]
+rain_mm = [200, 1800]
+prefers = ["mountain", "open"]
+traits = ["aggressive"]
+
+[[lineage]]
+id = "githzerai"  # monastic gith of the high places, arrivals
+name = "githzerai (arrived)"
+origin = "arrival"
+at = "12 kyr"
+density = 0.8
+explore = 0.4
+insularity = 0.9
+temp_c = [-6, 18]
+rain_mm = [200, 1500]
+prefers = ["mountain"]
+traits = ["mountain"]
+
+[[lineage]]
+id = "satyr"  # fey revellers of the woods, arrivals
+name = "satyrs (from the feywild)"
+origin = "arrival"
+at = "30 kyr"
+density = 2
+explore = 0.5
+temp_c = [8, 26]
+rain_mm = [400, 1800]
+prefers = ["forest", "hills"]
+
+[[lineage]]
+id = "harengon"  # rabbit-folk of the meadows, arrivals
+name = "harengon (from the feywild)"
+origin = "arrival"
+at = "20 kyr"
+density = 4
+explore = 0.6
+temp_c = [4, 24]
+rain_mm = [400, 1500]
+prefers = ["open", "temperate"]
+
+[[lineage]]
+id = "pixie"  # tiny winged fey, arrivals
+name = "pixies (from the feywild)"
+origin = "arrival"
+at = "40 kyr"
+density = 0.5
+explore = 0.5
+temp_c = [4, 24]
+rain_mm = [700, 2500]
+prefers = ["forest"]
+traits = ["flies"]
+
+[[lineage]]
+id = "plasmoid"  # ooze-folk of the swamps, arrivals from far away
+name = "plasmoids (arrived)"
+origin = "arrival"
+at = "80 kyr"
+density = 0.5
+explore = 0.4
+temp_c = [10, 32]
+rain_mm = [900, 4000]
+prefers = ["wetland"]
+traits = ["subterranean"]
+
+[[lineage]]
+id = "changeling"  # shapeshifters living hidden among humans (a template)
+name = "changelings (among humans)"
+origin = "template"
+parents = ["human"]
+at = "6 kyr"

@@ -11,6 +11,7 @@ from ..spread import EST, graph_dist, nearest_label, rings
 from .params import POLY_MAX, POLY_MKM2, HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, PORTAL_FAR_KM, PORTAL_KM, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
 from .habitat import hold_mask
+from . import params as PM
 
 
 class OriginsMixin:
@@ -321,11 +322,13 @@ class OriginsMixin:
         pK = self._K(self.tree.lines[line.parents[0]], env, tags, step)
         r = max(2, int(round(FOUNDER_KM / self.cell_km)))
         blob = self._seed_blob(k, cell, K, (K > EST) & ((K >= 0.5 * pK) | ~P), r)
-        if P[cell] and lab[cell] != big:
+        local = PM.SPLIT_FOUNDING != "range"  # (lane 77: one origin, no takeover of the parent's cut-off part, no polycentric patches)
+        if P[cell] and lab[cell] != big and not local:
             part = (lab == lab[cell]) & (K > EST)
             self.p[k][part] = np.maximum(self.p[k][part], np.minimum(K[part], np.maximum(self.p[pk][part], 0.3)))
             blob = blob | part
-        blob = blob | self._polycentric(line, k, K, pK, P, blob, r)
+        if not local:
+            blob = blob | self._polycentric(line, k, K, pK, P, blob, r)
         self.p[pk][blob & P] = 0.0
         return cell, why
 
@@ -427,6 +430,10 @@ class OriginsMixin:
         P = self.p[k] > EST
         lab = np.full(g.n, -1, np.int64)
         kids = [c for c in self._realm_kids(line) if self.active.get(c)]
+        if PM.SPLIT_FOUNDING == "local":  # (lane 77: the stem's range passes only to children of its own kind)
+            kids = [c for c in kids if self.tree.lines[c].megafauna == line.megafauna]
+        elif PM.SPLIT_FOUNDING == "local_vacate":  # (...or to none: its children spread into it)
+            kids = []
         for ci, c in enumerate(kids):
             lab[self.p[self.idx[c]] > EST] = ci
         if kids and P.any():

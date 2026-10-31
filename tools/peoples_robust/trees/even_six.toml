@@ -1,0 +1,7 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+# The owner's target here is a near-even split (each of the six ~1/6). Lane 78's soft share bands will make this their acceptance
+# case: re-run it then with band_pct ~[12, 22] on each of the six (add the key under [edit.<id>] once the spec has it).
+rationale = "Six peoples only (humans, elves, gnomes, dragonborn, halflings, tieflings), no dragons, giants or other megafauna; the owner's target is a near-even split."
+base = "dnd"
+keep = ["human", "elf", "gnome", "dragonborn", "halfling", "tiefling"]
+off = ["half_elf", "aasimar"]

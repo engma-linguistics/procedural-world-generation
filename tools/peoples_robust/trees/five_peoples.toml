@@ -1,0 +1,4 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+rationale = "Only five peoples from four roots: humans, lizardfolk, goblins, aarakocra and the gnomes (arrivals); everything else off but their stems."
+base = "dnd"
+keep = ["human", "lizardfolk", "goblin", "aarakocra", "gnome"]
