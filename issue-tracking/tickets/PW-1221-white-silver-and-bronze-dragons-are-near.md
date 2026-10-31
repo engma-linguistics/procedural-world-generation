@@ -1,9 +1,10 @@
 ---
+id: PW-1221
 title: "White, silver and bronze dragons are nearly gone once the herds are fed only the above-ground NPP: cold, dry land holds 5-7x fewer grazers"
 type: task
 status: needs-decision
 parent: null
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: lane-90
 blocked_by: []
 relates: [PW-1073, PW-1065]
 refs: [planet/lineages/prey.py, planet/lineages/history/megafauna.py, planet/lineages/samples/dnd.toml, docs/review/dragon-food-chain/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
   (~1.5x in one trace) and costs others; not a real cure.
 
 Lean: B for v1 if the owner wants white dragons to be met in play; else A, with B in v2.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-cold-dragons-thin-after-above-ground-prey.md (found by lane-90).

@@ -1,4 +1,5 @@
 ---
+id: PW-1222
 title: "Dragon intake leaves out growth and flight: the mesotherm law is a field metabolic rate, which Nagy 2005 says omits the food for growing"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-90
 blocked_by: []
 relates: [PW-1066, PW-958]
 refs: [planet/lineages/dragon_ages.py, docs/review/dragon-food-chain/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 - **C.** Use the bird line for flying dragons as an upper bound on intake (x0.48 dragons).
 
 Lean: A. The intake law is now a stated, sourced choice; B and C have no number to put in.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-dragon-intake-growth-and-flight.md (found by lane-90).

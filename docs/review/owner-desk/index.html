@@ -91,7 +91,10 @@ characters), so L9 would need the binary layers ticket.</p>
 much faster than the 4–5 h guess). It ran on the peoples code from before D20 (D27 below), so it's the old human-heavy mix. Humans
 hold 110 Mkm², and their farmer, herder and nomad groups lie over the same land again (the stacking that D20 removes). Halflings 46,
 dragonborn 34, hobgoblins 19, orcs 14, tabaxi and kenku 13, kobolds 9, elves and gnomes 8. The server answers for it, but I haven't
-opened it in a browser at L8 yet. D20 is merged now, and a re-run on the new code (<code>l8-dnd-s11-d20</code>) started at 08:45. It should land around 09:50. For comparison, the L7 peoples are
+opened it in a browser at L8 yet. <b>On the D20 code</b> (<a href="http://localhost:8765/viewer/?run=b9edf5&amp;layer=peoples">run b9edf5</a>, 46 min): a very different world. Hobgoblins
+lead with 49 Mkm². Humans and their groups (nomads 32, plain humans 28, farmers 20, herders 16) total about 96, against about 410 on the old
+code. Orcs have 28, bugbears 21, half-orcs and steppe orcs 20 each, lizardfolk 19, hill giants 16, halflings and kenku 13. Kobolds are down to
+4.6. One try on one world, so it's a taste, not a verdict. It shows goblinoids filling what humans used to hold, which feeds D27's questions. For comparison, the L7 peoples are
 <a href="http://localhost:8765/viewer/?run=57b95b&amp;layer=peoples">run 57b95b</a>.
 Notes: <code>docs/review/l8-world/notes.md</code>.</p>
 </div>
@@ -224,7 +227,7 @@ Traces rule out the population floor and persecution. It's the food.</p>
 <div class="rec"><b>My lean: B, as the next dragon lane, in v2.</b> It isn't a v1 blocker, since peoples and dragons ship as a preview. Until then it's A by default.
 Report: <code>docs/review/dragon-food-chain/report.md</code>. Lane 90 also asks whether dragons should eat more while growing and in flight.
 It leans no on both, and so do I.</div>
-<div class="answer">cold dragons ticket (number after the merge)</div></div>
+<div class="answer">PW-1221</div></div>
 </div>
 
 <h2 id="coming">Running now</h2>
@@ -234,8 +237,8 @@ It leans no on both, and so do I.</div>
 teleport fix, no inherited ranges, a dying stem's land left empty, density by era and way of life, one capacity per people,
 sister peoples on different continents, a home-ground edge, dwarves fighting back; bands only if still needed. Judged on the
 stress test, with a "who holds each continent" measure.</td></tr>
-<tr><td>L8 peoples, D20 code</td><td>Re-run on the merged peoples code, landing ~09:50; shares go in the card at the top.</td></tr>
-<tr><td>90 · dragons</td><td><b>Done, see D28.</b> Merging once the L8 re-run finishes, since it touches the same code.</td></tr>
+
+<tr><td>90 · dragons</td><td><b>Merged, see D28</b> (868 tests pass).</td></tr>
 <tr><td>v1 checks</td><td>Release checks and the frozen-over tally, starting now that the L8 simulation is done (kept to part of the CPUs so the L8 peoples run isn&#39;t slowed much); then the space-to-ground globe's first try (PW-1198) after the tag.</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·

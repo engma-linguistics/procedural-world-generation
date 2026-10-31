@@ -1,4 +1,5 @@
 ---
+id: PW-1225
 title: "Herd production by prey size: the offtake reads Farlow's turnover at one 0.5 t head everywhere; small-grazer country should give more, elephant country less"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-90
 blocked_by: []
 relates: [PW-1072, PW-991]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/prey.py, docs/review/dragon-food-chain/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -27,3 +30,6 @@ What would do it: a per-cell mean prey mass (from the vegetation: open grassland
 browsers; or from the giants and the herders' stock), then turnover at that mass. Needs a source for the size structure by biome.
 - [ ] a sourced mean large-herbivore mass by biome or by biomass
 - [ ] OFFTAKE per cell from it
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-prey-size-field-for-herd-turnover.md (found by lane-90).
