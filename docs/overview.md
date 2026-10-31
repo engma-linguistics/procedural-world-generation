@@ -848,10 +848,15 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
-### 2.26 Peoples history: founding and the contest for land (`lineages/history/`, lane 83, owner D20)
+### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83 and 97, owner D20, D25-D27)
 
 The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.
 - **One-spot founding** (`origins._origin_split`, PW-1152, PW-1181): a split's founders hold the suitable country within `FOUNDER_KM` of one origin cell in or by its parent's range. They take neither a cut-off part of the parent's range nor patches across it, so the kobolds of the worldwide dragon stem start as one people of one country. When a stem ends at its last split (`_end_parent`), its remaining land lies empty for its children to spread into; it passes to no child (this replaces PW-677's handover). A stem ends only once every child of its realm has started, the ones authored to die out included, and a stem with splits still to come holds out in a refuge as a living people does (PW-1184). A split whose parent is gone founds near the parent's last land, and one with no room by its parent at the nearest country it can live in (`_origin_fallback`, a distance kernel of `FOUNDER_KM`), never at the best habitat anywhere.
+- **Founding at a few places** (`origins._found_spread`, `params.FOUND_SITES` 3, `FOUND_SPREAD` 1; lane 97, owner D27): a root, a
+  split or a people of the dragon stem founds at up to three places on one landmass, the first at the origin cell above, the others
+  drawn by the founding score within one walking jump (`JUMP_KM`, 800 km) of it and clear of each other's founding blobs. The founders
+  are as many as one blob's, shared among the places. The spread is in the spirit of our species' several linked regional origins
+  (Scerri et al. 2018; Ragsdale et al. 2023); the counts are judgements. Arrivals, place-born and sea peoples found as before.
 - **Fit decides the contest** (`competition._fit_w`, `params.FIT_Q`, PW-1180 option A): the competition line k feels from rival j on a cell is weighted by clip(S_j / S_k, 1/3, 3), S = fit x breadth^-1/2 x contest. The fit is how well the cell suits the people's body and ways (habitat before the goods, herds and crops, learned country in); the breadth is the fit's sum over the world, so a people that lives everywhere is weaker in any one country than the specialist of it; contest is the spec's martial strength (`contest`, 1, or 1.5 from the `martial` trait; stage 2). The coexistence cap (`spread.coexist_cap`) uses the weighted coefficients. Density no longer enters the contest (PW-887's frontier invasion by density and `DENSITY_PUSH` are gone): it sets how many people a land holds, not who holds it.
 - **One capacity per people** (`competition._compete`, `model._kin`, PW-1205 A): a people's groups (its farmers, herders, seafarers...)
   and the people itself share one capacity per cell. Each feels its kin's presence in full (alpha 1, before any edge or discount), so the
@@ -863,7 +868,8 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
   sets head counts, not who holds the land.
 - **Densities by way of life in the dnd tree** (owner D20 (4), PW-1149 B): foragers at 0.3 /km² (Binford 2001 Table 5.01 via D-PLACE
   B008, upper quartile 0.35), arctic foragers 0.05, elves 4 (forest gardeners), dwarves 7 and hill dwarves 8. Kobolds and goblins are
-  'denning': habitat x0.25 off mountains, hills and breaks, and learning new country at a quarter of the rate.
+  'denning': off mountains, hills and breaks they live in thin dens, at a quarter of their density (`params.DEN_THIN`, lane 97,
+  PW-1218 C; lane 83 had cut their habitat there instead), and they learn new country at a quarter of the rate.
 - **A people of a megafauna stem** (`origins._origin_off_megafauna`, spec, lane 83b): the kobolds and dragonborn split from the dragons, a
   handful of animals per country over a range that spans the world, so the stem's range says nothing about where its people's country
   lies. Such a people founds at one spot as an arrival settles: on a landmass the stem's range reaches, drawn in proportion to the founders
@@ -873,7 +879,27 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
   country to a people's pioneers and jumps (the dragons hardly take room; before, a dragon's range barred them). A hemmed-in people sends
   founders out over its jump kernel (PW-920) when rivals crowd it or when it has filled the land it holds: by crowding alone a narrow
   people, the denning kobolds on their patch of broken country, never left it.
-- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md.
+- **The brakes** (`history.counter`, lane 97, owner D25; lane 82's shared plug, PW-1165): every brake is a share of a people's
+  capacity K kept on a cell, multiplied together and never under `COUNTER_FLOOR` (5%). Off in the deep epoch.
+  - *War-torn land* (lane 82's K(W)): K x (1 - 0.3 min(1, h / 1%/yr)), h the way of life's violent-death rate (lane 82's medians of
+    Keeley, Gat, Bowles et al.) x [(density / 10 per km²)² x state pacification + 0.5 x hostile frontier]. Dense, stateless peoples
+    next to enemies lose land; states and sparse foragers hardly any. Viewer dial meta.war.
+  - *Raid losses and in-fighting* (lane 85's design, the owner's in-fighting): a raider people (spec `raids`, by default survival
+    'harsh': kobolds, goblins) has its canon excess losses scaled by R = 1 + RAID_Q x hostile frontier + FEUD_Q x hemmed-in share (no
+    free good country next door, or crowding), at most 3.6 (Gurven and Kaplan 2007's range of violent and accidental deaths); the
+    share kept is r(R)/r(1) on its life table (`life_history.harsh_kept`). Peoples of normal survival are never touched.
+  - *Culling wars*: a raider's crowded frontier, outnumbered by peoples hostile to it, is cut to 40% now and then and breeds back
+    (e-folding 50 yr / its growth multiple); a fast breeder takes the sawtooth's mean (0.28 lost) and the step logs a 'cull' event.
+  - Hostility comes from the cohabitation matrix (`compose.cohabitation`): an 'apart' wish of weight 1 reads 1. Viewer dial
+    meta.raiders (raids, in-fighting and culls together). The suite records each people's lost shares (`brakes`).
+  - At x1 the kobolds and goblins lose about a third of their land, almost all to in-fighting (they are nearly always hemmed in); other
+    peoples lose 0-5% to war, the humans almost none. The room goes mostly to the commonest people: docs/review/peoples-brakes/report.md.
+- **Old enemies hunt each other** (`history.hunts`, lane 97, owner D26 B): a pair the tree names as enemies ('apart' wish of weight w)
+  with a shared border logs a 'hunt' event at a border cell with chance `HUNT_PER_KYR` (0.5) x w a kyr, from its own generator. Story
+  on the map only: no numbers change.
+- **Dwarves resist disease** (spec `disease_resist`, 0..1; dwarves 0.75, owner D25): inherited by groups and splits, a hybrid takes its
+  parents' mean. Read by nothing yet: the plague events are not built (inbox draft).
+- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md; after D25-D27, docs/review/peoples-brakes/report.md (the commonest people's share per stage and per brake setting).
 
 ### 2.27 Megafauna: dragons, giants and their food chain (`lineages/history/megafauna.py`, `lineages/prey.py`, `lineages/dragon_ages.py`)
 
