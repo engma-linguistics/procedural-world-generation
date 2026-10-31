@@ -337,6 +337,65 @@ def flanks(sim, col, cont):
     sim.book("rift flanks", 0, add, cont)
 
 
+def necking(sim, col, cont, k, cells, s):
+    """Lay the new floor `cells` of plate k next to its continental crust
+    (sources s) as stretched continental crust paid for by thinning the
+    plate's own margin: the necking zone (PW-950). On Earth the crust
+    thins from ~30 km to <= 10 km across a necking zone ~50-60 km wide
+    before the ocean opens, with beta > 2 in it and < 2 landward (Mohn et
+    al. 2012, Tectonics 31 TC1012, pp. 1-3), and the crust is conserved
+    (ibid. p. 23; McKenzie 1978 p. 27). Here the gap the plates open is
+    floored with crust as thick as the edge after thinning, taken from the
+    plate's continental cells within neck_km of the edge (and the rift
+    pool first): each thins by exp(-eps w), w = 1 - d / neck_km, eps solved
+    so the crust taken equals the crust laid. Each ring is the next edge,
+    so the margin thins seaward; once the next ring would be thinner than
+    MARGIN_MIN_KM the rift has broken up and its floor stays ocean.
+    Returns the cells laid, their sources and their thickness (km)."""
+    g, p, pl = sim.grid, sim.params, sim.plates
+    own = sim.owner
+    cell_km = sim.edge_len * R_KM
+    reach = max(int(np.ceil(p.neck_km / cell_km)), 1)
+    label = np.where(cont, own, -1)
+    dist, _ = kernels.bfs_within(np.unique(s), label, g.nbr_off, g.nbr_idx, reach)
+    zone = np.flatnonzero((dist >= 0) & (dist * cell_km < p.neck_km))
+    w = 1.0 - dist[zone] * cell_km / p.neck_km
+    hz = col.t[zone]
+    pool = max(float(pl.rift_pool[k]), 0.0)
+    for _ in range(3):
+        hs = col.t[s]
+        need0 = float(hs.sum())
+        if pool >= need0:
+            eps = 0.0
+        else:
+            lo, hi = 0.0, 4.0
+            for _ in range(40):
+                eps = 0.5 * (lo + hi)
+                gap = pool + float((hz * -np.expm1(-eps * w)).sum()) - need0 * np.exp(-eps)
+                lo, hi = (eps, hi) if gap < 0 else (lo, eps)
+            eps = hi
+        km = hs * np.exp(-eps)
+        ok = km >= MARGIN_MIN_KM
+        if ok.all() or not ok.any():
+            break
+        cells, s = cells[ok], s[ok]
+    if not ok.all():
+        return cells[:0], s[:0], km[:0]
+    laid = float(km.sum())
+    take = laid - min(pool, laid)
+    pl.rift_pool[k] = pool - min(pool, laid)
+    if take > 0 and eps > 0:
+        t0 = col.t[zone].copy()
+        col.t[zone] = hz * np.exp(-eps * w)
+        strain = np.zeros(g.n)
+        strain[zone] = eps * w
+        mask = np.zeros(g.n, bool)
+        mask[zone] = True
+        record.rift(col.rec, mask, strain, sim.t)
+        sim.book("necking", t0, col.t[zone], 1.0)
+    return cells, s, km
+
+
 def rifted_margin(sim, lost, col, newc):
     """Stretching doesn't destroy crust, it spreads it thinner over a
     wider area: the opening rift is floored by thinned continental crust
@@ -382,10 +441,15 @@ def rifted_margin(sim, lost, col, newc):
         grew = False
         for k in np.unique(own[touch]):
             cells = np.flatnonzero(touch & (own == k))
-            km = min(p.rift_margin_km, pl.rift_pool[k] / len(cells))
-            if km < MARGIN_MIN_KM:
-                continue
             s = s_all[cells]
+            if p.neck_km > 0:
+                cells, s, km = necking(sim, col, cont, k, cells, s)
+                if not len(cells):
+                    continue
+            else:
+                km = min(p.rift_margin_km, pl.rift_pool[k] / len(cells))
+                if km < MARGIN_MIN_KM:
+                    continue
             col.t[cells] = km
             cont[cells] = True
             col.rock[cells] = col.rock[s]
@@ -398,7 +462,8 @@ def rifted_margin(sim, lost, col, newc):
             col.rec[cells, record.T] = record.NEVER
             col.rec[cells, record.T_RIFT] = sim.t
             col.lith[cells] = 0
-            pl.rift_pool[k] -= len(cells) * km
+            if p.neck_km <= 0:
+                pl.rift_pool[k] -= len(cells) * km  # (necking takes its share of the pool itself)
             laid[cells] = True
             grew = True
         if not grew:

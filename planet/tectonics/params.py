@@ -72,6 +72,9 @@ class Params:
     subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches (over a crust.FOREARC_KM wide forearc)
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
+    # km: necking zone of a rifted margin (crust.necking, PW-950): new rift floor next to continent is laid as crust
+    # as thick as the edge, paid for by thinning the continent within this distance (0: off, rings from the pool only)
+    neck_km: float = 0.0
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
     # Myr between climate (rain, ice, sea level) updates before the finish window: a ramp (PW-247, owner 10-29),
     # climate_every in the last climate_ramp Myr before it, twice that up to 10x as far back, and so on up to
