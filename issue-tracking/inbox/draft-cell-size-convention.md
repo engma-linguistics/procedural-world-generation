@@ -1,0 +1,21 @@
+---
+title: Pick one cell-size convention for the grid levels (README, world meta and CLAUDE.md disagree)
+type: task
+status: todo
+parent: null
+milestone: v2
+subsystem: docs
+effort: xs
+impact: low
+found_by: lane88-docs
+blocked_by: []
+relates: [PW-816]
+refs: [README.md, docs/overview.md, CLAUDE.md]
+---
+
+## Description
+The assumptions audit (finding on the stale overview) also asked to pick one cell-size convention. README.md says
+L6 ~110 km and L7 ~55 km; docs/overview.md section 2.1 says ~110 km for L6; world meta `cell_size_km` says 60 and 120;
+CLAUDE.md says ~60 km. They differ by centre spacing against sqrt(cell area). PW-816 did not touch it. Pick one (the
+centre spacing or sqrt of the area), state which in section 2.1, and make README, CLAUDE.md and the meta agree.
+- [ ] one convention, stated once in overview 2.1, used everywhere
