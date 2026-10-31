@@ -4,7 +4,7 @@ title: A restart during the tectonic simulation of a make job still starts the s
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-480, PW-248]
 refs: [planet/timeline.py, planet/make.py, planet/store.py, docs/review/code-audit-2026-10/index.html]
 created: 2026-10-21
-updated: 2026-10-29
+updated: 2026-10-31
 ---
 
 ## Description
@@ -23,6 +23,7 @@ Check first how much of the keyframe history the checkpoints can regenerate; if 
 - [ ] a killed L5 make resumes mid-run and the finished run is identical to an uninterrupted one (golden-style check)
 
 ## Updates
+- 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-29: Fix lane 49 (the keep-the-folder part of the merged audit note; resume itself stays open here): timeline.simulate writes run.json's header first with status 'running' plus its pid and process start time (store.process_stamp); on any exception (Ctrl-C included) it rewrites the header as 'interrupted' (stopped_at_myr, error) and keeps the folder and checkpoints (no more rmtree). store.run_status: done | running | interrupted (a running header whose process is gone, a hard kill) | None. exists/find/items treat only done runs as runs (find says 'still running' or 'interrupted; delete it with planet delete run:<id>'); orphans() (so delete --orphans and tools/cleanup_outputs) takes interrupted runs and folders without run.json but never a running one (before, delete --orphans would have removed a live simulation's folder); delete('run', id) removes an interrupted run, leaves a running one. Test: test_store.test_interrupted_run_keeps_its_folder. overview.md store section updated. Not-slow suite 741 passed.
 - 2026-10-29: Owner 10-29: reliability bugs come into v1.
 - 2026-10-29: Merged inbox draft draft-run-interrupt-keeps-checkpoints.md ("A crash or Ctrl-C during a run deletes the whole run folder, checkpoints included", found by code-audit-2026-10).

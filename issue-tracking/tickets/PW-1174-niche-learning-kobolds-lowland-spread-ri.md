@@ -4,7 +4,7 @@ title: "Niche learning: kobolds' lowland spread rides on the range they inherit 
 type: task
 status: todo
 parent: PW-917
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1155, PW-1152]
 refs: [planet/lineages/history/habitat.py, planet/lineages/history/params.py, "world 4360a3"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -33,4 +33,5 @@ founding, re-check that the minor draconic peoples are not lost outright: 0.1% i
 learning one.
 
 ## Updates
+- 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-kobold-lowlands-and-range-founding.md (found by lane79).
