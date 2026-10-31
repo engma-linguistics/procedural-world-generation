@@ -1,4 +1,5 @@
 ---
+id: PW-1217
 title: "A filled people now jumps, so a stem's range and its splits' birthplaces move: one dnd5 try has humans at 2.6% (elves 60%)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane83b
 blocked_by: []
 relates: [PW-920, PW-1202, PW-1207]
 refs: [planet/lineages/history/dispersal.py, docs/review/peoples-d20/report.md, docs/review/peoples-d20/suite-final.md, "world af2677"]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 - C. Drop it, and get the kobolds out some other way (their draft's options B and C).
 
 Lean: A, then B if the re-rolled small trees swing more than base.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-jump-push-moves-cradles.md (found by lane83b).

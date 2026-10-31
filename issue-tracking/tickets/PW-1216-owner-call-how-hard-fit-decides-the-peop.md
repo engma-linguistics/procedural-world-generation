@@ -1,4 +1,5 @@
 ---
+id: PW-1216
 title: "Owner call: how hard fit decides the peoples' contest (FIT_CLIP 3, BREADTH_Q 0.5, martial 1.5)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane83
 blocked_by: []
 relates: [PW-1180, PW-1149]
 refs: [planet/lineages/history/params.py, planet/lineages/history/competition.py, docs/review/peoples-d20/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 - C. Make it weaker (FIT_CLIP 2). That is closer to the old contest, where the broad farmers take most of the land.
 
 Lean: A. Judge it on the stress suite, not on single seeds. The numbers are in docs/review/peoples-d20/report.md.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-fit-contest-knobs.md (found by lane83).

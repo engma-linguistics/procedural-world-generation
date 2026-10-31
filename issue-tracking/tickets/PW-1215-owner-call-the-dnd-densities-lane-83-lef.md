@@ -1,4 +1,5 @@
 ---
+id: PW-1215
 title: "Owner call: the dnd densities lane 83 left as judgements (halflings, gnomes, hobgoblins, dragonborn, fisher folk)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane83
 blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/samples/dnd.toml, docs/review/peoples-d20/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -38,3 +41,6 @@ gardener density (at most 5) until it has the plough. So these numbers apply onl
 
 Hobgoblins rose to 2.6–19% of all people in lane 83's screens (from 1.1–1.9%), with the martial contest and their new fields and herds.
 If that is too many, lower their density or their contest, not the rule.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-dnd-density-judgements.md (found by lane83).

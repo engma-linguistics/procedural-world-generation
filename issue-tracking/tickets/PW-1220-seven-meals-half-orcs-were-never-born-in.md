@@ -1,4 +1,5 @@
 ---
+id: PW-1220
 title: "Seven Meals: half-orcs were never born in one run (af2677, seed 13): their parents never met"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane83b
 blocked_by: []
 relates: [PW-752, PW-852]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history/origins.py, docs/review/peoples-d20/suite-final.md, "world af2677"]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Measured: suite-final.md (sm-s13@af2677: half_orc 'never founded'; also gold dra
 To look at: is this D20's one-spot founding (humans and orcs born far apart, and no boats crossing in time), or the hybrid's date? A
 preset people that is a hybrid could be founded where its parents come nearest, once they have both been alive long enough, instead
 of waiting for them to meet.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-seven-meals-half-orcs-unborn.md (found by lane83b).

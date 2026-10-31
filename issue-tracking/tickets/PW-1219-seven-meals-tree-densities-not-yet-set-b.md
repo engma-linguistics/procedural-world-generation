@@ -1,4 +1,5 @@
 ---
+id: PW-1219
 title: "Seven Meals tree: densities not yet set by way of life (the dnd tree's D20 rule)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane83
 blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/samples/dnd.toml]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -24,3 +27,6 @@ To do: apply the same rule to seven_meals.toml:
 - fisher-foragers up to 0.7.
 
 Mark every number without a source as a judgement. Then check the stress suite's seven_meals rows.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-seven-meals-density-by-way.md (found by lane83).

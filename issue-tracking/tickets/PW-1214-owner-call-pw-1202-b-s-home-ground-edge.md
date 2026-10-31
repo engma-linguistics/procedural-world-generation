@@ -1,4 +1,5 @@
 ---
+id: PW-1214
 title: "Owner call: PW-1202 B's home-ground edge is close to the 'first to hold it keeps it' rule you turned down"
 type: task
 status: needs-decision
@@ -9,8 +10,10 @@ effort: s
 impact: med
 found_by: lane83
 blocked_by: []
-relates: [PW-1180]  # (and PW-1202, on main after this branch's base)
+relates: [PW-1180]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/pressure.py, docs/review/peoples-d20/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Options:
   home edge.
 
 Lean: B, then C. With the stage-3 changes the blocs already appear in some seeds; an incumbency edge risks freezing the map.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-blocs-incumbency-vs-surge.md (found by lane83).
