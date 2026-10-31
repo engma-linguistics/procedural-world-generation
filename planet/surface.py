@@ -172,7 +172,7 @@ SHELF_EDGE = -400.0  # m: below this it's the slope and the deep sea floor
 
 
 @njit(cache=True)
-def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
+def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km, rise=False):
     """Where the rivers' load (km of crust arriving at each sea cell) settles.
     Shallowest first: each cell on the shelf keeps what fits below its
     target level (DELTA_TOP next to land, SHELF_TOP farther out) and passes
@@ -202,7 +202,23 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
                     brink = True
                     break
             share = 1.0 if brink else 1 - np.exp(-d_km / fan_km)
-            keep = min(flux[i] * share, (SHELF_TOP - elev[i]) / iso[i])
+            room = (SHELF_TOP - elev[i]) / iso[i]
+            if rise and not brink:
+                # the slope's foot (PW-950): where the floor flattens below a
+                # steeper slope, the flows coming down it slow and drop a share
+                # 1 - drop_out / drop_in of their load, up to the level that
+                # grades the floor between the slope above and the floor below
+                up, lo_e = elev[i], elev[i]
+                for e in range(nbr_off[i], nbr_off[i + 1]):
+                    j = nbr_idx[e]
+                    if ocean[j]:
+                        up = max(up, elev[j])
+                        lo_e = min(lo_e, elev[j])
+                d_in, d_out = up - elev[i], elev[i] - lo_e
+                if d_in > d_out and d_out > 0:
+                    share = max(share, 1 - d_out / d_in)
+                    room = min(room, (0.5 * (up + lo_e) - elev[i]) / iso[i])
+            keep = min(flux[i] * share, max(room, 0.0))
         dep[i] += keep
         f = flux[i] - keep
         lo, bz = -1, elev[i]
@@ -298,7 +314,7 @@ def surface_rock(rock, cover, top, top_km):
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
           incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None,
-          base_rise=0.0):
+          base_rise=0.0, rise=False):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
@@ -377,7 +393,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     ocean = ~land
     coast = ocean & (np.add.reduceat(land[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
     dep_sea = _offshore(np.where(ocean, dep, 0.0), elev.astype(float), np.asarray(iso_dep, float), ocean, coast,
-                        grid.nbr_off, grid.nbr_idx, d_km, fan_km)
+                        grid.nbr_off, grid.nbr_idx, d_km, fan_km, rise)
     # then currents spread it sideways: a little along the shelf, more over
     # the deep sea floor (turbidity currents fan out)
     ea, eb = grid.edges[:, 0], grid.edges[:, 1]

@@ -1151,7 +1151,7 @@ def erode(sim, col):
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
-        base_rise=max(-float(sim.sea_ice), 0.0))
+        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0)
     sim.book("erosion", t0, col.t, cont)
     # the valleys rivers to the sea run in now (graded to the river they
     # carry: a shrunken river silts up a valley too big for it), and where

@@ -183,6 +183,7 @@ class Params:
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     fan_km: float = 1000.0  # km of deep sea floor over which ~63% of the load that passes the shelf settles
+    rise: float = 0.0  # 1: sediment past the shelf's brink settles first at the slope's foot (continental rise, PW-950; 0: off)
     # km: sediment buried deeper than this is cooked (~500 C) into metamorphic
     # rock and joins the basement (Earth's thickest piles: ~20 km)
     metamorphic_depth: float = 18.0
