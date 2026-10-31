@@ -14,6 +14,7 @@ export const S = {
   V: null,
   mesh: null,           // the globe (or map) mesh, and its topology (geometry.js)
   topo: null,
+  meshDeferred: false,  // the mesh is left out of date while the flat map's canvas covers it (geometry.js paint)
   overlays: {},         // the overlay objects by name (overlays.js)
   lastColors: null,     // the current layer's colours (paint), for the 2D map
   seaShell: null,       // the 3D relief's sea surface (one per view mode, kept across frames)

@@ -1,6 +1,6 @@
 import { S, state } from './state.js';
 import { SEASONAL, layerNeeds } from './layers.js';
-import { $ } from './scene.js';
+import { $, DIAG } from './scene.js';
 import { loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
 import { buildTopology, paint, prepareGrid } from './geometry.js';
 import { renderLayerButtons, renderRunSummary, renderSummary } from './panel.js';
@@ -28,6 +28,19 @@ async function needJSON(url, what) {
   if (r.status === 404) throw new LoadError(`There is no ${what}. It may have been deleted, or the link has a typo.`);
   if (!r.ok) throw new LoadError(`The server could not send ${what} (HTTP ${r.status}).`);
   try { return await r.json(); } catch { throw new LoadError(`${what[0].toUpperCase() + what.slice(1)} could not be read: its file is damaged or unfinished.`); }
+}
+// A level's grid is the same for every run and world on it: the last one asked for is kept, fetched and prepared
+// once (prepareGrid), and a world's is asked for while the world itself downloads (select.js loadSelection). At L8
+// that is ~0.6 s of fetching and parsing and ~0.3 s of preparing off each opening.
+let gridMemo = { url: null, p: null };
+export function gridOf(url, what) {
+  const key = String(url);
+  if (gridMemo.url !== key) {
+    const p = needJSON(key, what).then((G) => ({ G, pg: prepareGrid(G) }));
+    gridMemo = { url: key, p };
+    p.catch(() => { if (gridMemo.p === p) gridMemo = { url: null, p: null }; });  // (a failed fetch is tried again next time)
+  }
+  return gridMemo.p;
 }
 // The error card (PW-1044): what failed in plain words, with the newest planets and the start page to go on from.
 // Nothing half-built stays behind it, and Delete and the star are off while nothing is open.
@@ -85,22 +98,27 @@ export function hasLayer(k) { return S.V.kind === 'run' ? !!S.V.run.layers[k] : 
 export async function setWorld(w, tok = beginLoad()) {
   if (stale(tok)) return;
   stop(); S.picked = null; renderZoomBox();
-  const G = typeof w.grid === 'string' ? await needJSON(new URL(w.grid, new URL('../worlds/', location.href)), `the grid of world ${w.id || w.name}`) : w.grid;
+  const { G, pg } = typeof w.grid === 'string' ? await gridOf(new URL(w.grid, new URL('../worlds/', location.href)), `the grid of world ${w.id || w.name}`)
+    : { G: w.grid, pg: prepareGrid(w.grid) };
   if (stale(tok)) return;
-  const pg = prepareGrid(G);
+  DIAG.mark('grid: parsed and prepared');
   // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
   const nm = w.id ? await fetch(`/api/names?world=${w.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;  // (the server's: the owner's names, else the generated; PW-886)
   if (stale(tok)) return;
+  DIAG.mark('names');
   (w.summary?.landmasses || []).forEach((m, i) => { const o = nm?.names?.[i]?.name; if (o) m.name = o; });
   S.lmEdit = -1;
   for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
-  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
+  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), volcTable: volcTable(w.meta), ...legendFields(w.legend) };
   iceBed(S.V.layers);
+  DIAG.mark('world fields');
   document.title = `${w.name} · Planet Viewer`;
-  renderLayerButtons(); renderSummary(); buildTopology(); paint();
+  renderLayerButtons(); renderSummary(); DIAG.mark('buttons, summary');
+  buildTopology(); DIAG.mark('buildTopology');
+  paint(); DIAG.mark('paint');
   navSync(); loadOk();
   worldAnthroLoad();  // (peoples change the land on a finished world, PW-669)
 }
@@ -188,11 +206,10 @@ export async function loadRun(dir, wantT) {
   const base = `../runs/${dir}/`;
   const run = await needJSON(base + 'run.json', `run "${dir}"`);
   if (stale(tok)) return;
-  const grid = await needJSON(new URL(run.grid, new URL(base, location.href)), `the grid of run "${dir}"`);
+  const { G: grid, pg } = await gridOf(new URL(run.grid, new URL(base, location.href)), `the grid of run "${dir}"`);
   if (stale(tok)) return;
-  const pg = prepareGrid(grid);
   const tz = run.kind === 'timezoom';  // glacial time zoom: time in kyr
-  S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, cornerCells: pg.cornerCells,
+  S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC,
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
         ...legendFields(run.legend) };
   document.title = `${run.name} · Planet Viewer`;

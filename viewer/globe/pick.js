@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { esc } from '../planets.js';
-import { S, state } from './state.js';
+import { S, proj, state } from './state.js';
 import { $, DIAG, camera, controls, fitMap, group, relief3d, renderer } from './scene.js';
 import { buildTopology, nearestCellU, paint } from './geometry.js';
 import { renderTip } from './panel.js';
@@ -63,7 +63,7 @@ export function pickGlobeCell() {
   return best;
 }
 export function updateHover() {
-  if (!S.mesh) return;
+  if (!S.mesh || proj.on) return;  // (the flat map's canvas covers the live map: its own pointer handler picks)
   ray.setFromCamera(mouse, camera);
   const fast = pickGlobeCell();
   if (fast !== undefined) S.hovered = fast;
