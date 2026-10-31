@@ -86,9 +86,14 @@ def test_brief_bounty_hook_picks_the_ruined_valley():
 def test_sea_prey_from_ocean_npp():
     """D28 B (lane 99): Ryther's provinces (open 50, shelf 100, upwelling 300 g C/m2/yr), the marine mammals' share of the primary
     production (Trites et al. 1997), 10% a trophic level to the seals' level 4, 9 g wet per g C."""
-    elev = np.array([-4000.0, -200.0, -200.0, 100.0])
-    n = PR.sea_npp({"elevation": elev, "upwelling": np.array([0.0, 0.0, 5.0, 5.0])})
-    assert np.allclose(n, [50.0, 100.0, 300.0, 0.0])
+    from planet.grid import build_grid
+    g = build_grid(2)
+    elev = np.full(g.n, -4000.0)  # (one ocean, a shelf strip, an upwelling patch, one land cell)
+    elev[:20], elev[0] = -200.0, 100.0
+    up = np.zeros(g.n)
+    up[10:20] = 5.0
+    n = PR.sea_npp({"elevation": elev, "upwelling": up}, g)
+    assert n[0] == 0 and np.allclose(n[1:10], 100.0) and np.allclose(n[10:20], 300.0) and np.allclose(n[20:], 50.0)
     sp = PR.sea_prey(n)
-    assert np.isclose(sp[1], 25.0 / 135.0 * 100.0 * 1e-3 * 9.0) and sp[3] == 0
+    assert np.isclose(sp[1], 25.0 / 135.0 * 100.0 * 1e-3 * 9.0) and sp[0] == 0
     assert PR.sea_npp({}) is None and PR.sea_prey(None) is None

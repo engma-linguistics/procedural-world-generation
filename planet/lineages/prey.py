@@ -104,8 +104,9 @@ def sea_npp(layers: dict, grid=None) -> np.ndarray | None:
     month layers; a judgement: the ice-edge blooms and the seals' ice are kept, the closed pack is not). None without elevation."""
     if "elevation" not in layers:
         return None
+    from ..geo import is_land
     elev = np.asarray(layers["elevation"], float)
-    sea = elev < 0
+    sea = ~is_land(elev, layers.get("ice"), grid)  # (the sea that reaches the ocean: not inland pits below 0 m, PW-1229)
     depth = np.where(sea, -elev, 0.0)
     a, b = SEA_SHELF_M
     shelf = np.clip((a - depth) / (a - b), 0.0, 1.0)
