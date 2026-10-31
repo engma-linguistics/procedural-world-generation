@@ -3,6 +3,7 @@
 import numpy as np
 
 from planet import humanuse as HU
+from planet.geo import world_land
 
 
 def raster(z, receiver=None, res=2.0):
@@ -185,7 +186,7 @@ def test_finished_world_carries_the_layers_and_they_are_what_the_export_recomput
         assert np.array_equal(again[k], L[k]), k
     for k in HU.CLASS_MAPS:
         assert L[k].max() < len(HU.LEGEND[k])
-    land = L["elevation"] > 0
+    land = world_land(L, grid)
     assert not L["harbour"][land].any() and not L["fertile"][~land].any()  # (harbours are at sea, farms on land)
     assert L["pass_height"][L["pass"] > 0].min() > 0 and not L["pass"][~land].any()
     assert (L["fresh_km"] >= 0).all() and (L["fresh_water"][L["fresh_km"] == 0] == 3).all()

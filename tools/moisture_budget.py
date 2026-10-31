@@ -59,6 +59,7 @@ from planet import climate, kernels, vegetation  # noqa: E402
 from planet import ocean as ocean_mod  # noqa: E402
 from planet.climate import LQ, _budyko1  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
+from planet.geo import is_land  # noqa: E402
 from tools import earth_data  # noqa: E402
 from tools.earth_check import REGIONS  # noqa: E402
 
@@ -312,7 +313,7 @@ def basins(grid, elev) -> np.ndarray:
     Indonesian seas are the Pacific's. Atlantic vs Pacific: the two sides of
     the Americas (connected sea, with Panama walled off)."""
     lat, lon = grid.lat, grid.lon
-    sea = elev <= 0
+    sea = ~is_land(elev, grid=grid)  # (the sea by connection, PW-1229)
     lab = np.full(grid.n, -1)
     comp, k = grid.components(sea)
     world = np.argmax(np.bincount(comp[comp >= 0], minlength=k))
@@ -353,8 +354,8 @@ def basins(grid, elev) -> np.ndarray:
 def drainage(grid, elev, surf, basin) -> np.ndarray:
     """Basin of every cell: the sea's own, and for land the basin its rivers
     reach (routed downhill as ocean.river_input routes the runoff)."""
-    sea = elev <= 0
-    _, down, order = kernels.priority_flood(np.where(sea, np.minimum(surf, 0.0), np.maximum(surf, 1e-3)),
+    sea = ~is_land(elev, grid=grid)
+    _, down, order = kernels.priority_flood(np.where(sea, np.minimum(surf, 0.0), np.maximum(surf, 1e-3)), sea,
                                             grid.nbr_off, grid.nbr_idx, 0.01)
     lab = np.where(sea, basin, -1)
     for i in order:

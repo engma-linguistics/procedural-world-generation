@@ -171,9 +171,9 @@ def test_fill_shallow_fills_only_shallow_hollows():
     rng = np.random.default_rng(0)
     e = np.where(np.arange(g.n) < 40, -100.0, rng.uniform(1, 200, g.n))
     a = np.ones(g.n)
-    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 1e9, a, 0.0)  # every hollow: priority flood
-    assert np.allclose(h, hydrology.priority_flood(g, e)[0], atol=0.1) and not keep.any()
-    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0, a, 0.0)
+    h, keep = kernels.fill_shallow(e, e <= 0, g.nbr_off, g.nbr_idx, 1e9, a, 0.0)  # every hollow: priority flood
+    assert np.allclose(h, hydrology.priority_flood(g, e, sea=e <= 0)[0], atol=0.1) and not keep.any()
+    h, keep = kernels.fill_shallow(e, e <= 0, g.nbr_off, g.nbr_idx, 20.0, a, 0.0)
     assert (h >= e).all() and (h - e < 20.0 + 1.0).all()
     assert keep.any() and (h[keep] == e[keep]).sum() > 0.5 * keep.sum()
 
@@ -190,7 +190,7 @@ def test_fill_shallow_drains_wide_flat_basins():
     e = np.where(d[:, 0] < 300, 460 + 40 * d[:, 0] / 300, e)  # ~300 km across radius: 0.13 m/km
     e = np.where(d[:, 1] < 900, 460 + 40 * d[:, 1] / 900, e)  # ~900 km radius: 0.044 m/km
     for slope, narrow, wide in ((0.0, True, True), (0.1, True, False)):
-        h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0, area, slope)
+        h, keep = kernels.fill_shallow(e, e <= 0, g.nbr_off, g.nbr_idx, 20.0, area, slope)
         assert keep[np.argmin(d[:, 0])] == narrow and keep[np.argmin(d[:, 1])] == wide
         assert (h[d[:, 1] < 900] > 500).all() != wide  # drained: filled to the rim
 
@@ -276,9 +276,13 @@ def test_fast_flood_kernels_match_the_textbook_ones():
             sea = e <= 0
             land = np.nonzero(~sea)[0]
             assert np.array_equal(kernels._land_asc(e, sea), land[np.argsort(e[land], kind="stable")])
+            # land below sea level (cut off from the sea, PW-1229) sorts among the rest, ties by index
+            some = sea & (rng.random(g.n) < 0.5)
+            assert np.array_equal(kernels._land_asc(e, some),
+                                  np.nonzero(~some)[0][np.argsort(e[~some], kind="stable")])
             e2 = np.abs(e) + 1.0  # no sea at all: both start from the lowest cell
             assert np.array_equal(kernels.flood_fill(e2, e2 <= 0, g.nbr_off, g.nbr_idx, 0.01),
-                                  kernels.priority_flood(e2, g.nbr_off, g.nbr_idx, 0.01)[0])
+                                  kernels.priority_flood(e2, e2 <= 0, g.nbr_off, g.nbr_idx, 0.01)[0])
 
 
 def test_lake_order_reused_across_tries_matches_fresh_lakes():
@@ -289,11 +293,11 @@ def test_lake_order_reused_across_tries_matches_fresh_lakes():
     rng = np.random.default_rng(7)
     for trial in range(6):
         e = _tied_heights(g, rng, trial)
-        prep = kernels.lake_order(e, g.nbr_off, g.nbr_idx)
+        prep = kernels.lake_order(e, e <= 0, g.nbr_off, g.nbr_idx)
         loss = rng.random(g.n) * 3
         for _ in range(3):
             src = rng.random(g.n)
             got = kernels.lakes_on(e, g.nbr_off, g.nbr_idx, src, loss, *prep)
-            want = kernels.lakes(e, g.nbr_off, g.nbr_idx, src, loss)
+            want = kernels.lakes(e, e <= 0, g.nbr_off, g.nbr_idx, src, loss)
             for a, b in zip(got, want):
                 assert np.array_equal(a, b)

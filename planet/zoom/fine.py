@@ -1222,7 +1222,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     clim_f = np.where(lone, np.where(t_cold >= 18, 0, np.where(t_cold > 0, 14, 28)), clim_f)
     clim_f = np.where(land & (clim_f < 28) & (t_warm < 10), 28, clim_f)
     clim_f = np.where(land & ((t_warm < 0) | glacier), 29, clim_f).astype(np.uint8)
-    biome = climate.biomes(h, temp, precip, lake | pool)
+    biome = climate.biomes(h, temp, precip, lake | pool, land=h > 0)
     bare = (biome == 4) & ~glacier
     biome = np.where(bare, np.where(h > 1500, 15, np.where(precip < 250, 7, 5)), biome)
     biome = np.where(glacier, 4, biome).astype(np.uint8)

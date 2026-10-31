@@ -104,9 +104,9 @@ def test_envelopes_respected(ideal):
 def test_ice_lake_and_sea_cells():
     g = build_grid(3)
     n = g.n
-    elev = np.where(np.arange(n) % 5 == 0, -100.0, 300.0)
-    ice = np.where(np.arange(n) % 5 == 1, 500.0, 0.0)
-    lake = np.arange(n) % 5 == 2
+    elev = np.where(g.lat < -20, -100.0, 300.0)  # (the sea: one body, PW-1229)
+    ice = np.where((np.arange(n) % 5 == 1) & (elev > 0), 500.0, 0.0)
+    lake = (np.arange(n) % 5 == 2) & (elev > 0)
     t = np.full(n, 15.0)
     v = V.model(g, elev, t, t + 8, t - 8, np.full(n, 900.0), np.full(n, 700.0), lake=lake, ice=ice)
     assert (v["types"][elev <= 0] == 0).all()

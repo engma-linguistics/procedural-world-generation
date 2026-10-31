@@ -59,7 +59,7 @@ from . import hydrology
 from . import projection as PJ
 from . import store as S
 from . import world as W
-from .geo import R_KM, arc, arc_km, cell_area_km2, is_land, latlon, smoothstep, xyz
+from .geo import R_KM, arc, arc_km, cell_area_km2, is_land, latlon, smoothstep, world_land, xyz
 from .images import write_png
 from .provenance import code_version
 
@@ -642,7 +642,9 @@ def _world_rasters(world: dict, pts: np.ndarray, shape: tuple, dx_m, dy_m) -> di
         return sm.smooth(L[k]).reshape(ny, nx) if k in L else np.full(shape, default)
 
     elev, ice = smooth("elevation"), smooth("ice")
-    water = np.where(is_land(elev, ice), 0, 1).astype(np.uint8)
+    # land: the smoothed ground above the sea or under ice, and the cells below it cut off from it (geo.is_land)
+    pit = sm.nearest(world_land(L, grid) & (np.asarray(L["elevation"]) <= 0)).reshape(ny, nx)
+    water = np.where((elev > 0) | (ice > 0) | pit, 0, 1).astype(np.uint8)
     if "lake" in L:
         water[sm.nearest(np.asarray(L["lake"]) > 0).reshape(ny, nx)] = 2
     P = {"elevation": elev, "ice": ice, "water": water}
@@ -733,7 +735,7 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
     feats = Features(elevation=lambda la, lo: el[grid.locate(xyz(np.radians(la), np.radians(lo)))])
     if "flow" in L and "downstream" in L:
         q = hydrology.discharge(grid, np.asarray(L["flow"], float))
-        active = (q >= river_min) & is_land(el, ice)
+        active = (q >= river_min) & is_land(el, ice, grid)
         ll = np.stack([lat, lon], 1)
         for r in river_lines(np.asarray(L["downstream"]), q, active):
             pts = ll[r["nodes"]]

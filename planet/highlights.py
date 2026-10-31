@@ -202,7 +202,7 @@ class _Ctx:
 
     def filled(self) -> np.ndarray:
         """The pit-filled elevation (hydrology.priority_flood's filled surface alone)."""
-        return kernels.flood_fill(self.elev, self.elev <= 0, self.g.nbr_off, self.g.nbr_idx, 0.01)
+        return kernels.flood_fill(self.elev, ~self.land, self.g.nbr_off, self.g.nbr_idx, 0.01)
 
     def dilate(self, mask: np.ndarray, k: int = 1) -> np.ndarray:
         m = mask.copy()

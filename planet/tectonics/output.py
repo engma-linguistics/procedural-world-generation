@@ -10,7 +10,7 @@ from ..constants import T_REF_C
 from .. import climate, hydrology, landform, surface
 from . import volcanism
 from .events import latlon
-from .isostasy import MIX
+from .isostasy import MIX, grounded
 from .plates import CMYR
 
 
@@ -122,8 +122,9 @@ def water_now(sim) -> dict:
                     lake_depth=np.zeros(n))
     bed = sim.bed()
     c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
-    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0),
-                                                valley=sim.valley())
+    # (the grounded ice, as a world's: under it the bed may lie below the sea and is land, PW-307; dropping it
+    # there would leave an ice-free hollow inside the sheet, land since PW-1229, for a lake)
+    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, grounded(bed, sim.ice), valley=sim.valley())
     return dict(flow=flow, downstream=down, lake_kind=lk["kind"].astype(np.int8),
                 lake_depth=np.where(lk["wet"], np.maximum(lk["level"] - bed, 0.0), 0.0))
 

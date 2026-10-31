@@ -33,6 +33,7 @@ from ..constants import T_REF_C
 from ..geo import R_KM
 from ..grid import Grid, build_grid
 from ..provenance import code_hash, code_version
+from ..geo import is_land
 from .gridops import dist_km
 
 TZ_LAYERS = ("elevation", "ice", "temperature", "climate", "tree_cover")
@@ -315,7 +316,7 @@ class Pass:
         temp = temp + dT
         rain = rain * np.exp(RAIN_K * dT) * rf
         return {"elevation": elev, "ice": ice, "temperature": temp, "precipitation": rain, "climate": clim,
-                "tree_cover": trees, "land": (elev > 0) | (ice > 0.5), "noise_c": g}
+                "tree_cover": trees, "land": is_land(elev, ice > 0.5), "noise_c": g}
 
     def stats(self, t: float) -> dict:
         i, j, w = self._bracket(t)

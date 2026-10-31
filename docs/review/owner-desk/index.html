@@ -121,7 +121,7 @@ On Earth, resampled to the same grid, 18% of the ocean lies between 200 and 3,00
 The coast is 90 km from 3 km depth here, against 360 km on Earth. Stretched crust that thins over 50–200 km, and a mud apron at the foot
 of the slope, are missing (PW-950).</li>
 <li><b>A bug that L8 exposed: inland pits count as sea.</b> Ground below 0 m counts as ocean even 800 km inland, so the world's
-"largest river" ends in a puddle, and so does its highlight and regional zoom. L8 has 225 such pockets. The L7 world has 41, drawn as deep pits of ocean (PW-1229).</li>
+"largest river" ends in a puddle, and so does its highlight and regional zoom. L8 has 225 such pockets. The L7 world has 41, drawn as deep pits of ocean (PW-1229). <b>Fixed and merged:</b> by my count, 142 of a16f5a's pockets become land, and 17 of the 21 big rivers that ended in one, including the largest, now run on. This world and its zoom get rebuilt with the showcases.</li>
 <li><b>Good at L8:</b> rivers branch like real drainage, 9.5% of land drains inland (Earth ~18%, L7 2%), small islands match Earth's count, and
 the coasts are ragged with mangroves and tidal flats.</li>
 <li><b>Off:</b> the land rose with the sea, so 6% of land is within 10 m of sea level (Earth 1.4%) (PW-1230). Mid-sized islands
@@ -174,7 +174,12 @@ sister peoples born on different continents, and a home-ground edge.</p>
 
 <div class="card"><div class="id">D28 · COLD DRAGONS NEARLY GONE · open, you're looking later</div>
 <p><b>Your 10-31 note:</b> B for now, maybe A. Next comes the evidence you asked for: dragons before people vs after, per kind and country,
-against real analogues (Africa isn't lousy with lions; tigers in Asia, down to how often a tiger still kills someone in India). That starts once the combined-code re-measure (lane 93) lands.</p>
+against real analogues (Africa isn't lousy with lions; tigers in Asia, down to how often a tiger still kills someone in India). Lane 99 is on it now.</p>
+<p><b>A twist from the re-measure (lane 93):</b> with your D20 peoples and the dragon fixes together, dragons are about 10× what lane 90
+measured: about 65,000 on a world rather than 3,500, and about 1,500 in a Sword Coast-sized region rather than 120. White, silver and bronze
+dragons are back in the hundreds or thousands. The likely cause: D20's thinner peoples kill far fewer dragons and keep far fewer herds.
+Lane 99 checks whether the persecution rate was fitted to the old, too-dense peoples (then it gets re-derived) or is sourced on its own
+(then 65,000 is the model's honest answer). That's beside the lions-and-tigers comparison you asked for.</p>
 <h3>With the literature's fixes there are a fifth as many dragons, and white dragons are down to a handful</h3>
 <p>Every revision the literature answers is built, along with your DMG habitats (PW-1065). The herds now eat only the plant growth above ground,
 which is what their formula was fitted on, and the dragons' intake, assimilation, carcass use and offtake are each sourced. The result
@@ -197,16 +202,10 @@ It leans no on both, and so do I.</div>
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>83 · peoples</td><td><b>Merged, see D27.</b> Was: your D20, plus lane 84's findings: fit-decides with a generalist cost, local founding and the
-teleport fix, no inherited ranges, a dying stem's land left empty, density by era and way of life, one capacity per people,
-sister peoples on different continents, a home-ground edge, dwarves fighting back; bands only if still needed. Judged on the
-stress test, with a "who holds each continent" measure.</td></tr>
-
-<tr><td>90 · dragons</td><td><b>Merged, see D28</b> (868 tests pass).</td></tr>
 <tr><td>95 · plant floor</td><td>Your D29 = C: plants that starve for CO2 stop speeding up weathering. Screen of the 6 low draws, then the full tally with every draw's lowest CO2, so you can set the crash line. If it fails, it goes to v2.</td></tr>
-<tr><td>98 · inland pits</td><td>Building D30's pit fix on a branch: a below-sea pocket counts as sea only if it reaches the ocean; otherwise it becomes a lake or a dry basin. It's needed whichever way you answer. Your D30: v1 if it's quick. The slope stays v2.</td></tr>
+<tr><td>99 · dragon numbers</td><td>D28: why there are 10× more dragons now, lions and tigers (numbers, lost range, attacks per year) beside the dragons before and after people, and B, sea food for the cold kinds.</td></tr>
 <tr><td>97 · peoples</td><td>D27: founding spread over a few sites on one landmass (your idea), then D25's brakes (land, raids, culling wars, plus in-fighting, dwarves 0.75), D26 B, and the graphs you asked for on how far the commonest people should fall.</td></tr>
-<tr><td>93 · dragons + D20</td><td>Re-measuring the dragons on the combined peoples and dragon code.</td></tr>
+<tr><td>100 · continent edge</td><td>The physics slot was free, so per your standing rule I'm trying the margin (PW-950, v2): crust that thins gradually over 50–200 km instead of a one-cell cliff. It starts with a written diagnosis, then small screens. It won't merge before the v1 tag.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
@@ -216,6 +215,7 @@ stress test, with a "who holds each continent" measure.</td></tr>
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Inland pits fixed (lane 98, merged, 877 tests pass):</b> ground below 0 m counts as sea only if it reaches the ocean. Otherwise it fills to a lake or stays a dry basin. Side effects: Earth's Atlantic was missing the Amazon's water, so an old "overturning passes" result was false (a v2 ticket now). One L6 scorecard draw came out drier, which is probably chance and gets re-checked in the final tally.</li>
 <li><b>D30:</b> inland pits go into v1 if the fix is quick; the continental slope stays v2, since it already failed a round. When physics lanes are idle, I pick the most useful physics work regardless of version.</li>
 <li><b>Your 10-31 answers:</b> D25 (1 B; 2 A+B+C plus in-fighting; dwarves 0.75; portals later; item 5 awaits graphs), D26 B then A, D29 C, D27 to my judgement plus your spread-founding idea. All in lanes 95 and 97.</li>
 <li><b>Merged:</b> your D20 peoples fixes (lane 83) and the dragon food chain (lane 90), 868 tests pass.</li>

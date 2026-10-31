@@ -108,9 +108,9 @@ def seasons(grid: Grid, elev: np.ndarray, temp: np.ndarray, tilt: float = 23.4, 
     """First guess of the warmest- and coldest-month temperatures (used for
     the winds; compute refines them). The swing grows with latitude and
     with distance from the sea, which evens temperatures out (Vancouver: 4
-    to 18 C; Yakutsk, 62 N inland: -39 to +19). land: default elev > 0
+    to 18 C; Yakutsk, 62 N inland: -39 to +19). land: default geo.is_land
     (compute's: geo.is_land). Returns (t_warm, t_cold)."""
-    land = elev > 0 if land is None else land
+    land = is_land(elev, grid=grid) if land is None else land
     coast = np.flatnonzero(land & (np.add.reduceat(~land[grid.nbr_idx], grid.nbr_off[:-1]) > 0))
     hops, _ = kernels.bfs_within(coast, land.astype(np.int64), grid.nbr_off, grid.nbr_idx, 10**6)
     dist = np.where(land, np.maximum(hops, 0) * grid.spacing * R_KM + 50.0, 0.0)
@@ -1210,8 +1210,8 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
       sinking subtropical air clears the land (cloud_clear), less where it
       rains anyway (a monsoon overrides it).
     Returns a list of (cloud cover, sunshine share of the day: sunshine()),
-    one per half-year. ocean: default elev <= 0 (compute's: not geo.is_land)."""
-    ocean = elev <= 0 if ocean is None else ocean
+    one per half-year. ocean: default not geo.is_land (as compute)."""
+    ocean = ~is_land(elev, grid=grid) if ocean is None else ocean
     pole = np.clip((np.abs(grid.lat) - 60.0) / 20.0, 0, 1)
     landy = smooth(grid, (~ocean).astype(float), tune["cloud_cont_km"])
     coastal = tune["cloud_coast"] * np.clip(1 - np.maximum(elev, 0) / tune["cloud_coast_m"], 0, 1)
@@ -1379,9 +1379,9 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     deg the tropical rain belt is north of the equator, t_sl_season: the
     season's temperatures reduced to sea level, track: storminess along
     the jet's storm tracks (storm_track), which takes over a share
-    storm_jet of the latitude belt's storminess. ocean: default elev <= 0
+    storm_jet of the latitude belt's storminess. ocean: default not geo.is_land
     (compute's: not geo.is_land)."""
-    ocean = elev <= 0 if ocean is None else ocean
+    ocean = ~is_land(elev, grid=grid) if ocean is None else ocean
     lat = grid.lat
     up = LAPSE * np.maximum(elev if surf is None else surf, 0)
     # How much water the air can hold. Clouds form in the air mass aloft,
@@ -1527,7 +1527,7 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     """rain's arguments to _rain (also tools/moisture_budget.py's). start:
     an earlier call's end state (rain's), to start warm from."""
     n = grid.n
-    ocean = elev <= 0 if ocean is None else ocean
+    ocean = ~is_land(elev, grid=grid) if ocean is None else ocean
     w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
     open_sea = np.ones(n) if open_sea is None else np.asarray(open_sea, np.float64)
     open_sea = np.ascontiguousarray(np.broadcast_to(open_sea, (len(seasons_in), n)), np.float64)
@@ -1574,8 +1574,8 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
     part the air takes up water from, less the stable land air of a summer
     (compute), which sets its bulk exchange (sea_uptake). tune's
     mean_mm: the global mean rain the kernel's rain is scaled to (in mm,
-    for the land's evaporation). ocean: default elev <= 0 (compute's: not
-    geo.is_land). start: an earlier call's end state (the fourth result:
+    for the land's evaporation). ocean: default the sea of geo.is_land (as
+    compute's). start: an earlier call's end state (the fourth result:
     the kernel's vapour and running mean of the rain), to start from it and
     run RAIN_WARM_DAYS instead of RAIN_DAYS (a run's climate updates, PW-387;
     the outputs move by the kernel's convergence error, ~1%)."""
@@ -2026,9 +2026,10 @@ KOPPEN = [
 SEA_CLASS = 30
 
 
-def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None):
+def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None, land=None):
     """Koppen class per cell, from the twelve months the climate implies
-    (month_temps, month_rain: as climate.months)."""
+    (month_temps, month_rain: as climate.months). land: what isn't sea
+    (default geo.is_land of elev and ice)."""
     lat = np.asarray(lat, float)
     north = lat >= 0
     p_m = month_rain(p_jul, p_jan)
@@ -2050,7 +2051,7 @@ def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None):
         sel = mask & (out < 0)
         out[sel] = cid[sel] if np.ndim(cid) else cid
 
-    sea = ~is_land(elev, ice)  # (a bed below sea level under grounded ice is land)
+    sea = ~(is_land(elev, ice) if land is None else land)  # (a bed below sea level under grounded ice is land)
     out[sea] = SEA_CLASS
     if ice is not None:
         put(ice > 0, 29)
@@ -2104,10 +2105,11 @@ BIOMES = [
 
 
 def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
-           lake: np.ndarray | None = None, ice: np.ndarray | None = None) -> np.ndarray:
+           lake: np.ndarray | None = None, ice: np.ndarray | None = None, land: np.ndarray | None = None) -> np.ndarray:
+    """land: what isn't sea (default geo.is_land of a world's cells; a zoom's pixels pass their own)."""
     t, p = temp, precip
     b = np.full(len(elev), -1)
-    land = is_land(elev, ice)
+    land = is_land(elev, ice) if land is None else land
 
     def land_rule(mask, bid):
         sel = land & mask & (b < 0)
@@ -2140,9 +2142,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             ice: np.ndarray | None = None, tune: dict | None = None, melt: np.ndarray | None = None,
             moc_start: dict | None = None, veg: dict | None = None, orbit_dt: np.ndarray | None = None,
             ice_air: np.ndarray | None = None, rain_start: dict | None = None,
-            ice_cold: np.ndarray | None = None) -> dict:
+            ice_cold: np.ndarray | None = None, land: np.ndarray | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
-    level; <= 0 is sea unless grounded ice is on it: geo.is_land), the global
+    level; geo.is_land tells the land, or the caller's land mask: a coarse
+    nested grid's, nest.climate_coarse), the global
     temperature offset dT from today's Earth, axial tilt and land ice (m).
     melt: fresh water from shrinking ice sheets,
     m/yr per cell (on land it runs off to the sea; see ocean.py), none in
@@ -2212,7 +2215,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     tune = {**TUNE, **(tune or {})}
     n = grid.n
     ice = np.zeros(n) if ice is None else ice
-    land = is_land(elev, ice)  # (a bed below sea level under grounded ice is land, PW-307)
+    if land is None:  # (a bed below sea level under grounded ice is land, PW-307; ground below it cut off, PW-1229)
+        land = is_land(elev, ice, grid)
     ocean = ~land
     surf = elev + ice
     north = grid.lat >= 0
@@ -2390,7 +2394,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
-    k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
+    k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice, land)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
     # July / January: the sea's peak months (where it is iced over most of
     # the year, the summer's heat goes into melting the ice: a smaller

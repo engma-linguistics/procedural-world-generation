@@ -198,13 +198,17 @@ def _heap_pop(hk, hv, size):
 def _land_asc(elev, sea):
     """The cells that aren't sea in order of height, ties by index: what
     argsort(elev, kind="mergesort") gives with the sea's cells left out
-    (every one of them must be > 0). A stable radix sort on the bits of the
-    heights (a positive float's bits sort as the float does), 11 bits a
-    pass; ~7x faster than numba's mergesort."""
+    (land below sea level, cut off from the sea, included: geo.is_land). A
+    stable radix sort on the bits of the heights, 11 bits a pass (a
+    positive float's bits sort as the float does; a negative one's sort
+    reversed, so they are flipped, and the sign bit set on the rest, as
+    IEEE total order has it); ~7x faster than numba's mergesort."""
     idx = np.nonzero(~sea)[0]
     m = idx.shape[0]
     a = idx.copy()
-    ka = elev[idx].view(np.uint64)
+    ka = (elev[idx] + 0.0).view(np.uint64)  # (+ 0.0: -0.0 sorts as 0.0)
+    sign = np.uint64(1) << np.uint64(63)
+    ka = np.where((ka & sign) != 0, ~ka, ka | sign)
     b = np.empty_like(a)
     kb = np.empty_like(ka)
     cnt = np.empty(2048, np.int64)
@@ -238,10 +242,11 @@ def _land_asc(elev, sea):
 
 
 @njit(cache=True)
-def priority_flood(elev, nbr_off, nbr_idx, eps):
-    """Barnes et al. 2014 priority-flood + epsilon. Returns (filled,
+def priority_flood(elev, sea, nbr_off, nbr_idx, eps):
+    """Barnes et al. 2014 priority-flood + epsilon, draining to the sea
+    (geo.is_land's: not all ground below 0 is sea). Returns (filled,
     downstream, order); order runs outlet -> headwater."""
-    return priority_flood_to(elev, elev <= 0, nbr_off, nbr_idx, eps)
+    return priority_flood_to(elev, sea, nbr_off, nbr_idx, eps)
 
 
 CELL_BITS = 26  # (a cell index fits in the low bits of a flood's queue tag: up to 67M cells, level 11)
@@ -402,7 +407,7 @@ def _root(parent, i):
 
 
 @njit(cache=True)
-def fill_shallow(elev, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
+def fill_shallow(elev, sea_in, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
     """elev with every hollow too shallow to hold water filled to its rim.
 
     A hollow is too shallow when its floor lies less than
@@ -417,13 +422,13 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
     a shallow dip in the floor of a deep basin becomes part of the basin's
     floor instead of a pit of its own, and a whole basin that is too shallow
     drains. Filled ground rises by eps per cell away from where it spills,
-    so water runs across it (as in priority_flood). elev: m, <= 0 is sea;
-    area: km^2 per cell.
+    so water runs across it (as in priority_flood). elev: m; sea_in: the
+    sea's cells (geo.is_land's); area: km^2 per cell.
     Returns (h, keep): the filled elevation, and the cells of the basins
     left standing."""
     n = elev.shape[0]
     h = elev.copy()
-    sea = elev <= 0
+    sea = sea_in.copy()
     if not sea.any():
         sea[np.argmin(elev)] = True
     asc = _land_asc(elev, sea)
@@ -565,7 +570,7 @@ def _merge_dry(a, b, head, tail, nxt, elev):
 
 
 @njit(cache=True)
-def lakes(elev, nbr_off, nbr_idx, src, loss):
+def lakes(elev, sea, nbr_off, nbr_idx, src, loss):
     """Lakes that evaporate (fill and spill, with evaporation).
 
     Water runs downhill (steepest descent) into pits. Each pit's basin then
@@ -578,25 +583,26 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
     surplus and may rise in turn, so basins merge into one lake), or into
     the sea (an open lake).
 
-    elev: m, <= 0 is sea; src: water each land cell sends downhill;
+    elev: m; sea: the sea's cells (geo.is_land's: ground below 0 cut off
+    from the sea is land); src: water each land cell sends downhill;
     loss: the extra water a cell loses while under a lake (same units).
     Returns (wet, open, out_z, pit, catch, basin): cell under a lake; the
     cell's basin spills to the sea (its lakes are fresh, through-flowing);
     elevation at which that basin met the sea's drainage; cell is a pit
     (no lower neighbour); water reaching each cell downhill (catchment);
     the cell's basin (its root cell)."""
-    sea, rcv, asc = lake_order(elev, nbr_off, nbr_idx)
+    sea, rcv, asc = lake_order(elev, sea, nbr_off, nbr_idx)
     return lakes_on(elev, nbr_off, nbr_idx, src, loss, sea, rcv, asc)
 
 
 @njit(cache=True)
-def lake_order(elev, nbr_off, nbr_idx):
+def lake_order(elev, sea_in, nbr_off, nbr_idx):
     """What kernels.lakes needs of elev alone (so its callers can reuse it
     for the same elev with other src, loss): (sea, rcv, asc): the sea's
-    cells, each land cell's steepest-descent receiver (-1: a pit), the land
-    cells in order of height."""
+    cells (sea_in, or the lowest cell if it has none), each land cell's
+    steepest-descent receiver (-1: a pit), the land cells in order of height."""
     n = elev.shape[0]
-    sea = elev <= 0
+    sea = sea_in.copy()
     if not sea.any():
         sea[np.argmin(elev)] = True
     # steepest descent

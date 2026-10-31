@@ -33,6 +33,7 @@ from . import mining as MN
 from .history import megafauna as MG
 from . import salt_reach as SR
 from . import spec as SP
+from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
@@ -211,7 +212,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
         place = {"lat": lat, "lon": lon, "radius_km": rad, "basis": "a circle"}
     elev = ctx.f("elevation", i).astype(float)
     ice = ctx.f("ice", i).astype(float)
-    land_all = (elev > 0) | (ice > 0.5)
+    land_all = is_land(elev, ice > 0.5)
     land = sel & land_all
     sea = sel & ~land_all
     place["cells"] = int(sel.sum())
@@ -602,7 +603,7 @@ def _salt_reach(ctx: Ctx, i: int) -> dict | None:
     G, W = ctx.goods, ctx.world
     out = None
     if G is not None and "_salt_km" in G and W is not None and "flow" in W:
-        wl = np.asarray(W["elevation"]) > 0
+        wl = world_land(W)
         zone = SR.contact_zone(ctx.g, wl, ctx.f("peoples", i), _marine_mask(ctx))
         mined, works = _salt_works(ctx, i)
         out = SR.reach(ctx.g, wl, np.asarray(G["_salt_km"], float), np.asarray(W["flow"], float), zone, SALT_TRADED_KM,

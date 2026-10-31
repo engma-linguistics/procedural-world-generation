@@ -28,7 +28,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import climate
-from .geo import R_KM, arc_km
+from .geo import R_KM, arc_km, is_land
 from .hydrology import CLOSED_LAKE, OPEN_LAKE, SALT_PAN
 
 # ---------------------------------------------------------------------------
@@ -368,7 +368,8 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     ice = np.zeros(n) if ice is None else np.asarray(ice, float)
     lake_kind = np.zeros(n, int) if lake_kind is None else np.asarray(lake_kind, int)
     wet_lake = np.isin(lake_kind, (OPEN_LAKE, CLOSED_LAKE)) if lake is None else np.asarray(lake).astype(bool)
-    land = (elev > 0) & (ice <= 0) & ~wet_lake
+    ground = is_land(elev, grid=grid)  # (not the sea: ground below it cut off from it too, PW-1229)
+    land = ground & (ice <= 0) & ~wet_lake
     rock = np.full(n, 3) if rock is None else np.asarray(rock, int)
     lfm = np.zeros(n, int) if landform is None else np.asarray(landform, int)
     lfa = np.full(n, 9999.0) if landform_age is None else np.asarray(landform_age, float)
@@ -382,21 +383,21 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     aggrading = (lfm == LF.COASTAL_PLAIN) & (lfa <= COASTAL_PLAIN_MYR)
 
     # loess: dust from dry bare ground (salt pans and dune fields most) and glacial outwash
-    sea = elev <= 0
+    sea = ~ground
     crystalline = _crystalline(rock)
-    bare = _bare(mi, elev, ice)
+    bare = _bare(mi, ground, ice)
     # (hot deserts make less loess-sized silt than glaciers grind: Smalley 1995)
     src = DESERT_DUST * bare * (1 + 0.5 * (lfm == LF.DUNES)) + 1.0 * (lake_kind == SALT_PAN)
     gl_now = (ice > 0) | (glac <= TILL_MYR)
     nbr_gl = np.add.reduceat(gl_now[grid.nbr_idx].astype(float), grid.nbr_off[:-1]) > 0
-    outwash = (elev > 0) & (ice <= 0) & ~gl_now & nbr_gl & ~crystalline
+    outwash = ground & (ice <= 0) & ~gl_now & nbr_gl & ~crystalline
     if glacial_loess is None:
         src = src + 1.0 * outwash
     trap = np.clip((mi - 0.1) / 0.4, 0.0, 1.0)  # (bare ground keeps none: what settles is blown on)
     loess_m = np.where(land, loess(grid, src, trap, winds, sea | (ice > 0)), 0.0) if len(winds) else np.zeros(n)
     if glacial_loess is not None:
         loess_m = loess_m + np.where(land, np.asarray(glacial_loess, float), 0.0)
-    return _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope,
+    return _mineral(cl, land, ground, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope,
                     fp / 0.35, aggrading, loess_m, salt_near(grid, lake_kind), memory)
 
 
@@ -432,12 +433,12 @@ def _crystalline(rock) -> np.ndarray:
     return PARENT_FLAGS["acid"][rock] & ~PARENT_FLAGS["sandy"][rock] & (rock != 10)
 
 
-def _bare(mi, elev, ice) -> np.ndarray:
-    """0..1: dry ground too bare to hold its dust."""
-    return np.clip((0.2 - mi) / 0.15, 0, 1) * (elev > 0) * (ice <= 0)
+def _bare(mi, ground, ice) -> np.ndarray:
+    """0..1: dry ground too bare to hold its dust (ground: not the sea)."""
+    return np.clip((0.2 - mi) / 0.15, 0, 1) * ground * (ice <= 0)
 
 
-def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope, alluv,
+def _mineral(cl, land, ground, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope, alluv,
              aggrading, loess_m, salt_near, memory=None, h_min: float = H_MIN, colluvium=None) -> dict:
     """Pass 1 per cell or pixel (mineral() and zoom_mineral()): cl from
     _climate; slope in the cells' measure (m per km to the steepest
@@ -457,7 +458,7 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
     till = land & glaciated & flat & ~crystalline  # ice scours hard rock bare, leaves till on soft lowlands
     alluvial = np.where(land, np.maximum(alluv, np.where(aggrading, 0.5, 0.0)), 0.0)  # share of the cell
     alluvial = np.clip(alluvial, 0, 1)
-    bare = _bare(mi, elev, ice)
+    bare = _bare(mi, ground, ice)
     w_loess = np.clip(loess_m / 1.0, 0, 1) * (1 - alluvial)
     w_till = till * (1 - alluvial - w_loess)
     w_rock = 1 - alluvial - w_loess - w_till
@@ -524,7 +525,7 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
     perm = np.zeros(n, int)
     for k, edge in enumerate(PERMA_EDGES):
         perm = np.where(t_ground < edge, k + 1, perm)
-    perm = np.where((elev > 0) & ~wet_lake, perm, 0)  # (under ice sheets too: the ground beneath freezes or not)
+    perm = np.where(ground & ~wet_lake, perm, 0)  # (under ice sheets too: the ground beneath freezes or not)
     perm = np.where(ice > 0, 0, perm)
 
     # the vegetation's two buckets (0-0.3 m, 0.3-1.5 m): soil, and below a thin soil weathered and
@@ -626,7 +627,7 @@ def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul
     cl = _climate(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
     land = np.ones(n, bool)
     zero = np.zeros(n)
-    return _mineral(cl, land, np.ones(n), zero, np.zeros(n, bool), np.zeros(n, int), np.asarray(rock, int), lfm, lfa,
+    return _mineral(cl, land, np.ones(n, bool), zero, np.zeros(n, bool), np.zeros(n, int), np.asarray(rock, int), lfm, lfa,
                     glac, temp, t_warm, t_cold, slope, alluv, aggrading, loess_px,
                     np.asarray(salt_near_, bool), h_min=H_MIN_PX, colluvium=COLLUVIUM_M * np.asarray(hollow, float))
 

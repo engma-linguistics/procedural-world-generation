@@ -393,7 +393,7 @@ def sea_ice_share(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None
     temperature taken as a sine between the coldest and warmest months,
     frozen below climate.FREEZE. Its annual mean is the share of the year
     under ice."""
-    ocean = ~is_land(np.asarray(elev, float), ice)
+    ocean = ~is_land(np.asarray(elev, float), ice, grid)
     tm = 0.5 * (np.asarray(c["t_warm"], float) + np.asarray(c["t_cold"], float))
     a = np.maximum(0.5 * (np.asarray(c["t_warm"], float) - np.asarray(c["t_cold"], float)), 1e-6)
     th = np.arccos(np.clip((climate.FREEZE - tm) / a, -1.0, 1.0))  # open while |phase from the warm peak| < th
@@ -435,7 +435,7 @@ def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: 
     for those months, however icy the half-year is overall. ice: grounded
     land ice (a bed below the sea under it is land, geo.is_land)."""
     elev = np.asarray(elev, float)
-    land = is_land(elev, ice)
+    land = is_land(elev, ice, grid)
     ocean = ~land
     U, D = np.asarray(U, float), np.asarray(D, float)
     openv = np.where(land[None, :], 0.0, 1.0 - np.asarray(icy, float))
@@ -505,7 +505,7 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     of the factors (connection, shelf amplification, funnel, shelf width km,
     openness)."""
     elev = np.asarray(elev, float)
-    land = is_land(elev, ice)
+    land = is_land(elev, ice, grid)
     ocean = ~land
     n = grid.n
     h = grid.spacing * R_KM
@@ -677,7 +677,7 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     has those layers at all ("marine"; without them waves and tides count
     as 0)."""
     from .geo import R_KM, world_land
-    sea = ~world_land(L)
+    sea = ~world_land(L, grid)
     down = np.asarray(L["downstream"], int)
     nb = grid.nbr_idx[grid.nbr_off[mouth]:grid.nbr_off[mouth + 1]]
     wet = np.unique(np.concatenate([[down[mouth]], nb[sea[nb]]]).astype(int))

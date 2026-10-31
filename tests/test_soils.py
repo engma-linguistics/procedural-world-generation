@@ -56,8 +56,8 @@ def mostly(t, tid, share=0.9):
 # --------------------------------------------------------------------------- the types
 def test_no_soil_under_ice_lakes_and_sea(g):
     n = g.n
-    elev = np.where(np.arange(n) % 3 == 0, -100.0, 200.0)
-    ice = np.where(np.arange(n) % 3 == 1, 500.0, 0.0)
+    elev = np.where(g.lat < -20, -100.0, 200.0)  # (the sea: one body, PW-1229)
+    ice = np.where((np.arange(n) % 3 == 1) & (elev > 0), 500.0, 0.0)
     m = mineral(g, elev=elev, ice=ice)
     t = types(g, m, npp=500)
     assert (t[elev <= 0] == SO.NONE).all() and (t[ice > 0] == SO.NONE).all()

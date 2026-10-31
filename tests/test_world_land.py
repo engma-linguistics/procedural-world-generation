@@ -34,8 +34,16 @@ def test_grounded_drops_ice_afloat():
     ice = np.array([2500.0, 250.0, 100.0, 0.0])
     got = grounded(e, ice)
     assert got.tolist() == [2500.0, 0.0, 100.0, 0.0]
-    assert is_land(e, got).tolist() == [True, False, True, False]
-    assert np.array_equal(is_land(e), e > 0)
+    chain = _chain(4)  # (cells in a row, each a quarter of the sphere: every body of water is ocean-sized)
+    assert is_land(e, got, chain).tolist() == [True, False, True, False]
+    assert np.array_equal(is_land(e, grid=chain), e > 0)
+
+
+def _chain(n):
+    """A grid of n cells in a row, each linked to the next, each 1/n of the sphere."""
+    from types import SimpleNamespace
+    nb = [[j for j in (i - 1, i + 1) if 0 <= j < n] for i in range(n)]
+    return SimpleNamespace(n=n, nbr_off=np.cumsum([0] + [len(x) for x in nb]), nbr_idx=np.concatenate(nb))
 
 
 def test_true_bed_under_marine_ice_is_land(marine):
