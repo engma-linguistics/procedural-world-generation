@@ -39,19 +39,19 @@ out: dict = {"cell_km2": CELL_KM2}
 ds = DA.structure(DA.DEFAULT)
 g = MG.guild_ratio()
 food_t = ds["cattle_yr"] * PR.HEAD_T  # t of prey a dragon kills a year (survivorship mean over all ages)
-coef = MG.OFFTAKE / (1.0 + g) / food_t  # dragons per km2 per t/km2 of prey where nobody else eats (megafauna.natural_coef, "food")
+coef = MG.OFFTAKE * MG.dragon_share() / food_t  # dragons per km2 per t/km2 of prey where nobody else eats (megafauna.natural_coef, "food"; lane 90: young dragons in the smaller classes)
 mean_mass = float(np.dot(ds["share"], ds["stage_mass_kg"]))
 m = ds["eco_mass_kg"]
 out["chain"] = {
     "schedule": ds["name"], "eco_mass_kg": m, "mean_mass_all_stages_kg": mean_mass, "kcal_day": ds["kcal_day"],
     "cattle_yr": ds["cattle_yr"], "generation_yr": ds["generation_yr"], "head_t": PR.HEAD_T, "food_t_yr": food_t, "offtake": MG.OFFTAKE, "stock_tolerable": MG.STOCK_TOLERABLE,
-    "guild_ratio": g, "dragon_share": 1.0 / (1.0 + g), "per_km2_per_t": coef, "one_per_km2_at_1t": 1.0 / coef,
+    "guild_ratio": g, "dragon_share": MG.dragon_share(), "per_km2_per_t": coef, "one_per_km2_at_1t": 1.0 / coef,
     "prey_dragon_biomass_ratio_eco": 1.0 / (coef * m / 1000.0), "prey_dragon_biomass_ratio_mean": 1.0 / (coef * mean_mass / 1000.0),
     "person_kcal_day": MG.PERSON_KCAL_YR / 365.0, "wild_meat": list(MG.WILD_MEAT), "head_kcal": MG.HEAD_KCAL,
     "forager_game_t_yr": MG.WILD_MEAT[0] * MG.PERSON_KCAL_YR / MG.HEAD_KCAL * PR.HEAD_T,
     "other_game_t_yr": MG.WILD_MEAT[1] * MG.PERSON_KCAL_YR / MG.HEAD_KCAL * PR.HEAD_T,
     "guild_classes": [list(c) for c in MG.GUILD_CLASSES],
-    "guild_food_weights": [n * mm ** MG.GUILD_KLEIBER for mm, n in MG.GUILD_CLASSES],
+    "guild_food_weights": [n * mm ** MG.GUILD_EXP for mm, n in MG.GUILD_CLASSES],
     "press_n0": MG.PRESS_N0, "overkill": PR.OVERKILL, "kill_q": MG.KILL_Q, "breed_x": MG.BREED_X, "motive0": MG.MOTIVE0, "forager_org": MG.FORAGER_ORG, "vulnerability": MG.VULNERABILITY, "ancient_x": MG.ANCIENT_X,
     "era_level": MG.ERA_LEVEL, "era_kyr": MG.ERA_KYR, "people_exp": PR.PEOPLE_EXP, "forage_ref": PR.FORAGE_REF, "graze_ref": PR.GRAZE_REF, "npp_ref": PR.NPP_REF,
     "stage_share": ds["share"], "stage_food_share": ds["food_share"], "stage_mass_kg": ds["stage_mass_kg"],
@@ -516,7 +516,7 @@ for k in sorted(NOPER):
         continue
     S = off_["wild"] + off_["stock"]
     lad["alone"]["capacity"].append(scales(off_, S / off_["fpd"]))
-    lad["rivals"]["capacity"].append(scales(off_, np.maximum(S - off_["giants"], 0) / (1 + G) / off_["fpd"]))
+    lad["rivals"]["capacity"].append(scales(off_, np.maximum(S - off_["giants"], 0) * MG.dragon_share() / off_["fpd"]))
     lad["hunt"]["capacity"].append(scales(off_, off_["food"] / off_["fpd"]))
     lad["hunt"]["realised"].append(scales(off_, off_["dragons"]))
     lad["overkill"]["capacity"].append(scales(no_, no_["food"] / no_["fpd"]))
