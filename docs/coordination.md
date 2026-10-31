@@ -96,3 +96,7 @@ See [wiki/state.md](wiki/state.md) (one overwritten page) and [wiki/index.md](wi
 - `tools/earth_data.SHA256SUMS` (committed) lists the expected checksums.
 
 To restore: `cp -a /home/daniel/backups/procgen-earth/<latest>/* data/earth/ && (cd data/earth && sha256sum -c ../../tools/earth_data.SHA256SUMS)`. Take a fresh dated copy whenever `tools/earth_data.py` changes a source.
+
+## D&D rulebooks (local only)
+
+The owner's PHB and DMG PDFs sit in `docs/references/dnd/` (gitignored, as is the text cache). Search them with `uv run python tools/rulebook.py index|search|page` and cite book plus printed page. Never commit the PDFs or text extracted from them. Details and page offsets: `docs/references/dnd/README.md`.

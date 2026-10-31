@@ -25,3 +25,6 @@ briefs/
 
 # reference papers: PDFs stay local (copyright); the folder README indexes them
 docs/references/**/*.pdf
+
+# D&D rulebook text cache (copyrighted; never commit)
+docs/references/dnd/.cache/
