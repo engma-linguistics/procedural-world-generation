@@ -127,7 +127,7 @@ PORTAL_WAIT_KYR = 5.0  # lane 78: an arrival (or a later wave) waits up to this 
 SCATTER_KM = 100.0  # lane 78: a wandering thinning is placed this far (rms) off its site, as volcanism.hotspots scatters a new plume by ~100 km
 
 FIT_Q, BREADTH_Q, FIT_CLIP = 1.0, 0.5, 3.0  # lane 83 (owner D20, PW-1180 option A: "fit decides the contest"): where two peoples want the
-# same cell, the competition line k feels from rival j there is weighted by how much better j suits the cell than k does: x clip((S_j / S_k),
+# same cell, the competition line k feels from rival j there is weighted by how much better j suits the cell than k does: x clip(S_j / S_k,
 # 1 / FIT_CLIP, FIT_CLIP), with a people's contest strength S = (K here)^FIT_Q x (1 / its breadth)^BREADTH_Q (x its martial strength, spec
 # `contest`). K saturates at 1 over a people's whole comfort range, so where a broad people and a specialist both reach K = 1 the tie used to
 # go to the denser (DENSITY_PUSH, INVADE) or the first; the breadth (its cells of K >= 0.3 at the step) is the specialist-generalist

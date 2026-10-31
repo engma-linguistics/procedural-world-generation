@@ -147,7 +147,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._chains = needs_chains(tree)
         self._aT, self._tT = np.ascontiguousarray(self.alpha.T), np.ascontiguousarray(self.terr.T)  # (how each rival feels line k: column k)
         self._Kmat = np.zeros((len(self.lines), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
-        self._breadth = np.ones(len(self.lines))  # (its breadth then: the contest's fit, params.FIT_Q)
+        self._breadth = np.ones(len(self.lines))  # (its fit and breadth then: the contest, params.FIT_Q)
+        self._Fmat = np.zeros((len(self.lines), g.n))
+        self._fit_now: dict[int, np.ndarray] = {}
         self._martial = np.ones(len(self.lines))  # (each line's martial strength in the contest, lane 83)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
@@ -183,7 +185,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._budget = np.zeros(len(L))
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
-        self._breadth = np.ones(len(L))  # (...and its breadth, cells of K >= 0.3: the contest's fit, params.FIT_Q, lane 83)
+        self._Fmat = np.zeros((len(L), g.n))  # (...its fit, and breadth, the fit's sum: the contest, params.FIT_Q, lane 83)
+        self._breadth = np.ones(len(L))
+        self._fit_now: dict[int, np.ndarray] = {}
         self._last_held: dict[int, np.ndarray] = {}  # (a line's last land when it ended: a split whose parent is gone founds by it, PW-1184)
         self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
         self._L: dict[int, np.ndarray] = {}  # (each learning line's learned acceptance per cell, float32, PW-1155: habitat._learn)

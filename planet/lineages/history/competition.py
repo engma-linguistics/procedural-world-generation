@@ -17,20 +17,25 @@ class CompetitionMixin:
         return float(self._martial[k]) * float(max(self._breadth[k], 1.0)) ** -PM.BREADTH_Q
 
     def _note_K(self, k, K):
-        """Keep line k's habitat this step for its rivals: their coexistence shares (params.COEXIST) and the contest's fit (FIT_Q)."""
+        """Keep line k's habitat this step for its rivals (their coexistence shares, params.COEXIST), and its fit: how well the land
+        suits its body and ways (habitat._K before the places, wishes, goods, herds and crops), with its breadth, the sum of the fit over
+        the cells (the contest, FIT_Q)."""
         self._Kmat[k] = K
-        self._breadth[k] = float((K >= 0.3).sum())
+        F = self._fit_now.pop(k, None)
+        self._Fmat[k] = K if F is None else F
+        self._breadth[k] = float(self._Fmat[k].sum())
 
     def _fit_w(self, k, K, J, idx) -> np.ndarray:
         """The contest's fit weight (lane 83, owner D20, params.FIT_Q) of each rival j in J on line k at the cells idx, (len(J), len(idx)):
-        clip(S_j / S_k, 1 / FIT_CLIP, FIT_CLIP), S = K^FIT_Q x strength (_strength), K the rival's habitat at its last step (its presence
-        where none is kept yet). Where both suit a cell alike, and are alike broad and strong, 1: the competition is the pair's own."""
+        clip(S_j / S_k, 1 / FIT_CLIP, FIT_CLIP), S = fit^FIT_Q x strength (_strength), the fit at the line's last step (_note_K; the
+        habitat K for a line with none kept yet). Where both suit a cell alike, and are alike broad and strong, 1: the pair's own competition."""
         if not len(J) or not len(idx):
             return np.ones((len(J), len(idx)))
         s = np.array([self._strength(j) for j in J]) / self._strength(k)
         if PM.FIT_Q:
-            Kj = np.maximum(self._Kmat[np.ix_(J, idx)], self.p[np.ix_(J, idx)])
-            w = (np.maximum(Kj, 1e-3) / np.maximum(K[idx], 1e-3)[None, :]) ** PM.FIT_Q * s[:, None]
+            Fk = self._Fmat[k][idx] if self._Fmat[k].any() else K[idx]
+            Fj = np.maximum(self._Fmat[np.ix_(J, idx)], self.p[np.ix_(J, idx)])  # (a row not kept yet reads as the presence)
+            w = (np.maximum(Fj, 1e-3) / np.maximum(Fk, 1e-3)[None, :]) ** PM.FIT_Q * s[:, None]
         else:
             w = np.repeat(s[:, None], len(idx), axis=1)
         return np.clip(w, 1.0 / PM.FIT_CLIP, PM.FIT_CLIP)
