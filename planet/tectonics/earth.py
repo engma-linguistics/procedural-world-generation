@@ -214,19 +214,39 @@ def temp_response(grid) -> np.ndarray:
     return 0.5 + (0.156 * x + 2.012 * x**2 - 1.168 * x**3)
 
 
-def co2_law(x, bare: float):
+def _planted(x, bare: float, starve):
+    """(M, dM / d ln X): the planted ground's share of the sink at the balance, (1 - bare), with its plants'
+    enhancement (PLANT_WEATHER - 1 of its PLANT_WEATHER) scaled per cell by the C3 plants' starvation below the
+    vegetation's CO2 floor (vegetation.starvation, PW-1227; starve: (each cell's planted share of the sink at
+    the balance, summing to 1 - bare, its temperature C), or None: no starvation). 1 - bare at and above the
+    floor."""
+    if starve is None or climate.PCO2_BALANCE * x >= vegetation.CO2_FLOOR:
+        return 1.0 - bare, 0.0
+    wp, t = starve
+    q, dq = vegetation.starvation(t, climate.PCO2_BALANCE * x)
+    k = (PLANT_WEATHER - 1.0) / PLANT_WEATHER
+    return float((wp * (1.0 - k + k * q)).sum()), float((wp * k * dq).sum())
+
+
+def co2_law(x, bare: float, starve=None):
     """The weathering sink's CO2 factor at X = x (pCO2 against the balance; 1 there): bare ground's share
     `bare` of the sink (at the balance) ~ X^WEATHER_CO2_BARE, the planted rest ~ (2X / (1 + X))^WEATHER_FERT
-    (GEOCARB III, Berner & Kothavala 2001; their mix while plants spread, Berner 2006)."""
-    return bare * x**WEATHER_CO2_BARE + (1.0 - bare) * (2.0 * x / (1.0 + x)) ** WEATHER_FERT
+    (GEOCARB III, Berner & Kothavala 2001; their mix while plants spread, Berner 2006). Below the plants' CO2
+    floor (vegetation.CO2_FLOOR, 124 ppm) the plants starve: their enhancement of the planted ground's
+    weathering falls with their C3 quantum yield, cell by cell (_planted, starve; Pagani et al. 2009: "vegetation
+    activity is substantially reduced, compromising the capacity to further enhance silicate chemical
+    weathering"; GEOCARB's FERT is the same growth response above the floor)."""
+    m, _ = _planted(x, bare, starve)
+    return bare * x**WEATHER_CO2_BARE + m * (2.0 * x / (1.0 + x)) ** WEATHER_FERT
 
 
-def co2_slope(x, bare: float) -> float:
+def co2_slope(x, bare: float, starve=None) -> float:
     """d ln co2_law / d ln X: the sink's CO2 log-slope (0.5 on bare ground; 0.2 planted at the balance, less
-    above it)."""
+    above it; steeper below the plants' CO2 floor, where they starve)."""
     sat = (2.0 * x / (1.0 + x)) ** WEATHER_FERT
-    num = bare * WEATHER_CO2_BARE * x**WEATHER_CO2_BARE + (1.0 - bare) * WEATHER_FERT * sat / (1.0 + x)
-    return float(num / co2_law(x, bare))
+    m, dm = _planted(x, bare, starve)
+    num = bare * WEATHER_CO2_BARE * x**WEATHER_CO2_BARE + m * WEATHER_FERT * sat / (1.0 + x) + sat * dm
+    return float(num / co2_law(x, bare, starve))
 
 
 def start_weatherability(p) -> tuple[float, float]:
@@ -333,11 +353,12 @@ def weathering(sim, land):
     return supply * (warm * plants), supply, warm, plants, supply * warm * (1.0 - v)
 
 
-def co2_stock(co2, s, w, dt, bare=1.0, steps=4):
+def co2_stock(co2, s, w, dt, bare=1.0, steps=4, starve=None):
     """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (pCO2, climate.pco2) relative to the
     reference; s the volcanic source and w the weathering sink at X = 1, each against its reference; bare the
-    sink's share on bare ground. Weathering also grows with CO2 itself (carbonic acid; co2_law: X^0.5 on bare
-    ground, saturating under plants, GEOCARB III), so
+    sink's share on bare ground; starve the planted ground's cells for its plants' starvation below their CO2
+    floor (co2_law). Weathering also grows with CO2 itself (carbonic acid; co2_law: X^0.5 on bare
+    ground, saturating under plants, falling off where they starve, GEOCARB III), so
         dX/dt = (s - w co2_law(X, bare)) / CO2_TAU.
     Its steady state is w co2_law(X) = s. CO2_TAU is far below a step, so X is about there each step, except
     where the sink is nearly gone (ice over the weathering land): then X grows at s / CO2_TAU, as outgassing
@@ -352,12 +373,13 @@ def co2_stock(co2, s, w, dt, bare=1.0, steps=4):
         u = hi
         for _ in range(100):
             eu = np.exp(u)
-            fu = eu + c1 * co2_law(eu, bare) - c0
+            law = co2_law(eu, bare, starve)
+            fu = eu + c1 * law - c0
             if fu > 0.0:
                 hi = u
             else:
                 lo = u
-            du = fu / (eu + c1 * co2_law(eu, bare) * co2_slope(eu, bare))
+            du = fu / (eu + c1 * law * co2_slope(eu, bare, starve))
             un = u - du
             if not lo < un < hi:
                 un = 0.5 * (lo + hi)
@@ -489,8 +511,13 @@ def global_temperature(sim, growth, newc, rng, plume=None):
             sim.refs = sim.refs + b * (learn - sim.refs)
         elif sim.refs is None:
             sim.refs = now.copy()
+        tot = max(float(sink_cells.sum()), 1e-300)
+        starve = None
+        if sim.temp is not None:  # (the planted ground's cells, for its plants' starvation below their CO2 floor)
+            on = sink_cells > bare_cells
+            starve = ((sink_cells - bare_cells)[on] / tot, sim.temp[on])
         sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / sim.refs[1], dt,
-                            bare=float(bare_cells.sum()) / max(float(sink_cells.sum()), 1e-300))
+                            bare=float(bare_cells.sum()) / tot, starve=starve)
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
