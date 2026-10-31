@@ -91,7 +91,7 @@ characters), so L9 would need the binary layers ticket.</p>
 much faster than the 4–5 h guess). It ran on the peoples code from before D20 (D27 below), so it's the old human-heavy mix. Humans
 hold 110 Mkm², and their farmer, herder and nomad groups lie over the same land again (the stacking that D20 removes). Halflings 46,
 dragonborn 34, hobgoblins 19, orcs 14, tabaxi and kenku 13, kobolds 9, elves and gnomes 8. The server answers for it, but I haven't
-opened it in a browser at L8 yet. I've now merged D20, so a re-run on the new code is an hour away if you'd like one. For comparison, the L7 peoples are
+opened it in a browser at L8 yet. D20 is merged now, and a re-run on the new code (<code>l8-dnd-s11-d20</code>) started at 08:45. It should land around 09:50. For comparison, the L7 peoples are
 <a href="http://localhost:8765/viewer/?run=57b95b&amp;layer=peoples">run 57b95b</a>.
 Notes: <code>docs/review/l8-world/notes.md</code>.</p>
 </div>
@@ -202,8 +202,9 @@ Go?</li>
 </ol>
 <div class="rec"><b>My lean: merge it as it stands, then 1 = C, 2 = A, 3 = yes, PW-1202 C first.</b> It's your D20 as asked, and
 humans, blocs and elves all move the right way. C is a mechanism, not a kobold dial, and it should help the three-people tree
-without breaking the D&amp;D tree. I'm holding the merge only until the L8 peoples run finishes (~10:30), so it doesn't pick up
-code halfway through. Report: <code>docs/review/peoples-d20/report.md</code>.</div>
+without breaking the D&amp;D tree. Merged at 08:40 (865 tests pass). It's easy to undo if you'd rather not. The knobs lane 83 left for you are tickets: how hard fit
+decides (PW-1216), the densities it had no source for (PW-1215), and the home-ground edge being close to the rule you turned down
+(PW-1214). Report: <code>docs/review/peoples-d20/report.md</code>.</div>
 <div class="answer">PW-1180 · PW-1189 · PW-1202</div></div>
 
 <div class="card"><div class="id">DRAGON FIXES · for your information · lane 90 running</div>
@@ -220,7 +221,7 @@ with white and silver holding the cold poor land at lower numbers. Anything that
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>83 · peoples</td><td><b>Done, see D27; merging after the L8 peoples run lands.</b> Was: your D20, plus lane 84's findings: fit-decides with a generalist cost, local founding and the
+<tr><td>83 · peoples</td><td><b>Merged, see D27.</b> Was: your D20, plus lane 84's findings: fit-decides with a generalist cost, local founding and the
 teleport fix, no inherited ranges, a dying stem's land left empty, density by era and way of life, one capacity per people,
 sister peoples on different continents, a home-ground edge, dwarves fighting back; bands only if still needed. Judged on the
 stress test, with a "who holds each continent" measure.</td></tr>
