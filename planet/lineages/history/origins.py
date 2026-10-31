@@ -270,6 +270,8 @@ class OriginsMixin:
         if not P.any():  # (PW-1184: near the parent's last land, not at the best habitat anywhere)
             last = self._last_held.get(pk)
             return self._origin_fallback(line, step, env, tags, K, "parent gone: near its last land", last)
+        if self.tree.lines[line.parents[0]].megafauna and not line.megafauna:
+            return self._origin_off_megafauna(line, step, env, tags, K, noise, P)
         lab, n = g.components(P)
         sizes = np.bincount(lab[P], minlength=n)
         big = int(np.argmax(sizes))
@@ -315,6 +317,34 @@ class OriginsMixin:
         # as one people of one country)
         self.p[pk][blob & P] = 0.0
         return cell, why
+
+    def _origin_off_megafauna(self, line, step, env, tags, K, noise, P):
+        """A people split from a megafauna stem (lane 83b: the kobolds and the dragonborn of the dragons). The stem is a handful of
+        animals per country over a range that may span the world, so where it lives says nothing about where its people's own country
+        lies: drawn by the stem's range (area^z, x3 on a cut-off part of it) the kobolds started on a landmass with a sixth of their
+        country, and stayed there. Such a people arises at one spot (D20) as an arrival settles (lane 73): on a landmass within reach of
+        the stem's range, drawn in proportion to the founders its free room (habitat less what its rivals take) would carry
+        (_by_landmass, room), at its roomiest habitat there. Returns (cell, why)."""
+        g, k, pk = self.grid, self.idx[line.id], self.idx[line.parents[0]]
+        ll, _ = g.components(env["land"])
+        touched = np.zeros(ll.max() + 2, bool)
+        touched[ll[self._dilate(P, 4) & (ll >= 0)]] = True
+        ok = hold_mask(line, tags) & (ll >= 0) & touched[ll] & (K > 2 * EST)
+        free = np.clip(K - self._rivals_here(line, K), 0, None) * (K > EST)
+        room = free if (free * ok >= EST).any() else K
+        pocket = room
+        for _ in range(ARRIVAL_POCKET_RINGS):
+            pocket = self._smooth(pocket)
+        score = np.where(ok, pocket, 0.0) * self._place_mult(line, tags) * self._wish_near(line, origin=True) \
+            * self._start_hints(line, env, tags) * noise
+        if score.max() <= 0:
+            return self._origin_fallback(line, step, env, tags, K, "no room for it in the stem's country: nearest habitat", P)
+        score = self._by_landmass(line, score, room, env, ago=step.ago, room=True)
+        cell = int(np.argmax(score))
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        blob = self._seed_blob(k, cell, K, K > EST, r)
+        self.p[pk][blob & P] = 0.0
+        return cell, "where its own country lies, within the stem's range (a people of a megafauna stem)"
 
     def _origin_hybrid(self, line, K, noise):
         """A hybrid where its parents meet: (cell, why), or False while they have not met."""

@@ -178,6 +178,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._div_dt = np.zeros(len(L))
         self._native = np.array([i for i, x in enumerate(L) if not x.overlay and not x.marine], np.int64)  # (land peoples: the sea ones leave the animals, crops and counts as they were)
         self._nat_set = set(self._native.tolist())
+        # (lane 83b: ...and the peoples among them: a cell only megafauna hold is free country for a people's pioneers and jumps; the
+        # dragons are a handful per country and hardly take room from the peoples, MEGAFAUNA_PUSH, so their range is not 'taken')
+        self._ppl_set = {i for i in self._nat_set if not L[i].megafauna}
         self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
@@ -231,6 +234,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             mix = self._mix_ramp(step.ago)
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
+            self._cntp = self._pm[sorted(self._ppl_set)].sum(0, dtype=np.int16)
             order = [l for l in L if self.active[l.id]]
             keys = {l.id: self._lrng[l.id].random() for l in order}  # (the order: a random key per line from its own generator)
             order.sort(key=lambda l: (l.marine, keys[l.id]))

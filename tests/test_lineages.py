@@ -3031,3 +3031,81 @@ def test_a_split_founds_by_its_parent_s_last_land(faketz):
     assert h._origin_fallback(a, step, env, tags, K, "parent gone: near its last land", near=last)
     cell = h.origins["a"]["cell"]
     assert g.lon[cell] > 85  # (on the east continent, by the last land; the west one is as good but far)
+
+
+def _mega_raw():
+    """A worldwide flying megafauna stem (the dragons) with a walking people split from it (the kobolds)."""
+    return {"meta": {"name": "t", "seed": 2}, "lineage": [
+        {"id": "wyrm", "origin": "root", "at": "30 kyr", "megafauna": True, "explore": 0.3, "insularity": 0.85, "sea_share": 0.02,
+         "temp_c": [-10, 40], "rain_mm": [50, 6000], "traits": ["flies", "insular"]},
+        {"id": "kin", "parents": ["wyrm"], "at": "20 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000], "traits": ["hardy"]},
+        {"id": "wyrmling", "parents": ["wyrm"], "at": "15 kyr", "megafauna": True}]}
+
+
+def test_a_people_of_a_megafauna_stem_takes_no_demography_from_it():
+    """Lane 83b: the dragons' explore and insularity are a handful of solitary fliers' numbers, not a people's: a people split from a
+    megafauna stem takes them from its own traits; a megafauna child still inherits them."""
+    t = SP.parse(_mega_raw())
+    assert t.lines["kin"].demos()["explore"] == SP.demography(["hardy"])["explore"]
+    assert t.lines["kin"].demos()["insularity"] == SP.DEMO_DEFAULT["insularity"]
+    assert t.lines["wyrmling"].demos()["insularity"] == 0.85 and t.lines["wyrmling"].demos()["explore"] == 0.3
+
+
+def test_a_people_of_a_megafauna_stem_founds_where_its_own_country_lies(faketz):
+    """Lane 83b: a split of a worldwide megafauna stem founds as an arrival settles: its landmass drawn by the founders its own country
+    (free room) would carry, not by the stem's range; the stem's range at the spot is cleared, as for any one-spot split (D20)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_mega_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    h.active = {l.id: False for l in h.lines}
+    step = h.steps[-1]
+    env = step.get()
+    tags = H._tags(h.grid, env)
+    h._corr_now = None
+    h.p[h.idx["wyrm"]][tags["land"]] = 0.5
+    h.active["wyrm"] = True
+    kin = h.tree.lines["kin"]
+    K = H.capacity(kin, env, tags)
+    cell, why = h._origin_split(kin, step, env, tags, K, np.ones(h.grid.n))
+    assert "megafauna stem" in why and K[cell] > 0.3
+    held = h.p[h.idx["kin"]] > 0
+    assert held.any() and not (h.p[h.idx["wyrm"]][held] > 0).any()
+
+
+def test_pioneers_and_jumps_count_megafauna_land_as_free(faketz):
+    """Lane 83b: a cell only megafauna hold is free country to a people's pioneers and jumps (the dragons hardly take room from the
+    peoples); to another megafauna kind it is taken, as before."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_mega_raw()), ps, 1)
+    L = h.lines
+    h.p = np.zeros((len(L), h.grid.n))
+    h._native = np.arange(len(L))
+    h._nat_set = set(range(len(L)))
+    h._ppl_set = {i for i in h._nat_set if not L[i].megafauna}
+    h.p[h.idx["wyrm"]][:10] = 1.0
+    h._pm = h.p >= 0.12
+    h._cnt = h._pm.sum(0, dtype=np.int16)
+    h._cntp = h._pm[sorted(h._ppl_set)].sum(0, dtype=np.int16)
+    assert (h._taken_cnt(h.tree.lines["kin"])[:10] == 0).all()
+    assert (h._taken_cnt(h.tree.lines["wyrmling"])[:10] == 1).all()
+    h.p[h.idx["kin"]][5:15] = 1.0
+    h._sync(h.idx["kin"])
+    assert (h._cntp[5:15] == 1).all() and (h._cnt[5:10] == 2).all()
+
+
+def test_a_people_that_filled_its_patch_pushes_founders_out(faketz):
+    """Lane 83b (PW-920): a hemmed-in people sends out founders when rivals crowd it or when it has filled the land it holds; a narrow
+    people alone on its patch of country used to have no push at all."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    k = h.idx["a"]
+    K = np.full(h.grid.n, 0.8)
+    held = np.zeros(h.grid.n, bool)
+    held[:20] = True
+    h.p[k][held] = 0.8
+    assert h._jump_push(k, K, K.copy(), held) == pytest.approx(1.0)  # (filled, no rival: full push)
+    h.p[k][held] = 0.2
+    assert h._jump_push(k, K, K.copy(), held) == pytest.approx(0.25)  # (a quarter filled)
+    room = np.full(h.grid.n, 0.2)
+    assert h._jump_push(k, K, room, held) == pytest.approx(1.0)  # (crowded to its room by rivals)

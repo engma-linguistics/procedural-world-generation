@@ -902,12 +902,15 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         if r.get("band_km2") not in (None, "") and r.get("density") in (None, ""):
             r = {**r, "density": BAND / float(r["band_km2"])}
         demo = {}
+        # (lane 83b: a people split from a megafauna stem, the kobolds and dragonborn of the dragons, takes no demography from it: the stem's
+        # numbers are a handful of solitary flying animals' (the dragons' explore 0.3, insularity 0.85), not a people's)
+        off_mega = origin == "split" and bases and base.megafauna and not r.get("megafauna", False)
         for k in DEMO_KEYS:
             v = r.get(k)
             if v in (None, ""):
                 # inherited from a split's parent where given there (else from its own traits); a hybrid's,
                 # an arrival's or a template's from its own (merged) traits unless given
-                demo[k] = getattr(base, k) if origin in ("split", "group") else None
+                demo[k] = getattr(base, k) if origin in ("split", "group") and not off_mega else None
                 continue
             v = float(v)
             if k in ("density", "contest") and not v > 0:
