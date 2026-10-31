@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from planet import climate, store as S, timeline as T
+from planet.geo import is_land
 from planet.zoom import regional as zoom
 from planet.grid import build_grid
 from planet.surface import ROCKS
@@ -297,9 +298,14 @@ def test_climate_fits_ground_after_events():
 
     def check(s):
         if s.climate_t == s.t:
-            sure = np.abs(s.w_elev) > 200
+            land = is_land(s.w_elev, grid=s.grid)
+            # sure: ground 200 m above the sea, or the open ocean 200 m below it (a body cut off from it, land
+            # by PW-1229, can join it as a metre of a far sill erodes after the climate)
+            deep = s.w_elev < -200
+            lab, _ = s.grid.components(deep)
+            sure = (s.w_elev > 200) | (deep & (lab == np.argmax(np.bincount(lab[deep]))))
             sea = s.koppen == climate.SEA_CLASS
-            bad.extend((s.t, int(i)) for i in np.flatnonzero(sure & (sea != (s.w_elev <= 0))))
+            bad.extend((s.t, int(i)) for i in np.flatnonzero(sure & (sea != ~land)))
 
     sim.run(300, on_step=check)
     assert not bad, bad[:10]
@@ -337,13 +343,15 @@ def test_sediment_budget_closes(monkeypatch):
     where rivers end is filled above the basin's spill point (PW-280), nor
     any other cell inside a hollow by its floodplain (PW-299)."""
     from planet import kernels, surface
+    from planet.geo import is_land
     steps, real = [], surface.erode
 
     def wrapped(grid, elev, *a, **kw):
         out = real(grid, elev, *a, **kw)
-        spill = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)[0]
+        land = is_land(elev, grid=grid)
+        spill = kernels.priority_flood(elev.astype(float), ~land, grid.nbr_off, grid.nbr_idx, 0.01)[0]
         top = elev + out[4] * a[-1]  # (a[-1]: iso_dep, m per km deposited)
-        hollow = (elev > 0) & (spill > elev + 1.0)  # (a deposit can't fill a cell above where it already stood)
+        hollow = land & (spill > elev + 1.0)  # (a deposit can't fill a cell above where it already stood)
         steps.append((out[3].copy(), out[4].copy(), (out[7]["sink"] | hollow) & (top > np.maximum(spill, elev) + 1.0),
                       out[7]["sink"].sum()))
         return out

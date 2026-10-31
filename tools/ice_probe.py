@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import planet  # noqa: E402,F401  (first: its thread caps)
 import numpy as np  # noqa: E402
 from planet import climate, ocean, timezoom  # noqa: E402
-from planet.geo import R_KM  # noqa: E402
+from planet.geo import R_KM, is_land  # noqa: E402
 from planet.tectonics import earth  # noqa: E402
 from planet.tectonics.isostasy import ice_load, land_view  # noqa: E402
 from planet.tectonics.params import Params  # noqa: E402
@@ -73,7 +73,7 @@ def stair(a):
         for _ in range(a.iters):
             bed = bed0 - ice_load(g, ice)
             e, ice0, _ = land_view(bed, np.where(bed0 > 0, ice, 0.0))
-            land = e > 0
+            land = is_land(e, grid=g)
             c = climate.compute(g, e, dT0 + dT, p.tilt, np.where(land, ice0, 0.0))
             sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
             ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice),
@@ -149,7 +149,7 @@ def main():
         for _ in range(a.iters):
             bed = bed0 - ice_load(g, ice)
             e, ice0, _ = land_view(bed, np.where(bed0 > 0, ice, 0.0))
-            land = e > 0
+            land = is_land(e, grid=g)
             c = climate.compute(g, e, dT, p.tilt, np.where(land, ice0, 0.0))
             sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
             ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice), marine=earth.marine_view(bed, c))

@@ -81,7 +81,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import kernels
-from .geo import R_KM, xyz
+from .geo import R_KM, is_land, xyz
 from .surface import (ARC, COAL, CRATON, DOLOMITE, EVAPORITE, FLOOD_BASALT, GRANITE, HOTSPOT, LIMESTONE, QUARTZITE,
                       SANDSTONE, SHALE, TUFF)
 from .tectonics import record as R
@@ -235,7 +235,7 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     evaporation of the aridity index (aridity())."""
     from .tectonics.volcanism import ARC as V_ARC, VENT
     n = grid.n
-    land = elev > 0
+    land = is_land(elev, grid=grid)
     top, top_km, folded, top_t, below = R.top(rec, lith, rock, VENEER_KM)
     age_top = t - top_t
     t_rift, t_fold = rec[:, R.T_RIFT], rec[:, R.T_FOLD]

@@ -13,6 +13,7 @@ import { navSync } from './tabs.js';
 import { stop } from './playback.js';
 import { esc } from '../planets.js';
 import { applyPalette } from './palettes.js';
+import { seaMask } from './landsea.js';
 import { loadSettlements } from './settlements.js';
 // ------------------------------------------------------------ latest wins (PW-1044)
 // Opening a run or world takes several awaits; picking another meanwhile must not let the slower one land last.
@@ -113,7 +114,7 @@ export async function setWorld(w, tok = beginLoad()) {
   S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), volcTable: volcTable(w.meta), ...legendFields(w.legend) };
-  iceBed(S.V.layers);
+  landView(S.V.layers);
   DIAG.mark('world fields');
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); DIAG.mark('buttons, summary');
@@ -138,7 +139,7 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
 
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
-  // ice, which says which cells are land (see iceBed)
+  // ice, which says which cells are land (see landView)
   const want = ['elevation', 'lake_kind', 'ice', ...layerNeeds(state.layer)];  // (layers.js: each layer's needs)
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
@@ -283,14 +284,15 @@ export function volcLine(i) {
 
 // Glacial isostasy (PW-189): a run's and a world's elevation is the bed, pressed down by its ice, so
 // grounded ice can sit on a bed below sea level (land all the same: PW-307); a time zoom's is the surface
-// (ice included). L.bed keeps the bed, and the elevation is shown floored at 1 m under grounded ice, so
-// it reads as land everywhere (the sea shading, the coasts, the land counts).
-function iceBed(L) {
-  if (!L.elevation || !L.ice) return;
+// (ice included). And ground below sea level cut off from the sea is land too (landsea.js, PW-1229). L.bed
+// keeps the bed, and the elevation is shown floored at 1 m on such land, so it reads as land everywhere
+// (the sea shading, the coasts, the land counts).
+function landView(L) {
+  if (!L.elevation) return;
   const n = S.V.n, e = L.elevation, bed = new Float32Array(n);
-  if (S.V.tz) { for (let i = 0; i < n; i++) bed[i] = e[i] - L.ice[i]; L.bed = bed; return; }
-  const land = new Float32Array(n);
-  for (let i = 0; i < n; i++) { bed[i] = e[i]; land[i] = L.ice[i] > 0 && e[i] < 1 ? 1 : e[i]; }
+  if (S.V.tz) { if (L.ice) { for (let i = 0; i < n; i++) bed[i] = e[i] - L.ice[i]; L.bed = bed; } return; }
+  const sea = seaMask(e, L.ice, S.V.grid.nbr), land = new Float32Array(n);
+  for (let i = 0; i < n; i++) { bed[i] = e[i]; land[i] = !sea[i] && e[i] < 1 ? 1 : e[i]; }
   L.bed = bed; L.elevation = land;
 }
 
@@ -311,7 +313,7 @@ export function setFrame(f, repaint = true) {
   const r = S.V.run;
   S.V.frame = f; S.V.t = r.frames[f].t; S.V.omega = r.frames[f].omega;
   S.V.layers = frameLayers(f);
-  iceBed(S.V.layers);
+  landView(S.V.layers);
   S.V.hotspots = r.frames[f].hotspots;
   S.V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = S.V.axis.pos[f];
