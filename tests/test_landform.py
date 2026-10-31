@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from planet import landform as LF
+from planet.geo import is_land
 from planet.grid import build_grid
 from planet.surface import (ARC, CRATON, FLOOD_BASALT, HOTSPOT, LIMESTONE, OROGEN, SANDSTONE, SHALE)
 from planet.tectonics import record as R
@@ -50,10 +51,11 @@ def only(out, k):
 
 def test_plain_land_is_hills_and_sea_is_sea(g):
     p = planet(g)
-    p["elev"][: g.n // 2] = -3000
+    south = g.lat < 0  # (the sea: one body, PW-1229)
+    p["elev"][south] = -3000
     out = classify(g, p)
-    assert np.all(out["landform"][: g.n // 2] == LF.SEA)
-    assert np.all(out["landform"][g.n // 2:] == LF.HILLS)
+    assert np.all(out["landform"][south] == LF.SEA)
+    assert np.all(out["landform"][~south] == LF.HILLS)
 
 
 def test_shield_old_granite_basement_exposed(g):
@@ -205,11 +207,12 @@ def test_priority_arc_beats_everything(g):
 def test_simulated_planet_has_classes_from_its_history(sim4):
     """A 300 Myr level-4 run: several classes, all from the record."""
     s = sim4.snapshot()
-    land = s.elevation > 0
+    ground = is_land(sim4.w_elev, grid=sim4.grid)  # (what the landforms are classed on: geo.is_land)
+    land = ground & (s.elevation > 0)
     got = set(np.unique(s.landform[land]).tolist())
     assert LF.SEA not in got
     assert len(got) >= 4, got
-    assert np.all(s.landform[~(sim4.w_elev > 0)] == LF.SEA)
+    assert np.all(s.landform[~ground] == LF.SEA)
     for k in LF.LAYERS:
         assert getattr(s, k).shape == (sim4.grid.n,)
 

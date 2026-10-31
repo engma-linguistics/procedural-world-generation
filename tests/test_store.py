@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from planet import server, store as S, timeline as T
+from planet.geo import is_land
 from planet.tectonics import Params, Simulation
 
 from helpers import run_sim
@@ -58,7 +59,7 @@ def test_run_lakes(sim4):
     wet = (k == H.OPEN_LAKE) | (k == H.CLOSED_LAKE)
     assert set(np.unique(k)) <= {H.NO_LAKE, H.OPEN_LAKE, H.CLOSED_LAKE, H.SALT_PAN} and (k > 0).any()
     assert (d[wet] > 0).all() and (d[~wet] == 0).all()
-    assert not (k > 0)[(snap.elevation <= 0) | (snap.ice > 0)].any()
+    assert not (k > 0)[~is_land(snap.elevation, grid=sim.grid) | (snap.ice > 0)].any()
     vals = T.frame_values(sim.grid, snap, T.jet_of(sim.grid, snap))
     assert np.array_equal(S.encode(vals["lake_kind"], S.LAYERS["lake_kind"]), k)
 

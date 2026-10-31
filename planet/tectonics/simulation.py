@@ -36,6 +36,7 @@ from typing import ClassVar
 
 import numpy as np
 
+from ..geo import is_land
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
@@ -469,9 +470,10 @@ class Simulation:
         return self.w_extra[:, VALLEY]
 
     def land(self) -> np.ndarray:
-        """Land: ground above sea level, or under grounded ice (all of the
-        run's ice is grounded, even where its load pushes the bed below the sea)."""
-        return (self.bed() > 0) | (self.ice > 0)
+        """Land: geo.is_land of the bed and the ice (all of the run's ice is
+        grounded, even where its load pushes the bed below the sea; ground
+        below the sea cut off from it is land too, PW-1229)."""
+        return is_land(self.bed(), self.ice, self.grid)
 
     def heat(self) -> float:
         """Mantle heat relative to today's (see earth.heat)."""

@@ -95,7 +95,7 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
     rain_start: the coarse grid's rain state (the result's "rain_state" is the coarse kernel's)."""
     steps = chain(fine, level)
     e, ice = np.asarray(elev, float), np.asarray(ice, float)
-    land = is_land(e, ice)
+    land = is_land(e, ice, fine)
     masks, e_c, ice_c, veg_c, share = [land], e, np.where(land, ice, 0.0), veg, land.astype(float)
     for s in steps:
         lf = masks[-1]
@@ -107,7 +107,7 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
             veg_c = {k: _restrict(s, np.asarray(v, float), lf) for k, v in veg_c.items()}
         masks.append(lc)
     coarse = steps[-1]["coarse"] if steps else fine
-    c = climate.compute(coarse, e_c, dT, tilt, ice_c, veg=veg_c, rain_start=rain_start)
+    c = climate.compute(coarse, e_c, dT, tilt, ice_c, veg=veg_c, rain_start=rain_start, land=masks[-1])
     if not steps:
         return c
     surf_c, bed_c = np.maximum(e_c + ice_c, 0.0), np.maximum(e_c, 0.0)
@@ -162,7 +162,7 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
     out.update(wb)
     out["precip"] = 0.5 * (out["p_jul"] + out["p_jan"])
     out["koppen"] = climate.koppen(e, out["temp"], out["t_warm"], out["t_cold"], out["precip"], out["p_jul"],
-                                   out["p_jan"], fine.lat, ice)
+                                   out["p_jan"], fine.lat, ice, land)
     return out
 
 

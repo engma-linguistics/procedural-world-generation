@@ -62,9 +62,9 @@ def world_scores(seed: int, myr: float) -> dict:
     track = []
     while sim.t < myr - 1e-9:
         sim.run(min(myr, sim.t + 100))
-        land = sim.w_elev > 0
+        land = is_land(sim.w_elev, grid=sim.grid)  # (the sea by connection, PW-1229)
         st = sim.stats()
-        sea, sub = sim.w_elev <= 0, (sim.w_elev <= 0) & sim.w_cont
+        sea, sub = ~land, ~land & sim.w_cont
         track.append({"t": sim.t, "land": st["land_pct"], "cont": st["continental_pct"],
                       "largest": st["largest_landmass_pct"], "masses": st["landmasses"],
                       "dry": round(100 * float((GROUP[sim.snapshot().koppen[land]] == "B").mean()), 1),
