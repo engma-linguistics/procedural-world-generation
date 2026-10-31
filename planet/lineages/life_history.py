@@ -142,3 +142,44 @@ def summary(l) -> dict | None:
             "breeding": t["breeding"], "survival": t["survival"],
             "by_era": {e: {**v, "T": round(v["T"], 1), "r_pct": round(100 * v["r"], 2), "x": round(v["r"] / rh, 2),
                            "sustain_pct": round(50 * v["r"], 2)} for e, v in t["by_era"].items()}}
+
+
+@lru_cache(maxsize=None)
+def _harsh_r(adult_yr: float, lifespan_yr: float, breeding: str, fertile: tuple | None, era: str, R: float) -> float:
+    """r (/yr) of a harsh-survival people under a schedule whose harsh excess (the harsh rates less the normal ones) is scaled by R, with
+    the fecundity closed as in table(): on the harsh forager schedule at R = 1 (lane 97, raid losses and in-fighting, history.counter)."""
+    a, life = float(adult_yr), float(lifespan_yr)
+    ends = _stage_ends(a, life)
+    cp, ap = a / HUMAN_END[1], (life - a) / (HUMAN_END[3] - HUMAN_END[1])
+    f0, f1 = fertile if fertile else (a + FIRST_BIRTH * cp, a + LAST_BIRTH * ap)
+    x = np.arange(0.0, life + DX / 2, DX)
+    st = np.searchsorted(np.array(ends[:3]), x, side="right")
+    births = ((x >= f0) & (x <= f1)).astype(float)
+
+    def surv(m):
+        return np.exp(-np.concatenate([[0.0], np.cumsum(m[st][:-1] * DX)]))
+
+    fec = BREEDING[breeding] / max(float((surv(_rates(a, life, "forager", "harsh", None)) * births).sum() * DX), 1e-12)
+    mn, mh = _rates(a, life, era, "normal", None), _rates(a, life, era, "harsh", None)
+    w = surv(mn + R * (mh - mn)) * births * fec * DX
+    lo, hi = -0.5, 3.0
+    for _ in range(80):
+        r = 0.5 * (lo + hi)
+        if (w * np.exp(-r * x)).sum() > 1.0:
+            lo = r
+        else:
+            hi = r
+    return float(r)
+
+
+def harsh_kept(l, era: str, R: float) -> float:
+    """The share of its numbers a harsh-survival line keeps (r' / r, lane 82's sustainable-loss form N* = K (1 - h / r)) when its harsh
+    excess is R x the canon one (R 1: as its life table; lane 85's raid factor). 1 for a line of normal survival, without canon ages or with
+    its own mortality schedule (nothing to scale), and for R <= 1 (no line is held above its habitat)."""
+    if R <= 1.0 or l.survival != "harsh" or l.adult_yr is None or l.mortality:
+        return 1.0
+    fert = tuple(l.fertile_yr) if l.fertile_yr else None
+    r1 = _harsh_r(float(l.adult_yr), float(l.lifespan_yr), l.breeding, fert, era, 1.0)
+    if r1 <= 0:
+        return 1.0
+    return float(np.clip(_harsh_r(float(l.adult_yr), float(l.lifespan_yr), l.breeding, fert, era, round(R, 3)) / r1, 0.0, 1.0))

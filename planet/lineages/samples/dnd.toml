@@ -663,6 +663,8 @@ contest = 1.5  # lane 83 (owner D20: 'make the militaristic buggers compete hard
 adult_yr = 50  # PHB: young until 50; ~350; fertile 50-100 (lane 76's rethink)
 lifespan_yr = 350
 fertile_yr = [50, 100]
+disease_resist = 0.75  # lane 97 (owner D25, 10-31): dwarves shrug off three quarters of plague and epidemic losses, and still carry them (5e
+# Dwarven Resilience is against poison: "advantage on saving throws against poison, and ... resistance against poison damage"; disease is the owner's extension)
 name = "dwarves"
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]

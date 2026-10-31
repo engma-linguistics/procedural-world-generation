@@ -240,7 +240,7 @@ LOCAL_FAMILIES = {"base", "jitter-dnd", "subset", "authored"}  # (a second arm's
 ONE_SEED = {"menagerie": 7}  # (the scale test: one seed)
 
 
-def plan(worlds=WORLDS, families=None, arms=DEFAULT_ARMS, seeds=None, trees=None, params=None, tag=None) -> list[dict]:
+def plan(worlds=WORLDS, families=None, arms=DEFAULT_ARMS, seeds=None, trees=None, params=None, tag=None, meta=None) -> list[dict]:
     """The variants, the range arm first (so a cut-short suite still has the whole of today's model). Filters: families, arms, seeds,
     trees (names as in the report: dnd, seven_meals, dnd5, dnd3, dnd+1, or an authored tree's file name); params: overrides added to
     every variant (its name gets ~<tag>), to judge a change without editing the code."""
@@ -259,9 +259,12 @@ def plan(worlds=WORLDS, families=None, arms=DEFAULT_ARMS, seeds=None, trees=None
         if info.get("info_only") and arm != DEFAULT_ARMS[0]:
             return
         prm = {**ARMS[arm], **(params or {})}
-        suffix = "".join(f"~{x}" for x in ([arm] if arm != DEFAULT_ARMS[0] else []) + ([tag or "p"] if params else []))
+        if meta:  # (lane 97: tree meta settings for every variant, e.g. the brakes' dials {"raiders": 2})
+            raw = copy.deepcopy(raw)
+            raw.setdefault("meta", {}).update(meta)
+        suffix = "".join(f"~{x}" for x in ([arm] if arm != DEFAULT_ARMS[0] else []) + ([tag or "p"] if params or meta else []))
         out.append({"family": fam, "name": f"{name}{suffix}@{world}", "world": world, "raw": raw, "arm": arm, "params": prm,
-                    "tag": tag if params else None, **info})
+                    "tag": tag if params or meta else None, "meta": meta or None, **info})
 
     authored_trees = [(p.stem, *authored(p)) for p in sorted(TREES.glob("*.toml"))]
     for arm in arms:
@@ -370,7 +373,12 @@ def measure(h, res, pres) -> dict:
                       "n_over_10pct": int((ps >= 0.1).sum()),
                       "n90": int(np.searchsorted(np.cumsum(np.sort(ps)[::-1]), 0.9) + 1), "dist": float(0.5 * np.abs(ps - world).sum()),
                       "pop": ptot})
-    return {"peoples": out, "n_peoples": len(peoples), "lost": lost, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
+    kinds = {}
+    for e in h.events:
+        kinds[e.get("kind")] = kinds.get(e.get("kind"), 0) + 1
+    # (lane 97: per line, the share of its K each brake held off at its last step, history.counter)
+    brakes = dict(getattr(h, "lost", None) or {})
+    return {"peoples": out, "n_peoples": len(peoples), "lost": lost, "brakes": brakes, "event_kinds": kinds, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
             "total_pop": float(tot), "megafauna": {k: v.get("count") if isinstance(v, dict) else None for k, v in (pres.get("megafauna") or {}).items()}}
 
 
@@ -684,6 +692,7 @@ def _filters(a):
     a.add_argument("--trees", default=None, help="comma-separated trees: dnd, seven_meals, dnd5, dnd3, dnd+1, or authored file names")
     a.add_argument("--params", default=None, help='JSON of params overrides for every variant, e.g. \'{"FIT_CLIP": 2}\'')
     a.add_argument("--tag", default=None, help="the overrides' name in the variant names (default p)")
+    a.add_argument("--meta", default=None, help='JSON of tree meta settings for every variant, e.g. \'{"raiders": 2, "war": 0}\'')
     a.add_argument("--worlds", default=",".join(WORLDS))
 
 
@@ -691,7 +700,8 @@ def _plan_args(args) -> dict:
     sp = lambda x: [v for v in x.split(",") if v] if x else None  # noqa: E731
     return {"worlds": sp(args.worlds), "families": set(sp(args.family)) if args.family else None, "arms": tuple(sp(args.arms)),
             "seeds": {int(x) for x in sp(args.seeds)} if args.seeds else None, "trees": set(sp(args.trees)) if args.trees else None,
-            "params": json.loads(args.params) if args.params else None, "tag": args.tag}
+            "params": json.loads(args.params) if args.params else None, "tag": args.tag,
+            "meta": json.loads(args.meta) if args.meta else None}
 
 
 def main(argv=None):
