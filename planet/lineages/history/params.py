@@ -133,7 +133,33 @@ COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two pe
 # at its full habitat left a newcomer K(1 - alpha) of room, under the establishment threshold (EST) and the hold (HOLD_MIN) wherever
 # alpha_eff > ~0.75, so whoever reached a niche first kept it (kobolds held the mountains 1.5 Myr before the dwarves split, and the
 # dwarves never got in). Off only to measure what it does
-MAINLINE_Q = 0.0  # owner 10-30 (lane 73, option C), measured and NOT the chosen design (the owner prefers demography: lane 76): a mainline
-# people (spec `mainline`) feels its rivals' competition this much less, everywhere. On world 4360a3, seeds 7 and 10: at 0.4 orcs,
-# gnomes and halflings rise above 2% of people, elves reach ~2-3% of cells led at ~0.5% of people, dwarves stay ~0.3%; at 0.6 dwarves
-# 0.6-0.9%, elves 0.3-0.5%, humans fall to 55-63%. Off (0) until the demography pass decides
+LEARN = True  # off: every habitat as the tree gives it (L stays 0; bit-identical to before)
+BODY_C, BODY_OCT, BODY_ELEV_M = 8.0, 1.0, 1000.0  # the body envelope around the comfort range: degrees C of the annual mean on each side,
+# octaves of the annual rain (x2 / x0.5) and metres of a height band. A design judgement, not a measured number: humans' comfort 6-26 C
+# then tolerates -2..34 C, from the boreal forest edge to hot desert margins, while the polar ice, the hottest deserts and the driest
+# land stay out of reach of a people whose comfort is temperate; a cold people (goliaths, -6..12 C) likewise stays out of the tropics.
+# Real peoples went further still with clothing, fire and herds (the Arctic, below), so the envelope is a floor on what culture can do
+ECTO_COLD_C = 1.0  # an ectotherm kind's (spec limits.cold_c: the saurian kin, tortles, lizardfolk, troglodytes) margin below its comfort
+# range, in place of BODY_C: a cold-blooded body cannot be clothed against the cold (owner 10-30: "tortles really don't like the frozen
+# north"). A design judgement; the heat side keeps BODY_C
+T_LEARN_KYR = 5.0  # learned acceptance grows as (1 - L) with this e-folding time, in full where the people lives on country its culture
+# finds marginal, and x its pressure on the ring of cells next to its range. Grounded on the human peopling of high and cold country
+# (sources read 2026-10-30): settlement at 4,355-4,480 m in the Peruvian Andes by 12.8-12.4 kyr ago, within ~2 kyr of the first entry
+# into the Americas (Rademaker et al. 2014, Science, doi:10.1126/science.1258260, "Paleoindian settlement of the high-altitude Peruvian Andes"); the Tibetan
+# Plateau at 4,600 m visited 40-30 kyr ago (Zhang et al. 2018, Science 362:1049, Nwya Devu) but lived on all year only after ~3.6 kyr ago,
+# with barley farming and herds (Chen et al. 2015, Science 347:248); people near 72 N by ~45 kyr ago, when earlier finds stop at 57 N
+# (Pitulko et al. 2016, Science 351:260). So a margin is first held within ~1-2 kyr (L ~0.3 at 5 kyr e-folding, under full pressure) and
+# lived in densely after ~10 kyr or more (L ~0.86 at 10 kyr)
+FORGET_X = 10.0  # ...and fades where the people no longer lives (nor presses), with T_LEARN_KYR x this: knowledge outlives a retreat
+CARRY = 0.9  # a pressed people moving into country of the same biome class (biome_class) as land it has learned carries that knowledge:
+# the frontier cell takes up to CARRY x the best learned acceptance of its held neighbours of that class, x its pressure. Once a people
+# has learned the tundra it can sweep the connected tundra (the Thule expansion); the tundra's lessons do not open the desert
+FULL_FROM = 0.5  # pressure (0..1): the larger of the people's crowding (pressure.crowding) and how full its own country is, counted from
+# this share of its good country held (K0 >= 0.3) to all of it. An unpressed people at home learns next to nothing
+HIGH_M = 2500.0  # biome_class: land above this is high mountain whatever its climate
+LEARNED_MIN = 0.5  # (reporting: a cell counts as learned country where L >= this and the preference alone gives K0 < 0.3)
+LEARN_GAIN = 0.6  # learned country holds a people at most this share of the way from its preference to its body limit (K = K0 + GAIN L
+# (T - K0)): the home country, where its way of life grew, stays its best; a frontier group lives thinner on what it learned. A design
+# judgement, measured (lane 79, world 4360a3, dnd seed 7, one try): at 1 the first people into an empty continent (kobolds, ~100 kyr before
+# the humans) learned the temperate lowlands and kept them (6.5% -> 27% of people; the peoples' biome mixes converged, homogenisation
+# 0.63 -> 0.73); at 0.6 kobolds 11%, humans 73% -> 67%, homogenisation 0.62 as without learning

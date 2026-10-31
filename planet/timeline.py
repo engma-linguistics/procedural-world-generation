@@ -182,7 +182,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  # run time (Myr) from which skeletal reef builders exist (earth.reef_builders_t, PW-892)
                  "reef_builders_t": round(float(reef_builders_t(sim)), 1),
                  # the finished world's moment and why (PW-866): what `--at auto`, make and the viewer take
-                 "finish_moment": H.finish_moment(frames, params.finish_window),
+                 "finish_moment": H.finish_moment(frames, params.finish_window, params.finish_require_ice),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",

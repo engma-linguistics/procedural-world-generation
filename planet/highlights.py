@@ -2681,14 +2681,26 @@ def find(world: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 # The finish checks (PW-865 option C, owner 2026-10-25; passrate4's, unchanged): a moment people could live in
 PREIND_T = 13.8  # C: Earth's pre-industrial (1850-1900) true area mean (Berkeley Earth / HadCRUT ~13.7-13.9)
-HUMAN_RANGE = (-6.0, 3.0)  # C against it (LGM to Pliocene-ish)
+# C against it: the cold edge is the LGM, the warm edge +5 C (owner D19, 2026-10-30, PW-1164: up from +3; the finish
+# temperature wanders with sd ~3.7 C, so +3 sent ~1 world in 5 over). The ONE definition: tools and review judges import it.
+HUMAN_RANGE = (-6.0, 5.0)
+# "Permanent ice" for the require-permanent-ice setting (owner D19; the threshold is a JUDGEMENT CALL, not a measured
+# number): ice held through the warmest month (land ice, which is perennial by construction, plus sea whose warmest
+# month stays below freezing) over at least this % of the planet's surface. Earth today: ~10% of the surface.
+PERM_ICE_MIN_PCT = 0.5
 LAND_ICE_RANGE = (1.0, 25.0)  # % of land under ice: not none, not LGM-like (Earth pre-industrial ~10, LGM ~25)
 WET_TREES = 20.0  # % tree cover on the wet equatorial lowland (PW-806)
 
 
-def habitable(stats: dict) -> list[str]:
+def has_permanent_ice(stats: dict) -> bool:
+    """The moment holds permanent ice (tectonics.output.habitability's perm_ice_pct >= PERM_ICE_MIN_PCT of the surface)."""
+    p = stats.get("perm_ice_pct")
+    return p is not None and p >= PERM_ICE_MIN_PCT
+
+
+def habitable(stats: dict, require_ice: bool = False) -> list[str]:
     """The finish checks a moment's stats (tectonics.output.habitability) fail; [] when it passes all.
-    A frame without them (no climate yet) fails every one."""
+    A frame without them (no climate yet) fails every one. require_ice adds the permanent-ice check."""
     out = []
     t = stats.get("true_temp_c")
     if t is None or not HUMAN_RANGE[0] <= t - PREIND_T <= HUMAN_RANGE[1]:
@@ -2699,21 +2711,27 @@ def habitable(stats: dict) -> list[str]:
     w = stats.get("wet_eq_trees_pct")
     if w is None or w < WET_TREES:
         out.append("wet-tropics trees")
+    if require_ice and not has_permanent_ice(stats):
+        out.append("permanent ice")
     return out
 
 
-def finish_moment(frames: list[dict], window: float) -> dict:
+def finish_moment(frames: list[dict], window: float, require_ice: bool = False) -> dict:
     """The moment a default or showcase world is taken at (`--at auto`; owner 2026-10-25, PW-866): the latest
     human-habitable keyframe (habitable: the finish checks) of the run's last `window` Myr, the finish window
     whose steps each have a climate (tectonics Simulation.step_length). Earth passes those checks only in its
     last few Myr, so this is choosing the right kind of moment. Without a passing one: the run's end, flagged.
     Returns {t, before_end_myr, passes, candidates, passing, fails_at_end, why} (the run records it in its
-    meta as finish_moment, for the viewer)."""
+    meta as finish_moment, for the viewer).
+    require_ice (the "require permanent ice" setting, PW-1164): a moment must also hold permanent ice, so the pick is
+    the latest candidate that has it; `no_permanent_ice` is True when no candidate of the window does (the caller
+    then re-rolls the seed, make.make)."""
     end = float(frames[-1]["t"])
     cand = [f for f in frames if f["t"] >= end - window - 1e-9] if window > 0 else [frames[-1]]
-    ok = [f for f in cand if not habitable(f["stats"])]
-    at_end = habitable(frames[-1]["stats"])
-    out = {"candidates": len(cand), "passing": len(ok), "fails_at_end": at_end}
+    ok = [f for f in cand if not habitable(f["stats"], require_ice)]
+    at_end = habitable(frames[-1]["stats"], require_ice)
+    out = {"candidates": len(cand), "passing": len(ok), "fails_at_end": at_end,
+           "no_permanent_ice": bool(require_ice and not any(has_permanent_ice(f["stats"]) for f in cand))}
     if not ok:
         return {**out, "t": end, "before_end_myr": 0.0, "passes": False,
                 "why": f"NO human-habitable moment in the last {window:g} Myr ({len(cand)} candidates): the run's "
@@ -2732,15 +2750,20 @@ def window_of(meta: dict) -> float:
     return float(meta.get("params", {}).get("finish_window", 0.0))
 
 
+def ice_of(meta: dict) -> bool:
+    """Whether the run was made requiring permanent ice (tectonics Params.finish_require_ice)."""
+    return bool(meta.get("params", {}).get("finish_require_ice", False))
+
+
 def representative_time(frames: list[dict], meta: dict | None = None) -> float:
     """The finish moment's time (finish_moment): as the run recorded it, else worked out from its frames."""
     fm = (meta or {}).get("finish_moment")
-    return float(fm["t"]) if fm else finish_moment(frames, window_of(meta or {}))["t"]
+    return float(fm["t"]) if fm else finish_moment(frames, window_of(meta or {}), ice_of(meta or {}))["t"]
 
 
 def representative_note(frames: list[dict], t: float, meta: dict | None = None) -> str:
     """One line on the picked moment: why it was taken (finish_moment)."""
-    fm = (meta or {}).get("finish_moment") or finish_moment(frames, window_of(meta or {}))
+    fm = (meta or {}).get("finish_moment") or finish_moment(frames, window_of(meta or {}), ice_of(meta or {}))
     return f"({fm['why']})" if abs(fm["t"] - t) < 1e-9 else ""
 
 

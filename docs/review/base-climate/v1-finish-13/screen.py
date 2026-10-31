@@ -1,7 +1,7 @@
 """usage: screen.py DIR [...] -> the human-habitable screen at every step of a run's last 5, 10 and 20 Myr
 (diagnostic only, coordinator's question: take the finished world at the latest passing moment, not the end).
 A moment passes if
-- the true mean temperature is within -6..+3 C of pre-industrial (passrate4's PREIND_T): the climate's true mean
+- the true mean temperature is within -6..+5 C of pre-industrial (passrate4's PREIND_T): the climate's true mean
   (updates, every climate_every Myr) carried to the 2-Myr steps through the run's dT (its offset to dT interpolated);
 - the land ice at that moment is 1-25% of land (passrate4's LAND_ICE_NONE..LAND_ICE_LGM, at the moment);
 - pCO2 >= 180 ppm (a proxy for C3 forests);
@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from planet import climate  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
-PREIND_T, HUMAN_RANGE = 13.8, (-6.0, 3.0)  # passrate4's (v1-finish-12; it runs on import, so copied)
+from planet.highlights import HUMAN_RANGE, PREIND_T  # noqa: E402  (the finish band's one definition, PW-1164: now -6..+5 C)
 LAND_ICE_NONE, LAND_ICE_LGM, WET_TREES = 1.0, 25.0, 20.0
 
 WINDOWS = (5, 10, 20)

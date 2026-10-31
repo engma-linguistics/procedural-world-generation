@@ -36,6 +36,12 @@ meta.megafauna_natural, which peoples press down to meta.dragon_km2 / meta.giant
 tiers (PW-1024, history.habitat): its own country (`prefers`, within `temp_c` and `rain_mm`) in full; `tolerates = [tags]`, places or
 climates it accepts at the edges, at reduced suitability and with a margin round its comfort range; elsewhere a tenth; and, by
 ecological release (history.megafauna.release), rich neighbouring land that no rival kind holds, at reduced density.
+Niche learning (PW-1155, history.params.LEARN): a land people's habitat as given (comfort ranges, prefers, avoids, leanings) is its
+cultural preference; its body limits are the same fit over a wider envelope, `limits = { cold_c, heat_c, rain_oct, elev_m, learn }`
+(LIMIT_KEYS; defaults history.params BODY_C, BODY_OCT, BODY_ELEV_M; learn x its learning rate, 0 never), and `never = [{ what = tag,
+is = "present" | "absent" }]` rules country out for good (sea folk away from the coast, drow in the desert). Living on country its
+culture finds marginal, or pressed against it, a people learns it slowly, cell by cell (history.habitat._learn); megafauna, sea
+peoples and overlays do not learn. Both tables are the body: inherited down the tree, a child's keys and entries added.
 Sapience (PW-965): a stem may say `sapient = "T"`, the one dated "sapiens" node where minds arrive for the whole stem (it must lie
 between the stem's start and its first split child: the kinds split after it and inherit it, they do not evolve minds apart).
 `animals = true` (a non-persisting stem with split children) gives it a new kind of end, not extinction: at its last split the stem is
@@ -338,6 +344,16 @@ def fertility_at(d_kyr: float, tier_kyr: tuple = TIER_KYR) -> float:
 ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
 GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
+# body limits (PW-1155): a line's `limits` table, its body envelope round its comfort range (history.habitat.tolerance; the defaults are
+# history.params BODY_C, BODY_OCT, BODY_ELEV_M): cold_c and heat_c, degrees C of the annual mean below and above the comfort range;
+# rain_oct, octaves of rain either side; elev_m, metres either side of a height band; learn, x the rate it learns new country (0: never,
+# as the megafauna and the sea peoples). Inherited down the tree (the body), each key overridable
+LIMIT_KEYS = ("cold_c", "heat_c", "rain_oct", "elev_m", "learn")
+# what a kind can never live in, however long it learns (PW-1155, owner 10-30): `never = [{what = "coast", is = "absent"}]`, written like a
+# wish: what is a place or climate (PLACES, GROUPS, Köppen codes), is "present" (never where it is: drow in the desert) or "absent" (never
+# where it is not: tritons away from the coast). The learned habitat is 0 there (history.habitat._K); inherited, a child adds its own
+NEVER_IS = ("present", "absent")
+
 KOPPEN_CODES = ["Af", "Am", "Aw", "BWh", "BWk", "BSh", "BSk", "Csa", "Csb", "Csc", "Cwa", "Cwb", "Cwc", "Cfa", "Cfb",
                 "Cfc", "Dsa", "Dsb", "Dsc", "Dsd", "Dwa", "Dwb", "Dwc", "Dwd", "Dfa", "Dfb", "Dfc", "Dfd", "ET", "EF"]
 GROUPS = {  # Köppen groups usable in prefers / avoids (climate.KOPPEN ids)
@@ -364,6 +380,10 @@ class Lineage:
     elev_m: tuple[float, float] | None = None
     prefers: list[str] = field(default_factory=list)
     avoids: list[str] = field(default_factory=list)
+    limits: dict = field(default_factory=dict)  # body limits (PW-1155, history.habitat.tolerance): margins of the body envelope round the comfort range, LIMIT_KEYS; inherited (it is the body)
+    limits_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
+    never: list[tuple[str, str]] = field(default_factory=list)  # hard body limits (PW-1155): (what, is) pairs, NEVER_IS; inherited, a child adds its own
+    never_given: list[tuple[str, str]] = field(default_factory=list)  # of it, what the spec gave on this line itself
     tolerates: list[str] = field(default_factory=list)  # megafauna (PW-1024): places or climates held at reduced suitability (history.habitat TOLERATE_K), with a margin round the comfort range
     traits: list[str] = field(default_factory=list)
     generation_yr: float = GENERATION_YR  # years per generation (history.origin_mvp scales a daughter's founding floor with the generations it must persist); derived from the canon ages below where given
@@ -389,7 +409,6 @@ class Lineage:
     way_given: str | None = None  # of it, what the spec gave on this line itself
     realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
     persists: bool = False  # keeps living after its last split child
-    mainline: bool = False  # owner 10-30 (lane 73): one of the genre's core peoples, meant to be common (history.params.MAINLINE_Q); its groups inherit it
     megafauna: bool = False  # a handful per country (dragons): its range hardly takes room from the peoples that share it (history.MEGAFAUNA_PUSH, PW-855)
     group_size: tuple[float, float] | None = None  # megafauna (PW-924): how many live together, [least, most] (dragons [1, 3]: solitary, a pair with young; giants [5, 20]: a steading); inherited by splits and groups
     rivalry: float = 1.0  # megafauna (PW-924): x the competition the line feels and gives (metallic dragons 0.5: they coexist more readily); inherited by splits and groups
@@ -873,6 +892,21 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
             if k != "density" and not 0 <= v <= 1:
                 raise ValueError(f"{lid}: {k} must be within 0..1")
             demo[k] = v
+        lgiven = dict(r.get("limits") or {})
+        for key, v in lgiven.items():
+            if key not in LIMIT_KEYS:
+                raise ValueError(f"{lid}: unknown limits key {key!r} (one of {LIMIT_KEYS})")
+            if not isinstance(v, (int, float)) or v < 0:
+                raise ValueError(f"{lid}: limits.{key} must be a number >= 0")
+            lgiven[key] = float(v)
+        ngiven = []
+        for e in r.get("never", []):
+            if not isinstance(e, dict) or set(e) - {"what", "is"} or "what" not in e:
+                raise ValueError(f"{lid}: never takes tables {{what = <place or climate>, is = 'present' | 'absent'}}")
+            how = str(e.get("is", "present"))
+            if how not in NEVER_IS:
+                raise ValueError(f"{lid}: never.is must be one of {NEVER_IS}")
+            ngiven.append((_check_tag(str(e["what"]), lid), how))
         bgiven = parse_body(r.get("body"), lid)
         body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
         body["toxic"] = list(body["toxic"])
@@ -912,9 +946,11 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     tolerates=[_check_tag(x, lid) for x in r.get("tolerates", base.tolerates)],
+                    limits={**(base.limits if bases else {}), **lgiven}, limits_given=lgiven,
+                    never=list(dict.fromkeys((base.never if bases else []) + ngiven)), never_given=ngiven,
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), mainline=bool(r.get("mainline", base.mainline if (bases and origin == "group") else False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)), exempt=bool(r.get("exempt", False)),
@@ -1135,14 +1171,16 @@ def to_raw(t: Tree) -> dict:
             r["landmass"] = l.start_land
         if l.body_given:
             r["body"] = l.body_given
+        if l.limits_given:
+            r["limits"] = l.limits_given
+        if l.never_given:
+            r["never"] = [{"what": w, "is": i} for w, i in l.never_given]
         if l.way_given:
             r["way"] = l.way_given
         if l.color:
             r["color"] = l.color
         if l.persists:
             r["persists"] = True
-        if l.mainline:
-            r["mainline"] = True
         if l.megafauna:
             r["megafauna"] = True
         if l.group_size is not None:
