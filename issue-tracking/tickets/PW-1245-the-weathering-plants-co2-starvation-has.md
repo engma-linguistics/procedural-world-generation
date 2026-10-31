@@ -1,4 +1,5 @@
 ---
+id: PW-1245
 title: The weathering plants' CO2 starvation has no C4/CAM rescue, and the vegetation itself still holds CO2 at 124 ppm
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane95
 blocked_by: []
 relates: [PW-1227, PW-1224, PW-880]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, docs/review/v1-cut/plant-floor.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -31,3 +34,6 @@ Fix sketch: keep the C4/CAM share of `npp_w` (one more per-cell array) and exemp
 (docs/review/v1-cut/plant-floor.md) on the draws whose minima go under 124 ppm.
 - [ ] C4/CAM share of the weathering plants kept and not starved
 - [ ] vegetation's own CO2 response below 124 ppm (biome shifts checked on one low-CO2 frame)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-weathering-starvation-c4-and-biomes.md (found by lane95).

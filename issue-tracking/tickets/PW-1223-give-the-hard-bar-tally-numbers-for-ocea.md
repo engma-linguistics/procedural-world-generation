@@ -32,4 +32,5 @@ is already a diagnostic. Lean: A now, B when the CO2 crash draft (draft-l6-co2-c
 - [ ] the tally script moved under tools/ and linked from the playbook's PW-932 line
 
 ## Updates
+- 2026-10-31: Plant floor merged; full min-pCO2 list in docs/review/v1-cut/plant-floor.md. Crash line put to Daniel as D32 on the owner's desk.
 - 2026-10-31: Created from inbox draft draft-hard-bar-definitions.md (found by lane92).
