@@ -1,8 +1,10 @@
 ---
+id: PW-1213
 title: planet simulate prints no progress when stdout is redirected
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: infra
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: lane-86b
 blocked_by: []
 relates: [PW-535]
 refs: [planet/make.py, planet/tectonics.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -19,3 +23,6 @@ the first 40 minutes of an L8 run and then lines only every 6 Myr; the long fini
 ("finish window: climate 7 of 20"). Lane 86b could not tell a hang from slow work for ~90 minutes.
 - [ ] a progress line at least every 5 min while redirected, flushed
 - [ ] the finish window names its own progress
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-simulate-no-progress-redirected.md (found by lane-86b).
