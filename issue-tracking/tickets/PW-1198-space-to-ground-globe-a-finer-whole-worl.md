@@ -1,0 +1,31 @@
+---
+id: PW-1198
+title: "Space-to-ground globe: a finer whole world (L8/L9 finish) and a level-of-detail globe that zooms from orbit to the ground"
+type: epic
+status: todo
+parent: null
+milestone: v2
+subsystem: viewer
+effort: xl
+impact: high
+found_by: coordinator
+blocked_by: []
+relates: [PW-490, PW-1008, PW-1143, PW-316, PW-516, PW-253]
+refs: [docs/review/l8-world/]
+created: 2026-10-31
+updated: 2026-10-31
+---
+
+## Description
+**In plain words.** The owner (2026-10-31) wants the "zoom in from space down to the ground" view other world generators have, and a sharper whole world. Stay in the browser (three.js; WebGPU later), no engine switch: the limit is drawing every cell at full detail, not the engine.
+
+Layers, coarse to fine: the simulated L7 globe (always drawn); a whole-world finish refined to L8/L9 (PW-490) for the finished moment; regional and fine zooms (1-4 km down to 25-250 m) where they exist; cosmetic GPU detail below that which keeps every parent cell's mean (PW-1008), never fed back into the physics.
+
+v2 (right after the v1.0 tag, owner: "at least a try at some of it fairly immediately"): one lane, with half the CPUs and the GPU (RTX PRO 6000, 96 GB) if it helps.
+- [ ] PW-490 first cut: refine a finished L7 world to L8 (terrain from the zooms' landform synthesis keeping parent means; rivers/lakes/coasts recomputed; climate downscaled; soils/vegetation/biomes per cell), measured cost; compare with lane 86's native L8 world.
+- [ ] Chunked level-of-detail globe: coarse globe always, finer patches loaded for visible tiles near the camera (builds on PW-316's data textures).
+- [ ] A first continuous zoom from the globe into an existing regional zoom without a page change.
+v3: the real GPU work (detail synthesis in shaders, seamless streaming down to fine-zoom scale, L9 everywhere).
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-space-to-ground-globe-epic.md (found by coordinator).

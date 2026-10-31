@@ -3,7 +3,7 @@ id: PW-490
 title: "Whole-world finish at L8/L9 (post-v1): refine the finished moment onto a finer global grid, with a level-of-detail globe viewer"
 type: epic
 status: todo
-parent: null
+parent: PW-1198
 milestone: v3
 subsystem: zoom
 effort: xl
