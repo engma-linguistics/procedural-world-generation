@@ -1,4 +1,5 @@
 ---
+id: PW-1210
 title: "3D relief on/off at L8 takes 0.6-1.7 s: keep the globe's mesh, swap only material and normals"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane91-viewer-l8
 blocked_by: []
 relates: [PW-1198]
 refs: [viewer/globe/geometry.js, viewer/globe/map2d.js, docs/review/viewer-l8/diagnosis.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -27,3 +30,6 @@ fresh position, colour and index buffers (`bufferData` ~0.2 s at L8) on top of t
 - optionally keep the last globe topology while on the flat map, so going back costs only a paint
   (~0.2 GB of heap at L8: weigh it).
 - [ ] L8: 3D relief on/off < 0.4 s; same pixels (tools/viewer_perf_globe.py --fingerprint --equirect)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-relief-toggle-keeps-globe-mesh.md (found by lane91-viewer-l8).
