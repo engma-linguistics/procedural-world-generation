@@ -42,4 +42,5 @@ Options:
 Lean: A. B is a small follow-up if the owner wants farmers to track productivity too.
 
 ## Updates
+- 2026-10-30: Option B done in fun lane 63 with "a smidge of C": every way's density follows its layer to the power 0.75 (absolute: foragers the foraging layer over 2.83, herders grazing NPP over 263, farmers total NPP over 330; refs are power means over the r2 off-arm cells).
 - 2026-10-29: Created from inbox draft draft-people-density-productivity-form.md (found by fun-lane-45b).

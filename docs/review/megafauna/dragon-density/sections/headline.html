@@ -17,7 +17,7 @@
 
 <p>Three things set the numbers.</p>
 <ul>
-<li><b>Rival predators matter most to what the food can feed.</b> The guild of smaller carnivores eats about {{ sig(N['headline']['guild_ratio'],2) }} times what the dragons eat, so dragons alone would be about {{ sig(1+N['headline']['guild_ratio'],2) }} times as many.</li>
+<li><b>Rival predators matter most to what the food can feed.</b> The guild of smaller carnivores eats about {{ sig(N['headline']['guild_ratio'],2) }} times what the dragons eat, so with neither that guild nor the giants the food would feed about {{ sig(N['headline']['rows']['alone']['capacity']['world']/N['headline']['rows']['rivals']['capacity']['world'],2) }} times as many dragons.</li>
 <li><b>Habitat and viability matter most to what the worlds hold.</b> The model's worlds hold about {{ pct(N['headline']['rows']['hunt']['realised']['world']/N['headline']['rows']['hunt']['capacity']['world'],2) }} of what the food would feed even with the pressure off. Each dragon kind lives only in its own kinds of country, and a pocket too small to last fades out (Section 5.3).</li>
 <li><b>Among the peoples' channels:</b>
 <ul>

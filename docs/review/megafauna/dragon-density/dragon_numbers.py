@@ -1,6 +1,6 @@
 """dragon_numbers.py R2_DIR OUT.json: every model number on the dragon-density page (index.html), from the review's round-2 sweep.
 
-R2_DIR (persistent: /home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r2/, written by its run.sh) holds
+SRC_DIR (persistent: /home/daniel/personal/repos/procedural-world-generation/data/review-inputs/dragon-r3/, round 3) holds
 docs/review/megafauna/probe.py outputs run from a snapshot of git 8c7ce305 (main b36c9581 plus this review's probe.py; planet/ as on main,
 prey.FORAGE_REF 2.85, GRAZE_REF 279), all with --eras 31,29,25,10,0 --cells:
   on/WORLD_ROLL.json      6 worlds x rolls 7000-7003, the default model (food budget on, the peoples' pressure on)
