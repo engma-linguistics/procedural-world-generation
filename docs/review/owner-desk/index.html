@@ -64,165 +64,201 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · 30 October 2026 · evening</div>
+  <div class="kicker">procgen_world · 30 October 2026 · late evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D17, the
-  "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
-  when anything else needs you.</p>
-  <nav class="toc"><a href="#decisions">Decisions</a><a href="#robust">Robust, not tuned</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
+  <p class="lede">Everything that needs you, in one place. Tonight: the peoples write-up you asked for (where they stand, what changed),
+  then five calls. Climate, mines and D17–D19 are settled and cleared off. Every lane has merged. Nothing is running except a rebuild of your
+  seven runs on today's model.</p>
+  <nav class="toc"><a href="#now">Peoples now</a><a href="#changed">What changed</a><a href="#stress">Stress-test findings</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Recently settled</a></nav>
 </header>
 
+<h2 id="now">Peoples: where they stand</h2>
+<p class="sub">The D&amp;D preset on one test world (4360a3, the quick grid), three seeds, after every merge tonight. Shares are of all
+people alive at the present.</p>
+<div class="tbl"><table>
+<tr><th>People</th><th>Seed 7</th><th>Seed 10</th><th>Seed 13</th><th>Reading</th></tr>
+<tr><td><b>Humans</b></td><td>71%</td><td>58%</td><td>69%</td><td>Still dominant. Down from 73–87% earlier in the week.</td></tr>
+<tr><td>Kobolds</td><td>10%</td><td>8.8%</td><td>9.5%</td><td>Partly a gift: they inherit the dragons' range when they split off (below)</td></tr>
+<tr><td>Kenku</td><td>5.2%</td><td>6.5%</td><td>4.8%</td><td>Same gift, from the avian stem</td></tr>
+<tr><td>Gnomes</td><td>3.7%</td><td>5.0%</td><td>5.5%</td><td>Steady now. They swung 7× between seeds before tonight.</td></tr>
+<tr><td>Dragonborn</td><td>2.8%</td><td>4.9%</td><td>3.4%</td><td></td></tr>
+<tr><td>Hobgoblins · orcs · tabaxi</td><td>2.1 · 1.6 · 1.3%</td><td>1.4 · 1.7 · 1.1%</td><td>2.4 · 1.5 · 1.1%</td><td></td></tr>
+<tr><td>Halflings</td><td>0.6%</td><td>10%</td><td>0.6%</td><td>All or nothing: they either catch their founding land or don't</td></tr>
+<tr><td><b>Elves</b></td><td>0.4%</td><td>0.5%</td><td>0.5%</td><td>Rare, though they hold 12–14 M km² (4× last week)</td></tr>
+<tr><td><b>Dwarves</b></td><td>0.2%</td><td>0.2%</td><td>0.2%</td><td>Still too rare, your first complaint</td></tr>
+</table></div>
+<p><b>In one line:</b> the machinery you asked for is all in. Peoples share land, learn new country, have life stages and arrive through
+portals in force. But the outcome still isn't what you want. Humans hold about two thirds of all people, and dwarves and elves stay
+under half a percent. The stress test shows why: the contest rules, not any one people's numbers. That's decision D20.</p>
+
+<h2 id="changed">What changed with the peoples (today)</h2>
+<div class="cards">
+<div class="card"><div class="id">SHARING LAND · lane 73 · your D17 comments</div>
+<p>"First to hold it keeps it forever" is gone. Two peoples who could live side by side now do (the textbook coexistence rule). A people
+on the upswing (growing in numbers or range) gets a fading edge on land others hold, with one dial for the early eras and one for the
+late. Late arrivals land where there is free room, not in a full world. Kobolds now split off later (350,000 years ago).</p></div>
+
+<div class="card"><div class="id">LEARNING NEW COUNTRY · lane 79 · your idea</div>
+<p>Each people has a fixed <b>body range</b> (how hot, cold, wet, dry and high it can stand) and a <b>never</b> list (merfolk out of water,
+drow in desert). Within the body range, the land it is happy on widens slowly at the frontier when it's crowded. It takes about 5,000
+years, timed on how fast real people settled the high Andes and the Arctic. Learned land never fully matches home: it can go at most 60%
+of the way to the body's limit, so peoples don't all blur into one. A group that has adapted far enough splits off as its own
+people, like taiga gnomes or desert dragonborn. Effect: humans down 3–9 points, elves on 3–5× more land. The "mainline" flag was removed.</p></div>
+
+<div class="card"><div class="id">LIFE STAGES, GROWTH, PORTALS, SHARE TARGETS · lane 78</div>
+<ul>
+<li><b>Four life stages</b> for every people: infant, child, adult, elder. Each has a death rate for foragers, gardeners and farmers,
+from a cross-cultural study of real forager and farmer populations (Gurven &amp; Kaplan 2007). A people uses its own way of life's table: it
+counts as gardeners once it has a staple crop, and as farmers once it farms half its food and has a plough animal.</li>
+<li><b>Growth rates now matter.</b> A fast breeder (kobolds, goblins) spreads, recovers and pushes into a rival's land faster. A slow one
+(elves, dwarves) is slower at all three. On canon ages, kobolds grow 1.5–3× as fast as humans, dwarves about a quarter as fast, elves about a seventh.</li>
+<li><b>Portals in force.</b> Elves come as a million through 8 portals in two waves, gnomes as four million. There's also a new
+"wandering thinnings" mode: weak spots between the realms that drift over the world like hotspots. It's built, but not the default (D21).</li>
+<li><b>Share targets.</b> Each people can carry a min–max share. The run nudges its density and tries again, up to ×4 either way.
+They're soft targets, not clamps, and you get a warning if the minimums add up to more than 100%.</li>
+<li>No tree now ends with one people over 85%. The five-people tree had humans at 89%; now 82%.</li>
+</ul></div>
+
+<div class="card"><div class="id">DENSITY FOLLOWS THE LAND · lane 63 · your D8</div>
+<p>How many people a km² holds now follows how productive it is, on a mildly bent curve: half as rich land holds 59% as many people, not
+none. Foragers read the wild food, herders the grazing, farmers the plant growth.</p></div>
+
+<div class="card"><div class="id">DRAGONS AND PEOPLES · lane 63 · your D14, D16</div>
+<p>Peoples kill dragons by age: stone-age peoples reach the wyrmlings, and grown dragons only fall to high tech. Dragons in farmed land
+now keep about 9% of their numbers, against 1% before. The viewer has "how hard peoples press dragons and giants", early and late, plus
+settings for rival predators, the peoples' share of the game, and how badly they overhunted the wild herds. Round 3 of the dragon paper
+is up: <a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">How Many Dragons</a> (about 120,000 dragons per world at the defaults).</p></div>
+
+<div class="card"><div class="id">MINES AND SETTLEMENTS · lanes 66, 68, 72, 74</div>
+<p>Town and city sizes follow the holders' tech. Mines go to the people most inclined to mine, even as a minority. Mining peoples (dwarves,
+kobolds, gnomes, drow) send mining towns to rich ore within 300 km. Big districts sit only on rich ore (7.7% of land), with about 1,000
+small local pits per world (your D18, option 3).</p></div>
+
+<div class="card"><div class="id">RESEARCH AND DESIGN, NO MODEL CHANGE · lanes 76, 82</div>
+<ul>
+<li><b>Demography (76):</b> breeding rate decides how fast a people grows and recovers, not how many it ends up with. Once land is full,
+numbers come from density × land. So done honestly, life stages make dwarves and elves <i>rarer</i>.</li>
+<li><b>War, plague, drought (82):</b> deaths alone thin the slow breeders first. The brake on fast breeders has to be land: plague-emptied
+towns, war-torn fields, drought (D22). Also: the model's finest-timescale droughts are 100–1,000× rarer than real ones like the
+steppe droughts of Indo-European times. So no, it doesn't yet shuffle peoples around the way those did.</li>
+</ul></div>
+</div>
+
+<h2 id="stress">Stress-test findings, for us to talk over</h2>
+<p class="sub">Lane 77 built the test every peoples change now has to pass: 9 trees (D&amp;D, Seven Meals, even six, a 52-people menagerie, a
+"humans arrive late" world, an all-at-once creationist tree for information only…), with dates shuffled and knobs turned. As you
+asked, <b>nothing in the model was changed from it.</b> Full report: <code>docs/review/peoples-robust/report.md</code>.</p>
+<div class="card">
+<ul>
+<li><b>Nothing broke:</b> no crashes and no unexplained extinctions in 150 runs. Turning a knob up always moves its people up.</li>
+<li><b>Small rosters go to the humans:</b> 93–94% in the five-people tree, 89% in a three-people cut (tonight's merge brought the five-people tree to 82%).
+It isn't density: making humans a fifth as dense still left them at 98%. They reach every landmass by sea, and they hold whatever they land
+on, because the contest never asks who fits the land better.</li>
+<li><b>Brittle peoples:</b> hobgoblins, tabaxi, bugbears, halflings and goblins swing 40× or more between runs.</li>
+<li><b>A split teleports:</b> when a people's parent is gone, the new people appears at the best spot <i>anywhere in the world</i>.
+Troglodytes do it in 57 of 62 runs.</li>
+<li><b>Inherited ranges:</b> kobolds, dragonborn and kenku start with their stem's worldwide range, the thing you ruled against.</li>
+<li><b>Dwarves aren't stranded</b> (an early split didn't help). Competition holds them down.</li>
+<li><b>Losers get pinned as slivers</b> at the 0.5 M km² refuge floor.</li>
+</ul>
+</div>
+
 <h2 id="decisions">Decisions waiting on you</h2>
-<p class="sub">"Your call" or "wait for the numbers" are fine answers.</p>
+<p class="sub">"Your call" or "let's talk" are fine answers. D20 is the big one.</p>
 <div class="cards">
 
-<div class="card"><div class="id">D19 · CLIMATE · answered: up to +5 °C, plus a "require permanent ice" setting (lane 81)</div>
-<h3>How warm may a finished Earth-like be?</h3>
-<p>Climate is done for v1. Worlds finish at a median of about today's temperature, but spread ±3.7 °C. That's slow volcanic
-wander in CO₂, not a bug, and it's narrower than Earth's own past (the last 66 million years alone ran from about +14 °C to −6 °C
-against today). The test calls a world too warm above +3 °C, so about a fifth of worlds will always fail on warmth, however good the
-physics.</p>
-<ol><li><b>Keep +3 °C.</b> Strictly today-like. About 1 in 5 worlds fails as too warm.</li>
-<li><b>Allow up to about +4.7 °C.</b> Warm Earth-likes, like Earth a few million years ago, count as passing. About 1 in 10 fails.</li></ol>
-<div class="rec"><b>My lean: 2.</b> A world 4 °C warmer than ours is still plainly Earth-like, with more forest and less ice. But you're the one asking
-for Earth-likes, so it's your line to draw.</div>
-<div class="answer">PW-1164 · lane 80's analysis: docs/review/base-climate/finish-drift-l80/</div></div>
-
-<div class="card"><div class="id">D17 · PEOPLES · the research is back</div>
-<h3>How do the mainline peoples get common: density, portals, or the flag?</h3>
-<p><b>What you asked:</b> instead of a weight or min/max caps, let birth rates, lifespans and survival drive the numbers, and let
-Feywild peoples arrive in force. A research pass read the 5e age traits for every people in the tree and real human demography.
-The full report is <code>docs/review/peoples-demography/report.md</code>.</p>
-<p><b>The finding you won't love:</b> breeding rate decides how fast a people <i>grows, spreads and recovers</i>, not how many it
-ends up with. Once land is full, births balance deaths for everyone. How many live there comes from how many people a km² feeds
-and how much land they hold. On canon ages, kobolds, goblins and orcs grow about 1.5–3× as fast as humans, dwarves and gnomes about
-¼, elves about ⅐. So life history, done properly, makes dwarves and elves <b>rarer</b>, not commoner. They lose races for empty land,
-recover slowly, and can't take steady losses: at 0.5% a year lost to raids or dragons, humans keep ~88% of their numbers, kobolds
-~93%, dwarves and gnomes ~55%, elves ~18% (corrected; the first figures were wrong). That fits canon (long-lived, few), and your kobold and goblin picture fits exactly:
-breed fast, die young, shrug off losses. Canon gives no birth rates at all. Lifespans imply a dwarf woman bears ~6–7 children about
-24 years apart, an elf about 39 years apart.</p>
-<p><b>I'll build these regardless, since they're sound:</b> ages, breeding class (slow, mammal, brood) and a fertile window per
-people in the setup, driving spread speed, recovery and how quickly a people takes land. Also portal arrivals: portals already exist
-in the model, and the D&amp;D setup just has them switched off. Arrivals would come through 6–10 portals with a founding size you set
-per people ("a million elves through ten portals").</p>
-<p><b>Your call: what makes mainline peoples common?</b></p>
+<div class="card"><div class="id">D20 · PEOPLES · supersedes D17 · PW-1180, 1181, 1149, 1189</div>
+<h3>How do we get from "humans two thirds" to the mix you want?</h3>
+<p>Four levers, from least to most forced. They stack:</p>
 <ol>
-<li><b>Density by way of life.</b> Elves are set at 1 person per km², humans at 10. That's why elves lead 2–3% of the land but are
-only 0.5% of the people. Make elves forest gardeners at 3–5 per km², and dwarves mountain farmer-miners at 6–8. It changes an
-ecological number, not a weight, and roughly triples the elves.</li>
-<li><b>Portals in force</b> for elves and gnomes (being built anyway). How big a wave is your number.</li>
-<li><b>The mainline flag</b>, kept in reserve. Tested at a modest strength, it brought dwarves only to 0.6–0.9% and elves to
-0.3–0.5%.</li>
+<li><b>Fit decides the contest.</b> When two peoples want the same land, the one that suits it better presses harder there. Today a broad
+people presses a specialist as hard in the specialist's best country as anywhere. This is the real fix for "humans take every
+landmass", and it's general: it should help any tree.</li>
+<li><b>One spot for new peoples, made the default</b> (your ruling, built as a switch, off). It takes kobolds from 5% to 0.2% and
+dragonborn from 5% to 1%. <b>On its own it hands that room to the humans</b> (65% → 72%), so it should go in with lever 1. It needs one
+fix with it: a split whose parent is gone should start near the parent's last land, not at the best spot in the world. Sub-question: should
+a dying stem's leftover land still pass to its own kind (kenku keep 56 M km²), or lie empty for the children to spread into?</li>
+<li><b>Density by way of life:</b> elves as forest gardeners at 3–5 per km² (now 1), dwarves as mountain farmer-miners at 6–8. That's an
+ecological number, not a weight, and it should roughly triple both.</li>
+<li><b>Share targets</b> to finish the job. Alone they can't even out the even six: humans need more than a ×¼ nudge and elves more than ×4.
+Even at the limits, humans keep 24–28% and elves reach 7–8%. After levers 1–3 they'd only have the last step to make. And up their re-tries from 3 to 6.</li>
 </ol>
-<div class="rec"><b>My lean: 1 and 2 together, flag off.</b> Slow-breeding peoples being somewhat rarer is honest and on-canon. If
-they're denser where they live and arrive in force, they should still be a real presence. Tell me rough densities if you have a feel
-for them (e.g. "dwarves like a farming people, elves a third of that"), and how big the portal waves should be.</div>
-<div class="note"><b>Lane 73 is merged.</b> Peoples who should share land now share it, a growing people gets a fading edge on
-held land, and late arrivals land where there's free room. The flag is built but switched off. On its own this barely moved dwarves
-(0.15–0.4% of people), but elves doubled to about 0.2–0.4% and gnomes reached 2% on one seed. Two general causes turned up, and
-they'd hit any tree, not just this one:
-(1) <b>a slow people stays stranded on the continent where its parent lived</b>. Dwarves sit on a continent with only 9% of good dwarf
-country;
-(2) <b>a people split off from the dragons inherits the dragons' worldwide range on day one</b>. That's how kobolds got everywhere
-first. Your seven runs still show the history before lane 73. I'll rebuild them once the robustness work below settles, so you
-aren't looking at a moving target.</div>
-<div class="answer">lane 73 · lane 76 report · drafts: life history, growth rate, portal arrivals, density rethink</div></div>
-</div>
+<div class="rec"><b>My lean: 1 and 2 together in one lane, judged on the stress test, then 3, then 4 only where needed.</b> If you'd rather
+just talk it through first, that's the "let's talk" answer.</div>
+<div class="answer">PW-1180 · PW-1181 · PW-1184 (split teleport) · PW-1149 · PW-1189</div></div>
 
-<h2 id="robust">Robust, not tuned</h2>
-<p class="sub">Your point: a preset that only works at one set of values is useless for Seven Meals, a five-race world, or a world with
-different races made common.</p>
-<div class="card"><div class="id">PEOPLES · new lane 77 · no decision needed</div>
-<h3>A stress test for the peoples history, before any more tuning</h3>
-<p>Each peoples change used to be judged on one or two seeds of one tree. That's how you end up with something that "barely works".
-Lane 77 builds the test every future change will have to pass instead:</p>
-<ul>
-<li><b>Several trees:</b> the D&amp;D preset, the Seven Meals tree, a 5-people and a 3-people cut, and one with a people added.</li>
-<li><b>Re-timed:</b> every split and arrival date moved by a random factor between ½ and 2×.</li>
-<li><b>Knobs that behave:</b> make a people denser, or its portal wave bigger, and its share must go up, smoothly, without collapsing
-anything else.</li>
-<li><b>No silent extinctions</b>, no people swallowing the world, several seeds each.</li>
-</ul>
-<p>The lane then reports which of today's fixes are general mechanisms and which were point fixes that only helped D&amp;D at one seed
-(the kobold date and dwarf mobility are suspects). It also ranks the general bugs, like the two above. Life history and density
-(D17) get judged on the same test.</p></div>
-
-<h2 id="mines">Mines are in: have a look</h2>
-<p class="sub">Lane 72 (your D12) is merged. Peoples who live by mining (dwarves, kobolds, gnomes, drow) now send mining towns of incomers
-to rich ore within 300 km of their own land, like German miners invited into medieval Hungary. Everyone else opens a mine only when
-they need one: they farm or herd, or there's a town nearby to sell to, or they have seen a mine work next door for about 1,000 years.
-That last rule is your point about First Nations peoples knowing copper without opening mines. Each diamond is a whole mining
-<i>district</i>, the pits and town of one seam, not a single pit. That's why there are a few hundred per world.</p>
-<p>In the viewer: <b>Overlays → Settlements → "only the mines"</b> shows every district at any zoom. Mining colonies have a white ring.
-Each link below opens straight onto one, with its hover card showing.</p>
-<div class="grid2">
-<figure><img src="img2/m-21-dwarf-gold-colony-488d7e.jpg" alt="A dwarf mining colony in a gold district, with its hover card" loading="lazy"><figcaption><b>A dwarf gold colony</b>, a mining town of about 1,900 incomers, founded about 2,600 years ago. <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;layer=peoples&amp;lat=39.461&amp;lon=74.921&amp;dist=2.3">Open it</a></figcaption></figure>
-<figure><img src="img2/m-23-gnome-iron-colony-488d7e.jpg" alt="A gnome mining colony in an iron district" loading="lazy"><figcaption><b>A gnome iron colony.</b> <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;layer=peoples&amp;lat=3.725&amp;lon=145.876&amp;dist=2.3">Open it</a> · also <a href="http://localhost:8765/viewer/?run=570701&amp;settle=mines&amp;layer=peoples&amp;lat=30.756&amp;lon=125.406&amp;dist=2.3">a copper district the kobolds founded</a></figcaption></figure>
-<figure><img src="img2/m-24-mines-only-globe-488d7e.jpg" alt="The whole globe showing only mining districts" loading="lazy"><figcaption><b>The whole globe, mines only.</b> Mining districts per world went from 255–380 to 277–412, 38–81 of them colonies. The human share fell from 42–80% to 36–72%. Kobolds about doubled. <a href="http://localhost:8765/viewer/?run=488d7e&amp;settle=mines&amp;view=30,100">Open it</a></figcaption></figure>
-</div>
-<div class="note"><b>D18 done (your option 3), merged and on your runs.</b> Big mining districts now sit only on rich ore (7.7% of
-land, 110–210 per world). About 1,000 small <b>local pits</b> per world sit on ordinary ore wherever a people smelts and needs the metal.
-They show as small diamonds under "only the mines". Kobolds dig about a quarter of the pits, and dwarves get theirs near home, as
-many as their small land allows. The pictures above are from before the pits.</div>
-<div class="card"><div class="id">D18 · MINES · answered: option 3, merged</div>
-<h3>Fewer, truer mining districts, or keep the count?</h3>
-<p>"Ore country" covered 46% of the land, because the code counted any 50% chance of a deposit in a big map cell as a mining district.
-Real ore districts are rare and clustered. Lane 74 tightened it to rich deposits only, 7.7% of land. That's built and tested, but held
-from merging, because it cuts the count you already called low:</p>
-<ul>
-<li>Mining districts standing today (run 488d7e): <b>321 → 107</b>. Ever founded, over all seven runs: 4,349 → 1,173.</li>
-<li>Share of districts by kind is about the same (humans 35%, kobolds 19%, gnomes 8%), but dwarves fall from 6% to 3%, and to 0% on one
-run. Fewer rich deposits sit near the few dwarves.</li>
-<li>Tech is unaffected: smelting still only needs ordinary ore nearby. Tying it to rich ore would wipe out iron entirely, so I didn't.</li>
-</ul>
+<div class="card"><div class="id">D21 · PORTALS · PW-1185, PW-1191</div>
+<h3>Two portal details</h3>
 <ol>
-<li><b>Merge it.</b> Mining districts are rare, like on Earth. Dwarves gain mines through D17's fixes (more dwarves), not through more ore.</li>
-<li><b>Keep today's count.</b> Mining country stays half the land.</li>
-<li><b>Both.</b> Rich deposits are big districts. Ordinary ore gets small local pits (a village's copper or iron pit), shown as
-smaller marks. More mines on the map, and the big districts stay special. One more small lane.</li>
+<li><b>An arrival that doesn't say how many come</b> currently lands a full patch at <i>every</i> portal. With 8 portals that's about
+ten times the people. In the "humans arrive late" test, humans went from 29% to 84%. <i>Lean:</i> split one founding patch over the
+portals, so the portal count says <i>where</i> a people lands, not how many come.</li>
+<li><b>Feywild peoples: fixed portals or wandering thinnings?</b> The preset uses 8 fixed portals at interesting sites. Wandering
+thinnings drift over the world and open for a few thousand years each. They're built and tested, but not yet measured on a full run.
+<i>Lean:</i> keep fixed for now. I'll measure wandering on a few runs and show you a map before switching.</li>
 </ol>
-<div class="rec"><b>My lean: 3.</b> It matches how mining really looked: a few great districts like the Great Orme or Rio Tinto, and a
-scatter of small local pits everywhere metal was used. It also gives dwarf peoples somewhere to dig near home. If you'd rather keep it
-simple, 1.</div>
-<div class="answer">PW-1146 · lane 74 branch</div></div>
+<div class="answer">PW-1185 · PW-1191</div></div>
+
+<div class="card"><div class="id">D22 · WAR AND PLAGUE · PW-1169 · your bonus ask</div>
+<h3>What should the brake on fast breeders be?</h3>
+<p>You asked whether war or plague could keep the humans and kobolds down. Deaths alone can't. An extra 0.5% of adults killed a year
+leaves humans at 94% and kobolds at 98%, but dwarves at 86% and elves at 46%. An extra 1% of disease wipes out the elves. What really
+holds a fast breeder down is <b>losing land</b>: plague empties the densest towns for a century and neighbours move in, crowded war leaves
+fields unworked, drought cuts the food. The design (lane 82) builds every counter-pressure that way, with "how warlike" and "how
+often plague" dials per era. Expect it to trim the top people's share by a few points, maybe up to 25%, not to halve it.</p>
+<ol>
+<li><b>Land, not deaths</b>, with dials per era. <i>Or</i> deaths strong enough to bite on fast breeders, with slow peoples sheltered.</li>
+<li><b>"Virgin soil" epidemics</b> (a new disease hitting peoples who have never met it) on by default? They're realistic, but they help
+dense farmers spread, the opposite of a brake.</li>
+<li>How far should the commonest people's share fall at the default dials? Your number.</li>
+</ol>
+<div class="rec"><b>My lean: 1 = land, 2 = on at a softened strength, 3 = "a few points".</b> Kobolds being too many is a density question
+(D20), not a war question.</div>
+<div class="answer">PW-1169 · docs/review/peoples-counterpressures/design.md</div></div>
+
+<div class="card"><div class="id">D23 · DRAGONS · PW-1179 · from the dragon lane's pushback</div>
+<h3>Dragons in hunters' country: they lose their food, not their lives</h3>
+<p>After the age-by-age fix, early peoples hardly kill dragons. Even so, 25,000 years ago dragons where hunters live are only a few percent
+of their empty-land numbers. The D&amp;D hunting peoples (halflings at 12 per km², goblins at 5) are 40–400× denser than real hunter-gatherers.
+They eat half their food as big game, and every tonne comes out of the dragons' own prey. On top of that, overhunting cuts the wild herds by 60% wherever they live.</p>
+<ol>
+<li><b>Dense peoples eat less meat</b> (sourced: dense foragers eat about a fifth of their food as game, thin ones about half). Halflings
+and gnomes become gatherers and gardeners, not big-game hunters. Your densities stay.</li>
+<li><b>Overhunting depends on how long the fauna has lived beside people</b> (sourced: low where they evolved together, high on first
+contact).</li>
+<li>Lower the hunting peoples' densities toward real ones. That changes how the world looks, so it's yours to call.</li>
+</ol>
+<div class="rec"><b>My lean: 1 + 2.</b> Both are sourced and keep your densities. 1 also lightens the humans' and halflings' grip a little.</div>
+<div class="note">The lane's other pushback, for the record: "never wipes out a kind" comes from the shape of the rule, not from evidence.
+The late-era kill strength (dense renaissance farmers keep 10%) is a judgement, and the settings let you move it. No source was found
+that big predators ever held human numbers down.</div>
+<div class="answer">PW-1179</div></div>
+
+<div class="card"><div class="id">D24 · CLIMATE · PW-1170 · small</div>
+<h3>"Require permanent ice": is 0.5% of the surface right?</h3>
+<p>Your D19 setting is built: off by default, and when on it re-rolls up to 3 times. "Permanent ice" means ice that survives the
+warmest month, covering at least 0.5% of the planet (Earth today: about 10%). Separately, the standard finish check already needs land
+ice of 1% of the land.</p>
+<div class="rec"><b>My lean:</b> keep 0.5%. Keep the 1% land-ice floor too (it catches the ice-free worlds whether or not the setting is on).</div>
+<div class="answer">PW-1170</div></div>
+</div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
-<tr><th>What</th><th>Lane</th><th>Where it stands</th></tr>
-<tr><td><b>Climate: v1 bar met, merged.</b> Under your ruling (frozen over counts only near the final Sun): <b>0 of 18</b> worlds frozen over,
-<b>12 of 18</b> pass (main had 11), and the L7 check world passes. Earth's Greenland is smaller, as you accepted; ice flow is in v2. The
-carbon thermostat checks out against published Earth estimates. The last round (lane 80) found that the remaining too-warm and too-cold finishes are
-natural variation. Two small real biases cancel each other, so they're fixed together in v2. <b>Climate is done for v1.</b> See D19.</td><td>80</td><td>Done</td></tr>
-<tr><td><b>Peoples learn new country</b> (PW-1155): body limits fixed, plus a list of never-livable places per people (merfolk out of
-water, drow in desert); habits widen slowly at the frontier when pressed; demes split off once they've adapted (tundra elves, desert
-aarakocra)</td><td>79</td><td>Design approved, building</td></tr>
-<tr><td><b>Life stages, share sliders, portals</b>: infant/child/adult/elder deaths by way of life; soft min/max share targets;
-elves through ~8 portals in waves; wandering "thinnings"</td><td>78</td><td>Building</td></tr>
-<tr><td><b>Peoples stress test</b>: robustness across trees, dates and knobs, including even-six and a 50–100-people menagerie. Results are for you and me to talk over; nothing changes from them until then.</td><td>77</td><td>Running, about 2 h left</td></tr>
-<tr><td><b>Dragon paper, revised</b> (D14, D16): mortality split by age, a pressure setting per tech era, and the food-channel loss
-broken down by cause</td><td>63</td><td>Re-runs, then checks and peer review</td></tr>
-<tr><td>Source hunt, pass 2 (about 425 tech dates)</td><td>–</td><td>Once the web-search allowance refills</td></tr>
+<tr><th>What</th><th>Where it stands</th></tr>
+<tr><td><b>Your seven peoples runs, rebuilt on today's model.</b> They still showed the history from before lane 73. They get new
+ids, and links to the old ones will stop working.</td><td>Running</td></tr>
+<tr><td>Nothing else. The next peoples lane waits on D20, so it isn't built on a moving target.</td><td>–</td></tr>
 </table></div>
 
-<h2 id="answers">Your latest answers → actions</h2>
-<div class="tbl"><table>
-<tr><th>You said</th><th>What happened</th></tr>
-<tr><td>Pass bar: should every Earth-like be habitable?</td><td>Now two tiers. <b>Hard failures</b> (frozen over, boiled, oceans lost,
-CO₂ crash) must pass 100%, and each failing world gets its own investigation. A world with its continents at the poles can be a
-real icehouse, but only if the investigation shows that. <b>The softer score</b> keeps its 60–70% bar. We don't chase a closer
-Earth match.</td></tr>
-<tr><td>Fewer worlds; throw ten things in at once</td><td>Now standard: one world to diagnose, about 6 to confirm, combined batches alongside
-single fixes, the full test once before merging.</td></tr>
-<tr><td>D10: stop the 72-world test; ice sheets back in v1; can warm months melt more?</td><td>Stopped. The model already averaged melt over the orbit.
-The real gap was that warm phases barely reached the ice. Lane 71 is fixing that (above).</td></tr>
-<tr><td>D11: park monsoons for v2, find a source</td><td>Parked. The land and sea drag sources are saved in the repo.</td></tr>
-<tr><td>D12: dwarves find ore, the least forced way; links must open the right view</td><td>Merged (lane 72). See "Mines are in". Every link on it was tested to open on a mine.</td></tr>
-<tr><td>D13: end the history at "D", extend if nobody's arrived</td><td>On the ticket (PW-1134). Built after the current lanes.</td></tr>
-<tr><td>D14/D16: dragon pressure as a setting; dragons press back on small folk</td><td>Lane 63 (above). The setting, and a draft for dragons
-eating small folk to keep game plentiful. Metallic versus chromatic temperament comes later.</td></tr>
-<tr><td>D15: skip; Binford someday</td><td>Noted.</td></tr>
-<tr><td>Mixing peoples needs more detail: try L8/L9</td><td>Ticket filed (PW-1143). An experimental finishing pass for v2.</td></tr>
-</table></div>
+<h2 id="settled">Recently settled</h2>
+<ul class="done">
+<li><b>Climate is done for v1</b>: 0 of 18 worlds frozen over in the near-final-Sun window, 13 of 18 pass at your +5 °C, and the L7 check passes. <a href="https://claude.ai/artifact/X8G1P8unbvo6GCeBM4HC6Z">The climate story</a>.</li>
+<li><b>D19:</b> up to +5 °C, with "require permanent ice" in the New planet form. Merged.</li>
+<li><b>D18:</b> rich-ore districts plus local pits. Merged.</li>
+<li><b>D17:</b> answered by demography, life stages and portals in force. Merged; what's left is D20.</li>
+<li><b>Dragon pressure (D14/D16):</b> merged. Dragons pressing back on small folk and metallic versus chromatic temperament are on the board for later.</li>
+</ul>
 
-<footer><a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">Dragon paper (to be revised)</a> · <a href="https://claude.ai/artifact/NwELDGdqbNCcYTXjBpmkYF">Viewer side-by-sides 2</a></footer>
+<footer><a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">Dragon paper, round 3</a> · <a href="https://claude.ai/artifact/X8G1P8unbvo6GCeBM4HC6Z">Climate v1 story</a></footer>
 </div>
