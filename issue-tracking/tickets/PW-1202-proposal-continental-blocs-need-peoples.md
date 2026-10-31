@@ -36,8 +36,10 @@ Measured (lane 84, docs/review/peoples-why/report.md, section 2):
   people does not yet hold where it has room (crossing.py:196); then the contest rules (PW-1180) and the stacked groups favour them.
 
 Options (they stack):
-- A. Allopatric splits: a split's founders are drawn by landmass first (as roots are, `_by_landmass`), with the parent's crossing
-  reach, so sister peoples are often born on different continents ("elves of the south").
+- A. Allopatric splits: splits already go through `_by_landmass` (origins.py:302), but only over the landmasses their score
+  reaches, and country across the sea weighs 0.6 x K x the crossing's reach, so the parent's own landmass nearly always wins. Give
+  the 'across the sea' landmasses a real share of the draw (by habitable area, as for roots, times a reach that falls off more
+  gently), so sister peoples are often born on different continents ("elves of the south").
 - B. Home ground: a people that has held a landmass long weighs a newcomer's load more (an incumbency edge that grows with time held),
   so landings make coastal enclaves instead of takeovers.
 - C. Late deep-sea craft for everyone: open-sea crossings only from a late date (the Austronesian and Norse scale is Holocene), straits

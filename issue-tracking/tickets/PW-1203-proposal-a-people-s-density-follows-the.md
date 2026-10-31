@@ -31,7 +31,7 @@ Measured by lane 84 (docs/review/peoples-why/report.md, section 1; world 4360a3,
   Five-people cut: 83% -> 58%, range 107 -> 108. So density works through the count, not the contest: INVADE 0 + DENSITY_PUSH 0
   moves the five-people cut by -0.6 points.
 - Today: `History.dens` is one number per line for the whole run (model.py:102), times a static productivity field read through the
-  line's land-use shares (model.py:113-116, prey.py:121-140). Lane 78's era (forager / horticulturalist / agrarian, growth.py:213-228)
+  line's land-use shares (model.py:113-116, prey.py:121-140). Lane 78's era (forager / horticulturalist / agrarian, growth.py:31-46)
   changes growth rates only.
 
 Options:

@@ -24,7 +24,7 @@ run between hostile peoples. Goblins next to humans would then live thinner on t
 
 ## Description
 Today: no war, raids or killing between peoples anywhere in planet/lineages (grep; settlements.py:41 "Not modelled in v0: war and
-raids"). Peoples interact only through the competition for room (competition.py:106-182: niche overlap, closed-country exclusion,
+raids"). Peoples interact only through the competition for room (competition.py:24-99: niche overlap, closed-country exclusion,
 frontier invasion, displacement at TAU_KYR, the HOLD_MIN lapse) and through hybrids and contacts.
 
 The megafauna rule (megafauna.py: `kill`, `kept`, `local_density`): kill effort = KILL_Q x the persecutors' people per km² x their
