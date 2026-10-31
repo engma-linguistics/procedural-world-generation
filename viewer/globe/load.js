@@ -1,6 +1,6 @@
 import { S, state } from './state.js';
 import { SEASONAL, layerNeeds } from './layers.js';
-import { $ } from './scene.js';
+import { $, DIAG } from './scene.js';
 import { loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
 import { buildTopology, paint, prepareGrid } from './geometry.js';
 import { renderLayerButtons, renderRunSummary, renderSummary } from './panel.js';
@@ -87,20 +87,26 @@ export async function setWorld(w, tok = beginLoad()) {
   stop(); S.picked = null; renderZoomBox();
   const G = typeof w.grid === 'string' ? await needJSON(new URL(w.grid, new URL('../worlds/', location.href)), `the grid of world ${w.id || w.name}`) : w.grid;
   if (stale(tok)) return;
+  DIAG.mark('grid: parsed');
   const pg = prepareGrid(G);
+  DIAG.mark('prepareGrid');
   // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
   const nm = w.id ? await fetch(`/api/names?world=${w.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;  // (the server's: the owner's names, else the generated; PW-886)
   if (stale(tok)) return;
+  DIAG.mark('names');
   (w.summary?.landmasses || []).forEach((m, i) => { const o = nm?.names?.[i]?.name; if (o) m.name = o; });
   S.lmEdit = -1;
   for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
-  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
+  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), volcTable: volcTable(w.meta), ...legendFields(w.legend) };
   iceBed(S.V.layers);
+  DIAG.mark('world fields');
   document.title = `${w.name} · Planet Viewer`;
-  renderLayerButtons(); renderSummary(); buildTopology(); paint();
+  renderLayerButtons(); renderSummary(); DIAG.mark('buttons, summary');
+  buildTopology(); DIAG.mark('buildTopology');
+  paint(); DIAG.mark('paint');
   navSync(); loadOk();
   worldAnthroLoad();  // (peoples change the land on a finished world, PW-669)
 }
@@ -192,7 +198,7 @@ export async function loadRun(dir, wantT) {
   if (stale(tok)) return;
   const pg = prepareGrid(grid);
   const tz = run.kind === 'timezoom';  // glacial time zoom: time in kyr
-  S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, cornerCells: pg.cornerCells,
+  S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC,
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
         ...legendFields(run.legend) };
   document.title = `${run.name} · Planet Viewer`;

@@ -106,6 +106,9 @@ export function syncProj() {
     $('projExt').value = proj.ext || '';
     if (S.V) { if (!S.lastColors) S.lastColors = cellColors(state.layer); drawProj(); }
   } else if (was) { S.hovered = -1; renderHover(); }
+  // the live map (or the globe) shows again: its mesh, left as it was under the canvas (geometry.js paint), is
+  // brought up to date, unless the caller rebuilds and repaints it anyway (the mode switch, the 3D relief)
+  if (!canvas && S.meshDeferred && S.V) requestAnimationFrame(() => { if (S.meshDeferred && !proj.on) paint(); });
   const u = new URL(location);
   ['mode', 'proj', 'map2d'].forEach((k) => u.searchParams.delete(k));
   if (flat) { u.searchParams.set('mode', 'map'); if (proj.name !== 'equal-earth') u.searchParams.set('proj', proj.name); }

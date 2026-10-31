@@ -224,8 +224,8 @@ export function buildOverlays() {
   if ($('outlines').checked || $('pentas').checked) {
     const cp = (k, i) => {
       if (globe) {
-        const cs = S.V.cornerCells[k]; let e = 0; for (const j of cs) e += Math.max(L.elevation[j], 0);
-        const r = S.topo.relief && S.topo.R ? S.topo.R[S.V.n + k] : 1 + reliefScale() * e / cs.length;
+        const a = S.V.cStart[k], b = S.V.cStart[k + 1]; let e = 0; for (let q = a; q < b; q++) e += Math.max(L.elevation[S.V.cList[q]], 0);
+        const r = S.topo.relief && S.topo.R ? S.topo.R[S.V.n + k] : 1 + reliefScale() * e / (b - a);
         return unitVec(G.corner_lat[k], G.corner_lon[k]).map((x) => x * r * 1.001);
       }
       let d = G.corner_lon[k] - G.lon[i]; d -= 360 * Math.round(d / 360);
