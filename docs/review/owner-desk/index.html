@@ -66,7 +66,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · 30 October 2026 · evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D18 (mines, under "Mines are in") and D17, the
+  <p class="lede">Only what needs you, plus what's running. D10–D16 are answered and cleared off. Open: D17, the
   "how common should a people be" weight. Its numbers fill in when lane 73's test batches finish, and the page is updated in place
   when anything else needs you.</p>
   <nav class="toc"><a href="#decisions">Decisions</a><a href="#robust">Robust, not tuned</a><a href="#mines">Mines</a><a href="#coming">Running now</a><a href="#answers">Your latest answers → actions</a></nav>
@@ -75,6 +75,18 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <h2 id="decisions">Decisions waiting on you</h2>
 <p class="sub">"Your call" or "wait for the numbers" are fine answers.</p>
 <div class="cards">
+
+<div class="card"><div class="id">D19 · CLIMATE · answered: up to +5 °C, plus a "require permanent ice" setting (lane 81)</div>
+<h3>How warm may a finished Earth-like be?</h3>
+<p>Climate is done for v1. Worlds finish at a median of about today's temperature, but spread ±3.7 °C. That's slow volcanic
+wander in CO₂, not a bug, and it's narrower than Earth's own past (the last 66 million years alone ran from about +14 °C to −6 °C
+against today). The test calls a world too warm above +3 °C, so about a fifth of worlds will always fail on warmth, however good the
+physics.</p>
+<ol><li><b>Keep +3 °C.</b> Strictly today-like. About 1 in 5 worlds fails as too warm.</li>
+<li><b>Allow up to about +4.7 °C.</b> Warm Earth-likes, like Earth a few million years ago, count as passing. About 1 in 10 fails.</li></ol>
+<div class="rec"><b>My lean: 2.</b> A world 4 °C warmer than ours is still plainly Earth-like, with more forest and less ice. But you're the one asking
+for Earth-likes, so it's your line to draw.</div>
+<div class="answer">PW-1164 · lane 80's analysis: docs/review/base-climate/finish-drift-l80/</div></div>
 
 <div class="card"><div class="id">D17 · PEOPLES · the research is back</div>
 <h3>How do the mainline peoples get common: density, portals, or the flag?</h3>
@@ -85,8 +97,8 @@ The full report is <code>docs/review/peoples-demography/report.md</code>.</p>
 ends up with. Once land is full, births balance deaths for everyone. How many live there comes from how many people a km² feeds
 and how much land they hold. On canon ages, kobolds, goblins and orcs grow about 1.5–3× as fast as humans, dwarves and gnomes about
 ¼, elves about ⅐. So life history, done properly, makes dwarves and elves <b>rarer</b>, not commoner. They lose races for empty land,
-recover slowly, and can't take steady losses: at 0.5% a year lost to raids or dragons, humans keep ~43% of their numbers, kobolds
-~65–70%, and dwarves, gnomes and elves nothing. That fits canon (long-lived, few), and your kobold and goblin picture fits exactly:
+recover slowly, and can't take steady losses: at 0.5% a year lost to raids or dragons, humans keep ~88% of their numbers, kobolds
+~93%, dwarves and gnomes ~55%, elves ~18% (corrected; the first figures were wrong). That fits canon (long-lived, few), and your kobold and goblin picture fits exactly:
 breed fast, die young, shrug off losses. Canon gives no birth rates at all. Lifespans imply a dwarf woman bears ~6–7 children about
 24 years apart, an elf about 39 years apart.</p>
 <p><b>I'll build these regardless, since they're sound:</b> ages, breeding class (slow, mammal, brood) and a fertile window per
@@ -177,14 +189,16 @@ simple, 1.</div>
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>What</th><th>Lane</th><th>Where it stands</th></tr>
-<tr><td><b>Frozen-over worlds</b> (D10). The 7-world screen is done. The three ice fixes together froze <b>0 of 7</b> (main: 4),
-but they shrank Earth's real Greenland from 165 map cells to 68, which breaks my guard rail. The gentle fix alone keeps Greenland but
-leaves 2 frozen. Looking at each frozen world closely: in 3 of 4, the climate itself got very cold (6–10 °C below today) after a fast
-CO₂ drop. None is polar geography. So the next round goes after the root cause: why the planet's carbon thermostat (cold slows rock
-weathering, so CO₂ should build back) doesn't pull it out. Also, "ice must survive the warmest phase" is being softened to "thick
-enough to outlast it", as Greenland did in the last warm interglacial.</td><td>75</td><td>Short written diagnosis first, then a
-7-world screen with a combined batch</td></tr>
-<tr><td><b>Peoples stress test</b>: robustness across trees, dates and knobs</td><td>77</td><td>Building and running, about 4 h</td></tr>
+<tr><td><b>Climate: v1 bar met, merged.</b> Under your ruling (frozen over counts only near the final Sun): <b>0 of 18</b> worlds frozen over,
+<b>12 of 18</b> pass (main had 11), and the L7 check world passes. Earth's Greenland is smaller, as you accepted; ice flow is in v2. The
+carbon thermostat checks out against published Earth estimates. The last round (lane 80) found that the remaining too-warm and too-cold finishes are
+natural variation. Two small real biases cancel each other, so they're fixed together in v2. <b>Climate is done for v1.</b> See D19.</td><td>80</td><td>Done</td></tr>
+<tr><td><b>Peoples learn new country</b> (PW-1155): body limits fixed, plus a list of never-livable places per people (merfolk out of
+water, drow in desert); habits widen slowly at the frontier when pressed; demes split off once they've adapted (tundra elves, desert
+aarakocra)</td><td>79</td><td>Design approved, building</td></tr>
+<tr><td><b>Life stages, share sliders, portals</b>: infant/child/adult/elder deaths by way of life; soft min/max share targets;
+elves through ~8 portals in waves; wandering "thinnings"</td><td>78</td><td>Building</td></tr>
+<tr><td><b>Peoples stress test</b>: robustness across trees, dates and knobs, including even-six and a 50–100-people menagerie. Results are for you and me to talk over; nothing changes from them until then.</td><td>77</td><td>Running, about 2 h left</td></tr>
 <tr><td><b>Dragon paper, revised</b> (D14, D16): mortality split by age, a pressure setting per tech era, and the food-channel loss
 broken down by cause</td><td>63</td><td>Re-runs, then checks and peer review</td></tr>
 <tr><td>Source hunt, pass 2 (about 425 tech dates)</td><td>–</td><td>Once the web-search allowance refills</td></tr>

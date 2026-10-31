@@ -44,10 +44,16 @@ ICEHOUSE_LAND = 0.01  # (reported only: share of the land under ice)
 #                   a world never in one for ICEHOUSE_NEVER_PCT % of the time is "never-ice" (reported)
 #   glacial maximum an ice-age peak, roughly Earth at its coldest (the Last Glacial Maximum, ~25% of land): the share
 #                   of land under ice reaches GLACIAL_MAX_LAND (the same 25% as passrate4's LAND_ICE_LGM)
-#   frozen over     FROZEN_OVER_LAND of the land (40%) or more under ice. An instant fail for an Earth-like world,
-#                   and a loud warning that the climate is out of whack. The only one of the three that fails.
+#   frozen over     FROZEN_OVER_LAND of the land (40%) or more under ice. A fail for an Earth-like world, and a loud
+#                   warning that the climate is out of whack, but only in the hard-bar window (hard_window): the
+#                   stretch where the star is near its final brightness (owner 2026-10-30): its forcing within
+#                   FINAL_STAR_C of the finish's and within the last FINAL_MYR of the run, whichever starts later.
+#                   Frozen spells before it, under the dim young star, are an icehouse of the dim era (Earth's
+#                   Cryogenian) and are reported only (frozen_over_any). The only one of the three that fails.
 GLACIAL_MAX_LAND = 0.25
 FROZEN_OVER_LAND = 0.40
+FINAL_STAR_C = 2.0  # C: the star's forcing within this of the finish's (owner 2026-10-30, PW-1142) ...
+FINAL_MYR = 300.0  # Myr: ... and within this of the run's end, whichever window is narrower
 ICEHOUSE_NEVER_PCT = 5.0
 JOIN = 8.0  # Myr
 DEEP, DEEP_MAX = -150.0, 150.0  # m, Myr
@@ -73,6 +79,7 @@ def series(d: dict) -> dict:
     get = lambda k, alt=None: np.array([r.get(k, r.get(alt)) if alt else r.get(k) for r in rows], dtype=float)
     out = {"t": get("t"), "sea_ice": get("sea_ice", "ice"), "sea_tect": get("sea_tect", "tect"),
            "dT": get("dT_end", "dT")}
+    out["star"] = get("star") if all(r.get("star") is not None for r in rows) else None  # (C, the star's forcing)
     if "iced_land" in rows[0]:
         out["iced_land"] = get("iced_land")
     else:  # (a track: the iced share of the surface over the land's share)
@@ -80,20 +87,41 @@ def series(d: dict) -> dict:
     return out
 
 
-def ice_terms(si, il, sl_deep: float = DEEP) -> dict:
+def hard_window(t, star=None) -> tuple[np.ndarray, float, str]:
+    """(mask, start Myr, which) of the samples in frozen over's hard-bar window: the star's forcing (star, C, on
+    the same samples; None: not recorded, the run-length rule alone) within FINAL_STAR_C of its last sample's, and
+    t within FINAL_MYR of the last sample, whichever starts later ("star" or "last 300 Myr")."""
+    t = np.asarray(t, float)
+    end = float(t.max())
+    start, which = end - FINAL_MYR, f"last {FINAL_MYR:g} Myr"
+    if star is not None:
+        star = np.asarray(star, float)
+        near = np.flatnonzero(star >= star[np.argmax(t)] - FINAL_STAR_C)
+        t_star = float(t[near].min())  # (the star only brightens: the first sample near the finish's forcing)
+        if t_star > start:
+            start, which = t_star, "star"
+    return t >= start - 1e-9, start, which
+
+
+def ice_terms(si, il, sl_deep: float = DEEP, hard=None) -> dict:
     """The three ice terms over one window of samples (si: sea level from ice, m; il: share of the land under ice,
     0..1, from the run's saved `iced_land` stat; il may be None when the record has none: land terms are then None).
-    Returns percent-of-time shares, the peak land-ice share, and the flags."""
+    hard: the samples in frozen over's hard-bar window (hard_window; None: all): frozen_over counts only there,
+    frozen_over_any over the whole window (reported). Returns percent-of-time shares, the peak land-ice share, and
+    the flags."""
     si = np.asarray(si, float)
     share = 100 * float((si <= ICEHOUSE_SL).mean())
     out = {"icehouse_pct": share, "icehouse": share >= ICEHOUSE_NEVER_PCT, "never_ice": share < ICEHOUSE_NEVER_PCT,
            "deep_pct": 100 * float((si < sl_deep).mean()), "land_ice_peak": None, "glacial_max": None,
-           "glacial_max_pct": None, "frozen_over": None, "frozen_over_pct": None}
+           "glacial_max_pct": None, "frozen_over": None, "frozen_over_pct": None, "frozen_over_any": None}
     if il is not None and len(il):
         il = np.asarray(il, float)
+        fz = il >= FROZEN_OVER_LAND
+        hard = np.ones(len(il), bool) if hard is None else np.asarray(hard, bool)
         out.update(land_ice_peak=100 * float(il.max()), glacial_max=bool((il >= GLACIAL_MAX_LAND).any()),
                    glacial_max_pct=100 * float((il >= GLACIAL_MAX_LAND).mean()),
-                   frozen_over=bool((il >= FROZEN_OVER_LAND).any()), frozen_over_pct=100 * float((il >= FROZEN_OVER_LAND).mean()))
+                   frozen_over=bool((fz & hard).any()), frozen_over_pct=100 * float(fz.mean()),
+                   frozen_over_any=bool(fz.any()))
     return out
 
 
@@ -159,7 +187,9 @@ def evaluate(d: dict, spinup: float = SPINUP) -> dict:
                      f"{100 * ICEHOUSE_SHARE[1]:g}%")
     if lens and max(lens) > ICEHOUSE_MAX:
         fails.append(f"an icehouse lasts {max(lens):g} > {ICEHOUSE_MAX:g} Myr")
-    res["terms"] = ice_terms(si, il)  # (reported: icehouse / glacial maximum / frozen over; not part of `fails`)
+    hard, h0, which = hard_window(t, None if s["star"] is None else s["star"][late])
+    res["terms"] = ice_terms(si, il, hard=hard)  # (reported: icehouse / glacial max / frozen over; not in `fails`)
+    res["terms"].update(hard_from=h0, hard_by=which)
     res["dT"] = {"min": round(float(dT.min()), 1), "max": round(float(dT.max()), 1)}
     res["tect"] = {"min": round(float(np.nanmin(s["sea_tect"][late]))), "max": round(float(np.nanmax(s["sea_tect"][late]))),
                    "end": round(float(s["sea_tect"][-1]))}
@@ -182,7 +212,7 @@ def line(name: str, r: dict) -> str:
             f" median gap {ih['median_gap']}), deep {dp['share_pct']}% longest {dp['longest']:g} Myr"
             f"{' (on at end)' if dp['on_at_end'] else ''}, <-430 longest {r['vdeep']['longest']:g}, worst {r['worst']} m,"
             f" land ice peak {r['terms']['land_ice_peak']:.0f}%"
-            f"{' GLACIAL-MAX' if r['terms']['glacial_max'] else ''}{' FROZEN-OVER' if r['terms']['frozen_over'] else ''},"
+            f"{' GLACIAL-MAX' if r['terms']['glacial_max'] else ''}{' FROZEN-OVER' if r['terms']['frozen_over'] else (' frozen-over-dim-star' if r['terms']['frozen_over_any'] else '')},"
             f" dT {r['dT']['min']}..{r['dT']['max']}, basins {r['tect']['min']}..{r['tect']['max']} (end {r['tect']['end']})"
             + (f" -- {'; '.join(r['fails'])}" if r["fails"] else ""))
 

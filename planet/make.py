@@ -29,6 +29,8 @@ import json
 import secrets
 from pathlib import Path
 
+import numpy as np
+
 from . import api
 from . import store as S
 from . import highlights as H
@@ -90,12 +92,13 @@ UNSUPPORTED = ["orbit (distance, eccentricity)", "star brightness", "day length"
 
 NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},
                {"key": "glacial", "label": "Glacial maximum"}, {"key": "end", "label": "End of the time zoom"}]
-DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4}
+DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4,
+            "require_ice": False, "tries": 3}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
 
 
 def parse_make_request(req: dict) -> dict:
     """Validates a make request and fills defaults. Raises api.BadRequest.
-    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name}"""
+    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name, require_ice, tries}"""
     from dataclasses import fields
     from .tectonics import Params
     if not isinstance(req, dict):
@@ -127,6 +130,10 @@ def parse_make_request(req: dict) -> dict:
     out["now"] = now
     for k in ("timezoom", "finish", "highlights"):
         out[k] = bool(req.get(k, DEFAULTS[k]))
+    out["require_ice"] = bool(req.get("require_ice", DEFAULTS["require_ice"]))
+    out["tries"] = int(api._num(req, "tries", DEFAULTS["tries"]))
+    if not 1 <= out["tries"] <= 8:
+        raise api.BadRequest("tries must be within 1..8")
     out["zooms"] = int(api._num(req, "zooms", DEFAULTS["zooms"]))
     if not 0 <= out["zooms"] <= 12:
         raise api.BadRequest("zooms must be within 0..12")
@@ -164,7 +171,9 @@ def estimate(spec: dict) -> dict:
     """{"stages": [{"key", "label", "s"}], "total_s"}: expected seconds per stage on a typical
     machine (the run-cost table), for the form and for weighting the progress bar."""
     L = spec["level"]
-    st = [("simulate", f"Simulating {spec['myr']:g} Myr of tectonics", spec["myr"] / 1000 * RUN_S_PER_GYR[L])]
+    st = [("simulate", f"Simulating {spec['myr']:g} Myr of tectonics"
+                       + (f" (one try; a roll with no permanent ice is re-rolled, up to {spec['tries']} tries)" if spec["require_ice"] else ""),
+           spec["myr"] / 1000 * RUN_S_PER_GYR[L])]
     if spec["timezoom"]:
         st.append(("timezoom", f"Ice ages: {spec['kyr']:g} kyr time zoom", spec["kyr"] * TZ_S_PER_KYR[L]))
     if spec["finish"]:
@@ -186,6 +195,11 @@ def options() -> dict:
     return {"presets": {k: {**v, "set": dict(v["set"])} for k, v in PRESETS.items()}, "default_preset": DEFAULT_PRESET,
             "settings": settings, "levels": [{"level": L, "cells": 10 * 4 ** L + 2, "run_s_per_gyr": RUN_S_PER_GYR[L]} for L in LEVELS],
             "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
+
+
+def reroll_seed(seed: int, k: int) -> int:
+    """The seed of roll k (k >= 1) of a require-permanent-ice make: derived from the first, so the whole chain repeats."""
+    return int(np.random.default_rng([int(seed), int(k)]).integers(10**6))
 
 
 def _load_state(state, spec: dict) -> dict:
@@ -240,12 +254,30 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
             run_id, t = out["run"], out["t_myr"]
             prog("simulate")(1.0, f"run {run_id} already made; representative moment {t:g} Myr")
         else:
-            params = T.make_params(spec["set"])
+            params = T.make_params({**spec["set"], "finish_require_ice": spec["require_ice"]})
             p = prog("simulate")
-            p(0.0, f"simulating {spec['myr']:g} Myr at level {spec['level']} (seed {spec['seed']})")
-            run_dir = T.simulate(spec["seed"], spec["level"], spec["myr"], DT, EVERY, spec["name"], params,
-                                 progress=lambda f: p(f, f"tectonics: {f * spec['myr']:.0f} of {spec['myr']:g} Myr"))
-            run = json.loads((run_dir / "run.json").read_text())
+            rolls = []  # (recorded in the output only with require_ice: off, the output is unchanged)
+            tries = spec["tries"] if spec["require_ice"] else 1
+            for k in range(tries):  # (require permanent ice: a roll whose finish window has none is refused, then a new seed)
+                seed = spec["seed"] if k == 0 else reroll_seed(spec["seed"], k)
+                p(k / tries, f"simulating {spec['myr']:g} Myr at level {spec['level']} (seed {seed}"
+                  + (f", roll {k + 1} of {tries})" if spec["require_ice"] else ")"))
+                run_dir = T.simulate(seed, spec["level"], spec["myr"], DT, EVERY, spec["name"], params,
+                                     progress=lambda f, k=k: p((k + f) / tries, f"tectonics: {f * spec['myr']:.0f} of {spec['myr']:g} Myr"))
+                run = json.loads((run_dir / "run.json").read_text())
+                fm = run["meta"]["finish_moment"]
+                rolls.append({"seed": seed, "run": run["id"], "permanent_ice": not fm["no_permanent_ice"],
+                              "finish": fm["why"]})
+                if spec["require_ice"]:
+                    p((k + 1) / tries, f"roll {k + 1}: seed {seed} "
+                      + ("has permanent ice" if rolls[-1]["permanent_ice"] else "has NO permanent ice: refused"))
+                if rolls[-1]["permanent_ice"] or not spec["require_ice"]:
+                    break
+            else:
+                made = ", ".join(f"seed {r['seed']} (run {r['run']})" for r in rolls)
+                raise RuntimeError(f"no roll had permanent ice in {tries} tries: {made}; the runs are kept")
+            if spec["require_ice"]:
+                out["seed"], out["rolls"] = seed, rolls
             run_id = out["run"] = run["id"]
             t = out["t_myr"] = H.representative_time(run["frames"], run["meta"])
             save()

@@ -11,7 +11,7 @@ The three ice terms (tools/ice_criteria.py ice_terms): icehouse (permanent polar
 >= 25%, Earth's coldest) and frozen over (>= 40%); judge / flags / line report all three.
 
 The finish checks, per run at its end:
-- true area mean temperature (the climate's mean, PW-822) within -6..+3 C of pre-industrial 13.8 C;
+- true area mean temperature (the climate's mean, PW-822) within -6..+5 C of pre-industrial 13.8 C;
 - interglacial land ice near Earth's ~10% of land: the least over the last 12 Myr is not none (< 1%) and not
   LGM-like (>= 25%); the share inside 5-20% is also tallied as "near Earth";
 - wet equatorial lowland (> 2000 mm) trees >= 20% (PW-806, hard check);
@@ -27,21 +27,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from planet import climate  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
-PREIND_T = 13.8  # C: Earth's pre-industrial (1850-1900) area mean (Berkeley Earth / HadCRUT ~13.7-13.9)
-HUMAN_RANGE = (-6.0, 3.0)  # C against it (LGM to Pliocene-ish; owner via coordinator 2026-10-25)
+from planet.highlights import HUMAN_RANGE, PREIND_T  # noqa: E402  (one definition of the finish band: -6..+5 C, owner D19, PW-1164)
 LAND_ICE_NONE, LAND_ICE_LGM = 1.0, 25.0  # % of land: none / LGM-like (Earth pre-industrial ~10, LGM ~25)
 LAND_ICE_NEAR = (5.0, 20.0)  # % of land: "near Earth's ~10%" (reported)
 WET_TREES = 20.0  # % trees on the wet equatorial lowland (PW-806)
 PCO2_DIAG = (180.0, 600.0)  # ppm at the end (diagnostic)
 
 
-def judge(t, si, dT, a, b, il=None):
+def judge(t, si, dT, a, b, il=None, star=None):
     """il: the share of land under ice (0..1) on the same samples (C.series(raw)["iced_land"]). Without it the
-    land terms are None and nothing is frozen over."""
+    land terms are None and nothing is frozen over. star: the star's forcing on them (C.series(raw)["star"]):
+    frozen over fails only in C.hard_window (the star near its final brightness, the run's last 300 Myr at most;
+    owner 2026-10-30); before it, frozen_any is reported only."""
     w = (t >= a) & (t < b)
     if not w.any():
         return None
-    ice = C.ice_terms(si[w], None if il is None else il[w])
+    hard, h0, which = C.hard_window(t[w], None if star is None else star[w])
+    ice = C.ice_terms(si[w], None if il is None else il[w], hard=hard)
     share, deep = ice["icehouse_pct"], ice["deep_pct"]
     med, mx = float(np.median(dT[w])), float(dT[w].max())
     hell = med > 10.5 or mx > 15.5
@@ -50,12 +52,13 @@ def judge(t, si, dT, a, b, il=None):
     # Never-ice and the old icebox rule (icehouse >= 90% or deep >= 30%) are reported only. The set-level check
     # (fmtally, pjudge) flags the sim as wrong if nearly all worlds are frozen over or nearly all hellhouses.
     return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, never=ice["never_ice"], frozen=frozen,
+                frozen_any=bool(ice["frozen_over_any"]), hard_from=h0, hard_by=which,
                 glacial_max=bool(ice["glacial_max"]), land_ice_peak=ice["land_ice_peak"],
                 icehouse=ice["icehouse"], always_icy=bool(share >= 90 or deep >= 30), ok=not hell and not frozen)
 
 
 def flags(j):
-    return ((" HELL" if j["hell"] else "") + (" FROZEN-OVER" if j["frozen"] else "") + (" GLACIAL-MAX" if j["glacial_max"] else "")
+    return ((" HELL" if j["hell"] else "") + (" FROZEN-OVER" if j["frozen"] else (" frozen-dim-star" if j.get("frozen_any") else "")) + (" GLACIAL-MAX" if j["glacial_max"] else "")
             + (" ICEHOUSE" if j["icehouse"] else "") + (" NEVER-ICE" if j["never"] else ""))
 
 
@@ -117,13 +120,13 @@ for d in map(Path, sys.argv[1:]):
         tree_ok = wet is not None and wet >= WET_TREES
         co2_ok = PCO2_DIAG[0] <= pc[-1] <= PCO2_DIAG[1]
         all_ok = allj["ok"] and t_ok and ice_ok and tree_ok
-        for k, v in [("finish T -6..+3", t_ok), ("finish land ice 1-25%", ice_ok), ("finish land ice 5-20%", ice_near),
+        for k, v in [("finish T -6..+5", t_ok), ("finish land ice 1-25%", ice_ok), ("finish land ice 5-20%", ice_near),
                      ("finish wet-eq trees >= 20%", tree_ok), ("end pCO2 180-600 (diag.)", co2_ok),
                      ("bar + hard finish checks", all_ok)]:
             add((q, k), v)
         print(f"{'':>27}end: dT {last['dT']:+.1f}, true mean T {last['temp']:.1f} C, trees {last.get('trees')}% of land, "
               f"wet-eq lowland trees {'none' if wet is None else f'{wet:.0f}%'} ({last.get('wet_eq_cells')} cells)")
-        print(f"{'':>27}finish: true mean {rel:+.1f} C vs pre-industrial ({'inside' if t_ok else 'OUTSIDE'} -6..+3); "
+        print(f"{'':>27}finish: true mean {rel:+.1f} C vs pre-industrial ({'inside' if t_ok else 'OUTSIDE'} -6..+5); "
               f"land ice {ice_end:.1f}% at the end, {ice_min:.1f}% least in the last 12 Myr{iflag}; "
               f"trees {'ok' if tree_ok else 'LOW'}; -> {'PASSES ALL' if all_ok else 'fails'}")
         rows.append((q, d.name, seed, allj, rel, ice_min, wet, pc[-1], all_ok))

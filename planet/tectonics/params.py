@@ -97,6 +97,9 @@ class Params:
     # time, each with a climate update and a keyframe, so the finished world can be taken at the latest
     # human-habitable one of those candidate moments (highlights.representative_time). 0: none.
     finish_window: float = 10.0
+    # Require permanent ice (owner D19, PW-1164): the finish moment must hold permanent ice (highlights.has_permanent_ice);
+    # `planet make` re-rolls the seed when no moment of the window does. Off: no behaviour change.
+    finish_require_ice: bool = False
     finish_step: float = 0.5
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
@@ -162,6 +165,14 @@ class Params:
     # times the sheets' carried air is re-made within a climate update's ice passes (earth.ice_sheets, PW-1050):
     # the ice settles with its own air, at most this many re-makings (0: off, the air follows at the next update)
     ice_air_rounds: float = 8.0
+    # the ice-age cycle's warm phase (PW-1142): a sheet carried from a cold era outlasts a climate update only
+    # where it outlasts the cycle's warm phase (the persistent ice, under each cell's balance averaged over this
+    # share of the orbital states, its least first: 0.125 the warmest alone, 0.5 the warm half; seeds the
+    # time-mean sheets; 0: off, the time-mean sheets carry themselves) ...
+    ice_warm_persist: float = 0.125
+    # ... and a melting surface (bare ice) absorbs this share of an insolation change (icemass.BARE_ABSORB,
+    # Wehrle et al. 2021's bare-ice albedo; 0: off, all ice as bright as snow, icemass.ICE_ABSORB)
+    ice_bare_absorb: float = 1.0 - 0.565
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # rocks
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton

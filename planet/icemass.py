@@ -59,6 +59,15 @@ PRECIP_K = 0.07  # rain ~ exp(PRECIP_K * dT) (Clausius-Clapeyron)
 SHEET_KM = 1000.0  # km: a sheet's own air mass (air_mass) ...
 LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
 # snow gets none: its brightness is in the climate's own snow albedo; PW-275)
+SEASON_LAPSE = 2.5 / 1000.0  # C per m: on melting ice the surface's warmest month cools with the ice's height by
+# climate.LAPSE - this and its coldest by LAPSE + this (same annual mean), in full where the warmest month melts
+# (its days above 0 C: 1 - cold_share at the plain lapse), none on a plateau that never melts (PW-1142). GC-Net
+# (Steffen & Box 2001, JGR 106(D24) 33951): "mean annual lapse rate along the surface slope is 0.71 C / 100 m,
+# with monthly mean lapse rates varying between 0.4 C / 100 m in summer and 1.0 C / 100 m in winter"; here
+# ~4 C/km in summer, ~9 in winter. 0: off
+BARE_ABSORB = 1.0 - 0.565  # share of an insolation change a melting (bare-ice) surface absorbs: Greenland's
+# bare-ice albedo at the onset of ablation is 0.565 +- 0.109 over 20 PROMICE sites (Wehrle et al. 2021, GEUS
+# Bulletin 47), against ICE_ABSORB for bright snow (PW-1142; earth._ice_pass, Params.ice_bare_absorb)
 SURFACE_KM = 500.0  # km: the fetch over which the air touching an ice surface takes on the ice's own effects
 # (surface_share; ~a day's travel at ~6 m/s, the time a surface layer takes to adjust to a new surface)
 
@@ -283,7 +292,7 @@ def cycle_dq(tilt: float) -> np.ndarray:
 
 
 def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, tilt: float | None = None,
-            absorb=None):
+            absorb=None, warm: float = 0.0):
     """m of ice per year each land cell gains (> 0) or loses (< 0) under h m
     of ice (0: bare ground: snow that outlasts the summer). t_warm, t_cold:
     the bare ground's warmest and coldest month (C) at the bed (the ice's
@@ -294,8 +303,11 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
     summer than it falls in a cold one, so the cycle's average ice is less
     than the mean orbit's); None: at the mean orbit. absorb: the share
     (0..1) of an insolation change the surface feels (None: from the ice
-    itself, ICE_ABSORB on thick ice). Returns (smb, t_warm on the surface,
-    at the mean orbit)."""
+    itself, ICE_ABSORB on thick ice). warm (0..1): the cycle's warm phase
+    instead of its average, each cell's balance averaged over that share of
+    the states with the least (1/8: the warmest state alone): the ice that
+    outlasts an interglacial (earth.ice_sheets' persistent ice, PW-1142).
+    Returns (smb, t_warm on the surface, at the mean orbit)."""
     from .timezoom.kernels import climate_step
     lat = np.asarray(lat, float)
     n = len(lat)
@@ -309,12 +321,16 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
     band = np.clip(((lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
     a = 1 - f_alb * (1 - ICE_ABSORB) if absorb is None else np.broadcast_to(np.asarray(absorb, float), (n,))
     k_orb = np.where(land, INSOL_K, INSOL_K * INSOL_SEA) * a
-    tot, one, t_x = np.zeros(n), np.zeros(n), np.zeros(n)
+    one, t_x = np.zeros(n), np.zeros(n)
     states = cycle_dq(tilt)
-    for dq in states:
+    each = np.empty((len(states), n))
+    for k, dq in enumerate(states):
         climate_step(*args, k_orb, band, dq, *rest, one, t_x, t_x, t_x, p_scale, f_sum)
-        tot += one
-    return tot / len(states), t_w
+        each[k] = one
+    if warm > 0:
+        m = max(1, int(round(warm * len(states))))
+        return np.sort(each, axis=0)[:m].mean(axis=0), t_w
+    return each.mean(axis=0), t_w
 
 
 def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):
@@ -325,6 +341,9 @@ def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):
     n = len(lat)
     h = np.broadcast_to(np.asarray(h, float), (n,)).copy()
     t_warm, t_cold = np.asarray(t_warm, float), np.asarray(t_cold, float)
+    if SEASON_LAPSE > 0:  # (the seasonal lapse on melting ice, PW-1142: SEASON_LAPSE)
+        sw = SEASON_LAPSE * np.maximum(h, 0) * (1.0 - cold_share(t_warm - climate.LAPSE * np.maximum(h, 0)))
+        t_warm, t_cold = t_warm + sw, t_cold - sw
     f_ice, f_alb = np.clip(h / ALBEDO_H, 0, 1), np.clip(h / SNOW_H, 0, 1)
     damp = SUMMER_DAMP * np.broadcast_to(np.clip(np.asarray(cover, float), 0, 1), (n,))
     smb, t_ann, t_w, t_c, p_scale, f_sum = (np.zeros(n) for _ in range(6))
@@ -369,6 +388,7 @@ def ground_from_surface(lat, tw_s, tc_s, p_jul, p_jan, h, cover, iters: int = 40
     tw_s, tc_s = np.asarray(tw_s, float), np.asarray(tc_s, float)
     h = np.broadcast_to(np.asarray(h, float), lat.shape)
     up = climate.LAPSE * h + ICE_COOL * np.clip(h / ALBEDO_H, 0, 1)
+    sw = SEASON_LAPSE * np.maximum(h, 0)  # (the seasonal lapse's most: it widens the bounds both ways)
 
     def solve(fn, target, lo, hi):
         for _ in range(iters):
@@ -377,11 +397,12 @@ def ground_from_surface(lat, tw_s, tc_s, p_jul, p_jan, h, cover, iters: int = 40
             lo, hi = np.where(below, mid, lo), np.where(below, hi, mid)
         return 0.5 * (lo + hi)
 
-    top = np.maximum(tw_s, tw_s / MELT_HOLD) + up + 80.0
+    top = np.maximum(tw_s, tw_s / MELT_HOLD) + up + sw + 80.0
     gw = top
     for _ in range(rounds):
         gc = solve(lambda x: surface(lat, gw, x, p_jul, p_jan, h, cover)[2], tc_s, tc_s + up - 3.0,
-                   np.maximum(tc_s, tc_s / MELT_HOLD) + up + 3.0)
-        gw = solve(lambda x: surface(lat, x, gc, p_jul, p_jan, h, cover)[1], tw_s, np.maximum(gc, tw_s + up - 3.0),
+                   np.maximum(tc_s, tc_s / MELT_HOLD) + up + sw + 3.0)
+        gw = solve(lambda x: surface(lat, x, gc, p_jul, p_jan, h, cover)[1], tw_s,
+                   np.maximum(gc, tw_s + up - sw - 3.0),
                    np.maximum(top, gc))
     return gw, gc
