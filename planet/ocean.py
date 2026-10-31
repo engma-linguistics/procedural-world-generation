@@ -198,7 +198,7 @@ def river_input(grid: Grid, surf: np.ndarray, sea: np.ndarray, water_mm: np.ndar
     land_w = np.where(sea, 0.0, np.maximum(water_mm, 0.0)) / 1000.0
     if not land_w.any():
         return np.zeros(grid.n)
-    _, down, order = kernels.priority_flood(np.where(sea, np.minimum(surf, 0.0), np.maximum(surf, 1e-3)),
+    _, down, order = kernels.priority_flood(np.where(sea, np.minimum(surf, 0.0), np.maximum(surf, 1e-3)), sea,
                                             grid.nbr_off, grid.nbr_idx, 0.01)
     flow = kernels.accumulate(down, order, land_w)
     return _spread(grid, np.where(sea, flow, 0.0), sea, km)

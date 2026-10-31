@@ -44,4 +44,5 @@ updated: 2026-10-31
 Recorded: virgin-soil epidemics stay off (your 10-31 ruling). That belongs in PW-1167's Updates.
 
 ## Updates
+- 2026-10-31: Daniel 10-31 (D25): 1=B; 2=A+B+C plus in-fighting within raider peoples; 3=dwarves disease resistance 0.75; 4=portal trickle later; 5=open, wants a breakdown with a graph of the commonest people's share under the dials.
 - 2026-10-31: Created from inbox draft draft-owner-call-events-brakes-resistance.md (found by lane-85).

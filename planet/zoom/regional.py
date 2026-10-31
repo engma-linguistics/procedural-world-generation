@@ -173,10 +173,10 @@ from . import stage_rivers as STG_R
 from . import stage_landscape as STG_L
 from . import stage_finish as STG_F
 from ..constants import GRAV, RHO_ICE, SEC_PER_YR
-from ..geo import R_KM, arc, arc_km, latlon, smoothstep, xyz
+from ..geo import R_KM, arc, arc_km, latlon, smoothstep, world_land, xyz
 from ..images import ramp_colour, write_png
 from ..climate import LAPSE
-from ..tectonics.isostasy import land_view
+from ..tectonics.isostasy import BED_FLOOR, land_view
 
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
@@ -1158,18 +1158,28 @@ def land_world(world: dict) -> tuple[dict, np.ndarray]:
     so they build on the land view: such a cell's bed at 1 m, its ice
     thinned to keep the surface (isostasy.land_view), so the coastline and
     the ice surface are the world's. build() then sinks the bed under its
-    glaciers to the true one, the ice thickened by as much (PW-356)."""
+    glaciers to the true one, the ice thickened by as much (PW-356). Ground
+    below the sea cut off from it (geo.is_land, PW-1229) is land too: its
+    bed stands at 1 m in the view, a lake on it as deep as on the true bed
+    (the zoom shows such a depression flat; its true bed is the stats')."""
     L = world["layers"]
-    if "ice" not in L:
-        return world, np.zeros(len(L["elevation"]))
-    e, ice, low = land_view(L["elevation"], L["ice"])
-    if not low.any():
+    el = np.asarray(L["elevation"], float)
+    pit = world_land(L, world.get("grid")) & (el <= 0)
+    if "ice" in L:
+        e, ice, low = land_view(el, L["ice"])
+    else:
+        e, ice, low = el, None, np.zeros(len(el), bool)
+    pit &= ~low
+    if not (low.any() or pit.any()):
         return world, np.zeros(len(e))
-    sunk = e - np.asarray(L["elevation"], float)
-    e = e.astype(np.asarray(L["elevation"]).dtype)
-    out = {**L, "elevation": e, "ice": ice}
+    e = np.where(pit, BED_FLOOR, e)
+    sunk = e - el
+    out = {**L, "elevation": e.astype(np.asarray(L["elevation"]).dtype)}
+    if ice is not None:
+        out["ice"] = ice
     if "lake_level" in L:  # (no lake under the ice: its level is the ground's)
-        out["lake_level"] = np.where(low, e, L["lake_level"])
+        depth = np.maximum(np.asarray(L["lake_level"], float) - el, 0.0)
+        out["lake_level"] = np.where(low, e, np.where(pit, e + depth, L["lake_level"]))
     return {**world, "layers": out}, sunk
 
 

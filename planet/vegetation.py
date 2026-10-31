@@ -847,7 +847,7 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None, pe
     permafrost: soils.mineral's class (0..3) per cell; without it, ground
     colder than -2 C on average counts as permafrost (the run and the zoom)."""
     from .hydrology import CLOSED_LAKE, OPEN_LAKE
-    land = elev > 0
+    land = is_land(elev, grid=grid)
     rel = relief(grid, elev)
     flat = np.clip(1 - rel / 400.0, 0, 1)
     plain = floodplain(grid, elev, flow, rel, flood_ratio)
@@ -1364,7 +1364,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     n = grid.n
     elev = np.asarray(elev, float)
     ice = np.zeros(n) if ice is None else np.asarray(ice, float)
-    land = (elev > 0) & (ice <= 0)
+    land = is_land(elev, grid=grid) & (ice <= 0)
     if lake is not None:
         land &= ~np.asarray(lake).astype(bool)
     unlocked = all_unlocked() if unlocked is None else np.asarray(unlocked, bool)

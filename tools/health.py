@@ -44,7 +44,7 @@ import numpy as np  # noqa: E402
 from planet import parallel  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import timeline as T  # noqa: E402
-from planet.geo import R_KM  # noqa: E402
+from planet.geo import R_KM, is_land  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.scorecard import GROUP  # noqa: E402  (Koppen class -> main group letter)
 from planet.tectonics.earth import CO2_MAX  # noqa: E402
@@ -181,7 +181,7 @@ def real_hollows(grid, elev: np.ndarray, lake_kind: np.ndarray) -> np.ndarray:
     (Since PW-239 a run frame's `downstream` is routed on its own terrain,
     so this is a check that its ends do hold water.)"""
     nb_min = np.minimum.reduceat(elev[grid.nbr_idx], grid.nbr_off[:-1])
-    return (lake_kind >= 2) | ((elev > 0) & (nb_min >= elev))
+    return (lake_kind >= 2) | (is_land(elev, grid=grid) & (nb_min >= elev))
 
 
 def _round(v, nd):
@@ -194,7 +194,7 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
     n = grid.n
     cell_km2 = EARTH_KM2 / n
     elev = np.asarray(L["elevation"], float)
-    land = elev > 0
+    land = is_land(elev, grid=grid)  # (the frame's ground, no ice; geo.is_land)
     ice = np.asarray(L["ice"], float)
     free = land & (ice <= 0)
     cont = np.asarray(L["crust"]) > 0

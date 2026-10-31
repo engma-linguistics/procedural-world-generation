@@ -140,7 +140,7 @@ def climate_on_terrain(ctx):
     alpine = ctx.land & (ctx.clim_f < 28) & (ctx.t_warm < 10)
     ctx.clim_f = np.where(alpine, 28, ctx.clim_f)
     ctx.clim_f = np.where(ctx.land & ((ctx.t_warm < 0) | ctx.glacier), 29, ctx.clim_f).astype(np.uint8)
-    ctx.biome = climate.biomes(ctx.h, ctx.temp, ctx.precip, ctx.lake | ctx.lf_lake)
+    ctx.biome = climate.biomes(ctx.h, ctx.temp, ctx.precip, ctx.lake | ctx.lf_lake, land=ctx.h > 0)
     # (the ice sheet biome is the glaciers: cold ground without ice is bare rock up high, else tundra or cold desert)
     bare = (ctx.biome == 4) & ~ctx.glacier
     ctx.biome = np.where(bare, np.where(ctx.h > 1500, 15, np.where(ctx.precip < 250, 7, 5)), ctx.biome)

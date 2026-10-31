@@ -138,7 +138,9 @@ function cellInfo(i) {
   if (S.V.kind === 'run') R('place', 't', timeLabel(S.V.t), { sep: ' = ', ess: true });
   R('place', 'cell', `${i}${S.V.pentagons.includes(i) ? ' (pentagon!)' : ''}`, { ess: true });
   R('place', '', `lat ${G.lat[i].toFixed(1)}, lon ${G.lon[i].toFixed(1)}`, { lab: 'position', ess: true });
-  R('place', 'elevation', `${L.elevation[i]} m${S.V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
+  const pit = land && L.bed && L.bed[i] <= 0 && !(L.ice && L.ice[i] > 0);  // (below the sea, cut off from it: landsea.js)
+  R('place', 'elevation', pit ? `${Math.round(L.bed[i])} m (below sea level, cut off from the sea)`
+    : `${L.elevation[i]} m${S.V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
   if (S.V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }

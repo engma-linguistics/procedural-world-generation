@@ -13,7 +13,7 @@ blocked_by: [PW-015]
 relates: []
 refs: [planet/ocean.py, tools/moisture_budget.py, docs/review/audit/pw015-rain.md]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-10-31
 ---
 
 ## Description
@@ -27,6 +27,7 @@ Also in scope: Earth gives ~11 Sv of North Atlantic sinking against an observed 
 there's no lasting off-state (after ~1 Sv hosing it recovers within 2–3 climate updates; see PW-018).
 
 ## Updates
+- 2026-10-31: Lane 98 (PW-1229): the L7 pass on this bar (>= +0.25 Sv) was an artefact; the Amazon mouth cell and Ob gulf were cut-off 'seas' so 7.5 Mkm2 of Atlantic catchment was missing. Corrected: Atlantic E-P-R +0.12 Sv at L7, +0.08 at L6; Atlantic minus Pacific -55 mm/yr.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
 - 2026-10-16: Merged inbox draft draft-pw016-spin-up-status.md ("PW-016 after PW-015 stages 1-2: the spin-up rule is already inert on Earth, but the Atlantic's catchments are still too wet (E-P-R +0.20 Sv at L6)", found by pw015-rain).

@@ -15,7 +15,7 @@ import numpy as np
 
 from .. import climate, hydrology, icemass, kernels, nest, surface, vegetation
 from ..constants import GRAV, RHO_ICE
-from ..geo import R_KM
+from ..geo import R_KM, is_land
 from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
@@ -647,7 +647,7 @@ def update_climate(sim, e):
     p, g = sim.params, sim.grid
     bed, crust = e - sim.ice_sink, e
     e, ice0, _ = land_view(bed, np.where(crust > 0, sim.ice, 0.0))
-    land = e > 0
+    land = is_land(e, grid=g)
     c = _climate(sim, e, np.where(land, ice0, 0.0), veg_feedback(sim))
     sim.rain_state = c["rain_state"]  # the next update's rain starts from it (PW-387)
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
@@ -728,7 +728,7 @@ def update_vegetation(sim, e):
     n = g.n
     rng = np.random.default_rng([sim.seed, sim.step_no, 11])
     sim.flora = vegetation.flora_update(sim.flora, sim.t, climate_interval(sim), now_myr(p), sim.veg_niche, rng)
-    land = e > 0
+    land = is_land(e, grid=g)
     ice = np.where(land, sim.ice, 0.0)
     kind = np.where(land, sim.lake_kind, 0)
     lake = np.isin(kind, (hydrology.OPEN_LAKE, hydrology.CLOSED_LAKE))
@@ -742,7 +742,7 @@ def update_vegetation(sim, e):
         sim.npp_pot = sim.pot_frac = sim.pot_lai = None
     if not vegetation.land_plants(sim.flora, sim.t):
         sim.veg, sim.npp, sim.tree_cover, sim.npp_w = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
-        sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
+        sim.veg_type = np.where(land, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
         sim.veg_niche = vegetation.bare_niches()
         return
     v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
@@ -1216,7 +1216,7 @@ def sediments(sim, col, dep, lake):
     p, g, dt = sim.params, sim.grid, sim.dt_now
     x, cover = col.x, col.cover
     e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x))
-    land = e > 0
+    land = is_land(e, grid=g)
     x[:, SAND] += dep * np.where(land, 0.6, np.where(e > -200, 0.5, 0.15))
     net = dep - col.eroded_cover
     record.remove_top(col.rec, col.lith, np.maximum(-net, 0))

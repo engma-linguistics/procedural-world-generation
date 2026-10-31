@@ -223,3 +223,121 @@ point or two of drift is noise. The six l90 runs were deleted afterwards.
 - No golden files changed. The tests changed for the intended changes: the McNaughton and anchor tests now read the above-ground
   share, the release test reads the hunting range, the natural-settings and budget tests read `dragon_share`, and there is a new
   `test_food_chain_revisions_lane90`.
+
+## Lane 93: on main after both merges
+
+### In plain words
+
+Lane 90 measured its dragons on peoples code from before the D20 rework (lane 83). I re-ran its probe on main at c959a53f, with both
+lanes merged, on the same six worlds at roll 7000. The dragons are back: about ten times as many as lane 90 measured. The median world
+holds 65,375 dragons (lane 90: 3,454), and a Sword Coast-sized region about 1,500 (lane 90: about 120). The cold dragons recovered
+the most: the median white dragon count goes from 26 to 242, silver from 20 to 534 and bronze from 146 to 5,096. The hill giants
+also rose (40,179 to 126,969). I checked this is the merge and not my setup: the lane 90 branch tip re-run on world 067778 gives exactly
+lane 90's 2,946 dragons, while main gives 22,001 there. In that world's cell fields the peoples' persecution (`kill`) is 3.4 times lower
+on main. That fits D20's lower, sourced densities, but I did not isolate the cause; that needs a run with D20's density switched off,
+which this lane could not do without changing code. Two further things changed. The deep-time peak of dragons has gone back to the
+300-400 kyr plate switch (1.2 Myr on one world), where lane 90 had moved it to 8-16 Myr ago; and the largest kind's share fell from
+0.42 to 0.32. The peoples look odd in places rather than broken: see the shares below. Whether ten times as many dragons is wanted is
+the owner's call (draft: `draft-dragons-tenfold-after-d20.md`).
+
+### What was run
+
+- Code: main c959a53f, clean `planet/`. Probe: `docs/review/megafauna/probe.py WORLD 7000 OUT.json --eras 31,29,25,10,5,0 --cells DIR`, the "on"
+  arm only, worlds 2a7385, 1df1c3, e71172, 6909cb, a12762, 067778 (existing worlds, nothing rebuilt). 4 at a time with `NUMBA_NUM_THREADS=2`;
+  Each run took 33-44 min on the shared machine, 83 min for the six.
+- Numbers: the paper's `dragon_numbers.py`, on the six "on" outputs. It also wants the pressure-off and persecution-off arms, which I
+  did not run (lane 93's brief: "on" only). So the rows that need them (alone, rivals, hunt and overkill in H1 and H2) are not
+  re-measured. I patched a scratch copy of the script (not committed) to build the "persecution", "press_0.25" and "press_4" rows from the
+  "on" cells alone; those are the same formulas.
+- Control: the lane 90 tip 1532de63, in a scratch git worktree, same probe, world 067778 only.
+
+### Table: lane 90 "after" against now (medians over the six worlds; the H2 rows are dragons the worlds hold now)
+
+| row | lane 90 after | now (main c959a53f) |
+|---|---|---|
+| world total, per world 067778, 1df1c3, 2a7385, 6909cb, a12762, e71172 | 2,946; 3,962; 18,585; 5,682; 917; 1,864 | 22,001; 65,661; 136,051; 92,962; 42,331; 65,089 |
+| world total, median | 3,454 | 65,375 |
+| H2 persecution, world | 3,566 | 65,259 |
+| H2 persecution, region | 74 | 1,381 |
+| H2 persecution, empty land (per 10,000 km²) | 0.071 | 0.61 |
+| H2 persecution, peopled | 0.21 | 4.2 |
+| H2 persecution, grassland | 0.38 | 6.1 |
+| H2 persecution, forest | 0.015 | 1.4 |
+| H2 persecution, desert | 0.21 | 1.8 |
+| H2 press_0.25, world / region | 5,271 / 109 | 75,160 / 1,595 |
+| H2 press_4, world / region | 2,088 / 43 | 50,848 / 1,071 |
+| Sword Coast-sized region, mean over all land (range) | 118 (19-385) | 1,504 (479-2,870) |
+| largest kind's share, median | 0.42 | 0.32 (0.22-0.48) |
+| deep-time peak of all dragons | 0.25-0.53 million, at 8-16 Myr ago | 0.35-1.1 million, at 286-400 kyr ago (1,200 kyr on e71172) |
+| white dragon, median (range) | 26 (0-82) | 242 (79-677) |
+| silver dragon, median (range) | 20 (6-317) | 534 (39-2,341) |
+| bronze dragon, median (range) | 146 (28-474) | 5,096 (2,113-9,242) |
+
+Not re-measured (need the other arms): H1 all rows, H2 hunt and overkill. For what it is worth, the food the dragons could have (H1
+"persecution" capacity, from the "on" cells) is 397,032 on the world and 8,363 in the region, so the dragons now hold about a sixth of it.
+
+By kind, at the present, on the six worlds (lane 90 after → now, median count and coverage of its country):
+
+| kind | lane 90 after | now | coverage |
+|---|---|---|---|
+| black dragon | 134 | 22,251 (4,520-42,848) | 0.54 → 0.92 |
+| blue dragon | 238 | 1,391 (300-7,236) | 0.92 → 0.91 |
+| brass dragon | 1,495 | 10,444 (3,672-16,115) | 0.93 → 0.95 |
+| bronze dragon | 146 | 5,096 (2,113-9,242) | 0.85 → 0.92 |
+| copper dragon | 106 | 5,222 (2,777-12,408) | 0.36 → 0.82 |
+| gold dragon | 419 | 14,290 (2,276-37,148) | 0.98 → 0.98 |
+| green dragon | 24 | 1,402 (239-11,709) | 0.88 → 0.93 |
+| red dragon | 133 | 3,182 (666-5,167) | 0.69 → 0.82 |
+| silver dragon | 20 | 534 (39-2,341) | 0.54 → 0.83 |
+| white dragon | 26 | 242 (79-677) | 0.49 → 0.76 |
+| cloud giant | 342 | 1,340 (474-9,448) | 0.61 → 0.73 |
+| fire giant | 2,038 | 9,667 (4,103-15,524) | 0.45 → 0.70 |
+| frost giant | 348 | 802 (95-2,358) | 0.54 → 0.58 |
+| hill giant | 40,179 | 126,969 (65,001-277,051) | 0.73 → 0.89 |
+| storm giant | 6,989 | 8,438 (1,095-21,241) | 0.96 → 0.96 |
+
+### Control: lane 90's tip against main, world 067778
+
+| | lane 90 tip 1532de63 | main c959a53f |
+|---|---|---|
+| dragons, present | 2,946 (lane 90's table: 2,946) | 22,001 |
+| giants, present | 44,126 | 163,252 |
+| deep-time peak | 465,409 at 16,196 kyr ago | 556,530 at 400 kyr ago |
+| persecution field `kill`, summed over cells | 281.0 | 81.6 |
+| dragons' food `food`, summed over cells | 1,171.8 | 624.4 |
+| wild herds `wild` / livestock `stock`, summed | 4,423 / 3,148 | 4,446 / 1,150 |
+| humans, hobgoblins, kobolds, dwarves, elves (land share) | 32.7, 11.3, 10.5, 0.5, 1.9% | 11.9, 0.14, 0.56, 2.7, 2.5% |
+
+The control reproduces lane 90's 067778 count exactly, so the probe, the worlds and the roll are the same. The difference is in the code
+that merged between the two (D20, and the giants' food reading `HEAD_KCAL`, which is small). The cell fields point at persecution: less
+killing, less livestock (the dragons' food is lower but they are more numerous, so it is not food that holds them back now). This is a
+reading of the fields, not a proof.
+
+### The peoples: land shares on the six worlds, now
+
+Share of all non-megafauna peoples' present cells (`peoples` in the probe's output; not lane 83's measure, which is Mkm² on 4360a3 with
+best of four tries, so these do not compare directly with the D20 tables).
+
+| people | 067778 | 1df1c3 | 2a7385 | 6909cb | a12762 | e71172 | median |
+|---|---|---|---|---|---|---|---|
+| humans | 11.9 | 2.4 | 11.8 | 19.7 | 39.1 | 17.4 | 14.7 |
+| hobgoblins | 0.1 | 0.0 | 0.0 | 1.7 | 0.0 | 13.3 | 0.1 |
+| kobolds | 0.6 | 2.8 | 1.0 | 2.3 | 0.3 | 2.2 | 1.6 |
+| dwarves | 2.7 | 1.9 | 0.7 | 2.8 | 1.4 | 0.0 | 1.7 |
+| elves | 2.5 | 12.9 | 8.7 | 4.6 | 2.2 | 2.4 | 3.6 |
+| dragonborn | 21.5 | 6.3 | 28.4 | 9.1 | 18.2 | 23.6 | 19.9 |
+| orcs | 16.1 | 0.0 | 0.0 | 13.5 | 17.4 | 0.0 | 6.8 |
+
+The humans lead on only some worlds; on 1df1c3 they hold 2.4% beside gnomes 14.1, aarakocra 13.5 and elves 12.9 (D20's effect or the draw of these six worlds; not isolated). Hobgoblins are near zero on four worlds and 13% on one; orcs are zero on three.
+These are single draws on worlds chosen for dragons, so I draw no conclusion beyond: nothing looks broken, and nothing here shows the
+dragons' larger numbers pushing the peoples around (the dragonborn, who split from the dragons, hold 6-28%).
+
+### Is anything broken by the combination?
+
+Nothing crashes and the dragons still sit inside their country (coverage 0.58-0.98). Three things are flagged, as drafts:
+1. Ten times as many dragons as lane 90's paper-sourced numbers give (inbox draft). It undoes most of lane 90's effect, and the cold
+   dragons it was worried about (white, silver, bronze) come back. Whether that is a bug or the right answer is a judgement.
+2. The deep-time peak is back at the plate switch rather than 8-16 Myr ago (same draft).
+3. The 6 worlds' median human share is 14.7% (see peoples table); not a dragon matter, but a fact for the v1 checks.
+
+Wall time: the six runs took 83 min (33-44 min each, four at a time); the control 51 min; about 2 h 20 min in all with waiting.

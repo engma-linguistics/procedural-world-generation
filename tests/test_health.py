@@ -9,6 +9,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from planet import timeline as T  # noqa: E402
+from planet.geo import is_land  # noqa: E402
 from tools import health as H  # noqa: E402
 
 
@@ -19,7 +20,7 @@ def test_measure_frame(sim4):
     st = sim4.stats()
     m = H.measure_frame(g, L, st)
     # (the run's land also counts grounded ice on a bed pressed below the sea; the frame's elevation doesn't)
-    sunk = 100 * float(((snap.elevation <= 0) & (snap.ice > 0)).mean())
+    sunk = 100 * float((~is_land(snap.elevation, grid=g) & (snap.ice > 0)).mean())
     assert abs(m["land_pct"] + sunk - st["land_pct"]) < 0.1
     assert abs(m["cont_pct"] - st["continental_pct"]) < 0.1
     assert m["plates"] == st["plates"] and m["temp"] == st["global_temp_c"]
@@ -37,7 +38,7 @@ def test_stats_land_is_the_frames_land(sim4):
     grounded ice. Oceanic crust whose bed is just above the sea but whose
     trench puts the frame below it is sea in both (PW-309)."""
     snap, st = sim4.snapshot(), sim4.stats()
-    frame_land = (snap.elevation > 0) | (snap.ice > 0)
+    frame_land = is_land(snap.elevation, snap.ice, sim4.grid)
     assert np.array_equal(sim4.land(), frame_land)
     assert st["land_pct"] == round(100 * frame_land.mean(), 1)
     # the PW-309 case, made on a copy: an oceanic cell 10 m above the sea at a 300 m trench
