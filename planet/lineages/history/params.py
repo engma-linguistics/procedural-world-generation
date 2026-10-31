@@ -186,3 +186,29 @@ FOUND_SPREAD = 1.0  # (in walking jump lengths, JUMP_KM)
 # warrens but forage and raid out of them. Screened (docs/review/peoples-brakes/report.md, stage 1): it brought the stranded kobolds of
 # the three-people tree from 1-2% to 17-20% in two of four tries without lifting them in the full tree. False: lane 83's habitat cut
 DEN_THIN = True
+# The brakes (lane 97, owner D25: history.counter, where each is explained). All cut a people's K on a cell; none below COUNTER_FLOOR.
+COUNTER_FLOOR = 0.05  # lane 82: no brake holds a people under this share of its habitat (judgement: never species-ending)
+COHAB_REF = 0.5  # hostility is how far a pair's cohabitation (compose.cohabitation) falls under this, two open peoples' (0.5)
+# Raid losses and in-fighting, on a raider people's harsh excess (life_history.harsh_kept): R = 1 + RAID_Q F + FEUD_Q H, at most R_MAX
+RAID_Q = 1.0  # lane 85's R_FRONT 2 on a full hostile frontier (F 1): a kobold border keeps 31%, a goblin one 41% (judgement)
+FEUD_Q = 0.5  # in-fighting at full hemming (H 1, nowhere to split off to): R 1.5, a kobold people keeps 65%, a goblin one 70% (judgement;
+# the mechanism is Chagnon's fission and Carneiro's circumscription, the size is not sourced)
+R_MAX = 3.6  # violent and accidental deaths run 4-69% of deaths, average 19% (Gurven & Kaplan 2007): at most 3.6x the average
+# Culling wars (lane 85's design, every number a judgement): a crowded (p >= CULL_FULL K) raider frontier (F >= CULL_F), outnumbered there
+# by peoples hostile to it, is cut by CULL_D with chance CULL_P a step; it may be struck again once its depletion is under CULL_AGAIN;
+# it recovers with e-folding RECOVER_YR / x (lane 82: a 40% dent mostly gone in ~150 yr for humans). One logged cull per CULL_LOG_KYR
+CULL_FULL, CULL_F, CULL_P, CULL_D, CULL_AGAIN = 0.8, 0.3, 0.5, 0.6, 0.1
+RECOVER_YR = 50.0
+CULL_LOG_KYR = 2.0
+# War-torn land (lane 82's K(W)): K x (1 - LAND_Q min(1, h / H_MAX)), h = WAR_Q x H_WAY x [(N / WAR_N0)^2 G + WAR_EXT F]
+LAND_Q, H_MAX = 0.3, 0.01  # lane 82's judgements: war-torn country holds up to 30% fewer, in full at 1%/yr of violent deaths
+WAR_Q = 1.0
+WAR_N0 = 10.0  # people per km2 (lane 82: the human farmers' number)
+WAR_EXT = 0.5  # the frontier's weight against crowding (lane 82: foragers' killing is mostly homicide, not war; Fry and Soderberg 2013)
+STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
+# violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of
+# Keeley 1996, Gat 2006, Bowles 2009 and others): foragers 20-160 per 100k, highland horticulturalists 290-731, herders 970-1000,
+# state farmers 70-160. A people in the forager era reads the foragers' row whatever its way; one without a way, its era's row
+H_WAY = {"forager": 0.0007, "fisher_forager": 0.0007, "sea_nomad": 0.0007, "horticulturalist": 0.005, "agro_pastoral": 0.005,
+         "pastoral_nomad": 0.008, "transhumant": 0.008, "farmer": 0.0012}
+H_ERA = {"forager": 0.0007, "horticulturalist": 0.005, "agrarian": 0.0012}

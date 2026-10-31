@@ -3194,3 +3194,84 @@ def test_a_new_people_is_founded_at_a_few_sites_spread_over_one_landmass(faketz,
     assert sites1 == [cell] and blob1.sum() == one
 
 
+
+
+def _raider_raw():
+    return {"meta": {"name": "r", "seed": 2, "mixing_start": "3 kyr"}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000]},
+        {"id": "kob", "parents": ["stem"], "at": "20 kyr", "adult_yr": 6, "lifespan_yr": 120, "breeding": "brood", "survival": "harsh"},
+        {"id": "folk", "parents": ["stem"], "at": "20 kyr", "adult_yr": 18, "lifespan_yr": 80},
+        {"id": "dw", "parents": ["stem"], "at": "20 kyr", "disease_resist": 0.75},
+        {"id": "hill", "origin": "group", "parents": ["dw"], "at": "10 kyr"},
+        {"id": "mix", "origin": "hybrid", "parents": ["dw", "folk"], "at": "8 kyr"}],
+        "wish": [{"a": "folk", "b": "kob", "want": "apart", "weight": 1.0}]}
+
+
+def test_raid_losses_scale_a_raiders_canon_losses_only():
+    """Lane 97 (D25 B, lane 85's table): R x the harsh excess; kobold-like lines keep 0.65 / 0.31 at R 1.5 / 2, normal survival 1."""
+    from planet.lineages import life_history as LH
+    t = SP.parse(_raider_raw())
+    kob, folk = t.lines["kob"], t.lines["folk"]
+    assert kob.raids and not folk.raids
+    assert LH.harsh_kept(kob, "forager", 1.0) == 1.0 and LH.harsh_kept(kob, "forager", 0.7) == 1.0
+    assert LH.harsh_kept(kob, "forager", 1.5) == pytest.approx(0.65, abs=0.02)
+    assert LH.harsh_kept(kob, "forager", 2.0) == pytest.approx(0.31, abs=0.02)
+    assert LH.harsh_kept(folk, "forager", 2.0) == 1.0
+    assert t.lines["dw"].disease_resist == 0.75 and t.lines["hill"].disease_resist == 0.75  # (a group inherits it, PW-1192)
+    assert t.lines["mix"].disease_resist == pytest.approx(0.375)  # (a hybrid: its parents' mean)
+    assert SP.parse(SP.to_raw(t)).lines["dw"].disease_resist == 0.75
+    raw = _raider_raw()
+    raw["lineage"][3]["disease_resist"] = 1.5
+    with pytest.raises(ValueError):
+        SP.parse(raw)
+    assert SP.load(LR.SAMPLES / "dnd.toml").lines["dwarf"].disease_resist == 0.75  # (owner D25: 0.75, not lane 85's 0.5)
+
+
+def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
+    """Lane 97 (D25): on a border with a people that hates it a raider keeps less of its habitat than at home; hemmed in (no free
+    country next door) it loses more to in-fighting; a people of normal survival has no raid or in-fighting loss; meta.raiders 0: off."""
+    import types
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raider_raw()), ps, 1)
+    g, L = h.grid, h.lines
+    h.p = np.zeros((len(L), g.n))
+    h.active = {l.id: True for l in L}
+    h.crops = None
+    h._growth_setup()
+    h._counter_setup()
+    env = h.steps[-1].get()
+    h._land_now = env["land"]
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[180:400]] = 0.8
+    h._pm = h.p >= 0.12
+    h._cntp = h._pm.sum(0, dtype=np.int16)
+    h._deep_now = False
+    step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
+    K = np.where(env["land"], 0.8, 0.0)
+    assert h._hos[kb, fk] == pytest.approx(1.0) and h._hos[kb, h.idx["dw"]] == 0.0
+    h._hem[kb] = 0.0
+    Kb = h._brake(L[kb], kb, K, step, env, None)
+    F = h._frontier(kb)
+    border, home = int(np.argmax(np.where(h._pm[kb], F, -1))), int(np.argmin(np.where(h._pm[kb], F, 9)))
+    assert F[border] > 0.3 and F[home] == 0.0
+    assert Kb[border] < Kb[home] <= K[home] + 1e-12
+    h._hem[kb] = 1.0
+    Kh = h._brake(L[kb], kb, K, step, env, None)
+    assert Kh[home] / K[home] <= 0.66  # (R 1.5 from in-fighting alone: 0.65, and a little war-torn land)
+    assert set(h.lost["kob"]) >= {"raid", "feud"} and h.lost["kob"]["feud"] > 0
+    Kf = h._brake(L[fk], fk, K, step, env, None)
+    assert "raid" not in h.lost.get("folk", {}) and np.all(Kf <= K + 1e-12)
+    h.tree.raiders, h.tree.war = 0.0, 0.0
+    assert np.array_equal(h._brake(L[kb], kb, K, step, env, None), K)
+
+
+def test_a_cull_sawtooth_averages_the_same_for_any_growth_rate():
+    """Lane 85's arithmetic (D25 C): d = 0.6 recovering to 0.1 before the next cull averages (0.6 - 0.1) / ln 6 = 0.28, whatever x."""
+    from planet.lineages.history import params as PM
+    D, A = PM.CULL_D, PM.CULL_AGAIN
+    for tau in (17.0, 450.0):
+        t = np.linspace(0, tau * np.log(D / A), 20001)
+        assert np.mean(D * np.exp(-t / tau)) == pytest.approx((D - A) / np.log(D / A), rel=1e-3)
+    assert (D - A) / np.log(D / A) == pytest.approx(0.28, abs=0.005)
