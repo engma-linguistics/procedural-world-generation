@@ -2740,6 +2740,51 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
         SP.parse({**raw, "meta": {"seed": 1, "game_share": 1.5}})
 
 
+def test_food_chain_revisions_lane90(faketz):
+    """Lane 90 (the dragon-density paper's Table 10): overkill follows how long small folk have held the land (Sandom 2014, PW-1000);
+    the deep epoch has a planet food budget (PW-1062); the peoples press the smaller predators too (PW-1070); a linked population needs
+    LINKED_MVP (PW-1069); the dragons' share counts the young in the smaller classes (PW-1071)."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    assert 0.15 < MG.dragon_share() < 0.25 and MG.dragon_share() > 1 / (1 + MG.guild_ratio())
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "density": 5.0, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
+    ps.graze_npp = 3.0 ** (1 / PR.PREY_EXP) * g1 / PR.above(ps.rain0)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    h = H.History(SP.parse(raw), ps, 1)
+    del ps.graze_npp, ps.forage
+    n, fa, w = h.grid.n, h.idx["farm"], h.idx["wyrm"]
+    land = np.ones(n, bool)
+    P = np.zeros((len(h.lines), n))
+    P[fa, : n // 2] = 1.0
+    # the overkill's clock: land held 1 kyr is naive (meta.overkill), land held 3 Myr nearly spared
+    h._ago_now = 3000.0
+    MG.note_settled(h, P, 3000.0)
+    h._ago_now = 0.0
+    ok_old = np.asarray(MG.overkill(h))
+    assert np.allclose(ok_old[: n // 2], PR.OVERKILL * 0.02 / 0.46)
+    h._first_ago[:] = -1.0
+    MG.note_settled(h, P, 1.0)
+    assert np.allclose(np.asarray(MG.overkill(h))[: n // 2], PR.OVERKILL)
+    # the deep epoch: one planet figure, less with peoples on half the land than with none
+    MG.deep_budget(h, np.zeros_like(P), land)
+    empty = h._deep_food
+    assert np.isclose(empty, MG.OFFTAKE * h._wild_mean * MG.dragon_share(h))
+    MG.deep_budget(h, P, land)
+    assert 0 < h._deep_food < empty
+    nat = MG.natural(h, w, None, None)
+    assert np.isclose(nat, h._deep_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    # the smaller predators: kept below 1 where the farmers kill, 1 where nobody does
+    gk = MG.guild_kept(h, MG.kill(h, P, land))
+    assert gk[: n // 2].max() < 1.0 and np.allclose(gk[n // 2:], 1.0)
+    # a linked population's floor
+    assert MG.linked_mvp(h, h.lines[w]) == max(h.line_mvp(h.lines[w]), MG.LINKED_MVP) >= MG.LINKED_MVP
+
+
 def test_people_density_reads_productivity(faketz):
     """PW-974, PW-1020 B: a people's density per cell is its number x f, f absolute and mildly concave ((the foraging layer over
     FORAGE_REF)^PEOPLE_EXP for foragers, the grazing NPP over GRAZE_REF for herders, the total NPP over NPP_REF for farmers): a poorer
