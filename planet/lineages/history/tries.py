@@ -6,6 +6,7 @@ import numpy as np
 
 from .. import recent as R
 from .. import spec as SP
+from . import bands as B
 from .model import History
 from .params import LOST_PENALTY
 from .summary import present_summary
@@ -31,6 +32,17 @@ def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: 
         key = sc - LOST_PENALTY * len(pres["lost"])  # (a try that keeps every living line is preferred)
         if best is None or key > best[3] + 1e-9:
             best = (h, res, pres, key)
+    if B.banded(tree) and tree.band_rounds > 0:  # (lane 78: share bands as soft targets, history.bands)
+        seed = best[0].seed
+
+        def run_one(h, k=n):
+            res = h.run(lambda f, msg: progress(min(0.999, (n - 1 + f) / n), f"share bands: {msg}"))
+            pres = present_summary(h, res["present"])
+            return res, pres, round(float(pres["wish_score"] or 0.0), 3)
+
+        h, res, pres = B.calibrate(lambda kn: History(tree, ps, seed, goods=goods, knobs=kn), run_one, tree, best[:2], best[2],
+                                   round(float(best[2]["wish_score"] or 0.0), 3))
+        best = (h, res, pres, best[3])
     best[2]["tries"] = scores
     best[2]["try_stats"] = tstats
     best[2]["tries_mean"] = {q: round(float(np.mean([t[q] for t in tstats if t[q] is not None])), 3)

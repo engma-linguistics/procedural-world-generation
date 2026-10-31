@@ -15,6 +15,7 @@ from ..provenance import code_version
 from . import demes as DM
 from . import fuels as FU
 from . import land as LD
+from . import life_history as LH
 from . import landuse as LU
 from . import reputation as RP
 from . import settlements as ST
@@ -140,7 +141,9 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
               "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
               "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
-              "body": l.body, "way": l.way, "generation_yr": h.gen_yr(l),
+              "body": l.body, "way": l.way, "generation_yr": h.gen_yr(l), "life_history": LH.summary(l),
+              "life_eras": getattr(h, "life_eras", {}).get(l.id), "waves": getattr(h, "wave_log", {}).get(l.id),
+              **({"band_pct": list(l.band_pct)} if tuple(l.band_pct) != (0.0, 100.0) else {}),
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     contacts = h.contacts.summary() if h.contacts is not None else None
     pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)
@@ -153,7 +156,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     S.write_json(out / "run.json", {
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
-                 "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
+                 "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "thinnings": h.portal_report(),
+                 "growth_rates": h.tree.growth_rates, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
                  "contacts": contacts, "techtree": techtree, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
@@ -371,6 +375,12 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
          f"{h.tree.source or '(inline)'}; seed {h.seed}; tries {pres.get('tries')}; {h.runtime:.1f} s", ""]
     L.append(f"mode: {h.tree.mode}" + (f"; portals ({h.tree.portal_mode}): " + ", ".join(f"{q['kind']} {q['lat']},{q['lon']}" for q in h._portals or [])
                                       if h.tree.portal_mode != "off" else ""))
+    if pres.get("bands"):  # (lane 78: the share bands, soft targets)
+        L.append("share bands: " + "; ".join(f"{lid} {b['share_pct']:.2f}% in [{b['band'][0]:g}, {b['band'][1]:g}]"
+                                             + ("" if b["met"] else f" UNMET ({b['why']})") + (f", {b['knob']} x{b['x']:g}" if b["x"] != 1 else "")
+                                             for lid, b in pres["bands"].items()))
+    for w in SP.band_warnings(h.tree):
+        L.append(f"warning: {w}")
     L.append(f"target era: {h.tree.era} (a setting only: the technology tree, PW-675, will read it; the history is not run past the present)")
     if h.tree.disabled:
         L.append(f"switched off: {', '.join(h.tree.disabled)}")

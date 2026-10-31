@@ -21,6 +21,7 @@ def editor_schema() -> dict:
     """GET /api/lineage-schema: the peoples editor's option lists and defaults, from spec.py, land.GOODS and dragon_ages
     (viewer/lineages.html renders its menus from it, so they can't drift from what a tree may say; PW-1033)."""
     from . import dragon_ages as DA
+    from . import life_history as LH
     return {
         "traits": list(SP.TRAITS), "places": list(SP.PLACES), "groups": list(SP.GROUPS), "ways": list(SP.WAYS),
         "realms": list(SP.REALMS), "goods": {k: label for k, (label, _) in LD.GOODS.items()},
@@ -39,6 +40,9 @@ def editor_schema() -> dict:
                      "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL,
                      "surge_early": 1.0, "surge_late": 1.0},
         "surge_x": list(SP.SURGE_X),  # (the momentum edge's dial per era, lane 73)
+        "breeding": list(LH.BREEDING), "survival": list(LH.SURVIVAL), "life_stages": list(LH.STAGES),  # (lane 78: life history)
+        "life_defaults": {"wave_kyr": SP.WAVE_KYR, "portal_open_kyr": SP.PORTAL_OPEN_KYR, "portal_drift_kmkyr": SP.PORTAL_DRIFT_KMKYR,
+                          "band_rounds": SP.BAND_ROUNDS, "breeding": "mammal", "survival": "normal"},
     }
 
 

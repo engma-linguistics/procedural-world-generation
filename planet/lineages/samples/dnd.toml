@@ -44,9 +44,14 @@ megafauna_natural = "food"  # the megafauna's natural density where no people pr
 dragon_ages = "younger"  # the dragons' age schedule (PW-958; owner 10-28: younger is the default): younger (annual mortality 20% wyrmling, 3% young, 0.5% adult, 0.1% ancient; ancients ~3%) | base (ancients ~7%) | harsher | gentler
 dragon_generation = "line"  # the dragons' generation time (PW-959; owner 10-28: ~430 yr for now, each dragon line's generation_yr): line | schedule (~460-520 yr under younger) | schedule_mass (~700 at base)
 mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
-portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)
-portals = 1  # ...how many portals they come through (portal_mode random / sites)
+portal_mode = "sites"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697) | wandering
+# (lane 78: thinnings to each arrival's plane that drift over the world, open for some kyr and close; history.portals). Coordinator 10-30: sites, ~8
+# portals, the elves a million strong (the owner: "a million through ten portals")
+portals = 8  # ...how many portals they come through (portal_mode random / sites; wandering: how many of a plane's thinnings stay open)
 portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' draws on: deepest part of a large forest, middle of a desert, a coral reef, the foot of a volcano
+growth_rates = true  # PW-1147 (lane 78): each people's growth rate r, from its canon ages (life_history), sets its spread (x sqrt r), how fast
+# its rivals displace it, the fade of its small patches and its far jumps. Off: every people at the same rates
+wave_kyr = 2  # an arrival's waves come this many kyr apart (a judgement)
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
@@ -247,12 +252,15 @@ never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30: "tortles r
 
 [[lineage]]
 id = "kobold"
+adult_yr = 6  # VGtM: 6; up to 120 'but rarely do so': brood breeders, harsh survival  # PW-1148 (lane 78): canon ages, lane 76's table (docs/review/peoples-demography/report.md section 2)
+lifespan_yr = 120
+breeding = "brood"
+survival = "harsh"
 name = "kobolds"
 body = { bitter = "low" }  # scavengers
 parents = ["draconic"]
 at = "350 kyr"  # lane 73 (coordinator 10-30): a dragon-blooded people split off recently, as the dragonborn (300 kyr), not at 2 Myr: older
 # than the dwarves (500 kyr) in the same niche (mountain, underground), the kobolds held every range before the dwarves arose
-generation_yr = 25  # (a people of its own, not a great wyrm: the default)
 density = 4
 sea_share = 0.02
 temp_c = [5, 25]
@@ -272,6 +280,8 @@ traits = ["subterranean"]
 
 [[lineage]]
 id = "lizardfolk"
+adult_yr = 14  # VGtM: 14; rarely over 60
+lifespan_yr = 60
 name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["saurian"]
@@ -286,6 +296,8 @@ traits = ["swims"]
 
 [[lineage]]
 id = "tortle"
+adult_yr = 15  # Tortle Package: 15; average 50 (70 as the span, lane 76)
+lifespan_yr = 70
 name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["saurian"]
@@ -300,11 +312,12 @@ traits = ["swims", "coastal"]
 
 [[lineage]]
 id = "dragonborn"
+adult_yr = 15  # PHB: 15; ~80
+lifespan_yr = 80
 name = "dragonborn"
 body = { smell = "keen", suction = "poor" }  # dragon-blooded predators; dragonborn: a poor sucker (lapping and tipping, intake 4.3)
 parents = ["draconic"]
 at = "300 kyr"
-generation_yr = 25  # (a people of its own, not a great wyrm: the default)
 density = 2
 explore = 0.6
 temp_c = [8, 28]
@@ -337,6 +350,8 @@ prefers = ["tropical"]
 
 [[lineage]]
 id = "tabaxi"
+adult_yr = 18  # VGtM: as humans
+lifespan_yr = 80
 name = "tabaxi"
 parents = ["feline"]
 at = "1.2 Myr"
@@ -350,6 +365,8 @@ speed_kmyr = 0.8
 
 [[lineage]]
 id = "leonin"
+adult_yr = 18  # MOoT: as humans
+lifespan_yr = 80
 name = "leonin"
 parents = ["feline"]
 at = "900 kyr"
@@ -383,6 +400,10 @@ prefers = ["temperate", "open", "forest"]
 
 [[lineage]]
 id = "goblin"
+adult_yr = 8  # VGtM: 8; up to 60: brood breeders, harsh survival (lane 76's rethink)
+lifespan_yr = 60
+breeding = "brood"
+survival = "harsh"
 name = "goblins"
 parents = ["goblinoid"]
 at = "400 kyr"
@@ -394,6 +415,8 @@ traits = ["hunter"]
 
 [[lineage]]
 id = "hobgoblin"
+adult_yr = 18  # VGtM: as humans
+lifespan_yr = 80
 name = "hobgoblins"
 parents = ["greater_goblinoid"]
 at = "250 kyr"
@@ -406,6 +429,8 @@ traits = ["hunter"]
 
 [[lineage]]
 id = "bugbear"
+adult_yr = 16  # VGtM: 16; up to 80
+lifespan_yr = 80
 name = "bugbears"
 body = { smell = "keen", diet = "carnivore" }  # ambush hunters
 parents = ["greater_goblinoid"]
@@ -554,6 +579,8 @@ traits = ["mountain", "insular"]
 
 [[lineage]]
 id = "goliath"
+adult_yr = 18  # EEPC: late teens; < a century
+lifespan_yr = 80
 name = "goliaths"
 parents = ["giantkin"]
 at = "300 kyr"
@@ -566,6 +593,8 @@ traits = ["hardy", "mountain", "hunter"]
 
 [[lineage]]
 id = "firbolg"
+adult_yr = 30  # VGtM: 30; up to 500
+lifespan_yr = 500
 name = "firbolgs"
 parents = ["giantkin"]
 at = "200 kyr"
@@ -579,6 +608,8 @@ traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "orc"
+adult_yr = 12  # VGtM: 12; up to 50
+lifespan_yr = 50
 name = "orcs"
 body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
@@ -618,8 +649,10 @@ way = "farmer"
 
 [[lineage]]
 id = "dwarf"
+adult_yr = 50  # PHB: young until 50; ~350; fertile 50-100 (lane 76's rethink)
+lifespan_yr = 350
+fertile_yr = [50, 100]
 name = "dwarves"
-generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
@@ -647,6 +680,8 @@ traits = ["subterranean", "miner"]
 
 [[lineage]]
 id = "archaic_human"
+adult_yr = 18  # no canon: as humans (judgement)
+lifespan_yr = 80
 real = true  # (kept in the real-world mode)
 name = "archaic humans stem"
 parents = ["hominid"]
@@ -660,6 +695,8 @@ way = "forager"
 
 [[lineage]]
 id = "human"
+adult_yr = 18  # PHB: late teens; < a century
+lifespan_yr = 80
 real = true  # (kept in the real-world mode)
 name = "humans"
 parents = ["archaic_human"]
@@ -752,6 +789,9 @@ way = "forager"
 
 [[lineage]]
 id = "halfling"
+adult_yr = 20  # PHB: 20; mid second century; a human-like fertile window (lane 76's rethink)
+lifespan_yr = 150
+fertile_yr = [20, 45]
 name = "halflings"
 parents = ["archaic_human"]
 at = "100 kyr"
@@ -767,8 +807,15 @@ traits = ["agricultural", "cosmopolitan"]
 # ---- from outside the world -------------------------------------------------------------
 [[lineage]]
 id = "elf"
+founders = 1000000  # PW-1150 (lane 78; coordinator 10-30, the owner's "a million through ten portals"): about 3x today's founding patch
+# (~0.3 M elves at density 1, lane 76 section 6), in two waves through the portals they can live near
+waves = 2
+plane = "feywild"
+adult_yr = 100  # PHB: ~100; up to 750; slow breeders, fertile 100-200 (lane 76's rethink)
+lifespan_yr = 750
+breeding = "slow"
+fertile_yr = [100, 200]
 name = "elves (from the feywild)"
-generation_yr = 50  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
@@ -812,8 +859,13 @@ never = [{ what = "coast", is = "absent" }]  # PW-1155 (owner 10-30): sea folk n
 
 [[lineage]]
 id = "gnome"
+founders = 4000000  # PW-1150 (lane 78): today's founding patch for gnomes (~0.5 Mkm2 x density 12 x their habitat, ~4 M: lane 76 section 6), so
+# the gnomes come as many as they did, now through every portal they can live near rather than one place (a judgement: comparable in land to the elves' million)
+plane = "feywild"
+adult_yr = 40  # PHB: ~40; ~350; fertile 40-90 (lane 76's rethink)
+lifespan_yr = 350
+fertile_yr = [40, 90]
 name = "gnomes (from the feywild)"
-generation_yr = 40  # years per generation (default 25, humans: Fenner 2005): long-lived: lifespans scale with generation time (Pacifici 2013 mammal generation lengths); sets the horizon in generations for its origin floor (history.origin_mvp)
 origin = "arrival"
 at = "50 kyr"  # owner 2026-10-27: an earlier arrival, so the fey folk settle hills and woods before the world fills (at 15 kyr they were remnants on 9 of 24 rolls)
 density = 12  # owner 2026-10-27: a normal people, insular, denser and less far-reaching than humans (density 10, explore 0.55, insularity 0.3)
@@ -827,6 +879,9 @@ traits = ["miner"]
 
 [[lineage]]
 id = "triton"
+plane = "plane of water"
+adult_yr = 15  # VGtM: 15; up to 200
+lifespan_yr = 200
 name = "tritons (from the plane of water)"
 body = { capsaicin = false, diet = "carnivore", raw_meat = true, fire = false }  # sea folk: raw fish; sea folk cook without fire: brine, fermentation, drying
 origin = "arrival"
@@ -873,6 +928,8 @@ share = 0.02
 # human-orc absorbed (700 kyr). A preset of its own can mark other hybrids exempt or set a pair's stage with an [[interfertile]] row.
 [[lineage]]
 id = "half_elf"
+adult_yr = 20  # PHB: 20; often over 180
+lifespan_yr = 180
 name = "half-elves"
 origin = "hybrid"
 parents = ["human", "elf"]
@@ -883,6 +940,8 @@ insularity = 0.3  # (at home in neither parent group, not as aloof as their elve
 
 [[lineage]]
 id = "half_orc"
+adult_yr = 14  # PHB: 14; rarely over 75
+lifespan_yr = 75
 name = "half-orcs"
 origin = "hybrid"
 parents = ["human", "orc"]
@@ -935,6 +994,9 @@ traits = ["flies"]
 
 [[lineage]]
 id = "aarakocra"
+adult_yr = 3  # EEPC: 3; ~30. Birds: Rmax ~7.8 a generation (Ginzburg et al. 2010)
+lifespan_yr = 30
+breeding = "brood"
 name = "aarakocra"
 body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
 parents = ["avian"]
@@ -946,6 +1008,8 @@ traits = ["flies", "mountain"]
 
 [[lineage]]
 id = "kenku"
+adult_yr = 12  # VGtM: 12; up to 60
+lifespan_yr = 60
 name = "kenku"
 parents = ["avian"]
 at = "400 kyr"

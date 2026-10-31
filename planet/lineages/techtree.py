@@ -397,10 +397,11 @@ def generations(tree_raw: dict | None) -> dict:
     if not tree_raw:
         return {}
     from . import dragon_ages as DA
+    from . import life_history as LH
     from . import spec as SP
     t = SP.parse(tree_raw)
     return {l.id: (DA.generation_yr(t.dragon_ages, t.dragon_generation, l.generation_yr) if l.megafauna and "flies" in l.traits
-                   else l.generation_yr) for l in t.lines.values()}
+                   else LH.generation_yr(l)) for l in t.lines.values()}
 
 
 def with_generations(lines: list[dict], tree_raw: dict | None) -> list[dict]:
