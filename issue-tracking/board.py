@@ -37,7 +37,7 @@ SUBSYSTEMS = ["tectonics", "surface", "climate", "ocean", "hydrology", "coast", 
               "highlights", "viewer", "store", "infra", "docs"]
 EFFORTS = ["xs", "s", "m", "l", "xl"]  # ascending
 IMPACTS = ["low", "med", "high"]  # ascending
-MILESTONES = ["v1", "v2", "v3", "later"]  # or null: unscheduled
+MILESTONES = ["v1", "v2", "v3", "v4", "later"]  # or null: unscheduled
 LINK_FIELDS = ["blocked_by", "relates"]
 LIST_FIELDS = LINK_FIELDS + ["refs"]
 FIELDS = ["id", "title", "type", "status", "parent", "milestone", "subsystem", "effort", "impact",
@@ -913,7 +913,7 @@ def main(argv=None):
     s.add_argument("--impact", choices=IMPACTS, required=True)
     s.add_argument("--found-by", default="coordinator")
     s.add_argument("--parent")
-    s.add_argument("--milestone", choices=MILESTONES, help="v1, v2, v3 or later (default: unscheduled)")
+    s.add_argument("--milestone", choices=MILESTONES, help="v1, v2, v3, v4 or later (default: unscheduled)")
     s.add_argument("--status", choices=STATUSES, default="todo")
     s.add_argument("--desc")
     s.add_argument("--ref", action="append", default=[])

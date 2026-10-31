@@ -22,7 +22,7 @@ title: Zoom falls lose their step when the river leaves the region
 type: task              # epic | story | task
 status: todo            # todo, or needs-decision for a judgement call
 parent: null            # an epic/story id, e.g. PW-012, or null
-milestone: null         # v1, v2, v3, later, or null (unscheduled); may be left out of a draft
+milestone: null         # v1, v2, v3, v4, later, or null (unscheduled); may be left out of a draft
 subsystem: zoom         # tectonics surface climate ocean hydrology coast zoom timezoom highlights viewer store infra docs
 effort: s               # xs <30 min, s <2 h, m ~half a day, l a day or more, xl multi-agent project
 impact: med             # low | med | high (see below)
@@ -88,7 +88,7 @@ What and why, with enough detail to act on. Edit in place as understanding chang
 The 15 fields above are the complete schema; `check` rejects unknown and missing ones. No assignees, priorities, labels or due dates. To add a field, add it to `FIELDS` in `board.py` and document it here first.
 
 - `type`: epic → story → task. A parent must rank above its child (a task may sit directly under an epic). `parent` is optional: most tickets have none. Epics are for real multi-ticket projects, not for grouping a subsystem (that's what `subsystem` is for).
-- `milestone`: `v1`, `v2`, `v3`, `later`, or `null` (unscheduled, the default). It says which release a ticket is planned for. `v1` is the finished, plausible planet; `v2` is the next features and the physics lanes' known path; `v3` is deliberately far off: a system of its own (civilization, technology, weather, moons and weird worlds, L8/L9) that the owner wants eventually but only after v2; `later` is "maybe, unscheduled": polish, quality-pass items and ideas nobody has pulled for. Rule of thumb: v3 needs an owner who wants it and a reason it waits; `later` needs neither. Milestones are not inherited: each ticket carries its own value, whatever its parent says. Drafts may omit it (intake makes it null). Use `board.py milestones [v1]` for counts and open tickets.
+- `milestone`: `v1`, `v2`, `v3`, `v4`, `later`, or `null` (unscheduled, the default). It says which release a ticket is planned for. `v1` is the finished, plausible planet; `v2` is the next features and the physics lanes' known path; `v3` is deliberately far off: a system of its own (civilization, technology, weather, moons and weird worlds, L8/L9) that the owner wants eventually but only after v2; `v4` is further still: ground-level, asset-heavy work (a walkable setting) after v3; `later` is "maybe, unscheduled": polish, quality-pass items and ideas nobody has pulled for. Rule of thumb: v3 needs an owner who wants it and a reason it waits; `later` needs neither. Milestones are not inherited: each ticket carries its own value, whatever its parent says. Drafts may omit it (intake makes it null). Use `board.py milestones [v1]` for counts and open tickets.
 
 PW-244 is v1's written definition: the epic describes what v1 has to deliver, and its children are the work that does it. `milestone` decides membership. A ticket under PW-244 can be set to `v2` (PW-247, the speed pass, is one), and a v1 ticket need not sit under PW-244. Read PW-244 for the meaning of v1; read `milestone` for what is in it.
 - `status`: `todo`, `in-progress`, `blocked` (only with `blocked_by` filled in), `needs-decision`, `done`, `wontdo`. A `needs-decision` ticket's Description gives the options and the coordinator's lean; Daniel's answer goes in Updates, then the status moves on.
