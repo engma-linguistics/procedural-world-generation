@@ -862,7 +862,16 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
 - **Densities by way of life in the dnd tree** (owner D20 (4), PW-1149 B): foragers at 0.3 /km² (Binford 2001 Table 5.01 via D-PLACE
   B008, upper quartile 0.35), arctic foragers 0.05, elves 4 (forest gardeners), dwarves 7 and hill dwarves 8. Kobolds and goblins are
   'denning': habitat x0.25 off mountains, hills and breaks, and learning new country at a quarter of the rate.
-- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
+- **A people of a megafauna stem** (`origins._origin_off_megafauna`, spec, lane 83b): the kobolds and dragonborn split from the dragons, a
+  handful of animals per country over a range that spans the world, so the stem's range says nothing about where its people's country
+  lies. Such a people founds at one spot as an arrival settles: on a landmass the stem's range reaches, drawn in proportion to the founders
+  its free room would carry, at its roomiest habitat there. It takes no demography (explore, insularity, sea share, density) from the
+  stem: the dragons' numbers are solitary fliers', not a people's.
+- **Free country and the jump** (`dispersal._taken_cnt`, `dispersal._jump_push`, lane 83b): a cell only megafauna hold is free
+  country to a people's pioneers and jumps (the dragons hardly take room; before, a dragon's range barred them). A hemmed-in people sends
+  founders out over its jump kernel (PW-920) when rivals crowd it or when it has filled the land it holds: by crowding alone a narrow
+  people, the denning kobolds on their patch of broken country, never left it.
+- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md.
 
 ## 3. Calibration and validation
 
