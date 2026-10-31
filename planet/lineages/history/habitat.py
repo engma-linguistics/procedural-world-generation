@@ -160,6 +160,9 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
     mb = line.trait("mountain", 0.0)
     if mb:
         K = K * np.where(has("mountain"), 1.0, 1.0 - mb)
+    db = line.trait("den", 0.0)
+    if db:  # (lane 83: a denning people's dens are in broken country, spec TRAITS 'denning')
+        K = K * np.where(has("mountain") | has("hills") | has("breaks"), 1.0, 1.0 - db)
     ob = line.trait("open", 0.0)
     if ob:
         K = K * np.where(has("open"), 1.0, 1.0 - ob)

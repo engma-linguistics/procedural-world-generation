@@ -7,8 +7,8 @@ import numpy as np
 from .. import spec as SP
 from ..spread import EST, coexist_cap, load_rows
 from . import params as PM
-from .params import HOLD_MIN, INTEGRATE, INVADE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
-from .pressure import crowding, expanse_factor, integration_weights, invasion_weights, squeeze, surge, surge_q
+from .params import HOLD_MIN, INTEGRATE, FARM_KYR, MIX_DROP, REFUGE_MKM2, TAU_KYR
+from .pressure import crowding, expanse_factor, integration_weights, squeeze, surge, surge_q
 
 
 class CompetitionMixin:
@@ -80,14 +80,6 @@ class CompetitionMixin:
                     ak, tk = ak * iw, tk * iw
             W = self._fit_w(k, K, J, idx)  # (lane 83: the one that suits a cell better presses harder there)
             q = self._load(k, K, J, ak, tk, idx, c, W)
-            if INVADE > 0 and not deep and not l.marine and len(J):
-                # frontier invasion: along the contact line a denser people weighs its thinner rivals less (PW-887); not a people
-                # its rival lives among by a wish (PW-889)
-                front = self._dilate(self.p[k] >= EST, 1)[idx]
-                if front.any():
-                    w = np.where(self._among[k], 1.0, invasion_weights(self.dens, k))
-                    fi = np.flatnonzero(front)
-                    q[fi] = self._load(k, K, J, ak * w, tk * w, idx[fi], c[fi], W[:, fi])
             if PM.LEARN and len(J):  # (on its learned country a people lives as the locals do: no way-of-life discount there, PW-1155)
                 q = q + self._learned_load(k, J, idx, c)
             if "agricultural" in l.traits and step.ago <= FARM_KYR:

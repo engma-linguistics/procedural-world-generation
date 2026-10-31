@@ -73,14 +73,10 @@ LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of 
 HYBRID_FROM_KYR = 12.0  # coordinator 2026-10-27: hybrid peoples (half-elves, half-orcs) appear no earlier than the farming onset (~12-10 kyr ago,
 # the Natufian / early Neolithic): before it, contact between foragers leaves ancestry traces (contacts.py) but no people of mixed descent of its own
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
-INVADE, INVADE_FLOOR = 0.5, 0.3  # frontier invasion (PW-887): on the cells touching its range, a rival thinner than one weighs exp(-INVADE x ln(own density / its))
-# (a small demographic edge at the front displaces a thinner people, the modern-human / Neanderthal mechanism: Banks 2008, Kolodny & Feldman 2017), at least INVADE_FLOOR
+# (lane 83, owner D20: PW-887's frontier invasion by density, INVADE, and lane 63's DENSITY_PUSH, numbers in the competition, are gone:
+# the contest is decided by fit, FIT_Q below, not by who is denser; density sets how many people a land holds, not who holds it)
 CROWD_HOP, CROWD_ENTER = 2.0, 0.5  # crowding drives exploration (PW-887): a people that loses share of its held country to rivals crosses water (the crossing rate x 1 + CROWD_HOP x crowd,
 # within its craft: crossing.modes) and enters poor country (the entry pressure a0 -> a0 + (1 - a0) x CROWD_ENTER x crowd)
-DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x (its density / one's own)^0.1, within
-# 0.7..1.4: numbers tell a little where peoples share land (farmers at 10 /km² press on foragers at 2 x1.17; giants
-# at 0.005 dent others' room x0.7 and feel theirs x1.4). Mild: at 0.25, 0.5..2, the elves and orcs lost
-# most of their land to the humans in single tries on 1df1c3
 # overland (and over-water) jump dispersal (PW-920, owner 2026-10-27): a crowded people with no free country next door founds,
 # now and then, on free suitable land farther off. Long-distance dispersal is rare and its kernel fat-tailed (Clark et al. 1998,
 # "Reid's paradox of rapid plant migration", BioScience 48; Nathan et al. 2012, "Dispersal kernels: review", in Dispersal Ecology
@@ -128,12 +124,13 @@ SCATTER_KM = 100.0  # lane 78: a wandering thinning is placed this far (rms) off
 
 FIT_Q, BREADTH_Q, FIT_CLIP = 1.0, 0.5, 3.0  # lane 83 (owner D20, PW-1180 option A: "fit decides the contest"): where two peoples want the
 # same cell, the competition line k feels from rival j there is weighted by how much better j suits the cell than k does: x clip(S_j / S_k,
-# 1 / FIT_CLIP, FIT_CLIP), with a people's contest strength S = (K here)^FIT_Q x (1 / its breadth)^BREADTH_Q (x its martial strength, spec
+# 1 / FIT_CLIP, FIT_CLIP), with a people's contest strength S = (fit here)^FIT_Q (the fit: how well the land suits its body and ways, its
+# learned country in, before the land's goods, herds and crops, habitat._K) x (1 / its breadth)^BREADTH_Q (x its martial strength, spec
 # `contest`). K saturates at 1 over a people's whole comfort range, so where a broad people and a specialist both reach K = 1 the tie used to
-# go to the denser (DENSITY_PUSH, INVADE) or the first; the breadth (its cells of K >= 0.3 at the step) is the specialist-generalist
+# go to the denser (the old DENSITY_PUSH, INVADE) or the first; the breadth (the sum of its fit at the step) is the specialist-generalist
 # trade-off: a people that lives everywhere is not the best at any one country, and one adapted to a narrow country is better there (the
 # orangutans keep the jungle). A design judgement, not a measured number: the square root, and the clip at x3 either way so a tiny niche is
-# not invincible; FIT_Q 1 so a people at its margin (K 0.4 off its preferred country) presses less there than one at home
+# not invincible; FIT_Q 1 so a people at its margin (fit 0.4 off its preferred country) presses less there than one at home
 PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does
 COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two peoples' competition is under 1 both ways (Lotka-Volterra
 # coexistence), each feels the other at most at its coexistence share (spread.coexist_cap), whichever came first: before, an incumbent

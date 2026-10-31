@@ -2,7 +2,7 @@
 
     uv run python tools/peoples_robust.py plan                       # list the variants (no runs)
     uv run python tools/peoples_robust.py run --out DIR [--jobs 4 --threads 4 --max-load 60] [--family base,jitter,...]
-    uv run python tools/peoples_robust.py run --out DIR2 --arms range --trees dnd,even_six --seeds 7 --params '{"INVADE": 0}' --tag noinv
+    uv run python tools/peoples_robust.py run --out DIR2 --arms now --trees dnd,even_six --seeds 7 --params '{"FIT_CLIP": 2}' --tag clip2
     uv run python tools/peoples_robust.py report --out DIR           # tables from the runs in DIR (report.md, summary.json)
     uv run python tools/peoples_robust.py one SPEC.json OUT.json     # one variant (the runner's worker)
 
@@ -297,8 +297,8 @@ def plan(worlds=WORLDS, families=None, arms=DEFAULT_ARMS, seeds=None, trees=None
     return out
 
 
-SCREENS = {"base": {}, "noinvade": {"INVADE": 0.0}, "nopush": {"DENSITY_PUSH": 0.0}, "closed1": {"ALPHA_CLOSED": 1.0},
-           "noinv_nopush": {"INVADE": 0.0, "DENSITY_PUSH": 0.0}, "nohold": {"HOLD_MIN": 0.0}}
+SCREENS = {"base": {}, "nofit": {"FIT_Q": 0.0, "BREADTH_Q": 0.0}, "closed1": {"ALPHA_CLOSED": 1.0}, "nohold": {"HOLD_MIN": 0.0},
+           "noexpanse": {"EXPANSE_PRESS": 0.0}, "nosurge": {"SURGE_Q": 0.0}}
 
 
 # ---------------------------------------------------------------- one run
@@ -664,7 +664,7 @@ def _filters(a):
     a.add_argument("--arms", default=",".join(DEFAULT_ARMS), help=f"comma-separated arms of {list(ARMS)}")
     a.add_argument("--seeds", default=None, help="comma-separated seeds (default: each family's own)")
     a.add_argument("--trees", default=None, help="comma-separated trees: dnd, seven_meals, dnd5, dnd3, dnd+1, or authored file names")
-    a.add_argument("--params", default=None, help='JSON of params overrides for every variant, e.g. \'{"INVADE": 0}\'')
+    a.add_argument("--params", default=None, help='JSON of params overrides for every variant, e.g. \'{"FIT_CLIP": 2}\'')
     a.add_argument("--tag", default=None, help="the overrides' name in the variant names (default p)")
     a.add_argument("--worlds", default=",".join(WORLDS))
 

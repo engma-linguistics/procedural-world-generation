@@ -2381,17 +2381,6 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
         assert 20 <= LH.generation_yr(tr.lines["dragonborn"]) <= 30 and tr.lines["metallic_dragon"].rivalry < 1  # (not the wyrms' 430)
 
 
-def test_denser_people_weighs_thinner_rivals_less_at_the_front():
-    """PW-887: along the contact line a denser people feels a thinner rival less (frontier invasion); an equal or denser rival weighs in full,
-    and the same rule holds for every pair. Before, a rival weighed the same at the front as anywhere."""
-    dens = np.array([10.0, 5.0, 0.5, 10.0, 20.0])
-    w = H.invasion_weights(dens, 0)
-    assert w[0] == 1.0 and w[3] == 1.0 and w[4] == 1.0  # (itself, an equal, a denser one: in full)
-    assert H.INVADE_FLOOR <= w[2] < w[1] < 1.0  # (the thinner the rival, the less it weighs, down to the floor)
-    assert w[1] == pytest.approx(0.5 ** H.INVADE)
-    assert H.invasion_weights(dens, 2)[0] == 1.0  # (the thin people gets no such relief against the dense one)
-
-
 def test_crowding_measures_the_share_of_habitat_rivals_take():
     """PW-887: crowding (0 free, 1 squeezed out) is the mean share of K over the held cells that rivals take; it drives exploration."""
     K = np.array([1.0, 1.0, 0.5, 1.0])

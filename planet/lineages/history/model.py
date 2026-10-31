@@ -30,7 +30,7 @@ from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
 from . import params as PM
-from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
+from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
                      MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
 from .portals import PortalsMixin
@@ -98,7 +98,6 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._groups = {l.id: [self.idx[x] for x in tree.groups_of(l.id)] for l in self.lines}
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
-        # numbers: a denser rival weighs more (DENSITY_PUSH)
         self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else l.demo("density") for l in self.lines])
         for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own density, its groups' with it; history.bands)
             if kn.get("density", 1.0) != 1.0 and lid in self.idx:
@@ -114,9 +113,6 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                                getattr(ps, "npp", None))
         if F is not None and PEOPLE_PROD:
             self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
-        push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
-        self.alpha *= push
-        self.terr *= push
         mega = np.array([l.megafauna for l in self.lines])
         for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855);
             if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
@@ -132,7 +128,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.terr *= rv
         # each line's rivals: the lines whose presence enters its competition
         self._crowd = np.zeros(len(self.lines))  # (each line's crowding at its last step; reset by run)
-        self._among = np.zeros((len(self.lines),) * 2, bool)  # (pairs of an 'among' wish: no frontier invasion between them, PW-889)
+        self._among = np.zeros((len(self.lines),) * 2, bool)  # (pairs of an 'among' wish, PW-889)
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border); 'among', more (they share cells)
             if w.want in ("near", "among") and w.a in self.idx and w.b in self.idx:
                 f = 1 - (NEAR_TOLERANCE if w.want == "near" else AMONG_TOLERANCE) * min(w.weight, 1.0)
@@ -150,7 +146,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._breadth = np.ones(len(self.lines))  # (its fit and breadth then: the contest, params.FIT_Q)
         self._Fmat = np.zeros((len(self.lines), g.n))
         self._fit_now: dict[int, np.ndarray] = {}
-        self._martial = np.ones(len(self.lines))  # (each line's martial strength in the contest, lane 83)
+        self._martial = np.array([1.0 if l.megafauna or l.overlay else l.demo("contest") for l in self.lines])  # (each line's martial strength in the contest, spec contest, lane 83)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
         self.events: list[dict] = []
