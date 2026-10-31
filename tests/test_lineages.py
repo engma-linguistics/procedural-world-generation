@@ -174,9 +174,9 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     assert arr["peoples"].shape[0] == len(run["frames"])
 
 
-def test_a_stem_cut_off_from_its_children_carries_on_as_one_of_them(faketz):
-    """PW-677: when a stem ends, the part of its range joined to no child (another landmass) goes to the child
-    whose niche suits it, instead of vanishing with the stem."""
+def test_a_stem_s_land_lies_empty_at_its_end(faketz):
+    """Owner D20 (PW-1181, superseding PW-677's handover): when a stem ends at its last split its remaining range passes to no child, of
+    its own kind or any other; it lies empty for the children to spread into. Its last land is kept (PW-1184: a later split founds by it)."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     h = H.History(SP.parse(_raw()), ps, 1)
     h.p = np.zeros((len(h.lines), h.grid.n))
@@ -190,11 +190,14 @@ def test_a_stem_cut_off_from_its_children_carries_on_as_one_of_them(faketz):
     east = tags["land"] & (lon > 90) & (lon < 150)
     assert west.any() and east.any()
     h.p[h.idx["stem"]][west | east] = 1.0
-    h.p[h.idx["a"]][west] = 1.0  # the child 'a' lives on the west continent only; 'b' is not yet alive
+    h.p[h.idx["a"]][west & (lon < 0)] = 1.0  # the child 'a' lives on part of the west continent only; 'b' is not yet alive
     h.active["stem"] = h.active["a"] = True
+    h._last_held = {}
+    a0 = h.p[h.idx["a"]].copy()
     h._end_parent(h.tree.lines["stem"], step, env, tags)
     assert not (h.p[h.idx["stem"]] > 0).any()
-    assert (h.p[h.idx["a"]][east] > H.EST).mean() > 0.5  # the cut-off east stock carried on as 'a'
+    assert (h.p[h.idx["a"]] == a0).all()  # (nothing handed over, joined to its land or cut off)
+    assert (h._last_held[h.idx["stem"]] == (west | east)).all()
 
 
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
@@ -292,16 +295,17 @@ def test_peoples_that_would_coexist_can_invade_each_other_whoever_came_first():
     rows, idx, c = np.array([1]), np.arange(n), np.zeros(n)
     a = np.array([0.0, 0.35])
     t = np.array([0.0, 0.52])  # (closed country: 0.87 both ways, the dwarves and kobolds)
-    P = coexist_cap(p, rows, a, t, a, t, Km, Km[0], idx, c)
+    W = np.ones((1, n))  # (no fit weight: the pair suits the cells alike)
+    P = coexist_cap(p, rows, a, t, a, t, Km, Km[0], idx, c, W)
     share = 0.72 * (1 - 0.87) / (1 - 0.87 ** 2)
     assert P[0] == pytest.approx(share)
     room = Km[0] - load_rows(P, a, t, rows, c)
     assert room == pytest.approx(share) and (room > H.EST).all() and (0.72 - 0.87 * 0.72) < H.EST  # (was locked out)
     assert load_rows(p[1:2], a, t, rows, c) == pytest.approx(H.rivals_load(p, rows, a, t, idx, c))
     t2 = np.array([0.0, 0.9])  # (1.25: exclusion, the presence counts in full)
-    assert (coexist_cap(p, rows, a, t2, a, t2, Km, Km[0], idx, c)[0] == p[1]).all()
+    assert (coexist_cap(p, rows, a, t2, a, t2, Km, Km[0], idx, c, W)[0] == p[1]).all()
     Km0 = np.zeros((2, n))  # (a row not yet set reads K_j as the presence)
-    assert coexist_cap(p, rows, a, t, a, t, Km0, Km[0], idx, c)[0] == pytest.approx(share)
+    assert coexist_cap(p, rows, a, t, a, t, Km0, Km[0], idx, c, W)[0] == pytest.approx(share)
 
 
 def test_rafts_and_dugouts_give_coastal_peoples_an_early_rung():

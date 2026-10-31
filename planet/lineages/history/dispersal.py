@@ -149,9 +149,10 @@ class DispersalMixin:
                 self.cross.note(l.id, blob, step.ago, way, self.events, l.label(), gap)
 
     def _hold_out(self, l, k, K, step):
-        """A line given as living at the present isn't lost: at its lowest it holds out in a refuge."""
+        """A line given as living at the present isn't lost: at its lowest it holds out in a refuge; so is a stem with splits still to
+        come (PW-1184: it is as much given as living until its last split, so its children arise by it)."""
         g = self.grid
-        if not l.overlay and l.extinct_kyr is None and l.id in self._living and (self.p[k] >= EST).sum() < 3 \
+        if not l.overlay and l.extinct_kyr is None and (l.id in self._living or self._unsplit(l)) and (self.p[k] >= EST).sum() < 3 \
                 and K.max() > 2 * EST:
             # a line given as living at the present isn't lost: at its lowest it holds out in a refuge,
             # its best habitat near where it was (as the ice-age refugia did)

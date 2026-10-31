@@ -147,6 +147,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._chains = needs_chains(tree)
         self._aT, self._tT = np.ascontiguousarray(self.alpha.T), np.ascontiguousarray(self.terr.T)  # (how each rival feels line k: column k)
         self._Kmat = np.zeros((len(self.lines), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
+        self._breadth = np.ones(len(self.lines))  # (its breadth then: the contest's fit, params.FIT_Q)
+        self._martial = np.ones(len(self.lines))  # (each line's martial strength in the contest, lane 83)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
         self.events: list[dict] = []
@@ -181,6 +183,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._budget = np.zeros(len(L))
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
+        self._breadth = np.ones(len(L))  # (...and its breadth, cells of K >= 0.3: the contest's fit, params.FIT_Q, lane 83)
+        self._last_held: dict[int, np.ndarray] = {}  # (a line's last land when it ended: a split whose parent is gone founds by it, PW-1184)
         self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
         self._L: dict[int, np.ndarray] = {}  # (each learning line's learned acceptance per cell, float32, PW-1155: habitat._learn)
         self._Lm = None
@@ -236,6 +240,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         deep = step.epoch == "deep"
         k = self.idx[l.id]
         if l.extinct_kyr is not None and step.ago <= l.extinct_kyr + 1e-9:
+            if (self.p[k] >= EST).any():
+                self._last_held[k] = self.p[k] >= EST
             self.p[k][:] = 0
             self.active[l.id] = False
             self.ended[l.id] = step.ago
@@ -246,13 +252,14 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         if K is None:
             K = self._K(l, env, tags, step)
         self._K_now[k] = K  # (the composition's reach: where a people could live, CP.reach)
-        self._Kmat[k] = K
+        self._note_K(k, K)
         if l.overlay and l.origin == "hybrid":
             self._hybrid(l, k, K, step)
             return
         if l.cities:  # (a people's minority in others' cities, PW-889)
             self._city(l, k, step)
             return
+        held0 = self.p[k] >= EST  # (its land at the step's start: kept if it ends now, PW-1184)
         self.p[k] = np.minimum(self.p[k], K)
         self.p[k][self.p[k] < EST] = 0
         if l.group_of and not deep:
@@ -277,6 +284,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             self._learn(l, k, step, tags)
         self._hold_out(l, k, K, step)
         if not (self.p[k] > EST).any() and not l.overlay:
+            if held0.any():
+                self._last_held[k] = held0
             self.active[l.id] = False
             self.ended[l.id] = step.ago
             self._event(step.ago, "extinct", l, f"{l.label()} dies out (no habitat left)")

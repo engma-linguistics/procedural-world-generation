@@ -4,7 +4,6 @@ from __future__ import annotations
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 PIONEER_P = 1.0  # pressure a people's frontier carries into empty country, at most (its habitat there); 0: only its presence
-POLY_MKM2, POLY_MAX = 2.0, 4  # polycentric origins (owner 2026-10-27, origins._polycentric): a split founds in one patch per this many Mkm² of the parent's range, at most this many
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then
@@ -127,6 +126,14 @@ PORTAL_WAIT_KYR = 5.0  # lane 78: an arrival (or a later wave) waits up to this 
 # the first wave comes at its best habitat (as without portals) and a later one does not come. A design judgement: about one opening
 SCATTER_KM = 100.0  # lane 78: a wandering thinning is placed this far (rms) off its site, as volcanism.hotspots scatters a new plume by ~100 km
 
+FIT_Q, BREADTH_Q, FIT_CLIP = 1.0, 0.5, 3.0  # lane 83 (owner D20, PW-1180 option A: "fit decides the contest"): where two peoples want the
+# same cell, the competition line k feels from rival j there is weighted by how much better j suits the cell than k does: x clip((S_j / S_k),
+# 1 / FIT_CLIP, FIT_CLIP), with a people's contest strength S = (K here)^FIT_Q x (1 / its breadth)^BREADTH_Q (x its martial strength, spec
+# `contest`). K saturates at 1 over a people's whole comfort range, so where a broad people and a specialist both reach K = 1 the tie used to
+# go to the denser (DENSITY_PUSH, INVADE) or the first; the breadth (its cells of K >= 0.3 at the step) is the specialist-generalist
+# trade-off: a people that lives everywhere is not the best at any one country, and one adapted to a narrow country is better there (the
+# orangutans keep the jungle). A design judgement, not a measured number: the square root, and the clip at x3 either way so a tiny niche is
+# not invincible; FIT_Q 1 so a people at its margin (K 0.4 off its preferred country) presses less there than one at home
 PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does
 COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two peoples' competition is under 1 both ways (Lotka-Volterra
 # coexistence), each feels the other at most at its coexistence share (spread.coexist_cap), whichever came first: before, an incumbent
@@ -163,9 +170,5 @@ LEARN_GAIN = 0.6  # learned country holds a people at most this share of the way
 # judgement, measured (lane 79, world 4360a3, dnd seed 7, one try): at 1 the first people into an empty continent (kobolds, ~100 kyr before
 # the humans) learned the temperate lowlands and kept them (6.5% -> 27% of people; the peoples' biome mixes converged, homogenisation
 # 0.63 -> 0.73); at 0.6 kobolds 11%, humans 73% -> 67%, homogenisation 0.62 as without learning
-SPLIT_FOUNDING = "range"  # lane 77 (owner ruling 10-30, PW-1152: a new people emerges at one spot and spreads from there), a switch to
-# measure, not yet chosen: "range" (as before: the founders also take the whole cut-off part of the parent's range they arise in, up to
-# POLY_MAX polycentric patches across it, and the stem's range is handed to its children at its end, PW-677); "local" (the founders hold
-# FOUNDER_KM about the origin only; at the stem's end its range passes only to children of its own kind, megafauna to megafauna, peoples to
-# peoples: a dragon range is not a population of proto-kobolds); "local_vacate" (local, and the stem's range is handed to no child: its
-# children spread into it)
+# (lane 77's SPLIT_FOUNDING switch is gone: lane 83, owner D20, made one-spot founding the rule, with the stem's land left empty at its
+# end, origins._origin_split and _end_parent; PW-1152, PW-1181)

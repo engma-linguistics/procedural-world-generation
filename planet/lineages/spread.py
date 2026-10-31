@@ -146,13 +146,15 @@ def rivals_load(p, rows, a, t, idx, contact):
 
 
 @njit(cache=True)
-def coexist_cap(p, rows, a0, t0, ab, tb, Km, Kk, idx, contact):
+def coexist_cap(p, rows, a0, t0, ab, tb, Km, Kk, idx, contact, W):
     """The rivals' presences as line k feels them on the cells idx, each capped at its Lotka-Volterra coexistence share with k
     (mutual invasibility, lane 73). Where the pair's effective coefficients (a0 + (1 - contact) t0: k from j; ab + (1 - contact) tb:
     j from k) are both under 1, two peoples coexist at p_j* = (K_j - a_jk K_k) / (1 - a_kj a_jk) whichever came first, so the
     load k feels from j is at most a_kj p_j*: its room is then its own share p_k*, and an incumbent above its share does not lock the
     newcomer out (without the cap the newcomer's room under a full incumbent, K_k - a_kj K_j, sat under the establishment threshold).
-    Where either coefficient is 1 or more one excludes the other and the presence counts as it is. Returns (len(rows), len(idx))."""
+    Where either coefficient is 1 or more one excludes the other and the presence counts as it is. W (len(rows), len(idx)): the
+    contest's fit weight of rival r on k at each cell (history.params.FIT_Q, lane 83), so the pair's coefficients there are k from j
+    x W and j from k / W. Returns (len(rows), len(idx))."""
     m = idx.shape[0]
     out = np.empty((rows.shape[0], m))
     for r in range(rows.shape[0]):
@@ -161,8 +163,8 @@ def coexist_cap(p, rows, a0, t0, ab, tb, Km, Kk, idx, contact):
             i = idx[x]
             v = p[j, i]
             c = 1.0 - contact[x]
-            akj = a0[j] + c * t0[j]
-            ajk = ab[j] + c * tb[j]
+            akj = (a0[j] + c * t0[j]) * W[r, x]
+            ajk = (ab[j] + c * tb[j]) / W[r, x]
             if v > 0.0 and akj < 1.0 and ajk < 1.0:
                 kj = Km[j, i] if Km[j, i] > v else v  # (K_j >= p_j: a row not yet set reads as the presence)
                 s = (kj - ajk * Kk[i]) / (1.0 - akj * ajk)
