@@ -2,7 +2,7 @@
 id: PW-1069
 title: Regional dragon counts (tens to hundreds in a Sword Coast-sized peopled region) are far below the thousands a viable population needs
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-936, PW-977]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Direction: fewer dragons, locally none, if the test is tightened; or explicitly 
 - [ ] decide whether a regional pocket should need a regional viable number
 
 ## Updates
+- 2026-10-31: Status todo -> done. Lane 90: LINKED_MVP 1,000 (Marshall 2021 p. 285; Burness 2001 p. 14521) for a linked population's fade (hook in dispersal._viable, megafauna only); summary pockets carry linked_pop and viable. A trace with the old floor changes little. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-dragon-viability-at-regional-counts.md (found by dragon-density-r2).

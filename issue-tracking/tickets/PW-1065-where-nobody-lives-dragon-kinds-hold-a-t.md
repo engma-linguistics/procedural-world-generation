@@ -2,7 +2,7 @@
 id: PW-1065
 title: "Where nobody lives, dragon kinds hold a third of the land and 31% of the dragons' food goes uneaten (wild forest 6%, grassland 25% occupied): habitat, not pressure"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-990, PW-924]
 refs: [docs/review/megafauna/dragon-density/index.html, docs/review/megafauna/dragon-density/numbers.json, planet/lineages/history/megafauna.py, planet/lineages/history/habitat.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -40,4 +40,5 @@ Lean: owner's call (design: which dragons live in forest and grassland). Then tr
 - [ ] trace occupied rich cells' density vs food-fed density
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 90 (closer to A, widened): dnd.toml dragon habitats after the DMG 5e Appendix B monsters-by-environment lists, pp. 302-305, each kind citing book and page; release lets a kind hunt HUNT_KM (~173 km, Jetz 2004 Table 1) out of its own country. White/silver stay thin on cold land from the food: inbox draft cold-dragons-thin. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-dragon-habitat-coverage-rich-land.md (found by dragon-density-r2).

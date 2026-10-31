@@ -2,7 +2,7 @@
 id: PW-1066
 title: "Dragon intake: the 2.7 t a year is an all-ages mean on a reptile fit stretched 60-1,100x past its data; it behaves as a mesotherm's, and the page and code should say which law and why"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-958, PW-977, PW-1019]
 refs: [planet/lineages/dragon_ages.py, planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/sensitivity.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -50,4 +50,5 @@ Lean: A or B for the owner; the docstring in megafauna.py ("~0.55 of a mammal's 
 - [ ] fix the megafauna.py docstring ratio and dragon_ages.py's "Table 2, p. 260" (the reptile row is eq. 32 on p. 261)
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 90: one stated intake law, dragon_ages.fmr_kcal = Nagy 1999 all-mammal FMR (Table 2 p. 260) / 2.1 (Marshall 2021 p. 284 midway physiology); the all-ages mean (4.9 t prey/yr) and the eco-mass dragon (8.5 t) stated in the docstring. Growth and flight left out: inbox draft dragon-intake-growth-and-flight. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-dragon-intake-law-and-label.md (found by dragon-density-r2).

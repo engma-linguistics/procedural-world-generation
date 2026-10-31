@@ -2,7 +2,7 @@
 id: PW-1070
 title: "Food budget order: the dragons' share the pressure leaves uneaten goes to nobody, and the smaller predators are never pressed by peoples (they keep ~50% of the supply in farmers' country)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -31,4 +31,5 @@ Direction and size on dragons: none directly. A mesopredator release would cut t
 - [ ] decide whether the smaller predators are pressed too, and where the uneaten share goes
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 90: the guild takes (1 - dragon_share) of what the giants leave x guild_kept (the peoples' kill on the smaller predators, Ripple 2014 Table 1); what a pressed guild leaves, the dragons take. Prey mode's guild unified with food mode. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-food-budget-uneaten-share-and-unpressed-small-predators.md (found by dragon-density-r2).

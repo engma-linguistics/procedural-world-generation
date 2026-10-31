@@ -2,7 +2,7 @@
 id: PW-1062
 title: "Before 300 kyr the dragons' density is a flat rule at the land's median prey: right on the median but off by up to 2.7x per world at the hand-over, ignores peoples"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-990]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/dragon-density/index.html]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,4 +29,5 @@ from their climate. Lean: A (cheap, removes the per-world step); impact low beca
 - [ ] decide A/B
 
 ## Updates
+- 2026-10-31: Status todo -> done. Lane 90 (option A): the deep epoch's dragons read one planet food figure from the same budget, MG.deep_budget (hook in model.py). Deep peaks 0.65-2.4 M -> 0.25-0.53 M. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-deep-epoch-dragon-budget.md (found by dragon-density-r2).

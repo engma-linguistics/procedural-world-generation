@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-990, PW-1019]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/dragon_ages.py, docs/review/megafauna/dragon-density/claims.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-10-31
 ---
 
 ## Description
@@ -41,4 +41,5 @@ Options:
 Lean: A now, B as part of PW-1019.
 
 ## Updates
+- 2026-10-31: Lane 90: after the revisions the chain's per-tonne factor is ~0.51 of round 3 and prey falls x0.16-0.46 (above-ground share); see the report's before/after tables. docs/review/dragon-food-chain/report.md
 - 2026-10-30: Created from inbox draft draft-dragon-guild-biomass-ratio-check.md (found by dragon-density-r2).
