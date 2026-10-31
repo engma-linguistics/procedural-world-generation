@@ -1,4 +1,5 @@
 ---
+id: PW-1238
 title: "disease_resist is in the spec (dwarves 0.75) but nothing scales by it yet: the plague code (PW-1167) must read it"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1192, PW-1167, PW-1194]
 refs: [planet/lineages/spec.py, planet/lineages/samples/dnd.toml, planet/lineages/history/counter.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -25,3 +28,6 @@ still carry plague). The number is stored and passed down the tree, but the hist
   Lane 82's `plague_x` is not built, so nothing to replace.
 - [ ] the plague code reads disease_resist; a test that 0.75 leaves a quarter of a pulse's loss
 - [ ] shown on the peoples tab beside the life history (PW-1192's last box)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-disease-resist-needs-the-plague.md (found by lane97).

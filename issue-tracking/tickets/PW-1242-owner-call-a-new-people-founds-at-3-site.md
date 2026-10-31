@@ -1,7 +1,8 @@
 ---
+id: PW-1242
 title: "Owner call: a new people founds at 3 sites within one jump length (800 km) of each other; denning peoples live in thin dens off broken country"
 type: task
-status: needs-decision
+status: done
 parent: PW-917
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1218, PW-1217, PW-1207]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/params.py, docs/review/peoples-brakes/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -38,3 +41,7 @@ Options:
 - B. Five sites over 1.5 jump lengths.
 - C. Back to lane 83's habitat cut for denning peoples.
 Lean: A.
+
+## Updates
+- 2026-10-31: Status needs-decision -> done. Coordinator call under Daniel's D27 'do what feels good to you': keep as built (A): 3 founding sites within one jump, thin dens kept, filled-people jump unchanged. Merged with lane 97.
+- 2026-10-31: Created from inbox draft draft-peoples-founding-spread-judgements.md (found by lane97).

@@ -1,4 +1,5 @@
 ---
+id: PW-1241
 title: "Owner question: how big should the commonest people be? (today: humans about 60% in the full dnd tree on one world, 30% on the other, 90%+ with three peoples)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1172]
 refs: [docs/review/peoples-brakes/report.md, docs/review/peoples-brakes/charts.py, docs/review/peoples-brakes/maps.py, tools/peoples_robust.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -27,3 +30,6 @@ What number would you like? For example:
 - D. Something else.
 
 Whatever you pick becomes a check in the stress suite, so later changes are measured against it.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-commonest-share-target.md (found by lane97).

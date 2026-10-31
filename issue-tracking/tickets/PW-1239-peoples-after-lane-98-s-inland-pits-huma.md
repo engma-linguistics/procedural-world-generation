@@ -1,4 +1,5 @@
 ---
+id: PW-1239
 title: "Peoples after lane 98's inland pits: humans brittle in dnd again (31x), Seven Meals humans 35% -> 43% on 4360a3"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1229]
 refs: [docs/review/peoples-brakes/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -23,3 +26,6 @@ One suite cannot tell whether this is a real effect of the new land or the usual
 the human share over the two worlds and several seeds, before and after, with the land diff per world (inland-pit cells that are now
 land, and which peoples hold them).
 - [ ] compare over several re-rolled draws (seeds 7, 10, 13 plus jitter) before calling it signal
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-peoples-after-inland-pits.md (found by lane97).

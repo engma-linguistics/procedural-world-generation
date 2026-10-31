@@ -1,4 +1,5 @@
 ---
+id: PW-1240
 title: "Owner call: the D25 brakes at x1 cut kobolds and goblins hard (mostly through in-fighting) and leave the humans untouched, so the commonest people grows"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1165, PW-1172, PW-1218]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-brakes/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -45,3 +48,7 @@ Options:
 - D. Add a brake on the leader too: crowding war for any dense people (PW-1172's war deaths through the life tables), so the people
   that holds the most land pays the most. This is the only option that lowers the commonest share directly.
 Lean: B now, D with PW-1172. The question of what the commonest share should be is in the report's last section.
+
+## Updates
+- 2026-10-31: Coordinator: B (in-fighting rises with the raiders' own crowding) plus D (a leader brake via PW-1172 war deaths) plus a floor that holds numbers go to lane 101. Daniel's target for the commonest share (PW-1241) sets the judge.
+- 2026-10-31: Created from inbox draft draft-peoples-brakes-sizes-and-the-leader.md (found by lane97).

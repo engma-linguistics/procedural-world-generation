@@ -1,5 +1,6 @@
 ---
-title: "War-torn land (lane 82's K(W)) is built as a brake with one dial (meta.war); PW-1172's war deaths, era dials, troubles and refugees are still open"
+id: PW-1243
+title: War-torn land (lane 82's K(W)) is built as a brake with one dial (meta.war); PW-1172's war deaths, era dials, troubles and refugees are still open
 type: task
 status: todo
 parent: PW-917
@@ -11,6 +12,8 @@ found_by: lane97
 blocked_by: []
 relates: [PW-1172, PW-1165, PW-1194]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-brakes/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Lane 97 also built the shared K channel lane 82 designed (PW-1165's `kept`, as `
 the run file and workbench (only the stress suite records it, as `brakes`).
 - [ ] PW-1172 builds on `history.counter` instead of a second channel
 - [ ] the run output and the workbench show each people's lost-to shares (war, raid, feud, cull)
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-war-land-term-built-rest-of-war-open.md (found by lane97).
