@@ -2,7 +2,7 @@
 id: PW-1068
 title: "Dragon persecution has no source: 1 - exp(-N/0.05) presses every dragon to 1 per 5,000 km2 at any settled density"
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -39,6 +39,7 @@ Lean: A (it is PW-977 stage 3); read the two wishlist papers first.
 - [x] decide A/B (owner 10-30: A, by age class)
 
 ## Updates
+- 2026-10-30: Status in-progress -> done. Merged lane 63 (a23f20e0): kill by dragon age class, rising with tech; viewer press settings early/late. Follow-ups PW-1177, PW-1178, PW-1179.
 - 2026-10-30: Done in fun lane 63 (option A, owner rulings 10-30): a kill by dragon age class against the dragons' life table (wyrmlings always reachable, the young a little more with tech, adults only at high tech; bronze age 0.15), KILL_Q calibrated so dense renaissance farmers keep 10% (a judgement); never fatal is built into the saturating form, not derived. Tech level is a calendar proxy behind `vulnerability`/`means` (draft: persecution means from real techs). Viewer: "how hard peoples press dragons and giants", early and late (D14). r3 sweep, now, share of pressure-off kept (median of 24 pairs): farmers' 8.8% (r2: about 1%), foragers' 11%, others' 27%, herders' 44%; 25 kyr ago persecution is slight and the loss is the food channels (draft: forager offtake overstated).
 - 2026-10-30: Owner 10-30 D14: make dragon pressure a setting or set of settings (e.g. per tech era). D16: wants dragons to press back on peoples (predation on small folk keeps game plentiful); later, metallics coexist more and chromatics stay combative.
 - 2026-10-30: Status needs-decision -> in-progress. Owner 10-30: start immediately (it may rewrite the dragon paper). Lane 63.

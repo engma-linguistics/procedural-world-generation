@@ -1,4 +1,5 @@
 ---
+id: PW-1177
 title: "Dragon persecution's 'means' read an era calendar, not the peoples' own techs: feed megafauna.means from known weapons, metal and horses"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-63
 blocked_by: []
 relates: [PW-1068, PW-946, PW-961, PW-977]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/techtree.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -34,3 +37,6 @@ change, per line, at a time. Keep KILL_Q's
 calibration (dense renaissance farmers keep ~10% of their dragons) or re-calibrate it on the tech-fed means.
 - [ ] the tech level (`vulnerability`) and `means()` read each line's known techs at the step, not the era calendar
 - [ ] the calendar proxy (`tech_level`, `ERA_LEVEL`, `ERA_KYR`) retires
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-dragon-persecution-means-from-real-techs.md (found by fun-lane-63).

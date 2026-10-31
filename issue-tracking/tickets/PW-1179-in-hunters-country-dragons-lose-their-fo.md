@@ -1,4 +1,5 @@
 ---
+id: PW-1179
 title: "In hunters' country dragons lose their food, not their lives: is the peoples' share of the wild herds overstated?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun-lane-63
 blocked_by: []
 relates: [PW-1068, PW-1020, PW-977, PW-967, PW-990]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/prey.py, planet/lineages/samples/dnd.toml, docs/review/megafauna/dragon-density/index.html]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## Description
@@ -119,3 +122,4 @@ hunters' country by several times. Re-measure with the paired arms (`docs/review
 it. A stays in reserve if B + C fall short. D is the owner's call.
 
 ## Updates
+- 2026-10-30: Created from inbox draft draft-forager-offtake-overstated.md (found by fun-lane-63).
