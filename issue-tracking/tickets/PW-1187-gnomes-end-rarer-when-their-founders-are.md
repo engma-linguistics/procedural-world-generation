@@ -1,4 +1,5 @@
 ---
+id: PW-1187
 title: Gnomes end rarer when their founders are split over many portals
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane78
 blocked_by: []
 relates: [PW-1150, PW-1149]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/portals.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -37,3 +40,6 @@ They do hold about as much land, or more. Elves, by contrast, gain a lot from ar
   - late_humans 8.1 -> 0.2: the humans land at 7 portals there (draft-arrivals-without-founders-land-at-every-portal).
   - So the regression lane 78 saw is gone on dnd once learning is in. Only the menagerie, at one seed, still shows it.
 - [ ] pick an option (lean now: c, leave it); re-check menagerie at a second seed
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-gnomes-thin-out-when-split-over-many-portals.md (found by lane78).

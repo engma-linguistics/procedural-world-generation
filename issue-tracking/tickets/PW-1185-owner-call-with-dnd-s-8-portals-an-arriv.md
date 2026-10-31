@@ -1,4 +1,5 @@
 ---
+id: PW-1185
 title: "Owner call: with dnd's 8 portals, an arrival without founders lands at every portal (late humans 29% -> 84%)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane78b
 blocked_by: []
 relates: [PW-1150, PW-697]
 refs: [planet/lineages/history/portals.py, planet/lineages/samples/dnd.toml, tools/peoples_robust/trees/late_humans.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -30,3 +33,6 @@ from 29% of all people to 84%, and the gnomes fell from 8% to 0.2%.
   - B. Without `founders`, use one portal (as before lane 78); many portals only for an arrival that says how many come.
   - C. Accept: arriving through many portals is meant to be strong.
 - Lean: A. The number of portals then says where a people lands, not how many come.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-arrivals-without-founders-land-at-every-portal.md (found by lane78b).

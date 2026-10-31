@@ -1,4 +1,5 @@
 ---
+id: PW-1189
 title: "Owner call: share bands get three of the even six into 12-22%, but humans and elves need more than a x4 nudge"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane78b
 blocked_by: []
 relates: [PW-1173, PW-1149, PW-1155]
 refs: [planet/lineages/history/bands.py, tools/peoples_robust/trees/even_six.toml, "world 4360a3"]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -45,3 +48,6 @@ main). Share of people:
   - C. Widen BAND_KNOB to x1/10..x10. That would likely meet all five, but by then the band is rewriting the people's ecology.
   - D. Raise the default `band_rounds` from 3 to 6. Each round costs one try.
 - Lean: B, then D. C only if the owner wants the even split exactly.
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-share-bands-cannot-even-out-the-six.md (found by lane78b).

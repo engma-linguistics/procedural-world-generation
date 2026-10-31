@@ -2,7 +2,7 @@
 id: PW-1147
 title: Let each people's growth rate set its spread speed, recovery and displacement
 type: task
-status: todo
+status: done
 parent: PW-917
 milestone: v2
 subsystem: highlights
@@ -38,4 +38,5 @@ Steady losses (raids, predation, plague: N* = K(1 − h/r)) are PW-917's counter
 - [ ] scorecard and lineages tests pass; golden updated on purpose
 
 ## Updates
+- 2026-10-30: Status todo -> done. Merged lane 78/78b (e30f6092): life stages by way of life, growth-rate displacement (meta.growth_rates), share bands, portals in force + wandering. Follow-ups PW-1185-1191.
 - 2026-10-30: Created from inbox draft draft-growth-rate-drives-spread-and-recovery.md (found by lane76).

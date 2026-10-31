@@ -1,4 +1,5 @@
 ---
+id: PW-1191
 title: "Owner call: should the elves and gnomes come through wandering thinnings instead of fixed portals?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane78
 blocked_by: []
 relates: [PW-1150, PW-697]
 refs: [planet/lineages/history/portals.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -37,3 +40,6 @@ Your call: switch the Feywild peoples to wandering thinnings, or keep the fixed 
 - Not yet measured on a 4360a3 run in wandering mode. Only the unit test (tests/test_lineages.py::test_wandering_thinnings_drift_open_and_close) covers it.
 - [ ] owner picks fixed or wandering for the preset
 - [ ] if wandering: screen elves', gnomes' and tritons' shares on a few rolls
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-wandering-portals-for-the-feywild.md (found by lane78).

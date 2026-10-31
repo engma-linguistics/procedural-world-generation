@@ -1,4 +1,5 @@
 ---
+id: PW-1190
 title: Share bands calibrate on the best try's seed only
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane78
 blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/history/bands.py, planet/lineages/history/tries.py]
+created: 2026-10-30
+updated: 2026-10-30
 ---
 
 ## In plain words
@@ -24,3 +27,6 @@ When a people lands outside its share band, the run nudges that people's own den
   - (c) after a met band, offer a "keep this density" button in the workbench, which writes the nudged density into the tree.
 - Lean: (c). It turns the soft target into a lasting, visible ecological number.
 - [ ] decide (a), (b) or (c); build (c) if chosen
+
+## Updates
+- 2026-10-30: Created from inbox draft draft-share-bands-on-more-than-one-seed.md (found by lane78).
