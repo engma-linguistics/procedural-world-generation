@@ -226,6 +226,7 @@ temp_c = [4, 28]
 rain_mm = [400, 4000]
 prefers = ["coast"]
 traits = ["swims", "coastal"]
+never = [{ what = "coast", is = "absent" }]  # PW-1155 (owner 10-30): sea folk never live away from the water
 
 [[lineage]]
 id = "merfolk"
@@ -654,6 +655,8 @@ temp_c = [18, 36]
 rain_mm = [40, 4500]
 prefers = ["desert", "wetland"]
 traits = ["swims"]
+limits = { cold_c = 1 }  # PW-1155: ectotherms, the body cannot be clothed against the cold
+never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30): never the tundra or the ice
 
 [[lineage]]  # the arid belt, ancestral: ectothermy as a desert superpower
 id = "lizard_desert"
@@ -694,6 +697,8 @@ temp_c = [20, 30]
 rain_mm = [600, 3000]
 prefers = ["coast", "island"]
 traits = ["swims", "coastal"]
+limits = { cold_c = 1 }  # PW-1155: ectotherms, the body cannot be clothed against the cold
+never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30): never the tundra or the ice
 way = "sea_nomad"
 
 # The dragons (PW-855, owner): reptiles. The draconic stem IS the dragons, the elder line among the reptilian peoples (the ur-dragon, ~19.5 Myr) that never went

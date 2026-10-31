@@ -54,6 +54,8 @@ class CompetitionMixin:
                     w = np.where(self._among[k], 1.0, invasion_weights(self.dens, k))
                     fi = np.flatnonzero(front)
                     q[fi] = self._load(k, K, J, ak * w, tk * w, idx[fi], c[fi])
+            if PM.LEARN and len(J):  # (on its learned country a people lives as the locals do: no way-of-life discount there, PW-1155)
+                q = q + self._learned_load(k, J, idx, c)
             if "agricultural" in l.traits and step.ago <= FARM_KYR:
                 q = q * np.where(tags["farmland"][idx], 0.5, 1.0)  # farmers push into others' fertile lowland
             press = SP.WAY_PRESS.get(l.way) if l.way and self.animals is not None and self.goods is not None else None
@@ -69,8 +71,6 @@ class CompetitionMixin:
             mo, self._mref[k] = surge(float(self.p[k].sum()), self._mref[k], step.dt)
             if mo > 0:
                 q = q * (1.0 - surge_q(self.tree.surge_early, self.tree.surge_late, step.ago) * mo)
-            if l.mainline and PM.MAINLINE_Q > 0:  # (option C: the genre's core peoples, authored)
-                q = q * (1.0 - PM.MAINLINE_Q)
             f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * c, 0.05, 1)
             room = np.zeros(g.n)
             room[idx] = np.clip(K[idx] - f * q, 0, None)

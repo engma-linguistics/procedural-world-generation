@@ -28,6 +28,7 @@ from .groups import GroupsMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
 from .origins import OriginsMixin
 from . import megafauna as MG
+from . import params as PM
 from .params import (PEOPLE_PROD, ALPHA_CLOSED, AMONG_TOLERANCE, DENSITY_CLIP, DENSITY_PUSH, GROUP_KIN, HOP_EVERY_KYR, MEGAFAUNA_PUSH,
                      MVP_EVERY_KYR, NEAR_TOLERANCE)
 from .peoples import PeoplesMixin
@@ -46,6 +47,11 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
         self._portals = None  # (the arrivals' portals, portal_cells)
         self._K_now: dict[int, np.ndarray] = {}  # (each line's habitat this step, and the contact value: the composition's reach)
+        self._L: dict[int, np.ndarray] = {}  # (niche learning, PW-1155: reset by run)
+        self._learn_in: dict[int, tuple] = {}
+        self._env_now = None
+        self._Lm = None  # (the learned acceptance of every line, lines x cells, float32; made on first use; _L's rows are its views)
+        self._dAT = None  # (habitat._learned_load: the pairs' coefficients with the ways counted alike, less their own)
         self._K_own: dict[int, np.ndarray] = {}  # (a megafauna kind's habitat without ecological release, PW-1024: its own country, for its target)
         self._corr_now = None
         self._tags_now = None
@@ -169,6 +175,9 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self._crowd = np.zeros(len(L))  # (each line's crowding at its last step, pressure.crowding: the squeeze that drives integration, PW-889)
         self._Kmat = np.zeros((len(L), g.n))  # (each line's habitat at its last step: its rivals' coexistence shares, params.COEXIST)
         self._mref = np.zeros(len(L))  # (each line's lagged range mass: its momentum, pressure.surge)
+        self._L: dict[int, np.ndarray] = {}  # (each learning line's learned acceptance per cell, float32, PW-1155: habitat._learn)
+        self._Lm = None
+        self._learn_in: dict[int, tuple] = {}  # (...and its preference K0 and body limit T this step, from _K)
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
@@ -183,6 +192,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                                                None if deep else env["land"] & (self.cross.label < 0))
             self._corr_now = corr
             self._tags_now = tags
+            self._env_now = env
             Ks = {}
             self._land_now = env["land"]  # (the peoples' pressure on the megafauna this step, PW-957)
             self._deep_now = deep
@@ -251,6 +261,8 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:
                 self._viable(l, k, self._mvp_dt[k], step)
                 self._mvp_dt[k] = 0.0
+        if PM.LEARN:  # (PW-1155: niche learning at the edges of its range)
+            self._learn(l, k, step, tags)
         self._hold_out(l, k, K, step)
         if not (self.p[k] > EST).any() and not l.overlay:
             self.active[l.id] = False

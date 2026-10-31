@@ -72,6 +72,15 @@ SPLIT_ITER = 8  # (distance splits per deme per frame at most)
 SERIES_KEEP = 24  # points of a deme's or a pair's series kept (the rest thinned evenly)
 PAIRS_KEEP = 3000  # deme pairs kept in demes.json (the most contact first)
 NONE = 65535
+# niche learning (PW-1155): a deme whose frontier has learned new country (the history's peoples_learned layer) is labelled with it, and
+# a part of a deme that has come to live differently enough from the rest splits off as its own deme ("split_adapted": tundra elves,
+# desert aarakocra). Judgement calls, not measured numbers:
+ADAPT_L = 50  # % learned acceptance at which a cell counts as learned country (the history's LEARNED_MIN)
+ADAPT_DIV = 0.4  # divergence: the piece's mean learned acceptance less the rest of the deme's; at this the two live differently enough
+# to be two populations (0.4: most of the piece is at home where most of the rest is not)
+ADAPT_MIN_CELLS = 20  # the piece: at least this many connected cells of learned country of one biome class (~0.25 Mkm2 at L6)...
+ADAPT_MIN_POP = 20000.0  # ...holding at least this many people at its people's density (cells x km2 x density, an upper bound)
+ADAPT_LABEL = 0.5  # a deme is labelled "adapted: <class>" when this share of its cells are learned country of that class
 
 
 # -- numba kernels ------------------------------------------------------------------------------------
@@ -200,7 +209,8 @@ def subgraph(idx, gl, nbr_off, nbr_idx):
 
 # -- per frame -------------------------------------------------------------------------------------------
 class Deme:
-    __slots__ = ("id", "line", "parent", "born", "how", "ended", "end_how", "into", "series", "peak", "peak_at", "first_cells", "settled", "at")
+    __slots__ = ("id", "line", "parent", "born", "how", "ended", "end_how", "into", "series", "peak", "peak_at", "first_cells", "settled", "at",
+                 "adapted", "learned")
 
     def __init__(self, id_, line, parent, born, how):
         self.id, self.line, self.parent, self.born, self.how = id_, line, parent, born, how
@@ -213,6 +223,8 @@ class Deme:
         self.first_cells = None
         self.settled = None  # (a piece cut off by a gap: when its land was first settled)
         self.at = None  # (lat, lon, present landmass rank) at its peak, then at its last frame
+        self.adapted = None  # (PW-1155: the biome class of learned country it lives on, ADAPT_LABEL, at its last frame; or split off for)
+        self.learned = None  # (...and the share of its cells on learned country, its last frame)
 
 
 class State:
@@ -249,6 +261,11 @@ class Demes:
         self.tmp = np.full(n, -1, np.int64)
         self.tmpf = np.full(n, np.nan)
         self.agos: list[float] = []
+        self.learned = None  # (this frame's peoples_learned layer, % per cell, and biome class per cell: PW-1155; None on older runs)
+        self.biome = None
+        self.dens = {i: float((l.get("demography") or {}).get("density") or 1.0) for i, l in enumerate(lines)}
+        self.cell_km2 = 4 * np.pi * 6371.0 ** 2 / grid.n
+        self.adapt_pend: dict[tuple, list] = {}  # (deme, class) -> [kyr ago the piece first diverged, frames since] (PERSIST)
 
     # deme bookkeeping
     def _new(self, line, parent, ago, how, cells=None, when=None):
@@ -457,7 +474,66 @@ class Demes:
                 if d not in touched:
                     D[d] = 0.0  # (could not be halved: leave it)
         self.diam.update(D)
+        if self.learned is not None:
+            lab = self._adapt(k, lab, Om, idx, ago, since, loff, lidx)
         return State(idx, lab, Om, since, oidx)
+
+    def _adapt(self, k, lab, Om, idx, ago, since, loff, lidx):
+        """Niche learning (PW-1155): label each deme of people k with the learned country it lives on (ADAPT_LABEL), and split off a
+        connected piece of learned country of one biome class (ADAPT_MIN_CELLS, ADAPT_MIN_POP) whose mean learned acceptance exceeds
+        the rest of its deme's by ADAPT_DIV, once it has for PERSIST frames: it lives differently enough to be its own population."""
+        from .history.habitat import BIOMES
+        Lg = self.learned[idx].astype(float) / 100.0
+        bg = self.biome[idx].astype(np.int64)
+        adapted = Om & (Lg * 100 >= ADAPT_L) & (bg >= 0)
+        seen = set()
+        for d in np.unique(lab[Om & (lab >= 0)]).tolist():
+            dm = self.demes[d]
+            mine = Om & (lab == d)
+            n = int(mine.sum())
+            ad = adapted & mine
+            dm.learned = round(float(ad.sum()) / max(n, 1), 3)
+            label = None
+            if ad.any():
+                cnt = np.bincount(bg[ad], minlength=len(BIOMES))
+                c = int(cnt.argmax())
+                if cnt[c] >= ADAPT_LABEL * n:
+                    label = BIOMES[c]
+            if label is not None or dm.how != "split_adapted":
+                dm.adapted = label
+            if n < ADAPT_MIN_CELLS + MIN_CELLS:
+                continue
+            for c in np.unique(bg[ad]).tolist():
+                if dm.adapted == BIOMES[c]:
+                    continue  # (the deme as a whole already lives this way)
+                comp, nc = components(ad & (bg == c), loff, lidx)
+                if nc == 0:
+                    continue
+                sizes = np.bincount(comp[comp >= 0], minlength=nc)
+                q = int(sizes.argmax())
+                piece = comp == q
+                sz = int(sizes[q])
+                if sz < ADAPT_MIN_CELLS or n - sz < MIN_CELLS or sz * self.cell_km2 * self.dens.get(k, 1.0) < ADAPT_MIN_POP:
+                    continue
+                rest = mine & ~piece
+                div = float(Lg[piece].mean() - Lg[rest].mean())
+                if div < ADAPT_DIV:
+                    continue
+                key = (d, int(c))
+                seen.add(key)
+                r = self.adapt_pend.setdefault(key, [ago, 0])
+                r[1] += 1
+                if r[1] < PERSIST:
+                    continue
+                del self.adapt_pend[key]
+                nd = self._new(k, d, ago, "split_adapted", idx[piece], when=r[0])
+                self.demes[nd].adapted = BIOMES[c]
+                self.demes[nd].settled = round(float(np.nanmax(since[piece])), 3)
+                lab = np.where(piece, nd, lab)
+                break  # (one split per deme per frame)
+        for key in [key for key in self.adapt_pend if self.demes[key[0]].line == k and key not in seen]:
+            del self.adapt_pend[key]  # (the piece stopped diverging before it counted)
+        return lab
 
     def _from_people(self, k, cells):
         """The deme a new people's first deme arose from: of its parent people (the tree's) on these cells or nearest them
@@ -551,7 +627,8 @@ class Demes:
         """Fuse touching demes of a people whose diameters sum to less than FUSE_KM once they have stayed so PERSIST frames
         (dated when they first could); the older keeps its id."""
         u = np.unique(touching(np.flatnonzero(lab >= 0), lab, loff, lidx))
-        cand = {(int(x // NONE), int(x % NONE)) for x in u if D.get(int(x // NONE), 0) + D.get(int(x % NONE), 0) < FUSE_KM}
+        cand = {(int(x // NONE), int(x % NONE)) for x in u if D.get(int(x // NONE), 0) + D.get(int(x % NONE), 0) < FUSE_KM
+                and self.demes[int(x // NONE)].adapted == self.demes[int(x % NONE)].adapted}  # (PW-1155: two ways of life stay two demes)
         for key in [key for key in self.near if self.demes[key[0]].line == k and key not in cand]:
             del self.near[key]
         gone, fused = set(), False
@@ -651,8 +728,10 @@ def derive(run_dir: Path, window_kyr: float = WINDOW_KYR, split_km: float | None
 def _derive(run_dir: Path, window_kyr: float) -> dict:
     t0 = time.time()
     run_dir = Path(run_dir)
-    run, arr = T.load_frames(run_dir, ("elevation", "ice", "precipitation", "climate", "tree_cover", "peoples_whole",
-                                        "mix_lead", "mix_second", "mix_second_share"))
+    names = ("elevation", "ice", "precipitation", "climate", "tree_cover", "peoples_whole", "mix_lead", "mix_second", "mix_second_share")
+    run, arr = T.load_frames(run_dir, names)
+    if "peoples_learned" in run["layers"]:  # (PW-1155)
+        arr.update(S.read_layers(run_dir, run["layers"], ("peoples_learned",)))
     m = run["meta"]
     lines = m["lineages"]
     g = shared_grid(m["level"])
@@ -689,6 +768,9 @@ def _derive(run_dir: Path, window_kyr: float) -> dict:
                 o = occupied(pw, ml, ms, mss, k)
                 if o.any():
                     occ[k] = o
+        if "peoples_learned" in arr:  # (PW-1155: niche learning; older runs have no layer)
+            from .history.habitat import biome_class
+            dm.learned, dm.biome = np.asarray(arr["peoples_learned"][j]), biome_class(env, tags)
         cmap = dm.update(agos[j], occ, cost, env["land"], lead, second)
         layer[j] = np.where(cmap >= 0, cmap, NONE).astype(np.uint16)
     return {"layer": layer, **_document(dm, m, g, agos[use[0]] if use else 0.0, time.time() - t0)}
@@ -741,6 +823,7 @@ def _document(dm: Demes, m: dict, g, start, secs) -> dict:
                       "place": place, "lat": d.at[0] if d.at else None, "lon": d.at[1] if d.at else None,
                       "parent": d.parent, "parent_people": None if d.parent is None else ids[dm.demes[d.parent].line],
                       "born_kyr": d.born, "how": d.how, "settled_kyr": d.settled, "ended_kyr": d.ended, "end": d.end_how, "into": d.into,
+                      "adapted": d.adapted, "learned_share": d.learned,
                       "peak_cells": d.peak, "peak_kyr": d.peak_at, "cells_now": now.get(d.id, 0) if d.ended is None else 0,
                       "series": [list(x) for x in _thin(d.series, SERIES_KEEP)]})
     cols = _colors(demes, lines)
@@ -783,7 +866,7 @@ def _document(dm: Demes, m: dict, g, start, secs) -> dict:
 
 
 HOW = {"split_gap": "split off {other} along a gap", "split_distance": "budded off {other} (distance)", "crossing": "was founded over the sea from {other}",
-       "from_people": "arose from {other}", "fusion": "took in {other}", "extinct": "died out"}
+       "from_people": "arose from {other}", "split_adapted": "took to new country apart from {other} (a way of life of its own)", "fusion": "took in {other}", "extinct": "died out"}
 
 
 def _text(e, demes):
