@@ -223,6 +223,7 @@ dense people, which is PW-1172's war deaths. The raider brakes cannot lower it; 
 - `draft-peoples-commonest-share-target.md` (owner question: the commonest share).
 - `draft-war-land-term-built-rest-of-war-open.md` (PW-1172's war deaths, troubles and refugees still to build).
 - `draft-disease-resist-needs-the-plague.md` (dwarves' 0.75 is read by nothing until the plague events exist).
+- `draft-peoples-after-inland-pits.md` (the merged suite's shifts: signal or a re-rolled draw).
 
 ## Handoff
 
@@ -233,3 +234,32 @@ folders) were in the lane's tmpfs scratchpad and are deleted. To redo:
 `uv run python tools/peoples_robust.py run --out DIR --arms now --jobs 12 --threads 1`, adding
 `--meta '{"raiders": R, "war": W}' --trees dnd,dnd3,seven_meals --family base,subset --seeds 7,10` for a sweep arm. Then run
 `uv run --with matplotlib python docs/review/peoples-brakes/charts.py STAGES.json`.
+
+## After merging main (518726ef, lane 98's inland pits)
+
+The same suite on the merged code, 86 tries, brakes at x1. Lane 98 made the below-sea pits cut off from the ocean into land, which
+moves the land and the coasts a little and reshuffles every try.
+
+| tree | world | human | kobold | goblin | elf | dwarf | hobgoblin | commonest | non-human-led landmasses | runs failing |
+|---|---|---|---|---|---|---|---|---|---|---|
+| dnd | 4360a3 | 61 (57-61) | 0.084 (0.044-2) | 0.089 (0.032-0.15) | 6.7 (6.3-8.7) | 0.89 (0.83-1.3) | 12 (9-17) | 61 | 2 of 9 | 0 |
+| dnd | af2677 | 21 (20-42) | 0.91 (0.11-1.8) | 0.37 (0.03-0.4) | 8.8 (8.6-14) | 5.2 (1.6-18) | 0.21 (0.13-12) | 31 | 4 of 6 | 0 |
+| dnd3 | 4360a3 | 100 (100-100) | 0.098 (0.035-0.16) | 0.058 (0.034-0.081) | | | | 100 | 0 of 9.5 | 2 |
+| dnd3 | af2677 | 90 (90-91) | 9.6 (8.7-10) | 0.0052 (0.0038-0.0066) | | | | 90 | 1 of 6 | 2 |
+| dnd5 | 4360a3 | 62 (61-63) | | | 17 (15-18) | 5.4 (5.3-5.4) | | 62 | 2 of 10 | 0 |
+| dnd5 | af2677 | 12 (2.6-21) | | | 35 (15-54) | 7.1 (1.3-13) | | 57 | 5 of 6 | 0 |
+| Seven Meals | 4360a3 | 43 (38-44) | 1.7 (0.56-8.1) | 0.29 (0.2-0.33) | 0.25 (0.065-0.25) | 0.14 (0.087-0.15) | 2.5 (1.4-4.2) | 43 | 4 of 10 | 0 |
+| Seven Meals | af2677 | 30 (29-35) | 0.6 (0.16-1.8) | 1.9 (1.8-5.6) | 0.74 (0.64-0.79) | 0.2 (0.17-0.35) | 7.9 (6.9-8.6) | 30 | 4 of 6 | 0 |
+
+Invariant fails, 5 of 86: the four dnd3 tries (humans 90-100%), and Seven Meals j1@af2677, where the half-orcs were lost (main lost
+them in s13@af2677).
+Brittle in dnd, 10: human 31.1x, hobgoblin 605x, halfling 22.6x, dwarf 11.4x, kobold 99.1x, leonin 204x, tabaxi 318x, bugbear 53.2x,
+goblin 19.6x, firbolg 20.5x. Brittle in Seven Meals, 4: half-orc 2,000x, halfling 20.9x, kobold 14.4x, goliath 14.5x.
+
+The picture is the same: the commonest share is where it was, and dnd3 fails on humans. Two things moved:
+- **The humans are brittle in dnd again (31x).** On af2677 their median fell to 21% (20-42), with the hobgoblins and dwarves
+  swinging the other way (dwarves up to 18%).
+- **Seven Meals on 4360a3 rose to 43% humans** (35% before the merge).
+
+These are new geography, not a change in the peoples model, but D27's gain in human brittleness did not survive the reshuffle.
+Judged on one suite, this cannot tell signal from a re-rolled draw. Inbox draft `draft-peoples-after-inland-pits.md`.
