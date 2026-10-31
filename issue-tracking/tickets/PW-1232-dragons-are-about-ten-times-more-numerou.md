@@ -1,8 +1,10 @@
 ---
+id: PW-1232
 title: Dragons are about ten times more numerous on main than lane 90 measured (D20 and the dragon food chain combined)
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: highlights
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane93
 blocked_by: []
 relates: []
 refs: [docs/review/dragon-food-chain/report.md, docs/review/megafauna/probe.py, planet/lineages/history/megafauna.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -29,3 +33,6 @@ that stays; (B) re-calibrate `KILL_Q` (and the persecution by techs) on the D20 
 first, then B. Needs the owner because it moves the dragons' headline number.
 - [ ] isolate the cause on 067778 (a run per D20 switch)
 - [ ] re-measure all of H1 and H2 (pressure-off and persecution-off arms) once settled
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-dragons-tenfold-after-d20.md (found by lane93).
