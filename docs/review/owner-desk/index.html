@@ -172,6 +172,22 @@ sister peoples born on different continents, and a home-ground edge.</p>
 <h2 id="decisions">Decisions waiting on you</h2>
 <div class="cards">
 
+<div class="card" id="d31"><div class="id">D31 · HOW BIG SHOULD THE COMMONEST PEOPLE BE? · your D25 item 5, with the graphs</div>
+<p><b>What happened:</b> your D25 brakes are built (lane 97, merged). They do keep the kobolds and goblins down: in-fighting takes about a third of their land, while raids, culls and war take a few percent. But the land they lose goes mostly to the humans, so the commonest people got <i>bigger</i>, not smaller. D27's spread founding had helped first: in the humans-kobolds-goblins tree, humans fell from 99% to 89% on one world. Then the brakes pushed them back to 97%.</p>
+<div class="shots">
+<figure><img src="d31/commonest-by-stage.png" alt="Commonest people's share per stage, four trees on two worlds"><figcaption>The commonest people's share: before, after D27, after D25. Full tree: 61% and 29% on the two test worlds, barely moved. Five-people tree: about 64% and 55%. Three-people tree: 89–97%. Seven Meals: about 30%.</figcaption></figure>
+<figure><img src="d31/sweep-raiders.png" alt="Shares against the raiders dial from x0 to x4"><figcaption>The raiders' dial from off (x0) to x4. Stronger brakes mean more humans, and at x4 the kobolds and goblins die out (a bug: no brake should end a people).</figcaption></figure>
+</div>
+<p><b>The question:</b> what number do you want for the commonest people? Whatever you pick becomes a check in the stress test.</p>
+<ul>
+<li><b>A.</b> Usually under half, never over 70% once there are five or more peoples.</li>
+<li><b>B.</b> Humans can be most of the world; the others just need real countries (each above some share of land).</li>
+<li><b>C.</b> It depends on the tree: a human-centred tree may run 60–70% human, an even tree stays under 40%. <i>My lean:</i> this matches how the trees are written, and it's what Seven Meals already does at about 30%.</li>
+<li><b>D.</b> Something else.</li>
+</ul>
+<p><b>Meanwhile (my calls, in lane 101):</b> make in-fighting rise with a raider people's own crowding instead of a flat cut; make the floor really stop a brake from ending a people; add the brake that bites the leader, crowding war deaths for whoever is dense (PW-1172). That last one is the only lever that brings the commonest share down. Your D27 "do what feels good" calls stay as built: 3 founding sites within 800 km, kobold and goblin dens in broken country.</p>
+</div>
+
 <div class="card"><div class="id">D28 · COLD DRAGONS NEARLY GONE · open, you're looking later</div>
 <p><b>Your 10-31 note:</b> B for now, maybe A. Next comes the evidence you asked for: dragons before people vs after, per kind and country,
 against real analogues (Africa isn't lousy with lions; tigers in Asia, down to how often a tiger still kills someone in India). Lane 99 is on it now.</p>
@@ -204,7 +220,7 @@ It leans no on both, and so do I.</div>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>95 · plant floor</td><td>Your D29 = C: plants that starve for CO2 stop speeding up weathering. Screen of the 6 low draws, then the full tally with every draw's lowest CO2, so you can set the crash line. If it fails, it goes to v2.</td></tr>
 <tr><td>99 · dragon numbers</td><td>D28: why there are 10× more dragons now, lions and tigers (numbers, lost range, attacks per year) beside the dragons before and after people, and B, sea food for the cold kinds.</td></tr>
-<tr><td>97 · peoples</td><td>D27: founding spread over a few sites on one landmass (your idea), then D25's brakes (land, raids, culling wars, plus in-fighting, dwarves 0.75), D26 B, and the graphs you asked for on how far the commonest people should fall.</td></tr>
+<tr><td>101 · peoples</td><td>After D31's finding: in-fighting that scales with crowding, a floor that holds, and a brake on the leader (crowding war deaths). Judged on the same stress test, not tuned to a number until you answer D31.</td></tr>
 <tr><td>100 · continent edge</td><td>The physics slot was free, so per your standing rule I'm trying the margin (PW-950, v2): crust that thins gradually over 50–200 km instead of a one-cell cliff. It starts with a written diagnosis, then small screens. It won't merge before the v1 tag.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>
@@ -215,6 +231,7 @@ It leans no on both, and so do I.</div>
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Peoples D27, D25, D26 merged (lane 97, 882 tests pass):</b> founding at 3 sites on one landmass, the four raider brakes with viewer dials <code>raiders</code> and <code>war</code>, dwarves resist disease at 0.75 (this takes effect once the plague code reads it), and enemy pairs log "hunt" events on their shared border (about 600 over a full history; numbers unchanged).</li>
 <li><b>Inland pits fixed (lane 98, merged, 877 tests pass):</b> ground below 0 m counts as sea only if it reaches the ocean. Otherwise it fills to a lake or stays a dry basin. Side effects: Earth's Atlantic was missing the Amazon's water, so an old "overturning passes" result was false (a v2 ticket now). One L6 scorecard draw came out drier, which is probably chance and gets re-checked in the final tally.</li>
 <li><b>D30:</b> inland pits go into v1 if the fix is quick; the continental slope stays v2, since it already failed a round. When physics lanes are idle, I pick the most useful physics work regardless of version.</li>
 <li><b>Your 10-31 answers:</b> D25 (1 B; 2 A+B+C plus in-fighting; dwarves 0.75; portals later; item 5 awaits graphs), D26 B then A, D29 C, D27 to my judgement plus your spread-founding idea. All in lanes 95 and 97.</li>
