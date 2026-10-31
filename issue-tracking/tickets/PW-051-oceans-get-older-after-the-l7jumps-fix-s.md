@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-024, PW-053]
 refs: [planet/tectonics/events.py, planet/tectonics/earth.py, docs/review/health/2026-10-15/report.md]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-31
 ---
 
 ## Description
@@ -24,6 +24,7 @@ term — half the change in mean ocean depth against a ~300 Myr running baseline
 the hot-mantle and ice terms are added after the clip.) More plates (PW-024) may fix most of it.
 
 ## Updates
+- 2026-10-31: Lane 96, young-ocean side: L8 run 2c0c5d (seed 11, supercontinent start) ends at 100 Myr with sea level +311.6 m (sea_tect +323.9 m against the +-400 m limiter; it climbs steadily from ~0 at 24 Myr), ocean-floor mean age 26.7 Myr (median 22) in world a16f5a, mean plate speed 7.4 cm/yr. The overview comment puts the Phanerozoic span at about -100..+250 m. Land stays ~34% through it (see inbox draft-continents-rise-with-the-sea-in-a-highstand).
 - 2026-10-15: Tectonics fix (slab drag, PW-288): health --quick ocean age median 38 -> 50 Myr (36-69); agents and the health sweep consider it closable. Re-check in the post-batch sweep before closing.
 - 2026-10-15: Merged inbox draft draft-health-pw051-ocean-age.md ("PW-051 update: oceans no longer age at L6 or L7 (health sweep: seed medians 37-47 Myr, max 86); likely closable", found by health-sweep).
   Update for PW-051 (re-measure). PW-246 health sweep (2026-10-15, main 6926583, 1 Gyr): mean ocean-floor

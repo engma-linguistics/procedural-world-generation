@@ -13,7 +13,7 @@ blocked_by: [PW-358]
 relates: [PW-054, PW-300, PW-243]
 refs: [planet/tectonics/plate_kernels.py, planet/tectonics/simulation.py, docs/review/audit/basins-lakes.md]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-31
 ---
 
 ## Description
@@ -42,6 +42,7 @@ from boundaries under resolve alone (should be ~0 for a rigid plate), and trying
 docs/review/audit/basins-lakes/hollow_budget.py (`python hollow_budget.py <repo> 6 <seed> 300`).
 
 ## Updates
+- 2026-10-31: Lane 96 evidence (L8): world a16f5a has a 1,481-cell (1.15 Mkm2) closed salt lake at 44.9N 163.4E, surface 362 m, max depth 174 m, on 37 km crust ringed by arc volcanoes; rain ~600 mm on it and its catchment, which is only 2.4x the lake. In run 2c0c5d's last frames the same footprint holds 200 lake cells at 95.5 Myr, 682 at 98.0, 1,439 at 100.0: a broad flat hollow filling over ~5 Myr, PW-300's giant-lake pattern at L8. It is 77% of the world's 1,913 lake cells, so the L8 notes' '40x the lake cells of L7' is mostly this one lake; without it a16f5a has 92 lakes on 432 cells (0.34 Mkm2) vs 2a7385's 18 on 44 (0.14 Mkm2).
 - 2026-10-16: Status blocked -> todo. pw300: PW-358 is done and PW-300 landed outlet memory (valley column carried with the rock), which removes the basins that closed only because they lost their outlet; the closed-hollow volume resolve makes each step is untouched by it. What's left for this ticket: giant lakes in hollows that never spilled, appearing in a step or two on flat plate interiors (after PW-300 they're most of the ~4% of L6 frames with a lake over 1 Mkm2; e.g. seed 77 @ 68 Myr 2.4 Mkm2 closed under 2009 mm, seed 42 @ 436/452 3.7 Mkm2 closed, seed 11 @ 192 4.3 Mkm2; see inbox draft-fresh-hollow-closed-lakes.md). The new valley column is resampled nearest-cell like the others, so it also suffers the duplicate/hidden-cell artefact (an outlet cell hidden for a step loses its gap; _fill averages it from neighbours). Re-measure with docs/review/audit/basins-lakes/hollow_budget.py before designing the interpolating world view.
 - 2026-10-16: Status todo -> blocked. Blocked by PW-358 (lake evaporation) per the v1 reassessment: re-measure the closed-hollow volume after it lands.
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: coordinator's call. Coordinator: park until PW-358/PW-015 land (giant lakes now trace to open-water evaporation); then re-measure whether resampling hollows still matter before designing an interpolating world view.
