@@ -112,6 +112,8 @@ GUILD_APEX_KG = 1000.0  # the classes of this mass and up are the dragons' own s
 GUILD_EXP = DA.FMR_B
 YOUNG_IN_GUILD = True  # (off only to measure it)
 GUILD_GEN_YR = 7.0  # the smaller predators' generation, years, for the peoples' kill on them (a wolf- to leopard-sized carnivore's; a judgement)
+SEA_FOOD = True  # D28 B (owner 10-31, lane 99): kinds with the trait 'sea_hunter' (white, bronze and blue dragons in the dnd tree) also live
+# on the sea's marine mammals within their foraging reach (`sea_food`; prey.sea_prey); off only to measure it
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
 # Hunting ranges (PW-1065, lane 90; owner 10-31: "dragons have very large hunting ranges"). Jetz et al. 2004 (Science 306:266, Table 1 p. 268)
 # fit mammal-carnivore home range H = 52.07 ha x M^1.20 (M kg, n = 70; a far extrapolation past the living carnivores). Over the age schedule's
@@ -372,6 +374,22 @@ def setup(h: History) -> None:
     h._overkill = None
     h._deep_food = None  # (the deep epoch's food budget, t/km2/yr for the dragons: `deep_budget`, PW-1062)
     h._wild_mean = None if h.prey_wild is None else float(h.prey_wild[h.prey_wild > 0].mean()) if (h.prey_wild > 0).any() else 0.0
+    h.sea_food = sea_food(h)
+    h._sea_hunt = np.array([bool(SEA_FOOD and h.sea_food is not None and l.megafauna and "sea_hunter" in l.traits) for l in h.lines])
+
+
+def sea_food(h: History) -> np.ndarray | None:
+    """The sea's food for a sea-hunting dragon per cell, t/km2/yr (D28 B, lane 99): the marine mammals' production (prey.sea_prey, from
+    the ocean's NPP, prey.sea_npp) over a dragon's foraging reach (`_reach`, so a coast cell with half its reach at sea gets half), x the
+    share of a prey's production all its predators kill (PRODUCTION_KILLED, the land's figure: a judgement for the sea) x the dragons' share
+    of the guild (`dragon_share`: the dragons as the apex class among the seal hunters, orcas and sharks in their place; a judgement).
+    The peoples' fishing and sealing are not taken out (a simplification). None without an ocean NPP field (or with SEA_FOOD off). The
+    deep epoch, whose plates lay elsewhere, has none."""
+    npp = getattr(h.ps, "sea_npp", None)
+    if not SEA_FOOD or npp is None or h.prey_wild is None:
+        return None
+    x = PR.sea_prey(npp)
+    return _reach(h, x) * PRODUCTION_KILLED * dragon_share(h)
 
 
 COEVOL_KM = 300.0  # the herds' own range: a land's fauna has known people as long as the longest-peopled land this near (a judgement, = RELEASE_KM)
@@ -512,6 +530,8 @@ def natural(h: History, k: int, prey: np.ndarray | None, food: np.ndarray | None
     if h.mf_natural == "food" and "flies" in l.traits and h.prey_wild is not None:  # (PW-990 B: the dragons' part of the food / a dragon's food)
         if food is None and prey is None and getattr(h, "_deep_food", None) is not None:  # (the deep epoch's budget, PW-1062)
             return h._deep_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T)
+        if food is not None and getattr(h, "_sea_hunt", None) is not None and h._sea_hunt[k]:
+            food = food + h.sea_food  # (D28 B: a sea hunter's food is the land's and the sea's)
         return food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T) if food is not None else c * (prey if prey is not None else h.prey_ref)
     if h.mf_natural not in ("prey", "food") or h.prey_wild is None:
         return c
@@ -551,11 +571,19 @@ def food_scale(h: History, P: np.ndarray, kl: np.ndarray, prey: np.ndarray, food
     cannot feed them, fewer of them are born, survive or stay (starvation and emigration; the dragons' range grows until it holds
     its food). Each dragon needs the age schedule's mean food, cattle a year (dragon_ages.structure)."""
     need = np.zeros(h.grid.n)
+    sea_need = np.zeros(h.grid.n)
+    sh = getattr(h, "_sea_hunt", None)
     for j, l in enumerate(h.lines):
         if l.megafauna and "flies" in l.traits:
-            need += np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, kl, prey, food)
+            d = np.where(P[j] >= EST, P[j], 0.0) * _pressed(h, j, kl, prey, food)
+            need += d
+            if sh is not None and sh[j]:
+                sea_need += d
+    supply = food
+    if sh is not None and sh.any():  # (D28 B: the sea's food feeds only the sea hunters: their share of the need there)
+        supply = food + h.sea_food * sea_need / np.maximum(need, 1e-30)
     need = need * h.dragon_struct["cattle_yr"] * PR.HEAD_T
-    return np.minimum(1.0, food / np.maximum(need, 1e-12))
+    return np.minimum(1.0, supply / np.maximum(need, 1e-12))
 
 
 def local_density(h: History, k: int, kl, prey: np.ndarray | None = None, food: np.ndarray | None = None,

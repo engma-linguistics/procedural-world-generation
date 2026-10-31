@@ -91,6 +91,7 @@ TRAITS = {
     # country (mountain, hills, breaks) x0.25, so it holds a narrow country densely, not a cover of whole open or forested cells; history.habitat)
     "martial": {},  # (lane 83: its contest strength, DEMOGRAPHY: a disciplined, warlike people that holds and takes land, dwarves, hobgoblins)  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
+    "sea_hunter": {},  # (D28 B, lane 99: a megafauna kind that also lives on the sea's seals and other marine mammals, history.megafauna.sea_food)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
 # ways of life (PW-723): how a people gets its living, a cultural trait (a group of a people may differ from it). The goods a
