@@ -239,6 +239,28 @@ def co2_doublings(pco2: float) -> float:
     (PW-646: the run and the time zoom hand them a real pCO2, climate.pco2)."""
     return float(np.clip(np.log2(max(float(pco2), 1e-9) / CA_REF), -CO2_RANGE, CO2_RANGE))
 
+
+CO2_FLOOR = CA_REF * 2.0 ** -CO2_RANGE  # ppm (124): the low end of the plants' CO2 range
+
+
+def starvation(t, pco2: float):
+    """Per cell at monthly-or-annual temperature t (C), the C3 plants' growth below CO2_FLOOR as a share of
+    theirs at the floor: the quantum yield's ratio _q3(t, 0.7 pCO2) / _q3(t, 0.7 CO2_FLOOR) (Farquhar et al.
+    1980, Bernacchi et al. 2001's compensation point), 1 at and above the floor, 0 at and below the
+    compensation point (photorespiration takes all the carbon). For the consumers that see CO2 below the
+    range the vegetation itself holds (the weathering sink's plants, tectonics/earth.co2_law; PW-1227:
+    Pagani et al. 2009, starving plants stop speeding up weathering, which keeps CO2 from falling further).
+    Returns (share, d share / d ln pCO2)."""
+    t = np.asarray(t, float)
+    if pco2 >= CO2_FLOOR:
+        return np.ones_like(t), np.zeros_like(t)
+    g = _gstar(t)
+    ci = 0.7 * max(float(pco2), 0.0)
+    q = (ci - g) / (ci + 2.0 * g) / _q3(t, 0.7 * CO2_FLOOR)
+    dq = 3.0 * g * ci / (ci + 2.0 * g) ** 2 / _q3(t, 0.7 * CO2_FLOOR)
+    pos = q > 0.0
+    return np.where(pos, q, 0.0), np.where(pos, dq, 0.0)
+
 # ---------------------------------------------------------------------------
 # Plant groups that appear during a run (decision 3)
 # ---------------------------------------------------------------------------

@@ -36,6 +36,69 @@ def test_co2_law():
     assert np.isclose(earth.co2_slope(x, 0.3), num, rtol=1e-4)
 
 
+def test_starvation_law():
+    """PW-1227: below the vegetation's CO2 floor the weathering sink's plants starve by the model's own C3
+    quantum yield; at and above it nothing changes."""
+    from planet import climate, vegetation
+    fl = vegetation.CO2_FLOOR
+    assert np.isclose(fl, 123.74, atol=0.01)
+    t = np.array([0.0, 10.0, 20.0, 30.0])
+    assert np.all(vegetation.starvation(t, fl)[0] == 1.0) and np.all(vegetation.starvation(t, 600.0)[0] == 1.0)
+    assert np.allclose(vegetation.starvation(t, fl * 0.999)[0], 1.0, atol=0.01)  # continuous at the floor
+    ratio = vegetation._q3(t, 0.7 * 60.0) / vegetation._q3(t, 0.7 * fl)
+    assert np.allclose(vegetation.starvation(t, 60.0)[0], np.maximum(ratio, 0.0))
+    assert np.all(vegetation.starvation(t[1:], 20.0)[0] == 0.0)  # below the compensation point (14 ppm Ci)
+    assert vegetation.starvation(0.0, 20.0)[0] > 0.0  # (lower in the cold: 0 C's is ~10 ppm)
+    # the law: unchanged at and above the floor, continuous through it, its slope consistent with it
+    starve = (np.array([0.5, 0.47]), np.array([12.0, 22.0]))
+    xf = fl / climate.PCO2_BALANCE
+    for x in (xf, 0.5, 1.0, 3.0):
+        assert earth.co2_law(x, 0.03, starve) == earth.co2_law(x, 0.03)
+        assert earth.co2_slope(x, 0.03, starve) == earth.co2_slope(x, 0.03)
+    assert np.isclose(earth.co2_law(xf * 0.9999, 0.03, starve), earth.co2_law(xf, 0.03), rtol=1e-3)
+    for x in (0.2, 0.1, 0.07):
+        h = 1e-5
+        num = (np.log(earth.co2_law(x * np.exp(h), 0.03, starve))
+               - np.log(earth.co2_law(x * np.exp(-h), 0.03, starve))) / (2 * h)
+        assert np.isclose(earth.co2_slope(x, 0.03, starve), num, rtol=1e-4)
+        assert earth.co2_law(x, 0.03, starve) < earth.co2_law(x, 0.03)
+    # with the plants' enhancement all gone, planted ground weathers 1 / PLANT_WEATHER of its planted rate
+    assert np.isclose(earth.co2_law(0.02, 0.0, (np.array([1.0]), np.array([25.0]))),
+                      (2 * 0.02 / 1.02) ** earth.WEATHER_FERT / earth.PLANT_WEATHER)
+    # the stock settles where the starving law takes up the source
+    c = np.log(0.1)
+    for _ in range(50):
+        c = earth.co2_stock(c, 0.2, 1.0, 2.0, 0.03, starve=starve)
+    assert np.isclose(earth.co2_law(np.exp(c), 0.03, starve), 0.2, rtol=1e-6)
+
+
+def test_starvation_lane94_offline_table():
+    """Lane 94's offline closed loop for draw l6fix 639472 over 930-1000 Myr (docs/review/v1-cut/
+    co2-crash-diagnosis.md s2): source ln -1.29, the sink's other parts ln -0.04, its net climate gain 0.044 per C,
+    the episode's 3.9 C of dT per e-fold of CO2, from X 1.06; bare share 3%. The planted cells as two temperatures
+    that give the diagnosis's sink-weighted starvation (3% at 35 ppm, 13% at 50). Its table: 38 ppm as the run
+    is, 73 ppm with the plants starving (no C4 rescue), 84 with that and the design gain 0.070."""
+    from planet import climate, vegetation
+    starve = (np.array([0.3, 0.7]) * 0.97, np.array([12.0, 20.5]))
+    for ppm, share in ((35.0, 0.03), (50.0, 0.13)):
+        q = float((starve[0] * vegetation.starvation(starve[1], ppm)[0]).sum() / 0.97)
+        assert abs(q - share) < 0.005
+    x0 = 1.06
+
+    def end_ppm(gain, sv):
+        def f(u):
+            return (-0.04 + gain * 3.9 * (u - np.log(x0)) + 1.29
+                    + np.log(earth.co2_law(np.exp(u), 0.03, sv) / earth.co2_law(x0, 0.03)))
+        lo, hi = -8.0, 1.0
+        for _ in range(100):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if f(mid) < 0 else (lo, mid)
+        return climate.PCO2_BALANCE * np.exp(lo)
+    assert 33 < end_ppm(0.044, None) < 43  # lane 94: 38
+    assert 65 < end_ppm(0.044, starve) < 82  # lane 94: 73
+    assert 76 < end_ppm(0.070, starve) < 92  # lane 94: 84
+
+
 def test_stock_piles_up_while_the_sink_is_gone():
     """With no weathering, the outgassing adds s / CO2_TAU of the reference stock per Myr (no ceiling)."""
     c = earth.co2_stock(0.0, 1.0, 0.0, 10.0)
