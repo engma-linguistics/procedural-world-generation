@@ -1,4 +1,5 @@
 ---
+id: PW-1264
 title: "Refined worlds (planet refine): the landform classes' own terrain is not drawn, only the zoom's noise and means"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane104-refine-l8
 blocked_by: []
 relates: [PW-490, PW-1008]
 refs: [planet/refine.py, planet/zoom/landforms.py, planet/zoom/stage_terrain.py, docs/review/refine-l8/design.md, docs/review/refine-l8/shots/]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options:
 - C: full port (all hooks on a graph). Large.
 
 Lean: A for L8; B when L9 becomes a product (after PW-1209 makes L9 openable).
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-refine-landform-synthesis-on-the-sphere.md (found by lane104-refine-l8).

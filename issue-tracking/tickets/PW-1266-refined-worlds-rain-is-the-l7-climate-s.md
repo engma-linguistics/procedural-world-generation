@@ -1,4 +1,5 @@
 ---
+id: PW-1266
 title: "Refined worlds: rain is the L7 climate's, spread smoothly; no rain shadow or windward rain below 55 km"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane104-refine-l8
 blocked_by: []
 relates: [PW-101, PW-290, PW-490]
 refs: [planet/nest.py, planet/refine.py, docs/review/refine-l8/design.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Try: a per-fine-cell orographic factor from the wind (the July and January winds
 fine slope against the parent's mean slope. Rescale it so each L7 cell keeps its rain total (the terrain's
 mean-keeping rule). PW-101 asks for the same in the regional zoom, so one function could serve both.
 - [ ] refined L8: windward/lee rain ratio on fine ridges in a plausible range; each L7 cell's rain total kept
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-refine-sub-cell-orographic-rain.md (found by lane104-refine-l8).

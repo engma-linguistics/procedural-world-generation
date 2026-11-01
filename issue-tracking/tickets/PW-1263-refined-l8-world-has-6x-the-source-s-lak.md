@@ -1,5 +1,6 @@
 ---
-title: "Refined L8 world has 6x the source's lakes (211 vs 35); check which are real"
+id: PW-1263
+title: Refined L8 world has 6x the source's lakes (211 vs 35); check which are real
 type: task
 status: todo
 parent: PW-1198
@@ -11,6 +12,8 @@ found_by: lane104-refine-l8
 blocked_by: []
 relates: [PW-490]
 refs: [planet/refine.py, "world 783674", docs/review/refine-l8/design.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -27,3 +30,6 @@ grid, but nobody has checked it.
 Try: count the refined world's lakes inside and outside the L7 closed basins, and look at the one-cell ones. If most
 are noise pits inside basins, drain the ones shallower than the noise's own amplitude.
 - [ ] lake count per source basin, and a verdict (keep them, or drain the shallow ones)
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-refine-lakes-in-coarse-closed-basins.md (found by lane104-refine-l8).

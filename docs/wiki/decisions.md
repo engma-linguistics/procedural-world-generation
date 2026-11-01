@@ -198,3 +198,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-31: Merged lane 107 (emergent cultures first cut, PW-670; suite 894). Daniel: dragons are sapient; each dragon kind is one culture along colour lines, no fragmenting for now.
 - 2026-10-31 (Daniel): cultures split after ~1-2 centuries apart, not 1 kyr; giants keep cultures with a global pull; dragons one culture per kind as a normalizing force, to emerge from reach (lane 108).
 - 2026-11-01: Merged lane 101 (in-fighting for every people, BRAKE_HOLD floor, D31 A reported; suite 896), lane 103 (dragons round 2: lion-evidence persecution with local extirpation, dragon_abundance dial), lane 108 (cultures round 2: reach in demes, era-scaled time apart, cohesion, merging side by side). Suite 902. Tickets PW-1252..1261.
+- 2026-11-01: Merged lane 104 (planet refine, PW-1198 first cut; suite 909). Refined L8 world fb5e11.
