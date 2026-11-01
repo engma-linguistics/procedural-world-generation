@@ -218,25 +218,27 @@ stretched margins is the standard textbook one, not read for this note.</p>
 <div class="shots"><figure><img src="d28r2/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions, tigers and the body-size expectation"><figcaption>Grey diamonds: what the body-size law expects from each kind's prey. Open circles: density where each kind still lives today. Bottom rows: all dragons together by biome.</figcaption></figure></div>
 </div>
 
-<div class="card" id="d37"><div class="id">D37 · WHY THE MARGIN FIX COOLED THE WORLD (diagnosis done, nothing built)</div>
-<p><b>The land loss:</b> the sea didn't rise; it actually fell, from the extra ice. What happens is that the creep carries sediment off
-the drowned continent edges onto the ocean floor, where it piles into rises. Once a pile is thick enough, the model counts it as
-new continent, but a drowned one. A thermostat holds the continents' total area steady, so those drowned rises use up area that
-would otherwise stand as land.</p>
-<p><b>The cooling:</b> not from the lost land (less land would warm the world). It's a second thermostat. The model keeps
-continental volume steady by growing volcanic arcs, and it counts that arc growth as volcanic CO2. Early on, the creep strips the
-continents fast, so arcs grow more, and the volcanoes' "normal" level is learned from those years. Later the drowned rises refill
-the volume instead, arcs grow 14% less, and CO2 falls. So a bookkeeping link (volcanoes follow a thermostat, not the plates) turns
-a margin change into a climate change.</p>
-<p><b>Also found, already on main:</b> sea level ignores the water that sediment on the ocean floor pushes up, about 125 m by late in
-a run.</p>
-<ol><li><b>A</b> make volcanic CO2 follow the plates (how fast they converge × trench length), not the volume thermostat. <i>Lean</i>,
-with a cheap first test of C. It's the real fix: volcanoes should know nothing about the volume thermostat.</li>
-<li><b>B</b> count the continent's sediment on the ocean floor in the volume thermostat.</li>
-<li><b>C</b> keep sediment-born rises out of the area thermostat.</li>
-<li><b>D</b> leave the creep off and park it (cliff coasts stay at 23%, against Earth's 3.5%).</li></ol>
-<p>And, separately: count ocean-floor sediment in sea level (yes / later). All of these change main, so each one gets its own
-36-world test. Proposal: <code>docs/review/tectonics/margin/diagnosis-land.md</code> on the lane-100 branch.</p>
+<div class="card" id="d37"><div class="id">D37 · MARGINS ROUND 5: ONE FIX PASSES, THE CREEP STILL COOLS · FOR A JOINT LOOK</div>
+<p><b>Passes, ready to merge on your yes:</b> sea level now counts the water that sediment on the ocean floor pushes up (+105 to
++116 m late in a run). On 72 paired worlds it causes no hard failures (main had 1) and passes the same 57/72 as main. Climate
+doesn't move; land is 0.6 points lower, as a higher sea should make it. The Earth check is unchanged. One test needed a wider
+search window (assertions unchanged).</p>
+<p><b>My diagnosis was wrong on one link.</b> Volcanic CO2 already follows the plates (since PW-741); the volume thermostat's arc
+boost never reaches it. The late CO2 fall is real slab flux (convergence × trench length) against an early reference. That
+is the open question in PW-1158, not a bookkeeping bug. Candidate C (piles out of the area count) did nothing useful; dropped.</p>
+<p><b>The deep dive you asked for</b> (old code included), each thermostat switched off on 2 seeds:</p>
+<ul>
+<li><b>Area thermostat</b> (PW-1276): without it the continents still sit near 40% of the surface on their own, but it failed its
+36-world test (1 frozen world, 23/36 against 27/36). So it's not dead weight yet; keep it for now, revisit in v2 as ticketed.</li>
+<li><b>Volume thermostat:</b> load-bearing. Without it the crust thins and worlds warm 2–6 °C. It stands in for a real crust
+budget (a sourced arc growth rate plus sediment recycling); lean: keep for v1, replace in v2.</li>
+<li><b>The weakest piece, and the real culprit for the creep:</b> any sediment pile on the ocean floor becomes continent at 20 km.
+With the creep that churn is the biggest late flux in the whole crust budget (about 45,000 births per 400 Myr against 13,000).
+Lean: a pile becomes continent only where it touches continental crust. That's the next fix before the creep is tried again.</li>
+</ul>
+<p><b>The creep on top of the sea fix still fails</b> (2 frozen worlds, −2.6 °C, 3 points less land), so it stays off.</p>
+<p><b>Asks:</b> (1) merge the sea-level fix? My yes. (2) next lane: piles become continent only against continental crust, then
+re-judge the creep? My yes. Notes: <code>docs/review/tectonics/margin/deep-dive.md</code> on the lane-100 branch.</p>
 </div>
 
 <div class="card" id="d36"><div class="id">D36 · NOW THAT EVERY DRAGON IS SEEN, EACH KIND IS 1–5 CULTURES</div>
@@ -271,7 +273,7 @@ costs +20% on the presence table and a new peoples run. My lean: leave it until 
 <h2 id="coming">Running now: nothing (parked work below)</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>100e · continent edge</td><td><b>Running (your go on D37).</b> In this order: a quick test of keeping the drowned piles out of the area count; volcanic CO2 following the plates; sea level counting ocean-floor sediment. Then the 36-world test of those against main, and only if that passes, the creep on top.</td></tr>
+<tr><td>100e · continent edge</td><td><b>Done, held for you (D37).</b> Sea-level fix passes; the creep still fails; deep dive written.</td></tr>
 
 
 </table></div>
