@@ -53,6 +53,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "planet" / "lineages" / "samples"
 WORLDS = ["4360a3", "af2677"]  # the L6 worlds with their time zooms on disk (2026-10-30)
 MONO_MAX = 0.85  # no people above this share of all people (trees of 3+ peoples)
+D31_USUAL, D31_NEVER, D31_MANY = 0.5, 0.7, 5  # owner D31 A: the commonest people usually under half, never over 70% with 5+ peoples (reported)
 SWING = 10.0  # a people whose share swings more than this x across the seeds, or the jitters, on one world is brittle (PW-1207)
 SHARE_FLOOR = 1e-4  # (shares under this count as this in the swing ratio: an extinct people is reported apart)
 KNOB_PEOPLES = {"dwarf": "mainline", "bugbear": "minor", "gnome": "late arrival"}
@@ -490,6 +491,32 @@ def _fmt(x, pct=True):
     return "-" if x is None else (f"{100 * x:.0f}%" if x >= 0.995 else f"{100 * x:.2g}%") if pct else f"{x:.3g}"
 
 
+def _d31(ok, lines):
+    """Owner D31 A (2026-10-31): the commonest people should usually be under half of all people, and never over D31_NEVER once a tree
+    has D31_MANY or more peoples. Reported per tree (families and worlds pooled) and over all tries; a check to read, not an invariant:
+    no try fails on it."""
+    groups = {}
+    for r in ok:
+        if r.get("info_only") or not r["peoples"]:
+            continue
+        groups.setdefault(r.get("tree", "?"), []).append(r)
+    groups["all tries"] = [r for v in list(groups.values()) for r in v]
+    rows, out = [], {}
+    for t, rs in groups.items():
+        top = np.array([max(x["share"] for x in r["peoples"].values()) for r in rs])
+        many = np.array([max(x["share"] for x in r["peoples"].values()) for r in rs if r["n_peoples"] >= D31_MANY])
+        never = float((many <= D31_NEVER).mean()) if len(many) else None
+        out[t] = {"runs": len(rs), "median": float(np.median(top)), "under_half": float((top < D31_USUAL).mean()),
+                  "many_runs": int(len(many)), "many_never_over": never}
+        rows.append(f"| {t} | {len(rs)} | {_fmt(out[t]['median'])} | {100 * out[t]['under_half']:.0f}% | {len(many)} | "
+                    f"{'-' if never is None else f'{100 * never:.0f}%'} |")
+    lines += ["## The commonest people's share (owner D31 A: reported, not a failure)", "",
+              f"Usually under {100 * D31_USUAL:.0f}% of all people; never over {100 * D31_NEVER:.0f}% with {D31_MANY}+ peoples.", "",
+              f"| tree | runs | median commonest share | runs under {100 * D31_USUAL:.0f}% | runs with {D31_MANY}+ peoples | "
+              f"of those, at or under {100 * D31_NEVER:.0f}% |", "|---|---|---|---|---|---|", *rows, ""]
+    return lines, out
+
+
 def report(out: Path) -> str:
     runs = [json.loads(p.read_text()) for p in sorted(out.glob("*.json")) if not p.name.endswith(".spec.json") and p.name != "summary.json"]
     screens = [r for r in runs if r.get("family") == "screen"]
@@ -541,8 +568,10 @@ def report(out: Path) -> str:
             dist = f"{sum(b['dist'] * b['pop'] for b in B) / wt:.2f}" if B and "dist" in B[0] and wt > 0 else "-"
             lines.append(f"| {r['name']} | {len(B)} | {nh} | {nm} | {hu} | {len({b['top'] for b in B})} | {n90} | {dist} | {lead} |")
         lines.append("")
+    # -- the commonest people's share (owner D31 A, 2026-10-31): reported, never a failure
+    lines, d31 = _d31(ok, lines)
     # -- spread over base + jitter (the same families under each founding arm), per tree
-    summ = {"spread": {}, "knob": {}, "fails": fails}
+    summ = {"spread": {}, "knob": {}, "fails": fails, "d31": d31}
     stats = {}
     for tree in ("dnd", "seven_meals"):
         for arm in ARMS:

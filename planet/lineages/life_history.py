@@ -183,3 +183,4 @@ def harsh_kept(l, era: str, R: float) -> float:
     if r1 <= 0:
         return 1.0
     return float(np.clip(_harsh_r(float(l.adult_yr), float(l.lifespan_yr), l.breeding, fert, era, round(R, 3)) / r1, 0.0, 1.0))
+
