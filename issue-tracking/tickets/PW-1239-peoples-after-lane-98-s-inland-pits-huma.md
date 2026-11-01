@@ -28,4 +28,5 @@ land, and which peoples hold them).
 - [ ] compare over several re-rolled draws (seeds 7, 10, 13 plus jitter) before calling it signal
 
 ## Updates
+- 2026-10-31: Lane 101 re-rolled 48 draws a side (seeds 7-22, dnd jitters j1-j10, both worlds) before and after the pits: the humans' brittleness and Seven Meals 4360a3 (p 0.37) are chance; Seven Meals af2677 humans 24% -> 29% (p 0.01) is real. Verdict in draft-seven-meals-af2677-humans-up-after-pits.md; this ticket can close on it.
 - 2026-10-31: Created from inbox draft draft-peoples-after-inland-pits.md (found by lane97).

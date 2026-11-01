@@ -50,5 +50,6 @@ Options:
 Lean: B now, D with PW-1172. The question of what the commonest share should be is in the report's last section.
 
 ## Updates
+- 2026-10-31: Lane 101: B done for every people, humans included (Daniel D31), sourced to Carneiro 2012, Chagnon 2014, Walker and Hill 2014; the floor holds numbers (BRAKE_HOLD 0.24 on held cells). D (war-deaths leader brake) built, measured at 0-0.2%, dropped on Daniel's ruling and parked with PW-1172. Suite: commonest dnd 64/37%, fails 7 of 82 (4 dnd3, 3 Seven Meals half-orcs never founded), no people lost to a brake. Sizes parked in draft-in-fighting-judgements-for-polities.md.
 - 2026-10-31: Coordinator: B (in-fighting rises with the raiders' own crowding) plus D (a leader brake via PW-1172 war deaths) plus a floor that holds numbers go to lane 101. Daniel's target for the commonest share (PW-1241) sets the judge.
 - 2026-10-31: Created from inbox draft draft-peoples-brakes-sizes-and-the-leader.md (found by lane97).
