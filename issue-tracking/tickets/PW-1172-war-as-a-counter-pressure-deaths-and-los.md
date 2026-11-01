@@ -50,4 +50,5 @@ Settlements (PW-1108) read the war intensity for sacking and walls. PW-661 build
 - [ ] lane 77 arms off / default / x2: slow breeders not lower than off; commonest people's share falls; no new brittle peoples
 
 ## Updates
+- 2026-10-31: Lane 101 built the war deaths through the life tables (excess violent deaths over the life table, lane 82 stage weights) and measured them on the stress suite: 0-0.2% of any people, no change to the commonest share. Dropped on Daniel's D31 ruling; parked with the commonest-share question for the war and polities work (inbox draft draft-in-fighting-judgements-for-polities.md).
 - 2026-10-30: Created from inbox draft draft-war-counterpressure.md (found by lane-82).

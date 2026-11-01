@@ -356,6 +356,17 @@ def cmd_demes(args):
         print(ref, "\n".join(DM.lines_for_report(sm, json.loads((d / "demes.json").read_text()))))
 
 
+def cmd_cultures(args):
+    """Adds (or redoes) a peoples run's emergent cultures (PW-670): cultures.json, meta.cultures; --out writes cultures.json elsewhere
+    and leaves the run untouched."""
+    from .lineages import cultures as CU
+    for ref in args.runs:
+        d = S.find_run(ref)
+        out = Path(args.out) / d.name if args.out else None
+        sm = CU.write(d, out_dir=out, report=out is None, redemes=args.redemes)
+        print(ref, "\n".join(CU.lines_for_report(sm, json.loads(((out or d) / "cultures.json").read_text()))))
+
+
 def cmd_settlements(args):
     """Adds (or redoes) a peoples run's settlement ledger in place (PW-1011): settlements.json, meta.settlements."""
     from .lineages import settlements as ST
@@ -773,6 +784,13 @@ def main():
                                       "(by sea gaps, hard country and distance) and their dated tree of splits, fusions and contacts, in place (PW-981)")
     dm.add_argument("runs", nargs="+", help="peoples run ids")
     dm.set_defaults(func=cmd_demes)
+
+    cu = sub.add_parser("cultures", help="add or redo a peoples run's emergent cultures (PW-670): demes that adapted to new country or "
+                                         "lived apart long enough, their inherited and drifting ways, merges; in place unless --out (needs demes)")
+    cu.add_argument("runs", nargs="+", help="peoples run ids")
+    cu.add_argument("--out", help="write cultures.json under this folder (one subfolder per run) and leave the runs untouched")
+    cu.add_argument("--redemes", action="store_true", help="with --out: cut the demes afresh in memory first (today's demes.py), writing demes.json under --out too")
+    cu.set_defaults(func=cmd_cultures)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "

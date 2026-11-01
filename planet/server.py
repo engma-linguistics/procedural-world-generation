@@ -15,6 +15,7 @@
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
+  GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -173,6 +174,37 @@ def brief(query: str) -> tuple[dict, int]:
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:  # no such run / people
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+_cultures_cache: dict = {}  # (run id, run.json mtime) -> cultures doc: a run without cultures.json, worked out once per change
+
+
+def cultures(query: str) -> tuple[dict, int]:
+    """GET /api/cultures?run=<id>: the emergent cultures of a peoples run (lineages/cultures.py, PW-670) for the workbench's Cultures
+    tab: the run's cultures.json if it has one, else derived from its demes (a few seconds) and kept in memory, never written into the run."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import cultures as CU
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        f = d / "cultures.json"
+        if f.exists():
+            return json.loads(f.read_text()), 200
+        run = json.loads((d / "run.json").read_text())
+        if not (run.get("meta") or {}).get("demes"):
+            return {"error": "this run has no demes (older than PW-981): run the peoples again"}, 404
+        key = (d.name, (d / "run.json").stat().st_mtime)
+        if key not in _cultures_cache:
+            _cultures_cache.clear()
+            _cultures_cache[key] = CU.derive(d)["doc"]
+        return _cultures_cache[key], 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
         return {"error": str(e)}, 404
     except Exception as e:
         return {"error": f"{type(e).__name__}: {e}"}, 500
@@ -437,6 +469,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/brief":
             return self.send_json(*brief(url.query))
+        if url.path == "/api/cultures":
+            return self.send_json(*cultures(url.query))
         if url.path == "/api/names":
             return self.send_json(*landmass_names(url.query))
         if url.path == "/api/favourites":

@@ -1,5 +1,8 @@
 # How many dragons? Before people, after people, beside lions and tigers (lane 99: PW-1232, PW-1221, D28)
 
+**Superseded in part by [round2.md](round2.md) (lane 103):** the persecution (KILL_Q, the never-zero form) was replaced by local
+extirpation on the lions' 25 people per km², and the numbers were re-run (`round2/`).
+
 Lane 99, 2026-10-31. The code is main after D20 and PW-1229 (merge 8a95477e), plus D28 B's sea food on this branch. The numbers come
 from six probe worlds at roll 7000 (2a7385, 1df1c3, e71172, 6909cb, a12762, 067778), each run once through the dnd history. Lane 97 is
 changing the peoples model, so **every number here will move when it merges. To refresh them, run one command from the repository

@@ -1,30 +1,34 @@
 """Brakes on a people's numbers (lane 97, owner D25, 2026-10-31): cuts to a people's carrying capacity K on each cell, the one channel
 lane 82 designed for every counter-pressure (docs/review/peoples-counterpressures/design.md, "The shared plug"; PW-1165).
 
-Four brakes, each a share `kept` of K (multiplied together, never below COUNTER_FLOOR: no brake ends a species):
-- war-torn land (D25 A; lane 82's K(W), PW-1172's land term only): K x (1 - LAND_Q min(1, h_war / H_MAX)), h_war the way of life's
+Four brakes, each a share `kept` of K (multiplied together, never below COUNTER_FLOOR, and on the cells a people holds never under
+BRAKE_HOLD of presence: lane 101, a brake thins a people where it lives but never takes the land outright, so no brake ends a people):
+- war-torn land (D25 A; lane 82's K(W), PW-1172's land term): K x (1 - LAND_Q min(1, h_war / H_MAX)), h_war the way of life's
   violent-death rate (H_WAY, the medians lane 82 read from Our World in Data's compilation of Keeley, Gat, Bowles et al.) x [(N / N0)^2 G
   + WAR_EXT F], N the people's density there, G the state's pacification, F the hostile frontier. Dense, stateless, hemmed-in peoples
   lose land; sparse ones hardly any.
 - raid losses (D25 B, lane 85): a raider people's (survival 'harsh': kobolds, goblins) extra losses, the deaths its fast breeding already
   pays for, scaled by R on each cell. On a border with peoples who hate it R rises (1 + RAID_Q F). kept = r(R) / r(1) on its life
   table (life_history.harsh_kept), so a people of normal survival has nothing to scale and is untouched.
-- in-fighting (D25, the owner's addition: "assume in-fighting to keep them down"): feuds and succession fights rise when a raider
-  people has nowhere to split off to. Small-scale societies settle quarrels by fission, a faction moving off (Chagnon 1968 on Yanomamo
-  village fission); where land is circumscribed they fight instead (Carneiro 1970, Science 169:733). So R also rises by FEUD_Q x the
-  people's hemmed-in share H: 1 less the share of its border that is free good country it could move into, or its crowding by rivals
-  where that is more. A kobold people alone in its filled mountains is braked as hard as one beset by enemies.
+- in-fighting (D25 for the raiders, the owner's addition: "assume in-fighting to keep them down"; D31 for every people: "HUMANS
+  ought also be infighting"): feuds and succession fights rise when a people has nowhere to split off to. A village grows "to a
+  certain size" and can no longer be held together, so it fissions (Chagnon, PNAS profile 2014); internal political conflict is the
+  main cause of group fission (Walker and Hill 2014, Human Nature 25:465); where the land is circumscribed and filled, the quarrels
+  turn to war (Carneiro 2012's restatement of his 1970 theory, Social Evolution & History 11(2):5). Lane 101 (PW-1240 B): K x (1 -
+  meta.war x FEUD_CUT x C x u), u the people's own fill of the land on the cell (_fill) and C its circumscription (_circumscribed),
+  graded as Carneiro grades it: free good country next door bars nothing, others' land bars SOCIAL_Q (social circumscription leaks),
+  unlivable country fully. A thinned people fights less, so the cut settles instead of sitting at lane 97's flat ~35% for raiders only.
 - culling wars (D25 C, lane 85): a raider people's crowded frontier, outnumbered there by peoples who hate it, is hunted down to 40%
   (CULL_D 0.6) with chance CULL_P a step, and bounces back with the e-folding RECOVER_YR / x (x its growth multiple). Faster than the
   step, as for every raider, the step takes the sawtooth's mean (0.28 for any x) and logs one 'cull' event.
 
 The sizes. R's range: violent and accidental deaths are 4-69% of all deaths in small-scale societies, average 19% (Gurven & Kaplan
-2007, PDR 33:321, p. 341-343, read by lane 85): from about 0.2x to 3.6x the average. R is held within that (R_MAX 3.6); RAID_Q and FEUD_Q
-are judgements within it. The rates are absolute violent-death rates (lane 82's table, per 100,000 a year); applied as deaths to the
+2007, PDR 33:321, p. 341-343, read by lane 85): from about 0.2x to 3.6x the average. R is held within that (R_MAX 3.6); RAID_Q
+is a judgement within it. The rates are absolute violent-death rates (lane 82's table, per 100,000 a year); applied as deaths to the
 life tables they would barely dent a fast breeder (+0.5%/yr of adult deaths keeps kobolds 98%), which is why the raiders' brake scales
 their own canon losses rather than adding the human rates.
 
-The dials: meta.raiders (RAIDERS_X: raid, in-fighting and culls together) and meta.war (WAR_X: the war-torn land), both 1 by default;
+The dials: meta.raiders (raid losses and culls) and meta.war (war-torn land and every people's in-fighting), both 1 by default;
 0 switches a brake off. Off in the deep epoch (no densities then), as lane 82 designed.
 """
 
@@ -54,7 +58,8 @@ class CounterMixin:
                 self._hos[i, :] = 0.0
                 self._hos[:, i] = 0.0
         self._hos[self._kin] = 0.0
-        self._hem = np.zeros(len(L))  # (each line's hemmed-in share at its last step: in-fighting)
+        self._hem = np.zeros(len(L))  # (each line's hemmed-in share (lane 97) or circumscription (lane 101) at its last step)
+        self._K0 = {}  # (line index -> its unbraked habitat this step)
         self._cull_d = {}  # (line index -> depletion field of an explicit (slow) cull sawtooth)
         self._cull_log = {}  # (line index -> kyr ago of its last logged cull)
         self.lost = {}  # (line id -> {brake: share of K held off, people-weighted over its land}, at its last step)
@@ -83,21 +88,32 @@ class CounterMixin:
         return F
 
     def _note_hemmed(self, l, k, K, room, crowd):
-        """After the competition: line k's hemmed-in share for next step's in-fighting, 1 less the share of the cells next to its range
-        that are free good country (K and room >= 0.3, held by no other people), or its crowding where that is more."""
-        if not self._raider[k]:
+        """After the competition: line k's circumscription for next step's in-fighting (_circumscribed), any people."""
+        if l.overlay or l.megafauna or l.marine:
             return
         held = self.p[k] >= EST
-        if not held.any():
-            self._hem[k] = 0.0
-            return
-        ring = self._dilate(held, 1) & ~held & self._land_now
+        self._hem[k] = self._circumscribed(l, k, held, room, crowd) if held.any() else 0.0
+
+    def _circumscribed(self, l, k, held, room, crowd) -> float:
+        """How circumscribed line k is, 0..1 (lane 101, PW-1240 B; Carneiro 2012): the mean over the cells next to its range of how far
+        each bars a faction from splitting off there. Free good country (habitat and room >= 0.3, held by no other people) bars nothing;
+        country no one could split off into (habitat under 0.3, or the sea for a people that does not sail) bars fully: environmental
+        circumscription; country other peoples hold bars SOCIAL_Q: social circumscription, which Carneiro finds 'generally less tight',
+        allowing 'leakage' at the peripheries. Its crowding by rivals on its own land counts as social circumscription where that is
+        more. Habitat here is the unbraked one (the brakes' own cut is not a barrier)."""
+        K0 = self._K0.get(k)
+        if K0 is None:
+            return 0.0
+        ring = self._dilate(held, 1) & ~held
+        if l.trait("sea", 0.0):  # (a seafaring people can split off over the water: only its land ring bars it)
+            ring &= self._land_now
         if not ring.any():
-            self._hem[k] = 1.0
-            return
+            return 1.0
+        land = self._land_now
         taken = (self._cntp - self._pm[k]) > 0
-        free = ring & (K >= 0.3) & (room >= 0.3) & ~taken
-        self._hem[k] = max(float(crowd), 1.0 - free.sum() / ring.sum())
+        free = land & (K0 >= 0.3) & (room >= 0.3) & ~taken
+        bar = np.where(free, 0.0, np.where(land & taken, PM.SOCIAL_Q, 1.0))
+        return float(max(PM.SOCIAL_Q * float(crowd), bar[ring].mean()))
 
     def _brake(self, l, k, K, step, env, tags):
         """Line k's K with the brakes applied (the share kept per cell), and the shares lost noted for the output."""
@@ -106,6 +122,7 @@ class CounterMixin:
         held = self.p[k] >= EST
         if not held.any():
             return K
+        self._K0[k] = K  # (the unbraked habitat: in-fighting's fill and circumscription read it)
         kept = np.ones(self.grid.n)
         lost = {}
         F = None
@@ -124,23 +141,22 @@ class CounterMixin:
                 kw = 1.0 - PM.LAND_Q * np.minimum(1.0, h / PM.H_MAX)
                 kept *= kw
                 lost["war"] = kw
+            fx = self.tree.war * PM.FEUD_CUT * self._hem[k]
+            if fx > 0:  # (in-fighting, every people: lane 101, owner D31 "humans ought also be infighting")
+                kf = 1.0 - np.minimum(1.0, fx * self._fill(k, K))
+                kept *= kf
+                lost["feud"] = kf
         rx = self.tree.raiders
         if rx > 0 and self._raider[k]:
             if F is None:
                 F = self._frontier(k)
-            R = 1.0 + rx * (PM.RAID_Q * F + PM.FEUD_Q * self._hem[k])
-            R = np.clip(np.round(R / 0.05) * 0.05, 1.0, PM.R_MAX)
+            R = np.clip(np.round((1.0 + rx * PM.RAID_Q * F) / 0.05) * 0.05, 1.0, PM.R_MAX)
             era = self._era[k]
             kr = np.ones(self.grid.n)
             for v in np.unique(R[held]):
                 kr[R == v] = LH.harsh_kept(l, era, float(v))
-            kr_raid = np.ones(self.grid.n)
-            Rr = np.clip(np.round((1.0 + rx * PM.RAID_Q * F) / 0.05) * 0.05, 1.0, PM.R_MAX)
-            for v in np.unique(Rr[held]):
-                kr_raid[Rr == v] = LH.harsh_kept(l, era, float(v))
             kept *= kr
-            lost["raid"] = kr_raid
-            lost["feud"] = np.where(kr_raid > 0, kr / np.maximum(kr_raid, 1e-9), 1.0)
+            lost["raid"] = kr
             kc = self._cull(l, k, K * kept, F, step, rx)
             if kc is not None:
                 kept *= kc
@@ -148,11 +164,23 @@ class CounterMixin:
         if not lost:
             return K
         kept = np.maximum(kept, PM.COUNTER_FLOOR)
+        Kb = K * kept
+        if PM.BRAKE_HOLD > 0:  # (lane 101: a brake thins a people where it lives, it never takes the land outright)
+            Kb = np.where(held, np.maximum(Kb, np.minimum(K, PM.BRAKE_HOLD)), Kb)
         w = (K * held)
         ws = float(w.sum())
         if ws > 0:
             self.lost[l.id] = {b: round(float(((1.0 - np.maximum(v, PM.COUNTER_FLOOR)) * w).sum() / ws), 4) for b, v in lost.items()}
-        return K * kept
+            self.lost[l.id]["all"] = round(float(((K - Kb) * held).sum() / ws), 4)
+        return Kb
+
+    def _fill(self, k, K) -> np.ndarray:
+        """Line k's own fill of the land on each cell, 0..1: its presence at the step's start over its unbraked habitat (lane 101,
+        PW-1240 B). Chagnon's villages 'grow to a certain size and could not be held together' (PNAS profile 2014); Walker and Hill
+        2014 find internal political conflict the main cause of a group's fission, resource scarcity the second; Carneiro 2012:
+        circumscribed crowding brings war once the population 'reaches this point' of filling its land. So in-fighting rises with the
+        people's own numbers on the land, and a people thinned by its brakes, or spreading into new country, fights less."""
+        return np.clip(self.p[k] / np.maximum(K, 1e-9), 0.0, 1.0)
 
     def _cull(self, l, k, K, F, step, rx):
         """Culling wars on line k's crowded hostile frontier (D25 C): the share kept per cell this step, or None."""

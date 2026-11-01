@@ -4,7 +4,8 @@ world, across the stages and across a sweep of the brakes' dials, from lane 77 s
     uv run python docs/review/peoples-brakes/charts.py STAGES.json
 
 STAGES.json: {"stages": {"main": DIR, "after D27": DIR, "after D25": DIR}, "sweep": {"raiders=0 war=0": DIR, ...}} (each DIR a
-tools/peoples_robust.py run --out folder). Writes PNGs and data.json beside this file."""
+tools/peoples_robust.py run --out folder). Writes PNGs and data.json beside this file, or into "out" (a folder, relative to the repo)
+with the sweep charts titled "after LABEL" from "sweep_label" (lane 101 reuses it for docs/review/peoples-leader)."""
 
 from __future__ import annotations
 
@@ -190,18 +191,20 @@ def chart_sweep(sweep, path, dial, fixed, label):
 
 def main(cfg_path):
     cfg = json.loads(Path(cfg_path).read_text())
+    out = HERE.parent.parent.parent / cfg["out"] if cfg.get("out") else HERE
+    lab = cfg.get("sweep_label", "D27 + D25")
     stages = {n: load(d) for n, d in cfg["stages"].items()}
     data = {"stages": stages}
-    chart_stages(stages, HERE / "commonest-by-stage.png")
-    chart_top6(stages, HERE / "top6-by-stage.png")
+    chart_stages(stages, out / "commonest-by-stage.png")
+    chart_top6(stages, out / "top6-by-stage.png")
     if cfg.get("sweep"):
         sweep = {n: load(d) for n, d in cfg["sweep"].items()}
         data["sweep"] = sweep
-        chart_sweep(sweep, HERE / "sweep-raiders.png", "raiders", 1.0,
-                    "Shares against the raiders' dial (war at x1): median over the seeds, after D27 + D25")
-        chart_sweep(sweep, HERE / "sweep-war.png", "war", 1.0,
-                    "Shares against the war-torn-land dial (raiders at x1): median over the seeds, after D27 + D25")
-    (HERE / "data.json").write_text(json.dumps(data, indent=0))
+        chart_sweep(sweep, out / "sweep-raiders.png", "raiders", 1.0,
+                    f"Shares against the raiders' dial (war at x1): median over the seeds, after {lab}")
+        chart_sweep(sweep, out / "sweep-war.png", "war", 1.0,
+                    f"Shares against the war dial (raiders at x1): median over the seeds, after {lab}")
+    (out / "data.json").write_text(json.dumps(data, indent=0))
 
 
 if __name__ == "__main__":
