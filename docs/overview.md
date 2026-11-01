@@ -877,7 +877,7 @@ every people's demes, so a culture's cells are all the cells its people lives in
 returning pockets rejoin its first culture is gone: it made up for dragons dropping out of frames that kept only each cell's two
 leading peoples. Size: ~15 MB a run at L6 (169 frames), ~3 bytes an entry; demes_all adds 2 bytes an entry. Runs made before
 the table use the two leading peoples as before. The globe's demes layer has a "whose demes" picker (`?demes_of=ID`), and the
-Cultures tab's map link opens it on that culture's people. Report: [docs/review/overlapping-demes/report.md](review/overlapping-demes/report.md).
+Cultures tab's map link opens it on that culture's people. Ticket: PW-1259 (lane 109).
 
 Each culture copies its parent's skills when it starts, then drifts toward what its land rewards: sea craft from the coast
 share of its cells, herding lore from the share of open dry country. It loses a skill with an e-folding time of 1 kyr. It
