@@ -1,4 +1,5 @@
 ---
+id: PW-1274
 title: Shrink the L7 presence table on disk (uint16 deltas) - needs peoples runs re-cut
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane111
 blocked_by: []
 relates: [PW-1269, PW-1259]
 refs: [planet/lineages/output.py, planet/lineages/brief.py, viewer/globe/colours.js, "run b4d502"]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -22,3 +25,6 @@ cc22df, 622c00) would not read unless the reader keeps both formats (against the
 for that reason. Worth doing only when the owner runs are re-cut for another reason.
 - [ ] write_presence stores deltas; read_presence, `read_presence_frame`, brief and the viewer decode them
 - [ ] a round-trip test with gaps over 65535
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-presence-cell-ids-smaller.md (found by lane111).

@@ -1,4 +1,5 @@
 ---
+id: PW-1273
 title: A minority's learned country - store learned acceptance per presence entry? (measured, nothing built)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane111
 blocked_by: []
 relates: [PW-1269, PW-1259, PW-1155, PW-981]
 refs: [planet/lineages/demes.py, planet/lineages/history/frame.py, planet/lineages/output.py, "run b4d502"]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -40,3 +43,6 @@ Options:
 - B. Store the per-entry byte and let any people split adapted demes from its own learning (cost above, a re-run of peoples).
 - C. Only for kinds whose lead share is under ~25% (dragon kinds): store the byte for those, the same cost mostly (they hold most of the entries).
 Lean: A until a dragon or giant culture looks wrong for lack of it; B if wanted, since the byte is cheap.
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-minority-learned-country.md (found by lane111).

@@ -2,7 +2,7 @@
 id: PW-1269
 title: "Presence table follow-ups: per-frame download for the picker, a minority's learned country, the brief's people range"
 type: task
-status: todo
+status: done
 parent: PW-670
 milestone: null
 subsystem: timezoom
@@ -32,4 +32,5 @@ In plain words: the overlapping demes work, but three loose ends remain.
    table it could take every cell where X lives (dragons and giants would get their real range).
 
 ## Updates
+- 2026-11-01: Status todo -> done. Lane 111: picker fetches one frame (/api/presence, ~0.74 MB raw / 0.22 MB gzip per frame change at L7 vs 124 MB); brief --people reads every cell from the presence table. Item 2 measured only (needs-decision ticket); cell-id shrink deferred to the next re-cut.
 - 2026-11-01: Created from inbox draft draft-presence-table-follow-ups.md (found by lane109).
