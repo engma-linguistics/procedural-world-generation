@@ -1,8 +1,10 @@
 ---
+id: PW-1250
 title: "Emergent cultures: small cultures lose skills faster (Henrich pool size), and the brief should show a culture as it was at the era"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lane107
 blocked_by: []
 relates: [PW-670, PW-675]
 refs: [planet/lineages/cultures.py, planet/lineages/brief.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -22,3 +26,6 @@ In plain words: two refinements to the first cut of cultures.
    that time. A brief for one people should also list that people's own cultures first.
 - [ ] TAU_LOSE scaled by pool size; the effect checked on cc22df
 - [ ] the brief at 5 kyr shows the skills as they were then
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-cultures-pool-size-and-era.md (found by lane107).

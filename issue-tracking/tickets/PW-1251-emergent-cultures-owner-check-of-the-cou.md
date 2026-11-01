@@ -1,8 +1,10 @@
 ---
+id: PW-1251
 title: "Emergent cultures: owner check of the count per people, and whether the giants get cultures"
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: med
@@ -10,6 +12,8 @@ found_by: lane107
 blocked_by: []
 relates: [PW-670, PW-676, PW-1155]
 refs: [planet/lineages/cultures.py, docs/review/emergent-cultures/design.md, "runs cc22df 622c00 (read only)"]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -28,3 +32,6 @@ peoples 1–5. Two calls for you, in the Cultures tab of the workbench.
    - B: fewer cultures. Raise the time apart to 3 kyr, or merge at chiefdoms too.
    - C: more cultures. Drop to 0.5 kyr.
 - [ ] owner picks for 1 and 2
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-cultures-scope-and-knobs.md (found by lane107).
