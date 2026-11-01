@@ -34,4 +34,5 @@ peoples 1–5. Two calls for you, in the Cultures tab of the workbench.
 - [ ] owner picks for 1 and 2
 
 ## Updates
+- 2026-10-31: Owner 10-31: 1 kyr apart is far too long (even 250 yr feels long; cf. the American colonies). Giants keep cultures. Dragons: one culture per kind was his stand-in for a normalizing force (one draconic language, shared mores across a diffuse flying population); giants get a weaker global pull (a council, then everyone goes home). Lane 108: sourced shorter threshold, separation scaled by each kind's reach, a per-kind cohesion pull, contact merging.
 - 2026-10-31: Created from inbox draft draft-cultures-scope-and-knobs.md (found by lane107).
