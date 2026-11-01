@@ -3267,6 +3267,92 @@ def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
     assert np.array_equal(h._brake(L[kb], kb, K, step, env, None), K)
 
 
+def _brake_setup(faketz):
+    import types
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raider_raw()), ps, 1)
+    g, L = h.grid, h.lines
+    h.p = np.zeros((len(L), g.n))
+    h.active = {l.id: True for l in L}
+    h.crops = None
+    h._growth_setup()
+    h._counter_setup()
+    env = h.steps[-1].get()
+    h._land_now = env["land"]
+    h._deep_now = False
+    step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
+    return h, env, step
+
+
+def _sync_pm(h):
+    h._pm = h.p >= 0.12
+    h._cntp = h._pm.sum(0, dtype=np.int16)
+    h._cnt = h._cntp
+    h.__dict__.pop("_Fc", None)
+
+
+def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
+    """Lane 101 (PW-1240 B, owner D31): every people fights itself, humans too, more as it fills its land (a thinly spread people
+    fights less) and as it is circumscribed: free good country next door bars nothing, others' land bars SOCIAL_Q, unlivable country
+    fully. meta.war 0 switches it off."""
+    from planet.lineages.history import params as HP
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.tree.raiders = 0.0
+    for k in (kb, fk):  # (a raider and a people of normal survival alike)
+        h.p[:] = 0.0
+        h.p[k][land[:200]] = 0.8
+        _sync_pm(h)
+        h._hem[k] = 1.0
+        full = h._brake(L[k], k, K, step, env, None)
+        h.p[k][land[:200]] = 0.2  # (the same land, a fifth as full: Chagnon's village before it grows to splitting size)
+        thin = h._brake(L[k], k, K, step, env, None)
+        c = land[10]
+        assert thin[c] > full[c]
+        assert full[c] / K[c] == pytest.approx(1.0 - HP.FEUD_CUT, abs=0.02)  # (full and fully circumscribed; a little war-torn land)
+        assert h.lost[L[k].id]["feud"] > 0
+    h.tree.war = 0.0
+    assert np.array_equal(h._brake(L[fk], fk, K, step, env, None), K)  # (war and raiders off: no brakes at all)
+    h.p[:] = 0.0
+    h.p[kb][land[:50]] = 0.8
+    _sync_pm(h)
+    room = K.copy()
+    h._K0[kb] = K
+    held = h.p[kb] >= 0.12
+    open_c = h._circumscribed(L[kb], kb, held, room, 0.0)
+    ring = h._dilate(held, 1) & ~held & env["land"]
+    h.p[fk][ring] = 0.8
+    _sync_pm(h)
+    ringed = h._circumscribed(L[kb], kb, held, room, 0.0)
+    assert open_c < ringed <= HP.SOCIAL_Q + (1 - HP.SOCIAL_Q) * float((~env["land"][h._dilate(held, 1) & ~held]).mean()) + 1e-9
+
+
+def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
+    """Lane 101 (PW-1240): at the raiders' dial x4 a hemmed-in raider on a hostile border keeps at least BRAKE_HOLD of its habitat on
+    every cell it holds (lane 97's 5% of K fell under the hold, EST 0.12, and the raiders died out); off its land the brakes still cut."""
+    from planet.lineages.history import params as HP
+    from planet.lineages.spread import EST
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[150:400]] = 0.8
+    _sync_pm(h)
+    h._hem[kb] = 1.0
+    h.tree.raiders = 4.0
+    Kb = h._brake(L[kb], kb, K, step, env, None)
+    held = h._pm[kb]
+    assert np.all(Kb[held] >= min(HP.BRAKE_HOLD, 0.8) - 1e-12) and HP.BRAKE_HOLD > 2 * EST - 1e-12
+    assert (Kb[held] < K[held]).any()
+    monkeypatch.setattr(HP, "BRAKE_HOLD", 0.0)
+    assert (h._brake(L[kb], kb, K, step, env, None)[held] < EST).any()  # (the old floor on K alone)
+
+
 def test_a_cull_sawtooth_averages_the_same_for_any_growth_rate():
     """Lane 85's arithmetic (D25 C): d = 0.6 recovering to 0.1 before the next cull averages (0.6 - 0.1) / ln 6 = 0.28, whatever x."""
     from planet.lineages.history import params as PM
