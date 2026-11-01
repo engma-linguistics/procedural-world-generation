@@ -112,7 +112,7 @@
   <button id="helpBtn" class="qbtn" aria-expanded="false" aria-controls="foot" title="What this tab shows and how to use it">?</button>
 </nav>
 <main>
-  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option><option value="demes" title="each people's regional populations (demes, PW-981) from the picked peoples run: where sea, hard country or distance cut a people, dated splits, fusions and ends">species + regional populations</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="peoples and their splits. Cultures (the ways of life, groups, inside a people) are not drawn here: they live in the Peoples tab and on the people's side panel"><option value="species">species</option><option value="demes" title="each people's regional populations (demes, PW-981) from the picked peoples run: where sea, hard country or distance cut a people, dated splits, fusions and ends">species + regional populations</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
   <section class="tab" id="tab-peoples"></section>
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
@@ -243,7 +243,7 @@ const FOOT = {
   tree: `Time runs left to right, Myr to the present, on a log scale (tectonic run, glacial time zoom, recent pass). Drag a bar's left end to move when
     the line appears; click a bar to edit it. Origins: <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> ·
     <span style="color:#c79bff">arrival</span> · <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>.
-    <span style="color:#6bd6d0">group (a way of life within a people)</span>. <span style="color:#fff">&#9670;</span> sapiens node: minds arrive once for the whole stem, its kinds split after it.
+    Cultures (groups, ways of life within a people) are not drawn here: see the Peoples tab. <span style="color:#fff">&#9670;</span> sapiens node: minds arrive once for the whole stem, its kinds split after it.
     <span style="color:#b39c86">&rsaquo; dotted tail</span>: not extinct, the stem continues as animals, untracked (no peoples, techs or megafauna after it).
     Switching a line off: its split children re-parent to its parent; its hybrids, templates and groups go with it.`,
   peoples: `A people's groups (ways of life: steppe and forest orcs, human seafarers...) sit under it: ▸ opens them, + group adds one. Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
@@ -410,7 +410,7 @@ function demeRow(x, y, d) {
   const lab = `<g class="lab"><text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}" font-size="11" fill="${x.color}" clip-path="url(#labclip)"><title>${esc(tip)}</title>${esc(x.name)}</text></g>`;
   return { bar, lab };
 }
-let viewMode = 'all', fitAll = false;
+let viewMode = 'species', fitAll = false;
 $('tlFit').onclick = () => { fitAll = !fitAll; $('tlFit').textContent = fitAll ? 'scroll' : 'fit all'; drawTimeline(); $('tl').scrollLeft = 0; diagTl('fit'); };
 // sideways navigation (PW-841): the native scrollbar, trackpad swipe and shift+wheel (explicit, as not every browser maps it over an svg),
 // and click-drag on the background (a bar still selects on a plain click; the end grips still drag the start point)
