@@ -60,6 +60,31 @@ def frame_and_grid(ctx):
     ctx.region = ctx.region.ravel()
 
 
+def ruggedness(g, L: dict, sel=None) -> tuple[np.ndarray, np.ndarray]:
+    """How rugged the sub-cell detail is per coarse cell (0.12..1; computed for the cells sel, else all, and 0
+    elsewhere), and each cell's relief (m: the largest height step to a neighbour, land heights): by basement
+    rock, less under thick cover, more at plate boundaries, on steep and high ground, less under ice. Shared by the
+    zoom (coarse_fields) and the whole-world refinement (planet/refine.py)."""
+    elev = np.asarray(L["elevation"], float)
+    nb_e = np.maximum(elev, 0)
+    deg = np.diff(g.nbr_off)
+    src = np.repeat(np.arange(g.n), deg)
+    relief = np.zeros(g.n)
+    np.maximum.at(relief, src, np.abs(nb_e[src] - nb_e[g.nbr_idx]))
+    sel = np.arange(g.n) if sel is None else sel
+    r = np.array([RG.RUGGED.get(int(k), 0.5) for k in np.asarray(L["rock"]).astype(int)[sel]])
+    cover = L.get("sediment_cover", np.zeros(g.n))[sel]
+    r = r * np.where(cover > 0.3, 0.65, 1.0)
+    bnd = L.get("plate_boundary", np.zeros(g.n))[sel]
+    r = np.where(bnd > 0, np.maximum(r, 0.85), np.where(bnd < 0, np.maximum(r, 0.6), r))
+    r = np.maximum(r, np.clip(relief[sel] / 2500, 0, 1))
+    r = np.maximum(r, 0.9 * smoothstep(600, 3500, elev[sel]))  # high ground is rugged whatever the rock
+    ice = L.get("ice", np.zeros(g.n))[sel].astype(float)
+    out = np.zeros(g.n)
+    out[sel] = np.clip(r * np.exp(-ice / 500), 0.12, 1.0)
+    return out, relief
+
+
 def coarse_fields(ctx):
     """The coarse cells round the region and their fields (heights, rain, ice, ruggedness, runoff) interpolated onto
     the pixels.
@@ -77,21 +102,10 @@ def coarse_fields(ctx):
     ctx.interior_c = ctx.land_c & (np.bincount(np.repeat(np.arange(ctx.g.n), np.diff(ctx.g.nbr_off)), ctx.elev[ctx.g.nbr_idx] <= 0, ctx.g.n)[ctx.sel] == 0)
 
     # ruggedness per coarse cell
-    nb_e = np.maximum(ctx.elev, 0)
-    deg = np.diff(ctx.g.nbr_off)
-    src = np.repeat(np.arange(ctx.g.n), deg)
-    relief = np.zeros(ctx.g.n)
-    np.maximum.at(relief, src, np.abs(nb_e[src] - nb_e[ctx.g.nbr_idx]))
     ctx.rock = ctx.L["rock"].astype(int)
-    ctx.r_c = np.array([RG.RUGGED.get(int(k), 0.5) for k in ctx.rock[ctx.sel]])
-    cover = ctx.L.get("sediment_cover", np.zeros(ctx.g.n))[ctx.sel]
-    ctx.r_c = ctx.r_c * np.where(cover > 0.3, 0.65, 1.0)
-    bnd = ctx.L.get("plate_boundary", np.zeros(ctx.g.n))[ctx.sel]
-    ctx.r_c = np.where(bnd > 0, np.maximum(ctx.r_c, 0.85), np.where(bnd < 0, np.maximum(ctx.r_c, 0.6), ctx.r_c))
-    ctx.r_c = np.maximum(ctx.r_c, np.clip(relief[ctx.sel] / 2500, 0, 1))
-    ctx.r_c = np.maximum(ctx.r_c, 0.9 * smoothstep(600, 3500, ctx.e_c))  # high ground is rugged whatever the rock
+    r_all, relief = ruggedness(ctx.g, ctx.L, ctx.sel)
+    ctx.r_c = r_all[ctx.sel]
     ice_c = ctx.L.get("ice", np.zeros(ctx.g.n))[ctx.sel].astype(float)
-    ctx.r_c = np.clip(ctx.r_c * np.exp(-ice_c / 500), 0.12, 1.0)
 
     # (glaciers: the bare ground's summer and winter at sea level, the coarse ice's sheet cover, the rain's
     # share in the July half-year)

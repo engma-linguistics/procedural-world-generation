@@ -1,4 +1,5 @@
 ---
+id: PW-1256
 title: "Dragon persecution after lane 103: the lions' threshold carried to dragons, Woodroffe 2000 unread, option C not built"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane103
 blocked_by: []
 relates: [PW-1246, PW-1068, PW-1221]
 refs: [planet/lineages/history/megafauna.py, docs/review/dragon-numbers/round2.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Open points (lane 103, round2.md section 2):
   show dragons smeared evenly over farmland.
 - [ ] The giants use the same KILL_Q, so they are now pressed about 10x less per person than before (the old KILL_Q was 10x higher).
   Check the giants' counts on the next census (lane 99's census counts dragons only).
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-dragon-persecution-follow-ups.md (found by lane103).

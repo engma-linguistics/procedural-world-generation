@@ -20,6 +20,7 @@ uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region a
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
 uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
+uv run python -m planet refine <world-id> --level 8           # a finished world's moment remade on a finer grid (L8; L9 can't be opened yet, PW-1209)
 uv run python -m planet satellite <world-or-zoom-id>  # add / redo the true-colour satellite view in place
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/ (--jobs J: jobs at once, default 4)
 uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms (built at once)
