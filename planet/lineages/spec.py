@@ -536,7 +536,8 @@ BAND_ROUNDS = 3  # default meta.band_rounds: re-runs of the best try that nudge 
 PORTAL_SITES = ("forest", "desert", "reef", "volcano")  # (history.History.portal_sites: deepest forest, middle of a desert, a coral reef, the foot of a volcano)
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 BRAKE_X = (0.0, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.raiders and meta.war (lane 97, D25; history.counter): how hard the raiders are
-# braked (raid losses, in-fighting, culling wars) and how much land war takes from crowded, stateless peoples; default 1, 0 off
+# braked (raid losses, culling wars) and how much land war takes: war-torn land from crowded, stateless peoples and every people's
+# in-fighting where it has filled its land and has nowhere to split off to (lane 101, D31); default 1, 0 off
 SURGE_X = (0.0, 0.5, 1.0, 2.0)  # the choices of meta.surge_early / meta.surge_late (owner 10-30, lane 73): how strongly a people on the upswing
 # contests land others hold, x history.params.SURGE_Q (0: no momentum edge); early before the farming onset, late at the present, blended between. Default 1, 1
 
@@ -555,7 +556,7 @@ class Tree:
     surge_early: float = 1.0  # the momentum edge's dial in the early eras (SURGE_X, lane 73)
     surge_late: float = 1.0  # ... and at the present
     raiders: float = 1.0  # meta.raiders (BRAKE_X, lane 97): the raiders' brakes
-    war: float = 1.0  # meta.war (BRAKE_X, lane 97): war-torn land
+    war: float = 1.0  # meta.war (BRAKE_X, lane 97): war-torn land and every people's in-fighting (lane 101)
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
     animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
