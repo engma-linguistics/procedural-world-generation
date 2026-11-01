@@ -176,7 +176,7 @@ const LAYERS = {
   rainfall: { group: 'climate', ramp: PRECIPITATION, units: 'mm/yr', seasonal: 'precipitation', needs: ['precipitation'], in: { run: RUN_ROCK() },
     hint: 'Precipitation (rain and snow as water).', color: onLand(({ sv, layer }) => (i, c) => rampFns[layer](sv[i], c)) },
   temperature: { group: 'climate', ramp: TEMPERATURE,
-    units: '°C mean annual', where: 'all', seasonal: 'temperature', obs: 'obs_temperature', needs: ['temperature'], in: { world: true, run: 'climate', tz: true },
+    units: '°C, mean over the year', where: 'all', seasonal: 'temperature', obs: 'obs_temperature', needs: ['temperature'], in: { world: true, run: 'climate', tz: true },
     hint: 'Air temperature near the ground.' },
   precipitation: { group: 'climate', ramp: PRECIPITATION, units: 'mm/yr', where: 'all', seasonal: 'precipitation', obs: 'obs_precipitation', in: { world: true },
     hint: 'Precipitation (rain and snow as water).' },

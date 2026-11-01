@@ -2,7 +2,7 @@ import { esc, num as fmtNum } from '../planets.js';
 import { S, state } from './state.js';
 import { COAST_SCORES, HU_LAYERS, LAKE_LAYERS, OBS_LAYERS, RAMPS, SEASONAL, UNITS, WORLD_TINTED, availableLayers, layerDef } from './layers.js';
 import { $ } from './scene.js';
-import { HU_OVERLAY, LAKE_KINDS, animalStocks, anthroOn, anthroSrc, coastText, cropBit, cropStocks, fillRes, fillTechs, fuelRows, fuelSrc, huSwatches, lakeKind, obsView, peoplesIdx, resInfo, seasonUnits, seasonalData, techTree, worldAnthroOn, worldAnthroPanel } from './colours.js';
+import { HU_OVERLAY, LAKE_KINDS, SEASON_NAMES, colourSeason, animalStocks, anthroOn, anthroSrc, coastText, cropBit, cropStocks, fillRes, fillTechs, fuelRows, fuelSrc, huSwatches, lakeKind, obsView, peoplesIdx, resInfo, seasonUnits, seasonalData, techTree, worldAnthroOn, worldAnthroPanel } from './colours.js';
 import { EVENT_COLORS, eventWindow, hexColor } from './overlays.js';
 import { buildLandmassNames, rankLetter } from './axis.js';
 import { finishBox, finishMomentLine, timezoomBox, timezoomSummary } from './timezoom.js';
@@ -222,7 +222,11 @@ function tipHtml(i) {
   const cat = layerCats(layer), num = !cat && layerNumbers(layer);
   let main = '';
   if (cat) { const v = cat.arr[i]; main = v === cat.none ? (cat.noneName || 'none') : cat.names[v] || '?'; }
-  else if (num) { const v = Number(num.arr[i]); if (Number.isFinite(v)) main = `${fmtNum(v)} ${String(UNITS[layer] || '').split(/[,(:]/)[0].replace(/^class$/, '')}`; }
+  else if (num) {
+    // a seasonal layer names the month it shows
+    const v = Number(num.arr[i]), ss = colourSeason(layer);
+    if (Number.isFinite(v)) main = `${fmtNum(v)} ${String(UNITS[layer] || '').split(/[,(:]/)[0].replace(/^class$/, '')}${ss ? `, ${SEASON_NAMES[ss]}` : ''}`;
+  }
   else if (layer === 'fuels' && fuelSrc()) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
   else { const sp = layerSpecial(layer); if (sp) main = sp.tip(i); }
   return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;

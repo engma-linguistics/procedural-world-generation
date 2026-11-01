@@ -248,7 +248,7 @@ export function obsView(layer) {
 export const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
-function colourSeason(layer = state.layer) {
+export function colourSeason(layer = state.layer) {
   const k = SEASONAL[layer];
   return k && state.season && S.V?.layers?.[`${k}_${state.season}`] && !obsView(layer) ? state.season : '';
 }
