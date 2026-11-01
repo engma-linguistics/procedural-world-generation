@@ -36,3 +36,11 @@ together with the foreset-slope draft (draft-clinoform-front-has-no-foreset-slop
 makes the cliff.
 - [ ] CO2 crash count not above main's over two rolls, with the other hard bars still at 0
 - [ ] soft pass count not lower than main's
+
+## Update (lane 100c, 2026-11-01)
+Lane 100c ran the full 18x2 paired L6 judge with necking + rise + sea-floor creep (`neck_km=200 rise=1 slope_k=1000`)
+against main (docs/review/tectonics/margin/report.md, round 3). CO2 crash (below the plants' compensation point,
+tools/hard_bar.py): 0/36 in both arms. The secondary pCO2 < 100 ppm count: 3/36 main, 6/36 on; one draw went under
+60 ppm. Frozen, boiled and ocean loss: 0 in both. Soft pass: 29/36 main, 26/36 on (McNemar p 0.55). Late dT -2.2 C and
+land -2.9 points, both moved. The judge can't tell necking's share of this from the creep's: see
+draft-sea-creep-alone-judge.

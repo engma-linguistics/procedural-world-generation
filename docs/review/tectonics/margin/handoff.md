@@ -18,3 +18,17 @@ find and read a source for K and its depth decay. Then L6 screens on seeds 1 and
 diffusion) with margindiag.py, and one full 18x2 paired judge at the end (`tools/hard_bar.py` replaced
 docs/review/v1-cut/tally.py on main). Scratch for this round: `scratchpad/l100b/` (a real folder; never `scratchpad/root`).
 Cap: 24 threads in total (lane 105's L8 run uses 8 cores).
+
+## Round 3c (lane 100c, 2026-11-01)
+
+Done: K sourced and the addendum written (diagnosis-foreset.md). `slope_k` sea-floor creep is in `surface._creep`
+(off by default, goldens unchanged), with tests/test_sea_creep.py. L6 screens on seeds 1 and 3 over five arms are in
+report.md, round 3. The paired 18x2 L6 judge of `neck_km=200 rise=1 slope_k=1000` against main ran from a frozen copy
+at d43d24a1 through a margindiag variant of paired.sh (scratch `l100c/paired_m.sh`). Two roots (`judge_base/`,
+`judge_on/`, arm `m` each, so `tools/hard_bar.py` reads them), copied into one root for pjudge.py.
+
+Result (report.md, round 3): the margin numbers move most of the way to Earth on all 36 draws, with no hard failures.
+But soft pass is 26/36 against 29/36, late dT is -2.2 C and land -2.9 points (both moved). So `slope_k` stays off.
+Next: judge `slope_k=1000` alone and trace the land loss (draft-sea-creep-alone-judge). Scratch runs are deleted.
+To redo them: `paired_margin.sh CODE OUT m 0.0005 0.001`, with `EXTRA="slope_k=1000"` for the on arm, one OUT root per
+arm (hard_bar.py reads arm `m`). Then copy both into one root as base_/on_ for pjudge.py.

@@ -106,3 +106,80 @@ Commands (scratch under the lane's scratchpad `l100/`, deleted at the end):
 `diag.sh CODE OUT CPUS SEED MYR LEVEL THREADS [--set neck_km=200 rise=1]` runs margindiag;
 `MAXSIM=5 THREADS=2 taskset -c ... bash docs/review/base-climate/v1-finish-16/paired.sh CODE OUT ARM 0.0005`;
 `uv run python docs/review/base-climate/v1-finish-16/pjudge.py OUT base on`; `docs/review/v1-cut/tally.py`.
+
+# Round 3 (lane 100c, 2026-11-01): sea-floor sediment creep
+
+Diagnosis: [diagnosis-foreset.md](diagnosis-foreset.md) (and its addendum on K). Code: `surface._creep`, param
+`slope_k` (km2/Myr; 0 = off, the default; goldens unchanged); tests `tests/test_sea_creep.py`.
+
+## In plain words
+
+Sediment on the sea floor now creeps slowly downhill, faster in shallow water than in deep, the way stratigraphers
+model how margins build out. Only loose sediment moves, and none is lost or made. It changes the continental edge a
+lot: on the 36-draw climate judge, coast cells with deep (>3 km) water in the very next cell fall from 23% to 6.5%
+(Earth 3.5%), and the middle depths (200-3000 m) grow from 12.9% to 20.0% of the ocean (Earth 19.6%). The shelf itself
+doesn't widen (2.6%, Earth 6.2%). But the judged arm (necking + rise + creep together) also came out about 2 C cooler,
+with 3 points less land and 3 fewer passing worlds (26/36 against 29/36). That is within the judge's noise, but it is
+not "not worse", so it stays switched off. The screens show the creep itself drowns land, so the next step is to judge
+the creep alone and find where the land goes.
+
+## Mechanism
+
+Across every sea-sea edge, a flux `K(d) x drop / iso` km of cover moves from the higher cell to the lower, with
+`K(d) = slope_k x 200 / (d + 200)`, d the donor's water depth (Mitchell & Huthnance 2008, K ~ 1/d). Default
+proposals: 300 (Jordan & Flemings' 100-1000 m2/yr, log-middle) or 1000. It is explicit, with substeps keeping
+`K dt / d^2 <= 0.1`. A donor gives at most its cover minus lava flows, and its ingredients go pro rata. The sediment
+arrives as mud, and `sediments()` gives it its sand share. What a cell lost is booked as eroded cover, so the strata
+lose their top. It is not counted as weathering (`sim.removed` is unchanged).
+
+## Screens (L6, 1 Gyr, default settings; means of the 600-1000 Myr samples; s1 / s3)
+
+Five tuning arms (k = slope_k): k300 and k1000 on top of round 2 (neck_km=200, rise=1), k300 and k1000 alone, and
+rise + k300. Main and round 2 reproduce round 2's numbers exactly.
+
+| arm | shelf % | 200-3000 m % | 4000-5000 m % | coast cells >3 km next cell % | ... within 2 % | coast to 3000 m km | land % | pCO2 min after 300 Myr |
+|---|---|---|---|---|---|---|---|---|
+| main | 2.51 / 2.15 | 12.1 / 11.2 | 31.1 / 33.0 | 23.2 / 23.2 | 60.5 / 60.8 | 240 / 240 | 34.6 / 34.7 | 253 / 165 |
+| round 2 (neck + rise) | 3.36 / 3.08 | 15.9 / 14.2 | 28.4 / 31.2 | 14.8 / 13.9 | 49.5 / 48.4 | 320 / 307 | 33.6 / 33.6 | 160 / 144 |
+| k300 | 2.38 / 2.17 | 16.5 / 14.0 | 29.9 / 30.5 | 11.6 / 11.7 | 37.9 / 38.7 | 360 / 360 | 32.2 / 33.5 | 163 / 171 |
+| k1000 | 3.11 / 2.80 | 21.1 / 19.6 | 25.8 / 27.8 | 10.2 / 9.2 | 29.4 / 30.9 | 400 / 373 | 31.8 / 30.8 | 123 / 157 |
+| rise + k300 | 2.15 / 2.63 | 15.5 / 15.9 | 29.2 / 29.6 | 11.1 / 11.4 | 38.6 / 39.7 | 360 / 360 | 33.2 / 32.7 | 144 / 215 |
+| round 2 + k300 | 3.58 / 3.01 | 19.8 / 17.2 | 27.0 / 29.3 | 7.5 / 6.6 | 31.4 / 28.8 | 360 / 373 | 31.8 / 32.0 | 98 / 106 |
+| round 2 + k1000 | 2.69 / 2.41 | 19.5 / 20.5 | 27.0 / 27.0 | 5.1 / 6.5 | 21.7 / 24.4 | 468 / 468 | 32.5 / 30.8 | 159 / 153 |
+| Earth on L6 | 6.21 | 19.6 | 31.8 | 3.5 | 22.0 | 602 | 27.8 | |
+
+Best on the margin numbers: round 2 + k1000, which was judged.
+
+## Paired judge (v1-finish-16's 18 L6 draws x rolls 0.0005, 0.001; star_brightening=1)
+
+`base` = main (frozen copy at d43d24a1, all three off); `on` = `neck_km=200 rise=1 slope_k=1000`. Run through
+[paired_margin.sh](paired_margin.sh) (paired.sh via margindiag.py). pjudge.py, then tools/hard_bar.py per arm.
+
+| measure | main | on | median on - main | 95% CI | moved |
+|---|---|---|---|---|---|
+| end T | -0.34 | -1.49 | -0.22 | [-3.59, +2.17] | |
+| late dT | 0.88 | -2.16 | -2.24 | [-3.61, -0.58] | * |
+| late CO2 index | 0.57 | 0.16 | -0.24 | [-0.51, -0.02] | * |
+| land % | 34.98 | 32.14 | -2.83 | [-2.98, -2.52] | * |
+| sink ref / src ref | 6.61 / 7.98 | 6.55 / 8.01 | -0.05 / +0.01 | [-0.12, +0.02] / [-0.02, +0.10] | |
+| arid % / hot desert % | 22.4 / 8.1 | 17.7 / 5.1 | -4.3 / -3.0 | [-5.3, -2.9] / [-4.0, -2.2] | * |
+| land rain (mm/yr) / trees % | 1151 / 34.9 | 1073 / 33.5 | -43 / -1.7 | [-89, -15] / [-2.1, -0.6] | * |
+| shelf % | 2.55 | 2.60 | -0.02 | [-0.28, +0.25] | |
+| 200-3000 m % | 12.89 | 19.98 | +7.43 | [+6.68, +7.67] | * |
+| 4000-5000 m % | 30.95 | 27.62 | -3.07 | [-3.63, -2.28] | * |
+| coast cells >3 km next cell % | 22.81 | 6.52 | -16.0 | [-16.5, -15.6] | * |
+| ... within 2 cells % | 59.86 | 25.17 | -34.4 | [-35.2, -33.3] | * |
+| coast to 3000 m (km) | 240 | 437 | +187 | [+174, +201] | * |
+| submerged continent median (m) | -785 | -733 | +52 | [-64, +78] | |
+
+Pass count: main 15/18 + 14/18 = 29/36; on 14/18 + 12/18 = 26/36 (both 22, main only 7, on only 4; McNemar p 0.55).
+Glacial maximum 22 against 28. Hard bars (hard_bar.py): frozen 0/0, boiled 0/0, ocean loss 0/0, CO2 crash (below the
+compensation point) 0/0. Secondary: pCO2 < 100 ppm 3/36 against 6/36, end pCO2 outside 180-600 10 against 16.
+
+Reading: the margin numbers moved strongly toward Earth on every draw, with no hard failure. But the soft pass is 3
+lower (the bar is "not worse"), and the world is cooler with less land. So it is **not a clear gain, and not proposed
+for defaults-on**. Less land would usually warm a world (less weathering), so the cooling probably comes from less
+arid ground and fewer deserts, i.e. a changed land layout. Not traced here. Follow-ups: draft-sea-creep-alone-judge
+(creep alone, and where the land goes), draft-marine-diffusivity-k-and-depth-law (the K value),
+draft-l6-shelf-collapses-after-100-myr (the shelf share drops 5% -> 1.3% between 100 and 150 Myr in every arm, then
+recovers to ~2.7% by 1 Gyr).

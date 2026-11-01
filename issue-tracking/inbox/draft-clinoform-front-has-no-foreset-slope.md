@@ -32,3 +32,12 @@ shelf then progrades as a sloping wedge whose width is set in km, the same at ev
 `docs/review/tectonics/margin/margindiag.py` (near1/near2, the 200-3000 m share, coast-to-3000 m) and the hard bars.
 - [ ] steepest-neighbour gradient on slope cells (-500..-2500 m) at L7/L8 within a factor ~2 of Earth on the same grid
 - [ ] no hard-bar failures on the paired judge
+
+## Update (lane 100c, 2026-11-01)
+The round-3 diagnosis (docs/review/tectonics/margin/diagnosis-foreset.md) found a one-cell front about right at L6/L7,
+since a 3-degree front is about one cell wide there. So lane 100c built sea-floor creep of the sediment cover instead
+(`slope_k`, surface._creep; off by default). On the 36-draw paired L6 judge (with necking and rise) it moves every
+margin number most of the way to Earth: coast cells with >3 km of water in the next cell 22.8% -> 6.5% (Earth 3.5%),
+within 2 cells 59.9% -> 25.2% (Earth 22%), 200-3000 m share of the ocean 12.9% -> 20.0% (Earth 19.6%), coast to
+3000 m 240 -> 437 km (Earth 602). The shelf share doesn't move (2.6%, Earth 6.2%). A foreset-angle cap (candidate 1)
+is still open for L8 only.
