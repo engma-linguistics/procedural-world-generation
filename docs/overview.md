@@ -848,6 +848,26 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
+### 2.25b Emergent cultures, first cut (`lineages/cultures.py`, PW-670)
+
+Output only, read after the demes (2 s a run). A people's first demes are its founding culture. A deme that split off by
+niche learning (`split_adapted`) is a culture of its own at once. A deme cut off by a gap, a crossing or distance becomes one
+after 1 kyr apart (`T_APART_KYR`). The dragon kinds (megafauna that fly) get no cultures. Each culture copies its parent's skills when it starts, then drifts toward what its land
+rewards: sea craft from the coast share of its cells, herding lore from the share of open dry country. It loses a skill
+with an e-folding time of 1 kyr. It gains one with an e-folding time of 3 kyr, and only once its people knows boats (or
+herding) (Henrich 2004, Rivers 1912). Its way of life, its people's groups on its cells (`groups_best`), is recorded at
+the start and now.
+
+Two things merge cultures (PW-676). A culture whose last deme fused into another culture's deme has merged into it. Two
+bordering sister cultures with the same adaptation and way of life merge after 1 kyr once their people knows cities (up
+to 1 Mkm² together) or written law (5 Mkm²).
+
+Output: `cultures.json` and `meta.cultures`. Run it with `planet cultures RUN [--out DIR]`; `--out` leaves the run as it
+is. `GET /api/cultures?run=` works it out on the fly for a run without the file. It is shown in the workbench's Cultures
+tab, which is separate from the species tree, and in the brief's "Cultures here".
+
+Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
+
 ### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83 and 97, owner D20, D25-D27)
 
 The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.
