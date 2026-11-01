@@ -53,7 +53,7 @@ def _frames(g, west, east, D, known, coast_east, steps=(6.0, 5.0, 4.0, 3.0, 2.0,
         coast = west.copy() if coast_east is None else west | (east & coast_east)
         biome = np.where(west | east, 4, -1)
         biome[east] = biome_east
-        dr.frame(a, dem, np.full(g.n, 255, np.uint8), coast, biome)
+        dr.frame(a, np.arange(g.n), dem, np.full(g.n, 255, np.uint8), coast, biome)
     CU.finish(C, dc, D)
     return C, dr
 
@@ -109,14 +109,13 @@ def test_a_culture_whose_last_deme_fused_merged_into_the_other():
     assert C[1].end == "merged" and C[1].into == 0 and C[1].ended == 2.0
 
 
-def test_a_cohesive_kind_that_drops_out_of_sight_and_returns_is_one_culture_and_its_daughter_peoples_descend_from_it():
+def test_a_kind_that_died_out_and_came_back_is_a_new_culture_and_its_daughter_peoples_descend_from_it():
+    """Lane 109: full presence in the frames, so a dragon kind no longer drops out of sight; one that really died out is a new culture."""
     D = [dict(_deme(0, None, "first", 30.0, ended=25.0, end="extinct"), people="red_dragon"),
-         dict(_deme(1, None, "from_people", 20.0), people="red_dragon"),  # (its pockets back in the frames: a new first deme)
+         dict(_deme(1, None, "from_people", 20.0), people="red_dragon"),
          _deme(2, 1, "from_people", 10.0)]  # (a people born of a dragon population: kobolds, dragonborn)
-    C, dc = CU.assign(D, coh={"red_dragon": 0.9})
-    assert len(C) == 2 and dc.tolist() == [0, 0, 1] and C[0].people == "red_dragon" and C[1].parent == 0
-    C, dc = CU.assign(D)  # (no cohesion: two founding cultures)
-    assert dc.tolist() == [0, 1, 2]
+    C, dc = CU.assign(D)
+    assert dc.tolist() == [0, 1, 2] and C[1].people == "red_dragon" and C[2].parent == 1
 
 
 def test_cohesion_is_inherited_down_the_tree_and_old_runs_read_the_preset():
@@ -157,5 +156,21 @@ def test_fliers_have_no_sea_craft():
     dr = CU.Drift(C, dc, lines, g.nbr_off, g.nbr_idx, 1000.0, {}, BIOMES)
     dem = np.full(g.n, CU.NONE, np.uint16)
     dem[west] = 0
-    dr.frame(1.0, dem, np.full(g.n, 255, np.uint8), west, np.where(west, 4, -1))
+    dr.frame(1.0, np.arange(g.n), dem, np.full(g.n, 255, np.uint8), west, np.where(west, 4, -1))
     assert C[0].sea is None
+
+
+def test_overlapping_cultures_count_every_cell_they_live_in_and_touch_only_their_own_people():
+    """Lane 109: Drift.frame takes (cell, deme) pairs, so two peoples' cultures on the same cells are both counted there, and
+    contact (for sister merges) is only between cultures of one people."""
+    g, west, east, _ = _setup()
+    D = [_deme(0, None, "first", 6.0), dict(_deme(1, None, "first", 6.0), people="hob")]
+    lines = [LINES[0], dict(LINES[1], id="hob", index=1)]
+    C, dc = CU.assign(D)
+    dr = CU.Drift(C, dc, lines, g.nbr_off, g.nbr_idx, 1000.0, {}, BIOMES)
+    cells = np.flatnonzero(west)
+    cell = np.concatenate([cells, cells])
+    deme = np.concatenate([np.zeros(len(cells), np.uint16), np.ones(len(cells), np.uint16)])
+    dr.frame(1.0, cell, deme, np.full(g.n, 255, np.uint8), west, np.where(west, 4, -1))
+    assert C[0].cells_now == C[1].cells_now == len(cells)
+    assert dr._touching(cell.astype(np.int64), deme.astype(np.int64)) == set()  # (two peoples on the same land: no sister contact)

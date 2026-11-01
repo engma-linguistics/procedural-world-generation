@@ -1,7 +1,7 @@
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { $, CMYR } from './scene.js';
-import { SEASON_NAMES, animalStocks, anthroRows, coastText, coastalText, cropRows, demeOf, fuelRows, isSeaPeople, lakeLine, monthRuns, resRows, techRows } from './colours.js';
+import { SEASON_NAMES, animalStocks, anthroRows, coastText, coastalText, cropRows, demeOf, demesAt, fuelRows, isSeaPeople, lakeLine, monthRuns, resRows, techRows } from './colours.js';
 import { plateVelocity } from './geometry.js';
 import { timeLabel } from './timezoom.js';
 import { volcLine } from './load.js';
@@ -99,6 +99,8 @@ function peoplesRows(i, R) {
     R('place', '', `${dm.name}, ${dm.how === 'first' ? `there when the cut starts (~${dm.born_kyr} kyr ago)` : `since ~${dm.born_kyr} kyr ago`}${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
       { lab: 'regional population', ess: true });
   }
+  const all = demesAt(i);  // (every people's deme here, overlapping: lane 109)
+  if (all && all.length > 1) R('place', '', all.map((x) => x.short).join(', '), { lab: 'demes here', ess: true });
   const wd = L.peoples_whole?.[i];  // the cell's composition (PW-689): leading people, second, all others
   const ml = L.mix_lead ? L.mix_lead[i] : wd;  // (the people with most heads, PW-705)
   if (L.mix_lead_share && wd != null && wd !== 255 && lines[ml]) {

@@ -122,6 +122,20 @@ class Ctx:
             self.fuels = {k: _read_single(self.dir, spec) for k, spec in fl.items()}
         self._frame_cache: dict = {}
         self._cultures = False  # (cultures.json, or worked out from the demes on first use: cultures())
+        self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
+
+    def overlap(self) -> tuple | None:
+        """(presence table, demes_all) of a run that has every people's demes (lane 109), else None (the leading people's demes only)."""
+        if self._overlap is False:
+            self._overlap = None
+            fa = ((self.meta.get("demes") or {}).get("all") or {}).get("file")
+            if fa and (self.dir / fa).exists():
+                from .output import read_presence
+                pt = read_presence(self.dir, self.meta)
+                allv = np.fromfile(self.dir / fa, dtype="<u2")
+                if pt is not None and len(pt["cells"]) == len(allv):
+                    self._overlap = (pt, allv)
+        return self._overlap
 
     def cultures(self) -> dict | None:
         """The run's emergent cultures (PW-670): its cultures.json, else derived from its demes (not written), None without demes."""
@@ -1121,14 +1135,24 @@ CULTURES_TOP = 6  # cultures listed in the brief (the most land in the region fi
 
 
 def _cultures(ctx: Ctx, i: int, land: np.ndarray, era: float) -> list | None:
-    """The emergent cultures (PW-670) leading the region's land at the era: name, people, share of the land, what changed."""
+    """The emergent cultures (PW-670) living on the region's land at the era: name, people, share of the land, what changed. On a run
+    with every people's demes (lane 109) a culture counts wherever its people lives, so the shares overlap (a dragon kind's culture
+    over the peoples below it); on an older run only where its people leads."""
     doc = ctx.cultures()
     if doc is None or "demes" not in ctx.arr:
         return None
-    dem = np.asarray(ctx.arr["demes"][i]).astype(np.int64)
     C, dc = doc["cultures"], np.asarray(doc["deme_culture"], np.int64)
-    on = land & (dem < len(dc))
-    if not on.any():
+    ov = ctx.overlap()
+    if ov is not None:
+        pt, allv = ov
+        a, b = int(pt["offsets"][i, 0]), int(pt["offsets"][i, -1])
+        cell, dem = pt["cells"][a:b].astype(np.int64), allv[a:b].astype(np.int64)
+        keep = (dem < len(dc)) & land[cell]
+        dem = dem[keep]
+    else:
+        dem = np.asarray(ctx.arr["demes"][i]).astype(np.int64)
+        dem = dem[land & (dem < len(dc))]
+    if not len(dem):
         return []
 
     def at(c):  # (the culture holding it at the era, after any merges by then)
@@ -1136,7 +1160,7 @@ def _cultures(ctx: Ctx, i: int, land: np.ndarray, era: float) -> list | None:
             c = C[c]["into"]
         return c
 
-    u, n = np.unique(dc[dem[on]], return_counts=True)
+    u, n = np.unique(dc[dem], return_counts=True)
     tot = {}
     for c, k in zip(u.tolist(), n.tolist()):
         if c >= 0:
@@ -1284,7 +1308,7 @@ def markdown(b: dict) -> str:
     cu = b.get("cultures")
     if cu:
         t += ["", "## Cultures here (emergent, PW-670; placeholder names)", ""]
-        t += [f"- {c['name']} ({c['people']}, {c['how']}, since {c['since_kyr']:g} kyr): {_pc(c['land_share'])} of the land"
+        t += [f"- {c['name']} ({c['people']}, {c['how']}, since {c['since_kyr']:g} kyr): lives on {_pc(c['land_share'])} of the land"
               + (f"; {'; '.join(c['changes'])}" if c["changes"] else "") for c in cu]
     mf = b.get("megafauna")
     if mf:
