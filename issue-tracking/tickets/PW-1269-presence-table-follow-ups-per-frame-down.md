@@ -1,8 +1,10 @@
 ---
+id: PW-1269
 title: "Presence table follow-ups: per-frame download for the picker, a minority's learned country, the brief's people range"
 type: task
 status: todo
 parent: PW-670
+milestone: null
 subsystem: timezoom
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: lane109
 blocked_by: []
 relates: [PW-1259, PW-1155, PW-981, PW-670]
 refs: [viewer/globe/colours.js, planet/lineages/demes.py, planet/lineages/brief.py, planet/lineages/history/frame.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -26,3 +30,6 @@ In plain words: the overlapping demes work, but three loose ends remain.
    deme. Store the learned acceptance per entry of the presence table (one more uint8 an entry) if that matters.
 3. **The brief's people range.** `planet brief --people X` takes the cells where X leads or comes second. With the presence
    table it could take every cell where X lives (dragons and giants would get their real range).
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-presence-table-follow-ups.md (found by lane109).

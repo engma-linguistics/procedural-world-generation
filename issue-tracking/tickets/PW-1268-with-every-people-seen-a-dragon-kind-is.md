@@ -1,8 +1,10 @@
 ---
+id: PW-1268
 title: "With every people seen, a dragon kind is one to five living cultures, not one: keep that or fold it?"
 type: task
 status: needs-decision
 parent: PW-670
+milestone: null
 subsystem: timezoom
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lane109
 blocked_by: []
 relates: [PW-1259, PW-670, PW-981]
 refs: [planet/lineages/cultures.py, planet/lineages/demes.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -31,3 +35,6 @@ The choice for Daniel:
 
 Also seen: with every cell counted, a giant culture on the coast "gains the sea craft" (hill giants 0.02 -> 0.69 on the test
 run). Check whether giants should have sea craft at all (they wade straits), like fliers have none.
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-dragon-kinds-several-cultures-with-full-presence.md (found by lane109).
