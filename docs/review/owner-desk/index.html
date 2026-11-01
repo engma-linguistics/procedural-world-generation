@@ -73,61 +73,25 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <p class="lede">Good morning, Daniel. The cultures proposal you asked for is ready, just below: read it whenever, and we
   iterate. Overnight, dragons round 2, in-fighting for every people, the D31 check and the L8 refine all merged. One new physics
   call: the wild herds (D34). <b>v0.1.0 is tagged</b>: no hard failures in 42 test worlds, and fresh showcases to look at.</p>
-  <nav class="toc"><a href="#l8">L8 world</a><a href="#l8learn">L8 lessons</a><a href="#v1">v0.1.0 tagged</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
+  <nav class="toc"><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
 </header>
 
-<h2 id="l8">The L8 world</h2>
+<h2 id="l8">Your 1 Gyr L8 world</h2>
 <div class="card" id="l8card">
-<p><b>Ready to open.</b> <a href="http://localhost:8765/viewer/?world=a16f5a.json">L8 world a16f5a</a> (655,000 cells of ~30 km,
-seed 11) · <a href="http://localhost:8765/viewer/?run=2c0c5d">its run 2c0c5d</a> · compare with the
-<a href="http://localhost:8765/viewer/?world=2a7385.json">L7 seed-11 world 2a7385</a>. Four regional zooms and 75 highlights are in it.</p>
-<p><b>What changed from the plan:</b> it's a 100 Myr world, not 1 Gyr. The last 10 Myr, where climate is redone every 0.5 Myr, cost 90 of the
-132 minutes. 1 Gyr would have run past your 8 hours. So read it as a resolution demo: same seed as L7, but different continents.</p>
-<p><b>What L8 buys:</b> far more small water. Lakes go from 44 cells to 1,913. Big rivers are 3x longer in total (107,000 km against 35,000).
-Coastline is 30% longer, with 50 small islands against 7. The finer grid makes small basins and pits that L7 smooths away.
-It's also cooler (13 °C mean against 19.5) and lower (highest peak 3,250 m against 5,730), but that's mostly its young age, not the grid.</p>
-<p><b>Viewer:</b> it doesn't chug. The globe holds 60 fps while turning. It's on screen in ~5 s (L7: 1.6 s), and a layer switch takes about
-0.1 s. Switching to the flat map or relief takes ~1.2 s. Drawing only the visible half would gain nothing: the GPU is ~0.5 ms a frame,
-and the real costs were mesh building and the flat map, both fixed last night. L8 is about as big as one file can get in Chrome (440 of ~536 M
-characters), so L9 would need the binary layers ticket.</p>
-<p><b>Cost:</b> 132 min to simulate, then 14 min to slice and 39 min for a 60 kyr ice-age pass. Peak memory 15–18 GB. The make estimates were ~5x low (now a ticket).</p>
-<p><b>Peoples on it:</b> <a href="http://localhost:8765/viewer/?run=1294d0&amp;layer=peoples">run 1294d0</a> (D&amp;D tree, one try, 65 min,
-much faster than the 4–5 h guess). It ran on the peoples code from before D20 (D27 below), so it's the old human-heavy mix. Humans
-hold 110 Mkm², and their farmer, herder and nomad groups lie over the same land again (the stacking that D20 removes). Halflings 46,
-dragonborn 34, hobgoblins 19, orcs 14, tabaxi and kenku 13, kobolds 9, elves and gnomes 8. The server answers for it, but I haven't
-opened it in a browser at L8 yet. <b>On the D20 code</b> (<a href="http://localhost:8765/viewer/?run=b9edf5&amp;layer=peoples">run b9edf5</a>, 46 min): a very different world. Hobgoblins
-lead with 49 Mkm². Humans and their groups (nomads 32, plain humans 28, farmers 20, herders 16) total about 96, against about 410 on the old
-code. Orcs have 28, bugbears 21, half-orcs and steppe orcs 20 each, lizardfolk 19, hill giants 16, halflings and kenku 13. Kobolds are down to
-4.6. One try on one world, so it's a taste, not a verdict. It shows goblinoids filling what humans used to hold, which feeds D27's questions. For comparison, the L7 peoples are
-<a href="http://localhost:8765/viewer/?run=57b95b&amp;layer=peoples">run 57b95b</a>.
-Notes: <code>docs/review/l8-world/notes.md</code>.</p>
+<p><b>Ready to open:</b> <a href="http://localhost:8765/viewer/?world=0af5ae.json">world 0af5ae</a>. It is seed 11 at 655,000 cells of about 28 km, finished at the latest
+interglacial (sea level −79 m). Also: the plain last moment <a href="http://localhost:8765/viewer/?world=928016.json">928016</a>, <a href="http://localhost:8765/viewer/?run=6a6fd6">run 6a6fd6</a>
+and its 300 kyr ice-age pass <a href="http://localhost:8765/viewer/?run=7d803e">7d803e</a>. It stayed on its 8 cores and nothing crashed.</p>
+<p><b>What a billion years fixed:</b> the 100 Myr L8 world's oddities were its youth. Peaks reach 6,000 m (were 3,250). The biggest
+river carries 18,300 m³/s to the sea along 239 cells (it was 6,300, ending in an inland pocket). Land draining inland fell from 28% to
+about 5%. One continent, Hizam, holds 87% of the land; that's this seed.</p>
+<p><b>What it didn't fix:</b> the continental shelf. It covers 0.6–1.2% of the ocean, against Earth's 6–7% (and 4.2% on the young
+world). So the missing shelf and the cliff at the continent edge are the model's, not the run's age, which is exactly what lane
+100c is working on. Mid-sized islands are still short: 14, against about 44 for Earth on this grid.</p>
+<p><b>Cost:</b> 5 h 26 min to simulate (about 5.7 h per Gyr on 8 cores), then 10 min to slice, 1 h 48 min for the ice-age pass and
+9 min to finish: 7.5 hours in all. Peak memory 30 GB, at the final write. No peoples run on it yet; say if you want one.
+Notes: <code>docs/review/l8-world/gyr-notes.md</code>. The 100 Myr world <a href="http://localhost:8765/viewer/?world=a16f5a.json">a16f5a</a> and its refined L7 → L8 cousin
+<a href="http://localhost:8765/viewer/?world=fb5e11.json">fb5e11</a> are still there.</p>
 </div>
-
-<h2 id="l8learn">What the L8 world taught us (lane 96)</h2>
-<p class="sub">A read-only look around world a16f5a, compared with the L7 world and with Earth's own relief resampled to the same grids. Full write-up:
-<code>docs/review/l8-world/explore.md</code>.</p>
-<div class="shots">
-<figure><img src="l8/01_spot_flooded_platform_sat.jpg" alt="Daniel's spot: a shallow sea over continental crust, true colour"><figcaption>Your spot: a flooded part of a continent.</figcaption></figure>
-<figure><img src="l8/02_spot_step_relief.jpg" alt="The same spot in 3D relief, showing a one-cell cliff from shelf to abyss"><figcaption>Its edge in 3D relief: a one-cell, 4 km cliff.</figcaption></figure>
-<figure><img src="l8/05_largest_river_ends_inland.jpg" alt="A young rift sea and the biggest river ending in an inland below-sea-level pocket"><figcaption>A young Red Sea-like rift, and the biggest river ending in an inland "sea".</figcaption></figure>
-<figure><img src="l8/04_giant_salt_lake_sat.jpg" alt="A giant salt lake ringed by volcanoes"><figcaption>A giant salt lake (1.15 Mkm², ringed by volcanoes).</figcaption></figure>
-</div>
-<ul>
-<li><b>Your spot</b> is a shallow sea flooding part of a whole continent, like Hudson Bay or the old American inland seaway. It isn't a sunken
-plateau like Zealandia. The sea rose 312 m over this run, because young ocean floor rides high after a supercontinent breaks up. That part
-is plausible and looks good.</li>
-<li><b>The sharp edge is a real gap, and it's in L7 too.</b> The continent ends in one cell: 26 km of crust at −441 m, then ocean floor at −4,200 m.
-On Earth, resampled to the same grid, 18% of the ocean lies between 200 and 3,000 m deep (the slope and rise). Here it's 5%, and the L7 world has 11%.
-The coast is 90 km from 3 km depth here, against 360 km on Earth. Stretched crust that thins over 50–200 km, and a mud apron at the foot
-of the slope, are missing (PW-950).</li>
-<li><b>A bug that L8 exposed: inland pits count as sea.</b> Ground below 0 m counts as ocean even 800 km inland, so the world's
-"largest river" ends in a puddle, and so does its highlight and regional zoom. L8 has 225 such pockets. The L7 world has 41, drawn as deep pits of ocean (PW-1229). <b>Fixed and merged:</b> by my count, 142 of a16f5a's pockets become land, and 17 of the 21 big rivers that ended in one, including the largest, now run on. This world and its zoom get rebuilt with the showcases.</li>
-<li><b>Good at L8:</b> rivers branch like real drainage, 9.5% of land drains inland (Earth ~18%, L7 2%), small islands match Earth's count, and
-the coasts are ragged with mangroves and tidal flats.</li>
-<li><b>Off:</b> the land rose with the sea, so 6% of land is within 10 m of sea level (Earth 1.4%) (PW-1230). Mid-sized islands
-(10,000–100,000 km²) number 11 here against Earth's 44 (PW-1231). 3D relief draws a fake diamond lattice on shallow seas (PW-1228).
-The "40 times L7's lakes" figure is mostly one giant salt lake.</li>
-</ul>
 
 <h2 id="v1">v0.1.0 is tagged</h2>
 <p class="sub">The v1 milestone is done (local tag, not pushed). No hard failures in 42 test worlds, and every v1 ticket is closed.

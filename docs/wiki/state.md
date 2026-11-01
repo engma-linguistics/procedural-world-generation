@@ -13,9 +13,9 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Lane 105: L8 1 Gyr, seed 11, 8 threads, frozen worktree; notes in `docs/review/l8-world/gyr-notes.md`.
-- Held on its branch: lane 100, continent margins round 1 (necking and continental rise, off by default; branch
-  worktree-agent-a5fd6321b3834f864). Next round: the shelf's sediment front gets a real slope, then an 18x2 judge.
+- L8 1 Gyr world done (lane 105): run 6a6fd6, finished world 0af5ae, slice 928016, time zoom 7d803e; `docs/review/l8-world/gyr-notes.md`. Shelf still 0.6-1.2% of ocean.
+- Lane 100c running on branch worktree-agent-a5fd6321b3834f864: sea-floor sediment diffusion (Mitchell & Huthnance 2008)
+  on top of round 1's necking and rise (all off by default); L6 screens on seeds 1 and 3, then an 18x2 judge.
 - Waiting on Daniel (Owner's Desk): D34 wild herds 2-3x thin (lean B: check savanna growth first), D35 small items, D36 dragon
   kinds now 1-5 cultures (PW-1268, lean fold), and the proper-cultures proposal (`docs/review/cultures-proposal/`, 19 questions).
 - After those: the proposal's lanes (lects v0 and polities v0 in parallel, then names); refine refactor (shared terrain-detail
