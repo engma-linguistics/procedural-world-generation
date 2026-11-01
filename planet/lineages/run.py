@@ -36,6 +36,7 @@ def editor_schema() -> dict:
                      "megafauna_natural": SP.MEGAFAUNA_NATURAL_DEFAULT, "dragon_ages": DA.DEFAULT,
                      "dragon_generation": DA.GENERATION_DEFAULT, "dragon_km2": SP.DRAGON_KM2, "giant_km2": SP.GIANT_KM2,
                      "press_early": 1.0, "press_late": 1.0, "press_x": list(SP.PRESS_X), "rivals": 1.0, "rivals_x": list(SP.RIVALS_X),
+                     "dragon_abundance": 1.0, "abundance_x": list(SP.ABUNDANCE_X),
                      "game_share": 1.0, "game_share_x": list(SP.GAME_SHARE_X), "overkill": 0.6, "overkill_x": list(SP.OVERKILL_X),
                      "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL,
                      "surge_early": 1.0, "surge_late": 1.0, "raiders": 1.0, "war": 1.0,

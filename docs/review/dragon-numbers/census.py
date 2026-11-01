@@ -9,6 +9,8 @@ Run from the repository root (the code in the current directory is the code meas
   megafauna.SUITABLE), as if it held all of it: the most the land would carry before people.
 - the people per cell (all small folk), the biome tags, the land, the persecution `kill` per cell, and each kind's count over time.
 - `by_people`: the persecution's weight by people (people x means; the kill is KILL_Q x their sum).
+- (lane 103) `nopeople_country_uncapped`: the country count with each kind alone on its food (no cap shared between kinds), and `prey0`,
+  the prey with no people (t/km2 over a forager's reach), for the allometric expectation (Carbone & Gittleman 2002 at the prey).
 `tables.py` reads these. `run_all.sh` runs the six worlds.
 """
 import json
@@ -68,7 +70,10 @@ for k in fl:
     K = own.get(k)
     s = np.where(K >= EST, np.clip(K / CP.SUIT_K, 0.0, 1.0), 0.0) if K is not None else S[k]
     Pc[k] = np.where(s >= MG.SUITABLE, 1.0, 0.0)
-nopc, _ = census(Pc, False)
+nopc, bc = census(Pc, False)
+# (lane 103, the diagnosis) the same country, no people, without the food cap shared between kinds: each kind alone on its food
+z0 = np.zeros(h.grid.n)
+nat_c = np.array([np.where(Pc[k] >= EST, Pc[k], 0.0) * MG.local_density(h, k, z0, bc["prey"], bc["food"]) * area for k in fl], np.float32)
 people = (np.where(P >= EST, P, 0.0) * h.dens_cells() * small[:, None]).sum(0) * area  # (people per cell)
 bits = np.zeros(h.grid.n, np.uint16)
 for bi, tg in enumerate(g["BIOME_TAGS"]):
@@ -88,7 +93,9 @@ np.savez_compressed(outdir / f"{key}.census.npz", ids=np.array(ids), now=now, no
                     people=people.astype(np.float32), biome_bits=bits, biome_tags=np.array(g["BIOME_TAGS"]), land=land,
                     kill=np.asarray(MG.kill(h, P, land), np.float32), food=np.asarray(b_now["food"], np.float32),
                     food0=np.asarray(b0["food"], np.float32), sea_food=np.asarray(getattr(h, "sea_food", np.zeros(h.grid.n)), np.float32),
-                    cell_km2=np.array(area), lat=np.asarray(h.grid.lat, np.float32))
+                    cell_km2=np.array(area), lat=np.asarray(h.grid.lat, np.float32),
+                    nopeople_country_uncapped=nat_c, prey0=np.asarray(bc["prey"], np.float32), food_country=np.asarray(bc["food"], np.float32),
+                    eco_mass_kg=np.array(h.dragon_struct["eco_mass_kg"]), abundance=np.array(MG.abundance(h.tree)))
 json.dump({"world": world, "roll": int(roll), "by_people": by_people, "kill_w_sum": sum(r["kill_w"] for r in by_people.values()),
            "tracks": tracks, "count_now": {i: float(now[j].sum()) for j, i in enumerate(ids)},
            "count_nopeople": {i: float(nop[j].sum()) for j, i in enumerate(ids)},

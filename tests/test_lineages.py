@@ -2472,15 +2472,23 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     assert k0[h.grid.n // 2:].max() == 0 and k0[half].min() > 0
     h._ago_now = 0.0  # (the present: meta.era, renaissance)
     d = MG.local_density(h, w, k0)
-    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d > 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
+    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d >= 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
     h._ago_now = 10.0  # (the stone age)
     d10 = MG.local_density(h, w, k0)
     assert (d10[half] > 0.9 * h.dens_nat[w]).all() and (d10[half] > d[half]).all()
     v0, v9 = MG.vulnerability(0.0), MG.vulnerability(0.9)
     assert v0[0] == v9[0] == 1 and v0[2] < 0.02 < 0.5 < v9[2] and (v0 <= v9).all()  # (the adults' share of the kill rises with tech)
-    for e in (1e-4, 1e-3, 1e-2):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
+    for e in (1e-4, 1e-3):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
         assert MG.dragon_kept(h, e, 0.0) > MG.dragon_kept(h, e, 0.9) > 0
-    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) > 0
+    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) == 0
+    # local extirpation (PW-1246 B, lane 103): kept falls linearly with the births' rise F and is 0 once F >= BREED_X; KILL_Q is set so
+    # LOSS_KM2 farmers of MEANS_REF at tech level LOSS_LEV reach that point on the default schedule (the lions' 25 per km2, Riggio 2013; this tree runs the base schedule, a little more vulnerable)
+    from planet.lineages import dragon_ages as DA
+    e_loss = MG.KILL_Q * MG.LOSS_KM2 * MG.MEANS_REF
+    assert np.isclose(MG.births_rise(DA.DEFAULT, e_loss, MG.LOSS_LEV)[0], MG.BREED_X, rtol=1e-3)
+    assert MG.dragon_kept(h, 0.7 * e_loss, MG.LOSS_LEV) > 0 and MG.dragon_kept(h, 1.1 * e_loss, MG.LOSS_LEV) == 0
+    assert 0.2 < MG.dragon_kept(h, 0.5 * e_loss, MG.LOSS_LEV) < 0.7 and MG.dragon_kept(h, e_loss, 0.0) > 0.9
+    assert np.isclose(MG.guild_kept(h, np.array([0.0, 0.5, 2.0]) * e_loss, 1.0), [1.0, 0.5, 0.0]).all()
     h._ago_now = 0.0
     dh = MG.local_density(h, hi, k0)
     assert (dh[half] / h.dens_nat[hi] < 1).all() and (dh[half] > 0).all()
@@ -2494,6 +2502,12 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     h5._ago_now = h._ago_now = 10.0  # (the stone age: the early setting, gentler)
     assert (MG.local_density(h5, w, k0)[half] > MG.local_density(h, w, k0)[half]).all()
     h._ago_now = 0.0
+    # the world-builder's dial (lane 103): meta.dragon_abundance multiplies every dragon kind's density, not the giants'
+    t6 = SP.parse({**raw, "meta": {**raw["meta"], "dragon_abundance": 4.0}})
+    assert t6.dragon_abundance == 4.0 and SP.parse(SP.to_raw(t6)).dragon_abundance == 4.0 and SP.parse(raw).dragon_abundance == 1.0
+    h6 = H.History(t6, ps, 1)
+    h6._ago_now = 0.0
+    assert np.allclose(MG.local_density(h6, w, k0), 4.0 * d) and np.allclose(MG.local_density(h6, hi, k0), dh)
     # the nominal density (meta.giant_km2) no longer sets any density
     t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
     h4 = H.History(t4, ps, 1)

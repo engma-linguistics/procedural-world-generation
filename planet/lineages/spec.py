@@ -199,6 +199,9 @@ OVERKILL_X = (0.0, 0.1, 0.23, 0.46, 0.6)  # meta.overkill: the share of the wild
 PRESS_X = (0.25, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.press_early / meta.press_late (owner 10-30, D14: the viewer's "how hard peoples
 # press dragons and giants", one setting for the early eras and one for the late): multipliers on the peoples' kill (history.megafauna.KILL_Q);
 # early holds at the stone age (tech level 0), late at the top (tech level 1), the eras between blend them by their tech level. Default 1, 1
+ABUNDANCE_X = (0.25, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.dragon_abundance (lane 103, owner 10-31: "a lever to pull to make 'em more or
+# less numerous for a run"): x every dragon kind's density (history.megafauna.abundance), after the food and the persecution. A world-builder's
+# choice, not physics. Default 1: the model's ecology
 FORAGER_KM2 = 0.1  # default meta.forager_km2: human foragers per km2, the giants' natural-density baseline (scaled by mass^-0.75). No
 # located source (PW-976): Hamilton et al. 2007's fit implies 0.03-0.09 for groups of 25-1,000, so 0.1 is the top of that; owner 10-28
 # made it a setting (option C) until Binford 2001 can be checked
@@ -580,6 +583,7 @@ class Tree:
     press_early: float = 1.0  # how hard peoples press dragons and giants in the early eras: x the kill at tech level 0 (PRESS_X, owner D14)
     press_late: float = 1.0  # ... and in the late eras: x the kill at tech level 1 (blended by tech level between)
     rivals: float = 1.0  # x the rival predator guild's share of the dragons' food (RIVALS_X)
+    dragon_abundance: float = 1.0  # x every dragon kind's density, a world-builder's dial, not physics (ABUNDANCE_X; history.megafauna.abundance)
     game_share: float = 1.0  # the share of the peoples' wild game taken from the dragons' prey (GAME_SHARE_X)
     overkill: float = 0.6  # the share of wild big herbivores lost where peoples press the land fully (OVERKILL_X; prey.OVERKILL)
     megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: food | prey | mesotherm | mammal (PW-957, PW-966, PW-990)
@@ -1166,7 +1170,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.giant_km2 = float(meta.get("giant_km2", GIANT_KM2))
     if t.giant_km2 <= 0:
         raise ValueError("meta.giant_km2 must be > 0")
-    for k, d in (("press_early", 1.0), ("press_late", 1.0), ("rivals", 1.0), ("game_share", 1.0), ("overkill", 0.6)):
+    for k, d in (("press_early", 1.0), ("press_late", 1.0), ("rivals", 1.0), ("game_share", 1.0), ("overkill", 0.6), ("dragon_abundance", 1.0)):
         setattr(t, k, float(meta.get(k, d)))
         if getattr(t, k) < 0:
             raise ValueError(f"meta.{k} must be >= 0")
@@ -1286,7 +1290,7 @@ def to_raw(t: Tree) -> dict:
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "surge_early": t.surge_early, "surge_late": t.surge_late, "raiders": t.raiders, "war": t.war,
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
-                     "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
+                     "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "wave_kyr": t.wave_kyr,
                      "portal_open_kyr": t.portal_open_kyr, "portal_drift_kmkyr": t.portal_drift_kmkyr, "band_rounds": t.band_rounds,

@@ -23,6 +23,12 @@ KINDS = ("red", "blue", "green", "black", "white", "gold", "silver", "bronze", "
 # deaths a year per tiger in India: 378 deaths in 2020-24 (Rajya Sabha reply, 1 Aug 2025; secondary) over 3,682 tigers (All-India
 # estimate 2022; secondary): ~0.021. The stated estimate of the dragons' toll applies it to the dragons in peopled country.
 TIGER_DEATHS_PER_TIGER = (378 / 5) / 3682.0
+# (lane 103) the allometric expectations, at the census's ecological mass M (kg): Carbone & Gittleman 2002 (Science 295:2273, p. 2274; on
+# file): carnivores per 10,000 kg of prey = 89.1 M^-1.05, read at the no-people prey over the kind's country (`prey0`, t/km2); and
+# Damuth's line on Marshall et al. 2021's mesotherm intercept (Science 372:284, Table 1, p. 284; on file), 10^2.99 (1000 M)^-0.75 per km2
+# x the age schedule's all-ages factor, uniform: the model's own "mesotherm" setting (history.megafauna.natural_coef)
+def carbone_km2_per_t(m_kg):
+    return 89.1 * m_kg ** -1.05 / 10.0
 
 
 def med(xs):
@@ -52,6 +58,9 @@ def world_stats(npz, js):
     people = z["people"].astype(float)
     biome = biome_of(z["biome_bits"].astype(np.int64), [str(t) for t in z["biome_tags"]])
     kinds = {}
+    unc = z["nopeople_country_uncapped"][keep].astype(float) if "nopeople_country_uncapped" in z else None
+    prey0 = z["prey0"].astype(float) if "prey0" in z else None
+    m_eco = float(z["eco_mass_kg"]) if "eco_mass_kg" in z else None
     for j, lid in enumerate(ids):
         k = lid.removesuffix("_dragon")
         country = cty[j] > 0
@@ -66,7 +75,11 @@ def world_stats(npz, js):
                     "held_peopled": float((held & pc).sum() / pc.sum()) if pc.any() else None,
                     "held_empty": float((held & ec).sum() / ec.sum()) if ec.any() else None,
                     "peopled_share": float(pc.sum() / max(country.sum(), 1)), "kept10_share": float(kept.sum() / max(country.sum(), 1)),
-                    "region_now": n / land_km2 * REGION_KM2, "region_before": nc / land_km2 * REGION_KM2}
+                    "region_now": n / land_km2 * REGION_KM2, "region_before": nc / land_km2 * REGION_KM2,
+                    "per10k_held": n / float(held.sum() * a) * 1e4 if held.any() else None,
+                    "per10k_uncapped": float(unc[j].sum()) / ckm2 * 1e4 if unc is not None and ckm2 else None,
+                    "per10k_carbone": float(carbone_km2_per_t(m_eco) * prey0[country].mean() * 1e4) if prey0 is not None and country.any() else None,
+                    "prey_country": float(prey0[country].mean()) if prey0 is not None and country.any() else None}
     tot_now, tot_c = now.sum(0), cty.sum(0)
     by_biome = {}
     for bi, bn in enumerate(BIOMES):
@@ -140,6 +153,18 @@ for k in KINDS:
                  f"{fmt(med([r['region_before'] for r in rows])[0])} -> {fmt(med([r['region_now'] for r in rows])[0])} | "
                  f"{fmt(med([r['held_share'] for r in rows])[0], 2)} ({fmt(med([r['held_peopled'] for r in rows])[0], 2)} / {fmt(med([r['held_empty'] for r in rows])[0], 2)}) | "
                  f"{fmt(med([r['peopled_share'] for r in rows])[0], 2)} | {fmt(med([r['kept10_share'] for r in rows])[0], 2)} |")
+if any(w["kinds"][k].get("per10k_carbone") is not None for w in W.values() for k in w["kinds"]):
+    lines += ["", "Against the allometric expectation (lane 103), per 100 km2 of the kind's country, medians over the worlds: the mean prey there "
+              "with no people (t/km2); Carbone & Gittleman 2002's carnivores per prey at that prey; the model with each kind alone on its food "
+              "(no cap shared with other kinds); the model before people (the kinds sharing the food); today over its whole country; today "
+              "where it still lives.", "",
+              "| kind | prey, t/km2 | Carbone at that prey | model, alone on its food | model before people | today, whole country | today, where it lives |",
+              "|---|---|---|---|---|---|---|"]
+    for k in KINDS:
+        rows = [w["kinds"][k] for w in W.values() if k in w["kinds"]]
+        if rows:
+            g = lambda key, f=100.0: fmt(med([r[key] / f if r.get(key) is not None else None for r in rows])[0])
+            lines.append(f"| {k} | {g('prey_country', 1.0)} | {g('per10k_carbone')} | {g('per10k_uncapped')} | {g('per10k_before')} | {g('per10k_now')} | {g('per10k_held')} |")
 lines += ["", "All dragons by biome (per 10,000 km2 of that biome's land):", "", "| biome | share of land | before people | today |", "|---|---|---|---|"]
 for bn in BIOMES:
     rows = [w["biomes"][bn] for w in W.values() if bn in w["biomes"]]
@@ -211,18 +236,28 @@ an = [("lions, Serengeti (call-in survey)", 14.36, "lion"), ("lions, Kenyan comm
 dn = []
 for k in ks:
     rows = [w["kinds"][k] for w in W.values() if k in w["kinds"]]
-    dn.append((f"{k} dragons", med([r["per10k_before"] for r in rows])[0] / 100, med([r["per10k_now"] for r in rows])[0] / 100))
-fig, ax = plt.subplots(figsize=(8, 6.5))
+    q = lambda key: (lambda v: v / 100 if v is not None else None)(med([r.get(key) for r in rows])[0])
+    dn.append((f"{k} dragons", q("per10k_before"), q("per10k_now"), q("per10k_held"), q("per10k_carbone")))
+for bn in ("wetland", "grassland", "forest"):  # (lane 103: every kind together, the fair match to one big cat: the kinds share one apex share)
+    rows = [w["biomes"][bn] for w in W.values() if bn in w["biomes"]]
+    if rows:
+        dn.append((f"all dragons, {bn}", med([r["per10k_before"] for r in rows])[0] / 100, med([r["per10k_now"] for r in rows])[0] / 100,
+                   None, None))
+fig, ax = plt.subplots(figsize=(8, 7.2))
 labels = [a[0] for a in an] + [d[0] for d in dn]
 yy = np.arange(len(labels))
 for i, (lab, v, kind) in enumerate(an):
     ax.plot([v], [i], "o", ms=8, color="#1baf7a" if kind == "lion" else "#6250d6", mec=SURF, mew=2)
     ax.text(v * 1.3, i, f"{v:g}", va="center", fontsize=8, color=MUTED)
-for j, (lab, before, now_) in enumerate(dn):
+for j, (lab, before, now_, held, carb) in enumerate(dn):
     i = len(an) + j
     ax.plot([before, now_], [i, i], color="#c3c2b7", lw=2, zorder=1)
+    if carb is not None:
+        ax.plot([carb], [i], "D", ms=6, color="#8a8984", mec=SURF, mew=1, label="expected from prey (Carbone & Gittleman 2002)" if j == 0 else None)
     ax.plot([before], [i], "o", ms=8, color=BLUE, mec=SURF, mew=2, label="dragons before people" if j == 0 else None)
-    ax.plot([now_], [i], "o", ms=8, color=ORANGE, mec=SURF, mew=2, label="dragons today" if j == 0 else None)
+    ax.plot([now_], [i], "o", ms=8, color=ORANGE, mec=SURF, mew=2, label="dragons today, over their whole country" if j == 0 else None)
+    if held is not None:
+        ax.plot([held], [i], "o", ms=8, mfc="none", mec=ORANGE, mew=1.6, label="dragons today, where they still live" if j == 0 else None)
 ax.plot([], [], "o", color="#1baf7a", label="lions (Africa)")
 ax.plot([], [], "o", color="#6250d6", label="tigers (Asia)")
 ax.set_xscale("log")
