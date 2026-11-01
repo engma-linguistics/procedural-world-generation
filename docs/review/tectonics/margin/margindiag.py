@@ -79,6 +79,21 @@ def margin(sim):
         pt.append(round(float(np.median(sim.w_thick[m])), 1) if m.any() else None)
         pe.append(int(np.median(e[m])) if m.any() else None)
     out["prof_t"], out["prof_e"] = pt, pe
+    # the same profile on rifted margins only: boundary cells whose continental side rifted in the last 150 Myr
+    # and hasn't been folded since (passive margins young enough to show their rift)
+    rec = sim.w_rec
+    young = cont & (sim.t - rec[:, record.T_RIFT].astype(float) < 150) & (rec[:, record.T_FOLD] <= rec[:, record.T_RIFT])
+    near_young = any_nb(young & edge_c)
+    rt, re_ = [], []
+    for k in (2, 1, 0):
+        m = (hc == k) & young
+        rt.append(round(float(np.median(sim.w_thick[m])), 1) if m.any() else None)
+        re_.append(int(np.median(e[m])) if m.any() else None)
+    m = (ho == 0) & near_young
+    rt.append(round(float(np.median(sim.w_thick[m])), 1) if m.any() else None)
+    re_.append(int(np.median(e[m])) if m.any() else None)
+    out["rift_t"], out["rift_e"] = rt, re_
+    out["rift_edge_share"] = round(100 * float((young & edge_c).sum() / max(edge_c.sum(), 1)), 1)
     st = sim.w_rec[edge_c, record.RIFT_STRAIN].astype(float)
     out["edge_strain"] = round(float(np.median(np.maximum(st, 0))), 3) if len(st) else 0.0
     out["cont"] = round(100 * float(cont.mean()), 2)
