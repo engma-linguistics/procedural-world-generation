@@ -1,4 +1,5 @@
 ---
+id: PW-1258
 title: "In-fighting for every people: its size and its state rule are judgements, parked for the war and polities work"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane101
 blocked_by: []
 relates: [PW-1240, PW-1172, PW-1241, PW-661]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-leader/data.json]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -34,4 +37,5 @@ until war and polities are in, so these are parked for that work, not for now:
 - [ ] revisit with the war and polities work (PW-1172, PW-661)
 
 ## Updates
+- 2026-11-01: Created from inbox draft draft-in-fighting-judgements-for-polities.md (found by lane101).
 - 2026-10-31: Created by lane 101.

@@ -1,8 +1,10 @@
 ---
+id: PW-1254
 title: "Cultures round 2: owner check of the era time-apart table, the cohesion values and merging side by side"
 type: task
 status: needs-decision
 parent: PW-670
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: med
@@ -10,6 +12,8 @@ found_by: lane108
 blocked_by: []
 relates: [PW-670, PW-1251, PW-676]
 refs: [planet/lineages/cultures.py, planet/lineages/samples/dnd.toml, docs/review/emergent-cultures/design.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -30,3 +34,6 @@ In plain words: three of the new numbers are judgements. On your dnd runs they g
    - A (lean): keep. This is what holds the count down.
    - B: 2,000 years, which gives more cultures (humans would be in the 40s).
 - [ ] owner picks for 1, 2 and 3
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-cultures-round2-owner-check.md (found by lane108).

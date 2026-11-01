@@ -1,4 +1,5 @@
 ---
+id: PW-1260
 title: "Seven Meals on world af2677: humans 24% -> 29% after the inland pits (a real shift, not a re-rolled draw); the rest of PW-1239 was chance"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane101
 blocked_by: []
 relates: [PW-1239, PW-1229]
 refs: [docs/review/peoples-leader/data.json, tools/peoples_robust.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -30,4 +33,5 @@ Worth a look only if the Seven Meals half-orcs (who already die out now and then
 - [ ] if wanted: the inland-pit cells of af2677 that are land now, and who holds them in Seven Meals
 
 ## Updates
+- 2026-11-01: Created from inbox draft draft-seven-meals-af2677-humans-up-after-pits.md (found by lane101).
 - 2026-10-31: Created by lane 101 (PW-1239's check; PW-1239 can close on it).

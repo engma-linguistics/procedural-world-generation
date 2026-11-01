@@ -1,8 +1,10 @@
 ---
+id: PW-1253
 title: "Cultures round 2: re-cut the stored demes of the dnd runs so the viewer shows the reach-scaled demes"
 type: task
 status: todo
 parent: PW-670
+milestone: null
 subsystem: timezoom
 effort: xs
 impact: med
@@ -10,6 +12,8 @@ found_by: lane108
 blocked_by: []
 relates: [PW-670, PW-981, PW-1251]
 refs: [planet/lineages/demes.py, "runs cc22df 622c00 (protected)"]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -22,3 +26,6 @@ Fix: on main after the merge, run `uv run python -m planet demes cc22df 622c00` 
 `planet cultures cc22df 622c00` to store cultures.json. This rewrites demes.json, layers/demes.bin and meta.demes in the
 protected runs, so it needs the coordinator's say. Settlements do not read the demes and are unaffected.
 - [ ] demes re-cut on the dnd runs (or left as they are, with a note)
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-cultures-recut-demes-on-owner-runs.md (found by lane108).

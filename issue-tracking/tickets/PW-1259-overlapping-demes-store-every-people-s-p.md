@@ -1,8 +1,10 @@
 ---
+id: PW-1259
 title: "Overlapping demes: store every people's presence per frame, cut demes from it, show overlaps on the map"
 type: task
 status: todo
 parent: PW-670
+milestone: null
 subsystem: timezoom
 effort: l
 impact: med
@@ -10,6 +12,8 @@ found_by: lane108
 blocked_by: []
 relates: [PW-981, PW-670, PW-924, PW-703]
 refs: [planet/lineages/demes.py, planet/lineages/compose.py, planet/lineages/output.py, planet/lineages/cultures.py, viewer/lineages.html, "runs cc22df 622c00"]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -47,3 +51,6 @@ Plan:
 - [ ] presence table in the history output, size measured on an L6 and an L7 run
 - [ ] demes cut from it, contacts by co-presence
 - [ ] per-people deme layer and the viewer picker
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-megafauna-underseen-in-deme-frames.md (found by lane108).

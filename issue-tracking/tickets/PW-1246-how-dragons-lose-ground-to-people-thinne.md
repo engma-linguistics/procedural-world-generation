@@ -2,7 +2,7 @@
 id: PW-1246
 title: "How dragons lose ground to people: thinned on the farmland they keep, or cleared from it like lions and tigers"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1232, PW-1221, PW-1068]
 refs: [docs/review/dragon-numbers/report.md, planet/lineages/history/megafauna.py, docs/review/dragon-numbers/census.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Description
@@ -50,5 +50,6 @@ Lean: A for now, and B if the viewer's dragon maps look too evenly smeared over 
 analogues suggest. B changes where the dragons are, not how many there are, and it needs a threshold judgement from the owner.
 
 ## Updates
+- 2026-11-01: Status needs-decision -> done. Lane 103 merged: option B (local extirpation; kill rate from Riggio 2013's ~25/km2 lion line, KILL_Q 0.000185), meta.dragon_abundance dial. Dragons x1.3. Not a mortality problem (all ages counted). Herds 2-3x thin vs Coe 1976: PW-1261.
 - 2026-10-31: Owner 10-31: inclined to B and/or C; wants more dragons and a per-run abundance lever; questions the KILL_Q anchor. Lane 103, one round.
 - 2026-10-31: Created from inbox draft draft-dragon-range-loss-to-people.md (found by lane99).

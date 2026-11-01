@@ -1,4 +1,5 @@
 ---
+id: PW-1257
 title: "Seven Meals half-orcs are never founded on af2677 in 3 of 5 tries: a hybrid people needs its parents to meet 10 kyr ago"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane101
 blocked_by: []
 relates: [PW-1239, PW-1240, PW-752]
 refs: [planet/lineages/history/origins.py, planet/lineages/samples/seven_meals.toml, docs/review/peoples-leader/data.json]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -27,4 +30,5 @@ nearest (as a split with no room founds at the nearest country it can live in, `
 - [ ] the suite: no "never founded" half-orcs in Seven Meals
 
 ## Updates
+- 2026-11-01: Created from inbox draft draft-half-orcs-never-founded-when-parents-do-not-meet.md (found by lane101).
 - 2026-10-31: Created by lane 101.
