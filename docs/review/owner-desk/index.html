@@ -72,7 +72,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <h1>Owner's Desk</h1>
   <p class="lede">Good morning, Daniel. The cultures proposal you asked for is ready, just below: read it whenever, and we
   iterate. Overnight, dragons round 2, in-fighting for every people, the D31 check and the L8 refine all merged. One new physics
-  call: the wild herds (D34). The last v0.1.0 tally is still running.</p>
+  call: the wild herds (D34). The final v0.1.0 tally came back clean (no hard failures in 42 worlds); only the showcase rebuild stands between us and the tag.</p>
   <nav class="toc"><a href="#l8">L8 world</a><a href="#l8learn">L8 lessons</a><a href="#v1">v0.1.0</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
 </header>
 
@@ -138,10 +138,15 @@ Peoples ship as a preview. Plan: <code>docs/review/v1-cut/plan.md</code>.</p>
 <tr><td>Docs: star section, overview section 3 regenerated, 2.6 rewritten (PW-814, PW-816)</td><td>Merged, 858 tests pass</td></tr>
 <tr><td>Release checks (PW-825): L7 Earth check (71% climate-group agreement, global 13.9 °C and 996 mm against 14.0 and 983 observed);
 scorecard on 6 seeds (71%); the L7-drier pairs (L7 only ~2 points drier now)</td><td>Done, all as expected</td></tr>
-<tr><td>Hard-bar tally: 36 L6 + 6 L7 draws (cause found). Frozen over 0, boiled 0, ocean loss 0, <b>CO2 crash 1</b> (L6). Soft pass 81% at L6 (29 of 36), 5 of 6 at L7</td><td><b>Clear under your D32 B</b> (crash = CO2 below where plants can live; the worst draw is 85 ppm). Lane 102 is confirming on the final code</td></tr>
-<tr><td>Showcases rebuilt on final code, full test suite, state page, close PW-244 and PW-1119, tag v0.1.0</td><td>After the checks</td></tr>
+<tr><td>Final tally on the final code (lane 102): 42 test worlds. Frozen over 0, boiled 0, ocean loss 0, CO2 crash <b>0</b> under your
+D32 B (the lowest world reaches 83 ppm, against a plant limit near 21 ppm). Soft pass 29 of 36 at L6 (81%), 5 of 6 at L7. The "drier
+after the inland-pits fix" worry was six unlucky test worlds: 36 paired worlds show no shift. Earth check: climate groups agree 70%.
+Glacial maximum's 25% of land is USGS's figure for Earth's last one.</td><td><b>Done, all hard bars clear</b></td></tr>
+<tr><td>Fresh showcases on the final code (lane 110): the six recipes at L7, their worlds and highlight zooms, dnd and Seven Meals
+peoples runs (so overlapping demes and the Cultures tab work on them), one glacial time zoom</td><td>Running, a few hours</td></tr>
+<tr><td>State page, close PW-244, tag <code>v0.1.0</code></td><td>Straight after the showcases</td></tr>
 </table></div>
-<p>Report: <code>docs/review/v1-cut/checks.md</code>. Everything passed except one world in 42, so the tag waits on the plant fix (lane 95). If it fails, the crash goes to v2 and we tag.</p>
+<p>Report: <code>docs/review/v1-cut/final-tally.md</code>. Nothing is left that blocks the tag except building the showcases.</p>
 
 <h2 id="why">Why humans hold two thirds, and why there are no elf continents</h2>
 <p class="sub">Lane 84, measured by switching one thing off at a time (D&amp;D preset, seeds 7, 10, 13; humans at 67%). Report:
@@ -228,7 +233,7 @@ isolation. This sits between A and B.</li></ol>
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>102 · final tally</td><td>Re-running all 42 test worlds on the final physics code (plant fix plus inland pits), counting crashes under each D32 option, so your answer can go straight to the tag. It also settles whether the inland-pits fix really made worlds drier.</td></tr>
+<tr><td>110 · showcases</td><td>The six showcase worlds rebuilt on the final code for the v0.1.0 tag, with peoples runs and highlight zooms.</td></tr>
 <tr><td>100 · continent edge</td><td><b>Round 1 done, parked on its branch until after the tag.</b> Cause found: a continent splits into two rigid plates at once, so its edge barely stretches. Built crust that thins over about 200 km, plus a mud apron at the slope foot. Cliff coasts fell from 23% to 15% at L6 (Earth 3.5%) and from 20% to 9% at L7. What's left is the shelf's sediment front, which is still a one-cell wall. Next round: give that front a real slope, then judge on all draws (3 of 11 draws dipped to 69–85 ppm CO2, probably chance).</td></tr>
 <tr><td>105 · L8, 1 Gyr</td><td>Your ask: the same seed-11 L8 planet, but 1 billion years, held to 8 cores. Rough guess: 5–8 hours for the run plus the slice, by lane 86b's per-Myr speed. Notes as it goes in <code>docs/review/l8-world/gyr-notes.md</code>.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
