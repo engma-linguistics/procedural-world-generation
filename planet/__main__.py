@@ -353,7 +353,7 @@ def cmd_cultures(args):
     for ref in args.runs:
         d = S.find_run(ref)
         out = Path(args.out) / d.name if args.out else None
-        sm = CU.write(d, out_dir=out, report=out is None)
+        sm = CU.write(d, out_dir=out, report=out is None, redemes=args.redemes)
         print(ref, "\n".join(CU.lines_for_report(sm, json.loads(((out or d) / "cultures.json").read_text()))))
 
 
@@ -769,6 +769,7 @@ def main():
                                          "lived apart long enough, their inherited and drifting ways, merges; in place unless --out (needs demes)")
     cu.add_argument("runs", nargs="+", help="peoples run ids")
     cu.add_argument("--out", help="write cultures.json under this folder (one subfolder per run) and leave the runs untouched")
+    cu.add_argument("--redemes", action="store_true", help="with --out: cut the demes afresh in memory first (today's demes.py), writing demes.json under --out too")
     cu.set_defaults(func=cmd_cultures)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "

@@ -1,6 +1,7 @@
 """Emergent cultures (planet/lineages/cultures.py, PW-670): demes that adapt or live apart become cultures, inherit, drift, merge."""
 
 import numpy as np
+import pytest
 
 from planet.grid import shared_grid
 from planet.lineages import cultures as CU
@@ -27,6 +28,12 @@ def test_assign_founding_adapted_apart_and_brief_split():
     assert C[1].adapted == "desert" and C[1].parent == 0 and C[2].parent == 0
 
 
+@pytest.fixture
+def apart(monkeypatch):
+    """The two sisters never merge side by side (the drift tests follow both to the end)."""
+    monkeypatch.setattr(CU, "MERGE_CONTACT_KYR", 100.0)
+
+
 def _setup():
     g = shared_grid(5)
     lon = g.lon
@@ -35,9 +42,9 @@ def _setup():
     return g, west, east, D
 
 
-def _frames(g, west, east, D, known, coast_east, steps=(6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0), biome_east=4, cell_km2=1000.0):
+def _frames(g, west, east, D, known, coast_east, steps=(6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0), biome_east=4, cell_km2=1000.0, coh=None):
     C, dc = CU.assign(D)
-    dr = CU.Drift(C, dc, LINES, g.nbr_off, g.nbr_idx, cell_km2, known, BIOMES)
+    dr = CU.Drift(C, dc, LINES, g.nbr_off, g.nbr_idx, cell_km2, known, BIOMES, coh)
     for a in steps:
         dem = np.full(g.n, CU.NONE, np.uint16)
         dem[west] = 0
@@ -51,7 +58,7 @@ def _frames(g, west, east, D, known, coast_east, steps=(6.0, 5.0, 4.0, 3.0, 2.0,
     return C, dr
 
 
-def test_an_inland_daughter_loses_the_sea_craft_and_the_coast_keeps_it():
+def test_an_inland_daughter_loses_the_sea_craft_and_the_coast_keeps_it(apart):
     g, west, east, D = _setup()
     C, _ = _frames(g, west, east, D, {"folk": {"canoes": [50.0, "invented", None]}}, coast_east=np.zeros(g.n, bool))
     assert C[0].sea0 == 0.9 and C[0].sea > 0.85  # (the founders on the coast keep their boats)
@@ -64,7 +71,7 @@ def test_an_inland_daughter_loses_the_sea_craft_and_the_coast_keeps_it():
     assert x["traits"]["body"] == ["hardy"] and x["traits"]["cultural"] == ["seafaring"]
 
 
-def test_a_skill_is_gained_only_with_the_technology_for_it():
+def test_a_skill_is_gained_only_with_the_technology_for_it(apart):
     g, west, east, D = _setup()
     open_ = dict(coast_east=np.zeros(g.n, bool), biome_east=BIOMES.index("steppe"))
     C, _ = _frames(g, west, east, D, {"folk": {}}, **open_)
@@ -73,7 +80,16 @@ def test_a_skill_is_gained_only_with_the_technology_for_it():
     assert C[1].open > 0.7  # (herds known: it comes, slowly, TAU_GAIN 3 kyr)
 
 
-def test_sister_cultures_merge_only_under_a_state_that_can_hold_both():
+def test_sister_cultures_side_by_side_merge_sooner_the_more_cohesive_their_kind():
+    g, west, east, D = _setup()
+    C, dr = _frames(g, west, east, D, {"folk": {}}, coast_east=None)  # (touching from 5 kyr ago, no states)
+    assert [(m["why"], m["ago_kyr"]) for m in dr.merges] == [("contact", 5.0 - CU.MERGE_CONTACT_KYR)] and C[1].into == 0
+    C, dr = _frames(g, west, east, D, {"folk": {}}, coast_east=None, steps=(6.0, 5.0, 4.9, 4.8, 4.0), coh={"folk": 0.9})
+    assert dr.merges[0]["ago_kyr"] == 4.9  # (cohesion 0.9: after a tenth of MERGE_CONTACT_KYR)
+
+
+def test_sister_cultures_merge_under_a_state_that_can_hold_both(monkeypatch):
+    monkeypatch.setattr(CU, "MERGE_CONTACT_KYR", 100.0)  # (the state rule alone)
     g, west, east, D = _setup()
     C, dr = _frames(g, west, east, D, {"folk": {}}, coast_east=None)
     assert not dr.merges and C[1].end is None  # (no cities: they stay two)
@@ -82,7 +98,7 @@ def test_sister_cultures_merge_only_under_a_state_that_can_hold_both():
     assert (west.sum() + east.sum()) * 1000.0 / 1e6 > dict(CU.REACH_MKM2)["cities"] and not dr.merges
     C, dr = _frames(g, west, east, D, cities, coast_east=None, cell_km2=100.0)  # (0.66 Mkm2: one state can hold both)
     assert len(dr.merges) == 1 and C[1].end == "merged" and C[1].into == 0
-    assert dr.merges[0]["ago_kyr"] == 3.0 - CU.MERGE_KYR  # (after MERGE_KYR in contact under the reach)
+    assert dr.merges[0]["ago_kyr"] == 3.0 and dr.merges[0]["why"] == "states"  # (touching MERGE_KYR already: merged once cities came)
     assert C[0].end is None
 
 
@@ -93,15 +109,45 @@ def test_a_culture_whose_last_deme_fused_merged_into_the_other():
     assert C[1].end == "merged" and C[1].into == 0 and C[1].ended == 2.0
 
 
-def test_each_dragon_kind_is_one_culture_and_its_daughter_peoples_descend_from_it():
-    lines = [{"id": "red_dragon", "traits": ["flies", "hardy"]}, {"id": "storm_giant", "traits": ["swims"]}, LINES[0]]
-    tree = {"lineage": [{"id": "red_dragon", "megafauna": True}, {"id": "storm_giant", "megafauna": True}, {"id": "folk"}]}
-    whole = CU.one_culture(tree, lines)
-    assert whole == {"red_dragon"}  # (the giants fragment like peoples)
-    D = [dict(_deme(0, None, "first", 30.0), people="red_dragon"), dict(_deme(1, 0, "split_gap", 20.0), people="red_dragon"),
-         _deme(2, 0, "from_people", 10.0)]  # (a people born of a dragon population: kobolds, dragonborn)
-    C, dc = CU.assign(D, whole)
-    assert len(C) == 2 and dc.tolist() == [0, 0, 1] and C[0].people == "red_dragon" and C[1].people == "folk" and C[1].parent == 0
+def test_a_cohesive_kind_that_drops_out_of_sight_and_returns_is_one_culture_and_its_daughter_peoples_descend_from_it():
+    D = [dict(_deme(0, None, "first", 30.0, ended=25.0, end="extinct"), people="red_dragon"),
+         dict(_deme(1, None, "from_people", 20.0), people="red_dragon"),  # (its pockets back in the frames: a new first deme)
+         _deme(2, 1, "from_people", 10.0)]  # (a people born of a dragon population: kobolds, dragonborn)
+    C, dc = CU.assign(D, coh={"red_dragon": 0.9})
+    assert len(C) == 2 and dc.tolist() == [0, 0, 1] and C[0].people == "red_dragon" and C[1].parent == 0
+    C, dc = CU.assign(D)  # (no cohesion: two founding cultures)
+    assert dc.tolist() == [0, 1, 2]
+
+
+def test_cohesion_is_inherited_down_the_tree_and_old_runs_read_the_preset():
+    tree = {"lineage": [{"id": "draconic"}, {"id": "chromatic", "parents": ["draconic"], "cohesion": 0.9},
+                        {"id": "red", "parents": ["chromatic"]}, {"id": "dragonborn", "parents": ["draconic"]}]}
+    assert CU.cohesion(tree) == {"draconic": 0.0, "chromatic": 0.9, "red": 0.9, "dragonborn": 0.0}
+    import tomllib
+    from pathlib import Path
+    dnd = tomllib.loads((Path(CU.__file__).parent / "samples" / "dnd.toml").read_text())
+    old = {"lineage": [{k: v for k, v in r.items() if k != "cohesion"} for r in dnd["lineage"]]}
+    c = CU.cohesion(old, dnd["meta"]["name"])
+    assert c["red_dragon"] == c["gold_dragon"] == 0.9 and c["storm_giant"] == 0.5 and c["human"] == 0.0 and c["dragonborn"] == 0.0
+
+
+def test_time_apart_shortens_with_the_era():
+    known = {"folk": {"a": [9.0, "invented", None], "b": [4.0, "invented", None]}}
+    eras = CU.eras({"techs": [{"id": "a", "era": "stone age"}, {"id": "b", "era": "bronze age"}], "known": known})
+    assert CU.t_apart(eras["folk"], 10.0) == CU.T_APART_KYR["stone age"]
+    assert CU.t_apart(eras["folk"], 3.0) == CU.T_APART_KYR["bronze age"] < CU.T_APART_KYR["stone age"]
+    D = [_deme(0, None, "first", 20.0), _deme(1, 0, "crossing", 12.0, ended=11.5, end="fused", into=0),  # (0.5 kyr apart, stone age)
+         _deme(2, 0, "crossing", 3.0, ended=2.5, end="fused", into=0)]  # (0.5 kyr apart, bronze age: long enough now)
+    C, dc = CU.assign(D, eras)
+    assert dc.tolist() == [0, 0, 1] and C[1].how == "apart"
+
+
+def test_cohesion_pulls_a_culture_toward_its_kind(apart):
+    g, west, east, D = _setup()
+    known = {"folk": {"canoes": [50.0, "invented", None]}}
+    C, _ = _frames(g, west, east, D, known, coast_east=np.zeros(g.n, bool))
+    C2, _ = _frames(g, west, east, D, known, coast_east=np.zeros(g.n, bool), coh={"folk": 0.9})
+    assert C[1].sea < CU.LOST < 0.5 < C2[1].sea  # (inland, it keeps most of its craft when its kind holds together)
 
 
 def test_fliers_have_no_sea_craft():
