@@ -2,7 +2,7 @@
 id: PW-1232
 title: Dragons are about ten times more numerous on main than lane 90 measured (D20 and the dragon food chain combined)
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: highlights
@@ -35,4 +35,5 @@ first, then B. Needs the owner because it moves the dragons' headline number.
 - [ ] re-measure all of H1 and H2 (pressure-off and persecution-off arms) once settled
 
 ## Updates
+- 2026-10-31: Status needs-decision -> done. Lane 99 (merged 1296dd2e): cause is range, not persecution. D20's thinner peoples leave dragons 5.5x the cells; KILL_Q set from a stated density, not fitted, so left alone. The count is the model's answer. docs/review/dragon-numbers/report.md
 - 2026-10-31: Created from inbox draft draft-dragons-tenfold-after-d20.md (found by lane93).

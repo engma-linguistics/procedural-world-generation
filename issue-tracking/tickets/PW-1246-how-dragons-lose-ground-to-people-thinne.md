@@ -1,4 +1,5 @@
 ---
+id: PW-1246
 title: "How dragons lose ground to people: thinned on the farmland they keep, or cleared from it like lions and tigers"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane99
 blocked_by: []
 relates: [PW-1232, PW-1221, PW-1068]
 refs: [docs/review/dragon-numbers/report.md, planet/lineages/history/megafauna.py, docs/review/dragon-numbers/census.py]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -45,3 +48,6 @@ Options:
 
 Lean: A for now, and B if the viewer's dragon maps look too evenly smeared over farmland. The counts are already in the range the
 analogues suggest. B changes where the dragons are, not how many there are, and it needs a threshold judgement from the owner.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-dragon-range-loss-to-people.md (found by lane99).

@@ -1,4 +1,5 @@
 ---
+id: PW-1247
 title: "Dragons' sea food (D28 B): read Ryther 1969 itself, an areal sea-ice production, the peoples' fishing take, and a polar-bear check"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane99
 blocked_by: []
 relates: [PW-1221]
 refs: [planet/lineages/prey.py, planet/lineages/history/megafauna.py, docs/review/dragon-numbers/report.md]
+created: 2026-10-31
+updated: 2026-10-31
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Lane 99 added `prey.sea_npp` / `prey.sea_prey` and `megafauna.sea_food` (trait `
   2.36 per 1,000 km2, unverified) against the model's sea-hunter density per km2 of coastal sea, with the bear's yearly intake.
 - [ ] The prey's trophic level (seals 4.0; Pauly et al. 1998) against the marine mammals' share of primary production (Trites et al.
   1997, all mammals, whales included, whose diets are lower): one mixed figure; a seal-only share would be smaller.
+
+## Updates
+- 2026-10-31: Created from inbox draft draft-sea-food-follow-ups.md (found by lane99).

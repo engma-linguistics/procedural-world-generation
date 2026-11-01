@@ -43,6 +43,7 @@ Options:
 Lean: B for v1 if the owner wants white dragons to be met in play; else A, with B in v2.
 
 ## Updates
+- 2026-10-31: D28 B built and merged (lane 99): sea_hunter trait eats ocean prey; white x1.9, bronze x1.6, blue x1.4. D28 stays open on the desk (range-loss pattern A/B/C).
 - 2026-10-31: Daniel 10-31: also tigers in Asia as an analogue, down to the occasional modern tiger attack in India: how often people actually meet the apex predator today, not just how many there are.
 - 2026-10-31: Daniel 10-31 (D28): B (sea food for cold/coast kinds) for now, maybe A. Not closed: wants dragon numbers before people vs after people, per kind and biome, against real analogues (lions in Africa), before settling the right number.
 - 2026-10-31: Created from inbox draft draft-cold-dragons-thin-after-above-ground-prey.md (found by lane-90).
