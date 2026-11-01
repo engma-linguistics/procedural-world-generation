@@ -238,7 +238,12 @@ for k in ks:
     rows = [w["kinds"][k] for w in W.values() if k in w["kinds"]]
     q = lambda key: (lambda v: v / 100 if v is not None else None)(med([r.get(key) for r in rows])[0])
     dn.append((f"{k} dragons", q("per10k_before"), q("per10k_now"), q("per10k_held"), q("per10k_carbone")))
-fig, ax = plt.subplots(figsize=(8, 6.5))
+for bn in ("wetland", "grassland", "forest"):  # (lane 103: every kind together, the fair match to one big cat: the kinds share one apex share)
+    rows = [w["biomes"][bn] for w in W.values() if bn in w["biomes"]]
+    if rows:
+        dn.append((f"all dragons, {bn}", med([r["per10k_before"] for r in rows])[0] / 100, med([r["per10k_now"] for r in rows])[0] / 100,
+                   None, None))
+fig, ax = plt.subplots(figsize=(8, 7.2))
 labels = [a[0] for a in an] + [d[0] for d in dn]
 yy = np.arange(len(labels))
 for i, (lab, v, kind) in enumerate(an):
