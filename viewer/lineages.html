@@ -103,6 +103,7 @@
 </header>
 <nav id="tabs">
   <button data-tab="tree">Tree &amp; timeline</button>
+  <button data-tab="cultures" title="Cultures that grew out of the peoples as they spread: a part that took to new country, or lived apart long enough (PW-670). Kept apart from the species tree">Cultures</button>
   <button data-tab="peoples">Peoples</button>
   <button data-tab="places">Places &amp; land use</button>
   <button data-tab="wishes">Wishes</button>
@@ -113,6 +114,7 @@
 </nav>
 <main>
   <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="peoples and their splits. Cultures (the ways of life, groups, inside a people) are not drawn here: they live in the Peoples tab and on the people's side panel"><option value="species">species</option><option value="demes" title="each people's regional populations (demes, PW-981) from the picked peoples run: where sea, hard country or distance cut a people, dated splits, fusions and ends">species + regional populations</option></select> <button id="tlFit" title="Fit the whole timeline into the window width (otherwise at least 1100 px, scrolling sideways; drag the background or shift+wheel to pan)">fit all</button></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-cultures"></section>
   <section class="tab" id="tab-peoples"></section>
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
@@ -250,6 +252,12 @@ const FOOT = {
     habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
+  cultures: `Cultures that grew out of each people on the peoples run picked in Results (PW-670, a first cut, worked out after the run).
+    A part of a people becomes a culture of its own when it takes to new country (<b>adapted</b>) or lives apart from the rest for 1 kyr or more
+    (<b>apart</b>: cut off by sea, hard country or distance); a people's first populations are its <b>founding</b> culture. Each culture starts with its
+    parent's skills, then drifts toward what its own land rewards: sea craft fades inland within about a thousand years; new skills come slowly, and only
+    once the people has boats (or herds). Sister cultures that border each other merge once their people has cities or written law and one state
+    could hold both. Names are placeholders. The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
@@ -282,6 +290,7 @@ function redraw() {
   else if (tab === 'places') drawPlaces();
   else if (tab === 'wishes') drawWishes();
   else if (tab === 'tech') drawTech();
+  else if (tab === 'cultures') drawCultures();
   else drawResults();
 }
 
@@ -958,6 +967,75 @@ function drawResults() {
   el.innerHTML = h;
   bind();
 }
+// ---- the cultures tab (planet/lineages/cultures.py, PW-670): cultures grown out of the peoples, kept apart from the species tree ----------
+const cultUI = { people: '', all: false };
+const HOW_COL = { founding: '#e3c26b', adapted: '#9fd18b', apart: '#7fb2ff' };
+function drawCultures() {
+  const el = $('tab-cultures');
+  if (!result) {
+    const mine = worldRuns();
+    if (mine.length && !drawCultures.busy) { drawCultures.busy = true; showResult(mine[0].dir).finally(() => { drawCultures.busy = false; }); }
+    el.innerHTML = '<p class="muted">Pick a peoples run in the Results tab (or run the tree on a world) to see its cultures.</p>'; return;
+  }
+  const doc = result.culturesDoc;
+  if (doc === undefined) {
+    el.innerHTML = `<p class="muted">Working out the cultures of ${esc(result.id)}…</p>`;
+    if (!drawCultures.busy) {
+      const id = result.id; drawCultures.busy = true;
+      fetch(`../api/cultures?run=${encodeURIComponent(id)}`, { cache: 'no-store' }).then((r) => r.json()).catch((e) => ({ error: e.message }))
+        .then((d) => { if (result?.id === id) result.culturesDoc = d; }).finally(() => { drawCultures.busy = false; if (tab === 'cultures') drawCultures(); });
+    }
+    return;
+  }
+  if (!doc || doc.error) { el.innerHTML = `<p class="muted">No cultures for ${esc(result.id)}: ${esc(doc?.error || 'not found')}</p>`; return; }
+  const C = doc.cultures, L = Object.fromEntries((result.lineages || []).map((l) => [l.id, l]));
+  const pname = (p) => esc((L[p]?.name || p).replace(/ \(.*$/, ''));
+  const by = {};
+  for (const c of C) (by[c.people] = by[c.people] || []).push(c);
+  const living = (p) => by[p].filter((c) => !c.end).length;
+  const peoples = Object.keys(by).sort((a, b) => living(b) - living(a) || by[b].length - by[a].length);
+  if (cultUI.people !== '*' && !by[cultUI.people]) cultUI.people = peoples[0];
+  const alive = C.filter((c) => !c.end).length;
+  let h = `<div class="row" style="margin-bottom:8px"><span class="muted">people</span><select id="cuPeople"><option value="*" ${cultUI.people === '*' ? 'selected' : ''}>all peoples</option>
+    ${peoples.map((p) => `<option value="${esc(p)}" ${p === cultUI.people ? 'selected' : ''}>${pname(p)}: ${living(p)} living of ${by[p].length}</option>`).join('')}</select>
+    <label class="muted" title="Also list the cultures that died out or merged into another (otherwise only the living ones and the ancestors that join them up)"><input type="checkbox" id="cuAll" ${cultUI.all ? 'checked' : ''}> all, with those gone</label>
+    <span class="muted">${C.length} cultures since ${fmt(doc.from_kyr ?? 300)} ago, ${alive} living; ${doc.merges.length} merged under one state</span></div>`;
+  // the life bar: a log time axis from 50 yr to the start of the window
+  const LO = Math.log10(0.05), HI = Math.log10(Math.max(doc.from_kyr || 300, 1)), BW = 200;
+  const bx = (k) => Math.round((1 - (Math.log10(Math.max(k, 0.05)) - LO) / (HI - LO)) * BW);
+  const bar = (c) => { const a = bx(c.born_kyr), b = bx(c.ended_kyr ?? 0.05);
+    return `<span style="position:relative;display:inline-block;width:${BW}px;height:8px;background:var(--line,#1f2836);vertical-align:middle" title="${esc(fmt(c.born_kyr))} ago to ${c.end ? esc(fmt(c.ended_kyr)) + ' ago' : 'now'}"><span style="position:absolute;left:${a}px;width:${Math.max(2, b - a)}px;top:0;bottom:0;background:${c.color};opacity:${c.end ? 0.45 : 1}"></span></span>`; };
+  const skill = (s, what) => !s || s.verdict === 'never had' ? '' : `<span title="${esc(what)}: ${s.start} at its start, ${s.now} now (its land rewards ${s.fit_now})" style="${s.verdict === 'lost' ? 'color:var(--bad,#c33)' : ''}">${esc(what)} ${esc(s.verdict)}</span>`;
+  const wayName = (c, w) => (w === c.people ? 'old ways' : esc(L[w]?.name || w));
+  for (const p of cultUI.people === '*' ? peoples : [cultUI.people]) {
+    const cs = by[p], ids = new Set(cs.map((c) => c.id)), keep = new Set();
+    for (const c of cs) if (cultUI.all || !c.end) { let x = c; while (x && !keep.has(x.id)) { keep.add(x.id); x = x.parent != null && ids.has(x.parent) ? C[x.parent] : null; } }
+    const kids = {};
+    for (const c of cs) if (keep.has(c.id)) { const k = c.parent != null && ids.has(c.parent) ? c.parent : 'root'; (kids[k] = kids[k] || []).push(c); }
+    const st = cs.reduce((o, c) => { o[c.how] = (o[c.how] || 0) + 1; return o; }, {});
+    h += `<h2>${pname(p)} <span class="muted" style="font-weight:normal;font-size:12px">${living(p)} living of ${cs.length}: ${st.founding || 0} founding, ${st.adapted || 0} adapted, ${st.apart || 0} apart; ${cs.filter((c) => c.end === 'merged').length} merged, ${cs.filter((c) => c.end === 'died out').length} died out</span></h2>
+      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${fmt(doc.from_kyr ?? 300)} ago → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>what changed</th><th></th></tr>`;
+    const row = (c, d) => {
+      const par = c.parent != null ? C[c.parent] : null;
+      const from = par && par.people !== c.people ? ` <span class="muted">(from ${esc(par.name)})</span>` : '';
+      const w = Object.entries(c.traits.ways_now || {})[0];
+      const ended = c.end ? ` <span class="muted">${c.end === 'merged' && c.into != null ? 'merged into ' + esc(C[c.into].name) : esc(c.end)} ${fmt(c.ended_kyr)} ago</span>` : '';
+      const t = -(c.end ? c.ended_kyr : 0);
+      const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? fmt(c.ended_kyr) + ' ago' : 'the present'}, showing the regional populations">map</a>` : '';
+      return `<tr style="${c.end ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}<span class="sw" style="background:${c.color}"></span>${esc(c.name)}${from}${ended}</td>
+        <td><span style="color:${HOW_COL[c.how] || '#ccc'}">${esc(c.how)}</span></td><td style="white-space:nowrap">${bar(c)} <span class="muted">${fmt(c.born_kyr)}</span></td><td class="n">${c.area_mkm2}</td>
+        <td class="muted">${esc(c.country_now || '')}</td><td>${w ? `${wayName(c, w[0])} <span class="muted">${Math.round(100 * w[1])}%</span>` : ''}</td>
+        <td style="white-space:nowrap">${[skill(c.traits.sea_craft, 'sea craft'), skill(c.traits.open_country, 'herding lore')].filter(Boolean).join('<br>')}</td>
+        <td class="muted" style="max-width:340px">${esc(c.changes.join('; '))}</td><td>${map}</td></tr>`;
+    };
+    const walk = (k, d) => (kids[k] || []).sort((a, b) => b.born_kyr - a.born_kyr).forEach((c) => { h += row(c, d); walk(c.id, d + 1); });
+    walk('root', 0);
+    h += '</table>';
+  }
+  el.innerHTML = h;
+  $('cuPeople').onchange = (e) => { cultUI.people = e.target.value; drawCultures(); };
+  $('cuAll').onchange = (e) => { cultUI.all = e.target.checked; drawCultures(); };
+}
 // ---- the technology tab (techtree.py, PW-675; its six views: techtab.js, PW-913) -------------------------------------------
 function drawTech() {
   const el = $('tab-tech');
@@ -1037,7 +1115,7 @@ $('run').onclick = async () => {
 };
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
-  result = { id, ...run.meta };
+  result = { id, ...run.meta };  // (result.culturesDoc: fetched by the Cultures tab when first shown, /api/cultures)
   if (run.meta.demes?.file) try { result.demesDoc = await (await fetch(`../runs/${id}/${run.meta.demes.file}`, { cache: 'no-store' })).json(); } catch { result.demesDoc = null; }  // (PW-981)
   status(`run ${id}`);
   const g = $('globe');

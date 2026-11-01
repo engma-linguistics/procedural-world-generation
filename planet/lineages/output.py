@@ -12,6 +12,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM
 from ..provenance import code_version
+from . import cultures as CU
 from . import demes as DM
 from . import fuels as FU
 from . import land as LD
@@ -180,6 +181,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             f.write("\n".join(LU.lines_for_report(sm)) + "\n")
         FU.write(out)  # (what each people burns to cook: fuels.py, PW-722; adds a line to the stories and run.txt)
     DM.write(out)  # (the regional populations and their tree: demes.py, PW-981; demes.json, layers/demes.bin, meta.demes)
+    CU.write(out)  # (emergent cultures from the demes: cultures.py, PW-670; cultures.json, meta.cultures)
     if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
         ST.write(out)
     T.update_index()
