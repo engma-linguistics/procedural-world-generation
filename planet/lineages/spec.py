@@ -91,6 +91,7 @@ TRAITS = {
     # country (mountain, hills, breaks) x0.25, so it holds a narrow country densely, not a cover of whole open or forested cells; history.habitat)
     "martial": {},  # (lane 83: its contest strength, DEMOGRAPHY: a disciplined, warlike people that holds and takes land, dwarves, hobgoblins)  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
+    "sea_hunter": {},  # (D28 B, lane 99: a megafauna kind that also lives on the sea's seals and other marine mammals, history.megafauna.sea_food)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
 # ways of life (PW-723): how a people gets its living, a cultural trait (a group of a people may differ from it). The goods a
@@ -198,6 +199,9 @@ OVERKILL_X = (0.0, 0.1, 0.23, 0.46, 0.6)  # meta.overkill: the share of the wild
 PRESS_X = (0.25, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.press_early / meta.press_late (owner 10-30, D14: the viewer's "how hard peoples
 # press dragons and giants", one setting for the early eras and one for the late): multipliers on the peoples' kill (history.megafauna.KILL_Q);
 # early holds at the stone age (tech level 0), late at the top (tech level 1), the eras between blend them by their tech level. Default 1, 1
+ABUNDANCE_X = (0.25, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.dragon_abundance (lane 103, owner 10-31: "a lever to pull to make 'em more or
+# less numerous for a run"): x every dragon kind's density (history.megafauna.abundance), after the food and the persecution. A world-builder's
+# choice, not physics. Default 1: the model's ecology
 FORAGER_KM2 = 0.1  # default meta.forager_km2: human foragers per km2, the giants' natural-density baseline (scaled by mass^-0.75). No
 # located source (PW-976): Hamilton et al. 2007's fit implies 0.03-0.09 for groups of 25-1,000, so 0.1 is the top of that; owner 10-28
 # made it a setting (option C) until Binford 2001 can be checked
@@ -535,7 +539,8 @@ BAND_ROUNDS = 3  # default meta.band_rounds: re-runs of the best try that nudge 
 PORTAL_SITES = ("forest", "desert", "reef", "volcano")  # (history.History.portal_sites: deepest forest, middle of a desert, a coral reef, the foot of a volcano)
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 BRAKE_X = (0.0, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.raiders and meta.war (lane 97, D25; history.counter): how hard the raiders are
-# braked (raid losses, in-fighting, culling wars) and how much land war takes from crowded, stateless peoples; default 1, 0 off
+# braked (raid losses, culling wars) and how much land war takes: war-torn land from crowded, stateless peoples and every people's
+# in-fighting where it has filled its land and has nowhere to split off to (lane 101, D31); default 1, 0 off
 SURGE_X = (0.0, 0.5, 1.0, 2.0)  # the choices of meta.surge_early / meta.surge_late (owner 10-30, lane 73): how strongly a people on the upswing
 # contests land others hold, x history.params.SURGE_Q (0: no momentum edge); early before the farming onset, late at the present, blended between. Default 1, 1
 
@@ -554,7 +559,7 @@ class Tree:
     surge_early: float = 1.0  # the momentum edge's dial in the early eras (SURGE_X, lane 73)
     surge_late: float = 1.0  # ... and at the present
     raiders: float = 1.0  # meta.raiders (BRAKE_X, lane 97): the raiders' brakes
-    war: float = 1.0  # meta.war (BRAKE_X, lane 97): war-torn land
+    war: float = 1.0  # meta.war (BRAKE_X, lane 97): war-torn land and every people's in-fighting (lane 101)
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
     animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
@@ -578,6 +583,7 @@ class Tree:
     press_early: float = 1.0  # how hard peoples press dragons and giants in the early eras: x the kill at tech level 0 (PRESS_X, owner D14)
     press_late: float = 1.0  # ... and in the late eras: x the kill at tech level 1 (blended by tech level between)
     rivals: float = 1.0  # x the rival predator guild's share of the dragons' food (RIVALS_X)
+    dragon_abundance: float = 1.0  # x every dragon kind's density, a world-builder's dial, not physics (ABUNDANCE_X; history.megafauna.abundance)
     game_share: float = 1.0  # the share of the peoples' wild game taken from the dragons' prey (GAME_SHARE_X)
     overkill: float = 0.6  # the share of wild big herbivores lost where peoples press the land fully (OVERKILL_X; prey.OVERKILL)
     megafauna_natural: str = MEGAFAUNA_NATURAL_DEFAULT  # the megafauna's natural density: food | prey | mesotherm | mammal (PW-957, PW-966, PW-990)
@@ -1164,7 +1170,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.giant_km2 = float(meta.get("giant_km2", GIANT_KM2))
     if t.giant_km2 <= 0:
         raise ValueError("meta.giant_km2 must be > 0")
-    for k, d in (("press_early", 1.0), ("press_late", 1.0), ("rivals", 1.0), ("game_share", 1.0), ("overkill", 0.6)):
+    for k, d in (("press_early", 1.0), ("press_late", 1.0), ("rivals", 1.0), ("game_share", 1.0), ("overkill", 0.6), ("dragon_abundance", 1.0)):
         setattr(t, k, float(meta.get(k, d)))
         if getattr(t, k) < 0:
             raise ValueError(f"meta.{k} must be >= 0")
@@ -1284,7 +1290,7 @@ def to_raw(t: Tree) -> dict:
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "surge_early": t.surge_early, "surge_late": t.surge_late, "raiders": t.raiders, "war": t.war,
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
-                     "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
+                     "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "wave_kyr": t.wave_kyr,
                      "portal_open_kyr": t.portal_open_kyr, "portal_drift_kmkyr": t.portal_drift_kmkyr, "band_rounds": t.band_rounds,

@@ -2,7 +2,7 @@
 id: PW-1241
 title: "Owner question: how big should the commonest people be? (today: humans about 60% in the full dnd tree on one world, 30% on the other, 90%+ with three peoples)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-917
 milestone: v2
 subsystem: timezoom
@@ -32,4 +32,6 @@ What number would you like? For example:
 Whatever you pick becomes a check in the stress suite, so later changes are measured against it.
 
 ## Updates
+- 2026-10-31: Status needs-decision -> todo. Owner 10-31 D31 = A: commonest people usually under half, never over 70% with 5+ peoples. Humans must in-fight too. He leans hard on stopping fiddling until war and polities land; lane 101 adds A as a reported (not gating) stress-suite check and stops.
+- 2026-10-31: Daniel picked A (usually under half, never over 70% with 5+ peoples). Lane 101 added it to the stress suite as a reported check (not a failure): all 82 tries 53% median, 48% under half, 86% of 5+ trees at or under 70% (main: 52/49/94). Further work on the share is parked for war and polities.
 - 2026-10-31: Created from inbox draft draft-peoples-commonest-share-target.md (found by lane97).

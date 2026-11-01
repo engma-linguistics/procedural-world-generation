@@ -89,3 +89,19 @@ def test_coarse_spin_up_hands_over_to_the_run_grid_and_resumes_bit_identical():
     b = Simulation.from_state(a.grid, a.seed, a.params, a.dt, st)
     b.run(36)
     assert sim_digest(b) == sim_digest(a)
+
+
+def test_coarse_climate_keeps_the_overturning_total(sim4_60):
+    """Per-cell totals (the Sv sinking in a cell) come down as densities: the fine grid's sum is the coarse one's."""
+    s, g = sim4_60, sim4_60.grid
+    e = s.w_elev
+    ice = np.where(e > 0, s.ice, 0.0)
+    coarse = nest.chain(g, 3)[-1]["coarse"]
+    a = climate.compute(coarse, *(nest._restrict(nest.step(g), f) for f in (e,)), s.dT, s.params.tilt,
+                        nest._restrict(nest.step(g), ice))
+    b = nest.climate_coarse(g, 3, e, s.dT, s.params.tilt, ice)
+    tot_b = float(b["overturning"].sum())
+    assert tot_b > 0
+    assert abs(tot_b - float(a["overturning"].sum())) < 0.5 * float(a["overturning"].sum())
+    # not the per-cell value copied onto 4x the cells
+    assert tot_b < 2.0 * float(a["overturning"].sum())

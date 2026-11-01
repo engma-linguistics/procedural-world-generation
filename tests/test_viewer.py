@@ -243,6 +243,13 @@ def test_brief_endpoint_rejects_bad_requests():
     assert server.brief("run=no-such-run-xyz&people=orc")[1] == 404
 
 
+def test_cultures_endpoint_rejects_bad_requests():
+    """GET /api/cultures (PW-670) answers 400 without a run, 404 for a run that doesn't exist."""
+    from planet import server
+    assert server.cultures("")[1] == 400
+    assert server.cultures("run=no-such-run-xyz")[1] == 404
+
+
 def test_peoples_editor_has_no_copied_option_lists():
     """PW-1033: the peoples editor (viewer/lineages.html) takes its option lists and defaults from GET /api/lineage-schema
     (planet/lineages/run.editor_schema, from spec.py, land.GOODS and dragon_ages), so none may be copied into it:

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-490, PW-1008, PW-1143, PW-316, PW-516, PW-253]
 refs: [docs/review/l8-world/]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Description
@@ -28,4 +28,6 @@ v2 (right after the v1.0 tag, owner: "at least a try at some of it fairly immedi
 v3: the real GPU work (detail synthesis in shaders, seamless streaming down to fine-zoom scale, L9 everywhere).
 
 ## Updates
+- 2026-11-01: Lane 104 merged: planet refine (L7 -> L8/L9). World fb5e11 (from L7 783674, run b13ee9). L8 route ~20-25 min vs 146 direct; L9 38 min / 38.8 GB, too big for the viewer (PW-1209). docs/review/refine-l8/report.md
+- 2026-10-31: Owner 10-31 asked for the L7-then-L8/L9 refine overnight: lane 104.
 - 2026-10-31: Created from inbox draft draft-space-to-ground-globe-epic.md (found by coordinator).

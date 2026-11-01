@@ -2472,15 +2472,23 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     assert k0[h.grid.n // 2:].max() == 0 and k0[half].min() > 0
     h._ago_now = 0.0  # (the present: meta.era, renaissance)
     d = MG.local_density(h, w, k0)
-    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d > 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
+    assert np.allclose(d[h.grid.n // 2:], h.dens_nat[w]) and (d >= 0).all() and (d <= h.dens_nat[w] + 1e-15).all()
     h._ago_now = 10.0  # (the stone age)
     d10 = MG.local_density(h, w, k0)
     assert (d10[half] > 0.9 * h.dens_nat[w]).all() and (d10[half] > d[half]).all()
     v0, v9 = MG.vulnerability(0.0), MG.vulnerability(0.9)
     assert v0[0] == v9[0] == 1 and v0[2] < 0.02 < 0.5 < v9[2] and (v0 <= v9).all()  # (the adults' share of the kill rises with tech)
-    for e in (1e-4, 1e-3, 1e-2):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
+    for e in (1e-4, 1e-3):  # (a kill on wyrmlings alone costs far less than the same on the adults: elasticity)
         assert MG.dragon_kept(h, e, 0.0) > MG.dragon_kept(h, e, 0.9) > 0
-    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) > 0
+    assert np.isclose(MG.dragon_kept(h, 0.0, 0.5), 1.0) and MG.dragon_kept(h, 1.0, 1.0) == 0
+    # local extirpation (PW-1246 B, lane 103): kept falls linearly with the births' rise F and is 0 once F >= BREED_X; KILL_Q is set so
+    # LOSS_KM2 farmers of MEANS_REF at tech level LOSS_LEV reach that point on the default schedule (the lions' 25 per km2, Riggio 2013; this tree runs the base schedule, a little more vulnerable)
+    from planet.lineages import dragon_ages as DA
+    e_loss = MG.KILL_Q * MG.LOSS_KM2 * MG.MEANS_REF
+    assert np.isclose(MG.births_rise(DA.DEFAULT, e_loss, MG.LOSS_LEV)[0], MG.BREED_X, rtol=1e-3)
+    assert MG.dragon_kept(h, 0.7 * e_loss, MG.LOSS_LEV) > 0 and MG.dragon_kept(h, 1.1 * e_loss, MG.LOSS_LEV) == 0
+    assert 0.2 < MG.dragon_kept(h, 0.5 * e_loss, MG.LOSS_LEV) < 0.7 and MG.dragon_kept(h, e_loss, 0.0) > 0.9
+    assert np.isclose(MG.guild_kept(h, np.array([0.0, 0.5, 2.0]) * e_loss, 1.0), [1.0, 0.5, 0.0]).all()
     h._ago_now = 0.0
     dh = MG.local_density(h, hi, k0)
     assert (dh[half] / h.dens_nat[hi] < 1).all() and (dh[half] > 0).all()
@@ -2494,6 +2502,12 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     h5._ago_now = h._ago_now = 10.0  # (the stone age: the early setting, gentler)
     assert (MG.local_density(h5, w, k0)[half] > MG.local_density(h, w, k0)[half]).all()
     h._ago_now = 0.0
+    # the world-builder's dial (lane 103): meta.dragon_abundance multiplies every dragon kind's density, not the giants'
+    t6 = SP.parse({**raw, "meta": {**raw["meta"], "dragon_abundance": 4.0}})
+    assert t6.dragon_abundance == 4.0 and SP.parse(SP.to_raw(t6)).dragon_abundance == 4.0 and SP.parse(raw).dragon_abundance == 1.0
+    h6 = H.History(t6, ps, 1)
+    h6._ago_now = 0.0
+    assert np.allclose(MG.local_density(h6, w, k0), 4.0 * d) and np.allclose(MG.local_density(h6, hi, k0), dh)
     # the nominal density (meta.giant_km2) no longer sets any density
     t4 = SP.parse({**raw, "meta": {"seed": 1, "giant_km2": 50}})
     h4 = H.History(t4, ps, 1)
@@ -3267,6 +3281,92 @@ def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
     assert np.array_equal(h._brake(L[kb], kb, K, step, env, None), K)
 
 
+def _brake_setup(faketz):
+    import types
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raider_raw()), ps, 1)
+    g, L = h.grid, h.lines
+    h.p = np.zeros((len(L), g.n))
+    h.active = {l.id: True for l in L}
+    h.crops = None
+    h._growth_setup()
+    h._counter_setup()
+    env = h.steps[-1].get()
+    h._land_now = env["land"]
+    h._deep_now = False
+    step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
+    return h, env, step
+
+
+def _sync_pm(h):
+    h._pm = h.p >= 0.12
+    h._cntp = h._pm.sum(0, dtype=np.int16)
+    h._cnt = h._cntp
+    h.__dict__.pop("_Fc", None)
+
+
+def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
+    """Lane 101 (PW-1240 B, owner D31): every people fights itself, humans too, more as it fills its land (a thinly spread people
+    fights less) and as it is circumscribed: free good country next door bars nothing, others' land bars SOCIAL_Q, unlivable country
+    fully. meta.war 0 switches it off."""
+    from planet.lineages.history import params as HP
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.tree.raiders = 0.0
+    for k in (kb, fk):  # (a raider and a people of normal survival alike)
+        h.p[:] = 0.0
+        h.p[k][land[:200]] = 0.8
+        _sync_pm(h)
+        h._hem[k] = 1.0
+        full = h._brake(L[k], k, K, step, env, None)
+        h.p[k][land[:200]] = 0.2  # (the same land, a fifth as full: Chagnon's village before it grows to splitting size)
+        thin = h._brake(L[k], k, K, step, env, None)
+        c = land[10]
+        assert thin[c] > full[c]
+        assert full[c] / K[c] == pytest.approx(1.0 - HP.FEUD_CUT, abs=0.02)  # (full and fully circumscribed; a little war-torn land)
+        assert h.lost[L[k].id]["feud"] > 0
+    h.tree.war = 0.0
+    assert np.array_equal(h._brake(L[fk], fk, K, step, env, None), K)  # (war and raiders off: no brakes at all)
+    h.p[:] = 0.0
+    h.p[kb][land[:50]] = 0.8
+    _sync_pm(h)
+    room = K.copy()
+    h._K0[kb] = K
+    held = h.p[kb] >= 0.12
+    open_c = h._circumscribed(L[kb], kb, held, room, 0.0)
+    ring = h._dilate(held, 1) & ~held & env["land"]
+    h.p[fk][ring] = 0.8
+    _sync_pm(h)
+    ringed = h._circumscribed(L[kb], kb, held, room, 0.0)
+    assert open_c < ringed <= HP.SOCIAL_Q + (1 - HP.SOCIAL_Q) * float((~env["land"][h._dilate(held, 1) & ~held]).mean()) + 1e-9
+
+
+def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
+    """Lane 101 (PW-1240): at the raiders' dial x4 a hemmed-in raider on a hostile border keeps at least BRAKE_HOLD of its habitat on
+    every cell it holds (lane 97's 5% of K fell under the hold, EST 0.12, and the raiders died out); off its land the brakes still cut."""
+    from planet.lineages.history import params as HP
+    from planet.lineages.spread import EST
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[150:400]] = 0.8
+    _sync_pm(h)
+    h._hem[kb] = 1.0
+    h.tree.raiders = 4.0
+    Kb = h._brake(L[kb], kb, K, step, env, None)
+    held = h._pm[kb]
+    assert np.all(Kb[held] >= min(HP.BRAKE_HOLD, 0.8) - 1e-12) and HP.BRAKE_HOLD > 2 * EST - 1e-12
+    assert (Kb[held] < K[held]).any()
+    monkeypatch.setattr(HP, "BRAKE_HOLD", 0.0)
+    assert (h._brake(L[kb], kb, K, step, env, None)[held] < EST).any()  # (the old floor on K alone)
+
+
 def test_a_cull_sawtooth_averages_the_same_for_any_growth_rate():
     """Lane 85's arithmetic (D25 C): d = 0.6 recovering to 0.1 before the next cull averages (0.6 - 0.1) / ln 6 = 0.28, whatever x."""
     from planet.lineages.history import params as PM
@@ -3317,3 +3417,29 @@ def test_old_enemies_hunt_each_other_on_their_border_as_story_only(faketz, monke
     monkeypatch.setattr(HP, "HUNT_PER_KYR", 0.0)
     h._hunts(types.SimpleNamespace(epoch="recent", ago=0.1, dt=0.1))
     assert not h.events  # (none in the deep epoch, none with the rate at 0)
+
+
+def test_sea_hunters_eat_the_sea(faketz):
+    """D28 B (lane 99): a dragon kind with the trait 'sea_hunter' adds the sea's food (megafauna.sea_food) to the land's; others do not;
+    off (SEA_FOOD False) nobody does."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "sea", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies", "sea_hunter"]},
+        {"id": "land", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    ps.graze_npp = np.full(ps.grid.n, 100.0)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    ps.sea_npp = np.where(np.arange(ps.grid.n) % 2 == 0, 100.0, 0.0)
+    h = H.History(SP.parse(raw), ps, 1)
+    assert h.sea_food is not None and h.sea_food.max() > 0
+    food = np.full(h.grid.n, 0.01)
+    s, l = h.idx["sea"], h.idx["land"]
+    assert np.allclose(MG.natural(h, s, None, food) - MG.natural(h, l, None, food), h.sea_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    MG.SEA_FOOD = False
+    try:
+        h2 = H.History(SP.parse(raw), ps, 1)
+        assert h2.sea_food is None and np.allclose(MG.natural(h2, s, None, food), MG.natural(h2, l, None, food))
+    finally:
+        MG.SEA_FOOD = True

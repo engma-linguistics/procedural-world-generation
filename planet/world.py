@@ -90,7 +90,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
            veg: dict | None = None, orbit_dt: np.ndarray | None = None, soil_memory: dict | None = None,
            outlet: np.ndarray | None = None, closed: np.ndarray | None = None,
-           valley: np.ndarray | None = None) -> dict:
+           valley: np.ndarray | None = None, climate_level: int | None = None,
+           history: dict | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
@@ -107,12 +108,21 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     keyframe climate for the soils (soils.climate_memory; PW-185). outlet,
     closed: river heights and closed basins from finer data
     (hydrology.rivers_and_lakes'; the Earth world's). valley: m the run's
-    rivers have cut each cell's valley (hydrology.lakes'; a run's worlds)."""
+    rivers have cut each cell's valley (hydrology.lakes'; a run's worlds).
+    climate_level: run the climate on that coarser nested grid and bring it down to this one
+    (nest.climate_coarse: temperatures through the lapse rate on each cell's own height; orbit_dt is then the
+    coarse grid's); a world refined onto a finer grid (planet/refine.py). history: the resources' history pass
+    for this grid, made by the caller (refine: the source run's, on its grid, mapped onto this one)."""
     t0 = t0 or time.time()
     veg = veg or {}
     # (a time zoom's plants, PW-213: the trees stay where they are and the rest settles on this climate)
     held = dict(migrate=vegetation.HELD, steps=vegetation.HELD_STEPS) if veg.get("held") else {}
-    c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
+    def clim(e, fb=None):
+        if climate_level is not None and climate_level < grid.level:
+            from .nest import climate_coarse
+            return climate_coarse(grid, climate_level, e, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
+        return climate.compute(grid, e, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
+    c = clim(elev)
     # The vegetation feeds back on the climate (climate.compute's veg): a
     # first, cheap vegetation on the first climate, then the climate again
     # with it (on the eroded terrain, if any).
@@ -122,7 +132,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
         elev = hydrology.erode(grid, elev, c, erosion_iterations, erosion, ice=ice)
-    c = climate.compute(grid, elev, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
+    c = clim(elev, fb)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed, valley=valley)
@@ -248,7 +258,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     sr = meta.get("source_run")
     if _RESOURCES.get() and sr and S.exists("run", sr) and "landform" in layers:
         from . import resources
-        hist = resources.history(S.find_run(sr), float(meta["t_myr"]), grid)
+        hist = history if history is not None else resources.history(S.find_run(sr), float(meta["t_myr"]), grid)
         mode = str(meta.get("mode") or "fantasy")
         layers.update(resources.world_layers(grid, layers, meta, hist, mode))
         meta["mode"] = mode

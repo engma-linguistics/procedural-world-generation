@@ -188,11 +188,23 @@ FOUND_SPREAD = 1.0  # (in walking jump lengths, JUMP_KM)
 DEN_THIN = True
 # The brakes (lane 97, owner D25: history.counter, where each is explained). All cut a people's K on a cell; none below COUNTER_FLOOR.
 COUNTER_FLOOR = 0.05  # lane 82: no brake holds a people under this share of its habitat (judgement: never species-ending)
+# lane 101 (PW-1240): a floor on K alone did not hold numbers (5% of a habitat is under EST, 0.12, so the cell was lost and a raider at
+# x4 died out). On the cells a people holds, the brakes never cut its habitat under BRAKE_HOLD (or its habitat, where that is less): a
+# brake thins a people where it lives, never takes the land outright; only the contest with its rivals does that. 0.24 is the refuge's
+# own floor (2 x EST, dispersal._hold_out); 0 switches it off
+BRAKE_HOLD = 0.24
 COHAB_REF = 0.5  # hostility is how far a pair's cohabitation (compose.cohabitation) falls under this, two open peoples' (0.5)
-# Raid losses and in-fighting, on a raider people's harsh excess (life_history.harsh_kept): R = 1 + RAID_Q F + FEUD_Q H, at most R_MAX
+# Raid losses, on a raider people's harsh excess (life_history.harsh_kept): R = 1 + RAID_Q F, at most R_MAX
 RAID_Q = 1.0  # lane 85's R_FRONT 2 on a full hostile frontier (F 1): a kobold border keeps 31%, a goblin one 41% (judgement)
-FEUD_Q = 0.5  # in-fighting at full hemming (H 1, nowhere to split off to): R 1.5, a kobold people keeps 65%, a goblin one 70% (judgement;
-# the mechanism is Chagnon's fission and Carneiro's circumscription, the size is not sourced)
+# In-fighting, every people (lane 101, PW-1240 B; owner D25 for the raiders, D31 "humans ought also be infighting"): K x (1 - meta.war x
+# FEUD_CUT x C x u), C the people's circumscription (counter._circumscribed: how far the land next to it bars a faction from splitting
+# off, Carneiro 2012), u its own fill of the land on the cell (counter._fill: Chagnon's fission, Walker and Hill 2014). Country held by
+# other peoples bars SOCIAL_Q (Carneiro 2012: social circumscription is "generally less tight" than a physical barrier, with
+# "leakage"; the 0.5 is a judgement). FEUD_CUT 0.35 is lane 97's in-fighting at x1 for a fully hemmed kobold people (it kept 65%, R
+# 1.5 on its life table), carried to every people as a share of land: the mechanism is sourced, the size is a judgement. A thinned
+# people fights less (u falls), so the cut settles at 1 / (1 + FEUD_CUT C) of the land, not at the full FEUD_CUT
+FEUD_CUT = 0.35
+SOCIAL_Q = 0.5
 R_MAX = 3.6  # violent and accidental deaths run 4-69% of deaths, average 19% (Gurven & Kaplan 2007): at most 3.6x the average
 # Culling wars (lane 85's design, every number a judgement): a crowded (p >= CULL_FULL K) raider frontier (F >= CULL_F), outnumbered there
 # by peoples hostile to it, is cut by CULL_D with chance CULL_P a step; it may be struck again once its depletion is under CULL_AGAIN;
