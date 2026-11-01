@@ -32,3 +32,14 @@ But soft pass is 26/36 against 29/36, late dT is -2.2 C and land -2.9 points (bo
 Next: judge `slope_k=1000` alone and trace the land loss (draft-sea-creep-alone-judge). Scratch runs are deleted.
 To redo them: `paired_margin.sh CODE OUT m 0.0005 0.001`, with `EXTRA="slope_k=1000"` for the on arm, one OUT root per
 arm (hard_bar.py reads arm `m`). Then copy both into one root as base_/on_ for pjudge.py.
+
+## Round 3d (lane 100d, 2026-11-01): diagnosis only (owner: proposals, no fixes, no judge)
+
+[diagnosis-land.md](diagnosis-land.md), with [tracediag.py](tracediag.py) as the harness. Land loss: the creep drowns
+continental crust (it strips the margins' cover, and rises born continental at 20 km count in the area thermostat).
+It is not sea level. Cooling: the arc CO2 source follows the volume thermostat, which the creep drives up during the
+spin-up while the source reference is learnt and down later. Early shelf collapse: the start-up continents' first
+assembly removes highstand-flooded plains (36/36 draws). A judge of slope_k=300 alone was stopped at 29/36 paired
+draws (land -1.6 moved; dT -0.9 and CO2 within the noise). No code changed. Next: decide
+draft-arc-co2-follows-volume-thermostat and draft-sea-level-ignores-ocean-floor-sediment before any creep
+defaults-on. Scratch runs deleted.

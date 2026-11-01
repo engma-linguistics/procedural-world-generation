@@ -28,6 +28,12 @@ raises the sea level and starves the deltas that build coast out.
 What to do: run the same 36-draw paired judge on `slope_k=1000` alone (and maybe 300) against main, using
 docs/review/tectonics/margin/paired_margin.sh (paired.sh through margindiag.py) as in report.md round 3. Check the sea level (`sea_level`,
 `sea_cont` in the steps) and the delta/shelf deposit for the land loss.
-- [ ] land and late dT shifts of creep alone, each with its paired 95% interval
-- [ ] the land loss traced to its cause (sea level from displaced water, or less delta progradation)
+Lane 100d (docs/review/tectonics/margin/diagnosis-land.md): traced on seeds 1 and 3, plus 29 of 36 paired draws
+of slope_k=300 alone (judge stopped on the owner's call, proposals only). Land -1.60 [-1.85, -1.16], late dT
+-0.92 [-1.97, +0.66], late CO2 index -0.10 [-0.36, +0.16]. The land goes because more of the continental crust
+drowns: the creep strips the margins' cover, and rises piled on the ocean floor are born as drowned continent inside
+the area thermostat. It is not sea level: the sea is lower. The cooling goes through the arc CO2 source, which
+follows the volume thermostat (draft-arc-co2-follows-volume-thermostat), not through the land.
+- [ ] land and late dT shifts of creep alone, each with its paired 95% interval (29/36 at 300 done; finish it)
+- [x] the land loss traced to its cause (drowned continental crust; see diagnosis-land.md)
 - [ ] soft pass not below main's before defaults-on

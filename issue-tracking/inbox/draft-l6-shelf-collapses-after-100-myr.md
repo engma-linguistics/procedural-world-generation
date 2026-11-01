@@ -27,4 +27,12 @@ the drop is in every arm, between the 100 and the 150 Myr samples. The coordinat
 What to try: record the shelf share every 10 Myr over 0-200 Myr at L6, plus the sea level, the submerged continental
 area and the shelf cells' sediment budget (river supply against creep and erosion), to see what removes the start-up
 shelves. Then see why the margin builds new shelf so slowly (river supply to the coast? the fill-to-SHELF_TOP rule?).
-- [ ] the cause of the 100-150 Myr drop named, with numbers
+Lane 100d (docs/review/tectonics/margin/diagnosis-land.md part 4; a 2 Myr trace of draw 819014, plus all 36 main
+draws): the 100 Myr "shelf" is the start-up continents' low plain, flooded by the ridge highstand (+235 m at 100 Myr).
+It goes in the start-up continents' first assembly. From 100 to 150 Myr the continental area falls 2.9 points (36/36
+draws) and the mean continental crust thickens 2.2 km (36/36). Collision and overlap lift and squeeze the flooded
+plains, and in 18/36 draws the sea also falls more than 100 m. In 819014 the sea barely moves (243 to 206 m) while
+the shelf goes from 5.2 to 1.0%. It is not rifting, erosion, isostasy or the brink rule, and it isn't a bug. The slow
+recovery after it is the built margin (PW-950 itself). Related: PW-1230 (the early highstand).
+- [x] the cause of the 100-150 Myr drop named, with numbers
+- [ ] decide whether the start-up layout (assembly within ~100 Myr) or the start-up highstand needs changing, or close

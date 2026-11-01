@@ -148,7 +148,7 @@ rise + k300. Main and round 2 reproduce round 2's numbers exactly.
 | round 2 + k1000 | 2.69 / 2.41 | 19.5 / 20.5 | 27.0 / 27.0 | 5.1 / 6.5 | 21.7 / 24.4 | 468 / 468 | 32.5 / 30.8 | 159 / 153 |
 | Earth on L6 | 6.21 | 19.6 | 31.8 | 3.5 | 22.0 | 602 | 27.8 | |
 
-Best on the margin numbers: round 2 + k1000, which was judged.
+Best on the margin numbers: round 2 + k1000, which was judged. Lane 100d traced the land loss and the cooling: [diagnosis-land.md](diagnosis-land.md).
 
 ## Paired judge (v1-finish-16's 18 L6 draws x rolls 0.0005, 0.001; star_brightening=1)
 
