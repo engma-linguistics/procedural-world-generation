@@ -10,7 +10,7 @@ impact: med
 found_by: lane104-refine-l8
 blocked_by: []
 relates: [PW-490, PW-1008]
-refs: [planet/refine.py, planet/zoom/landforms.py, planet/zoom/stage_terrain.py, docs/review/refine-l8/design.md]
+refs: [planet/refine.py, planet/zoom/landforms.py, planet/zoom/stage_terrain.py, docs/review/refine-l8/design.md, docs/review/refine-l8/shots/]
 ---
 
 ## Description
