@@ -29,6 +29,11 @@ a deme, or a run of demes along that tree, that counts as its own culture:
   On those numbers the line is crossed after about 0.5–0.7 kyr. 1 kyr (two frames of the recent pass) is a **judgement**
   that leaves some margin. Speech is a proxy for culture here, nothing more.
 - Every other child deme belongs to its parent's culture.
+- **Dragons get no cultures** (coordinator, 2026-10-31). They are beasts, not peoples. Their populations come and go, and
+  one kind used to collect up to 67 short-lived cultures. A dragon kind is a megafauna line that flies, the same test
+  `history.megafauna.eco_mass` uses (`cultures.no_culture`). A people born of a dragon population (kobolds, dragonborn)
+  starts a founding culture with no parent. The giants keep their cultures for now; Daniel is being asked in an inbox
+  draft.
 
 A culture is the set of its demes. On the map, a cell belongs to the culture of the deme that leads it (`layers/demes.bin`).
 A culture ends when its last deme ends. If that deme died out, the culture died out. If it fused into a deme of another

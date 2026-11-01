@@ -65,12 +65,22 @@ class Culture:
         self.fit_sea = self.fit_open = None
 
 
-def assign(demes: list[dict]) -> tuple[list[Culture], np.ndarray]:
-    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture."""
+def no_culture(tree: dict | None, lines: list[dict]) -> set[str]:
+    """The kinds that get no cultures: the dragons (megafauna that fly, as history.megafauna.eco_mass tells them apart): beasts, not
+    peoples, whose populations come and go (coordinator 2026-10-31). The giants keep theirs (sapient in D&D; an owner question)."""
+    mega = {r["id"] for r in (tree or {}).get("lineage", []) if r.get("megafauna")}
+    return {l["id"] for l in lines if l["id"] in mega and "flies" in (l.get("traits") or [])}
+
+
+def assign(demes: list[dict], skip: set | frozenset = frozenset()) -> tuple[list[Culture], np.ndarray]:
+    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture (-1: a
+    people in `skip`, no_culture)."""
     out: list[Culture] = []
     dc = np.full(len(demes), -1, np.int64)
     founding: dict = {}
     for d in demes:
+        if d["people"] in skip:
+            continue
         par = d["parent"]
         same = par is not None and demes[par]["people"] == d["people"]
         life = d["born_kyr"] - (d["ended_kyr"] if d["ended_kyr"] is not None else 0.0)
@@ -78,7 +88,7 @@ def assign(demes: list[dict]) -> tuple[list[Culture], np.ndarray]:
             key = (d["people"], round(d["born_kyr"], 3))
             if key not in founding:
                 founding[key] = len(out)
-                out.append(Culture(len(out), d["people"], None if par is None else int(dc[par]), "founding", d["born_kyr"], d.get("adapted")))
+                out.append(Culture(len(out), d["people"], None if par is None or dc[par] < 0 else int(dc[par]), "founding", d["born_kyr"], d.get("adapted")))
             c = founding[key]
         elif d["how"] == "split_adapted":
             c = len(out)
@@ -162,7 +172,7 @@ class Drift:
         nC = len(self.C)
         dt = 0.0 if self.prev is None else max(self.prev - ago, 0.0)
         self.prev = ago
-        lut = np.array([self.resolve(int(self.dc[d]), ago) for d in range(len(self.dc))] + [-1], np.int64)
+        lut = np.array([self.resolve(int(self.dc[d]), ago) if self.dc[d] >= 0 else -1 for d in range(len(self.dc))] + [-1], np.int64)
         dl = np.where(deme == NONE, len(self.dc), deme).astype(np.int64)
         cmap = lut[np.minimum(dl, len(self.dc))]
         on = cmap >= 0
@@ -283,7 +293,7 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
     out = []
     held = np.zeros(len(cultures), np.int64)  # (cells its living demes hold now, as leading or second people: a culture that leads nowhere)
     for d in D:
-        if d["ended_kyr"] is None and d["cells_now"]:
+        if d["ended_kyr"] is None and d["cells_now"] and dc[d["id"]] >= 0:
             c = int(dc[d["id"]])
             while cultures[c].end == "merged" and cultures[c].into is not None:
                 c = cultures[c].into
@@ -369,7 +379,7 @@ def derive(run_dir: Path) -> dict:
     lines = m["lineages"]
     g = shared_grid(m["level"])
     cell_km2 = 4 * np.pi * 6371.0 ** 2 / g.n
-    cultures, dc = assign(doc["demes"])
+    cultures, dc = assign(doc["demes"], no_culture(m.get("tree"), lines))
     dr = Drift(cultures, dc, lines, g.nbr_off, g.nbr_idx, cell_km2, (m.get("techtree") or {}).get("known"), BIOMES)
     agos = [max(0.0, -f["t"]) for f in run["frames"]]
     win = doc.get("from_kyr", 300.0)
