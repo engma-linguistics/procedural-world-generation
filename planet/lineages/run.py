@@ -38,7 +38,8 @@ def editor_schema() -> dict:
                      "press_early": 1.0, "press_late": 1.0, "press_x": list(SP.PRESS_X), "rivals": 1.0, "rivals_x": list(SP.RIVALS_X),
                      "game_share": 1.0, "game_share_x": list(SP.GAME_SHARE_X), "overkill": 0.6, "overkill_x": list(SP.OVERKILL_X),
                      "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL,
-                     "surge_early": 1.0, "surge_late": 1.0},
+                     "surge_early": 1.0, "surge_late": 1.0, "raiders": 1.0, "war": 1.0,
+                     "brake_x": list(SP.BRAKE_X)},  # (lane 97: the raiders' brakes and war-torn land, meta.raiders / meta.war)
         "surge_x": list(SP.SURGE_X),  # (the momentum edge's dial per era, lane 73)
         "breeding": list(LH.BREEDING), "survival": list(LH.SURVIVAL), "life_stages": list(LH.STAGES),  # (lane 78: life history)
         "life_defaults": {"wave_kyr": SP.WAVE_KYR, "portal_open_kyr": SP.PORTAL_OPEN_KYR, "portal_drift_kmkyr": SP.PORTAL_DRIFT_KMKYR,

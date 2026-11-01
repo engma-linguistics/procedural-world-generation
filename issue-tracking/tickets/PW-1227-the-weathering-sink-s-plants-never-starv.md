@@ -2,7 +2,7 @@
 id: PW-1227
 title: The weathering sink's plants never starve at low CO2, so nothing stops a source dip short of tens of ppm
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -41,4 +41,5 @@ constant. Watch for a double count with FERT above the floor.
       moves under 0.3 C
 
 ## Updates
+- 2026-10-31: Status todo -> done. Lane 95 merged (cd7b718b): plants' weathering boost fades with their C3 quantum yield below CO2_FLOOR 124 ppm; bit-identical above. Crash draw min 36 -> 85 ppm; L6 crashes (<100) 2 -> 1 of 36; L7 unchanged. docs/review/v1-cut/plant-floor.md.
 - 2026-10-31: Created from inbox draft draft-weathering-plants-starve-below-co2-floor.md (found by lane94).

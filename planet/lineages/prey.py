@@ -75,6 +75,62 @@ LIVESTOCK_X = 1.0  # stocked country carries livestock at the pasture's wild her
 HEAD_T = 0.5  # t live weight per head of cattle (PW-967: an ancient's ~100 head a year is ~50 t)
 
 
+# Sea prey (D28 B, owner 10-31; lane 99): the coast and ice dragons' food from the sea, the seals and other marine mammals, from the
+# ocean's primary production up the food chain. Read 2026-10-31 (docs/review/dragon-numbers/report.md, "Sea food"):
+# - primary production by province, g C/m2/yr: open ocean 50, coastal waters to 180 m 100, upwelling 300 (Ryther 1969, Science 166:72,
+#   Table 1, as quoted by Pauly 1996, Fish Res 25:25, sec. 5; the original not read). Later estimates run 1.4-2.6x higher (Martin et al.
+#   1987, via a NOAA-SWFSC 1988 review): a low reading, marked.
+# - transfer efficiency between trophic levels 10% (Pauly & Christensen 1995, Nature 374:255, as summarised by FishBase; Chassot et al.
+#   2010, Ecol Lett 13:495, p. 497 use 10% for temperate systems, 5% upwelling, 14% tropical); one figure, a simplification.
+# - the prey's trophic level 4.0: harbour, larga and grey seals (Pauly, Trites, Capuli & Christensen 1998, ICES J Mar Sci 55:467,
+#   Table 2; the pinnipeds run 3.8-4.4).
+# - the marine mammals' share of the primary production: they need 20-30 g C/m2/yr of it in every FAO area of the Pacific (Trites,
+#   Christensen & Pauly 1997, J Northw Atl Fish Sci 22:173, text and Fig. 4: "a very narrow range of 20 to 30 g C per m2 per year"), of a Pacific mean 135 (Table 1): 25 / 135.
+# - wet weight 9 g per g C (Chassot et al. 2010 and Stock et al. 2017, PNAS 114:1441, both after Strathmann 1967).
+# So the marine mammals' production, t wet/km2/yr = MM_SHARE x NPP x TE^(TL - 1) x WET_PER_C: ~0.17 over a shelf at 100 g C.
+SEA_NPP = (50.0, 100.0, 300.0)  # g C/m2/yr: open ocean, shelf, upwelling (Ryther 1969 Table 1, via Pauly 1996)
+SEA_SHELF_M = (1500.0, 300.0)  # a sea cell's mean depth, m: deep sea from the first, shelf under the second (as seafood.SHELF_M: a 60 km cell)
+SEA_UPWELL = (0.5, 3.0)  # C of upwelling cooling at which a sea is an upwelling province, from none to full (as coastform.PROD_UPWELL)
+SEA_TE = 0.10  # transfer efficiency per trophic level (Pauly & Christensen 1995)
+SEA_TL = 4.0  # the prey's trophic level (seals: Pauly et al. 1998)
+MM_SHARE = 25.0 / 135.0  # the marine mammals' share of the primary production (Trites et al. 1997)
+WET_PER_C = 9.0  # g wet weight per g C (Strathmann 1967, via Chassot et al. 2010)
+
+
+def sea_npp(layers: dict, grid=None) -> np.ndarray | None:
+    """Ocean net primary production, g C/m2/yr, per sea cell (0 on land), from a world's layers: Ryther's open-ocean figure, his coastal
+    one over the shelf (the cell's mean depth, SEA_SHELF_M) and his upwelling one where the sea upwells (SEA_UPWELL); under perennial
+    sea ice x (1 - 0.8 x ramp(the year's ice share, 0.6, 0.98)), coastform's own cut for its sea production (with the grid and the
+    month layers; a judgement: the ice-edge blooms and the seals' ice are kept, the closed pack is not). None without elevation."""
+    if "elevation" not in layers:
+        return None
+    from ..geo import is_land
+    elev = np.asarray(layers["elevation"], float)
+    sea = ~is_land(elev, layers.get("ice"), grid)  # (the sea that reaches the ocean: not inland pits below 0 m, PW-1229)
+    depth = np.where(sea, -elev, 0.0)
+    a, b = SEA_SHELF_M
+    shelf = np.clip((a - depth) / (a - b), 0.0, 1.0)
+    up = np.asarray(layers["upwelling"], float) if "upwelling" in layers else np.zeros_like(elev)
+    u = np.clip((up - SEA_UPWELL[0]) / (SEA_UPWELL[1] - SEA_UPWELL[0]), 0.0, 1.0)
+    base = SEA_NPP[0] + (SEA_NPP[1] - SEA_NPP[0]) * shelf
+    npp = np.where(sea, base + (SEA_NPP[2] - base) * u, 0.0)
+    if grid is not None and "warm_month" in layers and "cold_month" in layers:
+        from .. import coast as CO
+        from ..geo import ramp
+        ice_y = CO.sea_ice_share(grid, elev, {"t_warm": np.asarray(layers["warm_month"], float),
+                                                   "t_cold": np.asarray(layers["cold_month"], float)}, layers.get("ice")).mean(0)
+        npp = npp * (1.0 - 0.8 * ramp(ice_y, 0.6, 0.98))
+    return npp
+
+
+def sea_prey(npp: np.ndarray | None) -> np.ndarray | None:
+    """The marine mammals' production, t wet/km2/yr, per cell, from the ocean's NPP (g C/m2/yr): MM_SHARE x NPP x SEA_TE^(SEA_TL - 1)
+    x WET_PER_C (g/m2 = t/km2)."""
+    if npp is None:
+        return None
+    return MM_SHARE * np.asarray(npp, float) * SEA_TE ** (SEA_TL - 1.0) * WET_PER_C
+
+
 def above(rain_mm) -> np.ndarray:
     """The above-ground share of NPP at an annual rainfall (mm): 1 - F-BNPP (Gherardi & Sala 2020, PW-1073)."""
     r = np.clip(np.asarray(rain_mm, float), *MAP_CLIP)

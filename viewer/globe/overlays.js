@@ -585,7 +585,8 @@ const mocGroup = new THREE.Group();  // the overturning's Sv labels
 group.add(mocGroup);
 
 export const EVENT_COLORS = { rift: 0x3bf0ff, subduction: 0x7dff6b, collision: 0xff6b3b, suture: 0xffd23b, absorbed: 0xc58cff, consumed: 0xc58cff,
-                       'glacial max': 0x9fd8ff, interglacial: 0xffb36b };  // the last two: time zooms
+                       'glacial max': 0x9fd8ff, interglacial: 0xffb36b,  // the last two: time zooms
+                       cull: 0xff4f6d, hunt: 0xffa94d };  // peoples runs (lane 97): culling wars on raiders, enemies hunting along a border
 export const hexColor = (c) => '#' + c.toString(16).padStart(6, '0');
 // events this close to the frame on screen are marked on the globe and highlighted in the list
 export function eventWindow() { return S.V.tz ? Math.max(2, S.V.run.meta.every * 1.5) : Math.max(10, S.V.run.meta.every * 2.5); }

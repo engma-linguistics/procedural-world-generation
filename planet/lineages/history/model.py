@@ -21,12 +21,14 @@ from ..spread import EST
 from .cities import CitiesMixin
 from .competition import CompetitionMixin
 from .contact import ContactMixin
+from .counter import CounterMixin
 from .dispersal import DispersalMixin
 from .events import EventsMixin
 from .frame import FrameMixin
 from .groups import GroupsMixin
 from .growth import GrowthMixin
 from .habitat import HabitatMixin, niche_overlap, same_way
+from .hunts import HuntsMixin
 from .origins import OriginsMixin
 from . import megafauna as MG
 from . import params as PM
@@ -38,7 +40,7 @@ from .steps import StepsMixin
 from .tags import _tags, needs_chains
 
 
-class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
+class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
               ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
                  goods: dict | None = None, knobs: dict | None = None):
@@ -203,7 +205,16 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
+        if PM.DEN_THIN and self._Fprod is not None:  # (D27 C screen: a denning people's density, not its habitat, falls off broken country)
+            env0 = self.steps[-1].get()
+            t0 = _tags(g, env0, self._chains, self._volcanic(False))
+            broken = t0["mountain"] | t0["hills"] | t0["breaks"]
+            for k, l in enumerate(L):
+                if l.trait("den", 0.0) and not l.megafauna:
+                    self._Fprod[k] = self._Fprod[k] * np.where(broken, 1.0, 1.0 - l.trait("den", 0.0))
+                    self._dmap[k] = self.dens[k] * self._Fprod[k]
         self._growth_setup()
+        self._counter_setup()  # (the brakes on a people's numbers, lane 97: history.counter)
         frames = []
         nsteps = len(self.steps)
         t0 = time.time()
@@ -244,6 +255,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
             order.sort(key=lambda l: (l.marine, keys[l.id]))
             for l in order:
                 self._advance(l, step, env, tags, corr, mix, Ks)
+            self._hunts(step)  # (the old enmities hunt each other where their lands meet: events only, history.hunts)
             if step.store or si == nsteps - 1:
                 frames.append(self._frame(step, env))
             if si % 25 == 0:
@@ -267,6 +279,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
         K = Ks.get(l.id)
         if K is None:
             K = self._K(l, env, tags, step)
+        K = self._brake(l, k, K, step, env, tags)  # (war-torn land, raid losses, in-fighting, culls: lane 97, history.counter)
         self._K_now[k] = K  # (the composition's reach: where a people could live, CP.reach)
         self._note_K(k, K)
         if l.overlay and l.origin == "hybrid":
@@ -286,6 +299,7 @@ class History(EventsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin,
                 self._div_dt[k] = 0.0
         room, crowd = self._compete(l, k, K, step, tags, corr, mix, deep)
         self._crowd[k] = crowd
+        self._note_hemmed(l, k, K, room, crowd)
         self._disperse(l, k, K, room, crowd, step, env, tags)
         self._sail(l, k, K, room, crowd, step, env, tags)
         self._jump(l, k, K, room, step, env, tags)

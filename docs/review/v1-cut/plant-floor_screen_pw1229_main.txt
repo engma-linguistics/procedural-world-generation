@@ -1,0 +1,20 @@
+  roll    tag    seed pass bar  fm FRZ frzAny BOIL OCN CO2x oceanMin |sl|max pCO2min pCO2end  endT pkIce  arid trees   min
+0.0005  l6c_0  733847    Y   Y   Y   -      -    -   -    -     63.1     295     132     511  -0.2  25.5  24.6  30.1  37.2
+0.0005  l6c_p  583167    Y   Y   Y   -      -    -   -    -     64.2     236     132     171  -4.1  20.2  21.1  25.9  42.5
+0.0005  l6c_p  819014    Y   Y   Y   -      -    -   -    -     61.9     516     112     684  +1.5  35.4  23.7  28.0  44.4
+0.0005  l6fix  619496    Y   Y   Y   -      -    -   -    -     63.1     197     372     394  +1.9  10.2  24.5  28.2  25.5
+0.0005  l6fix  957317    Y   Y   Y   -      -    -   -    -     62.1     393     112     852  +1.5  26.2  23.1  29.8  30.4
+ 0.001  l6c_p  733847    Y   Y   Y   -      -    -   -    -     63.0     354     142     340  -4.3  26.0  28.2  19.9  23.8
+ 0.001  l6fix  639472    Y   Y   Y   -      -    -   -    Y     61.8     446      46     185  -5.3  29.9  21.7   0.0  40.8
+
+L6: 7 draws
+  soft pass (bar + finish moment): 7/7
+  HARD frozen over in window: 0/7
+  HARD boiled/hellhouse: 0/7
+  HARD ocean loss: 0/7
+  HARD CO2 crash (<100 ppm): 1/7
+  (frozen any time after 300, reported): 0/7
+  (end pCO2 outside 180-600, reported): 3/7
+  (icehouse, reported): 7/7
+  roll 0.0005: pass 5/5, frozen 0, boiled 0
+  roll 0.001: pass 2/2, frozen 0, boiled 0

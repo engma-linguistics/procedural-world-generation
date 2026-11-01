@@ -3026,8 +3026,11 @@ def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
     assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
 
 
-def test_a_denning_people_holds_mostly_broken_country(faketz):
-    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25."""
+def test_a_denning_people_holds_mostly_broken_country(faketz, monkeypatch):
+    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25. Lane 97
+    (D27 C, params.DEN_THIN, the default): thin dens instead, the habitat uncut and the density cut there (model.run)."""
+    from planet.lineages.history import params as PM
+    monkeypatch.setattr(PM, "DEN_THIN", False)
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     env = ps.fields(0.0, variability=False)
     tags = H._tags(ps.grid, env)
@@ -3038,6 +3041,8 @@ def test_a_denning_people_holds_mostly_broken_country(faketz):
     ok = Kp > 0
     assert (ok & ~broken).any()
     assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
+    monkeypatch.setattr(PM, "DEN_THIN", True)
+    assert np.allclose(H.capacity(den, env, tags), Kp)
 
 
 def test_a_farming_people_lives_at_forager_density_until_it_farms(faketz):
@@ -3159,3 +3164,182 @@ def test_a_people_that_filled_its_patch_pushes_founders_out(faketz):
     assert h._jump_push(k, K, K.copy(), held) == pytest.approx(0.25)  # (a quarter filled)
     room = np.full(h.grid.n, 0.2)
     assert h._jump_push(k, K, room, held) == pytest.approx(1.0)  # (crowded to its room by rivals)
+
+
+def test_a_new_people_is_founded_at_a_few_sites_spread_over_one_landmass(faketz, monkeypatch):
+    """Lane 97 (owner D27): a root or a split is founded at FOUND_SITES seed sites on its origin's landmass, within FOUND_SPREAD jump
+    lengths of the first and clear of each other, the founders' area shared among them; with one site, the one blob of before."""
+    from planet.lineages.history import params as PM
+    from planet.lineages.gridops import dist_km
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    env = h.steps[-1].get()
+    g, k, line = h.grid, h.idx["a"], h.tree.lines["a"]
+    K = np.where(env["land"], 0.8, 0.0)
+    cell = int(np.flatnonzero(env["land"] & (np.abs(g.lon) < 15) & (np.abs(g.lat) < 15))[0])
+    monkeypatch.setattr(PM, "FOUND_SPREAD", 6.0)  # (the test grid's cells are ~1,000 km: a spread of a few cells)
+    blob, sites = h._found_spread(line, k, cell, K.copy(), K, K > 0.12, 2, env)
+    assert len(sites) == PM.FOUND_SITES == 3 and sites[0] == cell
+    ll, _ = g.components(env["land"])
+    d0 = dist_km(g, float(g.lat[cell]), float(g.lon[cell]))
+    assert all(ll[c] == ll[cell] for c in sites) and all(d0[c] <= PM.FOUND_SPREAD * PM.JUMP_KM for c in sites)
+    assert min(dist_km(g, float(g.lat[a]), float(g.lon[a]))[b] for a in sites for b in sites if a != b) > 2 * h.cell_km
+    h.p[k][:] = 0
+    one = h._seed_blob(k, cell, K, K > 0.12, 2).sum()
+    assert 0.3 * one <= blob.sum() <= 1.5 * one  # (the founders' area shared among the sites, about as before)
+    monkeypatch.setattr(PM, "FOUND_SITES", 1)
+    h.p[k][:] = 0
+    blob1, sites1 = h._found_spread(line, k, cell, K.copy(), K, K > 0.12, 2, env)
+    assert sites1 == [cell] and blob1.sum() == one
+
+
+
+
+def _raider_raw():
+    return {"meta": {"name": "r", "seed": 2, "mixing_start": "3 kyr"}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000]},
+        {"id": "kob", "parents": ["stem"], "at": "20 kyr", "adult_yr": 6, "lifespan_yr": 120, "breeding": "brood", "survival": "harsh"},
+        {"id": "folk", "parents": ["stem"], "at": "20 kyr", "adult_yr": 18, "lifespan_yr": 80},
+        {"id": "dw", "parents": ["stem"], "at": "20 kyr", "disease_resist": 0.75},
+        {"id": "hill", "origin": "group", "parents": ["dw"], "at": "10 kyr"},
+        {"id": "mix", "origin": "hybrid", "parents": ["dw", "folk"], "at": "8 kyr"}],
+        "wish": [{"a": "folk", "b": "kob", "want": "apart", "weight": 1.0}]}
+
+
+def test_raid_losses_scale_a_raiders_canon_losses_only():
+    """Lane 97 (D25 B, lane 85's table): R x the harsh excess; kobold-like lines keep 0.65 / 0.31 at R 1.5 / 2, normal survival 1."""
+    from planet.lineages import life_history as LH
+    t = SP.parse(_raider_raw())
+    kob, folk = t.lines["kob"], t.lines["folk"]
+    assert kob.raids and not folk.raids
+    assert LH.harsh_kept(kob, "forager", 1.0) == 1.0 and LH.harsh_kept(kob, "forager", 0.7) == 1.0
+    assert LH.harsh_kept(kob, "forager", 1.5) == pytest.approx(0.65, abs=0.02)
+    assert LH.harsh_kept(kob, "forager", 2.0) == pytest.approx(0.31, abs=0.02)
+    assert LH.harsh_kept(folk, "forager", 2.0) == 1.0
+    assert t.lines["dw"].disease_resist == 0.75 and t.lines["hill"].disease_resist == 0.75  # (a group inherits it, PW-1192)
+    assert t.lines["mix"].disease_resist == pytest.approx(0.375)  # (a hybrid: its parents' mean)
+    assert SP.parse(SP.to_raw(t)).lines["dw"].disease_resist == 0.75
+    raw = _raider_raw()
+    raw["lineage"][3]["disease_resist"] = 1.5
+    with pytest.raises(ValueError):
+        SP.parse(raw)
+    assert SP.load(LR.SAMPLES / "dnd.toml").lines["dwarf"].disease_resist == 0.75  # (owner D25: 0.75, not lane 85's 0.5)
+
+
+def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
+    """Lane 97 (D25): on a border with a people that hates it a raider keeps less of its habitat than at home; hemmed in (no free
+    country next door) it loses more to in-fighting; a people of normal survival has no raid or in-fighting loss; meta.raiders 0: off."""
+    import types
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raider_raw()), ps, 1)
+    g, L = h.grid, h.lines
+    h.p = np.zeros((len(L), g.n))
+    h.active = {l.id: True for l in L}
+    h.crops = None
+    h._growth_setup()
+    h._counter_setup()
+    env = h.steps[-1].get()
+    h._land_now = env["land"]
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[180:400]] = 0.8
+    h._pm = h.p >= 0.12
+    h._cntp = h._pm.sum(0, dtype=np.int16)
+    h._deep_now = False
+    step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
+    K = np.where(env["land"], 0.8, 0.0)
+    assert h._hos[kb, fk] == pytest.approx(1.0) and h._hos[kb, h.idx["dw"]] == 0.0
+    h._hem[kb] = 0.0
+    Kb = h._brake(L[kb], kb, K, step, env, None)
+    F = h._frontier(kb)
+    border, home = int(np.argmax(np.where(h._pm[kb], F, -1))), int(np.argmin(np.where(h._pm[kb], F, 9)))
+    assert F[border] > 0.3 and F[home] == 0.0
+    assert Kb[border] < Kb[home] <= K[home] + 1e-12
+    h._hem[kb] = 1.0
+    Kh = h._brake(L[kb], kb, K, step, env, None)
+    assert Kh[home] / K[home] <= 0.66  # (R 1.5 from in-fighting alone: 0.65, and a little war-torn land)
+    assert set(h.lost["kob"]) >= {"raid", "feud"} and h.lost["kob"]["feud"] > 0
+    Kf = h._brake(L[fk], fk, K, step, env, None)
+    assert "raid" not in h.lost.get("folk", {}) and np.all(Kf <= K + 1e-12)
+    h.tree.raiders, h.tree.war = 0.0, 0.0
+    assert np.array_equal(h._brake(L[kb], kb, K, step, env, None), K)
+
+
+def test_a_cull_sawtooth_averages_the_same_for_any_growth_rate():
+    """Lane 85's arithmetic (D25 C): d = 0.6 recovering to 0.1 before the next cull averages (0.6 - 0.1) / ln 6 = 0.28, whatever x."""
+    from planet.lineages.history import params as PM
+    D, A = PM.CULL_D, PM.CULL_AGAIN
+    for tau in (17.0, 450.0):
+        t = np.linspace(0, tau * np.log(D / A), 20001)
+        assert np.mean(D * np.exp(-t / tau)) == pytest.approx((D - A) / np.log(D / A), rel=1e-3)
+    assert (D - A) / np.log(D / A) == pytest.approx(0.28, abs=0.005)
+
+
+def test_old_enemies_hunt_each_other_on_their_border_as_story_only(faketz, monkeypatch):
+    """Lane 97 (D26 B): a pair the tree names as enemies ('apart') logs 'hunt' events at cells where their lands meet; a pair
+    without that wish never does, and the hunts change nobody's numbers. (The apart wish itself keeps the two apart on the coarse
+    test grid, so the lands are set by hand.)"""
+    import types
+    from planet.lineages.gridops import nbr_reduce
+    from planet.lineages.history import params as HP
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "c", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}],
+           "wish": [{"a": "a", "b": "b", "want": "apart"}]}
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(raw), ps, 1)
+    g = h.grid
+    land = np.flatnonzero(ps.fields(0.0, variability=False)["land"])
+    h.p = np.zeros((3, g.n))
+    h.p[h.idx["a"]][land[:150]] = 0.8
+    h.p[h.idx["b"]][land[150:300]] = 0.8
+    h.p[h.idx["c"]][land[300:450]] = 0.8
+    h.active = {"a": True, "b": True, "c": True}
+    h._pm = h.p >= H.EST
+    A, B = h._pm[h.idx["a"]], h._pm[h.idx["b"]]
+    border = (A & nbr_reduce(g, np.logical_or, B[g.nbr_idx])) | (B & nbr_reduce(g, np.logical_or, A[g.nbr_idx]))
+    assert border.any()
+    P0 = h.p.copy()
+    monkeypatch.setattr(HP, "HUNT_PER_KYR", 50.0)  # (a hunt every step)
+    for i in range(20):
+        h._hunts(types.SimpleNamespace(epoch="recent", ago=2.0 - 0.1 * i, dt=0.1))
+    hunts = [e for e in h.events if e["kind"] == "hunt"]
+    assert len(hunts) == 20 and {e["line"] for e in hunts} <= {"a", "b"}
+    at = {(round(float(g.lat[c]), 2), round(float(g.lon[c]), 2)) for c in np.flatnonzero(border)}
+    assert all((e["lat"], e["lon"]) in at for e in hunts)  # (on the border between the enemies)
+    assert not any("c" in e["text"].split() for e in hunts)  # (c, with no enmity, is never in one)
+    assert np.array_equal(h.p, P0)  # (story only: nobody's numbers change)
+    h.events = []
+    h._hunts(types.SimpleNamespace(epoch="deep", ago=30.0, dt=0.1))
+    monkeypatch.setattr(HP, "HUNT_PER_KYR", 0.0)
+    h._hunts(types.SimpleNamespace(epoch="recent", ago=0.1, dt=0.1))
+    assert not h.events  # (none in the deep epoch, none with the rate at 0)
+
+
+def test_sea_hunters_eat_the_sea(faketz):
+    """D28 B (lane 99): a dragon kind with the trait 'sea_hunter' adds the sea's food (megafauna.sea_food) to the land's; others do not;
+    off (SEA_FOOD False) nobody does."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "sea", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies", "sea_hunter"]},
+        {"id": "land", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    ps.graze_npp = np.full(ps.grid.n, 100.0)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    ps.sea_npp = np.where(np.arange(ps.grid.n) % 2 == 0, 100.0, 0.0)
+    h = H.History(SP.parse(raw), ps, 1)
+    assert h.sea_food is not None and h.sea_food.max() > 0
+    food = np.full(h.grid.n, 0.01)
+    s, l = h.idx["sea"], h.idx["land"]
+    assert np.allclose(MG.natural(h, s, None, food) - MG.natural(h, l, None, food), h.sea_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    MG.SEA_FOOD = False
+    try:
+        h2 = H.History(SP.parse(raw), ps, 1)
+        assert h2.sea_food is None and np.allclose(MG.natural(h2, s, None, food), MG.natural(h2, l, None, food))
+    finally:
+        MG.SEA_FOOD = True
