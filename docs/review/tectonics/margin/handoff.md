@@ -43,3 +43,23 @@ assembly removes highstand-flooded plains (36/36 draws). A judge of slope_k=300 
 draws (land -1.6 moved; dT -0.9 and CO2 within the noise). No code changed. Next: decide
 draft-arc-co2-follows-volume-thermostat and draft-sea-level-ignores-ocean-floor-sediment before any creep
 defaults-on. Scratch runs deleted.
+
+## Round 5 (lane 100e, 2026-11-01): fixes and judges
+
+Done:
+- **Sea level counts the ocean floor's sediment** (`earth.floor_sediment_water`, `sim.sea_sed` / `sed_water_ref`,
+  diag `sea_sed`). The water the cover keeps out of oceanic cells is counted against the start, as `continent_water`
+  counts the continents. Test: `tests/test_sea_level.py::test_sediment_moved_off_a_shelf_onto_the_ocean_floor_keeps_the_sea`.
+  The goldens are updated. Judge 1 (72 paired draws) passes, see [deep-dive.md](deep-dive.md). It's a main change.
+- **Candidate A (arc CO2 from the slab) is already the code** (PW-741). [note-arc-co2.md](note-arc-co2.md) has the
+  trace. No change.
+- **Candidate C** (`pile_area`, drowned sediment piles kept out of the area thermostat) was screened, didn't help, and
+  was removed.
+- **Deep dive** ([deep-dive.md](deep-dive.md)), per the owner's 11-01 widening. Area thermostat off: area holds near
+  40%, but its judge failed (1 frozen over, pass 23 vs 27), so it stays on. The volume thermostat is load-bearing. The
+  sediment-birth churn with the creep is the biggest late flux. The screen-only params (`area_gain`, `volume_gain`)
+  were removed after their screens.
+- Judge 2 (creep on top of the fix) fails: 2 frozen over, late dT -2.6 C, land -3.0. The creep stays off.
+- tracediag.py now also logs the source's parts (ridge / arc / plume) and the slab (trench edges, convergence).
+Next: draft-sediment-piles-born-continental (screen A on seeds 1 and 3 with the creep), then judge the creep again.
+Scratch runs are deleted.

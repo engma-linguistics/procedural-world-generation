@@ -108,6 +108,7 @@ class Recorder:
         rec.update({"dT_end": round(float(sim.dT), 3), "iced_land": round(iced_land, 4),
                     "sea_level": round(float(sim.sea_level), 2), "sea_ice": round(float(sim.sea_ice), 2),
                     "sea_tect": round(float(sim.sea_tect), 2), "sea_cont": round(float(sim.sea_cont), 2),
+                    "sea_sed": round(float(sim.sea_sed), 2),
                     "land": round(float(land.mean()), 4)})
         rec.update(output.habitability(sim))  # (what the finish moment reads: highlights.finish_moment, PW-866)
         self._pending = None

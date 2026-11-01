@@ -43,6 +43,36 @@ def creep(h, iso, movable, ea, eb, k, dref, n_sub):
 
 surface._creep = creep
 
+from planet.tectonics import earth  # noqa: E402
+_gt = earth.global_temperature
+
+
+def global_temperature(sim, growth, newc, rng, plume=None):
+    # (the CO2 source's parts this step, before the drift: ridge (new floor), arc (20 x the arcs' nominal growth,
+    # the slab's melt: crust.arc_growth), plume; lane 100e)
+    out = _gt(sim, growth, newc, rng, plume=plume)
+    STASH["parts"] = (newc * (sim.dt / sim.dt_now) / sim.scale**2, 20.0 * float(growth.sum()) / sim.scale**2,
+                      float(sim.plume_src))
+    return out
+
+
+earth.global_temperature = global_temperature
+
+from planet.tectonics import crust  # noqa: E402
+_ag = crust.arc_growth
+
+
+def arc_growth(sim, bd, conv, thermostat):
+    # (the slab: trench edges subducting now (conv > 0), their mean convergence, and their sum, per scale^2)
+    c = bd.at_trenches(conv)
+    on = c > 0
+    STASH["slab"] = (int(on.sum()) / sim.scale**2, float(c[on].mean()) if on.any() else 0.0,
+                     float(c.sum()) / sim.scale**2, int(len(np.unique(bd.overriding[on]))) / sim.scale**2)
+    return _ag(sim, bd, conv, thermostat)
+
+
+crust.arc_growth = arc_growth
+
 
 def step(self, sim):
     _step(self, sim)
@@ -63,6 +93,10 @@ def step(self, sim):
     if sim.rates is not None and sim.refs is not None:
         tr["src"], tr["sink"] = [round(float(v), 4) for v in sim.rates]
         tr["src_ref"], tr["sink_ref"] = [round(float(v), 4) for v in sim.refs]
+    if "parts" in STASH:
+        tr["ridge"], tr["arc"], tr["plume"] = [round(float(v), 2) for v in STASH["parts"]]
+    if "slab" in STASH:
+        tr["trench_n"], tr["conv"], tr["conv_sum"], tr["over_n"] = [round(float(v), 3) for v in STASH["slab"]]
     tr["pco2"] = round(float(climate.pco2(sim.co2)), 1)
     if sim.weathered is not None:
         sup = np.asarray(sim.weathered) * land

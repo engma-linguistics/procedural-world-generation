@@ -38,5 +38,15 @@ Options:
   This removes the late-run swap of arcs for born rises. It's the narrowest, but it treats a symptom of A.
 Lean: A, because that's the physics. Try C first as a cheap screen with the creep on. Related: PW-1158 (the source
 running low late in some runs).
-- [ ] decision A / B / C
+Lane 100e update (2026-11-01): **the premise is wrong; A is already the code.** Since PW-741 (`04b9fff5`),
+`Simulation._physics` passes `crust.arc_growth`'s *nominal* field (convergence at each trench edge x mantle heat, with
+no thermostat gain) to `earth.global_temperature`. The thermostat's gain only reaches the crust. A trace of the
+source's parts (docs/review/tectonics/margin/note-arc-co2.md, tracediag.py) shows that with the creep the
+thermostat's arc growth rises by 16-35% over 0-300 Myr while the arc CO2 part moves by +0.3 to +1.5%. Late in the run
+the growth rises by 34-127% while the arc CO2 falls by 13-14%. The late fall is in the slab itself (convergence x
+trench length) against the 0-300 Myr reference, which is PW-1158's question. C was screened (pile_area: drowned
+SEDIMENT cells kept out of the area thermostat). Land moved -0.3 / -0.2 points on main and -1.3 / +1.2 with the
+creep (seeds 1 / 3), and dT moved both ways by up to 6 C, so it didn't help and was removed. B wasn't tried.
+Suggest: close as invalid, or merge into PW-1158.
+- [ ] decision: close, or merge into PW-1158
 - [ ] the chosen change judged paired (18 x 2) against main, then with slope_k on

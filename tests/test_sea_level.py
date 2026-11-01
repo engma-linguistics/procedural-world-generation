@@ -22,7 +22,7 @@ def test_basin_term_is_measured_against_the_starting_floor():
         s.step()
         assert s.depth_ref == ref
         rise = (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (s.depth_ridge - ref)
-        assert np.isclose(s.sea_tect - s.sea_cont, earth.SEA_TECT_MAX * np.tanh(rise / earth.SEA_TECT_MAX))
+        assert np.isclose(s.sea_tect - s.sea_cont - s.sea_sed, earth.SEA_TECT_MAX * np.tanh(rise / earth.SEA_TECT_MAX))
         seen.append(rise)
     assert max(abs(x) for x in seen) > 1.0  # (the floor did change)
     assert abs((RHO_MANTLE - RHO_WATER) / RHO_MANTLE - 0.69) < 0.01
@@ -106,3 +106,40 @@ def test_starting_continents_ride_inside_plates():
             # (a boundary meets a coast only where two continents face each other across a narrow sea)
             assert (bd & (cont[a] | cont[b])).sum() < 0.05 * bd.sum()
             assert all(s.plates.owned[k].any() for k in np.flatnonzero(s.plates.alive))
+
+
+def test_sediment_moved_off_a_shelf_onto_the_ocean_floor_keeps_the_sea(grid4):
+    """PW-950 lane 100e: the ocean's water is conserved when sediment moves. Carried from a drowned continental
+    cell onto the ocean floor, the shelf holds more water (continent_water falls) and the floor's cover keeps as
+    much out (floor_sediment_water rises), so the sea moves only by the two crusts' different isostatic lift of
+    the same volume. Before the floor's part was counted, the sea fell by the whole of the shelf's extra water."""
+    from planet.tectonics.isostasy import elevation, sediment_km
+    s = Simulation(grid4, 1, Params(heat_start=1.0), 2.0)
+    s.step()
+    w = earth.ocean_area(s.grid)
+    assert s.sed_water_ref is not None
+    s.cont_water_ref = s.sed_water_ref = None  # (references taken at this moment)
+    assert abs(earth.continent_water(s, w)) < 1e-9 and abs(earth.floor_sediment_water(s, w)) < 1e-9
+    e = s.w_elev + s.sea_ice
+    sed0 = sediment_km(s.w_cover, s.w_extra)
+    a = int(np.flatnonzero(s.w_cont & (e < -1500) & (sed0 > 1.0))[0])  # a drowned continental cell with cover
+    b = int(np.flatnonzero(~s.w_cont & (e < -3000))[0])  # deep ocean floor
+    da = 1.0  # km of cover taken off a
+    db = da * w[a] / w[b]  # the same volume laid on b
+    thick, cover = s.w_thick.copy(), s.w_cover.copy()
+    thick[a] -= da
+    cover[a] -= da
+    thick[b] += db
+    cover[b] += db
+    elev = elevation(thick, s.w_age, s.w_cont, s.w_rock, s.datum(), sediment_km(cover, s.w_extra))
+    drop, rise = e[a] - (elev[a] + s.sea_ice), (elev[b] + s.sea_ice) - e[b]
+    assert drop > 0 and rise > 0
+    s.w_thick, s.w_cover, s.w_elev = thick, cover, elev
+    cont, floor = earth.continent_water(s, w), earth.floor_sediment_water(s, w)
+    ocean = float(((s.w_elev + s.sea_ice < 0) * w).sum() / w.sum())
+    k = (RHO_MANTLE - RHO_WATER) / RHO_MANTLE
+    assert np.isclose(cont, -k * drop * w[a] / w.sum() / ocean)
+    assert np.isclose(floor, k * rise * w[b] / w.sum() / ocean)
+    # (the net is only the isostatic difference of the same volume: drowned continental crust floats as in air,
+    # isostasy.K_LAND, the ocean floor under water, K_SEA, so the floor gains more height than the shelf loses)
+    assert np.isclose(cont + floor, k * (rise * w[b] - drop * w[a]) / w.sum() / ocean)
