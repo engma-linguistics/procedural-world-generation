@@ -93,15 +93,15 @@ def test_a_culture_whose_last_deme_fused_merged_into_the_other():
     assert C[1].end == "merged" and C[1].into == 0 and C[1].ended == 2.0
 
 
-def test_dragons_get_no_cultures_and_their_daughter_peoples_start_fresh():
+def test_each_dragon_kind_is_one_culture_and_its_daughter_peoples_descend_from_it():
     lines = [{"id": "red_dragon", "traits": ["flies", "hardy"]}, {"id": "storm_giant", "traits": ["swims"]}, LINES[0]]
     tree = {"lineage": [{"id": "red_dragon", "megafauna": True}, {"id": "storm_giant", "megafauna": True}, {"id": "folk"}]}
-    skip = CU.no_culture(tree, lines)
-    assert skip == {"red_dragon"}  # (the giants keep theirs)
+    whole = CU.one_culture(tree, lines)
+    assert whole == {"red_dragon"}  # (the giants fragment like peoples)
     D = [dict(_deme(0, None, "first", 30.0), people="red_dragon"), dict(_deme(1, 0, "split_gap", 20.0), people="red_dragon"),
          _deme(2, 0, "from_people", 10.0)]  # (a people born of a dragon population: kobolds, dragonborn)
-    C, dc = CU.assign(D, skip)
-    assert len(C) == 1 and dc.tolist() == [-1, -1, 0] and C[0].people == "folk" and C[0].parent is None
+    C, dc = CU.assign(D, whole)
+    assert len(C) == 2 and dc.tolist() == [0, 0, 1] and C[0].people == "red_dragon" and C[1].people == "folk" and C[1].parent == 0
 
 
 def test_fliers_have_no_sea_craft():

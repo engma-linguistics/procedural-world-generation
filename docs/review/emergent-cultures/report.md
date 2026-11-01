@@ -10,7 +10,7 @@ or distance for 1 kyr or more. Each culture starts with its parent's skills, the
 seafaring people lose their boats within a thousand years or two. Open-country cultures slowly pick up herding, once their people has
 herds. Cultures also merge. When a population folds back into another, its culture goes with it. Once a people has cities or
 written law, neighbouring sister cultures that live the same way merge under one state, if one state could hold them both. There is
-no cap on the count. The dragons get no cultures: they are beasts, not peoples. The giants keep theirs for now.
+no cap on the count. Each dragon kind is one culture, along colour lines: dragons are sapient, but they don't fragment for now (Daniel, 2026-10-31). The giants fragment like peoples for now.
 
 The workbench has a new **Cultures** tab, separate from the species tree. It shows each people's cultures as a family tree, with
 each culture's life span, land, way of life, skills, what changed, and a link to the map. The species tree is unchanged. It is all
@@ -21,7 +21,7 @@ cultures, kobolds 26–30, dragonborn 11–22, kenku 12–15, storm giants 13, m
 
 ![Cultures tab on 622c00](cultures-tab-622c00.png)
 
-(The screenshot was taken before the dragons were dropped. The humans' table it shows is unchanged.)
+(The screenshot was taken before each dragon kind became a single culture. The humans' table it shows is unchanged. The counts in this report exclude the dragon kinds' one culture each.)
 
 ## Runs
 

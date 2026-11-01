@@ -852,7 +852,7 @@ Viewer, under Overlays > Settlements:
 
 Output only, read after the demes (2 s a run). A people's first demes are its founding culture. A deme that split off by
 niche learning (`split_adapted`) is a culture of its own at once. A deme cut off by a gap, a crossing or distance becomes one
-after 1 kyr apart (`T_APART_KYR`). The dragon kinds (megafauna that fly) get no cultures. Each culture copies its parent's skills when it starts, then drifts toward what its land
+after 1 kyr apart (`T_APART_KYR`). Each dragon kind (megafauna that fly) is one culture, along colour lines, and never fragments (owner 2026-10-31: sapient, but not split for now). Each culture copies its parent's skills when it starts, then drifts toward what its land
 rewards: sea craft from the coast share of its cells, herding lore from the share of open dry country. It loses a skill
 with an e-folding time of 1 kyr. It gains one with an e-folding time of 3 kyr, and only once its people knows boats (or
 herding) (Henrich 2004, Rivers 1912). Its way of life, its people's groups on its cells (`groups_best`), is recorded at

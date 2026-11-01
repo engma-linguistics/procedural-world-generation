@@ -65,23 +65,31 @@ class Culture:
         self.fit_sea = self.fit_open = None
 
 
-def no_culture(tree: dict | None, lines: list[dict]) -> set[str]:
-    """The kinds that get no cultures: the dragons (megafauna that fly, as history.megafauna.eco_mass tells them apart): beasts, not
-    peoples, whose populations come and go (coordinator 2026-10-31). The giants keep theirs (sapient in D&D; an owner question)."""
+def one_culture(tree: dict | None, lines: list[dict]) -> set[str]:
+    """The kinds that keep one culture each, never fragmenting: the dragons (megafauna that fly, as history.megafauna.eco_mass tells
+    them apart). They are sapient, but for now each kind is simply its own culture, along colour lines (owner 2026-10-31); their
+    populations come and go too fast to read as cultures. The giants fragment like peoples (sapient in D&D; an owner question)."""
     mega = {r["id"] for r in (tree or {}).get("lineage", []) if r.get("megafauna")}
     return {l["id"] for l in lines if l["id"] in mega and "flies" in (l.get("traits") or [])}
 
 
-def assign(demes: list[dict], skip: set | frozenset = frozenset()) -> tuple[list[Culture], np.ndarray]:
-    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture (-1: a
-    people in `skip`, no_culture)."""
+def assign(demes: list[dict], whole: set | frozenset = frozenset()) -> tuple[list[Culture], np.ndarray]:
+    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture. A people
+    in `whole` (one_culture) is one culture: all its demes share it."""
     out: list[Culture] = []
     dc = np.full(len(demes), -1, np.int64)
     founding: dict = {}
+    kind: dict = {}
     for d in demes:
-        if d["people"] in skip:
-            continue
         par = d["parent"]
+        if d["people"] in whole:
+            if d["people"] not in kind:
+                kind[d["people"]] = len(out)
+                out.append(Culture(len(out), d["people"], None if par is None or dc[par] < 0 else int(dc[par]), "founding", d["born_kyr"], None))
+            c = kind[d["people"]]
+            dc[d["id"]] = c
+            out[c].demes.append(d["id"])
+            continue
         same = par is not None and demes[par]["people"] == d["people"]
         life = d["born_kyr"] - (d["ended_kyr"] if d["ended_kyr"] is not None else 0.0)
         if not same or d["how"] in ("first", "from_people"):
@@ -379,7 +387,7 @@ def derive(run_dir: Path) -> dict:
     lines = m["lineages"]
     g = shared_grid(m["level"])
     cell_km2 = 4 * np.pi * 6371.0 ** 2 / g.n
-    cultures, dc = assign(doc["demes"], no_culture(m.get("tree"), lines))
+    cultures, dc = assign(doc["demes"], one_culture(m.get("tree"), lines))
     dr = Drift(cultures, dc, lines, g.nbr_off, g.nbr_idx, cell_km2, (m.get("techtree") or {}).get("known"), BIOMES)
     agos = [max(0.0, -f["t"]) for f in run["frames"]]
     win = doc.get("from_kyr", 300.0)
