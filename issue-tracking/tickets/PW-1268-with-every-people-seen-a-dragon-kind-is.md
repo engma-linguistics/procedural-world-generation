@@ -2,7 +2,7 @@
 id: PW-1268
 title: "With every people seen, a dragon kind is one to five living cultures, not one: keep that or fold it?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-670
 milestone: null
 subsystem: timezoom
@@ -37,4 +37,5 @@ Also seen: with every cell counted, a giant culture on the coast "gains the sea 
 run). Check whether giants should have sea craft at all (they wade straits), like fliers have none.
 
 ## Updates
+- 2026-11-01: Status needs-decision -> todo. Owner 2026-11-01 (D36): B, keep the splits; a dragon kind may be several cultures.
 - 2026-11-01: Created from inbox draft draft-dragon-kinds-several-cultures-with-full-presence.md (found by lane109).

@@ -2,7 +2,7 @@
 id: PW-1254
 title: "Cultures round 2: owner check of the era time-apart table, the cohesion values and merging side by side"
 type: task
-status: needs-decision
+status: todo
 parent: PW-670
 milestone: null
 subsystem: timezoom
@@ -36,4 +36,5 @@ In plain words: three of the new numbers are judgements. On your dnd runs they g
 - [ ] owner picks for 1, 2 and 3
 
 ## Updates
+- 2026-11-01: Status needs-decision -> todo. Owner 2026-11-01: 1 keep the era table (A); 2 B, cohesion scaled by lifespan (long-lived kinds hold together more); 3 B, side-by-side merging after 2,000 years, and different ways of life side by side should not merge (Seven Meals: steppe herder orcs beside forest farmer orcs keep two food cultures).
 - 2026-11-01: Created from inbox draft draft-cultures-round2-owner-check.md (found by lane108).
