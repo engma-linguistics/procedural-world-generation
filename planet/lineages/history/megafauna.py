@@ -31,9 +31,9 @@ The older note here ("an apex hunter two to three orders below the herbivore lin
 their carnivore line sits ~1.5 orders below the herbivores'.
 
 Peoples press both down by persecution (`kill`, PW-1068): a kill against their slow breeding, rising with the peoples' numbers and
-`means` (herds to defend, and weapons and organised hunts by the era's tech level), so they settle at natural x 1 / (1 + kill / r)
-(`local_density`): never zero, near natural beside early foragers and farmers, a tenth or so of it in dense renaissance farmland
-(constants below). Ripple et al. 2014 (Science 343:1241484, on file) shows the large carnivores pushed back by people (17 of the 31
+`means` (herds to defend, and weapons and organised hunts by the era's tech level), so they settle at natural x (1 - kill / r) and are
+lost from land where the kill outruns their breeding (`local_density`; PW-1246 B, lane 103): near natural beside early foragers, thinned
+beside farmers, gone from land as busy as the farmland lions are lost from (25 people per km2, Riggio et al. 2013; constants below). Ripple et al. 2014 (Science 343:1241484, on file) shows the large carnivores pushed back by people (17 of the 31
 largest hold on average 47% of their historical range, from <1% to 73%: tiger 18%, lion 17%; p. 1241484-2 and Table 1), gives no
 figure for density against potential, and ties their vulnerability to persecution to their slow reproduction (p. 1241484-1).
 Cardillo et al. 2004 (PLoS Biol 2:e197, on file) finds carnivore extinction risk tied to slow life history where people are dense
@@ -111,7 +111,6 @@ GUILD_CLASSES = ((20.6, 79.9), (58.3, 19.0), (1123.0, 0.9), (5347.0, 0.1))  # (m
 GUILD_APEX_KG = 1000.0  # the classes of this mass and up are the dragons' own size class (a dragon's ecological mass is ~2-3 t)
 GUILD_EXP = DA.FMR_B
 YOUNG_IN_GUILD = True  # (off only to measure it)
-GUILD_GEN_YR = 7.0  # the smaller predators' generation, years, for the peoples' kill on them (a wolf- to leopard-sized carnivore's; a judgement)
 SEA_FOOD = True  # D28 B (owner 10-31, lane 99): kinds with the trait 'sea_hunter' (white, bronze and blue dragons in the dnd tree) also live
 # on the sea's marine mammals within their foraging reach (`sea_food`; prey.sea_prey); off only to measure it
 FOOD_CAP = True  # PW-977 stage 1: dragons held to the food there (off only to measure what it does, docs/review/megafauna/probe.py)
@@ -135,25 +134,35 @@ PRESS_N0 = 0.05  # the overkill pressure (`pressure`; prey.field cuts the wild b
 # `means`: how many there are, how organised, how much they have to defend); a stage s of dragons loses effort x VULNERABILITY_s(tech) of
 # its number a year. Wyrmlings are reachable with spears, traps and bait; the young less so; adults and ancients hardly at all until the
 # tech level is high, so the adults' share of the kill rises with tech. On the dragons' age schedule (dragon_ages: the survival by stage,
-# fecundity flat from BREED_FROM) the kill lowers lifetime births R0 by a factor F (R0 / R0 under the kill); the dragons settle at
-# natural x 1 / (1 + (F - 1) / (BREED_X - 1)) (`dragon_kept`), a saturating form, a judgement: where births would have to rise BREED_X-fold
-# the dragons are halved, and the thinned dragons are assumed to breed back ever harder, so it is never zero (never species-ending,
-# owner 10-29, built in, not derived: a strict life table with births capped at BREED_X-fold dies out once F > BREED_X), never above natural; ~1 / (1 + k / r) for a small kill k on every stage, r = ln(BREED_X) / generation. Giants (no age
-# schedule) take the adults' vulnerability in that one-stage form, r = ln(BREED_X) / their generation.
+# fecundity flat from BREED_FROM) the kill lowers lifetime births R0 by a factor F (R0 / R0 under the kill). Where the dragons are thinned
+# their births rise to make up for it, at most BREED_X-fold where they are fewest (density compensation, linear between); they settle where
+# the births' rise meets F: natural x (1 - (F - 1) / (BREED_X - 1)) (`dragon_kept`), and where the kill would need more than a BREED_X-fold
+# rise they are lost from that land (local extirpation, PW-1246 B, owner 10-31: "inclined towards B"). Giants (no age schedule) take the
+# adults' vulnerability in the one-stage form, kept = 1 - kill / r, r = ln(BREED_X) / their generation. A kind is never ended by the kill
+# alone: it keeps the land where people are few (the lions' and tigers' pattern below); never above natural.
 # Evidence: in long-lived, slow-breeding animals growth is far less sensitive to first-year survival than to the long juvenile and adult
 # stages (loggerheads: Crouse, Crowder & Caswell 1987, Ecology 68:1412, p. 1416 and Fig. 1; protecting eggs alone "could not prevent the
 # eventual extinction of the model population", p. 1417); the dragons' own schedule agrees (the elasticity of R0 to a stage's survival,
 # summed over its years: wyrmlings 6, young 95, adults 242, ancients 92). Large carnivores' slow reproduction leaves them "poorly able to
 # respond to persecution" (Ripple et al. 2014, Science 343:1241484, p. 1241484-1), and among carnivores slow life history predicts
-# extinction risk where people are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912). None gives
-# the kill's size or the vulnerabilities: KILL_Q, VULNERABILITY and the means are judgements.
-BREED_X = 2.0  # the births' rise at which persecution halves the megafauna (the half-point of `dragon_kept`'s form; a judgement. Crouse 1987
-# p. 1417: loggerheads could recover by fecundity only "if they could more than double egg production, which seems unlikely")
-KILL_Q = 0.00187  # kill effort a year per head, per person per km2 at full means (a judgement, calibrated once: dense renaissance farmers,
-# 10 per km2, keep 10% of their dragons; lane 90 re-calibrated it for the means read from the history (PW-1177): such farmers keep their herds and
-# ride, means 0.94 against the old 0.625, so 0.0028 x 0.625 / 0.94, the same kill on them. The evidence read would allow local extirpation in dense farmland, Ripple 2014's tiger at 18% and
-# lion at 17% of their historical range, Table 1, a range share, not density kept; the form is never fatal at any KILL_Q, so 10% is a
-# reading of how hard late peoples should press, not a bound)
+# extinction risk where people are dense, >= 10 per km2 (Cardillo et al. 2004, PLoS Biol 2:e197, Tables 2-3, pp. 0911-0912).
+# The kill's size (lane 103, replacing lane 63's "dense renaissance farmers at 10 per km2 keep 10% of their dragons", a judgement the owner
+# did not want): the lions' range loss. Riggio et al. 2013 (Biodivers Conserv 22:17, CC-BY, on file as
+# docs/references/megafauna/riggio2013_savannah_africa_lion_view_biodivconserv.pdf; read 2026-10-31) map Africa's lion areas by excluding
+# land above 25 people per km2 (p. 21, rule 3), the density that best matches land converted to crops, overlap peaking "between 10 and 25
+# people per km2" in all four focus areas (p. 23); and "Woodroffe (2000) estimated a mean human population density threshold at which lions
+# went extinct of 26 people per km2" (p. 30; Woodroffe itself not read). Lions persist, at park-like density, on pastoral land below it
+# (Western et al. 2022, lane 99's report). So the apex predator is lost from land of LOSS_KM2 farmers and kept, thinned, below: KILL_Q is
+# set so the dragons' own life table (the default schedule, dragon_ages.DEFAULT) reaches F = BREED_X there, at the top tech level (the
+# lions' modern Africa) and the means of a farming people with herds and no riding (MEANS_REF). At earlier tech levels the same peoples
+# reach far fewer of the adults (VULNERABILITY), so the dragons are lost only from much denser land then. The smaller predators (the guild)
+# take the same threshold directly (`guild_kept`). VULNERABILITY and the means stay judgements.
+BREED_X = 2.0  # the most the births rise where the megafauna are fewest (a judgement. Crouse 1987 p. 1417: loggerheads could recover by
+# fecundity only "if they could more than double egg production, which seems unlikely")
+LOSS_KM2 = 25.0  # people per km2 (farmers) at which the apex predator is lost from the land: Riggio et al. 2013 pp. 21, 23 (25; Woodroffe 2000's 26, p. 30)
+LOSS_LEV = 1.0  # the tech level of that observation (twentieth-century Africa)
+MEANS_REF = None  # (set below: `means` of a farming people that keeps its herds and does not ride, 0.625)
+KILL_Q = None  # (set below, `_calibrate`: kill effort a year per head, per person per km2 at full means, ~1.85e-4)
 MOTIVE0 = 0.25  # means: a people with no herds still kills what threatens it, at this share of one with herds everywhere (judgement)
 FORAGER_ORG = 0.3  # means: a forager band's organised killing against a settled or herding people's (judgement)
 VULNERABILITY = {"wyrmling": (1.0, 0.0, 1.0), "young": (0.05, 0.45, 1.0), "adult": (0.01, 0.99, 2.0)}  # (a, b, p): a + b x level^p
@@ -192,11 +201,12 @@ def dragon_share(h: History | None = None) -> float:
 def guild_kept(h: History, kl, lev: float | None = None):
     """The smaller predators' share of their food-fed number kept under the peoples' kill kl (PW-1070, lane 90): Ripple et al. 2014's 31
     persecuted large carnivores (Science 343:1241484, Table 1) include the wolf- and leopard-sized members of the guild, so the peoples press
-    them too, at the wyrmlings' vulnerability (spears, traps and poison reach them at any tech) in the one-stage form, r = ln(BREED_X) /
-    GUILD_GEN_YR."""
+    them too, at the wyrmlings' vulnerability (spears, traps and poison reach them at any tech): linearly fewer with the kill, lost from
+    land where it is that of LOSS_KM2 farmers of MEANS_REF (lane 103: the lions' threshold itself, Riggio et al. 2013, the lions being
+    the guild's largest)."""
     lev = tech_level(h.tree.era, getattr(h, "_ago_now", 0.0)) if lev is None else lev
     v = vulnerability(lev)[0] * press_x(h.tree, lev)
-    return 1.0 / (1.0 + np.asarray(kl, float) * v / (np.log(BREED_X) / GUILD_GEN_YR))
+    return np.clip(1.0 - np.asarray(kl, float) * v / (KILL_Q * LOSS_KM2 * MEANS_REF), 0.0, 1.0)
 
 
 def meat_need(h: History, line) -> float:
@@ -304,25 +314,32 @@ def breed_r(h: History, line) -> float:
 _EPS = np.concatenate([[0.0], np.geomspace(1e-7, 1.0, 241)])  # (the kill-effort grid of dragon_kept's table, per head a year)
 
 
+def births_rise(schedule: str, eps, lev: float) -> np.ndarray:
+    """F: the factor lifetime births must rise by to make up for a kill effort eps (per head a year, an array) at tech level lev, on the age
+    schedule `schedule` (dragon_ages.SCHEDULES: survival by stage, fecundity flat from BREED_FROM): R0 with no kill over R0 under it."""
+    mort = np.asarray(DA.SCHEDULES[schedule], float)[DA.STAGE_OF]
+    breed = DA.AGES >= DA.BREED_FROM
+    ks = np.atleast_1d(np.asarray(eps, float))[:, None] * vulnerability(lev)[DA.STAGE_OF][None, :]
+    l = np.concatenate([np.ones((ks.shape[0], 1)), np.cumprod((1.0 - mort)[None, :] * np.exp(-ks), axis=1)[:, :-1]], axis=1)
+    l0 = np.concatenate([[1.0], np.cumprod(1.0 - mort)[:-1]])
+    return (l0 * breed).sum() / (l * breed).sum(1)
+
+
 def _kept_table(h: History, lev: float) -> np.ndarray:
     """dragon_kept over _EPS at tech level lev, on the dragons' age schedule (cached per level)."""
-    from .. import dragon_ages as DA
     c = h.__dict__.setdefault("_kept_cache", {})
     key = round(lev, 4)
     if key not in c:
-        mort = np.asarray(DA.SCHEDULES[h.dragon_struct["name"]], float)[DA.STAGE_OF]
-        breed = DA.AGES >= DA.BREED_FROM
-        ks = _EPS[:, None] * vulnerability(lev)[DA.STAGE_OF][None, :]
-        l = np.concatenate([np.ones((len(_EPS), 1)), np.cumprod((1.0 - mort)[None, :] * np.exp(-ks), axis=1)[:, :-1]], axis=1)
-        F = (l[0] * breed).sum() / (l * breed).sum(1)
-        c[key] = 1.0 / (1.0 + (F - 1.0) / (BREED_X - 1.0))
+        F = births_rise(h.dragon_struct["name"], _EPS, lev)
+        c[key] = np.clip(1.0 - (F - 1.0) / (BREED_X - 1.0), 0.0, 1.0)
     return c[key]
 
 
 def dragon_kept(h: History, eps, lev: float) -> np.ndarray:
     """The share of their natural density dragons keep under the peoples' kill effort eps (per head a year, `kill`) at tech level lev: each
-    stage loses eps x vulnerability(lev) a year; lifetime births R0 fall by a factor F; kept (a saturating judgement form, BREED_X its half-point) =
-    1 / (1 + (F - 1) / (BREED_X - 1)), F the births' rise needed. Interpolated on a table per level."""
+    stage loses eps x vulnerability(lev) a year; lifetime births R0 fall by a factor F (`births_rise`); the births rise to meet it, at most
+    BREED_X-fold where the dragons are fewest (linear compensation): kept = 1 - (F - 1) / (BREED_X - 1), 0 where F >= BREED_X (lost from
+    that land, PW-1246 B). Interpolated on a table per level."""
     e = np.clip(np.asarray(eps, float), 0.0, _EPS[-1])
     t = _kept_table(h, lev)
     return np.interp(np.log10(e + 1e-9), np.log10(_EPS + 1e-9), t)
@@ -337,12 +354,12 @@ def press_x(tree, lev: float) -> float:
 
 def kept(h: History, k: int, eps, lev: float | None = None) -> np.ndarray:
     """Line k's share of its natural density kept under the kill effort eps: dragons by age class (`dragon_kept`), giants in the
-    one-stage form with the adults' vulnerability, 1 / (1 + eps x v_adult / r)."""
+    one-stage form with the adults' vulnerability, 1 - eps x v_adult / r (0 where the kill outruns their breeding)."""
     lev = tech_level(h.tree.era, getattr(h, "_ago_now", 0.0)) if lev is None else lev
     eps = np.asarray(eps, float) * press_x(h.tree, lev)
     if "flies" in h.lines[k].traits and getattr(h, "dragon_struct", None) is not None:
         return dragon_kept(h, eps, lev)
-    return 1.0 / (1.0 + np.asarray(eps, float) * vulnerability(lev)[2] / breed_r(h, h.lines[k]))
+    return np.clip(1.0 - np.asarray(eps, float) * vulnerability(lev)[2] / breed_r(h, h.lines[k]), 0.0, 1.0)
 
 
 def kill(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.ndarray:
@@ -354,6 +371,21 @@ def kill(h: History, P: np.ndarray, land: np.ndarray | None = None) -> np.ndarra
         g = h.grid
         N = np.where(land, N, np.maximum(N, nbr_reduce(g, np.maximum, np.where(land, N, 0.0)[g.nbr_idx])))
     return KILL_Q * N
+
+def _calibrate() -> tuple[float, float]:
+    """(MEANS_REF, KILL_Q): the means of a farming people that keeps its herds (prey.LIVESTOCK's farmer share) and does not ride, and the
+    kill effort per head per person per km2 at full means at which LOSS_KM2 such farmers at tech level LOSS_LEV drive the default age
+    schedule's births to a BREED_X-fold rise: the dragons lost from that land, as lions are (Riggio et al. 2013; see LOSS_KM2)."""
+    m = MOTIVE0 + (1.0 - MOTIVE0) * PR.LIVESTOCK["farmer"]
+    lo, hi = 1e-8, 1.0
+    for _ in range(100):
+        mid = np.sqrt(lo * hi)
+        lo, hi = (mid, hi) if births_rise(DA.DEFAULT, mid, LOSS_LEV)[0] < BREED_X else (lo, mid)
+    return m, float(np.sqrt(lo * hi) / (LOSS_KM2 * m))
+
+
+MEANS_REF, KILL_Q = _calibrate()
+
 
 def setup(h: History) -> None:
     """The natural-density state on a new History: the setting, the dragons' age structure, the static prey and productivity."""
@@ -589,12 +621,22 @@ def food_scale(h: History, P: np.ndarray, kl: np.ndarray, prey: np.ndarray, food
 def local_density(h: History, k: int, kl, prey: np.ndarray | None = None, food: np.ndarray | None = None,
                   P: np.ndarray | None = None) -> np.ndarray:
     """Megafauna line k's density per cell, per km2, under the peoples' kill kl (per head a year, `kill`; PW-1068): its natural density
-    x `kept` (by age class for dragons): natural where nobody kills them, never zero, never above natural. One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
-    the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere)."""
-    d = _pressed(h, k, kl, prey, food if "flies" in h.lines[k].traits else None)
-    if FOOD_CAP and food is not None and P is not None and "flies" in h.lines[k].traits:
+    x `kept` (by age class for dragons): natural where nobody kills them, 0 where the kill outruns their breeding, never above natural. One rule for dragons and giants. Dragons are also held to the food there (food_scale; PW-977 stage 1) where the presences P and
+    the food are given (the present's prey; not the deep epoch, whose plates lay elsewhere). Dragons, last, x meta.dragon_abundance (the
+    world-builder's dial, not physics: `abundance`)."""
+    flies = "flies" in h.lines[k].traits
+    d = _pressed(h, k, kl, prey, food if flies else None)
+    if FOOD_CAP and food is not None and P is not None and flies:
         d = d * food_scale(h, P, kl, prey, food)
-    return d
+    return d * abundance(h.tree) if flies else d
+
+
+def abundance(tree) -> float:
+    """meta.dragon_abundance (lane 103, owner 10-31: "a lever to pull to make 'em more or less numerous for a run"): a plain multiplier on
+    every dragon kind's density everywhere, after the food, the food cap and the persecution, so the dragons' map and their pattern beside
+    the peoples keep their shape and only the numbers scale. A world-builder's choice, not physics: at x2 the dragons eat twice the food
+    the model's ecology gives them (a richer, more magical world). Default 1 (spec.ABUNDANCE_X)."""
+    return float(getattr(tree, "dragon_abundance", 1.0))
 
 
 def ages(h: History) -> dict:
