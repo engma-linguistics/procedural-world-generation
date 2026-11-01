@@ -40,7 +40,7 @@ Jobs (zooms, time zooms, finished worlds) run `--jobs J` at a time (default 4), 
 |---|---|---|---|---|
 | 6 | 41k | ~110 km | ~11–13 min per Gyr (store runs 705–802 s/Gyr; 659 s in the Oct 15 sweep under load; ~260 s/Gyr on the idle Threadripper) | checkpoints ~12 MB each (PW-131, PW-306: seed 1 @ 200 Myr 15.3 -> 11.7 MB); layers ~360–390 MB per Gyr (Oct 15, with vegetation) |
 | 7 | 164k | ~55 km | ~50 min per Gyr (Oct 15 sweep: 3 seeds at 2965–3038 s, 11 workers at once; the earlier ~20–40 min was idle) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4–1.7 GB per Gyr, checkpoints ~45 MB each (PW-306 estimate from L6's share; ~60 after PW-131, ~140 before) |
-| 8 | 655k | ~28 km | ~3–4 h per Gyr (4.1 h for 1.2 Gyr) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
+| 8 | 655k | ~28 km | ~5.7 h per Gyr at 8 threads (lane 105: 5 h 26 min for 1 Gyr, peak 30 GB at the final write) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
 
 Measured at L8 on 2026-10-31 (seed 11, 100 Myr, load 20–55 on the Threadripper, docs/review/l8-world/notes.md): `simulate` 132 min for 100 Myr, ~9–25 s/Myr until the last ~10 Myr, then ~8 min/Myr in the finish window (full L8 climate every 0.5 Myr: 88 -> 100 Myr took ~90 min, the part that dominates short runs); peak RSS 10.7–15 GB (not 3.5 GB). `slice` of the world (full climate, coast, resources) 13.8 min, 17.7 GB RSS, world file 440 MB. 60 kyr glacial time zoom 39 min (about 10–20 s per kyr, not the 2.6 s the make estimate assumes), 10.4 GB RSS. `highlights` 86 s, 4 regional zooms 439 s together, under load.
 

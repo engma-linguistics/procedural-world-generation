@@ -202,3 +202,61 @@ def test_post_refuses_cross_site(data_root):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def _presence_run(root, dtype, nlines=3, nframes=4):
+    """A fake peoples run with a presence table (output.write_presence's layout) and demes_all: returns the run id and per-frame truth."""
+    from planet.lineages import output as LO
+    rid = "abc123"
+    d = root / "runs" / rid
+    (d / "layers").mkdir(parents=True)
+    rng = np.random.default_rng(5)
+    n_cells = 70000 if dtype == "<u4" else 900
+    frames, truth = [], []
+    for f in range(nframes):
+        pl, pc, ps = [], [], []
+        for k in range(nlines):
+            c = np.sort(rng.choice(n_cells, int(rng.integers(0, 40)), replace=False))
+            pl += [k] * len(c)
+            pc += list(c)
+            ps += [50] * len(c)
+        frames.append({"presence": (np.array(pl), np.array(pc), np.array(ps, np.uint8))})
+        truth.append((np.array(pl), np.array(pc)))
+    pm = LO.write_presence(d, frames, nlines, n_cells)
+    assert pm["dtypes"]["cells"] == dtype
+    dem = np.arange(pm["entries"], dtype="<u2")
+    (d / "layers" / "demes_all.bin").write_bytes(dem.tobytes())
+    (d / "run.json").write_text(json.dumps({"meta": {"presence": pm, "demes": {"all": {"file": "layers/demes_all.bin"}}}}))
+    return rid, truth, pm
+
+
+@pytest.mark.parametrize("dtype", ["<u2", "<u4"])
+def test_presence_frame_slice(http_root, dtype):
+    """/api/presence sends one frame's offsets, cells and demes_all, equal to that frame's slice of the whole table (PW-1269)."""
+    root, get = http_root
+    rid, truth, pm = _presence_run(root, dtype)
+    whole = np.fromfile(root / "runs" / rid / "layers/presence_cells.bin", dtype=dtype)
+    offs = np.fromfile(root / "runs" / rid / "layers/presence_offsets.bin", dtype="<u4").reshape(pm["frames"], -1)
+    L = pm["lines"] + 1
+    cs = np.dtype(dtype).itemsize
+    for f in range(pm["frames"]):
+        status, h, body = get(f"/api/presence?run={rid}&frame={f}", gz=False)
+        assert status == 200 and h["Content-Type"] == "application/octet-stream"
+        o = np.frombuffer(body[:4 * L], "<u4")
+        n = int(o[-1])
+        a = int(offs[f, 0])
+        assert (o == offs[f] - a).all() and n == len(truth[f][1])
+        assert len(body) == 4 * L + n * (cs + 2)
+        cells = np.frombuffer(body[4 * L:4 * L + n * cs], dtype)
+        dem = np.frombuffer(body[4 * L + n * cs:], "<u2")
+        assert (cells == truth[f][1]).all() and (cells == whole[a:a + n]).all()
+        assert (dem == np.arange(a, a + n)).all()
+        for k in range(pm["lines"]):  # (line k's cells within the slice)
+            assert (cells[o[k]:o[k + 1]] == truth[f][1][truth[f][0] == k]).all()
+    status, h, body = get(f"/api/presence?run={rid}&frame=1")  # (gzipped when the browser accepts it)
+    raw = get(f"/api/presence?run={rid}&frame=1", gz=False)[2]
+    assert status == 200 and h.get("Content-Encoding") == "gzip" and gzip.decompress(body) == raw
+    assert get(f"/api/presence?run={rid}&frame={pm['frames']}")[0] == 400
+    assert get(f"/api/presence?run={rid}&frame=x")[0] == 400
+    assert get("/api/presence?frame=0")[0] == 400
+    assert get("/api/presence?run=nope&frame=0")[0] == 404

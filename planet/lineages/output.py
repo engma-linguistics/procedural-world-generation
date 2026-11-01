@@ -227,6 +227,33 @@ def read_presence(run_dir: Path, meta: dict) -> dict | None:
     return out
 
 
+def read_presence_frame(run_dir: Path, meta: dict, frame: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """One frame's slice of the presence table and of demes_all, read by seeking (the viewer's picker downloads one frame at a
+    time, PW-1269): (cells, demes, offsets): the frame's entries for all lines in order, and offsets (lines + 1) of line k's entries within
+    that slice. Raises KeyError (no table) or IndexError (no such frame)."""
+    pm = meta.get("presence")
+    if not pm:
+        raise KeyError("this run has no presence table")
+    if not 0 <= frame < pm["frames"]:
+        raise IndexError(f"frame {frame} outside 0..{pm['frames'] - 1}")
+    run_dir, w = Path(run_dir), pm["lines"] + 1
+    with open(run_dir / pm["files"]["offsets"], "rb") as f:
+        f.seek(4 * frame * w)
+        row = np.frombuffer(f.read(4 * w), "<u4")
+    a, b = int(row[0]), int(row[-1])
+    cdt = np.dtype(pm["dtypes"]["cells"])
+    with open(run_dir / pm["files"]["cells"], "rb") as f:
+        f.seek(a * cdt.itemsize)
+        cells = np.frombuffer(f.read((b - a) * cdt.itemsize), cdt)
+    dm = (meta.get("demes") or {}).get("all")
+    dem = np.zeros(0, "<u2")
+    if dm:
+        with open(run_dir / dm["file"], "rb") as f:
+            f.seek(2 * a)
+            dem = np.frombuffer(f.read(2 * (b - a)), "<u2")
+    return cells, dem, row.astype(np.int64) - a
+
+
 def composition(h: History, frames: list) -> dict:
     """How the peoples share the cells (PW-689): at the present and about 5 kyr ago, the share of peopled land with
     2+ peoples (a second people with at least history.COMPOSITION_TWO_PCT of the cell), the mean lead share, the empty

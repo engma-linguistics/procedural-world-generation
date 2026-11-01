@@ -8,6 +8,7 @@
                                       takes its zooms and highlights with it)
   POST   /api/zoom, /api/timezoom, /api/finish, /api/make, /api/highlight-zooms
                                       start a job (api.py; make.py: seed to finished world) -> {"job": id}
+  GET    /api/presence?run=&frame=    one frame of a peoples run's presence table + demes_all (binary; the demes picker, PW-1269)
   DELETE /api/jobs/<id>               cancel a queued or running job (api.Jobs.cancel)
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
@@ -42,6 +43,7 @@ so they don't wait for the jobs or for each other. Job state is kept in
 
 from __future__ import annotations
 
+import gzip
 import email.utils
 import http.server
 import json
@@ -116,6 +118,28 @@ def rename_landmass(raw: bytes) -> tuple[dict, int]:
         return {"names": NM.set_name(str(b.get("world") or ""), str(b.get("letter") or ""), str(b.get("name") or ""))}, 200
     except (ValueError, TypeError) as e:
         return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+
+
+def presence_frame(query: str) -> tuple[bytes | dict, int]:
+    """GET /api/presence?run=<id>&frame=<f>: one frame of the run's presence table and demes_all (PW-1269), so the viewer's
+    "whose demes" picker downloads that frame's slice instead of the whole table. The body is binary: (lines + 1) uint32 offsets
+    of each line's entries within the slice, then the cell ids (meta.presence.dtypes.cells), then the demes (uint16, if the
+    run has demes_all). The entry count is the last offset."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import output as LO
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        meta = (json.loads((d / "run.json").read_text()).get("meta") or {})
+        cells, dem, offs = LO.read_presence_frame(d, meta, int(q.get("frame", "")))
+        return offs.astype("<u4").tobytes() + cells.tobytes() + dem.tobytes(), 200
+    except (ValueError, IndexError) as e:
+        return {"error": str(e)}, 400
+    except KeyError as e:
+        return {"error": e.args[0]}, 404
     except SystemExit as e:
         return {"error": str(e)}, 404
 
@@ -469,6 +493,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/brief":
             return self.send_json(*brief(url.query))
+        if url.path == "/api/presence":
+            body, code = presence_frame(url.query)
+            if isinstance(body, dict):
+                return self.send_json(body, code)
+            self.send_response(code)
+            self.send_header("Content-Type", "application/octet-stream")
+            if accepts_gzip(self.headers.get("Accept-Encoding")):  # (cell ids ascend, so it gzips ~3.4x at L7)
+                body = gzip.compress(body, 1)
+                self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if url.path == "/api/cultures":
             return self.send_json(*cultures(url.query))
         if url.path == "/api/names":

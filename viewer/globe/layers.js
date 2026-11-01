@@ -312,10 +312,10 @@ const LAYERS = {
       const D = S.V.demes?.demes || [], cnt = new Map(), lines = S.V.run.meta.lineages || [];
       for (let i = 0; i < S.V.n; i++) { const d = demeOf(i); if (d) cnt.set(d.id, (cnt.get(d.id) || 0) + 1); }
       const rows = [...cnt.entries()].filter(([d]) => D[d]).sort((a, b) => b[1] - a[1]);
-      const who = state.demesOf && S.V.demesAll ? lines.find((l) => l.id === state.demesOf) : null;
+      const who = state.demesOf && S.V.demesAll?.f === S.V.frame ? lines.find((l) => l.id === state.demesOf) : null;
       // (whose demes, lane 109: demes overlap, a kobold deme beside a hobgoblin one in the same hills, a dragon kind's over the peoples below)
       const ppl = [...new Set(D.map((d) => d.people))].map((id) => lines.find((l) => l.id === id)).filter(Boolean).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
-      const pick = S.V.run.meta.demes?.all ? `<label title="Demes overlap: every people has its own, wherever it lives. Each cell's leading people, or one people's demes (with the cells it shares)">whose demes <select data-demesof><option value="">each cell's leading people</option>${ppl.map((l) => `<option value="${esc(l.id)}"${l.id === state.demesOf ? ' selected' : ''}>${esc(l.name || l.id)}</option>`).join('')}</select></label>${state.demesOf && !S.V.demesAll ? ' <span class="muted">loading…</span>' : ''}<br>` : '';
+      const pick = S.V.run.meta.demes?.all ? `<label title="Demes overlap: every people has its own, wherever it lives. Each cell's leading people, or one people's demes (with the cells it shares)">whose demes <select data-demesof><option value="">each cell's leading people</option>${ppl.map((l) => `<option value="${esc(l.id)}"${l.id === state.demesOf ? ' selected' : ''}>${esc(l.name || l.id)}</option>`).join('')}</select></label>${state.demesOf && S.V.demesAll?.f !== S.V.frame ? ' <span class="muted">loading…</span>' : ''}<br>` : '';
       return pick + rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
         sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations ${who ? `of the ${esc(who.name || who.id)}, wherever they live (over or beside other peoples)` : 'of the leading peoples here'}: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${S.V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
     } },
