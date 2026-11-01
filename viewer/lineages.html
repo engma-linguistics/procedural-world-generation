@@ -253,11 +253,13 @@ const FOOT = {
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
   cultures: `Cultures that grew out of each people on the peoples run picked in Results (PW-670, a first cut, worked out after the run).
-    A part of a people becomes a culture of its own when it takes to new country (<b>adapted</b>) or lives apart from the rest for 1 kyr or more
-    (<b>apart</b>: cut off by sea, hard country or distance); a people's first populations are its <b>founding</b> culture. Each culture starts with its
-    parent's skills, then drifts toward what its own land rewards: sea craft fades inland within about a thousand years; new skills come slowly, and only
-    once the people has boats (or herds). Sister cultures that border each other merge once their people has cities or written law and one state
-    could hold both. Names are placeholders. The bar is the culture's life on a log time axis; "map" opens the globe there.`,
+    A part of a people becomes a culture of its own when it takes to new country (<b>adapted</b>) or lives apart from the rest, beyond its kind's own
+    reach (a dragon's flight, a sailor's craft, a walker's legs), for 0.6 kyr in the stone age down to 150 years by the renaissance (<b>apart</b>);
+    a people's first populations are its <b>founding</b> culture. Each culture starts with its parent's skills, then drifts toward what its own land
+    rewards: sea craft fades inland within about a thousand years; new skills come slowly, and only once the people has boats (or herds). A kind's
+    cohesion (dragons strong, giants middling) pulls its cultures toward one another. Sister cultures that live side by side merge after about a
+    thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
+    The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
@@ -1000,7 +1002,7 @@ function drawCultures() {
   let h = `<div class="row" style="margin-bottom:8px"><span class="muted">people</span><select id="cuPeople"><option value="*" ${cultUI.people === '*' ? 'selected' : ''}>all peoples</option>
     ${peoples.map((p) => `<option value="${esc(p)}" ${p === cultUI.people ? 'selected' : ''}>${pname(p)}: ${living(p)} living of ${by[p].length}</option>`).join('')}</select>
     <label class="muted" title="Also list the cultures that died out or merged into another (otherwise only the living ones and the ancestors that join them up)"><input type="checkbox" id="cuAll" ${cultUI.all ? 'checked' : ''}> all, with those gone</label>
-    <span class="muted">${C.length} cultures since ${fmt(doc.from_kyr ?? 300)} ago, ${alive} living; ${doc.merges.length} merged under one state</span></div>`;
+    <span class="muted">${C.length} cultures since ${fmt(doc.from_kyr ?? 300)} ago, ${alive} living; ${doc.merges.length} merged (${doc.merges.filter((m) => m.why === 'states').length} under one state)</span></div>`;
   // the life bar: a log time axis from 50 yr to the start of the window
   const LO = Math.log10(0.05), HI = Math.log10(Math.max(doc.from_kyr || 300, 1)), BW = 200;
   const bx = (k) => Math.round((1 - (Math.log10(Math.max(k, 0.05)) - LO) / (HI - LO)) * BW);

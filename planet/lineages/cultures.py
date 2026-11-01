@@ -1,4 +1,4 @@
-"""Emergent cultures, first cut (PW-670): demes that adapted to new country, or lived apart long enough, become cultures of their own.
+"""Emergent cultures (PW-670, round 2): demes that adapted to new country, or lived apart long enough, become cultures of their own.
 
 Output only, like demes.py and settlements.py: reads a finished peoples run (demes.json, layers/demes.bin, groups_best, the terrain
 frames, meta.techtree) and writes `cultures.json` and `meta.cultures`. Nothing in the history is read back or changed.
@@ -6,14 +6,18 @@ Design and grounding: docs/review/emergent-cultures/design.md.
 
 - A culture is a deme or a run of demes along the deme tree. A people's first demes form its founding culture. A deme split
   off by niche learning (`split_adapted`) is a new culture at once. A deme cut off by a gap, a crossing or distance is a new
-  culture once it has lived apart T_APART_KYR. Every other deme is its parent's culture.
+  culture once it has lived apart `t_apart(era)`: T_APART_KYR by the people's era when it split (meta.techtree). Every other
+  deme is its parent's culture. Who is apart is the demes' call: demes.py cuts each kind by its own reach (a walker's, a
+  seafarer's, a flier's, a dragon's or giant's LINK_KM), so this module has no distance logic of its own.
 - Inheritance: at its first frame a culture copies its parent culture's skills as they are then (a founding culture its
   people's spec). Its way of life, the shares of its people's groups on its cells (groups_best), is read at its first frame and now.
 - Drift: sea craft and open-country lore move toward what its country rewards (the coast share of its cells / COAST_FULL;
-  the steppe, desert and savanna share / OPEN_FULL), losing with TAU_LOSE_KYR and gaining with TAU_GAIN_KYR.
-- Merging (PW-676, no cap): a culture whose last deme fused into another culture's deme merged into it. Two touching cultures
-  of one people, with the same adaptation and main way of life, merge after MERGE_KYR of contact once the people knows a
-  unifying technology whose reach (REACH_MKM2) holds both.
+  the steppe, desert and savanna share / OPEN_FULL), losing with TAU_LOSE_KYR and gaining with TAU_GAIN_KYR. A kind's cohesion
+  (0..1, the tree's per-line `cohesion`, inherited; dragons strong, giants medium, peoples none) pulls the target that far toward
+  its kind's mean: one tongue and shared mores across a kind.
+- Merging (PW-676, no cap): a culture whose last deme fused into another culture's deme merged into it. Two touching sister
+  cultures (one people, the same adaptation and main way of life) merge after MERGE_CONTACT_KYR x (1 - cohesion) side by side,
+  or after MERGE_KYR once the people knows a unifying technology whose reach (REACH_MKM2) holds both.
 """
 
 from __future__ import annotations
@@ -30,7 +34,14 @@ from ..geo import is_land
 from ..grid import shared_grid
 
 # judgement calls and their grounding: docs/review/emergent-cultures/design.md
-T_APART_KYR = 1.0  # a deme apart this long is a culture of its own (lexicostatistics: speech parts in ~0.5-0.7 kyr; margin)
+T_APART_KYR = {"stone age": 0.6, "bronze age": 0.45, "classical": 0.3, "medieval": 0.2, "renaissance": 0.15, "industrial": 0.15}
+# a deme apart this long, by its people's era when it split, is a culture of its own. Renaissance: settler colonies were told apart
+# in ~120-175 yr (Cape Dutch a stable dialect by ~1775; "Americanism" coined 1781, 174 yr after Jamestown; Quebec cut off in 1760). Stone
+# age: speech parts into separate tongues in ~0.5-0.7 kyr (lexicostatistics). Between: a judgement. Frames are 0.5 kyr apart near the
+# present and 4 kyr in the glacial pass, so a split is seen at frame resolution: a deme counts once its life spans t_apart
+ERA_SHARE = 0.25  # a people is in an era once it knows this share of the era's techs (meta.techtree; the stone age from the start)
+MERGE_CONTACT_KYR = 1.0  # sister cultures touching this long merge (x (1 - cohesion)); longer than t_apart, so a brief meeting
+# does not undo a split
 COAST_FULL = 0.25  # coast share of a culture's cells at which sea craft is fully rewarded
 OPEN_FULL = 0.5  # steppe, desert and savanna share at which open-country lore (herding, moving with the herds) is
 TAU_LOSE_KYR = 1.0  # e-folding of a skill its country no longer rewards (Rivers 1912 via Henrich 2004: canoes lost on islands)
@@ -65,35 +76,76 @@ class Culture:
         self.fit_sea = self.fit_open = None
 
 
-def one_culture(tree: dict | None, lines: list[dict]) -> set[str]:
-    """The kinds that keep one culture each, never fragmenting: the dragons (megafauna that fly, as history.megafauna.eco_mass tells
-    them apart). They are sapient, but for now each kind is simply its own culture, along colour lines (owner 2026-10-31); their
-    populations come and go too fast to read as cultures. The giants fragment like peoples (sapient in D&D; an owner question)."""
-    mega = {r["id"] for r in (tree or {}).get("lineage", []) if r.get("megafauna")}
-    return {l["id"] for l in lines if l["id"] in mega and "flies" in (l.get("traits") or [])}
+def cohesion(tree: dict | None, tree_name: str | None = None) -> dict[str, float]:
+    """id -> the kind's cohesion (0..1): the tree's per-line `cohesion`, inherited from the first parent where not given (spec's rule),
+    0 where no line above gives it. A stored tree that gives none anywhere (a run made before the key existed) takes the values of the
+    preset of the same name (samples/*.toml); the rest of its tree is as it was run."""
+    rows = {r["id"]: r for r in (tree or {}).get("lineage", [])}
+    given = {k: float(r["cohesion"]) for k, r in rows.items() if "cohesion" in r}
+    if not given and tree_name:
+        import tomllib
+        for f in sorted((Path(__file__).parent / "samples").glob("*.toml")):
+            t = tomllib.loads(f.read_text())
+            if (t.get("meta") or {}).get("name") == tree_name:
+                given = {r["id"]: float(r["cohesion"]) for r in t.get("lineage", []) if "cohesion" in r and r["id"] in rows}
+                break
+    out: dict[str, float] = {}
+
+    def get(k, seen=()):
+        if k not in out:
+            par = (rows.get(k) or {}).get("parents") or []
+            v = given[k] if k in given else get(par[0], seen + (k,)) if par and par[0] in rows and par[0] not in seen else 0.0
+            out[k] = min(1.0, max(0.0, v))
+        return out[k]
+
+    for k in rows:
+        get(k)
+    return out
 
 
-def assign(demes: list[dict], whole: set | frozenset = frozenset()) -> tuple[list[Culture], np.ndarray]:
-    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture. A people
-    in `whole` (one_culture) is one culture: all its demes share it."""
+def eras(techtree: dict | None) -> dict[str, list]:
+    """people -> [(kyr ago, era index)] of the eras it reached (ERA_SHARE of an era's techs known), oldest first; the stone age always."""
+    from .techtree import ERAS
+    tt = techtree or {}
+    era = {t["id"]: t.get("era", "stone age") for t in tt.get("techs", [])}
+    tot = {e: sum(1 for v in era.values() if v == e) for e in ERAS}
+    out = {}
+    for p, kn in (tt.get("known") or {}).items():
+        r = [(float("inf"), 0)]
+        for i, e in enumerate(ERAS[1:], 1):
+            when = sorted((float(v[0]) for t, v in kn.items() if era.get(t) == e), reverse=True)
+            need = int(np.ceil(ERA_SHARE * tot[e])) if tot[e] else 0
+            if need and len(when) >= need:
+                r.append((when[need - 1], i))
+        out[p] = r
+    return out
+
+
+def t_apart(era_list: list | None, ago: float) -> float:
+    """The time apart that makes a culture, for a people at that time (its era then; the stone age's without a techtree)."""
+    from .techtree import ERAS
+    i = max([e for when, e in era_list if when >= ago - 1e-9], default=0) if era_list else 0
+    return T_APART_KYR[ERAS[i]]
+
+
+def assign(demes: list[dict], era_of: dict | None = None, coh: dict | None = None) -> tuple[list[Culture], np.ndarray]:
+    """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture. era_of:
+    people -> eras() list (None: the stone age's time apart for all). coh: people -> cohesion; a cohesive kind's later first demes
+    (pockets that drop out of the frames, which keep only each cell's two leading peoples, and come back) join its first culture."""
     out: list[Culture] = []
     dc = np.full(len(demes), -1, np.int64)
     founding: dict = {}
-    kind: dict = {}
+    first: dict = {}
+    era_of, coh = era_of or {}, coh or {}
     for d in demes:
         par = d["parent"]
-        if d["people"] in whole:
-            if d["people"] not in kind:
-                kind[d["people"]] = len(out)
-                out.append(Culture(len(out), d["people"], None if par is None or dc[par] < 0 else int(dc[par]), "founding", d["born_kyr"], None))
-            c = kind[d["people"]]
-            dc[d["id"]] = c
-            out[c].demes.append(d["id"])
-            continue
         same = par is not None and demes[par]["people"] == d["people"]
         life = d["born_kyr"] - (d["ended_kyr"] if d["ended_kyr"] is not None else 0.0)
         if not same or d["how"] in ("first", "from_people"):
             key = (d["people"], round(d["born_kyr"], 3))
+            if coh.get(d["people"], 0.0) > 0 and d["people"] in first:
+                key = first[d["people"]]
+            first.setdefault(d["people"], key)
             if key not in founding:
                 founding[key] = len(out)
                 out.append(Culture(len(out), d["people"], None if par is None or dc[par] < 0 else int(dc[par]), "founding", d["born_kyr"], d.get("adapted")))
@@ -101,7 +153,7 @@ def assign(demes: list[dict], whole: set | frozenset = frozenset()) -> tuple[lis
         elif d["how"] == "split_adapted":
             c = len(out)
             out.append(Culture(c, d["people"], int(dc[par]), "adapted", d["born_kyr"], d.get("adapted")))
-        elif life >= T_APART_KYR - 1e-9:
+        elif life >= t_apart(era_of.get(d["people"]), d["born_kyr"]) - 1e-9:
             c = len(out)
             pa = out[int(dc[par])].adapted
             out.append(Culture(c, d["people"], int(dc[par]), "apart", d["born_kyr"], d.get("adapted") if d.get("adapted") != pa else pa))
@@ -135,8 +187,9 @@ class Drift:
     """Follows the cultures through the frames, oldest first: inheritance at a culture's first frame, drift, contact merges."""
 
     def __init__(self, cultures: list[Culture], dc: np.ndarray, lines: list[dict], nbr_off, nbr_idx, cell_km2: float, known: dict | None = None,
-                 biomes: tuple = ()):
+                 biomes: tuple = (), coh: dict | None = None):
         self.C, self.dc, self.lines = cultures, dc, lines
+        self.coh = coh or {}  # (people -> cohesion 0..1)
         self.ids = [l["id"] for l in lines]
         self.idx = {l["id"]: i for i, l in enumerate(lines)}
         self.cell_km2 = cell_km2
@@ -199,7 +252,18 @@ class Drift:
             w = self.ids[gi] if gi < len(self.ids) and self.group_of[gi] == p else self.C[c].people  # (no group of its own: its people's old ways)
             ways.setdefault(c, {})
             ways[c][w] = ways[c].get(w, 0) + n
-        for c in np.flatnonzero(cells).tolist():
+        live = np.flatnonzero(cells).tolist()
+        mean: dict[str, list] = {}  # (people -> [cells, x open, cells with sea craft, x sea] over its cultures: the kind's mean)
+        for c in live:
+            u = self.C[c]
+            if u.started and self.coh.get(u.people, 0.0) > 0:
+                m = mean.setdefault(u.people, [0.0, 0.0, 0.0, 0.0])
+                m[0] += cells[c]
+                m[1] += cells[c] * u.open
+                if u.sea is not None:
+                    m[2] += cells[c]
+                    m[3] += cells[c] * u.sea
+        for c in live:
             u = self.C[c]
             n = int(cells[c])
             fs, fo = min(1.0, coastc[c] / n / COAST_FULL), min(1.0, openc[c] / n / OPEN_FULL)
@@ -214,9 +278,17 @@ class Drift:
                 u.sea, u.open, u.ways0 = u.sea0, u.open0, wsh
             else:
                 gs, go = self._can_gain("sea", u.people, ago), self._can_gain("open", u.people, ago)
+                k = self.coh.get(u.people, 0.0)
+                m = mean.get(u.people)
                 if u.sea is not None:
-                    u.sea = _step(u.sea, fs if gs else min(fs, u.sea), dt)
-                u.open = _step(u.open, fo if go else min(fo, u.open), dt)
+                    ts = fs if gs else min(fs, u.sea)
+                    if m and m[2] > 0:
+                        ts = (1 - k) * ts + k * m[3] / m[2]  # (cohesion: the kind's mean pulls the target that far)
+                    u.sea = _step(u.sea, ts, dt)
+                to = fo if go else min(fo, u.open)
+                if m and m[0] > 0:
+                    to = (1 - k) * to + k * m[1] / m[0]
+                u.open = _step(u.open, to, dt)
             u.ways, u.fit_sea, u.fit_open = wsh, fs, fo
             u.country = self.biomes[int(bh[c].argmax())] if self.biomes else None
             u.last_ago = ago
@@ -240,15 +312,15 @@ class Drift:
             if x.people != y.people or x.adapted != y.adapted or not x.ways or not y.ways or next(iter(x.ways)) != next(iter(y.ways)):
                 continue
             area = (cells[x.id] + cells[y.id]) * self.cell_km2 / 1e6
-            if area > _reach(self.rd.get(x.people), ago):
-                continue
             key = (x.id, y.id)
-            now[key] = self.contact[key] + dt if key in self.contact else 0.0  # (the time since the pair first qualified)
-            if now[key] >= MERGE_KYR - 1e-9 and x.id not in gone and y.id not in gone:
+            now[key] = self.contact[key] + dt if key in self.contact else 0.0  # (the time since the pair first touched as sisters)
+            state = area <= _reach(self.rd.get(x.people), ago) and now[key] >= MERGE_KYR - 1e-9
+            side = now[key] >= MERGE_CONTACT_KYR * (1.0 - self.coh.get(x.people, 0.0)) - 1e-9
+            if (state or side) and x.id not in gone and y.id not in gone:
                 keep, lose = (x, y) if x.born >= y.born else (y, x)
                 lose.merged_at, lose.into = round(ago, 3), keep.id
                 lose.ended, lose.end = round(ago, 3), "merged"
-                self.merges.append({"ago_kyr": round(ago, 3), "culture": lose.id, "into": keep.id, "why": "states", "area_mkm2": round(float(area), 2),
+                self.merges.append({"ago_kyr": round(ago, 3), "culture": lose.id, "into": keep.id, "why": "states" if state else "contact", "area_mkm2": round(float(area), 2),
                                     "contact_kyr": round(now[key], 3)})
                 gone |= {x.id, y.id}
                 del now[key]
@@ -292,7 +364,9 @@ def _short_people(l: dict) -> str:
     return (l.get("name") or l["id"]).split(" (")[0]
 
 
-def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dict], merges: list[dict], cell_km2: float, secs: float = 0.0) -> dict:
+def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dict], merges: list[dict], cell_km2: float, secs: float = 0.0,
+             coh: dict | None = None) -> dict:
+    coh = coh or {}
     from .demes import _colors
     idx = {l["id"]: l for l in lines}
     D = doc["demes"]
@@ -337,7 +411,7 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
         out.append({
             "id": u.id, "people": u.people, "n": per[u.people], "name": nm, "how": u.how,
             "parent": u.parent, "parent_people": par.people if par else None,
-            "born_kyr": round(u.born, 3), "own_from_kyr": round(u.born - T_APART_KYR, 3) if u.how == "apart" else round(u.born, 3),
+            "born_kyr": round(u.born, 3), "cohesion": coh.get(u.people, 0.0),
             "ended_kyr": u.ended, "end": u.end, "into": u.into,
             "demes": u.demes, "adapted": u.adapted, "founded_by": founded, "place": place, "lat": big.get("lat"), "lon": big.get("lon"),
             "country_now": u.country, "cells_now": u.cells_now if u.end is None else 0, "cells_held_now": int(held[u.id]) if u.end is None else 0,
@@ -361,13 +435,16 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
         b["merged"] += x["end"] == "merged"
         b["died_out"] += x["end"] == "died out"
     for m in merges:
-        m["text"] = f"{out[m['culture']]['name']} merged into {out[m['into']]['name']} (one state's reach, {m['area_mkm2']} Mkm2)"
+        why = f"one state's reach, {m['area_mkm2']} Mkm2" if m["why"] == "states" else f"side by side {m['contact_kyr']:g} kyr"
+        m["text"] = f"{out[m['culture']]['name']} merged into {out[m['into']]['name']} ({why})"
     cdoc = {"format": "procgen-cultures/1", "from_kyr": doc.get("from_kyr"), "frames": doc.get("frames"), "cultures": out,
             "merges": merges, "deme_culture": dc.tolist()}
-    summary = {"file": "cultures.json", "count": len(out), "alive": sum(x["end"] is None for x in out), "merges": len(merges), "by_people": by,
+    summary = {"file": "cultures.json", "count": len(out), "alive": sum(x["end"] is None for x in out), "merges": len(merges),
+               "merges_by": {w: sum(m["why"] == w for m in merges) for w in ("contact", "states")}, "by_people": by,
                "generated_in_s": round(secs, 1),
                "constants": {"t_apart_kyr": T_APART_KYR, "coast_full": COAST_FULL, "open_full": OPEN_FULL, "tau_lose_kyr": TAU_LOSE_KYR,
-                             "tau_gain_kyr": TAU_GAIN_KYR, "merge_kyr": MERGE_KYR, "reach_mkm2": dict(REACH_MKM2)}}
+                             "tau_gain_kyr": TAU_GAIN_KYR, "merge_kyr": MERGE_KYR, "merge_contact_kyr": MERGE_CONTACT_KYR,
+                             "era_share": ERA_SHARE, "reach_mkm2": dict(REACH_MKM2), "cohesion": {k: v for k, v in coh.items() if v > 0}}}
     return {"doc": cdoc, "summary": summary}
 
 
@@ -375,20 +452,26 @@ def _thin(s: list, k: int) -> list:
     return s if len(s) <= k else [s[int(round(i))] for i in np.linspace(0, len(s) - 1, k)]
 
 
-def derive(run_dir: Path) -> dict:
-    """The cultures of a stored peoples run that has demes: {"doc": cultures.json, "summary": meta.cultures}."""
+def derive(run_dir: Path, demes: dict | None = None) -> dict:
+    """The cultures of a stored peoples run that has demes: {"doc": cultures.json, "summary": meta.cultures}. demes: a fresh
+    demes.derive result ({"layer", "doc"}) to use instead of the run's stored demes (a read-only look with today's demes)."""
     from .history.habitat import BIOMES, biome_class
     t0 = time.time()
     run_dir = Path(run_dir)
-    names = ("elevation", "ice", "climate", "demes", "groups_best")
+    names = ("elevation", "ice", "climate", "groups_best") + (("demes",) if demes is None else ())
     run, arr = T.load_frames(run_dir, names)
     m = run["meta"]
-    doc = json.loads((run_dir / m["demes"]["file"]).read_text())
+    if demes is None:
+        doc = json.loads((run_dir / m["demes"]["file"]).read_text())
+    else:
+        doc = demes["doc"]
+        arr["demes"] = demes["layer"]
     lines = m["lineages"]
     g = shared_grid(m["level"])
     cell_km2 = 4 * np.pi * 6371.0 ** 2 / g.n
-    cultures, dc = assign(doc["demes"], one_culture(m.get("tree"), lines))
-    dr = Drift(cultures, dc, lines, g.nbr_off, g.nbr_idx, cell_km2, (m.get("techtree") or {}).get("known"), BIOMES)
+    coh = cohesion(m.get("tree"), m.get("tree_name"))
+    cultures, dc = assign(doc["demes"], eras(m.get("techtree")), coh)
+    dr = Drift(cultures, dc, lines, g.nbr_off, g.nbr_idx, cell_km2, (m.get("techtree") or {}).get("known"), BIOMES, coh)
     agos = [max(0.0, -f["t"]) for f in run["frames"]]
     win = doc.get("from_kyr", 300.0)
     use = [j for j, a in enumerate(agos) if a <= win + 1e-9 and (j + 1 == len(agos) or agos[j + 1] < a)]  # (as demes.derive)
@@ -402,19 +485,29 @@ def derive(run_dir: Path) -> dict:
         biome = biome_class(env, {"land": land, "elev": elev})
         dr.frame(agos[j], np.asarray(arr["demes"][j]), np.asarray(arr["groups_best"][j]), coast, biome)
     finish(cultures, dc, doc["demes"])
-    return document(cultures, dc, doc, lines, dr.merges, cell_km2, time.time() - t0)
+    return document(cultures, dc, doc, lines, dr.merges, cell_km2, time.time() - t0, coh)
 
 
-def write(run_dir: Path, out_dir: Path | None = None, report: bool = True) -> dict:
+def write(run_dir: Path, out_dir: Path | None = None, report: bool = True, redemes: bool = False) -> dict:
     """Adds cultures.json and meta.cultures to a peoples run (or, with out_dir, writes cultures.json there and leaves the run
-    untouched: a read-only look at a protected run); returns meta.cultures."""
+    untouched: a read-only look at a protected run); returns meta.cultures. redemes (with out_dir only): cut the demes afresh in
+    memory first (today's demes.py; never written) instead of reading the run's stored ones."""
     run_dir = Path(run_dir)
-    d = derive(run_dir)
+    if redemes and out_dir is None:
+        raise ValueError("redemes needs out_dir: redo the run's demes with `planet demes` instead")
+    dem = None
+    if redemes:
+        from . import demes as DM
+        dem = DM.derive(run_dir)
+    d = derive(run_dir, dem)
     if out_dir is not None:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         S.write_atomic(out_dir / "cultures.json", json.dumps(d["doc"], separators=(",", ":")))
         (out_dir / "summary.json").write_text(json.dumps(d["summary"], indent=1))
+        if dem is not None:
+            S.write_atomic(out_dir / "demes.json", json.dumps(dem["doc"], separators=(",", ":")))
+            (out_dir / "demes_summary.json").write_text(json.dumps(dem["summary"], indent=1))
         return d["summary"]
     S.write_atomic(run_dir / "cultures.json", json.dumps(d["doc"], separators=(",", ":")))
     S.update_meta(run_dir, lambda run: run["meta"].__setitem__("cultures", d["summary"]))
@@ -424,8 +517,12 @@ def write(run_dir: Path, out_dir: Path | None = None, report: bool = True) -> di
     return d["summary"]
 
 
+def _kv(d: dict | None) -> str:
+    return ", ".join(f"{v} {k}" for k, v in (d or {}).items())
+
+
 def lines_for_report(sm: dict, doc: dict) -> list[str]:
-    L = ["", f"## Cultures (PW-670, first cut): {sm['count']} in all, {sm['alive']} alive, {sm['merges']} merged by states ({sm['generated_in_s']} s)"]
+    L = ["", f"## Cultures (PW-670): {sm['count']} in all, {sm['alive']} alive, {sm['merges']} merged ({_kv(sm.get('merges_by'))}; {sm['generated_in_s']} s)"]
     for p, b in sorted(sm["by_people"].items(), key=lambda x: -x[1]["alive"]):
         if b["alive"]:
             L.append(f"  {p:<18} {b['alive']:>3} alive of {b['cultures']:>3}: {b['adapted']} adapted, {b['apart']} apart; "

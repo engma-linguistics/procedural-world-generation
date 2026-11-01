@@ -848,23 +848,39 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
-### 2.25b Emergent cultures, first cut (`lineages/cultures.py`, PW-670)
+### 2.25b Emergent cultures (`lineages/cultures.py`, PW-670; round 2)
 
 Output only, read after the demes (2 s a run). A people's first demes are its founding culture. A deme that split off by
-niche learning (`split_adapted`) is a culture of its own at once. A deme cut off by a gap, a crossing or distance becomes one
-after 1 kyr apart (`T_APART_KYR`). Each dragon kind (megafauna that fly) is one culture, along colour lines, and never fragments (owner 2026-10-31: sapient, but not split for now). Each culture copies its parent's skills when it starts, then drifts toward what its land
-rewards: sea craft from the coast share of its cells, herding lore from the share of open dry country. It loses a skill
-with an e-folding time of 1 kyr. It gains one with an e-folding time of 3 kyr, and only once its people knows boats (or
-herding) (Henrich 2004, Rivers 1912). Its way of life, its people's groups on its cells (`groups_best`), is recorded at
-the start and now.
+niche learning (`split_adapted`) is a culture of its own at once. A deme cut off by a gap, a crossing or distance becomes
+one once it has lived apart `T_APART_KYR` for its people's era when it split: 0.6 kyr in the stone age, down to 0.15 kyr
+by the renaissance (settler colonies were told apart in 120-175 years; the era is the latest whose techs the people knows a
+quarter of, `meta.techtree`). The frames are 0.5 kyr apart near the present, so in practice a split counts once it spans one
+frame gap (two in the stone age).
 
-Two things merge cultures (PW-676). A culture whose last deme fused into another culture's deme has merged into it. Two
-bordering sister cultures with the same adaptation and way of life merge after 1 kyr once their people knows cities (up
-to 1 Mkm² together) or written law (5 Mkm²).
+Who is apart is the demes' call. `demes.py` cuts each kind by its own reach (owner 2026-10-31): the thresholds are a
+walker's (`JUMP_KM`); a megafauna kind (dragons fly, giants roam and wade straits) moves `LINK_KM` over land and sea alike,
+a flier `HOPS['flies']`, with no terrain cost and `SPLIT_KM` / `FUSE_KM` and the gaps it crosses scaled up to match; a
+people with sea craft crosses sea up to its craft's reach x its sea share, at a coast's cost.
 
-Output: `cultures.json` and `meta.cultures`. Run it with `planet cultures RUN [--out DIR]`; `--out` leaves the run as it
-is. `GET /api/cultures?run=` works it out on the fly for a run without the file. It is shown in the workbench's Cultures
-tab, which is separate from the species tree, and in the brief's "Cultures here".
+A kind's **cohesion** (0..1, the tree's per-line `cohesion`, inherited; dnd and Seven Meals: dragons 0.9, giants 0.5, peoples
+0) is its normalizing pull: each culture's drift target is pulled that far toward its kind's mean, sister cultures merge
+side by side in `(1 - cohesion)` of the time, and a cohesive kind's pockets that drop out of the frames and come back stay its
+first culture. So each dragon kind comes out as one culture along colour lines, and the giants keep distinct cultures across
+the seas. A run made before the key existed reads it from the preset of the same name.
+
+Each culture copies its parent's skills when it starts, then drifts toward what its land rewards: sea craft from the coast
+share of its cells, herding lore from the share of open dry country. It loses a skill with an e-folding time of 1 kyr. It
+gains one with an e-folding time of 3 kyr, and only once its people knows boats (or herding) (Henrich 2004, Rivers 1912). Its
+way of life, its people's groups on its cells (`groups_best`), is recorded at the start and now.
+
+Three things merge cultures (PW-676, no cap). A culture whose last deme fused into another culture's deme has merged into it.
+Two touching sister cultures with the same adaptation and way of life merge after `MERGE_CONTACT_KYR` = 1 kyr side by side
+(x (1 - cohesion)), or after 1 kyr once their people knows cities (up to 1 Mkm² together) or written law (5 Mkm²).
+
+Output: `cultures.json` and `meta.cultures`. Run it with `planet cultures RUN [--out DIR [--redemes]]`; `--out` leaves the
+run as it is, and `--redemes` cuts the demes afresh in memory first (for a run whose stored demes predate today's
+`demes.py`). `GET /api/cultures?run=` works it out on the fly for a run without the file. It is shown in the workbench's
+Cultures tab, which is separate from the species tree, and in the brief's "Cultures here".
 
 Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
 

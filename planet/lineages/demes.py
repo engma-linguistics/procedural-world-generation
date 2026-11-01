@@ -65,6 +65,13 @@ SEA_KM = 150.0  # open sea a people crosses as one population (a strait); wider 
 SEA_COST = 2.0  # easy km per km of that sea (a sea people: 1 on its own sea)
 SPLIT_KM = 7000.0  # a deme wider than this (travel-cost diameter, easy km) splits in two: ~5,500 km of open lowland, 7,000 of coast
 FUSE_KM = 4000.0  # two touching demes of a people whose diameters sum to less fuse
+# Reach by kind (PW-670 round 2, owner 2026-10-31: a population is the folk who can meet and mate, and dragons meet across whole
+# continents). The thresholds above are a walker's: it moves JUMP_KM per jump (history.params, the history's own length). A kind that
+# moves farther is scaled by its reach / JUMP_KM (SPLIT_KM, FUSE_KM), crosses sea and others' land up to its reach as one population, and
+# pays no terrain cost, land or sea: a megafauna kind history.megafauna.link_km (LINK_KM: dragons fly, giants roam and wade straits), a
+# flier spec.HOPS['flies']. A people with sea craft (animal_defs.craft_for_people at the time) crosses sea gaps up to the craft's reach x
+# min(1, its sea share / spec.BOATS_FULL) (at least SEA_KM) at a coast's cost (1 easy km per km, not SEA_COST): a seafaring people's seas
+# are its roads. Sea peoples (marine realm) keep their own sea at 1, as before.
 NECK_KM = 120.0  # a strip of other peoples' land this wide does not cut a people (its two sides stay one population), as SEA_KM of sea
 PERSIST = 4  # frames a gap split or a fusion must hold before it counts (dated when it began); see docs/review/lineages/demes.md
 MIN_CELLS = 40  # a piece cut off becomes its own deme only from this many cells (~125,000 km² at L7); smaller ones stay with theirs
@@ -237,14 +244,13 @@ class State:
 
 
 class Demes:
-    def __init__(self, grid, lines: list[dict], cell_km: float, rank: np.ndarray | None = None):
+    def __init__(self, grid, lines: list[dict], cell_km: float, rank: np.ndarray | None = None, mega: set | frozenset = frozenset()):
         self.g = grid
+        self.mega = set(mega)  # (the megafauna kinds' ids: their reach is LINK_KM, land and sea alike)
         self.ids = [l["id"] for l in lines]
         self.rank = np.full(grid.n, -1, np.int64) if rank is None else rank  # (the present landmass of each cell, by size; for the names)
         self.lines = lines
         self.cell_km = cell_km
-        self.hs = max(1, int(round(SEA_KM / cell_km / 2)))  # (sea cells reached from either shore: a gap of 2 hs is crossed)
-        self.hl = int(round(NECK_KM / cell_km / 2))  # (land of others reached from either side: a neck of 2 hl is bridged)
         n = grid.n
         self.st: dict[int, State] = {}  # line index -> its demes at the last frame
         self.diam = {}  # deme id -> its diameter at the last frame (easy km)
@@ -266,6 +272,25 @@ class Demes:
         self.dens = {i: float((l.get("demography") or {}).get("density") or 1.0) for i, l in enumerate(lines)}
         self.cell_km2 = 4 * np.pi * 6371.0 ** 2 / grid.n
         self.adapt_pend: dict[tuple, list] = {}  # (deme, class) -> [kyr ago the piece first diverged, frames since] (PERSIST)
+
+    def mobility(self, k: int, ago: float) -> tuple[float, float, float, bool]:
+        """(scale of SPLIT_KM and FUSE_KM, sea gap km, neck km, terrain-free) of people k at that time (reach by kind, above)."""
+        from . import animal_defs as AD
+        from . import spec as SP
+        from .history.megafauna import link_km
+        from .history.params import JUMP_KM
+        l = self.lines[k]
+        tr = l.get("traits") or []
+        if l["id"] in self.mega:
+            r = float(link_km(l))
+        elif "flies" in tr:
+            r = float(SP.HOPS["flies"][1])
+        else:
+            share = float((l.get("demography") or {}).get("sea_share") or 0.0)
+            craft = AD.craft_for_people(share, ago) if l.get("realm", "land") == "land" else None
+            sea = max(SEA_KM, craft[1] * min(1.0, share / SP.BOATS_FULL)) if craft else SEA_KM
+            return 1.0, sea, NECK_KM, False
+        return r / JUMP_KM, r, r, True
 
     # deme bookkeeping
     def _new(self, line, parent, ago, how, cells=None, when=None):
@@ -371,9 +396,11 @@ class Demes:
     def _cut(self, k, O, oidx, old, ago, cost, land) -> State:
         g = self.g
         step = self.cell_km
-        reach, dn = near_cells(oidx, max(self.hs, self.hl), g.nbr_off, g.nbr_idx, self.tmp)
+        scale, sea_km, neck_km, free = self.mobility(k, ago)
+        hs, hl = max(1, int(round(sea_km / step / 2))), int(round(neck_km / step / 2))  # (cells reached from either side: a gap of 2 h is crossed)
+        reach, dn = near_cells(oidx, max(hs, hl), g.nbr_off, g.nbr_idx, self.tmp)
         lr = land[reach]
-        extra = reach[np.where(lr, dn <= self.hl, dn <= self.hs)]
+        extra = reach[np.where(lr, dn <= hl, dn <= hs)]
         idx = np.sort(np.concatenate([oidx, extra]))  # (its cells, the sea it crosses and the necks of others' land it bridges)
         m = len(idx)
         self.gl[idx] = np.arange(m)
@@ -382,7 +409,12 @@ class Demes:
         self.gl[idx] = -1
         Om = np.zeros(m, np.bool_)
         Om[Ol] = True
-        costl = np.where(Om & ~land[idx], 1.0, cost[idx])  # (a sea people on its own sea: 1)
+        if free:
+            costl = np.ones(m)  # (a flier or a roaming megafauna kind: no terrain)
+        else:
+            costl = np.where(Om & ~land[idx], 1.0, cost[idx])  # (a sea people on its own sea: 1)
+            if sea_km > SEA_KM:
+                costl = np.where(land[idx], costl, 1.0)  # (a seafaring people: the sea at a coast's cost)
         if old is not None:
             self.tmp[old.idx] = old.lab
             oldl = self.tmp[idx].copy()
@@ -457,11 +489,11 @@ class Demes:
                 lab[mem] = nd
         # diameters, fusions, then splits by distance (all the wide demes of the people at once, a few rounds)
         D, ends = self._diameters(lab, costl, loff, lidx, idx=idx, cached=True)
-        lab, fused = self._fuse(k, lab, D, ago, idx, loff, lidx)
+        lab, fused = self._fuse(k, lab, D, ago, idx, loff, lidx, FUSE_KM * scale)
         if fused:
             D, ends = self._diameters(lab, costl, loff, lidx, idx=idx, cached=True)
         for _ in range(SPLIT_ITER):
-            wide = [d for d, v in D.items() if v > SPLIT_KM]
+            wide = [d for d, v in D.items() if v > SPLIT_KM * scale]
             if not wide:
                 break
             lab, touched = self._halve(k, wide, ends, lab, Om, costl, since, ago, idx, loff, lidx)
@@ -623,11 +655,12 @@ class Demes:
                 self.dcache[int(d)] = (sigs[int(d)], D[int(d)], (int(idx[prev[d]]), int(idx[a[d]])))
         return D, ends
 
-    def _fuse(self, k, lab, D, ago, idx, loff, lidx):
-        """Fuse touching demes of a people whose diameters sum to less than FUSE_KM once they have stayed so PERSIST frames
-        (dated when they first could); the older keeps its id."""
+    def _fuse(self, k, lab, D, ago, idx, loff, lidx, fuse_km: float | None = None):
+        """Fuse touching demes of a people whose diameters sum to less than fuse_km (FUSE_KM x the kind's reach scale) once they
+        have stayed so PERSIST frames (dated when they first could); the older keeps its id."""
+        fuse_km = FUSE_KM if fuse_km is None else fuse_km
         u = np.unique(touching(np.flatnonzero(lab >= 0), lab, loff, lidx))
-        cand = {(int(x // NONE), int(x % NONE)) for x in u if D.get(int(x // NONE), 0) + D.get(int(x % NONE), 0) < FUSE_KM
+        cand = {(int(x // NONE), int(x % NONE)) for x in u if D.get(int(x // NONE), 0) + D.get(int(x % NONE), 0) < fuse_km
                 and self.demes[int(x // NONE)].adapted == self.demes[int(x % NONE)].adapted}  # (PW-1155: two ways of life stay two demes)
         for key in [key for key in self.near if self.demes[key[0]].line == k and key not in cand]:
             del self.near[key]
@@ -751,7 +784,7 @@ def _derive(run_dir: Path, window_kyr: float) -> dict:
     ks = peoples_of(lines)
     kset = np.zeros(256, bool)
     kset[ks] = True
-    dm = Demes(g, lines, cell_km, rank)
+    dm = Demes(g, lines, cell_km, rank, megafauna_of(m.get("tree"), m.get("mode")))
     layer = np.full((len(agos), n), NONE, np.uint16)
     for j in use:
         env = {nm: T.frame(run, arr, nm, j).astype(float) for nm in ("elevation", "ice", "precipitation", "climate", "tree_cover")}
@@ -774,6 +807,14 @@ def _derive(run_dir: Path, window_kyr: float) -> dict:
         cmap = dm.update(agos[j], occ, cost, env["land"], lead, second)
         layer[j] = np.where(cmap >= 0, cmap, NONE).astype(np.uint16)
     return {"layer": layer, **_document(dm, m, g, agos[use[0]] if use else 0.0, time.time() - t0)}
+
+
+def megafauna_of(tree: dict | None, mode: str | None = None) -> set:
+    """The megafauna kinds of a stored tree (meta.tree, with spec's inheritance)."""
+    if not tree:
+        return set()
+    from . import spec as SP
+    return {k for k, l in SP.parse(tree, mode).lines.items() if l.megafauna}
 
 
 def landmass_rank(g, present_land: np.ndarray) -> np.ndarray:
