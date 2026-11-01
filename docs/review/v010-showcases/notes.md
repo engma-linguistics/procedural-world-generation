@@ -44,9 +44,15 @@ Totals: frozen over in window 0/6, boiled 0/6, ocean loss 0/6, CO2 crash (D32 B)
 Links: http://localhost:8765/viewer/?world=899985.json , http://localhost:8765/viewer/?world=dba204.json
 
 ## Peoples
-Started on the finished worlds, tree names as given, 4 tries each (about 12 min a try at the time of writing):
-- Earth-like A, dnd: `v010-earthlike-a-dnd` on world 899985.
-- Earth-like A, seven_meals: `v010-earthlike-a-seven-meals` on world 899985.
-- Earth-like B, dnd: `v010-earthlike-b-dnd` on world dba204.
+Started on the finished worlds, 4 tries each (finished by the coordinator after the lane's hand-off). Viewer:
+`http://localhost:8765/viewer/?run=<id>&layer=peoples`.
 
-The run ids are printed at the end of each log (scratchpad `ln-a-dnd.log`, `ln-b-dnd.log`, `ln-a-sm.log` under the lane's scratchpad folder `l110`), and `uv run python -m planet list` shows them by name. The `planet cultures <run>` check was not done when this file was committed.
+| For | Tree | World | Peoples run | Cultures (all / alive / merged by contact, under states) |
+|---|---|---|---|---|
+| Earth-like A | dnd | 899985 | b4d502 | 836 / 298 / 399, 22 |
+| Earth-like B | dnd | dba204 | a24559 | 773 / 305 / 344, 31 |
+| Earth-like A | seven_meals | 899985 | 3c1caf | 871 / 332 / 357, 67 |
+
+`planet cultures` reads sensibly on all three: the largest cultures are the founding peoples (dragon kinds, goblins, hobgoblins,
+elves, halflings) and human cultures that split 17-58 kyr ago, with drifting skills (sea craft fading inland, herding lore gained
+in open country). Living cultures are about 2.5x the L6 runs' 111-130, from L7's finer cells and the overlapping demes.
