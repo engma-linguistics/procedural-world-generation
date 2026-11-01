@@ -68,12 +68,12 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · 31 October 2026 · morning</div>
+  <div class="kicker">procgen_world · 1 November 2026 · morning</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Good morning, Daniel. Overnight: your D20–D24 answers went into lanes, v1 is down to its release checks, and the
-  "why so many humans" question has measured answers (your hunch about the human offshoots was right). Two calls for you below:
-  the events system and one war question. The L8 world is at the top.</p>
-  <nav class="toc"><a href="#l8">L8 world</a><a href="#l8learn">L8 lessons</a><a href="#v1">v0.1.0</a><a href="#why">Why humans</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
+  <p class="lede">Good morning, Daniel. The cultures proposal you asked for is ready, just below: read it whenever, and we
+  iterate. Overnight, dragons round 2, in-fighting for every people, the D31 check and the L8 refine all merged. One new physics
+  call: the wild herds (D34). The last v0.1.0 tally is still running.</p>
+  <nav class="toc"><a href="#l8">L8 world</a><a href="#l8learn">L8 lessons</a><a href="#v1">v0.1.0</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
 </header>
 
 <h2 id="l8">The L8 world</h2>
@@ -169,49 +169,57 @@ with livestock giving about half back) and 58% persecution, rising to 93% where 
 <p>All of this has gone to lane 83 (your D20), which now takes on one capacity per people, density by era and way of life,
 sister peoples born on different continents, and a home-ground edge.</p>
 
+<h2 id="cultures">Proper cultures: the proposal</h2>
+<div class="card" id="cprop"><div class="id">READ WHEN YOU LIKE · 19 QUESTIONS, EACH WITH A LEAN</div>
+<p><b><a href="https://claude.ai/artifact/5KVFMYPEF6QNFA3ab1utsv">Open the full proposal</a></b> (long; the decisions are in §5).
+It builds in three stages, and each one works without the next.</p>
+<ol>
+<li><b>Languages with no words yet.</b> Every culture gets a speech variety. Each has a family tree, a "how similar" score against
+its neighbours and a mutual-intelligibility number, plus a light history: splits, contact, a shift to a neighbour's tongue, a
+language dying out. The similarity score drifts at a measured rate (Holman et al. 2011) and stays higher where neighbours trade
+and marry. Two varieties count as separate languages at about 1,300 years apart (Wichmann's line). The names are only glosses
+from your ethnonym taxonomy, so words can come later.</li>
+<li><b>Polities and war.</b> States form where farmers are boxed in (Carneiro's circumscription, which the code already
+measures), reach only as far as their messages travel, and break up at measured rates. Real war replaces today's stand-ins, and
+your human in-fighting becomes states splitting. My expectation: this trims the leading people's share; it won't topple it.</li>
+<li><b>Attitudes, gods (a placeholder), writing</b> and a "Cultures here" block in the brief.</li>
+</ol>
+<p><b>Main leans:</b> one speech variety per culture; computed from the record after the run, not inside it, at first; the
+languages lane and the polities lane run side by side once the overlapping-demes lane has merged; then you look before the names
+lane starts.</p>
+</div>
+
 <h2 id="decisions">Decisions waiting on you</h2>
 <div class="cards">
 
-<div class="card" id="d28"><div class="id">D28 · HOW MANY DRAGONS? · your 10-31 answer is in lane 103</div>
-<p><b>Your answer:</b> more dragons, B and/or C for how they lose ground, a per-run lever, and the 10-farmers anchor isn't what you want. Lane 103 is doing one round on exactly that (below is the evidence it starts from).</p>
-<p><b>Why there are 10× more dragons than lane 90 measured (lane 99):</b> it's their <i>range</i>, not weaker hunting. Your D20 peoples hold much less land.
-Humans' cells fell from about 14,800 to 4,000 and kobolds' from 9,600 to 400, so dragons now live in about 5.5× as many places.
-D20's first change (a new people founds at one spot, and a dying stem's land is left empty) does most of it. The hunting rate was set from a
-stated density ("10 farmers per km² keep 10% of dragons"), not fitted to the old peoples, so I left it alone. The new count is the model's honest answer.</p>
-<div class="shots">
-<figure><img src="d28/dragons_before_after_people.png" alt="Dragons per kind before people and today"><figcaption>Before people vs today, median of six worlds. In all, about 359,000 before people and 80,000 today. A Sword Coast-sized region goes from about 7,700 to 1,700. Black dragons gain (herds and freed swamps feed them). Blue, green and silver fall to about a thirtieth, white to a sixteenth.</figcaption></figure>
-<figure><img src="d28/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions and tigers"><figcaption>Per 100 km² of their own country, dragons are 10 to 1,000× sparser than lions or tigers. Big beasts that eat big beasts should be sparse.</figcaption></figure>
+<div class="card" id="d28"><div class="id">D28 · DRAGONS ROUND 2 · merged; one real question left (D34)</div>
+<p><b>Your mortality hunch:</b> not the cause. Every age is counted (24% wyrmlings, 55% young, 19% adults, 3% ancients), and a harsher death schedule actually gives <i>more</i> dragons (the average dragon is smaller and eats less).</p>
+<p><b>Why they're rarer than lions:</b> mostly size, and that part is sound. On the same prey, a 1.65 t dragon should be about 1/13 as dense as a 142 kg lion (Carbone &amp; Gittleman 2002); the model's chain comes out at 0.86 of that law. Ten kinds also share one top-predator slice of the food, so compare a lion with <i>all</i> dragons together: before people, 0.68 per 100 km² in wetland, 0.32 in grassland, 0.23 in forest. The body-size target ("north star") is about 3 per 100 km² on rich prey, so the model is a fifth to a tenth of it. About half that gap is the thin herds (D34).</p>
+<p><b>Built and merged:</b> your B. The 10-farmers anchor is gone; dragons are now cleared from land where people are as dense as where lions vanish (about 25 per km², Riggio et al. 2013), and stay in the wilds (94% kept there). Riding farmers at 10 per km² keep about half their dragons instead of a tenth. A world total of about <b>96,000</b> (was 84,000), with about 2,000 in a Sword Coast-sized region. <b>Your lever:</b> "dragon abundance" ×¼ to ×4 in the peoples controls, labelled as a world-builder's choice.</p>
+<div class="shots"><figure><img src="d28r2/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions, tigers and the body-size expectation"><figcaption>Grey diamonds: what the body-size law expects from each kind's prey. Open circles: density where each kind still lives today. Bottom rows: all dragons together by biome.</figcaption></figure></div>
 </div>
-<p><b>Against your lions and tigers:</b> lions keep 6–13% of their old range, tigers under 7%. Six dragon kinds keep 4–14% of their country at
-a tenth or more of their pre-people density (red, blue, green, white, gold, silver). Bronze, brass and copper keep about 30%, black 68%. India loses about
-76 people a year to tigers and Tanzania about 38 to lions (1.3 per million). 35% of people live in dragon country. <i>If</i> dragons killed
-like Indian tigers per animal (my assumption, not a model output), that's about 1,500 deaths a year on a world, around 15 per million people in range.
-So meeting a dragon is rare, but you'd hear of one in your lifetime.</p>
-<p><b>Your B is merged:</b> sea food (seals, fish and seabirds from the ocean's productivity) for white, bronze and blue. White dragons ×1.9, bronze ×1.6, blue ×1.4.
-The cold kinds are now in the hundreds per world, not a handful.</p>
-<p><b>Still open, for when you look closer:</b> <i>how</i> dragons lose ground to people. Today the kill thins them everywhere and never clears a place.
-Lions and tigers instead vanish from farmland and stay dense in the wilds.</p>
-<ol>
-<li><b>A</b> keep it. The shares already match the cats for most kinds. <i>My lean for now.</i></li>
-<li><b>B</b> local extirpation: dragons fade from a cell where the kill would outrun their breeding. That gives the lion pattern, never species-ending.</li>
-<li><b>C</b> habitat avoidance: dragons read busy country as poorer. That gives the same pattern through habitat, not killing.</li>
-</ol>
-<p>Report: <code>docs/review/dragon-numbers/report.md</code>, with every figure flagged read, secondary or my arithmetic.</p>
+
+<div class="card" id="d34"><div class="id">D34 · THE WILD HERDS ARE 2–3× THIN</div>
+<p>At the same rainfall, the model's warm-country grazing herds are 2–3× below real African parks (Coe, Cumming &amp; Phillipson 1976). The cause is upstream: the model's plants put about 2.4× less growth above ground than the figure Coe used. Fixing it would mean 2–3× more dragons, giants and wild game in warm grassland, without a fudge. It touches the vegetation model (your earlier PW-1073 ruling), so it's your call.</p>
+<ol><li><b>A</b> accept; the dragon-abundance dial is the lever.</li>
+<li><b>B</b> check the vegetation's savanna growth against a sourced table first, then fix whichever step is wrong. <i>My lean</i>: it's a physics question, and the climate and plant model is where v1's credibility lives.</li>
+<li><b>C</b> fit the herds directly to Coe's measured numbers, skipping plant growth. Quick, but Africa-only.</li></ol>
 </div>
+
+<div class="card" id="d35"><div class="id">D35 · SMALL ONES, ANSWER IF YOU LIKE</div>
+<ul>
+<li><b>Cultures round 2 numbers</b> (PW-1254): time apart 600 → 150 years from stone age to renaissance; cohesion dragons 0.9, giants 0.5; side-by-side merging after 1,000 years. My lean: keep them. Re-cut your runs' demes so the viewer shows round 2 (PW-1253)? My lean: yes, after the overlapping-demes lane lands.</li>
+<li><b>Refine:</b> one ~1–2 h refactor so the regional zoom and the L8 refine share one terrain-detail function instead of copying 40 lines. My lean: yes. Landform shapes on refined worlds: leave out at L8 for now (lean).</li>
+</ul></div>
 </div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>102 · final tally</td><td>Re-running all 42 test worlds on the final physics code (plant fix plus inland pits), counting crashes under each D32 option, so your answer can go straight to the tag. It also settles whether the inland-pits fix really made worlds drier.</td></tr>
-<tr hidden><td>95 · plant floor</td><td>Your D29 = C: plants that starve for CO2 stop speeding up weathering. Screen of the 6 low draws, then the full tally with every draw's lowest CO2, so you can set the crash line. If it fails, it goes to v2.</td></tr>
-<tr><td>101 · peoples</td><td>Your D31 A: in-fighting for every people, humans included, scaled by crowding; a floor so no brake ends a people; your A as a reported check. Then it stops until war and polities.</td></tr>
 <tr><td>100 · continent edge</td><td><b>Round 1 done, parked on its branch until after the tag.</b> Cause found: a continent splits into two rigid plates at once, so its edge barely stretches. Built crust that thins over about 200 km, plus a mud apron at the slope foot. Cliff coasts fell from 23% to 15% at L6 (Earth 3.5%) and from 20% to 9% at L7. What's left is the shelf's sediment front, which is still a one-cell wall. Next round: give that front a real slope, then judge on all draws (3 of 11 draws dipped to 69–85 ppm CO2, probably chance).</td></tr>
-<tr><td>103 · dragons round 2</td><td>Why dragons are so sparse even before people (checked against body-size rules for big predators, and whether all ages are counted). The 10-farmers anchor is replaced by local extirpation and/or avoiding busy country, and a "dragon abundance" dial goes in the viewer. One round.</td></tr>
-<tr><td>104 · L7 → L8 overnight</td><td>Your ask: refine a finished L7 world to L8 (and try L9) instead of simulating at L8, then compare it with the direct L8 world.</td></tr>
 <tr><td>105 · L8, 1 Gyr</td><td>Your ask: the same seed-11 L8 planet, but 1 billion years, held to 8 cores. Rough guess: 5–8 hours for the run plus the slice, by lane 86b's per-Myr speed. Notes as it goes in <code>docs/review/l8-world/gyr-notes.md</code>.</td></tr>
-<tr><td>106 · workbench</td><td><b>Merged:</b> the species tree and timeline now show evolutionary lines only; cultures stay in the Peoples tab. <b>Why they stay in the model:</b> these "groups" (human farmers, herders, seafarers, nomads; steppe and forest orcs; hill dwarves; city kobolds) are simulated. Each holds its own land where its way of life beats its people's, and they carry things the cookbook needs: herders' milk tolerance and seafarers' coasts, plus town quarters in settlements and tech inherited through the tree. <b>Demes</b> are different: regional populations worked out after a run (where a people splits, fuses or dies out), used only to place settlements. Neither is the coming cultures work.</td></tr>
-<tr><td>108 · cultures round 2</td><td>Your answers on D33: a new culture after about one to two centuries apart (sourced from colonial divergence, e.g. American vs British English), not 1,000 years. "Apart" is measured against each kind's own reach, so flying dragons stay one culture per colour on their own, with no special case needed. Giants get a lighter global pull (the Storm King's council) and still keep distinct cultures. Neighbours in contact merge back, so the count stays sane.</td></tr>
+<tr><td>109 · overlapping demes</td><td>Your ask: every people's presence stored per moment, so demes overlap: dragons' wide ranges over the peoples below, kobolds beside hobgoblins in the same country. Plus a "whose demes" view on the map.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
@@ -221,6 +229,11 @@ Lions and tigers instead vanish from farmland and stay dense in the wilds.</p>
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Merged overnight</b> (all tests pass, 909):
+peoples in-fighting for everyone with a floor that holds (it grew the leader a little, as the humans are walled in least; parked until war and polities);
+dragons round 2 (D28 above);
+cultures round 2 (reach in the demes, as you said; time apart by era; giants keep cultures; each dragon kind one culture through cohesion, no special case);
+the L7 → L8 refine: <a href="http://localhost:8765/viewer/?world=fb5e11.json">world fb5e11</a>, 20–25 minutes instead of 146 for a direct L8, same detail; L9 works but is too big for the viewer yet.</li>
 <li><b>Cultures first cut merged (D33 answered):</b> the Cultures tab is live on your existing runs; giants keep cultures; 1,000 years apart was far too long; dragons stay one culture per colour, by reach rather than by a hard-code (lane 108).</li>
 <li><b>Tags are 0.x:</b> the first tag is <code>v0.1.0</code> (the v1 milestone), then v0.2.0 for v2, and so on.</li>
 <li><b>Your D28 question, answered:</b> "a dying people’s land is left empty" is the evolution track. When a stem (e.g. archaic humans) ends at its last split, its land goes to no child; the children spread into it. It is not one group replacing another on a continent. Your mortality hunch is with lane 103.</li>
