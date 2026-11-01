@@ -199,6 +199,18 @@ lane starts.</p>
 <div class="shots"><figure><img src="d28r2/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions, tigers and the body-size expectation"><figcaption>Grey diamonds: what the body-size law expects from each kind's prey. Open circles: density where each kind still lives today. Bottom rows: all dragons together by biome.</figcaption></figure></div>
 </div>
 
+<div class="card" id="d36"><div class="id">D36 · NOW THAT EVERY DRAGON IS SEEN, EACH KIND IS 1–5 CULTURES</div>
+<p>The old record caught a dragon kind only where it led a cell, which was 4% of the blue dragons' land and 10–13% for gold,
+silver, copper, bronze and red. That blindness is what made "one culture per kind" come out on its own. With every dragon now
+counted, a kind splits wherever its populations sit farther apart than a dragon flies (1,500 km). On the test world that gives
+black 1, blue 2, bronze and gold 2–3, red, silver and brass 4, green and white 5 living cultures.</p>
+<ol><li><b>A</b> fold each kind back into one culture, as you said ("culture simply along color lines"). <i>My lean</i> for now.
+The languages lane in the proposal can revisit it: if Draconic is one tongue, something has to hold it together.</li>
+<li><b>B</b> keep the splits: a red dragon a continent away is its own culture.</li>
+<li><b>C</b> keep the mechanism, but stretch a cohesive kind's time apart by its cohesion, so dragons split only after very long
+isolation. This sits between A and B.</li></ol>
+</div>
+
 <div class="card" id="d34"><div class="id">D34 · THE WILD HERDS ARE 2–3× THIN</div>
 <p>At the same rainfall, the model's warm-country grazing herds are 2–3× below real African parks (Coe, Cumming &amp; Phillipson 1976). The cause is upstream: the model's plants put about 2.4× less growth above ground than the figure Coe used. Fixing it would mean 2–3× more dragons, giants and wild game in warm grassland, without a fudge. It touches the vegetation model (your earlier PW-1073 ruling), so it's your call.</p>
 <ol><li><b>A</b> accept; the dragon-abundance dial is the lever.</li>
@@ -219,7 +231,6 @@ lane starts.</p>
 <tr><td>102 · final tally</td><td>Re-running all 42 test worlds on the final physics code (plant fix plus inland pits), counting crashes under each D32 option, so your answer can go straight to the tag. It also settles whether the inland-pits fix really made worlds drier.</td></tr>
 <tr><td>100 · continent edge</td><td><b>Round 1 done, parked on its branch until after the tag.</b> Cause found: a continent splits into two rigid plates at once, so its edge barely stretches. Built crust that thins over about 200 km, plus a mud apron at the slope foot. Cliff coasts fell from 23% to 15% at L6 (Earth 3.5%) and from 20% to 9% at L7. What's left is the shelf's sediment front, which is still a one-cell wall. Next round: give that front a real slope, then judge on all draws (3 of 11 draws dipped to 69–85 ppm CO2, probably chance).</td></tr>
 <tr><td>105 · L8, 1 Gyr</td><td>Your ask: the same seed-11 L8 planet, but 1 billion years, held to 8 cores. Rough guess: 5–8 hours for the run plus the slice, by lane 86b's per-Myr speed. Notes as it goes in <code>docs/review/l8-world/gyr-notes.md</code>.</td></tr>
-<tr><td>109 · overlapping demes</td><td>Your ask: every people's presence stored per moment, so demes overlap: dragons' wide ranges over the peoples below, kobolds beside hobgoblins in the same country. Plus a "whose demes" view on the map.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
@@ -229,10 +240,14 @@ lane starts.</p>
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Overlapping demes merged</b> (your ask; all tests pass, 912): every people's presence is now stored for every
+moment, so a kobold deme can sit beside a hobgoblin one in the same hills, and a dragon kind's demes lie over the peoples below.
+87% of peopled cells now hold demes of two or more peoples. The globe's demes layer has a "whose demes" picker, and hovering a
+cell lists every deme on it. Your existing runs need a fresh peoples run to show the overlap. One question came out of it (D36).</li>
 <li><b>Merged overnight</b> (all tests pass, 909):
 peoples in-fighting for everyone with a floor that holds (it grew the leader a little, as the humans are walled in least; parked until war and polities);
 dragons round 2 (D28 above);
-cultures round 2 (reach in the demes, as you said; time apart by era; giants keep cultures; each dragon kind one culture through cohesion, no special case);
+cultures round 2 (reach in the demes, as you said; time apart by era; giants keep cultures; each dragon kind one culture through cohesion, no special case, but see D36);
 the L7 → L8 refine: <a href="http://localhost:8765/viewer/?world=fb5e11.json">world fb5e11</a>, 20–25 minutes instead of 146 for a direct L8, same detail; L9 works but is too big for the viewer yet.</li>
 <li><b>Cultures first cut merged (D33 answered):</b> the Cultures tab is live on your existing runs; giants keep cultures; 1,000 years apart was far too long; dragons stay one culture per colour, by reach rather than by a hard-code (lane 108).</li>
 <li><b>Tags are 0.x:</b> the first tag is <code>v0.1.0</code> (the v1 milestone), then v0.2.0 for v2, and so on.</li>
