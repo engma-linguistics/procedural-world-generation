@@ -1,0 +1,96 @@
+  roll    tag    seed pass bar  fm FRZ frzAny BOIL OCN CO2x oceanMin |sl|max pCO2min pCO2end  endT pkIce  arid trees   min
+0.0005  l6c_0   53669    -   Y   -   -      -    -   -    -     59.7     555     118     170  -7.0  34.4  22.6  20.0  37.8
+0.0005  l6c_0  733847    Y   Y   Y   -      -    -   -    -     63.1     295     132     511  -0.2  25.5  24.6  30.1  35.1
+0.0005  l6c_0  819014    Y   Y   Y   -      -    -   -    -     63.2     286     129     200  -4.5  31.0  21.9  28.3  32.8
+0.0005  l6c_0  958504    -   Y   -   -      -    -   -    -     63.3     448     131     535  -2.8  29.5  24.1  28.9  25.4
+0.0005  l6c_m   53669    Y   Y   Y   -      -    -   -    -     63.1     203     182     309  +0.1  16.7  24.9  34.1  30.5
+0.0005  l6c_m  958504    Y   Y   Y   -      -    -   -    -     63.0     210     122     368  +1.1  12.7  25.1  31.7  26.0
+0.0005  l6c_p   53669    Y   Y   Y   -      Y    -   -    -     62.1     447     280     307  +0.5  40.1  24.2  32.7  31.6
+0.0005  l6c_p  583167    Y   Y   Y   -      -    -   -    -     64.2     236     132     171  -4.1  20.2  21.1  25.9  32.6
+0.0005  l6c_p  619496    -   Y   -   -      -    -   -    -     62.5     349      90     115  -7.2  30.8  19.8  27.4  33.2
+0.0005  l6c_p  639472    Y   Y   Y   -      -    -   -    -     62.5     445     106     582  -3.5  36.6  23.1  29.5  30.3
+0.0005  l6c_p  733847    Y   Y   Y   -      -    -   -    -     63.0     375     132     362  +0.9  25.8  24.3  30.8  29.0
+0.0005  l6c_p  819014    Y   Y   Y   -      -    -   -    -     61.9     512     118     567  -0.8  35.4  22.1  29.3  33.6
+0.0005  l6c_p  957317    Y   Y   Y   -      -    -   -    -     64.2     240     198     273  -0.8  28.3  22.7  33.4  31.2
+0.0005  l6c_p  958504    Y   Y   Y   -      -    -   -    -     61.7     416     135     270  -1.0  31.9  24.3  31.6  32.7
+0.0005  l6fix  583167    Y   Y   Y   -      -    -   -    -     62.2     194     230     564  +4.4  15.6  22.9  35.4  33.6
+0.0005  l6fix  619496    Y   Y   Y   -      -    -   -    -     63.1     197     372     394  +1.9  10.2  24.5  28.2  34.2
+0.0005  l6fix  639472    Y   Y   Y   -      -    -   -    -     63.6     209     190     486  +2.9   5.5  25.6  32.6  28.9
+0.0005  l6fix  957317    Y   Y   Y   -      -    -   -    -     62.1     394     119     633  +2.2  26.1  25.8  32.6  33.9
+ 0.001  l6c_0   53669    Y   Y   Y   -      -    -   -    -     62.3     246     196     580  +3.7  22.9  23.2  31.9  25.2
+ 0.001  l6c_0  733847    Y   Y   Y   -      -    -   -    -     62.5     305     175    1266  +3.7  21.6  23.0  31.8  23.5
+ 0.001  l6c_0  819014    Y   Y   Y   -      -    -   -    -     62.8     201     222     313  -2.1  19.9  19.3  31.5  25.0
+ 0.001  l6c_0  958504    -   Y   -   -      -    -   -    -     62.5     534      91     311  -4.9  39.0  23.0  25.2  30.4
+ 0.001  l6c_m   53669    Y   Y   Y   -      -    -   -    -     63.5     145     195     195  -3.3  20.5  18.1  33.2  24.3
+ 0.001  l6c_m  958504    Y   Y   Y   -      -    -   -    -     63.8     241     183     371  -3.4  24.3  22.4  30.4  24.9
+ 0.001  l6c_p   53669    -   Y   -   -      -    -   -    -     63.7     302     332    1146  +5.7  27.5  29.3   0.0  24.9
+ 0.001  l6c_p  583167    Y   Y   Y   -      -    -   -    -     61.3     321     118     286  -4.4  28.6  20.6  27.0  27.4
+ 0.001  l6c_p  619496    -   Y   -   -      -    -   -    -     63.6     150     361    1582  +7.3  11.6  25.5  29.1  19.0
+ 0.001  l6c_p  639472    Y   Y   Y   -      -    -   -    -     62.9     224     283     337  +1.0  17.9  24.4  34.1  21.9
+ 0.001  l6c_p  733847    Y   Y   Y   -      -    -   -    -     63.0     354     142     340  -4.3  26.0  28.2  19.9  19.4
+ 0.001  l6c_p  819014    Y   Y   Y   -      -    -   -    -     63.7     437     128     362  -2.7  31.6  19.6  31.9  24.6
+ 0.001  l6c_p  957317    Y   Y   Y   -      -    -   -    -     63.3     251     286    1003  +2.2  31.7  25.1  31.4  23.5
+ 0.001  l6c_p  958504    Y   Y   Y   -      -    -   -    -     62.3     442     191     572  +1.0  35.0  24.2  30.3  21.2
+ 0.001  l6fix  583167    Y   Y   Y   -      -    -   -    -     62.1     217     109     467  -0.5  29.7  20.5  32.6  32.3
+ 0.001  l6fix  619496    -   Y   -   -      -    -   -    -     62.3     180     587     611  +5.1  16.8  22.2  36.0  23.3
+ 0.001  l6fix  639472    Y   Y   Y   -      -    -   -    -     61.3     448      83     246  -4.2  29.0  21.8   0.0  26.9
+ 0.001  l6fix  957317    Y   Y   Y   -      -    -   -    -     61.1     462     169     748  +0.7  34.2  21.5  30.2  28.2
+
+min pCO2 per draw, ascending (t at min Myr; global mean T at min C; dT vs pre-industrial; compensation point ppm = G*(T)/0.7; below it?; worst 50-Myr fall ratio; 8-fold-no-recovery):
+    83.3 ppm  L6 r0.001 l6fix 639472  t=  946  T=  5.2  dT= -8.6  comp= 20.7  below_comp=-  worst50=0.05  fall8=Y  fall8strict=Y
+    90.4 ppm  L6 r0.0005 l6c_p 619496  t=  948  T=  5.8  dT= -8.0  comp= 21.3  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+    91.0 ppm  L6 r0.001 l6c_0 958504  t=  864  T=  3.4  dT=-10.4  comp= 18.5  below_comp=-  worst50=0.08  fall8=Y  fall8strict=Y
+   106.0 ppm  L6 r0.0005 l6c_p 639472  t=  976  T=  5.1  dT= -8.7  comp= 20.5  below_comp=-  worst50=0.08  fall8=-  fall8strict=-
+   109.0 ppm  L6 r0.001 l6fix 583167  t=  880  T=  8.8  dT= -5.0  comp= 25.4  below_comp=-  worst50=0.14  fall8=-  fall8strict=-
+   117.9 ppm  L6 r0.0005 l6c_p 819014  t=  732  T=  3.7  dT=-10.1  comp= 18.9  below_comp=-  worst50=0.10  fall8=Y  fall8strict=-
+   118.0 ppm  L6 r0.001 l6c_p 583167  t=  850  T=  5.3  dT= -8.5  comp= 20.8  below_comp=-  worst50=0.08  fall8=Y  fall8strict=Y
+   118.1 ppm  L6 r0.0005 l6c_0 53669  t=  995  T=  7.2  dT= -6.6  comp= 23.1  below_comp=-  worst50=0.05  fall8=Y  fall8strict=Y
+   119.2 ppm  L6 r0.0005 l6fix 957317  t=  798  T=  4.2  dT= -9.6  comp= 19.4  below_comp=-  worst50=0.14  fall8=-  fall8strict=-
+   121.9 ppm  L6 r0.0005 l6c_m 958504  t=  850  T= 10.4  dT= -3.4  comp= 27.8  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+   127.9 ppm  L6 r0.001 l6c_p 819014  t=  948  T=  9.9  dT= -3.9  comp= 27.1  below_comp=-  worst50=0.08  fall8=Y  fall8strict=Y
+   128.6 ppm  L6 r0.0005 l6c_0 819014  t=  990  T=  8.9  dT= -4.9  comp= 25.6  below_comp=-  worst50=0.11  fall8=Y  fall8strict=Y
+   130.8 ppm  L6 r0.0005 l6c_0 958504  t=  988  T=  7.6  dT= -6.2  comp= 23.8  below_comp=-  worst50=0.09  fall8=Y  fall8strict=Y
+   132.1 ppm  L6 r0.0005 l6c_p 733847  t=  902  T=  9.7  dT= -4.1  comp= 26.7  below_comp=-  worst50=0.12  fall8=Y  fall8strict=Y
+   132.2 ppm  L6 r0.0005 l6c_p 583167  t=  982  T= 10.2  dT= -3.7  comp= 27.4  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+   132.4 ppm  L6 r0.0005 l6c_0 733847  t=  940  T=  7.9  dT= -5.9  comp= 24.2  below_comp=-  worst50=0.03  fall8=Y  fall8strict=Y
+   134.9 ppm  L6 r0.0005 l6c_p 958504  t=  688  T=  5.8  dT= -8.0  comp= 21.4  below_comp=-  worst50=0.09  fall8=Y  fall8strict=Y
+   142.1 ppm  L6 r0.001 l6c_p 733847  t=  974  T=  8.5  dT= -5.3  comp= 25.0  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+   168.8 ppm  L6 r0.001 l6fix 957317  t=  876  T=  6.3  dT= -7.5  comp= 21.9  below_comp=-  worst50=0.09  fall8=-  fall8strict=-
+   175.1 ppm  L6 r0.001 l6c_0 733847  t=  918  T=  9.4  dT= -4.4  comp= 26.2  below_comp=-  worst50=0.09  fall8=-  fall8strict=-
+   181.7 ppm  L6 r0.0005 l6c_m 53669  t=  966  T= 13.4  dT= -0.4  comp= 32.9  below_comp=-  worst50=0.06  fall8=Y  fall8strict=Y
+   183.2 ppm  L6 r0.001 l6c_m 958504  t=  980  T= 13.1  dT= -0.7  comp= 32.4  below_comp=-  worst50=0.09  fall8=Y  fall8strict=Y
+   190.5 ppm  L6 r0.0005 l6fix 639472  t=  818  T= 11.3  dT= -2.5  comp= 29.3  below_comp=-  worst50=0.06  fall8=Y  fall8strict=-
+   191.3 ppm  L6 r0.001 l6c_p 958504  t=  872  T=  8.1  dT= -5.8  comp= 24.3  below_comp=-  worst50=0.07  fall8=Y  fall8strict=Y
+   195.1 ppm  L6 r0.001 l6c_m 53669  t= 1000  T= 10.5  dT= -3.3  comp= 28.0  below_comp=-  worst50=0.08  fall8=Y  fall8strict=Y
+   195.9 ppm  L6 r0.001 l6c_0 53669  t=  852  T= 11.1  dT= -2.7  comp= 29.0  below_comp=-  worst50=0.06  fall8=Y  fall8strict=Y
+   197.7 ppm  L6 r0.0005 l6c_p 957317  t=  978  T= 13.2  dT= -0.6  comp= 32.5  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+   221.8 ppm  L6 r0.001 l6c_0 819014  t=  882  T= 13.2  dT= -0.6  comp= 32.7  below_comp=-  worst50=0.12  fall8=Y  fall8strict=Y
+   230.4 ppm  L6 r0.0005 l6fix 583167  t=  956  T= 13.9  dT= +0.1  comp= 33.8  below_comp=-  worst50=0.13  fall8=-  fall8strict=-
+   280.2 ppm  L6 r0.0005 l6c_p 53669  t=  998  T= 14.5  dT= +0.7  comp= 34.9  below_comp=-  worst50=0.12  fall8=Y  fall8strict=Y
+   283.3 ppm  L6 r0.001 l6c_p 639472  t=  878  T= 13.9  dT= +0.1  comp= 33.8  below_comp=-  worst50=0.11  fall8=Y  fall8strict=Y
+   285.9 ppm  L6 r0.001 l6c_p 957317  t=  892  T=  8.7  dT= -5.1  comp= 25.3  below_comp=-  worst50=0.15  fall8=-  fall8strict=-
+   332.5 ppm  L6 r0.001 l6c_p 53669  t=  712  T= 10.6  dT= -3.2  comp= 28.1  below_comp=-  worst50=0.12  fall8=-  fall8strict=-
+   361.3 ppm  L6 r0.001 l6c_p 619496  t=  812  T= 15.9  dT= +2.1  comp= 37.8  below_comp=-  worst50=0.06  fall8=Y  fall8strict=Y
+   372.3 ppm  L6 r0.0005 l6fix 619496  t= 1000  T= 15.8  dT= +2.0  comp= 37.6  below_comp=-  worst50=0.19  fall8=-  fall8strict=-
+   586.8 ppm  L6 r0.001 l6fix 619496  t=  556  T= 10.9  dT= -2.9  comp= 28.6  below_comp=-  worst50=0.18  fall8=-  fall8strict=-
+  min pCO2 < 50 ppm: 0/36
+  min pCO2 < 60 ppm: 0/36
+  min pCO2 < 100 ppm: 3/36
+  CRASH (B): pCO2 below the compensation point of a step: 0/36
+  falls 8-fold strict (end <= 2x fall bottom): 19/36
+  falls 8-fold in <=50 Myr and end <= 1/4 of the pre-fall value: 21/36
+
+L6: 36 draws
+  soft pass (bar + finish moment): 29/36
+  HARD frozen over in window: 0/36
+  HARD boiled/hellhouse: 0/36
+  HARD ocean loss: 0/36
+  HARD CO2 crash (below plants' compensation point): 0/36
+  (secondary: CO2 under 100 ppm): 3/36
+  (secondary: 8-fold fall in <=50 Myr, end <= 1/4 of pre-fall): 21/36
+  (secondary: 8-fold fall in <=50 Myr, end <= 2x the fall bottom): 19/36
+  (frozen any time after 300, reported): 1/36
+  (end pCO2 outside 180-600, reported): 10/36
+  (icehouse, reported): 36/36
+  roll 0.0005: pass 15/18, frozen 0, boiled 0
+  roll 0.001: pass 14/18, frozen 0, boiled 0

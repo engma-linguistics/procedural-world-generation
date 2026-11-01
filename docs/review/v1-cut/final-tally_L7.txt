@@ -1,0 +1,36 @@
+  roll    tag    seed pass bar  fm FRZ frzAny BOIL OCN CO2x oceanMin |sl|max pCO2min pCO2end  endT pkIce  arid trees   min
+0.0005  l6fix  583167    Y   Y   Y   -      -    -   -    -     62.7     210     164     330  -1.4  30.0  18.1  16.2 142.4
+0.0005  l6fix  619496    -   Y   -   -      -    -   -    -     61.7     317     111     283  -5.9  32.1  20.5  11.7 137.5
+0.0005  l6fix  639472    Y   Y   Y   -      -    -   -    -     63.0     299     200     323  -1.5  32.6  22.9  30.6 134.4
+0.0005  l6fix  957317    Y   Y   Y   -      -    -   -    -     62.9     226     217    1045  +3.6  22.6  21.3  33.6 127.8
+ 0.001  l6fix  619496    Y   Y   Y   -      -    -   -    -     62.9     321     139     153  -5.7  35.5  20.1  27.1  89.2
+ 0.001  l6fix  957317    Y   Y   Y   -      -    -   -    -     62.4     278     120     342  -2.7  29.2  22.6  25.5  98.3
+
+min pCO2 per draw, ascending (t at min Myr; global mean T at min C; dT vs pre-industrial; compensation point ppm = G*(T)/0.7; below it?; worst 50-Myr fall ratio; 8-fold-no-recovery):
+   111.1 ppm  L7 r0.0005 l6fix 619496  t=  956  T=  5.3  dT= -8.5  comp= 20.7  below_comp=-  worst50=0.15  fall8=-  fall8strict=-
+   119.5 ppm  L7 r0.001 l6fix 957317  t=  876  T=  7.4  dT= -6.4  comp= 23.4  below_comp=-  worst50=0.11  fall8=Y  fall8strict=-
+   138.9 ppm  L7 r0.001 l6fix 619496  t=  998  T=  8.2  dT= -5.6  comp= 24.5  below_comp=-  worst50=0.10  fall8=Y  fall8strict=Y
+   163.8 ppm  L7 r0.0005 l6fix 583167  t=  632  T=  7.9  dT= -5.9  comp= 24.1  below_comp=-  worst50=0.10  fall8=Y  fall8strict=Y
+   200.1 ppm  L7 r0.0005 l6fix 639472  t=  746  T=  8.7  dT= -5.1  comp= 25.3  below_comp=-  worst50=0.10  fall8=Y  fall8strict=Y
+   217.2 ppm  L7 r0.0005 l6fix 957317  t=  852  T= 11.2  dT= -2.6  comp= 29.1  below_comp=-  worst50=0.14  fall8=-  fall8strict=-
+  min pCO2 < 50 ppm: 0/6
+  min pCO2 < 60 ppm: 0/6
+  min pCO2 < 100 ppm: 0/6
+  CRASH (B): pCO2 below the compensation point of a step: 0/6
+  falls 8-fold strict (end <= 2x fall bottom): 3/6
+  falls 8-fold in <=50 Myr and end <= 1/4 of the pre-fall value: 4/6
+
+L7: 6 draws
+  soft pass (bar + finish moment): 5/6
+  HARD frozen over in window: 0/6
+  HARD boiled/hellhouse: 0/6
+  HARD ocean loss: 0/6
+  HARD CO2 crash (below plants' compensation point): 0/6
+  (secondary: CO2 under 100 ppm): 0/6
+  (secondary: 8-fold fall in <=50 Myr, end <= 1/4 of pre-fall): 4/6
+  (secondary: 8-fold fall in <=50 Myr, end <= 2x the fall bottom): 3/6
+  (frozen any time after 300, reported): 0/6
+  (end pCO2 outside 180-600, reported): 2/6
+  (icehouse, reported): 6/6
+  roll 0.0005: pass 3/4, frozen 0, boiled 0
+  roll 0.001: pass 2/2, frozen 0, boiled 0
