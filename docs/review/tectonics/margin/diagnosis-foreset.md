@@ -73,3 +73,46 @@ Worst draws first. Round 2's cliff share is highest on L6 seeds 1 and 3 (23% nex
 targeted L6 runs with `margindiag.py`: main, necking + rise (round 2), and necking + rise + diffusion as the kitchen
 sink. Then the full 18x2 paired judge once, at the end. Report the shelf, 200-3000 m and next-cell cliff shares against
 round 2 and main.
+
+## Addendum (round 3, lane 100c): K and its depth law, before any screen
+
+Sources read this session (PDFs kept in the lane scratch, not committed):
+
+- **Mitchell & Huthnance 2008** (NERC eprint 2772, author's manuscript). The depth law: in their 2-D run "the mobility
+  was decreased inversely with depth d: K = K0(d/d0)^-1" (manuscript p. 24, lines 5-6), "nearly equivalent" to their
+  measured current-speed trend (Fig. 5A, beta = 0.36) with K ~ u^3 (p. 24, line 7); K scales as roughly u^2 to u^3
+  (p. 10, lines 6-7). They give **no absolute K** (the depth changes are "omitted ... to highlight the pattern",
+  p. 24) and censor results below 400 m, where "the model is not relevant to the muddy slope sediments" (p. 24).
+- **Strata tutorial** (Flemings group, UT Austin, `jsg.utexas.edu/flemings/files/Strata_tutorial.pdf`, PDF p. 4),
+  for the Jordan & Flemings (1991) clinoform model: "Jordan and Flemings (1991) found reasonable values for Kmarine to
+  be on the order of 100-1000 m2/yr", non-marine 1e4-1e5 m2/yr; lowering Kmarine steepens the clinoforms. I read the
+  tutorial, not Jordan & Flemings 1991 itself.
+- **Simon, Robin, Rouby, Guillocheau, Yuan & Braun, EGU2018-6425** and **Simon et al., EGU2019-7016** (abstracts of the
+  Simon et al. 2022 Basin Research study, whose full text I still could not reach): diffusion coefficients measured
+  from seismic stratigraphy and wells in the Ogooue and Zambezi deltas "range over two orders of magnitude (x0,01 to 10
+  km2/ka)" (2019; 0.01-1 km2/ka in 2018), "strongly depend on the slopes along the depositional profiles", and the
+  diffusion approach is "optimal at a scale of several kilometers and million years" (2019).
+- **Kaufman, Grotzinger & McCormick 1991** (Kansas Geol. Survey Bull. 233, pp. 489-508, eq. 3, p. 491):
+  `D = C0 exp(-C1 W)` with C1 = 0.05 /m (Table 1, p. 492). That decay (e-folding 20 m) is for wave-swept shelves 0-150 m
+  deep, not a slope; noted, not used.
+
+**K.** 100-1000 m2/yr is 100-1000 km2/Myr; the Ogooue/Zambezi measurements, 10-10^4 km2/Myr, bracket it. The default is
+**K0 = 300 km2/Myr** (the log-middle of Jordan & Flemings' range) at the reference depth, screened within 100-1000.
+That is a sourced order of magnitude, with the value inside it a judgement (needs-decision draft
+`draft-marine-diffusivity-k-and-depth-law`).
+
+**Depth law.** `K(d) = K0 d_ref / (d + d_ref)`, d the water depth, d_ref = 200 m: Mitchell & Huthnance's K ~ 1/d at
+depth, finite at the shore, K0/2 at the shelf edge (200 m) and K0/16 at 3000 m. Using 1/d below 400 m extrapolates past
+the range they fit. This is a judgement, kept because the slope must stay less mobile than the shelf, or the
+rollover inverts (Kaufman p. 491, the same logic). K is taken at the upslope (donor) cell's depth, where the moving
+sediment lies.
+
+**Why it should help, in numbers.** At L6 (cell ~120 km), the timescale to grade one cell is d^2/K ~ 50 Myr at K0, and
+~10x longer at slope depths. So over 1 Gyr it reaches the lower slope and rise many times. Expected effect: the front
+cell keeps its fill-to-shelf rule, but the cell beyond it gains sediment fed down the gradient, so 3000-4000 m cells
+next to the shelf aggrade into the 200-3000 m band.
+
+**Conservation.** Equal-area cells (`geo.cell_area_km2`), so the km of cover that leave one cell are the km that
+arrive in the other. Only sea-to-sea edges carry flux. A donor gives at most its light sediment cover (cover minus
+lava flows), its carbonate, sand, salt, coal and tuff pro rata. It arrives as mud (shale), and `sediments()` gives
+it its sand share by depth, as for any sea deposit. Bare rock gives nothing.

@@ -1174,11 +1174,11 @@ def erode(sim, col):
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
     iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
-    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
+    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk, crept = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
-        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0)
+        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0, slope_k=p.slope_k)
     sim.book("erosion", t0, col.t, cont)
     # the valleys rivers to the sea run in now (graded to the river they
     # carry: a shrunken river silts up a valley too big for it), and where
@@ -1186,7 +1186,7 @@ def erode(sim, col):
     # slopes (hydrology.VALLEY_MYR); they ride on with the rock
     x[:, VALLEY] = np.where(lk["incised"] > 0, lk["incised"], x[:, VALLEY] * np.exp(-dt / hydrology.VALLEY_MYR))
     # the basement comes up by what's worn off net (the strata: in sediments())
-    col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
+    col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0)) + crept  # (+ the sea floor's creep, PW-950)
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)
     # what bare ground lost, for the weathering sink: masked by the ice this erosion ran under (the next
     # step's sink sees the ice after a climate update; ground the ice left in it counted its glacial

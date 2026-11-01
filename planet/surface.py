@@ -233,6 +233,54 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km, ris
     return dep
 
 
+CREEP_DREF = 200.0  # m: the depth scale of the sea-floor creep's mobility, K d_ref / (d + d_ref) (the shelf edge)
+CREEP_KMAX = 0.1  # the largest K dt / d^2 per substep (explicit diffusion on ~6 neighbours stays stable below ~1/6)
+
+
+@njit(cache=True)
+def _creep(h, iso, avail, ea, eb, k0, d_ref, n_sub):
+    """Sea-floor creep of the sediment cover (clinoform diffusion, PW-950):
+    across each sea-sea edge a flux k0 x d_ref / (d + d_ref) x the drop
+    (m) / iso (m per km) of crust moves from the higher cell to the lower,
+    d the higher (donor) cell's water depth (Mitchell & Huthnance 2008:
+    mobility ~ 1/depth). k0 is K0 dt / (n_sub d_km^2) per substep. A cell
+    gives at most its movable cover (avail, km); what it gets can move on
+    in the next substep. Cells are equal in area, so what one loses the
+    other gains. Returns the net km gained (negative: lost) per cell."""
+    n = h.shape[0]
+    hh = h.copy()
+    av = avail.copy()
+    net = np.zeros(n)
+    m = len(ea)
+    flux = np.empty(m)
+    donor = np.empty(m, np.int64)
+    out = np.empty(n)
+    for _ in range(n_sub):
+        out[:] = 0.0
+        for e in range(m):
+            a, b = ea[e], eb[e]
+            if hh[b] > hh[a]:
+                a, b = b, a
+            donor[e] = a
+            d = max(-hh[a], 0.0)
+            f = k0 * d_ref / (d + d_ref) * (hh[a] - hh[b]) / (0.5 * (iso[a] + iso[b]))
+            flux[e] = f
+            out[a] += f
+        for i in range(n):
+            out[i] = min(1.0, av[i] / out[i]) if out[i] > 0 else 1.0  # (now the share each donor can pay)
+        for e in range(m):
+            a = donor[e]
+            b = eb[e] if ea[e] == a else ea[e]
+            f = flux[e] * out[a]
+            net[a] -= f
+            net[b] += f
+            av[a] -= f
+            av[b] += f
+            hh[a] -= f * iso[a]
+            hh[b] += f * iso[b]
+    return net
+
+
 BASIN_PASSES = 8  # closed basins an overflow may fill in turn on its way down (the Nile into the Nubian hollow)
 
 
@@ -314,7 +362,7 @@ def surface_rock(rock, cover, top, top_km):
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
           incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None,
-          base_rise=0.0, rise=False):
+          base_rise=0.0, rise=False, slope_k=0.0):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
@@ -327,8 +375,11 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     valley: m the cells' valleys are already cut (hydrology.lakes').
     base_rise: m the continents' base level stands above the sea (the run's
     ice: how far it has lowered the sea).
+    slope_k: km2/Myr, the sea floor's sediment creep at the shore (_creep;
+    0: off).
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
-    lakes): lakes is hydrology.lakes' dict (on the terrain before this
+    lakes, crept_km): crept_km is the cover each sea cell lost to the creep
+    (what it gained is in deposited_km); lakes is hydrology.lakes' dict (on the terrain before this
     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
     land = is_land(elev, grid=grid)  # (ground below the sea cut off from it is land: a hollow to fill, PW-1229)
     lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land)
@@ -404,7 +455,28 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
                + _spread(dep_sea - on_shelf, ea[deep[ea] & deep[eb]], eb[deep[ea] & deep[eb]], 0.15,
                          int(round(4 * scale**2))))
     dep = np.where(ocean, dep_sea, dep)
+    crept = np.zeros(len(dep))
+    if slope_k > 0:
+        # the sea floor's sediment creeps down its slope (PW-950): only the light cover (not lava flows) moves,
+        # taking its ingredients pro rata; it settles as mud (sediments() gives it its sand by depth)
+        sea_e = ocean[ea] & ocean[eb]
+        movable = np.where(ocean, np.maximum(cover - mix[:, 1], 0), 0.0) + np.where(ocean, dep, 0.0)
+        h_sea = np.where(ocean, elev + dep * iso_dep, 0.0).astype(float)
+        k_dt = slope_k * dt / d_km**2
+        n_sub = max(int(np.ceil(k_dt / CREEP_KMAX)), 1)
+        net = _creep(h_sea, np.asarray(iso_dep, float) * np.ones(len(dep)), movable, ea[sea_e], eb[sea_e],
+                     k_dt / n_sub, CREEP_DREF, n_sub)
+        gain = np.maximum(net, 0.0)
+        # what a cell lost comes out of this step's deposit first, then its old cover
+        from_dep = np.minimum(np.maximum(-net, 0.0), dep * ocean)
+        crept = np.maximum(-net, 0.0) - from_dep
+        old_movable = np.maximum(cover - mix[:, 1], 0)
+        f = np.where(old_movable > 0, 1 - crept / np.maximum(old_movable, 1e-30), 1.0)
+        mix = mix * np.where(np.arange(mix.shape[1]) == 1, 1.0, f[:, None])
+        dep = dep - from_dep + gain
+        thick = thick - crept
+        cover = cover - crept
     thick = thick + dep
     cover = cover + dep
     lk["depth"] = np.where(lk["wet"], np.maximum(lk["level"] - elev, 0.0), 0.0)
-    return thick, cover, mix, removed, dep, flow, down, lk
+    return thick, cover, mix, removed, dep, flow, down, lk, crept

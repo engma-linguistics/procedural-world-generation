@@ -184,6 +184,10 @@ class Params:
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     fan_km: float = 1000.0  # km of deep sea floor over which ~63% of the load that passes the shelf settles
     rise: float = 0.0  # 1: sediment past the shelf's brink settles first at the slope's foot (continental rise, PW-950; 0: off)
+    # km2/Myr: the sea floor's sediment cover creeps down its slope, flux = K grad(elevation), K falling with
+    # depth as K d_ref / (d + d_ref) (clinoform diffusion, PW-950: Mitchell & Huthnance 2008; Jordan &
+    # Flemings 1991's 100-1000 m2/yr; docs/review/tectonics/margin/diagnosis-foreset.md; 0: off)
+    slope_k: float = 0.0
     # km: sediment buried deeper than this is cooked (~500 C) into metamorphic
     # rock and joins the basement (Earth's thickest piles: ~20 km)
     metamorphic_depth: float = 18.0
