@@ -138,7 +138,7 @@ Peoples ship as a preview. Plan: <code>docs/review/v1-cut/plan.md</code>.</p>
 <tr><td>Docs: star section, overview section 3 regenerated, 2.6 rewritten (PW-814, PW-816)</td><td>Merged, 858 tests pass</td></tr>
 <tr><td>Release checks (PW-825): L7 Earth check (71% climate-group agreement, global 13.9 °C and 996 mm against 14.0 and 983 observed);
 scorecard on 6 seeds (71%); the L7-drier pairs (L7 only ~2 points drier now)</td><td>Done, all as expected</td></tr>
-<tr><td>Hard-bar tally: 36 L6 + 6 L7 draws (cause found). Frozen over 0, boiled 0, ocean loss 0, <b>CO2 crash 1</b> (L6). Soft pass 81% at L6 (29 of 36), 5 of 6 at L7</td><td><b>Plant fix merged; the crash draw is now 85 ppm.</b> Your call: D32, where the crash line sits</td></tr>
+<tr><td>Hard-bar tally: 36 L6 + 6 L7 draws (cause found). Frozen over 0, boiled 0, ocean loss 0, <b>CO2 crash 1</b> (L6). Soft pass 81% at L6 (29 of 36), 5 of 6 at L7</td><td><b>Clear under your D32 B</b> (crash = CO2 below where plants can live; the worst draw is 85 ppm). Lane 102 is confirming on the final code</td></tr>
 <tr><td>Showcases rebuilt on final code, full test suite, state page, close PW-244 and PW-1119, tag v1.0</td><td>After the checks</td></tr>
 </table></div>
 <p>Report: <code>docs/review/v1-cut/checks.md</code>. Everything passed except one world in 42, so the tag waits on the plant fix (lane 95). If it fails, the crash goes to v2 and we tag.</p>
@@ -172,34 +172,8 @@ sister peoples born on different continents, and a home-ground edge.</p>
 <h2 id="decisions">Decisions waiting on you</h2>
 <div class="cards">
 
-<div class="card" id="d32"><div class="id">D32 · WHERE IS THE CO2 CRASH LINE? · the last thing between us and the v1 tag</div>
-<p><b>What happened:</b> your D29 C is built and merged (lane 95). When CO2 falls below 124 ppm, plants now starve, and their threefold speed-up of rock weathering fades with them. This uses physiology the plant model already has, adds no new constant, and changes nothing above 124 ppm. The crash world now bottoms out at <b>85 ppm instead of 36</b>, recovers to 120, and is not frozen over (32% of land under ice against the 40% bar). Every other dip got shallower too, and no draw got worse.</p>
-<p><b>The lowest CO2 of all 42 draws:</b> L6 85, 108, 116, 119, 120, 121, then 136 and up (median 172). L7 133 and up. So at lane 92's 100 ppm line it is still <b>1 crash in 42</b>, and only that one draw is under 100.</p>
-<ul>
-<li><b>A. Keep 100 ppm.</b> One crash stays. Per your D29 the rest goes to v2 (the next fix is C4 grasses, which cope with low CO2 better; PW-1245), and we tag with this one world documented as a known outlier.</li>
-<li><b>B. Put the line where the model's own plants stop growing.</b> That is the CO2 compensation point, from Bernacchi et al. 2001 as the code already uses it: about 36 ppm in the air at 15 °C and 61 ppm at 25 °C. That makes a crash "CO2 too low for plants to live". The old 36 ppm world failed it; the new 85 ppm world passes. <i>My lean</i>, because it's a line set by biology, not by Earth. To be fair to the other side: it moves a line after seeing the result, which is why it's your call.</li>
-<li><b>C. Make a crash mean "falls and doesn't come back"</b>, for example an 8-fold drop in under 50 Myr (PW-1156's idea). The 85 ppm world recovers, so it passes.</li>
-</ul>
-<p>After your answer: the full re-run on the final code (plant fix plus inland pits), the showcase rebuild, and the <code>v1.0</code> tag.</p>
-</div>
-
-<div class="card" id="d31"><div class="id">D31 · HOW BIG SHOULD THE COMMONEST PEOPLE BE? · your D25 item 5, with the graphs</div>
-<p><b>What happened:</b> your D25 brakes are built (lane 97, merged). They do keep the kobolds and goblins down: in-fighting takes about a third of their land, while raids, culls and war take a few percent. But the land they lose goes mostly to the humans, so the commonest people got <i>bigger</i>, not smaller. D27's spread founding had helped first: in the humans-kobolds-goblins tree, humans fell from 99% to 89% on one world. Then the brakes pushed them back to 97%.</p>
-<div class="shots">
-<figure><img src="d31/commonest-by-stage.png" alt="Commonest people's share per stage, four trees on two worlds"><figcaption>The commonest people's share: before, after D27, after D25. Full tree: 61% and 29% on the two test worlds, barely moved. Five-people tree: about 64% and 55%. Three-people tree: 89–97%. Seven Meals: about 30%.</figcaption></figure>
-<figure><img src="d31/sweep-raiders.png" alt="Shares against the raiders dial from x0 to x4"><figcaption>The raiders' dial from off (x0) to x4. Stronger brakes mean more humans, and at x4 the kobolds and goblins die out (a bug: no brake should end a people).</figcaption></figure>
-</div>
-<p><b>The question:</b> what number do you want for the commonest people? Whatever you pick becomes a check in the stress test.</p>
-<ul>
-<li><b>A.</b> Usually under half, never over 70% once there are five or more peoples.</li>
-<li><b>B.</b> Humans can be most of the world; the others just need real countries (each above some share of land).</li>
-<li><b>C.</b> It depends on the tree: a human-centred tree may run 60–70% human, an even tree stays under 40%. <i>My lean:</i> this matches how the trees are written, and it's what Seven Meals already does at about 30%.</li>
-<li><b>D.</b> Something else.</li>
-</ul>
-<p><b>Meanwhile (my calls, in lane 101):</b> make in-fighting rise with a raider people's own crowding instead of a flat cut; make the floor really stop a brake from ending a people; add the brake that bites the leader, crowding war deaths for whoever is dense (PW-1172). That last one is the only lever that brings the commonest share down. Your D27 "do what feels good" calls stay as built: 3 founding sites within 800 km, kobold and goblin dens in broken country.</p>
-</div>
-
-<div class="card" id="d28"><div class="id">D28 · HOW MANY DRAGONS? · the numbers you asked for, before and after people</div>
+<div class="card" id="d28"><div class="id">D28 · HOW MANY DRAGONS? · your 10-31 answer is in lane 103</div>
+<p><b>Your answer:</b> more dragons, B and/or C for how they lose ground, a per-run lever, and the 10-farmers anchor isn't what you want. Lane 103 is doing one round on exactly that (below is the evidence it starts from).</p>
 <p><b>Why there are 10× more dragons than lane 90 measured (lane 99):</b> it's their <i>range</i>, not weaker hunting. Your D20 peoples hold much less land.
 Humans' cells fell from about 14,800 to 4,000 and kobolds' from 9,600 to 400, so dragons now live in about 5.5× as many places.
 D20's first change (a new people founds at one spot, and a dying stem's land is left empty) does most of it. The hunting rate was set from a
@@ -231,8 +205,10 @@ Lions and tigers instead vanish from farmland and stay dense in the wilds.</p>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>102 · final tally</td><td>Re-running all 42 test worlds on the final physics code (plant fix plus inland pits), counting crashes under each D32 option, so your answer can go straight to the tag. It also settles whether the inland-pits fix really made worlds drier.</td></tr>
 <tr hidden><td>95 · plant floor</td><td>Your D29 = C: plants that starve for CO2 stop speeding up weathering. Screen of the 6 low draws, then the full tally with every draw's lowest CO2, so you can set the crash line. If it fails, it goes to v2.</td></tr>
-<tr><td>101 · peoples</td><td>After D31's finding: in-fighting that scales with crowding, a floor that holds, and a brake on the leader (crowding war deaths). Judged on the same stress test, not tuned to a number until you answer D31.</td></tr>
+<tr><td>101 · peoples</td><td>Your D31 A: in-fighting for every people, humans included, scaled by crowding; a floor so no brake ends a people; your A as a reported check. Then it stops until war and polities.</td></tr>
 <tr><td>100 · continent edge</td><td>The physics slot was free, so per your standing rule I'm trying the margin (PW-950, v2): crust that thins gradually over 50–200 km instead of a one-cell cliff. It starts with a written diagnosis, then small screens. It won't merge before the v1 tag.</td></tr>
+<tr><td>103 · dragons round 2</td><td>Why dragons are so sparse even before people (checked against body-size rules for big predators, and whether all ages are counted). The 10-farmers anchor is replaced by local extirpation and/or avoiding busy country, and a "dragon abundance" dial goes in the viewer. One round.</td></tr>
+<tr><td>104 · L7 → L8 overnight</td><td>Your ask: refine a finished L7 world to L8 (and try L9) instead of simulating at L8, then compare it with the direct L8 world.</td></tr>
 <tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
@@ -242,6 +218,7 @@ Lions and tigers instead vanish from farmland and stay dense in the wilds.</p>
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Your 10-31 evening answers:</b> D32 B (the crash line is where plants can no longer live, so the 85 ppm world passes); D31 A, humans in-fight too, and peoples-share work pauses until war and polities; D28 more dragons with a lever (lane 103); L8 refine overnight (lane 104).</li>
 <li><b>Dragons D28 B merged (lane 99, 886 tests pass):</b> sea food for white, bronze and blue; the census and the lions-and-tigers comparison are in the D28 card.</li>
 <li><b>CO2 plant fix merged (lane 95, 884 tests pass):</b> L6 crashes 2 → 1 of 36, the crash world 36 → 85 ppm, soft pass 28 → 29 of 36. It adds no dryness (the drier scorecard came with the inland pits). Report: <code>docs/review/v1-cut/plant-floor.md</code>.</li>
 <li><b>Peoples D27, D25, D26 merged (lane 97, 882 tests pass):</b> founding at 3 sites on one landmass, the four raider brakes with viewer dials <code>raiders</code> and <code>war</code>, dwarves resist disease at 0.75 (this takes effect once the plague code reads it), and enemy pairs log "hunt" events on their shared border (about 600 over a full history; numbers unchanged).</li>
