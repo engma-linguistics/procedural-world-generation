@@ -3317,3 +3317,29 @@ def test_old_enemies_hunt_each_other_on_their_border_as_story_only(faketz, monke
     monkeypatch.setattr(HP, "HUNT_PER_KYR", 0.0)
     h._hunts(types.SimpleNamespace(epoch="recent", ago=0.1, dt=0.1))
     assert not h.events  # (none in the deep epoch, none with the rate at 0)
+
+
+def test_sea_hunters_eat_the_sea(faketz):
+    """D28 B (lane 99): a dragon kind with the trait 'sea_hunter' adds the sea's food (megafauna.sea_food) to the land's; others do not;
+    off (SEA_FOOD False) nobody does."""
+    from planet.lineages import prey as PR
+    from planet.lineages.history import megafauna as MG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "sea", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies", "sea_hunter"]},
+        {"id": "land", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
+    ps.graze_npp = np.full(ps.grid.n, 100.0)
+    ps.forage = np.full(ps.grid.n, 2.0)
+    ps.sea_npp = np.where(np.arange(ps.grid.n) % 2 == 0, 100.0, 0.0)
+    h = H.History(SP.parse(raw), ps, 1)
+    assert h.sea_food is not None and h.sea_food.max() > 0
+    food = np.full(h.grid.n, 0.01)
+    s, l = h.idx["sea"], h.idx["land"]
+    assert np.allclose(MG.natural(h, s, None, food) - MG.natural(h, l, None, food), h.sea_food / (h.dragon_struct["cattle_yr"] * PR.HEAD_T))
+    MG.SEA_FOOD = False
+    try:
+        h2 = H.History(SP.parse(raw), ps, 1)
+        assert h2.sea_food is None and np.allclose(MG.natural(h2, s, None, food), MG.natural(h2, l, None, food))
+    finally:
+        MG.SEA_FOOD = True

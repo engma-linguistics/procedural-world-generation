@@ -127,6 +127,7 @@ class Pass:
         self.graze_npp = None  # ...and its grazing NPP, g C/m2/yr (gameattrs, raw): the static prey field's base (lineages.prey, PW-966)
         self.npp = None  # ...and its total NPP, g C/m2/yr (world layer): the farmers' productivity (lineages.prey.people_fields, PW-1020 B)
         self.forage = None  # ...and its foraging layer (0-5, wild food for people): the foragers' productivity (lineages.prey.people_fields, PW-974)
+        self.sea_npp = None  # ...and its ocean NPP, g C/m2/yr (lineages.prey.sea_npp): the sea-hunting dragons' food (D28 B, lane 99)
         if world_ref:
             from .. import world as W
             w = W.load(S.find_world(world_ref))
@@ -142,6 +143,8 @@ class Pass:
             gl = GA.world_layers(self.grid, w["layers"], tilt, raw=True)
             self.graze_npp, self.forage = gl.get("grazing_npp"), gl.get("foraging")
             self.npp = w["layers"]["npp"].astype(float) if "npp" in w["layers"] else None
+            from . import prey as PR
+            self.sea_npp = PR.sea_npp(w["layers"], self.grid)
             return
         if m.get("source_run") and m["source_run"] != "earth":
             src = S.find_run(m["source_run"])
