@@ -391,10 +391,11 @@ On today's Earth (L6, 2026-10-16, after the coast batch, docs/review/audit/coast
 
 ### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
-A **world** is one moment, finished. Four ways to get one:
+A **world** is one moment, finished. Five ways to get one:
 - **`planet slice <run> --at T`** (or `--at auto`: the keyframe after 300 Myr whose land %, largest landmass and landmass count are jointly nearest the run's medians, once the full flora has appeared; in an icehouse era, a warm moment of that era, PW-700). It replays the simulation from the nearest checkpoint, checks the result against the stored keyframe and refuses to save on a mismatch (the code changed since the run) unless `--force`.
 - **The viewer's Zoom button** builds the world straight from the keyframe nearest that time (`timeline.world_from_frame`, seconds, exactly what the viewer shows), reusing a world already made at that time.
 - **`planet finish <timezoom> --kyr N`** (PW-091, `finish.py`; the viewer's "Finish world here" on a time zoom frame): a world at any stored frame (every 2 kyr) of a glacial time zoom. Geology (plates, crust, rock, landforms, volcanoes) is the source keyframe's; bed, ice, sea level and global temperature are the frame's, and the frame's orbit (obliquity, precession, eccentricity) is the time zoom's monthly temperature anomaly passed to `climate.compute` (`orbit_dt`, with Earth's start anchor; PW-198); then the usual finishing below, so lakes form against the ice and on the pressed-down bed, and lowered seas join land. Grounded ice on a bed below sea level (pressed down by its load, or a marine sheet) is stored as it is, the true bed under the ice (PW-197); it is land by its ice (see **Land** below; meta `ice_bed_below_sea_cells`). The Earth world's data (`earth_data`) stores ETOPO1's true bed as well (PW-354). The time zoom's glacial imprint up to the frame comes along (PW-037): the bed is the carved one, so lakes fill the overdeepened basins and the hollows behind till; layers `glacial_erosion`, `glacial_till`, `ice_max`; the sediment cover loses what the ice stripped and gains the till (a scoured shield shows its basement); the sub-cell texture's bumps are planed (exp(−erosion / 180 m) of them stay; the mountains' ridges stay); `glaciated_myr` = 0 wherever the ice reached. Time zooms made before PW-037 can't be finished (re-run them). Meta: `source_run`, `t_myr`, `timezoom`, `timezoom_kyr`, the frame's sea-level change and orbit. **Storage choice:** no re-run; each time-zoom frame already stores the surface and the grounded ice (to 1 m since PW-091), so bed = surface − ice. `planet finish <run> --at T` (or "Finish world here" on a run) is the keyframe world, as the Zoom button. An Earth time zoom finishes like `tools/earth_world.py` (real terrain, no rock record, so no regional zooms).
+- **`planet refine <world> --level 8`** (`refine.py`, PW-490 first cut, lane 104): a finished world's moment remade on a finer grid (the history stays the source's). The zoom's coastline, relief noise and mean correction on the sphere (each coarse cell keeps its land or sea and its height as its fine cells' mean), the noise's hollows drained outside the coarse world's lakes and closed basins, each fine cell on one coarse cell's rock column, then the finishing below per fine cell with the climate run on the coarse grid and brought down by the lapse rate (`nest.climate_coarse`). L7 -> L8: 4.5-10 min, 10.8 GB, 440 MB; L9: 38 min, 39 GB, 1.76 GB (too big for the viewer, PW-1209). No landform-class shapes and no sub-cell orographic rain yet.
 - **`planet generate`** makes an unsimulated world from cartoon plates (no texture, ice, record or landforms; it can't be zoomed). **`tools/earth_world.py`** runs real Earth terrain through the same finishing, with observed climate alongside.
 
 **Finishing** (run-based worlds first get sub-cell texture, `timeline.texture`: ±180 m of noise plus ridges on high ground, scaled by the ground's slope, so steep country (≥ 1.25 m/km between cells) gets all of it and plains and plateaus 15%: PW-057):
@@ -848,7 +849,53 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
-### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83 and 97, owner D20, D25-D27)
+### 2.25b Emergent cultures (`lineages/cultures.py`, PW-670; round 2)
+
+Output only, read after the demes (2 s a run). A people's first demes are its founding culture. A deme that split off by
+niche learning (`split_adapted`) is a culture of its own at once. A deme cut off by a gap, a crossing or distance becomes
+one once it has lived apart `T_APART_KYR` for its people's era when it split: 0.6 kyr in the stone age, down to 0.15 kyr
+by the renaissance (settler colonies were told apart in 120-175 years; the era is the latest whose techs the people knows a
+quarter of, `meta.techtree`). The frames are 0.5 kyr apart near the present, so in practice a split counts once it spans one
+frame gap (two in the stone age).
+
+Who is apart is the demes' call. `demes.py` cuts each kind by its own reach (owner 2026-10-31): the thresholds are a
+walker's (`JUMP_KM`); a megafauna kind (dragons fly, giants roam and wade straits) moves `LINK_KM` over land and sea alike,
+a flier `HOPS['flies']`, with no terrain cost and `SPLIT_KM` / `FUSE_KM` and the gaps it crosses scaled up to match; a
+people with sea craft crosses sea up to its craft's reach x its sea share, at a coast's cost.
+
+A kind's **cohesion** (0..1, the tree's per-line `cohesion`, inherited; dnd and Seven Meals: dragons 0.9, giants 0.5, peoples
+0) is its normalizing pull: each culture's drift target is pulled that far toward its kind's mean, and sister cultures merge
+side by side in `(1 - cohesion)` of the time. A run made before the key existed reads it from the preset of the same name.
+
+**Overlapping demes** (lane 109). Each frame stores every whole people's presence, megafauna included, as a sparse table
+(`meta.presence`: per frame and line, the cells where it is established, presence >= EST, and its % of the cell;
+`output.write_presence`). `demes.py` cuts each people from its own presence, so demes overlap freely: a kobold deme beside a
+hobgoblin one in the same hills, a dragon kind's wide demes over the peoples below. Deme contacts count the cells two demes
+share (co-presence) as well as the leading peoples' borders. `layers/demes.bin` stays the leading people's deme per cell;
+`layers/demes_all.bin` holds every people's deme on each of its cells, aligned with the presence table. The cultures read
+every people's demes, so a culture's cells are all the cells its people lives in. Round 2's rule that a cohesive kind's
+returning pockets rejoin its first culture is gone: it made up for dragons dropping out of frames that kept only each cell's two
+leading peoples. Size (169 frames): 15 MB at L6 (4.8 M entries, 3 bytes each) and 111 MB at L7 (22 M entries, 5 bytes each); demes_all adds 2 bytes an entry (10 and 44 MB). Runs made before
+the table use the two leading peoples as before. The globe's demes layer has a "whose demes" picker (`?demes_of=ID`), and the
+Cultures tab's map link opens it on that culture's people. Ticket: PW-1259 (lane 109).
+
+Each culture copies its parent's skills when it starts, then drifts toward what its land rewards: sea craft from the coast
+share of its cells, herding lore from the share of open dry country. It loses a skill with an e-folding time of 1 kyr. It
+gains one with an e-folding time of 3 kyr, and only once its people knows boats (or herding) (Henrich 2004, Rivers 1912). Its
+way of life, its people's groups on its cells (`groups_best`), is recorded at the start and now.
+
+Three things merge cultures (PW-676, no cap). A culture whose last deme fused into another culture's deme has merged into it.
+Two touching sister cultures with the same adaptation and way of life merge after `MERGE_CONTACT_KYR` = 1 kyr side by side
+(x (1 - cohesion)), or after 1 kyr once their people knows cities (up to 1 Mkm² together) or written law (5 Mkm²).
+
+Output: `cultures.json` and `meta.cultures`. Run it with `planet cultures RUN [--out DIR [--redemes]]`; `--out` leaves the
+run as it is, and `--redemes` cuts the demes afresh in memory first (for a run whose stored demes predate today's
+`demes.py`). `GET /api/cultures?run=` works it out on the fly for a run without the file. It is shown in the workbench's
+Cultures tab, which is separate from the species tree, and in the brief's "Cultures here".
+
+Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
+
+### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83, 97 and 101, owner D20, D25-D27, D31)
 
 The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.
 - **One-spot founding** (`origins._origin_split`, PW-1152, PW-1181): a split's founders hold the suitable country within `FOUNDER_KM` of one origin cell in or by its parent's range. They take neither a cut-off part of the parent's range nor patches across it, so the kobolds of the worldwide dragon stem start as one people of one country. When a stem ends at its last split (`_end_parent`), its remaining land lies empty for its children to spread into; it passes to no child (this replaces PW-677's handover). A stem ends only once every child of its realm has started, the ones authored to die out included, and a stem with splits still to come holds out in a refuge as a living people does (PW-1184). A split whose parent is gone founds near the parent's last land, and one with no room by its parent at the nearest country it can live in (`_origin_fallback`, a distance kernel of `FOUNDER_KM`), never at the best habitat anywhere.
@@ -879,27 +926,35 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
   country to a people's pioneers and jumps (the dragons hardly take room; before, a dragon's range barred them). A hemmed-in people sends
   founders out over its jump kernel (PW-920) when rivals crowd it or when it has filled the land it holds: by crowding alone a narrow
   people, the denning kobolds on their patch of broken country, never left it.
-- **The brakes** (`history.counter`, lane 97, owner D25; lane 82's shared plug, PW-1165): every brake is a share of a people's
-  capacity K kept on a cell, multiplied together and never under `COUNTER_FLOOR` (5%). Off in the deep epoch.
+- **The brakes** (`history.counter`, lanes 97 and 101, owner D25, D31; lane 82's shared plug, PW-1165): every brake is a share of a
+  people's capacity K kept on a cell, multiplied together. On a cell a people holds (presence 0.12+) the brakes never cut its habitat
+  under `BRAKE_HOLD` (0.24): they thin a people, never take its land (only the contest with rivals does). Elsewhere `COUNTER_FLOOR`
+  (5%). Off in the deep epoch.
   - *War-torn land* (lane 82's K(W)): K x (1 - 0.3 min(1, h / 1%/yr)), h the way of life's violent-death rate (lane 82's medians of
     Keeley, Gat, Bowles et al.) x [(density / 10 per km²)² x state pacification + 0.5 x hostile frontier]. Dense, stateless peoples
     next to enemies lose land; states and sparse foragers hardly any. Viewer dial meta.war.
-  - *Raid losses and in-fighting* (lane 85's design, the owner's in-fighting): a raider people (spec `raids`, by default survival
-    'harsh': kobolds, goblins) has its canon excess losses scaled by R = 1 + RAID_Q x hostile frontier + FEUD_Q x hemmed-in share (no
-    free good country next door, or crowding), at most 3.6 (Gurven and Kaplan 2007's range of violent and accidental deaths); the
-    share kept is r(R)/r(1) on its life table (`life_history.harsh_kept`). Peoples of normal survival are never touched.
+  - *In-fighting, every people* (lane 101, owner D31 "humans ought also be infighting"): a people keeps 1 - war x `FEUD_CUT` (0.35) x
+    C x u of a cell, u its own fill of the cell's land, C its circumscription: the mean, over the cells next to its land, of how far each
+    bars a faction from splitting off (free good country 0, other peoples' land `SOCIAL_Q` 0.5, sea for non-sailors and unlivable land
+    1). Fission from internal conflict once a group outgrows its land (Chagnon, PNAS profile 2014; Walker and Hill 2014), graded by
+    circumscription with social circumscription leakier (Carneiro 2012). The sizes are judgements, parked for war and polities.
+    Not damped by states. Viewer dial meta.war.
+  - *Raid losses* (lane 85's design): a raider people (spec `raids`, by default survival 'harsh': kobolds, goblins) has its canon
+    excess losses scaled by R = 1 + RAID_Q x hostile frontier, at most 3.6 (Gurven and Kaplan 2007's range of violent and accidental
+    deaths); the share kept is r(R)/r(1) on its life table (`life_history.harsh_kept`). Peoples of normal survival are never touched.
   - *Culling wars*: a raider's crowded frontier, outnumbered by peoples hostile to it, is cut to 40% now and then and breeds back
     (e-folding 50 yr / its growth multiple); a fast breeder takes the sawtooth's mean (0.28 lost) and the step logs a 'cull' event.
   - Hostility comes from the cohabitation matrix (`compose.cohabitation`): an 'apart' wish of weight 1 reads 1. Viewer dial
-    meta.raiders (raids, in-fighting and culls together). The suite records each people's lost shares (`brakes`).
-  - At x1 the kobolds and goblins lose about a third of their land, almost all to in-fighting (they are nearly always hemmed in); other
-    peoples lose 0-5% to war, the humans almost none. The room goes mostly to the commonest people: docs/review/peoples-brakes/report.md.
+    meta.raiders (raids and culls). The suite records each people's lost shares (`brakes`).
+  - At x1 every people loses 6-20% of its land to in-fighting (humans about 8%, the least, as they hold the most open country); the
+    kobolds and goblins lose 2-8% more to raids. War deaths through the life tables were built and dropped (0-0.2% of any people;
+    parked with PW-1172).
 - **Old enemies hunt each other** (`history.hunts`, lane 97, owner D26 B): a pair the tree names as enemies ('apart' wish of weight w)
   with a shared border logs a 'hunt' event at a border cell with chance `HUNT_PER_KYR` (0.5) x w a kyr, from its own generator. Story
   on the map only: no numbers change.
 - **Dwarves resist disease** (spec `disease_resist`, 0..1; dwarves 0.75, owner D25): inherited by groups and splits, a hybrid takes its
   parents' mean. Read by nothing yet: the plague events are not built (inbox draft).
-- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md; after D25-D27, docs/review/peoples-brakes/report.md (the commonest people's share per stage and per brake setting).
+- Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md; after D25-D27, docs/review/peoples-brakes/report.md (the commonest people's share per stage and per brake setting). The suite also reports owner D31 A (the commonest people usually under half, never over 70% with 5+ peoples) without failing on it: after lane 101, all tries median 53%, 48% under half, 86% of 5+ trees at or under 70% (charts in docs/review/peoples-leader/).
 
 ### 2.27 Megafauna: dragons, giants and their food chain (`lineages/history/megafauna.py`, `lineages/prey.py`, `lineages/dragon_ages.py`)
 

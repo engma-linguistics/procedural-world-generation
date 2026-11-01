@@ -1,0 +1,1010 @@
+<title>Proper Cultures Proposal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+:root {
+  --bg: #f3f1ea; --card: #fbfaf6; --ink: #22241f; --ink2: #4a4d44; --muted: #6c6f63;
+  --rule: #d8d4c6; --accent: #8a5a1c; --accent-soft: #f1e4cf; --code: #ece8dc;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+    --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --code: #24262c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+  --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --code: #24262c; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3, h4 { font-family: var(--sans); line-height: 1.25; text-wrap: balance; color: var(--ink); }
+h1 { font-size: 1.9rem; margin: 0 0 .4em; }
+h2 { font-size: 1.35rem; margin: 2.2em 0 .5em; padding-top: .6em; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.12rem; margin: 1.8em 0 .4em; color: var(--accent); }
+h4 { font-size: 1rem; margin: 1.5em 0 .3em; }
+p, li { color: var(--ink2); } strong { color: var(--ink); }
+a { color: var(--accent); }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code); padding: .08em .3em; border-radius: 3px; }
+pre { background: var(--code); padding: 12px 14px; border-radius: 6px; overflow-x: auto; font-size: .85em; line-height: 1.45; }
+pre code { background: none; padding: 0; }
+.tbl { overflow-x: auto; margin: 1em 0; }
+table { border-collapse: collapse; font-family: var(--sans); font-size: .88rem; min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { color: var(--ink); background: var(--accent-soft); }
+.note { font-family: var(--sans); font-size: .9rem; background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 4px; }
+</style>
+<div class="wrap">
+<h1 id="proper-cultures-a-proposal-languages-names-polities-attitudes-gods">Proper cultures: a proposal (languages, names, polities, attitudes, gods)</h1>
+<p class="note">A draft to iterate on, written 2026-11-01 from the repo, the tickets and your ethnonym taxonomy. Nothing here is built. The 19 decisions are in §5, each with a lean. Source of truth: <code>docs/review/cultures-proposal/proposal.md</code>.</p>
+
+<p>For Daniel, 2026-11-01, to iterate on. Written read-only against main at 02a3b147 (cultures round 2 merged; lane 109,
+overlapping demes, still running). Nothing here is built. Sources are listed at the end with what was actually read.</p>
+<h2 id="in-plain-words">In plain words</h2>
+<p>Today a "culture" is a regional branch of a people that has lived apart long enough, or taken to new country. It knows
+where it lives, when it split, whom it came from, two drifting skills (sea craft, open-country herding) and its way of
+life. That is a good skeleton. It has no language, no name of its own beyond a placeholder, no ruler, no gods and no
+opinion of its neighbours.</p>
+<p>The proposal is to put flesh on it in thin layers, each one a cheap pass after the run (like the demes and cultures are
+now), so we can look at it in the viewer and argue about it before anything feeds back into the history.</p>
+<ol>
+<li><strong>Stage 0, languages without words.</strong> Each culture speaks a <em>lect</em>. Lects form a dated family tree that follows the
+   culture tree. Every pair of neighbouring lects gets a mutual-intelligibility number worked out from how long ago they
+   split, how much they have been in touch since, and a published rate of vocabulary loss. A dialect continuum falls out
+   on its own: neighbours along a chain understand each other, the ends don't. With the sourced rate, two lects out of
+   touch cross the language/dialect line after about 1.3 kyr (Wichmann 2019 puts it at 1.1-1.6 kyr). "Languages" are
+   then clusters of lects on the near side of that line, derived rather than stored. Light history comes for free: splits, koines when sisters merge,
+   shifts when one culture is swallowed by another, deaths, and borrowing episodes (including which food words would have
+   travelled where, with the word forms left empty). Placeholder names follow your ethnonym taxonomy as glosses: "the
+   true people", "the speakers", and per neighbour "the mutes" or "the people of the first valley we met".</li>
+<li><strong>Stage 1, polities.</strong> Chiefdoms, states and empires grow out of the settlement ledger where the tech allows and the
+   land is hemmed in (Carneiro), reach as far as their tech lets them rule (half a day's walk for a chiefdom, 50-250 km
+   for an early state, more with writing, roads, horses and ships), and fight on their borders. War between polities is where the leader brake you
+   parked (the peoples' share) can finally live, but I'd be honest up front: the literature lane 101 read says war mostly
+   costs land, not lives, so polities will trim a dominant people, not topple it. Polities also give languages their
+   main lever: a state's language spreads and its subjects shift.</li>
+<li><strong>Stage 2, attitudes, gods, names with history, writing.</strong> Attitudes between cultures (from temperament plus what
+   happened between them), a placeholder pantheon per culture whose domains follow its way of life, name stacks that
+   change with conquest and contact (your P1-P8), and writing as a tech that makes standards, longer memories and
+   in-world scholars' names for vanished peoples.</li>
+</ol>
+<p>All of it reaches the culinary brief: per region and era, who lives here, what they speak and how close it is to the
+neighbours', who rules them and since when, what they call themselves and what others call them, and which food words
+came from where. No actual words, sounds or grammar until the language demo (PW-986), which this builds the plumbing for.</p>
+<p>My strongest opinions, flagged so you can push back: a culture is not a language (the count of lects will be about the
+count of cultures; the count of <em>languages</em> will be much lower); keep everything output-side until you have looked at it,
+then move only polities (and war) into the history; and don't expect polities to fix the commonest-people share on their
+own.</p>
+<hr />
+<h2 id="1-where-we-are">1. Where we are</h2>
+<h3 id="11-what-exists-main-2026-11-01">1.1 What exists (main, 2026-11-01)</h3>
+<ul>
+<li><strong>Peoples</strong> (<code>planet/lineages/</code>): an authored tree of lines (species, splits, hybrids, groups, templates), a history
+  (<code>history/</code>) that founds, spreads, contests land and applies brakes on a century step, stored as frames (0.5 kyr apart
+  near the present, ~4 kyr in the glacial pass; the deep keyframes Myr apart). Each frame keeps only each cell's two
+  leading peoples (lane 109 is fixing that).</li>
+<li><strong>Groups</strong> (<code>origin = "group"</code>): authored ways of life inside a people (human seafarers, steppe orcs). Not cut into
+  demes; their land counts as their people's.</li>
+<li><strong>Demes</strong> (<code>demes.py</code>, PW-981, output-side): per people, regional populations per frame over the last 300 kyr, with a
+  dated tree of splits (<code>split_gap</code>, <code>crossing</code>, <code>split_distance</code>, <code>split_adapted</code>), fusions and extinctions, and a
+  contact series per deme pair (shared border edges and shared cells per frame, <code>pairs</code>, up to 3,000 kept). Reach by
+  kind since round 2 (walkers 800 km jumps, megafauna 1,500 km, fliers 700 km, seafarers by craft x sea share).</li>
+<li><strong>Cultures</strong> (<code>cultures.py</code>, PW-670, output-side, ~2 s a run): a culture is a run of demes. New at once if adapted;
+  new after <code>T_APART_KYR</code> apart (0.6 kyr stone age ... 0.15 kyr renaissance). Two drifting skills, ways of life,
+  cohesion by kind (dragons 0.9, giants 0.5), merging by deme fusion, side by side (1 kyr x (1 - cohesion)), or under a
+  unifying tech's reach (<code>cities</code> 1 Mkm², <code>law</code> 5 Mkm²). 111-130 living cultures on the dnd runs (cc22df, 622c00).
+  <code>cultures.json</code> (<code>procgen-cultures/1</code>), Cultures tab in the workbench, "Cultures here" in the brief (brief_version 15).
+  Placeholder names: "desert dragonborn of the west of Kesh".</li>
+<li><strong>Contacts</strong> (<code>contacts.py</code>, PW-727): pairs of <em>peoples</em> (not cultures), years in contact, border kind, substrate
+  (who held a cell before), derived incursions (displacement and settled-among, with direction) over the last 100 kyr.</li>
+<li><strong>Reputation</strong> (<code>reputation.py</code>, PW-731): per observer people and subject people a valence (feared, despised, exotic,
+  edge, neighbour), a folk category from the preset's <code>[[exonym]]</code> rows (devil = horns...), memory that fades
+  (e-folding 1.5 kyr x an era scale that grows with writing), lumping and borrowed views. Authored <code>[[event]]</code>
+  conquests as a fallback. No "resented" (ruled-by) valence: there are no polities.</li>
+<li><strong>Tech tree</strong> (<code>techtree.py</code>, PW-675): 547 techs, invention by pool size (Henrich log form) x specialists x learners,
+  contact as a 1 km/yr front. Has <code>language</code> (per stem, only after the sapiens node), <code>tokens</code>, <code>proto_writing</code>,
+  <code>writing</code> (floor 5.3 kyr), <code>alphabet</code>, <code>chiefdoms</code>, <code>law</code>, <code>kingship</code>, <code>bureaucracy</code>, <code>census</code>, <code>roads</code>, <code>villages</code>,
+  <code>towns</code>, <code>cities</code>, <code>temples</code>, <code>calendar</code>. Output only (PW-946: does not feed back).</li>
+<li><strong>Settlements</strong> (<code>settlements.py</code>, PW-1011, output-side): a ledger of villages, towns, cities and mining districts on
+  a 100-year step over ~12.5 kyr, sized as central places, with ruins, minorities and colonies. Does not read demes.</li>
+<li><strong>Brakes in the history</strong> (<code>history/counter.py</code>): war-torn land K(W) with a state-pacification proxy
+  G = 1 / (1 + 3 x tech level x town share), in-fighting for every people (FEUD_CUT 0.35 x circumscription C),
+  raids and culls. The peoples' share tuning is parked "until war and polities get in" (D31).</li>
+<li><strong>Brief</strong> (<code>brief.py</code>, PW-728): per region / people / era; cultures, towns, contacts, reputation. <code>trade_reach</code> is
+  still "not modelled".</li>
+</ul>
+<h3 id="12-tickets-grouped-open-unless-marked">1.2 Tickets, grouped (open unless marked)</h3>
+<p><strong>Cultures (built, round 2 open)</strong>
+- PW-670 (in progress): cultures fracture as peoples spread. The parent of this work.
+- PW-1248: a globe layer coloured by culture (the Cultures tab links to the demes layer today).
+- PW-1249: placeholder names repeat ("temperate humans of the south of Gugiki (7)"); give each a gloss name.
+- PW-1250: small cultures lose skills faster (Henrich pool size); the brief should show a culture as it was at the era.
+- PW-1251 (needs-decision): count per people, and giants' cultures (you ruled: giants keep cultures; 1 kyr too long).
+- PW-1252: drift by era (lane 108: pool size is the sounder term) and a minimum shared border for merging side by side.
+- PW-1253: re-cut the dnd runs' stored demes so the viewer shows the reach-scaled demes.
+- PW-1254 (needs-decision): owner check of the era time-apart table, cohesion values, merging side by side.
+- PW-1259 / PW-1013 (lane 109 running): overlapping demes, every people's presence per frame.
+- PW-1014 / PW-1015 / PW-1016: demes: what opened a gap; deme size (in progress); speed.
+- PW-665 (done), PW-666, PW-748, PW-758: groups and ways of life; how much of a people takes up a way; hybrids; culture-only groups.
+- PW-1176: viewer: learned country and adapted demes.</p>
+<p><strong>Language (all parked "later" except the demo)</strong>
+- PW-767 (epic, v2): historical linguistics: exonyms, names that stick or fade, folklore names, links to writing systems.
+- PW-982 (later): proto-languages and a sound-change engine along the deme tree from ~20 kyr.
+- PW-983 (later): first-principles phonology experiment at deme level.
+- PW-984 (later, high): food words travel with food (loanword strata), nativized per hop.
+- PW-985 (later): morphological complexity as a cycle (one scalar per language; population, adult L2 share, isolation).
+- PW-986 (v2, high): language end-to-end demo on one fantasy run; you rule demo vs accepted end state.
+- PW-947 (later): how early and how uneven language is (your rulings: only after a stem's sapiens node; contact spreads
+  the faculty; first languages simple).
+- PW-945 (later): should dragons teach language and magic (lean C, arcane only).</p>
+<p><strong>Names, ethnonyms, reputation</strong>
+- PW-731 (done), PW-754 (done): reputation and exonym v0; folk categories and memory length.
+- PW-972 (v2): gloss-only name stacks from your taxonomy (endonym pattern and gloss; per-neighbour exonym from contact,
+  geography and history; word forms empty). Acceptance: under a third of exonym rows read plain "foreigners".
+- PW-757: devil/demon memory 30 kyr is a judgement; neighbour valence hides fiends from co-residents.
+- PW-773: should co-residence alone read as feared.
+- PW-906: folklore forgets who arrived (~100 yr not seen as mixture, ~300 yr "always been here").
+- PW-1249 (above).</p>
+<p><strong>Polities, states, war</strong>
+- PW-661 (epic, v3): civilization simulation: states, trade, warfare, displaced peoples.
+- PW-676 (v3): unifying pressure: cities and states merge and meld cultures as tech grows (today a stand-in in cultures.py).
+- PW-756 (in progress): <code>[[event]]</code> anchors: polities and the <code>resented</code> valence, direction, viewer editor keeping events.
+- PW-785 (v2): your Seven Meals empires (present antelope-kin empire, fallen cervid-kin empire), avoidable elsewhere.
+- PW-1172 (v2, high): war as a counter-pressure (deaths and lost land; per-era dial). War deaths built and dropped.
+- PW-1243: war-torn land is one dial; PW-1172's era dials, troubles and refugees still open.
+- PW-1258 (new, lane 101): in-fighting's size (FEUD_CUT 0.35), social circumscription (SOCIAL_Q 0.5) and its state rule,
+  parked for this work.
+- PW-1108: settlements sacked, razed and walled (war as a cause of a site's fall).
+- PW-1206 (needs-decision), PW-1196: hostile peoples hunt each other; raiders.
+- PW-1240, PW-1241, PW-1169, PW-1194, PW-1165, PW-1173, PW-1180: the leader-share calls this work is meant to unblock.</p>
+<p><strong>Attitudes</strong>
+- PW-768 (epic, later): attitudes between peoples, carried by cultures, replacing the one <code>aggressive</code> trait.
+- PW-904 (v2, high): history + temperament; xenophobia by culture and species; grudges fade faster with intermarriage,
+  shared faith and language; a stubbornness axis.
+- PW-910: per-world mixing preset (realistic vs fantasy-neat).</p>
+<p><strong>Gods</strong>
+- PW-907 (v2): a light layer: each culture's gods with placeholder domains, splitting and merging with the culture.</p>
+<p><strong>Tech, writing, timing</strong>
+- PW-675 (epic), PW-913 (tech tab, stop ~1400s), PW-946 (tech feeds back), PW-1123 (contact adds learners), PW-1127
+  (city people from the ledger), PW-1134 (end the history when cultures settle).</p>
+<p><strong>Culinary end</strong>
+- PW-692 (epic, the end goal), PW-856 (cultures as the unit of the culinary book), PW-728 (the brief), PW-912 (regional
+  crops spreading by trade), PW-744 (cuisine plants are markers only), PW-805 (salt not in trade).</p>
+<p><strong>History resolution</strong>
+- PW-908 / PW-909: history zoom at 25-year steps from each region's farming onset. Relevant: polities at a 100-year step
+  only see long-lived states.</p>
+<p><strong>v3</strong>: PW-911 named individuals and lineages.</p>
+<h3 id="13-what-your-rulings-already-settle">1.3 What your rulings already settle</h3>
+<ul>
+<li>Cultures emerge (no authored list), with their own tab; the species tree stays evolutionary (10-31).</li>
+<li>Language is a joint project with you; the tech tree's language rules are for review only (10-28).</li>
+<li>Morphology runs in cycles; first languages simple; the comparative horizon is ~6-10 kyr (10-28, PW-985, PW-947).</li>
+<li>Emergent first, anchors later; attitudes = history + temperament; xenophobia by culture and by species; grudges fade
+  with mixing plus a stubbornness axis; gods a light placeholder in v2 (10-26).</li>
+<li>Light exploratory v0 passes first; linguistics, attitudes and polities deeper later (standing).</li>
+<li>Cultures, settlements and polities built in steps; the peoples' share waits for war and polities (10-31, D31).</li>
+</ul>
+<hr />
+<h2 id="2-the-proposal-staged">2. The proposal, staged</h2>
+<h3 id="stage-0-placeholder-language-infrastructure-no-words-no-sounds">Stage 0: placeholder language infrastructure (no words, no sounds)</h3>
+<h4 id="201-what-a-language-object-is">2.0.1 What a language object is</h4>
+<p><strong>One lect per culture.</strong> Every culture speaks exactly one lect, and the lect is born, splits and ends with it. That keeps
+one tree, not two, and it is what PW-981 meant when it called demes "speech/breeding populations".</p>
+<p><strong>A "language" is derived, not stored.</strong> Group lects into languages by single-linkage on mutual intelligibility at or
+above a threshold (Decision L2). So "the language" of a dialect chain is the whole chain, and a culture can be "a dialect
+of X". This matches how linguists actually draw the line (badly, and with politics), and it lets a polity later <em>promote</em>
+a lect to a language without touching the lect tree (Stage 1: the standard).</p>
+<p><strong>Families are what in-world scholars could see.</strong> The true lect tree goes back as far as the demes (300 kyr). A
+"family" is a clade whose members still share enough to be recognised as related: in practice, everything under a node
+younger than the comparative horizon (~8 kyr, a constant to argue over, Decision L4). Deeper nodes are kept but flagged
+<code>beyond_horizon</code>: the truth is underneath, as with PW-906's folklore. Isolates fall out naturally: a lect whose nearest
+relative split 15 kyr ago is an isolate to its scholars.</p>
+<p>The horizon need not be a constant. With the rate in 2.0.2 (s = 0.92 x 0.72^(2t)), inherited similarity falls to ~0.03
+by ~5 kyr at the mean rate. Slow lineages (the lognormal tail) stay above that for longer. If "recognisably related"
+means <code>s_inherited</code> above a chance floor (a judgement, ~0.03-0.05), the horizon comes out per family at roughly 5-9 kyr.
+That is close to your 6-10 kyr without setting it, which is PW-982's own acceptance test, met early by the bookkeeping.</p>
+<p>Families' placeholder scholarly names follow your "language reconstruction" row: either the root place ("Rilunic") or,
+Indo-European style, the two far ends of the family's range ("Tholosas-Drama"). Cheap and very much in character.</p>
+<p><strong>What it carries in Stage 0</strong>, all as numbers or glosses:
+- id, culture, people, parent lect, born (split date and cause: gap, sea crossing, distance, adapted country, founding),
+  ended and how (died out, merged by koine, shifted to X);
+- the pairwise similarities live on the pairs, not the lect (see 2.0.2);
+- <code>rate_x</code>: its own rate multiplier (lognormal, drawn at birth; see 2.0.2);
+- speakers now and at each frame (from its culture's demes and the history's density);
+- an L2 share (adult second-language learners: from shift events, mixing in cities and, later, polities);
+- optionally the PW-985 morphology scalar (Decision L7);
+- <code>written</code>: whether its culture knows writing, and from when (Stage 2 uses it);
+- a glossonym (2.0.6).</p>
+<h4 id="202-mutual-intelligibility-from-time-contact-and-a-rate">2.0.2 Mutual intelligibility from time, contact and a rate</h4>
+<p>The quantity to simulate is an ASJP-style <strong>lexical-phonetic similarity</strong> s between two lects. Holman et al. (2011)
+define it as 1 - LDND. LDN is the Levenshtein distance between same-meaning words on a 40-item list, divided by the
+longer word's length. LDND normalises LDN by the distance between different-meaning words. s covers both word
+replacement and sound change in one number, and published dates, thresholds and intelligibility results are all
+expressed in it. That is why I would not model word loss and sound change as two separate scalars. One number with a
+calibration beats two numbers without one.</p>
+<p><strong>1. Divergence with no contact.</strong> Holman et al. 2011 fitted <code>t = (ln s - ln s0) / (2 ln r)</code> on 52 dated groups, with
+<code>s0 = 0.92</code> and <code>r = 0.72</code> per millennium (t in kyr). The correlation of ln s with t is -0.84, and the mean absolute error
+is 29%. We run it forwards: <code>s(t) = s0 · r^(2t)</code>. Each lineage loses at λ = -ln r ≈ 0.33 per kyr, scaled by its own
+<code>rate_x</code>. The 29% scatter is the honest size for that multiplier: a lognormal with sigma ≈ 0.3. Rates differ strongly
+by word (Pagel et al. 2007, abstract: word frequency explains about half the variation in replacement rates), so a fixed
+clock would be the wrong picture.</p>
+<p><strong>2. Contact pulls the surface back.</strong> While two lects are in contact, borrowing and levelling raise their similarity at
+a rate κ times the contact intensity c_ab. c_ab is the deme pair's border edges and shared cells per frame, already in
+<code>demes.json</code>. Per frame step dt:</p>
+<pre><code>s' = s + [ -(λa + λb) · s + κ · c_ab · (s0 - s) ] · dt
+</code></pre>
+<p>With steady contact the pair settles at <code>s* = s0 · κc / (λa + λb + κc)</code>. Neighbours stay close however old their split.
+Along a chain, similarity falls off link by link. <strong>That is the dialect continuum, with no extra rule.</strong> Nerbonne (2010)
+names the observed shape Séguy's curve: aggregate dialect distance grows with the <em>logarithm</em> of geographic distance. The
+fit is better with travel time than with straight-line distance, and geography explains only about a quarter of the
+variance (r 0.41-0.62 across seven datasets). That last point is a useful warning: a model whose map looks too tidy is
+wrong. The lognormal <code>rate_x</code> and the uneven contact give the scatter.</p>
+<p>Two similarities per pair keep the scholars honest:
+- <code>s_inherited</code>: never pulled back. This is what the comparative method sees, and families use it.
+- <code>s_surface</code>: pulled back by contact. This is what a listener meets, and intelligibility uses it.</p>
+<p>Loans between unrelated lects raise <code>s_surface</code> a little and never touch <code>s_inherited</code>.</p>
+<p><strong>3. Where is the language line.</strong> Wichmann (2019) proposes LDN = 0.51 as a universal language/dialect cut-off. That is
+LDND ≈ 0.60, so s ≈ 0.40. He puts it at 1,075-1,635 years of separation (centre ~1,355). Our formula with no contact
+gives 1.27 kyr for the same s, which is a consistency check, not a coincidence: same database. His table places
+real pairs on the scale:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>pair</th>
+<th>LDN</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Indonesian-Malay</td>
+<td>0.12</td>
+</tr>
+<tr>
+<td>Hindi-Urdu</td>
+<td>0.43</td>
+</tr>
+<tr>
+<td>Russian-Belarusian</td>
+<td>0.46</td>
+</tr>
+<tr>
+<td>Danish-Swedish</td>
+<td>0.49</td>
+</tr>
+<tr>
+<td>Cairo-Moroccan Arabic</td>
+<td>0.58</td>
+</tr>
+<tr>
+<td>Catalan-Spanish</td>
+<td>0.66</td>
+</tr>
+</tbody>
+</table></div>
+<p>This is what I'd use for L2's bands.</p>
+<p>Set against the cultures: <code>T_APART_KYR</code> is 0.15-0.6 kyr. A culture split 0.6 kyr ago with no contact has
+s ≈ 0.62 (LDND ≈ 0.38), so it is still a dialect of its parent. <strong>Cultures split well before languages do.</strong> Expect many
+cultures per language, as on Earth.</p>
+<p><strong>4. Intelligibility from similarity.</strong> <code>mi_inherent = f(s_surface)</code>, a logistic curve. <strong>No published closed-form fit
+exists.</strong> Gooskens and van Heuven (2020) give correlations and R² only, so the curve is ours, fitted to their points.
+What constrains it:
+- For listeners with minimal exposure ("inherent intelligibility"), lexical distance correlates with intelligibility at
+  r = -0.95 in Germanic. Adding orthographic, syntactic, phonetic and affix distances, the stepwise R² over all families
+  climbs from 0.57 to 0.77.
+- Within a near-cognate continuum (Scandinavian), phonetic distance is the better predictor: r ≈ -0.80 against a
+  non-significant lexical r (Gooskens 2007).
+- Gooskens et al. 2017/18 (16 languages, 1,833 listeners, a spoken cloze test) found Danes and Swedes with no exposure at
+  44-56% correct. They suggest 40% as "a possible threshold" for receptive multilingualism to work.</p>
+<p>So the curve passes through ~0.5 at Danish-Swedish (s ≈ 0.42), ~0.4 near Wichmann's line, and toward 1 as s approaches
+s0. Mark it a placeholder fitted to European close relatives.</p>
+<p><strong>5. Exposure and asymmetry.</strong> The big result in that literature: once real listeners are counted, <strong>exposure</strong> to the
+other language is "the most important variable, overriding all other variables". It correlates with intelligibility at
+r = 0.87-0.93 by family. Attitudes add almost nothing beyond it (Gooskens &amp; van Heuven 2020). Most asymmetries are
+exposure. A residue is structural: Portuguese listeners understand Spanish better than the reverse even with minimal
+exposure, which the authors put down to Portuguese reduced syllables and its vowel inventory (Gooskens et al. 2017/18).
+So:</p>
+<pre><code>mi_ab = mi_inherent(s_surface) + (1 - mi_inherent) · E_ab
+</code></pre>
+<p>E_ab grows when:
+- b's speakers dominate the shared cells;
+- b's culture rules a's (Stage 1);
+- b is a written standard or the towns' trade speech.</p>
+<p>E_ab is in 0..1, and it is a <strong>judgement</strong>. A small seeded structural asymmetry per pair stands in for the Portuguese
+case. Report <code>mi_inherent</code> (symmetric) and <code>mi_ab</code>, <code>mi_ba</code> (directional, the numbers the brief prints).</p>
+<p><strong>Checks, not targets</strong> (Earth as a loose anchor):
+- two lects ~1.3 kyr apart with no contact sit at the language line;
+- a walker people's range with open borders shows a chain whose far ends fall below the line while every neighbour pair
+  stays above it;
+- lect similarity against travel distance looks like Séguy's curve, with a lot of scatter;
+- lect density follows growing season as Nettle (1998) found: <code>ln LANGS = 0.58 ln AREA + 0.23 MGS - 5.32</code> over 43
+  tropical countries (r = 0.66; MGS is growing-season months). That is about x1.26 languages per extra month at equal
+  area. Ours should show the trend, not the constant: dragons and dwarves are not obliged to be tropical farmers;
+- different peoples' lects never show inherited similarity above chance.</p>
+<h4 id="203-which-pairs-get-a-number">2.0.3 Which pairs get a number</h4>
+<p>"Neighbours" = pairs whose demes touch now (border edges or shared cells in the latest frame), plus each lect's nearest
+sister in the tree. Typically a few per lect, so a few hundred numbers a run, stored sparse. Any other pair can be worked
+out on demand (the API computes it from the tree and the stored contact series), so the viewer's "intelligibility from
+here" map (section 4) needs no full matrix.</p>
+<p>Different peoples: their lects are unrelated (<code>s_inherited</code> = 0, by construction: each stem found speech on its own,
+PW-947). They still get a contact number (borrowing, bilingualism), and <code>mi_ab</code> can be non-zero only through
+exposure (learned bilingualism), never structure.</p>
+<p>Dragons and giants: a cohesive kind's lects are pulled together by cohesion the same way the culture drift is (one
+Draconic per colour today because there is one culture per colour). Peoples born of a megafauna stem (kobolds,
+dragonborn) could start speaking the stem's lect (D&amp;D canon has kobolds speak Draconic) or their own: Decision L5.</p>
+<h4 id="204-light-history-events">2.0.4 Light history events</h4>
+<p>Written into <code>languages.json</code> as dated events, and into the brief and the Cultures tab as sentences:
+- <strong>split</strong> (date, cause, place): "the speech of the inland Drama humans parted from the coast's ~17 kyr ago when they
+  moved up the rivers";
+- <strong>koine</strong> (two sister cultures merged side by side): the new lect is the older culture's, its distance to the merged
+  one set to zero, the merged one's history kept;
+- <strong>shift</strong> (a culture's last deme fused into another culture's deme, or a people's incursion settled among another):
+  the shifting lect ends, the receiving lect records a <strong>substrate</strong> (who, when, how big), and its L2 share rises;
+- <strong>death</strong> (the last speakers died out or shifted);
+- <strong>contact episode</strong> (start, end, intensity, between lects or between peoples): the basis of borrowing;
+- <strong>standard</strong> (Stage 2: a written lect with a state);
+- <strong>horizon</strong> (a family's deepest visible node): "beyond ~8 kyr its relations are lost".</p>
+<p>Language shift in Stage 0 rides only on what the demes and contacts already record. Real shift under states needs
+polities (Stage 1).</p>
+<h4 id="205-contact-borrowing-including-food-words-forms-empty">2.0.5 Contact borrowing (including food words, forms empty)</h4>
+<p>Per lect, a list of <strong>loan strata</strong>: from which lect or people, when, how much (a share of the notional list, from the
+contact integral), and of what kind:
+- <strong>core</strong> (rare, from the contact term above);
+- <strong>cultural</strong> (techs taken up by contact: the tech tree's contact front already says who learned what from whom and
+  when; each such uptake writes a loan stratum "the word for the plough came from the X");
+- <strong>food</strong>: every crop or animal taken up by spread or trade (the history's crops and animals, PW-719/721) writes a loan
+  with its route: giver lect, relay lects, receiver. That is PW-984's skeleton with empty forms, and it is exactly the
+  part of historical linguistics the culinary book prints. When PW-986 lands, the relay already exists; it only needs
+  sound changes applied per hop (your X4 note).
+- <strong>substrate</strong> (from shift events): place names and words for the land's plants and animals (the classic substrate
+  domain), flagged so a later pass knows where to put them.</p>
+<p>Sizes from the World Loanword Database (Haspelmath &amp; Tadmor 2009; 41 languages, 1,460 meanings). The mean borrowed
+share is ~25% (median 24%). The range runs from Mandarin 2% to Selice Romani 63%, with English at 42%. By field, the
+borrowed scores are:
+- social and political relations: 0.64;
+- religion and belief: 0.49;
+- agriculture and vegetation: 0.45;
+- food and drink: 0.37;
+- kinship: 0.23;
+- the body: 0.17;
+- spatial relations: 0.15.</p>
+<p>Inside food the spread is what a cookbook would hope for:
+- traded and processed goods borrow heavily: olive 0.93, sugar 0.79, wine 0.74, beer and cheese 0.68, pepper 0.66,
+  oil 0.60;
+- basic states and acts stay native: raw 0.05, cooked 0.06, to milk 0.07, to be hungry 0.03.</p>
+<p>So a stratum's size is ~25% overall x a field weight, and <strong>a traded food almost always brings its word, a cooking verb
+almost never does</strong>. That sets how big each kind of stratum is, not which words.</p>
+<h4 id="206-placeholder-names-your-taxonomy-gloss-only">2.0.6 Placeholder names (your taxonomy, gloss only)</h4>
+<p>This is PW-972, folded in because it wants the same contact record. Per culture, your name stack with forms empty:
+- <strong>endonym</strong>: pattern and gloss. Weights per your doc (E1, E2 dominant; E3-E8 common; E9-E12 rare). Driven by the sim
+  where it can be: E6 from the culture's main river, coast or range (hydrology and highlights already name them), E8 from
+  its way of life (a herder culture "people of the herds"), E7 from position relative to a larger power (Stage 1), E5
+  when a founder is known (a polity's founder, Stage 1), E10 with gods (Stage 2), E11 for a confederation (Stage 1).
+- <strong>glossonym</strong>: usually derived from the endonym ("the speech of the true people"), sometimes from E3 ("speaking
+  properly"), sometimes divergent (your Hittite note) at a small rate.
+- <strong>exonyms, one per neighbour that matters</strong>, from the relationship, per your table: trade or border contact -&gt; X1 (the
+  first deme or group met stands for the whole: the deme contact series says which deme met which first, so this is
+  real, not drawn); war (feared/despised valence) -&gt; X5; thin contact -&gt; X2, X3 or X8 (direction from the centroids,
+  already computed for incursions); imperial contact -&gt; X4, X7, X9 (Stage 1). E3 forces X3 on its neighbours, as your
+  doc says. Lumping (reputation.py) carries over.
+- <strong>scholarly names</strong> for dead cultures (Stage 2 mostly): type site from the settlement ledger's ruins, signature craft
+  from its techs, a text if a literate neighbour knew it.
+- <strong>name_history</strong>: P-processes from history hooks, Stage 1 onward.</p>
+<p>The gloss strings ("the true people", "the people of the long river", "the mutes") make the brief readable now and give
+PW-986 its slots. They also fix PW-1249's repeats: "temperate humans of the south of Gugiki (7)" becomes "the people of
+the red hills, called the Eastern Mutes by the coast folk".</p>
+<h4 id="207-what-stage-0-does-not-do">2.0.7 What Stage 0 does not do</h4>
+<p>No phonology, inventories, syllables, forms, grammar or typology (PW-982/983). No sound change. No real shift dynamics
+(that needs states). No language across species boundaries except loans and learned bilingualism.</p>
+<h3 id="stage-1-polities">Stage 1: polities</h3>
+<h4 id="211-what-a-polity-is">2.1.1 What a polity is</h4>
+<p>A polity is a ruled territory with a centre: a set of cells at each 100-year step, a capital (a settlement ledger site),
+a ruling culture (and so a ruling lect), a tier, a founding date and a fate. Tiers, gated by techs that already exist:
+- <strong>band / tribe</strong>: no polity object; the culture is the unit (most of the map for most of history).
+- <strong>chiefdom</strong>: needs <code>chiefdoms</code> (villages + feasting). A centre and the villages within its reach.
+- <strong>state</strong>: needs <code>kingship</code> (chiefdoms + cities) or <code>law</code> (writing + chiefdoms). Delegated rule: reach well beyond the
+  centre's day.
+- <strong>empire</strong>: a state that rules more than one culture of substance, or more than one people. Not a tech gate, a
+  description, so it emerges.</p>
+<h4 id="212-formation-growth-and-reach">2.1.2 Formation, growth and reach</h4>
+<ul>
+<li><strong>Where chiefdoms start.</strong> Each step, each culture with <code>chiefdoms</code> and towns has a hazard of founding a chiefdom at its
+  largest town. The hazard is scaled by:</li>
+<li>local density;</li>
+<li><strong>resource concentration</strong> (rich fisheries, a river oasis);</li>
+<li>a contagion term (Carneiro 2012: one chiefdom "spurred the formation of others");</li>
+<li><strong>circumscription</strong> (Carneiro 1970, read through his own 2012 restatement). Circumscription speeds states up but is
+    "not absolutely essential". Social circumscription is "less tight", so states arise there too, "but it will take
+    longer".</li>
+</ul>
+<p>The in-fighting term already computes a
+  people's circumscription C (free good country 0, other peoples' land SOCIAL_Q, sea and unlivable land 1). Hemmed-in,
+  dense farming country makes chiefdoms and then states first; open frontiers keep people splitting off instead. This
+  reuses <code>counter._circumscribed</code>, which is pleasing: the same number that today makes a people fight itself becomes
+  the reason it submits to a chief.
+- <strong>Reach.</strong> A polity holds the cells within its reach in travel time from its capital (the demes' and crossing.py's
+  travel costs; the brief's missing <code>trade_reach</code> gets built on the way). Reach grows by tier and tech:
+  - A <strong>chiefdom</strong> reaches about half a day's travel from its centre, "some 25–30 km by foot" (Spencer 2010). That is a
+    third to a fifth of an L7 cell, so a chiefdom is a one-cell thing at our grid. Honest consequence: chiefdoms are a
+    tier label on a town and its cell, not a shape on the map.
+  - A <strong>state</strong> is defined by ruling beyond a day's round trip. Spencer's six primary states reached 50–250 km
+    (400 km for the Indus) soon after their state institutions appear.
+  - <strong>Writing, law, roads, horses (riding) and ships</strong> extend that reach further.</p>
+<p>Spencer's numbers are measured. How far each tech extends the reach is a <strong>judgement</strong>, checked against the sizes
+  below.
+- <strong>Competition.</strong> Where reaches overlap, the stronger polity (population within reach x a tech factor x cohesion of the
+  ruling culture) takes the cell after a contest; the weaker shrinks. Conquest is absorption of a weaker neighbour's
+  core: logged as an event with a direction (feeds <code>resented</code>, P1/P2 names, shift).
+- <strong>Frontiers breed empires</strong> (Turchin 2009's mirror empires): nomad raiding pushes farming communities to unite, and
+  large agrarian states push nomads to "band together". Turchin et al. 2013 rebuilt the Old World's imperial map from
+  this at 100 km cells and 100-year steps. They seeded military technology at the steppe edge and let it spread, and the
+  fit to history was R² = 0.65. With random seeding it fell to 0.17, and dropping the elevation term cut it to 0.48. So
+  the lever is a herder-farmer frontier that spreads war techs. We have the pieces: open-country herders, the tech
+  contact front, and the <code>aggressive</code> war-tech bonus. In this world it is a lovely hook: the human-orc steppe frontier,
+  the dwarf mountains' edge, dragon country. Their grid and step are ours, which is reassuring.
+- <strong>Fragmentation and collapse.</strong> A polity has a base hazard of ending that does not grow with age (Arbesman 2011 found
+  empire lifetimes exponential, mean ~220 years, i.e. ~0.46 per century). On top of it, the hazard rises with its size
+  beyond its reach, its cultural mix, and bad years (droughts, plague later). Tiers move one step at a time, up and down:
+  Currie et al. 2010's best-supported model for 84 Austronesian societies is "small steps" both ways (the model where
+  falls may skip levels ranked second). So a collapsing empire normally falls to states, and those to chiefdoms. A big
+  multi-step collapse can be a rare path. Successors take the provinces. A fallen empire leaves a name (X6: "names freeze
+  at the moment of contact and outlive the dynasty") and ruins.
+- <strong>Size checks</strong> (not caps): the largest polity's area by era against Taagepera 1997 (nothing over 0.01 Mm² much before
+  3000 BC; the largest under 1.1 Mm² before ~650 BC and never under 2.3 Mm² after; record 5.5 Mm² Achaemenid, 24 Mm²
+  Mongol). The two jumps come with "government at a distance" (bureaucracy, relay stations), so the jump should come
+  from our <code>bureaucracy</code> and <code>roads</code> techs, not from a date. Durations: Taagepera's median is 130 years at half or more of
+  peak (78 polities; only 16 lasted 300+ years). Turchin 2009 has 60+ "mega-empires" of 1 Mm² or more between 3000 BCE
+  and 1800 CE, over 90% of them in or next to the arid belt. Polity population ladder (Johnson &amp; Earle 2000, via Grinin
+  2003): simple chiefdoms in the thousands, complex chiefdoms in the tens of thousands, states in the hundreds of
+  thousands or more. The bands overlap.</p>
+<h4 id="213-war-the-brake-you-parked">2.1.3 War, the brake you parked</h4>
+<p>The history already has the pieces: war-torn land K(W), with a state-pacification proxy G (tech level x town share) and a
+hostile-frontier share F of <em>peoples</em>. Polities replace the proxies with real things:
+- <strong>G becomes the polity's interior</strong>: inside a state's core, low-level feud is damped (Gómez et al. 2016; Turchin's
+  -alpha S).
+- <strong>F becomes polity borders</strong>: frontier cells between hostile polities (of any peoples, including two human states) are
+  war-torn.
+- <strong>In-fighting becomes polity fission</strong> (PW-1258): today every people "fights itself" where it is walled in. With
+  polities, that fight is between and inside polities of one people: a crowded human landscape is many human states at
+  war, which is what costs a leading people land. FEUD_CUT and SOCIAL_Q stay as they are for stateless country.
+- <strong>Sacking and razing</strong> (PW-1108): a site on a front of a conquest has a chance to be sacked or razed; walls
+  (fortifications) halve it.</p>
+<p>Honesty about the leader brake: lane 101 measured war deaths at the sourced violent-death rates at 0-0.2% of any
+people's numbers; the life tables already contain their peoples' violence. Polities will cost the commonest people some
+land along many internal borders, and states will spread the leader's language to others (which matters for the brief
+more than the share). If after this the humans are still ~60% on one world, I'd stop and take your D31 A as reported, not
+chase it with polity knobs. Plague (PW-1167) is the sourced brake on a dense farming leader.</p>
+<p><strong>This is the one place that wants to be in the history</strong> (Decision P1): war changes K, and K changes who holds land. I'd
+build polities v0 output-side first (read the ledger, techs, cultures; draw them; you look), then move the minimal state
+variable into the history once you like the shapes.</p>
+<h4 id="214-what-polities-give-the-other-layers">2.1.4 What polities give the other layers</h4>
+<ul>
+<li><strong>Languages</strong>: a state's ruling lect has prestige. Shift in its territory follows Abrams &amp; Strogatz 2003:
+  <code>dx/dt = y·c·x^a·s - x·c·y^a·(1 - s)</code>, x the share speaking the ruling lect, s its status. Their fitted exponent is
+  a = 1.31 ± 0.25 over 42 regions (Peru, Scotland, Wales, Ireland, Bolivia, Alsace-Lorraine). The status values in their
+  figure are 0.26-0.46. Their model has no stable coexistence. The authors note that status feedback (policy) can
+  stabilise a bilingual state. So s comes from tier, writing and cities, and the shift is computed per cell per 100-year
+  step. Currie &amp; Mace 2009 (PNAS; 4,233 languages, 602 societies) give the large-scale check: political complexity is the
+  largest predictor of a language's area (about a quarter of the explained variance, full-model R² 0.55). Levels 0 and 1
+  did not differ, and pastoralists' languages cover more ground than farmers'. Their mechanism is that complex societies
+  "replace or incorporate less complex groups". The shift also gives an adult-L2 share, which feeds the morphology scalar
+  (PW-985: empire languages simplify). A written state lect becomes a <strong>standard</strong> whose dialects converge on it
+  (exposure). Cross-species shift becomes possible: humans in a dwarf state learn and, over generations, may speak
+  dwarvish (Decision L5).</li>
+<li><strong>Names</strong>: E7 (position against a larger power), E11 (confederation), P1 (conquerors' name absorbed), P2 (newcomers
+  inherit the old name), P4 (a constructed name at a founding), P5 (rejection at independence), X6 (dynasty or state).</li>
+<li><strong>Reputation</strong>: the <code>resented</code> valence (ruled by S), PW-756 closed properly.</li>
+<li><strong>Cultures</strong>: the merge-under-a-state rule in cultures.py (REACH_MKM2) becomes "merge within one polity", which is
+  what PW-676 asked for.</li>
+<li><strong>Settlements</strong>: capitals, provincial centres, frontier forts, sackings.</li>
+<li><strong>Your Seven Meals empires</strong> (PW-785): either they emerge (the antelope-kin as a farming, milking people on a frontier
+  is exactly a Turchin setting) or an authored <code>[[event]] kind = "polity"</code> anchors one as a back-fill.</li>
+</ul>
+<h3 id="stage-2-attitudes-gods-names-with-history-writing">Stage 2: attitudes, gods, names with history, writing</h3>
+<h4 id="221-attitudes-pw-904-pw-768">2.2.1 Attitudes (PW-904, PW-768)</h4>
+<p>Per ordered pair of cultures (observer, subject), a small vector instead of one <code>aggressive</code> trait:
+- <strong>xenophobia</strong>: temperament (the spec's per-people starting stance: orcs aggressive, elves insular) x difference
+  (species distance: tier; culture distance: way of life, lect MI) x unfamiliarity (thin contact);
+- <strong>expansionism</strong>: temperament x crowding x polity frontier (Stage 1);
+- <strong>assimilation vs tolerance</strong>: does a polity of the observer's culture absorb or leave alone (feeds the shift rate);
+- <strong>grudge</strong>: conquest memory (reputation.py's strength), fading faster with intermarriage (mixing zones), shared faith
+  (Stage 2 gods) and shared language (MI), slower with a <strong>stubbornness</strong> axis (per culture, inherited with drift).</p>
+<p>Uses: the exonym valence (X5), the polity war hazard, the shift rate, city mixing (PW-910). Output-side v0, like
+reputation.py, which it grows out of (I'd extend reputation.py rather than start a new module).</p>
+<h4 id="222-gods-pw-907-a-placeholder">2.2.2 Gods (PW-907, a placeholder)</h4>
+<p>Per culture a short pantheon: 3-7 god slots, each with domains and no names. Domains are drawn from what the culture
+lives by and fears: sea craft -&gt; a sea god; herding -&gt; a sky or storm god and a herd keeper; farming -&gt; grain and
+fertility, a harvest feast; a volcano or quake belt nearby -&gt; fire; dragon country -&gt; a dragon cult or a dragon-slayer;
+the dead (burial techs). A daughter culture inherits the pantheon and drifts (a domain fades when the life it rested on
+fades, like the sea craft). Merging cultures syncretise (domains matched, one god absorbs the other, <em>interpretatio</em>);
+a polity can impose a state cult. Feeds: E10 endonyms, shared-faith grudge fading, and the brief's feasts and taboos
+hooks ("a harvest feast to the grain mother" as a suggested line). That's all I would build for v2.</p>
+<h4 id="223-name-stacks-with-history">2.2.3 Name stacks with history</h4>
+<p>Stage 0's stacks get their P-processes from Stage 1's events: conquest -&gt; P1 or P2; independence -&gt; P4 or P5;
+centuries of contact -&gt; P6 (an ethnonym becoming a word: "a frank", "a vandal": only where a valence is strong);
+related lects -&gt; P7 (one root split by borrowing). Exonyms relay along the contact graph (X4): a name that reached C
+through B records the relay path, ready for sound changes per hop later. PW-906's folklore forgetting fits here: the
+stack keeps the truth; the "what they believe" layer says "always been here" after ~300 years.</p>
+<h4 id="224-writing-as-a-tech">2.2.4 Writing as a tech</h4>
+<p>Writing already exists in the tech tree (tokens 10 kyr, proto-writing 8.6, writing floor 5.3, alphabet 3.8, law,
+bureaucracy, census). Proposed effects, all output-side:
+- a written lect of a state becomes a <strong>standard</strong>: dialects within the polity are pulled toward it (exposure), and its
+  name stack gains a formal form (P8 parallel names);
+- memory of conquests lasts longer (reputation.py's ERA_FADE already does this by era; make it read writing instead);
+- <strong>scholarly names</strong> exist where writing did: a dead culture known to literate neighbours gets a "text" scholarly
+  name (your Hittite and Sea Peoples rows); one known only from ruins gets a type-site or artifact name;
+- a <strong>script lineage</strong> per written lect: which script tradition it uses (inherited from whoever taught it writing, via
+  the tech contact front; adopted with a state cult or a conquest). Placeholder ids only: this is the hook to your
+  writing-systems repo, and the materials (clay, bark, hide, stone) can be read from the land and techs if you want that
+  link later.
+- a <strong>literacy share</strong> per culture (tiny before bureaucracy and schools), for the brief and the morphology scalar
+  (written standards are conservative in ways that are honestly debated: that one is a judgement, flagged).</p>
+<h4 id="225-into-the-culinary-brief">2.2.5 Into the culinary brief</h4>
+<p>Per region and era, a "Peoples and speech" block:
+- the culture(s) here, with endonym gloss and pattern ("they call themselves 'the true people' (E2)");
+- what each neighbour calls them and why ("'the mutes' to the coast folk (X3, little contact)");
+- their lect: family, dialect-of, split date, MI to each neighbour both ways ("understand the river folk well (0.8);
+  are understood less (0.6): they hear the river folk's traders more");
+- who rules them, since when, in whose language; minorities and the lingua franca of the towns;
+- their gods' domains that touch food (harvest feast, a sea god's catch taboo);
+- food loan strata: "their word for barley came from the river folk ~4 kyr ago, by way of the hill folk";
+- a <code>suggested</code> line set, as now, rule-based and overrulable: "a ruling minority's dishes are court food; the
+  substrate's are village food" (a judgement line, but the classic pattern: English beef/cow, pork/swine).</p>
+<p>This is what PW-856 wants: the culture, not the species, as the unit of the book.</p>
+<hr />
+<h2 id="3-data-model-sketches">3. Data model sketches</h2>
+<h3 id="31-where-each-lives">3.1 Where each lives</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>object</th>
+<th>where</th>
+<th>why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>demes</td>
+<td>output-side (as now)</td>
+<td>read from frames; fast; no feedback</td>
+</tr>
+<tr>
+<td>cultures</td>
+<td>output-side (as now)</td>
+<td>same; ~2 s a run</td>
+</tr>
+<tr>
+<td>lects and languages</td>
+<td><strong>output-side</strong></td>
+<td>pure readout of cultures + contacts + techs; you'll want to re-run it many times while we argue about rates; never needs a history re-run</td>
+</tr>
+<tr>
+<td>names</td>
+<td><strong>output-side</strong></td>
+<td>depends on everything else; no feedback</td>
+</tr>
+<tr>
+<td>attitudes</td>
+<td>output-side v0</td>
+<td>grows out of reputation.py; feeds back only once polities and war are in the history</td>
+</tr>
+<tr>
+<td>gods</td>
+<td>output-side</td>
+<td>placeholder</td>
+</tr>
+<tr>
+<td>polities v0</td>
+<td><strong>output-side</strong></td>
+<td>reads the settlement ledger, techs, cultures, circumscription; lets you look before we commit</td>
+</tr>
+<tr>
+<td>polities v1 (state presence + war)</td>
+<td><strong>in-history</strong></td>
+<td>war changes K, and K changes who holds land; that is the brake you're waiting for</td>
+</tr>
+</tbody>
+</table></div>
+<p>The chain of output passes would be: demes -&gt; cultures -&gt; polities (v0) -&gt; lects -&gt; names -&gt; attitudes -&gt; gods -&gt; brief.
+Each writes its own JSON and a <code>meta</code> summary, each re-runnable over a stored run (<code>planet languages RUN</code>, etc.), each
+behind a <code>GET /api/...?run=</code> that works it out on the fly like <code>/api/cultures</code>.</p>
+<p>Why output-side first, at the cost of no feedback: an L7 peoples history is minutes; these passes are seconds. Daniel's
+runs stay valid across every rate change. The only feedback that matters for the peoples' numbers is war, so only that
+moves.</p>
+<h3 id="32-culturesjson-procgen-cultures2-additions-only">3.2 <code>cultures.json</code> (procgen-cultures/2): additions only</h3>
+<pre><code class="language-json">{
+  &quot;id&quot;: 41, &quot;people&quot;: &quot;human&quot;, &quot;name&quot;: &quot;temperate humans of Drama (2)&quot;,
+  &quot;lect&quot;: 41,
+  &quot;names&quot;: &quot;see names.json&quot;,
+  &quot;polity_now&quot;: 7,
+  &quot;gods&quot;: [{&quot;slot&quot;: 0, &quot;domains&quot;: [&quot;sea&quot;, &quot;storms&quot;], &quot;since_kyr&quot;: 17.2, &quot;from&quot;: &quot;inherited&quot;},
+           {&quot;slot&quot;: 1, &quot;domains&quot;: [&quot;grain&quot;, &quot;harvest&quot;], &quot;since_kyr&quot;: 6.1, &quot;from&quot;: &quot;drift&quot;}],
+  &quot;attitudes&quot;: {&quot;stubbornness&quot;: 0.4}
+}
+</code></pre>
+<h3 id="33-languagesjson-procgen-languages1">3.3 <code>languages.json</code> (procgen-languages/1)</h3>
+<pre><code class="language-json">{
+  &quot;format&quot;: &quot;procgen-languages/1&quot;,
+  &quot;params&quot;: {&quot;s0&quot;: 0.92, &quot;r_per_kyr&quot;: 0.72, &quot;rate_sigma&quot;: 0.3, &quot;kappa&quot;: null, &quot;mi_curve&quot;: {&quot;kind&quot;: &quot;logistic&quot;, &quot;mid_s&quot;: 0.42, &quot;slope&quot;: null},
+             &quot;horizon_kyr&quot;: 8.0, &quot;language_s&quot;: 0.40},
+  &quot;lects&quot;: [
+    {&quot;id&quot;: 41, &quot;culture&quot;: 41, &quot;people&quot;: &quot;human&quot;, &quot;parent&quot;: 12, &quot;born_kyr&quot;: 17.2, &quot;cause&quot;: &quot;adapted&quot;,
+     &quot;ended_kyr&quot;: null, &quot;end&quot;: null, &quot;into&quot;: null,
+     &quot;rate_x&quot;: 1.12, &quot;speakers_now&quot;: 410000, &quot;l2_share&quot;: 0.08, &quot;morph&quot;: 0.31, &quot;written_kyr&quot;: 4.2, &quot;script&quot;: &quot;s3&quot;,
+     &quot;family&quot;: &quot;f2&quot;, &quot;language&quot;: &quot;L9&quot;, &quot;glossonym&quot;: {&quot;gloss&quot;: &quot;the speech of the true people&quot;, &quot;pattern&quot;: &quot;E2&quot;},
+     &quot;substrates&quot;: [{&quot;from_lect&quot;: 77, &quot;people&quot;: &quot;elf&quot;, &quot;at_kyr&quot;: 9.5, &quot;share&quot;: 0.06, &quot;domains&quot;: [&quot;place&quot;, &quot;flora&quot;]}],
+     &quot;loans&quot;: [{&quot;from_lect&quot;: 12, &quot;via&quot;: [33], &quot;at_kyr&quot;: 4.1, &quot;kind&quot;: &quot;food&quot;, &quot;item&quot;: &quot;crop_barley&quot;},
+               {&quot;from_people&quot;: &quot;dwarf&quot;, &quot;at_kyr&quot;: 3.0, &quot;kind&quot;: &quot;cultural&quot;, &quot;item&quot;: &quot;copper&quot;}],
+     &quot;series&quot;: [[17.2, 12000, 1.0], [10.0, 90000, 0.82]]}
+  ],
+  &quot;pairs&quot;: [
+    {&quot;a&quot;: 41, &quot;b&quot;: 12, &quot;split_kyr&quot;: 17.2, &quot;s_inherited&quot;: 0.0, &quot;s_surface&quot;: 0.47,
+     &quot;mi_inherent&quot;: 0.55, &quot;mi_ab&quot;: 0.70, &quot;mi_ba&quot;: 0.58, &quot;exposure_ab&quot;: 0.33, &quot;exposure_ba&quot;: 0.07, &quot;contact_now&quot;: 0.8,
+     &quot;why&quot;: &quot;neighbours since 6 kyr on a long open border; the inland folk trade in the coast towns&quot;}
+  ],
+  &quot;families&quot;: [{&quot;id&quot;: &quot;f2&quot;, &quot;root_lect&quot;: 12, &quot;root_kyr&quot;: 7.6, &quot;scholarly&quot;: {&quot;gloss&quot;: &quot;Rilun-Drama&quot;, &quot;basis&quot;: &quot;reconstruction&quot;},
+                &quot;deeper_kyr&quot;: 21.0}],
+  &quot;languages&quot;: [{&quot;id&quot;: &quot;L9&quot;, &quot;lects&quot;: [41, 44, 52], &quot;standard&quot;: 44, &quot;kind&quot;: &quot;dialect chain&quot;}],
+  &quot;events&quot;: [{&quot;kyr&quot;: 3.1, &quot;kind&quot;: &quot;shift&quot;, &quot;lect&quot;: 52, &quot;to&quot;: 44, &quot;where&quot;: [12.3, 40.1], &quot;why&quot;: &quot;fused into the river culture&quot;},
+             {&quot;kyr&quot;: 2.4, &quot;kind&quot;: &quot;koine&quot;, &quot;lect&quot;: 45, &quot;into&quot;: 44}],
+  &quot;deme_lect&quot;: [41, 41, 12]
+}
+</code></pre>
+<h3 id="34-namesjson-procgen-names1-your-schema-verbatim-per-culture">3.4 <code>names.json</code> (procgen-names/1): your schema, verbatim, per culture</h3>
+<p>Your record from the doc (<code>culture_id</code>, <code>endonym</code>, <code>glossonym</code>, <code>exonyms[]</code> with <code>namer_culture_id</code>, <code>pattern</code>,
+<code>relay_path</code>, <code>connotation</code>, <code>era</code>; <code>scholarly_names[]</code>; <code>name_history[]</code>), with three additions: <code>basis</code> on each exonym
+(the sim fact that chose the pattern: "first met deme 233 on the Kesh coast", "valence feared since 3.2 kyr"), <code>form</code>
+left empty everywhere, and <code>people_level: true</code> for peoples-level rows that reputation.py already makes (so the two meet
+instead of competing).</p>
+<h3 id="35-politiesjson-procgen-polities1-and-layerspolitiesbin">3.5 <code>polities.json</code> (procgen-polities/1) and <code>layers/polities.bin</code></h3>
+<pre><code class="language-json">{
+  &quot;format&quot;: &quot;procgen-polities/1&quot;,
+  &quot;step_yr&quot;: 100,
+  &quot;polities&quot;: [
+    {&quot;id&quot;: 7, &quot;tier_series&quot;: [[5.1, &quot;chiefdom&quot;], [4.3, &quot;state&quot;], [3.2, &quot;empire&quot;]],
+     &quot;capital_site&quot;: 1882, &quot;capitals&quot;: [[5.1, 1882], [3.0, 2011]],
+     &quot;ruling_culture&quot;: 44, &quot;ruling_lect&quot;: 44, &quot;founded_kyr&quot;: 5.1, &quot;ended_kyr&quot;: 2.6, &quot;end&quot;: &quot;fragmented&quot;,
+     &quot;successors&quot;: [9, 11], &quot;peak_mkm2&quot;: 2.4, &quot;peak_pop&quot;: 3100000,
+     &quot;cultures_ruled&quot;: [[44, 0.61], [41, 0.27], [77, 0.12]],
+     &quot;series&quot;: [[5.1, 12, 40000], [4.3, 61, 410000]],
+     &quot;events&quot;: [{&quot;kyr&quot;: 3.2, &quot;kind&quot;: &quot;conquest&quot;, &quot;of&quot;: 4, &quot;dir&quot;: &quot;north-west&quot;},
+                {&quot;kyr&quot;: 2.6, &quot;kind&quot;: &quot;fragment&quot;, &quot;into&quot;: [9, 11], &quot;why&quot;: &quot;size beyond reach; drought&quot;}],
+     &quot;names&quot;: {&quot;self&quot;: {&quot;gloss&quot;: &quot;the realm of the middle&quot;, &quot;pattern&quot;: &quot;E7&quot;}, &quot;x6&quot;: [{&quot;namer_culture_id&quot;: 77, &quot;gloss&quot;: &quot;the Osk&quot;}]}}
+  ],
+  &quot;cell_polity&quot;: &quot;layers/polities.bin (per 100-year step, uint16 polity id per cell, 0xFFFF stateless)&quot;
+}
+</code></pre>
+<p>Sizes: at L7 ~120 steps x ~160k cells x 2 bytes is ~38 MB uncompressed, so store only steps where something changed or
+only at the frame times plus change lists. A judgement for the lane.</p>
+<hr />
+<h2 id="4-viewer-what-you-would-see">4. Viewer: what you would see</h2>
+<p>All in the viewer (you use it, not the CLI):</p>
+<ul>
+<li><strong>Cultures tab</strong>, grown:</li>
+<li>the culture list gains columns: endonym gloss, lect / language / family, polity now;</li>
+<li>a <strong>Languages</strong> view: a dendrogram of lects on the same time axis as the species timeline, coloured by family, with
+    the <strong>comparative horizon</strong> drawn as a vertical line ("to the left of this, nobody in-world can see these are
+    related"); hover a node for the split's date, cause and place; merges and shifts drawn as joins into the receiver;</li>
+<li>a <strong>culture card</strong>: name stack (endonym, glossonym, a table of exonyms per neighbour with pattern and why), the
+    lect's MI to its neighbours as paired bars (a understands b / b understands a), its loan strata as a little
+    timeline, its gods' domains, its polity history.</li>
+<li><strong>Globe layers</strong> (Colour by, under Peoples):</li>
+<li><strong>cultures</strong> (PW-1248), <strong>languages</strong> (by family, shaded by lect), <strong>polities</strong> (fill by polity, borders as lines,
+    capitals marked on the settlements overlay), all on the time slider;</li>
+<li><strong>intelligibility from here</strong>: click a cell and every cell is coloured by how well its lect is understood by the
+    clicked cell's speakers. This is the one I'd most like you to see: it shows a dialect continuum, a language border
+    and a sea strait at a glance, and it's how you'll judge κ and λ quickly.</li>
+<li><strong>Polities on the map over time</strong>: scrub the slider and watch chiefdoms coalesce in hemmed-in valleys, states push
+  along rivers, empires on frontiers, fragmentation.</li>
+</ul>
+<hr />
+<h2 id="5-decisions-for-you">5. Decisions for you</h2>
+<p>Each with options and my lean. L = language, N = names, P = polities, A = attitudes and gods.</p>
+<p><strong>L1. Is a culture a language?</strong>
+- A (lean): one lect per culture; languages are clusters by MI; families by the horizon.
+- B: one language per culture (simpler; but 111-130 "languages" per run where many would be dialects of each other).
+- C: a separate lect tree cut straight from the demes at a coarser scale.</p>
+<p><strong>L2. Where is the language line?</strong> MI between two lects at or above a threshold makes them one language.
+- A (lean): languages cut at Wichmann 2019's line (s ≈ 0.40, LDN 0.51, ~1.1-1.6 kyr apart). In the brief, use
+  three bands for intelligibility: dialects (mi ≥ ~0.7), partly understood (0.4-0.7; 0.4 is Gooskens et al.'s workable
+  threshold), separate (&lt; 0.4).
+- B: cut languages by mi instead of s, so that exposure (a standard, a ruling lect) can merge "languages". This is closer
+  to how people talk, but it makes the language count depend on politics.</p>
+<p><strong>L3. The rate.</strong>
+- A (lean): Holman's r = 0.72 per kyr, s0 0.92, with a lognormal multiplier per lect (sigma ~0.3, the fit's 29% scatter)
+  and no era trend (lane 108's reading of Greenhill and Bromham agrees). An optional burst at a split is off by
+  default.
+- B: rate tied to population (Bromham et al. 2015 found size changes gains and losses; the net effect is unclear).
+- C: A with the burst on.</p>
+<p><strong>L4. Time depth.</strong>
+- A (lean): the lect tree as deep as the demes (300 kyr). Families are visible only above a chance floor of inherited
+  similarity, so the horizon emerges per family (~5-9 kyr at the sourced rate; your 6-10 kyr is the check).
+- B: start lects at ~20 kyr as PW-982 does (anything older is a set of unrelated isolate roots).</p>
+<p><strong>L5. Lects across species.</strong>
+- A (lean): no inherited relatedness across peoples; shift across peoples only under polities (Stage 1); a people born
+  of a megafauna stem starts speaking the stem's lect (kobolds speak Draconic at their split, then drift).
+- B: the same, but megafauna-stem peoples start with their own speech.
+- C: no cross-people shift at all (each people keeps its own family forever).</p>
+<p><strong>L6. Dragons and giants.</strong> Cohesion already makes one culture per dragon colour.
+- A (lean): one lect per dragon culture, held together by cohesion; is "Draconic" one language across colours (MI high
+  between colours) or a family (colours mutually unintelligible)? Lean: one language, colour dialects, MI ~0.8.
+- B: a family, colours unintelligible.</p>
+<p><strong>L7. The morphology scalar (PW-985) in Stage 0?</strong> It's one number per lect, nudged by speakers, adult L2 share and
+isolation, starting low. It is not "the language itself", but it's a step toward it.
+- A: in Stage 0, shown on the card only.
+- B (lean, given "none of the actual language"): wait until Stage 1 gives a real L2 share (from shift under states),
+  which is what makes it meaningful.</p>
+<p><strong>N1. Gloss language.</strong> A (lean): English glosses ("the true people") in Stage 0; forms empty. B: no glosses, pattern
+codes only.</p>
+<p><strong>N2. Who gets names.</strong> A (lean): every living culture, and peoples-level rows from reputation.py merged in. B: only
+cultures above a size.</p>
+<p><strong>P1. Polities output-side or in the history?</strong>
+- A (lean): output-side v0 first (look at them), then in-history v1 for presence and war.
+- B: straight into the history (one build, but every tweak is a history re-run and the peoples' numbers move while we're
+  still arguing about shapes).</p>
+<p><strong>P2. Tier gates.</strong> A (lean): chiefdom = <code>chiefdoms</code> + towns; state = <code>kingship</code> or <code>law</code>; empire = emergent (rules
+several cultures or peoples). B: state needs writing (the strict reading of "archaic state").</p>
+<p><strong>P3. War scope.</strong> A (lean): war between polities replaces the G and F proxies in K(W); in-fighting stays for stateless
+country and becomes fission inside polities; no war deaths (lane 101). B: also re-add war deaths with polity wars.</p>
+<p><strong>P4. The leader share.</strong> A (lean): after polities, report the commonest share and stop (D31 A stands); don't add polity
+knobs aimed at it. B: allow one polity dial ("how fragmented are the great peoples").</p>
+<p><strong>P5. Your empires.</strong> A (lean): emergent first, authored <code>[[event]] kind = "polity"</code> as a back-fill in Seven Meals if they
+don't appear. B: authored from the start.</p>
+<p><strong>A1. Attitudes as an extension of reputation.py, per culture pair.</strong> A (lean): yes. B: a new module with its own record.</p>
+<p><strong>A2. Gods.</strong> A (lean): domains only, from way of life and land; syncretism on merges; state cults under polities. B: also
+a rank (high god, local spirits) by polity tier (a sourced pattern exists but I didn't read it: flagged).</p>
+<hr />
+<h2 id="6-costs-and-order">6. Costs and order</h2>
+<p>Respecting your rule: light exploratory v0 passes first, deep systems later. Each lane below is output-side unless said,
+re-runs nothing in the history, and is judged in the viewer on the dnd runs (cc22df, 622c00) and one Seven Meals run.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>lane</th>
+<th>content</th>
+<th>size</th>
+<th>model tier</th>
+<th>depends on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Lects v0</strong></td>
+<td><code>languages.py</code>: lect per culture, <code>s_inherited</code>, <code>s_surface</code>, MI inherent and both ways, families by horizon, events, contact and food loans (forms empty); <code>/api/languages</code>; brief block; Cultures tab Languages view and card; "intelligibility from here" layer</td>
+<td>M-L</td>
+<td>Opus for the model, Sonnet for viewer</td>
+<td>lane 109 merged (overlapping demes change the cultures)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Names v0</strong> (PW-972)</td>
+<td><code>names.py</code>: your name stack per culture, gloss only, exonyms by relationship from the deme contact record, E3/X3 coupling, direction, lumping; PW-1249 fixed; card table</td>
+<td>M</td>
+<td>Sonnet</td>
+<td>1 (for MI and contact per culture)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Polities v0</strong> (output-side)</td>
+<td><code>polities.py</code>: chiefdoms/states/empires from ledger + techs + circumscription; reach by travel time; competition, conquest, fragmentation; <code>polities.json</code> + layer; globe layer; size checks against the literature</td>
+<td>L</td>
+<td>Opus</td>
+<td>parallel to 1 (reads settlements and cultures)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Owner look</strong></td>
+<td>you look at 1-3 in the viewer; rulings on L1-L7, N1-N2, P1-P5</td>
+<td>-</td>
+<td>-</td>
+<td>1-3</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Polities into languages and names</strong></td>
+<td>shift under states (status model), standards, <code>resented</code>, P1/P2/P4/P5, X6, cultures merging within a polity (PW-676)</td>
+<td>M</td>
+<td>Sonnet</td>
+<td>4</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Attitudes v0 + gods placeholder</strong> (PW-904, PW-907)</td>
+<td>extend reputation.py per culture pair; pantheon domains; feeds exonym valence and grudges</td>
+<td>M</td>
+<td>Sonnet</td>
+<td>2, 5</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Polities v1 in the history + war</strong> (PW-1172, PW-1258, PW-1108)</td>
+<td>state presence per cell in the history; K(W) reads polity interiors and borders; fission; sacking; then the leader-share report</td>
+<td>L</td>
+<td>Opus</td>
+<td>4, your P1/P3 ruling</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Writing effects</strong></td>
+<td>standards, scholarly names, script lineage ids, literacy share</td>
+<td>S</td>
+<td>Haiku/Sonnet</td>
+<td>5</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>PW-986 language demo</strong></td>
+<td>the first actual words, on this plumbing</td>
+<td>L</td>
+<td>Opus, with you</td>
+<td>1, 2, your call</td>
+</tr>
+</tbody>
+</table></div>
+<p>Rough compute: lanes 1, 2, 3, 5, 6, 8 are seconds per run each and need no history re-runs. Lane 7 re-runs peoples
+histories (minutes at L7 each, the stress suite for the share report). Lanes 1 and 3 can run in parallel with each other
+and with whatever physics lane is running.</p>
+<p>Sensible first move: lanes 1 and 3 together, once lane 109 merges. Lane 2 straight after 1. Then you look.</p>
+<hr />
+<h2 id="7-where-im-unsure-said-plainly">7. Where I'm unsure, said plainly</h2>
+<ul>
+<li><strong>κ (the contact pull) has no literature value.</strong> It is the knob that decides how wide a dialect chain is. It will be
+  tuned by eye on the "intelligibility from here" map against the checks in 2.0.2. That's a judgement and should be
+  labelled one.</li>
+<li><strong>The MI curve is ours.</strong> No paper publishes a closed form. We fit it to European close relatives (the Germanic,
+  Romance and Slavic test sets). Nothing says it transfers to dwarves. It's a placeholder curve with citations, not a law.</li>
+<li><strong>Exposure dominates real intelligibility</strong> (r ~0.9). So <code>mi_ab</code> will be driven mostly by E_ab, a judgement, and
+  <code>mi_inherent</code> is the sourced half.</li>
+<li><strong>Frames are coarse.</strong> Cultures and lects split at frame resolution (0.5 kyr near the present); polities at the
+  settlement step (100 years). Dynasties and short-lived states won't show until the history zoom (PW-908).</li>
+<li><strong>Culture count vs lect count.</strong> If you rule more cultures (PW-1251, PW-1254), you also get more lects. That's
+  fine: languages are clusters, so the language count is robust to it.</li>
+<li><strong>Polities may come out too regular</strong> (Voronoi-ish states around towns). The circumscription and frontier terms are
+  there to break that; if they don't, it's a sign the settlement ledger needs more geography (PW-1104).</li>
+</ul>
+<hr />
+<h2 id="8-literature-note">8. Literature note</h2>
+<p>Two subagents read these sources over the web on 2026-11-01. Nothing below is cited from memory. The read status of
+each source:
+- <strong>full</strong>: full text read;
+- <strong>abstract</strong>: abstract only;
+- <strong>secondary</strong>: seen only through another source;
+- <strong>data</strong>: the live database.</p>
+<p>Anything not listed was not read.</p>
+<h3 id="language">Language</h3>
+<ul>
+<li><strong>Holman, Brown, Wichmann et al. 2011</strong>, "Automated dating of the world's language families based on lexical
+  similarity", <em>Current Anthropology</em> 52(6):841-875. <strong>Full</strong> (author's final manuscript).</li>
+<li><code>t = (ln s - ln s0)/(2 ln r)</code>, s0 = 0.92, r = 0.72 per kyr, s = 1 - LDND; 52 calibration groups.</li>
+<li>Corr(ln s, t) = -0.84; mean absolute error 29%.</li>
+<li>Note: 0.72 is the retention constant, not a dialect threshold.</li>
+<li><strong>Wichmann 2019</strong>, "How to distinguish languages and dialects", <em>Computational Linguistics</em> 45(4):823-831. <strong>Full.</strong></li>
+<li>Language/dialect cut-off LDN 0.51 (resampling ~0.57); LDND = 1.00158 LDN + 0.08459.</li>
+<li>The threshold corresponds to 1,075-1,635 years apart.</li>
+<li>Table of pairs (above).</li>
+<li><strong>Lees 1953</strong>, "The basis of glottochronology", <em>Language</em> 29(2):113-127. <strong>Full.</strong></li>
+<li>Retention 0.8048 ± 0.0176 per millennium on the ~200-item list.</li>
+<li>Swadesh's 86% for the 100-item list was seen only on secondary pages: not used.</li>
+<li><strong>Pagel, Atkinson &amp; Meade 2007</strong>, <em>Nature</em> 449:717-720. <strong>Abstract.</strong> Word frequency explains ~50% of the variation in
+  replacement rates (200 meanings, 87 Indo-European languages).</li>
+<li><strong>Greenhill et al. 2017</strong>, Bromham et al. 2015, Atkinson et al. 2008: not re-read this round. As cited by lane 108 in
+  docs/review/emergent-cultures/design.md (Greenhill and Bromham read there, Atkinson a snippet only).</li>
+<li><strong>Gooskens 2007</strong>, <em>J. Multilingual &amp; Multicultural Development</em> 28(6). <strong>Full.</strong></li>
+<li>Phonetic distance vs intelligibility: r = -0.64 overall, -0.80 Scandinavian.</li>
+<li>Lexical: not significant (r 0.36), because Scandinavian non-cognates are only 0-3.6%.</li>
+<li>Danes understand Swedish better than the reverse in that data.</li>
+<li><strong>Gooskens, van Heuven, Golubović, Schüppert, Swarte &amp; Voigt 2017/18</strong>, "Mutual intelligibility between closely related
+  languages in Europe", <em>Int. J. Multilingualism</em>. <strong>Full.</strong></li>
+<li>16 languages, 1,833 listeners, cloze test.</li>
+<li>Tree distance correlates with intelligibility: Germanic -0.67, Slavic -0.88.</li>
+<li>Danish/Swedish with no exposure 44-56%; "40% correct could be set as a possible threshold".</li>
+<li>Portuguese understand Spanish better than the reverse, even with minimal exposure.</li>
+<li><strong>Gooskens &amp; van Heuven 2020</strong>, <em>Linguistic Approaches to Bilingualism</em> 10(3):351-379. <strong>Full.</strong></li>
+<li>70 pairs. Exposure vs intelligibility r = 0.87-0.93: "the most important variable, overriding all other variables".</li>
+<li>Attitudes add little.</li>
+<li>Minimal-exposure listeners: Germanic lexical r = -0.95; stepwise R² 0.57 to 0.77 over all families.</li>
+<li>No closed-form curve.</li>
+<li><strong>Nerbonne 2010</strong>, "Measuring the diffusion of linguistic change", <em>Phil. Trans. R. Soc. B</em> 365:3821-3828. <strong>Full</strong>
+  (through a page summariser).</li>
+<li>Séguy's curve: aggregate distance grows with log geographic distance, r 0.41-0.62 over seven datasets; travel time
+    beats straight-line distance.</li>
+<li>About a quarter of the variance is geography.</li>
+<li>A population (gravity) effect is weak or absent.</li>
+<li><strong>Abrams &amp; Strogatz 2003</strong>, "Modelling the dynamics of language death", <em>Nature</em> 424:900. <strong>Full.</strong></li>
+<li>The model in 2.1.4; a = 1.31 ± 0.25 over 42 regions; status 0.26-0.46 in the fitted cases.</li>
+<li>No stable coexistence without status feedback.</li>
+<li><strong>Nettle 1998</strong>, "Explaining global patterns of language diversity", <em>J. Anthropological Archaeology</em> 17:354-374.
+  <strong>Full.</strong></li>
+<li>ln LANGS = 0.58 ln AREA + 0.23 MGS - 5.32 (43 tropical countries, r 0.66).</li>
+<li>Regional fits 0.23-0.32 per growing month.</li>
+<li><strong>Gavin, Rangel et al. 2017</strong>, "Process-based modelling shows how climate and demography shape language diversity",
+  <em>Global Ecology &amp; Biogeography</em> 26:584-591. <strong>Full.</strong></li>
+<li>Australian simulation: carrying capacity a power law of rain.</li>
+<li>A language starts at 10 people and buds a new one into an empty neighbouring cell when it reaches a maximum group
+    size drawn from Binford's forager group sizes (not a fixed threshold).</li>
+<li>Predicts 383-427 languages against 407 observed; r² 0.53-0.58 for richness.</li>
+<li>Fitted constants are in the supplement (not read).</li>
+<li>Relevant as an independent check that "a group buds a new language at a size limit" works, and as a hint that our
+    deme sizes (PW-1015) matter for the lect count.</li>
+<li><strong>Amano et al. 2014</strong>, <em>Proc. R. Soc. B</em> 281:20141574. <strong>Abstract.</strong></li>
+<li>25% of languages threatened.</li>
+<li>Small ranges in tropical and arctic, rainy, rugged terrain; recent declines linked to economic growth.</li>
+<li><strong>Haspelmath &amp; Tadmor (eds.) 2009</strong>, World Loanword Database, wold.clld.org. <strong>Data.</strong></li>
+<li>41 languages; mean borrowed share 25.2% (median 24%), computed from the site.</li>
+<li>Field and meaning scores as quoted in 2.0.5.</li>
+<li>Tadmor's results chapter was not read.</li>
+</ul>
+<h3 id="polities">Polities</h3>
+<ul>
+<li><strong>Carneiro 2012</strong>, "The circumscription theory: a clarification, amplification, and reformulation", <em>Social Evolution &amp;
+  History</em> 11(2):5-30. <strong>Full.</strong></li>
+<li>The mechanism: hemmed-in growth leads to war, and war welds villages into chiefdoms, then states.</li>
+<li>The first states "without exception" arose in circumscribed areas, but circumscription is "not absolutely
+    essential".</li>
+<li>Resource concentration works too, more slowly.</li>
+<li>Social circumscription is "less tight", so states come "but it will take longer".</li>
+<li>Chiefdoms spur neighbouring chiefdoms.</li>
+<li><strong>Carneiro 1970</strong>, <em>Science</em> 169:733-738: not read (paywall); used through the 2012 restatement.</li>
+<li><strong>Spencer 2010</strong>, "Territorial expansion and primary state formation", <em>PNAS</em> 107(16):7119-7126. <strong>Full.</strong></li>
+<li>A chiefdom's reach is "about one-half day of travel from the chiefly center, some 25–30 km by foot".</li>
+<li>State institutions appear with expansion beyond a day's round trip. Six cases reached 50-250 km (Indus ~400 km).</li>
+<li><strong>Turchin 2009</strong>, "A theory for formation of large empires", <em>J. Global History</em> 4(2):191-217. <strong>Full.</strong></li>
+<li>60+ mega-empires of 1 Mm² or more, 3000 BCE-1800 CE; over 90% in or next to the arid belt.</li>
+<li>All but one of China's fifteen unifications came from the north.</li>
+<li><strong>Turchin, Currie, Turner &amp; Gavrilets 2013</strong>, "War, space, and the evolution of Old World complex societies", <em>PNAS</em>
+  110(41):16384-16389. <strong>Full main text.</strong></li>
+<li>100 km cells, 100-year steps.</li>
+<li>Military tech seeded at the steppe edge: R² 0.65 against history; 0.48 without elevation; 0.17 with random seeding.</li>
+<li>The supplement with the parameter values was not read.</li>
+<li><strong>Taagepera 1997</strong>, "Expansion and contraction patterns of large polities", <em>International Studies Quarterly</em>
+  41(3):475-504. <strong>Full.</strong></li>
+<li>Largest polity ≤ 1.1 Mm² before ~650 BC, never &lt; 2.3 Mm² after; Achaemenid 5.5, Mongol 24, British 35 Mm².</li>
+<li>Median duration 130 yr (78 polities); 16 lasted 300+ yr.</li>
+<li>Duration vs rise time is weak (~D = 25 R^0.5).</li>
+<li><strong>Taagepera 1978/79</strong>: not read.</li>
+<li><strong>Taagepera &amp; Nemčok 2024</strong>, <em>More People, Fewer States</em>: <strong>chapter summaries only.</strong></li>
+<li><strong>Arbesman 2011</strong>, "The life-spans of empires", <em>Historical Methods</em> 44(3):127-129. <strong>Full.</strong> Exponential, λ = 0.46
+  per century, mean ~220 yr; 41 empires from Taagepera.</li>
+<li><strong>Currie, Greenhill, Gray, Hasegawa &amp; Mace 2010</strong>, <em>Nature</em> 467:801-804. <strong>Abstract and summaries only.</strong></li>
+<li>Complexity rises and falls in small steps.</li>
+<li>The model where falls may skip levels ranked second of six.</li>
+<li>Rates not read.</li>
+<li><strong>Grinin 2003</strong>, "The early state and its analogues", <em>Social Evolution &amp; History</em> 2(1):131-176. <strong>Full.</strong> Quotes
+  Johnson &amp; Earle 2000, which was not read directly:</li>
+<li>simple chiefdom: thousands;</li>
+<li>complex chiefdom: tens of thousands;</li>
+<li>state: hundreds of thousands to millions.
+  Smallest states are several thousand.</li>
+<li><strong>Currie &amp; Mace 2009</strong>, "Political complexity predicts the spread of ethnolinguistic groups", <em>PNAS</em>
+  106(18):7339-7344. <strong>Full.</strong> As in 2.1.4.</li>
+<li><strong>Alexander</strong>, "Application of mathematical models to English secular cycles", <em>Cliodynamics</em>. <strong>Abstract.</strong> Secular
+  cycles run 2-3 centuries. Turchin &amp; Nefedov 2009 itself was not read.</li>
+</ul>
+<h3 id="already-in-the-repo-reused">Already in the repo, reused</h3>
+<ul>
+<li>Violent-death rates and Turchin's K(W), Gómez et al. 2016: docs/review/peoples-counterpressures/design.md (lane 82).</li>
+<li>Settler-colony and glottochronology grounding of the culture split times: docs/review/emergent-cultures/design.md
+  (lane 108).</li>
+<li>Your ethnonym taxonomy (Claude Doc "Ethnonyms: A Taxonomy for Culture Generation", read in full through the Docs tools
+  for this proposal).</li>
+</ul>
+<h3 id="not-verified-dont-build-on-these-without-a-read">Not verified (don't build on these without a read)</h3>
+<ul>
+<li>Swadesh's 86% per millennium and his dialect/language percentages.</li>
+<li>Pagel's per-word half-lives.</li>
+<li>The "three-generation" shift pattern (Fishman, Veltman, Alba).</li>
+<li>Median speakers per language for foragers vs farmers.</li>
+<li>Sourced unintelligibility times for Romance or Arabic specifically.</li>
+<li>Gavin's fitted constants.</li>
+<li>Turchin 2013's parameters.</li>
+<li>Currie 2010's rates.</li>
+<li>Feinman and Flannery's polity sizes.</li>
+</ul>
+</div>

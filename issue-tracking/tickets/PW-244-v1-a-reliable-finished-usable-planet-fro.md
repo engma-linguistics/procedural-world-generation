@@ -2,7 +2,7 @@
 id: PW-244
 title: "V1: a reliable, finished, usable planet from a seed"
 type: epic
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: infra
@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-013, PW-184, PW-100, PW-090, PW-358, PW-202, PW-037, PW-092, PW-213, PW-248, PW-099, PW-392, PW-405, PW-030]
 refs: []
 created: 2026-10-15
-updated: 2026-10-23
+updated: 2026-11-01
 ---
 
 ## Description
 Owner and coordinator agreed (2026-10-15). V1 = pick a seed and a few settings and, in reasonable time, reliably get a finished planet at a chosen moment: plausible and mutually consistent geology, climate, water, ice and life; browsable from globe to km-scale region; data usable outside the viewer. Gaps, in rough priority: (1) remake the showcase on current code and review it (PW-202); (2) health: a physics audit for weird or wrong shortcuts, and a multi-seed health sweep as a standing check; (3) climate fidelity, mainly rain (epic PW-013); (4) the run's ice in cold eras (PW-240); (5) life layer complete: soils, coastal life, vegetation in the time zoom (epic PW-184); (6) speed: an optimisation pass, not only a faster machine; (7) a one-command/one-button seed-to-finished-world flow; (8) export (PW-100); (9) a calibration re-tune once the physics settles. Deliberately not V1: resources PW-155, weather PW-156, hazards PW-098, species/civilisation PW-103, moons PW-216, game attributes PW-206.
 
 ## Updates
+- 2026-11-01: Status todo -> done. v0.1.0 tagged 2026-11-01: final tally 0/42 hard failures (lane 102), showcases rebuilt on the final code (lane 110, docs/review/v010-showcases/notes.md), all v1 tickets closed.
 - 2026-10-23: Owner (2026-10-24): icebox bar: across seeds up to ~40% of a planet's time in an icehouse is acceptable (Earth ~10-30%), outlier seeds OK (the ~70% multi-seed pass bar).
 - 2026-10-23: Owner's v1 bar (2026-10-24): most physics real or real-enough that a compellingly crafted world passes muster to an amateur geologist or hydrologist who digs; a whole world you can time-zoom into for a compelling moment with biomes, plants and peoples. Above all: good enough to build atop without generating ten worlds to avoid a molten hellhole or an always-icebox world (seed robustness). Fine detail like 'this town by the sea' is later; the physics that makes the world it belongs in is v1. v1 shrunk to its gates the same day (88 tickets to v2/later).
 - 2026-10-22: Owner 2026-10-22: the sim-physics work (ice, rain, winds, base climate: epic PW-470) stays under v1; v1 is an arbitrary point and nothing is released yet.

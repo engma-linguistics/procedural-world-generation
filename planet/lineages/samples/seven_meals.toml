@@ -330,6 +330,7 @@ way = "farmer"
 # sparse (a band of 25 roams thousands of km2), not because their habitat is cut (PW-650, PW-655).
 [[lineage]]
 id = "giant"
+cohesion = 0.5  # PW-670 round 2 (owner 10-31, Storm King's Thunder): a council of giants that meets, then each goes home. Distinct cultures that drift half as far from their kind and merge in half the time side by side. A judgement
 name = "giants stem"
 parents = ["terrestrial"]
 at = "3 Myr"
@@ -732,6 +733,7 @@ traits = ["hardy", "flies", "insular"]
 
 [[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the kinds below split from them (PW-924), and the stems end
 id = "chromatic_dragon"
+cohesion = 0.9  # PW-670 round 2 (owner 10-31): one tongue and shared mores per kind, a far-flung folk that still meets to mate. A judgement: cultures.py pulls each culture's drift 90% toward its kind's mean, and sister cultures merge after 0.1 x MERGE_CONTACT_KYR side by side
 name = "chromatic dragons (red, blue, green, black, white)"
 parents = ["draconic"]
 at = "2.5 Myr"
@@ -749,6 +751,7 @@ traits = ["hardy", "flies", "insular"]
 
 [[lineage]]  # the ur-dragon's two great kinds split ~2.5 Myr ago (owner: 1-4 Mya); the kinds below split from them (PW-924), and the stems end
 id = "metallic_dragon"
+cohesion = 0.9  # PW-670 round 2 (owner 10-31): one tongue and shared mores per kind, a far-flung folk that still meets to mate. A judgement: cultures.py pulls each culture's drift 90% toward its kind's mean, and sister cultures merge after 0.1 x MERGE_CONTACT_KYR side by side
 name = "metallic dragons (gold, silver, bronze, copper, brass)"
 parents = ["draconic"]
 at = "2.5 Myr"

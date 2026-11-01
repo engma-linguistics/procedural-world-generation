@@ -26,7 +26,7 @@
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
-import { ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demesColor, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
+import { ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demeOf, demesColor, loadDemesAll, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
 import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
 import { pftColor } from './pick.js';
@@ -307,13 +307,17 @@ const LAYERS = {
   // ---- peoples runs
   peoples: { group: 'peoples', needs: PEOPLES_NEEDS, in: { tz: peoplesIn() }, color: peoplesLayer, legend: peoplesLegend },
   'peoples blend': { group: 'peoples', in: { tz: peoplesIn(() => hasLayer('mix_second')) }, color: peoplesLayer, legend: peoplesLegend },
-  demes: { group: 'peoples', needs: ['demes'], in: { tz: peoplesIn(() => hasLayer('demes')) }, color: () => (i, c) => demesColor(i, c),
+  demes: { group: 'peoples', needs: ['demes'], in: { tz: peoplesIn(() => hasLayer('demes')) }, color: () => { loadDemesAll(); return (i, c) => demesColor(i, c); },
     legend: (sw) => {  // the regional populations of this frame (planet/lineages/demes.py, PW-981), the largest first
-      const L = S.V.layers, D = S.V.demes?.demes || [], cnt = new Map();
-      if (L.demes) for (let i = 0; i < S.V.n; i++) { const d = L.demes[i]; if (d !== 65535) cnt.set(d, (cnt.get(d) || 0) + 1); }
+      const D = S.V.demes?.demes || [], cnt = new Map(), lines = S.V.run.meta.lineages || [];
+      for (let i = 0; i < S.V.n; i++) { const d = demeOf(i); if (d) cnt.set(d.id, (cnt.get(d.id) || 0) + 1); }
       const rows = [...cnt.entries()].filter(([d]) => D[d]).sort((a, b) => b[1] - a[1]);
-      return rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
-        sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations of the leading peoples here: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${S.V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
+      const who = state.demesOf && S.V.demesAll ? lines.find((l) => l.id === state.demesOf) : null;
+      // (whose demes, lane 109: demes overlap, a kobold deme beside a hobgoblin one in the same hills, a dragon kind's over the peoples below)
+      const ppl = [...new Set(D.map((d) => d.people))].map((id) => lines.find((l) => l.id === id)).filter(Boolean).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+      const pick = S.V.run.meta.demes?.all ? `<label title="Demes overlap: every people has its own, wherever it lives. Each cell's leading people, or one people's demes (with the cells it shares)">whose demes <select data-demesof><option value="">each cell's leading people</option>${ppl.map((l) => `<option value="${esc(l.id)}"${l.id === state.demesOf ? ' selected' : ''}>${esc(l.name || l.id)}</option>`).join('')}</select></label>${state.demesOf && !S.V.demesAll ? ' <span class="muted">loading…</span>' : ''}<br>` : '';
+      return pick + rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
+        sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations ${who ? `of the ${esc(who.name || who.id)}, wherever they live (over or beside other peoples)` : 'of the leading peoples here'}: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${S.V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
     } },
   'peoples mix': { group: 'peoples', needs: ['peoples_mix'], in: { tz: peoplesIn() }, color: peoplesLayer,
     legend: (sw) => [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody') },

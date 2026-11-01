@@ -2,7 +2,7 @@
 id: PW-1119
 title: Glacial maximum is reported at 25% of land under ice; confirm the number
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1091]
 refs: [tools/ice_criteria.py, docs/review/base-climate/v1-finish-12/passrate4.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-01
 ---
 
 ## Description
@@ -25,5 +25,6 @@ On the 18 L6 draws of the D arm (roll 0.001) it flags 14, with frozen over 3, be
 - [ ] Verify Earth's LGM land-ice share from a source and note it in the glossary
 
 ## Updates
+- 2026-11-01: Status needs-decision -> done. Confirmed: USGS gives the Last Glacial Maximum as about 25% of Earth's land under ice (8% of the surface; today 11% of land): https://www.usgs.gov/faqs/how-does-present-glacier-extent-and-sea-level-compare-extent-glaciers-and-global-sea-level . The 25% line stays.
 - 2026-10-30: Owner 10-30: 25% is a good placeholder; a literature search should confirm it.
 - 2026-10-30: Created from inbox draft draft-glacial-maximum-threshold.md (found by lane65).

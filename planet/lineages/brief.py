@@ -37,7 +37,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 14  # 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 15  # 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -101,7 +101,7 @@ class Ctx:
         self.dir = S.find_run(run_ref)
         names = ["elevation", "ice", "temperature", "climate", "tree_cover", "precipitation", "peoples", "peoples_whole",
                  "mix_lead", "mix_lead_share", "mix_second", "mix_second_share", "mix_other_share",
-                 "animal_wild", "animal_known", "crop_wild", "crop_known", "groups_best", "groups_best_pct"]
+                 "animal_wild", "animal_known", "crop_wild", "crop_known", "groups_best", "groups_best_pct", "demes"]
         self.run, _ = T.load_frames(self.dir, ())
         self.arr = S.read_layers(self.dir, self.run["layers"], [n for n in names if n in self.run["layers"]])  # (the group layers: runs since PW-742)
         self.meta = self.run["meta"]
@@ -121,6 +121,34 @@ class Ctx:
         if fl:
             self.fuels = {k: _read_single(self.dir, spec) for k, spec in fl.items()}
         self._frame_cache: dict = {}
+        self._cultures = False  # (cultures.json, or worked out from the demes on first use: cultures())
+        self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
+
+    def overlap(self) -> tuple | None:
+        """(presence table, demes_all) of a run that has every people's demes (lane 109), else None (the leading people's demes only)."""
+        if self._overlap is False:
+            self._overlap = None
+            fa = ((self.meta.get("demes") or {}).get("all") or {}).get("file")
+            if fa and (self.dir / fa).exists():
+                from .output import read_presence
+                pt = read_presence(self.dir, self.meta)
+                allv = np.fromfile(self.dir / fa, dtype="<u2")
+                if pt is not None and len(pt["cells"]) == len(allv):
+                    self._overlap = (pt, allv)
+        return self._overlap
+
+    def cultures(self) -> dict | None:
+        """The run's emergent cultures (PW-670): its cultures.json, else derived from its demes (not written), None without demes."""
+        if self._cultures is False:
+            f = self.dir / "cultures.json"
+            if f.exists():
+                self._cultures = json.loads(f.read_text())
+            elif self.meta.get("demes") and "demes" in self.arr:
+                from . import cultures as CU
+                self._cultures = CU.derive(self.dir)["doc"]
+            else:
+                self._cultures = None
+        return self._cultures
 
     def frame_at(self, era_kyr: float) -> int:
         return int(np.argmin(np.abs(self.ts - (-era_kyr))))
@@ -243,6 +271,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["crops"] = _grown(ctx, "crop_known", "crops", i, sel, land)
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
+    brief["cultures"] = _cultures(ctx, i, land, era)
     brief["sea_peoples"] = _sea_peoples(ctx, i, sel, sea, land_all)
     brief["megafauna"] = _megafauna(ctx, sel, era)
     brief["megafauna_ages"] = (MG.ages_text(ctx.meta["present"].get("megafauna_ages") or {}) or None) if abs(era) <= 1e-6 else None
@@ -1102,6 +1131,48 @@ def _suggested(brief: dict) -> dict:
     return {"basis": "rule-based from this brief only; the culinary side overrules", "notes": notes, "drink": None}
 
 
+CULTURES_TOP = 6  # cultures listed in the brief (the most land in the region first)
+
+
+def _cultures(ctx: Ctx, i: int, land: np.ndarray, era: float) -> list | None:
+    """The emergent cultures (PW-670) living on the region's land at the era: name, people, share of the land, what changed. On a run
+    with every people's demes (lane 109) a culture counts wherever its people lives, so the shares overlap (a dragon kind's culture
+    over the peoples below it); on an older run only where its people leads."""
+    doc = ctx.cultures()
+    if doc is None or "demes" not in ctx.arr:
+        return None
+    C, dc = doc["cultures"], np.asarray(doc["deme_culture"], np.int64)
+    ov = ctx.overlap()
+    if ov is not None:
+        pt, allv = ov
+        a, b = int(pt["offsets"][i, 0]), int(pt["offsets"][i, -1])
+        cell, dem = pt["cells"][a:b].astype(np.int64), allv[a:b].astype(np.int64)
+        keep = (dem < len(dc)) & land[cell]
+        dem = dem[keep]
+    else:
+        dem = np.asarray(ctx.arr["demes"][i]).astype(np.int64)
+        dem = dem[land & (dem < len(dc))]
+    if not len(dem):
+        return []
+
+    def at(c):  # (the culture holding it at the era, after any merges by then)
+        while C[c]["end"] == "merged" and C[c]["into"] is not None and C[c]["ended_kyr"] is not None and C[c]["ended_kyr"] >= era - 1e-9:
+            c = C[c]["into"]
+        return c
+
+    u, n = np.unique(dc[dem], return_counts=True)
+    tot = {}
+    for c, k in zip(u.tolist(), n.tolist()):
+        if c >= 0:
+            tot[at(c)] = tot.get(at(c), 0) + k
+    out = []
+    for c, k in sorted(tot.items(), key=lambda x: -x[1])[:CULTURES_TOP]:
+        x = C[c]
+        out.append({"id": c, "name": x["name"], "people": x["people"], "how": x["how"], "since_kyr": x["born_kyr"], "land_share": round(k / int(land.sum()), 3),
+                    "sea_craft": (x["traits"].get("sea_craft") or {}).get("verdict"), "changes": x["changes"]})
+    return out
+
+
 def _people(ctx: Ctx, pid: str) -> dict:
     l = ctx.lines[ctx.idx[pid]]
     p = ctx.meta["present"]
@@ -1234,6 +1305,11 @@ def markdown(b: dict) -> str:
         body = r["body"]
         t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (f" (culture of {r['groups_of']}, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
+    cu = b.get("cultures")
+    if cu:
+        t += ["", "## Cultures here (emergent, PW-670; placeholder names)", ""]
+        t += [f"- {c['name']} ({c['people']}, {c['how']}, since {c['since_kyr']:g} kyr): lives on {_pc(c['land_share'])} of the land"
+              + (f"; {'; '.join(c['changes'])}" if c["changes"] else "") for c in cu]
     mf = b.get("megafauna")
     if mf:
         t += ["", "## Megafauna (counted)", ""]

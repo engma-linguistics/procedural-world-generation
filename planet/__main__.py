@@ -293,6 +293,16 @@ def cmd_finish(args):
           f"  view: http://127.0.0.1:8765/viewer/?world={path.name}")
 
 
+def cmd_refine(args):
+    from . import refine as RF
+    if args.no_resources:
+        with W.resources_off():
+            path = RF.refine_world(args.world, args.level, args.erosion, args.seed)
+    else:
+        path = RF.refine_world(args.world, args.level, args.erosion, args.seed)
+    print(f"{S.rel(path)}  view: http://127.0.0.1:8765/viewer/?world={path.name}")
+
+
 def cmd_recent(args):
     from .lineages import recent as R
     tz, now, world = R.resolve(args.ref)
@@ -344,6 +354,17 @@ def cmd_demes(args):
         d = S.find_run(ref)
         sm = DM.write(d, report=False)
         print(ref, "\n".join(DM.lines_for_report(sm, json.loads((d / "demes.json").read_text()))))
+
+
+def cmd_cultures(args):
+    """Adds (or redoes) a peoples run's emergent cultures (PW-670): cultures.json, meta.cultures; --out writes cultures.json elsewhere
+    and leaves the run untouched."""
+    from .lineages import cultures as CU
+    for ref in args.runs:
+        d = S.find_run(ref)
+        out = Path(args.out) / d.name if args.out else None
+        sm = CU.write(d, out_dir=out, report=out is None, redemes=args.redemes)
+        print(ref, "\n".join(CU.lines_for_report(sm, json.loads(((out or d) / "cultures.json").read_text()))))
 
 
 def cmd_settlements(args):
@@ -696,6 +717,16 @@ def main():
     fi.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     fi.set_defaults(func=cmd_finish)
 
+    rf = sub.add_parser("refine", help="a finished world refined onto a finer global grid (L8, L9): its terrain, "
+                        "rivers, lakes, coasts, climate (downscaled), soils and plants per finer cell -> worlds/<id>.json")
+    rf.add_argument("world", help="world id or path (a world from a run)")
+    rf.add_argument("--level", type=int, default=8, help="the finer grid's level (8: 655k cells, 9: 2.6M)")
+    rf.add_argument("--erosion", type=float, default=0.1, help="strength of the finish's river-carving pass (the "
+                    "source world had its own: refine.EROSION)")
+    rf.add_argument("--seed", type=int, default=1, help="the detail noise's seed (the zoom's default: 1)")
+    rf.add_argument("--no-resources", action="store_true", help="leave the resource layers out")
+    rf.set_defaults(func=cmd_refine)
+
     rc = sub.add_parser("recent", help="the recent pass: the last ~30 kyr of a time zoom at century steps "
                                        "(interpolated, with short-period variability) -> runs/<id>/")
     rc.add_argument("ref", help="a time zoom id (present = its end, or --now) or a finished world's id (present = its kyr)")
@@ -753,6 +784,13 @@ def main():
                                       "(by sea gaps, hard country and distance) and their dated tree of splits, fusions and contacts, in place (PW-981)")
     dm.add_argument("runs", nargs="+", help="peoples run ids")
     dm.set_defaults(func=cmd_demes)
+
+    cu = sub.add_parser("cultures", help="add or redo a peoples run's emergent cultures (PW-670): demes that adapted to new country or "
+                                         "lived apart long enough, their inherited and drifting ways, merges; in place unless --out (needs demes)")
+    cu.add_argument("runs", nargs="+", help="peoples run ids")
+    cu.add_argument("--out", help="write cultures.json under this folder (one subfolder per run) and leave the runs untouched")
+    cu.add_argument("--redemes", action="store_true", help="with --out: cut the demes afresh in memory first (today's demes.py), writing demes.json under --out too")
+    cu.set_defaults(func=cmd_cultures)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "

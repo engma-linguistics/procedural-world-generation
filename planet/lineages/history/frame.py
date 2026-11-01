@@ -18,6 +18,10 @@ class FrameMixin:
         Pw = self.rollup(P)  # (the peoples as wholes: a people and its groups mixing is one people)
         whole = np.where(Pw.max(0) >= EST, Pw.argmax(0), 255).astype(np.uint8)
         mixn = (Pw >= 0.25).sum(0).astype(np.uint8)
+        # every people's presence (lane 109, PW-670): each whole people, megafauna and contact hybrids living on included, on every cell
+        # where it is established (EST): (line, cell) sorted by line then cell, and its % of the cell's habitat (output.py: a sparse table)
+        pl, pc = np.nonzero(Pw >= EST)
+        presence = (pl.astype(np.uint16), pc.astype(np.uint32), np.round(np.clip(Pw[pl, pc], 0, 1) * 100).astype(np.uint8))
         O = np.where(~own, self.p, 0)
         ov = np.where(O.max(0) >= EST, O.argmax(0), 255).astype(np.uint8)
         # the cell's composition (PW-689) and the body flags given as a share of a people (PW-701)
@@ -58,7 +62,7 @@ class FrameMixin:
                 "groups_best": np.where(gp >= EST, G.argmax(0), 255).astype(np.uint8),
                 "groups_best_pct": np.where(gp >= EST, np.round(gp * 100), 0).astype(np.uint8), "peoples_mix": mixn, "peoples_learned": learned,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
-                "peoples_overlay": ov, "peoples_whole": whole, **comp,
+                "peoples_overlay": ov, "peoples_whole": whole, "presence": presence, **comp,
                 **(self.animals.frame_layers() if self.animals is not None else {}),
                 **(self.crops.frame_layers() if self.crops is not None else {}),
                 "stats": {**step.stats, "peoples": areas, "population": pops, **cstats, **({"learned": lstats} if lstats else {})}}

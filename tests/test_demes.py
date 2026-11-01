@@ -139,7 +139,7 @@ def test_document_names_and_contacts():
 def test_derive_overrides_leave_defaults_unchanged(monkeypatch):
     seen = []
 
-    def fake(run_dir, window_kyr):
+    def fake(run_dir, window_kyr, presence=True):
         seen.append((DM.SPLIT_KM, DM.FUSE_KM))
         return {}
 
@@ -149,3 +149,50 @@ def test_derive_overrides_leave_defaults_unchanged(monkeypatch):
     DM.derive("x", split_km=3000, fuse_km=1500)
     assert seen == [(s0, f0), (3000.0, 1500.0)]
     assert (DM.SPLIT_KM, DM.FUSE_KM) == (s0, f0) == (7000.0, 4000.0)
+
+
+def test_reach_by_kind_a_dragon_kind_is_one_population_over_a_sea_that_cuts_walkers():
+    from planet.lineages.history.megafauna import LINK_KM
+    from planet.lineages.history.params import JUMP_KM
+    g = _g()
+    land = _cap(g, 0, 0, 12) | _cap(g, 0, 40, 12)  # (two landmasses ~16 degrees of sea apart)
+    lines = LINES + [{"index": 2, "id": "wyrm", "color": "#aa0000", "parents": ["stem"], "traits": ["flies"]}]
+    dm = DM.Demes(g, lines, 120.0, mega={"wyrm"})
+    _frame(dm, 10.0, {1: land.copy(), 2: land.copy()}, land)
+    assert len(_alive(dm, 1)) == 2 and len(_alive(dm, 2)) == 1  # (the walkers cut by the sea; LINK_KM flies over it)
+    s, sea, neck, free = dm.mobility(2, 10.0)
+    assert free and sea == neck == LINK_KM and s == LINK_KM / JUMP_KM
+    assert dm.mobility(1, 10.0) == (1.0, DM.SEA_KM, DM.NECK_KM, False)  # (a walker: the thresholds as they were)
+
+
+def test_a_seafaring_people_crosses_wider_sea_with_its_craft():
+    sea = [{"index": 0, "id": "sailors", "color": "#0055aa", "parents": [], "demography": {"sea_share": 0.6}}]
+    dm = DM.Demes(_g(), sea, 120.0)
+    assert dm.mobility(0, 150.0)[1] == DM.SEA_KM  # (before rafts: none)
+    assert dm.mobility(0, 30.0)[1] == 300.0  # (canoes and outriggers since 60 kyr)
+    assert dm.mobility(0, 1.0)[1] == 2500.0  # (sailing ships, at a full sea share)
+
+
+def test_overlapping_demes_two_peoples_in_the_same_cells_count_co_presence():
+    """Lane 109: with full presence (dm.full), two peoples living in the same hills are each their own deme over the same
+    cells, and the cells they share count as contact; each people's labels come back aligned with its occupied cells."""
+    g = _g()
+    land = _cap(g, 0, 0, 40)
+    hills = _cap(g, 0, 0, 12)
+    dm = DM.Demes(g, LINES, 240.0)
+    dm.full = True
+    n = g.n
+    lead = np.where(hills, 0, -1).astype(np.int64)
+    dm.update(1.0, {0: hills, 1: hills.copy()}, np.ones(n), land, lead, np.full(n, -1, np.int64))
+    a, b = _alive(dm, 0), _alive(dm, 1)
+    assert len(a) == 1 and len(b) == 1
+    assert len(dm.labels[0]) == len(dm.labels[1]) == int(hills.sum()) and (dm.labels[1] == b[0].id).all()
+    (key, r), = dm.pairs.items()
+    assert key == (a[0].id, b[0].id) and r["series"][-1][2] == int(hills.sum())  # (shared: every hill cell)
+
+
+def test_copresent_pairs_each_cell_once():
+    cell = np.array([0, 0, 0, 3, 3, 5], np.int64)
+    deme = np.array([4, 7, 9, 7, 7, 1], np.int64)
+    u = sorted(DM.copresent(cell, deme).tolist())
+    assert u == sorted([4 * 65535 + 7, 4 * 65535 + 9, 7 * 65535 + 9])

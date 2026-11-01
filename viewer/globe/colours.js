@@ -371,8 +371,55 @@ export function peoplesColor(layer, i, c) {
   return c;
 }
 // Demes (planet/lineages/demes.py, PW-981): the regional population of each cell's leading people, each a shade of its
-// people's colour (layer demes: index into demes.json, V.demes, loaded with the run; 65535 nobody)
-export function demeOf(i) { const d = S.V.layers.demes?.[i]; return d == null || d === 65535 ? null : S.V.demes?.demes?.[d] || null; }
+// people's colour (layer demes: index into demes.json, V.demes, loaded with the run; 65535 nobody). Demes overlap (lane 109):
+// a run with the presence table holds every people's deme on each of its cells (meta.demes.all, aligned with meta.presence),
+// fetched when the demes layer is shown; "whose demes" (state.demesOf, a people's id; ?demes_of=) then shows one people's.
+state.demesOf = new URLSearchParams(location.search).get('demes_of') || null;
+export function loadDemesAll() {
+  const v = S.V, m = v?.run?.meta;
+  if (!m?.demes?.all || !m.presence || v.demesAll || v.demesAllP) return;
+  const get = (f) => fetch(v.base + f, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(`${f}: HTTP ${r.status}`); return r.arrayBuffer(); });
+  v.demesAllP = Promise.all([get(m.presence.files.offsets), get(m.presence.files.cells), get(m.demes.all.file)]).then(([o, c, d]) => {
+    v.demesAll = { off: new Uint32Array(o), cells: m.presence.dtypes.cells === '<u2' ? new Uint16Array(c) : new Uint32Array(c), dem: new Uint16Array(d),
+      L: m.presence.lines + 1, f: -1, k: -1, map: null };
+    if (S.V === v) paint();
+  }).catch((e) => console.error(e));
+}
+function demesOfMap() {  // (the picked people's deme per cell this frame, -1 none; null: each cell's leading people)
+  const A = S.V.demesAll, lines = S.V.run.meta.lineages || [];
+  if (!A || !state.demesOf) return null;
+  const k = lines.findIndex((l) => l.id === state.demesOf);
+  if (k < 0 || (S.V.frame + 1) * A.L > A.off.length) return null;
+  if (A.f !== S.V.frame || A.k !== k) {
+    const map = A.map?.length === S.V.n ? A.map.fill(-1) : new Int32Array(S.V.n).fill(-1);
+    const a = A.off[S.V.frame * A.L + k], b = A.off[S.V.frame * A.L + k + 1];
+    for (let e = a; e < b; e++) if (A.dem[e] !== 65535) map[A.cells[e]] = A.dem[e];
+    Object.assign(A, { f: S.V.frame, k, map });
+  }
+  return A.map;
+}
+export function demeOf(i) {
+  const m = demesOfMap(), d = m ? m[i] : S.V.layers.demes?.[i];
+  return d == null || d < 0 || d === 65535 ? null : S.V.demes?.demes?.[d] || null;
+}
+export function demesAt(i) {  // (every people's deme on cell i this frame, overlapping; null without the table)
+  const A = S.V.demesAll, D = S.V.demes?.demes;
+  if (!A || !D || (S.V.frame + 1) * A.L > A.off.length) return null;
+  const out = [], base = S.V.frame * A.L;
+  for (let k = 0; k + 1 < A.L; k++) {
+    let lo = A.off[base + k], hi = A.off[base + k + 1];
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (A.cells[mid] < i) lo = mid + 1; else hi = mid; }
+    if (lo < A.off[base + k + 1] && A.cells[lo] === i && A.dem[lo] !== 65535 && D[A.dem[lo]]) out.push(D[A.dem[lo]]);
+  }
+  return out;
+}
+document.addEventListener('change', (e) => {
+  if (!e.target.matches?.('[data-demesof]') || !S.V?.run) return;
+  state.demesOf = e.target.value || null;
+  const u = new URL(location); if (state.demesOf) u.searchParams.set('demes_of', state.demesOf); else u.searchParams.delete('demes_of');
+  history.replaceState(null, '', u);
+  paint(); renderRunSummary();
+});
 export function demesColor(i, c) {
   const L = S.V.layers, elev = L.elevation;
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);

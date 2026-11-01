@@ -1,57 +1,63 @@
 # State
 
-**Last updated: 2026-10-30.** Overwrite this page; never append (history is in git). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
+**Last updated: 2026-11-01.** Overwrite this page; never append (history is in git). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
+
+## Release
+- **v0.1.0 tagged 2026-11-01** (the v1 milestone, epic PW-244). The physics is good enough to fool a layman and impress a
+  climatologist or geologist; the peoples ship as a preview.
+- Final tally (lane 102, `docs/review/v1-cut/final-tally.md`, `tools/hard_bar.py`): 42 draws, 0 hard failures (frozen over,
+  boiled, ocean loss, CO2 crash under D32 B, below the plants' compensation point). Soft pass L6 29/36, L7 5/6.
+- Bars: hard failures must be 0; the soft scorecard is fine at ~60-70% (L7 60% OK for v1; 70%+ is v2, PW-1009). Only "frozen
+  over" (40%+ of land under ice) and hellhouse fail; icehouse and glacial maximum (25% of land, the USGS LGM figure) are reported.
+- Next tag: v0.2.0 for the v2 milestone.
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics (10-29): lanes 23-25 merged (weld ratchet PW-970; continents' sea water PW-980 part; sea bulk evaporation PW-015 with Earth B 27-28%; paired judge PW-994). Lane 26 running: dry subtropical coasts PW-998 with PW-026 (maritime air inland). Then the PW-980 remainder, PW-948 (needs the owner), showcase rebuild, tag v1.
-- Fun (10-29): megafauna PW-958/959/977 stage 1 and sapiens dates PW-978/971 merged. Lane 45 running: people density PW-974 + PW-977 stage 2 (peoples' and predators' share of the food). Owner decisions open: PW-948, PW-990, PW-987, PW-988.
-- Fun lane 66 (10-30, branch worktree-agent-a6adfb4eb11252857): settlement size classes now follow the holder's techs (stages villages, towns, cities, cities+roads; town 1,000 or 2,000, city 10,000, city caps from Reba 2016's tables; village and town bands UNVERIFIED pending Fletcher 1995) and second peoples' places churn far less (PW-1114, PW-1117; overview 2.25). PW-1116 (mine count) still waits on the owner.
-- Fun lane 68 (10-30): PW-1116 done on its branch: mines go to the cell's most mining-inclined people even as a minority (affinity from traits and kin), one mining district per ring of cells; ~2,200 mines a run became 260-370, humans 95% -> 42-80%; overview 2.25. Rebuilt techtree and settlements on all seven runs with a settlements doc (488d7e 6128a3 114231 570701 6553f1 8d6884 e368d1).
-- Fun lane 72 (10-30, owner D12): mining follows need and dwarves find ore, both settlement-side (no history re-run).
-  - Mines open only where wanted: farmers and herders, a town's market within two rings, a mining kind, or slow exposure to a nearby mine. Ore mines wait a seeded ~1 kyr after smelting.
-  - Mining kinds (dwarves, kobolds, gnomes, drow) send colonies of incomers to ore districts within 300 km of their country.
-  - 255-380 mines a run became 277-412, 38-81 of them colonies. Dwarves 3-12 -> 4-18, kobolds 15-43 -> 28-76, humans 42-80% -> 36-72%. At 4 kyr ago 194 -> 36 mines on 488d7e.
-  - Viewer: a 'mines' box and an 'only the mines' box, a hover naming the district and colony, and the deep link `?settle=mines&lat=..&lon=..&dist=2.3`. Overview 2.25.
-  - Techtree and settlements rebuilt on the seven runs. 114231 and 8d6884 are the same seed (9000) on the same world, and so are 6128a3 and e368d1 (8000).
-- Fun lane 63 (10-30): PW-1068 persecution as a kill by dragon age class against slow breeding (wyrmlings reachable early, adults at high tech; tech level a calendar proxy behind `megafauna.vulnerability`/`means`); PW-1020 B people density follows NPP^0.75; viewer "how hard peoples press dragons and giants", early/late (owner D14; dragon_km2/giant_km2 nominal). Competition settings in code + viewer: meta.rivals (guild share), game_share (peoples' hunt from dragon prey), overkill (default 0.6). Dragon-density paper round 3 (r3 sweep), reframed as "how many dragons a world/region/biome holds, by competition" (headline tables H1/H2; world ~120k at defaults, food alone ~23M); checkers + peer review + revision done. Drafts: forager offtake overstated (needs-decision, incl. dragons pressing back D16), metallic/chromatic temperament, persecution means from real techs.
-- Up to ~12 sims with >=40 GB free in /tmp.
+- Lane 105: L8 1 Gyr, seed 11, 8 threads, frozen worktree; notes in `docs/review/l8-world/gyr-notes.md`.
+- Held on its branch: lane 100, continent margins round 1 (necking and continental rise, off by default; branch
+  worktree-agent-a5fd6321b3834f864). Next round: the shelf's sediment front gets a real slope, then an 18x2 judge.
+- Waiting on Daniel (Owner's Desk): D34 wild herds 2-3x thin (lean B: check savanna growth first), D35 small items, D36 dragon
+  kinds now 1-5 cultures (PW-1268, lean fold), and the proper-cultures proposal (`docs/review/cultures-proposal/`, 19 questions).
+- After those: the proposal's lanes (lects v0 and polities v0 in parallel, then names); refine refactor (shared terrain-detail
+  function, on a yes); PW-1198 globe.
+- Up to ~12 sims with >=40 GB free in /tmp. `scratchpad/root` holds symlinks into the main runs/ and zooms/: never write into it.
 
-## v1
-- Epic PW-244. PW-780 signed off. 15 open tickets in the v1 milestone (10-29): physics PW-998/026/015/821/969/980; release checks PW-825/932; docs PW-814/816; provenance PW-938/939/940/942. Older backlog grouping (workgroups A-D in the backlog doc https://claude.ai/artifact/8rxpMkD49iovLmeBzZmP4t).
-- Icehouse bar loosened 2026-10-25 (PW-865): icehouse share is uncapped; snowball, hellhole and never-ice fail. The old bar on main's forward star was L6 13/18 and L7 7/8. Rule: ~70% pass; since 2026-10-30 only hellhouse and "frozen over" (40%+ of land under ice) fail, and the judges report icehouse, glacial maximum and frozen over (PW-1091; [glossary](glossary.md), [decisions](decisions.md)).
-- Showcase remake (PW-202) done; the 4 L6 + 4 L7 showcases below.
-
-## v2 and later (board.py milestones, 2026-10-26)
+## Milestones (2026-11-01)
 | milestone | open | done |
 |---|---|---|
-| v1 | 42 | 112 |
-| v2 | 183 | 150 |
-| v3 | 21 | 4 |
-| later | 72 | 5 |
-| unscheduled | 50 | 275 |
+| v1 | 0 | 157 |
+| v2 | 384 | 200 |
+| v3 | 23 | 4 |
+| v4 | 1 | 0 |
+| later | 80 | 5 |
+| unscheduled | 121 | 297 |
 
-v2 priorities: always one fun lane on peoples/lineages (PW-692 frames the end goal), then speed, resources (PW-155), zoom quality (PW-516). Roadmap: [plan_next.md](../plan_next.md).
+v2 priorities: always one fun lane on peoples/lineages (PW-692 frames the end goal; cultures, languages and polities next per
+the proposal), physics lanes take the most useful physics ticket, then speed, resources (PW-155), zoom quality (PW-516).
+Roadmap: [plan_next.md](../plan_next.md).
 
-## Tech tree (PW-675; v1 invention model, lane 64, 2026-10-30)
-- planet/lineages/techtree.py + samples/techtree.toml: 547 techs since fun lane 69 (PW-1122, 10-30): the 594-id catalogue (docs/references/tech-catalogue/, README lists what was merged and dropped) folded in, with `earth_origins` per row, the history's crops and herd animals as techs (crop_wheat, animal_cattle...: wine waits for the vine, the plough for cattle) and `needs_any` (riding: a mount). 4 D&D runs x 2 draws: world firsts farming ~12.5 kyr (history), copper ~6.3, writing ~5.6, cities ~6.4; a living people knows ~250 of 547 now; finds per world ~2.7x Earth's origins (copper ~12 vs 4: better needs did not fix it, needs-decision draft); settlements unchanged in kind (488d7e: 114 -> 113 cities, towns 3,032 -> 3,513). Pottery has a band-justified rate (0.09). Build ~22 s a run.
-- The hazard per people, per tech, per kyr: rate x kind rate_x (gnomes 1.5) x culture-domain match (cap 1.5) x S(pool) x ramp.
-  - S = ln(pool / 300) / ln(1e5 / 300), Henrich's log with a threshold.
-  - pool: the population at the time (from the tracks) x the learners factor (generation / 25 yr, capped at 20: dragons 17, elves 2, dwarves 1.6). For bronze-age-on techs it is x the specialist ladder (0.2% to 10%, a judgement after Childe) x a density term (a judgement after Bettencourt).
-  - Domains: the catalogue's eight tags. Aggressive peoples take war techs up by contact x2.
-- Band: dates at or before 11.6 kyr (and techs Earth got more than 10 kyr after their prerequisites) are hard floors. Younger techs are soft: their rate is set so the first of anchor_peers = 4 peoples of 10 M meets Earth's lag after the prerequisites (techtree.anchor_check, lane 70). A floored tech with 2+ dated Earth origins (`origins_kyr`) waits after its floor as the median origin did (band_wait, PW-1138; pottery's hand rate is now the rule). late_rate is gone.
-- Fun lane 70 (10-30, PW-1137/1138 on its branch): contact is a front at 1 km/yr (Pinhasi et al. 2005; Jordan et al. 2016 for pottery) that reaches the taker's middle after a per-pair delay and then hands over whatever the taker can use, so packages travel together; inventing no longer goes first within a step. 4 runs x 2 draws: finds/origins median 2.75x -> 1.3x (copper 11.8 -> 5.6, writing 7.2 -> 2.5, towns 15 -> 6), world firsts copper 5.8 kyr, writing 4.1, iron 3.6, cities 6.1; living peoples knowing copper/writing/cities ~50% -> ~70%, beer 0% -> 73%.
-- Evidence: docs/references/techtree/README.md. Open: drafts for a planet-own glacial gate, the risk effect, contact pools, specialists from the settlement ledger (PW-946); lane 69's drafts: finds vs origins (PW-1124 follow-up), floored techs' slow track rate, ending the history when cultures settle (owner idea), missing pigs/camelids/reindeer, dogs counting as herding, the tree view's size, build time.
+## Current showcases (v0.1.0, lane 110: `docs/review/v010-showcases/notes.md`)
+All at L7, `--every 4`, built on main e55316ad.
 
-## Current showcases
-- Owner feedback world (2026-10-24): world 2a7385 (seed 11 L7, run 6b48f5, time zoom f778ab, zooms 1ab4c4 91bf86 cd4341 80a169), peoples b69f51 (seven_meals) and 6b5d0e (dnd). Feedback doc: https://claude.ai/artifact/GMaU7W2PynuiY9z5o71kDA
-- Runs: 6c652c, d30069, 99dc70, feaade.
-- Worlds: 6fbc2c, 067778, a12762, 6909cb.
-- Peoples run 104de8 (`seven_meals` preset) on world 6fbc2c.
-- Also kept: Earth world 577526 and the nine overturning reference worlds (119973 28442c 607540 81aced 7082f5 d14b89 a5a387 dad91b c00ebf), per PW-202.
-- Viewer defaults (2026-10-30, lane 65): family-hue peoples colours, the current ramps, the docked legend and the grouped "Colour by" picker (globe and zoom) are the only behaviour; the `?palette=`, `?ramps=`, `?legend=` and `?picker=` switches are gone (PW-1032/1027/1029/1026). Screenshots: docs/review/viewer-defaults-10-30/.
-- Viewer: http://127.0.0.1:8765/viewer/ (server notes in [coordination.md](../coordination.md)).
+| Recipe | Run | World | Notes |
+|---|---|---|---|
+| Earth-like A (seed 11, 1 Gyr) | a19366 | 9459ad | time zoom fc5311, finished world 899985; peoples b4d502 (dnd), 3c1caf (seven_meals) |
+| Earth-like B (seed 12, 1.5 Gyr) | 10fd90 | 848662 | time zoom 56dee1, finished world dba204; peoples a24559 (dnd) |
+| Water world (seed 13, 2 Gyr) | f27dc1 | b76c8e | icehouse; soft fail (post-v1 kind) |
+| Land-heavy (seed 14, 1 Gyr) | fe954c | 036772 | |
+| Cold (seed 15, 1 Gyr) | c9f38c | 0c14eb | icehouse, -6.4 C (as meant) |
+| Hothouse (seed 16, 1 Gyr) | 5aa5ff | f9c12a | only +3.5 C: the recipe is weak |
+
+Each world has six highlight zooms (ids in the notes). Also kept: the L8 worlds a16f5a (direct) and fb5e11 (refined from L7
+783674, run b13ee9; zoom 361209); the older showcases and owner runs (cc22df 622c00 and the protected list in the coordinator
+memory) until Daniel has seen the new set; Earth world 577526 and the nine overturning reference worlds (PW-202).
+
+## Peoples model (v0.1.0 preview)
+- Lineages, demes (overlapping per people since lane 109, PW-1259), emergent cultures (PW-670: era-scaled time apart, cohesion by
+  kind), in-fighting for every people (D31 A: the commonest people under 50% usually, never over 70% with 5+ peoples), dragons
+  round 2 (lion-line persecution, local extirpation, `dragon_abundance` dial), tech tree (PW-675), settlements and mines.
+- Peoples-share tuning is paused until war and polities exist (Daniel 10-31).
 
 ## Where to look next
 - Open owner decisions: `board.py decisions`.
-- Unmerged branches or held work: ask `git branch --no-merged main` and the lane tickets; not tracked here.
+- Unmerged branches or held work: `git branch --no-merged main` and the lane tickets.

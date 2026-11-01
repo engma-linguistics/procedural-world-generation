@@ -2,7 +2,7 @@
 id: PW-1224
 title: One L6 draw ends in a CO2 crash (pCO2 36 ppm, 10 C below pre-industrial) at the 36-draw hard-bar tally
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1156, PW-1158, PW-1163, PW-244]
 refs: [docs/review/v1-cut/checks.md, docs/review/v1-cut/tally_L6.txt, docs/review/v1-cut/tally.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Description
@@ -35,6 +35,7 @@ the source's dip and the PW-1158 / PW-1163 pair.
 - [ ] a ruling on whether it blocks the tag
 
 ## Updates
+- 2026-11-01: Status todo -> done. Lane 102 final tally on the plant-floor code: no draw crashes under D32 B (0 of 42); the lowest minimum is 83 ppm against a compensation point of 20.7 ppm. The 36 ppm draw is gone.
 - 2026-10-31: Lane 95 plant floor merged: this draw now bottoms at 85 ppm (was 36) and recovers to 120. Still under lane 92's 100 ppm line; crash line put to Daniel as D32.
 - 2026-10-31: Daniel 10-31 (D29): C. Build the plant-starvation weathering floor, then set the crash line on the tally's evidence (PW-1223). If it fails, move to v2. Plate-speed question to v2 (PW-1158).
 - 2026-10-31: lane 94 diagnosis, docs/review/v1-cut/co2-crash-diagnosis.md (bit-identical rerun; offset is 0.001, not 0.002). Cause: a late assembly (sutures 982/984, largest continent 21->36%) halves trench length and plate speed; the source is 92% arc slab flux (ridges 6%, r 0.92 with arcs), so it falls 3.5x. The sink responds near design but has no plant-starvation floor (FERT 0.44 at 36 ppm), and its tropical weathering cools least (0.044/C vs 0.070). Direction plausible (Mills 2017, Mueller 2024); depth a defect (Pagani 2009). Lean: not a v1 blocker; candidate 1 (plants starve below 124 ppm, drafted) lifts this draw only to ~70 ppm; no source/CO2 floor (clamp).
