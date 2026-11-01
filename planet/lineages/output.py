@@ -130,6 +130,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             if st.a.id in pres[kind]["stocks"]:
                 (out / "layers" / f"route_{st.a.id}.bin").write_bytes(np.where(st.rd >= EST, st.route, 0).astype(np.uint8).tobytes())
                 pres[kind]["stocks"][st.a.id]["route_file"] = f"layers/route_{st.a.id}.bin"
+    presence_meta = write_presence(out, frames, len(h.lines), g.n)
     pres_q = np.round(np.clip(res["present"], 0, 1) * 100).astype(np.uint8)
     (out / "layers" / "presence_present.bin").write_bytes(pres_q.tobytes())
     S.write_grid(g)
@@ -165,6 +166,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
                                       "shape": [len(h.lines), g.n], "units": "%"},
+                 "presence": presence_meta,
                  "kyr": round(max(fr["ago"] for fr in frames), 3), "step_kyr": ps.params.step, "every": ps.params.every,
                  "myr": max(fr["ago"] for fr in frames) / 1000, "frames": len(out_frames), "seed": m.get("seed"),
                  "level": g.level, "cells": g.n, "cell_size_km": round(g.spacing * R_KM), "params": m.get("params", {}),
@@ -185,6 +187,43 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
         ST.write(out)
     T.update_index()
+    return out
+
+
+def write_presence(out: Path, frames: list, nlines: int, n: int) -> dict:
+    """Every people's presence per frame (lane 109, PW-670), a sparse table: for frame f and line k the entries
+    offsets[f, k]..offsets[f, k + 1] of `cells` (cell ids, ascending) and `share` (% of the cell's habitat, >= EST). The layers
+    peoples_whole / mix_lead / mix_second keep only a cell's two leading peoples; this keeps them all, megafauna included."""
+    cdt = np.uint16 if n <= 65536 else np.uint32
+    offs = np.zeros((len(frames), nlines + 1), np.uint32)
+    cells, share, at = [], [], 0
+    for j, f in enumerate(frames):
+        pl, pc, ps = f["presence"]
+        offs[j] = at + np.searchsorted(pl, np.arange(nlines + 1))
+        at += len(pl)
+        cells.append(pc.astype(cdt))
+        share.append(ps)
+    files = {"offsets": "layers/presence_offsets.bin", "cells": "layers/presence_cells.bin", "share": "layers/presence_share.bin"}
+    (out / files["offsets"]).write_bytes(offs.astype("<u4").tobytes())
+    (out / files["cells"]).write_bytes(np.concatenate(cells).astype("<u2" if cdt is np.uint16 else "<u4").tobytes())
+    (out / files["share"]).write_bytes(np.concatenate(share).astype(np.uint8).tobytes())
+    return {"files": files, "entries": int(at), "lines": nlines, "frames": len(frames), "min_pct": round(100 * EST),
+            "dtypes": {"offsets": "<u4", "cells": "<u2" if cdt is np.uint16 else "<u4", "share": "uint8"},
+            "bytes": int(offs.nbytes + at * (np.dtype(cdt).itemsize + 1)),
+            "description": "every whole people's presence per frame (megafauna and contact hybrids living on included): for frame f and "
+                           "line k, entries offsets[f, k]..offsets[f, k+1] of cells (ascending) and share (% of the cell's habitat, at least min_pct)"}
+
+
+def read_presence(run_dir: Path, meta: dict) -> dict | None:
+    """The run's presence table (write_presence), or None on a run made before it: {"offsets" (frames, lines + 1), "cells", "share"}."""
+    pm = meta.get("presence")
+    if not pm:
+        return None
+    run_dir = Path(run_dir)
+    out = {}
+    for k, f in pm["files"].items():
+        a = np.fromfile(run_dir / f, dtype=np.dtype(pm["dtypes"][k]))
+        out[k] = a.reshape(pm["frames"], pm["lines"] + 1) if k == "offsets" else a
     return out
 
 

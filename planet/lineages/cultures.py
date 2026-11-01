@@ -15,6 +15,8 @@ Design and grounding: docs/review/emergent-cultures/design.md.
   the steppe, desert and savanna share / OPEN_FULL), losing with TAU_LOSE_KYR and gaining with TAU_GAIN_KYR. A kind's cohesion
   (0..1, the tree's per-line `cohesion`, inherited; dragons strong, giants medium, peoples none) pulls the target that far toward
   its kind's mean: one tongue and shared mores across a kind.
+- Demes overlap (lane 109): on a run with the presence table every people's demes are read (demes_all), so a culture's cells are
+  all the cells its people lives in, over or beside other peoples; an older run gives the leading people's demes only (demes.bin).
 - Merging (PW-676, no cap): a culture whose last deme fused into another culture's deme merged into it. Two touching sister
   cultures (one people, the same adaptation and main way of life) merge after MERGE_CONTACT_KYR x (1 - cohesion) side by side,
   or after MERGE_KYR once the people knows a unifying technology whose reach (REACH_MKM2) holds both.
@@ -128,24 +130,21 @@ def t_apart(era_list: list | None, ago: float) -> float:
     return T_APART_KYR[ERAS[i]]
 
 
-def assign(demes: list[dict], era_of: dict | None = None, coh: dict | None = None) -> tuple[list[Culture], np.ndarray]:
+def assign(demes: list[dict], era_of: dict | None = None) -> tuple[list[Culture], np.ndarray]:
     """The cultures of a deme tree (demes.json `demes`, in id order: a parent before its children) and each deme's culture. era_of:
-    people -> eras() list (None: the stone age's time apart for all). coh: people -> cohesion; a cohesive kind's later first demes
-    (pockets that drop out of the frames, which keep only each cell's two leading peoples, and come back) join its first culture."""
+    people -> eras() list (None: the stone age's time apart for all). (Round 2's rule that a cohesive kind's later first demes rejoin
+    its first culture is gone, lane 109: it made up for dragons dropping out of frames that kept only each cell's two leading
+    peoples; the demes now see every people wherever it lives, and a kind that really died out and came back is a new culture.)"""
     out: list[Culture] = []
     dc = np.full(len(demes), -1, np.int64)
     founding: dict = {}
-    first: dict = {}
-    era_of, coh = era_of or {}, coh or {}
+    era_of = era_of or {}
     for d in demes:
         par = d["parent"]
         same = par is not None and demes[par]["people"] == d["people"]
         life = d["born_kyr"] - (d["ended_kyr"] if d["ended_kyr"] is not None else 0.0)
         if not same or d["how"] in ("first", "from_people"):
             key = (d["people"], round(d["born_kyr"], 3))
-            if coh.get(d["people"], 0.0) > 0 and d["people"] in first:
-                key = first[d["people"]]
-            first.setdefault(d["people"], key)
             if key not in founding:
                 founding[key] = len(out)
                 out.append(Culture(len(out), d["people"], None if par is None or dc[par] < 0 else int(dc[par]), "founding", d["born_kyr"], d.get("adapted")))
@@ -198,11 +197,8 @@ class Drift:
                           for k, ts in GAIN_NEEDS.items()}  # (skill -> people -> kyr ago it could first gain it; None never)
         self.open_ids = np.array([i for i, b in enumerate(biomes) if b in OPEN_CLASSES], np.int64)
         self.biomes = biomes
-        cnt = np.diff(nbr_off)
-        a = np.repeat(np.arange(len(cnt)), cnt)
-        b = np.asarray(nbr_idx)
-        keep = a < b
-        self.ea, self.eb = a[keep], b[keep]  # (each neighbour pair once)
+        self.nbr_off, self.nbr_idx = np.asarray(nbr_off, np.int64), np.asarray(nbr_idx, np.int64)
+        self.people_of = np.array([self.idx[u.people] for u in cultures] + [0], np.int64)  # (culture -> its people's line index)
         self.contact: dict[tuple, float] = {}
         self.merges: list[dict] = []
         self.prev = None
@@ -227,23 +223,24 @@ class Drift:
         boats = l.get("realm", "land") == "land" and not ({"flies", "swims"} & set(tr))  # (a flier or a swimmer needs no boat: no sea craft)
         return (float(dem.get("sea_share") or 0.0) if boats else None), 1.0 if "nomadic" in tr else 0.0
 
-    def frame(self, ago: float, deme: np.ndarray, groups: np.ndarray, coast: np.ndarray, biome: np.ndarray):
-        """One frame: deme (the leading people's deme per cell, NONE none), groups (groups_best, 255 none), coast (land with a sea
-        neighbour), biome (class index per cell, -1 sea)."""
+    def frame(self, ago: float, cell: np.ndarray, deme: np.ndarray, groups: np.ndarray, coast: np.ndarray, biome: np.ndarray):
+        """One frame: (cell, deme) pairs, every people's deme on each of its cells (the run's demes_all; on a run without it, the
+        leading people's deme per cell), groups (groups_best per cell, 255 none), coast (land with a sea neighbour), biome (class
+        index per cell, -1 sea)."""
         nC = len(self.C)
         dt = 0.0 if self.prev is None else max(self.prev - ago, 0.0)
         self.prev = ago
         lut = np.array([self.resolve(int(self.dc[d]), ago) if self.dc[d] >= 0 else -1 for d in range(len(self.dc))] + [-1], np.int64)
         dl = np.where(deme == NONE, len(self.dc), deme).astype(np.int64)
-        cmap = lut[np.minimum(dl, len(self.dc))]
-        on = cmap >= 0
-        cc = cmap[on]
+        ce = lut[np.minimum(dl, len(self.dc))]
+        on = ce >= 0
+        cc, at = ce[on], np.asarray(cell, np.int64)[on]
         cells = np.bincount(cc, minlength=nC)
-        coastc = np.bincount(cc, weights=coast[on].astype(float), minlength=nC)
-        openc = np.bincount(cc, weights=np.isin(biome[on], self.open_ids).astype(float), minlength=nC)
+        coastc = np.bincount(cc, weights=coast[at].astype(float), minlength=nC)
+        openc = np.bincount(cc, weights=np.isin(biome[at], self.open_ids).astype(float), minlength=nC)
         nb = max(len(self.biomes), 1)
-        bh = np.bincount(cc * nb + np.clip(biome[on], 0, nb - 1), minlength=nC * nb).reshape(nC, nb)
-        gk = cc * 256 + groups[on].astype(np.int64)
+        bh = np.bincount(cc * nb + np.clip(biome[at], 0, nb - 1), minlength=nC * nb).reshape(nC, nb)
+        gk = cc * 256 + groups[at].astype(np.int64)
         gu, gn = np.unique(gk, return_counts=True)
         ways: dict[int, dict] = {}
         for k, n in zip(gu.tolist(), gn.tolist()):
@@ -297,14 +294,31 @@ class Drift:
                 u.peak = n
         for u in self.C:
             u.cells_now = int(cells[u.id]) if u.id < nC else 0
-        self._contacts(ago, cmap, cells, dt)
+        self._contacts(ago, at, cc, cells, dt)
 
-    def _contacts(self, ago, cmap, cells, dt):
-        a, b = cmap[self.ea], cmap[self.eb]
-        m = (a >= 0) & (b >= 0) & (a != b)
-        lo, hi = np.minimum(a[m], b[m]), np.maximum(a[m], b[m])
+    def _touching(self, at: np.ndarray, cc: np.ndarray) -> set:
+        """The pairs of cultures of one people on neighbouring cells (lo * nC + hi), from the (cell, culture) pairs: demes overlap,
+        so a cell holds one culture per people living there."""
+        nC, n = len(self.C), len(self.nbr_off) - 1
+        if not len(cc):
+            return set()
+        pk = self.people_of[cc] * n + at
+        o = np.argsort(pk, kind="stable")
+        ks, kc = pk[o], cc[o]
+        st = self.nbr_off[at]
+        deg = self.nbr_off[at + 1] - st
+        rep = np.repeat(np.arange(len(at)), deg)
+        pos = np.arange(int(deg.sum())) - np.repeat(np.cumsum(deg) - deg, deg) + st[rep]
+        q = self.people_of[cc[rep]] * n + self.nbr_idx[pos]
+        w = np.minimum(np.searchsorted(ks, q), len(ks) - 1)
+        hit = ks[w] == q
+        a, b = cc[rep][hit], kc[w][hit]
+        m = a < b
+        return set(np.unique(a[m] * nC + b[m]).tolist())
+
+    def _contacts(self, ago, at, cc, cells, dt):
         nC = len(self.C)
-        pairs = set(np.unique(lo * nC + hi).tolist())
+        pairs = self._touching(at, cc)
         now = {}
         gone = set()
         for k in sorted(pairs, key=lambda k: cells[k // nC] + cells[k % nC]):
@@ -454,7 +468,9 @@ def _thin(s: list, k: int) -> list:
 
 def derive(run_dir: Path, demes: dict | None = None) -> dict:
     """The cultures of a stored peoples run that has demes: {"doc": cultures.json, "summary": meta.cultures}. demes: a fresh
-    demes.derive result ({"layer", "doc"}) to use instead of the run's stored demes (a read-only look with today's demes)."""
+    demes.derive result ({"layer", "all", "doc"}) to use instead of the run's stored demes (a read-only look with today's demes).
+    Every people's demes (demes_all, with the run's presence table) where the run has them, else the leading people's (demes.bin)."""
+    from .output import read_presence
     from .history.habitat import BIOMES, biome_class
     t0 = time.time()
     run_dir = Path(run_dir)
@@ -463,14 +479,20 @@ def derive(run_dir: Path, demes: dict | None = None) -> dict:
     m = run["meta"]
     if demes is None:
         doc = json.loads((run_dir / m["demes"]["file"]).read_text())
+        fa = (m["demes"].get("all") or {}).get("file")
+        allv = np.fromfile(run_dir / fa, dtype="<u2") if fa and (run_dir / fa).exists() else None
     else:
         doc = demes["doc"]
         arr["demes"] = demes["layer"]
+        allv = demes.get("all")
+    pt = read_presence(run_dir, m) if allv is not None else None
+    if pt is not None and len(pt["cells"]) != len(allv):
+        pt = None
     lines = m["lineages"]
     g = shared_grid(m["level"])
     cell_km2 = 4 * np.pi * 6371.0 ** 2 / g.n
     coh = cohesion(m.get("tree"), m.get("tree_name"))
-    cultures, dc = assign(doc["demes"], eras(m.get("techtree")), coh)
+    cultures, dc = assign(doc["demes"], eras(m.get("techtree")))
     dr = Drift(cultures, dc, lines, g.nbr_off, g.nbr_idx, cell_km2, (m.get("techtree") or {}).get("known"), BIOMES, coh)
     agos = [max(0.0, -f["t"]) for f in run["frames"]]
     win = doc.get("from_kyr", 300.0)
@@ -483,7 +505,14 @@ def derive(run_dir: Path, demes: dict | None = None) -> dict:
         coast = land & sea_n
         env = {"climate": T.frame(run, arr, "climate", j)}
         biome = biome_class(env, {"land": land, "elev": elev})
-        dr.frame(agos[j], np.asarray(arr["demes"][j]), np.asarray(arr["groups_best"][j]), coast, biome)
+        if pt is not None:  # (every people's demes, overlapping: lane 109)
+            a, b = int(pt["offsets"][j, 0]), int(pt["offsets"][j, -1])
+            cell, deme = pt["cells"][a:b].astype(np.int64), allv[a:b]
+        else:
+            lead = np.asarray(arr["demes"][j])
+            cell = np.flatnonzero(lead != NONE)
+            deme = lead[cell]
+        dr.frame(agos[j], cell, deme, np.asarray(arr["groups_best"][j]), coast, biome)
     finish(cultures, dc, doc["demes"])
     return document(cultures, dc, doc, lines, dr.merges, cell_km2, time.time() - t0, coh)
 

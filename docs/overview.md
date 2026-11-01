@@ -864,10 +864,20 @@ a flier `HOPS['flies']`, with no terrain cost and `SPLIT_KM` / `FUSE_KM` and the
 people with sea craft crosses sea up to its craft's reach x its sea share, at a coast's cost.
 
 A kind's **cohesion** (0..1, the tree's per-line `cohesion`, inherited; dnd and Seven Meals: dragons 0.9, giants 0.5, peoples
-0) is its normalizing pull: each culture's drift target is pulled that far toward its kind's mean, sister cultures merge
-side by side in `(1 - cohesion)` of the time, and a cohesive kind's pockets that drop out of the frames and come back stay its
-first culture. So each dragon kind comes out as one culture along colour lines, and the giants keep distinct cultures across
-the seas. A run made before the key existed reads it from the preset of the same name.
+0) is its normalizing pull: each culture's drift target is pulled that far toward its kind's mean, and sister cultures merge
+side by side in `(1 - cohesion)` of the time. A run made before the key existed reads it from the preset of the same name.
+
+**Overlapping demes** (lane 109). Each frame stores every whole people's presence, megafauna included, as a sparse table
+(`meta.presence`: per frame and line, the cells where it is established, presence >= EST, and its % of the cell;
+`output.write_presence`). `demes.py` cuts each people from its own presence, so demes overlap freely: a kobold deme beside a
+hobgoblin one in the same hills, a dragon kind's wide demes over the peoples below. Deme contacts count the cells two demes
+share (co-presence) as well as the leading peoples' borders. `layers/demes.bin` stays the leading people's deme per cell;
+`layers/demes_all.bin` holds every people's deme on each of its cells, aligned with the presence table. The cultures read
+every people's demes, so a culture's cells are all the cells its people lives in. Round 2's rule that a cohesive kind's
+returning pockets rejoin its first culture is gone: it made up for dragons dropping out of frames that kept only each cell's two
+leading peoples. Size (169 frames): 15 MB at L6 (4.8 M entries, 3 bytes each) and 111 MB at L7 (22 M entries, 5 bytes each); demes_all adds 2 bytes an entry (10 and 44 MB). Runs made before
+the table use the two leading peoples as before. The globe's demes layer has a "whose demes" picker (`?demes_of=ID`), and the
+Cultures tab's map link opens it on that culture's people. Ticket: PW-1259 (lane 109).
 
 Each culture copies its parent's skills when it starts, then drifts toward what its land rewards: sea craft from the coast
 share of its cells, herding lore from the share of open dry country. It loses a skill with an e-folding time of 1 kyr. It

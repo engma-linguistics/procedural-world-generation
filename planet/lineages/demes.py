@@ -7,11 +7,15 @@ follows them from frame to frame: when a deme splits off, fuses with another, di
 
 Output only, like contacts.py: nothing in the history is read back or changed. Written into the run directory:
 `demes.json` (the tree, the events, the contact series per deme pair), `layers/demes.bin` (per frame, the deme of each
-cell's leading people; 65535 none) and `meta.demes` in run.json (a summary, the file names and the constants).
+cell's leading people; 65535 none), `layers/demes_all.bin` (every people's deme on each of its cells, aligned with the run's
+presence table; runs that have one) and `meta.demes` in run.json (a summary, the file names and the constants).
 
 How a frame is cut (per people):
-- Occupied cells: the cell's leading people (peoples_whole), its people with most heads (mix_lead), and its second people
-  by heads where at least SECOND_MIN % of the cell (mix_second). Frames store no fuller presence (see the caveat below).
+- Occupied cells: every cell where the people is established (the run's presence table, output.write_presence: each whole
+  people's presence >= EST, megafauna included; lane 109). So demes overlap freely: a kobold deme and a hobgoblin deme in the
+  same hills, a dragon kind's wide demes over the peoples below. A run made before the table falls back to the two leading
+  peoples: the cell's leading people (peoples_whole), its people with most heads (mix_lead), and its second people by heads
+  where at least SECOND_MIN % of the cell (mix_second).
 - Travel cost: entering a land cell costs (CORR_EASY / corridor) ** COST_POW, at most COST_MAX (crossing.corridor, the
   history's own contact value from this frame's land, rain, trees, ice and the world's rivers): 1 on a coast, ~1.3 on
   open lowland, ~2-2.3 in desert or mountains. Open sea up to SEA_KM wide is crossed at SEA_COST per cell (canoes over a
@@ -31,11 +35,12 @@ How a frame is cut (per people):
   else the deme that led most of those cells.
 Each people is cut on a subgraph of its own cells, the sea within SEA_KM and the necks within NECK_KM of them.
 Contacts: per frame, per pair of demes (of the same or of different peoples), the land edges where the leading peoples of
-two neighbouring cells are those demes, and the cells where one leads and the other is the second people.
+two neighbouring cells are those demes, and the cells both live in (co-presence; on a run without the presence table, the
+cells where one leads and the other is the second people).
 
 Caveats: time resolution is the frame spacing (0.5 kyr in the recent pass, 4 kyr in the glacial zoom); ancestry is
-inferred from range change; a people that rarely leads or comes second in a cell is underseen (frames keep only the
-leading two peoples per cell); the thresholds are in "easy km" (coast-equivalent travel) and are crude."""
+inferred from range change; on a run without the presence table a people that rarely leads or comes second in a cell is
+underseen; the thresholds are in "easy km" (coast-equivalent travel) and are crude."""
 
 from __future__ import annotations
 
@@ -159,6 +164,29 @@ def touching(cells, lab, nbr_off, nbr_idx):
 
 
 @njit(cache=True)
+def copresent(cell, deme):
+    """The pairs of different demes on the same cell (lo * 65535 + hi; one per cell and pair): cell sorted ascending."""
+    buf = [np.int64(0)]
+    buf.pop()
+    m = cell.shape[0]
+    a = 0
+    while a < m:
+        b = a + 1
+        while b < m and cell[b] == cell[a]:
+            b += 1
+        for x in range(a, b):
+            for y in range(x + 1, b):
+                lo, hi = min(deme[x], deme[y]), max(deme[x], deme[y])
+                if lo != hi:
+                    buf.append(np.int64(lo) * 65535 + hi)
+        a = b
+    out = np.empty(len(buf), np.int64)
+    for i in range(len(buf)):
+        out[i] = buf[i]
+    return out
+
+
+@njit(cache=True)
 def near_cells(cells, maxd, nbr_off, nbr_idx, d):
     """The cells within maxd graph steps of `cells` (not them) and their steps: a breadth-first walk out from those
     cells only. d: scratch, -1 everywhere on entry and on return."""
@@ -269,9 +297,12 @@ class Demes:
         self.agos: list[float] = []
         self.learned = None  # (this frame's peoples_learned layer, % per cell, and biome class per cell: PW-1155; None on older runs)
         self.biome = None
+        self.whole = None  # (this frame's peoples_whole: peoples_learned is the leading people's, so it is read only where k leads)
         self.dens = {i: float((l.get("demography") or {}).get("density") or 1.0) for i, l in enumerate(lines)}
         self.cell_km2 = 4 * np.pi * 6371.0 ** 2 / grid.n
         self.adapt_pend: dict[tuple, list] = {}  # (deme, class) -> [kyr ago the piece first diverged, frames since] (PERSIST)
+        self.full = False  # (occupied cells from the run's presence table: contacts by co-presence; lane 109)
+        self.labels: dict[int, np.ndarray] = {}  # (this frame: line index -> its deme on each of its occupied cells, ascending)
 
     def mobility(self, k: int, ago: float) -> tuple[float, float, float, bool]:
         """(scale of SPLIT_KM and FUSE_KM, sea gap km, neck km, terrain-free) of people k at that time (reach by kind, above)."""
@@ -331,6 +362,8 @@ class Demes:
         cmap = np.full(n, -1, np.int64)  # (lead deme per cell, this frame)
         smap = np.full(n, -1, np.int64)
         self.st0 = dict(self.st)  # (the frame before, for a new people's parent)
+        self.labels = {}
+        allc, alld = [], []
         for k in sorted(set(occ_by_line) | set(self.st)):
             O = occ_by_line.get(k)
             old = self.st.get(k)
@@ -349,6 +382,9 @@ class Demes:
             self.st[k] = st
             on = st.O & (st.lab >= 0)
             gi, gl_ = st.idx[on], st.lab[on]
+            self.labels[k] = st.lab[st.O]
+            allc.append(gi)
+            alld.append(gl_)
             ld = lead[gi] == k
             cmap[gi[ld]] = gl_[ld]
             sd = second[gi] == k
@@ -373,7 +409,14 @@ class Demes:
                     dm.at = at
                 if abs(ago) < 1e-9:
                     dm.at = at  # (alive at the present: where it is now)
-        self._contacts(ago, cmap, smap, land)
+        if self.full and allc:  # (co-presence: the cells two demes both live in)
+            c, d = np.concatenate(allc), np.concatenate(alld)
+            o = np.argsort(c, kind="stable")
+            shared = copresent(c[o], d[o])
+        else:
+            m_ = (cmap >= 0) & (smap >= 0) & (cmap != smap)
+            shared = np.minimum(cmap[m_], smap[m_]) * NONE + np.maximum(cmap[m_], smap[m_])
+        self._contacts(ago, cmap, shared, land)
         self.prev_map = cmap
         return cmap
 
@@ -516,6 +559,8 @@ class Demes:
         the rest of its deme's by ADAPT_DIV, once it has for PERSIST frames: it lives differently enough to be its own population."""
         from .history.habitat import BIOMES
         Lg = self.learned[idx].astype(float) / 100.0
+        if self.whole is not None:  # (the layer is the cell's leading people's learning: where k does not lead, not k's; lane 109)
+            Lg = np.where(self.whole[idx] == k, Lg, 0.0)
         bg = self.biome[idx].astype(np.int64)
         adapted = Om & (Lg * 100 >= ADAPT_L) & (bg >= 0)
         seen = set()
@@ -710,7 +755,8 @@ class Demes:
             touched |= {d, nd}
         return lab, touched
 
-    def _contacts(self, ago, cmap, smap, land):
+    def _contacts(self, ago, cmap, shared, land):
+        """shared: per cell and pair of demes living in it, lo * NONE + hi (co-presence, or lead and second on an older run)."""
         lm = np.where(land, cmap, -1)
         e = touching(np.flatnonzero(lm >= 0), lm, self.g.nbr_off, self.g.nbr_idx)  # (shared land borders, in cell edges)
         rec = {}
@@ -718,10 +764,8 @@ class Demes:
             u, c = np.unique(e, return_counts=True)
             for x, y in zip(u.tolist(), c.tolist()):
                 rec[(x // NONE, x % NONE)] = [y, 0]
-        m = (cmap >= 0) & (smap >= 0) & (cmap != smap)
-        if m.any():
-            lo, hi = np.minimum(cmap[m], smap[m]), np.maximum(cmap[m], smap[m])
-            u, c = np.unique(lo * NONE + hi, return_counts=True)
+        if len(shared):
+            u, c = np.unique(shared, return_counts=True)
             for x, y in zip(u.tolist(), c.tolist()):
                 rec.setdefault((x // NONE, x % NONE), [0, 0])[1] = y
         for key, (bd, sh) in rec.items():
@@ -745,20 +789,23 @@ def occupied(pw, ml, ms, mss, k) -> np.ndarray:
     return (pw == k) | (ml == k) | ((ms == k) & (mss >= SECOND_MIN))
 
 
-def derive(run_dir: Path, window_kyr: float = WINDOW_KYR, split_km: float | None = None, fuse_km: float | None = None) -> dict:
-    """The demes of a stored peoples run: {"layer": (frames, cells) uint16, "doc": demes.json, "summary": meta.demes}.
-    split_km / fuse_km override SPLIT_KM / FUSE_KM for this call only (deme-scale examples, PW-1015); None keeps the defaults."""
+def derive(run_dir: Path, window_kyr: float = WINDOW_KYR, split_km: float | None = None, fuse_km: float | None = None,
+           presence: bool = True) -> dict:
+    """The demes of a stored peoples run: {"layer": (frames, cells) uint16, "all": every people's deme per presence entry (uint16, or
+    None on a run without the presence table), "doc": demes.json, "summary": meta.demes}. split_km / fuse_km override SPLIT_KM /
+    FUSE_KM for this call only (deme-scale examples, PW-1015); None keeps the defaults. presence=False cuts from the two leading
+    peoples even where the run has the presence table (a comparison)."""
     global SPLIT_KM, FUSE_KM
     saved = SPLIT_KM, FUSE_KM
     SPLIT_KM = saved[0] if split_km is None else float(split_km)
     FUSE_KM = saved[1] if fuse_km is None else float(fuse_km)
     try:
-        return _derive(run_dir, window_kyr)
+        return _derive(run_dir, window_kyr, presence)
     finally:
         SPLIT_KM, FUSE_KM = saved
 
 
-def _derive(run_dir: Path, window_kyr: float) -> dict:
+def _derive(run_dir: Path, window_kyr: float, presence: bool = True) -> dict:
     t0 = time.time()
     run_dir = Path(run_dir)
     names = ("elevation", "ice", "precipitation", "climate", "tree_cover", "peoples_whole", "mix_lead", "mix_second", "mix_second_share")
@@ -786,6 +833,12 @@ def _derive(run_dir: Path, window_kyr: float) -> dict:
     kset[ks] = True
     dm = Demes(g, lines, cell_km, rank, megafauna_of(m.get("tree"), m.get("mode")))
     layer = np.full((len(agos), n), NONE, np.uint16)
+    from .output import read_presence
+    pt = read_presence(run_dir, m) if presence else None
+    if pt is not None and pt["offsets"].shape[0] != len(agos):
+        pt = None  # (a table that does not match the frames: the two leading peoples)
+    dm.full = pt is not None
+    allv = np.full(len(pt["cells"]), NONE, np.uint16) if pt is not None else None
     for j in use:
         env = {nm: T.frame(run, arr, nm, j).astype(float) for nm in ("elevation", "ice", "precipitation", "climate", "tree_cover")}
         env["land"] = is_land(env["elevation"], env["ice"])
@@ -796,17 +849,30 @@ def _derive(run_dir: Path, window_kyr: float) -> dict:
         lead = np.where((pw < 255) & kset[np.minimum(pw, 255)], pw, -1).astype(np.int64)
         second = np.where((ms < 255) & (mss >= SECOND_MIN), ms, -1).astype(np.int64)
         occ = {}
-        for k in set(np.unique(pw).tolist()) | set(np.unique(ml).tolist()) | set(np.unique(ms).tolist()):
-            if k < 255 and kset[k]:
-                o = occupied(pw, ml, ms, mss, k)
-                if o.any():
+        if pt is not None:  # (every people where it is established: lane 109)
+            off = pt["offsets"][j].astype(np.int64)
+            for k in ks:
+                if off[k + 1] > off[k]:
+                    o = np.zeros(n, bool)
+                    o[pt["cells"][off[k]:off[k + 1]]] = True
                     occ[k] = o
+        else:
+            for k in set(np.unique(pw).tolist()) | set(np.unique(ml).tolist()) | set(np.unique(ms).tolist()):
+                if k < 255 and kset[k]:
+                    o = occupied(pw, ml, ms, mss, k)
+                    if o.any():
+                        occ[k] = o
         if "peoples_learned" in arr:  # (PW-1155: niche learning; older runs have no layer)
             from .history.habitat import biome_class
-            dm.learned, dm.biome = np.asarray(arr["peoples_learned"][j]), biome_class(env, tags)
+            dm.learned, dm.biome, dm.whole = np.asarray(arr["peoples_learned"][j]), biome_class(env, tags), pw
         cmap = dm.update(agos[j], occ, cost, env["land"], lead, second)
         layer[j] = np.where(cmap >= 0, cmap, NONE).astype(np.uint16)
-    return {"layer": layer, **_document(dm, m, g, agos[use[0]] if use else 0.0, time.time() - t0)}
+        if allv is not None:
+            for k, lab in dm.labels.items():
+                allv[off[k]:off[k + 1]] = np.where(lab >= 0, lab, NONE).astype(np.uint16)
+    out = {"layer": layer, "all": allv, **_document(dm, m, g, agos[use[0]] if use else 0.0, time.time() - t0)}
+    out["summary"]["occupied_from"] = "presence" if pt is not None else "two leading peoples"
+    return out
 
 
 def megafauna_of(tree: dict | None, mode: str | None = None) -> set:
@@ -940,6 +1006,11 @@ def write(run_dir: Path, report: bool = True) -> dict:
     d = derive(run_dir)
     S.write_atomic(run_dir / "layers" / "demes.bin", d["layer"].astype("<u2").tobytes())
     S.write_atomic(run_dir / "demes.json", json.dumps(d["doc"], separators=(",", ":")))
+    if d["all"] is not None:  # (every people's deme, aligned with the presence table: the map's "whose demes", lane 109)
+        S.write_atomic(run_dir / "layers" / "demes_all.bin", d["all"].astype("<u2").tobytes())
+        d["summary"]["all"] = {"file": "layers/demes_all.bin", "dtype": "<u2", "aligned_with": "presence",
+                               "description": "per entry of the presence table (meta.presence), the deme of that people on that cell "
+                                              "(index into demes.json demes; 65535 none: a frame not cut, or a line not cut into demes)"}
 
     def add(run):
         run["layers"]["demes"] = {"file": "layers/demes.bin", "dtype": "uint16", "shape": list(d["layer"].shape), "scale": 1, "offset": 0,

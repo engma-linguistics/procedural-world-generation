@@ -117,7 +117,10 @@ first parent). Defaults, both **judgements**, in `samples/dnd.toml` and `samples
    0.5 kyr for giants, 1 kyr for peoples.
 3. **One record across gaps in sight.** The frames keep only each cell's two leading peoples, and dragons and giants rarely
    lead a cell, so their pockets drop out of the frames and come back as new "first" demes (one red dragon kind had 64 of
-   them). For a cohesive kind those are the same folk, and they rejoin its first culture.
+   them). For a cohesive kind those are the same folk, and they rejoin its first culture. (Removed by lane 109: the frames
+   now store every people's presence, so the pockets no longer drop out; PW-1259.
+   With the full record a dragon kind comes out as one to
+   five living cultures, split by gaps wider than its reach.)
 
 With these, each dragon kind comes out as one culture without a special case (the round 1 `one_culture` hard-code is gone).
 A kind can still split when it is truly cut off beyond its reach: on cc22df the green dragons have three cultures apart

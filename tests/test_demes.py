@@ -139,7 +139,7 @@ def test_document_names_and_contacts():
 def test_derive_overrides_leave_defaults_unchanged(monkeypatch):
     seen = []
 
-    def fake(run_dir, window_kyr):
+    def fake(run_dir, window_kyr, presence=True):
         seen.append((DM.SPLIT_KM, DM.FUSE_KM))
         return {}
 
@@ -171,3 +171,28 @@ def test_a_seafaring_people_crosses_wider_sea_with_its_craft():
     assert dm.mobility(0, 150.0)[1] == DM.SEA_KM  # (before rafts: none)
     assert dm.mobility(0, 30.0)[1] == 300.0  # (canoes and outriggers since 60 kyr)
     assert dm.mobility(0, 1.0)[1] == 2500.0  # (sailing ships, at a full sea share)
+
+
+def test_overlapping_demes_two_peoples_in_the_same_cells_count_co_presence():
+    """Lane 109: with full presence (dm.full), two peoples living in the same hills are each their own deme over the same
+    cells, and the cells they share count as contact; each people's labels come back aligned with its occupied cells."""
+    g = _g()
+    land = _cap(g, 0, 0, 40)
+    hills = _cap(g, 0, 0, 12)
+    dm = DM.Demes(g, LINES, 240.0)
+    dm.full = True
+    n = g.n
+    lead = np.where(hills, 0, -1).astype(np.int64)
+    dm.update(1.0, {0: hills, 1: hills.copy()}, np.ones(n), land, lead, np.full(n, -1, np.int64))
+    a, b = _alive(dm, 0), _alive(dm, 1)
+    assert len(a) == 1 and len(b) == 1
+    assert len(dm.labels[0]) == len(dm.labels[1]) == int(hills.sum()) and (dm.labels[1] == b[0].id).all()
+    (key, r), = dm.pairs.items()
+    assert key == (a[0].id, b[0].id) and r["series"][-1][2] == int(hills.sum())  # (shared: every hill cell)
+
+
+def test_copresent_pairs_each_cell_once():
+    cell = np.array([0, 0, 0, 3, 3, 5], np.int64)
+    deme = np.array([4, 7, 9, 7, 7, 1], np.int64)
+    u = sorted(DM.copresent(cell, deme).tolist())
+    assert u == sorted([4 * 65535 + 7, 4 * 65535 + 9, 7 * 65535 + 9])

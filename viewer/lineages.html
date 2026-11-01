@@ -1024,7 +1024,7 @@ function drawCultures() {
       const w = Object.entries(c.traits.ways_now || {})[0];
       const ended = c.end ? ` <span class="muted">${c.end === 'merged' && c.into != null ? 'merged into ' + esc(C[c.into].name) : esc(c.end)} ${fmt(c.ended_kyr)} ago</span>` : '';
       const t = -(c.end ? c.ended_kyr : 0);
-      const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? fmt(c.ended_kyr) + ' ago' : 'the present'}, showing the regional populations">map</a>` : '';
+      const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&demes_of=${encodeURIComponent(c.people)}&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? fmt(c.ended_kyr) + ' ago' : 'the present'}, showing the regional populations of the ${esc(c.people)} (whose demes: theirs, over or beside other peoples)">map</a>` : '';
       return `<tr style="${c.end ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}<span class="sw" style="background:${c.color}"></span>${esc(c.name)}${from}${ended}</td>
         <td><span style="color:${HOW_COL[c.how] || '#ccc'}">${esc(c.how)}</span></td><td style="white-space:nowrap">${bar(c)} <span class="muted">${fmt(c.born_kyr)}</span></td><td class="n">${c.area_mkm2}</td>
         <td class="muted">${esc(c.country_now || '')}</td><td>${w ? `${wayName(c, w[0])} <span class="muted">${Math.round(100 * w[1])}%</span>` : ''}</td>
