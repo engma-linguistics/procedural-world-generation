@@ -2,7 +2,7 @@
 id: PW-932
 title: One 18-draw L6 pass-rate roll swings by ~6 passes; compare sets over two re-rolls
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: infra
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-866, PW-872, PW-876]
 refs: [docs/review/base-climate/v1-finish-16/fmtally.py]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-11-01
 ---
 
 ## Description
@@ -26,4 +26,5 @@ So the 6/18 was a bad roll. One roll of 18 draws moves by +-3 (and once by 6), s
 - [ ] the merge bar for run-physics lanes: two re-rolled offsets per set (36 L6 draws), pooled
 
 ## Updates
+- 2026-11-01: Status todo -> done. Lane 102 compared its 36 re-rolled draws with lane 92's set: soft pass 29/36 vs 28/36. By the 10-30 ruling we stop re-running pass-rate sets.
 - 2026-10-27: Created from inbox draft draft-l6-passrate-roll-noise.md (found by v1-finish-17).
