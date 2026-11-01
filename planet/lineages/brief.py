@@ -123,6 +123,14 @@ class Ctx:
         self._frame_cache: dict = {}
         self._cultures = False  # (cultures.json, or worked out from the demes on first use: cultures())
         self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
+        self._presence = False  # (the presence table alone, on first use: presence_table())
+
+    def presence_table(self) -> dict | None:
+        """The run's presence table (output.read_presence: every people's cells per frame, PW-1259), None on a run made before it."""
+        if self._presence is False:
+            from .output import read_presence
+            self._presence = read_presence(self.dir, self.meta)
+        return self._presence
 
     def overlap(self) -> tuple | None:
         """(presence table, demes_all) of a run that has every people's demes (lane 109), else None (the leading people's demes only)."""
@@ -194,13 +202,24 @@ def _since(ctx: Ctx, layer: str, stock: dict, sel: np.ndarray, land: np.ndarray,
 
 
 def region_of_people(ctx: Ctx, pid: str, i: int) -> tuple[np.ndarray, tuple | None, str]:
-    """The cells a people holds at frame i: where it leads or is second (peoples, peoples_whole, mix_*), and at the run's
-    present also where its presence is at least PRESENCE_MIN %; a group (no cells of its own in the frames) at an earlier
-    era takes its people's range."""
+    """The cells a people holds at frame i: every cell where it lives, from the presence table (PW-1269: a dragon or giant
+    kind that never leads has a range all the same); on a run without the table, where it leads or is second (peoples,
+    peoples_whole, mix_*) and at the run's present also where its presence is at least PRESENCE_MIN %. A group (no cells of its
+    own in the frames) at an earlier era takes its people's range."""
     k = ctx.idx[pid]
     line = ctx.lines[k]
-    sel = (ctx.f("mix_lead", i) == k) | (ctx.f("mix_second", i) == k) | (ctx.f("peoples_whole", i) == k) | (ctx.f("peoples", i) == k)
     basis = f"the range of {pid}"
+    pt = ctx.presence_table()
+    if pt is not None and 0 <= i < len(pt["offsets"]):
+        a, b = int(pt["offsets"][i, k]), int(pt["offsets"][i, k + 1])
+        sel = np.zeros(ctx.g.n, bool)
+        sel[pt["cells"][a:b].astype(np.int64)] = True
+        basis = f"the range of {pid}, every cell where it lives (presence table)"
+        if not sel.any() and line.get("group_of") in ctx.idx:
+            return region_of_people(ctx, line["group_of"], i)[0], None, f"the range of {pid}'s people, {line['group_of']}"
+        return (sel, _centre(ctx, sel), basis) if sel.any() else (sel, (0.0, 0.0, 0.0), basis)
+    sel = (ctx.f("mix_lead", i) == k) | (ctx.f("mix_second", i) == k) | (ctx.f("peoples_whole", i) == k) | (ctx.f("peoples", i) == k)
+    basis = f"the range of {pid}, where it leads or is second (a run without the presence table)"
     if i == len(ctx.ts) - 1:
         pp = np.fromfile(ctx.dir / "layers" / "presence_present.bin", dtype=np.uint8).reshape(len(ctx.lines), -1)
         sel = sel | (pp[k] >= PRESENCE_MIN)
