@@ -68,13 +68,40 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · 1 November 2026 · morning</div>
+  <div class="kicker">procgen_world · 1 November 2026 · week-end review</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Good morning, Daniel. The cultures proposal you asked for is ready, just below: read it whenever, and we
-  iterate. Overnight, dragons round 2, in-fighting for every people, the D31 check and the L8 refine all merged. One new physics
-  call: the wild herds (D34). <b>v0.1.0 is tagged</b>: no hard failures in 42 test worlds, and fresh showcases to look at.</p>
-  <nav class="toc"><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
+  <p class="lede">Good evening, Daniel. This is the week-end review: what shipped this week, what's open, and a proposed plan for
+next week. Nothing is running, so the machine is idle until you say go. New since this morning: the margins round 4 findings (D37), and
+the shelf write-up now has the real tally of where eroded rock goes.</p>
+  <nav class="toc"><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#why">Why humans</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
 </header>
+
+<h2 id="week">The week in review (26 October – 1 November)</h2>
+<div class="card" id="weekcard">
+<p><b>Shipped: v0.1.0 is tagged.</b> No hard failures in 42 test worlds; six fresh showcase planets on the final code.</p>
+<ul>
+<li><b>Planet physics:</b> the CO2 crash fixed (plants starve below their own limit, D32 B), inland pits that aren't sea, warm-orbit ice sheets,
+dry subtropical coasts, sea evaporation as a bulk exchange, climate updates faster (every 8 Myr), and the L7 → L8 refine
+(20–25 minutes instead of 146). Your 1 Gyr L8 world finished.</li>
+<li><b>Peoples (the preview):</b> demes, then overlapping demes; emergent cultures and the Cultures tab; peoples learning new country;
+in-fighting for everyone; four life stages; the tech tree with 547 techs spreading as a 1 km/yr front; settlements, towns, cities and
+mines; dragons from the food chain, with lion-evidence persecution and your abundance dial.</li>
+<li><b>Viewer:</b> rebuilt into modules, fast at L8, family colours, a docked legend, the Technology and Cultures tabs, and the "whose
+demes" picker.</li>
+<li>Lanes 23 to 111 ran this week (some as several rounds); all 915 tests pass on main.</li>
+</ul>
+<p><b>Open, for you</b> (cards below): D34 the thin wild herds, D35 small ones, D36 dragon kinds as 1–5 cultures, D37 the margins'
+cooling, and the cultures proposal (19 questions).</p>
+<p><b>Proposed for next week, in order:</b></p>
+<ol>
+<li>Your read of the <a href="https://claude.ai/artifact/5KVFMYPEF6QNFA3ab1utsv">cultures proposal</a>, then its first two lanes side by side:
+languages without words (lects v0) and polities v0.</li>
+<li>D37's fix, if you pick one: one physics lane, diagnosis already done.</li>
+<li>D34 (herds): check the plant model's savanna growth against a sourced table.</li>
+<li>The space-to-ground globe's first try (PW-1198) and the refine refactor, as you have time to look.</li>
+</ol>
+<p>To keep usage down: at most two lanes at once, cheap diagnoses before any 36-world test, and no new lanes until you've answered.</p>
+</div>
 
 <h2 id="l8">Your 1 Gyr L8 world</h2>
 <div class="card" id="l8card">
@@ -194,6 +221,13 @@ round 4 to add that tally to its shelf-collapse look (shelves are 5% of the ocea
 see if it's sediment leaving or the crust beneath changing. Round 3's creep pushes more sediment off the shelf toward the deep
 sea, and that might also be where its land loss comes from.</li>
 </ul>
+<p><b>The tally is in</b> (round 4, one test world, eroded rock per destination): about a fifth stays on land (floodplains
+15–25%, lakes and closed basins about 5%), an eighth on the shelf, about 30% in the brink cells and 35–40% on the deep-sea fans.
+Late in the run the trenches take in about 40% of the erosion rate; half of that is scraped onto the coast and half goes down with
+the slab. What goes in matches what comes out to within 0.1%, so nothing is lost by mistake. <b>The early shelf collapse isn't
+sediment leaving:</b> the "shelf" at 100 Myr is the first continents' low plains flooded by a high early sea. When those continents
+crash together between 100 and 150 Myr (in all 36 test worlds), the collision lifts and folds them. A start-up effect, not a
+bug.</p>
 <p class="sub">Sources: shelf width, break depth and passive margins:
 <a href="https://en.wikipedia.org/wiki/Continental_shelf">Wikipedia, Continental shelf</a>;
 <a href="https://geo.libretexts.org/Bookshelves/Oceanography/Introduction_to_Oceanography_(Webb)/01%3A_Introduction_to_the_Oceans/1.02%3A_Continental_Margins">Webb, Introduction to Oceanography 1.2</a>;
@@ -209,6 +243,27 @@ stretched margins is the standard textbook one, not read for this note.</p>
 <p><b>Why they're rarer than lions:</b> mostly size, and that part is sound. On the same prey, a 1.65 t dragon should be about 1/13 as dense as a 142 kg lion (Carbone &amp; Gittleman 2002); the model's chain comes out at 0.86 of that law. Ten kinds also share one top-predator slice of the food, so compare a lion with <i>all</i> dragons together: before people, 0.68 per 100 km² in wetland, 0.32 in grassland, 0.23 in forest. The body-size target ("north star") is about 3 per 100 km² on rich prey, so the model is a fifth to a tenth of it. About half that gap is the thin herds (D34).</p>
 <p><b>Built and merged:</b> your B. The 10-farmers anchor is gone; dragons are now cleared from land where people are as dense as where lions vanish (about 25 per km², Riggio et al. 2013), and stay in the wilds (94% kept there). Riding farmers at 10 per km² keep about half their dragons instead of a tenth. A world total of about <b>96,000</b> (was 84,000), with about 2,000 in a Sword Coast-sized region. <b>Your lever:</b> "dragon abundance" ×¼ to ×4 in the peoples controls, labelled as a world-builder's choice.</p>
 <div class="shots"><figure><img src="d28r2/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions, tigers and the body-size expectation"><figcaption>Grey diamonds: what the body-size law expects from each kind's prey. Open circles: density where each kind still lives today. Bottom rows: all dragons together by biome.</figcaption></figure></div>
+</div>
+
+<div class="card" id="d37"><div class="id">D37 · WHY THE MARGIN FIX COOLED THE WORLD (diagnosis done, nothing built)</div>
+<p><b>The land loss:</b> the sea didn't rise; it actually fell, from the extra ice. What happens is that the creep carries sediment off
+the drowned continent edges onto the ocean floor, where it piles into rises. Once a pile is thick enough, the model counts it as
+new continent, but a drowned one. A thermostat holds the continents' total area steady, so those drowned rises use up area that
+would otherwise stand as land.</p>
+<p><b>The cooling:</b> not from the lost land (less land would warm the world). It's a second thermostat. The model keeps
+continental volume steady by growing volcanic arcs, and it counts that arc growth as volcanic CO2. Early on, the creep strips the
+continents fast, so arcs grow more, and the volcanoes' "normal" level is learned from those years. Later the drowned rises refill
+the volume instead, arcs grow 14% less, and CO2 falls. So a bookkeeping link (volcanoes follow a thermostat, not the plates) turns
+a margin change into a climate change.</p>
+<p><b>Also found, already on main:</b> sea level ignores the water that sediment on the ocean floor pushes up, about 125 m by late in
+a run.</p>
+<ol><li><b>A</b> make volcanic CO2 follow the plates (how fast they converge × trench length), not the volume thermostat. <i>Lean</i>,
+with a cheap first test of C. It's the real fix: volcanoes should know nothing about the volume thermostat.</li>
+<li><b>B</b> count the continent's sediment on the ocean floor in the volume thermostat.</li>
+<li><b>C</b> keep sediment-born rises out of the area thermostat.</li>
+<li><b>D</b> leave the creep off and park it (cliff coasts stay at 23%, against Earth's 3.5%).</li></ol>
+<p>And, separately: count ocean-floor sediment in sea level (yes / later). All of these change main, so each one gets its own
+36-world test. Proposal: <code>docs/review/tectonics/margin/diagnosis-land.md</code> on the lane-100 branch.</p>
 </div>
 
 <div class="card" id="d36"><div class="id">D36 · NOW THAT EVERY DRAGON IS SEEN, EACH KIND IS 1–5 CULTURES</div>
@@ -240,26 +295,19 @@ costs +20% on the presence table and a new peoples run. My lean: leave it until 
 </ul></div>
 </div>
 
-<h2 id="coming">Running now</h2>
+<h2 id="coming">Running now: nothing (parked work below)</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>100 · continent edge</td><td><b>Round 3: the edge looks right, but the world came out cooler, so it's not merged
-yet.</b> Sea-floor mud now creeps downhill, faster in shallow water (the standard model; its speed comes from Jordan &amp; Flemings
-1991's published range, read through a tutorial). Across all 36 test worlds, coasts with deep sea in the very next cell fell from 23% to 6.5% (Earth
-3.5%), and middle depths went from 13% to 20% of the ocean (Earth 19.6%). But the tested mix of three changes was also about 2 °C
-cooler, had 3 points less land and passed 26 worlds against 29. That's within noise, but it isn't "not worse". So it stays
-switched off while round 4 tests the creep on its own and works out where the land goes. A side finding: on every arm the shelves
-collapse early (5% of the ocean at 100 Myr, 1.3% by 150–250 Myr) and then slowly recover, so something strips the first continents'
-shelves. Round 4 looks at that too.</td></tr>
-<tr><td>105 · L8, 1 Gyr</td><td>Your ask: the same seed-11 L8 planet, but 1 billion years, held to 8 cores. Rough guess: 5–8 hours for the run plus the slice, by lane 86b's per-Myr speed. Notes as it goes in <code>docs/review/l8-world/gyr-notes.md</code>.</td></tr>
-<tr><td>After the tag</td><td>Showcases rebuilt on final code, then the space-to-ground globe's first try (PW-1198).</td></tr>
+<tr><td>100 · continent edge</td><td>Parked on its branch, waiting on D37. Round 3 made the edges Earth-like; round 4 found why it cooled the world.</td></tr>
+
+
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
 <a href="http://localhost:8765/viewer/?run=622c00&amp;layer=peoples">622c00</a> (s8) ·
 <a href="http://localhost:8765/viewer/?run=bf5398&amp;layer=peoples">bf5398</a> (s9) ·
 <a href="http://localhost:8765/viewer/?run=3d9b5f&amp;layer=peoples">3d9b5f</a> (s10).</p>
 
-<h2 id="settled">Settled overnight</h2>
+<h2 id="settled">Settled this week</h2>
 <ul class="done">
 <li><b>Demes on the map, lighter</b> (lane 111; all tests pass, 915): the "whose demes" picker now downloads only the moment
 you're looking at, about 0.2 MB instead of 124 MB up front, and a people's brief covers everywhere it lives (red dragons 20,000
@@ -276,24 +324,7 @@ the L7 → L8 refine: <a href="http://localhost:8765/viewer/?world=fb5e11.json">
 <li><b>Cultures first cut merged (D33 answered):</b> the Cultures tab is live on your existing runs; giants keep cultures; 1,000 years apart was far too long; dragons stay one culture per colour, by reach rather than by a hard-code (lane 108).</li>
 <li><b>Tags are 0.x:</b> the first tag is <code>v0.1.0</code> (the v1 milestone), then v0.2.0 for v2, and so on.</li>
 <li><b>Your D28 question, answered:</b> "a dying people’s land is left empty" is the evolution track. When a stem (e.g. archaic humans) ends at its last split, its land goes to no child; the children spread into it. It is not one group replacing another on a continent. Your mortality hunch is with lane 103.</li>
-<li><b>Your 10-31 evening answers:</b> D32 B (the crash line is where plants can no longer live, so the 85 ppm world passes); D31 A, humans in-fight too, and peoples-share work pauses until war and polities; D28 more dragons with a lever (lane 103); L8 refine overnight (lane 104).</li>
-<li><b>Dragons D28 B merged (lane 99, 886 tests pass):</b> sea food for white, bronze and blue; the census and the lions-and-tigers comparison are in the D28 card.</li>
-<li><b>CO2 plant fix merged (lane 95, 884 tests pass):</b> L6 crashes 2 → 1 of 36, the crash world 36 → 85 ppm, soft pass 28 → 29 of 36. It adds no dryness (the drier scorecard came with the inland pits). Report: <code>docs/review/v1-cut/plant-floor.md</code>.</li>
-<li><b>Peoples D27, D25, D26 merged (lane 97, 882 tests pass):</b> founding at 3 sites on one landmass, the four raider brakes with viewer dials <code>raiders</code> and <code>war</code>, dwarves resist disease at 0.75 (this takes effect once the plague code reads it), and enemy pairs log "hunt" events on their shared border (about 600 over a full history; numbers unchanged).</li>
-<li><b>Inland pits fixed (lane 98, merged, 877 tests pass):</b> ground below 0 m counts as sea only if it reaches the ocean. Otherwise it fills to a lake or stays a dry basin. Side effects: Earth's Atlantic was missing the Amazon's water, so an old "overturning passes" result was false (a v2 ticket now). One L6 scorecard draw came out drier, which is probably chance and gets re-checked in the final tally.</li>
-<li><b>D30:</b> inland pits go into v1 if the fix is quick; the continental slope stays v2, since it already failed a round. When physics lanes are idle, I pick the most useful physics work regardless of version.</li>
-<li><b>Your 10-31 answers:</b> D25 (1 B; 2 A+B+C plus in-fighting; dwarves 0.75; portals later; item 5 awaits graphs), D26 B then A, D29 C, D27 to my judgement plus your spread-founding idea. All in lanes 95 and 97.</li>
-<li><b>Merged:</b> your D20 peoples fixes (lane 83) and the dragon food chain (lane 90), 868 tests pass.</li>
-<li><b>D20–D24 answered</b> and in lanes: D20 and D23 (hunters' density, overkill by co-evolution) in lanes 83 and 90; D21 fixed
-portals for now; D22 virgin soil off, events designed (D25); D24 keeps 0.5%.</li>
-<li><b>The v1 milestone means the planet</b>; PW-508 to v2; the 25% glacial-maximum line closes at the tag; the tally runs.</li>
-<li><b>New epics:</b> space-to-ground globe (PW-1198, first try right after the tag, half the CPUs and the GPU, hard-capped with
-<code>taskset</code>); export targets Minecraft / Dwarf Fortress / Valheim (PW-1200, v3); a walkable setting (PW-1199) in the new
-<b>v4</b> milestone.</li>
-<li><b>Your PHB and DMG</b> are in <code>docs/references/dnd/</code> (git-ignored, never committed), searchable by page with
-<code>tools/rulebook.py</code>.</li>
-<li><b>Viewer at L8</b> merged: globe mesh built once into typed arrays, layer switches recolour only, the flat map built on first use (layer switch on the L8 flat map 2.7–5.3 s → ~0.1 s).</li>
-<li>The finest-timescale drought gap is a v2 physics ticket (PW-1171).</li>
+<li>Older settled items are in the desk's git history and <code>docs/wiki/decisions.md</code>.</li>
 </ul>
 
 <footer><a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">Dragon paper, round 3</a> · <a href="https://claude.ai/artifact/X8G1P8unbvo6GCeBM4HC6Z">Climate v1 story</a></footer>
