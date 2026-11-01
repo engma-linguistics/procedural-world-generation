@@ -28,4 +28,5 @@ v2 (right after the v1.0 tag, owner: "at least a try at some of it fairly immedi
 v3: the real GPU work (detail synthesis in shaders, seamless streaming down to fine-zoom scale, L9 everywhere).
 
 ## Updates
+- 2026-10-31: Owner 10-31 asked for the L7-then-L8/L9 refine overnight: lane 104.
 - 2026-10-31: Created from inbox draft draft-space-to-ground-globe-epic.md (found by coordinator).

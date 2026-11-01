@@ -2,7 +2,7 @@
 id: PW-1223
 title: Give the hard-bar tally numbers for "ocean loss" and "CO2 crash" and make the tally a tool
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: infra
@@ -32,5 +32,6 @@ is already a diagnostic. Lean: A now, B when the CO2 crash draft (draft-l6-co2-c
 - [ ] the tally script moved under tools/ and linked from the playbook's PW-932 line
 
 ## Updates
+- 2026-10-31: Status needs-decision -> todo. Owner 10-31 D32 = B: 'chase the science not a hard value'. A CO2 crash = pCO2 below the plants' own compensation point (vegetation._gstar at the draw's temperature). One collapse in 42 is acceptable to him; 85 ppm passes. Lane 102 moves the tally to tools/hard_bar.py.
 - 2026-10-31: Plant floor merged; full min-pCO2 list in docs/review/v1-cut/plant-floor.md. Crash line put to Daniel as D32 on the owner's desk.
 - 2026-10-31: Created from inbox draft draft-hard-bar-definitions.md (found by lane92).

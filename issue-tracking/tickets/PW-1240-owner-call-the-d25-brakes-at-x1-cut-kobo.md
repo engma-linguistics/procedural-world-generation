@@ -50,5 +50,6 @@ Options:
 Lean: B now, D with PW-1172. The question of what the commonest share should be is in the report's last section.
 
 ## Updates
+- 2026-10-31: Owner 10-31: in-fighting for every people, humans included (lane 101). PW-1172 war-deaths leader brake parked to the war/polities work.
 - 2026-10-31: Coordinator: B (in-fighting rises with the raiders' own crowding) plus D (a leader brake via PW-1172 war deaths) plus a floor that holds numbers go to lane 101. Daniel's target for the commonest share (PW-1241) sets the judge.
 - 2026-10-31: Created from inbox draft draft-peoples-brakes-sizes-and-the-leader.md (found by lane97).
