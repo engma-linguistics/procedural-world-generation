@@ -201,3 +201,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-01: Merged lane 104 (planet refine, PW-1198 first cut; suite 909). Refined L8 world fb5e11.
 - 2026-11-01: Merged lane 109 (overlapping demes, PW-1259: every people's presence per frame, demes cut per people, rejoin rule removed, whose-demes picker; suite 912). Dragon kinds now 1-5 cultures each: PW-1268 asks Daniel. Owner runs need a new peoples run for overlap.
 - 2026-11-01: Merged lane 102 (final v0.1.0 tally: 0 of 42 hard failures under D32 B; soft L6 29/36, L7 5/6; no dry shift in paired draws; tools/hard_bar.py; suite 912). Closed PW-825 PW-932 PW-1119 (USGS LGM 25% of land) PW-1223 PW-1224 PW-1234; NPP/tree follow-up PW-1270.
+- 2026-11-01: v0.1.0 tagged (v1 milestone, PW-244 done). Showcases lane 110 (a19366/9459ad Earth-like A, 10fd90/848662 B, plus water, land-heavy, cold, hothouse; peoples b4d502 a24559 3c1caf). state.md rewritten.
