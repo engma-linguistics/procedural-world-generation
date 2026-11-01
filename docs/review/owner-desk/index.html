@@ -223,6 +223,9 @@ isolation. This sits between A and B.</li></ol>
 <div class="card" id="d35"><div class="id">D35 · SMALL ONES, ANSWER IF YOU LIKE</div>
 <ul>
 <li><b>Cultures round 2 numbers</b> (PW-1254): time apart 600 → 150 years from stone age to renaissance; cohesion dragons 0.9, giants 0.5; side-by-side merging after 1,000 years. My lean: keep them. Re-cut your runs' demes so the viewer shows round 2 (PW-1253)? My lean: yes, after the overlapping-demes lane lands.</li>
+<li><b>Learned country for followers:</b> a dragon living over human farmland can't count the humans' farming as its own new
+country, so peoples that mostly follow (most dragon kinds, hill giants) never split off "adapted" groups. Storing it for them
+costs +20% on the presence table and a new peoples run. My lean: leave it until cultures and languages need it.</li>
 <li><b>Refine:</b> one ~1–2 h refactor so the regional zoom and the L8 refine share one terrain-detail function instead of copying 40 lines. My lean: yes. Landform shapes on refined worlds: leave out at L8 for now (lean).</li>
 </ul></div>
 </div>
@@ -230,7 +233,6 @@ isolation. This sits between A and B.</li></ol>
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>111 · demes on the map</td><td>Small follow-ups to overlapping demes: the map fetches one moment at a time instead of 155 MB at once, and a people's brief covers everywhere it lives (dragons and giants get their real range).</td></tr>
 <tr><td>100 · continent edge</td><td><b>Round 2 diagnosis written; a fresh agent is now testing the fix.</b> The sheer
 one-cell step at the shelf edge comes from one rule: the first deep cell past the shelf keeps all the mud until it is full. A
 surprise: a real shelf edge slopes about 3° (Mosher et al. 2017), only about one cell wide at L6 and L7, so the step is roughly
@@ -248,6 +250,9 @@ Round 1, for reference: cliff coasts fell from 23% to 15% at L6 (Earth 3.5%), pa
 
 <h2 id="settled">Settled overnight</h2>
 <ul class="done">
+<li><b>Demes on the map, lighter</b> (lane 111; all tests pass, 915): the "whose demes" picker now downloads only the moment
+you're looking at, about 0.2 MB instead of 124 MB up front, and a people's brief covers everywhere it lives (red dragons 20,000
+years ago: 0.9 → 9.2 Mkm²).</li>
 <li><b>Overlapping demes merged</b> (your ask; all tests pass, 912): every people's presence is now stored for every
 moment, so a kobold deme can sit beside a hobgoblin one in the same hills, and a dragon kind's demes lie over the peoples below.
 87% of peopled cells now hold demes of two or more peoples. The globe's demes layer has a "whose demes" picker, and hovering a
