@@ -3443,3 +3443,27 @@ def test_sea_hunters_eat_the_sea(faketz):
         assert h2.sea_food is None and np.allclose(MG.natural(h2, s, None, food), MG.natural(h2, l, None, food))
     finally:
         MG.SEA_FOOD = True
+
+
+def test_brief_people_range_takes_every_cell_it_lives_on(tmp_path):
+    """PW-1269: `brief --people X` takes the presence table's cells for X (a kind that never leads has a range all the same);
+    a run without the table falls back to where X leads or is second."""
+    from types import SimpleNamespace
+    from planet.grid import shared_grid
+    from planet.lineages import brief as BR
+    g = shared_grid(3)
+    n = g.n
+    k_lead, k_dragon = 0, 1
+    lead = np.full(n, 255, np.uint8)
+    lead[:200] = k_lead
+    second = np.full(n, 255, np.uint8)
+    second[100:150] = k_dragon  # (the dragons come second on 50 cells)
+    frames = {"mix_lead": lead, "mix_second": second, "peoples_whole": lead, "peoples": lead}
+    lived = np.arange(80, 400)  # (they live on 320 cells: in a table, the range)
+    table = {"offsets": np.array([[0, 0, len(lived)]] * 2, np.uint32), "cells": lived.astype(np.uint32), "share": np.full(len(lived), 30, np.uint8)}
+    mk = lambda pt: SimpleNamespace(idx={"folk": 0, "dragon": 1}, lines=[{"id": "folk"}, {"id": "dragon"}], g=g, ts=np.array([-5.0, 0.0]),
+                                    f=lambda name, i: frames[name], presence_table=lambda: pt, dir=tmp_path)
+    sel, cen, basis = BR.region_of_people(mk(table), "dragon", 0)
+    assert sel.sum() == len(lived) and sel[lived].all() and cen is not None and "presence table" in basis
+    sel_old = BR.region_of_people(mk(None), "dragon", 0)[0]  # (frame 0 of 2: the last frame also reads presence_present.bin)
+    assert sel_old.sum() == 50 and sel_old[100:150].all()
