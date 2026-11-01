@@ -875,7 +875,7 @@ share (co-presence) as well as the leading peoples' borders. `layers/demes.bin` 
 `layers/demes_all.bin` holds every people's deme on each of its cells, aligned with the presence table. The cultures read
 every people's demes, so a culture's cells are all the cells its people lives in. Round 2's rule that a cohesive kind's
 returning pockets rejoin its first culture is gone: it made up for dragons dropping out of frames that kept only each cell's two
-leading peoples. Size: ~15 MB a run at L6 (169 frames), ~3 bytes an entry; demes_all adds 2 bytes an entry. Runs made before
+leading peoples. Size (169 frames): 15 MB at L6 (4.8 M entries, 3 bytes each) and 111 MB at L7 (22 M entries, 5 bytes each); demes_all adds 2 bytes an entry (10 and 44 MB). Runs made before
 the table use the two leading peoples as before. The globe's demes layer has a "whose demes" picker (`?demes_of=ID`), and the
 Cultures tab's map link opens it on that culture's people. Ticket: PW-1259 (lane 109).
 
