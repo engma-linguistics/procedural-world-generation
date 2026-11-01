@@ -1,0 +1,820 @@
+<title>Proper Cultures Proposal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+:root {
+  --bg: #f3f1ea; --card: #fbfaf6; --ink: #22241f; --ink2: #4a4d44; --muted: #6c6f63;
+  --rule: #d8d4c6; --accent: #8a5a1c; --accent-soft: #f1e4cf; --code: #ece8dc;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+    --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --code: #24262c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --card: #1d1f24; --ink: #e8e6df; --ink2: #c3c0b5; --muted: #9a978c;
+  --rule: #34363d; --accent: #e0a85a; --accent-soft: #3a2e1d; --code: #24262c; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3, h4 { font-family: var(--sans); line-height: 1.25; text-wrap: balance; color: var(--ink); }
+h1 { font-size: 1.9rem; margin: 0 0 .4em; }
+h2 { font-size: 1.35rem; margin: 2.2em 0 .5em; padding-top: .6em; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.12rem; margin: 1.8em 0 .4em; color: var(--accent); }
+h4 { font-size: 1rem; margin: 1.5em 0 .3em; }
+p, li { color: var(--ink2); } strong { color: var(--ink); }
+a { color: var(--accent); }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code); padding: .08em .3em; border-radius: 3px; }
+pre { background: var(--code); padding: 12px 14px; border-radius: 6px; overflow-x: auto; font-size: .85em; line-height: 1.45; }
+pre code { background: none; padding: 0; }
+.tbl { overflow-x: auto; margin: 1em 0; }
+table { border-collapse: collapse; font-family: var(--sans); font-size: .88rem; min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { color: var(--ink); background: var(--accent-soft); }
+.note { font-family: var(--sans); font-size: .9rem; background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 4px; }
+</style>
+<div class="wrap">
+<h1 id="proper-cultures-a-proposal-round-2-languages-names-polities-attitudes-gods">Proper cultures: a proposal, round 2 (languages, names, polities, attitudes, gods)</h1>
+<p class="note"><strong>Round 2.</strong> Revised 2026-11-01 (evening) with your notes folded in. Nothing here is built. Round 1 is still at <a href="index.html">index.html</a>. Source of truth: <code>docs/review/cultures-proposal/proposal-r2.md</code>.</p>
+<p>For Daniel, 2026-11-01 (evening). Revises <code>proposal.md</code> (round 1) with your notes in <code>owner-notes-r1.md</code>. Where a note
+and round 1 disagree, the note wins. Docs only; nothing is built. Round 1's sections that still stand are kept here in
+trimmed form; the rest is in round 1. Sources are at the end with what was actually read (all by round 1 unless marked).</p>
+<h2 id="in-plain-words">In plain words</h2>
+<p>Nothing about the shape of the plan changes. A culture is still the unit; each gets a lect (a way of speaking), a name
+stack, and, later, a ruler, attitudes and gods. What changed is what we promise and in what order.</p>
+<ul>
+<li><strong>Language is fuzzy and partly political.</strong> "A language" is a stretch of mutually understandable lects, not a box. Where
+  the lines fall depends on politics too: a ruling lect has prestige (your Norman example), so a conquered people's
+  speech bends toward it. You will be able to click a people and see a strong-colour blob that fades with distance: "the
+  language of these people", with hard cutoffs where something wholly different is spoken.</li>
+<li><strong>Time and depth.</strong> The in-world horizon is 10 kyr and we stop tracking anything deeper. Language can begin more than
+  once, at about the same time across species, but not tied to when a species became genetically modern.</li>
+<li><strong>Names.</strong> Rivers and mountains keep their names through conquests; settlements and states change theirs.
+  Outsiders lump distinct small cultures into one; the viewer will show both views.</li>
+<li><strong>War is mostly a change of owner.</strong> A battle ends when the loser has lost perhaps 10-20% (your figure, not a sourced
+  one), and the farmers just have new landlords, unless the winners are intolerant of their species or culture. The
+  same tolerance decides whether a state keeps other peoples' records (your cuneiform point).</li>
+<li><strong>Writing</strong> is shaped by what it is written on. Secret dragon writing is parked as an optional scenario.</li>
+<li><strong>Gods</strong> are only placeholder domains in v0. The religion design comes after a talk with you; nothing real before it.</li>
+<li><strong>Dragons and kin.</strong> Dragon kinds are several cultures each, but "Draconic" stays one language with colour dialects.
+  Kobolds live under dragons and speak close to them. Dragon dominion becomes dragon realms (polities with subjects).
+  Goblins mostly stay low-tech and get folded into other goblinoids' realms.</li>
+<li><strong>Order.</strong> Languages v0 and polities v0 are output-side (a readout after the run). Polities go into the history in v1,
+  together with authored nudges ("this people rises here") by re-running from a time zoom.</li>
+<li><strong>Your four questions</strong> are answered in section 2, each with a call: de-hardcode groups (yes, in two steps), the history
+  zoom (start now, needed before polities v1), the village experiment (designed, not run), Catalan and Spanish (I
+  could confirm only what the distance table says, not the history).</li>
+</ul>
+<h2 id="what-changed-from-round-1">What changed from round 1</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>your note</th>
+<th>what changed</th>
+<th>where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Skills drift and relate to cultural identity</td>
+<td>Nothing to change; kept as a feature</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Languages as dialects with an army; "language of these people" fading blob</td>
+<td>Language line stays fuzzy MI spectrum, politics shifts it; new viewer layer</td>
+<td>3.1, 5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>War costs 10-20%, then a change of owner, unless winners intolerant</td>
+<td>War outcome is ownership change; displacement scales with the winner's intolerance</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Polities trim, not topple</td>
+<td>Kept; no polity knobs aimed at the leader share</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Religion discussion first</td>
+<td>Gods v0 is placeholder domains only; real design waits for the discussion</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Some names last forever (rivers, mountains)</td>
+<td>Place-name persistence by feature type</td>
+<td>3.2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Writing shaped by media</td>
+<td>Script lineage has a medium; secret dragon writing is an optional scenario</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Word forms and sounds later</td>
+<td>Confirmed: glosses only until PW-986</td>
+<td>3.2</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Culture is not language, nor dialect; China and Hindi-Urdu type cases</td>
+<td>Kept; both mismatches shown on the card</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Groups: relax or de-hardcode?</td>
+<td>Answered</td>
+<td>2.1</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Small areas have distinct cultures that outsiders lump</td>
+<td>Exonym view against endonym view, observer-side lumping</td>
+<td>3.2, 5</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Writing as a secret held by early-modern dragons</td>
+<td>Optional scenario, later</td>
+<td>3.5, 8</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Villages: test with/without; generate on demand</td>
+<td>Experiment designed, not run</td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Horizon 10 kyr; no beyond_horizon</td>
+<td>Horizon 10 kyr; flag and per-family horizon removed</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Catalan and Spanish</td>
+<td>Answered</td>
+<td>2.4</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Chiefdom at L6/L7/L8 cells</td>
+<td>Answered by your own follow-up; a chiefdom is a one-cell tier label</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Placeholder war formulae need pulling out</td>
+<td>Listed as a prerequisite for polities</td>
+<td>7</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Ruling lect prestige (Norman conquest)</td>
+<td>Kept as the main polity-to-language lever</td>
+<td>3.1, 3.3</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Tolerant, record-keeping states preserve records</td>
+<td>Record survival = writing x tolerance</td>
+<td>3.3, 3.5</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Gods v0 fine</td>
+<td>Same</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Cohesion makes one culture per dragon colour: out of date</td>
+<td>Corrected: dragon kinds are 1-5 cultures each (D36 B)</td>
+<td>1, 3.6</td>
+</tr>
+<tr>
+<td>22</td>
+<td>L1 culture vs language, L2 language line, L3 rate</td>
+<td>Recorded as settled</td>
+<td>6</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Lect tree as deep as demes; language can begin more than once</td>
+<td>Kept (try first, B if disliked); multiple independent onsets</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Kobolds align to dragons</td>
+<td>Kobold lects start from Draconic and stay close by exposure</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Language onset near-simultaneous, not tied to modernity</td>
+<td>Onset drawn per stem around a shared window</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Draconic: one language across colours</td>
+<td>Settled: one language, colour dialects</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td>27</td>
+<td>L7 morphology scalar: B</td>
+<td>Settled: wait for real L2 share</td>
+<td>6</td>
+</tr>
+<tr>
+<td>28</td>
+<td>N1 glosses; N2 everyone</td>
+<td>Settled</td>
+<td>6</td>
+</tr>
+<tr>
+<td>29</td>
+<td>P1 output-side v0, in-history v1</td>
+<td>Settled</td>
+<td>6, 7</td>
+</tr>
+<tr>
+<td>30</td>
+<td>P2 nearly B: writing is the impetus for small states</td>
+<td>Chiefdom needs writing; small states need it nearly; writing is also an impetus</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>31</td>
+<td>P3 war scope B eventually, not v0; P4 no feelings</td>
+<td>Settled; P4 means D31 A stands</td>
+<td>6</td>
+</tr>
+<tr>
+<td>32</td>
+<td>P5 emergent first; authored nudges via time zoom for v1</td>
+<td>Settled; nudges are a v1 wish</td>
+<td>3.3, 8</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Attitudes extend reputation.py, refactor when big</td>
+<td>Settled</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>34</td>
+<td>Polities may come out too regular</td>
+<td>Kept as an uncertainty; handle if it shows</td>
+<td>9</td>
+</tr>
+<tr>
+<td>35</td>
+<td>History zoom timing</td>
+<td>Answered</td>
+<td>2.2</td>
+</tr>
+<tr>
+<td>36</td>
+<td>PW-1254</td>
+<td>Cohesion by lifespan; 2 kyr side-by-side; no merging across ways of life</td>
+<td>3.1, 3.6</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Density ladder PW-1275</td>
+<td>An input to polity population and a prerequisite accessor</td>
+<td>3.3, 7</td>
+</tr>
+<tr>
+<td>38</td>
+<td>Goblins low-tech; kobolds to dragons; dragon dominion in polities</td>
+<td>Folded into polities</td>
+<td>3.3, 3.6</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="1-where-we-are-state-short">1. Where we are (state, short)</h2>
+<p>Round 1's section 1 inventory still stands (peoples, demes, cultures, contacts, reputation, tech tree, settlements,
+brief). Updates:</p>
+<ul>
+<li>Overlapping demes (lane 109, PW-1259) are merged. Each frame stores every people's presence; demes overlap (87% of
+  peopled cells hold two or more peoples on the L6 test run); dragon kinds are one to five living cultures each
+  (<code>docs/review/overlapping-demes/report.md</code>, read). Old runs need a new peoples run to get overlap.</li>
+<li>Your 11-01 rulings: D36 B (dragon kinds may be several cultures, PW-1268); PW-1254 (era table kept, cohesion scaled by
+  lifespan, side-by-side merge after 2 kyr, no merging across ways of life); density from one shared ladder (PW-1275, todo,
+  v2, effort l); goblins and kobolds as in 3.6 (<code>docs/wiki/decisions.md</code>, read).</li>
+<li>Ticket groups from round 1 section 1.2 are unchanged and not repeated. The ones that matter here: PW-670/1254/1268 cultures;
+  PW-767/972/982-986/947 language and names; PW-756/785/1172/1258/1108 polities and war; PW-768/904/907 attitudes and
+  gods; PW-908/909 history zoom; PW-1275 density.</li>
+<li>Standing rulings (round 1 1.3) are unchanged: emergent first, anchors later; language a joint project; light v0 passes first.</li>
+</ul>
+<hr />
+<h2 id="2-your-open-questions-answered">2. Your open questions, answered</h2>
+<h3 id="21-should-groups-be-de-hardcoded">2.1 Should groups be de-hardcoded?</h3>
+<p><strong>Recommendation: yes, in two steps; keep authored groups as seeds, not constraints.</strong></p>
+<p>What a group is today: an authored way of life inside a people (human seafarers, steppe orcs), not cut into demes; its land
+counts as its people's (round 1). Cultures already carry a way of life and two drifting skills (sea craft, open-country
+herding), so most of what a group expresses already emerges per culture.</p>
+<p>The density ladder (PW-1275) says way of life changes with tech for <em>part of a people</em>. That is the pull the other way:
+if ways of life are fully per culture, a people that half-farms and half-herds has to be two cultures, which then
+conflicts with PW-1254 (no merging across ways of life) and inflates the culture count.</p>
+<p>Weighing it:
+- <strong>Per-culture way of life only</strong> (full de-hardcode): simple, but a way-of-life transition (herders taking up farming)
+  becomes a culture split and an artificial boundary. Rejected.
+- <strong>A share of a culture on each way of life</strong> (the ladder's reading): transitions are gradual and cost no splits. A new
+  culture appears only when a share persists, is separated in space, and the PW-1254 rule (no merging across ways of
+  life) keeps it apart. This is the sounder mechanism.
+- <strong>Hardcoded groups</strong>: they work, but they stop steppe orcs from <em>emerging</em> where the land says so, and a world with
+  no authored group gets no equivalent.</p>
+<p>So: step 1, land the ladder with way-of-life <em>shares per culture</em> (PW-1275 plus the shift-with-tech rule). Step 2, make
+groups seed an initial share and a starting skill, then check on the dnd runs that the emergent ways of life reproduce
+what the groups gave; retire the group code path once they do (no backward compatibility, per the repo rules). I have not
+read the ladder's design beyond the ticket and your ruling; the shape of the shares is a judgement for the lane.</p>
+<h3 id="22-when-does-the-history-zoom-pw-908-need-to-happen">2.2 When does the history zoom (PW-908) need to happen?</h3>
+<p><strong>Call: not before v0; start it in parallel with v0 and land it before polities v1.</strong></p>
+<ul>
+<li>Languages v0 and polities v0 are output-side and read frames and a 100-year ledger. The 100-year step only sees
+  long-lived states (round 1 section 7). That is fine for a first look, and it does not need a finer history.</li>
+<li>Polities v1 (war in the history) and your authored nudges ("this people rises here", "these are wiped out") both
+  need a time zoom you can select a region in and re-run from a moment. PW-908 (25-year steps from each region's farming
+  onset) is that. Without it, v1 polities are blind to short-lived states, and nudges have nothing to re-run.</li>
+<li>It is a large ticket (effort l, v2 milestone, status todo). Put it on a parallel lane now so it does not become the
+  critical path for v1. This matches your hunch that it cannot wait much longer.</li>
+</ul>
+<p>I have not read PW-908 beyond its header and title; the scope is the ticket's, not mine.</p>
+<h3 id="23-villages-tracked-or-generated-an-experiment-design-not-run">2.3 Villages: tracked or generated? An experiment design (not run)</h3>
+<p>Your ask: test with and without village tracking, always keep villages for the last ~200 years, and generate villages on
+demand from town data, possibly rolling up to the city level.</p>
+<p><strong>Question the experiment answers:</strong> do tracked villages change anything that matters downstream (towns, cities, polity
+seeds, cultures' sizes, minorities) beyond storage and complexity?</p>
+<p><strong>Arms</strong> (same world, same seed, L6 first, then one L7 world):
+- <strong>A: baseline.</strong> Villages tracked every 100-year step.
+- <strong>B: no villages until the end.</strong> No villages tracked before the last 200 years (two steps); the last 200 always include them.
+- <strong>C: on demand.</strong> B plus a function that generates a cell's villages when asked, from the cell's town data and the
+  people left over after towns: count and sizes from the same central-place rule, deterministic given the cell and step.</p>
+<p><strong>Measures:</strong>
+1. Town and city counts, sizes and founding steps, compared A against B (do towns appear in the same cells and steps?).
+2. Culture sizes, minorities and colonies in the settlement ledger (do they shift?).
+3. Polity-relevant seeds: the largest town per culture per step, and chiefdom-hazard inputs.
+4. For C: the generated villages in the last 200 years against the tracked ones (count and size distributions per cell).
+5. Cost: ledger size on disk and wall time for the settlements pass, per arm.</p>
+<p><strong>Pass criteria</strong> (suggested, yours to change): B's towns and cities within the A run-to-run variation of a rerun with a
+different seed; C's last-200-year villages within the same variation of the tracked ones.</p>
+<p><strong>Cost:</strong> two world runs per arm at L6 (peoples history already exists; the settlements pass is output-side), plus one
+small code change: a <code>track_villages</code> switch and the on-demand generator for arm C. I have not measured the settlements
+pass: the cultures pass is about 2 s a run (round 1), and I expect settlements to be seconds to minutes, but that is a
+guess, so the experiment's first step is timing arm A. Size: one Sonnet lane, small; roughly the same again for the L7 repeat.
+It does not touch the history. Do it before polities v0 builds on the ledger, since polities read what the ledger holds.</p>
+<h3 id="24-catalan-and-spanish-contact-or-normalisation">2.4 Catalan and Spanish: contact or normalisation?</h3>
+<p>You expect they did have contact but not direct communication and normalisation for a long time. What I can actually say
+from what was read:</p>
+<ul>
+<li>Wichmann (2019) puts Catalan-Spanish at LDN 0.66, the highest of his example pairs (table above), well past his
+  language/dialect cut-off at LDN 0.51 (round 1 full read). So they count as clearly separate languages by that
+  measure, and <em>more</em> different than Cairo and Moroccan Arabic (0.58).</li>
+<li>In the round 1 model, a split with no contact reaches the cut-off at about 1.27 kyr. Converting 0.66 the same way
+  (LDND about 0.745, s about 0.255) gives about 2.0 kyr of no-contact divergence, which I computed from Holman's
+  fit and Wichmann's conversion. That is a model equivalent, not a date: contact would lower the similarity pull and
+  make the real time longer.</li>
+<li>I did not read anything on the actual Iberian history, so I cannot confirm or refute "different enough and far
+  enough away for a long time". What the model offers is the <em>distinction</em> you are drawing: contact (borrowing,
+  levelling) raises surface similarity, while <em>normalisation under a standard or a ruling lect</em> raises
+  <strong>exposure</strong>, which raises intelligibility without touching the surface similarity (section 3.1). The
+  literature says exposure dominates real intelligibility (r 0.87-0.93, Gooskens &amp; van Heuven 2020). So the sim
+  can tell "close because they talked" from "close because one was the standard".</li>
+<li>A suggestion if you want it confirmed: a cheap targeted read of the Catalan-Spanish history, as a Haiku pass, before
+  we tune the contact term on it. I would not use this pair as a calibration target until then.</li>
+</ul>
+<hr />
+<h2 id="3-the-proposal-revised">3. The proposal, revised</h2>
+<h3 id="31-languages-stage-0-no-words-no-sounds">3.1 Languages (Stage 0, no words, no sounds)</h3>
+<p><strong>Stands from round 1:</strong> one lect per culture, born, split and ended with it; the true lect tree is deep as the demes
+(300 kyr), tried first; "languages" are <em>derived</em> clusters of lects, never stored.</p>
+<p><strong>Changed:</strong>
+- <strong>Fuzzy, partly political.</strong> A language is a stretch of lects with high mutual intelligibility (MI). The line is
+  drawn at the Wichmann cut-off (s about 0.40) as the default, but the viewer's language blob and the brief both read MI,
+  and politics shifts MI through exposure: a ruling lect, a written standard or a trade speech raises
+  how well subjects understand it. So "the language count" may depend on politics (your L2 ruling: mostly A, with
+  politics). Both mismatches are visible per culture: one language called two things because of culture, and
+  distinct cultures with indistinguishable lects (your China and Hindi-Urdu cases; the China example is yours, I did not
+  source it).
+- <strong>The 10 kyr horizon.</strong> In-world scholars can see relations up to about 10 kyr back. Beyond that nothing is tracked or
+  flagged: there is no <code>beyond_horizon</code> field and no per-family horizon. Families are clades whose root is younger than 10
+  kyr, a constant. The true tree keeps whatever the demes give; we do not ask what the truth was beyond what scholars
+  could know. Splits, merges and overlaps just happen.
+- <strong>Language can begin more than once.</strong> Each people's stem draws its own onset of <em>spoken language</em> from a window around
+  a shared date, near-simultaneous across species, and set apart from its genetic modernity (the humans' 200 kyr of language against a
+  longer genetic modernity is your example, a rough figure from your note). Inside one stem, separate demes that have not
+  met can have started separately too: a lect root can appear in more than one place, and contact spreads the faculty
+  after (PW-947). The window's width and the lag after modernity are my judgement; I'd start with a window of a few tens of
+  kyr and flag it for tuning. No pair across stems is related (<code>s_inherited = 0</code>).
+- <strong>Cultures split before languages.</strong> <code>T_APART_KYR</code> 0.15-0.6 kyr, a no-contact split at 0.6 kyr has s about 0.62, still
+  dialects (round 1). Expect many cultures per language, as on Earth. PW-1254's rules (cohesion by lifespan; no merging
+  across ways of life) apply: two cultures of the same people with different ways of life stay two cultures, usually
+  one language.</p>
+<p><strong>The model, trimmed (stands):</strong>
+- Similarity s between two lects (ASJP-style, 1 minus LDND; Holman 2011). Divergence with no contact:
+  <code>s(t) = s0 * r^(2t)</code>, <code>s0 = 0.92</code>, <code>r = 0.72</code> per kyr; each lineage has a lognormal multiplier <code>rate_x</code> (sigma about 0.3,
+  the fit's 29% scatter).
+- Contact pulls the surface back: <code>s' = s + [ -(la+lb) s + kappa c_ab (s0 - s) ] dt</code>. Neighbours along a chain stay close; ends
+  diverge: that is the dialect continuum. Two numbers per pair: <code>s_inherited</code> (the comparative method; never pulled back)
+  and <code>s_surface</code> (what a listener hears).
+- MI: <code>mi_inherent = f(s_surface)</code>, a logistic curve of ours, fitted to European close relatives (no published closed
+  form; Gooskens &amp; van Heuven 2020 give only correlations). Then <code>mi_ab = mi_inherent + (1 - mi_inherent) E_ab</code>, with
+  exposure E_ab (judgement) growing with b's speakers dominating shared cells, b's culture ruling a's (polities), or
+  b being a written standard or trade speech. A small seeded asymmetry stands in for the Portuguese-Spanish structural residue.
+- Bands in the brief: dialects (mi &gt;= about 0.7), partly understood (0.4-0.7; 0.4 is Gooskens et al.'s workable
+  threshold), separate (&lt; 0.4).
+- Pairs: touching demes now plus each lect's nearest sister; any other pair on demand.
+- Light events: split, koine (sister cultures merged), shift (one culture swallowed), death, contact episodes, standard.
+- <strong>Loan strata</strong> (forms empty): core, cultural, food (every crop or animal spread writes a loan with its route),
+  substrate (from shifts). Sizes from the World Loanword Database: mean borrowed share about 25%; by field social
+  and political 0.64, religion 0.49, agriculture 0.45, food and drink 0.37, kinship 0.23, body 0.17; traded goods
+  (olive 0.93, wine 0.74) borrow heavily, basic states (raw 0.05, cooked 0.06) stay native.
+- <strong>Checks, not targets:</strong> two lects about 1.3 kyr apart with no contact sit at the line; a walker people's open range
+  shows a chain whose ends are below the line while neighbours stay above; similarity against travel distance looks like
+  Seguy's curve with scatter; lect density follows growing season (Nettle 1998; trend, not constant).</p>
+<p><strong>What politics adds (changed):</strong> the ruling lect's prestige drives shift among a state's subjects (Abrams &amp; Strogatz, in
+3.3), and raises <code>E_ab</code> toward the ruling lect. Your Norman-conquest example is the intended picture: a court language
+that does not replace the commoners' speech, but pulls a large share of its vocabulary and prestige register.</p>
+<h3 id="32-names">3.2 Names</h3>
+<p><strong>Stands:</strong> the name stack per culture with forms empty, glosses only (your E/X/P taxonomy): endonym pattern and gloss,
+glossonym, an exonym per neighbour that matters from the relationship, scholarly names for dead cultures, name history.
+Gloss strings fix PW-1249's repeated placeholders. English glosses and forms empty: settled.</p>
+<p><strong>Changed:</strong>
+- <strong>Some names are very resilient.</strong> Names of rivers and mountains persist through conquests and language shifts (your
+  note); settlement names change more often; polity names change most. Implementation: each place name carries a
+  persistence class (water and mountain features high, settlements medium, polity low) and a small chance of an
+  arbitrary "sticks forever" name regardless of class. The classes and rates are my judgement; I have not read the
+  toponymy literature this round. The substrate stratum from shifts is where these names are recorded.
+- <strong>Outsiders lump.</strong> A region's several small, distinct cultures can be one exonym to a distant observer, and may look
+  alike on the map, while each regards the others as distinct (your Native American example). The culture split
+  already makes them distinct (local, by time apart). Lumping is <em>observer-side</em>: reputation.py already lumps by
+  observer and subject (round 1); extend it so the lump size grows with distance and thin contact. Store both views
+  and let the viewer switch (section 5).</p>
+<h3 id="33-polities">3.3 Polities</h3>
+<p><strong>Stands (round 1 2.1, trimmed):</strong>
+- Tiers: band or tribe (no polity), chiefdom, state, empire (emergent: rules more than one culture or people).
+- Output-side v0, using the settlement ledger, techs, cultures and circumscription (<code>counter._circumscribed</code>); in the
+  history in v1.
+- Chiefdoms start where a culture with chiefdoms and towns has a hazard of founding one at its largest town, scaled by
+  local density, resource concentration, a contagion term and circumscription (Carneiro 2012).
+- Reach: a chiefdom about half a day's travel (25-30 km on foot, Spencer 2010), a state 50-250 km soon after state
+  institutions appear; writing, law, roads, horses and ships extend that, by judgement.
+- Frontiers breed empires (Turchin 2009, Turchin et al. 2013); polities end with a base hazard (Arbesman 2011, exponential,
+  mean about 220 years) and tiers move one step at a time (Currie et al. 2010, abstract only).
+- Size checks, not caps: Taagepera 1997.</p>
+<p><strong>Changed:</strong>
+- <strong>Chiefdom and grid.</strong> By your follow-up, a chiefdom is a one-cell thing at L7 (a third to a fifth of a cell, from the
+  round 1 figure); at coarser cells it is smaller still. It is a tier label on a town and its cell, not a map shape.
+- <strong>Gate (P2, nearly B).</strong> A chiefdom needs writing; a small state can barely do without it. I read your "impetus" point as
+  a <em>feedback</em>: need for records pressures the adoption of writing, so writing's invention hazard gets a bump
+  where a chiefdom or small state forms. Output-side v0 cannot feed back (the tech tree is output only, PW-946), so v0 just
+  uses the gate with a slight lenience (a chiefdom without writing is allowed if its neighbours have it, because it can
+  borrow it). The real feedback arrives with the history in v1.
+- <strong>War is mostly a change of owner (P3 B, not v0).</strong> The losing side's army breaks at perhaps 10-20% losses (your
+  figure; I did not source it), and the cells change hands. A cell's population does not change much: the farmers keep
+  farming under a new ruler. Population loss and displacement depend on the winner's <strong>tolerance</strong> of the subject's
+  species or culture (attitudes, 3.4): tolerant winners cost little, intolerant ones expel, enslave or exterminate a
+  share. This agrees with round 1's finding that war deaths at sourced violent-death rates were 0-0.2% of any people
+  (lane 101) and with your "trim, not topple" expectation, except in long sustained aggression. P3 B (war deaths and
+  displacement) is eventual, not v0; v0 draws ownership only.
+- <strong>Pulling out placeholder formulae.</strong> The in-fighting term (FEUD_CUT, SOCIAL_Q) and the state-pacification proxy G and
+  hostile-frontier share F in <code>counter.py</code> are placeholders for what polities replace. A prerequisite lane lists and isolates them
+  (section 7) so polities can swap them cleanly (PW-1258).
+- <strong>Languages (the Norman point).</strong> The ruling lect's prestige drives shift among its subjects: round 1 used Abrams &amp;
+  Strogatz (2003): <code>dx/dt = y c x^a s - x c y^a (1-s)</code>, a = 1.31 +/- 0.25, status s from tier, writing and cities.
+  The shift is computed per cell per 100-year step, and an elite lect can add vocabulary without displacing the commoners'
+  (partial shift, a large loan stratum). Political complexity predicts a language's area (Currie &amp; Mace 2009).
+- <strong>Tolerance and records.</strong> A tolerant, record-keeping empire preserves other cultures' records (your cuneiform point,
+  which I accept as plausible but did not source). So the survival of a conquered people's texts and scholarly names =
+  writing x the state's tolerance toward them, not just writing.
+- <strong>Population from the density ladder.</strong> A polity's population within reach reads one accessor for density. Until
+  PW-1275 lands that accessor reads today's density; when the ladder lands (way of life x tech stage x land
+  productivity, kind factor 0.8-1.2) it swaps in with no change to polities.
+- <strong>Dragon realms.</strong> Dragon dominion over land belongs in polities, not in habitat learning (your ruling): a dragon
+  realm is a polity whose ruling culture is a dragon culture, with subjects of other peoples (kobolds, dragonborn, others). Its
+  reach is the flight range, not the tech tiers. Kobolds gravitate to dragons and occasionally form dragon,
+  dragonborn and kobold realms. Open decision O4 asks how such a realm's gate works.
+- <strong>Goblins.</strong> Goblins mostly stay low on the tech tree (short brutish lives), so they rarely form polities of their own
+  and more often become subjects of other goblinoids (hobgoblins, bugbears) via the same ruling-lect shift. Their lects stay
+  separate unless shifted.
+- <strong>Emergent first; authored nudges later.</strong> Polities emerge by default. In v1 you can select in a time zoom "this
+  specific people rises about now" or "these are wiped out or nearly out by a neighbour" and the sim re-runs from just
+  before to contrive it. That needs the history zoom (2.2) and the polities in the history. The round 1 <code>[[event]]
+  kind = "polity"</code> back-fill stays as the fallback for Seven Meals empires (PW-785).
+- <strong>Leader share (P4).</strong> No polity knobs aimed at it; D31 A stands, report the share after polities and stop.</p>
+<h3 id="34-attitudes-and-gods">3.4 Attitudes and gods</h3>
+<p><strong>Attitudes (changed):</strong> extend <code>reputation.py</code> per culture pair (settled), with a refactor when it gets big. The
+vector stands: xenophobia, expansionism, assimilation vs <strong>tolerance</strong>, grudge (fading with intermarriage, shared faith
+and shared language, slowed by a stubbornness axis). Tolerance is now explicitly an input to war outcome and record
+survival (3.3). Output-side v0.</p>
+<p><strong>Refactor trigger.</strong> The lane that adds attitudes first checks how large <code>reputation.py</code> is; if the new code would make it
+a grab bag, it splits reputation and attitudes into a small package in the same change. You said "refactor when
+needed", so this is pre-approved; the lane reports what moved.</p>
+<p><strong>Gods (changed):</strong> v0 is placeholder domains only: a pantheon per culture of 3-7 slots with domains and no names,
+following way of life and land, as in round 1. Syncretism on merges and state cults are <em>not</em> in v0. Real
+design starts only after the religion discussion with you. Your starting framing, so we hold it: look at what is around a
+people, what taboos there reasonably could be, the natural forces they deal with (hurricanes, tornadoes, lightning,
+a sea god if they have a sea, river spirits, desert things, ancestor worship, "the gamut of what humans have done").
+Nothing is built on this until we talk.</p>
+<h3 id="35-writing">3.5 Writing</h3>
+<p><strong>Stands:</strong> writing is a tech (tokens, proto-writing, writing floor 5.3 kyr, alphabet); effects output-side: standards,
+scholarly names, literacy share, memory of conquests.</p>
+<p><strong>Changed:</strong>
+- <strong>Media shape scripts.</strong> A script lineage carries a <code>medium</code> (clay, reed or papyrus, bark or leaf, stone or wood
+  as runes, hide), read from the land and techs, not from a date. Real scripts were arguably shaped by their media
+  (your note: runes, cuneiform in clay, papyrus; leaves feel "a bit more spurious but decent enough"). v0 stores only the
+  medium id and the lineage; the shape effects are a later, deeper design ("way WAY in the reeds").
+- <strong>Record survival.</strong> Writing x tolerance (3.3). A medium also changes survival of records (clay lasts, leaves rot),
+  which the same field enables later.
+- <strong>Secret dragon writing (optional scenario, later).</strong> If dragons reach behavioural modernity far earlier than others, writing could be a
+  secret they keep for a very long time and that eventually leaks, against dragons simply discovering their own writing
+  or being gifted it. It should be a scenario switch on the tech tree's contact gate, not a default. Not in v0 or v1.</p>
+<h3 id="36-dragons-kobolds-and-kin">3.6 Dragons, kobolds and kin</h3>
+<ul>
+<li>Dragon kinds are one to five cultures each (D36 B). The round 1 line "cohesion already makes one culture per colour" is out of date.</li>
+<li><strong>"Draconic" is one language across colours</strong> (settled), with colour dialects (MI about 0.8, round 1's lean) held together by
+  dragon cohesion (0.9, a round 1 figure for dragons). One lect per dragon culture.</li>
+<li><strong>Kobolds</strong> start from Draconic at their split (round 1 L5 A, which you approved with the note that kobolds closely
+  align themselves to life under dragons). Their lect stays close to the dragons' by exposure (high <code>E_ab</code> toward the
+  dragon lect when under a dragon realm) and drifts only slowly.</li>
+<li><strong>Dragon dominion</strong> is a polity (3.3); <strong>goblins</strong> are subjects or low-tech (3.3).</li>
+<li>Dragons are sapient: nowhere do the models treat their speech as a lesser thing.</li>
+</ul>
+<hr />
+<h2 id="4-data-model-deltas-against-round-1-section-3">4. Data model deltas (against round 1 section 3)</h2>
+<p>Round 1's <code>languages.json</code>, <code>names.json</code>, <code>polities.json</code> sketches stand. Changes:
+- <code>languages.json</code>: remove <code>beyond_horizon</code>, <code>horizon_kyr</code> becomes the constant 10; add <code>onset</code> per stem and per lect root;
+  add <code>mi_ab</code> exposure source (<code>standard</code>, <code>ruling</code>, <code>trade</code>) so we can tell normalisation from contact.
+- <code>names.json</code>: add <code>persistence_class</code> and <code>sticks</code> to place names; add <code>view: lumped|distinct</code> per exonym.
+- <code>polities.json</code>: add <code>kind: dragon_realm</code>, <code>tolerance</code> and <code>record_survival</code> per subject culture, <code>war</code> events carry
+  <code>losses_share</code> and <code>displaced_share</code>.
+- <code>cultures.json</code>: gods are a placeholder list only; add <code>way_of_life_shares</code>.
+- Where each lives: unchanged (output-side for everything except polities v1 which goes in the history).</p>
+<hr />
+<h2 id="5-viewer-what-you-would-see-changes">5. Viewer: what you would see (changes)</h2>
+<p>Round 1 section 4 stands (Languages view with a dendrogram, culture card, globe layers, intelligibility-from-here,
+polities on the slider). Additions and changes:
+- <strong>"The language of these people" layer:</strong> select a people or culture and the map shows a strong colour at the core
+  fading out with intelligibility, with hard cutoffs where something wholly different is spoken; it reads <code>mi_ab</code> so the
+  blob follows politics. Particularly for the pre-empire period.
+- <strong>Dendrogram:</strong> the 10 kyr line replaces the per-family horizon; nothing is drawn beyond it as "related".
+- <strong>Exonym view toggle:</strong> "as they see themselves" (distinct cultures) against "as outsiders see them" (lumped).
+- Card: dual mismatch notes ("same language, two names", "indistinguishable lects, one name").</p>
+<hr />
+<h2 id="6-settled-decisions-recorded">6. Settled decisions (recorded)</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>id</th>
+<th>question</th>
+<th>ruling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1</td>
+<td>culture is a language?</td>
+<td>no; a fuzzy spectrum of intelligibility</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>where is the language line?</td>
+<td>mostly A, with politics shifting it</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>the rate</td>
+<td>my choice: Holman r = 0.72, lognormal rate multiplier, no burst</td>
+</tr>
+<tr>
+<td>L4</td>
+<td>time depth</td>
+<td>lect tree as deep as demes, tried first; B if disliked; language may begin more than once</td>
+</tr>
+<tr>
+<td>L5</td>
+<td>across species</td>
+<td>kobolds start from Draconic; no inherited relatedness across peoples; shift only under polities</td>
+</tr>
+<tr>
+<td>L6</td>
+<td>dragons</td>
+<td>one lect per dragon culture; Draconic one language across colours</td>
+</tr>
+<tr>
+<td>L7</td>
+<td>morphology scalar</td>
+<td>B: wait for a real L2 share</td>
+</tr>
+<tr>
+<td>N1</td>
+<td>gloss language</td>
+<td>English glosses, forms empty</td>
+</tr>
+<tr>
+<td>N2</td>
+<td>who gets names</td>
+<td>every living culture and peoples-level rows merged in, for now</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>output-side or history</td>
+<td>output-side v0, in-history v1</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>tier gates</td>
+<td>nearly B: chiefdom needs writing; writing is also an impetus</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>war scope</td>
+<td>B eventually, not v0</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>leader share</td>
+<td>no strong feelings: D31 A stands</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>your empires</td>
+<td>emergent first; authored nudges via time zoom in v1</td>
+</tr>
+<tr>
+<td>A1</td>
+<td>attitudes</td>
+<td>extend reputation.py; refactor when big</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>gods</td>
+<td>A (domains only) for v0; B and beyond from the discussion</td>
+</tr>
+<tr>
+<td>D36</td>
+<td>dragon kinds</td>
+<td>B: may be several cultures</td>
+</tr>
+<tr>
+<td>PW-1254</td>
+<td>era table</td>
+<td>kept; cohesion by lifespan; 2 kyr side by side; no merge across ways of life</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="7-lane-plan-for-v0">7. Lane plan for v0</h2>
+<p>All output-side; judged in the viewer on the dnd runs and one Seven Meals run; none re-runs a history. Tiers per the
+model-tier memory: Opus for model physics, Sonnet moderate, Haiku mechanical.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>lane</th>
+<th>content</th>
+<th>needs first</th>
+<th>tier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Prep: placeholder formulae</strong></td>
+<td>list and isolate the war, in-fighting, G and F proxies in <code>counter.py</code> (PW-1258) so polities can swap them</td>
+<td>nothing</td>
+<td>Sonnet</td>
+</tr>
+<tr>
+<td><strong>Prep: PW-1254 implemented</strong></td>
+<td>cohesion by lifespan, 2 kyr side-by-side merge, no merge across ways of life</td>
+<td>your ruling (done)</td>
+<td>Sonnet</td>
+</tr>
+<tr>
+<td><strong>Prep: village experiment</strong></td>
+<td>section 2.3, one run per arm</td>
+<td>nothing (L6 world)</td>
+<td>Sonnet</td>
+</tr>
+<tr>
+<td><strong>Prep: new peoples runs</strong></td>
+<td>rebuild dnd runs on overlapping demes so cultures see overlap</td>
+<td>lane 109 (merged)</td>
+<td>compute only</td>
+</tr>
+<tr>
+<td><strong>1. Languages v0</strong></td>
+<td><code>languages.py</code>: lects, <code>s_inherited</code>, <code>s_surface</code>, MI both ways, families under 10 kyr, events, loans (forms empty), multiple onsets, <code>/api/languages</code>, brief block, Languages view, card, "language of these people" layer, intelligibility-from-here</td>
+<td>PW-1254 implemented; new peoples runs; stable culture ids across recuts (to check)</td>
+<td>Opus model, Sonnet viewer</td>
+</tr>
+<tr>
+<td><strong>2. Names v0</strong> (PW-972)</td>
+<td>name stack per culture, gloss only; place-name persistence; observer-side lumping and the exonym toggle; PW-1249 fixed</td>
+<td>lane 1 (MI and contact)</td>
+<td>Sonnet</td>
+</tr>
+<tr>
+<td><strong>3. Polities v0</strong></td>
+<td><code>polities.py</code>: tiers from ledger, techs, circumscription; reach by travel time; competition as ownership change; dragon realms; tolerance stub; <code>polities.json</code> and layer</td>
+<td>placeholder-formula prep; village experiment ruled; density accessor (today's density now, PW-1275 later); PW-1254 implemented</td>
+<td>Opus</td>
+</tr>
+<tr>
+<td><strong>4. Owner look</strong></td>
+<td>you look at 1-3; rulings on the open decisions</td>
+<td>1-3</td>
+<td>-</td>
+</tr>
+<tr>
+<td><strong>5. Religion discussion</strong></td>
+<td>no code; with you; sets gods v1</td>
+<td>scheduled by you</td>
+<td>-</td>
+</tr>
+</tbody>
+</table></div>
+<p>Lanes 1 and 3 can run in parallel once their prep is done; lane 2 straight after lane 1. PW-908 (history zoom) starts in
+parallel (2.2) but does not gate v0. Order of the output passes: demes, cultures, polities (v0), lects, names, attitudes
+(v0), gods (placeholder), brief.</p>
+<hr />
+<h2 id="8-open-decisions-left-only-those-not-settled">8. Open decisions left (only those not settled)</h2>
+<ul>
+<li><strong>O1. De-hardcode groups</strong> (2.1): my call is yes, in two steps (ladder with shares first, groups become seeds second).
+  Needs your yes before the ladder lane's brief says so.</li>
+<li><strong>O2. History zoom timing</strong> (2.2): my call is start now in parallel, land before polities v1. Confirm.</li>
+<li><strong>O3. Village experiment</strong> (2.3): go or no-go, and whether the pass criteria are right.</li>
+<li><strong>O4. Dragon realms' gate:</strong> what lets a dragon culture rule (a count of subjects, sapience and flight range only, or
+  a tech-like hoard stage)? Round 1 has nothing on it; my lean is flight range plus subjects present, no tech gate.</li>
+<li><strong>O5. Religion discussion:</strong> when. Blocks anything real on gods; v0 placeholders are unaffected.</li>
+</ul>
+<p>No other round 1 decision is open.</p>
+<hr />
+<h2 id="9-deferred-v1-and-later-and-uncertainties">9. Deferred (v1 and later) and uncertainties</h2>
+<p><strong>v1:</strong> polities in the history with war (PW-1172, PW-1258, PW-1108); authored nudges by re-running from a time zoom;
+the history zoom (PW-908/909) in place; tolerance-based displacement (P3 B); writing feedback (writing as impetus for
+small states); attitudes full (PW-904, PW-768); real gods after the discussion (state cults, syncretism, ranks); writing
+effects (standards, scholarly names, script lineage); groups retired once shares reproduce them.</p>
+<p><strong>Later:</strong> PW-986 language demo (real words, sounds, grammar); sound change per hop; PW-985 morphology; the secret dragon
+writing scenario; writing shaped by media in detail; mixed-way-of-life culture splits at fine scale; weird worlds.</p>
+<p><strong>Uncertainties, said plainly:</strong>
+- <code>kappa</code> (contact pull) has no literature value; tuned by eye on the intelligibility map. A judgement.
+- The MI curve is ours, fitted to European close relatives; no evidence it transfers to dwarves.
+- Exposure dominates real MI, so <code>mi_ab</code> is mostly the judgement term <code>E_ab</code>; <code>mi_inherent</code> is the sourced half.
+- The onset window width, persistence classes and tolerance-to-displacement rates are judgements.
+- Frames are coarse (0.5 kyr near the present; 100 years for polities); the history zoom fixes it later.
+- Polities may come out too regular (Voronoi-ish); if it shows, we decide then (PW-1104).
+- Unread: PW-908's and PW-1275's design beyond the tickets; the toponymy literature; the Iberian language history.</p>
+<hr />
+<h2 id="10-literature-note">10. Literature note</h2>
+<p>Round 1's subagents read these on 2026-11-01; nothing is cited from memory. Status: full text, abstract only, or data.
+Anything not listed was not read. No new sources were read in round 2.</p>
+<ul>
+<li>Holman et al. 2011, <em>Current Anthropology</em> 52(6): the dating formula, s0 0.92, r 0.72; <strong>full</strong>.</li>
+<li>Wichmann 2019, <em>Computational Linguistics</em> 45(4): language/dialect cut-off LDN 0.51, 1,075-1,635 yr; pair table
+  (Indonesian-Malay 0.12, Hindi-Urdu 0.43, Russian-Belarusian 0.46, Danish-Swedish 0.49, Cairo-Moroccan Arabic 0.58,
+  Catalan-Spanish 0.66); <strong>full</strong>.</li>
+<li>Gooskens 2007; Gooskens et al. 2017/18; Gooskens &amp; van Heuven 2020: phonetic and lexical distance, 40% threshold,
+  exposure r 0.87-0.93, Portuguese-Spanish asymmetry; <strong>full</strong>.</li>
+<li>Nerbonne 2010 (Seguy's curve, through a summariser); Abrams &amp; Strogatz 2003 (a = 1.31 +/- 0.25); Nettle 1998;
+  Currie &amp; Mace 2009: <strong>full</strong>.</li>
+<li>Pagel et al. 2007 (<strong>abstract</strong>); Lees 1953 (<strong>full</strong>); Gavin et al. 2017 (<strong>full</strong>); Amano et al. 2014 (<strong>abstract</strong>).</li>
+<li>Haspelmath &amp; Tadmor 2009, World Loanword Database: <strong>data</strong> (Tadmor's chapter unread).</li>
+<li>Carneiro 2012; Spencer 2010; Turchin 2009; Turchin et al. 2013 (main text); Taagepera 1997; Arbesman 2011; Grinin 2003:
+  <strong>full</strong>. Currie et al. 2010: <strong>abstract and summaries only</strong>. Carneiro 1970: not read (used through 2012).</li>
+<li>In repo: peoples-counterpressures design (violent-death rates, K(W)); emergent-cultures design; your ethnonym taxonomy doc.</li>
+</ul>
+<p><strong>Not verified; do not build on these without a read:</strong> Swadesh's percentages; Pagel's per-word half-lives; the
+three-generation shift pattern; Gavin's fitted constants; Turchin 2013's parameters; Currie 2010's rates; Feinman and
+Flannery sizes; the Norman conquest's effect on English, the cuneiform tablet record and China's lects (your examples,
+accepted as given, not sourced here); the Catalan-Spanish history; anything about river and mountain name persistence.</p>
+<h2 id="follow-ups-noticed-for-tickets-not-filed">Follow-ups noticed (for tickets; not filed)</h2>
+<ul>
+<li>A ticket for the placeholder-formula extraction in <code>counter.py</code> if PW-1258 does not already cover it.</li>
+<li>A ticket for the village experiment (2.3).</li>
+<li>A ticket for the Catalan-Spanish history read, if you want it.</li>
+<li>A ticket for a <code>track_villages</code> switch and on-demand village generator, contingent on the experiment.</li>
+</ul>
+</div>
