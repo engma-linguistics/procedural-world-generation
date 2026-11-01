@@ -293,6 +293,16 @@ def cmd_finish(args):
           f"  view: http://127.0.0.1:8765/viewer/?world={path.name}")
 
 
+def cmd_refine(args):
+    from . import refine as RF
+    if args.no_resources:
+        with W.resources_off():
+            path = RF.refine_world(args.world, args.level, args.erosion, args.seed)
+    else:
+        path = RF.refine_world(args.world, args.level, args.erosion, args.seed)
+    print(f"{S.rel(path)}  view: http://127.0.0.1:8765/viewer/?world={path.name}")
+
+
 def cmd_recent(args):
     from .lineages import recent as R
     tz, now, world = R.resolve(args.ref)
@@ -695,6 +705,16 @@ def main():
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
     fi.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     fi.set_defaults(func=cmd_finish)
+
+    rf = sub.add_parser("refine", help="a finished world refined onto a finer global grid (L8, L9): its terrain, "
+                        "rivers, lakes, coasts, climate (downscaled), soils and plants per finer cell -> worlds/<id>.json")
+    rf.add_argument("world", help="world id or path (a world from a run)")
+    rf.add_argument("--level", type=int, default=8, help="the finer grid's level (8: 655k cells, 9: 2.6M)")
+    rf.add_argument("--erosion", type=float, default=0.1, help="strength of the finish's river-carving pass (the "
+                    "source world had its own: refine.EROSION)")
+    rf.add_argument("--seed", type=int, default=1, help="the detail noise's seed (the zoom's default: 1)")
+    rf.add_argument("--no-resources", action="store_true", help="leave the resource layers out")
+    rf.set_defaults(func=cmd_refine)
 
     rc = sub.add_parser("recent", help="the recent pass: the last ~30 kyr of a time zoom at century steps "
                                        "(interpolated, with short-period variability) -> runs/<id>/")

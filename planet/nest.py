@@ -26,6 +26,9 @@ from .grid import Grid, shared_grid
 from .ocean import cell_area_km2
 
 _NEST: dict = {}
+# climate.compute's fields that are totals per cell (Sv of deep water sinking in the cell), not values at a point:
+# prolonged as densities (a refined world's overturning summed 4x its coarse climate's at L8, lane 104)
+PER_CELL = ("overturning",)
 
 
 def step(fine: Grid) -> dict:
@@ -85,14 +88,16 @@ def chain(fine: Grid, level: int) -> list[dict]:
     return out
 
 
-def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_start=None) -> dict:
+def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_start=None, orbit_dt=None) -> dict:
     """climate.compute(fine, elev, dT, tilt, ice, veg=veg, rain_start=rain_start), run on the nested
     level-`level` grid: the ground is restricted to it (a coarse cell is land where at least half its area is,
     at the mean height of its land or of its sea floor, with its land's mean ice; the vegetation's feedbacks are
     its land's means), and the climate prolonged back (masked by land and sea; temperatures through sea level
     by the lapse rate, so a fine cell's height still sets its air; vectors back onto the fine tangent planes; the
     water balance, the lakes' evaporation and the Koppen class again on the fine cells' own climate).
-    rain_start: the coarse grid's rain state (the result's "rain_state" is the coarse kernel's)."""
+    rain_start: the coarse grid's rain state (the result's "rain_state" is the coarse kernel's).
+    orbit_dt: climate.compute's orbit anomaly, on the coarse grid (a finished time-zoom frame refined to a finer
+    grid, planet/refine.py)."""
     steps = chain(fine, level)
     e, ice = np.asarray(elev, float), np.asarray(ice, float)
     land = is_land(e, ice, fine)
@@ -107,7 +112,8 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
             veg_c = {k: _restrict(s, np.asarray(v, float), lf) for k, v in veg_c.items()}
         masks.append(lc)
     coarse = steps[-1]["coarse"] if steps else fine
-    c = climate.compute(coarse, e_c, dT, tilt, ice_c, veg=veg_c, rain_start=rain_start, land=masks[-1])
+    c = climate.compute(coarse, e_c, dT, tilt, ice_c, veg=veg_c, rain_start=rain_start, land=masks[-1],
+                        orbit_dt=orbit_dt)
     if not steps:
         return c
     surf_c, bed_c = np.maximum(e_c + ice_c, 0.0), np.maximum(e_c, 0.0)
@@ -116,6 +122,8 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
     out["ground"] = tuple(climate.LAPSE * bed_c + t for t in c["ground"])
     for k in air:
         out[k] = climate.LAPSE * surf_c + c[k]
+    for k in PER_CELL:  # (per-cell totals go down as densities: a coarse cell's Sv shared by its fine cells' areas)
+        out[k] = c[k] / cell_area_km2(coarse)
     for i in range(len(steps) - 1, -1, -1):  # up one level at a time
         s, cm, fm = steps[i], masks[i + 1], masks[i]
         for k, v in list(out.items()):
@@ -131,6 +139,8 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
                 out[k] = _prolong(s, v, cm, fm)
             elif v.ndim == 2 and v.shape[1] == s["nc"]:  # (k, n) stacks
                 out[k] = np.stack([_prolong(s, r, cm, fm) for r in v])
+    for k in PER_CELL:
+        out[k] = out[k] * cell_area_km2(fine)
     surf, bed = np.maximum(e + np.where(land, ice, 0.0), 0.0), np.maximum(e, 0.0)
     for k in air:
         out[k] = out[k] - climate.LAPSE * surf
