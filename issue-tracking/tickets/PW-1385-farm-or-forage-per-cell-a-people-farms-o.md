@@ -1,0 +1,23 @@
+---
+id: PW-1385
+title: "Farm or forage per cell: a people farms or herds a cell only where that clearly out-feeds foraging there"
+type: task
+status: todo
+parent: null
+milestone: v2
+subsystem: timezoom
+effort: m
+impact: med
+found_by: Daniel 11-02
+blocked_by: []
+relates: [PW-1373]
+refs: ["planet/lineages/ladder.py::Ladder.line", docs/review/peoples/density-ladder/ladder.md]
+created: 2026-11-02
+updated: 2026-11-02
+---
+
+## Description
+In plain words: today a people that knows crops farms all the farmable land in every cell it holds (ladder.py::line: farmable share farmed, grazable herded, only the rest foraged), so foragers survive only on marginal land. Real foragers also held on where wild food was rich enough that farming wasn't worth the extra work (salmon coasts, acorn woods). Daniel 11-02 agreed: a cell is farmed or herded only where that feeds clearly more people than foraging or fishing there, by a sourced margin standing for farming's extra labour; any people can have such foraging portions (humans did). Target picture: roughly 1500 AD, where the tech tree ends (foragers still holding large regions, rare but real in rich and marginal land). The kind's inclination stays as a small delay in learning crops (PW-1373). Source the margin before building (labour returns of foraging vs early farming); measure the forager share of land and people by biome on the robust suite.
+
+## Updates
+- 2026-11-02: Created.

@@ -35,5 +35,6 @@ Options:
 Lean B: it keeps Q2 A and lets each kind's lore show as a delay, not a cap. Measure on the robust suite.
 
 ## Updates
+- 2026-11-02: Daniel 11-02 (later): pushback, a lag alone only postpones farming. Agreed the main mechanism is farm-or-forage per cell (PW-1385), any people may keep foraging portions, era target ~1500 AD. Keep the lag small; lane 139's 10x measurement informs it but is not merged as is.
 - 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02: B. Less inclined peoples learn crops ~10x slower (delay ~ LAG / propensity), keeping the land rule. If they end up effectively never farming, try 5x. Neither force nor forbid farming. Obligate carnivores (cat-folk) lean far more to herding than to crops.
 - 2026-11-02: Created from inbox draft draft-hunters-learn-crops-regardless.md (found by lane 137 (density ladder check d)).
