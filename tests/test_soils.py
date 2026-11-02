@@ -214,7 +214,9 @@ def test_world_soils(sim4):
     from planet import timeline as T
     w = T.world_from_sim(sim4)
     L = w["layers"]
-    land = (L["elevation"] > 0) & (L["ice"] <= 0) & (L["lake"] == 0)
+    from planet.geo import is_land
+    # the model's own land: ground cut off below the sea counts (PW-1229)
+    land = is_land(np.asarray(L["elevation"]), grid=sim4.grid) & (L["ice"] <= 0) & (L["lake"] == 0)
     soil = np.asarray(L["soil"])
     assert (soil[~land] == SO.NONE).all() and (soil[land] > 0).mean() > 0.95
     assert (np.asarray(L["soil_depth"]) <= SO.H_MAX).all()

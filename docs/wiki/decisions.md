@@ -211,3 +211,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-01: merged lane 100 (PW-950 sea level counts ocean-floor sediment; creep/necking/rise stay off). Daniel: PW-1292 A next (piles become continent only against continental crust); area thermostat stays (PW-1276 v2).
 - 2026-11-01: merged lane 113 (ref forms paper:/#anchor/::function, docs/references/bibliography.md, check warnings, refs backfill on PW-1158/950/1276/1286-1293). Wider backfill (299 open tickets with <=2 refs, ~10-12 Sonnet lanes) waits on Daniel.
 - 2026-11-01: Daniel: refs backfill only as lanes touch open tickets, and full refs at creation; no backfill lanes, never closed tickets.
+- 2026-11-01: merged lane 112 (PW-1292 A, judge 33/36 vs 27/36, no hard failures); churn is margin flicker at the shared 20 km line (PW-1295, D38 proposal). test_world_soils now uses geo.is_land (PW-1229 cut-off basins), assertions unchanged.

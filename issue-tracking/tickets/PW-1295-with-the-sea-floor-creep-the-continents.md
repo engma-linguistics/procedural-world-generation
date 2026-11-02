@@ -1,8 +1,10 @@
 ---
+id: PW-1295
 title: With the sea-floor creep, the continents' outer cells flicker between continent and ocean floor at the 20 km bound
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-112
 blocked_by: []
 relates: [PW-1292, PW-950, PW-108]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/margin/pw1292-note.md, docs/review/tectonics/margin/tracediag.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -32,3 +36,6 @@ What to try:
 - [ ] tag the shredded cells in tracediag.py and count how many are born again within 50 Myr (confirms or rules out the flicker)
 - [ ] if confirmed, screen hysteresis between the bounds (a shred only below ~15 km, or re-birth of a shredded cell only above ~25 km), on seeds 1 and 3 with the creep
 - [ ] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds)
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-margin-cells-flicker-at-the-20-km-bound.md (found by lane-112).

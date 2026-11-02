@@ -2,7 +2,7 @@
 id: PW-1292
 title: Sediment piles on the ocean floor turn into continent at 20 km, and with the sea-floor creep that churn steers both crust thermostats
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: null
 subsystem: tectonics
@@ -34,9 +34,10 @@ Options:
 - C. Leave it.
 Lean: A (it keeps sediment-built coastal plains). Screen it on seeds 1 and 3 with and without the creep, then run a
 paired judge. Lane 100e tried keeping drowned piles out of the area count only (pile_area). It didn't help.
-- [ ] decision A / B / C
+- [x] decision A / B / C (Daniel 11-01: A)
 
 ## Updates
+- 2026-11-01: Status in-progress -> done. Lane 112 merged: A on by default; judge 33/36 vs 27/36, no hard failures, nothing moved. Isolated piles were only 2-12% of births, so the creep's churn remains: see the flicker ticket.
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Status needs-decision -> in-progress. Daniel 11-01: option A, next physics lane (lane 112).
 - 2026-11-01: Created from inbox draft draft-sediment-piles-born-continental.md (found by lane-100e).
