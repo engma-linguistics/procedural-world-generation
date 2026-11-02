@@ -634,7 +634,7 @@ function about() {
     <tr><td>source</td><td>${sw.source_run
       ? `<a href="index.html?run=${sw.source_run}&t=${sw.t_myr}" target="_top" title="Open the run at this time">${sw.name || 'run ' + sw.source_run + ' @ ' + sw.t_myr + ' Myr'}</a><br>run ${sw.source_run} @ ${sw.t_myr} Myr, sliced as world <a href="index.html?world=${sw.id}.json" target="_top">${sw.id}</a>`
       : `world <a href="index.html?world=${sw.id}.json" target="_top">${sw.id}</a><br>${sw.name || ''}`}</td></tr>
-    <tr><td>centre</td><td>${fmt(m.center.lat, 2)}, ${fmt(m.center.lon, 2)}</td></tr>
+    <tr><td>centre</td><td>${fmt(m.center.lat, 2)}, ${fmt(m.center.lon, 2)}${m.section ? ` &middot; section ${m.section}` : ''}${m.center.up ? ` &middot; turned: up ${m.projection.up_bearing_deg == null ? 'at the pole' : `${fmt(m.projection.up_bearing_deg, 0)}&deg;`}` : ''}</td></tr>
     <tr><td>size</td><td>${m.size_km} km, ${m.nx}&times;${m.ny} px @ ${fmt(m.res_km, 2)} km</td></tr>
     <tr><td>seed</td><td>${m.seed}</td></tr>
     <tr><td>land</td><td>${s.land_pct}% (coarse ${s.coarse_land_pct}%)</td></tr>
@@ -942,13 +942,19 @@ async function loadFineSizes(resList) {
 const zoomEntry = (id) => fine.idx.find((z) => z.id === id);
 const kids = (id) => (zoomEntry(id)?.children || []).map(zoomEntry).filter(Boolean);
 function descendants(id, depth = 1, out = []) { for (const z of kids(id)) { out.push({ z, depth }); descendants(z.id, depth + 1, out); } return out; }
-// zoom frames (planet/zoom/regional.py Frame): the plane's x east, y north (km) of lat, lon round `center`
+// zoom frames (planet/zoom/regional.py Frame): the plane's x east, y north (km) of lat, lon round `center`; a turned
+// section (PW-1338) has y along center.up
 function frameOf(center) {
-  const la = center.lat * Math.PI / 180, lo = center.lon * Math.PI / 180;
+  const la = center.lat * Math.PI / 180, lo = center.lon * Math.PI / 180, dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const C = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  if (center.up) {
+    const u = center.up, k = dot(u, C); let N = [0, 1, 2].map((j) => u[j] - k * C[j]); const nn = Math.hypot(...N);
+    N = N.map((v) => v / nn);
+    return { C, E: cross(N, C), N };
+  }
   let E = [-C[1], C[0], 0]; const ne = Math.hypot(E[0], E[1]); E = ne < 1e-9 ? [0, 1, 0] : [E[0] / ne, E[1] / ne, 0];
-  const N = [C[1] * E[2] - C[2] * E[1], C[2] * E[0] - C[0] * E[2], C[0] * E[1] - C[1] * E[0]];
-  return { C, E, N };
+  return { C, E, N: cross(C, E) };
 }
 function toPlane(center, lat, lon) {
   const { C, E, N } = frameOf(center), la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
@@ -1514,10 +1520,7 @@ function pixelAt(ev) {
 }
 
 function latlon(xkm, ykm) {
-  const m = state.meta, la = m.center.lat * Math.PI / 180, lo = m.center.lon * Math.PI / 180;
-  const C = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
-  let E = [-C[1], C[0], 0]; const ne = Math.hypot(E[0], E[1]) || 1; E = ne < 1e-9 ? [0, 1, 0] : [E[0] / ne, E[1] / ne, 0];
-  const N = [C[1] * E[2] - C[2] * E[1], C[2] * E[0] - C[0] * E[2], C[0] * E[1] - C[1] * E[0]];
+  const { C, E, N } = frameOf(state.meta.center);
   const rho = Math.hypot(xkm, ykm) / R_KM, az = Math.atan2(xkm, ykm);
   const p = [0, 1, 2].map((j) => Math.cos(rho) * C[j] + Math.sin(rho) * (Math.sin(az) * E[j] + Math.cos(az) * N[j]));
   return [Math.asin(p[2]) * 180 / Math.PI, Math.atan2(p[1], p[0]) * 180 / Math.PI];

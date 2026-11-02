@@ -47,7 +47,7 @@ class Z:
         self.meta = meta
         self.res, self.nx, self.ny = meta["res_km"], meta["nx"], meta["ny"]
         self.c = meta["center"]
-        self.frame = RG.Frame(self.c["lat"], self.c["lon"])
+        self.frame = RG.frame_of(self.c)  # (a turned section keeps its orientation in center.up, PW-1338)
         self.h = S.decode(np.asarray(raw["elevation"]), meta["layers"]["elevation"]).astype(np.float32)
         self.water = np.asarray(raw["water"])
         self.q = S.decode(np.asarray(raw["discharge"]), meta["layers"]["discharge"]).astype(np.float32)
@@ -230,6 +230,76 @@ def render(A: dict, B: dict, along_km, d_km, path: Path, step: int, q: float, ti
     write_png(path, np.ascontiguousarray(img))
 
 
+OWNER_STATIONS = (("held -50", -50.0), ("held -10", -10.0), ("line", 0.0), ("ramp +20", 20.0), ("ramp +40", 40.0),
+                  ("ramp +70", 70.0))
+MOVED_BANDS = ((0, 80), (80, 160), (160, 300), (300, 600), (600, 1e9))
+
+
+def owner_stations(ZA: Z, ZB: Z, alone: Z | None = None) -> dict:
+    """A matched pair's numbers at the owner line (PW-1301): who owns each of B's pixels as zoom/match.py decides it
+    (the tiling's cell when both are sections, else the nearer centre); sd = signed km from the owner line, + into
+    B's own ground. Stations are B's pixels within half a pixel of sd = d (held ground at d < 0, the ramp 0..80);
+    A is sampled at their centres. With `alone` (B built alone, the same frame): how far B moved, by band of sd."""
+    from planet.zoom import kernels as ZK
+    from planet.zoom import tiling as ZT
+    nx, ny, res = ZB.nx, ZB.ny, ZB.res
+    xs = (np.arange(nx) + 0.5 - nx / 2) * res
+    ys = (ny / 2 - np.arange(ny) - 0.5) * res
+    X, Y = np.meshgrid(xs, ys)
+    P = ZB.frame.to_sphere(X.ravel(), Y.ravel())
+    sa, sb = ZA.meta.get("section"), ZB.meta.get("section")
+    if sa and sb:
+        n = ZT.choose_n(ZB.meta["size_km"], 190.0)
+        f, i, j = ZT.locate(P, n)
+        cell = np.char.add(np.char.add(np.char.add(np.array(list(ZT.FACES))[f], "."), i.astype(str)),
+                           np.char.add(".", j.astype(str)))
+        mine, theirs = cell == sb, cell == sa
+    else:
+        a, b = ZA.centre_vec(), ZB.centre_vec()
+        mine = (P @ b) >= (P @ a)
+        theirs = ~mine
+    # (pixel centres: the first pixel each side of the line is half a pixel from it; a third cell's pixels are left out)
+    sd = (np.maximum(ZK.inside_distance(mine, nx, ny, False) - 0.5, 0)
+          - np.maximum(ZK.inside_distance(theirs, nx, ny, False) - 0.5, 0)) * res
+    sd = np.where(mine | theirs, sd, np.nan)
+    SA = ZA.sample(P)
+    SB = {k: v.ravel() for k, v in dict(h=ZB.h, slope=ZB.slope, water=ZB.water, q=ZB.q, biome=ZB.biome,
+                                          landform=ZB.landform).items()}
+    SB["ok"] = np.ones(len(P), bool)
+    landA, landB = SA["water"] == 0, SB["water"] == 0
+    out = {"owner": "tiling cells" if sa and sb else "nearer centre", "stations": {}}
+    for name, d in OWNER_STATIONS:
+        k = SA["ok"] & (np.abs(sd - d) <= 0.5 * res)
+        both = k & landA & landB
+        dh = np.abs(SA["h"] - SB["h"])[both]
+        ds = np.abs(SA["slope"] - SB["slope"])[both]
+        out["stations"][name] = dict(
+            d_km=d, n=int(k.sum()), n_land=int(both.sum()), dh_median_abs=pct(dh, 50), dh_p95_abs=pct(dh, 95),
+            dslope_median_deg=pct(ds, 50), dslope_p95_deg=pct(ds, 95),
+            coast_mismatch_share=float((landA != landB)[k].mean()) if k.any() else None,
+            # (which water each side has where they disagree, 'A/B': 0 land, 1 sea, 2 lake)
+            coast_pairs={f"{wa}/{wb}": int(((SA["water"] == wa) & (SB["water"] == wb) & k).sum())
+                         for wa in (0, 1, 2) for wb in (0, 1, 2) if wa != wb and (wa == 0 or wb == 0)},
+            biome_mismatch_share=float((SA["biome"] != SB["biome"])[both].mean()) if both.any() else None,
+            landform_mismatch_share=float((SA["landform"] != SB["landform"])[both].mean()) if both.any() else None)
+    for lab, lo, hi in (("slope_p95_ramp_0_80", 0, 80), ("slope_p95_inside_120_400", 120, 400)):
+        k = landB & (sd > lo) & (sd < hi)
+        out[lab] = pct(SB["slope"][k], 95)
+        if alone is not None:
+            out[lab + "_alone"] = pct(alone.slope.ravel()[(alone.water.ravel() == 0) & (sd > lo) & (sd < hi)], 95)
+    if alone is not None:
+        assert (alone.nx, alone.ny) == (nx, ny), "the alone build must be the same square"
+        both = landB & (alone.water.ravel() == 0)
+        dh = np.abs(alone.h.ravel() - SB["h"])
+        out["b_moved"] = {f"{lo}-{hi if hi < 1e8 else 'end'}": dict(
+            n_land=int((both & (sd >= lo) & (sd < hi)).sum()),
+            dh_median_abs=pct(dh[both & (sd >= lo) & (sd < hi)], 50), dh_p95_abs=pct(dh[both & (sd >= lo) & (sd < hi)], 95),
+            coast_changed_share=float((landB != (alone.water.ravel() == 0))[(sd >= lo) & (sd < hi)].mean())
+            if ((sd >= lo) & (sd < hi)).any() else None)
+            for lo, hi in MOVED_BANDS}
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("a")
@@ -240,28 +310,41 @@ def main():
     ap.add_argument("--step", type=float, default=1.0, help="km between samples along the line")
     ap.add_argument("--strip-km", type=float, default=None, help="picture half-width across the seam (default overlap/2 + 40)")
     ap.add_argument("--no-png", action="store_true")
+    ap.add_argument("--owner", action="store_true",
+                    help="B is matched to A (planet zoom --match): add stations at the owner line and across the ramp")
+    ap.add_argument("--alone", default=None, metavar="ZOOM",
+                    help="with --owner: B's square built alone, to measure how far matching moved B")
     args = ap.parse_args()
     ZA, ZB = Z(args.a), Z(args.b)
     a, b = ZA.centre_vec(), ZB.centre_vec()
     gap = float(np.arccos(np.clip(a @ b, -1, 1)) * R_KM)
     side = ZA.meta["size_km"]
-    overlap = side - gap
-    edge = overlap / 2 - 5.0
     half = min(side, ZB.meta["size_km"]) / 2 + 100.0
     dstep = 1.0
-    pts, along, dd = seam_points(a, b, half, args.step, args.strip_km or (overlap / 2 + 40.0), dstep)
+    # the band both squares cover, found from the data (turned or unequal sections: not side - gap, PW-1338):
+    # across the bisector, the d range where at least half as much of the line as at best has both zooms
+    probe, _, dp = seam_points(a, b, half, 10.0, max(side - gap, 0.0) / 2 + 400.0, dstep)
+    pf = probe.reshape(-1, 3)
+    both = np.mean((ZA.sample(pf)["ok"] & ZB.sample(pf)["ok"]).reshape(probe.shape[:2]), axis=0)
+    cov = np.flatnonzero(both >= 0.5 * both.max())
+    lo_d, hi_d = float(dp[cov[0]]), float(dp[cov[-1]])
+    overlap, mid = hi_d - lo_d, 0.5 * (lo_d + hi_d)
+    edge = overlap / 2 - 5.0
+    pts, along, dd = seam_points(a, b, half, args.step, args.strip_km or (max(abs(lo_d), abs(hi_d)) + 40.0), dstep)
     na, nd = pts.shape[:2]
     flat = pts.reshape(-1, 3)
     SA, SB = ZA.sample(flat), ZB.sample(flat)
     SA = {k: v.reshape(na, nd) for k, v in SA.items()}
     SB = {k: v.reshape(na, nd) for k, v in SB.items()}
     res = {"a": ZA.id, "b": ZB.id, "centres_km_apart": round(gap, 1), "overlap_km": round(overlap, 1),
-           "q_m3s": args.q, "stations": {}}
-    for name, d in (("B_edge", -edge), ("middle", 0.0), ("A_edge", edge)):
+           "overlap_mid_km": round(mid, 1), "q_m3s": args.q, "stations": {}}
+    for name, d in (("B_edge", mid - edge), ("middle", mid), ("A_edge", mid + edge)):
         i = int(np.argmin(abs(dd - d)))
         A = {k: v[:, i] for k, v in SA.items()}
         B = {k: v[:, i] for k, v in SB.items()}
         res["stations"][name] = {"d_km": float(dd[i]), **station(A, B, args.step, args.q)}
+    if args.owner:
+        res["owner_line"] = owner_stations(ZA, ZB, Z(args.alone) if args.alone else None)
     name = args.name or f"{ZA.id}-{ZB.id}"
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

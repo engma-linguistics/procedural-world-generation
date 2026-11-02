@@ -231,15 +231,19 @@ BRANCH_CLIMB_M = 30.0  # m: ... nor where it stands higher than this above the d
 # Projection
 # ---------------------------------------------------------------------------
 class Frame:
-    """Azimuthal equidistant projection around (lat0, lon0); x east, y north, km."""
+    """Azimuthal equidistant projection around (lat0, lon0); x east, y north, km. With `up` (a 3D vector, PW-1338) the
+    plane is turned so +y runs along the tangent part of `up` at the centre and x is 90 degrees clockwise of it (the
+    tiling's sections, PW-1319); `self.up` keeps it (None: north-up)."""
 
     def __init__(self, lat0: float, lon0: float, up: np.ndarray | None = None):
         la, lo = np.radians(lat0), np.radians(lon0)
         self.c = xyz(la, lo)
+        self.up = None
         if up is not None:  # a chosen orientation (the tiling's, PW-1319): +y along the tangent part of `up`
             n = np.asarray(up, float) - (np.asarray(up, float) @ self.c) * self.c
             self.n = n / np.linalg.norm(n)
             self.e = np.cross(self.n, self.c)
+            self.up = self.n.copy()
             return
         e = np.cross([0.0, 0.0, 1.0], self.c)
         if np.linalg.norm(e) < 1e-9:  # at a pole: pick any east
@@ -259,6 +263,25 @@ class Frame:
         az = np.arctan2(x, y)
         d = np.sin(az)[:, None] * self.e + np.cos(az)[:, None] * self.n
         return np.cos(rho)[:, None] * self.c + np.sin(rho)[:, None] * d
+
+
+def frame_of(center: dict) -> Frame:
+    """The frame of a saved zoom from its zoom.json `center` ({lat, lon} and, for a turned section, `up`: PW-1338)."""
+    return Frame(center["lat"], center["lon"], up=center.get("up"))
+
+
+def up_of(lat: float, lon: float, up) -> np.ndarray | None:
+    """A zoom's orientation as a unit 3D vector tangent at (lat, lon): None (north-up), a vector, or a bearing in degrees
+    (clockwise from north) for the square's +y."""
+    if up is None:
+        return None
+    if np.ndim(up) == 0:
+        b = np.radians(float(up))
+        f = Frame(lat, lon)
+        if np.linalg.norm(np.cross([0.0, 0.0, 1.0], f.c)) < 1e-9:
+            raise SystemExit("a bearing has no meaning at a pole: give the orientation as a vector or use --section")
+        return np.sin(b) * f.e + np.cos(b) * f.n
+    return Frame(lat, lon, up=up).up
 
 
 def _latlon(p):
@@ -1193,7 +1216,8 @@ class ZoomCtx:
     stage reads. The stages (stage_*.py) read and write it as attributes; a stage's own temporaries stay local to it.
     An attribute a stage has not set yet raises AttributeError, as an unbound local would."""
 
-    __slots__ = ("iterations", "lat", "log", "lon", "peoples", "res_km", "river_min_flow", "seed", "size_km", "world",
+    __slots__ = ("iterations", "lat", "log", "lon", "peoples", "res_km", "river_min_flow", "seed", "size_km", "up",
+                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice", "m_lake",
                  "BR", "Kr", "L", "P", "Pc", "Pk", "S", "active", "all_falls", "amp_land", "area", "banks", "barrier",
                  "base", "bi_island", "bi_layer", "biome", "bottom", "branch", "c_idx", "cap", "carved", "cell_area",
                  "cell_means", "cexit", "cgrad", "chain_km", "clab", "clamp", "clim_f", "clvl", "coarse", "course",
@@ -1218,10 +1242,16 @@ class ZoomCtx:
 
 
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
-          seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print, peoples: dict | None = None) -> dict:
-    """Build the regional zoom of the world round (lat, lon): size_km square at res_km per pixel. The pipeline, stage by
-    stage (each in stage_*.py, on a shared ZoomCtx): see the module docstring."""
+          seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print, peoples: dict | None = None,
+          up: np.ndarray | None = None, section: str | None = None, match: list | None = None) -> dict:
+    """Build the regional zoom of the world round (lat, lon): size_km square at res_km per pixel, north-up or turned to
+    `up` (a unit vector, PW-1338). The pipeline, stage by stage (each in stage_*.py, on a shared ZoomCtx): see the
+    module docstring. `match`: neighbouring sections already built (match.sources) to agree with at the edges
+    (PW-1301); `section`: this zoom's tiling cell, if it is one (whose ground it owns)."""
     ctx = ZoomCtx()
+    ctx.up = up
+    ctx.section = section
+    ctx.match = match or None
     ctx.world = world
     ctx.lat = lat
     ctx.lon = lon
@@ -1424,19 +1454,26 @@ LAYER_DOC = {
 
 
 def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float, seed: int,
-            iterations: int = 15, peoples: str | None = None) -> str:
+            iterations: int = 15, peoples: str | None = None, up=None, match=()) -> str:
     key = f"{world_id}|{lat:.4f}|{lon:.4f}|{size_km:g}|{res_km:g}|{seed}"
     if iterations != 15:  # the default keeps the ids it always had
         key += f"|it{iterations}"
     if peoples:  # (a zoom with a peoples run's land use is another zoom)
         key += f"|peoples{peoples}"
+    if up is not None:  # (a turned section, PW-1338: another zoom than the north-up one of the same centre)
+        key += "|up" + ",".join(f"{v:.4f}" for v in np.asarray(up, float))
+    if match:  # (matched to neighbours already built, PW-1301: another zoom than the one built alone)
+        key += "|match" + ",".join(sorted(match))
     return hashlib.sha1(key.encode()).hexdigest()[:6]
 
 
 def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km: float, res_km: float,
-         seed: int, iterations: int = 15, peoples: str | None = None) -> Path:
+         seed: int, iterations: int = 15, peoples: str | None = None, section: str | None = None,
+         match: tuple = ()) -> Path:
     world_id = world_path.stem
-    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations, peoples)
+    fr: Frame = z["frame"]
+    up = _up_list(fr)
+    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations, peoples, up, match)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
     specs, arrays = {}, {}
@@ -1453,7 +1490,6 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     for k, img in z["satellite"].items():
         write_png(out / SAT_FILES[k], img)
     write_png(out / "coarse.png", coarse_image(z))
-    fr: Frame = z["frame"]
     half = size_km / 2
     corners = {k: [round(v, 4) for v in _latlon(fr.to_sphere(np.array([x]), np.array([y]))[0])]
                for k, (x, y) in {"nw": (-half, half), "ne": (half, half), "se": (half, -half),
@@ -1467,15 +1503,20 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
         "generated_in_s": z["seconds"],
         "source_world": {"id": world_id, "file": f"worlds/{world_path.name}", "name": world.get("name"),
                          "source_run": m.get("source_run"), "t_myr": m.get("t_myr"), "level": m.get("level")},
-        "center": {"lat": lat, "lon": lon},
+        "center": {"lat": lat, "lon": lon, **({"up": up} if up else {})},
+        **({"section": section} if section else {}),
+        **({"matched_to": sorted(match)} if match else {}),
         "size_km": size_km,
         "res_km": z["res"],
         "nx": z["nx"], "ny": z["ny"],
         "seed": seed,
         "projection": {
             "type": "azimuthal_equidistant", "lat0": lat, "lon0": lon, "planet_radius_km": R_KM,
-            "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (east of centre)",
-            "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)",
+            **({"up": up, "up_bearing_deg": _bearing(fr),
+                "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (right of centre: 90 degrees clockwise of up)",
+                "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (along `up` from the centre; row 0 = the up edge)"} if up else {
+                "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (east of centre)",
+                "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)"}),
             "corners_latlon": corners,
         },
         "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png",
@@ -1495,6 +1536,21 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     return out
 
 
+def _up_list(fr: Frame) -> list | None:
+    """A frame's orientation as zoom.json keeps it (None: north-up)."""
+    return None if fr.up is None else [round(float(v), 6) for v in fr.up]
+
+
+def _bearing(fr: Frame) -> float | None:
+    """Degrees clockwise from true north of a frame's +y at its centre (None at a pole)."""
+    e = np.cross([0.0, 0.0, 1.0], fr.c)
+    if np.linalg.norm(e) < 1e-9:
+        return None
+    e /= np.linalg.norm(e)
+    n = np.cross(fr.c, e)
+    return round(float(np.degrees(np.arctan2(fr.n @ e, fr.n @ n)) % 360), 3)
+
+
 # the satellite view's images (unshaded; satellite.py's seasons -> file; zoom.json's files: name without .png)
 SAT_FILES = {"year": "satellite.png", "jul": "satellite_jul.png", "jan": "satellite_jan.png"}
 
@@ -1507,7 +1563,7 @@ def add_satellite(ref: str | Path) -> Path:
     meta, lay = load(d, decode=True)
     world = land_world(W.load(find_world(meta["source_world"]["id"])))[0]
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res
     ys = (ny / 2 - np.arange(ny) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)
@@ -1537,7 +1593,7 @@ def add_game(ref: str | Path) -> Path:
     meta, lay = load(d, decode=True)
     world = W.load(find_world(meta["source_world"]["id"]))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res
     ys = (ny / 2 - np.arange(ny) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)
@@ -1561,7 +1617,7 @@ def add_humanuse(ref: str | Path) -> Path:
     d = S.find_zoom(ref)
     meta, lay = load(d, decode=True)
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     new = HU.zoom_layers(lay, res, HU.falls_pixels(meta.get("stats", {}).get("falls", []), fr, nx, ny, res))
     specs = {}
     for k in new:
@@ -1588,8 +1644,19 @@ def update_index():
     S.update_index("zoom")
 
 
-def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0, seed: int = 1,
-         iterations: int = 15, log=print, peoples: str | None = None) -> Path:
+def zoom(world_ref: str, lat: float | None, lon: float | None, size_km: float = 1000.0, res_km: float = 2.0,
+         seed: int = 1, iterations: int = 15, log=print, peoples: str | None = None, up=None,
+         section: str | None = None, match=()) -> Path:
+    """Zoom a world round (lat, lon), north-up or turned to `up` (a 3D vector or a bearing in degrees, PW-1338); or
+    the tiling's section `section` (a cell id such as 'px.1.1', tiling.py: its centre and orientation; lat, lon and up
+    are then ignored). `match`: ids of neighbouring zooms already built that this one agrees with at the edges
+    (zoom/match.py, PW-1301)."""
+    if section is not None:
+        from . import tiling as ZT
+        s = ZT.section(section, size_km)
+        lat, lon, up = s["lat"], s["lon"], s["up"]
+    if lat is None or lon is None:
+        raise SystemExit("give --lat and --lon, or --section")
     if not -90 <= lat <= 90:
         raise SystemExit("--lat must be within -90..90")
     if not 10 <= size_km <= 5000:
@@ -1601,12 +1668,20 @@ def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km
     if "rock" not in world["layers"]:
         raise SystemExit("this world has no rock/climate layers; zoom needs a world sliced from a tectonic run")
     lon = (lon + 180) % 360 - 180
+    up = up_of(lat, lon, up)
     A = ZP.load(peoples, path.stem) if peoples else None  # (a peoples run of this world: its land use, PW-667)
     if A:
         peoples = A["id"]
-    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A)
-    with S.lock(S.zooms_dir(), zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples)):
-        out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples)  # (one writer per zoom folder)
+    srcs = None
+    if match:
+        from . import match as ZM
+        srcs = ZM.sources(match)
+        match = tuple(s["id"] for s in srcs)
+    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A, up=up, section=section,
+              match=srcs)
+    zid = zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples, _up_list(z["frame"]), match)
+    with S.lock(S.zooms_dir(), zid):
+        out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples, section, match)  # (one writer per zoom folder)
     ZC.add_to_zoom(out.name, world=world)  # (the coast layers and features, PW-097: the islands are in the terrain already)
     add_deposits(out, world)
     return out

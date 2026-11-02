@@ -29,6 +29,9 @@ def first_glaciers(ctx):
     lat_px, nx, ny, outlet, precip, res, sea, sp, tilt_w, world.
     Writes: edge, glacier, glacier_mask, ice, ice_n, ice_th, jitter_g, lat_px, outlet, precip, sea, tilt_w."""
     # --- landscape pass ----------------------------------------------------
+    if ctx.match:  # (the neighbours' ground at their finished heights, PW-1301)
+        from . import match as ZM
+        ZM.hold(ctx)
     ctx.edge = np.zeros((ctx.ny, ctx.nx), bool)
     ctx.edge[0, :] = ctx.edge[-1, :] = ctx.edge[:, 0] = ctx.edge[:, -1] = True
     for p0, rr_ in ctx.inflow_pts:  # the edge next to where a river enters is land, not an outlet,
@@ -37,6 +40,8 @@ def first_glaciers(ctx):
     ctx.edge = ctx.edge.ravel()
     ctx.sea = ~ctx.land
     ctx.outlet = ctx.sea | ctx.edge
+    if ctx.match:  # (... held there, outlets of the landscape pass)
+        ZM.hold_edge(ctx)
     ctx.precip = np.clip(np.nan_to_num(ctx.precip, nan=0.0), 0, None)
     ctx.ice = np.clip(np.nan_to_num(ctx.ice, nan=0.0), 0, None)
     # glaciers from each pixel's own climate (see glaciers()): a first
@@ -86,6 +91,9 @@ def lakes(ctx):
                                   np.column_stack([ctx.land_c, lk_c]).astype(float), 0.42 * ctx.sp)
         lake_n = ZK.fbm(ctx.Pc, 0.5 * ctx.sp, RG._octaves(0.5 * ctx.sp, 2 * ctx.res), 0.6, ctx.S + 8) / 0.15
         cand = ctx.land & ~ctx.edge & ~ctx.glacier & (np.nan_to_num(lind[:, 0], nan=-1.0) + 0.2 * lake_n > 0.1)
+        if ctx.match:  # (the neighbours' lake outlines where they weigh over a half, on held ground too, PW-1301)
+            from . import match as ZM
+            cand = ZM.lakes(ctx, cand)
         lab, sizes = ZK.label_components(cand, ctx.nx, ctx.ny)
         pl = np.flatnonzero(lab >= 0)
         pl = pl[sizes[lab[pl]] >= min_px]
@@ -1081,7 +1089,8 @@ def landscape_loop(ctx):
     # becomes land instead, a flat at its level that the rivers cross.
     ctx.rec = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)[1]
     ctx.outs = ctx.lake_outlets(ctx.reroute(ctx.rec, ZK.receiver_order(ctx.rec))[0])
-    sink = [j for j, lk in enumerate(ctx.lakes) if lk["exit"] is not None and ctx.outs[j] < 0]
+    sink = [j for j, lk in enumerate(ctx.lakes) if lk["exit"] is not None and ctx.outs[j] < 0
+            and not (ctx.match and ctx.m_pin[lk["px"]].mean() > 0.5)]  # (a neighbour's lake on held ground: its outlet is the neighbour's)
     if sink:
         for j in sink:
             ctx.lake[ctx.lakes[j]["px"]] = False
@@ -1103,6 +1112,9 @@ def final_drainage(ctx):
     Writes: active, all_falls, area, discharge, g, h, lake_depth, lake_in, lf_counts, lf_lake, lf_overlay, lf_sink,
     outlet, outs, plunge, rec, top_falls."""
     # --- final drainage --------------------------------------------------
+    if ctx.match:  # (the ramp blended to the neighbours' heights first, PW-1301)
+        from . import match as ZM
+        ZM.blend(ctx)
     filled, ctx.rec, order = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
     # tall drops become carved falls: tiers, a gorge retreated up into the plateau, walls round the lip
     # and a funnel round the foot (zoom.falls, PW-517); the drainage is found again on the carved ground
