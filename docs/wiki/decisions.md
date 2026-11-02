@@ -220,3 +220,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: religion drafts numbered: epic PW-1308 (under PW-856), children PW-1304 faith tech nodes, PW-1305 food taboos, PW-1306 god tree + individuation (PW-907 folded in), PW-1307 moral ledgers (waits on the cosmic ledger tab). First slice 1304-1306, readout-only, ready for a lane.
 - 2026-11-02: merged lane 117 religion slice 1 (PW-1304/1305/1306 done; follow-ups PW-1309..1313 under PW-1308; calls for Daniel in PW-1311).
 - 2026-11-02: lane 115 (PW-1295 15 km shred) merged then code reverted: slow test_envelopes seed 2 hothouse 28.8 C (pCO2 3547) vs 15.8 C. Back to the lane for re-rolled L5 draws. Creep (PW-1315) to the back of the line under three strikes.
+- 2026-11-02: lane 115 round 2: seed 2 hothouse = frozen CO2 references caught a spin-up lull (PW-1316, D39 for Daniel, lean B); 15 km bound weakens spin-up outgassing ~7% (lane 119 checks trench jamming, PW-1317).
