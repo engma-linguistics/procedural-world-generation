@@ -39,7 +39,7 @@ must be able to act on it.
 - [ ] acceptance criteria as a checklist, when useful
 ```
 
-**List everything in `refs`.** A draft's `refs` (and a ticket update's) lists everything you actually used and anything a fixer will need: code functions (`path.py::name`), notes and reports, harness scripts, the specific runs, worlds and places you looked at (prefer protected or durable ones; say in the Description when a scratch run is gone), and papers by key. Two refs is almost always too few.
+**List everything in `refs`.** A draft's `refs` (and a ticket update's) lists everything you actually used and anything a fixer will need: code functions (`path.py::name`), notes and reports, harness scripts, the specific runs, worlds and places you looked at (prefer protected or durable ones; say in the Description when a scratch run is gone), and papers by key. Two refs is almost always too few. When you create a ticket, put in everything you think it will need ahead of time. When a lane works on an open ticket, it fills in that ticket's thin refs as it goes; that is the only backfill (no backfill lanes, none for closed tickets).
 
 For a `needs-decision` draft, the Description lays out the options (A, B, C), the trade-offs, and your lean.
 
