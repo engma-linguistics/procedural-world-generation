@@ -1,0 +1,342 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index a1f028c7..d317db75 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1040,7 +1040,8 @@ def _budyko1(p, pet, w):
+ 
+ @njit(cache=True, parallel=True)
+ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+-          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, ema0, warm):
++          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, mbl, mbl_kv, mbl_gam, mbl_rb, b0, m0,
++          ema0, warm):
+     """Water vapour carried along the wind in physical time, for all
+     seasons at once (arrays are [season, cell]). Each time step dt (s):
+     - the air moves: a finite-volume transport through the cell faces
+@@ -1077,12 +1078,25 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
+     of the steps, the large-scale part of it, the evaporation from the sea
+     (the water the air takes up over it, same units), the air's water
+     vapour left after its rain (_qsat units: 1 = saturated at 0 C), and the
+-    vapour and the running mean of the rain at the end. (Parallel over cells, each adding up in a fixed order; the
++    vapour and the running mean of the rain at the end, and the marine
++    layer's vapour at the end.
++    The marine layer (mbl, PW-1321): with it on, the air near the ground is
++    its own layer b [season, cell] (_qsat units, depth mbl_rb x the
++    column's), carried by the same winds. The sea's bulk exchange fills b,
++    not the column (the column never touches the water), and b mixes with
++    the air just above it, the column's vapour at the layer's top (mbl_gam
++    x q: the vapour's e-folding height), at the share mbl_kv [0: sea, 1:
++    land] per step; what crosses goes into (or comes out of) the column,
++    which rains. Over land the layer's vapour above what the air can hold
++    goes up into the column at once. Off (mbl False): b is unused and the
++    sea fills the column directly. (Parallel over cells, each adding up in a fixed order; the
+     one sum over all cells stays serial, so the results don't depend on the
+     threads.)"""
+     S, n = qs.shape
+     m = np.ascontiguousarray(m0.T)  # [cell, season]: a neighbour's seasons side by side (one gather)
+     m1 = np.empty((n, S))
++    bm = np.ascontiguousarray(b0.T)  # the marine layer's vapour (mbl), [cell, season]
++    bm1 = np.empty((n, S))
+     acc = np.zeros((S, n))
+     acc_ls = np.zeros((S, n))
+     ema = ema0.copy()  # running mean of each place's rain
+@@ -1131,10 +1145,36 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
+         last = it >= steps - tail
+         for i in prange(n):
+             for k in range(S):
++                b = 0.0
+                 q = c_self[k, i] * m[i, k]
+                 for j in range(off[i], off[i + 1]):
+                     q += c_in[j, k] * m[nbr[j], k]
+-                if ocean[i]:
++                if mbl:
++                    b = c_self[k, i] * bm[i, k]
++                    for j in range(off[i], off[i + 1]):
++                        b += c_in[j, k] * bm[nbr[j], k]
++                    if ocean[i]:
++                        if src_q[k, i] > b:
++                            up = open_sea[k, i] * (src_q[k, i] - b)
++                            if last:
++                                acc_up[k, i] += mbl_rb * up
++                            b += up
++                        f = mbl_kv[0] * (b - mbl_gam * q)
++                    else:
++                        q += land_e[k, i]
++                        f = mbl_kv[1] * (b - mbl_gam * q)
++                    if mbl >= 2:  # showers draw on the layer: their updrafts lift its air (and fire on its energy)
++                        ib = (mse_t[k, i] + tcor[k, i] + LQ * b - mse_thr[k, i]) / cv_scale
++                        if ib > 0 and b > mbl_gam * q:
++                            f += min(cv_rate[k, i] * min(ib, 2.0) * dt, 1.0) * (b - mbl_gam * q)
++                    f = min(f, b)
++                    b -= f
++                    q += mbl_rb * f
++                    if not ocean[i] and b > qs[k, i]:
++                        q += mbl_rb * (b - qs[k, i])
++                        b = qs[k, i]
++                    bm1[i, k] = b
++                elif ocean[i]:
+                     if src_q[k, i] > q:
+                         up = open_sea[k, i] * (src_q[k, i] - q)
+                         if last:
+@@ -1146,7 +1186,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
+                 rh = min(q / max(qs[k, i], 1e-12) / rh_c[k, i], 1.0)
+                 rate = ls_rate[k, i] * rh**rh_pow
+                 r_ls = min(rate * dt, 1.0) * (q - excess)
+-                inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale
++                inst = (mse_t[k, i] + tcor[k, i] + LQ * (b if mbl >= 2 else q) - mse_thr[k, i]) / cv_scale
+                 if inst > 0:
+                     rate += cv_rate[k, i] * min(inst, 2.0)
+                 r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+@@ -1157,7 +1197,10 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
+                     acc_ls[k, i] += r_ls
+                     acc_q[k, i] += q - r
+         m, m1 = m1, m
+-    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, np.ascontiguousarray(m.T), ema
++        if mbl:
++            bm, bm1 = bm1, bm
++    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, np.ascontiguousarray(m.T), ema, \
++        np.ascontiguousarray(bm.T)
+ 
+ 
+ def vapour_mixed(grid: Grid, q: np.ndarray, qs: np.ndarray, t_air: np.ndarray, tune: dict) -> np.ndarray:
+@@ -1567,16 +1610,25 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
+     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
+           ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr", "rhc")}
+     c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
+-    open_sea = sea_uptake(seasons_in, open_sea, dt, tune)
++    mbl = int(tune["mbl"])
++    open_sea = sea_uptake(seasons_in, open_sea, dt, {**tune, "sea_bl_m": tune["mbl_h"]} if mbl else tune)
++    # the marine layer (PW-1321): its mixing with the air above it, w x dt / its depth, over the sea and over land;
++    # the column's vapour at its top (the column's e-folding height 1 / (q_k LAPSE)); its depth per the column's
++    mbl_kv = np.array([1.0 - np.exp(-tune["mbl_w"] * dt / tune["mbl_h"]),
++                       1.0 - np.exp(-tune["mbl_w_land"] * dt / tune["mbl_h"])])
++    mbl_gam = float(np.exp(-tune["mbl_h"] * tune["q_k"] * LAPSE))
++    mbl_rb = float(tune["mbl_h"] / tune["sea_bl_m"])
+     warm = start is not None and start["vap"].shape == st["qs"].shape
+     steps = int((RAIN_WARM_DAYS if warm else RAIN_DAYS) * 86400.0 / dt) + 20
+     tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
+     m0 = start["vap"] if warm else np.where(ocean, st["src_q"], RAIN_INIT * st["qs"])
+     ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
++    b0 = start["bl"] if warm and "bl" in start else np.where(ocean, st["src_q"], RAIN_INIT * st["qs"])
+     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
+             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, c_self, c_in, nbr,
+             _faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"], tune["cv_scale"],
+-            tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
++            tune["evap_cool"], tune["mean_mm"], mbl, mbl_kv, mbl_gam, mbl_rb, np.ascontiguousarray(b0, np.float64),
++            np.ascontiguousarray(m0, np.float64),
+             np.ascontiguousarray(ema0, np.float64), warm)
+ def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[dict], tune: dict) -> np.ndarray:
+     """Storms carry their rain with them: the large-scale (frontal) rain is
+@@ -1612,8 +1664,9 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
+     the kernel's vapour and running mean of the rain), to start from it and
+     run RAIN_WARM_DAYS instead of RAIN_DAYS (a run's climate updates, PW-387;
+     the outputs move by the kernel's convergence error, ~1%)."""
+-    r, r_ls, up, vap, m, ema = _rain(*_rain_args(grid, elev, seasons_in, tune, pet, w, open_sea, ocean, start))
+-    return storm_spread(grid, r, r_ls, seasons_in, tune), up, vap, dict(vap=m, ema=ema)
++    r, r_ls, up, vap, m, ema, b = _rain(*_rain_args(grid, elev, seasons_in, tune, pet, w, open_sea, ocean, start))
++    st = dict(vap=m, ema=ema, bl=b) if tune["mbl"] else dict(vap=m, ema=ema)
++    return storm_spread(grid, r, r_ls, seasons_in, tune), up, vap, st
+ 
+ 
+ TUNE = dict(
+@@ -1623,6 +1676,10 @@ TUNE = dict(
+     sea_ce=1.3e-3,  # bulk transfer coefficient of the sea's evaporation (C_E, neutral, ~10 m)
+     sea_bl_m=500.0,  # m: the marine boundary layer the sea's evaporation fills (the bulk exchange's depth)
+     sea_wind_min=3.0,  # m/s: the least wind the bulk exchange sees (gusts in a calm)
++    mbl=0.0,  # the marine layer under the column (PW-1321; _rain): 1 on (screening switch, lane 132) ...
++    mbl_h=500.0,  # m: ... its depth (the bulk exchange's: it fills this layer; sea_bl_m is then the column's) ...
++    mbl_w=0.007,  # m/s: ... its mixing with the air above it over the sea (entrainment + shallow cumulus) ...
++    mbl_w_land=0.02,  # m/s: ... and over land (a sunlit convective layer)
+     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
+     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
+     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
+diff --git a/tests/test_rain_transport.py b/tests/test_rain_transport.py
+index d530ef84..6a2be0b2 100644
+--- a/tests/test_rain_transport.py
++++ b/tests/test_rain_transport.py
+@@ -54,7 +54,7 @@ def test_no_rain_from_a_dry_column():
+         d["src_q"] = np.zeros(g.n)
+     a = list(climate._rain_args(g, elev, s_in, climate.TUNE, np.full((2, g.n), 1000.0)))
+     a[-3] = np.zeros((2, g.n))  # (m0: dry air)
+-    r, r_ls, up, q, m, _ = climate._rain(*a)
++    r, r_ls, up, q, m, _, _ = climate._rain(*a)
+     assert not r.any() and not up.any() and not q.any() and not m.any()
+ 
+ 
+diff --git a/tools/moisture_budget.py b/tools/moisture_budget.py
+index 06707054..9efc4ee4 100644
+--- a/tools/moisture_budget.py
++++ b/tools/moisture_budget.py
+@@ -130,8 +130,8 @@ PROBE_REGIONS = ["Sahara", "Sahel", "Arabia", "Australia interior", "Gobi/Mongol
+ # --------------------------------------------------------------------------
+ @njit(cache=True, parallel=True)
+ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+-           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, un, kd, ea, eb, L, lc,
+-           tag, ntag):
++           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, mbl, mbl_kv, mbl_gam, mbl_rb, b0, m0,
++           un, kd, ea, eb, L, lc, tag, ntag):
+     """climate._rain, line for line, plus: tracers of the vapour by where it
+     evaporated (tag: per cell, 0..ntag-1; a well-mixed column, so each tracer
+     is carried as the vapour is and rains its share r/q of the cell's rain),
+@@ -142,11 +142,16 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+     ea -> eb, model units x m2/s). Returns (rain, rain_ls, sea uptake,
+     vapour after rain, land evaporation, rain from oversaturation, shower
+     rain, trigger's dry part, vapour before rain, rain by tracer
+-    [S, ntag, n], face flux by the wind [S, ne], by mixing [S, ne])."""
++    [S, ntag, n], face flux by the wind [S, ne], by mixing [S, ne]). With
++    the marine layer (mbl) on, its vapour is tagged too, the vapour before
++    rain is the column's plus the layer's (mbl_rb x b: column units) and
++    the face fluxes are both layers'."""
+     S, n = qs.shape
+     ne = ea.shape[0]
+     m = np.ascontiguousarray(m0.T)
+     m1 = np.empty((n, S))
++    bm = np.ascontiguousarray(b0.T)
++    bm1 = np.empty((n, S))
+     acc = np.zeros((S, n))
+     acc_ls = np.zeros((S, n))
+     ema = np.zeros((S, n))
+@@ -163,10 +168,14 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+     acc_fm = np.zeros((S, ne))
+     T = np.zeros((S, ntag, n))
+     T1 = np.zeros((S, ntag, n))
++    TB = np.zeros((S, ntag, n))  # the marine layer's tracers (mbl)
++    TB1 = np.zeros((S, ntag, n))
+     acc_t = np.zeros((S, ntag, n))
+     for k in range(S):
+         for i in range(n):
+             T[k, tag[i], i] = m[i, k]
++            if mbl:
++                TB[k, tag[i], i] = bm[i, k]
+     tail = max(steps // 4, 1)
+     fex = 1.0 - np.exp(-dt / tau_ex)
+     scale = 1.0
+@@ -207,9 +216,13 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+                 a, b = ea[e], eb[e]
+                 for k in range(S):
+                     u = un[k, e]
+-                    fa = (u * m[a, k] if u > 0 else u * m[b, k]) * L[e]
++                    ma, mb_ = m[a, k], m[b, k]
++                    if mbl:
++                        ma += mbl_rb * bm[a, k]
++                        mb_ += mbl_rb * bm[b, k]
++                    fa = (u * ma if u > 0 else u * mb_) * L[e]
+                     acc_fa[k, e] += fa
+-                    acc_fm[k, e] += kd[k, e] / lc[e] * (m[a, k] - m[b, k]) * L[e]
++                    acc_fm[k, e] += kd[k, e] / lc[e] * (ma - mb_) * L[e]
+         for i in prange(n):
+             for k in range(S):
+                 q = c_self[k, i] * m[i, k]
+@@ -220,7 +233,60 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+                     for j in range(off[i], off[i + 1]):
+                         tg += c_in[j, k] * T[k, g, nbr[j]]
+                     T1[k, g, i] = tg
+-                if ocean[i]:
++                bb = 0.0
++                if mbl:
++                    bb = c_self[k, i] * bm[i, k]
++                    for j in range(off[i], off[i + 1]):
++                        bb += c_in[j, k] * bm[nbr[j], k]
++                    for g in range(ntag):
++                        tg = c_self[k, i] * TB[k, g, i]
++                        for j in range(off[i], off[i + 1]):
++                            tg += c_in[j, k] * TB[k, g, nbr[j]]
++                        TB1[k, g, i] = tg
++                    if ocean[i]:
++                        if src_q[k, i] > bb:
++                            up = open_sea[k, i] * (src_q[k, i] - bb)
++                            if last:
++                                acc_up[k, i] += mbl_rb * up
++                            bb += up
++                            TB1[k, tag[i], i] += up
++                        f = mbl_kv[0] * (bb - mbl_gam * q)
++                    else:
++                        q += land_e[k, i]
++                        T1[k, tag[i], i] += land_e[k, i]
++                        if last:
++                            acc_le[k, i] += land_e[k, i]
++                        f = mbl_kv[1] * (bb - mbl_gam * q)
++                    if mbl >= 2:  # showers draw on the layer: their updrafts lift its air (and fire on its energy)
++                        ib = (mse_t[k, i] + tcor[k, i] + LQ * bb - mse_thr[k, i]) / cv_scale
++                        if ib > 0 and bb > mbl_gam * q:
++                            f += min(cv_rate[k, i] * min(ib, 2.0) * dt, 1.0) * (bb - mbl_gam * q)
++                    f = min(f, bb)
++                    # what crosses carries the tracers of the layer it leaves
++                    if f > 0:
++                        sh = f / bb if bb > 0 else 0.0
++                        for g in range(ntag):
++                            x = TB1[k, g, i] * sh
++                            TB1[k, g, i] -= x
++                            T1[k, g, i] += mbl_rb * x
++                    elif f < 0:
++                        sh = -mbl_rb * f / q if q > 0 else 0.0
++                        for g in range(ntag):
++                            x = T1[k, g, i] * sh
++                            T1[k, g, i] -= x
++                            TB1[k, g, i] += x / mbl_rb
++                    bb -= f
++                    q += mbl_rb * f
++                    if not ocean[i] and bb > qs[k, i]:
++                        sh = (bb - qs[k, i]) / bb
++                        for g in range(ntag):
++                            x = TB1[k, g, i] * sh
++                            TB1[k, g, i] -= x
++                            T1[k, g, i] += mbl_rb * x
++                        q += mbl_rb * (bb - qs[k, i])
++                        bb = qs[k, i]
++                    bm1[i, k] = bb
++                elif ocean[i]:
+                     if src_q[k, i] > q:
+                         up = open_sea[k, i] * (src_q[k, i] - q)
+                         if last:
+@@ -237,7 +303,7 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+                 rate = ls_rate[k, i] * rh**rh_pow
+                 r_ls = min(rate * dt, 1.0) * (q - excess)
+                 dry = mse_t[k, i] + tcor[k, i] - mse_thr[k, i]
+-                inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale  # (as _rain adds it up)
++                inst = (mse_t[k, i] + tcor[k, i] + LQ * (bb if mbl >= 2 else q) - mse_thr[k, i]) / cv_scale  # (as _rain)
+                 if inst > 0:
+                     rate += cv_rate[k, i] * min(inst, 2.0)
+                 r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+@@ -256,9 +322,12 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+                     acc_ex[k, i] += fex * excess
+                     acc_cv[k, i] += r - fex * excess - r_ls
+                     acc_dry[k, i] += dry
+-                    acc_qb[k, i] += q
++                    acc_qb[k, i] += q + mbl_rb * bb
+         m, m1 = m1, m
+         T, T1 = T1, T
++        if mbl:
++            bm, bm1 = bm1, bm
++            TB, TB1 = TB1, TB
+     return (acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, acc_le / tail, acc_ex / tail, acc_cv / tail,
+             acc_dry / tail, acc_qb / tail, acc_t / tail, acc_fa / tail, acc_fm / tail)
+ 
+diff --git a/tools/moisture_regions.py b/tools/moisture_regions.py
+index 419fcfde..07eaf1e8 100644
+--- a/tools/moisture_regions.py
++++ b/tools/moisture_regions.py
+@@ -127,14 +127,23 @@ def kernel_inputs(rec, tune=None, st_fn=None, wind_fn=None, w_fn=None):
+     if wind_fn is not None:
+         un, kd = wind_fn(un.copy(), kd.copy())
+     c_self, c_in, nbr, dt = climate._transport(grid, un, kd)
++    open_sea0 = open_sea
+     open_sea = climate.sea_uptake(s_in, open_sea, dt, tune)
+     steps = int(climate.RAIN_DAYS * 86400.0 / dt) + 20
+     tau_ex = -climate.RATE_S / np.log(1.0 - tune["fex"])
+     m0 = np.where(ocean, st["src_q"], climate.RAIN_INIT * st["qs"])
++    mbl = int(tune["mbl"])
++    if mbl:  # (the marine layer, as climate._rain_args has it)
++        open_sea = climate.sea_uptake(s_in, open_sea0, dt, {**tune, "sea_bl_m": tune["mbl_h"]})
++    mbl_kv = np.array([1.0 - np.exp(-tune["mbl_w"] * dt / tune["mbl_h"]),
++                       1.0 - np.exp(-tune["mbl_w_land"] * dt / tune["mbl_h"])])
++    mbl_gam = float(np.exp(-tune["mbl_h"] * tune["q_k"] * climate.LAPSE))
++    mbl_rb = float(tune["mbl_h"] / tune["sea_bl_m"])
+     args = (st["qs"], st["src_q"], ocean, st["ls"] / climate.RATE_S, st["cv"] / climate.RATE_S, st["mse_t"],
+             st["mse_thr"], np.ascontiguousarray(rec["pet"], np.float64), w, float(tune["soil_mm"]), open_sea,
+             c_self, c_in, nbr, climate._faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"],
+-            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64))
++            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"], mbl, mbl_kv, mbl_gam, mbl_rb,
++            np.ascontiguousarray(m0, np.float64), np.ascontiguousarray(m0, np.float64))
+     return args, un, kd, tune
+ 
+ 

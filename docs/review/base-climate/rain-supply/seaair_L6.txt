@@ -1,0 +1,16 @@
+N Atlantic storm track   Jul: SST  10.1  air   9.5  final air  15.5  NCEP air  14.0  qsat(air)/qsat(SST) 0.97
+N Atlantic storm track   Jan: SST   6.7  air   4.7  final air  13.1  NCEP air   8.0  qsat(air)/qsat(SST) 0.91
+N Pacific storm track    Jul: SST  10.7  air  10.4  final air  10.0  NCEP air  11.5  qsat(air)/qsat(SST) 0.98
+N Pacific storm track    Jan: SST   7.2  air   6.0  final air   6.0  NCEP air   4.4  qsat(air)/qsat(SST) 0.94
+Gulf of Mexico           Jul: SST  25.0  air  24.6  final air  24.6  NCEP air  27.2  qsat(air)/qsat(SST) 0.98
+Gulf of Mexico           Jan: SST  22.0  air  21.0  final air  21.1  NCEP air  22.6  qsat(air)/qsat(SST) 0.95
+W Atlantic subtropics    Jul: SST  22.1  air  21.8  final air  22.9  NCEP air  25.0  qsat(air)/qsat(SST) 0.99
+W Atlantic subtropics    Jan: SST  19.3  air  18.7  final air  20.5  NCEP air  19.0  qsat(air)/qsat(SST) 0.97
+E Atlantic subtropics    Jul: SST  19.9  air  19.9  final air  20.7  NCEP air  23.4  qsat(air)/qsat(SST) 1.00
+E Atlantic subtropics    Jan: SST  17.8  air  18.0  final air  18.8  NCEP air  19.5  qsat(air)/qsat(SST) 1.01
+NW Pacific subtropics    Jul: SST  22.9  air  22.7  final air  22.6  NCEP air  25.0  qsat(air)/qsat(SST) 0.99
+NW Pacific subtropics    Jan: SST  20.3  air  19.6  final air  19.8  NCEP air  17.3  qsat(air)/qsat(SST) 0.96
+SW Atlantic              Jul: SST  18.8  air  18.2  final air  18.0  NCEP air  17.1  qsat(air)/qsat(SST) 0.96
+SW Atlantic              Jan: SST  21.8  air  21.6  final air  21.3  NCEP air  21.2  qsat(air)/qsat(SST) 0.99
+Tropical Atlantic        Jul: SST  25.7  air  25.6  final air  25.2  NCEP air  24.9  qsat(air)/qsat(SST) 0.99
+Tropical Atlantic        Jan: SST  25.8  air  25.7  final air  26.1  NCEP air  25.4  qsat(air)/qsat(SST) 1.00
