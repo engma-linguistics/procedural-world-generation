@@ -1238,7 +1238,8 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         cu = np.where(ocean, 0.0, tune["cloud_cu"] * np.clip((inst + c0) / c1, 0, 1) * np.sqrt(rh))
         # the stratocumulus deck drifts over low coasts (the garua of Lima, the Namib's fog)
         drift = np.clip(grid.nbr_mean(np.where(ocean, deck, 0.0)) * coastal, 0, 1)
-        layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 - tune["cloud_polar"] * pole) * (1 - drift), 0, 1)
+        layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 * _layer_gate(si, tune) - tune["cloud_polar"] * pole)
+                        * (1 - drift), 0, 1)
         low = np.where(ocean, sea, layer)
         clear = np.where(ocean, 0.0, tune["cloud_clear"] * sink * np.exp(-p / tune["cloud_clear_mm"]))
         cover = lambda k: np.clip((1 - (1 - k * deep) * (1 - k * cu) * (1 - storm) * (1 - low)) * (1 - clear), 0, 1)
@@ -1247,6 +1248,21 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         # cloud_sun_conv of the day that layer cloud of the same cover would.
         out.append((cover(1.0), sunshine(cover(tune["cloud_sun_conv"]))))
     return out
+
+
+def _layer_gate(si, tune):
+    """Share (0..1) of the land humidity layer cloud (cloud_rh) the lower troposphere's stability allows: the air
+    aloft (t_ref, the free troposphere's surface-equivalent temperature, _season_inputs) less the surface air's
+    (mse_t's dry part: t_air plus height), from -cloud_rh_lts[0] C (none) over cloud_rh_lts[1] C (full).
+    Low stratus is a stable-air cloud: its season is the one of the greatest lower-tropospheric stability
+    (Klein & Hartmann 1993), and the continents' low cloud is stratus and stratocumulus in winter but cumulus
+    in summer (Eastman & Warren 2014). So it stays over winter Europe, Siberia and Canada, and thins over warm
+    land whose air is as warm as the air aloft or warmer (the tropics, summer continents). (PW-1334: it made all
+    of the warm land's shade excess.) cloud_rh_lts[1] = 0: no gate."""
+    a, b = tune["cloud_rh_lts"]
+    if b <= 0:
+        return 1.0
+    return np.clip((si["t_ref"] - si["mse_t"] + a) / b, 0, 1)
 
 
 def day_hours(lat, tilt: float = 23.4) -> tuple[np.ndarray, np.ndarray]:
@@ -1654,6 +1670,8 @@ TUNE = dict(
     cloud_coast_m=1000.0,  # ... less the higher it is, none this high (the decks are ~1 km deep)
     cloud_itcz=0.1,  # share of the sea's low cloud the tropical rain belt's towers replace
     cloud_rh=0.55,  # land: cloud per unit of relative humidity (^1.5) of the air mass ...
+    cloud_rh_lts=(2.0, 6.0),  # ... where the air aloft is warm against the ground's (stable; C: from -[0], in
+    # full over [1] more; _layer_gate)
     cloud_polar=0.25,  # ... thin cloud over the cold poles (from 60 deg, in full from 80) ...
     cloud_cu=0.5,  # ... fair-weather cumulus where the ground makes the air unstable ...
     cloud_cu_c=(4.0, 6.0),  # ... from this many C stable, in full over this many more
@@ -1704,7 +1722,11 @@ TUNE = dict(
     # h = sqrt(2 H tau / (rho c_p gamma)) ~1500 m for ~80 W/m2 into a free troposphere of ~5 K/km)
     ef_ref=0.61,  # the summer's actual / potential evaporation the temperature curve stands for (Earth's ice-free
     # land 20-60 deg without the split: tools' water_balance on its own climate) ...
-    cloud_ref=0.63,  # ... and its summer cloud cover (Earth's ice-free land 20-60 deg, as albedo_ref)
+    sun_ref=0.62,  # ... and its summer sunshine share (CRU: Earth's ice-free land 20-60 deg; PW-1327)
+    split_lw=1.0,  # share of FAO-56's net long-wave change with the sunshine kept in _summer_split (clear skies
+    # lose more long-wave; Allen et al. 1998 eq. 39, its cloud factor)
+    split_bl_max=4.0,  # the summer boundary layer deepens as sqrt(H / H_ref) where the ground's heat beats the
+    # curve's (encroachment), up to this x sum_h (1: fixed; the Saharan one is 5-6 km: Ryder et al. 2015)
     fetch_km=1000.0,  # km: the summer air above the boundary layer is as continental as the land within this
     # (the synoptic scale its storms and highs mix it over; _summer_fetch) ...
     fetch_h=3500.0,  # m: ... up to this height (the summer's continental heat low reaches ~650 hPa), so the
@@ -2152,8 +2174,8 @@ def open_water_evap(lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul, cloud_
     m/s at 2 m). The water's temperature is the air's, month by month (a
     sine between the coldest and warmest month); the net radiation Rn is
     the sunshine at the ground (Angstrom: the top of the atmosphere's x
-    0.25 + 0.5 x the sunshine share, from the half-year's cloud cover, as
-    climate.months) less 6% reflected, less the net long-wave loss (FAO-56:
+    0.25 + 0.5 x the sunshine share, from cloud_jul / cloud_jan: the light's
+    cloud, shade(), as climate.months) less 6% reflected, less the net long-wave loss (FAO-56:
     warmer, drier and clearer air loses more); e_a is the half-year's
     humidity (rh_jul / rh_jan, %: humidity()). So a humid, cloudy tropical
     lake evaporates ~1500 mm and a desert one ~3000 (Lake Victoria ~1500,
@@ -2628,8 +2650,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # first pass's temperatures.)
     wb0 = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
     air["d_sum"] = np.where(land & (ice <= 0), _summer_split(grid.lat, tilt, north, wb0["aet_half"],
-                                                             wb0["pet_half"], np.where(north, cloud_jul, cloud_jan),
-                                                             tune), 0.0)
+                                                             wb0["pet_half"], np.where(north, sun_jul, sun_jan),
+                                                             tune, *_sum_air(tm, dt, north, qm_jul, qm_jan, tune)),
+                                 0.0)
     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
@@ -2696,9 +2719,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
     (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(qm_jul, tm + dt, tune), humidity(qm_jan, tm - dt, tune)
     day_jul, day_jan = day_hours(grid.lat, tilt)
-    # lakes: Penman's open water, on the clouds and the air's humidity (PW-358)
-    wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul,
-                                                     cloud_jan, tilt, tune), 0.0)
+    # lakes: Penman's open water, on the light's cloud (shade: Angstrom-Prescott is in sunshine hours) and the
+    # air's humidity (PW-358, PW-1336)
+    wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, shade(sun_jul),
+                                                     shade(sun_jan), tilt, tune), 0.0)
 
     def reground(ice_new):
         """The bare ground's (t_warm, t_cold, temp), as `ground`, under another land ice's carried air (its own
@@ -3000,28 +3024,50 @@ def _upstream(grid, v, x):
     return np.where(den > 1e-9, num / np.maximum(den, 1e-12), x)
 
 
-def _summer_split(lat, tilt, north, aet_half, pet_half, cloud_sum, tune):
+def _sum_air(tm, dt, north, qm_jul, qm_jan, tune):
+    """(t_sum, dew_sum): the first pass's summer half-year air and its dew point, for _summer_split's long-wave."""
+    t_sum = tm + np.where(north, dt, -dt)
+    return t_sum, humidity(np.where(north, qm_jul, qm_jan), t_sum, tune)[0]
+
+
+def _summer_split(lat, tilt, north, aet_half, pet_half, sun_sum, tune, t_sum=None, dew_sum=None):
     """C warmer (colder) the land's summer air is from its surface energy
-    split: the sunshine reaching the ground in the summer half (under its
-    clouds, sunshine; the curve's albedo) less what evaporation takes
+    split: the sunshine reaching the ground in the summer half (sun_sum,
+    clouds' sunshine share of the day, which counts the showers at
+    cloud_sun_conv; the curve's albedo) less what evaporation takes
     (aet_half's summer half, in W/m2) is the sensible heat H that warms
     the boundary layer (sum_h deep) over the air's day (sum_tau), against
-    the H the temperature curve stands for: its sunshine under cloud_ref,
+    the H the temperature curve stands for: its sunshine share sun_ref,
     less ef_ref of the summer's potential evaporation (pet_half, the
     model's own wet surface at that place and temperature). So a cloudy,
     wet summer is cooler than the curve's (Houston, the Yangtze) and a
     sunny, dry one hotter (Phoenix), while a cold summer, whose wet
     surface evaporates little, has little to gain or lose; this replaces
-    the +-evap_cool table."""
+    the +-evap_cool table. With split_lw, the clearer sky's extra
+    long-wave loss (FAO-56) offsets part of its extra sunshine; with
+    split_bl_max > 1 a hotter ground mixes a deeper layer (t_sum, dew_sum:
+    the summer air and dew point, _sum_air)."""
     S = insolation(np.asarray(lat, float), tilt) * 1e6 / 86400.0
     s_sum = np.where(north, S[3:9].mean(0), np.concatenate([S[:3], S[9:]]).mean(0))
     ground = (1 - tune["albedo_ref"]) * s_sum
-    sw = ground * (0.25 + 0.5 * sunshine(cloud_sum))
-    sw_ref = ground * (0.25 + 0.5 * sunshine(np.full_like(cloud_sum, tune["cloud_ref"])))
+    sun, sun_ref = np.asarray(sun_sum, float), tune["sun_ref"]
+    sw = ground * (0.25 + 0.5 * sun)
+    sw_ref = ground * (0.25 + 0.5 * sun_ref)
     i, sm = np.arange(len(lat)), np.where(north, 0, 1)
     to_w = LATENT * 1e6 / (0.5 * YEAR_S)  # mm per half-year -> W/m2
     le, le_ref = aet_half[sm, i] * to_w, tune["ef_ref"] * pet_half[sm, i] * to_w
-    return tune["sum_tau"] / (RHO_C_AIR * tune["sum_h"]) * ((sw - le) - (sw_ref - le_ref))
+    h, h_ref = sw - le, sw_ref - le_ref
+    if tune["split_lw"] > 0 and t_sum is not None:
+        # FAO-56 eq. 39's net long-wave, sigma T^4 (0.34 - 0.14 sqrt(ea)) (1.35 Rs/Rso - 0.35): only its
+        # cloud factor differs between the cell and the curve's reference (Rs/Rso = (0.25 + 0.5 sun) / 0.75)
+        ea = 0.6108 * np.exp(17.27 * dew_sum / (dew_sum + 237.3))
+        lw0 = 5.67e-8 * (t_sum + 273.15) ** 4 * np.clip(0.34 - 0.14 * np.sqrt(ea), 0.0, None) * 1.35 / 0.75 * 0.5
+        h = h - tune["split_lw"] * lw0 * (sun - sun_ref)
+    k = tune["sum_tau"] / (RHO_C_AIR * tune["sum_h"])
+    if tune["split_bl_max"] > 1:  # a hotter ground mixes a deeper layer: the warming per W/m2 falls (encroachment)
+        deep = np.clip(np.sqrt(np.maximum(h, 0) / np.maximum(h_ref, 1.0)), 1.0, tune["split_bl_max"])
+        return k * (h - h_ref) / deep
+    return k * (h - h_ref)
 
 
 def vegetation_feedbacks(open_land, veg, tune) -> dict:
