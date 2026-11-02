@@ -1,0 +1,42 @@
+{
+ "a": "d904d6",
+ "b": "5d2e02",
+ "q": 50.0,
+ "tol_km": 12.0,
+ "A_to_B": {
+  "n": 1,
+  "continued": 1,
+  "within25": 1.0,
+  "log2_median": 7.734914326426168e-05,
+  "offset_km_median": 4.0651245031266265,
+  "n_big": 0,
+  "big_within25": null,
+  "q_up_total": 53.78847885131836,
+  "q_down_total": 53.79136276245117,
+  "worst": [
+   {
+    "q_up": 53.8,
+    "q_down": 53.8
+   }
+  ]
+ },
+ "B_to_A": {
+  "n": 0,
+  "continued": 0,
+  "within25": null,
+  "log2_median": null,
+  "offset_km_median": null,
+  "n_big": 0,
+  "big_within25": null,
+  "q_up_total": 0.0,
+  "q_down_total": 0.0,
+  "worst": []
+ },
+ "lakes": {
+  "n": 994,
+  "lake_A": 0,
+  "lake_B": 0,
+  "A_lake_B_land": 0,
+  "A_land_B_lake": 0
+ }
+}

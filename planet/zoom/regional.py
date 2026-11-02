@@ -1217,7 +1217,7 @@ class ZoomCtx:
     An attribute a stage has not set yet raises AttributeError, as an unbound local would."""
 
     __slots__ = ("iterations", "lat", "log", "lon", "peoples", "res_km", "river_min_flow", "seed", "size_km", "up",
-                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice", "m_lake",
+                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice", "m_lake", "m_mine", "m_accept",
                  "BR", "Kr", "L", "P", "Pc", "Pk", "S", "active", "all_falls", "amp_land", "area", "banks", "barrier",
                  "base", "bi_island", "bi_layer", "biome", "bottom", "branch", "c_idx", "cap", "carved", "cell_area",
                  "cell_means", "cexit", "cgrad", "chain_km", "clab", "clamp", "clim_f", "clvl", "coarse", "course",
@@ -1464,6 +1464,9 @@ def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float
         key += "|up" + ",".join(f"{v:.4f}" for v in np.asarray(up, float))
     if match:  # (matched to neighbours already built, PW-1301: another zoom than the one built alone)
         key += "|match" + ",".join(sorted(match))
+        # (the neighbours' rivers handed on across the owner line, PW-1302: other zooms than lane 128's, which
+        # seams-round2.md cites)
+        key += "|rivers"
     return hashlib.sha1(key.encode()).hexdigest()[:6]
 
 

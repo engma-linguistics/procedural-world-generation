@@ -29,21 +29,23 @@ import numpy as np
 from .. import store as S
 from ..geo import smoothstep
 from . import kernels as ZK
+from . import regional as RG
 
 RAMP_KM = 80.0  # the blend's width inside the section's own ground (the tiling's least margin is ~97 km)
 VALID_PX = 3  # a neighbour's pixels this near its own edge aren't used (its bilinear sampling needs a pixel round)
+ACCEPT_M3S = 10.0  # the least stream of the neighbour's coming in from this section's ground that this one's water may join
 FADE_KM = 20.0  # ... and its weight fades to 0 over this much before them, so a ramp never ends in a step
 
 
 def sources(refs) -> list[dict]:
     """The saved zooms to match, as {id, frame, res, nx, ny, h (the ground: the bed under a glacier), ice (m), land, section,
     center, layers (categorical, 2D)}."""
-    from . import regional as RG
     out = []
     for ref in refs:
         d = S.find_zoom(ref)
         meta = json.loads((d / "zoom.json").read_text())
-        want = [k for k in ("elevation", "water", "ice", "lake_depth", *CATEGORICAL) if k in meta["layers"]]
+        want = [k for k in ("elevation", "water", "ice", "lake_depth", "discharge", "receiver", *CATEGORICAL)
+                if k in meta["layers"]]
         raw = S.read_layers(d, meta["layers"], want)
         h = S.decode(np.asarray(raw["elevation"]), meta["layers"]["elevation"]).astype(np.float32)
         if "lake_depth" in raw:
@@ -54,7 +56,8 @@ def sources(refs) -> list[dict]:
         out.append(dict(id=meta["id"], frame=RG.frame_of(meta["center"]), res=float(meta["res_km"]), nx=int(meta["nx"]),
                         ny=int(meta["ny"]), h=h, ice=ice, land=np.asarray(raw["water"]) != 1, lake=np.asarray(raw["water"]) == 2, section=meta.get("section"),
                         size_km=float(meta["size_km"]), center=meta["center"],
-                        layers={k: np.asarray(raw[k]) for k in want if k in CATEGORICAL}))
+                        layers={k: np.asarray(raw[k]) for k in want if k in CATEGORICAL},
+                        **_network(raw.get("discharge"), raw.get("receiver"), meta["layers"].get("discharge"))))
     return out
 
 
@@ -69,7 +72,21 @@ def source_of(z: dict, zid: str = "mem", section: str | None = None) -> dict:
                 h=h,
                 ice=np.asarray(L["ice"], np.float32) if "ice" in L else np.zeros(np.shape(L["elevation"]), np.float32), land=np.asarray(L["water"]) != 1, lake=np.asarray(L["water"]) == 2, section=section,
                 size_km=float(z["nx"] * z["res"]), center=None,
-                layers={k: np.asarray(L[k]) for k in CATEGORICAL if k in L})
+                layers={k: np.asarray(L[k]) for k in CATEGORICAL if k in L},
+                **_network(L.get("discharge"), L.get("receiver"), None))
+
+
+def _network(q, slots, spec) -> dict:
+    """A neighbour's drainage: discharge (m3/s) and receivers (pixel index, -1 none) from its D8 slot layer."""
+    if q is None or slots is None:
+        return dict(q=None, rec=None)
+    q = np.asarray(q)
+    q = (S.decode(q, spec) if spec is not None else q).astype(np.float32).ravel()
+    sl = np.asarray(slots).ravel().astype(np.int64)
+    nx = np.asarray(slots).shape[1]
+    t = sl + (sl >= 4)  # (slot 3 * (dr + 1) + (dc + 1), the centre skipped: regional.d8_slots)
+    rec = np.where(sl == RG.D8_NONE, -1, np.arange(len(sl)) + (t // 3 - 1) * nx + (t % 3 - 1))
+    return dict(q=q, rec=rec)
 
 
 def _lake_surface(h, water, depth) -> np.ndarray:
@@ -83,9 +100,9 @@ def _lake_surface(h, water, depth) -> np.ndarray:
 CATEGORICAL = ("biome", "landform", "vegetation", "land_cover", "surface_rock", "soil")
 
 
-def _owner(ctx, srcs) -> np.ndarray:
-    """Index of each pixel's owner: -1 this section, k the k-th neighbour."""
-    P = ctx.P
+def _owner(ctx, srcs, P=None) -> np.ndarray:
+    """Index of the owner of each pixel (or of points P): -1 this section, k the k-th neighbour."""
+    P = ctx.P if P is None else P
     secs = [s["section"] for s in srcs]
     if getattr(ctx, "section", None) and all(secs):
         from . import tiling as ZT
@@ -161,6 +178,7 @@ def prepare(ctx) -> None:
     ctx.m_lake = np.where(W > 0, Ks / np.maximum(W, 1e-9), 0.0) >= 0.5  # (its lakes: land in m_land)
     ctx.m_cat = cats
     ctx.m_dist = dist
+    ctx.m_mine = mine
     ctx.m_pin = (~mine) & (ctx.m_w > 0.999)
     ctx.log(f"  matched to {', '.join(s['id'] for s in srcs)}: {ctx.m_pin.mean():.1%} of the pixels held, "
             f"{((ctx.m_w > 0) & mine).mean():.1%} in the ramp")
@@ -184,6 +202,93 @@ def lakes(ctx, cand: np.ndarray) -> np.ndarray:
     # (this section's first glacier outline gives way to the neighbour's lake: the ice there is the neighbour's, final())
     ctx.glacier = ctx.glacier & ~(z & ctx.m_lake & ~frame)
     return np.where(z, ctx.m_lake & ctx.land & ~frame, cand)
+
+
+def inflows(ctx) -> None:
+    """After the coarse rivers' inflow: the water the neighbour's rivers carry across the owner line into this
+    section's ground, handed on (PW-1302). The held ground is an outlet, so without it a river flowing from the
+    neighbour's ground into this one started dry at the line (lane 128's pairs: 0 of 53 crossings carried on, e.g.
+    a 95,000 m3/s river arriving at 0). From the neighbour's own network (its `receiver` layer): every pixel it owns
+    whose receiver this section owns passes its discharge to this section's pixel where that receiver lies (the
+    nearest of its own land pixels round it, if the lattices' offset puts it on held ground or the sea). The
+    river's course from there is this section's own routing, on ground that at the line is the neighbour's.
+    Also ctx.m_accept: the held pixels where the neighbour's rivers enter its ground from this section's (walls()
+    keeps those, and only those, open to this section's water)."""
+    n_in, q_in = 0, 0.0
+    nx, ny, res = ctx.nx, ctx.ny, ctx.res
+    ok = ctx.m_mine & ~ctx.m_pin & ctx.land
+    ctx.m_accept = np.zeros(ctx.npx, bool)
+    for k, s in enumerate(ctx.match):
+        if s["q"] is None:
+            continue
+        nxs, nys = s["nx"], s["ny"]
+        cand = np.flatnonzero((s["rec"] >= 0) & (s["q"] > 0) & s["land"].ravel())
+        if not len(cand):
+            continue
+        rr, cc = np.divmod(cand, nxs)
+        X = (cc + 0.5 - nxs / 2) * s["res"]
+        Y = (nys / 2 - rr - 0.5) * s["res"]
+        own_p = _owner(ctx, ctx.match, s["frame"].to_sphere(X, Y))
+        # its pixels on this section's ground whose receiver it owns: where its rivers (a stream at least) enter its
+        # ground from ours
+        back = cand[(own_p == -1) & (s["q"][cand] >= ACCEPT_M3S)]
+        rr, cc = np.divmod(s["rec"][back], nxs)
+        Pb = s["frame"].to_sphere((cc + 0.5 - nxs / 2) * s["res"], (nys / 2 - rr - 0.5) * s["res"])
+        Pb = Pb[_owner(ctx, ctx.match, Pb) == k]
+        x, y = ctx.fr.to_plane(Pb)
+        col = np.floor(x / res + nx / 2).astype(int)
+        row = np.floor(ny / 2 - y / res).astype(int)
+        on = (col >= 0) & (col < nx) & (row >= 0) & (row < ny)
+        ctx.m_accept[row[on] * nx + col[on]] = True
+        cand = cand[own_p == k]  # (the pixels it owns)
+        r = s["rec"][cand]
+        rr, cc = np.divmod(r, nxs)
+        Pr = s["frame"].to_sphere((cc + 0.5 - nxs / 2) * s["res"], (nys / 2 - rr - 0.5) * s["res"])
+        cross = _owner(ctx, ctx.match, Pr) == -1  # (whose receiver this section owns)
+        p, Pr = cand[cross], Pr[cross]
+        x, y = ctx.fr.to_plane(Pr)
+        col = np.floor(x / res + nx / 2).astype(int)
+        row = np.floor(ny / 2 - y / res).astype(int)
+        on = (col >= 3) & (col < nx - 3) & (row >= 3) & (row < ny - 3)
+        for pk, r0, c0 in zip(p[on], row[on], col[on]):
+            b = r0 * nx + c0
+            if not ok[b]:  # (onto the nearest of this section's own land pixels, within 2)
+                dr, dc = np.mgrid[-2:3, -2:3]
+                rr_, cc_ = r0 + dr.ravel(), c0 + dc.ravel()
+                bb = rr_ * nx + cc_
+                good = ok[bb]
+                if not good.any():
+                    continue
+                b = int(bb[good][np.argmin((dr.ravel() ** 2 + dc.ravel() ** 2)[good])])
+            ctx.inflow[b] += float(s["q"][pk]) / RG.KM2_M_PER_YR_TO_M3S
+            n_in += 1
+            q_in += float(s["q"][pk])
+    ctx.log(f"  {n_in} crossings of the owner line hand on {q_in:,.0f} m3/s from the neighbours' rivers")
+
+
+def basin_lakes(ctx) -> None:
+    """The landform lakes and ponds (final drainage) keep to the neighbour's lake outline where its weight is over a
+    half, as the lakes do (lakes()): a basin on the ramp that fills to the brim with a river handed on (inflows())
+    made a lake at the line where the neighbour has land (lane 129, ice range pair: 6 of 402 line pixels). Where one
+    goes, the ground stands at its surface."""
+    drop = ctx.lf_lake & (ctx.m_w >= 0.5) & ~ctx.m_lake
+    if drop.any():
+        ctx.h = np.where(drop, ctx.h + ctx.lake_depth, ctx.h)
+        ctx.lake_depth = np.where(drop, 0.0, ctx.lake_depth)
+        ctx.lf_lake = ctx.lf_lake & ~drop
+
+
+def walls(ctx) -> np.ndarray:
+    """The held pixels next to this section's own ground that its water may not enter (PW-1302): all but where the
+    neighbour's own network has a river coming in from this side (ctx.m_accept). Held ground is an outlet of the
+    landscape pass (the valleys are graded down to the neighbour's levels), but in the final drainage an outlet all
+    along the line let a river handed on by inflows() run straight back into held ground beside where it came in
+    (lane 129's first try: a 95,000 m3/s river handed on, 104,000 m3/s run back out at the next pixels): water
+    crosses the line only where the neighbour, whose ground the mosaic shows there, has it cross."""
+    held = ctx.m_pin & ctx.land & ~ctx.lake & ~ctx.sea
+    own = (ctx.m_mine & ~ctx.m_pin).reshape(ctx.ny, ctx.nx)
+    near = RG._dilate(own, 1).ravel()
+    return held & near & ~ctx.m_accept
 
 
 def hold(ctx) -> None:
