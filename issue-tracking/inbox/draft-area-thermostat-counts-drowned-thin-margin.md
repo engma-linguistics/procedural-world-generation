@@ -17,7 +17,7 @@ In plain words: PW-1295 now keeps margin cells of 15-20 km as continental crust 
 floor (that stopped them flickering). The thermostat that holds the continents' area at its target counts those thin,
 deeply drowned cells as continent like any other. So it holds the same area (41%) with more drowned margin and less
 thick crust: on the 36-draw judge the land is 1.3 points lower (33 of 36 draws), the continental crust 0.8 km
-thinner, the drowned part 260 m deeper. Climate didn't move. The middle depths (200-3000 m) grew by 1.4 points,
+thinner, the drowned part 260 m deeper (scorecard: continental volume x0.97-0.98 of its target, from x1.00). Climate didn't move. The middle depths (200-3000 m) grew by 1.4 points,
 towards Earth.
 
 Why: on main the shreds of 15-20 km cells balanced the welds; now coherence is a net source of continental area

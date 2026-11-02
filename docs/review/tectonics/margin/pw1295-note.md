@@ -151,3 +151,8 @@ Goldens updated (the shred bound changes every output of the 60 Myr golden run).
 tracediag.py with `HYST_SHRED=20` (main's bound) or unset, seeds 1 and 3, `--myr 1000 --level 6 --set
 star_brightening=1.0 [neck_km=200 rise=1 slope_k=1000]`; the judge with `paired_margin.sh CODE OUT m 0.0005 0.001`,
 one OUT per arm (hard_bar.py reads arm `m`), linked into one root as base_/on_ for pjudge.py.
+
+Scorecard (tools/scorecard.py, d143c2bc, L6 seeds 1 / 2, 1 Gyr, no Earth data in the worktree): land 32.3 / 30.9%,
+crust 40.9 / 39.8%, shelf 1.6 / 2.7% of the ocean, submerged continent median -1263 / -968 m, volume x0.974 / 0.978.
+The line before it (7c9409e2, an older main): land 33.5 / 32.9, shelf 3.4 / 1.9, -757 / -995 m, volume x1.005 / 1.004.
+Same direction as the judge: land a point or two lower, continental volume ~2.5% under its target (thinner crust).
