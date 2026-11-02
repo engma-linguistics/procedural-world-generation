@@ -29,7 +29,7 @@ yet** (lane handed off at its tool budget; see "Next" at the end).
 
 ## Diagnosis: where each seam mismatch comes from
 
-Stage-by-stage attribution (`diag.py`, scratch harness: two zooms built with a snapshot of the height after every
+Stage-by-stage attribution (`docs/review/land-zoom/stage_diag.py WORLD LATA LONA LATB LONB SIZE RES`, PYTHONPATH at the repo: two zooms built with a snapshot of the height after every
 stage, compared at the same sphere points of their 200 km shared band). Pairs of 1000 km squares at 4 km/px, centres
 800 km apart, on lane 116's worst seams of dba204. Median |dh| on land both call land, m (p95 in brackets):
 
@@ -87,7 +87,7 @@ Sources, in order of size:
 - **Saved:** `zoom.json` `matched_to: [ids]`; the id includes them. `planet zoom ... --match ID,...`.
 - A zoom built without `--match` runs no new code (outputs unchanged), except the glacial direction fix of PW-1338.
 
-## Results on the small pairs (diag2.py: A alone, B alone, B matched to A, 1000 km @ 4 km/px)
+## Results on the small pairs (`docs/review/land-zoom/match_diag.py WORLD LATA LONA LATB LONB SIZE RES`: A alone, B alone, B matched to A, 1000 km @ 4 km/px)
 
 Median |dh| (p95), m, land both call land; d = distance from the owner line into B's ground:
 
