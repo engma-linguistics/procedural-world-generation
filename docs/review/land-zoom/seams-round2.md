@@ -119,7 +119,7 @@ own (range +70: 12 px of B lake on A land, a lake now continuing across the swit
 ## The far-inside test bound (brief item 4)
 
 Lane 127 loosened `test_matched_section_meets_its_neighbour`'s far-inside bound from 5 to 15 m after measuring 5.4 m.
-Stage attribution on the test's own synthetic pair (`far_diag.py` in the lane scratch: B alone vs B matched, same
+Stage attribution on the test's own synthetic pair (`round2/far_diag.py`: B alone vs B matched, same
 frame, snapshot after every stage, median |dh| on land by km from the owner line):
 
 | | 0-80 | 80-160 | 160-240 | 240-320 | 320-400 | 400-600 |
