@@ -278,3 +278,89 @@ Verdict for the coordinator: the band failure on seed 2 is mostly chaos in which
 (1/20 against 0/20). But the bound does move the spin-up source down systematically (17/20), which makes such trips a
 little likelier, and at L5 / 400 Myr it raises continental area by ~2 points. Candidate 1's check is the cheap next
 step. The bound stays off on main until then.
+
+## 5. Round 3 (lane 119, PW-1317): do the kept thin margins jam trenches? No
+
+**In plain words:** the guess was that the 15-20 km margin cells the 15 km bound keeps as continent reach trenches
+and jam them, which would shorten the subducting trenches and slow the plates. They don't, measurably: such jams add
+about 1 collision edge in 900 trench edges. What does differ is that the young planet has **fewer plates**, about
+2.5 fewer (-17%) over 100-300 Myr on 8 of 8 seeds, so all its plate boundaries are ~9% shorter: ridges and trenches
+alike, hence the weaker ridge and arc outgassing. The plates aren't slower (mean speed unchanged). The fewer plates
+come from the kept margins counting as continent in the plates' **dynamics** (the continental keel's drag in the
+force balance and the continents' insulation of the mantle): a screen where those two see only crust of 20 km and
+up, everything else as the 15 km bound, removes most of the difference. Step 2 (let thin continental crust subduct)
+was not made: it would fix a jam that isn't there.
+
+Harness: [jamdiag.py](jamdiag.py), envdraw.py's world (the test_envelopes fixture: L5, `Params(run_end=400)`, dt 2,
+its chunks), every step to 300 Myr, counting at `motion.boundaries`: subducting edges (`sub_n`) and their summed
+convergence (`sub_conv`, the slab flux), collision edges (`col_n`) and those with a thin (< 20 km) continental side
+(`col_thin`), all boundary edges, live plates, the source's parts; events from `sim.events`. Counts are edges /
+scale^2. Seeds 1-8 (envelope seed 2 among them), 15 km (the cherry-picked d143c2bc) against 20 km (main's bound).
+Means over 100-300 Myr, 15 / 20:
+
+| seed | thin cont % | col_thin | sub_n | sub_conv | all edges | plates | ridge | arcs' nominal | speed (cm/yr) |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 2.95 / 1.59 | 7 / 6 | 806 / 901 | 3963 / 4508 | 1818 / 2020 | 12.5 / 15.2 | 162 / 185 | 1837 / 1983 | 3.80 / 4.17 |
+| 2 | 3.63 / 1.84 | 10 / 5 | 709 / 948 | 3539 / 4756 | 1704 / 2014 | 10.8 / 15.7 | 156 / 206 | 1528 / 2101 | 4.13 / 4.84 |
+| 3 | 2.94 / 1.76 | 8 / 8 | 760 / 817 | 3694 / 4164 | 1734 / 1889 | 11.8 / 14.5 | 156 / 178 | 1667 / 1803 | 4.20 / 4.05 |
+| 4 | 3.37 / 2.24 | 9 / 6 | 789 / 831 | 4127 / 4162 | 1827 / 1909 | 13.9 / 14.0 | 180 / 177 | 1843 / 1912 | 4.74 / 4.26 |
+| 5 | 3.51 / 2.48 | 6 / 9 | 761 / 880 | 3686 / 4098 | 1705 / 2003 | 11.0 / 12.8 | 157 / 171 | 1683 / 1891 | 4.01 / 3.95 |
+| 6 | 3.54 / 1.74 | 7 / 5 | 863 / 862 | 4212 / 4258 | 1909 / 1887 | 12.2 / 12.8 | 166 / 179 | 1940 / 1915 | 3.97 / 4.29 |
+| 7 | 2.97 / 1.36 | 7 / 5 | 841 / 894 | 4280 / 4674 | 1890 / 1986 | 13.1 / 15.5 | 179 / 192 | 1881 / 2043 | 4.47 / 4.29 |
+| 8 | 3.22 / 2.27 | 4 / 4 | 821 / 919 | 3994 / 4521 | 1776 / 2079 | 12.3 / 15.1 | 165 / 186 | 1811 / 2030 | 3.85 / 4.01 |
+
+(ridge and arcs' nominal as in section 4, here averaged over every step; they agree with its table within ~2%)
+
+- **The jam is too small to matter.** Collision edges with a thin side: +1.0 per step (median; higher on 6 of 8),
+  against 40-240 fewer subducting edges (median -75, fewer on 7 of 8). Subducting edges whose overriding cell is
+  thin continent (a kept margin taking the other plate's ocean floor under it) differ by nothing (median -0.0, 4 of 8).
+  The thin margin cells themselves double (3.3 against 1.8% of the surface), but nearly all of them sit inside plates,
+  not on converging edges. (A sinking cell is always oceanic by `motion.boundaries`' rule, so a kept margin can only
+  "jam" as a continent-continent collision edge; those are the `col_thin` counts.)
+- **The plates aren't slower.** Mean speed differs by -0.05 cm/yr (median; lower on 4 of 8). Section 4's "slower on
+  4 of 6" was the same coin toss.
+- **There are fewer plates, so less boundary of every kind.** Plates -2.5 (median; fewer on 8 of 8, -17%), all
+  boundary edges -178 (7 of 8, -9%), spreading edges -90 (7 of 8), subducting edges -75 (7 of 8), slab flux -441
+  (8 of 8, -10%), ridge -17 (7 of 8), arcs' nominal -154 (7 of 8, -8%). The ridge and arc deficits are the boundary
+  deficit: per edge they're about equal in both arms.
+- **When:** over 0-100 Myr the arms barely differ (plates within 1, mean over the span), though the 15 km arm logs
+  more continental collisions (42 against 30, summed over the 8 seeds) and sutures (4 against 0). Over 100-300 Myr it
+  makes fewer plates (rifts plus new subductions, 147 against 160) and loses more (absorbed slivers, sutures,
+  consumed: 165 against 157). The plate counts part from ~80-120 Myr on (seed 2: 6-8 plates over 180-240 Myr
+  against 12-16).
+
+### What the fewer plates come from: screens (15 km bound, one model term reading only crust >= 20 km as continent)
+
+| arm (each against 20 km, 8 seeds, 100-300 Myr medians) | plates | all edges | sub_n | slab flux | ridge | arcs' nominal |
+|---|---|---|---|---|---|---|
+| 15 km | -2.5 (8/8 fewer) | -178 (7/8) | -75 (7/8) | -441 (8/8) | -17 (7/8) | -154 (7/8) |
+| 15 km, rift cuts' sliver test and strength see >= 20 km (`JAM_THICK_PIECE`, seeds 1-2 only) | 12.3 / 9.6 against 15.2 / 15.7 | | | | | |
+| 15 km, force balance (keel drag, traction coupling) sees >= 20 km (`JAM_THICK_DYN=keel`) | -1.9 (6/8) | -209 (7/8) | -96 (6/8) | -412 (7/8) | -22 (5/8) | -181 (6/8) |
+| 15 km, mantle insulation sees >= 20 km (`JAM_THICK_DYN=mantle`) | -0.3 (5/8) | -132 (5/8) | -75 (5/8) | -399 (5/8) | -13 (5/8) | -60 (5/8) |
+| 15 km, both (`JAM_THICK_DYN=1`) | -0.8 (5/8) | -38 (5/8) | -12 (4/8) | -216 (6/8) | -7 (5/8) | -81 (5/8) |
+
+(n/8: seeds where the arm is lower than 20 km; 5/8 or 4/8 is no sign)
+
+Reading: the rifts' sliver test (`events.piece_ok`, a kept speck making a cut leave a "continental sliver") isn't it:
+it vetoes a few more trial cuts with 15 km (50 and 59% against 46 and 36% on seeds 1-2), but the screen that
+takes the thin margin out of it leaves the plates as few. The keel
+alone isn't it either (the deficit stays systematic, 6-7 of 8). The mantle's insulation alone takes the systematic
+sign away (5 of 8 on every measure) but leaves large median deficits in boundary and slab flux; with both terms
+reading only thick crust the deficit mostly goes (medians a sixth to a half of the 15 km arm's: plate count and
+boundary at a third and a fifth, arcs and slab flux at half; and 4-6 of 8, inside the seed-to-seed scatter). Eight seeds tell a systematic 8/8 or 7/8 from chance
+(sign test p 0.01-0.07), not 6/8 from 5/8, so which of the two terms carries more is not settled. So the kept
+margins weaken the spin-up's source not at the trenches but by counting, in the mantle and force model, as a wider
+continent: `mantle.update` warms the mantle under every continental cell (`insulation x w_cont x lid`) and
+`motion.forces` / `mantle.traction` give each continental cell 2.5x the drag and coupling. A 15-20 km rifted margin
+has neither a thick lithospheric keel nor a continent's insulating lid; a continental fraction of those weights
+(e.g. by thickness, from the 20 km bound up) is the mechanism-level change. Not made here (draft): it touches the
+plate dynamics of every run, needs its own screen on the 20 envelope seeds and a judge, and is only needed if the
+15 km bound comes back.
+
+Not shown: why a warmer, wider insulated patch gives fewer plates (fewer rifts, more sutures and absorbed slivers
+over 100-300 Myr, in about equal parts). The screens settle which model terms carry the effect, not the path.
+
+Verdict: PW-1317's hypothesis is not confirmed; step 2 (thin continental crust subducts) is not proposed. The
+envelope seed 2 failure stays what section 4 said: chaos in which run trips the frozen references (PW-1316), made a
+little likelier by a ~8% weaker spin-up source, which comes from fewer plates, which comes from the kept margins'
+weight in the mantle and force model.
