@@ -44,6 +44,10 @@ Jobs (zooms, time zooms, finished worlds) run `--jobs J` at a time (default 4), 
 
 Measured at L8 on 2026-10-31 (seed 11, 100 Myr, load 20–55 on the Threadripper, docs/review/l8-world/notes.md): `simulate` 132 min for 100 Myr, ~9–25 s/Myr until the last ~10 Myr, then ~8 min/Myr in the finish window (full L8 climate every 0.5 Myr: 88 -> 100 Myr took ~90 min, the part that dominates short runs); peak RSS 10.7–15 GB (not 3.5 GB). `slice` of the world (full climate, coast, resources) 13.8 min, 17.7 GB RSS, world file 440 MB. 60 kyr glacial time zoom 39 min (about 10–20 s per kyr, not the 2.6 s the make estimate assumes), 10.4 GB RSS. `highlights` 86 s, 4 regional zooms 439 s together, under load.
 
+Measured at L8 over 1 Gyr on 2026-11-01 (seed 11, 655,362 cells of ~28 km, run 6a6fd6, world 0af5ae, docs/review/l8-world/gyr-notes.md): `simulate` 5 h 26 min on 8 cores (~5.7 h per Gyr), `slice` 10 min, the 300 kyr ice-age pass (7d803e) 1 h 48 min, finish 9 min: 7.5 h in all; peak RSS 30 GB, at the final write.
+
+Land zoom sections, 4000 km at 1 km/px (2026-11-02, lanes 122/128/129, docs/review/land-zoom/cost.md): 16 min and 86 GB alone and unloaded; a matched section (`--match`) 22-30 min and ~108 GB under load. At most two at once on this machine. The tiling covers dba204's land with 47 sections: ~12 h one at a time.
+
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min (Mac, zooms one after the other).
 - Mac only (4P+4E cores): `NUMBA_NUM_THREADS=4` is often faster under load; each parallel kernel launch costs ~40–57 µs.
 - Concurrency comes from processes, not threads (`planet/parallel.py`). Threadripper 9960X (24C/48T), 2026-10-15: one L6 100 Myr run takes 45.7 s at 4 numba threads and 39–40 s at 16–48 (serial Python/numpy dominates), but 8 at once at 2 threads each take 54 s (`planet simulate --seed 1 2 ... 8 --jobs 8 --threads 2`, load ~5; ~6x the throughput on 16 threads), and the coordinator measured 16 at once in 69 s (~9x). `parallel.simulate_many` is the entry point for multi-seed sweeps (PW-246).

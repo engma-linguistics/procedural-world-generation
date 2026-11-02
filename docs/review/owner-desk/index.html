@@ -68,153 +68,73 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · 1 November 2026 · week-end review</div>
+  <div class="kicker">procgen_world · Monday 2 November 2026 · morning</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Good evening, Daniel. This is the week-end review: what shipped this week and the plan for next week. Every
-decision on the desk is answered; the one thing left for you is your thoughts in the
-<a href="https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP">religion doc</a>. New tonight: the sea-level fix is merged, and one
-physics lane is running (sediment piles become continent only against continental crust).</p>
-  <nav class="toc"><a href="#density">D43 density</a><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#coming">Running now</a><a href="#settled">Settled this week</a></nav>
+  <p class="lede">Only what needs you now, plus what's running. Your answers from this morning are recorded on the tickets; the
+questions you asked are answered in chat and summed up below.</p>
+  <nav class="toc"><a href="#open">Open, for you</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
-<h2 id="week">The week in review (26 October – 1 November)</h2>
-<div class="card" id="weekcard">
-<p><b>Shipped: v0.1.0 is tagged.</b> No hard failures in 42 test worlds; six fresh showcase planets on the final code.</p>
-<ul>
-<li><b>Planet physics:</b> the CO2 crash fixed (plants starve below their own limit, D32 B), inland pits that aren't sea, warm-orbit ice sheets,
-dry subtropical coasts, sea evaporation as a bulk exchange, climate updates faster (every 8 Myr), and the L7 → L8 refine
-(20–25 minutes instead of 146). Your 1 Gyr L8 world finished.</li>
-<li><b>Peoples (the preview):</b> demes, then overlapping demes; emergent cultures and the Cultures tab; peoples learning new country;
-in-fighting for everyone; four life stages; the tech tree with 547 techs spreading as a 1 km/yr front; settlements, towns, cities and
-mines; dragons from the food chain, with lion-evidence persecution and your abundance dial.</li>
-<li><b>Viewer:</b> rebuilt into modules, fast at L8, family colours, a docked legend, the Technology and Cultures tabs, and the "whose
-demes" picker.</li>
-<li>Lanes 23 to 111 ran this week (some as several rounds); all 915 tests pass on main.</li>
-</ul>
-<p><b>Open, for you:</b> D39 (how the CO2 balance learns its normal), D40 (the rain round), D41 (the finished world's orbit), D42 (plant growth), D43 (the density ladder's seven questions) and the religion calls (PW-1311).</p>
-<p><b>Queue after lane 115:</b> speed part 2 (PW-1297), then no more chasing L8/L9 speed; the physics picks (rain inland, summer heat,
-plant growth); and the <b>whole-planet land zoom</b> epic (PW-1299): I pick side-by-side 4,000 km practice sections whose seams cross a
-river, a range, a coast and a desert edge (PW-1300); then seams, rivers across sections, and cost; the planet-wide sweep comes last
-(PW-1296).</p>
-<p><b>Next week, in order</b> (at most two lanes at once):</p>
-<ol>
-<li><b>Physics:</b> lane 112 (running): sediment piles become continent only where they touch a continent (PW-1292); then the
-sea-floor creep is tried again on top.</li>
-<li><b>Cultures prep</b>, small lanes: pull the placeholder war formulae out (PW-1280); your PW-1254 rulings (cohesion by lifespan,
-2,000 years side by side, no merging across ways of life); the village experiment (PW-1281); stable culture ids (PW-1283).</li>
-<li><b>Then</b> languages v0 and polities v0 side by side, the history zoom (PW-908) in parallel, and the sources reads: the density
-ladder's rungs (PW-1275, shown to you before building) and real battle losses (PW-1285).</li>
-<li><b>Also queued:</b> D34 B, all biomes' plant growth against sourced tables; the refine refactor; the globe (PW-1198); the global
-stats view (PW-1277).</li>
-</ol>
+<h2 id="open">Open, for you</h2>
+<p class="sub">Four calls: D39, D43's two open questions, and D41. D40 A, D42 A and D43's other five are recorded.</p>
+<div class="cards">
+
+<div class="card" id="d39"><div class="id">D39 · HOW THE CO2 BALANCE LEARNS ITS "NORMAL" (PW-1316) · B OR C?</div>
+<p><b>Your question: isn't outgassing part of the thermostat?</b> Not in this model, and mostly not in the real one either. The thermostat
+is weathering: warmer, wetter land weathers rock faster, which draws CO2 down, and colder land does the reverse. That part already runs
+every step. Volcanic outgassing is what the thermostat answers to: it rises and falls with the plates, and the planet finds a new balance
+each time.</p>
+<p><b>The "references" in D39 are only yardsticks:</b> the model measures today's outgassing and weathering against them. Right now
+they're learnt mostly from about the last 100 Myr of the first 300 Myr, so a volcanic lull in that stretch makes later normal
+outgassing read as "too much". B learns them over the whole first 300 Myr, so one lull can't set them. C keeps letting them follow
+the planet all run long. That turns the yardsticks into a second, fake thermostat: whatever the volcanoes do becomes "normal", so a
+planet whose volcanoes really wind down would never cool. This was tried once (PW-576) and it erased real long trends within a few
+hundred Myr. So I still lean <b>B</b>. D42's plant change follows D39, since less grass growth warms runs through these same yardsticks.</p>
 </div>
 
-<h2 id="l8">Your 1 Gyr L8 world</h2>
-<div class="card" id="l8card">
-<p><b>Ready to open:</b> <a href="http://localhost:8765/viewer/?world=0af5ae.json">world 0af5ae</a>. It is seed 11 at 655,000 cells of about 28 km, finished at the latest
-interglacial (sea level −79 m). Also: the plain last moment <a href="http://localhost:8765/viewer/?world=928016.json">928016</a>, <a href="http://localhost:8765/viewer/?run=6a6fd6">run 6a6fd6</a>
-and its 300 kyr ice-age pass <a href="http://localhost:8765/viewer/?run=7d803e">7d803e</a>. It stayed on its 8 cores and nothing crashed.</p>
-<p><b>What a billion years fixed:</b> the 100 Myr L8 world's oddities were its youth. Peaks reach 6,000 m (were 3,250). The biggest
-river carries 18,300 m³/s to the sea along 239 cells (it was 6,300, ending in an inland pocket). Land draining inland fell from 28% to
-about 5%. One continent, Hizam, holds 87% of the land; that's this seed.</p>
-<p><b>What it didn't fix:</b> the continental shelf. It covers 0.6–1.2% of the ocean, against Earth's 6–7% (and 4.2% on the young
-world). So the missing shelf and the cliff at the continent edge are the model's, not the run's age, That's what the margins lanes
-are after: the sea-level part is merged, and lane 112 is on the next piece. Mid-sized islands are still short: 14, against about 44 for Earth on this grid.</p>
-<p><b>Cost:</b> 5 h 26 min to simulate (about 5.7 h per Gyr on 8 cores), then 10 min to slice, 1 h 48 min for the ice-age pass and
-9 min to finish: 7.5 hours in all. Peak memory 30 GB, at the final write. No peoples run on it yet; say if you want one.
-Notes: <code>docs/review/l8-world/gyr-notes.md</code>. The 100 Myr world <a href="http://localhost:8765/viewer/?world=a16f5a.json">a16f5a</a> and its refined L7 → L8 cousin
-<a href="http://localhost:8765/viewer/?world=fb5e11.json">fb5e11</a> are still there.</p>
+<div class="card" id="d43q"><div class="id">D43 · DENSITY LADDER: QUESTIONS 3 AND 4 (PW-1350)</div>
+<p><b>3. The land-quality power isn't fertilisation.</b> It's how steeply density follows the land's plant growth: density ∝
+(growth ÷ reference)<sup>power</sup>. At 0.75 (today), land that grows twice as much holds 1.7× the people; at 1.0, exactly 2×; at 1.3, 2.5×.
+Lane 130's fit of Binford's 339 forager groups gives about 1.3 for foragers (wide scatter); gardeners span about 8× from poor to rich
+land in Papua New Guinea. Fertilisers, manuring and crop rotation would be tech steps that raise a farming rung's number, not this power.
+Choices: <b>A</b> keep 0.75; <b>B</b> 1.0 everywhere (simple, density in step with growth); <b>C</b> per rung, 1.3 for foragers where
+it's fitted and 1.0 elsewhere. I now lean <b>C</b>: it costs nothing and uses the one rung we actually fitted.</p>
+<p><b>4. Den peoples and raiding.</b> Yes, that can be done without heavy-handedness: goblins, kobolds and troglodytes sit at the
+forager rung (with the kind factor at 1.2), plus a <i>raiding share</i> that grows with how many farmers and herders live within reach,
+capped so raiding tops up a living rather than replacing it. How large a share of a living raiding gave real peoples is something
+I'd source before building, not guess. Goblin raiders then appear wherever goblins
+live next to rich neighbours, and stay thin in empty country. Farming for den peoples stays possible but weighted very low, so
+"goblin farmers" are rare rather than banned. <b>Lean:</b> A plus a capped raiding share, sourced first.</p>
 </div>
 
-<h2 id="v1">v0.1.0 is tagged</h2>
-<p class="sub">The v1 milestone is done (local tag, not pushed). No hard failures in 42 test worlds, and every v1 ticket is closed.
-The six showcase planets are rebuilt on the final code, at L7. The older showcases and your feedback runs are still there until you've
-looked at these.</p>
+<div class="card" id="d41"><div class="id">D41 · A FINISHED WORLD ADDS ITS ORBIT TO EVERY MONTH AT 3× THE LAND'S REAL RESPONSE (PW-1325)</div>
+<p><b>Your July on dba204:</b> a finished world adds its moment's orbit to the months. dba204's moment has the near-sun point in northern
+summer (eccentricity 0.035), worth +32 W/m² in July at the equator, and the model turns sunshine into degrees at the ice rule's 0.25 °C per
+W/m², about 3× what land really does (PW-459 found this; PMIP2's mid-Holocene runs, Braconnot et al. 2007, give 0.08 °C per W/m² or less).
+That's about +8 °C on tropical land. With the orbit at the real response, dba204's land with a 30 °C warmest month falls from 45% to
+19%, and its tropics match Earth's model.</p>
+<ol><li><b>A</b> apply the orbit to a finished world's months at the land's seasonal response. One line; doesn't touch the ice ages, the runs or Earth.
+<i>My lean.</i></li>
+<li><b>B</b> leave it.</li></ol>
+</div>
+
+</div>
+
+<h2 id="coming">Running now</h2>
 <div class="tbl"><table>
-<tr><th>Showcase</th><th>World</th><th>How it came out</th></tr>
-<tr><td>Earth-like A (1 Gyr)</td><td><a href="http://localhost:8765/viewer/?world=9459ad.json">9459ad</a></td><td>Passes. Ends warm (764 ppm, +3.9 °C). Peoples: <a href="http://localhost:8765/viewer/?run=b4d502&amp;layer=peoples">b4d502</a> (dnd) and <a href="http://localhost:8765/viewer/?run=3c1caf&amp;layer=peoples">3c1caf</a> (Seven Meals), on its ice-age world <a href="http://localhost:8765/viewer/?world=899985.json">899985</a></td></tr>
-<tr><td>Earth-like B (1.5 Gyr)</td><td><a href="http://localhost:8765/viewer/?world=848662.json">848662</a></td><td>Passes, near today's climate (+0.3 °C). Peoples: <a href="http://localhost:8765/viewer/?run=a24559&amp;layer=peoples">a24559</a> (dnd), on <a href="http://localhost:8765/viewer/?world=dba204.json">dba204</a></td></tr>
-<tr><td>Land-heavy</td><td><a href="http://localhost:8765/viewer/?world=036772.json">036772</a></td><td>Passes</td></tr>
-<tr><td>Cold</td><td><a href="http://localhost:8765/viewer/?world=0c14eb.json">0c14eb</a></td><td>Icehouse, 6.4 °C colder, as meant</td></tr>
-<tr><td>Water world</td><td><a href="http://localhost:8765/viewer/?world=b76c8e.json">b76c8e</a></td><td>Stays icehouse after its first 300 Myr, CO2 down to 40 ppm (plants survive). Water worlds come after the tag.</td></tr>
-<tr><td>Hothouse</td><td><a href="http://localhost:8765/viewer/?world=f9c12a.json">f9c12a</a></td><td>Only 3.5 °C warmer: the recipe is weak now that the star no longer brightens late. Hothouses come after the tag.</td></tr>
+<tr><th>Lane</th><th>What</th></tr>
+<tr><td>132 · rain supply (D40 A)</td><td>The first lane of the big rain round: a proper low sea-air layer under the column, so the humid coasts get
+their sea vapour and the interiors stop getting too much. Screened on Earth first; reports before merging. B (land friction alone) stays
+the fallback.</td></tr>
+<tr><td>133 · religion views and taboos</td><td>Many more taboo kinds and types (practical, purity, totemic, names, kinship, places, the dead and more),
+sourced; the distributions of gods and taboos across cultures; and the views you asked for: small god-tree drawings, a map of where each
+faith arose and spread, and a religion timeline apart from the cultures one (PW-1311, PW-1358).</td></tr>
 </table></div>
-<p>The peoples runs show overlapping demes and the Cultures tab, about 300 living cultures each. Details:
-<code>docs/review/v010-showcases/notes.md</code> and <code>docs/review/v1-cut/final-tally.md</code>.</p>
+<p>Next: D39 as soon as you pick, then D42 A; the density ladder build once questions 3 and 4 are settled (it also removes groups from
+the peoples, PW-1357, and lets halflings and gnomes farm, PW-1351).</p>
 
-<h2 id="cultures">Proper cultures: the proposal, round 2</h2>
-<div class="card" id="cprop"><div class="id">ROUND 2 · ANSWERED; RELIGION DOC OPEN FOR YOUR THOUGHTS</div>
-<p><b><a href="https://claude.ai/artifact/BPHExNndBRqLUCsbYS5Xdy">Open round 2</a></b> (your 41 notes folded in; where a note and
-round 1 disagreed, the note won; the table at the top maps each note to what changed).
-<a href="https://claude.ai/artifact/5KVFMYPEF6QNFA3ab1utsv">Round 1</a> stays for the detail.</p>
-<p><b>Biggest changes:</b> language is a fuzzy, partly political spectrum, with a "language of these people" fading blob on the map;
-a 10,000-year horizon and no tracking beyond it; language can begin more than once; river and mountain names outlast conquests;
-outsiders lump small cultures (the viewer shows both views); war is mostly a change of owner, with losses and expulsion set by the
-winner's tolerance; record survival is writing × tolerance; scripts carry their medium; gods are placeholder domains until we talk;
-dragon realms are polities, kobolds speak close to Draconic, goblins mostly stay low-tech under other goblinoids.</p>
-<p><b>Your answers (11-01 evening):</b> O1 yes; O2 start the history zoom now; O3 go (PW-1281); O4 a dragon realm is one
-flat ruler whose reach is the range it can fly and defend against rival dragons, until technology outstrips it; O5 in the
-<a href="https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP">religion doc</a>. Also: lects are tracked from when language began
-(10,000 years is only what in-world scholars can see); Draconic's colour dialects aren't forced; battle losses get sourced
-(PW-1285), not the EU4 figure.</p>
-<p><b>Lanes next:</b> three small prep lanes (pull out the placeholder war formulae; build your PW-1254 rulings; the
-village experiment if O3 is go), then languages v0 and polities v0 side by side, then names.</p>
-</div>
-
-<h2 id="shelf">What a continental shelf is, and where our eroded rock goes</h2>
-<div class="card" id="shelfcard">
-<p><b>What it is.</b> The drowned edge of a continent: continental crust under shallow sea, sloping gently out to a "shelf break",
-on average around 120–140 m deep and around 80 km wide (anything from none to the Siberian shelf's 1,500 km). Past the break the
-continental slope drops steeply to the deep ocean floor, and at its foot lies the continental rise, a thick apron of sediment
-from the continent. Wide shelves go with quiet "passive" margins like North America's east coast. Margins on a plate boundary,
-like the Andes, have almost none.</p>
-<p><b>Where it comes from.</b> Three things together:</p>
-<ol>
-<li><b>Crust.</b> When a continent rifts apart, its edge is stretched thin. Thin crust floats lower, and as the stretched edge
-cools over tens of millions of years it sinks further. That makes a ramp of continental crust going under the sea. Round 1's
-"necking" was this.</li>
-<li><b>Sediment.</b> Rivers dump eroded rock at the coast. It piles up as a wedge on that sinking ramp and builds outwards, and
-its front is the shelf break and the slope (Round 3's creep acts here).</li>
-<li><b>Sea level.</b> Ice ages drop the sea about 120 m and expose the shelf, and waves plane it flat as the sea goes in and out.
-That's why the break sits at a fairly uniform depth. Today's shelves are drowned because we're in an interglacial.</li>
-</ol>
-<p><b>Your question: where does our eroded rock go?</b> I checked the code (<code>planet/surface.py</code>, <code>planet/tectonics/crust.py</code>).
-The model does track it, all of it, in this order:</p>
-<ol>
-<li>Lakes and closed basins keep what fits (inland basins fill up).</li>
-<li>Floodplains in low ground keep some.</li>
-<li>At the sea, the shelf cells keep it up to 60 m below sea level ("wave base"), nearest the coast first.</li>
-<li>The first deep cell past the shelf (the "brink") keeps everything until it's full to that level. That's the one-cell wall from
-round 2's diagnosis.</li>
-<li>Only once the brink is full does anything go farther, spreading out as deep-sea fans.</li>
-<li>Sediment that lies on ocean crust rides the plate to a trench. Part is scraped off into the coast's mountains (accretionary
-wedges, like Japan), and the rest goes down with the slab. That part is gone for good.</li>
-</ol>
-<p><b>Where I think your suspicion points.</b> Two weak spots:</p>
-<ul>
-<li>Rock is only conserved until it reaches ocean crust. The sediment past the brink, and the rise, sit on ocean floor that keeps
-going down trenches. So a model that builds shelves only from sediment loses its shelf material to subduction. Real shelves sit on
-continental crust, which doesn't sink.</li>
-<li>Nobody has added up where all of it ends, as a budget per destination over a run. That's the obvious first look. I've asked
-round 4 to add that tally to its shelf-collapse look (shelves are 5% of the ocean at 100 Myr and 1.3% by 150–250 Myr), so we can
-see if it's sediment leaving or the crust beneath changing. Round 3's creep pushes more sediment off the shelf toward the deep
-sea, and that might also be where its land loss comes from.</li>
-</ul>
-<p><b>The tally is in</b> (round 4, one test world, eroded rock per destination): about a fifth stays on land (floodplains
-15–25%, lakes and closed basins about 5%), an eighth on the shelf, about 30% in the brink cells and 35–40% on the deep-sea fans.
-Late in the run the trenches take in about 40% of the erosion rate; half of that is scraped onto the coast and half goes down with
-the slab. What goes in matches what comes out to within 0.1%, so nothing is lost by mistake. <b>The early shelf collapse isn't
-sediment leaving:</b> the "shelf" at 100 Myr is the first continents' low plains flooded by a high early sea. When those continents
-crash together between 100 and 150 Myr (in all 36 test worlds), the collision lifts and folds them. A start-up effect, not a
-bug.</p>
-<p class="sub">Sources: shelf width, break depth and passive margins:
-<a href="https://en.wikipedia.org/wiki/Continental_shelf">Wikipedia, Continental shelf</a>;
-<a href="https://geo.libretexts.org/Bookshelves/Oceanography/Introduction_to_Oceanography_(Webb)/01%3A_Introduction_to_the_Oceans/1.02%3A_Continental_Margins">Webb, Introduction to Oceanography 1.2</a>;
-<a href="https://courses.ems.psu.edu/earth107/book/export/html/557">Penn State EARTH 107</a>. The cooling-and-sinking account of
-stretched margins is the standard textbook one, not read for this note.</p>
-</div>
-
-<h2 id="religion">Religion, first slice: built (read-only from the record)</h2>
+<h2 id="religion">Religion, first slice</h2>
+<p class="sub">Kept, as you asked. Lane 133 is adding the tree drawings, the spread map and the timeline.</p>
 <div class="card" id="rel1"><div class="id">GODS, FAITH TECHS AND FOOD TABOOS · SIX CALLS MADE FOR YOU TO CHECK (PW-1311)</div>
 <p><b>Look at it:</b> the Cultures tab now has a gods column, and a culture's brief lists its gods and taboos, on your peoples runs
 <a href="http://localhost:8765/viewer/?run=b4d502&amp;layer=peoples">b4d502</a>,
@@ -238,211 +158,37 @@ a sourced table; no "practical" taboos (nothing models poison or parasites); the
 by run (221 on b4d502, 967 on a24559), worth a look.</p>
 </div>
 
-<h2 id="landzoom">Land zoom: the practice sections are in</h2>
-<div class="card" id="lz1"><div class="id">10 SIDE-BY-SIDE 4,000 KM SECTIONS ON DBA204 · SEAMS MEASURED · 1 KM IS EXPENSIVE (PW-1300)</div>
-<p><b>Open them:</b> a 2×2 block on Trojanel
-(<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=7b69a9">7b69a9</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=a33145">a33145</a>,
-<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=f6a9c7">f6a9c7</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=c9ae66">c9ae66</a>; ten rivers cross
-its west seam), a coast pair (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=2a4463">2a4463</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=fde691">fde691</a>),
-an ice-covered range (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=7fd990">7fd990</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=e82f85">e82f85</a>) and a
-desert edge (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=48489d">48489d</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=50d6af">50d6af</a>), all at 2 km per
-pixel; one at 1 km (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=69b422">69b422</a>). Seam pictures: <code>docs/review/land-zoom/seam-*.png</code>.</p>
-<ul>
-<li><b>Good already:</b> coasts and landform types agree across seams; plains differ by 7–20 m.</li>
-<li><b>Bad:</b> mountains and ice disagree by 300–480 m typically and up to 3 km; dunes by about 60 m; biomes differ on 7–36% of the same ground;
-some rivers exist in one section and not the other (30 of 102 crossings on the west seam).</li>
-<li><b>The squares don't tile the sphere:</b> stepping 3,800 km gives rotated, wedge-shaped overlaps (871 km on one seam). A real tiling
-rule comes before the seam work (PW-1319).</li>
-<li><b>Cost is the real wall:</b> one section at 1 km took 2 h 48 min and 110 GB of memory (2 km: 20–60 min, 22–40 GB). A whole planet
-at 1 km would be about 50 hours, one at a time. So the order in the epic is now: tiling rule and cost (the memory peak and a long
-single-core stage) first, then seams and rivers, then the sweep.</li>
-</ul>
+<h2 id="landzoom">Land zoom: neighbours now meet, rivers carry on</h2>
+<div class="card" id="lz"><div class="id">SEAMS AND RIVERS MERGED (PW-1301, PW-1302, PW-1338)</div>
+<p><b>In plain words:</b> a section built next to one already built takes over its neighbour's ground up to the line and blends over 80 km:
+heights meet at 0.0 m (they were 10–410 m apart), coasts and biomes agree to a pixel. Rivers flowing from the first section into the second now
+carry their water on (48 of 53 crossings; was none). Rivers flowing the other way need one water pass over all finished sections, after a
+sweep (filed). Look: <a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=3580b7">block W</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=e2313a">ice range</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=83b0b1">tiling pair</a>. One at a time is hard to see, agreed: a stitched,
+pannable view of neighbours is filed (PW-1359, kept small).</p>
+<p><b>On 1 km and your v3 idea:</b> agreed, no whole planet at 1 km any time soon; a sweep would run at 4 km per pixel, which is minutes
+per section rather than half an hour. Using fine terrain <i>inside</i> the peoples sim is doable as summaries: a 4 km sweep writes, for
+each sim cell, numbers like its farmable valley floor, flat land by water, passes and defensible sites, and the history reads those;
+settlements then sit in real valleys. Running the history itself at 1 km is out, on time and RAM. Filed as a v3 epic (PW-1360), with your
+"super-detailed slow mode" thought noted on it.</p>
 </div>
 
-<h2 id="density">People density: the ladder is sourced · seven questions</h2>
-<div class="card" id="d43"><div class="id">D43 · ONE DENSITY LADDER FOR EVERY PEOPLE, FROM PUBLISHED NUMBERS (PW-1275, PW-1350)</div>
-<p><b>In plain words:</b> today each people has its own fixed density: humans 10–12 per km², most others 0.3. That 30–40× gap is most of
-why humans swamp the map. Lane 130 found a published figure for every rung of your shared ladder (persons per km² of land held):</p>
-<ul>
-<li><b>Foragers</b> 0.01–0.4, typically 0.1 (Binford 2001's 339 groups); about 14× from the poorest to the richest land.</li>
-<li><b>Fishing foragers</b> 0.3–2, rich coasts up to ~9 (Binford; Kelly 2013).</li>
-<li><b>Gardeners</b> ~2–20, typically 4–10; about 8× from worst to best land (Papua New Guinea survey; first European farmers).</li>
-<li><b>Plough farmers</b> ~2.5–14 in the Early Bronze Age, ~11–18 Roman, ~13 in England in 1086, ~35 at the medieval peak.</li>
-<li><b>Irrigation</b> 30–240 per km² <i>of watered land only</i> (Nile valley, Butzer 1976); the country around is far emptier.</li>
-<li><b>Herding nomads</b> ~0.3–2; <b>mixed herder-farmers</b> ~1–15 (the weakest-sourced rung).</li>
-<li><b>Dwarven holds:</b> mushrooms turn straw into ~520 kcal a kilo against wheat's ~1,800–2,600, a relish, not a staple. So a hold is
-its valleys' farming or terrace rung plus what it trades for.</li>
-</ul>
-<p><b>What it does:</b> humans lose their head start only where other kinds farm beside them. Forest orcs, hobgoblins and elves would
-stand level with human farmers at the same tech; the hunting kinds stay sparse until some of them take up crops or herds. Every number was
-re-opened by a second checker; a few pages and ranges were corrected. Full page: <code>docs/review/peoples/density-ladder/ladder.md</code>.
-Also found: halflings, gnomes and dwarves aren't seen as farmers by the model, so they skip the land-quality cap (PW-1351, fixed with the build).</p>
-<ol>
-<li><b>What a rung's number means:</b> A the people's average over its land, scaled by land quality; B its best-land density. <i>Lean A.</i></li>
-<li><b>Who changes way of life:</b> A the land decides (farmable cells farm once the people knows how); B a fixed share per kind; C a share that
-grows with time since the discovery. <i>Lean A.</i> This matters more for humans' share than any number above.</li>
-<li><b>How strongly land quality counts:</b> A keep today's 0.75 power; B 1.0 for every rung (density in step with plant growth); C set per rung. <i>Lean B.</i></li>
-<li><b>Den peoples</b> (goblins, kobolds, troglodytes): A the forager rung with the kind factor at 1.2; B a judged "den" rung of ~1–3, unsourced;
-C a farming or herding way. <i>Lean A, then C for the part that farms.</i></li>
-<li><b>Irrigation:</b> A only on cells water reaches; B a flat bonus over the whole range. <i>Lean A.</i></li>
-<li><b>Dwarven holds:</b> A their valleys' rung plus traded food up to a cap, mushrooms a small bonus; B a fixed hold rung. <i>Lean A.</i></li>
-<li><b>The top of the ladder</b> for a roughly Renaissance present: A cap ploughing at the medieval peak (~35); B source an early-modern rung first. <i>Lean A.</i></li>
-</ol>
-<p>One paper would help: Zimmermann, Hilpert &amp; Wendt 2009 (<i>Human Biology</i>), open access but it blocks agents. If you download it
-in a browser into the repo, I'll use it (it's on <code>docs/references/wishlist.md</code>).</p>
-</div>
-<h2 id="plants">Plant growth: the herds' premise was wrong · one question</h2>
-<div class="card" id="d42"><div class="id">D42 · GRASS GROWS TOO MUCH, WET TROPICAL FOREST TOO LITTLE; EARTH'S HERDS ARE FINE (PW-1261)</div>
-<p><b>Fed Earth's observed climate,</b> the model's herds already match Coe's measured African parks. The "2.4× too little growth"
-came from Rosenzweig's 1968 formula as Coe used it, which sits 2–2.5× above both field fits for grass (it was fitted across all
-ecosystems, wood included). The worlds' herds are thin for climate reasons: their dry tropics are cloudier and cooler in winter than
-Africa's (PW-1330), and some have low CO2.</p>
-<p><b>Two real plant errors, cancelling in the world total:</b> grasses, shrubs and tundra keep about 70% of what they photosynthesise
-because their roots pay no upkeep (measured ~46%, though from forests), so every open biome grows ~1.5× too much; and wet tropical forest
-grows about 0.55× what plots measure (Malhi et al. 2011).</p>
-<ol><li><b>A</b> one round: give grass roots their upkeep, together with the two things tuned on the inflated grass: the weathering's
-plant reference (less grass alone warms runs 3–5 °C through slower weathering, PW-1332) and a sourced fire fuel floor (PW-1328), then the
-36-world test. <i>My lean.</i> Wet tropical forest is its own ticket (PW-1331).</li>
-<li><b>B</b> leave the plants; the herd gap is a separate call on the herd formula (PW-1329; lean there: a grassland offset fitted
-on Coe's herds).</li></ol>
-<p>D39 (the CO2 balance's references) and this both touch the weathering reference, so I'd do D39 first if you pick both.</p>
-</div>
-
-<div class="card" id="seams128"><div class="id">LANES 127+128 MERGED · NEIGHBOURING LAND ZOOM SECTIONS NOW MEET EXACTLY (PW-1338, PW-1301)</div>
-<p><b>In plain words:</b> a section built next to one already built now takes over its neighbour's ground right up to the line
-between them, then blends into its own landscape over 80 km. Built separately, neighbours' heights disagreed at the line by 10 to 410 m;
-now it's 0.0 m, and coasts and biomes agree to within a pixel. The blend makes no visible steps. Sections can also be turned to fit the
-planet's tiling. Rivers don't carry on across the line yet: that's lane 129.</p>
-<p><b>Have a look</b> (each is the second section, built matched to its neighbour): <a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=a13667">desert</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=59336f">ice range</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=0852e2">coast</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=3b412b">turned tiling section</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=8f5874">the same at 1 km</a>. A matched 1 km section needs about 110 GB.</p>
-</div>
-<div class="card" id="zoom122"><div class="id">LANE 122 MERGED · A 1 KM SECTION NOW TAKES 16 MINUTES, NOT 2 H 48 (PW-1303, PW-1319)</div>
-<p><b>In plain words:</b> one 4,000 km section at 1 km per pixel went from 2 h 48 min and 110 GB of memory to 16 minutes and 86 GB,
-with every output identical. Almost all the time went to one step that re-measured the whole map once per mountain pass (188 times); it
-now looks only near each pass. Memory still allows only two 1 km sections at once (PW-1337 is next on that).</p>
-<p><b>Laying sections over the planet:</b> the globe is cut like a cube into 54 squares, each with one section, neighbours overlapping by
-about 200 km. On dba204, 47 of them hold land, covering 99.6% of it: about 12 hours at 1 km one at a time, or 6.5 hours two at once.
-Covering only land could cut that (PW-1339). The sweep itself (PW-1296) still waits on seams, rivers and section orientation.</p>
-</div>
-<div class="card" id="cloud126"><div class="id">LANE 126 MERGED · TROPICAL SHADE AND SUMMER HEAT FIXED ON EARTH (PW-1334, PW-1327, PW-1326, PW-1336)</div>
-<p><b>In plain words:</b> the model made low cloud out of humid air even in hot air. It now makes it only where the air is stable (the air
-aloft as warm as the surface or warmer), as the sources say low stratus does (Klein &amp; Hartmann 1993, read as abstract; Eastman &amp;
-Warren 2014; Cermak et al. 2009). Earth's warm land now gets about the measured sunshine (within 0.05 in all three bands, was 0.13–0.16
-too shady). The summer heating reads that sunshine, with the two fixes from the D41 card's last paragraph switched on: Earth's
-20–40° summers went from 2.1 °C too hot to 0.4 °C, land reaching 35 °C from 7.9% to 0.9% (measured 1.7%), the Sahara from +4.7 to +0.8 °C.
-Lakes and the inspector read the same sunshine (Lake Victoria's evaporation now about the measured 1,500 mm a year).</p>
-<p><b>36 worlds against main:</b> 32 pass on both, no hard failures; temperature and CO2 not moved; the worlds come out somewhat less arid
-(−2 points) and more wooded (+5.7 points). <b>Costs, now being diagnosed by lane 131:</b> the Congo lost too much cloud, summer land at
-20–40° is now a bit too sunny, and the US Southwest got 5 °C colder (it was already cold). The wet tropics stay ~1.6 °C cool because their
-rain is too high (the parked rain work).</p>
-</div>
-<p><b>In plain words:</b> the worlds' dry tropics are no shadier than the model's own Earth at the same rain. The model itself is the
-problem: its Earth is about 0.13 too shady against measured sunshine (CRU), and all of that comes from one term that turns humid air
-into low cloud even in hot air, where real low cloud rarely forms. Separately, three places read "sky cover" as if it were "sunshine"
-(the summer split, open-water evaporation, and the inspector). The cool coldest month is a different cause (PW-1335).</p>
-<p><b>Order of fixes, now running as lane 126:</b> A, limit that humid-air cloud to the air where it really forms (needs a source
-first); B, feed the summer split real sunshine and re-anchor it; C, open water and the inspector. This changes D41's later round and
-D42 (plant light), so neither leans need revisiting yet; I'll say if 126 moves them. No ruling needed.</p>
-</div>
-<h2 id="heat">Summer heat: dba204 was mostly the orbit · one question</h2>
-<div class="card" id="d41"><div class="id">D41 · A FINISHED WORLD ADDS ITS ORBIT TO EVERY MONTH AT 3× THE LAND'S REAL RESPONSE (PW-1325)</div>
-<p><b>Your July on dba204:</b> a finished world adds its moment's orbit to the months. dba204's moment has the near-sun point in northern
-summer (eccentricity 0.035), worth +32 W/m² in July at the equator, and the model turns sunshine into degrees at the ice rule's 0.25 °C per
-W/m², about 3× what land really does (PW-459 found this; PMIP2's mid-Holocene runs, Braconnot et al. 2007, give 0.08 °C per W/m² or less).
-That's about +8 °C on tropical land. With the orbit at the real response, dba204's land with a 30 °C warmest month falls from 45% to
-19%, and its tropics match Earth's model.</p>
-<ol><li><b>A</b> apply the orbit to a finished world's months at the land's seasonal response. One line; doesn't touch the ice ages, the runs or Earth.
-<i>My lean.</i></li>
-<li><b>B</b> leave it.</li></ol>
-<p><b>On Earth itself</b> the 2.1 °C too-hot summers are fixed (lane 126, above); A is still the call for finished worlds' orbit.</p>
-</div>
-
-<h2 id="rain">Rain inland: the problem is the other way round · one question</h2>
-<div class="card" id="d40"><div class="id">D40 · INTERIORS TOO WET, HUMID COASTS TOO DRY · THREE STRIKES, PARKED (PW-015/026, PW-1321)</div>
-<p><b>Pushback on the ticket:</b> rain already reaches far inland, too far. Between 40 and 60° N the model's land gets 1.6–1.8× the observed
-rain (Mongolia 3.5×, European Russia 1.5×), while humid and monsoon coasts get about half (SE USA 719 mm against 1,329; the Pampas 394
-against 943; India 627 against 1,126; Japan 671 against 1,683). Winter sea air already reaches 1,000–2,000 km inland; Europe and Russia take
-in about 3× the observed vapour. So for crops and herds the fix is moving rain from the interiors back to the coasts.</p>
-<p><b>Tried, three strikes:</b> vapour condensing above winter inversions (right way, too small); showers held back in dry air (wrong way);
-rough land slowing the wind (helps the coasts a little but dries the deserts' edges the wrong way). How much rain a continent gets is set
-by how much sea vapour crosses its coasts; changing how fast air rains only moves rain around inside. The seas beside the humid coasts are
-too dry (the Gulf and W Atlantic hold 0.8× the observed vapour; storm-track seas evaporate a third of the observed in winter).</p>
-<ol><li><b>A</b> one large round on the supply: a proper low air layer over the sea under the column, then the inflow depth, rising air and land
-friction judged together. <i>My lean</i>, but it's big (several lanes) and needs your go.</li>
-<li><b>B</b> merge the land friction alone, a partial fix.</li>
-<li><b>C</b> park it; the next picks go first.</li></ol>
-<p>It matters downstream: the summer heat lane checks how much of the heat is these dry coasts, and the plant growth check (D34) would
-inherit the rain errors (Mongolia, the Sahel and E Africa 3.5–4× too wet).</p>
-</div>
-
-<h2 id="d39h">One decision for you</h2>
-<div class="card" id="d39"><div class="id">D39 · THE CO2 BALANCE LEARNS ITS "NORMAL" IN THE FIRST 300 MYR, AND KEEPS IT FOREVER (PW-1316)</div>
-<p><b>What lane 115 found</b> while chasing the hothouse test world: the model measures volcanic outgassing and rock weathering against
-reference values it learns over a run's first 300 Myr, then never updates. If that window happens to catch a lull in volcanoes or a
-burst of weathering, the planet afterwards reads normal outgassing as "too much" and CO2 piles up for 100 Myr. That's what sent
-seed 2 to 28.8 °C. Across 40 re-rolled runs, end temperature follows this mismatch closely (correlation 0.80) and barely follows
-continent size. It's also the likely root of PW-1158 (the long cold finish when the source runs low against its early reference).</p>
-<ol><li><b>A</b> leave it.</li>
-<li><b>B</b> learn each reference as the mean over the whole spin-up, not a short stretch of it, so one lull or burst can't set it.
-<i>My lean:</i> it fixes the fragility and still lets real long trends show.</li>
-<li><b>C</b> let the references drift slowly all run long. Steadier, but it would hide real slow trends (a planet whose volcanoes really
-wind down would never feel it).</li></ol>
-<p><b>The 15 km margin fix, parked:</b> lane 119 found thin kept margins don't jam trenches; instead the young planet makes about 2.5
-fewer plates, because thin edges count as full continent in the plate forces (keel drag) and warm the mantle under them (PW-1318).
-The flicker it cures is small without the sea-floor creep, and the creep is at the back of the line, so the two wait together.</p>
-</div>
-
-<h2 id="coming">Running now</h2>
-<div class="tbl"><table>
-<tr><th>Lane</th><th>What</th></tr>
-
-<tr><td>129 · rivers across sections</td><td>Rivers and lakes that carry on across the line between two land zoom sections, with their water (PW-1302). The last piece before the planet sweep.</td></tr>
-<tr><td>131 · cloud side effects</td><td>Diagnosis only: why the Congo lost its cloud and summer subtropics got too sunny after lane 126, and why
-warm dry land's coldest month is ~2 °C cold on Earth (PW-1347, PW-1348, PW-1335). Comes back with candidates, no merge.</td></tr>
-</table></div>
-<div class="card" id="speed1"><div class="id">SPEED PASS PART 1 MERGED (PW-252) · SMALLER THAN HOPED, AND WHY</div>
-<p><b>11.6% faster at L7</b> (273.8 → 242.1 s per 100 Myr), 8.5% at L6, outputs identical to the bit. The ticket guessed 30%. Only
-about 40 of the 146 s of single-threaded glue could be made parallel without changing a single output bit. Most of the rest calls
-<code>exp</code>, and numba's <code>exp</code> differs from numpy's in the last bit for about 5% of values. I've decided to accept that
-last-bit change for part 2 (PW-1297, roughly another 10–15 s at L7): it's far below anything physical, and we don't keep old
-outputs. Peak memory didn't change.</p>
-<p><b>The GPU question, measured:</b> the kernels a GPU could take are a third of an L6 or L7 step, so a GPU can't pay there.
-At L8 they're about 60% of a step, and the expensive ones grow faster than the cell count (the rain kernel: 0.26 s at L7, 8.7 s at
-L8). So a GPU starts to pay at L8 and more at L9. That fits the plan: deep time on the CPU, the heavy finishing and the whole-planet
-land zoom (PW-1296) as the GPU's first job.</p>
-</div>
-<p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
-<a href="http://localhost:8765/viewer/?run=622c00&amp;layer=peoples">622c00</a> (s8) ·
-<a href="http://localhost:8765/viewer/?run=bf5398&amp;layer=peoples">bf5398</a> (s9) ·
-<a href="http://localhost:8765/viewer/?run=3d9b5f&amp;layer=peoples">3d9b5f</a> (s10).</p>
-
-<h2 id="settled">Settled this week</h2>
+<h2 id="settled">Settled today</h2>
 <ul class="done">
-<li><b>Sea level counts ocean-floor sediment</b> (D37, merged tonight): +105 to +116 m late in a run; no hard failures on 72 paired
-worlds, same pass count as main, climate unmoved, land 0.6 points lower. Volcanic CO2 already followed the plates (my round 4 diagnosis
-was wrong there); the area thermostat stays for now (PW-1276, v2); the creep stays off until lane 112 lands.</li>
-<li><b>Cultures proposal round 2 answered</b>: O1 yes (groups become starting points after the density ladder); O2 history zoom now;
-O3 village experiment go; O4 a dragon realm is one flat ruler whose reach is what it can fly and defend; O5 the religion doc. Lects are
-tracked from when language began; Draconic's colour dialects aren't forced; battle losses get sourced. Notes:
-<code>docs/review/cultures-proposal/owner-notes-r2.md</code>.</li>
-<li><b>Desk decisions answered</b>: D28 closed; D34 B, widened to every biome's plant growth; D35 refine refactor yes, followers'
-learned country is a discussion (dragon dominion goes in polities); D36 B, dragon kinds may be several cultures; PW-1254 era table kept,
-cohesion by lifespan, merge after 2,000 years side by side, never across ways of life.</li>
-<li><b>Density, ruled but not yet built</b> (PW-1275; sourcing started as lane 130): one shared ladder, way of life × tech stage × land productivity, with a kind factor of 0.8–1.2 for
-now; sourced rungs come to you before building. No underdark.</li>
-<li><b>dba204's hot July</b>: hotter than Earth at low latitudes (42% of land reaches a 30 °C warmest month, against Earth's 14%);
-filed as PW-1279. The temperature tooltip now names the month shown.</li>
-<li><b>Merged this week</b> (all tests pass): overlapping demes, the per-frame demes picker, the final v1 tally (0/42 hard
-failures), v0.1.0 showcases, the 1 Gyr L8 world.</li>
-<li><b>Same seed, same world</b> at 1 to 16 threads (PW-1324, lane 124): checked to 1 Gyr, now guarded by a test.</li>
-<li><b>Speed, parts 1 and 2</b> (PW-252, lanes 114 and 118): L7 runs roughly a quarter faster than before (part 1: 11.6% on a quiet machine; part 2: 15–25% more, timed on a busy one, so estimated); part 2 changes outputs only in the last bit of <code>exp</code>. A small worry it turned up: the same seed may give a different world at a different thread count (PW-1324, to check).</li>
-<li><b>Sediment piles become continent only against their own continent</b> (PW-1292, lane 112; judged, merged).</li>
-<li><b>Ticket references</b>: tickets can cite papers, doc sections and code functions, and the checker flags any that don't resolve. New tickets get full refs up front; old ones are filled in only as lanes work on them.</li>
-<li>Older settled items are in the desk's git history and <code>docs/wiki/decisions.md</code>.</li>
+<li><b>D40 A</b>: the big rain round on the sea's vapour supply, running as lane 132; B is the fallback.</li>
+<li><b>D42 A</b>: grass and herb root upkeep, after D39.</li>
+<li><b>D43</b>: 1 A (I'll warn if it implements oddly), 2 A (yes: farming spread with its people and knowledge, outcompeting and absorbing
+foragers, who held on in marginal land; A gives that), 5 A, 6 A with trade-fed holds as a marked placeholder, 7 A plus an early-modern
+source on your wishlist (<code>docs/references/wishlist.md</code>). Peoples lose their groups (PW-1357); halflings and gnomes farm.</li>
+<li><b>Religion calls (PW-1311)</b>: first pass accepted; more taboo kinds, and the distributions reported to you over time.</li>
+<li><b>Tech tree</b>: open to a rework; a review is filed (PW-1361).</li>
+<li><b>Merged since last night</b>: land zoom cost (2 h 48 → 16 min), tiling, turned sections, seams, rivers; the tropical cloud fix
+(Earth's warm land now gets about the measured sunshine; 20–40° summers 2.1 → 0.4 °C too hot); lane 131 traced the cloud fix's side
+effects to the ocean off Gabon and to the rain, so nothing was forced.</li>
+<li><b>Desk</b>: the L8 world's run costs are now in <code>docs/coordination.md</code>; the week in review comes back on Fridays,
+at the bottom.</li>
 </ul>
 
-<footer><a href="https://claude.ai/artifact/DuuWJV4pfTApvbbUAxTqGQ">Dragon paper, round 3</a> · <a href="https://claude.ai/artifact/X8G1P8unbvo6GCeBM4HC6Z">Climate v1 story</a></footer>
+<footer>Desk v93 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

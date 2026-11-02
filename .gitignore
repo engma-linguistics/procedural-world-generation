@@ -10,6 +10,7 @@ exports/
 .claude/*
 !.claude/settings.json
 !.claude/hooks/
+!.claude/skills/
 data/
 # the server's job state (api.Jobs)
 .jobs/
