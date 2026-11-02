@@ -141,3 +141,30 @@ def test_rift_pool_decays_into_its_flanks():
     assert back > 0
     assert np.isclose((col.t - t0).sum(), back)
     assert np.allclose((col.t - t0)[rifted], back / rifted.sum()) and (col.t == t0)[~rifted].all()
+
+
+def test_necking_pays_for_the_margin_with_thinned_crust(monkeypatch):
+    """PW-950: with a necking zone, new rift floor next to continent is laid
+    as crust no thicker than its source edge after thinning, at least
+    MARGIN_MIN_KM, and every km laid comes out of the rift pool or the
+    thinned continent within neck_km (crust conserved)."""
+    from planet.tectonics import crust
+    seen = []
+    necking = crust.necking
+
+    def recording(sim, col, cont, k, cells, s):
+        t0, pool0 = col.t.copy(), float(sim.plates.rift_pool[k])
+        out_cells, out_s, km = necking(sim, col, cont, k, cells, s)
+        taken = float((t0 - col.t).sum()) + pool0 - float(sim.plates.rift_pool[k])
+        seen.append((float(km.sum()), taken, km, col.t[out_s]))
+        return out_cells, out_s, km
+
+    monkeypatch.setattr(crust, "necking", recording)
+    s = Simulation(build_grid(5), 1, Params(neck_km=200.0), 2.0)
+    s.run(60)
+    laid = [x for x in seen if len(x[2])]
+    assert len(laid) >= 3
+    for total, taken, km, src in laid:
+        assert np.isclose(total, taken, rtol=1e-6, atol=1e-6)
+        assert (km >= crust.MARGIN_MIN_KM).all()
+        assert (km <= src + 1e-9).all()

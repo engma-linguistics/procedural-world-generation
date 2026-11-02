@@ -326,8 +326,9 @@ def test_deep_grounded_ice_stands(sim4):
     src = Z.source_from_sim(sim4)
     elev, ice = src["elev"].copy(), np.zeros(g.n)
     nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
-    # two inland cells: their neighbours (and theirs) on land
-    inland = [i for i in range(g.n) if elev[i] > 200 and all(elev[j] > 200 and (elev[nb(j)] > 200).all() for j in nb(i))]
+    # two inland cells: their neighbours (and theirs) on land (above the sea: lane 100e's sea level, which counts
+    # the ocean floor's sediment, left the L4 fixture only one cluster of such cells above 200 m)
+    inland = [i for i in range(g.n) if elev[i] > 0 and all(elev[j] > 0 and (elev[nb(j)] > 0).all() for j in nb(i))]
     inland.sort(key=lambda i: -abs(g.lat[i]))  # (the coldest first: the ice around shouldn't melt away and drain it)
     a, b = inland[0], next(i for i in inland if not set(nb(i)) & set(nb(inland[0])) and i not in nb(inland[0]))
     for c, depth, h in ((a, 2000.0, 3200.0), (b, 4000.0, 5500.0)):

@@ -3,7 +3,8 @@ CO2, sea level, the climate model, and the surface processes that run on
 its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
-co2, rates, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect (with sea_cont, cont_water_ref), ice,
+co2, rates, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect (with sea_cont, cont_water_ref,
+sea_sed, sed_water_ref), ice,
 the vegetation (veg, veg_frac, veg_lai, npp, veg_type, tree_cover, flora,
 veg_niche), removed, the climate fields from climate.compute, the rivers
 (flow, down) and the lakes (lake_kind, lake_depth).
@@ -443,6 +444,30 @@ def continent_water(sim, w) -> float:
     return (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (sim.cont_water_ref - held) / ocean
 
 
+def floor_sediment_water(sim, w) -> float:
+    """m of sea level from the water the sediment on the oceanic crust displaces (PW-950 lane 100e): the basins'
+    part (the age-depth curve) reads the floor without its cover, so sediment carried off a shelf onto the ocean
+    floor lowered the sea (the shelf held more water, continent_water) when it should leave it nearly unchanged,
+    and the ocean floor's cover (~180 m of floor late in an L6 run) never raised it. Counted as continent_water
+    counts the continents: the water the cover keeps out of each oceanic cell (its depth below the ice-free sea
+    with the cover, against without it), over the whole surface, against the run's start, spread over the ocean
+    and raised by (rho_m - rho_w) / rho_m for the floor's sinking under the water. Lagged by a step, as the
+    continents' part is. w: the cells' areas."""
+    o = ~sim.w_cont
+    sed = sediment_km(sim.w_cover[o], sim.w_extra[o])
+    thick, age, rock = sim.w_thick[o], sim.w_age[o], sim.w_rock[o]
+    sea = np.zeros(len(sed), bool)  # (oceanic crust)
+    lift = elevation(thick, age, sea, rock, 0.0, sed) - elevation(thick - sed, age, sea, rock, 0.0, 0.0 * sed)
+    e1 = sim.w_elev[o] + sim.sea_ice  # m above the ice-free sea level, with the cover
+    kept = np.maximum(-(e1 - lift), 0.0) - np.maximum(-e1, 0.0)  # m of water the cover keeps out
+    shut = float((kept * w[o]).sum() / w.sum())
+    if sim.sed_water_ref is None:  # (the run's start: its floor's cover is the reference)
+        sim.sed_water_ref = shut
+    e = sim.w_elev + sim.sea_ice
+    ocean = max(float(((e < 0) * w).sum() / w.sum()), 1e-3)
+    return (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (shut - sim.sed_water_ref) / ocean
+
+
 def global_temperature(sim, growth, newc, rng, plume=None):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Four things move it, slowly (tens of Myr):
@@ -549,7 +574,8 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
     w = ocean_area(sim.grid)
     sim.sea_cont = continent_water(sim, w)
-    sim.sea_tect += sim.sea_cont
+    sim.sea_sed = floor_sediment_water(sim, w)
+    sim.sea_tect += sim.sea_cont + sim.sea_sed
     sim.sea_level = sim.sea_ice + sim.sea_tect
     ice_frac = float(((sim.ice > 0) * w).sum() / w.sum())  # (area-weighted: cells differ by up to ~9%)
     ice_ref = earth_ice(sim.grid.level)
@@ -1174,11 +1200,11 @@ def erode(sim, col):
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
     iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
-    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
+    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk, crept = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
-        base_rise=max(-float(sim.sea_ice), 0.0))
+        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0, slope_k=p.slope_k)
     sim.book("erosion", t0, col.t, cont)
     # the valleys rivers to the sea run in now (graded to the river they
     # carry: a shrunken river silts up a valley too big for it), and where
@@ -1186,7 +1212,7 @@ def erode(sim, col):
     # slopes (hydrology.VALLEY_MYR); they ride on with the rock
     x[:, VALLEY] = np.where(lk["incised"] > 0, lk["incised"], x[:, VALLEY] * np.exp(-dt / hydrology.VALLEY_MYR))
     # the basement comes up by what's worn off net (the strata: in sediments())
-    col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
+    col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0)) + crept  # (+ the sea floor's creep, PW-950)
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)
     # what bare ground lost, for the weathering sink: masked by the ice this erosion ran under (the next
     # step's sink sees the ice after a climate update; ground the ice left in it counted its glacial

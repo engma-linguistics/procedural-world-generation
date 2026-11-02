@@ -68,6 +68,8 @@ class Simulation:
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "sea_cont",  # m: the part of sea_tect from the water the continents hold (earth.continent_water)
         "cont_water_ref",  # m: the sea the start's continents held, over the whole surface (None before the first step)
+        "sea_sed",  # m: the part of sea_tect from the water the ocean floor's sediment displaces (earth.floor_sediment_water)
+        "sed_water_ref",  # m: the water the start's ocean-floor sediment kept out, over the whole surface (None before)
         "ice",  # m of land ice per cell
         "ice_warm",  # m: the persistent ice, what outlasts the ice-age cycle's warm phase (earth.update_climate,
         # PW-1142; None before the first climate update or with Params.ice_warm_persist off)
@@ -153,6 +155,7 @@ class Simulation:
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
         self.sea_cont, self.cont_water_ref = 0.0, None
+        self.sea_sed, self.sed_water_ref = 0.0, None
         self.ice = np.zeros(n)
         self.ice_warm = None
         self.ice_sink = np.zeros(n)
