@@ -593,10 +593,20 @@ def _inlet_on_plate(sim, cells):
     return n_cont >= n_own - 2
 
 
+def touches_own_continent(sim, cont):
+    """Cells with a continental neighbour on their own plate (world grid)."""
+    g, own = sim.grid, sim.owner
+    src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
+    same = cont[g.nbr_idx] & (own[g.nbr_idx] == own[src])
+    return np.logical_or.reduceat(same, g.nbr_off[:-1])
+
+
 def birth_and_cratons(sim, col, arcky, squeezed):
     """Ocean crust thickened enough by arcs or sediment becomes continental;
-    hotspot piles (Hawaii, Iceland) stay oceanic however big, unless
-    it's sediment from a nearby continent that's piling up on them.
+    a sediment pile only where it touches its plate's continent (a margin
+    wedge; PW-1292). Hotspot piles (Hawaii, Iceland) stay oceanic however
+    big, unless it's sediment from a nearby continent that's piling up on
+    them.
     Rock age (continents): crust that's just formed or been remelted /
     metamorphosed starts again at 0 (and so does its exhumation, the
     erosion since: record.EXHUMED). An arc worn GRANITE_KM down since
@@ -609,6 +619,11 @@ def birth_and_cratons(sim, col, arcky, squeezed):
     # was sediment too, now basement; PW-172)
     sedimented = (col.cover > 0.5 * (t - OCEAN_KM)) | (col.cover > 0.8 * sim.params.metamorphic_depth)
     born = ~cont & (t >= BECOMES_CONT_KM) & ((rock != HOTSPOT) | sedimented)
+    # (a pile of sediment on the ocean floor is sediment on oceanic crust, however thick: it becomes continental
+    # only as a margin wedge against its own plate's continent; elsewhere it joins one when a trench scrapes it on
+    # (accrete) or a collision welds it on; PW-1292)
+    if (born & sedimented).any():
+        born &= ~sedimented | touches_own_continent(sim, cont)
     rock[born] = np.where(sedimented[born], SEDIMENT, ARC)
     sim.book("born", 0, t, born)
     age = sim.w_age.copy()

@@ -61,3 +61,27 @@ def test_churn_metric_flags_a_flip_back():
     c = churn(g, [base, flip, base])
     assert abs(c["crust"] - 100 * 10 / n) < 1e-2
     assert c["relief"] > 0 and c["plate"] == 0
+
+
+def test_sediment_piles_are_born_continental_only_against_their_continent():
+    """PW-1292: a sediment pile on the ocean floor, however thick, is sediment on
+    oceanic crust; it joins a continent only as a margin wedge against
+    continental crust of its own plate. An isolated arc of the same thickness is
+    still born continental."""
+    from planet.surface import SEDIMENT
+    sim = Simulation(build_grid(5), 3, Params(), 2.0)
+    g, own = sim.grid, sim.owner
+    col = _column(sim)
+    alone = [c for c in np.random.default_rng(2).permutation(g.n) if not sim.w_cont[c] and
+             (own[g.neighbors[c]] == own[c]).all() and not sim.w_cont[g.neighbors[c]].any()]
+    pile, arc = alone[0], next(c for c in alone[1:] if c not in g.neighbors[alone[0]])
+    wedge = next(c for c in np.random.default_rng(3).permutation(g.n) if not sim.w_cont[c] and
+                 (sim.w_cont[g.neighbors[c]] & (own[g.neighbors[c]] == own[c])).any())
+    for c in (pile, wedge):
+        col.t[c], col.cover[c] = 25.0, 16.0  # (mostly sediment)
+    col.t[arc], col.cover[arc] = 25.0, 0.0
+    no = np.zeros(g.n, bool)
+    born = crust.birth_and_cratons(sim, col, no, no)
+    assert not born[pile]
+    assert born[wedge] and col.rock[wedge] == SEDIMENT
+    assert born[arc]
