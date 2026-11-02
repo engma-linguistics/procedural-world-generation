@@ -178,7 +178,29 @@ wooded. That's expected from the mechanism: cooler dry summers (deep layer, long
 tropics' sunnier, warmer wet seasons don't raise it as much. Note: Earth's Köppen B moved the same way (25.0 ->
 24.5 vs Kottek 30.1), and PW-290 has L7 worlds too arid (38-42%). Which way that nets depends on the level.
 
-**Paired judge, 2 rolls (36 draws per arm): RUNNING at hand-off (lane 126 handed off at its context limit).**
+**Paired judge, 2 rolls (36 draws per arm): finished, PASSES.** (Read after the hand-off note was written; 72/72 draws.)
+
+| measure | main median | cand median | median B-A | 95% CI | B>A / B<A | moved |
+|---|---|---|---|---|---|---|
+| end T | 1.70 | 1.58 | +1.08 | [-0.54, +2.10] | 23 / 13 | |
+| late dT | 0.76 | 0.22 | -0.83 | [-1.43, +1.15] | 15 / 21 | |
+| late CO2 | 0.60 | 0.52 | -0.11 | [-0.22, +0.14] | 15 / 21 | |
+| land % | 34.4 | 34.2 | -0.16 | [-0.49, +0.17] | 14 / 22 | |
+| sink ref | 6.59 | 6.71 | +0.10 | [+0.05, +0.16] | 27 / 9 | * |
+| src ref | 7.97 | 7.99 | -0.01 | [-0.04, +0.03] | 17 / 19 | |
+| arid % | 23.4 | 20.9 | -2.0 | [-3.2, -1.4] | 7 / 29 | * |
+| hot desert % | 9.7 | 7.6 | -2.6 | [-3.1, -1.0] | 6 / 30 | * |
+| land rain | 1128 | 1147 | +27 | [-25, +77] | 20 / 16 | |
+| trees % | 34.2 | 39.0 | +5.7 | [+3.0, +6.4] | 29 / 7 | * |
+
+Pass count: main 32/36 (15/18, 17/18), cand 32/36 (15/18, 17/18); both 29, main only 3, cand only 3, neither 1; McNemar
+p 1.0. Hard failures 0 on both (hellhouse 0, frozen over 0; main had 3 frozen spells under the dim young star, cand 0).
+End T, late dT, CO2 and land: not moved. Moved: arid / hot desert down, trees up (the change's own mechanism, as in the
+sanity), and the weathering sink's reference +0.10 in ln: the same path, since cooler dry summers lower the PET, so more
+runoff and weathering supply. The climate's balance absorbs it (CO2 and dT not moved). Glacial maxima 18 -> 23 of 36
+(icehouse colour only; not part of the pass).
+
+Launch details, kept for the record:
 
 - Launched 06:36 on 2026-11-02, both arms into one out root, MAXSIM 10 shared, detached (nohup):
   `paired.sh <S>/code/main <S>/judge main 0.0005 0.001` and the same for `<S>/code/cand ... cand`, with
@@ -199,7 +221,7 @@ tropics' sunnier, warmer wet seasons don't raise it as much. Note: Earth's Köpp
   default; Earth L7 screens (section 2 tables); lake measures (section 4); `pytest -m "not slow"` passes except the two
   goldens, which were updated for this change (sky -> sunshine and the gate move every climate output);
   `tests/test_envelopes.py` (slow) 11 passed; L6 sanity (section 5).
-- **Running:** the paired judge (section 5).
+- **Judge:** passed (section 5): 32/36 vs 32/36, hard failures 0, dT / CO2 not moved.
 - **Next:** read the judge and report to the coordinator before any merge. If it passes, say so plainly; PW-1334, PW-1327,
   PW-1336 and PW-1326 (B+C) close together on merge. Run `tools/scorecard.py` at merge (CLAUDE.md, after model changes).
 - **Strikes:** none. A, B and C each moved its target the right way on the first try.
