@@ -1,4 +1,5 @@
 ---
+id: PW-1368
 title: "Taboo catalogue: unsourced kinds and thin sources (gender roles, rest days, smiths, Colding & Folke categories)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane133
 blocked_by: []
 relates: [PW-1311, PW-1305]
-refs: [planet/lineages/taboo_defs.py, planet/lineages/taboos.py::other_taboos, planet/lineages/taboos.py::context, docs/review/religion/stats-round1.md, docs/review/religion/slice2.md, "https://d-place.org/parameters/EA036", "https://hraf.yale.edu/documents/106", "https://en.wikipedia.org/wiki/Sumptuary_law"]
+refs: [planet/lineages/taboo_defs.py, "planet/lineages/taboos.py::other_taboos", "planet/lineages/taboos.py::context", docs/review/religion/stats-round1.md, docs/review/religion/slice2.md, "https://d-place.org/parameters/EA036", "https://hraf.yale.edu/documents/106", "https://en.wikipedia.org/wiki/Sumptuary_law"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Gaps:
 - [ ] read the EA sex-difference variables and add a "work by sex" kind with their counts
 - [ ] fetch Colding & Folke 2001 in full and regroup the resource rules
 - [ ] replace the Wikipedia-only kinds' sources with the works those pages cite, where reachable
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-taboo-catalogue-gaps.md (found by lane133).

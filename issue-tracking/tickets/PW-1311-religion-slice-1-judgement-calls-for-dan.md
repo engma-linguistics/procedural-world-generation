@@ -2,7 +2,7 @@
 id: PW-1311
 title: Religion slice 1 judgement calls for Daniel (culture-level beings, faith-tech rates, placeholder purity weight, taboo kinds)
 type: task
-status: todo
+status: done
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -36,6 +36,7 @@ In plain words: the first religion slice works, and I made these calls so as not
 Lean: keep all as built and revisit when the ledger and names (PW-986) land.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 133 (merged a6f3e62a): 13 taboo kinds, 57 non-food rules, each sourced (level stored in SOURCES); stats over 15 runs in docs/review/religion/stats-round1.md. Follow-ups filed.
 - 2026-11-02: lane 133: taboo catalogue of 13 kinds and 57 sourced rules beyond food (taboo_defs.py), drawn per culture from its way of life, techs and gods; stats round 1 over 15 runs (docs/review/religion/stats-round1.md): individuation sits in steps under the tier ceilings, pantheons peak at 6, ~16 taboos per culture, spells far commoner than slice 1 said (draft filed).
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: first pass good. Wants many more taboo kinds, both specific taboos to choose from and types (practical/hygienic, ritual purity, totemic, sumptuary, speech/name, kinship, place/time, etc., even ones irrelevant to the sim). Individuation tiers fine; keep stats of the odd cases and the distributions (bell curves) and report them to him over time.
 - 2026-11-02: Created from inbox draft draft-religion-slice1-calls.md (found by lane117).

@@ -2,7 +2,7 @@
 id: PW-1358
 title: "Religion views: small god-tree examples, a map of where faiths arose and spread, and a religion timeline apart from the cultures timeline"
 type: story
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -20,5 +20,6 @@ updated: 2026-11-02
 In plain words: owner 2026-11-02 wants to see religion: a few small drawn god trees (how a faith's gods split and individuate), a map of where each faith sprang up, moved and changed over time, and a timeline like the cultures one. Faiths must stop being one and the same as cultures: a faith can spread to other cultures or die out while its culture lives.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 133 (merged a6f3e62a): faiths as own records (FAITH_RULE: found, inherit, schism after 20 kyr drift, conversion by organised neighbours, end); Religion tab: god trees, faith map with slider, timeline, taboos.
 - 2026-11-02: lane 133: faiths as records (founded, inherited, schism, conversion, end), the Religion tab (god trees, faith map with time slider via /api/faithmap, faith timeline, taboos); rule filed as a needs-decision draft.
 - 2026-11-02: Created.

@@ -1,4 +1,5 @@
 ---
+id: PW-1366
 title: "Faiths as their own records: the founding, schism and conversion rule (judgement call)"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: med
 found_by: lane133
 blocked_by: []
 relates: [PW-1358, PW-1306, PW-1311]
-refs: [planet/lineages/gods.py::Pantheons._schisms, planet/lineages/gods.py::Pantheons._conversions, planet/lineages/gods.py::contacts, planet/lineages/gods.py::faith_docs, planet/lineages/gods.py::FAITH_RULE, planet/lineages/faithmap.py, viewer/religiontab.js, tests/test_gods.py, docs/review/religion/slice2.md, docs/review/religion/stats-round1.md, tools/religion_stats.py, "run b4d502", "run a24559", "run 3c1caf"]
+refs: ["planet/lineages/gods.py::Pantheons._schisms", "planet/lineages/gods.py::Pantheons._conversions", "planet/lineages/gods.py::contacts", "planet/lineages/gods.py::faith_docs", "planet/lineages/gods.py::FAITH_RULE", planet/lineages/faithmap.py, viewer/religiontab.js, tests/test_gods.py, docs/review/religion/slice2.md, docs/review/religion/stats-round1.md, tools/religion_stats.py, "run b4d502", "run a24559", "run 3c1caf"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Options:
 - B: conversion also from equal individuation by population or prestige (needs a population per culture, not in cultures.json now).
 - C: schism on a slower clock or only on daughter splits (fewer, larger faiths).
 Lean A for v2; revisit the three numbers after Daniel has seen the map.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-faith-spread-rule-call.md (found by lane133).
