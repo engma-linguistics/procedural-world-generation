@@ -158,3 +158,21 @@ def indices(surface: np.ndarray, land: np.ndarray, sea: np.ndarray, discharge: n
     return dict(ri12=ri12, radiation_index=np.where(land, ri, 1.0), twi=twi, slope=slope, river=river,
                 river_dist=rd, river_q=np.where(has, discharge[sj], 0.0),
                 river_h=np.where(has, surface[sj], surface), coast_dist=cd)
+
+
+def en_to_grid(Pk: np.ndarray, ny: int, nx: int, ve: np.ndarray, vn: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """A vector given as (east, north) components at each pixel, as (grid x: +col, grid y: -row) components: true
+    east and north turn against the zoom's grid away from its centre, and a turned section (PW-1338) has its grid
+    north anywhere. Pk: the pixels' planet positions (ny * nx, 3)."""
+    P = np.asarray(Pk, float).reshape(ny, nx, 3)
+    ux = np.gradient(P, axis=1)  # +col
+    uy = -np.gradient(P, axis=0)  # -row
+    ux /= np.linalg.norm(ux, axis=-1, keepdims=True)
+    uy /= np.linalg.norm(uy, axis=-1, keepdims=True)
+    p = (P / np.linalg.norm(P, axis=-1, keepdims=True)).reshape(-1, 3)
+    e = np.cross([0.0, 0.0, 1.0], p)
+    ne = np.linalg.norm(e, axis=-1, keepdims=True)
+    e = np.where(ne > 1e-9, e / np.maximum(ne, 1e-12), [0.0, 1.0, 0.0])  # (at a pole: any east)
+    n = np.cross(p, e)
+    w3 = np.asarray(ve, float)[:, None] * e + np.asarray(vn, float)[:, None] * n
+    return (w3 * ux.reshape(-1, 3)).sum(-1), (w3 * uy.reshape(-1, 3)).sum(-1)

@@ -609,11 +609,11 @@ def fractions(zoom_ref) -> dict:
     zooms store the summary layers only): {code: (ny, nx) fractions}, plus
     'vegetation' (the named types, as stored)."""
     from .. import world as W
-    from .regional import Frame, find_world, load
+    from .regional import find_world, frame_of, load
     meta, lay = load(zoom_ref, decode=True)
     world = W.load(find_world(meta["source_world"]["id"]))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     surf = surface(lay["elevation"].ravel(), lay["lake_depth"].ravel(), lay["water"].ravel())
     r = compute(world, fr, nx, ny, res, meta["seed"], meta["size_km"], surf, lay["water"].ravel(),
                 lay["ice"].ravel(), lay["discharge"].ravel(), lay["drainage_area"].ravel(),

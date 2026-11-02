@@ -8,6 +8,7 @@ import { openWorld } from './provenance.js';
 import { zoomSource } from './zoom.js';
 import { fetchHighlights } from './highlights.js';
 import { stop } from './playback.js';
+import { aeFrame, latlonOf } from '../zoom3d_place.js';
 import { fillSelector, openRun } from './select.js';
 // ------------------------------------------------------------ tabs: globe | regional zoom (zoom.html in an iframe)
 state.tab = 'globe';
@@ -96,11 +97,12 @@ export function buildZoomOutlines() {
   const globe = state.mode === 'globe', r0 = globe ? 1.012 : 1;
   const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;
   for (const z of zoomsOnScreen()) {
-    const { lat, lon } = z.center, h = z.size_km / 2 / 111.2, cl = Math.max(Math.cos(lat * Math.PI / 180), 0.1), pts = [];
-    const corners = [[-h, -h], [-h, h], [h, h], [h, -h], [-h, -h]];
+    // (the zoom's own square: its frame, north-up or turned, PW-1338)
+    const { lat, lon } = z.center, F = aeFrame(lat, lon, z.center.up), s = z.size_km / 2, h = s / 111.2, pts = [];
+    const corners = [[-s, s], [s, s], [s, -s], [-s, -s], [-s, s]];
     for (let c = 0; c < 4; c++) for (let k = 0; k < 8; k++) {
       const [a0, b0] = corners[c], [a1, b1] = corners[c + 1];
-      const f = (t) => llPos(lat + a0 + (a1 - a0) * t, lon + (b0 + (b1 - b0) * t) / cl, r0);
+      const f = (t) => llPos(...latlonOf(F.toSphere(a0 + (a1 - a0) * t, b0 + (b1 - b0) * t)), r0);
       const p1 = f(k / 8), p2 = f((k + 1) / 8);
       if (!wraps(p1, p2)) pts.push(...p1, ...p2);
     }
@@ -115,9 +117,9 @@ export function buildZoomOutlines() {
 export function outlineAt(i) {
   const lat = S.V.grid.lat[i], lon = S.V.grid.lon[i];
   for (const z of zoomsOnScreen()) {
-    const h = z.size_km / 2 / 111.2, cl = Math.max(Math.cos(z.center.lat * Math.PI / 180), 0.1);
-    const dy = Math.abs(lat - z.center.lat), dx = Math.abs(((lon - z.center.lon + 540) % 360) - 180) * cl;
-    const m = Math.max(dy, dx) / h;
+    const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
+    const [x, y] = aeFrame(z.center.lat, z.center.lon, z.center.up).toPlane([Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)]);
+    const m = Math.max(Math.abs(x), Math.abs(y)) / (z.size_km / 2);
     if (m >= 0.75 && m <= 1.15) return z;
   }
   return null;

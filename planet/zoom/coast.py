@@ -112,9 +112,9 @@ def _distance(src, mask, res, max_km):
 
 def _pixel_cells(meta, grid):
     """Planet-fixed points (km) of each pixel, and its nearest world cell."""
-    from .regional import Frame
+    from .regional import frame_of
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     c, r = np.meshgrid(np.arange(nx), np.arange(ny))
     x, y = (c.ravel() + 0.5 - nx / 2) * res, (ny / 2 - r.ravel() - 0.5) * res
     P = fr.to_sphere(x, y)

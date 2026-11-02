@@ -114,9 +114,13 @@ def cmd_zoom(args):
     kind, _, ref = args.world.rpartition(":")
     if kind == "zoom" or (not kind and S.exists("zoom", ref) and not S.exists("world", ref)):
         return _fine_zoom(args, ref)
-    size_km = 1000.0 if args.size_km is None else args.size_km
+    size_km = args.size_km
     res_km = 2.0 if args.res_km is None else args.res_km
-    out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations, peoples=args.peoples)
+    if args.section and size_km is None:
+        size_km = 4000.0  # (the tiling's section size, tiling.py)
+    size_km = 1000.0 if size_km is None else size_km
+    out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations, peoples=args.peoples,
+                 up=args.up, section=args.section)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
     print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
@@ -137,6 +141,8 @@ def cmd_zoom(args):
 def _fine_zoom(args, parent: str):
     """planet zoom <zoom id>: a fine zoom (zoom.fine, PW-129) of that zoom."""
     from .zoom import fine as ZF
+    if args.lat is None or args.lon is None or args.section or args.up is not None:
+        raise SystemExit("a fine zoom takes --lat and --lon (north-up; no --section or --up)")
     out = ZF.zoom(parent, args.lat, args.lon, args.size_km, args.res_km, args.seed)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
@@ -655,8 +661,13 @@ def main():
                                     "of a zoom: a fine zoom (25-100 m/px) of part of it")
     z.add_argument("world", help="world id, e.g. a3f9c2 (see `list`); or a zoom id (zoom:<id> if a world has it "
                                  "too): a fine zoom nested in that zoom, at most 20x finer")
-    z.add_argument("--lat", type=float, required=True, help="centre latitude")
-    z.add_argument("--lon", type=float, required=True, help="centre longitude")
+    z.add_argument("--lat", type=float, default=None, help="centre latitude (required unless --section)")
+    z.add_argument("--lon", type=float, default=None, help="centre longitude (required unless --section)")
+    z.add_argument("--up", type=float, default=None, metavar="DEG",
+                   help="turn the square: its up edge faces this bearing (degrees clockwise from north; default north-up)")
+    z.add_argument("--section", default=None, metavar="CELL",
+                   help="zoom the land-zoom tiling's section of this cell (e.g. px.1.1, pz.1.1: zoom/tiling.py): its "
+                        "centre and orientation; --size-km defaults to 4000")
     z.add_argument("--size-km", type=float, default=None,
                    help="side of the square region (default 1000; fine zooms: 50 in a zoom, 25 in a fine zoom)")
     z.add_argument("--res-km", type=float, default=None,

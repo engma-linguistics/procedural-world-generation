@@ -46,7 +46,7 @@ def frame_and_grid(ctx):
     ctx.size_in, ctx.size_km = ctx.size_km, (ctx.n_in + 2 * ctx.halo) * ctx.res
     ctx.nx = ctx.ny = ctx.n_in + 2 * ctx.halo
     ctx.npx = ctx.nx * ctx.ny
-    ctx.fr = RG.Frame(ctx.lat, ctx.lon)
+    ctx.fr = RG.Frame(ctx.lat, ctx.lon, up=ctx.up)
     ctx.xs = (np.arange(ctx.nx) + 0.5 - ctx.nx / 2) * ctx.res
     ctx.ys = (ctx.ny / 2 - np.arange(ctx.ny) - 0.5) * ctx.res
     X, Y = np.meshgrid(ctx.xs, ctx.ys)
