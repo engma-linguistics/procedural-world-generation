@@ -30,5 +30,6 @@ doc's "Cosmic ledger (draft)" tab, 29 acts.
 - Gate: start once Daniel has settled the ledger tab: its "Your call" rows, plus law/chaos, severity, and intent.
 
 ## Updates
+- 2026-11-02: Ledger round 2 (Daniel, in the religion doc's ledger tab): severity weights added (mild/serious/grave); the cosmos judges the act alone, reasons are cultural. Evil: slavery, eating sapients, desecrating the dead, raising the dead (some gods fine with it), taking a disputed share by force (scaled by amount). Neutral: killing another sapient kind (killing the helpless stays evil), leaving the helpless to save yourself, usurping, breaking a food taboo. Obeying a ruler = lawful, not good; a law/chaos axis is wanted, proposed as reading a person's own oaths, duties and code, not local statutes (awaiting Daniel). Open: sapient sacrifice (proposed: unwilling = evil, willing = Daniel's call).
 - 2026-11-02: Waits on Daniel finishing the religion doc's cosmic ledger tab; not for a lane yet.
 - 2026-11-02: Created from inbox draft draft-moral-ledgers.md (found by religion-doc-chat).
