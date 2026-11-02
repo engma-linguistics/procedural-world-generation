@@ -1,4 +1,5 @@
 ---
+id: PW-1364
 title: "The rain runs before the overturning, so it sees the N Atlantic 3-6 C too cold: the storm tracks' winter evaporation is a third of NCEP's"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane132
 blocked_by: []
 relates: [PW-1321, PW-593]
 refs: [docs/review/base-climate/rain-supply/round1.md, docs/review/base-climate/rain-supply/seaair.py, docs/review/base-climate/rain-supply/seaair_L6.txt, docs/review/base-climate/rain-supply/sstswap.py, docs/review/base-climate/rain-supply/screens.md, "planet/climate.py::compute", "planet/climate.py::_season_inputs", "planet/ocean.py::solve", tools/moisture_regions.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -45,3 +48,6 @@ Check the run cost and the PW-387 warm start.
 
 - [ ] N Atlantic winter evaporation toward NCEP on Earth (>= 0.7x), with the humid coasts' and the interiors' rain
   ratios no worse
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-rain-misses-overturning-sea-warmth.md (found by lane132).

@@ -1,4 +1,5 @@
 ---
+id: PW-1362
 title: "NH subtropical seas are 2.3-3.5 C too cool in the summer half (Gulf 24.6 vs NCEP air 27.2): the Gulf's showers never fire"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane132
 blocked_by: []
 relates: [PW-593, PW-1321, PW-015]
 refs: [docs/review/base-climate/rain-supply/round1.md, docs/review/base-climate/rain-supply/seaair.py, docs/review/base-climate/rain-supply/seaair_L6.txt, docs/review/base-climate/rain-supply/sstswap.py, docs/review/base-climate/rain-supply/screens.md, "planet/climate.py::sea_surface", "planet/climate.py::_sea_half", "planet/climate.py::_summer_half", tools/moisture_regions.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -41,3 +44,6 @@ Effect on the rain:
 The coordinator may prefer to fold this into PW-593.
 
 - [ ] Gulf and W Atlantic summer-half sea air within ~1 C of NCEP on Earth
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-nh-subtropical-seas-cool-summer-for-rain.md (found by lane132).
