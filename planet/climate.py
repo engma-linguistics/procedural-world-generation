@@ -1468,20 +1468,37 @@ def face_winds(grid: Grid, seasons_in: list[dict], tune: dict) -> tuple[np.ndarr
     ea, eb = F["ea"], F["eb"]
     S, ne = len(seasons_in), len(ea)
     un, kd = np.empty((S, ne)), np.empty((S, ne))
-    mid = grid.centers[ea] + grid.centers[eb]
-    mid = mid / np.linalg.norm(mid, axis=1)[:, None]
-    north = np.array([0.0, 0.0, 1.0])[None, :] - mid[:, 2:3] * mid
-    north = north / np.maximum(np.linalg.norm(north, axis=1)[:, None], 1e-12)
-    # the face normal's poleward part, faded within 15 deg of the equator, where the Earth's spin is too weak for
-    # the storms' eddies (as monsoon_wind's geostrophic share; the storm tracks run on into the tropics)
-    poleward = np.clip(np.abs(np.degrees(np.arcsin(np.clip(mid[:, 2], -1, 1)))) / 15.0, 0, 1) * np.sign(mid[:, 2]) \
-        * (F["n"] * north).sum(1)
+    G = _geom(grid)
+    if "poleward" not in G:  # the face normal's poleward part, faded within 15 deg of the equator, where the Earth's
+        # spin is too weak for the storms' eddies (as monsoon_wind's geostrophic share; the storm tracks run on
+        # into the tropics): the grid's, whatever the season
+        mid = grid.centers[ea] + grid.centers[eb]
+        mid = mid / np.linalg.norm(mid, axis=1)[:, None]
+        north = np.array([0.0, 0.0, 1.0])[None, :] - mid[:, 2:3] * mid
+        north = north / np.maximum(np.linalg.norm(north, axis=1)[:, None], 1e-12)
+        G["poleward"] = np.clip(np.abs(np.degrees(np.arcsin(np.clip(mid[:, 2], -1, 1)))) / 15.0, 0, 1) * np.sign(mid[:, 2]) \
+            * (F["n"] * north).sum(1)
+    poleward = G["poleward"]
+    nrm = np.ascontiguousarray(F["n"], dtype=np.float64)
     for k, d in enumerate(seasons_in):
-        v = d["v"] * U_REF
-        drift = tune["eddy_drift"] * np.clip(0.5 * (d["track"][ea] + d["track"][eb]), 0, 1.2)
-        un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1) + drift * poleward
-        kd[k] = K_MIX * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
+        v, tr, B = np.ascontiguousarray(d["v"], dtype=np.float64), np.ascontiguousarray(d["track"], dtype=np.float64), \
+            np.ascontiguousarray(d["B"], dtype=np.float64)
+        _face_winds_k(v, tr, B, ea, eb, nrm, poleward, U_REF, float(tune["eddy_drift"]), float(tune["eddy"]), K_MIX,
+                      un[k], kd[k])
     return un, kd
+
+
+@njit(cache=True, parallel=True)
+def _face_winds_k(v, track, B, ea, eb, nrm, poleward, u_ref, eddy_drift, eddy, k_mix, un, kd):
+    """face_winds' season loop in one pass over the faces (numpy's arithmetic in its order). v: (n, 3) before u_ref."""
+    for e in prange(ea.shape[0]):
+        a, b = ea[e], eb[e]
+        drift = eddy_drift * min(max(0.5 * (track[a] + track[b]), 0.0), 1.2)
+        s = 0.5 * (v[a, 0] * u_ref + v[b, 0] * u_ref) * nrm[e, 0]
+        s = s + 0.5 * (v[a, 1] * u_ref + v[b, 1] * u_ref) * nrm[e, 1]
+        s = s + 0.5 * (v[a, 2] * u_ref + v[b, 2] * u_ref) * nrm[e, 2]
+        un[e] = s + drift * poleward[e]
+        kd[e] = k_mix * min(max(0.12 + eddy * 0.5 * (B[a] + B[b]), 0.0), 1.0)
 
 
 def _transport(grid: Grid, un: np.ndarray, kd: np.ndarray) -> tuple:
@@ -1918,13 +1935,58 @@ def month_rain(p_jul, p_jan) -> np.ndarray:
     return np.where(jul, shape * (0.5 * p_jul / s_jul), shape * (0.5 * p_jan / s_jan))
 
 
+@njit(cache=True, inline="always")
+def _erf1(x):
+    """Abramowitz-Stegun 7.1.26 at one point (the arithmetic, in the order, of the numpy form it replaced; numba's exp
+    is libm's, which differs from numpy's SIMD exp in the last bit for ~5% of arguments: PW-1297)."""
+    ax = abs(x)
+    t = 1 / (1 + 0.3275911 * ax)
+    y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496735) * t + 0.254829592) * t * np.exp(-ax * ax)
+    if x > 0:
+        return y
+    if x < 0:
+        return -y
+    if x == 0:
+        return 0.0 * y
+    return x  # nan
+
+
+@njit(cache=True, parallel=True)
+def _erf_k(x, out):
+    for i in prange(x.shape[0]):
+        out[i] = _erf1(x[i])
+
+
 def _erf(x):
     """Abramowitz-Stegun 7.1.26 (|error| < 1.5e-7)."""
+    if isinstance(x, np.ndarray) and x.dtype == np.float64 and x.size >= 1024:
+        xr = np.ascontiguousarray(x).ravel()
+        out = np.empty(xr.shape)
+        _erf_k(xr, out)
+        return out.reshape(x.shape)
     sg = np.sign(x)
     x = np.abs(x)
     t = 1 / (1 + 0.3275911 * x)
     y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496735) * t + 0.254829592) * t * np.exp(-x * x)
     return sg * y
+
+
+_GDD_C = 4.0 / np.sqrt(2 * np.pi)
+_SQRT2 = np.sqrt(2)
+
+
+@njit(cache=True, parallel=True)
+def _gdd5_k(t_m, days, out):
+    """months' degree-days above 5 C per cell: the twelve months summed in order, the normal's mean excess
+    (sd 4 C) of each month's days."""
+    for i in prange(t_m.shape[1]):
+        s = 0.0
+        for m in range(12):
+            d = t_m[m, i] - 5.0
+            x = d / 4.0
+            cdf = 0.5 * (1 + _erf1(x / _SQRT2))
+            s = s + (_GDD_C * np.exp(-0.5 * x * x) + d * cdf) * days[m]
+        out[i] = s if s > 0.0 else (s if s != s else 0.0)
 
 
 @njit(cache=True, parallel=True)
@@ -1945,6 +2007,33 @@ def _snowpack(t_m, p_m, days, ddf, snow, water):
                 pack = pack - melt
                 snow[m, i] = pack
                 water[m, i] = (1 - share[m]) * p_m[m, i] + melt
+
+
+@njit(cache=True, parallel=True)
+def _par_k(ra, cj, cn, days, out):
+    for i in prange(ra.shape[1]):
+        for m in range(12):
+            c = cj[i] if (m >= 3 and m <= 8) else cn[i]
+            sun = min(max(SUN_CLEAR - SUN_CLOUD * c, 0.0), 1.0)
+            out[m, i] = 0.48 * ra[m, i] * (0.25 + 0.5 * sun) * days[m]
+
+
+def _par(ra, jul, c_jul, c_jan):
+    """months' par: 0.48 x top-of-atmosphere sunshine x (0.25 + 0.5 x the sunshine share) x days (one pass per cell)."""
+    n = ra.shape[1]
+    ok = ra.dtype == np.float64
+    cs = []
+    for c in (c_jul, c_jan):
+        c = np.asarray(c)
+        if c.dtype != np.float64 or c.ndim > 1 or (c.ndim == 1 and c.shape[0] != n):
+            ok = False
+        cs.append(np.full(n, float(c)) if (ok and c.ndim == 0) else c)
+    if ok:
+        out = np.empty(ra.shape)
+        _par_k(ra, np.ascontiguousarray(cs[0]), np.ascontiguousarray(cs[1]), MONTH_DAYS, out)
+        return out
+    cloud = np.where(jul, c_jul, c_jan)
+    return 0.48 * ra * (0.25 + 0.5 * sunshine(cloud)) * MONTH_DAYS[:, None]
 
 
 def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None) -> dict:
@@ -1975,16 +2064,14 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
     jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
     c_jul = 0.5 if cloud_jul is None else np.asarray(cloud_jul)
     c_jan = 0.5 if cloud_jan is None else np.asarray(cloud_jan)
-    cloud = np.where(jul, c_jul, c_jan)
-    par = 0.48 * ra * (0.25 + 0.5 * sunshine(cloud)) * MONTH_DAYS[:, None]
+    par = _par(ra, jul, c_jul, c_jan)
     snow, water = np.empty_like(t_m), np.empty_like(t_m)
     _snowpack(t_m, p_m, MONTH_DAYS, SNOW_DDF, snow, water)
     # degree-days above 5 C, the days scattered around each month's mean (sd
     # 4 C, as Reeh 1991 for melt): a month averaging 5 C still has warm days
-    x = (t_m - 5.0) / 4.0
-    cdf = 0.5 * (1 + _erf(x / np.sqrt(2)))
-    gdd5 = ((4.0 / np.sqrt(2 * np.pi) * np.exp(-0.5 * x * x) + (t_m - 5.0) * cdf) * MONTH_DAYS[:, None]).sum(0)
-    return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=np.maximum(gdd5, 0.0))
+    gdd5 = np.empty(t_m.shape[1])
+    _gdd5_k(t_m, MONTH_DAYS, gdd5)
+    return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=gdd5)
 
 
 def pet_halves(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
@@ -2029,6 +2116,32 @@ SIGMA_MJ = 4.903e-9  # MJ/m2/day per K^4: Stefan-Boltzmann
 PSYCHRO = 0.0665  # kPa per C: the psychrometric constant (at sea level)
 
 
+@njit(cache=True, parallel=True)
+def _open_water_k(t_m, ra, rh_jul, rh_jan, cloud_jul, cloud_jan, lake_wind, days, out):
+    """open_water_evap per cell, month by month (numpy's arithmetic in its order; numba's exp and power are libm's,
+    which can differ in the last bit from numpy's: PW-1297)."""
+    fu = 6.43 * (1 + 0.536 * lake_wind)
+    for i in prange(t_m.shape[1]):
+        tot = 0.0
+        for m in range(12):
+            t = t_m[m, i]
+            summer = m >= 3 and m <= 8
+            rh = min(max((rh_jul[i] if summer else rh_jan[i]) / 100.0, 0.0), 1.0)
+            c = cloud_jul[i] if summer else cloud_jan[i]
+            sun = min(max(SUN_CLEAR - SUN_CLOUD * c, 0.0), 1.0)
+            r = ra[m, i]
+            rs = r * (0.25 + 0.5 * sun)
+            es = 0.6108 * np.exp(17.27 * t / (t + 237.3))
+            ea = rh * es
+            rnl = (SIGMA_MJ * (t + 273.15) ** 4 * (0.34 - 0.14 * np.sqrt(ea))
+                   * (1.35 * min(max(rs / max(0.75 * r, 1e-9), 0.0), 1.0) - 0.35))
+            rn = max((1 - 0.06) * rs - rnl, 0.0)
+            delta = 4098.0 * es / (t + 237.3) ** 2
+            e = (delta * rn + PSYCHRO * fu * (es - ea)) / (delta + PSYCHRO) / LATENT  # mm/day
+            tot = tot + ((e if t > 0 else 0.0) * days[m])
+        out[i] = tot
+
+
 def open_water_evap(lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul, cloud_jan, tilt: float = 23.4,
                     tune: dict | None = None) -> np.ndarray:
     """Evaporation from open water (lakes), mm/yr, by Penman's combination
@@ -2052,6 +2165,11 @@ def open_water_evap(lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul, cloud_
     lat = np.asarray(lat, float)
     t = month_temps(lat, temp, t_warm, t_cold)
     ra = insolation(lat, tilt)
+    hs = [np.asarray(h) for h in (rh_jul, rh_jan, cloud_jul, cloud_jan)]
+    if t.dtype == np.float64 and all(h.dtype == np.float64 and h.shape == (t.shape[1],) for h in hs):
+        out = np.empty(t.shape[1])
+        _open_water_k(t, ra, *[np.ascontiguousarray(h) for h in hs], float(tune["lake_wind"]), MONTH_DAYS, out)
+        return out
     jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
     rh = np.clip(np.where(jul, rh_jul, rh_jan) / 100.0, 0.0, 1.0)
     rs = ra * (0.25 + 0.5 * sunshine(np.where(jul, cloud_jul, cloud_jan)))
@@ -2114,6 +2232,97 @@ def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None, land=
     north = lat >= 0
     p_m = month_rain(p_jul, p_jan)
     t_m = month_temps(lat, temp, t_warm, t_cold)
+    sea = ~(is_land(elev, ice) if land is None else land)  # (a bed below sea level under grounded ice is land)
+    icy = np.zeros(len(elev), bool) if ice is None else np.asarray(ice) > 0
+    out = np.empty(len(elev), np.int64)
+    if all(a.dtype == np.float64 for a in (p_m, t_m, np.asarray(temp), np.asarray(t_warm), np.asarray(t_cold), np.asarray(p_ann))):
+        _koppen_k(p_m, t_m, north, np.ascontiguousarray(temp, float), np.ascontiguousarray(t_warm, float),
+                  np.ascontiguousarray(t_cold, float), np.ascontiguousarray(p_ann, float), sea, icy, out)
+        return out
+    return _koppen_np(p_m, t_m, north, temp, t_warm, t_cold, p_ann, sea, icy, ice is not None)
+
+
+@njit(cache=True, parallel=True)
+def _koppen_k(p_m, t_m, north, T, t_warm, t_cold, P, sea, icy, out):
+    """koppen's decision chain per cell (the first test that holds wins; the numpy form, _koppen_np, is the reference)."""
+    big = 1e9
+    for i in prange(T.shape[0]):
+        if sea[i]:
+            out[i] = SEA_CLASS
+            continue
+        if icy[i] or t_warm[i] < 0:
+            out[i] = 29
+            continue
+        if t_warm[i] < 10:
+            out[i] = 28
+            continue
+        dry_s, wet_s, dry_w, wet_w = big, -big, big, -big
+        driest = p_m[0, i]
+        p_sum, p_win = 0.0, 0.0
+        m10 = 0
+        for m in range(12):
+            v = p_m[m, i]
+            jul = m >= 3 and m <= 8
+            summer = jul if north[i] else not jul
+            if v < driest:
+                driest = v
+            if summer:
+                if v < dry_s:
+                    dry_s = v
+                if v > wet_s:
+                    wet_s = v
+                p_sum = p_sum + v
+                p_win = p_win + 0.0
+            else:
+                if v < dry_w:
+                    dry_w = v
+                if v > wet_w:
+                    wet_w = v
+                p_sum = p_sum + 0.0
+                p_win = p_win + v
+            if t_m[m, i] >= 10:
+                m10 += 1
+        summer_share = p_sum / max(p_sum + p_win, 1e-9)
+        pth = 20 * T[i] + (280 if summer_share >= 0.7 else (140 if summer_share >= 0.3 else 0))
+        hot = T[i] >= 18
+        if P[i] < 0.5 * pth:
+            out[i] = 3 if hot else 4
+            continue
+        if P[i] < pth:
+            out[i] = 5 if hot else 6
+            continue
+        if t_cold[i] >= 18:
+            if driest >= 60:
+                out[i] = 0
+            elif driest >= 100 - P[i] / 25:
+                out[i] = 1
+            else:
+                out[i] = 2
+            continue
+        s_ = (dry_s < 40) and (dry_s < wet_w / 3)
+        w_ = dry_w < wet_s / 10
+        if t_warm[i] >= 22:
+            third = 0
+        elif m10 >= 4:
+            third = 1
+        elif t_cold[i] < -38:
+            third = 3
+        else:
+            third = 2
+        third_c = min(third, 2)  # C climates have no 'd'
+        if t_cold[i] > -3:
+            out[i] = (7 if s_ else (10 if w_ else 13)) + third_c
+        elif s_:
+            out[i] = 16 + third
+        elif w_:
+            out[i] = 20 + third
+        else:
+            out[i] = 24 + third
+
+
+def _koppen_np(p_m, t_m, north, temp, t_warm, t_cold, p_ann, sea, icy, has_ice):
+    """koppen in numpy (the reference of _koppen_k, and the path for inputs that are not float64)."""
+    elev_n = len(north)
     # the local summer half-year: Apr-Sep in the north, Oct-Mar in the south
     jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
     summer = np.where(north[None, :], jul, ~jul)
@@ -2125,16 +2334,15 @@ def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None, land=
     p_win = np.where(summer, 0.0, p_m).sum(0)
     P, T = p_ann, temp
     m10 = (t_m >= 10).sum(0)  # months at 10 C or more
-    out = np.full(len(elev), -1)
+    out = np.full(elev_n, -1)
 
     def put(mask, cid):
         sel = mask & (out < 0)
         out[sel] = cid[sel] if np.ndim(cid) else cid
 
-    sea = ~(is_land(elev, ice) if land is None else land)  # (a bed below sea level under grounded ice is land)
     out[sea] = SEA_CLASS
-    if ice is not None:
-        put(ice > 0, 29)
+    if has_ice:
+        put(icy, 29)
     put(t_warm < 0, 29)
     put(t_warm < 10, 28)
     summer_share = p_sum / np.maximum(p_sum + p_win, 1e-9)
@@ -2156,7 +2364,7 @@ def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None, land=
     put(temperate, 13 + third_c)
     put(s_, 16 + third)
     put(w_, 20 + third)
-    put(np.ones(len(elev), bool), 24 + third)
+    put(np.ones(elev_n, bool), 24 + third)
     return out
 
 

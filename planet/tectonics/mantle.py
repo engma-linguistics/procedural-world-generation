@@ -38,7 +38,7 @@ regions most (volcanism.hotspots).
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 from ..geo import R_KM
 
@@ -230,19 +230,62 @@ def update(sim, bd):
     sim.mantle = sim.mantle * np.exp(-dt / p.mantle_memory) + src * dt
 
 
+_GRAD = {}
+
+
+def _grad_edges(g):
+    """Per cell, the edges it is the a (or b) end of, in edge order (CSR): the order np.bincount adds them in."""
+    hit = _GRAD.get(g.n)
+    if hit is None or hit[0] is not g.edges:
+        e = g.edges
+        ea, eb = e[:, 0].astype(np.int64), e[:, 1].astype(np.int64)
+        offs, ids = [], []
+        for end in (ea, eb):
+            ids.append(np.argsort(end, kind="stable").astype(np.int64))
+            offs.append(np.concatenate([[0], np.cumsum(np.bincount(end, minlength=g.n))]).astype(np.int64))
+        hit = _GRAD[g.n] = (e, ea, eb, offs[0], ids[0], offs[1], ids[1])
+    return hit[1:]
+
+
+@njit(cache=True, parallel=True)
+def _gradient_k(f, P, ea, eb, off_a, id_a, off_b, id_b, out):
+    """gradient per cell: each cell adds up its own edges (as a, then as b), in edge order, like the bincounts."""
+    for c in prange(P.shape[0]):
+        n0 = n1 = n2 = 0.0
+        dd = 0.0
+        for e in id_a[off_a[c]:off_a[c + 1]]:
+            x = f[eb[e]] - f[ea[e]]
+            d0, d1, d2 = P[eb[e], 0] - P[ea[e], 0], P[eb[e], 1] - P[ea[e], 1], P[eb[e], 2] - P[ea[e], 2]
+            n0 += x * d0
+            n1 += x * d1
+            n2 += x * d2
+            dd += (d0 * d0 + d1 * d1) + d2 * d2
+        m0 = m1 = m2 = 0.0
+        de = 0.0
+        for e in id_b[off_b[c]:off_b[c + 1]]:
+            x = f[eb[e]] - f[ea[e]]
+            d0, d1, d2 = P[eb[e], 0] - P[ea[e], 0], P[eb[e], 1] - P[ea[e], 1], P[eb[e], 2] - P[ea[e], 2]
+            m0 += x * d0
+            m1 += x * d1
+            m2 += x * d2
+            de += (d0 * d0 + d1 * d1) + d2 * d2
+        den = dd + de
+        g0, g1, g2 = 2 * (n0 + m0) / den, 2 * (n1 + m1) / den, 2 * (n2 + m2) / den
+        s = (g0 * P[c, 0] + g1 * P[c, 1]) + g2 * P[c, 2]
+        out[c, 0] = g0 - s * P[c, 0]
+        out[c, 1] = g1 - s * P[c, 1]
+        out[c, 2] = g2 - s * P[c, 2]
+
+
 def gradient(sim, f: np.ndarray) -> np.ndarray:
     """Tangent gradient of a smooth field on the grid (per radian), from
     differences to the neighbours (least squares, isotropic neighbours)."""
     g = sim.grid
-    a, b = g.edges[:, 0], g.edges[:, 1]
-    P = g.centers
-    d = P[b] - P[a]
-    df = (f[b] - f[a])[:, None] * d
-    num = np.stack([np.bincount(a, df[:, j], g.n) + np.bincount(b, df[:, j], g.n) for j in range(3)], 1)
-    dd = (d * d).sum(1)
-    den = np.bincount(a, dd, g.n) + np.bincount(b, dd, g.n)
-    grad = 2 * num / den[:, None]
-    return grad - (grad * P).sum(1, keepdims=True) * P
+    f = np.ascontiguousarray(f, dtype=np.float64)
+    out = np.empty((g.n, 3))
+    ea, eb, off_a, id_a, off_b, id_b = _grad_edges(g)
+    _gradient_k(f, np.ascontiguousarray(g.centers, dtype=np.float64), ea, eb, off_a, id_a, off_b, id_b, out)
+    return out
 
 
 def traction(sim) -> np.ndarray:
