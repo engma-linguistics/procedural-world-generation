@@ -233,9 +233,14 @@ BRANCH_CLIMB_M = 30.0  # m: ... nor where it stands higher than this above the d
 class Frame:
     """Azimuthal equidistant projection around (lat0, lon0); x east, y north, km."""
 
-    def __init__(self, lat0: float, lon0: float):
+    def __init__(self, lat0: float, lon0: float, up: np.ndarray | None = None):
         la, lo = np.radians(lat0), np.radians(lon0)
         self.c = xyz(la, lo)
+        if up is not None:  # a chosen orientation (the tiling's, PW-1319): +y along the tangent part of `up`
+            n = np.asarray(up, float) - (np.asarray(up, float) @ self.c) * self.c
+            self.n = n / np.linalg.norm(n)
+            self.e = np.cross(self.n, self.c)
+            return
         e = np.cross([0.0, 0.0, 1.0], self.c)
         if np.linalg.norm(e) < 1e-9:  # at a pole: pick any east
             e = np.array([0.0, 1.0, 0.0])
