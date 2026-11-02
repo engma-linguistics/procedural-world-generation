@@ -19,7 +19,7 @@
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
-  GET    /api/faithmap?run=<id>&frame=<f>[&w=1024]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
+  GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -299,7 +299,8 @@ def faithmap(query: str) -> tuple[bytes | dict, int]:
             raise ValueError("w must be 512, 1024 or 2048")
         from . import api
         with api.COMPUTE:  # (the grid lookup is a parallel numba kernel: one at a time per process, as thumbs)
-            return FM.render(d, gods_doc(d), int(q.get("frame", 0)), w), 200
+            only = int(q["only"]) if q.get("only", "").isdigit() else None
+            return FM.render(d, gods_doc(d), int(q.get("frame", 0)), w, only), 200
     except (ValueError, IndexError, KeyError) as e:
         return {"error": str(e)}, 400
     except SystemExit as e:

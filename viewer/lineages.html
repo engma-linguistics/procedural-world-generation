@@ -1063,7 +1063,7 @@ function drawReligion() {
   const el = $('tab-religion');
   if (!result) {
     const mine = worldRuns();
-    if (mine.length && !drawReligion.busy) { drawReligion.busy = true; showResult(mine[0].dir).finally(() => { drawReligion.busy = false; }); }
+    if (mine.length && !drawReligion.busy && !new URLSearchParams(location.search).get('run')) { drawReligion.busy = true; showResult(mine[0].dir).finally(() => { drawReligion.busy = false; }); }
     el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its religion.</p>'; return;
   }
   ReligionTab.draw(el, result);

@@ -82,7 +82,7 @@ def religion(out: Path, extra):
         try:
             s = TB.write_religion(d, dest, rebuild=tree == "stored")
             (dest / "tree.txt").write_text(tree)
-            print(rid, tree, round(time.time() - t0, 1), "s", s["gods"]["living"], "beings", s.get("faiths", {}).get("faiths"), "faiths", flush=True)
+            print(rid, tree, round(time.time() - t0, 1), "s", s["gods"]["living"], "beings", (s.get("faiths") or {}).get("ever"), "faiths", flush=True)
         except Exception as e:  # (one bad run does not stop the rest)
             print(rid, "FAILED", type(e).__name__, e, flush=True)
 
@@ -174,20 +174,38 @@ def report(out: Path, md: Path | None, png: Path | None) -> str:
     fsizes = np.array(fsizes or [0])
     L.append(f"\nLiving faiths hold {fsizes.mean():.1f} cultures on average (median {np.median(fsizes):.0f}, max {fsizes.max()}).\n")
     # odd cases
-    L.append("## Odd cases\n")
-    oddc = []
+    L.append("## Odd cases (counts, with up to three examples each)\n")
+    odd: dict = {}
+
+    def note(what, ex):
+        odd.setdefault(what, []).append(ex)
     for r in rows:
-        if r["lead_ind"] is not None and r["pantheon"] >= 14:
-            oddc.append(f"- full pantheon (15): {r['culture']} ({r['run']})")
-        if r["taboos"] == 0:
-            oddc.append(f"- no taboos at all: {r['culture']} ({r['run']})")
+        if r["pantheon"] >= 12:
+            note("12 or more living gods (the cap is 15)", f"{r['culture']} ({r['pantheon']}, {r['run']})")
+        if r["pantheon"] < 3:
+            note("fewer than 3 living gods (a culture is founded with 3)", f"{r['culture']} ({r['pantheon']}, {r['run']})")
+        if r["taboos"] <= 8:
+            note("8 taboos or fewer", f"{r['culture']} ({r['taboos']}, {r['run']})")
+        if r["taboos"] >= 22:
+            note("22 taboos or more", f"{r['culture']} ({r['taboos']}, {r['run']})")
         if r["spells"] >= 3:
-            oddc.append(f"- three or more spell-granting gods: {r['culture']} ({r['spells']}, {r['run']})")
+            note("three or more spell-granting gods in one culture", f"{r['culture']} ({r['spells']}, {r['run']})")
+        if r["lead_ind"] is not None and r["lead_ind"] < 0.15:
+            note("a culture whose leading being is still a bare spirit", f"{r['culture']} ({r['run']})")
     for rid, tree, sm, frs in per:
         for f in frs:
             if f["ended_kyr"] is None and len(f["peoples_now"]) >= 3:
-                oddc.append(f"- a faith across {len(f['peoples_now'])} peoples: {f['name']} ({rid})")
-    L.append("\n".join(oddc[:40]) + (f"\n- ... and {len(oddc) - 40} more" if len(oddc) > 40 else "") + "\n" if oddc else "None found.\n")
+                note("a living faith across 3 or more peoples", f"{f['name']} ({len(f['peoples_now'])} peoples, {rid})")
+            if f["end"] == "no followers left":
+                note("a faith that ended while its cultures lived on (all converted or broke away)", f"{f['name']} ({rid})")
+            if len(f.get("changes") or []) >= 2:
+                note("a faith whose core moved twice or more", f"{f['name']} ({rid})")
+    L.append("| case | count | share of cultures or faiths | examples |\n|---|---|---|---|")
+    nf = sum(len(x[3]) for x in per)
+    for what, ex in odd.items():
+        base = nf if "faith" in what.split(" culture")[0] and what.startswith("a") and "faith" in what[:20] else len(rows)
+        L.append(f"| {what} | {len(ex)} | {100 * len(ex) / max(base, 1):.1f}% | {'; '.join(ex[:3])} |")
+    L.append("")
     if png:
         _charts(png, lead, pan, tab, kinds, len(rows), fsizes)
         L.append("Charts: `religion_stats_individuation.png`, `religion_stats_pantheon.png`, `religion_stats_taboos.png`.\n")

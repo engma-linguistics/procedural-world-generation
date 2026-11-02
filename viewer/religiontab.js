@@ -147,7 +147,7 @@
   function mapDraw() {
     const fr = D.frames.find((x) => x[0] === st.frame) || D.frames[D.frames.length - 1], at = fr[1];
     $('rl-when').textContent = ago(at);
-    const img = $('rl-img'), src = `../api/faithmap?run=${encodeURIComponent(D.id)}&frame=${fr[0]}&w=1024`;
+    const img = $('rl-img'), src = `../api/faithmap?run=${encodeURIComponent(D.id)}&frame=${fr[0]}&w=1024${st.follow != null ? '&only=' + st.follow : ''}`;
     if (img.dataset.src !== src) { img.dataset.src = src; $('rl-load').textContent = 'drawing…'; img.onload = () => { if ($('rl-load')) $('rl-load').textContent = ''; }; img.src = src; }
     const live = D.F.filter((f) => f.founded_kyr >= at - 1e-9 && (f.ended_kyr == null || f.ended_kyr < at - 1e-9));
     const sample = (f) => { let s = null; for (const t of f.track) if (t[0] >= at - 1e-9) s = t; else break; return s; };
