@@ -633,12 +633,12 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     ccx, ccy, cz = cx[mine], cy[mine], lab[sel][mine]
     near = np.zeros(n, np.int64)
     best = np.full(n, np.inf)
-    for j0 in range(0, len(ccx), 256):
-        d = (px[:, None] - ccx[None, j0:j0 + 256]) ** 2 + (py[:, None] - ccy[None, j0:j0 + 256]) ** 2
+    step = max(4096, (1 << 22) // max(len(ccx), 1))  # (pixels in blocks: the whole raster x all cells was 22 GB at 2 km, PW-1303)
+    for r0 in range(0, n, step):
+        d = (px[r0:r0 + step, None] - ccx[None, :]) ** 2 + (py[r0:r0 + step, None] - ccy[None, :]) ** 2
         a = np.argmin(d, 1)
-        dm = d[np.arange(n), a]
-        better = dm < best
-        near[better], best[better] = a[better] + j0, dm[better]
+        near[r0:r0 + step] = a
+        best[r0:r0 + step] = d[np.arange(len(a)), a]
     zp = cz[near]
     out["id"] = zp
     loc = np.zeros(len(mine))

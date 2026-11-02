@@ -91,7 +91,8 @@ class Net:
     downstream (-1 none) and down_km the distance to it; area: km^2 per node;
     step: the typical spacing, km; kind: 'world' or 'zoom'."""
 
-    def __init__(self, n, ea, eb, elen, nxt, down_km, area, step, kind, lat=None):
+    def __init__(self, n, ea, eb, elen, nxt, down_km, area, step, kind, lat=None, shape=None):
+        self.shape = shape  # (ny, nx) of a raster net: lets a neighbourhood be cut out (dist_near)
         self.n, self.ea, self.eb, self.elen = n, ea, eb, elen
         self.nxt, self.down_km, self.area, self.step, self.kind, self.lat = nxt, down_km, area, step, kind, lat
 
@@ -126,7 +127,7 @@ class Net:
             nxt = np.where(ok, nr * nx + nc, -1)
             dk = np.where(ok, res_km * np.where((k % 2) == 0, 1.0, 1.0) * np.where(np.isin(k, (1, 3, 5, 7)), 1.0, 2**0.5), 0.0)
         return cls(ny * nx, np.concatenate(ea), np.concatenate(eb), np.concatenate(ln), nxt, dk,
-                   np.full(ny * nx, res_km**2), res_km, "zoom")
+                   np.full(ny * nx, res_km**2), res_km, "zoom", shape=(ny, nx))
 
     def hops(self, km: float) -> int:
         return max(int(round(km / self.step)), 1)
@@ -144,6 +145,19 @@ def dist_from(net: Net, src: np.ndarray, max_km: float) -> np.ndarray:
             break
         d = m
     return d
+
+
+def dist_near(net: Net, node: int, max_km: float) -> tuple[tuple[slice, slice], np.ndarray]:
+    """dist_from one node of a raster net, on the window round it that any path of up to max_km stays in
+    (the same iteration on the same edges, so the same distances): (rows, cols slices, distances in the window)."""
+    ny, nx = net.shape
+    h = int(np.ceil(max_km / net.step * 1.5)) + 1
+    r, c = divmod(int(node), nx)
+    rs, cs = slice(max(r - h, 0), min(r + h + 1, ny)), slice(max(c - h, 0), min(c + h + 1, nx))
+    sub = Net.raster(rs.stop - rs.start, cs.stop - cs.start, net.step)
+    src = np.zeros(sub.n, bool)
+    src[(r - rs.start) * (cs.stop - cs.start) + (c - cs.start)] = True
+    return (rs, cs), dist_from(sub, src, max_km)
 
 
 def hop_min(net: Net, z: np.ndarray, hops: int, same: np.ndarray | None = None) -> np.ndarray:
@@ -416,6 +430,11 @@ def passes(net: Net, z, land, t_warm, t_cold, precip):
         if taken[p["node"]]:
             continue
         keep.append(p)
+        if net.shape is not None:  # (a zoom: only the window round the pass, not the whole raster, PW-1303)
+            (rs, cs), d = dist_near(net, p["node"], near * net.step * 1.5)
+            t2 = taken.reshape(net.shape)
+            t2[rs, cs] |= np.isfinite(d).reshape(rs.stop - rs.start, cs.stop - cs.start)
+            continue
         m = np.zeros(net.n, bool)
         m[p["node"]] = True
         taken |= np.isfinite(dist_from(net, m, near * net.step * 1.5))
