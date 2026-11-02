@@ -267,3 +267,10 @@ hydrology. 5x is not on the table on the CPU without changing outputs, 10x not a
 - `draft-climate-cadence-decision.md` (needs-decision, PW-247): climate every 8 Myr?
 - `draft-gpu-backend-decision.md` (needs-decision): GPU path or not, and which backend.
 - `draft-gpu-port-climate-stencils.md`: the GPU port, only if the decision says B.
+
+## 10. Update after PW-252 (lane 114, `docs/review/speed/pw252.md`)
+
+Numpy glue fused (bit-identical kernels): L7 100 Myr 273.8 -> 242.1 s, L6 73.8 -> 67.5 s; python-side time at L7 146 -> 108 s.
+Measured on the same code, the kernels in section 4's GPU-candidate rows (`climate_step`, `_relax_along`, `_smooth`, `_rain`,
+`_coarse_down`) are 33% of an L6 and an L7 step and 60% of an L8 step (12 Myr cold-start window, 1062 s): the GPU bound is
+~1.5x at L7 and ~2.5x at L8, before copies. No L9/L10 step was measured.

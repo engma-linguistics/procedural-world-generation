@@ -1,7 +1,7 @@
 """Monkeypatching timers: wraps every planet Python function/method and every
 top-level numba dispatcher (one not called from other jitted code) with a
 stack-based perf_counter timer. Tree of inclusive times keyed by call path."""
-import importlib, pkgutil, time, types, json
+import importlib, pkgutil, time, types, json, threading
 from collections import defaultdict
 from numba.core.registry import CPUDispatcher
 
@@ -12,6 +12,8 @@ _pc = time.perf_counter
 
 def _wrap(fn, label):
     def w(*a, **k):
+        if threading.current_thread() is not threading.main_thread():
+            return fn(*a, **k)   # the checkpoint writer thread would corrupt the shared stack
         STACK.append(label)
         t0 = _pc()
         try:

@@ -918,9 +918,11 @@ def margin_band(g, bare):
     the same planet at the same dT grew ~2x the iced land and ~3x the ice at L7 from its first update
     (docs/review/base-climate/v1-finish-3/)."""
     rings = max(1, int(round(MARGIN_KM / (g.spacing * R_KM))))
-    band = np.asarray(bare, bool)
+    band = np.array(bare, dtype=np.bool_)  # (a copy: the rings alternate between two buffers)
+    nxt = np.empty_like(band)
     for _ in range(rings):
-        band = band | (np.add.reduceat(band[g.nbr_idx], g.nbr_off[:-1]) > 0)
+        kernels.grow(band, g.nbr_off, g.nbr_idx, nxt)
+        band, nxt = nxt, band
     return band
 
 
@@ -1046,7 +1048,8 @@ def sheet_surface(g, iced, bed):
         dd = np.where(np.isfinite(d), d, 0.0)  # (cells no margin has reached yet: inf)
         return np.where(np.isfinite(d), (2.0 / 3.0) * np.sqrt(k_m) * ((dd + 1.0) ** 1.5 - dd ** 1.5), np.inf)
 
-    edge = iced & (np.add.reduceat(~iced[idx], off[:-1]) > 0)
+    edge = np.empty(n, np.bool_)
+    kernels.has_unset_nbr(np.ascontiguousarray(iced, dtype=np.bool_), off, idx, edge)
     src = np.repeat(np.arange(n), np.diff(off))
     ok = iced[src] & iced[idx]
     a, b = src[ok], idx[ok]

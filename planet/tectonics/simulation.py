@@ -42,7 +42,7 @@ from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
 from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, VALLEY, elevation, sediment_km, subsidence
 from .params import Params
-from .plate_kernels import cleanup_ghosts, resolve
+from .plate_kernels import cleanup_ghosts, resolve, world_view, write_back
 from .plates import Plates
 from .setup import initial_state
 
@@ -417,14 +417,14 @@ class Simulation:
         pl = self.plates
         o, i = self.owner, np.arange(self.grid.n)
         r = pl.idx[o, i]
-        self.w_age = pl.age[o, r]
-        self.w_cont = pl.cont[o, r]
-        self.w_thick = pl.thick[o, r]
-        self.w_rock = pl.rock[o, r]
-        self.w_cover = pl.cover[o, r]
-        self.w_extra = pl.extra[o, r]
-        self.w_rec = pl.rec[o, r]
-        self.w_lith = pl.lith[o, r]
+        self.w_age = world_view(pl.age, o, r)
+        self.w_cont = world_view(pl.cont, o, r)
+        self.w_thick = world_view(pl.thick, o, r)
+        self.w_rock = world_view(pl.rock, o, r)
+        self.w_cover = world_view(pl.cover, o, r)
+        self.w_extra = world_view(pl.extra, o, r)
+        self.w_rec = world_view(pl.rec, o, r)
+        self.w_lith = world_view(pl.lith, o, r)
         self.swell = self.w_extra[:, LIFT]
         self._subsidence()
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
@@ -448,14 +448,14 @@ class Simulation:
         """Write the world view back into the plates' frames."""
         pl = self.plates
         o, r = self.owner, self.w_ref
-        pl.age[o, r] = self.w_age
-        pl.cont[o, r] = self.w_cont
-        pl.thick[o, r] = self.w_thick
-        pl.rock[o, r] = self.w_rock
-        pl.cover[o, r] = self.w_cover
-        pl.extra[o, r] = self.w_extra
-        pl.rec[o, r] = self.w_rec
-        pl.lith[o, r] = self.w_lith
+        write_back(pl.age, o, r, self.w_age)
+        write_back(pl.cont, o, r, self.w_cont)
+        write_back(pl.thick, o, r, self.w_thick)
+        write_back(pl.rock, o, r, self.w_rock)
+        write_back(pl.cover, o, r, self.w_cover)
+        write_back(pl.extra, o, r, self.w_extra)
+        write_back(pl.rec, o, r, self.w_rec)
+        write_back(pl.lith, o, r, self.w_lith)
 
     # ------------------------------------------------------------- queries
     def bed(self) -> np.ndarray:

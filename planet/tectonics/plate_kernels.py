@@ -9,11 +9,47 @@ ocean floor in the gaps (see the package docstring).
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 from .. import kernels
 from ..surface import CRATON, OCEAN, OROGEN
 from .isostasy import OCEAN_KM
+
+
+@njit(parallel=True, cache=True)
+def gather(arr, o, r, out):
+    """out[i] = arr[o[i], r[i]] for a plate array arr (P, n, m): the world view of one crust field, one pass
+    (a copy, so bit-identical to arr[o, r]; m: the trailing columns, 1 for a plain field)."""
+    m = arr.shape[2]
+    for i in prange(o.shape[0]):
+        oi, ri = o[i], r[i]
+        for c in range(m):
+            out[i, c] = arr[oi, ri, c]
+
+
+@njit(cache=True)
+def scatter(arr, o, r, src):
+    """arr[o[i], r[i]] = src[i]: gather's inverse (the world view written back to the plates' frames). Serial:
+    several world cells can sample one plate cell, and numpy's assignment lets the last one win, as this does."""
+    m = arr.shape[2]
+    for i in range(o.shape[0]):
+        oi, ri = o[i], r[i]
+        for c in range(m):
+            arr[oi, ri, c] = src[i, c]
+
+
+def world_view(arr, o, r):
+    """arr[o, r] for a plate array (P, n, ...) via gather: the world cells' crust, shape (n, ...)."""
+    a3 = arr.reshape(arr.shape[0], arr.shape[1], -1)
+    out = np.empty((o.shape[0], a3.shape[2]), arr.dtype)
+    gather(a3, o, r, out)
+    return out.reshape((o.shape[0],) + arr.shape[2:])
+
+
+def write_back(arr, o, r, src):
+    """arr[o, r] = src (scatter) for a plate array (P, n, ...)."""
+    a3 = arr.reshape(arr.shape[0], arr.shape[1], -1)
+    scatter(a3, o, r, np.ascontiguousarray(src).reshape(o.shape[0], -1))
 
 
 @njit(cache=True)

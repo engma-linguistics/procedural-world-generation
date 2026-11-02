@@ -1038,6 +1038,54 @@ def _merge(cells, nu, out, tol, act):
                 nu[p, i] = out[p, i]
 
 
+@njit(parallel=True, cache=True)
+def _strip(x, seed, out):
+    """equilibrium's cover with the seeds taken off: a type under twice the seed is gone, and a cell over full
+    (the sum over its types above 1) is scaled down to 1."""
+    for i in prange(x.shape[1]):
+        tot = 0.0
+        for k in range(x.shape[0]):
+            v = x[k, i] - seed if x[k, i] > 2 * seed else 0.0
+            out[k, i] = v
+            tot = v if k == 0 else tot + v
+        if tot > 1:
+            d = tot if tot > 1e-9 else 1e-9
+            for k in range(x.shape[0]):
+                out[k, i] = out[k, i] / d
+
+
+@njit(parallel=True, cache=True)
+def _equilibrium_prep(pot_ok, land, fw, npp, net, cap, wet, flood, carbon, litf, trees, herbs, mig, nu0, no_nu0,
+                      start_trees, start_herbs, seed, npp_full, g, K, litter, nu, ok, any_ok):
+    """equilibrium's set-up in one pass per cell, in place of ~25 (NP, n) temporaries: where each type may grow
+    (ok), its net growth per unit carbon (g), its room (K) and litter, and the starting cover (nu)."""
+    for i in prange(fw.shape[0]):
+        nt = nh = 0
+        anyk = False
+        for k in range(pot_ok.shape[0]):
+            o = pot_ok[k, i] and land[i] and (wet[k] == 0 or fw[i] > 0.01)
+            ok[k, i] = o
+            anyk = anyk or o
+            if o and trees[k]:
+                nt += 1
+            if o and herbs[k]:
+                nh += 1
+        any_ok[i] = anyk
+        nt, nh = max(nt, 1), max(nh, 1)
+        for k in range(pot_ok.shape[0]):
+            pm = npp[k, i] if npp[k, i] > 0.0 else 0.0
+            cost = carbon[k] * min(max(pm / npp_full, 0.3), 1.0)
+            g[k, i] = (net[k, i] if net[k, i] > 0.0 else 0.0) / cost
+            kk = fw[i] if wet[k] > 0 else 1.0 - fw[i] * (1.0 - flood[k])
+            K[k, i] = min(kk, cap[i]) if trees[k] else kk
+            litter[k, i] = pm * litf[k]
+            if no_nu0:
+                v = start_trees / nt if trees[k] else (start_herbs / nh if herbs[k] else 0.0)
+            else:
+                v = nu0[k, i]
+            nu[k, i] = (v if mig[k] > 0 else max(v, seed)) if ok[k, i] else 0.0
+
+
 def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=None, steps=None,
                 diff: float = 0.02, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
     """The cover fractions (NP, n) in equilibrium with the climate (section
@@ -1053,20 +1101,9 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     crown: the conifers' crown fire (CROWN_FIRE; the simulation's climate steps leave it off for now, so runs keep
     their pre-PW-347 fire until the run physics take it up)."""
     n = grid.n
-    ok = pot["ok"] & land[None, :] & ((_col("wet")[:, None] == 0) | (fw[None, :] > 0.01))
-    cells = np.flatnonzero(ok.any(0)).astype(np.int64)
-    carbon, mort = _col("carbon"), _col("gamma")
-    # a square metre of a type costs less where it grows poorly (stunted
-    # trees at the treeline hold far less carbon than a lowland forest)
-    cost = carbon[:, None] * np.clip(np.maximum(pot["npp"], 0.0) / NPP_FULL, 0.3, 1.0)
-    g = np.maximum(pot["net"], 0.0) / cost
-    # where each type may grow: the flooded share belongs to the wetland types
-    wet, flood = _col("wet")[:, None], _col("flood")[:, None]
-    K = np.where(wet > 0, fw[None, :], 1.0 - fw[None, :] * (1.0 - flood))
+    mort = _col("gamma")
     # water caps tree cover: in dry climates the canopy can't close (Sankaran et al. 2005)
     cap = np.clip((s["mi"] - 0.05) / 0.4, 0.0, 1.0)
-    K = np.where(TREES[:, None], np.minimum(K, cap[None, :]), K)
-    litter = np.maximum(pot["npp"], 0.0) * _col("litf")[:, None]
     # fire weather: the share of the year the fuel bed (the topsoil under the
     # likeliest burner, the herbs) is dry; lightning from warm, showery summers
     season = s["fire_season"]
@@ -1080,21 +1117,25 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     browsed = (TREES | SHRUBS).astype(float)
     # (herds follow nutritious grass: none where it is wet all year)
     graze = GRAZE * np.clip(1.5 - s["mi"], 0.0, 1.0)
-    if nu0 is None:  # no history: start from a young woodland over grass (see START), shared by the types that can grow
-        nt = np.maximum((ok & TREES[:, None]).sum(0), 1)
-        nh = np.maximum((ok & HERBS[:, None]).sum(0), 1)
-        nu0 = np.where(TREES[:, None], START["trees"] / nt, np.where(HERBS[:, None], START["herbs"] / nh, 0.0))
     mig = np.zeros(NP, np.uint8) if migrate is None else np.asarray(migrate, np.uint8)
-    nu0 = np.asarray(nu0, float)
-    nu = np.where(ok, np.where(mig[:, None] > 0, nu0, np.maximum(nu0, seed)), 0.0)
+    # where each type may grow (ok), what it costs and gains (g: a square metre of a type costs less where it grows
+    # poorly, stunted trees at the treeline hold far less carbon than a lowland forest), the room it has (K: the
+    # flooded share belongs to the wetland types), its litter, and the start state (one fused pass)
+    prep = tuple(np.empty((NP, n)) for _ in range(3)) + (np.empty((NP, n)), np.empty((NP, n), np.bool_), np.empty(n, np.bool_))
+    g, K, litter, nu, ok, any_ok = prep
+    _equilibrium_prep(pot["ok"], land, fw, pot["npp"], pot["net"], cap, _col("wet"), _col("flood"), _col("carbon"),
+                      _col("litf"), TREES, HERBS, mig, np.zeros((1, 1)) if nu0 is None else np.asarray(nu0, float),
+                      nu0 is None, START["trees"], START["herbs"], seed, NPP_FULL, g, K, litter, nu, ok, any_ok)
+    cells = np.flatnonzero(any_ok).astype(np.int64)
     out = np.zeros_like(nu)  # (zeros, not empty: _step writes only `cells`, and reads their neighbours)
     burned = np.zeros(n)
     C, resist = _C, _col("resist")
     slowf = SHRUBS.astype(np.float64)
     c4s = np.asarray(pot.get("c4_share", np.full(n, 0.5)), np.float64)
     def strip(x):
-        x = np.where(x > 2 * seed, x - seed, 0.0)
-        return np.where(x.sum(0) > 1, x / np.maximum(x.sum(0), 1e-9), x)
+        out_ = np.empty(x.shape)
+        _strip(x, seed, out_)
+        return out_
     snapped, k = [], 0
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
         for _ in range(count):
@@ -1126,10 +1167,114 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
 CLOSED = 2.5  # LAI at which a canopy shades all the ground under it
 
 
+@njit(parallel=True, cache=True)
+def _summary_a(nu, lai_p, npp_p, on_jul, on_jan, trees, shrubs, herbs, grounds, evg, resist, mort, tau, den,
+               shade, cover, tree, shrub, herb, ground, lai, l_jul, l_jan, npp, biomass, r_tree, m_tree):
+    """summary's sums over the plant types, one pass per cell with no (NP, n) temporaries. The types are added in
+    order from the first, as numpy's axis-0 sums add them, so the results are bit-identical."""
+    for i in prange(nu.shape[1]):
+        c = a_npp = a_lai = a_jul = a_jan = a_bio = 0.0
+        t = sh = he = gr = nt = rt = mt = 0.0
+        f_c = f_n = f_l = f_j = f_a = f_b = False
+        f_t = f_s = f_h = f_g = f_nt = False
+        for k in range(nu.shape[0]):
+            v = nu[k, i]
+            lp = lai_p[k, i]
+            x = min(max(lp / den[k], 0.0), 1.0)
+            sd = v * x
+            shade[k, i] = sd
+            c = sd if not f_c else c + sd
+            f_c = True
+            pp = npp_p[k, i]
+            pm = pp if pp > 0.0 else 0.0
+            w = v * pm
+            a_npp = w if not f_n else a_npp + w
+            f_n = True
+            w = v * lp
+            a_lai = w if not f_l else a_lai + w
+            f_l = True
+            wj = v * lp * (1.0 if evg[k] else on_jul[k, i] / 6.0)
+            a_jul = wj if not f_j else a_jul + wj
+            f_j = True
+            wa = v * lp * (1.0 if evg[k] else on_jan[k, i] / 6.0)
+            a_jan = wa if not f_a else a_jan + wa
+            f_a = True
+            wb = v * pm * tau[k]
+            a_bio = wb if not f_b else a_bio + wb
+            f_b = True
+            if trees[k]:
+                t = sd if not f_t else t + sd
+                f_t = True
+                w = v * resist[k]
+                rt = w if not f_nt else rt + w
+                w = v * mort[k]
+                mt = w if not f_nt else mt + w
+                nt = v if not f_nt else nt + v
+                f_nt = True
+            if shrubs[k]:
+                sh = sd if not f_s else sh + sd
+                f_s = True
+            if herbs[k]:
+                he = sd if not f_h else he + sd
+                f_h = True
+            if grounds[k]:
+                gr = sd if not f_g else gr + sd
+                f_g = True
+        cover[i], tree[i], shrub[i], herb[i], ground[i] = c, t, sh, he, gr
+        lai[i], l_jul[i], l_jan[i], npp[i], biomass[i] = a_lai, a_jul, a_jan, a_npp, a_bio * 0.01
+        d = nt if nt > 1e-9 else 1e-9
+        r_tree[i], m_tree[i] = rt / d, mt / d
+
+
+@njit(parallel=True, cache=True)
+def _summary_height(nu, lai_p, laimax, hmax, trees, tf, height):
+    """summary's canopy height: the tallest type with cover over 0.1 (tf: the trees' 1 - exp(-stand / 60))."""
+    for i in prange(nu.shape[1]):
+        best = 0.0
+        first = True
+        for k in range(nu.shape[0]):
+            if nu[k, i] > 0.1:
+                h = hmax[k] * np.sqrt(min(max(lai_p[k, i] / laimax[k], 0.0), 1.0)) * (tf[i] if trees[k] else 1.0)
+            else:
+                h = 0.0
+            if first or h > best:
+                best = h
+            first = False
+        height[i] = best
+
+
 def summary(s: dict, pot: dict, eq: dict) -> dict:
     """Per-cell structure from the fractions: cover, tree cover, LAI (and
     per half-year), NPP, biomass, canopy height, fire return interval and
     stand age."""
+    nu = eq["nu"]
+    lai_p = pot["lai"]
+    b = eq["burned"]
+    ins = (nu, lai_p, pot["npp"], pot["on_jul"], pot["on_jan"])
+    if not all(isinstance(a, np.ndarray) and a.dtype == np.float64 and a.ndim == 2 and a.flags.c_contiguous
+               and a.shape == nu.shape for a in ins) or b.dtype != np.float64:
+        return _summary_numpy(s, pot, eq)
+    n = nu.shape[1]
+    shade = np.empty(nu.shape)
+    o = {k: np.empty(n) for k in ("cover", "tree", "shrub", "herb", "ground", "lai", "l_jul", "l_jan", "npp",
+                                   "biomass", "r_tree", "m_tree")}
+    # (a type's share of the cell the canopy shades: a sparse canopy, LAI under CLOSED, covers part of its share)
+    _summary_a(nu, lai_p, pot["npp"], pot["on_jul"], pot["on_jan"], TREES, SHRUBS, HERBS, GROUNDS, _col("phen") == EVERGREEN,
+               _col("resist"), _col("gamma"), _col("tau"), np.where(GROUNDS, 1.0, CLOSED), shade,
+               o["cover"], o["tree"], o["shrub"], o["herb"], o["ground"], o["lai"], o["l_jul"], o["l_jan"],
+               o["npp"], o["biomass"], o["r_tree"], o["m_tree"])
+    tree = o["tree"]
+    stand = np.where(tree > 0.05, 1.0 / np.maximum(b * (1 - o["r_tree"]) + o["m_tree"], 1e-4), 1.0 / (b + 0.1))
+    height = np.empty(n)
+    _summary_height(nu, lai_p, _col("laimax"), _col("hmax"), TREES, 1 - np.exp(-stand / 60.0), height)
+    return dict(cover=o["cover"], tree=tree, shrub=o["shrub"], herb=o["herb"], ground=o["ground"], shade=shade,
+                lai=o["lai"], lai_jul=o["l_jul"], lai_jan=o["l_jan"], npp=o["npp"], biomass=o["biomass"],
+                height=height, fire_return=np.where(b > 1e-4, 1.0 / np.maximum(b, 1e-9), 0.0),
+                stand_age=np.minimum(stand, 2000.0))
+
+
+def _summary_numpy(s: dict, pot: dict, eq: dict) -> dict:
+    """summary() in plain numpy (for inputs that are not float64 (NP, n) arrays; the reference of the kernels)."""
     nu = eq["nu"]
     lai_p = pot["lai"]
     # the ground a type's share of the cell actually shades: a sparse canopy
