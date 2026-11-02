@@ -3,7 +3,7 @@ id: PW-1351
 title: Halflings, gnomes and dwarves skip the era density cap and the land's productivity (no farm share)
 type: task
 status: todo
-parent: PW-1275
+parent: null
 milestone: v2
 subsystem: timezoom
 effort: s
