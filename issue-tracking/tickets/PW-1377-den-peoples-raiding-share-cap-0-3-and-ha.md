@@ -2,7 +2,7 @@
 id: PW-1377
 title: "Den peoples' raiding share: cap 0.3 and half-cap 5 /km2 are judgements, no measured share found"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -28,5 +28,6 @@ What would firm it up: an ethnography giving the share of a raiding people's foo
 Turkana or Nuer cattle-raiding counts). If found, set the cap from it; until then the numbers stay marked as judgements.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Coordinator: keep RAID_CAP 0.3 / RAID_HALF 5 as marked judgements; lane 138 found no quantitative share (sources-round2.md). Raided neighbours losing land filed separately.
 - 2026-11-02: Lane 138 searched again (sources-round2.md): no measured food or income share from raiding and nothing tying raids to the victims' density in anything readable. What exists: Nyangatom loot goes to bridewealth (Glowacki2015), Apache stolen stock was mostly a trade good (NPS, secondary), Turkana fear of raids left 47% of the district unused 1982-84 (Hendrickson1998 via ENN). Recommendation: keep RAID_CAP 0.3 and RAID_HALF 5 as judgements; 0.3 is if anything generous. Follow-up draft: raiders thin their neighbours.
 - 2026-11-02: Created from inbox draft draft-raid-share-unsourced.md (found by lane 136 / lane 137 (density ladder build)).

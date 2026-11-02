@@ -2,7 +2,7 @@
 id: PW-1378
 title: Should irrigation need the plough? Kenku jumped to 10% of people by irrigating as gardeners
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: docs
@@ -20,5 +20,6 @@ updated: 2026-11-02
 In plain words: after the density ladder (lanes 136/137), kenku went from under 1% to 10% of D&D people, 66% of them on irrigated cells, because irrigation isn't tied to plough farming (Q5 A only limited it to cells water reaches). Lane 130's irrigation numbers (Butzer 1976) are Nile plough farmers. Source whether and where irrigation without the plough supported high densities, then propose: tie irrigation to the plough, give non-plough irrigation its own lower rung, or leave it.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Coordinator: leave it (option C). Lane 138: pre-Columbian and Polynesian irrigation ran without plough animals at Nile-or-higher densities per watered km² (chinampas, Kaua'i taro, Ifugao). Kenku's rise is better addressed by PW-1373.
 - 2026-11-02: Lane 138 sourced it (docs/review/peoples/density-ladder/sources-round2.md): irrigation without plough animals is the rule in the Americas and Polynesia and reaches as much as or more than the Nile curve per watered km2 (chinampas ~1,000-1,700, tertiary; Kaua'i pondfields ~600-1,300, arithmetic on an abstract; Ifugao terraces ~350-450 fed per km2 of terrace, a village model). Recommendation: option C, leave it; the kenku share is not a plough question.
 - 2026-11-02: Created.
