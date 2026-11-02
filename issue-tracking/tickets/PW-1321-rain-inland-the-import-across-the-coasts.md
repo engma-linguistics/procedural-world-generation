@@ -2,7 +2,7 @@
 id: PW-1321
 title: "Rain inland: the import across the coasts only moves with supply; next round is moist source seas (PW-015 option A), then inflow depth + friction + ascent together"
 type: task
-status: needs-decision
+status: todo
 parent: PW-015
 milestone: v2
 subsystem: climate
@@ -48,4 +48,5 @@ Options:
 - [ ] owner picks A, B or C
 
 ## Updates
+- 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D40 A approved (one large round on the supply: a low marine air layer under the column, then inflow depth, rising air and land friction judged together); B (land friction alone) is the fallback if A doesn't work out. Coordinator prioritises it against other physics.
 - 2026-11-02: Created from inbox draft draft-rain-coasts-need-moist-source-seas-round.md (found by lane120).

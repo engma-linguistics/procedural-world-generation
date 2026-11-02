@@ -2,7 +2,7 @@
 id: PW-1302
 title: Land zoom rivers and lakes continuous across sections
 type: task
-status: todo
+status: done
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -20,5 +20,6 @@ updated: 2026-11-02
 **In plain words.** A river crossing three sections must be one river: same course, flow and lakes. Options: one planet-wide drainage pass at zoom resolution, or each section conditioned on the world's routing with fixed inflow/outflow points on its edges. Judged on the practice sections.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 129 (merged 8be2508b): A->B rivers carried on (48/53 crossings, 22/23 big within 25%; 1 km tile 20/21); walls + basin lakes; B->A needs a mosaic discharge pass after the sweep (follow-up). Notes docs/review/land-zoom/rivers-round1.md.
 - 2026-11-02: Notes from lane 127 (folded from PW-1344): matched sections end their rivers at the owner line (held ground is an outlet via match.hold_edge), discharge not handed on; neighbour's crossing rivers could enter as inflows (ctx.inflow_pts, stage_rivers.coarse_rivers) with courses pinned in the held zone; multi-crossing rivers need a second pass or planet-wide coarse discharge routing both sides read; measure with seams.py river columns at the owner line (cell edge for tiling sections).
 - 2026-11-02: Created.

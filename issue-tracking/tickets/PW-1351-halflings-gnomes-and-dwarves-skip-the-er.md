@@ -28,4 +28,5 @@ PW-1275 (the shared ladder) would replace all of this, so fix it there rather th
 - [ ] check `shares` for every dnd people with density > 1 has farm or herd > 0
 
 ## Updates
+- 2026-11-02: Owner 2026-11-02: halflings and gnomes absolutely can be farmers.
 - 2026-11-02: Created from inbox draft draft-halflings-farm-as-foragers-at-12.md (found by lane130-density-ladder).

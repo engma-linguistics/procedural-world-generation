@@ -33,4 +33,5 @@ counting). Options, for the owner:
 - [ ] B: keep it as is (the trips are rare: 1 of 40 left the test band here)
 
 ## Updates
+- 2026-11-02: Owner 2026-11-02 asked why B over C (isn't outgassing part of the thermostat?); answered in chat: the thermostat is the weathering sink's climate response; the references are only the yardsticks; drifting yardsticks (C) were tried in PW-576 and erased real trends within a few hundred Myr. Awaiting his pick.
 - 2026-11-02: Created from inbox draft draft-frozen-co2-references-lock-in-spin-up-transients.md (found by lane-115).

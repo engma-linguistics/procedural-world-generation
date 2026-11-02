@@ -2,14 +2,14 @@
 id: PW-1261
 title: "The wild herds are 2-3x thinner than Africa's measured herds at the same rain: the model's above-ground growth is about half Rosenzweig's"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
 found_by: lane103
-blocked_by: []
+blocked_by: [PW-1316]
 relates: [PW-1073, PW-1221, PW-1246]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, docs/review/dragon-numbers/round2.md, docs/references/megafauna/coe1976_african_herbivore_biomass_rainfall_oecologia.pdf]
 created: 2026-11-01
@@ -50,6 +50,7 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D42 A (herbs' root respiration, see what it gets us). After D39 (PW-1316) lands, since lowering grass NPP warms runs through NPP_WEATHER and the CO2 references.
 - 2026-11-02: Status in-progress -> needs-decision. 11-02 lane 123: premise wrong: on Earth's observed climate herds match Coe; grass grows 1.4-1.8x too much (herbs keep ~70% of GPP, roots pay no upkeep) and wet tropical forest ~0.55x. Worlds' herds thin from cloudy/cool semi-arid tropics (PW-1330) and low CO2. Candidate C1 needs NPP_WEATHER re-anchor (PW-1332) and a sourced fire fuel floor (PW-1328) in one round. docs/review/vegetation/npp-check/diagnosis.md
 - 2026-11-02: Status needs-decision -> in-progress. 11-02: lane 123, D34 B broadened (all biomes, plant response on observed climate), diagnosis first.
 - 2026-11-01: Created from inbox draft draft-wild-herds-below-coe-1976.md (found by lane103).

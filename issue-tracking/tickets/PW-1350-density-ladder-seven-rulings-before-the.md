@@ -32,4 +32,5 @@ Daniel picks seven settings. Each option and lean is laid out in the page's "Que
 7. Renaissance top: (A) cap the plough rung at the medieval peak (~35 /km²); (B) source an early-modern rung first. Lean A.
 
 ## Updates
+- 2026-11-02: Owner 2026-11-02: Q1 A (warn if it implements weirdly); Q2 A (confirmed: farming spreads with knowledge and people, outcompeting/assimilating foragers); Q5 A; Q6 A, and trade-fed holds (B) allowed if marked placeholder until trade exists; Q7 A for now plus a literature search for an early-modern rung put on the owner's wishlist. Q3 (land-quality power) and Q4 (den peoples: forager density plus raiding?) under discussion. Also: peoples have no groups for now (groups come from cultures and geography; no subspecies); halflings and gnomes can farm.
 - 2026-11-02: Created from inbox draft draft-density-ladder-rulings.md (found by lane130-density-ladder).
