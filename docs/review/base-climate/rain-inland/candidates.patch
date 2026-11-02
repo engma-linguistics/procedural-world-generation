@@ -1,0 +1,332 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index e00c2334..f4f9e450 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -674,8 +674,11 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     displacement (wind(), front_shift); belt: the westerlies' strength
+     (westerly_belt). column: how much of the air column the ground's
+     warmth and cold fill (low_column's pair; default all of it): a land's
+-    lows and highs are as deep as its air's warmth or cold. Returns (wind, warmth):
+-    warmth is the smoothed temperature excess, C (>0: rising air)."""
++    lows and highs are as deep as its air's warmth or cold. Returns (wind, warmth,
++    inflow): warmth is the smoothed temperature excess, C (>0: rising air);
++    inflow is the wind's cross-isobar part poleward of the tropics (in the
++    wind; the friction layer's inflow toward the lows, out of the highs:
++    inflow_share)."""
+     anom = t_sl - zonal_mean(grid, t_sl)
+     if column is not None:
+         anom = anom * np.where(anom >= 0, column[0], column[1])
+@@ -693,8 +696,36 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     # wind belts, least of all in the strong mid- and high-latitude westerlies.
+     m = np.linalg.norm(v, axis=1, keepdims=True)
+     cap = 0.7 * strength * np.clip((65 - np.abs(grid.lat)) / 25, 0.3, 1)[:, None]
+-    v = v * np.minimum(1, cap / np.maximum(m, 1e-9))
+-    return wind(grid, shift, front, belt) + v, warmth
++    k = np.minimum(1, cap / np.maximum(m, 1e-9))
++    return wind(grid, shift, front, belt) + v * k, warmth, strength * 0.3 * (-0.45 * w * g) * k
++
++
++def inflow_share(ocean: np.ndarray, north: np.ndarray, tune: dict) -> tuple[np.ndarray, np.ndarray]:
++    """The share of the air column's water vapour that rides the land-sea
++    circulation's cross-isobar inflow (monsoon_wind's), per cell, in each
++    half-year (Apr-Sep, Oct-Mar): PW-1099. The inflow is the friction
++    layer's: above it the wind is about geostrophic and runs along the
++    isobars. The vapour falls off with height as the saturation does along
++    the lapse rate (at a fixed relative humidity, e-folding over
++    1 / (q_k LAPSE), ~2.6 km), so a layer h deep holds 1 - exp(-h q_k LAPSE)
++    of it. h: the marine boundary layer over the sea (sea_bl_m), the
++    summer's convective boundary layer over land (sum_h) and the winter's
++    air mass under its inversion (air_m)."""
++    h_sum = np.where(ocean, tune["sea_bl_m"], tune["sum_h"])
++    h_win = np.where(ocean, tune["sea_bl_m"], tune["air_m"])
++    f = lambda h: 1.0 - np.exp(-h * tune["q_k"] * LAPSE)
++    return np.where(north, f(h_sum), f(h_win)), np.where(north, f(h_win), f(h_sum))
++
++
++def convergence(grid: Grid, v: np.ndarray) -> np.ndarray:
++    """The wind's convergence (1/s, > 0: the air piles in) in each cell, as
++    the rain's transport sees it: minus the outward flow through its faces
++    (each the mean of its two cells' winds across it, face_winds'), per
++    unit of its area. v: tangent vectors, U_REF units."""
++    F = _faces(grid)
++    un = (0.5 * (v[F["ea"]] + v[F["eb"]]) * F["n"]).sum(1) * U_REF
++    cell = np.repeat(np.arange(grid.n), np.diff(F["off"]))
++    return -np.bincount(cell, F["sg"] * un[F["eid"]] * F["L"][F["eid"]], grid.n) / F["A"]
+ 
+ 
+ def speed(v):
+@@ -1038,9 +1069,22 @@ def _budyko1(p, pet, w):
+     return p * (1 + x - x * (1 + x ** -w) ** (1 / w))  # (the same, without overflow on very dry ground)
+ 
+ 
++@njit(cache=True)
++def _cv_gate(r, r_c, a):
++    """The showers' rain per unit of vapour against the column's relative
++    humidity r (q / qs), relative to its rate at r_c (the large-scale rain's
++    full-rate humidity): Bretherton et al. (2004)'s monthly P = exp(a (r -
++    r_m)) over the tropical oceans (a 11.4), per unit of vapour (P / r),
++    and at most 1 (entrained dry air kills the plumes; Schiro et al. 2016 find
++    the same pickup over the Amazon). a <= 0: off (lane 120 candidate)."""
++    if a <= 0 or r >= r_c:
++        return 1.0
++    return min(np.exp(a * (r - r_c)) * r_c / max(r, 1e-6), 1.0)
++
++
+ @njit(cache=True, parallel=True)
+ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+-          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, ema0, warm):
++          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, cv_a, cv_a_sea, evap, mean_mm, m0, ema0, warm):
+     """Water vapour carried along the wind in physical time, for all
+     seasons at once (arrays are [season, cell]). Each time step dt (s):
+     - the air moves: a finite-volume transport through the cell faces
+@@ -1148,7 +1192,8 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
+                 r_ls = min(rate * dt, 1.0) * (q - excess)
+                 inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale
+                 if inst > 0:
+-                    rate += cv_rate[k, i] * min(inst, 2.0)
++                    rate += cv_rate[k, i] * min(inst, 2.0) * _cv_gate(q / max(qs[k, i], 1e-12), rh_c[k, i],
++                                                                      cv_a_sea if ocean[i] else cv_a)
+                 r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+                 m1[i, k] = q - r
+                 ema[k, i] += 0.05 * (r - ema[k, i])
+@@ -1370,7 +1415,7 @@ def storm_track(grid: Grid, jet: np.ndarray, baro: np.ndarray, tune: dict) -> np
+ 
+ 
+ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, track=None, surf=None,
+-                   ocean=None) -> dict:
++                   ocean=None, ascent=None) -> dict:
+     """Per-cell inputs of the rain kernel for one season (see _rain).
+     elev: the ground (<= 0: sea); surf: the ground or ice surface (m;
+     default elev), which t_air, the surface air temperature (C, used over
+@@ -1380,7 +1425,9 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
+     season's temperatures reduced to sea level, track: storminess along
+     the jet's storm tracks (storm_track), which takes over a share
+     storm_jet of the latitude belt's storminess. ocean: default not geo.is_land
+-    (compute's: not geo.is_land)."""
++    (compute's: not geo.is_land). ascent: the rate (1/s) at which the land-
++    sea circulation's converging low-level air lifts the column's vapour
++    out of the friction layer (compute; default none)."""
+     ocean = ~is_land(elev, grid=grid) if ocean is None else ocean
+     lat = grid.lat
+     up = LAPSE * np.maximum(elev if surf is None else surf, 0)
+@@ -1395,6 +1442,17 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
+     # part (lapse_q) of the cooling with height wrings water out.
+     t_sl = np.where(ocean, sst, t_air + up)
+     t_mass = np.maximum(smooth(grid, t_sl, tune["airmass_km"]), np.where(ocean, -99.0, t_sl))
++    # Land colder than its latitude's sea (a winter continent) cools from the
++    # ground up: the cold sits in a surface-based inversion, and the air
++    # above it, which carries the vapour, stays warmer (Zhang et al. 2011:
++    # winter inversions over Siberia > 800 m deep and > 15 K, weak over
++    # northern Europe). inv_share of the land's chill below the latitude's
++    # sea surface stays under the inversion, so the vapour's air condenses
++    # that much warmer (PW-026 lane 120 candidate; 0: off). Not on land ice.
++    if tune.get("inv_share", 0.0) > 0:
++        ref = smooth(grid, zonal_mean(grid, sst, ocean), 800.0)
++        bare = ~ocean & ((surf - elev) <= 1.0 if surf is not None else True)
++        t_mass = t_mass + np.where(bare, tune["inv_share"] * np.maximum(ref - t_mass, 0.0), 0.0)
+     qs = np.where(ocean, _qsat(sst, tune["q_k"]), _qsat(t_mass - tune["lapse_q"] * up, tune["q_k"]))
+     # the sea's own humidity, which its evaporation drives the air toward: saturation over salt water
+     src_q = np.where(ocean, tune["sea_sat"] * qs, 0.0)
+@@ -1411,6 +1469,16 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
+     pole = np.clip((np.abs(lat) - 70) / 15, 0, 1)
+     ls = tune["base"] * np.clip(tune["bg"] + tune["storm"] * B + tune["itcz_ls"] * itcz
+                                 - tune["belt_dry"] * sink - 0.3 * pole, 0.05, None)
++    # Where the land-sea circulation's cross-isobar inflow converges, its air
++    # rises out of the friction layer, and the vapour it brought rains as it
++    # is lifted (PW-1100): ascent is that layer's vapour lifted per second
++    # per unit of the column's (inflow_share x the convergence, by
++    # continuity), on the same humidity gate. The zonal belts' own rising
++    # and sinking air are itcz and sink; under the subtropics' sinking air
++    # the lifted air is held down (a heat low's shallow ascent under the
++    # trade inversion), as the storms' lift.
++    if ascent is not None:
++        ls = ls + RATE_S * np.asarray(ascent) * np.clip(1 - sink, 0, 1)
+     # Storms lift the air (PW-998 round 2): along the storm tracks the warm
+     # sector's air glides up over the fronts, so it rains at a surface
+     # humidity well below saturation (winter rain on the subtropical east
+@@ -1543,7 +1611,7 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
+     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
+             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, c_self, c_in, nbr,
+             _faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"], tune["cv_scale"],
+-            tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
++            float(tune["cv_rh_a"]), float(tune["cv_rh_a_sea"]), tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
+             np.ascontiguousarray(ema0, np.float64), warm)
+ def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[dict], tune: dict) -> np.ndarray:
+     """Storms carry their rain with them: the large-scale (frontal) rain is
+@@ -1593,6 +1661,8 @@ TUNE = dict(
+     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
+     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
+     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
++    inv_share=0.0,  # share of a cold land's chill below its latitude's sea kept under the surface inversion,
++    # below the vapour's air (_season_inputs; lane 120 candidate, off)
+     # rain-making
+     fex=0.25,  # share of the oversaturated water that rains out per RATE_S (rest further on)
+     base=0.035,  # share of the vapour that rains out per RATE_S (large-scale rain; showers: cv times this)
+@@ -1608,6 +1678,8 @@ TUNE = dict(
+     storm_km=600.0,  # km: a storm's rain area
+     cv=4.0,  # showers: rain-out per RATE_S at cv_scale C of instability, times base
+     cv_scale=10.0,  # C of moist static energy excess for full-rate showers
++    cv_rh_a=0.0,  # showers' column-humidity gate over land (_cv_gate; Bretherton et al. 2004's 11.4; 0: off,
++    cv_rh_a_sea=0.0,  # ... and over the sea; lane 120 candidate)
+     itcz_cv=1.0,  # showers are likelier under the tropical rain belt (rising air) ...
+     cv_sink=0.5,  # ... and rarer under the sinking subtropical air
+     wtg=20.0,  # deg: the tropics' even temperature aloft reaches this far (then fades over 15 deg)
+@@ -1649,6 +1721,12 @@ TUNE = dict(
+     belt_shift=10.0,  # deg the tropical rain belt follows the sun at the solstice (times tilt/23.4)
+     hk=0.64,  # the half-years' mean of a seasonal swing (2/pi of the peak, for a sine)
+     monsoon=1.0,  # strength of the land-sea pressure winds ...
++    fric_land=1.0,  # friction layer's wind over land / over sea (lane 120 candidate; 1: off)
++    inflow_bl=False,  # their cross-isobar inflow carries only its friction layer's vapour (inflow_share; PW-1099:
++    # off, as it dries the monsoon coasts, whose rain rests on that inflow's whole-column vapour, until they get
++    # their vapour from a sound source)
++    ascent=False,  # large-scale rain from that inflow's convergence (_season_inputs' ascent; PW-1100: off, it
++    # rides with inflow_bl)
+     big=1.5,  # ... and of their continent-wide part
+     big_km=2000.0,  # km: the scale of that part
+     eq_up=15.0,  # C: equatorial upwelling (cold tongues) under a full trade wind
+@@ -2337,14 +2415,33 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # lows and highs as deep as its air column's warmth (low_column)
+     col = low_column(grid, land, tune)
+     b_jul, b_jan = westerly_belt(grid, t_sl_jul, t_sl_jan)
+-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jul, col)
+-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jan, col)
++    w_jul, _, in_jul = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jul,
++                                    col)
++    w_jan, _, in_jan = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jan,
++                                    col)
+     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
+     v_ann = 0.5 * (v_jul + v_jan)
+     # the rain's wind: the water vapour rides above the polar inversion, not
+-    # in the shallow cold air draining off the poles (polar_drift, PW-332)
+-    vq_jul = deflect(grid, w_jul - polar_drift(grid, shift), surf, tune)
+-    vq_jan = deflect(grid, w_jan - polar_drift(grid, -shift), surf, tune)
++    # in the shallow cold air draining off the poles (polar_drift, PW-332),
++    # and the land-sea circulation's cross-isobar inflow carries only the
++    # vapour of the friction layer it blows in (inflow_share, PW-1099)
++    bl_jul, bl_jan = inflow_share(ocean, north, tune) if tune["inflow_bl"] else (np.ones(n), np.ones(n))
++    vq_jul = deflect(grid, w_jul - polar_drift(grid, shift) - (1 - bl_jul)[:, None] * in_jul, surf, tune)
++    vq_jan = deflect(grid, w_jan - polar_drift(grid, -shift) - (1 - bl_jan)[:, None] * in_jan, surf, tune)
++    if tune["fric_land"] != 1.0:
++        # Rough land slows the friction layer's wind more than the sea does (lane 120 candidate): its share of the
++        # column's vapour (inflow_share) moves at fric_land of the sea's surface wind (linear drag, |V|/G = cos of
++        # the turning angle: ~25-50 deg over land, 15-30 over sea, cos 37.5 / cos 22.5 = 0.86)
++        sh_jul, sh_jan = inflow_share(ocean, north, tune)
++        vq_jul = vq_jul * np.where(land, 1 - sh_jul * (1 - tune["fric_land"]), 1.0)[:, None]
++        vq_jan = vq_jan * np.where(land, 1 - sh_jan * (1 - tune["fric_land"]), 1.0)[:, None]
++    # where that inflow converges, its air rises out of the friction layer, and the vapour it brings rains
++    # (PW-1100): the rate of that ascent per unit of the column's vapour
++    up_jul = up_jan = None
++    if tune["ascent"]:
++        sh_jul, sh_jan = inflow_share(ocean, north, tune)
++        up_jul = sh_jul * np.maximum(convergence(grid, in_jul), 0.0)
++        up_jan = sh_jan * np.maximum(convergence(grid, in_jan), 0.0)
+ 
+     cur, away = currents(grid, ocean, v_ann, tune)
+ 
+@@ -2381,8 +2478,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+         j, baro = jet_stream(grid, t_s, tune)
+         jets.append(j)
+         tracks.append(storm_track(grid, j, baro, tune))
+-    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
+-            _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
++    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean,
++                           up_jul),
++            _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean,
++                           up_jan)]
+     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
+     wet = np.exp(RAIN_PER_C * dT)  # a warmer world is a wetter one
+     # The air takes up water from the open sea and from the land as much as
+@@ -2466,8 +2565,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     f_jul, f_jan = front_shift(grid, t_sj), front_shift(grid, t_sn)
+     # (and the westerlies' strength from the finished air's contrast)
+     b_jul, b_jan = westerly_belt(grid, t_sj, t_sn)
+-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul, b_jul, col)
+-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan, b_jan, col)
++    w_jul, _, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul, b_jul, col)
++    w_jan, _, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan, b_jan, col)
+     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
+     air["v_sum"] = np.where(north[:, None], v_jul, v_jan)
+     air["v_win"] = np.where(north[:, None], v_jan, v_jul)
+diff --git a/tests/test_rain_transport.py b/tests/test_rain_transport.py
+index d530ef84..aaa105a5 100644
+--- a/tests/test_rain_transport.py
++++ b/tests/test_rain_transport.py
+@@ -72,3 +72,30 @@ def test_same_planet_rains_the_same_at_two_levels():
+         out[level] = (c["precip"][land].mean(), c["precip"][inland].mean())
+     for a, b in zip(out[5], out[6]):
+         assert abs(a / b - 1) < 0.05, out
++
++
++def test_convergence_closes_and_vanishes_for_rotation():
++    """convergence (PW-1100): over the whole sphere what piles in somewhere leaves somewhere else (the area-weighted
++    sum is 0), and a solid-body rotation about the poles neither converges nor diverges anywhere."""
++    g = build_grid(5)
++    F = climate._faces(g)
++    rng = np.random.default_rng(2)
++    v = rng.normal(0, 1, (g.n, 3))
++    v -= (v * g.centers).sum(1, keepdims=True) * g.centers
++    c = climate.convergence(g, v)
++    assert abs((c * F["A"]).sum()) < 1e-9 * (np.abs(c) * F["A"]).sum()
++    rot = np.cross(np.array([0.0, 0.0, 1.0]), g.centers)
++    assert np.abs(climate.convergence(g, rot)).max() < 1e-3 * np.abs(c).max()
++
++
++def test_inflow_share_is_the_friction_layers_vapour():
++    """inflow_share (PW-1099): the share of an exponential vapour column (e-folding 1 / (q_k LAPSE)) below the
++    friction layer: the shallow marine layer holds less than the summer land's, and both less than half."""
++    t = climate.TUNE
++    ocean = np.array([True, False, False])
++    north = np.array([True, True, False])
++    jul, jan = climate.inflow_share(ocean, north, t)
++    f = lambda h: 1 - np.exp(-h * t["q_k"] * climate.LAPSE)
++    assert np.allclose(jul, [f(t["sea_bl_m"]), f(t["sum_h"]), f(t["air_m"])])
++    assert np.allclose(jan, [f(t["sea_bl_m"]), f(t["air_m"]), f(t["sum_h"])])
++    assert 0 < jul[0] < jul[1] < 0.5
+diff --git a/tools/moisture_budget.py b/tools/moisture_budget.py
+index 06707054..22d5c5f3 100644
+--- a/tools/moisture_budget.py
++++ b/tools/moisture_budget.py
+@@ -130,7 +130,8 @@ PROBE_REGIONS = ["Sahara", "Sahel", "Arabia", "Australia interior", "Gobi/Mongol
+ # --------------------------------------------------------------------------
+ @njit(cache=True, parallel=True)
+ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+-           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, un, kd, ea, eb, L, lc,
++           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, cv_a, cv_a_sea, evap, mean_mm, m0, un, kd, ea, eb, L,
++           lc,
+            tag, ntag):
+     """climate._rain, line for line, plus: tracers of the vapour by where it
+     evaporated (tag: per cell, 0..ntag-1; a well-mixed column, so each tracer
+@@ -239,7 +240,8 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
+                 dry = mse_t[k, i] + tcor[k, i] - mse_thr[k, i]
+                 inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale  # (as _rain adds it up)
+                 if inst > 0:
+-                    rate += cv_rate[k, i] * min(inst, 2.0)
++                    rate += cv_rate[k, i] * min(inst, 2.0) * climate._cv_gate(q / max(qs[k, i], 1e-12), rh_c[k, i],
++                                                                              cv_a_sea if ocean[i] else cv_a)
+                 r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+                 m1[i, k] = q - r
+                 ema[k, i] += 0.05 * (r - ema[k, i])
+diff --git a/tools/moisture_regions.py b/tools/moisture_regions.py
+index 419fcfde..6447fff2 100644
+--- a/tools/moisture_regions.py
++++ b/tools/moisture_regions.py
+@@ -134,7 +134,7 @@ def kernel_inputs(rec, tune=None, st_fn=None, wind_fn=None, w_fn=None):
+     args = (st["qs"], st["src_q"], ocean, st["ls"] / climate.RATE_S, st["cv"] / climate.RATE_S, st["mse_t"],
+             st["mse_thr"], np.ascontiguousarray(rec["pet"], np.float64), w, float(tune["soil_mm"]), open_sea,
+             c_self, c_in, nbr, climate._faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"],
+-            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64))
++            tune["cv_scale"], float(tune["cv_rh_a"]), float(tune["cv_rh_a_sea"]), tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64))
+     return args, un, kd, tune
+ 
+ 
+@@ -551,8 +551,8 @@ def patch_monsoon(ageo: float):
+         v = strength * 0.3 * (w * (0.9 * geo - ageo * g) - (1 - w) * g)
+         m = np.linalg.norm(v, axis=1, keepdims=True)
+         cap = 0.7 * strength * np.clip((65 - np.abs(grid.lat)) / 25, 0.3, 1)[:, None]
+-        v = v * np.minimum(1, cap / np.maximum(m, 1e-9))
+-        return climate.wind(grid, shift, front, belt) + v, warmth
++        k = np.minimum(1, cap / np.maximum(m, 1e-9))
++        return climate.wind(grid, shift, front, belt) + v * k, warmth, strength * 0.3 * (-ageo * w * g) * k
+ 
+     climate.monsoon_wind = mw
+     return orig
