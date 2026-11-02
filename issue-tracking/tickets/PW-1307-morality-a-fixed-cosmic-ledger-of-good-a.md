@@ -1,8 +1,9 @@
 ---
+id: PW-1307
 title: "Morality: a fixed cosmic ledger of good and evil plus per-culture concern weights over an act list"
 type: story
 status: todo
-parent: null
+parent: PW-1308
 milestone: v2
 subsystem: timezoom
 effort: m
@@ -11,6 +12,8 @@ found_by: religion-doc-chat
 blocked_by: []
 relates: [PW-904]
 refs: [planet/lineages/reputation.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -25,3 +28,7 @@ doc's "Cosmic ledger (draft)" tab, 29 acts.
 - Each act is tagged by concern, with context words (kin, guest, helpless, enemy, sapient). A culture's verdict = its weights x
   the tags. A god's character is its worshippers' weights; its cosmic alignment = those habits read on the fixed ledger.
 - Gate: start once Daniel has settled the ledger tab: its "Your call" rows, plus law/chaos, severity, and intent.
+
+## Updates
+- 2026-11-02: Waits on Daniel finishing the religion doc's cosmic ledger tab; not for a lane yet.
+- 2026-11-02: Created from inbox draft draft-moral-ledgers.md (found by religion-doc-chat).

@@ -1,8 +1,9 @@
 ---
+id: PW-1308
 title: "Religion: gods, faith, taboos and morality per culture (faith-made gods by default)"
 type: epic
 status: todo
-parent: null
+parent: PW-856
 milestone: v2
 subsystem: timezoom
 effort: xl
@@ -11,6 +12,8 @@ found_by: religion-doc-chat
 blocked_by: []
 relates: [PW-856, PW-907, PW-904, PW-719, PW-696, PW-692]
 refs: [docs/wiki/decisions.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Settled with Daniel in the religion doc, https://claude.ai/artifact/Tk4g2nkJPQpT
 
 Children (drafts filed alongside): gods tree, faith tech nodes, food taboos, moral ledgers. Coordinator: PW-907 (gods
 placeholder) is probably superseded by the gods-tree story. Re-parent it under this epic or fold it in.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-religion-epic.md (found by religion-doc-chat).

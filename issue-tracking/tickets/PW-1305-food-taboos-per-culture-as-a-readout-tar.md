@@ -1,8 +1,9 @@
 ---
+id: PW-1305
 title: "Food taboos per culture as a readout: target, scope and origin (practical, symbolic, divine, identity, purity)"
 type: story
 status: todo
-parent: null
+parent: PW-1308
 milestone: v2
 subsystem: timezoom
 effort: m
@@ -11,6 +12,8 @@ found_by: religion-doc-chat
 blocked_by: []
 relates: [PW-719, PW-692]
 refs: [planet/lineages/brief.py, planet/lineages/animal_defs.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Settled in the religion doc (https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP (
     animal_defs) become "unclean". The number of rules scales with the culture's purity weight on the moral ledger. Ritual
     slaughter and blood rules are a possible later field.
 - The explanation, consequence and enforcement are writer's material, not computed.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-food-taboos.md (found by religion-doc-chat).

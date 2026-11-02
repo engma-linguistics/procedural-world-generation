@@ -1,8 +1,9 @@
 ---
+id: PW-1304
 title: "Tech tree: faith steps on the social track (moralizing high god after temples + kingship) and a divine-magic node on the arcane track, gated by gods mode"
 type: task
 status: todo
-parent: null
+parent: PW-1308
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -11,6 +12,8 @@ found_by: religion-doc-chat
 blocked_by: []
 relates: [PW-696, PW-675]
 refs: [planet/lineages/samples/techtree.toml, docs/references/tech-catalogue/knowledge.toml, planet/lineages/techtree.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Daniel's ruling (religion doc, https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP
   2013, and note that the Whitehouse et al. 2019 Seshat result was contested (check its retraction status before citing).
 - Arcane track: a "divine magic" (clerics) node that needs temples. It exists only when gods_mode is faith_made or absolute. It is
   kept separate from the rest of magic (PW-696, v3) so that belief-only worlds still get the faith steps.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-faith-tech-nodes.md (found by religion-doc-chat).

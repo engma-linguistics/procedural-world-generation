@@ -1,8 +1,9 @@
 ---
-title: "Gods as a lect-like tree per deme (born, split, merge, drift, fade) with an individuation slider and a gods-mode switch, as a readout"
+id: PW-1306
+title: Gods as a lect-like tree per deme (born, split, merge, drift, fade) with an individuation slider and a gods-mode switch, as a readout
 type: story
 status: todo
-parent: null
+parent: PW-1308
 milestone: v2
 subsystem: timezoom
 effort: l
@@ -11,6 +12,8 @@ found_by: religion-doc-chat
 blocked_by: []
 relates: [PW-907, PW-981, PW-986, PW-711]
 refs: [planet/lineages/demes.py, planet/lineages/cultures.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -29,3 +32,7 @@ Design, settled in the religion doc (https://claude.ai/artifact/Tk4g2nkJPQpTJgeD
   The history is identical across modes; only the readout wording and the spell-granting flag change. No feedback in v2.
 - Under the parent epic (religion draft). Names wait for PW-986 (cognate god names from the lect tree).
 - Daniel uses the viewer, not the CLI: the culture card needs a gods panel, and the mode needs a world-creation control (relates PW-711).
+
+## Updates
+- 2026-11-02: Supersedes PW-907 (folded in): read PW-907's 11-02 rulings before building.
+- 2026-11-02: Created from inbox draft draft-gods-tree-individuation.md (found by religion-doc-chat).
