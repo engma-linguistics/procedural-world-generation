@@ -238,6 +238,27 @@ a sourced table; no "practical" taboos (nothing models poison or parasites); the
 by run (221 on b4d502, 967 on a24559), worth a look.</p>
 </div>
 
+<h2 id="landzoom">Land zoom: the practice sections are in</h2>
+<div class="card" id="lz1"><div class="id">10 SIDE-BY-SIDE 4,000 KM SECTIONS ON DBA204 · SEAMS MEASURED · 1 KM IS EXPENSIVE (PW-1300)</div>
+<p><b>Open them:</b> a 2×2 block on Trojanel
+(<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=7b69a9">7b69a9</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=a33145">a33145</a>,
+<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=f6a9c7">f6a9c7</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=c9ae66">c9ae66</a>; ten rivers cross
+its west seam), a coast pair (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=2a4463">2a4463</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=fde691">fde691</a>),
+an ice-covered range (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=7fd990">7fd990</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=e82f85">e82f85</a>) and a
+desert edge (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=48489d">48489d</a>, <a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=50d6af">50d6af</a>), all at 2 km per
+pixel; one at 1 km (<a href="http://localhost:8765/viewer/?world=dba204.json&amp;tab=zoom&amp;zoom=69b422">69b422</a>). Seam pictures: <code>docs/review/land-zoom/seam-*.png</code>.</p>
+<ul>
+<li><b>Good already:</b> coasts and landform types agree across seams; plains differ by 7–20 m.</li>
+<li><b>Bad:</b> mountains and ice disagree by 300–480 m typically and up to 3 km; dunes by about 60 m; biomes differ on 7–36% of the same ground;
+some rivers exist in one section and not the other (30 of 102 crossings on the west seam).</li>
+<li><b>The squares don't tile the sphere:</b> stepping 3,800 km gives rotated, wedge-shaped overlaps (871 km on one seam). A real tiling
+rule comes before the seam work (PW-1319).</li>
+<li><b>Cost is the real wall:</b> one section at 1 km took 2 h 48 min and 110 GB of memory (2 km: 20–60 min, 22–40 GB). A whole planet
+at 1 km would be about 50 hours, one at a time. So the order in the epic is now: tiling rule and cost (the memory peak and a long
+single-core stage) first, then seams and rivers, then the sweep.</li>
+</ul>
+</div>
+
 <h2 id="d39h">One decision for you</h2>
 <div class="card" id="d39"><div class="id">D39 · THE CO2 BALANCE LEARNS ITS "NORMAL" IN THE FIRST 300 MYR, AND KEEPS IT FOREVER (PW-1316)</div>
 <p><b>What lane 115 found</b> while chasing the hothouse test world: the model measures volcanic outgassing and rock weathering against
