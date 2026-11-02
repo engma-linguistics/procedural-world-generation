@@ -1,5 +1,6 @@
 ---
-title: "Town minorities (goblins and kobolds in other peoples' towns) wait for a towns and minorities model"
+id: PW-1387
+title: Town minorities (goblins and kobolds in other peoples' towns) wait for a towns and minorities model
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane 139 (PW-1369)
 blocked_by: []
 relates: [PW-1369, PW-889, PW-1357, PW-1011]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/settlements.py, planet/lineages/spec.py, planet/lineages/brief.py, viewer/globe/settlements.js, "git show HEAD~ -- planet/lineages/history/cities.py (the removed CitiesMixin)", docs/review/cultures-proposal/owner-notes-r1.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +30,6 @@ a town and its ring; minorities would add to that. The old PW-889 numbers (a 2-3
 within 1000 km of the minority's own country) are a starting point.
 - [ ] a towns-and-minorities design (no per-minority lines), for Daniel's yes
 - [ ] the quarters back in the settlement ledger, the brief and the viewer
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-town-minorities-model.md (found by lane 139 (PW-1369)).

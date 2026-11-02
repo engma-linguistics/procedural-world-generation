@@ -2,7 +2,7 @@
 id: PW-1373
 title: "Hunting kinds take up farming as fast as anyone: the crop front, not their leaning, decides (density ladder Q2 A)"
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -35,6 +35,7 @@ Options:
 Lean B: it keeps Q2 A and lets each kind's lore show as a delay, not a cap. Measure on the robust suite.
 
 ## Updates
+- 2026-11-02: Status in-progress -> done. Merged 15fb88b9 (lane 139): learn a crop after LAG_KYR 0.4 / propensity (anchored on Baltic/Scandinavian foragers beside farmers ~1-1.5 kyr, Zvelebil & Rowley-Conwy); obligate carnivores crops x0.5, herds +0.3 (diet lean). 14 D&D runs: runs where under 5% of a kind farms: tabaxi 2->6, leonin 0->7, goliath 1->3. 10x kept. hunters-lag.md.
 - 2026-11-02: Daniel 11-02 (later): pushback, a lag alone only postpones farming. Agreed the main mechanism is farm-or-forage per cell (PW-1385), any people may keep foraging portions, era target ~1500 AD. Keep the lag small; lane 139's 10x measurement informs it but is not merged as is.
 - 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02: B. Less inclined peoples learn crops ~10x slower (delay ~ LAG / propensity), keeping the land rule. If they end up effectively never farming, try 5x. Neither force nor forbid farming. Obligate carnivores (cat-folk) lean far more to herding than to crops.
 - 2026-11-02: Created from inbox draft draft-hunters-learn-crops-regardless.md (found by lane 137 (density ladder check d)).

@@ -2,7 +2,7 @@
 id: PW-1369
 title: "City goblins and kobolds: do they stay as groups now that peoples have none? (Daniel to confirm)"
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -29,6 +29,7 @@ Options:
 Lean A.
 
 ## Updates
+- 2026-11-02: Status in-progress -> done. Merged 15fb88b9: city_goblin/city_kobold and the city-minority mechanism removed (history/cities.py etc.); trees naming cities/hosts are refused with a pointer here. Town minorities: new draft intaken.
 - 2026-11-02: Daniel 11-02 confirmed: drop them.
 - 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02 asked whether this means a group for every minority anywhere (dozens). It would: groups don't scale to minorities. Coordinator call (he deferred): B, remove the two city groups; town minorities wait for a towns and minorities model.
 - 2026-11-02: Created from inbox draft draft-city-minorities-groups.md (found by lane 136 / lane 137 (density ladder build)).
