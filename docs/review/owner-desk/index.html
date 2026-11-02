@@ -74,7 +74,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 decision on the desk is answered; the one thing left for you is your thoughts in the
 <a href="https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP">religion doc</a>. New tonight: the sea-level fix is merged, and one
 physics lane is running (sediment piles become continent only against continental crust).</p>
-  <nav class="toc"><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#coming">Running now</a><a href="#settled">Settled this week</a></nav>
+  <nav class="toc"><a href="#density">D43 density</a><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#coming">Running now</a><a href="#settled">Settled this week</a></nav>
 </header>
 
 <h2 id="week">The week in review (26 October – 1 November)</h2>
@@ -91,7 +91,7 @@ mines; dragons from the food chain, with lion-evidence persecution and your abun
 demes" picker.</li>
 <li>Lanes 23 to 111 ran this week (some as several rounds); all 915 tests pass on main.</li>
 </ul>
-<p><b>Open, for you:</b> D39 (how the CO2 balance learns its normal), D40 (the rain round), D41 (the finished world's orbit), D42 (plant growth) and the religion calls (PW-1311).</p>
+<p><b>Open, for you:</b> D39 (how the CO2 balance learns its normal), D40 (the rain round), D41 (the finished world's orbit), D42 (plant growth), D43 (the density ladder's seven questions) and the religion calls (PW-1311).</p>
 <p><b>Queue after lane 115:</b> speed part 2 (PW-1297), then no more chasing L8/L9 speed; the physics picks (rain inland, summer heat,
 plant growth); and the <b>whole-planet land zoom</b> epic (PW-1299): I pick side-by-side 4,000 km practice sections whose seams cross a
 river, a range, a coast and a desert edge (PW-1300); then seams, rivers across sections, and cost; the planet-wide sweep comes last
@@ -259,6 +259,38 @@ single-core stage) first, then seams and rivers, then the sweep.</li>
 </ul>
 </div>
 
+<h2 id="density">People density: the ladder is sourced · seven questions</h2>
+<div class="card" id="d43"><div class="id">D43 · ONE DENSITY LADDER FOR EVERY PEOPLE, FROM PUBLISHED NUMBERS (PW-1275, PW-1350)</div>
+<p><b>In plain words:</b> today each people has its own fixed density: humans 10–12 per km², most others 0.3. That 30–40× gap is most of
+why humans swamp the map. Lane 130 found a published figure for every rung of your shared ladder (persons per km² of land held):</p>
+<ul>
+<li><b>Foragers</b> 0.01–0.4, typically 0.1 (Binford 2001's 339 groups); about 14× from the poorest to the richest land.</li>
+<li><b>Fishing foragers</b> 0.3–2, rich coasts up to ~9 (Binford; Kelly 2013).</li>
+<li><b>Gardeners</b> ~2–20, typically 4–10; about 8× from worst to best land (Papua New Guinea survey; first European farmers).</li>
+<li><b>Plough farmers</b> ~2.5–14 in the Early Bronze Age, ~11–18 Roman, ~13 in England in 1086, ~35 at the medieval peak.</li>
+<li><b>Irrigation</b> 30–240 per km² <i>of watered land only</i> (Nile valley, Butzer 1976); the country around is far emptier.</li>
+<li><b>Herding nomads</b> ~0.3–2; <b>mixed herder-farmers</b> ~1–15 (the weakest-sourced rung).</li>
+<li><b>Dwarven holds:</b> mushrooms turn straw into ~520 kcal a kilo against wheat's ~1,800–2,600, a relish, not a staple. So a hold is
+its valleys' farming or terrace rung plus what it trades for.</li>
+</ul>
+<p><b>What it does:</b> humans lose their head start only where other kinds farm beside them. Forest orcs, hobgoblins and elves would
+stand level with human farmers at the same tech; the hunting kinds stay sparse until some of them take up crops or herds. Every number was
+re-opened by a second checker; a few pages and ranges were corrected. Full page: <code>docs/review/peoples/density-ladder/ladder.md</code>.
+Also found: halflings, gnomes and dwarves aren't seen as farmers by the model, so they skip the land-quality cap (PW-1351, fixed with the build).</p>
+<ol>
+<li><b>What a rung's number means:</b> A the people's average over its land, scaled by land quality; B its best-land density. <i>Lean A.</i></li>
+<li><b>Who changes way of life:</b> A the land decides (farmable cells farm once the people knows how); B a fixed share per kind; C a share that
+grows with time since the discovery. <i>Lean A.</i> This matters more for humans' share than any number above.</li>
+<li><b>How strongly land quality counts:</b> A keep today's 0.75 power; B 1.0 for every rung (density in step with plant growth); C set per rung. <i>Lean B.</i></li>
+<li><b>Den peoples</b> (goblins, kobolds, troglodytes): A the forager rung with the kind factor at 1.2; B a judged "den" rung of ~1–3, unsourced;
+C a farming or herding way. <i>Lean A, then C for the part that farms.</i></li>
+<li><b>Irrigation:</b> A only on cells water reaches; B a flat bonus over the whole range. <i>Lean A.</i></li>
+<li><b>Dwarven holds:</b> A their valleys' rung plus traded food up to a cap, mushrooms a small bonus; B a fixed hold rung. <i>Lean A.</i></li>
+<li><b>The top of the ladder</b> for a roughly Renaissance present: A cap ploughing at the medieval peak (~35); B source an early-modern rung first. <i>Lean A.</i></li>
+</ol>
+<p>One paper would help: Zimmermann, Hilpert &amp; Wendt 2009 (<i>Human Biology</i>), open access but it blocks agents. If you download it
+in a browser into the repo, I'll use it (it's on <code>docs/references/wishlist.md</code>).</p>
+</div>
 <h2 id="plants">Plant growth: the herds' premise was wrong · one question</h2>
 <div class="card" id="d42"><div class="id">D42 · GRASS GROWS TOO MUCH, WET TROPICAL FOREST TOO LITTLE; EARTH'S HERDS ARE FINE (PW-1261)</div>
 <p><b>Fed Earth's observed climate,</b> the model's herds already match Coe's measured African parks. The "2.4× too little growth"
@@ -370,11 +402,6 @@ The flicker it cures is small without the sea-floor creep, and the creep is at t
 <tr><td>129 · rivers across sections</td><td>Rivers and lakes that carry on across the line between two land zoom sections, with their water (PW-1302). The last piece before the planet sweep.</td></tr>
 <tr><td>131 · cloud side effects</td><td>Diagnosis only: why the Congo lost its cloud and summer subtropics got too sunny after lane 126, and why
 warm dry land's coldest month is ~2 °C cold on Earth (PW-1347, PW-1348, PW-1335). Comes back with candidates, no merge.</td></tr>
-<tr><td>130 · density ladder sources</td><td>Step 1 of your density ruling (PW-1275): a published source for every rung (foragers, gardening,
-plough, irrigation, herding, fishing, dwarven holds), checked twice, as a page for you to review before anything is built. The human
-groups becoming starting points waits on this.</td></tr>
-
-
 </table></div>
 <div class="card" id="speed1"><div class="id">SPEED PASS PART 1 MERGED (PW-252) · SMALLER THAN HOPED, AND WHY</div>
 <p><b>11.6% faster at L7</b> (273.8 → 242.1 s per 100 Myr), 8.5% at L6, outputs identical to the bit. The ticket guessed 30%. Only
