@@ -1,8 +1,10 @@
 ---
+id: PW-1287
 title: Drowned continental crust floats as if in air, so a shelf's sediment lifts it less than the same sediment lifts the ocean floor
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: lane-100e
 blocked_by: []
 relates: [PW-950, PW-980]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/earth.py, tests/test_sea_level.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -31,3 +35,6 @@ Options:
   within it.
 Lean: B for v1, A when the margins are next revisited.
 - [ ] decision A or B
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-drowned-continental-crust-floats-as-in-air.md (found by lane-100e).

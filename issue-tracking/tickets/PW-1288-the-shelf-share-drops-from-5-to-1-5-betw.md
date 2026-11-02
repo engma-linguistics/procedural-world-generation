@@ -1,8 +1,10 @@
 ---
+id: PW-1288
 title: The shelf share drops from ~5% to ~1.5% between 100 and 150 Myr, then only slowly recovers
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: surface
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
 refs: [docs/review/tectonics/margin/margindiag.py, docs/review/tectonics/margin/report.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -36,3 +40,6 @@ the shelf goes from 5.2 to 1.0%. It is not rifting, erosion, isostasy or the bri
 recovery after it is the built margin (PW-950 itself). Related: PW-1230 (the early highstand).
 - [x] the cause of the 100-150 Myr drop named, with numbers
 - [ ] decide whether the start-up layout (assembly within ~100 Myr) or the start-up highstand needs changing, or close
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-l6-shelf-collapses-after-100-myr.md (found by lane-100c).

@@ -1,4 +1,5 @@
 ---
+id: PW-1286
 title: The shelf builds out with a vertical front one cell wide (the clinoform fill has no foreset slope)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane100
 blocked_by: []
 relates: [PW-950, PW-818]
 refs: [planet/surface.py, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/margindiag.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -41,3 +44,6 @@ margin number most of the way to Earth: coast cells with >3 km of water in the n
 within 2 cells 59.9% -> 25.2% (Earth 22%), 200-3000 m share of the ocean 12.9% -> 20.0% (Earth 19.6%), coast to
 3000 m 240 -> 437 km (Earth 602). The shelf share doesn't move (2.6%, Earth 6.2%). A foreset-angle cap (candidate 1)
 is still open for L8 only.
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-clinoform-front-has-no-foreset-slope.md (found by lane100).

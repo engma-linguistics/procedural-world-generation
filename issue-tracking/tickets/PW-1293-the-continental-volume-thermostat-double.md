@@ -1,8 +1,10 @@
 ---
+id: PW-1293
 title: The continental volume thermostat doubles or triples arc growth late in a run; it stands in for an uncalibrated crust budget
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: tectonics
 effort: l
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-100e
 blocked_by: []
 relates: [PW-1276, PW-046, PW-052, PW-741]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/margin/deep-dive.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -27,3 +31,6 @@ Options:
 - B. Keep it, documented as the crust budget's closure.
 Lean: B for v1, A for v2. It needs sources first (none read yet).
 - [ ] decision A / B
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-volume-thermostat-stands-in-for-crust-budget.md (found by lane-100e).

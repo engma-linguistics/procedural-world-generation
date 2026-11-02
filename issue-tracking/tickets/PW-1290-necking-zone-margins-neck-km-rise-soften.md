@@ -1,4 +1,5 @@
 ---
+id: PW-1290
 title: Necking-zone margins (neck_km, rise) soften the margin cliff; judge them over a second roll before switching them on
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane100
 blocked_by: []
 relates: [PW-950]
 refs: [planet/tectonics/crust.py, planet/surface.py, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/diagnosis.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -44,3 +47,6 @@ tools/hard_bar.py): 0/36 in both arms. The secondary pCO2 < 100 ppm count: 3/36 
 60 ppm. Frozen, boiled and ocean loss: 0 in both. Soft pass: 29/36 main, 26/36 on (McNemar p 0.55). Late dT -2.2 C and
 land -2.9 points, both moved. The judge can't tell necking's share of this from the creep's: see
 draft-sea-creep-alone-judge.
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-necking-margins-judge-co2-dips.md (found by lane100).

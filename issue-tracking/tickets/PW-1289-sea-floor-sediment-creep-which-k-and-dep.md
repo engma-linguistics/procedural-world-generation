@@ -1,8 +1,10 @@
 ---
+id: PW-1289
 title: Sea-floor sediment creep - which K and depth law to keep
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: surface
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
 refs: [planet/surface.py, planet/tectonics/params.py, docs/review/tectonics/margin/diagnosis-foreset.md]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -31,3 +35,6 @@ Options:
 - C. Keep it off until a slope-dependent (non-linear) K, as Simon et al. measured, is built.
 
 Lean: A, or whichever arm the lane 100c screens and judge favour. The numbers are in the lane 100c report.
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-marine-diffusivity-k-and-depth-law.md (found by lane-100c).

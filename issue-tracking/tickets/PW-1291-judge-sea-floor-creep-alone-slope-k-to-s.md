@@ -1,8 +1,10 @@
 ---
+id: PW-1291
 title: Judge sea-floor creep alone (slope_k) to see whether it, or necking, cools the world and drowns land
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: surface
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
 refs: [planet/surface.py, docs/review/tectonics/margin/report.md, docs/review/base-climate/v1-finish-16/paired.sh]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -37,3 +41,6 @@ follows the volume thermostat (draft-arc-co2-follows-volume-thermostat), not thr
 - [ ] land and late dT shifts of creep alone, each with its paired 95% interval (29/36 at 300 done; finish it)
 - [x] the land loss traced to its cause (drowned continental crust; see diagnosis-land.md)
 - [ ] soft pass not below main's before defaults-on
+
+## Updates
+- 2026-11-01: Created from inbox draft draft-sea-creep-alone-judge.md (found by lane-100c).

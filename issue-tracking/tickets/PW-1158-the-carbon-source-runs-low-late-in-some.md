@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-969, PW-980, PW-1142]
 refs: [planet/tectonics/earth.py, docs/overview.md]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Description
@@ -35,5 +35,6 @@ floor ages. If the ridges die off, the source falls. PW-969's giant welded plate
       (a diag field per part), and whether the decline tracks the rift count or the largest plate
 
 ## Updates
+- 2026-11-01: Lane 100e (11-01): arc CO2 already uses nominal slab melt (convergence x trench length), not the volume thermostat; the late fall is real slab flux against the 0-300 Myr reference. See docs/review/tectonics/margin/note-arc-co2.md.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-late-run-outgassing-decline.md (found by lane75).
