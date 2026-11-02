@@ -11,7 +11,7 @@ impact: high
 found_by: owner
 blocked_by: [PW-1319]
 relates: []
-refs: [planet/zoom/stage_finish.py, planet/zoom/coastal.py, planet/zoom/fine_forms.py]
+refs: [planet/zoom/stage_finish.py, planet/zoom/coastal.py, planet/zoom/fine_forms.py, planet/zoom/match.py, "planet/zoom/match.py::prepare", "planet/zoom/stage_landscape.py::landscape_loop", "planet/zoom/stage_terrain.py::mean_correction", "planet/zoom/stage_terrain.py::coastline", "planet/zoom/regional.py::zoom", planet/zoom/tiling.py, tests/test_zoom_match.py, docs/review/land-zoom/seams-round1.md, docs/review/land-zoom/practice.md, docs/review/land-zoom/seams.py, docs/review/land-zoom/table.py, "world dba204"]
 created: 2026-11-02
 updated: 2026-11-02
 ---

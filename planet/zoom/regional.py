@@ -1217,7 +1217,7 @@ class ZoomCtx:
     An attribute a stage has not set yet raises AttributeError, as an unbound local would."""
 
     __slots__ = ("iterations", "lat", "log", "lon", "peoples", "res_km", "river_min_flow", "seed", "size_km", "up",
-                 "world",
+                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice",
                  "BR", "Kr", "L", "P", "Pc", "Pk", "S", "active", "all_falls", "amp_land", "area", "banks", "barrier",
                  "base", "bi_island", "bi_layer", "biome", "bottom", "branch", "c_idx", "cap", "carved", "cell_area",
                  "cell_means", "cexit", "cgrad", "chain_km", "clab", "clamp", "clim_f", "clvl", "coarse", "course",
@@ -1243,12 +1243,15 @@ class ZoomCtx:
 
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
           seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print, peoples: dict | None = None,
-          up: np.ndarray | None = None) -> dict:
+          up: np.ndarray | None = None, section: str | None = None, match: list | None = None) -> dict:
     """Build the regional zoom of the world round (lat, lon): size_km square at res_km per pixel, north-up or turned to
     `up` (a unit vector, PW-1338). The pipeline, stage by stage (each in stage_*.py, on a shared ZoomCtx): see the
-    module docstring."""
+    module docstring. `match`: neighbouring sections already built (match.sources) to agree with at the edges
+    (PW-1301); `section`: this zoom's tiling cell, if it is one (whose ground it owns)."""
     ctx = ZoomCtx()
     ctx.up = up
+    ctx.section = section
+    ctx.match = match or None
     ctx.world = world
     ctx.lat = lat
     ctx.lon = lon
@@ -1451,7 +1454,7 @@ LAYER_DOC = {
 
 
 def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float, seed: int,
-            iterations: int = 15, peoples: str | None = None, up=None) -> str:
+            iterations: int = 15, peoples: str | None = None, up=None, match=()) -> str:
     key = f"{world_id}|{lat:.4f}|{lon:.4f}|{size_km:g}|{res_km:g}|{seed}"
     if iterations != 15:  # the default keeps the ids it always had
         key += f"|it{iterations}"
@@ -1459,15 +1462,18 @@ def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float
         key += f"|peoples{peoples}"
     if up is not None:  # (a turned section, PW-1338: another zoom than the north-up one of the same centre)
         key += "|up" + ",".join(f"{v:.4f}" for v in np.asarray(up, float))
+    if match:  # (matched to neighbours already built, PW-1301: another zoom than the one built alone)
+        key += "|match" + ",".join(sorted(match))
     return hashlib.sha1(key.encode()).hexdigest()[:6]
 
 
 def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km: float, res_km: float,
-         seed: int, iterations: int = 15, peoples: str | None = None, section: str | None = None) -> Path:
+         seed: int, iterations: int = 15, peoples: str | None = None, section: str | None = None,
+         match: tuple = ()) -> Path:
     world_id = world_path.stem
     fr: Frame = z["frame"]
     up = _up_list(fr)
-    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations, peoples, up)
+    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations, peoples, up, match)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
     specs, arrays = {}, {}
@@ -1499,6 +1505,7 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
                          "source_run": m.get("source_run"), "t_myr": m.get("t_myr"), "level": m.get("level")},
         "center": {"lat": lat, "lon": lon, **({"up": up} if up else {})},
         **({"section": section} if section else {}),
+        **({"matched_to": sorted(match)} if match else {}),
         "size_km": size_km,
         "res_km": z["res"],
         "nx": z["nx"], "ny": z["ny"],
@@ -1639,10 +1646,11 @@ def update_index():
 
 def zoom(world_ref: str, lat: float | None, lon: float | None, size_km: float = 1000.0, res_km: float = 2.0,
          seed: int = 1, iterations: int = 15, log=print, peoples: str | None = None, up=None,
-         section: str | None = None) -> Path:
+         section: str | None = None, match=()) -> Path:
     """Zoom a world round (lat, lon), north-up or turned to `up` (a 3D vector or a bearing in degrees, PW-1338); or
     the tiling's section `section` (a cell id such as 'px.1.1', tiling.py: its centre and orientation; lat, lon and up
-    are then ignored)."""
+    are then ignored). `match`: ids of neighbouring zooms already built that this one agrees with at the edges
+    (zoom/match.py, PW-1301)."""
     if section is not None:
         from . import tiling as ZT
         s = ZT.section(section, size_km)
@@ -1664,10 +1672,16 @@ def zoom(world_ref: str, lat: float | None, lon: float | None, size_km: float = 
     A = ZP.load(peoples, path.stem) if peoples else None  # (a peoples run of this world: its land use, PW-667)
     if A:
         peoples = A["id"]
-    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A, up=up)
-    zid = zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples, _up_list(z["frame"]))
+    srcs = None
+    if match:
+        from . import match as ZM
+        srcs = ZM.sources(match)
+        match = tuple(s["id"] for s in srcs)
+    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A, up=up, section=section,
+              match=srcs)
+    zid = zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples, _up_list(z["frame"]), match)
     with S.lock(S.zooms_dir(), zid):
-        out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples, section)  # (one writer per zoom folder)
+        out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples, section, match)  # (one writer per zoom folder)
     ZC.add_to_zoom(out.name, world=world)  # (the coast layers and features, PW-097: the islands are in the terrain already)
     add_deposits(out, world)
     return out

@@ -29,6 +29,9 @@ def first_glaciers(ctx):
     lat_px, nx, ny, outlet, precip, res, sea, sp, tilt_w, world.
     Writes: edge, glacier, glacier_mask, ice, ice_n, ice_th, jitter_g, lat_px, outlet, precip, sea, tilt_w."""
     # --- landscape pass ----------------------------------------------------
+    if ctx.match:  # (the neighbours' ground at their finished heights, PW-1301)
+        from . import match as ZM
+        ZM.hold(ctx)
     ctx.edge = np.zeros((ctx.ny, ctx.nx), bool)
     ctx.edge[0, :] = ctx.edge[-1, :] = ctx.edge[:, 0] = ctx.edge[:, -1] = True
     for p0, rr_ in ctx.inflow_pts:  # the edge next to where a river enters is land, not an outlet,
@@ -37,6 +40,8 @@ def first_glaciers(ctx):
     ctx.edge = ctx.edge.ravel()
     ctx.sea = ~ctx.land
     ctx.outlet = ctx.sea | ctx.edge
+    if ctx.match:  # (... held there, outlets of the landscape pass)
+        ZM.hold_edge(ctx)
     ctx.precip = np.clip(np.nan_to_num(ctx.precip, nan=0.0), 0, None)
     ctx.ice = np.clip(np.nan_to_num(ctx.ice, nan=0.0), 0, None)
     # glaciers from each pixel's own climate (see glaciers()): a first
@@ -1103,6 +1108,9 @@ def final_drainage(ctx):
     Writes: active, all_falls, area, discharge, g, h, lake_depth, lake_in, lf_counts, lf_lake, lf_overlay, lf_sink,
     outlet, outs, plunge, rec, top_falls."""
     # --- final drainage --------------------------------------------------
+    if ctx.match:  # (the ramp blended to the neighbours' heights first, PW-1301)
+        from . import match as ZM
+        ZM.blend(ctx)
     filled, ctx.rec, order = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
     # tall drops become carved falls: tiers, a gorge retreated up into the plateau, walls round the lip
     # and a funnel round the foot (zoom.falls, PW-517); the drainage is found again on the carved ground

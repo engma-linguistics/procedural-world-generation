@@ -120,7 +120,7 @@ def cmd_zoom(args):
         size_km = 4000.0  # (the tiling's section size, tiling.py)
     size_km = 1000.0 if size_km is None else size_km
     out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations, peoples=args.peoples,
-                 up=args.up, section=args.section)
+                 up=args.up, section=args.section, match=tuple(args.match.split(",")) if args.match else ())
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
     print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
@@ -668,6 +668,9 @@ def main():
     z.add_argument("--section", default=None, metavar="CELL",
                    help="zoom the land-zoom tiling's section of this cell (e.g. px.1.1, pz.1.1: zoom/tiling.py): its "
                         "centre and orientation; --size-km defaults to 4000")
+    z.add_argument("--match", default=None, metavar="IDS",
+                   help="neighbouring zooms already built (comma-separated ids) that this one agrees with where they "
+                        "meet: their ground is held, a ramp blends into this one's (zoom/match.py, PW-1301)")
     z.add_argument("--size-km", type=float, default=None,
                    help="side of the square region (default 1000; fine zooms: 50 in a zoom, 25 in a fine zoom)")
     z.add_argument("--res-km", type=float, default=None,

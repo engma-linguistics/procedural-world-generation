@@ -58,6 +58,9 @@ def frame_and_grid(ctx):
     ctx.region = np.zeros((ctx.ny, ctx.nx), bool)
     ctx.region[ctx.halo:ctx.halo + ctx.n_in, ctx.halo:ctx.halo + ctx.n_in] = True
     ctx.region = ctx.region.ravel()
+    if ctx.match:  # (matched to neighbouring sections already built: who owns which ground, the blend, PW-1301)
+        from . import match as ZM
+        ZM.prepare(ctx)
 
 
 def ruggedness(g, L: dict, sel=None) -> tuple[np.ndarray, np.ndarray]:
@@ -256,6 +259,9 @@ def coastline(ctx):
     ctx.ind_n = np.where(ctx.bi_island, np.maximum(ctx.ind_n, 0.4), np.where(ctx.isl["lagoon"], np.maximum(ctx.ind_n, -0.12), ctx.ind_n))
     if ctx.bi_island.any():
         ctx.log(f"  barrier islands: {int(ctx.bi_island.sum())} px, lagoons {int(ctx.isl['lagoon'].sum())} px, inlets {int(ctx.isl['inlet'].sum())} px")
+    if ctx.match:  # (one coastline: the neighbours' where they weigh over a half, PW-1301)
+        from . import match as ZM
+        ZM.coast(ctx)
     ctx.land = ctx.ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ctx.ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ctx.ind_n)
