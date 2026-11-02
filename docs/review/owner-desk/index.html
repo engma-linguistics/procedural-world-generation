@@ -276,6 +276,17 @@ on Coe's herds).</li></ol>
 <p>D39 (the CO2 balance's references) and this both touch the weathering reference, so I'd do D39 first if you pick both.</p>
 </div>
 
+<div class="card" id="seams128"><div class="id">LANES 127+128 MERGED · NEIGHBOURING LAND ZOOM SECTIONS NOW MEET EXACTLY (PW-1338, PW-1301)</div>
+<p><b>In plain words:</b> a section built next to one already built now takes over its neighbour's ground right up to the line
+between them, then blends into its own landscape over 80 km. Built separately, neighbours' heights disagreed at the line by 10 to 410 m;
+now it's 0.0 m, and coasts and biomes agree to within a pixel. The blend makes no visible steps. Sections can also be turned to fit the
+planet's tiling. Rivers don't carry on across the line yet: that's lane 129.</p>
+<p><b>Have a look</b> (each is the second section, built matched to its neighbour): <a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=a13667">desert</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=59336f">ice range</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=0852e2">coast</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=3b412b">turned tiling section</a> ·
+<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=8f5874">the same at 1 km</a>. A matched 1 km section needs about 110 GB.</p>
+</div>
 <div class="card" id="zoom122"><div class="id">LANE 122 MERGED · A 1 KM SECTION NOW TAKES 16 MINUTES, NOT 2 H 48 (PW-1303, PW-1319)</div>
 <p><b>In plain words:</b> one 4,000 km section at 1 km per pixel went from 2 h 48 min and 110 GB of memory to 16 minutes and 86 GB,
 with every output identical. Almost all the time went to one step that re-measured the whole map once per mountain pass (188 times); it
@@ -348,10 +359,9 @@ The flicker it cures is small without the sea-floor creep, and the creep is at t
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
-<tr><td>127 · land zoom seams</td><td>Lets a section be turned to match the tiling (PW-1338), then makes neighbouring sections agree where they meet: heights, coasts, landforms, biomes (PW-1301). Rivers across sections come after.</td></tr>
-<tr><td>126 · tropical cloud fix</td><td>Acting on lane 125's finding below: find a source for where low cloud really forms over land, gate the
-model's "humid air makes cloud" term by it, then have the summer split read sunshine instead of sky cover (PW-1334, PW-1327, PW-1336).
-Reports back before merging.</td></tr>
+<tr><td>129 · rivers across sections</td><td>Rivers and lakes that carry on across the line between two land zoom sections, with their water (PW-1302). The last piece before the planet sweep.</td></tr>
+<tr><td>126 · tropical cloud fix</td><td>Coded and passing on Earth; the 36-world test is nearly done. Result here when it lands.</td></tr>
+
 
 </table></div>
 <div class="card" id="speed1"><div class="id">SPEED PASS PART 1 MERGED (PW-252) · SMALLER THAN HOPED, AND WHY</div>
