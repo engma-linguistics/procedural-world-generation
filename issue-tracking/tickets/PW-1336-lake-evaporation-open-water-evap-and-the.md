@@ -1,4 +1,5 @@
 ---
+id: PW-1336
 title: Lake evaporation (open_water_evap) and the server's cell inspector feed sky cover where they need sunshine
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane125
 blocked_by: []
 relates: [PW-1327, PW-358, PW-808]
-refs: ["planet/climate.py::open_water_evap", "planet/climate.py::months", "planet/climate.py::shade", "planet/nest.py", "planet/server.py", "https://www.fao.org/4/x0490e/x0490e07.htm", docs/review/base-climate/tropical-cloud/diagnosis.md, docs/review/base-climate/v1-finish-12/README.md]
+refs: ["planet/climate.py::open_water_evap", "planet/climate.py::months", "planet/climate.py::shade", planet/nest.py, planet/server.py, "https://www.fao.org/4/x0490e/x0490e07.htm", docs/review/base-climate/tropical-cloud/diagnosis.md, docs/review/base-climate/v1-finish-12/README.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -23,3 +26,6 @@ radiation there is low and the inspector's chart differs from what the plants sa
 Try: pass shade_jul/jan (climate.shade_from_hours of the sunshine layers) and compare Lake Victoria / Amazon
 floodplain (PW-358: 1415 / 1406 mm) and the earth_check closed basins.
 - [ ] lake_evap on shade; Earth's closed basins stay closed; inspector chart equals the plants' months
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-open-water-and-inspector-read-sky-cover.md (found by lane125).

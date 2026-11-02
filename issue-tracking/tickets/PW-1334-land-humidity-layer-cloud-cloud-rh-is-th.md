@@ -1,4 +1,5 @@
 ---
+id: PW-1334
 title: Land humidity layer cloud (cloud_rh) is the whole shade excess over warm moist land, on Earth and every world
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane125
 blocked_by: []
 relates: [PW-1330, PW-1327, PW-808, PW-232, PW-1261]
 refs: ["planet/climate.py::clouds", "planet/climate.py::shade", "planet/climate.py::_summer_split", "planet/climate.py::open_water_evap", docs/review/base-climate/tropical-cloud/diagnosis.md, docs/review/base-climate/tropical-cloud/bands.py, docs/review/base-climate/tropical-cloud/components.py, docs/review/base-climate/summer-heat/diagnosis.md, docs/review/vegetation/npp-check/diagnosis.md, "tools/earth_check.py::CLOUD_REGIONS", "world dba204", "world 899985", "world 1df1c3", "world 6909cb", "world 3e9e7d", "https://www.fao.org/4/x0490e/x0490e07.htm"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Try: scale the humidity layer cloud down in warm air (stratus belongs to cool ai
 Europe / Pacific NW / Siberia in tools/earth_check.py's cloud regions, then PW-1327's split change in the same ticket.
 It needs an external source for the stratus-vs-convective split first (none read).
 - [ ] Earth model warm-land shade within ~0.05 of observed in the three rain bands, W Europe cloud still passes
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-cloud-rh-warm-moist-land.md (found by lane125).

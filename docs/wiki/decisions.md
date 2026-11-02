@@ -228,3 +228,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: merged lane 121 (docs only): dba204 heat mostly the finished-frame orbit response 3x too strong (PW-1325, D41 for Daniel); Earth 20-40 deg excess from _summer_split (PW-1326/1327). Lane 123 started on D34 B plant growth (PW-1261).
 - 2026-11-02: merged lane 123 (docs only): plant check; grass too productive, wet tropics too little, herds fine on Earth (D42 for Daniel; PW-1328..1332).
 - 2026-11-02: merged lane 124: PW-1324 not reproduced (same seed same world at 1-16 threads); thread-independence test added.
+- 2026-11-02: merged lane 125 (docs only): tropical shade excess = cloud_rh in warm air (PW-1334); sky cover read as sunshine in the summer split, open-water evap and inspector (PW-1327/1335); cool coldest month separate (PW-1336).

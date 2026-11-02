@@ -2,7 +2,7 @@
 id: PW-1330
 title: Worlds' semi-arid tropics are cloudier and cooler-wintered than Earth's at the same rain, cutting grass growth ~30-45%
 type: task
-status: in-progress
+status: todo
 parent: null
 milestone: v2
 subsystem: climate
@@ -27,5 +27,6 @@ in the Sahel/E Africa band, lanes 120/121's tools).
 - [ ] cloud and coldest-month temperature of warm 400-900 mm land: Earth model climate vs observed, then the worlds
 
 ## Updates
+- 2026-11-02: Status in-progress -> todo. 11-02 lane 125: worlds' tropics match the Earth model's own shade; the Earth model is ~0.13 too shady vs CRU, from the humidity-layer cloud (cloud_rh) in warm air (PW-1334) plus over-rain; cool coldest month is separate (PW-1336). docs/review/base-climate/tropical-cloud/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 125, diagnosis only (Earth model vs CRU cloud/sunshine and coldest month, then worlds).
 - 2026-11-02: Created from inbox draft draft-semiarid-tropics-cloudy-cool.md (found by lane123).
