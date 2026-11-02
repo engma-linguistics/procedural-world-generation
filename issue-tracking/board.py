@@ -644,6 +644,60 @@ def dangling_refs(b, items, body=False):
     return out
 
 
+# paper:<AuthorYear>, path.md#heading-anchor, path.py::function, plain repo paths
+BIBLIOGRAPHY = "docs/references/bibliography.md"
+BIB_KEY_RE = re.compile(r"^\s*[-*|]?\s*\*\*(\w+)\*\*", re.M)
+PATHISH_RE = re.compile(r"^[\w./\-*{},]+$")
+
+
+def heading_slug(h):
+    """GitHub-style anchor for a markdown heading."""
+    h = re.sub(r"[`*_]", "", h.strip().lower())
+    return re.sub(r"\s", "-", re.sub(r"[^\w\s-]", "", h))
+
+
+def ref_problems(b, items):
+    """(ticket or draft name, message) for each `refs` entry in a form we can check that doesn't hold:
+    paper: key missing from the bibliography, path.py::function not defined in the file, path.md#anchor
+    matching no heading, or a path that doesn't exist. Run/world/zoom refs are dangling_refs' business."""
+    repo = b.root.resolve().parent
+    bib = repo / BIBLIOGRAPHY
+    keys = set(BIB_KEY_RE.findall(bib.read_text())) if bib.is_file() else set()
+    out = []
+    for name, t in items:
+        for ref in (str(r).strip() for r in t.get("refs") or []):
+            if m := re.match(r"paper:(\w+)$", ref):
+                if m.group(1) not in keys:
+                    out.append((name, f"refs {ref}, which is not in {BIBLIOGRAPHY}"))
+                continue
+            if DATA_REF_RE.match(ref):
+                continue
+            path, func, anchor = ref, None, None
+            if "::" in ref:
+                path, func = ref.split("::", 1)
+            elif "#" in ref:
+                path, anchor = ref.split("#", 1)
+            if not PATHISH_RE.match(path) or not ("/" in path or "." in path):
+                continue  # free text, not a path
+            if "*" in path or "{" in path:
+                if not list(repo.glob(path)):
+                    out.append((name, f"refs {ref}, which matches no file"))
+                continue
+            f = repo / path
+            if not f.exists():
+                out.append((name, f"refs {ref}, but {path} does not exist"))
+            elif func and f.is_file():
+                leaf = func.split(".")[-1]
+                if not re.search(rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(leaf)}\b|^{re.escape(leaf)}\s*=",
+                                 f.read_text(), re.M):
+                    out.append((name, f"refs {ref}, but {leaf} is not defined in {path}"))
+            elif anchor and f.is_file():
+                slugs = {heading_slug(h) for h in re.findall(r"^#+\s+(.*)$", f.read_text(), re.M)}
+                if anchor not in slugs:
+                    out.append((name, f"refs {ref}, but {path} has no heading #{anchor}"))
+    return out
+
+
 WIKI_LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[^)]*)?\)")
 WIKI_PATH_RE = re.compile(r"`((?:docs|planet|tools|tests|viewer|issue-tracking)/[^`\s<>*{}]+)`")
 WIKI_STALE_DAYS = 3
@@ -717,6 +771,13 @@ def cmd_check(b, tickets, args):
     elif gone:
         print(f"warning: {len(gone)} refs in open tickets to runs/worlds/zooms that no longer exist "
               f"(board.py check --refs lists them)")
+    # a warning, not a problem: a ref that doesn't resolve (paper key, function, heading anchor, path)
+    bad = ref_problems(b, open_items if not args.refs else list(tickets.items()))
+    if args.refs or len(bad) <= 5:
+        for n, m in bad:
+            print(f"warning: {n} {m}")
+    elif bad:
+        print(f"warning: {len(bad)} refs in open tickets that don't resolve (board.py check --refs lists them)")
     sys.exit(1 if problems else 0)
 
 

@@ -11,9 +11,9 @@ impact: med
 found_by: lane19b
 blocked_by: []
 relates: [PW-818, PW-846]
-refs: [planet/surface.py, planet/tectonics/, tools/scorecard.py]
+refs: [planet/surface.py, planet/tectonics/, tools/scorecard.py, planet/tectonics/isostasy.py::subsidence, planet/tectonics/crust.py::necking, planet/surface.py::_creep, paper:McKenzie1978, paper:Mohn2012, paper:Mosher2017, paper:Mitchell2008, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/handoff.md, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/diagnosis-foreset.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/margindiag.py, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/sinkdiag.py, docs/review/tectonics/margin/earth_margin.py, docs/review/tectonics/margin/paired_margin.sh]
 created: 2026-10-28
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Description
@@ -28,6 +28,7 @@ crust thinned. Try water-loaded isostasy for sea cells of continental crust (no 
 - [ ] shelf share of ocean >= 3% without a pass-rate cost on the paired judge
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-10-31: Lane 100 round (branch worktree-agent-a5fd6321b3834f864 @ daaf016f, held until after the v1 tag): necking (crust.necking, neck_km) + continental rise, both off by default. L6 s1-3: next-cell cliff 23 -> 15% (Earth 3.5), 200-3000 m band 12.3 -> 14.7% (Earth 19.6), shelf 2.6 -> 3.1%. Criteria unmet; residual wall is the brink fill's one-cell front (draft: foreset slope). Paired judge 11 draws: CO2 dips 0 -> 3 under 100 ppm (85/69/82, all recover; p 0.25), to recheck under D32 B. docs/review/tectonics/margin/report.md
 - 2026-10-31: Lane 96 (L8 world a16f5a vs L7 2a7385 vs Earth ETOPO1 resampled to each grid, read-only; docs/review/l8-world/explore.md): the L8 world's shelf share is 4.3% of the ocean (Earth on L8 7.0%; 2a7385 0.66%) and its submerged continent median -154 m, but that is the run's +312 m highstand flooding low continent (shelf 2.1% at t=0), not margin physics. The margin itself is a one-cell cliff: medians across the continent-ocean crust boundary go 33.3 km / +30 m, 31.5 / +3, 25.9 km / -441 m (last continental cell) -> 9.0 km / -4199 m (first oceanic cell), edge rift strain median 0.04 (beta ~1.04: barely stretched). 20.9% of coast cells have water deeper than 3000 m within one 30 km cell and 41% within two (Earth on L8: 1.1% and 5.0%); median coast-to-3000 m 90 km (Earth on L8 360 km). Depths 200-3000 m are 5.0% of the ocean (Earth on L8 17.7%), 4000-5000 m 48% (Earth 32%). Steepest-neighbour gradient on slope cells (-500..-2500 m within 180 km of land) p50 60 m/km (Earth on L8 29). L7 2a7385 (older code, 792 Myr) has a wider taper (35 -> 19 km over 4 cells) but the same missing 200-3000 m band (10.6% vs Earth on L7 18.1%). Supports suggestion 1 (tapered stretching over a 50-200 km necking zone) plus a sediment apron at the slope foot (continental rise); L8 shows the step most plainly because the cell is narrower than the transition should be.
 - 2026-10-29: McKenzie 1978 on file (read 10-29). Table 1 (p. 27) and eq. 12 (p. 28): E0 = 4 a rho0 alpha T1 / (pi^2 (rho0 - rho_w)) = 3.2 km, water-loaded; isostasy's SAG_KM 2.2 is the same with rho0 in the denominator (3.2 x 2.33/3.33 = 2.24), and SAG_TIME 63 is tau = 62.8 My. So the paper agrees with lane 23: water loading deepens a drowned margin's sag (1.43x), it doesn't lift it. McKenzie also has an initial subsidence Si, positive where the crust is thicker than 18 km (p. 27), and sediment-filled basins sink further (Fig. 4, p. 29).

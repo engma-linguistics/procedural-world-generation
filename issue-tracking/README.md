@@ -39,6 +39,8 @@ must be able to act on it.
 - [ ] acceptance criteria as a checklist, when useful
 ```
 
+**List everything in `refs`.** A draft's `refs` (and a ticket update's) lists everything you actually used and anything a fixer will need: code functions (`path.py::name`), notes and reports, harness scripts, the specific runs, worlds and places you looked at (prefer protected or durable ones; say in the Description when a scratch run is gone), and papers by key. Two refs is almost always too few.
+
 For a `needs-decision` draft, the Description lays out the options (A, B, C), the trade-offs, and your lean.
 
 `board.py check` (and the hook) validates drafts too, so a bad field shows up while you're still on the branch.
@@ -111,8 +113,14 @@ Point at a moment and a place with these forms (in `refs` or in prose):
 | a run at a time, at a place | `run:<id>@<t>Myr(<lat>,<lon>)` | `run:428083@624Myr(7.80,156.60)` |
 | a world, at a place | `world:<id>(<lat>,<lon>)` | `world:7c5adf(-30.08,119.50)` |
 | a regional zoom | `zoom:<id>` | `zoom:f81832` |
+| a paper | `paper:<AuthorYear>`, a key in `docs/references/bibliography.md` | `paper:Holman2011` |
+| a doc section | `path.md#heading-anchor` | `issue-tracking/README.md#subagents-write-inbox-drafts-never-ids` |
+| a function or class | `path.py::name` | `planet/tectonics/crust.py::birth_and_cratons` |
+| a note, report, harness script | its plain path (encouraged) | `docs/review/tectonics/margin/tracediag.py` |
 
 The plain `run fe7144` / `world 7c5adf` / `zoom f81832` still work for a whole run, world or zoom. Use lat/lon, not cell ids: cell ids differ by grid level. Clicking a cell in the viewer copies the reference, the cell's description and a deep link that reopens the viewer there (`viewer/?run=428083&t=624&lat=7.80&lon=156.60`, or `?world=7c5adf.json&lat=..&lon=..`); paste the reference into the ticket and the link too if it helps.
+
+Cite every paper you relied on by key; if it is not in `docs/references/bibliography.md`, add a line there (key, full citation, what you read, where the repo uses it) from the paper itself, never from memory. `check` warns (never fails) when a `paper:` key is missing from the bibliography, a `path.py::name` is not defined in that file, a `#anchor` matches no heading, or a path does not exist.
 
 Runs, worlds and zooms get deleted (`planet delete`). `check` warns when open tickets' `refs` name ids that no longer exist; `check --refs` lists every such ref in all tickets' `refs` and Descriptions. Replace a dangling ref with a current one or note in an update that it's gone.
 

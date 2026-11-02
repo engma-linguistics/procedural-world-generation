@@ -11,7 +11,7 @@ impact: med
 found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
-refs: [planet/surface.py, docs/review/tectonics/margin/report.md, docs/review/base-climate/v1-finish-16/paired.sh]
+refs: [planet/surface.py, planet/surface.py::_creep, planet/tectonics/params.py, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/paired_margin.sh, docs/review/base-climate/v1-finish-16/paired.sh]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -43,4 +43,5 @@ follows the volume thermostat (draft-arc-co2-follows-volume-thermostat), not thr
 - [ ] soft pass not below main's before defaults-on
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-sea-creep-alone-judge.md (found by lane-100c).

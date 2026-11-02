@@ -11,7 +11,7 @@ impact: med
 found_by: lane100
 blocked_by: []
 relates: [PW-950, PW-818]
-refs: [planet/surface.py, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/margindiag.py]
+refs: [planet/surface.py, paper:Mosher2017, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/diagnosis-foreset.md, docs/review/tectonics/margin/margindiag.py]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -46,4 +46,5 @@ within 2 cells 59.9% -> 25.2% (Earth 22%), 200-3000 m share of the ocean 12.9% -
 is still open for L8 only.
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-clinoform-front-has-no-foreset-slope.md (found by lane100).
