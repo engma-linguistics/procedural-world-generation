@@ -5,8 +5,8 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-ab77e24b7280d80be")
-sys.path.insert(0, "/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-ab77e24b7280d80be/docs/review/land-zoom")
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
 import stage_diag as SD  # noqa: E402  (hooks every stage, snapshots into SD.SNAP)
 
 from planet import world as W  # noqa: E402

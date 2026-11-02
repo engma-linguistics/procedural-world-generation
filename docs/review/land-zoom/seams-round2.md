@@ -95,7 +95,8 @@ B (B matched vs B alone, median |dh| m (p95; share of pixels whose land/water ch
 | tile | 6.99 / 7.74 | 6.90 / 6.90 | 1.8 (222; 0.10) | 0.4 (133; 0.00) | 0.3 (60; 0.00) | 0.0 (15; 0.00) | 0.0 (1.1; 0.00) |
 
 Before lane 128's fixes (lane 127's code, same zooms rebuilt; `out127` in the lane's scratch, gone): the heights were
-the same to the decimetre at every station; the coast pair crashed; the ice range seam had 0.87% coast mismatch at the
+the same at every station on desert, blockW and tile, and within a few metres on the range (ramp +40: 175 -> 172 m);
+the coast pair crashed; the ice range seam had 0.87% coast mismatch at the
 line (all A-lake vs B-land) and blockW 0.05% (1 px).
 
 ## The coast in the held ground (brief item 2)
@@ -141,7 +142,28 @@ On real L7 pairs basins are many cells long, so the tail is longer in cells (0-2
 
 ## The 1 km check (brief item 3)
 
-(see below)
+The tiling pair at 1 km/px (4000 x 4000 px), one at a time: `py.1.1` alone, **34d0a5** (27 min 20 s, peak 103.7 GB),
+then `py.0.1 --match 34d0a5`, **8f5874** (30 min 9 s, peak 107.3 GB; 11.2% of its pixels held, 2.3% in the ramp).
+Both ran beside another lane's sims (load ~50 on 48 cores), so the walls are above lane 122's 16 min and the peaks
+above its 86 GB: budget ~110 GB for a matched 1 km section. No 1 km "alone" B was built (another 30 min / 105 GB); the
+alone numbers at 4 km above stand in. Viewer:
+http://localhost:8765/?world=dba204.json&tab=zoom&zoom=8f5874 (and zoom=34d0a5).
+
+| station (1 km, tile) | n land | median dh m | p95 dh m | dslope p95 deg | coast % | biome % |
+|---|---|---|---|---|---|---|
+| held -50 km | 7876 | 0.0 | 0.0 | 3.02 | 0.00 | 0.0 |
+| held -10 km | 7888 | 0.0 | 0.0 | 2.90 | 0.00 | 0.0 |
+| **line** | 7689 | **0.0** | **0.0** | 2.95 | **0.00** | **0.2** |
+| ramp +20 | 6904 | 1.7 | 16.5 | 2.99 | 0.00 | 1.1 |
+| ramp +40 | 6850 | 11.5 | 113 | 4.74 | 0.37 | 9.5 |
+| ramp +70 | 6758 | 33.9 | 359 | 7.05 | 0.07 | 22.4 |
+
+Slope p95 in the ramp 12.68 deg vs 12.69 inside (120-400 km): no steps. The +40 km coast mismatch (27 points, A land /
+B sea) is the mid-ramp coast switch (draft below). Same picture as at 4 km.
+
+Zoom ids (all kept, all cited): 4 km d904d6 599c28 a13667 fe600a f4db12 59336f b710fd 33a72a 0852e2 a3a793 7ec571
+d7b43d 683193 e02373 3b412b; 1 km 34d0a5 8f5874. Judge outputs: `docs/review/land-zoom/round2/` (seams jsons, two
+pictures, `table4.py` that prints the tables, `far_diag.py` the far-inside attribution).
 
 ## Follow-ups (drafts)
 - `draft-land-zoom-held-ice-bed-before-final.md`: held ground under the neighbour's ice keeps its bed, which may lie
