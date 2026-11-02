@@ -1,4 +1,5 @@
 ---
+id: PW-1350
 title: "Density ladder: seven rulings before the build (PW-1275 step 2)"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: high
 found_by: lane130-density-ladder
 blocked_by: []
 relates: [PW-1275, PW-1203, PW-974, PW-833]
-refs: [docs/review/peoples/density-ladder/ladder.md, docs/review/peoples/density-ladder/binford_by_npp.py, planet/lineages/prey.py::people_fields, planet/lineages/prey.py::PEOPLE_EXP, planet/lineages/history/growth.py::ERA_DENSITY, planet/lineages/history/growth.py::_note_eras, planet/lineages/history/model.py, planet/lineages/samples/dnd.toml, planet/lineages/samples/techtree.toml, planet/lineages/spec.py::WAYS, tools/peoples_robust.py, "Binford 2001 Table 5.01 via D-PLACE dplace-dataset-binford", "Kelly 2013 Table 7-3", "Butzer 1976 Table 4", "Zimmermann et al. 2009 PPS 75", "Broadberry, Campbell & van Leeuwen 2011", "Bourke & Harwood 2009", "Pingali & Binswanger 1983 Table I", "Wilson 1986 ILCA RR14", "Khazanov 1994 p. 31"]
+refs: [docs/review/peoples/density-ladder/ladder.md, docs/review/peoples/density-ladder/binford_by_npp.py, "planet/lineages/prey.py::people_fields", "planet/lineages/prey.py::PEOPLE_EXP", "planet/lineages/history/growth.py::ERA_DENSITY", "planet/lineages/history/growth.py::_note_eras", planet/lineages/history/model.py, planet/lineages/samples/dnd.toml, planet/lineages/samples/techtree.toml, "planet/lineages/spec.py::WAYS", tools/peoples_robust.py, "Binford 2001 Table 5.01 via D-PLACE dplace-dataset-binford", "Kelly 2013 Table 7-3", "Butzer 1976 Table 4", "Zimmermann et al. 2009 PPS 75", "Broadberry, Campbell & van Leeuwen 2011", "Bourke & Harwood 2009", "Pingali & Binswanger 1983 Table I", "Wilson 1986 ILCA RR14", "Khazanov 1994 p. 31"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Daniel picks seven settings. Each option and lean is laid out in the page's "Que
 6. The dwarven hold: (A) its valleys' plough or terrace rung plus traded food up to a cap, mushrooms a small bonus; (B) a fixed hold
    rung (~1.5x plough, a judgement). Lean A.
 7. Renaissance top: (A) cap the plough rung at the medieval peak (~35 /km²); (B) source an early-modern rung first. Lean A.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-density-ladder-rulings.md (found by lane130-density-ladder).

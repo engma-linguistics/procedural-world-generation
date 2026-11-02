@@ -1,8 +1,9 @@
 ---
+id: PW-1351
 title: Halflings, gnomes and dwarves skip the era density cap and the land's productivity (no farm share)
 type: task
 status: todo
-parent: null
+parent: PW-1275
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -10,7 +11,9 @@ impact: med
 found_by: lane130-density-ladder
 blocked_by: []
 relates: [PW-1275, PW-1203, PW-974]
-refs: [planet/lineages/samples/dnd.toml, planet/lineages/landuse.py::shares, planet/lineages/history/growth.py::_set_era_density, planet/lineages/history/growth.py::ERA_DENSITY, planet/lineages/prey.py::people_fields, planet/lineages/history/model.py, docs/review/peoples/density-ladder/ladder.md]
+refs: [planet/lineages/samples/dnd.toml, "planet/lineages/landuse.py::shares", "planet/lineages/history/growth.py::_set_era_density", "planet/lineages/history/growth.py::ERA_DENSITY", "planet/lineages/prey.py::people_fields", planet/lineages/history/model.py, docs/review/peoples/density-ladder/ladder.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Found while sourcing the density ladder (lane 130, `docs/review/peoples/density-
 PW-1275 (the shared ladder) would replace all of this, so fix it there rather than separately (owner's no-stopgaps rule) unless PW-1275 slips: then give halflings `way = "farmer"` (or an explicit fertile use) and give gnomes and dwarves a farm/herd use so the cap and the productivity factor apply.
 - [ ] halflings, gnomes, dwarves get a way of life whose density follows the era and the land
 - [ ] check `shares` for every dnd people with density > 1 has farm or herd > 0
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-halflings-farm-as-foragers-at-12.md (found by lane130-density-ladder).
