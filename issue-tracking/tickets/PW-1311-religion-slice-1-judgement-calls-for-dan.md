@@ -1,4 +1,5 @@
 ---
+id: PW-1311
 title: Religion slice 1 judgement calls for Daniel (culture-level beings, faith-tech rates, placeholder purity weight, taboo kinds)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane117
 blocked_by: []
 relates: [PW-1304, PW-1305, PW-1306, PW-1307]
 refs: [planet/lineages/gods.py, planet/lineages/taboos.py, planet/lineages/samples/techtree.toml, docs/review/religion/slice1.md, "run b4d502", "run a24559"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -31,3 +34,6 @@ In plain words: the first religion slice works, and I made these calls so as not
    and kingship but no high god has one spell-granting god, and a people with only temples has none.
 
 Lean: keep all as built and revisit when the ledger and names (PW-986) land.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-religion-slice1-calls.md (found by lane117).

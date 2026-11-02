@@ -2,7 +2,7 @@
 id: PW-1304
 title: "Tech tree: faith steps on the social track (moralizing high god after temples + kingship) and a divine-magic node on the arcane track, gated by gods mode"
 type: task
-status: todo
+status: done
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -28,4 +28,5 @@ Daniel's ruling (religion doc, https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP
   kept separate from the rest of magic (PW-696, v3) so that belief-only worlds still get the faith steps.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 117 merged f33d1c2d (readout-only); docs/review/religion/slice1.md. Calls in PW-1311.
 - 2026-11-02: Created from inbox draft draft-faith-tech-nodes.md (found by religion-doc-chat).

@@ -2,7 +2,7 @@
 id: PW-1305
 title: "Food taboos per culture as a readout: target, scope and origin (practical, symbolic, divine, identity, purity)"
 type: story
-status: todo
+status: done
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -33,4 +33,5 @@ Settled in the religion doc (https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP (
 - The explanation, consequence and enforcement are writer's material, not computed.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 117 merged f33d1c2d (readout-only); docs/review/religion/slice1.md. Calls in PW-1311.
 - 2026-11-02: Created from inbox draft draft-food-taboos.md (found by religion-doc-chat).

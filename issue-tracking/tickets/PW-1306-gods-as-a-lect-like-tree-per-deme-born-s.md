@@ -2,7 +2,7 @@
 id: PW-1306
 title: Gods as a lect-like tree per deme (born, split, merge, drift, fade) with an individuation slider and a gods-mode switch, as a readout
 type: story
-status: todo
+status: done
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -34,6 +34,7 @@ Design, settled in the religion doc (https://claude.ai/artifact/Tk4g2nkJPQpTJgeD
 - Daniel uses the viewer, not the CLI: the culture card needs a gods panel, and the mode needs a world-creation control (relates PW-711).
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 117 merged f33d1c2d (readout-only); docs/review/religion/slice1.md. Calls in PW-1311.
 - 2026-11-02: Daniel 2026-11-02: viewer first pass approved: a Gods panel on each culture card (each being with its main domains, a spirit-to-god marker, cousins in related cultures), the culture's food taboos with reasons below it, and the gods mode as a world-creation option. Domain list (target 50-100) and the spirit-to-god graduation rule are being drafted in the religion doc's 'Gods: domains and graduation (draft)' tab; take them from there once Daniel signs off. Naming taboo on the dead: only in some religions, later (lect work).
 - 2026-11-02: Supersedes PW-907 (folded in): read PW-907's 11-02 rulings before building.
 - 2026-11-02: Created from inbox draft draft-gods-tree-individuation.md (found by religion-doc-chat).
