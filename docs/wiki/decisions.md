@@ -225,3 +225,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: merged lane 116 (PW-1300 land zoom practice, dba204). 1 km section: 2 h 48 m, 110 GB peak; squares don't tile (PW-1319 tiling rule before seams PW-1301); cost PW-1303 next in the epic.
 - 2026-11-02: lane 120 (docs only) merged: rain-inland three strikes, PW-015/026 back of the line; real problem is wet interiors / dry humid coasts, supply from adjacent seas (PW-1321, needs Daniel's go for a large round). Lane 121 started on summer heat (PW-1279/1322).
 - 2026-11-02: merged lane 118 speed part 2 (full suite 939 passed); PW-252/1297/1298 done. New PW-1324: same seed differs across thread counts (to check).
+- 2026-11-02: merged lane 121 (docs only): dba204 heat mostly the finished-frame orbit response 3x too strong (PW-1325, D41 for Daniel); Earth 20-40 deg excess from _summer_split (PW-1326/1327). Lane 123 started on D34 B plant growth (PW-1261).

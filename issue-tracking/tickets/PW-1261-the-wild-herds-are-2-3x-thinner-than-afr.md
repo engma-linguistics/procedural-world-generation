@@ -2,7 +2,7 @@
 id: PW-1261
 title: "The wild herds are 2-3x thinner than Africa's measured herds at the same rain: the model's above-ground growth is about half Rosenzweig's"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1073, PW-1221, PW-1246]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, docs/review/dragon-numbers/round2.md, docs/references/megafauna/coe1976_african_herbivore_biomass_rainfall_oecologia.pdf]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-02
 ---
 
 ## Description
@@ -50,4 +50,5 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> in-progress. 11-02: lane 123, D34 B broadened (all biomes, plant response on observed climate), diagnosis first.
 - 2026-11-01: Created from inbox draft draft-wild-herds-below-coe-1976.md (found by lane103).
