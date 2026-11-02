@@ -11,7 +11,7 @@ impact: med
 found_by: lane-100e
 blocked_by: []
 relates: [PW-950, PW-1276]
-refs: [planet/tectonics/crust.py, planet/tectonics/isostasy.py, docs/review/tectonics/margin/deep-dive.md]
+refs: [planet/tectonics/crust.py, planet/tectonics/isostasy.py, planet/tectonics/crust.py::birth_and_cratons, planet/tectonics/isostasy.py::sediment_iso, planet/surface.py::_creep, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/sinkdiag.py, docs/review/tectonics/margin/handoff.md, tests/test_sea_level.py]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -37,5 +37,6 @@ paired judge. Lane 100e tried keeping drowned piles out of the area count only (
 - [ ] decision A / B / C
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Status needs-decision -> in-progress. Daniel 11-01: option A, next physics lane (lane 112).
 - 2026-11-01: Created from inbox draft draft-sediment-piles-born-continental.md (found by lane-100e).

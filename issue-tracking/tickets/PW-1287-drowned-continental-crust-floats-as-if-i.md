@@ -11,7 +11,7 @@ impact: low
 found_by: lane-100e
 blocked_by: []
 relates: [PW-950, PW-980]
-refs: [planet/tectonics/isostasy.py, planet/tectonics/earth.py, tests/test_sea_level.py]
+refs: [planet/tectonics/isostasy.py, tests/test_sea_level.py, planet/tectonics/isostasy.py::sediment_iso, planet/tectonics/isostasy.py::sediment_lift, planet/tectonics/earth.py, tests/test_sea_level.py::test_sediment_moved_off_a_shelf_onto_the_ocean_floor_keeps_the_sea, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/handoff.md]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -37,4 +37,5 @@ Lean: B for v1, A when the margins are next revisited.
 - [ ] decision A or B
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-drowned-continental-crust-floats-as-in-air.md (found by lane-100e).

@@ -11,7 +11,7 @@ impact: med
 found_by: lane75
 blocked_by: []
 relates: [PW-969, PW-980, PW-1142]
-refs: [planet/tectonics/earth.py, docs/overview.md]
+refs: [planet/tectonics/earth.py, planet/tectonics/earth.py::global_temperature, planet/tectonics/earth.py::drift_source, planet/tectonics/simulation.py::_physics, planet/tectonics/crust.py::arc_growth, planet/tectonics/events.py, docs/overview.md, docs/review/tectonics/margin/note-arc-co2.md, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/deep-dive.md, docs/review/v1-cut/co2-crash-diagnosis.md, docs/review/base-climate/v1-finish-16/paired.sh, "seed-draw 819014 l6c_p (scratch run, gone; only the seed and arm label survive)"]
 created: 2026-10-30
 updated: 2026-11-01
 ---
@@ -35,6 +35,7 @@ floor ages. If the ridges die off, the source falls. PW-969's giant welded plate
       (a diag field per part), and whether the decline tracks the rift count or the largest plate
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Lane 100e (11-01): arc CO2 already uses nominal slab melt (convergence x trench length), not the volume thermostat; the late fall is real slab flux against the 0-300 Myr reference. See docs/review/tectonics/margin/note-arc-co2.md.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-late-run-outgassing-decline.md (found by lane75).

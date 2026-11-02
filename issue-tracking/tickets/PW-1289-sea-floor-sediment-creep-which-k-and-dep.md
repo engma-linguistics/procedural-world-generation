@@ -11,7 +11,7 @@ impact: med
 found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
-refs: [planet/surface.py, planet/tectonics/params.py, docs/review/tectonics/margin/diagnosis-foreset.md]
+refs: [planet/surface.py, planet/surface.py::_creep, planet/tectonics/params.py, paper:Mitchell2008, docs/review/tectonics/margin/diagnosis-foreset.md, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/paired_margin.sh]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -37,4 +37,5 @@ Options:
 Lean: A, or whichever arm the lane 100c screens and judge favour. The numbers are in the lane 100c report.
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-marine-diffusivity-k-and-depth-law.md (found by lane-100c).

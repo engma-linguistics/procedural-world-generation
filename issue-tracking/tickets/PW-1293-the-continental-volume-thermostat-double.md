@@ -11,7 +11,7 @@ impact: med
 found_by: lane-100e
 blocked_by: []
 relates: [PW-1276, PW-046, PW-052, PW-741]
-refs: [planet/tectonics/crust.py, docs/review/tectonics/margin/deep-dive.md]
+refs: [planet/tectonics/crust.py, planet/tectonics/crust.py::thermostats, planet/tectonics/crust.py::arc_growth, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/note-arc-co2.md, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/handoff.md]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -33,4 +33,5 @@ Lean: B for v1, A for v2. It needs sources first (none read yet).
 - [ ] decision A / B
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-volume-thermostat-stands-in-for-crust-budget.md (found by lane-100e).

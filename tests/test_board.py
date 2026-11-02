@@ -344,3 +344,24 @@ def test_review_retention_warns_on_orphans(tmp_path, capsys):
     assert check(root) == 0  # a warning, not a failure
     out = capsys.readouterr().out
     assert "warning: 2 docs/review files" in out and "docs/review/b/old.txt" in out and "docs/review/e/z.txt" in out
+
+
+def test_check_warns_on_unresolved_new_ref_forms(tmp_path, capsys):
+    repo = tmp_path / "repo"
+    root = repo / "issue-tracking"
+    (root / "tickets").mkdir(parents=True)
+    (root / "inbox").mkdir()
+    (repo / "docs" / "references").mkdir(parents=True)
+    (repo / "docs" / "references" / "bibliography.md").write_text("- **Holman2011**: Holman et al. 2011. Read: full.\n")
+    (repo / "planet").mkdir()
+    (repo / "planet" / "mod.py").write_text("def real_fn():\n    pass\n\nclass Thing:\n    pass\n")
+    (repo / "docs" / "note.md").write_text("# Top\n\n## A `Sub` heading: here\n")
+    refs = ["paper:Holman2011", "planet/mod.py::real_fn", "planet/mod.py::Thing", "docs/note.md#a-sub-heading-here",
+            "docs/note.md", "free text ref",
+            "paper:Nobody1999", "planet/mod.py::missing_fn", "docs/note.md#no-such", "planet/gone.py"]
+    new(root, "Refs", "s", "med", "zoom", *[x for r in refs for x in ("--ref", r)], "--desc", "x.")
+    capsys.readouterr()
+    assert check(root) == 0  # warnings only
+    out = capsys.readouterr().out
+    assert "Nobody1999" in out and "missing_fn" in out and "#no-such" in out and "planet/gone.py" in out
+    assert out.count("warning: PW-001") == 4

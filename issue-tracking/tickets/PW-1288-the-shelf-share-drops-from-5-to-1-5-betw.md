@@ -11,7 +11,7 @@ impact: med
 found_by: lane-100c
 blocked_by: []
 relates: [PW-950]
-refs: [docs/review/tectonics/margin/margindiag.py, docs/review/tectonics/margin/report.md]
+refs: [planet/surface.py, planet/tectonics/isostasy.py::subsidence, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/margindiag.py, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/sinkdiag.py, docs/review/tectonics/margin/earth_margin.py, docs/review/tectonics/margin/paired_margin.sh]
 created: 2026-11-01
 updated: 2026-11-01
 ---
@@ -42,4 +42,5 @@ recovery after it is the built margin (PW-950 itself). Related: PW-1230 (the ear
 - [ ] decide whether the start-up layout (assembly within ~100 Myr) or the start-up highstand needs changing, or close
 
 ## Updates
+- 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-l6-shelf-collapses-after-100-myr.md (found by lane-100c).
