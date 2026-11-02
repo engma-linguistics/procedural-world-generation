@@ -3,6 +3,23 @@
 Lane 136, 2026-11-02. **Work in progress: built and tests green, not yet judged.** The before/after suite is running; the
 results page for Daniel (plain words, tables, charts) is still to write from it.
 
+## Lane 137 state (hand-off notes, updated as it goes)
+
+- Merged main (5849cae3, lane 133 religion) and lane 136's WIP 3db2c21f: no conflicts.
+- Removed the dead `prey.people_fields` block (and its PEOPLE_EXP / FORAGE_REF / GRAZE_REF / NPP_REF); comments in recent.py, params.py.
+- Drafts written in issue-tracking/inbox (9): tech tree inside the history, human lactase, hold trade, landuse.derive shares, city
+  minorities (needs-decision), raid share, goblin_world, hunters learn crops regardless of propensity (needs-decision, check d).
+  Refs backfilled on PW-1275 / 1357 / 1351.
+- Check (b) forager rung: 0.036 at NPP 330 is ON Binford's terrestrial fit (rerun of binford_by_npp.py: fit 0.036 at 330; bin NPP
+  300-450: median 0.033, mean 0.071, n=48). Binford's whole-sample median 0.11 sits higher because his foragers live on richer land
+  (most terrestrial societies at NPP > 450) and include fishers. Not a slip; kept.
+- Check (c): world 4360a3: flow >= 5 on 13.7% of land, but the watered share averages 1.4% of land (1.9% of farmable land); fish good
+  > 0.2 on 31% of land, the fisher rung beats the forager rung on 27% of land; fisher rung median 0.33 where it exists (Binford
+  fishing-led median 0.25, sedentary 0.41). Kept.
+- Check (a): mean presence 0.40-0.46 on every rung (realized = 0.4 x the rung). Pending: `scratchpad/l137/fill.py` (sum of presences
+  per cell) after the main suite ends, to decide calibrate vs "at full habitat".
+- Scripts: scratchpad/l137/compare.py (tables + PNGs: OUT_MAIN OUT_BRANCH PNG_DIR, needs `uv run --with matplotlib`), probe.py, fill.py.
+
 ## What is built (commit on this branch)
 
 - `planet/lineages/ladder.py` (new): the shared ladder. Per line, per cell: density = kind x sum over its ways of life of
