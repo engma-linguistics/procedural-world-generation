@@ -2,7 +2,7 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: todo
+status: in-progress
 parent: PW-013
 milestone: v2
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: [PW-352]
 relates: [PW-019]
 refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/ (removed; see git d32f7fa), docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
 created: 2026-10-14
-updated: 2026-10-30
+updated: 2026-11-02
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 regional budget (docs/review/base-climate/moisture-budget/README.md): land imports 2.26 Sv net (published runoff ~1.15) through the
   summer land-sea inflow (monsoon_wind's cross-isobar 0.45). The kernel has no convergence lift. Its vapour lasts

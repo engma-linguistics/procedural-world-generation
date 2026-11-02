@@ -1,8 +1,10 @@
 ---
+id: PW-1318
 title: Thin continental margins drag and insulate like full continent, so keeping them leaves the young planet fewer plates
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lane-119
 blocked_by: []
 relates: [PW-1317, PW-1295, PW-1314, PW-1316]
 refs: ["planet/tectonics/mantle.py::update", "planet/tectonics/mantle.py::traction", "planet/tectonics/motion.py::forces", "planet/tectonics/events.py::maybe_rift", "planet/tectonics/events.py::sutures", "planet/tectonics/events.py::absorb_slivers", "planet/tectonics/crust.py::coherence", "docs/review/tectonics/margin/pw1295-note.md#5-round-3-lane-119-pw-1317-do-the-kept-thin-margins-jam-trenches-no", docs/review/tectonics/margin/jamdiag.py, docs/review/tectonics/margin/envdraw.py, tests/test_envelopes.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -38,3 +42,6 @@ What to try (only worth it if the 15 km bound, or any change that keeps more thi
   count against main; then the L6 paired judge
 - Caution: this changes every run's plate dynamics (main's thin margins too, ~1.8% of the surface at L5), so judge it
   on its own against main first, not only with the 15 km bound.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-thin-margins-weigh-as-continent-in-plate-dynamics.md (found by lane-119).

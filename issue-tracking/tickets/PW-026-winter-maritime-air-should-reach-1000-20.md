@@ -2,7 +2,7 @@
 id: PW-026
 title: Winter maritime air should reach 1000-2000 km inland under westerlies
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: v2
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-022]
 refs: [planet/climate.py, tools/earth_check.py, "plan_next@bdc967f: Known issues → Climate"]
 created: 2026-10-14
-updated: 2026-10-30
+updated: 2026-11-02
 ---
 
 ## Description
@@ -25,6 +25,7 @@ westerlies (and the reverse on east coasts). Also check the old continental-wint
 Alaska, Quebec, NE China 5–10 °C off) with the same change.
 
 ## Updates
+- 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): the winter westerlies bring ~3x the observed net vapour into Europe and Russia
   (W Europe +1345 vs +411, European Russia +962 vs +284, W Siberia +518 vs +168 mm/yr), and it rains as

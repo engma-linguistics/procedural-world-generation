@@ -250,18 +250,16 @@ continent size. It's also the likely root of PW-1158 (the long cold finish when 
 <i>My lean:</i> it fixes the fragility and still lets real long trends show.</li>
 <li><b>C</b> let the references drift slowly all run long. Steadier, but it would hide real slow trends (a planet whose volcanoes really
 wind down would never feel it).</li></ol>
-<p>Meanwhile lane 119 is checking whether thin kept margins jam trenches, which is what made the 15 km fix weaken young volcanoes by
-about 7%. The 15 km fix stays off main until that check is done.</p>
+<p><b>The 15 km margin fix, parked:</b> lane 119 found thin kept margins don't jam trenches; instead the young planet makes about 2.5
+fewer plates, because thin edges count as full continent in the plate forces (keel drag) and warm the mantle under them (PW-1318).
+The flicker it cures is small without the sea-floor creep, and the creep is at the back of the line, so the two wait together.</p>
 </div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>115 · continent edge (D38)</td><td><b>Round 2.</b> Confirmed the flicker and cured it (crust is cut off only below 15 km, still born at
-20 km); the 36-world test passed with climate unmoved and land 1.3 points lower. But after merging, a slow test world (L5, seed 2) ran to a
-28.8 °C hothouse with it, against 15.8 °C without, so I took the code back out. The lane is re-rolling that test's worlds to tell chance
-from a real runaway, and tracing the CO2. The sea-floor creep itself has now failed four times; under your three-strikes rule it goes
-to the back of the line (PW-1315).</td></tr>
+<tr><td>120 · rain inland</td><td>Your top physics pick (PW-015/026): a written diagnosis of how vapour moves inland and where the model
+departs from physics, sourced candidates, cheap screens on the Earth check; then it reports to you before any big test.</td></tr>
 <tr><td>116 · land zoom practice</td><td>Picking side-by-side 4,000 km sections and measuring their seams (PW-1300).</td></tr>
 <tr><td>118 · speed part 2</td><td>The <code>exp</code> ports (last-bit changes accepted) and the cheap remaining single-threaded code (PW-1297/1298).</td></tr>
 </table></div>
