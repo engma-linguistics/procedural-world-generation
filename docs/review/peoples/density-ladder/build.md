@@ -20,7 +20,9 @@ Lane 136 built it, lane 137 measured it (2026-11-02). Before = main (fc4e0398), 
   show "people per km2 it fills" instead.
 - **Things that look odd, stated plainly:**
   1. Hunting kinds farm: tabaxi, leonin, goliaths, bugbears learn crops as fast as any farmer (their low leaning to farm cancels out
-     in the test), so most of their people end up ploughing or gardening. Draft for your decision (lean: a delay, not a cap).
+     in the test), so most of their people end up ploughing or gardening. Draft for your decision (lean: a delay, not a cap). **Done (PW-1373 B, lane 139):** knowing now waits 0.4 kyr /
+     propensity (hunters ~10x slower) and meat-eaters lean to herds; the cat-folk stay hunters or herders in about half the D&D runs:
+     `hunters-lag.md`. (PW-1369 B: the city goblins and kobolds are gone.)
   2. Irrigation lifts gardeners without a plough a lot: kenku 0.7% to 10%, with two thirds of kenku living on irrigated cells; elves
      and gnomes half. Egypt's numbers (Butzer) are for plough farmers; the ruling (Q5 A) did not tie irrigation to the plough.
   3. Den peoples and halflings fall: kobolds 3.6% to 0.4%, goblins 0.5% to 0.1%, halflings 4% to 1% (Seven Meals 9% to 1.4%, and

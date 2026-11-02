@@ -84,13 +84,13 @@ fig, ax = plt.subplots(figsize=(9, 4.6), dpi=130)
 y = np.arange(len(KINDS))
 hgt = 0.8 / len(T)
 for i, (lab, t) in enumerate(zip(labels, T)):
-    v = [100 * sum(t[k][1][w] for w in FARM) for k in KINDS]
+    v = [t[k][2] for k in KINDS]  # (runs where under 5% of the kind's people farm: the pooled farming share hides them)
     ax.barh(y + (i - (len(T) - 1) / 2) * hgt, v, height=hgt * 0.9, color=COLS[i], label=lab)
 ax.set_yticks(y, [k.replace("_", " ") for k in KINDS], color=INK)
 ax.invert_yaxis()
-ax.set_xlim(0, 100)
-ax.set_xlabel("share of the kind's people living by farming (garden, plough, irrigation, agro-pastoral), %", color=MUTED)
-ax.set_title("Hunting kinds learn crops later (PW-1373): D&D base + jitter runs, pooled", color=INK, fontsize=11, loc="left")
+ax.set_xlim(0, max(t[k][3] for t in T for k in KINDS))
+ax.set_xlabel("runs in which under 5% of the kind's people farm (of the D&D base + jitter runs)", color=MUTED)
+ax.set_title("Hunting kinds learn crops later (PW-1373): runs where they stay hunters or herders", color=INK, fontsize=11, loc="left")
 for s in ("top", "right"):
     ax.spines[s].set_visible(False)
 ax.grid(axis="x", color="#e4e3dc", lw=0.6)

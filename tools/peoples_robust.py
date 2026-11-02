@@ -305,6 +305,60 @@ SCREENS = {"base": {}, "nofit": {"FIT_Q": 0.0, "BREADTH_Q": 0.0}, "closed1": {"A
 
 # ---------------------------------------------------------------- one run
 
+WILD_NEAR = 0.5  # (PW-1385 sizing: a farmed or herded cell where the wild rung gives at least this x the way's own density)
+
+
+def wild_overlap(h, P) -> dict:
+    """PW-1385 sizing (lane 139): per people, its farmed and herded people, and those of them on cells where its wild density (the
+    forager or fisher rung, ladder.Ladder.line) is at least WILD_NEAR x the farm (or herd) density it gets there; and per biome class
+    (history.habitat.BIOMES) the same summed over all peoples. Rung densities are recovered from Ladder.line with one way known at a
+    time (d = s x way + (1 - s) x wild)."""
+    from planet.lineages.spread import EST
+    from planet.lineages.history.habitat import BIOMES, biome_class
+    lad = getattr(h, "ladder", None)
+    if lad is None or not lad.ok or h._env_now is None:
+        return {}
+    bio = biome_class(h._env_now, h._tags_now)
+    out, by_b = {}, {}
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna or l.marine or not lad.people[k]:
+            continue
+        pc = h.population(k, P)
+        if pc.sum() <= 0:
+            continue
+        t = lad.tech(k, 0.0)
+        if not (t[0] or t[1]):
+            continue
+        wild = lad.line(k, (False, False, -1.0, -1.0), None)[0]
+        d, sf, sh = lad.line(k, t, None)[:3]
+        dd = np.maximum(d, 1e-12)
+        rows = {}
+        if t[0]:
+            d1, s1 = lad.line(k, (True, False, t[2], t[3]), None)[:2]
+            farm = np.where(s1 > 0, (d1 - (1 - s1) * wild) / np.maximum(s1, 1e-12), 0.0)
+            rows["farm"] = (pc * sf * farm / dd, wild >= WILD_NEAR * farm)
+        if t[1]:
+            d2, _, s2 = lad.line(k, (False, True, -1.0, -1.0), None)[:3]
+            nomad = np.where(s2 > 0, (d2 - (1 - s2) * wild) / np.maximum(s2, 1e-12), 0.0)
+            rows["herd"] = (pc * sh * nomad / dd, wild >= WILD_NEAR * nomad)
+        who = h.tree.people_of(l.id)
+        o = out.setdefault(who, {})
+        for way, (ppl, near) in rows.items():
+            ppl = np.where(P[k] >= EST, ppl, 0.0)
+            v = o.setdefault(way, [0.0, 0.0])
+            v[0] += float(ppl.sum())
+            v[1] += float(ppl[near].sum())
+            for b in np.unique(bio[ppl > 0]):
+                if b < 0:
+                    continue
+                sel = (bio == b) & (ppl > 0)
+                w = by_b.setdefault(BIOMES[b], {}).setdefault(way, [0.0, 0.0])
+                w[0] += float(ppl[sel].sum())
+                w[1] += float(ppl[sel & near].sum())
+    rnd = lambda d: {a: {w: [round(x) for x in v] for w, v in b.items()} for a, b in d.items()}  # noqa: E731
+    return {"peoples": rnd(out), "biomes": rnd(by_b)}
+
+
 def measure(h, res, pres) -> dict:
     """The numbers of one try: per people (groups rolled up; megafauna and overlays apart) share of people, of the cells led, range,
     founding; the extinctions and their reasons."""
@@ -443,6 +497,10 @@ def _run_spec(spec: dict, Probe) -> dict:
     res = h.run()
     pres = present_summary(h, res["present"])
     m = measure(h, res, pres)
+    try:
+        m["wild_overlap"] = wild_overlap(h, res["present"])
+    except Exception as e:  # (a sizing number: never fail a run on it)
+        m["wild_overlap"] = {"error": repr(e)}
     m["wall_s"] = round(time.time() - t0, 1)
     import resource
     m["max_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)
