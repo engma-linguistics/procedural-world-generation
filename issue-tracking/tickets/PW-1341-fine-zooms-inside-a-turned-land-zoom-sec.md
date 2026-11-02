@@ -1,4 +1,5 @@
 ---
+id: PW-1341
 title: "Fine zooms inside a turned land-zoom section: 2D boxes drawn unturned, fine zoom stays north-up"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane127
 blocked_by: []
 relates: [PW-1338, PW-129]
 refs: ["viewer/zoom.html::drawFine", "viewer/zoom.html::fineHost", "viewer/zoom3d_place.js::place", "planet/zoom/fine.py::zoom", "planet/zoom/regional.py::frame_of"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -22,3 +25,6 @@ square while arming is axis-aligned too: in a turned section both are drawn untu
 up to 45 degrees or more near the poles). Either draw the fine zoom's true corners (`aeFrame(...).toSphere` of its four
 corners into the page's plane), or build fine zooms in their parent's orientation (`up` = the parent's up).
 - [ ] a fine zoom's outline in a turned section's 2D map matches where its 3D tile lands
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-fine-zoom-in-turned-section.md (found by lane127).

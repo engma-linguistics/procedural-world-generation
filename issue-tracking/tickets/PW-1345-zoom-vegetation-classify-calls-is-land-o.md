@@ -1,8 +1,9 @@
 ---
+id: PW-1345
 title: "Zoom vegetation classify calls is_land on pixels: raises when a land pixel is at or below sea level"
 type: task
 status: todo
-parent: null
+parent: PW-1299
 milestone: v2
 subsystem: zoom
 effort: xs
@@ -11,6 +12,8 @@ found_by: lane127
 blocked_by: []
 relates: [PW-1301]
 refs: ["planet/vegetation.py::classify", "planet/geo.py::is_land", "planet/geo.py::_grid_of", "planet/zoom/vegetation.py::compute", "planet/zoom/stage_landscape.py::landscape_loop"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -24,3 +27,6 @@ future change could hit it in an ordinary zoom.
 Fix: in a zoom, pass the land mask the zoom already has (classify is called on land pixels only) instead of is_land, or
 give classify a `land=` argument and use is_land only on world cells.
 - [ ] a zoom whose land includes a pixel at -5 m builds without error
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-zoom-vegetation-is-land-on-pixels.md (found by lane127).

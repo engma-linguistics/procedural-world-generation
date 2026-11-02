@@ -2,7 +2,7 @@
 id: PW-1338
 title: Land zoom sections need an orientation in zoom(), save() and zoom.json before any tiling sweep
 type: task
-status: todo
+status: done
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -28,4 +28,5 @@ vector or bearing in degrees) to the build arguments, the zoom id (so a rotated 
 - [ ] two neighbouring sections' overlap band checked against `tiling.sections()[..]['overlap_km']`
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lanes 127/128 (merged 13c281dc): planet zoom --section CELL / --up DEG; zoom.json records the turn; every frame rebuild and the viewer read it; pole cells tested.
 - 2026-11-02: Created from inbox draft draft-land-zoom-section-orientation.md (found by lane122).

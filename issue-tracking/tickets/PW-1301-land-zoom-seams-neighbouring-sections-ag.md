@@ -2,7 +2,7 @@
 id: PW-1301
 title: "Land zoom seams: neighbouring sections agree at their edges (heights, coasts, landforms, biomes)"
 type: task
-status: todo
+status: done
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -20,5 +20,6 @@ updated: 2026-11-02
 **In plain words.** Make adjacent sections agree where they meet: shared overlap bands with blending, noise and landform seeds keyed by place rather than by section, and coastlines from one source. Judged on the practice sections.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lanes 127/128 (merged 13c281dc): planet zoom --match IDS. Neighbour owns its tiling cell's ground (coast, finished heights, lakes at surface), 80 km blend ramp. 4 practice seams + turned tile pair py.1.1/py.0.1 at 4 km: median dh at the line 10-410 m -> 0.0 m (p95 <= 0.3), coast/biome <= 0.1%, no ramp steps; 1 km tile pair same. Matched 1 km section ~110 GB. Notes docs/review/land-zoom/seams-round2.md.
 - 2026-11-02: Created.
 - 2026-11-02: Lane 128 (in branch, not merged): judged lane 127's matching (`planet zoom --match`) on lane 116's four practice seams and one tiling pair (py.1.1 / py.0.1) at 4 km/px: height difference at the owner line 10-410 m alone -> 0.0 m matched (p95 <= 0.3 m), coast and biome at the line 0-0.1%, ramp slopes no steeper than built alone. Fixed: neighbour's lakes (held at their surface, outlines taken where it weighs over a half; the only coast mismatch left at the line), a crash on held lake beds, the tiling owner rule's crash. Far-inside test bound back to 1 m (measured 480 km in; the reach is by design and scales with the coarse cell). Notes: docs/review/land-zoom/seams-round2.md.

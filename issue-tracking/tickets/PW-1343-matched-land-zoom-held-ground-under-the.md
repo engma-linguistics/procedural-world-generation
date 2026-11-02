@@ -1,4 +1,5 @@
 ---
+id: PW-1343
 title: "Matched land zoom: held ground under the neighbour's ice may be bare and below the sea until final()"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane128
 blocked_by: []
 relates: [PW-1301]
 refs: ["planet/zoom/match.py::hold", "planet/zoom/match.py::final", "planet/zoom/match.py::sources", "planet/zoom/stage_finish.py::vegetation_layers", "planet/zoom/stage_finish.py::ice_bed", "planet/vegetation.py::classify", "planet/geo.py::is_land", docs/review/land-zoom/seams-round2.md, "zoom fe600a", "zoom 59336f", "world dba204"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -29,3 +32,6 @@ from `m_ice` there, before the landscape pass), so every stage sees ice over a s
 (bed + ice) through the landscape and climate stages, and put the bed back in `final()`. Lean A.
 - [ ] a matched build whose neighbour has a marine ice sheet on the held strip, and this section's own glacier
   does not cover it, finishes (a synthetic test: neighbour with ice over a bed below 0, this section warm)
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-land-zoom-held-ice-bed-before-final.md (found by lane128).

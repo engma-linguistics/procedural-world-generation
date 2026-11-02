@@ -1,7 +1,8 @@
 ---
+id: PW-1344
 title: "Notes for PW-1302 from lane 127: rivers across a matched section's owner line"
 type: task
-status: todo
+status: done
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -11,6 +12,8 @@ found_by: lane127
 blocked_by: []
 relates: [PW-1302, PW-1301, PW-1338]
 refs: ["planet/zoom/match.py::prepare", "planet/zoom/match.py::hold_edge", "planet/zoom/match.py::blend", "planet/zoom/stage_landscape.py::first_glaciers", "planet/zoom/stage_rivers.py::coarse_rivers", "planet/zoom/stage_landscape.py::final_drainage", docs/review/land-zoom/seams-round1.md, docs/review/land-zoom/practice.md, docs/review/land-zoom/seams.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -30,3 +33,7 @@ held and the heights blend across an 80 km ramp. Rivers are not matched yet; thi
 - Measure with `seams.py` river columns at the owner line (for tiling sections the cell edge, not the bisector).
 - [ ] neighbour's crossing rivers enter the matched section as inflows with their discharge
 - [ ] the matched section's rivers leaving across the line keep their discharge (stats) for the next section
+
+## Updates
+- 2026-11-02: Status todo -> done. Folded into PW-1302 (notes copied there).
+- 2026-11-02: Created from inbox draft draft-land-zoom-matched-rivers-notes.md (found by lane127).
