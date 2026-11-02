@@ -15,6 +15,11 @@ A taboo is {target, scope, origin, why}; the explanation, the consequence and th
              culture's purity weight. That weight is the moral ledger's (PW-1307), which waits on Daniel; until then it is a seeded placeholder
              in PURITY_RANGE per culture, marked as such in the output.
 Seeded per (run seed, culture): the same run gives the same taboos.
+
+Beyond food (PW-1311): every other kind of taboo in taboo_defs.KINDS (totemic, purity and the dead, speech and names, kinship and
+marriage, birth, women, sacred places, sacred times, hunting and harvest, chiefly, sumptuary, caste), drawn per culture from its tags
+(context(): its way of life, its techs, its gods' domains) by other_taboos(), with their own random stream so the food taboos are as
+before. Each taboo has a `kind`; the food ones are kind "food" with their origin as before. Still a readout.
 """
 
 from __future__ import annotations
@@ -24,6 +29,8 @@ import time
 from pathlib import Path
 
 import numpy as np
+
+from . import taboo_defs as TD
 
 TOTEM_P = 0.12  # JUDGEMENT: the share of cultures with a sacred domesticate
 PURITY_RANGE = (0.1, 0.6)  # JUDGEMENT placeholder for the ledger's purity weight (PW-1307)
@@ -84,7 +91,7 @@ def culture_taboos(rng: np.random.Generator, *, domestic: list, crops: list, wil
         if target in taken:
             return
         taken.add(target)
-        out.append({"target": target, "label": _label(target), "scope": scope, "origin": origin, "why": why, **kw})
+        out.append({"kind": "food", "target": target, "label": _label(target), "scope": scope, "origin": origin, "why": why, **kw})
 
     # symbolic: a domesticate held sacred (a lineage's kin)
     keep = [d for d in domestic if d != "dog"]
@@ -122,6 +129,79 @@ def culture_taboos(rng: np.random.Generator, *, domestic: list, crops: list, wil
     return out
 
 
+METAL = ("copper", "native_copper", "bronze", "iron")
+
+
+def context(know: set, traits: set, beings: list) -> set:
+    """A culture's tags for the catalogue (taboo_defs): ways (farm, herd, forage, hunt, sea), techs, its living gods' leading domains."""
+    t = set()
+    t |= {"farm"} if "cultivation" in know else set()
+    t |= {"herd"} if "herding" in know else set()
+    if not t:
+        t.add("forage")
+    if "farm" not in t:
+        t.add("hunt")
+    if traits & {"coastal", "swims", "seafaring"}:
+        t.add("sea")
+    t |= {k for k in ("burial", "temples", "kingship", "writing") if k in know}
+    if "moralizing_high_god" in know:
+        t.add("high_god")
+    if any(m in know for m in METAL):
+        t.add("metal")
+    for b in beings:
+        t |= {"g:" + d for d in b["domains"]}
+        if b.get("spells"):
+            t.add("spells")
+    return t
+
+
+def _span(rng: np.random.Generator, tags: set) -> str | None:
+    """A post-partum taboo length drawn from EA036's counts, the long ones tilted by the way of life (Saucier 1972, summary)."""
+    long_x = TD.LONG_FARM if "farm" in tags and "kingship" not in tags else TD.LONG_OTHER
+    names = [n for n, _ in TD.POSTPARTUM_EA036]
+    w = np.array([c * (long_x if n in ("one to two years", "more than two years") else 1.0) for n, c in TD.POSTPARTUM_EA036], float)
+    k = names[int(rng.choice(len(names), p=w / w.sum()))]
+    return None if k == "none" else k
+
+
+def other_taboos(rng: np.random.Generator, tags: set) -> list:
+    """The taboos of one culture beyond food, from its tags: each kind is held with its chance (taboo_defs.KINDS, x KIND_BOOST per tag),
+    then 1..max of its rules whose needs the culture meets, weighted by their boosts."""
+    out = []
+    for kind, (name, _, _, base, most) in TD.KINDS.items():
+        if kind == "food":
+            continue
+        need = TD.KIND_NEEDS.get(kind)
+        if need and need not in tags:
+            continue
+        p = base
+        for tg, x in TD.KIND_BOOST.get(kind, {}).items():
+            if tg in tags:
+                p *= x
+        if rng.random() >= min(p, 0.97 if kind not in ("kinship", "postpartum") else 1.0):
+            continue
+        rules = [r for r in TD.RULES if r[1] == kind and all(n in tags for n in r[4])]
+        if kind == "kinship":  # (the nuclear-family rule everywhere; clan exogamy at EA015's share; the rest drawn)
+            pick = [TD.RULE["incest_core"]] + ([TD.RULE["clan_exogamy"]] if rng.random() < TD.EXOGAMY_P and "kingship" not in tags else [])
+            rules = [r for r in rules if r[0] not in ("incest_core", "clan_exogamy")]
+            n = int(rng.integers(0, most - len(pick) + 1)) if most > len(pick) else 0
+        else:
+            pick, n = [], 1 + int(rng.binomial(most - 1, 0.4)) if most > 1 else 1
+        if rules and n:
+            w = np.array([np.prod([x for tg, x in r[5].items() if tg in tags] or [1.0]) for r in rules], float)
+            pick += [rules[int(i)] for i in rng.choice(len(rules), min(n, len(rules)), replace=False, p=w / w.sum())]
+        for rid, _, text, who, needs, boost, src in pick:
+            if rid == "postpartum":
+                span = _span(rng, tags)
+                if span is None:
+                    continue
+                text = text.format(span=span)
+            why = [t for t in (*needs, *boost) if t in tags]
+            out.append({"kind": kind, "target": rid, "label": text, "scope": who, "origin": kind,
+                        "why": f"{name}; drawn from: {', '.join(why) if why else 'any culture'}", "source": src})
+    return out
+
+
 def derive(run_dir: Path, gods: dict | None = None, techtree: dict | None = None) -> dict:
     """taboos.json of a stored peoples run that has cultures (read-only). gods: its gods.json document (the divine origin), if any."""
     t0 = time.time()
@@ -153,7 +233,7 @@ def derive(run_dir: Path, gods: dict | None = None, techtree: dict | None = None
     for b in (gods or {}).get("beings", []):
         if b["status"] == "living":
             by_god.setdefault(b["culture"], []).append({"id": b["id"], "label": b["label"], "ind": b["individuation"],
-                                                        "domains": [t[0] for t in b["top"][:2]]})
+                                                        "domains": [t[0] for t in b["top"][:2]], "spells": b.get("grants_spells")})
     out = {}
     for c in doc["cultures"]:
         if c["end"] is not None:
@@ -169,12 +249,18 @@ def derive(run_dir: Path, gods: dict | None = None, techtree: dict | None = None
         tb = culture_taboos(rng, domestic=kept(c["people"], "animals", "animal"), crops=kept(c["people"], "crops", "crop"),
                             wild=available(lines.get(c["people"]) or {}, c.get("country_now")), enemies=en,
                             beings=by_god.get(c["id"], []), purity=pur)
+        kn = set(known.get(c["people"]) or {})
+        tags = context(kn, set((lines.get(c["people"]) or {}).get("traits") or []), by_god.get(c["id"], []))
+        tb += other_taboos(np.random.default_rng((seed, c["id"], 1311)), tags)
         out[str(c["id"])] = {"name": c["name"], "people": c["people"], "purity_weight": round(pur, 3), "purity_weight_is": "placeholder (PW-1307)",
-                             "taboos": tb}
-    return {"format": "procgen-taboos/1", "cultures": out,
+                             "tags": sorted(tags), "taboos": tb}
+    return {"format": "procgen-taboos/2", "cultures": out,
+            "kinds": {k: {"name": v[0], "what": v[1], "sources": list(v[2])} for k, v in TD.KINDS.items()},
+            "sources": {k: {"title": v[0], "url": v[1], "level": v[2]} for k, v in TD.SOURCES.items()},
             "summary": {"cultures": len(out), "with_taboos": sum(bool(v["taboos"]) for v in out.values()),
-                        "by_origin": {o: sum(t["origin"] == o for v in out.values() for t in v["taboos"])
+                        "by_origin": {o: sum(t["kind"] == "food" and t["origin"] == o for v in out.values() for t in v["taboos"])
                                       for o in ("symbolic", "identity", "divine", "purity", "practical")},
+                        "by_kind": {k: sum(t["kind"] == k for v in out.values() for t in v["taboos"]) for k in TD.KINDS},
                         "generated_in_s": round(time.time() - t0, 1)}}
 
 
@@ -187,12 +273,15 @@ def write(run_dir: Path, out_dir: Path | None = None, gods: dict | None = None, 
     return d["summary"]
 
 
-def write_religion(run_dir: Path, out_dir: Path | None = None, mode: str = "faith_made", techtree: dict | None = None) -> dict:
+def write_religion(run_dir: Path, out_dir: Path | None = None, mode: str = "faith_made", techtree: dict | None = None, rebuild: bool = False) -> dict:
     """The religion readouts of a run, gods.json then taboos.json (which reads the gods), into the run or out_dir; returns both summaries."""
     from . import gods as GD
+    if rebuild and techtree is None:
+        from . import techtree as TT
+        techtree = TT.rebuild(Path(run_dir))
     gd = GD.derive(Path(run_dir), mode, techtree)
     dest = Path(out_dir) if out_dir else Path(run_dir)
     dest.mkdir(parents=True, exist_ok=True)
     from .. import store as S
     S.write_atomic(dest / "gods.json", json.dumps(gd, separators=(",", ":")))
-    return {"gods": gd["summary"], "taboos": write(run_dir, out_dir, gd, techtree)}
+    return {"gods": gd["summary"], "faiths": gd["summary"].get("faiths"), "taboos": write(run_dir, out_dir, gd, techtree)}

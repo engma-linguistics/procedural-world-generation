@@ -895,6 +895,18 @@ Cultures tab, which is separate from the species tree, and in the brief's "Cultu
 
 Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
 
+### 2.25c Gods, faiths and taboos (`lineages/gods.py`, `taboos.py`, `taboo_defs.py`, `faithmap.py`; PW-1306, PW-1305, PW-1311, PW-1358)
+
+Readouts after the cultures, never read back by the history. Each culture with spirit ritual has 3-15 gods and spirits whose domains drift
+toward its land and way of life and whose individuation rises with its faith techs (`gods.json`). Faiths are records of their own: a
+culture founds one, daughters inherit it, a culture whose leading god turns away for 20 kyr breaks off as a schism, and a temple faith
+converts its less organised neighbours (`gods.FAITH_RULE`; each faith's cultures, track of centre and size, and end). Taboos
+(`taboos.json`): food taboos (symbolic, identity, divine, Douglas-style purity) plus twelve more kinds from a sourced catalogue
+(`taboo_defs.py`: totemic, ritual purity and the dead, speech and names, kinship and marriage, the post-partum taboo at EA036's
+frequencies, women and birth, sacred places, sacred times, hunting and harvest, chiefly, sumptuary, caste), drawn per culture from its
+way of life, techs and gods. Shown in the workbench's Religion tab (`viewer/religiontab.js`: god trees, a faith map with a time slider
+from `GET /api/faithmap`, a faith timeline, taboos). Stats over several trees: `tools/religion_stats.py`, docs/review/religion/.
+
 ### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83, 97 and 101, owner D20, D25-D27, D31)
 
 The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.

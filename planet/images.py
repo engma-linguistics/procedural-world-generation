@@ -12,6 +12,11 @@ import numpy as np
 def write_png(path: Path, img: np.ndarray) -> None:
     """Minimal PNG writer: (h, w, 3) uint8 RGB, (h, w, 4) uint8 RGBA, (h, w)
     uint8 or uint16 greyscale."""
+    Path(path).write_bytes(png_bytes(img))
+
+
+def png_bytes(img: np.ndarray) -> bytes:
+    """The PNG file of an image (as write_png) as bytes."""
     if img.dtype == np.uint16 and img.ndim == 2:
         hgt, wid = img.shape
         raw = img.astype(">u2").view(np.uint8).reshape(hgt, wid * 2)
@@ -31,8 +36,8 @@ def write_png(path: Path, img: np.ndarray) -> None:
     def chunk(tag, body):
         return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
 
-    Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-                           + chunk(b"IDAT", zlib.compress(data, 6)) + chunk(b"IEND", b""))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(data, 6)) + chunk(b"IEND", b""))
 
 
 def hex_rgb(c: str) -> tuple:
