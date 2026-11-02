@@ -47,3 +47,9 @@ What to try:
   main's level, statelessly. `crust.SHRED_KM = 15` is on. Judge (36 draws, creep off): 0 hard failures, 32/36
   against 33/36, climate unmoved, land -1.25 points (moved; the area thermostat counts the kept thin margin: draft).
   The creep-on judge wasn't run: creep + S15 screens 3 C colder than S15 (draft).
+- 2026-11-02: Lane 115, round 2 (after the revert, 4e3185dc): test_envelopes' world re-rolled over 20 seeds at its own
+  settings (L5, 400 Myr; docs/review/tectonics/margin/envdraw.py). Out of band: 1/20 with 15 km (seed 2, 28.8 C), 0/20
+  with 20 km; median end T the same (-0.25 C paired). Seed 2's hothouse is the frozen CO2 references (REF_FREEZE)
+  locking in a spin-up dip of the arcs and ridges. That dip is systematic with 15 km (spin-up source -7%, lower on
+  17/20; subduction erosion's area gain higher on 7/7), so the bound makes such trips a little likelier. Diagnosis and
+  candidates in pw1295-note.md section 4; first a cheap check of whether kept thin margins jam trenches. No fix made.

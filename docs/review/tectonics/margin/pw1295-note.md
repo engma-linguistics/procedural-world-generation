@@ -156,3 +156,125 @@ Scorecard (tools/scorecard.py, d143c2bc, L6 seeds 1 / 2, 1 Gyr, no Earth data in
 crust 40.9 / 39.8%, shelf 1.6 / 2.7% of the ocean, submerged continent median -1263 / -968 m, volume x0.974 / 0.978.
 The line before it (7c9409e2, an older main): land 33.5 / 32.9, shelf 3.4 / 1.9, -757 / -995 m, volume x1.005 / 1.004.
 Same direction as the judge: land a point or two lower, continental volume ~2.5% under its target (thinner crust).
+
+## 4. Round 2: test_envelopes seed 2 goes to a hothouse with the 15 km bound (diagnosis only, no fix)
+
+The coordinator reverted the bound on main (4e3185dc): `tests/test_envelopes.py::test_climate[2]` (L5, seed 2, 400 Myr)
+ends at 28.8 C, pCO2 3547 ppm with `SHRED_KM = 15`, against 15.8 C, 327 ppm at 20. Harness:
+[envdraw.py](envdraw.py) runs the fixture's own world (L5, `Params(run_end=400)`, dt 2, 0-100 Myr in one call then
+4 Myr chunks) for a seed and a bound, with a trace every 4 Myr. It reproduces both numbers exactly.
+
+### Re-rolled draws: 20 seeds, both bounds, end at 400 Myr
+
+| seed | T 15 / 20 (C) | pCO2 15 / 20 | land % 15 / 20 | cont % 15 / 20 | thick (km) 15 / 20 |
+|---|---|---|---|---|---|
+| 1 | 19.6 / 16.6 | 427 / 425 | 29.2 / 30.7 | 44.5 / 41.4 | 30.4 / 32.0 |
+| 2 | **28.8** / 15.8 | 3547 / 327 | 30.9 / 32.1 | 43.5 / 40.3 | 30.8 / 33.0 |
+| 3 | 13.1 / 14.3 | 176 / 273 | 29.5 / 30.1 | 42.9 / 40.3 | 31.4 / 33.0 |
+| 4 | 17.5 / 14.8 | 494 / 362 | 31.1 / 31.0 | 42.6 / 40.8 | 31.8 / 32.7 |
+| 5 | 17.5 / 14.3 | 419 / 222 | 29.5 / 30.7 | 42.9 / 42.1 | 30.8 / 31.7 |
+| 6 | 13.1 / 16.5 | 222 / 317 | 29.9 / 30.1 | 41.5 / 42.4 | 31.4 / 31.2 |
+| 7 | 21.4 / 9.5 | 1169 / 103 | 28.3 / 31.4 | 43.6 / 40.6 | 30.2 / 33.1 |
+| 8 | 16.6 / 15.0 | 412 / 339 | 29.9 / 30.7 | 43.1 / 40.7 | 30.7 / 32.2 |
+| 9 | 15.5 / 16.2 | 413 / 304 | 30.4 / 31.2 | 41.4 / 41.5 | 31.6 / 32.0 |
+| 10 | 12.8 / 15.9 | 184 / 346 | 30.1 / 31.6 | 43.4 / 39.9 | 31.6 / 32.8 |
+| 11 | 16.7 / 16.3 | 509 / 408 | 27.7 / 31.1 | 44.9 / 41.2 | 30.0 / 32.3 |
+| 12 | 13.4 / 21.6 | 210 / 1171 | 29.9 / 32.1 | 43.4 / 40.8 | 31.3 / 32.9 |
+| 13 | 13.9 / 16.5 | 157 / 340 | 29.6 / 30.5 | 43.1 / 40.4 | 31.1 / 32.7 |
+| 14 | 11.2 / 11.3 | 176 / 149 | 28.7 / 30.3 | 43.4 / 40.7 | 31.3 / 32.4 |
+| 15 | 17.5 / 13.6 | 435 / 144 | 29.8 / 30.3 | 41.2 / 43.3 | 32.2 / 31.1 |
+| 16 | 19.3 / 17.9 | 664 / 611 | 29.4 / 31.4 | 43.9 / 40.4 | 30.3 / 32.5 |
+| 17 | 10.5 / 18.0 | 125 / 404 | 31.5 / 30.4 | 42.4 / 41.3 | 31.8 / 32.4 |
+| 18 | 11.6 / 12.0 | 224 / 158 | 27.3 / 31.2 | 42.5 / 41.0 | 30.5 / 32.6 |
+| 19 | 18.1 / 21.5 | 666 / 813 | 32.3 / 29.3 | 42.1 / 40.7 | 31.8 / 32.2 |
+| 20 | 15.6 / 21.9 | 278 / 1096 | 30.2 / 30.4 | 42.2 / 42.4 | 31.8 / 31.6 |
+
+- **Out of the envelope band (|T - 14.5| > 10): 1 of 20 with 15 km (seed 2), 0 of 20 with 20 km.** The 20 km arm's
+  warmest ends are 21.9, 21.6 and 21.5 C (seeds 20, 12, 19), within 3 C of the edge; the 15 km arm's next warmest is
+  21.4 (seed 7).
+- End T: median 16.1 against 16.05 C, paired median difference -0.25 C, the 15 km arm warmer on 9 of 20. Spread
+  sd 4.1 against 3.2 C (seed 2 alone makes the difference).
+- So **on the band count it looks like chaos**: 1/20 against 0/20 can't be told apart (Fisher p = 1). Seed 2 is
+  the most extreme run of the 40 (peak pCO2 6955 ppm; the next highest is 4354, a 20 km run), but other draws go
+  further out in the other arm (seeds 12, 20: +8, +6 C with 20 km).
+- **But the bound does shift things systematically at L5 / 400 Myr**: continental crust 43.0 against 40.8% (median;
+  higher on 17 of 20), thinner by ~1.5 km, land ~1 point lower. Unlike the L6 1 Gyr judge, the area thermostat hasn't
+  pulled the area back by 400 Myr.
+
+### Where seed 2's CO2 runs away
+
+Trace (envdraw.py; source = ridge + 20 x the arcs' nominal growth + plume, `earth.global_temperature`; refs learnt
+until `earth.REF_FREEZE` = 300 Myr, then kept):
+
+| t (Myr) | dT 15 / 20 | pCO2 15 / 20 | source 15 / 20 | sink 15 / 20 | src ref 15 / 20 | sink ref 15 / 20 | land supply 15 / 20 | cont % 15 / 20 |
+|---|---|---|---|---|---|---|---|---|
+| 100 | 6.3 / 4.8 | 3168 / 1813 | 2656 / 2816 | 357 / 486 | 2281 / 2338 | 475 / 463 | 94 / 99 | 44.5 / 42.2 |
+| 160 | -5.6 / -2.6 | 232 / 379 | 1160 / 1927 | 359 / 465 | 1987 / 2273 | 497 / 522 | 160 / 168 | 39.9 / 39.2 |
+| 200 | -4.8 / 3.7 | 494 / 1365 | 1369 / 2816 | 455 / 560 | 1675 / 2296 | 566 / 543 | 178 / 136 | 39.6 / 39.3 |
+| 240 | 1.3 / 5.7 | 1158 / 1668 | 2407 / 3446 | 823 / 560 | 1627 / 2332 | 691 / 522 | 223 / 133 | 39.8 / 39.8 |
+| 300 | 10.3 / 3.3 | 3905 / 767 | 3671 / 2517 | 924 / 505 | 1973 / 2384 | 745 / 523 | 154 / 129 | 42.4 / 39.2 |
+| 340 | 12.2 / 4.4 | 4195 / 835 | 2609 / 2775 | 665 / 543 | (kept) | (kept) | 117 / 138 | 43.2 / 40.1 |
+| 380 | 15.5 / 0.8 | 6368 / 281 | 2236 / 1735 | 587 / 436 | 1973 / 2384 | 745 / 523 | 108 / 133 | 43.3 / 40.7 |
+
+The source's parts over the spin-up 100-300 Myr: ridge 158 against 208, the arcs' nominal 1530 against 2120 (from
+120 to 260 Myr the 15 km arm's arcs and ridges both sit 25-60% lower: 830-1760 against 1730-2700, 73-177 against
+160-252).
+
+Reading: after 300 Myr the two arms' **absolute** source and sink are about the same (2240-2610 against
+1735-2775; 400-770 against 420-545). What differs is what they're measured against. In the 15 km arm the source's
+reference was learnt during a 140 Myr spell of weak arcs and ridges (1973 against 2384, -17%), and the sink's during
+the high weathering supply of 220-300 Myr (745 against 523, +42%). Kept from 300 Myr on, they put the source at
+1.13-1.32 of its reference and the sink at 0.54-1.03 of its own, so CO2 piles up for 100 Myr: the frozen-reference
+mechanism (PW-558/559 B) locking a spin-up transient in. Over all 40 runs, the end T follows that late imbalance
+(correlation 0.80 with ln(source index) - ln(sink index), 300-400 Myr) and hardly the continental area (0.15).
+
+### Is the spin-up dip chance or the bound?
+
+Over the 20 seeds, the 15 km arm's spin-up source (100-300 Myr mean) is lower on 17 of 20 (median -161, ~-7%), and so
+its kept source reference (17 of 20). Its late source is higher on 14 of 20, and the late imbalance larger on 12 of 20
+(median +0.05 e-folds). On 7 seeds with the parts traced (1-6, 8):
+
+| seed | ridge 15 / 20 | arcs' nominal 15 / 20 | plate speed (cm/yr) 15 / 20 | area gain (`shrink`) 15 / 20 | arc gain 15 / 20 | cont % at 100 Myr 15 / 20 | end T 15 / 20 |
+|---|---|---|---|---|---|---|---|
+| 1 | 160 / 187 | 1840 / 1990 | 4.13 / 4.47 | 1.23 / 0.93 | 1.21 / 1.38 | 44.1 / 42.2 | 19.6 / 16.6 |
+| 2 | 158 / 208 | 1530 / 2120 | - | 1.47 / 1.12 | 1.23 / 1.47 | 44.5 / 42.2 | 28.8 / 15.8 |
+| 3 | 159 / 178 | 1680 / 1820 | 4.49 / 4.33 | 1.06 / 0.74 | 1.35 / 1.53 | 42.8 / 42.2 | 13.1 / 14.3 |
+| 4 | 181 / 179 | 1860 / 1920 | 4.93 / 4.50 | 1.23 / 1.01 | 1.26 / 1.58 | 43.3 / 41.6 | 17.5 / 14.8 |
+| 5 | 160 / 172 | 1690 / 1890 | 4.14 / 4.16 | 1.27 / 1.07 | 1.45 / 1.82 | 42.3 / 42.1 | 17.5 / 14.3 |
+| 6 | 165 / 180 | 1950 / 1930 | 4.16 / 4.51 | 1.46 / 0.96 | 1.37 / 1.49 | 44.8 / 42.1 | 13.1 / 16.5 |
+| 8 | 167 / 185 | 1810 / 2020 | 3.99 / 4.16 | 1.38 / 1.07 | 1.32 / 1.42 | 42.5 / 40.8 | 16.6 / 15.0 |
+
+(spin-up means; plate speed every 20 Myr, missing for seed 2's first trace)
+
+So it isn't only chance: with the 15 km bound the start-up continents keep more thin margin (more continental area
+at 100 Myr on 7 of 7), the area thermostat runs subduction erosion harder (7 of 7), and the ridges and arcs, the
+spin-up CO2 source, are weaker (6 of 7 each; plates slower on 4 of 6). The reference learns that weaker source as
+the planet's balance. When the source recovers after the freeze the world warms. Mostly this stays in the band (median
+end T unchanged). On seed 2 the dip was deepest (-28% arcs) and the freeze caught a weathering-supply peak.
+
+Why weaker arcs and ridges is not shown yet. The likeliest reading: thin margin cells kept as continental crust on a
+plate's leading edge count as continent at its trenches, so they meet a trench as continental crust (buoyant,
+collision rather than subduction), which shortens the subducting trench and slows the plates. Unverified: the trace
+doesn't count trench edges by crust type.
+
+### Candidate fixes (none made)
+
+1. **Thin continental crust subducts.** Below BECOMES_CONT_KM, a continental cell on the sinking side of a trench is
+   taken down like ocean floor, not jammed like a continent (Earth's thinned margins are partly subducted before a
+   collision locks). Check first: count trench edges whose sinking cell is 15-20 km continental, per arm (cheap,
+   envdraw.py plus `bd.at_trenches`). If they're the difference, this is the mechanism-level fix and keeps the
+   flicker cure.
+2. **Thin margin outside the area thermostat** (PW-1314): count only crust at least BECOMES_CONT_KM thick as the
+   continents' area, so the kept margins don't drive subduction erosion. That treats the extra erosion, not the weak
+   source.
+3. **The frozen reference's fragility** is not this lane's: any change in the spin-up's plate history can lock a
+   transient in at 300 Myr (seeds 12 and 20 do it with the 20 km bound). Learning the source's reference as a
+   longer mean, or not before the spin-up's start-up continents have dispersed, would make all arms sturdier. That
+   is a reference-scheme decision (PW-558/559's owner ruling), not a fix for PW-1295.
+4. Not proposed: a different shred bound (17.5 km) to "split the difference". It would trade the flicker cure for a
+   smaller version of the same shift, with nothing to justify the number.
+
+Verdict for the coordinator: the band failure on seed 2 is mostly chaos in which run trips the frozen references
+(1/20 against 0/20). But the bound does move the spin-up source down systematically (17/20), which makes such trips a
+little likelier, and at L5 / 400 Myr it raises continental area by ~2 points. Candidate 1's check is the cheap next
+step. The bound stays off on main until then.
