@@ -35,6 +35,7 @@ its reference from CRU's land 20-60 deg summer share (0.62). Then re-check 0-20 
 interacts with the deep-boundary-layer candidate (PW-1279's lane 121 arm) through the reference.
 
 ## Updates
+- 2026-11-02: Correction to the update above: open water and inspector is PW-1336 (not 1335).
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 125: confirmed; fold with PW-1334 (cloud first, then the split's reading and cloud_ref) and PW-1335 (open water, inspector).
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 125, diagnosis only (Earth model vs CRU cloud/sunshine and coldest month, then worlds).
 - 2026-11-02: Created from inbox draft draft-summer-split-overcast-tropics.md (found by lane121).
