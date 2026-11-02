@@ -879,6 +879,32 @@ def grow_regions(seed, seeds, rates, nbr_off, nbr_idx, n):
     return label
 
 
+@njit(cache=True, parallel=True)
+def grow(mask, nbr_off, nbr_idx, out):
+    """out = mask | (some neighbour is in mask): one ring outward (the bool the numpy form
+    `mask | (np.add.reduceat(mask[nbr_idx], nbr_off[:-1]) > 0)` makes with an (edges,) temporary)."""
+    for i in prange(mask.shape[0]):
+        v = mask[i]
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            if mask[nbr_idx[e]]:
+                v = True
+                break
+        out[i] = v
+
+
+@njit(cache=True, parallel=True)
+def has_unset_nbr(mask, nbr_off, nbr_idx, out):
+    """out = mask & (some neighbour is not in mask): the cells on the edge of a region."""
+    for i in prange(mask.shape[0]):
+        v = False
+        if mask[i]:
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                if not mask[nbr_idx[e]]:
+                    v = True
+                    break
+        out[i] = v
+
+
 @njit(cache=True)
 def components(mask, nbr_off, nbr_idx):
     """Connected regions of a cell mask: (label per cell, -1 outside the

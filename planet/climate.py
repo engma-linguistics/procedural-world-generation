@@ -1814,15 +1814,53 @@ def pet_months(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
     return _pet(insolation(lat, tilt), month_temps(lat, temp, t_warm, t_cold))
 
 
+@njit(cache=True, parallel=True)
+def _pet_k(ra, t_m, days, latent, out):
+    for i in prange(t_m.shape[1]):
+        for m in range(12):
+            v = ra[m, i] / latent * (t_m[m, i] + 5) / 100
+            out[m, i] = (v if v > 0.0 else 0.0) * days[m]  # (not max(): np.maximum(-0.0, 0) is +0.0)
+
+
 def _pet(ra, t_m):
     """Oudin PET, mm per month, from top-of-atmosphere sunshine ra (MJ/m2/day) and temperature t_m."""
+    if ra.shape == t_m.shape == (12, ra.shape[-1]) and ra.dtype == t_m.dtype == np.float64:
+        out = np.empty(t_m.shape)
+        _pet_k(ra, t_m, MONTH_DAYS, float(LATENT), out)
+        return out
     return np.maximum(ra / LATENT * (t_m + 5) / 100, 0) * MONTH_DAYS[:, None]
+
+
+@njit(cache=True, parallel=True)
+def _month_temps(north, temp, t_warm, t_cold, out):
+    """month_temps in one pass per cell (numpy's arithmetic in its order: bit-identical)."""
+    for i in prange(temp.shape[0]):
+        peak = 6 if north[i] else 0
+        amp = 0.5 * (t_warm[i] - t_cold[i])
+        for m in range(12):
+            v = temp[i] + amp * np.cos(2 * np.pi * (m - peak) / 12)
+            out[m, i] = min(max(v, t_cold[i]), t_warm[i])
+
+
+def _f64(*arrs):
+    """The arrays as 1-D float64 of one length (scalars broadcast), or None if any is not float (or not 1-D)."""
+    arrs = [np.asarray(a) for a in arrs]
+    if any(a.dtype != np.float64 or a.ndim > 1 for a in arrs):
+        return None
+    n = max(a.shape[0] if a.ndim else 1 for a in arrs)
+    return [np.ascontiguousarray(np.broadcast_to(a, (n,))) for a in arrs]
 
 
 def month_temps(lat, temp, t_warm, t_cold) -> np.ndarray:
     """Mean temperature of each month (C, shape (12, n)): a sine between
     the coldest and warmest month around the annual mean, peaking in July
     (north) or January (south), clipped to [t_cold, t_warm]."""
+    f = _f64(temp, t_warm, t_cold)
+    lat = np.asarray(lat)
+    if f is not None and lat.ndim == 1 and lat.shape[0] == f[0].shape[0]:
+        out = np.empty((12, lat.shape[0]))
+        _month_temps(lat >= 0, *f, out)
+        return out
     m = np.arange(12)[:, None]
     peak = np.where(np.asarray(lat) >= 0, 6, 0)[None, :]
     amp = 0.5 * (t_warm - t_cold)
@@ -1835,11 +1873,41 @@ _HALF_COS = (1 + 2 * np.cos(np.pi / 6) + 2 * np.cos(np.pi / 3)) / 6
 SNOW_DDF = 3.0  # mm of snow melted per positive degree-day (icemass.py's snow DDF; months melt at the monthly mean, no day-to-day scatter: PW-877)
 
 
+@njit(cache=True, parallel=True)
+def _month_rain(p_jul, p_jan, half_cos, out):
+    """month_rain in one pass per cell (the sums add the months in order, as numpy's axis-0 sums do)."""
+    for i in prange(p_jul.shape[0]):
+        pj, pa = p_jul[i], p_jan[i]
+        mean = (pj + pa) / 24.0
+        a = min(max((pj - pa) / max(pj + pa, 1e-9) / half_cos, -1.0), 1.0)
+        s_jul, s_all = 0.0, 0.0
+        for m in range(12):
+            v = mean * (1 + a * np.cos(2 * np.pi * (m - 6) / 12))
+            out[m, i] = v
+            s_all = v if m == 0 else s_all + v
+            if m == 3:
+                s_jul = v
+            elif 3 < m <= 8:
+                s_jul = s_jul + v
+        s_jan = max(s_all - s_jul, 1e-12)
+        s_jul = max(s_jul, 1e-12)
+        for m in range(12):
+            if 3 <= m <= 8:
+                out[m, i] = out[m, i] * (0.5 * pj / s_jul)
+            else:
+                out[m, i] = out[m, i] * (0.5 * pa / s_jan)
+
+
 def month_rain(p_jul, p_jan) -> np.ndarray:
     """Rain (mm) in each month, shape (12, n), from the two half-year rates
     (mm/yr; Apr-Sep, Oct-Mar): a cosine through the year peaking in July
     (or January, when that half is wetter), as koppen() assumes, rescaled
     so each half-year's months add up to exactly its rate / 2."""
+    f = _f64(p_jul, p_jan)
+    if f is not None and f[0].shape == np.shape(p_jul):
+        out = np.empty((12, f[0].shape[0]))
+        _month_rain(f[0], f[1], _HALF_COS, out)
+        return out
     m = np.arange(12)[:, None]
     mean = (p_jul + p_jan) / 24.0
     a = np.clip((p_jul - p_jan) / np.maximum(p_jul + p_jan, 1e-9) / _HALF_COS, -1, 1)
@@ -1857,6 +1925,26 @@ def _erf(x):
     t = 1 / (1 + 0.3275911 * x)
     y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496735) * t + 0.254829592) * t * np.exp(-x * x)
     return sg * y
+
+
+@njit(cache=True, parallel=True)
+def _snowpack(t_m, p_m, days, ddf, snow, water):
+    """months' snowpack: snow falls below 0 C (half of it between -2 and +2 C), melts ddf mm per degree-day;
+    two years from bare ground, per cell (the same arithmetic, in the same order, as the numpy loop it replaced)."""
+    for i in prange(t_m.shape[1]):
+        share = np.empty(12)
+        cap = np.empty(12)
+        for m in range(12):
+            share[m] = min(max((2.0 - t_m[m, i]) / 4.0, 0.0), 1.0)
+            cap[m] = ddf * (t_m[m, i] if t_m[m, i] > 0.0 else 0.0) * days[m]
+        pack = 0.0
+        for _ in range(2):
+            for m in range(12):
+                pack = pack + share[m] * p_m[m, i]
+                melt = min(pack, cap[m])
+                pack = pack - melt
+                snow[m, i] = pack
+                water[m, i] = (1 - share[m]) * p_m[m, i] + melt
 
 
 def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None) -> dict:
@@ -1889,16 +1977,8 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
     c_jan = 0.5 if cloud_jan is None else np.asarray(cloud_jan)
     cloud = np.where(jul, c_jul, c_jan)
     par = 0.48 * ra * (0.25 + 0.5 * sunshine(cloud)) * MONTH_DAYS[:, None]
-    snow_share = np.clip((2.0 - t_m) / 4.0, 0, 1)
-    melt_cap = SNOW_DDF * np.maximum(t_m, 0) * MONTH_DAYS[:, None]
-    pack = np.zeros(lat.shape)
-    snow, water = np.zeros_like(t_m), np.zeros_like(t_m)
-    for _ in range(2):
-        for m in range(12):
-            pack = pack + snow_share[m] * p_m[m]
-            melt = np.minimum(pack, melt_cap[m])
-            pack = pack - melt
-            snow[m], water[m] = pack, (1 - snow_share[m]) * p_m[m] + melt
+    snow, water = np.empty_like(t_m), np.empty_like(t_m)
+    _snowpack(t_m, p_m, MONTH_DAYS, SNOW_DDF, snow, water)
     # degree-days above 5 C, the days scattered around each month's mean (sd
     # 4 C, as Reeh 1991 for melt): a month averaging 5 C still has warm days
     x = (t_m - 5.0) / 4.0
