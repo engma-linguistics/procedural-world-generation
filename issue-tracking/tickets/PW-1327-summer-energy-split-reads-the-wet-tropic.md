@@ -2,7 +2,7 @@
 id: PW-1327
 title: "Summer energy split reads the wet tropics' sky cover as their sunshine (0.12-0.17 vs CRU 0.4-0.5): wet tropical summers 1.5-4 C cool"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -35,6 +35,7 @@ its reference from CRU's land 20-60 deg summer share (0.62). Then re-check 0-20 
 interacts with the deep-boundary-layer candidate (PW-1279's lane 121 arm) through the reference.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 126 (merged fdc631a4): see docs/review/base-climate/tropical-cloud/round1.md. Earth warm-land shade 0.31/0.42/0.54 vs CRU 0.27/0.41/0.53; land >=35 C 7.9% -> 0.9% (NCEP 1.7%); Lake Victoria evap 1357 -> 1635 mm. L6 judge 32/36 vs 32/36, no hard failures, dT/CO2 unmoved; arid -2.0 pts, trees +5.7.
 - 2026-11-02: Correction to the update above: open water and inspector is PW-1336 (not 1335).
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 125: confirmed; fold with PW-1334 (cloud first, then the split's reading and cloud_ref) and PW-1335 (open water, inspector).
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 125, diagnosis only (Earth model vs CRU cloud/sunshine and coldest month, then worlds).

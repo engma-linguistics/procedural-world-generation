@@ -2,7 +2,7 @@
 id: PW-1326
 title: "Summer split heats dry sunny land into a fixed 1500 m layer with no long-wave loss: subtropics +2.1 C, 8% of land >= 35 C (obs 2%)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -45,4 +45,5 @@ alone now would be a partial fix (memory: no temporary fixes).
 - [ ] judge (36 worlds) on the chosen arm, after the owner's go
 
 ## Updates
+- 2026-11-02: Status needs-decision -> done. Lane 126 (merged fdc631a4) folded B+C in with the cloud gate and sunshine re-anchor, as planned on the desk's D41 card: Earth warmest month at 20-40 deg +2.1 -> +0.4 C; land >=35 C 7.9% -> 0.9%; Sahara +4.7 -> +0.8. Costs: US SW -5.2 C, Arabia -2.5, India -1.2. L6 judge 32/36 vs 32/36.
 - 2026-11-02: Created from inbox draft draft-summer-split-deep-dry-boundary-layer.md (found by lane121).

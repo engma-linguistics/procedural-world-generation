@@ -1,5 +1,6 @@
 ---
-title: "Summer subtropical land too sunny after the stratus gate (20-40 deg 0.76 vs CRU 0.67), worst where the rain is too low"
+id: PW-1348
+title: Summer subtropical land too sunny after the stratus gate (20-40 deg 0.76 vs CRU 0.67), worst where the rain is too low
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane126
 blocked_by: []
 relates: [PW-1334, PW-1326, PW-015, PW-228]
 refs: ["planet/climate.py::_layer_gate", "planet/climate.py::clouds", "planet/climate.py::_summer_split", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/screen.py, docs/review/base-climate/summer-heat/diagnosis.md, data/earth/clouds_L7.npz, "Eastman & Warren 2014 (J. Climate 27:2386)"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -31,3 +34,6 @@ should come back as cumulus (`cloud_cu`) and monsoon deep cloud, from the right 
 Try: once PW-015 / PW-228's rain lands, re-measure. If W Europe's summer is still 0.1 too sunny, look at `cloud_cu`'s
 instability threshold over midlatitude summer land.
 - [ ] 20-40 deg summer sunshine within ~0.05 of CRU without losing the tropical shade bands
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-subtropical-summer-too-sunny-after-cloud-gate.md (found by lane126).

@@ -2,7 +2,7 @@
 id: PW-1336
 title: Lake evaporation (open_water_evap) and the server's cell inspector feed sky cover where they need sunshine
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -28,4 +28,5 @@ floodplain (PW-358: 1415 / 1406 mm) and the earth_check closed basins.
 - [ ] lake_evap on shade; Earth's closed basins stay closed; inspector chart equals the plants' months
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 126 (merged fdc631a4): see docs/review/base-climate/tropical-cloud/round1.md. Earth warm-land shade 0.31/0.42/0.54 vs CRU 0.27/0.41/0.53; land >=35 C 7.9% -> 0.9% (NCEP 1.7%); Lake Victoria evap 1357 -> 1635 mm. L6 judge 32/36 vs 32/36, no hard failures, dT/CO2 unmoved; arid -2.0 pts, trees +5.7.
 - 2026-11-02: Created from inbox draft draft-open-water-and-inspector-read-sky-cover.md (found by lane125).

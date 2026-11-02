@@ -1,5 +1,6 @@
 ---
-title: "Congo basin loses its low cloud under the land stratus stability gate (sky 60% vs 70-80, sunshine 0.57 vs CRU 0.45)"
+id: PW-1347
+title: Congo basin loses its low cloud under the land stratus stability gate (sky 60% vs 70-80, sunshine 0.57 vs CRU 0.45)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane126
 blocked_by: []
 relates: [PW-1334, PW-232, PW-228]
 refs: ["planet/climate.py::_layer_gate", "planet/climate.py::clouds", "planet/climate.py::_season_inputs", "tools/earth_check.py::CLOUD_REGIONS", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/screen.py, docs/review/base-climate/tropical-cloud/ec.sh, data/earth/clouds_L7.npz, "Klein & Hartmann 1993 (J. Climate 6:1587)", "Eastman & Warren 2014 (J. Climate 27:2386)"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Try: read a source on the Congo / southern West Africa low cloud (e.g. the DACCI
 inversion that reaches over the coast (as `cloud_coast` drifts the Sc deck), or let the gate use the upwind sea's
 stability. Check the Congo and Amazon rows and the three warm rain bands in round1.md's screen.
 - [ ] Congo sky in 70-80% and the warm-land shade bands still within ~0.05 of observed
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-congo-low-cloud-under-stability-gate.md (found by lane126).
