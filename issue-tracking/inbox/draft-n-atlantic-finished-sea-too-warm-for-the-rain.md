@@ -10,7 +10,7 @@ impact: med
 found_by: lane134
 blocked_by: []
 relates: [PW-1364, PW-593, PW-589, PW-1362]
-refs: [docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/seaparts.py, docs/review/base-climate/rain-supply/seaair.py, "planet/climate.py::compute", "planet/climate.py::sea_surface", "planet/ocean.py::winter_half", "planet/ocean.py::solve", tools/moisture_regions.py]
+refs: [docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/track.py, docs/review/base-climate/rain-supply/seaparts.py, docs/review/base-climate/rain-supply/seaair.py, "planet/climate.py::compute", "planet/climate.py::sea_surface", "planet/ocean.py::winter_half", "planet/ocean.py::solve", tools/moisture_regions.py]
 ---
 
 ## Description
@@ -44,8 +44,14 @@ There are two parts:
   take-off may be too small in the N Atlantic. Note that NCEP's air sits below the real SST in winter (cold-air
   outbreaks), and the repo has no observed SST to compare against.
 
+It also dries the ice sheets (lane 134b, round2.md section 5). The rain's global mean is fixed, so the box's extra
+rain is taken out of every other cell. On the same planet the land ice gets 3-5% less snow, while its summers don't
+change. That gives fewer glacial maxima (23 -> 13 in the L6 judge) and most of PW-1364's late dT +0.57 C. Fixing
+this box should take most of that back.
+
 What I'd try: PW-593 first (the swing), then re-measure. If the annual stays 2-3 C warm, look at the inflow's heat
 loss (`moc_lambda`) against an observed SST climatology.
 
 - [ ] N Atlantic storm-track winter-half sea air within ~2 C of NCEP on Earth L6
 - [ ] its winter evaporation within 0.7-1.3x NCEP, with the humid coasts' and the interiors' rain ratios no worse
+- [ ] the L6 paired judge's late dT against PW-1364's merge: the +0.57 C (with its fewer glacial maxima) shrinks, or is shown to be sound on its own

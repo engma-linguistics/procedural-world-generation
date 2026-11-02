@@ -2,7 +2,8 @@
 
 Status: **the paired judge finished, and it passes the bar.** Hard failures are 0 in both arms. Soft passes are
 cand 30/36 against main 32/36 (McNemar p 0.75; lane 24's null change moves 7-8 draws). One measure moved and needs
-the coordinator's call: late dT +0.57 C warmer [+0.24, +1.56]. Hot desert also moved, +1.3 points. Arm a1 is a
+the coordinator's call: late dT +0.57 C warmer [+0.24, +1.56]. Section 5 (lane 134b) explains it: not a
+bug; the ice sheets get 3-5% less snow, a side effect of the over-wet N Atlantic box under the fixed global rain. Hot desert also moved, +1.3 points. Arm a1 is a
 second rain pass on the overturning's sea, commit c680e951. Not merged.
 
 ## 1. Diagnosis (the gate)
@@ -220,6 +221,116 @@ gitignored, a real directory, not a link).
 - **PW-1362:** fold its swing part into PW-593 (the coordinator's call); the Gulf goes to the upwelling draft.
   PW-593 is the lever for both PW-1362 and the N Atlantic overshoot that this fix exposes.
 
+## 5. Where the late dT +0.57 C comes from (lane 134b, 2026-11-02)
+
+**In short:** it is not a bug. The land ice sheets get **3-5% less snow** in the candidate, and smaller ice sheets
+reflect less sunlight. That is a side effect of a known error. The N Atlantic box now rains too much (section 2:
+2765 mm in winter against GPCP 1651). The rain's global mean is fixed (`scale` in `rain_pass`), so the extra rain
+over that sea is taken out of every other cell, the ice sheets included. Clouds play no part: the run's dT has no
+cloud term.
+
+### 5a. Bug check (reading the code, plus one Earth slice)
+
+- **The second pass replaces the first; nothing is added twice.**
+  - `rain_pass` returns the rain, sea evaporation, vapour, clouds, sun and `d_sum`.
+  - After `ocean.solve`, all of them are taken from pass 2: `R` is reassigned, `fin` gets pass 2's rain, and
+    `air["d_sum"]` is set to pass 2's, not added to pass 1's.
+  - Pass 2's own air is built with `d_sum=None`, as pass 1's is, so the summer split is not counted twice.
+  - The latent heat is not counted twice: the summer split is the only place the evaporation's heat enters.
+  - Only one cloud field reaches the outputs and the vegetation (pass 2's).
+  - The final `water_balance` and Köppen use pass 2's rain. The overturning keeps pass 1's fresh water, by design.
+  - The `rain_state` handed to the next update is pass 2's, so the next pass 1 warm-starts from it. The error is
+    the warm start's ~1% (PW-387).
+- **Earth L6 water budget** (`earthw.py`, both arms): global P 1114 / 1107 mm, sea evaporation + land AET
+  1136 / 1130.
+  - The 2% gap is the same in both arms (it is the old "fresh water doesn't balance" warning, which both arms print).
+  - Land temperature by band changes by at most 0.12 C.
+- **There is no top-of-atmosphere budget to check.** In a run, dT is `earth.global_temperature`'s 0-D sum: the CO2
+  term + the land-ice albedo term (from the iced share) + CH4/N2O + the star + the offset. Clouds and snow albedo on
+  bare ground have no term in it.
+  - So the brief's candidate 2 (clouds) can reach dT only through the ice sheets' melt or through weathering.
+  - Candidate 3 (snow) can reach it only through the land ice sheets' area.
+
+### 5b. The late dT, split into its parts (4 re-run draws)
+
+These are the `l6fix` draws at roll 0.0005, re-run on both arms from `git archive` copies, with late means over
+600-1000 Myr. Each part is cand minus main, in C.
+
+| draw | late dT | CO2 term | ice albedo | CH4/N2O | ice share | snow gained on the sheets |
+|---|---|---|---|---|---|---|
+| 619496 | +5.14 | +3.60 | +0.80 | +0.61 | -0.017 | -13.0 (16.5 -> 3.5) |
+| 957317 | +1.83 | +1.16 | +0.45 | +0.21 | -0.014 | -10.0 (36.9 -> 26.8) |
+| 583167 | +0.70 | -0.12 | +0.57 | +0.14 | -0.021 | -12.8 (29.0 -> 16.2) |
+| 639472 | -1.46 | -1.06 | -0.14 | -0.15 | +0.009 | -7.3 (34.3 -> 27.0) |
+| mean | +1.55 | +0.90 | +0.42 | +0.20 | | |
+
+(The parts add up to the target. The dT relaxes toward the target over 5 Myr, which accounts for the rest.)
+
+- **The CO2 term** has the largest swings, but they go both ways and are chaos, not the fix.
+  - Each draw's CO2 follows things that differ by chance between the arms:
+    - the volcanic source (ln, cand minus main: +0.16, -0.01, -0.11, -0.15), because the tectonics diverge;
+    - the weathering reference learnt in the first 300 Myr (+0.22, -0.06, +0.01, -0.09);
+    - the eroding land's supply (+0.11, -0.18, +0.02, -0.08).
+  - This matches the judge's late CO2 "not moved" (+0.08 [-0.03, +0.18]).
+- **The ice albedo term** is positive in 3 of the 4 draws (mean +0.42). The CH4/N2O term follows dT (~0.11 C per C).
+- **The snow gained by the ice sheets is lower in all 4 draws**, even in 639472, where the candidate is the colder
+  arm and has more ice. That points to a systematic cause, which 5c tests.
+
+### 5c. The same planet under both climates (the swap)
+
+`track.py` runs one arm's trajectory. At every climate update it also runs the other arm's `climate.compute` on the
+same inputs (ground, ice, dT, rain_start), so the planet is held fixed and only the climate code differs. Main's
+trajectory, seeds 957317 and 583167, 600-1000 Myr:
+
+| | glacial updates (957317 / 583167) | warm updates |
+|---|---|---|
+| rain on the land ice | -3.1% / -3.1% | -5.4% / -5.1% |
+| rain on land with a warm half below 5 C | -3.1% / -2.9% | -3.8% / -4.9% |
+| warm-half air over the ice, the bare ground under it, land poleward of 45 deg | within 0.04 C | within 0.04 C |
+| weathering sink (same ground) | -1.9% / -2.0% | -2.5% / -2.8% |
+
+- **The ice sheets' snow falls by 3-5%. Their summers don't change.** So the sheets grow less and retreat sooner:
+  - glacial maxima fall from 23 to 13 (judge);
+  - the iced share falls by ~0.015 (5b), and the ice albedo term rises by ~+0.4-0.8 C.
+- **Clouds (candidate 2): ruled out.** The summer air over the ice and over the land poleward of 45 deg moves by
+  less than 0.05 C, so the cloud change doesn't reach the melt. dT has no cloud term (5a).
+- **The weathering sink is 2-2.5% lower** on the same ground, because the land is drier: land rain falls by 20-34
+  mm/yr. That doesn't move dT much:
+  - the sink's reference is learnt over 0-300 Myr under the candidate's own climate, when the deficit is already
+    -1.9% (`track.py` along both arms' trajectories of 619496 and cand 957317), so the reference takes up most of it;
+  - the ~0.5% left over is worth about +0.05 C through the thermostat (ln 0.005 / (c + a / G) with c 0.07,
+    a ~0.18, G 4.33).
+- **Why the snow falls, and where:**
+  - The rain kernel's global mean is fixed (`scale = mean_mm x wet / mean(r)`).
+  - On Earth L6 the candidate's sea rain at 45-60 N goes up from 993 to 1368 mm (`earthw.py`), mostly in the N
+    Atlantic box, which is ~1.7x GPCP (section 2).
+  - Most other cells give up ~2-3% to pay for it. That includes Antarctica's land (216 -> 202, -6.5%), far from
+    the N Atlantic.
+  - So the ice sheets' lost snow is the over-wet N Atlantic's rain, taken from the rest of the globe. The cause is
+    that sea being too warm (draft-n-atlantic-finished-sea-too-warm-for-the-rain, PW-593's winter swing), not the
+    second pass itself.
+
+### 5d. Verdict and merge recommendation
+
+- **What causes the warming:** the land ice sheets get 3-5% less snow, so there are fewer and smaller glacial
+  maxima, and the ice albedo term rises.
+  - The late window is near the glaciation threshold. Main's median late dT is 0.22 and cand's 1.77; each glacial
+    maximum is several C colder.
+  - So a small, steady loss of snow moves the late mean by more than its direct ~+0.4 C. The judge's +0.57 is
+    within that range.
+  - The CO2 term's large swings are chaos.
+- **Sound or bug:** sound. It is the correct mechanism (the rain sees the sea the climate finishes with) showing up
+  a known error elsewhere: the finished N Atlantic is too warm, and under a fixed global rain it takes snow from the
+  ice sheets. There is no double-counting, and the water budget is unchanged.
+- **Recommendation: merge.** It is a soundness fix, and the memory's rule applies: merge the correct mechanism even
+  if a fitted kernel downstream regresses. The warming should mostly go away when the N Atlantic overshoot is fixed
+  (PW-593, then draft-n-atlantic-finished-sea-too-warm-for-the-rain). The draft now names the ice sheets' snow as a
+  bar to check. There is no fix to make in `planet/`.
+
+Scripts (in this directory): `split.py` (the per-draw split from `ice_diag` jsons), `track.py` (the swap along a
+trajectory), `rice.py` (its summary), `earthw.py` (the Earth water budget). Scratch for lane 134b deleted after the
+read.
+
 ## Files
 
-ec2.sh, summ2.py (lane 132's harness pointed at l134), seaparts.py, seaair.py (lane 132's), launch.sh (a copy of $S/launch.sh), why.py.
+ec2.sh, summ2.py (lane 132's harness pointed at l134), seaparts.py, seaair.py (lane 132's), launch.sh (a copy of $S/launch.sh), why.py; lane 134b: split.py, track.py, rice.py, earthw.py.
