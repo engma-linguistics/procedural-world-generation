@@ -1,0 +1,194 @@
+{
+ "a": "d904d6",
+ "b": "599c28",
+ "centres_km_apart": 3800.0,
+ "overlap_km": 208.0,
+ "overlap_mid_km": -0.0,
+ "q_m3s": 100.0,
+ "stations": {
+  "B_edge": {
+   "d_km": -99.00116893175982,
+   "line_km": 2390.0,
+   "n_land": 1278,
+   "dh_median_abs": 103.89786856837577,
+   "dh_p95_abs": 369.34194811972486,
+   "dh_bias": 87.15652201416135,
+   "dslope_median_deg": 0.44776713848114014,
+   "dslope_p95_deg": 2.71846342086792,
+   "coast_mismatch_share": 0.0029288702928870294,
+   "coast_breaks_per_100km": 0.08368200836820083,
+   "river_crossings_A": 0,
+   "river_crossings_B": 0,
+   "river_unmatched_A": 0,
+   "river_unmatched_B": 0,
+   "river_breaks_per_100km": 0.0,
+   "river_matched": 0,
+   "river_offset_km_median": null,
+   "river_offset_km_max": null,
+   "river_log2_q_ratio_median": null,
+   "landform_mismatch_share": 0.017996870109546165,
+   "biome_mismatch_share": 0.1564945226917058
+  },
+  "middle": {
+   "d_km": -0.0011689317598211346,
+   "line_km": 3923.0,
+   "n_land": 2578,
+   "dh_median_abs": 63.8808044032462,
+   "dh_p95_abs": 450.5972534258553,
+   "dh_bias": 50.436307482085404,
+   "dslope_median_deg": 0.5161569118499756,
+   "dslope_p95_deg": 2.906412363052368,
+   "coast_mismatch_share": 0.0030588835075197555,
+   "coast_breaks_per_100km": 0.05098139179199593,
+   "river_crossings_A": 0,
+   "river_crossings_B": 0,
+   "river_unmatched_A": 0,
+   "river_unmatched_B": 0,
+   "river_breaks_per_100km": 0.0,
+   "river_matched": 0,
+   "river_offset_km_median": null,
+   "river_offset_km_max": null,
+   "river_log2_q_ratio_median": null,
+   "landform_mismatch_share": 0.004654771140418929,
+   "biome_mismatch_share": 0.21799844840961985
+  },
+  "A_edge": {
+   "d_km": 98.99883106824018,
+   "line_km": 2390.0,
+   "n_land": 1357,
+   "dh_median_abs": 33.64241275717603,
+   "dh_p95_abs": 230.3191401359709,
+   "dh_bias": 21.44876579115024,
+   "dslope_median_deg": 0.326338529586792,
+   "dslope_p95_deg": 1.557294487953186,
+   "coast_mismatch_share": 0.0020920502092050207,
+   "coast_breaks_per_100km": 0.04184100418410042,
+   "river_crossings_A": 0,
+   "river_crossings_B": 0,
+   "river_unmatched_A": 0,
+   "river_unmatched_B": 0,
+   "river_breaks_per_100km": 0.0,
+   "river_matched": 0,
+   "river_offset_km_median": null,
+   "river_offset_km_max": null,
+   "river_log2_q_ratio_median": null,
+   "landform_mismatch_share": 0.018422991893883568,
+   "biome_mismatch_share": 0.16801768607221812
+  }
+ },
+ "owner_line": {
+  "owner": "nearer centre",
+  "stations": {
+   "held -50": {
+    "d_km": -50.0,
+    "n": 996,
+    "n_land": 655,
+    "dh_median_abs": 95.97431949792895,
+    "dh_p95_abs": 439.1613941382608,
+    "dslope_median_deg": 0.5304049849510193,
+    "dslope_p95_deg": 2.2497336864471436,
+    "coast_mismatch_share": 0.0,
+    "coast_pairs": {
+     "0/1": 0,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.14045801526717558,
+    "landform_mismatch_share": 0.007633587786259542
+   },
+   "held -10": {
+    "d_km": -10.0,
+    "n": 996,
+    "n_land": 658,
+    "dh_median_abs": 87.89492698517333,
+    "dh_p95_abs": 477.01169288257364,
+    "dslope_median_deg": 0.4323854148387909,
+    "dslope_p95_deg": 2.672524929046631,
+    "coast_mismatch_share": 0.0,
+    "coast_pairs": {
+     "0/1": 0,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.21124620060790272,
+    "landform_mismatch_share": 0.007598784194528876
+   },
+   "line": {
+    "d_km": 0.0,
+    "n": 1990,
+    "n_land": 1310,
+    "dh_median_abs": 69.72333164375192,
+    "dh_p95_abs": 463.0000714490052,
+    "dslope_median_deg": 0.4610331654548645,
+    "dslope_p95_deg": 2.9050118923187256,
+    "coast_mismatch_share": 0.0005025125628140704,
+    "coast_pairs": {
+     "0/1": 1,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.20458015267175572,
+    "landform_mismatch_share": 0.004580152671755725
+   },
+   "ramp +20": {
+    "d_km": 20.0,
+    "n": 1928,
+    "n_land": 1260,
+    "dh_median_abs": 67.3128564137329,
+    "dh_p95_abs": 459.16267916131414,
+    "dslope_median_deg": 0.4065884053707123,
+    "dslope_p95_deg": 2.7624716758728027,
+    "coast_mismatch_share": 0.0,
+    "coast_pairs": {
+     "0/1": 0,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.18492063492063493,
+    "landform_mismatch_share": 0.009523809523809525
+   },
+   "ramp +40": {
+    "d_km": 40.0,
+    "n": 1928,
+    "n_land": 1201,
+    "dh_median_abs": 64.42169334739026,
+    "dh_p95_abs": 436.44670139821187,
+    "dslope_median_deg": 0.47124290466308594,
+    "dslope_p95_deg": 3.2392797470092773,
+    "coast_mismatch_share": 0.0,
+    "coast_pairs": {
+     "0/1": 0,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.2189841798501249,
+    "landform_mismatch_share": 0.005828476269775187
+   },
+   "ramp +70": {
+    "d_km": 70.0,
+    "n": 992,
+    "n_land": 610,
+    "dh_median_abs": 85.48944109843762,
+    "dh_p95_abs": 443.1640035577579,
+    "dslope_median_deg": 0.5689827799797058,
+    "dslope_p95_deg": 3.3098275661468506,
+    "coast_mismatch_share": 0.0,
+    "coast_pairs": {
+     "0/1": 0,
+     "0/2": 0,
+     "1/0": 0,
+     "2/0": 0
+    },
+    "biome_mismatch_share": 0.2098360655737705,
+    "landform_mismatch_share": 0.009836065573770493
+   }
+  },
+  "slope_p95_ramp_0_80": 4.863745212554932,
+  "slope_p95_inside_120_400": 3.701477289199829
+ }
+}

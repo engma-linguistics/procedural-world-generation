@@ -91,6 +91,9 @@ def lakes(ctx):
                                   np.column_stack([ctx.land_c, lk_c]).astype(float), 0.42 * ctx.sp)
         lake_n = ZK.fbm(ctx.Pc, 0.5 * ctx.sp, RG._octaves(0.5 * ctx.sp, 2 * ctx.res), 0.6, ctx.S + 8) / 0.15
         cand = ctx.land & ~ctx.edge & ~ctx.glacier & (np.nan_to_num(lind[:, 0], nan=-1.0) + 0.2 * lake_n > 0.1)
+        if ctx.match:  # (the neighbours' lake outlines where they weigh over a half, on held ground too, PW-1301)
+            from . import match as ZM
+            cand = ZM.lakes(ctx, cand)
         lab, sizes = ZK.label_components(cand, ctx.nx, ctx.ny)
         pl = np.flatnonzero(lab >= 0)
         pl = pl[sizes[lab[pl]] >= min_px]
@@ -1086,7 +1089,8 @@ def landscape_loop(ctx):
     # becomes land instead, a flat at its level that the rivers cross.
     ctx.rec = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)[1]
     ctx.outs = ctx.lake_outlets(ctx.reroute(ctx.rec, ZK.receiver_order(ctx.rec))[0])
-    sink = [j for j, lk in enumerate(ctx.lakes) if lk["exit"] is not None and ctx.outs[j] < 0]
+    sink = [j for j, lk in enumerate(ctx.lakes) if lk["exit"] is not None and ctx.outs[j] < 0
+            and not (ctx.match and ctx.m_pin[lk["px"]].mean() > 0.5)]  # (a neighbour's lake on held ground: its outlet is the neighbour's)
     if sink:
         for j in sink:
             ctx.lake[ctx.lakes[j]["px"]] = False

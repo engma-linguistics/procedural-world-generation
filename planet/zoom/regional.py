@@ -1217,7 +1217,7 @@ class ZoomCtx:
     An attribute a stage has not set yet raises AttributeError, as an unbound local would."""
 
     __slots__ = ("iterations", "lat", "log", "lon", "peoples", "res_km", "river_min_flow", "seed", "size_km", "up",
-                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice",
+                 "world", "match", "section", "m_w", "m_h", "m_land", "m_cat", "m_dist", "m_pin", "m_ice", "m_lake",
                  "BR", "Kr", "L", "P", "Pc", "Pk", "S", "active", "all_falls", "amp_land", "area", "banks", "barrier",
                  "base", "bi_island", "bi_layer", "biome", "bottom", "branch", "c_idx", "cap", "carved", "cell_area",
                  "cell_means", "cexit", "cgrad", "chain_km", "clab", "clamp", "clim_f", "clvl", "coarse", "course",

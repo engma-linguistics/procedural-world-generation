@@ -56,12 +56,17 @@ def test_matched_section_meets_its_neighbour(pair):
     assert k.sum() > 50
     alone, matched = np.median(np.abs(ha - hb)[k]), np.median(np.abs(ha - hm)[k])
     assert matched < 0.5 * alone + 1.0  # the matched section meets its neighbour far better than one built alone
-    # far inside its own ground (past the ramp) the section is nearly as built alone: a few metres, the slope fit's
-    # smooth C and the drainage reaching across (in the diagnostics: 0 m beyond ~600 km of a 1000 km section)
-    far = across(330.0)
+    # far inside its own ground the section is as built alone. Matching does reach past the ramp, by design: the held
+    # ground is an outlet at the neighbour's levels, so a basin draining across the line is graded up from them, and
+    # the slope fit pulls each coarse cell back to its own mean, so the change dies out with distance, over about two
+    # coarse cells here (lane 128, seams-round2.md: median 100 / 33 / 9 / 3 / 0.3 m at 80-160 / -240 / -320 / -400 /
+    # 400-600 km on this level-5 world of ~220 km cells; on the L7 4000 km practice pairs, whose basins run many cells
+    # long, 0.1-6 m at 160-300 km, 0-2 m at 300-600, 0.0 beyond). 480 km is past that reach on this world (0.24 m).
+    far = across(480.0)
     ok1, h1 = _at(zb, far)
     ok2, h2 = _at(zm, far)
-    assert np.median(np.abs(h1 - h2)[ok1 & ok2]) < 15.0
+    assert (ok1 & ok2).sum() > 50
+    assert np.median(np.abs(h1 - h2)[ok1 & ok2]) < 1.0
 
 
 def test_unmatched_build_is_unchanged(pair):

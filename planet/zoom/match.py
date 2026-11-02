@@ -43,13 +43,16 @@ def sources(refs) -> list[dict]:
     for ref in refs:
         d = S.find_zoom(ref)
         meta = json.loads((d / "zoom.json").read_text())
-        want = [k for k in ("elevation", "water", "ice", *CATEGORICAL) if k in meta["layers"]]
+        want = [k for k in ("elevation", "water", "ice", "lake_depth", *CATEGORICAL) if k in meta["layers"]]
         raw = S.read_layers(d, meta["layers"], want)
         h = S.decode(np.asarray(raw["elevation"]), meta["layers"]["elevation"]).astype(np.float32)
+        if "lake_depth" in raw:
+            h = _lake_surface(h, np.asarray(raw["water"]),
+                              S.decode(np.asarray(raw["lake_depth"]), meta["layers"]["lake_depth"]))
         ice = (S.decode(np.asarray(raw["ice"]), meta["layers"]["ice"]).astype(np.float32) if "ice" in raw
                else np.zeros_like(h))
         out.append(dict(id=meta["id"], frame=RG.frame_of(meta["center"]), res=float(meta["res_km"]), nx=int(meta["nx"]),
-                        ny=int(meta["ny"]), h=h, ice=ice, land=np.asarray(raw["water"]) != 1, section=meta.get("section"),
+                        ny=int(meta["ny"]), h=h, ice=ice, land=np.asarray(raw["water"]) != 1, lake=np.asarray(raw["water"]) == 2, section=meta.get("section"),
                         size_km=float(meta["size_km"]), center=meta["center"],
                         layers={k: np.asarray(raw[k]) for k in want if k in CATEGORICAL}))
     return out
@@ -59,11 +62,21 @@ def source_of(z: dict, zid: str = "mem", section: str | None = None) -> dict:
     """A built (unsaved) zoom, regional.build's result, as a source to match (tests, diagnostics); its height is the
     ground (the bed under a glacier) and the ice's thickness apart."""
     L = z["layers"]
+    h = np.asarray(L["elevation"], np.float32)
+    if "lake_depth" in L:
+        h = _lake_surface(h, np.asarray(L["water"]), np.asarray(L["lake_depth"]))
     return dict(id=zid, frame=z["frame"], res=float(z["res"]), nx=int(z["nx"]), ny=int(z["ny"]),
-                h=np.asarray(L["elevation"], np.float32),
-                ice=np.asarray(L["ice"], np.float32) if "ice" in L else np.zeros(np.shape(L["elevation"]), np.float32), land=np.asarray(L["water"]) != 1, section=section,
+                h=h,
+                ice=np.asarray(L["ice"], np.float32) if "ice" in L else np.zeros(np.shape(L["elevation"]), np.float32), land=np.asarray(L["water"]) != 1, lake=np.asarray(L["water"]) == 2, section=section,
                 size_km=float(z["nx"] * z["res"]), center=None,
                 layers={k: np.asarray(L[k]) for k in CATEGORICAL if k in L})
+
+
+def _lake_surface(h, water, depth) -> np.ndarray:
+    """The neighbour's ground with its lakes at their surface (the elevation layer is a lake's bed): held ground is
+    land here (lakes count as land), and a lake's bed held as bare ground was a pit, below the sea at times (a bare
+    pixel below the sea broke the vegetation's land test)."""
+    return np.where(water == 2, h + np.nan_to_num(np.asarray(depth, np.float32)), h).astype(np.float32)
 
 
 # the layers that switch (not blend) across the ramp: classes, not quantities
@@ -76,7 +89,7 @@ def _owner(ctx, srcs) -> np.ndarray:
     secs = [s["section"] for s in srcs]
     if getattr(ctx, "section", None) and all(secs):
         from . import tiling as ZT
-        n = ZT.choose_n(ctx.size_in)
+        n = ZT.choose_n(ctx.size_in, 190.0)  # (as tiling.section builds them: its default least overlap)
         f, i, j = ZT.locate(P, n)
         names = np.array(list(ZT.FACES))
         cell = np.char.add(np.char.add(np.char.add(names[f], "."), i.astype(str)), np.char.add(".", j.astype(str)))
@@ -105,7 +118,7 @@ def _sample(s, P, ctx_res):
                 + h[r0 + 1, c0 + 1] * fr * fc)
     ri = np.clip(np.rint(r).astype(int), 0, s["ny"] - 1)
     ci = np.clip(np.rint(c).astype(int), 0, s["nx"] - 1)
-    return bil(s["h"]), bil(s["ice"]), s["land"][ri, ci], {k: v[ri, ci] for k, v in s["layers"].items()}, inside
+    return bil(s["h"]), bil(s["ice"]), s["land"][ri, ci], s["lake"][ri, ci], {k: v[ri, ci] for k, v in s["layers"].items()}, inside
 
 
 def prepare(ctx) -> None:
@@ -122,10 +135,11 @@ def prepare(ctx) -> None:
     Hs = np.zeros(n)
     Is = np.zeros(n)
     Ls = np.zeros(n)
+    Ks = np.zeros(n)
     cats: dict = {}
     best = np.full(n, -1.0)
     for k, s in enumerate(srcs):
-        hv, iv, lv, cv, inside = _sample(s, ctx.P, ctx.res)
+        hv, iv, lv, kv, cv, inside = _sample(s, ctx.P, ctx.res)
         fade = smoothstep(0.0, FADE_KM, inside)  # (0 outside its usable square)
         # its weight: 1 on its own ground, falling across our ramp; nothing where a third section owns the ground
         mine_or_its = mine | (own == k)
@@ -135,6 +149,7 @@ def prepare(ctx) -> None:
         Hs += w * hv
         Is += w * iv
         Ls += w * lv
+        Ks += w * kv
         for key, v in cv.items():
             cats.setdefault(key, np.zeros(n, v.dtype))
             cats[key] = np.where(w > best, v, cats[key])
@@ -143,6 +158,7 @@ def prepare(ctx) -> None:
     ctx.m_h = np.where(W > 0, Hs / np.maximum(W, 1e-9), 0.0)
     ctx.m_ice = np.where(W > 0, Is / np.maximum(W, 1e-9), 0.0)
     ctx.m_land = np.where(W > 0, Ls / np.maximum(W, 1e-9), 0.0) >= 0.5
+    ctx.m_lake = np.where(W > 0, Ks / np.maximum(W, 1e-9), 0.0) >= 0.5  # (its lakes: land in m_land)
     ctx.m_cat = cats
     ctx.m_dist = dist
     ctx.m_pin = (~mine) & (ctx.m_w > 0.999)
@@ -158,11 +174,25 @@ def coast(ctx) -> None:
     ctx.ind_n = np.where(flip, np.where(ctx.m_land, 0.05, -0.05), ctx.ind_n)
 
 
+def lakes(ctx, cand: np.ndarray) -> np.ndarray:
+    """The lake outlines: the neighbour's where its weight is over a half, as the coastline (coast()). Its lakes were
+    land to this section's coastline and held ground isn't a lake candidate (an outlet, as the region's edge), so the
+    neighbour's lakes there and near the line were dry ground in this section, the only coast mismatch left at the
+    owner line on lane 128's practice pairs. Same coarse lakes, same levels: the held surface is the lake's."""
+    z = ctx.m_w >= 0.5
+    frame = ctx.edge & ~ctx.m_pin  # (the square's own edge stays no lake)
+    # (this section's first glacier outline gives way to the neighbour's lake: the ice there is the neighbour's, final())
+    ctx.glacier = ctx.glacier & ~(z & ctx.m_lake & ~frame)
+    return np.where(z, ctx.m_lake & ctx.land & ~frame, cand)
+
+
 def hold(ctx) -> None:
     """Before the landscape pass: the held ground at the neighbour's heights (the target there), and an outlet of
     the pass, as the region's edge."""
     pin = ctx.m_pin & ctx.land
-    ctx.h = np.where(pin, ctx.m_h, ctx.h)
+    # (bare held ground above the sea: where the neighbour has no ice its ground is above it, but for a closed
+    # basin's lake below sea level; under its ice the bed may lie below, and is held as it is)
+    ctx.h = np.where(pin, np.where(ctx.m_ice >= 1.0, ctx.m_h, np.maximum(ctx.m_h, 0.5)), ctx.h)
 
 
 def hold_edge(ctx) -> None:
@@ -186,10 +216,11 @@ def final(ctx) -> None:
     w = np.where(ctx.land & ctx.m_land[reg], ctx.m_w[reg], 0.0)
     on = w > 0
     ctx.h = np.where(on, w * ctx.m_h[reg] + (1 - w) * ctx.h, ctx.h)
-    ctx.h = np.where(on & ~ctx.glacier & (ctx.h < 0.5), 0.5, ctx.h)  # (bare land above the sea; a bed under ice may not be)
     ice = w * ctx.m_ice[reg] + (1 - w) * np.where(ctx.glacier, ctx.ice_th, 0.0)
     ctx.glacier = np.where(on, ice >= 1.0, ctx.glacier)
     ctx.ice_th = np.where(on, ice, ctx.ice_th)
+    # (bare land above the sea, on the blended glacier outline: a bed under ice may not be)
+    ctx.h = np.where(on & ~ctx.glacier & (ctx.h < 0.5), 0.5, ctx.h)
 
 
 def categorical(ctx, layers: dict) -> None:
