@@ -11,7 +11,7 @@ impact: high
 found_by: owner
 blocked_by: []
 relates: [PW-1198, PW-541]
-refs: []
+refs: [planet/zoom/regional.py::zoom, planet/zoom/stage_finish.py, planet/zoom/coastal.py, planet/zoom/fine.py, planet/parallel.py, "docs/coordination.md", docs/review/gpu/profile.md, "world 0af5ae", "world dba204"]
 created: 2026-11-01
 updated: 2026-11-01
 ---
