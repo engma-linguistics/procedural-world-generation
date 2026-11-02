@@ -2,7 +2,7 @@
 id: PW-1384
 title: "The CO2 references are learnt over 0-300 Myr, a stretch unlike the rest of a run: bare land (sink x0.5), the start's breakup lull (source x0.78), the faint star"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 milestone: null
 subsystem: climate
@@ -44,5 +44,6 @@ proves fiddly. Not C.
 - [ ] Daniel picks A, B or C
 
 ## Updates
+- 2026-11-02: Status needs-decision -> wontdo. Daniel 11-02: A, leave the yardsticks as they are. Revisit B only if PW-1163's +1.6 C leftover must be fixed on its own.
 - 2026-11-02: Coordinator: brought to Daniel on the desk with the PW-1316 B result (lean A for now).
 - 2026-11-02: Created from inbox draft draft-co2-references-spinup-unlike-the-run.md (found by lane135).
