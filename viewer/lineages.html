@@ -109,6 +109,7 @@
   <button data-tab="wishes">Wishes</button>
   <button data-tab="results">Results</button>
   <button data-tab="tech">Technology</button>
+  <button data-tab="religion" title="Gods, faiths and taboos of the picked peoples run: small god trees, a map of where each faith arose and spread, a faith timeline, each culture's taboos (PW-1358, PW-1311)">Religion</button>
   <span style="flex:1"></span>
   <button id="helpBtn" class="qbtn" aria-expanded="false" aria-controls="foot" title="What this tab shows and how to use it">?</button>
 </nav>
@@ -120,10 +121,12 @@
   <section class="tab" id="tab-wishes"></section>
   <section class="tab" id="tab-results"></section>
   <section class="tab" id="tab-tech"></section>
+  <section class="tab" id="tab-religion"></section>
 </main>
 <div id="foot" class="helpPop" role="note" hidden></div>
 <script src="numfmt.js"></script>
 <script src="techtab.js"></script>
+<script src="religiontab.js"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -261,6 +264,7 @@ const FOOT = {
     thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
+  religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1).split('/')[0];  // (#tech/map: the Technology tab's view, techtab.js)
@@ -270,7 +274,7 @@ function showTab(t) {
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('on', s.id === `tab-${t}`));
   $('foot').innerHTML = FOOT[t];  // (no command lines here: the owner uses the viewer, PW-1047)
-  history.replaceState(null, '', `${location.search}#${t}${t === 'tech' ? '/' + TechTab.view : ''}`);
+  history.replaceState(null, '', `${location.search}#${t}${t === 'tech' ? '/' + TechTab.view : t === 'religion' ? '/' + ReligionTab.view : ''}`);
   redraw();
 }
 $('tabs').onclick = (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); };
@@ -292,6 +296,7 @@ function redraw() {
   else if (tab === 'places') drawPlaces();
   else if (tab === 'wishes') drawWishes();
   else if (tab === 'tech') drawTech();
+  else if (tab === 'religion') drawReligion();
   else if (tab === 'cultures') drawCultures();
   else drawResults();
 }
@@ -1052,6 +1057,16 @@ function drawCultures() {
   el.innerHTML = h;
   $('cuPeople').onchange = (e) => { cultUI.people = e.target.value; drawCultures(); };
   $('cuAll').onchange = (e) => { cultUI.all = e.target.checked; drawCultures(); };
+}
+// ---- the religion tab (gods.py, taboos.py, faithmap.py; its four views: religiontab.js, PW-1358) ---------------------------------
+function drawReligion() {
+  const el = $('tab-religion');
+  if (!result) {
+    const mine = worldRuns();
+    if (mine.length && !drawReligion.busy) { drawReligion.busy = true; showResult(mine[0].dir).finally(() => { drawReligion.busy = false; }); }
+    el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its religion.</p>'; return;
+  }
+  ReligionTab.draw(el, result);
 }
 // ---- the technology tab (techtree.py, PW-675; its six views: techtab.js, PW-913) -------------------------------------------
 function drawTech() {

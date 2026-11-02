@@ -154,3 +154,82 @@ def test_sea_kinds_need_a_coast():
     inland = TB.available({"traits": []}, "steppe")
     coast = TB.available({"traits": ["coastal"]}, "steppe")
     assert "shellfish" not in inland and "shellfish" in coast and "snakes" in inland
+
+
+# ---- faiths (PW-1358) -------------------------------------------------------------------------------------------------
+TEMPLE = KNOW | {"temples", "kingship"}
+
+
+def test_a_founding_culture_founds_a_faith_and_daughters_keep_it():
+    P = G.Pantheons()
+    run(P, [(100.0, {0: (sal(sea=0.9, storm=0.8, hunt=0.7), KNOW)})])
+    assert P.faith_of[0] == 0 and P.faiths[0].core == "sea" and P.faiths[0].how == "founded"
+    P.split(1, 0, 99.0)
+    assert P.faith_of[1] == 0 and P.faiths[0].members == {0, 1}
+    assert all(b.faith == 0 for b in P.by[1])
+
+
+def test_a_faith_whose_cultures_all_convert_ends_while_they_live():
+    P = G.Pantheons(seed=1)
+    s0, s1 = sal(sea=0.9, storm=0.8, hunt=0.7), sal(mountain=0.9, sky=0.8, herd=0.7)
+    for k in range(0, 200, 2):
+        P.frame(100.0 - k / 2, {0: {"sal": s0, "know": KNOW}, 1: {"sal": s1, "know": TEMPLE}}, contacts={(0, 1)})
+    assert [0, 1] == [f for _, f in P.fhist[0]][:2]  # (the temple faith spread over the border; later schisms may follow)
+    old = P.faiths[0]
+    assert old.end == "no followers left" and old.ended is not None and P.by[0]  # (its culture lives on)
+    assert any(b.how == "converted" and b.culture == 0 for b in P.beings)
+    assert P.counts["conversions"] == 1
+
+
+def test_no_conversion_without_an_organised_faith_next_door():
+    P = G.Pantheons(seed=1)
+    s0, s1 = sal(sea=0.9, storm=0.8, hunt=0.7), sal(mountain=0.9, sky=0.8, herd=0.7)
+    for k in range(0, 200, 2):
+        P.frame(100.0 - k / 2, {0: {"sal": s0, "know": KNOW}, 1: {"sal": s1, "know": KNOW}}, contacts={(0, 1)})
+    assert P.faith_of[0] != P.faith_of[1] and P.counts["conversions"] == 0
+
+
+def test_a_daughter_whose_god_turns_breaks_away_and_a_lone_faith_just_changes():
+    P = G.Pantheons()
+    coast, hills = sal(sea=0.9, storm=0.5, hunt=0.4), sal(mountain=0.9, storm=0.5, hunt=0.4, sea=0.0)
+    run(P, [(300.0, {0: (coast, KNOW)})])
+    P.split(1, 0, 299.0)
+    run(P, [(299.0 - k, {0: (coast, KNOW), 1: (hills, KNOW)}) for k in range(0, 200, 4)])
+    assert P.faith_of[0] == 0 and P.faith_of[1] != 0
+    F = P.faiths[P.faith_of[1]]
+    assert F.how == "schism" and F.parent == 0 and F.core != "sea"
+    Q = G.Pantheons()  # (alone: the faith's core moves)
+    run(Q, [(300.0, {0: (coast, KNOW)})] + [(299.0 - k, {0: (hills, KNOW)}) for k in range(0, 200, 4)])
+    assert len(Q.faiths) == 1 and Q.faiths[0].changes and Q.counts["core_changes"] >= 1
+
+
+def test_contacts_pairs_share_or_border_cells():
+    src, dst = np.array([0, 1, 1, 2]), np.array([1, 0, 2, 1])
+    pairs = G.contacts(4, np.array([0, 1, 2, 2]), np.array([5, 5, 6, 7]), src, dst, 10)
+    assert pairs == {(5, 7), (6, 7)}  # (a border is drawn from one culture per cell: the last listed)
+
+
+# ---- the other kinds of taboo (PW-1311) -------------------------------------------------------------------------------
+def test_catalogue_is_sourced_and_every_rule_has_a_kind():
+    from planet.lineages import taboo_defs as TD
+    assert len(TD.KINDS) >= 12 and len(TD.RULES) >= 40
+    for r in TD.RULES:
+        assert r[1] in TD.KINDS and r[6] in TD.SOURCES
+    for v in TD.KINDS.values():
+        assert all(s in TD.SOURCES for s in v[2])
+
+
+def test_other_taboos_follow_the_culture():
+    from planet.lineages import taboo_defs as TD
+    forager = TB.context({"spirit_ritual"}, set(), [{"domains": ["forest", "hunt"]}])
+    king = TB.context({"spirit_ritual", "burial", "temples", "kingship", "cultivation", "bronze"}, {"coastal"}, [{"domains": ["sea"], "spells": True}])
+    assert "forage" in forager and "g:forest" in forager and "kingship" not in forager
+    assert {"farm", "kingship", "metal", "sea", "spells"} <= king
+    fk = {t["kind"] for s in range(60) for t in TB.other_taboos(np.random.default_rng(s), forager)}
+    kk = {t["kind"] for s in range(60) for t in TB.other_taboos(np.random.default_rng(s), king)}
+    assert not fk & {"rank", "sumptuary", "caste"} and {"rank", "sumptuary", "caste"} <= kk
+    for s in range(30):
+        for t in TB.other_taboos(np.random.default_rng(s), forager):
+            assert all(n in forager for n in TD.RULE[t["target"]][4])  # (never a rule whose needs it lacks: no burial, no grave rules)
+    assert TB.other_taboos(np.random.default_rng(4), king) == TB.other_taboos(np.random.default_rng(4), king)
+    assert all(any(t["target"] == "incest_core" for t in TB.other_taboos(np.random.default_rng(s), forager)) for s in range(20))

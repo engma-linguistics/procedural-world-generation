@@ -17,7 +17,9 @@
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
-  GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306): its gods.json, else worked out on the fly, not saved
+  GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
+  GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
+  GET    /api/faithmap?run=<id>&frame=<f>[&w=1024]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -238,6 +240,74 @@ def cultures(query: str) -> tuple[dict, int]:
 _gods_cache: dict = {}  # (run id, run.json mtime, mode) -> gods doc
 
 
+def gods_doc(d: Path, mode: str | None = None) -> dict:
+    """A run's gods doc: its gods.json when it is in this mode and has faiths (made since PW-1358), else derived once and kept in memory."""
+    from .lineages import gods as GD
+    mode = mode or GD.MODE_DEFAULT
+    f = d / "gods.json"
+    if f.exists():
+        doc = json.loads(f.read_text())
+        if doc.get("gods_mode") == mode and "faiths" in doc and "frames" in doc:
+            return doc
+    if not (d / "cultures.json").exists():
+        raise SystemExit("this run has no cultures (it is older than PW-670): run the peoples again")
+    key = (d.name, (d / "run.json").stat().st_mtime, mode)
+    if key not in _gods_cache:
+        _gods_cache.clear()
+        _gods_cache[key] = GD.derive(d, mode)
+    return _gods_cache[key]
+
+
+_taboos_cache: dict = {}
+
+
+def taboos(query: str) -> tuple[dict, int]:
+    """GET /api/taboos?run=<id>: the run's taboos.json when it has every kind (format procgen-taboos/2, PW-1311), else worked out from
+    its gods doc and kept in memory, never written into the run."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import taboos as TB
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        f = d / "taboos.json"
+        if f.exists():
+            doc = json.loads(f.read_text())
+            if doc.get("format") == "procgen-taboos/2":
+                return doc, 200
+        key = (d.name, (d / "run.json").stat().st_mtime)
+        if key not in _taboos_cache:
+            _taboos_cache.clear()
+            _taboos_cache[key] = TB.derive(d, gods_doc(d))
+        return _taboos_cache[key], 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+def faithmap(query: str) -> tuple[bytes | dict, int]:
+    """GET /api/faithmap?run=<id>&frame=<f>[&w=512|1024|2048]: the faiths at one stored frame as an equirectangular PNG (faithmap.py)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import faithmap as FM
+        d = S.find_run(q.get("run", ""))
+        w = int(q.get("w", 1024))
+        if w not in (512, 1024, 2048):
+            raise ValueError("w must be 512, 1024 or 2048")
+        from . import api
+        with api.COMPUTE:  # (the grid lookup is a parallel numba kernel: one at a time per process, as thumbs)
+            return FM.render(d, gods_doc(d), int(q.get("frame", 0)), w), 200
+    except (ValueError, IndexError, KeyError) as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 def gods(query: str) -> tuple[dict, int]:
     """GET /api/gods?run=<id>[&mode=faith_made|belief_only|absolute]: the gods of a peoples run's cultures (lineages/gods.py, PW-1306): the
     run's gods.json if it has one (and no other mode is asked for), else worked out from its cultures (some seconds) and kept in memory,
@@ -249,16 +319,7 @@ def gods(query: str) -> tuple[dict, int]:
             raise ValueError("run= is required")
         d = S.find_run(q["run"])
         mode = q.get("mode") or GD.MODE_DEFAULT
-        f = d / "gods.json"
-        if f.exists() and json.loads(f.read_text()).get("gods_mode") == mode:
-            return json.loads(f.read_text()), 200
-        if not (d / "cultures.json").exists():
-            return {"error": "this run has no cultures.json: run `planet cultures` on it first"}, 404
-        key = (d.name, (d / "run.json").stat().st_mtime, mode)
-        if key not in _gods_cache:
-            _gods_cache.clear()
-            _gods_cache[key] = GD.derive(d, mode)
-        return _gods_cache[key], 200
+        return gods_doc(d, mode), 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -543,6 +604,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*cultures(url.query))
         if url.path == "/api/gods":
             return self.send_json(*gods(url.query))
+        if url.path == "/api/taboos":
+            return self.send_json(*taboos(url.query))
+        if url.path == "/api/faithmap":
+            body, code = faithmap(url.query)
+            if isinstance(body, dict):
+                return self.send_json(body, code)
+            self.send_response(code)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if url.path == "/api/names":
             return self.send_json(*landmass_names(url.query))
         if url.path == "/api/favourites":
