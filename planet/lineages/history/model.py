@@ -18,7 +18,6 @@ from ..animals import Animals
 from ..crops import Crops
 from ..crossing import Crossings, corridor
 from ..spread import EST
-from .cities import CitiesMixin
 from .competition import CompetitionMixin
 from .contact import ContactMixin
 from .counter import CounterMixin
@@ -41,7 +40,7 @@ from .tags import _tags, needs_chains
 
 
 class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
-              ContactMixin, CitiesMixin, PeoplesMixin, FrameMixin, GrowthMixin):
+              ContactMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
                  goods: dict | None = None, knobs: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
@@ -285,9 +284,6 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
         self._note_K(k, K)
         if l.overlay and l.origin == "hybrid":
             self._hybrid(l, k, K, step)
-            return
-        if l.cities:  # (a people's minority in others' cities, PW-889)
-            self._city(l, k, step)
             return
         held0 = self.p[k] >= EST  # (its land at the step's start: kept if it ends now, PW-1184)
         self.p[k] = np.minimum(self.p[k], K)

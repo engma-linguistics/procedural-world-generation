@@ -347,7 +347,7 @@ def _holder_at(s: dict, ago: float) -> str:
 
 def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> dict | None:
     """The towns and cities of the region at the era, from the settlement ledger (settlements.json, PW-1011): how many of each
-    kind, the largest with who lives in them and their quarters, the towns held by another people than their founders, the
+    kind, the largest with who lives in them, the towns held by another people than their founders, the
     places of second peoples and the mines, the ruins and what ended them; for a people's brief also its places world-wide."""
     sm = ctx.meta.get("settlements")
     if not sm:
@@ -374,7 +374,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
         r = {"id": s["id"], "kind": s.get("kind", "chief"), "tier": tier(s, pop), "people": h, "pop": round(pop), "lat": s["lat"], "lon": s["lon"],
              "place": s.get("place"), "founded_kyr": s["founded_kyr"], "founded_by": s["founded_by"]}
         if abs(era) <= 1e-6:
-            r["who"], r["quarters"] = s["who"], s["quarters"]
+            r["who"] = s["who"]
         return r
 
     live, ruins = [], []
@@ -1244,8 +1244,7 @@ def _settlements_md(st: dict | None) -> list[str]:
     for r in st["largest"]:
         t += [f"- {r['tier']} of the {nm(r['people'])}" + (" (their own place among another people)" if r["kind"] == "minority" else "")
               + f", {r['place'] or f'{r['lat']}, {r['lon']}'}: ~{r['pop']:,} people, founded ~{r['founded_kyr']:g} kyr ago by the {nm(r['founded_by'])}"
-              + ("; " + ", ".join(f"{nm(k)} {v}%" for k, v in r["who"].items()) if r.get("who") else "")
-              + ("; " + ", ".join(f"a {q['group'].replace('_', ' ')} quarter ({q['pct']}%)" for q in r["quarters"]) if r.get("quarters") else "")]
+              + ("; " + ", ".join(f"{nm(k)} {v}%" for k, v in r["who"].items()) if r.get("who") else "")]
     if st["taken"]["count"]:
         t += [f"- {st['taken']['count']} towns and cities held by another people than their founders: " + "; ".join(
               f"a {r['tier']} of the {nm(r['founded_by'])} held by the {nm(r['people'])} since ~{r['held_since_kyr']:g} kyr ago" for r in st["taken"]["list"])]

@@ -27,12 +27,6 @@ INTEGRATE = 0.5  # PW-889 (owner 10-29): under pressure a people grows more will
 # (1 - held / (SQUEEZE_FILL x potential), as EXPANSE_FILL). A design judgement: at most half, so a squeezed people persists thinly inside
 # the friendly range rather than taking it over
 SQUEEZE_FILL = 0.5
-CITY_TOP, CITY_MIN_KM2 = 0.05, 5.0  # PW-889: a city-minority group lives in its hosts' town country: the cells among the densest CITY_TOP of the
-# peopled land this step by the hosts' settlement (people per km2 of the host peoples there, presence x density), and settled at least
-# CITY_MIN_KM2. A design judgement, relative because a world's peak settlement varies (on world af2677 the 20 /km2 first tried was reached
-# by 0-200 cells, none near the goblins in most rolls): the densest twentieth of the peopled land is where the towns are; the floor keeps
-# a world of foragers townless
-CITY_REACH_KM = 1000.0  # ...within this, over land, of its own people's range: the city minority comes in from its people's country
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
 APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches would put at least this share of a's habitat near b's

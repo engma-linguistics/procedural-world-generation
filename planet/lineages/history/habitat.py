@@ -222,8 +222,6 @@ def niche_overlap(a: SP.Lineage, b: SP.Lineage, tree: SP.Tree) -> float:
 
 class HabitatMixin:
     def _K(self, l, env, tags, step, clip=True):
-        if l.cities:  # (a city minority: where it can be, its hosts' cities within reach, PW-889)
-            return np.where(self._city_mask(l)[0], 1.0, 0.0)
         if l.overlay and l.origin == "template":
             return np.max([self.whole(q) for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
         K = capacity(l, env, tags)

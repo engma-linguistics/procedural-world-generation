@@ -32,9 +32,8 @@ The model (every judgement constant is in the block below; `derive(..., **overri
   its founding), driven out (the holder changed in the last HAND_KYR, or the new holder cannot keep sites), else its people
   left. A ruin stays in the ledger; the cell can be settled again ("on the ruins of" the old site).
 - Who lives there: a village's people are its cell's (mostly one people); a town's are its cell and the ring around it, a
-  city's two rings, weighted by heads (towns draw people in: the realistic mixing of PW-910). A city-minority group
-  (spec cities = true, PW-889) is a quarter of its spec share in a town or city where it is the cell's overlay in that
-  frame or lives there at the present.
+  city's two rings, weighted by heads (towns draw people in: the realistic mixing of PW-910). (Minorities' quarters, PW-889, went with
+  the city groups, PW-1369: they wait for a towns and minorities model.)
 - Rivers moving: the history keeps the world's present rivers through time, so there is no drainage per frame to read. A
   stand-in: a site on a navigable river in the lowlands (under RIVER_LOW_M) is left at a seeded chance of RIVER_SHIFT per
   kyr ("the river moved away"), as floodplain rivers shift their beds; the cell may be settled again on the new course.
@@ -54,7 +53,6 @@ from .. import timeline as T
 from ..geo import R_KM, is_land
 from ..grid import shared_grid
 from . import landuse as LU
-from . import spec as SP
 from .demes import _place, landmass_rank
 from .spread import graph_dist
 
@@ -348,11 +346,6 @@ def derive(run_dir: Path, **over) -> dict:
     dlv, mnr = np.maximum(_known_dates(m, nl, "delving"), _known_dates(m, nl, "fortifications")), _miner_lines(m, nl)
     tech[:, 2] = np.where(mnr & (dlv >= 0), np.maximum(tech[:, 2], dlv), tech[:, 2])
     mines = _mines_dates(m, nl)
-    tree = SP.parse(m["tree"]) if m.get("tree") else None
-    city_groups = {l["index"]: (l["group_of"], float(tree.lines[l["id"]].share) if tree is not None and l["id"] in tree.lines else 0.03)
-                   for l in lines if l.get("cities")}
-    pp = m.get("presence_present")
-    pres_now = np.fromfile(run_dir / pp["file"], np.uint8).reshape(pp["shape"]) if pp else None
     rng = np.random.default_rng((int(m.get("try_seed") or 0), 1011))
     present_land = is_land(T.frame(run, arr, "elevation", len(run["frames"]) - 1), T.frame(run, arr, "ice", len(run["frames"]) - 1))
     rank = landmass_rank(g, present_land)
@@ -433,7 +426,7 @@ def derive(run_dir: Path, **over) -> dict:
             same_people[a, b] = people_of[a] == people_of[b]
 
     def who(cell, tier, e, dens, step_ago):
-        """{people: % of the place's heads}, and the city-minority quarters, for a place of `tier` in `cell`."""
+        """{people: % of the place's heads} for a place of `tier` in `cell`."""
         cells = _rings(g, cell, {1: 0, 2: 1, 3: 2}.get(tier, 0))
         heads: dict[str, float] = {}
         for x in cells.tolist():
@@ -448,13 +441,7 @@ def derive(run_dir: Path, **over) -> dict:
                 heads["others"] = heads.get("others", 0.0) + w * float(e["mix_other_share"][x])
         tot = sum(heads.values()) or 1.0
         pct = {k: round(100 * v / tot) for k, v in sorted(heads.items(), key=lambda kv: -kv[1])}
-        quarters = []
-        if tier >= 2:
-            for gi, (gof, share) in city_groups.items():
-                here = e["peoples_overlay"][cell] == gi or (step_ago == 0 and pres_now is not None and pres_now[gi, cell] > 0)
-                if here:
-                    quarters.append({"group": ids[gi], "people": gof, "pct": round(100 * share, 1)})
-        return {k: v for k, v in pct.items() if v >= c["QUARTER_MIN_PCT"]}, quarters
+        return {k: v for k, v in pct.items() if v >= c["QUARTER_MIN_PCT"]}
 
     def allowed(li, ago):  # (n,) line index -> the largest tier its techs allow (villages first: no towns without them)
         lt = tech_x[np.minimum(li, nl)]
@@ -640,7 +627,7 @@ def derive(run_dir: Path, **over) -> dict:
                 s["tier"] = s["tier_pk"] = max(tier_of(pop, c, int(stages[k][cell])), 1) if k < 2 else 1
                 if s["ruin_of"] is not None:
                     sites[s["ruin_of"]]["resettled_as"] = s["id"]
-                s["_peak_who"] = who(cell, s["tier"], e, dens, ago) if k == 0 else ({h: 100}, [])
+                s["_peak_who"] = who(cell, s["tier"], e, dens, ago) if k == 0 else {h: 100}
                 if k == 3:  # (a pit: what it digs)
                     s["district"], s["colony"] = D["pit_name"][cell], False
                 if k == 2:  # (the district it works; a colony: worked by incomers, its people neither leads nor is second here)
@@ -711,7 +698,7 @@ def derive(run_dir: Path, **over) -> dict:
     for s in sites:
         if s["abandoned_kyr"] is None:
             s["_end_who"] = (who(s["cell"], max(s["tier"], 1), e_now, dens_f[-1], 0.0) if s["kind"] == "chief"
-                             else ({s["holder"]: 100}, []))
+                             else {s["holder"]: 100})
     return _document(sites, c, g, ids, rank, lms, steps, area, time.time() - t0)
 
 
@@ -722,7 +709,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
         alive = s["abandoned_kyr"] is None
         tier_peak, tier_now = s["tier_pk"], (max(s["tier"], 1) if alive else 0)
         place = _place((s["lat"], s["lon"], int(rank[s["cell"]])), lms)
-        who, quarters = (s["_end_who"] if alive else s["_peak_who"]) or ({}, [])
+        who = (s["_end_who"] if alive else s["_peak_who"]) or {}
         ser = s["series"]
         if len(ser) > c["SERIES_KEEP"]:
             keep = np.unique(np.r_[np.linspace(0, len(ser) - 1, c["SERIES_KEEP"]).round().astype(int), int(np.argmax([p for _, p in ser]))])
@@ -734,7 +721,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "holders": [[round(a, 3), h] for a, h in s["holders"]], "abandoned_kyr": None if alive else round(s["abandoned_kyr"], 3),
                "why": s["why"], "ruin_of": s["ruin_of"], "resettled_as": s["resettled_as"],
                "pop_now": round(s["pop"]) if alive else 0, "peak_pop": round(s["peak_pop"]), "peak_kyr": round(s["peak_kyr"], 3),
-               "who": who, "who_when": "now" if alive else "at its height", "quarters": quarters, "series": ser,
+               "who": who, "who_when": "now" if alive else "at its height", "series": ser,
                "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if not mine else []}
         if mine:  # (D12: what the district is worked for, and whether by a colony of incomers)
             rec["district"], rec["colony"] = s.get("district"), bool(s.get("colony"))
@@ -811,6 +798,6 @@ def lines_for_report(sm: dict, doc: dict) -> list[str]:
     big = sorted((r for r in doc["sites"] if r["abandoned_kyr"] is None and r["kind"] not in ("mine", "pit")), key=lambda r: -r["pop_now"])[:8]
     L.append("  -- the largest now")
     L += [f"  {r['tier_now']} of the {r['holder']}, {r['place'] or '?'}: {r['pop_now']:,}, since {r['founded_kyr']:g} kyr; "
-          + ", ".join(f"{k} {v}%" for k, v in r["who"].items()) + ("; quarters " + ", ".join(f"{q['group']} {q['pct']}%" for q in r["quarters"]) if r["quarters"] else "")
+          + ", ".join(f"{k} {v}%" for k, v in r["who"].items())
           for r in big]
     return L

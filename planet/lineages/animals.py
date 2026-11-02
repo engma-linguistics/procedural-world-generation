@@ -40,6 +40,10 @@ WILD_MIN = 0.35  # a cell is in the wild range from this suitability
 WILD_PATCH_MKM2 = 0.25  # a landmass needs this much range to count
 OVERLAP_MIN = 3  # cells where tamers sit on the wild range
 TOOK_UP = 0.2  # a people has taken up an animal when it is known over this share of its land
+# PW-1373 (owner 11-02): meat-eating kinds lean to herds, not crops, through their propensity (not a ban): per body diet, x on a crop's
+# propensity and + on a herd animal's (one with a herd capacity). The cat-folk (obligate carnivores) take crops at half their leaning
+# and herds at +0.3; carnivores (bugbears, lizardfolk) at half that lean.
+DIET_LEAN = {"obligate_carnivore": (0.5, 0.3), "carnivore": (0.75, 0.15)}
 CONTACT_KMYR = 8.0  # the front of an `uptake = "contact"` animal, km/yr: about ten times the peoples' own expansion (0.5-0.8 km/yr), a mount is adopted on meeting
 BARRIER_ENTER = 0.8  # contact animals: pressure kept per peopled cell outside the wild range (a belt of ~3 cells of forest or high ground stops it)
 BOAT_EVERY_KYR = 0.5  # how often the crossings are tried
@@ -85,7 +89,10 @@ class Stock:
         a = self.a
         if l.overlay or any(t in l.traits for t in a.excl) or l.megafauna:
             return 0.0
-        return float(np.clip(a.prop_floor + sum(w * self.sh[k][i] for k, w in a.prop.items()), 0, 1))
+        p = a.prop_floor + sum(w * self.sh[k][i] for k, w in a.prop.items())
+        crop_x, herd_add = DIET_LEAN.get(l.body.get("diet"), (1.0, 0.0))
+        p = p * crop_x if a.plant else p + herd_add if a.k.get("herd", 0) > 0 else p
+        return float(np.clip(p, 0, 1))
 
     # -- per step -----------------------------------------------------------------------------------
     def step(self, step, env, tags, p, native, sea, peopled=None) -> None:

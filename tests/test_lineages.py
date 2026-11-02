@@ -4,6 +4,7 @@ on a small fake time zoom (level 3) in a temporary store."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -740,61 +741,18 @@ def test_an_among_wish_lets_a_people_share_a_friendly_peoples_country_and_a_sque
     assert CP.cohabitation(t, ha.lines, ha.idx)[b, gb] > CP.cohabitation(SP.parse(base), h0.lines, h0.idx)[b, gb]
 
 
-def test_a_city_minority_lives_in_its_neighbours_dense_towns_and_counts_in_its_peoples_numbers(faketz):
-    """PW-889 (owner 10-29): a group with `cities` is its people's minority in other peoples' cities: an overlay present only in the
-    hosts' densest settled cells (CITY_TOP of the peopled land, at least CITY_MIN_KM2), within CITY_REACH_KM over land of its people's range; a share of the townsfolk there; in its
-    people's numbers (people_rollup), not in its range or the map's peoples."""
-    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+def test_city_minorities_are_gone():
+    """PW-1369 (11-02): the city minorities (groups with `cities`, PW-889) were removed until a towns and minorities model: a tree that
+    still gives `cities` or `hosts` is refused with a pointer, and the D&D preset has no groups left."""
     raw = {"meta": {"seed": 1}, "lineage": [
-        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "town_gob", "origin": "group", "group_of": "gob", "at": "5 kyr", "cities": True, "share": 0.05}]}
-    t = SP.parse(raw)
-    c = t.lines["town_gob"]
-    assert c.overlay and c.cities and t.groups_of("gob") == [] and t.city_groups_of("gob") == ["town_gob"]
-    r2 = SP.to_raw(t)
-    assert next(x for x in r2["lineage"] if x["id"] == "town_gob")["cities"] is True and SP.parse(r2).lines["town_gob"].cities
-    with pytest.raises(ValueError):
-        SP.parse({**raw, "lineage": [*raw["lineage"][:2], {"id": "x", "origin": "root", "at": "5 kyr", "cities": True}]})
-    with pytest.raises(ValueError):
-        SP.parse({**raw, "lineage": [*raw["lineage"][:2], {**raw["lineage"][2], "hosts": ["gob"]}]})
-    h = H.History(t, ps, 1)
-    h.dens[h.idx["human"]], h.dens[h.idx["gob"]] = 30.0, 2.0  # (PW-1275: no world, no ladder: the numbers the test needs)
-    g = h.grid
-    env = ps.fields(0.0, variability=False)
-    land = env["land"]
-    h._land_now = land
-    h._dmap = None
-    hu, gb, k = h.idx["human"], h.idx["gob"], h.idx["town_gob"]
-    h.p = np.zeros((3, g.n))
-    h._linger = np.zeros((3, g.n), bool)
-    h.active = {"human": True, "gob": True, "town_gob": True}
-    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
-    gob_home = H.rings(cell, land, 1, g.nbr_off, g.nbr_idx)
-    town = land & ~gob_home & h._dilate(gob_home, 1)  # (the humans' towns next door, within reach on any grid)
-    far = land & ~h._dilate(gob_home, int(np.ceil(H.CITY_REACH_KM / h.cell_km)) + 2)
-    h.p[gb][gob_home] = 0.8
-    h.p[hu][town] = 0.9  # (30/km2 x 0.9 = 27: the densest)
-    h.p[hu][far] = 0.9
-    h.p[hu][land & ~town & ~far & ~gob_home] = 0.15  # (4.5/km2, under CITY_MIN_KM2: farmland, no towns)
-    city, hp = h._city_mask(c)
-    assert town.any() and city.any() and not (city & ~town).any() and (city & town).sum() == town.sum()
-    assert not (city & far).any()  # (out of the minority's reach)
-    step = H.Step(2.0, 1.0, "recent", True, None)
-    h._city(c, k, step)
-    assert (h.p[k][town] >= H.EST).all() and not h.p[k][~town].any()
-    pop = h.population(k)
-    hosts = h.population(hu)
-    assert pop[town].sum() == pytest.approx(0.05 * hosts[town].sum()) and not pop[~town].any()
-    assert np.array_equal(h.whole("gob") >= H.EST, gob_home)  # (not the people's range)
-    f = h._frame(step, env)
-    assert not (f["peoples_whole"] == k).any() and (f["peoples_overlay"][town] == k).all()
-    lines = {"gob": {"population": int(h.population(gb).sum())}, "town_gob": {"population": int(pop.sum())}}
-    w = H.people_rollup(h, h.p, lines)["gob"]
-    assert w["groups"] == ["town_gob"] and w["population"] == lines["gob"]["population"] + lines["town_gob"]["population"] > lines["gob"]["population"]
-    assert w["area_mkm2"] == pytest.approx(gob_home.sum() * h.cell_mkm2, abs=0.01)  # (its range is its own country's)
-    from planet.lineages import output as O
-    assert len(O.colors(h)) == len(h.lines)  # (a city group takes a tint of its people's colour too)
+        {"id": "human", "origin": "root", "at": "30 kyr"}, {"id": "gob", "origin": "root", "at": "30 kyr"},
+        {"id": "town_gob", "origin": "group", "group_of": "gob", "at": "5 kyr", "cities": True}]}
+    with pytest.raises(ValueError, match="PW-1369"):
+        SP.parse(raw)
+    with pytest.raises(ValueError, match="PW-1369"):
+        SP.parse({**raw, "lineage": [*raw["lineage"][:2], {"id": "town_gob", "origin": "group", "group_of": "gob", "hosts": ["human"]}]})
+    t = SP.load(Path(SP.__file__).parent / "samples" / "dnd.toml")
+    assert not [l.id for l in t.lines.values() if l.origin == "group"]
 
 
 def test_peoples_change_the_land_from_their_ways_of_life():
@@ -1229,6 +1187,33 @@ def test_hunters_tame_dogs_not_whoever_lacks_a_farm_or_herd_use():
     t = SP.parse(raw)
     assert LU.shares(t, t.lines["plain"])["forage"] == 0.0  # (no use of any food good: no longer counted a forager)
     assert LU.shares(t, t.lines["hunt"])["forage"] == 1.0 and LU.shares(t, t.lines["farm"])["forage"] == 0.0
+
+
+def test_hunters_learn_crops_slower_and_meat_eaters_lean_to_herds():
+    """PW-1373 B (owner 11-02): a people takes a crop up once it has stood on a fifth of its land for LAG_KYR / propensity (farmers
+    at once, hunters ~10x slower); obligate carnivores lean to herds over crops through their propensities (not a ban)."""
+    from planet.lineages import animals as AN, crops as CR
+    lag = CR.learn_lag([1.0, 0.1, 0.0])
+    assert lag[0] == pytest.approx(CR.LAG_KYR) and lag[1] == pytest.approx(10 * CR.LAG_KYR) and np.isinf(lag[2])
+    t = SP.load(Path(SP.__file__).parent / "samples" / "dnd.toml")
+
+    class _H:  # (just what Stock's propensity reads)
+        def __init__(self, tree):
+            self.tree, self.lines = tree, [l for l in tree.order()]
+    h = _H(t)
+    ids = [l.id for l in h.lines]
+    st = AN.Stock.__new__(AN.Stock)
+    from planet.lineages import crop_defs as CD, animal_defs as AD, landuse as LU
+    sh = np.array([[LU.shares(t, l)[k] for k in ("farm", "herd", "forage", "gather")] if not l.overlay else [0.0] * 4 for l in h.lines])
+    st.sh = {"farm": sh[:, 0], "herd": sh[:, 1], "forage": sh[:, 2], "gather": sh[:, 3]}
+    prop = {}
+    for a in (CD.BY_ID["wheat"], AD.BY_ID["caprine"]):
+        st.a = a
+        prop[a.id] = {i: st._propensity(l, k) for k, (i, l) in enumerate(zip(ids, h.lines))}
+    assert t.lines["tabaxi"].body["diet"] == "obligate_carnivore"
+    assert prop["caprine"]["tabaxi"] > 2 * prop["wheat"]["tabaxi"] > 0  # (the cat-folk lean to herds, and may still farm)
+    assert prop["wheat"]["leonin"] > 0 and prop["caprine"]["leonin"] > 10 * prop["wheat"]["leonin"]
+    assert prop["wheat"]["human"] > 0.9 and CR.learn_lag([prop["wheat"]["tabaxi"]])[0] >= 10 * CR.LAG_KYR - 1e-9
 
 
 def test_crops_are_cultivated_by_farmers_add_capacity_and_leave_layers(faketz, monkeypatch):

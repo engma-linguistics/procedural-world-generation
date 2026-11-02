@@ -35,7 +35,7 @@ def _run(tmp_path, dens, farm, elev, rain=None, lead=None, tech=None, overlay=No
     for k, v in q.items():
         (out / "layers" / f"eraq_{k}.bin").write_bytes(v.tobytes())
         eraq["layers"][k] = {"file": f"layers/eraq_{k}.bin", "dtype": "uint8", "shape": [F, n]}
-    lines = lines or [{"index": 0, "id": "a", "group_of": None, "cities": False}]
+    lines = lines or [{"index": 0, "id": "a", "group_of": None}]
     tech = tech or {"a": {"villages": [11.0, "invented"], "towns": [6.0, "invented"]}}
     run = {"layers": layers, "frames": [{"t": -float(a)} for a in ago],
            "meta": {"level": LEVEL, "cells": g.n, "world": None, "lineages": lines, "techtree": {"known": tech}, "eraq": eraq,
@@ -105,17 +105,6 @@ def test_a_change_of_hands_is_recorded_and_a_people_without_villages_drives_out(
     sites = {s["cell"]: s for s in ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"] if s["ruin_of"] is None}
     assert sites[0]["why"] == "driven out by the bees"  # (the plural name, without its note: PW-1106)
     assert sites[1]["abandoned_kyr"] is None and sites[1]["holder"] == "c" and [h for _, h in sites[1]["holders"]] == ["a", "c"]
-
-
-def test_city_minorities_are_quarters_of_towns(tmp_path):
-    g = shared_grid(LEVEL)
-    F = 13
-    overlay = np.full((F, g.n), 1, np.uint8)  # (the city group is everywhere)
-    lines = [{"index": 0, "id": "a", "group_of": None}, {"index": 1, "id": "city_k", "group_of": "k", "cities": True}]
-    out, _ = _run(tmp_path, _flat(g, F, 40), _flat(g, F, 1.0), _flat(g, F, 200), overlay=overlay, lines=lines)
-    sites = ST.derive(out)["doc"]["sites"]
-    assert any(s["quarters"] and s["quarters"][0]["group"] == "city_k" for s in sites if s["tier_now"] == "town")
-    assert not any(s["quarters"] for s in sites if s["tier_now"] == "village")
 
 
 def test_write_adds_the_ledger_and_meta(tmp_path):
