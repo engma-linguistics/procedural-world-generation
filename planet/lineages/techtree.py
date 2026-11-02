@@ -219,6 +219,7 @@ def goods_held(T: dict, present: np.ndarray | None, goods: dict | None, k: int) 
     return out
 
 
+GODS_MODES = ("faith_made", "belief_only", "absolute")  # (PW-1306)
 DOMAINS = ("war", "food", "craft", "build", "move", "know", "ritual", "trade")  # (the same eight as docs/references/tech-catalogue)
 POOLS = ("all", "specialists", "none")
 GENERATION_REF_YR = 25.0  # (spec.GENERATION_YR: a human generation)
@@ -458,15 +459,16 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
 
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
           goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
-          T: dict | None = None) -> dict:
-    """meta.techtree for a peoples run. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
+          T: dict | None = None, gods_mode: str = "faith_made") -> dict:
+    """meta.techtree for a peoples run. gods_mode (PW-1304): "faith_made" (default), "belief_only" or "absolute"; a tech marked
+    `gods = true` (divine magic) exists only in faith_made and absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
     ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
     lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods."""
     T = T or load()
     D = T["defaults"]
     cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
     techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
-             and (mode != "real" or t.get("mode") != "fantasy")}
+             and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
     order = [i for i in T["order"] if i in techs]
     rng = np.random.default_rng((seed, 675))
     L = {l["id"]: l for l in lines}
@@ -659,7 +661,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                         "generation_yr": gens[lid], "learners_x": round(learn[lid], 2), "rate_x": kind[lid].get("rate_x", 1.0),
                         "culture": {d: round(x, 2) for d, x in culture[lid][0].items()},
                         "take": {d: round(x, 2) for d, x in culture[lid][1].items()}}
-    return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode,
+    return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode, "gods_mode": gods_mode,
             "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
             "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
                        "needs_any": [n for n in techs[i].get("needs_any", []) if n in techs],
@@ -746,12 +748,10 @@ def anchor_check(tids, seeds: int = 41, T: dict | None = None, peers: int | None
     return out
 
 
-def for_run(run_dir: Path) -> dict:
-    """Builds (or rebuilds) meta.techtree of a stored peoples run in place; returns it."""
-    from .. import store as S
+def rebuild(run_dir: Path, gods_mode: str | None = None) -> dict:
+    """The tech tree of a stored peoples run, built afresh in memory (nothing written): today's tree file, the run's saved lines."""
     from . import land as LD
-    p = Path(run_dir) / "run.json"
-    run = json.loads(p.read_text())
+    run = json.loads((Path(run_dir) / "run.json").read_text())
     m = run["meta"]
     pp = m.get("presence_present")
     present = None
@@ -759,7 +759,13 @@ def for_run(run_dir: Path) -> dict:
         present = np.frombuffer((Path(run_dir) / pp["file"]).read_bytes(), np.uint8).reshape(pp["shape"]) / 100.0
     goods = LD.goods(m.get("world")) if m.get("world") else None
     lines = with_generations(m["lineages"], m.get("tree"))
-    tt = build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
-               m.get("era"), int(m.get("try_seed") or 0))
+    return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
+                 m.get("era"), int(m.get("try_seed") or 0), gods_mode=gods_mode or m.get("gods_mode", "faith_made"))
+
+
+def for_run(run_dir: Path) -> dict:
+    """Builds (or rebuilds) meta.techtree of a stored peoples run in place; returns it."""
+    from .. import store as S
+    tt = rebuild(run_dir)
     S.update_meta(run_dir, lambda r: r["meta"].__setitem__("techtree", tt))  # (re-read under the lock, PW-1040)
     return tt

@@ -37,7 +37,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 15  # 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 16  # 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -122,6 +122,7 @@ class Ctx:
             self.fuels = {k: _read_single(self.dir, spec) for k, spec in fl.items()}
         self._frame_cache: dict = {}
         self._cultures = False  # (cultures.json, or worked out from the demes on first use: cultures())
+        self._religion = False  # (gods.json and taboos.json, if the run has them: religion())
         self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
         self._presence = False  # (the presence table alone, on first use: presence_table())
 
@@ -144,6 +145,12 @@ class Ctx:
                 if pt is not None and len(pt["cells"]) == len(allv):
                     self._overlap = (pt, allv)
         return self._overlap
+
+    def religion(self) -> tuple[dict | None, dict | None]:
+        """(gods.json, taboos.json) of the run, each None where the run has no such file (never derived here: PW-1306, PW-1305)."""
+        if self._religion is False:
+            self._religion = tuple(json.loads((self.dir / f).read_text()) if (self.dir / f).exists() else None for f in ("gods.json", "taboos.json"))
+        return self._religion
 
     def cultures(self) -> dict | None:
         """The run's emergent cultures (PW-670): its cultures.json, else derived from its demes (not written), None without demes."""
@@ -1189,6 +1196,13 @@ def _cultures(ctx: Ctx, i: int, land: np.ndarray, era: float) -> list | None:
         x = C[c]
         out.append({"id": c, "name": x["name"], "people": x["people"], "how": x["how"], "since_kyr": x["born_kyr"], "land_share": round(k / int(land.sum()), 3),
                     "sea_craft": (x["traits"].get("sea_craft") or {}).get("verdict"), "changes": x["changes"]})
+        gd, tb = ctx.religion()
+        if gd and str(c) in gd["cultures"]:  # (PW-1306: its living gods, the most individuated first)
+            bs = sorted((gd["beings"][j] for j in gd["cultures"][str(c)]["living"]), key=lambda b: -b["individuation"])
+            out[-1]["gods"] = {"mode": gd["gods_mode"], "beings": [{"label": b["label"], "individuation": b["individuation"], "domains": [t[0] for t in b["top"]],
+                                                                    "grants_spells": b["grants_spells"], "bound_to": b["bound_to"]} for b in bs]}
+        if tb and str(c) in tb["cultures"]:  # (PW-1305)
+            out[-1]["taboos"] = [{k: t[k] for k in ("label", "scope", "origin", "why")} for t in tb["cultures"][str(c)]["taboos"]]
     return out
 
 
@@ -1329,6 +1343,12 @@ def markdown(b: dict) -> str:
         t += ["", "## Cultures here (emergent, PW-670; placeholder names)", ""]
         t += [f"- {c['name']} ({c['people']}, {c['how']}, since {c['since_kyr']:g} kyr): lives on {_pc(c['land_share'])} of the land"
               + (f"; {'; '.join(c['changes'])}" if c["changes"] else "") for c in cu]
+        for c in cu:
+            if c.get("gods") and c["gods"]["beings"]:
+                t += [f"  - gods of the {c['name']} ({c['gods']['mode']}): " + "; ".join(
+                    f"{g['label']} ({g['individuation']:.2f}{', grants spells' if g['grants_spells'] else ''})" for g in c["gods"]["beings"][:5])]
+            if c.get("taboos"):
+                t += [f"  - food taboos of the {c['name']}: " + "; ".join(f"{x['label']} ({x['origin']}, {x['scope']})" for x in c["taboos"])]
     mf = b.get("megafauna")
     if mf:
         t += ["", "## Megafauna (counted)", ""]

@@ -991,6 +991,19 @@ function drawCultures() {
     return;
   }
   if (!doc || doc.error) { el.innerHTML = `<p class="muted">No cultures for ${esc(result.id)}: ${esc(doc?.error || 'not found')}</p>`; return; }
+  if (result.godsDoc === undefined && !drawCultures.godsBusy) {  // (PW-1306: the gods panel; fetched once, the table draws without it meanwhile)
+    const id = result.id; drawCultures.godsBusy = true;
+    fetch(`../api/gods?run=${encodeURIComponent(id)}`, { cache: 'no-store' }).then((r) => r.json()).catch((e) => ({ error: e.message }))
+      .then((d) => { if (result?.id === id) result.godsDoc = d; }).finally(() => { drawCultures.godsBusy = false; if (tab === 'cultures') drawCultures(); });
+  }
+  const gd = result.godsDoc && !result.godsDoc.error ? result.godsDoc : null;
+  const godCell = (c) => {
+    const cu = gd?.cultures?.[c.id]; if (!cu) return '';
+    const bs = cu.living.map((i) => gd.beings[i]).sort((a, b) => b.individuation - a.individuation);
+    if (!bs.length) return '';
+    const tip = bs.map((b) => `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}${b.bound_to ? ', bound to ' + b.bound_to : ''}; ${b.top.map((t) => t[0]).join(', ')})`).join('\n');
+    return `<span title="${esc(tip)}">${esc(bs[0].label)}${bs.length > 1 ? ` <span class="muted">+${bs.length - 1}</span>` : ''}</span>`;
+  };
   const C = doc.cultures, L = Object.fromEntries((result.lineages || []).map((l) => [l.id, l]));
   const pname = (p) => esc((L[p]?.name || p).replace(/ \(.*$/, ''));
   const by = {};
@@ -1017,7 +1030,7 @@ function drawCultures() {
     for (const c of cs) if (keep.has(c.id)) { const k = c.parent != null && ids.has(c.parent) ? c.parent : 'root'; (kids[k] = kids[k] || []).push(c); }
     const st = cs.reduce((o, c) => { o[c.how] = (o[c.how] || 0) + 1; return o; }, {});
     h += `<h2>${pname(p)} <span class="muted" style="font-weight:normal;font-size:12px">${living(p)} living of ${cs.length}: ${st.founding || 0} founding, ${st.adapted || 0} adapted, ${st.apart || 0} apart; ${cs.filter((c) => c.end === 'merged').length} merged, ${cs.filter((c) => c.end === 'died out').length} died out</span></h2>
-      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${fmt(doc.from_kyr ?? 300)} ago → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>what changed</th><th></th></tr>`;
+      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${fmt(doc.from_kyr ?? 300)} ago → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>gods <span class="muted">(${esc(gd?.gods_mode || '…')})</span></th><th>what changed</th><th></th></tr>`;
     const row = (c, d) => {
       const par = c.parent != null ? C[c.parent] : null;
       const from = par && par.people !== c.people ? ` <span class="muted">(from ${esc(par.name)})</span>` : '';
@@ -1029,6 +1042,7 @@ function drawCultures() {
         <td><span style="color:${HOW_COL[c.how] || '#ccc'}">${esc(c.how)}</span></td><td style="white-space:nowrap">${bar(c)} <span class="muted">${fmt(c.born_kyr)}</span></td><td class="n">${c.area_mkm2}</td>
         <td class="muted">${esc(c.country_now || '')}</td><td>${w ? `${wayName(c, w[0])} <span class="muted">${Math.round(100 * w[1])}%</span>` : ''}</td>
         <td style="white-space:nowrap">${[skill(c.traits.sea_craft, 'sea craft'), skill(c.traits.open_country, 'herding lore')].filter(Boolean).join('<br>')}</td>
+        <td style="max-width:200px">${godCell(c)}</td>
         <td class="muted" style="max-width:340px">${esc(c.changes.join('; '))}</td><td>${map}</td></tr>`;
     };
     const walk = (k, d) => (kids[k] || []).sort((a, b) => b.born_kyr - a.born_kyr).forEach((c) => { h += row(c, d); walk(c.id, d + 1); });

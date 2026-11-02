@@ -6576,6 +6576,30 @@ earth_origins = 4
 source = "Trigger 2003, Understanding Early Civilizations (unverified) (unverified)"
 
 [[tech]]
+id = "moralizing_high_god"
+name = "a moralizing high god"
+track = "social"
+domains = ["ritual", "know"]
+needs = ["temples", "kingship"]
+rate = 0.08  # per kyr at full strength: JUDGEMENT (PW-1304). A hazard, never a law: at 0.4 every people with kingship had one within ~0.4 kyr (b4d502 check), so a few kyr and many never.
+spread = 0.3  # JUDGEMENT: a creed crosses a border slower than a tool (the default is 1): in the b4d502 check one invention took every people within 1 kyr at the default
+era = "bronze age"
+source = "Norenzayan 2013, Big Gods (Princeton UP): moralizing high gods arise with large, organized societies (a hypothesis). NOT the Whitehouse et al. 2019 Nature seshat paper: it was retracted in July 2021 after Beheim et al.'s critique on missing data (Retraction Watch 2021-07-07); the authors' 2021 'retake' disputes the reversal, so the ordering of complexity and moralizing gods is contested and the node is only a soft hazard. No dated Earth anchor."
+
+[[tech]]
+id = "divine_magic"
+name = "divine magic (clerics)"
+track = "arcane"
+domains = ["ritual"]
+needs = ["temples"]
+hands = false
+gods = true  # exists only when the world's gods_mode is faith_made or absolute (techtree.build gods_mode, PW-1304); kept apart from PW-696's other magic so belief-only worlds still get the faith steps
+rate = 0.2  # JUDGEMENT
+era = "bronze age"
+mode = "fantasy"
+source = "fantasy (D&D clerics); no citation"
+
+[[tech]]
 id = "taxation"
 name = "taxation and tribute"
 track = "social"
