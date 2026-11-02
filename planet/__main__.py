@@ -367,6 +367,18 @@ def cmd_cultures(args):
         print(ref, "\n".join(CU.lines_for_report(sm, json.loads(((out or d) / "cultures.json").read_text()))))
 
 
+def cmd_religion(args):
+    """Adds (or redoes) a peoples run's gods and food taboos (PW-1306, PW-1305): gods.json and taboos.json, a readout of its cultures; --out
+    writes them elsewhere and leaves the run untouched; --rebuild-techtree reads the faith techs from a tree built afresh in memory."""
+    from .lineages import taboos as TB, techtree as TT
+    for ref in args.runs:
+        d = S.find_run(ref)
+        out = Path(args.out) / d.name if args.out else None
+        tt = TT.rebuild(d, args.mode) if args.rebuild_techtree else None
+        sm = TB.write_religion(d, out, args.mode, tt)
+        print(ref, json.dumps(sm))
+
+
 def cmd_settlements(args):
     """Adds (or redoes) a peoples run's settlement ledger in place (PW-1011): settlements.json, meta.settlements."""
     from .lineages import settlements as ST
@@ -791,6 +803,14 @@ def main():
     cu.add_argument("--out", help="write cultures.json under this folder (one subfolder per run) and leave the runs untouched")
     cu.add_argument("--redemes", action="store_true", help="with --out: cut the demes afresh in memory first (today's demes.py), writing demes.json under --out too")
     cu.set_defaults(func=cmd_cultures)
+
+    rl = sub.add_parser("religion", help="add or redo a peoples run's gods (a lect-like tree per culture, with individuation) and food taboos: "
+                                         "gods.json, taboos.json; readout only, in place unless --out (needs cultures)")
+    rl.add_argument("runs", nargs="+", help="peoples run ids")
+    rl.add_argument("--out", help="write the files under this folder (one subfolder per run) and leave the runs untouched")
+    rl.add_argument("--mode", default="faith_made", choices=["faith_made", "belief_only", "absolute"], help="gods mode (default faith_made)")
+    rl.add_argument("--rebuild-techtree", action="store_true", help="read the faith techs from a tech tree built afresh in memory (a run made before them)")
+    rl.set_defaults(func=cmd_religion)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "

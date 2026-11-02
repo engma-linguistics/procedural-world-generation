@@ -393,3 +393,22 @@ def test_pleistocene_techs_take_their_band():
     assert TT.band_wait(T, "bread") is None and TT.rate_of(T, "bread") == T["defaults"]["track_rate"]["fire"]
     assert TT.band_wait(T, "cordage") is None
     assert TT.band_wait(T, "writing") is None  # (a soft tech: its lag after its prerequisites sets it)
+
+
+def test_faith_nodes_and_gods_mode():
+    """PW-1304: the moralizing high god sits on the social track behind temples + kingship; divine magic on the arcane track behind
+    temples, and exists only when gods_mode is faith_made or absolute (belief-only worlds keep the faith steps)."""
+    mg, dm = T["techs"]["moralizing_high_god"], T["techs"]["divine_magic"]
+    assert mg["track"] == "social" and set(mg["needs"]) == {"temples", "kingship"} and "Norenzayan" in mg["source"]
+    assert "retracted" in mg["source"]  # (the contested Whitehouse 2019 result is flagged, not leaned on)
+    assert dm["track"] == "arcane" and dm["needs"] == ["temples"] and dm["gods"]
+    lines = [line("human", at=200.0, track=_pop(100000, 5.0, 200.0))]
+
+    def ids(m, **kw):
+        return {t["id"] for t in TT.build(lines, None, None, seed=1, T=T, gods_mode=m, **kw)["techs"]}
+    for m in ("faith_made", "absolute"):
+        assert {"divine_magic", "moralizing_high_god"} <= ids(m)
+    b = ids("belief_only")
+    assert "divine_magic" not in b and "moralizing_high_god" in b
+    real = ids("faith_made", mode="real")
+    assert "divine_magic" not in real and "moralizing_high_god" in real

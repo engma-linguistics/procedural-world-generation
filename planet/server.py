@@ -17,6 +17,7 @@
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
+  GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306): its gods.json, else worked out on the fly, not saved
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -226,6 +227,38 @@ def cultures(query: str) -> tuple[dict, int]:
             _cultures_cache.clear()
             _cultures_cache[key] = CU.derive(d)["doc"]
         return _cultures_cache[key], 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+_gods_cache: dict = {}  # (run id, run.json mtime, mode) -> gods doc
+
+
+def gods(query: str) -> tuple[dict, int]:
+    """GET /api/gods?run=<id>[&mode=faith_made|belief_only|absolute]: the gods of a peoples run's cultures (lineages/gods.py, PW-1306): the
+    run's gods.json if it has one (and no other mode is asked for), else worked out from its cultures (some seconds) and kept in memory,
+    never written into the run. Needs cultures.json (a run older than PW-670 has none)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import gods as GD
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        mode = q.get("mode") or GD.MODE_DEFAULT
+        f = d / "gods.json"
+        if f.exists() and json.loads(f.read_text()).get("gods_mode") == mode:
+            return json.loads(f.read_text()), 200
+        if not (d / "cultures.json").exists():
+            return {"error": "this run has no cultures.json: run `planet cultures` on it first"}, 404
+        key = (d.name, (d / "run.json").stat().st_mtime, mode)
+        if key not in _gods_cache:
+            _gods_cache.clear()
+            _gods_cache[key] = GD.derive(d, mode)
+        return _gods_cache[key], 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -507,6 +540,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.wfile.write(body)
         if url.path == "/api/cultures":
             return self.send_json(*cultures(url.query))
+        if url.path == "/api/gods":
+            return self.send_json(*gods(url.query))
         if url.path == "/api/names":
             return self.send_json(*landmass_names(url.query))
         if url.path == "/api/favourites":

@@ -184,6 +184,9 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         FU.write(out)  # (what each people burns to cook: fuels.py, PW-722; adds a line to the stories and run.txt)
     DM.write(out)  # (the regional populations and their tree: demes.py, PW-981; demes.json, layers/demes.bin, meta.demes)
     CU.write(out)  # (emergent cultures from the demes: cultures.py, PW-670; cultures.json, meta.cultures)
+    if (out / "cultures.json").exists():  # (gods and food taboos from the cultures: gods.py, taboos.py, PW-1306, PW-1305; readout only)
+        from . import taboos as TB
+        TB.write_religion(out)  # (gods_mode: the default, faith_made, until the world-creation control exists)
     if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
         ST.write(out)
     T.update_index()
