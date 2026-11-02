@@ -30,7 +30,7 @@ def test_coherence_welds_inlets_and_drops_thin_shreds():
     hole = _interior(sim, True)  # a one-cell hole of ocean floor in a continent
     col.cont[hole], col.t[hole] = False, 7.0
     shred = _interior(sim, False)  # a thin shred of continent in the ocean
-    col.cont[shred], col.t[shred] = True, 12.0
+    col.cont[shred], col.t[shred] = True, 15.0
     isle = shred
     for c in np.random.default_rng(1).permutation(sim.grid.n):
         if c != shred and c not in sim.grid.neighbors[shred] and not sim.w_cont[c] and \
@@ -45,29 +45,8 @@ def test_coherence_welds_inlets_and_drops_thin_shreds():
     assert col.cont[isle]
     assert col.t[hole] > 20  # crust flowed in from around it...
     assert abs(col.t.sum() - t0.sum()) < 1e-6  # ...volume kept
-    assert col.t[shred] == 12.0 and col.t[isle] == 30.0
+    assert col.t[shred] == 15.0 and col.t[isle] == 30.0
     assert weld.sum() + drop.sum() <= 20  # and only on one-cell features
-
-
-def test_a_margin_cell_thinned_just_below_the_birth_bound_is_not_shredded():
-    """PW-1295: crust is born continental at BECOMES_CONT_KM but is shredded
-    only below SHRED_KM, lower: a shred-shaped cell (nearly ringed by ocean
-    floor) born at 20.x km and thinned to 19.x km by the next step's creep
-    stays continental, and isn't shredded and born again every few Myr. One
-    thinned below SHRED_KM is still a shred."""
-    from planet.tectonics.isostasy import BECOMES_CONT_KM
-    assert crust.SHRED_KM < BECOMES_CONT_KM
-    sim = Simulation(build_grid(5), 3, Params(), 2.0)
-    g = sim.grid
-    col = _column(sim)
-    alone = [c for c in np.random.default_rng(4).permutation(g.n) if not sim.w_cont[c] and
-             (sim.owner[g.neighbors[c]] == sim.owner[c]).all() and not sim.w_cont[g.neighbors[c]].any()]
-    near, thin = alone[0], next(c for c in alone[1:] if c not in g.neighbors[alone[0]])
-    col.cont[near], col.t[near] = True, BECOMES_CONT_KM - 0.5
-    col.cont[thin], col.t[thin] = True, crust.SHRED_KM - 0.5
-    _, drop = crust.coherence(sim, col)
-    assert col.cont[near] and not drop[near]
-    assert not col.cont[thin] and drop[thin]
 
 
 def test_churn_metric_flags_a_flip_back():

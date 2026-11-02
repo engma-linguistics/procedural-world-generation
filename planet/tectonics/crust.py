@@ -36,12 +36,6 @@ FOREARC_KM = 120.0  # km: width of the forearc (arc-trench gap) that subduction 
 L5_KM = 240.0  # km between level-5 cells (the unit of spread widths)
 THERMO_MYR = 100.0  # Myr: the thermostats' memory of a persisting error (integral time)
 THERMO_MAX = 0.4  # at most x e^(4 x 0.4) ~ 5 from that memory
-# km: continental crust thinner than this, nearly ringed by ocean floor, is a shred of margin (coherence). Below the
-# birth bound (BECOMES_CONT_KM): crust is born continental at 20 km but stays so until thinned to 15, so a margin
-# cell that a step of sediment creep or erosion takes from 20.x to 19.x km isn't shredded and born again every few
-# Myr (PW-1295: with the sea-floor creep, ~1150 cells per 400 Myr at L6 were shredded within 10 Myr of their
-# birth, at 19.3 km on average, and ~900 born again within 10 Myr of a shred).
-SHRED_KM = 15.0
 
 
 @dataclass
@@ -508,14 +502,11 @@ def coherence(sim, col, trench=None):
     nearly ringed by continental crust of its own plate (a one-cell inlet
     or hole, <= 2 of its neighbours oceanic) is, at 50-100 km, part of the
     thinned margin or basin around it: it counts as (thin) continental
-    crust from now on. A thin continental cell (< SHRED_KM) nearly ringed
-    by ocean floor (>= all but 2 of its neighbours oceanic) is a shred of
-    margin: ocean floor. (SHRED_KM is below the birth bound, a hysteresis:
-    a cell born at the bound and thinned a little by the next step's creep
-    or erosion stays continental instead of flickering, PW-1295.) A shred
-    keeps its thickness; into an inlet the continental crust around it
-    flows (lower-crustal flow, volume kept): its neighbours each give it an
-    equal share until it is
+    crust from now on. A thin continental cell (< BECOMES_CONT_KM) nearly
+    ringed by ocean floor (>= all but 2 of its neighbours oceanic) is a
+    shred of margin: ocean floor. A shred keeps its thickness; into an
+    inlet the continental crust around it flows (lower-crustal flow,
+    volume kept): its neighbours each give it an equal share until it is
     as thick as their new mean, so a one-cell pit becomes a shallow dip.
     Why: a mosaic of one-cell inlets and shreds, left by margins, arcs and
     sampling, was carried past the world grid by the moving plates and
@@ -541,7 +532,7 @@ def coherence(sim, col, trench=None):
       the cells per km (PW-749);
     - the crust around it must be continental crust by the model's own
       measure (its mean at least BECOMES_CONT_KM, as for a cell born
-      continental): a hole among thin margin cells
+      continental; the shred rule's bound): a hole among thin margin cells
       is a gap in the ocean-continent transition, not in a continent.
     In place on col; returns (cells made continental, cells made oceanic)."""
     g = sim.grid
@@ -558,7 +549,7 @@ def coherence(sim, col, trench=None):
     s_t = np.add.reduceat(np.where(ok, col.t[g.nbr_idx], 0.0), g.nbr_off[:-1])
     weld &= s_t >= BECOMES_CONT_KM * np.maximum(n_cont, 1)
     weld[weld] = _inlet_on_plate(sim, np.flatnonzero(weld))
-    shred = ring & col.cont & (n_cont <= 2) & (col.t < SHRED_KM)
+    shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
     if weld.any() or shred.any():
         v0 = col.t * col.cont
         col.cont = col.cont.copy()
