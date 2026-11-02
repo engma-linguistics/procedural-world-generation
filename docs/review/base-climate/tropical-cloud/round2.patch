@@ -1,0 +1,66 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index a1f028c7..5e6de241 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1238,6 +1238,17 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
+         cu = np.where(ocean, 0.0, tune["cloud_cu"] * np.clip((inst + c0) / c1, 0, 1) * np.sqrt(rh))
+         # the stratocumulus deck drifts over low coasts (the garua of Lima, the Namib's fog)
+         drift = np.clip(grid.nbr_mean(np.where(ocean, deck, 0.0)) * coastal, 0, 1)
++        if tune["cloud_inland_km"] > 0:  # (lane 131 candidate PW-1347 b: the deck rides the onshore wind inland)
++            hh = _geom(grid)["h"]
++            b_in = np.where(ocean, 0.0, np.exp(-hh / tune["cloud_inland_km"]) * coastal)
++            far = carry(grid, si["v"], np.where(ocean, deck, 0.0), b_in, 4 * tune["cloud_inland_km"], 0.25)
++            drift = np.maximum(drift, np.clip(np.where(ocean, 0.0, far), 0, 1))
++        if tune["cloud_seastab_km"] > 0:  # (lane 131 candidate PW-1347 c: the cool sea's stability rides inland)
++            hh = _geom(grid)["h"]
++            b_in = np.where(ocean, 0.0, np.exp(-hh / tune["cloud_seastab_km"]))
++            st = carry(grid, si["v"], np.where(ocean, np.maximum(si["t_ref"] - si["t_sl"], 0.0), 0.0), b_in,
++                       4 * tune["cloud_seastab_km"], 0.25)
++            si = {**si, "lts_sea": np.where(ocean, 0.0, st)}
+         layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 * _layer_gate(si, tune) - tune["cloud_polar"] * pole)
+                         * (1 - drift), 0, 1)
+         low = np.where(ocean, sea, layer)
+@@ -1262,7 +1273,12 @@ def _layer_gate(si, tune):
+     a, b = tune["cloud_rh_lts"]
+     if b <= 0:
+         return 1.0
+-    return np.clip((si["t_ref"] - si["mse_t"] + a) / b, 0, 1)
++    lts = si["t_ref"] - si["mse_t"]
++    if "lts_sea" in si:
++        lts = np.maximum(lts, si["lts_sea"] - a)  # (a carried 0 adds no cloud)
++    g = np.clip((lts + a) / b, 0, 1)
++    f = tune["cloud_rh_floor"]
++    return f + (1 - f) * g if f > 0 else g
+ 
+ 
+ def day_hours(lat, tilt: float = 23.4) -> tuple[np.ndarray, np.ndarray]:
+@@ -1672,6 +1688,9 @@ TUNE = dict(
+     cloud_rh=0.55,  # land: cloud per unit of relative humidity (^1.5) of the air mass ...
+     cloud_rh_lts=(2.0, 6.0),  # ... where the air aloft is warm against the ground's (stable; C: from -[0], in
+     # full over [1] more; _layer_gate)
++    cloud_rh_floor=0.0,  # (lane 131 candidate: share of the layer cloud kept in unstable air)
++    cloud_inland_km=0.0,  # (lane 131 candidate: e-fold km the sea's Sc deck rides the wind inland; 0 = off)
++    cloud_seastab_km=0.0,  # (lane 131 candidate: e-fold km the sea's inversion rides the wind inland; 0 = off)
+     cloud_polar=0.25,  # ... thin cloud over the cold poles (from 60 deg, in full from 80) ...
+     cloud_cu=0.5,  # ... fair-weather cumulus where the ground makes the air unstable ...
+     cloud_cu_c=(4.0, 6.0),  # ... from this many C stable, in full over this many more
+@@ -1713,6 +1732,8 @@ TUNE = dict(
+     cur_min=0.3,  # ... scaled with speed, between these multiples
+     cur_max=3.0,
+     # temperature
++    mee_k=0.0,  # (lane 131 candidate: C per km of plateau-smoothed ice-free height warmer than the free air; 0 = off)
++    mee_km=300.0,  # (... smoothed over this many km: a plateau's mass, not a peak)
+     continental=24.0,  # C: seasonal half-swing of land left to itself (times season strength)
+     coast=0.35,  # sea air at a coast per share of sea neighbours (sea breezes, fog)
+     sum_tau=86400.0,  # s: the summer air's memory over land: the sunlit, convective boundary layer takes up the
+@@ -2534,6 +2555,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     tilt_adj = (tilt - 23.4) * 0.3  # more tilt: milder poles, slightly cooler tropics
+     eq, pole = 27.8 + 0.5 * dT - 0.3 * tilt_adj, -10.4 + 1.5 * dT + tilt_adj
+     temp0 = temperature(grid, surf, eq, pole)
++    if tune["mee_k"] > 0:  # (lane 131 candidate PW-1335: the mass elevation effect of broad, ice-free high ground)
++        bare = land & (ice <= 0)
++        z_b = np.where(bare, np.maximum(elev, 0.0), 0.0)
++        temp0 = temp0 + tune["mee_k"] * 1e-3 * np.where(bare, np.minimum(smooth(grid, z_b, tune["mee_km"]), z_b), 0.0)
+     # the latitude's sea temperature; below freezing, the air over sea ice
+     t_sea_air = sea_temperature(grid, eq - 0.8, pole + 2.9)
+     t_sea = np.maximum(t_sea_air, FREEZE)
