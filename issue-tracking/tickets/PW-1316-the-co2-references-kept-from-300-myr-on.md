@@ -1,15 +1,19 @@
 ---
+id: PW-1316
 title: The CO2 references, kept from 300 Myr on, lock in whatever transient the spin-up ended on
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med
 found_by: lane-115
 blocked_by: []
-relates: [PW-558, PW-559, PW-576, PW-1295]
-refs: [planet/tectonics/earth.py::global_temperature, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/envdraw.py, tests/test_envelopes.py]
+relates: [PW-558, PW-559, PW-576, PW-1295, PW-1158]
+refs: ["planet/tectonics/earth.py::global_temperature", docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/envdraw.py, tests/test_envelopes.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +31,6 @@ counting). Options, for the owner:
 - [ ] A: learn the source's reference as a longer mean over the spin-up (e.g. its whole 100-300 Myr mean, not a
   100 Myr e-folding that weights its end)
 - [ ] B: keep it as is (the trips are rare: 1 of 40 left the test band here)
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-frozen-co2-references-lock-in-spin-up-transients.md (found by lane-115).

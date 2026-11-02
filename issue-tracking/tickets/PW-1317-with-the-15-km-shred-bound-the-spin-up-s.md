@@ -1,15 +1,19 @@
 ---
+id: PW-1317
 title: With the 15 km shred bound, the spin-up's arcs and ridges are weaker; check whether kept thin margins jam trenches
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: s
 impact: med
 found_by: lane-115
 blocked_by: []
 relates: [PW-1295, PW-1314, PW-558]
-refs: [planet/tectonics/crust.py::coherence, planet/tectonics/crust.py::arc_growth, planet/tectonics/crust.py::thermostats, planet/tectonics/earth.py::global_temperature, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/envdraw.py, tests/test_envelopes.py]
+refs: ["planet/tectonics/crust.py::coherence", "planet/tectonics/crust.py::arc_growth", "planet/tectonics/crust.py::thermostats", "planet/tectonics/earth.py::global_temperature", docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/envdraw.py, tests/test_envelopes.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -30,3 +34,6 @@ What to try:
   (envdraw.py plus `bd.at_trenches`), and the subducting trench length
 - [ ] if that is the difference: let continental crust thinner than BECOMES_CONT_KM subduct like ocean floor; screen
   on the 20 envelope seeds (band count and spin-up source) before any judge
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-kept-thin-margins-may-jam-trenches.md (found by lane-115).
