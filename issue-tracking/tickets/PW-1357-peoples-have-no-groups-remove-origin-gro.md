@@ -20,5 +20,6 @@ updated: 2026-11-02
 In plain words: owner 2026-11-02: peoples should not carry groups for now; ways of life and splits come from cultures and geography (the density ladder's Q2 A: farmable land farms once the people knows how). No subspecies either (it would open 'fifty kinds of aarakocra'). Keep the steppe/forest orc pair recorded for Seven Meals later, as notes, not live entries. Do it with the density ladder build so humans' and orcs' ways of life still exist.
 
 ## Updates
+- 2026-11-02: Daniel 11-02: the peoples view (Peoples workbench, peoples and their groups) is for meaningfully genetically distinct groups, currently one per species; not necessarily forever. Ways of life and town minorities never go there.
 - 2026-11-02: Status todo -> done. Lanes 136/137 (merged b4bb9a81): density ladder built per PW-1350; D&D humans 56% -> 17% (median of 14 runs), people total 2.3-2.6x; every rung inside ladder.md's sourced range. Results docs/review/peoples/density-ladder/build.md.
 - 2026-11-02: Created.

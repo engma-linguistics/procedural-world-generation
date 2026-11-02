@@ -29,5 +29,6 @@ Options:
 Lean A.
 
 ## Updates
+- 2026-11-02: Daniel 11-02 confirmed: drop them.
 - 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02 asked whether this means a group for every minority anywhere (dozens). It would: groups don't scale to minorities. Coordinator call (he deferred): B, remove the two city groups; town minorities wait for a towns and minorities model.
 - 2026-11-02: Created from inbox draft draft-city-minorities-groups.md (found by lane 136 / lane 137 (density ladder build)).
