@@ -74,7 +74,7 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 from . import climate as C
 from . import kernels
@@ -209,9 +209,28 @@ def ice_growth(t_air: np.ndarray, half: np.ndarray) -> np.ndarray:
     over the sea (a sine of half-swing `half` around the annual mean t_air,
     below the sea's freezing point) by Lebedev's rule h = 1.33 FDD^0.58 cm
     (Arctic ~2 m)."""
+    if (isinstance(t_air, np.ndarray) and isinstance(half, np.ndarray) and t_air.ndim == half.ndim == 1
+            and t_air.dtype == half.dtype == np.float64 and t_air.shape == half.shape):
+        out = np.empty(t_air.shape)
+        _ice_growth_k(np.ascontiguousarray(t_air), np.ascontiguousarray(half), _MONTH_COS, C.FREEZE, out)
+        return out
     m = np.cos(2 * np.pi * (np.arange(12) + 0.5) / 12)[:, None]
     fdd = (np.maximum(C.FREEZE - (t_air + half * m), 0.0) * 30.44).sum(0)
     return 0.0133 * fdd**0.58
+
+
+_MONTH_COS = np.cos(2 * np.pi * (np.arange(12) + 0.5) / 12)
+
+
+@njit(cache=True, parallel=True)
+def _ice_growth_k(t_air, half, mcos, freeze, out):
+    """ice_growth per cell: the freezing degree-days summed month by month (numba's power is libm's, numpy's can differ
+    in the last bit: PW-1297)."""
+    for i in prange(t_air.shape[0]):
+        fdd = 0.0
+        for m in range(12):
+            fdd = fdd + max(freeze - (t_air[i] + half[i] * mcos[m]), 0.0) * 30.44
+        out[i] = 0.0133 * fdd**0.58
 
 
 def open_share(sst: np.ndarray, frozen: np.ndarray, half: np.ndarray) -> np.ndarray:

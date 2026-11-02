@@ -29,6 +29,7 @@ relaxing asthenosphere).
 from __future__ import annotations
 
 import numpy as np
+from numba import njit, prange
 
 from ..surface import HOTSPOT
 
@@ -199,9 +200,36 @@ def sediment_iso(cont, rock, sed):
     return _k(cont, rock) * (RHO_MANTLE - sediment_density(sed))
 
 
+@njit(cache=True, inline="always")
+def _lift1(cont, sed):
+    """sediment_lift at one cell: the numpy form's arithmetic in its order (numba's exp is libm's, numpy's is SIMD: they
+    can differ in the last bit, PW-1297)."""
+    c = sed if sed > 0 else 0.0
+    rho = RHO_CONT if cont else RHO_OCEAN
+    deficit = (rho - SED_DEEP) * c + (SED_DEEP - SED_TOP) * SED_COMPACT_KM * (1 - np.exp(-c / SED_COMPACT_KM))
+    return (K_LAND if cont else K_SEA) * deficit
+
+
+@njit(cache=True, parallel=True)
+def _sediment_lift_k(cont, sed, out):
+    for i in prange(sed.shape[0]):
+        out[i] = _lift1(cont[i], sed[i])
+
+
+def _fast(*arrs):
+    """The arrays are 1-D, C-contiguous and the same length (the kernels' inputs); float ones float64."""
+    n = arrs[0].shape[0] if isinstance(arrs[0], np.ndarray) and arrs[0].ndim == 1 else -1
+    return n >= 0 and all(isinstance(a, np.ndarray) and a.ndim == 1 and a.shape[0] == n and a.flags.c_contiguous
+                          for a in arrs)
+
+
 def sediment_lift(cont, rock, sed):
     """m a pile of sed km of sediment stands higher than the same thickness
     of crust would (the integral of the density deficit)."""
+    if _fast(cont, sed) and cont.dtype == np.bool_ and sed.dtype == np.float64:
+        out = np.empty(sed.shape)
+        _sediment_lift_k(cont, sed, out)
+        return out
     c = np.maximum(sed, 0)
     rho = np.where(cont, RHO_CONT, RHO_OCEAN)
     deficit = (rho - SED_DEEP) * c + (SED_DEEP - SED_TOP) * SED_COMPACT_KM * (1 - np.exp(-c / SED_COMPACT_KM))
@@ -213,12 +241,35 @@ def sediment_km(cover, extra):
     return np.maximum(cover - extra[:, LAVA], 0)
 
 
+@njit(cache=True, parallel=True)
+def _elevation_k(thick, age, cont, rock, swell, sw0, use_sw, sed, out):
+    for i in prange(thick.shape[0]):
+        extra = thick[i] - OCEAN_KM
+        if cont[i]:
+            base = 250 + ISO_LAND * (thick[i] - CONT_KM)
+        else:
+            pile = 0.0
+            if rock[i] == HOTSPOT:
+                pile = min(max(extra, 0.0), VOLCANO_PILE_KM)
+            a = age[i] if age[i] > 0 else 0.0
+            od = -min(2600 + 345 * np.sqrt(a), 6400)
+            base = od + ISO_SEA * extra + (ISO_VOLCANO - ISO_SEA) * pile
+        out[i] = base + _lift1(cont[i], sed[i]) + (swell[i] if use_sw else sw0)
+
+
 def elevation(thick, age, cont, rock, swell, sed):
     """m above sea level (swell: m of plume doming minus the sea level;
     sed: km of the crust that is (light) sediment, see sediment_km)."""
     # (a volcanic pile is held up by the plate's flexure only up to the
     # load it can carry, VOLCANO_PILE_KM; crust beyond that floats like
     # any other: PW-172, a 45 km sediment-laden pile stood at 11.5 km)
+    if (_fast(thick, age, cont, rock, sed) and thick.dtype == age.dtype == sed.dtype == np.float64
+            and cont.dtype == np.bool_ and rock.dtype.kind in "iu"
+            and (np.ndim(swell) == 0 or (_fast(thick, swell) and swell.dtype == np.float64))):
+        out = np.empty(thick.shape)
+        use = np.ndim(swell) != 0
+        _elevation_k(thick, age, cont, rock, swell if use else out, 0.0 if use else float(swell), use, sed, out)
+        return out
     extra = thick - OCEAN_KM
     pile = np.where(rock == HOTSPOT, np.clip(extra, 0, VOLCANO_PILE_KM), 0.0)
     return np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),

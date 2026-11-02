@@ -489,6 +489,50 @@ TOP_MM, DEEP_MM = 50.0, 150.0  # water the topsoil (0-0.3 m) and subsoil (0.3-1.
 SMAX = 5.0  # mm/day: what full soil can supply to the leaves (LPJ's Emax)
 
 
+@njit(cache=True, parallel=True)
+def _site_k(p_m, t_m, snow, water, pet_m, north, pet, dry, drought, fire, tg):
+    """site's per-cell reductions over the twelve months, in one pass (numpy's arithmetic in its order, sums month by month)."""
+    for i in prange(p_m.shape[1]):
+        ps = pet_m[0, i]
+        nd = 0
+        dry_s = np.inf
+        wet_w = -np.inf
+        f = 0.0
+        for m in range(12):
+            if m > 0:
+                ps = ps + pet_m[m, i]
+            t = t_m[m, i]
+            p = p_m[m, i]
+            if p < 2 * t and t > 0:
+                nd += 1
+            jul = m >= 3 and m <= 8
+            summer = jul if north[i] else not jul
+            if summer:
+                if p < dry_s:
+                    dry_s = p
+            elif p > wet_w:
+                wet_w = p
+            r = water[m, i] / max(pet_m[m, i], 1e-6)
+            c = min(max((1.0 - r) / 0.8, 0.0), 1.0)
+            v = c * (1.0 if t > 5 else 0.0) * (1.0 if snow[m, i] <= 1 else 0.0)
+            f = v if m == 0 else f + v
+        pet[i] = ps
+        dry[i] = nd
+        drought[i] = (dry_s < 40) and (dry_s < wet_w / 3)
+        fire[i] = f / 12.0
+        # growth temperature: the mean of the three warmest months, summed smallest to largest
+        a0, a1, a2 = -np.inf, -np.inf, -np.inf  # a2 >= a1 >= a0 the three largest
+        for m in range(12):
+            t = t_m[m, i]
+            if t >= a2:
+                a0, a1, a2 = a1, a2, t
+            elif t >= a1:
+                a0, a1 = a1, t
+            elif t > a0:
+                a0 = t
+        tg[i] = ((a0 + a1) + a2) / 3
+
+
 def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None,
          relief=None, light=None, extra_water=None, extra_pet=None) -> dict:
     """The climate inputs of each cell: climate.months plus the envelope
@@ -516,26 +560,19 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
         mo["water"] = mo["water"] + add
         pw = p + add.sum(0)
     tc, tw = np.minimum(t_cold, t_warm), np.maximum(t_cold, t_warm)
-    pet = mo["pet"].sum(0)
-    dry = ((mo["p"] < 2 * mo["t"]) & (mo["t"] > 0)).sum(0)
     rel = np.zeros_like(temp) if relief is None else np.asarray(relief, float)
     steep = np.clip((rel - 500.0) / 2000.0, 0, 0.6)
     north = np.asarray(lat) >= 0
+    # the per-cell reductions over the months, in one pass: potential evaporation of the year, Gaussen dry months,
+    # summer drought as Koppen's Cs/Ds has it (the driest month of the summer half-year under 40 mm and under a third
+    # of the winter's wettest), fire weather (the expected share of the year the litter is dry: a month above 5 C, free
+    # of snow, is dry for sure when rain and snowmelt bring under 20% of its potential evaporation, never above 100%;
+    # in between, in some years: its dry spells) and the growth temperature (the mean of the three warmest months,
+    # the respiration acclimates to it, RESP_ACCLIM)
+    n = len(north)
+    pet, dry, drought, fire, tg = np.empty(n), np.empty(n, np.int64), np.empty(n, bool), np.empty(n), np.empty(n)
+    _site_k(mo["p"], mo["t"], mo["snow"], mo["water"], mo["pet"], north, pet, dry, drought, fire, tg)
     mi = pw / np.maximum(pet, 1.0)
-    # fire weather: the expected share of the year the litter is dry. A month
-    # (above 5 C, free of snow) is dry for sure when rain and snowmelt bring
-    # under 20% of its potential evaporation, never above 100% (in between,
-    # in some years: its dry spells)
-    # summer drought as Koppen's Cs/Ds has it: the driest month of the summer
-    # half-year under 40 mm and under a third of the winter's wettest
-    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
-    summer = np.where(north[None, :], jul, ~jul)
-    dry_s = np.where(summer, mo["p"], np.inf).min(0)
-    drought = (dry_s < 40) & (dry_s < np.where(summer, -np.inf, mo["p"]).max(0) / 3)
-    ratio = mo["water"] / np.maximum(mo["pet"], 1e-6)
-    fire = (np.clip((1.0 - ratio) / 0.8, 0, 1) * (mo["t"] > 5) * (mo["snow"] <= 1)).sum(0) / 12.0
-    # growth temperature: the mean of the three warmest months (the respiration acclimates to it, RESP_ACCLIM)
-    tg = np.sort(mo["t"], 0)[-3:].mean(0)
     return dict(mo, fire_season=fire, summer_drought=drought, tc=tc, tw=tw, tg=tg, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
                 precip=p, pet_y=pet, mi=mi, dry=dry, lat=np.asarray(lat, float),
                 cap1=np.full(len(p), TOP_MM), cap2=DEEP_MM * (1 - steep),

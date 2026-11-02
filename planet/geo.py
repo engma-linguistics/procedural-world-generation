@@ -4,6 +4,9 @@ conversions between unit vectors and latitude/longitude (degrees)."""
 from __future__ import annotations
 
 import numpy as np
+from numba import njit
+
+from .kernels import components
 
 R_KM = 6371.0  # planet radius (Earth's), km
 
@@ -66,35 +69,65 @@ def is_land(elev, ice=None, grid=None) -> np.ndarray:
     if not wet.any():
         return ~wet
     g = _grid_of(elev.shape[0], grid)
-    from . import kernels
-    lab, k = kernels.components(wet, g.nbr_off, g.nbr_idx)
-    size = np.bincount(lab[wet], minlength=k)
-    sea = size * cell_area_km2(g.n) >= SEA_MIN_KM2
-    sea[np.argmax(size)] = True
-    if not sea.all():
-        # bodies one low cell apart join (union-find over the bodies), and any group with a sea in it is sea
-        src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
-        dst = g.nbr_idx
-        sill = ~wet & (elev <= SILL_M)
-        e = sill[src] & wet[dst]
-        s, b = src[e], lab[dst[e]]  # (sill cell, a body beside it)
-        low = np.full(g.n, k)
-        np.minimum.at(low, s, b)
-        pair = b != low[s]  # (each other body beside a sill joins its lowest-numbered one)
-        parent = np.arange(k)
+    return _land_k(wet, np.ascontiguousarray(elev, dtype=np.float64), g.nbr_off, g.nbr_idx, cell_area_km2(g.n),
+                   SEA_MIN_KM2, SILL_M)
 
-        def root(x):
-            while parent[x] != x:
-                parent[x] = parent[parent[x]]
-                x = parent[x]
-            return x
-        for x, y in set(zip(low[s][pair].tolist(), b[pair].tolist())):
-            rx, ry = root(x), root(y)
-            if rx != ry:
-                parent[rx] = ry
-        roots = np.array([root(x) for x in range(k)])
-        sea = np.bincount(roots, weights=sea, minlength=k)[roots] > 0
-    return ~(wet & sea[np.maximum(lab, 0)])
+
+@njit(cache=True)
+def _find(parent, x):
+    while parent[x] != x:
+        parent[x] = parent[parent[x]]
+        x = parent[x]
+    return x
+
+
+@njit(cache=True)
+def _land_k(wet, elev, nbr_off, nbr_idx, area, min_km2, sill_m):
+    """is_land after the wet mask, in one sequential pass (integer logic, so the answer is the numpy form's exactly):
+    the wet bodies, the ones big enough or the largest are sea, bodies one low cell apart join (union-find), a group
+    with a sea in it is sea."""
+    n = wet.shape[0]
+    lab, k = components(wet, nbr_off, nbr_idx)
+    size = np.zeros(k, np.int64)
+    for i in range(n):
+        if wet[i]:
+            size[lab[i]] += 1
+    sea = np.zeros(k, np.bool_)
+    big = 0
+    for b in range(k):
+        sea[b] = size[b] * area >= min_km2
+        if size[b] > size[big]:
+            big = b
+    sea[big] = True
+    if not sea.all():
+        parent = np.arange(k)
+        for s in range(n):
+            if wet[s] or not elev[s] <= sill_m:
+                continue
+            low = k
+            for e in range(nbr_off[s], nbr_off[s + 1]):
+                j = nbr_idx[e]
+                if wet[j] and lab[j] < low:
+                    low = lab[j]
+            if low == k:
+                continue
+            for e in range(nbr_off[s], nbr_off[s + 1]):
+                j = nbr_idx[e]
+                if wet[j] and lab[j] != low:
+                    rx, ry = _find(parent, low), _find(parent, lab[j])
+                    if rx != ry:
+                        parent[rx] = ry
+        grp = np.zeros(k, np.bool_)
+        for b in range(k):
+            if sea[b]:
+                grp[_find(parent, b)] = True
+        for b in range(k):
+            sea[b] = grp[_find(parent, b)]
+    out = np.ones(n, np.bool_)
+    for i in range(n):
+        if wet[i] and sea[lab[i]]:
+            out[i] = False
+    return out
 
 
 def world_land(L: dict, grid=None) -> np.ndarray:

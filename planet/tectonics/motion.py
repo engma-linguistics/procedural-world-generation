@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from numba import njit
 
 from . import mantle
 from .plates import CMYR, P_MAX
@@ -98,6 +99,25 @@ class CellForces:
     drag: np.ndarray  # (n, 3, 3)
 
 
+@njit(cache=True)
+def _add_rows(out, idx, vals):
+    """np.add.at(out, idx, vals) for 2-D rows, in the same (sequential) order: bit-identical, without add.at's overhead."""
+    for i in range(idx.shape[0]):
+        r = idx[i]
+        for j in range(out.shape[1]):
+            out[r, j] += vals[i, j]
+
+
+def _add_at(out, idx, vals):
+    """np.add.at for row scatter-adds (out (m, k), vals (len(idx), k) or broadcastable), else numpy's."""
+    idx = np.asarray(idx)
+    if out.ndim == 2 and out.dtype == np.float64 and idx.ndim == 1 and idx.dtype.kind in "iu":
+        v = np.ascontiguousarray(np.broadcast_to(vals, (idx.shape[0], out.shape[1])), dtype=np.float64)
+        _add_rows(out, idx.astype(np.int64, copy=False), v)
+    else:
+        np.add.at(out, idx, vals)
+
+
 def forces(sim, bd: Boundaries, rng) -> CellForces:
     """Move every plate's angular velocity toward the one the forces on it
     call for (relaxing over velocity_timescale, capped at max_speed; in
@@ -117,27 +137,27 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     resist = p.slab_drag * np.clip(conv, 0, 15)
     slab_a = (p.slab_pull * np.clip(sim.w_age[a] / 80, 0.3, 1.5) - resist) * L
     slab_b = (p.slab_pull * np.clip(sim.w_age[b] / 80, 0.3, 1.5) - resist) * L
-    np.add.at(F, a[bd.a_down], d[bd.a_down] * slab_a[bd.a_down, None])
-    np.add.at(F, b[bd.b_down], -d[bd.b_down] * slab_b[bd.b_down, None])
+    _add_at(F, a[bd.a_down], d[bd.a_down] * slab_a[bd.a_down, None])
+    _add_at(F, b[bd.b_down], -d[bd.b_down] * slab_b[bd.b_down, None])
     # ridge push: away from opening boundaries
     o = bd.opening
-    np.add.at(F, a[o], -d[o] * p.ridge_push * L)
-    np.add.at(F, b[o], d[o] * p.ridge_push * L)
+    _add_at(F, a[o], -d[o] * p.ridge_push * L)
+    _add_at(F, b[o], d[o] * p.ridge_push * L)
     # collision: resist further closing, harder the faster they close
     c = bd.collision
     k = (p.collision_drag * np.clip(conv[c], 0, 15) * L)[:, None]
-    np.add.at(F, a[c], -d[c] * k)
-    np.add.at(F, b[c], d[c] * k)
+    _add_at(F, a[c], -d[c] * k)
+    _add_at(F, b[c], d[c] * k)
     # basal traction: the mantle flowing under the plate from warm to cold
     F += mantle.traction(sim)
 
     torque = np.zeros((P_MAX, 3))
     cell_torque = np.cross(P, F)
-    np.add.at(torque, sim.owner, cell_torque)
+    _add_at(torque, sim.owner, cell_torque)
     w = sim.cell_area * (1 + p.continental_keel * sim.w_cont)
     outer = (np.eye(3)[None] - P[:, :, None] * P[:, None, :]) * w[:, None, None]
     drag = np.zeros((P_MAX, 3, 3))
-    np.add.at(drag, sim.owner, outer)
+    _add_at(drag.reshape(P_MAX, 9), sim.owner, outer.reshape(len(outer), 9))
 
     decay = np.exp(-dt / p.mantle_timescale)
     relax = 1 - np.exp(-dt / p.velocity_timescale)

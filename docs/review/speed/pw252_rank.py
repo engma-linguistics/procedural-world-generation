@@ -1,5 +1,6 @@
 import sys, json
-sys.path.insert(0, "/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a8b7e588388848b25/docs/review/gpu/scripts")
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "gpu", "scripts"))
 from stages import load, stage_of
 from collections import defaultdict
 fn = sys.argv[1]; top = int(sys.argv[2]) if len(sys.argv) > 2 else 40
