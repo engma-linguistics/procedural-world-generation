@@ -99,3 +99,17 @@ For the sapiens-node dates (PW-971, docs/review/lineages/sapiens-dates.md). Read
   (PW-987); none chosen yet.
 - [ ] The Dikika cut-mark dispute (a rebuttal to McPherron et al. 2010), no reference yet.
 - [ ] Dediu & Levinson 2013 full text for the Neanderthal/sapiens split date they use.
+
+## Peoples: the density ladder (PW-1275, lane 130; docs/review/peoples/density-ladder/ladder.md)
+
+- [ ] **Zimmermann, Hilpert & Wendt 2009**, "Estimations of population density for selected periods between the Neolithic and AD
+  1800", Human Biology 81(2-3):357-380. Open access on Wayne State Digital Commons (digitalcommons.wayne.edu, humbiol article 1060),
+  but the site blocks agents; a browser download works. Its per-period table (Neolithic to 1800, central Europe) would firm up the
+  ladder's bronze, iron, medieval and c. 1800 steps.
+- [ ] **Boserup 1981**, *Population and Technology* (p. 23, the food-supply systems by density) and **Boserup 1965**: read only as
+  quoted by Pingali & Binswanger 1983; that copy gives bush fallow 4-64 /km², the often-quoted figure is 4-16.
+- [ ] **An early-modern densest-region source** (the Low Countries, Lombardy or the Yangzi delta c. 1500-1800, persons per km² of
+  total land), for the renaissance top of the plough rung (ladder question 7).
+- [ ] **Kalff, Downing & Smith 1985**, J. Arid Environments 9:173 (full text; abstract only read): density against rainfall in dry
+  Kenya, the agro-pastoral rung's scaling.
+- [ ] **Wang & Huang 1999**, Bull. Inst. Hist. Philology 70(2):363 (full text; abstract only): wet-rice densities and their area basis.
