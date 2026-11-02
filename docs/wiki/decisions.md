@@ -229,3 +229,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: merged lane 123 (docs only): plant check; grass too productive, wet tropics too little, herds fine on Earth (D42 for Daniel; PW-1328..1332).
 - 2026-11-02: merged lane 124: PW-1324 not reproduced (same seed same world at 1-16 threads); thread-independence test added.
 - 2026-11-02: merged lane 125 (docs only): tropical shade excess = cloud_rh in warm air (PW-1334); sky cover read as sunshine in the summer split, open-water evap and inspector (PW-1327/1336); cool coldest month separate (PW-1335).
+- 2026-11-02: merged lane 122 (e89de6af): 1 km land zoom section 2h48m/110 GB -> 16 min/86 GB, outputs identical; cube-sphere tiling (54 cells, 47 land sections on dba204). PW-1303/1319 done; follow-ups PW-1337..1340 under PW-1299; PW-1296 now also blocked by PW-1338 (section orientation).

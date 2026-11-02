@@ -1,4 +1,5 @@
 ---
+id: PW-1338
 title: Land zoom sections need an orientation in zoom(), save() and zoom.json before any tiling sweep
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane122
 blocked_by: []
 relates: [PW-1319]
 refs: ["planet/zoom/tiling.py::sections", "planet/zoom/regional.py::Frame", "planet/zoom/regional.py::zoom", "planet/zoom/regional.py::build", "planet/zoom/regional.py::save", "planet/zoom/regional.py::zoom_id", docs/review/land-zoom/tiling.md, docs/review/land-zoom/seams.py, tests/test_zoom_tiling.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -23,3 +26,6 @@ vector or bearing in degrees) to the build arguments, the zoom id (so a rotated 
 - [ ] `planet zoom --section px.1.1` (or `--up`) builds the tiling's section for a world; ids differ by orientation
 - [ ] corners in `zoom.json` follow the rotation; `seams.py` accepts rotated zooms
 - [ ] two neighbouring sections' overlap band checked against `tiling.sections()[..]['overlap_km']`
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-land-zoom-section-orientation.md (found by lane122).

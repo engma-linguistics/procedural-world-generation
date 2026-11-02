@@ -1,5 +1,6 @@
 ---
-title: Land zoom memory: chunk the vegetation pass and find the 9 GB between live arrays and RSS
+id: PW-1337
+title: "Land zoom memory: chunk the vegetation pass and find the 9 GB between live arrays and RSS"
 type: task
 status: todo
 parent: PW-1299
@@ -11,6 +12,8 @@ found_by: lane122
 blocked_by: []
 relates: [PW-1303]
 refs: ["planet/zoom/vegetation.py::compute", "planet/zoom/stage_finish.py::vegetation_layers", "planet/zoom/landforms.py::Landforms", docs/review/land-zoom/cost.md, "world dba204", "zoom 69b422 (1 km, deleted)"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -24,3 +27,6 @@ RSS 15 GB at the end of the terrain stages against ~6 GB of arrays the build hol
 - [ ] try returning memory to the OS between stages (`malloc_trim`) and see how much of the 5 GB gap goes
 - [ ] re-measure at 1 km with `/usr/bin/time -v`; target <= 40 GB
 Harness: wrap the `stage_*` functions and sample `/proc/self/statm` (see cost.md).
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-land-zoom-memory-floor.md (found by lane122).

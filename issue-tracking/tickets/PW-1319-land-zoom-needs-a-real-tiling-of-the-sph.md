@@ -2,7 +2,7 @@
 id: PW-1319
 title: "Land zoom needs a real tiling of the sphere: stepping 3800 km east or north does not give aligned, overlapping squares"
 type: task
-status: in-progress
+status: done
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -22,5 +22,6 @@ updated: 2026-11-02
 - [ ] re-measure the practice seams with it (`seams.py`)
 
 ## Updates
+- 2026-11-02: Status in-progress -> done. Lane 122 (merged e89de6af): planet/zoom/tiling.py::sections, cube sphere 3x3 per face = 54 cells, overlap >=197 km; dba204 needs 47 land sections (~12 h at 1 km serial, ~6.5 h two at once). Orientation through zoom/save needed before a sweep (PW-1338); fewer sections PW-1339. Design docs/review/land-zoom/tiling.md.
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 122 (cost profile + fixes; tiling design and section lister).
 - 2026-11-02: Created from inbox draft draft-land-zoom-tiling-geometry.md (found by lane116).

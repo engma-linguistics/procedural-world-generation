@@ -9,7 +9,7 @@ subsystem: zoom
 effort: l
 impact: high
 found_by: owner
-blocked_by: [PW-1300, PW-1301, PW-1302, PW-1303]
+blocked_by: [PW-1300, PW-1301, PW-1302, PW-1303, PW-1338]
 relates: [PW-1198, PW-541]
 refs: [planet/zoom/regional.py::zoom, planet/zoom/stage_finish.py, planet/zoom/coastal.py, planet/zoom/fine.py, planet/parallel.py, "docs/coordination.md", docs/review/gpu/profile.md, "world 0af5ae", "world dba204"]
 created: 2026-11-01
