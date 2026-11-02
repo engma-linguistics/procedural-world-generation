@@ -1,0 +1,60 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index e00c2334..d53ecab5 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1704,6 +1704,10 @@ TUNE = dict(
+     # polynyas and the open part of a freezing sea: a pack 15% open keeps its air ~10 C nearer the water's)
+     evap_cool=1.5,  # C: how much cooler wet summers are (and hotter dry ones), for the rain kernel's own showers
+     # (the temperatures' own: _summer_split)
++    split_lw=0.0,  # lane 121 candidate (off): share of FAO-56's net long-wave change with the sunshine kept in
++    # _summer_split (clear skies lose more long-wave; Allen et al. 1998 eq. 39, its cloud factor)
++    split_bl_max=1.0,  # lane 121 candidate (1 = off): the summer boundary layer deepens as sqrt(H / H_ref)
++    # where the ground's heat beats the curve's (encroachment), up to this x sum_h (Saharan 5-6 km: Ryder 2015)
+     # the vegetation's feedbacks (vegetation_feedbacks, albedo_warming; tuned on Earth: tools/veg_check.py)
+     veg_w=1.0,  # Budyko w per unit of woody cover ...
+     veg_w_deep=0.3,  # ... plus this per unit of deep-rooted evergreen tree cover ...
+@@ -2421,7 +2425,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     wb0 = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+     air["d_sum"] = np.where(land & (ice <= 0), _summer_split(grid.lat, tilt, north, wb0["aet_half"],
+                                                              wb0["pet_half"], np.where(north, cloud_jul, cloud_jan),
+-                                                             tune), 0.0)
++                                                             tune, *_sum_air(tm, dt, north, qm_jul, qm_jan, tune)), 0.0)
+     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
+     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
+     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+@@ -2792,7 +2796,13 @@ def _upstream(grid, v, x):
+     return np.where(den > 1e-9, num / np.maximum(den, 1e-12), x)
+ 
+ 
+-def _summer_split(lat, tilt, north, aet_half, pet_half, cloud_sum, tune):
++def _sum_air(tm, dt, north, qm_jul, qm_jan, tune):
++    """(t_sum, dew_sum): the first pass's summer half-year air and its dew point, for _summer_split's long-wave."""
++    t_sum = tm + np.where(north, dt, -dt)
++    return t_sum, humidity(np.where(north, qm_jul, qm_jan), t_sum, tune)[0]
++
++
++def _summer_split(lat, tilt, north, aet_half, pet_half, cloud_sum, tune, t_sum=None, dew_sum=None):
+     """C warmer (colder) the land's summer air is from its surface energy
+     split: the sunshine reaching the ground in the summer half (under its
+     clouds, sunshine; the curve's albedo) less what evaporation takes
+@@ -2813,7 +2823,19 @@ def _summer_split(lat, tilt, north, aet_half, pet_half, cloud_sum, tune):
+     i, sm = np.arange(len(lat)), np.where(north, 0, 1)
+     to_w = LATENT * 1e6 / (0.5 * YEAR_S)  # mm per half-year -> W/m2
+     le, le_ref = aet_half[sm, i] * to_w, tune["ef_ref"] * pet_half[sm, i] * to_w
+-    return tune["sum_tau"] / (RHO_C_AIR * tune["sum_h"]) * ((sw - le) - (sw_ref - le_ref))
++    h, h_ref = sw - le, sw_ref - le_ref
++    if tune["split_lw"] > 0 and t_sum is not None:
++        # FAO-56 eq. 39's net long-wave, sigma T^4 (0.34 - 0.14 sqrt(ea)) (1.35 Rs/Rso - 0.35): only its
++        # cloud factor differs between the cell and the curve's reference (Rs/Rso = (0.25 + 0.5 sun) / 0.75)
++        ea = 0.6108 * np.exp(17.27 * dew_sum / (dew_sum + 237.3))
++        lw0 = 5.67e-8 * (t_sum + 273.15) ** 4 * np.clip(0.34 - 0.14 * np.sqrt(ea), 0.0, None) * 1.35 / 0.75 * 0.5
++        sun, sun_ref = sunshine(cloud_sum), sunshine(np.full_like(cloud_sum, tune["cloud_ref"]))
++        h = h - tune["split_lw"] * lw0 * (sun - sun_ref)
++    k = tune["sum_tau"] / (RHO_C_AIR * tune["sum_h"])
++    if tune["split_bl_max"] > 1:  # a hotter ground mixes a deeper layer: the warming per W/m2 falls (encroachment)
++        deep = np.clip(np.sqrt(np.maximum(h, 0) / np.maximum(h_ref, 1.0)), 1.0, tune["split_bl_max"])
++        return k * (h - h_ref) / deep
++    return k * (h - h_ref)
+ 
+ 
+ def vegetation_feedbacks(open_land, veg, tune) -> dict:

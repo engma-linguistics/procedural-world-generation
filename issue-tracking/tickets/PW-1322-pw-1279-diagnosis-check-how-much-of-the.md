@@ -2,7 +2,7 @@
 id: PW-1322
 title: "PW-1279 diagnosis: check how much of the hot low-latitude summers is the dry-coast rain deficit (observed-rain swap)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -34,7 +34,16 @@ is ~0.5 C per 100 mm, through `_summer_split`.
 To do, for PW-1279's diagnosis gate:
 - run Earth's summer energy split with GPCC rain swapped in for the model's;
 - report the warmest month by latitude band, with and without the swap.
-- [ ] the share of the low-latitude warm-month excess that the rain swap removes, in PW-1279's write-up
+- [x] the share of the low-latitude warm-month excess that the rain swap removes, in PW-1279's write-up
+
+Result (lane 121, docs/review/base-climate/summer-heat/diagnosis.md section 3). On Earth the excess is at 20-40
+deg, not 0-20 (0-20 is 1.9 C *cool*). GPCC rain in the water balance takes 20-40 deg from +2.1 to +1.9 C (~10%),
+and the >= 35 C land share from 7.9% to 7.2% (NCEP 1.7%). On the dry humid coasts it removes a fifth to a quarter:
+SE USA +5.1 -> +4.0, Pampas +6.4 -> +4.8, E Australia +4.9 -> +4.5. India goes +0.7 -> -1.3. NCEP's observed
+latent heat in place of the split's evaporation removes about a third (20-40 deg +1.4; SE USA -2.8, Pampas -2.2).
+Budyko on the observed rain still evaporates half of NCEP's on those coasts. Most of the excess is the split's own
+dry-land heating (with the split off, 20-40 deg is -1.1 C and no land reaches 35 C).
 
 ## Updates
 - 2026-11-02: Created from inbox draft draft-summer-heat-check-rain-deficit-first.md (found by lane120).
+- 2026-11-02: Done by lane 121 (result above).
