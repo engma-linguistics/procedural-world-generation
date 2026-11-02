@@ -5,7 +5,7 @@
 # enabled = false switches a line off (its split children re-parent to its parent; its hybrids and templates go too).
 # extinct = "T": the line dwindles and is gone by T before the present.
 # persists = true: the line lives on after its last split. megafauna = true (PW-855): a handful per country (the dragons); its range hardly takes room from the peoples (history.MEGAFAUNA_PUSH); its groups inherit it.
-# origin = "group", group_of = <people>: a part of a people (here only the city minorities). Owner 2026-11-02 (PW-1357): peoples have
+# origin = "group", group_of = <people>: a part of a people (none here: the city minorities went, PW-1369). Owner 2026-11-02 (PW-1357): peoples have
 # no groups for ways of life; who farms, herds, fishes or forages comes from the density ladder (lineages.ladder: the land decides, once
 # a people knows how). Kept as notes for Seven Meals later: the orc pair, steppe orcs (horse-and-herd raiders of the dry grassland,
 # pastoral nomads, soured dairy, 150-650 mm) and forest orcs (farming clans of the cold woods, settled, wary, -2..16 C, 450-1800 mm).
@@ -795,30 +795,6 @@ temp_c = [12, 28]
 prefers = ["island", "coast"]
 traits = ["swims", "coastal", "insular"]
 never = [{ what = "coast", is = "absent" }]  # PW-1155 (owner 10-30): sea folk never live away from the water
-
-# ---- minorities in other peoples' cities (PW-889, owner 10-29: "stuff can be two things") ----------------------
-# A people can live in its own wild country and, at once, as an untrusted, persecuted minority in the towns of others (goblins and
-# kobolds in the cities of humans and dwarves, as in the Forgotten Realms). cities = true: a group of its people present in the densest
-# settled cells of the other peoples (history.params.CITY_TOP, the densest twentieth of the peopled land) within CITY_REACH_KM of its own
-# range, a `share` of the townsfolk there.
-# It counts in its people's numbers, not its range.
-[[lineage]]
-id = "city_goblin"
-name = "city goblins"
-origin = "group"
-group_of = "goblin"
-at = "5 kyr"
-cities = true
-share = 0.03
-
-[[lineage]]
-id = "city_kobold"
-name = "city kobolds"
-origin = "group"
-group_of = "kobold"
-at = "5 kyr"
-cities = true
-share = 0.02
 
 # ---- hybrids: only where both parents meet ------------------------------------------------
 # Who can have children together follows realistic genetics (PW-752, owner 10-29): by how long ago two peoples split (meta.tier_kyr,

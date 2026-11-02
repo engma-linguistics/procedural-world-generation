@@ -129,7 +129,7 @@ def people_rollup(h: History, P: np.ndarray, lines: dict) -> dict:
     out = {}
     g = h.grid
     for l in h.lines:
-        gs = h.tree.groups_of(l.id) + h.tree.city_groups_of(l.id)  # (a city minority counts in the numbers, not the range, PW-889)
+        gs = h.tree.groups_of(l.id)
         if not gs:
             continue
         parts = [x for x in [l.id, *gs] if x in lines]

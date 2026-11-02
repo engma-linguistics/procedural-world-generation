@@ -21,7 +21,9 @@ the people's *mean* over the land it holds at the reference land quality (Q1 A),
 **Who lives which way where (Q2 A): the land decides.** Once a people knows cultivation (it has taken up a staple crop, crops.py),
 its farmable cells farm (the share FARM_SHARE of the fertile good); once it knows herding (a herd animal, animals.py), grazing land
 outside the fields is herded; the rest stays foraging (or fishing where the waters are rich). So foragers persist on marginal land
-and farmers spread with the knowledge. Den peoples farm at DEN_FARM_W of that (rare, not forbidden, Q4 A).
+and farmers spread with the knowledge. Knowing is slower for kinds little inclined to farm (PW-1373 B): a crop must stand on a fifth of
+a people's land for crops.LAG_KYR / its propensity before the people takes it up (hunters ~10x slower than farmers; meat-eaters lean
+to herds, animals.DIET_LEAN). Den peoples farm at DEN_FARM_W of that (rare, not forbidden, Q4 A).
 
 **Tech stage, inside the history.** The history does not run the tech tree (techtree.py reads the run afterwards), so the stages are
 read from what the history knows: cultivation (a crop taken up), herding (a herd animal), the plough (a plough animal, as

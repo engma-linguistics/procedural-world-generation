@@ -159,7 +159,6 @@ export function settlementRows(i, R) {
     }
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
-    const q = s.quarters.map((x) => `a ${String(x.group).replace(/_/g, ' ')} quarter (${x.pct}%)`).join(', ');  // (the group's id: 'a city kobold quarter')
     if (s.kind === 'pit') {  // (PW-1146: a village's own pit on ordinary ore, not a district)
       R('place', '', `local pit of the ${name(h)}: a village's ${esc(s.district || 'ore')} pit, ~${n0(p)} diggers and those who feed them; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
         + ' (ordinary ore: one pit for the best cell of a ring)', { lab: 'local pit', ess: true });
@@ -174,6 +173,6 @@ export function settlementRows(i, R) {
     const what = s.kind === 'minority' ? `${TIER(p, d, s, ago)} (their own place, as a second people here)` : TIER(p, d, s, ago);
     R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
       + `${s.abandoned_kyr != null ? `; left ~${yrs(s.abandoned_kyr)} ago (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
-    if (who) R('place', '', `${who}${q ? `; ${q}` : ''} (${s.who_when})`, { lab: 'its people', ess: true });
+    if (who) R('place', '', `${who} (${s.who_when})`, { lab: 'its people', ess: true });
   }
 }

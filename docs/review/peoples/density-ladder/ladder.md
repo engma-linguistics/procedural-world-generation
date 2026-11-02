@@ -142,7 +142,9 @@ will measure on `tools/peoples_robust.py`):
 1. **What a rung's number means.** (A) the people's *mean* over the land it holds, scaled up and down by land quality (as now);
    (B) its density on the best land, scaled down. Lean **A**: the sources are mostly regional means (Binford, England, PNG totals).
 2. **Who changes way of life, and how much.** Your ruling says part of a people shifts with tech. (A) the share of a people on
-   each rung follows its land (the farmable cells farm once the people knows cultivation, the rest stay foragers or herders);
+   each rung follows its land (the farmable cells farm once the people knows cultivation, the rest stay foragers or herders;
+   PW-1373 B, 11-02: a people knows a crop once it has stood on a fifth of its land for ~0.4 kyr / its leaning to farm, so hunting
+   kinds learn ~10x slower, and the cat-folk lean to herds over crops: hunters-lag.md);
    (B) a fixed share per kind; (C) a share that grows with time since the tech arrived. Lean **A**: it is the land, not the kind,
    that decides who farms, and it makes humans fall only where others really farm.
 3. **The land-quality power.** Today 0.75 on (NPP / reference). The sources say ~1 (foragers 1.3, noisy; PNG and Roman soils ×6–8).
