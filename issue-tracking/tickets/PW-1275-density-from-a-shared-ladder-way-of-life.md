@@ -2,7 +2,7 @@
 id: PW-1275
 title: "Density from a shared ladder: way of life x tech stage x land productivity, kind factor 0.8-1.2"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -20,6 +20,7 @@ updated: 2026-11-02
 In plain words: a people's density should come from what it does and knows, not who it is. Owner 2026-11-01: one shared ladder for every people (way of life x tech stage x land productivity); the per-people density field becomes a kind factor of 0.5-2x, filled for now only between 0.8 and 1.2 (slightly less for free-ranging kinds such as leonin and tabaxi); the workbench tooltip shows the ladder and the current rung, not a bare number. Ways of life shift with tech for part of a people, not all: some take up farming or herding and outgrow the rest, others stay foragers at low density to this day (any people, not just humans; e.g. leonin to husbandry, orcs part raiders part industry). Dwarves may exceed humans per km2 through an underground or vertical way of life (mushroom farming), a ladder entry, not the kind factor. Steps: source every rung (forager 0.35 Binford 2001 is sourced; gardening, plough farming, irrigation, herding, fishing need sources), show the owner the sourced ladder before building, then build and judge on tools/peoples_robust.py over many trees. Expect humans' share to fall sharply (the 10-12 vs 0.3 ceiling gap is the biggest cause).
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lanes 136/137 (merged b4bb9a81): density ladder built per PW-1350; D&D humans 56% -> 17% (median of 14 runs), people total 2.3-2.6x; every rung inside ladder.md's sourced range. Results docs/review/peoples/density-ladder/build.md.
 - 2026-11-02: Lane 137 measured lane 136's build on the 48-run robust suite (results page at the top of
   docs/review/peoples/density-ladder/build.md): humans 56% -> 17% in D&D, people x2.3-2.6, rungs inside ladder.md's ranges; Q1 A kept
   as "per km2 filled" (no calibration); forager 0.036 confirmed on Binford's fit; 9 inbox drafts. Not merged yet.

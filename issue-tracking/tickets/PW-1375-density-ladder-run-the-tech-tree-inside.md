@@ -1,4 +1,5 @@
 ---
+id: PW-1375
 title: "Density ladder: run the tech tree inside the history instead of the stage proxies"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 136 / lane 137 (density ladder build)
 blocked_by: []
 relates: [PW-1275, PW-1350]
 refs: ["planet/lineages/ladder.py::Ladder.tech", "planet/lineages/ladder.py::PLOUGH_STEPS", "planet/lineages/ladder.py::IRR_LAG", "planet/lineages/ladder.py::TERRACE_LAG", "planet/lineages/ladder.py::ERA_STAGE", planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, planet/lineages/history/growth.py, docs/review/peoples/density-ladder/build.md, docs/review/peoples/density-ladder/ladder.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -25,3 +28,6 @@ What to try: run the food track of the tech tree inside the history (or a cheap 
 from the techs actually known; then drop the lags. Check the cost per step on the robust suite (`tools/peoples_robust.py`).
 - [ ] ladder stage from known techs, not lags
 - [ ] before/after on the robust suite: rung densities and shares
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-ladder-tech-tree-inside-history.md (found by lane 136 / lane 137 (density ladder build)).

@@ -1,4 +1,5 @@
 ---
+id: PW-1373
 title: "Hunting kinds take up farming as fast as anyone: the crop front, not their leaning, decides (density ladder Q2 A)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 137 (density ladder check d)
 blocked_by: []
 relates: [PW-1275, PW-1350, PW-721]
 refs: ["planet/lineages/crops.py::Crops.step (took_up: adopt >= 0.2 x prop)", "planet/lineages/animals.py::Stock._front", "planet/lineages/animals.py::Stock._propensity", "planet/lineages/crop_defs.py::_PROP", "planet/lineages/ladder.py::Ladder.tech", "planet/lineages/ladder.py::Ladder.line", planet/lineages/samples/dnd.toml, docs/review/peoples/density-ladder/build.md, docs/review/peoples/density-ladder/ladder.md, tools/peoples_robust.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options:
   (farmers at once, hunters ~10x slower); the share that farms once it knows is still the land's (Q2 A);
 - (C) scale the farmed share by the leaning (hunters farm a tenth of their farmable land): closer to Q2 B, which was not chosen.
 Lean B: it keeps Q2 A and lets each kind's lore show as a delay, not a cap. Measure on the robust suite.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-hunters-learn-crops-regardless.md (found by lane 137 (density ladder check d)).

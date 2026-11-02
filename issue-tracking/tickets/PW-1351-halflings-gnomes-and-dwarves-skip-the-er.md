@@ -2,7 +2,7 @@
 id: PW-1351
 title: Halflings, gnomes and dwarves skip the era density cap and the land's productivity (no farm share)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -28,5 +28,6 @@ PW-1275 (the shared ladder) would replace all of this, so fix it there rather th
 - [ ] check `shares` for every dnd people with density > 1 has farm or herd > 0
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lanes 136/137 (merged b4bb9a81): density ladder built per PW-1350; D&D humans 56% -> 17% (median of 14 runs), people total 2.3-2.6x; every rung inside ladder.md's sourced range. Results docs/review/peoples/density-ladder/build.md.
 - 2026-11-02: Owner 2026-11-02: halflings and gnomes absolutely can be farmers.
 - 2026-11-02: Created from inbox draft draft-halflings-farm-as-foragers-at-12.md (found by lane130-density-ladder).
