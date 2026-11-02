@@ -113,3 +113,24 @@ For the sapiens-node dates (PW-971, docs/review/lineages/sapiens-dates.md). Read
 - [ ] **Kalff, Downing & Smith 1985**, J. Arid Environments 9:173 (full text; abstract only read): density against rainfall in dry
   Kenya, the agro-pastoral rung's scaling.
 - [ ] **Wang & Huang 1999**, Bull. Inst. Hist. Philology 70(2):363 (full text; abstract only): wet-rice densities and their area basis.
+
+## Peoples: irrigation without the plough and raiding shares (PW-1378, PW-1377, lane 138; docs/review/peoples/density-ladder/sources-round2.md)
+
+- [ ] **Kirch 1994**, *The Wet and the Dry: Irrigation and Agricultural Intensification in Polynesia* (U Chicago Press): Futuna's
+  irrigated (Sigave) against dry (Alo) densities; the best non-plough irrigation comparison. Book, not online.
+- [ ] **Kurashima, Fortini & Ticktin 2019**, Nature Sustainability (2019), doi 10.1038/s41893-019-0226-1 (paywalled): lo'i area and
+  the people Hawaiian pondfields alone could feed; would replace sources-round2.md's arithmetic on Ladefoged 2009.
+- [ ] **Ladefoged et al. 2009**, J. Archaeol. Sci. 36:2374 (full text; abstract only read): which crop and weight the 49k t are.
+- [ ] **Parsons 1976**, "The role of chinampa agriculture in the food supply of Aztec Tenochtitlan", in Cleland (ed.), *Cultural
+  Change and Continuity* (Academic Press), pp. 233-257; and **Armillas 1971**, Science 174:653: the primary chinampa numbers
+  now read only through a popular article.
+- [ ] **Conklin 1980**, *Ethnographic Atlas of Ifugao* (Yale UP), or **Acabado**'s Banaue survey (Hukay 15; the UP Diliman PDF is
+  blocked): Ifugao people per km² of cultivable land.
+- [ ] **Billman 2002**, "Irrigation and the origins of the southern Moche state", Latin American Antiquity 13(4): Andean
+  (no draft animals) irrigated hectares against population.
+- [ ] **Schilling, Opiyo & Scheffran 2012**, Pastoralism 2:25, doi 10.1186/2041-7136-2-25 (open access, but blocked to the fetcher):
+  Turkana and Pokot raid counts and animals taken; and **McCabe 2004**, *Cattle Bring Us to Our Enemies* (U Michigan Press).
+- [ ] **Hendrickson, Mearns & Armon 1996**, IDS Bulletin 27(3):17-30 (OpenDocs PDF blocked) and **Hendrickson, Armon & Mearns 1998**,
+  Disasters 22(3): Turkana raiding and famine, read only as an abstract and an ENN summary.
+- [ ] **Sweet 1965**, "Camel raiding of North Arabian Bedouin: a mechanism of ecological adaptation", American Anthropologist 67:1132
+  (Wiley, blocked): camels moved by raids, the one classic quantitative-leaning raiding study.

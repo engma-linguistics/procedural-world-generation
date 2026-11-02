@@ -11,7 +11,7 @@ impact: low
 found_by: lane 136 / lane 137 (density ladder build)
 blocked_by: []
 relates: [PW-1275, PW-1350]
-refs: ["planet/lineages/ladder.py::RAID_CAP", "planet/lineages/ladder.py::RAID_HALF", "planet/lineages/ladder.py::RAID_REACH", "planet/lineages/ladder.py::Ladder.settled_near", docs/review/peoples/density-ladder/build.md, "Opler 1941 An Apache Life-Way p. 332", "Encyclopedia of World Cultures 2008, Western Apache - Economy (secondary)", "Burckhardt 1831 Notes on the Bedouins and Wahabys vol. 1 pp. 71-72", "Khazanov 1994 Nomads and the Outside World pp. 155, 187, 221-222", "Hendrickson, Mearns & Armon 1996 IDS Bulletin 27(3) (abstract only)"]
+refs: ["planet/lineages/ladder.py::RAID_CAP", "planet/lineages/ladder.py::RAID_HALF", "planet/lineages/ladder.py::RAID_REACH", "planet/lineages/ladder.py::Ladder.settled_near", docs/review/peoples/density-ladder/build.md, "Opler 1941 An Apache Life-Way p. 332", "Encyclopedia of World Cultures 2008, Western Apache - Economy (secondary)", "Burckhardt 1831 Notes on the Bedouins and Wahabys vol. 1 pp. 71-72", "Khazanov 1994 Nomads and the Outside World pp. 155, 187, 221-222", "Hendrickson, Mearns & Armon 1996 IDS Bulletin 27(3) (abstract only)", docs/review/peoples/density-ladder/sources-round2.md, "paper:Glowacki2015", "paper:Hendrickson1998", "NPS Gila Cliff Dwellings administrative history ch. 1 (68,000 livestock 1771-1776)", "ENN Field Exchange 6 (1999)", docs/references/wishlist.md]
 created: 2026-11-02
 updated: 2026-11-02
 ---
@@ -28,4 +28,5 @@ What would firm it up: an ethnography giving the share of a raiding people's foo
 Turkana or Nuer cattle-raiding counts). If found, set the cap from it; until then the numbers stay marked as judgements.
 
 ## Updates
+- 2026-11-02: Lane 138 searched again (sources-round2.md): no measured food or income share from raiding and nothing tying raids to the victims' density in anything readable. What exists: Nyangatom loot goes to bridewealth (Glowacki2015), Apache stolen stock was mostly a trade good (NPS, secondary), Turkana fear of raids left 47% of the district unused 1982-84 (Hendrickson1998 via ENN). Recommendation: keep RAID_CAP 0.3 and RAID_HALF 5 as judgements; 0.3 is if anything generous. Follow-up draft: raiders thin their neighbours.
 - 2026-11-02: Created from inbox draft draft-raid-share-unsourced.md (found by lane 136 / lane 137 (density ladder build)).
