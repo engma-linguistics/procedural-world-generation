@@ -142,7 +142,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
               "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
-              "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
+              "demography": {**{kk: round(v, 4) for kk, v in l.demos().items()},  # (density: its mean over its land at the present, PW-1275)
+                             "density": round(float((pres["lines"].get(l.id) or {}).get("density") or h.dens[k]), 4)}, "speed_kmyr": l.speed_kmyr,
               "body": l.body, "way": l.way, "generation_yr": h.gen_yr(l), "life_history": LH.summary(l),
               "life_eras": getattr(h, "life_eras", {}).get(l.id), "waves": getattr(h, "wave_log", {}).get(l.id),
               **({"band_pct": list(l.band_pct)} if tuple(l.band_pct) != (0.0, 100.0) else {}),

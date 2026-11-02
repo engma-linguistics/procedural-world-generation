@@ -10,8 +10,8 @@ import numpy as np
 from ...geo import R_KM, cell_area_km2
 from .. import compose as CP
 from .. import contacts as CT
+from .. import ladder as LD
 from .. import landuse as LU
-from .. import prey as PR
 from .. import recent as R
 from .. import spec as SP
 from ..animals import Animals
@@ -104,23 +104,25 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
         self._groups = {l.id: [self.idx[x] for x in tree.groups_of(l.id)] for l in self.lines}
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
-        self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else l.demo("density") for l in self.lines])
-        for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own density, its groups' with it; history.bands)
-            if kn.get("density", 1.0) != 1.0 and lid in self.idx:
+        # (PW-1275: a people's density comes from the density ladder, lineages.ladder: its kind factor x the rung of the way it lives in
+        # each cell. self.kx is the kind factor (x a share band's nudge); self.dens the line's one number, its mean density over the land
+        # it holds (the deep epoch, a run without a world, the cells' composition): foragers' at the reference land until the ladder runs)
+        self.kx = np.array([1.0 if (l.megafauna or l.overlay) else l.demo("kind") for l in self.lines])
+        for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own kind factor, its groups' with it; history.bands)
+            if kn.get("kind", 1.0) != 1.0 and lid in self.idx:
                 for j in [self.idx[lid], *self._groups.get(lid, [])]:
-                    self.dens[j] *= kn["density"]
+                    self.kx[j] *= kn["kind"]
+        self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else self.kx[k] * LD.ref_density(l)
+                              for k, l in enumerate(self.lines)])
         # (dragons, the flying megafauna: one per meta.dragon_km2 where peoples press them, owner PW-923, PW-957; the true giants, the rest
         # of the megafauna: one per meta.giant_km2, PW-963; both user options. Away from the peoples they keep nearer their natural
         # density (meta.megafauna_natural: from the prey, PW-966, or from mass): MG.local_density, read through dens_at. The competition
         # below takes the pressed value)
-        self._dmap = None  # (the peoples' density per cell, PW-974: PR.people_fields; set below, once the dens are known)
+        self._dmap = None  # (the peoples' density per cell, PW-1275: lineages.ladder; set below, once the dens are known)
         MG.setup(self)  # (dens_nat, the prey field; _press and _prey: the peoples' pressure and the prey, per cell, at the start of the step)
-        F = PR.people_fields(self.lines, lambda l: LU.shares(tree, l), getattr(ps, "graze_npp", None), getattr(ps, "forage", None),
-                               getattr(ps, "npp", None))
-        self._dens0 = self.dens.copy()  # (the tree's numbers: a farming people's at its own way of life; history.growth's era sets dens)
-        self._Fprod = F if (F is not None and PEOPLE_PROD) else None
-        if F is not None and PEOPLE_PROD:
-            self._dmap = self.dens[:, None] * F  # (static: the present's land; the deep epoch, whose plates lay elsewhere, keeps the number)
+        self.ladder = LD.Ladder(self)  # (the density per cell, PW-1275: set by history.growth as the peoples learn; static land: the present's)
+        if self.ladder.ok and PEOPLE_PROD:
+            self._dmap = np.repeat(self.dens[:, None], g.n, axis=1)  # (megafauna, overlays and sea peoples keep their number)
         mega = np.array([l.megafauna for l in self.lines])
         for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855);
             if b.megafauna:  # among themselves they compete at their niche overlap (red dragons and fire giants on the volcanoes, PW-924)
@@ -205,14 +207,13 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
         self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
-        if PM.DEN_THIN and self._Fprod is not None:  # (D27 C screen: a denning people's density, not its habitat, falls off broken country)
+        if PM.DEN_THIN and self._dmap is not None:  # (D27 C screen: a denning people's density, not its habitat, falls off broken country)
             env0 = self.steps[-1].get()
             t0 = _tags(g, env0, self._chains, self._volcanic(False))
             broken = t0["mountain"] | t0["hills"] | t0["breaks"]
             for k, l in enumerate(L):
                 if l.trait("den", 0.0) and not l.megafauna:
-                    self._Fprod[k] = self._Fprod[k] * np.where(broken, 1.0, 1.0 - l.trait("den", 0.0))
-                    self._dmap[k] = self.dens[k] * self._Fprod[k]
+                    self.ladder.thin[k] = np.where(broken, 1.0, 1.0 - l.trait("den", 0.0))
         self._growth_setup()
         self._counter_setup()  # (the brakes on a people's numbers, lane 97: history.counter)
         frames = []

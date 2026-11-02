@@ -21,12 +21,14 @@ def editor_schema() -> dict:
     """GET /api/lineage-schema: the peoples editor's option lists and defaults, from spec.py, land.GOODS and dragon_ages
     (viewer/lineages.html renders its menus from it, so they can't drift from what a tree may say; PW-1033)."""
     from . import dragon_ages as DA
+    from . import ladder as LA
     from . import life_history as LH
     return {
         "traits": list(SP.TRAITS), "places": list(SP.PLACES), "groups": list(SP.GROUPS), "ways": list(SP.WAYS),
         "realms": list(SP.REALMS), "goods": {k: label for k, (label, _) in LD.GOODS.items()},
         "pair_wants": list(SP.PAIR_WANTS), "stages": list(SP.STAGES), "stage_notes": SP.STAGE_NOTES,
-        "band": SP.BAND, "demo_default": SP.DEMO_DEFAULT, "demography": SP.DEMOGRAPHY,
+        "band": SP.BAND, "demo_default": SP.DEMO_DEFAULT, "demography": SP.DEMOGRAPHY, "kind_range": list(SP.KIND_RANGE),
+        "ladder": [list(r) for r in LA.TABLE],
         "body_default": SP.BODY_DEFAULT, "body_choices": {k: list(v) for k, v in SP.BODY_CHOICES.items()},
         "body_bools": [k for k, v in SP.BODY_DEFAULT.items() if isinstance(v, bool)], "toxins": list(SP.TOXINS),
         "eras": list(SP.ERAS), "modes": list(SP.MODES), "portal_modes": list(SP.PORTAL_MODES),

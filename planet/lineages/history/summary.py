@@ -51,9 +51,13 @@ def present_summary(h: History, P: np.ndarray) -> dict:
         lm = h.cross.label
         by = np.bincount(lm[(lm >= 0) & (pc > 0)], weights=pc[(lm >= 0) & (pc > 0)], minlength=len(h.cross.names))
         top = np.argsort(-by)[:6]
-        d = l.demos()
-        out["lines"][l.id].update(population=int(pc.sum()), density=round(d["density"], 4),
-                                  band_km2=round(SP.BAND / d["density"], 1),
+        held = float((P[k] >= EST).sum() * h.cell_mkm2 * 1e6)
+        dm = float(pc.sum() / held) if held > 0 else float(h.dens[k])  # (its mean over the land it holds, PW-1275 Q1 A)
+        lad = h.ladder.by_rung(k, P) if not (l.megafauna or l.overlay) else {}
+        out["lines"][l.id].update(population=int(pc.sum()), density=round(dm, 4), kind=round(float(h.kx[k]), 3),
+                                  band_km2=round(SP.BAND / dm, 1) if dm > 0 else None,
+                                  ladder={r: list(v) for r, v in lad.items()},
+                                  rung=max(lad, key=lambda r: lad[r][0]) if lad else None,
                                   by_landmass={str(int(m)): int(by[m]) for m in top if by[m] >= 1},
                                   faded_patches=h.faded.get(l.id, 0))
     natives = np.array([not l.overlay and not l.marine for l in h.lines])  # (the land peoples: the sea ones do not mix or hold land)

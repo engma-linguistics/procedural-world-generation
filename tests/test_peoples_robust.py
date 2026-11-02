@@ -12,7 +12,7 @@ from tools import peoples_robust as PR
 
 def _tree():
     raw = _raw()
-    raw["lineage"].append({"id": "c", "parents": ["stem"], "at": "12 kyr", "density": 2})
+    raw["lineage"].append({"id": "c", "parents": ["stem"], "at": "12 kyr"})
     return raw
 
 
@@ -27,7 +27,7 @@ def test_variants_stay_valid_trees():
     t = SP.parse(PR.subset(raw, ["a"]))
     assert "a" in t.lines and "stem" in t.lines and "b" not in t.lines and "tmpl" in t.lines and "half" not in t.lines
     k = SP.parse(PR.knob(raw, "c", 2.0))
-    assert k.lines["c"].demo("density") == 4.0
+    assert k.lines["c"].demo("kind") == 2.0  # (the kind factor, PW-1275: x2 of 1)
     assert len(PR.plan()) > 100 and {v["family"] for v in PR.plan()} == {"base", "jitter", "subset", "knob", "portal", "authored"}
     for p in sorted(PR.TREES.glob("*.toml")):  # (the authored trees parse, and say why they exist)
         raw, info = PR.authored(p)

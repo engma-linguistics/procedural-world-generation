@@ -51,7 +51,7 @@ def miss(tree, sh: dict) -> float:
 
 
 def knob_of(h, l) -> str:
-    return "density"
+    return "kind"
 
 
 def why_unmet(h, l, share: float, knob: float, warnings: list[str]) -> str:

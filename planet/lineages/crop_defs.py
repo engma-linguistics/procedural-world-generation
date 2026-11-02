@@ -81,7 +81,7 @@ def _emberpod(env, tags, land, widen=0.0):
 
 _FARM = {"farm": 1.0, "gather": 0.5}  # first cultivated by farmers, or by gatherers of wild plants (the foraging use) on the range
 _PROP = {"farm": 0.9, "gather": 0.15}
-_EXCL = ("flies", "swims", "subterranean")
+_EXCL = ("flies", "swims")  # (PW-1275 Q6 A, Q4 A: holds farm their valleys and den peoples may farm, rarely: lineages.ladder; was also subterranean)
 
 
 def _crop(i, id_, label, wild, anchor, front, k, weight, straw, **kw):

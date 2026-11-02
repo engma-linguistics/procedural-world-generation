@@ -11,7 +11,7 @@ Variant families, cut from the stock trees (planet/lineages/samples):
   base    dnd and seven_meals at several seeds
   jitter  every split and arrival date x a seeded factor in 0.5-2 (log-uniform), parents kept older than their children
   subset  a 5-people and a 3-people tree cut from dnd (enabled = false on the rest, stems kept), and dnd plus an authored people
-  knob    three peoples (a mainline one, a minor one, a late arrival) at density x0.5 and x2 against the base at the same seed
+  knob    three peoples (a mainline one, a minor one, a late arrival) at kind factor x0.5 and x2 (PW-1275) against the base at the same seed
   portal  dnd with portal_mode = sites (1 and 3 portals) against off
   authored  the trees under tools/peoples_robust/trees/ (edits of a sample; each says why it exists; all_at_once is information only)
 Arms (ARMS): params overrides each variant runs under; now is the model as it stands, nofit the contest without its fit weight (lane 83;
@@ -20,7 +20,7 @@ the first arm runs every family, the others base, dnd's jitter, subset and autho
 Per run, per people (a people with its groups rolled up; megafauna and overlays apart): its share of all people, its share of the
 peopled cells it leads (the most people there), its range, and whether it lives; a people that dies out is named with why (its
 events). The invariants (report): no crash; no authored people silently extinct; no people above MONO_MAX of all people unless the
-tree has <= 2; shares move with each people's own density knob. The spread: each people's share over the base, jitter and portal
+tree has <= 2; shares move with each people's own kind factor. The spread: each people's share over the base, jitter and portal
 runs; a people whose share swings more than SWING x between the seeds, or the jitters, of one world is a brittle point (PW-1207: the
 pooled swing, also reported, mixes the two worlds' geography).
 
@@ -156,7 +156,7 @@ def subset(raw: dict, keep: list[str]) -> dict:
 
 
 ADDED_PEOPLE = {  # an author's own people, added to dnd: horned hill folk split from the hominids
-    "id": "minotaur", "name": "minotaurs (authored)", "parents": ["hominid"], "at": "600 kyr", "density": 1.5, "explore": 0.5,
+    "id": "minotaur", "name": "minotaurs (authored)", "parents": ["hominid"], "at": "600 kyr", "explore": 0.5,
     "temp_c": [6, 24], "rain_mm": [350, 1400], "prefers": ["hills", "open"], "traits": ["hardy"],
 }
 
@@ -166,13 +166,10 @@ def knob(raw: dict, lid: str, x: float) -> dict:
     from planet.lineages import spec as SP
     for r in raw["lineage"]:
         if r["id"] == lid:
-            if "band_km2" in r:
-                r["band_km2"] = float(r["band_km2"]) / x
-            else:
-                d = r.get("density")
-                if d is None:  # (left out: the traits' default, spec.DEMOGRAPHY)
-                    d = SP.parse(raw).lines[lid].demo("density")
-                r["density"] = float(d) * x
+            d = r.get("kind")
+            if d is None:  # (left out: inherited or 1; PW-1275: the kind factor on the density ladder)
+                d = SP.parse(raw).lines[lid].demo("kind")
+            r["kind"] = float(min(max(float(d) * x, SP.KIND_RANGE[0]), SP.KIND_RANGE[1]))
     return raw
 
 
@@ -312,17 +309,29 @@ def measure(h, res, pres) -> dict:
     """The numbers of one try: per people (groups rolled up; megafauna and overlays apart) share of people, of the cells led, range,
     founding; the extinctions and their reasons."""
     from planet.lineages.spread import EST
+    from planet.lineages.ladder import RUNGS as LADDER_RUNGS
     tree, P = h.tree, res["present"]
     n = h.grid.n
     peoples = [l for l in tree.leaves() if not l.group_of and not l.megafauna and not l.overlay]
     pid = {l.id: i for i, l in enumerate(peoples)}
     pop = np.zeros((len(peoples), n))
+    ways = {l.id: {} for l in peoples}  # (PW-1275: per people, its people and held land per rung of the density ladder)
     for k, l in enumerate(h.lines):
         if l.overlay or l.megafauna or l.marine and False:
             continue
         who = tree.people_of(l.id)
         if who in pid:
-            pop[pid[who]] += h.population(k, P)
+            pc = h.population(k, P)
+            pop[pid[who]] += pc
+            lad = getattr(h, "ladder", None)
+            if lad is not None and lad.ok and pc.sum() > 0 and not l.marine:
+                for i, nm in enumerate(LADDER_RUNGS):
+                    sel = (lad.rung[k] == i) & (pc > 0)
+                    if sel.any():
+                        w = ways[who].setdefault(nm, [0.0, 0.0, 0.0])  # (people, held km2, people at full presence: the rung's number there)
+                        w[0] += float(pc[sel].sum())
+                        w[1] += float(sel.sum() * h.cell_mkm2 * 1e6)
+                        w[2] += float(h._dmap[k][sel].sum() * h.cell_mkm2 * 1e6)
     tot = pop.sum()
     peopled = pop.sum(0) > 0
     lead = np.argmax(pop, 0)
@@ -351,7 +360,9 @@ def measure(h, res, pres) -> dict:
                      "why_gone": why, "origin": {k: o.get(k) for k in ("ago_kyr", "why", "lat", "lon")} if o else None,
                      "found_mkm2": h._found_mkm2.get(l.id), "inherit_mkm2": h._inherit_mkm2.get(l.id, 0.0),
                      "jumps": h.jumps_n.get(l.id, 0), "crossings": h.crossings_n.get(l.id, 0), "faded": h.faded.get(l.id, 0),
-                     "refuged": l.id in h._refuged, "density": l.demo("density"), "authored_extinct": m_ext}
+                     "refuged": l.id in h._refuged, "kind": l.demo("kind"), "authored_extinct": m_ext,
+                     "density": float(pop[i].sum() / max(held.sum() * h.cell_mkm2 * 1e6, 1.0)),
+                     "ways": {r: [round(x, 1) for x in v] for r, v in ways[l.id].items()}}
     lost = [x for x in pres.get("lost", [])]
     # continental blocs (lane 83, owner D20: different landmasses led by different sets of peoples): per landmass of the present land
     # of at least BLOC_MIN_MKM2 with people on it, its leading people and that people's share of the landmass's people, and the humans'
@@ -675,7 +686,7 @@ def report(out: Path) -> str:
     # -- knob response
     kn = [r for r in ok if r["family"] == "knob"]
     if kn:
-        lines += ["## Knob response (density x0.5 / x1 / x2, same world and seed)", "",
+        lines += ["## Knob response (kind factor x0.5 / x1 / x2, same world and seed)", "",
                   "| people | world, seed | share x0.5 | x1 | x2 | led x0.5 | x1 | x2 | area x0.5 | x1 | x2 | monotone |", "|---|---|---|---|---|---|---|---|---|---|---|---|"]
         base = {(r["world"], r["seed"]): r for r in ok if r["family"] == "base" and r.get("tree") == "dnd" and r.get("arm", "now") == DEFAULT_ARMS[0]}
         for lid in KNOB_PEOPLES:
