@@ -1,15 +1,19 @@
 ---
+id: PW-1315
 title: With the margin flicker cured, the sea-floor creep still cools the world by about 3 C
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med
 found_by: lane-115
 blocked_by: []
 relates: [PW-1295, PW-1292, PW-950]
-refs: [planet/surface.py::_creep, planet/tectonics/crust.py::coherence, planet/tectonics/crust.py::necking, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/note-arc-co2.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/tracediag.py]
+refs: ["planet/surface.py::_creep", "planet/tectonics/crust.py::coherence", "planet/tectonics/crust.py::necking", docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/note-arc-co2.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/tracediag.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -29,3 +33,7 @@ What to try:
 
 Screens: pw1295-note.md section 2, scratch runs deleted; redo with tracediag.py and `--set star_brightening=1.0
 neck_km=200 rise=1 slope_k=1000`, seeds 1 and 3, 1 Gyr, L6.
+
+## Updates
+- 2026-11-02: Coordinator 11-02, three-strikes rule: the sea-floor creep has now failed its judge or screens in rounds 2, 3, 100e and 115 (cools ~3 C each time). Back of the line; not to be retried until the CO2 source/sink trace is done by some other lane's need.
+- 2026-11-02: Created from inbox draft draft-sea-creep-still-cools-with-the-flicker-cured.md (found by lane-115).

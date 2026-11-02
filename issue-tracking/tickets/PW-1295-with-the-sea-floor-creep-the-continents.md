@@ -2,7 +2,7 @@
 id: PW-1295
 title: With the sea-floor creep, the continents' outer cells flicker between continent and ocean floor at the 20 km bound
 type: task
-status: done
+status: in-progress
 parent: null
 milestone: null
 subsystem: tectonics
@@ -38,6 +38,8 @@ What to try:
 - [x] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds): not run, moved to draft-sea-creep-still-cools-with-the-flicker-cured (the screens show the cooling stays)
 
 ## Updates
+- 2026-11-02: Status done -> in-progress. 11-02: merge reverted (code only): slow test_envelopes seed 2 (L5, 400 Myr) goes 15.8 -> 28.8 C, pCO2 327 -> 3547 with SHRED_KM 15. Back to lane 115 for re-rolled draws before calling it chaos or signal.
+- 2026-11-02: Merged 7dac9049 (SHRED_KM 15). Land -1.25 points, climate unmoved; follow-up PW-1314.
 - 2026-11-01: Created from inbox draft draft-margin-cells-flicker-at-the-20-km-bound.md (found by lane-112).
 - 2026-11-02: Lane 115. Confirmed (pw1295-note.md): with the creep ~1150 shreds per 400 Myr come within 10 Myr of a
   birth (at 19.3 km) and ~900 births within 10 Myr of a shred, against 140-160 and 60-65 on main. Screened a 15 km

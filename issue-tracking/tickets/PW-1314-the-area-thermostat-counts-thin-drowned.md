@@ -1,15 +1,19 @@
 ---
+id: PW-1314
 title: The area thermostat counts thin drowned margin as continent, so keeping the margin costs 1.3 points of land
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med
 found_by: lane-115
 blocked_by: []
 relates: [PW-1295, PW-970, PW-950, PW-046]
-refs: [planet/tectonics/crust.py::thermostats, planet/tectonics/crust.py::coherence, planet/tectonics/crust.py::subduction_erosion, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/paired_margin.sh, docs/review/base-climate/v1-finish-16/pjudge.py]
+refs: ["planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::coherence", "planet/tectonics/crust.py::subduction_erosion", docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/paired_margin.sh, docs/review/base-climate/v1-finish-16/pjudge.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -32,3 +36,6 @@ Is the land change a problem? Earth is no target and 33% land is plausible, so t
 
 Judge data: pw1295-note.md section 3 (scratch deleted; redo with paired_margin.sh from frozen copies of main before
 and after PW-1295).
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-area-thermostat-counts-drowned-thin-margin.md (found by lane-115).
