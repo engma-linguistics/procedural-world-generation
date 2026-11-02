@@ -2,7 +2,7 @@
 id: PW-1261
 title: "The wild herds are 2-3x thinner than Africa's measured herds at the same rain: the model's above-ground growth is about half Rosenzweig's"
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -50,6 +50,7 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-02: Status todo -> in-progress. 11-02: lane 140 started on D42 A (C1 herb root respiration with the NPP_WEATHER re-anchor, PW-1332, and the fuel floor PW-1328 if needed). PW-1316 settled without change (B failed).
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D42 A (herbs' root respiration, see what it gets us). After D39 (PW-1316) lands, since lowering grass NPP warms runs through NPP_WEATHER and the CO2 references.
 - 2026-11-02: Status in-progress -> needs-decision. 11-02 lane 123: premise wrong: on Earth's observed climate herds match Coe; grass grows 1.4-1.8x too much (herbs keep ~70% of GPP, roots pay no upkeep) and wet tropical forest ~0.55x. Worlds' herds thin from cloudy/cool semi-arid tropics (PW-1330) and low CO2. Candidate C1 needs NPP_WEATHER re-anchor (PW-1332) and a sourced fire fuel floor (PW-1328) in one round. docs/review/vegetation/npp-check/diagnosis.md
 - 2026-11-02: Status needs-decision -> in-progress. 11-02: lane 123, D34 B broadened (all biomes, plant response on observed climate), diagnosis first.
