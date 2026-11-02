@@ -74,3 +74,15 @@ by kind and shreds of pile rock (`births`). [pw1292-note.md](pw1292-note.md) has
 pile births, so A barely changes the creep's churn. A screen of "3 continental neighbours" (A3) didn't either and ran
 colder. The churn looks like a flicker at the shared 20 km birth and shred bound
 (draft-margin-cells-flicker-at-the-20-km-bound). The creep-on-A judge wasn't run. Scratch runs are deleted.
+
+## Lane 115 (2026-11-02): PW-1295, the flicker at the 20 km bound
+
+Done: tracediag.py tags births, welds and shreds on the plate grid (`flick`). The flicker is confirmed (creep on:
+~1150 shreds per 400 Myr within 10 Myr of a birth, at 19.3 km; ~900 re-births within 10 Myr of a shred; main
+140-160 and 60-65). Screened S15 (shred only below 15 km), R25 (re-birth of a shred only at 25 km), both: S15 cures it
+and needs no state. `crust.SHRED_KM = 15` is on, with
+`tests/test_churn.py::test_a_margin_cell_thinned_just_below_the_birth_bound_is_not_shredded`; goldens updated.
+Judge (36 draws, creep off): 0 hard failures, 32/36 against 33/36, climate unmoved, land -1.25 moved (the area
+thermostat counts the kept thin margin). [pw1295-note.md](pw1295-note.md). Drafts:
+draft-area-thermostat-counts-drowned-thin-margin, draft-sea-creep-still-cools-with-the-flicker-cured. Creep-on judge
+not run (creep + S15 screens 3 C colder than S15). Scratch runs deleted.

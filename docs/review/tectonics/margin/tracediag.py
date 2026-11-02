@@ -13,6 +13,8 @@ Adds to each recorded step a "trace" dict:
   continental crust's budget by process so far (sim.budget, km x level-5 cells; "erosion" includes the creep), and
   sed_born / sed_born_sub / sed_born_med: continental crust of rock SEDIMENT (born from a sediment pile), % of the
   surface, its submerged part, its median elevation (m)
+- flick (PW-1295): births, welds and shreds tagged on the plate's own grid, binned by the Myr since the cell's last
+  event of the other way and by thickness (600-1000 Myr); HYST_SHRED / HYST_REBIRTH set screen-only bounds
 Run from the code checkout being judged (cwd), same arguments as ice_diag / margindiag. Harness only: reads the sim.
 """
 import runpy
@@ -106,6 +108,79 @@ def coherence(sim, col, trench=None):
 
 crust.birth_and_cratons, crust.coherence = birth_and_cratons, coherence
 
+# (PW-1295, lane 115: the flicker check. Every birth, weld and shred is tagged on the plate's own grid (slot, cell),
+# so the tag rides with the crust; at each event, the Myr since that cell's last event of the other way (a shred
+# for a birth or weld, a birth or weld for a shred) is binned, and so is its thickness. Counted only over
+# FLICK_WIN, in cells / scale^2.)
+FLICK_WIN = (600.0, 1000.0)
+DELAYS = (4.0, 10.0, 50.0, 200.0)  # Myr bins: <=4 (two L6 steps), <=10, <=50, <=200, longer or never
+SHRED_T = (15.0, 17.5, 19.0, 20.0)  # km bins of a shred's thickness
+BIRTH_T = (21.0, 23.0, 25.0, 30.0)  # km bins of a birth's thickness (20 and up)
+FLICK = {}
+TAGS = {}
+
+
+def _bin(v, edges):
+    return np.searchsorted(np.asarray(edges), v, side="left")
+
+
+def _flick(sim, cells, kind, other, thick):
+    pl = sim.plates
+    if not TAGS:
+        TAGS["up"] = np.full(pl.cont.shape, -np.inf)  # Myr of the last birth or weld
+        TAGS["down"] = np.full(pl.cont.shape, -np.inf)  # Myr of the last shred
+    c = np.flatnonzero(cells)
+    k = sim.owner[c]
+    r = pl.idx[k, c]
+    t = float(sim.t)
+    if FLICK_WIN[0] <= t < FLICK_WIN[1] and len(c):
+        w = 1.0 / sim.scale**2
+        d = t - TAGS[other][k, r]
+        hd = np.bincount(_bin(d, DELAYS), minlength=len(DELAYS) + 1) * w
+        ht = np.bincount(_bin(thick[c], SHRED_T if kind == "shred" else BIRTH_T), minlength=5) * w
+        for key, h in ((kind + "_dt", hd), (kind + "_km", ht)):
+            FLICK[key] = FLICK.get(key, np.zeros(5)) + h
+        # (thickness of the quick ones: re-events within 10 Myr)
+        q = d <= 10.0
+        FLICK[kind + "_quick_km"] = FLICK.get(kind + "_quick_km", 0.0) + float(thick[c][q].sum()) * w
+    TAGS["down" if kind == "shred" else "up"][k, r] = t
+
+
+def coherence_tag(sim, col, trench=None):
+    weld, shred = coherence(sim, col, trench)
+    _flick(sim, shred, "shred", "up", col.t)
+    _flick(sim, weld, "weld", "down", col.t)
+    return weld, shred
+
+
+# (PW-1295 screens only, from the environment: HYST_SHRED, coherence's shred bound (crust.SHRED_KM); HYST_REBIRTH, the
+# bound a cell whose last event was a shred must reach to be born again (else BECOMES_CONT_KM))
+import os  # noqa: E402
+if os.environ.get("HYST_SHRED"):
+    crust.SHRED_KM = float(os.environ["HYST_SHRED"])
+REBIRTH = float(os.environ.get("HYST_REBIRTH") or 0.0)
+print("PW-1295 screen: shred bound", crust.SHRED_KM, "rebirth bound", REBIRTH or None, flush=True)
+
+
+def birth_tag(sim, col, arcky, squeezed):
+    sedim = (col.cover > 0.5 * (col.t - OCEAN_KM)) | (col.cover > 0.8 * sim.params.metamorphic_depth)
+    t0 = col.t
+    if REBIRTH and TAGS:
+        pl = sim.plates
+        i = np.arange(sim.grid.n)
+        k = sim.owner
+        r = pl.idx[k, i]
+        held = ~col.cont & (TAGS["down"][k, r] > TAGS["up"][k, r]) & (t0 >= BECOMES_CONT_KM) & (t0 < REBIRTH)
+        col.t = np.where(held, np.minimum(t0, BECOMES_CONT_KM - 1e-3), t0)
+    born = birth_and_cratons(sim, col, arcky, squeezed)
+    col.t = t0
+    _flick(sim, born & ~sedim, "birth_arc", "down", col.t)
+    _flick(sim, born & sedim, "birth_pile", "down", col.t)
+    return born
+
+
+crust.birth_and_cratons, crust.coherence = birth_tag, coherence_tag
+
 
 def step(self, sim):
     _step(self, sim)
@@ -131,6 +206,7 @@ def step(self, sim):
     if "slab" in STASH:
         tr["trench_n"], tr["conv"], tr["conv_sum"], tr["over_n"] = [round(float(v), 3) for v in STASH["slab"]]
     tr["births"] = {k: round(v, 2) for k, v in BIRTHS.items()}
+    tr["flick"] = {k: (np.round(v, 2).tolist() if isinstance(v, np.ndarray) else round(v, 2)) for k, v in FLICK.items()}
     tr["pco2"] = round(float(climate.pco2(sim.co2)), 1)
     if sim.weathered is not None:
         sup = np.asarray(sim.weathered) * land
