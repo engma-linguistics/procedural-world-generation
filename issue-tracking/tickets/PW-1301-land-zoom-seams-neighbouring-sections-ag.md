@@ -9,7 +9,7 @@ subsystem: zoom
 effort: l
 impact: high
 found_by: owner
-blocked_by: [PW-1300]
+blocked_by: [PW-1319]
 relates: []
 refs: [planet/zoom/stage_finish.py, planet/zoom/coastal.py, planet/zoom/fine_forms.py]
 created: 2026-11-02

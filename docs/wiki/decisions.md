@@ -222,3 +222,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: lane 115 (PW-1295 15 km shred) merged then code reverted: slow test_envelopes seed 2 hothouse 28.8 C (pCO2 3547) vs 15.8 C. Back to the lane for re-rolled L5 draws. Creep (PW-1315) to the back of the line under three strikes.
 - 2026-11-02: lane 115 round 2: seed 2 hothouse = frozen CO2 references caught a spin-up lull (PW-1316, D39 for Daniel, lean B); 15 km bound weakens spin-up outgassing ~7% (lane 119 checks trench jamming, PW-1317).
 - 2026-11-02: lane 119 (docs only) merged: no trench jam; 15 km bound gives fewer plates via keel drag + insulation (PW-1318). PW-1295 parked with the creep (PW-1315). Lane 120 started on rain inland (PW-015/026), diagnosis first.
+- 2026-11-02: merged lane 116 (PW-1300 land zoom practice, dba204). 1 km section: 2 h 48 m, 110 GB peak; squares don't tile (PW-1319 tiling rule before seams PW-1301); cost PW-1303 next in the epic.
