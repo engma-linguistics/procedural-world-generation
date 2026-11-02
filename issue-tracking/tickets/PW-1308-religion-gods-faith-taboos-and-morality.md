@@ -3,7 +3,7 @@ id: PW-1308
 title: "Religion: gods, faith, taboos and morality per culture (faith-made gods by default)"
 type: epic
 status: todo
-parent: PW-856
+parent: null
 milestone: v2
 subsystem: timezoom
 effort: xl
