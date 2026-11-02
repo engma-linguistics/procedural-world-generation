@@ -11,7 +11,7 @@ impact: low
 found_by: lane126
 blocked_by: []
 relates: [PW-1334, PW-1326, PW-015, PW-228]
-refs: ["planet/climate.py::_layer_gate", "planet/climate.py::clouds", "planet/climate.py::_summer_split", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/screen.py, docs/review/base-climate/summer-heat/diagnosis.md, data/earth/clouds_L7.npz, "Eastman & Warren 2014 (J. Climate 27:2386)"]
+refs: ["planet/climate.py::_layer_gate", "planet/climate.py::clouds", "planet/climate.py::_summer_split", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/screen.py, docs/review/base-climate/summer-heat/diagnosis.md, data/earth/clouds_L7.npz, "Eastman & Warren 2014 (J. Climate 27:2386)", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/winter2.py, docs/review/base-climate/tropical-cloud/screen2.py]
 created: 2026-11-02
 updated: 2026-11-02
 ---
@@ -37,3 +37,4 @@ instability threshold over midlatitude summer land.
 
 ## Updates
 - 2026-11-02: Created from inbox draft draft-subtropical-summer-too-sunny-after-cloud-gate.md (found by lane126).
+- 2026-11-02: Lane 131 (round2-diagnosis.md section 3): 70% of the 20-40 deg summer sunshine excess is on land where the model's rain is < 0.6 x GPCC; +0.08 where the rain is within 20%. Gate floor 0.3, cloud_cu 0.7, sun_ref 0.658 screened: at most -0.03 on the band, each with costs. Three strikes; leave it until the rain round.
