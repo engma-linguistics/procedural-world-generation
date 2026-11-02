@@ -90,6 +90,15 @@ world under the old code", not warmer than Earth.</li>
 <p>You're right that the baseline matters. For a change, the baseline is always the same world under the current code, so that chance
 mostly cancels. For whether a world is plausible, it's today's Earth (the offset), and the hard checks (frozen over, boiled, the seas lost) are
 absolute, so they don't depend on either.</p>
+<p><b>The accepted range</b> (<code>planet/highlights.py</code>, <code>passrate4.py</code>), against Earth's pre-industrial 13.8 °C:</p>
+<ul>
+<li><b>The world you're given</b> (its finish moment) must be −6 to +5 °C, i.e. about 7.8–18.8 °C. The cold edge is the last ice age; the warm
+edge is yours (D19, raised from +3). It must also have 1–25% of its land under ice, and at least 20% tree cover on the wet equatorial lowland.</li>
+<li><b>Over the whole run, a world fails outright</b> if its middle offset is over +10.5 °C or it ever peaks over +15.5 °C ("hellhouse"),
+or if 40% or more of its land is under ice in its last 300 Myr ("frozen over").</li>
+<li>A change like +0.57 has no fixed limit of its own: the test asks whether it is beyond chance, and if so I explain it before merging.
+The test worlds' middle late value of +1.77 °C sits well inside the range.</li>
+</ul>
 <p><b>Where the warming came from:</b> no bug, and not the clouds. Now the rain sees the warmed sea, the North Atlantic storm track rains
 1.7× what's observed, because the model's sea there is about 3 °C too warm. The world's total rain is held fixed, so that extra rain comes out of
 everywhere else, the ice sheets included: they get 3–5% less snow, grow less, reflect less sun, and ice-age peaks fall from 23 to 13. Merged
@@ -158,5 +167,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v101 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v102 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
