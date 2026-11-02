@@ -214,3 +214,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-01: merged lane 112 (PW-1292 A, judge 33/36 vs 27/36, no hard failures); churn is margin flicker at the shared 20 km line (PW-1295, D38 proposal). test_world_soils now uses geo.is_land (PW-1229 cut-off basins), assertions unchanged.
 - 2026-11-01: Daniel: v2 order PW-252 speed, D38 margin flicker (PW-1295), rain inland (PW-015/026), summer heat (PW-1279), plant growth (D34 B). Three strikes in a row -> back of the line.
 - 2026-11-01: Daniel: after the speed/physics list, a whole-planet land zoom (PW-1296) instead of an L7->L9 refine; refine route kept for later; efficiency first.
+- 2026-11-01: merged lane 114 (PW-252 part 1, -11.6% L7, bit-identical). Coordinator call: accept 1-ulp exp differences for part 2 (PW-1297). GPU pays from L8 (kernels ~60% of an L8 step), not L6/L7. Lane 115 started on D38/PW-1295.

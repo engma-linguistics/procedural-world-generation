@@ -1,4 +1,5 @@
 ---
+id: PW-1297
 title: The biggest remaining numpy glue calls np.exp, which numba cannot match bit for bit (needs-decision)
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: med
 found_by: lane-114 (PW-252)
 blocked_by: []
 relates: [PW-252]
-refs: [planet/climate.py::_erf, planet/climate.py::months, planet/climate.py::koppen, planet/tectonics/isostasy.py::sediment_lift, planet/tectonics/isostasy.py::elevation, docs/review/speed/pw252.md, "tests/test_golden.py"]
+refs: ["planet/climate.py::_erf", "planet/climate.py::months", "planet/climate.py::koppen", "planet/tectonics/isostasy.py::sediment_lift", "planet/tectonics/isostasy.py::elevation", docs/review/speed/pw252.md, tests/test_golden.py]
+created: 2026-11-01
+updated: 2026-11-01
 ---
 
 ## Description
@@ -31,3 +34,7 @@ regenerated, the climate is not meaningfully different), or keep the numpy exp a
 ## Acceptance
 - [ ] Daniel picks: regenerate goldens for ulp-level changes, or stay bit-identical with exp precomputed in numpy.
 - [ ] Then port `_erf`+gdd5, `sediment_lift`, `koppen`, `site` accordingly; bound the change (max relative diff) on the golden case.
+
+## Updates
+- 2026-11-01: Coordinator 11-01: accept last-bit (1 ulp) exp differences; regenerate goldens with that stated reason. No backward compat, and 1 ulp is below any physical meaning. Queued with PW-1298 as speed part 2.
+- 2026-11-01: Created from inbox draft draft-glue-exp-ports-need-ulp-decision.md (found by lane-114 (PW-252)).

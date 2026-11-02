@@ -38,6 +38,7 @@ elementwise mostly) and check goldens. Rough gain: fusing half of this glue at ~
 - [ ] port the top 5; before/after per stage; goldens unchanged or regenerated with a stated reason
 
 ## Updates
+- 2026-11-01: Lane 114 merged 02517a9c: bit-identical fusion, L7 273.8 -> 242.1 s/100 Myr (-11.6%), L6 -8.5%; peak memory unchanged. Rest split into PW-1297 (exp ports) and PW-1298 (remaining glue). GPU share of a step: 33% L6/L7, ~60% L8 (docs/review/speed/pw252.md, docs/review/gpu/profile.md).
 - 2026-11-01: Status todo -> in-progress. Daniel 11-01: top v2 priority; lane 114 running alone for clean timings.
 - 2026-10-15: Merged inbox draft draft-speed-shares-after-pw257.md ("Where the time goes after PW-256/257 (for PW-252, PW-255, PW-259): zooms now mostly numpy glue", found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).
   Meant to be merged into PW-252 (`board.py intake --merge-into PW-252`), with a pointer from PW-255/259.
