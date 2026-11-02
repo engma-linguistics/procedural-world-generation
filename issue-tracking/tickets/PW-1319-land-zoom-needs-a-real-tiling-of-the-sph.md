@@ -2,7 +2,7 @@
 id: PW-1319
 title: "Land zoom needs a real tiling of the sphere: stepping 3800 km east or north does not give aligned, overlapping squares"
 type: task
-status: todo
+status: in-progress
 parent: PW-1299
 milestone: v2
 subsystem: zoom
@@ -22,4 +22,5 @@ updated: 2026-11-02
 - [ ] re-measure the practice seams with it (`seams.py`)
 
 ## Updates
+- 2026-11-02: Status todo -> in-progress. 11-02: lane 122 (cost profile + fixes; tiling design and section lister).
 - 2026-11-02: Created from inbox draft draft-land-zoom-tiling-geometry.md (found by lane116).

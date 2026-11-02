@@ -299,6 +299,7 @@ The flicker it cures is small without the sea-floor creep, and the creep is at t
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>121 · summer heat</td><td>Low-latitude summers too hot (PW-1279). First: how much of it is just the dry coasts (observed rain swapped in);
 then sourced candidates and cheap screens; reports before any big test.</td></tr>
+<tr><td>122 · land zoom cost and tiling</td><td>Why a 1 km section needs 110 GB and 2 h 48 min, and the cheap fixes; plus a real rule for laying 4,000 km sections over the sphere (PW-1303, PW-1319).</td></tr>
 <tr><td>116 · land zoom practice</td><td>Picking side-by-side 4,000 km sections and measuring their seams (PW-1300).</td></tr>
 
 </table></div>
@@ -336,7 +337,7 @@ now; sourced rungs come to you before building. No underdark.</li>
 filed as PW-1279. The temperature tooltip now names the month shown.</li>
 <li><b>Merged this week</b> (all tests pass): overlapping demes, the per-frame demes picker, the final v1 tally (0/42 hard
 failures), v0.1.0 showcases, the 1 Gyr L8 world.</li>
-<li><b>Speed, parts 1 and 2</b> (PW-252, lanes 114 and 118): L7 runs about 25–35% faster than a week ago in all; part 2 changes outputs only in the last bit of <code>exp</code>. A small worry it turned up: the same seed may give a different world at a different thread count (PW-1324, to check).</li>
+<li><b>Speed, parts 1 and 2</b> (PW-252, lanes 114 and 118): L7 runs roughly a quarter faster than before (part 1: 11.6% on a quiet machine; part 2: 15–25% more, timed on a busy one, so estimated); part 2 changes outputs only in the last bit of <code>exp</code>. A small worry it turned up: the same seed may give a different world at a different thread count (PW-1324, to check).</li>
 <li><b>Sediment piles become continent only against their own continent</b> (PW-1292, lane 112; judged, merged).</li>
 <li><b>Ticket references</b>: tickets can cite papers, doc sections and code functions, and the checker flags any that don't resolve. New tickets get full refs up front; old ones are filled in only as lanes work on them.</li>
 <li>Older settled items are in the desk's git history and <code>docs/wiki/decisions.md</code>.</li>
