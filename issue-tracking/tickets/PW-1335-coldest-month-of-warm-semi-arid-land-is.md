@@ -26,5 +26,6 @@ bias (model rain 2-3x too high in the Sahel/E Africa, which cools them). First: 
 - [ ] decide the cause; Earth warm semi-arid coldest month within ~1 C of NCEP
 
 ## Updates
+- 2026-11-02: Lane 131: not cloud, not rain. ~1/3 is height (PW-1353, mass elevation effect), the lowland rest is dry sunny winters not warmed (PW-1354, needs a source). Height arms not recommended (40-60 deg winters, Koppen B, Congo rain move the wrong way).
 - 2026-11-02: Created from inbox draft draft-cool-coldest-month-warm-semiarid.md (found by lane125).
 - 2026-11-02: Lane 131 (round2-diagnosis.md section 4): not the rain (r +0.28, wrong sign). ~1/3 is height (-1.5 C/km at all latitudes; mass elevation effect, He 2016). The rest is a lowland winter-range excess (dry sunny winters get no energy split). Three mass-elevation arms screened: 20-40 deg winters fixed, the ticket's cells only +0.5 C, 40-60 deg winters too mild. None to merge; inbox drafts mass-elevation-effect-highland-temperature and winter-energy-split-dry-season-warmth.

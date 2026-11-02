@@ -1,4 +1,5 @@
 ---
+id: PW-1352
 title: The model's eastern equatorial Atlantic (off Gabon and Angola) hardly cools in its cool season, so the Congo's dry-season stratus has no inversion
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane131
 blocked_by: []
 relates: [PW-1347, PW-1334]
-refs: ["planet/climate.py::sea_surface", "planet/climate.py::upwelling_cooling", "planet/climate.py::clouds", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/screen2.py, docs/review/base-climate/tropical-cloud/round2.patch, paper:Champagne2023, paper:Berger2025, paper:Philippon2019]
+refs: ["planet/climate.py::sea_surface", "planet/climate.py::upwelling_cooling", "planet/climate.py::clouds", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/screen2.py, docs/review/base-climate/tropical-cloud/round2.patch, "paper:Champagne2023", "paper:Berger2025", "paper:Philippon2019"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -31,3 +34,6 @@ has none yet; NCEP air is only a proxy). If the cold tongue is missing, see whet
 term has a season. Then re-try lane 131's candidate c (`cloud_seastab_km` in round2.patch: the sea's inversion carried
 inland for the land stratus gate). It did nothing on today's sea.
 - [ ] model cool-season SST off Gabon within ~1 C of an SST climatology; then Congo sky re-measured with candidate c
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-east-equatorial-atlantic-cold-season-too-warm.md (found by lane131).

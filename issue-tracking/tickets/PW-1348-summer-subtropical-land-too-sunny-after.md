@@ -36,5 +36,6 @@ instability threshold over midlatitude summer land.
 - [ ] 20-40 deg summer sunshine within ~0.05 of CRU without losing the tropical shade bands
 
 ## Updates
+- 2026-11-02: Lane 131: three strikes (gate floor, cloud_cu 0.7, sun_ref 0.658 all <= 0.03 or harmful). 70% of the excess sits where rain < 0.6x GPCC: it's the rain. Leave it; re-measure after the rain round (PW-015/026, parked).
 - 2026-11-02: Created from inbox draft draft-subtropical-summer-too-sunny-after-cloud-gate.md (found by lane126).
 - 2026-11-02: Lane 131 (round2-diagnosis.md section 3): 70% of the 20-40 deg summer sunshine excess is on land where the model's rain is < 0.6 x GPCC; +0.08 where the rain is within 20%. Gate floor 0.3, cloud_cu 0.7, sun_ref 0.658 screened: at most -0.03 on the band, each with costs. Three strikes; leave it until the rain round.
