@@ -2,7 +2,7 @@
 id: PW-252
 title: Fuse the run's single-threaded numpy glue into parallel numba kernels (~45% of an L6/L7 run's wall time)
 type: task
-status: in-progress
+status: done
 parent: PW-247
 milestone: v2
 subsystem: infra
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-249, PW-215]
 refs: [planet/climate.py, planet/tectonics/simulation.py, planet/tectonics/mantle.py, planet/noise.py, planet/vegetation.py, planet/landform.py, docs/review/gpu/profile.md, docs/review/gpu/scripts/]
 created: 2026-10-15
-updated: 2026-11-01
+updated: 2026-11-02
 ---
 
 ## Description
@@ -38,6 +38,7 @@ elementwise mostly) and check goldens. Rough gain: fusing half of this glue at ~
 - [ ] port the top 5; before/after per stage; goldens unchanged or regenerated with a stated reason
 
 ## Updates
+- 2026-11-02: Status in-progress -> done. Parts 1 and 2 merged (02517a9c, 80d8b181). Daniel 11-02: stop chasing L8/L9 speed here; leftovers PW-1323 (low).
 - 2026-11-01: Lane 114 merged 02517a9c: bit-identical fusion, L7 273.8 -> 242.1 s/100 Myr (-11.6%), L6 -8.5%; peak memory unchanged. Rest split into PW-1297 (exp ports) and PW-1298 (remaining glue). GPU share of a step: 33% L6/L7, ~60% L8 (docs/review/speed/pw252.md, docs/review/gpu/profile.md).
 - 2026-11-01: Status todo -> in-progress. Daniel 11-01: top v2 priority; lane 114 running alone for clean timings.
 - 2026-10-15: Merged inbox draft draft-speed-shares-after-pw257.md ("Where the time goes after PW-256/257 (for PW-252, PW-255, PW-259): zooms now mostly numpy glue", found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).

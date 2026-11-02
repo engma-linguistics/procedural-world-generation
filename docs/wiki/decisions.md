@@ -224,3 +224,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: lane 119 (docs only) merged: no trench jam; 15 km bound gives fewer plates via keel drag + insulation (PW-1318). PW-1295 parked with the creep (PW-1315). Lane 120 started on rain inland (PW-015/026), diagnosis first.
 - 2026-11-02: merged lane 116 (PW-1300 land zoom practice, dba204). 1 km section: 2 h 48 m, 110 GB peak; squares don't tile (PW-1319 tiling rule before seams PW-1301); cost PW-1303 next in the epic.
 - 2026-11-02: lane 120 (docs only) merged: rain-inland three strikes, PW-015/026 back of the line; real problem is wet interiors / dry humid coasts, supply from adjacent seas (PW-1321, needs Daniel's go for a large round). Lane 121 started on summer heat (PW-1279/1322).
+- 2026-11-02: merged lane 118 speed part 2 (full suite 939 passed); PW-252/1297/1298 done. New PW-1324: same seed differs across thread counts (to check).

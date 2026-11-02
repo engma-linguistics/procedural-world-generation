@@ -300,7 +300,7 @@ The flicker it cures is small without the sea-floor creep, and the creep is at t
 <tr><td>121 · summer heat</td><td>Low-latitude summers too hot (PW-1279). First: how much of it is just the dry coasts (observed rain swapped in);
 then sourced candidates and cheap screens; reports before any big test.</td></tr>
 <tr><td>116 · land zoom practice</td><td>Picking side-by-side 4,000 km sections and measuring their seams (PW-1300).</td></tr>
-<tr><td>118 · speed part 2</td><td>The <code>exp</code> ports (last-bit changes accepted) and the cheap remaining single-threaded code (PW-1297/1298).</td></tr>
+
 </table></div>
 <div class="card" id="speed1"><div class="id">SPEED PASS PART 1 MERGED (PW-252) · SMALLER THAN HOPED, AND WHY</div>
 <p><b>11.6% faster at L7</b> (273.8 → 242.1 s per 100 Myr), 8.5% at L6, outputs identical to the bit. The ticket guessed 30%. Only
@@ -336,7 +336,7 @@ now; sourced rungs come to you before building. No underdark.</li>
 filed as PW-1279. The temperature tooltip now names the month shown.</li>
 <li><b>Merged this week</b> (all tests pass): overlapping demes, the per-frame demes picker, the final v1 tally (0/42 hard
 failures), v0.1.0 showcases, the 1 Gyr L8 world.</li>
-<li><b>Speed part 1</b> (PW-252, lane 114): 11.6% faster at L7, bit-identical.</li>
+<li><b>Speed, parts 1 and 2</b> (PW-252, lanes 114 and 118): L7 runs about 25–35% faster than a week ago in all; part 2 changes outputs only in the last bit of <code>exp</code>. A small worry it turned up: the same seed may give a different world at a different thread count (PW-1324, to check).</li>
 <li><b>Sediment piles become continent only against their own continent</b> (PW-1292, lane 112; judged, merged).</li>
 <li><b>Ticket references</b>: tickets can cite papers, doc sections and code functions, and the checker flags any that don't resolve. New tickets get full refs up front; old ones are filled in only as lanes work on them.</li>
 <li>Older settled items are in the desk's git history and <code>docs/wiki/decisions.md</code>.</li>

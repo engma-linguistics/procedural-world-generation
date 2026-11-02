@@ -1,4 +1,5 @@
 ---
+id: PW-1324
 title: The same seed gives a different 1 Gyr world at 6 and at 8 numba threads (check)
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane-118 (PW-1297)
 blocked_by: []
 relates: [PW-1297]
-refs: [tools/scorecard.py, docs/review/speed/pw252.md, "planet/parallel.py", "planet/kernels.py"]
+refs: [tools/scorecard.py, docs/review/speed/pw252.md, planet/parallel.py, planet/kernels.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -22,3 +25,6 @@ statistical. Found while checking that PW-1297's last-bit changes cause no physi
 Check: run `Simulation(build_grid(5), 1, ...)` for 200 Myr at NUMBA_NUM_THREADS 1, 6, 8, 16 and compare the arrays bit for bit; if they differ,
 find the kernel (a prange with an accumulating reduction or atomic-order scatter).
 - [ ] bit-compare one small run across thread counts; list the kernels responsible if they differ
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-run-not-reproducible-across-thread-counts.md (found by lane-118 (PW-1297)).

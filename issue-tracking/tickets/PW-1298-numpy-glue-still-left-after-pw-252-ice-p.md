@@ -2,7 +2,7 @@
 id: PW-1298
 title: Numpy glue still left after PW-252 (ice pass, route/settle, forces, gradient, is_land, face_winds)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: infra
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-252]
 refs: ["planet/tectonics/earth.py::ablation_zone", "planet/tectonics/earth.py::_ice_pass", "planet/tectonics/earth.py::sheet_surface", "planet/hydrology.py::route", "planet/hydrology.py::_settle", "planet/tectonics/motion.py::forces", "planet/tectonics/mantle.py::gradient", "planet/geo.py::is_land", "planet/climate.py::face_winds", docs/review/speed/pw252.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-02
 ---
 
 ## Description
@@ -26,4 +26,5 @@ not ported (ranking and reasons in docs/review/speed/pw252.md):
 Fusing these is another ~15 s at L7 (6%) if the order constraints hold.
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 118 merged 80d8b181: L7 python-side 150 -> 105 s per 100 Myr (wall ~15-25% under load); goldens regenerated for 1-ulp exp/pow. Rest in PW-1323.
 - 2026-11-01: Created from inbox draft draft-glue-remaining-after-pw252.md (found by lane-114 (PW-252)).
