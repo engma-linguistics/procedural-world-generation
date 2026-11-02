@@ -2,7 +2,7 @@
 id: PW-1373
 title: "Hunting kinds take up farming as fast as anyone: the crop front, not their leaning, decides (density ladder Q2 A)"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -35,4 +35,5 @@ Options:
 Lean B: it keeps Q2 A and lets each kind's lore show as a delay, not a cap. Measure on the robust suite.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02: B. Less inclined peoples learn crops ~10x slower (delay ~ LAG / propensity), keeping the land rule. If they end up effectively never farming, try 5x. Neither force nor forbid farming. Obligate carnivores (cat-folk) lean far more to herding than to crops.
 - 2026-11-02: Created from inbox draft draft-hunters-learn-crops-regardless.md (found by lane 137 (density ladder check d)).

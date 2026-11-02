@@ -2,7 +2,7 @@
 id: PW-1366
 title: "Faiths as their own records: the founding, schism and conversion rule (judgement call)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -41,4 +41,5 @@ Options:
 Lean A for v2; revisit the three numbers after Daniel has seen the map.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> todo. Daniel 11-02: keep the rule as built (A); no hurry. Revisit the three numbers together once he has looked at the map and timeline.
 - 2026-11-02: Created from inbox draft draft-faith-spread-rule-call.md (found by lane133).

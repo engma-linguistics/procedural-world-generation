@@ -1,4 +1,5 @@
 ---
+id: PW-1380
 title: "Coastal upwelling cools the whole Gulf of Mexico 1.45 C (up to 6 C in the Bay of Campeche): Ekman drift away from a coast in a nearly enclosed sea"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane134
 blocked_by: []
 relates: [PW-1362, PW-593]
 refs: [docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/seaparts.py, "planet/climate.py::upwelling_cooling", "planet/climate.py::sea_surface"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -38,3 +41,6 @@ The E Atlantic subtropics' annual mean is also 1.5 C cool (Canary current -0.74,
 It's small and has two parts, so it's noted here, not ticketed.
 
 - [ ] Gulf box upwelling under ~0.5 C mean, with the four big eastern-boundary upwellings unchanged (+-0.5 C)
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-gulf-upwelling-box-wide.md (found by lane134).

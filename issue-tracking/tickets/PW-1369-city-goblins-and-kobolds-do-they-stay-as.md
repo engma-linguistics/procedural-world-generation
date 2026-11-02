@@ -2,7 +2,7 @@
 id: PW-1369
 title: "City goblins and kobolds: do they stay as groups now that peoples have none? (Daniel to confirm)"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -29,4 +29,5 @@ Options:
 Lean A.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> in-progress. Daniel 11-02 asked whether this means a group for every minority anywhere (dozens). It would: groups don't scale to minorities. Coordinator call (he deferred): B, remove the two city groups; town minorities wait for a towns and minorities model.
 - 2026-11-02: Created from inbox draft draft-city-minorities-groups.md (found by lane 136 / lane 137 (density ladder build)).

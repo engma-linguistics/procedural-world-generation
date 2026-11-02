@@ -2,7 +2,7 @@
 id: PW-1367
 title: Most gods grant spells once a people has kingship (68% of cultures have 3+ spell-granting gods)
 type: task
-status: needs-decision
+status: done
 parent: PW-1308
 milestone: v2
 subsystem: timezoom
@@ -29,4 +29,5 @@ Options:
 Lean B or C if Daniel wants spell-granting to be rare; A if not. One constant either way; the stats tool re-measures it in a minute.
 
 ## Updates
+- 2026-11-02: Status needs-decision -> done. Daniel 11-02: keep as is (A). Not every god-fearing person is a cleric, so many spell-granting gods is fine.
 - 2026-11-02: Created from inbox draft draft-spells-common-under-kingship.md (found by lane133).

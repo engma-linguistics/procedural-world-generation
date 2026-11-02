@@ -1,5 +1,6 @@
 ---
-title: "The finished N Atlantic is ~3 C too warm in the annual mean and ~5 C in winter; now that the rain sees it (PW-1364), its storm track rains 1.7x GPCP"
+id: PW-1381
+title: The finished N Atlantic is ~3 C too warm in the annual mean and ~5 C in winter; now that the rain sees it (PW-1364), its storm track rains 1.7x GPCP
 type: task
 status: todo
 parent: PW-015
@@ -11,6 +12,8 @@ found_by: lane134
 blocked_by: []
 relates: [PW-1364, PW-593, PW-589, PW-1362]
 refs: [docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/track.py, docs/review/base-climate/rain-supply/seaparts.py, docs/review/base-climate/rain-supply/seaair.py, "planet/climate.py::compute", "planet/climate.py::sea_surface", "planet/ocean.py::winter_half", "planet/ocean.py::solve", tools/moisture_regions.py]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -55,3 +58,7 @@ loss (`moc_lambda`) against an observed SST climatology.
 - [ ] N Atlantic storm-track winter-half sea air within ~2 C of NCEP on Earth L6
 - [ ] its winter evaporation within 0.7-1.3x NCEP, with the humid coasts' and the interiors' rain ratios no worse
 - [ ] the L6 paired judge's late dT against PW-1364's merge: the +0.57 C (with its fewer glacial maxima) shrinks, or is shown to be sound on its own
+
+## Updates
+- 2026-11-02: Raised in practice: since PW-1364 this overshoot takes snow off every ice sheet (Antarctica's land rain -6.5% on Earth L6) and is behind the judge's late dT +0.57 C and glacial maxima 23 -> 13. Re-check the L6 judge's late dT after the fix. Next in the physics queue after PW-1316's judge.
+- 2026-11-02: Created from inbox draft draft-n-atlantic-finished-sea-too-warm-for-the-rain.md (found by lane134).

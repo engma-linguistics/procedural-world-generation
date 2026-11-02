@@ -2,7 +2,7 @@
 id: PW-1364
 title: "The rain runs before the overturning, so it sees the N Atlantic 3-6 C too cold: the storm tracks' winter evaporation is a third of NCEP's"
 type: task
-status: todo
+status: done
 parent: PW-015
 milestone: v2
 subsystem: climate
@@ -50,6 +50,7 @@ Check the run cost and the PW-387 warm start.
   ratios no worse
 
 ## Updates
+- 2026-11-02: Status todo -> done. Merged b83e973a. Paired L6 judge 36 draws: hard 0/0, soft 30 vs 32 (McNemar p 0.75). Late dT +0.57 C (median paired, cand - main; dT is the offset from today's Earth) traced by lane 134b (round2.md section 5): the land ice sheets get 3-5% less snow, because the N Atlantic box now rains 1.7x GPCP and the global rain mean is fixed; no bug, clouds not involved. Merged as a soundness fix; the overshoot is PW-1381.
 - 2026-11-02: Lane 134: a second, warm-started rain pass on the overturning's sea (c680e951). Earth L7: B 24.5 -> 25.4, log-rain r 0.714 -> 0.713,
   interiors 1.85 -> 1.70x, humid coasts 0.56 -> 0.54x; N Atl winter E 452 -> 1990 (NCEP 1339): overshoots, because the finished
   N Atlantic is too warm (draft-n-atlantic-finished-sea-too-warm-for-the-rain). L6 seeds and judge: round2.md.
