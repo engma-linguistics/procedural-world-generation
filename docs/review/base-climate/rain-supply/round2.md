@@ -1,7 +1,8 @@
 # Lane 134: the rain on the overturning's sea (PW-1364), and the NH subtropical seas (PW-1362), 2026-11-02
 
-Status: **in progress.** Arm a1 (a second rain pass on the overturning's sea) holds on Earth L7; L6 sanity seeds
-running. Code: commit c680e951 on this branch.
+Status: **paired judge running detached (handed off before it finished).** Arm a1 (a second rain pass on the
+overturning's sea, commit c680e951) holds on Earth L7. The L6 sanity runs are 2 of 4 seeds in (one cand soft fail,
+land ice at the end). Not merged.
 
 ## 1. Diagnosis (the gate)
 
@@ -123,7 +124,55 @@ Code frozen by `git archive` into `$S/code/main` (2b3bf6f1) and `$S/code/cand` (
 `docs/review/base-climate/v1-finish-16/paired.sh` (MAXSIM 4-5, THREADS 3; Daniel's 15-core cap for this lane), launched by
 `$S/launch.sh ONLY ROLL...`, with S = /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l134.
 
-(pending)
+**Sanity so far (roll 0.0005; the other two l6fix seeds are queued in the same judge):**
+
+| seed | main: pass, end T, arid %, land %, late CO2 | cand |
+|---|---|---|
+| 619496 | PASS +4.7, 21.9, 35.1, +0.64 | fail (land ice at the run's end) +3.1, 27.6, 35.4, +1.47 |
+| 957317 | PASS -0.2, 19.4, 34.1, +0.17 | PASS +1.3, 23.6, 35.2, +0.44 |
+
+(main's rows match lane 126's cand rows for these seeds, as they should.)
+
+Both draws: arid +5 points and hot desert +4, with late CO2 and late dT higher and land rain +63 mm. Earth's B moved
+the same way, but only +0.9.
+
+A plausible chain: rain moves onto the warm storm-track seas (Earth's 40-70 N sea rain +25-100%), so the dry land
+gets drier and the arid share rises. Weathering then falls, CO2 rises and the climate warms. Two draws can't tell
+that from chaos (lane 24: a null change moves 15 of 36 passes). **Watch arid %, late CO2 and sink ref in the judge.**
+If arid moves by +3 or more with CO2 up, that's the side effect to diagnose before merging, against PW-290 (L7
+worlds already too arid).
+
+**The judge (launched 10:29-10:36, 2026-11-02):** both arms, rolls 0.0005 and 0.001, all 18 draws, 72 runs into
+`$S/judge`. Three launchers, logs `$S/launch_main.log` and `$S/launch_cand.log`, all from `$S/launch.sh`:
+- `launch.sh l6fix 0.0005` (MAXSIM 4);
+- `launch.sh l6c 0.0005 0.001` (MAXSIM 5);
+- `launch.sh l6fix 0.001` (MAXSIM 5).
+
+The shared cap is 5 sims (15 cores, Daniel's limit for this lane on 11-02). Expect ~4 h from 10:30 (about 17 min a
+run, 5 at once), so done ~14:30.
+
+**To read it:**
+1. `ls $S/judge/*/seed*.json.gz | wc -l` should be 72, and every launch log's lines should end with "all done" (six
+   "all done" lines in all).
+2. A draw that died has a `log_<seed>.txt` but no `seed*.json.gz`. Delete that log and re-run
+   `MAXSIM=5 bash $S/launch.sh <l6fix|l6c> <roll>`.
+3. Then `uv run python docs/review/base-climate/v1-finish-16/pjudge.py $S/judge main cand --table` and paste the
+   tables here.
+4. `docs/review/base-climate/rain-supply/why.py <draw files>` (run from the repo root) prints a draw's finish-moment reasons.
+
+**Bar:**
+- hard failures 0 (frozen over, hellhouse);
+- soft pass ~main's or better, with no threshold loosening;
+- late dT / CO2 / sink ref not moved, or moved by what the mechanism explains (see above).
+
+**Also before merging:** `uv run pytest tests/test_envelopes.py` (slow; not run yet, because the sims held the core
+cap) and the full suite. The not-slow suite passed: 926 passed. Its 7 failures were 3 thread tests under
+NUMBA_NUM_THREADS=1, which pass at 4 threads; the goldens, regenerated in d2a34a48; and
+the probe test, fixed in 62fa91e2.
+
+**Don't delete `$S` until the judge is read:** the frozen code copies and the draws live there. Then
+`rm -rf "${S:?}"` (no symlinks inside it). Also remove the worktree's private `data/earth/` copy (133 MB,
+gitignored, a real directory, not a link).
 
 ## 4. PW-1362: the NH subtropical seas (diagnosis)
 
@@ -160,8 +209,21 @@ Code frozen by `git archive` into `$S/code/main` (2b3bf6f1) and `$S/code/cand` (
 
 ## 4b. State and next
 
-(pending)
+- **Done:**
+  - the diagnosis (section 1);
+  - arm a1 coded, with the probe and `moisture_regions` following the warm start;
+  - Earth screens (section 2), not-slow tests and goldens;
+  - the PW-1362 diagnosis (section 4);
+  - drafts: draft-n-atlantic-finished-sea-too-warm-for-the-rain, draft-gulf-upwelling-box-wide.
+- **Strikes:** 0 failed arms.
+- **Next:**
+  - read the judge (section 3);
+  - if it passes, run test_envelopes and the full suite, then hand to the coordinator for the merge;
+  - if arid / CO2 move beyond the mechanism, diagnose: compare the Earth arid shift (+0.9) with L6's (+5); check
+    which land gets drier.
+- **PW-1362:** fold its swing part into PW-593 (the coordinator's call); the Gulf goes to the upwelling draft.
+  PW-593 is the lever for both PW-1362 and the N Atlantic overshoot that this fix exposes.
 
 ## Files
 
-ec2.sh, summ2.py (lane 132's harness pointed at l134), seaparts.py, seaair.py (lane 132's).
+ec2.sh, summ2.py (lane 132's harness pointed at l134), seaparts.py, seaair.py (lane 132's), launch.sh (a copy of $S/launch.sh), why.py.
