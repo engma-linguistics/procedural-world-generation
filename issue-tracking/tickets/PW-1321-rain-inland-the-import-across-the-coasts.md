@@ -1,4 +1,5 @@
 ---
+id: PW-1321
 title: "Rain inland: the import across the coasts only moves with supply; next round is moist source seas (PW-015 option A), then inflow depth + friction + ascent together"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: high
 found_by: lane120
 blocked_by: []
 relates: [PW-026, PW-1099, PW-1100, PW-1120, PW-1094, PW-1097, PW-1279]
-refs: [docs/review/base-climate/rain-inland/diagnosis.md, docs/review/base-climate/rain-inland/candidates.patch, docs/review/base-climate/rain-inland/budget_L6_screens.txt, docs/review/base-climate/rain-inland/withtune.py, docs/review/base-climate/rain-inland/summ.py, docs/review/base-climate/rain-inland/ecsumm.py, docs/review/base-climate/moisture-budget/README.md, docs/review/base-climate/moisture-inflow-ascent/, docs/references/drag-sources-pw1120.md, tools/moisture_regions.py, tools/earth_check.py, planet/climate.py::_rain, planet/climate.py::_season_inputs, planet/climate.py::sea_uptake, planet/climate.py::monsoon_wind, planet/climate.py::inflow_share, planet/climate.py::compute, "Zhang et al. 2011 J. Climate 24:5167", "van der Ent & Savenije 2011 ACP 11:1853", "Bretherton, Peters & Back 2004 J. Climate 17:1517", "Schiro et al. 2016 JAS 73:4043", "Karger & Bumke 1996"]
+refs: [docs/review/base-climate/rain-inland/diagnosis.md, docs/review/base-climate/rain-inland/candidates.patch, docs/review/base-climate/rain-inland/budget_L6_screens.txt, docs/review/base-climate/rain-inland/withtune.py, docs/review/base-climate/rain-inland/summ.py, docs/review/base-climate/rain-inland/ecsumm.py, docs/review/base-climate/moisture-budget/README.md, docs/review/base-climate/moisture-inflow-ascent/, docs/references/drag-sources-pw1120.md, tools/moisture_regions.py, tools/earth_check.py, "planet/climate.py::_rain", "planet/climate.py::_season_inputs", "planet/climate.py::sea_uptake", "planet/climate.py::monsoon_wind", "planet/climate.py::inflow_share", "planet/climate.py::compute", "Zhang et al. 2011 J. Climate 24:5167", "van der Ent & Savenije 2011 ACP 11:1853", "Bretherton, Peters & Back 2004 J. Climate 17:1517", "Schiro et al. 2016 JAS 73:4043", "Karger & Bumke 1996"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Options:
   Revisit with A.
 
 - [ ] owner picks A, B or C
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-rain-coasts-need-moist-source-seas-round.md (found by lane120).

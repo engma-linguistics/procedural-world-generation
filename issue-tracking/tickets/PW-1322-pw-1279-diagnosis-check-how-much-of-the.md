@@ -1,4 +1,5 @@
 ---
+id: PW-1322
 title: "PW-1279 diagnosis: check how much of the hot low-latitude summers is the dry-coast rain deficit (observed-rain swap)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane120
 blocked_by: []
 relates: [PW-1279, PW-015]
-refs: [docs/review/base-climate/rain-inland/diagnosis.md, tools/earth_check.py, planet/climate.py::_summer_split, planet/climate.py::_land_finish, planet/climate.py::compute]
+refs: [docs/review/base-climate/rain-inland/diagnosis.md, tools/earth_check.py, "planet/climate.py::_summer_split", "planet/climate.py::_land_finish", "planet/climate.py::compute"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -32,3 +35,6 @@ To do, for PW-1279's diagnosis gate:
 - run Earth's summer energy split with GPCC rain swapped in for the model's;
 - report the warmest month by latitude band, with and without the swap.
 - [ ] the share of the low-latitude warm-month excess that the rain swap removes, in PW-1279's write-up
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-summer-heat-check-rain-deficit-first.md (found by lane120).

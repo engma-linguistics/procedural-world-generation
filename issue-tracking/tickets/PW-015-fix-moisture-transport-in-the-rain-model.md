@@ -2,7 +2,7 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: in-progress
+status: todo
 parent: PW-013
 milestone: v2
 subsystem: climate
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-11-02: Status in-progress -> todo. 11-02 lane 120: three strikes (C1 inversions too small, C2 dry-column showers wrong way, C3 land friction partial and shifts B share wrong way); back of the line. The model over-rains 40-60 N interiors (1.6-1.8x) and under-rains humid coasts (~0.5x); supply from the adjacent seas is the lever. docs/review/base-climate/rain-inland/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Lane 58 regional budget (docs/review/base-climate/moisture-budget/README.md): land imports 2.26 Sv net (published runoff ~1.15) through the
