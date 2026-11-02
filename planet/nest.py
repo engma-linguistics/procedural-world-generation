@@ -167,8 +167,8 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
                                tilt, tune, fb["w"])
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
     wb["lake_evap"] = np.where(land, climate.open_water_evap(fine.lat, out["temp"], out["t_warm"], out["t_cold"],
-                                                             out["rh_jul"], out["rh_jan"], out["cloud_jul"],
-                                                             out["cloud_jan"], tilt, tune), 0.0)
+                                                             out["rh_jul"], out["rh_jan"], out["shade_jul"],
+                                                             out["shade_jan"], tilt, tune), 0.0)
     out.update(wb)
     out["precip"] = 0.5 * (out["p_jul"] + out["p_jan"])
     out["koppen"] = climate.koppen(e, out["temp"], out["t_warm"], out["t_cold"], out["precip"], out["p_jul"],

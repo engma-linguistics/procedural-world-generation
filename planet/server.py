@@ -269,7 +269,7 @@ def gods(query: str) -> tuple[dict, int]:
 
 # ---------------------------------------------------------------- /api/cell
 CELL_INPUTS = ("temperature", "warm_month", "cold_month", "precipitation_jul", "precipitation_jan",
-               "cloud_jul", "cloud_jan")  # what climate.months needs from a world
+               "sunshine_jul", "sunshine_jan")  # what climate.months needs from a world (the light's shade)
 CELL_WORLDS = 4  # worlds kept loaded (their CELL_INPUTS only: ~9 MB each at L7)
 _cell_lock = threading.Lock()
 _cell_worlds: dict = {}  # world id -> (file mtime, lat, tilt, {layer: array}), oldest first
@@ -326,8 +326,9 @@ def cell(query: str) -> tuple[dict, int]:
     if not 0 <= i < len(lat):
         return {"error": f"i: 0..{len(lat) - 1}"}, 400
     c = {k: v[i:i + 1] for k, v in L.items()}
+    sh_jul, sh_jan = climate.shade_from_hours(lat[i:i + 1], c["sunshine_jul"], c["sunshine_jan"], tilt)
     mo = climate.months(lat[i:i + 1], c["temperature"], c["warm_month"], c["cold_month"], c["precipitation_jul"],
-                        c["precipitation_jan"], tilt, c["cloud_jul"] / 100, c["cloud_jan"] / 100)
+                        c["precipitation_jan"], tilt, sh_jul, sh_jan)
     return {"world": wid, "i": i, "lat": round(float(lat[i]), 3),
             "t": [round(float(x), 2) for x in mo["t"][:, 0]], "p": [round(float(x), 2) for x in mo["p"][:, 0]]}, 200
 

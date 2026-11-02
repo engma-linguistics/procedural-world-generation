@@ -117,7 +117,7 @@ def test_cell_months(http_root):
     tilt = w["meta"]["params"]["tilt"]
     ref = climate.months(lat, *(np.asarray(L[k], float) for k in ("temperature", "warm_month", "cold_month",
                                                                    "precipitation_jul", "precipitation_jan")),
-                         tilt, np.asarray(L["cloud_jul"]) / 100, np.asarray(L["cloud_jan"]) / 100)
+                         tilt, *climate.shade_from_hours(lat, L["sunshine_jul"], L["sunshine_jan"], tilt))
     for i in (0, 17, len(lat) - 1):
         status, h, body = get(f"/api/cell?world={wid}.json&i={i}")
         d = json.loads(gzip.decompress(body) if h.get("Content-Encoding") == "gzip" else body)
