@@ -2,7 +2,7 @@
 id: PW-1325
 title: "Finished worlds add the orbit's insolation change at the ice rule's 0.25 C per W/m2: dba204's tropical July is +5 C from it"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -11,7 +11,7 @@ impact: high
 found_by: lane121
 blocked_by: []
 relates: [PW-1279, PW-459, PW-198, PW-555]
-refs: [docs/review/base-climate/summer-heat/diagnosis.md, docs/review/base-climate/summer-heat/world_bands.py, "planet/finish.py::orbit_dt", "planet/timezoom/forcing.py::orbit_anomaly", "planet/timezoom/forcing.py::own_k", "planet/icemass.py::seasonal_k", "planet/climate.py::_orbit", worlds/dba204.json, runs/56dee1, "Braconnot et al. 2007 (Clim. Past 3:261)"]
+refs: [docs/review/base-climate/summer-heat/diagnosis.md, docs/review/tectonics/co2-refs/round1.md, docs/review/tectonics/co2-refs/pw1325_dba204.py, "tests/test_finish.py::test_finished_climate_has_the_orbit", docs/review/base-climate/summer-heat/world_bands.py, "planet/finish.py::orbit_dt", "planet/timezoom/forcing.py::orbit_anomaly", "planet/timezoom/forcing.py::own_k", "planet/icemass.py::seasonal_k", "planet/climate.py::_orbit", worlds/dba204.json, runs/56dee1, "Braconnot et al. 2007 (Clim. Past 3:261)"]
 created: 2026-11-02
 updated: 2026-11-02
 ---
@@ -50,8 +50,9 @@ Options:
 Lean: A. It's one line in finish.py::orbit_dt (`p.orbit_resp` forced to 'seasons'), and the visible tropical
 summers are the owner's complaint. The ice doesn't change.
 
-- [ ] dba204 re-finished with A: warmest month 0-20 deg within ~1 C of the no-orbit climate
+- [x] dba204 re-finished with A: warmest month 0-20 deg within ~1 C of the no-orbit climate
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 135: built A (planet/finish.py::orbit_dt always uses the 'seasons' response). dba204 re-solved (pw1325_dba204.py): warmest month 0-20 deg 30.6 -> 25.5 C (no orbit 25.4), land with warmest month >= 30 C 45.0% -> 15.5% (no orbit 14.8%), >= 35 C 17.9% -> 2.9%. Runs, time zooms' ice and earth_check untouched (goldens unchanged); test_finish asserts the seasons rule. docs/review/tectonics/co2-refs/round1.md.
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: A (apply the orbit to a finished world's months at the land's seasonal response). Slam dunk; should have been done and reported rather than asked.
 - 2026-11-02: Created from inbox draft draft-finished-frame-orbit-response-too-strong.md (found by lane121).

@@ -27,7 +27,8 @@ PW-307, PW-197).
 
 Approximation (see docs/overview.md 2.11):
 - the climate gets the frame's seasonal insolation anomaly against the
-  planet's mean orbit (obliquity, precession, eccentricity; timezoom.orbit_anomaly)
+  planet's mean orbit (obliquity, precession, eccentricity; timezoom.orbit_anomaly),
+  at each cell's seasonal response (orbit_resp 'seasons' always, PW-1325),
   and the time zoom's start-anchor cooling (Earth's, where ice lies) as climate.compute's
   orbit_dt (PW-198), so the finished world's seasons are the time zoom's.
 
@@ -219,24 +220,35 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
 
 
 def orbit_dt(run: dict, st: dict) -> np.ndarray:
-    """climate.compute's orbit_dt for a frame (PW-198): the time zoom's
-    monthly insolation anomaly at that frame's orbit, plus its start anchor
-    (C, all year, where it had one and the frame has ice, as the time zoom
-    applies it)."""
+    """climate.compute's orbit_dt for a frame (PW-198): the monthly
+    insolation anomaly at that frame's orbit (against the time zoom's
+    reference orbit), at each cell's seasonal response, plus the time zoom's
+    start anchor (C, all year, where it had one and the frame has ice, as the
+    time zoom applies it).
+
+    The response is always 'seasons' (icemass.seasonal_k, PW-459), whatever
+    the time zoom's own orbit_resp, PW-1325: the 'run' rule's 0.25 C per W/m2
+    is the ice-age cycle's response, ~3x the land's seasonal one (PW-459:
+    0.08-0.09 observed on 40-70 N land; Braconnot et al. 2007, PMIP2
+    mid-Holocene: +26 W/m2 of NH seasonal insolation warms continental
+    summers <= ~2 C), and gave dba204's tropical land +5 C Julys. The
+    frame's ice is the time zoom's, grown under its own rule."""
+    import dataclasses
+
+    from . import climate, icemass
     from . import timezoom as TZ
     m = run["meta"]
     p = TZ.TZParams(**{k: v for k, v in m.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
+    p = dataclasses.replace(p, orbit_resp="seasons")
     s = st["stats"]
     grid = build_grid(m["level"])
     land = st["elevation"] + st["ice"] > 0  # (the time zoom's land: grounded ice on a sunk bed included)
     tilt = m["params"].get("tilt", 23.4)
-    own = None
-    if p.orbit_resp == "seasons":  # (each cell's own response to the orbit, its seasons', PW-459: from the frame's
-        # climate at the mean orbit, the bare ground's under its ice)
-        from . import climate, icemass
-        gw, gc, _ = climate.compute(grid, st["elevation"], st["dT"], tilt,  # (the bed: compute adds the ice, PW-871)
-                                    np.where(land, st["ice"], 0.0))["ground"]
-        own = icemass.seasonal_k(grid.lat, gw, gc, tilt)
+    # each cell's own response to the orbit, its seasons' (PW-459): from the frame's climate at the mean orbit,
+    # the bare ground's under its ice
+    gw, gc, _ = climate.compute(grid, st["elevation"], st["dT"], tilt,  # (the bed: compute adds the ice, PW-871)
+                                np.where(land, st["ice"], 0.0))["ground"]
+    own = icemass.seasonal_k(grid.lat, gw, gc, tilt)
     d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), tilt,
                          p, land, st["ice"], own, earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
     bright = np.clip(st["ice"] / p.snow_h, 0, 1)  # (the anchor corrects the ice's climate: where ice lies, PW-035)

@@ -1,6 +1,7 @@
 """Finished worlds (planet/finish.py, PW-091): a world at any frame of a
 glacial time zoom, and the API / queue around it, on a tiny level-4 run."""
 
+import dataclasses
 import json
 
 import numpy as np
@@ -84,8 +85,10 @@ def test_finish_at_any_kyr(tiny):
 
 def test_finished_climate_has_the_orbit(tiny):
     """PW-198: a finished frame's climate gets the frame's monthly insolation
-    anomaly (the time zoom's own), so its summers follow the orbit: where the
-    anomaly is +x in July, the finished July is warmer than without it."""
+    anomaly (against the time zoom's reference orbit), so its summers follow the orbit: where the
+    anomaly is +x in July, the finished July is warmer than without it. PW-1325: at each cell's
+    seasonal response ('seasons'), even when the time zoom's own rule is 'run' (as this one's is),
+    ~3x weaker than the run rule's on land."""
     tz = tiny["tz"]
     tzrun = json.loads((tz / "run.json").read_text())
     i = len(tzrun["frames"]) - 1
@@ -96,16 +99,23 @@ def test_finished_climate_has_the_orbit(tiny):
     # the time zoom's land mask (surface > 0: grounded ice on a bed pressed below the sea is land, PW-274)
     m_ = tzrun["meta"]
     p_ = TZ.TZParams(**{k: v for k, v in m_.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
+    assert p_.orbit_resp == "run"
+    p_ = dataclasses.replace(p_, orbit_resp="seasons")
     s_ = st["stats"]
     tilt_ = m_["params"].get("tilt", 23.4)
     land_ = st["elevation"] + st["ice"] > 0
-    gw, gc, _ = CL.compute(g, st["elevation"] + st["ice"], st["dT"], tilt_, np.where(land_, st["ice"], 0.0))["ground"]
+    gw, gc, _ = CL.compute(g, st["elevation"], st["dT"], tilt_, np.where(land_, st["ice"], 0.0))["ground"]
     ref = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), tilt_,
                            p_, land_, st["ice"], icemass.seasonal_k(g.lat, gw, gc, tilt_),
                            phases=m_.get("orbit_phases_deg"))
     for j, v in m_.get("anchor", []):
         ref[j] += v * min(st["ice"][j] / p_.snow_h, 1.0)  # (where the frame has ice, PW-035)
     assert np.array_equal(d, ref)
+    run_rule = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), tilt_,
+                                dataclasses.replace(p_, orbit_resp="run"), land_, st["ice"],
+                                phases=m_.get("orbit_phases_deg"))
+    bare = land_ & (st["ice"] == 0)
+    assert np.abs(ref[bare]).mean() < 0.6 * np.abs(run_rule[bare]).mean()  # (the seasons' response, PW-1325)
     from planet import climate
     land = st["elevation"] > 0
     e = np.where(land, st["elevation"], np.minimum(st["elevation"], -1))
