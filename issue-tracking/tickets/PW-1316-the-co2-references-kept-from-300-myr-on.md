@@ -2,7 +2,7 @@
 id: PW-1316
 title: The CO2 references, kept from 300 Myr on, lock in whatever transient the spin-up ended on
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: null
 subsystem: climate
@@ -33,5 +33,6 @@ counting). Options, for the owner:
 - [ ] B: keep it as is (the trips are rare: 1 of 40 left the test band here)
 
 ## Updates
+- 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: try B (references learnt over the whole spin-up). He's uneasy that the first ~500 Myr are in flux unlike the rest of a run and may be behind the CO2 trouble: check prior work (PW-558/559/576/809, PW-1158, lane 115) for how founded that is, in writing, alongside B.
 - 2026-11-02: Owner 2026-11-02 asked why B over C (isn't outgassing part of the thermostat?); answered in chat: the thermostat is the weathering sink's climate response; the references are only the yardsticks; drifting yardsticks (C) were tried in PW-576 and erased real trends within a few hundred Myr. Awaiting his pick.
 - 2026-11-02: Created from inbox draft draft-frozen-co2-references-lock-in-spin-up-transients.md (found by lane-115).

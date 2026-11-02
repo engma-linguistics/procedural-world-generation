@@ -2,7 +2,7 @@
 id: PW-1325
 title: "Finished worlds add the orbit's insolation change at the ice rule's 0.25 C per W/m2: dba204's tropical July is +5 C from it"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -53,4 +53,5 @@ summers are the owner's complaint. The ice doesn't change.
 - [ ] dba204 re-finished with A: warmest month 0-20 deg within ~1 C of the no-orbit climate
 
 ## Updates
+- 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: A (apply the orbit to a finished world's months at the land's seasonal response). Slam dunk; should have been done and reported rather than asked.
 - 2026-11-02: Created from inbox draft draft-finished-frame-orbit-response-too-strong.md (found by lane121).
