@@ -72,6 +72,39 @@ def arc_growth(sim, bd, conv, thermostat):
 
 
 crust.arc_growth = arc_growth
+_birth, _coh = crust.birth_and_cratons, crust.coherence
+from planet.surface import HOTSPOT  # noqa: E402
+from planet.tectonics.isostasy import BECOMES_CONT_KM, OCEAN_KM  # noqa: E402
+# (PW-1292, lane 112: births by kind, cumulative cells / scale^2: arc, sediment pile next to its plate's continent,
+# isolated pile (a candidate at 20 km; born or not), isolated pile born, isolated candidate on a hotspot, and the
+# coherence shreds: all, and of continental rock SEDIMENT)
+BIRTHS = dict.fromkeys(("arc", "pile_touch", "pile_iso_cand", "pile_iso_born", "pile_iso_hot", "shred", "shred_sed"), 0.0)
+
+
+def birth_and_cratons(sim, col, arcky, squeezed):
+    t, cont, rock = col.t, col.cont, col.rock.copy()
+    sedim = (col.cover > 0.5 * (t - OCEAN_KM)) | (col.cover > 0.8 * sim.params.metamorphic_depth)
+    cand = ~cont & (t >= BECOMES_CONT_KM) & ((rock != HOTSPOT) | sedim)
+    touch = crust.touches_own_continent(sim, cont)
+    born = _birth(sim, col, arcky, squeezed)
+    k = 1.0 / sim.scale**2
+    BIRTHS["arc"] += k * int((born & ~sedim).sum())
+    BIRTHS["pile_touch"] += k * int((born & sedim & touch).sum())
+    BIRTHS["pile_iso_cand"] += k * int((cand & sedim & ~touch).sum())
+    BIRTHS["pile_iso_born"] += k * int((born & sedim & ~touch).sum())
+    BIRTHS["pile_iso_hot"] += k * int((cand & sedim & ~touch & (rock == HOTSPOT)).sum())
+    return born
+
+
+def coherence(sim, col, trench=None):
+    rock = col.rock.copy()
+    weld, shred = _coh(sim, col, trench)
+    BIRTHS["shred"] += int(shred.sum()) / sim.scale**2
+    BIRTHS["shred_sed"] += int((shred & (rock == SEDIMENT)).sum()) / sim.scale**2
+    return weld, shred
+
+
+crust.birth_and_cratons, crust.coherence = birth_and_cratons, coherence
 
 
 def step(self, sim):
@@ -97,6 +130,7 @@ def step(self, sim):
         tr["ridge"], tr["arc"], tr["plume"] = [round(float(v), 2) for v in STASH["parts"]]
     if "slab" in STASH:
         tr["trench_n"], tr["conv"], tr["conv_sum"], tr["over_n"] = [round(float(v), 3) for v in STASH["slab"]]
+    tr["births"] = {k: round(v, 2) for k, v in BIRTHS.items()}
     tr["pco2"] = round(float(climate.pco2(sim.co2)), 1)
     if sim.weathered is not None:
         sup = np.asarray(sim.weathered) * land
