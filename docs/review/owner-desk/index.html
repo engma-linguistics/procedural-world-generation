@@ -123,9 +123,9 @@ That's about +8 °C on tropical land. With the orbit at the real response, dba20
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>132 · rain supply (D40 A)</td><td>The first lane of the big rain round: a proper low sea-air layer under the column, so the humid coasts get
-their sea vapour and the interiors stop getting too much. Screened on Earth first; reports before merging. B (land friction alone) stays
-the fallback.</td></tr>
+<tr><td>134 · rain sees the sea's warmth</td><td>Two real errors lane 132 found: the rain is worked out before the deep ocean's warm inflow is added (the winter
+North Atlantic looks 4.7 °C to the rain, 13.1 °C in the finished climate), and the northern subtropical seas run 2–3 °C cool in summer
+(PW-1364, PW-1362). Soundness fixes; reports before merging.</td></tr>
 <tr><td>133 · religion views and taboos</td><td>Many more taboo kinds and types (practical, purity, totemic, names, kinship, places, the dead and more),
 sourced; the distributions of gods and taboos across cultures; and the views you asked for: small god-tree drawings, a map of where each
 faith arose and spread, and a religion timeline apart from the cultures one (PW-1311, PW-1358).</td></tr>
@@ -176,7 +176,12 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 
 <h2 id="settled">Settled today</h2>
 <ul class="done">
-<li><b>D40 A</b>: the big rain round on the sea's vapour supply, running as lane 132; B is the fallback.</li>
+<li><b>D40 A tried, and its premise was wrong</b> (lane 132): the humid coasts aren't short of sea vapour. Giving the model the observed
+sea air brought the seas' vapour close to observed, and the coasts still got <i>drier</i>: the vapour passes straight over them (in summer
+the SE USA takes in 3,916 mm through its south side and lets 4,185 out the north). So the fix is where arriving air rains, not the supply.
+Rain has now failed five tries over two rounds, so under your three-strikes rule I've parked the coast round at the back of the line
+(PW-1363), with that "where it rains" round as its plan when it returns, and not the land-friction fallback alone, which dries the
+desert edges. The two real errors it found are being fixed now (lane 134).</li>
 <li><b>D42 A</b>: grass and herb root upkeep, after D39.</li>
 <li><b>D43</b>: 1 A (I'll warn if it implements oddly), 2 A (yes: farming spread with its people and knowledge, outcompeting and absorbing
 foragers, who held on in marginal land; A gives that), 5 A, 6 A with trade-fed holds as a marked placeholder, 7 A plus an early-modern
@@ -190,5 +195,5 @@ effects to the ocean off Gabon and to the rain, so nothing was forced.</li>
 at the bottom.</li>
 </ul>
 
-<footer>Desk v93 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v94 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
