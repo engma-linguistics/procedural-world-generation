@@ -38,6 +38,7 @@ What to try:
 - [x] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds): not run, moved to draft-sea-creep-still-cools-with-the-flicker-cured (the screens show the cooling stays)
 
 ## Updates
+- 2026-11-02: Merged 7dac9049 (SHRED_KM 15). Land -1.25 points, climate unmoved; follow-up PW-1314.
 - 2026-11-01: Created from inbox draft draft-margin-cells-flicker-at-the-20-km-bound.md (found by lane-112).
 - 2026-11-02: Lane 115. Confirmed (pw1295-note.md): with the creep ~1150 shreds per 400 Myr come within 10 Myr of a
   birth (at 19.3 km) and ~900 births within 10 Myr of a shred, against 140-160 and 60-65 on main. Screened a 15 km
