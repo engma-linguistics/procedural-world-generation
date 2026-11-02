@@ -2490,7 +2490,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       moc_inflow             Sv per cell width: the warm surface inflow feeding the sinking
       moc_heat               C: how much the overturning warms (cools) the sea surface
       freshwater             m/yr: net fresh water into the sea (rain + rivers + ice and
-                             meltwater - evaporation), global mean taken off
+                             meltwater - evaporation), global mean taken off (the first rain's: the overturning's)
       sea_evap               mm/yr: evaporation from the sea
       sea_ice_growth         m: sea ice frozen per winter
       upwelling              C: how much coastal and equatorial upwelling cools the sea
@@ -2521,7 +2521,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     currents and sea-surface temperature -> air temperatures carried by the
     winds -> rain in each half-year -> wet ground cools the summer ->
     salinity and the overturning (ocean.py), whose heat is then added to
-    the sea and air temperatures."""
+    the sea and air temperatures -> the rain again, on the overturning's
+    sea (PW-1364; the overturning keeps the first rain's fresh water: on
+    Earth the second's moves its sinking by 0.05 Sv)."""
     tune = {**TUNE, **(tune or {})}
     n = grid.n
     ice = np.zeros(n) if ice is None else ice
@@ -2600,59 +2602,69 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
 
     # rain in each half-year, from its mean conditions
-    tm = 0.5 * (t_warm + t_cold)
-    dt = hk * (np.where(north, t_warm, t_cold) - tm)
-    sum_half = _summer_half(sst, sea_half, sea_half_w)
-    sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -sea_half_w), FREEZE)
-    sst_jan = np.maximum(sst + hk * np.where(north, -sea_half_w, sum_half), FREEZE)
-    # the jet stream over each half-year's temperatures steers its storms
-    jets, tracks = [], []
-    for t_s in season_temps(grid, surf, t_warm, t_cold, hk):
-        j, baro = jet_stream(grid, t_s, tune)
-        jets.append(j)
-        tracks.append(storm_track(grid, j, baro, tune))
-    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
-            _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
     wet = np.exp(RAIN_PER_C * dT)  # a warmer world is a wetter one
-    # The air takes up water from the open sea and from the land as much as
-    # the land's water balance evaporates (on these first-pass temperatures;
-    # the kernel's own mm/yr, for that and its wet-cool / dry-hot showers,
-    # use the same global mean as the rain). Pack ice is no lid: its leads
-    # and polynyas keep a share `leads` of a frozen sea open, and the very
-    # cold, dry air over them takes up water fast (PW-308).
-    open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half_w)
-    pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
-    # In the summer half the air that came off land (land_air) is warmer
-    # than the sea it crosses (that air is what warms a coastal sea beyond
-    # its own swing, _sea_half): it lies stable over the cooler water, which
-    # can't stir its vapour up into it, so the sea fills only the rest of
-    # the air (PW-578). In winter the land's air is colder than the water,
-    # and the sea fills it fast.
-    open_air = np.where(ocean, open_y + tune["leads"] * (1.0 - open_y), 1.0)
-    calm = np.where(ocean, 1.0 - land_air, 1.0)
-    open_k = np.stack([open_air * np.where(north, calm, 1.0), open_air * np.where(north, 1.0, calm)])
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan), rain_state = rain(
-        grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet}, pet, fb["w"], open_k, ocean, rain_start)
-    scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
-    p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
-    precip = 0.5 * (p_jul + p_jan)
-    sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
+
+    def rain_pass(sst, half_w, t_warm, t_cold, temp, start):
+        """The rain, its clouds and the summer's energy split (d_sum) on these sea and air temperatures (the
+        winds are the first guess's). Twice: on the first pass's, for the overturning's fresh water, then on
+        the overturning's sea (PW-1364)."""
+        tm = 0.5 * (t_warm + t_cold)
+        dt = hk * (np.where(north, t_warm, t_cold) - tm)
+        sum_half = _summer_half(sst, sea_half, half_w)
+        sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -half_w), FREEZE)
+        sst_jan = np.maximum(sst + hk * np.where(north, -half_w, sum_half), FREEZE)
+        # the jet stream over each half-year's temperatures steers its storms
+        jets, tracks = [], []
+        for t_s in season_temps(grid, surf, t_warm, t_cold, hk):
+            j, baro = jet_stream(grid, t_s, tune)
+            jets.append(j)
+            tracks.append(storm_track(grid, j, baro, tune))
+        s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
+                _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
+        # The air takes up water from the open sea and from the land as much as
+        # the land's water balance evaporates (on these temperatures;
+        # the kernel's own mm/yr, for that and its wet-cool / dry-hot showers,
+        # use the same global mean as the rain). Pack ice is no lid: its leads
+        # and polynyas keep a share `leads` of a frozen sea open, and the very
+        # cold, dry air over them takes up water fast (PW-308).
+        open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), half_w)
+        pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
+        # In the summer half the air that came off land (land_air) is warmer
+        # than the sea it crosses (that air is what warms a coastal sea beyond
+        # its own swing, _sea_half): it lies stable over the cooler water, which
+        # can't stir its vapour up into it, so the sea fills only the rest of
+        # the air (PW-578). In winter the land's air is colder than the water,
+        # and the sea fills it fast.
+        open_air = np.where(ocean, open_y + tune["leads"] * (1.0 - open_y), 1.0)
+        calm = np.where(ocean, 1.0 - land_air, 1.0)
+        open_k = np.stack([open_air * np.where(north, calm, 1.0), open_air * np.where(north, 1.0, calm)])
+        (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan), rain_state = rain(
+            grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet}, pet, fb["w"], open_k, ocean, start)
+        scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
+        p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
+        qm_jul, qm_jan = (vapour_mixed(grid, q, d_["qs"], d_["t_air"], tune) for q, d_ in zip((q_jul, q_jan), s_in))
+        (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [qm_jul, qm_jan], [p_jul, p_jan],
+                                                            tune, ocean)
+        # The summer's surface energy split (_summer_split): with the rain, the
+        # clouds and the evaporation known, the land's summer air is warmed by
+        # the sensible heat the ground has left, so cloudy, wet summers stay
+        # cooler and sunny, dry ones get hotter. (The rain comes before, on
+        # these temperatures.)
+        wb0 = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+        d_sum = np.where(land & (ice <= 0), _summer_split(grid.lat, tilt, north, wb0["aet_half"], wb0["pet_half"],
+                                                          np.where(north, sun_jul, sun_jan), tune,
+                                                          *_sum_air(tm, dt, north, qm_jul, qm_jan, tune)), 0.0)
+        return dict(p_jul=p_jul, p_jan=p_jan, precip=0.5 * (p_jul + p_jan),
+                    sea_evap=np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0), qm_jul=qm_jul, qm_jan=qm_jan,
+                    cloud_jul=cloud_jul, cloud_jan=cloud_jan, sun_jul=sun_jul, sun_jan=sun_jan, jets=jets,
+                    rain_state=rain_state, d_sum=d_sum, open_y=open_y)
+
+    R = rain_pass(sst, sea_half_w, t_warm, t_cold, temp, rain_start)
+    p_jul, p_jan, precip, sea_evap, open_y = R["p_jul"], R["p_jan"], R["precip"], R["sea_evap"], R["open_y"]
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
                cover=_sheet_cover(grid, np.where(land, ice, 0.0), ice_air, ice_cold), lat=grid.lat, tilt=tilt, fb=fb)
-    qm_jul, qm_jan = (vapour_mixed(grid, q, d_["qs"], d_["t_air"], tune) for q, d_ in zip((q_jul, q_jan), s_in))
-    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [qm_jul, qm_jan], [p_jul, p_jan], tune,
-                                                        ocean)
-    # The summer's surface energy split (_summer_split): with the rain, the
-    # clouds and the evaporation known, the land's summer air is warmed by
-    # the sensible heat the ground has left, so cloudy, wet summers stay
-    # cooler and sunny, dry ones get hotter. (The rain came before, on the
-    # first pass's temperatures.)
-    wb0 = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
-    air["d_sum"] = np.where(land & (ice <= 0), _summer_split(grid.lat, tilt, north, wb0["aet_half"],
-                                                             wb0["pet_half"], np.where(north, sun_jul, sun_jan),
-                                                             tune, *_sum_air(tm, dt, north, qm_jul, qm_jan, tune)),
-                                 0.0)
+    air["d_sum"] = R["d_sum"]
     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
@@ -2660,9 +2672,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # The deep ocean's overturning (ocean.py): fresh water in and out of the
     # sea -> salinity -> density -> sinking where the water is densest ->
     # warm surface water flowing in to replace it, carrying heat poleward.
-    # It needs the rain, which needs the sea temperatures: the overturning's
-    # warmth is added to the air temperatures afterwards (the rain doesn't
-    # see it).
+    # It needs the rain, which needs the sea temperatures: the rain runs
+    # again on the overturning's sea afterwards (PW-1364; the overturning
+    # keeps the first pass's fresh water).
     ice_m = np.where(ocean, ocean_mod.ice_growth(0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold)), 0.0)
     # only where the sea freezes over in winter; under year-round pack ice
     # little new ice forms (thick ice insulates the water; it grows in leads)
@@ -2681,6 +2693,14 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         sst = oc["sst"]
         # where the surface water is the overturning's deep inflow, its winter cools less (ocean.winter_half)
         half_w = air["half_w"] = ocean_mod.winter_half(sea_half_w, oc["share"], tune)
+        # The rain again, on the overturning's sea and the air over it (as the first pass's air: without the
+        # summer split), from the first pass's vapour (PW-1364): the storm tracks' winter seas are the
+        # inflow's warm water, not the latitude's
+        R = rain_pass(sst, half_w, *_orbit(_air_temps(sst=sst, **{**air, "d_sum": None}), orbit_dt, north)[:3],
+                      R["rain_state"])
+        p_jul, p_jan, precip, sea_evap = R["p_jul"], R["p_jan"], R["precip"], R["sea_evap"]
+        fin.update(p_jul=p_jul, p_jan=p_jan)
+        air["d_sum"] = R["d_sum"]
         t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
         t_warm, t_cold, temp, _, _ = _land_finish(t_warm, t_cold, temp, **fin)
     # A shelf sea's water is the air's more than the currents' (_shelf_air): the North Sea's and the Baltic's
@@ -2691,8 +2711,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # air, a warm polar sea pulls the westerlies north over it and a cold
     # continent lets the polar air south. The land-sea winds stay the first
     # guess's (t_sl_jul / jan); the air is carried on the new winds. (The rain
-    # came before and keeps the first guess's winds, as it doesn't see the
-    # overturning.)
+    # came before and keeps the first guess's winds.)
     t_sj, t_sn = season_temps(grid, surf, t_warm, t_cold, hk)
     f_jul, f_jan = front_shift(grid, t_sj), front_shift(grid, t_sn)
     # (and the westerlies' strength from the finished air's contrast)
@@ -2717,6 +2736,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
              np.maximum(sst - swing * np.where(north, half_w, sum_half), FREEZE))
     tm = 0.5 * (t_warm + t_cold)
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
+    qm_jul, qm_jan, cloud_jul, cloud_jan, sun_jul, sun_jan, jets, rain_state = (R[k] for k in (
+        "qm_jul", "qm_jan", "cloud_jul", "cloud_jan", "sun_jul", "sun_jan", "jets", "rain_state"))
     (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(qm_jul, tm + dt, tune), humidity(qm_jan, tm - dt, tune)
     day_jul, day_jan = day_hours(grid.lat, tilt)
     # lakes: Penman's open water, on the light's cloud (shade: Angstrom-Prescott is in sunshine hours) and the
