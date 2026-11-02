@@ -83,7 +83,7 @@ class Stock:
 
     def _propensity(self, l, i) -> float:
         a = self.a
-        if l.overlay or any(t in l.traits for t in a.excl) or l.demo("density") < 0.05:
+        if l.overlay or any(t in l.traits for t in a.excl) or l.megafauna:
             return 0.0
         return float(np.clip(a.prop_floor + sum(w * self.sh[k][i] for k, w in a.prop.items()), 0, 1))
 

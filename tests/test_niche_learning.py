@@ -28,7 +28,7 @@ def faketz(tmp_path):
 def _tree(**extra):
     # (a narrow-niche people alone on the world: cool forest folk; a megafauna kind; a cold-limited, sea-bound kind)
     return SP.parse({"meta": {"name": "n", "seed": 2}, "lineage": [
-        {"id": "elf", "origin": "root", "at": "36 kyr", "temp_c": [10, 16], "rain_mm": [100, 9000], "prefers": ["forest"], "density": 2,
+        {"id": "elf", "origin": "root", "at": "36 kyr", "temp_c": [10, 16], "rain_mm": [100, 9000], "prefers": ["forest"],
          **extra},
         {"id": "wyrm", "origin": "root", "at": "36 kyr", "temp_c": [0, 30], "rain_mm": [100, 9000], "megafauna": True},
         {"id": "turtle", "origin": "root", "at": "36 kyr", "temp_c": [18, 26], "rain_mm": [100, 9000], "traits": ["swims", "coastal"],
