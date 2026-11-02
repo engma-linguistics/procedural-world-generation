@@ -227,3 +227,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: merged lane 118 speed part 2 (full suite 939 passed); PW-252/1297/1298 done. New PW-1324: same seed differs across thread counts (to check).
 - 2026-11-02: merged lane 121 (docs only): dba204 heat mostly the finished-frame orbit response 3x too strong (PW-1325, D41 for Daniel); Earth 20-40 deg excess from _summer_split (PW-1326/1327). Lane 123 started on D34 B plant growth (PW-1261).
 - 2026-11-02: merged lane 123 (docs only): plant check; grass too productive, wet tropics too little, herds fine on Earth (D42 for Daniel; PW-1328..1332).
+- 2026-11-02: merged lane 124: PW-1324 not reproduced (same seed same world at 1-16 threads); thread-independence test added.

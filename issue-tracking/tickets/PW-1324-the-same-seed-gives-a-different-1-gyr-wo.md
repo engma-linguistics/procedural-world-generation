@@ -2,7 +2,7 @@
 id: PW-1324
 title: The same seed gives a different 1 Gyr world at 6 and at 8 numba threads (check)
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: infra
@@ -27,4 +27,5 @@ find the kernel (a prange with an accumulating reduction or atomic-order scatter
 - [ ] bit-compare one small run across thread counts; list the kernels responsible if they differ
 
 ## Updates
+- 2026-11-02: Status todo -> done. Lane 124: not reproduced at 1/2/6/8/16 threads (L5 to 1 Gyr, L6 100 Myr, whole and chunked); tests/test_thread_independence.py guards it. Lane 118's difference came from its two scripts (PW-1333).
 - 2026-11-02: Created from inbox draft draft-run-not-reproducible-across-thread-counts.md (found by lane-118 (PW-1297)).

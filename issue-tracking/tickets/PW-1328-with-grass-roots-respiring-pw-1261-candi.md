@@ -11,7 +11,7 @@ impact: med
 found_by: lane123
 blocked_by: []
 relates: [PW-1261, PW-234, PW-228]
-refs: ["planet/vegetation.py::FUEL_MIN", "planet/vegetation.py::fire_rate", "planet/vegetation.py::globfirm", "tests/test_vegetation.py::test_mediterranean_scrub_burns_and_stays_scrub", docs/review/vegetation/npp-check/candidate1-herb-root-resp.patch, docs/review/vegetation/npp-check/screens.md, docs/review/vegetation/npp-check/diagnosis.md, tools/veg_check.py]
+refs: ["planet/vegetation.py", "planet/vegetation.py::fire_rate", "planet/vegetation.py::globfirm", "tests/test_vegetation.py::test_mediterranean_scrub_burns_and_stays_scrub", docs/review/vegetation/npp-check/candidate1-herb-root-resp.patch, docs/review/vegetation/npp-check/screens.md, docs/review/vegetation/npp-check/diagnosis.md, tools/veg_check.py]
 created: 2026-11-02
 updated: 2026-11-02
 ---

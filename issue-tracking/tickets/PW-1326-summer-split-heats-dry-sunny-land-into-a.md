@@ -11,7 +11,7 @@ impact: high
 found_by: lane121
 blocked_by: []
 relates: [PW-1279, PW-015]
-refs: [docs/review/base-climate/summer-heat/diagnosis.md, docs/review/base-climate/summer-heat/candidates.patch, docs/review/base-climate/summer-heat/diag.py, docs/review/base-climate/summer-heat/summ.py, docs/review/base-climate/summer-heat/screen.sh, docs/review/base-climate/summer-heat/ec.sh, docs/review/base-climate/summer-heat/seeds.sh, docs/review/base-climate/summer-heat/simtune.py, docs/review/base-climate/summer-heat/runs_measure.py, docs/review/base-climate/rain-inland/withtune.py, "planet/climate.py::_summer_split", "planet/climate.py::_sum_air", "planet/climate.py::compute", "planet/climate.py::open_water_evap", tools/earth_check.py, data/earth/L7.npz, "Ryder et al. 2015 (ACPD 15:199 / ACP 15:8479)", "Allen et al. 1998 (FAO-56, eq. 39)"]
+refs: [docs/review/base-climate/summer-heat/diagnosis.md, docs/review/base-climate/summer-heat/candidates.patch, docs/review/base-climate/summer-heat/diag.py, docs/review/base-climate/summer-heat/summ.py, docs/review/base-climate/summer-heat/screen.sh, docs/review/base-climate/summer-heat/ec.sh, docs/review/base-climate/summer-heat/seeds.sh, docs/review/base-climate/summer-heat/simtune.py, docs/review/base-climate/summer-heat/runs_measure.py, docs/review/base-climate/rain-inland/withtune.py, "planet/climate.py::_summer_split", "docs/review/base-climate/summer-heat/candidates.patch", "planet/climate.py::compute", "planet/climate.py::open_water_evap", tools/earth_check.py, data/earth/L7.npz, "Ryder et al. 2015 (ACPD 15:199 / ACP 15:8479)", "Allen et al. 1998 (FAO-56, eq. 39)"]
 created: 2026-11-02
 updated: 2026-11-02
 ---
