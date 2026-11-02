@@ -7,7 +7,9 @@ plate's continent; isolated piles stay ocean floor however thick. A is in (`crus
 shows that isolated piles were never the problem. On main only about one pile birth in ten is isolated, and with the
 sea-floor creep only one in fifty. The churn the ticket is about is margin wedges: sediment piled against the
 continent's own edge reaches 20 km, turns continental, then thins below 20 km and is cut off again as a shred by the
-coherence rule. A leaves that loop untouched, so A on its own does not cure the creep's churn.
+coherence rule. A leaves that churn untouched, so A on its own does not cure it. The paired judge of A against main
+(36 draws, creep off) passes: no hard failures, 33/36 against 27/36, nothing moved. A is on by default. The churn
+looks like a flicker at the shared 20 km bound of birth and shred, not pile births (a draft).
 
 ## Where pile births happen (tracediag.py `births`, L6, 1 Gyr, cells / scale^2)
 
@@ -29,10 +31,9 @@ Reading:
 - Isolated piles are 11-12% of pile births on main and 2% with the creep. They are not where the creep's extra
   births come from.
 - With the creep, pile births next to the continent rise five-fold, and about 60% of them come back as shreds of pile
-  rock (659 of 1064, 838 of 1406). The loop: the creep and the rise feed the margin's foot to 20 km, the cell turns
-  continental with one or two continental neighbours, the creep or erosion thins it, and below 20 km with at most 2
-  continental neighbours it is a shred (`coherence`). The birth bound and the shred bound are the same 20 km, so the
-  margin's outer cell can flip back and forth.
+  rock (659 of 1064, 838 of 1406). The first guess was a wedge loop: a pile
+  turns continental with one or two continental neighbours, thins, and below 20 km is a shred (`coherence`). The A3
+  screen below rules out the one-neighbour part of it; see "So where is the creep's churn?".
 - What A changes in the budget: it removes 5-10% of pile births on main (23-37 cells per 400 Myr at 20-25 km, about 500-800 km x
   cells of the born flux of 13 000-14 500). With the creep it removes about 2%.
 
@@ -71,6 +72,24 @@ A.
 The creep-on-A judge was not run: the screen shows A doesn't touch the churn (the brief's condition, "if the creep-on-A
 screen looks promising", isn't met).
 
-## Judge
+## Judge (L6, v1-finish-16's 18 draws x rolls 0.0005, 0.001, paired_margin.sh, pjudge.py + tools/hard_bar.py)
 
-(below, when it has run)
+Both arms ran from one frozen copy of the code: `base` with the rule switched off (a screen-only switch, since
+removed; it was main's code path), `A` with it on. Creep off in both.
+
+| measure | main | A | median A - main | 95% CI | moved |
+|---|---|---|---|---|---|
+| end T | 0.67 | 0.50 | -0.28 | [-1.84, +2.74] | |
+| late dT | 1.05 | 0.62 | -0.04 | [-1.41, +0.78] | |
+| late CO2 index | 0.61 | 0.56 | -0.02 | [-0.15, +0.11] | |
+| land % | 34.35 | 34.54 | +0.18 | [-0.05, +0.48] | |
+| sink ref / src ref | 6.61 / 8.02 | 6.58 / 7.99 | +0.01 / +0.00 | [-0.04, +0.06] / [-0.06, +0.07] | |
+| arid % / hot desert % | 22.5 / 8.3 | 22.4 / 8.8 | +0.5 / -0.1 | [-1.7, +2.3] / [-1.0, +1.3] | |
+| land rain (mm/yr) / trees % | 1129 / 34.3 | 1136 / 34.3 | +10 / +0.8 | [-33, +58] / [-0.9, +2.0] | |
+
+Pass: main 15/18 + 12/18 = 27/36, A 16/18 + 17/18 = 33/36 (both 24, main only 3, A only 9; McNemar p 0.15).
+Hard bars: frozen over 0/0, boiled 0/0, ocean loss 0/0, CO2 crash 0/0. Secondary: pCO2 < 100 ppm 3 against 1, end
+pCO2 outside 180-600 20 against 14, an 8-fold CO2 fall within 50 Myr (end at most 1/4 of before) 20 against 25.
+
+**Passes**: no hard failure, the soft pass is 6 higher (not significant), and no measure moved. A is on, with no
+switch. The goldens didn't change (their runs are too short for a pile to reach 20 km).

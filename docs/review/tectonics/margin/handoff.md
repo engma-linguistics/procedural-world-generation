@@ -63,3 +63,14 @@ Done:
 - tracediag.py now also logs the source's parts (ridge / arc / plume) and the slab (trench edges, convergence).
 Next: draft-sediment-piles-born-continental (screen A on seeds 1 and 3 with the creep), then judge the creep again.
 Scratch runs are deleted.
+
+## Lane 112 (2026-11-01): PW-1292 option A
+
+Done: sediment piles are born continental only where they touch their own plate's continent
+(`crust.touches_own_continent` in `crust.birth_and_cratons`), with
+`tests/test_churn.py::test_sediment_piles_are_born_continental_only_against_their_continent`. tracediag.py logs births
+by kind and shreds of pile rock (`births`). [pw1292-note.md](pw1292-note.md) has the diagnosis, screens and the
+36-draw paired judge (passes: 0 hard failures, 33/36 against 27/36, nothing moved). Isolated piles were only 2-12% of
+pile births, so A barely changes the creep's churn. A screen of "3 continental neighbours" (A3) didn't either and ran
+colder. The churn looks like a flicker at the shared 20 km birth and shred bound
+(draft-margin-cells-flicker-at-the-20-km-bound). The creep-on-A judge wasn't run. Scratch runs are deleted.
