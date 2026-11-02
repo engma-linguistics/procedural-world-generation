@@ -158,7 +158,56 @@ unchanged (Caspian closed 73, Great Basin 12, Lake Eyre 12, Chad 21, Balkhash 23
 
 ## 5. L6 sanity and the paired judge
 
-(filled below as the runs finish)
+Code frozen per arm (main = e89de6af by `git archive`; cand = this branch's planet/ and tools/ at 3637d117), run
+through `../v1-finish-16/paired.sh` (L6, 1 Gyr, `tools/ice_diag.py`, star_brightening 1), judged with `pjudge.py`.
+
+**Sanity: the 4 l6fix seeds, roll 0.0005** (seeds 957317, 619496, 583167, 639472):
+
+| seed | main: pass, end T, arid %, land %, late CO2 | cand |
+|---|---|---|
+| 583167 | PASS +3.3, 20.2, 33.4, +0.04 | PASS +0.4, 18.7, 34.5, +0.44 |
+| 619496 | PASS +2.9, 26.4, 35.1, +0.75 | PASS +4.7, 21.9, 35.1, +0.64 |
+| 639472 | PASS +2.0, 24.7, 34.2, +0.63 | PASS -3.9, 21.2, 33.6, +0.34 |
+| 957317 | PASS -5.4, 23.5, 35.3, +0.19 | PASS -0.2, 19.4, 34.1, +0.17 |
+
+Paired medians (B - A, 95% interval): late dT -0.37 [-2.07, +2.13], late CO2 -0.06 [-0.29, +0.40], sink ref +0.03,
+land -0.3: not moved. Arid % -3.8 [-4.5, -1.5], hot desert -2.9 [-4.9, -0.5], land rain +37 mm [+22, +77],
+trees +4.4 points [+0.5, +9.3]: moved, all four draws the same way. 4/4 pass on both. So no systematic dT drift
+(lane 121's -1.5 / -6.8 on two un-rolled seeds isn't there on re-rolled draws); the climate gets less arid and more
+wooded. That's expected from the mechanism: cooler dry summers (deep layer, long-wave) lower the PET, and the
+tropics' sunnier, warmer wet seasons don't raise it as much. Note: Earth's Köppen B moved the same way (25.0 ->
+24.5 vs Kottek 30.1), and PW-290 has L7 worlds too arid (38-42%). Which way that nets depends on the level.
+
+**Paired judge, 2 rolls (36 draws per arm): RUNNING at hand-off (lane 126 handed off at its context limit).**
+
+- Launched 06:36 on 2026-11-02, both arms into one out root, MAXSIM 10 shared, detached (nohup):
+  `paired.sh <S>/code/main <S>/judge main 0.0005 0.001` and the same for `<S>/code/cand ... cand`, with
+  S = /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l126.
+  Launcher logs `<S>/launch_main2.log` and `<S>/launch_cand2.log` end with "all done". The 8 sanity draws (l6fix r0.0005)
+  are reused. Expect ~1.5-2 h at 10 at once (~15 min per run).
+- To finish: once both logs say "all done", `ls <S>/judge/*/seed*.json.gz | wc -l` should be 72. A draw that died has a log
+  but no seed*.json.gz: delete that log and re-launch the same paired.sh line. Then
+  `uv run python docs/review/base-climate/v1-finish-16/pjudge.py <S>/judge main cand --table` and paste the tables here.
+- **Bar:** hard failures 0 (frozen over, hellhouse); soft pass ~main's or better (sanity 4/4 vs 4/4); late dT / CO2 / sink
+  ref not moved, or moved by what the mechanism explains; arid % / BWh down and trees up are expected (sanity).
+- **Don't delete `<S>` until the judge is read**: the frozen code copies and the draws live there. After that, delete
+  `<S>` (no symlinks inside it; `rm -rf "${S:?}"`). The worktree's private `data/earth/` copy (51 MB, gitignored) can go too.
+
+## 6. State at hand-off, and what's next
+
+- **Done:** sources (section 1); A, B, C coded and committed (3637d117 + this note), with lane 121's lw + deep layer on by
+  default; Earth L7 screens (section 2 tables); lake measures (section 4); `pytest -m "not slow"` passes except the two
+  goldens, which were updated for this change (sky -> sunshine and the gate move every climate output);
+  `tests/test_envelopes.py` (slow) 11 passed; L6 sanity (section 5).
+- **Running:** the paired judge (section 5).
+- **Next:** read the judge and report to the coordinator before any merge. If it passes, say so plainly; PW-1334, PW-1327,
+  PW-1336 and PW-1326 (B+C) close together on merge. Run `tools/scorecard.py` at merge (CLAUDE.md, after model changes).
+- **Strikes:** none. A, B and C each moved its target the right way on the first try.
+- **Open candidates, not tried:** a floor on the gate (30% keeps the summer midlatitudes nearer CRU, but the tropical
+  bands land 0.05-0.06 off); sun_ref at the model's own 20-60 deg share (0.658, ~0.3 C cooler at 20-60 deg); C alone
+  without lw (closest on the >= 35 C tail, 1.5%). None is needed for the tickets' bars.
+- **Drafts (issue-tracking/inbox):** draft-congo-low-cloud-under-stability-gate, draft-subtropical-summer-too-sunny-after-cloud-gate,
+  draft-caspian-closed-open-knife-edge, draft-wet-tropics-summer-cool-from-rain.
 
 ## Files
 
