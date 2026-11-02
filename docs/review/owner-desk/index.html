@@ -276,6 +276,14 @@ on Coe's herds).</li></ol>
 <p>D39 (the CO2 balance's references) and this both touch the weathering reference, so I'd do D39 first if you pick both.</p>
 </div>
 
+<div class="card" id="zoom122"><div class="id">LANE 122 MERGED · A 1 KM SECTION NOW TAKES 16 MINUTES, NOT 2 H 48 (PW-1303, PW-1319)</div>
+<p><b>In plain words:</b> one 4,000 km section at 1 km per pixel went from 2 h 48 min and 110 GB of memory to 16 minutes and 86 GB,
+with every output identical. Almost all the time went to one step that re-measured the whole map once per mountain pass (188 times); it
+now looks only near each pass. Memory still allows only two 1 km sections at once (PW-1337 is next on that).</p>
+<p><b>Laying sections over the planet:</b> the globe is cut like a cube into 54 squares, each with one section, neighbours overlapping by
+about 200 km. On dba204, 47 of them hold land, covering 99.6% of it: about 12 hours at 1 km one at a time, or 6.5 hours two at once.
+Covering only land could cut that (PW-1339). The sweep itself (PW-1296) still waits on seams, rivers and section orientation.</p>
+</div>
 <div class="card" id="cloud125"><div class="id">LANE 125 · THE TROPICS' EXTRA SHADE IS THE MODEL'S, NOT THE WORLDS' (PW-1330, PW-1334)</div>
 <p><b>In plain words:</b> the worlds' dry tropics are no shadier than the model's own Earth at the same rain. The model itself is the
 problem: its Earth is about 0.13 too shady against measured sunshine (CRU), and all of that comes from one term that turns humid air
@@ -340,7 +348,7 @@ The flicker it cures is small without the sea-floor creep, and the creep is at t
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
-<tr><td>122 · land zoom cost and tiling</td><td>Why a 1 km section needs 110 GB and 2 h 48 min, and the cheap fixes; plus a real rule for laying 4,000 km sections over the sphere (PW-1303, PW-1319).</td></tr>
+<tr><td>127 · land zoom seams</td><td>Lets a section be turned to match the tiling (PW-1338), then makes neighbouring sections agree where they meet: heights, coasts, landforms, biomes (PW-1301). Rivers across sections come after.</td></tr>
 <tr><td>126 · tropical cloud fix</td><td>Acting on lane 125's finding below: find a source for where low cloud really forms over land, gate the
 model's "humid air makes cloud" term by it, then have the summer split read sunshine instead of sky cover (PW-1334, PW-1327, PW-1336).
 Reports back before merging.</td></tr>
