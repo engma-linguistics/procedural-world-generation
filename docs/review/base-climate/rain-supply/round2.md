@@ -1,8 +1,9 @@
 # Lane 134: the rain on the overturning's sea (PW-1364), and the NH subtropical seas (PW-1362), 2026-11-02
 
-Status: **paired judge running detached (handed off before it finished).** Arm a1 (a second rain pass on the
-overturning's sea, commit c680e951) holds on Earth L7. The L6 sanity runs are 2 of 4 seeds in (one cand soft fail,
-land ice at the end). Not merged.
+Status: **the paired judge finished, and it passes the bar.** Hard failures are 0 in both arms. Soft passes are
+cand 30/36 against main 32/36 (McNemar p 0.75; lane 24's null change moves 7-8 draws). One measure moved and needs
+the coordinator's call: late dT +0.57 C warmer [+0.24, +1.56]. Hot desert also moved, +1.3 points. Arm a1 is a
+second rain pass on the overturning's sea, commit c680e951. Not merged.
 
 ## 1. Diagnosis (the gate)
 
@@ -124,49 +125,43 @@ Code frozen by `git archive` into `$S/code/main` (2b3bf6f1) and `$S/code/cand` (
 `docs/review/base-climate/v1-finish-16/paired.sh` (MAXSIM 4-5, THREADS 3; Daniel's 15-core cap for this lane), launched by
 `$S/launch.sh ONLY ROLL...`, with S = /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l134.
 
-**Sanity so far (roll 0.0005; the other two l6fix seeds are queued in the same judge):**
+**Paired judge (2 rolls, 36 draws per arm; read 14:05, 2026-11-02):**
 
-| seed | main: pass, end T, arid %, land %, late CO2 | cand |
-|---|---|---|
-| 619496 | PASS +4.7, 21.9, 35.1, +0.64 | fail (land ice at the run's end) +3.1, 27.6, 35.4, +1.47 |
-| 957317 | PASS -0.2, 19.4, 34.1, +0.17 | PASS +1.3, 23.6, 35.2, +0.44 |
+| measure | main median | cand median | median B-A | 95% CI | B>A / B<A | moved |
+|---|---|---|---|---|---|---|
+| end T | 1.58 | 1.90 | +0.79 | [-1.42, +1.90] | 20 / 16 | |
+| late dT | 0.22 | 1.77 | +0.57 | [+0.24, +1.56] | 25 / 11 | * |
+| late CO2 | 0.52 | 0.67 | +0.08 | [-0.03, +0.18] | 22 / 14 | |
+| land % | 34.2 | 34.6 | +0.28 | [-0.03, +0.46] | 23 / 13 | |
+| sink ref | 6.71 | 6.67 | -0.06 | [-0.09, +0.00] | 13 / 23 | |
+| src ref | 7.99 | 7.94 | +0.00 | [-0.03, +0.06] | 18 / 18 | |
+| arid % | 20.9 | 22.7 | +0.82 | [-0.11, +2.45] | 23 / 13 | |
+| hot desert % | 7.6 | 7.9 | +1.30 | [+0.43, +1.85] | 26 / 10 | * |
+| land rain | 1147 | 1166 | +5 | [-41, +33] | 18 / 18 | |
+| trees % | 39.0 | 40.4 | -0.16 | [-1.90, +2.74] | 18 / 18 | |
 
-(main's rows match lane 126's cand rows for these seeds, as they should.)
+**Pass count.**
+- main 32/36 (15/18 and 17/18), cand 30/36 (14/18 and 16/18). Both pass 26 draws, main only 6, cand only 4,
+  neither 0; McNemar p 0.754.
+- Hard failures 0 on both arms: frozen over 0, hellhouse 0.
+- Icehouse 36 / 36 on both; glacial maxima 23 -> 13.
 
-Both draws: arid +5 points and hot desert +4, with late CO2 and late dT higher and land rain +63 mm. Earth's B moved
-the same way, but only +0.9.
+**Reading.**
+- The sanity runs' arid +5 was chaos: the judge puts arid at +0.8, not moved. CO2, sink ref and land rain didn't
+  move either.
+- BWh +1.3 goes the way Earth's B went (+0.9). It is also toward Kottek on Earth (11.7 -> 11.9 against 14.8), but
+  away from the fix PW-290 wants (L7 worlds already too arid).
+- **Late dT +0.57 C** (25 of 36 draws warmer, fewer glacial maxima) is not explained by a CO2 change.
+  - Candidates: the rain's clouds over the warm storm-track seas and the land downwind (Earth's W Europe sky
+    73 -> 70%), so more sun reaches high latitudes; or less snow on the drier interiors.
+  - Not diagnosed: I handed off at the call budget.
+  - Earth's global T is unchanged (13.9 against NCEP 14.0).
+  - I read it as a moderate climate shift that the bar tolerates. Hard failures are 0 and the passes are within
+    chaos, but it is a moved measure the mechanism doesn't clearly explain.
+- **The coordinator's call:** merge as a soundness fix (memory: a correct mechanism even if a fitted kernel
+  regresses), or first run a cheap cloud / snow-albedo split of the dT shift on 2-3 warm draws.
 
-A plausible chain: rain moves onto the warm storm-track seas (Earth's 40-70 N sea rain +25-100%), so the dry land
-gets drier and the arid share rises. Weathering then falls, CO2 rises and the climate warms. Two draws can't tell
-that from chaos (lane 24: a null change moves 15 of 36 passes). **Watch arid %, late CO2 and sink ref in the judge.**
-If arid moves by +3 or more with CO2 up, that's the side effect to diagnose before merging, against PW-290 (L7
-worlds already too arid).
-
-**The judge (launched 10:29-10:36, 2026-11-02):** both arms, rolls 0.0005 and 0.001, all 18 draws, 72 runs into
-`$S/judge`. Three launchers, logs `$S/launch_main.log` and `$S/launch_cand.log`, all from `$S/launch.sh`:
-- `launch.sh l6fix 0.0005` (MAXSIM 4);
-- `launch.sh l6c 0.0005 0.001` (MAXSIM 5);
-- `launch.sh l6fix 0.001` (MAXSIM 5).
-
-The shared cap is 5 sims (15 cores, Daniel's limit for this lane on 11-02). Expect ~4 h from 10:30 (about 17 min a
-run, 5 at once), so done ~14:30.
-
-**To read it:**
-1. `ls $S/judge/*/seed*.json.gz | wc -l` should be 72, and every launch log's lines should end with "all done" (six
-   "all done" lines in all).
-2. A draw that died has a `log_<seed>.txt` but no `seed*.json.gz`. Delete that log and re-run
-   `MAXSIM=5 bash $S/launch.sh <l6fix|l6c> <roll>`.
-3. Then `uv run python docs/review/base-climate/v1-finish-16/pjudge.py $S/judge main cand --table` and paste the
-   tables here.
-4. `docs/review/base-climate/rain-supply/why.py <draw files>` (run from the repo root) prints a draw's finish-moment reasons.
-
-**Bar:**
-- hard failures 0 (frozen over, hellhouse);
-- soft pass ~main's or better, with no threshold loosening;
-- late dT / CO2 / sink ref not moved, or moved by what the mechanism explains (see above).
-
-**Also before merging:** `uv run pytest tests/test_envelopes.py` (slow; not run yet, because the sims held the core
-cap) and the full suite. The not-slow suite passed: 926 passed. Its 7 failures were 3 thread tests under
+**Also before merging:** the full suite. test_envelopes: see section 4b. The not-slow suite passed: 926 passed. Its 7 failures were 3 thread tests under
 NUMBA_NUM_THREADS=1, which pass at 4 threads; the goldens, regenerated in d2a34a48; and
 the probe test, fixed in 62fa91e2.
 
@@ -216,11 +211,12 @@ gitignored, a real directory, not a link).
   - the PW-1362 diagnosis (section 4);
   - drafts: draft-n-atlantic-finished-sea-too-warm-for-the-rain, draft-gulf-upwelling-box-wide.
 - **Strikes:** 0 failed arms.
-- **Next:**
-  - read the judge (section 3);
-  - if it passes, run test_envelopes and the full suite, then hand to the coordinator for the merge;
-  - if arid / CO2 move beyond the mechanism, diagnose: compare the Earth arid shift (+0.9) with L6's (+5); check
-    which land gets drier.
+- **Judge read** (section 3): it passes the bar, with late dT +0.57 C moved and not explained. `tests/test_envelopes.py`
+  passes (11 passed). The full suite hasn't been run (that's for the merge).
+- **Scratch deleted** after the judge was read: `$S`, the frozen code and the draws. The worktree's private
+  `data/earth/` copy is deleted too. To re-read the judge, re-run section 3's launches.
+- **Next:** the coordinator's call on late dT. Either merge, or run a cloud / snow-albedo split of the shift on 2-3
+  warm draws first.
 - **PW-1362:** fold its swing part into PW-593 (the coordinator's call); the Gulf goes to the upwelling draft.
   PW-593 is the lever for both PW-1362 and the N Atlantic overshoot that this fix exposes.
 
