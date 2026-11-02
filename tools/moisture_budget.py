@@ -130,7 +130,7 @@ PROBE_REGIONS = ["Sahara", "Sahel", "Arabia", "Australia interior", "Gobi/Mongol
 # --------------------------------------------------------------------------
 @njit(cache=True, parallel=True)
 def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
-           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, un, kd, ea, eb, L, lc,
+           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, ema0, warm, un, kd, ea, eb, L, lc,
            tag, ntag):
     """climate._rain, line for line, plus: tracers of the vapour by where it
     evaporated (tag: per cell, 0..ntag-1; a well-mixed column, so each tracer
@@ -149,7 +149,7 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
     m1 = np.empty((n, S))
     acc = np.zeros((S, n))
     acc_ls = np.zeros((S, n))
-    ema = np.zeros((S, n))
+    ema = ema0.copy()
     tcor = np.zeros((S, n))
     acc_up = np.zeros((S, n))
     acc_q = np.zeros((S, n))
@@ -171,14 +171,15 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
     fex = 1.0 - np.exp(-dt / tau_ex)
     scale = 1.0
     for it in range(steps):
-        tcor_due = evap != 0 and it >= 20 and it % 10 == 0
-        if (it >= 5 and it % 5 == 0) or tcor_due:
+        tcor_due = evap != 0 and ((it >= 20 and it % 10 == 0) or (warm and it == 0))
+        land_due = (it >= 5 and it % 5 == 0) or (warm and it == 0)
+        if land_due or tcor_due:
             tot = 0.0
             for k in range(S):
                 for i in range(n):
                     tot += ema[k, i]
             scale = mean_mm * S * n / max(tot, 1e-12)
-        if it >= 5 and it % 5 == 0:
+        if land_due:
             for i in prange(n):
                 if not ocean[i]:
                     aet = np.empty(S)
@@ -265,7 +266,8 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
 
 def kernel_args(rec: dict) -> tuple:
     """climate.rain's arguments to climate._rain, from a recorded call."""
-    return climate._rain_args(*(rec[k] for k in ("grid", "elev", "s_in", "tune", "pet", "w", "open_sea", "ocean")))
+    return climate._rain_args(*(rec[k] for k in ("grid", "elev", "s_in", "tune", "pet", "w", "open_sea", "ocean")),
+                              rec.get("start"))
 
 
 def probe(rec: dict, tag: np.ndarray, ntag: int) -> dict:
@@ -273,7 +275,7 @@ def probe(rec: dict, tag: np.ndarray, ntag: int) -> dict:
     a = kernel_args(rec)
     F = climate._faces(rec["grid"])
     un, kd = climate.face_winds(rec["grid"], rec["s_in"], rec["tune"])
-    out = _probe(*a[:-2], un, kd, F["ea"], F["eb"], F["L"], F["lc"], np.ascontiguousarray(tag, np.int64), int(ntag))
+    out = _probe(*a, un, kd, F["ea"], F["eb"], F["L"], F["lc"], np.ascontiguousarray(tag, np.int64), int(ntag))
     keys = ("r", "r_ls", "up", "q", "land_e", "r_ex", "r_cv", "dry", "q_before", "r_tag", "f_adv", "f_mix")
     P = dict(zip(keys, out))
     P["dt"] = a[16]
@@ -282,7 +284,8 @@ def probe(rec: dict, tag: np.ndarray, ntag: int) -> dict:
 
 def capture(grid, elev, ice, compute=None):
     """The Earth climate as earth_check makes it, with the last climate.rain
-    call's inputs and outputs recorded (rec). Returns (climate, rec)."""
+    call's inputs and outputs recorded (rec; compute's second pass, on the
+    overturning's sea, warm-started from the first: rec["start"], PW-1364). Returns (climate, rec)."""
     rec = {}
     orig = climate.rain
 
@@ -290,7 +293,7 @@ def capture(grid, elev, ice, compute=None):
         out = orig(grid_, elev_, seasons_in, tune, pet, w, open_sea, ocean, start)
         rec.clear()
         rec.update(grid=grid_, elev=elev_, s_in=seasons_in, tune=tune, pet=pet, w=w, open_sea=open_sea,
-                   ocean=ocean, out=out)
+                   ocean=ocean, out=out, start=start)
         return out
 
     climate.rain = recording

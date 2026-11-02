@@ -128,13 +128,17 @@ def kernel_inputs(rec, tune=None, st_fn=None, wind_fn=None, w_fn=None):
         un, kd = wind_fn(un.copy(), kd.copy())
     c_self, c_in, nbr, dt = climate._transport(grid, un, kd)
     open_sea = climate.sea_uptake(s_in, open_sea, dt, tune)
-    steps = int(climate.RAIN_DAYS * 86400.0 / dt) + 20
+    start = rec.get("start")
+    warm = start is not None and start["vap"].shape == st["qs"].shape  # (compute's second pass, PW-1364)
+    steps = int((climate.RAIN_WARM_DAYS if warm else climate.RAIN_DAYS) * 86400.0 / dt) + 20
     tau_ex = -climate.RATE_S / np.log(1.0 - tune["fex"])
-    m0 = np.where(ocean, st["src_q"], climate.RAIN_INIT * st["qs"])
+    m0 = start["vap"] if warm else np.where(ocean, st["src_q"], climate.RAIN_INIT * st["qs"])
+    ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
     args = (st["qs"], st["src_q"], ocean, st["ls"] / climate.RATE_S, st["cv"] / climate.RATE_S, st["mse_t"],
             st["mse_thr"], np.ascontiguousarray(rec["pet"], np.float64), w, float(tune["soil_mm"]), open_sea,
             c_self, c_in, nbr, climate._faces(grid)["off"], steps, dt, tau_ex, st["rhc"], tune["rh_pow"],
-            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64))
+            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
+            np.ascontiguousarray(ema0, np.float64), warm)
     return args, un, kd, tune
 
 
