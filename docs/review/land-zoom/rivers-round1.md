@@ -123,11 +123,26 @@ Heights (seams.py --owner, `rivers1/seam-<pair>-rivers.json`), line station medi
 | block W | a3a793 | d7b43d | 3580b7 http://localhost:8765/?world=dba204.json&tab=zoom&zoom=3580b7 |
 | tile (py.1.1 / py.0.1) | 683193 | 3b412b | 83b0b1 http://localhost:8765/?world=dba204.json&tab=zoom&zoom=83b0b1 |
 
-Each ~2.5 min, five at once.
+Each ~2.5 min, five at once. 1 km: ce39ed (below).
 
 ## The 1 km check
 
-KM1_PENDING
+The tiling pair at 1 km/px (4000 x 4000 px): lane 128's `py.1.1` alone **34d0a5** as A; `py.0.1 --match 34d0a5`
+rebuilt with this lane's code, **ce39ed** (22 min 42 s, peak 107.6 GB; 1,480 crossings hand on 21,388 m3/s), against
+lane 128's matched **8f5874** as before. Viewer: http://localhost:8765/?world=dba204.json&tab=zoom&zoom=ce39ed
+(judge jsons `rivers1/rivers-tile1km-*.json`, `rivers1/seam-tile1km-rivers.json`).
+
+| direction | build | crossings | carried on (x2) | within 25% | median abs log2 | big >= 500: n, within 25% | course offset km | total m3/s up -> down |
+|---|---|---|---|---|---|---|---|---|
+| A->B | before (8f5874) | 21 | 3 | 0% | 4.81 | 7, 0% | 5.8 | 15,926 -> 4,447 |
+| A->B | after (ce39ed) | 21 | 20 | 90% | 0.01 | 7, 100% | 0.9 | 15,926 -> 16,021 |
+| B->A | before | 17 | 14 | 65% | 0.17 | 6, 67% | 0.7 | 21,304 -> 25,029 |
+| B->A | after | 18 | 14 | 56% | 0.19 | 8, 50% | 0.8 | 27,550 -> 21,828 |
+
+Lakes at the line: none either side (3,974 line pixels). Heights at the line: median 0.0 m, p95 0.07 m; ramp +20 km
+1.7 (17.8) m, +40 11.1 (118), +70 33.5 (358), as lane 128's 1.7 (16.5) / 11.5 (113) / 33.9 (359); coast at the line
+0.00%, +40 km 0.37%. Same picture as at 4 km: rivers into the matched section are fixed, those into the first-built
+section stay at the first section's own estimate (draft).
 
 ## Follow-ups (drafts)
 - `draft-land-zoom-mosaic-discharge-pass.md`: one discharge pass over the whole mosaic after the sweep (rivers into the
