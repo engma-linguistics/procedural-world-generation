@@ -70,10 +70,11 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · 1 November 2026 · week-end review</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Good evening, Daniel. This is the week-end review: what shipped this week, what's open, and a proposed plan for
-next week. Nothing is running, so the machine is idle until you say go. New since this morning: the margins round 4 findings (D37), and
-the shelf write-up now has the real tally of where eroded rock goes.</p>
-  <nav class="toc"><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#decisions">Decisions</a><a href="#coming">Running now</a><a href="#settled">Settled overnight</a></nav>
+  <p class="lede">Good evening, Daniel. This is the week-end review: what shipped this week and the plan for next week. Every
+decision on the desk is answered; the one thing left for you is your thoughts in the
+<a href="https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP">religion doc</a>. New tonight: the sea-level fix is merged, and one
+physics lane is running (sediment piles become continent only against continental crust).</p>
+  <nav class="toc"><a href="#week">Week in review</a><a href="#l8">L8 1 Gyr world</a><a href="#v1">v0.1.0 tagged</a><a href="#cultures">Cultures proposal</a><a href="#shelf">Shelves</a><a href="#coming">Running now</a><a href="#settled">Settled this week</a></nav>
 </header>
 
 <h2 id="week">The week in review (26 October – 1 November)</h2>
@@ -90,17 +91,18 @@ mines; dragons from the food chain, with lion-evidence persecution and your abun
 demes" picker.</li>
 <li>Lanes 23 to 111 ran this week (some as several rounds); all 915 tests pass on main.</li>
 </ul>
-<p><b>Open, for you</b> (cards below): D34 the thin wild herds, D35 small ones, D36 dragon kinds as 1–5 cultures, D37 the margins'
-cooling, and your thoughts in the religion doc.</p>
-<p><b>Proposed for next week, in order:</b></p>
+<p><b>Open, for you:</b> only the religion doc. Everything else is answered (see Settled).</p>
+<p><b>Next week, in order</b> (at most two lanes at once):</p>
 <ol>
-<li>Your answers on <a href="https://claude.ai/artifact/BPHExNndBRqLUCsbYS5Xdy">cultures round 2</a> (O1–O5), then its prep lanes and its first two lanes side by side:
-languages without words (lects v0) and polities v0.</li>
-<li>D37's fix, if you pick one: one physics lane, diagnosis already done.</li>
-<li>D34 (herds): check the plant model's savanna growth against a sourced table.</li>
-<li>The space-to-ground globe's first try (PW-1198) and the refine refactor, as you have time to look.</li>
+<li><b>Physics:</b> lane 112 (running): sediment piles become continent only where they touch a continent (PW-1292); then the
+sea-floor creep is tried again on top.</li>
+<li><b>Cultures prep</b>, small lanes: pull the placeholder war formulae out (PW-1280); your PW-1254 rulings (cohesion by lifespan,
+2,000 years side by side, no merging across ways of life); the village experiment (PW-1281); stable culture ids (PW-1283).</li>
+<li><b>Then</b> languages v0 and polities v0 side by side, the history zoom (PW-908) in parallel, and the sources reads: the density
+ladder's rungs (PW-1275, shown to you before building) and real battle losses (PW-1285).</li>
+<li><b>Also queued:</b> D34 B, all biomes' plant growth against sourced tables; the refine refactor; the globe (PW-1198); the global
+stats view (PW-1277).</li>
 </ol>
-<p>To keep usage down: at most two lanes at once, cheap diagnoses before any 36-world test, and no new lanes until you've answered.</p>
 </div>
 
 <h2 id="l8">Your 1 Gyr L8 world</h2>
@@ -112,8 +114,8 @@ and its 300 kyr ice-age pass <a href="http://localhost:8765/viewer/?run=7d803e">
 river carries 18,300 m³/s to the sea along 239 cells (it was 6,300, ending in an inland pocket). Land draining inland fell from 28% to
 about 5%. One continent, Hizam, holds 87% of the land; that's this seed.</p>
 <p><b>What it didn't fix:</b> the continental shelf. It covers 0.6–1.2% of the ocean, against Earth's 6–7% (and 4.2% on the young
-world). So the missing shelf and the cliff at the continent edge are the model's, not the run's age, which is exactly what lane
-100c is working on. Mid-sized islands are still short: 14, against about 44 for Earth on this grid.</p>
+world). So the missing shelf and the cliff at the continent edge are the model's, not the run's age, That's what the margins lanes
+are after: the sea-level part is merged, and lane 112 is on the next piece. Mid-sized islands are still short: 14, against about 44 for Earth on this grid.</p>
 <p><b>Cost:</b> 5 h 26 min to simulate (about 5.7 h per Gyr on 8 cores), then 10 min to slice, 1 h 48 min for the ice-age pass and
 9 min to finish: 7.5 hours in all. Peak memory 30 GB, at the final write. No peoples run on it yet; say if you want one.
 Notes: <code>docs/review/l8-world/gyr-notes.md</code>. The 100 Myr world <a href="http://localhost:8765/viewer/?world=a16f5a.json">a16f5a</a> and its refined L7 → L8 cousin
@@ -208,74 +210,12 @@ bug.</p>
 stretched margins is the standard textbook one, not read for this note.</p>
 </div>
 
-<h2 id="decisions">Decisions waiting on you</h2>
-<div class="cards">
-
-<div class="card" id="d28"><div class="id">D28 · DRAGONS ROUND 2 · merged; one real question left (D34)</div>
-<p><b>Your mortality hunch:</b> not the cause. Every age is counted (24% wyrmlings, 55% young, 19% adults, 3% ancients), and a harsher death schedule actually gives <i>more</i> dragons (the average dragon is smaller and eats less).</p>
-<p><b>Why they're rarer than lions:</b> mostly size, and that part is sound. On the same prey, a 1.65 t dragon should be about 1/13 as dense as a 142 kg lion (Carbone &amp; Gittleman 2002); the model's chain comes out at 0.86 of that law. Ten kinds also share one top-predator slice of the food, so compare a lion with <i>all</i> dragons together: before people, 0.68 per 100 km² in wetland, 0.32 in grassland, 0.23 in forest. The body-size target ("north star") is about 3 per 100 km² on rich prey, so the model is a fifth to a tenth of it. About half that gap is the thin herds (D34).</p>
-<p><b>Built and merged:</b> your B. The 10-farmers anchor is gone; dragons are now cleared from land where people are as dense as where lions vanish (about 25 per km², Riggio et al. 2013), and stay in the wilds (94% kept there). Riding farmers at 10 per km² keep about half their dragons instead of a tenth. A world total of about <b>96,000</b> (was 84,000), with about 2,000 in a Sword Coast-sized region. <b>Your lever:</b> "dragon abundance" ×¼ to ×4 in the peoples controls, labelled as a world-builder's choice.</p>
-<div class="shots"><figure><img src="d28r2/dragons_vs_lions_tigers.png" alt="Dragons per 100 km2 against lions, tigers and the body-size expectation"><figcaption>Grey diamonds: what the body-size law expects from each kind's prey. Open circles: density where each kind still lives today. Bottom rows: all dragons together by biome.</figcaption></figure></div>
-</div>
-
-<div class="card" id="d37"><div class="id">D37 · MARGINS ROUND 5: ONE FIX PASSES, THE CREEP STILL COOLS · FOR A JOINT LOOK</div>
-<p><b>Passes, ready to merge on your yes:</b> sea level now counts the water that sediment on the ocean floor pushes up (+105 to
-+116 m late in a run). On 72 paired worlds it causes no hard failures (main had 1) and passes the same 57/72 as main. Climate
-doesn't move; land is 0.6 points lower, as a higher sea should make it. The Earth check is unchanged. One test needed a wider
-search window (assertions unchanged).</p>
-<p><b>My diagnosis was wrong on one link.</b> Volcanic CO2 already follows the plates (since PW-741); the volume thermostat's arc
-boost never reaches it. The late CO2 fall is real slab flux (convergence × trench length) against an early reference. That
-is the open question in PW-1158, not a bookkeeping bug. Candidate C (piles out of the area count) did nothing useful; dropped.</p>
-<p><b>The deep dive you asked for</b> (old code included), each thermostat switched off on 2 seeds:</p>
-<ul>
-<li><b>Area thermostat</b> (PW-1276): without it the continents still sit near 40% of the surface on their own, but it failed its
-36-world test (1 frozen world, 23/36 against 27/36). So it's not dead weight yet; keep it for now, revisit in v2 as ticketed.</li>
-<li><b>Volume thermostat:</b> load-bearing. Without it the crust thins and worlds warm 2–6 °C. It stands in for a real crust
-budget (a sourced arc growth rate plus sediment recycling); lean: keep for v1, replace in v2.</li>
-<li><b>The weakest piece, and the real culprit for the creep:</b> any sediment pile on the ocean floor becomes continent at 20 km.
-With the creep that churn is the biggest late flux in the whole crust budget (about 45,000 births per 400 Myr against 13,000).
-Lean: a pile becomes continent only where it touches continental crust. That's the next fix before the creep is tried again.</li>
-</ul>
-<p><b>The creep on top of the sea fix still fails</b> (2 frozen worlds, −2.6 °C, 3 points less land), so it stays off.</p>
-<p><b>Asks:</b> (1) merge the sea-level fix? My yes. (2) next lane: piles become continent only against continental crust, then
-re-judge the creep? My yes. Notes: <code>docs/review/tectonics/margin/deep-dive.md</code> on the lane-100 branch.</p>
-</div>
-
-<div class="card" id="d36"><div class="id">D36 · NOW THAT EVERY DRAGON IS SEEN, EACH KIND IS 1–5 CULTURES</div>
-<p>The old record caught a dragon kind only where it led a cell, which was 4% of the blue dragons' land and 10–13% for gold,
-silver, copper, bronze and red. That blindness is what made "one culture per kind" come out on its own. With every dragon now
-counted, a kind splits wherever its populations sit farther apart than a dragon flies (1,500 km). On the test world that gives
-black 1, blue 2, bronze and gold 2–3, red, silver and brass 4, green and white 5 living cultures.</p>
-<ol><li><b>A</b> fold each kind back into one culture, as you said ("culture simply along color lines"). <i>My lean</i> for now.
-The languages lane in the proposal can revisit it: if Draconic is one tongue, something has to hold it together.</li>
-<li><b>B</b> keep the splits: a red dragon a continent away is its own culture.</li>
-<li><b>C</b> keep the mechanism, but stretch a cohesive kind's time apart by its cohesion, so dragons split only after very long
-isolation. This sits between A and B.</li></ol>
-</div>
-
-<div class="card" id="d34"><div class="id">D34 · THE WILD HERDS ARE 2–3× THIN</div>
-<p>At the same rainfall, the model's warm-country grazing herds are 2–3× below real African parks (Coe, Cumming &amp; Phillipson 1976). The cause is upstream: the model's plants put about 2.4× less growth above ground than the figure Coe used. Fixing it would mean 2–3× more dragons, giants and wild game in warm grassland, without a fudge. It touches the vegetation model (your earlier PW-1073 ruling), so it's your call.</p>
-<ol><li><b>A</b> accept; the dragon-abundance dial is the lever.</li>
-<li><b>B</b> check the vegetation's savanna growth against a sourced table first, then fix whichever step is wrong. <i>My lean</i>: it's a physics question, and the climate and plant model is where v1's credibility lives.</li>
-<li><b>C</b> fit the herds directly to Coe's measured numbers, skipping plant growth. Quick, but Africa-only.</li></ol>
-</div>
-
-<div class="card" id="d35"><div class="id">D35 · SMALL ONES, ANSWER IF YOU LIKE</div>
-<ul>
-<li><b>Cultures round 2 numbers</b> (PW-1254): time apart 600 → 150 years from stone age to renaissance; cohesion dragons 0.9, giants 0.5; side-by-side merging after 1,000 years. My lean: keep them. Re-cut your runs' demes so the viewer shows round 2 (PW-1253)? My lean: yes, after the overlapping-demes lane lands.</li>
-<li><b>Learned country for followers:</b> a dragon living over human farmland can't count the humans' farming as its own new
-country, so peoples that mostly follow (most dragon kinds, hill giants) never split off "adapted" groups. Storing it for them
-costs +20% on the presence table and a new peoples run. My lean: leave it until cultures and languages need it.</li>
-<li><b>Refine:</b> one ~1–2 h refactor so the regional zoom and the L8 refine share one terrain-detail function instead of copying 40 lines. My lean: yes. Landform shapes on refined worlds: leave out at L8 for now (lean).</li>
-</ul></div>
-</div>
-
-<h2 id="coming">Running now: nothing (parked work below)</h2>
+<h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>100e · continent edge</td><td><b>Done, held for you (D37).</b> Sea-level fix passes; the creep still fails; deep dive written.</td></tr>
-
-
+<tr><td>112 · continent edge</td><td><b>Running (your yes on D37).</b> A short diagnosis first, then sediment piles become continent
+only where they touch continental crust (PW-1292), screens on two seeds, a 36-world test against main, and the creep on top only if
+that looks promising. It reports before anything merges.</td></tr>
 </table></div>
 <p>Your seven peoples runs are unchanged: <a href="http://localhost:8765/viewer/?run=cc22df&amp;layer=peoples">cc22df</a> (s7) ·
 <a href="http://localhost:8765/viewer/?run=622c00&amp;layer=peoples">622c00</a> (s8) ·
@@ -284,21 +224,22 @@ costs +20% on the presence table and a new peoples run. My lean: leave it until 
 
 <h2 id="settled">Settled this week</h2>
 <ul class="done">
-<li><b>Demes on the map, lighter</b> (lane 111; all tests pass, 915): the "whose demes" picker now downloads only the moment
-you're looking at, about 0.2 MB instead of 124 MB up front, and a people's brief covers everywhere it lives (red dragons 20,000
-years ago: 0.9 → 9.2 Mkm²).</li>
-<li><b>Overlapping demes merged</b> (your ask; all tests pass, 912): every people's presence is now stored for every
-moment, so a kobold deme can sit beside a hobgoblin one in the same hills, and a dragon kind's demes lie over the peoples below.
-87% of peopled cells now hold demes of two or more peoples. The globe's demes layer has a "whose demes" picker, and hovering a
-cell lists every deme on it. Your existing runs need a fresh peoples run to show the overlap. One question came out of it (D36).</li>
-<li><b>Merged overnight</b> (all tests pass, 909):
-peoples in-fighting for everyone with a floor that holds (it grew the leader a little, as the humans are walled in least; parked until war and polities);
-dragons round 2 (D28 above);
-cultures round 2 (reach in the demes, as you said; time apart by era; giants keep cultures; each dragon kind one culture through cohesion, no special case, but see D36);
-the L7 → L8 refine: <a href="http://localhost:8765/viewer/?world=fb5e11.json">world fb5e11</a>, 20–25 minutes instead of 146 for a direct L8, same detail; L9 works but is too big for the viewer yet.</li>
-<li><b>Cultures first cut merged (D33 answered):</b> the Cultures tab is live on your existing runs; giants keep cultures; 1,000 years apart was far too long; dragons stay one culture per colour, by reach rather than by a hard-code (lane 108).</li>
-<li><b>Tags are 0.x:</b> the first tag is <code>v0.1.0</code> (the v1 milestone), then v0.2.0 for v2, and so on.</li>
-<li><b>Your D28 question, answered:</b> "a dying people’s land is left empty" is the evolution track. When a stem (e.g. archaic humans) ends at its last split, its land goes to no child; the children spread into it. It is not one group replacing another on a continent. Your mortality hunch is with lane 103.</li>
+<li><b>Sea level counts ocean-floor sediment</b> (D37, merged tonight): +105 to +116 m late in a run; no hard failures on 72 paired
+worlds, same pass count as main, climate unmoved, land 0.6 points lower. Volcanic CO2 already followed the plates (my round 4 diagnosis
+was wrong there); the area thermostat stays for now (PW-1276, v2); the creep stays off until lane 112 lands.</li>
+<li><b>Cultures proposal round 2 answered</b>: O1 yes (groups become starting points after the density ladder); O2 history zoom now;
+O3 village experiment go; O4 a dragon realm is one flat ruler whose reach is what it can fly and defend; O5 the religion doc. Lects are
+tracked from when language began; Draconic's colour dialects aren't forced; battle losses get sourced. Notes:
+<code>docs/review/cultures-proposal/owner-notes-r2.md</code>.</li>
+<li><b>Desk decisions answered</b>: D28 closed; D34 B, widened to every biome's plant growth; D35 refine refactor yes, followers'
+learned country is a discussion (dragon dominion goes in polities); D36 B, dragon kinds may be several cultures; PW-1254 era table kept,
+cohesion by lifespan, merge after 2,000 years side by side, never across ways of life.</li>
+<li><b>Density</b> (PW-1275): one shared ladder, way of life × tech stage × land productivity, with a kind factor of 0.8–1.2 for
+now; sourced rungs come to you before building. No underdark.</li>
+<li><b>dba204's hot July</b>: hotter than Earth at low latitudes (42% of land reaches a 30 °C warmest month, against Earth's 14%);
+filed as PW-1279. The temperature tooltip now names the month shown.</li>
+<li><b>Merged this week</b> (all tests pass): overlapping demes, the per-frame demes picker, the final v1 tally (0/42 hard
+failures), v0.1.0 showcases, the 1 Gyr L8 world.</li>
 <li>Older settled items are in the desk's git history and <code>docs/wiki/decisions.md</code>.</li>
 </ul>
 

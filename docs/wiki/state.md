@@ -14,12 +14,10 @@
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
 - L8 1 Gyr world done (lane 105): run 6a6fd6, finished world 0af5ae, slice 928016, time zoom 7d803e; `docs/review/l8-world/gyr-notes.md`. Shelf still 0.6-1.2% of ocean.
-- Lane 100c running on branch worktree-agent-a5fd6321b3834f864: sea-floor sediment diffusion (Mitchell & Huthnance 2008)
-  on top of round 1's necking and rise (all off by default); L6 screens on seeds 1 and 3, then an 18x2 judge.
-- Waiting on Daniel (Owner's Desk): D34 wild herds 2-3x thin (lean B: check savanna growth first), D35 small items, D36 dragon
-  kinds now 1-5 cultures (PW-1268, lean fold), and the proper-cultures proposal (`docs/review/cultures-proposal/`, 19 questions).
-- After those: the proposal's lanes (lects v0 and polities v0 in parallel, then names); refine refactor (shared terrain-detail
-  function, on a yes); PW-1198 globe.
+- Lane 100 merged 11-01 (sea level counts ocean-floor sediment; creep/necking/rise off). Lane 112 running: PW-1292 A (sediment piles become continent only against continental crust), then creep re-judged.
+- Lane 113 running: richer ticket refs (paper/doc/function forms, check validation, demo backfill on PW-1158 and lane 100 tickets).
+- Waiting on Daniel: only his thoughts in the religion doc (https://claude.ai/artifact/Tk4g2nkJPQpTJgeDXo6KoP). Cultures r2 answered (owner-notes-r2.md).
+- Next: cultures prep lanes (PW-1280, PW-1254 rulings, PW-1281, PW-1283), then lects v0 + polities v0, PW-908; sources reads PW-1275, PW-1285; D34 B all-biome productivity; refine refactor; PW-1198.
 - Up to ~12 sims with >=40 GB free in /tmp. `scratchpad/root` holds symlinks into the main runs/ and zooms/: never write into it.
 
 ## Milestones (2026-11-01)
