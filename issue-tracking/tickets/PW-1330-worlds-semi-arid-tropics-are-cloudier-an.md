@@ -1,5 +1,6 @@
 ---
-title: "Worlds' semi-arid tropics are cloudier and cooler-wintered than Earth's at the same rain, cutting grass growth ~30-45%"
+id: PW-1330
+title: Worlds' semi-arid tropics are cloudier and cooler-wintered than Earth's at the same rain, cutting grass growth ~30-45%
 type: task
 status: todo
 parent: null
@@ -10,7 +11,9 @@ impact: med
 found_by: lane123
 blocked_by: []
 relates: [PW-1261, PW-1321, PW-1279]
-refs: [planet/climate.py::shade_from_hours, planet/climate.py::months, planet/vegetation.py::_ft, docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/world_check.py, docs/review/vegetation/npp-check/inputs_cmp.py, "world 067778", "world 6909cb", "world dba204", "world 506694 (Earth L6)", docs/review/base-climate/rain-inland/diagnosis.md]
+refs: ["planet/climate.py::shade_from_hours", "planet/climate.py::months", "planet/vegetation.py::_ft", docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/world_check.py, docs/review/vegetation/npp-check/inputs_cmp.py, "world 067778", "world 6909cb", "world dba204", "world 506694 (Earth L6)", docs/review/base-climate/rain-inland/diagnosis.md]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -22,3 +25,6 @@ The plants respond the same way to the same climate; the worlds' climate differs
 worlds' semi-arid tropics are plausible is a climate question (compare the Earth model-climate run against CRU sunshine
 in the Sahel/E Africa band, lanes 120/121's tools).
 - [ ] cloud and coldest-month temperature of warm 400-900 mm land: Earth model climate vs observed, then the worlds
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-semiarid-tropics-cloudy-cool.md (found by lane123).

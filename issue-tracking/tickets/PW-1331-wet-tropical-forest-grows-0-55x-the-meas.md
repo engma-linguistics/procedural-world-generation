@@ -1,4 +1,5 @@
 ---
+id: PW-1331
 title: "Wet tropical forest grows ~0.55x the measured NPP: its photosynthesis is low (EPS_SCALE cut to hide the grasses' surplus)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane123
 blocked_by: []
 relates: [PW-1261, PW-228, PW-806]
-refs: [planet/vegetation.py::_year, planet/vegetation.py::EPS_SCALE, planet/vegetation.py::_TUNE, planet/vegetation.py::potential, tools/veg_check.py, docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/npp_check.py, docs/review/vegetation/npp-check/pft_probe.py, "Malhi, Doughty & Galbraith 2011 Phil Trans R Soc B 366:3225, PMC3179639, Table 3", "MOD17A3 (tools/earth_data.py::earth_mod17_npp)", "world 506694 (Earth L6)"]
+refs: ["planet/vegetation.py::_year", "planet/vegetation.py::EPS_SCALE", "planet/vegetation.py::_TUNE", "planet/vegetation.py::potential", tools/veg_check.py, docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/npp_check.py, docs/review/vegetation/npp-check/pft_probe.py, "Malhi, Doughty & Galbraith 2011 Phil Trans R Soc B 366:3225, PMC3179639, Table 3", "MOD17A3 (tools/earth_data.py::earth_mod17_npp)", "world 506694 (Earth L6)"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +30,6 @@ land NPP to 60.5 Pg (with the herbs' fix) but shrinks savanna from 17.7 to 13.8 
 (EPS_SCALE 1.0) overshoots temperate and cold land (T 10-18 C, 1000-1500 mm: 1070 against Miami 734 / MOD17 741).
 - [ ] read a measured tropical light-use efficiency (or GPP vs absorbed PAR) and check the light under the observed cloud
 - [ ] fix the tropical GPP step; re-check savanna area, fire and potveg agreement (tools/veg_check.py)
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-tropical-forest-gpp-low.md (found by lane123).

@@ -1,5 +1,6 @@
 ---
-title: "Lowering grass NPP to field values warms L6 runs by 3-5 C through the weathering's NPP factor"
+id: PW-1332
+title: Lowering grass NPP to field values warms L6 runs by 3-5 C through the weathering's NPP factor
 type: task
 status: needs-decision
 parent: null
@@ -10,7 +11,9 @@ impact: high
 found_by: lane123
 blocked_by: []
 relates: [PW-1261, PW-646]
-refs: [planet/tectonics/earth.py::NPP_WEATHER, planet/tectonics/earth.py::START_PLANTED, planet/tectonics/earth.py::update_vegetation, planet/vegetation.py::_year, docs/review/vegetation/npp-check/screens.md, docs/review/vegetation/npp-check/candidate1-herb-root-resp.patch, docs/review/vegetation/npp-check/diagnosis.md, tools/health.py::measure_run]
+refs: ["planet/tectonics/earth.py::NPP_WEATHER", "planet/tectonics/earth.py::START_PLANTED", "planet/tectonics/earth.py::update_vegetation", "planet/vegetation.py::_year", docs/review/vegetation/npp-check/screens.md, docs/review/vegetation/npp-check/candidate1-herb-root-resp.patch, docs/review/vegetation/npp-check/diagnosis.md, "tools/health.py::measure_run"]
+created: 2026-11-02
+updated: 2026-11-02
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
   their carbon budget).
 - **C.** Keep the warmer runs (the star brightening and thermostat already set the climate; would need the judge).
 Lean: A, then two L6 seeds and the judge, as one change with PW-1261's plant patch and the fire fuel floor.
+
+## Updates
+- 2026-11-02: Created from inbox draft draft-weathering-npp-reference-after-grass-cue.md (found by lane123).
