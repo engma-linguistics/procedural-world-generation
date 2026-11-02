@@ -138,8 +138,15 @@ def frame_inputs(h, P: np.ndarray, land: np.ndarray) -> dict:
             hl += s.a.herd_land * k
             cl += s.a.crop_land * k * (1.0 if s.tamed else 0.0)
     dens = d.sum(0)
-    farm, herd, wood = (sh[:, j] @ d for j in range(3))
-    herd_eff, farm_eff = (sh[:, 1][:, None] * d * (1 + hl)).sum(0), (sh[:, 0][:, None] * d * (1 + cl)).sum(0)
+    lad = getattr(h, "ladder", None)
+    if lad is not None and lad.ok and not getattr(h, "_deep_now", False):  # (PW-1275: who farms and herds per cell, from the density ladder)
+        own = np.array([not (l.megafauna or l.overlay or l.marine) for l in h.lines])[:, None]
+        sf = np.where(own, lad.sh["farm"], sh[:, 0][:, None])
+        sg = np.where(own, lad.sh["herd"], sh[:, 1][:, None])
+    else:
+        sf, sg = sh[:, 0][:, None], sh[:, 1][:, None]
+    farm, herd, wood = (sf * d).sum(0), (sg * d).sum(0), sh[:, 2] @ d
+    herd_eff, farm_eff = (sg * d * (1 + hl)).sum(0), (sf * d * (1 + cl)).sum(0)
     q = lambda v: np.clip(np.rint(v), 0, 255).astype(np.uint8)  # noqa: E731
     frac = lambda v: q(100 * v / np.maximum(dens, 1e-9))  # noqa: E731
     return {"dens": q(np.log2(1 + dens) / PEOPLE_SCALE), "farm": frac(farm), "herd": frac(herd), "wood": frac(wood),

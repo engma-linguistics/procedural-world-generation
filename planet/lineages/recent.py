@@ -125,8 +125,8 @@ class Pass:
         self.world_seed = None  # ...and its seed: the landmasses' names (names.py, PW-853)
         self.world_names: dict = {}  # ...and the owner's own names for some of them (planet name, PW-867)
         self.graze_npp = None  # ...and its grazing NPP, g C/m2/yr (gameattrs, raw): the static prey field's base (lineages.prey, PW-966)
-        self.npp = None  # ...and its total NPP, g C/m2/yr (world layer): the farmers' productivity (lineages.prey.people_fields, PW-1020 B)
-        self.forage = None  # ...and its foraging layer (0-5, wild food for people): the foragers' productivity (lineages.prey.people_fields, PW-974)
+        self.npp = None  # ...and its total NPP, g C/m2/yr (world layer): the farm and forager rungs (lineages.ladder, PW-1275)
+        self.forage = None  # ...and its foraging layer (0-5, wild food for people): no longer read by the density (PW-1275)
         self.sea_npp = None  # ...and its ocean NPP, g C/m2/yr (lineages.prey.sea_npp): the sea-hunting dragons' food (D28 B, lane 99)
         if world_ref:
             from .. import world as W

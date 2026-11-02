@@ -155,10 +155,11 @@ RAFT_KYR = 100.0
 
 # demography and movement, per people (PW-650): each can be given in the spec; else it comes from the traits
 # (the strongest value among its traits; 'insular' sets exploration and insularity whatever else).
-# density: people per km² of full habitat (K = 1); a people's number is the sum of presence x density x area.
-#   Also: a separate patch with fewer than meta.viable_pop people fades (history.MVP_TAU_KYR), so a sparse people
-#   (giants: a band roaming thousands of km²) needs a large piece of good country to hold a land at all. Who holds a land is
-#   not the density's: the contest goes by fit (history.params.FIT_Q, lane 83).
+# kind (PW-1275, owner 2026-11-01): a people's density comes from the shared density ladder (lineages.ladder: the way it lives in each
+#   cell x what it knows x the land's productivity); `kind` is its own factor on that, 0.5-2 (filled 0.8-1.2 for now: 1 most peoples, 0.8
+#   free-ranging kinds, 1.2 den peoples). `density` and `band_km2` are no longer given: a line's density is read off the run.
+#   A separate patch with fewer than meta.viable_pop people fades (history.MVP_TAU_KYR), so a sparse people needs a large piece of good
+#   country to hold a land at all. Who holds a land is not the density's: the contest goes by fit (history.params.FIT_Q, lane 83).
 # explore 0..1: how readily the frontier pushes into marginal land and over the sea (long crossings x 2 explore).
 # sea_share 0..1: the share of the frontier that tries water crossings (BOATS; short hops over straits from
 #   LATE_SEA_KYR at >= SHORT_HOP_SHARE).
@@ -168,16 +169,15 @@ RAFT_KYR = 100.0
 #   x1.5 presses x1.5 harder on its rivals and feels them x1/1.5, within the fit clip). 1 is a people that fights for land as most do; the
 #   'martial' trait gives 1.5 (owner: dwarves and hobgoblins, "rather capable and fighty"). A design dial, not a measured number
 BAND = 25  # people in a band: band_km2 = BAND / density, the land a band roams
-DEMO_DEFAULT = {"density": 2.0, "explore": 0.5, "sea_share": 0.03, "insularity": 0.5, "contest": 1.0}
+KIND_RANGE = (0.5, 2.0)  # the kind factor's allowed span (owner PW-1275)
+DEMO_DEFAULT = {"kind": 1.0, "explore": 0.5, "sea_share": 0.03, "insularity": 0.5, "contest": 1.0}
 DEMOGRAPHY = {
-    "agricultural": {"density": 10.0},
-    "nomadic": {"density": 0.6, "explore": 0.7},
-    "subterranean": {"density": 3.0, "explore": 0.35},
-    "miner": {"density": 3.0},
-    "flies": {"density": 0.6, "explore": 0.65},
+    "nomadic": {"explore": 0.7},
+    "subterranean": {"explore": 0.35},
+    "flies": {"explore": 0.65},
     "seafaring": {"sea_share": 0.6, "explore": 0.7},
     "swims": {"sea_share": 0.4},
-    "coastal": {"sea_share": 0.3, "density": 3.0},
+    "coastal": {"sea_share": 0.3},
     "cosmopolitan": {"insularity": 0.2, "explore": 0.7},
     "insular": {"insularity": 0.85, "explore": 0.25},
     "martial": {"contest": 1.5},
@@ -421,7 +421,7 @@ class Lineage:
     portal_n: int | None = None  # arrival: how many portals it comes through (None: meta.portals)
     plane: str = "beyond"  # arrival: the realm it comes from (the Feywild...): arrivals of one plane share its portals (wandering mode)
     speed_kmyr: float = 0.5  # expansion: how fast the frontier advances, km/yr (x the traits' speed)
-    density: float | None = None  # people per km² at full habitat (None: from the traits, DEMOGRAPHY)
+    kind: float | None = None  # the kind factor on the density ladder (PW-1275; None: 1, or the parent's)
     explore: float | None = None  # 0..1, how readily it pushes into new land and over the sea
     sea_share: float | None = None  # 0..1, the share of its frontier that tries water crossings
     insularity: float | None = None  # 0..1, resistance to mixing and to leaving home
@@ -917,8 +917,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         for x in traits:
             if x not in TRAITS:
                 raise ValueError(f"{lid}: unknown trait {x!r} (one of {sorted(TRAITS)})")
-        if r.get("band_km2") not in (None, "") and r.get("density") in (None, ""):
-            r = {**r, "density": BAND / float(r["band_km2"])}
+        if r.get("density") not in (None, "") or r.get("band_km2") not in (None, ""):
+            raise ValueError(f"{lid}: density and band_km2 are no longer given: density comes from the density ladder (PW-1275); "
+                             f"set `kind` (a factor {KIND_RANGE[0]}-{KIND_RANGE[1]}) instead")
         demo = {}
         # (lane 83b: a people split from a megafauna stem, the kobolds and dragonborn of the dragons, takes no demography from it: the stem's
         # numbers are a handful of solitary flying animals' (the dragons' explore 0.3, insularity 0.85), not a people's)
@@ -931,9 +932,11 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                 demo[k] = getattr(base, k) if origin in ("split", "group") and not off_mega else None
                 continue
             v = float(v)
-            if k in ("density", "contest") and not v > 0:
+            if k == "contest" and not v > 0:
                 raise ValueError(f"{lid}: {k} must be > 0")
-            if k not in ("density", "contest") and not 0 <= v <= 1:
+            if k == "kind" and not KIND_RANGE[0] <= v <= KIND_RANGE[1]:
+                raise ValueError(f"{lid}: kind must be within {KIND_RANGE[0]}..{KIND_RANGE[1]}")
+            if k not in ("kind", "contest") and not 0 <= v <= 1:
                 raise ValueError(f"{lid}: {k} must be within 0..1")
             demo[k] = v
         lgiven = dict(r.get("limits") or {})

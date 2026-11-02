@@ -5,11 +5,12 @@
 # enabled = false switches a line off (its split children re-parent to its parent; its hybrids and templates go too).
 # extinct = "T": the line dwindles and is gone by T before the present.
 # persists = true: the line lives on after its last split. megafauna = true (PW-855): a handful per country (the dragons); its range hardly takes room from the peoples (history.MEGAFAUNA_PUSH); its groups inherit it.
-# origin = "group", group_of = <people>: a way of life within a people (steppe and forest orcs; human seafarers, farmers,
-# herders, nomads): not a split and not deeper culture. It inherits what it leaves out, takes hold where its own niche
-# beats its people's, mixes freely with its people and sister groups, and rolls up into its people in the summaries.
-# demography (PW-650; left out: from the traits, spec.DEMOGRAPHY; a split inherits its parent's): density (people
-# per km² of full habitat, or band_km2: the land a band of 25 roams), explore (0..1: how readily it pushes into
+# origin = "group", group_of = <people>: a part of a people (here only the city minorities). Owner 2026-11-02 (PW-1357): peoples have
+# no groups for ways of life; who farms, herds, fishes or forages comes from the density ladder (lineages.ladder: the land decides, once
+# a people knows how). Kept as notes for Seven Meals later: the orc pair, steppe orcs (horse-and-herd raiders of the dry grassland,
+# pastoral nomads, soured dairy, 150-650 mm) and forest orcs (farming clans of the cold woods, settled, wary, -2..16 C, 450-1800 mm).
+# demography (PW-650; left out: from the traits, spec.DEMOGRAPHY; a split inherits its parent's): kind (the kind factor on the density
+# ladder, 0.5-2, PW-1275: 1 most peoples, 0.8 free-ranging kinds, 1.2 den peoples), explore (0..1: how readily it pushes into
 # new land and over the sea), sea_share (0..1: the share of its frontier that takes to the water), insularity
 # (0..1: resistance to mixing and to leaving home); speed_kmyr is the expansion rate (km/yr of frontier).
 # way (PW-723): the way of life, a cultural trait inherited from the parent or people and settable on any line: forager,
@@ -262,6 +263,7 @@ never = [{ what = "polar", is = "present" }]  # PW-1155 (owner 10-30: "tortles r
 
 [[lineage]]
 id = "kobold"
+kind = 1.2  # PW-1275 (owner 2026-11-01/02): the kind factor on the density ladder
 limits = { learn = 0.25 }  # lane 83 (owner D20): much less adaptive to open country and forest: learns new country at a quarter of the rate
 adult_yr = 6  # VGtM: 6; up to 120 'but rarely do so': brood breeders, harsh survival  # PW-1148 (lane 78): canon ages, lane 76's table (docs/review/peoples-demography/report.md section 2)
 lifespan_yr = 120
@@ -272,7 +274,6 @@ body = { bitter = "low" }  # scavengers
 parents = ["draconic"]
 at = "350 kyr"  # lane 73 (coordinator 10-30): a dragon-blooded people split off recently, as the dragonborn (300 kyr), not at 2 Myr: older
 # than the dwarves (500 kyr) in the same niche (mountain, underground), the kobolds held every range before the dwarves arose
-density = 4
 sea_share = 0.02
 temp_c = [5, 25]
 rain_mm = [300, 2000]
@@ -282,12 +283,13 @@ near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 
 [[lineage]]
 id = "troglodyte"
+kind = 1.2  # PW-1275 (owner 2026-11-01/02): the kind factor on the density ladder
 name = "troglodytes (extinct)"
 parents = ["saurian"]
 at = "2.5 Myr"  # PW-988: split from the lizardfolk (the saurian stem's last split), after the tortles left at 4.2 Myr
 extinct = "60 kyr"
 temp_c = [12, 28]
-traits = ["subterranean"]
+traits = ["subterranean", "denning"]  # PW-1350 Q4 A: a den people, as goblins and kobolds
 
 [[lineage]]
 id = "lizardfolk"
@@ -297,7 +299,6 @@ name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["saurian"]
 at = "2.5 Myr"  # PW-988: the saurian stem ends here, in the lizardfolk and the troglodytes
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.4
 sea_share = 0.25
 temp_c = [20, 30]
@@ -313,7 +314,6 @@ name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["saurian"]
 at = "4.2 Myr"  # PW-988: the saurian stem's first split, the deep branch (T3 to the lizardfolk and troglodytes by depth)
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 sea_share = 0.8
 temp_c = [20, 30]
@@ -329,7 +329,6 @@ name = "dragonborn"
 body = { smell = "keen", suction = "poor" }  # dragon-blooded predators; dragonborn: a poor sucker (lapping and tipping, intake 4.3)
 parents = ["draconic"]
 at = "300 kyr"
-density = 2
 explore = 0.6
 temp_c = [8, 28]
 rain_mm = [250, 1500]
@@ -361,12 +360,12 @@ prefers = ["tropical"]
 
 [[lineage]]
 id = "tabaxi"
+kind = 0.8  # PW-1275 (owner 2026-11-01/02): the kind factor on the density ladder
 adult_yr = 18  # VGtM: as humans
 lifespan_yr = 80
 name = "tabaxi"
 parents = ["feline"]
 at = "1.2 Myr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.8
 temp_c = [18, 30]
 rain_mm = [900, 3500]
@@ -376,12 +375,12 @@ speed_kmyr = 0.8
 
 [[lineage]]
 id = "leonin"
+kind = 0.8  # PW-1275 (owner 2026-11-01/02): the kind factor on the density ladder
 adult_yr = 18  # MOoT: as humans
 lifespan_yr = 80
 name = "leonin"
 parents = ["feline"]
 at = "900 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.6
 temp_c = [16, 32]
 rain_mm = [300, 1400]
@@ -411,6 +410,7 @@ prefers = ["temperate", "open", "forest"]
 
 [[lineage]]
 id = "goblin"
+kind = 1.2  # PW-1275 (owner 2026-11-01/02): the kind factor on the density ladder
 limits = { learn = 0.25 }  # lane 83 (owner D20): much less adaptive to open country and forest: learns new country at a quarter of the rate
 adult_yr = 8  # VGtM: 8; up to 60: brood breeders, harsh survival (lane 76's rethink)
 lifespan_yr = 60
@@ -419,7 +419,6 @@ survival = "harsh"
 name = "goblins"
 parents = ["goblinoid"]
 at = "400 kyr"
-density = 5
 temp_c = [18, 30]
 rain_mm = [1200, 4000]
 prefers = ["rainforest"]
@@ -434,7 +433,6 @@ lifespan_yr = 80
 name = "hobgoblins"
 parents = ["greater_goblinoid"]
 at = "250 kyr"
-density = 4
 explore = 0.6
 temp_c = [12, 26]
 rain_mm = [500, 2000]
@@ -449,7 +447,6 @@ name = "bugbears"
 body = { smell = "keen", diet = "carnivore" }  # ambush hunters
 parents = ["greater_goblinoid"]
 at = "200 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.4
 temp_c = [3, 20]
 rain_mm = [500, 2000]
@@ -472,7 +469,6 @@ id = "giantkin"
 name = "giant-kin stem"
 parents = ["hominid"]
 at = "1.1 Myr"  # PW-978: was 1.5 Myr, 0.5 Myr after the hominid node
-density = 0.1
 temp_c = [-4, 14]
 rain_mm = [300, 1500]
 prefers = ["mountain"]
@@ -599,7 +595,6 @@ lifespan_yr = 80
 name = "goliaths"
 parents = ["giantkin"]
 at = "300 kyr"
-density = 0.15
 explore = 0.4
 insularity = 0.7
 temp_c = [-6, 12]
@@ -613,7 +608,6 @@ lifespan_yr = 500
 name = "firbolgs"
 parents = ["giantkin"]
 at = "200 kyr"
-density = 0.3
 explore = 0.3
 insularity = 0.8
 temp_c = [2, 16]
@@ -629,39 +623,13 @@ name = "orcs"
 body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
 at = "700 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 temp_c = [2, 20]
 rain_mm = [200, 900]
 prefers = ["steppe", "open"]
 traits = ["nomadic", "hardy"]
 
-[[lineage]]  # horse-and-herd raiders of the dry grassland
-id = "steppe_orc"
-density = 0.8  # lane 83: a pastoral nomad group, as the human nomads (0.8): kept apart from its forager people's number
-name = "steppe orcs"
-body = { milk = 0.1 }  # most deep-steppe herders lack lactase (Mongolia): their dairy is soured and fermented (kumis, airag, aaruul), PW-723 / intake 3.6
-origin = "group"
-group_of = "orc"
-at = "9 kyr"
-rain_mm = [150, 650]
-prefers = ["steppe"]
-way = "pastoral_nomad"
 
-[[lineage]]  # farming clans of the cold woods: settled, wary, denser on the land; the same people as the steppe orcs, split by way of life (T0, freely interbreeding, PW-762)
-id = "forest_orc"
-name = "forest orcs"
-origin = "group"
-group_of = "orc"
-at = "9 kyr"
-density = 2
-explore = 0.4
-insularity = 0.8
-temp_c = [-2, 16]
-rain_mm = [450, 1800]
-prefers = ["forest"]
-traits = ["hardy"]
-way = "farmer"
 
 [[lineage]]
 id = "dwarf"
@@ -675,7 +643,6 @@ name = "dwarves"
 body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
-density = 7  # lane 83 (owner D20, PW-1149 B): mountain farmer-miners at 6-8 /km² (the owner's range; middle taken), was 4
 explore = 0.5  # lane 73: was 0.35, which kept them in the hominid cradle (one continent with 9% of their country) for 500 kyr. The
 # mountain peoples that do range (goliaths 0.4, the mountain-and-coast avian stem's aarakocra 0.7) and the people default (0.5) sit
 # here; the homebodies (gnomes 0.3, firbolgs 0.3) are woodland folk. Dwarves follow ore and trade out to far holds
@@ -685,17 +652,8 @@ temp_c = [-2, 18]
 rain_mm = [250, 1500]
 prefers = ["mountain"]
 traits = ["mountain", "subterranean", "miner"]
+way = "farmer"  # PW-1351 (owner 2026-11-02): farm-capable
 
-[[lineage]]  # the dwarves of the foothills: farms and mines in rolling country, more of them, less deep
-id = "hill_dwarf"
-name = "hill dwarves"
-origin = "group"
-group_of = "dwarf"
-at = "8 kyr"
-density = 8  # lane 83 (owner D20): hill farmer-miners, the top of the dwarves' 6-8 (richer land than the peaks), was 6
-elev_m = [100, 1800]
-prefers = ["hills"]
-traits = ["subterranean", "miner"]
 
 [[lineage]]
 id = "archaic_human"
@@ -705,7 +663,6 @@ real = true  # (kept in the real-world mode)
 name = "archaic humans stem"
 parents = ["hominid"]
 at = "400 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 temp_c = [6, 26]
 rain_mm = [350, 2200]
 prefers = ["temperate", "subtropical", "lowland"]
@@ -720,7 +677,6 @@ real = true  # (kept in the real-world mode)
 name = "humans"
 parents = ["archaic_human"]
 at = "200 kyr"
-density = 10
 explore = 0.55
 sea_share = 0.6
 insularity = 0.3
@@ -730,81 +686,10 @@ prefers = ["temperate", "subtropical", "lowland"]
 traits = ["agricultural", "seafaring", "cosmopolitan"]
 way = "farmer"
 
-[[lineage]]  # the first fields: fertile lowland, dense villages
-id = "human_farmer"
-real = true  # (kept in the real-world mode)
-name = "human farmers"
-origin = "group"
-group_of = "human"
-at = "9 kyr"
-density = 12
-sea_share = 0.1
-explore = 0.45
-prefers = ["temperate", "subtropical", "lowland"]
-traits = ["agricultural", "cosmopolitan"]
-way = "farmer"
 
-[[lineage]]  # flocks and herds on the open hills and grassland between the fields and the steppe
-id = "human_herder"
-real = true  # (kept in the real-world mode)
-name = "human herders"
-body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
-origin = "group"
-group_of = "human"
-at = "8 kyr"
-density = 3
-sea_share = 0.05
-rain_mm = [250, 1200]
-prefers = ["open", "hills", "steppe"]
-traits = ["hardy", "cosmopolitan"]
-way = "transhumant"
 
-[[lineage]]  # horse nomads of the steppe and desert edge
-id = "human_nomad"
-real = true  # (kept in the real-world mode)
-name = "human nomads"
-body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
-origin = "group"
-group_of = "human"
-at = "5 kyr"
-density = 0.8
-explore = 0.7
-sea_share = 0.02
-temp_c = [-2, 28]
-rain_mm = [100, 600]
-prefers = ["steppe", "desert", "open"]
-traits = ["nomadic", "hardy"]
-way = "pastoral_nomad"
 
-[[lineage]]  # fishers, traders and voyagers of the coasts and islands
-id = "human_seafarer"
-real = true  # (kept in the real-world mode)
-name = "human seafarers"
-origin = "group"
-group_of = "human"
-at = "6 kyr"
-density = 0.7  # lane 83: fisher-foragers at the top tenth of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies) (0.67 /km²); a judgement that the rich-coast fishers stand there
-explore = 0.8
-sea_share = 0.85
-prefers = ["coast", "island"]
-traits = ["seafaring", "coastal", "cosmopolitan"]
-way = "fisher_forager"
 
-[[lineage]]  # hunters of the tundra and the taiga edge, and of the cold coasts (Earth's Arctic peoples)
-id = "human_arctic"
-real = true  # (kept in the real-world mode)
-name = "human arctic hunters"
-origin = "group"
-group_of = "human"
-at = "30 kyr"
-density = 0.05  # lane 83: arctic and boreal foragers, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies) above 55 degrees: 0.049 /km² (median 0.016)
-explore = 0.7
-sea_share = 0.5  # kayaks and skin boats: the Thule crossed Smith Sound, the Inuit settled Greenland
-temp_c = [-14, 8]
-rain_mm = [60, 1500]
-prefers = ["tundra", "subarctic", "polar", "coast"]
-traits = ["hardy", "cosmopolitan", "hunter"]
-way = "forager"
 
 [[lineage]]
 id = "halfling"
@@ -814,7 +699,6 @@ fertile_yr = [20, 45]
 name = "halflings"
 parents = ["archaic_human"]
 at = "100 kyr"
-density = 12
 explore = 0.35
 sea_share = 0.1
 insularity = 0.4
@@ -822,6 +706,7 @@ temp_c = [9, 22]
 rain_mm = [600, 1600]
 prefers = ["temperate", "lowland"]
 traits = ["agricultural", "cosmopolitan"]
+way = "farmer"  # PW-1351 (owner 2026-11-02): farm-capable
 
 # ---- from outside the world -------------------------------------------------------------
 [[lineage]]
@@ -839,7 +724,6 @@ name = "elves (from the feywild)"
 body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
-density = 4  # lane 83 (owner D20, PW-1149 B): forest gardeners at 3-5 /km² (the owner's range; middle taken), was 1
 explore = 0.8
 sea_share = 0.3
 insularity = 0.7
@@ -854,7 +738,6 @@ id = "drow"
 name = "drow"
 parents = ["elf"]
 at = "12 kyr"
-density = 2
 explore = 0.4
 sea_share = 0.02
 insularity = 0.9
@@ -869,7 +752,6 @@ body = { fire = false }  # deep folk cook without fire: vents, brine, fermentati
 name = "sea elves"
 parents = ["elf"]
 at = "8 kyr"
-density = 1.5
 explore = 0.8
 sea_share = 0.85
 temp_c = [8, 26]
@@ -888,7 +770,6 @@ fertile_yr = [40, 90]
 name = "gnomes (from the feywild)"
 origin = "arrival"
 at = "50 kyr"  # owner 2026-10-27: an earlier arrival, so the fey folk settle hills and woods before the world fills (at 15 kyr they were remnants on 9 of 24 rolls)
-density = 12  # owner 2026-10-27: a normal people, insular, denser and less far-reaching than humans (density 10, explore 0.55, insularity 0.3)
 explore = 0.3
 insularity = 0.85
 sea_share = 0.1
@@ -896,6 +777,7 @@ temp_c = [4, 18]
 rain_mm = [600, 2000]
 prefers = ["forest", "mountain"]
 traits = ["miner"]
+way = "horticulturalist"  # PW-1351 (owner 2026-11-02): farm-capable
 
 [[lineage]]
 id = "triton"
@@ -906,7 +788,6 @@ name = "tritons (from the plane of water)"
 body = { capsaicin = false, diet = "carnivore", raw_meat = true, fire = false }  # sea folk: raw fish; sea folk cook without fire: brine, fermentation, drying
 origin = "arrival"
 at = "6 kyr"
-density = 1
 explore = 0.6
 sea_share = 0.9
 insularity = 0.8
@@ -1021,7 +902,6 @@ name = "aarakocra"
 body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
 parents = ["avian"]
 at = "900 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.7
 prefers = ["mountain", "island"]
 traits = ["flies", "mountain"]
@@ -1033,17 +913,12 @@ lifespan_yr = 60
 name = "kenku"
 parents = ["avian"]
 at = "400 kyr"
-density = 0.3  # lane 83 (owner D20): a forager people at full habitat, the upper quartile of Binford 2001 Table 5.01 (D-PLACE B008, 339 forager societies): 0.35 /km² (tropical 0.41, temperate 0.38; median 0.11)
 explore = 0.5
 temp_c = [12, 26]
 prefers = ["forest"]
 traits = []
 
 # ---- wishes (soft: best of N tries + mild nudges; each reports a score) ---------------------
-[[wish]]  # the orc kin pair: steppe herders and forest farmers stay in the same general region (PW-762)
-a = "steppe_orc"
-b = "forest_orc"
-want = "near"
 
 [[wish]]  # (the usual pairing of hobgoblin and orc warbands; savanna borders steppe, PW-614)
 a = "hobgoblin"
@@ -1399,30 +1274,10 @@ weight = 1.0
 # sparse (density 0.005-0.01 per km²: a band of 25 roams 2,500-5,000 km²), not because their habitat is cut:
 # a separate patch with fewer than meta.viable_pop giants fades, and denser peoples press on them (PW-650, PW-655)
 # ways of life within a people (groups, PW-665) look harder for their own goods
-[[use]]
-by = "steppe_orc"
-good = "grazing"
-pull = 0.75
 
-[[use]]
-by = "human_farmer"
-good = "fertile"
-pull = 0.75
 
-[[use]]
-by = "human_herder"
-good = "grazing"
-pull = 0.7
 
-[[use]]
-by = "human_seafarer"
-good = "harbour"
-pull = 0.75
 
-[[use]]
-by = "hill_dwarf"
-good = "hills"
-pull = 0.6
 
 [[use]]
 by = "fire_giant"

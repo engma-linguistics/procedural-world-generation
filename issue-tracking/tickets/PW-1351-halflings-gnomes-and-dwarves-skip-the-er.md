@@ -11,7 +11,7 @@ impact: med
 found_by: lane130-density-ladder
 blocked_by: []
 relates: [PW-1275, PW-1203, PW-974]
-refs: [planet/lineages/samples/dnd.toml, "planet/lineages/landuse.py::shares", "planet/lineages/history/growth.py::_set_era_density", "planet/lineages/history/growth.py::ERA_DENSITY", "planet/lineages/prey.py::people_fields", planet/lineages/history/model.py, docs/review/peoples/density-ladder/ladder.md]
+refs: [planet/lineages/samples/dnd.toml, "planet/lineages/landuse.py::shares", "planet/lineages/history/growth.py::_set_era_density", "planet/lineages/history/growth.py::ERA_DENSITY", "planet/lineages/prey.py::people_fields", planet/lineages/history/model.py, docs/review/peoples/density-ladder/ladder.md, "planet/lineages/ladder.py::is_hold", "planet/lineages/ladder.py::Ladder.tech (TERRACE_LAG)", "planet/lineages/crop_defs.py::_EXCL", "planet/lineages/spec.py::WAYS", docs/review/peoples/density-ladder/build.md]
 created: 2026-11-02
 updated: 2026-11-02
 ---

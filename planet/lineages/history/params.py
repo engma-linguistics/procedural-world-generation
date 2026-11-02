@@ -131,7 +131,7 @@ FIT_Q, BREADTH_Q, FIT_CLIP = 1.0, 0.5, 3.0  # lane 83 (owner D20, PW-1180 option
 # trade-off: a people that lives everywhere is not the best at any one country, and one adapted to a narrow country is better there (the
 # orangutans keep the jungle). A design judgement, not a measured number: the square root, and the clip at x3 either way so a tiny niche is
 # not invincible; FIT_Q 1 so a people at its margin (fit 0.4 off its preferred country) presses less there than one at home
-PEOPLE_PROD = True  # PW-974: a people's density per cell is its way-of-life number x the land's productivity (lineages.prey.people_fields); off only to measure what it does
+PEOPLE_PROD = True  # PW-974, PW-1275: a people's density per cell comes from the density ladder (lineages.ladder: way of life x tech x land); off only to measure what it does (each line keeps one number)
 COEXIST = True  # lane 73 (coordinator 10-30): mutual invasibility. Where two peoples' competition is under 1 both ways (Lotka-Volterra
 # coexistence), each feels the other at most at its coexistence share (spread.coexist_cap), whichever came first: before, an incumbent
 # at its full habitat left a newcomer K(1 - alpha) of room, under the establishment threshold (EST) and the hold (HOLD_MIN) wherever

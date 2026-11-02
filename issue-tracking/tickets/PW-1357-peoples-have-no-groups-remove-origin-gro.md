@@ -11,7 +11,7 @@ impact: high
 found_by: owner
 blocked_by: []
 relates: [PW-1275, PW-1350]
-refs: [planet/lineages/samples/dnd.toml, "planet/lineages/history/growth.py::ERA_DENSITY", docs/review/peoples/density-ladder/ladder.md, docs/review/cultures-proposal/owner-notes-r1.md, docs/review/cultures-proposal/owner-notes-r2.md]
+refs: [planet/lineages/samples/dnd.toml, "planet/lineages/history/growth.py::ERA_DENSITY", docs/review/peoples/density-ladder/ladder.md, docs/review/cultures-proposal/owner-notes-r1.md, docs/review/cultures-proposal/owner-notes-r2.md, planet/lineages/ladder.py, "planet/lineages/spec.py (group parse)", tools/peoples_robust/trees/menagerie.toml, tools/peoples_robust/trees/mountain_stem.toml, planet/lineages/samples/seven_meals.toml, docs/review/peoples/density-ladder/build.md, "issue-tracking/inbox/draft-city-minorities-groups.md (lane 137)"]
 created: 2026-11-02
 updated: 2026-11-02
 ---

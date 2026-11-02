@@ -613,14 +613,17 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     from planet.lineages import crossing as C
     raw = {"meta": {"name": "d", "seed": 1, "viable_pop": 500},
            "lineage": [{"id": "g", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000],
-                        "density": 1e-5, "traits": ["insular"]},
+                        "kind": 0.8, "traits": ["insular"]},
                        {"id": "g2", "parents": ["g"], "at": "10 kyr"},
                        {"id": "f", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000],
-                        "traits": ["agricultural", "seafaring"], "band_km2": 2.5}]}
+                        "traits": ["agricultural", "seafaring"]}]}
     t = SP.parse(raw)
-    assert t.lines["g2"].demo("density") == 1e-5 and t.lines["g"].demo("insularity") == SP.DEMOGRAPHY["insular"]["insularity"]
-    assert t.lines["f"].demo("density") == 10.0 and t.lines["f"].demo("sea_share") == 0.6
-    assert SP.parse(SP.to_raw(t)).lines["g2"].density == 1e-5
+    assert t.lines["g2"].demo("kind") == 0.8 and t.lines["g"].demo("insularity") == SP.DEMOGRAPHY["insular"]["insularity"]
+    assert t.lines["f"].demo("kind") == 1.0 and t.lines["f"].demo("sea_share") == 0.6
+    assert SP.parse(SP.to_raw(t)).lines["g2"].kind == 0.8
+    for bad in ({"density": 2}, {"band_km2": 10}, {"kind": 3}):  # (PW-1275: density comes from the ladder; kind within 0.5-2)
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", **bad}]})
     assert C.hop_mult(t.lines["f"]) > 2 * C.hop_mult(t.lines["g"])
     with pytest.raises(ValueError):
         SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "sea_share": 2}]})
@@ -630,6 +633,7 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     h.faded = {}
     env = ps.fields(0.0, variability=False)
     k = h.idx["g"]
+    h.dens[k] = 1e-5  # (PW-1275: no world, no ladder: the number the test needs)
     big = env["land"] & (np.abs(h.grid.lon) < 50)
     small = env["land"] & (h.grid.lon < -100) & (h.grid.lon > -140)  # the fake island
     h.p[k][big | small] = 0.5
@@ -648,7 +652,7 @@ def test_groups_within_a_people(faketz):
     out (demography too), never ends its people, appears where its own niche beats its people's, mixes with it
     as kin (no closed-country exclusion), keeps a range of its own, and rolls up into its people in the summaries."""
     raw = {"meta": {"name": "g", "seed": 3},
-           "lineage": [{"id": "orc", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000], "density": 1.5},
+           "lineage": [{"id": "orc", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000]},
                        {"id": "warm_orc", "origin": "group", "group_of": "orc", "at": "10 kyr", "temp_c": [16, 32]},
                        {"id": "elf", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000]},
                        {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["orc", "elf"], "at": "5 kyr"}],
@@ -656,7 +660,7 @@ def test_groups_within_a_people(faketz):
     t = SP.parse(raw)
     g = t.lines["warm_orc"]
     assert g.origin == "group" and g.group_of == "orc" and t.groups_of("orc") == ["warm_orc"] and t.people_of("warm_orc") == "orc"
-    assert g.demo("density") == 1.5 and g.rain_mm == (1.0, 9000.0) and t.lines["orc"].children == []
+    assert g.demo("kind") == 1.0 and g.rain_mm == (1.0, 9000.0) and t.lines["orc"].children == []
     assert {l.id for l in t.leaves()} >= {"orc", "warm_orc"}  # (a group never ends its people)
     assert SP.parse(SP.to_raw(t)).lines["warm_orc"].group_of == "orc"
     assert SP.parse({**raw, "lineage": [raw["lineage"][0], {k: v for k, v in raw["lineage"][1].items() if k != "at"}], "wish": []}
@@ -707,8 +711,8 @@ def test_an_among_wish_lets_a_people_share_a_friendly_peoples_country_and_a_sque
     from planet.lineages import compose as CP
     from planet.lineages.history import pressure as PR
     base = {"meta": {"seed": 1}, "lineage": [
-        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 5},
-        {"id": "bug", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 1},
+        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "bug", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "elf", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}]}
     near = {**base, "wish": [{"a": "bug", "b": "gob", "want": "near"}]}
     among = {**base, "wish": [{"a": "bug", "b": "gob", "want": "among"}]}
@@ -742,8 +746,8 @@ def test_a_city_minority_lives_in_its_neighbours_dense_towns_and_counts_in_its_p
     people's numbers (people_rollup), not in its range or the map's peoples."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1}, "lineage": [
-        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 30},
-        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 2},
+        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "gob", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "town_gob", "origin": "group", "group_of": "gob", "at": "5 kyr", "cities": True, "share": 0.05}]}
     t = SP.parse(raw)
     c = t.lines["town_gob"]
@@ -755,6 +759,7 @@ def test_a_city_minority_lives_in_its_neighbours_dense_towns_and_counts_in_its_p
     with pytest.raises(ValueError):
         SP.parse({**raw, "lineage": [*raw["lineage"][:2], {**raw["lineage"][2], "hosts": ["gob"]}]})
     h = H.History(t, ps, 1)
+    h.dens[h.idx["human"]], h.dens[h.idx["gob"]] = 30.0, 2.0  # (PW-1275: no world, no ladder: the numbers the test needs)
     g = h.grid
     env = ps.fields(0.0, variability=False)
     land = env["land"]
@@ -796,10 +801,9 @@ def test_peoples_change_the_land_from_their_ways_of_life():
     """PW-662: shares come from the [[use]] table, not names; fields, pasture, fire and woods follow the people."""
     from planet.lineages import landuse as LU
     t = SP.load(LR.tree_path("dnd"))
-    s = {k: LU.shares(t, t.lines[k]) for k in ("human_farmer", "human_herder", "steppe_orc", "dwarf")}
-    assert s["human_farmer"]["farm"] == 1 and s["steppe_orc"]["herd"] == 1
-    assert s["human_herder"]["herd"] > 0.8 and 0 < s["human_herder"]["farm"] < 0.2  # (PW-723: transhumant herders keep some fields; was herd == 1)
-    assert sum(s["dwarf"].values()) == 0  # (miners eat nothing the land grows here: no clearing)
+    s = {k: LU.shares(t, t.lines[k]) for k in ("human", "hobgoblin", "hill_giant", "dwarf")}
+    assert s["human"]["farm"] == 1 and s["hill_giant"]["herd"] == 1 and s["hobgoblin"]["farm"] == s["hobgoblin"]["herd"] == 0.5
+    assert s["dwarf"]["farm"] == 1  # (PW-1351: dwarves farm their valleys; the density ladder decides per cell, PW-1275)
     n = 4
     z, one = np.zeros(n), np.ones(n)
     fcls = np.array([4, 4, 1, 0])
@@ -823,10 +827,10 @@ def test_body_traits_default_inherit_and_round_trip():
     # real-world analogues: cats taste no sweet, birds feel no capsaicin, herding peoples keep lactase
     assert not b("tabaxi")["sweet"] and not b("leonin")["sweet"] and b("leonin")["diet"] == "obligate_carnivore"
     assert not b("aarakocra")["capsaicin"] and not b("kenku")["sweet"] and b("human")["capsaicin"] and b("human")["sweet"]
-    assert b("human_herder")["milk"] and b("steppe_orc")["milk"] and not b("human")["milk"] and not b("human_farmer")["milk"]
+    assert not b("human")["milk"]  # (the herders' lactase went with the human herder groups, PW-1357: inbox draft)
     assert set(b("tabaxi")["toxic"]) == {"alliums", "theobromine"} and b("human")["toxic"] == []
     assert dnd.lines["tabaxi"].body_given == {}  # (inherited from the feline stem, not given)
-    assert SP.parse(SP.to_raw(dnd)).lines["steppe_orc"].body == b("steppe_orc")
+    assert SP.parse(SP.to_raw(dnd)).lines["tabaxi"].body == b("tabaxi")
     assert SP.body_notes(SP.BODY_DEFAULT) == [] and "cannot taste sweet" in SP.body_notes(b("leonin"))
     base = {"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"toxic": ["alliums"], "smell": "keen"}},
                         {"id": "y", "parents": ["x"], "at": "0.5 kyr", "body": {"smell": "low"}}]}
@@ -839,10 +843,11 @@ def test_body_traits_default_inherit_and_round_trip():
 
 # ---- composition of peoples per cell (PW-689) and body shares (PW-701) ------------------------------
 def test_body_flags_can_be_a_share_of_a_people():
-    dnd = SP.load(LR.SAMPLES / "dnd.toml")
-    assert 0 < dnd.lines["human_herder"].body["milk"] < 1 and dnd.share_traits() == ["milk"]
-    assert "60% digest milk as adults" in SP.body_notes(dnd.lines["human_herder"].body)
-    assert SP.parse(SP.to_raw(dnd)).lines["human_herder"].body["milk"] == dnd.lines["human_herder"].body["milk"]
+    dnd = SP.load(LR.SAMPLES / "seven_meals.toml")  # (the dnd preset's herder groups are gone, PW-1357)
+    herd = next(l for l in dnd.lines.values() if isinstance(l.body.get("milk"), float) and 0 < l.body["milk"] < 1)
+    assert dnd.share_traits() == ["milk"]
+    assert f"{round(100 * herd.body['milk'])}% digest milk as adults" in SP.body_notes(herd.body)
+    assert SP.parse(SP.to_raw(dnd)).lines[herd.id].body["milk"] == herd.body["milk"]
     for bad in (1.5, -0.1, "some"):
         with pytest.raises(ValueError):
             SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"milk": bad}}]})
@@ -1078,8 +1083,7 @@ def test_real_mode_keeps_only_the_marked_lines_and_no_fantasy_goods():
 
 def test_the_dnd_preset_has_a_human_real_mode():
     real = SP.load(LR.SAMPLES / "dnd.toml", "real")
-    assert real.mode == "real" and set(real.lines) == {"archaic_human", "human", "human_farmer", "human_herder", "human_nomad",
-                                                       "human_seafarer", "human_arctic"}
+    assert real.mode == "real" and set(real.lines) == {"archaic_human", "human"}  # (no groups, PW-1357)
     assert SP.load(LR.SAMPLES / "dnd.toml").mode == "fantasy"
 
 
@@ -1384,12 +1388,11 @@ def test_ways_of_life_set_the_uses_a_people_reads():
     sets the shares that decide who tames, cultivates and herds."""
     from planet.lineages import landuse as LU
     t = SP.load(LR.tree_path("dnd"))
-    assert t.lines["hill_giant"].way == "pastoral_nomad" and t.lines["steppe_orc"].way == "pastoral_nomad"
-    assert t.lines["forest_orc"].way == "farmer" and t.lines["human_seafarer"].way == "fisher_forager"
+    assert t.lines["hill_giant"].way == "pastoral_nomad" and t.lines["halfling"].way == "farmer"
+    assert t.lines["archaic_human"].way == "forager"
     assert LU.shares(t, t.lines["hill_giant"])["herd"] == 1
-    assert LU.shares(t, t.lines["human_seafarer"])["forage"] == 1
+    assert LU.shares(t, t.lines["archaic_human"])["forage"] == 1
     assert dict(t.uses_of(t.lines["human"])).get("harbour", 0) > 0  # (seafaring's harbour row stays under the farmer way)
-    assert t.lines["steppe_orc"].body["milk"] < 0.6 <= t.lines["human_herder"].body["milk"]  # (soured dairy vs fresh)
     raw = SP.to_raw(t)
     assert {r["id"]: r.get("way") for r in raw["lineage"]}["hill_giant"] == "pastoral_nomad"
     bad = [{**r, "way": "bard"} if r["id"] == "human" else r for r in raw["lineage"]]
@@ -1858,10 +1861,11 @@ def test_presets_orc_kin_pair_farm_and_herd_and_aarakocra_taste_like_humans_but_
     """PW-762 / PW-764 / PW-765: the orc groups are one people split by way of life and wished near; aarakocra taste sweet and
     roughly like humans but feel no capsaicin; the regional foods sit beyond bit 31 (uint64 crop layers)."""
     from planet.lineages import crop_defs as CD
-    for name, herd, farm in (("dnd", "steppe_orc", "forest_orc"), ("seven_meals", "arha", "anja")):
+    for name, herd, farm in (("dnd", None, None), ("seven_meals", "arha", "anja")):  # (dnd: no groups, PW-1357; the orc pair is a note)
         t = SP.load(LR.tree_path(name))
-        assert t.lines[herd].way == "pastoral_nomad" and t.lines[farm].way == "farmer" and t.tier_of(herd, farm) == 0
-        assert any({w.a, w.b} == {herd, farm} and w.want == "near" for w in t.wishes)
+        if herd:
+            assert t.lines[herd].way == "pastoral_nomad" and t.lines[farm].way == "farmer" and t.tier_of(herd, farm) == 0
+            assert any({w.a, w.b} == {herd, farm} and w.want == "near" for w in t.wishes)
         b = t.lines["aarakocra"].body
         assert b["sweet"] is True and b["capsaicin"] is False and b["bitter"] == "normal" and b["smell"] == "normal"
     assert max(a.bit for a in CD.TABLE) >= 32 and len({a.bit for a in CD.TABLE}) == len(CD.TABLE)
@@ -2080,6 +2084,7 @@ def test_a_contact_hybrid_appears_soon_after_both_parents_hold_one_continent(fak
         {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
     h = H.History(SP.parse(raw), ps, 3)
+    h.dens[:] = 2.0  # (PW-1275: no world, no ladder: the number the test needs)
     seen = {}
     orig = H.History._frame
 
@@ -2269,7 +2274,7 @@ def test_an_arrival_near_its_partner_takes_the_freest_country_when_none_is_free(
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 3}, "lineage": [
         {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "crowd", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 1},
+        {"id": "crowd", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "half", "origin": "hybrid", "exempt": True, "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
     tree = SP.parse(raw)
@@ -2315,10 +2320,10 @@ def test_megafauna_press_the_peoples_hardly_at_all_and_the_kinds_inherit_it(fake
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     base = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.006, "persists": True},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "persists": True},
         {"id": "red", "origin": "group", "group_of": "wyrm", "at": "20 kyr"},
-        {"id": "kin", "parents": ["wyrm"], "at": "1 Myr", "density": 2},
-        {"id": "folk", "parents": ["stem"], "at": "2 Myr", "density": 2}]}
+        {"id": "kin", "parents": ["wyrm"], "at": "1 Myr"},
+        {"id": "folk", "parents": ["stem"], "at": "2 Myr"}]}
     plain = H.History(SP.parse(base), ps, 1)
     raw = {**base, "lineage": [dict(r, **({"megafauna": True} if r["id"] == "wyrm" else {})) for r in base["lineage"]]}
     t = SP.parse(raw)
@@ -2340,11 +2345,11 @@ def test_megafauna_are_counted_long_lived_and_coexist_by_kind(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1, "viable_pop": 500, "giant_km2": 5000, "dragon_generation": "line"}, "lineage": [  # (giants as dense as dragons here: their overlap, not their numbers; the lines' own generation, PW-959)
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.0002, "persists": True, "megafauna": True,
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "persists": True, "megafauna": True,
          "generation_yr": 200, "group_size": [1, 3], "traits": ["flies"]},
         {"id": "gold", "parents": ["wyrm"], "at": "1 Myr", "megafauna": True, "rivalry": 0.5},
-        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.0002, "megafauna": True, "generation_yr": 65, "group_size": [5, 20]},
-        {"id": "folk", "parents": ["stem"], "at": "2 Myr", "density": 2}]}
+        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "generation_yr": 65, "group_size": [5, 20]},
+        {"id": "folk", "parents": ["stem"], "at": "2 Myr"}]}
     t = SP.parse(raw)
     assert t.lines["gold"].group_size == (1.0, 3.0) and t.lines["gold"].generation_yr == 200 and t.lines["gold"].rivalry == 0.5
     t2 = SP.parse(SP.to_raw(t))
@@ -2428,7 +2433,7 @@ def test_dragon_km2_sets_every_dragon_density(faketz):
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]},
-        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "density": 0.005, "megafauna": True}]}
+        {"id": "giant", "parents": ["stem"], "at": "2 Myr", "megafauna": True}]}
     t = SP.parse(raw)
     assert t.dragon_km2 == 5000 and SP.parse(SP.to_raw(t)).dragon_km2 == 5000
     h = H.History(t, ps, 1)
@@ -2448,7 +2453,7 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1, "dragon_ages": "base"}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "folk", "parents": ["stem"], "at": "1 Myr", "density": 1.0},
+        {"id": "folk", "parents": ["stem"], "at": "1 Myr"},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "mass_kg": 3200, "generation_yr": 200, "traits": ["flies"]},
         {"id": "hill", "parents": ["stem"], "at": "2 Myr", "megafauna": True, "mass_kg": 2200},
         {"id": "storm", "parents": ["hill"], "at": "1 Myr", "megafauna": True, "mass_kg": 7300}]}
@@ -2460,6 +2465,7 @@ def test_megafauna_natural_density_pressed_by_peoples(faketz):
     assert 60 <= 1 / h.dens_nat[w] <= 70 and 130 <= 1 / h.dens_nat[hi] <= 150 and 330 <= 1 / h.dens_nat[st] <= 360
     assert h.dens_nat[f] == h.dens[f]
     # pressure: none on empty land, near full where a people holds it, and the density between natural and pressed by it
+    h.dens[f] = h.dens_nat[f] = 1.0  # (PW-1275: no world, no ladder: the number the test needs)
     P = np.zeros((len(h.lines), h.grid.n))
     P[f, : h.grid.n // 2] = 0.5
     s = MG.pressure(h, P)
@@ -2526,7 +2532,7 @@ def test_megafauna_tolerated_tier_and_ecological_release(faketz):
            "prefers": ["coast"]}
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        dict(row, tolerates=["inland"]), dict(row, id="other", tolerates=[]), {"id": "folk", "parents": ["stem"], "at": "1 Myr", "density": 1.0}]}
+        dict(row, tolerates=["inland"]), dict(row, id="other", tolerates=[]), {"id": "folk", "parents": ["stem"], "at": "1 Myr"}]}
     t = SP.parse(raw)
     assert t.lines["wyrm"].tolerates == ["inland"] and SP.parse(SP.to_raw(t)).lines["wyrm"].tolerates == ["inland"]
     with pytest.raises(ValueError):
@@ -2680,7 +2686,7 @@ def test_food_budget_peoples_then_guild_then_dragons(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "hunt", "parents": ["stem"], "at": "5 Myr", "way": "forager", "traits": ["hunter"], "density": 0.2, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", "parents": ["stem"], "at": "5 Myr", "way": "forager", "traits": ["hunter"], "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
     t = SP.parse(raw)
@@ -2758,12 +2764,13 @@ def test_food_chain_revisions_lane90(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "density": 5.0, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", "parents": ["stem"], "at": "5 Myr", "way": "farmer", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
         {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "megafauna": True, "generation_yr": 200, "traits": ["flies"]}]}
     g1 = (PR.KJ_PER_G_LIVE / 10.0 ** PR.PREY_LOG_A) ** (1 / PR.PREY_EXP) / PR.KJ_PER_G_C
     ps.graze_npp = 3.0 ** (1 / PR.PREY_EXP) * g1 / PR.above(ps.rain0)
     ps.forage = np.full(ps.grid.n, 2.0)
     h = H.History(SP.parse(raw), ps, 1)
+    h.dens[[i for i, l in enumerate(h.lines) if not l.megafauna]] = 5.0 if 'farm' in h.idx else 2.0  # (PW-1275: no world, no ladder: the number the test needs)
     del ps.graze_npp, ps.forage
     n, fa, w = h.grid.n, h.idx["farm"], h.idx["wyrm"]
     land = np.ones(n, bool)
@@ -2793,43 +2800,38 @@ def test_food_chain_revisions_lane90(faketz):
     assert MG.linked_mvp(h, h.lines[w]) == max(h.line_mvp(h.lines[w]), MG.LINKED_MVP) >= MG.LINKED_MVP
 
 
-def test_people_density_reads_productivity(faketz):
-    """PW-974, PW-1020 B: a people's density per cell is its number x f, f absolute and mildly concave ((the foraging layer over
-    FORAGE_REF)^PEOPLE_EXP for foragers, the grazing NPP over GRAZE_REF for herders, the total NPP over NPP_REF for farmers): a poorer
-    world holds fewer, poor land fewer but not none; with no world, a number; in the deep epoch, a number."""
-    from planet.lineages import landuse as LU
-    from planet.lineages import prey as PR
+def test_people_density_reads_the_ladder(faketz):
+    """PW-1275: a people's density per cell is its kind factor x the ladder's rung for the way it lives there: foragers on the NPP to
+    the 1.3, farmers once they know cultivation on farmable land (the land decides, Q2 A), a poorer world fewer; no world, a number."""
+    from planet.lineages import ladder as LA
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
     raw = {"meta": {"seed": 1}, "lineage": [
         {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "hunt", **base, "way": "forager", "traits": ["hunter"]}, {"id": "herd", **base, "way": "pastoral_nomad"},
-        {"id": "farm", **base, "way": "farmer"}]}
+        {"id": "hunt", **base, "way": "forager", "traits": ["hunter"]}, {"id": "farm", **base, "way": "farmer", "kind": 1.2},
+        {"id": "den", **base, "traits": ["denning"]}]}
     h0 = H.History(SP.parse(raw), ps, 1)
-    assert h0._dmap is None and np.ndim(h0.dens_at(h0.idx["hunt"])) == 0  # (no world: the number)
+    assert h0._dmap is None and np.ndim(h0.dens_at(h0.idx["hunt"])) == 0 and h0.dens[h0.idx["hunt"]] == pytest.approx(LA.FORAGER)
+    n = ps.grid.n
     rng = np.random.default_rng(3)
-    ps.graze_npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.GRAZE_REF
-    ps.forage = rng.uniform(0.1, 1.9, ps.grid.n) * PR.FORAGE_REF
-    ps.npp = rng.uniform(0.1, 2.0, ps.grid.n) * PR.NPP_REF
-    fo, npp = ps.forage.copy(), ps.npp.copy()
-    h = H.History(SP.parse(raw), ps, 1)
-    ps.graze_npp, ps.forage, ps.npp = ps.graze_npp * 0.5, ps.forage * 0.5, ps.npp * 0.5  # (a world half as productive)
-    hp = H.History(SP.parse(raw), ps, 1)
-    del ps.npp
-    hn = H.History(SP.parse(raw), ps, 1)  # (no NPP layer: the farmers keep their number)
-    del ps.graze_npp, ps.forage
-    hu, he, fa = (h.idx[x] for x in ("hunt", "herd", "farm"))
-    ff = h.dens_at(hu) / h.dens[hu]
-    sh = LU.shares(h.tree, h.lines[he])
-    x = 0.5 ** PR.PEOPLE_EXP  # (absolute: half the food, fewer people; concave: more than half of them)
-    assert np.allclose(hp.dens_at(hu), x * h.dens_at(hu)) and np.allclose(hp.dens_at(he), x * h.dens_at(he)) and np.allclose(hp.dens_at(fa), x * h.dens_at(fa))
-    assert 0.5 < x < 1
-    assert abs(np.corrcoef(h.dens_at(hu), h.dens_at(he))[0, 1]) < 0.5 and ff.std() > 0 and h.dens_at(he).std() > 0
-    assert np.allclose(ff, (fo / PR.FORAGE_REF) ** PR.PEOPLE_EXP) and sh["herd"] > 0  # (a forager: the foraging layer over its reference)
-    assert np.allclose(h.dens_at(fa), h.dens[fa] * (npp / PR.NPP_REF) ** PR.PEOPLE_EXP)  # (farmers: the total NPP, PW-1020 B)
-    assert np.allclose(hn.dens_at(fa), hn.dens[fa])
-    h._deep_now = True
-    assert np.ndim(h.dens_at(hu)) == 0  # (the deep epoch's plates lay elsewhere: the number)
+    ps.graze_npp = rng.uniform(0.1, 2.0, n) * LA.GRAZE_REF
+    ps.npp = rng.uniform(0.1, 2.0, n) * LA.NPP_REF
+    goods = {"fertile": rng.uniform(0, 1, n), "grazing": rng.uniform(0, 1, n), "fish": np.zeros(n)}
+    h = H.History(SP.parse(raw), ps, 1, goods=goods)
+    lad = h.ladder
+    assert lad.ok and lad.den[h.idx["den"]] and not lad.den[h.idx["hunt"]]
+    hu, fa = h.idx["hunt"], h.idx["farm"]
+    d, sf, sh, rung, _ = lad.line(hu, (False, False, -1.0, -1.0), None)
+    assert np.allclose(d, LA.FORAGER * (ps.npp / LA.NPP_REF) ** LA.FORAGER_POW) and not sf.any() and (rung == 0).all()
+    d2, sf2, _, rung2, _ = lad.line(fa, (True, False, -1.0, -1.0), None)  # (gardens where the land is farmable, foraging elsewhere)
+    farmable = np.clip(goods["fertile"] / LA.FARM_FULL, 0, 1)
+    assert np.allclose(sf2, farmable) and np.allclose(d2, farmable * LA.GARDEN * ps.npp / LA.NPP_REF + (1 - farmable) * d)
+    d3, *_ = lad.line(fa, (True, False, 2.0, -1.0), None)  # (the medieval plough, never above its top)
+    assert d3.max() <= LA.PLOUGH_TOP + 1e-9 and (d3 >= d2 - 1e-9).all()
+    dd, sfd, *_ = lad.line(h.idx["den"], (True, False, -1.0, -1.0), np.full(n, LA.RAID_HALF))  # (dens: farm rarely, raid to the cap)
+    assert np.allclose(sfd, LA.DEN_FARM_W * farmable)
+    lad.refresh(1.0, False, force=True)
+    assert np.allclose(h._dmap[fa], 1.2 * lad.line(fa, lad.state[fa], None)[0])  # (x the kind factor)
 
 
 def test_nomads_and_settled_compete_less(faketz):
@@ -2956,6 +2958,7 @@ def test_an_arrival_in_force_founds_its_people_at_several_portals_in_waves(faket
     raw = _mode_raw(portal_mode="random", portals=3, wave_kyr=1.0)
     {x["id"]: x for x in raw["lineage"]}["elf"].update(founders=2e6, waves=2)
     h = H.History(SP.parse(raw), ps, 1)
+    h.dens[[i for i, l in enumerate(h.lines) if not l.megafauna]] = 5.0 if 'farm' in h.idx else 2.0  # (PW-1275: no world, no ladder: the number the test needs)
     h.run()
     log = h.wave_log["elf"]
     assert len(log) == 2 and log[0]["portals"] >= 2 and log[0]["people"] == 1e6
@@ -3004,7 +3007,7 @@ def test_share_bands_nudge_a_peoples_own_density_and_never_clamp(faketz):
     tree = SP.parse(raw)
     h, res, pres = H.simulate(tree, ps, tries=1)
     b = pres["bands"]["ork"]
-    assert b["knob"] == "density" and b["x"] > 1  # (nudged up its own density)
+    assert b["knob"] == "kind" and b["x"] > 1  # (nudged up its own kind factor, PW-1275)
     assert len(pres["band_rounds"]) >= 2
     assert b["met"] or b["why"]
     assert b["share_pct"] == pytest.approx(B.shares(h, pres)["ork"], abs=1e-3)  # (the outcome as run, not set)
@@ -3057,29 +3060,6 @@ def test_a_denning_people_holds_mostly_broken_country(faketz, monkeypatch):
     assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
     monkeypatch.setattr(PM, "DEN_THIN", True)
     assert np.allclose(H.capacity(den, env, tags), Kp)
-
-
-def test_a_farming_people_lives_at_forager_density_until_it_farms(faketz):
-    """Lane 83 (PW-1203 A): a farming people's density follows its era: a forager's (at most 0.35 /km2, Binford) before it has crops, a
-    gardener's (at most 5) with a crop and no plough, its own number as farmers; foragers keep theirs; no crops modelled: no change."""
-    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    raw = {"meta": {"seed": 3}, "lineage": [
-        {"id": "farmer", "origin": "root", "at": "30 kyr", "way": "farmer", "density": 10, "temp_c": [-20, 40], "rain_mm": [1, 9000]},
-        {"id": "hunter", "origin": "root", "at": "30 kyr", "way": "forager", "density": 0.3, "temp_c": [-20, 40], "rain_mm": [1, 9000]}]}
-    h = H.History(SP.parse(raw), ps, 1)
-    f, u = h.idx["farmer"], h.idx["hunter"]
-    h.crops = None
-    h._growth_setup()
-    assert h.dens[f] == 10 and h.dens[u] == pytest.approx(0.3)  # (no crops in the history: the tree's numbers)
-    h.crops = object()
-    h._growth_setup()
-    assert h.dens[f] == pytest.approx(0.35) and h.dens[u] == pytest.approx(0.3)
-    h._era[f] = "horticulturalist"
-    h._set_era_density(f)
-    assert h.dens[f] == pytest.approx(5.0)
-    h._era[f] = "agrarian"
-    h._set_era_density(f)
-    assert h.dens[f] == 10
 
 
 def test_a_split_founds_by_its_parent_s_last_land(faketz):
