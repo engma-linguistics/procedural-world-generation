@@ -146,10 +146,10 @@ def _inherit(pmeta: dict, pres: dict, meta: dict, river: np.ndarray) -> list[dic
     this zoom's pixels. A placer moves to the nearest river pixel within a few parent pixels (the fine zoom's
     river runs a little differently), a kimberlite field's pipes follow."""
     from ..geo import xyz
-    from .regional import Frame
+    from .regional import frame_of
     nx, ny, res = int(meta["nx"]), int(meta["ny"]), float(meta["res_km"])
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
-    pfr = Frame(pmeta["center"]["lat"], pmeta["center"]["lon"])
+    fr = frame_of(meta["center"])
+    pfr = frame_of(pmeta["center"])
     pnx, pny, pres_km = int(pmeta["nx"]), int(pmeta["ny"]), float(pmeta["res_km"])
 
     def to_px(rows_cols):
@@ -185,11 +185,11 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
     meta, its `resources`) for a fine zoom (PW-618): it keeps its parent's deposits that lie inside it (_inherit)
     and re-sites only what depends on its own ground (the coal outcrop belts)."""
     from . import kernels as ZK
-    from .regional import Frame
+    from .regional import frame_of
     t0 = time.time()
     g, L = world["grid"], world["layers"]
     nx, ny, res = int(meta["nx"]), int(meta["ny"]), float(meta["res_km"])
-    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = frame_of(meta["center"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res
     ys = (ny / 2 - np.arange(ny) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)

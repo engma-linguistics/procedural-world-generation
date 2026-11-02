@@ -47,7 +47,7 @@ class Z:
         self.meta = meta
         self.res, self.nx, self.ny = meta["res_km"], meta["nx"], meta["ny"]
         self.c = meta["center"]
-        self.frame = RG.Frame(self.c["lat"], self.c["lon"])
+        self.frame = RG.frame_of(self.c)  # (a turned section keeps its orientation in center.up, PW-1338)
         self.h = S.decode(np.asarray(raw["elevation"]), meta["layers"]["elevation"]).astype(np.float32)
         self.water = np.asarray(raw["water"])
         self.q = S.decode(np.asarray(raw["discharge"]), meta["layers"]["discharge"]).astype(np.float32)
@@ -245,19 +245,26 @@ def main():
     a, b = ZA.centre_vec(), ZB.centre_vec()
     gap = float(np.arccos(np.clip(a @ b, -1, 1)) * R_KM)
     side = ZA.meta["size_km"]
-    overlap = side - gap
-    edge = overlap / 2 - 5.0
     half = min(side, ZB.meta["size_km"]) / 2 + 100.0
     dstep = 1.0
-    pts, along, dd = seam_points(a, b, half, args.step, args.strip_km or (overlap / 2 + 40.0), dstep)
+    # the band both squares cover, found from the data (turned or unequal sections: not side - gap, PW-1338):
+    # across the bisector, the d range where at least half as much of the line as at best has both zooms
+    probe, _, dp = seam_points(a, b, half, 10.0, max(side - gap, 0.0) / 2 + 400.0, dstep)
+    pf = probe.reshape(-1, 3)
+    both = np.mean((ZA.sample(pf)["ok"] & ZB.sample(pf)["ok"]).reshape(probe.shape[:2]), axis=0)
+    cov = np.flatnonzero(both >= 0.5 * both.max())
+    lo_d, hi_d = float(dp[cov[0]]), float(dp[cov[-1]])
+    overlap, mid = hi_d - lo_d, 0.5 * (lo_d + hi_d)
+    edge = overlap / 2 - 5.0
+    pts, along, dd = seam_points(a, b, half, args.step, args.strip_km or (max(abs(lo_d), abs(hi_d)) + 40.0), dstep)
     na, nd = pts.shape[:2]
     flat = pts.reshape(-1, 3)
     SA, SB = ZA.sample(flat), ZB.sample(flat)
     SA = {k: v.reshape(na, nd) for k, v in SA.items()}
     SB = {k: v.reshape(na, nd) for k, v in SB.items()}
     res = {"a": ZA.id, "b": ZB.id, "centres_km_apart": round(gap, 1), "overlap_km": round(overlap, 1),
-           "q_m3s": args.q, "stations": {}}
-    for name, d in (("B_edge", -edge), ("middle", 0.0), ("A_edge", edge)):
+           "overlap_mid_km": round(mid, 1), "q_m3s": args.q, "stations": {}}
+    for name, d in (("B_edge", mid - edge), ("middle", mid), ("A_edge", mid + edge)):
         i = int(np.argmin(abs(dd - d)))
         A = {k: v[:, i] for k, v in SA.items()}
         B = {k: v[:, i] for k, v in SB.items()}

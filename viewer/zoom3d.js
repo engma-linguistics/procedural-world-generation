@@ -782,7 +782,7 @@ export class Zoom3D {
     this.dirty = true;
   }
   // a scene point's lat/lon (the first zoom's projection)
-  latlonAt(X, Z) { const c = this.tiles[0].center; return latlonOf(aeFrame(c.lat, c.lon).toSphere(X, -Z)); }
+  latlonAt(X, Z) { const c = this.tiles[0].center; return latlonOf(aeFrame(c.lat, c.lon, c.up).toSphere(X, -Z)); }
 
   // fly along river k (this.rivers, biggest first) from its head; o.at: start that share of the way down,
   // o.pause: hold there (screenshots)

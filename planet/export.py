@@ -1012,7 +1012,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland", *HU.CLASS_MAPS, "spring",
            "fire_months", "green_months", "hazards", "mud_months")
     hu, hu_tab = HU.analyse_zoom(L, nat, HU.falls_pixels(meta.get("stats", {}).get("falls", []),
-                                                        Z.Frame(meta["center"]["lat"], meta["center"]["lon"]),
+                                                        Z.frame_of(meta["center"]),
                                                         meta["nx"], meta["ny"], nat))
     for k, v in hu.items():  # (a stored layer wins; older zooms have none)
         L.setdefault(k, v)
@@ -1023,7 +1023,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     log(f"  native grid, {nx}x{ny} px at {r_km:g} km" + (f" (block {f}x{f})" if f > 1 else ""))
     el = A["elevation"].astype(float)
     wr = Writer(out, tile, overlap, raw)
-    fr = Z.Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = Z.frame_of(meta["center"])
     mv = None
     if mv_args:  # a projected map: resample the native grid onto the map's pixels
         out_km = float(res or nat)
@@ -1063,7 +1063,8 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
 
     def local(la, lo_):
         return to_xy(la, lo_)
-    local.crs = f"azimuthal_equidistant(lat0={meta['center']['lat']},lon0={meta['center']['lon']},R_km={R_KM})"
+    local.crs = (f"azimuthal_equidistant(lat0={meta['center']['lat']},lon0={meta['center']['lon']},R_km={R_KM}"
+                 + (f",up={meta['center']['up']})" if meta['center'].get('up') else ")"))
     feats = Features(local=local, elevation=ground)
 
     def pix_ll(idx, w=nx, h=ny, step=r_km):

@@ -30,7 +30,7 @@ def measure(zid: str) -> dict:
     pa = ZF._Parent(pm, {k: np.asarray(v) for k, v in pl.items()})
     res, n = meta["res_km"], meta["nx"]
     sea = np.asarray(lay["water"]).reshape(n, n) == 1
-    fr = Z.Frame(meta["center"]["lat"], meta["center"]["lon"])
+    fr = Z.frame_of(meta["center"])
     xs = (np.arange(n) + 0.5 - n / 2) * res
     ys = (n / 2 - np.arange(n) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)

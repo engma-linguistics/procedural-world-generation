@@ -136,3 +136,11 @@ def sections(world: dict | None = None, size_km: float = 4000.0, min_overlap_km:
         even = len(g.centers) / (6 * n * n)
         out = [s for s in out if s["land_cells"] > 0 and s["land_cells"] >= min_land_frac * even]
     return out
+
+
+def section(cell: str, size_km: float = 4000.0, min_overlap_km: float = 190.0, n: int | None = None) -> dict:
+    """One section of the tiling by its cell id ('px.1.1'; `planet zoom WORLD --section px.1.1`, PW-1338)."""
+    for s in sections(None, size_km, min_overlap_km, n):
+        if s["id"] == cell:
+            return s
+    raise SystemExit(f"no section {cell!r} in the {size_km:g} km tiling (ids are face.i.j, faces {' '.join(FACES)})")

@@ -229,7 +229,9 @@ class Glaciated(Synth):
         c = cx.cache
         if "f" not in c:
             p = cx.prm
-            fe, fn = p["ice_fe"], p["ice_fn"]
+            from .terrain import en_to_grid  # (east/north -> the grid's x/y: true north turns, PW-1338)
+            fe, fn = en_to_grid(cx.Pk, cx.ny, cx.nx, p["ice_fe"], p["ice_fn"])
+            wx, wy = en_to_grid(cx.Pk, cx.ny, cx.nx, p["wind_e"], p["wind_n"])
             nrm = np.hypot(fe, fn)
             c["f"] = {"E": np.maximum(p["glacial_erosion"], 0.0), "T": np.maximum(p["glacial_till"], 0.0),
                       "O": np.maximum(p.get("glacial_outwash", 0.0 * p["ice_max"]), 0.0),
@@ -237,7 +239,7 @@ class Glaciated(Synth):
                       "F": np.maximum(p["ice_max"], 0.0), "G": np.clip(p["iced"], 0.0, 1.0),
                       "ux": np.where(nrm > 0.05, fe / np.maximum(nrm, 1e-9), 0.0),
                       "uy": np.where(nrm > 0.05, fn / np.maximum(nrm, 1e-9), 0.0), "dir": np.clip(nrm, 0, 1),
-                      "wx": p["wind_e"], "wy": p["wind_n"]}
+                      "wx": wx, "wy": wy}
         return c["f"]
 
     def _margin(self, cx, G, level, gmin=0.004):

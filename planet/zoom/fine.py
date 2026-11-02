@@ -202,7 +202,7 @@ def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float) ->
         raise ValueError(f"keep size_km / res_km within 32..{MAX_PX} px (asked {n})")
     if not -90 <= lat <= 90:
         raise ValueError("lat must be within -90..90")
-    fp = Z.Frame(pmeta["center"]["lat"], pmeta["center"]["lon"])
+    fp = Z.frame_of(pmeta["center"])
     fr = Z.Frame(lat, lon)
     half = 0.5 * size_km + _halo_px(rp, res_km) * res_km
     t = np.array([-1.0, 0.0, 1.0]) * half
@@ -247,7 +247,7 @@ class _Parent:
         self.id = meta["id"]
         self.rp = float(meta["res_km"])
         self.nx, self.ny = int(meta["nx"]), int(meta["ny"])
-        self.fr = Z.Frame(meta["center"]["lat"], meta["center"]["lon"])
+        self.fr = Z.frame_of(meta["center"])
 
     def coords(self, P: np.ndarray):
         x, y = self.fr.to_plane(P)

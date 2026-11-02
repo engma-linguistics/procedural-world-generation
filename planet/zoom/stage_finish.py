@@ -214,6 +214,9 @@ def ice_bed(ctx):
             hb = np.minimum(ctx.keep_means(hb, ctx.h - drop[ctx.own_s], ctx.glacier), ctx.h)
         ctx.ice_th = np.where(ctx.glacier, ctx.ice_th + (ctx.h - hb), ctx.ice_th)
         ctx.h = hb
+    if ctx.match:  # (the ground and the ice once more, to the neighbours' where they own it, PW-1301)
+        from . import match as ZM
+        ZM.final(ctx)
 
 
 def stats(ctx):
@@ -338,6 +341,9 @@ def stats(ctx):
     ctx.layers.update({k: v.ravel() for k, v in HU.zoom_layers(
         {k: np.asarray(v).reshape(ctx.ny, ctx.nx) for k, v in ctx.layers.items()}, ctx.res,
         HU.falls_pixels(ctx.stats.get("falls", []), ctx.fr, ctx.nx, ctx.ny, ctx.res)).items()})
+    if ctx.match:  # (the class layers switch to the neighbours' across the ramp, PW-1301)
+        from . import match as ZM
+        ZM.categorical(ctx, ctx.layers)
     # the peoples' land use (zoom.peoples, PW-667), an optional overlay: only with a peoples run (zoom(peoples=RUN))
     peo = None
     if ctx.peoples is not None:
