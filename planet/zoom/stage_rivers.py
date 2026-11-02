@@ -324,6 +324,9 @@ def coarse_rivers(ctx):
         ctx.inflow_pts.append((row * ctx.nx + col, 3))
     ctx.log(f"  {len(ctx.riv_ids)} coarse river cells carved, {ctx.n_rivers_in} entering from outside "
         f"[{time.time() - ctx.t0:.1f}s]")
+    if ctx.match:  # (the neighbours' rivers crossing the owner line bring their water on, PW-1302)
+        from . import match as ZM
+        ZM.inflows(ctx)
 
 
 def categorical_layers(ctx):

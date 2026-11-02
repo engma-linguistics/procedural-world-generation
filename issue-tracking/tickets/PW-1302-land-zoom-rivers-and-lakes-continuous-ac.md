@@ -11,7 +11,7 @@ impact: high
 found_by: owner
 blocked_by: [PW-1300]
 relates: []
-refs: [planet/hydrology.py, "planet/zoom/regional.py::zoom", planet/zoom/match.py, "planet/zoom/stage_rivers.py::coarse_rivers", docs/review/land-zoom/seams-round2.md, docs/review/land-zoom/seams.py]
+refs: [planet/hydrology.py, "planet/zoom/regional.py::zoom", "planet/zoom/regional.py::zoom_id", planet/zoom/match.py, "planet/zoom/match.py::inflows", "planet/zoom/match.py::walls", "planet/zoom/match.py::basin_lakes", "planet/zoom/stage_rivers.py::coarse_rivers", "planet/zoom/stage_landscape.py::final_drainage", docs/review/land-zoom/seams-round2.md, docs/review/land-zoom/seams.py, docs/review/land-zoom/rivers.py, docs/review/land-zoom/rivers-round1.md, docs/review/land-zoom/rivers1/, tests/test_zoom_match.py, "zoom:5d2e02", "zoom:e2313a", "zoom:b9c5c8", "zoom:3580b7", "zoom:83b0b1", "zoom:a13667", "zoom:59336f", "zoom:0852e2", "zoom:d7b43d", "zoom:3b412b", "zoom:34d0a5", "world:dba204"]
 created: 2026-11-02
 updated: 2026-11-02
 ---

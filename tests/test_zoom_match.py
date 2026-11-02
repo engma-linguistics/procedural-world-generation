@@ -73,3 +73,26 @@ def test_unmatched_build_is_unchanged(pair):
     """match=None leaves the build as it always was (no conditioning code runs)."""
     za, zb, zm = pair
     assert not np.array_equal(zb["layers"]["elevation"], zm["layers"]["elevation"])
+
+
+def test_matched_section_carries_the_neighbours_rivers_on(pair):
+    """A river of the neighbour's flowing across the owner line into the section's ground carries its water on
+    there (PW-1302): before, held ground was an outlet and the river started dry at the line. From the neighbour's
+    own network (its receivers): each crossing of >= 100 m3/s, the section's largest discharge within 2 px of where it
+    enters (on this pair 304 -> 330 and 199 -> 215 m3/s)."""
+    za, _, zm = pair
+    sA = ZM.source_of(za, "A")
+    nx, ny, res = sA["nx"], sA["ny"], sA["res"]
+    r, c = np.divmod(np.arange(nx * ny), nx)
+    P = sA["frame"].to_sphere((c + 0.5 - nx / 2) * res, (ny / 2 - r - 0.5) * res)
+    own_b = P @ zm["frame"].c > P @ sA["frame"].c
+    p = np.flatnonzero(~own_b & (sA["rec"] >= 0) & (sA["q"] >= 100.0) & sA["land"].ravel())
+    p = p[own_b[sA["rec"][p]]]
+    assert len(p) >= 2
+    Q = np.asarray(zm["layers"]["discharge"])
+    for k in p:
+        x, y = zm["frame"].to_plane(P[sA["rec"][k]][None])
+        rr = int(np.floor(zm["ny"] / 2 - y[0] / zm["res"]))
+        cc = int(np.floor(x[0] / zm["res"] + zm["nx"] / 2))
+        got = Q[max(rr - 2, 0):rr + 3, max(cc - 2, 0):cc + 3].max()
+        assert 0.8 * sA["q"][k] <= got <= 1.5 * sA["q"][k]

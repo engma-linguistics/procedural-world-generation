@@ -1115,6 +1115,12 @@ def final_drainage(ctx):
     if ctx.match:  # (the ramp blended to the neighbours' heights first, PW-1301)
         from . import match as ZM
         ZM.blend(ctx)
+        # (the held pixels by the line are walls to this section's water but where the neighbour's rivers come in
+        # from it, PW-1302: no outlets, and above all else while the drainage is found; their heights come back below)
+        wall = ZM.walls(ctx)
+        h_wall = ctx.h[wall]
+        ctx.outlet = ctx.outlet & ~wall
+        ctx.h = np.where(wall, ctx.h + 2.0e4, ctx.h)
     filled, ctx.rec, order = ZK.flood_d8(ctx.h, ctx.outlet, ctx.nx, ctx.ny, 1e-3, ctx.jitter)
     # tall drops become carved falls: tiers, a gorge retreated up into the plateau, walls round the lip
     # and a funnel round the foot (zoom.falls, PW-517); the drainage is found again on the carved ground
@@ -1167,6 +1173,8 @@ def final_drainage(ctx):
             ctx.rec, order = r2, o2
     diag = (ctx.rec >= 0) & ((ctx.rec % ctx.nx) != (ctx.idx % ctx.nx)) & ((ctx.rec // ctx.nx) != (ctx.idx // ctx.nx))
     ZK.settle(ctx.h, ctx.rec, order, ~ctx.active, ctx.res * np.where(diag, 1.4142, 1.0), RG.SETTLE_M)
+    if ctx.match:
+        ctx.h[wall] = h_wall
     ctx.outs = ctx.lake_outlets(ctx.rec)
     Q, ctx.lake_in = ctx.route(ctx.srcq, ctx.rec, order, ctx.outs, split_ok, ctx.lake_loss)
     ctx.area, _ = ctx.route(np.full(ctx.npx, ctx.res * ctx.res), ctx.rec, order, ctx.outs, split_ok, water=False)
@@ -1268,6 +1276,8 @@ def final_drainage(ctx):
         ctx.h, ctx.discharge, ctx.lf_overlay = fz["h"], np.where(ctx.land, fz["q"], 0.0), fz["stats"]
         ctx.lf_lake = ctx.lf_lake | fz["pond"]
         ctx.lake_depth = np.where(fz["pond"], fz["pond_depth"], ctx.lake_depth)
+    if ctx.match:  # (the landform lakes and ponds too keep to the neighbour's outline near the line, PW-1302)
+        ZM.basin_lakes(ctx)
     if ctx.bi_island.any():  # (the barrier islands stand 1.5-3 m: the mean correction and the landscape pass had lifted them)
         ctx.h = np.where(ctx.bi_island, ZC.ISLAND_M * (0.5 + 0.5 * ctx.isl["u"]), ctx.h)
 
