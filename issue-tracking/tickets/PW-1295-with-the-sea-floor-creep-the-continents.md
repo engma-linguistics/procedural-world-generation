@@ -2,7 +2,7 @@
 id: PW-1295
 title: With the sea-floor creep, the continents' outer cells flicker between continent and ocean floor at the 20 km bound
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: tectonics
@@ -11,9 +11,9 @@ impact: med
 found_by: lane-112
 blocked_by: []
 relates: [PW-1292, PW-950, PW-108]
-refs: [planet/tectonics/crust.py, docs/review/tectonics/margin/pw1292-note.md, docs/review/tectonics/margin/tracediag.py]
+refs: [planet/tectonics/crust.py::coherence, docs/review/tectonics/margin/pw1292-note.md, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/tracediag.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-02
 ---
 
 ## Description
@@ -33,9 +33,15 @@ neighbours, a cell is shredded and keeps its thickness. When sediment or crust f
 born again.
 
 What to try:
-- [ ] tag the shredded cells in tracediag.py and count how many are born again within 50 Myr (confirms or rules out the flicker)
-- [ ] if confirmed, screen hysteresis between the bounds (a shred only below ~15 km, or re-birth of a shredded cell only above ~25 km), on seeds 1 and 3 with the creep
-- [ ] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds)
+- [x] tag the shredded cells in tracediag.py and count how many are born again within 50 Myr (confirms or rules out the flicker)
+- [x] if confirmed, screen hysteresis between the bounds (a shred only below ~15 km, or re-birth of a shredded cell only above ~25 km), on seeds 1 and 3 with the creep
+- [x] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds): not run, moved to draft-sea-creep-still-cools-with-the-flicker-cured (the screens show the cooling stays)
 
 ## Updates
 - 2026-11-01: Created from inbox draft draft-margin-cells-flicker-at-the-20-km-bound.md (found by lane-112).
+- 2026-11-02: Lane 115. Confirmed (pw1295-note.md): with the creep ~1150 shreds per 400 Myr come within 10 Myr of a
+  birth (at 19.3 km) and ~900 births within 10 Myr of a shred, against 140-160 and 60-65 on main. Screened a 15 km
+  shred bound (S15), a 25 km re-birth bound (R25) and both: S15 ends the flicker and brings the creep's churn to
+  main's level, statelessly. `crust.SHRED_KM = 15` is on. Judge (36 draws, creep off): 0 hard failures, 32/36
+  against 33/36, climate unmoved, land -1.25 points (moved; the area thermostat counts the kept thin margin: draft).
+  The creep-on judge wasn't run: creep + S15 screens 3 C colder than S15 (draft).
