@@ -122,7 +122,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
-    frames, vframes, data = [], [], {k: [] for k in RUN_LAYERS}
+    frames = []
     jet = {"src": None, "v": None}  # the climate (and so the jet) changes only at its updates (earth.climate_due)
     run_id = S.new_id()
     out = S.runs_dir() / run_id
@@ -140,14 +140,15 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         snap = s.snapshot()
         if jet["v"] is None or jet["src"] is not s.t_warm:
             jet["src"], jet["v"] = s.t_warm, jet_of(s.grid, snap)
-        # encode now: at level 7, 126 float64 keyframes per layer would be ~1 GB
+        # encoded and written to disk now, frame by frame: held in memory, an L7 Gyr's keyframes were
+        # ~2.3 GB, stacked again at the save (PW-801)
         for k, v in frame_values(s.grid, snap, jet["v"]).items():
-            data[k].append(S.encode(v, S.run_spec(k), s.grid))
+            stream.append(k, S.encode(v, S.run_spec(k), s.grid))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
                        "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
                        "volcanoes": active_volcanoes(snap.volcanoes)})
-        vframes.append(snap.volcanoes)
+        volcanoes.append(snap.volcanoes)
         if progress:
             progress(min(1.0, s.t / myr))
 
@@ -157,16 +158,24 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr, "params": asdict(params),
                      "code": code_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S"), **S.process_stamp()}}
     S.write_json(out / "run.json", head)
+    stream = volcanoes = None
     try:
         with writer:
+            stream = S.LayerStream(out, {k: S.run_spec(k) for k in RUN_LAYERS})
+            volcanoes = S.VolcanoStream(out, VOLCANO_COLUMNS)
             keep(sim)
             sim.run(myr, keep)
-            layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS},
-                                    {k: S.run_spec(k) for k in RUN_LAYERS})
-            S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
+            stream.close()
+            layers = stream.layers()
+            volcanoes.finish()
     except BaseException as e:
         head["status"] = "interrupted"
         head["meta"].update(stopped_at_myr=round(float(sim.t), 3), error=f"{type(e).__name__}: {e}"[:500])
+        if volcanoes:
+            volcanoes.abort()
+        if stream:  # the whole keyframes written so far stay readable (load_frames), with their frames' stats
+            stream.close(frames=len(frames))
+            head["layers"], head["frames"] = stream.layers(), frames[:min(stream.count.values(), default=0)]
         S.write_json(out / "run.json", head)
         raise
     S.write_grid(grid)

@@ -532,10 +532,63 @@ def write_layers(out_dir: Path, arrays: dict, specs: dict | None = None) -> dict
         arr = np.ascontiguousarray(np.asarray(a).astype(dt))
         path = out_dir / "layers" / f"{name}.bin"
         arr.tofile(path)
-        meta[name] = {"file": f"layers/{name}.bin", "dtype": dt.name, "shape": list(arr.shape),
-                      **{k: spec.get(k, d) for k, d in (("scale", 1), ("offset", 0), ("transform", None))},
-                      **{k: spec[k] for k in ("units", "description") if k in spec}}
+        meta[name] = _layer_meta(name, spec, dt, arr.shape)
     return meta
+
+
+def _layer_meta(name: str, spec: dict, dt: np.dtype, shape) -> dict:
+    """A layer file's entry in run.json / zoom.json "layers"."""
+    return {"file": f"layers/{name}.bin", "dtype": dt.name, "shape": list(shape),
+            **{k: spec.get(k, d) for k, d in (("scale", 1), ("offset", 0), ("transform", None))},
+            **{k: spec[k] for k in ("units", "description") if k in spec}}
+
+
+class LayerStream:
+    """A run's keyframe layers written frame by frame as the run makes them (PW-801): the same
+    layers/<name>.bin files as write_layers of the stacked frames, without holding them in memory.
+    specs: name -> spec with a dtype (frames are cast to it, little-endian). append(name, frame)
+    for each layer at each keyframe; layers() is write_layers' metadata for the frames written."""
+
+    def __init__(self, out_dir: Path, specs: dict):
+        (Path(out_dir) / "layers").mkdir(parents=True, exist_ok=True)
+        self.specs = {k: dict(v) for k, v in specs.items()}
+        self.dt = {k: np.dtype(v["dtype"]).newbyteorder("<") for k, v in self.specs.items()}
+        self.frame_shape = {k: None for k in self.specs}
+        self.count = {k: 0 for k in self.specs}
+        self.files = {}
+        try:
+            for k in self.specs:
+                self.files[k] = open(Path(out_dir) / "layers" / f"{k}.bin", "wb")
+        except BaseException:
+            self.close()
+            raise
+
+    def append(self, name: str, a) -> None:
+        arr = np.ascontiguousarray(np.asarray(a).astype(self.dt[name]))
+        if self.frame_shape[name] is None:
+            self.frame_shape[name] = arr.shape
+        elif arr.shape != self.frame_shape[name]:
+            raise ValueError(f"layer {name}: frame shape {arr.shape}, earlier frames {self.frame_shape[name]}")
+        self.files[name].write(arr.tobytes())
+        self.count[name] += 1
+
+    def close(self, frames: int | None = None) -> None:
+        """Closes the files. frames: first cuts every layer back to at most this many frames, and to
+        the frames all layers have (a run stopped part-way through writing a keyframe)."""
+        n = min([*self.count.values(), *([] if frames is None else [frames])], default=0)
+        for k, f in self.files.items():
+            if f.closed:
+                continue
+            if frames is not None and self.count[k] > n:
+                f.flush()
+                f.truncate(n * self.dt[k].itemsize * int(np.prod(self.frame_shape[k])))
+                self.count[k] = n
+            f.close()
+
+    def layers(self) -> dict:
+        """write_layers' metadata for the frames written, in the order of specs."""
+        return {k: _layer_meta(k, self.specs[k], self.dt[k], (self.count[k], *(self.frame_shape[k] or ())))
+                for k in self.specs}
 
 
 def read_layer(base_dir: Path, spec: dict, mmap: bool = True) -> np.ndarray:
@@ -917,6 +970,42 @@ def write_volcanoes(run_dir: Path, columns, frames: list) -> Path:
     write_atomic(path, gzip.compress(json.dumps({"columns": list(columns), "frames": frames},
                                                 separators=(",", ":")).encode(), 6))
     return path
+
+
+class VolcanoStream:
+    """volcanoes.json.gz written keyframe by keyframe (PW-801): the same bytes as write_volcanoes of
+    all the frames (gzip.compress at level 6 is zlib's gzip stream with mtime 0 and OS byte 255),
+    compressed as the frames come under a temporary name, renamed into place by finish()."""
+
+    def __init__(self, run_dir: Path, columns):
+        self.path = volcanoes_path(run_dir)
+        self.tmp = self.path.with_name(f".{self.path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+        self.f = open(self.tmp, "wb")
+        self.z = zlib.compressobj(6, zlib.DEFLATED, 31)
+        self.n = 0
+        self._put('{"columns":' + json.dumps(list(columns), separators=(",", ":")) + ',"frames":[')
+
+    def _put(self, text: str) -> None:
+        self.f.write(self.z.compress(text.encode()))
+
+    def append(self, table: list) -> None:
+        self._put(("," if self.n else "") + json.dumps(table, separators=(",", ":")))
+        self.n += 1
+
+    def finish(self) -> Path:
+        self._put("]}")
+        self.f.write(self.z.flush())
+        self.f.seek(4)
+        self.f.write(bytes(4))  # mtime 0, as gzip.compress
+        self.f.seek(9)
+        self.f.write(bytes([255]))  # OS "unknown", as gzip.compress
+        self.f.close()
+        os.replace(self.tmp, self.path)
+        return self.path
+
+    def abort(self) -> None:
+        self.f.close()
+        self.tmp.unlink(missing_ok=True)
 
 
 def read_volcanoes(run_dir: Path) -> dict | None:
