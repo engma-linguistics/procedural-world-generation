@@ -2,7 +2,7 @@
 id: PW-1393
 title: Move the physics judge (passrate4, pjudge) out of docs/review into tools/ with a test
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: infra
@@ -23,5 +23,6 @@ In plain words: the scoring code that decides whether a generated planet passes 
 - [x] review-folder copies removed or left as thin pointers; the ticket notes the commit
 
 ## Updates
+- 2026-11-03: Status todo -> done. Merged 05d53f3b (lane 151): tools/judge.py (bar, paired, judge_draw); hard_bar and review scripts point at it; 13 outputs byte-identical on lane 144's judge dir; 967 passed on the branch. Follow-ups PW-1417, PW-1418.
 - 2026-11-03: Created.
 - 2026-11-03: Lane 151 moved passrate4 and pjudge into tools/judge.py (`judge.py bar`, `judge.py paired`; `judge_draw(raw)` is shared with tools/hard_bar.py). passrate4.py and pjudge.py in the review folders are now pointer files; test is tests/test_judge.py. Output byte-identical on lane 144's judge dir (paired tables and json for 4 arm pairs, hard_bar per arm, passrate4). PW-1121 and PW-1272 left; follow-up drafts draft-judge-shims-retire and draft-judge-draw-takes-a-stored-run.

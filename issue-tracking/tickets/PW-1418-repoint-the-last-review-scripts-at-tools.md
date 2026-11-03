@@ -1,4 +1,5 @@
 ---
+id: PW-1418
 title: Repoint the last review scripts at tools/judge.py and drop the passrate4/pjudge pointer files
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane151
 blocked_by: []
 relates: [PW-1393, PW-1121]
 refs: [tools/judge.py, docs/review/base-climate/v1-finish-12/passrate4.py, docs/review/base-climate/v1-finish-16/pjudge.py, docs/review/base-climate/v1-finish-16/fmtally.py, docs/review/base-climate/warm-drift/judge.py, docs/review/base-climate/warm-edge-l81/rescore.py, docs/review/base-climate/v1-finish-13/screen.py, docs/review/base-climate/v1-finish-12/pr.sh]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -18,3 +21,6 @@ In plain words: PW-1393 moved the climate judge into tools/judge.py and left two
 Noticed, not changed (a move only): fmtally.py's docstring says the finish temperature band is -6..+3 C while the code (HUMAN_RANGE) uses -6..+5.
 - [ ] each of the scripts above imports tools.judge directly
 - [ ] passrate4.py and pjudge.py deleted; docs/review retention check clean
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-judge-shims-retire.md (found by lane151).
