@@ -90,12 +90,13 @@ export async function fillSelector() {
   const opt = (v, label) => `<option value="${v}">${isFav(v) ? '\u2605 ' : ''}${label}</option>`;
   const when = (c) => (c || '').slice(5, 16);  // "MM-DD HH:MM"
   const all = [
-    ...runs.filter((r) => r.kind !== 'timezoom').map((r) => ['main', 'run:' + r.dir, `${r.id} · ${r.name} · ${r.myr} Myr · ${when(r.created)}`]),
+    ...runs.filter((r) => r.kind !== 'timezoom' && r.kind !== 'peoples').map((r) => ['main', 'run:' + r.dir, `${r.id} · ${r.name} · ${r.myr} Myr · ${when(r.created)}`]),
     ...runs.filter((r) => r.kind === 'timezoom').map((r) => ['tz', 'run:' + r.dir, `${r.id} · ${r.name} · ${r.kyr} kyr · ${when(r.created)}`]),
+    ...runs.filter((r) => r.kind === 'peoples').map((r) => ['peoples', 'run:' + r.dir, `${r.id} · ${r.name} · ${when(r.created)}`]),
     ...worlds.map((w) => ['world', 'world:' + w.file, `${w.id} · ${worldTitle(w)}${w.name !== worldTitle(w) ? ' — ' + w.name : ''} · ${when(w.created)}`])];
-  const LABEL = { main: 'Tectonic timelines (newest first)', tz: 'Glacial time zooms (newest first)', world: 'Worlds (newest first)' };
+  const LABEL = { main: 'Tectonic timelines (newest first)', tz: 'Glacial time zooms (newest first)', peoples: 'Peoples runs (newest first)', world: 'Worlds (newest first)' };
   const group = (label, items) => (items.length ? `<optgroup label="${label}">${items.map(([, v, l]) => opt(v, l)).join('')}</optgroup>` : '');
-  const groups = (items) => ['main', 'tz', 'world'].map((g) => group(LABEL[g], items.filter((x) => x[0] === g))).join('');
+  const groups = (items) => ['main', 'tz', 'peoples', 'world'].map((g) => group(LABEL[g], items.filter((x) => x[0] === g))).join('');
   const favItems = all.filter((x) => isFav(x[1]));
   // favourites first: a group of them on top (the rest below, each once); only: just those, plus the item on show so it stays selectable
   $('worldSel').innerHTML = mode === 'first' ? group('\u2605 Favourites', favItems) + groups(all.filter((x) => !isFav(x[1])))

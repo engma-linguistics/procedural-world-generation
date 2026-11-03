@@ -12,12 +12,12 @@ import { fillSelector, openRun } from './select.js';
 // today's Earth), with the geology frozen. Its summary has the sea-level curve.
 export function timeLabel(t) {
   if (!S.V.tz) return `${t} Myr`;
-  if (S.V.run.meta.phase) return agoLabel(t);  // recent pass and lineages (planet/lineages/): kyr before the present
+  if (S.V.run.meta.phase || S.V.run.kind === 'peoples') return agoLabel(t);  // recent pass and lineages (planet/lineages/): kyr before the present
   return S.V.tzEarth ? `+${t} kyr from today` : `+${t} kyr`;
 }
 
 // Recent passes and lineage histories (planet/lineages/, docs/proposals/lineages.md) are time-zoom
-// runs with meta.phase and time in kyr before the present (t <= 0).
+// runs (kind 'peoples', or timezoom with meta.phase) and time in kyr before the present (t <= 0).
 export function agoLabel(t) {
   const a = -t;
   if (a <= 0) return 'present';
@@ -34,13 +34,13 @@ function phaseSummary() {
   const stat = s.sea_level_change_m != null ? `sea level ${sign(s.sea_level_change_m)} m vs the time zoom's start · land ice on ${s.ice_pct}% of the surface` : '';
   return `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${what} · ${m.cells} cells · made ${m.created}</span><br>
     <b>${agoLabel(S.V.t)}</b>${s.variability_c != null ? ` · centennial anomaly ${sign(s.variability_c, 2)} °C` : ''}<br>${stat}<br>
-    ${m.phase === 'lineages' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
+    ${r.kind === 'peoples' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
     <span class="muted">Present = </span>${tzl}${m.world ? ` (finished world <a href="?world=${m.world}.json" data-world="${m.world}.json">${m.world}</a>)` : ''}<br>
     <details class="cli"><summary>command line (for scripts)</summary><code>${remake}</code></details>`;
 }
 
 export function timezoomSummary() {
-  if (S.V.run.meta.phase) return phaseSummary();
+  if (S.V.run.meta.phase || S.V.run.kind === 'peoples') return phaseSummary();
   const r = S.V.run, m = r.meta, s = r.frames[S.V.frame].stats;
   const when = S.V.tzEarth ? `<b>+${S.V.t} kyr</b> from today's Earth`
     : `<b>+${S.V.t} kyr</b> after ${m.source_name} @ ${m.at_myr} Myr`;

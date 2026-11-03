@@ -6,7 +6,7 @@
 - history/: a package (PW-901), `History` assembled from one mixin per concern: habitat (carrying capacity per line), origins
   (+ portals, groups), competition, dispersal (spread, crossings, refuge), contact (hybrids), peoples, frame, events, steps;
   summary and tries (best of N) at the end. Its __init__ lists the modules.
-- output.py: the stored result (a run of kind timezoom, meta.phase 'lineages') and its report
+- output.py: the stored result (a run of kind 'peoples') and its report
 
 Design and decisions: docs/proposals/lineages.md.
 """

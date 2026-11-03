@@ -325,7 +325,7 @@ export function lakeLine(i) {
 }
 
 // colour layers drawn at sea only -> their world layer
-// Peoples (planet/lineages/, meta.phase 'lineages'): the leading people's colour, paler where it holds
+// Peoples (planet/lineages/, kind 'peoples'): the leading people's colour, paler where it holds
 // less of the land, whitened where two or more mix; 'peoples mix' counts them. A picked line
 // (state.people, from the panel) shows only its own range. state.peoplesWhole (the panel's toggle): a people with groups
 // (ways of life, PW-665) as a whole, from the peoples_whole layer, instead of by group.
@@ -680,7 +680,7 @@ export async function worldAnthroLoad() {
   v.wAnthro = null; v.wAnthroRun = null;
   const want = new URLSearchParams(location.search).get('peoples');
   if (want === '0' || v.kind !== 'world' || !v.id) return;
-  const cands = (S.IDX?.runs || []).filter((r) => r.phase === 'lineages' && r.world === v.id && (!want || r.dir === want || r.id === want))
+  const cands = (S.IDX?.runs || []).filter((r) => r.kind === 'peoples' && r.world === v.id && (!want || r.dir === want || r.id === want))
     .sort((a, b) => (b.created || '').localeCompare(a.created || ''));
   for (const r of cands) {
     try {

@@ -239,6 +239,8 @@ def frame(run: dict, arr: dict, name: str, i: int, grid: Grid | None = None) -> 
 # ---------------------------------------------------------------------------
 def report(run_dir: Path) -> Path:
     run, arr = load_frames(run_dir, ())
+    if run.get("kind") == "peoples":
+        raise SystemExit(f"{run_dir.name} is a peoples run: its report is written when it is made (its run.txt)")
     if run.get("kind") == "timezoom":
         from . import timezoom
         return timezoom.report(run_dir)
@@ -547,6 +549,8 @@ GLACIAL_LAYERS = ("glacial_erosion", "glacial_till", "glacial_outwash", "glacial
 
 
 def _not_timezoom(run: dict, run_dir: Path):
+    if run.get("kind") == "peoples":
+        raise SystemExit(f"{run_dir.name} is a peoples run; slice its source run instead")
     if run.get("kind") == "timezoom":
         m = run["meta"]
         raise SystemExit(f"{run_dir.name} is a glacial time zoom (of {m['source_run']} @ {m['at_myr']:g} Myr); "

@@ -79,6 +79,19 @@ def test_estimate_follows_the_stages():
     assert l7["stages"][0]["s"] > 4 * sim
 
 
+def test_peoples_option_parses_estimates_and_lists_trees():
+    """PW-1394: `peoples` names a tree (a preset or saved one); it needs the time zoom and the world."""
+    assert make.parse_make_request({"seed": 1})["peoples"] == ""
+    assert make.parse_make_request({"seed": 1, "peoples": "seven_meals"})["peoples"] == "seven_meals"
+    for bad in ({"peoples": "nope"}, {"peoples": "dnd", "timezoom": False}, {"peoples": "dnd", "finish": False}):
+        with pytest.raises(api.BadRequest):
+            make.parse_make_request({"seed": 1, **bad})
+    assert {"dnd", "seven_meals"} <= set(make.options()["peoples"]) and "techtree" not in make.options()["peoples"]
+    est = make.estimate(make.parse_make_request({"seed": 1, "level": 6, "peoples": "dnd"}))
+    assert [s["key"] for s in est["stages"]][-1] == "peoples" and est["stages"][-1]["s"] == make.PEOPLES_S[6]
+    assert server.make_query("seed=1&peoples=dnd")["peoples"] == "dnd"
+
+
 # ---------------------------------------------------------------- the command line
 def test_cli_dry_run(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["planet", "make", "--seed", "5", "--preset", "hothouse", "--level", "5",
@@ -174,6 +187,34 @@ def test_make_chain(made):
     assert any("zoom 1/1" in m for _, m in log)
 
 
+def test_make_builds_a_peoples_run_of_its_own_kind(made, tmp_path):
+    """PW-1394: make's peoples stage (after the world, here by resuming the tiny chain) stores a run of kind 'peoples',
+    which the index, the planet family and the land-use reader know as such, and not as a time zoom."""
+    from planet.lineages import landuse
+    out, _ = made
+    req = {"seed": 2, "level": 4, "myr": 40, "kyr": 6, "zooms": 0, "name": "tiny make", "peoples": "dnd"}
+    state = tmp_path / "state.json"
+    state.write_text(json.dumps({"spec": make.parse_make_request(req), "out": {k: out[k] for k in ("run", "t_myr", "timezoom", "world")}}))
+    log = []
+    res = make.make(req, lambda f, m: log.append((f, m)), state=state, resume=True)
+    pid = res["peoples"]
+    run = json.loads((S.find_run(pid) / "run.json").read_text())
+    assert run["kind"] == "peoples" and run["meta"]["kind"] == "peoples" and "phase" not in run["meta"]
+    assert run["meta"]["world"] == out["world"] and run["meta"]["tree_name"]
+    assert [f for f, _ in log][-1] == 1.0
+    item = next(e for e in S.update_index("run") if e["dir"] == pid)
+    assert item["kind"] == "peoples" and item["world"] == out["world"] and item["timezoom"] == out["timezoom"] and "phase" not in item
+    ps = family.planets()
+    node = next(n for n in ps[0]["nodes"] if n["key"] == f"run:{pid}")
+    assert node["kind"] == "peoples" and node["parent"] == f"run:{out['timezoom']}" and node["world"] == out["world"]
+    assert ps[0]["counts"]["peoples"] == 1 and ps[0]["counts"]["timezoom"] == 1
+    assert landuse._load(S.find_run(pid))[1]["world"] == out["world"]
+    with pytest.raises(api.BadRequest, match="peoples run"):  # (a peoples run is neither a time zoom to finish nor a run to zoom in time)
+        api.parse_finish_request({"run": pid, "t": 0})
+    with pytest.raises(api.BadRequest, match="peoples run"):
+        api.parse_timezoom_request({"run": pid, "t": 0})
+
+
 def test_make_failure_names_the_stage(data_root):
     with pytest.raises(RuntimeError, match=r"simulate failed.*made so far: nothing"):
         make.make({"seed": 1, "level": 4, "myr": 40, "set": {"n_plates": 12}}, lambda f, m: (_ for _ in ()).throw(ValueError("x")))
@@ -188,7 +229,7 @@ def test_family_and_thumbs_of_a_made_planet(made):
     assert by[f"run:{out['timezoom']}"]["parent"] == f"run:{out['run']}"
     assert by[f"world:{out['world']}"]["parent"] == f"run:{out['timezoom']}"
     assert by[f"zoom:{out['zooms'][0]}"]["parent"] == f"world:{out['world']}"
-    assert p["counts"] == {"timezoom": 1, "world": 1, "zoom": 1, "fine": 0} and p["thumb"].endswith(out["world"])
+    assert {**p["counts"], "peoples": 0} == {"timezoom": 1, "peoples": 0, "world": 1, "zoom": 1, "fine": 0} and p["thumb"].endswith(out["world"])
     from planet import thumbs
     for kind, i in (("world", out["world"]), ("run", out["run"]), ("run", out["timezoom"])):
         png = thumbs.thumb(kind, i)

@@ -1,5 +1,5 @@
 // The time slider's axis (PW-1042): where each stored moment sits along the slider, and the dated ticks under it.
-// A peoples run (meta.phase 'lineages') stores moments unevenly (Myr apart in deep time, centuries at the end), so
+// A peoples run (kind 'peoples') stores moments unevenly (Myr apart in deep time, centuries at the end), so
 // its slider is a log axis of time before the present, with "now" at the right end and the eras it was made from
 // as bands, like the workbench timeline (lineages.html drawTimeline). Every other run is linear in its own time
 // (a main run in Myr, a time zoom in kyr). The slider input runs 0..RES; a position picks the nearest moment.
@@ -18,7 +18,7 @@ function niceStep(span, n = 6) {
 export function timeAxis(run) {
   const fr = run.frames, t0 = fr[0].t, t1 = fr[fr.length - 1].t, m = run.meta || {};
   let at, ticks = [], bands = [];
-  const log = m.phase === 'lineages' && t1 <= 0 && t0 < 0;
+  const log = run.kind === 'peoples' && t1 <= 0 && t0 < 0;
   if (log) {
     const agos = fr.map((f) => -f.t).filter((a) => a > 0);
     const amax = Math.max(...agos), amin = Math.min(...agos) / 2, L0 = Math.log10(amin), L1 = Math.log10(amax);
@@ -37,8 +37,9 @@ export function timeAxis(run) {
   } else {
     const span = t1 - t0 || 1;
     at = (t) => Math.min(1, Math.max(0, (t - t0) / span));
-    const unit = run.kind === 'timezoom' ? 'kyr' : 'Myr', step = niceStep(span);
-    const label = (v) => (m.phase && v === 0 ? 'now' : m.phase ? `${fmtKyr(-v)} ago` : `${+v.toFixed(3)} ${unit}`);
+    const unit = run.kind === 'timezoom' || run.kind === 'peoples' ? 'kyr' : 'Myr', step = niceStep(span);
+    const ago = !!m.phase || run.kind === 'peoples';
+    const label = (v) => (ago && v === 0 ? 'now' : ago ? `${fmtKyr(-v)} ago` : `${+v.toFixed(3)} ${unit}`);
     for (let v = Math.ceil(t0 / step) * step; v <= t1 + 1e-9; v += step) {
       const x = at(v);
       ticks.push({ x, text: label(v), end: x < 0.02 ? 'start' : x > 0.98 ? 'end' : '' });

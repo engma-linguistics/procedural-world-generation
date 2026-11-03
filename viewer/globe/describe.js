@@ -145,7 +145,7 @@ function cellInfo(i) {
     : `${L.elevation[i]} m${S.V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (S.V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
+  if (S.V.run?.kind === 'peoples' && L.peoples) { peoplesRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
   if (S.V.kind === 'world' && S.V.wAnthro && state.anthro !== false) { anthroRows(i, R); fuelRows(i, R); }
   const vl = S.V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });

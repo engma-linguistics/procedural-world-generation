@@ -64,7 +64,8 @@ export function createNavigator(host) {
   }
   const short = (n, v) => {
     if (n.kind === 'run') return `Run${v && keyOf(v) === n.key && v.t != null ? ` ${v.t} Myr` : ''}`;
-    if (n.phase) return n.phase === 'lineages' ? `Peoples${n.world ? ` on world ${n.world}` : ''}` : 'Recent pass (last kyr)';
+    if (n.kind === 'peoples') return `Peoples${n.world ? ` on world ${n.world}` : ''}`;
+    if (n.phase) return 'Recent pass (last kyr)';
     if (n.kind === 'timezoom') return `Time zoom${v && keyOf(v) === n.key && v.t != null ? ` +${v.t} kyr` : ` ${n.kyr} kyr`}`;
     if (n.kind === 'world') return n.timezoom_kyr != null ? `Finished world +${n.timezoom_kyr} kyr` : `World ${n.t_myr ?? ''} Myr`;
     return n.kind === 'fine' ? `Fine zoom ${n.size_km} km` : `Zoom ${n.size_km} km`;
@@ -106,7 +107,7 @@ export function createNavigator(host) {
         <select class="pl-btn sm" data-kyr title="How long the time zoom runs">${[100, 300, 1000].map((k) => `<option value="${k}"${k === kyr ? ' selected' : ''}>${k} kyr</option>`).join('')}</select>
         <button class="pl-btn sm" data-do="finishRun" ${dis} title="The full world at this keyframe">Finish world here</button>`;
     }
-    if (n.phase === 'lineages')  // (a peoples run: its tree opens in the editor; worlds are finished from the time zoom)
+    if (n.kind === 'peoples')  // (a peoples run: its tree opens in the editor; worlds are finished from the time zoom)
       return `<a class="pl-btn sm" href="lineages.html?run=${esc(n.id)}${n.world ? `&world=${esc(n.world)}` : ''}">Open its tree in the editor</a>`;
     if (n.phase) return '';
     if (n.kind === 'timezoom')
@@ -142,7 +143,7 @@ export function createNavigator(host) {
     if (!cur) return null;
     const byKey = (k) => p.nodes.find((x) => x.key === k);
     if (cur.kind === 'world') return cur;
-    if (cur.phase) return (cur.world && byKey('world:' + cur.world)) || byKey(cur.parent) || null;
+    if (cur.phase || cur.kind === 'peoples') return (cur.world && byKey('world:' + cur.world)) || byKey(cur.parent) || null;
     if (cur.kind === 'timezoom') return cur;
     if (cur.kind === 'zoom' || cur.kind === 'fine') return byKey('world:' + cur.world) || null;
     return null;
@@ -151,7 +152,7 @@ export function createNavigator(host) {
     const isW = t.kind === 'world', dis = busy() ? 'disabled' : '';
     const tzId = isW ? t.timezoom : t.id;
     const tzOk = !!tzId && p.nodes.some((x) => x.key === 'run:' + tzId && x.kind === 'timezoom');
-    const runs = p.nodes.filter((x) => x.phase === 'lineages' && (isW ? x.world === t.id : x.parent === t.key))
+    const runs = p.nodes.filter((x) => x.kind === 'peoples' && (isW ? x.world === t.id : x.parent === t.key))
       .sort((a, b) => b.created.localeCompare(a.created));
     const ref = isW ? `world=${esc(t.id)}` : `timezoom=${esc(t.id)}`;
     const why = !tzId ? 'This world was not finished from a time zoom, so there is no ice-age history to run peoples on. Finish one from a time zoom first.'
@@ -306,7 +307,7 @@ export function createNavigator(host) {
     // the view changed: redraw the chain (fetches the planets again if this one isn't known yet)
     set(v) { view = v; refresh(); },
     // only the time on screen changed (playback)
-    time(t) { if (view) { view.t = t; if (view.kind === 'run' || view.kind === 'timezoom') { const c = crumbs.querySelector('.cur span'); const [, n] = find(keyOf(view)); if (c && n) c.textContent = short(n, view); } } },
+    time(t) { if (view) { view.t = t; if (view.kind === 'run' || view.kind === 'timezoom' || view.kind === 'peoples') { const c = crumbs.querySelector('.cur span'); const [, n] = find(keyOf(view)); if (c && n) c.textContent = short(n, view); } } },
     refresh: () => refresh(true),
   };
 }

@@ -23,7 +23,7 @@ const CSS = `
 .pl-node .acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; align-items: center; }
 .pl-kind { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 0 5px; border-radius: 8px;
   border: 1px solid var(--border); color: var(--muted); margin-right: 5px; vertical-align: 1px; }
-.pl-kind.run { color: #ffd27c; } .pl-kind.timezoom { color: #9fd3ff; } .pl-kind.world { color: #b6f0a0; } .pl-kind.zoom, .pl-kind.fine { color: #e0b0ff; }
+.pl-kind.run { color: #ffd27c; } .pl-kind.timezoom { color: #9fd3ff; } .pl-kind.peoples { color: #ffb4a0; } .pl-kind.world { color: #b6f0a0; } .pl-kind.zoom, .pl-kind.fine { color: #e0b0ff; }
 .pl-bar { height: 6px; background: var(--ctl); border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
 .pl-bar > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
 .pl-err { color: #ff8a80; }
@@ -48,12 +48,13 @@ export async function getPlanets() {
   try { return (await (await fetch('../api/planets', { cache: 'no-store' })).json()).planets || []; } catch { return []; }
 }
 
-const KIND_NAME = { run: 'run', timezoom: 'time zoom', world: 'world', zoom: 'zoom', fine: 'fine zoom' };
+const KIND_NAME = { run: 'run', timezoom: 'time zoom', peoples: 'peoples run', world: 'world', zoom: 'zoom', fine: 'fine zoom' };
 export const kindName = (n) => (n.kind === 'world' && n.timezoom_kyr != null ? 'finished world' : KIND_NAME[n.kind]);
 
 // the place of a node in its planet's story, in a few words
 export function nodeWhen(n) {
   if (n.kind === 'run') return `${n.myr} Myr · seed ${n.seed} · level ${n.level}`;
+  if (n.kind === 'peoples') return `peoples${n.world ? ` on world ${n.world}` : ''}`;
   if (n.kind === 'timezoom') return `${n.kyr} kyr of ice ages after ${n.at_myr} Myr`;
   if (n.kind === 'world') return n.timezoom_kyr != null ? `+${n.timezoom_kyr} kyr, sea ${n.sea_level_change_m > 0 ? '+' : ''}${Math.round(n.sea_level_change_m)} m`
     : n.t_myr != null ? `at ${n.t_myr} Myr` : 'generated directly';
@@ -91,7 +92,7 @@ export function treeHtml(planet, currentKey, actions = () => '') {
 // the address that opens a node in the viewer
 export function openUrl(planet, n) {
   const world = (id) => planet.nodes.find((x) => x.key === `world:${id}`)?.file || `${id}.json`;
-  if (n.kind === 'run' || n.kind === 'timezoom') return `?run=${encodeURIComponent(n.id)}`;
+  if (n.kind === 'run' || n.kind === 'timezoom' || n.kind === 'peoples') return `?run=${encodeURIComponent(n.id)}`;
   if (n.kind === 'world') return `?world=${encodeURIComponent(n.file)}`;
   return `?world=${encodeURIComponent(world(n.world))}&tab=zoom&zoom=${encodeURIComponent(n.id)}`;
 }
@@ -145,14 +146,14 @@ export async function cancelJob(id) {
 export const fmtDuration = (s) => (s < 90 ? `${Math.max(1, Math.round(s))} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`);
 
 export async function deleteNode(n) {
-  const dir = { run: 'runs', timezoom: 'runs', world: 'worlds', zoom: 'zooms', fine: 'zooms' }[n.kind];
+  const dir = { run: 'runs', timezoom: 'runs', peoples: 'runs', world: 'worlds', zoom: 'zooms', fine: 'zooms' }[n.kind];
   const r = await fetch(`../${dir}/${n.id}`, { method: 'DELETE' });
   return r.ok;
 }
 
 // Favourites (planet/favourites.py): the owner's stars, kept by the server (GET / POST /api/favourites), never in the browser.
 // A key is "<kind>:<id>" with kind run | world | zoom (time zooms are runs, fine zooms are zooms).
-export const favKey = (n) => `${{ run: 'run', timezoom: 'run', world: 'world', zoom: 'zoom', fine: 'zoom' }[n.kind]}:${n.id}`;
+export const favKey = (n) => `${{ run: 'run', timezoom: 'run', peoples: 'run', world: 'world', zoom: 'zoom', fine: 'zoom' }[n.kind]}:${n.id}`;
 export async function getFavourites() {
   try { return new Set(((await (await fetch('../api/favourites', { cache: 'no-store' })).json()).favourites || []).map((e) => `${e.kind}:${e.id}`)); } catch { return new Set(); }
 }

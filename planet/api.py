@@ -313,8 +313,8 @@ def parse_timezoom_request(req: dict) -> dict:
         raise BadRequest("kyr must be within 1..2000")
     run_dir = S.find_run(out["run"])
     run = json.loads((run_dir / "run.json").read_text())
-    if run.get("kind") == "timezoom":
-        raise BadRequest("this is a time zoom already; start one from its source run")
+    if run.get("kind") in ("timezoom", "peoples"):
+        raise BadRequest("this is a time zoom or a peoples run; start a time zoom from its source run")
     out["t"] = keyframe_t(run_dir, _num(req, "t"))
     if "sea_level_m" not in run["frames"][0]["stats"]:
         raise BadRequest(f"run {run_dir.name} is too old (its keyframes have no climate)")
@@ -382,8 +382,8 @@ def parse_finish_request(req: dict) -> dict:
         return {"type": "finish", "timezoom": tz_dir.name, "kyr": run["frames"][i]["t"]}
     run_dir = S.find_run(str(req["run"]))
     run = S.read_header(run_dir / "run.json")
-    if run.get("kind") == "timezoom":
-        raise BadRequest("this is a time zoom: give it as timezoom (+ kyr)")
+    if run.get("kind") in ("timezoom", "peoples"):
+        raise BadRequest("this is a time zoom or a peoples run: give the time zoom as timezoom (+ kyr)")
     return {"type": "finish", "run": run_dir.name, "t": keyframe_t(run_dir, _num(req, "t"))}
 
 
@@ -443,7 +443,7 @@ def make_job(req: dict, progress=lambda f, msg: None, ctx: dict | None = None) -
 
 
 def lineages_job(req: dict, progress=lambda f, msg: None) -> dict:
-    """POST /api/lineages's work (planet/lineages/run.job): {"run"} (a peoples run, meta.phase 'lineages')."""
+    """POST /api/lineages's work (planet/lineages/run.job): {"run"} (a peoples run, kind 'peoples')."""
     from .lineages import run as LR
     return LR.job({k: v for k, v in req.items() if k != "type"}, progress)
 

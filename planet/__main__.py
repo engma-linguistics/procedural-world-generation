@@ -274,6 +274,8 @@ def cmd_timezoom(args):
 def cmd_finish(args):
     from . import api, finish as F
     run = S.read_header(S.find_run(args.ref) / "run.json")
+    if run.get("kind") == "peoples":
+        raise SystemExit(f"{args.ref} is a peoples run; finish a run or a time zoom")
     if run.get("kind") == "timezoom":
         if args.at is not None:
             raise SystemExit("--at is for a run; for a time zoom give --kyr")
@@ -448,7 +450,8 @@ def cmd_list(args):
     print("runs:" if runs else "runs: none")
     for r in runs:
         span = (f"time zoom: {r['kyr']:g} kyr after {r['source_run']} @ {r['at_myr']:g} Myr"
-                if r.get("kind") == "timezoom" else f"{r['myr']:g} Myr")
+                if r.get("kind") == "timezoom" else f"peoples on {r.get('world') or r['source_run']}" if r.get("kind") == "peoples"
+                else f"{r['myr']:g} Myr")
         print(f"  {r['id']}  {r['created']}  {r['name']}  ({span})")
     print("worlds:" if worlds else "worlds: none")
     for w in worlds:
@@ -564,7 +567,7 @@ def cmd_make(args):
     req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr, "now": args.now,
            "set": _parse_set(args.set), "timezoom": args.timezoom, "finish": args.finish,
            "highlights": args.highlights, "zooms": args.zooms, "name": args.name,
-           "require_ice": args.require_ice, "tries": args.tries}
+           "require_ice": args.require_ice, "tries": args.tries, "peoples": args.peoples}
     req = {k: v for k, v in req.items() if v is not None}
     try:
         spec = M.parse_make_request(req)
@@ -596,6 +599,8 @@ def cmd_make(args):
         print(f"view: http://127.0.0.1:8765/viewer/?world={out['world']}.json")
     elif out.get("timezoom"):
         print(f"view: http://127.0.0.1:8765/viewer/?run={out['timezoom']}")
+    if out.get("peoples"):
+        print(f"peoples: http://127.0.0.1:8765/viewer/?run={out['peoples']}")
 
 
 def cmd_serve(args):
@@ -872,6 +877,8 @@ def main():
     mk.add_argument("--finish", action=argparse.BooleanOptionalAction, help="make the finished world (default on)")
     mk.add_argument("--highlights", action=argparse.BooleanOptionalAction, help="find the world's highlights (default on)")
     mk.add_argument("--zooms", type=int, metavar="N", help=f"regional zooms of the top N highlights (default {MD['zooms']})")
+    mk.add_argument("--peoples", nargs="?", const="dnd", metavar="TREE", help="after the world, also build a peoples run of this tree "
+                    "(a preset such as dnd or seven_meals, or a saved tree; bare --peoples means dnd). Needs the time zoom and the world")
     mk.add_argument("--name", "-n")
     mk.add_argument("--require-ice", action=argparse.BooleanOptionalAction, help="refuse a finished world with no permanent "
                     "ice (default off): the latest finish candidate of the last 10 Myr that has it, else a re-roll of the seed")

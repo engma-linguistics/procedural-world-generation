@@ -125,7 +125,7 @@ export async function showStart() {
   const find = { q: '', sort: 'newest', only: [] };
   try { Object.assign(find, JSON.parse(localStorage.getItem(FIND_KEY) || '{}')); } catch { /* private window */ }
   const saveFind = () => { try { localStorage.setItem(FIND_KEY, JSON.stringify({ sort: find.sort, only: find.only })); } catch { /* private window */ } };
-  const peoplesOf = (p) => p.nodes.filter((n) => n.phase === 'lineages').length;
+  const peoplesOf = (p) => p.nodes.filter((n) => n.kind === 'peoples').length;
   const starredOf = (p) => p.nodes.some((n) => favs.has(favKey(n)));
   let shown = [];  // the planets that pass the search and filters, in the chosen order
   function filterPlanets() {
@@ -226,7 +226,7 @@ export async function showStart() {
       }
       if (e.target.dataset.act === 'delall') {
         if (!confirm(`Delete ${p.name} and all ${p.nodes.length} things made from it? This removes them from disk.`)) return;
-        const order = ['world', 'fine', 'zoom', 'timezoom', 'run'];  // (worlds take their zooms with them)
+        const order = ['world', 'fine', 'zoom', 'peoples', 'timezoom', 'run'];  // (worlds take their zooms with them)
         for (const k of order) for (const n of p.nodes.filter((x) => x.kind === k)) await deleteNode(n);
         m.remove(); await loadGallery();
       }
@@ -259,7 +259,7 @@ export async function showStart() {
     if (res.status === 'done') {
       const r = res.result || {};
       view.innerHTML = `<div class="banner"><b>Planet made.</b> ${r.world ? `<a href="?world=${r.world}.json">Open the world</a> · ` : ''}
-        ${!r.world && r.timezoom ? `<a href="?run=${r.timezoom}">Open the time zoom</a> · ` : ''}${r.run ? `<a href="?run=${r.run}">Open the run</a>` : ''} <button class="pl-btn sm" data-act="dismiss">Dismiss</button></div>`;
+        ${!r.world && r.timezoom ? `<a href="?run=${r.timezoom}">Open the time zoom</a> · ` : ''}${r.peoples ? `<a href="?run=${r.peoples}">Open the peoples run</a> · ` : ''}${r.run ? `<a href="?run=${r.run}">Open the run</a>` : ''} <button class="pl-btn sm" data-act="dismiss">Dismiss</button></div>`;
       await loadGallery();
     }
     view.querySelector('[data-act=dismiss]')?.addEventListener('click', () => (view.innerHTML = ''));
@@ -285,7 +285,7 @@ export async function showStart() {
     if (!opt) { box.innerHTML = '<div class="pl-err">The server has no make API. Restart it: uv run python -m planet serve</div>'; return; }
     const D = opt.defaults, byKey = Object.fromEntries(opt.settings.map((s) => [s.key, s]));
     const S = { preset: opt.default_preset, seed: Math.floor(Math.random() * 1e6), level: D.level, myr: opt.presets[opt.default_preset].myr,
-      timezoom: D.timezoom, kyr: D.kyr, now: D.now, nowKey: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, requireIce: D.require_ice, tries: D.tries, vals: {} };
+      timezoom: D.timezoom, kyr: D.kyr, now: D.now, nowKey: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, peoples: D.peoples, requireIce: D.require_ice, tries: D.tries, vals: {} };
     const eff = (k) => (k in opt.presets[S.preset].set ? opt.presets[S.preset].set[k] : byKey[k].default);  // value without the user's change
     const cur = (k) => (k in S.vals ? S.vals[k] : eff(k));
     const levelNote = { 5: 'tiny, for testing', 6: 'quick', 7: 'showcase' };
@@ -306,7 +306,9 @@ export async function showStart() {
           <select id="fNow" style="width:auto;flex:none" title="Which moment of the ice-age cycle is the planet's present">${opt.nows.map((w) => `<option value="${w.key}">${esc(w.label)}</option>`).join('')}</select>
           or <input id="fNowKyr" type="number" min="0" step="1" placeholder="kyr" title="A specific kyr of the time zoom (overrides the choice above)" style="width:90px"> kyr</label>
         <label class="ck"><input type="checkbox" id="fHl"><span>Highlights (the most interesting places)</span></label>
-        <label class="ck"><span>Regional zooms of the top highlights:</span> <select id="fZooms" style="width:auto;flex:none">${[0, 2, 4, 6].map((k) => `<option value="${k}">${k}</option>`).join('')}</select></label></fieldset>
+        <label class="ck"><span>Regional zooms of the top highlights:</span> <select id="fZooms" style="width:auto;flex:none">${[0, 2, 4, 6].map((k) => `<option value="${k}">${k}</option>`).join('')}</select></label>
+        <label class="ck"><span>Peoples on the finished world <span style="color:var(--muted)">(which set of peoples to run; needs the time zoom and the finished world)</span>:</span> <select id="fPeoples" style="width:auto;flex:none" title="Also build a peoples run, with this tree, once the world is made">
+          <option value="">none</option>${(opt.peoples || []).map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></label></fieldset>
       <fieldset><legend>Finished world</legend>
         <label class="ck"><input type="checkbox" id="fIce"><span>Require permanent ice <span style="color:var(--muted)">(refuse a present with no ice that lasts the summer: it takes the latest moment of the last 10 Myr that has some, else makes a new planet with a new seed)</span></span>
           <select id="fTries" style="width:auto;flex:none" title="How many planets to try before giving up">${[1, 2, 3, 4, 6, 8].map((k) => `<option value="${k}">${k} ${k > 1 ? 'tries' : 'try'}</option>`).join('')}</select></label></fieldset>
@@ -328,18 +330,20 @@ export async function showStart() {
       q('#fFinish').checked = S.finish; q('#fNow').value = S.nowKey; q('#fNow').disabled = !S.finish || !S.timezoom;
       q('#fNowKyr').value = typeof S.now === 'number' ? S.now : ''; q('#fNowKyr').max = S.kyr; q('#fNowKyr').disabled = !S.finish || !S.timezoom;q('#fHl').checked = S.highlights && S.finish; q('#fHl').disabled = !S.finish;
       q('#fIce').checked = S.requireIce; q('#fTries').value = S.tries; q('#fTries').disabled = !S.requireIce; q('#fZooms').value = S.zooms; q('#fZooms').disabled = !S.finish || !S.highlights;
+      q('#fPeoples').value = peoplesOn() ? S.peoples : ''; q('#fPeoples').disabled = !S.finish || !S.timezoom;
       for (const s of opt.settings) { const i = q('#s_' + s.key); i.value = cur(s.key); i.style.borderColor = s.key in S.vals ? 'var(--accent)' : ''; }
       estimate();
     };
+    const peoplesOn = () => !!S.peoples && S.finish && S.timezoom;  // (peoples are built on the time zoom and the world)
     const request = () => ({ seed: S.seed, preset: S.preset, level: S.level, myr: S.myr, timezoom: S.timezoom, kyr: S.kyr, now: S.now, finish: S.finish,
-      highlights: S.highlights && S.finish, zooms: S.finish && S.highlights ? S.zooms : 0, require_ice: S.requireIce, tries: S.tries, set: S.vals });
+      highlights: S.highlights && S.finish, zooms: S.finish && S.highlights ? S.zooms : 0, require_ice: S.requireIce, tries: S.tries, peoples: peoplesOn() ? S.peoples : '', set: S.vals });
     let estTimer = null;
     const estimate = () => {
       clearTimeout(estTimer);
       estTimer = setTimeout(async () => {
         const r = request();
         const qs = new URLSearchParams({ seed: r.seed, preset: r.preset, level: r.level, myr: r.myr, kyr: r.kyr, now: r.now, zooms: r.zooms,
-          tries: r.tries, require_ice: r.require_ice ? 1 : 0, timezoom: r.timezoom ? 1 : 0, finish: r.finish ? 1 : 0, highlights: r.highlights ? 1 : 0 });
+          tries: r.tries, peoples: r.peoples, require_ice: r.require_ice ? 1 : 0, timezoom: r.timezoom ? 1 : 0, finish: r.finish ? 1 : 0, highlights: r.highlights ? 1 : 0 });
         let out;
         try { out = await (await fetch('../api/make/estimate?' + qs)).json(); } catch { return; }
         q('#fEst').innerHTML = out.error ? `<span class="pl-err">${esc(out.error)}</span>`
@@ -366,6 +370,7 @@ export async function showStart() {
       else if (t.id === 'fFinish') S.finish = t.checked;
       else if (t.id === 'fHl') S.highlights = t.checked;
       else if (t.id === 'fZooms') S.zooms = +t.value;
+      else if (t.id === 'fPeoples') S.peoples = t.value;
       else if (t.id === 'fIce') S.requireIce = t.checked;
       else if (t.id === 'fTries') S.tries = +t.value;
       else if (t.dataset.k) {

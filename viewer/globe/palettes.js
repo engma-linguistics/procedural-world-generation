@@ -140,7 +140,7 @@ function separate(order, nb, col, span) {
 // ------------------------------------------------------------ apply, and measure
 export function applyPalette(V) {
   const lines = V.run.meta.lineages;
-  if (!lines?.length || V.run.meta.phase !== 'lineages') return;
+  if (!lines?.length || V.run.kind !== 'peoples') return;
   const nb = neighbourSets(lines, contacts(V));
   const order = lines.map((l) => l.index).sort((a, b) => nb[b].size - nb[a].size);
   const col = familyColours(lines, nb, order);
