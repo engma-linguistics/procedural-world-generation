@@ -929,8 +929,10 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
   sets head counts, not who holds the land.
 - **Densities by way of life in the dnd tree** (owner D20 (4), PW-1149 B): foragers at 0.3 /km² (Binford 2001 Table 5.01 via D-PLACE
   B008, upper quartile 0.35), arctic foragers 0.05, elves 4 (forest gardeners), dwarves 7 and hill dwarves 8. Kobolds and goblins are
-  'denning': off mountains, hills and breaks they live in thin dens, at a quarter of their density (`params.DEN_THIN`, lane 97,
-  PW-1218 C; lane 83 had cut their habitat there instead), and they learn new country at a quarter of the rate.
+  'denning': their density follows the **den ground** (PW-1382, `lineages/dens.py`, the `den` good, 0..1: karst and other carbonate,
+  lava plains and shields, tuff, rock shelters in cliffed hard rock, sea cliffs, thick loess and deep soft soil), x1 on the best and
+  x0.5 where there is none (the trait's `den` 0.5; Daniel 11-02: a preference, never a requirement), and never their habitat; they
+  learn new country at a quarter of the rate.
 - **A people of a megafauna stem** (`origins._origin_off_megafauna`, spec, lane 83b): the kobolds and dragonborn split from the dragons, a
   handful of animals per country over a range that spans the world, so the stem's range says nothing about where its people's country
   lies. Such a people founds at one spot as an arrival settles: on a landmass the stem's range reaches, drawn in proportion to the founders

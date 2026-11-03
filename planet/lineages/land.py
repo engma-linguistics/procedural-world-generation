@@ -66,6 +66,7 @@ GOODS = {
     "hills": ("rolling hill country", True),
     "peaks": ("high peaks", True),
     "frost": ("frozen ground and ice margins", False),
+    "den": ("caves, rock shelters and ground to dig (den ground)", True),
     "storm_coast": ("storm-beaten coasts", False),
 }
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
@@ -76,7 +77,7 @@ _ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
 LIVING = ("fertile", "grazing", "foraging", "timber", "fuel", "building")  # scaled to the world's best
 SEAFOOD = ("fish", "shellfish", "sea_mammals")  # scaled to the world's best, then reach inland
-AREA = ("hills", "peaks", "frost", "storm_coast")  # already 0..1 per cell and area-like: no reach inland
+AREA = ("hills", "peaks", "frost", "storm_coast", "den")  # already 0..1 per cell and area-like: no reach inland
 # volcanic: an active volcano's cell 1, an extinct one exp(-age / VOLCANO_MYR); young arc / hotspot ground
 # (landform, within a cell of a volcano younger than YOUNG_MYR) at least YOUNG_GROUND
 VOLCANO_MYR, YOUNG_MYR, YOUNG_GROUND = 3.0, 5.0, 0.5
@@ -282,6 +283,8 @@ def _make_goods(world_ref: str) -> dict:
     rise = nbr_reduce(g, np.maximum, np.abs(elev[g.nbr_idx] - elev[g.nbr_src])) / (g.spacing * R_KM)
     raw["hills"] = _window(rise, HILL_SLOPE) * _window(elev, HILL_ELEV)
     raw["peaks"] = np.clip((elev - PEAK_ELEV[0]) / (PEAK_ELEV[1] - PEAK_ELEV[0]), 0, 1)
+    from . import dens as DN
+    raw["den"] = DN.fitness(f, rise, raw["cliff"], land)  # (PW-1382: caves, rock shelters, ground to dig; dens.py)
     ice = f("ice") > 0
     ice_edge = ~ice & nbr_reduce(g, np.logical_or, ice[g.nbr_idx])
     raw["frost"] = np.maximum(np.clip(f("permafrost") / 3.0, 0, 1), 0.8 * ice_edge) * ~ice

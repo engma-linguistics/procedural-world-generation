@@ -175,11 +175,6 @@ LEARN_GAIN = 0.6  # learned country holds a people at most this share of the way
 # people of one country, not a species' whole range.
 FOUND_SITES = 3
 FOUND_SPREAD = 1.0  # (in walking jump lengths, JUMP_KM)
-# D27 option C (PW-1218 C, lane 97): a denning people (kobolds, goblins) off broken country lives in thin dens, its density there
-# x (1 - den), instead of hardly at all (its habitat x (1 - den), lane 83). "Dense but narrow" read as density: kobolds keep to caves and
-# warrens but forage and raid out of them. Screened (docs/review/peoples-brakes/report.md, stage 1): it brought the stranded kobolds of
-# the three-people tree from 1-2% to 17-20% in two of four tries without lifting them in the full tree. False: lane 83's habitat cut
-DEN_THIN = True
 # The brakes (lane 97, owner D25: history.counter, where each is explained). All cut a people's K on a cell; none below COUNTER_FLOOR.
 COUNTER_FLOOR = 0.05  # lane 82: no brake holds a people under this share of its habitat (judgement: never species-ending)
 # lane 101 (PW-1240): a floor on K alone did not hold numbers (5% of a habitat is under EST, 0.12, so the cell was lost and a raider at

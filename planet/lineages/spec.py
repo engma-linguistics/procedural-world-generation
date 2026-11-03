@@ -84,8 +84,9 @@ TRAITS = {
     "cosmopolitan": {},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
     "aggressive": {"push": 0.7},
-    "denning": {"den": 0.75},  # (lane 83, owner D20: a people of dense dens and warrens in rock, kobolds and goblins: its habitat off broken
-    # country (mountain, hills, breaks) x0.25, so it holds a narrow country densely, not a cover of whole open or forested cells; history.habitat)
+    "denning": {"den": 0.5},  # (lane 83, owner D20: a people of dens and warrens in rock, kobolds and goblins. PW-1382 (Daniel 11-02:
+    # prefer den ground, never rely on it): its density x(1 - den) where the land has no caves, rock shelters or ground to dig, x1 on the
+    # best (the den good, dens.py; history.model.run); its habitat is not cut)
     "martial": {},  # (lane 83: its contest strength, DEMOGRAPHY: a disciplined, warlike people that holds and takes land, dwarves, hobgoblins)  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
     "sea_hunter": {},  # (D28 B, lane 99: a megafauna kind that also lives on the sea's seals and other marine mammals, history.megafauna.sea_food)

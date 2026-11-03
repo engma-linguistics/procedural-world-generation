@@ -3053,23 +3053,40 @@ def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
     assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
 
 
-def test_a_denning_people_holds_mostly_broken_country(faketz, monkeypatch):
-    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25. Lane 97
-    (D27 C, params.DEN_THIN, the default): thin dens instead, the habitat uncut and the density cut there (model.run)."""
-    from planet.lineages.history import params as PM
-    monkeypatch.setattr(PM, "DEN_THIN", False)
+def test_den_peoples_prefer_den_ground_but_live_on_poor_ground(faketz):
+    """PW-1382 (Daniel 11-02: prefer den ground, never rely on it): a denning people's habitat is a plain people's everywhere; its
+    density is x1 on the best den ground and keeps half (1 - the trait's den) where the land has no caves, shelters or ground to dig,
+    never zero; other peoples do not read the den ground. dens.fitness: karst best, plain ground with nothing to dig 0."""
+    from planet.lineages import dens as DN
+    from planet.lineages import ladder as LA
+    from planet import surface as SU
+    from planet.landform import HILLS, KARST
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     env = ps.fields(0.0, variability=False)
     tags = H._tags(ps.grid, env)
     plain = SP.Lineage("p", temp_c=(-20, 40), rain_mm=(1, 9000))
     den = SP.Lineage("d", temp_c=(-20, 40), rain_mm=(1, 9000), traits=["denning"])
-    Kp, Kd = H.capacity(plain, env, tags), H.capacity(den, env, tags)
-    broken = tags["mountain"] | tags["hills"] | tags["breaks"]
-    ok = Kp > 0
-    assert (ok & ~broken).any()
-    assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
-    monkeypatch.setattr(PM, "DEN_THIN", True)
-    assert np.allclose(H.capacity(den, env, tags), Kp)
+    assert np.allclose(H.capacity(den, env, tags), H.capacity(plain, env, tags))  # (the habitat: never cut)
+    lay = {"surface_rock": np.array([SU.LIMESTONE, SU.SHALE, SU.GRANITE, SU.SHALE]), "landform": np.array([KARST, HILLS, HILLS, HILLS]),
+           "loess": np.array([0.0, 0.0, 0.0, 5.0])}
+    f = lambda k: np.asarray(lay[k], float) if k in lay else np.zeros(4)  # noqa: E731
+    fit = DN.fitness(f, np.array([0.0, 0.0, 9.0, 0.0]), np.zeros(4), np.ones(4, bool))
+    assert fit[0] == pytest.approx(DN.KARST) and fit[1] == 0.0 and fit[2] == pytest.approx(DN.SHELTER_OTHER)
+    assert fit[3] == pytest.approx(DN.LOESS_X)
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", **base, "way": "forager"}, {"id": "den", **base, "traits": ["denning"]}]}
+    n = ps.grid.n
+    ps.graze_npp, ps.npp = np.full(n, LA.GRAZE_REF), np.full(n, LA.NPP_REF)
+    fit = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell the best den ground, the rest none)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.zeros(n), "grazing": np.zeros(n), "fish": np.zeros(n), "den": fit})
+    th = h.ladder.thin[h.idx["den"]]
+    assert np.allclose(th[fit == 1], 1.0) and np.allclose(th[fit == 0], 1.0 - SP.TRAITS["denning"]["den"]) and th.min() >= 0.5
+    assert np.allclose(h.ladder.thin[h.idx["hunt"]], 1.0)
+    h.ladder.refresh(1.0, False, force=True)
+    dd = h._dmap[h.idx["den"]]
+    assert (dd[fit == 0] > 0).all() and np.allclose(dd[fit == 0], 0.5 * dd[fit == 1].mean())  # (poor den ground: half, never none)
 
 
 def test_a_split_founds_by_its_parent_s_last_land(faketz):
