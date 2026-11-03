@@ -2,7 +2,7 @@
 id: PW-1408
 title: "Runs made before PW-1390 replay from t=0: their checkpoints are in the old format"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: store
@@ -29,4 +29,5 @@ What to do after the merge (no backward-compatibility code in planet/):
   `store.save_checkpoint` with the new code; check one slice matches its keyframe).
 
 ## Updates
+- 2026-11-03: Status todo -> done. Lane 149: tools/resave_checkpoints.py built and verified on a fresh old-code run, but none of the 68 runs' 687 checkpoints is convertible: all lack state fields added since they were written, so they already replayed from t=0 before PW-1390. Nothing under runs/ touched. Follow-up PW-1410.
 - 2026-11-03: Created from inbox draft draft-old-checkpoints-replay-from-zero.md (found by lane 147).

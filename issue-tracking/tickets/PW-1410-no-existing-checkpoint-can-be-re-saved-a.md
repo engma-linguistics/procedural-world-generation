@@ -1,4 +1,5 @@
 ---
+id: PW-1410
 title: "No existing checkpoint can be re-saved: all 68 runs' checkpoints lack state fields added since they were written"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane 149
 blocked_by: []
 relates: [PW-1390, PW-1035]
-refs: [tools/resave_checkpoints.py, planet/tectonics/simulation.py::Simulation.STATE, planet/timeline.py::replay, docs/review/peoples/den-raids/round1.md]
+refs: [tools/resave_checkpoints.py, "planet/tectonics/simulation.py::Simulation.STATE", "planet/timeline.py::replay", docs/review/peoples/den-raids/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,3 +37,6 @@ accepting t=0 replays. The same will happen at every future change to STATE: eac
 - [ ] decide which runs to keep and re-simulate them (or delete the runs; outputs are freely deletable)
 - [ ] close PW-1408 with this finding; keep `tools/resave_checkpoints.py` for a future format-only change (it stops with "lacks state" otherwise)
 - [ ] optional: have `planet simulate`/`replay` say once, in plain words, that a checkpoint is from older code and the run replays from t=0
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-all-old-checkpoints-lack-state.md (found by lane 149).

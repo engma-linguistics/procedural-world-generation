@@ -1,4 +1,5 @@
 ---
+id: PW-1412
 title: The winter air over the open sea sits almost at the water's temperature; over the N Atlantic the real air sits ~2.4 C below it
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane142
 blocked_by: []
 relates: [PW-1381]
 refs: ["planet/climate.py::_winter_air", "planet/climate.py::TUNE", docs/review/base-climate/n-atlantic/round1.md, docs/review/base-climate/n-atlantic/seabox.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,3 +41,6 @@ formula), everywhere, not only downwind of land. Needs a source for C_H and the 
 
 - [ ] the coldest month's air minus sea within ~1 C of NCEP minus OISST in the four boxes above, with the Nordic
   seas' winter air no worse
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-winter-air-over-heat-losing-sea.md (found by lane142).

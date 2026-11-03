@@ -2,7 +2,7 @@
 id: PW-1407
 title: Den peoples lose their raiding share when their tech moves between ladder refreshes
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: peoples
@@ -29,4 +29,5 @@ golden test needs an on-purpose update; check on the robust suite (base family) 
 - [ ] golden updated on purpose; robust base family invariants hold
 
 ## Updates
+- 2026-11-03: Status todo -> done. Merged aaa83852 (lane 149): Ladder._sn keeps the last settled_near map. Effect on the 6 robust runs vs main 3cf50fdd: under 0.001%. 966 passed.
 - 2026-11-03: Created from inbox draft draft-den-raids-dropped-between-refreshes.md (found by lane 146).

@@ -1,4 +1,5 @@
 ---
+id: PW-1413
 title: Under the overturning's inflow the sea's winter swing is cut to a tenth, but OISST shows about half
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane142
 blocked_by: []
 relates: [PW-593, PW-1381]
 refs: ["planet/ocean.py::winter_half", "planet/climate.py::_sea_half", docs/review/base-climate/n-atlantic/round1.md, docs/review/base-climate/n-atlantic/seabox.py, docs/review/base-climate/n-atlantic/get_sst.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,3 +41,6 @@ layer from the wind and the heating), not as a lone constant.
 
 - [ ] the winter half-swing under the inflow within ~0.7 C of OISST's in the Nordic seas and the NE Atlantic,
   on Earth L6
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-winter-half-cut-too-strong-under-inflow.md (found by lane142).

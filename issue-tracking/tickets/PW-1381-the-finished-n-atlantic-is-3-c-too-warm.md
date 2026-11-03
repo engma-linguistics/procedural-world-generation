@@ -2,7 +2,7 @@
 id: PW-1381
 title: The finished N Atlantic is ~3 C too warm in the annual mean and ~5 C in winter; now that the rain sees it (PW-1364), its storm track rains 1.7x GPCP
 type: task
-status: in-progress
+status: done
 parent: PW-015
 milestone: v2
 subsystem: ocean
@@ -60,6 +60,7 @@ loss (`moc_lambda`) against an observed SST climatology.
 - [ ] the L6 paired judge's late dT against PW-1364's merge: the +0.57 C (with its fewer glacial maxima) shrinks, or is shown to be sound on its own
 
 ## Updates
+- 2026-11-03: Status in-progress -> done. Merged 5c2dc50d (lane 142): moc_lambda 30 -> 60 from the RAPID/OSNAP heat budget. Paired judge vs main 0c1ca629: hard 0/0 both arms; soft 28 vs 30 of 36 (McNemar p 0.79); late dT -0.12 [-1.58,+0.64]; glacial maxima 13 -> 17. Full suite 962 passed after golden update. Follow-ups PW-1411..1413.
 - 2026-11-03: Lane 142 diagnosis (round1.md in worktree, commits a2815e10, 24bbc6bb): inflow keeps 57% of 26.5N heat at 60N vs observed 34% (RAPID 1.33 PW, OSNAP 0.45 PW); candidate moc_lambda 30->60. Earth L6 box SST 13.7->11.9 (OISST 11.9). Judge (2 rolls, 36 paired) running, ~7 AM.
 - 2026-11-03: Status todo -> in-progress. Lane 142 started overnight 11-03: diagnosis gate, screens, then judge.
 - 2026-11-02: Raised in practice: since PW-1364 this overshoot takes snow off every ice sheet (Antarctica's land rain -6.5% on Earth L6) and is behind the judge's late dT +0.57 C and glacial maxima 23 -> 13. Re-check the L6 judge's late dT after the fix. Next in the physics queue after PW-1316's judge.

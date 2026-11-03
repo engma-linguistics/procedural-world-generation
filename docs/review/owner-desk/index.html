@@ -207,15 +207,9 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>142 · North Atlantic too warm</td><td>PW-1381. <b>Found:</b> the warm current that carries heat north gives up too little of it on the way. On the model, 57% of
-the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (RAPID and OSNAP, the two mooring lines across the Atlantic).
-<b>The change:</b> one exchange rate doubled (30 → 60), set from that measured heat budget, not from the area's temperature. It isn't specific to Earth.
-<b>On Earth, compared with the current code:</b> the sea there goes from 13.7 to 11.9 °C over the year, matching satellite measurements
-(11.9). Winter rain drops from 2765 to 2265 mm (observed 1651), and Antarctica gets 2–3% more snow. The rest of the land is unchanged. What gets worse:
-the seas north of Iceland are now 2.7 °C too cold (they had been right only because the current arrived too warm), and winter air is still 3.9 °C too warm.
-Both are filed. <b>Now:</b> the 36-world test, done around 7 AM.</td></tr>
 
-<tr><td>149 · old saves and den raids</td><td>Your runs' saved checkpoints are in the old format since the memory trim, so slicing an older run would replay from the start (35–50 minutes at level 7). This re-saves them in the new format, checking each one before it replaces the old. Also a small fix: goblins, kobolds and troglodytes kept losing their raiding food between the 500-year updates (PW-1407).</td></tr>
+<tr><td>150 · North Atlantic, part 2</td><td>PW-1411, PW-1413, follow-ups to the fix below: the warm water should carry about a third of its heat past Iceland into the Norwegian Sea, but the model gives nearly all of it up south of Iceland, and the sea there hardly cools in winter (it should cool about half as much as the open ocean does). Diagnosis and quick screens first; it stops before the full test.</td></tr>
+<tr><td>151 · judge into tools</td><td>PW-1393, from the fresh-eyes review: move the code that decides whether a test planet passes out of review folders into tools/, so it can't get pruned away. Must give identical verdicts on a past test.</td></tr>
 <tr><td>148 · how stretched an orbit can be</td><td>Your ask (PW-1365): a study, not a change. How worlds behave as the orbit gets more stretched (eccentricity 0 to 0.2 and beyond): hot and frozen seasons, ice ages, CO2, and where a world stops being livable. It ends with a recommended range for the generator.</td></tr>
 </table></div>
 <p>Overnight these use up to about 44 cores, as you allowed; every lane drops back under your daytime cap (32 cores, about 90 GB together) from 8 AM.</p>
@@ -256,6 +250,9 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>North Atlantic too warm</b> (PW-1381): <b>merged</b>, all 962 tests pass. The warm current now gives up its heat on the way north at the rate the Atlantic mooring lines measure. On Earth, compared with the current code: the sea there 13.7 → 11.9 °C (satellites: 11.9), winter rain 2765 → 2265 mm. <b>The 36-world test, compared with the same worlds on the code before:</b> no hard failures on either; 28 against 30 passes, within chance; the late temperature moves −0.12 °C, not a real change. It gives back some ice ages: worlds reaching a full glacial maximum 13 → 17. Three follow-ups filed; two are lane 150.</li>
+<li><b>Den raids</b> (PW-1407): <b>merged</b>. Den peoples no longer lose their raiding food between updates; the effect at the end of a history is under 0.001%.</li>
+<li><b>Old saved checkpoints</b> (PW-1408): nothing to convert after all. All 687 old checkpoints in your 68 runs were already too old to resume from (written before state was added), so those runs already sliced from the start before last night's change. Slicing an old run takes 35–50 minutes at level 7; new runs are fine. Re-simulating any you want to keep sliced quickly is optional (PW-1410).</li></ul>
 <ul><li><b>Foragers trade with farmers</b> (PW-1386): <b>merged</b>, all 961 tests pass. A hunting-and-gathering people with farming neighbours within about a day's walk gets part of its food from them, up to half its foraging food: the Mbuti get over 60% of their food by weight from farm produce (Ichikawa 1983), Congo Basin foragers about 50% (Kitanishi 1995). How the share grows with the farmers' numbers is my judgement; no source I read measures it (PW-1405). <b>On 6 D&amp;D test runs, compared with the same runs before:</b> very small, 0.2–2.4% of forager peoples' food, because most foragers left by 1500 AD are fishers or herders. Whether herders and fishers trade too is filed (PW-1406).</li>
 <li><b>Memory trims</b> (PW-1390, PW-1389, from the level 9 report): <b>merged</b>, all 963 tests pass, and worlds come out bit-identical. <b>Peak memory, compared with the same run before:</b> level 6, 300 Myr: 2.45 → 1.34 GB; level 7, 200 Myr: 6.80 → 4.41 GB. The bigger level 9 saving (storing each plate's cells sparsely) is a refactor across about 8 modules, filed as PW-1409; keyframes (PW-801) are now the larger prize.</li></ul>
 <ul><li><b>Shared spin-up test tool</b> (lane 144): <b>merged</b> as a tool, not switched on; all 960 tests pass. What it found is in D45 above.</li></ul>
@@ -304,5 +301,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v122 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v123 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
