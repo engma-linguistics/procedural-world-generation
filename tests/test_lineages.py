@@ -2879,6 +2879,36 @@ def test_foragers_trade_with_farmer_neighbours(faketz):
     assert not lad.farmers_near().any()  # (nobody present yet: no farmers near)
 
 
+def test_den_people_keeps_its_raid_share_between_refreshes(faketz):
+    """PW-1407: a den people whose tech moves between the ladder's full refreshes is redone with the settled-near map of the last full
+    refresh, so its raiding share stays (it used to drop to nothing until the next full refresh)."""
+    from planet.lineages import ladder as LA
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", **base, "way": "farmer"}, {"id": "den", **base, "traits": ["denning"]}]}
+    n = ps.grid.n
+    ps.graze_npp = np.full(n, LA.GRAZE_REF)
+    ps.npp = np.full(n, LA.NPP_REF)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.ones(n), "fish": np.zeros(n)})
+    lad, fa, dn = h.ladder, h.idx["farm"], h.idx["den"]
+    h.p = np.zeros((len(h.lines), n))
+    h.p[fa] = 10 * LA.EST  # (farmers everywhere: raiders have something to raid)
+    lad.tech = lambda k, ago: (True, False, -1.0, -1.0, 0.0) if k == fa else (False, False, -1.0, -1.0, 0.0)
+    lad.refresh(1.0, False, force=True)
+    lad.refresh(1.0, False, force=True)  # (the first fills the farmers' shares and densities, the second reads them)
+    raid0, dmap0 = lad.raid[dn].copy(), h._dmap[dn].copy()
+    assert (raid0 > 0).all()
+    t_new = (False, True, -1.0, -1.0, 0.0)  # (the den people learns herding between two full refreshes)
+    lad.tech = lambda k, ago: t_new if k == dn else (True, False, -1.0, -1.0, 0.0)
+    lad.refresh(1.0 - LA.REFRESH_KYR / 2, False)  # (not due: only the den line is redone)
+    assert lad.state[dn] == t_new and np.array_equal(lad.raid[dn], raid0)
+    d, *_ = lad.line(dn, t_new, lad._sn)
+    assert np.allclose(h._dmap[dn], h.kx[dn] * d * lad.thin[dn]) and not np.allclose(h._dmap[dn], dmap0)
+    assert np.allclose(lad.line(dn, t_new, None)[0], lad.line(dn, t_new, lad._sn)[0]) is False  # (the raids do change the density)
+
+
 def test_published_ranges_are_optional_seeded_draws(faketz):
     """PW-1383: meta.draw_ranges draws the ladder's sourced numbers from their published ranges (ranges.py), seeded by the peoples
     seed. Off (the default): the fixed constants and the very same densities. On: inside the ranges, the same for a seed, others differ."""

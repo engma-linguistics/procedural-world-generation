@@ -194,6 +194,7 @@ class Ladder:
         self.raid = np.zeros((L, n)) if self.ok else None
         self.barter = np.zeros((L, n)) if self.ok else None  # (PW-1386: the part of each cell's food a forager people trades for)
         self._fn = None  # (PW-1386: the farmers near at the last due refresh)
+        self._sn = None  # (PW-1407: the settled near, for the den peoples' raids, at the last due refresh)
         if not self.ok:
             return
         self.fa = np.maximum(np.asarray(ps.npp, float), 0.0) / NPP_REF
@@ -329,9 +330,10 @@ class Ladder:
         if not self.ok or h._dmap is None:
             return
         due = force or self.last is None or (not deep and self.last - ago >= REFRESH_KYR)
-        sn = self.settled_near() if (due and self.den.any() and not deep) else None
-        if due:  # (PW-1386: the farmers near, kept between the due refreshes for lines whose tech moves in between)
+        if due:  # (PW-1386, PW-1407: the farmers near and the settled near, kept between the due refreshes for lines whose tech moves in between)
+            self._sn = self.settled_near() if (self.den.any() and not deep) else None
             self._fn = None if deep else self.farmers_near()
+        sn = self._sn
         fn = self._fn
         for k, l in enumerate(h.lines):
             if not self.people[k] or l.marine:
