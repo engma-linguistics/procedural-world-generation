@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-649
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: peoples-workbench-lane

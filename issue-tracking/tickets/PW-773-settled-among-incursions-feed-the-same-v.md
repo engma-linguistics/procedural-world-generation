@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-767
 milestone: later
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: fun15

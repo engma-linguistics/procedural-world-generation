@@ -4,7 +4,7 @@ title: "Mature start: what still moves early (the breakup's erosion dip, sedimen
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: surface
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-558, PW-576, PW-559, PW-549, PW-649]
 refs: [planet/tectonics/setup.py, docs/review/base-climate/thermostat.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,5 +34,6 @@ sediment cover (thermostat.md, Stage 3). The ice-free land's erosion now starts 
 - [ ] check the volume ratio on more seeds; if it's the start's margins, look at subduction erosion of thin crust
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-relief-spinup-erosion-rise.md (found by base-climate-laneB3).

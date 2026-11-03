@@ -5,7 +5,7 @@ type: story
 status: in-progress
 parent: PW-691
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: m
 impact: med
 found_by: fun6

@@ -4,7 +4,7 @@ title: Does a sheet's carried air over-protect big glacial sheets' summer margin
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-030, PW-336]
 refs: [planet/icemass.py, planet/climate.py, docs/review/audit/PW-030-handoff.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,5 +31,6 @@ latitude or onshore-wind dependence of the carried air would be physics, not a f
 - [ ] if changed: PW-030's metrics rerun (handoff's three L6 moments and Earth)
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-sheet-air-protects-glacial-margins.md (found by pw030).

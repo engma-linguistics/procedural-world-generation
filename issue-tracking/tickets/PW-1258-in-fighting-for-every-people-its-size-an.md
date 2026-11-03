@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-917
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: med
 found_by: lane101

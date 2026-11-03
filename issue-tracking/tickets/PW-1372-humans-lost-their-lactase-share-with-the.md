@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: s
 impact: low
 found_by: lane 136 / lane 137 (density ladder build)

@@ -10,10 +10,10 @@ effort: m
 impact: low
 found_by: smalls2
 blocked_by: []
-relates: [PW-075, PW-649]
+relates: [PW-075, PW-649, PW-013]
 refs: [planet/climate.py, planet/coast.py, tools/coast_check.py]
 created: 2026-10-15
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,5 +21,6 @@ Rest of PW-075. tools/coast_check.py: India W wave power 2.9 kW/m (obs 8-15). Th
 - [ ] July wind over the Arabian Sea SW and strong; coast_check India W within 2x
 
 ## Updates
+- 2026-11-03: Related to PW-013 added 11-03 (fresh-eyes review s3); already milestone later.
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-15: Created from inbox draft draft-india-monsoon-swell.md (found by smalls2).

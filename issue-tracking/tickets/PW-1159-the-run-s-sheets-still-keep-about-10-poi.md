@@ -4,7 +4,7 @@ title: The run's sheets still keep about 10 points of extra land ice at dT -4 on
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1142, PW-464]
 refs: [tools/ice_probe.py, planet/tectonics/earth.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ credit it for terminations; not read here); the sheets' carried air (lane 67: wi
 - [ ] The staircase gap at -4 within ~3 points, with the down-leg still ~25% at -8
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-30: Created from inbox draft draft-mid-leg-ice-hysteresis.md (found by lane71).

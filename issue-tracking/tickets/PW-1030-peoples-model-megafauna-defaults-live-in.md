@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: null
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: code-audit-2026-10

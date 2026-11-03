@@ -16,12 +16,13 @@ The physics is "toy but physical". Each process is a cheap version of a named re
 
 | Step | Command | What you get | Scale and cost (level 7) |
 |---|---|---|---|
-| **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~20–25 min per Gyr. |
+| **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~35–40 min per Gyr on a quiet machine, ~50 under load (see the cost note under the table of §4). |
 | **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, vegetation (and biomes from it), ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
 | **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes, landform-specific terrain and per-pixel vegetation. | ~10–15 s. |
 | **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6, ~30 min at L7. |
 | **Finished world** | `planet finish <timezoom> --kyr N` (or `<run> --at T`) | A world at any kyr of a time zoom: its ice, sunken bed, sea level and climate on the run's geology. | Seconds (L6) to ~1 min (L7). |
 | **Highlights** | `planet highlights <run> --at auto --zoom N` | The ~40–55 most interesting places, with pre-made zooms. | Seconds. |
+| **Peoples** | `planet lineages <world or time zoom>` (then `planet techtree`, `planet settlements`) | A tree of peoples (lineages, dragons and giants included) placed, split and spread over the last ~300–400 kyr on the world's own climate, with demes, emergent cultures, gods and taboos, a tech tree, settlements and a culinary brief per region (§2.24–2.27). Stored as a run of its own (`kind: timezoom, phase: lineages` for now, PW-1394). Not yet part of `planet make`. | Minutes to an hour; see §2.26. |
 
 All of these are browsed in a three.js viewer: `planet serve` (http://127.0.0.1:8765/viewer/).
 
@@ -35,9 +36,10 @@ flowchart LR
   W -->|"planet zoom"| Z[("regional zoom<br/>500 px, 0.5–4 km/px")]
   R -->|"planet timezoom --at T"| T[("time zoom run<br/>1 Myr of ice ages")]
   T -->|"planet finish --kyr N"| W
+  W & T -->|"planet lineages"| P[("peoples run<br/>lineages, cultures, gods,<br/>tech, settlements, brief")]
   W -->|"planet highlights"| H[("highlights<br/>+ pre-made zooms")]
   H --> Z
-  R & W & Z & T & H --> V["viewer<br/>planet serve, :8765"]
+  R & W & Z & T & H & P --> V["viewer<br/>planet serve, :8765"]
 ```
 
 ### What you can do with it
@@ -48,7 +50,7 @@ flowchart LR
 - Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
 - Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
 
-**Not yet built:** resources, settlements and a game export are on the roadmap (PW-184, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world, run and zoom parts and its climate feedbacks, not yet the time zoom (PW-187 steps 7–9). There is no day-scale weather yet (PW-156).
+**Built since this list was first written:** a resources layer (§2.23), settlements (§2.25), a game export (`planet export`, PW-100 done) and the whole peoples layer (§2.24–2.27). **Not yet built:** the peoples step in `planet make` and the New planet form (PW-1394); languages and polities (PW-982 ff; `docs/plan_next.md`); vegetation (§2.18) has its world, run and zoom parts and its climate feedbacks, not yet the time zoom (PW-187 steps 7–9). There is no day-scale weather yet (PW-156).
 
 ---
 
@@ -1038,9 +1040,10 @@ Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `me
 |---|---|---|---|---|---|
 | 5 | fastest; used by `generate` and tests (no recent run timing) | small | — | seconds | ~1 MB |
 | 6 | ~6–8 min per Gyr | well under L7's (not measured) | ~0.5–0.65 GB (layers ~0.3, checkpoints 10 × ~12 MB) | 1.5–5 s after replay | ~5 MB |
-| 7 | ~20–25 min per Gyr (up to ~35 under load) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × ~45 MB) | 13–28 s after replay | 30–45 MB |
+| 7 | ~35–40 min per Gyr quiet, ~50 under load (see the cost note) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × ~45 MB) | 13–28 s after replay | 30–45 MB |
 | 8 | ~3–4 h per Gyr | ~3.5 GB | ~17 MB per keyframe, so use `--every 10` | world + 5 highlight zooms ~8.5 min | — |
 
+- **L7 cost, one figure (checked 2026-11-03).** Earlier docs gave three: 20–25 min per Gyr (this table, from the first sweeps), 30–40 (CLAUDE.md) and ~50 (coordination.md, the 2026-10-15 health sweep with 11 workers at once). The latest measurements are `docs/review/speed/pw252.md` (2026-11-01/02, seed 3199, 100 Myr, 16 threads): L7 274 s before and 242 s after PW-252 part 1 on a quiet machine (about 40 min per Gyr), and part 2 took a further 15–25% off (292 s against 360 s on a machine at load 12–60, about 49 against 60 min per Gyr). So: **~35–40 min per Gyr quiet, ~50 under load.** These are 100 Myr slices scaled up, not a full-Gyr timing; the L8 figure (5 h 26 min for 1 Gyr, lane 105) is the only recent full-run one. The same slices put L6 at 67 s per 100 Myr (about 11 min per Gyr), above the ~6–8 min in the table; the L6 row is older and not rechecked here.
 - **Vegetation:** in the run ~0.09 s per climate update at L6 (~25 s per Gyr, ~8% of a run; L6 1 Gyr took 4.6 min, L7 23 min with other jobs running); in a world 0.2 s at L6. It adds ~3 MB to an L6 world (9 → 12 MB) and ~13 MB at L7 (~58 MB), and three layers (vegetation, tree cover, NPP) to run keyframes.
 - **Soils:** worlds only, ~0.8 s at L7 (mineral pass ~0.7 s, mostly the loess sweeps; climate memory from the keyframes ~0.35 s; organic pass 0.03 s); +5.6 MB on an L7 world JSON (62 → 68 MB); L7 worlds from keyframes took 25-31 s with them (under load).
 - **Lakes and river routing** (`hydrology.lakes` + `route`, PW-255; Threadripper, 8 numba threads, load ~12-18, seed 3199, 100 Myr): L6 ~6.1 -> ~3.4 s of a ~33.5 -> ~31 s run (medians of 3 interleaved pairs); L7 37.2 -> 23.6 s of a 180 -> 166 s run (one pair). Bit-identical (radix sort of the land cells, lake order reused across `_settle`'s tries, a filled-only flood for `_bed`, Floyd's heap pop). Then PW-344 (outputs change): `priority_flood_to` takes tied cells first come first, a strict order, so it queues only the coastal outlets, not the open sea: the flood 3.5 -> 1.9 ms at L6 and 23 -> 9.5 ms at L7 (~2.4x; the ~3.6x of a coast-only queue without the tie order isn't sound: its ties followed the heap's layout). Whole 100 Myr runs (8 threads, load 21-33): L6 36.2 -> 34.1 s (medians of 3 interleaved pairs); at L7 the expected ~6-7 s (~435 route floods per 100 Myr) is below the load noise (base 166-203 s, new 164-196 s over 4 pairs).

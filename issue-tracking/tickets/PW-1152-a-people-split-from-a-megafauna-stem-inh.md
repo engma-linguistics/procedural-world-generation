@@ -2,7 +2,7 @@
 id: PW-1152
 title: A people split from a megafauna stem inherits the dragons' world-wide range at once (kobolds, dragonborn)
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-677, PW-888, PW-937]
 refs: [planet/lineages/history/origins.py, "peoples runs e6ca59 (lane 73 arm 2), 488d7e"]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -46,5 +46,6 @@ Options:
 - [ ] decide A or B; implement; re-run one peoples run and compare the kobolds' and dragonborn's founding area and present share
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03 (housekeeping, fresh-eyes review s3): built. One-spot founding is the rule for every split (owner D20 'no inherited worldwide ranges', 10-31, decisions.md): origins._origin_split founds at one spot, origins._origin_off_megafauna handles the dragon stem; overview 2.26 'One-spot founding'.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-split-inherits-megafauna-stem-range.md (found by lane73).

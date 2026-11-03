@@ -5,7 +5,7 @@ type: story
 status: in-progress
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: l
 impact: high
 found_by: owner

@@ -2,7 +2,7 @@
 id: PW-1173
 title: "Owner call: after niche learning humans still hold about two thirds of people in the even-six tree; what next?"
 type: task
-status: needs-decision
+status: done
 parent: PW-917
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1155, PW-1149, PW-1152]
 refs: [planet/lineages/history/params.py, tools/peoples_robust/trees/even_six.toml, "world 4360a3"]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -42,5 +42,6 @@ Options:
 Lean: B, then re-measure. Only C if B is short.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: its lean B (densities by way of life) is built (PW-1149 B, PW-1203 A, overview 2.26; owner D20 lever 3), and D31 (10-31) ruled to stop fiddling with peoples shares until war/polities. Remaining share questions are PW-1241.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-even-six-after-niche-learning.md (found by lane79).

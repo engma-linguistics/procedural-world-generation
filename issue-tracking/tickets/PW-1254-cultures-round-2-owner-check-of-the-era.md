@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-670
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: xs
 impact: med
 found_by: lane108

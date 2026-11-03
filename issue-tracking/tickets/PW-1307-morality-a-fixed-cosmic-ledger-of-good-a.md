@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: PW-1308
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: m
 impact: med
 found_by: religion-doc-chat

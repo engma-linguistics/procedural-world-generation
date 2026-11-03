@@ -5,7 +5,7 @@ type: task
 status: in-progress
 parent: PW-981
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: xs
 impact: med
 found_by: fun46-demes

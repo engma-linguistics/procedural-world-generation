@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: m
 impact: med
 found_by: fun-lane-60

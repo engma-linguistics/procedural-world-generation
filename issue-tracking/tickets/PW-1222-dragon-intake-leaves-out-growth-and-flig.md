@@ -4,8 +4,8 @@ title: "Dragon intake leaves out growth and flight: the mesotherm law is a field
 type: task
 status: needs-decision
 parent: null
-milestone: v2
-subsystem: timezoom
+milestone: later
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane-90
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1066, PW-958]
 refs: [planet/lineages/dragon_ages.py, docs/review/dragon-food-chain/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Options:
 Lean: A. The intake law is now a stated, sourced choice; B and C have no number to put in.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Dragon-density tail; PW-961 stays. Still needs-decision; parking does not answer it.
 - 2026-10-31: Created from inbox draft draft-dragon-intake-growth-and-flight.md (found by lane-90).

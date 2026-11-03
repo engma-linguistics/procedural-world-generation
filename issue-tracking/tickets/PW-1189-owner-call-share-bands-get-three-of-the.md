@@ -2,7 +2,7 @@
 id: PW-1189
 title: "Owner call: share bands get three of the even six into 12-22%, but humans and elves need more than a x4 nudge"
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-917
 milestone: v2
 subsystem: highlights
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1173, PW-1149, PW-1155]
 refs: [planet/lineages/history/bands.py, tools/peoples_robust/trees/even_six.toml, "world 4360a3"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -50,4 +50,5 @@ main). Share of people:
 - Lean: B, then D. C only if the owner wants the even split exactly.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> wontdo. Closed 11-03: superseded. Owner D31 (10-31) paused peoples-share tuning; densities by way of life (PW-1203 A, D20) replace the x4 band nudge, and band_pct is set by neither shipped preset (fresh-eyes review, R7: dead knob). A mechanism ledger (D44) decides whether to retire the code.
 - 2026-10-30: Created from inbox draft draft-share-bands-cannot-even-out-the-six.md (found by lane78b).

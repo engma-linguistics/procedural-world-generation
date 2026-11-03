@@ -5,7 +5,7 @@ type: task
 status: needs-decision
 parent: null
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: xs
 impact: low
 found_by: fix-lane-49

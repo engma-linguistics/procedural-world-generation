@@ -34,7 +34,7 @@ TYPES = ["epic", "story", "task"]  # order = hierarchy rank
 STATUSES = ["todo", "in-progress", "blocked", "needs-decision", "done", "wontdo"]
 CLOSED = {"done", "wontdo"}
 SUBSYSTEMS = ["tectonics", "surface", "climate", "ocean", "hydrology", "coast", "zoom", "timezoom",
-              "highlights", "viewer", "store", "infra", "docs"]
+              "highlights", "viewer", "store", "infra", "docs", "peoples", "culture", "food"]
 EFFORTS = ["xs", "s", "m", "l", "xl"]  # ascending
 IMPACTS = ["low", "med", "high"]  # ascending
 MILESTONES = ["v1", "v2", "v3", "v4", "later"]  # or null: unscheduled

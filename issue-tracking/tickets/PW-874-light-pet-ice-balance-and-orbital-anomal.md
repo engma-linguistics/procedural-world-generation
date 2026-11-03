@@ -4,7 +4,7 @@ title: Light, PET, ice balance and orbital anomalies use today's S0 while the ru
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-809, PW-791]
 refs: [planet/orbit.py, planet/climate.py, planet/tectonics/earth.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,5 +30,6 @@ Coupling audit finding C9 (severity low for the Earth-like v1 finish; docs/revie
 **What to try:** Pass the star's L/L_now into climate.compute / months / icemass (one scale on S0), from the run's frame stats.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-26: Milestone null -> v1. (PW-900 backlog reorg).
 - 2026-10-25: Created from inbox draft draft-insolation-uses-todays-sun-not-the-runs-star.md (found by coupling-audit).

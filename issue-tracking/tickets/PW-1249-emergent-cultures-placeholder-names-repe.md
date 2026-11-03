@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: s
 impact: low
 found_by: lane107

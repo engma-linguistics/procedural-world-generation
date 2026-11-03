@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1150, PW-697]
 refs: [planet/lineages/history/portals.py, planet/lineages/samples/dnd.toml, tools/peoples_robust/trees/late_humans.toml]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -35,4 +35,5 @@ from 29% of all people to 84%, and the gnomes fell from 8% to 0.2%.
 - Lean: A. The number of portals then says where a people lands, not how many come.
 
 ## Updates
+- 2026-11-03: Re-checked 11-03 (housekeeping): not settled by a ruling. D21 fixed arrival size for now and D25 (4) put the portal trickle later (PW-1195), but neither answers a founderless arrival at every portal. Left open.
 - 2026-10-30: Created from inbox draft draft-arrivals-without-founders-land-at-every-portal.md (found by lane78b).

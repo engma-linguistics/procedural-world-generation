@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: PW-661
 milestone: v3
-subsystem: timezoom
+subsystem: culture
 effort: l
 impact: med
 found_by: daniel

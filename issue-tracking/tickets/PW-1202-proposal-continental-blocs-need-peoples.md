@@ -5,7 +5,7 @@ type: story
 status: needs-decision
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: l
 impact: high
 found_by: lane84

@@ -4,7 +4,7 @@ title: "Run ice: a coastal accumulation zone must pay the zoom's calving and she
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-461, PW-460, PW-459, PW-436, PW-462]
 refs: [planet/tectonics/earth.py, planet/timezoom/ice.py, planet/timezoom/sim.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,6 +44,7 @@ PW-460/459 code, and the 10-seed cold-era check.
 - [ ] main's 10-seed cold-era check does not get worse
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-26: Merged PW-513: fixed margin thickness, cheap shallow coasts, and newly exposed marine coast charged a climate update late. (PW-900 backlog reorg).
 - 2026-10-26: Merged PW-461: sub-cell margin + seasonal insol_k deepen the zoom but freeze the run's cold eras (1/10 seeds); the run needs a way to deglaciate. (PW-900 backlog reorg).
 - 2026-10-26: Merged PW-556: run ice with coast_loss drifts 5/10 on the merged code's run moments; heavily iced moments miss by 40-90 m both ways. (PW-900 backlog reorg).

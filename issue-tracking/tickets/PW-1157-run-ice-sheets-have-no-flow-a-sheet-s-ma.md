@@ -4,7 +4,7 @@ title: "Run ice sheets have no flow: a sheet's margins can't be resupplied from 
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1142, PW-464, PW-1115]
 refs: [planet/tectonics/earth.py, planet/icemass.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -48,4 +48,5 @@ Options:
 - [ ] Owner: draw-down for v1, SIA later, or accept
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-30: Created from inbox draft draft-ice-flow-resupplies-margins.md (found by lane75).

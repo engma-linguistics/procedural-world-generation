@@ -2,7 +2,7 @@
 id: PW-1181
 title: Make one-spot founding the default (SPLIT_FOUNDING = local); decide whether a stem's range still passes to its children at its end
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1152, PW-677, PW-888]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/params.py, tools/peoples_robust.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -50,5 +50,6 @@ split-teleport fix (draft "split whose stem has died out ... best habitat anywhe
 parent when the parent is gone.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: the SPLIT_FOUNDING switch is gone (params.py comment, lane 83); one-spot founding is the rule (owner D20, 10-31) and origins._end_parent leaves a stem's land empty, passing to no child (the strict local_vacate option); overview 2.26.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-local-founding-default-and-stem-handover.md (found by lane77).

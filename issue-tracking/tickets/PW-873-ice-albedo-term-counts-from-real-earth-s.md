@@ -4,7 +4,7 @@ title: Ice-albedo term counts from real Earth's ice share (3.1%), not the model'
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/earth.py, tools/ice_probe.py, docs/review/coupling-audit/]
 created: 2026-10-25
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,6 +32,7 @@ Coupling audit finding C8 (severity low for the Earth-like v1 finish; docs/revie
 **What to try:** Set EARTH_ICE from the model's own Earth probe (area-weighted) and weight ice_frac by cell area. Fold into the next calibration pass.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-26: Milestone null -> v1. (PW-900 backlog reorg).
 - 2026-10-25: v1-finish-13 (1b52cdf): ice-albedo zero is the model's own Earth ice at dT 0, area-weighted (earth.MODEL_EARTH_ICE: L6 2.77%, L7 3.05%, tools/ice_probe.py now prints the area share); the run's ice share is area-weighted.
 - 2026-10-25: Created from inbox draft draft-ice-albedo-reference-is-real-earths-ice.md (found by coupling-audit).

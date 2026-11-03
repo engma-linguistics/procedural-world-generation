@@ -5,7 +5,7 @@ type: epic
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: xl
 impact: med
 found_by: owner
