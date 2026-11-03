@@ -13,7 +13,7 @@ blocked_by: [PW-1316]
 relates: [PW-1073, PW-1221, PW-1246]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, docs/review/dragon-numbers/round2.md, docs/references/megafauna/coe1976_african_herbivore_biomass_rainfall_oecologia.pdf]
 created: 2026-11-01
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,6 +50,7 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-03: Lane 140b screen (8bc401dd, round1.md s6): neither half alone fails (herb-only 24.4/39.4, fuel-only 23.4/39.8 on the two draws); failures are chaos at a thin margin plus a small real cold shift (+1.35 pt mean window land ice over 36 draws, herb part at least as much as fuel); not via trees; FUEL_MIN 200 is needed (scrub stops burning without it). Next (lane 140c): null-nudge screen of main's 6 coldest, then a written diagnosis of the weathering reference grown on the spin-up climate.
 - 2026-11-02: Lane 140 judge (2 rolls, 36 paired draws): soft 30 -> 26 (p 0.39), dT/CO2 unchanged, trees -1.8 pt, hard bar 2 frozen over (42.9%, 41.7% land ice; main 0). Strike 1, not merged (branch commits 88ebe5a4, ada450a2, 351a995f). Next: targeted screen on the two draws, each part alone (herb resp vs FUEL_MIN 200), before any re-judge.
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 140 started on D42 A (C1 herb root respiration with the NPP_WEATHER re-anchor, PW-1332, and the fuel floor PW-1328 if needed). PW-1316 settled without change (B failed).
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D42 A (herbs' root respiration, see what it gets us). After D39 (PW-1316) lands, since lowering grass NPP warms runs through NPP_WEATHER and the CO2 references.

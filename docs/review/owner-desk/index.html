@@ -142,7 +142,14 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 measurements to 1.15–1.5×, and on average temperature and CO2 didn't move. But 2 of the 36 worlds went frozen over (42.9% and 41.7% of land
 under ice; the limit is 40%), against none on the current code. Those were the two coldest worlds already (36% and 35% on the current code). Trees
 also fell 1.8 points, probably from the second part of the change, a lower fuel threshold for fires (250 → 200 g C/m², from the fire model
-GlobFIRM). Now running: those two worlds again with each part alone, to find which part pushes them over, before any new full test. Herds in
+GlobFIRM). <b>Each part alone, on those two worlds:</b> neither went over 40% (best 24%, worst 39.8%). Together they did, and on one world
+each part alone came out warmer than the current code while both together came out colder. That looks like chance at a thin margin: what
+decided it was whether a deep ice age ended just before or just after the 300 Myr window opens. But there's also a small real cold push (+1.4 points of
+land ice on average over the 36 worlds, compared with the same worlds on the current code). The herb change carries at least as much of it as the fire
+change. It isn't coming through the trees. The fire change is needed: without it the Mediterranean scrub stops burning at all, a real effect, not a test quirk.
+<b>Now running (140c):</b> the current code's six coldest worlds again with a nudge that changes no physics, to see whether chance alone
+can push the current code over 40% too. Then a written diagnosis of the likely real culprit: the planet's weathering yardstick is set using
+plants grown on the cold early climate. No full test until that's understood. Herds in
 warm African grassland would drop to about 0.7× Coe's measured parks. They matched before, and the remaining gap is in the herd formula,
 not the plants.</td></tr>
 <tr><td>142 · North Atlantic too warm</td><td>The next physics item (PW-1381). The model's sea between Newfoundland and Ireland is about 3 °C too warm over the year
@@ -213,5 +220,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v110 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v111 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
