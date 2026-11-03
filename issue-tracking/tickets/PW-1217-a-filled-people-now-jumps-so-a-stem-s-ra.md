@@ -2,7 +2,7 @@
 id: PW-1217
 title: "A filled people now jumps, so a stem's range and its splits' birthplaces move: one dnd5 try has humans at 2.6% (elves 60%)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: highlights
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-920, PW-1202, PW-1207]
 refs: [planet/lineages/history/dispersal.py, docs/review/peoples-d20/report.md, docs/review/peoples-d20/suite-final.md, "world af2677"]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ Options:
 Lean: A, then B if the re-rolled small trees swing more than base.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: the desk call D27 (10-31, decisions.md) left the jump-push cradle moves to the coordinator's judgement, and lane 97 kept the rule as built (decisions.md 10-31 lane 97 entry); the jump rule is overview 2.26 'Free country and the jump'. Brittleness belongs to PW-1207 (per-world swing).
 - 2026-10-31: Created from inbox draft draft-peoples-jump-push-moves-cradles.md (found by lane83b).

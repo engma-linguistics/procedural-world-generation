@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: l
 impact: high
 found_by: coordinator

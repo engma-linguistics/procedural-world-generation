@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: null
-subsystem: timezoom
+subsystem: food
 effort: s
 impact: low
 found_by: pw901-history-split

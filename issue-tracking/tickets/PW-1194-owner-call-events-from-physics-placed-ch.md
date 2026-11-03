@@ -2,7 +2,7 @@
 id: PW-1194
 title: "Owner call: events from physics-placed chance; fast-breeder brake = raid losses + culling wars on top of land; dwarves' disease resistance"
 type: task
-status: needs-decision
+status: done
 parent: PW-917
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1169, PW-1167, PW-1185]
 refs: [docs/review/peoples-events/design.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,5 +44,6 @@ updated: 2026-10-31
 Recorded: virgin-soil epidemics stay off (your 10-31 ruling). That belongs in PW-1167's Updates.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: answered by owner D25 (10-31, in its Updates) and built: dwarves disease_resist 0.75 (spec.py, dnd.toml), raid losses + culls + in-fighting (lane 97 and 101, overview 2.26). Events (PW-1193, PW-1167, PW-1169) and the portal trickle (PW-1195) stay as their own tickets.
 - 2026-10-31: Daniel 10-31 (D25): 1=B; 2=A+B+C plus in-fighting within raider peoples; 3=dwarves disease resistance 0.75; 4=portal trickle later; 5=open, wants a breakdown with a graph of the commonest people's share under the dials.
 - 2026-10-31: Created from inbox draft draft-owner-call-events-brakes-resistance.md (found by lane-85).

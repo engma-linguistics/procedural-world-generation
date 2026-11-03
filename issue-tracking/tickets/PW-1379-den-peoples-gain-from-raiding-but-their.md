@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane 138 (density ladder sources round 2)

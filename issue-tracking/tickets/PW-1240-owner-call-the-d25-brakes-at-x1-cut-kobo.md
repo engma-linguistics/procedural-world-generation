@@ -2,7 +2,7 @@
 id: PW-1240
 title: "Owner call: the D25 brakes at x1 cut kobolds and goblins hard (mostly through in-fighting) and leave the humans untouched, so the commonest people grows"
 type: task
-status: needs-decision
+status: done
 parent: PW-917
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1165, PW-1172, PW-1218]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-brakes/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,6 +50,7 @@ Options:
 Lean: B now, D with PW-1172. The question of what the commonest share should be is in the report's last section.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: B done and D dropped, per this ticket's own 10-31 Updates (lane 101: in-fighting for every people, BRAKE_HOLD 0.24 in params.py and counter.py; the leader brake via war deaths measured 0-0.2% and was dropped on D31). The sizes are parked in PW-1258; overview 2.26 'The brakes'.
 - 2026-10-31: Owner 10-31: in-fighting for every people, humans included (lane 101). PW-1172 war-deaths leader brake parked to the war/polities work.
 - 2026-10-31: Lane 101: B done for every people, humans included (Daniel D31), sourced to Carneiro 2012, Chagnon 2014, Walker and Hill 2014; the floor holds numbers (BRAKE_HOLD 0.24 on held cells). D (war-deaths leader brake) built, measured at 0-0.2%, dropped on Daniel's ruling and parked with PW-1172. Suite: commonest dnd 64/37%, fails 7 of 82 (4 dnd3, 3 Seven Meals half-orcs never founded), no people lost to a brake. Sizes parked in draft-in-fighting-judgements-for-polities.md.
 - 2026-10-31: Coordinator: B (in-fighting rises with the raiders' own crowding) plus D (a leader brake via PW-1172 war deaths) plus a floor that holds numbers go to lane 101. Daniel's target for the commonest share (PW-1241) sets the judge.

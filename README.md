@@ -96,8 +96,8 @@ uv run python -m planet report <run-id>                                         
 `-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (~220 km cells),
 6 = 41k (~110 km), 7 = 164k (~55 km), 8 = 655k (~28 km). `simulate` defaults to
 level 6, `generate` to level 5. Rough `simulate` times on a laptop (they vary
-with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~20-35 min
-per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
+with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~35-40 min
+per Gyr (~50 under load; docs/overview.md section 4), level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
 ## Game export (`planet export`, `planet/export.py`, PW-100)
 

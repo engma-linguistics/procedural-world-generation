@@ -4,8 +4,8 @@ title: "Source the peoples' share of the dragon food budget: a person's food, th
 type: task
 status: todo
 parent: null
-milestone: v2
-subsystem: timezoom
+milestone: later
+subsystem: peoples
 effort: s
 impact: low
 found_by: fun-lane-45b
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-991, PW-974]
 refs: [planet/lineages/history/megafauna.py, docs/references/megafauna/README.md]
 created: 2026-10-29
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,5 +34,6 @@ Cross-checks already on file: Farlow 1993 (p. 172) 7 kJ per g live mass puts a 0
 - [ ] the guild rule checked against a living large-mammal guild (e.g. Serengeti carnivore biomass by species)
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Dragon-density tail; PW-961 stays.
 - 2026-10-31: Lane 90: the peoples' game take now uses the shared edible figure HEAD_KCAL (Carbone 2007 carcass use); WILD_MEAT still unsourced. docs/review/dragon-food-chain/report.md
 - 2026-10-29: Created from inbox draft draft-food-budget-peoples-share-constants-unverified.md (found by fun-lane-45b).

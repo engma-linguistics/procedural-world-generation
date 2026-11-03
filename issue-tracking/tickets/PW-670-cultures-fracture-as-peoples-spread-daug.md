@@ -5,7 +5,7 @@ type: story
 status: in-progress
 parent: PW-661
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: l
 impact: med
 found_by: daniel

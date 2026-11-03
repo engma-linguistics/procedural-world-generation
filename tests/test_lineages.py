@@ -170,6 +170,7 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     out = O.save(h, res, pres, name="test peoples")
     run = json.loads((out / "run.json").read_text())
     assert run["meta"]["phase"] == "lineages" and run["frames"][-1]["t"] == 0
+    assert run["meta"]["draw_ranges"] is False and run["meta"]["range_draws"] == {}  # (PW-1383: off by default)
     assert [l["id"] for l in run["meta"]["lineages"]] == [l.id for l in h.lines]
     _, arr = T.load_frames(out, ("peoples",))
     assert arr["peoples"].shape[0] == len(run["frames"])
@@ -2806,9 +2807,9 @@ def test_people_density_reads_the_ladder(faketz):
     lad = h.ladder
     assert lad.ok and lad.den[h.idx["den"]] and not lad.den[h.idx["hunt"]]
     hu, fa = h.idx["hunt"], h.idx["farm"]
-    d, sf, sh, rung, _ = lad.line(hu, (False, False, -1.0, -1.0), None)
+    d, sf, sh, rung, *_ = lad.line(hu, (False, False, -1.0, -1.0), None)
     assert np.allclose(d, LA.FORAGER * (ps.npp / LA.NPP_REF) ** LA.FORAGER_POW) and not sf.any() and (rung == 0).all()
-    d2, sf2, _, rung2, _ = lad.line(fa, (True, False, -1.0, -1.0), None)  # (gardens where the land is farmable, foraging elsewhere)
+    d2, sf2, _, rung2, *_ = lad.line(fa, (True, False, -1.0, -1.0), None)  # (gardens where the land is farmable, foraging elsewhere)
     farmable = np.clip(goods["fertile"] / LA.FARM_FULL, 0, 1)
     assert np.allclose(sf2, farmable) and np.allclose(d2, farmable * LA.GARDEN * ps.npp / LA.NPP_REF + (1 - farmable) * d)
     d3, *_ = lad.line(fa, (True, False, 2.0, -1.0), None)  # (the medieval plough, never above its top)
@@ -2817,6 +2818,107 @@ def test_people_density_reads_the_ladder(faketz):
     assert np.allclose(sfd, LA.DEN_FARM_W * farmable)
     lad.refresh(1.0, False, force=True)
     assert np.allclose(h._dmap[fa], 1.2 * lad.line(fa, lad.state[fa], None)[0])  # (x the kind factor)
+
+
+def test_rich_wild_land_resists_farming(faketz):
+    """PW-1385 A: where the wild feeds far more than the land's ordinary foraging (rich waters), a people knowing crops farms only
+    part of the farmable land, more of it the longer it has known crops; ordinary land farms in full. Herding goes
+    where it feeds more than the wild."""
+    from planet.lineages import ladder as LA
+    assert np.allclose(LA.rich_keep(np.ones(3), -1.0), 1.0)  # (ordinary land: all farmed)
+    r = np.array([1.0 + LA.RICH_HALF, 1.0 + 3 * LA.RICH_HALF])
+    k0, k2 = LA.rich_keep(r, -1.0), LA.rich_keep(r, 2.0)
+    assert k0[0] == pytest.approx(0.5) and k0[1] < k0[0] and (k2 > k0).all()  # (half at the half point; more farmed with time)
+    assert LA.herd_keep(np.array([1.0]), np.array([1.0]))[0] == pytest.approx(0.5)
+    assert LA.herd_keep(np.array([1.0]), np.array([0.01]))[0] > 0.99
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", **base, "way": "farmer"}]}
+    n = ps.grid.n
+    ps.graze_npp = np.full(n, LA.GRAZE_REF)
+    ps.npp = np.full(n, LA.NPP_REF)
+    fish = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell on the richest waters)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
+    _, sf, *_ = h.ladder.line(h.idx["farm"], (True, False, -1.0, -1.0), None)
+    assert np.allclose(sf[fish == 0], 1.0) and (sf[fish == 1] < 0.5).all()
+
+
+def test_foragers_trade_with_farmer_neighbours(faketz):
+    """PW-1386: a forager people near farmers gets a share of its foraging food from them, rising with the farmers' density within reach
+    (half the cap at BARTER_HALF) and never reaching BARTER_CAP; none with no farmers near; farming, den and fishing-led cells keep their own."""
+    from planet.lineages import ladder as LA
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", **base, "way": "forager", "traits": ["hunter"]}, {"id": "farm", **base, "way": "farmer"},
+        {"id": "den", **base, "traits": ["denning"]}]}
+    n = ps.grid.n
+    ps.graze_npp = np.full(n, LA.GRAZE_REF)
+    ps.npp = np.full(n, LA.NPP_REF)
+    fish = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell on the richest waters: fishing leads there)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
+    lad, hu, fa, dn = h.ladder, h.idx["hunt"], h.idx["farm"], h.idx["den"]
+    t = (False, False, -1.0, -1.0, 0.0)
+    d0, *_, b0 = lad.line(hu, t, None)
+    dz, *_, bz = lad.line(hu, t, np.zeros(n), np.zeros(n))
+    assert b0 is None and np.array_equal(d0, dz) and not bz.any()  # (no farmers near: as before, to the bit)
+    land = fish == 0
+    dh, *_, bh = lad.line(hu, t, None, np.full(n, LA.BARTER_HALF))
+    assert np.allclose(dh[land], d0[land] / (1 - LA.BARTER_CAP / 2)) and np.allclose(bh[land], LA.BARTER_CAP / 2)
+    assert np.array_equal(dh[~land], d0[~land]) and not bh[~land].any()  # (the fishers' richer waters are their own)
+    dx, *_, bx = lad.line(hu, t, None, np.full(n, 1e4))
+    assert (bx[land] < LA.BARTER_CAP).all() and (bx[land] > 0.99 * LA.BARTER_CAP).all() and (dx[land] > dh[land]).all()
+    tc = (True, False, -1.0, -1.0, 0.0)  # (a people that knows crops, and a den people, do not barter)
+    assert not lad.barters(fa, tc) and not lad.barters(dn, t) and lad.barters(hu, t)
+    df, *_, bf = lad.line(fa, tc, None, np.full(n, 1e4))
+    assert bf is None and np.array_equal(df, lad.line(fa, tc, None)[0])
+    assert lad.line(dn, t, None, np.full(n, 1e4))[-1] is None
+    assert not lad.farmers_near().any()  # (nobody present yet: no farmers near)
+
+
+def test_published_ranges_are_optional_seeded_draws(faketz):
+    """PW-1383: meta.draw_ranges draws the ladder's sourced numbers from their published ranges (ranges.py), seeded by the peoples
+    seed. Off (the default): the fixed constants and the very same densities. On: inside the ranges, the same for a seed, others differ."""
+    from planet.lineages import ladder as LA, ranges as RG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    n = ps.grid.n
+    rng = np.random.default_rng(3)
+    ps.graze_npp = rng.uniform(0.1, 2.0, n) * LA.GRAZE_REF
+    ps.npp = rng.uniform(0.1, 2.0, n) * LA.NPP_REF
+    goods = {"fertile": rng.uniform(0, 1, n), "grazing": rng.uniform(0, 1, n), "fish": rng.uniform(0, 1, n)}
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+
+    def build(seed, on):
+        raw = {"meta": {"seed": seed, **({"draw_ranges": True} if on else {})}, "lineage": [
+            {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+            {"id": "farm", **base, "way": "farmer"}]}
+        return H.History(SP.parse(raw), ps, 1, goods=goods)
+
+    def dens(h):
+        return [h.ladder.line(h.idx["farm"], t, None)[0] for t in ((True, True, -1.0, -1.0, 2.0), (True, True, 2.0, 1.0, 5.0))]
+
+    off, off2, on7, on7b, on8 = build(7, False), build(7, False), build(7, True), build(7, True), build(8, True)
+    assert off.ladder.drawn == {} and off.ladder.v == {"forager_pow": LA.FORAGER_POW, "fish_top": LA.FISH_TOP, "garden": LA.GARDEN,
+                                                       "plough": tuple(LA.PLOUGH), "nomad": LA.NOMAD, "rich_t": LA.RICH_T}
+    assert all(np.array_equal(a, b) for a, b in zip(dens(off), dens(off2)))
+    d = on7.ladder.drawn
+    assert set(d) == set(RG.RANGES) and all(r.lo <= d[k] <= r.hi for k, r in RG.RANGES.items())
+    assert on7.ladder.v["plough"] == (d["plough_0"], d["plough_1"], d["plough_2"]) and d["plough_0"] < d["plough_1"] < d["plough_2"]
+    assert on7.ladder.drawn == on7b.ladder.drawn and all(np.array_equal(a, b) for a, b in zip(dens(on7), dens(on7b)))
+    assert on8.ladder.drawn != d
+    assert not all(np.array_equal(a, b) for a, b in zip(dens(on7), dens(off)))
+    raw = _raw()
+    raw["meta"]["draw_ranges"] = True
+    h2, res2, pres2 = H.simulate(SP.parse(raw), ps, tries=1)
+    run2 = json.loads((O.save(h2, res2, pres2, name="test draws") / "run.json").read_text())  # (the run says which numbers it drew)
+    assert run2["meta"]["draw_ranges"] is True and run2["meta"]["tree"]["meta"]["draw_ranges"] is True
+    assert run2["meta"]["range_draws"] == {k: round(x, 6) for k, x in RG.draw(2).items()}  # (the tree's seed is 2)
+    seeds = [RG.draw(s) for s in range(40)]  # (every name moves across seeds, and stays in range)
+    assert all(len({round(x[k], 9) for x in seeds}) > 30 for k in RG.RANGES)
+    assert all(r.lo <= x[k] <= r.hi for x in seeds for k, r in RG.RANGES.items())
 
 
 def test_nomads_and_settled_compete_less(faketz):
@@ -3028,23 +3130,40 @@ def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
     assert h._fit_w(b, Kb, np.array([s]), idx)[0, 0] == pytest.approx(0.5 * np.sqrt(n / (0.5 * (n // 4))))
 
 
-def test_a_denning_people_holds_mostly_broken_country(faketz, monkeypatch):
-    """Lane 83 (owner D20): kobolds and goblins pack into dens and warrens: off mountains, hills and breaks their habitat is x0.25. Lane 97
-    (D27 C, params.DEN_THIN, the default): thin dens instead, the habitat uncut and the density cut there (model.run)."""
-    from planet.lineages.history import params as PM
-    monkeypatch.setattr(PM, "DEN_THIN", False)
+def test_den_peoples_prefer_den_ground_but_live_on_poor_ground(faketz):
+    """PW-1382 (Daniel 11-02: prefer den ground, never rely on it): a denning people's habitat is a plain people's everywhere; its
+    density is x1 on the best den ground and keeps half (1 - the trait's den) where the land has no caves, shelters or ground to dig,
+    never zero; other peoples do not read the den ground. dens.fitness: karst best, plain ground with nothing to dig 0."""
+    from planet.lineages import dens as DN
+    from planet.lineages import ladder as LA
+    from planet import surface as SU
+    from planet.landform import HILLS, KARST
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     env = ps.fields(0.0, variability=False)
     tags = H._tags(ps.grid, env)
     plain = SP.Lineage("p", temp_c=(-20, 40), rain_mm=(1, 9000))
     den = SP.Lineage("d", temp_c=(-20, 40), rain_mm=(1, 9000), traits=["denning"])
-    Kp, Kd = H.capacity(plain, env, tags), H.capacity(den, env, tags)
-    broken = tags["mountain"] | tags["hills"] | tags["breaks"]
-    ok = Kp > 0
-    assert (ok & ~broken).any()
-    assert np.allclose(Kd[ok & broken], Kp[ok & broken]) and np.allclose(Kd[ok & ~broken], 0.25 * Kp[ok & ~broken])
-    monkeypatch.setattr(PM, "DEN_THIN", True)
-    assert np.allclose(H.capacity(den, env, tags), Kp)
+    assert np.allclose(H.capacity(den, env, tags), H.capacity(plain, env, tags))  # (the habitat: never cut)
+    lay = {"surface_rock": np.array([SU.LIMESTONE, SU.SHALE, SU.GRANITE, SU.SHALE]), "landform": np.array([KARST, HILLS, HILLS, HILLS]),
+           "loess": np.array([0.0, 0.0, 0.0, 5.0])}
+    f = lambda k: np.asarray(lay[k], float) if k in lay else np.zeros(4)  # noqa: E731
+    fit = DN.fitness(f, np.array([0.0, 0.0, 9.0, 0.0]), np.zeros(4), np.ones(4, bool))
+    assert fit[0] == pytest.approx(DN.KARST) and fit[1] == 0.0 and fit[2] == pytest.approx(DN.SHELTER_OTHER)
+    assert fit[3] == pytest.approx(DN.LOESS_X)
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", **base, "way": "forager"}, {"id": "den", **base, "traits": ["denning"]}]}
+    n = ps.grid.n
+    ps.graze_npp, ps.npp = np.full(n, LA.GRAZE_REF), np.full(n, LA.NPP_REF)
+    fit = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell the best den ground, the rest none)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.zeros(n), "grazing": np.zeros(n), "fish": np.zeros(n), "den": fit})
+    th = h.ladder.thin[h.idx["den"]]
+    assert np.allclose(th[fit == 1], 1.0) and np.allclose(th[fit == 0], 1.0 - SP.TRAITS["denning"]["den"]) and th.min() >= 0.5
+    assert np.allclose(h.ladder.thin[h.idx["hunt"]], 1.0)
+    h.ladder.refresh(1.0, False, force=True)
+    dd = h._dmap[h.idx["den"]]
+    assert (dd[fit == 0] > 0).all() and np.allclose(dd[fit == 0], 0.5 * dd[fit == 1].mean())  # (poor den ground: half, never none)
 
 
 def test_a_split_founds_by_its_parent_s_last_land(faketz):

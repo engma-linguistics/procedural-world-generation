@@ -4,7 +4,7 @@ title: "N2O in ghg_conc: all of it scales with ice-free land (the ocean's ~1/3 s
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-859]
 refs: [planet/tectonics/earth.py]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,5 +23,6 @@ only. Proterozoic N2O, which may have been higher in a copper-poor ocean (Robers
 counted. Small: ~0.1 W/m2 at the LGM.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-26: Milestone null -> v1. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-n2o-ocean-share-and-deep-time.md (found by v1-finish-14).

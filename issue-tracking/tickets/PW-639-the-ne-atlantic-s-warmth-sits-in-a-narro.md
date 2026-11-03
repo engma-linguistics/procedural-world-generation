@@ -4,16 +4,16 @@ title: "The NE Atlantic's warmth sits in a narrow inflow trunk west of 15W: Rock
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
 found_by: base-climate-laneA20
 blocked_by: []
-relates: [PW-592, PW-582, PW-589]
+relates: [PW-592, PW-582, PW-589, PW-013]
 refs: [planet/ocean.py, planet/climate.py, docs/review/base-climate/laneA20/eumap_main.txt, docs/review/base-climate/laneA20/shelfdiag_main.txt, docs/review/base-climate/laneA20/shelfdiag_slopelat.txt]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,5 +40,6 @@ Candidates:
   1 holding
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Earth-only regional residual; Earth is a test analogue (PW-013 relation added).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-ne-atlantic-inflow-trunk-too-narrow.md (found by base-climate-laneA20).

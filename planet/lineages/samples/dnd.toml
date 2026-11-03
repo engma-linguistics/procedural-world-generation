@@ -52,6 +52,7 @@ portals = 8  # ...how many portals they come through (portal_mode random / sites
 portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' draws on: deepest part of a large forest, middle of a desert, a coral reef, the foot of a volcano
 growth_rates = true  # PW-1147 (lane 78): each people's growth rate r, from its canon ages (life_history), sets its spread (x sqrt r), how fast
 # its rivals displace it, the fade of its small patches and its far jumps. Off: every people at the same rates
+draw_ranges = false  # PW-1383: true draws the density ladder's sourced numbers (gardeners, plough stages, nomads, fishers, forager slope, rich-land farming time) from their published ranges (planet/lineages/ranges.py), seeded by meta.seed; false: the fixed values
 wave_kyr = 2  # an arrival's waves come this many kyr apart (a judgement)
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 

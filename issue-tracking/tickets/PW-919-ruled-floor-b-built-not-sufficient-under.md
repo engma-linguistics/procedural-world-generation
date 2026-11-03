@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-692
 milestone: null
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: med
 found_by: fun-lane-30

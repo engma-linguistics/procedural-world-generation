@@ -160,7 +160,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "thinnings": h.portal_report(),
-                 "growth_rates": h.tree.growth_rates, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
+                 "growth_rates": h.tree.growth_rates, "draw_ranges": h.tree.draw_ranges, "range_draws": h.ladder.drawn, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
                  "contacts": contacts, "techtree": techtree, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],

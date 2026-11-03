@@ -4,7 +4,7 @@ title: "Margin cells melt as their outermost 10 km (edge_h 408 m vs the cell's ~
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-033, PW-435, PW-115, PW-422, PW-453]
 refs: [planet/timezoom/sim.py, planet/icemass.py, planet/tectonics/earth.py, docs/review/audit/PW-033-diagnosis.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -45,6 +45,7 @@ interglacial ice, so they should be balanced together.
 - [ ] decide
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Absorbs PW-115 (superseded; PW-597 triage): PW-115's measurement was that in the Earth time zoom (L6, 100 kyr from today) 94% of ice cells with negative mass balance are margin cells (north of 40N 87 of 93 ablating cells on the sheet's edge, Antarctica 64 of 65), where real ablation zones are tens to ~150 km wide. Its ideas (a sub-cell hypsometry for margin cells, or a partial ice cover per cell) and its measures (share of ablating cells away from the margin; ablation area ratio, Greenland today ~0.15-0.2 of its area, reported in the run's stats) apply to this fix.
 - 2026-10-20: pw460: built in run and zoom (branch worktree-agent-a9f64607e1a64d2e8 (246ef40), kept unmerged). Zoom: margin-only with obs baseline meets every Earth target (-82 m, Laurentide 5.65 Mkm2 to 44.9 N, interglacial ice 9.5-12.3%). Run: cold eras freeze (10-seed check 0-3/10 vs main 8/10); unforced-start consistency +17.9 to +76 m. The 408 m edge was the run's only way to deglaciate. Not merged; decision moved to PW-461.

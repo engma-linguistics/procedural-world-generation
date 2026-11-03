@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-1308
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: m
 impact: low
 found_by: lane117

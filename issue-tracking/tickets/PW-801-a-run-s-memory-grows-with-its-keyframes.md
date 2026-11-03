@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ Goal: stream keyframes to disk (or preallocate and write in place) so memory sta
 CPU: one run uses ~7 cores (numba capped at 8 threads), so a 4-core laptop should take roughly 1.5-2x as long (L7 ~45-60 min per Gyr); worth one --threads 4 measurement to confirm.
 
 ## Updates
+- 2026-11-03: Cause located (11-03, docs/review/speed/l9-memory.md): keyframes are kept as lists all run (timeline.py:125,145) and every layer is np.stack'ed at once before writing (timeline.py:164), hence the end spike. Streaming frames to disk keeps outputs bit-identical; ~38 GB per Gyr at L9 (estimate).
 - 2026-10-24: Created.

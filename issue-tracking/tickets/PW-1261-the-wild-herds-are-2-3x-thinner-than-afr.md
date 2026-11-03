@@ -5,7 +5,7 @@ type: task
 status: in-progress
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: m
 impact: med
 found_by: lane103
@@ -13,7 +13,7 @@ blocked_by: [PW-1316]
 relates: [PW-1073, PW-1221, PW-1246]
 refs: [planet/lineages/prey.py, planet/gameattrs.py, docs/review/dragon-numbers/round2.md, docs/references/megafauna/coe1976_african_herbivore_biomass_rainfall_oecologia.pdf]
 created: 2026-11-01
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,6 +50,10 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-03: Lane 144 (fork judge, merged 558ce440): PW-1261's 2 frozen-over draws are the same two where a forked do-nothing change also froze over (PW-1404). Still parked on D45.
+- 2026-11-03: Lane 140d (5f5d6ddf, round1.md s8): main's cold-tail fragility is the carbon-cycle yardstick learnt from ~5 samples of the spin-up (carries 1.5 of 1.7 C within-seed late-dT sd); the herb change's own push ~-0.1 to -0.15 C. Parked pending D45 (judge from a shared spin-up?); harness being built in lane 144.
+- 2026-11-03: Lane 140c (95761e73, round1.md s7): null-nudge screen moves main's 6 coldest by 3-27 pt (one crosses 40% before the window); herb change stays above the null on 6/6 (sign test p~0.03): small real cold push. Weathering reference on spin-up climate: negligible (~+0.01 C), lean close. Held on branch; lane 140d diagnoses the cold-tail margin (spin-up dT vs late dT r=-0.39) and the in-window push.
+- 2026-11-03: Lane 140b screen (8bc401dd, round1.md s6): neither half alone fails (herb-only 24.4/39.4, fuel-only 23.4/39.8 on the two draws); failures are chaos at a thin margin plus a small real cold shift (+1.35 pt mean window land ice over 36 draws, herb part at least as much as fuel); not via trees; FUEL_MIN 200 is needed (scrub stops burning without it). Next (lane 140c): null-nudge screen of main's 6 coldest, then a written diagnosis of the weathering reference grown on the spin-up climate.
 - 2026-11-02: Lane 140 judge (2 rolls, 36 paired draws): soft 30 -> 26 (p 0.39), dT/CO2 unchanged, trees -1.8 pt, hard bar 2 frozen over (42.9%, 41.7% land ice; main 0). Strike 1, not merged (branch commits 88ebe5a4, ada450a2, 351a995f). Next: targeted screen on the two draws, each part alone (herb resp vs FUEL_MIN 200), before any re-judge.
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 140 started on D42 A (C1 herb root respiration with the NPP_WEATHER re-anchor, PW-1332, and the fuel floor PW-1328 if needed). PW-1316 settled without change (B failed).
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D42 A (herbs' root respiration, see what it gets us). After D39 (PW-1316) lands, since lowering grass NPP warms runs through NPP_WEATHER and the CO2 references.

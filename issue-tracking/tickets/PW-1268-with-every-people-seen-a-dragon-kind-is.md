@@ -2,7 +2,7 @@
 id: PW-1268
 title: "With every people seen, a dragon kind is one to five living cultures, not one: keep that or fold it?"
 type: task
-status: todo
+status: done
 parent: PW-670
 milestone: null
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1259, PW-670, PW-981]
 refs: [planet/lineages/cultures.py, planet/lineages/demes.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,5 +37,6 @@ Also seen: with every cell counted, a giant culture on the coast "gains the sea 
 run). Check whether giants should have sea craft at all (they wade straits), like fliers have none.
 
 ## Updates
+- 2026-11-03: Status todo -> done. Closed 11-03: owner D36 B (11-01, decisions.md): keep the splits, a dragon kind may be several cultures; nothing left to build. The side question on giants' sea craft is not tracked elsewhere; reopen as a draft if wanted.
 - 2026-11-01: Status needs-decision -> todo. Owner 2026-11-01 (D36): B, keep the splits; a dragon kind may be several cultures.
 - 2026-11-01: Created from inbox draft draft-dragon-kinds-several-cultures-with-full-presence.md (found by lane109).

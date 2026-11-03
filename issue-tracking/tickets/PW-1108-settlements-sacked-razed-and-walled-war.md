@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-856
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: l
 impact: med
 found_by: fun-lane-60

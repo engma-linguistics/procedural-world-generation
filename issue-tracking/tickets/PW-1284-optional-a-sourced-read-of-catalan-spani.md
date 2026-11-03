@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: later
-subsystem: timezoom
+subsystem: culture
 effort: xs
 impact: low
 found_by: coordinator

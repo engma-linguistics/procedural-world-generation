@@ -334,7 +334,7 @@ def wild_overlap(h, P) -> dict:
         dd = np.maximum(d, 1e-12)
         rows = {}
         if t[0]:
-            d1, s1 = lad.line(k, (True, False, t[2], t[3]), None)[:2]
+            d1, s1 = lad.line(k, (True, False, t[2], t[3], t[4]), None)[:2]
             farm = np.where(s1 > 0, (d1 - (1 - s1) * wild) / np.maximum(s1, 1e-12), 0.0)
             rows["farm"] = (pc * sf * farm / dd, wild >= WILD_NEAR * farm)
         if t[1]:
@@ -357,6 +357,98 @@ def wild_overlap(h, P) -> dict:
                 w[1] += float(ppl[sel & near].sum())
     rnd = lambda d: {a: {w: [round(x) for x in v] for w, v in b.items()} for a, b in d.items()}  # noqa: E731
     return {"peoples": rnd(out), "biomes": rnd(by_b)}
+
+
+WILD_RUNGS = (0, 1, 8)  # (ladder.RUNGS forager, fisher, raider: a cell's people living off the wild)
+
+
+def forage_land(h, P) -> dict:
+    """PW-1385 (lane 141): where the wild still feeds people at the end. Per biome class: peopled cells, those whose people are
+    mostly on a wild rung (forager, fisher, raider: ladder.Ladder.line's main rung), all people and those on a wild rung. Per people:
+    its people, its wild-rung people and wild-led cells (Mkm2), for a forager people (ladder.barters, PW-1386) its people and the part
+    its traded farm food feeds (ladder.barter), and for a people knowing cultivation its farmable land (the fertile
+    good's share, ladder.farmable, summed over held cells, Mkm2) and the part of it farmed (ladder.sh['farm'])."""
+    from planet.lineages.spread import EST
+    from planet.lineages.history.habitat import BIOMES, biome_class
+    lad = getattr(h, "ladder", None)
+    if lad is None or not lad.ok or h._env_now is None:
+        return {}
+    bio = biome_class(h._env_now, h._tags_now)
+    n = h.grid.n
+    tot, wild = np.zeros(n), np.zeros(n)
+    kinds = {}
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna or l.marine or not lad.people[k]:
+            continue
+        pc = h.population(k, P)
+        if pc.sum() <= 0:
+            continue
+        w = np.isin(lad.rung[k], WILD_RUNGS) & (pc > 0)
+        tot += pc
+        wild += np.where(w, pc, 0.0)
+        o = kinds.setdefault(h.tree.people_of(l.id), {"pop": 0.0, "wild_pop": 0.0, "wild_mkm2": 0.0, "farmable": 0.0, "farmed": 0.0,
+                                                      "forager_pop": 0.0, "traded_pop": 0.0})
+        o["pop"] += float(pc.sum())
+        o["wild_pop"] += float(pc[w].sum())
+        if lad.barters(k, lad.tech(k, 0.0)):  # (PW-1386: a forager people, and the people its traded farm food feeds)
+            o["forager_pop"] += float(pc.sum())
+            o["traded_pop"] += float((pc * lad.barter[k]).sum()) if getattr(lad, "barter", None) is not None else 0.0
+            fn = getattr(lad, "_fn", None)
+            if fn is not None:  # (its people within reach of 1+ and 5+ farmers per km2: BARTER_HALF)
+                o["near1_pop"] = o.get("near1_pop", 0.0) + float(pc[fn >= 1.0].sum())
+                o["near5_pop"] = o.get("near5_pop", 0.0) + float(pc[fn >= 5.0].sum())
+        o["wild_mkm2"] += float(w.sum() * h.cell_mkm2)
+        if lad.tech(k, 0.0)[0] and not lad.den[k]:
+            held = P[k] >= EST
+            o["farmable"] += float(lad.farmable[held].sum() * h.cell_mkm2)
+            o["farmed"] += float(lad.sh["farm"][k][held].sum() * h.cell_mkm2)
+    by_b = {}
+    peopled = tot > 0
+    for b, nm in enumerate(BIOMES):
+        sel = peopled & (bio == b)
+        if sel.any():
+            by_b[nm] = {"cells": int(sel.sum()), "wild_cells": int((sel & (wild > 0.5 * tot)).sum()),
+                        "pop": float(tot[sel].sum()), "wild_pop": float(wild[sel].sum())}
+    return {"biomes": by_b, "peoples": {a: {x: round(v, 4) for x, v in o.items()} for a, o in kinds.items()},
+            "cell_mkm2": float(h.cell_mkm2)}
+
+
+DEN_HIGH = 0.5  # (PW-1382: den ground at or above this counts as good den ground in den_ground)
+
+
+def den_ground(h, P) -> dict:
+    """PW-1382 (lane 143): how each people sits on the den ground (the `den` good, dens.py) at the end: its range and its people, all
+    and on good den ground (>= DEN_HIGH), and on the old proxy, broken country (mountain, hills, breaks: lane 97's den rule); the
+    land's own shares of both, for the baseline. Empty without the den good."""
+    from planet.lineages.spread import EST
+    G = h.goods
+    if G is None or "den" not in G or h._tags_now is None:
+        return {}
+    fit = np.asarray(G["den"], float)
+    t = h._tags_now
+    land = t["land"]
+    hi = fit >= DEN_HIGH
+    broken = t["mountain"] | t["hills"] | t["breaks"]
+    tree = h.tree
+    out = {}
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna:
+            continue
+        who = tree.people_of(l.id)
+        pc = h.population(k, P)
+        o = out.setdefault(who, {"pop": 0.0, "pop_hi": 0.0, "pop_broken": 0.0, "fit_pop": 0.0})
+        o["pop"] += float(pc.sum())
+        o["pop_hi"] += float(pc[hi].sum())
+        o["pop_broken"] += float(pc[broken].sum())
+        o["fit_pop"] += float((pc * fit).sum())
+    for who, o in out.items():
+        held = h.whole(who, P) >= EST
+        o["mkm2"] = float(held.sum() * h.cell_mkm2)
+        o["mkm2_hi"] = float((held & hi).sum() * h.cell_mkm2)
+        o["mkm2_broken"] = float((held & broken).sum() * h.cell_mkm2)
+        o["fit_area"] = float(fit[held].mean()) if held.any() else 0.0
+    return {"peoples": out, "land_hi": float(hi[land].mean()), "land_broken": float(broken[land].mean()),
+            "land_fit": float(fit[land].mean())}
 
 
 def measure(h, res, pres) -> dict:
@@ -501,6 +593,14 @@ def _run_spec(spec: dict, Probe) -> dict:
         m["wild_overlap"] = wild_overlap(h, res["present"])
     except Exception as e:  # (a sizing number: never fail a run on it)
         m["wild_overlap"] = {"error": repr(e)}
+    try:
+        m["forage_land"] = forage_land(h, res["present"])
+    except Exception as e:  # (likewise)
+        m["forage_land"] = {"error": repr(e)}
+    try:
+        m["den_ground"] = den_ground(h, res["present"])
+    except Exception as e:  # (likewise)
+        m["den_ground"] = {"error": repr(e)}
     m["wall_s"] = round(time.time() - t0, 1)
     import resource
     m["max_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)

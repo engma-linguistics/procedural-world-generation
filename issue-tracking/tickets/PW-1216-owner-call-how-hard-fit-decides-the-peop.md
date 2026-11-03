@@ -4,7 +4,7 @@ title: "Owner call: how hard fit decides the peoples' contest (FIT_CLIP 3, BREAD
 type: task
 status: needs-decision
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180, PW-1149]
 refs: [planet/lineages/history/params.py, planet/lineages/history/competition.py, docs/review/peoples-d20/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,6 @@ Options:
 Lean: A. Judge it on the stress suite, not on single seeds. The numbers are in docs/review/peoples-d20/report.md.
 
 ## Updates
+- 2026-11-03: Status done -> needs-decision. Coordinator 11-03: reopened. D31 paused share tuning, which parks this rather than deciding it; kept as a parked decision for Daniel.
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: option A (keep FIT_CLIP 3, BREADTH_Q 0.5, martial 1.5) is what is built (params.py, overview 2.26) and D31 (10-31) ruled to stop fiddling with peoples shares; revisit judged on the stress suite only if the mechanism ledger (D44) asks.
 - 2026-10-31: Created from inbox draft draft-peoples-fit-contest-knobs.md (found by lane83).

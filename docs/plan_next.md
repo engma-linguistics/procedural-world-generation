@@ -1,10 +1,10 @@
 # Plan
 
-*Updated 2026-10-23. The roadmap is the board in `issue-tracking/` (one file per ticket); this page only says where to look. History: the 2026-10-14 version is at `git show d32f7fa~1:docs/plan_next.md` (older still: `git show bdc967f:docs/plan_next.md`).*
+*Updated 2026-11-03. The roadmap is the board in `issue-tracking/` (one file per ticket); this page only says where to look. History: the 2026-10-14 version is at `git show d32f7fa~1:docs/plan_next.md` (older still: `git show bdc967f:docs/plan_next.md`).*
 
 ## Milestones
-- **v1** (epic PW-244): a reliable, finished, usable planet from a seed. `planet make` / the start screen, export, human-use layers, glacial imprint, fine-zoom redraws, then the showcase remake (PW-202) and the final calibration pass. `board.py milestones v1` lists what is open.
-- **v2:** features before more physics fidelity. Mainly speed (PW-247/252), resources (PW-155 with PW-474), planet settings and phone layout (PW-481, PW-483), fine-zoom and zoom landform quality (PW-516 and the zoom tickets), and the base-climate and ocean follow-ups. `board.py milestones v2`.
+- **v1** (epic PW-244; done, tagged v0.1.0 on 2026-11-01): a reliable, finished, usable planet from a seed. `planet make` / the start screen, export, human-use layers, glacial imprint, fine-zoom redraws, then the showcase remake (PW-202) and the final calibration pass. `board.py milestones v1` lists what is open.
+- **v2:** features before more physics fidelity. Always one lane on the peoples layer (subsystems `peoples`, `culture`, `food` on the board; PW-692, the culinary ethnography, frames the end goal; D44 on the owner's desk asks whether food comes before languages and polities). Also speed (PW-247/252), resources (PW-155 with PW-474), planet settings (PW-481; the viewer is PC-only, so the phone layout PW-483 is out of v2 and v3), fine-zoom and zoom landform quality (PW-516 and the zoom tickets), and the base-climate and ocean follow-ups. `board.py milestones v2`.
 - **v3:** deliberately far off, each a system of its own: the civilization epic (PW-661: warfare and displacement, culture fracture PW-670, unifying pressure PW-676), technology (PW-675), weather (PW-156), moons and planet bodies (PW-216), weird worlds (PW-443), whole-world L8/L9 finish (PW-490).
 - **v4:** ground level and asset-heavy: a walkable setting or city-sized view (PW-1199), after v3.
 - **later:** maybe, unscheduled: polish, quality-pass items (epic PW-649) and ideas nobody has pulled for. Ice ages done properly (epic PW-470; v1 uses the glacial index kludge PW-471) is run-physics work in the v2 lane.

@@ -4,7 +4,7 @@ title: "Physical ice-albedo rule (PW-449): no version both deepens Earth's time-
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-449, PW-448, PW-438, PW-435, PW-033, PW-450, PW-030, PW-436]
 refs: [planet/tectonics/earth.py, planet/timezoom/forcing.py, planet/icemass.py, docs/review/audit/PW-449-snow-season.patch]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -116,6 +116,7 @@ exact 31%. The main scorecard (commit e02d7e2) has Earth group 70.6 / exact 30.9
 seed 2 ice 10.6%.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20: option (a). Keep main's rule; revisit (b), the snow-season rule A2 for both run and zoom (9/10 seeds), after PW-450, PW-435 and PW-033. The missing depth is where the ice grows plus the missing vegetation and dust, not the cap.
 - 2026-10-20: Created from inbox draft draft-ice-albedo-physical-rule-run-vs-zoom.md (found by pw449).

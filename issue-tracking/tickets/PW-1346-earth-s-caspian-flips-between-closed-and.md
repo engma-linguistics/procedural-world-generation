@@ -4,16 +4,16 @@ title: Earth's Caspian flips between closed and open basin with GPCC rain on unr
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: hydrology
 effort: s
 impact: low
 found_by: lane126
 blocked_by: []
-relates: [PW-358, PW-1336]
+relates: [PW-358, PW-1336, PW-013]
 refs: [tools/earth_check.py, "planet/hydrology.py::rivers_and_lakes", "planet/climate.py::open_water_evap", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/ec.sh, data/earth/hydrosheds_L7.npz]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,4 +30,5 @@ the table rather than as pass/fail. Or check whether the Volga's catchment rain 
 - [ ] earth_check marks marginal basins; the Caspian's ratio is reported
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Earth-only regional residual; Earth is a test analogue (PW-013 relation added).
 - 2026-11-02: Created from inbox draft draft-caspian-closed-open-knife-edge.md (found by lane126).

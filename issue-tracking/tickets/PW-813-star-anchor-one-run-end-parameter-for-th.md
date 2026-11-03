@@ -4,7 +4,7 @@ title: "Star anchor: one run-end parameter for the star and the plant calendar, 
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-791, PW-807, PW-557]
 refs: [planet/tectonics/params.py, planet/timeline.py, tests/helpers.py, tools/scorecard.py, tools/ice_diag.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,6 +44,7 @@ re-anchoring would change the run's past.
 - [ ] PW-557 note added on intake
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-29: Removed tools/sealevel.py and tools/supercontinent.py in cleanup; last present at aae96637. Their channels moved into tools/ice_diag.py --tect, which sets run_end = --myr, so that item is gone.
 - 2026-10-24: v1-finish-10: done in the branch. params.run_end (0: the run's length, set by timeline.simulate; earth.now_myr the one reader, RUN_END_DEFAULT 1000 for direct callers) replaces flora_end for star and flora, stored in run meta params; check_star refuses runs longer than the star's age; direct callers (tests/helpers, scorecard, ice_diag, health, test_store) set it. PW-557 note: an extension keeps run_end (the extra time is star_now_offset_myr's future). docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-run-end-param-star-and-flora.md (found by star-anchor-audit).

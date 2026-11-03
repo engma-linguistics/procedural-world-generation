@@ -4,16 +4,16 @@ title: Japan rains its vapour at 0.3-0.4x the observed rate in both halves (no c
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
 found_by: lane26
 blocked_by: []
-relates: [PW-998, PW-026]
+relates: [PW-998, PW-026, PW-013]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,5 +39,6 @@ so the missing piece is the trigger.
 To do: check the winter outbreak's air temperature first (PW-026), then the shower trigger over windward coasts.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Earth-only regional residual; Earth is a test analogue (PW-013 relation added).
 - 2026-10-30: Coordinator: moved to v2; regional Earth-fidelity refinement, Earth is a plausibility anchor.
 - 2026-10-30: Created from inbox draft draft-japan-rain-efficiency.md (found by lane26).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/pressure.py, docs/review/peoples-d20/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ Options:
 Lean: B, then C. With the stage-3 changes the blocs already appear in some seeds; an incumbency edge risks freezing the map.
 
 ## Updates
+- 2026-11-03: Re-checked 11-03: no ruling on the incumbency edge; D31's pause on share tuning argues for option B (leave it), but that is Daniel's call. Left open.
 - 2026-10-31: Created from inbox draft draft-peoples-blocs-incumbency-vs-surge.md (found by lane83).

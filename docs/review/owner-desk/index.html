@@ -68,14 +68,113 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · Monday 2 November 2026 · afternoon</div>
+  <div class="kicker">procgen_world · Tuesday 3 November 2026 · early morning</div>
   <h1>Owner's Desk</h1>
   <p class="lede">Nothing needs a decision from you right now. Your answers from this afternoon are on the tickets;
 your temperature question is answered below. The religion views wait for you tonight.</p>
-  <nav class="toc"><a href="#answers">Your question</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <nav class="toc"><a href="#answers">Your questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
-<h2 id="answers">"0.6 °C warmer than what?"</h2>
+<h2 id="answers">Your questions</h2>
+<div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (PW-1403, PW-1404; PW-1261 waits on this) · UPDATED OVERNIGHT</div>
+<p><b>In plain words:</b> in its first 300 Myr each planet learns two yardsticks: how much CO2 its volcanoes normally give off and how fast
+its rocks normally weather it away. They're learnt from about five samples' worth of wandering rates, so they come out a bit different every
+time a world is re-run. That carries 1.5 °C of the 1.7 °C spread between re-runs of the same planet (36 test worlds, current code).</p>
+<p><b>New overnight (lane 144):</b> I had leaned towards starting both versions from the same spin-up, so they share the yardstick.
+Lane 144 built that and checked it. It's exact (the same code gives bit-identical worlds), but <b>it doesn't calm the coldest worlds</b>. On the six
+coldest test worlds, a change that does nothing (it adds 0.00001 °C) still swings their land ice in the final window by 3–23 points. Without the
+shared spin-up the swing was 3–27. And one such do-nothing change <b>fails the frozen-over check on 2 of those 6 worlds</b>. The reason: a tiny difference has grown
+to full size by about 500–600 Myr, long before the window opens at 884 Myr, and the ice then depends on when the glacial eras happen to fall.
+So on the coldest worlds, the frozen-over check is reading chance, not the change. Those 2 worlds are the same 2 the grass-roots change (PW-1261)
+failed on. The shared start does narrow the temperature spread by about 19%, and it removes a warm bias from the earlier do-nothing comparisons.</p>
+<ol>
+<li><b>A. Learn the yardsticks over a longer stretch.</b> Sound, but weak: it narrows the spread only 8–16%.</li>
+<li><b>B. Keep today's test, and check failures against chance.</b> When a change freezes a world over, re-run that world with a few do-nothing
+changes from the same spin-up. If those freeze over too, the failure is the world's chance, not the change. The 40% line and the window stay
+as they are. But the rule changes from "no world frozen over" to "no world frozen over that a do-nothing change doesn't also freeze", so it's your call.
+Under it, the grass-roots change would pass the frozen-over check.</li>
+<li><b>C. Give the coldest worlds more room.</b> Warm main's coldest worlds through the ice lanes, so chance doesn't reach the line. It's the lasting fix, but it's ice-age
+physics, which you parked as a deep hole.</li>
+<li><b>D. A yardstick that isn't a sample:</b> a fixed, planet-generic link between outgassing and weathering. A redesign that needs its own diagnosis.</li>
+<li><b>E. Leave it.</b> Changes that cool even slightly keep failing on chance.</li>
+</ol>
+<p><i>My lean:</i> B now, with C later. B changes a pass rule, which is why it waits for you; nothing is switched over. The shared-spin-up tool
+stays available for targeted checks, as the lane recommended (PW-1403).</p>
+</div>
+<div class="card" id="d44"><div class="id">D44 · THE FRESH-EYES REVIEW YOU ASKED FOR</div>
+<p><b>In plain words:</b> an agent with no history read the whole project. Its verdict: the physics is careful and well guarded, but
+<b>the cookbook is falling behind</b>. The peoples layer grows fast, while the output still answers "where does this species live"
+rather than "what does this culture cook". Languages, polities and gods are queued ahead of food. Full report:
+<code>docs/review/fresh-eyes/2026-11-03.md</code>.</p>
+<p><b>Where I need you</b> (my lean in each):</p>
+<ol>
+<li><b>Food before languages and polities.</b> Build a per-culture brief and a first "cuisine sheet" now. It would cover
+fuel, staple, drink, who eats together, and what outsiders get wrong (culinary-dnd's five questions). Two of those, drink and who eats
+together, have no model at all today, and the brief takes a species, not a culture. <i>Lean: yes.</i> It's the cheapest way to find
+what the book actually lacks.</li>
+<li><b>Stop the weathering reading raw plant growth</b> (PW-1332 B). Grassland grows too much and wet tropics too little, and the two errors
+cancel in the global total the climate is tuned on. So every plant fix moves the climate several degrees, which is exactly what tripped the
+grass-roots lane. Let the weathering read plant cover or roots instead. <i>Lean: yes</i>, after lane 140c's diagnosis, which is looking at the
+same tie.</li>
+<li><b>Fewer tickets.</b> About 65 are filed a day and 25 closed, with 689 open. Lanes would put observations in their write-ups and file
+at most about 3 tickets each. <i>Lean: yes.</i></li>
+<li><b>A ledger of the peoples' mechanisms before polities</b> (a refactor, so it needs your yes): measure each of the dozen stacked
+mechanisms on the stress suite and retire the ones that do nothing at the defaults. Some already do nothing: the share bands, and
+resistance to disease, which nothing reads. <i>Lean: yes</i>, but after the cuisine sheet.</li>
+<li><b>Which world is the book written on?</b> Seven Meals was ruled secondary on 10-29, yet it's the culinary repo's own world. Is the
+book meant for the D&amp;D preset?</li>
+</ol>
+<p><b>What I'll just do</b> (housekeeping, nothing it changes is yours to rule on):</p>
+<ul>
+<li>Close the tickets it found already built, after checking each one.</li>
+<li>Give the board peoples, culture and food categories (266 peoples tickets are filed under ice-age time zooms today).</li>
+<li>Park three groups: the ice-age long tail, the Earth-only regional residuals, and the dragon fine-tuning (keeping what dragons eat).</li>
+<li>Move the climate test's code out of the review folders, once no physics test is running.</li>
+<li>Check whether "farming can start 11.6 kyr ago" uses Earth's date rather than each planet's own last ice age.</li>
+<li>Refresh the stale docs.</li>
+</ul>
+<p>It also flags: world files at L8 are 440–450 MB of text and should move to a binary format (PW-1209) before more fine-grid work. The
+peoples step isn't in "make a planet" yet. And more rain-kernel tries, Earth-matching regional climate and dragon numbers aren't worth chasing.
+I agree with all of these.</p>
+</div>
+<div class="card" id="rung"><div class="id">SMALL ONE · ROLLED FARM NUMBERS CAN COME OUT OF ORDER (PW-1400)</div>
+<p><b>In plain words:</b> with the new range dice switched on, gardeners (published 2–20 people per km²) and the first plough farmers (2.5–14) roll separately. In one test world gardeners rolled 12.7 and the plough 6.9, so a people taking up the plough got thinner. The sources' ranges really do overlap, so a world could go either way.</p>
+<ol type="A"><li>Leave it: it only happens with the dice on, and the plough's gain still shows in the later plough stages and irrigation.</li>
+<li>Roll gardening and the first plough from one shared position in their ranges, the way the three plough stages already share one.</li>
+<li>After rolling, lift the plough to at least the gardening number.</li></ol>
+<p><b>My lean: B</b>, mildly. It keeps every number inside its published range and stops the odd step backwards, at no cost. Lane 145 leaned A; either is fine.</p>
+</div>
+
+<div class="card" id="l9"><div class="id">WHY LEVEL 9 FROM SCRATCH NEEDS SO MUCH MEMORY, AND WHAT RUNS ON ONE CORE (PW-801, PW-1389, PW-1390)</div>
+<p><b>In plain words:</b> most of the memory isn't the planet, it's bookkeeping we can trim. The time is the real wall.</p>
+<p>Today an L9 run from scratch would need roughly 110–160 GB at its peak (an estimate: the measured L7 figure, 9.9 GB, times 16 for two
+levels). About three quarters of that is avoidable, and the fixes don't change the worlds at all:</p>
+<ul>
+<li><b>Viewer frames, ~38 GB per Gyr at L9, doubled at the save.</b> Every frame of the run is held in memory until the end and then copied
+once more to write it out (PW-801). Writing each frame to disk as it's made removes this.</li>
+<li><b>Empty plate slots, ~19 GB.</b> Each plate keeps a whole-planet copy of its crust in 48 fixed slots, but in a measured run only 14 slots
+were in use and about 2% of those cells held real crust. That's 90% of a run's memory (PW-1389).</li>
+<li><b>Checkpoint copies, ~22 GB for a moment every 100 Myr.</b> The run copies its whole state, empty slots included, before trimming it (PW-1390).</li>
+</ul>
+<p>With those three fixed, an L9 run might fit in 10–20 GB (estimate). The planet's own fields are only about 3–5 GB at L9.</p>
+<p><b>Why it's slow, and what can't be split across cores:</b></p>
+<ul>
+<li><b>The time steps.</b> Each 2 Myr step needs the one before it, so they can't run side by side; only separate worlds can.</li>
+<li><b>River and lake filling</b> works outward from the lowest point in strict order. Parallel versions exist but break ties
+differently, so rivers would come out slightly different.</li>
+<li><b>The ocean gyres' solver</b> sweeps east to west, and that order is part of the method.</li>
+<li>Some plate bookkeeping is kept in order on purpose, so that runs repeat exactly.</li>
+<li>Several solvers (winds, gyres, rain, sea-floor creep) need more passes on a finer grid, so cost grows about 6–10× per level
+against 4× the cells. An L9 Gyr would take 1–2+ days (estimate).</li>
+</ul>
+<p><b>The cheaper path you already have:</b> simulate at L7 and refine the finished moment to L9. That's measured at 38 minutes and 38.8 GB
+(<code>docs/review/refine-l8/report.md</code>), or the land zoom for regions. <i>My lean:</i> the three memory fixes are cheap and change
+nothing, so I'd do them when a lane is free, starting with the viewer frames (it also lets an L7 run fit on an 8 GB laptop). I wouldn't
+pursue L9 from scratch beyond that. Full write-up: <code>docs/review/speed/l9-memory.md</code>. I couldn't find the earlier "bonkers"
+estimate written down; it was most likely the L7 figure times 16.</p>
+</div>
+
+<h3>"0.6 °C warmer than what?"</h3>
 <div class="card" id="dt"><div class="id">WHAT THE CLIMATE TESTS COMPARE (PW-1364)</div>
 <p><b>In plain words:</b> two different things, and I ran them together.</p>
 <ul>
@@ -108,19 +207,18 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>140 · grass roots breathe</td><td>Your D42 A (PW-1261). The 36-world test failed (strike 1, not merged). Grassland growth came down from 1.4–1.8× the field
-measurements to 1.15–1.5×, and on average temperature and CO2 didn't move. But 2 of the 36 worlds went frozen over (42.9% and 41.7% of land
-under ice; the limit is 40%), against none on the current code. Those were the two coldest worlds already (36% and 35% on the current code). Trees
-also fell 1.8 points, probably from the second part of the change, a lower fuel threshold for fires (250 → 200 g C/m², from the fire model
-GlobFIRM). Now running: those two worlds again with each part alone, to find which part pushes them over, before any new full test. Herds in
-warm African grassland would drop to about 0.7× Coe's measured parks. They matched before, and the remaining gap is in the herd formula,
-not the plants.</td></tr>
-<tr><td>141 · rich wild land resists farming</td><td>Your pick A (PW-1385): where wild food feeds each person well above the usual forager level (salmon coasts, acorn woods),
-a people takes up farming there much more slowly or farms only part of it. Sources first (Pacific Northwest, California and any others the
-literature supports), then the build, then before-and-after forager shares on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
+<tr><td>142 · North Atlantic too warm</td><td>PW-1381. <b>Found:</b> the warm current that carries heat north gives up too little of it on the way. On the model, 57% of
+the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (RAPID and OSNAP, the two mooring lines across the Atlantic).
+<b>The change:</b> one exchange rate doubled (30 → 60), set from that measured heat budget, not from the area's temperature. It isn't specific to Earth.
+<b>On Earth, compared with the current code:</b> the sea there goes from 13.7 to 11.9 °C over the year, matching satellite measurements
+(11.9). Winter rain drops from 2765 to 2265 mm (observed 1651), and Antarctica gets 2–3% more snow. The rest of the land is unchanged. What gets worse:
+the seas north of Iceland are now 2.7 °C too cold (they had been right only because the current arrived too warm), and winter air is still 3.9 °C too warm.
+Both are filed. <b>Now:</b> the 36-world test, done around 7 AM.</td></tr>
+
+<tr><td>149 · old saves and den raids</td><td>Your runs' saved checkpoints are in the old format since the memory trim, so slicing an older run would replay from the start (35–50 minutes at level 7). This re-saves them in the new format, checking each one before it replaces the old. Also a small fix: goblins, kobolds and troglodytes kept losing their raiding food between the 500-year updates (PW-1407).</td></tr>
+<tr><td>148 · how stretched an orbit can be</td><td>Your ask (PW-1365): a study, not a change. How worlds behave as the orbit gets more stretched (eccentricity 0 to 0.2 and beyond): hot and frozen seasons, ice ages, CO2, and where a world stops being livable. It ends with a recommended range for the generator.</td></tr>
 </table></div>
-<p>It stays within your daytime cap: at most 32 cores and about 90 GB together. Next physics: the too-warm North
-Atlantic (PW-1381).</p>
+<p>Overnight these use up to about 44 cores, as you allowed; every lane drops back under your daytime cap (32 cores, about 90 GB together) from 8 AM.</p>
 
 <h2 id="religion">Religion: the views are in</h2>
 <div class="card" id="rel2"><div class="id">GOD TREES, A FAITH MAP, A TIMELINE AND 13 KINDS OF TABOO (PW-1358, PW-1311, MERGED)</div>
@@ -158,6 +256,29 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Foragers trade with farmers</b> (PW-1386): <b>merged</b>, all 961 tests pass. A hunting-and-gathering people with farming neighbours within about a day's walk gets part of its food from them, up to half its foraging food: the Mbuti get over 60% of their food by weight from farm produce (Ichikawa 1983), Congo Basin foragers about 50% (Kitanishi 1995). How the share grows with the farmers' numbers is my judgement; no source I read measures it (PW-1405). <b>On 6 D&amp;D test runs, compared with the same runs before:</b> very small, 0.2–2.4% of forager peoples' food, because most foragers left by 1500 AD are fishers or herders. Whether herders and fishers trade too is filed (PW-1406).</li>
+<li><b>Memory trims</b> (PW-1390, PW-1389, from the level 9 report): <b>merged</b>, all 963 tests pass, and worlds come out bit-identical. <b>Peak memory, compared with the same run before:</b> level 6, 300 Myr: 2.45 → 1.34 GB; level 7, 200 Myr: 6.80 → 4.41 GB. The bigger level 9 saving (storing each plate's cells sparsely) is a refactor across about 8 modules, filed as PW-1409; keyframes (PW-801) are now the larger prize.</li></ul>
+<ul><li><b>Shared spin-up test tool</b> (lane 144): <b>merged</b> as a tool, not switched on; all 960 tests pass. What it found is in D45 above.</li></ul>
+<ul><li><b>Range dice</b> (PW-1383, your ask): <b>merged</b>, all 958 tests pass. Eight peoples numbers with a published range (forager slope, fisher top, gardeners, the three plough stages, herders, rich-land farming time) can be rolled per world inside it. There's a tick box in the peoples workbench and a <code>draw_ranges</code> line in the D&amp;D preset. Off by default, and with it off nothing changes. The rest stay fixed, each with its reason written down (most have no published range). <b>On 6 test runs, each compared with the same seed with the dice off:</b> total people within about ±12% in five, and 0.62× in one; humans' share moved most (0.77× to 1.64×); kobolds barely moved. Filed: listing the rolled numbers in the workbench (PW-1401), and finding ranges for the fixed ones (PW-1402).</li></ul>
+<ul><li><b>Dens follow the rock</b> (PW-1382): <b>merged</b>, all 957 tests pass. A den-ground map from the geology: karst limestone best, then tuff,
+lava fields, cliffs with rock shelters and thick loess, mostly from Goldscheider et al. 2020 on karst (15% of Earth's ice-free land is carbonate). Den kinds live
+at full density on the best ground and half where there's none, as you ruled: a preference, never a limit. <b>On the 14 D&amp;D runs, compared with the same runs on the
+code before:</b> kobold range 11.1 → 10.2 Mkm², with the share on good den ground 35% → 41%; goblins 4.2 → 5.1 Mkm² (9% → 15%). Both live in all 14 runs. The old rule
+gave every mountain full den density; granite mountains now count as fair ground only, which is why kobolds dip. One knob if you'd rather they didn't. One thing
+worth knowing: the generated worlds have only about 1% of land as exposed limestone, against Earth's 15%, which keeps den ground scarce (an existing ticket, PW-130).
+A viewer layer for den ground is filed (PW-1399).</li></ul>
+<p><b>Board tidy, done</b> (from D44's housekeeping):</p>
+<ul>
+<li><b>Closed 12 tickets</b> that were already built or settled by your rulings. 2 more, how hard fit decides shares (PW-1216) and kobolds after one-spot founding (PW-1218), are
+parked as your decisions for later: the pause on share tuning parks them, it doesn't decide them.</li>
+<li><b>New board categories:</b> peoples, culture and food. 202 tickets moved out of the ice-age time-zoom category.</li>
+<li><b>Parked to later:</b> 51 ice-age follow-ups, keeping one cheap check (PW-467); 9 Earth-only regional climate fixes; 10 dragon fine-tuning tickets, keeping
+what dragons eat (PW-961).</li>
+<li><b>New tickets for the review's ideas:</b> the cuisine sheet (PW-1391, waiting on your D44.1), one climate per epoch for the peoples (PW-1392),
+the climate test's code moved into the tools (PW-1393), a peoples step in "make a planet" (PW-1394), and the farming start date checked against each planet's own ice ages (PW-1395).</li>
+<li><b>Docs refreshed:</b> the state page, the plan, the overview, and one consistent L7 cost figure (about 35–40 minutes per Gyr on a quiet
+machine, about 50 under load).</li>
+</ul>
 <ul class="done">
 <li><b>Rain sees the sea's warmth</b> (PW-1364): merged; see the card above.</li>
 <li><b>CO2 yardsticks B</b> (PW-1316): failed its test, not merged; the yardsticks stay as they are (PW-1384, your call).</li>
@@ -166,9 +287,14 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 <li><b>Hunters and crops</b> (PW-1373): merged. A people learns a crop about 0.4 kyr after it arrives, divided by its leaning to farm
 (hunters ~4 kyr), and cat-folk lean to herding. Over 14 D&amp;D runs, leonin now stay hunters or herders in 7 runs (was 0), tabaxi in 6 (was 2),
 goliaths in 3 (was 1); farming kinds barely move. Write-up: <code>docs/review/peoples/density-ladder/hunters-lag.md</code>.</li>
-<li><b>Farm or forage per cell</b> (PW-1385): you picked A, rich wild land resists farming, compared per person rather than per km²; lane 141
-is on it. Crowding-driven farming (B) is filed as a look-around with a sim or three, no fix expected (PW-1388). The forager–farmer trade case
-follows A (PW-1386).</li>
+<li><b>Rich wild land resists farming</b> (PW-1385, your pick A): <b>merged</b>, all 957 tests pass. Where wild food (rich fishing, abundant game)
+feeds several times what ordinary foraging does, a people farms only part of the land, taking up more over about a thousand years. The strength is set from
+the Calusa of Florida (about 0.8 people/km², unfarmed for 550+ years beside maize farmers), and the time scale from the Baltic and Japan. Herding now takes
+grazing land only where it feeds more than the wild. <b>On the 14 D&amp;D runs, compared with the same runs on the code before:</b> people living off the wild
+0.9% → 3.2%; land led by foragers or fishers 34% → 39%; subarctic 4.5% → 15% and polar 8% → 22% of people on the wild; total people −7%. Farming kinds
+still farm 83–97% of their farmable land, and every farming kind now keeps a foraging fringe somewhere (dragonborn in 14 of 14 runs, was 8; orcs 11, was 5;
+leonin 8, was 1). No people dies out. One side effect to know about: desert farmers fall 12%, because fish-rich rivers in dry land count as rich (an exemption
+for irrigable valleys is a one-line change, filed as PW-1398; my lean is to leave it). Crowding-driven farming (B) is filed as a look-around (PW-1388).</li>
 <li><b>City goblins and kobolds</b> (PW-1369): you're right that it doesn't scale. Every minority in every town would need its own
 entry, so dozens. Removed (merged). Town minorities should come out of a towns model later, not be listed by hand.</li>
 <li><b>Dens follow the rock</b>: filed (PW-1382). Caves, rock shelters and diggable ground come from the bedrock and landforms, so den
@@ -178,5 +304,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v107 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v122 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

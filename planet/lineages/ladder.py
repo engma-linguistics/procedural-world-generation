@@ -3,6 +3,10 @@ rich the land is, times a small kind factor. Nothing here knows a people's name.
 
     density(cell) = kind x sum over the ways of life of (the share of the people living that way there) x (that way's rung there)
 
+**Published ranges (PW-1383).** Where a rung's number has a published range, ranges.py holds it beside its source (and lists what has none),
+and `meta.draw_ranges = true` draws the number from it, seeded by the peoples seed (Ladder.v, Ladder.drawn). Off by default: the constants
+below are used as they are.
+
 **The rungs** (docs/review/peoples/density-ladder/ladder.md has every source, read in lane 130 and re-checked). Each rung's number is
 the people's *mean* over the land it holds at the reference land quality (Q1 A), so a rung reads a land layer:
 (layer / reference) ** power, power 1.3 for foragers (Binford's fit, Q3 C) and 1.0 elsewhere.
@@ -21,7 +25,10 @@ the people's *mean* over the land it holds at the reference land quality (Q1 A),
 **Who lives which way where (Q2 A): the land decides.** Once a people knows cultivation (it has taken up a staple crop, crops.py),
 its farmable cells farm (the share FARM_SHARE of the fertile good); once it knows herding (a herd animal, animals.py), grazing land
 outside the fields is herded; the rest stays foraging (or fishing where the waters are rich). So foragers persist on marginal land
-and farmers spread with the knowledge. Knowing is slower for kinds little inclined to farm (PW-1373 B): a crop must stand on a fifth of
+and farmers spread with the knowledge. **Rich wild land resists farming (PW-1385 A):** where the wild feeds well above the land's
+ordinary foraging (rich waters), a people farms only part of the farmable land, taking up more of it over the millennia it has known
+crops (rich_keep); the richest waters stay with foragers and fishers, as on the salmon and estuary coasts of North America. Herding
+takes the grazing land where it feeds more people than the wild there (herd_keep). Knowing is slower for kinds little inclined to farm (PW-1373 B): a crop must stand on a fifth of
 a people's land for crops.LAG_KYR / its propensity before the people takes it up (hunters ~10x slower than farmers; meat-eaters lean
 to herds, animals.DIET_LEAN). Den peoples farm at DEN_FARM_W of that (rare, not forbidden, Q4 A).
 
@@ -32,7 +39,12 @@ three-field 1.2: the iron rung PLOUGH_STEPS[1] kyr after the plough, the medieva
 cultivation, cultivation 11.5 against irrigation 8), capped by the tree's era (meta.era). A proxy until the tech tree runs in step.
 
 **Den peoples (Q4 A).** Goblins, kobolds, troglodytes: the forager rung x kind 1.2, plus a raiding share r of their food that grows
-with the farmers' and herders' density within reach, capped (RAID_*): density = forager / (1 - r).
+with the farmers' and herders' density within reach, capped (RAID_*): density = forager / (1 - r). Their dens follow the rock
+(PW-1382, den_thin): x1 on the best den ground (caves, rock shelters, ground to dig: dens.py), x0.5 where there is none, a preference
+and never a range limit (Daniel 11-02).
+**Foragers who trade with farmers (PW-1386).** A forager people (it knows no crops; not a den people or a hold) living near farmers
+gets up to BARTER_CAP of its foraging food from them, more the denser the farmers within reach (BARTER_*): its foraging rung /
+(1 - b), as Congo Basin foragers trade meat, forest goods and labour for farm food (docs/review/peoples/forager-trade/round1.md).
 **Dwarven holds (Q6 A).** A people that mines and lives underground (traits `miner` and `subterranean`) farms its valleys at the
 farming rung (terraces: the plough rung's stage TERRACE_LAG after it cultivates, without a plough animal), buys food with ore and
 craft up to TRADE_CAP of what it eats (a placeholder until trade exists) and adds MUSHROOM_X from its crop waste.
@@ -42,6 +54,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from . import ranges as RG
 from .gridops import nbr_reduce
 from .spread import EST
 
@@ -76,9 +89,33 @@ RAID_HALF = 5.0  # farmers' and herders' people/km2 within reach at which raidin
 # village country; raids on herders or foragers like themselves only swap herds back and forth, Khazanov p. 155, so the share follows
 # the settled density, near 0 among foragers)
 RAID_REACH = 2  # cells (neighbour rings) a den people raids over
+# PW-1386: foragers who trade with farmer neighbours (docs/review/peoples/forager-trade/round1.md has the sources and the quotes). A
+# forager people (one that knows no crops, not a den people or a hold) gets a share b of its foraging food from farmers within reach,
+# for meat, forest goods and labour: its foraging rung / (1 - b), b = BARTER_CAP x farmers near / (farmers near + BARTER_HALF). The
+# rich-land and herding choices read the land's own wild, never the bartered top-up.
+BARTER_CAP = 0.5  # the most of its foraging food a forager people gets from farmers. Congo Basin foragers living with farmers: "more than
+# 60 % of total food weight on farm products" (Mbuti, Ichikawa 1983 p. 55); in the forest camps 11-63% of energy from farm food, "about 50%"
+# for most groups (Kitanishi 1995 p. 106 and Table 11, p. 107: Mbuti 11 and 63, Efe 41 and 34, Aka 11, oil palm apart); Aka of Lobaye 55%
+# of meal items (Bahuchet 1988, via Kitanishi p. 107). 0.5: the "about 50%", under the Mbuti's 60% by weight
+BARTER_HALF = 5.0  # farmers' people/km2 within reach at which the share is half its cap (a judgement, as RAID_HALF: a gardening village
+# country; no source relates the share to the farmers' density. The one relation found is distance: Aka camps 3-4 hours' walk from the
+# village eat more farm food than camps 5-8 hours away, Bahuchet 1988 via Kitanishi 1995 p. 107; and with no farmers near the share is 0,
+# as on the Baka's months-long molongo, "solely on wild food resources", Yasuoka 2004 p. 36)
+BARTER_REACH = 1  # cells (neighbour rings) a forager people trades over (those camps are within a day's walk: one ring of ~60 km cells)
 REFRESH_KYR = 0.5  # the ladder is redone at least this often in the recent epochs (raids and the plough's stage move with time)
 ERA_STAGE = {"stone age": -1, "bronze age": 0, "classical": 1, "medieval": 2, "renaissance": 2, "industrial": 2}  # the plough stage an era allows
 RUNGS = ("forager", "fisher", "garden", "plough", "irrigation", "nomad", "agro_pastoral", "hold", "raider")
+# PW-1385 A, rich wild land resists farming (docs/review/peoples/density-ladder/rich-foragers.md has the sources). A cell's richness
+# = its wild rung over the land's own forager rung, never taken below the usual forager level FORAGER (so poor land's rivers do not read
+# as rich; 1 off rich waters). Of its farmable share a people knowing crops farms
+# 1 / (1 + x^RICH_POW), x = (richness - 1) / (RICH_HALF x (1 + years it has known crops / RICH_T)).
+RICH_HALF = 3.0  # the excess richness half farmed when crops are new (a judgement on the cases: Calusa ~0.8/km2 over a whole domain
+# (Worth 2006), ~7x the forager fit there, still unfarmed ~0.55 kyr after maize next door; Ertebolle beside farming ~1 kyr, then farmed)
+RICH_T = 1.0  # kyr over which that half point grows by RICH_HALF (Ertebolle ~1 kyr beside farmers, Gron NSF; Yayoi rice reached
+# southern Tohoku ~0.6 kyr after Kyushu, Mizoguchi): moderately rich land farms within ~1-1.5 kyr, the richest waters hold for millennia
+RICH_POW = 2.0  # the steepness (a judgement: from 90% to 10% farmed across a ninefold richness)
+KNOWN_STEP, KNOWN_CAP = 0.5, 15.0  # kyr: the years a people has known crops, in steps (redo a line only when they move) and capped
+HERD_POW = 2.0  # PW-1385: herding goes where it feeds more people than the wild, smoothly (a judgement: half where they feed the same)
 FREE_RANGING = 0.8  # (the kind factor the dnd preset gives free-ranging kinds, leonin and tabaxi; den peoples 1.2: samples/dnd.toml)
 
 
@@ -95,9 +132,33 @@ def is_den(l) -> bool:
     return "denning" in l.traits
 
 
+def den_thin(l, fit: np.ndarray) -> np.ndarray:
+    """PW-1382 (Daniel 11-02: den peoples prefer den ground, never rely on it): a line's density factor per cell from the den ground
+    `fit` (0..1, the `den` good: caves, rock shelters, ground to dig; dens.py): x1 on the best, x(1 - its `den` trait) where there is
+    none (the `denning` trait: 0.5), so a den people keeps half its density on poor ground. 1 for every other line. Its habitat (where it
+    can live) never reads this."""
+    return 1.0 - l.trait("den", 0.0) * (1.0 - fit)
+
+
 def is_hold(l) -> bool:
     """A people of holds (Q6 A): miners living underground (dwarves)."""
     return "miner" in l.traits and "subterranean" in l.traits
+
+
+def rich_keep(rich: np.ndarray, known: float, rich_t: float | None = None) -> np.ndarray:
+    """PW-1385 A: the part of a cell's farmable share a people that has known crops for `known` kyr farms, from how rich the wild is
+    there over ordinary foraging (rich = the wild rung / the land's own forager rung, at least FORAGER: 1 where nothing is richer than plain
+    foraging). 1 on ordinary land; half where the excess richness is RICH_HALF x (1 + known / RICH_T); less beyond, as its RICH_POW
+    power. So rich land takes up farming slowly, and the richest waters stay with foragers or fishers for millennia."""
+    x = np.maximum(rich - 1.0, 0.0) / (RICH_HALF * (1.0 + max(known, 0.0) / (RICH_T if rich_t is None else rich_t)))
+    return 1.0 / (1.0 + x ** RICH_POW)
+
+
+def herd_keep(nomad: np.ndarray, wild: np.ndarray) -> np.ndarray:
+    """PW-1385: the part of a cell's grazable share a people that knows herding herds: whichever of herding and foraging feeds more
+    there, smoothly (half where they feed the same; HERD_POW the steepness; rich_foragers.md)."""
+    a, b = nomad ** HERD_POW, wild ** HERD_POW
+    return a / np.maximum(a + b, 1e-30)
 
 
 def _interp_stage(t: float, steps, vals) -> float:
@@ -116,13 +177,23 @@ class Ladder:
         self.den = np.array([is_den(l) and not l.megafauna for l in h.lines])
         self.hold = np.array([is_hold(l) and not l.megafauna for l in h.lines])
         self.people = np.array([not (l.megafauna or l.overlay) for l in h.lines])
-        self.thin = np.ones((L, n)) if self.ok else None  # (D27 C: a den people's density falls off broken country; model.run sets it)
+        self.thin = np.ones((L, n)) if self.ok else None  # (PW-1382: a den people's density follows the den ground: den_thin)
         self.state: dict[int, tuple] = {}
+        # (PW-1383: the ranged numbers. The module constants are the fixed values; with meta.draw_ranges each is drawn from its published
+        # range, seeded by the peoples seed: ranges.py. self.drawn holds the draws ({} when off), recorded in the run's metadata)
+        self.v = {"forager_pow": FORAGER_POW, "fish_top": FISH_TOP, "garden": GARDEN, "plough": tuple(PLOUGH), "nomad": NOMAD, "rich_t": RICH_T}
+        self.drawn: dict[str, float] = {}
+        if getattr(h.tree, "draw_ranges", False):
+            d = self.drawn = {k: round(x, 6) for k, x in RG.draw(h.tree.seed).items()}
+            self.v.update(forager_pow=d["forager_pow"], fish_top=d["fish_top"], garden=d["garden"], nomad=d["nomad"], rich_t=d["rich_t"],
+                          plough=(d["plough_0"], d["plough_1"], d["plough_2"]))
         self.last = None
         self.era_stage = ERA_STAGE.get(h.tree.era, 2)
         self.rung = np.zeros((L, n), np.int8) if self.ok else None  # (each line's main rung per cell, RUNGS index)
         self.sh = {k: np.zeros((L, n)) for k in ("farm", "herd")} if self.ok else None  # (its ways' shares per cell: landuse)
         self.raid = np.zeros((L, n)) if self.ok else None
+        self.barter = np.zeros((L, n)) if self.ok else None  # (PW-1386: the part of each cell's food a forager people trades for)
+        self._fn = None  # (PW-1386: the farmers near at the last due refresh)
         if not self.ok:
             return
         self.fa = np.maximum(np.asarray(ps.npp, float), 0.0) / NPP_REF
@@ -135,6 +206,11 @@ class Ladder:
             if g in goods:
                 ore = np.maximum(ore, np.asarray(goods[g], float))
         self.trade = TRADE_CAP * np.clip(ore / TRADE_FULL, 0, 1)
+        if "den" in goods:
+            fit = np.clip(np.asarray(goods["den"], float), 0.0, 1.0)
+            for k, l in enumerate(h.lines):
+                if not l.megafauna:
+                    self.thin[k] = den_thin(l, fit)
         flow = getattr(ps, "flow", None)
         if flow is None:
             self.water = np.zeros(n)
@@ -144,8 +220,8 @@ class Ladder:
 
     # -- what a people knows ----------------------------------------------------------------------
     def tech(self, k: int, ago: float) -> tuple:
-        """(knows cultivation, knows herding, plough stage level 0..2 as a float or -1, irrigation kyr since or -1), from the
-        history's crops and animals."""
+        """(knows cultivation, knows herding, plough stage level 0..2 as a float or -1, irrigation kyr since or -1, kyr since it knew
+        cultivation in KNOWN_STEP steps up to KNOWN_CAP, 0 if not), from the history's crops and animals."""
         h = self.h
         cult = herd = None
         plough = None
@@ -166,14 +242,18 @@ class Ladder:
         if cult is not None and self.era_stage >= 0 and cult - IRR_LAG >= ago:
             irr = cult - IRR_LAG - ago
         q = lambda x: round(x * 4) / 4  # noqa: E731  (quarter steps: redo a line only when its tech moves)
-        return (cult is not None, herd is not None, q(lvl), q(irr) if irr >= 0 else -1.0)
+        known = round(min(cult - ago, KNOWN_CAP) / KNOWN_STEP) * KNOWN_STEP if cult is not None else 0.0
+        return (cult is not None, herd is not None, q(lvl), q(irr) if irr >= 0 else -1.0, known)
 
     # -- the rungs per cell -----------------------------------------------------------------------
-    def line(self, k: int, t: tuple, settled_near: np.ndarray | None):
-        """(density per cell, farm share, herd share, main rung per cell) of line k with tech t."""
-        cult, herd, lvl, irr = t
-        forage = FORAGER * self.fa ** FORAGER_POW
-        fish = FISH_TOP * np.clip((self.ff - FISH_MIN) / (1.0 - FISH_MIN), 0, 1)
+    def line(self, k: int, t: tuple, settled_near: np.ndarray | None, farmers_near: np.ndarray | None = None):
+        """(density per cell, farm share, herd share, main rung per cell, raid share or None, barter share or None) of line k with tech
+        t; settled_near feeds a den people's raids, farmers_near a forager people's trade (PW-1386)."""
+        cult, herd, lvl, irr = t[:4]
+        known = t[4] if len(t) > 4 else 0.0  # (kyr it has known crops: PW-1385 A)
+        v = self.v
+        forage = FORAGER * self.fa ** v["forager_pow"]
+        fish = v["fish_top"] * np.clip((self.ff - FISH_MIN) / (1.0 - FISH_MIN), 0, 1)
         wild = np.maximum(forage, fish)
         rung_w = np.where(fish > forage, 1, 0).astype(np.int8)
         raid = None
@@ -181,14 +261,22 @@ class Ladder:
             raid = RAID_CAP * settled_near / (settled_near + RAID_HALF)
             wild = wild / (1.0 - raid)
             rung_w = np.where(raid > 0.1, 8, rung_w).astype(np.int8)
+        nomad = v["nomad"] * self.fg
+        wild0 = np.maximum(forage, fish)  # (the wild before any raids or trade: what the land itself feeds)
+        barter = None
+        if self.barters(k, t) and farmers_near is not None:  # (PW-1386: a forager people trades with farmers near)
+            barter = BARTER_CAP * farmers_near / (farmers_near + BARTER_HALF)
+            wild = np.maximum(forage / (1.0 - barter), fish)
         sf = self.farmable * (DEN_FARM_W if self.den[k] else 1.0) if cult else np.zeros_like(forage)
-        sh = (1.0 - sf) * self.grazable if herd else np.zeros_like(forage)
+        if cult:  # (PW-1385 A: rich wild land resists farming)
+            sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known, v["rich_t"])
+        sh = (1.0 - sf) * self.grazable * herd_keep(nomad, wild0) if herd else np.zeros_like(forage)
         if cult:
             if lvl >= 0:
-                rain = np.minimum(_interp_stage(lvl, (0, 1, 2), PLOUGH) * self.fa, PLOUGH_TOP)
+                rain = np.minimum(_interp_stage(lvl, (0, 1, 2), v["plough"]) * self.fa, PLOUGH_TOP)
                 rr = 3
             else:
-                rain = GARDEN * self.fa
+                rain = v["garden"] * self.fa
                 rr = 2
             farm = rain
             if irr >= 0:
@@ -197,7 +285,6 @@ class Ladder:
                 farm = farm / (1.0 - self.trade) * (1.0 + MUSHROOM_X)
         else:
             farm, rr = np.zeros_like(forage), 2
-        nomad = NOMAD * self.fg
         sw = 1.0 - sf - sh
         d = sf * farm + sh * nomad + sw * wild
         rung = rung_w.copy()
@@ -207,10 +294,21 @@ class Ladder:
         if cult and irr >= 0 and not self.hold[k]:
             rung[main_farm & (self.water * _interp_stage(irr, IRR_STEPS, IRR) > (1.0 - self.water) * rain)] = 4
         rung[(sf >= 0.25) & (sh >= 0.25)] = 6
-        return d, sf, sh, rung, raid
+        if barter is not None:  # (the part of each cell's food that is bartered farm food)
+            barter = np.where(d > 0, sw * (wild - wild0) / np.maximum(d, 1e-30), 0.0)
+        return d, sf, sh, rung, raid, barter
 
-    def settled_near(self) -> np.ndarray:
-        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH rings of neighbours (what a den people raids)."""
+    def barters(self, k: int, t: tuple) -> bool:
+        """PW-1386: line k trades with farmer neighbours: a people that knows no crops (t[0]), not a den people (they raid) or a hold."""
+        return bool(self.people[k] and not t[0] and not self.den[k] and not self.hold[k] and not self.h.lines[k].marine)
+
+    def farmers_near(self) -> np.ndarray:
+        """Farmers' people/km2 per cell, averaged over BARTER_REACH rings of neighbours (PW-1386: whom a forager people trades with)."""
+        return self.settled_near(("farm",), BARTER_REACH)
+
+    def settled_near(self, ways: tuple = ("farm", "herd"), reach: int = RAID_REACH) -> np.ndarray:
+        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH rings of neighbours (what a den people raids); `ways` and
+        `reach` pick the ways counted and the rings."""
         h = self.h
         P = np.where(h.p >= EST, h.p, 0.0) if getattr(h, "p", None) is not None else None
         s = np.zeros(h.grid.n)
@@ -218,10 +316,10 @@ class Ladder:
             return s
         for k in np.flatnonzero(self.people & ~self.den):
             if P[k].any():
-                s += P[k] * h._dmap[k] * (self.sh["farm"][k] + self.sh["herd"][k])
+                s += P[k] * h._dmap[k] * sum(self.sh[w][k] for w in ways)
         g = h.grid
         deg = np.diff(g.nbr_off).astype(float)
-        for _ in range(RAID_REACH):
+        for _ in range(reach):
             s = 0.5 * s + 0.5 * nbr_reduce(g, np.add, s[g.nbr_idx]) / np.maximum(deg, 1)
         return s
 
@@ -232,14 +330,17 @@ class Ladder:
             return
         due = force or self.last is None or (not deep and self.last - ago >= REFRESH_KYR)
         sn = self.settled_near() if (due and self.den.any() and not deep) else None
+        if due:  # (PW-1386: the farmers near, kept between the due refreshes for lines whose tech moves in between)
+            self._fn = None if deep else self.farmers_near()
+        fn = self._fn
         for k, l in enumerate(h.lines):
             if not self.people[k] or l.marine:
                 continue
-            t = (False, False, -1.0, -1.0) if deep else self.tech(k, ago)
+            t = (False, False, -1.0, -1.0, 0.0) if deep else self.tech(k, ago)
             if not due and self.state.get(k) == t:
                 continue
             self.state[k] = t
-            d, sf, shd, rung, raid = self.line(k, t, sn if self.den[k] else None)
+            d, sf, shd, rung, raid, barter = self.line(k, t, sn if self.den[k] else None, fn)
             h._dmap[k] = h.kx[k] * d * self.thin[k]
             self.sh["farm"][k], self.sh["herd"][k], self.rung[k] = sf, shd, rung
             P = getattr(h, "p", None)
@@ -251,6 +352,7 @@ class Ladder:
                     h._farm_share[k] = float((w * sf).sum() / w.sum())
             if raid is not None:
                 self.raid[k] = raid
+            self.barter[k] = 0.0 if barter is None else barter
         if due:
             self.last = ago
 
@@ -289,4 +391,6 @@ TABLE = [  # (rung, its number at the reference land, what it reads, the sourced
     ("agro_pastoral", "fields and herds in one cell", "both", "1-15 (Wilson 1986)"),
     ("hold", f"its valleys' farming x trade (to {TRADE_CAP:g} of its food, placeholder) + {MUSHROOM_X:g} mushrooms", "the valleys", "its valleys' rung"),
     ("raider", f"forager / (1 - raid share), raids to {RAID_CAP:g} of food", "farmers near", "a top-up (Opler 1941; Khazanov 1994)"),
+    ("forager, trading", f"forager / (1 - trade share), farm food to {BARTER_CAP:g} of its foraging food", "farmers near",
+     "farm food 11-63% of energy, ~50% typical (Ichikawa 1983; Kitanishi 1995)"),
 ]

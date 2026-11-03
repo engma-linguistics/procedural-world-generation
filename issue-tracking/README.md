@@ -23,7 +23,7 @@ type: task              # epic | story | task
 status: todo            # todo, or needs-decision for a judgement call
 parent: null            # an epic/story id, e.g. PW-012, or null
 milestone: null         # v1, v2, v3, v4, later, or null (unscheduled); may be left out of a draft
-subsystem: zoom         # tectonics surface climate ocean hydrology coast zoom timezoom highlights viewer store infra docs
+subsystem: zoom         # tectonics surface climate ocean hydrology coast zoom timezoom highlights viewer store infra docs peoples culture food
 effort: s               # xs <30 min, s <2 h, m ~half a day, l a day or more, xl multi-agent project
 impact: med             # low | med | high (see below)
 found_by: falls2        # your branch or agent name
@@ -94,7 +94,7 @@ The 15 fields above are the complete schema; `check` rejects unknown and missing
 
 PW-244 is v1's written definition: the epic describes what v1 has to deliver, and its children are the work that does it. `milestone` decides membership. A ticket under PW-244 can be set to `v2` (PW-247, the speed pass, is one), and a v1 ticket need not sit under PW-244. Read PW-244 for the meaning of v1; read `milestone` for what is in it.
 - `status`: `todo`, `in-progress`, `blocked` (only with `blocked_by` filled in), `needs-decision`, `done`, `wontdo`. A `needs-decision` ticket's Description gives the options and the coordinator's lean; Daniel's answer goes in Updates, then the status moves on.
-- `subsystem`: tectonics, surface (erosion, sediment, rock), climate, ocean, hydrology (rivers, lakes), coast (waves, tides, deltas), zoom, timezoom, highlights, viewer, store (run/world/zoom files, checkpoints), infra (server, API, tests, tools, performance), docs.
+- `subsystem`: tectonics, surface (erosion, sediment, rock), climate, ocean, hydrology (rivers, lakes), coast (waves, tides, deltas), zoom, timezoom (the ice-age time zoom only), peoples (lineages, ranges, demography, dragons and giants as peoples), culture (religion, language, tech, history, polities), food (crops, herds, fuels, cuisine, the brief), highlights, viewer, store (run/world/zoom files, checkpoints), infra (server, API, tests, tools, performance), docs.
 - `effort`, in agent time: **xs** under 30 min; **s** under 2 h; **m** about half a day; **l** about a day or more; **xl** a multi-agent project (usually an epic).
 - `impact`: how much better the planets look, behave or match Earth, or how much other work it unblocks. **high**: visible on most worlds or a key Earth check, or it unblocks an epic. **med**: visible in some places or zooms, or a clear Earth miss in one region. **low**: cosmetic, rare, or internal tidiness.
 - `found_by`: the branch, agent or user that found it (`falls2`, `coordinator`, `daniel`).

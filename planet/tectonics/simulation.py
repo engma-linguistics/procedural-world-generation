@@ -194,15 +194,16 @@ class Simulation:
         """A deep copy of everything that changes during the run: {name:
         value} for every name in STATE (numpy arrays, a Plates, plain
         lists/dicts/floats, None for climate fields not computed yet).
-        (A checkpoint file can shrink it a lot: only plates.alive slots
-        matter, and of their (P, n) arrays only the plates.owned cells.)"""
+        (A checkpoint doesn't take this copy: store.pack_state packs the
+        live state, keeping of the plates' (P, n) arrays only the cells
+        something reads, PW-1390.)"""
         return copy.deepcopy({name: getattr(self, name) for name in self.STATE})
 
     def load_state(self, state: dict):
         """Continue from a state() taken from a simulation with the same
         grid, seed, params and dt."""
-        for name in self.STATE:
-            setattr(self, name, copy.deepcopy(state[name]))
+        for name in self.STATE:  # (the plates' crust on mapped memory, only the live slots': Plates.mapped_copy)
+            setattr(self, name, state[name].mapped_copy() if name == "plates" else copy.deepcopy(state[name]))
         self._world_view()
 
     @classmethod
@@ -266,6 +267,7 @@ class Simulation:
         self._world_view()
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
+        self.plates.release_dead()  # (after tend: re_home reads a dead plate's swell under its volcanoes)
 
         # 6. climate, when due (earth.climate_due), on the ground as the events
         # left it: a keyframe shows the climate of the ground it shows, and

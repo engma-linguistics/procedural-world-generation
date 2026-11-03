@@ -2,7 +2,7 @@
 id: PW-1180
 title: With few peoples the humans take nearly everything; contests go to the denser people wherever niches overlap
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887, PW-1147, PW-1152]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/pressure.py, planet/lineages/history/model.py, planet/lineages/history/habitat.py, tools/peoples_robust.py, tools/peoples_robust/trees/five_peoples.toml, tools/peoples_robust/trees/even_six.toml]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -66,5 +66,6 @@ Options (general, least forced first):
 - Lean: A (the screens rule out density as the lever), then B, judged on the suite (even_six, five_peoples, dnd3, dnd5 against today), with C as the guard rail.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: option A built. competition._fit_w weights the contest by fit and breadth (FIT_Q, owner D20 lever 1); overview 2.26 'Fit decides the contest'. Few-people trees are handled by D31 (commonest share target) and PW-1241.
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-dense-broad-people-takes-small-trees.md (found by lane77).

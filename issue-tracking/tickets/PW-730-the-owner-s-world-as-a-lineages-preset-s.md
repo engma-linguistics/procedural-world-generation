@@ -5,7 +5,7 @@ type: story
 status: in-progress
 parent: PW-692
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: m
 impact: high
 found_by: culinary-intake

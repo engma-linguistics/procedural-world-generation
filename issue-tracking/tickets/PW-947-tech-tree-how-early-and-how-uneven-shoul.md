@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-675
 milestone: later
-subsystem: timezoom
+subsystem: culture
 effort: xs
 impact: low
 found_by: fun39-techtree
