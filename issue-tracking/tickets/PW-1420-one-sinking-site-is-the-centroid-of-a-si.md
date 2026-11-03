@@ -1,4 +1,5 @@
 ---
+id: PW-1420
 title: One "sinking site" is the centroid of a sinking area from the Labrador Sea to the Barents
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane150
 blocked_by: []
 relates: [PW-1411]
 refs: ["planet/ocean.py::overturning", tools/overturning_report.py, docs/review/base-climate/nordic-seas/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,3 +31,6 @@ anyone reading `moc_sites` or `overturning_report.py`, can be misled the same wa
 
 - [ ] split `sites` into per-basin pieces (e.g. separate an area wherever the sinking per cell has a local minimum,
   or cut at sills shallower than LOOP_DEEP_M), or report the sinking by its strongest cells rather than the centroid
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-moc-site-centroid-misleads.md (found by lane150).

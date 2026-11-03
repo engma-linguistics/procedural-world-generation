@@ -267,3 +267,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-03 07:10: Lane 148 (PW-1365) merged, docs only; D46 (PW-1415 eccentricity range, lean B) on the desk; PW-1414, PW-1416 filed.
 - 2026-11-03 07:35: Lane 151 (PW-1393) merged 05d53f3b: judge in tools/judge.py, byte-identical. Intake PW-1417, PW-1418.
 - 2026-11-03 07:40: Lane 152 (PW-1401 viewer list of drawn ranges; PW-1418 if cheap) started.
+- 2026-11-03 07:55: Lane 150 (PW-1411/1413) merged docs only: three strikes, back of the line; no physics lane started pending D45/D46.

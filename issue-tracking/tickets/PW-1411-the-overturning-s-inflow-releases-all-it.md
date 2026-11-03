@@ -43,4 +43,5 @@ What I'd look at:
   OISST, with the 40-60 N box no warmer
 
 ## Updates
+- 2026-11-03: Lane 150 (merged, docs/review/base-climate/nordic-seas/round1.md): three strikes (A relax to sst0, B sea-warmed air, C Clausius-Clapeyron lambda), back of the line. Correction: the overturning does not sink off East Greenland; 67.3N 32W is the centroid of one 5.1 Mkm2 Labrador-to-Barents area (Labrador 3.84 Sv, Irminger/Iceland 2.92, north of the ridge 5.80 vs obs ~6). Volumes about right; the inflow crosses the ridge at 3.8 C, 118 TW vs Tsubouchi 2021's 305 TW. Next try needs structure (air pass inside ocean.solve; surface imprint, PW-1419).
 - 2026-11-03: Created from inbox draft draft-inflow-misses-nordic-seas-interior.md (found by lane142).

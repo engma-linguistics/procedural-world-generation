@@ -1,4 +1,5 @@
 ---
+id: PW-1419
 title: Where the inflow is all the surface water, the sea adds sst0's own anomaly on top of the inflow's
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane150
 blocked_by: []
 relates: [PW-1411, PW-265, PW-589]
 refs: ["planet/ocean.py::solve", "planet/climate.py::sea_surface", docs/review/base-climate/nordic-seas/round1.md, docs/review/base-climate/nordic-seas/nordmap.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,3 +40,6 @@ Expect the subpolar box to cool and to need PW-1411's mechanism with it. Screen 
 
 - [ ] decide whether the imprint should be share x (t_in - sst0); if so, screen it on Earth L6 against OISST
   (the 40-60 N box and the Nordic seas)
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-inflow-imprint-adds-on-sst0-anomaly.md (found by lane150).
