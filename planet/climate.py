@@ -1786,7 +1786,11 @@ TUNE = dict(
     moc_src_lat=25.0,  # deg: the water replacing what sinks comes from equatorward of this ...
     moc_follow=3.0,  # ... riding the currents (a step costs exp(-this x the current's speed its way / cur_ref))
     moc_width=250.0,  # km: the inflow's width (for its heat loss to the air, and the straits it can pass) ...
-    moc_lambda=30.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature
+    moc_lambda=60.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature. Set by the
+    # heat the Atlantic inflow gives up on its way north: of the 1.33 PW crossing 26.5 N (RAPID; Johns et al.
+    # 2011) only 0.45 PW is left at OSNAP, ~55-60 N (Lozier et al. 2019), so ~2/3 goes to the air over the Gulf
+    # Stream and the North Atlantic Current (PW-1381: at 30 the inflow kept ~60% to 60 N and the subpolar sea
+    # ran ~3 C warm)
     moc_q0=0.001,  # Sv per km of width: an inflow this strong makes up ~2/3 of the surface water
     moc_layer_m=500.0,  # m: the inflow layer's depth, which winter convection mixes into (ocean.winter_half)
     moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean, both hemispheres together
