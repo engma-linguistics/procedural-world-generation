@@ -968,6 +968,15 @@ function drawResults() {
       [['world', fu.summary.world], ...Object.entries(fu.summary.by_biome), ...Object.entries(fu.summary.by_line).slice(0, 12)]
         .map(([k, v]) => `<tr><td>${esc(k)}</td>${fu.names.map((f) => `<td>${Math.round(100 * v[f])}%</td>`).join('')}</tr>`).join('') + '</table>';
   }
+  // the sourced numbers (PW-1383, PW-1401): what the run drew from its published ranges, or the fixed values
+  if (SCHEMA.ranges?.length) {
+    const dr = result.range_draws || {}, on = !!result.draw_ranges && Object.keys(dr).length > 0;
+    const g = (x) => +(+x).toPrecision(3);
+    h += `<h2>Sourced numbers <span class="muted" style="font-weight:normal;font-size:12px">(the density ladder's, ${on ? 'drawn from their published ranges' : 'off'})</span></h2>` +
+      (on ? `<table class="t"><tr><th>number</th><th>drawn</th><th>published range</th><th>source</th></tr>${SCHEMA.ranges.map((r) =>
+        `<tr><td title="${esc(r.name)}">${esc(r.label)}</td><td class="n"><b>${g(dr[r.name])}</b> <span class="muted">${esc(r.unit)}</span></td><td class="n">${g(r.lo)}–${g(r.hi)}${r.scale === 'log' ? ' <span class="muted" title="drawn log-uniform: equal chance per doubling">(log)</span>' : ''}</td><td class="muted">${esc(r.source)}</td></tr>`).join('')}</table>`
+        : `<p class="muted">Fixed values: this run did not draw its density ladder's numbers from their published ranges (tick "draw sourced numbers from their published ranges" in the tree's settings to draw them).</p>`);
+  }
   // the map
   if (P.ascii?.rows) {
     const col = Object.fromEntries(Object.entries(P.ascii.letters).map(([ch, id]) => [ch, L[id]?.color || '#ccc']));

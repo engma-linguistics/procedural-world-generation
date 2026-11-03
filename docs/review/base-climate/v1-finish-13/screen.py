@@ -1,9 +1,9 @@
 """usage: screen.py DIR [...] -> the human-habitable screen at every step of a run's last 5, 10 and 20 Myr
 (diagnostic only, coordinator's question: take the finished world at the latest passing moment, not the end).
 A moment passes if
-- the true mean temperature is within -6..+5 C of pre-industrial (passrate4's PREIND_T): the climate's true mean
+- the true mean temperature is within -6..+5 C of pre-industrial (tools/judge.py's PREIND_T): the climate's true mean
   (updates, every climate_every Myr) carried to the 2-Myr steps through the run's dT (its offset to dT interpolated);
-- the land ice at that moment is 1-25% of land (passrate4's LAND_ICE_NONE..LAND_ICE_LGM, at the moment);
+- the land ice at that moment is 1-25% of land (tools/judge.py's LAND_ICE_NONE..LAND_ICE_LGM, at the moment);
 - pCO2 >= 180 ppm (a proxy for C3 forests);
 - and, for the "+trees" column, the wet equatorial lowland trees >= 20% at the nearest climate update.
 Per draw: the latest passing moment's age before the end (Myr; '-' none in 20 Myr), without and with trees.

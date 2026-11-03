@@ -58,6 +58,17 @@ RANGES: dict[str, Range] = {
                     "beside farmers, Gron; rich-foragers.md, RICH_T)"),
 }
 
+LABELS: dict[str, tuple[str, str]] = {  # name -> (what it is in plain words, its unit), for the workbench's Results tab (PW-1401)
+    "forager_pow": ("how steeply foragers' density rises with the land's productivity (the fitted slope)", "exponent"),
+    "fish_top": ("the densest fishing foragers on a rich coast", "people per km2"),
+    "garden": ("gardeners (shifting cultivation)", "people per km2"),
+    "plough_0": ("early plough farmers (Bronze Age)", "people per km2"),
+    "plough_1": ("middle plough farmers (Roman-age)", "people per km2"),
+    "plough_2": ("late plough farmers (medieval)", "people per km2"),
+    "nomad": ("nomadic herders", "people per km2"),
+    "rich_t": ("time rich coasts take to adopt farming", "kyr"),
+}
+
 FIXED: dict[str, str] = {
     "FORAGER (0.036 at NPP 330)": "fixed: no published range at the reference land. Binford's spans (hunting-led 0.01-0.044, gathering "
                                   "0.036-0.33, all 0.11 median) are across all land qualities; at one NPP the scatter around the fit is "
@@ -99,5 +110,6 @@ def draw(seed: int) -> dict[str, float]:
 
 def table() -> list[dict]:
     """The ranges as rows (name, lo, hi, scale, source) for the write-up and the metadata."""
-    return [{"name": k, "lo": r.lo, "hi": r.hi, "scale": "log" if r.log else "linear", "group": r.group, "source": r.source}
+    return [{"name": k, "label": LABELS[k][0], "unit": LABELS[k][1], "lo": r.lo, "hi": r.hi, "scale": "log" if r.log else "linear",
+             "group": r.group, "source": r.source}
             for k, r in RANGES.items()]

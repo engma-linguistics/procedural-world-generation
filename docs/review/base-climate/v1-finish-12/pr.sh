@@ -6,4 +6,4 @@ W=/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a509f
 N=${2:-0}
 for i in $(seq 1 57); do [ $(ls $V/$1_*/seed*.json.gz 2>/dev/null | wc -l) -ge $N ] && break; sleep 10; done
 echo "files: $(ls $V/$1_*/seed*.json.gz 2>/dev/null | wc -l)"
-cd $W && uv run python docs/review/base-climate/v1-finish-12/passrate4.py $V/$1_* 2>&1 | grep -v Warning
+cd $W && uv run python tools/judge.py bar $V/$1_* 2>&1 | grep -v Warning

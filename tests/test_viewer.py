@@ -276,3 +276,6 @@ def test_peoples_editor_has_no_copied_option_lists():
     assert "fertile: 'farmland'" not in html
     assert "density: 2.0" not in html and "Candidates until" not in html and "nothing reads it yet" not in html
     assert "/api/lineage-schema" in html
+    from planet.lineages import ranges as RG  # PW-1401: the Results tab shows the run's draws against these (range, label, source)
+    assert [r["name"] for r in d["ranges"]] == list(RG.RANGES) and all(r["label"] and r["unit"] and r["source"] for r in d["ranges"])
+    assert "result.range_draws" in html and "Fixed values" in html

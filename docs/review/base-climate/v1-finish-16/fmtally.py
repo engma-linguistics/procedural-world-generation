@@ -1,6 +1,6 @@
 """usage: fmtally.py DIAG_DIR [...] -> PW-866's measures side by side, per draw and tallied per queue:
-- the deep-time bar on 300 Myr to the end (passrate4.judge, PW-865 option C; a frozen-over world, 40%+ of the land under ice, also fails, PW-1091);
-- the finish checks at the very end, as passrate4 judges them (true mean -6..+3 C, least land ice of the last 12 Myr
+- the deep-time bar on 300 Myr to the end (tools/judge.py judge, PW-865 option C; a frozen-over world, 40%+ of the land under ice, also fails, PW-1091);
+- the finish checks at the very end, as tools/judge.py judges them (true mean -6..+3 C, least land ice of the last 12 Myr
   1-25%, wet-eq trees >= 20%);
 - the finish moment (planet.highlights.finish_moment: the latest step of the finish window that passes
   highlights.habitable, the same checks at that moment), how far back it sits, and which candidates it skipped;
@@ -18,11 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from planet import highlights as H  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
-with redirect_stdout(io.StringIO()):  # (passrate4 runs on import; with no dirs it prints only empty tallies)
-    _argv, sys.argv = sys.argv, [sys.argv[0]]
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "v1-finish-12"))
-    import passrate4 as P  # noqa: E402
-    sys.argv = _argv
+from tools import judge as P  # noqa: E402
 
 rows, tally = [], {}
 
