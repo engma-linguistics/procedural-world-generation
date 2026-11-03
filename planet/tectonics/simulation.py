@@ -194,8 +194,9 @@ class Simulation:
         """A deep copy of everything that changes during the run: {name:
         value} for every name in STATE (numpy arrays, a Plates, plain
         lists/dicts/floats, None for climate fields not computed yet).
-        (A checkpoint file can shrink it a lot: only plates.alive slots
-        matter, and of their (P, n) arrays only the plates.owned cells.)"""
+        (A checkpoint doesn't take this copy: store.pack_state packs the
+        live state, keeping of the plates' (P, n) arrays only the cells
+        something reads, PW-1390.)"""
         return copy.deepcopy({name: getattr(self, name) for name in self.STATE})
 
     def load_state(self, state: dict):

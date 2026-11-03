@@ -256,7 +256,7 @@ def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
     pl.owned[owner[cells], pl.idx[owner[cells], cells]] = False  # make some of the view's slots unowned
     live = Simulation.from_state(sim4_60.grid, 1, Params(run_end=60.0), 2.0, st)
     path = tmp_path / "c.ckpt"
-    S._write_checkpoint(path, st, sim4_60.grid)
+    S._write_checkpoint(path, S.pack_state(st), sim4_60.grid)
     back = Simulation.from_state(sim4_60.grid, 1, Params(run_end=60.0), 2.0, S.read_checkpoint(path, sim4_60.grid))
     assert np.array_equal(back.w_rec, live.w_rec) and np.array_equal(back.w_lith, live.w_lith)
     assert np.array_equal(back.dyn, live.dyn) and np.array_equal(back.w_elev, live.w_elev)
@@ -268,9 +268,39 @@ def test_checkpoint_plate_idx_round_trip(tmp_path, sim4_60):
     st = sim4_60.state()
     idx = st["plates"].idx.copy()
     path = tmp_path / "c.ckpt"
-    S._write_checkpoint(path, st, sim4_60.grid)
-    assert (st["plates"].idx == 0).mean() > 0.99  # (what was pickled)
+    packed = S.pack_state(st)
+    S._write_checkpoint(path, packed, sim4_60.grid)
+    assert packed["plates"]["idx"][0].size < 0.01 * idx.size  # (what was pickled: the cells that differ)
     assert np.array_equal(S.read_checkpoint(path, sim4_60.grid)["plates"].idx, idx)
+
+
+def test_checkpoint_reads_back_as_shrunk_state(tmp_path, sim4_60):
+    """A checkpoint packs the live simulation (only the plate cells
+    something reads, PW-1390) and reads back as exactly its shrink_state():
+    every array the same values, dtype and shape; the simulation untouched."""
+    import copy
+    from dataclasses import fields
+    before = sim4_60.state()
+    S.save_checkpoint(tmp_path, sim4_60)
+    want = S.shrink_state(copy.deepcopy(before))
+    got = S.load_checkpoint(tmp_path, sim4_60.t, sim4_60.grid)
+
+    def same(a, b):
+        if isinstance(a, np.ndarray):
+            return isinstance(b, np.ndarray) and a.dtype == b.dtype and a.shape == b.shape and np.array_equal(a, b)
+        return type(a) is type(b) and a == b if not isinstance(a, (list, dict)) else \
+            (len(a) == len(b) and all(same(x, y) for x, y in (zip(a, b) if isinstance(a, list) else
+                                                                ((a[k], b[k]) for k in a))))
+    assert list(got) == list(want)
+    for name in want:
+        if name == "plates":
+            for f in fields(want[name]):
+                assert same(getattr(want[name], f.name), getattr(got[name], f.name)), f.name
+        else:
+            assert same(want[name], got[name]), name
+    after = sim4_60.state()
+    for f in fields(before["plates"]):
+        assert same(getattr(before["plates"], f.name), getattr(after["plates"], f.name)), f.name
 
 
 def test_run_layout(data_root):
