@@ -1,7 +1,7 @@
 # Lane 142: the finished N Atlantic too warm (PW-1381), 2026-11-03
 
-Status: **diagnosis done, Earth screens done, paired judge on arm l60 (moc_lambda 30 -> 60, commit a2815e10):
-see section 4.**
+Status: **diagnosis done, Earth screens done, paired judge on arm l60 (moc_lambda 30 -> 60, commit a2815e10)
+passes: section 4.**
 
 Main = 0c1ca629. Everything here is Earth L6 unless it says L7. Scripts are in this directory:
 - `get_sst.py`: how the observed SST was fetched;
@@ -178,16 +178,32 @@ Skipped. The paired judge has the cold-edge and warm-edge draws (l6c_m / l6c_p) 
 
 ## 4. Paired judge (2 rolls, 36 draws per arm; main 0c1ca629, cand a2815e10)
 
-Running since 00:18, 2026-11-03.
-- Frozen code: `$S/code/main` (0c1ca629) and `$S/code/cand` (a2815e10), with
-  S = /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l142.
-- Launch: `launch.sh 0.0005 0.001` (MAXSIM 4 shared, THREADS 3: 12 cores) into `$S/judge`.
-- About 22 min per draw, so ~6.5 h for all 72.
-- Read with `pjudge.py $S/judge main cand --table`. `tools/hard_bar.py` per arm needs `m_r*` names: use symlink
-  folders in scratch, and remove the links with `find -P DIR -maxdepth 1 -type l -delete` before any rm.
+Ran 00:18-05:47, 2026-11-03 (`launch.sh 0.0005 0.001`, MAXSIM 4 x THREADS 3). Read with
+`pjudge.py $S/judge main cand --table` and `tools/hard_bar.py` per arm (symlink folders, removed after).
+
+**It passes the bar.**
+- **Hard failures: 0 on both arms.** Frozen over, boiled, ocean loss and CO2 crash are all 0/36.
+- **Soft passes:** main 30/36 (14/18 + 16/18), cand 28/36 (15/18 + 13/18). Both pass 22 draws, main only 8, cand
+  only 6. McNemar p 0.79, so within chance; lane 24's null change moves 7-8 draws.
+- **Late dT:** main median 1.77, cand 1.05; paired B-A -0.12 [-1.58, +0.64], 17 / 19, not moved. Inside
+  HUMAN_RANGE (-6..+5).
+- **Glacial maxima:** main 13, cand 17 (lane 134's merge had taken them 23 -> 13).
+- **Moved:** only the source reference, +0.05 [+0.01, +0.07] (sign p 0.065).
+- **Not moved:**
+  - end T -1.5 [-3.2, +1.0];
+  - late CO2 +0.01;
+  - land rain -6 [-36, +12];
+  - arid +0.8, hot desert -0.2, trees -1.1.
+- **Reported, not on the bar:** draws whose end pCO2 lies outside 180-600 ppm went from 11 to 19. Draws under
+  100 ppm went from 2 to 1.
+
+**Reading:**
+- This takes back most of PW-1364's warming: the late dT that PW-1364 raised by +0.57 C now moves by -0.12 against
+  the same worlds on main, and glacial maxima recover 13 -> 17.
+- That fits the mechanism: the over-wet N Atlantic took snow from the ice sheets, and Antarctic land rain is +2-3%
+  on Earth.
 
 ## 5. Not yet done
 
-- the judge's reading;
 - the full test suite and the golden update (the outputs change on purpose);
 - `tools/scorecard.py` and `tools/earth_check.py` on the candidate.
