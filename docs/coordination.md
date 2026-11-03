@@ -22,7 +22,7 @@ When an agent reports:
 ## docs/review retention
 docs/ holds only what agents or the owner read. Lane evidence (reports, tables, images, probe scripts) goes under `docs/review/<topic>/` and is deleted when its tickets close; the history keeps it. A review file stays while an open ticket, a core doc (docs/ outside review/, README.md, CLAUDE.md) or code names it, directly or through a kept review page. `uv run python issue-tracking/board.py review [--orphans]` lists each file with what keeps it; `board.py check` warns about the orphans. When you delete them, note the removal on each closed ticket that cited them: `board.py update PW-n "Removed <path> in cleanup; last present at <sha>."` Large screenshot bundles stay outside git.
 
-Reusable harnesses that live in review: the paired A/B judge, `docs/review/base-climate/v1-finish-16/` (`pjudge.py`, `paired.sh`, README; PW-994).
+Reusable harnesses that live in review: the paired A/B judge, `docs/review/base-climate/v1-finish-16/` (`pjudge.py`, `paired.sh`, README; PW-994), and its optional forked variant `paired_fork.sh` (shared spin-up; not adopted, `docs/review/base-climate/fork-judge/round1.md`).
 
 ## Viewer server
 `planet serve --no-open` on port 8765 (http://127.0.0.1:8765/viewer/). Restart after server changes:
