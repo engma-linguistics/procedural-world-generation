@@ -270,3 +270,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-03 07:55: Lane 150 (PW-1411/1413) merged docs only: three strikes, back of the line; no physics lane started pending D45/D46.
 - 2026-11-03 08:10: Lane 152 merged c490b1d7 (PW-1401 workbench ranges, PW-1418 shims dropped); 160 area tests pass. Lane 153 (PW-1394 peoples in make + own store kind; relabel script, coordinator runs it after merge) started.
 - 2026-11-03 08:50: Lane 153 (PW-1394) merged cae4886e: make --peoples, form choice, kind 'peoples'; 972 passed. 63 peoples runs relabelled by the coordinator (run.json backups in session scratchpad peoples_runs_backup); script removed. Intake PW-1421, PW-1422.
+- 2026-11-03 08:55: Lane 154 (PW-801 keyframe streaming, bit-identical) started.
