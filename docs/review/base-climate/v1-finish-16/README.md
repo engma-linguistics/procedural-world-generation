@@ -79,3 +79,8 @@ count as a check (coordinator ruling, PW-994).
    "moved" now and then; trust a move that the change's mechanism predicts or that shows in the late windows too.
    **Use 4 rolls (add 0.0015 0.002) only when the pass count decides the merge**, e.g. a correct mechanism against
    a fitted kernel's loss.
+
+**Optional, not adopted: the forked judge** (lane 144). `paired_fork.sh` + `fork.py` run each draw once to 300 Myr
+(REF_FREEZE) and continue both arms from that state, so the arms share the carbon-cycle yardstick; outputs in
+this layout for `pjudge.py`. Exact, but no calmer on the hard bar at the cold tail. How to run it, what it misses and
+the validation: `../fork-judge/round1.md`.
