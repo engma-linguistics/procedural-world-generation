@@ -2,9 +2,9 @@
 id: PW-1218
 title: "Kobolds after one-spot founding: fixed in most draws, but a narrow non-seafaring people still strands on a crowded landmass in some (dnd3 seed 7: 0.4%)"
 type: task
-status: done
+status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: med
@@ -49,5 +49,6 @@ Options:
 Lean: A. The suite's per-world swings are in docs/review/peoples-d20/report.md.
 
 ## Updates
+- 2026-11-03: Status done -> needs-decision. Coordinator 11-03: reopened. D31 paused share tuning, which parks this rather than deciding it; kept as a parked decision for Daniel.
 - 2026-11-03: Status needs-decision -> done. Closed 11-03: option A (accept) plus the built den-thinning (params.DEN_THIN, PW-1218 C in overview 2.26); D27 and D31 (10-31) stopped further share work. The residual (dnd3 seed 7 kobolds at 0.4%) is a known stress-suite outlier (seed pass-rate ruling: outlier worlds OK).
 - 2026-10-31: Created from inbox draft draft-peoples-split-of-a-megafauna-stem-strands.md (found by lane83b).
