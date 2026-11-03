@@ -231,7 +231,7 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>153 · peoples from the New planet form</td><td>PW-1394: building a planet from the viewer can also build its peoples (D&amp;D or Seven Meals), so you don't need the command line for that step. Peoples runs also get their own label in the store, so they're no longer filed as ice-age zooms. Your existing peoples runs are relabelled, not deleted.</td></tr>
+<tr><td>none</td><td>Nothing is running. The next physics lane waits for your answers on D45 and D46.</td></tr>
 </table></div>
 <p>Within your daytime cap (32 cores, about 90 GB together). The next physics lane waits for your answers on D45 and D46, which decide what's worth trying next.</p>
 
@@ -271,6 +271,7 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Peoples from the New planet form</b> (PW-1394): <b>merged</b>, all 972 tests pass. The New planet form has a "Peoples on the finished world" choice (none, D&amp;D or Seven Meals; it needs the ice-age zoom and the finished world ticked), so one click builds the planet through to its peoples. Peoples runs now have their own label instead of being filed as ice-age zooms; your 63 existing ones were relabelled in place, not deleted, and the religion links above still work.</li></ul>
 <ul><li><b>Rolled numbers in the workbench</b> (PW-1401): <b>merged</b>. A peoples run's Results tab now has a "Sourced numbers" section: each rolled number in plain words, its value, its published range and source, or "fixed values" when the dice were off.</li></ul>
 <ul><li><b>North Atlantic, part 2</b> (PW-1411, PW-1413): <b>three strikes, back of the line.</b> The Nordic seas run 2.7 °C cold because the warm water reaches the Iceland–Scotland ridge too cool (it carries 118 TW there, against 305 TW measured), not because it takes the wrong route; the amounts sinking are about right. Three quick fixes all moved the Nordic seas only together with the sea south of Iceland, which is already right. The next try needs a structural change (the water should lose heat to the air over it, not to a fixed temperature), so it waits. Nothing in the code changed.</li></ul>
 <ul><li><b>Judge moved into tools</b> (PW-1393, from the fresh-eyes review): <b>merged</b>. The code that decides whether a test planet passes now lives in <code>tools/judge.py</code>, not in prunable review folders; it gives byte-identical verdicts on a past test.</li></ul>
@@ -326,5 +327,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v130 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v131 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

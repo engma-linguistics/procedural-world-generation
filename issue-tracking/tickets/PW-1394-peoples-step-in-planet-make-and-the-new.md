@@ -2,7 +2,7 @@
 id: PW-1394
 title: Peoples step in `planet make` and the New planet form (and a real run kind for peoples runs)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: peoples
@@ -23,5 +23,6 @@ In plain words: the one-command path that builds a planet (`planet make`) stops 
 - [x] a peoples run has its own kind in the store; old runs deleted, no compatibility path (repo rule)
 
 ## Updates
+- 2026-11-03: Status todo -> done. Merged cae4886e (lane 153): planet make --peoples [tree], New planet form choice, kind 'peoples' everywhere; 972 passed. Coordinator relabelled the 63 existing peoples runs (backups of run.json in the session scratchpad peoples_runs_backup), b4d502 serves; relabel script and its test removed after use.
 - 2026-11-03: Created.
 - 2026-11-03: Lane 153: `planet make --peoples TREE` and the form's peoples choice (planet/make.py, viewer/start.js); peoples runs are kind `peoples` (no phase) in the store, family, API and viewer. Existing runs are relabelled by the one-off tools/relabel_peoples_runs.py, run by the coordinator after merge (then delete it). Follow-ups: draft-navigator-peoples-tree-choice, draft-peoples-stage-time-estimate.
