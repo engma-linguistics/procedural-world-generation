@@ -160,10 +160,7 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
     mb = line.trait("mountain", 0.0)
     if mb:
         K = K * np.where(has("mountain"), 1.0, 1.0 - mb)
-    db = line.trait("den", 0.0)
-    if db and not PM.DEN_THIN:  # (lane 83: a denning people's dens are in broken country, spec TRAITS 'denning'; PM.DEN_THIN, lane 97:
-        # thin dens off it instead, its density cut there and not its habitat, model.run)
-        K = K * np.where(has("mountain") | has("hills") | has("breaks"), 1.0, 1.0 - db)
+    # (a denning people's dens never cut its habitat: its density follows the den ground instead, PW-1382, model.run)
     ob = line.trait("open", 0.0)
     if ob:
         K = K * np.where(has("open"), 1.0, 1.0 - ob)

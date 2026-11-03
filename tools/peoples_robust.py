@@ -404,6 +404,44 @@ def forage_land(h, P) -> dict:
             "cell_mkm2": float(h.cell_mkm2)}
 
 
+DEN_HIGH = 0.5  # (PW-1382: den ground at or above this counts as good den ground in den_ground)
+
+
+def den_ground(h, P) -> dict:
+    """PW-1382 (lane 143): how each people sits on the den ground (the `den` good, dens.py) at the end: its range and its people, all
+    and on good den ground (>= DEN_HIGH), and on the old proxy, broken country (mountain, hills, breaks: lane 97's den rule); the
+    land's own shares of both, for the baseline. Empty without the den good."""
+    from planet.lineages.spread import EST
+    G = h.goods
+    if G is None or "den" not in G or h._tags_now is None:
+        return {}
+    fit = np.asarray(G["den"], float)
+    t = h._tags_now
+    land = t["land"]
+    hi = fit >= DEN_HIGH
+    broken = t["mountain"] | t["hills"] | t["breaks"]
+    tree = h.tree
+    out = {}
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna:
+            continue
+        who = tree.people_of(l.id)
+        pc = h.population(k, P)
+        o = out.setdefault(who, {"pop": 0.0, "pop_hi": 0.0, "pop_broken": 0.0, "fit_pop": 0.0})
+        o["pop"] += float(pc.sum())
+        o["pop_hi"] += float(pc[hi].sum())
+        o["pop_broken"] += float(pc[broken].sum())
+        o["fit_pop"] += float((pc * fit).sum())
+    for who, o in out.items():
+        held = h.whole(who, P) >= EST
+        o["mkm2"] = float(held.sum() * h.cell_mkm2)
+        o["mkm2_hi"] = float((held & hi).sum() * h.cell_mkm2)
+        o["mkm2_broken"] = float((held & broken).sum() * h.cell_mkm2)
+        o["fit_area"] = float(fit[held].mean()) if held.any() else 0.0
+    return {"peoples": out, "land_hi": float(hi[land].mean()), "land_broken": float(broken[land].mean()),
+            "land_fit": float(fit[land].mean())}
+
+
 def measure(h, res, pres) -> dict:
     """The numbers of one try: per people (groups rolled up; megafauna and overlays apart) share of people, of the cells led, range,
     founding; the extinctions and their reasons."""
@@ -550,6 +588,10 @@ def _run_spec(spec: dict, Probe) -> dict:
         m["forage_land"] = forage_land(h, res["present"])
     except Exception as e:  # (likewise)
         m["forage_land"] = {"error": repr(e)}
+    try:
+        m["den_ground"] = den_ground(h, res["present"])
+    except Exception as e:  # (likewise)
+        m["den_ground"] = {"error": repr(e)}
     m["wall_s"] = round(time.time() - t0, 1)
     import resource
     m["max_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)

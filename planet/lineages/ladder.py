@@ -35,7 +35,9 @@ three-field 1.2: the iron rung PLOUGH_STEPS[1] kyr after the plough, the medieva
 cultivation, cultivation 11.5 against irrigation 8), capped by the tree's era (meta.era). A proxy until the tech tree runs in step.
 
 **Den peoples (Q4 A).** Goblins, kobolds, troglodytes: the forager rung x kind 1.2, plus a raiding share r of their food that grows
-with the farmers' and herders' density within reach, capped (RAID_*): density = forager / (1 - r).
+with the farmers' and herders' density within reach, capped (RAID_*): density = forager / (1 - r). Their dens follow the rock
+(PW-1382, den_thin): x1 on the best den ground (caves, rock shelters, ground to dig: dens.py), x0.5 where there is none, a preference
+and never a range limit (Daniel 11-02).
 **Dwarven holds (Q6 A).** A people that mines and lives underground (traits `miner` and `subterranean`) farms its valleys at the
 farming rung (terraces: the plough rung's stage TERRACE_LAG after it cultivates, without a plough animal), buys food with ore and
 craft up to TRADE_CAP of what it eats (a placeholder until trade exists) and adds MUSHROOM_X from its crop waste.
@@ -109,6 +111,14 @@ def is_den(l) -> bool:
     return "denning" in l.traits
 
 
+def den_thin(l, fit: np.ndarray) -> np.ndarray:
+    """PW-1382 (Daniel 11-02: den peoples prefer den ground, never rely on it): a line's density factor per cell from the den ground
+    `fit` (0..1, the `den` good: caves, rock shelters, ground to dig; dens.py): x1 on the best, x(1 - its `den` trait) where there is
+    none (the `denning` trait: 0.5), so a den people keeps half its density on poor ground. 1 for every other line. Its habitat (where it
+    can live) never reads this."""
+    return 1.0 - l.trait("den", 0.0) * (1.0 - fit)
+
+
 def is_hold(l) -> bool:
     """A people of holds (Q6 A): miners living underground (dwarves)."""
     return "miner" in l.traits and "subterranean" in l.traits
@@ -146,7 +156,7 @@ class Ladder:
         self.den = np.array([is_den(l) and not l.megafauna for l in h.lines])
         self.hold = np.array([is_hold(l) and not l.megafauna for l in h.lines])
         self.people = np.array([not (l.megafauna or l.overlay) for l in h.lines])
-        self.thin = np.ones((L, n)) if self.ok else None  # (D27 C: a den people's density falls off broken country; model.run sets it)
+        self.thin = np.ones((L, n)) if self.ok else None  # (PW-1382: a den people's density follows the den ground: den_thin)
         self.state: dict[int, tuple] = {}
         self.last = None
         self.era_stage = ERA_STAGE.get(h.tree.era, 2)
@@ -165,6 +175,11 @@ class Ladder:
             if g in goods:
                 ore = np.maximum(ore, np.asarray(goods[g], float))
         self.trade = TRADE_CAP * np.clip(ore / TRADE_FULL, 0, 1)
+        if "den" in goods:
+            fit = np.clip(np.asarray(goods["den"], float), 0.0, 1.0)
+            for k, l in enumerate(h.lines):
+                if not l.megafauna:
+                    self.thin[k] = den_thin(l, fit)
         flow = getattr(ps, "flow", None)
         if flow is None:
             self.water = np.zeros(n)
