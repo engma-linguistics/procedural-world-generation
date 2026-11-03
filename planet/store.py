@@ -44,6 +44,7 @@ vocabulary of layer names shared by runs, time zooms, worlds and the viewer.
 from __future__ import annotations
 
 import contextlib
+import copy
 import gzip
 import json
 import os
@@ -925,76 +926,131 @@ def read_volcanoes(run_dir: Path) -> dict | None:
 # ---------------------------------------------------------------------------
 # Checkpoints: the full simulation state every ~100 Myr of a run
 # ---------------------------------------------------------------------------
-# A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
-# and volcano lists, events, budget), zlib-compressed, the crust of the
-# plates' unowned cells zeroed (shrink_state) and the plates' cell map stored
-# as its difference from a fresh grid.locate (pack_idx). Only ever read back
-# from our own runs/.
+# A pickle of pack_state(...) (the state of tectonics.Simulation: arrays, the
+# Plates, hotspot and volcano lists, events, budget), zlib-compressed. The
+# plates go in packed: their crust columns only on the cells something reads
+# (_keep; the rest reads back as zeros, as shrink_state leaves them), owned
+# and that mask as bits, and the cell map as the few cells where it differs
+# from a fresh grid.locate. Packing works on the live simulation before any
+# copy, so a checkpoint never holds a second full copy of the plates
+# (PW-1390). Only ever read back from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
 
 def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
-    """The state, with the crust of plate cells nothing reads zeroed
-    (shrink_state: ~9 in 10 of the plates' cells are stale copies of crust
-    that has left, which compress badly). writer: a CheckpointWriter to
-    pickle, compress and write it in the background (sim.state() is a deep
-    copy taken here, so the run can go on meanwhile)."""
+    """The state, packed (pack_state: of the plates, only the cells
+    something reads). writer: a CheckpointWriter to finish, pickle, compress
+    and write it in the background (pack_state copies what it keeps, so the
+    run can go on meanwhile)."""
     path = checkpoint_path(run_dir, sim.t)
     path.parent.mkdir(parents=True, exist_ok=True)
-    state = sim.state()
+    packed = pack_state({name: getattr(sim, name) for name in sim.STATE})
     if writer is None:
-        _write_checkpoint(path, state, sim.grid)
+        _write_checkpoint(path, packed, sim.grid)
     else:
-        writer.submit(path, state, sim.grid)
+        writer.submit(path, packed, sim.grid)
     return path
 
 
-def shrink_state(state: dict) -> dict:
-    """Zeroes, in place, the crust columns (plates.CRUST) of plate cells
-    nothing reads on: cells a plate owns no crust in (dead slots, cells its
-    crust has left: a column is written in full when a plate gains a cell)
-    except those the world view samples (Simulation._world_view: a plate's
+def _keep(plates, owner, volcanoes) -> np.ndarray:
+    """(P, n) bool: the plate cells something reads the crust of: cells a
+    plate owns crust in (a column is written in full when a plate gains a
+    cell), those the world view samples (Simulation._world_view: a plate's
     slot can be the view's without being owned, and the view and its
     subsidence read it, PW-291) and the volcanoes' crust cells (re_home
-    reads a volcano's swell, volcanism.base_level). Returns state."""
-    pl = state["plates"]
-    keep = pl.owned.copy()
-    owner = state["owner"]
-    keep[owner, pl.idx[owner, np.arange(owner.size)]] = True
-    for v in state["volcanoes"]:
+    reads a volcano's swell, volcanism.base_level). The rest (dead slots,
+    cells a plate's crust has left: ~9 in 10) are stale copies."""
+    keep = plates.owned.copy()
+    keep[owner, plates.idx[owner, np.arange(owner.size)]] = True
+    for v in volcanoes:
         keep[v["plate"], v["ref"]] = True
+    return keep
+
+
+def shrink_state(state: dict) -> dict:
+    """Zeroes, in place, the crust columns (plates.CRUST) of the plate cells
+    nothing reads (outside _keep): what a checkpoint reads back as. Returns
+    state."""
+    pl = state["plates"]
+    keep = _keep(pl, state["owner"], state["volcanoes"])
     for arr in pl.crust():
         arr[~keep] = 0
     return state
 
 
-def _located(plates, grid) -> np.ndarray:
-    """(P, n): each plate slot's cell under each world cell, found afresh
-    (no warm start) from its rotation."""
-    return np.stack([grid.locate(grid.centers @ q) for q in plates.Q])
+def pack_state(state: dict) -> dict:
+    """A copy of state ({name: value} over Simulation.STATE: the live
+    simulation's, or a state()) to pickle, the plates packed: each crust
+    column only on _keep's cells, owned and that mask as bits, the cell map
+    as int32 (pack_idx finishes it, on the writer's thread). Leaves state as
+    it is; unpack_state gives back shrink_state(state)."""
+    from dataclasses import fields
 
+    from .tectonics.plates import CRUST
 
-def pack_idx(state: dict, grid) -> dict:
-    """Replaces, in place, the plates' cell map idx ((P, n) int64, a rotated
-    nearest-neighbour map that zlib can't compress: ~a quarter of a
-    checkpoint) by its difference from _located (Plates.move computes it the
-    same way, but warm-started from the last step: ~all zeros). unpack_idx
-    adds it back, so the round trip is exact whatever the warm start did
-    (PW-306). Returns state."""
     pl = state["plates"]
-    pl.idx = pl.idx - _located(pl, grid)
+    keep = _keep(pl, state["owner"], state["volcanoes"])
+    assert pl.idx.shape[1] < 2**31
+    packed = {
+        "small": {f.name: copy.deepcopy(getattr(pl, f.name)) for f in fields(pl)
+                  if f.name not in (*CRUST, "owned", "idx")},
+        "shape": keep.shape,
+        "keep": np.packbits(keep, axis=None),
+        "owned": np.packbits(pl.owned, axis=None),
+        "crust": {name: (getattr(pl, name).dtype, getattr(pl, name).shape[2:], getattr(pl, name)[keep])
+                  for name in CRUST},
+        "idx": pl.idx.astype(np.int32),
+    }
+    rest = copy.deepcopy({name: value for name, value in state.items() if name != "plates"})  # (one copy: keeps any sharing)
+    return {name: packed if name == "plates" else rest[name] for name in state}
+
+
+def unpack_state(packed: dict, grid) -> dict:
+    """The state pack_state (then pack_idx) packed, with full Plates again."""
+    from .tectonics.plates import Plates
+
+    pk = packed["plates"]
+    shape = tuple(pk["shape"])
+    size = shape[0] * shape[1]
+    keep = np.unpackbits(pk["keep"], count=size).astype(bool).reshape(shape)
+    crust = {}
+    for name, (dtype, tail, values) in pk["crust"].items():
+        arr = np.zeros(shape + tuple(tail), dtype)
+        arr[keep] = values
+        crust[name] = arr
+    owned = np.unpackbits(pk["owned"], count=size).astype(bool).reshape(shape)
+    idx = _located(pk["small"]["Q"], grid)
+    cells, diff = pk["idx"]
+    idx.reshape(-1)[cells] += diff
+    state = dict(packed)
+    state["plates"] = Plates(**pk["small"], **crust, owned=owned, idx=idx)
     return state
 
 
-def unpack_idx(state: dict, grid) -> dict:
-    pl = state["plates"]
-    pl.idx = pl.idx + _located(pl, grid)
-    return state
+def _located(Q: np.ndarray, grid) -> np.ndarray:
+    """(P, n) int64: under each world cell, the cell of each plate slot's
+    grid (rotations Q, (P, 3, 3)), found afresh (no warm start)."""
+    return np.stack([grid.locate(grid.centers @ q) for q in Q])
 
 
-def _write_checkpoint(path: Path, state: dict, grid):
-    write_atomic(path, zlib.compress(pickle.dumps(pack_idx(shrink_state(state), grid), protocol=5), 1))
+def pack_idx(packed: dict, grid) -> dict:
+    """Replaces, in place, the packed plates' cell map (a rotated
+    nearest-neighbour map that zlib can't compress) by the cells where it
+    differs from _located, and by how much (Plates.move computes it the same
+    way, but warm-started from the last step: ~all the same). unpack_state
+    adds them back, so the round trip is exact whatever the warm start did
+    (PW-306). Returns packed."""
+    pk = packed["plates"]
+    diff = pk["idx"].reshape(-1) - _located(pk["small"]["Q"], grid).reshape(-1)
+    cells = np.flatnonzero(diff)
+    pk["idx"] = (cells, diff[cells])
+    return packed
+
+
+def _write_checkpoint(path: Path, packed: dict, grid):
+    """packed: a pack_state()."""
+    write_atomic(path, zlib.compress(pickle.dumps(pack_idx(packed, grid), protocol=5), 1))
 
 
 class CheckpointWriter:
@@ -1007,12 +1063,12 @@ class CheckpointWriter:
         self._thread = None
         self._error = None
 
-    def submit(self, path: Path, state: dict, grid):
+    def submit(self, path: Path, packed: dict, grid):
         self.wait()
 
         def work():
             try:
-                _write_checkpoint(path, state, grid)
+                _write_checkpoint(path, packed, grid)
             except BaseException as e:  # (raised again by wait, on the run's thread)
                 self._error = e
         self._thread = threading.Thread(target=work, name="checkpoint", daemon=True)
@@ -1044,4 +1100,4 @@ def load_checkpoint(run_dir: Path, t: float, grid) -> dict:
 
 
 def read_checkpoint(path: Path, grid) -> dict:
-    return unpack_idx(pickle.loads(zlib.decompress(Path(path).read_bytes())), grid)
+    return unpack_state(pickle.loads(zlib.decompress(Path(path).read_bytes())), grid)

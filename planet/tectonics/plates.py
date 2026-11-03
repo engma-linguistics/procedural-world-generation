@@ -8,7 +8,9 @@ resampled, so a plate's interior doesn't blur as it travels.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import copy
+import mmap
+from dataclasses import dataclass, fields
 
 import numpy as np
 
@@ -32,6 +34,27 @@ def rotation(axis_angle: np.ndarray) -> np.ndarray:
 # the per-cell crust columns each plate carries in its own frame (isostasy.EXTRA: extra's
 # columns; record.RECORD: rec's, the strata and history)
 CRUST = ("age", "thick", "cont", "rock", "cover", "extra", "rec", "lith")
+# the (P, n, ...) arrays that live on mapped memory (_mapped): only the rows of slots in use cost memory (PW-1389)
+MAPPED = ("owned", *CRUST)
+
+
+def _mapped(shape, dtype) -> np.ndarray:
+    """A zeroed array on its own anonymous memory map: a page costs memory
+    only once it is written, and Plates.release can hand a dead slot's
+    pages back (a plain np.zeros may come from reused heap memory, written
+    in full)."""
+    dtype = np.dtype(dtype)
+    count = int(np.prod(shape))
+    # (private: madvise(DONTNEED) frees a private page and it reads as zero again; a shared one keeps its data)
+    buf = mmap.mmap(-1, max(count * dtype.itemsize, 1), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
+    return np.frombuffer(buf, dtype, count).reshape(shape)
+
+
+def _map_of(arr: np.ndarray) -> mmap.mmap | None:
+    b = arr.base
+    while b is not None and not isinstance(b, mmap.mmap):
+        b = getattr(b, "base", None) if not isinstance(b, memoryview) else b.obj
+    return b
 
 
 @dataclass
@@ -92,17 +115,65 @@ class Plates:
 
     @classmethod
     def empty(cls, n: int, n_extra: int, next_label: int) -> "Plates":
+        """No crust yet; slots 0..next_label-1 ready for setup.initial_state.
+        (Later slots are only ever filled by events.split, which copies the
+        parent's whole frame in, so their rows stay unwritten until then:
+        on mapped memory they cost nothing, PW-1389.)"""
         P = P_MAX
-        rec, lith = record.empty((P, n))
+        rec = _mapped((P, n, len(record.RECORD)), np.float32)
+        rec[:next_label] = record.blank()
         return cls(
             alive=np.zeros(P, bool), label=np.arange(P), next_label=next_label, formed=np.zeros(P),
             Q=np.tile(np.eye(3), (P, 1, 1)), omega=np.zeros((P, 3)), wander=np.zeros((P, 3)),
             rift_pool=np.zeros(P),
-            owned=np.zeros((P, n), bool), age=np.zeros((P, n)), thick=np.zeros((P, n)),
-            cont=np.zeros((P, n), bool), rock=np.zeros((P, n), np.uint8), cover=np.zeros((P, n)),
-            extra=np.zeros((P, n, n_extra)), rec=rec, lith=lith, idx=np.tile(np.arange(n), (P, 1)),
+            owned=_mapped((P, n), bool), age=_mapped((P, n), float), thick=_mapped((P, n), float),
+            cont=_mapped((P, n), bool), rock=_mapped((P, n), np.uint8), cover=_mapped((P, n), float),
+            extra=_mapped((P, n, n_extra), float), rec=rec, lith=_mapped((P, n, record.K), np.uint8),
+            idx=np.tile(np.arange(n), (P, 1)),
             contact=np.zeros((P, P)), closing=np.zeros((P, P)),
             last_logged=np.full((P, P), -1e9), rifted_at=np.full((P, P), -1e9))
+
+    def mapped_copy(self) -> "Plates":
+        """A copy with the MAPPED arrays on mapped memory and only the live
+        slots' rows written (a dead slot's crust is never read: a slot comes
+        back to life only by events.split, which overwrites its whole frame);
+        for a state put back into a simulation (Simulation.load_state)."""
+        out = {}
+        for f in fields(self):
+            v = getattr(self, f.name)
+            if f.name in MAPPED:
+                a = _mapped(v.shape, v.dtype)
+                a[self.alive] = v[self.alive]
+                out[f.name] = a
+            else:
+                out[f.name] = copy.deepcopy(v)
+        return Plates(**out)
+
+    def release(self, k: int):
+        """Hand slot k's rows of the MAPPED arrays back to the system (they
+        read as zeros after, or stale on the edge pages). Only for a dead
+        slot nothing reads any more: see release_dead."""
+        page = mmap.PAGESIZE
+        for name in MAPPED:
+            arr = getattr(self, name)
+            mm = _map_of(arr)
+            if mm is None or not hasattr(mmap, "MADV_DONTNEED"):  # (plain arrays: a state() copy, in tests)
+                continue
+            row = arr[0].nbytes
+            a = -(-(k * row) // page) * page
+            b = ((k + 1) * row) // page * page
+            if b > a:
+                mm.madvise(mmap.MADV_DONTNEED, a, b - a)
+
+    def release_dead(self):
+        """release() every dead slot (cheap for one already handed back).
+        Called at the end of a step: within the step a plate's crust is
+        still read after it dies (volcanism.re_home reads the swell under
+        its volcanoes), but after it nothing reads a dead slot's crust until
+        events.split brings the slot back and overwrites its whole frame
+        (PW-1389)."""
+        for k in np.flatnonzero(~self.alive):
+            self.release(int(k))
 
     def crust(self) -> tuple[np.ndarray, ...]:
         """The per-cell crust arrays (CRUST order), for copying crust between plates."""
