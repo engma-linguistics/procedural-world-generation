@@ -2807,9 +2807,9 @@ def test_people_density_reads_the_ladder(faketz):
     lad = h.ladder
     assert lad.ok and lad.den[h.idx["den"]] and not lad.den[h.idx["hunt"]]
     hu, fa = h.idx["hunt"], h.idx["farm"]
-    d, sf, sh, rung, _ = lad.line(hu, (False, False, -1.0, -1.0), None)
+    d, sf, sh, rung, *_ = lad.line(hu, (False, False, -1.0, -1.0), None)
     assert np.allclose(d, LA.FORAGER * (ps.npp / LA.NPP_REF) ** LA.FORAGER_POW) and not sf.any() and (rung == 0).all()
-    d2, sf2, _, rung2, _ = lad.line(fa, (True, False, -1.0, -1.0), None)  # (gardens where the land is farmable, foraging elsewhere)
+    d2, sf2, _, rung2, *_ = lad.line(fa, (True, False, -1.0, -1.0), None)  # (gardens where the land is farmable, foraging elsewhere)
     farmable = np.clip(goods["fertile"] / LA.FARM_FULL, 0, 1)
     assert np.allclose(sf2, farmable) and np.allclose(d2, farmable * LA.GARDEN * ps.npp / LA.NPP_REF + (1 - farmable) * d)
     d3, *_ = lad.line(fa, (True, False, 2.0, -1.0), None)  # (the medieval plough, never above its top)
@@ -2843,6 +2843,40 @@ def test_rich_wild_land_resists_farming(faketz):
     h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
     _, sf, *_ = h.ladder.line(h.idx["farm"], (True, False, -1.0, -1.0), None)
     assert np.allclose(sf[fish == 0], 1.0) and (sf[fish == 1] < 0.5).all()
+
+
+def test_foragers_trade_with_farmer_neighbours(faketz):
+    """PW-1386: a forager people near farmers gets a share of its foraging food from them, rising with the farmers' density within reach
+    (half the cap at BARTER_HALF) and never reaching BARTER_CAP; none with no farmers near; farming, den and fishing-led cells keep their own."""
+    from planet.lineages import ladder as LA
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "hunt", **base, "way": "forager", "traits": ["hunter"]}, {"id": "farm", **base, "way": "farmer"},
+        {"id": "den", **base, "traits": ["denning"]}]}
+    n = ps.grid.n
+    ps.graze_npp = np.full(n, LA.GRAZE_REF)
+    ps.npp = np.full(n, LA.NPP_REF)
+    fish = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell on the richest waters: fishing leads there)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
+    lad, hu, fa, dn = h.ladder, h.idx["hunt"], h.idx["farm"], h.idx["den"]
+    t = (False, False, -1.0, -1.0, 0.0)
+    d0, *_, b0 = lad.line(hu, t, None)
+    dz, *_, bz = lad.line(hu, t, np.zeros(n), np.zeros(n))
+    assert b0 is None and np.array_equal(d0, dz) and not bz.any()  # (no farmers near: as before, to the bit)
+    land = fish == 0
+    dh, *_, bh = lad.line(hu, t, None, np.full(n, LA.BARTER_HALF))
+    assert np.allclose(dh[land], d0[land] / (1 - LA.BARTER_CAP / 2)) and np.allclose(bh[land], LA.BARTER_CAP / 2)
+    assert np.array_equal(dh[~land], d0[~land]) and not bh[~land].any()  # (the fishers' richer waters are their own)
+    dx, *_, bx = lad.line(hu, t, None, np.full(n, 1e4))
+    assert (bx[land] < LA.BARTER_CAP).all() and (bx[land] > 0.99 * LA.BARTER_CAP).all() and (dx[land] > dh[land]).all()
+    tc = (True, False, -1.0, -1.0, 0.0)  # (a people that knows crops, and a den people, do not barter)
+    assert not lad.barters(fa, tc) and not lad.barters(dn, t) and lad.barters(hu, t)
+    df, *_, bf = lad.line(fa, tc, None, np.full(n, 1e4))
+    assert bf is None and np.array_equal(df, lad.line(fa, tc, None)[0])
+    assert lad.line(dn, t, None, np.full(n, 1e4))[-1] is None
+    assert not lad.farmers_near().any()  # (nobody present yet: no farmers near)
 
 
 def test_published_ranges_are_optional_seeded_draws(faketz):

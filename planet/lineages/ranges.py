@@ -71,6 +71,10 @@ FIXED: dict[str, str] = {
     "WATER_FLOW, WATER_MAX, FARM_FULL": "fixed: judgements",
     "DEN_FARM_W, RAID_CAP, RAID_HALF, RAID_REACH": "fixed: judgements; no measured raiding share was found (ladder.md, Raiding)",
     "TRADE_CAP, TRADE_FULL": "fixed: a placeholder until trade exists",
+    "BARTER_CAP (0.5), BARTER_HALF, BARTER_REACH": "fixed: the cap is the 'about 50%' of farm food in Congo forest foragers' energy "
+                                                   "(Kitanishi 1995 p. 106); the 11-63% across camps (Table 11) is the spread of observed "
+                                                   "shares at given places, not a range for the cap; the half point and reach are judgements "
+                                                   "(forager-trade/round1.md)",
     "MUSHROOM_X (0.1)": "fixed: derived (~520 kcal a kg of straw against 1,800-2,600 in a kg of wheat), a bonus not a sourced range",
     "RICH_HALF (3)": "fixed: a judgement. The only range near it, richness 7-16 for the Calusa, is the case's, not the constant's",
     "RICH_POW, HERD_POW": "fixed: judgements (the steepness)",
