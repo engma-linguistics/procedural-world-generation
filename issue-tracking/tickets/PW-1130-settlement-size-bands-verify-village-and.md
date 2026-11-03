@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-1011
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: s
 impact: low
 found_by: fun-lane-66

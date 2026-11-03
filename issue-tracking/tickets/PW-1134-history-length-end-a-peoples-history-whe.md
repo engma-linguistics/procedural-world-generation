@@ -5,7 +5,7 @@ type: task
 status: needs-decision
 parent: PW-675
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: m
 impact: med
 found_by: fun-lane-69

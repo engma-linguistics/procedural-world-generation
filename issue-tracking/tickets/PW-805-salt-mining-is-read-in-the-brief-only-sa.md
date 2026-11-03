@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-692
 milestone: later
-subsystem: timezoom
+subsystem: food
 effort: m
 impact: low
 found_by: fun-lane-23

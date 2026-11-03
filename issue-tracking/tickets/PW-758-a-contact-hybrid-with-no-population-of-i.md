@@ -5,7 +5,7 @@ type: task
 status: in-progress
 parent: PW-692
 milestone: v2
-subsystem: timezoom
+subsystem: culture
 effort: s
 impact: low
 found_by: fun13

@@ -2,7 +2,7 @@
 id: PW-1205
 title: "Proposal: a people's ways of life share one carrying capacity per cell (groups stack today, ~1.3x a single people's fill)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180, PW-1149, PW-665, PW-684]
 refs: [planet/lineages/history/model.py, planet/lineages/history/groups.py, planet/lineages/history/peoples.py, planet/lineages/samples/dnd.toml, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -48,4 +48,5 @@ Lane 83 is reworking the contest in a worktree; this touches groups.py and the p
 - [ ] dnd and the lane 77 suite rerun; report the human share against today's
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: option A built. competition._compete and model._kin give a people and its groups one capacity per cell (alpha 1 between kin); overview 2.26 'One capacity per people' (lane 83).
 - 2026-10-31: Created from inbox draft draft-groups-share-their-peoples-capacity.md (found by lane84).

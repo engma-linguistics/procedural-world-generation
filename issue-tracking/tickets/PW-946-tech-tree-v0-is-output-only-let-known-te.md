@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: PW-675
 milestone: null
-subsystem: timezoom
+subsystem: culture
 effort: l
 impact: med
 found_by: fun39-techtree

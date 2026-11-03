@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-103
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: lineages-lane-2

@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: PW-856
 milestone: v3
-subsystem: timezoom
+subsystem: food
 effort: l
 impact: med
 found_by: owner

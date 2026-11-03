@@ -4,7 +4,7 @@ title: The glacial cooling scales with ice-free snowline land, so a run moment w
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-536, PW-471, PW-436, PW-435]
 refs: [planet/timezoom/cycle.py, planet/timezoom/sim.py, "time zoom ae8f75", "time zoom 7ec3fe", "time zoom e9d59c", "run bf5ee9 @ 864 Myr"]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,6 +38,7 @@ Lean: A, with the start drift (PW-436) fixed first, since a diagnostic 5 C cooli
 - [ ] Earth's zoom keeps cycles 98-109 kyr and maxima -86..-104 m.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Owner 2026-10-21: moved to v2.

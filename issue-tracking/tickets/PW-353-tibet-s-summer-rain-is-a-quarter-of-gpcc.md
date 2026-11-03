@@ -10,10 +10,10 @@ effort: m
 impact: low
 found_by: moisture-budget
 blocked_by: []
-relates: [PW-015, PW-233, PW-649]
+relates: [PW-015, PW-233, PW-649, PW-013]
 refs: [planet/climate.py, tools/moisture_budget.py, docs/review/moisture-budget-2026-10-16/earth_L6.md]
 created: 2026-10-16
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,5 +32,6 @@ What to try:
 - [ ] Tibet Apr-Sep P within 2x of GPCC, with the Himalayan front and the Gobi not wetter
 
 ## Updates
+- 2026-11-03: Related to PW-013 added 11-03 (fresh-eyes review s3); already milestone later.
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-tibet-plateau-too-dry.md (found by moisture-budget).

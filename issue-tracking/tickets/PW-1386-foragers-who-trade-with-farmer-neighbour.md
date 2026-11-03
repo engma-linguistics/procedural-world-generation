@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: s
 impact: low
 found_by: coordinator 11-02

@@ -4,16 +4,16 @@ title: "Pampas: no Andes-steered northerly low-level jet, so no Amazon vapour re
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: med
 found_by: lane26
 blocked_by: []
-relates: [PW-998]
+relates: [PW-998, PW-013]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,6 +43,7 @@ To do: a mountain-channelled flow, where the part of the wind that `deflect` tur
 downstream along it, not only within block_km. It waits until lane 26's rounds 1 and 2 are judged (coordinator).
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Earth-only regional residual; Earth is a test analogue (PW-013 relation added).
 - 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): Pampas Oct-Mar vapour is right (23.2 vs 24.5 mm) but rains at 0.51x the observed
   rate per mm (66% showers, weak trigger). 45% of it is SW Atlantic vapour, so more sea rain or no sinking air
   there makes the Pampas drier. Only the drift feeds it (no drift: 401 -> 330). Nothing in PW-1093's five

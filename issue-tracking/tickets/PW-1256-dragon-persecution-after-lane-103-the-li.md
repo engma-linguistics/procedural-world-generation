@@ -4,8 +4,8 @@ title: "Dragon persecution after lane 103: the lions' threshold carried to drago
 type: task
 status: todo
 parent: null
-milestone: v2
-subsystem: timezoom
+milestone: later
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane103
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1246, PW-1068, PW-1221]
 refs: [planet/lineages/history/megafauna.py, docs/review/dragon-numbers/round2.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ Open points (lane 103, round2.md section 2):
   Check the giants' counts on the next census (lane 99's census counts dragons only).
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Dragon-density tail; PW-961 stays.
 - 2026-11-01: Created from inbox draft draft-dragon-persecution-follow-ups.md (found by lane103).

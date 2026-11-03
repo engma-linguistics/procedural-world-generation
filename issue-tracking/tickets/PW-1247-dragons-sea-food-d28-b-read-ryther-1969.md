@@ -4,8 +4,8 @@ title: "Dragons' sea food (D28 B): read Ryther 1969 itself, an areal sea-ice pro
 type: task
 status: todo
 parent: null
-milestone: v2
-subsystem: timezoom
+milestone: later
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane99
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1221]
 refs: [planet/lineages/prey.py, planet/lineages/history/megafauna.py, docs/review/dragon-numbers/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ Lane 99 added `prey.sea_npp` / `prey.sea_prey` and `megafauna.sea_food` (trait `
   1997, all mammals, whales included, whose diets are lower): one mixed figure; a seal-only share would be smaller.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Dragon-density tail; PW-961 stays.
 - 2026-10-31: Created from inbox draft draft-sea-food-follow-ups.md (found by lane99).

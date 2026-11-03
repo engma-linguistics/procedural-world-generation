@@ -4,16 +4,16 @@ title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the i
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: l
 impact: high
 found_by: base-climate-laneA7, base-climate-laneA8, base-climate-laneA9
 blocked_by: []
-relates: [PW-582, PW-575, PW-458, PW-579]
+relates: [PW-582, PW-575, PW-458, PW-579, PW-013]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA9/]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -57,6 +57,7 @@ Options:
 - [ ] Iceland's regression (-10.6 -> -11.6): accept or chase with A
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Earth-only regional residual; Earth is a test analogue (PW-013 relation added).
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Coordinator 2026-10-22: parked (option C) after PW-582's three attempts; revisit after stage 3 and with the winds. Lean for later: option A (how sinking is spread within a capped hemisphere).

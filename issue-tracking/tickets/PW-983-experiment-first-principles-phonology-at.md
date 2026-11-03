@@ -5,7 +5,7 @@ type: story
 status: todo
 parent: PW-767
 milestone: later
-subsystem: timezoom
+subsystem: culture
 effort: xl
 impact: low
 found_by: owner

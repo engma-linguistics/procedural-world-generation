@@ -5,7 +5,7 @@ type: task
 status: needs-decision
 parent: PW-917
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: m
 impact: med
 found_by: lane84

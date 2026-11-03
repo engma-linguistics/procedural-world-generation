@@ -4,8 +4,8 @@ title: "Present-day dragon density's rationale ('large carnivores at a few perce
 type: task
 status: todo
 parent: null
-milestone: v2
-subsystem: timezoom
+milestone: later
+subsystem: peoples
 effort: xs
 impact: low
 found_by: papers-1029
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-957, PW-963, PW-923, PW-938]
 refs: [planet/lineages/history/megafauna.py, docs/proposals/megafauna-scaling.md, docs/references/megafauna/ripple2014_large_carnivores_science.pdf]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Lean: B now. A only if the owner wants the number defended.
 - [ ] the proposal's "Natural density, people pressure" bullet and PW-957's Description cite a figure that a paper on file supports, or say it is a judgement
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Dragon-density tail; PW-961 stays.
 - 2026-10-29: Created from inbox draft draft-ripple-few-percent-unsourced.md (found by papers-1029).

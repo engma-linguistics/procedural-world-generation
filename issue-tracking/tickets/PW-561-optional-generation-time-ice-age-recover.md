@@ -4,7 +4,7 @@ title: "Optional generation-time ice-age recovery lever: a push on real mechanis
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555]
 refs: [docs/review/ice-v2-criteria.md, planet/tectonics/earth.py, planet/tectonics/diag.py]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,5 +35,6 @@ section 4:
 - [ ] viewer band and New-planet option
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-ice-recovery-lever.md (found by ice-v2-stage0).

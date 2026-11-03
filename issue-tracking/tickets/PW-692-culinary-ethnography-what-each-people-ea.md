@@ -5,7 +5,7 @@ type: epic
 status: todo
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: food
 effort: xl
 impact: high
 found_by: daniel

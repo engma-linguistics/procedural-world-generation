@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: later
-subsystem: timezoom
+subsystem: peoples
 effort: m
 impact: low
 found_by: lane 139 (PW-1369)

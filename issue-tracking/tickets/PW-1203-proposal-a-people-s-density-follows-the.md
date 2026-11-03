@@ -2,7 +2,7 @@
 id: PW-1203
 title: "Proposal: a people's density follows the way of life it actually lives, era by era, not one hand number for its whole history"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1149, PW-1147, PW-974, PW-1180]
 refs: [planet/lineages/history/model.py, planet/lineages/history/peoples.py, planet/lineages/history/growth.py, planet/lineages/prey.py, planet/lineages/samples/dnd.toml, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -44,4 +44,5 @@ Lean: A; it is the general form of D20 lever 3 (PW-1149) and fixes humans counti
 - [ ] dnd and the lane 77 suite rerun, the human share and the elves' and dwarves' reported against today
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: option A built. growth._set_era_density and growth.ERA_DENSITY set a people's density by era (forager / plough farmer); overview 2.26 'Density follows the era' (lane 83, owner D20 lever 3).
 - 2026-10-31: Created from inbox draft draft-density-follows-way-of-life-over-time.md (found by lane84).

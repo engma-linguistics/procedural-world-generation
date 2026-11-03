@@ -4,7 +4,7 @@ title: "Time zoom from a run's moment: the sheets still thicken and spread onto 
 type: task
 status: blocked
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: [PW-366]
 relates: [PW-190, PW-115]
 refs: [planet/tectonics/earth.py, planet/timezoom.py]
 created: 2026-10-15
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,6 +29,7 @@ shallow shelves as the time zoom's do; or a short spin-up in the time zoom. Each
 little bigger.
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-16: Status in-progress -> blocked. Same cause as PW-295 (run sheet profile too thin, PW-366).
 - 2026-10-16: Same cause as PW-295 (tzbatch, see its update and draft draft-run-ice-profile-thin.md): the run's 50 kPa edge-sampled profile is thinner than the time zoom's sheets (and Earth's), and the time zoom's thickened sheets spread and ground on shelves (154 shelf cells, median 630 m, on L5 seed 11 @ 200 Myr). Not fixed here (run lane). Shelf grounding also in draft draft-timezoom-marine-margins.md.

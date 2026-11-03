@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: null
 milestone: v3
-subsystem: timezoom
+subsystem: peoples
 effort: l
 impact: med
 found_by: owner

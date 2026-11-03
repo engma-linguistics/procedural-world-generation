@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-661
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: med
 found_by: peoples-groups-lane

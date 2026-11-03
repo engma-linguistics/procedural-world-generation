@@ -5,7 +5,7 @@ type: task
 status: needs-decision
 parent: null
 milestone: null
-subsystem: timezoom
+subsystem: peoples
 effort: m
 impact: low
 found_by: lane111

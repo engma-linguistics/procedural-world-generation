@@ -4,7 +4,7 @@ title: "Time zoom: ice-age endings at the agreed strength are slow (30-75 kyr) a
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-440, PW-030, PW-436, PW-435]
 refs: [planet/timezoom/cycle.py, planet/timezoom/sim.py, docs/review/audit/PW-440-handoff.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Options:
 - [ ] decide; then s400 and Earth endings <= ~15 kyr with swing >= 80 m
 
 ## Updates
+- 2026-11-03: Parked 11-03 per fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md s3): milestone v2 -> later. Ice-age epic PW-470 is parked post-v1 (owner 10-28 timebox); PW-467 is the one kept as the timeboxed item.
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: pw460: with the PW-460 margin the zoom's endings rise to 5-7 per 600 kyr on Earth with 0 backstops, against main's 2 (obs: 2 backstops). Depends on PW-461.

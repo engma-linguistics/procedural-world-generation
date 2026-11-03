@@ -5,7 +5,7 @@ type: task
 status: todo
 parent: PW-856
 milestone: v2
-subsystem: timezoom
+subsystem: docs
 effort: s
 impact: med
 found_by: owner

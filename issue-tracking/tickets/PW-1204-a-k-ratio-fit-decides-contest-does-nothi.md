@@ -2,7 +2,7 @@
 id: PW-1204
 title: "A K-ratio 'fit decides' contest does nothing on today's niches: humans' habitat is 0.9-1.0 in every specialist's best country"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180, PW-1149]
 refs: [planet/lineages/history/habitat.py, planet/lineages/history/competition.py, planet/lineages/samples/dnd.toml, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -40,4 +40,5 @@ Options, for lane 83 or after it:
 Lean: A or B in lane 83's contest work, judged on the lane 77 suite; C alone is a point fix.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Closed 11-03: superseded by PW-1180 A as built (competition._fit_w includes the breadth term so a generalist is weaker in a specialist's country; overview 2.26, lane 83).
 - 2026-10-31: Created from inbox draft draft-fit-contest-inert-humans-fit-everywhere.md (found by lane84).
