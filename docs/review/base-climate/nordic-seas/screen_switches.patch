@@ -1,0 +1,29 @@
+diff --git a/planet/ocean.py b/planet/ocean.py
+index bfb97979..f89baf52 100644
+--- a/planet/ocean.py
++++ b/planet/ocean.py
+@@ -573,6 +573,13 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
+     Q = Tr * SV
+     hw = h * 1000.0 * tune["moc_width"] * 1000.0  # m2: the route's area per cell
+     mix = np.where(under, 0.0, tune["moc_lambda"] * hw / RHO_C_SEA)  # m3/s per cell (none under the ice lid)
++    if tune.get("moc_cc_ref", 0.0) > 0:  # SCREEN (lane 150): the bulk sensitivity's Clausius-Clapeyron part
++
++        def _gd(T):
++            es = 0.6108 * np.exp(17.27 * T / (T + 237.3))
++            return C.PSYCHRO + 4098.0 * es / (T + 237.3) ** 2
++
++        mix = mix * _gd(np.maximum(sst, C.FREEZE)) / _gd(tune["moc_cc_ref"])
+     t_in = _along(order, par, Q, t_eq, sst, mix, np.zeros(n))
+     s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / SEC_PER_YR * hw)
+     # spread over the route's width; where it carries more than ~moc_q0 Sv
+@@ -813,7 +820,9 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
+         spin = it == 0 and start is None
+         n_sp = max(n_it - 2, 1)
+         f = tune["moc_spin"] ** max(1.0 - it / n_sp, 0.0) if start is None else 1.0
+-        ov = overturning(cg, sea_c, rho_w, rho_a, sst, sss, teq_c, fresh_c, cur_c,
++        tgt_c = np.where(sea_c, teq_c + tune.get("moc_tgt", 0.0) * (sst0_c - teq_c)
++                         + tune.get("moc_tgt_sst", 0.0) * (sst - teq_c), teq_c)  # SCREEN (lane 150)
++        ov = overturning(cg, sea_c, rho_w, rho_a, sst, sss, tgt_c, fresh_c, cur_c,
+                          {**tune, "moc_drho": tune["moc_drho"] * f}, lid_d, depth_c, ice_lid)
+         a = 1.0 if spin else tune["moc_relax"]
+         step = a * (ov["share"] - st["share"])
