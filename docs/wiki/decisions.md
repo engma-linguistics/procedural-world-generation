@@ -248,3 +248,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: owner: PW-1384 A, CO2 yardsticks stay as they are (wontdo; B only if PW-1163 needs fixing alone).
 - 2026-11-02: owner: hunters' crops: farm-or-forage per cell is the main mechanism (PW-1385), any people may keep foraging portions, era target ~1500 AD; the lag stays small (PW-1373); forager-farmer trade top-up filed (PW-1386), after PW-1385.
 - 2026-11-02: merged lane 139 (15fb88b9): PW-1373 B (crop lag 0.4 kyr/propensity, meat-eaters lean to herds; cat-folk stay hunters/herders in ~half the D&D runs), PW-1369 B (city minorities removed). PW-1385 sizing: density comparison never stops farming; needs per-capita returns.
+- 2026-11-02: owner: PW-1385 A (rich wild land resists farming, per-person returns, sourced from PNW/California); B (crowding) as a look-around investigation later (PW-1388).
