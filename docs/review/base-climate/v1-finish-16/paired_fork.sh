@@ -5,11 +5,11 @@
 # earth.REF_FREEZE: the carbon cycle's references are frozen there), saved, and both arms continue from that same
 # state to 1000 Myr: MAIN_ARM with MAIN_CODE, CAND_ARM with CAND_CODE (frozen copies, as paired.sh's). So the arms
 # share the yardstick and differ by the change after the fork; the change's effect on the yardstick itself is not in
-# it (CAND_SPIN=1 measures that apart). Outputs, in paired.sh's layout (pjudge.py and tools/hard_bar.py read them):
+# it (CAND_SPIN=1 measures that apart). Outputs, in paired.sh's layout (tools/judge.py paired and tools/hard_bar.py read them):
 #   OUT_ROOT/<ARM>_r<ROLL>_<tag>/seed<S>_L<lvl>.json.gz (+ log_<S>.txt)
 #   OUT_ROOT/fork/r<ROLL>_<tag>/seed<S>_L<lvl>_at<FORK>.ckpt + .json.gz  (main's spin-up; ~0.3 of a run)
 #   OUT_ROOT/fork_cand/...  (CAND_SPIN=1: the candidate's own spin-up, for `fork.py yard`; ~0.3 of a run more)
-# Judge with pjudge.py OUT_ROOT MAIN_ARM CAND_ARM, as for paired.sh.
+# Judge with `uv run python tools/judge.py paired OUT_ROOT MAIN_ARM CAND_ARM`, as for paired.sh.
 # Env: MAIN_ARM (m), CAND_ARM (c); FORK (300); CAND_SET: k=v ... applied to the candidate arm after the fork only;
 # CAND_DOFF: added to the candidate's climate_offset after the fork only (default 0; the null check uses 1e-5);
 # MAXSIM (default 4): sims of this script at once (a draw takes 2, 3 with CAND_SPIN); MINFREE (40) GB before each

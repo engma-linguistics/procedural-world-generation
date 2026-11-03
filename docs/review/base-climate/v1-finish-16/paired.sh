@@ -2,7 +2,7 @@
 # usage: paired.sh CODE_DIR OUT_ROOT ARM ROLL... -> the paired judge's draws for one arm (PW-994): v1-finish-16's 18 L6
 # 1 Gyr seed-draws (seed x climate_offset), each offset plus ROLL, run from the code in CODE_DIR (a frozen copy:
 # `git archive <commit> | tar -x -C CODE_DIR`, so later edits don't leak in) through CODE_DIR/tools/ice_diag.py, into
-# OUT_ROOT/<ARM>_r<ROLL>_<tag>/. Judge two arms with pjudge.py OUT_ROOT ARM_A ARM_B.
+# OUT_ROOT/<ARM>_r<ROLL>_<tag>/. Judge two arms with `uv run python tools/judge.py paired OUT_ROOT ARM_A ARM_B` (was pjudge.py).
 # Rolls: 2 (0.0005 0.001) normally; 4 (add 0.0015 0.002) only when the pass count decides the merge (README).
 # Caps: at most MAXSIM (default 10) of this OUT_ROOT's sims at once, and free -g >= MINFREE (default 40) GB.
 # A draw whose result or log exists is skipped (delete the log of a draw that died to re-run it).
