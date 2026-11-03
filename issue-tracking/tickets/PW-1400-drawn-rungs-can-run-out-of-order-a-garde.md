@@ -1,4 +1,5 @@
 ---
+id: PW-1400
 title: Drawn rungs can run out of order (a gardener denser than a bronze-age plough farmer)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 145
 blocked_by: []
 relates: [PW-1383, PW-1275]
 refs: [planet/lineages/ranges.py, planet/lineages/ladder.py, docs/review/peoples/ranges/round1.md, tools/peoples_robust.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Options:
 - C. After drawing, raise the bronze plough to at least the gardening number.
 
 Check on the robust suite (3 seeds x 2 worlds, ranges/round1.md) whether any people's density falls when it takes the plough.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-ranges-rung-order-under-draws.md (found by lane 145).

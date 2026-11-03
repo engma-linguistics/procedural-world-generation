@@ -1,4 +1,5 @@
 ---
+id: PW-1402
 title: Source ranges for the ladder numbers that have none (forager level, rich-land half point, irrigation)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 145
 blocked_by: []
 relates: [PW-1383, PW-1275]
 refs: [planet/lineages/ranges.py, planet/lineages/ladder.py, docs/review/peoples/ranges/round1.md, docs/review/peoples/density-ladder/ladder.md, docs/review/peoples/density-ladder/binford_by_npp.py, docs/review/peoples/density-ladder/rich-foragers.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,3 +29,6 @@ of the numbers that matter most have none, so they stay fixed even with the sett
 
 Source the first (cheap, data in hand); the other two only if a paper turns up. Then add the ranges to ranges.py (RANGES, and take the
 name out of FIXED) and a ladder.py entry in Ladder.v.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-ranges-source-the-fixed-ones.md (found by lane 145).
