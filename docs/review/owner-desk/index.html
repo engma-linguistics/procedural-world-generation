@@ -76,6 +76,42 @@ your temperature question is answered below. The religion views wait for you ton
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d44"><div class="id">D44 · THE FRESH-EYES REVIEW YOU ASKED FOR</div>
+<p><b>In plain words:</b> an agent with no history read the whole project. Its verdict: the physics is careful and well guarded, but
+<b>the cookbook is falling behind</b>. The peoples layer grows fast, while the output still answers "where does this species live"
+rather than "what does this culture cook". Languages, polities and gods are queued ahead of food. Full report:
+<code>docs/review/fresh-eyes/2026-11-03.md</code>.</p>
+<p><b>Where I need you</b> (my lean in each):</p>
+<ol>
+<li><b>Food before languages and polities.</b> Build a per-culture brief and a first "cuisine sheet" now. It would cover
+fuel, staple, drink, who eats together, and what outsiders get wrong (culinary-dnd's five questions). Two of those, drink and who eats
+together, have no model at all today, and the brief takes a species, not a culture. <i>Lean: yes.</i> It's the cheapest way to find
+what the book actually lacks.</li>
+<li><b>Stop the weathering reading raw plant growth</b> (PW-1332 B). Grassland grows too much and wet tropics too little, and the two errors
+cancel in the global total the climate is tuned on. So every plant fix moves the climate several degrees, which is exactly what tripped the
+grass-roots lane. Let the weathering read plant cover or roots instead. <i>Lean: yes</i>, after lane 140c's diagnosis, which is looking at the
+same tie.</li>
+<li><b>Fewer tickets.</b> About 65 are filed a day and 25 closed, with 689 open. Lanes would put observations in their write-ups and file
+at most about 3 tickets each. <i>Lean: yes.</i></li>
+<li><b>A ledger of the peoples' mechanisms before polities</b> (a refactor, so it needs your yes): measure each of the dozen stacked
+mechanisms on the stress suite and retire the ones that do nothing at the defaults. Some already do nothing: the share bands, and
+resistance to disease, which nothing reads. <i>Lean: yes</i>, but after the cuisine sheet.</li>
+<li><b>Which world is the book written on?</b> Seven Meals was ruled secondary on 10-29, yet it's the culinary repo's own world. Is the
+book meant for the D&amp;D preset?</li>
+</ol>
+<p><b>What I'll just do</b> (housekeeping, nothing it changes is yours to rule on):</p>
+<ul>
+<li>Close the tickets it found already built, after checking each one.</li>
+<li>Give the board peoples, culture and food categories (266 peoples tickets are filed under ice-age time zooms today).</li>
+<li>Park three groups: the ice-age long tail, the Earth-only regional residuals, and the dragon fine-tuning (keeping what dragons eat).</li>
+<li>Move the climate test's code out of the review folders, once no physics test is running.</li>
+<li>Check whether "farming can start 11.6 kyr ago" uses Earth's date rather than each planet's own last ice age.</li>
+<li>Refresh the stale docs.</li>
+</ul>
+<p>It also flags: world files at L8 are 440–450 MB of text and should move to a binary format (PW-1209) before more fine-grid work. The
+peoples step isn't in "make a planet" yet. And more rain-kernel tries, Earth-matching regional climate and dragon numbers aren't worth chasing.
+I agree with all of these.</p>
+</div>
 <div class="card" id="l9"><div class="id">WHY LEVEL 9 FROM SCRATCH NEEDS SO MUCH MEMORY, AND WHAT RUNS ON ONE CORE (PW-801, PW-1389, PW-1390)</div>
 <p><b>In plain words:</b> most of the memory isn't the planet, it's bookkeeping we can trim. The time is the real wall.</p>
 <p>Today an L9 run from scratch would need roughly 110–160 GB at its peak (an estimate: the measured L7 figure, 9.9 GB, times 16 for two
@@ -156,7 +192,8 @@ not the plants.</td></tr>
 and 5 °C in winter, compared with observed air temperatures (NCEP). Since the rain fix, that extra warmth makes the area rain too much and takes snow off
 the ice sheets. First a written diagnosis with sources, then small tests, then the 36-world test. It should take back most of the 0.6 °C the rain fix
 added, measured against the same worlds on the code before that fix.</td></tr>
-<tr><td>Side report</td><td>A fresh-eyes review of the whole project with backlog suggestions, read-only. (The level-9 memory report is in; see Your questions.)</td></tr>
+<tr><td>Board tidy</td><td>The housekeeping from the review (D44, "what I'll just do"): closing tickets that are already built, after checking each, adding
+peoples, culture and food categories, parking the three long tails, and refreshing the stale docs. No code changes.</td></tr>
 <tr><td>141 · rich wild land resists farming</td><td>Your pick A (PW-1385): where wild food feeds each person well above the usual forager level (salmon coasts, acorn woods),
 a people takes up farming there much more slowly or farms only part of it. Sources first (Pacific Northwest, California and any others the
 literature supports), then the build, then before-and-after forager shares on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
@@ -220,5 +257,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v111 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v113 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

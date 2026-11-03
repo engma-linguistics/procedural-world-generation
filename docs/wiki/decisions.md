@@ -251,3 +251,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-02: owner: PW-1385 A (rich wild land resists farming, per-person returns, sourced from PNW/California); B (crowding) as a look-around investigation later (PW-1388).
 - 2026-11-02: lane 140 (PW-1261 herb roots + FUEL_MIN 200) judge failed hard bar (2 frozen over vs 0): strike 1, not merged; coordinator chose a per-part screen of the 2 draws over a 4-roll re-judge (more rolls can't cure hard failures).
 - 2026-11-03: L9 memory report (docs/review/speed/l9-memory.md): ~3/4 of L9-from-scratch RAM avoidable with bit-identical fixes (keyframes PW-801, plate slots PW-1389, checkpoint copy PW-1390); time is the wall; refine-from-L7 stays the path.
+- 2026-11-03: fresh-eyes review (docs/review/fresh-eyes/2026-11-03.md) to Daniel as D44 (food first, PW-1332 B, fewer tickets, mechanism ledger, which world); coordinator does the housekeeping (closes, subsystems, parking, docs).
