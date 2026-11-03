@@ -42,6 +42,9 @@ cultivation, cultivation 11.5 against irrigation 8), capped by the tree's era (m
 with the farmers' and herders' density within reach, capped (RAID_*): density = forager / (1 - r). Their dens follow the rock
 (PW-1382, den_thin): x1 on the best den ground (caves, rock shelters, ground to dig: dens.py), x0.5 where there is none, a preference
 and never a range limit (Daniel 11-02).
+**Foragers who trade with farmers (PW-1386).** A forager people (it knows no crops; not a den people or a hold) living near farmers
+gets up to BARTER_CAP of its foraging food from them, more the denser the farmers within reach (BARTER_*): its foraging rung /
+(1 - b), as Congo Basin foragers trade meat, forest goods and labour for farm food (docs/review/peoples/forager-trade/round1.md).
 **Dwarven holds (Q6 A).** A people that mines and lives underground (traits `miner` and `subterranean`) farms its valleys at the
 farming rung (terraces: the plough rung's stage TERRACE_LAG after it cultivates, without a plough animal), buys food with ore and
 craft up to TRADE_CAP of what it eats (a placeholder until trade exists) and adds MUSHROOM_X from its crop waste.
@@ -86,6 +89,19 @@ RAID_HALF = 5.0  # farmers' and herders' people/km2 within reach at which raidin
 # village country; raids on herders or foragers like themselves only swap herds back and forth, Khazanov p. 155, so the share follows
 # the settled density, near 0 among foragers)
 RAID_REACH = 2  # cells (neighbour rings) a den people raids over
+# PW-1386: foragers who trade with farmer neighbours (docs/review/peoples/forager-trade/round1.md has the sources and the quotes). A
+# forager people (one that knows no crops, not a den people or a hold) gets a share b of its foraging food from farmers within reach,
+# for meat, forest goods and labour: its foraging rung / (1 - b), b = BARTER_CAP x farmers near / (farmers near + BARTER_HALF). The
+# rich-land and herding choices read the land's own wild, never the bartered top-up.
+BARTER_CAP = 0.5  # the most of its foraging food a forager people gets from farmers. Congo Basin foragers living with farmers: "more than
+# 60 % of total food weight on farm products" (Mbuti, Ichikawa 1983 p. 55); in the forest camps 11-63% of energy from farm food, "about 50%"
+# for most groups (Kitanishi 1995 p. 106 and Table 11, p. 107: Mbuti 11 and 63, Efe 41 and 34, Aka 11, oil palm apart); Aka of Lobaye 55%
+# of meal items (Bahuchet 1988, via Kitanishi p. 107). 0.5: the "about 50%", under the Mbuti's 60% by weight
+BARTER_HALF = 5.0  # farmers' people/km2 within reach at which the share is half its cap (a judgement, as RAID_HALF: a gardening village
+# country; no source relates the share to the farmers' density. The one relation found is distance: Aka camps 3-4 hours' walk from the
+# village eat more farm food than camps 5-8 hours away, Bahuchet 1988 via Kitanishi 1995 p. 107; and with no farmers near the share is 0,
+# as on the Baka's months-long molongo, "solely on wild food resources", Yasuoka 2004 p. 36)
+BARTER_REACH = 1  # cells (neighbour rings) a forager people trades over (those camps are within a day's walk: one ring of ~60 km cells)
 REFRESH_KYR = 0.5  # the ladder is redone at least this often in the recent epochs (raids and the plough's stage move with time)
 ERA_STAGE = {"stone age": -1, "bronze age": 0, "classical": 1, "medieval": 2, "renaissance": 2, "industrial": 2}  # the plough stage an era allows
 RUNGS = ("forager", "fisher", "garden", "plough", "irrigation", "nomad", "agro_pastoral", "hold", "raider")
@@ -176,6 +192,8 @@ class Ladder:
         self.rung = np.zeros((L, n), np.int8) if self.ok else None  # (each line's main rung per cell, RUNGS index)
         self.sh = {k: np.zeros((L, n)) for k in ("farm", "herd")} if self.ok else None  # (its ways' shares per cell: landuse)
         self.raid = np.zeros((L, n)) if self.ok else None
+        self.barter = np.zeros((L, n)) if self.ok else None  # (PW-1386: the part of each cell's food a forager people trades for)
+        self._fn = None  # (PW-1386: the farmers near at the last due refresh)
         if not self.ok:
             return
         self.fa = np.maximum(np.asarray(ps.npp, float), 0.0) / NPP_REF
@@ -228,8 +246,9 @@ class Ladder:
         return (cult is not None, herd is not None, q(lvl), q(irr) if irr >= 0 else -1.0, known)
 
     # -- the rungs per cell -----------------------------------------------------------------------
-    def line(self, k: int, t: tuple, settled_near: np.ndarray | None):
-        """(density per cell, farm share, herd share, main rung per cell) of line k with tech t."""
+    def line(self, k: int, t: tuple, settled_near: np.ndarray | None, farmers_near: np.ndarray | None = None):
+        """(density per cell, farm share, herd share, main rung per cell, raid share or None, barter share or None) of line k with tech
+        t; settled_near feeds a den people's raids, farmers_near a forager people's trade (PW-1386)."""
         cult, herd, lvl, irr = t[:4]
         known = t[4] if len(t) > 4 else 0.0  # (kyr it has known crops: PW-1385 A)
         v = self.v
@@ -243,7 +262,11 @@ class Ladder:
             wild = wild / (1.0 - raid)
             rung_w = np.where(raid > 0.1, 8, rung_w).astype(np.int8)
         nomad = v["nomad"] * self.fg
-        wild0 = np.maximum(forage, fish)  # (the wild before any raids: what the land itself feeds)
+        wild0 = np.maximum(forage, fish)  # (the wild before any raids or trade: what the land itself feeds)
+        barter = None
+        if self.barters(k, t) and farmers_near is not None:  # (PW-1386: a forager people trades with farmers near)
+            barter = BARTER_CAP * farmers_near / (farmers_near + BARTER_HALF)
+            wild = np.maximum(forage / (1.0 - barter), fish)
         sf = self.farmable * (DEN_FARM_W if self.den[k] else 1.0) if cult else np.zeros_like(forage)
         if cult:  # (PW-1385 A: rich wild land resists farming)
             sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known, v["rich_t"])
@@ -271,10 +294,21 @@ class Ladder:
         if cult and irr >= 0 and not self.hold[k]:
             rung[main_farm & (self.water * _interp_stage(irr, IRR_STEPS, IRR) > (1.0 - self.water) * rain)] = 4
         rung[(sf >= 0.25) & (sh >= 0.25)] = 6
-        return d, sf, sh, rung, raid
+        if barter is not None:  # (the part of each cell's food that is bartered farm food)
+            barter = np.where(d > 0, sw * (wild - wild0) / np.maximum(d, 1e-30), 0.0)
+        return d, sf, sh, rung, raid, barter
 
-    def settled_near(self) -> np.ndarray:
-        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH rings of neighbours (what a den people raids)."""
+    def barters(self, k: int, t: tuple) -> bool:
+        """PW-1386: line k trades with farmer neighbours: a people that knows no crops (t[0]), not a den people (they raid) or a hold."""
+        return bool(self.people[k] and not t[0] and not self.den[k] and not self.hold[k] and not self.h.lines[k].marine)
+
+    def farmers_near(self) -> np.ndarray:
+        """Farmers' people/km2 per cell, averaged over BARTER_REACH rings of neighbours (PW-1386: whom a forager people trades with)."""
+        return self.settled_near(("farm",), BARTER_REACH)
+
+    def settled_near(self, ways: tuple = ("farm", "herd"), reach: int = RAID_REACH) -> np.ndarray:
+        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH rings of neighbours (what a den people raids); `ways` and
+        `reach` pick the ways counted and the rings."""
         h = self.h
         P = np.where(h.p >= EST, h.p, 0.0) if getattr(h, "p", None) is not None else None
         s = np.zeros(h.grid.n)
@@ -282,10 +316,10 @@ class Ladder:
             return s
         for k in np.flatnonzero(self.people & ~self.den):
             if P[k].any():
-                s += P[k] * h._dmap[k] * (self.sh["farm"][k] + self.sh["herd"][k])
+                s += P[k] * h._dmap[k] * sum(self.sh[w][k] for w in ways)
         g = h.grid
         deg = np.diff(g.nbr_off).astype(float)
-        for _ in range(RAID_REACH):
+        for _ in range(reach):
             s = 0.5 * s + 0.5 * nbr_reduce(g, np.add, s[g.nbr_idx]) / np.maximum(deg, 1)
         return s
 
@@ -296,6 +330,9 @@ class Ladder:
             return
         due = force or self.last is None or (not deep and self.last - ago >= REFRESH_KYR)
         sn = self.settled_near() if (due and self.den.any() and not deep) else None
+        if due:  # (PW-1386: the farmers near, kept between the due refreshes for lines whose tech moves in between)
+            self._fn = None if deep else self.farmers_near()
+        fn = self._fn
         for k, l in enumerate(h.lines):
             if not self.people[k] or l.marine:
                 continue
@@ -303,7 +340,7 @@ class Ladder:
             if not due and self.state.get(k) == t:
                 continue
             self.state[k] = t
-            d, sf, shd, rung, raid = self.line(k, t, sn if self.den[k] else None)
+            d, sf, shd, rung, raid, barter = self.line(k, t, sn if self.den[k] else None, fn)
             h._dmap[k] = h.kx[k] * d * self.thin[k]
             self.sh["farm"][k], self.sh["herd"][k], self.rung[k] = sf, shd, rung
             P = getattr(h, "p", None)
@@ -315,6 +352,7 @@ class Ladder:
                     h._farm_share[k] = float((w * sf).sum() / w.sum())
             if raid is not None:
                 self.raid[k] = raid
+            self.barter[k] = 0.0 if barter is None else barter
         if due:
             self.last = ago
 
@@ -353,4 +391,6 @@ TABLE = [  # (rung, its number at the reference land, what it reads, the sourced
     ("agro_pastoral", "fields and herds in one cell", "both", "1-15 (Wilson 1986)"),
     ("hold", f"its valleys' farming x trade (to {TRADE_CAP:g} of its food, placeholder) + {MUSHROOM_X:g} mushrooms", "the valleys", "its valleys' rung"),
     ("raider", f"forager / (1 - raid share), raids to {RAID_CAP:g} of food", "farmers near", "a top-up (Opler 1941; Khazanov 1994)"),
+    ("forager, trading", f"forager / (1 - trade share), farm food to {BARTER_CAP:g} of its foraging food", "farmers near",
+     "farm food 11-63% of energy, ~50% typical (Ichikawa 1983; Kitanishi 1995)"),
 ]

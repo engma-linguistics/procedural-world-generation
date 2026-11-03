@@ -365,7 +365,8 @@ WILD_RUNGS = (0, 1, 8)  # (ladder.RUNGS forager, fisher, raider: a cell's people
 def forage_land(h, P) -> dict:
     """PW-1385 (lane 141): where the wild still feeds people at the end. Per biome class: peopled cells, those whose people are
     mostly on a wild rung (forager, fisher, raider: ladder.Ladder.line's main rung), all people and those on a wild rung. Per people:
-    its people, its wild-rung people and wild-led cells (Mkm2), and for a people knowing cultivation its farmable land (the fertile
+    its people, its wild-rung people and wild-led cells (Mkm2), for a forager people (ladder.barters, PW-1386) its people and the part
+    its traded farm food feeds (ladder.barter), and for a people knowing cultivation its farmable land (the fertile
     good's share, ladder.farmable, summed over held cells, Mkm2) and the part of it farmed (ladder.sh['farm'])."""
     from planet.lineages.spread import EST
     from planet.lineages.history.habitat import BIOMES, biome_class
@@ -385,9 +386,17 @@ def forage_land(h, P) -> dict:
         w = np.isin(lad.rung[k], WILD_RUNGS) & (pc > 0)
         tot += pc
         wild += np.where(w, pc, 0.0)
-        o = kinds.setdefault(h.tree.people_of(l.id), {"pop": 0.0, "wild_pop": 0.0, "wild_mkm2": 0.0, "farmable": 0.0, "farmed": 0.0})
+        o = kinds.setdefault(h.tree.people_of(l.id), {"pop": 0.0, "wild_pop": 0.0, "wild_mkm2": 0.0, "farmable": 0.0, "farmed": 0.0,
+                                                      "forager_pop": 0.0, "traded_pop": 0.0})
         o["pop"] += float(pc.sum())
         o["wild_pop"] += float(pc[w].sum())
+        if lad.barters(k, lad.tech(k, 0.0)):  # (PW-1386: a forager people, and the people its traded farm food feeds)
+            o["forager_pop"] += float(pc.sum())
+            o["traded_pop"] += float((pc * lad.barter[k]).sum()) if getattr(lad, "barter", None) is not None else 0.0
+            fn = getattr(lad, "_fn", None)
+            if fn is not None:  # (its people within reach of 1+ and 5+ farmers per km2: BARTER_HALF)
+                o["near1_pop"] = o.get("near1_pop", 0.0) + float(pc[fn >= 1.0].sum())
+                o["near5_pop"] = o.get("near5_pop", 0.0) + float(pc[fn >= 5.0].sum())
         o["wild_mkm2"] += float(w.sum() * h.cell_mkm2)
         if lad.tech(k, 0.0)[0] and not lad.den[k]:
             held = P[k] >= EST
