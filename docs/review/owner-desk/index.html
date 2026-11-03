@@ -76,29 +76,30 @@ your temperature question is answered below. The religion views wait for you ton
 </header>
 
 <h2 id="answers">Your questions</h2>
-<div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (from lane 140d; PW-1261 waits on this)</div>
+<div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (PW-1403, PW-1404; PW-1261 waits on this) · UPDATED OVERNIGHT</div>
 <p><b>In plain words:</b> in its first 300 Myr each planet learns two yardsticks: how much CO2 its volcanoes normally give off and how fast
-its rocks normally weather it away. Then they're frozen for the rest of the run. They're learnt from a short stretch in which those rates
-wander, so in effect from only about five samples, and they come out a bit different every time a world is re-run. A spin-up that happened
-to run warm (more outgassing, less erosion) learns "this planet weathers little". Later the rates return to normal, the planet weathers more than
-its yardstick expects, draws its CO2 down and runs cold.</p>
-<p><b>How much it matters</b> (measured on the 36 test worlds, current code): this one number carries 1.5 °C of the 1.7 °C spread between re-runs of
-the same planet. It's also the best predictor of which worlds come near the frozen-over line. It's why a nudge that changes no physics swung a
-world by 27 points of land ice. It isn't geography and it isn't a bug in the rule; it's sampling noise in how the yardstick is learnt.
-So every climate change that cools by even a little can trip the "no world frozen over" check by re-drawing the yardstick, not by its own
-physics. That's what happened to the grass-roots change: its own cooling is about 0.1–0.15 °C.</p>
+its rocks normally weather it away. They're learnt from about five samples' worth of wandering rates, so they come out a bit different every
+time a world is re-run. That carries 1.5 °C of the 1.7 °C spread between re-runs of the same planet (36 test worlds, current code).</p>
+<p><b>New overnight (lane 144):</b> I had leaned towards starting both versions from the same spin-up, so they share the yardstick.
+Lane 144 built that and checked it. It's exact (the same code gives bit-identical worlds), but <b>it doesn't calm the coldest worlds</b>. On the six
+coldest test worlds, a change that does nothing (it adds 0.00001 °C) still swings their land ice in the final window by 3–23 points. Without the
+shared spin-up the swing was 3–27. And one such do-nothing change <b>fails the frozen-over check on 2 of those 6 worlds</b>. The reason: a tiny difference has grown
+to full size by about 500–600 Myr, long before the window opens at 884 Myr, and the ice then depends on when the glacial eras happen to fall.
+So on the coldest worlds, the frozen-over check is reading chance, not the change. Those 2 worlds are the same 2 the grass-roots change (PW-1261)
+failed on. The shared start does narrow the temperature spread by about 19%, and it removes a warm bias from the earlier do-nothing comparisons.</p>
 <ol>
-<li><b>A. Learn the yardsticks over a longer stretch.</b> Sound, but weak: replaying the 36 worlds' records shows it narrows the spread only 8–16%.</li>
-<li><b>B. In climate tests, start both versions from the same spin-up.</b> The new code continues from the current code's own planet just after
-the yardsticks freeze, so the test compares the change, not a fresh yardstick. The limits (40%, the temperature range) stay exactly as they are.
-What it misses: a change's effect on the yardstick itself, which would be measured and reported separately as a number (for the grass change, about −0.13 °C).</li>
-<li><b>C. A yardstick that isn't a sample:</b> a fixed, planet-generic link between outgassing and weathering, so mountainous planets run colder
-(real geography the learnt balance cancels out). A redesign; it needs its own diagnosis first.</li>
-<li><b>D. Leave it.</b> The cold tail stays thin, and slightly cooling changes keep failing on chance.</li>
+<li><b>A. Learn the yardsticks over a longer stretch.</b> Sound, but weak: it narrows the spread only 8–16%.</li>
+<li><b>B. Keep today's test, and check failures against chance.</b> When a change freezes a world over, re-run that world with a few do-nothing
+changes from the same spin-up. If those freeze over too, the failure is the world's chance, not the change. The 40% line and the window stay
+as they are. But the rule changes from "no world frozen over" to "no world frozen over that a do-nothing change doesn't also freeze", so it's your call.
+Under it, the grass-roots change would pass the frozen-over check.</li>
+<li><b>C. Give the coldest worlds more room.</b> Warm main's coldest worlds through the ice lanes, so chance doesn't reach the line. It's the lasting fix, but it's ice-age
+physics, which you parked as a deep hole.</li>
+<li><b>D. A yardstick that isn't a sample:</b> a fixed, planet-generic link between outgassing and weathering. A redesign that needs its own diagnosis.</li>
+<li><b>E. Leave it.</b> Changes that cool even slightly keep failing on chance.</li>
 </ol>
-<p><i>My lean:</i> B now, with the yardstick effect always reported beside it, and C on the list for a later look. I've started building B's
-test harness without switching to it (lane 144). It also checks that a world run both ways comes out identical, and how much the chance swing
-shrinks. Nothing changes how merges are judged until you pick. The grass-roots change stays parked until then.</p>
+<p><i>My lean:</i> B now, with C later. B changes a pass rule, which is why it waits for you; nothing is switched over. The shared-spin-up tool
+stays available for targeted checks, as the lane recommended (PW-1403).</p>
 </div>
 <div class="card" id="d44"><div class="id">D44 · THE FRESH-EYES REVIEW YOU ASKED FOR</div>
 <p><b>In plain words:</b> an agent with no history read the whole project. Its verdict: the physics is careful and well guarded, but
@@ -206,7 +207,6 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>144 · shared spin-up test harness</td><td>Built for D45 option B, not switched on. Checks that a world run both ways is identical, and how much the chance swing on the coldest worlds shrinks. The grass-roots change (PW-1261) is parked until you pick.</td></tr>
 <tr><td>142 · North Atlantic too warm</td><td>PW-1381. <b>Found:</b> the warm current that carries heat north gives up too little of it on the way. On the model, 57% of
 the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (RAPID and OSNAP, the two mooring lines across the Atlantic).
 <b>The change:</b> one exchange rate doubled (30 → 60), set from that measured heat budget, not from the area's temperature. It isn't specific to Earth.
@@ -256,6 +256,7 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Shared spin-up test tool</b> (lane 144): <b>merged</b> as a tool, not switched on; all 960 tests pass. What it found is in D45 above.</li></ul>
 <ul><li><b>Range dice</b> (PW-1383, your ask): <b>merged</b>, all 958 tests pass. Eight peoples numbers with a published range (forager slope, fisher top, gardeners, the three plough stages, herders, rich-land farming time) can be rolled per world inside it. There's a tick box in the peoples workbench and a <code>draw_ranges</code> line in the D&amp;D preset. Off by default, and with it off nothing changes. The rest stay fixed, each with its reason written down (most have no published range). <b>On 6 test runs, each compared with the same seed with the dice off:</b> total people within about ±12% in five, and 0.62× in one; humans' share moved most (0.77× to 1.64×); kobolds barely moved. Filed: listing the rolled numbers in the workbench (PW-1401), and finding ranges for the fixed ones (PW-1402).</li></ul>
 <ul><li><b>Dens follow the rock</b> (PW-1382): <b>merged</b>, all 957 tests pass. A den-ground map from the geology: karst limestone best, then tuff,
 lava fields, cliffs with rock shelters and thick loess, mostly from Goldscheider et al. 2020 on karst (15% of Earth's ice-free land is carbonate). Den kinds live
@@ -301,5 +302,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v119 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v120 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

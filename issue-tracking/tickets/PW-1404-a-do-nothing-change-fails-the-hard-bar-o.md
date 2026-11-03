@@ -1,4 +1,5 @@
 ---
+id: PW-1404
 title: "A do-nothing change fails the hard bar on 2 of main's 6 coldest test planets: the frozen-over check reads chaos there"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane144
 blocked_by: []
 relates: [PW-1261, PW-1091, PW-1142, PW-994]
 refs: [docs/review/base-climate/fork-judge/round1.md, docs/review/vegetation/herb-roots/round1.md, tools/hard_bar.py, tools/ice_criteria.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,3 +42,6 @@ Options:
 Lean: A now, B as the lasting fix.
 
 - [ ] Daniel's choice
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-hard-bar-null-fails-cold-tail.md (found by lane144).

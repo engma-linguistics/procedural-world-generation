@@ -1,5 +1,6 @@
 ---
-title: "Use the forked paired judge (shared 300 Myr spin-up)? Built and exact, but it does not calm the hard bar's cold tail"
+id: PW-1403
+title: Use the forked paired judge (shared 300 Myr spin-up)? Built and exact, but it does not calm the hard bar's cold tail
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: lane144
 blocked_by: []
 relates: [PW-994, PW-1261, PW-558, PW-559]
 refs: [docs/review/base-climate/fork-judge/round1.md, docs/review/base-climate/v1-finish-16/paired_fork.sh, docs/review/base-climate/v1-finish-16/fork.py, tests/test_fork_judge.py, docs/review/vegetation/herb-roots/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Options:
 Lean: A. Nothing in the existing judge, its thresholds or pass rules changed.
 
 - [ ] Daniel's choice
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-fork-judge-adopt.md (found by lane144).
