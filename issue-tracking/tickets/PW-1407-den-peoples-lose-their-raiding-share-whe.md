@@ -1,5 +1,6 @@
 ---
-title: "Den peoples lose their raiding share when their tech moves between ladder refreshes"
+id: PW-1407
+title: Den peoples lose their raiding share when their tech moves between ladder refreshes
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane 146
 blocked_by: []
 relates: [PW-1386]
 refs: ["planet/lineages/ladder.py::Ladder.refresh", "planet/lineages/ladder.py::Ladder.settled_near", "planet/lineages/ladder.py::Ladder.line"]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,3 +27,6 @@ the raid when it is None. Lane 146 (PW-1386) met the same pattern for the forage
 golden test needs an on-purpose update; check on the robust suite (base family) that the den kinds' ranges move only slightly.
 - [ ] `settled_near` kept between due refreshes, as `_fn` is
 - [ ] golden updated on purpose; robust base family invariants hold
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-den-raids-dropped-between-refreshes.md (found by lane 146).

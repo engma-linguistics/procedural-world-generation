@@ -2,7 +2,7 @@
 id: PW-1386
 title: "Foragers who trade with farmer neighbours: a capped top-up like the raiding share"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: food
@@ -20,6 +20,7 @@ updated: 2026-11-03
 In plain words: some foragers live beside farming villages and trade forest goods (meat, honey, labour) for grain, as in the Congo forests or parts of SE Asia. Mechanically like the den peoples' raiding share (ladder.py RAID_*): a food share that grows with the farmers' density within reach, capped, here for forest foragers. Builds on the farm-or-forage choice; source the share first (the rainforest-foragers-and-farmers debate in the literature, not read yet).
 
 ## Updates
+- 2026-11-03: Status todo -> done. Merged c0d24d01 (lane 146): foragers with no crop get a capped share of food from farmer neighbours, BARTER_CAP 0.5 (Ichikawa 1983 p.55; Kitanishi 1995 p.106-107); half point and reach are judgements. Tiny on dnd at 1500 AD (0.2-2.4% of forager food, total people +0.01%). Full suite 961 passed. Follow-ups PW-1405..1407.
 - 2026-11-03: Lane 146: sourced and built (ladder.py BARTER_*: cap 0.5 from Kitanishi 1995 p. 106 / Ichikawa 1983 p. 55; the half point and reach are judgements). Measured on 6 D&D robust runs against main: traded food 0.2-2.4% of forager peoples' food (most are coastal fishers or herders, which it does not top up), total people +0.01%, suite invariants hold. docs/review/peoples/forager-trade/round1.md.
 - 2026-11-02: Planned right after PW-1385 lands (it builds on that choice); effort s once a share is sourced.
 - 2026-11-02: Created.

@@ -215,9 +215,8 @@ the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (
 the seas north of Iceland are now 2.7 °C too cold (they had been right only because the current arrived too warm), and winter air is still 3.9 °C too warm.
 Both are filed. <b>Now:</b> the 36-world test, done around 7 AM.</td></tr>
 
+<tr><td>149 · old saves and den raids</td><td>Your runs' saved checkpoints are in the old format since the memory trim, so slicing an older run would replay from the start (35–50 minutes at level 7). This re-saves them in the new format, checking each one before it replaces the old. Also a small fix: goblins, kobolds and troglodytes kept losing their raiding food between the 500-year updates (PW-1407).</td></tr>
 <tr><td>148 · how stretched an orbit can be</td><td>Your ask (PW-1365): a study, not a change. How worlds behave as the orbit gets more stretched (eccentricity 0 to 0.2 and beyond): hot and frozen seasons, ice ages, CO2, and where a world stops being livable. It ends with a recommended range for the generator.</td></tr>
-<tr><td>146 · foragers who trade with farmers</td><td>PW-1386: foragers living beside farming villages (as in the Congo forests) get a capped share of grain by trade, growing with how many farmers are nearby. Finding the share in the literature first; if there's no usable number, it stops at a write-up.</td></tr>
-<tr><td>147 · run memory trims</td><td>PW-1390 then PW-1389, from the level 9 memory report: stop copying the whole state before each save, and stop giving every plate a whole-planet array. Must give identical worlds; it measures the memory before and after.</td></tr>
 </table></div>
 <p>Overnight these use up to about 44 cores, as you allowed; every lane drops back under your daytime cap (32 cores, about 90 GB together) from 8 AM.</p>
 
@@ -257,6 +256,8 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Foragers trade with farmers</b> (PW-1386): <b>merged</b>, all 961 tests pass. A hunting-and-gathering people with farming neighbours within about a day's walk gets part of its food from them, up to half its foraging food: the Mbuti get over 60% of their food by weight from farm produce (Ichikawa 1983), Congo Basin foragers about 50% (Kitanishi 1995). How the share grows with the farmers' numbers is my judgement; no source I read measures it (PW-1405). <b>On 6 D&amp;D test runs, compared with the same runs before:</b> very small, 0.2–2.4% of forager peoples' food, because most foragers left by 1500 AD are fishers or herders. Whether herders and fishers trade too is filed (PW-1406).</li>
+<li><b>Memory trims</b> (PW-1390, PW-1389, from the level 9 report): <b>merged</b>, all 963 tests pass, and worlds come out bit-identical. <b>Peak memory, compared with the same run before:</b> level 6, 300 Myr: 2.45 → 1.34 GB; level 7, 200 Myr: 6.80 → 4.41 GB. The bigger level 9 saving (storing each plate's cells sparsely) is a refactor across about 8 modules, filed as PW-1409; keyframes (PW-801) are now the larger prize.</li></ul>
 <ul><li><b>Shared spin-up test tool</b> (lane 144): <b>merged</b> as a tool, not switched on; all 960 tests pass. What it found is in D45 above.</li></ul>
 <ul><li><b>Range dice</b> (PW-1383, your ask): <b>merged</b>, all 958 tests pass. Eight peoples numbers with a published range (forager slope, fisher top, gardeners, the three plough stages, herders, rich-land farming time) can be rolled per world inside it. There's a tick box in the peoples workbench and a <code>draw_ranges</code> line in the D&amp;D preset. Off by default, and with it off nothing changes. The rest stay fixed, each with its reason written down (most have no published range). <b>On 6 test runs, each compared with the same seed with the dice off:</b> total people within about ±12% in five, and 0.62× in one; humans' share moved most (0.77× to 1.64×); kobolds barely moved. Filed: listing the rolled numbers in the workbench (PW-1401), and finding ranges for the fixed ones (PW-1402).</li></ul>
 <ul><li><b>Dens follow the rock</b> (PW-1382): <b>merged</b>, all 957 tests pass. A den-ground map from the geology: karst limestone best, then tuff,
@@ -303,5 +304,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v121 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v122 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

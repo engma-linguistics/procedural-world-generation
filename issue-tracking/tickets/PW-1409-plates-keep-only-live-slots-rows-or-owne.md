@@ -1,4 +1,5 @@
 ---
+id: PW-1409
 title: "Plates: keep only live slots' rows (or owned cells sparsely) instead of 48 full-globe slots"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: low
 found_by: lane 147
 blocked_by: []
 relates: [PW-1389, PW-1390, PW-801]
-refs: [planet/tectonics/plates.py, planet/tectonics/plate_kernels.py::resolve, planet/tectonics/plate_kernels.py::cleanup_ghosts, planet/tectonics/events.py::merge, planet/tectonics/events.py::split, planet/tectonics/volcanism.py::re_home, planet/tectonics/crust.py, planet/tectonics/setup.py, planet/tectonics/simulation.py::_world_view, planet/store.py::pack_state, tests/test_golden.py::sim_digest, docs/review/speed/memory-fixes/round1.md, docs/review/speed/l9-memory.md]
+refs: [planet/tectonics/plates.py, "planet/tectonics/plate_kernels.py::resolve", "planet/tectonics/plate_kernels.py::cleanup_ghosts", "planet/tectonics/events.py::merge", "planet/tectonics/events.py::split", "planet/tectonics/volcanism.py::re_home", planet/tectonics/crust.py, planet/tectonics/setup.py, "planet/tectonics/simulation.py::_world_view", "planet/store.py::pack_state", "tests/test_golden.py::sim_digest", docs/review/speed/memory-fixes/round1.md, docs/review/speed/l9-memory.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,3 +40,6 @@ Options:
 Lean: C for now, B only if L8/L9 from-scratch runs become a goal (Daniel prefers refine for those). Also
 possible cheaply: `idx` as int32 (halves 384 B/cell) if the golden digest is allowed to hash it as int64 still
 (hash `idx.astype(np.int64)`): no output changes.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-plates-sparse-owned-cells.md (found by lane 147).

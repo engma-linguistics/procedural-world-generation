@@ -1,4 +1,5 @@
 ---
+id: PW-1406
 title: "Forager trade: should foragers also trade with herders, and fishers with farmers?"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: low
 found_by: lane 146
 blocked_by: []
 relates: [PW-1386]
-refs: ["planet/lineages/ladder.py::Ladder.line", "planet/lineages/ladder.py::BARTER_CAP", "docs/review/peoples/forager-trade/round1.md"]
+refs: ["planet/lineages/ladder.py::Ladder.line", "planet/lineages/ladder.py::BARTER_CAP", docs/review/peoples/forager-trade/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Options:
 Trade-offs: B and C widen the effect with no number behind them; C would also raise the rich-coast fishers that PW-1385 keeps
 unfarmed, which may already be dense enough. **My lean: A**, and source forager-herder exchange (e.g. southern African foragers beside
 herders) before doing B.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-barter-with-herders-and-fishers.md (found by lane 146).

@@ -1,4 +1,5 @@
 ---
+id: PW-1408
 title: "Runs made before PW-1390 replay from t=0: their checkpoints are in the old format"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane 147
 blocked_by: []
 relates: [PW-1390, PW-1035]
-refs: [planet/store.py::read_checkpoint, planet/store.py::unpack_state, planet/timeline.py::replay, docs/review/speed/memory-fixes/round1.md]
+refs: ["planet/store.py::read_checkpoint", "planet/store.py::unpack_state", "planet/timeline.py::replay", docs/review/speed/memory-fixes/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,3 +27,6 @@ What to do after the merge (no backward-compatibility code in planet/):
 - [ ] for the ones worth keeping, either delete them and re-simulate, or re-save the checkpoints with a one-off
   script outside planet/ (load each old checkpoint with the pre-merge code, `Simulation.from_state`, then
   `store.save_checkpoint` with the new code; check one slice matches its keyframe).
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-old-checkpoints-replay-from-zero.md (found by lane 147).
