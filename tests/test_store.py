@@ -79,6 +79,46 @@ def test_layer_files(data_root):
     assert np.array_equal(S.read_layer(data_root / "r", meta["elevation"], mmap=False)[2], a[2])
 
 
+def test_streamed_keyframes_match_stacked(data_root):
+    """PW-801: LayerStream and VolcanoStream, fed frame by frame, write the same bytes and metadata as
+    write_layers of the stacked frames and write_volcanoes of all the tables; a stream cut part-way through
+    a keyframe keeps only the whole frames."""
+    rng = np.random.default_rng(3)
+    specs = {k: S.run_spec(k) for k in ("elevation", "precipitation_jul", "plate", "crust")}
+    fr = [{"elevation": rng.integers(-9000, 9000, 50), "precipitation_jul": S.encode(rng.random(50) * 3000,
+           specs["precipitation_jul"]), "plate": rng.integers(0, 40, 50), "crust": rng.random(50) > 0.5}
+          for _ in range(5)]
+    tables = [[[round(float(x), 3), int(i), 0.5] for i, x in enumerate(rng.random(int(rng.integers(0, 300))))]
+              for _ in range(5)]
+    meta = S.write_layers(data_root / "a", {k: np.stack([f[k] for f in fr]) for k in specs}, specs)
+    S.write_volcanoes(data_root / "a", ["lat", "id", "x"], tables)
+    st = S.LayerStream(data_root / "b", specs)
+    vs = S.VolcanoStream(data_root / "b", ["lat", "id", "x"])
+    for f, t in zip(fr, tables):
+        for k in specs:
+            st.append(k, f[k])
+        vs.append(t)
+    st.close()
+    vs.finish()
+    assert st.layers() == meta and list(st.layers()) == list(meta)
+    for p in [*(f"layers/{k}.bin" for k in specs), "volcanoes.json.gz"]:
+        assert (data_root / "a" / p).read_bytes() == (data_root / "b" / p).read_bytes(), p
+    assert sorted(p.name for p in (data_root / "b").iterdir()) == ["layers", "volcanoes.json.gz"]
+    # cut short: two whole frames, a third written for some layers only, the volcano file dropped
+    st = S.LayerStream(data_root / "c", specs)
+    vs = S.VolcanoStream(data_root / "c", ["lat", "id", "x"])
+    for f in fr[:2]:
+        for k in specs:
+            st.append(k, f[k])
+    st.append("elevation", fr[2]["elevation"])
+    st.close(frames=3)
+    vs.abort()
+    got = S.read_layers(data_root / "c", st.layers())
+    assert all(np.array_equal(got[k], meta_k) for k, meta_k in
+               ((k, S.read_layers(data_root / "a", meta)[k][:2]) for k in specs))
+    assert not list((data_root / "c").glob(".*")) and not S.volcanoes_path(data_root / "c").exists()
+
+
 def test_json_header(data_root):
     p = data_root / "x.json"
     S.write_json(p, {"format": "f", "id": "abc", "meta": {"a": 1}, "frames": [1, 2], "name": "late"})
@@ -172,6 +212,12 @@ def test_interrupted_run_keeps_its_folder(data_root):
     head = S.read_header(d / "run.json", ("status", "meta"))
     assert head["status"] == "interrupted" and "KeyboardInterrupt" in head["meta"]["error"]
     assert S.checkpoints(d) and S.run_status(d) == "interrupted"
+    # the keyframes written before the stop stay readable (PW-801), with their frames' stats; no volcano file
+    run, arr = T.load_frames(d)
+    n = len(run["frames"])
+    assert n >= 2 and all(run["layers"][k]["shape"] == [n, 642] for k in T.RUN_LAYERS)
+    assert np.isfinite(T.frame(run, arr, "elevation", n - 1)).all()
+    assert not S.volcanoes_path(d).exists() and not list(d.glob(".*.tmp"))
     assert not S.exists("run", d.name) and S.items("run") == [] and S.orphans() == [d]
     with pytest.raises(SystemExit, match="interrupted"):
         S.find_run(d.name)

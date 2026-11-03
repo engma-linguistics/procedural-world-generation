@@ -25,5 +25,6 @@ Goal: stream keyframes to disk (or preallocate and write in place) so memory sta
 CPU: one run uses ~7 cores (numba capped at 8 threads), so a 4-core laptop should take roughly 1.5-2x as long (L7 ~45-60 min per Gyr); worth one --threads 4 measurement to confirm.
 
 ## Updates
+- 2026-11-03: Lane 154: keyframes stream to disk as the run makes them (store.LayerStream, store.VolcanoStream; timeline.simulate no longer holds or stacks them). Seed 957317, --threads 4, against main ceda2abc on the same seed at the same time: L6 1 Gyr 2.74 -> 1.09 GB peak, L7 400 Myr 4.81 -> 3.36 GB, L7 1 Gyr 7.94 -> 3.43 GB (memory now level through the run). All layer files and volcanoes.json.gz byte-identical by SHA-256 at L5, L6 and L7; golden tests unchanged. A Ctrl-C'd run now keeps its whole keyframes readable (header lists layers and frames). Write-up: docs/review/speed/memory-fixes/round2.md.
 - 2026-11-03: Cause located (11-03, docs/review/speed/l9-memory.md): keyframes are kept as lists all run (timeline.py:125,145) and every layer is np.stack'ed at once before writing (timeline.py:164), hence the end spike. Streaming frames to disk keeps outputs bit-identical; ~38 GB per Gyr at L9 (estimate).
 - 2026-10-24: Created.
