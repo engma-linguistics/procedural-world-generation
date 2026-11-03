@@ -2,7 +2,7 @@
 id: PW-1401
 title: Show the numbers a world drew in the peoples workbench
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -24,3 +24,4 @@ form is for worlds, not peoples, so it needs nothing.
 
 ## Updates
 - 2026-11-03: Created from inbox draft draft-ranges-show-drawn-in-viewer.md (found by lane 145).
+- 2026-11-03: Done (lane 152): the Results tab has a 'Sourced numbers' section: each ranged name in plain words, the value drawn, the published range and its source (run.json meta.range_draws against editor_schema ranges); 'Fixed values' when draws were off.

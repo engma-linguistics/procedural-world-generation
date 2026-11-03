@@ -23,12 +23,13 @@ def editor_schema() -> dict:
     from . import dragon_ages as DA
     from . import ladder as LA
     from . import life_history as LH
+    from . import ranges as RG
     return {
         "traits": list(SP.TRAITS), "places": list(SP.PLACES), "groups": list(SP.GROUPS), "ways": list(SP.WAYS),
         "realms": list(SP.REALMS), "goods": {k: label for k, (label, _) in LD.GOODS.items()},
         "pair_wants": list(SP.PAIR_WANTS), "stages": list(SP.STAGES), "stage_notes": SP.STAGE_NOTES,
         "band": SP.BAND, "demo_default": SP.DEMO_DEFAULT, "demography": SP.DEMOGRAPHY, "kind_range": list(SP.KIND_RANGE),
-        "ladder": [list(r) for r in LA.TABLE],
+        "ladder": [list(r) for r in LA.TABLE], "ranges": RG.table(),  # (the published ranges a run's draws are shown against, PW-1401)
         "body_default": SP.BODY_DEFAULT, "body_choices": {k: list(v) for k, v in SP.BODY_CHOICES.items()},
         "body_bools": [k for k, v in SP.BODY_DEFAULT.items() if isinstance(v, bool)], "toxins": list(SP.TOXINS),
         "eras": list(SP.ERAS), "modes": list(SP.MODES), "portal_modes": list(SP.PORTAL_MODES),

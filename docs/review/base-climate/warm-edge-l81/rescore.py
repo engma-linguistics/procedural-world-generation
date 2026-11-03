@@ -5,11 +5,7 @@ ROOT = Path("/data/personal/repos/procedural-world-generation/.claude/worktrees/
 sys.path.insert(0, str(ROOT))
 from planet import highlights as H
 from tools import ice_criteria as C
-sys.path.insert(0, str(ROOT / "docs/review/base-climate/v1-finish-12"))
-with redirect_stdout(io.StringIO()):
-    _a, sys.argv = sys.argv, [sys.argv[0]]
-    import passrate4 as P
-    sys.argv = _a
+from tools import judge as P
 assert P.HUMAN_RANGE is H.HUMAN_RANGE
 J = Path("/tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l75/judge")
 tot = {3.0: 0, 5.0: 0}; noice = []; rows = []

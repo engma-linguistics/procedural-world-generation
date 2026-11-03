@@ -1,5 +1,5 @@
 """usage: judge.py ARM_A ARM_B [ROLL ...] -> paired table of two arms of paired.sh (judge/<ARM>_r<ROLL>_<tag>/).
-Pass = good finish moment (highlights.finish_moment) and no hellhouse or frozen-over world (passrate4.judge). Also per-draw
+Pass = good finish moment (highlights.finish_moment) and no hellhouse or frozen-over world (tools/judge.py judge). Also per-draw
 end T, moment T, land %, and the carbon-cycle terms over 600-1000 Myr (means) for diagnosis."""
 import io
 import sys
@@ -13,11 +13,7 @@ sys.path.insert(0, str(W))
 from planet import highlights as H  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
-with redirect_stdout(io.StringIO()):
-    _argv, sys.argv = sys.argv, [sys.argv[0]]
-    sys.path.insert(0, str(W / "docs/review/base-climate/v1-finish-12"))
-    import passrate4 as P  # noqa: E402
-    sys.argv = _argv
+from tools import judge as P  # noqa: E402
 
 J = Path(__file__).resolve().parent / "judge"
 A, B = sys.argv[1], sys.argv[2]
