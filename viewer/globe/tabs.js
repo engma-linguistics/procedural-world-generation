@@ -40,15 +40,15 @@ $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e
 function navView() {
   if (state.tab === 'zoom') { const z = new URLSearchParams(location.search).get('zoom'); if (z) return { kind: 'zoom', id: z }; }
   if (!S.V) return null;
-  if (S.V.kind === 'run') return { kind: S.V.tz ? 'timezoom' : 'run', id: S.V.dir, t: S.V.t };
+  if (S.V.kind === 'run') return { kind: S.V.run.kind === 'peoples' ? 'peoples' : S.V.tz ? 'timezoom' : 'run', id: S.V.dir, t: S.V.t };
   return S.V.id ? { kind: 'world', id: S.V.id } : null;
 }
 export function navSync() { S.navUi?.set(navView()); }
 async function navOpen(n, planet, t) {
   await fillSelector();
   if (state.tab === 'zoom' && n.kind !== 'zoom') showTab('globe');
-  if (n.phase === 'lineages') state.layer = 'peoples';  // (a peoples run opens on its own layer)
-  if (n.kind === 'run' || n.kind === 'timezoom') await openRun(n.id, t);
+  if (n.kind === 'peoples') state.layer = 'peoples';  // (a peoples run opens on its own layer)
+  if (n.kind === 'run' || n.kind === 'timezoom' || n.kind === 'peoples') await openRun(n.id, t);
   else if (n.kind === 'world') await openWorld(n.file);
   else {
     if (!(S.V?.kind === 'world' && S.V.id === n.world)) {

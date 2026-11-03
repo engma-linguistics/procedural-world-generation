@@ -51,7 +51,7 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
         return r["dir"] if r else None
 
     for r in runs:
-        if r.get("kind") == "timezoom":
+        if r.get("kind") in ("timezoom", "peoples"):
             continue
         p = planet(r["dir"], r["name"], seed=r["seed"], level=r["level"], myr=r["myr"], created=r["created"])
         p["run"] = r["dir"]
@@ -71,15 +71,15 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
                       seed=item.get("seed"), level=item.get("level"), created=item.get("created"))
 
     for r in runs:
-        if r.get("kind") != "timezoom":
+        if r.get("kind") not in ("timezoom", "peoples"):
             continue
         p = home(r.get("source_run"), r["dir"], r["name"], r)
         parent = f"run:{root_of(r['source_run'])}" if root_of(r.get("source_run")) else None
-        if r.get("phase") and run_by.get(r.get("timezoom")):  # a recent pass / peoples run: under its time zoom
+        if (r.get("phase") or r["kind"] == "peoples") and run_by.get(r.get("timezoom")):  # a recent pass / peoples run: under its time zoom
             parent = f"run:{run_by[r['timezoom']]['dir']}"
-        p["nodes"].append({"key": f"run:{r['dir']}", "kind": "timezoom", "id": r["dir"], "name": r["name"], "parent": parent,
+        p["nodes"].append({"key": f"run:{r['dir']}", "kind": r["kind"], "id": r["dir"], "name": r["name"], "parent": parent,
                            "created": r["created"], "at_myr": r["at_myr"], "kyr": r["kyr"], "level": r["level"],
-                           **({"phase": r["phase"], "world": r.get("world")} if r.get("phase") else {}),
+                           **({"phase": r["phase"]} if r.get("phase") else {}), **({"world": r.get("world")} if r.get("phase") or r["kind"] == "peoples" else {}),
                            "thumb": THUMB.format(kind="run", id=r["dir"])})
         where[f"run:{r['dir']}"] = p["key"]
         if p["key"] == "earth":
@@ -115,7 +115,7 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
     out = []
     for p in planets.values():
         n = p["nodes"]
-        p["counts"] = {k: sum(x["kind"] == k for x in n) for k in ("timezoom", "world", "zoom", "fine")}
+        p["counts"] = {k: sum(x["kind"] == k for x in n) for k in ("timezoom", "peoples", "world", "zoom", "fine")}
         p["created"] = p.get("created") or min((x["created"] for x in n), default="")
         p["updated"] = max((x["created"] for x in n), default=p["created"])
         # the picture on its card: its newest finished world, else a world, else the run

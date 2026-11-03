@@ -50,7 +50,7 @@ export function loadFailed(err) {
   const plain = err instanceof LoadError ? err.message : `Something went wrong while opening this: ${err.message}`;
   let card = $('errCard');
   if (!card) { card = document.createElement('div'); card.id = 'errCard'; card.className = 'panel'; document.body.append(card); }
-  const recent = [...(S.IDX.runs || []).map((r) => ({ when: r.created, href: `?run=${r.dir}`, label: `${r.name} (${r.phase === 'lineages' ? 'peoples' : r.kind === 'timezoom' ? 'time zoom' : 'run'})` })),
+  const recent = [...(S.IDX.runs || []).map((r) => ({ when: r.created, href: `?run=${r.dir}`, label: `${r.name} (${r.kind === 'peoples' ? 'peoples' : r.kind === 'timezoom' ? 'time zoom' : 'run'})` })),
                   ...(S.IDX.worlds || []).map((w) => ({ when: w.created, href: `?world=${w.file}`, label: `${w.name} (world)` }))]
     .sort((a, b) => (b.when || '').localeCompare(a.when || '')).slice(0, 5);
   card.innerHTML = `<h3>Could not open this</h3><p>${esc(plain)}</p>
@@ -143,7 +143,7 @@ function layersNeeded() {
   const want = ['elevation', 'lake_kind', 'ice', ...layerNeeds(state.layer)];  // (layers.js: each layer's needs)
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (S.V.run.meta?.phase === 'lineages') want.push(...layerNeeds('peoples'), 'peoples_overlay', 'animal_wild', 'animal_known', 'crop_wild', 'crop_known', 'mix_lead', 'mix_lead_share', 'mix_second',
+  if (S.V.run.kind === 'peoples') want.push(...layerNeeds('peoples'), 'peoples_overlay', 'animal_wild', 'animal_known', 'crop_wild', 'crop_known', 'mix_lead', 'mix_lead_share', 'mix_second',
     'mix_second_share', 'mix_other_share', ...Object.keys(S.V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
@@ -209,7 +209,7 @@ export async function loadRun(dir, wantT) {
   if (stale(tok)) return;
   const { G: grid, pg } = await gridOf(new URL(run.grid, new URL(base, location.href)), `the grid of run "${dir}"`);
   if (stale(tok)) return;
-  const tz = run.kind === 'timezoom';  // glacial time zoom: time in kyr
+  const tz = run.kind === 'timezoom' || run.kind === 'peoples';  // glacial time zoom or peoples run: time in kyr
   S.V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC,
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
         ...legendFields(run.legend) };
@@ -217,7 +217,7 @@ export async function loadRun(dir, wantT) {
   S.V.axis = timeAxis(run); drawAxis();  // (the slider's dated axis, PW-1042)
   let f = 0;
   if (wantT == null && !tz && run.meta.finish_moment) wantT = run.meta.finish_moment.t;  // (PW-866: open at the finish moment)
-  if (wantT == null && run.meta?.phase === 'lineages') wantT = run.frames.at(-1).t;  // (a peoples run opens at the present, PW-1028)
+  if (wantT == null && run.kind === 'peoples') wantT = run.frames.at(-1).t;  // (a peoples run opens at the present, PW-1028)
   if (wantT != null) f = run.frames.reduce((b, fr, i) => (Math.abs(fr.t - wantT) < Math.abs(run.frames[b].t - wantT) ? i : b), 0);
   S.V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load

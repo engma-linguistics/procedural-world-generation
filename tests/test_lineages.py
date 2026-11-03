@@ -169,7 +169,7 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     assert pres["wishes"] and len(pres["tries"]) == 2
     out = O.save(h, res, pres, name="test peoples")
     run = json.loads((out / "run.json").read_text())
-    assert run["meta"]["phase"] == "lineages" and run["frames"][-1]["t"] == 0
+    assert run["kind"] == "peoples" and run["meta"]["kind"] == "peoples" and "phase" not in run["meta"] and run["frames"][-1]["t"] == 0
     assert run["meta"]["draw_ranges"] is False and run["meta"]["range_draws"] == {}  # (PW-1383: off by default)
     assert [l["id"] for l in run["meta"]["lineages"]] == [l.id for l in h.lines]
     _, arr = T.load_frames(out, ("peoples",))

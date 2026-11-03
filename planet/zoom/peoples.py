@@ -59,7 +59,7 @@ def load(run_ref: str, world_id: str | None = None) -> dict:
     run = json.loads((d / "run.json").read_text())
     m = run["meta"]
     a = m.get("anthro")
-    if m.get("phase") != "lineages" or not a:
+    if run.get("kind") != "peoples" or not a:
         raise SystemExit(f"{d.name}: not a peoples run with a land-use overlay (planet landuse {d.name})")
     if world_id is not None and m.get("world") != world_id:
         raise SystemExit(f"peoples run {d.name} belongs to world {m.get('world')}, not {world_id}")

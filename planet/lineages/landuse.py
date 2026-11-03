@@ -84,7 +84,7 @@ def shares(tree: SP.Tree, l: SP.Lineage) -> dict:
 def _load(run_dir: Path):
     run = json.loads((run_dir / "run.json").read_text())
     m = run["meta"]
-    if m.get("phase") != "lineages":
+    if run.get("kind") != "peoples":
         raise ValueError(f"{run_dir.name} is not a peoples run")
     if not m.get("world"):
         raise ValueError(f"{run_dir.name} has no world (no farmland to read)")

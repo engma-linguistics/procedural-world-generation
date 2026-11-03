@@ -1196,7 +1196,7 @@ async function listWorlds() {
   const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };
   const [worlds, runs] = await Promise.all([get('../worlds/index.json'), get('../runs/index.json')]);
   const tzs = new Set(runs.filter((r) => r.kind === 'timezoom' && !r.phase).map((r) => r.dir));
-  peoplesRuns = runs.filter((r) => r.phase === 'lineages').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  peoplesRuns = runs.filter((r) => r.kind === 'peoples').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
   const have = new Set(peoplesRuns.map((r) => r.world));
   favs = await getFavs();
   let ok = worlds.filter((w) => w.timezoom && tzs.has(w.timezoom)).sort((a, b) => (favs.has(b.id) - favs.has(a.id)) || b.created.localeCompare(a.created));  // (favourites first)

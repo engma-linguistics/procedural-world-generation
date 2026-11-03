@@ -12,6 +12,8 @@ The chain, each stage optional after the first:
                  keyframe at the representative moment (api.slice_run)
   highlights     the world's interesting places (api.highlights)
   zooms          regional zooms of the top N highlights (api.zoom_job)
+  peoples        optional (PW-1394): a peoples run (kind 'peoples') of a named tree (dnd, seven_meals, a saved
+                 tree) on the finished world and its time zoom (api.lineages_job); needs both
 
 Settings: what the code honours today is listed in SETTINGS (tectonics.Params
 fields that change the planet's character, plus seed, level and length) and
@@ -55,6 +57,7 @@ ZOOM_S = {4: 8, 5: 11, 6: 15, 7: 22, 8: 31}   # one regional zoom (500 px); 25-5
 DT, EVERY = 2.0, 4.0                          # the simulate defaults
 
 # The showcase recipes (docs/coordination.md), as presets. `set` are tectonics.Params overrides.
+PEOPLES_S = {4: 25, 5: 70, 6: 220, 7: 700, 8: 3000}   # one peoples run (store timings of 60 runs: L6 median ~220 s, L7 ~100-1800 s, median ~500 s)
 PRESETS = {
     "earthlike": {"label": "Earth-like", "myr": 1000, "set": {},
                   "blurb": "Default parameters: a few continents drifting around, Earth's tilt and climate."},
@@ -93,12 +96,19 @@ UNSUPPORTED = ["orbit (distance, eccentricity)", "a different star (always Sun-l
 NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},
                {"key": "glacial", "label": "Glacial maximum"}, {"key": "end", "label": "End of the time zoom"}]
 DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4,
-            "require_ice": False, "tries": 3}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
+            "require_ice": False, "tries": 3, "peoples": ""}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
+
+
+def peoples_trees() -> list[str]:
+    """The names of the peoples trees a make may use: the presets (dnd, seven_meals, ...) and the saved trees."""
+    from .lineages import run as LR
+    return [t["name"] for t in LR.list_trees() if t["name"] != "techtree"]
 
 
 def parse_make_request(req: dict) -> dict:
     """Validates a make request and fills defaults. Raises api.BadRequest.
-    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name, require_ice, tries}"""
+    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name, require_ice, tries, peoples}
+    (peoples: the name of a peoples tree, a preset such as dnd or seven_meals or a saved one; "" makes none)"""
     from dataclasses import fields
     from .tectonics import Params
     if not isinstance(req, dict):
@@ -134,6 +144,12 @@ def parse_make_request(req: dict) -> dict:
     out["tries"] = int(api._num(req, "tries", DEFAULTS["tries"]))
     if not 1 <= out["tries"] <= 8:
         raise api.BadRequest("tries must be within 1..8")
+    out["peoples"] = str(req.get("peoples") or "").strip()
+    if out["peoples"]:
+        if peoples_trees() and out["peoples"] not in peoples_trees():
+            raise api.BadRequest(f"peoples must be one of {peoples_trees()} (or empty for none)")
+        if not (out["timezoom"] and out["finish"]):
+            raise api.BadRequest("peoples need the time zoom and the finished world (they are built on both)")
     out["zooms"] = int(api._num(req, "zooms", DEFAULTS["zooms"]))
     if not 0 <= out["zooms"] <= 12:
         raise api.BadRequest("zooms must be within 0..12")
@@ -182,6 +198,8 @@ def estimate(spec: dict) -> dict:
         st.append(("highlights", "Finding highlights", HIGHLIGHTS_S[L]))
     if spec["zooms"]:
         st.append(("zooms", f"{spec['zooms']} regional zoom{'s' if spec['zooms'] > 1 else ''}", spec["zooms"] * ZOOM_S[L]))
+    if spec["peoples"]:
+        st.append(("peoples", f"Peoples ({spec['peoples']})", PEOPLES_S[L]))
     stages = [{"key": k, "label": lab, "s": round(s, 1)} for k, lab, s in st]
     return {"stages": stages, "total_s": round(sum(s["s"] for s in stages), 1)}
 
@@ -194,7 +212,7 @@ def options() -> dict:
     settings = [{**s, "default": d[s["key"]]} for s in SETTINGS]
     return {"presets": {k: {**v, "set": dict(v["set"])} for k, v in PRESETS.items()}, "default_preset": DEFAULT_PRESET,
             "settings": settings, "levels": [{"level": L, "cells": 10 * 4 ** L + 2, "run_s_per_gyr": RUN_S_PER_GYR[L]} for L in LEVELS],
-            "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
+            "peoples": peoples_trees(), "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
 
 
 def reroll_seed(seed: int, k: int) -> int:
@@ -212,12 +230,12 @@ def _load_state(state, spec: dict) -> dict:
     out = d.get("out") or {}
     if d.get("spec") != json.loads(json.dumps(spec)) or not S.exists("run", out.get("run", "")):
         return {}
-    have = {"timezoom": "run", "world": "world"}
+    have = {"timezoom": "run", "world": "world", "peoples": "run"}
     return {k: v for k, v in out.items() if k not in have or S.exists(have[k], v)}
 
 
 def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = False) -> dict:
-    """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "t_myr"};
+    """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "peoples": run id, "t_myr"};
     only what was made. progress(fraction, message). A failure names the stage and what exists so far.
     state: a file the finished stages are recorded in (the server's make jobs); with resume, a run,
     time zoom or world an earlier try of the same request finished is reused, not made again (a server
@@ -310,10 +328,17 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
         if spec["zooms"]:
             stage = "zooms"
             out["zooms"] = api.zoom_highlights(out["world"], hl["features"], spec["zooms"], prog("zooms"))
+        if spec["peoples"]:
+            stage = "peoples"
+            if "peoples" in out:
+                prog("peoples")(1.0, f"peoples run {out['peoples']} already made")
+            else:
+                out["peoples"] = api.lineages_job({"type": "lineages", "world": out["world"], "tree": spec["peoples"]}, prog("peoples"))["run"]
+                save()
     except api.Cancelled:
         raise
     except (Exception, SystemExit) as e:
-        made = ", ".join(f"{k} {v}" for k, v in out.items() if k in ("run", "timezoom", "world")) or "nothing"
+        made = ", ".join(f"{k} {v}" for k, v in out.items() if k in ("run", "timezoom", "world", "peoples")) or "nothing"
         raise RuntimeError(f"{stage} failed: {e or type(e).__name__} (made so far: {made})") from e
     progress(1.0, "done")
     return out

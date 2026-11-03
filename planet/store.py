@@ -837,10 +837,12 @@ def _run_item(p: Path) -> dict:
     m = r["meta"]
     item = {"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
             "seed": m["seed"], "level": m["level"], "myr": m["myr"], "created": m["created"]}
-    if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom/): time in kyr
-        item.update(kind="timezoom", source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
-        if m.get("phase"):  # a recent pass or a peoples run (planet/lineages/): of a time zoom (and world)
-            item.update(phase=m["phase"], timezoom=m.get("timezoom"), world=m.get("world"))
+    if r.get("kind") in ("timezoom", "peoples"):  # glacial time zoom (planet/timezoom/) or a peoples run (planet/lineages/): time in kyr
+        item.update(kind=r["kind"], source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
+        if m.get("phase") or r["kind"] == "peoples":  # a recent pass or a peoples run: of a time zoom (and world)
+            item.update(timezoom=m.get("timezoom"), world=m.get("world"))
+            if m.get("phase"):
+                item.update(phase=m["phase"])
     return item
 
 

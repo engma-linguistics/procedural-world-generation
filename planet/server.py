@@ -81,7 +81,7 @@ def delete(path: str) -> int:
 def make_query(query: str) -> dict:
     """GET /api/make/estimate's query string as a make request (?seed=&preset=&level=&myr=&kyr=&timezoom=1&zooms=4...)."""
     q = dict(parse_qsl(query))
-    req = {k: q[k] for k in ("seed", "preset", "level", "myr", "kyr", "zooms", "now", "tries") if q.get(k) not in (None, "")}
+    req = {k: q[k] for k in ("seed", "preset", "level", "myr", "kyr", "zooms", "now", "tries", "peoples") if q.get(k) not in (None, "")}
     for k in ("timezoom", "finish", "highlights", "require_ice"):
         if k in q:
             req[k] = q[k] not in ("0", "false", "")

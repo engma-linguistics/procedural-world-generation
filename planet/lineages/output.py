@@ -1,4 +1,4 @@
-"""The peoples' history stored as a run (kind timezoom, meta.phase 'lineages') and its report."""
+"""The peoples' history stored as a run (kind 'peoples', PW-1394) and its report."""
 
 from __future__ import annotations
 
@@ -157,8 +157,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
                "lon": e["lon"] if e["lon"] is not None else 0} for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     S.write_json(out / "run.json", {
-        "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
-        "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
+        "format": "procgen-run/2", "kind": "peoples", "id": run_id, "name": label,
+        "meta": {"kind": "peoples", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "thinnings": h.portal_report(),
                  "growth_rates": h.tree.growth_rates, "draw_ranges": h.tree.draw_ranges, "range_draws": h.ladder.drawn, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),

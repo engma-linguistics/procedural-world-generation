@@ -313,7 +313,7 @@ export function renderLayerButtons() {
   document.body.classList.toggle('run', S.V.kind === 'run');
   document.querySelectorAll('.worldOnly').forEach((e) => (e.style.display = S.V.kind === 'world' ? '' : 'none'));
   document.querySelectorAll('.runOnly').forEach((e) => (e.style.display = S.V.kind === 'run' ? '' : 'none'));
-  S.V.peopleTracks = S.V.run?.meta?.phase === 'lineages' ? S.V.run.meta.lineages : null;
+  S.V.peopleTracks = S.V.run?.kind === 'peoples' ? S.V.run.meta.lineages : null;
   document.querySelectorAll('[data-needs-volc]').forEach((e) => (e.style.display = S.V[e.dataset.needsVolc]?.length ? '' : 'none'));
 }
 
@@ -401,7 +401,7 @@ export function renderRunSummary() {
     ${finishMomentLine()}
     ${finishBox()}
     ${timezoomBox()}`;
-  $('sumTitle').textContent = S.V.run.meta?.phase === 'lineages' ? 'Peoples and events' : S.V.run.meta?.phase === 'recent' ? 'Recent pass and events'
+  $('sumTitle').textContent = S.V.run.kind === 'peoples' ? 'Peoples and events' : S.V.run.meta?.phase === 'recent' ? 'Recent pass and events'
     : S.V.tz ? 'Ice ages and events' : 'Run and events';  // (plain titles, PW-1047)
   $('summaryBody').innerHTML = `${head}${S.V.tz ? '' : runTree()}
     <h2>Events <span class="muted">(click to jump${S.V.tz ? '; t in kyr' : ''})</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;

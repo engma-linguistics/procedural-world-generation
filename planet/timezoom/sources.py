@@ -23,8 +23,8 @@ def source_from_run(run_dir: Path, at: float) -> dict:
     from the stored keyframe nearest to `at` (as timeline.world_from_frame:
     no replay; ice to 20 m, dT to 0.1 C)."""
     run, arr = T.load_frames(run_dir, ("elevation", "ice", "tree_cover", *STATIC, *ROCK_LAYERS))
-    if run.get("kind") == "timezoom":
-        raise SystemExit("that's a time zoom already; give its source run")
+    if run.get("kind") in ("timezoom", "peoples"):
+        raise SystemExit("that's a time zoom or a peoples run; give its source run")
     m = run["meta"]
     times = np.array([f["t"] for f in run["frames"]])
     if not times.min() - 1e-9 <= at <= times.max() + 1e-9:

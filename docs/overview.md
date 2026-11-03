@@ -22,7 +22,7 @@ The physics is "toy but physical". Each process is a cheap version of a named re
 | **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6, ~30 min at L7. |
 | **Finished world** | `planet finish <timezoom> --kyr N` (or `<run> --at T`) | A world at any kyr of a time zoom: its ice, sunken bed, sea level and climate on the run's geology. | Seconds (L6) to ~1 min (L7). |
 | **Highlights** | `planet highlights <run> --at auto --zoom N` | The ~40–55 most interesting places, with pre-made zooms. | Seconds. |
-| **Peoples** | `planet lineages <world or time zoom>` (then `planet techtree`, `planet settlements`) | A tree of peoples (lineages, dragons and giants included) placed, split and spread over the last ~300–400 kyr on the world's own climate, with demes, emergent cultures, gods and taboos, a tech tree, settlements and a culinary brief per region (§2.24–2.27). Stored as a run of its own (`kind: timezoom, phase: lineages` for now, PW-1394). Not yet part of `planet make`. | Minutes to an hour; see §2.26. |
+| **Peoples** | `planet lineages <world or time zoom>` (then `planet techtree`, `planet settlements`) | A tree of peoples (lineages, dragons and giants included) placed, split and spread over the last ~300–400 kyr on the world's own climate, with demes, emergent cultures, gods and taboos, a tech tree, settlements and a culinary brief per region (§2.24–2.27). Stored as a run of its own kind (`kind: peoples`, PW-1394). `planet make --peoples dnd|seven_meals` (and the New planet form) builds one after the world. | Minutes to an hour; see §2.26. |
 
 All of these are browsed in a three.js viewer: `planet serve` (http://127.0.0.1:8765/viewer/).
 
