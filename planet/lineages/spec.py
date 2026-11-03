@@ -568,6 +568,7 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
+    draw_ranges: bool = False  # meta.draw_ranges (PW-1383): draw the density ladder's sourced numbers from their published ranges (ranges.py), seeded by meta.seed; off: the fixed values
     growth_rates: bool = False  # meta.growth_rates (PW-1147, lane 78): each people's growth rate r (life_history) sets its spread, displacement, fade and jumps
     wave_kyr: float = WAVE_KYR  # meta.wave_kyr: years between an arrival's waves, kyr
     portal_open_kyr: float = PORTAL_OPEN_KYR  # meta.portal_open_kyr: a wandering thinning's mean opening, kyr
@@ -1088,6 +1089,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         raise ValueError(f"meta.portal_sites must be some of {list(PORTAL_SITES)}")
     t.uses = uses
     t.growth_rates = bool(meta.get("growth_rates", False))
+    t.draw_ranges = bool(meta.get("draw_ranges", False))
     for key, dflt in (("wave_kyr", WAVE_KYR), ("portal_open_kyr", PORTAL_OPEN_KYR), ("portal_drift_kmkyr", PORTAL_DRIFT_KMKYR)):
         setattr(t, key, float(meta.get(key, dflt)))
         if getattr(t, key) < 0 or (key != "portal_drift_kmkyr" and getattr(t, key) <= 0):
@@ -1273,7 +1275,7 @@ def to_raw(t: Tree) -> dict:
                      "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
                      "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
-                     "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "wave_kyr": t.wave_kyr,
+                     "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "draw_ranges": t.draw_ranges, "wave_kyr": t.wave_kyr,
                      "portal_open_kyr": t.portal_open_kyr, "portal_drift_kmkyr": t.portal_drift_kmkyr, "band_rounds": t.band_rounds,
                      **({"reputation": t.reputation} if t.reputation else {}),
                      **({"animals": t.animals} if t.animals is not None else {}),

@@ -170,6 +170,7 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     out = O.save(h, res, pres, name="test peoples")
     run = json.loads((out / "run.json").read_text())
     assert run["meta"]["phase"] == "lineages" and run["frames"][-1]["t"] == 0
+    assert run["meta"]["draw_ranges"] is False and run["meta"]["range_draws"] == {}  # (PW-1383: off by default)
     assert [l["id"] for l in run["meta"]["lineages"]] == [l.id for l in h.lines]
     _, arr = T.load_frames(out, ("peoples",))
     assert arr["peoples"].shape[0] == len(run["frames"])
@@ -2842,6 +2843,48 @@ def test_rich_wild_land_resists_farming(faketz):
     h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
     _, sf, *_ = h.ladder.line(h.idx["farm"], (True, False, -1.0, -1.0), None)
     assert np.allclose(sf[fish == 0], 1.0) and (sf[fish == 1] < 0.5).all()
+
+
+def test_published_ranges_are_optional_seeded_draws(faketz):
+    """PW-1383: meta.draw_ranges draws the ladder's sourced numbers from their published ranges (ranges.py), seeded by the peoples
+    seed. Off (the default): the fixed constants and the very same densities. On: inside the ranges, the same for a seed, others differ."""
+    from planet.lineages import ladder as LA, ranges as RG
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    n = ps.grid.n
+    rng = np.random.default_rng(3)
+    ps.graze_npp = rng.uniform(0.1, 2.0, n) * LA.GRAZE_REF
+    ps.npp = rng.uniform(0.1, 2.0, n) * LA.NPP_REF
+    goods = {"fertile": rng.uniform(0, 1, n), "grazing": rng.uniform(0, 1, n), "fish": rng.uniform(0, 1, n)}
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+
+    def build(seed, on):
+        raw = {"meta": {"seed": seed, **({"draw_ranges": True} if on else {})}, "lineage": [
+            {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+            {"id": "farm", **base, "way": "farmer"}]}
+        return H.History(SP.parse(raw), ps, 1, goods=goods)
+
+    def dens(h):
+        return [h.ladder.line(h.idx["farm"], t, None)[0] for t in ((True, True, -1.0, -1.0, 2.0), (True, True, 2.0, 1.0, 5.0))]
+
+    off, off2, on7, on7b, on8 = build(7, False), build(7, False), build(7, True), build(7, True), build(8, True)
+    assert off.ladder.drawn == {} and off.ladder.v == {"forager_pow": LA.FORAGER_POW, "fish_top": LA.FISH_TOP, "garden": LA.GARDEN,
+                                                       "plough": tuple(LA.PLOUGH), "nomad": LA.NOMAD, "rich_t": LA.RICH_T}
+    assert all(np.array_equal(a, b) for a, b in zip(dens(off), dens(off2)))
+    d = on7.ladder.drawn
+    assert set(d) == set(RG.RANGES) and all(r.lo <= d[k] <= r.hi for k, r in RG.RANGES.items())
+    assert on7.ladder.v["plough"] == (d["plough_0"], d["plough_1"], d["plough_2"]) and d["plough_0"] < d["plough_1"] < d["plough_2"]
+    assert on7.ladder.drawn == on7b.ladder.drawn and all(np.array_equal(a, b) for a, b in zip(dens(on7), dens(on7b)))
+    assert on8.ladder.drawn != d
+    assert not all(np.array_equal(a, b) for a, b in zip(dens(on7), dens(off)))
+    raw = _raw()
+    raw["meta"]["draw_ranges"] = True
+    h2, res2, pres2 = H.simulate(SP.parse(raw), ps, tries=1)
+    run2 = json.loads((O.save(h2, res2, pres2, name="test draws") / "run.json").read_text())  # (the run says which numbers it drew)
+    assert run2["meta"]["draw_ranges"] is True and run2["meta"]["tree"]["meta"]["draw_ranges"] is True
+    assert run2["meta"]["range_draws"] == {k: round(x, 6) for k, x in RG.draw(2).items()}  # (the tree's seed is 2)
+    seeds = [RG.draw(s) for s in range(40)]  # (every name moves across seeds, and stays in range)
+    assert all(len({round(x[k], 9) for x in seeds}) > 30 for k in RG.RANGES)
+    assert all(r.lo <= x[k] <= r.hi for x in seeds for k, r in RG.RANGES.items())
 
 
 def test_nomads_and_settled_compete_less(faketz):

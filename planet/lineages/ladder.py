@@ -3,6 +3,10 @@ rich the land is, times a small kind factor. Nothing here knows a people's name.
 
     density(cell) = kind x sum over the ways of life of (the share of the people living that way there) x (that way's rung there)
 
+**Published ranges (PW-1383).** Where a rung's number has a published range, ranges.py holds it beside its source (and lists what has none),
+and `meta.draw_ranges = true` draws the number from it, seeded by the peoples seed (Ladder.v, Ladder.drawn). Off by default: the constants
+below are used as they are.
+
 **The rungs** (docs/review/peoples/density-ladder/ladder.md has every source, read in lane 130 and re-checked). Each rung's number is
 the people's *mean* over the land it holds at the reference land quality (Q1 A), so a rung reads a land layer:
 (layer / reference) ** power, power 1.3 for foragers (Binford's fit, Q3 C) and 1.0 elsewhere.
@@ -47,6 +51,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from . import ranges as RG
 from .gridops import nbr_reduce
 from .spread import EST
 
@@ -124,12 +129,12 @@ def is_hold(l) -> bool:
     return "miner" in l.traits and "subterranean" in l.traits
 
 
-def rich_keep(rich: np.ndarray, known: float) -> np.ndarray:
+def rich_keep(rich: np.ndarray, known: float, rich_t: float | None = None) -> np.ndarray:
     """PW-1385 A: the part of a cell's farmable share a people that has known crops for `known` kyr farms, from how rich the wild is
     there over ordinary foraging (rich = the wild rung / the land's own forager rung, at least FORAGER: 1 where nothing is richer than plain
     foraging). 1 on ordinary land; half where the excess richness is RICH_HALF x (1 + known / RICH_T); less beyond, as its RICH_POW
     power. So rich land takes up farming slowly, and the richest waters stay with foragers or fishers for millennia."""
-    x = np.maximum(rich - 1.0, 0.0) / (RICH_HALF * (1.0 + max(known, 0.0) / RICH_T))
+    x = np.maximum(rich - 1.0, 0.0) / (RICH_HALF * (1.0 + max(known, 0.0) / (RICH_T if rich_t is None else rich_t)))
     return 1.0 / (1.0 + x ** RICH_POW)
 
 
@@ -158,6 +163,14 @@ class Ladder:
         self.people = np.array([not (l.megafauna or l.overlay) for l in h.lines])
         self.thin = np.ones((L, n)) if self.ok else None  # (PW-1382: a den people's density follows the den ground: den_thin)
         self.state: dict[int, tuple] = {}
+        # (PW-1383: the ranged numbers. The module constants are the fixed values; with meta.draw_ranges each is drawn from its published
+        # range, seeded by the peoples seed: ranges.py. self.drawn holds the draws ({} when off), recorded in the run's metadata)
+        self.v = {"forager_pow": FORAGER_POW, "fish_top": FISH_TOP, "garden": GARDEN, "plough": tuple(PLOUGH), "nomad": NOMAD, "rich_t": RICH_T}
+        self.drawn: dict[str, float] = {}
+        if getattr(h.tree, "draw_ranges", False):
+            d = self.drawn = {k: round(x, 6) for k, x in RG.draw(h.tree.seed).items()}
+            self.v.update(forager_pow=d["forager_pow"], fish_top=d["fish_top"], garden=d["garden"], nomad=d["nomad"], rich_t=d["rich_t"],
+                          plough=(d["plough_0"], d["plough_1"], d["plough_2"]))
         self.last = None
         self.era_stage = ERA_STAGE.get(h.tree.era, 2)
         self.rung = np.zeros((L, n), np.int8) if self.ok else None  # (each line's main rung per cell, RUNGS index)
@@ -219,8 +232,9 @@ class Ladder:
         """(density per cell, farm share, herd share, main rung per cell) of line k with tech t."""
         cult, herd, lvl, irr = t[:4]
         known = t[4] if len(t) > 4 else 0.0  # (kyr it has known crops: PW-1385 A)
-        forage = FORAGER * self.fa ** FORAGER_POW
-        fish = FISH_TOP * np.clip((self.ff - FISH_MIN) / (1.0 - FISH_MIN), 0, 1)
+        v = self.v
+        forage = FORAGER * self.fa ** v["forager_pow"]
+        fish = v["fish_top"] * np.clip((self.ff - FISH_MIN) / (1.0 - FISH_MIN), 0, 1)
         wild = np.maximum(forage, fish)
         rung_w = np.where(fish > forage, 1, 0).astype(np.int8)
         raid = None
@@ -228,18 +242,18 @@ class Ladder:
             raid = RAID_CAP * settled_near / (settled_near + RAID_HALF)
             wild = wild / (1.0 - raid)
             rung_w = np.where(raid > 0.1, 8, rung_w).astype(np.int8)
-        nomad = NOMAD * self.fg
+        nomad = v["nomad"] * self.fg
         wild0 = np.maximum(forage, fish)  # (the wild before any raids: what the land itself feeds)
         sf = self.farmable * (DEN_FARM_W if self.den[k] else 1.0) if cult else np.zeros_like(forage)
         if cult:  # (PW-1385 A: rich wild land resists farming)
-            sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known)
+            sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known, v["rich_t"])
         sh = (1.0 - sf) * self.grazable * herd_keep(nomad, wild0) if herd else np.zeros_like(forage)
         if cult:
             if lvl >= 0:
-                rain = np.minimum(_interp_stage(lvl, (0, 1, 2), PLOUGH) * self.fa, PLOUGH_TOP)
+                rain = np.minimum(_interp_stage(lvl, (0, 1, 2), v["plough"]) * self.fa, PLOUGH_TOP)
                 rr = 3
             else:
-                rain = GARDEN * self.fa
+                rain = v["garden"] * self.fa
                 rr = 2
             farm = rain
             if irr >= 0:
