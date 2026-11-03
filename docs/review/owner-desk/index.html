@@ -72,10 +72,40 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <h1>Owner's Desk</h1>
   <p class="lede">Nothing needs a decision from you right now. Your answers from this afternoon are on the tickets;
 your temperature question is answered below. The religion views wait for you tonight.</p>
-  <nav class="toc"><a href="#answers">Your question</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <nav class="toc"><a href="#answers">Your questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
-<h2 id="answers">"0.6 °C warmer than what?"</h2>
+<h2 id="answers">Your questions</h2>
+<div class="card" id="l9"><div class="id">WHY LEVEL 9 FROM SCRATCH NEEDS SO MUCH MEMORY, AND WHAT RUNS ON ONE CORE (PW-801, PW-1389, PW-1390)</div>
+<p><b>In plain words:</b> most of the memory isn't the planet, it's bookkeeping we can trim. The time is the real wall.</p>
+<p>Today an L9 run from scratch would need roughly 110–160 GB at its peak (an estimate: the measured L7 figure, 9.9 GB, times 16 for two
+levels). About three quarters of that is avoidable, and the fixes don't change the worlds at all:</p>
+<ul>
+<li><b>Viewer frames, ~38 GB per Gyr at L9, doubled at the save.</b> Every frame of the run is held in memory until the end and then copied
+once more to write it out (PW-801). Writing each frame to disk as it's made removes this.</li>
+<li><b>Empty plate slots, ~19 GB.</b> Each plate keeps a whole-planet copy of its crust in 48 fixed slots, but in a measured run only 14 slots
+were in use and about 2% of those cells held real crust. That's 90% of a run's memory (PW-1389).</li>
+<li><b>Checkpoint copies, ~22 GB for a moment every 100 Myr.</b> The run copies its whole state, empty slots included, before trimming it (PW-1390).</li>
+</ul>
+<p>With those three fixed, an L9 run might fit in 10–20 GB (estimate). The planet's own fields are only about 3–5 GB at L9.</p>
+<p><b>Why it's slow, and what can't be split across cores:</b></p>
+<ul>
+<li><b>The time steps.</b> Each 2 Myr step needs the one before it, so they can't run side by side; only separate worlds can.</li>
+<li><b>River and lake filling</b> works outward from the lowest point in strict order. Parallel versions exist but break ties
+differently, so rivers would come out slightly different.</li>
+<li><b>The ocean gyres' solver</b> sweeps east to west, and that order is part of the method.</li>
+<li>Some plate bookkeeping is kept in order on purpose, so that runs repeat exactly.</li>
+<li>Several solvers (winds, gyres, rain, sea-floor creep) need more passes on a finer grid, so cost grows about 6–10× per level
+against 4× the cells. An L9 Gyr would take 1–2+ days (estimate).</li>
+</ul>
+<p><b>The cheaper path you already have:</b> simulate at L7 and refine the finished moment to L9. That's measured at 38 minutes and 38.8 GB
+(<code>docs/review/refine-l8/report.md</code>), or the land zoom for regions. <i>My lean:</i> the three memory fixes are cheap and change
+nothing, so I'd do them when a lane is free, starting with the viewer frames (it also lets an L7 run fit on an 8 GB laptop). I wouldn't
+pursue L9 from scratch beyond that. Full write-up: <code>docs/review/speed/l9-memory.md</code>. I couldn't find the earlier "bonkers"
+estimate written down; it was most likely the L7 figure times 16.</p>
+</div>
+
+<h3>"0.6 °C warmer than what?"</h3>
 <div class="card" id="dt"><div class="id">WHAT THE CLIMATE TESTS COMPARE (PW-1364)</div>
 <p><b>In plain words:</b> two different things, and I ran them together.</p>
 <ul>
@@ -119,8 +149,7 @@ not the plants.</td></tr>
 and 5 °C in winter, compared with observed air temperatures (NCEP). Since the rain fix, that extra warmth makes the area rain too much and takes snow off
 the ice sheets. First a written diagnosis with sources, then small tests, then the 36-world test. It should take back most of the 0.6 °C the rain fix
 added, measured against the same worlds on the code before that fix.</td></tr>
-<tr><td>Side reports</td><td>Two reports you asked for, both read-only: what in the simulation runs on one core and why a level-9 world would need so much memory,
-and a fresh-eyes review of the whole project with backlog suggestions.</td></tr>
+<tr><td>Side report</td><td>A fresh-eyes review of the whole project with backlog suggestions, read-only. (The level-9 memory report is in; see Your questions.)</td></tr>
 <tr><td>141 · rich wild land resists farming</td><td>Your pick A (PW-1385): where wild food feeds each person well above the usual forager level (salmon coasts, acorn woods),
 a people takes up farming there much more slowly or farms only part of it. Sources first (Pacific Northwest, California and any others the
 literature supports), then the build, then before-and-after forager shares on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
@@ -184,5 +213,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v108 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v110 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
