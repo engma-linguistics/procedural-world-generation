@@ -1,7 +1,7 @@
 """usage: tools/hard_bar.py DIR_ROOT LEVEL (6|7) -> lane 92's hard-bar tally over DIR_ROOT/m_r<roll>_<tag>/seed*_L<LEVEL>.json.gz
-(paired.sh output). Per draw: the pass (passrate4.judge bar + finish_moment, as pjudge), and the four hard failures:
-- frozen: passrate4.judge frozen (40%+ of the land under ice inside ice_criteria.hard_window); frozen_any is also shown
-- boiled: passrate4.judge hell (dT median > +10.5 or max > +15.5 C)
+(paired.sh output). Per draw: the pass (tools/judge.py: the bar + finish_moment, as the paired judge), and the four hard failures:
+- frozen: judge.judge frozen (40%+ of the land under ice inside ice_criteria.hard_window); frozen_any is also shown
+- boiled: judge.judge hell (dT median > +10.5 or max > +15.5 C)
 - ocean loss (operational definition, no owner-set number exists): sea-ice-free ocean share lost, i.e. the ocean's share
   of the surface (1 - land) after 300 Myr below 40% at any step (Earth 71%; the sim has no sink for ocean water, so this
   is the only way it can show) or the mean sea level beyond +-1000 m of the start
@@ -9,19 +9,14 @@
   vegetation._gstar(global mean T of that step) / 0.7 (the plant code's ci = 0.7 Ca). Secondary rows: pCO2 < 100 ppm
   (lane 92's line), < 50 / < 60 ppm, and 8-fold fall in <= 50 Myr without recovery. End pCO2 outside 180-600 is reported separately
 Harness only; no threshold of tools/ is changed."""
-import io, sys
-from contextlib import redirect_stdout
+import sys
 from pathlib import Path
 import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from planet import climate, highlights as H, vegetation as V  # noqa
 from tools import ice_criteria as C  # noqa
-with redirect_stdout(io.StringIO()):
-    _a, sys.argv = sys.argv, [sys.argv[0]]
-    sys.path.insert(0, str(ROOT / "docs/review/base-climate/v1-finish-12"))
-    import passrate4 as P  # noqa
-    sys.argv = _a
+from tools import judge as J  # noqa
 root, lvl = Path(sys.argv[1]), sys.argv[2]
 rows = []
 for p in sorted(root.glob(f"m_r*/seed*_L{lvl}.json.gz")) + sorted(root.glob(f"m_r*_*/seed*_L{lvl}.json.gz")):
@@ -30,10 +25,8 @@ seen = set()
 for p in sorted(root.glob(f"m_r*_*/seed*_L{lvl}.json.gz")):
     if p in seen: continue
     seen.add(p)
-    raw = C.load(str(p)); s = C.series(raw)
-    bar = P.judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"], s["star"])
-    steps = [r for r in raw["steps"] if r["t"] > 0]
-    fm = H.finish_moment([{"t": r["t"], "stats": r} for r in steps], float(raw["params"].get("finish_window", 10.0)))
+    raw = C.load(str(p))
+    s, bar, steps, fm = J.judge_draw(raw)
     late = [r for r in steps if r["t"] >= 300]
     pc = climate.PCO2_BALANCE * np.exp(np.array([r["co2"] for r in late]))
     tl = np.array([r["t"] for r in late]); i0 = int(pc.argmin())

@@ -12,7 +12,7 @@ spin  runs CODE_DIR's simulation of tools/ice_diag.py's draw (seed, level, --set
       the Recorder's records so far, the frozen references and the spin-up's w_pot).
 cont  continues FORK_BASE (the path without .ckpt / .json.gz) with CODE_DIR's code (which may be another arm's) to the
       run's end, with --set applied on top of the spin's parameters (only from the fork on), and writes
-      OUT_DIR/seed<S>_L<l>.json.gz in tools/ice_diag.py's layout (what pjudge.py and tools/hard_bar.py read): the spin's
+      OUT_DIR/seed<S>_L<l>.json.gz in tools/ice_diag.py's layout (what tools/judge.py paired and tools/hard_bar.py read): the spin's
       records, then the continuation's. A run continued with the spin's own code and no --set is bit-identical to the
       unforked ice_diag run (Simulation.state() is complete: tests/test_state.py; checked in tests/test_fork_judge.py).
       If CODE_DIR's Simulation.STATE has names the spin's state lacks (a candidate that adds state), it stops, unless

@@ -61,7 +61,7 @@ count as a check (coordinator ruling, PW-994).
    root, so arms launched into the same root share it; `THREADS` numba threads each (default 3); needs
    `free -g` ≥ `MINFREE` (40) GB). ~15 min per run at load ~25; 72 runs for two arms ≈ 2 h at 10 at once.
    A draw with a log is skipped, so delete the log of a draw that died and launch again to fill the gap.
-3. Judge: `uv run python pjudge.py <scratch>/judge <armA> <armB> [--table] [--json out.json]`.
+3. Judge: `uv run python tools/judge.py paired <scratch>/judge <armA> <armB> [--table] [--json out.json]`.
    - Per measure: each arm's median, the median of the paired B − A differences, its bootstrap 95% interval
      (4000 resamples of the draws) and a two-sided sign test. "moved" (*) = the interval excludes 0.
    - Measures: end T and moment T (true mean − 13.8 C), late dT, late CO2, land %, the sink and source references
@@ -82,5 +82,5 @@ count as a check (coordinator ruling, PW-994).
 
 **Optional, not adopted: the forked judge** (lane 144). `paired_fork.sh` + `fork.py` run each draw once to 300 Myr
 (REF_FREEZE) and continue both arms from that state, so the arms share the carbon-cycle yardstick; outputs in
-this layout for `pjudge.py`. Exact, but no calmer on the hard bar at the cold tail. How to run it, what it misses and
+this layout for `tools/judge.py paired`. Exact, but no calmer on the hard bar at the cold tail. How to run it, what it misses and
 the validation: `../fork-judge/round1.md`.

@@ -39,11 +39,11 @@ SPINUP = 300.0  # Myr (owner, 2026-10-21: the first 300 Myr are a warm-up)
 EVERY = 4.0  # Myr: the climate updates
 ICEHOUSE_SL = -20.0  # m of sea level from ice
 ICEHOUSE_LAND = 0.01  # (reported only: share of the land under ice)
-# The owner's three ice terms (2026-10-30, PW-1091); passrate4.judge reports all three:
+# The owner's three ice terms (2026-10-30, PW-1091); tools/judge.py judge reports all three:
 #   icehouse        permanent polar ice sheets (Earth today): the ice holds at least -ICEHOUSE_SL m of sea level;
 #                   a world never in one for ICEHOUSE_NEVER_PCT % of the time is "never-ice" (reported)
 #   glacial maximum an ice-age peak, roughly Earth at its coldest (the Last Glacial Maximum, ~25% of land): the share
-#                   of land under ice reaches GLACIAL_MAX_LAND (the same 25% as passrate4's LAND_ICE_LGM)
+#                   of land under ice reaches GLACIAL_MAX_LAND (the same 25% as judge.py's LAND_ICE_LGM)
 #   frozen over     FROZEN_OVER_LAND of the land (40%) or more under ice. A fail for an Earth-like world, and a loud
 #                   warning that the climate is out of whack, but only in the hard-bar window (hard_window): the
 #                   stretch where the star is near its final brightness (owner 2026-10-30): its forcing within
