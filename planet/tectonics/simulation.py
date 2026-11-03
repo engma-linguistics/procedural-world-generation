@@ -202,8 +202,8 @@ class Simulation:
     def load_state(self, state: dict):
         """Continue from a state() taken from a simulation with the same
         grid, seed, params and dt."""
-        for name in self.STATE:
-            setattr(self, name, copy.deepcopy(state[name]))
+        for name in self.STATE:  # (the plates' crust on mapped memory, only the live slots': Plates.mapped_copy)
+            setattr(self, name, state[name].mapped_copy() if name == "plates" else copy.deepcopy(state[name]))
         self._world_view()
 
     @classmethod
@@ -267,6 +267,7 @@ class Simulation:
         self._world_view()
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
+        self.plates.release_dead()  # (after tend: re_home reads a dead plate's swell under its volcanoes)
 
         # 6. climate, when due (earth.climate_due), on the ground as the events
         # left it: a keyframe shows the climate of the ground it shows, and
