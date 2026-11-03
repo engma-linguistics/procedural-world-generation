@@ -11,7 +11,7 @@ impact: med
 found_by: owner
 blocked_by: []
 relates: [PW-1325, PW-443]
-refs: [planet/orbit.py, docs/review/base-climate/summer-heat/diagnosis.md, "planet/climate.py::_summer_split"]
+refs: [planet/orbit.py, docs/review/base-climate/summer-heat/diagnosis.md, "planet/climate.py::_summer_split", docs/review/climate/eccentricity/round1.md, "planet/icemass.py::cycle_dq", "planet/finish.py::orbit_dt", "planet/climate.py::_orbit", "planet/timezoom/params.py::TZParams", tools/hard_bar.py]
 created: 2026-11-02
 updated: 2026-11-02
 ---
