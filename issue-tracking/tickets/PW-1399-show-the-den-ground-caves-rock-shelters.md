@@ -1,4 +1,5 @@
 ---
+id: PW-1399
 title: Show the den ground (caves, rock shelters, ground to dig) as a viewer layer
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 143
 blocked_by: []
 relates: [PW-1382]
 refs: [planet/lineages/dens.py, "planet/lineages/dens.py::fitness", "planet/lineages/land.py::_make_goods", "planet/lineages/ladder.py::den_thin", viewer/lineages.html, docs/review/peoples/dens/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,3 +27,6 @@ ramp 0..1, with a tooltip naming the best den kind in the cell (karst, lava tube
 soil). dens.fitness would need to return which part won (an argmax) for the tooltip.
 - [ ] a den-ground layer the owner can toggle in the viewer
 - [ ] the tooltip names what kind of den ground the cell has
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-den-ground-viewer-layer.md (found by lane 143).
