@@ -21,7 +21,10 @@ the people's *mean* over the land it holds at the reference land quality (Q1 A),
 **Who lives which way where (Q2 A): the land decides.** Once a people knows cultivation (it has taken up a staple crop, crops.py),
 its farmable cells farm (the share FARM_SHARE of the fertile good); once it knows herding (a herd animal, animals.py), grazing land
 outside the fields is herded; the rest stays foraging (or fishing where the waters are rich). So foragers persist on marginal land
-and farmers spread with the knowledge. Knowing is slower for kinds little inclined to farm (PW-1373 B): a crop must stand on a fifth of
+and farmers spread with the knowledge. **Rich wild land resists farming (PW-1385 A):** where the wild feeds well above the land's
+ordinary foraging (rich waters), a people farms only part of the farmable land, taking up more of it over the millennia it has known
+crops (rich_keep); the richest waters stay with foragers and fishers, as on the salmon and estuary coasts of North America. Herding
+takes the grazing land where it feeds more people than the wild there (herd_keep). Knowing is slower for kinds little inclined to farm (PW-1373 B): a crop must stand on a fifth of
 a people's land for crops.LAG_KYR / its propensity before the people takes it up (hunters ~10x slower than farmers; meat-eaters lean
 to herds, animals.DIET_LEAN). Den peoples farm at DEN_FARM_W of that (rare, not forbidden, Q4 A).
 
@@ -79,6 +82,17 @@ RAID_REACH = 2  # cells (neighbour rings) a den people raids over
 REFRESH_KYR = 0.5  # the ladder is redone at least this often in the recent epochs (raids and the plough's stage move with time)
 ERA_STAGE = {"stone age": -1, "bronze age": 0, "classical": 1, "medieval": 2, "renaissance": 2, "industrial": 2}  # the plough stage an era allows
 RUNGS = ("forager", "fisher", "garden", "plough", "irrigation", "nomad", "agro_pastoral", "hold", "raider")
+# PW-1385 A, rich wild land resists farming (docs/review/peoples/density-ladder/rich-foragers.md has the sources). A cell's richness
+# = its wild rung over the land's own forager rung, never taken below the usual forager level FORAGER (so poor land's rivers do not read
+# as rich; 1 off rich waters). Of its farmable share a people knowing crops farms
+# 1 / (1 + x^RICH_POW), x = (richness - 1) / (RICH_HALF x (1 + years it has known crops / RICH_T)).
+RICH_HALF = 3.0  # the excess richness half farmed when crops are new (a judgement on the cases: Calusa ~0.8/km2 over a whole domain
+# (Worth 2006), ~7x the forager fit there, still unfarmed ~0.55 kyr after maize next door; Ertebolle beside farming ~1 kyr, then farmed)
+RICH_T = 1.0  # kyr over which that half point grows by RICH_HALF (Ertebolle ~1 kyr beside farmers, Gron NSF; Yayoi rice reached
+# southern Tohoku ~0.6 kyr after Kyushu, Mizoguchi): moderately rich land farms within ~1-1.5 kyr, the richest waters hold for millennia
+RICH_POW = 2.0  # the steepness (a judgement: from 90% to 10% farmed across a ninefold richness)
+KNOWN_STEP, KNOWN_CAP = 0.5, 15.0  # kyr: the years a people has known crops, in steps (redo a line only when they move) and capped
+HERD_POW = 2.0  # PW-1385: herding goes where it feeds more people than the wild, smoothly (a judgement: half where they feed the same)
 FREE_RANGING = 0.8  # (the kind factor the dnd preset gives free-ranging kinds, leonin and tabaxi; den peoples 1.2: samples/dnd.toml)
 
 
@@ -98,6 +112,22 @@ def is_den(l) -> bool:
 def is_hold(l) -> bool:
     """A people of holds (Q6 A): miners living underground (dwarves)."""
     return "miner" in l.traits and "subterranean" in l.traits
+
+
+def rich_keep(rich: np.ndarray, known: float) -> np.ndarray:
+    """PW-1385 A: the part of a cell's farmable share a people that has known crops for `known` kyr farms, from how rich the wild is
+    there over ordinary foraging (rich = the wild rung / the land's own forager rung, at least FORAGER: 1 where nothing is richer than plain
+    foraging). 1 on ordinary land; half where the excess richness is RICH_HALF x (1 + known / RICH_T); less beyond, as its RICH_POW
+    power. So rich land takes up farming slowly, and the richest waters stay with foragers or fishers for millennia."""
+    x = np.maximum(rich - 1.0, 0.0) / (RICH_HALF * (1.0 + max(known, 0.0) / RICH_T))
+    return 1.0 / (1.0 + x ** RICH_POW)
+
+
+def herd_keep(nomad: np.ndarray, wild: np.ndarray) -> np.ndarray:
+    """PW-1385: the part of a cell's grazable share a people that knows herding herds: whichever of herding and foraging feeds more
+    there, smoothly (half where they feed the same; HERD_POW the steepness; rich_foragers.md)."""
+    a, b = nomad ** HERD_POW, wild ** HERD_POW
+    return a / np.maximum(a + b, 1e-30)
 
 
 def _interp_stage(t: float, steps, vals) -> float:
@@ -144,8 +174,8 @@ class Ladder:
 
     # -- what a people knows ----------------------------------------------------------------------
     def tech(self, k: int, ago: float) -> tuple:
-        """(knows cultivation, knows herding, plough stage level 0..2 as a float or -1, irrigation kyr since or -1), from the
-        history's crops and animals."""
+        """(knows cultivation, knows herding, plough stage level 0..2 as a float or -1, irrigation kyr since or -1, kyr since it knew
+        cultivation in KNOWN_STEP steps up to KNOWN_CAP, 0 if not), from the history's crops and animals."""
         h = self.h
         cult = herd = None
         plough = None
@@ -166,12 +196,14 @@ class Ladder:
         if cult is not None and self.era_stage >= 0 and cult - IRR_LAG >= ago:
             irr = cult - IRR_LAG - ago
         q = lambda x: round(x * 4) / 4  # noqa: E731  (quarter steps: redo a line only when its tech moves)
-        return (cult is not None, herd is not None, q(lvl), q(irr) if irr >= 0 else -1.0)
+        known = round(min(cult - ago, KNOWN_CAP) / KNOWN_STEP) * KNOWN_STEP if cult is not None else 0.0
+        return (cult is not None, herd is not None, q(lvl), q(irr) if irr >= 0 else -1.0, known)
 
     # -- the rungs per cell -----------------------------------------------------------------------
     def line(self, k: int, t: tuple, settled_near: np.ndarray | None):
         """(density per cell, farm share, herd share, main rung per cell) of line k with tech t."""
-        cult, herd, lvl, irr = t
+        cult, herd, lvl, irr = t[:4]
+        known = t[4] if len(t) > 4 else 0.0  # (kyr it has known crops: PW-1385 A)
         forage = FORAGER * self.fa ** FORAGER_POW
         fish = FISH_TOP * np.clip((self.ff - FISH_MIN) / (1.0 - FISH_MIN), 0, 1)
         wild = np.maximum(forage, fish)
@@ -181,8 +213,12 @@ class Ladder:
             raid = RAID_CAP * settled_near / (settled_near + RAID_HALF)
             wild = wild / (1.0 - raid)
             rung_w = np.where(raid > 0.1, 8, rung_w).astype(np.int8)
+        nomad = NOMAD * self.fg
+        wild0 = np.maximum(forage, fish)  # (the wild before any raids: what the land itself feeds)
         sf = self.farmable * (DEN_FARM_W if self.den[k] else 1.0) if cult else np.zeros_like(forage)
-        sh = (1.0 - sf) * self.grazable if herd else np.zeros_like(forage)
+        if cult:  # (PW-1385 A: rich wild land resists farming)
+            sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known)
+        sh = (1.0 - sf) * self.grazable * herd_keep(nomad, wild0) if herd else np.zeros_like(forage)
         if cult:
             if lvl >= 0:
                 rain = np.minimum(_interp_stage(lvl, (0, 1, 2), PLOUGH) * self.fa, PLOUGH_TOP)
@@ -197,7 +233,6 @@ class Ladder:
                 farm = farm / (1.0 - self.trade) * (1.0 + MUSHROOM_X)
         else:
             farm, rr = np.zeros_like(forage), 2
-        nomad = NOMAD * self.fg
         sw = 1.0 - sf - sh
         d = sf * farm + sh * nomad + sw * wild
         rung = rung_w.copy()
@@ -235,7 +270,7 @@ class Ladder:
         for k, l in enumerate(h.lines):
             if not self.people[k] or l.marine:
                 continue
-            t = (False, False, -1.0, -1.0) if deep else self.tech(k, ago)
+            t = (False, False, -1.0, -1.0, 0.0) if deep else self.tech(k, ago)
             if not due and self.state.get(k) == t:
                 continue
             self.state[k] = t

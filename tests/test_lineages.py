@@ -2819,6 +2819,31 @@ def test_people_density_reads_the_ladder(faketz):
     assert np.allclose(h._dmap[fa], 1.2 * lad.line(fa, lad.state[fa], None)[0])  # (x the kind factor)
 
 
+def test_rich_wild_land_resists_farming(faketz):
+    """PW-1385 A: where the wild feeds far more than the land's ordinary foraging (rich waters), a people knowing crops farms only
+    part of the farmable land, more of it the longer it has known crops; ordinary land farms in full. Herding goes
+    where it feeds more than the wild."""
+    from planet.lineages import ladder as LA
+    assert np.allclose(LA.rich_keep(np.ones(3), -1.0), 1.0)  # (ordinary land: all farmed)
+    r = np.array([1.0 + LA.RICH_HALF, 1.0 + 3 * LA.RICH_HALF])
+    k0, k2 = LA.rich_keep(r, -1.0), LA.rich_keep(r, 2.0)
+    assert k0[0] == pytest.approx(0.5) and k0[1] < k0[0] and (k2 > k0).all()  # (half at the half point; more farmed with time)
+    assert LA.herd_keep(np.array([1.0]), np.array([1.0]))[0] == pytest.approx(0.5)
+    assert LA.herd_keep(np.array([1.0]), np.array([0.01]))[0] > 0.99
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"parents": ["stem"], "at": "1 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "farm", **base, "way": "farmer"}]}
+    n = ps.grid.n
+    ps.graze_npp = np.full(n, LA.GRAZE_REF)
+    ps.npp = np.full(n, LA.NPP_REF)
+    fish = np.where(np.arange(n) % 2 == 0, 0.0, 1.0)  # (every other cell on the richest waters)
+    h = H.History(SP.parse(raw), ps, 1, goods={"fertile": np.ones(n), "grazing": np.zeros(n), "fish": fish})
+    _, sf, *_ = h.ladder.line(h.idx["farm"], (True, False, -1.0, -1.0), None)
+    assert np.allclose(sf[fish == 0], 1.0) and (sf[fish == 1] < 0.5).all()
+
+
 def test_nomads_and_settled_compete_less(faketz):
     """Owner on PW-936: a nomadic people and a settled one share country more readily (spec.WAY_MOBILE, NOMAD_COEXIST),
     both ways; two herding peoples still compete in full."""

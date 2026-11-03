@@ -334,7 +334,7 @@ def wild_overlap(h, P) -> dict:
         dd = np.maximum(d, 1e-12)
         rows = {}
         if t[0]:
-            d1, s1 = lad.line(k, (True, False, t[2], t[3]), None)[:2]
+            d1, s1 = lad.line(k, (True, False, t[2], t[3], t[4]), None)[:2]
             farm = np.where(s1 > 0, (d1 - (1 - s1) * wild) / np.maximum(s1, 1e-12), 0.0)
             rows["farm"] = (pc * sf * farm / dd, wild >= WILD_NEAR * farm)
         if t[1]:
