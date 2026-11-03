@@ -1,16 +1,19 @@
 ---
+id: PW-1397
 title: "Rich wild land: should the plough also speed its farming up (needs a per-hour labour source)?"
 type: task
 status: needs-decision
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane 141
 blocked_by: []
 relates: [PW-1385, PW-1373]
 refs: ["planet/lineages/ladder.py::rich_keep", "planet/lineages/ladder.py::Ladder.line", docs/review/peoples/density-ladder/rich-foragers.md, docs/review/peoples/density-ladder/rich_foragers.py, "tools/peoples_robust.py::forage_land"]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 
 Lean: A now; B only if Daniel finds plough peoples leaving too much coast wild in the viewer.
 - [ ] a per-hour (or per-worker) labour source for plough vs hoe farming, read in full, if B is chosen
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-rich-hold-plough-gain.md (found by lane 141).

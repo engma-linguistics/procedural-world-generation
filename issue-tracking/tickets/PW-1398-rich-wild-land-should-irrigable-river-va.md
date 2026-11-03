@@ -1,16 +1,19 @@
 ---
+id: PW-1398
 title: "Rich wild land: should irrigable river valleys in dry land be exempt from the foragers' hold?"
 type: task
 status: needs-decision
 parent: null
 milestone: v2
-subsystem: timezoom
+subsystem: peoples
 effort: s
 impact: low
 found_by: lane 141
 blocked_by: []
 relates: [PW-1385]
 refs: ["planet/lineages/ladder.py::rich_keep", "planet/lineages/ladder.py::Ladder.line", "planet/lineages/ladder.py::WATER_MAX", docs/review/peoples/density-ladder/rich-foragers.md, docs/review/peoples/density-ladder/rich_foragers.py, docs/review/peoples/density-ladder/wild_overlap.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Options:
 - C: weigh the hold by the farm's own yield (the farm rung over the plough rung), which needs a sourced per-hour return for irrigation.
 
 Lean A for now; B is a one-line change if the viewer shows empty river valleys beside irrigating peoples.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-rich-wild-irrigated-valleys.md (found by lane 141).

@@ -174,20 +174,13 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>140 · grass roots breathe</td><td>Your D42 A (PW-1261). The 36-world test failed (strike 1, not merged). Grassland growth came down from 1.4–1.8× the field
-measurements to 1.15–1.5×, and on average temperature and CO2 didn't move. But 2 of the 36 worlds went frozen over (42.9% and 41.7% of land
-under ice; the limit is 40%), against none on the current code. Those were the two coldest worlds already (36% and 35% on the current code). Trees
-also fell 1.8 points, probably from the second part of the change, a lower fuel threshold for fires (250 → 200 g C/m², from the fire model
-GlobFIRM). <b>Each part alone, on those two worlds:</b> neither went over 40% (best 24%, worst 39.8%). Together they did, and on one world
-each part alone came out warmer than the current code while both together came out colder. That looks like chance at a thin margin: what
-decided it was whether a deep ice age ended just before or just after the 300 Myr window opens. But there's also a small real cold push (+1.4 points of
-land ice on average over the 36 worlds, compared with the same worlds on the current code). The herb change carries at least as much of it as the fire
-change. It isn't coming through the trees. The fire change is needed: without it the Mediterranean scrub stops burning at all, a real effect, not a test quirk.
-<b>Now running (140c):</b> the current code's six coldest worlds again with a nudge that changes no physics, to see whether chance alone
-can push the current code over 40% too. Then a written diagnosis of the likely real culprit: the planet's weathering yardstick is set using
-plants grown on the cold early climate. No full test until that's understood. Herds in
-warm African grassland would drop to about 0.7× Coe's measured parks. They matched before, and the remaining gap is in the herd formula,
-not the plants.</td></tr>
+<tr><td>140d · why the cold worlds are so touchy</td><td>The grass-roots change (PW-1261) is held, not merged. Two checks
+since the failed test: (1) re-running the current code's six coldest worlds with a nudge that changes no physics moved them by 3–27 points of land ice,
+and one even crossed 40% (before the measured window). So the 40% line partly reads chance. (2) The change still has a small real cold push: on all
+six worlds it stays colder than the nudged re-runs. The suspected yardstick problem turned out tiny (about 0.01 °C) and isn't worth building.
+<b>Now:</b> a written look, no code, at why the current code's coldest worlds sit only 4–7 points under the line. There's a lead: worlds whose early
+climate ran warmer end colder. Plus what carries the grass change's extra ice once grasses appear late in the run. This matters for every climate
+change, not just this one. Re-test the grass change only after that.</td></tr>
 <tr><td>142 · North Atlantic too warm</td><td>PW-1381. <b>Found:</b> the warm current that carries heat north gives up too little of it on the way. On the model, 57% of
 the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (RAPID and OSNAP, the two mooring lines across the Atlantic).
 <b>The change:</b> one exchange rate doubled (30 → 60), set from that measured heat budget, not from the area's temperature. It isn't specific to Earth.
@@ -196,9 +189,9 @@ the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (
 the seas north of Iceland are now 2.7 °C too cold (they had been right only because the current arrived too warm), and winter air is still 3.9 °C too warm.
 Both are filed. <b>Now:</b> the 36-world test, done around 7 AM.</td></tr>
 
-<tr><td>141 · rich wild land resists farming</td><td>Your pick A (PW-1385): where wild food feeds each person well above the usual forager level (salmon coasts, acorn woods),
-a people takes up farming there much more slowly or farms only part of it. Sources first (Pacific Northwest, California and any others the
-literature supports), then the build, then before-and-after forager shares on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
+<tr><td>143 · dens follow the rock</td><td>Your ruling on PW-1382: den-loving kinds (goblins, kobolds) get a modest bonus on good den ground (caves in
+limestone, lava fields, cliffs with rock shelters, soft ground to dig) but still live all over, never limited to it. Sources first, then the build, then
+each den kind's range and share on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
 </table></div>
 <p>It stays within your daytime cap: at most 32 cores and about 90 GB together. Next physics: the too-warm North
 Atlantic (PW-1381).</p>
@@ -259,9 +252,14 @@ machine, about 50 under load).</li>
 <li><b>Hunters and crops</b> (PW-1373): merged. A people learns a crop about 0.4 kyr after it arrives, divided by its leaning to farm
 (hunters ~4 kyr), and cat-folk lean to herding. Over 14 D&amp;D runs, leonin now stay hunters or herders in 7 runs (was 0), tabaxi in 6 (was 2),
 goliaths in 3 (was 1); farming kinds barely move. Write-up: <code>docs/review/peoples/density-ladder/hunters-lag.md</code>.</li>
-<li><b>Farm or forage per cell</b> (PW-1385): you picked A, rich wild land resists farming, compared per person rather than per km²; lane 141
-is on it. Crowding-driven farming (B) is filed as a look-around with a sim or three, no fix expected (PW-1388). The forager–farmer trade case
-follows A (PW-1386).</li>
+<li><b>Rich wild land resists farming</b> (PW-1385, your pick A): <b>merged</b>, all 957 tests pass. Where wild food (rich fishing, abundant game)
+feeds several times what ordinary foraging does, a people farms only part of the land, taking up more over about a thousand years. The strength is set from
+the Calusa of Florida (about 0.8 people/km², unfarmed for 550+ years beside maize farmers), and the time scale from the Baltic and Japan. Herding now takes
+grazing land only where it feeds more than the wild. <b>On the 14 D&amp;D runs, compared with the same runs on the code before:</b> people living off the wild
+0.9% → 3.2%; land led by foragers or fishers 34% → 39%; subarctic 4.5% → 15% and polar 8% → 22% of people on the wild; total people −7%. Farming kinds
+still farm 83–97% of their farmable land, and every farming kind now keeps a foraging fringe somewhere (dragonborn in 14 of 14 runs, was 8; orcs 11, was 5;
+leonin 8, was 1). No people dies out. One side effect to know about: desert farmers fall 12%, because fish-rich rivers in dry land count as rich (an exemption
+for irrigable valleys is a one-line change, filed as PW-1398; my lean is to leave it). Crowding-driven farming (B) is filed as a look-around (PW-1388).</li>
 <li><b>City goblins and kobolds</b> (PW-1369): you're right that it doesn't scale. Every minority in every town would need its own
 entry, so dozens. Removed (merged). Town minorities should come out of a towns model later, not be listed by hand.</li>
 <li><b>Dens follow the rock</b>: filed (PW-1382). Caves, rock shelters and diggable ground come from the bedrock and landforms, so den
@@ -271,5 +269,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v115 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v116 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
