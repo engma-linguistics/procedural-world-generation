@@ -76,6 +76,30 @@ your temperature question is answered below. The religion views wait for you ton
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (from lane 140d; PW-1261 waits on this)</div>
+<p><b>In plain words:</b> in its first 300 Myr each planet learns two yardsticks: how much CO2 its volcanoes normally give off and how fast
+its rocks normally weather it away. Then they're frozen for the rest of the run. They're learnt from a short stretch in which those rates
+wander, so in effect from only about five samples, and they come out a bit different every time a world is re-run. A spin-up that happened
+to run warm (more outgassing, less erosion) learns "this planet weathers little". Later the rates return to normal, the planet weathers more than
+its yardstick expects, draws its CO2 down and runs cold.</p>
+<p><b>How much it matters</b> (measured on the 36 test worlds, current code): this one number carries 1.5 °C of the 1.7 °C spread between re-runs of
+the same planet. It's also the best predictor of which worlds come near the frozen-over line. It's why a nudge that changes no physics swung a
+world by 27 points of land ice. It isn't geography and it isn't a bug in the rule; it's sampling noise in how the yardstick is learnt.
+So every climate change that cools by even a little can trip the "no world frozen over" check by re-drawing the yardstick, not by its own
+physics. That's what happened to the grass-roots change: its own cooling is about 0.1–0.15 °C.</p>
+<ol>
+<li><b>A. Learn the yardsticks over a longer stretch.</b> Sound, but weak: replaying the 36 worlds' records shows it narrows the spread only 8–16%.</li>
+<li><b>B. In climate tests, start both versions from the same spin-up.</b> The new code continues from the current code's own planet just after
+the yardsticks freeze, so the test compares the change, not a fresh yardstick. The limits (40%, the temperature range) stay exactly as they are.
+What it misses: a change's effect on the yardstick itself, which would be measured and reported separately as a number (for the grass change, about −0.13 °C).</li>
+<li><b>C. A yardstick that isn't a sample:</b> a fixed, planet-generic link between outgassing and weathering, so mountainous planets run colder
+(real geography the learnt balance cancels out). A redesign; it needs its own diagnosis first.</li>
+<li><b>D. Leave it.</b> The cold tail stays thin, and slightly cooling changes keep failing on chance.</li>
+</ol>
+<p><i>My lean:</i> B now, with the yardstick effect always reported beside it, and C on the list for a later look. I've started building B's
+test harness without switching to it (lane 144). It also checks that a world run both ways comes out identical, and how much the chance swing
+shrinks. Nothing changes how merges are judged until you pick. The grass-roots change stays parked until then.</p>
+</div>
 <div class="card" id="d44"><div class="id">D44 · THE FRESH-EYES REVIEW YOU ASKED FOR</div>
 <p><b>In plain words:</b> an agent with no history read the whole project. Its verdict: the physics is careful and well guarded, but
 <b>the cookbook is falling behind</b>. The peoples layer grows fast, while the output still answers "where does this species live"
@@ -174,13 +198,7 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>140d · why the cold worlds are so touchy</td><td>The grass-roots change (PW-1261) is held, not merged. Two checks
-since the failed test: (1) re-running the current code's six coldest worlds with a nudge that changes no physics moved them by 3–27 points of land ice,
-and one even crossed 40% (before the measured window). So the 40% line partly reads chance. (2) The change still has a small real cold push: on all
-six worlds it stays colder than the nudged re-runs. The suspected yardstick problem turned out tiny (about 0.01 °C) and isn't worth building.
-<b>Now:</b> a written look, no code, at why the current code's coldest worlds sit only 4–7 points under the line. There's a lead: worlds whose early
-climate ran warmer end colder. Plus what carries the grass change's extra ice once grasses appear late in the run. This matters for every climate
-change, not just this one. Re-test the grass change only after that.</td></tr>
+<tr><td>144 · shared spin-up test harness</td><td>Built for D45 option B, not switched on. Checks that a world run both ways is identical, and how much the chance swing on the coldest worlds shrinks. The grass-roots change (PW-1261) is parked until you pick.</td></tr>
 <tr><td>142 · North Atlantic too warm</td><td>PW-1381. <b>Found:</b> the warm current that carries heat north gives up too little of it on the way. On the model, 57% of
 the heat crossing 26.5° N is still in the water at 60° N; measured, it's 34% (RAPID and OSNAP, the two mooring lines across the Atlantic).
 <b>The change:</b> one exchange rate doubled (30 → 60), set from that measured heat budget, not from the area's temperature. It isn't specific to Earth.
@@ -269,5 +287,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v116 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v117 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

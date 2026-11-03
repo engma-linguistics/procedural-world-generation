@@ -256,3 +256,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-03: merged board tidy (b3c0d4b5); coordinator reopened PW-1216/1218 as parked needs-decision (milestone later): D31 parks, doesn't decide.
 - 2026-11-03: merged lane 141 (8c18ab01): PW-1385 A rich wild land resists farming + herd only where it out-feeds the wild; wild-fed people 0.9% -> 3.2%, total -7%, deserts' farmers -12% (irrigated-valley exemption drafted).
 - 2026-11-03: lane 140c: hard bar partly reads chaos on main's cold tail (null nudge swings 3-27 pt); herb-roots change held (small real cold push); weathering-reference fix not worth building; lane 140d diagnoses the margin. Lane 143 (PW-1382 dens) started.
+- 2026-11-03: lane 140d: cold-tail noise = learnt carbon yardstick sampling (D45 to Daniel: A longer window, B shared spin-up judges (lean), C fixed yardstick, D leave); PW-1261 parked on D45; lane 144 builds B harness without adopting it.
