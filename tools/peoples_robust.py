@@ -359,6 +359,51 @@ def wild_overlap(h, P) -> dict:
     return {"peoples": rnd(out), "biomes": rnd(by_b)}
 
 
+WILD_RUNGS = (0, 1, 8)  # (ladder.RUNGS forager, fisher, raider: a cell's people living off the wild)
+
+
+def forage_land(h, P) -> dict:
+    """PW-1385 (lane 141): where the wild still feeds people at the end. Per biome class: peopled cells, those whose people are
+    mostly on a wild rung (forager, fisher, raider: ladder.Ladder.line's main rung), all people and those on a wild rung. Per people:
+    its people, its wild-rung people and wild-led cells (Mkm2), and for a people knowing cultivation its farmable land (the fertile
+    good's share, ladder.farmable, summed over held cells, Mkm2) and the part of it farmed (ladder.sh['farm'])."""
+    from planet.lineages.spread import EST
+    from planet.lineages.history.habitat import BIOMES, biome_class
+    lad = getattr(h, "ladder", None)
+    if lad is None or not lad.ok or h._env_now is None:
+        return {}
+    bio = biome_class(h._env_now, h._tags_now)
+    n = h.grid.n
+    tot, wild = np.zeros(n), np.zeros(n)
+    kinds = {}
+    for k, l in enumerate(h.lines):
+        if l.overlay or l.megafauna or l.marine or not lad.people[k]:
+            continue
+        pc = h.population(k, P)
+        if pc.sum() <= 0:
+            continue
+        w = np.isin(lad.rung[k], WILD_RUNGS) & (pc > 0)
+        tot += pc
+        wild += np.where(w, pc, 0.0)
+        o = kinds.setdefault(h.tree.people_of(l.id), {"pop": 0.0, "wild_pop": 0.0, "wild_mkm2": 0.0, "farmable": 0.0, "farmed": 0.0})
+        o["pop"] += float(pc.sum())
+        o["wild_pop"] += float(pc[w].sum())
+        o["wild_mkm2"] += float(w.sum() * h.cell_mkm2)
+        if lad.tech(k, 0.0)[0] and not lad.den[k]:
+            held = P[k] >= EST
+            o["farmable"] += float(lad.farmable[held].sum() * h.cell_mkm2)
+            o["farmed"] += float(lad.sh["farm"][k][held].sum() * h.cell_mkm2)
+    by_b = {}
+    peopled = tot > 0
+    for b, nm in enumerate(BIOMES):
+        sel = peopled & (bio == b)
+        if sel.any():
+            by_b[nm] = {"cells": int(sel.sum()), "wild_cells": int((sel & (wild > 0.5 * tot)).sum()),
+                        "pop": float(tot[sel].sum()), "wild_pop": float(wild[sel].sum())}
+    return {"biomes": by_b, "peoples": {a: {x: round(v, 4) for x, v in o.items()} for a, o in kinds.items()},
+            "cell_mkm2": float(h.cell_mkm2)}
+
+
 def measure(h, res, pres) -> dict:
     """The numbers of one try: per people (groups rolled up; megafauna and overlays apart) share of people, of the cells led, range,
     founding; the extinctions and their reasons."""
@@ -501,6 +546,10 @@ def _run_spec(spec: dict, Probe) -> dict:
         m["wild_overlap"] = wild_overlap(h, res["present"])
     except Exception as e:  # (a sizing number: never fail a run on it)
         m["wild_overlap"] = {"error": repr(e)}
+    try:
+        m["forage_land"] = forage_land(h, res["present"])
+    except Exception as e:  # (likewise)
+        m["forage_land"] = {"error": repr(e)}
     m["wall_s"] = round(time.time() - t0, 1)
     import resource
     m["max_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)
