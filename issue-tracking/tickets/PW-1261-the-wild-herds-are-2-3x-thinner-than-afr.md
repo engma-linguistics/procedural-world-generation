@@ -50,6 +50,7 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-02: Lane 140 judge (2 rolls, 36 paired draws): soft 30 -> 26 (p 0.39), dT/CO2 unchanged, trees -1.8 pt, hard bar 2 frozen over (42.9%, 41.7% land ice; main 0). Strike 1, not merged (branch commits 88ebe5a4, ada450a2, 351a995f). Next: targeted screen on the two draws, each part alone (herb resp vs FUEL_MIN 200), before any re-judge.
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 140 started on D42 A (C1 herb root respiration with the NPP_WEATHER re-anchor, PW-1332, and the fuel floor PW-1328 if needed). PW-1316 settled without change (B failed).
 - 2026-11-02: Status needs-decision -> todo. Owner 2026-11-02: D42 A (herbs' root respiration, see what it gets us). After D39 (PW-1316) lands, since lowering grass NPP warms runs through NPP_WEATHER and the CO2 references.
 - 2026-11-02: Status in-progress -> needs-decision. 11-02 lane 123: premise wrong: on Earth's observed climate herds match Coe; grass grows 1.4-1.8x too much (herbs keep ~70% of GPP, roots pay no upkeep) and wet tropical forest ~0.55x. Worlds' herds thin from cloudy/cool semi-arid tropics (PW-1330) and low CO2. Candidate C1 needs NPP_WEATHER re-anchor (PW-1332) and a sourced fire fuel floor (PW-1328) in one round. docs/review/vegetation/npp-check/diagnosis.md

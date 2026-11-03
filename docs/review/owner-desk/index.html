@@ -108,9 +108,13 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>140 · grass roots breathe</td><td>Your D42 A (PW-1261): grass and herb roots pay upkeep, so grassland stops growing 1.4–1.8× too much. Because the
-planet's weathering reads plant growth, the weathering scale is re-anchored in the same change, so worlds don't warm 3–5 °C as they did in
-lane 123's test. Short tests first, then the 36-world test. I'll report what it does to the herds, and so to dragons and herders.</td></tr>
+<tr><td>140 · grass roots breathe</td><td>Your D42 A (PW-1261). The 36-world test failed (strike 1, not merged). Grassland growth came down from 1.4–1.8× the field
+measurements to 1.15–1.5×, and on average temperature and CO2 didn't move. But 2 of the 36 worlds went frozen over (42.9% and 41.7% of land
+under ice; the limit is 40%), against none on the current code. Those were the two coldest worlds already (36% and 35% on the current code). Trees
+also fell 1.8 points, probably from the second part of the change, a lower fuel threshold for fires (250 → 200 g C/m², from the fire model
+GlobFIRM). Now running: those two worlds again with each part alone, to find which part pushes them over, before any new full test. Herds in
+warm African grassland would drop to about 0.7× Coe's measured parks. They matched before, and the remaining gap is in the herd formula,
+not the plants.</td></tr>
 <tr><td>141 · rich wild land resists farming</td><td>Your pick A (PW-1385): where wild food feeds each person well above the usual forager level (salmon coasts, acorn woods),
 a people takes up farming there much more slowly or farms only part of it. Sources first (Pacific Northwest, California and any others the
 literature supports), then the build, then before-and-after forager shares on the 14 D&amp;D test runs, compared with the same runs on the current code.</td></tr>
@@ -174,5 +178,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v106 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v107 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
