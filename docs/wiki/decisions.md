@@ -268,3 +268,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-03 07:35: Lane 151 (PW-1393) merged 05d53f3b: judge in tools/judge.py, byte-identical. Intake PW-1417, PW-1418.
 - 2026-11-03 07:40: Lane 152 (PW-1401 viewer list of drawn ranges; PW-1418 if cheap) started.
 - 2026-11-03 07:55: Lane 150 (PW-1411/1413) merged docs only: three strikes, back of the line; no physics lane started pending D45/D46.
+- 2026-11-03 08:10: Lane 152 merged c490b1d7 (PW-1401 workbench ranges, PW-1418 shims dropped); 160 area tests pass. Lane 153 (PW-1394 peoples in make + own store kind; relabel script, coordinator runs it after merge) started.
