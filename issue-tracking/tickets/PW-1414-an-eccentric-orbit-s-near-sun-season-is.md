@@ -1,4 +1,5 @@
 ---
+id: PW-1414
 title: "An eccentric orbit's near-sun season is read only through July and January: above e ~0.1 a world's seasons depend on where perihelion falls in the calendar"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane148
 blocked_by: []
 relates: [PW-1365, PW-1325, PW-397, PW-443]
 refs: ["planet/climate.py::_orbit", "planet/finish.py::orbit_dt", "planet/timezoom/forcing.py::orbit_anomaly", "planet/orbit.py::insolation", docs/review/climate/eccentricity/round1.md, docs/review/climate/eccentricity/measure.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,3 +35,6 @@ rain kept on the matching half), not July and January. Then check that Earth-ran
 (goldens, earth_check).
 - [ ] the warm/cold season takes the anomaly's own extreme months; e <= 0.06 worlds unchanged within noise
 - [ ] an equinox-perihelion e = 0.3 world is not colder than its circular twin in its warmest month
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-eccentric-orbit-two-point-seasons.md (found by lane148).

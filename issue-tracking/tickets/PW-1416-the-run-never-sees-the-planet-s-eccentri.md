@@ -1,4 +1,5 @@
 ---
+id: PW-1416
 title: "The run never sees the planet's eccentricity: a fixed 0.03 in the ice cycle, no annual-mean gain; any per-planet eccentricity must reach the run too"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane148
 blocked_by: []
 relates: [PW-1365, PW-481, PW-555, PW-443]
 refs: ["planet/icemass.py::cycle_dq", "planet/icemass.py::ECC", "planet/timezoom/params.py::TZParams", "planet/tectonics/earth.py::star_forcing", "planet/make.py::UNSUPPORTED", docs/review/climate/eccentricity/round1.md, docs/review/climate/eccentricity/runs_summary.py, tools/hard_bar.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,3 +38,6 @@ To do when per-planet orbits come in (with PW-481's orbit parameter):
   thermostat answers it) and the time zoom's ecc_mean
 - [ ] the run's ice rule uses the seasons' response (PW-555 stage 3) before e above ~0.06 is allowed, or the
   run's ice ages disappear
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-run-ignores-orbit-eccentricity.md (found by lane148).

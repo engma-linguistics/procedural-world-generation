@@ -1,5 +1,6 @@
 ---
-title: "What orbital eccentricity range should the generator draw for v0.2 Earth-likes? (PW-1365 result)"
+id: PW-1415
+title: What orbital eccentricity range should the generator draw for v0.2 Earth-likes? (PW-1365 result)
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: lane148
 blocked_by: []
 relates: [PW-1365, PW-443, PW-481, PW-555, PW-1325]
 refs: [docs/review/climate/eccentricity/round1.md, docs/review/climate/eccentricity/runs_results.txt, docs/review/climate/eccentricity/worlds_results.jsonl, "planet/timezoom/params.py::TZParams", "planet/icemass.py::cycle_dq", "planet/finish.py::orbit_dt", "planet/climate.py::_orbit", tools/hard_bar.py, "Spiegel et al. 2010 ApJ 721 1308", "Dressing et al. 2010 ApJ 721 1295", "Way & Georgakarakos 2017 arXiv:1611.06133", "Laskar et al. 2011 A&A 532 A89"]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -59,3 +62,6 @@ Options:
 matches the physics (Earth's own range) and costs little. Going higher is physically fine, but the model would
 show artefacts rather than physics. C's fixes are worth doing, but as part of the weird-worlds work. This is a
 question about planet variety, so it is your call. The physics does not force either way below ~0.3.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-eccentricity-range-for-earthlikes.md (found by lane148).

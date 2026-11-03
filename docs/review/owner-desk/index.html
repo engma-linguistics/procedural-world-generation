@@ -76,6 +76,30 @@ your temperature question is answered below. The religion views wait for you ton
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d46"><div class="id">D46 · HOW STRETCHED SHOULD A PLANET'S ORBIT BE? (PW-1415, from your eccentricity question, PW-1365)</div>
+<p><b>In plain words:</b> eccentricity is how stretched the orbit is. Earth's swings between almost 0 and about 0.06 over ~100,000-year
+cycles (Spiegel et al. 2010). Today every generated planet gets Earth's own cycle in its ice-age zoom (0.002–0.052), and a fixed 0.03 in its
+1 Gyr run, which otherwise ignores the orbit. Lane 148 tested 0 to 0.4.</p>
+<ul>
+<li><b>Earth's range is safe on every measure.</b> Up to 0.06, compared with the same seed at today's Earth value (0.017): the share of land with a
+35 °C+ warmest month goes 0.1 → 1.8% on a 14 °C world and 2.6 → 7.1% on a warm 19 °C one; 4 of 4 runs pass (3 of 4 on today's code), with less time in ice ages.</li>
+<li><b>Around 0.1 the model, not the planet, gives way.</b> The run's ice ages vanish on every seed, because the run's ice rule overreacts to sunlight
+(about 3× the land's real seasonal response). And the climate reads the orbit only in July and January, so the seasons start depending on the calendar:
+an e = 0.3 world with its near-sun point at an equinox gets <i>colder</i> summers (22.3 → 15.9 °C) despite 4.8% more sunlight a year.</li>
+<li><b>Real hard failure only at about 0.4</b> (boiled on 4 of 4). Published climate models keep Earth-like planets temperate up to about 0.3
+(Way &amp; Georgakarakos 2017), so our ceiling is the model's limit, not physics'.</li>
+</ul>
+<ol type="A">
+<li><b>Keep today's draw:</b> every planet gets Earth's cycle. No work; every world has the same orbit statistics.</li>
+<li><b>Each planet gets its own average within Earth's range</b> (say 0.005–0.04, keeping the swings, so the peak stays under about 0.07), and the 1 Gyr run uses the same
+number, so a more stretched orbit means shorter ice-age eras and hotter one-hemisphere summers. Small work.</li>
+<li><b>Allow up to 0.1–0.15 for v0.2:</b> more variety, but it needs three fixes first (the run takes the draw, the run's ice rule uses the real seasonal response, the
+seasons read the orbit's own extreme months).</li>
+<li><b>Strong-season worlds (0.1–0.3) as a post-v1 weird-world kind</b> (PW-443), built on C's three fixes.</li>
+</ol>
+<p><i>My lean:</i> B now, D later. B gives real variety at no risk. C's fixes are worth doing, but as part of the weird-worlds work, not to stretch Earth-likes.</p>
+</div>
+
 <div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (PW-1403, PW-1404; PW-1261 waits on this) · UPDATED OVERNIGHT</div>
 <p><b>In plain words:</b> in its first 300 Myr each planet learns two yardsticks: how much CO2 its volcanoes normally give off and how fast
 its rocks normally weather it away. They're learnt from about five samples' worth of wandering rates, so they come out a bit different every
@@ -210,7 +234,6 @@ as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics q
 
 <tr><td>150 · North Atlantic, part 2</td><td>PW-1411, PW-1413, follow-ups to the fix below: the warm water should carry about a third of its heat past Iceland into the Norwegian Sea, but the model gives nearly all of it up south of Iceland, and the sea there hardly cools in winter (it should cool about half as much as the open ocean does). Diagnosis and quick screens first; it stops before the full test.</td></tr>
 <tr><td>151 · judge into tools</td><td>PW-1393, from the fresh-eyes review: move the code that decides whether a test planet passes out of review folders into tools/, so it can't get pruned away. Must give identical verdicts on a past test.</td></tr>
-<tr><td>148 · how stretched an orbit can be</td><td>Your ask (PW-1365): a study, not a change. How worlds behave as the orbit gets more stretched (eccentricity 0 to 0.2 and beyond): hot and frozen seasons, ice ages, CO2, and where a world stops being livable. It ends with a recommended range for the generator.</td></tr>
 </table></div>
 <p>Overnight these use up to about 44 cores, as you allowed; every lane drops back under your daytime cap (32 cores, about 90 GB together) from 8 AM.</p>
 
@@ -250,6 +273,7 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Eccentricity study</b> (PW-1365, your ask): done; see D46 above. Write-up: <code>docs/review/climate/eccentricity/round1.md</code>.</li></ul>
 <ul><li><b>North Atlantic too warm</b> (PW-1381): <b>merged</b>, all 962 tests pass. The warm current now gives up its heat on the way north at the rate the Atlantic mooring lines measure. On Earth, compared with the current code: the sea there 13.7 → 11.9 °C (satellites: 11.9), winter rain 2765 → 2265 mm. <b>The 36-world test, compared with the same worlds on the code before:</b> no hard failures on either; 28 against 30 passes, within chance; the late temperature moves −0.12 °C, not a real change. It gives back some ice ages: worlds reaching a full glacial maximum 13 → 17. Three follow-ups filed; two are lane 150.</li>
 <li><b>Den raids</b> (PW-1407): <b>merged</b>. Den peoples no longer lose their raiding food between updates; the effect at the end of a history is under 0.001%.</li>
 <li><b>Old saved checkpoints</b> (PW-1408): nothing to convert after all. All 687 old checkpoints in your 68 runs were already too old to resume from (written before state was added), so those runs already sliced from the start before last night's change. Slicing an old run takes 35–50 minutes at level 7; new runs are fine. Re-simulating any you want to keep sliced quickly is optional (PW-1410).</li></ul>
@@ -301,5 +325,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v123 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v124 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
