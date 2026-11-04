@@ -116,7 +116,7 @@ lenition | t > d / V_V | coarticulation | larynx | 5 | Latin vitam > Spanish vid
 lenition | k > g / V_V | coarticulation | larynx | 5 | Latin acutum > Spanish agudo
 lenition | t, d > ɾ / V́_V | effort | tongue_tip, timing | 5 | American English water [ˈwɑɾɚ]
 lenition | β > v | perception | lips | 3 | Latin habere > Italian avere
-lenition | p > f | effort | lips | 4 | Grimm's law: Latin pater vs English father
+lenition | p > f / #_, V_ | effort | lips | 4 | Grimm's law: Latin pater vs English father (kept after s: spuere, spew); Japanese *p > ɸ (kept in geminates: ippon)
 lenition | ɸ > h / #_ | effort | lips, larynx | 4 | Old Japanese *pana > ɸana > hana 'flower'
 lenition | f > h / #_ | effort | larynx | 3 | Latin facere > Old Spanish hazer > hacer
 lenition | h > ∅ | effort | larynx | 5 | Spanish hacer [aθer]; Cockney 'ouse; French h-loss
@@ -131,7 +131,7 @@ lenition | χ, x > h | effort | tongue_body, larynx | 4 | Caribbean Spanish jam�
 lenition | w > ∅ / _u, _o | dispersion | lips | 4 | English sword, two (w lost before back rounded vowels)
 lenition | w > ∅ / #_ (before back vowel) | effort | lips | 3 | Ancient Greek digamma loss: *woikos > oikos
 lenition | ʎ > j | effort | tongue_body | 5 | Spanish yeísmo: calle [kaʎe] > [kaje]; French fille [fij]
-lenition | j > ʒ | perception | tongue_blade | 3 | Rioplatense Spanish yo [ʒo] > [ʃo]
+lenition | j > ʒ / #_ | perception | tongue_blade | 3 | Latin iam > French déjà [ʒa], Portuguese já [ʒa] (word-initial); Rioplatense Spanish yo [ʒo] > [ʃo]
 lenition | tʃ > ʃ | effort | tongue_blade | 4 | Old French chanter [tʃ] > French [ʃ]
 lenition | ts > s | effort | tongue_tip | 5 | Old French cent [ts] > [s]
 lenition | dʒ > ʒ | effort | tongue_blade | 4 | Old French jour [dʒ] > [ʒ]
@@ -139,7 +139,7 @@ lenition | dz > z | effort | tongue_tip | 4 | Old Spanish dezir [dz] > [z] (late
 lenition | CC > C (degemination) | effort | timing | 5 | Latin gutta > Spanish gota; Latin cuppa > French coupe
 lenition | k > ʔ / _# | effort | tongue_body, larynx | 4 | Malay budak [budaʔ]
 lenition | p, t, k > ʔ / _# | effort | larynx | 4 | Proto-Burmish final stops > glottal stop in Burmese
-lenition | t > ʔ / V_V, _# | effort | tongue_tip, larynx | 4 | London English butter [bʌʔə], what [wɒʔ]
+lenition | t > ʔ / _C, _# | effort | tongue_tip, larynx | 3 | London English butter [bʌʔə], what [wɒʔ]
 fortition | w > gw / #_ | perception | lips, tongue_body | 3 | Frankish *werra > French guerre, Italian guerra; Welsh gw-
 fortition | w > b / #_ | perception | lips | 3 | Latin vivere > Spanish vivir [biβir]
 fortition | j > dʒ / #_ | perception | tongue_blade | 4 | Latin iam > Italian già; Latin iugum > Italian giogo
@@ -148,7 +148,7 @@ fortition | ∅ > t / n_s (excrescent stop) | coarticulation | tongue_tip, velum
 fortition | ∅ > b / m_r, m_l | coarticulation | lips, velum | 4 | Latin camera > French chambre; Latin numerus > French nombre
 fortition | ∅ > d / n_r | coarticulation | tongue_tip, velum | 4 | Old English þunor > thunder; Latin tenerum > French tendre
 fortition | C > CC / V́_j (West Germanic gemination) | prosody | timing | 3 | Proto-Germanic *satjan > Old English settan 'set'
-fortition | C > CC / V́_ (stressed short vowel) | prosody | timing, stress | 3 | Italian raddoppiamento: Latin femina > Italian femmina
+fortition | C > CC / V́[−long]_V (stressed short vowel) | prosody | timing, stress | 3 | Italian raddoppiamento: Latin femina > Italian femmina
 fortition | l > d / N_ | coarticulation | tongue_tip, velum | 4 | Swahili -refu 'long' > ndefu (class 9/10, Bantu *l > d after nasal)
 palatalization | k > tʃ / _[+front V] | coarticulation | tongue_body, tongue_blade | 5 | Latin centum [k] > Italian cento [tʃ]; Old English cirice > church
 palatalization | g > dʒ / _[+front V] | coarticulation | tongue_body, tongue_blade | 5 | Latin gentem > Italian gente [dʒ]
@@ -158,7 +158,7 @@ palatalization | t > tʃ / _i | coarticulation | tongue_tip, tongue_blade | 5 | 
 palatalization | d > dʒ / _i | coarticulation | tongue_tip, tongue_blade | 5 | Brazilian Portuguese dia [dʒia]; Japanese *di > ji
 palatalization | s > ʃ / _i | coarticulation | tongue_blade | 5 | Japanese *si > shi; Korean si [ɕi]
 palatalization | t, d, s, z > tʃ, dʒ, ʃ, ʒ / _j (yod coalescence) | coarticulation | tongue_blade | 5 | English nature, 'did you' [dɪdʒu], measure
-palatalization | n > ɲ / _j, _i | coarticulation | tongue_body, velum | 5 | Latin vinea > Spanish viña, Italian vigna
+palatalization | n > ɲ / _j, _i | coarticulation | tongue_body, velum | 4 | Latin vinea > Spanish viña, Italian vigna
 palatalization | l > ʎ / _j | coarticulation | tongue_body | 5 | Latin palea > Italian paglia [ʎ]; Latin filia > Portuguese filha
 palatalization | pl, kl, fl > ʎ / #_ | coarticulation | tongue_body | 3 | Latin plorare > Spanish llorar; clamare > llamar
 palatalization | pl, kl, fl > pj, kj, fj | coarticulation | tongue_body | 4 | Latin plenum > Italian pieno; florem > fiore
@@ -169,16 +169,16 @@ palatalization | a > ɛ / [+stress] open syllable | coarticulation | tongue_body
 labial | kʷ > p | perception | lips, tongue_body | 3 | Proto-Indo-European *kʷetwores > Welsh pedwar vs Old Irish cethair; Greek pente
 labial | gʷ > b | perception | lips, tongue_body | 3 | Proto-Indo-European *gʷem- > Greek bainō 'go'
 labial | kʷ > k | effort | lips | 4 | Latin quis > Spanish quién [kjen]; Latin quattuor > Portuguese quatro [kw] retained vs French quatre [k]
-labial | C > Cʷ / _u, _o (labialization, phonologized when vowel lost) | coarticulation | lips | 3 | English coo [kʷuː] allophonic; Northwest Caucasian labialized consonants traced to lost rounded vowels (Colarusso)
+labial | C[−labial −glottal −glide] > Cʷ / _u, _o (labialization, phonologized when vowel lost) | coarticulation | lips | 2 | English coo [kʷuː] allophonic; Northwest Caucasian labialized consonants traced to lost rounded vowels (Colarusso)
 labial | w > v | effort | lips | 4 | Latin v [w] > Romance [v]; Old High German w > German [v]
 labial | ɸ > f | perception | lips | 4 | Proto-Germanic *ɸ (< *p) > f
 labial | θ > f | perception | tongue_tip, lips | 3 | London English think [fɪŋk]; Old Russian Fëdor < Greek Theodoros
 labial | m > n / _# | dispersion | lips, tongue_tip | 4 | Proto-Indo-European *-om > Greek -on; Spanish álbum [alβun]
 labial | u > y | dispersion | tongue_body | 3 | Latin murum > French mur [myʁ]; Attic Greek u > y
 labial | y > i | effort | lips | 4 | Old English cyning [y] > king; Greek υ [y] > [i]
-assimilation | N > [αplace] / _C[αplace] | coarticulation | velum, lips, tongue_tip, tongue_body | 5 | Latin in- + possibilis > impossibilis; English input [ɪmpʊt]
+assimilation | N > [αplace] / _C[αplace −glottal −pharyngeal] | coarticulation | velum, lips, tongue_tip, tongue_body | 5 | Latin in- + possibilis > impossibilis; English input [ɪmpʊt]
 assimilation | [−son] > [−voice] / _[−voice] | coarticulation | larynx | 5 | Russian lodka [lotkə]
-assimilation | [−son] > [+voice] / _[+voice −son] | coarticulation | larynx | 5 | Russian vokzal [vɐɡzal]
+assimilation | [−son −glottal] > [+voice] / _[+voice −son] | coarticulation | larynx | 5 | Russian vokzal [vɐɡzal]
 assimilation | pt > tt | coarticulation | lips, tongue_tip, timing | 5 | Latin septem > Italian sette
 assimilation | kt > tt | coarticulation | tongue_body, tongue_tip, timing | 5 | Latin noctem > Italian notte; factum > fatto
 assimilation | ks > ss | coarticulation | tongue_body, timing | 4 | Latin saxum > Italian sasso
@@ -196,14 +196,14 @@ dissimilation | r...r > l...r | perception | tongue_tip | 3 | Latin peregrinus >
 dissimilation | l...l > l...r | perception | tongue_tip | 3 | Latin -alis > -aris after l (militaris)
 dissimilation | Cʰ...Cʰ > C...Cʰ (Grassmann's law) | perception | larynx | 2 | Proto-Indo-European *dʰidʰeh₁- > Sanskrit dadhāti, Greek tithēmi
 dissimilation | n...n > l...n, r...n | perception | velum, tongue_tip | 2 | Latin Bononia > Italian Bologna; Latin anima > *anma > Spanish alma (nm > lm)
-devoicing | [−son] > [−voice] / _# (final devoicing) | effort | larynx | 5 | German Rad [ʁaːt]; Dutch hond [ɦɔnt]; Russian, Polish, Turkish
+devoicing | [−son +pulmonic] > [−voice] / _# (final devoicing) | effort | larynx | 5 | German Rad [ʁaːt]; Dutch hond [ɦɔnt]; Russian, Polish, Turkish
 devoicing | z > s | effort | larynx | 4 | Old Spanish casa [z] > [s] (merger with s)
-devoicing | b, d, g > p, t, k (Grimm) | dispersion | larynx | 3 | Latin decem vs English ten; genu vs knee
-devoicing | bʰ, dʰ, gʰ > b, d, g (Grimm) | dispersion | larynx | 3 | Sanskrit bharati vs English bear; Proto-Indo-European *dʰwer- > door
+devoicing | b, d, g > p, t, k (Grimm) | dispersion | larynx | 2 | Latin decem vs English ten; genu vs knee
+devoicing | D̤ > D (loss of breathy voice) | dispersion | larynx | 3 | the PIE voiced aspirates became plain voiced stops in Iranian, Balto-Slavic and Celtic (and in Germanic, via β ð ɣ): Sanskrit bharati vs English bear; Proto-Indo-European *dʰwer- > door
 deletion | C > ∅ / _# | effort | timing | 4 | French petit [pəti]; Proto-Oceanic *ikan > Hawaiian iʻa 'fish'
 deletion | m > ∅ / _# | effort | lips, velum | 4 | Latin rosam > Italian rosa
 deletion | s > ∅ / _# | effort | tongue_tip | 4 | French les [le]; Florentine and southern Italian plurals
-deletion | r > ∅ / _C, _# (non-rhotic, compensatory lengthening) | effort | tongue_tip, timing | 4 | RP English car [kɑː], card [kɑːd]
+deletion | r, ɹ, ʁ > ∅ / _C, _# (non-rhotic, compensatory lengthening) | effort | tongue_tip, timing | 4 | RP English car [kɑː], card [kɑːd]; Standard German coda /ʁ/ vocalized: Wasser [vasɐ], Tier [tiːɐ̯]
 deletion | V[−stress] > ∅ / _# (apocope) | prosody | stress | 5 | Middle English name [naːmə] > [naːm]
 deletion | V[−stress] > ∅ / VC_CV (syncope) | prosody | stress | 5 | Latin calidus > caldus > Italian caldo; oculus > *oclus
 deletion | V > ∅ / #_ [−stress] (aphaeresis) | prosody | stress | 3 | English (a)mend, (e)squire
@@ -249,8 +249,8 @@ nasal | n > ŋ / _# | effort | tongue_body | 4 | Caribbean and Andalusian Spanis
 nasal | N > ∅ / _# with nasal vowel, then Ṽ > V (full nasal loss) | effort | velum | 3 | Proto-Germanic *-an infinitive > Old Norse -a
 rhotic | s > z / V_V | coarticulation | larynx | 5 | Latin rosa [z] in Romance; English houses [zɪz]
 rhotic | z > r / V_V (rhotacism) | effort | tongue_tip | 3 | Old Latin *flosis > floris; Proto-Germanic *wēzum > English were
-rhotic | r > ʁ, ʀ | perception | tongue_body | 3 | French, Standard German, Brazilian and European Portuguese (Lisbon) uvular r
-rhotic | r > ɹ | effort | tongue_tip | 4 | English approximant r (< trilled r)
+rhotic | r > ʁ, ʀ | perception | tongue_body | 2 | French, Standard German, Brazilian and European Portuguese (Lisbon) uvular r
+rhotic | r > ɹ | effort | tongue_tip | 3 | English approximant r (< trilled r)
 rhotic | l > r / C_ | perception | tongue_tip | 3 | Latin blancus > Portuguese branco; Latin clavum > Portuguese cravo
 rhotic | l > w, u / _C, _# (l-vocalization) | effort | tongue_tip, tongue_body | 4 | Latin altrum > French autre; London English milk [mɪʊk]; Polish ł [w]
 rhotic | l > ɫ / _C, _# (velarization) | coarticulation | tongue_body | 5 | English dark l in feel, milk
@@ -264,13 +264,13 @@ dental | θ > s | perception | tongue_tip | 3 | Urban Arabic θ > s in learned w
 dental | ts > θ (via s̪) | dispersion | tongue_tip | 2 | Old Spanish ç [ts] > Castilian [θ] (cinco [θiŋko])
 dental | ʃ > x | dispersion | tongue_body | 2 | Old Spanish dixo [ʃ] > dijo [x]
 laryngeal | tt > ʰt (preaspiration) | prosody | larynx, timing | 2 | Icelandic takka [tʰaʰka]; Scottish Gaelic mac [maʰk]
-laryngeal | D > ɗ, ɓ (implosivization of voiced stops) | effort | larynx | 2 | Sindhi implosives from Prakrit geminate voiced stops (*bb > ɓ)
+laryngeal | bː, dː > ɓ, ɗ (implosivization of voiced geminates) | effort | larynx | 2 | Sindhi implosives from Prakrit geminate voiced stops (*bb > ɓ)
 laryngeal | Cʔ > Cʼ (stop + glottal stop > ejective) | prosody | larynx | 2 | Ossetian ejectives (contact with Kartvelian); widely proposed in reconstructions
-laryngeal | D > D̤ (voiced stops > breathy, register) | tonogenesis | larynx, pitch_ear | 3 | Khmer and Mon registers from Old Khmer voiced onsets
-tone | V > V˩ / D_ ; V > V˥ / T_ ; then D > T (tone split from onset voicing) | tonogenesis | larynx, pitch_ear | 4 | Middle Chinese yin/yang tone split; Kammu dialects (voicing in Eastern Kammu, tone in Northern)
-tone | V > V˧˥ / _ʔ ; then ʔ > ∅ (tone from glottal coda) | tonogenesis | larynx, pitch_ear | 3 | Vietnamese: final *-ʔ gave one tone pair (Haudricourt 1954)
-tone | V > V˥˩ / _h ; then h > ∅ (tone from h coda, < s) | tonogenesis | larynx, pitch_ear | 3 | Vietnamese: final *-h (< *-s) gave a second tone pair (Haudricourt 1954)
-tone | V > tone class by coda (open or sonorant = A, ʔ = B, h = C, stop = D), each split by onset voicing | tonogenesis | larynx, pitch_ear | 3 | Proto-Tai tones from coda type and onset voicing (Thai five tones)
+laryngeal | V > V̤ / D[+pulmonic]_ ; then D[+pulmonic] > T (register: voiced onsets devoice and leave breathy vowels) | tonogenesis | larynx | 2 | Khmer and Mon registers from Old Khmer voiced onsets (the second, breathy register follows the old voiced stops)
+tone | V > V˨ / D_ ; V > V˦ / T_ ; then D > T (tone split from onset voicing) | tonogenesis | larynx, pitch_ear | 4 | Middle Chinese yin/yang tone split; Kammu dialects (voicing in Eastern Kammu, tone in Northern)
+tone | V > V˧˥ / _ʔ{C, #} ; then ʔ > ∅ / V_{C, #} (tone from glottal coda) | tonogenesis | larynx, pitch_ear | 3 | Vietnamese: final *-ʔ gave one tone pair (Haudricourt 1954)
+tone | V > V˥˩ / _h{C, #} ; then h > ∅ / V_{C, #} (tone from h coda, < s) | tonogenesis | larynx, pitch_ear | 3 | Vietnamese: final *-h (< *-s) gave a second tone pair (Haudricourt 1954)
+tone | V > V˨ / _T{C, #} ; V > V˧˥ / _ʔ{C, #} ; V > V˥˩ / _h{C, #} ; then ʔ, h > ∅ / V_{C, #} (Proto-Tai coda classes B, C and D, open and sonorant-final syllables stay unmarked as class A, the onset-voicing split is S166) | tonogenesis | larynx, pitch_ear | 3 | Proto-Tai tones from coda type and onset voicing (Thai five tones)
 tone | 1-syllable vs 2-syllable stress contours > lexical pitch accent | prosody | pitch_ear, stress | 2 | Swedish and Norwegian accent 1 vs accent 2 (anden 'the duck' vs 'the spirit')
 tone | H > ∅ / H_ (Meeussen's rule, adjacent high tones dissimilate) | dispersion | pitch_ear | 3 | Bantu tonology (e.g. Shona, Kirundi)
 tone | tone > stress (tone loss) | prosody | pitch_ear, stress | 2 | Swahili lost Proto-Bantu tone; stress fixed on penult
@@ -278,15 +278,26 @@ prosody | [−voice fricative] > [+voice] / [−stress]V_ (Verner's law) | proso
 prosody | ɛ, ɔ > je, we / [+stress] (diphthongization) | prosody | tongue_body, stress | 4 | Latin petra > Spanish piedra; porta > puerta
 prosody | ai, au > eː, oː (monophthongization) | effort | tongue_body | 5 | Latin causa > Spanish cosa; Old High German ou > ō
 prosody | iː, uː > ai, au (diphthongization of high vowels) | dispersion | tongue_body | 4 | German Haus (< hūs); English Great Vowel Shift
-chain_shift | p t k > f θ x (Grimm, step 1) | effort | lips, tongue_tip, tongue_body | 4 | Latin pater, tres, cornu vs English father, three, horn
-chain_shift | p t k > pf ts kx / #_, C_ ; f s x / V_ (High German shift) | effort | lips, tongue_tip, tongue_body | 3 | German Pfund, zehn, machen vs English pound, ten, make
-chain_shift | iː uː > əɪ əʊ > aɪ aʊ (Great Vowel Shift, top) | dispersion | tongue_body | 3 | English time [tiːm] > [taɪm], house [huːs] > [haʊs]
+chain_shift | p t k > f θ x / #_, V_ (Grimm, step 1, kept after s and other obstruents) | effort | lips, tongue_tip, tongue_body | 3 | Latin pater, tres, cornu vs English father, three, horn; but Latin spuere, stella vs English spew, star
+chain_shift | p t k > pf ts kx / #_, C_ ; f s x / V_ (High German shift) | effort | lips, tongue_tip, tongue_body | 2 | German Pfund, zehn, machen vs English pound, ten, make
+chain_shift | iː uː > ei ou > ai au (Great Vowel Shift, top, diphthongs written with plain i, u offglides) | dispersion | tongue_body | 3 | English time [tiːm] > [taɪm], house [huːs] > [haʊs]
 chain_shift | eː oː > iː uː (Great Vowel Shift, mid) | dispersion | tongue_body | 3 | Middle English meet [meːt] > [miːt], moon [moːn] > [muːn]
 chain_shift | aː > ɛː > eː (Great Vowel Shift, low) | dispersion | tongue_body | 3 | Middle English name [naːm] > [neːm]
 chain_shift | æ > eə ; ɑ > a ; ɔ > ɑ (Northern Cities Shift) | dispersion | tongue_body | 2 | Chicago and Detroit English cat [keət], cot [kat]
 analogy | paradigm leveling: irregular alternant replaced by regular | analogy | none | 4 | English holp > helped; kine > cows
 analogy | analogical extension of an alternation (four-part proportion) | analogy | none | 3 | English dove (past of dive, after drive:drove); sneak > snuck
 click | ǀ ǃ ǂ ǁ > ts, k, c, tɬ (click replacement) | effort | tongue_tip, tongue_body | 2 | Kalahari Khoe click replacement (e.g. Shua, Tshwa; Traill and Vossen 1997)
+laryngeal | pʰ, tʰ, kʰ, tsʰ, tʃʰ, cʰ, qʰ > p, t, k, ts, tʃ, c, q (loss of aspiration) | dispersion | larynx | 3 | Sinhala lost the aspiration contrast of its Middle Indo-Aryan ancestor; the Greek aspirates pʰ tʰ kʰ left no aspirated stops in Modern Greek (they became fricatives)
+laryngeal | [+breathy V] > [−breathy] (loss of breathy voice on vowels) | dispersion | larynx | 3 | Modern Khmer: the old breathy register survives as vowel quality, the breathiness largely gone
+fortition | β, ð, ɣ > b, d, g / #_, N_ | perception | lips, tongue_tip, tongue_body | 3 | West Germanic: Proto-Germanic *ð > d (*faðēr > Old English fæder); *β and *ɣ > b and g word-initially and after nasals
+dental | ʃ, ʒ, tʃ, dʒ > s, z, ts, dz (depalatalization) | perception | tongue_tip | 2 | Masovian Polish mazurzenie: szary > sary, czas > cas, żaba > zaba
+devoicing | ʒ > ʃ | effort | larynx | 3 | 16th-century Castilian sibilant devoicing: Old Spanish ojo [oʒo] > [oʃo] (later [oxo])
+deletion | ʔ > ∅ / V_C, _# | effort | larynx | 4 | loss of hamza in Arabic dialects: raʔs > raːs 'head', biʔr > biːr 'well'
+devoicing | v, z, ɣ > f, s, x / #_ | effort | larynx | 3 | Netherlandic Dutch initial fricative devoicing: vis [fɪs] 'fish', zee [seː] 'sea'
+lenition | kx > x | effort | tongue_body | 3 | Swiss German: k > kx > x word-initially (Kind [xɪnd])
+cluster | pf > f / #_ | effort | lips | 3 | colloquial northern German Pfund [fʊnt], Pferd [feːɐ̯t]
+rhotic | ɹ > ʋ | perception | lips | 2 | labiodental /r/ in southern British English: red [ʋɛd], rabbit [ʋæbɪt] (Foulkes and Docherty 2000)
+labial | v > b | perception | lips | 3 | Spanish betacism: Old Spanish /v/ merged with /b/ (vaca [baka], vino [bino])
 """
 
 GRAM_COLUMNS = ["id", "source_concept", "target_function", "intermediate_stages", "fusion_endpoint",
@@ -311,7 +322,7 @@ def write(path: Path, header: list[str], columns: list[str], rows: list[list[str
         w = csv.writer(fh, delimiter="\t", lineterminator="\n")
         w.writerow(columns)
         w.writerows(rows)
-    print(f"wrote {path.relative_to(ROOT)}: {len(rows)} rows")
+    print(f"wrote {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path}: {len(rows)} rows")
 
 
 CAUSES = {"coarticulation", "effort", "perception", "prosody", "tonogenesis", "dispersion", "analogy"}
@@ -355,7 +366,7 @@ def main() -> None:
         "source: WRITTEN FROM KNOWLEDGE of standard historical phonology (Campbell, Historical Linguistics; Hock 1991; "
         "Blevins 2004, Evolutionary Phonology; Kümmel 2007). The Index Diachronica (https://chridd.nfshost.com/diachronica/, a "
         "hobbyist compilation) was used only as inspiration for coverage; nothing was copied from it.",
-        f"version: hand-authored {TODAY}",
+        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned)",
         "licence: original text for this repository; examples are textbook cases.",
         f"script: {SCRIPT}",
         "rule notation: input > output / environment. V vowel, C consonant, N nasal, T voiceless stop, D voiced stop, "

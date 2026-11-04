@@ -20,11 +20,28 @@ from . import rules as RU
 RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
 RATE_SIGMA = 0.3  # lognormal sigma of a proto lect's rate
 RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
-INV_CAP_RATIO = 1.25  # consonants may grow to 1.25x the proto-language's count ...
-INV_CAP_V = 16  # vowel qualities (length and nasality count, tone does not), as PHOIBLE counts them
-INV_CAP_C = 35  # ... and never past 35 (half the run's lects ended above PHOIBLE's upper quartile at 1.5x / 45); beyond, the
-# rarest new ones fold (dispersion)
-FOLD_RARE = 0.01  # a unit the proto lacked, under this share of its kind's tokens and one axis from another unit, folds into it
+# Inventory size has no hard cap: rules are steered by PHOIBLE's size distribution (inventory.size_prior), so small and big
+# inventories stay possible but grow rare in PHOIBLE's proportions (Rotokas' 6 consonants, !Xóõ's 130). A rule that would take
+# the lect's consonant (or vowel-quality) count from n to n + d is drawn (prior(n + d) / prior(n)) ** SIZE_K times as often,
+# clamped to SIZE_CLAMP; past INV_MAX x PHOIBLE's largest count the rarest units fold (a sanity ceiling, not a shape).
+# Sound change by itself pulls every inventory toward the middle (a big one has more to merge, a small one more to split),
+# which would turn PHOIBLE's wide proto draw into a narrow living one; so the steer also holds each line near its own proto
+# size, a lognormal of sigma SIZE_ANCHOR in ln n (inventory size runs in families: Khoisan big, Polynesian small).
+SIZE_K = 0.5
+SIZE_ANCHOR = 0.2
+SIZE_CLAMP = (0.1, 2.0)
+INV_MAX = 1.0
+# Ease (markedness) drag, the owner's "light normalization toward easier consonants": a rule's weight is multiplied by
+# exp(EASE_K x the mean over the segments it rewrites of (cost before - cost after)), clamped to EASE_CLAMP. For a human vocal
+# tract (profiles.human_voiced) the cost is PHOIBLE's -ln(share of languages with the sound), so the factor is
+# (share_out / share_in) ** EASE_K: p > f (0.85 -> 0.43) is drawn 0.71x as often, f > p 1.4x; b > bʱ (0.62 -> 0.01) is held
+# at the floor; a deletion counts as making nothing (h > ∅ 1.3x, ʔ > ∅ 1.6x); insertions are neutral. For other voices the drag is their own make cost, already in the
+# catalogue weights (rules.cost_factor), never PHOIBLE: what is easy for a dragon or a kenku is not what is easy for a human.
+# Light on purpose: the clamp keeps an unusual change at a quarter of its weight, not out of reach.
+EASE_K = 0.5
+EASE_CLAMP = (0.25, 3.0)
+FOLD_RARE = 0.2  # a unit the proto lacked, under this fraction of an average unit's share of its kind's tokens (1% at 20
+# units, 0.33% at 60: a big inventory's units are each rarer) and one axis from a commoner unit, folds into it
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 3.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ...
@@ -300,36 +317,37 @@ class Lect:
         return frozenset(_unit(x) for x in self.segments() if x.kind in ("C", "V"))
 
     def weighted_rules(self, rules) -> list:
-        """The catalogue with rules that would add a segment the lect lacks down-weighted by NEW_SEG_WEIGHT (cached per
-        segment set)."""
+        """The catalogue weighted for this lect's sounds (cached per segment set): rule_factor (new segments, ease drag,
+        inventory size)."""
         segs = frozenset(self.segments())
         hit = getattr(self, "_rw", None)
         if hit is not None and hit[0] is rules and hit[1] == segs:
             return hit[2]
+        from . import profiles as PR
+        hv = PR.human_voiced(self.profile)
+        units = frozenset(_unit(x) for x in segs)
+        base = {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
         out = []
         for r in rules:
-            new = False
-            for x in segs:
-                o = RU._single(r, x)
-                if o and any(y not in segs for y in o):
-                    new = True
-                    break
-            out.append(replace(r, weight=r.weight * NEW_SEG_WEIGHT) if new else r)
+            f = rule_factor(r, segs, units, hv, base)
+            out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
         self._rw = (rules, segs, out)
         return out
 
     def cap_inventory(self, kyr: float) -> int:
-        """Keep inventories PHOIBLE-sized: past min(INV_CAP_RATIO x the proto count, INV_CAP_C consonants / INV_CAP_V
-        vowels; vowels counted by quality with length and nasality, tone set aside), the rarest units the proto lacked
-        (else the rarest) fold into their nearest remaining unit, consistently over the lexicon and grammar; logged as
-        one `simplification:` change with cause "dispersion". Returns units folded."""
+        """Tidy the inventory after sound change: two units spelt alike are one (the commoner stays); a rare unit the proto
+        lacked (under FOLD_RARE of an average unit's share of its kind's tokens) one axis from a commoner unit folds into it; past the sanity ceiling
+        (INV_MAX x PHOIBLE's largest count; vowels by quality with length and nasality, tone set aside) the rarest units fold
+        into their nearest remaining unit. A fold lands on the commoner and, among near neighbours, the cheaper unit
+        (fold_target). Consistent over the lexicon and grammar; logged as one `simplification:` change with cause
+        "dispersion". Returns units folded. Size itself is steered softly by the rule weights (rule_factor), not here."""
         from .percepts import distance, to_ipa
+        from . import inventory as INV
         segs = self.all_segments()
         mapping = {}
-        for kind, absmax in (("C", INV_CAP_C), ("V", INV_CAP_V)):
+        for kind in ("C", "V"):
             units = sorted({_unit(x) for x in segs if x.kind == kind}, key=lambda q: (to_ipa(q), repr(q)))
-            base = sum(1 for u in self.base_segs if u.kind == kind) or len(units)
-            cap = int(min(absmax, max(INV_CAP_RATIO * base, base + 2)))
+            cap = int(INV_MAX * INV.size_max("consonants" if kind == "C" else "vowels"))
             cnt = dict.fromkeys(units, 0)
             for w in self.lexicon.words.values():
                 for x in w.form:
@@ -349,12 +367,12 @@ class Lect:
                     ipa_of[k] = x
             tot = sum(cnt.values()) or 1
             for x in sorted(keep, key=lambda q: (cnt[q], to_ipa(q), repr(q))):  # (rare new units one axis from another fold)
-                if x in self.base_segs or cnt[x] >= FOLD_RARE * tot:
+                if x in self.base_segs or cnt[x] >= FOLD_RARE * tot / max(1, len(units)):
                     continue
                 near = [q for q in keep if q != x and _axes_apart(x, q) == 1 and cnt[q] > cnt[x]]
                 if near:
                     keep.discard(x)
-                    um[x] = max(near, key=lambda q: (cnt[q], to_ipa(q), repr(q)))
+                    um[x] = max(near, key=lambda q: (cnt[q] / (1.0 + self.unit_cost(q)), to_ipa(q), repr(q)))
             while len(keep) > cap:
                 # (malformed or off-table units go first, then those the proto lacked; folds land on symbol-table segments)
                 pool = ([x for x in keep if malformed(x)] or [x for x in keep if x not in self.base_segs and x not in table]
@@ -362,7 +380,7 @@ class Lect:
                 x = min(pool, key=lambda q: (cnt[q], to_ipa(q), repr(q)))
                 keep.discard(x)
                 tgt = [q for q in keep if q in table] or list(keep)
-                um[x] = min(tgt, key=lambda q: (distance(x, q), -cnt[q], to_ipa(q), repr(q)))
+                um[x] = fold_target(x, tgt, cnt, self.unit_cost, distance)
             for x in um:  # (a fold into a unit folded later follows it on)
                 y = um[x]
                 while y in um:
@@ -387,6 +405,12 @@ class Lect:
         self.changes.append({"kyr": round(float(kyr), 3), "rule": rid, "cause": "dispersion", "origin_lect": None, "merged": what})
         self._dirty = True
         return len(mapping)
+
+    def unit_cost(self, x) -> float:
+        """What a unit costs this lect's voice (profiles.species_cost; PHOIBLE's for a human voice), for fold targets."""
+        from . import profiles as PR
+        c = PR.species_cost(self.profile, x) if self.profile is not None else PR.human_cost(x)
+        return c if math.isfinite(c) else PR.COST_MAX * 4
 
     @property
     def alive(self) -> bool:
@@ -547,10 +571,113 @@ def _unit(x):
     return replace(x, tone=0) if x.kind == "V" and x.tone else x
 
 
+FOLD_SLACK = 1.0  # a fold may land up to this much farther (percepts.distance) than the nearest unit, to reach a cheaper one
+
+
+def fold_target(x, targets, cnt: dict, cost, distance):
+    """Where a folded unit goes: among the units within FOLD_SLACK of the nearest, the cheapest for the voice (the commoner
+    or easier neighbour), then the commonest in the lexicon."""
+    from .percepts import to_ipa
+    d = {q: distance(x, q) for q in targets}
+    near = min(d.values())
+    pool = [q for q in targets if d[q] <= near + FOLD_SLACK]
+    return min(pool, key=lambda q: (cost(q), d[q], -cnt.get(q, 0), to_ipa(q), repr(q)))
+
+
+_SINGLE: dict = {}
+
+
+def single(rule, x):
+    """rules._single, memoized per (rule id, notation, segment): what the rule makes of a lone segment."""
+    k = (rule.id, rule.notation, x)
+    if k not in _SINGLE:
+        o = RU._single(rule, x)
+        _SINGLE[k] = None if o is None else tuple(o)
+    return _SINGLE[k]
+
+
+_HCOST: dict = {}
+
+
+def human_cost(x) -> float:
+    if x not in _HCOST:
+        from . import profiles as PR
+        _HCOST[x] = PR.human_cost(x)
+    return _HCOST[x]
+
+
+def size_steer(measure: str, n: int, d: int, n0: int = 0) -> float:
+    """The size factor of a rule taking a count from n to n + d: PHOIBLE's prior ratio ** SIZE_K times the anchor ratio
+    around the proto count n0 (none when n0 is 0)."""
+    from . import inventory as INV
+    g = (INV.size_prior(measure, n + d) / INV.size_prior(measure, n)) ** SIZE_K
+    if n0 > 0 and n + d > 0 and n > 0:
+        a, b = math.log((n + d) / n0), math.log(n / n0)
+        g *= math.exp(-(a * a - b * b) / (2.0 * SIZE_ANCHOR ** 2))
+    return g
+
+
+def _ease(touched) -> float:
+    ds = [human_cost(x) - math.fsum(human_cost(y) for y in o) for x, o in touched]
+    ds = [d for d in ds if math.isfinite(d)]
+    if not ds:
+        return 1.0
+    return min(EASE_CLAMP[1], max(EASE_CLAMP[0], math.exp(EASE_K * math.fsum(ds) / len(ds))))  # (fsum: exact, so the
+    # order of a frozenset, which varies between processes with str hashing, cannot change a weight)
+
+
+def ease_factor(rule, lect) -> float:
+    """The ease drag alone for a lect (1 for a non-human voice): used to damp wave adoption of a change toward rarer sounds
+    (history.interval), so a hard sound does not spread by contact more readily than it arises at home."""
+    from . import profiles as PR
+    if not PR.human_voiced(lect.profile):
+        return 1.0
+    touched = []
+    for x in lect.segments():
+        o = single(rule, x)
+        if o is not None and o != (x,):
+            touched.append((x, o))
+    return _ease(touched) if touched else 1.0
+
+
+def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None) -> float:
+    """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
+    lacks; the ease drag (EASE_K, human voices only: PHOIBLE commonness of what it makes vs what it rewrites); and the size
+    steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
+    the pull toward the line's proto count). A
+    context-free rule removes the units it rewrites; a conditioned one keeps them (a split)."""
+    touched = []
+    for x in segs:
+        o = single(rule, x)
+        if o is None or o == (x,):
+            continue
+        touched.append((x, o))
+    if not touched:
+        return 1.0
+    f = NEW_SEG_WEIGHT if any(y not in segs for _x, o in touched for y in o) else 1.0
+    if human_voice:
+        f *= _ease(touched)
+    uncond = rule.target is not None and not rule.span and rule.env == RU.ANYWHERE and not rule.then
+    outs = {_unit(y) for _x, o in touched for y in o}
+    added = outs - units
+    removed = ({_unit(x) for x, _o in touched} - outs) if uncond else set()
+    g = 1.0
+    for kind, measure in (("C", "consonants"), ("V", "vowels")):
+        d = sum(1 for u in added if u.kind == kind) - sum(1 for u in removed if u.kind == kind)
+        if d:
+            n = sum(1 for u in units if u.kind == kind)
+            g *= size_steer(measure, n, d, (base or {}).get(kind, 0))
+    if g != 1.0:
+        f *= min(SIZE_CLAMP[1], max(SIZE_CLAMP[0], g))
+    return f
+
+
 def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
-    """grammar.step (it runs the typology drift too)."""
+    """grammar.step, with the typology drift on (per generation, at the lect's own rate, as sound change). Until the
+    2026-11-04 round no caller asked for the drift, so typology only changed by calques on shift."""
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
-            population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"])
+            population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
+            rate=getattr(lect, "rate", 1.0))
 
 
 def _accepted(fn, kw: dict) -> dict:

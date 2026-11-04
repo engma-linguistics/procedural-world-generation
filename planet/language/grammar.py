@@ -520,8 +520,23 @@ FEATURES: tuple[tuple[str, str], ...] = (
 )
 DERIVED = ("head_direction", "tone")
 
-#: per-generation flip hazard by class (a flip re-draws the value, which may come back the same)
+#: per-generation flip hazard by class (a flip re-draws the value, which may come back the same, so retention never falls
+#: below the value's share in the re-draw). Calibrated (docs/review/language/calibration.md, "Word length and typology drift
+#: round") so that over 20 kyr a human lect (27.7-yr generations, ~720 generations, the median adult-L2 share 0.54) keeps
+#: its proto's value in about 85-90% of lects for the very stable features (basic order, adpositions), ~80% for the stable
+#: ones, ~65% for the medium ones and ~50-60% for the fickle ones. Targets: Dediu 2011 (Proc. R. Soc. B 278:474) and
+#: Dediu & Cysouw 2013 (PLoS ONE 8:e55009) rank word order, adposition order, gender and alignment among the slow
+#: features and articles, adjective order and TAM marking among the fast; Greenhill et al. 2017 (PNAS 114:E8822) find
+#: grammatical features as a whole change at rates overlapping basic vocabulary (many no slower, a stable core much
+#: slower); Dunn et al. 2011 (Nature 473:79) show word-order features changing several times within families of 4-6 kyr
+#: depth (Austronesian, Bantu, Indo-European, Uto-Aztecan), always with lineage-specific co-dependencies. Hazards are per
+#: generation, so peoples with long generations change proportionally less per kyr, as sound change does.
 STABILITY = {"very_stable": 2e-4, "stable": 5e-4, "medium": 1e-3, "fickle": 2.5e-3, "very_fickle": 4e-3}
+#: a word-order harmony feature (adposition, genitive, adjective, demonstrative, relative) whose current value the basic
+#: order now disfavours flips faster: hazard x (1 + DISHARMONY * (1 - p(value | order) / p(best value | order))). After an
+#: OV > VO change, postpositions (p 0.08 vs 0.84 for prepositions) re-draw ~9x as often, so the harmony re-asserts itself
+#: within a few kyr, as in Dunn et al. 2011's correlated transitions (Dryer 1992's harmonies), not only by chance.
+DISHARMONY = 9.0
 FEATURE_CLASS = dict(FEATURES)
 
 #: morphological features adult L2 learners push toward their simplest value when they re-draw (Trudgill 2011)
@@ -750,10 +765,28 @@ def draw_typology(rng: np.random.Generator, table: Tables | None = None, inv=Non
     return typ
 
 
+def _cross_table(name: str, typ: Typology, T: Tables) -> dict[str, float] | None:
+    """P(value | basic order) for a word-order harmony feature (WALS crosstab, else the fallback), None for the rest."""
+    if name not in _FB_CROSS:
+        return None
+    return T.wals_cross.get(name, {}).get(typ.get("word_order", "free")) or _FB_CROSS[name][typ.ov()]
+
+
+def _disharmony(name: str, typ: Typology, T: Tables) -> float:
+    """Hazard multiplier for a harmony feature whose value the current basic order disfavours (1 for the rest)."""
+    tab = _cross_table(name, typ, T)
+    if not tab or "word_order" not in typ:
+        return 1.0
+    best = max(tab.values())
+    if best <= 0:
+        return 1.0
+    return 1.0 + DISHARMONY * (1.0 - min(1.0, tab.get(typ.get(name), 0.0) / best))
+
+
 def drift(rng: np.random.Generator, typ: Typology, n_generations: float, l2_share: float = 0.0,
           table: Tables | None = None, kyr: float | None = None, **kw) -> list[tuple[str, str, str]]:
     """Flip features at their stability-class hazard over n generations; a flip re-draws the value conditional on the rest
-    (so harmonies re-assert themselves after a word-order change). Adult L2 learners raise every hazard (x(1 + l2)) and pull
+    (so harmonies re-assert themselves after a word-order change, faster for a disharmonic value: `_disharmony`). Adult L2 learners raise every hazard (x(1 + l2)) and pull
     re-drawn morphological features to their simplest value with probability l2/2. Mutates `typ`; returns the changes."""
     T = table if table is not None else load_tables()
     if "l2" in kw and not l2_share:
@@ -766,7 +799,7 @@ def drift(rng: np.random.Generator, typ: Typology, n_generations: float, l2_shar
     l2 = min(max(float(l2_share), 0.0), 1.0)
     changes = []
     for name, cls in FEATURES:
-        lam = STABILITY[cls] * n_generations * (1.0 + l2)
+        lam = STABILITY[cls] * n_generations * (1.0 + l2) * _disharmony(name, typ, T)
         if lam <= 0 or rng.random() >= 1.0 - math.exp(-lam):
             continue
         old = typ.get(name)
@@ -1533,9 +1566,10 @@ def _lose(g: Grammar, gr: Gram, kyr: float, why: str) -> None:
 
 def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, lexicon=None, l2_share: float = 0.0,
          population: float | None = None, isolation: float = 0.5, kyr: float = 0.0, drift_typology: bool = False,
-         **kw) -> None:
-    """Advance the grammar n generations (fractional is fine): recruit, fuse, lose, analogy, class growth (and typology
-    drift when `drift_typology`; lect.py calls `drift` itself). Runs in sub-steps of at most CHUNK generations so events
+         rate: float = 1.0, **kw) -> None:
+    """Advance the grammar n generations (fractional is fine): recruit, fuse, lose, analogy, class growth, and typology
+    drift when `drift_typology` (lect.grammar_step asks for it; `rate` is the lect's own change rate, applied to the drift
+    as it is to sound change). Runs in sub-steps of at most CHUNK generations so events
     keep their order inside a long interval. Accepts lect.py's context names too (`l2`, `inventory`)."""
     if inv is None:
         inv = kw.get("inventory")
@@ -1555,7 +1589,7 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
     dn = n_generations / chunks
     for _ in range(chunks):
         if drift_typology:
-            for name, old, new in drift(rng, g.typology, dn, l2_share, T):
+            for name, old, new in drift(rng, g.typology, dn * max(float(rate), 0.0), l2_share, T):
                 g.events.append((kyr, f"typology {name}: {old} > {new}"))
         # recruit
         k = int(rng.poisson(dn * RECRUIT * soc["recruit"]))

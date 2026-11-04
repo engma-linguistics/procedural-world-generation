@@ -1,4 +1,5 @@
-"""The six checks of the language pass (PW-986, architecture section 10). Each returns {"name", "value", "target", "pass",
+"""The checks of the language pass (PW-986, architecture section 10): the six of the slice, then the living-lect realism
+checks (inventory sizes and segment frequencies vs PHOIBLE, 2026-11-04). Each returns {"name", "value", "target", "pass",
 "note"}; `run_all(result)` takes history.generate's result."""
 from __future__ import annotations
 
@@ -153,11 +154,102 @@ def complexity(result: dict) -> dict:
                 "< that of small isolated lects", ok, "one seed; across seeds later")
 
 
+# ---------------------------------------------------------------------------- living human-voiced lects vs PHOIBLE (2026-11-04)
+# Inventory sizes. The bar is PHOIBLE's shape, loosely: median within SIZE_MED_TOL of PHOIBLE's (21 C, 9 V), quartiles within
+# SIZE_Q_TOL, and the share of lects above PHOIBLE's 95th percentile (42 C, 22 V; 5% of PHOIBLE by definition) inside
+# TAIL_SHARE for consonants (a tail exists - at least one lect in ~300 - but stays rare) and under its upper end for vowels.
+# Loose on purpose: one seed, ~300 lects, and lines that share ancestors are not independent draws.
+SIZE_MED_TOL = {"consonants": 3, "vowels": 2}
+SIZE_Q_TOL = {"consonants": 4, "vowels": 3}
+TAIL_SHARE = (0.003, 0.15)
+# Segment frequencies. Top-20 overlap with PHOIBLE's top 20 >= LIVING_TOP20_MIN (protos: TOP20_MIN); the plain sounds of
+# PLAIN each present in at least PLAIN_FACTOR^-1 of PHOIBLE's share of languages (p: 85% -> at least 43%); and no
+# monoculture: no segment in more than MONO_SHARE of the lects unless PHOIBLE has it in at least MONO_SHARE / MONO_FACTOR
+# (ʒ, 14% of PHOIBLE, may not stand in more than half; ɲ, 42%, may).
+LIVING_TOP20_MIN = 12
+PLAIN = ("p", "t", "k", "m", "n", "i", "a", "u")
+PLAIN_FACTOR = 2.0
+MONO_SHARE, MONO_FACTOR = 0.5, 2.5
+
+
+def _living_human(result: dict) -> list:
+    return [l for l in result["lects"] if l.alive and l.deme is not None and l.people in HUMAN_VOICED
+            and l.inventory is not None]
+
+
+def _quant(xs, qs=(0.05, 0.25, 0.5, 0.75, 0.95)) -> list[float]:
+    return [float(x) for x in np.quantile(np.asarray(xs, float), qs)] if len(xs) else []
+
+
+def living_sizes(result: dict) -> dict:
+    """Living human-voiced lects' consonant and vowel counts vs PHOIBLE: p5/q1/median/q3/p95 and the share above PHOIBLE's
+    p95 (bars above)."""
+    from . import inventory as INV
+    ls = _living_human(result)
+    if len(ls) < 10:
+        return _row("living inventory sizes vs PHOIBLE", None, "", False, f"only {len(ls)} living human-voiced lects")
+    val, ok, why = {"lects": len(ls)}, True, []
+    for m, attr in (("consonants", "consonants"), ("vowels", "vowels")):
+        n = [len(getattr(l.inventory, attr)) for l in ls]
+        ph = INV.size_quantiles(m)
+        ours = _quant(n)
+        tail = float(np.mean(np.asarray(n) > ph[4]))
+        val[m] = {"ours": [round(x, 1) for x in ours], "phoible": ph, "above_phoible_p95": round(tail, 4),
+                  "max": int(max(n)), "min": int(min(n))}
+        good = (abs(ours[2] - ph[2]) <= SIZE_MED_TOL[m] and abs(ours[1] - ph[1]) <= SIZE_Q_TOL[m]
+                and abs(ours[3] - ph[3]) <= SIZE_Q_TOL[m] and tail <= TAIL_SHARE[1]
+                and (m != "consonants" or tail >= TAIL_SHARE[0]))
+        if not good:
+            why.append(m)
+        ok &= good
+    return _row("living inventory sizes vs PHOIBLE", val,
+                f"living human-voiced lects: median within {SIZE_MED_TOL['consonants']} C / {SIZE_MED_TOL['vowels']} V of "
+                f"PHOIBLE's, quartiles within {SIZE_Q_TOL['consonants']} C / {SIZE_Q_TOL['vowels']} V, share above PHOIBLE's "
+                f"95th percentile {TAIL_SHARE[0]:.1%}-{TAIL_SHARE[1]:.0%} for consonants (a rare tail), under "
+                f"{TAIL_SHARE[1]:.0%} for vowels", ok,
+                "quantiles p5/q1/median/q3/p95; vowels counted as inventory.vowels (length and nasality distinct, tone aside)"
+                + (f"; off: {', '.join(why)}" if why else ""))
+
+
+def living_segments(result: dict) -> dict:
+    """Living human-voiced lects' segment shares vs PHOIBLE's share of languages: top-20 overlap, the plain sounds present
+    within PLAIN_FACTOR, no monoculture (bars above)."""
+    from . import inventory as INV
+    from .percepts import to_ipa
+    ls = _living_human(result)
+    if len(ls) < 10:
+        return _row("living segment frequencies vs PHOIBLE", None, "", False, f"only {len(ls)} living human-voiced lects")
+    pc, pv = INV.phoible_pool()
+    ph = {to_ipa(s): f for s, f in list(pc) + list(pv)}
+    cnt: dict = {}
+    for l in ls:
+        for s in {to_ipa(x) for x in list(l.inventory.consonants) + list(l.inventory.vowels)}:
+            cnt[s] = cnt.get(s, 0) + 1
+    share = {s: c / len(ls) for s, c in cnt.items()}
+    ours = [s for s, _ in sorted(share.items(), key=lambda t: (-t[1], t[0]))[:20]]
+    order = sorted(ph, key=lambda s: -ph[s])
+    ov = len(set(ours) & set(order[:20]))
+    plain = {s: {"ours": round(share.get(s, 0.0), 3), "phoible": round(ph.get(s, 0.0), 3)} for s in PLAIN}
+    plain_ok = all(v["ours"] >= v["phoible"] / PLAIN_FACTOR for v in plain.values())
+    mono = {s: round(v, 3) for s, v in sorted(share.items(), key=lambda t: -t[1])
+            if v > MONO_SHARE and v > MONO_FACTOR * ph.get(s, 0.0)}
+    beyond12 = {s: round(v, 3) for s, v in sorted(share.items(), key=lambda t: -t[1]) if v > 0.5 and s not in order[:12]}
+    ok = ov >= LIVING_TOP20_MIN and plain_ok and not mono
+    return _row("living segment frequencies vs PHOIBLE",
+                {"top20_overlap": ov, "plain": plain, "monocultures": mono, "over_half_outside_phoible_top12": beyond12,
+                 "lects": len(ls)},
+                f"living human-voiced lects: top-20 overlap with PHOIBLE >= {LIVING_TOP20_MIN}; {' '.join(PLAIN)} each in at "
+                f"least 1/{PLAIN_FACTOR:.0f} of PHOIBLE's share; no segment in over {MONO_SHARE:.0%} of lects and over "
+                f"{MONO_FACTOR}x PHOIBLE's share", ok,
+                f"our top 20: {' '.join(ours)}; over_half_outside_phoible_top12 is informative (PHOIBLE itself has e, ŋ, b, o, "
+                f"ɡ, h in over half its languages)")
+
+
 def run_all(result: dict) -> list[dict]:
     fam = result.get("families") or {}
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, fam), (horizon, result), (shifts, result),
-                    (long_generations, result), (complexity, result)):
+                    (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result)):
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)

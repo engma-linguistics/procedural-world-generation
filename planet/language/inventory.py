@@ -200,6 +200,49 @@ def _sample_size(rng, measure: str, fallback_median: float) -> int:
     return max(2, int(round(rng.lognormal(math.log(fallback_median), 0.3))))
 
 
+SIZE_BW = 0.12  # bandwidth (in ln n) of the kernel that smooths PHOIBLE's size counts into a prior
+SIZE_FLOOR = 0.25  # pseudo-count (in languages) spread over every size up to 1.5x PHOIBLE's largest: the far tail is rare, not 0
+
+
+@functools.cache
+def _prior(measure: str) -> np.ndarray:
+    """PHOIBLE's inventory-size distribution for a measure, smoothed in ln n (SIZE_BW) with a SIZE_FLOOR pseudo-count, as an
+    array over sizes 0 .. 1.5 x the largest; sums to 1."""
+    k, f = phoible_sizes()[measure]["count"]
+    top = int(1.5 * max(k.max(), 2)) + 2
+    n = np.arange(top + 1, dtype=float)
+    ln = np.log(np.maximum(n, 0.5))
+    w = np.zeros(top + 1)
+    for size, frac in zip(k, f):
+        w += frac * np.exp(-0.5 * ((ln - math.log(max(size, 0.5))) / SIZE_BW) ** 2) / n.clip(1.0)
+    w = w / w[1:].sum()
+    n_lang = 2175.0
+    w = w + SIZE_FLOOR / n_lang / top
+    w[0] = 0.0
+    w[1] = min(w[1], w[2] * 0.5)
+    return w / w.sum()
+
+
+def size_prior(measure: str, n: int) -> float:
+    """Smoothed PHOIBLE probability of an inventory with n segments of a measure ("consonants" | "vowels"); sizes beyond the
+    array share its last value (tiny), and n < 1 is impossible (0 -> a tiny floor, so ratios stay finite)."""
+    w = _prior(measure)
+    if n < 1:
+        return 1e-12
+    return float(w[min(n, len(w) - 1)])
+
+
+def size_max(measure: str) -> int:
+    return int(phoible_sizes()[measure]["stat"]["max"])
+
+
+def size_quantiles(measure: str, qs=(0.05, 0.25, 0.5, 0.75, 0.95)) -> list[float]:
+    """Quantiles of PHOIBLE's (unsmoothed) size counts for a measure."""
+    k, f = phoible_sizes()[measure]["count"]
+    c = np.cumsum(f)
+    return [float(k[int(np.searchsorted(c, q - 1e-12))]) for q in qs]
+
+
 def tonal_share() -> float:
     try:
         k, f = phoible_sizes()["tones"]["count"]
@@ -332,6 +375,40 @@ def _pick_vowels(rng, n: int, profile) -> tuple[list, dict]:
     return [segs[i] for i in chosen], {segs[i]: float(cost[i]) for i in chosen}
 
 
+# Clicks. PHOIBLE lists a click in ~1.5% of its inventories (ǀ alone in 32 of 2175; the table keeps segments in >= 5
+# inventories) and those inventories are big (Nama 31 consonants with 20 clicks, Zulu ~45 with 15, !Xóõ 130 with 83): clicks
+# come as a system of places x accompaniments, the main source of PHOIBLE's long tail. A human-voiced proto whose drawn
+# consonant count is at least CLICK_MIN_C gets one with the probability that makes CLICK_SHARE of all protos click languages;
+# about CLICK_PART of its consonants are then clicks. The percept space has the five click places (ʘ ǀ ǃ ǂ ǁ) and the
+# accompaniments as its ordinary axes: plain (velar) k-, voiced ɡ-, nasal ŋ- (prenasal), aspirated, glottalized (ejective),
+# breathy-voiced.
+CLICK_SHARE = 0.015
+CLICK_MIN_C = 28
+CLICK_PART = 0.45
+CLICK_PLACES = ((("ǀ", "ǃ", "ǁ"), 0.5), (("ǀ", "ǃ", "ǁ", "ǂ"), 0.35), (("ǀ", "ǃ", "ǁ", "ǂ", "ʘ"), 0.15))
+CLICK_SERIES = ({}, {"voice": 1}, {"prenasal": 1}, {"larynx": 1}, {"larynx": 2}, {"voice": 1, "phonation": 1})
+CLICK_LEX_FREQ = 0.5  # lexical commonness of a click inside a click language (inv.freq; PHOIBLE's world share is ~0.01)
+
+
+def _p_click() -> float:
+    k, f = phoible_sizes()["consonants"]["count"]
+    big = float(f[k >= CLICK_MIN_C].sum()) or 1.0
+    return min(1.0, CLICK_SHARE / big)
+
+
+def click_system(rng, nc: int) -> list:
+    """A click system for an inventory of nc consonants: CLICK_PLACES x as many CLICK_SERIES as fill ~CLICK_PART of nc."""
+    from .percepts import from_ipa
+    opts = [p for p, _ in CLICK_PLACES]
+    places = opts[int(rng.choice(len(opts), p=[w for _, w in CLICK_PLACES]))]
+    m = max(1, min(len(CLICK_SERIES), int(round(CLICK_PART * nc / len(places)))))
+    out = []
+    for sets in CLICK_SERIES[:m]:
+        for sym in places:
+            out.append(replace(from_ipa(sym)[0], **sets))
+    return out
+
+
 _TONE_SETS = {2: [1, 3], 3: [1, 2, 3], 4: [1, 2, 3, 5], 5: [1, 2, 3, 4, 5]}
 
 
@@ -371,7 +448,14 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         nv = _sample_size(rng, "vowels", 6)
         if isinstance(size_hint, (int, float)) and size_hint:
             nc, nv = max(4, round(nc * size_hint)), max(2, round(nv * size_hint))
-    cons, ccost = _pick_consonants(rng, nc, profile)
+    clicks: list = []
+    from .profiles import human_voiced
+    if nc >= CLICK_MIN_C and human_voiced(profile) and rng.random() < _p_click():
+        clicks = click_system(rng, nc)
+    cons, ccost = _pick_consonants(rng, nc - len(clicks), profile)
+    if clicks:
+        ccost.update({c: _cost(profile, c) for c in clicks})
+        cons = cons + [c for c in clicks if c not in cons]
     vows, vcost = _pick_vowels(rng, nv, profile)
     # tone
     tones: list = []
@@ -395,7 +479,7 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         max_coda=sh["max_coda"], min_rise=int(rng.choice([1, 2, 3], p=[0.3, 0.5, 0.2])), coda_class=coda,
         onset_required=bool(sh["kind"] == "simple" and rng.random() < 0.5), stress=stress,
         repair_style="epenthesis" if rng.random() < 0.7 else "deletion",
-        cost={**ccost, **vcost}, freq={s: pool_f.get(s, 0.01) for s in cons + vows})
+        cost={**ccost, **vcost}, freq={s: (CLICK_LEX_FREQ if s in clicks else pool_f.get(s, 0.01)) for s in cons + vows})
     return inv
 
 

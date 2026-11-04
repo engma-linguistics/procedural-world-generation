@@ -281,6 +281,7 @@ class History:
                     w = 1.0 if w is None else w
                     if r.family == "tone" or r.cause == "tonogenesis":  # (an ear that hears tone coarsely takes it up less)
                         w *= min(1.0, (getattr(y.profile, "hear", None) or {}).get("tone", 1.0)) ** 2
+                    w *= min(1.0, LC.ease_factor(r, y))  # (a change toward rarer sounds spreads as reluctantly as it arises)
                     if rng.random() < p * min(1.0, w):
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm

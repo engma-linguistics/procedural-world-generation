@@ -200,6 +200,10 @@ FEATURES = {
     "labial": (cls("+labial", "C", "labial", place=0), cls("-labial", None, "", place=(1, 8)), None, None),
     "pulmonic": (cls("+pulmonic", None, "", larynx=(0, 1)), cls("-pulmonic", "C", "glottalic", larynx=(2, 3)), None, None),
     "glide": (G, Pattern("-glide", ("named", "nonglide"), ""), None, None),
+    "breathy": (cls("+breathy", None, "breathy", phonation=1), cls("-breathy", None, "modal", phonation=0),
+                {"phonation": 1}, {"phonation": 0}),
+    "aspirated": (cls("+aspirated", None, "aspirated", larynx=1), cls("-aspirated", None, "unaspirated", larynx=0),
+                  {"larynx": 1}, {"larynx": 0}),
 }
 # place is more than the place axis: assimilating to a retroflex, a labiodental or a labial-velar takes those axes too
 # (n + ʈ > ɳʈ, n + f > ɱf; ɳ + p > mp, never a retroflex labial m{retroflex=1})
@@ -1698,6 +1702,7 @@ _SET_WORDS = {("voice", 1): "voiced", ("voice", 0): "voiceless", ("back", 0): "f
               ("nasal", 1): "nasal", ("nasal", 0): "oral", ("length", 1): "long", ("length", 0): "short",
               ("round", 1): "rounded", ("round", 0): "unrounded", ("height", 6): "high", ("larynx", 2): "ejective",
               ("larynx", 3): "implosive", ("larynx", 1): "aspirated", ("phonation", 1): "breathy",
+              ("phonation", 0): "modal-voiced", ("larynx", 0): "unaspirated",
               ("secondary", 1): "labialized", ("secondary", 2): "palatalized",
               **{("tone", t): f"{w}-toned" for t, w in _TONE_WORDS.items()}}
 
@@ -1728,7 +1733,8 @@ _AFTER_V_CODA = Env(alts=(((("p", V),), ()),), syll=frozenset({"coda"}))
 def _build_demo() -> tuple[Rule, ...]:
     return (
         # lenition chain p > f > h > 0, one link per rule
-        _demo("lenition.p_f", "p > f", "effort", "lips", 4, "Grimm's law: Latin pater, English father"),
+        _demo("lenition.p_f", "p > f / #_, V_", "effort", "lips", 3,
+              "Grimm's law: Latin pater, English father (but spuere, spew: kept after s and other obstruents)"),
         _demo("lenition.f_h", "f > h / #_, V_V", "effort", "larynx", 3, "Latin facere > Old Spanish hazer > hacer"),
         _demo("lenition.h_loss", "h > ∅", "effort", "larynx", 5, "Spanish hacer [aθer]; Cockney 'ouse"),
         _demo("lenition.intervocalic_voicing", "[−voice −son −glottal] > [+voice] / V_V", "coarticulation", "larynx", 5,

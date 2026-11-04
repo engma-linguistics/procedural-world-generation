@@ -128,6 +128,11 @@ economy (prefer segments that reuse already-chosen places and manners: Clements)
 than `MIN_V_DIST` to an existing one until the system is full). Tone: with the PHOIBLE share of tonal languages, scaled by
 the profile's `tone` cost and `hear["tone"]`. Shapes: draw from a small distribution of canonical syllable types (CV only;
 CV(C); (C)(C)V(C); (C)(C)V(C)(C)), with onset and coda clusters allowed only if sonority rises into the nucleus.
+**Clicks** (2026-11-04): a human-voiced proto (`profiles.human_voiced`) drawing at least `CLICK_MIN_C` (28) consonants gets
+a click system with the probability that makes `CLICK_SHARE` (1.5%, PHOIBLE's share of click inventories) of all protos
+click languages: 3-5 places (ǀ ǃ ǁ, + ǂ, + ʘ) x as many accompaniments (plain, voiced, nasal, aspirated, glottalized,
+breathy) as fill `CLICK_PART` (45%) of the consonants, lexical commonness `CLICK_LEX_FREQ`. They are the main source of the
+long consonant tail, as in PHOIBLE (Nama, Zulu, !Xóõ).
 
 `draw_word(rng, inv, syllables=None) -> Word`, `repair(word, inv) -> Word` (make a word fit the phonotactics with the
 cheapest edit: epenthesis of the inventory's commonest high vowel, cluster simplification, coda deletion).
@@ -149,6 +154,13 @@ class Rule:
 
 - `catalogue(profile) -> list[Rule]`: all rules whose `needs` the profile has, with `weight` scaled by the species' make
   cost of the *output* (a rule producing a costly percept is downweighted; one removing a costly percept is upweighted).
+- Per lect (`lect.rule_factor`, cached per segment set, 2026-11-04): x `NEW_SEG_WEIGHT` (0.3) when the rule brings in a
+  segment the lect lacks; the **ease drag** for human voices, x `exp(EASE_K (cost_in - cost_out))` with PHOIBLE's
+  `-ln share` as the cost, i.e. (share_out / share_in) ** 0.5, clamped to [0.25, 3] (light: drift still happens; a deletion
+  makes nothing, an insertion is neutral; non-human voices get only their own make costs, through `cost_factor`, never
+  PHOIBLE); and the **size steer**: (PHOIBLE size prior at the count the rule leaves / at the count now) ** `SIZE_K` (0.5)
+  x a lognormal pull (sigma `SIZE_ANCHOR` 0.2 in ln n) toward the line's own proto count, clamped to [0.1, 2]. A context-free
+  rule removes what it rewrites; a conditioned one is a split.
 - `apply(rule, word) -> Word`, left to right, regular, on a tuple of Segments; `applies(rule, inv) -> bool` (the lect has
   a target segment).
 - `pick_rule(rng, lect) -> Rule | None`: weighted by `weight`, then vetoed by functional load: estimate the mergers the rule
@@ -199,6 +211,22 @@ Per-generation lexical events on a lect (`lexicon.step(rng, lect, gen_rate)`):
 - **borrowing on arrival**: `borrow(word, from_lect, to_lect, kyr, route_note)` = `hear_word` + repair + an `EtymStep`
   `borrow:<lect>`; the result is a normal word thereafter.
 
+**Word length follows the syllable space** (2026-11-04). `syllable_space(inv)` is the effective number of distinct
+syllables the inventory and its templates allow (perplexity over templates: onsets x vowels x tones x codas legal under the
+phonotactics; ~35 for a 6 C / 5 V CV-only language, ~1100 for 25 C / 8 V (C)V(C), ~10^5 for 40 C / 12 V complex).
+`length_scale(inv) = (LN_SIGMA_REF / ln sigma) ** LENGTH_EXP`, LN_SIGMA_REF = 7.7 (median human proto), LENGTH_EXP = 0.7,
+clipped to [0.7, 2.0]. Root syllables (`_n_syll_for`, 1-3 by frequency class, frequent words shorter) are multiplied by it
+(stochastic rounding, so the mean scales exactly); `limits(inv)` scales MAX_SYLL 3, MAX_SYLL_COMPOUND 4 and MAX_SEG 12 up
+with it (never down), and derivation and compound clipping keep more of their parts. Source: Nettle 1995 (Linguistics 33:
+359) and 1998 (J. Quant. Ling. 5:240): stems are shorter the larger the inventory, combined fit X = 17.87 S^-0.31 segments
+(r = 0.82), a coding-efficiency trade-off (Kohler's synergetic model); the exponent 0.7 damps the pure coding law
+(length ~ 1 / ln sigma) to Nettle's slope (a Rotokas-sized CV language ~1.6-1.8x the syllables of a 25 C (C)V(C) one).
+Over time the scale is re-measured on the lect's current inventory at every `lexicon.step`: after mergers shrink it,
+coinages are longer, derivation and compounding get `max(1, scale)` times their source weight (shift 1/scale), and a
+homophone being renewed weights derivation and compounding by LONGER_RENEWAL = 2 (Nettle 1998's mechanism: mergers make
+homophones, speakers answer with longer words, aujourd'hui < hui). `stats` reports `core_mean_syllables`,
+`core_mean_segments`, `syllable_space` and `length_scale`.
+
 ## 7. Grammar (`grammar.py`)
 
 Two layers.
@@ -209,6 +237,14 @@ adjective, relative clause, case, number, gender/class, alignment, TAM categorie
 generation: each feature has a flip hazard from its stability class (word order and adposition order very stable; adjective
 order and definite-article presence fickle), and a flip re-draws conditionally on the current word order. Keep ~40 features
 in the demo.
+Calibrated rates (2026-11-04; `grammar.STABILITY`, per generation: very stable 2e-4, stable 5e-4, medium 1e-3, fickle
+2.5e-3, very fickle 4e-3, x (1 + adult-L2 share), x the lect's own `rate` as for sound change): over 20 kyr at human
+generations a lect keeps its proto's value for ~85% (very stable), ~75-80% (stable), ~65% (medium), ~50-60% (fickle) of
+features; 145-yr generations keep ~90%. A word-order harmony feature whose value the current basic order disfavours
+flips up to 1 + DISHARMONY (9) times faster, so OV with postpositions and VO with prepositions re-assert themselves after
+a word-order change. Sources for the ranking and the size of the spread: Dediu 2011, Dediu & Cysouw 2013, Greenhill et al.
+2017, Dunn et al. 2011. `lect.grammar_step` runs it (`grammar.step(..., drift_typology=True, rate=lect.rate)`); before
+this round nothing called the drift and typology only changed by calques on shift.
 
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
@@ -324,6 +360,14 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
 4. at least a few living lects differ in family from their deme's descent (shift count > 0);
 5. long-generation species' lects changed measurably less (rules applied per kyr vs humans);
 6. empire and trade-hub lects simpler, isolated small lects richer (measured complexity by category; across seeds later).
+7. living human-voiced lects' inventory sizes vs PHOIBLE (`living_sizes`): p5/q1/median/q3/p95 of consonant and vowel
+   counts beside PHOIBLE's (12/17/21/27/42 C, 3/6/9/12/22 V); pass when the medians are within 3 C / 2 V, the quartiles
+   within 4 C / 3 V, and the share above PHOIBLE's p95 is 0.3-15% for consonants (a rare tail exists) and under 15% for
+   vowels;
+8. living human-voiced lects' segment frequencies vs PHOIBLE (`living_segments`): top-20 overlap >= 12; p t k m n i a u each
+   in at least half PHOIBLE's share of languages; no monoculture (no segment in over half the lects and over 2.5x PHOIBLE's
+   share: ʒ, ɹ, the breathy stops). The segments in over half the lects outside PHOIBLE's top 12 are listed, not judged
+   (PHOIBLE itself has e, ŋ, b, o, ɡ, h in over half its languages).
 
 ## 11. Output (`output.py`, `languages.json`)
 

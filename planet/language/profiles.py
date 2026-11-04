@@ -407,3 +407,17 @@ def hear_word(word: Iterable[Segment], listener: VoiceProfile, inventory: list[S
             continue
         out.append(best)
     return tuple(out)
+
+
+# ---- human-voiced or not ---------------------------------------------------------------------------------------------------
+
+def human_voiced(profile: VoiceProfile | None) -> bool:
+    """A human vocal tract: the human articulators and no non-human percept it can make (harsh voice aside, which humans make
+    at a high cost). Elves, dwarves, giants, orcs and the like are; dragons (sub-bass), kenku and aarakocra (syrinx, beak),
+    the reptilian mouths (no lips) and the purring cats are not. What is easy for such a voice is what is common among human
+    languages (PHOIBLE); for the others it is only their own make costs (rules.cost_factor)."""
+    if profile is None:
+        return True
+    if frozenset(profile.articulators) != HUMAN_ARTICULATORS:
+        return False
+    return all(math.isinf(profile.make_cost.get(k, INF)) for k in NONHUMAN_KEYS if k != "harsh")

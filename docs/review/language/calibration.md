@@ -173,3 +173,114 @@ human horizon moved from 9.0 to 11.0 kyr. The rule-rate lever does not move it:
 So the horizon is set by the lexical-replacement curve (how fast core words are replaced at 5-12 kyr), not by the sound-change
 rate, which only hurts the young sisters. The next lever is the replacement shape (faster rare end, slower core end) or the
 measure's tolerances; both are in the needs-decision draft. Shipped: RATE_SCALE 5, this run (`runs/a24559/languages.json`).
+
+## Word length and typology drift round (2026-11-04)
+
+**Word length.** Roots, derivations, compounds and coinages now scale with the lect's syllable space
+(`lexicon.syllable_space`, `length_scale = (7.7 / ln sigma) ** 0.7`, clipped 0.7-2.0; caps MAX_SYLL / MAX_SYLL_COMPOUND /
+MAX_SEG scale up with it), re-measured on the current inventory at every lexical step, with derivation and compounding
+favoured (x scale, x2 for a homophone's renewal) when a lect's space has shrunk. Grounding: Nettle 1995 and 1998, combined
+fit X = 17.87 S^-0.31 segments per stem; the exponent 0.7 was set so a Rotokas-sized CV language gets ~1.6-1.8x the
+syllables of a 25 C (C)V(C) one (architecture.md §6).
+
+Unit check (`tests/test_language_lexicon.py::test_small_syllable_space_gives_longer_words`, proto lexicons): 6-8 C and 3-5 V,
+CV only (sigma 27-35, scale 1.6-1.7): core mean 3.3 syllables, 6.4 segments, class-1 words 2.8 syllables, class-5 4.1;
+25 C / 8 V (C)V(C) (sigma ~2200, scale 1.0): core 1.8 syllables, 4.5 segments; 40 C / 12 V complex: 1.6 and 4.4.
+
+Typology: `grammar.drift` existed but nothing called it (`grammar.step` had `drift_typology=False` and `lect.grammar_step`
+never passed it), so living lects kept 98-100% of their proto's values; the 1-3% that moved were calques on shift. Now on,
+per generation x the lect's rate x (1 + L2 share), with the STABILITY rates unchanged (they already gave the target
+spread once run) and a new disharmony boost (x up to 10 for a word-order harmony feature the basic order disfavours).
+
+| trial | change | core syl (all living) | core syl, scale >= 1.2 (sigma < ~330) | corr(scale, core syl) | human: very stable / stable / medium / fickle / very fickle kept | long-lived (gen >= 60 yr) | OV>post, VO>pre |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| shipped (`runs/a24559/languages.json`) | - | 2.41 (4.73 seg) | 2.36-2.59 (n 52) | 0.05 | 0.99 / 0.99 / 0.99 / 0.99 / 0.98 | 1.00 / 1.00 / 1.00 / 0.99 / 1.00 | 0.95, 0.76 |
+| runB (scratchpad `runB/a24559/languages.json`) | length scale + drift on + disharmony | 2.44 (4.73 seg) | 2.86-3.51 (n 29) | 0.40 | 0.85 / 0.76 / 0.68 / 0.55 / 0.76 (human people, n 103) | 0.95 / 0.92 / 0.89 / 0.82 / 0.81 (n 243, median 145 yr) | 0.94, 0.87 |
+
+runB by length scale (living lects; the shipped file re-measured with the same function in brackets): scale < 0.85 (sigma
+~27k) 2.24 syllables (2.28); 0.85-0.95 2.35 (2.39); 0.95-1.05 2.49 (2.49); 1.05-1.2 2.61 (2.42); 1.2-1.4 (sigma ~180) 2.86
+(2.36); > 1.4 (sigma 85, hill giant d28, 17 C 5 V CV) 3.51 (2.59). By consonant count alone the curve stays flat (10-15 C
+2.82, 30-40 C 2.34), because in this run the small consonant inventories carry 10+ vowels or tones and (C)V(C) templates:
+their syllable space is not small (median ~1100). No living lect here has under 12 consonants and a CV template; the
+inventory-size round running in parallel widens that end, and the unit tests cover it. Homophone share over all words 0.135
+(0.136 before), longest word 19 segments (20 before). Horizon 11.0 kyr human (unchanged), sisters check ok.
+
+Typology per feature (runB, short-generation lects, n 378): word order 0.84, adposition 0.81, gender 0.83, alignment 0.63,
+genitive 0.67, negation 0.53, adjective order 0.56, definite article 0.53, diminutive 0.43, progressive 0.58; indefinite
+article 0.81 and habitual 0.69 stay high because their re-draw lands on the common value most of the time. Lects of peoples
+with generations of 60-430 yr (46-330 generations in 20 kyr) keep 0.8-0.95, as intended (hazards are per generation).
+
+## Sound realism round (2026-11-04)
+
+Goal (owner): a light ease/markedness drag on sound change, return paths in the catalogue, soft PHOIBLE-shaped inventory
+sizes instead of hard caps, clicks at PHOIBLE's rate, and checks that measure living human-voiced lects against PHOIBLE.
+Baseline: the shipped run `runs/a24559/languages.json` (309 living human-voiced lects). Iteration used an isolated-lect
+harness (protos stepped 20 kyr with no wave or shift; 40-60 lects, ~30 s) to find what removes and creates each segment,
+then full runs.
+
+What the harness showed. Every lect undergoes ~300 sound changes in 20 kyr, so nearly every catalogue rule fires at least
+once per line and each segment's share settles where its creation and removal rates balance. p, t, k died through
+*context-free* stop shifts (lenition.p_f `p > f`, its duplicate S015 and Grimm S177, ~1.3 removals per line), with no way
+back except b > p; ʒ came from context-free j > ʒ (S030) and dʒ > ʒ; ɹ, v, the breathy stops from context-free r > ɹ, w > v
+and S165 `D > D̤`, none with an exit (S098 was written with bʰ and never matched a breathy stop; Grassmann, S093, does not
+parse). Big proto inventories shrank to ~35 because FOLD_RARE folded every new unit under 1% of tokens, which in a 60-unit
+inventory is most of them; the size caps did the rest.
+
+Trials (harness, human protos; p/t/k/b share of end states, C quartiles):
+
+| trial | p | t | k | b | ʒ | ɹ | C q1/med/q3 (max) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| shipped code | 0 | 25 | 28 | 0 | 81 | 50 | 16/19.5/22 (34) |
+| + ease drag (K 0.5) + caps -> soft steer, S030/S098/S165 fixed, 9 return rows | 6 | 26 | 28 | 2 | 10 | 54 | 17/19/22 (33) |
+| + p > f and Grimm conditioned (#_, V_: kept after s and obstruents), S163 from geminates, ɹ > ʋ, v > b | 38-65 | 72-90 | 75-92 | 40-60 | 8-20 | 8-20 | 18/20/24 (38) |
+| + size anchor to the proto count, FOLD_RARE relative to the mean unit share | 62-65 | 75 | 63-78 | 60-65 | 13-22 | 13 | 17-18/21/24 (50-55) |
+
+EASE_K 0.75 and 1.0 changed nothing beyond sampling noise (the clamp and the catalogue's structure dominate), so it stays
+at 0.5 (the light setting: p > f at 0.71x, f-type returns at 1.4x). SIZE_K 0 vs 1 changed little; the anchor and the
+relative FOLD_RARE are what keep a wide living spread.
+
+Full run A (`scratchpad/runA`, 14 min, 8 workers; living human-voiced lects, n = 307; shipped in brackets):
+p 67% (1), t 75 (8), k 73 (13), b 40 (5), d 31 (8), ɡ 26 (12); ʒ 16 (95), ɹ 17 (56), bʱ/dʱ/ɡʱ 0 (43/42/33), kx 4 (31);
+consonants p5/q1/med/q3/p95 13/18/23/27/39, max 59, 3.3% above PHOIBLE's p95 of 42 (12/17/22/26/32, max 35); vowels
+5/7/9/12/17, max 28 (5/7/9/12/16); clicks in 3.6% of living human-voiced lects (0). Top-20 overlap with PHOIBLE 14 (11).
+Tonal: 37% of living lects (48%). Horizon 10.2 human / 7.6 all (11.0 / 9.2). Checks: the six as before (horizon still
+just outside 6-10), living sizes pass, living segments fail on one monoculture, ʁ in 66% (PHOIBLE 6%): r > ʁ (S148,
+context-free) with no exit. Kenku tonal 63% (93%), aarakocra 96% (88%), dragons keep their harsh marks (5.9 per lect, was 5.3).
+Fix for run B: S148 naturalness 3 -> 2 (uvular r is essentially one European areal spread) and the coda r-loss S102 takes
+ʁ too (Standard German coda /ʁ/ vocalization).
+
+Full run B (`scratchpad/runB`, 13 min): ʁ gone from the monoculture list; p 61, t 68, k 58, b 35, d 25, ɡ 25; ʒ 21, ɹ 16,
+breathy 0, kx 2; C 13/18/22/26/37 (max 57, 2.2% above 42), V 5/7/10/12/16 (max 23); tonal 39% of living lects; kenku 81%,
+aarakocra 92% tonal (so run A's kenku 63% was sampling, 27 lects from 8 protos); horizon 10.2 / 9.2. Living segments failed
+on ʊ (53%, PHOIBLE 14%): the Great Vowel Shift row S179 wrote its first stage as əɪ əʊ, which the percept space splits into
+vowel + ɪ/ʊ, so every firing brought in two lax vowels with no exit. Rewritten with plain offglides (iː uː > ei ou, the
+stage most handbooks give); in the harness ɪ and ʊ are then created by nothing.
+
+Full run C (`scratchpad/runC`, 13 min): ɪ/ʊ gone; ʁ back at 58% (B 49%, A 66%): uvular r mostly arrives by the wave
+(contact), which ignored the ease drag. p 61, t 67, k 59, b 45, d 29, ɡ 30; ʒ 16, ɹ 16, kx 7; C 14/18/22/27/40 (max 59,
+3.6% above 42), V 4/6/8.5/11/15; tonal 39%; horizon 9.5 human / 9.2 all (inside 6-10). Change for run D: wave adoption
+probability x min(1, the receiver's ease factor for the rule) (`lect.ease_factor`, human voices only): a change toward rarer
+sounds spreads by contact as reluctantly as it arises at home.
+
+Full run D (`scratchpad/runD`, 14 min; the round's result). Living human-voiced lects, n = 307 (shipped run in brackets):
+
+| | p | t | k | b | d | ɡ | ʒ | ɹ | bʱ/dʱ/ɡʱ | kx | ʔ | clicks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| run D | 68 | 85 | 78 | 43 | 32 | 31 | 14 | 21 | 0/0/0 | 3 | 78 | 3.6 |
+| shipped | 1 | 8 | 13 | 5 | 8 | 12 | 95 | 56 | 43/42/33 | 31 | 86 | 0 |
+| PHOIBLE | 85 | 72 | 90 | 62 | 48 | 56 | 14 | 2 | 1/0/2 | 0 | 38 | ~1.5 |
+
+Consonants p5/q1/med/q3/p95 14/18/22/27/39 (PHOIBLE 12/17/21/27/42), min 8, max 53, 3.6% above 42 and 4.2% above 40
+(shipped 12/17/22/26/32, max 35); vowels 5/6/8/11/16 (PHOIBLE 3/6/9/12/22), max 27. Top-20 overlap 15 (11). In over half
+the lects outside PHOIBLE's top 12: ɲ 92, ŋ 89, e 80, ʔ 78, f 74, h 69, ɛ 69, o 68, ɾ 57 (ɲ, ʔ and f are the
+over-represented ones: nasal place assimilation and n > ɲ / _i make splits that a phonologist would call allophones, and
+this engine counts every distinct segment in the forms as a phoneme). Tonal 38% of living lects (48%); kenku 85% (93%),
+aarakocra 96% (88%) tonal; dragons 5.7 harsh-voice units per lect (5.3).
+
+Checks: proto inventories, sisters, shift, long generations, hubs pass as before; **horizon 4.25 human / 5.4 all, now under
+6-10** (runs A-C: 10.2, 10.2, 9.5). Runs A-D also carried the parallel lexicon/grammar round's edits as they stood, and the
+split-based horizon rests on bins of a few splits, so this move is not attributed; it needs a look before the round ships.
+New checks: living sizes pass; living segments pass (no monoculture; p t k m n i a u all within half of PHOIBLE's share).
+
+Constants: EASE_K 0.5, EASE_CLAMP [0.25, 3]; SIZE_K 0.5, SIZE_ANCHOR 0.2, SIZE_CLAMP [0.1, 2]; FOLD_RARE 0.2 of the mean unit
+share; INV_MAX 1x PHOIBLE's largest count (130 C, 50 V); CLICK_SHARE 1.5%, CLICK_MIN_C 28, CLICK_PART 0.45.

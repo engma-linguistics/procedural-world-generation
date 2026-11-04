@@ -206,21 +206,52 @@ def test_rules_and_roman(result):
 
 
 def test_inventory_cap():
+    """No hard cap any more (size is steered by the rule weights): the cap only folds rare new units one axis from a
+    commoner unit (onto the cheaper, commoner neighbour) and units spelt alike; the proto's own units stay."""
     from planet.language import lect as LC
     from planet.language.percepts import from_ipa
     from planet.language import lexicon as LX
     base = from_ipa("ptkmnsla")
     lex = LX.Lexicon("x", {}, {}, True)
     extra = from_ipa("pʰtʰkʰbdgɓɗqχʁħʕɬɮ")
-    forms = [(b, v) for b in base for v in from_ipa("a")] + [(e, from_ipa("a")[0]) for e in extra]
+    forms = [(b, v) for b in base for v in from_ipa("a")] * 30 + [(e, from_ipa("a")[0]) for e in extra]
     for k, f in enumerate(forms):
         lex.words[f"W{k}"] = LX.Word(f"W{k}", tuple(f), "N", 3, (), 0.0)
     l = LC.Lect(id="x", deme=0, people="human", parent=None, how="proto", born_kyr=1.0, lexicon=lex,
                 base_segs=frozenset(LC._unit(x) for x in base))
     n = l.cap_inventory(0.5)
     cons = {x for w in lex.words.values() for x in w.form if x.kind == "C"}
-    assert n > 0 and len(cons) <= max(int(LC.INV_CAP_RATIO * 8), 10)
+    assert n > 0 and len(cons) < 8 + len(extra)
     assert {x for x in base if x.kind == "C"} <= cons and l.changes[-1]["cause"] == "dispersion" and l.changes[-1]["rule"] == "simplification" and " > " in l.changes[-1]["merged"]
+    ph, th = from_ipa("pʰ")[0], from_ipa("tʰ")[0]
+    assert ph not in cons and th not in cons  # (rare aspirates folded into the plain stops, one axis away)
+
+
+def test_size_steer_follows_phoible():
+    """The size steer: growing a 21-consonant inventory is neutral-ish, growing a 70-consonant one is rare, shrinking a
+    7-consonant one is rare; the anchor holds a line near its own proto size."""
+    from planet.language import lect as LC
+    assert 0.7 < LC.size_steer("consonants", 21, 1) < 1.3
+    assert LC.size_steer("consonants", 70, 1) < LC.size_steer("consonants", 21, 1)
+    assert LC.size_steer("consonants", 7, -1) < 0.8
+    assert LC.size_steer("consonants", 60, -1, n0=60) < LC.size_steer("consonants", 60, -1)
+
+
+def test_ease_drag_human_only():
+    """The ease drag favours changes toward commoner sounds for a human voice (f > p over p > f) and leaves other voices to
+    their own make costs."""
+    from planet.language import lect as LC, rules as RU
+    from planet.language.percepts import from_ipa
+    pf, _ = RU.parse_rule({"id": "a", "rule": "p > f", "cause": "effort", "articulators_or_axes_needed": "lips",
+                           "naturalness": "3", "example": "", "family": "lenition"})
+    fp, _ = RU.parse_rule({"id": "b", "rule": "f > p", "cause": "effort", "articulators_or_axes_needed": "lips",
+                           "naturalness": "3", "example": "", "family": "fortition"})
+    segs = frozenset(from_ipa("ptkbdgfvszʃmnŋlrjwhʔaeiou"))
+    units = frozenset(LC._unit(x) for x in segs)
+    h = [LC.rule_factor(r, segs, units, True) for r in (pf, fp)]
+    o = [LC.rule_factor(r, segs, units, False) for r in (pf, fp)]
+    assert h[0] < 1.0 < h[1]
+    assert o[0] == o[1]
 
 
 # ------------------------------------------------------------------------------------------- driver fixes (review 2026-11-04)

@@ -60,6 +60,30 @@ COLEX_P_PER_FAMILY = 0.008    # chance a proto-lexicon colexifies an edge, per f
 MAX_SYLL = 3                  # a derived word has at most this many syllables (the base is clipped to fit)
 MAX_SYLL_COMPOUND = 4         # a compound has at most this many (its parts are clipped to their first 1-2 syllables)
 MAX_SEG = 12                  # and no new word is longer than this many segments
+# (the three caps are for a language of the reference syllable space; `limits(inv)` scales them by `length_scale(inv)`)
+
+# Word length follows the syllable space. Nettle 1995 (Linguistics 33:359, ten languages) and 1998 (J. Quant. Ling.
+# 5:240, twelve West African languages) find dictionary stems shorter the larger the segment inventory: combined fit
+# X = 17.87 S^-0.31 segments (r = 0.82; S counts each vowel x tone combination), from ~8.5 segments at S = 11
+# (Rotokas-sized: 6 C + 5 V) to ~5.4 at S = 47 and ~4 at S = 119 (!Xu). The synergetic argument behind it (Kohler 1986)
+# is a coding one: a lexicon of fixed size needs length ~ log(N) / log(alphabet). We measure the alphabet as the
+# syllable space (`syllable_space`: the effective number of distinct syllables the inventory and its templates allow, so
+# a CV-only language counts as small even with a mid-sized inventory, Maddieson 2006 / Fenk-Oczlon & Fenk 1999 on the
+# syllable-complexity vs word-length trade-off) and damp the pure coding law to match Nettle's slope:
+#   length_scale = (LN_SIGMA_REF / ln sigma) ** LENGTH_EXP
+# LENGTH_EXP = 0.7 turns the coding ratio between a Rotokas-like CV language (sigma ~35) and a 25 C / 8 V (C)V(C) one
+# (sigma ~1100, ln ratio 1.98) into a syllable ratio of 1.61, close to Nettle's fit (segments 8.5 vs 5.7 at
+# 1.9 vs 2.5 segments a syllable: 1.8). Descriptive grammars agree on the small end: Rotokas (Firchow and Firchow 1969;
+# Robinson 2006) has mostly 2-4-syllable roots (avaraka, kopiroa, vokovoko); Piraha (Everett 1986; 8 C, 3 V, 2 tones)
+# few monosyllables, roots mostly 2-3 syllables. Hawaiian (13 segments, CV(V)) stems average 7.1 segments (Nettle 1995).
+# LN_SIGMA_REF is the median ln sigma of human proto inventories drawn by inventory.draw_inventory (so the median
+# language keeps the old lengths). The scale is clipped to LENGTH_SCALE_RANGE so 6 C + 3 V and 80 C both stay sane.
+# The caps (`limits`) grow with the scale but never fall below MAX_SYLL / MAX_SYLL_COMPOUND / MAX_SEG: a language
+# with a huge syllable space gets shorter roots, but its derivations and compounds are not clipped harder (clipping
+# only makes homophones).
+LN_SIGMA_REF = 7.7      # median ln sigma of 300 human draw_inventory() protos (quartiles 6.7 and 8.6)
+LENGTH_EXP = 0.7
+LENGTH_SCALE_RANGE = (0.7, 2.0)
 BUILD_MIN_FAMILIES = 5        # CLICS edges a new word is built or shifted along (3-4 families is mostly chance)
 SHIFT_GAP = 50.0              # generations: a concept takes or passes on a word by colexification shift at most this often
 HOMOPHONE_BOOST = 4.0         # replacement hazard x this for the rarer members of a homophone group of 3+ or of an
@@ -438,6 +462,8 @@ class Lexicon:
     gen: float = 0.0                                          # generations stepped so far (the shift clock)
     shifted: dict[str, float] = field(default_factory=dict)  # concept -> `gen` of its last colexification shift
     notes: list = field(default_factory=list)                 # (kyr, text): affixes lost and renewed
+    length_scale: float = 1.0                                 # `length_scale` of the inventory at the last step
+    syllable_space: float = 0.0                               # and its `syllable_space` (0: not measured yet)
 
     def __contains__(self, concept: str) -> bool:
         return resolve(concept) in self.words
@@ -468,7 +494,7 @@ class Lexicon:
     def copy(self, lect: str | None = None) -> "Lexicon":
         """A cheap copy: Words and EtymSteps are immutable and shared."""
         return Lexicon(lect or self.lect, dict(self.words), dict(self.affixes), self.head_first, self.gen,
-                       dict(self.shifted), [])
+                       dict(self.shifted), [], self.length_scale, self.syllable_space)
 
 
 def _step(kyr, lect, process, form, gloss, note="") -> EtymStep:
@@ -479,10 +505,75 @@ def _nsyl(form: Form) -> int:
     return sum(1 for s in form if s.kind == "V")
 
 
-def _n_syll_for(rng, freq_class: int) -> int:
+def _n_syll_for(rng, freq_class: int, scale: float = 1.0) -> int:
+    """Syllables for a new root: 1-3 by frequency class (frequent words shorter: Zipf's law of abbreviation), times the
+    language's `length_scale`, rounded stochastically so the mean scales exactly and the frequency order is kept."""
     p = {1: (0.55, 0.40, 0.05), 2: (0.40, 0.50, 0.10), 3: (0.25, 0.55, 0.20), 4: (0.15, 0.55, 0.30),
          5: (0.10, 0.50, 0.40)}[min(5, max(1, freq_class))]
-    return int(rng.choice(3, p=p)) + 1
+    n = int(rng.choice(3, p=p)) + 1
+    if scale == 1.0:
+        return n
+    x = n * scale
+    return max(1, int(x) + int(rng.random() < x - int(x)))
+
+
+# --- word length and the syllable space ---------------------------------------------------------------------------------
+
+def _inv_key(inv) -> tuple:
+    return (tuple(inv.consonants), tuple(inv.vowels), tuple(inv.tones), tuple(sorted(inv.shapes.items())),
+            inv.max_onset, inv.max_coda, inv.min_rise, inv.coda_class, inv.onset_required)
+
+
+@functools.lru_cache(maxsize=8192)
+def _space(key: tuple) -> float:
+    cons, vows, tones, shapes, max_onset, max_coda, min_rise, coda_class, onset_required = key
+    inv = _inv.Inventory(list(cons), list(vows), list(tones), dict(shapes), max_onset=max_onset, max_coda=max_coda,
+                         min_rise=min_rise, coda_class=coda_class, onset_required=onset_required)
+    nv = max(1, len(vows)) * max(1, len(tones))
+    on = {0: 1, 1: len(cons)}
+    co = {0: 1, 1: sum(1 for c in cons if inv.coda_ok((c,)))}
+    if max_onset >= 2:
+        on[2] = sum(1 for a in cons for b in cons if inv.onset_ok((a, b)))
+    if max_coda >= 2:
+        co[2] = sum(1 for a in cons for b in cons if inv.coda_ok((a, b)))
+    tot = sum(w for w in dict(shapes).values() if w > 0)
+    h = 0.0
+    for t, w in shapes:
+        if w <= 0:
+            continue
+        o = len(t) - len(t.lstrip("C"))
+        c = len(t) - len(t.rstrip("C"))
+        n = on.get(min(o, 2), 0) * nv * co.get(min(c, 2), 0)
+        if n <= 0:
+            continue
+        q = w / tot
+        h += q * (math.log(n) - math.log(q))
+    return math.exp(h) if h > 0 else float(nv)
+
+
+def syllable_space(inv) -> float:
+    """The effective number of distinct syllables (perplexity) the inventory allows: for each syllable template of
+    weight q, N = onsets x vowels (x tones) x codas legal under the phonotactics, and sigma = exp(sum q (ln N - ln q)).
+    A 6 C / 5 V CV-only language: ~35; 25 C / 8 V (C)V(C): ~1100; a 40 C / 12 V complex one: ~10^5."""
+    if inv is None or not getattr(inv, "consonants", None) and not getattr(inv, "vowels", None):
+        return math.exp(LN_SIGMA_REF)
+    return _space(_inv_key(inv))
+
+
+def length_scale(inv) -> float:
+    """How much longer (> 1) or shorter (< 1) words are than in a language of the reference syllable space:
+    (LN_SIGMA_REF / ln sigma) ** LENGTH_EXP, clipped to LENGTH_SCALE_RANGE (see the constants)."""
+    if inv is None:
+        return 1.0
+    ln = math.log(max(syllable_space(inv), 2.0))
+    lo, hi = LENGTH_SCALE_RANGE
+    return float(min(hi, max(lo, (LN_SIGMA_REF / ln) ** LENGTH_EXP)))
+
+
+def limits(inv) -> tuple[int, int, int]:
+    """(MAX_SYLL, MAX_SYLL_COMPOUND, MAX_SEG) scaled up by the language's `length_scale` (never below the constants)."""
+    s = max(1.0, length_scale(inv))
+    return round(MAX_SYLL * s), round(MAX_SYLL_COMPOUND * s), round(MAX_SEG * s)
 
 
 def _draw_affixes(rng, inv) -> dict[str, tuple]:
@@ -502,7 +593,8 @@ def _draw_affixes(rng, inv) -> dict[str, tuple]:
 
 def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: str,
                   head_first: bool | None = None, include_late: bool = False) -> Lexicon:
-    """A proto-language's words: one monomorphemic root of 1-3 syllables per concept (frequent concepts shorter), no
+    """A proto-language's words: one monomorphemic root of 1-3 syllables per concept (frequent concepts shorter; times
+    `length_scale(inv)`, so a small syllable space gives longer roots), no
     accidental homophones where avoidable, and a few colexifications from strong CLICS edges (TREE/WOOD, HAND/ARM...)
     with one word for both. Concepts with `proto=False` (crops, metals, straw) are left out unless `include_late`."""
     cl = [c for c in concepts if include_late or c.proto]
@@ -518,12 +610,14 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
                 if rng.random() < min(0.6, COLEX_P_PER_FAMILY * fam):
                     pair_of[nb] = c.id   # nb takes c's word
     used: set = set(a for a, _ in lex.affixes.values())
+    scale, mseg = length_scale(inv), limits(inv)[2]
+    lex.length_scale, lex.syllable_space = scale, syllable_space(inv)
     for c in sorted(cl, key=lambda c: (c.freq_class, c.id)):
         if c.id in pair_of:
             continue
         for _ in range(30):
-            f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class))
-            if f not in used and len(f) <= MAX_SEG:
+            f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class, scale))
+            if f not in used and len(f) <= mseg:
                 break
         used.add(f)
         lex.words[c.id] = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "proto", f, c.gloss),), float(kyr))
@@ -534,7 +628,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
             src = pair_of[src]
         c, w = concept_info(nb), lex.words.get(src)
         if w is None:   # the source has no word (not on this list, or itself unresolved): give nb its own root
-            f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class))
+            f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class, scale))
             lex.words[nb] = Word(nb, f, c.pos, c.freq_class, (_step(kyr, lect_id, "proto", f, c.gloss),), float(kyr))
             continue
         lex.words[nb] = Word(nb, w.form, c.pos, c.freq_class,
@@ -744,24 +838,28 @@ def _first_syllable(form: Form) -> Form:
     return form
 
 
-def _fit_base(base: Form, affix: Form) -> tuple[Form, bool]:
-    """Clip a derivation's base so base + affix keeps to MAX_SYLL syllables and MAX_SEG segments."""
+def _fit_base(base: Form, affix: Form, inv=None) -> tuple[Form, bool]:
+    """Clip a derivation's base so base + affix keeps to the language's MAX_SYLL syllables and MAX_SEG segments
+    (`limits`); the base keeps its first 1-2 syllables (more in a language with long words)."""
+    ms, _, mseg = limits(inv)
     a = syllables(affix)
-    room = max(1, min(2, MAX_SYLL - a))
+    room = max(1, min(round(2 * max(1.0, length_scale(inv))), ms - a))
     clipped = False
-    if syllables(base) + a > MAX_SYLL:
+    if syllables(base) + a > ms:
         base, clipped = clip(base, room), True
-    if len(base) + len(affix) > MAX_SEG and syllables(base) > 1:
+    if len(base) + len(affix) > mseg and syllables(base) > 1:
         base, clipped = clip(base, 1), True
     return base, clipped
 
 
-def _fit_parts(h: Form, m: Form) -> tuple[Form, Form, bool]:
-    """Clip a compound's parts (the modifier first) to their first 1-2 syllables until the whole keeps to
-    MAX_SYLL_COMPOUND syllables and MAX_SEG segments."""
+def _fit_parts(h: Form, m: Form, inv=None) -> tuple[Form, Form, bool]:
+    """Clip a compound's parts (the modifier first) to their first 1-2 syllables (more in a language with long words)
+    until the whole keeps to the language's MAX_SYLL_COMPOUND syllables and MAX_SEG segments (`limits`)."""
+    _, msc, mseg = limits(inv)
+    k = round(2 * max(1.0, length_scale(inv)))
     clipped = False
-    for part, n in (("m", 2), ("h", 2), ("m", 1), ("h", 1)):
-        if syllables(h) + syllables(m) <= MAX_SYLL_COMPOUND and len(h) + len(m) <= MAX_SEG:
+    for part, n in [(x, j) for j in range(k, 0, -1) for x in ("m", "h")]:
+        if syllables(h) + syllables(m) <= msc and len(h) + len(m) <= mseg:
             break
         if part == "m" and syllables(m) > n:
             m, clipped = clip(m, n), True
@@ -771,12 +869,13 @@ def _fit_parts(h: Form, m: Form) -> tuple[Form, Form, bool]:
 
 
 def _cap(form: Form, n_syll: int, inv) -> Form:
-    """Last guard after repair: at most n_syll syllables and MAX_SEG segments."""
-    if syllables(form) > n_syll or len(form) > MAX_SEG:
+    """Last guard after repair: at most n_syll syllables and the language's MAX_SEG segments (`limits`)."""
+    mseg = limits(inv)[2]
+    if syllables(form) > n_syll or len(form) > mseg:
         f = clip(form, n_syll)
-        while len(f) > MAX_SEG and syllables(f) > 1:
+        while len(f) > mseg and syllables(f) > 1:
             f = clip(f, syllables(f) - 1)
-        form = _inv.repair(f[:MAX_SEG], inv) or form[:MAX_SEG]
+        form = _inv.repair(f[:mseg], inv) or form[:mseg]
     return form
 
 
@@ -809,8 +908,8 @@ def derive(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None
     b = lex.words.get(resolve(base))
     if b is None or _carries(lex, b, meaning) or not affix_fits(meaning, c.id, b.concept):
         return None
-    bf, clipped = _fit_base(b.form, af)
-    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), MAX_SYLL, inv)
+    bf, clipped = _fit_base(b.form, af, inv)
+    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), limits(inv)[0], inv)
     note = f"{b.concept} + '{meaning}'" + (f" (clip {b.ipa} > {word_ipa(bf)})" if clipped else "")
     return Word(c.id, form, c.pos, c.freq_class,
                 b.etym + (_step(kyr, lect_id, f"derive:{meaning}", form, c.gloss, note),), float(kyr))
@@ -870,8 +969,8 @@ def compound(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | No
     if head is None or modifier is None or head not in lex.words or modifier not in lex.words:
         return None
     h, m = lex.words[head], lex.words[modifier]
-    hf_, mf_, clipped = _fit_parts(h.form, m.form)
-    form = _cap(_inv.repair(_join(lex, hf_, mf_, head_first), inv), MAX_SYLL_COMPOUND, inv)
+    hf_, mf_, clipped = _fit_parts(h.form, m.form, inv)
+    form = _cap(_inv.repair(_join(lex, hf_, mf_, head_first), inv), limits(inv)[1], inv)
     proc = process or f"compound:{head}+{modifier}"
     nt = note or f"{head} + {modifier} ({m.ipa})"
     if clipped:
@@ -893,10 +992,11 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
     elif how == "compound":
         w = compound(rng, lex, c.id, inv, kyr, lect_id, head_first)
     if w is None:
-        n = _n_syll_for(rng, c.freq_class)
+        n = _n_syll_for(rng, c.freq_class, length_scale(inv))   # (the current inventory: mergers lengthen coinages)
+        mseg = limits(inv)[2]
         for _ in range(10):
             f = _inv.draw_word(rng, inv, n_syll=n)
-            if len(f) <= MAX_SEG:
+            if len(f) <= mseg:
                 break
         w = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "coin", f, c.gloss),), float(kyr))
     if store:
@@ -916,8 +1016,8 @@ def taboo_word(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | 
         return None
     q = qual[int(rng.integers(len(qual)))]
     b = lex.words[q]
-    bf, _ = _fit_base(b.form, af)
-    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), MAX_SYLL, inv)
+    bf, _ = _fit_base(b.form, af, inv)
+    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), limits(inv)[0], inv)
     return Word(c.id, form, c.pos, c.freq_class,
                 b.etym + (_step(kyr, lect_id or lex.lect, "taboo", form, c.gloss, f"'the {q.lower()} one'"),), float(kyr))
 
@@ -978,8 +1078,8 @@ def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: fl
     form = _inv.repair(heard, inv)
     if not form:
         form = _inv.repair(tuple(_inv.segments(inv)[:1]), inv) or word.form
-    if len(form) > MAX_SEG:   # epenthesis can swell a cluster-heavy loan; long loans get clipped in use
-        form = _cap(form, MAX_SYLL_COMPOUND, inv)
+    if len(form) > limits(inv)[2]:   # epenthesis can swell a cluster-heavy loan; long loans get clipped in use
+        form = _cap(form, limits(inv)[1], inv)
         note = (note + "; " if note else "") + "clipped"
     c = concept_info(word.concept)
     w = Word(c.id, form, word.pos, c.freq_class,
@@ -1141,6 +1241,7 @@ def _renew_affixes(rng, lex: Lexicon, inv, n_generations: float, kyr: float) -> 
         lex.notes.append((float(kyr), f"'{m}' affix renewed as {word_ipa(f)} < {src.lower() if src else 'coined'}"))
 
 
+LONGER_RENEWAL = 2.0   # a homophone's replacement: derivation and compounding weights x this (lexical expansion)
 DERIVE_TRIES = 3   # a derivation that clashes (homophone) or finds no base is retried this often with another base or affix
 _NOUN_AFFIXES = ("thing", "little", "place", "agent")
 
@@ -1224,6 +1325,9 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     events: list[tuple[str, str]] = []
     if n_generations > 0:
         lex.gen += float(n_generations)
+    scale = length_scale(inv) if inv is not None else lex.length_scale
+    if inv is not None:
+        lex.length_scale, lex.syllable_space = scale, syllable_space(inv)
     if n_generations > 0 and lex.words:
         keys = list(lex.words)
         boost = _renewal_boost(lex)
@@ -1250,6 +1354,18 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             if not _shift_ok(lex, k) or not any(n in lex.words and _shift_ok(lex, n)
                                                 for n, _ in clics_neighbours(k, BUILD_MIN_FAMILIES)):
                 opts.pop("shift")
+            # word length follows the syllable space over time too (Nettle 1998: mergers make homophones, and
+            # speakers answer with longer words, aujourd'hui < hui, Chinese disyllabic compounds): a lect whose
+            # inventory has shrunk (length_scale > 1) builds more words and shifts fewer short ones, and a homophone
+            # being renewed favours a built (longer) word by LONGER_RENEWAL; coinages are lengthened in `coin` (a
+            # large syllable space only shortens coinages: fewer built words would just mean more fresh roots)
+            up = max(1.0, scale)
+            lw = up * (LONGER_RENEWAL if k in boost else 1.0)
+            for x in ("derive", "compound"):
+                if x in opts:
+                    opts[x] *= lw
+            if "shift" in opts:
+                opts["shift"] /= up
             names = list(opts)
             w = np.array([opts[s] for s in names])
             src = names[int(rng.choice(len(names), p=w / w.sum()))]
@@ -1374,14 +1490,17 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
 
 
 def stats(lex: Lexicon) -> dict:
-    """Diagnostics: mean and max segments and syllables per word, the share of concepts in homophone groups, counts
+    """Diagnostics: mean and max segments and syllables per word (all words, and the Swadesh-100 core), the
+    syllable space and length scale last measured on the lect's inventory, the share of concepts in homophone groups, counts
     per etymology process (every step of every chain, and the latest non-sound-change step of each word), and
     `inherited_core_share`: the share of the Swadesh-100 words that are still the proto word (`inherited`)."""
     import collections
 
     words = list(lex.words.values())
     if not words:
-        return {"words": 0, "mean_segments": 0.0, "max_segments": 0, "mean_syllables": 0.0, "homophone_share": 0.0,
+        return {"words": 0, "mean_segments": 0.0, "max_segments": 0, "mean_syllables": 0.0,
+                "core_mean_syllables": 0.0, "core_mean_segments": 0.0, "syllable_space": float(lex.syllable_space),
+                "length_scale": float(lex.length_scale), "homophone_share": 0.0,
                 "processes": {}, "latest": {}, "inherited_core_share": 0.0}
     lens = [len(w.form) for w in words]
     hom = sum(len(v) for v in lex.homophones().values())
@@ -1392,6 +1511,9 @@ def stats(lex: Lexicon) -> dict:
     core = [w for k, w in lex.words.items() if k in CORE100]
     return {"words": len(words), "mean_segments": float(np.mean(lens)), "max_segments": int(max(lens)),
             "mean_syllables": float(np.mean([syllables(w.form) for w in words])),
+            "core_mean_syllables": float(np.mean([syllables(w.form) for w in core])) if core else 0.0,
+            "core_mean_segments": float(np.mean([len(w.form) for w in core])) if core else 0.0,
+            "syllable_space": float(lex.syllable_space), "length_scale": float(lex.length_scale),
             "homophone_share": hom / len(words), "processes": dict(procs), "latest": dict(latest),
             "inherited_core_share": (sum(map(inherited, core)) / len(core)) if core else 0.0}
 
@@ -1423,6 +1545,7 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
         words[k] = {"ipa": w.ipa, "pos": w.pos, "freq": w.freq_class, "born_kyr": w.born_kyr,
                     "etym": [s.to_list() for s in w.etym]}
     return {"lect": lex.lect, "head_first": lex.head_first, "gen": lex.gen, "shifted": dict(lex.shifted),
+            "length_scale": lex.length_scale, "syllable_space": lex.syllable_space,
             "notes": [list(x) for x in lex.notes],
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in lex.affixes.items()},
             "words": words}
@@ -1430,7 +1553,8 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
 
 def from_json(d: dict) -> Lexicon:
     lex = Lexicon(d["lect"], {}, {}, bool(d.get("head_first", False)), float(d.get("gen", 0.0)),
-                  {_i(k): float(v) for k, v in d.get("shifted", {}).items()}, [tuple(x) for x in d.get("notes", [])])
+                  {_i(k): float(v) for k, v in d.get("shifted", {}).items()}, [tuple(x) for x in d.get("notes", [])],
+                  float(d.get("length_scale", 1.0)), float(d.get("syllable_space", 0.0)))
     for m, a in d.get("affixes", {}).items():
         lex.affixes[m] = (tuple(from_ipa(a["ipa"])) if a["ipa"] else (), bool(a["suffix"]))
     for k, v in d["words"].items():

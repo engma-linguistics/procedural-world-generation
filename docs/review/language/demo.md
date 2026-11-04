@@ -5,6 +5,67 @@ committed on the branch; nothing is merged. The viewer is `viewer/languages.html
 workbench header). Start the server from the worktree (`uv run python -m planet serve`, or on another port if yours is
 up) and pick a24559.
 
+## Midday round (2026-11-04): your follow-ups
+
+`runs/a24559/languages.json` was re-run after this round (deterministic: two runs identical). Sections 3-8 below still
+describe the overnight run; where they disagree, this section wins. Trials are in `calibration.md` ("Sound realism round",
+"Word length and typology drift round").
+
+**What you asked, and what the run now shows** (living lects; "human-voiced" = the peoples who speak with a human-like
+voice, 307 lects):
+
+| | overnight | now | PHOIBLE / real |
+|---|---|---|---|
+| p / t / k present | 1 / 8 / 13% | 68 / 85 / 78% | 85 / 72 / 90% |
+| ʒ / ɹ present | 95 / 56% | 14 / 21% | 14 / 2% |
+| breathy stops bʱ dʱ ɡʱ | 33-43% | 0% | 0-2% |
+| consonants p5 / median / p95, max | 12 / 22 / 32, max 35 | 14 / 22 / 39, max 63 | 12 / 21 / 42, max 130 |
+| vowels p5 / median / p95, max | 5 / 9 / 16, max 16 | 5 / 8 / 16, max 27 | 3 / 9 / 22 |
+| click languages | 0 | 3.6% | ~1.5% |
+| tonal (all living lects) | 48% | 38% | ~40% (WALS) |
+| kenku / aarakocra tonal | 93 / 88% | 85 / 96% | |
+| human lects keeping their proto word order | ~100% | 85% | |
+
+- **Easier sounds win, lightly.** A sound change is drawn more often when its result is commoner in real languages than its
+  input, as the square root of the PHOIBLE ratio (p > f drawn 0.71x as often), clamped. Non-human peoples are judged by
+  their own voice profile's effort costs, never by human frequencies. Contact spread is damped the same way.
+- **The real culprits were unconditioned rules.** p > f, Grimm's law and j > ʒ applied everywhere instead of word-initially
+  and between vowels; voiced > breathy was rewritten as Khmer-style register. Eleven attested return paths were added
+  (deaspiration, loss of breathy voice, West Germanic β ð ɣ > b d g, Spanish betacism, Polish mazurzenie, and others). No
+  sourced return paths were found for x > k, f > p, ʒ > dʒ or ɹ > r, so none were invented.
+- **Inventory sizes follow PHOIBLE's curve.** The hard caps (35 C, 16 V) are gone. Each change that grows or shrinks an
+  inventory is weighed against PHOIBLE's size distribution and a pull toward the line's own starting size. Big inventories
+  occur and are rare: 24 living lects have 40 or more consonants, the largest has 63. Click systems appear in about 1.5% of
+  human-voiced proto-languages. The small end is still too tame: the smallest has 8 consonants, and only 3 have 10 or fewer.
+- **Small sound systems make long words.** Word length now follows the number of distinct syllables a language can make
+  (after Nettle 1995: about S^-0.31), for frequent words too, and keeps following it when mergers shrink the inventory.
+  A cloud-giant language with 14 consonants and 2 vowels says *'ihivi* 'water', *vihiviyi* 'hand', *'uyibiyiyu* 'eye'.
+
+| distinct syllables | lects | core words, mean syllables |
+|---|---|---|
+| under 100 | 3 | 3.5 |
+| 100-300 | 30 | 2.8 |
+| 300-1,000 | 70 | 2.6 |
+| 1,000-5,000 | 276 | 2.5 |
+| over 5,000 | 242 | 2.3 |
+
+- **Grammar drifts now.** Typology drift had never been switched on in the run (a plain bug). Human lects now keep 88% of
+  their very stable features over 20 kyr and 54% of the fickle ones; long-lived peoples change proportionally less. Word
+  order harmony holds (VO with prepositions in 89% of VO lects).
+- **Two new checks**, both passing: living inventory sizes against PHOIBLE's quantiles, and living segment frequencies
+  (top-20 overlap, p t k m n i a u present, no single sound in over half the lects at 2.5x its real share).
+- **Tonal words are still only a little shorter** (2.37 vs 2.51 core syllables).
+
+**The horizon now reads 4.25 kyr, and that is the measure's noise.** It reports the first 2-kyr window where under half of
+the true splits are recovered. Here the 4-6 kyr window recovered 2 of 10 (it was 6 of 10 a run earlier); every window from
+6 to 10 kyr recovers 60-80%, as before, and recovery collapses at about 11 kyr as before. So rule 1 below stands, with one
+more item: the measure should smooth over windows (or need two windows in a row) before it counts as a horizon.
+
+**Still open from this round:** ɲ, ŋ and ʔ are in 80-90% of lects because the engine counts every surface sound as a
+phoneme (assimilated nasals that would be allophones count too); names are still capped at 4 syllables; derivations that
+fail still fall back to a fresh coinage about half the time; book mode spells ɟʝ as "gyyh". The screenshots in `screens/`
+are from the overnight run.
+
 ## Rule on these first
 
 1. **The horizon.** An automatic comparative method on the output goes blind at **11.0 kyr** for human lects (10.0 for all)

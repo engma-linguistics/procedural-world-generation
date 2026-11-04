@@ -428,3 +428,75 @@ def test_grammar_holds_several_live_grams():
             abandoned += first.startswith("lost: the periphrasis")
     assert np.median(live) >= 5, live
     assert abandoned < 0.3 * (bound + abandoned), (bound, abandoned)
+
+
+# --- typology drift in the run (the 2026-11-04 round) -------------------------------------------------------------------
+
+def test_step_drifts_typology_at_the_lect_rate():
+    """grammar.step drifts the typology when asked (lect.grammar_step asks), per generation times the lect's rate: over
+    ~720 generations (20 kyr of human history) a good share of features change, at rate 0 none do."""
+    changed, frozen = [], []
+    for s in range(6):
+        rng, g = _grammar(s)
+        t0 = dict(g.typology)
+        G.step(rng, g, 720, drift_typology=True, rate=1.0)
+        changed.append(sum(g.typology[f] != t0[f] for f, _ in G.FEATURES))
+        rng, g = _grammar(s)
+        t0 = dict(g.typology)
+        G.step(rng, g, 720, drift_typology=True, rate=0.0)
+        frozen.append(sum(g.typology[f] != t0[f] for f, _ in G.FEATURES))
+    assert np.mean(changed) >= 6 and not any(frozen), (changed, frozen)
+
+
+def test_lect_grammar_step_turns_drift_on():
+    from planet.language import lect as LC
+    seen = {}
+
+    class Fake:
+        def step(self, rng, g, n, **kw):
+            seen.update(kw)
+    lect = type("L", (), {"grammar": None, "inventory": None, "lexicon": None, "rate": 1.3})()
+    LC.grammar_step(Fake(), None, lect, 10.0, {"l2": 0.1, "population": 100.0, "isolation": 0.5, "kyr": 3.0})
+    assert seen["drift_typology"] is True and seen["rate"] == 1.3
+
+
+def test_drift_retention_by_class_and_harmony():
+    """20 kyr at human generations (722) and the median L2 share 0.54: very stable features kept by ~85%+, stable ~70-90%,
+    fickle ~40-70%; 145-yr generations keep more; OV keeps postpositions and VO prepositions after flips."""
+    T = G.load_tables()
+
+    def run(gen_yr, n=200, seed=1):
+        rng = np.random.default_rng(seed)
+        ret = {c: [] for c in G.STABILITY}
+        harm = []
+        for _ in range(n):
+            t = G.draw_typology(rng, T)
+            t0 = dict(t)
+            for _ in range(40):
+                G.drift(rng, t, 500.0 / gen_yr, 0.54, T)
+            for f, c in G.FEATURES:
+                ret[c].append(t[f] == t0[f])
+            harm.append((t.ov(), t["adposition"]))
+        return {c: float(np.mean(v)) for c, v in ret.items()}, harm
+
+    human, harm = run(27.7)
+    assert 0.75 <= human["very_stable"] <= 0.95, human
+    assert 0.65 <= human["stable"] <= 0.90, human
+    assert 0.40 <= human["fickle"] <= 0.70, human
+    assert human["very_stable"] > human["medium"] > human["fickle"], human
+    long, _ = run(145.0)
+    assert all(long[c] > human[c] for c in G.STABILITY), (long, human)
+    ov = [a for o, a in harm if o == "OV"]
+    vo = [a for o, a in harm if o == "VO"]
+    assert np.mean([a == "post" for a in ov]) > 0.85 and np.mean([a == "pre" for a in vo]) > 0.8
+
+
+def test_disharmonic_value_flips_faster():
+    T = G.load_tables()
+    t = G.draw_typology(np.random.default_rng(0), T)
+    t["word_order"], t["adposition"] = "SOV", "post"
+    G._derive(t)
+    assert G._disharmony("adposition", t, T) < 1.5
+    t["adposition"] = "pre"
+    assert G._disharmony("adposition", t, T) > 5.0
+    assert G._disharmony("case", t, T) == 1.0

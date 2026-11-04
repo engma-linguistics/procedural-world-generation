@@ -360,7 +360,7 @@ def test_functional_load_counts_minimal_pairs():
 
 def test_describe_names_real_outputs():
     d = R.describe(tsv("S163"))
-    assert "b > ɓ" in d and "became ɗ" not in d
+    assert "bː > ɓ" in d and "became ɗ" not in d  # (S163 now from geminates, as its Sindhi example says)
     d = R.describe(rule("D > ɓ"))  # a class to a literal keeps place: b > ɓ, d > ɗ
     assert "b > ɓ" in d and "d > ɗ" in d and "became ɓ" not in d
     assert "p > b" in R.describe(demo("lenition.intervocalic_voicing"))
