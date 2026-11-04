@@ -2,7 +2,7 @@
 id: PW-1450
 title: Invasions you schedule act only where the invaders' state already borders the victims, so most rows read 'it didn't'
 type: task
-status: todo
+status: needs-decision
 parent: null
 milestone: v4
 subsystem: peoples
@@ -35,6 +35,7 @@ Options:
 Lean: A for real campaigns, with B as a cheap v3 nudge if Daniel finds the read-outs too often negative.
 
 ## Updates
+- 2026-11-04: Status todo -> needs-decision. Reopened (coordinator, 11-04): lane 183's live polities (PW-1434, switch off) did not make rows reach further: dnd s10's orc and hobgoblin rows found no border in the history; Seven Meals' antelope-kin row conquered 3.1 Mkm2 against 10.8 in the read-out (round7.md section 6). A alone is not enough; back on the desk as D50 with B and C.
 - 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D50): A. Wait for v4: polities inside the history (PW-1434, lane 183) should give invaders reach.
 - 2026-11-04: Coordinator: milestone v4, with polities inside the history; desk card D50 asks Daniel whether a strong row should reach further sooner.
 - 2026-11-04: Created from inbox draft draft-invasions-need-a-shared-border.md (found by lane177).

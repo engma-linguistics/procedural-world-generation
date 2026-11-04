@@ -1,4 +1,5 @@
 ---
+id: PW-1466
 title: "Polities in the history need the tech tree in the history: today their gates are an era proxy or a borrowed calendar"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane183
 blocked_by: []
 relates: [PW-1434, PW-1460]
 refs: [planet/lineages/history/polity_live.py, "planet/lineages/techtree.py::build", "planet/lineages/output.py::save", docs/review/culture/polities/round7.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -34,3 +37,6 @@ saved whole series), the contacts so far (not intervals with a median border ove
 the present). Then `polity_live.knows` reads the live calendar, and the after-run tech tree is the same calendar written out.
 - [ ] the tech tree runs inside the history; with polities off, the calendar matches today's within the 12-seed spread (round 6)
 - [ ] polity_live reads it; CALENDAR and PROXY_LEV go
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-techtree-inside-the-history.md (found by lane183).

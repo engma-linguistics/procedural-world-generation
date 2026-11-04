@@ -1,4 +1,5 @@
 ---
+id: PW-1465
 title: "Conquered peoples: how harsh should a conqueror be, and where do the expelled go? (kept / thinned / expelled thresholds)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane183
 blocked_by: []
 relates: [PW-1434, PW-1172]
 refs: ["planet/lineages/history/polity_live.py::FATE_AT", "planet/lineages/history/polity_live.py::FATE_CUT", "planet/lineages/history/polity_live.py::FATE_MAX", docs/review/culture/polities/round7.md, docs/review/cultures-proposal/proposal-r2.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -34,3 +37,6 @@ the model, and the peoples' shares under the switch depend on them.
   expulsion moves a people instead of killing it.
 - C. Wait for attitudes (3.4) and read tolerance from them; keep A until then.
 Lean: B's "the expelled move" is a mechanism, not a tuning, and it makes expulsion read as history (refugees) rather than slaughter.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-conquered-peoples-tolerance.md (found by lane183).
