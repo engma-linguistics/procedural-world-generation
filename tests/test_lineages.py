@@ -3581,3 +3581,56 @@ def test_brief_people_range_takes_every_cell_it_lives_on(tmp_path):
     assert sel.sum() == len(lived) and sel[lived].all() and cen is not None and "presence table" in basis
     sel_old = BR.region_of_people(mk(None), "dragon", 0)[0]  # (frame 0 of 2: the last frame also reads presence_present.bin)
     assert sel_old.sum() == 50 and sel_old[100:150].all()
+
+
+def _sea_strip(gap_cells, era="renaissance"):
+    """(lane 157) A line of cells: landmass A (0-2), gap_cells of sea, landmass B (3 cells), 100 km a cell; a crop Stock known on A."""
+    from types import SimpleNamespace as NS
+    from planet.lineages import animals as AN
+    from planet.lineages import crop_defs as CD
+    n = 3 + gap_cells + 3
+    off = np.concatenate([[0], np.cumsum([(i > 0) + (i < n - 1) for i in range(n)])])
+    idx = np.array([j for i in range(n) for j in (i - 1, i + 1) if 0 <= j < n])
+    land = np.zeros(n, bool)
+    land[:3] = land[-3:] = True
+    lab = np.where(land, np.where(np.arange(n) < 3, 0, 1), -1)
+    names = [{"name": "A", "area_mkm2": 5.0}, {"name": "B", "area_mkm2": 5.0}]
+    h = NS(grid=NS(n=n, nbr_off=off, nbr_idx=idx, lat=np.zeros(n), lon=np.zeros(n)), cell_km=100.0, cross=NS(label=lab, names=names),
+           _native=np.array([0, 1]), events=[], tree=NS(era=era), lines=[NS(id="a"), NS(id="b")])
+    s = object.__new__(AN.Stock)
+    s.h, s.a, s.rng = h, CD.BY_ID["maize"], np.random.default_rng(1)
+    s.rd, s.route = np.where(np.arange(n) < 3, 1.0, 0.0), np.zeros(n, np.uint8)
+    s.crossings, s.landed, s.n_crossed, s.took_up = [], set(), 0, {0: 5.0}
+    coast = np.zeros(n, bool)
+    coast[2] = coast[n - 3] = True
+    sides = (np.where(np.arange(n) < 3, 1.0, 0.0), np.where(np.arange(n) >= n - 3, 1.0, 0.0))
+    return s, {"land": land}, {"label": lab, "coast": coast}, land, sides
+
+
+def test_crops_cross_open_sea_only_with_colonists_or_ocean_ships():
+    """Lane 157: before the ocean-going ships a crop crosses long open sea only with colonists to their own land, and passes between
+    peoples over a strait; the ships (the last 0.53 kyr of a renaissance or later present) carry it to anyone at once."""
+    from types import SimpleNamespace as NS
+    from planet.lineages import animals as AN
+    assert not AN.ocean_ships("renaissance", 2.0) and not AN.ocean_ships("medieval", 0.1) and AN.ocean_ships("renaissance", 0.3)
+    s, env, tags, land, (a, b) = _sea_strip(10)  # 1000 km of open sea, a seafaring people on A and another on B
+    p, sea = np.stack([a, b]), np.array([0.6, 0.6])
+    for _ in range(200):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, sea, 0.5)
+    assert s.n_crossed == 0  # (no trade with strangers over open sea in sailing ships)
+    s._ocean(NS(ago=0.3), env, tags, p, land, sea)  # the ships go there and back: it lands at once
+    assert (s.rd[b > 0] > 0).all() and s.crossings[-1]["craft"] == AN.OCEAN_SHIP
+    s, env, tags, land, (a, b) = _sea_strip(10)
+    p = np.stack([a + b, np.zeros(land.size)])  # the seafarers hold both shores: colonists take their gardens
+    for _ in range(200):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, sea, 0.5)
+        if s.n_crossed:
+            break
+    assert s.n_crossed == 1 and s.crossings[0]["craft"] == "sailing ship"
+    s, env, tags, land, (a, b) = _sea_strip(2)  # a 200 km strait: canoe trade between strangers, also after the planked boats
+    p = np.stack([a, b])
+    for _ in range(400):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, np.array([0.1, 0.05]), 0.5)
+        if s.n_crossed:
+            break
+    assert s.n_crossed == 1 and s.crossings[0]["craft"].startswith("canoe")
