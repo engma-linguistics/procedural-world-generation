@@ -183,7 +183,7 @@ COHAB_REF = 0.5  # hostility is how far a pair's cohabitation (compose.cohabitat
 # Raid losses, on a raider people's harsh excess (life_history.harsh_kept): R = 1 + RAID_Q F, at most R_MAX
 RAID_Q = 1.0  # lane 85's R_FRONT 2 on a full hostile frontier (F 1): a kobold border keeps 31%, a goblin one 41% (judgement)
 # In-fighting, every people (lane 101, PW-1240 B; owner D25 for the raiders, D31 "humans ought also be infighting"): K x (1 - meta.war x
-# FEUD_CUT x C x u), C the people's circumscription (counter._circumscribed: how far the land next to it bars a faction from splitting
+# FEUD_CUT x C x u), C the people's circumscription (history.rule.StandIns.circumscribed: how far the land next to it bars a faction from splitting
 # off, Carneiro 2012), u its own fill of the land on the cell (counter._fill: Chagnon's fission, Walker and Hill 2014). Country held by
 # other peoples bars SOCIAL_Q (Carneiro 2012: social circumscription is "generally less tight" than a physical barrier, with
 # "leakage"; the 0.5 is a judgement). FEUD_CUT 0.35 is lane 97's in-fighting at x1 for a fully hemmed kobold people (it kept 65%, R
