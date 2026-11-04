@@ -1,5 +1,5 @@
 ---
-title: "Language rates: the scholars' horizon reads 11-13 kyr against the 6-10 target, and sisters-recognisable pulls the other way (needs a ruling on the target, and on per-generation scaling for 6-yr-generation peoples)"
+title: "Language rates: the scholars' horizon now reads 9 kyr by a split-based measure (the old pair measure read 11-13); rule whether the measure's tolerances stand, whether the sisters bar applies to the strict cognate test, and whether 6-year-generation peoples keep exponent 1"
 type: task
 status: needs-decision
 parent: PW-767
@@ -9,33 +9,23 @@ impact: high
 found_by: lang-design
 blocked_by: []
 relates: [PW-986, PW-982, PW-1423]
-refs: [planet/language/history.py, planet/language/families.py, docs/review/language/calibration.md, docs/review/language/demo.md]
+refs: [planet/language/history.py, planet/language/families.py, planet/language/checks.py, docs/review/language/calibration.md, docs/review/language/demo.md]
 ---
 
 ## Description
 In plain words: the engine's speed of change was tuned so that an automatic comparative method on the output goes blind
-somewhere near 6-10 kyr (the design check). On a24559 it goes blind at 11 kyr (one run) or 13 kyr (another). Pushing the
-rates up to hit 6-10 makes sister dialects split 2 kyr ago fall below "recognisably related" (0.45 against the 0.5 bar).
-The two checks pull against each other at the current word-replacement shape, so one of them has to give. If this is never
-ruled on, the horizon check stays red on every run and nobody knows whether the languages are too conservative or the
-measure is too generous.
-
-Facts (calibration.md, trials t1-t9 and final):
-- Final constants: RATE_SCALE 5 on RATE_RULE 0.1 per generation (humans ~22 rules per kyr, long-lived peoples ~6),
-  REPLACE_SCALE 1.25 (Swadesh-100 retention ~86%/kyr x 1.25), COGNATE_DIST 0.45.
-- Sisters: 0.53 blind cognate share; cross-family 0.005; chance floor 0.017.
-- The horizon is read from the present back, per 1-kyr bin of true split ages, as the first bin where fewer than half the
-  pairs still beat their own chance level; a24559 has few human splits between 9 and 12 kyr, so it jumps 9 -> 11 -> 13.
-- Two runs of the same seed gave 11 and 13: the driver is not bit-for-bit deterministic across runs (548 vs 547 languages),
-  probably the fork pool or set ordering; worth a fix before any calibration is trusted to 1 kyr.
-- Exponent 1 per generation (Daniel 11-03) means aarakocra (5.8-yr generations) change 4.8x faster per year than humans and
-  their own horizon is ~2-3 kyr; elves (145 yr) look like ~3 kyr of human change over 20 kyr. The numbers are in demo.md.
-
-Options for Daniel:
-1. Widen the target to 6-13 kyr and keep sisters at 0.5 (the lane's lean: the measure is a blind UPGMA on 100 words, which
-   is more generous than a real comparative method on a few hundred words; real families are reconstructable to ~8-10 kyr
-   only with much more data than 100 words).
-2. Keep 6-10 and accept sisters near 0.45 (trial t4).
-3. Change the replacement shape (faster rare words, slower core) so both can hold; a half-day of calibration.
-And separately: keep exponent 1, or soften it (0.7) for the very-short-generation peoples.
-- [ ] Daniel's ruling recorded on PW-986; the check's target updated; a determinism fix so two runs agree
+near 6-10 kyr (the design check). The first measure (per-pair edit distance on 100 words) read 11-13 kyr and rested on one
+thin bin; the lane replaced it with a split-based measure under a stricter cognate test (aligned distance under 0.45 *and*
+recurring correspondences, a clade in the scholars' UPGMA tree matching the true split at Jaccard >= 0.8, beating chance by
+0.03). On a24559 it reads **9.0 kyr for human lects**, 9.6 for all. The check passes, but three choices inside it are
+judgement, and if nobody rules on them the green check is worth less than it looks:
+1. The tolerances: exact clades only (Jaccard 1) give 4.9 kyr; excess 0.05 gives 4.7; 0.02 gives 10.5. The lane chose
+   0.8 / 0.03 as "a scholar would accept a near-match".
+2. The sisters check (lects parted <= 2 kyr share > 0.5 of the core 100): sisters score 0.54 on the loose test, **0.46 on
+   the strict one**, 0.57 by true roots. The check passes on the loose share. Should the bar move to the strict share?
+3. Exponent 1 per generation (Daniel 11-03): aarakocra (5.8-yr generations) change ~5x faster per year than humans and
+   their sisters 5 kyr apart share almost no core roots; kobolds (11.7) ~2x; elves (145) look like ~3 kyr of human change
+   over 20 kyr; dragons keep most of their proto core words. Keep as ruled, or soften (0.7) for the short-generation peoples?
+Also: the lexical-replacement curve is probably the wrong shape (sisters share 0.57 of true roots where ~0.7 is expected,
+but 7-9 kyr pairs still 0.13-0.20 where ~0.10 is expected): a faster rare-word end and a slower core end would fix both.
+- [ ] Daniel's rulings on 1-3 recorded on PW-986; `checks.HORIZON_RANGE`, `SIBLING_MIN` and the measure's constants set
