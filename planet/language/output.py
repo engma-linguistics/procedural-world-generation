@@ -213,6 +213,8 @@ def rules_table(lects, h) -> dict:
             out[rid] = known[rid]
         elif rid == "simplification":
             out[rid] = "rare sounds merged into their nearest neighbours, as listed in the change's 'merged' (dispersion: the inventory had grown past its cap)"
+        elif rid == "koine.level":
+            out[rid] = "a mixed city's minority speech levelled toward the city majority's lect of the same language: its sound changes taken up and core words borrowed (koine levelling)"
         elif rid == "koine":
             out[rid] = "sounds most of a mixed city's heads could not say replaced, as listed in the change's 'merged' (koine)"
         else:
@@ -226,6 +228,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
     gj = grammar_json(lect, sp)
     return {"id": lect.id, "deme": lect.deme, "people": lect.people, "parent": lect.parent, "how": lect.how,
             "substrate": lect.substrate, "born_kyr": _r(lect.born_kyr), "died_kyr": _r(lect.died_kyr), "end": lect.end,
+            "minority": bool(getattr(lect, "minority", False)),
             "rate": _r(lect.rate), "gen_yr": _r(lect.gen_yr, 1), "language": lect.language, "family_true": lect.family_true,
             "family_scholars": lect.family_scholars, "deme_name": lect.deme_name,
             "inventory": None if inv is None else {"consonants": INV.to_json(inv)["consonants"], "vowels": INV.to_json(inv)["vowels"],

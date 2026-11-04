@@ -1198,7 +1198,7 @@ def _sync_cells(g: Grammar) -> None:
         for k in list(ex.cells):
             if k not in want:
                 ex.drop(k)
-        for k in want:
+        for k in sorted(want):  # a set: sorted for determinism across processes
             if k not in ex.cells:
                 ex.set(k, build_parts(ex, k, g))
 

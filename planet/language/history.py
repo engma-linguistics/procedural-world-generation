@@ -55,6 +55,11 @@ KOINE_MAJ = 0.5  # share of a mixed city's heads for whom a sound is hard before
 KOINE_RATE = 0.02  # per generation, x city weight x the hard share: chance a hard sound is replaced in the holder's lect
 KOINE_CITY = 20.0  # city weight = min(1, KOINE_CITY x city heads / the holding deme's heads)
 KIN_KYR = 4.0  # lects parted more recently than this are one speech for shift purposes
+SHIFT_COOLDOWN_KYR = 3.0  # a deme does not shift again within this long of its last shift
+MINORITY_MIN = 0.1  # a shifted-away lect lives on (a minority speech of its deme) until its share falls under this
+STRONG_WAVE = 1.0  # contact used for the wave while a shift trigger holds on a pair already speaking one language
+KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine receiver is borrowed from the majority lect
+RULE_WEIGHT = {"S042": 0.15}  # driver-side draw (and wave adoption) weight overrides by catalogue rule id: ʔ-prothesis is rare
 
 
 def rng_for(seed: int, *key) -> np.random.Generator:
@@ -84,6 +89,11 @@ class History:
         self._root: dict = {}
         self.pending: dict = {}  # lect id -> [(rule, origin lect, kyr)]: wave adoptions to apply at its next step
         self._snap: dict = {}
+        self.minority: dict[int, list[str]] = {}  # deme -> shifted-away lects still spoken there (oldest first)
+        self.last_shift: dict[int, float] = {}  # deme -> kyr of its last shift
+        self.forced: dict = {}  # (giver lect, receiver lect) -> wave probability, for the next interval (strong contact, koine)
+        self.route_of: dict = {}  # (lect id, concept) -> food route key the lect's word for it came by
+        self._lang: dict = {}
 
     # ------------------------------------------------------------------ helpers
     def say(self, kyr: float, text: str) -> None:
@@ -207,6 +217,8 @@ class History:
         tm = time.perf_counter()
         living = [self.lect_of(d) for d in alive if self.lect_of(d) is not None]
         living = [l for l in living if l.alive]
+        for d in alive:  # (minority speech of a shifted deme steps too)
+            living += [self.lects[m] for m in self.minority.get(d, ()) if self.lects[m].alive]
         contacts = {l.deme: R.contacts_of(l.deme, i, CONTACT_MIN) for l in living}
         self._snap = {l.id: l.lexicon.copy() for l in living}  # (borrowing reads the lexicons as they were at the interval's start)
         tasks = []
@@ -217,29 +229,47 @@ class History:
                 ol = self.lect_of(o)
                 if ol is not None and ol.alive and c >= CONTACT_BORROW and ol.id != l.id:
                     cids.append(ol.id)
-            ctx = {"contact_ids": sorted(cids), "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
+            for x in self.deme_speech(l.deme):  # (the other speech of the same deme: the dominant lect, its minorities)
+                if x.id != l.id:
+                    cids.append(x.id)
+            ctx = {"contact_ids": sorted(set(cids)), "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
                    "population": R.deme_population(l.deme, i), "isolation": R.isolation(l.deme, i),
-                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE}
+                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT}
             tasks.append((l.id, i, n, t1, ctx, self.pending.pop(l.id, [])))
         fired = self.run_steps(tasks)
         self.timing["steps"] = self.timing.get("steps", 0.0) + time.perf_counter() - tm
         # wave: decide the adoptions now, apply them at the start of the receiver's next step
         tm = time.perf_counter()
+        forced, self.forced = self.forced, {}
+        for d in alive:  # (the dominant lect's changes reach its deme's minority speech)
+            ml = self.lect_of(d)
+            for m in self.minority.get(d, ()):
+                if ml is not None and ml.alive and self.lects[m].alive:
+                    forced.setdefault((ml.id, m), math.tanh(WAVE_K * STRONG_WAVE / 2.0))
+        by_giver: dict = {}
+        for (g, r), p in sorted(forced.items()):
+            by_giver.setdefault(g, []).append((r, p))
         for l in living:
             if not fired.get(l.id):
                 continue
             px = self.prestige(l.deme, i)
+            offers = []
             for o, c in sorted(contacts[l.deme].items()):
                 y = self.lect_of(o)
-                if y is None or not y.alive or y.id == l.id:
+                if y is None or not y.alive or y.id == l.id or (l.id, y.id) in forced:
                     continue
                 ratio = min(px / self.prestige(o, i), PRESTIGE_CAP)
                 # (a change spreads through children learning it: a receiver living fewer generations in the interval than
                 # the giver adopts proportionally less, so long-lived peoples are not swept by short-lived neighbours)
-                p = math.tanh(WAVE_K * c * ratio / 2.0) * min(1.0, l.gen_yr / y.gen_yr)
+                offers.append((y, math.tanh(WAVE_K * c * ratio / 2.0) * min(1.0, l.gen_yr / y.gen_yr)))
+            for yid, p in by_giver.get(l.id, ()):
+                y = self.lects.get(yid)
+                if y is not None and y.alive and y.id != l.id:
+                    offers.append((y, p))
+            for y, p in offers:
                 rng = rng_for(self.seed, "wave", l.id, y.id, i)
                 for r in fired[l.id]:
-                    if rng.random() < p:
+                    if rng.random() < p * min(1.0, RULE_WEIGHT.get(LC.base_id(r.id), 1.0)):
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm
         tm = time.perf_counter()
@@ -253,12 +283,14 @@ class History:
         self.timing["food"] = self.timing.get("food", 0.0) + time.perf_counter() - tm
         for absorbed, host in ev["fusions"]:
             l = self.lect_of(absorbed)
+            self.end_minorities(absorbed, t1, "fused")
             if l is not None and l.alive:
                 l.died_kyr, l.end = t1, "fused"
                 h = self.lect_of(host)
                 self.say(t1, f"{self.deme_label(absorbed)} merged into {self.deme_label(host)}; lect {l.id} ends"
                              f"{' (its speakers now speak ' + h.id + ')' if h is not None else ''}")
         for d in ev["extinct"]:
+            self.end_minorities(d, t1, "extinct")
             l = self.lect_of(d)
             if l is not None and l.alive:
                 l.died_kyr, l.end = t1, "extinct"
@@ -289,6 +321,38 @@ class History:
             out[lid] = f
         return out
 
+    def deme_speech(self, deme: int) -> list:
+        """Every living lect spoken in a deme: the dominant one, then its minority speech."""
+        out = [self.lects[m] for m in self.minority.get(deme, ()) if self.lects[m].alive]
+        l = self.lect_of(deme)
+        return ([l] if l is not None and l.alive else []) + out
+
+    def end_minorities(self, deme: int, kyr: float, end: str) -> None:
+        for m in self.minority.pop(deme, []):
+            ml = self.lects[m]
+            if ml.alive:
+                ml.died_kyr, ml.end = kyr, end
+
+    def same_language(self, a: LC.Lect, b: LC.Lect, i: int) -> bool:
+        """One language: the same true family and a blind core-list share at or above families.LANG_SHARE (or parted less
+        than KIN_KYR ago). Cached per frame."""
+        if a.id == b.id:
+            return True
+        key = (min(a.id, b.id), max(a.id, b.id), i)
+        v = self._lang.get(key)
+        if v is None:
+            from . import families as FA
+            if self.root(a) != self.root(b):
+                v = False
+            elif self.kin_recent(a, b):
+                v = True
+            else:
+                v = FA.cognate_share(a, b, CORE, blind=True) >= FA.LANG_SHARE
+            if len(self._lang) > 200_000:
+                self._lang.clear()
+            self._lang[key] = v
+        return v
+
     def flush_pending(self) -> None:
         """Apply the wave adoptions decided in the last interval (at the end of the pass)."""
         for lid in sorted(self.pending):
@@ -312,6 +376,7 @@ class History:
             l = self.lect_of(c["holder_deme"])
             if l is None or not l.alive:
                 continue
+            self.koine_level(c, l, i)
             n = (t0 - t1) * 1000.0 / l.gen_yr
             w = min(1.0, KOINE_CITY * c["pop"] / max(R.deme_population(c["holder_deme"], i), 1.0))
             profs = {p: self.profile(p) or PR.HUMAN for p in c["who"]}
@@ -328,7 +393,7 @@ class History:
             maj = max(c["who"], key=lambda p: (c["who"][p], p))
             cheap = [x for x in segs if x not in hard]
             mapping = {}
-            for x in sorted(hard, key=PC.to_ipa):
+            for x in sorted(hard, key=lambda q: (PC.to_ipa(q), repr(q))):
                 if rng.random() >= 1.0 - math.exp(-KOINE_RATE * n * w * hard[x]):
                     continue
                 cand = [y for y in cheap if y.kind == x.kind]
@@ -350,6 +415,40 @@ class History:
             l.changes.append({"kyr": round(t1, 3), "rule": "koine", "cause": "koine", "origin_lect": None,
                               "city": c["site"], "peoples": sorted(c["who"]), "merged": what})
             self.say(t1, f"koine in city {c['site']} ({', '.join(sorted(c['who']))}): {l.id} {what}")
+
+    def koine_level(self, c: dict, holder: LC.Lect, i: int) -> None:
+        """Koine levelling (PW-986 review, section 9): in a mixed city, each other people's lect on the city's cell that is one
+        language with the holder's (same_language) levels with it: the lect of the people with the smaller share of the city's
+        heads (the holder's on a tie) takes up the other's sound changes by wave at p ~ 1 (next interval) and borrows its core
+        words with probability KOINE_LEVEL per word per interval; logged as `koine.level`, merged "levelled to <lect>"."""
+        R = self.R
+        t1 = R.kyr(i)
+        hp = R.people_of(holder.deme)
+        for p in sorted(c["who"]):
+            d = R.deme_at_cell(p, c["cell"], i)
+            o = self.lect_of(d) if d is not None else None
+            if o is None or not o.alive or o.id == holder.id or not self.same_language(holder, o, i):
+                continue
+            recv, give = (holder, o) if c["who"].get(p, 0.0) >= c["who"].get(hp, 0.0) else (o, holder)
+            self.forced[(give.id, recv.id)] = 1.0
+            rng = rng_for(self.seed, "koine-level", recv.id, give.id, c["site"], i)
+            n = 0
+            for concept in CORE:
+                wg, wr = give.lexicon.get(concept), recv.lexicon.get(concept)
+                if wg is None or wr is None or wg.form == wr.form:
+                    continue
+                if rng.random() < KOINE_LEVEL:
+                    LX.borrow(wg, give.id, recv.lexicon, recv.profile, recv.inventory, t1,
+                              note=f"koine levelling in city {c['site']}")
+                    n += 1
+            if n:
+                recv.touch()
+                recv._dirty = True
+                recv.sync()
+            recv.changes.append({"kyr": round(t1, 3), "rule": "koine.level", "cause": "koine", "origin_lect": give.id,
+                                 "city": c["site"], "peoples": sorted(c["who"]),
+                                 "merged": f"levelled to {give.id} ({n} core word{'s' if n != 1 else ''} borrowed)"})
+            self.say(t1, f"koine in city {c['site']}: {recv.id} levels toward {give.id} ({n} core words)")
 
     # ------------------------------------------------------------------ snapshots and intelligibility
     def root(self, l: LC.Lect) -> str:
@@ -416,7 +515,8 @@ class History:
             ld, lr = self.lect_of(tr.ruled_deme), self.lect_of(tr.ruler_deme)
             if ld is None or lr is None or not ld.alive or not lr.alive or ld.id == lr.id:
                 continue
-            if self.kin_recent(ld, lr):  # (already speaking the ruler's speech, or a close dialect of it)
+            if self.same_language(ld, lr, i):  # (already speaking the ruler's language: strong contact, not a shift)
+                self.forced[(lr.id, ld.id)] = math.tanh(WAVE_K * STRONG_WAVE / 2.0)
                 continue
             ratio = self.prestige(tr.ruler_deme, i) / self.prestige(tr.ruled_deme, i)
             pf = math.sqrt(min(max(ratio, 1.0 / PRESTIGE_CAP), PRESTIGE_CAP))
@@ -441,10 +541,22 @@ class History:
             for lid, (g, tr) in p.items():
                 s = l.shares.get(lid, 0.0)
                 l.shares[lid] = s + (1.0 - s) * (1.0 - math.exp(-g * n))
+            mins = self.minority.get(d, [])
+            for m in list(mins):  # (a minority speech dies when its share falls under MINORITY_MIN)
+                if l.shares.get(m, 0.0) < MINORITY_MIN:
+                    ml = self.lects[m]
+                    if ml.alive:
+                        ml.died_kyr, ml.end = t1, "shifted"
+                        self.say(t1, f"{self.deme_label(d)}: the old speech {m} is no longer spoken")
+                    mins.remove(m)
+                    l.shares.pop(m, None)
             if l.shares:
                 l.record_shares(t1)
-                best = max(l.shares, key=lambda k: (l.shares[k], k))
-                if l.shares[best] >= SHIFT_AT and best in self.lects and self.lects[best].alive:
+                cand = [k for k in l.shares if k in self.lects and self.lects[k].alive and self.lects[k].deme != d]
+                best = max(cand, key=lambda k: (l.shares[k], k)) if cand else None
+                if (best is not None and l.shares[best] >= SHIFT_AT
+                        and self.last_shift.get(d, math.inf) - t1 >= SHIFT_COOLDOWN_KYR - 1e-9
+                        and not self.same_language(l, self.lects[best], i)):
                     self.shift(d, l, self.lects[best], p.get(best, (0, None))[1], i)
 
     def shift(self, deme: int, old: LC.Lect, ruler: LC.Lect, trig, i: int) -> None:
@@ -455,11 +567,18 @@ class History:
         new.substrate = old.id
         new.shares_history = list(old.shares_history)
         new.shares = {old.id: round(1.0 - old.shares.get(ruler.id, 0.5), 3)}
+        for m in self.minority.get(deme, ()):  # (older minority speech of the deme keeps its share)
+            if m in old.shares and self.lects[m].alive:
+                new.shares[m] = old.shares[m]
         kept = LX.substrate_transfer(old.lexicon, new.lexicon, kyr=t1, inv=new.inventory, profile=new.profile)
         new.touch()
         accent = self.accent(rng, old, new, t1)
         calques = calque(rng, old, new)
-        old.died_kyr, old.end = t1, "shifted"
+        # (the old lect lives on as the deme's minority speech while its share holds: shift_step ends it under MINORITY_MIN)
+        old.minority = True
+        old.shares = {}
+        self.minority.setdefault(deme, []).append(old.id)
+        self.last_shift[deme] = t1
         rec = {"deme": deme, "kyr": t1, "from_lect": old.id, "to_lect": new.id, "ruler_lect": ruler.id,
                "ruler_deme": ruler.deme, "trigger": trig.to_json() if trig is not None else None,
                "substrate_words": kept, "accent": accent, "calques": calques,
@@ -481,10 +600,10 @@ class History:
         have = set(old_s)
         pairs = []
         mapping = {}
-        for s in sorted(set(new.segments()) - have, key=PC.to_ipa):
+        for s in sorted(set(new.segments()) - have, key=lambda q: (PC.to_ipa(q), repr(q))):
             if rng.random() >= ACCENT_P:
                 continue
-            best = min(old_s, key=lambda o: (PC.distance(s, o, hear), PC.to_ipa(o)))
+            best = min(old_s, key=lambda o: (PC.distance(s, o, hear), PC.to_ipa(o), repr(o)))
             if best.kind != s.kind:
                 continue
             mapping[s] = best
@@ -502,19 +621,22 @@ class History:
         GR = LC._gr_mod()
         if GR is not None and new.grammar is not None:
             GR.apply_rule_to_grammar(new.grammar, fn, f"accent:{old.id}", kyr)
-        LC._sync_inventory(new)
+        LC._sync_inventory(new, kyr)
         new.changes.append({"kyr": round(kyr, 3), "rule": f"accent:{old.id}", "cause": "substrate", "origin_lect": old.id})
         return pairs
 
     # ------------------------------------------------------------------ food
     def food_step(self, i: int) -> None:
+        """Every crop or animal arrival of the frame (inputs.Run.crop_arrivals, donors from the previous frame): the receiver
+        borrows the donor's word as it stands now (so each hop's donor form is the receiver's source), the donor coining
+        one first when it has none; a taming deme (or an arrival nobody could have passed on) coins its own: a route origin."""
         R = self.R
         t1 = R.kyr(i)
-        for d, concept, donor, origin in R.crop_arrivals(i):
+        ci = LX.concept_index()
+        for d, concept, donor, origin, how in R.crop_arrivals(i):
             l = self.lect_of(d)
             if l is None or not l.alive:
                 continue
-            ci = LX.concept_index()
             if concept not in ci and LX.resolve(concept) not in ci:
                 continue
             if concept in l.lexicon:
@@ -525,38 +647,50 @@ class History:
                     self.coin_food(dl, concept, t1, donor, origin=False)
                 src = dl.lexicon[concept]
                 w = LX.borrow(src, dl.id, l.lexicon, l.profile, l.inventory, t1,
-                              note=f"with the {LX.concept_info(concept).gloss.lower()} from {self.deme_label(donor)}")
-                self.route_hop(concept, src, w, l, dl, d, donor, t1)
+                              note=f"with the {LX.concept_info(concept).gloss.lower()} from {self.deme_label(donor)}"
+                                   f"{' over the sea' if how == 'sea' else ''}")
+                self.route_hop(concept, src, w, l, dl, d, donor, t1, how)
             else:
                 self.coin_food(l, concept, t1, d, origin=origin)
             l.touch()
 
     def coin_food(self, l: LC.Lect, concept: str, kyr: float, deme: int, origin: bool) -> None:
         w = LX.coin(rng_for(self.seed, "coin", l.id, concept), l.lexicon, concept, l.inventory, kyr, l.id)
-        key = (concept, LC.word_root(l, concept))
+        key = (concept, l.id, kyr)
         self.routes[key] = {"concept": concept, "origin_deme": deme, "origin_lect": l.id, "kyr": kyr, "ipa": w.ipa,
                             "origin": "tamed here" if origin else ("first known here" if deme is not None else ""),
                             "hops": []}
+        self.route_of[(l.id, concept)] = key
 
-    def route_hop(self, concept, src, w, l, dl, deme, donor, kyr) -> None:
-        # (the route this hop belongs to: one whose origin lect made or carried this word; the donor may have renewed the word
-        # since it got the crop, so the root alone does not identify it)
-        carried = {st.lect for st in src.etym} | {st.process.split(":", 1)[1] for st in src.etym if st.process.startswith("borrow:")}
-        cands = [k for k, v in self.routes.items() if k[0] == concept and v["origin_lect"] in carried | {dl.id}]
-        if not cands:  # (the donor got the crop by an earlier hop and has since renamed it with a word of its own)
-            cands = [k for k, v in self.routes.items() if k[0] == concept and any(h["lect"] == dl.id for h in v["hops"])]
-        key = max(cands, key=lambda k: (self.routes[k]["kyr"] or 0.0, str(k))) if cands else (concept, LC.word_root(dl, concept))
-        r = self.routes.get(key)
-        if r is None:
-            r = self.routes[key] = {"concept": concept, "origin_deme": dl.deme, "origin_lect": dl.id, "kyr": None,
-                                    "ipa": src.ipa, "origin": "inherited by the donor", "hops": []}
+    def route_key_of(self, l: LC.Lect, concept: str):
+        """The route a lect's word for a crop came by: its own, else its ancestors' (a bud or a shift daughter carries the
+        parent's word)."""
+        cur = l
+        while cur is not None:
+            k = self.route_of.get((cur.id, concept))
+            if k is not None:
+                return k
+            cur = self.lects.get(cur.parent) if cur.parent else None
+        return None
+
+    def route_hop(self, concept, src, w, l, dl, deme, donor, kyr, how: str = "land") -> None:
+        key = self.route_key_of(dl, concept)
+        r = self.routes.get(key) if key is not None else None
+        if r is None:  # (the donor's word came another way: inherited, substrate or coined outside a route)
+            key = (concept, dl.id, None)
+            r = self.routes.get(key)
+            if r is None:
+                r = self.routes[key] = {"concept": concept, "origin_deme": dl.deme, "origin_lect": dl.id, "kyr": None,
+                                        "ipa": src.ipa, "origin": "inherited by the donor", "hops": []}
+            self.route_of[(dl.id, concept)] = key
         since = []
         for s in reversed(src.etym):
             if s.process.startswith(("borrow:", "coin", "derive:", "compound:", "proto")):
                 break
             since.append(s.process)
         r["hops"].append({"deme": deme, "lect": l.id, "kyr": kyr, "ipa": w.ipa, "from_deme": donor, "from_lect": dl.id,
-                          "from_ipa": src.ipa, "changes": since[::-1]})
+                          "from_ipa": src.ipa, "changes": since[::-1], "how": how})
+        self.route_of[(l.id, concept)] = key
 
 
 _H: History | None = None
@@ -652,15 +786,14 @@ def typology_summary(g) -> dict:
 
 
 def adopt(l: LC.Lect, offers: list) -> int:
-    """Apply the rules offered by contacts, in order, where they apply to the lect's sounds."""
+    """Apply the rules offered by contacts, in order, where they apply to the lect's sounds and the lect's re-fire memory
+    allows them (an epenthesis inserts the receiver's own epenthetic vowel)."""
     n = 0
     for r, origin, kyr in offers:
-        if not RU.applies(r, l.segments()):
+        r = LC.epenthesis_variant(r, l.inventory)
+        if not l.may_fire(r, kyr) or not RU.applies(r, l.segments()):
             continue
-        if l.apply_rule(r, kyr, origin=origin) == 0:
-            l.changes.pop()
-            l.rules_applied -= 1
-        else:
+        if l.apply_rule(r, kyr, origin=origin) > 0:
             n += 1
     return n
 

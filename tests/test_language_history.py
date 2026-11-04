@@ -65,7 +65,8 @@ class TinyRun(I.Run):
             fr.pairs = {p: [2, 2, 120.0, 120.0] for p, r in pairs_at.items() if i in r}
             self._frames.append(fr)
         self.__dict__["triggers"] = [I.Trigger("elite", 2, 1, 1.5, 0.0, 1.0, "test: the orcs rule the second human deme")]
-        self.__dict__["_arrivals"] = [[], [], [(0, "crop:wheat", None, True)], [(3, "crop:wheat", 0, False)], [(4, "crop:wheat", 3, False)]]
+        self.__dict__["_arrivals"] = [[], [], [(0, "crop:wheat", None, True, "tamed")], [(3, "crop:wheat", 0, False, "land")],
+                                     [(4, "crop:wheat", 3, False, "land")]]
         self.__dict__["_river_data"] = {"id": np.full(g.n, -1), "rivers": {}}
         self.__dict__["_lake_data"] = {"id": np.full(g.n, -1), "lakes": {}}
         self.__dict__["_site_tiers"] = [dict() for _ in FRAMES]
@@ -161,9 +162,29 @@ def test_intelligibility(result):
     assert FA.intelligibility(a, a) == pytest.approx(1.0)
     pair = [p for p in doc["intelligibility"]["pairs"] if p[:2] == ["d0", "d3"]]
     v = pair[0][2]
-    assert v[:2] == [None, None] and v[2] > 0.2 and v[2] >= v[4]  # (from the bud on, and drifting apart at 8x the rate)
+    assert v[:2] == [None, None] and v[2] is not None  # (from the bud on)
     cross = [p for p in doc["intelligibility"]["pairs"] if p[:2] == ["d1", "d2"]]
     assert cross and max(x for x in cross[0][2] if x is not None) < 0.2  # (unrelated lects in contact)
+
+
+INTEL_SEEDS = (1, 2, 3, 4, 5, 6)
+
+
+def test_intelligibility_drifts_over_seeds():
+    """A bud and its parent start close and drift apart at 8x the rate: in aggregate over several seeds (one seed is a coin
+    flip at this size: 4 of 8 pass alone)."""
+    old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+    first, last = [], []
+    try:
+        for sd in INTEL_SEEDS:
+            res = H.generate(None, run=TinyRun(), seed=sd, analyse=False)
+            v = res["history"].intel[("d0", "d3")]
+            first.append(v[2])
+            last.append(v[4])
+    finally:
+        H.RATE_SCALE, H.SHIFT_K, H.WORKERS = old
+    assert np.mean(first) > 0.2 and np.mean(first) >= np.mean(last), (first, last)
 
 
 def test_deterministic(result):
@@ -200,3 +221,172 @@ def test_inventory_cap():
     cons = {x for w in lex.words.values() for x in w.form if x.kind == "C"}
     assert n > 0 and len(cons) <= max(int(LC.INV_CAP_RATIO * 8), 10)
     assert {x for x in base if x.kind == "C"} <= cons and l.changes[-1]["cause"] == "dispersion" and l.changes[-1]["rule"] == "simplification" and " > " in l.changes[-1]["merged"]
+
+
+# ------------------------------------------------------------------------------------------- driver fixes (review 2026-11-04)
+_NOT_RULES = ("simplification", "koine", "koine.level")
+
+
+def test_rules_do_not_refire(result):
+    """The re-fire memory: no rule more than MAX_FIRES times in a lect's line (harmony once), never twice within REFIRE_KYR."""
+    from planet.language import lect as LC
+    res, _, _ = result
+    cat = {}
+    for l in res["lects"]:
+        for r in LC.catalogue_for(res["history"].profile(l.profile_key), l.profile_key):
+            cat.setdefault(r.id, r)
+    for l in res["lects"]:
+        line = {}
+        for c in l.changes:
+            rid = c["rule"]
+            if rid in _NOT_RULES or rid.startswith(("accent:", "tone.phonemic")):
+                continue
+            line.setdefault(LC.base_id(rid), []).append(c["kyr"])
+        for b, ks in line.items():
+            cap = LC.HARMONY_MAX if b in cat and cat[b].family == "harmony" else LC.MAX_FIRES
+            assert len(ks) <= cap, (l.id, b, ks)
+            assert all(a - c >= LC.REFIRE_KYR - 1e-9 for a, c in zip(ks, ks[1:])), (l.id, b, ks)
+        assert all(len(v) <= LC.MAX_FIRES for v in l.fired.values())
+
+
+def test_epenthesis_uses_own_vowel():
+    from planet.language import inventory as INV, lect as LC, profiles as PR, rules as RU
+    inv = INV.draw_inventory(np.random.default_rng(3), PR.HUMAN)
+    v = INV.epenthetic_vowel(inv)
+    r = next(x for x in RU.catalogue(PR.HUMAN) if x.id == "S123")
+    e = LC.epenthesis_variant(r, inv)
+    assert e.change.items[0][1] == v and LC.base_id(e.id) == "S123" and v.height >= 5  # (a high vowel, not ə)
+    assert LC.epenthesis_variant(next(x for x in RU.catalogue(PR.HUMAN) if x.id == "S042"), inv).id == "S042"
+
+
+def test_tone_inventory_matches_marks(result):
+    res, _, _ = result
+    for l in res["lects"]:
+        if not l.alive or l.deme is None:
+            continue
+        marks = {x.tone for w in l.lexicon.words.values() for x in w.form if x.kind == "V" and x.tone}
+        assert marks <= set(l.inventory.tones), (l.id, marks, l.inventory.tones)
+        assert len(l.inventory.tones) != 1, l.id  # (one tone is no contrast: stripped)
+
+
+def test_tidy_segments():
+    from planet.language import lect as LC
+    from planet.language.percepts import from_ipa, to_ipa
+    d = from_ipa("dʱ")[0]
+    from dataclasses import replace
+    assert LC.tidy_segment(replace(d, larynx=1)) == d  # (dʰʱ is the breathy-voiced stop)
+    u = from_ipa("ʊ̞")[0]
+    low = replace(u, height=max(0, u.height - 1))
+    if LC.malformed(low):
+        t = LC.tidy_segment(low)
+        assert not LC.malformed(t) and t in set(LC.table_segments("V")), to_ipa(t)
+
+
+def test_one_shift_per_language(result):
+    """No re-shift into the language a deme already speaks; a deme's shifts are SHIFT_COOLDOWN_KYR apart."""
+    res, _, _ = result
+    h = res["history"]
+    by: dict = {}
+    for s in res["shifts"]:
+        by.setdefault(s["deme"], []).append(s["kyr"])
+        assert h.root(h.lects[s["from_lect"]]) != h.root(h.lects[s["ruler_lect"]]) or s["from_lect"] == s["ruler_lect"] is False
+    for ks in by.values():
+        assert all(a - b >= H.SHIFT_COOLDOWN_KYR - 1e-9 for a, b in zip(ks, ks[1:]))
+    assert len(by.get(1, [])) == 1
+
+
+def test_minority_lect_lives_on():
+    """A shifted-away lect stays alive (minority speech) while its share holds, and dies when it falls under MINORITY_MIN."""
+    run = TinyRun()
+    h = H.History(run)
+    h.start()
+    h.observe(0)
+    old, ruler = h.lect_of(1), h.lect_of(2)
+    old.shares[ruler.id] = 0.6
+    h.shift(1, old, ruler, None, 1)
+    new = h.lect_of(1)
+    assert new.id != old.id and old.alive and old.minority and new.shares[old.id] == pytest.approx(0.4)
+    assert old in h.deme_speech(1)
+    run.__dict__["triggers"] = []
+    for i in (2, 3, 4):
+        h.shift_step(i, run.demes_alive(i))
+        if not old.alive:
+            break
+        assert new.shares[old.id] >= H.MINORITY_MIN
+    new.shares[old.id] = 0.05
+    h.shift_step(4, run.demes_alive(4))
+    assert not old.alive and old.end == "shifted" and old.id not in h.minority.get(1, [])
+
+
+def test_koine_levels_same_language():
+    run = TinyRun()
+    h = H.History(run)
+    h.start()
+    h.observe(0)
+    a, b = h.lect_of(0), h.lect_of(1)
+    assert h.same_language(a, b, 1)
+    run.deme_at_cell = lambda people, cell, i: 0 if people == "human" else None
+    old_level = H.KOINE_LEVEL
+    H.KOINE_LEVEL = 1.0
+    try:
+        for c in H.CORE[:10]:  # (make some core words differ)
+            w = a.lexicon.get(c)
+            if w is not None:
+                from dataclasses import replace
+                a.lexicon.words[c] = replace(w, form=w.form + w.form[-1:])
+        h.koine_level({"site": "s1", "cell": 3, "pop": 1000.0, "holder": "human", "holder_deme": 1,
+                       "who": {"human": 0.6, "orc": 0.4}}, b, 1)
+    finally:
+        H.KOINE_LEVEL = old_level
+    ch = [c for c in b.changes if c["rule"] == "koine.level"]
+    assert ch and ch[-1]["merged"].startswith("levelled to d0") and ch[-1]["origin_lect"] == "d0"
+    assert h.forced[("d0", "d1")] == 1.0
+    assert any(st.process == "borrow:d0" for w in b.lexicon.words.values() for st in w.etym)
+
+
+class CropRun(TinyRun):
+    """TinyRun with real crop bits: wheat tamed by deme 0 at 1.0 kyr and known by its neighbour 1 the same frame (deme 3, budded
+    from 0 then, inherits it), at 0.5 kyr by deme 4 (sharing a cell with 3), at 0.0 kyr by the out-of-contact elves of deme 5."""
+
+    def __init__(self):
+        super().__init__()
+        del self.__dict__["_arrivals"]
+        g = self.g
+        lat, lon = float(np.degrees(np.arcsin(g.centers[1][2]))), float(np.degrees(np.arctan2(g.centers[1][1], g.centers[1][0])))
+        self.meta["crops"]["stocks"]["wheat"]["tamed"] = [{"ago_kyr": 1.0, "lat": lat, "lon": lon, "line": "human", "first": True}]
+        ck = self._lead["crop_known"]
+        for i, cells in ((2, [0, 1, 2, 3, 4, 5]), (3, [12, 13, 14]), (4, [30, 31, 32])):
+            ck[i:, cells] |= np.uint64(1)
+
+    def deme_at_cell(self, people, cell, i):
+        for d, cs in sorted(self.frame(i).cells.items()):
+            if self.people_of(d) == people and cell in cs:
+                return d
+        return None
+
+
+def test_crop_arrivals_from_taming_site():
+    R = CropRun()
+    got = {i: sorted((d, donor, origin, how) for d, c, donor, origin, how in R.crop_arrivals(i) if c == "crop:wheat")
+           for i in range(1, 5)}
+    assert got[2] == [(0, None, True, "tamed"), (1, 0, False, "land")]  # (the taming deme, and its neighbour from it)
+    assert got[3] == [(4, 3, False, "land")]
+    assert len(got[4]) == 1 and got[4][0][0] == 5 and got[4][0][3] == "sea" and got[4][0][1] in (0, 1, 3, 4)
+
+
+def test_food_hop_borrows_current_form(result):
+    _, doc, _ = result
+    for r in doc["food_routes"]:
+        seen = {r["origin_lect"]}
+        for hp in sorted(r["hops"], key=lambda x: -x["kyr"]):
+            assert hp["from_lect"] in seen or r["origin"] == "inherited by the donor", (r["concept"], hp)
+            seen.add(hp["lect"])
+
+
+def test_l2_share_varies():
+    """The adult-L2 proxy: 0 with no other people on the deme's land, rising with their presence, capped at L2_MAX."""
+    R = TinyRun()
+    assert R.l2_share(0, 3) == 0.0  # (humans among humans only)
+    v1, v2 = R.l2_share(1, 3), R.l2_share(2, 3)  # (human deme 1 and orc deme 2 share cells)
+    assert 0.0 < v1 <= I.L2_MAX and v1 == pytest.approx(I.L2_SHARED * 1.2 / 4)
+    assert v2 == pytest.approx(I.L2_SHARED * 1.2 / 4)

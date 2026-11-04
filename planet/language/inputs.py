@@ -38,7 +38,8 @@ SWAMP_INSIDE = 0.6  # share of a deme's cells inside another people's deme for s
 SWAMP_RATIO = 2.0  # ... where that deme holds this many times more of the habitat, and this many times the people
 TRADE_SHIFT_KYR = 3.0  # continuous contact before trade raises a shift pressure
 TRADE_SHARED = 0.25  # shared-cell share (of the smaller deme) for a trade link
-CITY_L2 = 0.15  # added to the adult-L2 share of a deme holding a mixed city
+L2_SHARED = 0.6  # adult-L2 proxy: weight of other peoples' presence on a deme's cells
+L2_MAX = 0.7  # ... and its ceiling (the share of heads in mixed cities is added before the clip)
 PRESTIGE_TECHS = ("cities", "writing", "law")
 
 
@@ -339,19 +340,29 @@ class Run:
         return self._pidx[i]
 
     def l2_share(self, deme: int, i: int) -> float:
-        """Adult second-language share proxy (PW-985): the share of the deme's cells it shares with another people's demes, plus a
-        bump when it holds a mixed city; 0..1."""
+        """Adult second-language share proxy (PW-985): clip(L2_SHARED x the other peoples' presence on the deme's cells (each
+        co-held cell weighted by the other people's presence share there) / the deme's cells + the share of the deme's heads
+        living in mixed cities it holds, 0, L2_MAX)."""
         cells, _ = self.deme_cells(deme, i)
         if not len(cells):
             return 0.0
         people = self.people_of(deme)
         fr = self.frame(i)
-        sh = 0
+        sh = 0.0
         for o in self._pair_index(i).get(deme, ()):
             if self.people_of(o) != people:
-                sh += fr.pairs[(min(deme, o), max(deme, o))][0]
-        base = min(1.0, sh / len(cells))
-        return float(min(1.0, 0.5 * base + (CITY_L2 if deme in self.mixed_city_demes(i) else 0.0)))
+                p = fr.pairs[(min(deme, o), max(deme, o))]
+                sh += (p[3] if deme < o else p[2]) / 100.0  # (the other deme's summed presence % on the shared cells)
+        city = sum(c["pop"] for c in self._mixed_cities_cached(i) if c["holder_deme"] == deme)
+        bonus = min(1.0, city / max(self.deme_population(deme, i), 1.0)) if city else 0.0
+        return float(min(max(L2_SHARED * sh / len(cells) + bonus, 0.0), L2_MAX))
+
+    def _mixed_cities_cached(self, i: int) -> list[dict]:
+        if not hasattr(self, "_mc"):
+            self._mc = {}
+        if i not in self._mc:
+            self._mc[i] = self.mixed_cities(i)
+        return self._mc[i]
 
     def isolation(self, deme: int, i: int) -> float:
         """1 when a deme touches no other deme at all, falling with its total contact."""
@@ -673,19 +684,32 @@ class Run:
 
     @cached_property
     def _arrivals(self) -> list[list]:
-        """Per local frame, the (deme, concept, donor, origin) arrivals (frame 0 holds what the start demes already know)."""
+        """Per local frame, the (deme, concept, donor, origin, how) arrivals (frame 0 holds what the start demes already know).
+        how: "tamed" (the deme holding a `stocks[id].tamed[]` cell at its taming frame: the route's origin), "land" (from the
+        co-present or bordering deme that knew it in the previous frame with the most shared and border cells; ties by
+        population), "sea" (no such neighbour: from the nearest deme that knew it), or "none" (nobody knew it: first known)."""
         out: list[list] = [[] for _ in self.frames_kyr]
         cum: dict = {}
         layers = ("crop_known", "animal_known")
         by_layer = {l: [(c, s["bit"]) for c, s in self.stocks.items() if s["layer"] == l] for l in layers}
+        origins = self._taming_origins()
         prev_alive: set = set()
         for i in range(len(self.frames_kyr)):
             bits_now = {l: self._known_bits(i, l) for l in layers}
             alive = self.demes_alive(i)
+            alive_set = set(alive)
+            prev_cum = {d: dict(v) for d, v in cum.items() if d in prev_alive}
             known: dict = {}
             for d in alive:
                 cells, _ = self.deme_cells(d, i)
                 known[d] = {l: int(np.bitwise_or.reduce(bits_now[l][cells])) if len(cells) else 0 for l in layers}
+            tamed_now = {}  # concept -> origin demes at this frame
+            for (concept, fi), ds in origins.items():
+                if fi == i:
+                    for d in ds:
+                        if d in alive_set:
+                            tamed_now.setdefault(concept, []).append(d)
+                            known[d][self.stocks[concept]["layer"]] |= 1 << self.stocks[concept]["bit"]
             for d in alive:
                 if d not in cum:
                     p = self.parent_deme(d)
@@ -698,39 +722,90 @@ class Run:
                     if not new:
                         continue
                     for concept, bit in by_layer[l]:
-                        if new >> bit & 1:
-                            donor = self._donor(d, l, bit, i, cum, prev_alive)
-                            out[i].append((d, concept, donor, donor is None and self._is_origin(d, concept, i)))
+                        if not new >> bit & 1:
+                            continue
+                        if d in tamed_now.get(concept, ()):
+                            out[i].append((d, concept, None, True, "tamed"))
+                            continue
+                        donor, how = self._donor(d, l, bit, i, prev_cum, alive_set, tamed_now.get(concept, ()))
+                        out[i].append((d, concept, donor, False, how))
                     cum[d][l] |= known[d][l]
-            prev_alive = set(alive)
+            prev_alive = alive_set
         return out
 
-    def _donor(self, d: int, layer: str, bit: int, i: int, cum: dict, prev_alive: set) -> int | None:
-        best, bc = None, 0.0
-        for o, c in self.contacts_of(d, i - 1).items():
-            if o in cum and o in prev_alive and cum[o][layer] >> bit & 1 and c > bc:
-                best, bc = o, c
-        if best is None:
-            for o, c in self.contacts_of(d, i).items():
-                if o in cum and o != d and cum[o][layer] >> bit & 1 and c > bc:
-                    best, bc = o, c
-        return best
+    def _taming_origins(self) -> dict:
+        """{(concept, local frame): [deme, ...]}: for each `tamed` entry of a stock (the first=True one first), the deme holding
+        its lat/lon cell at its taming frame (the tamer's people there, else the cell's leading deme, else that people's
+        nearest deme). Tamings before the window are known at the start, not origins."""
+        out: dict = {}
+        for concept, st in sorted(self.stocks.items()):
+            for t in sorted(st["tamed"], key=lambda t: (not t.get("first"), -float(t["ago_kyr"]))):
+                if t.get("lat") is None or float(t["ago_kyr"]) > self.frames_kyr[0] + 1e-9:
+                    continue
+                k = float(t["ago_kyr"])
+                i = max(1, min(range(len(self.frames_kyr)), key=lambda j: (abs(self.frames_kyr[j] - k), j)))
+                la, lo = math.radians(float(t["lat"])), math.radians(float(t["lon"]))
+                v = np.array([math.cos(la) * math.cos(lo), math.cos(la) * math.sin(lo), math.sin(la)])
+                cell = int(np.argmax(self.g.centers @ v))
+                people = _people_of_line(self.lines, t.get("line"))
+                d = self.deme_at_cell(people, cell, i) if people else None
+                if d is None:
+                    lead = int(np.asarray(self._lead["demes"][self.run_frame[i]])[cell])
+                    d = lead if lead != NONE and self.alive_at(lead, self.kyr(i)) else None
+                if d is None and people:
+                    cand = [x for x in self.demes_alive(i) if self.people_of(x) == people]
+                    if cand:
+                        d = max(cand, key=lambda x: (float(self._centroid(x, i) @ v), -x))
+                if d is not None:
+                    ds = out.setdefault((concept, i), [])
+                    if d not in ds:
+                        ds.append(d)
+        return out
 
-    def _is_origin(self, d: int, concept: str, i: int) -> bool:
-        people = self.people_of(d)
-        k = self.kyr(i)
-        for t in self.stocks[concept]["tamed"]:
-            if _people_of_line(self.lines, t.get("line")) == people and abs(float(t["ago_kyr"]) - k) <= 1.0:
-                return True
-        return False
+    def _centroid(self, d: int, i: int) -> np.ndarray:
+        key = (d, i)
+        if not hasattr(self, "_cent"):
+            self._cent = {}
+        c = self._cent.get(key)
+        if c is None:
+            cells, _ = self.deme_cells(d, i)
+            if not len(cells):
+                cells, _ = self.deme_cells(d, max(i - 1, 0))
+            m = self.g.centers[cells].sum(0) if len(cells) else np.zeros(3)
+            c = self._cent[key] = m / (np.linalg.norm(m) or 1.0)
+        return c
 
-    def crop_arrivals(self, i: int) -> list[tuple[int, str, int | None, bool]]:
-        """(deme, concept, donor deme or None, origin) for every crop or animal a deme first knows at local frame i (i >= 1)."""
+    def _donor(self, d: int, layer: str, bit: int, i: int, prev_cum: dict, alive: set, tamed: tuple = ()) -> tuple:
+        """(donor deme, how) for deme d's arrival at frame i: the co-present or bordering deme that knew it in the previous
+        frame (or tamed it this frame) with the most shared + border cells (ties by population, then id), at frame i, else at
+        frame i - 1; else ("sea") the nearest deme that knew it; else (None, "none")."""
+        knew = {o for o, c in prev_cum.items() if c[layer] >> bit & 1 and o in alive and o != d} | {o for o in tamed if o != d}
+        if not knew:
+            return None, "none"
+        for j in (i, i - 1):
+            fr = self.frame(j)
+            best, bk = None, None
+            for o in self._pair_index(j).get(d, ()):
+                if o not in knew:
+                    continue
+                p = fr.pairs[(min(d, o), max(d, o))]
+                k = (p[0] + p[1], self.deme_population(o, j), -o)
+                if bk is None or k > bk:
+                    best, bk = o, k
+            if best is not None:
+                return best, "land"
+        v = self._centroid(d, i)
+        best = max(sorted(knew), key=lambda o: (float(self._centroid(o, i) @ v), -o))
+        return best, "sea"
+
+    def crop_arrivals(self, i: int) -> list[tuple[int, str, int | None, bool, str]]:
+        """(deme, concept, donor deme or None, origin, how) for every crop or animal a deme first knows at local frame i (i >= 1);
+        how: tamed | land | sea | none (see _arrivals)."""
         return list(self._arrivals[i]) if i > 0 else []
 
     def known_at_start(self) -> list[tuple[int, str]]:
         """(deme, concept) for the crops and animals the start demes know already (coined at their proto time)."""
-        return [(d, c) for d, c, _, _ in self._arrivals[0]]
+        return [(d, c) for d, c, *_ in self._arrivals[0]]
 
     # ------------------------------------------------------------------ landscape
     @property

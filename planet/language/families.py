@@ -902,7 +902,7 @@ def horizon(result_or_doc: dict, people: str | None = "human", seed: int = 12) -
         allx, by = lects, {l.id: l for l in lects}
         form_of, root_of = word_form, word_root
         liv = [l for l in allx if l.died_kyr is None and l.deme is not None]
-        pool = _pool([l.lexicon or {} for l in liv], concepts)
+        pool = _pool([getattr(l.lexicon, "words", l.lexicon) or {} for l in liv], concepts)
     living = [l for l in allx if l.died_kyr is None and l.deme is not None]
     return horizon_from(living, by, concepts, form_of, root_of, people, seed, pool=pool)
 

@@ -25,6 +25,12 @@ INV_CAP_V = 20  # vowel qualities (length and nasality count, tone does not), as
 INV_CAP_C = 45  # ... and never past 45 (PHOIBLE's 99th percentile is ~50); beyond, the rarest new ones fold (dispersion)
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
+REFIRE_KYR = 3.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ...
+MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
+HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
+LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony"})  # families under the lifetime cap (the rest only wait REFIRE_KYR)
+LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
+GLOTTAL = None  # (ʔ, set on first use)
 
 
 # ---------------------------------------------------------------------------------------------- adapters to A, C, D
@@ -63,7 +69,7 @@ def catalogue_for(profile, key: str) -> list:
     return _CATALOGUES[key]
 
 
-def filtered_apply(rule, stress, segments):
+def filtered_apply(rule, stress, segments, inventory=None):
     """rules.apply for one rule, skipping (unchanged) every form that holds none of the rule's target segments among
     `segments` (an insertion, target None, runs on every form)."""
     tgt = None if rule.target is None else frozenset(x for x in segments if rule.target(x))
@@ -71,16 +77,95 @@ def filtered_apply(rule, stress, segments):
     def fn(f, stem_index=0):
         if tgt is not None and tgt.isdisjoint(f):
             return f
-        return normalize(RU.apply(rule, f, stress, stem_index=stem_index))
+        return normalize(RU.apply(rule, f, stress, stem_index=stem_index, inventory=inventory))
     return fn
 
 
 def normalize(f: tuple) -> tuple:
     """Driver-side phonetic tidy of a rule's output: a voiceless consonant left with breathy phonation (a devoiced bʱ, a
-    breathy-voiced p) is an aspirated one (kʱ{voice=0} > kʰ), as in the Indic and Greek devoicings."""
-    if not any(x.kind == "C" and x.phonation == 1 and not x.voice for x in f):
-        return f
-    return tuple(replace(x, phonation=0, larynx=1) if x.kind == "C" and x.phonation == 1 and not x.voice else x for x in f)
+    breathy-voiced p) is an aspirated one (kʱ{voice=0} > kʰ), as in the Indic and Greek devoicings; a voiced consonant both
+    aspirated and breathy (dʰʱ) is the breathy-voiced one (dʱ, the Indic "voiced aspirate"); a segment the house notation can
+    only write malformed (doubled diacritics, feature braces) is heard as its nearest symbol-table segment (tidy_segment)."""
+    out = []
+    ch = False
+    for x in f:
+        y = _TIDY.get(x)
+        if y is None:
+            y = _TIDY[x] = tidy_segment(x)
+        ch |= y is not x
+        out.append(y)
+    return tuple(out) if ch else f
+
+
+_TIDY: dict = {}
+_TABLE: dict = {}
+
+
+def table_segments(kind: str) -> list:
+    """The symbol table's segments of a kind (percepts.symbols()): the only fold targets the driver makes."""
+    if not _TABLE:
+        from .percepts import symbols, to_ipa
+        for k in ("C", "V"):
+            _TABLE[k] = sorted({s.seg for s in symbols() if s.seg.kind == k}, key=lambda q: (to_ipa(q), repr(q)))
+    return _TABLE.get(kind, [])
+
+
+def malformed(x) -> bool:
+    """True when the house notation writes the segment with a doubled diacritic or a feature brace (ʊ̞̞, m{retroflex=1})."""
+    import unicodedata
+    from .percepts import to_ipa
+    t = unicodedata.normalize("NFD", to_ipa(_unit(x)))
+    if "{" in t or "ʰʱ" in t:
+        return True
+    return any(a == b and unicodedata.combining(a) for a, b in zip(t, t[1:]))
+
+
+def tidy_segment(x):
+    if x.kind == "C" and x.phonation == 1 and not x.voice:
+        x = replace(x, phonation=0, larynx=1)
+    if x.kind == "C" and x.phonation == 1 and x.voice and x.larynx == 1:
+        x = replace(x, larynx=0)
+    if x.kind not in ("C", "V") or not malformed(x):
+        return x
+    from .percepts import distance, to_ipa
+    u = _unit(x)
+    best = min(table_segments(x.kind), key=lambda q: (distance(u, q), to_ipa(q), repr(q)), default=None)
+    if best is None:
+        return x
+    return replace(best, tone=x.tone) if x.kind == "V" else best
+
+
+def base_id(rid: str) -> str:
+    """A rule's catalogue id (a lect's epenthesis variant `S123/i` is S123)."""
+    return rid.split("/", 1)[0]
+
+
+def epenthesis_variant(rule, inv):
+    """An epenthesis insertion (family "epenthesis", a literal vowel inserted) re-pointed at the lect's own epenthetic vowel
+    (inventory.epenthetic_vowel: its commonest high vowel), id `<id>/<vowel>`. The catalogue rows write ə; inserting ə into
+    every lect is what made ə the commonest vowel of the run."""
+    ch = rule.change
+    if ch.kind != "insert" or rule.family != "epenthesis" or not ch.items or inv is None:
+        return rule
+    if not all(lit is not None and lit.kind == "V" for _r, lit, _s in ch.items):
+        return rule
+    try:
+        v = _inv_mod().epenthetic_vowel(inv)
+    except (ValueError, AttributeError):
+        return rule
+    if all(lit == v for _r, lit, _s in ch.items):
+        return rule
+    from .percepts import to_ipa
+    items = tuple((ref, v, sets) for ref, _lit, sets in ch.items)
+    return replace(rule, id=f"{base_id(rule.id)}/{to_ipa(v)}", change=replace(ch, items=items, out_text=to_ipa(v)))
+
+
+def glottal():
+    global GLOTTAL
+    if GLOTTAL is None:
+        from .percepts import from_ipa
+        GLOTTAL = from_ipa("ʔ")[0]
+    return GLOTTAL
 
 
 # ---------------------------------------------------------------------------------------------- word access (families)
@@ -139,6 +224,9 @@ class Lect:
     generations: float = 0.0
     base_segs: frozenset = frozenset()  # the proto-language's consonants (inventory cap; carried by daughters)
     rule_text: dict = field(default_factory=dict)  # rules.describe of rules made on the fly (dispersion pushes), for the json
+    fired: dict = field(default_factory=dict)  # catalogue rule id -> [kyr it fired, ...] (own and inherited: the re-fire memory)
+    glottal_phonetic: bool = False  # ʔ came only from prothesis (S042) in a lect without ʔ: not a phoneme (kept out of the inventory)
+    minority: bool = False  # an old lect still spoken by part of its deme after the deme shifted (lives until its share < 0.1)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -152,7 +240,21 @@ class Lect:
         return Lect(id=new_id, deme=deme, people=self.people, parent=self.id, how=how, born_kyr=float(kyr), rate=rate,
                     inventory=_copy_inv(self.inventory), lexicon=self.lexicon.copy(new_id) if self.lexicon is not None else None,
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
-                    base_segs=self.base_segs or self.consonants())
+                    base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
+                    glottal_phonetic=self.glottal_phonetic)
+
+    def may_fire(self, rule, kyr: float) -> bool:
+        """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
+        for harmony), is not drawn or adopted again."""
+        h = self.fired.get(base_id(rule.id))
+        if not h:
+            return True
+        # the lifetime cap holds only for the rules that pile up (prothesis, epenthesis, harmony: each firing feeds the next);
+        # every other rule just waits REFIRE_KYR, so a fast-changing line does not use up the catalogue
+        capped = rule.family in LIFETIME_CAP_FAMILIES or base_id(rule.id) in LIFETIME_CAP_IDS
+        if capped and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
+            return False
+        return h[-1] - kyr >= REFIRE_KYR - 1e-9
 
     def consonants(self) -> frozenset:
         """The proto-like base for the inventory cap: the consonants, and the vowel qualities (tone set aside)."""
@@ -188,7 +290,7 @@ class Lect:
         segs = self.all_segments()
         mapping = {}
         for kind, absmax in (("C", INV_CAP_C), ("V", INV_CAP_V)):
-            units = sorted({_unit(x) for x in segs if x.kind == kind}, key=to_ipa)
+            units = sorted({_unit(x) for x in segs if x.kind == kind}, key=lambda q: (to_ipa(q), repr(q)))
             base = sum(1 for u in self.base_segs if u.kind == kind) or len(units)
             cap = int(min(absmax, max(INV_CAP_RATIO * base, base + 2)))
             if len(units) <= cap:
@@ -200,12 +302,16 @@ class Lect:
                     if u in cnt:
                         cnt[u] += 1
             keep = set(units)
+            table = set(table_segments(kind))
             um = {}
             while len(keep) > cap:
-                pool = [x for x in keep if x not in self.base_segs] or list(keep)
-                x = min(pool, key=lambda q: (cnt[q], to_ipa(q)))
+                # (malformed or off-table units go first, then those the proto lacked; folds land on symbol-table segments)
+                pool = ([x for x in keep if malformed(x)] or [x for x in keep if x not in self.base_segs and x not in table]
+                        or [x for x in keep if x not in self.base_segs] or list(keep))
+                x = min(pool, key=lambda q: (cnt[q], to_ipa(q), repr(q)))
                 keep.discard(x)
-                um[x] = min(keep, key=lambda q: (distance(x, q), -cnt[q], to_ipa(q)))
+                tgt = [q for q in keep if q in table] or list(keep)
+                um[x] = min(tgt, key=lambda q: (distance(x, q), -cnt[q], to_ipa(q), repr(q)))
             for x in um:  # (a fold into a unit folded later follows it on)
                 y = um[x]
                 while y in um:
@@ -278,25 +384,48 @@ class Lect:
     def sync(self) -> None:
         """Bring the inventory in line with the forms after this interval's sound changes."""
         if getattr(self, "_dirty", False):
-            _sync_inventory(self)
+            _sync_inventory(self, getattr(self, "_last_kyr", None))
             self._dirty = False
 
     def apply_rule(self, rule, kyr: float, origin: str | None = None) -> int:
         """Run one sound change over every stored form; record it. Returns words changed."""
+        self._last_kyr = float(kyr)
         stress = stress_of(self.inventory)
-        fn = filtered_apply(rule, stress, self.all_segments())
+        fn = filtered_apply(rule, stress, self.all_segments(), self.inventory)
         self.touch()
         n = LX.apply_rule_to_lexicon(self.lexicon, fn, rule.id, kyr, self.id)
         GR = _gr_mod()
+        had_glottal = base_id(rule.id) == "S042" and glottal() in self.segments()
         if GR is not None and self.grammar is not None:
             g = GR.apply_rule_to_grammar(self.grammar, fn, rule.id, kyr)
             n += g if isinstance(g, int) else len(g or ())
+        self.touch()
+        if n == 0:  # (a rule that changed nothing is not a change: no record)
+            return 0
         self.changes.append({"kyr": round(float(kyr), 3), "rule": rule.id, "cause": rule.cause, "origin_lect": origin})
-        if rule.id.startswith("dispersion.") and rule.id not in self.rule_text:
+        if (rule.id.startswith("dispersion.") or "/" in rule.id) and rule.id not in self.rule_text:
             self.rule_text[rule.id] = RU.describe(rule)
+        self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
+        if base_id(rule.id) == "S042" and not had_glottal and not self.glottal_phonetic:
+            self.glottal_phonetic = True
         self.rules_applied += 1
         self._dirty = True
         return n
+
+    def rule_pool(self, rules, kyr: float, weights: dict | None = None) -> list:
+        """The rules this lect may draw now: the down-weighted catalogue (weighted_rules) with the driver's weight overrides
+        (history.RULE_WEIGHT), epenthesis re-pointed at the lect's epenthetic vowel, and the re-fire memory applied."""
+        weights = weights or {}
+        out = []
+        for r in self.weighted_rules(rules):
+            if not self.may_fire(r, kyr):
+                continue
+            w = weights.get(r.id)
+            if w is not None:
+                r = replace(r, weight=r.weight * w)
+            v = epenthesis_variant(r, self.inventory)
+            out.append(v)
+        return out
 
     def step(self, rng, n_generations: float, kyr: float, ctx: dict) -> list:
         """Advance by n generations in one batch (one frame interval). ctx: contact_words {lect id: Lexicon}, niche, l2,
@@ -305,20 +434,22 @@ class Lect:
         self.population = float(ctx.get("population", self.population))
         self.isolation = float(ctx.get("isolation", self.isolation))
         self.generations += n_generations
+        self._last_kyr = float(kyr)
         fired = []
         lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate
         k = int(rng.poisson(lam)) if lam > 0 else 0
         if k:
             rules = catalogue_for(self.profile, self.profile_key)
+            pool = self.rule_pool(rules, kyr, ctx.get("rule_weight"))
             for _ in range(k):
-                r = RU.pick_rule(rng, self.weighted_rules(rules), self.load_forms(), self.segments(), stress_of(self.inventory))
+                r = RU.pick_rule(rng, pool, self.load_forms(), self.segments(), stress_of(self.inventory))
                 if r is None:
+                    continue
+                if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue
                 if self.apply_rule(r, kyr) > 0:
                     fired.append(r)
-                else:  # (a rule that changed nothing is not a change; drop the record)
-                    self.changes.pop()
-                    self.rules_applied -= 1
+                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
         self.touch()
@@ -375,6 +506,78 @@ def _copy_inv(inv):
         return _deepcopy(inv)
 
 
-def _sync_inventory(lect: Lect) -> None:
-    """Keep the inventory's segment lists in step with the forms after a sound change (so new words use today's sounds)."""
-    lect.inventory = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
+def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
+    """Keep the inventory's segment lists in step with the forms after a sound change (so new words use today's sounds): the
+    tone marks are made consistent first (tone_hygiene), then the inventory is observed from the forms with its tones the
+    ones on the vowels, and a ʔ that only prothesis put before initial vowels is left out (not a phoneme)."""
+    tones = tone_hygiene(lect, kyr)
+    inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
+    if hasattr(inv, "tones"):
+        inv = replace(inv, tones=tones)
+    if lect.glottal_phonetic:
+        q = glottal()
+        if all(j == 0 and len(f) > 1 and f[1].kind == "V" for f in lect.all_forms() for j, x in enumerate(f) if x == q):
+            if q in inv.consonants and len(inv.consonants) > 1:
+                inv = replace(inv, consonants=[x for x in inv.consonants if x != q])
+        else:
+            lect.glottal_phonetic = False  # (ʔ now stands elsewhere too: it has phonemicized)
+    lect.inventory = inv
+
+
+def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
+    """Tone marks and the tone inventory agree. No marks: no tones. Fewer than 2 distinct tones over the core-list vowels: no
+    contrast, so the stray marks are stripped everywhere (a `simplification`, cause "dispersion"). Otherwise the lect is
+    tonal, its tones the levels present, and a vowel left unmarked takes the commonest level (`tone.phonemic/<t>`, cause
+    "tonogenesis"), since in a tone language every syllable carries one. Returns the tone list."""
+    segs = lect.all_segments()
+    marked = sorted({x.tone for x in segs if x.kind == "V" and x.tone})
+    if not marked:
+        return []
+    cnt: dict = {}
+    for c in _core():
+        w = lect.lexicon.get(c)
+        if w is not None:
+            for x in w.form:
+                if x.kind == "V" and x.tone:
+                    cnt[x.tone] = cnt.get(x.tone, 0) + 1
+    kyr = float(kyr if kyr is not None else lect.born_kyr)
+    if len(cnt) < 2:
+        mapping = {x: replace(x, tone=0) for x in segs if x.kind == "V" and x.tone}
+        what = "tone marks dropped (" + ", ".join(sorted({_tone_name(x.tone) for x in mapping})) + "): no tone contrast"
+        _map_forms(lect, mapping, "simplification", kyr)
+        lect.changes.append({"kyr": round(kyr, 3), "rule": "simplification", "cause": "dispersion", "origin_lect": None,
+                             "merged": what})
+        return []
+    if not any(x.kind == "V" and not x.tone for x in segs):
+        return marked
+    d = max(cnt, key=lambda t: (cnt[t], -t))
+    mapping = {x: replace(x, tone=d) for x in segs if x.kind == "V" and not x.tone}
+    rid = f"tone.phonemic/{d}"
+    _map_forms(lect, mapping, rid, kyr)
+    lect.rule_text.setdefault(rid, f"tone became phonemic: vowels with no tone mark took the {_tone_name(d)} tone, the commonest "
+                                   "(tonogenesis: phonemicization)")
+    lect.changes.append({"kyr": round(kyr, 3), "rule": rid, "cause": "tonogenesis", "origin_lect": None})
+    return marked
+
+
+_CORE: list = []
+
+
+def _core() -> list:
+    if not _CORE:
+        _CORE.extend(sorted(LX.CORE100))
+    return _CORE
+
+
+def _tone_name(t: int) -> str:
+    return {1: "low", 2: "mid", 3: "high", 4: "rising", 5: "falling", 6: "extra-high", 7: "extra-low"}.get(t, f"tone {t}")
+
+
+def _map_forms(lect: Lect, mapping: dict, rid: str, kyr: float) -> None:
+    def fn(f, stem_index=0, m=mapping):
+        return tuple(m.get(y, y) for y in f)
+    LX.apply_rule_to_lexicon(lect.lexicon, fn, rid, kyr, lect.id)
+    GR = _gr_mod()
+    if GR is not None and lect.grammar is not None:
+        GR.apply_rule_to_grammar(lect.grammar, fn, rid, kyr)
+    lect.touch()
