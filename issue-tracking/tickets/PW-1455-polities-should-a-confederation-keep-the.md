@@ -1,4 +1,5 @@
 ---
+id: PW-1455
 title: "Polities: should a confederation keep the long reach? It is now most of the giant polities"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane179
 blocked_by: []
 relates: [PW-1449, PW-1454, PW-785]
 refs: ["planet/lineages/polities.py::WIDE_BY", "planet/lineages/polities.py::_confederations", "planet/lineages/polities.py::STATE_MAX_KM", docs/review/culture/polities/round4.md, docs/review/culture/polities/round3.md, "docs/review/cultures-proposal/proposal.md#212-formation-growth-and-reach", "run 3c1caf", "run b4d502"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -33,3 +36,7 @@ Options (numbers on 3c1caf, the present; the baseline is lane 179's default, A):
 
 Lean: A. It keeps PW-785's empire without forcing it, and it matches Turchin's frontier story. The size of each giant is the
 multipliers' problem (the touchy-multipliers draft), not this choice.
+
+## Updates
+- 2026-11-04: Coordinator: merged as A (confederations keep the long reach); folded into desk D51 with PW-1454.
+- 2026-11-04: Created from inbox draft draft-confederations-keep-long-reach.md (found by lane179).

@@ -1,4 +1,5 @@
 ---
+id: PW-1457
 title: "Polities: the giants' size rests on four stacked judgement multipliers; ±20% on riding and roads swings them 1 to 10 a century"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane179
 blocked_by: []
 relates: [PW-1449]
 refs: ["planet/lineages/polities.py::_reach", "planet/lineages/polities.py::LAW_X", "planet/lineages/polities.py::DISTANCE_X", "planet/lineages/polities.py::RIDE_X", "planet/lineages/polities.py::WIDE_BY", docs/review/culture/polities/round4.md, docs/review/culture/polities/round1.md, "docs/review/cultures-proposal/proposal.md#212-formation-growth-and-reach", "run 3c1caf"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -32,3 +35,6 @@ What I would try: give the wide reach one sourced or checked number instead of a
 "government at a distance" reach checked against Taagepera's sizes, with riding and roads not stacking on it. Do it together with
 (or after) the war-chaining draft, since that changes how big conquerors get.
 - [ ] ±20% on each reach constant moves the count over 1 Mkm² per century by under ~2x on 3c1caf
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-wide-reach-multipliers-touchy.md (found by lane179).

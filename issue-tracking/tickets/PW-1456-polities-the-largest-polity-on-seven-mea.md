@@ -1,9 +1,10 @@
 ---
+id: PW-1456
 title: "Polities: the largest polity on Seven Meals is under Taagepera's 2.3 Mkm² floor (war v0 cannot chain conquests)"
 type: task
 status: todo
 parent: PW-661
-milestone: later
+milestone: v4
 subsystem: culture
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: lane179
 blocked_by: []
 relates: [PW-1449, PW-1432]
 refs: ["planet/lineages/polities.py::war_v0", "planet/lineages/polities.py::WIDE_BY", "planet/lineages/polities.py::STATE_MAX_KM", "planet/lineages/polities.py::derive", docs/review/culture/polities/round4.md, docs/review/culture/polities/round2.md, "docs/review/cultures-proposal/proposal.md#212-formation-growth-and-reach", "run 3c1caf", "run 07c755", "run a2b637"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -33,3 +36,7 @@ What I would try (one of):
   2013 conquer cell by cell at 100 km cells; their parameters are in the supplement, which nobody has read yet).
 - Conquest that chains within a century: a winner that took a neighbour may attack the neighbour's neighbours in the same step.
 - [ ] the largest polity on 3c1caf inside 2.3-5.5 Mkm² in most centuries of the last 3,000 years, with under ~8 over 1 Mkm²
+
+## Updates
+- 2026-11-04: Coordinator: v4, with polities inside the history (war that chains conquests).
+- 2026-11-04: Created from inbox draft draft-war-cannot-chain-conquests.md (found by lane179).
