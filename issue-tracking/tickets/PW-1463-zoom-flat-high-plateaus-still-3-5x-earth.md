@@ -1,5 +1,6 @@
 ---
-title: "Zoom flat high plateaus still 3-5x Earth's relief after PW-1462, and not from the detail amplitude"
+id: PW-1463
+title: Zoom flat high plateaus still 3-5x Earth's relief after PW-1462, and not from the detail amplitude
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane-189-pw1462
 blocked_by: []
 relates: [PW-1462, PW-1446]
 refs: [docs/review/tectonics/mountains/lane189.md, docs/review/tectonics/mountains/lane189_measure.py, docs/review/tectonics/mountains/lane189_trial.sh, docs/review/tectonics/mountains/scout2.md, "planet/zoom/regional.py::land_amp", "planet/zoom/stage_terrain.py::ruggedness", "planet/zoom/stage_terrain.py::detail", "planet/zoom/stage_landscape.py::fit_setup", "world 899985"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Measured by lane 189 (lane189.md §1), 1200 km zooms at 4 km/px, scratch builds 
 Candidates, cheapest test first: (a) the ruggedness's height term (`ruggedness`: `0.9 × smoothstep(600, 3500, elev)`) sets rug about 0.9 on any high ground. Try the zoom with it off on Z2 and look at the flat cells. (b) The landscape pass's valleys cut into a high plateau, and the mean-keeping lifts the ground between them. Compare the highest pixel against the cell mean before and after the landscape pass. (c) The base surface between cells. Write the diagnosis before any sweep.
 - [ ] the source of the flat-plateau excess named with a measurement on Z1/Z2
 - [ ] flat high cells within ~2x Earth's 4 km p75, lowlands unchanged
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-zoom-flat-plateaus-still-rough.md (found by lane-189-pw1462).
