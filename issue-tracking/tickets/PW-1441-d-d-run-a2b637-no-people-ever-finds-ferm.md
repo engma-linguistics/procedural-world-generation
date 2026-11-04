@@ -1,4 +1,5 @@
 ---
+id: PW-1441
 title: "D&D run a2b637: no people ever finds fermentation, so every D&D cuisine sheet says 'no beer or wine yet'"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane164
 blocked_by: []
 relates: [PW-1141, PW-1391, PW-744]
 refs: ["planet/lineages/samples/techtree.toml (id fermentation: needs cooking, containers; earliest 13 kyr; rate 0.02)", "planet/lineages/cuisine.py::drink", "run a2b637 (meta.techtree.known)", "run 3c1caf (Seven Meals: humans know fermentation 10.2 kyr ago)", docs/review/food/cuisine-sheet/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,3 +26,6 @@ whole D&D preset, and a reader will trust it.
 Check first whether this is one unlucky draw or systematic for the D&D tree (re-run or read two or three more D&D runs once they exist on
 current code); PW-1141 says single-origin Pleistocene techs come late, and here it never comes at all.
 - [ ] fermentation known by most farming peoples at the present on two or three D&D runs, or a stated reason why not
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-dnd-run-never-finds-fermentation.md (found by lane164).

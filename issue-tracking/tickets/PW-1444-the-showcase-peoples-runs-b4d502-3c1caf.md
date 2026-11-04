@@ -1,4 +1,5 @@
 ---
+id: PW-1444
 title: "The showcase peoples runs (b4d502, 3c1caf, a24559) no longer parse: the viewer's whole-people Culinary brief fails on them"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane164
 blocked_by: []
 relates: [PW-1275, PW-1391, PW-728]
 refs: ["planet/lineages/brief.py::_people_contacts (SP.parse of meta.tree)", "planet/lineages/spec.py::build (ValueError: density and band_km2 are no longer given)", "runs b4d502 3c1caf a24559 (the v0.1.0 showcases)", "run a2b637 (the one D&D run on current code)", docs/wiki/state.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,3 +27,6 @@ brief fails.
 Fix (no code): re-run the showcase peoples on current code (minutes each) and point state.md at the new ids; delete the old ones
 (no backward compatibility).
 - [ ] a Seven Meals and a D&D showcase peoples run on current code; the whole-people brief builds on both
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-showcase-peoples-runs-no-longer-parse.md (found by lane164).
