@@ -2,7 +2,7 @@
 id: PW-1448
 title: "Polities: the writing gate leaves 4,000 years of cities with no rulers on the D&D run"
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v3
 subsystem: culture
@@ -39,5 +39,6 @@ Options (set in one constant, `polities.WRITING_TECHS`):
 has cities.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D49): B plus C. Chiefdoms need only writing's forerunners (proto_writing counts); real states and empires need writing. He also wants a picture of how fast writing spreads; he suspects it is far too slow. Lane 184.
 - 2026-11-04: D49 on the owner's desk; lean B (proto-writing counts), C close second.
 - 2026-11-04: Created from inbox draft draft-polities-writing-gate.md (found by lane-169).

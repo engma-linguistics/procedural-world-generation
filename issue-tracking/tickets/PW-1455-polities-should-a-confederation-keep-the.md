@@ -2,7 +2,7 @@
 id: PW-1455
 title: "Polities: should a confederation keep the long reach? It is now most of the giant polities"
 type: task
-status: needs-decision
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -38,5 +38,6 @@ Lean: A. It keeps PW-785's empire without forcing it, and it matches Turchin's f
 multipliers' problem (the touchy-multipliers draft), not this choice.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> done. Daniel 11-04 (D51): A. Confederations keep the long reach. As merged.
 - 2026-11-04: Coordinator: merged as A (confederations keep the long reach); folded into desk D51 with PW-1454.
 - 2026-11-04: Created from inbox draft draft-confederations-keep-long-reach.md (found by lane179).

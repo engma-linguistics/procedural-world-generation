@@ -2,7 +2,7 @@
 id: PW-1454
 title: "Confederations: does a dragon realm next door count as the foreign power a people bands together against?"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v3
 subsystem: culture
@@ -51,5 +51,6 @@ Lean: A. Dragons are sapient rulers taking tribute, the proposal already names d
 mostly matters for PW-1449's reach, which owns that problem.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> done. Daniel 11-04 (D51): A. Dragon realms count as the foreign power. As merged.
 - 2026-11-04: Coordinator: merged with dragon realms counting (lane 178's default); desk D51 asks Daniel.
 - 2026-11-04: Created from inbox draft draft-confederations-against-dragon-realms.md (found by lane178).

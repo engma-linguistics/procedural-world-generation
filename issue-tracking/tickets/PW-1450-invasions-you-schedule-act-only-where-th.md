@@ -2,7 +2,7 @@
 id: PW-1450
 title: Invasions you schedule act only where the invaders' state already borders the victims, so most rows read 'it didn't'
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v4
 subsystem: peoples
@@ -35,5 +35,6 @@ Options:
 Lean: A for real campaigns, with B as a cheap v3 nudge if Daniel finds the read-outs too often negative.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D50): A. Wait for v4: polities inside the history (PW-1434, lane 183) should give invaders reach.
 - 2026-11-04: Coordinator: milestone v4, with polities inside the history; desk card D50 asks Daniel whether a strong row should reach further sooner.
 - 2026-11-04: Created from inbox draft draft-invasions-need-a-shared-border.md (found by lane177).
