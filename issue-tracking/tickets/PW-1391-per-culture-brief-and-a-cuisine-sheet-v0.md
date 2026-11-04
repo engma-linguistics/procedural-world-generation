@@ -2,7 +2,7 @@
 id: PW-1391
 title: "Per-culture brief and a cuisine sheet v0: answer 'what does this culture cook' before languages and polities"
 type: story
-status: needs-decision
+status: todo
 parent: PW-856
 milestone: v2
 subsystem: food
@@ -30,4 +30,5 @@ Scope if yes (effort M):
 - [ ] one culture's cuisine sheet v0 for a showcase people
 
 ## Updates
+- 2026-11-03: Status needs-decision -> todo. Owner D44 11-03 'food first' is the yes; v2 must-have (lane B).
 - 2026-11-03: Created.
