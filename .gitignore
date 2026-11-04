@@ -12,6 +12,7 @@ exports/
 !.claude/hooks/
 !.claude/skills/
 data/
+!planet/language/data/
 # the server's job state (api.Jobs)
 .jobs/
 .DS_Store

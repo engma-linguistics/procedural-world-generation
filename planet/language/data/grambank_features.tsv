@@ -1,0 +1,407 @@
+# source: https://github.com/grambank/grambank (tag v1.0.3, cldf/); https://grambank.clld.org; Zenodo doi:10.5281/zenodo.7740139
+# version: Grambank v1.0.3 (git tag v1.0.3 of grambank/grambank, cldf/); derived 2026-11-03
+# licence: CC-BY 4.0 (Skirgard et al. 2023, Grambank v1.0, Science Advances 9; dataset by the Grambank consortium).
+# script: tools/language/build_reference_tables.py
+# languages: 2426 languoids after keeping one per Language_level_ID (the 'language' row where present, else the first dialect); family-level rows dropped.
+# n_coded = languages with a value other than '?'; n_unknown = languages coded '?'; frequency = count / n_coded.
+# freq_family_weighted: each Glottolog top-level family (isolates = own family) gets total weight 1 split evenly over its coded languages; use it for genealogically balanced draws.
+# value_coding: Grambank codes.csv description. Binary features: 0 absent, 1 present. Multistate order features (GB024, GB025, GB065, GB130, GB193, GB203): 1/2/3 as described, 3 = both orders.
+feature_id	short_name	question	value	value_coding	n_coded	n_unknown	count	frequency	freq_family_weighted
+GB020	ARTDef	Are there definite or specific articles?	0	absent	2160	205	1344	0.6222	0.6913
+GB020	ARTDef	Are there definite or specific articles?	1	present	2160	205	816	0.3778	0.3087
+GB021	ARTIndef	Do indefinite nominals commonly have indefinite articles?	0	absent	2184	203	1885	0.8631	0.9116
+GB021	ARTIndef	Do indefinite nominals commonly have indefinite articles?	1	present	2184	203	299	0.1369	0.0884
+GB022	ARTPre	Are there prenominal articles?	0	absent	2169	162	1612	0.7432	0.7914
+GB022	ARTPre	Are there prenominal articles?	1	present	2169	162	557	0.2568	0.2086
+GB023	ARTPost	Are there postnominal articles?	0	absent	2167	171	1652	0.7623	0.7893
+GB023	ARTPost	Are there postnominal articles?	1	present	2167	171	515	0.2377	0.2107
+GB024	NUMOrder	What is the order of numeral and noun in the NP?	1	Num-N	2163	215	863	0.3990	0.3984
+GB024	NUMOrder	What is the order of numeral and noun in the NP?	2	N-Num	2163	215	1073	0.4961	0.4879
+GB024	NUMOrder	What is the order of numeral and noun in the NP?	3	both.	2163	215	227	0.1049	0.1137
+GB025	DEMOrder	What is the order of adnominal demonstrative and noun?	1	Dem-N	2229	158	906	0.4065	0.5408
+GB025	DEMOrder	What is the order of adnominal demonstrative and noun?	2	N-Dem	2229	158	1054	0.4729	0.3217
+GB025	DEMOrder	What is the order of adnominal demonstrative and noun?	3	both.	2229	158	269	0.1207	0.1376
+GB026	ADJDiscont	Can adnominal property words occur discontinuously?	0	absent	1742	561	1633	0.9374	0.8952
+GB026	ADJDiscont	Can adnominal property words occur discontinuously?	1	present	1742	561	109	0.0626	0.1048
+GB027	ComitConjDifferent	Are nominal conjunction and comitative expressed by different elements?	0	absent	1751	633	703	0.4015	0.3155
+GB027	ComitConjDifferent	Are nominal conjunction and comitative expressed by different elements?	1	present	1751	633	1048	0.5985	0.6845
+GB028	Clusivity	Is there a distinction between inclusive and exclusive?	0	absent	2320	92	1101	0.4746	0.5493
+GB028	Clusivity	Is there a distinction between inclusive and exclusive?	1	present	2320	92	1219	0.5254	0.4507
+GB030	PRO3PGender	Is there a gender distinction in independent 3rd person pronouns?	0	absent	2338	62	1776	0.7596	0.7147
+GB030	PRO3PGender	Is there a gender distinction in independent 3rd person pronouns?	1	present	2338	62	562	0.2404	0.2853
+GB031	PRODualAug	Is there a dual or unit augmented form (in addition to plural or augmented) for all person categories in the pronoun system?	0	absent	2295	60	1689	0.7359	0.6987
+GB031	PRODualAug	Is there a dual or unit augmented form (in addition to plural or augmented) for all person categories in the pronoun system?	1	present	2295	60	606	0.2641	0.3013
+GB035	DEMDistContrast	Are there three or more distance contrasts in demonstratives?	0	absent	2150	239	1097	0.5102	0.5145
+GB035	DEMDistContrast	Are there three or more distance contrasts in demonstratives?	1	present	2150	239	1053	0.4898	0.4855
+GB036	DEMElevation	Do demonstratives show an elevation distinction?	0	absent	2145	213	1976	0.9212	0.9123
+GB036	DEMElevation	Do demonstratives show an elevation distinction?	1	present	2145	213	169	0.0788	0.0877
+GB037	DEMVisNonvis	Do demonstratives show a visible-nonvisible distinction?	0	absent	2106	246	1896	0.9003	0.8925
+GB037	DEMVisNonvis	Do demonstratives show a visible-nonvisible distinction?	1	present	2106	246	210	0.0997	0.1075
+GB038	DEMClassifier	Are there demonstrative classifiers?	0	absent	2164	165	2048	0.9464	0.9517
+GB038	DEMClassifier	Are there demonstrative classifiers?	1	present	2164	165	116	0.0536	0.0483
+GB039	NounNUMAllomorph	Is there nonphonological allomorphy of noun number markers?	0	absent	2109	220	1600	0.7587	0.7547
+GB039	NounNUMAllomorph	Is there nonphonological allomorphy of noun number markers?	1	present	2109	220	509	0.2413	0.2453
+GB041	NUMSupplNoun	Are there several nouns (more than three) which are suppletive for number?	0	absent	1717	598	1576	0.9179	0.8627
+GB041	NUMSupplNoun	Are there several nouns (more than three) which are suppletive for number?	1	present	1717	598	141	0.0821	0.1373
+GB042	SingularNoun	Is there productive overt morphological singular marking on nouns?	0	absent	2312	93	1888	0.8166	0.8727
+GB042	SingularNoun	Is there productive overt morphological singular marking on nouns?	1	present	2312	93	424	0.1834	0.1273
+GB043	DualBound	Is there productive morphological dual marking on nouns?	0	absent	2265	96	2090	0.9227	0.8829
+GB043	DualBound	Is there productive morphological dual marking on nouns?	1	present	2265	96	175	0.0773	0.1171
+GB044	PluralBound	Is there productive morphological plural marking on nouns?	0	absent	2265	96	999	0.4411	0.4205
+GB044	PluralBound	Is there productive morphological plural marking on nouns?	1	present	2265	96	1266	0.5589	0.5795
+GB046	AssocPlural	Is there an associative plural marker for nouns?	0	absent	1457	835	1138	0.7811	0.7693
+GB046	AssocPlural	Is there an associative plural marker for nouns?	1	present	1457	835	319	0.2189	0.2307
+GB047	NMZActionState	Is there a productive morphological pattern for deriving an action/state noun from a verb?	0	absent	1633	747	468	0.2866	0.3172
+GB047	NMZActionState	Is there a productive morphological pattern for deriving an action/state noun from a verb?	1	present	1633	747	1165	0.7134	0.6828
+GB048	NMZAgent	Is there a productive morphological pattern for deriving an agent noun from a verb?	0	absent	1634	746	561	0.3433	0.3395
+GB048	NMZAgent	Is there a productive morphological pattern for deriving an agent noun from a verb?	1	present	1634	746	1073	0.6567	0.6605
+GB049	NMZObject	Is there a productive morphological pattern for deriving an object noun from a verb?	0	absent	1561	815	558	0.3575	0.4204
+GB049	NMZObject	Is there a productive morphological pattern for deriving an object noun from a verb?	1	present	1561	815	1003	0.6425	0.5796
+GB051	GenderSex	Is there a gender/noun class system where sex is a factor in class assignment?	0	absent	2170	175	1772	0.8166	0.7180
+GB051	GenderSex	Is there a gender/noun class system where sex is a factor in class assignment?	1	present	2170	175	398	0.1834	0.2820
+GB052	GenderShape	Is there a gender/noun class system where shape is a factor in class assignment?	0	absent	2192	198	2038	0.9297	0.9012
+GB052	GenderShape	Is there a gender/noun class system where shape is a factor in class assignment?	1	present	2192	198	154	0.0703	0.0988
+GB053	GenderAnimacy	Is there a gender/noun class system where animacy is a factor in class assignment?	0	absent	2141	202	1643	0.7674	0.7475
+GB053	GenderAnimacy	Is there a gender/noun class system where animacy is a factor in class assignment?	1	present	2141	202	498	0.2326	0.2525
+GB054	GenderPlants	Is there a gender/noun class system where plant status is a factor in class assignment?	0	absent	2153	217	2006	0.9317	0.9089
+GB054	GenderPlants	Is there a gender/noun class system where plant status is a factor in class assignment?	1	present	2153	217	147	0.0683	0.0911
+GB057	NUMClassif	Are there numeral classifiers?	0	absent	2140	258	1633	0.7631	0.8469
+GB057	NUMClassif	Are there numeral classifiers?	1	present	2140	258	507	0.2369	0.1531
+GB058	POSSClassifier	Are there possessive classifiers?	0	absent	2196	194	1982	0.9026	0.9155
+GB058	POSSClassifier	Are there possessive classifiers?	1	present	2196	194	214	0.0974	0.0845
+GB059	POSSAlienability	Is the adnominal possessive construction different for alienable and inalienable nouns?	0	absent	1995	353	1052	0.5273	0.5062
+GB059	POSSAlienability	Is the adnominal possessive construction different for alienable and inalienable nouns?	1	present	1995	353	943	0.4727	0.4938
+GB065	POSSPosdPosrOrder	What is the pragmatically unmarked order of adnominal possessor noun and possessed noun?	1	Possessor-Possessed	2285	97	1024	0.4481	0.6116
+GB065	POSSPosdPosrOrder	What is the pragmatically unmarked order of adnominal possessor noun and possessed noun?	2	Possessed-Possessor	2285	97	872	0.3816	0.1921
+GB065	POSSPosdPosrOrder	What is the pragmatically unmarked order of adnominal possessor noun and possessed noun?	3	both	2285	97	389	0.1702	0.1964
+GB068	PredAdjLikeV	Do core adjectives (defined semantically as property concepts such as value, shape, age, dimension) act like verbs in predicative position?	0	absent	1921	477	990	0.5154	0.5394
+GB068	PredAdjLikeV	Do core adjectives (defined semantically as property concepts such as value, shape, age, dimension) act like verbs in predicative position?	1	present	1921	477	931	0.4846	0.4606
+GB069	AttrAdjLikeV	Do core adjectives (defined semantically as property concepts; value, shape, age, dimension) used attributively require the same morphological treatment as verbs?	0	absent	1832	512	1439	0.7855	0.8312
+GB069	AttrAdjLikeV	Do core adjectives (defined semantically as property concepts; value, shape, age, dimension) used attributively require the same morphological treatment as verbs?	1	present	1832	512	393	0.2145	0.1688
+GB070	CoreCaseNoun	Are there morphological cases for non-pronominal core arguments (i.e. S/A/P)?	0	absent	2230	109	1468	0.6583	0.5582
+GB070	CoreCaseNoun	Are there morphological cases for non-pronominal core arguments (i.e. S/A/P)?	1	present	2230	109	762	0.3417	0.4418
+GB071	CoreCasePRO	Are there morphological cases for pronominal core arguments (i.e. S/A/P)?	0	absent	2201	134	1197	0.5438	0.5120
+GB071	CoreCasePRO	Are there morphological cases for pronominal core arguments (i.e. S/A/P)?	1	present	2201	134	1004	0.4562	0.4880
+GB072	ObliqueCaseNoun	Are there morphological cases for oblique non-pronominal NPs (i.e. not S/A/P)?	0	absent	2193	145	1169	0.5331	0.3874
+GB072	ObliqueCaseNoun	Are there morphological cases for oblique non-pronominal NPs (i.e. not S/A/P)?	1	present	2193	145	1024	0.4669	0.6126
+GB073	ObliqueCasePRO	Are there morphological cases for independent oblique personal pronominal arguments (i.e. not S/A/P)?	0	absent	2072	253	1129	0.5449	0.4648
+GB073	ObliqueCasePRO	Are there morphological cases for independent oblique personal pronominal arguments (i.e. not S/A/P)?	1	present	2072	253	943	0.4551	0.5352
+GB074	Prepositions	Are there prepositions?	0	absent	2229	175	999	0.4482	0.7180
+GB074	Prepositions	Are there prepositions?	1	present	2229	175	1230	0.5518	0.2820
+GB075	Postpositions	Are there postpositions?	0	absent	2119	233	1085	0.5120	0.3072
+GB075	Postpositions	Are there postpositions?	1	present	2119	233	1034	0.4880	0.6928
+GB079	VPrefixing	Do verbs have prefixes/proclitics, other than those that only mark A, S or P (do include portmanteau: A & S + TAM)?	0	absent	2136	139	690	0.3230	0.3322
+GB079	VPrefixing	Do verbs have prefixes/proclitics, other than those that only mark A, S or P (do include portmanteau: A & S + TAM)?	1	present	2136	139	1446	0.6770	0.6678
+GB080	VSuffixing	Do verbs have suffixes/enclitics, other than those that only mark A, S or P (do include portmanteau: A & S + TAM)?	0	absent	2228	100	368	0.1652	0.0722
+GB080	VSuffixing	Do verbs have suffixes/enclitics, other than those that only mark A, S or P (do include portmanteau: A & S + TAM)?	1	present	2228	100	1860	0.8348	0.9278
+GB081	VInfix	Is there productive infixation in verbs?	0	absent	2110	212	1795	0.8507	0.8922
+GB081	VInfix	Is there productive infixation in verbs?	1	present	2110	212	315	0.1493	0.1078
+GB082	PresentBoundV	Is there overt morphological marking of present tense on verbs?	0	absent	2221	133	1462	0.6583	0.5795
+GB082	PresentBoundV	Is there overt morphological marking of present tense on verbs?	1	present	2221	133	759	0.3417	0.4205
+GB083	PastBoundV	Is there overt morphological marking on the verb dedicated to past tense?	0	absent	2231	124	1062	0.4760	0.3769
+GB083	PastBoundV	Is there overt morphological marking on the verb dedicated to past tense?	1	present	2231	124	1169	0.5240	0.6231
+GB084	FutureBoundV	Is there overt morphological marking on the verb dedicated to future tense?	0	absent	2235	129	1220	0.5459	0.3790
+GB084	FutureBoundV	Is there overt morphological marking on the verb dedicated to future tense?	1	present	2235	129	1015	0.4541	0.6210
+GB086	AspectBoundV	Is a morphological distinction between perfective and imperfective aspect available on verbs?	0	absent	2094	208	692	0.3305	0.2798
+GB086	AspectBoundV	Is a morphological distinction between perfective and imperfective aspect available on verbs?	1	present	2094	208	1402	0.6695	0.7202
+GB089	S-ArgSfxV	Can the S argument be indexed by a suffix/enclitic on the verb in the simple main clause?	0	absent	2278	75	1354	0.5944	0.4923
+GB089	S-ArgSfxV	Can the S argument be indexed by a suffix/enclitic on the verb in the simple main clause?	1	present	2278	75	924	0.4056	0.5077
+GB090	S-ArgPfxV	Can the S argument be indexed by a prefix/proclitic on the verb in the simple main clause?	0	absent	2286	72	1329	0.5814	0.4802
+GB090	S-ArgPfxV	Can the S argument be indexed by a prefix/proclitic on the verb in the simple main clause?	1	present	2286	72	957	0.4186	0.5198
+GB091	A-ArgSfxV	Can the A argument be indexed by a suffix/enclitic on the verb in the simple main clause?	0	absent	2274	92	1439	0.6328	0.5235
+GB091	A-ArgSfxV	Can the A argument be indexed by a suffix/enclitic on the verb in the simple main clause?	1	present	2274	92	835	0.3672	0.4765
+GB092	A-ArgPfxV	Can the A argument be indexed by a prefix/proclitic on the verb in the simple main clause?	0	absent	2289	78	1407	0.6147	0.5181
+GB092	A-ArgPfxV	Can the A argument be indexed by a prefix/proclitic on the verb in the simple main clause?	1	present	2289	78	882	0.3853	0.4819
+GB093	P-ArgSfxV	Can the P argument be indexed by a suffix/enclitic on the verb in the simple main clause?	0	absent	2270	102	1490	0.6564	0.5822
+GB093	P-ArgSfxV	Can the P argument be indexed by a suffix/enclitic on the verb in the simple main clause?	1	present	2270	102	780	0.3436	0.4178
+GB094	P-ArgPfxV	Can the P argument be indexed by a prefix/proclitic on the verb in the simple main clause?	0	absent	2267	102	1760	0.7764	0.6358
+GB094	P-ArgPfxV	Can the P argument be indexed by a prefix/proclitic on the verb in the simple main clause?	1	present	2267	102	507	0.2236	0.3642
+GB095	CaseSplitTAM	Are variations in marking strategies of core participants based on TAM distinctions?	0	absent	2005	320	1766	0.8808	0.8579
+GB095	CaseSplitTAM	Are variations in marking strategies of core participants based on TAM distinctions?	1	present	2005	320	239	0.1192	0.1421
+GB096	CaseSplitVerbClass	Are variations in marking strategies of core participants based on verb classes?	0	absent	2009	311	1769	0.8805	0.7889
+GB096	CaseSplitVerbClass	Are variations in marking strategies of core participants based on verb classes?	1	present	2009	311	240	0.1195	0.2111
+GB098	CaseSplitPerson	Are variations in marking strategies of core participants based on person distinctions?	0	absent	2021	301	1644	0.8135	0.7215
+GB098	CaseSplitPerson	Are variations in marking strategies of core participants based on person distinctions?	1	present	2021	301	377	0.1865	0.2785
+GB099	VSupplPerson	Can verb stems alter according to the person of a core participant?	0	absent	1913	401	1769	0.9247	0.8943
+GB099	VSupplPerson	Can verb stems alter according to the person of a core participant?	1	present	1913	401	144	0.0753	0.1057
+GB103	BenefApplBoundV	Is there a benefactive applicative marker on the verb (including indexing)?	0	absent	2013	363	1335	0.6632	0.6062
+GB103	BenefApplBoundV	Is there a benefactive applicative marker on the verb (including indexing)?	1	present	2013	363	678	0.3368	0.3938
+GB104	AppInstrBoundV	Is there an instrumental applicative marker on the verb (including indexing)?	0	absent	1954	407	1644	0.8414	0.8453
+GB104	AppInstrBoundV	Is there an instrumental applicative marker on the verb (including indexing)?	1	present	1954	407	310	0.1586	0.1547
+GB105	CaseRecipientObj	Can the recipient in a ditransitive construction be marked like the monotransitive patient?	0	absent	1857	499	792	0.4265	0.4299
+GB105	CaseRecipientObj	Can the recipient in a ditransitive construction be marked like the monotransitive patient?	1	present	1857	499	1065	0.5735	0.5701
+GB107	NEGBoundV	Can standard negation be marked by an affix, clitic or modification of the verb?	0	absent	2266	113	1202	0.5305	0.4195
+GB107	NEGBoundV	Can standard negation be marked by an affix, clitic or modification of the verb?	1	present	2266	113	1064	0.4695	0.5805
+GB108	DirLocBoundV	Is there directional or locative morphological marking on verbs?	0	absent	2068	286	1287	0.6223	0.5036
+GB108	DirLocBoundV	Is there directional or locative morphological marking on verbs?	1	present	2068	286	781	0.3777	0.4964
+GB109	VSupplNUM	Is there verb suppletion for participant number?	0	absent	1861	492	1620	0.8705	0.7262
+GB109	VSupplNUM	Is there verb suppletion for participant number?	1	present	1861	492	241	0.1295	0.2738
+GB110	VSupplTA	Is there verb suppletion for tense or aspect?	0	absent	1859	508	1665	0.8956	0.8275
+GB110	VSupplTA	Is there verb suppletion for tense or aspect?	1	present	1859	508	194	0.1044	0.1725
+GB111	VerbClass	Are there conjugation classes?	0	absent	2071	249	1300	0.6277	0.5211
+GB111	VerbClass	Are there conjugation classes?	1	present	2071	249	771	0.3723	0.4789
+GB113	TransitivizingBound	Are there verbal affixes or clitics that turn intransitive verbs into transitive ones?	0	absent	1844	502	553	0.2999	0.3427
+GB113	TransitivizingBound	Are there verbal affixes or clitics that turn intransitive verbs into transitive ones?	1	present	1844	502	1291	0.7001	0.6573
+GB114	ReflBoundV	Is there a phonologically bound reflexive marker on the verb?	0	absent	1938	422	1078	0.5562	0.4508
+GB114	ReflBoundV	Is there a phonologically bound reflexive marker on the verb?	1	present	1938	422	860	0.4438	0.5492
+GB115	RecipBoundV	Is there a phonologically bound reciprocal marker on the verb?	0	absent	1929	436	817	0.4235	0.3945
+GB115	RecipBoundV	Is there a phonologically bound reciprocal marker on the verb?	1	present	1929	436	1112	0.5765	0.6055
+GB116	VClassifiers	Do verbs classify the shape, size or consistency of absolutive arguments by means of incorporated nouns, verbal affixes or suppletive verb stems?	0	absent	1903	371	1816	0.9543	0.9041
+GB116	VClassifiers	Do verbs classify the shape, size or consistency of absolutive arguments by means of incorporated nouns, verbal affixes or suppletive verb stems?	1	present	1903	371	87	0.0457	0.0959
+GB117	CopulaPredNom	Is there a copula for predicate nominals?	0	absent	2001	368	866	0.4328	0.4840
+GB117	CopulaPredNom	Is there a copula for predicate nominals?	1	present	2001	368	1135	0.5672	0.5160
+GB118	SerialV	Are there serial verb constructions?	0	absent	1569	804	740	0.4716	0.5794
+GB118	SerialV	Are there serial verb constructions?	1	present	1569	804	829	0.5284	0.4206
+GB119	MoodAUX	"Can mood be marked by an inflecting word (""auxiliary verb"")?"	0	absent	1859	305	1338	0.7197	0.7235
+GB119	MoodAUX	"Can mood be marked by an inflecting word (""auxiliary verb"")?"	1	present	1859	305	521	0.2803	0.2765
+GB120	AspectAUX	"Can aspect be marked by an inflecting word (""auxiliary verb"")?"	0	absent	1898	271	1285	0.6770	0.7044
+GB120	AspectAUX	"Can aspect be marked by an inflecting word (""auxiliary verb"")?"	1	present	1898	271	613	0.3230	0.2956
+GB121	AUXTense	"Can tense be marked by an inflecting word (""auxiliary verb"")?"	0	absent	1922	262	1504	0.7825	0.8048
+GB121	AUXTense	"Can tense be marked by an inflecting word (""auxiliary verb"")?"	1	present	1922	262	418	0.2175	0.1952
+GB122	VCompounding	Is verb compounding a regular process?	0	absent	1595	773	1089	0.6828	0.6251
+GB122	VCompounding	Is verb compounding a regular process?	1	present	1595	773	506	0.3172	0.3749
+GB123	LightVerb	Are there verb-adjunct (aka light-verb) constructions?	0	absent	1237	1114	804	0.6500	0.6338
+GB123	LightVerb	Are there verb-adjunct (aka light-verb) constructions?	1	present	1237	1114	433	0.3500	0.3662
+GB124	NounIncorpIntrans	Is incorporation of nouns into verbs a productive intransitivizing process?	0	absent	1634	713	1369	0.8378	0.8014
+GB124	NounIncorpIntrans	Is incorporation of nouns into verbs a productive intransitivizing process?	1	present	1634	713	265	0.1622	0.1986
+GB126	ExistentialV	Is there an existential verb?	0	absent	1760	569	587	0.3335	0.4065
+GB126	ExistentialV	Is there an existential verb?	1	present	1760	569	1173	0.6665	0.5935
+GB127	PostureVerbs	Are different posture verbs used obligatorily depending on an inanimate locatum's shape or position (e.g. 'to lie' vs. 'to stand')?	0	absent	1303	1000	1092	0.8381	0.7338
+GB127	PostureVerbs	Are different posture verbs used obligatorily depending on an inanimate locatum's shape or position (e.g. 'to lie' vs. 'to stand')?	1	present	1303	1000	211	0.1619	0.2662
+GB129	FewVerbs	Is there a notably small number, i.e. about 100 or less, of verb roots in the language?	0	absent	2070	255	2029	0.9802	0.9617
+GB129	FewVerbs	Is there a notably small number, i.e. about 100 or less, of verb roots in the language?	1	present	2070	255	41	0.0198	0.0383
+GB130	OrderSVIntrans	What is the pragmatically unmarked order of S and V in intransitive clauses?	1	SV	2282	94	1801	0.7892	0.7810
+GB130	OrderSVIntrans	What is the pragmatically unmarked order of S and V in intransitive clauses?	2	VS	2282	94	337	0.1477	0.1265
+GB130	OrderSVIntrans	What is the pragmatically unmarked order of S and V in intransitive clauses?	3	both	2282	94	144	0.0631	0.0925
+GB131	TransVInitOrder	Is a pragmatically unmarked constituent order verb-initial for transitive clauses?	0	absent	2310	98	1851	0.8013	0.7961
+GB131	TransVInitOrder	Is a pragmatically unmarked constituent order verb-initial for transitive clauses?	1	present	2310	98	459	0.1987	0.2039
+GB132	TransVMedOrder	Is a pragmatically unmarked constituent order verb-medial for transitive clauses?	0	absent	2287	106	1194	0.5221	0.6821
+GB132	TransVMedOrder	Is a pragmatically unmarked constituent order verb-medial for transitive clauses?	1	present	2287	106	1093	0.4779	0.3179
+GB133	TransVFinalOrder	Is a pragmatically unmarked constituent order verb-final for transitive clauses?	0	absent	2298	108	1303	0.5670	0.3290
+GB133	TransVFinalOrder	Is a pragmatically unmarked constituent order verb-final for transitive clauses?	1	present	2298	108	995	0.4330	0.6710
+GB134	MainSubSameOrder	Is the order of constituents the same in main and subordinate clauses?	0	absent	1723	601	102	0.0592	0.0643
+GB134	MainSubSameOrder	Is the order of constituents the same in main and subordinate clauses?	1	present	1723	601	1621	0.9408	0.9357
+GB135	SUBClauseInOPosition	Do clausal objects usually occur in the same position as nominal objects?	0	absent	1576	747	177	0.1123	0.1543
+GB135	SUBClauseInOPosition	Do clausal objects usually occur in the same position as nominal objects?	1	present	1576	747	1399	0.8877	0.8457
+GB136	WordOrderFixed	Is the order of core argument (i.e. S/A/P) constituents fixed?	0	absent	2000	388	766	0.3830	0.4268
+GB136	WordOrderFixed	Is the order of core argument (i.e. S/A/P) constituents fixed?	1	present	2000	388	1234	0.6170	0.5732
+GB137	NEGFinal	Can standard negation be marked clause-finally?	0	absent	2186	159	1338	0.6121	0.5015
+GB137	NEGFinal	Can standard negation be marked clause-finally?	1	present	2186	159	848	0.3879	0.4985
+GB138	NEGInitial	Can standard negation be marked clause-initially?	0	absent	2177	163	1280	0.5880	0.5815
+GB138	NEGInitial	Can standard negation be marked clause-initially?	1	present	2177	163	897	0.4120	0.4185
+GB139	NEGProhibitive	Is there a difference between imperative (prohibitive) and declarative negation constructions?	0	absent	2005	399	516	0.2574	0.2688
+GB139	NEGProhibitive	Is there a difference between imperative (prohibitive) and declarative negation constructions?	1	present	2005	399	1489	0.7426	0.7312
+GB140	SameNEGLocExistNom	Is verbal predication marked by the same negator as all of the following types of predication: locational, existential and nominal?	0	absent	1559	778	780	0.5003	0.4401
+GB140	SameNEGLocExistNom	Is verbal predication marked by the same negator as all of the following types of predication: locational, existential and nominal?	1	present	1559	778	779	0.4997	0.5599
+GB146	VControl	Is there a morpho-syntactic distinction between predicates expressing controlled versus uncontrolled events or states?	0	absent	1349	965	893	0.6620	0.6252
+GB146	VControl	Is there a morpho-syntactic distinction between predicates expressing controlled versus uncontrolled events or states?	1	present	1349	965	456	0.3380	0.3748
+GB147	PassiveBoundV	Is there a morphological passive marked on the lexical verb?	0	absent	1904	487	1096	0.5756	0.5943
+GB147	PassiveBoundV	Is there a morphological passive marked on the lexical verb?	1	present	1904	487	808	0.4244	0.4057
+GB148	AntipassiveBoundV	Is there a morphological antipassive marked on the lexical verb?	0	absent	1784	586	1621	0.9086	0.8980
+GB148	AntipassiveBoundV	Is there a morphological antipassive marked on the lexical verb?	1	present	1784	586	163	0.0914	0.1020
+GB149	InverseBoundV	Is there a morphologically marked inverse on verbs?	0	absent	1932	383	1838	0.9513	0.9167
+GB149	InverseBoundV	Is there a morphologically marked inverse on verbs?	1	present	1932	383	94	0.0487	0.0833
+GB150	ClauseChain	Is there clause chaining?	0	absent	1496	862	1059	0.7079	0.6784
+GB150	ClauseChain	Is there clause chaining?	1	present	1496	862	437	0.2921	0.3216
+GB151	SwitchReference	"Is there an overt verb marker dedicated to signalling coreference or noncoreference between the subject of one clause and an argument of an adjacent clause (""switch reference"")?"	0	absent	1763	601	1462	0.8293	0.7382
+GB151	SwitchReference	"Is there an overt verb marker dedicated to signalling coreference or noncoreference between the subject of one clause and an argument of an adjacent clause (""switch reference"")?"	1	present	1763	601	301	0.1707	0.2618
+GB152	SimulSeqBound	Is there a morphologically marked distinction between simultaneous and sequential clauses?	0	absent	1692	676	1114	0.6584	0.5702
+GB152	SimulSeqBound	Is there a morphologically marked distinction between simultaneous and sequential clauses?	1	present	1692	676	578	0.3416	0.4298
+GB155	CAUSBound	Are causatives formed by affixes or clitics on verbs?	0	absent	2022	364	554	0.2740	0.3007
+GB155	CAUSBound	Are causatives formed by affixes or clitics on verbs?	1	present	2022	364	1468	0.7260	0.6993
+GB156	CAUSSay	Is there a causative construction involving an element that is unmistakably grammaticalized from a verb for 'to say'?	0	absent	1777	556	1716	0.9657	0.9366
+GB156	CAUSSay	Is there a causative construction involving an element that is unmistakably grammaticalized from a verb for 'to say'?	1	present	1777	556	61	0.0343	0.0634
+GB158	RedupV	Are verbs reduplicated?	0	absent	1865	482	501	0.2686	0.3648
+GB158	RedupV	Are verbs reduplicated?	1	present	1865	482	1364	0.7314	0.6352
+GB159	RedupNoun	Are nouns reduplicated?	0	absent	1682	651	829	0.4929	0.5978
+GB159	RedupNoun	Are nouns reduplicated?	1	present	1682	651	853	0.5071	0.4022
+GB160	RedupOther	Are elements apart from verbs or nouns reduplicated?	0	absent	1693	647	556	0.3284	0.4512
+GB160	RedupOther	Are elements apart from verbs or nouns reduplicated?	1	present	1693	647	1137	0.6716	0.5488
+GB165	TrialBound	Is there productive morphological trial marking on nouns?	0	absent	2099	81	2091	0.9962	0.9928
+GB165	TrialBound	Is there productive morphological trial marking on nouns?	1	present	2099	81	8	0.0038	0.0072
+GB166	PaucalBound	Is there productive morphological paucal marking on nouns?	0	absent	2090	89	2063	0.9871	0.9813
+GB166	PaucalBound	Is there productive morphological paucal marking on nouns?	1	present	2090	89	27	0.0129	0.0187
+GB167	PROLogophore	Is there a logophoric pronoun?	0	absent	1564	597	1459	0.9329	0.9400
+GB167	PROLogophore	Is there a logophoric pronoun?	1	present	1564	597	105	0.0671	0.0600
+GB170	ADJGender	Can an adnominal property word agree with the noun in gender/noun class?	0	absent	2102	127	1643	0.7816	0.8169
+GB170	ADJGender	Can an adnominal property word agree with the noun in gender/noun class?	1	present	2102	127	459	0.2184	0.1831
+GB171	DEMGender	Can an adnominal demonstrative agree with the noun in gender/noun class?	0	absent	2102	106	1597	0.7598	0.7628
+GB171	DEMGender	Can an adnominal demonstrative agree with the noun in gender/noun class?	1	present	2102	106	505	0.2402	0.2372
+GB172	ARTGender	Can an article agree with the noun in gender/noun class?	0	absent	2083	110	1901	0.9126	0.9195
+GB172	ARTGender	Can an article agree with the noun in gender/noun class?	1	present	2083	110	182	0.0874	0.0805
+GB177	AnimacyBoundV	Can the verb carry a marker of animacy of argument, unrelated to any gender/noun class of the argument visible in the NP domain?	0	absent	1849	312	1709	0.9243	0.9137
+GB177	AnimacyBoundV	Can the verb carry a marker of animacy of argument, unrelated to any gender/noun class of the argument visible in the NP domain?	1	present	1849	312	140	0.0757	0.0863
+GB184	AdjNUM	Can an adnominal property word agree with the noun in number?	0	absent	1899	269	1181	0.6219	0.6244
+GB184	AdjNUM	Can an adnominal property word agree with the noun in number?	1	present	1899	269	718	0.3781	0.3756
+GB185	DEMNum	Can an adnominal demonstrative agree with the noun in number?	0	absent	1932	245	1089	0.5637	0.5739
+GB185	DEMNum	Can an adnominal demonstrative agree with the noun in number?	1	present	1932	245	843	0.4363	0.4261
+GB186	ARTNum	Can an article agree with the noun in number?	0	absent	1951	210	1655	0.8483	0.8886
+GB186	ARTNum	Can an article agree with the noun in number?	1	present	1951	210	296	0.1517	0.1114
+GB187	DIMBound	Is there any productive diminutive marking on the noun (exclude marking by system of nominal classification only)?	0	absent	1452	708	801	0.5517	0.4886
+GB187	DIMBound	Is there any productive diminutive marking on the noun (exclude marking by system of nominal classification only)?	1	present	1452	708	651	0.4483	0.5114
+GB188	AUGBound	Is there any productive augmentative marking on the noun (exclude marking by system of nominal classification only)?	0	absent	1309	840	1067	0.8151	0.7829
+GB188	AUGBound	Is there any productive augmentative marking on the noun (exclude marking by system of nominal classification only)?	1	present	1309	840	242	0.1849	0.2171
+GB192	GenderPhono	Is there a gender system where a noun's phonological properties are a factor in class assignment?	0	absent	2055	138	1925	0.9367	0.9638
+GB192	GenderPhono	Is there a gender system where a noun's phonological properties are a factor in class assignment?	1	present	2055	138	130	0.0633	0.0362
+GB193	OrderADJ	What is the order of adnominal property word and noun?	0	they cannot be used attributively	2089	137	45	0.0215	0.0245
+GB193	OrderADJ	What is the order of adnominal property word and noun?	1	ANM - N	2089	137	503	0.2408	0.2776
+GB193	OrderADJ	What is the order of adnominal property word and noun?	2	N - ANM	2089	137	1222	0.5850	0.5016
+GB193	OrderADJ	What is the order of adnominal property word and noun?	3	both	2089	137	319	0.1527	0.1963
+GB196	PRO2PMascFem	Is there a male/female distinction in 2nd person independent pronouns?	0	absent	2139	42	2023	0.9458	0.9434
+GB196	PRO2PMascFem	Is there a male/female distinction in 2nd person independent pronouns?	1	present	2139	42	116	0.0542	0.0566
+GB197	PRO1PMascFem	Is there a male/female distinction in 1st person independent pronouns?	0	absent	2144	38	2114	0.9860	0.9716
+GB197	PRO1PMascFem	Is there a male/female distinction in 1st person independent pronouns?	1	present	2144	38	30	0.0140	0.0284
+GB198	NUMGender	Can an adnominal numeral agree with the noun in gender/noun class?	0	absent	2024	149	1637	0.8088	0.8713
+GB198	NUMGender	Can an adnominal numeral agree with the noun in gender/noun class?	1	present	2024	149	387	0.1912	0.1287
+GB203	QUANTOrder	What is the order of the adnominal collective universal quantifier ('all') and the noun?	0	no UQ	1535	625	31	0.0202	0.0422
+GB203	QUANTOrder	What is the order of the adnominal collective universal quantifier ('all') and the noun?	1	UQ-N	1535	625	576	0.3752	0.3825
+GB203	QUANTOrder	What is the order of the adnominal collective universal quantifier ('all') and the noun?	2	N-UQ	1535	625	788	0.5134	0.4709
+GB203	QUANTOrder	What is the order of the adnominal collective universal quantifier ('all') and the noun?	3	both	1535	625	140	0.0912	0.1044
+GB204	QUANTUniversal	Do collective ('all') and distributive ('every') universal quantifiers differ in their forms or their syntactic positions?	0	absent	1108	1041	491	0.4431	0.5722
+GB204	QUANTUniversal	Do collective ('all') and distributive ('every') universal quantifiers differ in their forms or their syntactic positions?	1	present	1108	1041	617	0.5569	0.4278
+GB250	PredPOSSHabeo	Can predicative possession be expressed with a transitive 'habeo' verb?	0	absent	1484	656	839	0.5654	0.5449
+GB250	PredPOSSHabeo	Can predicative possession be expressed with a transitive 'habeo' verb?	1	present	1484	656	645	0.4346	0.4551
+GB252	PredPOSSLoc	Can predicative possession be expressed with an S-like possessum and a locative-coded possessor?	0	absent	1335	802	1093	0.8187	0.8408
+GB252	PredPOSSLoc	Can predicative possession be expressed with an S-like possessum and a locative-coded possessor?	1	present	1335	802	242	0.1813	0.1592
+GB253	PredPOSSDat	Can predicative possession be expressed with an S-like possessum and a dative-coded possessor?	0	absent	1327	809	1161	0.8749	0.8456
+GB253	PredPOSSDat	Can predicative possession be expressed with an S-like possessum and a dative-coded possessor?	1	present	1327	809	166	0.1251	0.1544
+GB254	PredPOSSAdnom	Can predicative possession be expressed with an S-like possessum and a possessor that is coded like an adnominal possessor?	0	absent	1386	751	850	0.6133	0.6319
+GB254	PredPOSSAdnom	Can predicative possession be expressed with an S-like possessum and a possessor that is coded like an adnominal possessor?	1	present	1386	751	536	0.3867	0.3681
+GB256	PredPOSSComitative	Can predicative possession be expressed with an S-like possessor and a possessum that is coded like a comitative argument?	0	absent	1341	795	1096	0.8173	0.8629
+GB256	PredPOSSComitative	Can predicative possession be expressed with an S-like possessor and a possessum that is coded like a comitative argument?	1	present	1341	795	245	0.1827	0.1371
+GB257	QIntonation	Can polar interrogation be marked by intonation only?	0	absent	1604	616	783	0.4882	0.6018
+GB257	QIntonation	Can polar interrogation be marked by intonation only?	1	present	1604	616	821	0.5118	0.3982
+GB260	QWordOrder	Can polar interrogation be indicated by a special word order?	0	absent	1727	489	1677	0.9710	0.9801
+GB260	QWordOrder	Can polar interrogation be indicated by a special word order?	1	present	1727	489	50	0.0290	0.0199
+GB262	QPartInitial	Is there a clause-initial polar interrogative particle?	0	absent	1745	454	1489	0.8533	0.8520
+GB262	QPartInitial	Is there a clause-initial polar interrogative particle?	1	present	1745	454	256	0.1467	0.1480
+GB263	QPartFinal	Is there a clause-final polar interrogative particle?	0	absent	1733	466	1053	0.6076	0.6375
+GB263	QPartFinal	Is there a clause-final polar interrogative particle?	1	present	1733	466	680	0.3924	0.3625
+GB264	QPartMedial	Is there a polar interrogative particle that most commonly occurs neither clause-initially nor clause-finally?	0	absent	1733	463	1539	0.8881	0.8710
+GB264	QPartMedial	Is there a polar interrogative particle that most commonly occurs neither clause-initially nor clause-finally?	1	present	1733	463	194	0.1119	0.1290
+GB265	COMPARExceed	Is there a comparative construction that includes a form that elsewhere means 'surpass, exceed'?	0	absent	1261	894	858	0.6804	0.7673
+GB265	COMPARExceed	Is there a comparative construction that includes a form that elsewhere means 'surpass, exceed'?	1	present	1261	894	403	0.3196	0.2327
+GB266	COMPARLoc	Is there a comparative construction that employs a marker of the standard which elsewhere has a locational meaning?	0	absent	1230	922	839	0.6821	0.7061
+GB266	COMPARLoc	Is there a comparative construction that employs a marker of the standard which elsewhere has a locational meaning?	1	present	1230	922	391	0.3179	0.2939
+GB270	COMPARConjoin	Can comparatives be expressed using two conjoined clauses?	0	absent	1197	949	1018	0.8505	0.7387
+GB270	COMPARConjoin	Can comparatives be expressed using two conjoined clauses?	1	present	1197	949	179	0.1495	0.2613
+GB273	COMPAROtherMarker	Is there a comparative construction with a standard marker that elsewhere has neither a locational meaning nor a 'surpass/exceed' meaning?	0	absent	1218	937	711	0.5837	0.6705
+GB273	COMPAROtherMarker	Is there a comparative construction with a standard marker that elsewhere has neither a locational meaning nor a 'surpass/exceed' meaning?	1	present	1218	937	507	0.4163	0.3295
+GB275	COMPDegreeBound	Is there a bound comparative degree marker on the property word in a comparative construction?	0	absent	1305	849	1036	0.7939	0.7839
+GB275	COMPDegreeBound	Is there a bound comparative degree marker on the property word in a comparative construction?	1	present	1305	849	269	0.2061	0.2161
+GB276	COMPDegreeFree	Is there a non-bound comparative degree marker modifying the property word in a comparative construction?	0	absent	1278	876	855	0.6690	0.7330
+GB276	COMPDegreeFree	Is there a non-bound comparative degree marker modifying the property word in a comparative construction?	1	present	1278	876	423	0.3310	0.2670
+GB285	QPartVMorph	Can polar interrogation be marked by a question particle and verbal morphology?	0	absent	1691	472	1658	0.9805	0.9681
+GB285	QPartVMorph	Can polar interrogation be marked by a question particle and verbal morphology?	1	present	1691	472	33	0.0195	0.0319
+GB286	QVMorph	Can polar interrogation be indicated by overt verbal morphology only?	0	absent	1743	469	1435	0.8233	0.6854
+GB286	QVMorph	Can polar interrogation be indicated by overt verbal morphology only?	1	present	1743	469	308	0.1767	0.3146
+GB291	QTone	Can polar interrogation be marked by tone?	0	absent	1685	438	1605	0.9525	0.9820
+GB291	QTone	Can polar interrogation be marked by tone?	1	present	1685	438	80	0.0475	0.0180
+GB296	Ideophones	Is there a phonologically or morphosyntactically definable class of ideophones that includes ideophones depicting imagery beyond sound?	0	absent	957	1146	661	0.6907	0.7350
+GB296	Ideophones	Is there a phonologically or morphosyntactically definable class of ideophones that includes ideophones depicting imagery beyond sound?	1	present	957	1146	296	0.3093	0.2650
+GB297	QVNotV	Can polar interrogation be indicated by a V-not-V construction?	0	absent	1596	510	1485	0.9305	0.9750
+GB297	QVNotV	Can polar interrogation be indicated by a V-not-V construction?	1	present	1596	510	111	0.0695	0.0250
+GB298	NEGAux	"Can standard negation be marked by an inflecting word (""auxiliary verb"")?"	0	absent	2010	145	1777	0.8841	0.8927
+GB298	NEGAux	"Can standard negation be marked by an inflecting word (""auxiliary verb"")?"	1	present	2010	145	233	0.1159	0.1073
+GB299	NEGPart	"Can standard negation be marked by a non-inflecting word (""auxiliary particle"")?"	0	absent	2027	131	705	0.3478	0.3996
+GB299	NEGPart	"Can standard negation be marked by a non-inflecting word (""auxiliary particle"")?"	1	present	2027	131	1322	0.6522	0.6004
+GB300	VSupplGive	Does the verb for 'give' have suppletive verb forms?	0	absent	1271	821	1131	0.8899	0.8296
+GB300	VSupplGive	Does the verb for 'give' have suppletive verb forms?	1	present	1271	821	140	0.1101	0.1704
+GB301	Inclusory	Is there an inclusory construction?	0	absent	1111	983	851	0.7660	0.7785
+GB301	Inclusory	Is there an inclusory construction?	1	present	1111	983	260	0.2340	0.2215
+GB302	PassiveFree	"Is there a phonologically free passive marker (""particle"" or ""auxiliary"")?"	0	absent	1581	514	1415	0.8950	0.9475
+GB302	PassiveFree	"Is there a phonologically free passive marker (""particle"" or ""auxiliary"")?"	1	present	1581	514	166	0.1050	0.0525
+GB303	AntipassiveFree	"Is there a phonologically free antipassive marker (""particle"" or ""auxiliary"")?"	0	absent	1503	592	1498	0.9967	0.9945
+GB303	AntipassiveFree	"Is there a phonologically free antipassive marker (""particle"" or ""auxiliary"")?"	1	present	1503	592	5	0.0033	0.0055
+GB304	PassiveA-ArgOvert	Can the agent be expressed overtly in a passive clause?	0	absent	1312	785	782	0.5960	0.6703
+GB304	PassiveA-ArgOvert	Can the agent be expressed overtly in a passive clause?	1	present	1312	785	530	0.4040	0.3297
+GB305	PRORefl	Is there a phonologically independent reflexive pronoun?	0	absent	1682	471	844	0.5018	0.5416
+GB305	PRORefl	Is there a phonologically independent reflexive pronoun?	1	present	1682	471	838	0.4982	0.4584
+GB306	PROReciproc	Is there a phonologically independent non-bipartite reciprocal pronoun?	0	absent	1518	579	1152	0.7589	0.7748
+GB306	PROReciproc	Is there a phonologically independent non-bipartite reciprocal pronoun?	1	present	1518	579	366	0.2411	0.2252
+GB309	MultiplePastFuture	Are there multiple past or multiple future tenses, distinguishing distance from Time of Reference?	0	absent	1895	243	1297	0.6844	0.6467
+GB309	MultiplePastFuture	Are there multiple past or multiple future tenses, distinguishing distance from Time of Reference?	1	present	1895	243	598	0.3156	0.3533
+GB312	MoodBoundV	Is there overt morphological marking on the verb dedicated to mood?	0	absent	1893	205	575	0.3038	0.1934
+GB312	MoodBoundV	Is there overt morphological marking on the verb dedicated to mood?	1	present	1893	205	1318	0.6962	0.8066
+GB313	PROPoss	Are there special adnominal possessive pronouns that are not formed by an otherwise regular process?	0	absent	1901	196	1207	0.6349	0.6371
+GB313	PROPoss	Are there special adnominal possessive pronouns that are not formed by an otherwise regular process?	1	present	1901	196	694	0.3651	0.3629
+GB314	AUGgender	Can augmentative meaning be expressed productively by a shift of gender/noun class?	0	absent	1778	318	1694	0.9528	0.9795
+GB314	AUGgender	Can augmentative meaning be expressed productively by a shift of gender/noun class?	1	present	1778	318	84	0.0472	0.0205
+GB315	DIMGender	Can diminutive meaning be expressed productively by a shift of gender/noun class?	0	absent	1816	281	1663	0.9157	0.9514
+GB315	DIMGender	Can diminutive meaning be expressed productively by a shift of gender/noun class?	1	present	1816	281	153	0.0843	0.0486
+GB316	SingularFree	Is singular number regularly marked in the noun phrase by a dedicated phonologically free element?	0	absent	1986	111	1881	0.9471	0.9488
+GB316	SingularFree	Is singular number regularly marked in the noun phrase by a dedicated phonologically free element?	1	present	1986	111	105	0.0529	0.0512
+GB317	DualFree	Is dual number regularly marked in the noun phrase by a dedicated phonologically free element?	0	absent	1977	120	1901	0.9616	0.9712
+GB317	DualFree	Is dual number regularly marked in the noun phrase by a dedicated phonologically free element?	1	present	1977	120	76	0.0384	0.0288
+GB318	PluralFree	Is plural number regularly marked in the noun phrase by a dedicated phonologically free element?	0	absent	2015	131	1650	0.8189	0.8708
+GB318	PluralFree	Is plural number regularly marked in the noun phrase by a dedicated phonologically free element?	1	present	2015	131	365	0.1811	0.1292
+GB319	TrialFree	Is trial number regularly marked in the noun phrase by a dedicated phonologically free element?	0	absent	1996	102	1987	0.9955	0.9999
+GB319	TrialFree	Is trial number regularly marked in the noun phrase by a dedicated phonologically free element?	1	present	1996	102	9	0.0045	0.0001
+GB320	PaucalFree	Is paucal number regularly marked in the noun phrase by a dedicated phonologically free element?	0	absent	1982	116	1964	0.9909	0.9926
+GB320	PaucalFree	Is paucal number regularly marked in the noun phrase by a dedicated phonologically free element?	1	present	1982	116	18	0.0091	0.0074
+GB321	GenderUnpredict	Is there a large class of nouns whose gender/noun class is not phonologically or semantically predictable?	0	absent	1927	171	1714	0.8895	0.9087
+GB321	GenderUnpredict	Is there a large class of nouns whose gender/noun class is not phonologically or semantically predictable?	1	present	1927	171	213	0.1105	0.0913
+GB322	EvidSense	Is there grammatical marking of direct evidence (perceived with the senses)?	0	absent	1400	751	1189	0.8493	0.7666
+GB322	EvidSense	Is there grammatical marking of direct evidence (perceived with the senses)?	1	present	1400	751	211	0.1507	0.2334
+GB323	EvidIndirect	Is there grammatical marking of indirect evidence (hearsay, inference, etc.)?	0	absent	1405	747	986	0.7018	0.5715
+GB323	EvidIndirect	Is there grammatical marking of indirect evidence (hearsay, inference, etc.)?	1	present	1405	747	419	0.2982	0.4285
+GB324	QV	Is there an interrogative verb for content interrogatives (who?, what?, etc.)?	0	absent	1800	297	1597	0.8872	0.8647
+GB324	QV	Is there an interrogative verb for content interrogatives (who?, what?, etc.)?	1	present	1800	297	203	0.1128	0.1353
+GB325	QCountMass	Is there a count/mass distinction in interrogative quantifiers?	0	absent	1314	780	1076	0.8189	0.8150
+GB325	QCountMass	Is there a count/mass distinction in interrogative quantifiers?	1	present	1314	780	238	0.1811	0.1850
+GB326	QInSitu	Do (nominal) content interrogatives normally or frequently occur in situ?	0	absent	1722	426	805	0.4675	0.5528
+GB326	QInSitu	Do (nominal) content interrogatives normally or frequently occur in situ?	1	present	1722	426	917	0.5325	0.4472
+GB327	RELPost	Can the relative clause follow the noun?	0	absent	1708	445	302	0.1768	0.2588
+GB327	RELPost	Can the relative clause follow the noun?	1	present	1708	445	1406	0.8232	0.7412
+GB328	RELPre	Can the relative clause precede the noun?	0	absent	1566	586	1090	0.6960	0.6269
+GB328	RELPre	Can the relative clause precede the noun?	1	present	1566	586	476	0.3040	0.3731
+GB329	RELInternalHead	Are there internally-headed relative clauses?	0	absent	1399	751	1214	0.8678	0.7689
+GB329	RELInternalHead	Are there internally-headed relative clauses?	1	present	1399	751	185	0.1322	0.2311
+GB330	RELCorr	Are there correlative relative clauses?	0	absent	1376	762	1209	0.8786	0.8350
+GB330	RELCorr	Are there correlative relative clauses?	1	present	1376	762	167	0.1214	0.1650
+GB331	RELAdjoined	Are there non-adjacent relative clauses?	0	absent	1379	759	1243	0.9014	0.8693
+GB331	RELAdjoined	Are there non-adjacent relative clauses?	1	present	1379	759	136	0.0986	0.1307
+GB333	NUMDecimal	Is there a decimal numeral system?	0	absent	1711	443	500	0.2922	0.5329
+GB333	NUMDecimal	Is there a decimal numeral system?	1	present	1711	443	1211	0.7078	0.4671
+GB334	NUMQuinary	Is there synchronic evidence for any element of a quinary numeral system?	0	absent	1748	406	1366	0.7815	0.6835
+GB334	NUMQuinary	Is there synchronic evidence for any element of a quinary numeral system?	1	present	1748	406	382	0.2185	0.3165
+GB335	NUMVigesimal	Is there synchronic evidence for any element of a vigesimal numeral system?	0	absent	1641	457	1375	0.8379	0.8413
+GB335	NUMVigesimal	Is there synchronic evidence for any element of a vigesimal numeral system?	1	present	1641	457	266	0.1621	0.1587
+GB336	NUMBodyTally	Is there a body-part tallying system?	0	absent	1662	434	1618	0.9735	0.9191
+GB336	NUMBodyTally	Is there a body-part tallying system?	1	present	1662	434	44	0.0265	0.0809
+GB400	PersonNeutralized	Are all person categories neutralized in some voice, tense, aspect, mood and/or negation?	0	absent	1485	380	1380	0.9293	0.9130
+GB400	PersonNeutralized	Are all person categories neutralized in some voice, tense, aspect, mood and/or negation?	1	present	1485	380	105	0.0707	0.0870
+GB401	PatientLabile	Is there a class of patient-labile verbs?	0	absent	832	1031	599	0.7200	0.7074
+GB401	PatientLabile	Is there a class of patient-labile verbs?	1	present	832	1031	233	0.2800	0.2926
+GB402	VSupplSee	Does the verb for 'see' have suppletive verb forms?	0	absent	1112	749	1049	0.9433	0.9067
+GB402	VSupplSee	Does the verb for 'see' have suppletive verb forms?	1	present	1112	749	63	0.0567	0.0933
+GB403	VSupplCome	Does the verb for 'come' have suppletive verb forms?	0	absent	1141	720	950	0.8326	0.7746
+GB403	VSupplCome	Does the verb for 'come' have suppletive verb forms?	1	present	1141	720	191	0.1674	0.2254
+GB408	Accusative	Is there any accusative alignment of flagging?	0	absent	1748	131	974	0.5572	0.5457
+GB408	Accusative	Is there any accusative alignment of flagging?	1	present	1748	131	774	0.4428	0.4543
+GB409	Ergative	Is there any ergative alignment of flagging?	0	absent	1745	144	1361	0.7799	0.7511
+GB409	Ergative	Is there any ergative alignment of flagging?	1	present	1745	144	384	0.2201	0.2489
+GB410	NeutralAlign	Is there any neutral alignment of flagging?	0	absent	1720	141	511	0.2971	0.3353
+GB410	NeutralAlign	Is there any neutral alignment of flagging?	1	present	1720	141	1209	0.7029	0.6647
+GB415	PRO2PPoliteness	Is there a politeness distinction in 2nd person forms?	0	absent	1717	210	1478	0.8608	0.9396
+GB415	PRO2PPoliteness	Is there a politeness distinction in 2nd person forms?	1	present	1717	210	239	0.1392	0.0604
+GB421	ComplThinkKnowPre	Is there a preposed complementizer in complements of verbs of thinking and/or knowing?	0	absent	1094	767	654	0.5978	0.7911
+GB421	ComplThinkKnowPre	Is there a preposed complementizer in complements of verbs of thinking and/or knowing?	1	present	1094	767	440	0.4022	0.2089
+GB422	ComplThinkKnowPost	Is there a postposed complementizer in complements of verbs of thinking and/or knowing?	0	absent	1103	758	968	0.8776	0.8823
+GB422	ComplThinkKnowPost	Is there a postposed complementizer in complements of verbs of thinking and/or knowing?	1	present	1103	758	135	0.1224	0.1177
+GB430	POSSPfxPosr	Can adnominal possession be marked by a prefix on the possessor?	0	absent	1829	103	1691	0.9245	0.9635
+GB430	POSSPfxPosr	Can adnominal possession be marked by a prefix on the possessor?	1	present	1829	103	138	0.0755	0.0365
+GB431	POSSPfxPosd	Can adnominal possession be marked by a prefix on the possessed noun?	0	absent	1841	91	1454	0.7898	0.6452
+GB431	POSSPfxPosd	Can adnominal possession be marked by a prefix on the possessed noun?	1	present	1841	91	387	0.2102	0.3548
+GB432	POSSSfxPosr	Can adnominal possession be marked by a suffix on the possessor?	0	absent	1827	104	1321	0.7230	0.5856
+GB432	POSSSfxPosr	Can adnominal possession be marked by a suffix on the possessor?	1	present	1827	104	506	0.2770	0.4144
+GB433	POSSSfxPosd	Can adnominal possession be marked by a suffix on the possessed noun?	0	absent	1848	86	1181	0.6391	0.7504
+GB433	POSSSfxPosd	Can adnominal possession be marked by a suffix on the possessed noun?	1	present	1848	86	667	0.3609	0.2496
+GB519	MoodAuxPart	"Can mood be marked by a non-inflecting word (""auxiliary particle"")?"	0	absent	1577	292	946	0.5999	0.6871
+GB519	MoodAuxPart	"Can mood be marked by a non-inflecting word (""auxiliary particle"")?"	1	present	1577	292	631	0.4001	0.3129
+GB520	AspectAuxPart	"Can aspect be marked by a non-inflecting word (""auxiliary particle"")?"	0	absent	1639	235	1016	0.6199	0.7379
+GB520	AspectAuxPart	"Can aspect be marked by a non-inflecting word (""auxiliary particle"")?"	1	present	1639	235	623	0.3801	0.2621
+GB521	TenseAuxPart	"Can tense be marked by a non-inflecting word (""auxiliary particle"")?"	0	absent	1673	222	1267	0.7573	0.7955
+GB521	TenseAuxPart	"Can tense be marked by a non-inflecting word (""auxiliary particle"")?"	1	present	1673	222	406	0.2427	0.2045
+GB522	PRODrop	"Can the S or A argument be omitted from a pragmatically unmarked clause when the referent is inferrable from context (""pro-drop"" or ""null anaphora"")?"	0	absent	1515	348	398	0.2627	0.2094
+GB522	PRODrop	"Can the S or A argument be omitted from a pragmatically unmarked clause when the referent is inferrable from context (""pro-drop"" or ""null anaphora"")?"	1	present	1515	348	1117	0.7373	0.7906

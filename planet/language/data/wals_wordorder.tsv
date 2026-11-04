@@ -1,0 +1,215 @@
+# source: https://github.com/cldf-datasets/wals (cldf/); https://wals.info
+# version: WALS Online CLDF, cldf-datasets/wals master @81298aa2 (2026-09-28); derived 2026-11-03
+# licence: CC-BY 4.0 (Dryer & Haspelmath eds. 2013, WALS Online v2020.x).
+# script: tools/language/build_reference_tables.py
+# features: 81A order of S,O,V; 85A adposition-NP; 86A genitive-noun; 87A adjective-noun; 88A demonstrative-noun; 90A relative clause-noun.
+# table=freq: value frequency over WALS languages coded for that feature (count / n). Raw languages, not genus-balanced (Dryer's own counts balance by genus; these do not).
+# table=crosstab: 81A value (rows) vs feature2 value; count = languages coded for both; fraction = count / n (n = languages with that 81A value coded for feature2), i.e. P(feature2 value | 81A value). The task asked for 85A and 86A; 87A, 88A, 90A are included as well since they are the same size.
+table	feature	feature_name	value	value_name	feature2	feature2_name	value2	value2_name	count	fraction	n
+freq	81A	Order of Subject, Object and Verb	1	SOV					564	0.4099	1376
+freq	81A	Order of Subject, Object and Verb	2	SVO					488	0.3547	1376
+freq	81A	Order of Subject, Object and Verb	3	VSO					95	0.0690	1376
+freq	81A	Order of Subject, Object and Verb	4	VOS					25	0.0182	1376
+freq	81A	Order of Subject, Object and Verb	5	OVS					11	0.0080	1376
+freq	81A	Order of Subject, Object and Verb	6	OSV					4	0.0029	1376
+freq	81A	Order of Subject, Object and Verb	7	No dominant order					189	0.1374	1376
+freq	85A	Order of Adposition and Noun Phrase	1	Postpositions					577	0.4873	1184
+freq	85A	Order of Adposition and Noun Phrase	2	Prepositions					511	0.4316	1184
+freq	85A	Order of Adposition and Noun Phrase	3	Inpositions					8	0.0068	1184
+freq	85A	Order of Adposition and Noun Phrase	4	No dominant order					58	0.0490	1184
+freq	85A	Order of Adposition and Noun Phrase	5	No adpositions					30	0.0253	1184
+freq	86A	Order of Genitive and Noun	1	Genitive-Noun					685	0.5484	1249
+freq	86A	Order of Genitive and Noun	2	Noun-Genitive					468	0.3747	1249
+freq	86A	Order of Genitive and Noun	3	No dominant order					96	0.0769	1249
+freq	87A	Order of Adjective and Noun	1	Adjective-Noun					373	0.2729	1367
+freq	87A	Order of Adjective and Noun	2	Noun-Adjective					879	0.6430	1367
+freq	87A	Order of Adjective and Noun	3	No dominant order					110	0.0805	1367
+freq	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses					5	0.0037	1367
+freq	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun					542	0.4424	1225
+freq	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative					562	0.4588	1225
+freq	88A	Order of Demonstrative and Noun	3	Demonstrative prefix					9	0.0073	1225
+freq	88A	Order of Demonstrative and Noun	4	Demonstrative suffix					28	0.0229	1225
+freq	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun					17	0.0139	1225
+freq	88A	Order of Demonstrative and Noun	6	Mixed					67	0.0547	1225
+freq	90A	Order of Relative Clause and Noun	1	Noun-Relative clause					579	0.7027	824
+freq	90A	Order of Relative Clause and Noun	2	Relative clause-Noun					141	0.1711	824
+freq	90A	Order of Relative Clause and Noun	3	Internally headed					24	0.0291	824
+freq	90A	Order of Relative Clause and Noun	4	Correlative					7	0.0085	824
+freq	90A	Order of Relative Clause and Noun	5	Adjoined					8	0.0097	824
+freq	90A	Order of Relative Clause and Noun	6	Doubly headed					1	0.0012	824
+freq	90A	Order of Relative Clause and Noun	7	Mixed					64	0.0777	824
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	85A	Order of Adposition and Noun Phrase	1	Postpositions	374	0.9167	408
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	85A	Order of Adposition and Noun Phrase	2	Prepositions	11	0.0270	408
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	85A	Order of Adposition and Noun Phrase	3	Inpositions	2	0.0049	408
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	85A	Order of Adposition and Noun Phrase	4	No dominant order	14	0.0343	408
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	85A	Order of Adposition and Noun Phrase	5	No adpositions	7	0.0172	408
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	85A	Order of Adposition and Noun Phrase	1	Postpositions	33	0.0897	368
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	85A	Order of Adposition and Noun Phrase	2	Prepositions	301	0.8179	368
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	85A	Order of Adposition and Noun Phrase	3	Inpositions	0	0.0000	368
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	85A	Order of Adposition and Noun Phrase	4	No dominant order	28	0.0761	368
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	85A	Order of Adposition and Noun Phrase	5	No adpositions	6	0.0163	368
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	85A	Order of Adposition and Noun Phrase	1	Postpositions	6	0.0706	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	85A	Order of Adposition and Noun Phrase	2	Prepositions	76	0.8941	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	85A	Order of Adposition and Noun Phrase	3	Inpositions	0	0.0000	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	85A	Order of Adposition and Noun Phrase	4	No dominant order	3	0.0353	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	85A	Order of Adposition and Noun Phrase	5	No adpositions	0	0.0000	85
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	85A	Order of Adposition and Noun Phrase	1	Postpositions	0	0.0000	22
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	85A	Order of Adposition and Noun Phrase	2	Prepositions	20	0.9091	22
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	85A	Order of Adposition and Noun Phrase	3	Inpositions	0	0.0000	22
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	85A	Order of Adposition and Noun Phrase	4	No dominant order	1	0.0455	22
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	85A	Order of Adposition and Noun Phrase	5	No adpositions	1	0.0455	22
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	85A	Order of Adposition and Noun Phrase	1	Postpositions	8	0.7273	11
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	85A	Order of Adposition and Noun Phrase	2	Prepositions	3	0.2727	11
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	85A	Order of Adposition and Noun Phrase	3	Inpositions	0	0.0000	11
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	85A	Order of Adposition and Noun Phrase	4	No dominant order	0	0.0000	11
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	85A	Order of Adposition and Noun Phrase	5	No adpositions	0	0.0000	11
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	85A	Order of Adposition and Noun Phrase	1	Postpositions	3	1.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	85A	Order of Adposition and Noun Phrase	2	Prepositions	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	85A	Order of Adposition and Noun Phrase	3	Inpositions	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	85A	Order of Adposition and Noun Phrase	4	No dominant order	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	85A	Order of Adposition and Noun Phrase	5	No adpositions	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	85A	Order of Adposition and Noun Phrase	1	Postpositions	53	0.4046	131
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	85A	Order of Adposition and Noun Phrase	2	Prepositions	50	0.3817	131
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	85A	Order of Adposition and Noun Phrase	3	Inpositions	5	0.0382	131
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	85A	Order of Adposition and Noun Phrase	4	No dominant order	8	0.0611	131
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	85A	Order of Adposition and Noun Phrase	5	No adpositions	15	0.1145	131
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	86A	Order of Genitive and Noun	1	Genitive-Noun	398	0.9025	441
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	86A	Order of Genitive and Noun	2	Noun-Genitive	26	0.0590	441
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	86A	Order of Genitive and Noun	3	No dominant order	17	0.0385	441
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	86A	Order of Genitive and Noun	1	Genitive-Noun	106	0.2684	395
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	86A	Order of Genitive and Noun	2	Noun-Genitive	249	0.6304	395
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	86A	Order of Genitive and Noun	3	No dominant order	40	0.1013	395
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	86A	Order of Genitive and Noun	1	Genitive-Noun	3	0.0357	84
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	86A	Order of Genitive and Noun	2	Noun-Genitive	77	0.9167	84
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	86A	Order of Genitive and Noun	3	No dominant order	4	0.0476	84
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	86A	Order of Genitive and Noun	1	Genitive-Noun	2	0.0833	24
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	86A	Order of Genitive and Noun	2	Noun-Genitive	21	0.8750	24
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	86A	Order of Genitive and Noun	3	No dominant order	1	0.0417	24
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	86A	Order of Genitive and Noun	1	Genitive-Noun	5	0.5556	9
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	86A	Order of Genitive and Noun	2	Noun-Genitive	2	0.2222	9
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	86A	Order of Genitive and Noun	3	No dominant order	2	0.2222	9
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	86A	Order of Genitive and Noun	1	Genitive-Noun	3	1.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	86A	Order of Genitive and Noun	2	Noun-Genitive	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	86A	Order of Genitive and Noun	3	No dominant order	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	86A	Order of Genitive and Noun	1	Genitive-Noun	67	0.4685	143
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	86A	Order of Genitive and Noun	2	Noun-Genitive	51	0.3566	143
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	86A	Order of Genitive and Noun	3	No dominant order	25	0.1748	143
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	87A	Order of Adjective and Noun	1	Adjective-Noun	182	0.3824	476
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	87A	Order of Adjective and Noun	2	Noun-Adjective	268	0.5630	476
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	87A	Order of Adjective and Noun	3	No dominant order	22	0.0462	476
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	4	0.0084	476
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	87A	Order of Adjective and Noun	1	Adjective-Noun	66	0.1521	434
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	87A	Order of Adjective and Noun	2	Noun-Adjective	346	0.7972	434
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	87A	Order of Adjective and Noun	3	No dominant order	22	0.0507	434
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	0	0.0000	434
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	87A	Order of Adjective and Noun	1	Adjective-Noun	20	0.2247	89
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	87A	Order of Adjective and Noun	2	Noun-Adjective	61	0.6854	89
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	87A	Order of Adjective and Noun	3	No dominant order	8	0.0899	89
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	0	0.0000	89
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	87A	Order of Adjective and Noun	1	Adjective-Noun	7	0.3333	21
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	87A	Order of Adjective and Noun	2	Noun-Adjective	13	0.6190	21
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	87A	Order of Adjective and Noun	3	No dominant order	1	0.0476	21
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	0	0.0000	21
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	87A	Order of Adjective and Noun	1	Adjective-Noun	2	0.2500	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	87A	Order of Adjective and Noun	2	Noun-Adjective	6	0.7500	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	87A	Order of Adjective and Noun	3	No dominant order	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	87A	Order of Adjective and Noun	1	Adjective-Noun	1	0.3333	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	87A	Order of Adjective and Noun	2	Noun-Adjective	2	0.6667	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	87A	Order of Adjective and Noun	3	No dominant order	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	87A	Order of Adjective and Noun	1	Adjective-Noun	46	0.3046	151
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	87A	Order of Adjective and Noun	2	Noun-Adjective	78	0.5166	151
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	87A	Order of Adjective and Noun	3	No dominant order	26	0.1722	151
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	87A	Order of Adjective and Noun	4	Only internally-headed relative clauses	1	0.0066	151
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	258	0.6308	409
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	119	0.2910	409
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	5	0.0122	409
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	6	0.0147	409
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	4	0.0098	409
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	88A	Order of Demonstrative and Noun	6	Mixed	17	0.0416	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	84	0.2054	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	296	0.7237	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	0	0.0000	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	9	0.0220	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	4	0.0098	409
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	88A	Order of Demonstrative and Noun	6	Mixed	16	0.0391	409
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	30	0.3529	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	39	0.4588	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	0	0.0000	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	7	0.0824	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	1	0.0118	85
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	88A	Order of Demonstrative and Noun	6	Mixed	8	0.0941	85
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	9	0.3913	23
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	12	0.5217	23
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	1	0.0435	23
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	0	0.0000	23
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	1	0.0435	23
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	88A	Order of Demonstrative and Noun	6	Mixed	0	0.0000	23
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	2	0.5000	4
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	2	0.5000	4
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	0	0.0000	4
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	0	0.0000	4
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	0	0.0000	4
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	88A	Order of Demonstrative and Noun	6	Mixed	0	0.0000	4
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	1	0.3333	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	2	0.6667	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	88A	Order of Demonstrative and Noun	6	Mixed	0	0.0000	3
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	1	Demonstrative-Noun	88	0.6027	146
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	2	Noun-Demonstrative	38	0.2603	146
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	3	Demonstrative prefix	0	0.0000	146
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	4	Demonstrative suffix	5	0.0342	146
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	5	Demonstrative before and after Noun	1	0.0068	146
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	88A	Order of Demonstrative and Noun	6	Mixed	14	0.0959	146
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	87	0.3271	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	113	0.4248	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	3	Internally headed	19	0.0714	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	4	Correlative	7	0.0263	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	5	Adjoined	4	0.0150	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	6	Doubly headed	1	0.0038	266
+crosstab	81A	Order of Subject, Object and Verb	1	SOV	90A	Order of Relative Clause and Noun	7	Mixed	35	0.1316	266
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	293	0.9734	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	4	0.0133	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	3	Internally headed	0	0.0000	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	5	Adjoined	1	0.0033	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	301
+crosstab	81A	Order of Subject, Object and Verb	2	SVO	90A	Order of Relative Clause and Noun	7	Mixed	3	0.0100	301
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	68	0.9714	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	0	0.0000	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	3	Internally headed	0	0.0000	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	5	Adjoined	0	0.0000	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	70
+crosstab	81A	Order of Subject, Object and Verb	3	VSO	90A	Order of Relative Clause and Noun	7	Mixed	2	0.0286	70
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	16	0.9412	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	0	0.0000	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	3	Internally headed	0	0.0000	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	5	Adjoined	0	0.0000	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	17
+crosstab	81A	Order of Subject, Object and Verb	4	VOS	90A	Order of Relative Clause and Noun	7	Mixed	1	0.0588	17
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	6	0.7500	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	1	0.1250	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	3	Internally headed	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	5	Adjoined	1	0.1250	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	5	OVS	90A	Order of Relative Clause and Noun	7	Mixed	0	0.0000	8
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	1	1.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	3	Internally headed	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	5	Adjoined	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	6	OSV	90A	Order of Relative Clause and Noun	7	Mixed	0	0.0000	1
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	1	Noun-Relative clause	70	0.7955	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	2	Relative clause-Noun	2	0.0227	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	3	Internally headed	2	0.0227	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	4	Correlative	0	0.0000	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	5	Adjoined	2	0.0227	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	6	Doubly headed	0	0.0000	88
+crosstab	81A	Order of Subject, Object and Verb	7	No dominant order	90A	Order of Relative Clause and Noun	7	Mixed	12	0.1364	88

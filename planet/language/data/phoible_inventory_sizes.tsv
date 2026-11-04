@@ -1,0 +1,232 @@
+# source: https://github.com/phoible/dev (data/phoible.csv); https://phoible.org
+# version: phoible/dev master @5f82b9c3 (2026-09-24), data/phoible.csv (PHOIBLE 2.0 plus later dev fixes); derived 2026-11-03
+# licence: CC-BY-SA 3.0 (PHOIBLE 2.0); this derived table shares that licence.
+# script: tools/language/build_reference_tables.py
+# n = 2175 inventories, one per Glottocode (first InventoryID), inventories without Glottocode dropped.
+# sizes count distinct phonemes per inventory by SegmentClass, marginal phonemes included; total = consonants + vowels + tones.
+# rows: kind=stat gives mean/median/q1/q3/min/max (quartiles: inclusive method); kind=count gives the number of inventories with exactly that size and the fraction of n.
+measure	kind	key	value	fraction
+consonants	stat	mean	23.66	
+consonants	stat	median	21	
+consonants	stat	q1	17.0	
+consonants	stat	q3	27.0	
+consonants	stat	min	6	
+consonants	stat	max	130	
+consonants	count	6	1	0.00046
+consonants	count	8	4	0.00184
+consonants	count	9	8	0.00368
+consonants	count	10	17	0.00782
+consonants	count	11	45	0.02069
+consonants	count	12	59	0.02713
+consonants	count	13	69	0.03172
+consonants	count	14	77	0.03540
+consonants	count	15	78	0.03586
+consonants	count	16	87	0.04000
+consonants	count	17	150	0.06897
+consonants	count	18	105	0.04828
+consonants	count	19	131	0.06023
+consonants	count	20	154	0.07080
+consonants	count	21	103	0.04736
+consonants	count	22	130	0.05977
+consonants	count	23	101	0.04644
+consonants	count	24	113	0.05195
+consonants	count	25	73	0.03356
+consonants	count	26	71	0.03264
+consonants	count	27	61	0.02805
+consonants	count	28	50	0.02299
+consonants	count	29	51	0.02345
+consonants	count	30	49	0.02253
+consonants	count	31	39	0.01793
+consonants	count	32	25	0.01149
+consonants	count	33	34	0.01563
+consonants	count	34	33	0.01517
+consonants	count	35	27	0.01241
+consonants	count	36	26	0.01195
+consonants	count	37	25	0.01149
+consonants	count	38	27	0.01241
+consonants	count	39	15	0.00690
+consonants	count	40	18	0.00828
+consonants	count	41	6	0.00276
+consonants	count	42	8	0.00368
+consonants	count	43	6	0.00276
+consonants	count	44	10	0.00460
+consonants	count	45	9	0.00414
+consonants	count	46	9	0.00414
+consonants	count	47	10	0.00460
+consonants	count	48	3	0.00138
+consonants	count	49	4	0.00184
+consonants	count	50	5	0.00230
+consonants	count	51	6	0.00276
+consonants	count	52	2	0.00092
+consonants	count	53	4	0.00184
+consonants	count	54	3	0.00138
+consonants	count	55	1	0.00046
+consonants	count	56	3	0.00138
+consonants	count	57	1	0.00046
+consonants	count	58	3	0.00138
+consonants	count	59	6	0.00276
+consonants	count	60	1	0.00046
+consonants	count	61	2	0.00092
+consonants	count	62	1	0.00046
+consonants	count	63	3	0.00138
+consonants	count	64	1	0.00046
+consonants	count	71	1	0.00046
+consonants	count	74	2	0.00092
+consonants	count	75	1	0.00046
+consonants	count	77	1	0.00046
+consonants	count	79	1	0.00046
+consonants	count	81	1	0.00046
+consonants	count	95	2	0.00092
+consonants	count	99	1	0.00046
+consonants	count	113	1	0.00046
+consonants	count	130	1	0.00046
+vowels	stat	mean	10.09	
+vowels	stat	median	9	
+vowels	stat	q1	6.0	
+vowels	stat	q3	12.0	
+vowels	stat	min	2	
+vowels	stat	max	50	
+vowels	count	2	3	0.00138
+vowels	count	3	108	0.04966
+vowels	count	4	97	0.04460
+vowels	count	5	258	0.11862
+vowels	count	6	291	0.13379
+vowels	count	7	184	0.08460
+vowels	count	8	136	0.06253
+vowels	count	9	112	0.05149
+vowels	count	10	243	0.11172
+vowels	count	11	62	0.02851
+vowels	count	12	145	0.06667
+vowels	count	13	58	0.02667
+vowels	count	14	102	0.04690
+vowels	count	15	36	0.01655
+vowels	count	16	60	0.02759
+vowels	count	17	22	0.01011
+vowels	count	18	59	0.02713
+vowels	count	19	32	0.01471
+vowels	count	20	34	0.01563
+vowels	count	21	20	0.00920
+vowels	count	22	18	0.00828
+vowels	count	23	7	0.00322
+vowels	count	24	20	0.00920
+vowels	count	25	6	0.00276
+vowels	count	26	8	0.00368
+vowels	count	27	13	0.00598
+vowels	count	28	10	0.00460
+vowels	count	29	3	0.00138
+vowels	count	30	7	0.00322
+vowels	count	31	1	0.00046
+vowels	count	32	3	0.00138
+vowels	count	33	1	0.00046
+vowels	count	34	3	0.00138
+vowels	count	35	2	0.00092
+vowels	count	37	1	0.00046
+vowels	count	39	3	0.00138
+vowels	count	40	1	0.00046
+vowels	count	43	1	0.00046
+vowels	count	46	1	0.00046
+vowels	count	49	2	0.00092
+vowels	count	50	2	0.00092
+tones	stat	mean	0.79	
+tones	stat	median	0	
+tones	stat	q1	0.0	
+tones	stat	q3	0.0	
+tones	stat	min	0	
+tones	stat	max	10	
+tones	count	0	1666	0.76598
+tones	count	1	4	0.00184
+tones	count	2	142	0.06529
+tones	count	3	175	0.08046
+tones	count	4	102	0.04690
+tones	count	5	51	0.02345
+tones	count	6	20	0.00920
+tones	count	7	6	0.00276
+tones	count	8	3	0.00138
+tones	count	9	4	0.00184
+tones	count	10	2	0.00092
+total	stat	mean	34.54	
+total	stat	median	32	
+total	stat	q1	25.0	
+total	stat	q3	41.0	
+total	stat	min	11	
+total	stat	max	161	
+total	count	11	2	0.00092
+total	count	14	3	0.00138
+total	count	15	3	0.00138
+total	count	16	16	0.00736
+total	count	17	28	0.01287
+total	count	18	38	0.01747
+total	count	19	37	0.01701
+total	count	20	59	0.02713
+total	count	21	86	0.03954
+total	count	22	67	0.03080
+total	count	23	106	0.04874
+total	count	24	82	0.03770
+total	count	25	103	0.04736
+total	count	26	86	0.03954
+total	count	27	68	0.03126
+total	count	28	67	0.03080
+total	count	29	70	0.03218
+total	count	30	66	0.03034
+total	count	31	61	0.02805
+total	count	32	63	0.02897
+total	count	33	55	0.02529
+total	count	34	64	0.02943
+total	count	35	58	0.02667
+total	count	36	68	0.03126
+total	count	37	64	0.02943
+total	count	38	68	0.03126
+total	count	39	57	0.02621
+total	count	40	50	0.02299
+total	count	41	37	0.01701
+total	count	42	48	0.02207
+total	count	43	43	0.01977
+total	count	44	45	0.02069
+total	count	45	35	0.01609
+total	count	46	35	0.01609
+total	count	47	32	0.01471
+total	count	48	25	0.01149
+total	count	49	25	0.01149
+total	count	50	21	0.00966
+total	count	51	18	0.00828
+total	count	52	15	0.00690
+total	count	53	17	0.00782
+total	count	54	23	0.01057
+total	count	55	17	0.00782
+total	count	56	19	0.00874
+total	count	57	10	0.00460
+total	count	58	8	0.00368
+total	count	59	17	0.00782
+total	count	60	8	0.00368
+total	count	61	5	0.00230
+total	count	62	8	0.00368
+total	count	63	5	0.00230
+total	count	64	3	0.00138
+total	count	65	5	0.00230
+total	count	66	8	0.00368
+total	count	67	3	0.00138
+total	count	68	8	0.00368
+total	count	69	5	0.00230
+total	count	70	2	0.00092
+total	count	71	1	0.00046
+total	count	72	1	0.00046
+total	count	73	3	0.00138
+total	count	74	3	0.00138
+total	count	75	3	0.00138
+total	count	76	1	0.00046
+total	count	77	1	0.00046
+total	count	78	1	0.00046
+total	count	82	2	0.00092
+total	count	83	1	0.00046
+total	count	84	1	0.00046
+total	count	87	1	0.00046
+total	count	89	1	0.00046
+total	count	90	2	0.00092
+total	count	91	1	0.00046
+total	count	94	1	0.00046
+total	count	95	1	0.00046
+total	count	116	1	0.00046
+total	count	120	1	0.00046
+total	count	128	1	0.00046
+total	count	141	1	0.00046
+total	count	161	1	0.00046
