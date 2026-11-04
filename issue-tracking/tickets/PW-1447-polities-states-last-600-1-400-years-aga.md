@@ -1,16 +1,19 @@
 ---
+id: PW-1447
 title: "Polities: states last 600-1,400 years against a historical median of 130 (no collapse yet)"
 type: task
 status: todo
 parent: PW-661
-milestone: later
+milestone: v3
 subsystem: culture
 effort: s
 impact: med
 found_by: lane-169
 blocked_by: []
 relates: [PW-1431, PW-1432]
-refs: [planet/lineages/polities.py::derive, planet/lineages/polities.py::WAR, docs/review/culture/polities/round1.md, docs/review/cultures-proposal/proposal.md, "run a2b637", "run 3c1caf"]
+refs: ["planet/lineages/polities.py::derive", "planet/lineages/polities.py::WAR", docs/review/culture/polities/round1.md, docs/review/cultures-proposal/proposal.md, "run a2b637", "run 3c1caf"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -26,3 +29,6 @@ towns become seats again. Do it with war v0 (PW-1432) at the `polities.WAR` seam
 rebuild gives the same map.
 - [ ] median state life within 2x of 130 years on a2b637 and 3c1caf, with counts per step still stable when the reach is nudged
   ±10%
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-polities-fall-hazard.md (found by lane-169).

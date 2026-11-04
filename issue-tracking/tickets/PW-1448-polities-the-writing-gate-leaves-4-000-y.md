@@ -1,16 +1,19 @@
 ---
+id: PW-1448
 title: "Polities: the writing gate leaves 4,000 years of cities with no rulers on the D&D run"
 type: task
 status: needs-decision
 parent: PW-661
-milestone: later
+milestone: v3
 subsystem: culture
 effort: xs
 impact: high
 found_by: lane-169
 blocked_by: []
 relates: [PW-1431, PW-1432]
-refs: [planet/lineages/polities.py::WRITING_TECHS, docs/review/culture/polities/round1.md, docs/review/cultures-proposal/owner-notes-r1.md, docs/review/cultures-proposal/proposal-r2.md, "run a2b637", "run 3c1caf"]
+refs: ["planet/lineages/polities.py::WRITING_TECHS", docs/review/culture/polities/round1.md, docs/review/cultures-proposal/owner-notes-r1.md, docs/review/cultures-proposal/proposal-r2.md, "run a2b637", "run 3c1caf"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options (set in one constant, `polities.WRITING_TECHS`):
 
 **Lean: B for v0, then the feedback in v1.** It keeps the spirit of "records first" and gives states a deep past where the run
 has cities.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-polities-writing-gate.md (found by lane-169).
