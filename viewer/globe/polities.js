@@ -15,6 +15,16 @@ const WHITE = new THREE.Color('#ffffff');
 const agoNow = () => Math.max(0, -(S.V.run.frames[S.V.frame]?.t ?? 0));
 const n0 = (x) => Math.round(x).toLocaleString('en');
 
+// an invasion saved in the workbench (invasiontab.js, PW-1433) remakes the run's polities: drop them and fetch again
+try {
+  new BroadcastChannel('pw-polities').onmessage = (e) => {
+    const v = S.V, run = e.data?.run;
+    if (!v?.run || (run && run !== v.dir && !String(v.dir).endsWith(`/${run}`))) return;
+    v.polDoc = null; v.polStep = null; v.polDocF = false; v.polStepF = null;
+    if (state.layer === 'polities') { loadPolities(); paint(); renderLegend(); }
+  };
+} catch (e) { /* no BroadcastChannel: the globe shows the new polities when the run is opened again */ }
+
 // the run's polities (once), then the step for this frame (again whenever the frame's nearest step changes)
 export function loadPolities() {
   const v = S.V;
@@ -79,7 +89,8 @@ export function politiesLegend(sw) {
   const st = D.steps[P.k], cnt = Object.entries(st.counts).filter(([, n]) => n).map(([t, n]) => `${n} ${t}${n > 1 ? 's' : ''}`).join(', ') || 'none yet';
   const big = [...P.here.values()].filter((h) => h.tier !== 'chiefdom').sort((a, b) => b.size - a.size).slice(0, 10);
   const war = [st.taken ? `${st.taken} taken by war` : '', st.collapsed ? `${st.collapsed} fell apart` : ''].filter(Boolean).join(', ');
-  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}${war ? `; this century ${esc(war)}` : ''}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(D.polities[h.id].name)} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
+  const iv = D.invasions?.rows || [], ivTxt = iv.length ? `<br>${iv.length} invasion${iv.length > 1 ? 's' : ''} you scheduled, ${iv.filter((r) => r.happened).length} happened (workbench, States &amp; war)` : '';
+  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}${war ? `; this century ${esc(war)}` : ''}${ivTxt}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(D.polities[h.id].name)} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
     sw('#5a5a52', 'no one rules here') + '<span class="muted">The century nearest this frame. A polity holds the peopled land within its reach (travel from its capital); ' +
     'the bigger, stronger seats claim first. Chiefdoms (one town and its cell) are pale; borders dark. An empire is a state where another culture holds a fifth or more of its people; ' +
     'a dragon realm is ruled by a dragon culture. War: a state at least half again as strong as a neighbour may take all of it (its farmers keep farming); ' +

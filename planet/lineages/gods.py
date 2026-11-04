@@ -92,7 +92,7 @@ TAU_CONVERT = 30.0  # kyr, JUDGEMENT: per contact, the e-folding time of a conve
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
 AUTHORED_FILE = "authored.json"
-AUTHORED_FORMAT = "procgen-authored/1"
+AUTHORED_FORMAT = "procgen-authored/2"  # (/2: the invasions you schedule, PW-1433)
 AUTHORED_MAX, AUTHORED_GODS_MAX = 40, BEING_MAX  # (a sane cap per run and per faith)
 
 
@@ -908,16 +908,21 @@ def read_authored(run_dir: Path) -> dict:
     except (OSError, ValueError):
         d = {}
     mode = d.get("gods_mode") if d.get("gods_mode") in GODS_MODES else None
-    return {"format": AUTHORED_FORMAT, "gods_mode": mode, "faiths": d.get("faiths") if isinstance(d.get("faiths"), list) else []}
+    return {"format": AUTHORED_FORMAT, "gods_mode": mode, "faiths": d.get("faiths") if isinstance(d.get("faiths"), list) else [],
+            "invasions": d.get("invasions") if isinstance(d.get("invasions"), list) else []}
 
 
-def write_authored(run_dir: Path, faiths: list, gods_mode: str | None, n_cultures: int, peoples: set) -> dict:
-    """Check and save a run's authored.json (the server's POST /api/authored, at Daniel's request); returns what was saved."""
+def write_authored(run_dir: Path, faiths: list, gods_mode: str | None, n_cultures: int, peoples: set, invasions: list | None = None) -> dict:
+    """Check and save a run's authored.json (the server's POST /api/authored, at Daniel's request); returns what was saved. It holds
+    all of Daniel's choices for the run: the gods mode, the faiths he wrote and the invasions he scheduled (PW-1433, invasions.clean:
+    strict on shape only; None keeps the saved ones)."""
     from .. import store as S
+    from . import invasions as IV
     if gods_mode is not None and gods_mode not in GODS_MODES:
         raise ValueError(f"gods_mode must be one of {GODS_MODES}")
     clean, _ = clean_authored(faiths, n_cultures, peoples, strict=True)
-    d = {"format": AUTHORED_FORMAT, "gods_mode": gods_mode, "faiths": clean}
+    inv, _ = IV.clean(read_authored(run_dir)["invasions"] if invasions is None else invasions, strict=invasions is not None)
+    d = {"format": AUTHORED_FORMAT, "gods_mode": gods_mode, "faiths": clean, "invasions": inv}
     S.write_atomic(Path(run_dir) / AUTHORED_FILE, json.dumps(d, indent=1))
     return d
 

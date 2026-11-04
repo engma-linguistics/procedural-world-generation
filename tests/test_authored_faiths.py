@@ -141,7 +141,7 @@ def test_post_saves_authored_json_and_refuses_bad_faiths(scratch):
 
 def test_read_authored_survives_a_broken_file(scratch):
     (scratch / "authored.json").write_text("{not json")
-    assert G.read_authored(scratch) == {"format": G.AUTHORED_FORMAT, "gods_mode": None, "faiths": []}
+    assert G.read_authored(scratch) == {"format": G.AUTHORED_FORMAT, "gods_mode": None, "faiths": [], "invasions": []}
 
 
 def test_derived_docs_persist_on_disk_keyed_by_the_authored_faiths(scratch):

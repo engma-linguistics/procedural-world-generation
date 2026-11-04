@@ -116,6 +116,7 @@
   <button data-tab="results">Results</button>
   <button data-tab="tech">Technology</button>
   <button data-tab="religion" title="Gods, faiths and taboos of the picked peoples run: small god trees, a map of where each faith arose and spread, a faith timeline, each culture's taboos (PW-1358, PW-1311)">Religion</button>
+  <button data-tab="polities" title="States and war of the picked peoples run: the invasions you schedule (who comes down on whom, when, from where, how hard) and what came of them, beside the incursions the history found on its own (PW-1433)">States &amp; war</button>
   <span style="flex:1"></span>
   <button id="helpBtn" class="qbtn" aria-expanded="false" aria-controls="foot" title="What this tab shows and how to use it">?</button>
 </nav>
@@ -129,11 +130,13 @@
   <section class="tab" id="tab-results"></section>
   <section class="tab" id="tab-tech"></section>
   <section class="tab" id="tab-religion"></section>
+  <section class="tab" id="tab-polities"></section>
 </main>
 <div id="foot" class="helpPop" role="note" hidden></div>
 <script src="numfmt.js"></script>
 <script src="techtab.js"></script>
 <script src="religiontab.js"></script>
+<script src="invasiontab.js"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -286,6 +289,7 @@ const FOOT = {
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
   religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
+  polities: 'Invasions you schedule and what came of them, beside the incursions the history found (invasiontab.js writes the rest).',
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
 };
 let tab = (location.hash || '#tree').slice(1).split('/')[0];  // (#tech/map: the Technology tab's view, techtab.js)
@@ -318,6 +322,7 @@ function redraw() {
   else if (tab === 'wishes') drawWishes();
   else if (tab === 'tech') drawTech();
   else if (tab === 'religion') drawReligion();
+  else if (tab === 'polities') drawPolities();
   else if (tab === 'cultures') drawCultures();
   else drawResults();
 }
@@ -1123,6 +1128,17 @@ function drawReligion() {
     el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to see its religion.</p>'; return;
   }
   ReligionTab.draw(el, result);
+}
+// ---- the states and war tab (polities.py, invasions.py, contacts.py: invasiontab.js, PW-1433) ----------------------------------------
+function drawPolities() {
+  const el = $('tab-polities');
+  if (!result) {
+    const mine = worldRuns();
+    if (mine.length && !drawPolities.busy && !new URLSearchParams(location.search).get('run')) { drawPolities.busy = true; showResult(mine[0].dir).finally(() => { drawPolities.busy = false; }); }
+    el.innerHTML = '<p class="muted" style="padding:10px 12px">Pick a peoples run in the Results tab (or run the tree on a world) to schedule invasions in it.</p>'; return;
+  }
+  if (!result.settlements) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Run ${esc(result.id)} has no settlement ledger, so it has no states to invade with. Run the peoples again from the Tree tab.</p>`; return; }
+  InvasionTab.draw(el, result);
 }
 // ---- the technology tab (techtree.py, PW-675; its six views: techtab.js, PW-913) -------------------------------------------
 function drawTech() {
