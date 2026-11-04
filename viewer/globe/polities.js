@@ -14,6 +14,9 @@ const NOBODY = new THREE.Color('#5a5a52'), OCEAN = new THREE.Color('#1c2a3c'), I
 const WHITE = new THREE.Color('#ffffff');
 const agoNow = () => Math.max(0, -(S.V.run.frames[S.V.frame]?.t ?? 0));
 const n0 = (x) => Math.round(x).toLocaleString('en');
+// a span of [[kyr ago, ...], ...] (oldest first) in force at ago; a polity's name then (PW-1451: the people holding its capital names it)
+const spanAt = (sp, ago) => (sp || []).reduce((o, s) => (s[0] >= ago - 1e-6 ? s : o), (sp || [])[0]);
+export const nameAt = (rec, ago) => spanAt(rec?.names, ago)?.[1] ?? rec?.name;
 
 // an invasion saved in the workbench (invasiontab.js, PW-1433) remakes the run's polities: drop them and fetch again
 try {
@@ -90,10 +93,10 @@ export function politiesLegend(sw) {
   const big = [...P.here.values()].filter((h) => h.tier !== 'chiefdom').sort((a, b) => b.size - a.size).slice(0, 10);
   const war = [st.taken ? `${st.taken} taken by war` : '', st.collapsed ? `${st.collapsed} fell apart` : ''].filter(Boolean).join(', ');
   const iv = D.invasions?.rows || [], ivTxt = iv.length ? `<br>${iv.length} invasion${iv.length > 1 ? 's' : ''} you scheduled, ${iv.filter((r) => r.happened).length} happened (workbench, States &amp; war)` : '';
-  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}${war ? `; this century ${esc(war)}` : ''}${ivTxt}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(D.polities[h.id].name)} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
+  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}${war ? `; this century ${esc(war)}` : ''}${ivTxt}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(nameAt(D.polities[h.id], P.ago))} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
     sw('#5a5a52', 'no one rules here') + '<span class="muted">The century nearest this frame. A polity holds the peopled land within its reach (travel from its capital); ' +
     'the bigger, stronger seats claim first. Chiefdoms (one town and its cell) are pale; borders dark. An empire is a state where another culture holds a fifth or more of its people; ' +
-    'a dragon realm is ruled by a dragon culture. War: a state at least half again as strong as a neighbour may take all of it (its farmers keep farming); ' +
+    'a dragon realm is ruled by a dragon culture. A people with kings or law but no city may still band its villages into a confederation beside a foreign state or dragon realm. War: a state at least half again as strong as a neighbour may take all of it (its farmers keep farming); ' +
     'a state also falls apart by chance, about as often as history\'s (Arbesman 2011), and a dragon realm when its ruler dies. Click a cell for its card. (planet/lineages/polities.py, read after the run)</span>';
 }
 
@@ -106,17 +109,22 @@ export function polityRows(i, R) {
   const rec = D.polities[o], h = P.here.get(o), C = D.cultures, ago = globalThis.NumFmt.ago;
   const cname = (u) => C[u]?.name || u;
   const ruler = [...rec.rulers].reverse().find(([a]) => a >= P.ago - 1e-6) || rec.rulers[0];
-  R('place', '', `${rec.name}: a ${h.tier}, ${n0(h.size * D.cell_km2)} km², ~${n0(h.people)} people in its towns and villages`, { lab: 'polity', ess: true });
+  const held = spanAt(rec.peoples, P.ago), founder = rec.peoples?.[0];
+  R('place', '', `${nameAt(rec, P.ago)}: a ${h.tier}, ${n0(h.size * D.cell_km2)} km², ~${n0(h.people)} people in its towns and villages`, { lab: 'polity', ess: true });
   if (ruler) R('place', 'ruled by', `${cname(ruler[1])}${rec.kind === 'dragon' ? ' (one dragon rules absolutely)' : ''}`, { ess: true });
   const subj = Object.entries(h.subjects || {}).sort((a, b) => b[1] - a[1]);
   if (subj.length) R('place', 'subjects', subj.slice(0, 6).map(([u, n]) => `${cname(u)}${n ? ` (~${n0(n)})` : ''}`).join(', ') + (subj.length > 6 ? `, + ${subj.length - 6} more` : ''), { ess: true });
-  R('place', 'founded', ago(rec.founded_kyr), { ess: true });
+  if (held && rec.kind !== 'dragon') R('place', 'its people', `the ${held[2]} hold its capital` + (rec.peoples.length > 1 ? `, since ${ago(held[0])}` : ''), { ess: true });
+  const cf = (rec.confed || []).find(([a]) => Math.abs(a - P.ago) < 1e-6);
+  if (cf) R('place', 'confederation', `no city of its own: ~${n0(cf[1])} of the ${held?.[2] || 'people'} in villages and camps within its reach banded together beside a foreign state or dragon realm`, { ess: true });
+  R('place', 'founded', ago(rec.founded_kyr) + (founder && held && founder[1] !== held[1] ? ` by the ${founder[2]}` : ''), { ess: true });
+  if (rec.peoples?.length > 1) R('place', 'held by', rec.peoples.map(([a, , n]) => `the ${n} ${ago(a)}`).join(', then '), { ess: false });
   const fr = P.from[i];
-  if (fr >= 0 && D.polities[fr]) R('place', 'this land', `taken from ${D.polities[fr].name} ${ago(D.polities[fr].fell_kyr)}`, { ess: true });
+  if (fr >= 0 && D.polities[fr]) R('place', 'this land', `taken from ${nameAt(D.polities[fr], D.polities[fr].fell_kyr)} ${ago(D.polities[fr].fell_kyr)}`, { ess: true });
   R('place', 'fell', rec.fell_kyr != null ? `${ago(rec.fell_kyr)}: ${rec.fell_why}` : 'still stands', { ess: true });
   const took = (rec.took || []).filter(([a]) => a >= P.ago - 1e-6);
-  if (took.length) R('place', 'conquests', took.slice(-6).reverse().map(([a, r, how]) => `${D.polities[r]?.name || r} ${ago(a)}${how === 'invasion' ? ' (an invasion)' : ''}`).join(', ') + (took.length > 6 ? `, + ${took.length - 6} earlier` : ''), { ess: true });
+  if (took.length) R('place', 'conquests', took.slice(-6).reverse().map(([a, r, how]) => `${D.polities[r] ? nameAt(D.polities[r], a) : r} ${ago(a)}${how === 'invasion' ? ' (an invasion)' : ''}`).join(', ') + (took.length > 6 ? `, + ${took.length - 6} earlier` : ''), { ess: true });
   const cap = rec.capital;
-  R('place', 'capital', `${rec.kind === 'dragon' ? 'the dragons\' lair' : 'a town of the ' + (rec.people_name || rec.people)} in ${cap.place || 'cell ' + cap.cell} (cell ${cap.cell}, lat ${cap.lat}, lon ${cap.lon})`, { ess });
+  R('place', 'capital', `${rec.kind === 'dragon' ? 'the dragons\' lair' : 'a town of the ' + (held?.[2] || rec.people_name || rec.people)} in ${cap.place || 'cell ' + cap.cell} (cell ${cap.cell}, lat ${cap.lat}, lon ${cap.lon})`, { ess });
   if (rec.tiers.length > 1) R('place', 'tiers', rec.tiers.map(([a, t]) => `${t} ${ago(a)}`).join(', '), { ess: false });
 }

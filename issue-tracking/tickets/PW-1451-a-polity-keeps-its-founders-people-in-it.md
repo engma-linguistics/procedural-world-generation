@@ -2,7 +2,7 @@
 id: PW-1451
 title: A polity keeps its founders' people in its name and card after another people holds its capital
 type: task
-status: todo
+status: done
 parent: null
 milestone: v3
 subsystem: peoples
@@ -31,5 +31,6 @@ dynasty of another people) or keep `people` per tier span and name the polity by
 - [ ] a polity's name and card name the people ruling it then
 
 ## Updates
+- 2026-11-04: Status todo -> done. lane178: a polity is named for the people holding its capital at each century (records: peoples, names, founded_by; name = the people at its peak); card rows 'its people', 'founded ... by', 'held by'; legend, conquests, 'conquered by' and the invasion read-out name it as it was then. 3c1caf: the three 'cervid-folk' empires now read (humans)/(half-orcs) from 6.2/4.7/4.2 kyr. Polities VERSION 4. docs/review/culture/polities/round3.md
 - 2026-11-04: Coordinator: milestone v3; the map should name the ruling people so it agrees with the invasion read-out.
 - 2026-11-04: Created from inbox draft draft-polity-named-for-founders-not-rulers.md (found by lane177).
