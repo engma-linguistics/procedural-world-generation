@@ -34,5 +34,6 @@ Risk: less high ground lowers the weathering CO2 sink (PW-451), so the climate m
 - [ ] zoom summits at or below about 9 km
 
 ## Updates
+- 2026-11-04: Scout 190 (pass 1 of 3), held, not merged: isostasy.max_km (cap thickening by the column's height, not thickness: Dewey 1988, England & Houseman 1989) brings the highest cell from 6,509 to 5,843 m median on the 8-draw screen (Earth L6 5,415) and cells above 7 km to 0. Full 36-draw judge vs main: 1 hard failure (958504 l6c_m frozen; that planet leans cold, 3 of 4 runs cooler), sd 1.80 vs 1.25 (1.71 without that draw), a broad widening at both tails. Code kept on branch held/scout190-max-km (59d774f3, e9e78e72); write-up docs/review/tectonics/mountains/scout3.md. Next pass: why lower mountains widen the spread (weathering's relief term as the thermostat?) before re-judging.
 - 2026-11-04: Scout 188 (docs/review/tectonics/mountains/scout2.md): not a craton effect on dba204. Half the zoom's detail grows with height (PW-1462); half the world's cells at the 80 km crust cap stand 1.0-1.3 km above Airy from sediment lift and swell (top cell 8,233 m; Earth L7 5,878). Run-physics candidate: no lift above Airy at the cap. Physics side track, after PW-1462.
 - 2026-11-03: Created from inbox draft draft-l7-relief-overshoot-craton.md (found by scout-171-pw846).
