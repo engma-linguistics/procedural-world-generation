@@ -3639,3 +3639,81 @@ def test_crops_cross_open_sea_only_with_colonists_or_ocean_ships():
         if s.n_crossed:
             break
     assert s.n_crossed == 1 and s.crossings[0]["craft"].startswith("canoe")
+
+
+def _live_setup(faketz, monkeypatch):
+    """Lane 183 (PW-1434): the brake set-up with polities in the history switched on, every tech known (a lent calendar), a farming
+    people (folk) beside a small one it hates (the kobolds)."""
+    from planet.lineages.history import params as HP, polity_live as PL
+    from planet.lineages import polities as PO
+    monkeypatch.setattr(HP, "POLITIES_LIVE", True)
+    h, env, step = _brake_setup(faketz)
+    assert type(h.rule) is PL.LivePolities
+    techs = ("chiefdoms", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
+    monkeypatch.setattr(PL, "CALENDAR", {l.id: {t: [100.0, "test", None] for t in techs} for l in h.lines})
+    monkeypatch.setattr(PO, "WAR_P", 1.0)
+    monkeypatch.setattr(PO, "STATE_KM", 1.0)  # (each seat rules its own cell: neighbours border, so war has somewhere to act)
+    h._farm_share[:] = 1.0
+    h._era = ["agrarian"] * len(h.lines)
+    h.dens[:] = 50.0
+    h.dens[h.idx["kob"]] = 5.0  # (folk ten times as dense: their states far the stronger)
+    h._dmap = None
+    h._env_now = env
+    land = np.flatnonzero(env["land"])
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    h.p[fk][land[:300]] = 0.9
+    h.p[kb][land[300:330]] = 0.9
+    _sync_pm(h)
+    return h, env, step, land
+
+
+def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_tolerance(faketz, monkeypatch):
+    """PW-1434 (lane 183, round7.md): switched on, the history seats states from its own central places and they claim land (war is
+    polities.war_v0 itself, tested there); the peoples on land a war took fare by the winner's hostility: the kobolds folk hate are
+    expelled, but never more than FATE_MAX of their heads in one step, and a tolerant winner keeps them. Off by default."""
+    import types
+    from planet.lineages.history import params as HP, polity_live as PL
+    assert HP.POLITIES_LIVE is False
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    for ago in (1.2, 1.1, 1.0, 0.9):
+        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    R = h.rule
+    assert R.steps and R.steps[0]["states"] >= 1 and R.owner is not None and (R.owner >= 0).any()
+    # the peoples on land a war took fare by the winner's hostility to them: the kobolds folk hate are expelled (FATE_CUT), but never
+    # more than FATE_MAX of their heads in one step; folk's own people keep their land
+    kob0, folk0 = h.p[kb].copy(), h.p[fk].copy()
+    cells = np.flatnonzero((h.p[kb] > 0) | (h.p[fk] > 0))
+    R.k += 1
+    fates = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])
+    assert fates["kob"][0] == "expelled" and fates["kob"][1] > 0 and "folk" not in fates
+    lost = 1.0 - h.p[kb].sum() / kob0.sum()
+    assert 0 < lost <= PL.FATE_MAX + 1e-9 and np.array_equal(h.p[fk], folk0)
+    monkeypatch.setattr(PL, "FATE_AT", (2.0, 3.0))  # (a tolerant winner keeps them)
+    R.k += 1
+    kob1 = h.p[kb].copy()
+    assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"] == ["kept", 0] and np.array_equal(h.p[kb], kob1)
+    # the seam reads the live polities: pacified where a state rules, not on unruled land
+    G = R.pacification(fk, types.SimpleNamespace(ago=0.9))
+    ruled = R.owner >= 0
+    assert np.all(G[~ruled] == 1.0) and np.all(G[ruled] < 1.0)
+    doc = R.doc()
+    assert doc["steps"] and doc["polities"] and doc["calendar"] == "borrowed"
+
+
+def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
+    """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
+    stand-in's frontier holds."""
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    fk = h.idx["folk"]
+    R = h.rule
+    F0 = R.frontier(fk).copy()
+    R.owner = np.zeros(h.grid.n, np.int64)  # (one polity rules everything)
+    R.tier_of = ["state"]
+    R.ruling = [{"people": "folk"}]
+    R._Fc = None
+    assert F0.any() and not R.frontier(fk).any()
+    R.owner[:] = -1
+    R._Fc = None
+    assert np.allclose(R.frontier(fk), F0)

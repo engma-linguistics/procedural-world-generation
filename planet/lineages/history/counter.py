@@ -54,7 +54,10 @@ class CounterMixin:
         """At the start of a run: who raids (spec raids), the stand-ins for states and war (history.rule), the fields."""
         L = self.lines
         self._raider = np.array([bool(getattr(l, "raids", False)) and not l.overlay and not l.megafauna and not l.marine for l in L])
-        self.rule = self.Rule(self)
+        R = self.Rule
+        if PM.POLITIES_LIVE and R is StandIns:  # (polities in the history, first cut, PW-1434: off by default; history.polity_live)
+            from .polity_live import LivePolities as R
+        self.rule = R(self)
         self._cull_d = {}  # (line index -> depletion field of an explicit (slow) cull sawtooth)
         self._cull_log = {}  # (line index -> kyr ago of its last logged cull)
         self.lost = {}  # (line id -> {brake: share of K held off, people-weighted over its land}, at its last step)
