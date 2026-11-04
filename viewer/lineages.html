@@ -151,12 +151,6 @@ const BODY_LABELS = { sweet: 'tastes sweet', milk: 'digests milk as an adult (or
 const MILK_SHARES = [0.1, 0.25, 0.5, 0.75];
 const PORTAL_LABELS = { off: 'at their best habitat', random: 'through portals at random', sites: 'through portals at interesting sites', wandering: 'through wandering thinnings (drift, open, close)' };
 const BREEDING_LABELS = { slow: 'slow (2x a generation)', mammal: 'mammal (3.5x)', brood: 'brood (7x)' };  // (lane 78: Rmax per generation, life_history.BREEDING)
-// the share bands' sums (lane 78, spec.band_warnings): the minimums past 100% or the maximums under it can't all be met
-function bandWarnings() {
-  const ps = T.lineage.filter((r) => r.enabled !== false && ['root', 'split', 'arrival'].includes(originOf(r)));
-  const lo = ps.reduce((s, r) => s + (+(r.band_pct?.[0] ?? 0) || 0), 0), hi = ps.reduce((s, r) => s + (r.band_pct?.[1] === undefined || r.band_pct?.[1] === '' ? 100 : +r.band_pct[1]), 0);
-  return [...(lo > 100 ? [`the minimum shares add up to ${+lo.toFixed(1)}% (over 100%): not all can be met`] : []), ...(hi < 100 ? [`the maximum shares add up to ${+hi.toFixed(1)}% (under 100%): not all can be met`] : [])];
-}
 const GENERATION_LABELS = { schedule: 'from the schedule', schedule_mass: 'fecundity ~ size', line: 'the lines\' own' };  // (milk may also be the lactase share of the people)
 const TOXIN_LABELS = { alliums: 'alliums (onion, garlic)', theobromine: 'theobromine (chocolate)' };
 async function loadSchema() {
@@ -255,12 +249,10 @@ function effective() {  // what switching lines off does (spec.parse): which lin
 }
 const resLine = (id) => result?.lineages?.find((l) => l.id === id);
 const resPres = (id) => result?.present?.lines?.[id];
-// the last run's life history and share band of a line (lane 78)
+// the last run's life history of a line (lane 78)
 const lifeCell = (id) => { const lh = (result?.lineages || []).find((l) => l.id === id)?.life_history; if (!lh) return '';
   const e = lh.by_era || {}, f = e.forager || {};
   return `<span title="${esc(Object.entries(e).map(([k, v]) => `${k}: T ${v.T} yr, r ${v.r_pct}%/yr (x${v.x}), ${Math.round(100 * v.adult_share)}% reach adulthood, it bears a steady loss of ${v.sustain_pct}%/yr at half its numbers; annual mortality ${v.mortality.map((m) => (100 * m).toFixed(1) + '%').join(' / ')}`).join('\n'))}">${f.T} · ×${f.x}</span>`; };
-const bandCell = (id) => { const b = result?.present?.bands?.[id]; if (!b) return '';
-  return ` <span class="${b.met ? 'muted' : ''}" style="${b.met ? '' : 'color:var(--bad,#c33)'}" title="${esc(b.met ? `met at ${b.share_pct}%` : `unmet: ${b.why}`)}${b.x !== 1 ? esc(`; its ${b.knob} x${b.x}`) : ''}">${b.share_pct}%${b.met ? '' : ' ✗'}</span>`; };
 const colorOf = (r) => resLine(r.id)?.color || r.color || ORIGIN_COL[originOf(r)] || '#aaa';
 
 // ---- tabs ----------------------------------------------------------------------------------------
@@ -627,11 +619,6 @@ function editLine(r, el) {
     const t = new Set(r.traits || inherited(r, 'traits') || []); el.checked ? t.add(el.dataset.trait) : t.delete(el.dataset.trait); r.traits = [...t];
     return;
   }
-  if (k === 'band_pct.0' || k === 'band_pct.1') {  // (lane 78: a share band; the other edge defaults to 0 or 100)
-    const b = [...(r.band_pct || [0, 100])]; b[+k.slice(-1)] = el.value === '' ? (k.endsWith('0') ? 0 : 100) : +el.value;
-    if (+b[0] === 0 && +b[1] === 100) delete r.band_pct; else r.band_pct = b;
-    return;
-  }
   if (['breeding', 'survival', 'plane'].includes(k)) { if (el.value.trim()) r[k] = el.value.trim(); else delete r[k]; return; }
   if (k.includes('.')) {
     const [a, i] = k.split('.'); r[a] = r[a] ? [...r[a]] : ['', ''];
@@ -754,9 +741,7 @@ function drawPeoples() {
     return `<input type="number" class="${cls}" step="${step}" min="0" ${['kind', 'contest'].includes(k) ? (k === 'kind' ? 'max="2"' : '') : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
   let h = `<p class="hint">Each people's demography and movement. Giants are sparse (a band roams thousands of km²) and insular; farmers dense; seafarers
     and explorers find the empty lands first. Click a name to open it in the tree; click a numeric heading to sort. ${result ? `Last run: <b>${esc(result.id)}</b> (${esc(result.world || '')}).` : 'Run on a world to fill population and area.'}</p>
-    ${bandWarnings().map((w) => `<p class="hint" style="color:var(--bad,#c33)">Share bands: ${esc(w)}</p>`).join('')}
-    <div class="row" style="margin-bottom:6px" title="Each people's growth rate, from its canon ages (adult, lifespan, breeding), sets how fast it spreads (x the square root of r), how fast rivals take its land, how fast its small patches fade and how often it jumps to far country (PW-1147). Off: every people at the same rates.">${field('growth rates from life history', `<input type="checkbox" data-m="growth_rates" ${T.meta?.growth_rates ? 'checked' : ''}>`)}
-      ${field('share band rounds', `<input type="number" min="0" max="8" data-m="band_rounds" value="${T.meta?.band_rounds ?? ''}" placeholder="${SCHEMA.life_defaults?.band_rounds ?? 3}" style="width:45px" title="When a run lands a people outside its share band (min / max % below), the best try is run again up to this many times with that people's own density nudged. The share is never clamped; an unmet band is reported with why.">`)}</div>
+    <div class="row" style="margin-bottom:6px" title="Each people's growth rate, from its canon ages (adult, lifespan, breeding), sets how fast it spreads (x the square root of r), how fast rivals take its land, how fast its small patches fade and how often it jumps to far country (PW-1147). Off: every people at the same rates.">${field('growth rates from life history', `<input type="checkbox" data-m="growth_rates" ${T.meta?.growth_rates ? 'checked' : ''}>`)}</div>
     <div class="row" style="margin-bottom:6px" title="Where the density ladder's numbers come from a source that gives a range (gardeners 2-20 per km², plough farmers by age, nomads 0.35-2, fishing foragers 0.3-2, the foragers' fitted slope, the time rich coasts take to farm: planet/lineages/ranges.py), draw each from its range instead of using the fixed value. Seeded by this tree's seed: the same draw every time, another seed another draw. The run's metadata lists the numbers drawn. Off (the default): the fixed values.">${field('draw sourced numbers from their published ranges', `<input type="checkbox" data-m="draw_ranges" ${T.meta?.draw_ranges ? 'checked' : ''}>`)}</div>
     <div class="row" style="margin-bottom:6px">${field('viable population (a separate patch with fewer fades)', `<input type="number" step="50" data-m="viable_pop" value="${T.meta?.viable_pop ?? ''}" placeholder="${DEFAULTS.viable_pop}">`)}</div>
     <div class="row" style="margin-bottom:6px" title="How hard peoples hunt down dragons and giants in the early eras (the stone age; the bronze age is mostly early). A multiplier on the peoples' kill: x1 is the default, where stone-age peoples barely dent the dragons (they reach wyrmlings, hardly the young, never the adults). Gentler leaves more dragons in early peopled country, harsher fewer. It never wipes a kind out: dragons breed back faster where they are few.">${field('how hard peoples press dragons and giants: early eras', `<select data-m="press_early" data-num="1">${(DEFAULTS.press_x || [0.25, 0.5, 1, 2, 4]).map(v => `<option value="${v}"${+(T.meta?.press_early ?? 1) === v ? ' selected' : ''}>x${v}${v === 1 ? ' (default)' : v < 1 ? ' (gentler)' : ' (harsher)'}</option>`).join('')}</select>`)}</div>
@@ -774,7 +759,7 @@ function drawPeoples() {
     <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
     ${th('kind', 'kind ×', 'kind factor on the density ladder, 0.5-2: 1 most peoples, 0.8 free-ranging kinds, 1.2 den peoples (PW-1275)')}<th title="${esc(ladderTitle())}">rung · /km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
-    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('contest', 'contest', 'martial strength where it contests land with a rival: 1 as most peoples, 1.5 martial (dwarves, hobgoblins); it presses that much harder and feels its rivals that much less')}<th title="Canon age of adulthood, yr (life history, PW-1148)">adult yr</th><th title="Canon lifespan, yr">lifespan</th><th title="Breeding class: Rmax per generation (slow 2, mammal 3.5, brood 7); survival: harsh = few reach adulthood">breeding</th><th title="From the last run: generation time T (yr) and growth rate r relative to humans, under the forager schedule (the farming schedules: hover)">T · r×</th><th title="Soft target for its share of the world's people, % [min, max] (the run nudges its own density to meet it; never a clamp)">share band %</th>${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th>
+    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('contest', 'contest', 'martial strength where it contests land with a rival: 1 as most peoples, 1.5 martial (dwarves, hobgoblins); it presses that much harder and feels its rivals that much less')}<th title="Canon age of adulthood, yr (life history, PW-1148)">adult yr</th><th title="Canon lifespan, yr">lifespan</th><th title="Breeding class: Rmax per generation (slow 2, mammal 3.5, brood 7); survival: harsh = few reach adulthood">breeding</th><th title="From the last run: generation time T (yr) and growth rate r relative to humans, under the forager schedule (the farming schedules: hover)">T · r×</th>${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th>
     <th title="Its places now, from the last run's settlement ledger (settlements.py, PW-1011, PW-1103): cities, towns, villages and mines it holds; its places of its own as a second people among another (PW-1105); the places it holds that another people founded; the ruins of places it founded">places now</th></tr>`;
   for (const { r, d, dm, p, group } of rows) {
     const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [], gs = group ? [] : groupsOf(r.id);
@@ -798,7 +783,6 @@ function drawPeoples() {
       <td><select data-k="breeding"><option value="">${esc(inherited(r, 'breeding') ?? 'mammal')}</option>${(SCHEMA.breeding || []).map((v) => `<option value="${v}"${r.breeding === v ? ' selected' : ''}>${BREEDING_LABELS[v] || v}</option>`).join('')}</select>
         <select data-k="survival" title="harsh: few reach adulthood (a quarter), more adults die each year"><option value="">${esc(inherited(r, 'survival') ?? 'normal')}</option>${(SCHEMA.survival || []).map((v) => `<option value="${v}"${r.survival === v ? ' selected' : ''}>${v}</option>`).join('')}</select></td>
       <td class="n muted">${lifeCell(r.id)}</td>
-      <td style="white-space:nowrap">${group || !['root', 'split', 'arrival'].includes(o) ? '' : `<input type="number" class="s" min="0" max="100" step="any" data-k="band_pct.0" value="${r.band_pct?.[0] ?? ''}" placeholder="0">–<input type="number" class="s" min="0" max="100" step="any" data-k="band_pct.1" value="${r.band_pct?.[1] ?? ''}" placeholder="100">${bandCell(r.id)}`}</td>
       <td class="n">${p?.population != null ? num(p.population) : ''}${whole ? `<br><span class="muted" title="with its groups">all ${num(whole.population)}</span>` : ''}</td>
       <td class="n">${p ? p.area_mkm2 : ''}${whole ? `<br><span class="muted">all ${whole.area_mkm2}</span>` : ''}</td><td class="n">${p ? p.patches : ''}</td><td class="muted" style="white-space:nowrap">${group ? '' : placesLine(r.id)}</td></tr>`;
   }
@@ -933,12 +917,6 @@ function drawResults() {
     <div><b>${P.mixing?.area_mkm2 ?? '–'} Mkm²</b><span>mixed land (${Math.round(100 * (P.mixing?.land_share ?? 0))}%)</span></div>
     <div><b>${(P.empty_continents || []).length}</b><span>empty continents</span></div><div><b>${(P.lost || []).length}</b><span>lost peoples</span></div>
     <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
-  // share bands (lane 78): met or not, with why, and the nudges the run made
-  const bands = Object.entries(P.bands || {});
-  if (bands.length) h += `<h2>Share bands</h2><table class="t"><tr><th>people</th><th>band %</th><th>share %</th><th></th><th>nudge</th></tr>${bands.map(([id, b]) =>
-    `<tr><td>${sw(id)}${nm(id)}</td><td class="n">${b.band[0]}–${b.band[1]}</td><td class="n">${b.share_pct}</td><td>${b.met ? 'met' : `<span style="color:var(--bad,#c33)">unmet</span>: ${esc(b.why || '')}`}</td><td class="muted">${b.x !== 1 ? `${esc(b.knob)} ×${b.x}` : ''}</td></tr>`).join('')}</table>
-    <p class="muted">${(P.band_rounds || []).map((r) => `round ${r.round}: miss ${r.miss} pts, score ${r.wish_score}`).join('; ')}</p>`;
-  for (const w of result.band_warnings || []) h += `<p class="hint" style="color:var(--bad,#c33)">Share bands: ${esc(w)}</p>`;
   if (result.thinnings) h += `<p class="muted">Wandering thinnings: ${Object.entries(result.thinnings).map(([pl, log]) => `${esc(pl)}: ${log.filter((x) => x.opened_kyr != null).length} opened`).join('; ')}</p>`;
   // population table
   const maxPop = Math.max(1, ...living.map(([id, v]) => popOf(id, v)));
