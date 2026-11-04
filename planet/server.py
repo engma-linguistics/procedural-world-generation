@@ -16,6 +16,7 @@
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
+  GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper]   a word said aloud: audio/wav (speak())
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
@@ -177,6 +178,39 @@ def landmass_names(query: str) -> tuple[dict, int]:
                           for i, g in enumerate(gen)]}, 200
     except SystemExit as e:
         return {"error": str(e)}, 404
+
+
+_SPEAK_CACHE: dict = {}
+_SPEAK_LOCK = threading.Lock()
+SPEAK_CACHE_MAX = 512
+SPEAK_MAX_CHARS = 200
+
+
+def speak(query: str) -> tuple[bytes | dict, int]:
+    """GET /api/speak?ipa=<IPA>&people=<lineage id>[&backend=]: the word rendered as WAV by language/speak.py (the people's
+    voice profile sets register and rate; at most 1 s of audio per word). Cached in memory by (ipa, people, backend)."""
+    q = dict(parse_qsl(query))
+    ipa, people, backend = (q.get("ipa") or "").strip(), q.get("people") or None, q.get("backend") or "auto"
+    if not ipa:
+        return {"error": "ipa= is required"}, 400
+    if len(ipa) > SPEAK_MAX_CHARS:
+        return {"error": f"ipa= is longer than {SPEAK_MAX_CHARS} characters"}, 400
+    key = (ipa, people, backend)
+    with _SPEAK_LOCK:
+        if key in _SPEAK_CACHE:
+            return _SPEAK_CACHE[key], 200
+    try:
+        from .language import speak as SP
+        b = SP.speak(ipa, SP.profile_for_people(people), backend=backend)
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except Exception as e:  # a missing backend (SP.BackendUnavailable) or a synthesis failure
+        return {"error": f"{type(e).__name__}: {e}"}, 503
+    with _SPEAK_LOCK:
+        if len(_SPEAK_CACHE) >= SPEAK_CACHE_MAX:
+            _SPEAK_CACHE.pop(next(iter(_SPEAK_CACHE)))
+        _SPEAK_CACHE[key] = b
+    return b, 200
 
 
 def brief(query: str) -> tuple[dict, int]:
@@ -589,6 +623,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/brief":
             return self.send_json(*brief(url.query))
+        if url.path == "/api/speak":
+            body, code = speak(url.query)
+            if isinstance(body, dict):
+                return self.send_json(body, code)
+            self.send_response(code)
+            self.send_header("Content-Type", "audio/wav")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if url.path == "/api/presence":
             body, code = presence_frame(url.query)
             if isinstance(body, dict):
