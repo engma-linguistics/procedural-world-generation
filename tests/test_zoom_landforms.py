@@ -167,9 +167,10 @@ def test_caprock_holds_the_lip():
 # ---------------------------------------------------------------------------
 # Batch 2 (PW-011): fold belt, rift, shield; and the fixes PW-149 / PW-150
 # ---------------------------------------------------------------------------
-def _plain_world(base, gx, gy, precip=1200.0, thick_gy=0.01):
+def _plain_world(base, gx, gy, precip=1200.0, thick_gy=0.01, hills=0.0):
     """A continent at `base` m rising gx, gy m/km east and north, its crust
-    thickening northward by thick_gy km/km (a collision to the north)."""
+    thickening northward by thick_gy km/km (a collision to the north); `hills`:
+    each cell up or down by up to that (m, a fixed draw), for some local relief."""
     from planet import hydrology
     from planet.grid import build_grid
     from planet.geo import latlon
@@ -179,6 +180,8 @@ def _plain_world(base, gx, gy, precip=1200.0, thick_gy=0.01):
     xk, yk = lon * 111.2, lat * 111.2
     d0 = _dist_km(g, 0.0, 0.0)
     elev = np.where(d0 < 2500, base + gx * xk + gy * yk, -3000.0)
+    if hills:
+        elev = np.where(d0 < 2500, elev + hills * np.random.default_rng(0).uniform(-1, 1, g.n), elev)
     pr = np.full(g.n, precip)
     c = {"runoff": 0.5 * pr, "aet": 0.5 * pr, "lake_evap": np.full(g.n, 300.0)}
     flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
@@ -251,7 +254,9 @@ def test_fold_belt_rivers_cut_water_gaps(fold_pair):
 
 @pytest.fixture(scope="module")
 def rift_pair():
-    w, land = _plain_world(900.0, 0.0, 0.0, precip=1200.0, thick_gy=0.0)
+    # low hills (cells +-100 m: a local relief of 110-190 m): the zoom's detail follows the local relief
+    # (PW-1462), so a dead-flat plain is drawn flat and couldn't show the rift's floors as flatter than the land round
+    w, land = _plain_world(900.0, 0.0, 0.0, precip=1200.0, thick_gy=0.0, hills=100.0)
     from planet.geo import latlon
     lat, lon = latlon(w["grid"].centers)
     n = len(land)
@@ -402,20 +407,28 @@ def test_landform_falls_are_listed_with_pools(esc_pair):
 def test_plunge_pool_lies_below_the_whole_fall(esc_pair):
     """PW-341: a fall over several pixels has its plunge pool at its foot,
     where its drop ends, not on the pixel below its top (where it hung with
-    most of the drop below it)."""
+    most of the drop below it). (A carved fall's tiers have basins of their
+    own inside its drop (zoom.falls.carve, PW-517), so the check is for a pool
+    at the foot, not for the first pool down the river; and a fall whose river
+    runs off the zoom's edge within 5 px has its foot in the cropped halo.)"""
     _, esc = esc_pair
-    L, nx = esc["layers"], esc["nx"]
+    L, nx, ny = esc["layers"], esc["nx"], esc["ny"]
     ws = (L["elevation"] + L["lake_depth"]).ravel().astype(float)
     pool = ((L["water"] == 2) & (L["lake_depth"] > 0)).ravel()
     pooled = [f for f in esc["stats"]["falls"] if f.get("plunge_pool_m")]
     long_ = [f for f in pooled if f["length_km"] > 1.5 * esc["res"]]
     assert long_, [(f["height_m"], f["length_km"]) for f in pooled]
+    checked = 0
     for f in pooled:
         p = f["px"][0] * nx + f["px"][1]
-        ch = zoom.ZK.chain(esc["rec"], p)[1:6]
-        at = [c for c in ch if pool[c]]
-        assert at, f
-        assert ws[p] - ws[at[0]] >= 0.9 * f["height_m"], (f, ws[p] - ws[at[0]])
+        ch = zoom.ZK.chain(esc["rec"], p)
+        r, c = divmod(int(ch[-1]), nx)
+        if len(ch) < 6 and (min(r, c) == 0 or r == ny - 1 or c == nx - 1):
+            continue  # (its foot is off the edge)
+        at = [c for c in ch[1:6] if pool[c] and ws[p] - ws[c] >= 0.9 * f["height_m"]]
+        assert at, (f, [(round(ws[p] - ws[c]), bool(pool[c])) for c in ch[1:6]])
+        checked += 1
+    assert checked, pooled
 
 
 # ---------------------------------------------------------------------------

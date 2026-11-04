@@ -156,7 +156,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import coast, icemass, kernels
+from .. import coast, icemass, kernels, summit
 from .. import humanuse as HU
 from .. import gameattrs as GA
 from .. import store as S
@@ -301,6 +301,26 @@ def _count(items) -> dict:
 
 def softplus(x, s):
     return s * np.logaddexp(0, x / s)
+
+
+# SUBCELL_K, a fitted constant (PW-1462): Earth's sub-cell relief over the land detail's amplitude. The detail noise,
+# the landscape pass's valleys and the mean-keeping between them put a zoom cell's highest 4 km pixel at about 1.5x
+# the amplitude above its mean. Fitted by eye on three 1200 km, 4 km/px zooms of world dba204 (scout 188,
+# docs/review/tectonics/mountains/scout2.md section 4) against Earth's 4 km p75 of (highest pixel - block mean) by
+# local relief (HydroSHEDS 0.5-degree blocks, same doc section 3): there one zoom came out under, one over, one close.
+# Checked on three zooms of world 899985 (lane 189): K = 1.2 / 1.5 / 1.8 moves its plateaus' p75 by 6-16% and its
+# highest pixel by under 7%; its flat high cells stay 3-5x Earth's at any K (most of that excess is not the detail's:
+# a third less amplitude takes a fifth off it).
+SUBCELL_K = 1.5
+
+
+def land_amp(rug, local_relief):
+    """The land detail's amplitude (m) per pixel, from the coarse cells' local relief (summit.local_relief,
+    interpolated): Earth's sub-cell relief for that relief (summit.sub_cell_relief) / SUBCELL_K, scaled by the
+    ruggedness. Earth's sub-cell relief follows the local relief, not the height (summit.py's fit): a flat plateau
+    at 4 km is as smooth as a plain, a rugged range at 1.5 km is not (PW-1446; the amplitude used to grow with the
+    height, 0.36 m per m, and drew 3-5 km of extra relief over 7-8 km plateaus)."""
+    return rug * (summit.sub_cell_relief(np.maximum(np.nan_to_num(local_relief), 0.0)) / SUBCELL_K + 25) + 12
 
 
 def shore_apron(h, lake, lakes, free, held, held_px, rec, order, q, nx, ny, res):
@@ -1229,7 +1249,7 @@ class ZoomCtx:
                  "jitter_g", "jul_f", "keep", "keep_means", "kpix", "kps", "lake", "lake_c", "lake_depth", "lake_id",
                  "lake_in", "lake_info", "lake_kind", "lake_loss", "lake_outlets", "lake_seq", "lakes", "lakes_out",
                  "land", "land_all", "land_c", "lat_px", "layers", "lf", "lf_counts", "lf_gorges", "lf_lake",
-                 "lf_overlay", "lf_sink", "lobe", "logC", "make_branches", "marsh", "minor_add", "n_in",
+                 "lf_overlay", "lf_sink", "lobe", "logC", "lrel", "make_branches", "marsh", "minor_add", "n_in",
                  "n_rivers_in", "n_splits", "north", "npx", "nx", "ny", "outlet", "outs", "ov_dst", "ov_src", "own",
                  "own_s", "pin_dst", "pin_pairs", "pin_src", "pix_lat", "place_falls", "plunge", "precip", "px", "py",
                  "q_course", "r_c", "rapids", "rapids_lift", "rec", "rec_out", "region", "rel", "reroute", "res",

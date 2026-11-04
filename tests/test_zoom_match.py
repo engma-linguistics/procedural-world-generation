@@ -78,8 +78,10 @@ def test_unmatched_build_is_unchanged(pair):
 def test_matched_section_carries_the_neighbours_rivers_on(pair):
     """A river of the neighbour's flowing across the owner line into the section's ground carries its water on
     there (PW-1302): before, held ground was an outlet and the river started dry at the line. From the neighbour's
-    own network (its receivers): each crossing of >= 100 m3/s, the section's largest discharge within 2 px of where it
-    enters (on this pair 304 -> 330 and 199 -> 215 m3/s)."""
+    own network (its receivers): each crossing of >= 100 m3/s, the most water put in at a pixel within 2 px of where it
+    enters (its discharge less its donors': the section's own tributaries may join the river right at the line, and
+    the largest discharge there was the river with them, PW-1462), and the river's course for 5 px below it (on this
+    pair 252 -> 255 and 211 -> 212 m3/s put in)."""
     za, _, zm = pair
     sA = ZM.source_of(za, "A")
     nx, ny, res = sA["nx"], sA["ny"], sA["res"]
@@ -89,10 +91,15 @@ def test_matched_section_carries_the_neighbours_rivers_on(pair):
     p = np.flatnonzero(~own_b & (sA["rec"] >= 0) & (sA["q"] >= 100.0) & sA["land"].ravel())
     p = p[own_b[sA["rec"][p]]]
     assert len(p) >= 2
-    Q = np.asarray(zm["layers"]["discharge"])
+    Q = np.asarray(zm["layers"]["discharge"], float).ravel()
+    rec = zm["rec"]
+    put = Q - np.bincount(rec[rec >= 0], Q[rec >= 0], len(Q))  # (each pixel's runoff, and a handed-on river's water)
     for k in p:
         x, y = zm["frame"].to_plane(P[sA["rec"][k]][None])
         rr = int(np.floor(zm["ny"] / 2 - y[0] / zm["res"]))
         cc = int(np.floor(x[0] / zm["res"] + zm["nx"] / 2))
-        got = Q[max(rr - 2, 0):rr + 3, max(cc - 2, 0):cc + 3].max()
-        assert 0.8 * sA["q"][k] <= got <= 1.5 * sA["q"][k]
+        rows, cols = np.mgrid[max(rr - 2, 0):rr + 3, max(cc - 2, 0):cc + 3]
+        win = (rows * zm["nx"] + cols).ravel()
+        b = int(win[np.argmax(put[win])])
+        assert 0.8 * sA["q"][k] <= put[b] <= 1.5 * sA["q"][k], (sA["q"][k], put[b])
+        assert Q[RG.ZK.chain(rec, b)[:6]].min() >= 0.8 * sA["q"][k]  # (and carries it on)

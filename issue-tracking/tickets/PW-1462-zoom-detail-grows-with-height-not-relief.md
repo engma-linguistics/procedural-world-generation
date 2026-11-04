@@ -2,7 +2,7 @@
 id: PW-1462
 title: "Zoom detail grows with height, not relief: flat 4 km plateaus drawn as mountains and 9-10 km massifs on 8 km plateaus"
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: zoom
@@ -24,9 +24,10 @@ Measured by scout 188 (docs/review/tectonics/mountains/scout2.md §3-4), against
 - Candidate patch on file, `scout2_land_amp.patch`: amplitude = rug × (summit.sub_cell_relief(local relief) / 1.5 + 25) + 12. On the same code and world, the highest pixel goes 11,456 → 9,890 m (zoom A, 61N 141W), 6,372 → 5,597 m and 5,470 → 4,668 m. Over the f4db12 view: 11,957 (stored) → 10,247 m. Each cell keeps its mean.
 - With the patch, 3 tests fail that pass on main. `test_rift_has_fault_blocks_along_its_axis` compares against a zero-relief synthetic plain that is now (correctly) flat, so its comparison needs a ruling. `test_plunge_pool_lies_below_the_whole_fall` and `test_matched_section_carries_the_neighbours_rivers_on` need a look over re-rolled seeds.
 
-- [ ] patch applied; the three tests settled (rift: a ruling on the comparison; the other two re-rolled over 3+ seeds)
-- [ ] K = 1.5 checked on 2-3 zooms of a second world against the 4 km Earth table in scout2.md §3
-- [ ] goldens updated if they move
+- [x] patch applied; the three tests settled (rift: a ruling on the comparison; the other two re-rolled over 3+ seeds)
+- [x] K = 1.5 checked on 2-3 zooms of a second world against the 4 km Earth table in scout2.md §3
+- [x] goldens updated if they move (they did not)
 
 ## Updates
+- 2026-11-04: Status todo -> done. Lane 189: patch applied (SUBCELL_K = 1.5 in planet/zoom/regional.py, labelled as fitted). The 3 tests were harness artefacts, re-rolled over seeds 1-6 on main and patch, thresholds unchanged: rift plain given low hills; plunge pool looks for the pool at the foot and skips falls running off the edge; seam rivers measure the water put in, not a window max that caught joining tributaries (failed 3 of 5 seeds on main too). World 899985 before/after and the K 1.2/1.5/1.8 nudge in docs/review/tectonics/mountains/lane189.md. Flat high cells still 3-5x Earth there: inbox draft.
 - 2026-11-04: Created from inbox draft draft-zoom-detail-amp-from-local-relief.md (found by scout-188-pw1446).
