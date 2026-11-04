@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-982, PW-981, PW-947, PW-856]
 refs: []
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Owner 2026-10-28. No built-in decay ('complex past, simple present' is an artefa
 - [ ] empire and trade-hub languages trend simpler, isolated small demes richer, across several seeds
 
 ## Updates
+- 2026-11-03: Daniel 2026-11-03 design doc (https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2): proposed amendment, awaiting his yes: population, adult L2 share and isolation push on fusion and loss rates of the grams (PW-982's grammar ladder) instead of setting a stored complexity scalar; complexity is measured from the grammar as the check.
 - 2026-10-28: Created.

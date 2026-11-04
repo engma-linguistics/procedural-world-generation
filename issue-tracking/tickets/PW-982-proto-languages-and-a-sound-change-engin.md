@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-972, PW-947, PW-971]
 refs: []
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ Checks (plausibility, not parity): inventory sizes and segment frequencies PHOIB
 - [ ] peoples, places and foods have word forms with etymologies
 
 ## Updates
+- 2026-11-03: Daniel 2026-11-03, design doc 'Languages from scratch: design' (https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2). Amendments: (1) the deme tree is NOT the language tree: a deme speaks lects with shares; language shift (elite rule from takeovers/conquests, swamping by migrants, city mixing, trade languages) lets a deme adopt another language, keeping a substrate (accent via percept mapping, local plant and place words, calqued grammar). (2) Tree plus wave: changes descend the tree and also spread sideways over the contact record, weighted by contact and prestige, leaving isoglosses, dialect continua and areal features; languages split when contact stays below a threshold. (3) Change runs per generation of the speakers (line generation_yr), so long-lived peoples change slower (pure vs softened exponent open in the doc, lean 0.7). (4) Every sound-change rule carries its physical cause and needs (articulators or hear axes); weights scale with the species' make costs (PW-1423). Contrast maintenance by functional load is built in. (5) Grammar in full depth, not only as deep as output shows: typology features drifting at feature-specific rates (Grambank/WALS, Dryer harmonies) plus real grams on a grammaticalization ladder (free word, clitic, affix, fused, lost; Heine & Kuteva paths) whose forms erode by the same sound changes; sound change on inflected forms gives alternations; analogy levels. Outputs: paradigms, typology sheet, interlinear examples, grammar-built names (noun-class prefixes, word order in compounds, locative endings). Writing stays in Daniel's other repo. (6) IPA internally, one house 'common' romanization (draft table in the doc). (7) Old river and place names are the conservative layer and survive shifts as substrate.
 - 2026-10-28: Created.

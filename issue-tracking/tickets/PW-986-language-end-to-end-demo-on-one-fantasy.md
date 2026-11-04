@@ -29,5 +29,6 @@ The owner reviews it as a linguist and rules: accept as the v2 end state (PW-982
 - [ ] owner ruling recorded: accepted end state or demo only
 
 ## Updates
+- 2026-11-03: Daniel 2026-11-03: language shift is IN the demo (elite takeovers make a deme adopt the rulers' language, with substrate words), plus tree-plus-wave spread, per-generation rates, rules carrying causes, minimal real grammar (word order, a handful of grams on the ladder), and the house romanization. Built on the voice-profile model PW-1423 (humans; other species flagged on the human default). Full slice list and checks in the design doc 'Languages from scratch: design' (https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2), section 'Build order and checks'.
 - 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-10-28: Created.
