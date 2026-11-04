@@ -174,6 +174,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{g.level}.json", "legend": S.legends(), "layers": layers,
         "events": events, "frames": out_frames})
+    if hasattr(h.rule, "doc"):  # (polities in the history, when switched on, PW-1434: their record beside the read-out's)
+        S.write_json(out / "polities_live.json", h.rule.doc())
     report(out, h, res, pres)
     with open(out / "run.txt", "a") as f:
         f.write("\n".join(TT.lines_for_report(techtree, lines)) + "\n")

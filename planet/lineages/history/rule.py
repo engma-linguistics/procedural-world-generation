@@ -47,6 +47,10 @@ class StandIns:
         self.K0 = {}  # (line index -> its unbraked habitat this step)
         self._Fc = None  # (the frontier cache: (presences it was made from, hostile presence lines x cells, {line: F}))
 
+    def begin_step(self, step):
+        """At the start of each step, before the presences are read (polities in the history run their step here: history.polity_live).
+        The stand-ins have nothing to do."""
+
     def pacification(self, k, step) -> float:
         """G, 0..1: the share of line k's own violence a state leaves (1 stateless). Stand-in: 1 / (1 + STATE_Q x tech level x farm
         share), a farming people with the tech forms states (Gómez et al. 2016; Turchin 2009's -alpha S)."""

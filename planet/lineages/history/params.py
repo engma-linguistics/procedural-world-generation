@@ -203,6 +203,7 @@ LAND_Q, H_MAX = 0.3, 0.01  # lane 82's judgements: war-torn country holds up to 
 WAR_Q = 1.0
 WAR_N0 = 10.0  # people per km2 (lane 82: the human farmers' number)
 WAR_EXT = 0.5  # the frontier's weight against crowding (lane 82: foragers' killing is mostly homicide, not war; Fry and Soderberg 2013)
+POLITIES_LIVE = False  # PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
 STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
 # violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of
 # Keeley 1996, Gat 2006, Bowles 2009 and others): foragers 20-160 per 100k, highland horticulturalists 290-731, herders 970-1000,

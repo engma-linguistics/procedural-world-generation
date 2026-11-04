@@ -235,6 +235,7 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
             self._note_eras(step)  # (each people's mortality schedule: forager, horticulturalist, agrarian; history.growth)
             self._waves(step, env, tags, Ks)  # (an arrival's later waves, and the wandering portals: history.portals)
             mix = self._mix_ramp(step.ago)
+            self.rule.begin_step(step)  # (polities in the history, when switched on: their century step, PW-1434; history.rule)
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
             self._cntp = self._pm[sorted(self._ppl_set)].sum(0, dtype=np.int16)
