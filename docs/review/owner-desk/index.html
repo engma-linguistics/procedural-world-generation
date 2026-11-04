@@ -71,11 +71,29 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <div class="kicker">procgen_world · Wednesday 4 November 2026 · midday</div>
   <h1>Owner's Desk</h1>
   <p class="lede">Overnight, v3 (states, war, invasions you schedule) got its first cut, and D47 and the rainforest fix landed. The three showcase peoples runs are rebuilt.
-Nothing waits on you except the v0.2.0 tag.</p>
+Two things wait on you: D53 (writing spread) and the v0.2.0 tag.</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
 <h2 id="answers">For you</h2>
+<div class="card" id="d53"><div class="id">D53 · WRITING SPREAD: WHICH IDEA GOES ON? (PW-1461, PW-1464, FROM LANE 186)</div>
+<p><b>In plain words:</b> your precedent question first. Yes: courts took up writing ahead of their countryside. Hittite kings probably brought Syrian scribes to their capital. Mycenaean Linear B stayed in the palaces (about 45 scribes at Pylos) and vanished with them. The Yamato court in Japan wrote two centuries before wider literacy. Maya scribes worked inside the royal court. Kin peoples do share more readily, but the sources give a bias, not a number. Lane 186 built four ideas behind one switch (off for now, so nothing has changed) and measured them on the three runs. The table gives the median years from writing's invention until half, and nine in ten, of settled people know it:</p>
+<div class="tbl"><table>
+<tr><th>Idea</th><th>To half</th><th>To nine in ten</th><th>Wait at a writing border</th></tr>
+<tr><td>Today (off)</td><td>865</td><td>1,403</td><td>741</td></tr>
+<tr><td>B: crosses towns, not land</td><td>425</td><td>663</td><td>313</td></tr>
+<tr><td>C: trading towns pass it faster</td><td>560</td><td>836</td><td>428</td></tr>
+<tr><td>E: rulers take it up when the front reaches their nearest town (your idea)</td><td>273</td><td>444</td><td>357</td></tr>
+<tr><td>K: kin share faster</td><td>850</td><td>1,295</td><td>723</td></tr>
+</table></div>
+<p>Earth: near neighbours took writing within 100–900 years, and the Bronze-Age fringe within 1,400–2,000. Every idea keeps the halfway time inside Earth's range. K does almost nothing, because the big peoples have no recent kin. The 2,100-year wait of the Seven Meals humans turned out to be an unlucky draw in the old tech tree; on today's tree they wait 320 years whichever idea is on.</p>
+<ol>
+<li><b>A. E</b>, rulers take it up. It's your picture and the history backs it; it adds no new number and holds steady when nudged. Its cost: the halfway time drops to about 270 years, fast but inside Earth's range. To work in new runs, the tech tree must be built after the town ledger (PW-1464, a small reorder).</li>
+<li><b>B. C</b>, trading towns. Its halfway time stays nearer today's (560), and it works in new runs now. But it borrows pottery's spreading speed, so it is partly a dial.</li>
+<li><b>C. Leave it off.</b> Today's spread is already Earth-like at the halfway mark.</li>
+</ol>
+<p><i>My lean:</i> A (E), with the reorder done first. It matches what you described, and both the history and the nudge check hold up. If 270 years feels too quick once you've seen it in Technology &rarr; Spread, C is the fallback.</p>
+</div>
 <div class="card" id="tag"><div class="id">TAG v0.2.0 WHEN YOU'VE LOOKED (V2 MILESTONE)</div>
 <p><b>In plain words:</b> v2's code is all merged and the full test suite passes (1,029 tests). What to look at: faiths you write (Religion tab), the food sheet per culture (Culinary brief panel), dates in years, and the workbench tree. Try them on the new showcase runs:
 <a href="http://localhost:8765/viewer/?run=07c755&amp;layer=peoples">Seven Meals 07c755</a> ·
@@ -100,7 +118,6 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>183 · states inside the history (v4)</td><td>v4's big piece. Today states are worked out after a run; here they form, fight and change hands while the history runs, and a conquered people is kept, expelled or thinned by the winner. This is what should let war chain one conquest onto the next into real empires, and let your scheduled invasions reach further. A written design first, then a first cut behind a switch, off by default.</td></tr>
-<tr><td>186 · how fast writing spreads (D52 experiments)</td><td>Your ask: try several ideas in their own lane. History first: is there precedent for a court in a distant city taking up writing ahead of its villages, and do kin peoples share know-how more freely than strangers? Sources required. Then four mechanisms tried side by side against the halfway time and the slow tail: writing crosses towns, not land (B); trading towns pass it faster (C); rulers take it up when their seat or towns touch writers (E, your "the king will love this"); and kin share faster than strangers (K). Each gets a nudge check.</td></tr>
 <tr><td>187 · carbon yardstick at L7 (physics scout)</td><td>D47's L7 yardstick came from six older runs. Measured properly on today's code, because an error of 0.1 shifts every L7 world by about 1 °C.</td></tr>
 <tr><td>190 · world cells too high (physics scout)</td><td>Scout 188's second cause of the too-tall peaks. Where the crust is at its thickest, the model adds sediment and heat swell on top, so some cells stand 1–1.3 km above where that crust should float (the test world's top cell is 8.2 km; Earth's at this grid size is 5.9 km). A written diagnosis with sources first, then a screen of test planets, and the full check only if that's clean.</td></tr>
 <tr><td>185 · grassland growth (physics, side track, attempt 2 of 3)</td><td>Grass grows 1.4–1.8 times too much, because grass roots pay no upkeep in the model. The fix failed once, on two planets that froze over, which later turned out to be chance. Since D47, weathering no longer reads plant growth, so it gets a second try: an Earth check, a 12-planet screen, then the full check.</td></tr>
@@ -132,5 +149,5 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 </ul></li>
 </ul>
 
-<footer>Desk v162 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v163 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
