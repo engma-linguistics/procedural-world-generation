@@ -1,5 +1,6 @@
 ---
-title: "Measure L7's carbon-cycle yardstick on current code (it is derived, not measured)"
+id: PW-1458
+title: Measure L7's carbon-cycle yardstick on current code (it is derived, not measured)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane170
 blocked_by: []
 relates: [PW-1424]
 refs: [docs/review/climate/stability/round3.md, tools/yardstick.py, "planet/tectonics/earth.py::YARDSTICK"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -26,3 +29,6 @@ the model means, and nobody would see it as a bias, because every L7 planet shif
 **Do.** Spin about 6 L7 stock draws to 300 Myr (fork.py spin, or the first 300 Myr of `paired.sh` with LEVEL=7
 ONLY=l6fix), run `tools/yardstick.py` on them, and set YARDSTICK[7] to the mean if it is outside the standard error
 of the current value. About 6 x 300 Myr at L7 (~1.5 runs' worth).
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-l7-yardstick-measure.md (found by lane170).
