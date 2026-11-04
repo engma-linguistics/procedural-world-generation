@@ -191,8 +191,9 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
             why = "no century step of the polities falls in its window"
         if why is None and L["took"]:
             o["happened"] = True
+            from .polities import name_at  # (each side as it was called then: the people holding its capital, PW-1451)
             for ago, li, wi, km2 in L["took"]:
-                o["took"].append({"ago_kyr": ago, "winner": polities[wi]["name"], "winner_id": wi, "loser": polities[li]["name"], "loser_id": li, "km2": int(round(km2))})
+                o["took"].append({"ago_kyr": ago, "winner": name_at(polities[wi], ago), "winner_id": wi, "loser": name_at(polities[li], ago), "loser_id": li, "km2": int(round(km2))})
             o["km2"] = int(round(sum(t["km2"] for t in o["took"])))
         elif why is None:
             them = f"the {who}" if "people" in r["who"] else who

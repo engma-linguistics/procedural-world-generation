@@ -158,3 +158,44 @@ def test_lifetimes_read_founding_to_fall_and_time_at_half_peak():
         "maps": [[[0, 1, [0, 10], {}, 5]], [[0, 1, [0, 4], {}, 5], [1, 2, [20, 2], {}, 5]], [[0, 1, [0, 6], {}, 5], [1, 2, [20, 2], {}, 5]]]}
     L = PO.lifetimes(doc)["states and empires"]
     assert L["fell"] == [300] and L["half"] == [200, 200] and L["standing"] == 1 and L["how"]["conquered"] == 1
+
+
+def test_a_confederation_needs_a_citys_people_in_reach_and_a_foreign_state_beside_it():
+    """PW-785, step 1b: villages of a people with kings but no city band together only beside a foreign power."""
+    g, ekm, off, idx = _setup(6)
+    c0 = 100
+    ring = [int(b) for b in idx[off[c0]:off[c0 + 1]]]
+    lines = [{"id": "herd"}, {"id": "farm"}]
+
+    class R:
+        pass
+    R.g, R.lines, R.ekm, R.uids = g, lines, ekm, ["u0"]
+    R.knows = staticmethod(lambda p, t, ago: p == "herd" and t in ("chiefdoms", "kingship", "law", "bureaucracy", "writing"))
+    F = {"edz": np.zeros(len(ekm)), "sea": np.zeros(g.n, bool), "ice": np.zeros(g.n, bool), "peopled": np.ones(g.n, bool)}
+    cells = [c0] + ring[:4]
+    sites = [{"id": j, "kind": "chief", "cell": c} for j, c in enumerate(cells)]
+    popk = np.array([500.0] + [3000.0] * 4)
+
+    def run(prev_owner, city_min=10000.0):
+        return PO._confederations(R, F, [], sites, popk, np.arange(len(sites)), lambda s, a: "herd", np.array(cells), 0.0, 5, prev_owner,
+                                  {0: ("state", "farm")}, {}, {}, city_min, {c: {0} for c in cells}, {}, off, idx,
+                                  np.full(g.n, np.inf), np.zeros(g.n, np.int64), np.zeros(g.n, np.int64))
+    beside = np.full(g.n, -1, np.int64)
+    beside[ring[5]] = 0  # (a foreign state held a cell beside them last step)
+    out = run(beside)
+    assert len(out) == 1 and out[0]["confed"] and out[0]["tier"] == "state" and out[0]["heads"] >= 10000 and out[0]["people"] == "herd"
+    assert run(np.full(g.n, -1, np.int64)) == []  # (no foreign state: nothing to band together against)
+    assert run(beside, city_min=20000.0) == []  # (too few of them within reach)
+
+
+def test_a_polity_is_named_for_the_people_holding_its_capital_then():
+    """PW-1451: a capital another people took renames the polity from then on; 'founded by' stays the first people."""
+    class R:
+        lname = {"cervid_folk": "cervid-kin", "human": "humans"}
+    rec = {"kind": "town", "people": "cervid_folk", "capital": {"place": "south-east of Razukum", "cell": 7}}
+    assert PO._name(R, rec) == "South-east of Razukum (cervid-kin)"
+    assert PO._name(R, rec, "human") == "South-east of Razukum (humans)"
+    rec["names"] = [[8.2, "South-east of Razukum (cervid-kin)"], [6.2, "South-east of Razukum (humans)"]]
+    assert PO.name_at(rec, 9.0) == PO.name_at(rec, 7.0) == "South-east of Razukum (cervid-kin)"
+    assert PO.name_at(rec, 6.2) == PO.name_at(rec, 0.0) == "South-east of Razukum (humans)"
+    assert PO._at([[8.2, "a"], [6.2, "b"]], 6.25)[1] == "a"

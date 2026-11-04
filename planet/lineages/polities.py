@@ -16,6 +16,12 @@ The one rule of a step (step()):
      (tiers.city_min), or a smaller town hemmed in (Carneiro 2012: circumscription speeds states): the size it needs falls by
      HEMMED_X x how hemmed in it is. One seat per cell (the biggest town). A seat keeps its tier down to HOLD of the size that
      made it (no flicker at the line).
+  1b. Confederations (PW-785; Turchin 2009's mirror empires, via proposal.md 2.1.2: large agrarian states push their neighbours to
+     "band together"). A people that knows `chiefdoms` and `kingship` or `law` (and passes the writing gate above) but has no city
+     big enough may still seat a state at one of its places, of any size, when its own people in its places within a state's reach
+     of it number a city's worth (city_min x CONFED_HEADS_X) and a foreign state, empire or dragon realm (CONFED_AGAINST) held land
+     within that reach last step. Its own city-state within reach rules there instead. It claims as a state, after the states
+     with cities (its rank is its seat's own size), and the card says it is a confederation and how many it gathered.
   2. Dragon seats. Each living dragon culture whose people know `hoards` (hoards and tribute) seats at its core cell.
   3. Claims. Seats claim in order: states with standing armies (technology that outstrips a dragon, O4), dragon realms, other
      states, chiefdoms; within a class, the bigger first (a capital last step counts INCUMBENT times its size). Each claims the
@@ -36,6 +42,9 @@ The one rule of a step (step()):
      cultures it names in its window (x2 light; x4 strong, which also needs no edge in strength) and leads the attack on its victims
      over plain war; the doc's "invasions" reads each row out (it happened: what was taken, when, how much land; or why not).
 
+Names (PW-1451): a polity is named for the people holding its capital (`names`, one per span of `peoples`); when another people
+takes the town the name and card follow them from then on, and `founded_by` keeps the first.
+
 Reach is a budget of foot-km (km on foot over flat ground): a chiefdom CHIEF_KM (its own cell at L7), a state STATE_KM, more with
 law and government at a distance; riding and roads make a km cheaper, climbing dearer; the sea needs boats. Every number below is
 sourced or labelled a judgement call.
@@ -53,7 +62,7 @@ import numpy as np
 from numba import njit
 
 FORMAT = "procgen-polities/1"
-VERSION = 3  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 4  # (bump when the rules change: the server's cached docs are remade)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -73,6 +82,10 @@ HEMMED_RINGS = 2  # judgement: hemmed-in is read over the cells within two rings
 HOLD = 0.8  # judgement: a seat keeps its tier until it shrinks under 0.8 of the size that made it
 INCUMBENT = 1.5  # judgement: last step's capital ranks as if 1.5x its size (the ruler in place keeps the advantage)
 GAP_STEPS = 2  # judgement: a seat that rules again within 2 steps (200 years) is the same polity, not a new one
+CONFED = True  # sourced mechanism, judged form: Turchin 2009's mirror empires (via proposal.md 2.1.2: large agrarian states push their neighbours to "band together"); step 1b
+CONFED_HEADS_X = 1.0  # judgement: a confederation needs a city's people (tiers.city_min) of its own in its places within a state's reach, spread out instead of in one city
+CONFED_TRY = 6  # judgement (a cost cap): a people's biggest places tried as a confederation's seat per step
+CONFED_AGAINST = ("state", "empire", "dragon realm")  # judgement: the foreign neighbours a confederation bands together against (Turchin's agrarian state; a dragon realm taking tribute is the raider on the other side of his mirror)
 STRONG_TECH = "standing_army"  # judgement (O4 "until technology outstrips it"): a state with standing armies claims before dragons
 # ---- falls (PW-1447)
 FALL_PER_CENTURY = 0.46  # sourced: Arbesman 2011 (41 empires from Taagepera): lifetimes exponential, lambda 0.46 per century, mean ~220 years (via proposal.md 2.1.2)
@@ -423,6 +436,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     maps = []
     steps = []
     prev_owner = None
+    prev_info: dict = {}  # last step's polity index -> (tier, its capital's people): the frontier a confederation forms against (1b)
     prev_cap: dict = {}  # key -> tier of last step's ruling seats
     claimed = np.zeros(g.n, np.int64)
     lord: dict = {}  # province key -> its conqueror's key (a seat taken by war claims for its conqueror: step 3b)
@@ -498,6 +512,11 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
             cu = cl.get((c, R.lidx.get(ppl, -1)), -1)  # (the seat's culture: what an invasion row naming a culture matches, PW-1433)
             seats.append({"key": key, "site": i, "cell": c, "people": ppl, "uid": R.uids[cu] if cu >= 0 else None, "pop": p, "tier": tier, "hemmed": round(hem, 2),
                           "cls": 0 if strong else (2 if tier == "state" else 3), "rank": p * (INCUMBENT if key in prev_cap else 1.0)})
+        # 1b. confederations (Turchin 2009's mirror empires): a people that has a state's institutions but no city big enough unites
+        # its camps and villages beside a foreign state
+        if CONFED and prev_owner is not None:
+            seats = _confederations(R, F, seats, sites, pop[:, k], live_i, holder, site_cell, ago, k, prev_owner, prev_info, prev_cap, cool,
+                                    city_min, here_lines, cl, off, idx, dist, touched, claimed)
         # 2. dragon seats
         for cu, cells in _dragon_cultures(R, F):
             ppl = C[cu]["people"]
@@ -631,6 +650,10 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                 rec["tiers"].append([ago, tier])
             if ruler is not None and (not rec["rulers"] or rec["rulers"][-1][1] != R.uids[ruler]):
                 rec["rulers"].append([ago, R.uids[ruler]])
+            if not rec["peoples"] or rec["peoples"][-1][1] != s["people"]:  # (PW-1451: another people took the capital's town)
+                rec["peoples"].append([ago, s["people"]])
+            if s.get("confed") and tier in ("state", "empire"):  # (1b: [kyr ago, its people's heads within reach] at each confederate step)
+                rec.setdefault("confed", []).append([ago, s["heads"]])
             for u in subj:
                 rec["_subjects"].add(u)
             area = len(cells) * R.cell_km2 / 1e6
@@ -654,27 +677,35 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
         maps.append(step_map)
         prev_owner = owner
         prev_cap = {key: v[2] for key, v in cur.items()}
+        prev_info = {v[0]: (v[2], v[1]["people"]) for v in cur.values()}
     # the cultures the doc names, keyed by uid (cultures.json's stable uid, PW-1283)
-    used, names = set(), {}
+    used, names, spans = set(), {}, []
     for rec in polities:
         rec["subjects"] = sorted(rec.pop("_subjects"))
         used.update(u for _, u in rec["rulers"])
         used.update(rec["subjects"])
         rec["tier_peak"] = max((t for _, t in rec["tiers"]), key=TIERS.index)
-        rec["name"] = _name(R, rec)
+        rec["peoples"] = [[a, p, _short(R, p)] for a, p in (rec["peoples"] or [[rec["founded_kyr"], rec["people"]]])]
+        rec["people"] = _at(rec["peoples"], rec["peak_kyr"])[1]  # (PW-1451: the people holding its capital at its peak names it)
+        rec["people_name"] = _short(R, rec["people"])
+        rec["names"] = []
+        spans += [(-a, rec["id"], ppl) for a, ppl, _ in rec["peoples"]]
+    for na, pid, ppl in sorted(spans):  # (each span of a people holding the capital is named; numbered in the order they began:
+        rec = polities[pid]             # 'Luki (humans) 2' is the second so named)
+        nm = _name(R, rec, ppl)
         if rec["tier_peak"] == "chiefdom":
-            nm = rec["name"]
-            rec["name"] = "Chiefdom in " + (nm[:1].lower() + nm[1:] if nm.split(" ")[1:2] == ["of"] else nm)  # ('west of Simath', but 'Ratal')
-        nk = names[rec["name"]] = names.get(rec["name"], 0) + 1  # (numbered in founding order: 'Luki (human) 2' is Luki's second)
-        if nk > 1:
-            rec["name"] += f" {nk}"
+            nm = "Chiefdom in " + (nm[:1].lower() + nm[1:] if nm.split(" ")[1:2] == ["of"] else nm)  # ('west of Simath', but 'Ratal')
+        nk = names[nm] = names.get(nm, 0) + 1
+        rec["names"].append([-na, nm + (f" {nk}" if nk > 1 else "")])
+    for rec in polities:
+        rec["name"] = name_at(rec, rec["peak_kyr"])
     for rec in polities:
         if rec.get("fell_by") is not None:
-            rec["fell_why"] = ("invaded and conquered by " if rec["fell_how"] == "invaded" else "conquered by ") + polities[rec["fell_by"]]["name"]
+            rec["fell_why"] = ("invaded and conquered by " if rec["fell_how"] == "invaded" else "conquered by ") + name_at(polities[rec["fell_by"]], rec["fell_kyr"])
     by_uid = {u: i for i, u in enumerate(R.uids)}
     cult = {u: {"id": by_uid[u], "name": C[by_uid[u]]["name"], "people": C[by_uid[u]]["people"], "color": C[by_uid[u]].get("color")} for u in sorted(used)}
     for rec in polities:
-        rec["color"] = _colour(cult.get(rec["rulers"][0][1], {}).get("color") if rec["rulers"] else None, rec["id"])
+        rec["color"] = _colour(cult.get(_at(rec["rulers"], rec["peak_kyr"])[1], {}).get("color") if rec["rulers"] else None, rec["id"])  # (its rulers' at its peak)
     return {"format": FORMAT, "version": VERSION, "run": R.dir.name, "step_kyr": step_kyr, "from_kyr": agos[0],
             "cell_km2": round(R.cell_km2, 1), "made_s": round(time.time() - t0, 1), "constants": constants(), "tiers": list(TIERS),
             "steps": steps, "polities": polities, "cultures": cult, "maps": maps,
@@ -779,11 +810,74 @@ def _new_record(R: _Run, s: dict, ruler, ago: float, pid: int) -> dict:
     site = R.S["sites"][s["site"]] if s.get("site") is not None else None
     lat, lon = (site["lat"], site["lon"]) if site else (float(np.degrees(np.arcsin(R.g.centers[s["cell"]][2]))), float(np.degrees(np.arctan2(R.g.centers[s["cell"]][1], R.g.centers[s["cell"]][0]))))
     return {"id": pid, "key": s["key"], "kind": "dragon" if s["tier"] == "dragon realm" else "town", "people": s["people"],
-            "people_name": R.lname.get(s["people"], s["people"]).split(" (")[0],
+            "founded_by": s["people"], "peoples": [],  # (PW-1451: the peoples who held its capital, [[kyr ago, people]]; people: at its peak)
             "capital": {"site": site["id"] if site else None, "cell": int(s["cell"]), "lat": round(lat, 2), "lon": round(lon, 2),
                         "place": site.get("place") if site else None},
             "founded_kyr": ago, "fell_kyr": None, "fell_why": None, "fell_how": None, "fell_by": None, "took": [], "tiers": [], "rulers": [], "_subjects": set(),
             "peak_mkm2": 0.0, "peak_kyr": ago, "peak_cells": 0, "peak_pop": 0}
+
+
+def _confederations(R: _Run, F: dict, seats: list, sites: list, popk: np.ndarray, live_i: np.ndarray, holder, site_cell: np.ndarray, ago: float,
+                    k: int, prev_owner: np.ndarray, prev_info: dict, prev_cap: dict, cool: dict, city_min: float, here_lines: dict, cl: dict,
+                    off, idx, dist, touched, claimed) -> list:
+    """Step 1b (module docstring): the seats with this step's confederations added (each replaces a chiefdom seat on its cell)."""
+    g = R.g
+    lid = {l["id"]: i for i, l in enumerate(R.lines)}
+    foreign = np.full(g.n, -1, np.int64)  # (cells a state or empire held last step: its capital's people, as a line index)
+    for p, (tier, ppl) in prev_info.items():
+        if tier in CONFED_AGAINST:
+            foreign[prev_owner == p] = lid.get(ppl, -2)
+    if not (foreign >= 0).any():
+        return seats
+    places: dict = {}  # people -> [(people, site index)] of its living places, any size
+    for i in live_i.tolist():
+        s = sites[i]
+        if s["kind"] in SETTLED_KINDS:
+            places.setdefault(holder(s, ago), []).append(i)
+    state_at = {s["cell"]: s for s in seats if s["tier"] == "state"}
+    scratch = np.full(g.n, -1, np.int64)
+    out = list(seats)
+    for ppl in sorted(p for p in places if p):
+        if not (R.knows(ppl, "chiefdoms", ago) and (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago))):
+            continue
+        li = lid.get(ppl, -1)
+        mine = sorted(places[ppl], key=lambda i: (f"s{sites[i]['id']}" not in prev_cap, -popk[i], i))  # (last step's seats first: no flicker)
+        heads_at: dict = {}
+        for i in mine:
+            heads_at[int(site_cell[i])] = heads_at.get(int(site_cell[i]), 0.0) + float(popk[i])
+        covered: set = set()
+        tries = 0
+        for i in mine:
+            c = int(site_cell[i])
+            key = f"s{sites[i]['id']}"
+            if tries >= CONFED_TRY or popk[i] <= 0:
+                break
+            if c in covered or c in state_at or cool.get(key, -1) >= k:
+                continue
+            near = here_lines.get(c, set()) | set().union(*(here_lines.get(int(b), set()) for b in idx[off[c]:off[c + 1]]))
+            if not any(R.knows(p_, t, ago) for t in WRITING_TECHS for p_ in {ppl} | {R.lines[l]["id"] for l in near}):
+                continue  # (the same writing gate as any seat: the owner's P2, D49 open)
+            tries += 1
+            b, lx, sx = _reach(R, {"people": ppl, "tier": "state"}, ago)
+            got = _claim(c, b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], scratch, 0, dist, touched, claimed)
+            cells = claimed[:got].copy()
+            scratch[cells] = -1
+            covered.update(cells.tolist())
+            if any(int(x) in state_at and state_at[int(x)]["people"] == ppl for x in cells):
+                continue  # (its own city-state is within reach: that state rules here, not a confederation)
+            heads = sum(heads_at.get(int(x), 0.0) for x in cells)
+            if heads < city_min * CONFED_HEADS_X * (HOLD if prev_cap.get(key) in ("state", "empire") else 1.0):
+                continue
+            fr = foreign[cells]
+            if not np.any((fr >= 0) & (fr != li)):
+                continue  # (no foreign state within reach: nothing to band together against)
+            cu = cl.get((c, li), -1)
+            strong = R.knows(ppl, STRONG_TECH, ago)
+            out = [s for s in out if s["cell"] != c]
+            out.append({"key": key, "site": i, "cell": c, "people": ppl, "uid": R.uids[cu] if cu >= 0 else None, "pop": float(popk[i]), "tier": "state",
+                        "hemmed": 0.0, "cls": 0 if strong else 2, "rank": float(popk[i]) * (INCUMBENT if key in prev_cap else 1.0), "confed": True,
+                        "heads": round(heads)})
+    return out
 
 
 def _why_fell(R: _Run, rec: dict, key: str, sites, pop, k: int, ago: float, absorbed: dict, cur: dict) -> str:
@@ -798,13 +892,34 @@ def _why_fell(R: _Run, rec: dict, key: str, sites, pop, k: int, ago: float, abso
     return "its capital shrank below a seat of rule"
 
 
-def _name(R: _Run, rec: dict) -> str:
-    """A name for the card: its capital's region and ruling people, 'West of Simath (human)', numbered when repeated (real names: PW-856's names slot, later)."""
+def _short(R: _Run, people: str) -> str:
+    """A people's short name ('antelope-kin', 'humans'), as the invasion read-out names it."""
+    return R.lname.get(people, people).split(" (")[0]
+
+
+def _at(spans: list, ago: float):
+    """The span of [[kyr ago, ...], ...] (oldest first) in force at `ago`; the first one before it began."""
+    out = spans[0]
+    for s in spans:
+        if s[0] >= ago - 1e-9:
+            out = s
+    return out
+
+
+def name_at(rec: dict, ago: float) -> str:
+    """A polity's name at `ago` (PW-1451): the name of the people holding its capital then (rec["names"], one per span)."""
+    return _at(rec["names"], ago)[1] if rec.get("names") else rec["name"]
+
+
+def _name(R: _Run, rec: dict, people: str | None = None) -> str:
+    """A name for the card: its capital's region and the people holding it, 'West of Simath (humans)', numbered when repeated (real
+    names: PW-856's names slot, later)."""
+    people = people or rec["people"]
     if rec["kind"] == "dragon":
-        return f"Realm of the {R.lname.get(rec['people'], rec['people']).split(' (')[0]}"
+        return f"Realm of the {_short(R, people)}"
     place = rec["capital"]["place"] or f"cell {rec['capital']['cell']}"
     place = place.removeprefix("the ")
-    return f"{place[:1].upper()}{place[1:]} ({rec['people'].replace('_', '-')})"
+    return f"{place[:1].upper()}{place[1:]} ({_short(R, people)})"
 
 
 def _colour(base: str | None, pid: int) -> str:
@@ -884,7 +999,7 @@ def report(doc: dict) -> list[str]:
         sizes = sorted(((sum(e[2][1::2]) * doc["cell_km2"] / 1e6, doc["tiers"][e[1]], e[4], e[0]) for e in m), reverse=True)
         a, t, n, p = sizes[0]
         out.append(f"{years_ago(st['ago'])}: " + ", ".join(f"{v} {k}" + ("s" if v != 1 else "") for k, v in st["counts"].items() if v)
-                   + f"; largest {P[p]['name']} ({t}, {a:.3f} Mkm2, ~{n:,} settled people); over 1 Mkm2: {sum(x[0] >= 1 for x in sizes)}")
+                   + f"; largest {name_at(P[p], st['ago'])} ({t}, {a:.3f} Mkm2, ~{n:,} settled people); over 1 Mkm2: {sum(x[0] >= 1 for x in sizes)}")
     if doc["maps"] and doc["maps"][-1]:
         last = doc["maps"][-1]
         for t, nm in enumerate(doc["tiers"]):
