@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .years import years_ago
+
 NONE = 65535
 KNOWN_SHARE = 0.10  # (as brief.KNOWN_SHARE) a crop or herd is known on a culture's land from this share of its cells
 WAY_MIN = 0.10  # JUDGEMENT: a way of life (farming, herding) counts for the sheet from this share of the culture's heads
@@ -112,7 +114,7 @@ def resolve(ctx, c: int, era: float) -> int:
     if not 0 <= c < len(C):
         raise SystemExit(f"no culture {c} in this run (ids 0..{len(C) - 1})")
     if C[c]["born_kyr"] < era - 1e-9:
-        raise SystemExit(f"culture {c} ({C[c]['name']}) begins {C[c]['born_kyr']:g} kyr ago, after the era asked for")
+        raise SystemExit(f"culture {c} ({C[c]['name']}) begins {years_ago(C[c]['born_kyr'])}, after the era asked for")
     return _at(C, c, era)
 
 
@@ -499,7 +501,7 @@ def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
 def markdown(s: dict, era: float) -> list[str]:
     cu = s["culture"]
     w = cu["ways"] or {}
-    t = [f"## Cuisine sheet: {cu['name']} ({cu['people_name']}), {era:g} kyr ago", "",
+    t = [f"## Cuisine sheet: {cu['name']} ({cu['people_name']}), {years_ago(era)}", "",
          f"- Fuel: {s['fuel']['text']}", f"- Staple: {s['staple']['text']}", f"- Drink: {s['drink']['text']}",
          f"- Who eats together: {s['who_eats_together']['text']}",
          f"- What outsiders get wrong: {s['outsiders_get_wrong']['text']}"]

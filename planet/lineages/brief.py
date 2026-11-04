@@ -259,12 +259,12 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
         culture = CZ.resolve(ctx, asked, era)
         sel = CZ.mask_of(ctx, i, era, culture)
         if not sel.any():
-            raise SystemExit(f"culture {asked} has no land at {era:g} kyr ago")
+            raise SystemExit(f"culture {asked} has no land at {SP.years_ago(era)}")
         cname = ctx.cultures()["cultures"][culture]["name"]
         lat, lon, rad = _centre(ctx, sel)
         place = {"lat": lat, "lon": lon, "radius_km": rad,
                  "basis": f"the land of the culture {cname} (culture {culture}" + (f", heir of culture {asked}" if culture != asked else "")
-                          + f") at {era} kyr ago (its cells; the radius is the farthest one from the centre)"}
+                          + f") at {SP.years_ago(era)} (its cells; the radius is the farthest one from the centre)"}
     elif people:
         if people not in ctx.idx:
             raise SystemExit(f"no people {people!r} in this run (ids: {', '.join(ctx.idx)})")
