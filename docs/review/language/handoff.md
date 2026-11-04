@@ -144,3 +144,29 @@ Also:
   open threads. Then stop cleanly.
 - **Wording.** Dragons are sapient: never call them beasts. The antelope and cervid peoples carry no "fiend" framing.
 - **Genuine judgement calls.** Pick a defensible lean, build it, and list it for Daniel. Don't stall.
+
+## Continuation (lane, 2026-11-04 03:20)
+
+**State.** Everything is committed on `lang-design` (last commit: morning report). Read `docs/review/language/demo.md`
+first: the rulings Daniel should make are at its top, then what works and what doesn't, then the samples and the measured
+checks. `runs/a24559/languages.json` is the shipped run (117 MB, commit e0520b9f's code, RATE_SCALE 5). Three inbox drafts
+are in `issue-tracking/inbox/` (rates and horizon: needs-decision; file size and cost; non-human variant share). Tests:
+the not-slow suite passed (1483) before the tidy-up round; the language tests (507) after it.
+
+**Next steps, in order, for whoever picks this up.**
+1. Daniel's rulings (demo.md, top): the horizon measure and target, the sisters bar, exponent 1 for short-generation
+   peoples, the voice-profile choices, river namers, book-mode romanization.
+2. The lexicon: the replacement curve (faster rare end, slower core end) is the lever for the horizon; coinage share
+   (~a third of new words) vs the 5% affix cap; apply the affix cap to the final lexicon, not only at coinage; derivation
+   meanings still absurd at times (RAIN + 'do' = burn).
+3. The ʒ monoculture (second commonest segment) and i at ~30% of vowel tokens: the palatalization and dispersion rules;
+   rare rules firing late in long lines once the common ones hit the cooldown.
+4. Romanization: ɹ and ɾ share a letter (279 lects spell two sounds alike in the full mode).
+5. Food routes: the hop table and the receiver's etymology disagree in 27% of hops (the receiver replaced the word later);
+   show both or mark the hop as superseded.
+6. Size and speed (draft): sidecars for snapshots and etymologies; `Segment.__hash__`, `hear_word`, `functional_load`.
+7. `brief.build` crashes on a24559 under current code before reaching the language section (PW-1275: the stored tree no
+   longer parses); a main-branch issue the coordinator should ticket.
+
+**Open threads.** Koine has fired on real data (109 entries) but nobody has judged it; the knowledge tables' examples
+(`reference-data.md`) deserve a spot-check; `lang-time` screenshots show a complexity dip that may be a pass artefact.
