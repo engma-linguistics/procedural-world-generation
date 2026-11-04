@@ -70,12 +70,28 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · Tuesday 3 November 2026 · evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">D47 and D48 are answered and on the tickets. Lane 162 is mapping v2 to v5 towards v1.0 on 1 December; lane 160 checks the climate fix.
+  <p class="lede">The road to v1.0 on 1 December is mapped and on the board; v2's first three lanes are running, and lane 160 checks the climate fix.
 Lanes stay within half the machine while your language jobs run.</p>
-  <nav class="toc"><a href="#answers">The board, your two questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <nav class="toc"><a href="#answers">Road to v1.0</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER (LANE 162, ON THE BOARD)</div>
+<div class="tbl"><table>
+<tr><th>Tag</th><th>Target</th><th>What you can do</th></tr>
+<tr><td>v0.2.0</td><td>Tue 10 Nov</td><td>Write your own faiths, read what a culture cooks (fuel, staple, drink, who eats together, what outsiders get wrong), see dates in years.</td></tr>
+<tr><td>v0.3.0</td><td>Tue 17 Nov</td><td>States and war, first cut: who rules where at any year, empires ruling several cultures, invasions you schedule.</td></tr>
+<tr><td>v0.4.0</td><td>Mon 23 Nov</td><td>History that moves: states fight and change hands inside the history, cultures found their own calendars, and every culture, faith, state and place has a name slot for your languages.</td></tr>
+<tr><td>v0.5.0</td><td>Sat 28 Nov</td><td>Your December world: pick from three candidates, refine L7 to L9 from the viewer, every Seven Meals people right, the food sheet complete.</td></tr>
+<tr><td>v1.0.0</td><td>Tue 1 Dec</td><td>An agent walks the checklist, then you do; tag.</td></tr>
+</table></div>
+<p>The board now has 12 open tickets in v2, 5 in v3, 6 in v4 and 15 in v5, plus the 11 new ones the plan named. Everything else is backlog.
+<b>Physics side track</b>, ranked, gating no tag: 1. D47 (approved); 2. mountains too low (tallest about 5.7 km); 3. wet-forest and grass growth;
+4. hot low-latitude summers (a re-measure may close it); 5. rain inland (three strikes); 6. warm finishes and CO2 under the ice (re-check after D47).
+v4 is the riskiest: if it runs long, empires merging cultures and sacked towns go to the backlog first. Full map: <code>docs/review/board/milestones-v2-v5.md</code>.</p>
+<p><b>Your answers needed soon</b> (small): whether the workbench tree fix works in Firefox (PW-841, v2), whether land rather than deaths holds down
+fast-breeding peoples (PW-1169, v4), and landform terrain on an L9 world (PW-1264, v5).</p>
+</div>
 <div class="card" id="board"><div class="id">THE BOARD, CUT DOWN (LANE 156, MERGED) · FIVE CALLS YOU MAY WANT TO REVERSE</div>
 <p><b>In plain words:</b> v2 went from 382 open tickets to 89. Nothing was thrown away: 291 moved to the backlog (<code>later</code>), each with
 a one-line reason, and two clear duplicates were closed. From now on a lane may file at most 3 tickets, and each must say what breaks or misleads
@@ -112,7 +128,9 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <tr><th>Lane</th><th>What</th></tr>
 
 <tr><td>160 · checking the climate fix</td><td>Your D47 pick, C: the full check of "one yardstick for every planet" on all 36 test planets, twice each, compared with the same planets on the current code. When it reports, a physics side lane builds C.</td></tr>
-<tr><td>162 · milestones v2 to v5</td><td>Your new plan: v1.0 on 1 December, with v0.x steps. v2 within a week and mostly not physics; v3 to v5 mapped from existing work, each with must-haves (states and empires by v3); physics as a ranked side track. It also moves the tickets to match.</td></tr>
+<tr><td>163 · years everywhere</td><td>v2: every peoples readout says "12,400 years ago" instead of "12.4 kyr", with an optional "the present is year N".</td></tr>
+<tr><td>164 · the food sheet</td><td>v2: for a picked culture, its fuel, staple, drink, who eats together, what outsiders get wrong, and its food taboos, in the brief panel.</td></tr>
+<tr><td>165 · stable culture ids</td><td>v2: makes sure a culture keeps its id when anything is re-derived, so your languages can key on it safely.</td></tr>
 </table></div>
 <p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
 
@@ -220,5 +238,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v138 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v139 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
