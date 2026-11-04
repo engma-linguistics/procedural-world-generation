@@ -4,7 +4,7 @@ title: "Owner call: the dnd densities lane 83 left as judgements (halflings, gno
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/samples/dnd.toml, docs/review/peoples-d20/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,4 +43,5 @@ Hobgoblins rose to 2.6–19% of all people in lane 83's screens (from 1.1–1.9%
 If that is too many, lower their density or their contest, not the rule.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dnd-only owner call; Seven Meals is the December world
 - 2026-10-31: Created from inbox draft draft-peoples-dnd-density-judgements.md (found by lane83).

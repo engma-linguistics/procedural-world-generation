@@ -4,7 +4,7 @@ title: "Climate stability package: one carbon-cycle yardstick per grid level ins
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -49,5 +49,6 @@ about the forecast.
 - [ ] confirming experiment (round1 section 7)
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 1; gates no tag (D47, approved)
 - 2026-11-03: Lane 158 lean: yes (A + C). Confirming experiment (pin.py on all 36 draws x2) started as lane 160 before Daniel decides.
 - 2026-11-03: Created from inbox draft draft-climate-yardstick-one-constant.md (found by lane158).

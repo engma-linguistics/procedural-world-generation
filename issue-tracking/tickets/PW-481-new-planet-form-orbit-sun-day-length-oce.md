@@ -4,7 +4,7 @@ title: "New planet form: orbit, sun, day length, ocean fraction, atmosphere and 
 type: story
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: climate
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-472, PW-248, PW-443]
 refs: [planet/make.py, planet/tectonics/params.py, planet/orbit.py, viewer/start.js]
 created: 2026-10-20
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,6 +32,7 @@ Each is a real piece of model work, and several interact with PW-443 (planet-rel
 - [ ] `UNSUPPORTED` shrinks accordingly
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: v3 is now states and war v0; this waits for after v1.0
 - 2026-10-26: Parent PW-244 -> none. (PW-900 backlog reorg). Milestone v2 -> v3: other planet kind. (PW-900 backlog reorg).
 - 2026-10-23: Merged PW-219 (closed as duplicate; PW-597 triage): this ticket's scope already lists planet size and gravity as the last parameter in its suggested order. PW-219's content for that step: radius, mean density and makeup other than Earth's change gravity (mountain heights, isostasy, erosion), internal heat and so plate speed and volcanism, the grid's km per cell, atmosphere and ocean scaling, and climate (Coriolis with day length). It needs a review of every Earth constant hard-coded across planet/ before anything else; more guesswork-heavy than the moons; effort for that step alone was xl.
 - 2026-10-20: Created from inbox draft draft-make-settings-gaps.md (found by agent-make-ui).

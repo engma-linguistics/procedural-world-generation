@@ -4,7 +4,7 @@ title: "Star anchor: re-measure the v1 climate bar and PW-806's showcase diagnos
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-791, PW-806, PW-780, PW-202]
 refs: [docs/review/base-climate/v1-finish-8/passrate2.py, docs/review/base-climate/v1-signoff/, tools/ice_criteria.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-25
+updated: 2026-11-03
 ---
 
 ## Description
@@ -42,6 +42,7 @@ Do:
 - [ ] PW-806's showcase check re-measured after the anchor
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0
 - 2026-10-25: v1-finish-11: re-measured on the anchored balance (passrate_a/t/o25.txt), with the end-counted last 540 Myr and the owner's finish diagnostics (true mean vs pre-industrial -6..+3 C, land ice at the finish). docs/review/base-climate/v1-finish-11/README.md
 - 2026-10-24: v1-finish-10: harness passrate3.py (strict bar, forward windows, end-counted last 540 Myr diagnostic, pCO2, true mean T, trees, wet-tropics trees, corr). Partial measurement only (L6 1 Gyr first waves): full Gough 0/6, 0.45 1/6, full Gough + thermostat see README. L7 and 2 Gyr not run: the anchored code fails at L6. docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-remeasure-v1-bar-on-anchored-star.md (found by star-anchor-audit).

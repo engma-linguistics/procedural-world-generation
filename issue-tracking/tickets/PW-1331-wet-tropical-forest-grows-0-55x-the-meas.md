@@ -4,7 +4,7 @@ title: "Wet tropical forest grows ~0.55x the measured NPP: its photosynthesis is
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: surface
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1261, PW-228, PW-806]
 refs: ["planet/vegetation.py::_year", "planet/vegetation.py::EPS_SCALE", "planet/vegetation.py::_TUNE", "planet/vegetation.py::potential", tools/veg_check.py, docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/npp_check.py, docs/review/vegetation/npp-check/pft_probe.py, "Malhi, Doughty & Galbraith 2011 Phil Trans R Soc B 366:3225, PMC3179639, Table 3", "MOD17A3 (tools/earth_data.py::earth_mod17_npp)", "world 506694 (Earth L6)"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ land NPP to 60.5 Pg (with the herbs' fix) but shrinks savanna from 17.7 to 13.8 
 - [ ] fix the tropical GPP step; re-check savanna area, fire and potveg agreement (tools/veg_check.py)
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth, with PW-1261 and PW-1332)
 - 2026-11-02: Created from inbox draft draft-tropical-forest-gpp-low.md (found by lane123).

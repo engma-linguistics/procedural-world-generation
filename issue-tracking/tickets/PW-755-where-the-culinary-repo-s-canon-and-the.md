@@ -4,7 +4,7 @@ title: Where the culinary repo's canon and the seven_meals run disagree (for the
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: v5
 subsystem: food
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-730, PW-734]
 refs: [planet/lineages/samples/seven_meals.toml, "run e63bfd", "culinary-dnd docs/genetics.md"]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ a fact of one world and one seed; re-read after any re-run.
 - **Half-elves and culture-only elf groups are not modelled** (draft-half-elf-no-population-switch), so the brief cannot say "same land as" for the two elf cultures.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: re-read the canon disagreements on the chosen world
 - 2026-10-24: Created from inbox draft draft-culinary-repo-vs-sim-disagreements.md (found by fun13).

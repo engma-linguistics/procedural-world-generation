@@ -4,7 +4,7 @@ title: "Ice ages v2 plan: honest margins that deglaciate in the zoom first, then
 type: task
 status: in-progress
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-470, PW-526, PW-514, PW-461, PW-462, PW-464, PW-465, PW-467, PW-469, PW-459, PW-460, PW-538, PW-496, PW-030, PW-549]
 refs: [docs/review/ice-v2-review.md, docs/review/audit/ice-framing-deep-dive.md, docs/review/audit/PW-514-batch.md]
 created: 2026-10-21
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -53,6 +53,7 @@ rules.
 - [ ] stage 0 tickets cut (PW-467 tool, moment suite, ice/basin split in health, hysteresis probe)
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0 (status unchanged)
 - 2026-10-26: Note from PW-526 (a result record): the ice batch (coast_loss + PW-460/459 + PW-464) fails: with honest margins neither the run nor the zoom can deglaciate a big sheet (cold eras 1/10, Earth interglacials 16-20% iced). (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Owner 2026-10-22: zoom ice work taken as more or less done. Stages 1-1c merged to main with the new zoom rules as TZParams options defaulting to the run's (with them on, the L4 endings test fails; PW-568). Stage 3 (the run runs the zoom's rules) waits on the base climate. The lane worktree moves to a base-climate / whole-sim review against Earth as a plausibility check, not a parity target.

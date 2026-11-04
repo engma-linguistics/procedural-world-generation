@@ -4,7 +4,7 @@ title: "Hard bar: a world fails 'frozen over' when it ends or stays frozen, not 
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: s
 impact: high
@@ -40,4 +40,5 @@ cold-yardstick draws still sit near the line.
 - [ ] Daniel's choice (a judging change)
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 1; gates no tag (D47, approved)
 - 2026-11-03: Created from inbox draft draft-hard-bar-ends-frozen-not-peak.md (found by lane158).

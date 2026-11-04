@@ -4,7 +4,7 @@ title: "The owner's world as a lineages preset (seven_meals.toml): the culinary 
 type: story
 status: in-progress
 parent: PW-692
-milestone: v2
+milestone: v5
 subsystem: food
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-103, PW-694, PW-613]
 refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/samples/dnd.toml, "culinary-dnd docs/genetics.md"]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -55,6 +55,7 @@ Measure on two L7 worlds, with four tries' means.
 - [ ] `dnd.toml` runs byte-identical.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: the Seven Meals preset, checked on the chosen world (status unchanged)
 - 2026-10-24: Status todo -> in-progress. Merged 08a93fe: seven_meals.toml, run e63bfd on 1df1c3. Left: measurement on the new showcase worlds (after PW-750).
 - 2026-10-24: fun13: seven_meals.toml built (62 lines, 20 wishes, tiers match genetics.md, deep ruminant fiends, horns/antlers by variant via new body key `display_sex`, `[[event]]` conquests, devil/demon rows). Run e63bfd on world 1df1c3 (--tries 1): wish 0.635, every living line holds land. Not done: half-elf `linger = false`, culture-only groups, kenku growing share (drafts filed); the "measure on two L7 worlds, four tries" boxes are open (one world, one try only). dnd.toml untouched.
 - 2026-10-24: Unblocked by PW-734 answers 1/3/4/5: deep fiend branch, antelope-kin invaders, horns/antlers by variant following real species.

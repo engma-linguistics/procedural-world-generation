@@ -4,7 +4,7 @@ title: The monsoon coasts need their own vapour supply before the land-sea inflo
 type: task
 status: needs-decision
 parent: PW-015
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xl
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1099, PW-1100, PW-1094, PW-1097]
 refs: [planet/climate.py, docs/review/base-climate/moisture-inflow-ascent/, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,6 +50,7 @@ Placement (coordinator 10-30): v2, unless the owner asks for (i), which would be
 - [ ] with the inflow depth on: SE USA and the Pampas not below main, log-rain r not below 0.70, B not below 25
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0
 - 2026-10-30: Open drag sources found (docs/references/drag-sources-pw1120.md): ECMWF IFS CY49R1 Part IV Table 8.3 (land z0m 0.013-2 m) and sec 3.2.4 (sea Charnock); Karger & Bumke 1996 coastal wind ratio 0.63 at 5 km to 0.86 offshore. Owner would need to fetch Large & Pond 1981 / Garratt / Stull for more.
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Created from inbox draft draft-monsoon-coasts-need-vapour-supply-not-lift.md (found by lane62).

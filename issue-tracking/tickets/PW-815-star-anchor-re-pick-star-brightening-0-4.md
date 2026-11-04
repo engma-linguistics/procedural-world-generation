@@ -4,7 +4,7 @@ title: "Star anchor: re-pick star_brightening (0.45 was tuned on the old from-ag
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: s
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-791, PW-780, PW-789, PW-761]
 refs: [planet/tectonics/params.py, planet/tectonics/earth.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,6 +50,7 @@ way (no backward compatibility): the anchor plus the ruled optional "future offs
 - [ ] star_age removed; params comment rewritten
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0
 - 2026-10-28: Owner 10-28: decide this by going live on the 2 Gyr runs ticket (PW-894), v2 under the ice-age epic.
 - 2026-10-24: v1-finish-10: star_age removed; default star_brightening 1.0 (full Gough) per the ruling, but anchored it fails: L6 1 Gyr 0/6 alone, 0.45 alone 1/6. Not re-pickable until the carbon-cycle draft is settled. docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-star-rate-after-anchor.md (found by star-anchor-audit).

@@ -4,7 +4,7 @@ title: "In hunters' country dragons lose their food, not their lives: is the peo
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1068, PW-1020, PW-977, PW-967, PW-990]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/prey.py, planet/lineages/samples/dnd.toml, docs/review/megafauna/dragon-density/index.html]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -122,4 +122,5 @@ hunters' country by several times. Re-measure with the paired arms (`docs/review
 it. A stays in reserve if B + C fall short. D is the owner's call.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dragon and giant food budget re-tunes the peoples balance; not a must-have for December
 - 2026-10-30: Created from inbox draft draft-forager-offtake-overstated.md (found by fun-lane-63).

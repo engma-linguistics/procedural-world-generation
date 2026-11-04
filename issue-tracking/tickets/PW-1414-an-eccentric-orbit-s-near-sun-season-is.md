@@ -4,7 +4,7 @@ title: "An eccentric orbit's near-sun season is read only through July and Janua
 type: task
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -37,4 +37,5 @@ rain kept on the matching half), not July and January. Then check that Earth-ran
 - [ ] an equinox-perihelion e = 0.3 world is not colder than its circular twin in its warmest month
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: v3 is now states and war v0; this waits for after v1.0
 - 2026-11-03: Created from inbox draft draft-eccentric-orbit-two-point-seasons.md (found by lane148).

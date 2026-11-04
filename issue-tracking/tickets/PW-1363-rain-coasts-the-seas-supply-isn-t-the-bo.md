@@ -54,6 +54,7 @@ Options:
 - [ ] owner picks A', B or C
 
 ## Updates
+- 2026-11-03: Milestones 11-03: stays later: physics side track, ranked 5; gates no tag (rain inland, three strikes: last of the five)
 - 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-11-02: Status needs-decision -> todo. Coordinator 2026-11-02 (owner delegated prioritisation): parked at the back of the line after five failed rain arms; A' (where the vapour rains: low-layer friction, PW-1100, PW-1099) is the plan when it comes back. Not B alone.
 - 2026-11-02: Created from inbox draft draft-rain-coasts-are-through-flow-not-supply.md (found by lane132).

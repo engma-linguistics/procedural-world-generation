@@ -4,7 +4,7 @@ title: "Refined worlds (planet refine): the landform classes' own terrain is not
 type: task
 status: needs-decision
 parent: PW-1198
-milestone: v2
+milestone: v5
 subsystem: zoom
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-490, PW-1008]
 refs: [planet/refine.py, planet/zoom/landforms.py, planet/zoom/stage_terrain.py, docs/review/refine-l8/design.md, docs/review/refine-l8/shots/]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,4 +35,5 @@ Options:
 Lean: A for L8; B when L9 becomes a product (after PW-1209 makes L9 openable).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have decision: landform terrain on a refined L9 world
 - 2026-11-01: Created from inbox draft draft-refine-landform-synthesis-on-the-sphere.md (found by lane104-refine-l8).

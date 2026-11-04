@@ -4,7 +4,7 @@ title: "Anchored balance: with a literature-strength thermostat the planet sits 
 type: task
 status: in-progress
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-809, PW-810, PW-791, PW-806, PW-812, PW-559]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish-11/]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-11-03
 ---
 
 ## Description
@@ -54,6 +54,7 @@ when it pins at its bound.
 - [ ] re-measured: L6 18, L7 8, 2 Gyr 13; end pCO2, finish T and ice, wet-tropics trees
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0 (status unchanged)
 - 2026-10-25: v1-finish-13: drift sized (dfc8b48) and the coupling-audit carbon couplings (PW-880/881/875/873, 1b52cdf) in; full set (L6 18, 2 Gyr 13, L7 8) running on 1b52cdf (prefix cpl), not tallied at hand-off. Habitable-screen diagnostic (screen.py) on the shade set: a passing moment within 5/10/20 Myr of the end 14/15/15 of 18; the end itself 12/18.
 - 2026-10-25: v1-finish-13: shade-only L6 1 Gyr (be00f07, plants' light from the climate's sunshine): bar 15/18, bar + hard finish checks 10/18, wet-eq trees 18/18 (was 5/10), finish T 12/18 (fails warm: +3.2..+9.5), land ice 16/18, end pCO2 180-600 9/18. Drift sized for what the model lacks (dfc8b48, 0.8 C); full set re-running on it. docs/review/base-climate/v1-finish-13/
 - 2026-10-25: v1-finish-12: harness on the ruled bar (passrate4.py, no cap). v1-finish-11 physics, thermostat off, 10 of 18 L6 1 Gyr draws: bar 7/10, bar + hard finish checks 3/10 (wet-eq trees 5/10, finish T 8/10, land ice 10/10). Plants' light fix committed (be00f07), so the full set (L6 18, 2 Gyr 13, L7 8) is re-running on it (lane.sh shade); not tallied at hand-off. docs/review/base-climate/v1-finish-12/README.md

@@ -4,7 +4,7 @@ title: "Herding takes grazing land only where it feeds more than the wild: is 'h
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -28,4 +28,5 @@ source compared herders' returns per hour of work with foragers' on the same lan
 Lean A. See rich-foragers.md's results for how many herders moved.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: rich-wild-land and forager-trade call; not a must-have
 - 2026-11-03: Created from inbox draft draft-herding-vs-wild-margin.md (found by lane 141).

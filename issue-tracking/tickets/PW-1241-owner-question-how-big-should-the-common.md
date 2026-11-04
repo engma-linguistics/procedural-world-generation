@@ -4,7 +4,7 @@ title: "Owner question: how big should the commonest people be? (today: humans a
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: xs
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1172]
 refs: [docs/review/peoples-brakes/report.md, docs/review/peoples-brakes/charts.py, docs/review/peoples-brakes/maps.py, tools/peoples_robust.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,6 +32,7 @@ What number would you like? For example:
 Whatever you pick becomes a check in the stress suite, so later changes are measured against it.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: peoples tuning or owner call that no milestone theme needs
 - 2026-10-31: Status needs-decision -> todo. Owner 10-31 D31 = A: commonest people usually under half, never over 70% with 5+ peoples. Humans must in-fight too. He leans hard on stopping fiddling until war and polities land; lane 101 adds A as a reported (not gating) stress-suite check and stops.
 - 2026-10-31: Daniel picked A (usually under half, never over 70% with 5+ peoples). Lane 101 added it to the stress suite as a reported check (not a failure): all 82 tries 53% median, 48% under half, 86% of 5+ trees at or under 70% (main: 52/49/94). Further work on the share is parked for war and polities.
 - 2026-10-31: Created from inbox draft draft-peoples-commonest-share-target.md (found by lane97).
