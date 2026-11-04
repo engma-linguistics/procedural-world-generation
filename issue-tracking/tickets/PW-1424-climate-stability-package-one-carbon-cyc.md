@@ -1,4 +1,5 @@
 ---
+id: PW-1424
 title: "Climate stability package: one carbon-cycle yardstick per grid level instead of each planet's dice roll, weathering on plant cover"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane158
 blocked_by: []
 relates: [PW-1403, PW-1404, PW-1332, PW-1261, PW-994]
 refs: [docs/review/climate/stability/round1.md, docs/review/climate/stability/tools/pin.py, docs/review/climate/stability/tools/pin_read.py, docs/review/climate/stability/tools/yard.py, docs/review/climate/stability/tools/decomp.py, docs/review/climate/stability/tools/share.py, docs/review/climate/stability/tools/probe.py, docs/review/base-climate/fork-judge/round1.md, "planet/tectonics/earth.py::global_temperature", "planet/tectonics/earth.py::plant_factor", "planet/tectonics/earth.py::REF_FREEZE", docs/review/base-climate/v1-finish-16/paired_fork.sh]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,3 +47,7 @@ Lean: A + C, after the confirming experiment: pin.py on all 36 judge draws (two 
 about the forecast.
 - [ ] Daniel's choice
 - [ ] confirming experiment (round1 section 7)
+
+## Updates
+- 2026-11-03: Lane 158 lean: yes (A + C). Confirming experiment (pin.py on all 36 draws x2) started as lane 160 before Daniel decides.
+- 2026-11-03: Created from inbox draft draft-climate-yardstick-one-constant.md (found by lane158).

@@ -1,4 +1,5 @@
 ---
+id: PW-1425
 title: "Hard bar: a world fails 'frozen over' when it ends or stays frozen, not when its worst moment in 884-1000 Myr crosses 40%"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane158
 blocked_by: []
 relates: [PW-1404, PW-994, PW-1261]
 refs: [docs/review/climate/stability/round1.md, docs/review/climate/stability/tools/attractor.py, docs/review/climate/stability/tools/pulse.py, docs/review/climate/stability/tools/pulse_read.py, docs/review/climate/stability/tools/pulse_parts.py, tools/hard_bar.py, tools/judge.py, tools/ice_criteria.py]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 Lean: A + recovery check, together with the yardstick fix (draft-climate-yardstick-one-constant). Without that fix,
 cold-yardstick draws still sit near the line.
 - [ ] Daniel's choice (a judging change)
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-hard-bar-ends-frozen-not-peak.md (found by lane158).
