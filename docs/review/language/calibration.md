@@ -95,3 +95,65 @@ Final run (written to runs/a24559/languages.json): 5 of 6 checks pass; the human
 bin: 20 of 35 pairs pass, 0.57; t9 at the same constants: 14 of 35, 0.40): the 12-13 kyr bin sits on the 50% line, so the
 reading flips between 11 and 13 between runs. The scholars clearly lose human families between ~11 and ~14 kyr in a24559.
 
+
+## The horizon by splits, under a stricter cognate test (2026-11-04, after the review)
+
+The review (review-output.md section 8) judged the pair measure loose and fragile: its human reading (11-13 kyr) rests on one
+12-13 kyr bin of 35 pairs drawn from one or two old splits, and an edit distance under 0.45 is not the comparative method.
+`families.horizon(result_or_doc)` is the replacement measure (the pair measure stays as `horizon_pairs`/`analyse`);
+`tools/language/horizon_offline.py` reports both from a stored file.
+
+- **Strict cognates** (`strict_shares`): two forms are cognate when their aligned distance is under COGNATE_DIST (0.45) *and*
+  every segment correspondence of the alignment (x:y, x:-, -:y; tone set apart, tone letters skipped) recurs in at least
+  REC_MIN = 2 other close pairs of the same two lects. Correspondences are counted over the whole stored vocabulary the
+  living lects share (~345 concepts: core 100 plus every concept at least half the living lects have), shares are scored on
+  the core 100. One pass (REC_ITERATE False): dropping the failures and recounting until stable collapses small cognate
+  sets to nothing (a human pair 5 kyr apart: 53 close pairs, 28 fail the first pass on rare identities such as ɗ:ɗ or
+  lʷ:lʷ, and the cascade then takes all of them; strict share 0 with a true shared-root share of 0.28).
+- **Splits, not pairs** (`true_splits`, `split_horizon`): each node of the true lect tree among living lects (lines parting in
+  the same frame folded into one multi-way split) is recovered when the scholars' UPGMA over 1 - strict share (lects in a
+  random order) holds a clade matching the split's lects at Jaccard >= SPLIT_JACCARD 0.8, and the mean strict share across
+  the split's groups beats the pairs' own shuffled chance level (19 permutations) by SPLIT_EXCESS 0.03. Windows of 2 kyr
+  stepped by 1 kyr; splits with two groups of >= 3 lects are scored alone when a window has >= 3 of them (rare: 0-3 per
+  window in a24559), else all; the horizon is the 0.5 crossing, linear between window centres, from the present, skipping
+  windows of < 3 splits. Under the strict test the shuffled chance level is ~0 (0.0000-0.0001 per split), so the excess
+  is in effect a minimum of three regular cognates in the hundred.
+- Synthetic check (tests/test_language_families.py): three families, 25 splits each over 16 kyr, 75% of words kept per kyr
+  per line and one merging sound law per kyr: the horizon reads 4.5-5.0 kyr over seeds, where 10-5% of the words survive
+  (the measure needs ~5-10 regular cognates in the hundred, not 3: rare segments fail recurrence).
+
+**a24559 (runs/a24559/languages.json as stored, 573 living lects, 60 human splits, 243 in all):**
+
+| measure | human | all lects |
+| --- | --- | --- |
+| pairs, loose test (stored / recomputed) | 11 | 11 |
+| splits, strict, SPLIT_EXCESS 0.03 (lect-order seeds 12, 1, 2, 3) | **9.7**, 9.7, 9.7, 8.6 | 12.0 |
+| splits, strict, SPLIT_EXCESS 0.02 / 0.05 | 10.5 / 4.7 | 12.0 / 9.3 |
+| splits, strict, exact clades (Jaccard 1) | 4.9 | 5.4 |
+
+| shares | pairs | loose (old) | strict | true roots |
+| --- | --- | --- | --- | --- |
+| sisters <= 2 kyr | 151 | 0.532 | **0.452** | 0.588 |
+| different true families | 162,128 | 0.005 | 0.000 | - |
+
+Human recovery curve (strict, SPLIT_EXCESS 0.03; "share" is the mean strict share across the window's splits):
+
+| window kyr | 0-2 | 1-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-8 | 7-9 | 8-10 | 9-11 | 10-12 | 11-13 | 12-14 | 13-15 | 14-16 | 15-17 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| splits | 11 | 11 | 5 | 8 | 11 | 9 | 7 | 8 | 5 | 2 | 2 | 1 | 3 | 3 | 5 | 4 |
+| recovered | 1.00 | 1.00 | 1.00 | 0.75 | 0.55 | 0.67 | 1.00 | 0.75 | 0.60 | 0.50 | 0.50 | 0.00 | 0.00 | 0.00 | 0.20 | 0.25 |
+| share | 0.54 | 0.44 | 0.29 | 0.15 | 0.14 | 0.14 | 0.12 | 0.06 | 0.04 | 0.04 | 0.04 | 0.01 | 0.00 | 0.01 | 0.02 | 0.01 |
+
+All lects: >= 0.5 to 11-13 kyr (0.50), then 0.36, 0.27, 0.31, 0.25, 0.20, 0.09 to 17-19 kyr.
+
+Reading. (1) The human horizon by splits is **~9.7 kyr**, inside 6-10, but thinly resolved: human splits between 9 and 14 kyr
+number 8, so the crossing sits between the 8-10 kyr window (5 splits, 0.60) and 12-14 (3 splits, 0.00). It is steady
+against the lect order (8.6-9.7) and SPLIT_EXCESS 0.02-0.03; it is sensitive to 0.05 (4.7, one weak 4-6 kyr window) and to
+exact clades (4.9: past ~4 kyr one or two lects per split are misplaced, by loans or shifts). (2) Sisters fall below the 0.5
+bar under the strict test (0.452): about a quarter of the true cognates of sisters fail recurrence, mostly identical words
+with a rare segment. The sisters check should stay on the loose test (recognisable resemblance is what a speaker or a first
+survey sees) or have its bar re-set for the strict one; that is a target change and the owner's call. (3) Lexical
+retention, not sound change, sets the strict horizon: across human splits at 6-8 kyr the loose share (0.17-0.29) is close
+to the true shared-root share (0.13-0.30), so sound change rarely pushes a cognate past the distance threshold; what the
+strict test loses is regularity and sample size. The true share is still 0.13-0.20 at 7-9 kyr (Swadesh 86%/kyr: ~0.1) and
+0.59 for sisters <= 2 kyr (~0.7 expected): replacement is too fast young and too slow in the tail.

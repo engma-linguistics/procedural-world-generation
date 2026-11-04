@@ -10,6 +10,9 @@ architecture section 9).
 - The horizon: the oldest true split the scholars' tree still recovers. Two measures: `horizon_kyr` (pairs: the oldest 1-kyr bin
   of true divergence where at least half the pairs of living lects are still above the chance floor) and `clade_horizon_kyr`
   (the oldest true clade, two or more living lects, that the scholars' UPGMA reproduces exactly, with its link above chance).
+- `horizon(result_or_doc)`: the split measure (calibration.md, "The horizon by splits"): splits of the true tree recovered as
+  clades of the scholars' UPGMA under a strict cognate test (close forms whose segment correspondences recur elsewhere in the
+  vocabulary), 2-kyr windows; with sisters / cross-family shares loose, strict and true. `analyse` keeps the pair measure.
 """
 from __future__ import annotations
 
@@ -98,7 +101,8 @@ class WordTable:
                     if r is not None:
                         self.roots[k] = root_ids.setdefault(r, len(root_ids))
         self.segs = np.asarray(flat or [0], np.int64)
-        self.M = _seg_distance(list(seg_id)) if seg_id else np.zeros((1, 1))
+        self.seglist = list(seg_id)
+        self.M = _seg_distance(self.seglist) if seg_id else np.zeros((1, 1))
         self.starts, self.lens = starts, lens
         self.has = lens > 0
 
@@ -520,3 +524,429 @@ def analyse(lects: list, concepts: list[str], seed: int, form_of=None, root_of=N
                      "siblings_true": round(float(S_true[iu][sib].mean()), 3) if sib.any() else None}
     out["_matrices"] = {"ids": ids, "blind": S_blind, "true": S_true, "divergence": T}
     return out
+
+
+# ---------------------------------------------------------------------------- the horizon, by splits and regular correspondences
+# (review-output.md section 8: the pair measure rests on one or two old splits, and an edit-distance lookalike test is looser
+# than the comparative method.) Two changes:
+# - a stricter cognate test: two forms count as cognate only when they are close (normalized aligned distance under
+#   COGNATE_DIST) *and* every segment correspondence of their alignment (x:y, x:-, -:y) recurs in at least REC_MIN other
+#   candidate pairs of the same two lects' vocabulary (the comparative method's recurrence criterion, simplified; one pass:
+#   the counts are over all candidates, REC_ITERATE recounts after dropping the failures);
+# - scoring splits, not pairs: a true split (a node of the lect tree, its living descendants in two or more groups) is
+#   recovered when the scholars' UPGMA over strict blind distances holds a clade matching the split's lects (Jaccard >=
+#   SPLIT_JACCARD), and the share across the split's groups beats the pairs' own shuffled chance level by SPLIT_EXCESS. The
+#   horizon is where the share of recovered splits, in 2-kyr windows stepped by 1 kyr from the present, first falls below half
+#   (linear between window centres); windows with fewer than MIN_SPLITS splits are skipped.
+REC_MIN = 2  # each correspondence of a cognate pair must recur in this many other candidate pairs
+REC_ITERATE = False  # True: drop failing candidates and recount until stable (collapses small cognate sets; see calibration.md)
+SPLIT_JACCARD = 0.8  # a scholars' clade matches a true split's lects at this overlap (one stray lect in five)
+SPLIT_EXCESS = 0.03  # the share across a split must beat chance by three regular cognate sets in a hundred
+SPLIT_WINDOW, SPLIT_STEP = 2.0, 1.0
+MIN_SPLITS = 3
+BIG_SIDE = 3  # "where possible", only splits with two groups of at least this many living lects are scored
+
+
+@njit(cache=True)
+def _align_cols(segs, M, sa, la, sb, lb, ca, cb):
+    """Edit-distance alignment of two words (substitution M, indel 1), traced back into columns ca/cb (segment ids, -1 a gap,
+    in reverse order); returns (number of columns, normalized distance)."""
+    D = np.empty((la + 1, lb + 1))
+    for i in range(la + 1):
+        D[i, 0] = i
+    for j in range(lb + 1):
+        D[0, j] = j
+    for i in range(1, la + 1):
+        x = segs[sa + i - 1]
+        for j in range(1, lb + 1):
+            c = D[i - 1, j - 1] + M[x, segs[sb + j - 1]]
+            if D[i - 1, j] + 1.0 < c:
+                c = D[i - 1, j] + 1.0
+            if D[i, j - 1] + 1.0 < c:
+                c = D[i, j - 1] + 1.0
+            D[i, j] = c
+    i, j, n = la, lb, 0
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and abs(D[i, j] - (D[i - 1, j - 1] + M[segs[sa + i - 1], segs[sb + j - 1]])) < 1e-9:
+            ca[n] = segs[sa + i - 1]
+            cb[n] = segs[sb + j - 1]
+            i -= 1
+            j -= 1
+        elif i > 0 and abs(D[i, j] - (D[i - 1, j] + 1.0)) < 1e-9:
+            ca[n] = segs[sa + i - 1]
+            cb[n] = -1
+            i -= 1
+        else:
+            ca[n] = -1
+            cb[n] = segs[sb + j - 1]
+            j -= 1
+        n += 1
+    return n, D[la, lb] / max(la, lb)
+
+
+@njit(cache=True)
+def _strict_pairs(segs, M, starts, lens, has, A, B, K, cdist, rec_min, scored, cls, iterate):
+    """For each pair of lects (rows of A, B: word indices per concept): (loose share, strict share) over the `scored` concepts
+    both have. Loose: aligned distance < cdist. Strict: loose and every correspondence of the word recurs in >= rec_min other
+    candidates (close pairs, distance < cdist) among all the concepts, scored or not."""
+    P, nc = A.shape
+    loose = np.zeros(P)
+    strict = np.zeros(P)
+    maxl = 1
+    for k in range(len(lens)):
+        if lens[k] > maxl:
+            maxl = lens[k]
+    W = 2 * maxl + 1
+    ca = np.empty(W, np.int64)
+    cb = np.empty(W, np.int64)
+    codes = np.empty((nc, W), np.int64)
+    ncode = np.zeros(nc, np.int64)
+    for p in range(P):
+        nb = 0
+        cand = np.zeros(nc, np.bool_)
+        for c in range(nc):
+            a, b = A[p, c], B[p, c]
+            if not (has[a] and has[b]):
+                continue
+            if scored[c]:
+                nb += 1
+            n, d = _align_cols(segs, M, starts[a], lens[a], starts[b], lens[b], ca, cb)
+            if d < cdist:
+                cand[c] = True
+                # distinct correspondences of this word, by correspondence class (tone apart); tone-letter columns skipped
+                m = 0
+                for q in range(n):
+                    x = cls[ca[q]] if ca[q] >= 0 else -1
+                    y = cls[cb[q]] if cb[q] >= 0 else -1
+                    if x == -2 or y == -2 or (x == -1 and y == -1):
+                        continue
+                    ca[m] = (x + 1) * (K + 1) + (y + 1)
+                    m += 1
+                u = np.unique(ca[:m])
+                ncode[c] = len(u)
+                codes[c, :len(u)] = u
+        if nb == 0:
+            continue
+        loose[p] = (cand & scored).sum() / nb
+        alive = cand.copy()
+        while True:
+            # how many live candidates hold each code
+            tot = 0
+            for c in range(nc):
+                if alive[c]:
+                    tot += ncode[c]
+            if tot == 0:
+                break
+            allc = np.empty(tot, np.int64)
+            at = 0
+            for c in range(nc):
+                if alive[c]:
+                    allc[at:at + ncode[c]] = codes[c, :ncode[c]]
+                    at += ncode[c]
+            allc.sort()
+            changed = False
+            for c in range(nc):
+                if not alive[c]:
+                    continue
+                for q in range(ncode[c]):
+                    x = codes[c, q]
+                    cnt = np.searchsorted(allc, x, side="right") - np.searchsorted(allc, x, side="left")
+                    if cnt - 1 < rec_min:
+                        alive[c] = False
+                        changed = True
+                        break
+            if not changed or not iterate:
+                break
+        strict[p] = (alive & scored).sum() / nb
+    return loose, strict
+
+
+CHUNK = 4000
+
+
+def _corr_classes(tab: "WordTable") -> np.ndarray:
+    """Segment id -> correspondence class: the segment without its tone (tone is its own tier for a comparativist, and tone
+    letters are not segments: -2, skipped)."""
+    c = getattr(tab, "_cls", None)
+    if c is not None:
+        return c
+    from dataclasses import replace
+    key: dict = {}
+    out = np.zeros(max(1, len(tab.seglist)), np.int64)
+    for i, sg in enumerate(tab.seglist):
+        if getattr(sg, "kind", None) == "T":
+            out[i] = -2
+            continue
+        try:
+            k = replace(sg, tone=0)
+        except TypeError:
+            k = sg
+        out[i] = key.setdefault(k, len(key))
+    tab._cls = out
+    return out
+
+
+def strict_shares(tab: "WordTable", ia, ib, perm=None, scored=None) -> tuple[np.ndarray, np.ndarray]:
+    """(loose, strict) blind shares for pairs of lects (indices into tab.lects) on the `scored` concepts (a bool mask over
+    tab.concepts, default all; correspondences are counted over all of tab's concepts); perm shuffles the second lect's
+    concepts (the chance level)."""
+    ia, ib = np.asarray(ia, np.int64), np.asarray(ib, np.int64)
+    nc = len(tab.concepts)
+    cols = np.arange(nc) if perm is None else np.asarray(perm)
+    sc = np.ones(nc, np.bool_) if scored is None else np.asarray(scored, np.bool_)
+    K = int(tab.M.shape[0])
+    lo, st = np.zeros(len(ia)), np.zeros(len(ia))
+    for k in range(0, len(ia), CHUNK):  # (chunks keep the index arrays small)
+        A = ia[k:k + CHUNK, None] * nc + np.arange(nc)[None, :]
+        B = ib[k:k + CHUNK, None] * nc + cols[None, :]
+        lo[k:k + CHUNK], st[k:k + CHUNK] = _strict_pairs(tab.segs, tab.M, tab.starts, tab.lens, tab.has, A, B, K, COGNATE_DIST,
+                                                         REC_MIN, sc, _corr_classes(tab), REC_ITERATE)
+    return lo, st
+
+
+def strict_matrix(tab: "WordTable", scored=None) -> tuple[np.ndarray, np.ndarray]:
+    """Loose and strict blind share matrices over all lects of a WordTable (scored: as strict_shares)."""
+    n = len(tab.lects)
+    ia, ib = np.triu_indices(n, 1)
+    Lo, St = np.eye(n), np.eye(n)
+    if len(ia):
+        lo, st = strict_shares(tab, ia, ib, scored=scored)
+        Lo[ia, ib] = Lo[ib, ia] = lo
+        St[ia, ib] = St[ib, ia] = st
+    return Lo, St
+
+
+def true_splits(T: np.ndarray, ids: list) -> list[dict]:
+    """The true tree's splits among living lects from their divergence matrix: UPGMA on an ultrametric is exact; nodes at the
+    same height as their parent are folded into it (several lines parting in one frame are one split, not an arbitrary
+    binary order). [{"kyr", "leaves" (indices), "groups" [index sets]}]."""
+    t = upgma(np.where(np.isfinite(T), 2 * T, np.inf), list(range(len(ids))))
+    nodes = t["nodes"]
+
+    def groups(i, h):
+        nd = nodes[i]
+        if nd["leaf"] is None and abs(nd["height"] - h) < 1e-9:
+            return [g for c in nd["children"] for g in groups(c, h)]
+        return [nd["leaves"]]
+    out = []
+    for nd in nodes:
+        if nd["leaf"] is not None:
+            continue
+        # skip nodes folded into a parent of the same height
+        out.append({"kyr": nd["height"], "leaves": nd["leaves"], "groups": [g for c in nd["children"] for g in groups(c, nd["height"])],
+                    "_id": nd["id"]})
+    folded = set()
+    for nd in nodes:
+        if nd["leaf"] is None:
+            for c in nd["children"]:
+                if nodes[c]["leaf"] is None and abs(nodes[c]["height"] - nd["height"]) < 1e-9:
+                    folded.add(c)
+    return [s for s in out if s["_id"] not in folded]
+
+
+def _clade_match(sch_clades: list[frozenset], leaves: frozenset) -> bool:
+    for c in sch_clades:
+        inter = len(c & leaves)
+        if inter and inter / len(c | leaves) >= SPLIT_JACCARD:
+            return True
+    return False
+
+
+def split_horizon(tab: "WordTable", T: np.ndarray, S_strict: np.ndarray, sel: list[int], rng, perm: int = PERM,
+                  extra: dict | None = None, scored=None) -> dict:
+    """The split measure among the lects `sel` (indices into tab.lects): the scholars' UPGMA over 1 - strict share among them
+    (lects in a random order, so ties do not follow storage order), each true split scored, the recovery curve, the horizon.
+    extra: {name: share matrix} also averaged across each split (e.g. the loose and true shares) for the record."""
+    sel = list(sel)
+    n = len(sel)
+    if n < 3:
+        return {"horizon_kyr": None, "recovery_by_bin": [], "splits": 0}
+    order = rng.permutation(n)
+    sub = np.asarray(sel)[order]
+    D = 1.0 - S_strict[np.ix_(sub, sub)]
+    sch = upgma(D, list(range(n)))
+    clades = [frozenset(int(order[x]) for x in nd["leaves"]) for nd in sch["nodes"] if nd["leaf"] is None]
+    splits = true_splits(T[np.ix_(sel, sel)], sel)
+    # chance level per related pair (one set of concept shuffles shared by all pairs)
+    pa, pb, owner = [], [], []
+    for k, s in enumerate(splits):
+        gs = [sorted(g) for g in s["groups"]]
+        for x in range(len(gs)):
+            for y in range(x + 1, len(gs)):
+                for i in gs[x]:
+                    for j in gs[y]:
+                        pa.append(sel[i])
+                        pb.append(sel[j])
+                        owner.append(k)
+    pa, pb, owner = np.asarray(pa, np.int64), np.asarray(pb, np.int64), np.asarray(owner, np.int64)
+    nc = len(tab.concepts)
+    ch = np.zeros(len(pa))
+    if len(pa):
+        for _ in range(perm):
+            ch += strict_shares(tab, pa, pb, rng.permutation(nc), scored)[1]
+        ch /= perm
+    obs = S_strict[pa, pb] if len(pa) else np.zeros(0)
+    rows = []
+    for k, s in enumerate(splits):
+        m = owner == k
+        exc = float(obs[m].mean() - ch[m].mean()) if m.any() else 0.0
+        sizes = sorted((len(g) for g in s["groups"]), reverse=True)
+        clade = _clade_match(clades, s["leaves"])
+        rec = clade and exc >= SPLIT_EXCESS
+        rows.append({"kyr": float(s["kyr"]), "lects": len(s["leaves"]), "sides": sizes, "big": len(sizes) > 1 and sizes[1] >= BIG_SIDE,
+                     "clade": bool(clade), "excess": round(exc, 4),
+                     "share": round(float(obs[m].mean()), 4) if m.any() else None, "chance": round(float(ch[m].mean()), 4) if m.any() else None,
+                     "recovered": bool(rec)})
+        for name, X in (extra or {}).items():
+            rows[-1][name] = round(float(X[pa[m], pb[m]].mean()), 4) if m.any() and X is not None else None
+    curve = []
+    top = max((r["kyr"] for r in rows), default=0.0)
+    b0 = 0.0
+    while b0 <= top:
+        inw = [r for r in rows if b0 <= r["kyr"] < b0 + SPLIT_WINDOW]
+        big = [r for r in inw if r["big"]]
+        use = big if len(big) >= MIN_SPLITS else inw
+        if inw:
+            curve.append({"from_kyr": b0, "to_kyr": b0 + SPLIT_WINDOW, "splits": len(inw), "big_splits": len(big),
+                          "scored": "big" if use is big else "all",
+                          "recovered": round(float(np.mean([r["recovered"] for r in use])), 3),
+                          "recovered_all": round(float(np.mean([r["recovered"] for r in inw])), 3),
+                          "mean_share": round(float(np.mean([r["share"] for r in use if r["share"] is not None] or [0.0])), 4)})
+        b0 += SPLIT_STEP
+    return {"horizon_kyr": _split_horizon(curve), "recovery_by_bin": curve, "splits": len(rows), "split_rows": rows}
+
+
+def _split_horizon(curve: list[dict]) -> float | None:
+    """From the present: the first window of MIN_SPLITS or more splits where fewer than half are recovered; the horizon is
+    the crossing of one half, linear between that window's centre and the previous scored window's (the window's start when
+    it is the first). Never failing: the end of the last scored window."""
+    prev = None
+    for w in curve:
+        if w["splits"] < MIN_SPLITS:
+            continue
+        c = (w["from_kyr"] + w["to_kyr"]) / 2.0
+        if w["recovered"] < HALF:
+            if prev is None:
+                return w["from_kyr"]
+            pc, pr = prev
+            return round(pc + (pr - HALF) / (pr - w["recovered"]) * (c - pc), 2)
+        prev = (c, w["recovered"])
+    return curve[-1]["to_kyr"] if prev is not None else None
+
+
+def _doc_lects(doc: dict, concepts) -> tuple[list, dict]:
+    """Lightweight lects from a stored languages.json: id/parent/born/died/deme/people, core forms and true roots (the last
+    word-formation step of each etymology chain)."""
+    from .lect import FORMATION_SKIP
+    from .percepts import from_ipa
+    nodes = doc.get("etym_nodes") or []
+    memo: dict = {}
+
+    def root(nid):
+        if nid in memo:
+            return memo[nid]
+        cur, last = nid, nid
+        while cur is not None and cur >= 0:
+            nd = nodes[cur]
+            if nd[3].split(":", 1)[0] not in FORMATION_SKIP:
+                last = cur
+                break
+            last, cur = cur, nd[0]
+        memo[nid] = last
+        return last
+    cs = set(concepts)
+
+    class _L:
+        pass
+    by = {}
+    for x in doc["lects"]:
+        l = _L()
+        l.id, l.parent, l.born_kyr, l.died_kyr, l.deme, l.people = x["id"], x["parent"], x["born_kyr"], x["died_kyr"], x["deme"], x["people"]
+        l.forms, l.roots = {}, {}
+        if l.died_kyr is None and l.deme is not None:
+            for c, w in (x.get("lexicon") or {}).items():
+                if c in cs and w.get("ipa"):
+                    l.forms[c] = tuple(from_ipa(w["ipa"]))
+                    if w.get("etym") is not None and nodes:
+                        l.roots[c] = root(int(w["etym"]))
+        by[l.id] = l
+    return list(by.values()), by
+
+
+POOL_SHARE = 0.5  # correspondences are counted over every concept that at least this share of the living lects have a word for
+
+
+def _pool(lexicons: list, core: list) -> list:
+    from collections import Counter
+    n = Counter(c for lx in lexicons for c in lx)
+    return [c for c, k in sorted(n.items()) if k >= POOL_SHARE * len(lexicons) and c not in set(core)]
+
+
+def horizon(result_or_doc: dict, people: str | None = "human", seed: int = 12) -> dict:
+    """The scholars' horizon by splits under the strict cognate test, from the pass result (lects as objects) or a stored
+    languages.json (lects as dicts): {"horizon_kyr" (lects of `people`, None = all), "method", "recovery_by_bin",
+    "sisters", "cross_family", "by": {"human"|..., "all": the split measure among all living lects}}. Shares are scored on
+    the core 100; correspondences are counted over the whole stored vocabulary the lects have in common (the comparativist
+    works from every word, the lexicostatistician from the list). Sisters and cross-family shares are reported loose (the
+    old edit-distance test), strict and true."""
+    from . import lexicon as LX
+    from .lect import word_form, word_root
+    concepts = sorted(LX.CORE100)
+    lects = result_or_doc["lects"]
+    if lects and isinstance(lects[0], dict):
+        liv = [x for x in lects if x["died_kyr"] is None and x["deme"] is not None]
+        pool = _pool([x.get("lexicon") or {} for x in liv], concepts)
+        allx, by = _doc_lects(result_or_doc, concepts + pool)
+        form_of, root_of = (lambda l, c: l.forms.get(c)), (lambda l, c: l.roots.get(c))
+    else:
+        allx, by = lects, {l.id: l for l in lects}
+        form_of, root_of = word_form, word_root
+        liv = [l for l in allx if l.died_kyr is None and l.deme is not None]
+        pool = _pool([l.lexicon or {} for l in liv], concepts)
+    living = [l for l in allx if l.died_kyr is None and l.deme is not None]
+    return horizon_from(living, by, concepts, form_of, root_of, people, seed, pool=pool)
+
+
+def horizon_from(living: list, by_id: dict, concepts, form_of, root_of=None, people: str | None = "human", seed: int = 12,
+                 pool=None) -> dict:
+    """horizon() on lect objects (id, parent, born_kyr, died_kyr, people) with form_of/root_of accessors; shares scored on
+    `concepts`, correspondences counted over concepts + pool."""
+    concepts = list(concepts)
+    allc = concepts + [c for c in (pool or []) if c not in set(concepts)]
+    scored = np.arange(len(allc)) < len(concepts)
+    tab = WordTable(living, allc, form_of, root_of)
+    T = divergence_matrix(living, by_id)
+    Lo, St = strict_matrix(tab, scored)
+    Tr = None
+    if root_of is not None:
+        core_tab = WordTable(living, concepts, form_of, root_of)
+        Tr = core_tab.share_matrix(blind=False)
+    fam = {l.id: root_of_lect(l, by_id) for l in living}
+    iu = np.triu_indices(len(living), 1)
+    t = T[iu]
+    sib = np.isfinite(t) & (t <= 2.0)
+    cross = np.array([fam[living[i].id] != fam[living[j].id] for i, j in zip(*iu)], bool)
+
+    def shares(m):
+        if not m.any():
+            return {"pairs": 0}
+        return {"pairs": int(m.sum()), "loose": round(float(Lo[iu][m].mean()), 4), "strict": round(float(St[iu][m].mean()), 4),
+                "true": round(float(Tr[iu][m].mean()), 4) if Tr is not None else None}
+    by = {}
+    extra = {"loose": Lo, "true": Tr}
+    by["all"] = split_horizon(tab, T, St, range(len(living)), np.random.default_rng((seed, 986, 12)), extra=extra, scored=scored)
+    if people is not None:
+        sel = [k for k, l in enumerate(living) if l.people == people]
+        by[people] = split_horizon(tab, T, St, sel, np.random.default_rng((seed, 986, 13)), extra=extra, scored=scored)
+    main = by[people] if people is not None else by["all"]
+    return {"horizon_kyr": main["horizon_kyr"],
+            "method": {"test": "strict: aligned distance < cognate_dist and every correspondence recurs in >= rec_min other close "
+                               "pairs over the pooled vocabulary; splits recovered by UPGMA clade match and excess over chance",
+                       "cognate_dist": COGNATE_DIST, "rec_min": REC_MIN, "jaccard": SPLIT_JACCARD, "split_excess": SPLIT_EXCESS,
+                       "window_kyr": SPLIT_WINDOW, "step_kyr": SPLIT_STEP, "min_splits": MIN_SPLITS, "big_side": BIG_SIDE,
+                       "perm": PERM, "people": people, "lects": len(living), "scored_concepts": len(concepts),
+                       "pool_concepts": len(allc)},
+            "recovery_by_bin": main["recovery_by_bin"],
+            "sisters": shares(sib), "cross_family": shares(cross),
+            "by": {k: {"horizon_kyr": v["horizon_kyr"], "splits": v["splits"], "recovery_by_bin": v["recovery_by_bin"],
+                       "split_rows": v.get("split_rows", [])} for k, v in by.items()}}

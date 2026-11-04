@@ -63,14 +63,29 @@ def sister_distant(fam: dict) -> dict:
                 f"{sh.get('siblings_pairs')} sister pairs, {sh.get('cross_family_pairs')} cross-family pairs; true-root share of sisters {sh.get('siblings_true')}")
 
 
-def horizon(fam: dict) -> dict:
+def horizon(result: dict) -> dict:
+    """The split-based horizon under the strict cognate test (families.horizon), with the old pair measure beside it."""
+    from . import families as FM
+    fam = result.get("families") or {}
     hb = (fam.get("horizon_by") or {}).get("human") or {}
-    h = hb.get("horizon_kyr")
+    old = hb.get("horizon_kyr")
+    try:
+        hz = FM.horizon(result, people="human")
+        h = hz.get("horizon_kyr")
+        h_all = (hz.get("by") or {}).get("all", {}).get("horizon_kyr") if isinstance((hz.get("by") or {}).get("all"), dict) else None
+        rec = hz.get("recovery_by_bin")
+        strict = {"sisters": hz.get("sisters"), "cross_family": hz.get("cross_family")}
+    except Exception as e:  # noqa: BLE001 - the old measure still reports
+        h, h_all, rec, strict = None, None, None, {"error": f"{type(e).__name__}: {e}"}
+    if h is None:
+        h = old
     ok = h is not None and HORIZON_RANGE[0] <= h <= HORIZON_RANGE[1]
-    return _row("scholars' horizon (human lects)", {"human": h, "all": fam.get("horizon_kyr"), "clade_all": fam.get("clade_horizon_kyr")},
+    return _row("scholars' horizon (human lects)", {"human": h, "all": h_all, "old_pair_measure": old, "old_all": fam.get("horizon_kyr"),
+                                                     "recovery_by_bin": rec, "strict_shares": strict},
                 f"{HORIZON_RANGE[0]:.0f}-{HORIZON_RANGE[1]:.0f} kyr", ok,
-                "the oldest 1-kyr bin of true divergence where half the pairs of living human lects still share more core words than "
-                "chance; clade_all: the oldest true clade the scholars' UPGMA reproduces exactly")
+                "the age above which the scholars' UPGMA tree (strict cognates: aligned distance under the threshold and recurring "
+                "correspondences) recovers fewer than half of the true splits among living human lects, read from the present in 2-kyr "
+                "windows; old_pair_measure: the former per-pair edit-distance measure")
 
 
 def shifts(result: dict) -> dict:
@@ -141,7 +156,7 @@ def complexity(result: dict) -> dict:
 def run_all(result: dict) -> list[dict]:
     fam = result.get("families") or {}
     out = []
-    for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, fam), (horizon, fam), (shifts, result),
+    for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, fam), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result)):
         try:
             out.append(fn(arg))
