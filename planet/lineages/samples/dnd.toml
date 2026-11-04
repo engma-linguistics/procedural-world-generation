@@ -872,8 +872,8 @@ traits = ["flies"]
 
 [[lineage]]
 id = "aarakocra"
-adult_yr = 3  # EEPC: 3; ~30. Birds: Rmax ~7.8 a generation (Ginzburg et al. 2010)
-lifespan_yr = 30
+adult_yr = 12  # owner 11-04: 12; ~60, replacing EEPC 3; ~30. Birds: Rmax ~7.8 a generation (Ginzburg et al. 2010)
+lifespan_yr = 60
 breeding = "brood"
 name = "aarakocra"
 body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
