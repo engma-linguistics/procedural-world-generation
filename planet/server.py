@@ -18,6 +18,8 @@
   GET    /api/brief?run=<id>&people=<id>|culture=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief()); a culture's has its cuisine sheet
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
+  GET    /api/authored?run=<id>      the faiths written in for a run and its saved gods mode (its authored.json, PW-1430)
+  POST   /api/authored {run, faiths, gods_mode}   check and save them (the run's authored.json, the only file this writes into a run)
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
@@ -27,7 +29,8 @@
 
 Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
-<data root>/.gzcache (Handler.send_gzip).
+<data root>/.gzcache (Handler.send_gzip). Derived gods and taboos docs are kept
+under <data root>/.godscache (disk_cached), so a restart doesn't pay again.
 
 Every POST must say `Content-Type: application/json`, and one that carries an
 Origin must come from this server's own address (Handler.post_refused, PW-1037):
@@ -238,25 +241,113 @@ def cultures(query: str) -> tuple[dict, int]:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
-_gods_cache: dict = {}  # (run id, run.json mtime, mode) -> gods doc
+_gods_cache: dict = {}  # (run id, run.json mtime, mode, authored.json mtime) -> gods doc
+_inputs_cache: dict = {}  # (run id, run.json mtime) -> gods.inputs (the slow part: the land per culture per frame, ~25 s at L7)
+_gods_lock = threading.Lock()  # (the gods, taboos and map requests come together: one derive, not three)
+
+
+GODS_DIR = ".godscache"
+
+
+def _authored_key(d: Path) -> str:
+    """A run's authored.json as a short content hash ('' when it has none): it keys every cache of the gods and taboos."""
+    import hashlib
+    from .lineages import gods as GD
+    f = d / GD.AUTHORED_FILE
+    return hashlib.sha1(f.read_bytes()).hexdigest()[:16] if f.exists() else ""
+
+
+def disk_cached(kind: str, d: Path, key: tuple, make):
+    """A derived doc of run d kept on disk under <data root>/.godscache (never in the run folder): one file per (kind, run), holding the
+    key it was made for (run id, run.json mtime, mode, authored hash) so a changed run or edit makes it again. make(): the doc."""
+    import hashlib
+    k = json.dumps([str(x) for x in key])
+    f = S.root() / GODS_DIR / f"{kind}-{d.name}.json"
+    try:
+        doc = json.loads(f.read_text())
+        if isinstance(doc, dict) and doc.get("_cache_key") == k:
+            return doc["doc"]
+    except (OSError, ValueError):
+        pass
+    out = make()
+    try:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        S.write_atomic(f, json.dumps({"_cache_key": k, "_hash": hashlib.sha1(k.encode()).hexdigest()[:8], "doc": out}, separators=(",", ":")))
+    except OSError:
+        pass  # (a read-only data root: memory only)
+    return out
 
 
 def gods_doc(d: Path, mode: str | None = None) -> dict:
-    """A run's gods doc: its gods.json when it is in this mode and has faiths (made since PW-1358), else derived once and kept in memory."""
+    """A run's gods doc. mode: asked for, else the run's saved one (authored.json, PW-1309), else faith_made. Its gods.json when it is in
+    this mode, has faiths (made since PW-1358) and no faiths are written in; else replayed from the run's inputs (kept in memory, so a
+    new mode or an edited faith takes seconds) with its authored faiths (PW-1430)."""
     from .lineages import gods as GD
-    mode = mode or GD.MODE_DEFAULT
+    A = GD.read_authored(d)
+    mode = mode or A["gods_mode"] or GD.MODE_DEFAULT
     f = d / "gods.json"
-    if f.exists():
+    if f.exists() and not A["faiths"]:
         doc = json.loads(f.read_text())
         if doc.get("gods_mode") == mode and "faiths" in doc and "frames" in doc:
             return doc
     if not (d / "cultures.json").exists():
         raise SystemExit("this run has no cultures (it is older than PW-670): run the peoples again")
-    key = (d.name, (d / "run.json").stat().st_mtime, mode)
-    if key not in _gods_cache:
-        _gods_cache.clear()
-        _gods_cache[key] = GD.derive(d, mode)
-    return _gods_cache[key]
+    rk = (d.name, (d / "run.json").stat().st_mtime)
+    key = (*rk, mode, _authored_key(d))
+    with _gods_lock:
+        if key not in _gods_cache:
+            def make():
+                if rk not in _inputs_cache:
+                    _inputs_cache.clear()
+                    _inputs_cache[rk] = GD.inputs(d)
+                return GD.replay(_inputs_cache[rk], mode, A["faiths"])
+            _gods_cache.clear()
+            _gods_cache[key] = disk_cached(f"gods-{mode}", d, key, make)
+        return _gods_cache[key]
+
+
+def _authored_context(d: Path) -> tuple[int, set]:
+    """(how many cultures, the people ids) of a run: what an authored faith may name."""
+    if not (d / "cultures.json").exists():
+        raise SystemExit("this run has no cultures (it is older than PW-670): run the peoples again")
+    meta = json.loads((d / "run.json").read_text()).get("meta") or {}
+    n = len(json.loads((d / "cultures.json").read_text()).get("cultures") or [])
+    return n, {l["id"] for l in meta.get("lineages") or []}
+
+
+def authored_get(query: str) -> tuple[dict, int]:
+    """GET /api/authored?run=<id>: the run's authored.json ({format, gods_mode, faiths}; empty when it has none)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import gods as GD
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        return GD.read_authored(S.find_run(q["run"])), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+
+
+def authored_set(raw: bytes) -> tuple[dict, int]:
+    """POST /api/authored {run, faiths: [...], gods_mode}: check the faiths (gods.clean_authored, strict: the first problem answers 400)
+    and save them as the run's authored.json; answers {saved, authored}. The viewer then fetches /api/gods and /api/taboos again."""
+    try:
+        from .lineages import gods as GD
+        b = json.loads(raw or b"{}")
+        if not isinstance(b, dict) or not b.get("run"):
+            raise ValueError("run is required")
+        d = S.find_run(str(b["run"]))
+        n, peoples = _authored_context(d)
+        old = GD.read_authored(d)
+        mode = b.get("gods_mode", old["gods_mode"]) or None
+        faiths = b["faiths"] if "faiths" in b else old["faiths"]
+        saved = GD.write_authored(d, faiths, mode, n, peoples)
+        return {"saved": len(saved["faiths"]), "authored": saved}, 200
+    except (ValueError, TypeError, AttributeError) as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
 
 
 _taboos_cache: dict = {}
@@ -271,15 +362,17 @@ def taboos(query: str) -> tuple[dict, int]:
         if not q.get("run"):
             raise ValueError("run= is required")
         d = S.find_run(q["run"])
+        from .lineages import gods as GD
         f = d / "taboos.json"
-        if f.exists():
+        if f.exists() and not GD.read_authored(d)["faiths"]:  # (faiths written in: their gods' taboos too, PW-1430)
             doc = json.loads(f.read_text())
             if doc.get("format") == "procgen-taboos/2":
                 return doc, 200
-        key = (d.name, (d / "run.json").stat().st_mtime)
+        gd = gods_doc(d, q.get("mode"))
+        key = (d.name, (d / "run.json").stat().st_mtime, gd.get("gods_mode"), _authored_key(d))
         if key not in _taboos_cache:
             _taboos_cache.clear()
-            _taboos_cache[key] = TB.derive(d, gods_doc(d))
+            _taboos_cache[key] = disk_cached(f"taboos-{gd.get('gods_mode')}", d, key, lambda: TB.derive(d, gd))
         return _taboos_cache[key], 200
     except ValueError as e:
         return {"error": str(e)}, 400
@@ -320,7 +413,9 @@ def gods(query: str) -> tuple[dict, int]:
         if not q.get("run"):
             raise ValueError("run= is required")
         d = S.find_run(q["run"])
-        mode = q.get("mode") or GD.MODE_DEFAULT
+        mode = q.get("mode") or None  # (none asked: the run's saved mode, authored.json, PW-1309)
+        if mode is not None and mode not in GD.GODS_MODES:
+            raise ValueError(f"mode must be one of {GD.GODS_MODES}")
         return gods_doc(d, mode), 200
     except ValueError as e:
         return {"error": str(e)}, 400
@@ -606,6 +701,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*cultures(url.query))
         if url.path == "/api/gods":
             return self.send_json(*gods(url.query))
+        if url.path == "/api/authored":
+            return self.send_json(*authored_get(url.query))
         if url.path == "/api/taboos":
             return self.send_json(*taboos(url.query))
         if url.path == "/api/faithmap":
@@ -728,6 +825,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*favourites_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path == "/api/names":
             return self.send_json(*rename_landmass(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
+        if self.path == "/api/authored":
+            return self.send_json(*authored_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
                          "/api/enrich"):
             return self.send_error(404)
