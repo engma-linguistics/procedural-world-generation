@@ -2,7 +2,7 @@
 id: PW-1447
 title: "Polities: states last 600-1,400 years against a historical median of 130 (no collapse yet)"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v3
 subsystem: culture
@@ -31,4 +31,5 @@ rebuild gives the same map.
   ±10%
 
 ## Updates
+- 2026-11-04: Status todo -> done. Lane 175: base fall hazard FALL_PER_CENTURY 0.46 (Arbesman 2011), seeded per polity and step; fallen capital a chiefdom for a century; dragon realms end with their ancient ruler (dragon_ages schedule, ~0.1/century). Median state life 200 years founding to fall on 3c1caf and a2b637 (was 1,700 and 600); at half peak 200 / 100 vs Taagepera 130. Counts and median steady under +-10% nudges. docs/review/culture/polities/round2.md.
 - 2026-11-04: Created from inbox draft draft-polities-fall-hazard.md (found by lane-169).

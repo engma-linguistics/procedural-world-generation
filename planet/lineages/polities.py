@@ -21,8 +21,18 @@ The one rule of a step (step()):
      states, chiefdoms; within a class, the bigger first (a capital last step counts INCUMBENT times its size). Each claims the
      peopled cells within its reach not yet claimed (travel through unclaimed land only: claimed land is a border). A seat whose
      own cell is already claimed rules nothing: it is a town of that polity.
-  4. War (PW-1432) plugs in after the claims: WAR(owner, ctx) may move cells between neighbouring polities (borders() lists the
-     neighbours); the default changes nothing. A polity whose capital cell is taken falls.
+  0. Falls (PW-1447), before the seats: each state, empire or dragon realm that ruled last step ends with FALL_PER_CENTURY's chance
+     per century (Arbesman 2011: lifetimes exponential, ~0.46 per century), a seeded draw per polity and step. Its capital drops one
+     tier for COOL_STEPS (a state's to a chiefdom; a dragon realm's dragons hold no realm) and its conquered provinces go free.
+  3b. Provinces. A seat that war took (below) claims for its conqueror, right after the conqueror's capital, until the conqueror
+     falls (then it rules again, as a successor) or someone else holds its town.
+  4. War (PW-1432, war_v0 at the WAR seam): neighbouring town polities that both stood last step (borders() lists who touches whom)
+     may fight. Each one's strength is its settled people x MIL_X per military edge its rulers know (MIL_TECHS: bronze, iron,
+     riding, standing armies). A state or empire at least WAR_ODDS times stronger than a neighbour takes it with WAR_P's chance per
+     century: the loser's army breaks, all its cells change hands, its capital becomes a province (3b), and it falls, "conquered by"
+     the winner. Farmers keep farming: nobody dies or moves (deaths and refugees: v4). Each loser faces only its strongest eligible
+     neighbour; the strongest attack first. Dragon realms neither attack nor are attacked here (their land is O4's claim order).
+     An authored invasion row (PW-1433, derive(invasions=...)) raises the chance between the peoples it names in its window.
 
 Reach is a budget of foot-km (km on foot over flat ground): a chiefdom CHIEF_KM (its own cell at L7), a state STATE_KM, more with
 law and government at a distance; riding and roads make a km cheaper, climbing dearer; the sea needs boats. Every number below is
@@ -34,13 +44,14 @@ from __future__ import annotations
 import heapq
 import json
 import time
+import zlib
 from pathlib import Path
 
 import numpy as np
 from numba import njit
 
 FORMAT = "procgen-polities/1"
-VERSION = 1  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 2  # (bump when the rules change: the server's cached docs are remade)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -61,6 +72,17 @@ HOLD = 0.8  # judgement: a seat keeps its tier until it shrinks under 0.8 of the
 INCUMBENT = 1.5  # judgement: last step's capital ranks as if 1.5x its size (the ruler in place keeps the advantage)
 GAP_STEPS = 2  # judgement: a seat that rules again within 2 steps (200 years) is the same polity, not a new one
 STRONG_TECH = "standing_army"  # judgement (O4 "until technology outstrips it"): a state with standing armies claims before dragons
+# ---- falls (PW-1447)
+FALL_PER_CENTURY = 0.46  # sourced: Arbesman 2011 (41 empires from Taagepera): lifetimes exponential, lambda 0.46 per century, mean ~220 years (via proposal.md 2.1.2)
+FALL_TIERS = ("state", "empire")  # judgement: chiefdoms (a town and its cell) come and go with their town's size already
+DRAGON_RULER = "ancient"  # judgement: a dragon realm (one absolute ruler, O4) ends when its ruler dies; the ruler is an ancient, dying at the run's dragon mortality schedule (dragon_ages.SCHEDULES, owner 10-28: 0.1% a year, ~0.1 per century)
+COOL_STEPS = 1  # judgement (Currie et al. 2010: complexity falls in small steps): a fallen capital rules at most a chiefdom for 1 step (a century)
+# ---- war (PW-1432)
+WAR_P = 0.25  # judgement: the chance per century that a state at least WAR_ODDS times stronger takes a neighbour (checked against Taagepera 1997's sizes, round2.md)
+WAR_ODDS = 1.5  # judgement: the strength an attacker needs, as a multiple of the defender's
+MIL_X = 1.5  # judgement: each military edge its rulers know multiplies a polity's strength
+MIL_TECHS = ("bronze", "iron", "riding", "standing_army")  # (any of these is one edge)
+INVADE_X = {"light": 2.0, "strong": 4.0}  # judgement: an authored invasion row (PW-1433) multiplies WAR_P; a strong one waives WAR_ODDS
 # ---- empires
 SUBJECT_SHARE = 0.2  # judgement: an empire is a state where another culture (not dragons living over it) holds 20% or more of its settled people
 SUBJECT_CELLS = 3  # judgement: the card lists a subject culture with settlements in the polity, or living on 3 or more of its cells
@@ -72,16 +94,17 @@ R_EARTH_KM = 6371.0  # (the grid's sphere, as cultures.py and demes.py measure a
 
 def constants() -> dict:
     """The rules' numbers, for the doc (each one's source is beside it above)."""
-    return {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float, tuple, str)) and k not in ("FORMAT",)}
+    return {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float, tuple, str, dict)) and k not in ("FORMAT",)}
 
 
 # ------------------------------------------------------------------ the claim kernel
 
 @njit(cache=True)
-def _claim(seed, budget, land_x, sea_x, climb_m, off, idx, ekm, edz, sea, blocked, may, owner, pid, dist, touched):
+def _claim(seed, budget, land_x, sea_x, climb_m, off, idx, ekm, edz, sea, blocked, may, owner, pid, dist, touched, claimed):
     """One seat's claim: a Dijkstra from seed over cells not owned by another polity and not blocked, each step costing its km x
     land_x (x (1 + climb / climb_m) when climb_m > 0), or x sea_x when either end is sea (sea_x < 0: no sea). Claims the cells it
-    reaches within budget where may[c] and owner[c] < 0. Returns the number claimed; dist is left all inf."""
+    reaches within budget where may[c] and owner[c] < 0. Returns the number claimed (the first that many entries of `claimed` are
+    those cells); dist is left all inf."""
     nt = 0
     h = [(0.0, seed)]
     dist[seed] = 0.0
@@ -94,6 +117,7 @@ def _claim(seed, budget, land_x, sea_x, climb_m, off, idx, ekm, edz, sea, blocke
             continue
         if owner[a] < 0 and (may[a] or a == seed):
             owner[a] = pid
+            claimed[got] = a
             got += 1
         for e in range(off[a], off[a + 1]):
             b = idx[e]
@@ -134,7 +158,48 @@ def no_war(owner: np.ndarray, ctx: dict) -> np.ndarray:
     return owner
 
 
-WAR = no_war
+def draw(run: str, key: str, step: int, what: str) -> float:
+    """A seeded uniform draw in [0, 1) per run, polity key, step and purpose: a rebuild gives the same map, and a nudged constant
+    meets the same luck (common random numbers, so the +-10% checks compare like with like)."""
+    return zlib.crc32(f"{run}|{key}|{step}|{what}".encode()) / 2 ** 32
+
+
+def strength(people: float, ruler: str, knows, ago: float) -> float:
+    """A polity's strength for war v0: its settled people x MIL_X per military edge (MIL_TECHS) its ruling people know."""
+    return people * MIL_X ** sum(1 for t in MIL_TECHS if knows(ruler, t, ago))
+
+
+def war_v0(owner: np.ndarray, ctx: dict) -> np.ndarray:
+    """War v0 (PW-1432), one plain rule per century step (module docstring, step 4). ctx: "seats" (by polity index; None for one not
+    ruling), "strength" (by index), "eligible" (index -> it stood last step and is a town polity), "borders", "run", "step", "ago",
+    "invasions" (authored rows, PW-1433). Moves every cell of each conquered polity to its conqueror and lists the conquests as
+    ctx["taken"] = [(winner index, loser index, how)], how "war" or "invasion"."""
+    seats, S, ok = ctx["seats"], ctx["strength"], ctx["eligible"]
+    rows = ctx.get("invasions") or []
+    best: dict = {}  # loser -> (winner's strength, winner, chance, how)
+    for (a, b) in ctx["borders"]():
+        for w, l in ((a, b), (b, a)):
+            if not (ok(w) and ok(l)) or seats[w]["tier"] != "state":
+                continue
+            p, odds, how = WAR_P, WAR_ODDS, "war"
+            for r in rows:
+                if r["who"] == seats[w]["people"] and r.get("whom") in (None, seats[l]["people"]) and r["from_kyr"] >= ctx["ago"] - 1e-9 >= r["to_kyr"] - 2e-9:
+                    p, how = min(1.0, WAR_P * INVADE_X[r.get("strength", "light")]), "invasion"
+                    odds = 1.0 if r.get("strength") == "strong" else odds
+            if S[w] >= odds * S[l] and S[w] > 0 and (l not in best or S[w] > best[l][0]):
+                best[l] = (S[w], w, p, how)
+    taken, gone = [], set()
+    for l, (_, w, p, how) in sorted(best.items(), key=lambda kv: (-kv[1][0], kv[0])):
+        if w in gone or l in gone or draw(ctx["run"], seats[l]["key"], ctx["step"], "war") >= p:
+            continue
+        owner[owner == l] = w
+        gone.add(l)
+        taken.append((w, l, how))
+    ctx["taken"] = taken
+    return owner
+
+
+WAR = war_v0
 
 
 # ------------------------------------------------------------------ reading the run
@@ -248,8 +313,18 @@ def _site_tables(R: _Run, agos: list[float]):
 
 # ------------------------------------------------------------------ the read-out
 
-def derive(run_dir: Path, war=None) -> dict:
-    """The polities doc of a peoples run (FORMAT): the polities (cards) and one map per century step. Read-only."""
+def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) -> dict:
+    """The polities doc of a peoples run (FORMAT): the polities (cards) and one map per century step. Read-only.
+    invasions: authored rows for war (PW-1433's hook): [{"who": people id, "whom": people id or None, "from_kyr", "to_kyr",
+    "strength": "light" | "strong"}]. over: {CONSTANT: value} for this call (the nudge checks), restored after."""
+    if over:
+        g_ = globals()
+        old = {k: g_[k] for k in over}
+        g_.update(over)
+        try:
+            return derive(run_dir, war, invasions)
+        finally:
+            g_.update(old)
     from .history import params as PM
     t0 = time.time()
     R = _Run(run_dir)
@@ -275,9 +350,34 @@ def derive(run_dir: Path, war=None) -> dict:
     steps = []
     prev_owner = None
     prev_cap: dict = {}  # key -> tier of last step's ruling seats
+    claimed = np.zeros(g.n, np.int64)
+    lord: dict = {}  # province key -> its conqueror's key (a seat taken by war claims for its conqueror: step 3b)
+    prov_rec: dict = {}  # province key -> the record id of the polity it was when taken
+    cool: dict = {}  # key -> the last step its seat is held one tier down (after a fall: step 0)
+    run_id = R.dir.name
+    from . import dragon_ages as DA
+    fall_p = 1.0 - float(np.exp(-FALL_PER_CENTURY * step_kyr * 10))  # (the chance per step)
+    mort = DA.SCHEDULES[R.meta.get("dragon_ages") or DA.DEFAULT][DA.STAGES.index(DRAGON_RULER)]
+    dragon_p = 1.0 - (1.0 - mort) ** (step_kyr * 1000)  # (a dragon realm's: its ruler dies)
     for k, ago in enumerate(agos):
         j = R.frame_of(ago)
         F = R.frame(j)
+        # 0. falls (PW-1447): the base hazard, for the polities that ruled last step
+        n_fell = 0
+        for key, tier in list(prev_cap.items()):
+            p = dragon_p if tier == "dragon realm" else (fall_p if tier in FALL_TIERS else 0.0)
+            if key in lord or draw(run_id, key, k, "fall") >= p:
+                continue
+            o = open_.pop(key)
+            rec = polities[o["i"]]
+            rec["fell_kyr"], rec["fell_how"] = ago, "collapsed"
+            rec["fell_why"] = "its ruler died and the realm broke up" if tier == "dragon realm" else "collapsed"
+            cool[key] = k + COOL_STEPS - 1
+            del prev_cap[key]
+            for pk in [pk for pk, r in lord.items() if r == key]:  # (its provinces go free: successors)
+                del lord[pk]
+                prov_rec.pop(pk, None)
+            n_fell += 1
         live = pop[:, k] > 0
         here_lines = _lines_by_cell(F, g.n)
         cl = F.setdefault("cl", {(c, l): u for c, l, u in zip(F["cells"].tolist(), F["line"].tolist(), F["cul"].tolist())})
@@ -310,7 +410,7 @@ def derive(run_dir: Path, war=None) -> dict:
             p = float(pop[i, k])
             tier = "chiefdom"
             hem = 0.0
-            if R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago):
+            if (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago)) and cool.get(key, -1) < k:  # (a fallen capital: one tier down)
                 hem = _hemmed(R, F, rings[c], ppl, here_lines, PM.SOCIAL_Q, ago)
                 need = city_min * (1 - HEMMED_X * hem) * (HOLD if prev_cap.get(key) in ("state", "empire") else 1.0)
                 if p >= need:
@@ -325,42 +425,91 @@ def derive(run_dir: Path, war=None) -> dict:
                 continue
             core = _core(cells, rings)
             key = f"d{R.uids[cu]}"
+            if cool.get(key, -1) >= k:
+                continue  # (a fallen dragon realm: no realm for COOL_STEPS)
             seats.append({"key": key, "site": None, "cell": core, "people": ppl, "culture": cu, "pop": 0.0, "tier": "dragon realm",
                           "cls": 1, "rank": len(cells) * (INCUMBENT if key in prev_cap else 1.0), "own": cells})
-        seats.sort(key=lambda s: (s["cls"], -s["rank"], s["key"]))
+        by_key = {s["key"]: s for s in seats}
+        for pk in [pk for pk, r in lord.items() if r not in by_key or pk not in by_key]:
+            if lord[pk] not in by_key:  # (its conqueror rules no more this step: the province goes free)
+                del lord[pk]
+                prov_rec.pop(pk, None)
+
+        def order(s):  # (a province claims right after its conqueror's capital: step 3b)
+            r = by_key.get(lord.get(s["key"]))
+            return (r["cls"], -r["rank"], r["key"], 1, -s["rank"]) if r else (s["cls"], -s["rank"], s["key"], 0, 0.0)
+        seats.sort(key=order)
         # 3. claims
         owner = np.full(g.n, -1, np.int64)
+        from_rec = np.full(g.n, -1, np.int64)  # (a province's cells: the record id of the polity it was when taken)
         settled = np.zeros(g.n, bool)
         settled[site_cell[live]] = True
         ruling = []
+        pid_of: dict = {}
         absorbed = {}
         for s in seats:
+            root = lord.get(s["key"])
             if owner[s["cell"]] >= 0:
                 absorbed[s["key"]] = int(owner[s["cell"]])
+                if root is not None and pid_of.get(root) != owner[s["cell"]]:
+                    del lord[s["key"]]  # (someone else holds the province's town: lost)
+                    prov_rec.pop(s["key"], None)
                 continue
+            if root is not None:
+                if root not in pid_of:
+                    del lord[s["key"]]
+                    prov_rec.pop(s["key"], None)
+                else:
+                    b, lx, sx = _reach(R, s, ago)
+                    got = _claim(s["cell"], b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], owner, pid_of[root], dist, touched, claimed)
+                    from_rec[claimed[:got]] = prov_rec[s["key"]]
+                    absorbed[s["key"]] = pid_of[root]
+                    continue
             pid = len(ruling)
             if s["tier"] == "dragon realm":
                 may = settled.copy()
                 may[s["own"]] = True
-                got = _claim(s["cell"], DRAGON_KM, 1.0, 1.0, 0.0, off, idx, R.ekm, F["edz"], F["sea"], np.zeros(g.n, bool), may, owner, pid, dist, touched)
-                if not np.any((owner == pid) & settled):
-                    owner[owner == pid] = -1  # (a dragon realm needs settled subjects to take tribute from: judgement)
+                got = _claim(s["cell"], DRAGON_KM, 1.0, 1.0, 0.0, off, idx, R.ekm, F["edz"], F["sea"], np.zeros(g.n, bool), may, owner, pid, dist, touched, claimed)
+                if not np.any(settled[claimed[:got]]):
+                    owner[claimed[:got]] = -1  # (a dragon realm needs settled subjects to take tribute from: judgement)
                     continue
             else:
                 b, lx, sx = _reach(R, s, ago)
-                got = _claim(s["cell"], b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], owner, pid, dist, touched)
+                got = _claim(s["cell"], b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], owner, pid, dist, touched, claimed)
             if got:
+                pid_of[s["key"]] = pid
                 ruling.append(s)
-        # 4. war (PW-1432 plugs in here)
-        owner = war(owner, {"grid": g, "seats": ruling, "ago": ago, "step": k, "prev_owner": prev_owner, "borders": lambda o=owner: borders(o, g)})
-        ruling = [s for p, s in enumerate(ruling) if owner[s["cell"]] == p]  # (a capital taken by war: that polity falls)
+        # 4. war (PW-1432): the WAR seam
+        so = owner[site_cell[live_i]]
+        ppl_pid = np.bincount(so[so >= 0], weights=pop[live_i[so >= 0], k], minlength=len(ruling))
+        S_pid = [strength(float(ppl_pid[p]), s["people"], R.knows, ago) for p, s in enumerate(ruling)]
+        ctx = {"grid": g, "seats": ruling, "ago": ago, "step": k, "run": run_id, "prev_owner": prev_owner, "strength": S_pid,
+               "eligible": lambda p: ruling[p] is not None and ruling[p]["tier"] != "dragon realm" and ruling[p]["key"] in prev_cap and ruling[p]["key"] in open_,
+               "invasions": invasions or [], "borders": lambda o=owner: borders(o, g)}
+        before = owner.copy()
+        owner = war(owner, ctx)
+        n_taken = 0
+        for w, l, how in ctx.get("taken", []):
+            wk, lk = ruling[w]["key"], ruling[l]["key"]
+            lo = open_.pop(lk)
+            lrec, wrec = polities[lo["i"]], polities[open_[wk]["i"]]
+            lrec["fell_kyr"], lrec["fell_by"], lrec["fell_how"] = ago, wrec["id"], "invaded" if how == "invasion" else "conquered"
+            wrec["took"].append([ago, lrec["id"], how])
+            m = (before == l) & (from_rec < 0)
+            from_rec[m] = lrec["id"]
+            for pk in [pk for pk, r in lord.items() if r == lk]:
+                lord[pk] = wk
+            lord[lk], prov_rec[lk] = wk, lrec["id"]
+            prev_cap.pop(lk, None)
+            n_taken += 1
+        ruling = [s if (s is not None and owner[s["cell"]] == p) else None for p, s in enumerate(ruling)]  # (a capital taken: it falls)
         # 5. who is ruled, by whom
         step_map = []
         cnt = {t: 0 for t in TIERS}
         ent_owner = owner[F["cells"]]
         cur = {}
         for p, s in enumerate(ruling):
-            cells = np.flatnonzero(owner == p)
+            cells = np.flatnonzero(owner == p) if s is not None else ()
             if not len(cells):
                 continue
             m = ent_owner == p
@@ -405,16 +554,19 @@ def derive(run_dir: Path, war=None) -> dict:
             if area > rec["peak_mkm2"]:
                 rec["peak_mkm2"], rec["peak_kyr"], rec["peak_cells"] = round(area, 4), ago, int(len(cells))
             rec["peak_pop"] = max(rec["peak_pop"], int(round(people_n)))
-            rec["fell_kyr"], rec["fell_why"] = None, None
+            rec["fell_kyr"], rec["fell_why"], rec["fell_how"] = None, None, None
             o["last"] = k
             o["absorbed"] = None
-            step_map.append([rec["id"], TIERS.index(tier), _pack(cells), subj, int(round(people_n))])
+            fr = from_rec[cells]  # (its provinces: the land war took, by the polity it was taken from)
+            prov = {int(r): _pack(cells[fr == r]) for r in np.unique(fr[fr >= 0])}
+            step_map.append([rec["id"], TIERS.index(tier), _pack(cells), subj, int(round(people_n)), prov])
         for key, o in open_.items():  # (the ones that stopped ruling this step: why, kept until they rule again or stay gone)
             if o["last"] == k - 1 and key not in cur:
                 rec = polities[o["i"]]
                 rec["fell_kyr"] = ago
                 rec["fell_why"] = _why_fell(R, rec, key, sites, pop, k, ago, absorbed, cur)
-        steps.append({"ago": ago, "frame": j, "counts": cnt, "ruled_cells": int((owner >= 0).sum()),
+                rec["fell_how"] = "faded"
+        steps.append({"ago": ago, "frame": j, "counts": cnt, "ruled_cells": int((owner >= 0).sum()), "taken": n_taken, "collapsed": n_fell,
                       "largest": max(step_map, key=lambda e: len(_unpack(e[2])))[0] if step_map else None})
         maps.append(step_map)
         prev_owner = owner
@@ -428,10 +580,14 @@ def derive(run_dir: Path, war=None) -> dict:
         rec["tier_peak"] = max((t for _, t in rec["tiers"]), key=TIERS.index)
         rec["name"] = _name(R, rec)
         if rec["tier_peak"] == "chiefdom":
-            rec["name"] = "Chiefdom in " + rec["name"][:1].lower() + rec["name"][1:]
+            nm = rec["name"]
+            rec["name"] = "Chiefdom in " + (nm[:1].lower() + nm[1:] if nm.split(" ")[1:2] == ["of"] else nm)  # ('west of Simath', but 'Ratal')
         nk = names[rec["name"]] = names.get(rec["name"], 0) + 1  # (numbered in founding order: 'Luki (human) 2' is Luki's second)
         if nk > 1:
             rec["name"] += f" {nk}"
+    for rec in polities:
+        if rec.get("fell_by") is not None:
+            rec["fell_why"] = ("invaded and conquered by " if rec["fell_how"] == "invaded" else "conquered by ") + polities[rec["fell_by"]]["name"]
     by_uid = {u: i for i, u in enumerate(R.uids)}
     cult = {u: {"id": by_uid[u], "name": C[by_uid[u]]["name"], "people": C[by_uid[u]]["people"], "color": C[by_uid[u]].get("color")} for u in sorted(used)}
     for rec in polities:
@@ -542,7 +698,7 @@ def _new_record(R: _Run, s: dict, ruler, ago: float, pid: int) -> dict:
             "people_name": R.lname.get(s["people"], s["people"]).split(" (")[0],
             "capital": {"site": site["id"] if site else None, "cell": int(s["cell"]), "lat": round(lat, 2), "lon": round(lon, 2),
                         "place": site.get("place") if site else None},
-            "founded_kyr": ago, "fell_kyr": None, "fell_why": None, "tiers": [], "rulers": [], "_subjects": set(),
+            "founded_kyr": ago, "fell_kyr": None, "fell_why": None, "fell_how": None, "fell_by": None, "took": [], "tiers": [], "rulers": [], "_subjects": set(),
             "peak_mkm2": 0.0, "peak_kyr": ago, "peak_cells": 0, "peak_pop": 0}
 
 
@@ -604,39 +760,65 @@ def summary(doc: dict) -> dict:
 
 
 def step_view(doc: dict, ago: float) -> dict:
-    """The step nearest `ago` (kyr): {step, ago, polities: [{id, tier, cells: [...], subjects: {uid: cells}, people}]}."""
+    """The step nearest `ago` (kyr): {step, ago, polities: [{id, tier, cells: [...], subjects: {uid: people}, people,
+    provinces: {record id: [cells]}}]} (provinces: the land war took, by the polity it was taken from; see the record's "took")."""
     st = doc["steps"]
     if not st:
         return {"step": None, "ago": ago, "polities": []}
     k = min(range(len(st)), key=lambda i: (abs(st[i]["ago"] - ago), st[i]["ago"]))
-    return {"step": k, "ago": st[k]["ago"], "polities": [{"id": p, "tier": doc["tiers"][t], "cells": _unpack(runs).tolist(), "subjects": subj, "people": n}
-                                                          for p, t, runs, subj, n in doc["maps"][k]]}
+    return {"step": k, "ago": st[k]["ago"], "polities": [{"id": e[0], "tier": doc["tiers"][e[1]], "cells": _unpack(e[2]).tolist(), "subjects": e[3], "people": e[4],
+                                                          "provinces": {str(r): _unpack(v).tolist() for r, v in (e[5] if len(e) > 5 else {}).items()}}
+                                                         for e in doc["maps"][k]]}
+
+
+def lifetimes(doc: dict) -> dict:
+    """Per kind ('states and empires', 'dragon realms'): the years from founding to fall of those that fell, and Taagepera 1997's
+    measure, the years at half or more of the polity's peak area (whole steps), for all of them."""
+    step_y = round(doc["step_kyr"] * 1000)
+    area: dict = {}
+    for m in doc["maps"]:
+        for e in m:
+            area.setdefault(e[0], []).append(sum(e[2][1::2]))
+    out = {}
+    for kind, tiers in (("states and empires", ("state", "empire")), ("dragon realms", ("dragon realm",))):
+        P = [p for p in doc["polities"] if p["tier_peak"] in tiers]
+        fell = sorted(round((p["founded_kyr"] - p["fell_kyr"]) * 1000) for p in P if p["fell_kyr"] is not None)
+        half = sorted(sum(a >= 0.5 * max(area[p["id"]]) for a in area[p["id"]]) * step_y for p in P if p["id"] in area)
+        out[kind] = {"n": len(P), "fell": fell, "half": half, "standing": sum(p["fell_kyr"] is None for p in P),
+                     "how": {h: sum(p.get("fell_how") == h for p in P) for h in ("conquered", "invaded", "collapsed", "faded")}}
+    return out
 
 
 def report(doc: dict) -> list[str]:
-    """Plain lines for a review: counts, the largest polity and the people per tier at a few moments, and the lifetimes."""
+    """Plain lines for a review: counts, the largest polity and the people per tier at a few moments, the conquests and the lifetimes."""
     from .years import years_ago
     out = []
     P = doc["polities"]
     for st, m in zip(doc["steps"], doc["maps"]):
         if round(st["ago"] * 10) % 10 or not m:
             continue
-        sizes = sorted(((sum(r[1::2]) * doc["cell_km2"] / 1e6, doc["tiers"][t], n, p) for p, t, r, _, n in m), reverse=True)
+        sizes = sorted(((sum(e[2][1::2]) * doc["cell_km2"] / 1e6, doc["tiers"][e[1]], e[4], e[0]) for e in m), reverse=True)
         a, t, n, p = sizes[0]
         out.append(f"{years_ago(st['ago'])}: " + ", ".join(f"{v} {k}" + ("s" if v != 1 else "") for k, v in st["counts"].items() if v)
-                   + f"; largest {P[p]['name']} ({t}, {a:.3f} Mkm2, ~{n:,} settled people)")
+                   + f"; largest {P[p]['name']} ({t}, {a:.3f} Mkm2, ~{n:,} settled people); over 1 Mkm2: {sum(x[0] >= 1 for x in sizes)}")
     if doc["maps"] and doc["maps"][-1]:
         last = doc["maps"][-1]
         for t, nm in enumerate(doc["tiers"]):
-            ns = sorted(n for _, tt, _, _, n in last if tt == t)
-            ar = sorted(sum(r[1::2]) * doc["cell_km2"] for _, tt, r, _, _ in last if tt == t)
+            ns = sorted(e[4] for e in last if e[1] == t)
+            ar = sorted(sum(e[2][1::2]) * doc["cell_km2"] for e in last if e[1] == t)
             if ns:
                 out.append(f"the present, {nm}s: {len(ns)}; settled people median {ns[len(ns) // 2]:,} (range {ns[0]:,}-{ns[-1]:,}); "
                            f"land median {ar[len(ar) // 2]:,.0f} km2 (largest {ar[-1]:,.0f} km2)")
-        ruled = sum(sum(r[1::2]) for _, _, r, _, _ in last)
+        ruled = sum(sum(e[2][1::2]) for e in last)
         out.append(f"the present: {ruled * doc['cell_km2'] / 1e6:.2f} Mkm2 ruled ({ruled} cells)")
-    lives = [(p["fell_kyr"] if p["fell_kyr"] is not None else 0.0) for p in P]
-    dur = sorted(round((p["founded_kyr"] - e) * 1000) for p, e in zip(P, lives) if p["tier_peak"] != "chiefdom")
-    if dur:
-        out.append(f"states, empires and realms: {len(dur)}; median life {dur[len(dur) // 2]} years; 300+ years: {sum(d >= 300 for d in dur)}")
+    peak = max(P, key=lambda p: p["peak_mkm2"], default=None)
+    if peak:
+        out.append(f"largest ever: {peak['name']} ({peak['tier_peak']}), {peak['peak_mkm2']:.2f} Mkm2 {years_ago(peak['peak_kyr'])}")
+    out.append(f"conquests: {sum(s.get('taken', 0) for s in doc['steps'])}; collapses: {sum(s.get('collapsed', 0) for s in doc['steps'])}")
+    for kind, L in lifetimes(doc).items():
+        if L["n"]:
+            f, h = L["fell"], L["half"]
+            out.append(f"{kind}: {L['n']} ({L['standing']} still stand); founding to fall, median {f[len(f) // 2] if f else '-'} years"
+                       f" (300+ years: {sum(d >= 300 for d in f)} of {len(f)}); at half peak area or more, median {h[len(h) // 2] if h else '-'} years"
+                       f" (300+: {sum(d >= 300 for d in h)}); fell by " + ", ".join(f"{k} {v}" for k, v in L["how"].items() if v))
     return out
