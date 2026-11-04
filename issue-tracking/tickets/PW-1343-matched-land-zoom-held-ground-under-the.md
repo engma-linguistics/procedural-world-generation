@@ -4,7 +4,7 @@ title: "Matched land zoom: held ground under the neighbour's ice may be bare and
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1301]
 refs: ["planet/zoom/match.py::hold", "planet/zoom/match.py::final", "planet/zoom/match.py::sources", "planet/zoom/stage_finish.py::vegetation_layers", "planet/zoom/stage_finish.py::ice_bed", "planet/vegetation.py::classify", "planet/geo.py::is_land", docs/review/land-zoom/seams-round2.md, "zoom fe600a", "zoom 59336f", "world dba204"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ from `m_ice` there, before the landscape pass), so every stage sees ice over a s
   does not cover it, finishes (a synthetic test: neighbour with ice over a bed below 0, this section warm)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-11-02: Created from inbox draft draft-land-zoom-held-ice-bed-before-final.md (found by lane128).

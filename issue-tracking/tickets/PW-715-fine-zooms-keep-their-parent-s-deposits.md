@@ -4,7 +4,7 @@ title: Fine zooms keep their parent's deposits but do not re-site them at the fi
 type: task
 status: todo
 parent: PW-155
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-618, PW-610]
 refs: [planet/zoom/resources.py, planet/zoom/fine.py, "zoom c7eff5 (fun5 test, fine zoom of 875af2)"]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,5 +28,6 @@ Options: A leave it (points are fine for the game use); B re-site with the same 
 to the parent's deposits by key and nearest position. Lean A until the lines are wanted.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Created from inbox draft draft-fine-zoom-deposits-resite.md (found by fun5).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

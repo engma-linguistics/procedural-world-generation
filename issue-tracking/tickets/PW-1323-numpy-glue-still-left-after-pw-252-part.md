@@ -4,7 +4,7 @@ title: Numpy glue still left after PW-252 part 2 (ice rings, route/settle, force
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: infra
 effort: l
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-252, PW-1298]
 refs: ["planet/tectonics/earth.py::ablation_zone", "planet/tectonics/earth.py::_ice_pass", "planet/tectonics/earth.py::sheet_surface", "planet/hydrology.py::route", "planet/hydrology.py::_settle", "planet/tectonics/motion.py::forces", "planet/ocean.py::overturning", "planet/icemass.py::balance", "planet/geo.py::_land_k", "planet/kernels.py::components", docs/review/speed/pw252.md, docs/review/speed/pw252_ab.py, docs/review/speed/pw252_rank.py, docs/review/gpu/scripts/run_sim.py]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ unexamined item. Daniel ruled that L8/L9 speed is not being chased, so this is l
 - [ ] ice ring loops as per-sheet sequential kernels with the same tie order (only if the ice pass shows up in a profile)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: tool or performance nicety
 - 2026-11-02: Created from inbox draft draft-glue-remaining-after-part2.md (found by lane-118 (PW-1297, PW-1298)).

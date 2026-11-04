@@ -4,7 +4,7 @@ title: "Coastal upwelling cools the whole Gulf of Mexico 1.45 C (up to 6 C in th
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1362, PW-593]
 refs: [docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/seaparts.py, "planet/climate.py::upwelling_cooling", "planet/climate.py::sea_surface"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,4 +43,5 @@ It's small and has two parts, so it's noted here, not ticketed.
 - [ ] Gulf box upwelling under ~0.5 C mean, with the four big eastern-boundary upwellings unchanged (+-0.5 C)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-02: Created from inbox draft draft-gulf-upwelling-box-wide.md (found by lane134).

@@ -4,7 +4,7 @@ title: Marine fans at the Ross and Amery fronts still reach 300-410 m
 type: task
 status: todo
 parent: PW-649
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-495]
 refs: [planet/timezoom/deposit.py, planet/timezoom/params.py]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,5 +26,6 @@ over ~2.6 Myr, so 400 m in 0.6 Myr is not out of range.
 - [ ] decide whether 411 m is acceptable; if not, a critical-slope relaxation of the sea-floor till
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ice-age/time-zoom work, parked post-v1 (epic PW-470)
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-marine-fan-still-300m-at-ross.md (found by pw497).

@@ -4,7 +4,7 @@ title: "Standard export bundle: equirectangular maps (biomes, elevation, tempera
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: med
@@ -13,12 +13,13 @@ blocked_by: []
 relates: [PW-477]
 refs: [docs/review/landscape/gleba-rock3-world-climate-lab.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
 Rock 3 and World Climate Lab both sell on 8K equirectangular exports. Check what PW-477's static maps already give; add a one-click bundle from the viewer at the zoom's or world's resolution (upsampled honestly, saying so).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-29: Owner 10-29: a late-v2 item.
 - 2026-10-29: Created from inbox draft draft-export-bundle.md (found by coordinator).

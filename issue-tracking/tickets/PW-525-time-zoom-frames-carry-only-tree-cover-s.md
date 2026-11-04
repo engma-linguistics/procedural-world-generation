@@ -4,7 +4,7 @@ title: Time zoom frames carry only tree cover; shrubs, herbs and the named type 
 type: task
 status: todo
 parent: PW-184
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-213, PW-103]
 refs: [planet/timezoom/plants.py, planet/finish.py, planet/vegetation.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ Try: migration-limit the shrubs (faster than trees), refresh the potential of ne
 store `plant_cover`, and record the refugia properly.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ice-age/time-zoom work, parked post-v1 (epic PW-470)
 - 2026-10-21: Created from inbox draft draft-veg-timezoom-frames-detail.md (found by pw213).

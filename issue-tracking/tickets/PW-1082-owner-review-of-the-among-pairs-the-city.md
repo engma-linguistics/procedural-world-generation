@@ -4,7 +4,7 @@ title: Owner review of the 'among' pairs, the city-minority shares and the PW-88
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: culture
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-889, PW-665, PW-856]
 refs: [docs/review/lineages/kinship-cities/README.md, planet/lineages/samples/dnd.toml, planet/lineages/history/params.py, planet/lineages/history/cities.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,5 +37,6 @@ Constants (history/params.py, each commented as a judgement):
 - [ ] owner: keep, change or drop each among pair; set the city shares (should kobolds also live in dwarven towns only, say?)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: later cultures work (languages, polities, religion, morality); food comes first (fresh-eyes review, D44)
 - 2026-10-30: Owner 10-30: goblinoid cohabitation confirmed. City minorities generalise: any people that doesn't usually get along with a city's or polity's people can live there as a minority if it 'promises to play nice' (tolerated, dirty looks). Kobolds and goblins were only examples. Build once polities exist.
 - 2026-10-30: Created from inbox draft draft-among-pairs-and-city-numbers-owner-review.md (found by fun-lane-54).

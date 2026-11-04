@@ -4,7 +4,7 @@ title: "Coast classes on Earth: 6 of 32 anchor places miss (Cornwall, Bunda Clif
 type: task
 status: todo
 parent: PW-097
-milestone: v2
+milestone: later
 subsystem: coast
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-097, PW-074, PW-323, PW-649]
 refs: [planet/coastform.py, tools/coast_check.py, "world 577526"]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,5 +29,6 @@ updated: 2026-10-23
 An anchor, not a target: only fix where a cause is physical (PW-074 waves), not by moving thresholds.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-coast-earth-misses.md (found by coast-detail).

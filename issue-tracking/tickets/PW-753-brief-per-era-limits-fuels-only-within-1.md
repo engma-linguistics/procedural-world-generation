@@ -4,7 +4,7 @@ title: Brief per-era limits - fuels only within 12.5 kyr, groups seen only where
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-742, PW-745]
 refs: [planet/lineages/landuse.py, planet/lineages/history.py, planet/lineages/brief.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ Left after PW-742's remainder:
 - Landuse inputs are written twice (`landuse.derive` for the present, `frame_inputs` per frame): a refactor to share them is worth a yes.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-24: Created from inbox draft draft-brief-era-window-and-route-wing.md (found by fun12).

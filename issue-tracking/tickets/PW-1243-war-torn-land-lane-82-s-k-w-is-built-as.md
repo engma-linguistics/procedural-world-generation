@@ -4,7 +4,7 @@ title: War-torn land (lane 82's K(W)) is built as a brake with one dial (meta.wa
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1172, PW-1165, PW-1194]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-brakes/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ the run file and workbench (only the stress suite records it, as `brakes`).
 - [ ] the run output and the workbench show each people's lost-to shares (war, raid, feud, cull)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-war-land-term-built-rest-of-war-open.md (found by lane97).

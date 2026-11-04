@@ -4,7 +4,7 @@ title: Ruminant peoples' forage-led diet is only described, not simulated (body.
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-850, PW-793, PW-800]
 refs: [planet/lineages/spec.py, planet/lineages/crops.py, planet/lineages/samples/seven_meals.toml]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,4 +22,5 @@ Option: make a people's crop uptake (crops.Crops adoption or k_mult) scale grain
 - [ ] a ruminant farming culture's staple mix reads forage-led in the brief's crops line
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-25: Created from inbox draft draft-ruminant-grain-forage-simulated.md (found by fun-lane-24).

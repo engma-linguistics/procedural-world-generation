@@ -4,7 +4,7 @@ title: "Seven Meals on world af2677: humans 24% -> 29% after the inland pits (a 
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1239, PW-1229]
 refs: [docs/review/peoples-leader/data.json, tools/peoples_robust.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,5 +33,6 @@ Worth a look only if the Seven Meals half-orcs (who already die out now and then
 - [ ] if wanted: the inland-pit cells of af2677 that are land now, and who holds them in Seven Meals
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-01: Created from inbox draft draft-seven-meals-af2677-humans-up-after-pits.md (found by lane101).
 - 2026-10-31: Created by lane 101 (PW-1239's check; PW-1239 can close on it).

@@ -4,7 +4,7 @@ title: Gnomes end rarer when their founders are split over many portals
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1150, PW-1149]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/portals.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -42,4 +42,5 @@ They do hold about as much land, or more. Elves, by contrast, gain a lot from ar
 - [ ] pick an option (lean now: c, leave it); re-check menagerie at a second seed
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples-share tuning, paused until war and polities exist
 - 2026-10-30: Created from inbox draft draft-gnomes-thin-out-when-split-over-many-portals.md (found by lane78).

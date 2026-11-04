@@ -4,7 +4,7 @@ title: "Epidemics: crowd diseases once a people's towns pass a few hundred thous
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-1108, PW-661]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/contacts.py, planet/lineages/history/cities.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -48,5 +48,6 @@ Design: docs/review/peoples-counterpressures/design.md, section (c). Depends on 
 - [ ] lane 77 arms (off / default / x4; virgin_soil 0 / 0.6 / 0.9) with post-pulse cell flips reported
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Owner 2026-10-31: virgin-soil epidemics stay OFF by default for now; the events system design (docs/review/peoples-events/design.md) covers epidemics as events.
 - 2026-10-30: Created from inbox draft draft-epidemics-counterpressure.md (found by lane-82).

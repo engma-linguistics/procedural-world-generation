@@ -4,7 +4,7 @@ title: Worlds' semi-arid tropics are cloudier and cooler-wintered than Earth's a
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1261, PW-1321, PW-1279]
 refs: ["planet/climate.py::shade_from_hours", "planet/climate.py::months", "planet/vegetation.py::_ft", docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/world_check.py, docs/review/vegetation/npp-check/inputs_cmp.py, "world 067778", "world 6909cb", "world dba204", "world 506694 (Earth L6)", docs/review/base-climate/rain-inland/diagnosis.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,6 +27,7 @@ in the Sahel/E Africa band, lanes 120/121's tools).
 - [ ] cloud and coldest-month temperature of warm 400-900 mm land: Earth model climate vs observed, then the worlds
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-02: Correction to the update above: the cool coldest month is PW-1335 (not 1336).
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 125: worlds' tropics match the Earth model's own shade; the Earth model is ~0.13 too shady vs CRU, from the humidity-layer cloud (cloud_rh) in warm air (PW-1334) plus over-rain; cool coldest month is separate (PW-1336). docs/review/base-climate/tropical-cloud/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 125, diagnosis only (Earth model vs CRU cloud/sunshine and coldest month, then worlds).

@@ -4,7 +4,7 @@ title: "No existing checkpoint can be re-saved: all 68 runs' checkpoints lack st
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: store
 effort: xs
 impact: low
@@ -39,4 +39,5 @@ accepting t=0 replays. The same will happen at every future change to STATE: eac
 - [ ] optional: have `planet simulate`/`replay` say once, in plain words, that a checkpoint is from older code and the run replays from t=0
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: store/export nicety
 - 2026-11-03: Created from inbox draft draft-all-old-checkpoints-lack-state.md (found by lane 149).

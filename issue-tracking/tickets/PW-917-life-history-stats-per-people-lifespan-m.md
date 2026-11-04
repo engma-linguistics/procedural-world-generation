@@ -4,7 +4,7 @@ title: Life-history stats per people (lifespan, maturity, offspring) with counte
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-888, PW-904, PW-916]
 refs: []
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ Deep-time sanity check, to add to the peoples acceptance tests:
 - Deep time, before ~20 kyr ago, only has to find reasonable places for each species.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-26: Created from inbox draft draft-life-history-stats.md (found by owner).

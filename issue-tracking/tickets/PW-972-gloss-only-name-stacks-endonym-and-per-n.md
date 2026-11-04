@@ -4,7 +4,7 @@ title: "Gloss-only name stacks: endonym and per-neighbour exonym patterns from c
 type: story
 status: todo
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: culture
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-731, PW-767, PW-665]
 refs: [planet/lineages/reputation.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Owner 2026-10-28. Fixes PW-856's 'exonyms too narrow' note without a language ge
 - [ ] on a fantasy run, fewer than a third of exonym rows read plain 'foreigners', and each row names its basis
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-10-28: Created.

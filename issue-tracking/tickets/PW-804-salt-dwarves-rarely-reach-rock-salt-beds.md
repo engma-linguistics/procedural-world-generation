@@ -4,7 +4,7 @@ title: Salt dwarves rarely reach rock-salt beds because evaporites lie in desert
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-797, PW-796]
 refs: [planet/lineages/mining.py, planet/lineages/samples/dnd.toml, "run d22731 (deleted), world 6fbc2c"]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,5 +29,6 @@ Lean: A until a showcase world needs one, then B.
 - [ ] a showcase run where a salt-dwarf group leads at least one bed district
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-24: Placed under PW-692.
 - 2026-10-24: Created from inbox draft draft-salt-dwarves-reach-the-beds.md (found by fun-lane-23).

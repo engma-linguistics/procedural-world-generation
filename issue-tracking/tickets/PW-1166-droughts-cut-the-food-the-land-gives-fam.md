@@ -4,7 +4,7 @@ title: Droughts cut the food the land gives (famine) and send peoples to rivers 
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-661, PW-1108]
 refs: [planet/lineages/recent.py, planet/lineages/history/habitat.py, planet/lineages/prey.py, docs/review/peoples-counterpressures/design.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,4 +41,5 @@ draft-recent-droughts-earthlike-rate makes droughts common enough.
 - [ ] lost.famine reported; settlements' "drought" abandonments line up with it
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-drought-famine-and-habitat-tracking.md (found by lane-82).

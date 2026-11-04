@@ -4,7 +4,7 @@ title: Time zooms still take every cell below their moment's sea level for sea, 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1229]
 refs: [planet/timezoom/sim.py, planet/geo.py, viewer/globe/load.js]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ chunk: cost ~20 ms at L7), and let `landView` apply `seaMask` to time-zoom frame
 - [ ] a time zoom of a world with a cut-off pocket keeps it land at every frame
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ice-age/time-zoom work, parked post-v1 (epic PW-470)
 - 2026-10-31: Created from inbox draft draft-timezoom-sea-ignores-connection.md (found by lane98).

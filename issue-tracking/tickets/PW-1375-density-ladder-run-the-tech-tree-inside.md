@@ -4,7 +4,7 @@ title: "Density ladder: run the tech tree inside the history instead of the stag
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: culture
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1275, PW-1350]
 refs: ["planet/lineages/ladder.py::Ladder.tech", "planet/lineages/ladder.py::PLOUGH_STEPS", "planet/lineages/ladder.py::IRR_LAG", "planet/lineages/ladder.py::TERRACE_LAG", "planet/lineages/ladder.py::ERA_STAGE", planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, planet/lineages/history/growth.py, docs/review/peoples/density-ladder/build.md, docs/review/peoples/density-ladder/ladder.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,4 +30,5 @@ from the techs actually known; then drop the lags. Check the cost per step on th
 - [ ] before/after on the robust suite: rung densities and shares
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-02: Created from inbox draft draft-ladder-tech-tree-inside-history.md (found by lane 136 / lane 137 (density ladder build)).

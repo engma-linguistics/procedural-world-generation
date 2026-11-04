@@ -4,7 +4,7 @@ title: "Language end-to-end demo on one fantasy run: demes to proto-languages to
 type: story
 status: todo
 parent: PW-767
-milestone: v2
+milestone: later
 subsystem: culture
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-982, PW-984, PW-972, PW-728]
 refs: []
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,4 +29,5 @@ The owner reviews it as a linguist and rules: accept as the v2 end state (PW-982
 - [ ] owner ruling recorded: accepted end state or demo only
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-10-28: Created.

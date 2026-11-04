@@ -4,7 +4,7 @@ title: Spits and other shore forms are still raised after the fact (planet coast
 type: task
 status: todo
 parent: PW-097
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-622, PW-621]
 refs: [planet/zoom/coast.py, planet/zoom/shoreforms.py, planet/zoom/regional.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,5 +26,6 @@ Options: A leave them as layers (no terrain change); B build them in `zoom.build
 Lean B if the owner wants spits as terrain.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Created from inbox draft draft-zoom-shore-forms-in-build.md (found by fun5).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

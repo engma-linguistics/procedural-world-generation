@@ -4,7 +4,7 @@ title: High ground is ~1.5 C/km too cold on Earth (all latitudes); a mass elevat
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1335]
 refs: ["planet/climate.py::temperature", "planet/climate.py::compute", "tools/earth_data.py::earth_on_grid", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/winter2.py, docs/review/base-climate/tropical-cloud/round2.patch, "paper:He2016"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,4 +35,5 @@ latitudes to low latitudes"). Why 35-50 deg lowlands are already +3.4 C in winte
 - [ ] decide whether to take the effect; if so, Earth highland miss within ~0.5 C/km without 40-60 deg winters past +1 C
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-02: Created from inbox draft draft-mass-elevation-effect-highland-temperature.md (found by lane131).

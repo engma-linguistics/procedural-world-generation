@@ -4,7 +4,7 @@ title: "After New Zealand walls the gyres (PW-594 step 1) the Tasman is still +3
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-594, PW-595]
 refs: [planet/climate.py, docs/review/base-climate/laneA17/wbc_step1.txt, docs/review/base-climate/laneA17/curmap.py, docs/review/base-climate/laneA17/gyre_base.txt]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,5 +43,6 @@ separation rule (a WBC leaves the coast where it turns away from the meridian / 
 - [ ] Tasman near-land SST within 2 C of NCEP's air
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-pw594-tasman-still-warm.md (found by base-climate-laneA17).

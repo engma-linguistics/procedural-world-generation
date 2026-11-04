@@ -4,7 +4,7 @@ title: Check that the Holocene gate matches each world's own last deglaciation (
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -23,4 +23,5 @@ In plain words: the peoples' calendar assumes Earth's Holocene: the tech tree's 
 Planet-relative, not Earth numbers (owner ruling on planet-relative thresholds).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-03: Created.

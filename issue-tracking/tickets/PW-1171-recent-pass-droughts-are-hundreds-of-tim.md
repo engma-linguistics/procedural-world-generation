@@ -4,7 +4,7 @@ title: Recent-pass droughts are hundreds of times rarer than Earth's and run lon
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-661]
 refs: [planet/lineages/recent.py, docs/review/peoples-counterpressures/design.md, planet/climate.py, docs/review/peoples-events/design.md]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,6 +43,7 @@ What to try (sizes from Cook & Seager's megadrought manuscript and Weiss 2016; r
 - [ ] episode statistics check against the design's table
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Merged inbox draft draft-droughts-from-climate-variability-physics.md ("Droughts from the climate's own variability: Earth-like megadrought rate, placed where the model's rain is touchy (v2 physics)", found by lane-85).
   **In plain words.** The climate model has no droughts of its own. It is an average climate, computed every 2,000 years. The few droughts
   the peoples ever see are dice rolled by the recent pass. There are far too few, and they land anywhere on land, not where real droughts

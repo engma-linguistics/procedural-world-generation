@@ -4,7 +4,7 @@ title: The diagnostics' sink CO2 slope (w_a) ignores the plants' starvation belo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1227]
 refs: [planet/tectonics/diag.py, planet/tectonics/earth.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ In plain words. A diagnostic number reads slightly wrong at very low CO2; the mo
 - [ ] w_a matches `co2_slope(X, bare, starve)` below the floor
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-31: Created from inbox draft draft-diag-co2-slope-ignores-starvation.md (found by lane95).

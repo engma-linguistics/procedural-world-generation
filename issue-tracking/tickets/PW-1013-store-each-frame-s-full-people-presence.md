@@ -4,7 +4,7 @@ title: Store each frame's full people presence as bit flags so demes see peoples
 type: task
 status: todo
 parent: PW-981
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-689]
 refs: [planet/lineages/history/frame.py, planet/lineages/output.py, planet/lineages/demes.py, "run b69f51"]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -36,4 +36,5 @@ bit instead of lead/second.
 - [ ] demes.occupied uses it when present; the caveat table above re-measured (target: every people >= 90% seen)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-29: Created from inbox draft draft-demes-full-presence-frames.md (found by fun46-demes).

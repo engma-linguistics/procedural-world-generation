@@ -4,7 +4,7 @@ title: "Triple junctions split three ways too often: Burke & Dewey 1973 have one
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-952]
 refs: [planet/tectonics/events.py, planet/tectonics/params.py, docs/review/tectonics/rifts/rifts.md, docs/references/tectonics/burke_dewey1973_plume_triple_junctions_jgeol.pdf]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,4 +41,5 @@ Lean: B. It keeps the three-way feature, rarer, and matches the paper's rule of 
 - [ ] largest plate share over 600-1000 Myr stays near PW-952's 26%; paired pass rate unchanged
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-29: Created from inbox draft draft-aulacogen-odds-burke-dewey.md (found by papers-1029).

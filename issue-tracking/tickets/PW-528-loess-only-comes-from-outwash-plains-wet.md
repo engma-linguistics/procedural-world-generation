@@ -4,7 +4,7 @@ title: Loess only comes from outwash plains, wet or dry, not from deserts
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-497, PW-096]
 refs: ["planet/timezoom/sim.py (drop)", planet/timezoom/deposit.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,4 +26,5 @@ source from the world's desert/dune cells; keep the volume bookkeeping (loess la
 - [ ] loess also downwind of the Sahara / Gobi analogue
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ice-age/time-zoom work, parked post-v1 (epic PW-470)
 - 2026-10-21: Created from inbox draft draft-loess-from-deserts-and-dryness.md (found by pw497).

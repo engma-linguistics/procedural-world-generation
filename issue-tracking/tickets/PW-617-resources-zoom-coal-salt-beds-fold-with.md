@@ -4,7 +4,7 @@ title: "Resources: zoom coal/salt beds fold with the zoom's ridges by a proxy, n
 type: task
 status: todo
 parent: PW-155
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-610, PW-649]
 refs: [planet/zoom/resources.py, planet/zoom/landforms.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,6 +28,7 @@ regional dip, so a bed outcrops only where valleys cut down to it.
 - [ ] coal outcrop belts in a fold-belt zoom follow its ridges' strike
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-resources-zoom-bed-geometry.md (found by resources2).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

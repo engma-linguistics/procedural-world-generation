@@ -4,7 +4,7 @@ title: One "sinking site" is the centroid of a sinking area from the Labrador Se
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: s
 impact: low
@@ -33,4 +33,5 @@ anyone reading `moc_sites` or `overturning_report.py`, can be misled the same wa
   or cut at sills shallower than LOOP_DEEP_M), or report the sinking by its strongest cells rather than the centroid
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-03: Created from inbox draft draft-moc-site-centroid-misleads.md (found by lane150).

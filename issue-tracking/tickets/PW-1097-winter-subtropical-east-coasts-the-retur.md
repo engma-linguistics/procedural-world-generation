@@ -4,7 +4,7 @@ title: "Winter subtropical east coasts: the return flow's vapour arrives but doe
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-998, PW-026]
 refs: [planet/climate.py, docs/review/base-climate/coasts/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -46,6 +46,7 @@ vapour in mm against NCEP:
   vapour-limited (7.7 mm vs NCEP 17.5): what's left is the return flow's supply.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-30: Lane 58 (docs/review/base-climate/moisture-budget/README.md): SE USA Oct-Mar budget: mean wind -455 mm/yr (offshore), drift +198, mixing
   +214; the Gulf exports the right amount (-1354 vs -1261) but southward. In summer SE USA rains at the observed
   rate per mm but is flushed north (S face +3853, N -4189) into NE USA (2634 vs 1132): the land-sea inflow draft.

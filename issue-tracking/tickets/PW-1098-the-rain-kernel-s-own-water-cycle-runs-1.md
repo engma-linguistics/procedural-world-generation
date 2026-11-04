@@ -4,7 +4,7 @@ title: The rain kernel's own water cycle runs ~1.56x too fast (vapour lasts 4.1 
 type: task
 status: todo
 parent: PW-015
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1093]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,4 +41,5 @@ To decide: whether the rates should carry physical units (no rescale), and what 
 sea's. Low priority. It's a consistency check, and Earth's rain pattern doesn't need it now.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-30: Created from inbox draft draft-kernel-rain-cycle-too-fast.md (found by lane58).

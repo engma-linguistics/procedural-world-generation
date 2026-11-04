@@ -4,7 +4,7 @@ title: "The sea's seasonal layer is 50 m everywhere, also on shelves shallower t
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-627, PW-592, PW-593, PW-595]
 refs: [planet/climate.py, docs/review/base-climate/laneA18/step2_shelf_probe.diff, docs/review/base-climate/laneA18/depth.py, docs/review/base-climate/laneA18/seabox.py, docs/review/base-climate/stages.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,6 +41,7 @@ which is right, but the overturning's sites and the Norwegian coast need the usu
 - [ ] the seasons' layer no deeper than the sea floor, with the Earth bars and stage 1 measured after PW-592
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Lane A20: with the shelf-air rule + step 2, the shelf-depth layer moves W Europe warmest -1.6 -> -1.3.
 - 2026-10-23: Created from inbox draft draft-sea-layer-deeper-than-shelf.md (found by base-climate-laneA18).

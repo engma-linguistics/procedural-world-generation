@@ -4,7 +4,7 @@ title: The rain kernel's vapour transport isn't mass-conservative (fresh-water r
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-266, PW-211]
 refs: [planet/climate.py, planet/ocean.py]
 created: 2026-10-15
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Measured as the residue in m/yr over the sea, after PW-266:
 Fix: make the transport conservative (each cell sends its moved vapour out in shares that sum to 1, and the inflow is what its neighbours send), and give the mixing a symmetric edge form. Keep the PW-211 seam fix in some form, then re-check PW-211's rain-streak test. Then lower `FW_RESIDUE` to 1 cm/yr.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-26: Parent PW-245 (done) -> PW-013. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone v2 -> v1 and impact low -> med (PW-597 triage, coordinator, 2026-10-23): the kernel's vapour transport is not mass-conservative (fresh-water residue ~1 cm/yr on L6 planets, up to 0.6 m/yr on banded test planets), a real v1 bug.

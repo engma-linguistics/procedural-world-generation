@@ -4,7 +4,7 @@ title: The shelf builds out with a vertical front one cell wide (the clinoform f
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: surface
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-950, PW-818]
 refs: [planet/surface.py, paper:Mosher2017, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/diagnosis-foreset.md, docs/review/tectonics/margin/margindiag.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -46,5 +46,6 @@ within 2 cells 59.9% -> 25.2% (Earth 22%), 200-3000 m share of the ocean 12.9% -
 is still open for L8 only.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: surface/resources refinement; not needed for the culinary goal
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-clinoform-front-has-no-foreset-slope.md (found by lane100).

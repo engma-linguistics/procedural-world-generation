@@ -4,7 +4,7 @@ title: "In-fighting for every people: its size and its state rule are judgements
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1240, PW-1172, PW-1241, PW-661]
 refs: [planet/lineages/history/counter.py, planet/lineages/history/params.py, docs/review/peoples-leader/data.json]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,5 +37,6 @@ until war and polities are in, so these are parked for that work, not for now:
 - [ ] revisit with the war and polities work (PW-1172, PW-661)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-01: Created from inbox draft draft-in-fighting-judgements-for-polities.md (found by lane101).
 - 2026-10-31: Created by lane 101.

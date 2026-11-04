@@ -4,7 +4,7 @@ title: "Short cited note: after conflict, are long-lived slow breeders (elves, d
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: docs
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: [PW-1165]
 relates: [PW-1149, PW-1169]
 refs: [docs/review/peoples-events/design.md, docs/review/peoples-demography/report.md, planet/lineages/life_history.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ mammal breeding for elves and dwarves, and read the median shares against 2–4%
 - [ ] owner card
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: docs/provenance work, not needed for the planet or the culinary goal
 - 2026-10-31: Created from inbox draft draft-slow-breeders-share-note.md (found by lane-85).

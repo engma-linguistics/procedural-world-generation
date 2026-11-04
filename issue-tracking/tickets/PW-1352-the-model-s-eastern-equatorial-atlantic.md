@@ -4,7 +4,7 @@ title: The model's eastern equatorial Atlantic (off Gabon and Angola) hardly coo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1347, PW-1334]
 refs: ["planet/climate.py::sea_surface", "planet/climate.py::upwelling_cooling", "planet/climate.py::clouds", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/screen2.py, docs/review/base-climate/tropical-cloud/round2.patch, "paper:Champagne2023", "paper:Berger2025", "paper:Philippon2019"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -36,4 +36,5 @@ inland for the land stratus gate). It did nothing on today's sea.
 - [ ] model cool-season SST off Gabon within ~1 C of an SST climatology; then Congo sky re-measured with candidate c
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-02: Created from inbox draft draft-east-equatorial-atlantic-cold-season-too-warm.md (found by lane131).

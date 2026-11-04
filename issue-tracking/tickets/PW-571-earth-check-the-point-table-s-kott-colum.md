@@ -4,7 +4,7 @@ title: "earth_check: the point table's Kott column and the region table's Kottek
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: infra
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [tools/earth_check.py]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ regions use `top(np.maximum(ok, 0), rk)`.
 Fix it, then check it against a few cities whose codes are known: Cairo BWh, London Cfb, Moscow Dfb.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: tool or performance nicety
 - 2026-10-22: Created from inbox draft draft-earth-check-kottek-column.md (found by base-climate-review).

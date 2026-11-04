@@ -4,7 +4,7 @@ title: landuse.derive still splits each people's density by its fixed [[use]] sh
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1275, PW-1357]
 refs: ["planet/lineages/landuse.py::derive", "planet/lineages/landuse.py::shares", "planet/lineages/landuse.py::frame_inputs", "planet/lineages/ladder.py::Ladder.sh", "planet/lineages/ladder.py::Ladder.rung", "planet/lineages/animals.py::Stock.__init__ (sh and propensity from landuse.shares)", planet/lineages/output.py, docs/review/peoples/density-ladder/build.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,4 +30,5 @@ What to try: save the ladder's per-line farm and herd shares per cell (or per li
 - [ ] land cover before/after on a dnd run (cropland and pasture per people)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-02: Created from inbox draft draft-landuse-derive-static-shares.md (found by lane 136 / lane 137 (density ladder build)).

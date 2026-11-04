@@ -4,7 +4,7 @@ title: Ways of life follow-ups - hybrids take only the first parent's way, no pr
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-723, PW-724, PW-661]
 refs: [planet/lineages/spec.py, planet/lineages/samples/dnd.toml, planet/lineages/landuse.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ PW-723 landed `Lineage.way` (spec.WAYS). Left over:
 - Hill giants are pastoral nomads but there is no giant-scale stock yet (PW-724), so they tame the ordinary herd animals at density 0.01.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-24: Created from inbox draft draft-ways-of-life-followups.md (found by fun10).

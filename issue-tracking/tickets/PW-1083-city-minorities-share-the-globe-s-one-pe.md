@@ -4,7 +4,7 @@ title: City minorities share the globe's one "peoples overlay" slot with half-el
 type: task
 status: todo
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-889, PW-752]
 refs: [viewer/globe/layers.js, planet/lineages/history/frame.py, planet/lineages/history/cities.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ What to try: store a per-cell bit mask, or a small "minorities" layer, holding e
 - [ ] a layer (or a toggle on "peoples overlay") shows city minorities on their own
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-30: Created from inbox draft draft-city-minorities-own-globe-layer.md (found by fun-lane-54).

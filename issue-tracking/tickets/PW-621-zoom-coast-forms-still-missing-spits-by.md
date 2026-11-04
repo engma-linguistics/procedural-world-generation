@@ -4,7 +4,7 @@ title: "Zoom coast forms still missing: spits by longshore drift, beach ridges, 
 type: task
 status: todo
 parent: PW-097
-milestone: v2
+milestone: later
 subsystem: coast
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-097, PW-326, PW-004]
 refs: [planet/zoom/coast.py, docs/proposals/coast_detail.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,6 +33,7 @@ beach/rocky classes run up tidal rivers; harmless but noisy.
 - [ ] drowned-reef layer from a time zoom's sea-level curve
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Polish lane 1 (44c50c9): spits and beach ridges by longshore drift, tidal flats and channels, drowned reefs at the last low stand (planet/zoom/shoreforms.py). Left: cliffs as terrain, raised reef terraces, branching channels at 1 km; PW-641.
 - 2026-10-23: polish1 lane: planet/zoom/shoreforms.py, run by `planet coast zoom:<id>`. It adds the layer shore_form (spits by longshore drift with recurved hooks, beach-ridge plains, tidal flats with D8 channels, drowned lowstand reefs) and spit features; spits are raised only with --terrain. Existing zoom outputs are unchanged. The viewer has a 'Shore forms' layer. Zoom 9d7c44 has 10 west-pointing spits under the trades; 368c45 has 20 spits and 1540 km2 of ridges; bc40a3 has 17100 km2 of flats. Not done: cliffs as terrain; the flats are coarse at 2 km/px (draft-shoreforms-followups). docs/review/polish/polish-1.md.
 - 2026-10-23: Created from inbox draft draft-coast-zoom-forms-remaining.md (found by coast-detail).

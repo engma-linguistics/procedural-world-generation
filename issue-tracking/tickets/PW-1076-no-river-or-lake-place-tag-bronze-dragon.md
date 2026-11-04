@@ -4,7 +4,7 @@ title: "No river or lake place tag: bronze dragons' big rivers and steppe lakes 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1024]
 refs: [planet/lineages/history/tags.py, planet/lineages/crossing.py, planet/lineages/samples/dnd.toml]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,4 +29,5 @@ What to try:
 - [ ] bronze dragons present along big steppe rivers on at least one sweep world
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-river-and-lake-place-tags.md (found by fun-lane-50).

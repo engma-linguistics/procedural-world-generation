@@ -4,7 +4,7 @@ title: The contact record is read at the stored epochs, from the wholes' presenc
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-727, PW-701]
 refs: [planet/lineages/contacts.py, planet/lineages/history.py, docs/review/lineages/briefs/SCHEMA.md]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ PW-727 is built as output only (contacts.py), so its limits are known and listed
 - [ ] store `contacts` per epoch as a layer if the viewer wants to draw the haloclines over time
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-24: Created from inbox draft draft-contact-record-resolution.md (found by fun11).

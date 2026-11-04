@@ -4,7 +4,7 @@ title: "Peoples preset: fire giants hold only a refuge (~50 giants) on 1df1c3 an
 type: task
 status: todo
 parent: PW-649
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-650, PW-655]
 refs: [planet/lineages/samples/dnd.toml, "run 37e9da (1df1c3)", "run 33b1c3 (3e9e7d)"]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,4 +40,5 @@ Things to try, in order:
 - [ ] fire giants hold ≥ 0.1 Mkm² and a few hundred on both showcase worlds without the strict pull
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Created from inbox draft draft-peoples-fire-giants-refuge.md (found by peoples-workbench-lane).

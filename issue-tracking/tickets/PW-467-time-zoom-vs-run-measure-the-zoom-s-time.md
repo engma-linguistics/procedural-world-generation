@@ -4,7 +4,7 @@ title: "Time zoom vs run: measure the zoom's time-mean ice against the run's (to
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: timezoom
 effort: s
 impact: high
@@ -42,6 +42,7 @@ Build the measurement first, so every later ice-age change is judged by it:
 - [ ] slow test in place (xfail strict on main)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ice-age/time-zoom work, parked post-v1 (epic PW-470)
 - 2026-11-03: Kept at v2 on 11-03 (fresh-eyes review s3) as the one timeboxed item under parked PW-470: the acceptance metric (zoom time-mean ice against the run's) is cheap (effort s) and is what any later ice-age work is judged by. The other open v2 children were parked to later.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-tz-mean-matches-run-check.md (found by pw462).

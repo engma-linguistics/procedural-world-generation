@@ -4,7 +4,7 @@ title: "Demes: say what opened each gap (sea, ice, hard country, or a neighbour 
 type: task
 status: todo
 parent: PW-981
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-902]
 refs: [planet/lineages/demes.py, "run b69f51", "run 2cb509"]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ when a world has them (PW-902: ranges following sea level).
 - [ ] each gap event names its cause; b69f51's 114 and 2cb509's 125 events classified, counts in the review note
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-29: Created from inbox draft draft-demes-gap-cause.md (found by fun46-demes).

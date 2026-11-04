@@ -4,7 +4,7 @@ title: "Dragons' intelligence arrives late: the draconic stem is the animals unt
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-855]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/samples/seven_meals.toml, planet/lineages/spec.py]
 created: 2026-10-25
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,5 +22,6 @@ Options: (A) a line field `sapient_kyr` (default: always), read by the brief/out
 - [ ] dragons listed as animals before their intelligence date, as a people after it, in dnd and seven_meals
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-28: RULING (owner, 10-28): sapience arises once per stem at a dated 'sapiens' node, not per kind; non-sapient lines live on as animals (wyverns, drakes, pseudodragons). Carried by inbox draft-megafauna-10.
 - 2026-10-25: Created from inbox draft draft-dragon-intelligence-late.md (found by fun-lane-26).

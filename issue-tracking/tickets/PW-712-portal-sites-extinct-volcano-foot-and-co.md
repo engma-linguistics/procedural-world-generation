@@ -4,7 +4,7 @@ title: "Portal sites: extinct-volcano foot and coral reef are approximated (youn
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-697, PW-607]
 refs: [planet/lineages/history.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,5 +27,6 @@ Next: if the volcano list in the world meta gains an age, prefer extinct ones; p
 store the portals where a world-side crystal layer can read them.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Accepted as approximations for now; store portals world-side when PW-607's arrival-site crystals are built.
 - 2026-10-23: Created from inbox draft draft-portal-sites-extinct-volcanoes-and-reefs.md (found by fun4).

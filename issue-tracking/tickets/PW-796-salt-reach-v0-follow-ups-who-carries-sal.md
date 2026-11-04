@@ -4,7 +4,7 @@ title: Salt reach v0 follow-ups - who carries salt, mineral licks as sources, an
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-745, PW-732]
 refs: [planet/lineages/salt_reach.py, planet/lineages/brief.py]
 created: 2026-10-24
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,6 +27,7 @@ fun21 added `salt_reach.py` and the brief's `salt.reach` (own / traded / cut-off
 - [ ] decide the licks; [ ] sea routes for trade; [ ] per-people trade partners in the brief's `trade_reach`
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-26: Milestone v3 -> v2. (PW-900 backlog reorg).
 - 2026-10-24: RULING (coordinator): mineral licks stay a human salt source (many were saline springs later boiled for salt, e.g. Big Bone Lick).
 - 2026-10-24: Created from inbox draft draft-salt-reach-follow-ups.md (found by fun21).

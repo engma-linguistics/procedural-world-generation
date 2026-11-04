@@ -4,7 +4,7 @@ title: "Matched land zoom: the coastline switches to the section's own at the ra
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1301]
 refs: ["planet/zoom/match.py::coast", "planet/zoom/match.py::lakes", "planet/zoom/match.py::prepare", "planet/zoom/stage_terrain.py::coastline", docs/review/land-zoom/seams-round2.md, docs/review/land-zoom/seams.py, "zoom b710fd", "zoom 0852e2", "zoom 33a72a", "world dba204"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ coast drifts from one outline to the other over the ramp; the heights already bl
 - [ ] if visible: coast mismatch at +40 km on the coast seam under ~1%, no new stubs or islands in the ramp
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-11-02: Created from inbox draft draft-land-zoom-coast-switch-mid-ramp.md (found by lane128).

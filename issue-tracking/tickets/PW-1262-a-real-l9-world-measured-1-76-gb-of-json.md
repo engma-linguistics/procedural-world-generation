@@ -4,7 +4,7 @@ title: "A real L9 world, measured: 1.76 GB of JSON, 38 min and 39 GB to make by 
 type: task
 status: todo
 parent: PW-1198
-milestone: v2
+milestone: later
 subsystem: store
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1209, PW-490]
 refs: [planet/refine.py, docs/review/refine-l8/design.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ Evidence for PW-1209 (binary world layers), which this should be merged into: th
 - [ ] fold into PW-1209's acceptance: an L9 refined world (`planet refine <world> --level 9`) opens
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Created from inbox draft draft-l9-world-measured.md (found by lane104-refine-l8).

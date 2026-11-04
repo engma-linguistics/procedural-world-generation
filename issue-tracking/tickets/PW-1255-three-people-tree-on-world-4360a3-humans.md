@@ -4,7 +4,7 @@ title: "Three-people tree on world 4360a3: humans 99% even with the raider brake
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1239, PW-1240, PW-1229, PW-1218]
 refs: [docs/review/peoples-leader/data.json, tools/peoples_robust.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,5 +27,6 @@ have changed with the new land. On af2677 the brakes do matter (82% humans at x0
 - [ ] then decide whether this tree is a fair test of the brakes on that world
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-01: Created from inbox draft draft-dnd3-4360a3-humans-99-without-brakes.md (found by lane101).
 - 2026-10-31: Created by lane 101.

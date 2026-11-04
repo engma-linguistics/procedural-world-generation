@@ -4,7 +4,7 @@ title: "Demes pass: 20-33 s per L7 run after the per-people cut; the next halvin
 type: task
 status: todo
 parent: PW-981
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981]
 refs: [planet/lineages/demes.py, "run b69f51"]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ Next steps, if it matters:
 - [ ] demes.derive on b69f51 under 15 s, same output
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-29: Created from inbox draft draft-demes-speed-floor.md (found by fun46-demes).

@@ -4,7 +4,7 @@ title: "Binary world layers: an L8 world's 448 MB JSON is 15% below Chrome's str
 type: task
 status: todo
 parent: PW-1198
-milestone: v2
+milestone: later
 subsystem: store
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-490, PW-1198]
 refs: [planet/world.py, planet/server.py, planet/names.py, viewer/globe/load.js, viewer/globe/select.js, docs/review/viewer-l8/diagnosis.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,4 +41,5 @@ world_landmasses` (scans for the summary line), the viewer's `setWorld`, and any
 - [ ] an L9-sized world (synthetic is fine) opens
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-10-31: Created from inbox draft draft-binary-world-layers.md (found by lane91-viewer-l8).

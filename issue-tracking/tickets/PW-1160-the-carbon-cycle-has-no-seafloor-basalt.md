@@ -4,7 +4,7 @@ title: The carbon cycle has no seafloor (basalt) weathering sink
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1142, PW-865]
 refs: [planet/tectonics/earth.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ kinetics steeper to compensate.
 - [ ] A seafloor term in co2_stock's sink behind a Params switch, normalised to the balance so its share is ~7%
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-30: Created from inbox draft draft-seafloor-weathering-sink.md (found by lane75).

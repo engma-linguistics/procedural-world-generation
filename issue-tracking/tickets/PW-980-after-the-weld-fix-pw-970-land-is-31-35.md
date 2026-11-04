@@ -4,7 +4,7 @@ title: After the weld fix (PW-970) land is 31 -> 35% of the surface and finish m
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-970, PW-950, PW-293, PW-865]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/crust/crust.md]
 created: 2026-10-28
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,6 +34,7 @@ sea level.
 - [ ] land back within ~29-33% at L6 without thinning the crust again
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Lane 28b: warm-finish half looks obsolete (median end T -0.25/+1.44/-0.20 C on 3a58e00d/F/coasts, no warm shift); land-share half open (34.6-34.9% at L6 vs 29-33% target).
 - 2026-10-29: Merged lane 24 10-29: the warm shift is erosion against the frozen sink reference (spin-up erodes ~20% more than late), mostly inside the judge's chaos band (PW-994). Water conservation for the continents' sea merged (null at L6). Open: why the spin-up erodes more after the weld fix; land back toward 29-33%.

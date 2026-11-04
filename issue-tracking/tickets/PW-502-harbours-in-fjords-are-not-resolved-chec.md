@@ -4,7 +4,7 @@ title: "Harbours in fjords are not resolved: check on an Earth zoom, add a world
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: coast
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-099]
 refs: [planet/humanuse.py, "world f6e955", tests/test_humanuse.py]
 created: 2026-10-21
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,6 +22,7 @@ Measured on the Earth world f6e955 (L6, ~120 km cells): harbours appear at estua
 - [ ] if the world needs it: a fjord proxy (deep water beside high relief, 800+ m land next to 100+ m water) as a shelter bonus, as the estuary has; ask before adding, it is a judgement call
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-26: Parent PW-099 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): fjord harbours are v2.
 - 2026-10-21: Created from inbox draft draft-humanuse-fjord-harbours.md (found by humanuse).

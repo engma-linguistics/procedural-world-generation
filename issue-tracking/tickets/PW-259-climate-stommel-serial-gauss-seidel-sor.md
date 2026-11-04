@@ -4,7 +4,7 @@ title: "climate._stommel: serial Gauss-Seidel/SOR is 5% of an L7 run and 8.5% of
 type: task
 status: todo
 parent: PW-247
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-249]
 refs: [planet/climate.py, docs/review/gpu/profile.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ slightly (converged vs iteration-limited psi), so this needs a check that curren
 (`tools/earth_check.py`) and new goldens.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-15: Created from inbox draft draft-stommel-solver-sequential.md (found by gpu-explore (PW-249)).

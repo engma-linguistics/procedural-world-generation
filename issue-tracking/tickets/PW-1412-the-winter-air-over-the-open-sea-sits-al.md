@@ -4,7 +4,7 @@ title: The winter air over the open sea sits almost at the water's temperature; 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -43,4 +43,5 @@ formula), everywhere, not only downwind of land. Needs a source for C_H and the 
   seas' winter air no worse
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-03: Created from inbox draft draft-winter-air-over-heat-losing-sea.md (found by lane142).

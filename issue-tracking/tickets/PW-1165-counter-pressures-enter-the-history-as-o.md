@@ -4,7 +4,7 @@ title: Counter-pressures enter the history as one cut to carrying capacity, from
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-1148]
 relates: [PW-917, PW-1147, PW-1148, PW-1068, PW-1108, PW-661]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/history/model.py, planet/lineages/history/competition.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,4 +38,5 @@ Design: docs/review/peoples-counterpressures/design.md, "The shared plug".
 - [ ] lane 77 suite reports lost.* and post-pulse cell flips
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-counterpressure-plug.md (found by lane-82).

@@ -4,7 +4,7 @@ title: Den peoples gain from raiding but their farming and herding neighbours lo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1377, PW-1350, PW-1275]
 refs: [docs/review/peoples/density-ladder/sources-round2.md, "planet/lineages/ladder.py::Ladder.line", "planet/lineages/ladder.py::Ladder.settled_near", "planet/lineages/ladder.py::RAID_CAP", "planet/lineages/ladder.py::RAID_HALF", "planet/lineages/ladder.py::RAID_REACH", "paper:Hendrickson1998", "paper:Glowacki2015", docs/review/peoples/density-ladder/build.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,5 +37,6 @@ Lean: A for now, C when peoples' relations exist. A number for B would need the 
 McCabe 2004, on `docs/references/wishlist.md`).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-02: Coordinator: A now (leave), C later: fold into relations between peoples (polities v0/v1).
 - 2026-11-02: Created from inbox draft draft-raiders-thin-their-neighbours.md (found by lane 138 (density ladder sources round 2)).

@@ -4,7 +4,7 @@ title: "The SH gyres' western boundary currents warm their coasts 3-5 C too far 
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-589, PW-017]
 refs: [planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,6 +34,7 @@ whether the westerlies' equatorward Ekman transport (cold water north) is missin
 - [ ] Tasman / Agulhas near-land SST within 2 C, without cooling the SH subtropics' east coasts' summers below NCEP
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Lane A17 (branch worktree-agent-a6b65c5df0ddd0d62, 7b41cea, waits on PW-623 with PW-596): islands longer N-S than two boundary-current widths now wall the gyres (New Zealand, Luzon, Sulawesi); Tasman SST 19.3 -> 18.5, bar not met; remainder PW-625.
 - 2026-10-22: Created from inbox draft draft-sh-western-boundary-currents-too-warm.md (found by base-climate-laneA13).

@@ -4,7 +4,7 @@ title: "Settlements: sacked, razed and walled: war and raids as a cause of a sit
 type: task
 status: todo
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: culture
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1011, PW-661, PW-961]
 refs: [planet/lineages/settlements.py, planet/lineages/contacts.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ Owner (PW-856, 10-25): crowding on a small landmass leads to conflict over resou
 - [ ] a "sacked by" and "razed by" reason in the ledger, from stored contacts; walls matter
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: later cultures work (languages, polities, religion, morality); food comes first (fresh-eyes review, D44)
 - 2026-10-30: Created from inbox draft draft-settlements-war-and-raids.md (found by fun-lane-60).

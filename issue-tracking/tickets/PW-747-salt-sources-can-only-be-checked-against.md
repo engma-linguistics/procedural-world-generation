@@ -4,7 +4,7 @@ title: Salt sources can only be checked against real interiors coarsely - the Ea
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: xs
 impact: low
@@ -13,11 +13,12 @@ blocked_by: []
 relates: [PW-746, PW-732]
 refs: [planet/lineages/seafood.py, "world 506694"]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
 PW-746 added playas, basin brine springs and mineral licks (mean land distance to salt on Earth 1028 -> 304 km). Caveats for whoever tunes it next: Earth world 506694's `surface_rock` holds only craton and shale (ids 5 and 8) and `sediment_cover` is 0.02 or 2.0, so brines and licks are checked there only as "shale everywhere"; the Amazon (13 km) is that artefact and the generated worlds with real rock mixes are the test. Tundra (Earth 422 km) and the Great Plains (383 km) are still the farthest regions: arctic peoples took salt in meat and blood and from the sea, which the brief does not say. Plant ash is deliberately still a marker. Worth a pass on a generated world with limestone, sandstone and evaporite cover once a showcase run exists.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-24: Created from inbox draft draft-salt-sources-on-real-geology.md (found by fun10).

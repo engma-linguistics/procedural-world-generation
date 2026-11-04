@@ -4,7 +4,7 @@ title: "Earth world: no basement ages or tectonic history, so most resource rule
 type: task
 status: todo
 parent: PW-155
-milestone: v2
+milestone: later
 subsystem: surface
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-132, PW-155, PW-649]
 refs: [tools/resources_check.py, tools/earth_data.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,5 +26,6 @@ compilation) and present plate boundaries in earth_data would make those checkab
 anchor only).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-resources-earth-ages.md (found by resources).

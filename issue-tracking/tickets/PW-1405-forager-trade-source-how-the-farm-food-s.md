@@ -4,7 +4,7 @@ title: "Forager trade: source how the farm-food share rises with the farmers' de
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -29,4 +29,5 @@ or by village density (the Efe and their Lese villages, the Agta and their lowla
 - [ ] read at least two; replace BARTER_HALF / BARTER_REACH with a sourced value if one is given, else record that none is
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-03: Created from inbox draft draft-barter-source-the-density-relation.md (found by lane 146).

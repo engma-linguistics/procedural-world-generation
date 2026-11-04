@@ -4,7 +4,7 @@ title: Refined L8 world has 6x the source's lakes (211 vs 35); check which are r
 type: task
 status: todo
 parent: PW-1198
-milestone: v2
+milestone: later
 subsystem: hydrology
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-490]
 refs: [planet/refine.py, "world 783674", docs/review/refine-l8/design.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ are noise pits inside basins, drain the ones shallower than the noise's own ampl
 - [ ] lake count per source basin, and a verdict (keep them, or drain the shallow ones)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Created from inbox draft draft-refine-lakes-in-coarse-closed-basins.md (found by lane104-refine-l8).

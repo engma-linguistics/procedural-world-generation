@@ -4,7 +4,7 @@ title: "Lineages: the frost and storm_coast goods are today's only (no ice-age f
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/lineages/land.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ the ice margin), e.g. as a place tag in history._tags; storm coasts would need w
 finished world has it). Small; do it if frost giants' glacial ranges look wrong in a showcase.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Created from inbox draft draft-lineages-frost-storm-goods-today-only.md (found by lineages-preset-lane).

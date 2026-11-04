@@ -4,7 +4,7 @@ title: "Metallic dragons live alongside peoples, chromatics stay combative: a te
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1068, PW-924, PW-855]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/samples/dnd.toml, planet/lineages/spec.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,4 +38,5 @@ kind, with no new mechanism.
 - [ ] shown in the viewer's lineage panel (the owner uses the viewer)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-dragon-temperament-metallic-chromatic.md (found by fun-lane-63).

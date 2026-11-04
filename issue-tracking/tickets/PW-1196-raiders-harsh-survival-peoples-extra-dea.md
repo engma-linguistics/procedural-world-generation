@@ -4,7 +4,7 @@ title: "Raiders: harsh-survival peoples' extra deaths rise on hostile frontiers,
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-1165]
 relates: [PW-1169, PW-1172, PW-1149, PW-1165]
 refs: [docs/review/peoples-events/design.md, planet/lineages/life_history.py, planet/lineages/samples/dnd.toml]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -45,4 +45,5 @@ Slow peoples have no such losses and are untouched. Design: docs/review/peoples-
 - [ ] lane 77 suite, arms off / default / ×2: kobold and goblin median share falls; elf, dwarf and gnome medians not below off
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-raiders-raid-losses-and-culling-wars.md (found by lane-85).

@@ -4,7 +4,7 @@ title: "Zoom vegetation classify calls is_land on pixels: raises when a land pix
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1301]
 refs: ["planet/vegetation.py::classify", "planet/geo.py::is_land", "planet/geo.py::_grid_of", "planet/zoom/vegetation.py::compute", "planet/zoom/stage_landscape.py::landscape_loop"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,4 +29,5 @@ give classify a `land=` argument and use is_land only on world cells.
 - [ ] a zoom whose land includes a pixel at -5 m builds without error
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-11-02: Created from inbox draft draft-zoom-vegetation-is-land-on-pixels.md (found by lane127).

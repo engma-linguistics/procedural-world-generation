@@ -4,7 +4,7 @@ title: "Technology map: a cell shows only its leading people's knowledge, so sma
 type: task
 status: todo
 parent: PW-913
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-913]
 refs: [viewer/index.html, "run 3097e3", docs/review/techtree-tab/3-map-at-an-event.png]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,4 +23,5 @@ What to try: colour a cell by any people there that knows the tech (the run has 
 - [ ] the inventor's own land is visibly lit at the moment of the invention, in run 3097e3 (pottery, halflings)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-29: Created from inbox draft draft-techtab-map-leading-people-only.md (found by fun-lane-47).

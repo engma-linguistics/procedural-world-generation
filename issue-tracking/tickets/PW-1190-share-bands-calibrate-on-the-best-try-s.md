@@ -4,7 +4,7 @@ title: Share bands calibrate on the best try's seed only
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/history/bands.py, planet/lineages/history/tries.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -29,4 +29,5 @@ When a people lands outside its share band, the run nudges that people's own den
 - [ ] decide (a), (b) or (c); build (c) if chosen
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples-share tuning, paused until war and polities exist
 - 2026-10-30: Created from inbox draft draft-share-bands-on-more-than-one-seed.md (found by lane78).

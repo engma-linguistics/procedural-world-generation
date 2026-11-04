@@ -4,7 +4,7 @@ title: "Rain coasts: the seas' supply isn't the bottleneck (observed sea tempera
 type: task
 status: todo
 parent: PW-015
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1321, PW-1099, PW-1100, PW-026, PW-1279, PW-593]
 refs: [docs/review/base-climate/rain-supply/round1.md, docs/review/base-climate/rain-supply/screens.md, docs/review/base-climate/rain-supply/marine-layer.patch, docs/review/base-climate/rain-supply/sstswap.py, docs/review/base-climate/rain-supply/swap.sh, docs/review/base-climate/rain-supply/ec.sh, docs/review/base-climate/rain-supply/summ.py, docs/review/base-climate/rain-inland/diagnosis.md, docs/review/base-climate/rain-inland/candidates.patch, tools/moisture_regions.py, tools/earth_check.py, "planet/climate.py::_rain", "planet/climate.py::sea_uptake", "planet/climate.py::_season_inputs", "planet/climate.py::monsoon_wind", "planet/climate.py::compute", "Fairall et al. 2003 J. Climate 16:571", "Stevens 2006 TCFD 20:279", "Chan & Wood 2013 JGR 118:12422"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -54,5 +54,6 @@ Options:
 - [ ] owner picks A', B or C
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-11-02: Status needs-decision -> todo. Coordinator 2026-11-02 (owner delegated prioritisation): parked at the back of the line after five failed rain arms; A' (where the vapour rains: low-layer friction, PW-1100, PW-1099) is the plan when it comes back. Not B alone.
 - 2026-11-02: Created from inbox draft draft-rain-coasts-are-through-flow-not-supply.md (found by lane132).

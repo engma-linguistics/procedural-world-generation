@@ -4,7 +4,7 @@ title: "Game export: engine presets and the attributes of PW-099 and PW-206"
 type: task
 status: todo
 parent: PW-1200
-milestone: v2
+milestone: later
 subsystem: store
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-100, PW-099, PW-206]
 refs: [planet/export.py, README.md]
 created: 2026-10-20
-updated: 2026-10-21
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,6 +28,7 @@ has none. The splat rules (`export.splat_weights`) are simple; PW-206's vegetati
 replace them.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: store/export nicety
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-21: PW-099's half is in the export: class maps river_nav/harbour/pass/fertile/fresh_water and feature kinds navigable_river, harbour, pass, spring, fertile_land (manifest key human_use). PW-206's attributes (travel cost, forage, timber, hazards) and the engine presets are still open.
 - 2026-10-20: Created from inbox draft draft-export-engine-presets-fields.md (found by export).

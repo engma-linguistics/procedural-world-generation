@@ -4,7 +4,7 @@ title: Pick one cell-size convention for the grid levels (README, world meta and
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: docs
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-816]
 refs: [README.md, docs/overview.md, CLAUDE.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ centre spacing or sqrt of the area), state which in section 2.1, and make README
 - [ ] one convention, stated once in overview 2.1, used everywhere
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: docs/provenance work, not needed for the planet or the culinary goal
 - 2026-10-31: Created from inbox draft draft-cell-size-convention.md (found by lane88-docs).

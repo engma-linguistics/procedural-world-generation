@@ -4,7 +4,7 @@ title: "Religion: gods, faith, taboos and morality per culture (faith-made gods 
 type: epic
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: culture
 effort: xl
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-856, PW-907, PW-904, PW-719, PW-696, PW-692]
 refs: [docs/wiki/decisions.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ Children (drafts filed alongside): gods tree, faith tech nodes, food taboos, mor
 placeholder) is probably superseded by the gods-tree story. Re-parent it under this epic or fold it in.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-02: Created from inbox draft draft-religion-epic.md (found by religion-doc-chat).

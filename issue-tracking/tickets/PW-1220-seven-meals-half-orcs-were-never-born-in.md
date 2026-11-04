@@ -2,7 +2,7 @@
 id: PW-1220
 title: "Seven Meals: half-orcs were never born in one run (af2677, seed 13): their parents never met"
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: v2
 subsystem: highlights
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-752, PW-852]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history/origins.py, docs/review/peoples-d20/suite-final.md, "world af2677"]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ preset people that is a hybrid could be founded where its parents come nearest, 
 of waiting for them to meet.
 
 ## Updates
+- 2026-11-03: Status todo -> wontdo. Triage 11-03: closed: Duplicate of PW-1257, which describes the same half-orcs-never-founded case on af2677 with more tries measured.
 - 2026-10-31: Created from inbox draft draft-seven-meals-half-orcs-unborn.md (found by lane83b).

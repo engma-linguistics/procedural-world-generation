@@ -4,7 +4,7 @@ title: "Provenance: tried-and-dropped ledger from git history and review docs"
 type: story
 status: todo
 parent: PW-938
-milestone: v2
+milestone: later
 subsystem: docs
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [docs/review]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,4 +26,5 @@ Build docs/wiki/tried-and-dropped.md by mining git log, docs/review/* and closed
 Commits stay as they are; the ledger links them. Going forward, agents add entries when they drop an approach.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: provenance project is documentation, not needed for a stable planet or the culinary goal
 - 2026-10-27: Created from inbox draft draft-provenance-ledger.md (found by owner).

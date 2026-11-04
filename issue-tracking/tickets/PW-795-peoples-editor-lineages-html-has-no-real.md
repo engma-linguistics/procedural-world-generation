@@ -4,7 +4,7 @@ title: Peoples editor (lineages.html) has no realm field; marine hatch and area 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-778, PW-775]
 refs: [viewer/lineages.html, viewer/index.html]
 created: 2026-10-24
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,5 +24,6 @@ so sea peoples show no area). The deep folk's stand-in decision is untouched.
 - [ ] realm select in the editor; [ ] sea area in the panel stats
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-26: Parent PW-729 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-24: Created from inbox draft draft-peoples-editor-realm-select.md (found by fun21).

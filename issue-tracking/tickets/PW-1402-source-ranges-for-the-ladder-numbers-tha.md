@@ -4,7 +4,7 @@ title: Source ranges for the ladder numbers that have none (forager level, rich-
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -31,4 +31,5 @@ Source the first (cheap, data in hand); the other two only if a paper turns up. 
 name out of FIXED) and a ladder.py entry in Ladder.v.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-03: Created from inbox draft draft-ranges-source-the-fixed-ones.md (found by lane 145).

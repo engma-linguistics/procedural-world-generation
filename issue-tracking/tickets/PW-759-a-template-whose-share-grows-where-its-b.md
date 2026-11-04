@@ -4,7 +4,7 @@ title: A template whose share grows where its bearers and hosts live together (k
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-730]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history.py, planet/lineages/spec.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,4 +26,5 @@ non-kenku share) per step, bounded by the hosts' presence there.
 - [ ] `dnd.toml` runs byte-identical (no `grows`)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-24: Created from inbox draft draft-kenku-share-grows.md (found by fun13).

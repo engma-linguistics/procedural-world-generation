@@ -4,7 +4,7 @@ title: Derive each people's generation time and growth rate from canon ages and 
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-888, PW-937]
 refs: [planet/lineages/spec.py, planet/lineages/samples/dnd.toml, planet/lineages/history/peoples.py, planet/lineages/history/dispersal.py, planet/lineages/history/origins.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -40,4 +40,5 @@ shorter fertile window). r relative to humans: elves 0.14, dwarves 0.26, halflin
 - [ ] golden and lineages tests updated (viability numbers shift: elves' line_mvp falls from 1/2 to ~1/8 of the tree's)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-life-history-from-canon-ages.md (found by lane76).

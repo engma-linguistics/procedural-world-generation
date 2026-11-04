@@ -4,7 +4,7 @@ title: "Lineages: review the contact-corridor values and the mixing share on mor
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-601, PW-649]
 refs: [planet/lineages/crossing.py, planet/lineages/history.py, docs/review/lineages/showcase-2.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -36,6 +36,7 @@ The values are first guesses:
 - [ ] the river field is the world's present flow, used for all glacial and recent epochs, so rivers on shelves exposed at low sea level are missing; deep epochs have no rivers
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-lineages-corridor-tuning.md (found by lineages-lane-2).
 - 2026-10-23: Lineages lane 3 addressed the shelf item. Exposed continental shelf at a low stand (land in a glacial or recent epoch, sea at the present) now gets a contact value of at least 0.7 (crossing.SHELF_CONTACT), standing for the coastal plains and lower river courses missing from the present-day flow field. Deep epochs still have no rivers: the plates have moved since.

@@ -4,7 +4,7 @@ title: "NH subtropical seas are 2.3-3.5 C too cool in the summer half (Gulf 24.6
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-593, PW-1321, PW-015]
 refs: [docs/review/base-climate/rain-supply/round1.md, docs/review/base-climate/rain-supply/seaair.py, docs/review/base-climate/rain-supply/seaair_L6.txt, docs/review/base-climate/rain-supply/sstswap.py, docs/review/base-climate/rain-supply/screens.md, "planet/climate.py::sea_surface", "planet/climate.py::_sea_half", "planet/climate.py::_summer_half", tools/moisture_regions.py, docs/review/base-climate/rain-supply/round2.md, docs/review/base-climate/rain-supply/seaparts.py, "planet/climate.py::upwelling_cooling"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -46,6 +46,7 @@ The coordinator may prefer to fold this into PW-593.
 - [ ] Gulf and W Atlantic summer-half sea air within ~1 C of NCEP on Earth
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-02: Lane 134 diagnosis (round2.md section 4): W Atlantic / NW Pacific annual means right, deficit all swing (PW-593);
   Gulf annual -2.2 C, mostly box-wide coastal upwelling 1.45 C (draft-gulf-upwelling-box-wide); E Atlantic annual -1.5. Suggest
   folding the swing part into PW-593.

@@ -4,7 +4,7 @@ title: "Exportable geological brief of a zoom: rock record, structures and depos
 type: task
 status: todo
 parent: PW-244
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: med
@@ -13,12 +13,13 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-11-03
 ---
 
 ## Description
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner can run it past a geologist they know.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-10-25: Owner: include cutaway cross-sections and other images a geologist would recognise (geologic map, stratigraphic column, cross-section through the zoom, deposit sites with their host rocks).
 - 2026-10-25: Created.

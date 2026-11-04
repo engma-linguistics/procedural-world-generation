@@ -4,7 +4,7 @@ title: "Few mid-sized islands (10,000-100,000 km2): 11 on the L8 world vs 44 on 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-116, PW-117]
 refs: [planet/tectonics/crust.py, planet/tectonics/events.py, "world a16f5a", "world 2a7385", docs/review/l8-world/explore.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ overview 2.2), island arcs staying blocky (PW-116), hotspot islands sub-cell (PW
 Count on a few L7 seeds before acting; one world each is thin.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-31: Created from inbox draft draft-few-mid-sized-islands.md (found by lane96).

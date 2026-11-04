@@ -4,7 +4,7 @@ title: Life stages for the peoples canon gives no ages for (troglodytes, giants,
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1148, PW-1147]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/life_history.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ Other notes:
 - [ ] Seven Meals ages
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples-share tuning, paused until war and polities exist
 - 2026-10-30: Created from inbox draft draft-life-history-for-peoples-without-canon-ages.md (found by lane78).

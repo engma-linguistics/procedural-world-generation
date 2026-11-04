@@ -4,7 +4,7 @@ title: "Stress suite: report each people's swing per world and per family; the 4
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180, PW-1181]
 refs: [tools/peoples_robust.py, docs/review/peoples-robust/report.md, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -39,4 +39,5 @@ Lane 77's own runs (range arm, scratch l77/suite), split by world and family (sh
 - [ ] a people is "brittle" on a per-world, per-family swing; a world-to-world difference is reported apart (it is geography)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-robust-suite-brittleness-per-world.md (found by lane84).

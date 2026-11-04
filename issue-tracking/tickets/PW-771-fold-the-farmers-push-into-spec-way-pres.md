@@ -4,7 +4,7 @@ title: Fold the farmers' push into spec.WAY_PRESS and tune the herders' press on
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-756, PW-723, PW-748]
 refs: [planet/lineages/spec.py, planet/lineages/history.py, planet/lineages/animals.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,4 +30,5 @@ is still the hard-coded `"agricultural" in l.traits and step.ago <= FARM_KYR` x 
   the press should also come from the people's own tamed herd stock (caprine/cattle) earlier is a taming question (PW-718), not this rule's.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-24: Created from inbox draft draft-way-press-farmers-and-herders.md (found by fun14).

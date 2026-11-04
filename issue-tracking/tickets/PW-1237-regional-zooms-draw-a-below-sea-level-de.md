@@ -4,7 +4,7 @@ title: Regional zooms draw a below-sea-level depression flat at 1 m (its lake ke
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1229, PW-356]
 refs: [planet/zoom/regional.py, planet/zoom/stage_finish.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ out, with the zoom's own sea mask kept from the land view (so the fine pixels be
 - [ ] a zoom over a dry depression 100+ m below the sea shows its floor below 0 m and no sea in it
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-10-31: Created from inbox draft draft-zoom-flattens-depressions-below-sea.md (found by lane98).

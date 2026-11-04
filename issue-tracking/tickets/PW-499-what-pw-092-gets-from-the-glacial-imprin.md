@@ -4,7 +4,7 @@ title: What PW-092 gets from the glacial imprint, and what it still lacks (ice f
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-092, PW-037, PW-005]
 refs: [planet/finish.py, planet/timeline.py, planet/zoom/regional.py, planet/zoom/landforms.py, docs/proposals/glacial_carving.md]
 created: 2026-10-21
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -36,6 +36,7 @@ Overlap: the zoom's rivers (`zoom_fine.py`, being edited on another branch) will
 and lakes on deglaciated ground in finished worlds; nothing in PW-037 touches that file.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-26: Parent PW-092 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-21: Created from inbox draft draft-zoom-inputs-from-glacial-imprint.md (found by pw037).

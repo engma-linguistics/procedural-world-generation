@@ -4,7 +4,7 @@ title: "Viewer: show learned country and adapted demes (niche learning)"
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1155, PW-981]
 refs: [planet/lineages/output.py, planet/lineages/demes.py, planet/lineages/history/frame.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -33,5 +33,6 @@ Wanted in the viewer:
 - the `split_adapted` events in the deme timeline.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-viewer-learned-country.md (found by lane79).

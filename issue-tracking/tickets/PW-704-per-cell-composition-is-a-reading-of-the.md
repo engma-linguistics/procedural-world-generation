@@ -4,7 +4,7 @@ title: Per-cell composition is a reading of the presence; should cohabitation al
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-689, PW-663, PW-682]
 refs: [planet/lineages/compose.py, planet/lineages/history.py, docs/proposals/lineages.md]
 created: 2026-10-23
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,6 +27,7 @@ Options:
 Lean: A now, C next; B only if the owner finds the globe's mixing too weak after the zooms use it.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-26: Parent PW-689 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Status needs-decision -> todo. Coordinator's call: keep composition a reading for now; feeding it into competition belongs with PW-663/PW-661's coexist-or-press-away pass and needs re-rolled draws.
 - 2026-10-23: Created from inbox draft draft-composition-feeds-competition.md (found by fun-composition).

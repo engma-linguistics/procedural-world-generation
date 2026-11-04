@@ -4,7 +4,7 @@ title: The convergence lift (PW-1100) wets the subtropical heat lows' margins at
 type: task
 status: todo
 parent: PW-015
-milestone: v2
+milestone: later
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1100, PW-1099]
 refs: [planet/climate.py, docs/review/base-climate/moisture-inflow-ascent/]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,5 +35,6 @@ Check it once PW-1099's inflow depth has its coastal partner, since the term rid
 - [ ] with the ascent on, Earth's B share no lower than with it off
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.
 - 2026-10-30: Created from inbox draft draft-ascent-wets-subtropical-heat-low-margins.md (found by lane62).

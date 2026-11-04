@@ -4,7 +4,7 @@ title: Cleared land on a finished world's other colour views, runs picker and 3D
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-669, PW-662]
 refs: [viewer/index.html, viewer/relief.js]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,4 +23,5 @@ What to try: a tree-cover view for worlds with the tint, a run picker when sever
 - [ ] a world with two peoples runs offers both
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-23: Created from inbox draft draft-world-anthro-tint-more-views.md (found by zoompeoples).

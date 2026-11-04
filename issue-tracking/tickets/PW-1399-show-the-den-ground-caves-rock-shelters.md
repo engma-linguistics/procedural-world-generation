@@ -4,7 +4,7 @@ title: Show the den ground (caves, rock shelters, ground to dig) as a viewer lay
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -29,4 +29,5 @@ soil). dens.fitness would need to return which part won (an argmax) for the tool
 - [ ] the tooltip names what kind of den ground the cell has
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-11-03: Created from inbox draft draft-den-ground-viewer-layer.md (found by lane 143).
