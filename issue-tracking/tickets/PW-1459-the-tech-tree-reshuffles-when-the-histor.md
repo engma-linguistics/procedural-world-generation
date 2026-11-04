@@ -1,4 +1,5 @@
 ---
+id: PW-1459
 title: The tech tree reshuffles when the history is nudged; key its draws per people and tech, not one shared stream
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: high
 found_by: lane180
 blocked_by: []
 relates: [PW-1280, PW-1434]
-refs: [planet/lineages/techtree.py::build, planet/lineages/polities.py::draw, docs/review/culture/polities/round5.md, docs/review/peoples/ledger/round1.md]
+refs: ["planet/lineages/techtree.py::build", "planet/lineages/polities.py::draw", docs/review/culture/polities/round5.md, docs/review/peoples/ledger/round1.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -37,3 +40,6 @@ tech, step) for an invention test (zlib.crc32 keys, as `polities.draw` and `coun
 (round5.md section 3). The goldens will change.
 - [ ] keyed draws in techtree.build; goldens updated on purpose
 - [ ] nudge check re-run: the same people hold the largest states at 1,000 years ago and at the present, on 2 seeds
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-techtree-keyed-draws.md (found by lane180).
