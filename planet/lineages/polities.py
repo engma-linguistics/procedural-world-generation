@@ -178,8 +178,9 @@ def no_war(owner: np.ndarray, ctx: dict) -> np.ndarray:
 
 
 def draw(run: str, key: str, step: int, what: str) -> float:
-    """A seeded uniform draw in [0, 1) per run, polity key, step and purpose: a rebuild gives the same map, and a nudged constant
-    meets the same luck (common random numbers, so the +-10% checks compare like with like)."""
+    """A seeded uniform draw in [0, 1) per run seed, polity luck key (derive: a town seat's cell and founding), step and purpose:
+    a rebuild gives the same map, and a nudged constant or tree meets the same luck (common random numbers, so the +-10% checks
+    compare like with like)."""
     return zlib.crc32(f"{run}|{key}|{step}|{what}".encode()) / 2 ** 32
 
 
@@ -275,7 +276,7 @@ def war_v0(owner: np.ndarray, ctx: dict) -> np.ndarray:
             if lg is not None:
                 lg["gone"] += 1
             continue
-        if draw(ctx["run"], seats[l]["key"], ctx["step"], "war") >= p:
+        if draw(ctx["run"], ctx.get("luck", str)(seats[l]["key"]), ctx["step"], "war") >= p:
             if lg is not None:
                 lg["chance"] += 1
                 lg["p"] = p
@@ -447,7 +448,13 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     prov_rec: dict = {}  # province key -> the record id of the polity it was when taken
     prov_state: set = set()  # province keys that were states when taken (their conqueror rules at a distance: WIDE_BY, PW-1449)
     cool: dict = {}  # key -> the last step its seat is held one tier down (after a fall: step 0)
-    run_id = R.dir.name
+    run_id = f"try{R.meta.get('try_seed')}"  # (PW-1459: the luck is the run's seed, not its random folder id, so a nudged rebuild meets the same draws)
+
+    def luck(key):  # (and a town seat's luck is its place, cell and founding, not its index in the ledger, which a nudge shifts)
+        if key.startswith("s"):
+            st_ = sites[int(key[1:])]
+            return f"c{st_['cell']}@{st_['founded_kyr']}"
+        return key
     from . import invasions as IV  # (invasions you schedule, PW-1433: the rows, as war_v0 reads them, and what it saw of each)
     inv_in, inv_notes = IV.clean(invasions, strict=False)
     inv_rows = IV.hook_rows(inv_in, R, step_kyr)
@@ -464,7 +471,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
         n_fell = 0
         for key, tier in list(prev_cap.items()):
             p = dragon_p if tier == "dragon realm" else (fall_p if tier in FALL_TIERS else 0.0)
-            if key in lord or draw(run_id, key, k, "fall") >= p:
+            if key in lord or draw(run_id, luck(key), k, "fall") >= p:
                 continue
             o = open_.pop(key)
             rec = polities[o["i"]]
@@ -589,7 +596,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
         so = owner[site_cell[live_i]]
         ppl_pid = np.bincount(so[so >= 0], weights=pop[live_i[so >= 0], k], minlength=len(ruling))
         S_pid = [strength(float(ppl_pid[p]), s["people"], R.knows, ago) for p, s in enumerate(ruling)]
-        ctx = {"grid": g, "seats": ruling, "ago": ago, "step": k, "run": run_id, "prev_owner": prev_owner, "strength": S_pid,
+        ctx = {"grid": g, "seats": ruling, "ago": ago, "step": k, "run": run_id, "luck": luck, "prev_owner": prev_owner, "strength": S_pid,
                "eligible": lambda p: ruling[p] is not None and ruling[p]["tier"] != "dragon realm" and ruling[p]["key"] in prev_cap and ruling[p]["key"] in open_,
                "invasions": inv_rows, "inv_log": inv_log, "ancestors": lambda p: anc.get(p, (p,)), "borders": lambda o=owner: borders(o, g)}
         before = owner.copy()

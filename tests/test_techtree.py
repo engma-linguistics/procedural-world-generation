@@ -412,3 +412,17 @@ def test_faith_nodes_and_gods_mode():
     assert "divine_magic" not in b and "moralizing_high_god" in b
     real = ids("faith_made", mode="real")
     assert "divine_magic" not in real and "moralizing_high_god" in real
+
+
+def test_a_nudge_elsewhere_leaves_a_peoples_dates_alone():
+    """PW-1459: every draw is keyed on what it is for, so changing another people (its size, a newcomer) leaves an unrelated
+    people's dates exactly as they were; the old shared stream reshuffled them."""
+    base = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(1e6))]
+    nudged = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(2e3)), line("c", at=40.0, track=_pop(5e5))]
+    for s in (1, 2):
+        k0 = TT.build(base, None, None, seed=s, T=T)["known"]
+        k1 = TT.build(nudged, None, None, seed=s, T=T)["known"]
+        assert k0["a"] and k0["a"] == k1["a"]
+        assert k0["b"] != k1["b"]  # (the nudged people itself does change)
+    u = [TT.keyed(3, "invent", "a", "fire", k) for k in range(4000)]
+    assert abs(np.mean(u) - 0.5) < 0.02 and 0.0 <= min(u) and max(u) < 1.0
