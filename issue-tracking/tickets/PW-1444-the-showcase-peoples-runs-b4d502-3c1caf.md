@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1275, PW-1391, PW-728]
 refs: ["planet/lineages/brief.py::_people_contacts (SP.parse of meta.tree)", "planet/lineages/spec.py::build (ValueError: density and band_km2 are no longer given)", "runs b4d502 3c1caf a24559 (the v0.1.0 showcases)", "run a2b637 (the one D&D run on current code)", docs/wiki/state.md]
 created: 2026-11-03
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 
 ## Description
@@ -29,4 +29,5 @@ Fix (no code): re-run the showcase peoples on current code (minutes each) and po
 - [ ] a Seven Meals and a D&D showcase peoples run on current code; the whole-people brief builds on both
 
 ## Updates
+- 2026-11-04: Showcase re-runs restarted from finished world ids (899985 for A, dba204 for B); the first try passed the time zoom id, which skips the world's goods (no towns). cb0e0a deleted. delete --orphans also cleared 7 interrupted/orphan run folders and an orphan goods cache.
 - 2026-11-03: Created from inbox draft draft-showcase-peoples-runs-no-longer-parse.md (found by lane164).

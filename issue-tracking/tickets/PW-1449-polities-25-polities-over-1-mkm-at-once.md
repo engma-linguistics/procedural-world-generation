@@ -1,9 +1,10 @@
 ---
+id: PW-1449
 title: "Polities: 25 polities over 1 Mkm² at once, about ten times history's (state reach is too long)"
 type: task
 status: todo
 parent: PW-661
-milestone: later
+milestone: v4
 subsystem: culture
 effort: s
 impact: med
@@ -11,6 +12,8 @@ found_by: lane-175
 blocked_by: []
 relates: [PW-1431, PW-1432]
 refs: ["planet/lineages/polities.py::_reach", "planet/lineages/polities.py::STATE_KM", "planet/lineages/polities.py::DISTANCE_X", docs/review/culture/polities/round2.md, docs/review/culture/polities/round1.md, docs/review/cultures-proposal/proposal.md, "docs/review/cultures-proposal/proposal.md#212-formation-growth-and-reach", "run 3c1caf", "run a2b637"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -31,3 +34,6 @@ What I would try:
 - Check the count over 1 Mkm² per century against the 2-3 above, and the largest against Taagepera's 2.3-5.5 Mkm² band (round 2
   measures both).
 - [ ] polities over 1 Mkm² at the present: under ~8 on 3c1caf and a2b637; the largest still inside 2.3-5.5 Mkm² on 3c1caf
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-polities-too-many-giant-states.md (found by lane-175).
