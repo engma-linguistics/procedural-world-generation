@@ -1,0 +1,221 @@
+# Voice profiles per stem and kind (PW-1423), keyed by the lineage ids of planet/lineages/samples/dnd.toml.
+# Read by planet/language/profiles.py; reasoning and sources in docs/review/language/voice-profiles.md.
+# Builder A draft, 2026-11-03. Numbers are judgement anchored on the cited work, not measurements.
+#
+# Each table (all keys optional; a child gives only what differs, merged key by key down the first-parent chain):
+#   articulators = [...]          full list, or "+x" / "-x" edits of the parent's (lips teeth tongue_tip tongue_body tongue_root velum larynx pharynx syrinx beak)
+#   make_cost = { key = x }       multiplier on the human (PHOIBLE) cost per percept-class key; "inf" = cannot make it
+#   hear = { axis = x }           resolution multiplier per percept axis (1 human, 0 ignored); sub / ultra = does a sub-bass / ultra percept reach the ear (0 no)
+#   register = n                  habitual voice pitch vs human, rough octaves (descriptive)
+#   notes = [...]                 plain-words lines;  sources = [...] citations ("[memory]" = not re-opened tonight)
+#   same_as_human = true          a deliberate "human profile" judgement (source data_file), as opposed to not yet profiled
+# A lineage with no table anywhere on its chain resolves to the human default, flagged "human_default".
+
+# ---------------------------------------------------------------- avian line
+[avian]
+articulators = ["syrinx", "beak", "tongue_tip", "tongue_body", "pharynx"]
+register = 1
+make_cost = { labial = 2.5, labiodental = 4.0, dental = 2.0, nasal = 2.0, nasal_vowel = 3.0, round_vowel = 1.5, sibilant = 1.3, trill = 0.7, tone = 0.7, source2 = 1.5, harsh = 3.0, percussive = 1.0, ejective = 2.0, implosive = 2.0, aspirated = 1.5 }
+hear = { length = 1.5, source2 = 1.5, sibilant = 1.0, tone = 1.0, sub = 0.0, ultra = 0.0 }
+notes = [
+  "Sound comes from the syrinx, not a larynx; it is filtered by the trachea, the mouth with its tongue, and the beak.",
+  "No lips and no teeth: a labial is heard as labial but made another way (beak closure, tongue against the beak); dental and lip-tooth sounds are substitutes too, dearer still.",
+  "No velum to shut off the nose cleanly, so nasals and nasal vowels are dear.",
+  "Two voices at once are natural (each side of the syrinx can run on its own) and are heard, so a second voice can carry contrast.",
+  "Pitch is controlled finely in song, so tone is cheap to make; it is heard about as well as by humans, not better.",
+  "Timing is heard more finely than by humans (birds resolve the fine time structure of sounds), so length contrasts are clear.",
+]
+sources = [
+  "Patterson, D. K. & Pepperberg, I. M. 1994. A comparative study of human and parrot phonation: acoustic and articulatory correlates of vowels. JASA 96(2): 634-648.",
+  "Patterson, D. K. & Pepperberg, I. M. 1998. Acoustic and articulatory correlates of stop consonants in a parrot and a human subject. JASA 103(4): 2197-2215. [abstract-level; title and pages confirmed by search, content from memory]",
+  "Warren, D. K., Patterson, D. K. & Pepperberg, I. M. 1996. Mechanisms of American English vowel production in a grey parrot (Psittacus erithacus). The Auk 113(1): 41-58. [memory]",
+  "Beckers, G. J. L., Nelson, B. S. & Suthers, R. A. 2004. Vocal-tract filtering by lingual articulation in a parrot. Current Biology 14: 1592-1597.",
+  "Suthers, R. A. 1990. Contributions to birdsong from the left and right sides of the intact syrinx. Nature 347: 473-477. [memory]",
+  "Dooling, R. J., Leek, M. R., Gleich, O. & Dent, M. L. 2002. Auditory temporal resolution in birds: discrimination of harmonic complexes. JASA 112: 748-759.",
+  "Dooling, R. J. 1980. Behavior and psychophysics of hearing in birds. In Popper & Fay (eds.), Comparative Studies of Hearing in Vertebrates, Springer. [summary via search]",
+]
+
+[aarakocra]
+make_cost = { labial = 3.0 }
+notes = [
+  "Ruling (Daniel, 2026-10-28): aarakocra labials are costly substitutes, heard as labial, made another way, as parrots do.",
+  "Large raptor-like bodies: a lower voice than a parrot's, but the avian stem's mouth and ear.",
+]
+
+[kenku]
+make_cost = { labial = 1.6, labiodental = 2.5, dental = 1.5, nasal = 1.5, nasal_vowel = 2.0 }
+notes = [
+  "Mimics: any sound they have heard is cheaper for them to reproduce than for other birds (lower substitute costs).",
+  "The canon has kenku unable to invent new words; that is a note for the story, not a mechanism here: their languages change by the ordinary rules.",
+]
+sources = ["Kenku lore: Volo's Guide to Monsters (2016) / Monsters of the Multiverse (2022), Wizards of the Coast. [memory]"]
+
+# ---------------------------------------------------------------- reptilian line
+[reptilian]
+articulators = ["teeth", "tongue_tip", "tongue_body", "larynx", "pharynx"]
+make_cost = { labial = 4.0, labiodental = 5.0, round_vowel = 3.0, nasal = 1.8, nasal_vowel = 3.0, fricative = 0.8, sibilant = 0.7, harsh = 2.0, aspirated = 0.8, tone = 1.3 }
+hear = { sibilant = 0.6, place = 0.9, sub = 0.0, ultra = 0.0 }
+notes = [
+  "No mobile lips: labials and lip-rounding are dear substitutes (a rounded vowel's lowered resonances made by retracting the tongue and lowering the larynx).",
+  "No soft palate in the mammal sense: a nasal-oral contrast is harder to keep, so nasals are dear.",
+  "A hiss is the reptile default: voiceless fricatives and sibilants are cheap, breathy aspiration cheap.",
+  "Reptile ears are tuned low (most below ~4-5 kHz), so the high hiss band that tells s from sh is heard coarsely.",
+]
+sources = [
+  "Wever, E. G. 1978. The Reptile Ear: Its Structure and Function. Princeton University Press. [memory]",
+  "Christensen-Dalsgaard, J. & Manley, G. A. 2005. Directionality of the lizard ear. J Exp Biol 208: 1209-1217.",
+  "Brittan-Powell, E. F., Christensen-Dalsgaard, J., Tang, Y., Carr, C. & Dooling, R. J. 2010. The auditory brainstem response in two lizard species. JASA 128: 787-794. (geckos and anoles best at 1.6-2 kHz, similar up to ~5 kHz)",
+]
+
+[saurian]
+notes = ["The lizard-like peoples share the reptilian stem's mouth and ear unchanged."]
+
+[lizardfolk]
+make_cost = { sibilant = 0.6, harsh = 1.5 }
+notes = ["Teeth and a large mouth: hissed and growled sounds come easily."]
+
+[troglodyte]
+notes = ["No reason found to differ from the saurian stem; kept as inherited."]
+
+[tortle]
+articulators = ["-teeth", "+beak"]
+make_cost = { labial = 2.0, round_vowel = 2.0, dental = 2.0, sibilant = 1.5, fricative = 1.0 }
+hear = { sibilant = 0.2, place = 0.5, back = 0.6, height = 1.0, tone = 1.0, length = 1.2 }
+notes = [
+  "A beak instead of lips and teeth: closing the beak shuts the front of the tract as lips do, so a beak-made labial is a nearer substitute than a lipless reptile's (dear, but less so).",
+  "No teeth: the incisor edge that makes s hiss sharply is missing, so sibilants are duller and dearer.",
+  "Turtle hearing is low and narrow (best around 300-500 Hz, little above ~1.2 kHz): vowel height (F1) is heard well, front-back (F2) and consonant place coarsely, the hiss band barely.",
+]
+sources = [
+  "Christensen-Dalsgaard, J., Brandt, C., Willis, K. L., Christensen, C. B., Ketten, D., Edds-Walton, P., Fay, R. R., Madsen, P. T. & Carr, C. E. 2012. Specialization for underwater hearing by the tympanic middle ear of the turtle, Trachemys scripta elegans. Proc R Soc B 279: 2816-2824. (ABR best sensitivity 300-500 Hz)",
+  "Ferrara, C. R., Vogt, R. C. & Sousa-Lima, R. S. 2013. Turtle vocalizations as the first evidence of posthatching parental care in chelonians. J Comp Psychol 127: 24-32. [memory]",
+  "Shadle, C. H. 1985. The acoustics of fricative consonants. MIT RLE Technical Report 506 (the teeth as the obstacle source of sibilant noise). [memory]",
+]
+
+[draconic]
+notes = ["The draconic stem (kobolds, dragonborn, the dragons) shares the reptilian mouth and ear; size effects sit on the dragon families."]
+
+[kobold]
+register = 1
+notes = ["Small bodies: a high voice. Mouth and ear as the reptilian stem."]
+
+[dragonborn]
+notes = [
+  "Inherits the reptilian mouth: labials and rounding are dear. The canon has dragonborn speaking Common well; read that as a learned accent with substitutes, not as lips.",
+]
+
+[chromatic_dragon]
+register = -2
+make_cost = { sub_register = 0.5, harsh = 0.7, long = 0.8, sibilant = 0.6 }
+hear = { sub = 1.0, sibilant = 0.5, place = 0.8 }
+notes = [
+  "Enormous vocal folds and a long tract: a habitual voice far below a human's, and part of the signal carried below ~20 Hz, as elephants' rumbles are. That sub-bass part is lost on human listeners.",
+  "Big animals hear lower and lose the top: dragons hear the sub-bass, and hear the hiss band coarsely.",
+  "Growl phonation is cheap. Dragons are sapient; their languages are languages.",
+]
+sources = [
+  "Herbst, C. T., Stoeger, A. S., Frey, R., Lohscheller, J., Titze, I. R., Gumpenberger, M. & Fitch, W. T. 2012. How low can you go? Physical production mechanism of elephant infrasonic vocalizations. Science 337: 595-599. [memory]",
+  "Payne, K. B., Langbauer, W. R. & Thomas, E. M. 1986. Infrasonic calls of the Asian elephant (Elephas maximus). Behav Ecol Sociobiol 18: 297-301. [memory]",
+  "Heffner, R. S. & Heffner, H. E. 1980. Hearing in the elephant (Elephas maximus). Science 208: 518-520. [memory]",
+  "Fitch, W. T. 1997. Vocal tract length and formant frequency dispersion correlate with body size in rhesus macaques. JASA 102: 1213-1222. [memory]",
+  "Møller, H. & Pedersen, C. S. 2004. Hearing at low and infrasonic frequencies. Noise & Health 6(23): 37-57. [memory]",
+]
+
+[metallic_dragon]
+register = -2
+make_cost = { sub_register = 0.5, harsh = 0.8, long = 0.8, sibilant = 0.6 }
+hear = { sub = 1.0, sibilant = 0.5, place = 0.8 }
+notes = ["As the chromatic dragons (same body plan; same reasoning). Dragons are sapient."]
+
+# ---------------------------------------------------------------- mammalian line
+[feline]
+make_cost = { purr = 0.8, harsh = 0.8, labial = 1.5, labiodental = 3.0, round_vowel = 2.0, fricative = 0.9 }
+hear = { sibilant = 1.5, place = 1.2, ultra = 1.0 }
+notes = [
+  "Purring and growling are cheap: the cat larynx purrs at ~25-30 Hz by itself (pads of tissue in the vocal folds), and growl and hiss are everyday sounds.",
+  "Lips are present but short and little protruded, set over a long jaw: bilabials are a little dear, lip-rounding and lip-tooth sounds dearer.",
+  "The tongue is mobile and long, so tongue sounds cost what they cost humans.",
+  "Cat hearing reaches far above ours (to ~85 kHz): the hiss band and burst spectra are heard finely, and ultra percepts reach them.",
+]
+sources = [
+  "Herbst, C. T., Prigge, T., Garcia, M., Hampala, V., Hofer, R., Weissengruber, G. E., Švec, J. G. & Fitch, W. T. 2023. Domestic cat larynges can produce purring frequencies without neural input. Current Biology 33(21): 4727-4732. doi:10.1016/j.cub.2023.09.014",
+  "Peters, G. 2002. Purring and similar vocalizations in mammals. Mammal Review 32(4): 245-271. [memory]",
+  "Heffner, R. S. & Heffner, H. E. 1985. Hearing range of the domestic cat. Hearing Research 19: 85-88. (48 Hz - 85 kHz) [memory]",
+  "Cat lip mobility: no measured source found tonight; judgement from feline anatomy. [memory]",
+]
+
+[tabaxi]
+notes = ["Small-cat build: the feline stem as it stands (purr cheap)."]
+
+[leonin]
+register = -1
+make_cost = { purr = 3.0, harsh = 0.6 }
+notes = [
+  "Lion-like: roaring cats do not purr continuously as small cats do, so purr is dear and the roar-growl cheap.",
+  "A bigger larynx and longer tract: a lower voice.",
+]
+sources = [
+  "Weissengruber, G. E., Forstenpointner, G., Peters, G., Kübber-Heiss, A. & Fitch, W. T. 2002. Hyoid apparatus and pharynx in the lion, jaguar, tiger, cheetah and domestic cat. J Anat 201(3): 195-209.",
+]
+
+[goblinoid]
+same_as_human = true
+notes = ["Human profile: no anatomical reason found to differ."]
+
+[bugbear]
+register = -1
+notes = ["Larger bodies: a lower voice; otherwise the human profile."]
+
+[goblin]
+register = 1
+notes = ["Small bodies: a higher voice; otherwise the human profile."]
+
+[giantkin]
+register = -1
+make_cost = { long = 0.8 }
+notes = [
+  "Longer vocal folds and tract: a voice an octave or so below a human's, still within human hearing.",
+  "Heavier articulators move more slowly: long vowels and geminates come cheaper. Judgement: speech rate scales weakly with size in mammals, if at all.",
+]
+sources = ["Fitch, W. T. 1997 (as for the dragons): formant spacing falls with vocal-tract length. [memory]",
+           "Titze, I. R. 1994. Principles of Voice Production. Prentice Hall (F0 falls with vocal-fold length). [memory]"]
+
+[true_giant]
+register = -2
+notes = ["True giants are bigger still: the lowest voices among the hominids (no sub-bass: their fold length stays far short of an elephant's)."]
+
+[firbolg]
+notes = ["Firbolgs are giant-kin in body: inherited."]
+
+[goliath]
+notes = ["Goliaths are giant-kin in body: inherited."]
+
+[orc]
+make_cost = { labial = 1.2, round_vowel = 1.2 }
+notes = ["Lower tusks get in the way of full lip closure and protrusion a little; otherwise the human profile. A small effect, kept small."]
+
+[dwarf]
+same_as_human = true
+notes = ["Human profile: no anatomical reason found to differ."]
+
+[human]
+same_as_human = true
+notes = ["The human default (PHOIBLE-weighted costs)."]
+
+[halfling]
+register = 1
+same_as_human = true
+notes = ["Human profile in a smaller body: a higher voice."]
+
+[elf]
+same_as_human = true
+notes = ["Human profile: no anatomical reason found to differ."]
+
+[gnome]
+register = 1
+same_as_human = true
+notes = ["Human profile in a small body: a higher voice."]
+
+[triton]
+same_as_human = true
+notes = ["Human profile for speech in air. Underwater speech (a different medium and ear) is not modelled."]

@@ -287,6 +287,23 @@ def parse_body(v, lid: str = "") -> dict:
     return out
 
 
+# voice (PW-1423, planet/language/profiles.py): how a people makes and hears speech sounds, a table of
+# `modality`, `articulators`, `make_cost` (percept key -> x the human cost, "inf" = cannot), `hear` (axis -> resolution),
+# `register`, `notes`, `sources`, `same_as_human`. Inherited from the first parent key by key like `body`; the language pass
+# merges it over planet/language/data/voice_profiles.toml (the spec wins). Only what a line gives is written back.
+VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "notes", "sources", "same_as_human")
+
+
+def parse_voice(v, lid: str = "") -> dict:
+    """Validate a `voice` table (only the keys given); returns it as given (make_cost "inf" kept as the string, so the
+    table round-trips through to_raw and JSON)."""
+    if v in (None, ""):
+        return {}
+    from planet.language.profiles import validate_voice  # (lazy: the language package reads the spec, not the reverse)
+    validate_voice(v, lid)
+    return {k: (dict(x) if isinstance(x, dict) else list(x) if isinstance(x, (list, tuple)) else x) for k, x in v.items()}
+
+
 def body_notes(b: dict) -> list[str]:
     """What is notable about a body (differences from the human-like baseline), as short phrases. A share
     (0 < x < 1) reads as 'x% ...'."""
@@ -426,6 +443,8 @@ class Lineage:
     contest: float | None = None  # > 0, its martial strength in a contest for land (lane 83; None: from the traits, DEMOGRAPHY)
     body: dict = field(default_factory=lambda: {**BODY_DEFAULT, "toxic": []})  # senses and body, resolved (BODY_DEFAULT)
     body_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
+    voice: dict = field(default_factory=dict)  # speech voice table (PW-1423, VOICE_KEYS), inherited key by key from the first parent
+    voice_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
     way: str | None = None  # way of life (WAYS), inherited from the parent (a group's people) where not given; None: from the traits
     way_given: str | None = None  # of it, what the spec gave on this line itself
     realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
@@ -952,6 +971,8 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         bgiven = parse_body(r.get("body"), lid)
         body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
         body["toxic"] = list(body["toxic"])
+        vgiven = parse_voice(r.get("voice"), lid)
+        voice = {**base.voice, **vgiven} if bases else dict(vgiven)
         wgiven = r.get("way")
         if wgiven in ("",):
             wgiven = None
@@ -994,7 +1015,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     never=list(dict.fromkeys((base.never if bases else []) + ngiven)), never_given=ngiven,
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     generation_yr=float(r.get("generation_yr", base.generation_yr if origin in ("split", "group") else GENERATION_YR)),
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, voice=voice, voice_given=vgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), group_size=_pair(r.get("group_size"), "group_size") or (base.group_size if origin in ("split", "group") else None), rivalry=float(r.get("rivalry", base.rivalry if origin in ("split", "group") else 1.0)), mass_kg=_mass(r, base, lid), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)), exempt=bool(r.get("exempt", False)),
@@ -1206,6 +1227,8 @@ def to_raw(t: Tree) -> dict:
             r["landmass"] = l.start_land
         if l.body_given:
             r["body"] = l.body_given
+        if l.voice_given:
+            r["voice"] = l.voice_given
         if l.limits_given:
             r["limits"] = l.limits_given
         if l.never_given:

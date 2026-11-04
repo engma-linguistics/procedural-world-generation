@@ -1,0 +1,146 @@
+# House romanization "house/1" for planet/language/romanize.py (builder A, 2026-11-03). Deterministic, ASCII first,
+# digraphs next, diacritics last. Base sounds only: modifiers are composed in romanize.py (aspiration h, ejective ', labialized w,
+# palatalized y (Hepburn ky, ny), prenasal m/n/ng before, voiceless sonorant h before, long consonant = first letter doubled (Hungarian ssz),
+# long vowel = last letter doubled, nasal vowel = tilde, tone: Yoruba-style acute high / grave low / mid unmarked, caron rising,
+# circumflex falling, double acute extra-high, double grave extra-low). Non-human percepts keep their symbols.tsv marks.
+# alt = the spelling used when the lect writes aspiration (it contrasts aspirated and plain): th, dh, kh, gh, sh, zh, ch, qh
+# would then read as aspirates, so the fricatives take their single-letter forms. Velar and uvular never share a spelling.
+# convention = the real orthography or transliteration followed ("house" = coined here; "merge" = a documented merger).
+ipa	spelling	alt	convention	note
+p	p		ascii	
+b	b		ascii	
+t	t		ascii	
+d	d		ascii	
+ʈ	ṭ		ISO 15919	retroflex = dot below
+ɖ	ḍ		ISO 15919	
+ȶ	ť		Czech/Slovak caron	alveolo-palatal stop
+ȡ	ď		Czech/Slovak caron	
+c	ky		Hungarian-like palatal row (ky gy ny ly hy)	palatal stop; merges with palatalized k (kʲ), as heard nearly the same
+ɟ	gy		Hungarian gy	merges with palatalized g
+k	k		ascii	
+ɡ	g		ascii	
+q	q		Quechua, Greenlandic, Arabic transliteration	uvular stop
+ɢ	gq		house	voiced uvular stop: g + the uvular mark q
+ʡ	ʡ		IPA kept	epiglottal stop (rare)
+ʔ	'		common practice (Hawaiian ʻokina, many orthographies)	
+k͡p	kp		Ewe, Igbo	
+ɡ͡b	gb		Ewe, Igbo	
+ŋ͡m	ngm		house	
+m	m		ascii	
+ɱ	m		merge	ɱ merges with m
+n	n		ascii	
+ɳ	ṇ		ISO 15919	
+ȵ	ň		Czech/Slovak caron	
+ɲ	ny		Hungarian, Catalan, Swahili	merges with palatalized n
+ŋ	ng		common (Tagalog, Swahili ng')	n + g that meet are written n-g
+ɴ	nq		house	uvular nasal: n + the uvular mark q
+ʙ	ʙ		IPA kept	bilabial trill (rare)
+r	rr		Spanish rr	trill; the tap is r
+ɾ	r		Spanish r	
+ʀ	rq		house	uvular trill: r + q
+ⱱ	ⱱ		IPA kept	
+ɽ	ṛ		ISO 15919 ṛ	
+ɺ	ɺ		IPA kept	
+ɸ	ƒ		Ewe ƒ	
+β	ʋ		Ewe ʋ	voiced bilabial fricative
+f	f		ascii	
+v	v		ascii	
+θ	th	þ	Greek/English th; Icelandic þ when th would read as aspirated t	
+ð	dh	ð	Albanian dh; Icelandic ð when dh would read as breathy d	
+s	s		ascii	
+z	z		ascii	
+ʃ	sh	š	English sh; Czech/ISO 9 š when sh would read as aspirated s	
+ʒ	zh	ž	Albanian zh, pinyin-like; Czech ž	
+ʂ	ṣ		ISO 15919 ṣ	
+ʐ	ẓ		dot below = retroflex	
+ɕ	ś		Polish ś	
+ʑ	ź		Polish ź	
+ç	hy		Hepburn hy (Japanese hi = [çi])	merges with palatalized h
+ʝ	yh		house	
+x	kh	x	Arabic/Russian transliteration kh; x (Spanish, Americanist) when kh would read as aspirated k	
+ɣ	gh	ğ	Arabic transliteration gh; Azerbaijani ğ when gh would read as breathy g	
+χ	qh	x̣	contract qh (q-row mark h); Americanist x̣ (dot = uvular) when qh would read as aspirated q	velar and uvular never share a spelling
+ʁ	ġ		DIN 31635 ġ (Arabic غ, often [ʁ])	
+ħ	ḥ		DIN 31635 / Semitist ḥ	
+ʕ	ʿ		Semitist ʿayn (U+02BF)	
+h	h		ascii	
+ɦ	ḧ		house (Zulu writes hh, which reads as long h here)	
+ɬ	hl		Zulu, Xhosa hl	merges with voiceless l
+ɮ	dl		Zulu dl	
+pf	pf		German pf	
+bv	bv		Shona bv	
+tθ	tþ		house (tth would read as long th)	
+dð	dð		house	
+ts	ts		common	
+dz	dz		common	
+tʃ	ch	č	English ch; Czech č when ch would read as an aspirated palatal	
+dʒ	j		English j	
+ʈʂ	ṭṣ		dot below = retroflex	
+ɖʐ	ḍẓ			
+tɕ	ć		Polish ć	
+dʑ	dź		Polish dź	
+cç	cç		IPA kept	
+ɟʝ	ɟʝ		IPA kept	
+kx	kx		house	
+ɡɣ	gɣ		house	
+qχ	qχ		house	
+tɬ	tl		Nahuatl tl	
+dɮ	dɮ		IPA kept	
+ʋ	v		merge	ʋ merges with v
+ɹ	r		merge	ɹ merges with the tap r
+ɻ	ḻ		ISO 15919 ḻ (Tamil ழ)	
+j	y		English y	
+ɰ	ŵ		house	
+w	w		ascii	
+ʍ	hw		Old English hw	voiceless sonorants take h before
+l	l		ascii	
+ɭ	ḷ		ISO 15919 ḷ	
+ȴ	ľ		Slovak ľ	
+ʎ	ly		Hungarian ly (historic)	merges with palatalized l
+ʟ	ʟ		IPA kept	
+ɫ	ł		Polish ł (historically [ɫ])	
+ɓ	'b		Hausa ASCII practice ('b for ɓ)	implosives take ' before
+ɗ	'd		Hausa ASCII practice	
+ᶑ	'ḍ			
+ʄ	'y		Hausa 'y	
+ɠ	'g			
+ʛ	'gq			
+ʘ	ʘ		Khoekhoe practice keeps the click letters	
+ǀ	|		ASCII for ǀ	
+ǁ	||		ASCII for ǁ	
+ǃ	!		ASCII for ǃ	
+ǂ	ǂ		Khoekhoe ǂ	
+ʬ	ʬ		extIPA kept	
+ʭ	ʭ		extIPA kept	
+ʞ	ʞ		house symbol kept	
+i	i		ascii	
+y	ü		German/Turkish ü	
+ɨ	ï		house: diaeresis = central	
+ʉ	ʉ		IPA kept	
+ɯ	eu		Korean RR eu (ㅡ)	
+u	u		ascii	
+ɪ	ı		house: dotless = lax i	
+ʏ	ü		merge	ʏ merges with y
+ʊ	ů		house: ring = lax u	
+e	e		ascii	
+ø	ö		German/Turkish ö	
+ɘ	ë		merge	ɘ merges with ə
+ɵ	ö		merge	ɵ merges with ø
+ɤ	ơ		Vietnamese ơ	
+o	o		ascii	
+e̞	e		merge	mid e merges with e
+ə	ë		contract: ë when the lect has e too, else e	
+o̞	o		merge	
+ɛ	ę		Old Norse normalised ę	
+œ	œ		French œ	
+ɜ	ë		merge	ɜ merges with ə
+ɞ	ö		merge	
+ʌ	eo		Korean RR eo (ㅓ)	
+ɔ	ǫ		Old Norse normalised ǫ	
+æ	æ		Old Norse, Danish, Old English æ	
+ɐ	a		merge	ɐ merges with a
+a	a		ascii	
+ɶ	œ		merge	ɶ merges with œ
+ä	a		merge	central a merges with a
+ɑ	ạ		house: dot below = back a	
+ɒ	ǫ		merge	ɒ merges with ɔ

@@ -1,0 +1,1448 @@
+"""Sound change: rules over the percept space (architecture.md section 5).
+
+A rule rewrites a *focus* segment (optionally followed by a short span of further segments) in an environment. Every rule
+carries its physical cause and what it needs (articulators or hear axes); a species keeps only the rules whose needs it
+has, weighted by its make costs (``catalogue``). Contrast maintenance is built in: ``pick_rule`` vetoes a drawn rule with a
+probability that rises with its functional load (Wedel), and a vetoed vowel merger offers a dispersion step instead (the
+crowded vowel moves away: a push-chain step).
+
+Application is left to right and iterative: the left context is read from the output built so far and the right context
+from the input, so a spreading rule (harmony) spreads and syncope alternates (VCVCVCV loses every other vowel, not all).
+Matching ignores tone (a toned vowel is still an e for "e > i"); everything else must match.
+
+The compact notation (``parse_rule``) is the one of ``data/sound_changes.tsv``: ``input > output / environment`` with IPA
+and the classes V C N P(stop) T(voiceless stop) D(voiced stop) F(fricative) S(sibilant) L/R(liquid) G(glide), ``#`` word
+edge, ``_`` the focus, ``∅`` zero, ``(X)`` optional, ``X*`` any number, ``{a, b}`` either, brackets ``[+front V]``,
+``[−voice]``, ``[αplace]`` (assimilation), ``[−stress]``, ``[axis=v]``, ``[axis=lo..hi]``, and the house flags
+``[coda]``, ``[onset]``, ``[final]``, ``[nonfinal]``, ``[open]``, ``[closed]``. Comma lists are parallel changes; a chain
+``a > b > c`` keeps its first step. What the parser cannot express it refuses with a reason, never by raising.
+"""
+
+from __future__ import annotations
+
+import csv
+import unicodedata
+import math
+import re
+from dataclasses import dataclass, field, replace
+from functools import lru_cache
+from pathlib import Path
+from typing import Callable, Iterable, Sequence
+
+from planet.language.percepts import AXES, from_ipa, is_glide, is_liquid, to_ipa
+
+Word = tuple  # tuple[Segment, ...]
+
+CAUSES = ("coarticulation", "effort", "perception", "prosody", "tonogenesis", "dispersion", "analogy")
+SCOPES = ("regular", "diffusing")
+DATA = Path(__file__).parent / "data" / "sound_changes.tsv"
+
+FL_K = 15.0  # veto probability = 1 - exp(-FL_K * load); load 0.05 (1 form in 20 merges) -> 53 % veto
+DEFAULT_STRESS = "penult"
+EPENTHETIC = "ə"  # vowel inserted by a class-V insertion ("∅ > V")
+
+# The tsv's needs vocabulary mapped onto the profile vocabulary (architecture §3). "stress" and "none" need nothing a
+# spoken species could lack. Hear tokens: pitch_ear <- hear["tone"], timing <- hear["length"].
+NEEDS_ALIAS = {"tongue_blade": "tongue_tip", "stress": None, "none": None, "": None}
+HEAR_TOKENS = {"pitch_ear": "tone", "timing": "length"}
+
+_V_QUALITY = ("height", "back", "round")
+_C_QUALITY = ("manner", "voice", "larynx", "phonation", "secondary", "sibilant", "lateral", "prenasal")  # a class rewritten to a literal keeps place
+
+
+# --------------------------------------------------------------------------------------------------------------- patterns
+
+class Pattern:
+    """A natural-class predicate over Segment (memoized per segment). It is built from a picklable ``spec`` (rules travel to
+    spawned workers): ("b", kind, ((axis, lo, hi), ...)) | ("lit", segment) | ("keys", frozenset of segments) |
+    ("named", name in NAMED) | ("and", spec, spec) | ("or", spec, spec). ``seg`` is set for a literal (one exact segment,
+    tone ignored); ``words`` is the plain-words name for ``describe``."""
+
+    __slots__ = ("label", "spec", "words", "seg", "fn", "_memo")
+
+    def __init__(self, label: str, spec: tuple, words: str = "", seg=None):
+        self.label, self.spec, self.words, self.seg = label, spec, words, seg
+        self.fn = _compile(spec)
+        self._memo: dict = {}
+
+    def __call__(self, seg) -> bool:
+        r = self._memo.get(seg)
+        if r is None:
+            r = self._memo[seg] = bool(self.fn(seg))
+        return r
+
+    def __reduce__(self):
+        return (Pattern, (self.label, self.spec, self.words, self.seg))
+
+    def __and__(self, other: "Pattern") -> "Pattern":
+        return Pattern(f"{self.label}&{other.label}", ("and", self.spec, other.spec), _join_words(other.words, self.words))
+
+    def __or__(self, other: "Pattern") -> "Pattern":
+        return Pattern(f"{self.label}|{other.label}", ("or", self.spec, other.spec), f"{self.words} or {other.words}")
+
+    def __repr__(self) -> str:
+        return f"Pattern({self.label})"
+
+
+NAMED: dict[str, Callable] = {
+    "liquid": is_liquid,
+    "glide": is_glide,
+    "son": lambda s: s.kind == "V" or (s.kind == "C" and 3 <= s.manner <= 7),
+    "obs": lambda s: s.kind == "C" and s.manner in (0, 1, 2, 8, 9),
+    "nonfront": lambda s: s.kind == "V" and (s.back >= 2 or s.height <= 1),
+    "nasal": lambda s: (s.kind == "C" and s.manner == 3) or bool(s.nasal),
+}
+
+
+def _compile(spec) -> Callable:
+    op = spec[0]
+    if op == "b":
+        _, kind, conds = spec
+
+        def fn(s):
+            if kind is not None and s.kind != kind:
+                return False
+            for ax, lo, hi in conds:
+                v = getattr(s, ax)
+                if v < lo or v > hi:
+                    return False
+            return True
+        return fn
+    if op == "lit":
+        key = spec[1]
+        return lambda s: _tonekey(s) == key
+    if op == "keys":
+        keys = spec[1]
+        return lambda s: _tonekey(s) in keys
+    if op == "named":
+        return NAMED[spec[1]]
+    if op in ("and", "or"):
+        a, b = _compile(spec[1]), _compile(spec[2])
+        return (lambda s: a(s) and b(s)) if op == "and" else (lambda s: a(s) or b(s))
+    raise ValueError(f"bad pattern spec {spec!r}")
+
+
+def _join_words(adj: str, noun: str) -> str:
+    if not adj:
+        return noun
+    if not noun:
+        return adj
+    if re.match(r"an? ", adj) and not re.match(r"an? ", noun):
+        adj, noun = noun, adj
+    noun = re.sub(r"^an? ", "", noun)
+    adj = re.sub(r"^an? ", "", adj)
+    return _article(f"{adj} {noun}")
+
+
+def _article(s: str) -> str:
+    return ("an " if s[:1] in "aeiou" else "a ") + s
+
+
+def cls(label: str, kind=None, words: str = "", **bounds) -> Pattern:
+    conds = tuple((ax, *(b if isinstance(b, tuple) else (b, b))) for ax, b in bounds.items())
+    return Pattern(label, ("b", kind, conds), words)
+
+
+def lit(seg) -> Pattern:
+    """Exactly this segment (tone ignored)."""
+    key = _tonekey(seg)
+    ipa = to_ipa(key)
+    return Pattern(ipa, ("lit", key), ipa, seg=key)
+
+
+V = cls("V", "V", "a vowel")
+C = cls("C", "C", "a consonant")
+N = cls("N", "C", "a nasal", manner=3)
+P = cls("P", "C", "a stop", manner=0)
+T = cls("T", "C", "a voiceless stop", manner=0, voice=0)
+D = cls("D", "C", "a voiced stop", manner=0, voice=1)
+F = cls("F", "C", "a fricative", manner=2)
+S = cls("S", "C", "a sibilant", sibilant=1)
+L = Pattern("L", ("named", "liquid"), "a liquid")
+G = Pattern("G", ("named", "glide"), "a glide")
+SON = Pattern("[+son]", ("named", "son"), "a sonorant")
+OBS = Pattern("[-son]", ("named", "obs"), "an obstruent")
+CLASSES = {"V": V, "C": C, "N": N, "P": P, "T": T, "D": D, "F": F, "S": S, "L": L, "R": L, "G": G}
+CLASS_SETS = {"T": {"manner": 0, "voice": 0}, "D": {"manner": 0, "voice": 1}, "P": {"manner": 0}, "N": {"manner": 3},
+              "F": {"manner": 2}}
+
+# feature -> (pattern if +, pattern if -, sets if +, sets if -)
+FEATURES = {
+    "voice": (cls("+voice", None, "voiced", voice=1), cls("-voice", "C", "voiceless", voice=0), {"voice": 1}, {"voice": 0}),
+    "son": (SON, OBS, None, None),
+    # low vowels count as non-front (a in a five-vowel system is [-front -back]): k > tʃ before i, e but not a
+    "front": (cls("+front", "V", "front", back=(0, 1), height=(2, 6)),
+              Pattern("-front", ("named", "nonfront"), "non-front"),
+              {"back": 0}, {"back": 4}),
+    "back": (cls("+back", "V", "back", back=(3, 4)), cls("-back", "V", "non-back", back=(0, 2)), {"back": 4}, {"back": 0}),
+    "high": (cls("+high", "V", "high", height=(5, 6)), cls("-high", "V", "non-high", height=(0, 4)), {"height": 6}, {"height": 4}),
+    "low": (cls("+low", "V", "low", height=(0, 1)), cls("-low", "V", "non-low", height=(2, 6)), {"height": 0}, {"height": 3}),
+    "round": (cls("+round", None, "rounded", round=1), cls("-round", None, "unrounded", round=0), {"round": 1}, {"round": 0}),
+    "nasal": (Pattern("+nasal", ("named", "nasal"), "nasal"),
+              cls("-nasal", None, "oral", nasal=0),
+              {"nasal": 1}, {"nasal": 0}),
+    "long": (cls("+long", None, "long", length=1), cls("-long", None, "short", length=0), {"length": 1}, {"length": 0}),
+    "fricative": (F, None, None, None),
+    "stop": (P, None, None, None),
+    "sibilant": (S, None, None, None),
+    "syllabic": (V, C, None, None),
+    "cons": (C, V, None, None),
+}
+ALPHA_AXES = {"place": ("place",), "back": ("back",), "round": ("round",), "voice": ("voice",), "front": ("back",),
+              "high": ("height",), "nasal": ("nasal",), "height": ("height",)}
+SYLL_FLAGS = ("coda", "onset", "final", "nonfinal", "open", "closed")
+DIACRITICS = {"ː": ("length", 1), "̃": ("nasal", 1), "ʰ": ("larynx", 1), "ʼ": ("larynx", 2), "ʷ": ("secondary", 1),
+              "ʲ": ("secondary", 2), "ˠ": ("secondary", 3), "ˤ": ("secondary", 4), "̤": ("phonation", 1),
+              "̰": ("phonation", 2)}
+STRESS_MARK = "́"
+
+
+# ------------------------------------------------------------------------------------------------------------- the rule
+
+@dataclass(frozen=True)
+class Change:
+    """What happens to the matched span.
+
+    kind: ``set`` (axes on the focus), ``map`` (parallel: each listed input segment has its own output), ``delete``,
+    ``insert`` (a segment at a gap; the rule has no focus), ``split`` (focus becomes two segments), ``metathesis`` (focus
+    swaps with its right neighbour), ``rewrite`` (a cluster becomes another), ``assimilate`` (copy ``axes`` from
+    ``source``: left | right | prev_vowel | first_vowel).
+    ``items``: the output as (ref, literal, sets) triples: ref = index into the matched span (-1 for a literal), sets =
+    ((axis, value), ...) applied on top. ``pairs`` for ``map``: ((input segment without tone, items), ...).
+    ``left_set``: axes set on the segment just before the span when it is a vowel (compensatory lengthening, tonogenesis).
+    """
+
+    kind: str
+    items: tuple = ()
+    pairs: tuple = ()
+    axes: tuple = ()
+    source: str = ""
+    left_set: tuple = ()
+    out_text: str = ""  # the output as written (for describe)
+
+    @staticmethod
+    def set(**values) -> "Change":
+        return Change("set", items=((0, None, tuple(values.items())),))
+
+    @staticmethod
+    def delete(**left_set) -> "Change":
+        return Change("delete", left_set=tuple(left_set.items()))
+
+    @staticmethod
+    def insert(seg) -> "Change":
+        return Change("insert", items=((-1, seg, ()),))
+
+
+@dataclass(frozen=True)
+class Env:
+    """Left and right contexts. ``alts``: ((left tokens, right tokens), ...), any may match. Tokens: ("#",),
+    ("p", Pattern), ("opt", Pattern), ("star", Pattern). ``stress``: None | stressed | unstressed (the focus vowel).
+    ``syll``: frozenset of SYLL_FLAGS on the focus."""
+
+    alts: tuple = (((), ()),)
+    stress: str | None = None
+    syll: frozenset = frozenset()
+
+
+ANYWHERE = Env()
+
+
+@dataclass(frozen=True)
+class Rule:
+    id: str
+    target: Pattern | None          # focus predicate; None for an insertion
+    change: Change
+    env: Env = ANYWHERE
+    cause: str = "effort"
+    needs: frozenset = frozenset()
+    weight: float = 3.0
+    scope: str = "regular"
+    example: str = ""
+    span: tuple = ()                # further patterns the match covers after the focus (clusters)
+    family: str = ""
+    notation: str = ""
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return isinstance(other, Rule) and self.id == other.id and self.notation == other.notation \
+            and self.weight == other.weight
+
+
+# ------------------------------------------------------------------------------------------------------- application
+
+def stressed_vowel(word: Sequence, pattern: str | None = DEFAULT_STRESS) -> int | None:
+    """Index of the stressed vowel under a fixed stress pattern (initial | final | penult | none)."""
+    vs = [i for i, s in enumerate(word) if s.kind == "V"]
+    if not vs or pattern in (None, "none"):
+        return None
+    if pattern == "initial":
+        return vs[0]
+    if pattern == "final":
+        return vs[-1]
+    if pattern == "penult":
+        return vs[-2] if len(vs) >= 2 else vs[0]
+    if pattern == "antepenult":
+        return vs[-3] if len(vs) >= 3 else vs[0]
+    raise ValueError(f"unknown stress pattern {pattern!r}")
+
+
+def _stress_of(word, stress_index) -> int | None:
+    if stress_index is None:
+        return stressed_vowel(word, DEFAULT_STRESS)
+    if isinstance(stress_index, str):
+        return stressed_vowel(word, stress_index)
+    if callable(stress_index):
+        return stress_index(word)
+    pat = getattr(stress_index, "stress", None)  # an Inventory
+    return stressed_vowel(word, pat)
+
+
+def _m(tokens, k, w, j, step) -> bool:
+    n = len(w)
+    while k < len(tokens):
+        t = tokens[k]
+        typ = t[0]
+        if typ == "#":
+            if j != (n if step > 0 else -1):
+                return False
+            k += 1
+            continue
+        inside = 0 <= j < n
+        if typ == "p":
+            if not (inside and t[1](w[j])):
+                return False
+            k += 1
+            j += step
+            continue
+        if typ == "opt":
+            if inside and t[1](w[j]) and _m(tokens, k + 1, w, j + step, step):
+                return True
+            k += 1
+            continue
+        if typ == "star":
+            jj = j
+            while True:
+                if _m(tokens, k + 1, w, jj, step):
+                    return True
+                if 0 <= jj < n and t[1](w[jj]):
+                    jj += step
+                else:
+                    return False
+        raise ValueError(typ)
+    return True
+
+
+def _env_ok(env: Env, out: list, w, j_right: int) -> bool:
+    """Left tokens (stored reversed) against the output so far, right tokens against the input from j_right."""
+    for left_rev, right in env.alts:
+        if left_rev and not _m(left_rev, 0, out, len(out) - 1, -1):
+            continue
+        if right and not _m(right, 0, w, j_right, 1):
+            continue
+        return True
+    return False
+
+
+def _final_start(w) -> int:
+    vs = [i for i, s in enumerate(w) if s.kind == "V"]
+    if not vs:
+        return 0
+    last = vs[-1]
+    return last - 1 if last >= 1 and w[last - 1].kind != "V" else last
+
+
+def _syll_ok(flags, w, i, end) -> bool:
+    n = len(w)
+    for f in flags:
+        if f == "coda":
+            if w[i].kind == "V" or (end < n and w[end].kind == "V") or not any(s.kind == "V" for s in w[:i]):
+                return False
+        elif f == "onset":
+            if not (end < n and w[end].kind == "V"):
+                return False
+        elif f in ("final", "nonfinal"):
+            fin = i >= _final_start(w)
+            if fin != (f == "final"):
+                return False
+        elif f in ("open", "closed"):
+            op = end == n or w[end].kind == "V" or (end + 1 < n and w[end + 1].kind == "V")
+            if op != (f == "open"):
+                return False
+    return True
+
+
+def _make(items, matched, focus_seg):
+    res = []
+    for ref, literal, sets in items:
+        base = matched[ref] if ref >= 0 else literal
+        res.append(replace(base, **dict(sets)) if sets else base)
+    return res
+
+
+def _tonekey(seg):
+    return replace(seg, tone=0) if seg.tone else seg
+
+
+def apply(rule: Rule, word, stress_index=None) -> tuple:
+    """Apply a rule once, regularly, left to right. ``stress_index``: a stress pattern name, an Inventory (its
+    ``.stress``), or a callable word -> stressed vowel index; default penult."""
+    w = word if isinstance(word, tuple) else tuple(word)
+    ch = rule.change
+    env = rule.env
+    target = rule.target
+    if target is None:
+        return _apply_insert(rule, w)
+    for s in w:
+        if target(s):
+            break
+    else:
+        return w
+    n = len(w)
+    k = len(rule.span)
+    need_stress = env.stress is not None
+    s_idx = _stress_of(w, stress_index) if need_stress else None
+    out: list = []
+    i = 0
+    changed = False
+    while i < n:
+        seg = w[i]
+        end = i + 1 + k
+        if target(seg) and end <= n and all(p(w[i + 1 + q]) for q, p in enumerate(rule.span)) \
+                and (not need_stress or _stress_ok(env.stress, s_idx, i, seg)) \
+                and (not env.syll or _syll_ok(env.syll, w, i, end)) \
+                and _env_ok(env, out, w, end):
+            produced = _produce(ch, w, i, end, out)
+            if produced is not None:
+                before = len(out)
+                if ch.left_set and before and out[-1].kind == "V":
+                    out[-1] = replace(out[-1], **dict(ch.left_set))
+                out.extend(produced)
+                changed = changed or tuple(produced) != w[i:end] or (ch.left_set and before > 0)
+                i = end
+                continue
+        out.append(seg)
+        i += 1
+    return tuple(out) if changed else w
+
+
+def _stress_ok(want, s_idx, i, seg) -> bool:
+    if s_idx is None or seg.kind != "V":
+        return False
+    return (i == s_idx) == (want == "stressed")
+
+
+def _produce(ch: Change, w, i, end, out):
+    kind = ch.kind
+    if kind == "map":
+        key = _tonekey(w[i])
+        for inp, items in ch.pairs:
+            if inp == key:
+                return _make(items, w[i:end], w[i])
+        return None
+    if kind == "assimilate":
+        src = None
+        if ch.source == "right":
+            src = w[end] if end < len(w) else None
+        elif ch.source == "left":
+            src = out[-1] if out else None
+        elif ch.source == "prev_vowel":
+            src = next((s for s in reversed(out) if s.kind == "V"), None)
+        elif ch.source == "first_vowel":
+            src = next((s for s in out if s.kind == "V"), None)
+        if src is None:
+            return None
+        return [replace(w[i], **{a: getattr(src, a) for a in ch.axes})]
+    return _make(ch.items, w[i:end], w[i])
+
+
+def _apply_insert(rule: Rule, w) -> tuple:
+    env = rule.env
+    out: list = []
+    changed = False
+    lit_seg = rule.change.items[0][1]
+    for g in range(len(w) + 1):
+        if _env_ok(env, out, w, g) and (not out or out[-1] != lit_seg):
+            out.append(lit_seg)
+            changed = True
+        if g < len(w):
+            out.append(w[g])
+    return tuple(out) if changed else w
+
+
+def applies(rule: Rule, segments: Iterable) -> bool:
+    """True when the lect has a segment the rule can act on (an insertion always can)."""
+    if rule.target is None:
+        return True
+    return any(rule.target(s) for s in segments)
+
+
+def apply_all(rule: Rule, forms: Sequence, stress_index=None) -> list:
+    return [apply(rule, f, stress_index) for f in forms]
+
+
+# ---------------------------------------------------------------------------------------------- functional load + pick
+
+def functional_load(rule: Rule, lexicon_forms: Sequence, stress_index=None) -> float:
+    """Fraction of forms that become homophonous with a form they were distinct from before the rule."""
+    if not lexicon_forms:
+        return 0.0
+    groups: dict = {}
+    for f in lexicon_forms:
+        f = tuple(f)
+        srcs = groups.setdefault(apply(rule, f, stress_index), {})
+        srcs[f] = srcs.get(f, 0) + 1
+    merged = sum(sum(srcs.values()) for srcs in groups.values() if len(srcs) > 1)
+    return merged / len(lexicon_forms)
+
+
+def veto_probability(load: float) -> float:
+    return 1.0 - math.exp(-FL_K * load)
+
+
+def _weighted_choice(rng, rules, weights):
+    tot = sum(weights)
+    if tot <= 0:
+        return None
+    x = rng.random() * tot
+    acc = 0.0
+    for r, wt in zip(rules, weights):
+        acc += wt
+        if x < acc:
+            return r
+    return rules[-1]
+
+
+def pick_rule(rng, rules: Sequence[Rule], lexicon_forms: Sequence, inventory_segments: Iterable,
+              stress_index=None) -> Rule | None:
+    """Draw one rule by weight among those that apply to the inventory, then veto it with probability
+    ``1 - exp(-FL_K * functional_load)``. A vetoed vowel merger offers a dispersion rule that moves the crowded vowel
+    away instead (itself subject to the veto). Returns None when nothing fires this time. ``rng`` is a
+    ``numpy.random.Generator`` or ``random.Random`` (only ``.random()`` is used)."""
+    inv = list(inventory_segments)
+    cand = [r for r in rules if applies(r, inv)]
+    if not cand:
+        return None
+    rule = _weighted_choice(rng, cand, [r.weight for r in cand])
+    if rule is None:
+        return None
+    load = functional_load(rule, lexicon_forms, stress_index)
+    if rng.random() >= veto_probability(load):
+        return rule
+    push = dispersion_rule(rule, inv)
+    if push is None:
+        return None
+    if rng.random() >= veto_probability(functional_load(push, lexicon_forms, stress_index)):
+        return push
+    return None
+
+
+def dispersion_rule(rule: Rule, inventory_segments: Iterable) -> Rule | None:
+    """For a vowel rule that would merge vowel v into an existing vowel o, the push-chain step: o moves on in the same
+    direction (or, at the edge of the space, centralizes), so v can follow later without a merger."""
+    inv = [s for s in inventory_segments if s.kind == "V"]
+    keys = {_tonekey(s): s for s in inv}
+    if rule.target is None or rule.change.kind in ("delete", "insert", "rewrite", "metathesis") or rule.span:
+        return None
+    for v in inv:
+        if not rule.target(v):
+            continue
+        outs = _single(rule, v)
+        if not outs or len(outs) != 1 or outs[0].kind != "V":
+            continue
+        o = keys.get(_tonekey(outs[0]))
+        if o is None or _tonekey(o) == _tonekey(v):
+            continue
+        dh = (o.height > v.height) - (o.height < v.height)
+        db = (o.back > v.back) - (o.back < v.back)
+        moved = replace(o, height=min(6, max(0, o.height + dh)), back=min(4, max(0, o.back + db)))
+        if _tonekey(moved) == _tonekey(o):  # at the edge: centralize (i > ɨ, u > ʉ) or, if central, lower
+            moved = replace(o, back=2) if o.back != 2 else replace(o, height=max(0, o.height - 1))
+        if _tonekey(moved) == _tonekey(o):
+            continue
+        sets = tuple((a, getattr(moved, a)) for a in ("height", "back") if getattr(moved, a) != getattr(o, a))
+        tgt = lit(_tonekey(o))
+        return Rule(
+            id=f"dispersion.push.{to_ipa(_tonekey(o))}", target=tgt, change=Change("set", items=((0, None, sets),)),
+            cause="dispersion", needs=frozenset({"tongue_body"}), weight=rule.weight, family="chain_shift",
+            example="Great Vowel Shift: as eː rose, iː moved out of its way (iː > əɪ)",
+            notation=f"{to_ipa(o)} > {to_ipa(moved)} (push chain from {rule.id})",
+        )
+    return None
+
+
+def _single(rule: Rule, seg):
+    """The rule's output for a lone segment (context ignored), or None when it does not act on it."""
+    ch = rule.change
+    if rule.target is None or not rule.target(seg):
+        return None
+    if ch.kind == "map":
+        key = _tonekey(seg)
+        for inp, items in ch.pairs:
+            if inp == key:
+                return _make(items, (seg,), seg)
+        return None
+    if ch.kind == "assimilate":
+        return [seg]
+    if rule.span:
+        return None
+    return _make(ch.items, (seg,), seg)
+
+
+# ------------------------------------------------------------------------------------------------------- catalogue
+
+def profile_capabilities(profile) -> frozenset:
+    """Articulators plus hear axes (resolution > 0; an axis missing from ``hear`` counts as heard) plus the derived hear
+    tokens pitch_ear (tone) and timing (length)."""
+    caps = set(getattr(profile, "articulators", ()) or ())
+    hear = getattr(profile, "hear", None) or {}
+    for ax in AXES:
+        if hear.get(ax, 1.0) > 0:
+            caps.add(ax)
+    for tok, ax in HEAR_TOKENS.items():
+        if hear.get(ax, 1.0) > 0:
+            caps.add(tok)
+    return frozenset(caps)
+
+
+@lru_cache(maxsize=1)
+def _protos() -> tuple:
+    out = []
+    for s in "p t k q ʔ b d g f v θ ð s z ʃ x ɣ χ h m n ŋ l r ɾ j w ts tʃ dʒ kʷ pʰ ɓ i e ɛ a ɑ o ɔ u y ə ɨ iː aː uː ã".split():
+        try:
+            segs = from_ipa(s)
+        except Exception:  # noqa: BLE001 - a symbol the table lacks
+            continue
+        if len(segs) == 1:
+            out.append(segs[0])
+    return tuple(out)
+
+
+def _mult(profile, seg) -> float:
+    """The species' make-cost multiplier for a segment relative to humans (1 = human)."""
+    from planet.language import profiles as _p
+
+    fn = getattr(_p, "make_multiplier", None)
+    if fn is not None:
+        return float(fn(profile, seg))
+    keys = _p.keys_of(seg) if hasattr(_p, "keys_of") else ()
+    m = 1.0
+    mc = getattr(profile, "make_cost", {}) or {}
+    for k in keys:
+        m *= mc.get(k, 1.0)
+    return m
+
+
+def cost_factor(rule: Rule, profile) -> float:
+    """Weight multiplier from the species' make costs: geometric mean over prototype segments of
+    sqrt(cost of what the rule removes / cost of what it produces), clamped to [0.2, 5]. 0 if every output is
+    impossible for the species."""
+    logs = []
+    impossible = 0
+    if rule.target is None:
+        m = _mult(profile, rule.change.items[0][1])
+        return 0.0 if math.isinf(m) else max(0.2, min(5.0, 1.0 / math.sqrt(max(m, 1e-6))))
+    for seg in _protos():
+        outs = _single(rule, seg)
+        if outs is None:
+            if rule.span and rule.target(seg):
+                outs = []  # cluster rule: score the focus as removed
+            else:
+                continue
+        m_in = _mult(profile, seg)
+        if math.isinf(m_in):
+            continue
+        m_out = 1.0
+        for o in outs:
+            m_out *= _mult(profile, o)
+        if math.isinf(m_out):
+            impossible += 1
+            continue
+        logs.append(0.5 * (math.log(max(m_in, 1e-6)) - math.log(max(m_out, 1e-6))))
+    if not logs:
+        return 0.0 if impossible else 1.0
+    return max(0.2, min(5.0, math.exp(sum(logs) / len(logs))))
+
+
+def load_tsv(path: Path | str = DATA) -> tuple[list[Rule], list[tuple[str, str, str]]]:
+    """Parse the sound-change table. Returns (rules, failures as (id, notation, reason))."""
+    rules, failures = [], []
+    with open(path, encoding="utf-8") as fh:
+        lines = [ln for ln in fh if not ln.startswith("#") and ln.strip()]
+    for row in csv.DictReader(lines, delimiter="\t"):
+        got, why = parse_rows(row)
+        if not got:
+            failures.append((row.get("id", ""), row.get("rule", ""), why))
+        rules += got
+    return rules, failures
+
+
+def parse_rows(row: dict) -> tuple[list[Rule], str]:
+    """Like parse_rule, but a row holding several rules ("mb > mm, nd > nn"; "æ > eə ; ɑ > a") becomes sub-rules with ids
+    S081a, S081b, ... (an environment written once at the end applies to all of them). Parts that fail are skipped."""
+    r, why = parse_rule(row)
+    if r is not None:
+        return [r], ""
+    if why not in ("several rules in one row", "several changes in one row"):
+        return [], why
+    text = re.sub(r"\(([^()]*)\)", lambda m: "" if " " in m.group(1) else m.group(0), row.get("rule", ""))
+    parts = [p.strip() for p in text.split(";")] if ";" in text else _split_top(text)
+    parts = [p for p in parts if ">" in p]
+    envs = [re.split(r"\s/\s", p, maxsplit=1)[1] for p in parts if re.search(r"\s/\s", p)]
+    if len(envs) == 1 and not re.search(r"\s/\s", parts[0]):
+        parts = [p if re.search(r"\s/\s", p) else f"{p} / {envs[0]}" for p in parts]
+    out, reasons = [], []
+    for k, part in enumerate(parts):
+        sub, w = parse_rule(dict(row, id=f"{row.get('id', '')}{'abcdefgh'[k]}", rule=part))
+        if sub is None:
+            reasons.append(w)
+        else:
+            out.append(sub)
+    return out, "; ".join(reasons)
+
+
+@lru_cache(maxsize=4)
+def _tsv_cached(path: str):
+    return load_tsv(path)
+
+
+def catalogue(profile, include_tsv: bool = True, path: Path | str = DATA) -> list[Rule]:
+    """DEMO_RULES plus the parsed tsv rules that the species can run (``needs`` within its articulators and heard axes),
+    with ``weight`` scaled by ``cost_factor``. Rules whose every output the species cannot make are dropped."""
+    caps = profile_capabilities(profile)
+    pool = list(DEMO_RULES)
+    if include_tsv and Path(path).exists():
+        pool += _tsv_cached(str(path))[0]
+    out = []
+    for r in pool:
+        if not r.needs <= caps:
+            continue
+        f = cost_factor(r, profile)
+        if f <= 0:
+            continue
+        out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
+    return out
+
+
+# ----------------------------------------------------------------------------------------------------------- parser
+
+_SPECIAL = set(" #()[]{}*_,∅") | set(CLASSES)
+_BLOCK = (("...", "a long-distance (non-adjacent) change"), ("…", "a long-distance (non-adjacent) change"),
+          ("then", "a staged change (several steps in one row)"), (";", "several changes in one row"),
+          ("same", "needs identity between segments"), ("paradigm", "analogy, not a sound change"),
+          ("analogical", "analogy, not a sound change"), ("tone", "a tone system rule"),
+          ("suffix", "morphology-conditioned"), ("ATR", "the ATR axis does not exist in the percept space"),
+          ("V1", "indexed segments"), ("H ", "tone letters"), ("contour", "a prosody-system rule"))
+_LENGTHEN = re.compile(r"(compensatory|vowel) lengthening")
+
+
+@dataclass
+class _Tok:
+    typ: str                 # lit | cls | edge | null | flag
+    text: str = ""
+    pat: Pattern | None = None
+    seg: object = None
+    sets: dict = field(default_factory=dict)
+    opt: bool = False
+    star: bool = False
+    stress: str | None = None
+    alpha: str | None = None
+    flag: str | None = None
+    base: str = ""
+
+
+class ParseError(ValueError):
+    pass
+
+
+def _bracket(body: str) -> _Tok:
+    """Contents of [...]: features (+voice, −son, αplace), class letters, axis=v / axis=lo..hi, stress, house flags."""
+    tok = _Tok("cls", text=f"[{body}]")
+    pat = None
+    for item in body.replace("−", "-").split():
+        if item in CLASSES:
+            p = CLASSES[item]
+            tok.base = tok.base or item
+        elif item in SYLL_FLAGS:
+            tok.typ, tok.flag = "flag", item
+            continue
+        elif item in ("+stress", "-stress"):
+            tok.stress = "stressed" if item[0] == "+" else "unstressed"
+            continue
+        elif item[0] == "α":
+            ax = item[1:]
+            if ax not in ALPHA_AXES:
+                raise ParseError(f"cannot agree in {ax!r}")
+            tok.alpha = ax
+            continue
+        elif "=" in item:
+            ax, val = item.split("=", 1)
+            lo, hi = (int(x) for x in val.split("..")) if ".." in val else (int(val),) * 2
+            if ax not in AXES:
+                raise ParseError(f"unknown axis {ax!r}")
+            p = Pattern(f"[{item}]", ("b", None, ((ax, lo, hi),)), f"{ax} {val}")
+            if lo == hi:
+                tok.sets[ax] = lo
+        elif item in FEATURES or (item[0] in "+-" and item[1:] in FEATURES):
+            if item[0] not in "+-":
+                item = "+" + item
+            pos, neg, sp, sn = FEATURES[item[1:]]
+            p = pos if item[0] == "+" else neg
+            sets = sp if item[0] == "+" else sn
+            if p is None:
+                raise ParseError(f"no class for {item!r}")
+            if sets:
+                tok.sets.update(sets)
+            else:
+                tok.sets["__unsettable__"] = item
+        else:
+            raise ParseError(f"unknown feature {item!r}")
+        pat = p if pat is None else (pat & p)
+    if tok.typ == "flag" and pat is None and tok.stress is None:
+        return tok
+    if pat is None and tok.stress is not None and tok.alpha is None and not tok.sets:
+        tok.typ = "flag"
+        return tok
+    tok.pat = pat
+    return tok
+
+
+def _tokens(s: str) -> list[_Tok]:
+    toks: list[_Tok] = []
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if c.isspace():
+            i += 1
+        elif c == "#":
+            toks.append(_Tok("edge", "#"))
+            i += 1
+        elif c == "∅":
+            toks.append(_Tok("null", "∅"))
+            i += 1
+        elif c == "*":
+            if not toks:
+                raise ParseError("* with nothing before it")
+            toks[-1].star = True
+            i += 1
+        elif c == "(":
+            j = s.find(")", i)
+            if j < 0:
+                raise ParseError("unclosed (")
+            inner = _tokens(s[i + 1:j])
+            if len(inner) != 1:
+                raise ParseError("optional group must hold one segment")
+            inner[0].opt = True
+            toks.append(inner[0])
+            i = j + 1
+        elif c == "[":
+            j = s.find("]", i)
+            if j < 0:
+                raise ParseError("unclosed [")
+            b = _bracket(s[i + 1:j])
+            prev = toks[-1] if toks else None
+            if prev is not None and i > 0 and not s[i - 1].isspace() and prev.typ in ("cls", "lit") and b.typ != "flag":
+                _merge(prev, b)  # V[+back], C[αplace]
+            elif prev is not None and i > 0 and not s[i - 1].isspace() and prev.typ in ("cls", "lit") \
+                    and b.typ == "flag" and b.stress:
+                prev.stress = b.stress
+            else:
+                toks.append(b)
+            i = j + 1
+        elif c in CLASSES:
+            t = _Tok("cls", c, pat=CLASSES[c], base=c)
+            i += 1
+            i = _diacritics(s, i, t)
+            toks.append(t)
+        else:
+            j = i
+            while j < n and s[j] not in _SPECIAL and not (s[j] in "ː̃́" and j == i):
+                j += 1
+            run = s[i:j]
+            if not run:
+                raise ParseError(f"unexpected {c!r}")
+            for seg in _ipa(run):
+                toks.append(_Tok("lit", to_ipa(seg), pat=lit(seg), seg=seg, base=to_ipa(replace(seg, length=0))))
+            i = j
+    return toks
+
+
+def _ipa(run: str):
+    if re.search(r"[A-Za-z]{3,}", run) and not re.fullmatch(r"[a-z]{3}", run):
+        raise ParseError(f"free text {run!r}")
+    if run[0] in "ʰʼʷʲˠˤːᴺ" or unicodedata.combining(run[0]):
+        raise ParseError(f"modifier with no segment in {run!r}")
+    try:
+        segs = from_ipa(run, strict=True)
+    except ValueError as e:
+        raise ParseError(f"unknown symbol in {run!r}") from e
+    if not segs:
+        raise ParseError(f"no segments in {run!r}")
+    return segs
+
+
+def _diacritics(s: str, i: int, t: _Tok) -> int:
+    while i < len(s) and (s[i] in DIACRITICS or s[i] == STRESS_MARK):
+        if s[i] == STRESS_MARK:
+            t.stress = "stressed"
+        else:
+            ax, v = DIACRITICS[s[i]]
+            t.sets[ax] = v
+            t.pat = t.pat & cls(s[i], None, {"length": "long", "nasal": "nasal", "larynx": "aspirated" if v == 1 else
+                                             "ejective", "secondary": "secondary-articulated",
+                                             "phonation": "breathy" if v == 1 else "creaky"}[ax], **{ax: v})
+        i += 1
+    return i
+
+
+def _merge(prev: _Tok, b: _Tok):
+    prev.text += b.text
+    if b.pat is not None:
+        prev.pat = prev.pat & b.pat
+    prev.sets.update(b.sets)
+    prev.alpha = b.alpha or prev.alpha
+    prev.stress = b.stress or prev.stress
+
+
+def _split_top(s: str, sep: str = ",") -> list[str]:
+    parts, depth, cur = [], 0, ""
+    for c in s:
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        if c == sep and depth == 0:
+            parts.append(cur)
+            cur = ""
+        else:
+            cur += c
+    parts.append(cur)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _expand_braces(s: str) -> list[str]:
+    m = re.search(r"\{([^{}]*)\}", s)
+    if not m:
+        return [s]
+    out = []
+    for choice in _split_top(m.group(1)):
+        out += _expand_braces(s[:m.start()] + choice + s[m.end():])
+    return out
+
+
+def _env_token(t: _Tok):
+    if t.typ == "edge":
+        return ("#",)
+    if t.typ not in ("cls", "lit") or t.pat is None:
+        raise ParseError(f"cannot use {t.text!r} in an environment")
+    if t.star:
+        return ("star", t.pat)
+    return ("opt", t.pat) if t.opt else ("p", t.pat)
+
+
+def _parse_env(text: str):
+    """-> (alts, stress, syll flags, alpha side or None)."""
+    stress, syll, alpha = None, set(), None
+    text = text.strip()
+    if "open syllable" in text:
+        syll.add("open")
+        text = text.replace("open syllable", "")
+    if "closed syllable" in text:
+        syll.add("closed")
+        text = text.replace("closed syllable", "")
+    alts, prev_side = [], None
+    raw_alts = _split_top(text)
+    if not raw_alts:
+        return (((), ()),), stress, frozenset(syll), alpha
+    for a in raw_alts:
+        if "_" not in a:
+            only = _tokens(a)
+            if all(t.typ == "flag" for t in only):
+                for t in only:
+                    stress = t.stress or stress
+                    if t.flag:
+                        syll.add(t.flag)
+                continue
+            if prev_side == "right":
+                a = "_" + a
+            elif prev_side == "left":
+                a = a + "_"
+            else:
+                raise ParseError(f"environment {a!r} has no _")
+        for e in _expand_braces(a):
+            if e.count("_") != 1:
+                raise ParseError(f"environment {e!r} needs exactly one _")
+            ls, rs = e.split("_")
+            lt, rt = [], []
+            for side, toks, dest in (("left", _tokens(ls), lt), ("right", _tokens(rs), rt)):
+                for t in toks:
+                    if t.typ == "flag":
+                        stress = t.stress or stress
+                        if t.flag:
+                            syll.add(t.flag)
+                        continue
+                    if t.alpha:
+                        alpha = side
+                    dest.append(_env_token(t))
+            alts.append((tuple(reversed(lt)), tuple(rt)))
+            prev_side = "right" if rt and not lt else ("left" if lt and not rt else prev_side)
+    if not alts:
+        alts = [((), ())]
+    return tuple(alts), stress, frozenset(syll), alpha
+
+
+def _side_items(s: str) -> list[str]:
+    s = s.strip()
+    if "," in s:
+        return _split_top(s)
+    parts = _split_top(re.sub(r"\s+", " ", s), " ")
+    return parts if len(parts) > 1 else [s]
+
+
+def _merge_gem(toks: list[_Tok], other) -> list[_Tok]:
+    """Two identical literal neighbours are one long segment (tt -> tː). Two identical class letters are one long segment
+    only against a single one on the other side (C > CC, CC > C); CCC > CC stays a cluster rule."""
+    other = list(other)
+    out: list[_Tok] = []
+    for t in toks:
+        if out and t.typ in ("lit", "cls") and out[-1].typ == t.typ and out[-1].text == t.text \
+                and not out[-1].sets.get("length") and not t.opt and not t.star:
+            if t.typ == "cls" and not (len(toks) == 2 and len(other) == 1 and other[0].text == t.text):
+                out.append(t)
+                continue
+            prev = out[-1]
+            prev.sets = dict(prev.sets, length=1)
+            if prev.typ == "lit":
+                prev.seg = replace(prev.seg, length=1)
+                prev.pat = lit(prev.seg)
+            else:
+                prev.pat = prev.pat & cls("ː", None, "long", length=1)
+            prev.text += t.text
+            continue
+        out.append(t)
+    return out
+
+
+def _out_items(ins: list[_Tok], outs: list[_Tok]):
+    texts = {t.text for t in ins} | {t.text for t in outs}
+    if len(texts) == 1 and ins[0].typ == "cls" and len(outs) < len(ins):  # CCC > CC: the middle goes
+        refs = list(range(len(outs) - 1)) + [len(ins) - 1]
+        return tuple((j, None, ()) for j in refs)
+    items, used = [], set()
+    for pos, o in enumerate(outs):
+        if o.typ not in ("lit", "cls"):
+            raise ParseError(f"cannot produce {o.text!r}")
+        if "__unsettable__" in o.sets:
+            raise ParseError(f"cannot set {o.sets['__unsettable__']}")
+        j = next((j for j, t in enumerate(ins) if j not in used and t.base and t.base == o.base), None)
+        if j is None:
+            j = next((j for j, t in enumerate(ins) if t.base and t.base == o.base), None)
+        if j is not None:
+            used.add(j)
+            sets = {}
+            if o.typ == "lit":
+                sets = _diff(ins[j], o.seg)
+            else:
+                for ax in ins[j].sets:
+                    sets[ax] = 0
+                sets.update(o.sets)
+            items.append((j, None, tuple(sets.items())))
+            continue
+        if o.typ == "lit":
+            jpos = pos if pos < len(ins) and pos not in used else None
+            if jpos is not None and len(outs) == len(ins) and _kind_of(ins[jpos]) == o.seg.kind:
+                used.add(jpos)
+                items.append((jpos, None, tuple(_diff(ins[jpos], o.seg).items())))
+            elif len(ins) == 1 and len(outs) > 1 and 0 not in used and _kind_of(ins[0]) == o.seg.kind:
+                used.add(0)
+                items.append((0, None, tuple(_diff(ins[0], o.seg).items())))
+            else:
+                items.append((-1, o.seg, ()))
+            continue
+        # a bare feature bundle ([−voice]) or another class letter (T > D) on the positional input
+        if o.base:
+            if o.base not in CLASS_SETS:
+                raise ParseError(f"cannot produce the class {o.text!r}")
+            o = replace(o, sets={**CLASS_SETS[o.base], **o.sets})
+        jpos = pos if pos < len(ins) else None
+        if jpos is None:
+            raise ParseError(f"no input for {o.text!r}")
+        used.add(jpos)
+        items.append((jpos, None, tuple(o.sets.items())))
+    return tuple(items)
+
+
+def _kind_of(t: _Tok):
+    if t.typ == "lit":
+        return t.seg.kind
+    return {"V": "V"}.get(t.base, "C" if t.base else None)
+
+
+def _diff(intok: _Tok, out_seg) -> dict:
+    """Axes to set so the input becomes the output literal."""
+    if intok.typ == "lit":
+        from dataclasses import fields as _f
+
+        return {f.name: getattr(out_seg, f.name) for f in _f(out_seg)
+                if f.name not in ("kind", "tone") and getattr(out_seg, f.name) != getattr(intok.seg, f.name)}
+    axes = _V_QUALITY + ("nasal",) if out_seg.kind == "V" else _C_QUALITY
+    d = {a: getattr(out_seg, a) for a in axes}
+    if out_seg.length:
+        d["length"] = 1
+    return d
+
+
+def parse_rule(line_or_row, **meta) -> tuple[Rule | None, str]:
+    """Parse one rule. Accepts a notation string, a tsv row dict (id, family, rule, cause, articulators_or_axes_needed,
+    naturalness, example) or a list in that column order. Returns (Rule, "") or (None, reason); never raises."""
+    try:
+        return _parse(line_or_row, **meta), ""
+    except ParseError as e:
+        return None, str(e)
+    except Exception as e:  # noqa: BLE001 - the contract is "report, don't raise"
+        return None, f"{type(e).__name__}: {e}"
+
+
+_COLS = ("id", "family", "rule", "cause", "articulators_or_axes_needed", "naturalness", "example")
+
+
+def _parse(src, **meta) -> Rule:
+    if isinstance(src, str):
+        row = {"rule": src}
+    elif isinstance(src, dict):
+        row = dict(src)
+    else:
+        row = dict(zip(_COLS, src))
+    row.update(meta)
+    text = unicodedata.normalize("NFD", (row.get("rule") or "").strip())
+    rid = row.get("id") or text
+    for marker, why in _BLOCK:
+        if (re.search(rf"\b{marker}\b", text) if marker.isalpha() else marker in text):
+            raise ParseError(why)
+    lengthen = bool(_LENGTHEN.search(text))
+    notes = []
+    # strip comments: parenthesized text with a space or a word in it; then known trailing phrases
+    text = re.sub(r"\(([^()]*)\)", lambda m: "" if (" " in m.group(1) or re.search(r"[A-Za-z]{3,}", m.group(1))) else m.group(0), text)
+    text = _LENGTHEN.sub("", re.sub(r"\bwith\b", "", text)).strip()
+    m = re.split(r"\s/\s", text, maxsplit=1)
+    main, envtxt = (m[0], m[1]) if len(m) == 2 else (m[0], "")
+    if "/" in main:
+        raise ParseError("alternative outputs (a/b)")
+    parts = [p.strip() for p in main.split(">")]
+    if len(parts) < 2:
+        raise ParseError("no '>'")
+    if len(parts) > 2:
+        if any("," in p for p in parts[1:-1]) and "," not in parts[0]:
+            raise ParseError("several rules in one row")
+        notes.append("first step of a chain")
+    lhs, rhs = parts[0], parts[1]
+    if not lhs or not rhs:
+        raise ParseError("empty side")
+    if ">" in envtxt:
+        raise ParseError("several rules in one row")
+    for phrase, flag in (("open syllable", "[open]"), ("closed syllable", "[closed]")):
+        envtxt = envtxt.replace(phrase, flag)
+    if re.search(r"[a-z]{3,}", re.sub(r"\[[^\]]*\]", "", " ".join((lhs, rhs, envtxt)))):
+        raise ParseError("free text in the rule")
+    in_items, out_items = _side_items(lhs), _side_items(rhs)
+    alts, stress, syll, alpha = _parse_env(envtxt)
+
+    in_toks = [_tokens(x) for x in in_items]
+    out_toks = [_tokens(x) for x in out_items]
+    if len(in_toks) == len(out_toks) == 1:
+        in_toks, out_toks = [_merge_gem(in_toks[0], out_toks[0])], [_merge_gem(out_toks[0], in_toks[0])]
+    else:
+        in_toks = [_merge_gem(t, ()) for t in in_toks]
+        out_toks = [_merge_gem(t, ()) for t in out_toks]
+    for toks in in_toks:  # stress / flags attached to the input token (V[−stress], V́)
+        for t in toks:
+            if t.stress:
+                stress = stress or t.stress
+            if t.typ == "flag" and t.flag:
+                syll = syll | {t.flag}
+    in_toks = [[t for t in toks if t.typ != "flag"] for toks in in_toks]
+    if stress and not all(_kind_of(t[0]) == "V" for t in in_toks if t):
+        stress_on_vowel = all(t and t[0].typ == "null" for t in in_toks)
+        if not stress_on_vowel:
+            raise ParseError("stress condition on a consonant")
+    if len(in_toks) > 1 and len(out_toks) == 1:  # "χ, x > h": every input to the one output
+        out_toks = [[replace(t, sets=dict(t.sets)) for t in out_toks[0]] for _ in in_toks]
+    if len(in_toks) == 1 and len(out_toks) > 1:
+        notes.append("first of several outputs")
+        out_toks = out_toks[:1]
+    if len(in_toks) != len(out_toks):
+        raise ParseError("input and output lists differ in length")
+
+    env = Env(alts=alts, stress=stress, syll=syll)
+    focus_kind = _kind_of(in_toks[0][0]) if in_toks and in_toks[0] else None
+    left_set = (("length", 1),) if lengthen and focus_kind == "C" else ()
+    target, span = None, ()
+    if len(in_toks) == 1:
+        ins, outs = in_toks[0], out_toks[0]
+        if any(t.typ in ("edge",) or t.opt or t.star for t in ins):
+            raise ParseError("edge or optional element in the input")
+        if len(ins) == 1 and ins[0].typ == "null":  # insertion
+            if len(outs) != 1:
+                raise ParseError("insertion of several segments")
+            o = outs[0]
+            if o.typ == "lit":
+                seg = o.seg
+            elif o.base == "V" and not o.sets:
+                seg = from_ipa(EPENTHETIC)[0]
+                notes.append(f"class V inserted as {EPENTHETIC}")
+            else:
+                raise ParseError(f"cannot insert {o.text!r}")
+            change = Change.insert(seg)
+        else:
+            if any(t.typ != "cls" and t.typ != "lit" for t in ins):
+                raise ParseError("odd input")
+            target, span = ins[0].pat, tuple(t.pat for t in ins[1:])
+            if len(outs) == 1 and outs[0].typ == "null":
+                change = Change("delete", items=(), left_set=left_set)
+            elif len(outs) == 1 and outs[0].alpha:
+                if alpha is None or len(ins) != 1:
+                    raise ParseError("agreement without a source")
+                change = Change("assimilate", axes=ALPHA_AXES[outs[0].alpha], source=alpha)
+            else:
+                items = _out_items(ins, outs)
+                kind = "set" if len(ins) == 1 and len(items) == 1 and items[0][0] == 0 else \
+                    "split" if len(ins) == 1 and len(items) == 2 else \
+                    "metathesis" if len(ins) == 2 and [x[0] for x in items] == [1, 0] else "rewrite"
+                if any(t.typ == "lit" for t in outs):
+                    out_text = out_items[0].strip()
+                elif len(outs) == 1 and outs[0].base in CLASS_SETS and outs[0].base != ins[0].base:
+                    out_text = CLASSES[outs[0].base].words
+                else:
+                    out_text = ""
+                change = Change(kind, items=items, left_set=left_set, out_text=out_text)
+    else:  # parallel lists: map
+        pairs, pats = [], []
+        for ins, outs in zip(in_toks, out_toks):
+            if len(ins) != 1 or ins[0].typ != "lit":
+                raise ParseError("parallel lists need single literal inputs")
+            if len(outs) == 1 and outs[0].typ == "null":
+                items = ()
+            else:
+                items = _out_items(ins, outs)
+            pairs.append((_tonekey(ins[0].seg), items))
+            pats.append(ins[0].pat)
+        keys = frozenset(p.seg for p in pats)
+        target = Pattern(",".join(p.label for p in pats), ("keys", keys),
+                         " or ".join(p.words for p in pats))
+        change = Change("map", pairs=tuple(pairs), left_set=left_set)
+
+    cause = (row.get("cause") or "effort").strip()
+    if cause not in CAUSES:
+        raise ParseError(f"unknown cause {cause!r}")
+    needs = set()
+    for x in (row.get("articulators_or_axes_needed") or row.get("needs") or "").replace(";", ",").split(","):
+        x = x.strip()
+        x = NEEDS_ALIAS.get(x, x)
+        if x:
+            needs.add(x)
+    weight = float(row.get("naturalness") or row.get("weight") or 3)
+    family = (row.get("family") or "").strip()
+    scope = row.get("scope") or ("diffusing" if family in DIFFUSING_FAMILIES or weight <= 1 else "regular")
+    return Rule(id=rid, target=target, change=change, env=env, cause=cause, needs=frozenset(needs), weight=weight,
+                scope=scope, example=(row.get("example") or "").strip(), span=span, family=family,
+                notation=(row.get("rule") or "").strip() + (f"  [{'; '.join(notes)}]" if notes else ""))
+
+
+# Lexical diffusion is the minority: metathesis and dissimilation spread word by word in the record (Wang 1969; Hock
+# 1991 ch. 9), as do the rarest (weight 1) changes.
+DIFFUSING_FAMILIES = frozenset({"metathesis", "dissimilation"})
+
+
+# ----------------------------------------------------------------------------------------------------------- describe
+
+def _tok_words(t) -> str:
+    if t[0] == "#":
+        return "#"
+    w = t[1].words or t[1].label
+    return f"optionally {w}" if t[0] == "opt" else (f"any number of {w}" if t[0] == "star" else w)
+
+
+def _env_words(env: Env) -> str:
+    bits = []
+    for left_rev, right in env.alts:
+        left = list(reversed(left_rev))
+        lw = [_tok_words(t) for t in left]
+        rw = [_tok_words(t) for t in right]
+        if lw == ["a vowel"] and rw == ["a vowel"]:
+            bits.append("between vowels")
+            continue
+        if lw in (["a consonant"], ["#", "a consonant"]) and rw in (["a consonant"], ["a consonant", "#"]):
+            rest = rw[1:]
+            bits.append(" + ".join(lw[:-1] + ["between consonants"] + rest).replace("# + ", "word-initially ")
+                        .replace(" + #", " at the end of a word"))
+            continue
+        part = []
+        if lw:
+            part.append("at the start of a word" if lw == ["#"] else "after " + " + ".join(x for x in lw if x != "#")
+                        + (" at the start of a word" if "#" in lw else ""))
+        if rw:
+            part.append("at the end of a word" if rw == ["#"] else "before " + " + ".join(x for x in rw if x != "#")
+                        + (" at the end of a word" if "#" in rw else ""))
+        if part:
+            bits.append(" and ".join(part))
+    s = " or ".join(bits)
+    extra = []
+    if env.stress:
+        extra.append(f"in {env.stress} syllables")
+    for f in sorted(env.syll):
+        extra.append({"coda": "at the end of a syllable", "onset": "before a vowel", "final": "in the last syllable",
+                      "nonfinal": "outside the last syllable", "open": "in open syllables",
+                      "closed": "in closed syllables"}[f])
+    return " ".join(x for x in [s] + extra if x)
+
+
+_TONE_WORDS = {1: "low", 2: "mid", 3: "high", 4: "rising", 5: "falling", 6: "extra-high", 7: "extra-low"}
+
+
+def describe(rule: Rule) -> str:
+    """Plain words for the workbench: 'p became f between vowels (effort: lenition)'."""
+    ch = rule.change
+    tw = rule.target.words if rule.target is not None else ""
+    if rule.span:
+        tw = tw + " + " + " + ".join(p.words or p.label for p in rule.span)
+    where = _env_words(rule.env)
+    after = ""
+    if ch.kind == "insert":
+        what = f"{to_ipa(ch.items[0][1])} was inserted"
+    elif ch.kind == "delete":
+        what = f"{tw} was lost"
+    elif ch.kind == "assimilate":
+        src = {"right": "the next sound", "left": "the sound before", "prev_vowel": "the vowel before",
+               "first_vowel": "the first vowel of the word"}[ch.source]
+        what = f"{tw} took the {'/'.join(ch.axes)} of {src}"
+    elif ch.kind == "map":
+        pairs = []
+        for inp, items in ch.pairs:
+            outs = _make(items, (inp,), inp) if items else []
+            pairs.append(f"{to_ipa(inp)} > {''.join(to_ipa(o) for o in outs) or '∅'}")
+        what = ", ".join(pairs)
+    elif ch.kind == "metathesis":
+        what = f"{tw} swapped places"
+    else:
+        what = f"{tw} became {ch.out_text or _describe_items(rule)}"
+    for ax, v in ch.left_set:
+        if ax == "length":
+            after = ", lengthening the vowel before"
+        elif ax == "tone":
+            after = f", leaving a {_TONE_WORDS.get(v, str(v))} tone on the vowel before"
+    fam = rule.family or rule.id.split(".")[0]
+    return f"{what}{' ' + where if where else ''}{after} ({rule.cause}: {fam})"
+
+
+def _describe_items(rule: Rule) -> str:
+    ch = rule.change
+    seg = rule.target.seg if rule.target is not None else None
+    if seg is not None and not rule.span:
+        return "".join(to_ipa(o) for o in _make(ch.items, (seg,), seg))
+    bits = []
+    for ref, literal, sets in ch.items:
+        if literal is not None:
+            bits.append(to_ipa(literal))
+        elif ref >= 0 and not sets:
+            pats = (rule.target,) + rule.span
+            bits.append(pats[ref].words or pats[ref].label)
+        elif sets:
+            bits.append(_sets_words(sets))
+        else:
+            bits.append("itself")
+    return " + ".join(bits) or "nothing"
+
+
+_SET_WORDS = {("voice", 1): "voiced", ("voice", 0): "voiceless", ("back", 0): "front", ("back", 4): "back",
+              ("nasal", 1): "nasal", ("nasal", 0): "oral", ("length", 1): "long", ("length", 0): "short",
+              ("round", 1): "rounded", ("round", 0): "unrounded", ("height", 6): "high", ("larynx", 2): "ejective",
+              ("larynx", 3): "implosive", ("larynx", 1): "aspirated", ("phonation", 1): "breathy",
+              ("secondary", 1): "labialized", ("secondary", 2): "palatalized"}
+
+
+def _sets_words(sets) -> str:
+    if len(sets) > 3:
+        return "a new quality"
+    return " ".join(_SET_WORDS.get((a, v), f"{a} {v}") for a, v in sets)
+
+
+# ---------------------------------------------------------------------------------------------------------- the demo set
+
+def _demo(rid, notation, cause, needs, weight, example, scope="regular", **override) -> Rule:
+    fam = rid.split(".")[0]
+    if notation:
+        r, why = parse_rule({"id": rid, "rule": notation, "cause": cause, "articulators_or_axes_needed": needs,
+                             "naturalness": weight, "example": example, "family": fam, "scope": scope})
+        if r is None:
+            raise RuntimeError(f"demo rule {rid}: {why}")
+        return replace(r, **override) if override else r
+    return Rule(id=rid, cause=cause, needs=frozenset(x.strip() for x in needs.split(",") if x.strip()), weight=weight,
+                example=example, scope=scope, family=fam, notation=override.pop("text", ""), **override)
+
+
+_AFTER_V_CODA = Env(alts=(((("p", V),), ()),), syll=frozenset({"coda"}))
+
+
+def _build_demo() -> tuple[Rule, ...]:
+    return (
+        # lenition chain p > f > h > 0, one link per rule
+        _demo("lenition.p_f", "p > f", "effort", "lips", 4, "Grimm's law: Latin pater, English father"),
+        _demo("lenition.f_h", "f > h / #_, V_V", "effort", "larynx", 3, "Latin facere > Old Spanish hazer > hacer"),
+        _demo("lenition.h_loss", "h > ∅", "effort", "larynx", 5, "Spanish hacer [aθer]; Cockney 'ouse"),
+        _demo("lenition.intervocalic_voicing", "[−voice −son] > [+voice] / V_V", "coarticulation", "larynx", 5,
+              "Latin vitam > Spanish vida"),
+        _demo("lenition.spirantization", "b, d, g > β, ð, ɣ / V_V", "effort", "lips, tongue_tip, tongue_body", 5,
+              "Spanish lobo [loβo], nada [naða], lago [laɣo]"),
+        _demo("devoicing.final", "[−son] > [−voice] / _#", "effort", "larynx", 5, "German Rad [ʁaːt] 'wheel'"),
+        _demo("deletion.final_vowel", "V > ∅ / C_# [−stress]", "prosody", "stress", 4,
+              "Latin lupum > Old French lou; Old English sunu > son"),
+        _demo("reduction.unstressed_schwa", "V[−stress] > ə", "prosody", "tongue_body, stress", 4,
+              "English photograph [ˈfoʊtəɡɹæf] vs photography [fəˈtɑɡɹəfi]"),
+        _demo("reduction.syncope", "V[−stress] > ∅ / VC_CV", "prosody", "stress", 3,
+              "Latin calidus > caldus > Italian caldo", "diffusing"),
+        _demo("assimilation.nasal_place", "N > [αplace] / _C[αplace]", "coarticulation", "velum", 5,
+              "Latin in + possibilis > impossibilis"),
+        _demo("palatalization.k_front", "k > tʃ / _[+front V]", "coarticulation", "tongue_body, tongue_tip", 5,
+              "Old English cirice > church"),
+        _demo("nasal.vowel_nasalization", "V > Ṽ / _N", "coarticulation", "velum", 5, "French bon [bɔ̃] < Latin bonum"),
+        _demo("nasal.nasal_loss", "N > ∅ / Ṽ_[coda]", "effort", "velum", 4, "French vin [vɛ̃], the n gone"),
+        _demo("debuccalization.s_h", "s > h / _C, _#", "effort", "tongue_tip, larynx", 5,
+              "Andalusian Spanish los perros [loh pero]"),
+        _demo("dental.theta_f", "θ > f", "perception", "tongue_tip, lips", 3, "Cockney think [fɪŋk]"),
+        _demo("cluster.simplification", "CCC > CC", "effort", "timing", 3, "English Christmas [ˈkɹɪsməs] (t lost)",
+              "diffusing"),
+        _demo("harmony.back", "", "coarticulation", "tongue_body", 3,
+              "Turkish ev-ler 'houses' vs at-lar 'horses' (suffix vowels agree in backness with the root)",
+              target=V, change=Change("assimilate", axes=("back", "round"), source="first_vowel"),
+              text="V > [αback αround] of the first vowel"),
+        _demo("umlaut.i", "V[+back] > [−back] / _C(C)i", "coarticulation", "tongue_body", 4,
+              "Proto-Germanic *mūsiz > Old English mȳs > mice"),
+        _demo("rhotic.rhotacism", "s > r / V_V", "coarticulation", "tongue_tip", 3,
+              "Old Latin honosis > honoris; flos, floris"),
+        _demo("tone.voiced_coda_low", "", "tonogenesis", "larynx, pitch_ear", 3,
+              "Tibetan-type: a lost voiced final leaves a low tone on its vowel",
+              target=cls("[+voice −son]", "C", "a voiced obstruent", voice=1, manner=(0, 2)),
+              change=Change.delete(tone=1), env=_AFTER_V_CODA,
+              text="[+voice −son] > ∅ / V_ [coda], vowel takes low tone"),
+        _demo("tone.glottal_coda_high", "", "tonogenesis", "larynx, pitch_ear", 3,
+              "Vietnamese sắc/ngã tones from a lost final glottal stop (Haudricourt 1954)",
+              target=lit(from_ipa("ʔ")[0]), change=Change.delete(tone=3), env=_AFTER_V_CODA,
+              text="ʔ > ∅ / V_ [coda], vowel takes high tone"),
+        _demo("chain_shift.raise_mid", "e, o > i, u / [+stress]", "dispersion", "tongue_body", 2,
+              "Great Vowel Shift: Middle English feet [feːt] > [fiːt]"),
+        _demo("metathesis.cc", "sk > ks", "perception", "tongue_tip, tongue_body", 2, "Old English ascian > dialectal ax",
+              "diffusing"),
+        _demo("epenthesis.cluster", "∅ > ə / C_C#, #C_C", "perception", "", 3,
+              "Spanish-speakers' English 'eschool'; Hindi iskuul; Arabic -CC# breaking"),
+        _demo("labial.w_v", "w > v", "perception", "lips, teeth", 3, "Latin vinum [w] > Italian vino [v]"),
+        _demo("rhotic.l_vocalization", "l > w / _C, _#", "effort", "tongue_tip, tongue_body", 3,
+              "Old French chevals > chevaus; London milk [mɪwk]"),
+        _demo("debuccalization.uvular", "q > ʔ", "effort", "tongue_body, larynx", 3,
+              "Cairene Arabic qalb > ʔalb 'heart'"),
+        _demo("debuccalization.uvular_pharyngeal", "χ > ħ", "perception", "pharynx", 2,
+              "Some Semitic and Caucasian lects: χ > ħ"),
+    )
+
+
+DEMO_RULES: tuple[Rule, ...] = _build_demo()
