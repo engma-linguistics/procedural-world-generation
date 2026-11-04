@@ -2,7 +2,7 @@
 id: PW-1415
 title: What orbital eccentricity range should the generator draw for v0.2 Earth-likes? (PW-1365 result)
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -64,4 +64,5 @@ show artefacts rather than physics. C's fixes are worth doing, but as part of th
 question about planet variety, so it is your call. The physics does not force either way below ~0.3.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Owner 11-03 (desk comment): A or B, either; 'we're having enough trouble with how Earth does it already that I don't want to muck about too much.' Coordinator picks A: keep Earth's eccentricity for v0.2 Earth-likes (his stability north star; B adds a climate input to an already touchy cold tail). Varied orbits wait for weird worlds (PW-443).
 - 2026-11-03: Created from inbox draft draft-eccentricity-range-for-earthlikes.md (found by lane148).

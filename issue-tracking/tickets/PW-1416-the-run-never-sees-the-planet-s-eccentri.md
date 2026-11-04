@@ -2,7 +2,7 @@
 id: PW-1416
 title: "The run never sees the planet's eccentricity: a fixed 0.03 in the ice cycle, no annual-mean gain; any per-planet eccentricity must reach the run too"
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: v2
 subsystem: climate
@@ -40,4 +40,5 @@ To do when per-planet orbits come in (with PW-481's orbit parameter):
   run's ice ages disappear
 
 ## Updates
+- 2026-11-03: Status todo -> wontdo. Under the D46 ruling (A, keep Earth's eccentricity) the run need not read a drawn eccentricity; revisit with weird worlds (PW-443).
 - 2026-11-03: Created from inbox draft draft-run-ignores-orbit-eccentricity.md (found by lane148).

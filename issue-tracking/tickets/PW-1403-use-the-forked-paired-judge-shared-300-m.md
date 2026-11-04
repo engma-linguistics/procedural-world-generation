@@ -2,7 +2,7 @@
 id: PW-1403
 title: Use the forked paired judge (shared 300 Myr spin-up)? Built and exact, but it does not calm the hard bar's cold tail
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: infra
@@ -48,4 +48,5 @@ Lean: A. Nothing in the existing judge, its thresholds or pass rules changed.
 - [ ] Daniel's choice
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Under D45 B: the fork judge is used for targeted chance checks (re-run a failing draw with do-nothing forks), not as the merge judge.
 - 2026-11-03: Created from inbox draft draft-fork-judge-adopt.md (found by lane144).

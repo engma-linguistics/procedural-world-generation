@@ -2,7 +2,7 @@
 id: PW-1404
 title: "A do-nothing change fails the hard bar on 2 of main's 6 coldest test planets: the frozen-over check reads chaos there"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: climate
@@ -44,4 +44,5 @@ Lean: A now, B as the lasting fix.
 - [ ] Daniel's choice
 
 ## Updates
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: agreed B now, C later. Also asked us to consider whether the touchiness itself is the problem ('too much variability for a semi-self-balancing equation'): a climate-stability diagnosis lane writes that up before any more cold-tail work.
 - 2026-11-03: Created from inbox draft draft-hard-bar-null-fails-cold-tail.md (found by lane144).
