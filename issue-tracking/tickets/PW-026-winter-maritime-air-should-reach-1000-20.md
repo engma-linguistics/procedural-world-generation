@@ -4,7 +4,7 @@ title: Winter maritime air should reach 1000-2000 km inland under westerlies
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-022]
 refs: [planet/climate.py, tools/earth_check.py, "plan_next@bdc967f: Known issues → Climate"]
 created: 2026-10-14
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,6 +25,7 @@ westerlies (and the reverse on east coasts). Also check the old continental-wint
 Alaska, Quebec, NE China 5–10 °C off) with the same change.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 120: three strikes (C1 inversions too small, C2 dry-column showers wrong way, C3 land friction partial and shifts B share wrong way); back of the line. The model over-rains 40-60 N interiors (1.6-1.8x) and under-rains humid coasts (~0.5x); supply from the adjacent seas is the lever. docs/review/base-climate/rain-inland/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.

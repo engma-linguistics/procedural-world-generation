@@ -4,7 +4,7 @@ title: Progress bars for runs, zooms and peoples runs in the viewer
 type: task
 status: todo
 parent: PW-247
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,4 +23,5 @@ The viewer gives no sign of how far a long job has got. Runs (`planet simulate`)
 - [ ] a finished or stopped job no longer shows a bar
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-26: Created from inbox draft draft-progress-bars.md (found by owner).

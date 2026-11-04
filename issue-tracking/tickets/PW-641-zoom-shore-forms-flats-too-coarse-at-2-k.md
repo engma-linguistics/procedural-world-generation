@@ -4,7 +4,7 @@ title: "Zoom shore forms: flats too coarse at 2 km/px, wave direction from the w
 type: task
 status: todo
 parent: PW-097
-milestone: v2
+milestone: later
 subsystem: coast
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-621, PW-097, PW-649]
 refs: [planet/zoom/shoreforms.py, planet/zoom/coast.py, docs/review/polish/polish-1.md, "zoom bc40a3", "zoom 9d7c44"]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,6 +35,7 @@ with D8 channels and drowned lowstand reefs, as the zoom layer `shore_form`. Wha
 - [ ] drift follows a stored wave direction where swell dominates
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-shoreforms-followups.md (found by polish1).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

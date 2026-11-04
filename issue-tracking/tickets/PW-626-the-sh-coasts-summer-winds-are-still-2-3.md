@@ -4,7 +4,7 @@ title: "The SH coasts' summer winds are still 2-3.5 m/s after PW-596 (Patagonia 
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-593, PW-596, PW-594, PW-592]
 refs: [planet/climate.py, docs/review/base-climate/laneA15/wind_after.txt, docs/review/base-climate/laneA15/patag.py, docs/review/base-climate/laneA15/pw596_probe_toggles.diff]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -88,5 +88,6 @@ Summer winds (m/s) A16 branch -> step 1 (New Zealand walls the gyres) -> step 2 
   `monsoon_wind`'s 900 km part over land narrower than the smoothing.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-sh-coastal-summer-winds-still-calm.md (found by base-climate-laneA15).

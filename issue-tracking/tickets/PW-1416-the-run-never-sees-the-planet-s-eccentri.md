@@ -4,7 +4,7 @@ title: "The run never sees the planet's eccentricity: a fixed 0.03 in the ice cy
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -40,4 +40,5 @@ To do when per-planet orbits come in (with PW-481's orbit parameter):
   run's ice ages disappear
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-03: Created from inbox draft draft-run-ignores-orbit-eccentricity.md (found by lane148).

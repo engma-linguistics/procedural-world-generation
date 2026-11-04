@@ -4,7 +4,7 @@ title: Before 20 kyr ago ~30% of peopled land holds 2+ peoples (COMPOSITION_TWO_
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-920, PW-888]
 refs: [planet/lineages/compose.py, planet/lineages/history/frame.py, planet/lineages/history/model.py]
 created: 2026-10-27
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,5 +26,6 @@ Lean A: it is a reporting and mixing rule, and B would shrink ranges again.
 - [ ] two_plus_pct before 20 kyr ago under ~10% on the 6 x 4 sweep, or the bar restated
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-29: Status needs-decision -> todo. Owner 10-29: option C. Unlike ways of life sharing a landscape at low density is fine; the 'small, contact zones only' bar applies to like-way peoples only. Restate the bar and measure two_plus_pct for like-way pairs.
 - 2026-10-27: Created from inbox draft draft-deep-time-two-plus-share-high.md (found by fun-lane-35).

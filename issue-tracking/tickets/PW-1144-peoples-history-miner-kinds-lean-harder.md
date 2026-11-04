@@ -4,7 +4,7 @@ title: "Peoples history: miner kinds lean harder toward rich ore (and copper, ti
 type: task
 status: todo
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1116, PW-1131]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/habitat.py, planet/lineages/settlements.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,4 +40,5 @@ mines will still be colonies. If the owner wants dwarves to be many, that is a r
 history, not a mining one.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-30: Created from inbox draft draft-dwarves-lean-to-rich-ore-in-history.md (found by fun-lane-72).

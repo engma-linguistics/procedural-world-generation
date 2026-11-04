@@ -4,7 +4,7 @@ title: "Wave power is half of a refined L8 world's finish (129 of 252 s) and gro
 type: task
 status: todo
 parent: PW-1198
-milestone: v2
+milestone: later
 subsystem: coast
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1211, PW-490]
 refs: [planet/coast.py, planet/world.py, docs/review/refine-l8/design.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ Try: rays with a fixed step in km (the L7 step) on L8/L9 grids, or the open sea'
 - [ ] L8 wave_power < 30 s; L7 outputs unchanged
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Created from inbox draft draft-wave-power-cost-at-l8-l9.md (found by lane104-refine-l8).

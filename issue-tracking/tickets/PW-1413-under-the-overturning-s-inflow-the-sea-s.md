@@ -4,7 +4,7 @@ title: Under the overturning's inflow the sea's winter swing is cut to a tenth, 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: s
 impact: med
@@ -43,5 +43,6 @@ layer from the wind and the heating), not as a lone constant.
   on Earth L6
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-03: Lane 150: not attempted (no openable source for a cooling-season mixed-layer depth); round1.md suggests the cut apply only to the inflow's extra winter loss. Back of the line with PW-1411.
 - 2026-11-03: Created from inbox draft draft-winter-half-cut-too-strong-under-inflow.md (found by lane142).

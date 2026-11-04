@@ -4,7 +4,7 @@ title: Portal arrivals as a random yearly trickle (compound Poisson) that averag
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: [PW-1185]
 relates: [PW-1150, PW-1185, PW-1191]
 refs: [docs/review/peoples-events/design.md, planet/lineages/history/portals.py, planet/lineages/history/founding.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ docs/review/peoples-events/design.md, section 4.
 - [ ] a test that the 50 kyr mean is within 5% of founders
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-portal-arrival-stream.md (found by lane-85).

@@ -4,7 +4,7 @@ title: "Fine zooms inside a turned land-zoom section: 2D boxes drawn unturned, f
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1338, PW-129]
 refs: ["viewer/zoom.html::drawFine", "viewer/zoom.html::fineHost", "viewer/zoom3d_place.js::place", "planet/zoom/fine.py::zoom", "planet/zoom/regional.py::frame_of"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ corners into the page's plane), or build fine zooms in their parent's orientatio
 - [ ] a fine zoom's outline in a turned section's 2D map matches where its 3D tile lands
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-11-02: Created from inbox draft draft-fine-zoom-in-turned-section.md (found by lane127).

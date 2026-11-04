@@ -4,7 +4,7 @@ title: On world af2677 (L6) the hobgoblins hold about 10 cells in every roll, wi
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-889]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/competition.py, "world af2677"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,4 +26,5 @@ never meets them. On the L7 world 2a7385 the hobgoblins hold about 7,000 cells, 
       the crossing rules)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-hobgoblins-ten-cells-on-af2677.md (found by fun-lane-54).

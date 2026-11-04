@@ -4,7 +4,7 @@ title: Fix moisture transport in the rain model
 type: story
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-352]
 relates: [PW-019]
 refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/ (removed; see git d32f7fa), docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
 created: 2026-10-14
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 120: three strikes (C1 inversions too small, C2 dry-column showers wrong way, C3 land friction partial and shifts B share wrong way); back of the line. The model over-rains 40-60 N interiors (1.6-1.8x) and under-rains humid coasts (~0.5x); supply from the adjacent seas is the lever. docs/review/base-climate/rain-inland/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).
 - 2026-10-30: Owner 10-30 D11: moisture/monsoon-coast work parked for v2; an agent will find a downloadable drag source.

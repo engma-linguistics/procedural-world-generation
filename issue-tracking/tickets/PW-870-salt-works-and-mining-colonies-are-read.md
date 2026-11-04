@@ -4,7 +4,7 @@ title: Salt works and mining colonies are read in the brief, not placed by the s
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-854, PW-797, PW-804]
 refs: [planet/lineages/mining.py, planet/lineages/salt_reach.py, planet/lineages/brief.py]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,4 +22,5 @@ Options: (A) a plain `[[use]] by = "dwarf" good = "salt_rock"` pull (a weak, non
 - [ ] dwarves' habitat leans toward rock-salt beds without a subgroup
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-25: Created from inbox draft draft-salt-colonies-in-the-sim.md (found by fun-lane-26).

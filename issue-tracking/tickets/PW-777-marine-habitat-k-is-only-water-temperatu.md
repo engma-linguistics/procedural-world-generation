@@ -4,7 +4,7 @@ title: Marine habitat K is only water temperature and a depth band; use sst, upw
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-729, PW-775]
 refs: [planet/lineages/history.py, planet/lineages/seafood.py, planet/coastal.py, planet/lineages/samples/seven_meals.toml]
 created: 2026-10-24
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,5 +32,6 @@ band `elev_m` (negative metres). Known limits, each a data or small-code step if
   measured cost note.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-26: Parent PW-729 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-24: Created from inbox draft draft-marine-habitat-fidelity.md (found by fun17).

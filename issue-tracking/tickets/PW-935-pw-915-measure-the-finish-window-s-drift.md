@@ -4,7 +4,7 @@ title: "PW-915: measure the finish window's drift with the step-length threshold
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-915, PW-866]
 refs: [planet/tectonics/crust.py, planet/tectonics/volcanism.py]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ volcanoes appear per Myr in the finish window against the steps before it.
 - [ ] count new ARC / HOTSPOT rock cells and new arc volcanoes per Myr in the last 10 Myr vs the 10 Myr before, on 2-3 L6 runs, with and without PW-915
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-27: Created from inbox draft draft-pw915-finish-window-drift-check.md (found by v1-finish-17).

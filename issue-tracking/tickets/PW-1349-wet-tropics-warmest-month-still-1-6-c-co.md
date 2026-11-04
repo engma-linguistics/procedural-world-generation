@@ -4,7 +4,7 @@ title: "Wet tropics' warmest month still ~1.6 C cool on Earth after the split re
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1327, PW-228, PW-1335, PW-1330]
 refs: ["planet/climate.py::_summer_split", "planet/climate.py::water_balance", docs/review/base-climate/tropical-cloud/round1.md, docs/review/base-climate/tropical-cloud/diagnosis.md, docs/review/base-climate/summer-heat/diagnosis.md, docs/review/base-climate/tropical-cloud/screen.py, data/earth/L7.npz]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,4 +29,5 @@ Try: nothing in the split. Re-measure the 0-20 deg warm month after the rain rou
 - [ ] 0-20 deg warmest month within ~1 C of NCEP once the Sahel / W Africa rain is right
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-02: Created from inbox draft draft-wet-tropics-summer-cool-from-rain.md (found by lane126).

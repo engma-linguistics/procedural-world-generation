@@ -4,7 +4,7 @@ title: Rivers in a one-pixel gorge draw as a pixel staircase in the zoom 3D view
 type: task
 status: todo
 parent: PW-516
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-537, PW-649]
 refs: [viewer/zoom3d.js, viewer/zoom3d_mesh.js, "zoom 60b7e1"]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,5 +25,6 @@ Options: (a) carve the zoom's terrain along a smoothed river course so the floor
 - [ ] the river in 60b7e1 below the upper pool turns less than ~1.5x the straight-line bearing change, without riding up the valley sides
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-zoom3d-river-staircase.md (found by pw537).

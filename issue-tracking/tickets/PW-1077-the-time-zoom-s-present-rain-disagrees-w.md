@@ -4,7 +4,7 @@ title: "The time zoom's present rain disagrees with its world's in places (70 mm
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1024, PW-966, PW-599]
 refs: [planet/lineages/recent.py, planet/lineages/prey.py, docs/review/megafauna/open-niches/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ What to try:
 - [ ] the rich empty class re-measured afterwards
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-time-zoom-rain-vs-world-rain.md (found by fun-lane-50).

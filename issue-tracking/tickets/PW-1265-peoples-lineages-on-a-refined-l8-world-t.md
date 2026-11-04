@@ -4,7 +4,7 @@ title: "Peoples (lineages) on a refined L8 world: the cheap L8 finishing state P
 type: task
 status: todo
 parent: PW-1198
-milestone: v2
+milestone: later
 subsystem: infra
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1143, PW-490]
 refs: [planet/refine.py, "world fb5e11", docs/review/refine-l8/design.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ mapped onto the refined grid, or the time zoom's frames are refined too.
 - [ ] if it runs: cost against the L7 try (~66 min, 11 GB) and a side-by-side of the peoples map
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Created from inbox draft draft-refine-peoples-on-a-refined-world.md (found by lane104-refine-l8).

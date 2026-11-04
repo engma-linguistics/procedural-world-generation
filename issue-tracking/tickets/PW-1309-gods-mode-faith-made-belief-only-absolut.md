@@ -4,7 +4,7 @@ title: Gods mode (faith_made | belief_only | absolute) as a world-creation contr
 type: task
 status: todo
 parent: PW-1308
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1306, PW-1304, PW-711]
 refs: ["planet/lineages/gods.py::Pantheons", "planet/lineages/gods.py::derive", "planet/lineages/techtree.py::build", "planet/lineages/techtree.py::rebuild", planet/lineages/spec.py, planet/lineages/output.py, "planet/server.py::gods", "planet/__main__.py::cmd_religion", viewer/lineages.html, docs/review/religion/slice1.md, "run b4d502", "run a24559"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -30,4 +30,5 @@ To do:
 - [ ] The Cultures tab's gods column shows the run's mode and re-fetches `/api/gods?mode=` when the user flips it (the endpoint already supports it).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-11-02: Created from inbox draft draft-gods-mode-world-control.md (found by lane117).

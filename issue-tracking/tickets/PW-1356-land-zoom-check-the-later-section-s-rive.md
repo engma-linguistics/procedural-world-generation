@@ -4,7 +4,7 @@ title: Land zoom, check the later section's rivers turned away at the owner line
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1302]
 refs: ["planet/zoom/match.py::walls", "planet/zoom/match.py::ACCEPT_M3S", "planet/zoom/match.py::inflows", "planet/zoom/stage_landscape.py::final_drainage", docs/review/land-zoom/rivers.py, docs/review/land-zoom/rivers-round1.md, "zoom:d904d6", "zoom:5d2e02", "zoom:a13667", "zoom:fe600a", "zoom:e2313a", "world:dba204"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -33,4 +33,5 @@ river of the later section through anyway (the mosaic discharge pass would then 
 section).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-11-02: Created from inbox draft draft-land-zoom-walls-divert-rivers.md (found by lane129).

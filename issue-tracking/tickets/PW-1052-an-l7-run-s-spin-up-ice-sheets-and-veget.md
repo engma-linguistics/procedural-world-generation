@@ -4,7 +4,7 @@ title: An L7 run's spin-up ice sheets and vegetation on the L6 grid too (the coa
 type: task
 status: todo
 parent: PW-247
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-247, PW-252]
 refs: [planet/nest.py, planet/tectonics/earth.py, docs/review/speed/README.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,4 +40,5 @@ Options:
 - [ ] judge it with the L7 set of docs/review/speed/README.md if it changes outputs
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-29: Created from inbox draft draft-l7-spinup-ice-and-plants-on-l6.md (found by lane27).

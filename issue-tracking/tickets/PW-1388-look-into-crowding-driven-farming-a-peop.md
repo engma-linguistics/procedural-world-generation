@@ -4,7 +4,7 @@ title: "Look into crowding-driven farming: a people farms a place only once it n
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: low
@@ -13,11 +13,12 @@ blocked_by: []
 relates: [PW-1385]
 refs: ["planet/lineages/ladder.py::Ladder.line"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
 In plain words: the leading explanation for why rich foragers stayed foragers is that nobody turned to farming until crowding forced it. The model fills land to its limit at once, so this would need a population-growth step it lacks. Daniel 11-02 (picking A for PW-1385): an investigation another time, not a fix: look around the literature and the code, try it in a sim or three, and report back. No merge expected.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-11-02: Created.

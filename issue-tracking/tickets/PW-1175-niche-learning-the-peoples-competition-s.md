@@ -4,7 +4,7 @@ title: "Niche learning: the peoples' competition still reads their authored comf
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1155]
 refs: [planet/lineages/history/habitat.py, planet/lineages/history/model.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ discount. Moving the temperature and rain overlap with the learned envelope is t
 per cell, or a per-line learned comfort range from the cells it holds. Measure it on the lane 77 suite before and after.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-learned-niche-overlap.md (found by lane79).

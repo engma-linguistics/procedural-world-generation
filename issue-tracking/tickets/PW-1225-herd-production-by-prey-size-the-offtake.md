@@ -4,7 +4,7 @@ title: "Herd production by prey size: the offtake reads Farlow's turnover at one
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1072, PW-991]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/prey.py, docs/review/dragon-food-chain/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ browsers; or from the giants and the herders' stock), then turnover at that mass
 - [ ] OFFTAKE per cell from it
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-31: Created from inbox draft draft-prey-size-field-for-herd-turnover.md (found by lane-90).

@@ -5,6 +5,7 @@ Durable how-to for the coordinating session: worktrees, merging, the server, run
 ## Working rules
 - Commit locally only, never push.
 - Iterate at level 6 (~5 min per run is fine); level 7 is the showcase default.
+- Keep the board small (owner 2026-11-03: stable and not exploding when nudged, then move on). A lane files at most 3 inbox drafts; each says what breaks or misleads if it is never done; observations go in the write-up. v2 holds only what the culinary ethnography needs or what makes the planet or peoples visibly broken; everything else is `later` (the backlog). See `docs/review/board/triage-2026-11-03.md`.
 - Ask about genuine judgement calls (as `needs-decision` tickets); nudge systems rather than force them. Correct the owner's wrong assumptions rather than building on them.
 - No backward compatibility: old runs, worlds and zooms can be deleted whenever a change breaks them (`uv run python -m planet delete run:<id>` / `world:` / `zoom:`, or `--orphans`). Don't keep code paths only so old runs replay.
 - Lanes run `uv run pytest -m 'not slow'` (plus the tests of the area they touched) before committing under `planet/`. The full suite (13–22 min wall at merges in the week of 2026-10-26, under sim load; `test_timezoom_consistency`'s 51-seed fixture is most of it) runs once, by the coordinator, at merge. Physics lanes that touch the run or time zoom also run the slow tests for their area. Run `uv run python tools/scorecard.py` (~11 min) after model changes, and `tools/earth_check.py` after climate changes.

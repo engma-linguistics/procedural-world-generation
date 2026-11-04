@@ -4,7 +4,7 @@ title: Necking-zone margins (neck_km, rise) soften the margin cliff; judge them 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-950]
 refs: [planet/tectonics/crust.py, planet/tectonics/crust.py::necking, planet/surface.py, planet/tectonics/params.py, paper:Mohn2012, paper:McKenzie1978, tests/test_rifts.py::test_necking_pays_for_the_margin_with_thinned_crust, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/margindiag.py]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## Description
@@ -49,5 +49,6 @@ land -2.9 points, both moved. The judge can't tell necking's share of this from 
 draft-sea-creep-alone-judge.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-necking-margins-judge-co2-dips.md (found by lane100).

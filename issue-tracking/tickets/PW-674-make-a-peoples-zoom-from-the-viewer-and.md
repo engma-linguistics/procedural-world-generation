@@ -4,7 +4,7 @@ title: Make a peoples zoom from the viewer and the zoom API
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-667, PW-669]
 refs: [planet/api.py, planet/server.py, viewer/index.html, viewer/zoom.html]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ What to try: an optional `peoples: RUN` in the zoom request (validated: a people
 - [ ] the box has no such checkbox on a world without a peoples run
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-23: Created from inbox draft draft-zoom-peoples-viewer-api.md (found by zoompeoples).

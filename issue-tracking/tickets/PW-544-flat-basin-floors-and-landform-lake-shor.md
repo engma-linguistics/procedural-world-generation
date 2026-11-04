@@ -4,7 +4,7 @@ title: Flat basin floors and landform-lake shores still dead flat after the shor
 type: task
 status: todo
 parent: PW-516
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-531, PW-521, PW-649]
 refs: [planet/zoom/regional.py, "zoom f24fda (Costa Rica, 18 iterations)", "zoom 9213a8", "zoom 4f65aa"]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,6 +29,7 @@ with slope under 1 m/km from 8002 km2 to 1554 km2. What is left there, and elsew
   `ZK.raise_to_run`), and whether the SW basin is a pan that may stay flat (a salt pan is legitimately flat)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-flat-basin-and-landform-lake-shores.md (found by pw531).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

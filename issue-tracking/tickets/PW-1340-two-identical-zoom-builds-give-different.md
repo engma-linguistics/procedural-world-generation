@@ -4,7 +4,7 @@ title: Two identical zoom builds give different `stats` (arrays identical)
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: ["planet/zoom/regional.py::build", "planet/zoom/stage_finish.py::stats", "world dba204", docs/review/land-zoom/cost.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ traced. Why it matters: golden tests and any "bit-identical" check of zoom chang
 - [ ] build twice on one code version, diff the `stats` dicts key by key, fix the ordering or document it
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-11-02: Created from inbox draft draft-zoom-stats-differ-between-identical-builds.md (found by lane122).

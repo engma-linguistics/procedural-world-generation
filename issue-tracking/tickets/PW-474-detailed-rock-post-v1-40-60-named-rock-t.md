@@ -4,7 +4,7 @@ title: "Detailed rock (post-v1): ~40-60 named rock types and a dig-down rock col
 type: task
 status: todo
 parent: PW-155
-milestone: v2
+milestone: later
 subsystem: surface
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-155]
 refs: [planet/surface.py]
 created: 2026-10-20
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,5 +23,6 @@ Output: a named surface rock per cell or zoom pixel, plus a rock column at any p
 Cost: labels only, so ~0 run time; the stored column is a few bytes per layer.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-29: 2026-10-29: owner wants the rock column in v2; World Orogen's per-cell rock column and lithology-controlled relief (PW-1005) are the reference design (docs/review/landscape/world-orogen.md).
 - 2026-10-20: Created.

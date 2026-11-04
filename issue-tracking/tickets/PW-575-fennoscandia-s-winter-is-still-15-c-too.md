@@ -4,7 +4,7 @@ title: "Fennoscandia's winter is still 15 C too cold with the Norwegian Sea open
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-458, PW-346, PW-570, PW-015]
 refs: [planet/climate.py, tools/overturning_report.py, docs/review/base-climate/stages.md]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -57,6 +57,7 @@ Generated planets have the same gap wherever a warm current or an overturning re
 - [ ] the winter wind over a warm polar sea onshore on its continent's coast
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: 2026-10-22 merged (lane A6, attempt 2): wind belts follow the air masses (front_shift); winter air over land relaxes in time (air_m 1000 m). Fennoscandia coldest-month bias -11.9 -> -8.9 C (bar +-6 not met: Barents/N Greenland Sea freeze, new ticket); Norwegian Sea winds now onshore; London +1.6, Stockholm -8.9; rain r 0.622, Koppen 70.3. Merged as a mechanism improvement (owner principle).
 - 2026-10-22: Created from inbox draft draft-nordic-winter-winds-offshore.md (found by base-climate-laneA).

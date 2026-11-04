@@ -4,7 +4,7 @@ title: Peoples' land use in a zoom leaves soils, fire and the named types as the
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-667, PW-661]
 refs: [planet/zoom/peoples.py, planet/zoom/vegetation.py, planet/soils.py, planet/vegetation.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,5 +23,6 @@ What to try: a `land_use` input to soils.organic (carbon x 0.6 under fields, x 0
 - [ ] soil carbon under the demo zoom's fields is lower than under its neighbouring wild ground
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: zoom polish; zooms are good enough to read
 - 2026-10-23: Created from inbox draft draft-zoom-peoples-soils-and-names.md (found by zoompeoples).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

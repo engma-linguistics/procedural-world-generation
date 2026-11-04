@@ -4,7 +4,7 @@ title: The vapour rides the whole land-sea (monsoon) circulation with no return 
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-015, PW-228, PW-233]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/review/base-climate/deserts/README.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,4 +44,5 @@ can't be the model's own rain (it is wet everywhere at the margins). Something l
 - [ ] Earth B within ~3 points of 30% with log-rain corr not below main's, India not drier
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-29: Created from inbox draft draft-land-sea-circulation-vapour-return-flow.md (found by lane25).

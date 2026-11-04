@@ -4,7 +4,7 @@ title: Warm semi-arid lowland winters 1.6 C cold where the rain is right; the mo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1335, PW-1327]
 refs: ["planet/climate.py::_summer_split", "planet/climate.py::_winter_air", "planet/climate.py::_air_temps", docs/review/base-climate/tropical-cloud/round2-diagnosis.md, docs/review/base-climate/tropical-cloud/winter2.py]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ dry-season surface energy budget of savannas before any code.
 - [ ] diagnosis written; Earth warm semi-arid lowland coldest month within ~1 C of NCEP without moving 40-60 deg
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-11-02: Created from inbox draft draft-winter-energy-split-dry-season-warmth.md (found by lane131).

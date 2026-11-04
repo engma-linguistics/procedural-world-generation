@@ -4,7 +4,7 @@ title: Elves hold about a sixth less land after the PW-889 cohabitation change o
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-889]
 refs: [planet/lineages/history/competition.py, planet/lineages/history/pressure.py, "world af2677"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ Check whether the humans, eased by the halflings living among them, now press ha
 - [ ] find which change moves the elves (among pairs off, integration off) over the 8 rolls
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-elves-thinner-after-among.md (found by fun-lane-54).

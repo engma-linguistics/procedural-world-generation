@@ -4,7 +4,7 @@ title: Where the inflow is all the surface water, the sea adds sst0's own anomal
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
@@ -42,4 +42,5 @@ Expect the subpolar box to cool and to need PW-1411's mechanism with it. Screen 
   (the 40-60 N box and the Nordic seas)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-11-03: Created from inbox draft draft-inflow-imprint-adds-on-sst0-anomaly.md (found by lane150).

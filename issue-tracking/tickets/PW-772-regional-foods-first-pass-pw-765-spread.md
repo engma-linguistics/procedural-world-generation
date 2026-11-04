@@ -4,7 +4,7 @@ title: "Regional foods first pass (PW-765): spread restriction, viewer colours a
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-765, PW-721, PW-738]
 refs: [planet/lineages/crop_defs.py, viewer/index.html, planet/lineages/crops.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ front; nothing cuts the sea or mountain barriers specially.
 - [ ] Not yet in the pass: hot-pepper-like regional rows beyond chili, maize/potato-style staples stay as they are; no per-people taste of these foods.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-24: Created from inbox draft draft-regional-foods-first-pass-followups.md (found by fun15).

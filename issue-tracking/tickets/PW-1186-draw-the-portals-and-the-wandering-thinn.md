@@ -4,7 +4,7 @@ title: Draw the portals and the wandering thinnings on the peoples map
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1150, PW-697]
 refs: [planet/lineages/history/portals.py, planet/lineages/output.py, viewer/lineages.html]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -32,4 +32,5 @@ A wandering thinning would show as a short track, from where it opened to where 
 - [ ] viewer markers
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-30: Created from inbox draft draft-draw-portals-and-thinnings-on-the-map.md (found by lane78).

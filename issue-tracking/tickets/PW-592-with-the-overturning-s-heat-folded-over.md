@@ -4,7 +4,7 @@ title: With the overturning's heat folded over both hemispheres (PW-589), the NH
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: ocean
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-589, PW-583, PW-458]
 refs: [planet/ocean.py, planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt, docs/review/base-climate/laneA13/climate_bias_a1.txt]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -38,6 +38,7 @@ month −13.1 → −12.3), so its too-cold inflow stays PW-583's.
 - [ ] NH open sea 45–65N within 2 C without losing the band means
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: ocean calibration against Earth sea temperatures; Earth is a plausibility anchor, not a target
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Lane A20 (held branch worktree-agent-a2b66e784ed5186c3, 1d076ad): shelf seas take the air the wind brings (only depth/moc_layer_m of the currents' anomaly reaches a shelf). North Sea SST 6.9 -> 8.5, W Europe warmest -1.0 -> -0.4, Yellow Sea warm bias 4.3 -> 3.6; other bars unchanged. Open-sea part (inflow trunk too narrow) is PW-639. Held on PW-640.
 - 2026-10-23: Lane A18: the North Sea's annual SST is 6.8 vs observed air ~10.5, about 3 C too cold already before PW-627; the overturning's heat reaching it is +1.4..+1.8 vs +3.6 in the NE Atlantic. First candidate for PW-592 (shelf seas starved of Atlantic heat).

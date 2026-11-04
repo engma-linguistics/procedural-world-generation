@@ -4,7 +4,7 @@ title: Gnomes (9/24) and half-elves (6/24) still remnants (<100 cells) at the pr
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-929, PW-920, PW-888]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, "worlds 067778 a12762 e71172 2a7385 1df1c3 6909cb", "dnd 7000-7003"]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,5 +27,6 @@ Options: a longer arrival founding window for an insular latecomer (PIONEER_KYR)
 - [ ] no main people under 100 cells at the present on the 6 x 4 sweep
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: evidence for the gnome-remnant ticket PW-956 (kept in v2); no separate fix needed first
 - 2026-10-27: Status needs-decision -> todo. Owner 2026-10-27: half-elves exempt (hybrids rare where parents rarely meet is fine). Gnomes moved to arrive at 50 kyr (ac3822a6); verify with the next peoples sweep.
 - 2026-10-27: Created from inbox draft draft-gnome-half-elf-remnants-after-polycentric.md (found by fun-lane-36).

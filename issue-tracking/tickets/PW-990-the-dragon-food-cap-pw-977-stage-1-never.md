@@ -4,7 +4,7 @@ title: "The dragon food cap (PW-977 stage 1) never binds at the default densitie
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-957, PW-973]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/probe.py, docs/review/megafauna/age-of-dragons.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -44,6 +44,7 @@ Options:
 Lean: A now, B with stage 2 (the budget is only a budget once hunters and herders draw on it too).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-29: Merged B (fun lane 45b). Stays open for stage 3: persecution as a kill rate against slow breeding, softer pressure, a viewer control for dragon abundance.
 - 2026-10-29: RULING (owner, 10-29): option B. Food decides how many dragons the land holds; persecution (stage 3) decides how many survive near peoples; the 1 per 5,000 km2 goes once that is literature-driven. No external target for dragon numbers.
 - 2026-10-29: Option B built as the default (meta.megafauna_natural = "food"; "prey" = Carbone kept as a cross-check): the guild, dragons included, splits what the peoples and giants leave by Carbone, Turvey & Bielby 2011's size classes (dragons 17%), natural density = that / 2.7 t a year. At 1 t/km2 of prey: 1 per 159 km2 (Carbone 1 per 269; Jetz 2004 carnivore N^-1 at 1.65 t: 1 per 202; Farlow 1993 reptiles 66.07 M^-1.01: 1 per 27). Rich (7 t/km2) 1 per 23, poor (0.6) 1 per 265. Present dragons 62.6k per run vs 42.3k (main). Prey:dragon biomass ~96:1 in wild country (Farlow p. 176: 100:1-200:1 modern, 50:1 his best case).

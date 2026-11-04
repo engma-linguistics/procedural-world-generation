@@ -4,7 +4,7 @@ title: "War as a counter-pressure: deaths and lost land where peoples are crowde
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-1108, PW-661, PW-1068]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/history/competition.py, planet/lineages/compose.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -50,5 +50,6 @@ Settlements (PW-1108) read the war intensity for sacking and walls. PW-661 build
 - [ ] lane 77 arms off / default / x2: slow breeders not lower than off; commonest people's share falls; no new brittle peoples
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Lane 101 built the war deaths through the life tables (excess violent deaths over the life table, lane 82 stage weights) and measured them on the stress suite: 0-0.2% of any people, no change to the commonest share. Dropped on Daniel's D31 ruling; parked with the commonest-share question for the war and polities work (inbox draft draft-in-fighting-judgements-for-polities.md).
 - 2026-10-30: Created from inbox draft draft-war-counterpressure.md (found by lane-82).

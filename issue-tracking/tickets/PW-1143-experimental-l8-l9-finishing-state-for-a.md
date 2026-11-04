@@ -4,7 +4,7 @@ title: Experimental L8 / L9 finishing state for a world, to get finer peoples pl
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: infra
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1015]
 refs: [planet/lineages/settlements.py, docs/review/owner-desk/]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,4 +35,5 @@ rate). Then propose the smallest experiment.
 - [ ] if feasible, one L8 finishing-state experiment, compared side by side with L7
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-10-30: Created from inbox draft draft-experimental-l8-l9-finish.md (found by owner).

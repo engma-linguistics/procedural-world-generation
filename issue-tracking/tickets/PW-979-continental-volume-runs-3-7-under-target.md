@@ -4,7 +4,7 @@ title: Continental volume runs 3-7% under target all run although the arc thermo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-970, PW-749, PW-046, PW-052]
 refs: [planet/tectonics/crust.py, docs/review/tectonics/crust/crust.md, docs/review/tectonics/crust/areadiag.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ Lean: B for v1, A in v2 with PW-749.
   boundary is off, sized from a source
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-28: Created from inbox draft draft-crust-volume-thermostat-shortfall.md (found by lane23).

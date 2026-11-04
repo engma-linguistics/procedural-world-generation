@@ -4,7 +4,7 @@ title: The storm-track seas evaporate a third to a half of NCEP's in winter and 
 type: task
 status: todo
 parent: PW-015
-milestone: v2
+milestone: later
 subsystem: climate
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1093, PW-1096]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ boundary-layer option (A). Not a v1 blocker.
 - [ ] storm-track seas' Oct-Mar E within 2x of NCEP and peaking in winter
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-30: Created from inbox draft draft-storm-track-sea-evaporation-seasons.md (found by lane58).

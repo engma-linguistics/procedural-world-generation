@@ -4,7 +4,7 @@ title: "Viewer: no dragon-density layer, and no stored peoples run with the food
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-990]
 refs: [viewer/index.html, docs/review/megafauna/dragon-density/shot.py, docs/review/megafauna/dragon-density/charts.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,4 +32,5 @@ the peoples layer, as in the report's Figure 6 (charts/map.png). It also serves 
 - [ ] a fresh dnd run on 2a7385 with the current model, for the showcase
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-30: Created from inbox draft draft-viewer-dragon-density-layer.md (found by dragon-density-doc).

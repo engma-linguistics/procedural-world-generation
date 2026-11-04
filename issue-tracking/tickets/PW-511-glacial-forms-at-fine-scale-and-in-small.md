@@ -4,7 +4,7 @@ title: Glacial forms at fine scale, and in small-glacier mountains (Alps, Patago
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-092, PW-499, PW-037]
 refs: [planet/zoom/glacial.py, planet/zoom/fine.py, "zoom b03a2b", "zoom bf3c88", "world 577526"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,5 +23,6 @@ Two gaps left by PW-092.
 - [ ] Alps and Patagonia zooms with troughs and cirques; a 100 m/px fjord zoom with cirques and a flat-floored U
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-21: Created from inbox draft draft-glacial-zoom-fine-and-alpine.md (found by pw092).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

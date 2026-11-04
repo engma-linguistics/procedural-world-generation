@@ -4,7 +4,7 @@ title: The weathering plants' CO2 starvation has no C4/CAM rescue, and the veget
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1227, PW-1224, PW-880]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, docs/review/v1-cut/plant-floor.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -36,4 +36,5 @@ Fix sketch: keep the C4/CAM share of `npp_w` (one more per-cell array) and exemp
 - [ ] vegetation's own CO2 response below 124 ppm (biome shifts checked on one low-CO2 frame)
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-31: Created from inbox draft draft-weathering-starvation-c4-and-biomes.md (found by lane95).

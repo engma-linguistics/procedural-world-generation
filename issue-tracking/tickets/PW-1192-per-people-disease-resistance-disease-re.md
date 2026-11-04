@@ -4,7 +4,7 @@ title: "Per-people disease resistance (disease_resist 0..1, inherited like the b
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1167]
 refs: [docs/review/peoples-events/design.md, planet/lineages/spec.py, planet/lineages/samples/dnd.toml]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ plague and epidemics. Design: docs/review/peoples-events/design.md, section 3.
 - [ ] shown on the peoples tab beside the life history
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-disease-resistance-per-people.md (found by lane-85).

@@ -4,7 +4,7 @@ title: "Life and the land surface: soils, vegetation, coastal life (no evolution
 type: epic
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: surface
 effort: xl
 impact: high
@@ -13,12 +13,13 @@ blocked_by: []
 relates: [PW-095, PW-083, PW-097, PW-155]
 refs: []
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
 Owner (2026-10-14): soils and a vegetation pass are must-haves, as soon as reasonable and parallelisable; the epic grew to life in general. Scope: soils from parent rock, climate, slope, surface age, glaciation and loess; vegetation as a system (types with productivity and cover feeding back on albedo, evapotranspiration, fire and soil carbon); coastal and shallow-sea life (reefs, mangroves, kelp, seagrass). Not in scope: simulating evolution. Species (real-world-like plants and animals, fantasy races) are placed later at the fine time scale (PW-103). Stories: soils, vegetation proposal, vegetation model, coastal life.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: surface/resources refinement; not needed for the culinary goal
 - 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): life and the land surface (soils, vegetation extras, coastal life) is v2 fun work.
 - 2026-10-14: Created.

@@ -4,7 +4,7 @@ title: Fine-zoom falls pin the lip pixel at the parent's lip height, so a horses
 type: task
 status: todo
 parent: PW-516
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-522, PW-516, PW-649]
 refs: [planet/zoom/fine.py, planet/zoom/falls.py]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,6 +27,7 @@ fine zoom may move a parent's lip.
 - [ ] move the lip up the course by the recess, with the bed above it graded into it
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-fine-fall-lip-notch.md (found by pw522).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

@@ -4,7 +4,7 @@ title: "Taboo catalogue: unsourced kinds and thin sources (gender roles, rest da
 type: task
 status: todo
 parent: PW-1308
-milestone: v2
+milestone: later
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1311, PW-1305]
 refs: [planet/lineages/taboo_defs.py, "planet/lineages/taboos.py::other_taboos", "planet/lineages/taboos.py::context", docs/review/religion/stats-round1.md, docs/review/religion/slice2.md, "https://d-place.org/parameters/EA036", "https://hraf.yale.edu/documents/106", "https://en.wikipedia.org/wiki/Sumptuary_law"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Gaps:
 - [ ] replace the Wikipedia-only kinds' sources with the works those pages cite, where reachable
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-02: Created from inbox draft draft-taboo-catalogue-gaps.md (found by lane133).

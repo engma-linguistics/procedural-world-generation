@@ -4,7 +4,7 @@ title: Gnomes (6/24), goblins on a12762 (3/4) and dwarves on 067778/a12762 are s
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-920, PW-888]
 refs: [planet/lineages/history/dispersal.py, "worlds 067778 a12762 e71172 2a7385 1df1c3 6909cb", "dnd 7000-7003"]
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,4 +22,5 @@ Possible next mechanisms (not built): allow a jump onto land held thinly by a pe
 - [ ] no main people under 100 cells at the present on the 6 x 4 sweep
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: evidence for the gnome-remnant ticket PW-956 (kept in v2); no separate fix needed first
 - 2026-10-27: Created from inbox draft draft-remnant-gnomes-goblins-dwarves.md (found by fun-lane-35).

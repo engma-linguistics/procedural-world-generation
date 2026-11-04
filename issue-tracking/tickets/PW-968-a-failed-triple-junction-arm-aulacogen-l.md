@@ -4,7 +4,7 @@ title: A failed triple-junction arm (aulacogen) leaves no trough, stretched crus
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-952, PW-135, PW-242]
 refs: [planet/tectonics/events.py, planet/tectonics/crust.py]
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-03
 ---
 
 ## Description
@@ -31,4 +31,5 @@ existing rift record, sag (rift_sag) and the fault-block-rift landform pick it u
 - [ ] no change to the plate counts or the paired pass rate
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-28: Created from inbox draft draft-aulacogen-leaves-no-trough.md (found by lane22).

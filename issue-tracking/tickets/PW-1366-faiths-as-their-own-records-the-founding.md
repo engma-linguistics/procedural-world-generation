@@ -4,7 +4,7 @@ title: "Faiths as their own records: the founding, schism and conversion rule (j
 type: task
 status: todo
 parent: PW-1308
-milestone: v2
+milestone: later
 subsystem: culture
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1358, PW-1306, PW-1311]
 refs: ["planet/lineages/gods.py::Pantheons._schisms", "planet/lineages/gods.py::Pantheons._conversions", "planet/lineages/gods.py::contacts", "planet/lineages/gods.py::faith_docs", "planet/lineages/gods.py::FAITH_RULE", planet/lineages/faithmap.py, viewer/religiontab.js, tests/test_gods.py, docs/review/religion/slice2.md, docs/review/religion/stats-round1.md, tools/religion_stats.py, "run b4d502", "run a24559", "run 3c1caf"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,5 +41,6 @@ Options:
 Lean A for v2; revisit the three numbers after Daniel has seen the map.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-02: Status needs-decision -> todo. Daniel 11-02: keep the rule as built (A); no hurry. Revisit the three numbers together once he has looked at the map and timeline.
 - 2026-11-02: Created from inbox draft draft-faith-spread-rule-call.md (found by lane133).

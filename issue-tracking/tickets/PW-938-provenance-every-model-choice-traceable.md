@@ -4,7 +4,7 @@ title: "Provenance: every model choice traceable to its sources, including what 
 type: epic
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: docs
 effort: xl
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [docs/review/assumptions-audit/findings.json]
 created: 2026-10-27
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,5 +26,6 @@ Ground rules:
 - There are about 99 distinct inline author-year citations in planet/ today, unverified and in no central registry.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: provenance project is documentation, not needed for a stable planet or the culinary goal
 - 2026-10-29: Owner 10-29: provenance moves to v2 in its entirety.
 - 2026-10-27: Created from inbox draft draft-provenance-epic.md (found by owner).

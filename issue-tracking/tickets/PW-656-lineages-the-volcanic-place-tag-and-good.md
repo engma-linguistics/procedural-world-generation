@@ -4,7 +4,7 @@ title: "Lineages: the volcanic place tag and good have no volcanoes in the deep 
 type: task
 status: todo
 parent: PW-103
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/lineages/land.py, planet/lineages/history.py, planet/tectonics/volcanism.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ build the tag from the nearest keyframe's table, the same rule as land._volcanic
 a preset or user line needs volcanoes in Myr time.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Created from inbox draft draft-lineages-volcanic-tag-deep-epochs.md (found by lineages-preset-lane).

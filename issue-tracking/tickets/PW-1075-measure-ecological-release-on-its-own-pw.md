@@ -4,7 +4,7 @@ title: "Measure ecological release on its own (PW-1024 B): lane 50's sweep chang
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1024]
 refs: [planet/lineages/history/megafauna.py, docs/review/megafauna/open-niches/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -37,4 +37,5 @@ The knobs are design judgements, with no sweep behind their values:
 - [ ] A-only and A+B numbers side by side in docs/review/megafauna/open-niches/README.md
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-30: Created from inbox draft draft-ecological-release-measured-alone.md (found by fun-lane-50).

@@ -4,7 +4,7 @@ title: Time an L7 run with the new climate defaults against main under the same 
 type: task
 status: todo
 parent: PW-247
-milestone: v2
+milestone: later
 subsystem: infra
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-247]
 refs: [docs/review/speed/README.md]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ machine if possible, with the same NUMBA_NUM_THREADS. Record wall and CPU. Put t
 docs/review/speed/README.md and in planet make's time estimates if they read from it. No judge draws are needed.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: tool or performance nicety
 - 2026-10-29: Created from inbox draft draft-l7-speed-equal-load-timing.md (found by lane27b).

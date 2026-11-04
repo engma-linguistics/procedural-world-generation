@@ -4,7 +4,7 @@ title: "Coast detail: reefs and atolls, mangroves, barrier islands, cliffs vs be
 type: story
 status: todo
 parent: PW-090
-milestone: v2
+milestone: later
 subsystem: coast
 effort: l
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-004, PW-077]
 refs: [planet/coast.py, planet/zoom/regional.py]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -22,6 +22,7 @@ volcano epic), mangroves on tropical sheltered coasts, barrier islands on wave-d
 cliffs vs beaches by rock strength and wave power. See also PW-077 (spits, beach ridges, tidal channels).
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: resources/ore layer or salt-mining detail; not needed for the first culinary brief
 - 2026-10-23: Coast-detail lane: stage 1 built (planet/coastform.py: coast_type classes, barrier/cliff scores, seabirds, seals,
   nav_hazard; `planet coast <world>`; viewer layers, summary; tools/coast_check.py 26/32 on Earth). Stage 2 in part
   (planet/zoom/coast.py: shore classes, barrier islands with inlets and lagoons, colonies, hazards; `planet coast

@@ -4,7 +4,7 @@ title: "Two missing measurements: an overturning report (sites, Sv, heat, basin 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: infra
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-458, PW-016, PW-558]
 refs: [tools/climate_bias.py, tools/ice_diag.py, tools/earth_check.py, docs/review/base-climate-review.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-11-03
 ---
 
 ## Description
@@ -41,4 +41,5 @@ Stage 0 of the base-climate review.
 - [ ] both print with one command each; a baseline row for main in `docs/review/base-climate-review.md`
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: tool or performance nicety
 - 2026-10-22: Created from inbox draft draft-overturning-and-thermostat-reports.md (found by base-climate-review).

@@ -4,7 +4,7 @@ title: Fine zoom of a small valley glacier is 40% bigger than its parent's ice
 type: task
 status: todo
 parent: PW-516
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-392, PW-127]
 refs: [planet/zoom/fine_forms.py, "zoom de7be6 in e33c3d"]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,5 +21,6 @@ zoom_fine_forms.glaciers() runs zoom.glaciers() on the fine ground, with new ice
 - [ ] ice area of the same valley at 1 km, 0.5 km and 0.1 km compared; cap ICE_NEAR if the fine zoom overshoots both
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-20: Created from inbox draft draft-fine-zoom-glacier-margin-wider-than-parent.md (found by pw392-fine-forms).
 - 2026-10-30: planet/zoom.py and planet/zoom_*.py moved into planet/zoom/ (regional.py, fine.py, ...) and zoom.build split into named stages (stage_*.py), lane 55; the file names here are the new ones, but the line numbers in the text are from before the move.

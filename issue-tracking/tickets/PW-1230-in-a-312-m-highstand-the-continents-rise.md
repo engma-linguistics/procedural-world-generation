@@ -4,7 +4,7 @@ title: In a +312 m highstand the continents rise with the sea (land stays ~34%),
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-051, PW-950, PW-238]
 refs: [planet/tectonics/earth.py, planet/tectonics/crust.py, planet/surface.py, "run 2c0c5d", "world a16f5a", docs/review/l8-world/explore.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -42,4 +42,5 @@ sediment filling flooded platforms to -60 m and deltas to +2 m? the weathering b
 Not a resolution effect as far as I can tell; same code at L7 should show it after a breakup.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-10-31: Created from inbox draft draft-continents-rise-with-the-sea-in-a-highstand.md (found by lane96).

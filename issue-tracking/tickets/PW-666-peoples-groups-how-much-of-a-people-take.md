@@ -4,7 +4,7 @@ title: "Peoples groups: how much of a people takes up a way of life (seafarers ~
 type: task
 status: todo
 parent: PW-661
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-665]
 refs: [planet/lineages/history.py, planet/lineages/samples/dnd.toml, docs/proposals/lineages.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,6 +39,7 @@ Options:
 Lean: C for the orcs plus A elsewhere; B if the owner wants "the humans" to read mostly as their groups.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-23: Owner (2026-10-24): part of a wider rule, cultures fracture as peoples spread (see PW-670 under PW-661); a seafaring founder's inland descendants lose the sea.
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): taking to the sea should follow exposure, i.e. the share of a people living on the coast, not a fixed group share; probably belongs with the wider culture pass. Moved under PW-661; preset left as is for now.
 - 2026-10-23: Created from inbox draft draft-peoples-group-shares.md (found by peoples-groups-lane).

@@ -4,7 +4,7 @@ title: The weathering sink's reference counts potential plants' weathering but b
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1158, PW-1161, PW-980]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/finish-drift-l80/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -45,4 +45,5 @@ the instantaneous ratio, which overstates the lasting step a little because reli
 - [ ] Supply reference at potential cover, paired with PW-1158's source fix, on a screen; median end T within +-0.5 C of main
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-30: Created from inbox draft draft-sink-supply-reference-learnt-bare.md (found by lane80).

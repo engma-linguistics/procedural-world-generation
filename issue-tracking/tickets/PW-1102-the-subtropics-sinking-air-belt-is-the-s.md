@@ -4,7 +4,7 @@ title: The subtropics' sinking-air belt is the same all round the latitude, so t
 type: task
 status: todo
 parent: PW-013
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1097, PW-1093]
 refs: [planet/climate.py, tools/moisture_regions.py, docs/review/base-climate/moisture-budget/README.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,4 +35,5 @@ warmth. It fits with the land-sea inflow drafts.
 - [ ] a generic form, one Earth solve, then a paired judge
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-10-30: Created from inbox draft draft-subtropical-sink-belt-zonal.md (found by lane58).

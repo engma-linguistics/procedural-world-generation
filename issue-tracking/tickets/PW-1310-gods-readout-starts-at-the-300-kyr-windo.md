@@ -4,7 +4,7 @@ title: "Gods readout starts at the 300 kyr window: seed the oldest gods (dragons
 type: task
 status: todo
 parent: PW-1308
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1306, PW-986, PW-981]
 refs: ["planet/lineages/gods.py::derive", "planet/lineages/gods.py::Pantheons.frame", "planet/lineages/cultures.py::derive", planet/lineages/demes.py, "run b4d502: gods.json cultures[].ritual_since_kyr", docs/review/religion/slice1.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -27,4 +27,5 @@ yr; drift is scaled by the frame gap, which is fine for slow ritual change, but 
 - [ ] choose A, B or C; if A, show the age in the viewer's gods column and the brief
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-02: Created from inbox draft draft-gods-pre-window-seed.md (found by lane117).

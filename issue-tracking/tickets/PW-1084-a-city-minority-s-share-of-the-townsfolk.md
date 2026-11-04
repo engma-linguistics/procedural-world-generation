@@ -4,7 +4,7 @@ title: A city minority's share of the townsfolk is fixed; let it grow when its o
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-889, PW-928]
 refs: [planet/lineages/history/cities.py, planet/lineages/history/pressure.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ the share could rise with that squeeze, for example share x (1 + squeeze), and f
 - [ ] the city share follows its people's squeeze (owner to approve the form); show it in the Results tab's peoples table
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: later cultures work (languages, polities, religion, morality); food comes first (fresh-eyes review, D44)
 - 2026-10-30: Created from inbox draft draft-city-minority-share-follows-pressure.md (found by fun-lane-54).

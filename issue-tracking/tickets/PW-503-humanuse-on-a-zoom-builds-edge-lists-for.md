@@ -4,7 +4,7 @@ title: "humanuse on a zoom builds edge lists for every pixel: memory and time at
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-099, PW-649]
 refs: [planet/humanuse.py, planet/zoom/regional.py]
 created: 2026-10-21
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,6 +21,7 @@ updated: 2026-10-26
 - [ ] time a 2000 x 2000 and a 4096 x 4096 zoom build with and without the layers
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: fine-zoom or coast-form polish; zooms read well enough
 - 2026-10-26: Parent PW-099 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.

@@ -4,7 +4,7 @@ title: "Events system: one seeded schedule per kind (drought, eruption, quake, p
 type: task
 status: todo
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-1165]
 relates: [PW-1165, PW-1166, PW-1167, PW-1171, PW-1172, PW-1108, PW-756]
 refs: [docs/review/peoples-events/design.md, planet/lineages/history/events.py, planet/lineages/recent.py, planet/lineages/reputation.py, planet/lineages/settlements.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -45,4 +45,5 @@ Work:
 - [ ] judged on tools/peoples_robust.py, arms off / default
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-events-system-schedule-and-viewer.md (found by lane-85).

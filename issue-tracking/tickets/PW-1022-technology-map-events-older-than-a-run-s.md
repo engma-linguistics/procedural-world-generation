@@ -4,7 +4,7 @@ title: "Technology map: events older than a run's first stored moment are drawn 
 type: task
 status: todo
 parent: PW-913
-milestone: v2
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-913]
 refs: [viewer/index.html, "run 3097e3"]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,4 +23,5 @@ What to try: draw old events at the people's `origin_place` when it is older tha
 - [ ] an event older than the first stored moment is drawn where the people was, or plainly marked as approximate
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-10-29: Created from inbox draft draft-techtab-map-before-first-stored-moment.md (found by fun-lane-47).

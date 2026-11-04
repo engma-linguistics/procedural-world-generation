@@ -4,7 +4,7 @@ title: "Seven Meals tree: densities not yet set by way of life (the dnd tree's D
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1149]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/samples/dnd.toml]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,4 +29,5 @@ To do: apply the same rule to seven_meals.toml:
 Mark every number without a source as a judgement. Then check the stress suite's seven_meals rows.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples-share tuning, paused until war and polities exist
 - 2026-10-31: Created from inbox draft draft-seven-meals-density-by-way.md (found by lane83).

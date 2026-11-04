@@ -4,7 +4,7 @@ title: Arrivals come through many portals at once, with a founder count per arri
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-697, PW-917]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/portals.py, planet/lineages/samples/dnd.toml, planet/lineages/history/params.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -36,4 +36,5 @@ a small patch. This task turns the portals on and adds one number per arriving p
 - [ ] screen on a few rolls: elves', gnomes' and tritons' share of people and cells led, before and after
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples-share tuning, paused until war and polities exist
 - 2026-10-30: Created from inbox draft draft-portal-arrivals-in-force.md (found by lane76).

@@ -4,7 +4,7 @@ title: "Dwarven holds buy food with a placeholder trade share (ladder.TRADE_CAP 
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1275, PW-1350]
 refs: ["planet/lineages/ladder.py::TRADE_CAP", "planet/lineages/ladder.py::TRADE_FULL", "planet/lineages/ladder.py::MUSHROOM_X", "planet/lineages/ladder.py::Ladder.line", "planet/lineages/ladder.py::is_hold", docs/review/peoples/density-ladder/ladder.md, docs/review/peoples/density-ladder/build.md, "Clark 1999 UC Davis notes ch. 4", "Ramos et al. 2010 NPT 4(3)"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -26,4 +26,5 @@ When trade exists: the food a hold buys should come from a neighbour's surplus w
 should fall out of that. Until then the placeholder stays, labelled as one in the ladder's table and the workbench.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-11-02: Created from inbox draft draft-hold-trade-placeholder.md (found by lane 136 / lane 137 (density ladder build)).

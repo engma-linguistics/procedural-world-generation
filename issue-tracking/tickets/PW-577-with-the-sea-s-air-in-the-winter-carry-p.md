@@ -4,7 +4,7 @@ title: With the sea's air in the winter carry, PW-575's offshore Nordic winds ch
 type: task
 status: todo
 parent: PW-570
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-575, PW-346, PW-458]
 refs: [planet/climate.py, docs/review/base-climate/stage2/attempt2.patch, docs/review/base-climate/stages.md, tools/climate_bias.py]
 created: 2026-10-22
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,5 +40,6 @@ effects for whoever lands the sea's air in the carry (see `draft-sea-swing-from-
 - [ ] Baffin Bay's warmest month within 3 C
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: calibration or second-order physics refinement, not needed for the planet to be stable or for the culinary goal
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-sea-air-carry-offshore-and-baffin-summer.md (found by base-climate-laneA2).

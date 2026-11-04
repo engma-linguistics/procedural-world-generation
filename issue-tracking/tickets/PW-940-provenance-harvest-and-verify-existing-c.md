@@ -4,7 +4,7 @@ title: "Provenance: harvest and verify existing citations (code, wiki, decisions
 type: story
 status: todo
 parent: PW-938
-milestone: v2
+milestone: later
 subsystem: docs
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-27
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,6 +23,7 @@ updated: 2026-10-29
 - Report how many were confirmed, corrected and unverifiable.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: provenance project is documentation, not needed for a stable planet or the culinary goal
 - 2026-10-29: Owner 10-29: provenance moves to v2 in its entirety.
 - 2026-10-29: 10-29 paper batch checked against the code: Nagy 1999 intercepts, McKenzie 1978 SAG constants, Burke & Dewey's 120 degrees and KJ_PER_G_LIVE (via Farlow 1993) are confirmed and their comments carry page or table; the Ripple 2014 'few percent' citation was wrong and is corrected (draft filed).
 - 2026-10-27: Created from inbox draft draft-provenance-harvest.md (found by owner).

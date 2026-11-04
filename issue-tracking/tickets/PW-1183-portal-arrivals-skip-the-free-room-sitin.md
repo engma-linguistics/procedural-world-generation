@@ -4,7 +4,7 @@ title: Portal arrivals skip the free-room siting, so the gnomes shrink 10-60x wh
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-697, PW-1150]
 refs: [planet/lineages/history/origins.py, tools/peoples_robust.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -30,5 +30,6 @@ Fix: inside the portal branch, score the cells within PORTAL_KM (and PORTAL_FAR_
 Lane 78 builds wandering portals: whoever touches the portal block first should fold this in.
 
 ## Updates
+- 2026-11-03: Triage 11-03: v2 -> later: peoples refinement or later mechanism (tuning, follow-ups), not needed for a first culinary brief
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-portal-arrivals-skip-free-room-siting.md (found by lane77).
