@@ -147,6 +147,18 @@ class Recorder:
         rec["arid_pct"] = round(100 * float(np.isin(kp, ARID).mean()), 2) if land.any() else None
         rec["bwh_pct"] = round(100 * float((kp == BWH).mean()), 2) if land.any() else None
         rec["land_precip"] = round(float(sim.precip[land].mean()), 1) if land.any() else None
+        # the grassy lands (lane 185, PW-1261): herb cover over land, and tree / herb cover on the steppe (Koppen BS)
+        # and the tropical wet-dry lands (Aw, As: savanna country), where the herbs' growth sets the fire and the trees
+        nu = getattr(sim, "veg_frac", None)
+        if nu is not None and land.any():
+            from .. import vegetation
+            herb = np.asarray(nu, float)[vegetation.HERBS].sum(0)
+            rec["grass"] = round(100 * float(herb[land].mean()), 2)
+            for key, codes in (("steppe", ("BSh", "BSk")), ("savanna", ("Aw", "As"))):
+                m = np.isin(kp, [k for k, c, _, _ in climate.KOPPEN if c in codes])
+                rec[f"{key}_cells"] = int(m.sum())
+                rec[f"{key}_trees"] = round(100 * float(tc[land][m].mean()), 2) if m.any() else None
+                rec[f"{key}_grass"] = round(100 * float(herb[land][m].mean()), 2) if m.any() else None
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
         rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)
