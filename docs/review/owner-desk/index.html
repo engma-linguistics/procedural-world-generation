@@ -72,10 +72,24 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <h1>Owner's Desk</h1>
   <p class="lede">The road to v1.0 on 1 December is mapped and on the board; v2's first three lanes are running, and lane 160 checks the climate fix.
 Lanes stay within half the machine while your language jobs run.</p>
-  <nav class="toc"><a href="#answers">Road to v1.0</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <nav class="toc"><a href="#answers">D49, road to v1.0</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d49"><div class="id">D49 · DO RULERS NEED WRITING? (PW-1448, FROM POLITIES V0)</div>
+<p><b>In plain words:</b> you ruled that a chiefdom needs writing (P2), and the new Polities layer keeps that rule. On the D&amp;D test run, humans have
+cities from 5,000 years ago and kingship from 4,500, but get writing only 1,100 years ago. So for 4,000 years the map shows cities with no rulers,
+only dragon realms. On Seven Meals, writing comes earlier, and states appear from 7,000 years ago.</p>
+<ol>
+<li><b>A. Keep it.</b> On the D&amp;D run, the first rulers come 1,100 years ago.</li>
+<li><b>B. Forerunners of writing count</b> (pictograms, tallies): on the D&amp;D run, the first states come about 4,500 years ago. At the present there are 986 chiefdoms and 364 states and empires
+(against 934 and 344 under A).</li>
+<li><b>C. Only states need writing</b>; chiefdoms need only chiefly rule. On Earth, chiefdoms are older than writing.</li>
+</ol>
+<p><i>My lean:</i> B, with C a close second. Earth's chiefdoms long predate writing, so C is more faithful, but B keeps your "records first" idea
+and still gives states a deep past where the run has cities. Later, when polities run inside the history (v4), the need for records can pull writing in
+earlier, as you suggested.</p>
+</div>
 <div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER (LANE 162, ON THE BOARD)</div>
 <div class="tbl"><table>
 <tr><th>Tag</th><th>Target</th><th>What you can do</th></tr>
@@ -128,8 +142,10 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <tr><th>Lane</th><th>What</th></tr>
 
 <tr><td>170 · building D47 (physics, side track)</td><td>Your pick, C: one carbon yardstick per grid level, weathering on plant cover, "frozen over" read at the end. Lane 160's full check, compared with the same 36 planets on the current code: re-runs of one planet still differ by about 1.8 °C (from 2.0), because plate chaos alone carries about 1.4 °C, so the 1.2 °C hope was wrong. But the spread across planets falls by a third (range &minus;7.5..+6.6 &rarr; &minus;4.2..+4.8 °C), both the cold and warm tails go, and no new hard failures appear. Worth building; judged on the paired test before merge.</td></tr>
-<tr><td>171 · scout: mountains too low</td><td>Why the tallest peaks are about 5.7 km and big ranges are rare. A diagnosis from stored runs, then at most 3 small runs measuring how much land is high, not temperature. Reports a lever; changes nothing.</td></tr>
-<tr><td>172 · scout: hot summers near the equator</td><td>Re-measures whether summers are still 3–4 °C too hot against Earth now that two of its causes are fixed. It may simply close the ticket.</td></tr>
+<tr><td>175 · war v0</td><td>v3: states take border land from weaker neighbours, a polity falls when its capital is taken, and states can also collapse. Today they last 600–1,400 years, against history's median of 130, and the biggest empire is smaller than Earth's after 650 BC because nothing conquers. A read-out: no re-run.</td></tr>
+<tr><td>174 · mountain summits</td><td>Display only: each high cell shows a summit height (its average plus Earth's measured summit-over-average), so the tallest-peak highlight reads like Earth's 8 km peaks.</td></tr>
+
+
 <tr><td>showcases</td><td>Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
 
 
@@ -173,6 +189,14 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>States and empires, first cut</b> (v3, PW-1431): <b>merged</b>. Peoples runs have a "polities" button on the globe. It shows who rules where at the century nearest the time slider: chiefdoms, states, empires (a state where another culture holds a fifth of its people) and dragon realms. Click a cell for its card: ruler, subjects, founded, fell, capital. Names are placeholders until the names slot. Compared with history, settled people per tier fit (chiefdoms in thousands, states in hundreds of thousands); states last too long and the biggest empire is too small, because nothing conquers yet (lane 175).</li>
+<li><b>Physics scouts:</b>
+<ul>
+<li><b>Hot summers near the equator: fixed already</b> (PW-1279 closed). On the Earth test world, against observed 1991–2020 records: warmest month 1.6 °C cooler at 0–20°, 0.4 °C warmer at 20–40°.</li>
+<li><b>Mountains aren't too low.</b> The model stores 60 km cell averages, and Earth averaged that way tops out at 5.9 km too. The real gaps are peaks overshooting on old craton (12 km zoom summits) and too few Andes-type ranges, both in the backlog. The display fix is lane 174.</li>
+<li><b>Wet forests</b> grow too few leaves because shaded leaves pay full upkeep. A one-constant fix lifts rainforest growth from 628 to 827 g C/m²/yr (field plots: about 1,160) with the global total unchanged. It waits for D47 to merge.</li>
+</ul></li>
+<li><b>Showcase re-run:</b> the D&amp;D demo world is now <a href="http://localhost:8765/viewer/?run=cb0e0a&amp;layer=peoples">cb0e0a</a> on current code. Seven Meals and the second D&amp;D are running.</li></ul>
 <ul><li><b>v2's code is all merged</b> (tag v0.2.0 waits on a last full test run and your look):
 <ul>
 <li><b>Faiths you write:</b> Religion tab &rarr; "Your faiths" &rarr; "✎ write a faith". Give it a name, a founder, a place, a year in any form, gods with their domains, and whether it spreads. It rebuilds in about 5 s, shows with a "✎ yours" badge in every view, and tells you whether it took hold, and why not if it didn't. Stored in the run as <code>authored.json</code>.</li>
@@ -254,5 +278,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v141 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v142 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

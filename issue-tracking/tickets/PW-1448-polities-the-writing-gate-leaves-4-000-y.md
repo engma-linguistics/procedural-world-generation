@@ -39,4 +39,5 @@ Options (set in one constant, `polities.WRITING_TECHS`):
 has cities.
 
 ## Updates
+- 2026-11-04: D49 on the owner's desk; lean B (proto-writing counts), C close second.
 - 2026-11-04: Created from inbox draft draft-polities-writing-gate.md (found by lane-169).
