@@ -136,6 +136,7 @@ from .constants import GRAV, SEC_PER_YR
 from .geo import R_KM, arc, arc_km, cell_area_km2, world_land
 from .grid import Grid
 from .landform import LAVA_PLATEAU
+from .summit import summit_m
 from .surface import DOLOMITE, FLOOD_BASALT, LIMESTONE
 from .tectonics.volcanism import ARC as ARC_VOLCANO
 from .vegetation import T as VEG_T
@@ -193,6 +194,7 @@ class _Ctx:
         self.cell_km = g.spacing * R_KM
         self.area = cell_area_km2(g.n)  # km^2 per cell (cells are near-equal)
         self.elev = self.L["elevation"].astype(float)
+        self.summit = summit_m(self.g, self.elev)  # a display height (cell mean + sub-cell relief, PW-846)
         self.land = world_land(self.L)  # (a bed below the sea under grounded ice is land, PW-307)
         self.a, self.b = g.edges[:, 0], g.edges[:, 1]
 
@@ -357,8 +359,14 @@ def _plates(ps: list[int]) -> str:
 ICE_PEAK_M = 100.0  # m of ice over the highest peak that hides it
 
 
+def _peak_title(ctx: _Ctx, i: int, what: str, suffix: str = "") -> str:
+    return f"{what}: {_m(ctx.summit[i])}{suffix}"
+
+
 def highest_peak(ctx: _Ctx) -> list[dict]:
-    i = int(np.argmax(ctx.elev))
+    """Ranked by summit height (cell mean + Earth's sub-cell relief, planet/summit.py): the model stores
+    each cell's average, which sits 1-3 km under the peaks a ~60 km cell holds."""
+    i = int(np.argmax(ctx.summit))
     if ctx.elev[i] <= 0:
         return []
     L = ctx.L
@@ -373,23 +381,25 @@ def highest_peak(ctx: _Ctx) -> list[dict]:
         where += " with no active plate boundary nearby (an old range)"
     ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
     blurb = (f"The top of the world, {where}" if where else "The top of the world") + \
-        (f", under ~{ice[i]:.0f} m of ice" if ice[i] > 0 else "") + "."
+        (f", under ~{ice[i]:.0f} m of ice" if ice[i] > 0 else "") + \
+        f". Summit about {_m(ctx.summit[i])}; the cell average is {_m(ctx.elev[i])}."
     # a summit under an ice cap zooms to a white blank: rank it lower, and
     # add the highest ice-free summit as its own place
     buried = ice[i] > ICE_PEAK_M
-    feats = [_feature(ctx, "highest_peak", f"Highest peak: {_m(ctx.elev[i])}" + (" (under ice)" if buried else ""),
-                      blurb, i, 500, {"elevation_m": int(ctx.elev[i]), "plates": ps, "ice_m": round(ice[i])},
-                      quality=(0.7 + 0.3 * min(ctx.elev[i] / 6000, 1)) * (0.7 if buried else 1.0))]
+    feats = [_feature(ctx, "highest_peak", _peak_title(ctx, i, "Highest peak", " (under ice)" if buried else ""),
+                      blurb, i, 500, {"elevation_m": int(ctx.elev[i]), "summit_m": int(ctx.summit[i]),
+                                      "plates": ps, "ice_m": round(ice[i])},
+                      quality=(0.7 + 0.3 * min(ctx.summit[i] / 6000, 1)) * (0.7 if buried else 1.0))]
     free = np.flatnonzero(ctx.land & (ice <= 0))
     if buried and len(free):
-        j = int(free[np.argmax(ctx.elev[free])])
+        j = int(free[np.argmax(ctx.summit[free])])
         setting = ROCK_SETTING.get(int(L["rock"][j]), "") if "rock" in L else ""
         km = float(ctx.dist(i, [j])[0])
         blurb = ("The highest summit not under ice" + (f", on {setting}" if setting else "") +
-                 f"; the highest peak ({_m(ctx.elev[i])}) is {_n(km)} km away under ~{_m(ice[i])} of ice.")
-        feats.append(_feature(ctx, "ice_free_peak", f"Highest ice-free peak: {_m(ctx.elev[j])}", blurb, j, 500,
-                              {"elevation_m": int(ctx.elev[j]), "km_from_highest": round(km)},
-                              quality=0.7 + 0.3 * min(ctx.elev[j] / 6000, 1)))
+                 f" (cell average {_m(ctx.elev[j])}); the highest peak ({_m(ctx.summit[i])}) is {_n(km)} km away under ~{_m(ice[i])} of ice.")
+        feats.append(_feature(ctx, "ice_free_peak", _peak_title(ctx, j, "Highest ice-free peak"), blurb, j, 500,
+                              {"elevation_m": int(ctx.elev[j]), "summit_m": int(ctx.summit[j]), "km_from_highest": round(km)},
+                              quality=0.7 + 0.3 * min(ctx.summit[j] / 6000, 1)))
     return feats
 
 
@@ -421,7 +431,7 @@ def mountain_ranges(ctx: _Ctx, top: int = 3) -> list[dict]:
     out.sort(key=lambda x: -x[0])
     feats = []
     for rank, (length, cells, spine) in enumerate(out[:top]):
-        peak = int(cells[np.argmax(ctx.elev[cells])])
+        peak = int(cells[np.argmax(ctx.summit[cells])])
         mid = spine[len(spine) // 2]
         L = ctx.L
         volcanic = "rock" in L and np.mean(L["rock"][cells] == 2) >= 0.4
@@ -434,10 +444,10 @@ def mountain_ranges(ctx: _Ctx, top: int = 3) -> list[dict]:
             ctxt = "an old range, with no active plate boundary nearby"
         iced = float(np.mean(L["ice"][cells] > 0)) if "ice" in L else 0.0
         title = ("Longest mountain range" if rank == 0 else "Mountain range") + f": {_n(length)} km"
-        blurb = f"High ground above {_m(thr)}, peaks to {_m(ctx.elev[peak])}; {ctxt}." + \
+        blurb = f"High ground above {_m(thr)}, peaks to about {_m(ctx.summit[peak])}; {ctxt}." + \
             (" Mostly buried under an ice sheet." if iced > 0.5 else "")
         f = _feature(ctx, "mountain_range", title, blurb, mid, zoom_size(length),
-                     {"length_km": round(length), "peak_m": int(ctx.elev[peak]), "threshold_m": round(thr),
+                     {"length_km": round(length), "peak_m": int(ctx.summit[peak]), "threshold_m": round(thr),
                       "cells": len(cells), "plates": ps, "peak_cell": peak},
                      quality=(0.8 ** rank) * (0.6 + 0.4 * min(length / 3000, 1)) * (1 - 0.4 * iced),
                      path=ctx.path(spine))

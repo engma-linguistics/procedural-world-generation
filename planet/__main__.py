@@ -38,7 +38,7 @@ def cmd_generate(args):
         s = json.loads(path.read_text())["summary"]
         lm = ", ".join(f"{m['name']}:{m['pct_of_surface']}%" for m in s["landmasses"][:4])
         print(f"{S.rel(path)}  [{w['meta']['generated_in_s']}s]  "
-              f"land {s['land_pct']}%  landmasses {lm}  peak {s['highest_m']['elevation']} m")
+              f"land {s['land_pct']}%  landmasses {lm}  peak {s['highest_m']['summit_m']} m (cell average {s['highest_m']['elevation']} m)")
 
 
 def cmd_show(args):

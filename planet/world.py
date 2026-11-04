@@ -33,6 +33,7 @@ from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, is_land, latlon, world_land, xyz
 from .grid import Grid, build_grid
+from .summit import summit_m
 
 
 # Whether finish() makes the resource layers (PW-609): `--no-resources` turns them off for the commands that make
@@ -310,7 +311,8 @@ def summarize(world: dict) -> dict:
         lm[m["_members"]] = m["name"]
     names = {b[0]: b[1] for b in climate.BIOMES}
     counts = np.bincount(biome[land], minlength=len(names)) if land.any() else []
-    peak = int(np.argmax(elev))
+    summit = summit_m(g, elev)  # display height: cell average + Earth's sub-cell relief (PW-846)
+    peak = int(np.argmax(summit))
     deep = int(np.argmin(elev))
 
     def loc(i):
@@ -329,7 +331,7 @@ def summarize(world: dict) -> dict:
         "land_pct": round(100 * land.mean(), 1),
         "landmasses": [{k: v for k, v in m.items() if k != "_members"} for m in masses[:8]],
         "islands_small": max(0, len(masses) - 8),
-        "highest_m": {**loc(peak), "elevation": int(elev[peak])},
+        "highest_m": {**loc(peak), "elevation": int(elev[peak]), "summit_m": int(summit[peak])},
         "deepest_m": {**loc(deep), "elevation": int(elev[deep])},
         "mean_land_elevation_m": int(elev[land].mean()) if land.any() else 0,
         "land_biomes_pct": {names[k]: round(100 * c / land.sum(), 1)
