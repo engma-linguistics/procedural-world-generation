@@ -48,5 +48,6 @@ Options:
 needs no new numbers. C is a dial turn.
 
 ## Updates
+- 2026-11-04: Daniel 11-04: B or C, wary of the halfway time; experiment lane 186 tries B, C, E (rulers take it up) and K (kin share faster).
 - 2026-11-04: Coordinator: desk D52. Lean B (writing crosses a people's towns, not its whole land) on Daniel's suspicion of a slow tail; it needs new peoples runs.
 - 2026-11-04: Created from inbox draft draft-writing-crosses-town-network.md (found by lane-184).

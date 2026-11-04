@@ -34,6 +34,10 @@ memory lives in `docs/wiki/` (state.md, decisions.md); durable how-to in `docs/c
 - Never cite from memory: every number and source on the desk comes from a lane report, a ticket or a file you read.
   An unsourced judgement is labelled as one.
 - Leans are honest: push back on a weak idea of his, with reasons.
+- **Run `uv run python tools/desk_check.py` before every publish and fix everything it lists** (ruled cards, dead viewer links,
+  a stale kicker date, a settled list over 20 items, running rows for merged lanes). It can't see a card he answered in chat
+  whose ticket is still open, so also: when he answers a card, remove it in that same turn; when a lane merges, move its row
+  to settled in that same turn. Each refresh rewrites the kicker and lede for now, not appends.
 - Prune on every refresh: remove settled cards, finished lanes, sections he has seen and acknowledged. Move anything
   durable (run costs, measured stats) to `docs/coordination.md` or the ticket before deleting it from the desk.
 - Bump the footer's version (`Desk vN`) and publish with a short `label` (e.g. "v94: lane 132 merged").

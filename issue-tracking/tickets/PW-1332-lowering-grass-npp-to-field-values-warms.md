@@ -2,7 +2,7 @@
 id: PW-1332
 title: Lowering grass NPP to field values warms L6 runs by 3-5 C through the weathering's NPP factor
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: later
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1261, PW-646]
 refs: ["planet/tectonics/earth.py::NPP_WEATHER", "planet/tectonics/earth.py::START_PLANTED", "planet/tectonics/earth.py::update_vegetation", "planet/vegetation.py::_year", docs/review/vegetation/npp-check/screens.md, docs/review/vegetation/npp-check/candidate1-herb-root-resp.patch, docs/review/vegetation/npp-check/diagnosis.md, "tools/health.py::measure_run"]
 created: 2026-11-02
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 
 ## Description
@@ -32,6 +32,7 @@ Options:
 Lean: A, then two L6 seeds and the judge, as one change with PW-1261's plant patch and the fire fuel floor.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> done. Moot after D47 (lane 170, merged 11-04): weathering reads rooted plant cover, not NPP; NPP_WEATHER is gone, so lowering grass NPP no longer warms runs through it. Lane 185 re-tries the grass fix on that basis.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth; after D47's weathering change)
 - 2026-11-03: Owner 11-03: 'your call', with a north star: 'reasonably stable and not prone to exploding when nudged', here and elsewhere. Folded into the climate-stability diagnosis lane.
 - 2026-11-02: Created from inbox draft draft-weathering-npp-reference-after-grass-cue.md (found by lane123).
