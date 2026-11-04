@@ -1,4 +1,5 @@
 ---
+id: PW-1454
 title: "Confederations: does a dragon realm next door count as the foreign power a people bands together against?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane178
 blocked_by: []
 relates: [PW-785, PW-1449]
 refs: ["planet/lineages/polities.py::_confederations", "planet/lineages/polities.py::CONFED_AGAINST", docs/review/culture/polities/round3.md, "docs/review/cultures-proposal/proposal.md#212-formation-growth-and-reach", "run 3c1caf", "run b4d502", "run a2b637"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -46,3 +49,7 @@ Options:
 
 Lean: A. Dragons are sapient rulers taking tribute, the proposal already names dragon country as a frontier, and the extra land
 mostly matters for PW-1449's reach, which owns that problem.
+
+## Updates
+- 2026-11-04: Coordinator: merged with dragon realms counting (lane 178's default); desk D51 asks Daniel.
+- 2026-11-04: Created from inbox draft draft-confederations-against-dragon-realms.md (found by lane178).
