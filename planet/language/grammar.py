@@ -44,12 +44,16 @@ Form = tuple  # tuple[Segment, ...]
 # Hazards (per generation). Chosen by hand; see the module report for the reasoning. Calibrate against checks, not taste.
 # --------------------------------------------------------------------------------------------------------------------
 
-RECRUIT = 0.015        # new periphrasis per generation, before social factors (~1 per 65 gens ~ 1.7 kyr at 25 yr)
+RECRUIT = 0.025        # new periphrasis per generation, before social factors (~1 per 40 gens ~ 1.1 kyr at 25 yr). Raised
+                       # from 0.015 after run a24559 (median 2 live grams): over 700 generations with the driver's sound
+                       # change, 30 human lects hold a median 5 live grams at l2 0.5 / 160k speakers, 7.5 at l2 0.3, 12 at
+                       # l2 0.1 / 20k speakers
 FUSE = 0.012           # one step down the ladder per generation for an average gram (~80 gens ~ 2 kyr per step)
 FUSE_LEVEL = (1.0, 0.7, 0.06)   # multiplier for 0->1, 1->2, 2->3 (binding is fast; true fusion with the stem is slow)
 AGE_SCALE = 200.0      # generations; fusion hazard x (1 + age/AGE_SCALE), capped at AGE_CAP
 AGE_CAP = 2.0
-ABANDON = 0.002        # an optional periphrasis (level 0-1) falls out of use; x4 when the typology no longer wants it
+ABANDON = 0.0005       # an optional periphrasis (level 0-1) falls out of use; x4 when the typology no longer wants it
+                       # (0.002 abandoned 44% of new periphrases before they bound when L2 learners slow fusion; now ~16%)
 LOSS = 0.002          # a fused gram (level 3) is lost outright
 L2_STRIP = 0.012       # bound gram (level >= 2) dropped by adult learners, x l2_share^2
 ANALOGY = 0.003        # one irregular cell levelled per generation (high-frequency exemplars: half-life ~ 230 gens)
@@ -1169,7 +1173,22 @@ def _resplit(parts: tuple[tuple[str, Form], ...], new: Form) -> tuple[tuple[str,
         cuts.append(c)
     nc = _align_cuts(old, new, cuts)
     bounds = [0, *nc, len(new)]
-    return tuple((lab, tuple(new[bounds[k]:bounds[k + 1]])) for k, (lab, _) in enumerate(parts))
+    out = [[lab, list(new[bounds[k]:bounds[k + 1]])] for k, (lab, _) in enumerate(parts)]
+    # a morph that was empty (an affix worn to nothing) stays empty: a segment a rule inserts at its edge (epenthesis,
+    # prothesis) belongs to the neighbour on the stem's side, never to a zero affix that would thereby come back to life
+    si = next((k for k, (lab, _) in enumerate(parts) if lab == "stem"), 0)
+    for k, (lab, f) in enumerate(parts):
+        if not f and out[k][1] and k != si:
+            d = -1 if k > si else 1
+            j = k + d
+            while j != si and not parts[j][1]:
+                j += d   # the nearest morph toward the stem that is not itself a zero
+            if k > si:
+                out[j][1] = out[j][1] + out[k][1]
+            else:
+                out[j][1] = out[k][1] + out[j][1]
+            out[k][1] = []
+    return tuple((lab, tuple(f)) for lab, f in out)
 
 
 def _sync_cells(g: Grammar) -> None:
@@ -1709,6 +1728,9 @@ def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rul
     for gr in g.grams:
         if not gr.live:
             continue
+        if not gr.form:
+            continue   # worn to nothing (marked only by the stem): sound change cannot give it a form back; renewal is a
+                       # new periphrasis, recruited as a new Gram (`_recruit`)
         alone = tuple(rule_apply_fn(tuple(gr.form)))
         new = alone
         if gr.level >= AFFIX:

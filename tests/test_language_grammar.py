@@ -377,3 +377,54 @@ def test_stem_index_passed_when_rule_accepts_it():
         want = len(g.gram("PL").form) if pre else 0
         assert (len(e.cells[("PL",)]), want) in seen
     G.apply_rule_to_grammar(g, lambda f: f, "plain", 5.0)   # one-argument callables still work
+
+
+# --- review of run a24559: thin grammar, a zero plural that came back -------------------------------------------------
+
+def _append_a(form):
+    """Epenthesis after a final consonant (what S123-style rules do)."""
+    f = tuple(form)
+    return f + tuple(from_ipa("a")) if f and f[-1].kind == "C" else f
+
+
+def test_zero_affix_stays_zero_and_renewal_is_a_new_gram():
+    rng, g = _pl_grammar()
+    nouns = [e for e in g.exemplars if e.pos == "N"]
+    # PL -ti worn to nothing, but kept as stem marking (cells differ from the stem)
+    G.apply_rule_to_grammar(g, lambda f: tuple(f) if tuple(f) != tuple(from_ipa("ti")) else (), "kill", 5.0)
+    pl = next(x for x in g.grams if x.function == "PL")
+    pl.form = ()
+    for e in nouns:
+        e.set(("PL",), (("stem", tuple(e.stem) + tuple(from_ipa("k"))), ("PL", ())))   # an umlaut-like stem mark
+    G._check_lost(g, 4.5)
+    assert pl.live and pl.level == G.FUSED and pl.form == ()
+    # an epenthetic vowel after the marked stem goes to the stem, not to the zero affix, and the gram stays empty
+    G.apply_rule_to_grammar(g, _append_a, "epenthesis", 4.0)
+    assert pl.form == () and all(e.morph(("PL",), "PL") == () for e in nouns)
+    # renewal: a new periphrasis is a new Gram with its own id and birth date; binding retires the zero
+    monkey = G.ABANDON
+    try:
+        G.ABANDON = 0.0
+        new = G.recruit(rng, g, lex(), kyr=3.0, function="PL")
+    finally:
+        G.ABANDON = monkey
+    assert new is not None and new is not pl and new.id != pl.id and new.born_kyr == 3.0 and new.level == G.FREE
+    assert pl.born_kyr == 10.0
+
+
+def test_grammar_holds_several_live_grams():
+    """RECRUIT / ABANDON: with no sound change and moderate L2 (0.3), lects hold a median 5+ live grams after 700
+    generations, and most new periphrases bind before they fall out of use."""
+    live, bound, abandoned = [], 0, 0
+    for s in range(10):
+        rng, g = _grammar(300 + s)
+        lx = lex()
+        for k in range(70):
+            G.step(rng, g, 10, Inv(), lx, l2_share=0.3, population=50000, isolation=0.3, kyr=20 - k * 0.28)
+        live.append(len(g.live()))
+        for gr in g.grams:
+            first = next((t for _, t in gr.history if t.startswith(("now ", "lost"))), "")
+            bound += first.startswith("now ")
+            abandoned += first.startswith("lost: the periphrasis")
+    assert np.median(live) >= 5, live
+    assert abandoned < 0.3 * (bound + abandoned), (bound, abandoned)

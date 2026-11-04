@@ -201,6 +201,9 @@ FEATURES = {
     "pulmonic": (cls("+pulmonic", None, "", larynx=(0, 1)), cls("-pulmonic", "C", "glottalic", larynx=(2, 3)), None, None),
     "glide": (G, Pattern("-glide", ("named", "nonglide"), ""), None, None),
 }
+# place is more than the place axis: assimilating to a retroflex, a labiodental or a labial-velar takes those axes too
+# (n + ʈ > ɳʈ, n + f > ɱf; ɳ + p > mp, never a retroflex labial m{retroflex=1})
+_PLACE_AXES = ("retroflex", "labiodental", "double")
 ALPHA_AXES = {"place": ("place",), "back": ("back",), "round": ("round",), "voice": ("voice",), "front": ("back",),
               "high": ("height",), "nasal": ("nasal",), "height": ("height",)}
 SYLL_FLAGS = ("coda", "onset", "final", "nonfinal", "open", "closed")
@@ -409,16 +412,101 @@ def _tonekey(seg):
     return replace(seg, tone=0) if seg.tone else seg
 
 
-def apply(rule: Rule, word, stress_index=None, stem_index=None) -> tuple:
+def apply(rule: Rule, word, stress_index=None, stem_index=None, inventory=None) -> tuple:
     """Apply a rule once, regularly, left to right (a staged rule runs its steps in order). ``stress_index``: a stress
     pattern name, an Inventory (its ``.stress``), or a callable word -> stressed vowel index; default penult.
     ``stem_index``: where the root starts in the form (an int, or a callable form -> int), for root-controlled harmony;
-    None takes the first vowel of the form (the root of a suffixing word)."""
+    None takes the first vowel of the form (the root of a suffixing word). ``inventory``: the lect's inventory; an
+    epenthesis rule (family "epenthesis", inserting a vowel) then inserts its epenthetic vowel
+    (``inventory.epenthetic_vowel``) instead of the catalogue's ə. Every segment of a changed output that the symbol table
+    cannot write (a feature brace, a doubled diacritic, ʰʱ) is snapped to the nearest table segment (``snap``)."""
     w = word if isinstance(word, tuple) else tuple(word)
+    if inventory is not None:
+        rule = epenthesis_for(rule, inventory)
     out = _apply_one(rule, w, stress_index, stem_index)
     for step in rule.then:
+        if inventory is not None:
+            step = epenthesis_for(step, inventory)
         out = _apply_one(step, out, stress_index, stem_index)
+    if out is not w and out != w:
+        out = snap_word(out)
     return out
+
+
+# ---------------------------------------------------------------------------------------------- output hygiene
+
+_TABLE_SEGS: dict = {}
+
+
+def _table_segments(kind: str) -> list:
+    """The segments of percepts.symbols() of a kind, tone-free (the only snap targets)."""
+    if not _TABLE_SEGS:
+        from planet.language.percepts import symbols
+        for k in ("C", "V"):
+            _TABLE_SEGS[k] = sorted({replace(x.seg, tone=0) for x in symbols() if x.seg.kind == k},
+                                    key=lambda q: (to_ipa(q), repr(q)))
+    return _TABLE_SEGS.get(kind, [])
+
+
+def writable(seg) -> bool:
+    """Can the house notation write `seg` from the symbol table and the standard diacritics (no feature brace such as
+    m{retroflex=1}, no doubled diacritic such as ʊ̞̞, not aspirated and breathy at once)?"""
+    if getattr(seg, "kind", None) not in ("C", "V"):
+        return True
+    t = unicodedata.normalize("NFD", to_ipa(replace(seg, tone=0) if seg.tone else seg))
+    if "{" in t or "ʰʱ" in t:
+        return False
+    return not any(a == b and unicodedata.combining(a) for a, b in zip(t, t[1:]))
+
+
+@lru_cache(maxsize=16384)
+def snap(seg):
+    """`seg` itself when `writable`, else the nearest symbol-table segment of its kind (percepts.distance), a vowel
+    keeping its tone."""
+    if writable(seg):
+        return seg
+    from planet.language.percepts import distance
+    unit = replace(seg, tone=0) if seg.kind == "V" and seg.tone else seg
+    best = min(_table_segments(seg.kind), key=lambda q: (distance(unit, q), to_ipa(q), repr(q)), default=None)
+    if best is None:
+        return seg
+    return replace(best, tone=seg.tone) if seg.kind == "V" and seg.tone else best
+
+
+def snap_word(word) -> tuple:
+    """`snap` over a form."""
+    out = tuple(snap(x) for x in word)
+    return out if out != tuple(word) else tuple(word)
+
+
+_EPENTHESIS_CACHE: dict = {}
+
+
+def epenthesis_for(rule: Rule, inventory) -> Rule:
+    """An epenthesis insertion (family "epenthesis", a literal vowel inserted) re-pointed at `inventory`'s epenthetic
+    vowel (inventory.epenthetic_vowel: its commonest high vowel); any other rule unchanged."""
+    ch = rule.change
+    if ch.kind != "insert" or rule.family != "epenthesis" or not ch.items:
+        return rule
+    if not all(lit is not None and getattr(lit, "kind", "") == "V" for _r, lit, _s in ch.items):
+        return rule
+    try:
+        from planet.language.inventory import epenthetic_vowel
+        v = epenthetic_vowel(inventory)
+    except (ValueError, AttributeError, TypeError):
+        return rule
+    key = (rule.id, rule.notation, v)
+    got = _EPENTHESIS_CACHE.get(key)
+    if got is None:
+        if all(lit == v for _r, lit, _s in ch.items):
+            got = rule
+        else:
+            items = tuple((ref, v, sets) for ref, _lit, sets in ch.items)
+            got = replace(rule, change=replace(ch, items=items, out_text=to_ipa(v)))
+        if len(_EPENTHESIS_CACHE) > 4096:
+            _EPENTHESIS_CACHE.clear()
+        _EPENTHESIS_CACHE[key] = got
+    return got
 
 
 def _harmony_trigger(w, stem_index) -> int | None:
@@ -510,7 +598,8 @@ def _produce(ch: Change, w, i, end, out, trig=None):
             src = w[trig] if trig is not None else None
         if src is None:
             return None
-        return [replace(w[i], **{a: getattr(src, a) for a in ch.axes})]
+        axes = ch.axes + _PLACE_AXES if "place" in ch.axes else ch.axes
+        return [replace(w[i], **{a: getattr(src, a) for a in axes})]
     return _make(ch.items, w[i:end], w[i])
 
 
@@ -798,12 +887,18 @@ def cost_factor(rule: Rule, profile) -> float:
     return max(0.2, min(5.0, math.exp(sum(logs) / len(logs))))
 
 
+# catalogue rows whose table weight or scope the review of run a24559 overturned: ʔ-prothesis before every initial vowel
+# fired 8,685 times and made 33% of core words ʔ-initial (rare, word-by-word in the record: Blevins 2004 on prothetic ʔ)
+ROW_OVERRIDES = {"S042": {"naturalness": "1", "scope": "diffusing"}}
+
+
 def load_tsv(path: Path | str = DATA) -> tuple[list[Rule], list[tuple[str, str, str]]]:
     """Parse the sound-change table. Returns (rules, failures as (id, notation, reason))."""
     rules, failures = [], []
     with open(path, encoding="utf-8") as fh:
         lines = [ln for ln in fh if not ln.startswith("#") and ln.strip()]
     for row in csv.DictReader(lines, delimiter="\t"):
+        row = {**row, **ROW_OVERRIDES.get(row.get("id", ""), {})}
         got, why = parse_rows(row)
         if not got:
             failures.append((row.get("id", ""), row.get("rule", ""), why))

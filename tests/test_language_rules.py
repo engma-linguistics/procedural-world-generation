@@ -363,3 +363,52 @@ def test_describe_names_real_outputs():
     assert "p > b" in R.describe(demo("lenition.intervocalic_voicing"))
     assert "eschool" not in demo("epenthesis.cluster").example
     assert R.apply(demo("epenthesis.cluster"), w("pokl")) == w("pokəl")  # anaptyxis, as the example says
+
+
+# --- review of run a24559: rule hygiene ------------------------------------------------------------------------------
+
+def test_nasal_place_assimilation_takes_retroflex_and_labiodental():
+    r = demo("assimilation.nasal_place")
+    assert ipa(R.apply(r, w("amʈa"))) == "aɳʈa"
+    assert ipa(R.apply(r, w("aŋɖa"))) == "aɳɖa"
+    assert ipa(R.apply(r, w("aɳpa"))) == "ampa"     # was m{retroflex=1}
+    assert ipa(R.apply(r, w("anfa"))) == "aɱfa"
+    assert ipa(R.apply(r, w("aɱta"))) == "anta"
+    rules, _ = R.load_tsv()
+    s075 = next(q for q in rules if q.id == "S075")
+    for x in ("aɳpa", "amʈa", "aɱka", "aɲʈa"):
+        out = R.apply(s075, w(x))
+        assert all(R.writable(s) for s in out), ipa(out)
+
+
+def test_outputs_snapped_to_table_segments():
+    from dataclasses import replace
+    m_rf = replace(w("m")[0], retroflex=1)
+    assert not R.writable(m_rf) and R.writable(R.snap(m_rf)) and R.snap(m_rf).manner == 3
+    assert R.snap(w("a")[0]) == w("a")[0]
+    toned = replace(w("ʊ")[0], height=1, tone=3)   # an axis combination with no symbol, tone kept
+    sn = R.snap(toned)
+    assert R.writable(sn) and sn.tone == 3
+    # a rule that sets an unwritable combination: apply hands back table segments only
+    rf = R.Rule("test.rf", R.lit(w("m")[0]), R.Change.set(retroflex=1))
+    out = R.apply(rf, w("ama"))
+    assert all(R.writable(s) for s in out) and ipa(out) != "a" + "m{retroflex=1}" + "a"
+
+
+def test_s042_rare_and_diffusing():
+    rules, _ = R.load_tsv()
+    s042 = next(q for q in rules if q.id == "S042")
+    assert s042.weight == 1.0 and s042.scope == "diffusing"
+
+
+def test_epenthesis_uses_the_inventory_vowel():
+    from planet.language import inventory as I
+    rules, _ = R.load_tsv()
+    s124 = next(q for q in rules if q.id == "S124")
+    assert ipa(R.apply(s124, w("tak"))) == "takə"     # no inventory: the catalogue's ə
+    inv = I.Inventory(consonants=list(w("ptkmn")), vowels=list(w("aiu")), freq={x: 1.0 for x in w("ptkmnaiu")})
+    assert ipa(R.apply(s124, w("tak"), inventory=inv)) == "taki"
+    cl = demo("epenthesis.cluster")
+    assert ipa(R.apply(cl, w("takt"), inventory=inv)) == "takit"
+    s042 = next(q for q in rules if q.id == "S042")
+    assert R.epenthesis_for(s042, inv) is s042   # only vowel epenthesis is re-pointed

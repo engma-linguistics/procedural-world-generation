@@ -142,3 +142,29 @@ def test_observed_inventory_after_change(draws):
     obs = I.observed(inv, forms)
     assert from_ipa("qʼ")[0] in obs.consonants and set(obs.consonants) <= set(inv.consonants) | {from_ipa("qʼ")[0]}
     assert obs.max_onset == inv.max_onset and math.isfinite(obs.cost[from_ipa("qʼ")[0]])
+
+
+def test_proto_words_pronounceable(draws):
+    """Review of run a24559 (proto *çla˨wu˦vnje˦k*): onsets and codas of at most two consonants; a two-consonant onset
+    is obstruent or nasal + liquid/glide rising into the vowel, or s + voiceless stop; a two-consonant coda opens with a
+    sonorant or is stop + s; medial runs at most three; tone only in tonal inventories."""
+    from planet.language.percepts import SONORITY
+    rng = np.random.default_rng(7)
+    for inv in draws[:80]:
+        assert inv.max_onset <= 2 and inv.max_coda <= 2
+        for _ in range(15):
+            w = I.draw_word(rng, inv)
+            assert not inv.tones or all(s.tone for s in w if s.kind == "V")
+            assert inv.tones or all(s.tone == 0 for s in w)
+            assert all(s.kind != "T" for s in w)
+            runs = I._runs(w)
+            assert len(runs[0]) <= 2 and len(runs[-1]) <= 2, to_ipa_word(w)
+            assert all(len(r) <= 3 for r in runs[2:-1:2]), to_ipa_word(w)
+            on = runs[0]
+            if len(on) == 2:
+                a, b = on
+                assert I._s_cluster(a, b) or (SONORITY(b) >= 7 and SONORITY(a) <= 6), to_ipa_word(w)
+    st, pn, vn = (tuple(from_ipa(x)) for x in ("st", "pn", "vn"))
+    inv = next(v for v in draws if v.max_onset == 2)
+    assert not inv.onset_ok(pn) and not inv.onset_ok(vn)
+    assert inv.onset_ok(st) or not set(st) <= set(inv.consonants)

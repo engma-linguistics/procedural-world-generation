@@ -41,6 +41,34 @@ SYLLABLE_TYPES = {"simple": 0.12, "moderate": 0.56, "complex": 0.32}     # WALS 
 sonority = SONORITY   # V 10 > glide 8 > liquid 7 > nasal 6 > voiced F 5 > F 4 > affricate 3 > voiced P 2 > P 1
 
 
+MAX_ONSET = 2   # onset and coda clusters of at most two consonants (WALS 12A's "complex" goes higher; the demo keeps them
+MAX_CODA = 2    # readable and the reviewers found 3-consonant onsets like vnj- unpronounceable)
+
+
+def _s_cluster(s1: Segment, s2: Segment) -> bool:
+    """s (or sh) + a voiceless plain stop: the one onset that falls in sonority and is still common (sp-, st-, sk-)."""
+    return (s1.kind == "C" and s1.manner == 2 and s1.sibilant == 1 and s1.voice == 0 and s1.place in (2, 3)
+            and s2.kind == "C" and s2.manner == 0 and s2.voice == 0 and s2.larynx == 0 and s2.place in (0, 1, 2, 5))
+
+
+def _onset_pair_ok(a: Segment, b: Segment, min_rise: int) -> bool:
+    """A two-consonant onset: an obstruent (stop, affricate or fricative) or a nasal before a liquid or glide, rising
+    by at least `min_rise` into the nucleus (pl-, kr-, fj-, mw-), or s + voiceless stop (st-). Nothing else: no stop +
+    nasal (pn-), no fricative + nasal (vn-), no glottal first member (ʔl-), no clicks."""
+    if a == b:
+        return False
+    if _s_cluster(a, b):
+        return True
+    if a.manner in (8, 9) or a.place == 8 or a.prenasal or b.manner in (8, 9):
+        return False
+    sa, sb = sonority(a), sonority(b)
+    if sb < 7 or sa > 6:
+        return False
+    if sa == 6 and sb < 8:
+        return False   # nasal only before a glide (mw-, nj-), not before a liquid (ml-)
+    return sb - sa >= min_rise
+
+
 def _strip_tone(v: Segment) -> Segment:
     return replace(v, tone=0) if v.tone else v
 
@@ -69,17 +97,14 @@ class Inventory:
 
     # phonotactics over natural classes
     def onset_ok(self, cl: tuple) -> bool:
-        if len(cl) > self.max_onset:
+        if len(cl) > min(self.max_onset, MAX_ONSET):
             return False
         if len(cl) <= 1:
             return True
-        if self.max_onset == 2 and self._shape_class == "moderate" and sonority(cl[-1]) < 7:
-            return False   # moderately complex: second member a liquid or glide (WALS 12A)
-        s = [sonority(c) for c in cl]
-        return all(b - a >= self.min_rise for a, b in zip(s, s[1:])) and len(set(cl)) == len(cl)
+        return _onset_pair_ok(cl[0], cl[1], self.min_rise)
 
     def coda_ok(self, cl: tuple) -> bool:
-        if len(cl) > self.max_coda:
+        if len(cl) > min(self.max_coda, MAX_CODA):
             return False
         if not cl:
             return True
@@ -89,6 +114,10 @@ class Inventory:
         if self.coda_class == "sonorant" and sonority(first) < 6:
             return False
         s = [sonority(c) for c in cl]
+        if len(cl) == 2 and s[0] < 6 and not _s_cluster(cl[1], cl[0]):
+            return False   # a two-consonant coda opens with a sonorant (-nt, -lk, -rs), or is stop + s (-ks, -ts)
+        if len(cl) == 2 and _s_cluster(cl[1], cl[0]):
+            return cl[0] != cl[1]
         return all(a - b >= self.min_rise for a, b in zip(s, s[1:])) and len(set(cl)) == len(cl)
 
     @property
@@ -326,9 +355,9 @@ def _draw_shapes(rng) -> dict:
             shapes = {"CV": 0.55, "CVC": 0.33, "V": 0.08, "VC": 0.04}
             mo = 1
     else:
-        shapes = {"CV": 0.32, "CVC": 0.28, "V": 0.04, "VC": 0.03, "CCV": 0.12, "CCVC": 0.1, "CVCC": 0.06,
-                  "CCCV": 0.02, "CCVCC": 0.03}
-        mo, mc = 3, 2
+        shapes = {"CV": 0.33, "CVC": 0.29, "V": 0.04, "VC": 0.03, "CCV": 0.13, "CCVC": 0.1, "CVCC": 0.06,
+                  "CCVCC": 0.02}
+        mo, mc = MAX_ONSET, MAX_CODA
     return {"shapes": shapes, "max_onset": mo, "max_coda": mc, "kind": kind}
 
 
@@ -438,17 +467,21 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
     sw /= sw.sum()
     for _ in range(40):
         out: list = []
+        prev_coda = 0
         for i in range(n):
             t = names[int(rng.choice(len(names), p=sw))]
             if t.startswith("V") and (inv.onset_required or (i > 0 and rng.random() < 0.7)):
                 t = "C" + t if "C" + t in inv.shapes or inv.max_onset >= 1 else t
             on = len(t) - len(t.lstrip("C"))
             co = len(t) - len(t.rstrip("C"))
+            if prev_coda and on > 1:
+                on = 1   # syllable contact: after a coda the next onset is one consonant (no -lp.n- runs of three or four)
+            prev_coda = co if inv.max_coda else 0
             if on:
-                out.extend(_onset_cluster(rng, inv, min(on, inv.max_onset), cw))
+                out.extend(_onset_cluster(rng, inv, min(on, inv.max_onset, MAX_ONSET), cw))
             out.append(_toned(rng, inv, _pick_seg(rng, inv.vowels, vw)))
             if co and inv.max_coda:
-                out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda), cw))
+                out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda, MAX_CODA), cw))
         w = tuple(out)
         if legal(w, inv):
             return w

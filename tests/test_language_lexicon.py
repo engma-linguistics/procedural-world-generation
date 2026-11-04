@@ -350,3 +350,45 @@ def test_stats_and_state_round_trip(concepts):
     assert st["words"] == len(lex) and st["processes"]["proto"] > 0 and 0 <= st["homophone_share"] < 1
     back = L.from_json(L.to_json(lex))
     assert back.gen == lex.gen == 200 and back.shifted == lex.shifted
+
+
+# --- review of run a24559: coinage swamped derivation; inherited core share -------------------------------------------
+
+def test_coinage_does_not_swamp_derivation(long_runs):
+    """A derivation that clashes or finds no base retries with another base or affix, then compound, then shift, before
+    a fresh root: over 700 generations the latest non-sound step is a coinage ~15-25% of the time, derivation leads."""
+    tot = collections.Counter()
+    for lex in long_runs:
+        tot.update({k: v for k, v in L.stats(lex)["latest"].items() if k != "proto"})
+    n = sum(tot.values())
+    assert 0.10 <= tot["coin"] / n <= 0.25, tot
+    assert tot["derive"] > 1.5 * tot["coin"], tot
+
+
+def test_derive_retry_avoids_homophone(concepts):
+    rng, inv, lex = _proto(81, concepts)
+    k = next(k for k in lex.words if L.concept_info(k).pos == "V" and len(L._related(lex, k)) >= 2)
+    first = L.derive(rng, lex, k, inv, 19.0)
+    base = first.etym[-1].note.split(" + '")[0]
+    again = L.derive(rng, lex, k, inv, 19.0, exclude={base})
+    assert again is None or again.etym[-1].note.split(" + '")[0] != base
+    # a clash with every try leaves no derivation; the replacement then falls back, not straight to a coin
+    c = L.concept_info(k)
+    src, new = L._replace_word(rng, lex, k, c, "derive", {"derive": 1, "shift": 1, "coin": 1}, inv, 19.0, "L", None,
+                               [], None, None)
+    assert src in ("derive", "shift", "coin") and new.concept == k
+
+
+def test_inherited_core_share(concepts):
+    rng, inv, lex = _proto(82, concepts)
+    assert L.stats(lex)["inherited_core_share"] == 1.0
+    k = next(k for k in lex.words if k in L.CORE100)
+    L.coin(rng, lex, k, inv, 19.0, how="root")
+    st = L.stats(lex)
+    n = sum(1 for c in lex.words if c in L.CORE100)
+    assert st["inherited_core_share"] == pytest.approx((n - 1) / n)
+    assert not L.inherited(lex.words[k])
+    # sound change keeps a word inherited
+    k2 = next(c for c in lex.words if c in L.CORE100 and c != k)
+    L.apply_rule_to_lexicon(lex, _final_vowel_loss, "S999", 18.0, "L")
+    assert L.inherited(lex.words[k2])
