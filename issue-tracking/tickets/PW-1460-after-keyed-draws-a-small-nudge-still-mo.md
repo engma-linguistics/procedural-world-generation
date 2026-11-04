@@ -1,9 +1,10 @@
 ---
+id: PW-1460
 title: After keyed draws, a small nudge still moves about half the ruled land to another people; find which step carries it
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v4
 subsystem: culture
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: lane182
 blocked_by: []
 relates: [PW-1459, PW-1434]
 refs: [docs/review/culture/polities/round6.md, docs/review/culture/polities/round5.md, "planet/lineages/polities.py::derive", "planet/lineages/settlements.py::build", "planet/lineages/techtree.py::keyed", "world 899985 (time zoom fc5311) at L7, dnd seeds 7 and 10 (scratch runs, deleted)"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -32,3 +35,7 @@ under a minute each):
 border shifts. Then nudge the step that amplifies; don't tune constants to the check.
 - [ ] the share of the change due to the ledger against polities, on 2 seeds
 - [ ] the amplifying step named, with a candidate fix or a reason it is legitimate
+
+## Updates
+- 2026-11-04: Coordinator: v4, judged again once polities run inside the history (PW-1434); that changes how states form.
+- 2026-11-04: Created from inbox draft draft-nudge-states-still-half-move.md (found by lane182).

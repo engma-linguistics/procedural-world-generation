@@ -64,7 +64,7 @@ import numpy as np
 from numba import njit
 
 FORMAT = "procgen-polities/1"
-VERSION = 5  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 6  # (bump when the rules change: the server's cached docs are remade)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
