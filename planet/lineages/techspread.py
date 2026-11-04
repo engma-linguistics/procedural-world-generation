@@ -55,10 +55,43 @@ def _contact_from(meta: dict, known: dict, tech: str) -> dict:
     return out
 
 
+def _ledger(run_dir: Path, meta: dict | None = None):
+    """(meta, the ledger, its steps A (kyr ago, oldest first), its settled sites, their people per step, town_min)."""
+    from . import polities as PO
+    d = Path(run_dir)
+    meta = meta or json.loads((d / "run.json").read_text())["meta"]
+    if not meta.get("settlements"):
+        raise SystemExit("this run has no settlement ledger: run the peoples again")
+    S = json.loads((d / meta["settlements"]["file"]).read_text())
+    step = float(S.get("step_kyr") or 0.1)
+    n = int(round(float(S["from_kyr"]) / step)) + 1
+    A = np.array([round(float(S["from_kyr"]) - k * step, 4) for k in range(n)])
+    sites = [s for s in S["sites"] if s["kind"] in SETTLED_KINDS]
+    pop, _, town_min = PO._site_tables(SimpleNamespace(S={**S, "sites": sites}), list(A))
+    return meta, S, A, sites, pop, town_min
+
+
+def town_footprint(run_dir: Path) -> dict:
+    """Each people's town cells (cells where it holds a place of town size) at every ledger step, for the tech tree's D52 arms B
+    and E (techtree.ARM_DEFAULTS): {people: (agos oldest first, counts)}, plus "_cell_km2". Read-only."""
+    meta, S, A, sites, pop, town_min = _ledger(run_dir)
+    cells: dict = {}  # people -> step -> set of cells
+    for i, s in enumerate(sites):
+        live = np.flatnonzero(pop[i] > 0)
+        if not len(live):
+            continue
+        hs = _holders(s, A)
+        for k in live:
+            if pop[i, k] >= town_min(s, A[k]):
+                cells.setdefault(hs[k], [set() for _ in A])[k].add(s["cell"])
+    out: dict = {lid: (A.copy(), np.array([len(c) for c in v], float)) for lid, v in cells.items()}
+    out["_cell_km2"] = float(meta["settlements"].get("cell_km2") or 0.0)
+    return out
+
+
 def derive(run_dir: Path, tech: str = "writing", tt: dict | None = None) -> dict:
     """The spread doc of one tech in a peoples run. Read-only. tt: a tech tree doc to read instead of the stored meta.techtree
     (techtree.rebuild's, to ask how today's rules would have spread it over the same history)."""
-    from . import polities as PO
     d = Path(run_dir)
     meta = json.loads((d / "run.json").read_text())["meta"]
     tt = tt or meta.get("techtree") or {}
@@ -66,17 +99,11 @@ def derive(run_dir: Path, tech: str = "writing", tt: dict | None = None) -> dict
     techs = {t["id"]: t for t in tt.get("techs") or []}
     if tech not in techs:
         raise ValueError(f"no tech {tech!r} in this run's tree")
-    if not meta.get("settlements"):
-        raise SystemExit("this run has no settlement ledger: run the peoples again")
-    S = json.loads((d / meta["settlements"]["file"]).read_text())
+    meta, S, A, sites, pop, town_min = _ledger(d, meta)
+    n = len(A)
     lines = {l["id"]: l for l in meta.get("lineages") or []}
     name = lambda lid: ((lines.get(lid) or {}).get("name") or lid).split(" (")[0]
     when = {lid: float(v[tech][0]) for lid, v in known.items() if v.get(tech)}
-    step = float(S.get("step_kyr") or 0.1)
-    n = int(round(float(S["from_kyr"]) / step)) + 1
-    A = np.array([round(float(S["from_kyr"]) - k * step, 4) for k in range(n)])
-    sites = [s for s in S["sites"] if s["kind"] in SETTLED_KINDS]
-    pop, _, town_min = PO._site_tables(SimpleNamespace(S={**S, "sites": sites}), list(A))
     pop_by: dict = {}  # people -> settled people per step
     knew = np.zeros(n)
     tot = pop.sum(axis=0)

@@ -43,3 +43,15 @@ def test_spread_shares_and_dates(tmp_path):
     cu = {c["name"]: c for c in doc["cultures"]}
     assert cu["first a"]["how"] == "invented" and cu["late b"]["how"] == "from its start" and cu["late b"]["ago"] == 0.1
     assert any("50% of settled people" in line for line in TS.report(doc))
+
+
+def test_town_footprint_counts_each_peoples_town_cells(tmp_path):
+    """D52's arms B and E (techtree.ARM_DEFAULTS) read each people's town cells per ledger step: a and b one each, c's village none."""
+    d = _run(tmp_path)
+    m = json.loads((d / "run.json").read_text())
+    m["meta"]["settlements"]["cell_km2"] = 3000
+    (d / "run.json").write_text(json.dumps(m))
+    fp = TS.town_footprint(d)
+    assert fp["_cell_km2"] == 3000.0 and "c" not in fp
+    agos, n = fp["a"]
+    assert agos[0] == 1.0 and agos[-1] == 0.0 and (n == 1).all()
