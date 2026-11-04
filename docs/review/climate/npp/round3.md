@@ -284,3 +284,13 @@ Open, not fixed here:
 - Climate-area slow tests (`test_envelopes.py`, `test_sea_level.py`, `test_co2_stock.py`, `-n 4`): 29 passed.
 - `tools/earth_check.py` (L6): Koppen main group 71%, exact code 37%, log-rain correlation 0.718, global mean T 13.9 C
   against NCEP's 14.0. The same as main (round2.md).
+- `tools/scorecard.py`: line appended (commit b8f97459). Earth: group 71.4%, exact 37.4%, rain correlation 0.718, the
+  same as main. Seed 1 at 1000 Myr: ice 4.1%, trees 42.6%, land NPP 484 (lane 181's KN line: 2.7%, 39.9%, 394).
+  Seed 2: ice 1.3%, trees 34.4%, NPP 470 (KN: 1.8%, 49.5%, 576). These are single seeds, inside the re-run chaos.
+
+## Status
+Done: Earth check, rooted-cover check, 12-draw screen, full 36-draw judge, tests, Earth check, scorecard. Verdict:
+passes the D47 bar. One test still fails on the branch (the rift sliver test, draft filed): the coordinator decides
+whether that blocks the merge. Scratch kept: `l185/judge/` (the c1 and mi arms, 72 runs), `ana.py`, `tails.py`,
+`ycmp.py`, `sel.py`, `screen.sh`, `hb.sh`, `judge36.txt`, `npp/`, logs. Code copies, symlink roots and the run data
+root removed.
