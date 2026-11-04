@@ -11,13 +11,14 @@ culture lives where at each stored frame). Source of the design: docs/review/cul
 
 The one rule of a step (step()):
   1. Seats. A living town (the ledger's own town size for its time and holder, settlements.json bands) whose people know
-     `chiefdoms` and writing (or live beside a people who know writing: the owner's P2 "nearly B", round 2's lenience) is a
-     chiefdom seat. It is a state seat when its people also know `kingship` or `law` (round 1 P2 A) and it is a city
+     `chiefdoms` and writing or its forerunner `proto_writing` (or live beside a people who know one: owner D49 "B plus C", round 2's
+     lenience) is a chiefdom seat. It is a state seat when its people also know `kingship` or `law` (round 1 P2 A) and real `writing`
+     of their own (D49: "real states gotta have writing") and it is a city
      (tiers.city_min), or a smaller town hemmed in (Carneiro 2012: circumscription speeds states): the size it needs falls by
      HEMMED_X x how hemmed in it is. One seat per cell (the biggest town). A seat keeps its tier down to HOLD of the size that
      made it (no flicker at the line).
   1b. Confederations (PW-785; Turchin 2009's mirror empires, via proposal.md 2.1.2: large agrarian states push their neighbours to
-     "band together"). A people that knows `chiefdoms` and `kingship` or `law` (and passes the writing gate above) but has no city
+     "band together"). A people that knows `chiefdoms`, `kingship` or `law`, and real `writing` (a state's gate above) but has no city
      big enough may still seat a state at one of its places, of any size, when its own people in its places within a state's reach
      of it number a city's worth (city_min x CONFED_HEADS_X) and a foreign state, empire or dragon realm (CONFED_AGAINST) held land
      within that reach last step. Its own city-state within reach rules there instead. It claims as a state, after the states
@@ -64,7 +65,7 @@ import numpy as np
 from numba import njit
 
 FORMAT = "procgen-polities/1"
-VERSION = 6  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 7  # (bump when the rules change: the server's cached docs are remade)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -105,7 +106,8 @@ INVADE_X = {"light": 2.0, "strong": 4.0}  # judgement: an authored invasion row 
 # ---- empires
 SUBJECT_SHARE = 0.2  # judgement: an empire is a state where another culture (not dragons living over it) holds 20% or more of its settled people
 SUBJECT_CELLS = 3  # judgement: the card lists a subject culture with settlements in the polity, or living on 3 or more of its cells
-WRITING_TECHS = ("writing",)  # owner P2 "nearly B" (owner-notes-r1.md): a chiefdom needs writing, its own or a neighbour's (round 2's lenience)
+WRITING_TECHS = ("proto_writing", "writing")  # owner D49 "B plus C" (PW-1448): a chiefdom needs writing or its forerunner, its own or a neighbour's (round 2's lenience)
+STATE_WRITING = "writing"  # owner D49: "real states gotta have writing": a state, empire or confederation needs its own people to know real writing
 TIERS = ("chiefdom", "state", "empire", "dragon realm")
 SETTLED_KINDS = ("chief", "minority")  # (seats: a people's own places; mines and pits count for people, never as capitals)
 R_EARTH_KM = 6371.0  # (the grid's sphere, as cultures.py and demes.py measure areas)
@@ -515,7 +517,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
             p = float(pop[i, k])
             tier = "chiefdom"
             hem = 0.0
-            if (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago)) and cool.get(key, -1) < k:  # (a fallen capital: one tier down)
+            if (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago)) and R.knows(ppl, STATE_WRITING, ago) and cool.get(key, -1) < k:  # (a fallen capital: one tier down)
                 hem = _hemmed(R, F, rings[c], ppl, here_lines, PM.SOCIAL_Q, ago)
                 need = city_min * (1 - HEMMED_X * hem) * (HOLD if prev_cap.get(key) in ("state", "empire") else 1.0)
                 if p >= need:
@@ -858,8 +860,8 @@ def _confederations(R: _Run, F: dict, seats: list, sites: list, popk: np.ndarray
     scratch = np.full(g.n, -1, np.int64)
     out = list(seats)
     for ppl in sorted(p for p in places if p):
-        if not (R.knows(ppl, "chiefdoms", ago) and (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago))):
-            continue
+        if not (R.knows(ppl, "chiefdoms", ago) and (R.knows(ppl, "kingship", ago) or R.knows(ppl, "law", ago)) and R.knows(ppl, STATE_WRITING, ago)):
+            continue  # (its seat is a state's: its own people need real writing, D49)
         li = lid.get(ppl, -1)
         mine = sorted(places[ppl], key=lambda i: (f"s{sites[i]['id']}" not in prev_cap, -popk[i], i))  # (last step's seats first: no flicker)
         heads_at: dict = {}
@@ -874,9 +876,6 @@ def _confederations(R: _Run, F: dict, seats: list, sites: list, popk: np.ndarray
                 break
             if c in covered or c in state_at or cool.get(key, -1) >= k:
                 continue
-            near = here_lines.get(c, set()) | set().union(*(here_lines.get(int(b), set()) for b in idx[off[c]:off[c + 1]]))
-            if not any(R.knows(p_, t, ago) for t in WRITING_TECHS for p_ in {ppl} | {R.lines[l]["id"] for l in near}):
-                continue  # (the same writing gate as any seat: the owner's P2, D49 open)
             tries += 1
             b, lx, sx = _reach(R, {"people": ppl, "tier": "state"}, ago, "confederation" in WIDE_BY)
             got = _claim(c, b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], scratch, 0, dist, touched, claimed)
