@@ -67,6 +67,8 @@ import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from .years import years_ago  # noqa: F401  (PW-1429: dates as text; also SP.years_ago)
+
 # movement and behaviour (docs/proposals/lineages.md section 2). sea: share of the carried
 # pressure kept per sea cell crossed (0: can't cross; establishment needs spread.EST, so 0.55 ~ 3 cells);
 # relief: share kept per 1000 m climbed between cells is exp(-relief) (walkers 0.6); speed: x the base

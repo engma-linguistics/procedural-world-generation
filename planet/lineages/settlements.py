@@ -53,6 +53,7 @@ from .. import timeline as T
 from ..geo import R_KM, is_land
 from ..grid import shared_grid
 from . import landuse as LU
+from .years import years_ago
 from .demes import _place, landmass_rank
 from .spread import graph_dist
 
@@ -788,7 +789,7 @@ def write(run_dir: Path, report: bool = True, **over) -> dict:
 
 
 def lines_for_report(sm: dict, doc: dict) -> list[str]:
-    L = ["", f"## Settlements (PW-1011 v0): since {sm['from_kyr']:g} kyr ago, {sm['founded']} founded, {sm['alive']} alive now "
+    L = ["", f"## Settlements (PW-1011 v0): since {years_ago(sm['from_kyr'])}, {sm['founded']} founded, {sm['alive']} alive now "
              f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mining districts, {sm['now']['pit']} local pits, {sm.get('colonies_now', 0)} of them colonies; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
              f"{sm['resettled']} on older ruins; {sm['people_in_places_now']:,} people in them now ({sm['generated_in_s']} s)",
          "  why abandoned: " + (", ".join(f"{k} {v}" for k, v in sorted(sm["why"].items(), key=lambda kv: -kv[1])) or "none")]

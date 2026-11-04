@@ -33,7 +33,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = NumFmt.kyr;
-  const ago = (k) => (k <= 0 ? 'now' : fmt(k) + ' ago');
+  const ago = (k) => NumFmt.ago(k);  // a date: '12,400 years ago', or 'year 1400' once the run's present is set (numfmt.js, PW-1429)
   const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['taboos', 'Taboos']];
   const FOOT = {
     trees: `Each card is one faith's gods on a log time axis (left: older, right: now). A line is one god or spirit, coloured by how individuated it was then
@@ -111,7 +111,7 @@
       }
       if (b.status === 'merged') h += `<text x="${x(end) + 2}" y="${y + 4}" style="fill:#c88">×</text>`;
       else if (b.status === 'faded' || b.status === 'dormant') h += `<line x1="${x(end)}" x2="${x(end)}" y1="${y - 4}" y2="${y + 4}" stroke="#c88"/>`;
-      const tip = `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}), ${b.how} ${fmt(b.born_kyr)} ago in ${D.cname(b.culture)}; ${b.status}${b.ended_kyr != null ? ' ' + fmt(b.ended_kyr) + ' ago' + (b.end ? ' (' + b.end + ')' : '') : ''}; domains ${b.top.map((t) => t[0] + ' ' + t[1]).join(', ')}`;
+      const tip = `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}), ${b.how} ${ago(b.born_kyr)} in ${D.cname(b.culture)}; ${b.status}${b.ended_kyr != null ? ' ' + ago(b.ended_kyr) + (b.end ? ' (' + b.end + ')' : '') : ''}; domains ${b.top.map((t) => t[0] + ' ' + t[1]).join(', ')}`;
       h += `<g><title>${esc(tip)}</title><rect x="0" y="${y - RH / 2}" width="${W}" height="${RH}" fill="transparent"/>
         <text x="${W - LAB}" y="${y + 4}" style="${b.status !== 'living' ? 'opacity:.55' : ''}">${'· '.repeat(Math.min(depth[i], 4))}${esc(b.label)}</text></g>`;
     }
@@ -168,7 +168,7 @@
     }
     $('rl-ov').innerHTML = o;
     const rows = live.map((f) => [f, sample(f)]).filter(([, s]) => s).sort((a, b) => b[1][2] - a[1][2]);
-    $('rl-side').innerHTML = `<h3>${rows.length} faiths ${at > 0 ? fmt(at) + ' ago' : 'now'}</h3>${st.follow != null ? '<p><a href="#" id="rl-all">show all faiths</a></p>' : ''}
+    $('rl-side').innerHTML = `<h3>${rows.length} faiths ${at > 0 ? ago(at) : 'now'}</h3>${st.follow != null ? '<p><a href="#" id="rl-all">show all faiths</a></p>' : ''}
       <table class="t"><tr><th>faith</th><th>cultures</th><th>cells</th><th>lead god</th></tr>${rows.map(([f, s]) => `<tr data-f="${f.id}" class="${st.follow === f.id ? 'sel' : ''}" title="founded ${esc(ago(f.founded_kyr))} in ${esc(D.cname(f.origin_culture))}; core ${esc(s[6])}"><td>${sw(f.color)}${esc(f.name)}</td><td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n" style="color:${indCol(s[5])}">${s[5].toFixed(2)}</td></tr>`).join('')}</table>`;
     for (const tr of $('rl-side').querySelectorAll('tr[data-f]')) tr.onclick = () => { st.follow = st.follow === +tr.dataset.f ? null : +tr.dataset.f; update(); };
     if ($('rl-all')) $('rl-all').onclick = (e) => { e.preventDefault(); st.follow = null; update(); };
@@ -178,7 +178,7 @@
   function tlMount(bar) {
     const s = D.gods.summary.faiths || {};
     bar.innerHTML = `<label class="muted"><input type="checkbox" id="rl-gone" ${st.gone ? 'checked' : ''}> with the faiths gone</label>
-      <span class="muted">${D.F.length} faiths since ${fmt(D.gods.from_kyr)} ago, ${D.F.filter((f) => f.ended_kyr == null).length} living: ${s.founded || 0} founded, ${s.schisms || 0} schisms, ${s.conversions || 0} conversions, ${s.core_changes || 0} cores moved;
+      <span class="muted">${D.F.length} faiths since ${ago(D.gods.from_kyr)}, ${D.F.filter((f) => f.ended_kyr == null).length} living: ${s.founded || 0} founded, ${s.schisms || 0} schisms, ${s.conversions || 0} conversions, ${s.core_changes || 0} cores moved;
       ${D.F.filter((f) => f.end === 'no followers left').length} ended with no followers left</span>`;
     $('rl-gone').onchange = (e) => { st.gone = e.target.checked; update(); };
   }
@@ -192,14 +192,14 @@
       let dots = f.events.map((e) => `<span title="won ${esc(D.cname(e[2]))} ${esc(ago(e[0]))}" style="position:absolute;left:${x(e[0]) - 2}px;top:1px;width:5px;height:5px;border-radius:50%;background:#6bd66b"></span>`).join('');
       dots += (D.lost[f.id] || []).map((e) => `<span title="lost ${esc(D.cname(e[2]))} to ${esc(D.F.find((g) => g.events.includes(e))?.name || '')} ${esc(ago(e[0]))}" style="position:absolute;left:${x(e[0]) - 2}px;top:1px;width:5px;height:5px;border-radius:50%;background:#ff6b6b"></span>`).join('');
       return `<span style="position:relative;display:inline-block;width:${BW}px;height:8px;background:var(--line,#1f2836);vertical-align:middle"><span style="position:absolute;left:${a}px;width:${Math.max(2, b - a)}px;top:0;bottom:0;background:${f.color};opacity:${f.ended_kyr != null ? 0.45 : 1}"></span>${dots}</span>`; };
-    let h = `<table class="t"><tr><th>faith</th><th>how</th><th>life <span class="muted">(${fmt(D.gods.from_kyr)} ago → now)</span></th><th>cultures now / ever</th><th>peoples now</th><th>leading god now</th><th>end</th></tr>`;
+    let h = `<table class="t"><tr><th>faith</th><th>how</th><th>life <span class="muted">(${ago(D.gods.from_kyr)} → now)</span></th><th>cultures now / ever</th><th>peoples now</th><th>leading god now</th><th>end</th></tr>`;
     const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
     const row = (f, d) => { const lead = f.lead_being != null ? D.B[f.lead_being] : null;
       h += `<tr style="${f.ended_kyr != null ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}${sw(f.color)}${esc(f.name)}</td>
-        <td>${esc(f.how)}</td><td style="white-space:nowrap">${bar(f)} <span class="muted">${fmt(f.founded_kyr)}</span></td><td class="n">${f.cultures_now.length} / ${f.cultures_ever.length}</td>
+        <td>${esc(f.how)}</td><td style="white-space:nowrap">${bar(f)} <span class="muted">${ago(f.founded_kyr)}</span></td><td class="n">${f.cultures_now.length} / ${f.cultures_ever.length}</td>
         <td class="muted" style="max-width:260px">${esc(f.peoples_now.map((p) => L[p] || p).join(', '))}</td>
         <td>${lead ? `<span style="color:${indCol(lead.individuation)}">${esc(lead.label)}</span> <span class="muted">${lead.individuation.toFixed(2)}</span>` : ''}</td>
-        <td class="muted">${f.ended_kyr != null ? esc(f.end) + ' ' + fmt(f.ended_kyr) + ' ago' : ''}${f.changes.length ? ` <span title="${esc(f.changes.map((c) => `${fmt(c[0])} ago: ${c[1]} → ${c[2]}`).join('\n'))}">core moved ×${f.changes.length}</span>` : ''}</td></tr>`; };
+        <td class="muted">${f.ended_kyr != null ? esc(f.end) + ' ' + ago(f.ended_kyr) : ''}${f.changes.length ? ` <span title="${esc(f.changes.map((c) => `${ago(c[0])}: ${c[1]} → ${c[2]}`).join('\n'))}">core moved ×${f.changes.length}</span>` : ''}</td></tr>`; };
     const walk = (k, d) => (kids[k] || []).sort((a, b) => b.founded_kyr - a.founded_kyr).forEach((f) => { row(f, d); walk(f.id, d + 1); });
     walk('root', 0);
     main.innerHTML = h + '</table>' + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(D.gods.faiths.rule)}</p>`;
