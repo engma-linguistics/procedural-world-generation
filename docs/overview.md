@@ -910,6 +910,13 @@ frequencies, women and birth, sacred places, sacred times, hunting and harvest, 
 way of life, techs and gods. Shown in the workbench's Religion tab (`viewer/religiontab.js`: god trees, a faith map with a time slider
 from `GET /api/faithmap`, a faith timeline, taboos). Stats over several trees: `tools/religion_stats.py`, docs/review/religion/.
 
+Faiths you write (PW-1430): the tab's "Your faiths" view saves faiths Daniel writes (name, founding culture, people or place, year,
+named gods with domains, spreads or closed) and the run's gods mode (PW-1309) as the run's `authored.json` (`POST /api/authored`, the
+only thing the server writes into a run for religion). Each is founded under the same rules at the first frame from its year on at
+which its founder has gods (`gods.AUTHORED_RULE`); one that can't take hold says why. `gods.inputs()` (the land per culture per frame,
+~20-25 s at L7) is kept in the server's memory and `gods.replay()` (~5 s) re-runs the faiths after an edit; the derived gods and taboos
+docs persist under `<data root>/.godscache`, keyed by run, run.json mtime, mode and the authored file's hash.
+
 ### 2.26 Peoples history: founding, the contest for land and the brakes (`lineages/history/`, lanes 83, 97 and 101, owner D20, D25-D27, D31)
 
 The full design is `docs/proposals/lineages.md`; this is what decides where a people starts and who holds a land.

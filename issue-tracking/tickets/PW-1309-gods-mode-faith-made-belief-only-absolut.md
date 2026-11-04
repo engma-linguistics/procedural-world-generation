@@ -30,6 +30,7 @@ To do:
 - [ ] The Cultures tab's gods column shows the run's mode and re-fetches `/api/gods?mode=` when the user flips it (the endpoint already supports it).
 
 ## Updates
+- 2026-11-03: Lane 166: viewer part done: a gods-mode select in the Religion tab bar, saved per run in authored.json (gods_mode) and used by /api/gods, taboos and the faith map when no mode= is asked. Left: gods_mode on the tree spec / run request at world creation, so techtree.build drops divine magic in belief_only (the stored meta.techtree still has it for runs switched later in the viewer).
 - 2026-11-03: Milestones 11-03: later -> v2: v2 must-have: gods mode as a viewer control, with authored faiths
 - 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-11-02: Created from inbox draft draft-gods-mode-world-control.md (found by lane117).
