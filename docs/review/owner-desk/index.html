@@ -141,7 +141,7 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>187b · carbon yardstick at L7 (physics scout)</td><td>All 24 test spin-ups are done: the L7 yardstick comes out at 1.618 &plusmn; 0.036, against the 1.542 in use, about two standard errors off. This lane sets it and checks the same planets on old and new values, plus the Earth check. An error of 0.1 moves every L7 world by about 1 °C.</td></tr>
 <tr><td>192 · technology inside the history (v4)</td><td>States in the history still guess "what era is it" for their writing rule. This puts the tech tree inside the history, so each state reads what its people really know that century, behind the same switch, off. First a small reorder so the D53 ideas work in new runs. Also checks whether humans alone, with no other peoples, still form states and learn to write, and when.</td></tr>
-<tr><td>193 · why lower peaks unsettle the climate (physics, pass 2 of 3)</td><td>Scout 190's fix brought the peaks down but widened the climate's spread. This pass only reads the runs already made, to test the likely cause (less high rock to weather, so the carbon thermostat steadies less) and propose 1–3 fixes. Nothing is changed yet.</td></tr>
+<tr><td>194 · too-tall peaks, last try (physics, pass 3 of 3)</td><td>Scout 193 found no physical reason why lower peaks would unsettle the climate: the carbon thermostat pushes back just as hard. The wider spread looks like it may be a fluke of one sample (about a 1-in-60 result), and today's code itself sits under the spread bar. So this pass re-checks the fix against today's code (now with the grass fix) on 36 fresh test planets. If it passes, it merges; if not, it goes to the back of the line.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): Andes-type coastal ranges, a re-check of warm finishes after D47 and the grass fix, a source for the rainforest fix's leaf constant, and the grazing herds after the grass fix. Rain inland waits at the back of the line (three strikes).</p>
 
@@ -160,5 +160,5 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 <li><b>Why the antelope-kin live thinly</b> (your D51 question). They are farmers in the preset, but their range is dry: 150–900 mm of rain a year, on steppe and savanna. Their "nomadic" trait also pulls them towards grazing land. On that land the density ladder gives them agro-pastoral numbers, 1–15 people per km² (Wilson 1986), against plough farming on fertile, well-watered land. They average 0.8, the humans 10. So their towns stay villages (the biggest ever was 7,925 people; a state seat needs a city of 10,000). That is how real steppe peoples could still build large states: as confederations of herders and villages facing a settled neighbour, Turchin's "mirror empires", which is what lane 178 added.</li>
 </ul>
 
-<footer>Desk v166 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v167 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
