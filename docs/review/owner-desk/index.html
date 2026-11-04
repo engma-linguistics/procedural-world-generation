@@ -142,11 +142,10 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <tr><th>Lane</th><th>What</th></tr>
 
 <tr><td>170 · building D47 (physics, side track)</td><td>Your pick, C: one carbon yardstick per grid level, weathering on plant cover, "frozen over" read at the end. Lane 160's full check, compared with the same 36 planets on the current code: re-runs of one planet still differ by about 1.8 °C (from 2.0), because plate chaos alone carries about 1.4 °C, so the 1.2 °C hope was wrong. But the spread across planets falls by a third (range &minus;7.5..+6.6 &rarr; &minus;4.2..+4.8 °C), both the cold and warm tails go, and no new hard failures appear. Worth building; judged on the paired test before merge.</td></tr>
-<tr><td>175 · war v0</td><td>v3: states take border land from weaker neighbours, a polity falls when its capital is taken, and states can also collapse. Today they last 600–1,400 years, against history's median of 130, and the biggest empire is smaller than Earth's after 650 BC because nothing conquers. A read-out: no re-run.</td></tr>
-<tr><td>174 · mountain summits</td><td>Display only: each high cell shows a summit height (its average plus Earth's measured summit-over-average), so the tallest-peak highlight reads like Earth's 8 km peaks.</td></tr>
+<tr><td>176 · peoples ledger</td><td>A one-page account of every mechanism that moves peoples (spread, density, contact, decline): what drives each, its source, and a test that it still does what it says. Nothing changes in the history itself.</td></tr>
+<tr><td>177 · invasions you schedule</td><td>v3: in the peoples workbench, a "Your invasions" panel. Write "antelope-kin against humans, around 1400, strong" and the Polities layer rebuilds. Each row then says what came of it: who took what from whom and how much land, or why it didn't happen (no state then, no shared border, or the odds failed). Saved next to your written faiths.</td></tr>
 
-
-<tr><td>showcases</td><td>Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
+<tr><td>showcases</td><td>Restarted overnight (my mistake: the first try started from the ice-age zoom rather than the world, so it got no towns or goods; deleted). Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
 
 
 
@@ -189,7 +188,9 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
-<ul><li><b>States and empires, first cut</b> (v3, PW-1431): <b>merged</b>. Peoples runs have a "polities" button on the globe. It shows who rules where at the century nearest the time slider: chiefdoms, states, empires (a state where another culture holds a fifth of its people) and dragon realms. Click a cell for its card: ruler, subjects, founded, fell, capital. Names are placeholders until the names slot. Compared with history, settled people per tier fit (chiefdoms in thousands, states in hundreds of thousands); states last too long and the biggest empire is too small, because nothing conquers yet (lane 175).</li>
+<ul><li><b>War, first cut</b> (v3, PW-1432 and PW-1447): <b>merged</b>, and the viewer is restarted. On the Polities layer, borders now move: states take border land from weaker neighbours, a card says "taken from X", and a fallen state says "conquered by Y" or "collapsed". States fall at about the rate history shows (46% chance per century). On Seven Meals (3c1caf), median state life is 200 years, against 130 in the historical record, and today's largest empire is 2.86 million km².</li>
+<li><b>Mountain summits</b> (PW-846): <b>merged</b>. High cells show a summit height, so the Earth test world's top peak reads 7.7 km, not the 5.9 km cell average.</li>
+<li><b>States and empires, first cut</b> (v3, PW-1431): <b>merged</b>. Peoples runs have a "polities" button on the globe. It shows who rules where at the century nearest the time slider: chiefdoms, states, empires (a state where another culture holds a fifth of its people) and dragon realms. Click a cell for its card: ruler, subjects, founded, fell, capital. Names are placeholders until the names slot. Compared with history, settled people per tier fit (chiefdoms in thousands, states in hundreds of thousands); states last too long and the biggest empire is too small, because nothing conquers yet (lane 175).</li>
 <li><b>Physics scouts:</b>
 <ul>
 <li><b>Hot summers near the equator: fixed already</b> (PW-1279 closed). On the Earth test world, against observed 1991–2020 records: warmest month 1.6 °C cooler at 0–20°, 0.4 °C warmer at 20–40°.</li>
@@ -278,5 +279,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v142 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v143 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
