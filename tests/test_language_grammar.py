@@ -547,7 +547,12 @@ def test_typology_reads_the_grams():
     g.grams.append(G.Gram("LOC", tuple(from_ipa("ka")), "NP", "post", G.FREE, ("AT", "X"), 5.0, id="LOC#y"))
     G.aims(g)["adposition"] = "pre"
     G.realise(g)
-    assert g.typology["case"] == "few" and g.typology["adposition"] == "post"   # a free postposition: postpositions
+    assert g.typology["case"] == "none" and g.typology["adposition"] == "post"   # a free postposition is an adposition, not case
+    g.grams[-1].level = G.CLITIC
+    G.realise(g)
+    assert g.typology["case"] == "few"   # case from clitic level on (WALS 49)
+    g.grams[-1].level = G.FREE
+    G.realise(g)
     G._follow_syntax(g, 5.0)
     G.realise(g)
     assert g.grams[-1].side == "pre" and g.typology["adposition"] == "pre"   # the free word moved with the syntax

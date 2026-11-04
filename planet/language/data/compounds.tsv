@@ -1,0 +1,212 @@
+# source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. Each row is a compound recipe (head + modifier = target) that real languages use for the target meaning, after: Urban 2012 (Analyzability and Semantic Associations in Referring Expressions: a study in comparative lexicology, PhD Leiden; complex lexemes for 160 meanings in a 78-language sample, e.g. 'bark' = 'tree skin', 'sun' = 'eye of day', 'spring' = 'water eye', 'fruit' = 'tree child'); Brown 1976 and Witkowski & Brown 1978/1985 on body-part partonomy and plant life-forms; Brown 1999 (Lexical Acculturation in Native American Languages, Oxford: introduced animals and plants named 'big dog' = horse, 'foreign X' / 'X-like native analog'); Witkowski & Brown 1983 (marking reversals); Buck 1949 (A Dictionary of Selected Synonyms in the Principal Indo-European Languages); Haspelmath & Tadmor 2009 (WOLD 'analyzable' words); the generic + specific compounds of Mainland Southeast Asia (Thai nók-X 'bird-X', plaa-X 'fish-X', tôn-X 'tree-X'; Malay pohon X, burung X; Mandarin song-shu 'pine-tree', li-yu 'carp-fish'; Enfield 2003, Bisang 1999) and English reindeer < Old Norse hreinn + deer.
+# version: hand-authored 2026-11-04 (procedural-language lane, compounds and shifts round)
+# licence: original text for this repository (no third-party data copied); cite the works above when using it.
+# CLICS3: at load time lexicon.py joins each (target, head) and (target, modifier) pair with data/clics_edges.tsv; a pair CLICS3 also attests as a colexification in >= 3 families (BARK/SKIN 49, MILK/BREAST 26, MOON/SUN 18 ...) adds family count / 10 to the weight (a motivated compound is often a colexification too).
+# columns: target = the concept named; head = the semantic category the target is a kind (or a part) of: 'tree SKIN' for bark, 'day EYE' for sun, 'mountain ROAD' for a pass, 'woman CHILD' for a girl; modifier = the word that says which one ('SELF' = the target's own current word: a generic + specific renewal, Thai plaa-X, English rein-deer); weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the source.
+# Only these recipes make compounds (lexicon.compound); a target with no row is renewed by derivation, shift, a loan or a fresh root instead. Elaborations (lexicon.ELABORATIONS: MILK + SOUR = soured milk) and function-word reinforcement (data/derivations.tsv 'reinforce' rows) are separate tables.
+target	head	modifier	weight	example
+BARK	SKIN	TREE	3	'tree skin': Swahili ganda la mti; Urban 2012 (bark/skin colexified in 49 CLICS families)
+BARK	SKIN	WOOD	2	'wood skin': Malay kulit kayu (kayu 'wood, tree')
+FEATHER	HAIR	BIRD	3	'bird hair': Tok Pisin gras bilong pisin, Quechua; Urban 2012
+WING	ARM OR HAND	BIRD	1	'bird arm': Urban 2012 (wing ~ arm, hand)
+HAIR	FEATHER	HEAD	1	'head feather' (hair/feather colexified in 16 CLICS families)
+HAIR	GRASS	HEAD	1	'head grass': Tok Pisin gras bilong het; Urban 2012 (hair ~ grass)
+KNEE	HEAD	LEG	1	'leg head': Malay kepala lutut 'knee-head' (kneecap); Urban 2012
+NAVEL	EYE	BELLY	1	'belly eye': Urban 2012 (navel ~ eye, ~ seed)
+MILK	WATER	BREAST	2	'breast water': Urban 2012 (milk ~ breast colexified in 26 CLICS families)
+ROOT	LEG	TREE	1	'tree leg / foot': Urban 2012 (root ~ leg, foot)
+FRUIT	CHILD (DESCENDANT)	TREE	2	'tree child': Hausa dan itace 'child of tree' = fruit; Urban 2012
+BERRY	FRUIT	SMALL	2	'little fruit'
+BERRY	FRUIT	RED	1	'red fruit'
+TWIG	STICK	SMALL	1	'little stick'
+SUN	EYE	DAY (NOT NIGHT)	3	'eye of day': Malay mata hari, widely in Austronesian; Urban 2012
+SUN	EYE	SKY	1	'sky eye': Urban 2012
+MOON	SUN	NIGHT	2	'night sun': Ojibwe dibik-giizis, Lakota hanhepi wi
+RAIN (PRECIPITATION)	WATER	SKY	1	'sky water': Urban 2012 (rain ~ water)
+ASH	DUST	FIRE	1	'fire dust': Urban 2012 (ash ~ dust, ~ 'fire excrement')
+STORM	WIND	BIG	2	'big wind': Tok Pisin bikpela win; Japanese o-kaze
+STORM	RAIN (PRECIPITATION)	BIG	1	'big rain'
+FLOOD	WATER	BIG	2	'big water': Tok Pisin bikpela wara; Algonquian kichi- 'great' + water
+SPRING (OF WATER)	EYE	WATER	3	'eye of water': Arabic 'ayn al-ma', Hebrew 'ayin, Persian cheshme, Turkish goz; Urban 2012
+SEA	WATER	SALTY	2	'salt water': Tok Pisin solwara; Urban 2012
+SEA	WATER	BIG	2	'big water': Ojibwe gichi-gami
+LAKE	WATER	BIG	1	'big water': Algonquian (Michigan < mishi-gami 'big lake')
+RIVER	WATER	FLOW	2	'flowing water': Urban 2012 (river ~ water colexified in 38 CLICS families)
+RIVER	WATER	BIG	1	'big water': Mississippi < Ojibwe misi-ziibi 'big river'
+STREAM	RIVER	SMALL	2	'little river': German Flusschen
+STREAM	WATER	SMALL	1	'little water'
+POND	LAKE	SMALL	2	'little lake'
+POND	WATER	SMALL	1	'little water'
+MARSH	LAND	WET	2	'wet land': English wetland; Urban 2012
+MARSH	EARTH (SOIL)	WATER	1	'water earth'
+COAST	LAND	SEA	1	'sea land' (seaboard)
+FORD	ROAD	RIVER	1	'river road' (crossing place)
+HILL	MOUNTAIN	SMALL	2	'little mountain': Urban 2012 (hill ~ mountain colexified in 20 CLICS families)
+PASS	ROAD	MOUNTAIN	2	'mountain road'
+ISLAND	LAND	WATER	2	'water land': Old English ieg-land 'island' (ea 'water'); Urban 2012
+ISLAND	LAND	SEA	1	'sea land'
+DESERT	LAND	DRY	2	'dry land'
+DESERT	LAND	SAND	2	'sand land'
+PLAIN	LAND	WIDE	1	'wide land'
+CAVE	HOUSE	STONE	1	'stone house'
+GRAVE	HOUSE	DEATH	2	'house of the dead': Latin domus aeterna; Urban 2012
+PEBBLE	STONE	SMALL	2	'little stone'
+STONE OR ROCK	STONE	BIG	1	'big stone'
+TOWN	VILLAGE	BIG	2	'big village' (town/village colexified in 23 CLICS families)
+VILLAGE	HOUSE	MANY	1	'many houses'
+HEARTH	STONE	FIRE	1	'fire stones' (the three hearthstones, Mesoamerican tenamaztli)
+SUNRISE	SUN	COME	2	'sun comes': Malay matahari terbit 'sun emerges'; Urban 2012
+SUNSET	SUN	FALL	2	'sun falls': Malay matahari terbenam 'sun sinks'; English sundown
+EAST	SUN	COME	2	'where the sun comes out': Hebrew mizrah 'rising'; Austronesian 'sun rises'
+WEST	SUN	FALL	2	'where the sun falls': Hebrew ma'arav, Arabic gharb 'setting'; English sundown
+NORTH	HAND	LEFT	1	'left hand (facing sunrise)': Old Irish tuaisceart, Hebrew smol 'left; north'
+SOUTH	HAND	RIGHT	1	'right hand (facing sunrise)': Sanskrit daksina, Hebrew yamin, Arabic yaman 'right; south'
+UPSTREAM	HEAD	RIVER	2	'river head': English headwaters; Malay hulu 'head; upstream'
+DOWNSTREAM	MOUTH	RIVER	2	'river mouth': Malay kuala, English river-mouth
+PEOPLE	PERSON	MANY	1	'many persons'
+STRANGER	PERSON	FAR	2	'far person': Urban 2012
+ENEMY	PERSON	BAD	1	'bad person'
+FRIEND	PERSON	GOOD	1	'good person'
+CHIEF	MAN	BIG	3	'big man': Tok Pisin bikman, Melanesian big-man; Sumerian lugal 'big man' = king
+CHIEF	MAN	HEAD	2	'head man': English headman
+ELDER	PERSON	OLD	2	'old person'
+ELDER	MAN	OLD	1	'old man'
+BABY	CHILD (YOUNG HUMAN)	SMALL	2	'little child'
+BABY	CHILD (YOUNG HUMAN)	NEW	1	'new child' (newborn)
+GIRL	CHILD (YOUNG HUMAN)	WOMAN	3	'woman child': Japanese onna-no-ko, Tok Pisin pikinini meri
+BOY	CHILD (YOUNG HUMAN)	MAN	3	'man child': Japanese otoko-no-ko, Tok Pisin pikinini man
+HUNTER	MAN	HUNT	1	'hunt man' (huntsman)
+FISHER	MAN	FISH	2	'fish man': English fisherman
+HERDER	MAN	HERD	1	'herd man': English herdsman
+FIGHTER	MAN	FIGHT	1	'fighting man'
+GUEST	PERSON	NEW	1	'new person' (newcomer)
+SON	CHILD (DESCENDANT)	MAN	2	'man child': Japanese otoko-no-ko; Tok Pisin pikinini man
+DAUGHTER	CHILD (DESCENDANT)	WOMAN	2	'woman child': Tok Pisin pikinini meri
+GRANDMOTHER	MOTHER	BIG	3	'big mother': German Grossmutter, French grand-mere, Hungarian nagyanya
+GRANDMOTHER	MOTHER	OLD	2	'old mother'
+GRANDFATHER	FATHER	BIG	3	'big father': German Grossvater, French grand-pere, Hungarian nagyapa
+GRANDFATHER	FATHER	OLD	2	'old father'
+UNCLE	FATHER	SMALL	2	'little father': Swahili baba mdogo (father's younger brother)
+AUNT	MOTHER	SMALL	2	'little mother': Swahili mama mdogo (mother's younger sister)
+HUSBAND	MAN	HOUSE	2	'house man': English husband < Old Norse hus-bondi 'house dweller'
+ANCESTORS	FATHER	OLD	1	'old fathers' (forefathers)
+GOD	SPIRIT	SKY	1	'sky spirit'
+PUPPY	CHILD (YOUNG HUMAN)	DOG	2	'dog child': Japanese ko-inu, Tok Pisin pikinini dog
+PUPPY	DOG	SMALL	1	'little dog'
+CHICK	CHILD (YOUNG HUMAN)	BIRD	2	'bird child': Tok Pisin pikinini kakaruk
+CHICK	BIRD	SMALL	1	'little bird'
+WOLF	DOG	FOREST	2	'forest dog' / 'wild dog': Urban 2012; Brown 1999
+HERD	ANIMAL	MANY	1	'many animals'
+KNIFE	STONE	SHARP	1	'sharp stone'
+NEEDLE	BONE	SHARP	1	'sharp bone'
+SPEAR	STICK	SHARP	1	'sharp stick'
+CUP	HORN (ANATOMY)	DRINK	1	'drinking horn'
+SIX	FIVE	ONE	2	'five-one': Khmer pram-muoy, Wolof juroom-benn
+SEVEN	FIVE	TWO	2	'five-two': Khmer pram-pir, Wolof juroom-naar
+EIGHT	FIVE	THREE	1	'five-three': Khmer pram-bei
+EIGHT	FOUR	TWO	1	'two fours': Urban 2012 (multiplicative eight)
+NINE	FIVE	FOUR	2	'five-four': Khmer pram-buon, Wolof juroom-nent
+NINE	TEN	ONE	1	'one from ten': Latin un-de-viginti (19), Ainu sinepesan
+TEN	HAND	TWO	2	'two hands': Urban 2012; many quinary systems
+animal:horse	DOG	BIG	2	'big dog': Cree mistatim, Lakota sunka wakan 'holy dog'; Brown 1999
+animal:horse	DEER	BIG	1	'big deer': Brown 1999 (introduced animals named after native ones)
+animal:horse	ANIMAL	SELF	1	generic + specific
+animal:cattle	DEER	BIG	1	'big deer': Brown 1999
+animal:cattle	ANIMAL	BIG	1	'big animal'
+animal:cattle	ANIMAL	SELF	1	generic + specific
+animal:caprine	DEER	SMALL	1	'little deer': Brown 1999 (Tzeltal tunim chij 'cotton deer' = sheep)
+animal:caprine	ANIMAL	HORN (ANATOMY)	1	'horn animal'
+animal:caprine	ANIMAL	SELF	1	generic + specific
+animal:fowl	BIRD	HOUSE	2	'house bird': Brown 1999
+animal:fowl	BIRD	SELF	1	generic + specific: Thai nok-X
+animal:great_elk	DEER	BIG	2	'big deer': Brown 1999 (introduced and large animals named after native ones)
+animal:great_elk	DEER	SELF	1	generic + specific: English rein-deer
+animal:riding_lizard	SNAKE	BIG	1	'big snake' (lizard ~ snake)
+animal:riding_lizard	ANIMAL	SELF	1	generic + specific
+DEER	ANIMAL	SELF	1	generic + specific
+BEAR	ANIMAL	SELF	1	generic + specific
+WOLF	ANIMAL	SELF	1	generic + specific
+crop:wheat	GRASS	SEED	1	'seed grass'
+crop:wheat	GRASS	SELF	1	generic + specific (Thai khao-X 'grain-X')
+crop:pulses	SEED	ROUND	1	'round seed'
+crop:pulses	SEED	SELF	1	generic + specific
+crop:foxtail_millet	SEED	SMALL	1	'little seed'
+crop:foxtail_millet	GRASS	SELF	1	generic + specific
+crop:rice	SEED	WATER	1	'water seed'
+crop:rice	GRASS	SELF	1	generic + specific
+crop:sorghum	GRASS	BIG	1	'big grass'
+crop:sorghum	GRASS	SELF	1	generic + specific
+crop:maize	SEED	BIG	1	'big seed'
+crop:maize	GRASS	SELF	1	generic + specific
+crop:potato	FRUIT	EARTH (SOIL)	2	'earth fruit': French pomme de terre, German Erdapfel, Dutch aardappel 'earth apple'
+crop:potato	ROOT	SELF	1	generic + specific
+crop:roots	ROOT	SELF	1	generic + specific
+crop:banana	FRUIT	LONG	1	'long fruit'
+crop:banana	FRUIT	SELF	1	generic + specific: Malay buah pisang
+crop:rye	GRASS	SEED	1	'seed grass'
+crop:rye	GRASS	SELF	1	generic + specific
+crop:stonegrain	SEED	STONE	1	'stone seed'
+crop:stonegrain	GRASS	SELF	1	generic + specific
+crop:emberpod	FRUIT	FIRE	1	'fire fruit'
+crop:emberpod	FRUIT	SELF	1	generic + specific
+crop:tree_fruit	FRUIT	TREE	2	'tree fruit'
+crop:tree_fruit	FRUIT	SELF	1	generic + specific: Malay buah X
+crop:olive	FRUIT	FAT (ORGANIC SUBSTANCE)	1	'oil fruit'
+crop:olive	FRUIT	SELF	1	generic + specific
+crop:vine	FRUIT	ROPE	1	'rope (vine) fruit'
+crop:vine	FRUIT	SELF	1	generic + specific
+crop:oil_seeds	SEED	FAT (ORGANIC SUBSTANCE)	1	'oil seed': English oilseed
+crop:oil_seeds	SEED	SELF	1	generic + specific
+crop:coconut	FRUIT	WATER	1	'water fruit'
+crop:coconut	FRUIT	SELF	1	generic + specific: Malay buah kelapa
+crop:spice_tree	WOOD	SWEET	2	'sweet wood': Malay kayu manis 'cinnamon'
+crop:spice_tree	TREE	SELF	1	generic + specific: Malay pohon X
+crop:chili	FRUIT	HOT OR WARM	2	'hot fruit'
+crop:chili	FRUIT	SELF	1	generic + specific
+crop:cane	GRASS	SWEET	2	'sweet grass / reed'
+crop:cane	GRASS	SELF	1	generic + specific
+crop:sap_sugar	WATER	TREE	1	'tree water' (sap)
+crop:sap_sugar	WATER	SWEET	1	'sweet water'
+crop:tea	LEAF	BITTER	1	'bitter leaf'
+crop:tea	LEAF	SELF	1	generic + specific: Mandarin cha-ye 'tea leaf'
+crop:greens	LEAF	GREEN	1	'green leaf'
+crop:greens	LEAF	SELF	1	generic + specific
+crop:alliums	ROOT	BITTER	1	'bitter root'
+crop:alliums	ROOT	SELF	1	generic + specific
+crop:nightshade_fruit	FRUIT	RED	2	'red fruit'
+crop:nightshade_fruit	FRUIT	YELLOW	1	'golden fruit': Italian pomodoro 'golden apple'
+crop:nightshade_fruit	FRUIT	SELF	1	generic + specific
+crop:squash	FRUIT	BIG	2	'big fruit'
+crop:squash	FRUIT	SELF	1	generic + specific
+crop:beans	SEED	ROUND	1	'round seed'
+crop:beans	SEED	SELF	1	generic + specific
+crop:cacao	SEED	BITTER	1	'bitter seed'
+crop:cacao	TREE	SELF	1	generic + specific
+crop:vanilla	SEED	SWEET	1	'sweet seed'
+crop:vanilla	FRUIT	SELF	1	generic + specific
+crop:peanut	SEED	EARTH (SOIL)	2	'earth nut': English earthnut / groundnut, German Erdnuss
+crop:peanut	SEED	SELF	1	generic + specific
+crop:sweet_potato	ROOT	SWEET	2	'sweet root': English sweet potato
+crop:sweet_potato	ROOT	SELF	1	generic + specific
+crop:pseudograin	SEED	SMALL	1	'little seed'
+crop:pseudograin	GRASS	SELF	1	generic + specific
+crop:avocado	FRUIT	FAT (ORGANIC SUBSTANCE)	1	'fat fruit'
+crop:avocado	FRUIT	SELF	1	generic + specific
+fuel:charcoal	WOOD	BLACK	1	'black wood'
+fuel:peat	EARTH (SOIL)	FIRE	1	'fire earth'
+fuel:straw	GRASS	DRY	2	'dry grass'
+fuel:drift	WOOD	SEA	2	'sea wood': English driftwood
+fuel:coal	STONE	BLACK	2	'black stone': German Steinkohle 'stone coal'
+fuel:heath	GRASS	MOUNTAIN	1	'mountain grass'
+fuel:tallow	FAT (ORGANIC SUBSTANCE)	ANIMAL	1	'animal fat'
+good:shellfish	FISH	STONE	1	'stone fish'
+good:seals	DOG	SEA	2	'sea dog': German Seehund, Dutch zeehond
+good:seals	ANIMAL	SEA	1	'sea animal'
+good:iron	STONE	HARD	1	'hard stone'
+good:metal	STONE	HARD	1	'hard stone'
+good:copper	good:metal	RED	2	'red metal': Mandarin hong-tong 'red copper'
+good:copper	STONE	RED	1	'red stone'
+good:gold	good:metal	YELLOW	2	'yellow metal': Mandarin huang-jin
+good:gold	STONE	YELLOW	1	'yellow stone'
+good:tin	good:metal	WHITE	2	'white metal': Latin plumbum album 'white lead' = tin
+good:iron	good:metal	BLACK	1	'black metal': Mandarin wu-jin 'black metal' = iron

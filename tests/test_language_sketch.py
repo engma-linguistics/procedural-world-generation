@@ -102,7 +102,7 @@ def test_render_page_sections_and_charts():
     assert "| **Plosive** | p · b |" in page  # voiceless left, voiced right, bilabial first
     assert "| **Close** | i |" in page and "ɪ" in page
     assert "| t | ɾ between vowels |" in page  # allophones rendered when present
-    assert "| 1st | aj ‹aj› |" in page  # pronoun chart from the lexicon
+    assert "| 1st | aj ‹ay› |" in page  # pronoun chart from the lexicon
     assert "'thou' and 'you' are the same word" in page
     assert "only one 'we' form" in page  # clusivity flagged as a gap
     assert "k became h between vowels" in page  # the proto stage's change
@@ -143,3 +143,20 @@ def test_english_score_and_auto(tmp_path):
     idx = (out / "index.md").read_text(encoding="utf-8")
     assert "The English-likeness score" in idx and "Top 5" in idx and "Ladefoged" in idx
     assert "## Next to English" in (out / "d1-human.md").read_text(encoding="utf-8")
+
+
+def test_root_families_allophone_table_and_case_clash():
+    fx = _fixture()
+    l = fx["lects"][0] if fx["lects"][0]["id"] == "d1" else next(x for x in fx["lects"] if x["id"] == "d1")
+    l["inventory"]["allophones"] = [{"ipa": "b", "of": "p", "test": "intervocalic", "where": "between vowels only (lenition)"}]
+    fx["roots"] = {"p0:DOG": {"node": 1, "lect": "p0", "kyr": 20.0, "concept": "DOG", "gloss": "dog", "ipa": "pa1", "pos": "N"}}
+    for c in ("DOG", "BIG", "PERSON"):
+        l["lexicon"][c]["roots"] = ["p0:DOG"]
+    page = sketch.render(sketch.Doc(fx), l)
+    assert "| allophone | phoneme | where |" in page and "| [b] | /p/ | between vowels only |" in page
+    assert "Words built on one root: **dog**" in page and "| roots (main first) |" in page
+    # a free locative is an adposition, not case; a clitic one is case
+    t = {"case": "none"}
+    free = [{"function": "LOC", "form_ipa": "ka", "level": 0}]
+    assert sketch._typology_clashes(t, free) == []
+    assert sketch._typology_clashes(t, [dict(free[0], level=1)])

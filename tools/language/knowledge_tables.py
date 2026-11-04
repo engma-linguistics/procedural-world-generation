@@ -226,9 +226,9 @@ reduction | VC > Vː / _C (compensatory lengthening) | prosody | timing | 4 | Pr
 epenthesis | ∅ > e / #_sC (prothesis) | perception | tongue_body | 4 | Latin schola > Spanish escuela; Latin stella > French étoile
 epenthesis | ∅ > ə, ɨ / C_C (anaptyxis) | perception | tongue_body | 4 | Irish film [fʲɪlʲəm]; Hindi iskūl 'school'
 epenthesis | ∅ > V / C_# (paragoge) | perception | tongue_body | 4 | Japanese loan adaptation bed > beddo; Italian dialects con > cone
-epenthesis | ∅ > j / i_V, ∅ > w / u_V (hiatus glide) | coarticulation | tongue_body, lips | 5 | English seeing [sijɪŋ], doing [duwɪŋ]
-epenthesis | V1V2 > V2 (elision in hiatus) | prosody | timing | 4 | French le ami > l'ami
-epenthesis | i, u > j, w / _V (glide formation) | prosody | tongue_body, lips | 5 | Latin filius > *filjus; Spanish diario [djaɾjo]
+hiatus | ∅ > j / i_V, ∅ > w / u_V (hiatus glide) | coarticulation | tongue_body, lips | 5 | English seeing [sijɪŋ], doing [duwɪŋ]
+hiatus | V[−stress] > ∅ / _V[−high] (elision of the first of two vowels) | prosody | stress | 4 | Ancient Greek ἀπὸ ἐμοῦ > ἀπ' ἐμοῦ, French le ami > l'ami; V1 elision is the commonest hiatus resolution across languages (Casali 1997, 2011)
+hiatus | i, u > j, w / _V (glide formation) | prosody | tongue_body, lips | 5 | Latin filius > *filjus; Spanish diario [djaɾjo]
 metathesis | CoRC > CRaC (liquid metathesis) | prosody | tongue_tip | 3 | Proto-Slavic *gordъ > Old Church Slavonic gradъ, Polish gród (Russian gorod: pleophony)
 metathesis | CrV > CVr | perception | tongue_tip | 3 | Old English brid > bird; hros > horse
 metathesis | sk > ks | perception | tongue_tip, tongue_body | 2 | Old English ascian > dialectal English ax 'ask'
@@ -276,7 +276,7 @@ tone | H > ∅ / H_ (Meeussen's rule, adjacent high tones dissimilate) | dispers
 tone | tone > stress (tone loss) | prosody | pitch_ear, stress | 2 | Swahili lost Proto-Bantu tone; stress fixed on penult
 prosody | [−voice fricative] > [+voice] / [−stress]V_ (Verner's law) | prosody | larynx, stress | 3 | Proto-Indo-European *ph₂tḗr > Proto-Germanic *fadēr (vs brother *brōþēr)
 prosody | ɛ, ɔ > je, we / [+stress] (diphthongization) | prosody | tongue_body, stress | 4 | Latin petra > Spanish piedra; porta > puerta
-prosody | ai, au > eː, oː (monophthongization) | effort | tongue_body | 5 | Latin causa > Spanish cosa; Old High German ou > ō
+prosody | ai > eː ; then au > oː (monophthongization) | effort | tongue_body | 5 | Latin causa > Spanish cosa; Old High German ou > ō; Sanskrit sandhi a + i > e, a + u > o (na iti > neti)
 prosody | iː, uː > ai, au (diphthongization of high vowels) | dispersion | tongue_body | 4 | German Haus (< hūs); English Great Vowel Shift
 chain_shift | p t k > f θ x / #_, V_ (Grimm, step 1, kept after s and other obstruents) | effort | lips, tongue_tip, tongue_body | 3 | Latin pater, tres, cornu vs English father, three, horn; but Latin spuere, stella vs English spew, star
 chain_shift | p t k > pf ts kx / #_, C_ ; f s x / V_ (High German shift) | effort | lips, tongue_tip, tongue_body | 2 | German Pfund, zehn, machen vs English pound, ten, make
@@ -306,6 +306,11 @@ deletion | j > ∅ / V_V | effort | tongue_body | 2 | Proto-Greek intervocalic *
 depalatalization | ɲ > n | perception | tongue_tip | 1 | Finnic: Proto-Uralic *ńëlɜ 'arrow' > Finnish nuoli (Hungarian nyíl, Mansi ńāl keep the palatal); Bulgarian kon 'horse' beside Serbian konj
 labial | ʋ > v | perception | lips | 3 | German w: Old High German wīn [w] > Middle High German [ʋ] > Wein [v]; Dutch w [ʋ] is [v] in many southern Dutch speakers
 labial | β > w / _C, _# (vocalization in the coda) | effort | lips | 3 | Catalan: Latin bibere > *beβre > beure 'drink', debitum > deute 'debt', civitate > ciutat 'city'
+hiatus | e, ɛ > j / _V[−high] (glide formation of a mid front vowel) | prosody | tongue_body | 4 | Vulgar Latin vinea > *vinja (Appendix Probi 'vinea non vinia'; Spanish viña), palea > *palja (Italian paglia), cavea > *cavja (Italian gabbia)
+hiatus | ea > ɛː ; then eo > oː ; then oe > oː ; then ao > ɔː ; then oa > ɔː (vowel contraction) | prosody | timing | 3 | Attic Greek contraction after the loss of intervocalic s and j: *génesa > *génea > génē 'races', *genesos > géneos > génous, timáomen > timômen 'we honour' (Smyth §§50-59)
+hiatus | ∅ > j / e_V[−high], ɛ_V[−high] (hiatus glide after a front vowel) | coarticulation | tongue_body | 3 | Portuguese: Latin plēnum > Old Portuguese chẽo > cheio [ˈʃeju] 'full', cēna > cẽa > ceia 'supper', frēnum > freo > freio 'brake'
+fortition | ɾ > r / #_ (a word-initial tap becomes a trill) | effort | tongue_tip | 3 | Spanish and Portuguese: the only rhotic allowed word-initially is the trill, so Latin rosa > Spanish rosa [ˈrosa]; Catalan likewise (roda [ˈrɔðə]); Albanian
+lateral | ɾ > l (the tap merges with l) | perception | tongue_tip | 3 | Polynesian: Proto-Polynesian *r merged with *l in Hawaiian (PPn *rua 'two' > Hawaiian lua) and in Tongan loss chains; Proto-Bantu *d > l ~ ɾ in many daughters; Japanese loans show the same r ~ l perception
 """
 
 GRAM_COLUMNS = ["id", "source_concept", "target_function", "intermediate_stages", "fusion_endpoint",
@@ -374,7 +379,7 @@ def main() -> None:
         "source: WRITTEN FROM KNOWLEDGE of standard historical phonology (Campbell, Historical Linguistics; Hock 1991; "
         "Blevins 2004, Evolutionary Phonology; Kümmel 2007). The Index Diachronica (https://chridd.nfshost.com/diachronica/, a "
         "hobbyist compilation) was used only as inspiration for coverage; nothing was copied from it.",
-        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j)",
+        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j; hiatus round: S125-S127 and S205-S207 the hiatus family (fired as repairs, lect.resolve_hiatus), S126 written to parse, S175 staged; exits for the tap: S208 initial ɾ > r, S209 ɾ > l)",
         "licence: original text for this repository; examples are textbook cases.",
         f"script: {SCRIPT}",
         "rule notation: input > output / environment. V vowel, C consonant, N nasal, T voiceless stop, D voiced stop, "

@@ -87,7 +87,7 @@ def test_replacement_rate_matches_calibration(concepts):
         for t in (20.0, 19.5):
             L.step(rng, lex, n_gen / 2, inv, kyr=t)
         for c in L.CORE100:
-            same = lex.words[c] is orig[c]
+            same = lex.words[c].etym is orig[c].etym   # (roots may be re-read, `refresh_roots`)
             kept += same
             total += 1
             by_class[orig[c].freq_class][0] += same
@@ -122,7 +122,7 @@ def test_etymology_append_only_oldest_first(concepts):
         before = dict(lex.words)
         kyr = round(kyr - 0.5, 3)
         events += collections.Counter(p.split(":")[0] for _, p in L.step(rng, lex, 18, inv, contact_words={"M": other}, kyr=kyr, niche_weights={"herder": 1.0, "coast": 0.8}))
-        replaced = {k for k in before if lex.words[k] is not before[k]}
+        replaced = {k for k in before if lex.words[k].etym is not before[k].etym}
         L.apply_rule_to_lexicon(lex, _dummy_rule, "lenition.voicing", kyr)
         L.apply_rule_to_lexicon(lex, _final_vowel_loss, "apocope", kyr)
         for k, old in before.items():
@@ -285,35 +285,143 @@ def test_homophone_share_low(long_runs):
 
 
 def test_compounds_are_plausible(concepts):
-    """200 compounds: no verb ever compounds or pairs with a colour, kin terms and animals take their class head."""
+    """200 compounds: each is a recipe of data/compounds.tsv (head = the category: SKIN + TREE = bark, EYE + DAY = sun)
+    or a function word reinforced along derivations.tsv (THIS + HERE); no verb or quality without a recipe compounds."""
     rng, inv, lex = _proto(71, concepts)
     ks = sorted(lex.words)
     made = []
-    while len(made) < 200:
+    for _ in range(20000):
+        if len(made) >= 200:
+            break
         k = ks[int(rng.integers(len(ks)))]
         w = L.compound(rng, lex, k, inv, 10.0)
         if w is None:
             continue
         head, mod = w.etym[-1].process[len("compound:"):].split("+")
         made.append((k, head, mod, w))
+    assert len(made) >= 200
     for k, head, mod, w in made:
-        parts = {L.sem_class(x) for x in (k, head, mod)}
-        assert not ("verb" in parts and "colour" in parts), (k, head, mod)
-        # nouns compound; a function word only reinforced by another (THIS + HERE), data/derivations.tsv
-        assert L.concept_info(k).pos == "N" or head == k and mod in dict(L.reinforcers()[k]), (k, head, mod)
-        if L.sem_class(k) in ("person", "kin") and mod not in {L.resolve(b) for b in L.concept_info(k).base}:
-            assert L.sem_class(mod) not in ("person", "kin"), (k, head, mod)   # no MAN + HUSBAND = 'person'
-        if mod in L._QUALITY and mod not in dict(L._related(lex, k)):
-            assert L.sem_class(k) in L.SPECIES, (k, head, mod)   # no 'green land' for 'stone' (CLICS or a hint may)
+        rows = {(r.head, k if r.modifier == L.SELF else r.modifier) for r in L.compound_templates(k)}
+        assert (head, mod) in rows or head == k and mod in dict(L.reinforcers()[k]), (k, head, mod)
         _, msc, mseg = L.limits(inv)   # (the caps follow the syllable space)
         assert L.syllables(w.form) <= msc + 1 and len(w.form) <= mseg
-        if L.sem_class(k) == "animal" and "ANIMAL" in lex and k != "ANIMAL":
-            assert head in ("ANIMAL", *L.concept_info(k).base), (k, head)
-        if L.sem_class(k) == "kin":
-            assert head in ("PERSON", "MAN", "WOMAN", "MALE PERSON", *L.concept_info(k).base), (k, head)
+        if mod == k:   # a generic + specific renewal is the old word renewed: its chain and main root
+            assert w.etym[:-1] == lex[k].etym and w.roots[0] == lex[k].roots[0]
+        else:
+            assert w.etym[:-1] == lex[head].etym and w.roots[0] == lex[head].roots[0]
     assert L.compound(rng, lex, "HUNT", inv, 10.0) is None and L.compound(rng, lex, "RED", inv, 10.0) is None
+    assert not L.compound_templates("EGG") and L.compound(rng, lex, "EGG", inv, 10.0) is None   # (no recipe)
     w = L.compound(rng, lex, "MILK (SOURED)", inv, 10.0, head="MILK", modifier="SOUR")   # explicit parts still work
     assert w is not None and w.etym[-1].process == "compound:MILK+SOUR"
+
+
+def test_compound_table_is_sound(concepts):
+    """data/compounds.tsv: every row's concepts are on the list (or are crops / animals the run may lack), the head is a
+    noun-like category, a sources header, and the brief's nonsense never has a recipe (TREE + RED = fire, FOOD + TOOTH
+    = egg, TREE + YELLOW = bark)."""
+    head = [ln for ln in open(L.DATA / "compounds.tsv", encoding="utf-8") if ln.startswith("#")]
+    assert any(ln.startswith("# source:") for ln in head) and any("Urban 2012" in ln for ln in head)
+    rows = L.compound_rows()
+    assert len(rows) >= 150
+    for r in rows:
+        assert L.concept_info(r.head).pos == "N" or L.concept_info(r.head).domain == "number" or r.head in L.CORE100 \
+            and L.sem_class(r.head) == "abstract", r   # (a noun-like category; numbers for numerals)
+        assert r.weight >= 1
+    pairs = {(r.target, r.head, r.modifier) for r in rows}
+    for bad in [("FIRE", "TREE", "RED"), ("EGG", "FOOD", "TOOTH"), ("BARK", "TREE", "YELLOW"), ("GRASS", "TREE", "SHARP"),
+                ("FLOWER", "TREE", "SMALL"), ("SEED", "TREE", "BONE")]:
+        assert bad not in pairs
+    assert ("BARK", "SKIN", "TREE") in pairs and ("SUN", "EYE", "DAY (NOT NIGHT)") in pairs
+
+
+def test_compounds_only_from_templates(long_runs):
+    """Over 700 generations every compound a lect makes (not an elaboration) follows a recipe or reinforces a function
+    word, and its head is the recipe's category."""
+    n = 0
+    for lex in long_runs:
+        for w in lex.words.values():
+            for st in w.etym:
+                if not st.process.startswith("compound:") or st.lect != lex.lect:
+                    continue
+                k = L._step_concept(st, w.concept)
+                head, mod = st.process[len("compound:"):].split("+")
+                rows = {(r.head, k if r.modifier == L.SELF else r.modifier) for r in L.compound_templates(k)}
+                assert (head, mod) in rows or head == k and mod in dict(L.reinforcers().get(k, ())), (k, head, mod)
+                n += 1
+            procs = [st.process for st in w.etym if st.process.startswith("compound:")]
+            assert len(procs) == len(set(procs)), (w.concept, procs)   # (no 'deer-animal-animal', 'they-that-that')
+    assert n > 50, n
+
+
+def test_shifts_follow_attested_paths(long_runs):
+    """Every shift goes along an attested pathway or a strong same-field colexification (`shift_fits`), the accidents of
+    the shipped run never happen (DOG > MOON, EGG > NAME, SEED > EYE, TREE > FIRE), and no word shifts twice within
+    SHIFT_CHAIN_KYR."""
+    n = 0
+    for lex in long_runs:
+        for w in lex.words.values():
+            steps = [s for s in w.etym if s.process.startswith("shift:")]
+            for i, st in enumerate(steps):
+                prev = next(s for s in reversed(w.etym[:w.etym.index(st)]) if not s.process.startswith("sound_change:"))
+                src, dst = L._step_concept(prev, prev.gloss.upper()), L._step_concept(st, w.concept)
+                fam = dict(L.clics_neighbours(dst, 3)).get(src, 0)
+                assert L.shift_fits(src, dst, fam), (src, dst, fam)
+                assert (src, dst) not in {("DOG", "MOON"), ("EGG", "NAME"), ("SEED", "EYE"), ("TREE", "FIRE")}
+                if i:
+                    assert steps[i - 1].kyr - st.kyr > L.SHIFT_CHAIN_KYR - 1e-9, (w.concept, steps[i - 1], st)
+                n += 1
+    assert n > 30, n
+    for a, b in [("DOG", "MOON"), ("EGG", "NAME"), ("SEED", "EYE"), ("TREE", "FIRE"), ("EGG", "TOOTH")]:
+        fam = dict(L.clics_neighbours(b, 3)).get(a, 0)
+        assert not L.shift_fits(a, b, fam), (a, b)
+    assert L.shift_fits("TREE", "WOOD", 59) and L.shift_fits("SKY", "GOD", 6) and L.shift_fits("BELLY", "IN", 0)
+
+
+def test_roots_stop_at_opacity(concepts):
+    """`roots` are the roots a speaker feels: a fresh derivation is its base's root; past OPAQUE_KYR, after a shift or
+    as a loan the word is a root of its own (its own step); a compound has its head's and its modifier's while felt."""
+    rng, inv, lex = _proto(91, concepts, "Z")
+    base = next(k for k in sorted(lex.words) if L.inherited(lex[k]) and L.concept_info(k).pos == "V"
+                and any(r.base == k and r.target != k and r.target in lex.words for r in L.derivation_rows()))
+    tgt = next(r.target for r in L.derivation_rows() if r.base == base and r.target != base and r.target in lex.words)
+    w = L.derive(rng, lex, tgt, inv, 15.0, base=base)
+    assert w is not None
+    lex.set(w)
+    assert L.felt_roots(lex, w, 15.0) == lex[base].roots
+    assert L.felt_roots(lex, w, 15.0 - L.OPAQUE_KYR + 0.1) == lex[base].roots
+    late = L.felt_roots(lex, w, 15.0 - L.OPAQUE_KYR - 0.1)
+    assert late == (f"Z:{tgt}@15",)   # (a root of its own, made by Z at 15 kyr)
+    assert L.root_step(L.replace(w, roots=late)) is w.etym[-1]
+    # the base replaced: no longer felt even while young
+    lex.set(L.coin(rng, lex, base, inv, 14.0, how="root", store=False))
+    assert L.felt_roots(lex, w, 14.0) != lex[base].roots and L.felt_roots(lex, w, 14.0)[0].endswith(f":{tgt}@15")
+    # a compound: head's then modifier's roots while young; a shifted word is its own root
+    lex2 = _proto(92, concepts, "Y")[2]
+    c = L.compound(rng, lex2, "BARK", inv, 12.0, head="SKIN", modifier="TREE")
+    lex2.set(c)
+    assert L.felt_roots(lex2, c, 12.0) == lex2["SKIN"].roots + lex2["TREE"].roots
+    assert L.felt_roots(lex2, c, 8.0) == ("Y:BARK@12",)
+    lex2.gen = 1000.0
+    s = L.shift_word(rng, lex2, "WOOD", 11.0)
+    if s is not None:
+        assert s.roots == (f"Y:WOOD@11",) and L.felt_roots(lex2, s, 11.0) == s.roots
+
+
+def test_roots_are_felt_families(long_runs):
+    """After 700 generations every word's main root names a step of its chain, and every word-formation step after that
+    step is still transparent (younger than OPAQUE_KYR): no 'egg' or 'eye' in the family of 'tree' through old or
+    shifted links."""
+    for lex in long_runs:
+        kyr = min(s.kyr for w in lex.words.values() for s in w.etym)
+        for w in lex.words.values():
+            assert w.roots == L.felt_roots(lex, w, kyr), w.concept
+            st = L.root_step(w)
+            i = w.etym.index(st)
+            for s in w.etym[i + 1:]:
+                p = s.process.split(":")[0]
+                assert p in ("sound_change", "derive", "compound", "elaborate", "taboo"), (w.concept, s.process)
+                if p != "sound_change" and not (p == "derive" and L.is_renewal(s)):
+                    assert s.kyr - kyr <= L.OPAQUE_KYR + 1e-9, (w.concept, s)
 
 
 def test_derive_clips_long_base(concepts):
@@ -329,9 +437,8 @@ def test_derive_clips_long_base(concepts):
 
 def test_shift_at_most_once_per_gap(concepts):
     rng, inv, lex = _proto(73, concepts)
-    k = next(c for c in sorted(lex.words) if lex[c].pos == "N"
-             and any(n in lex.words and lex[n].pos == "N" for n, _ in L.clics_neighbours(c, L.BUILD_MIN_FAMILIES)))
     lex.gen = 100.0
+    k = next(c for c in sorted(lex.words) if lex[c].pos == "N" and L.shift_candidates(lex, c, 5.0))
     old = lex[k]
     w = L.shift_word(rng, lex, k, 5.0)
     assert w is not None and w.etym[-1].process.startswith("shift:")
@@ -370,7 +477,7 @@ def test_stats_and_state_round_trip(concepts):
 
 def test_coinage_does_not_swamp_derivation(long_runs):
     """A replacement falls back to the next plausible source (derive along the table, compound, colexification shift,
-    the word's own diminutive or frequentative, a weaker CLICS shift, a loan when a contact lect has the word) before
+    the word's own diminutive or frequentative, a loan when a contact lect has the word) before
     a fresh root: over 700 generations with a contact lect, coinage is well under 15% of the replacements (the review of
     run a24559 measured ~33%), and no affix stands on much more than AFFIX_CAP of the words (renewals aside)."""
     tot = collections.Counter()

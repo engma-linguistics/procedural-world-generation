@@ -1,5 +1,5 @@
 ---
-title: "languages.json is 140 MB and the pass takes 15 minutes on a24559: thin it into sidecars and fix the three hot spots before it joins every peoples run"
+title: "languages.json is about 150 MB and the pass takes 15+ minutes on a24559: thin it into sidecars and fix the three hot spots before it joins every peoples run"
 type: task
 status: todo
 parent: PW-767
@@ -13,7 +13,7 @@ refs: [planet/language/output.py, planet/language/history.py, planet/language/pe
 ---
 
 ## Description
-In plain words: the language pass writes one 140 MB file per run (target was 40-60 MB) and takes about 15 minutes with
+In plain words: the language pass writes one ~150 MB file per run (149 MB after the 11-04 rounds; the felt-roots table doubled the root entries) (target was 40-60 MB) and takes about 15 minutes with
 12 workers (steps 560 s, inventory observation 55 s). The viewer copes (1.3-2 s load on this machine) and `output.save`
 only calls the pass through a guarded hook, but if this is never done every peoples run grows by 15 minutes and 140 MB, the
 viewer gets slow on a laptop, and the file is too big to keep several runs around for the "across seeds" check.

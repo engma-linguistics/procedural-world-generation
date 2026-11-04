@@ -230,3 +230,27 @@ def test_two_allophones_of_one_phoneme_must_not_share_an_environment():
     segs = list(dict.fromkeys(s for f in forms for s in f))
     al = I.phonemic(forms, segs)
     assert sum(1 for x in ("ɡ", "ɣ") if al.get(_seg(x), (None,))[0] == _seg("k")) == 1
+
+
+def test_legal_rejects_vowel_runs_and_initial_geminates(draws):
+    """No run of three vowels, no two vowels of one quality (that is a long vowel), no word-initial geminate; repair
+    resolves them by fusion, glide formation or elision (Casali 1997)."""
+    inv = next(d for d in draws if not d.onset_required and from_ipa("j")[0] in d.consonants
+               and {from_ipa(v)[0] for v in "aeiou"} <= set(d.vowels) and not d.tones)
+    for bad in ("kaa", "kaiea", "ppa", "kioua"):
+        assert not I.legal(tuple(from_ipa(bad)), inv), bad
+        r = I.repair(tuple(from_ipa(bad)), inv)
+        assert I.legal(r, inv) and I._vowel_trouble(r) is None and not I._initial_geminate(r), (bad, to_ipa_word(r))
+    assert to_ipa_word(I.repair(tuple(from_ipa("kiao")), inv)) in ("kjao", "kao", "kio", "kijao")
+    assert I.hiatus_in(tuple(from_ipa("kai"))) == 0 and I.hiatus_in(tuple(from_ipa("kia"))) == 1
+    assert I.hiatus_in(tuple(from_ipa("kaia"))) == 1
+
+
+def test_fuse_vowels():
+    """Identical vowels side by side are one: long where the lect has long vowels, short where not; two level tones make a
+    contour (H + L falling, L + H rising)."""
+    f = lambda s, lo=True: to_ipa_word(I.fuse_vowels(tuple(from_ipa(s)), lo))   # noqa: E731
+    assert f("kaa") == "kaː" and f("kaa", False) == "ka" and f("kaaa") == "kaː" and f("kaːa", False) == "kaː"
+    assert f("kai") == "kai" and f("kãa") == "kãː"
+    hl = I.fuse_vowels(tuple(from_ipa("ka˦a˨")))
+    assert len(hl) == 2 and hl[1].tone == 5 and I.fuse_vowels(tuple(from_ipa("ka˨a˦")))[1].tone == 4

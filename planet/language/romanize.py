@@ -63,9 +63,18 @@ def merged(a: str, b: str, contrasts: Iterable[str] | None = None) -> bool:
     a, b = bare(a), bare(b)
     if a == b or any(a in m and b in m for m in MERGES):
         return True
+    sa, sb = _split_shifts(a), _split_shifts(b)  # a shifted vowel keeps its mark: merged when the bases are and the marks agree
+    if (sa[1] or sb[1]) and sa[1] == sb[1] and merged(sa[0], sb[0]):
+        return True
     if contrasts is None:
         return False
     return _canonical(a, frozenset(contrasts)) == _canonical(b, frozenset(contrasts))
+
+
+def _split_shifts(ipa: str) -> tuple[str, str]:
+    d = unicodedata.normalize("NFD", ipa)
+    return (unicodedata.normalize("NFC", "".join(c for c in d if c not in _VOWEL_SHIFTS)),
+            "".join(sorted(c for c in d if c in _VOWEL_SHIFTS)))
 
 
 def _canonical(ipa: str, contrasts: frozenset) -> tuple:
@@ -85,7 +94,8 @@ def _canonical(ipa: str, contrasts: frozenset) -> tuple:
         k = _base_key(seg)
         built_in = seg.kind == "C" and seg.secondary and k != unicodedata.normalize("NFC", to_ipa(core(seg)))
         mods = replace(seg, **{a: 0 for a in quality}, **({"secondary": 0} if built_in else {}))
-        out.append((rep.get(k, k), mods))
+        kb, km = (k, "") if k in table() else _split_shifts(k)
+        out.append((rep.get(kb, kb) + km, mods))
     return tuple(out)
 
 
@@ -235,9 +245,18 @@ def _base_spelling(c: Segment, asp: bool, contrasts: set[str]) -> str:
             ai = unicodedata.normalize("NFC", to_ipa(alv))
             if ai in t:
                 return ("h" if not c.voice else "") + _mark_first_letter(t[ai][1 if asp else 0], "̪" if "dental" in contrasts else "")
+    if c.kind in "VC":  # a sound with an IPA mark for a small shift (ʌ̞ ɨ̠ ɑ̟ ɟ̟): the base sound's spelling carrying the same mark
+        base = "".join(ch for ch in unicodedata.normalize("NFD", ipa) if ch not in _VOWEL_SHIFTS)
+        marks = "".join(ch for ch in unicodedata.normalize("NFD", ipa) if ch in _VOWEL_SHIFTS)
+        if marks and base != ipa:
+            segs = from_ipa(unicodedata.normalize("NFC", base))
+            if len(segs) == 1 and segs[0].kind == c.kind:
+                return _mark_first_letter(_base_spelling(segs[0], asp, contrasts), marks)
     return ipa  # no house spelling: the IPA itself (non-human and very rare sounds)
 
 
+# IPA marks that shift a vowel a little (raised lowered advanced retracted, more or less rounded): kept as the mark in full mode
+_VOWEL_SHIFTS = frozenset("̝̞̠̟̹̜̥")
 # where a doubled letter spells a sound of its own (ll = ɫ, hh = ɦ), the long single letter takes a middle dot (Catalan l·l)
 _DOUBLED_TAKEN = {"dark_l": "l", "breathy_h": "h"}
 # non-human percepts (table header): ASCII marks after the sound

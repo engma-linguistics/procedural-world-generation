@@ -5,6 +5,7 @@
 # columns: relation = the affix meaning (agent 'one who', thing 'instrument / result / object', place 'place of', little 'small / young / diminutive', like 'X-like, having X', do 'make / do X, verb from a noun or quality', cause 'make (someone) V'), or reinforce (a function word renewed by compounding with the base: Latin ecce + iste > French ce 'this'; the Jespersen cycle, Old English na-wiht 'no thing' > not); base and target = concept ids of planet/language/lexicon.py; weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the bare motivation.
 # A target may sit on several rows; derivation picks among the rows whose base the lexicon has. Only these pairs derive (plus two renewals in lexicon.py: the expressive diminutive, lexicon.RENEW_LITTLE, a noun or quality replaced by its own diminutive: Latin auricula > French oreille 'ear', avicellus > oiseau 'bird', soliculus > soleil 'sun', vetulus > vieux 'old', novellus > nouveau 'new'; and the frequentative or preverb renewal of verbs, lexicon.RENEW_INTENS: Latin canere > cantare 'sing', iacere > iactare 'throw', edere > comedere > Spanish comer 'eat').
 # Content words from function words are kept to three rows of weight 1 (STRANGER < OTHER / FAR is a quality); function words derive among themselves (here < this + place).
+# shift rows (2026-11-04, compounds and shifts round): base > target = a semantic shift (the target concept takes the base's word) attested across families although the two concepts sit in different semantic fields (lexicon.shift_word otherwise allows a shift only along a CLICS3 colexification of >= 6 families, >= 10 for the core vocabulary, inside one concepts.tsv / CLICS3 semantic field and part of speech). Polysemies listed both ways where both directions are attested; sources: Buck 1949, Wilkins 1996 (Natural tendencies of semantic change and the search for cognates, in Durie & Ross eds., The Comparative Method Reviewed), Sweetser 1990 (From Etymology to Pragmatics: SEE > KNOW, HEAR > KNOW), Heine & Kuteva 2002 (World Lexicon of Grammaticalization: the content > function word rows, BELLY > IN, WITH > AND, ONE > SOME), Urban 2012, CLICS3 family counts. A pathway may cross parts of speech (grammaticalization); other shifts may not.
 relation	base	target	weight	example
 agent	HUNT	HUNTER	3	English hunt-er; Latin venator < venari 'hunt'
 agent	FIGHT	FIGHTER	3	English fight-er; Latin pugnator < pugnare
@@ -212,3 +213,45 @@ reinforce	THAT	HE	1	'that one'
 reinforce	THAT	THEY	1	'those ones'
 reinforce	OTHER	WE	1	Spanish nosotros < nos + otros 'we others'
 reinforce	OTHER	YOU	1	'you others' (Spanish vosotros < vos + otros)
+shift	TREE	WOOD	3	Buck 1949 1.42/1.43: Old English treow 'tree, wood', Russian drevo/drova; CLICS3 59 families
+shift	WOOD	TREE	3	Latin lignum; Malay kayu 'wood, tree'; CLICS3 59 families
+shift	STICK	TREE	1	CLICS3 23 families (tree ~ stick)
+shift	TREE	STICK	1	CLICS3 23 families
+shift	TREE	FOREST	2	Old Irish fid 'tree, wood, forest'; CLICS3 9 families
+shift	FOREST	TREE	1	CLICS3 9 families
+shift	WOOD	FOREST	2	English wood 'forest'; German Holz 'wood, copse'
+shift	FOREST	WOOD	1	CLICS3 5 families
+shift	SKIN	BARK	3	Wilkins 1996 (skin > bark); CLICS3 49 families
+shift	BARK	SKIN	2	CLICS3 49 families
+shift	SUN	DAY (NOT NIGHT)	3	Latin sol/dies, Malay hari 'sun; day'; Wilkins 1996; CLICS3 31 families
+shift	DAY (NOT NIGHT)	SUN	2	Malay hari; CLICS3 31 families
+shift	BREAST	MILK	3	Malay susu 'breast; milk'; CLICS3 26 families
+shift	MILK	BREAST	2	CLICS3 26 families
+shift	FRUIT	SEED	2	CLICS3 15 families
+shift	SEED	FRUIT	2	CLICS3 15 families
+shift	TONGUE	LANGUAGE	3	Latin lingua, Greek glossa, Russian jazyk 'tongue; language'; CLICS3 13 families
+shift	MOUTH	LANGUAGE	1	CLICS3 7 families ('mouth' = speech)
+shift	SKY	GOD	2	PIE *dyew- 'sky' > *deywos 'god' (Latin deus); Turkic tengri 'sky; god'; CLICS3 6 families
+shift	SUN	GOD	1	CLICS3 5 families
+shift	BREATH	SPIRIT	3	Latin spiritus, anima; Greek pneuma; Hebrew ruach; CLICS3 6 families
+shift	WIND	SPIRIT	1	Hebrew ruach 'wind, breath, spirit'
+shift	SEE	KNOW (SOMETHING)	3	PIE *weyd- 'see' > Greek oida 'know'; Sweetser 1990; CLICS3 15 families
+shift	HEAR	KNOW (SOMETHING)	1	Sweetser 1990 (hear > understand); CLICS3 13 families
+shift	HAND	FIVE	2	Wilkins 1996 / Urban 2012: 'hand' > 'five' (Austronesian lima); CLICS3 5 families
+shift	SALT	SEA	1	Greek hals 'salt; sea'; CLICS3 9 families
+shift	SEA	SALT	1	CLICS3 9 families
+shift	FAT (ORGANIC SUBSTANCE)	fuel:oil	3	Latin oleum / adeps; CLICS3 35 families (fat ~ oil)
+shift	fuel:oil	FAT (ORGANIC SUBSTANCE)	2	CLICS3 35 families
+shift	DUST	EARTH (SOIL)	1	CLICS3 14 families
+shift	EARTH (SOIL)	DUST	1	CLICS3 14 families
+shift	BELLY	IN	3	Heine & Kuteva 2002 STOMACH > IN (Swahili ndani < ndani 'interior', Mixtec 'belly' = in)
+shift	SIT	AT	1	Heine & Kuteva 2002 'be at, stay' > LOCATIVE (Mandarin zai 'be at' > 'at')
+shift	TAKE	WITH	1	Heine & Kuteva 2002 TAKE > INSTRUMENTAL
+shift	HOLD	WITH	1	Heine & Kuteva 2002 'hold, take' > INSTRUMENTAL / COMITATIVE
+shift	WITH	AND	3	Heine & Kuteva 2002 COMITATIVE > NP-AND (Swahili na 'with, and')
+shift	SAY	BECAUSE	1	Heine & Kuteva 2002 SAY > CAUSE
+shift	ONE	SOME	2	Heine & Kuteva 2002 ONE > INDEFINITE; CLICS3 7 families
+shift	FEW	SOME	2	CLICS3 18 families
+shift	MANY	ALL	2	CLICS3 17 families
+shift	ALL	MANY	1	CLICS3 17 families
+shift	TWO	OTHER	1	'second' > 'other' (Latin alter, English other < 'second of two')

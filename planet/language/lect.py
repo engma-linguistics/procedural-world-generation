@@ -16,6 +16,7 @@ import numpy as np
 
 from . import lexicon as LX
 from . import rules as RU
+from .inventory import fuse_vowels, hiatus_count, hiatus_in  # noqa: F401 (hiatus helpers, shared with repair)
 
 RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
 RATE_SIGMA = 0.3  # lognormal sigma of a proto lect's rate
@@ -77,6 +78,18 @@ HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
 # REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr)
 LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
+# Hiatus (2026-11-04, hiatus round). Consonant losses (h > ∅, j > ∅ / V_V, w > ∅, ð ɣ > ∅) leave vowels side by side, and
+# languages resolve such hiatus fast (Casali 1997, 2011): identical vowels fuse (normalize, below), and a change that leaves
+# new hiatus in the lect's words is followed at once by HIATUS_REPAIRS firing(s) of the catalogue's hiatus family
+# (S125-S127, S205-S207: glide formation, V1 elision, contraction, glide epenthesis; resolve_hiatus). Which repair a line
+# uses is its strategy: the row's weight x a lognormal preference of sigma HIATUS_SPREAD keyed by the line (inherited).
+# A falling diphthong (a non-high vowel + a short high one: ai, au, ei, ou) is not hiatus.
+# HIATUS_REPAIRS 3 / HIATUS_MIN 1 cost the sisters check 0.06 (every small hiatus repaired, two or three repairs a change);
+# one repair once a change leaves HIATUS_MIN new junctions keeps three-vowel runs under 2% at half the divergence.
+HIATUS_REPAIRS = 1
+HIATUS_MIN = 8  # new hiatus junctions (over the lexicon) a change must leave before it is repaired
+HIATUS_SPREAD = 1.0
+HIATUS_SAMPLE = 80  # hiatus words a candidate repair is tried on
 TONE_MIN_MARKED = 0.3  # tone phonemicizes only once marks stand on this share of the core-list vowels (else they are stripped)
 GLOTTAL = None  # (ʔ, set on first use)
 
@@ -118,22 +131,25 @@ def catalogue_for(profile, key: str) -> list:
 
 
 def filtered_apply(rule, stress, segments, inventory=None):
-    """rules.apply for one rule, skipping (unchanged) every form that holds none of the rule's target segments among
-    `segments` (an insertion, target None, runs on every form)."""
+    """rules.apply for one rule, then normalize, skipping (unchanged) every form that holds none of the rule's target
+    segments among `segments` (an insertion, target None, runs on every form). Fused vowels are long when `segments` hold a
+    long vowel."""
     tgt = None if rule.target is None else frozenset(x for x in segments if rule.target(x))
+    long_ok = any(x.kind == "V" and x.length for x in segments)
 
     def fn(f, stem_index=0):
         if tgt is not None and tgt.isdisjoint(f):
             return f
-        return normalize(RU.apply(rule, f, stress, stem_index=stem_index, inventory=inventory))
+        return normalize(RU.apply(rule, f, stress, stem_index=stem_index, inventory=inventory), long_ok)
     return fn
 
 
-def normalize(f: tuple) -> tuple:
+def normalize(f: tuple, long_ok: bool = True) -> tuple:
     """Driver-side phonetic tidy of a rule's output: a voiceless consonant left with breathy phonation (a devoiced bʱ, a
     breathy-voiced p) is an aspirated one (kʱ{voice=0} > kʰ), as in the Indic and Greek devoicings; a voiced consonant both
     aspirated and breathy (dʰʱ) is the breathy-voiced one (dʱ, the Indic "voiced aspirate"); a segment the house notation can
-    only write malformed (doubled diacritics, feature braces) is heard as its nearest symbol-table segment (tidy_segment)."""
+    only write malformed (doubled diacritics, feature braces) is heard as its nearest symbol-table segment (tidy_segment);
+    two vowels of one quality side by side are one vowel (fuse_vowels); a word-initial geminate is a single consonant."""
     out = []
     ch = False
     for x in f:
@@ -142,11 +158,19 @@ def normalize(f: tuple) -> tuple:
             y = _TIDY[x] = tidy_segment(x)
         ch |= y is not x
         out.append(y)
-    return tuple(out) if ch else f
+    g = fuse_vowels(tuple(out) if ch else f, long_ok)
+    # (an initial geminate simplifies: S035's degemination, where geminates are least stable)
+    if len(g) > 2 and g[0].kind == "C" and (g[0] == g[1] or g[0].length):
+        g = g[1:] if g[0] == g[1] else (replace(g[0], length=0),) + g[1:]
+    return g
+
+
 
 
 _TIDY: dict = {}
 _TABLE: dict = {}
+_PREF: dict = {}
+_HIATUS_ROWS: dict = {}
 
 
 def table_segments(kind: str) -> list:
@@ -308,6 +332,7 @@ class Lect:
     fired: dict = field(default_factory=dict)  # catalogue rule id -> [kyr it fired, ...] (own and inherited: the re-fire memory)
     glottal_phonetic: bool = False  # ʔ came only from prothesis (S042) in a lect without ʔ: not a phoneme (kept out of the inventory)
     minority: bool = False  # an old lect still spoken by part of its deme after the deme shifted (lives until its share < 0.1)
+    hiatus_key: str = ""  # the line whose hiatus strategy this lect keeps (resolve_hiatus; its proto's id, inherited)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -322,7 +347,7 @@ class Lect:
                     inventory=_copy_inv(self.inventory), lexicon=self.lexicon.copy(new_id) if self.lexicon is not None else None,
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
-                    glottal_phonetic=self.glottal_phonetic)
+                    glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id)
 
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
@@ -343,7 +368,7 @@ class Lect:
             return frozenset()
         return frozenset(_unit(x) for x in self.segments() if x.kind in ("C", "V"))
 
-    def weighted_rules(self, rules) -> list:
+    def weighted_rules(self, rules, cache: bool = True) -> list:
         """The catalogue weighted for this lect's sounds (cached per segment set and stop-share bin): rule_factor (new
         segments, ease drag, stop steer, inventory size)."""
         segs = frozenset(self.segments())
@@ -353,7 +378,7 @@ class Lect:
         from . import profiles as PR
         hv = PR.human_voiced(self.profile)
         sb = stop_bin(stop_share(self.load_forms())) if hv and self.lexicon is not None else None
-        hit = getattr(self, "_rw", None)
+        hit = getattr(self, "_rw", None) if cache else None
         if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == (counts, sb):
             return hit[2]
         units = frozenset(_unit(x) for x in segs)
@@ -366,7 +391,8 @@ class Lect:
             if hv and f > 0:
                 f *= keep_part(r, segs, forms, stress_of(inv))
             out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
-        self._rw = (rules, segs, out, (counts, sb))
+        if cache:
+            self._rw = (rules, segs, out, (counts, sb))
         return out
 
     def cap_inventory(self, kyr: float) -> int:
@@ -428,8 +454,10 @@ class Lect:
         if not mapping:
             return 0
 
+        long_ok = any(x.kind == "V" and x.length for x in segs)
+
         def fn(f, stem_index=0, m=mapping):
-            return tuple(m.get(y, y) for y in f)
+            return normalize(tuple(m.get(y, y) for y in f), long_ok)
         what = ", ".join(sorted({f"{to_ipa(_unit(a))} > {to_ipa(_unit(b))}" for a, b in mapping.items()}))
         rid = "simplification"
         self.touch()
@@ -497,8 +525,71 @@ class Lect:
             _sync_inventory(self, getattr(self, "_last_kyr", None))
             self._dirty = False
 
-    def apply_rule(self, rule, kyr: float, origin: str | None = None) -> int:
-        """Run one sound change over every stored form; record it. Returns words changed."""
+    def apply_rule(self, rule, kyr: float, origin: str | None = None, repair: bool = False) -> int:
+        """Run one sound change over every stored form; record it. A change that leaves new hiatus is followed by its repair
+        (resolve_hiatus; `repair` marks such a follow-up, which is not repaired again). Returns words changed."""
+        pre = None
+        if not repair and self.lexicon is not None:
+            pre = {c: w.form for c, w in self.lexicon.words.items()}
+        n = self._apply_rule(rule, kyr, origin)
+        if n and pre is not None:
+            self.resolve_hiatus(kyr, origin, pre)
+        return n
+
+    def resolve_hiatus(self, kyr: float, origin, pre: dict) -> int:
+        """After a change, while the lect's words hold more hiatus than before it (hiatus_count, over the lexicon), fire the
+        hiatus repair the line prefers (hiatus_pool: weight x hiatus_pref) among those that reduce the hiatus of the words
+        that have it and do not simply undo the change (put most changed words back), at most HIATUS_REPAIRS times. Each
+        firing is an ordinary recorded change (its own id and cause), outside the re-fire memory. Returns repairs fired."""
+        h0 = hiatus_count(pre.values())
+        fired = 0
+        for k in range(HIATUS_REPAIRS):
+            now = {c: w.form for c, w in self.lexicon.words.items()}
+            if hiatus_count(now.values()) - h0 < (HIATUS_MIN if k == 0 else 1):
+                break
+            sample = [f for f in now.values() if hiatus_in(f)][:HIATUS_SAMPLE]
+            back = [(pre[c], f) for c, f in now.items() if c in pre and pre[c] != f and hiatus_in(f)][:HIATUS_SAMPLE]
+            segs = self.all_segments()
+            stress = stress_of(self.inventory)
+            best = None
+            for r in self.hiatus_pool():
+                fn = filtered_apply(r, stress, segs, self.inventory)
+                gain = 0
+                for f in sample:
+                    gain += hiatus_in(f) - hiatus_in(fn(f))
+                if gain <= 0:
+                    continue
+                if back and 2 * sum(1 for p, f in back if fn(f) == p) > len(back):
+                    continue
+                sc = r.weight * self.hiatus_pref(r)
+                if best is None or sc > best[0]:
+                    best = (sc, r)
+            if best is None or self._apply_rule(best[1], kyr, origin, remember=False) == 0:
+                break
+            fired += 1
+        return fired
+
+    def hiatus_pool(self) -> list:
+        """The catalogue's hiatus repairs (family "hiatus") as this lect weights them (weighted_rules), re-fire memory
+        aside."""
+        rules = catalogue_for(self.profile, self.profile_key)
+        hs = _HIATUS_ROWS.get(id(rules))
+        if hs is None or hs[0] is not rules:
+            hs = _HIATUS_ROWS[id(rules)] = (rules, [r for r in rules if r.family == "hiatus"])
+        return [r for r in self.weighted_rules(hs[1], cache=False) if r.weight > 0]
+
+    def hiatus_pref(self, rule) -> float:
+        """The line's standing preference for a hiatus repair: a lognormal (sigma HIATUS_SPREAD) keyed by the line
+        (hiatus_key) and the rule, so daughters resolve hiatus as their parent did."""
+        key = (self.hiatus_key or self.id) + "|" + base_id(rule.id)
+        v = _PREF.get(key)
+        if v is None:
+            import zlib
+            z = float(np.random.default_rng(zlib.crc32(key.encode("utf-8"))).normal())
+            v = _PREF[key] = math.exp(HIATUS_SPREAD * z)
+        return v
+
+    def _apply_rule(self, rule, kyr: float, origin: str | None = None, remember: bool = True) -> int:
         self._last_kyr = float(kyr)
         segs0 = self.all_segments()
         memo = getattr(self, "_step_pairs", None)
@@ -525,7 +616,8 @@ class Lect:
                 memo[1].append((x, o[0]))
         if (rule.id.startswith("dispersion.") or "/" in rule.id) and rule.id not in self.rule_text:
             self.rule_text[rule.id] = RU.describe(rule)
-        self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
+        if remember:  # (a hiatus repair is not drawn, so it keeps no re-fire memory)
+            self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
         if base_id(rule.id) == "S042" and not had_glottal and not self.glottal_phonetic:
             self.glottal_phonetic = True
         self.rules_applied += 1

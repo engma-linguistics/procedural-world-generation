@@ -136,6 +136,10 @@ long consonant tail, as in PHOIBLE (Nama, Zulu, !Xóõ).
 
 `draw_word(rng, inv, syllables=None) -> Word`, `repair(word, inv) -> Word` (make a word fit the phonotactics with the
 cheapest edit: epenthesis of the inventory's commonest high vowel, cluster simplification, coda deletion).
+`legal` also rejects two vowels of one quality side by side (a long vowel), a run of three vowels and a word-initial
+geminate (2026-11-04, hiatus round); `repair` resolves them first (`_resolve_vowels`: fusion, long when the lect has that
+long vowel; a high vowel in the run to its glide when the lect has j or w; else V1 elision), so coinages, compounds,
+derivations and loans come out without them.
 
 **Phonemes and allophones** (2026-11-04). `observed(inv, forms)` lists only phonemes in `consonants` / `vowels`;
 `inv.allophones` maps each allophone to `(phoneme or None, test)`. `phonemic(forms, segs)` is the standard test
@@ -189,6 +193,16 @@ class Rule:
   weights and of the wave's ease factor. Catalogue sinks (one-way paths into ʔ, ɲ, ʋ) were balanced in the same round with
   conditioned creators and attested exits (calibration.md "Sinks round"); twins of a change drawn under two ids are listed
   in `rules.SAME_AS` and drawn once.
+- **Hiatus** (2026-11-04, hiatus round; calibration.md "Hiatus round"). Two driver-side repairs, after Casali 1997, 2011
+  (hiatus is resolved fast and nearly everywhere). (1) `lect.normalize` (run on every rule output and every fold) fuses two
+  vowels of one quality into one (`inventory.fuse_vowels`: long when the lect has a long vowel, short when not; two level
+  tones fuse to a contour) and simplifies a word-initial geminate. (2) `Lect.apply_rule`: a change that leaves more hiatus
+  in the lexicon than before it (`inventory.hiatus_in`: adjacent vowels that are not a falling diphthong, a non-high vowel
+  + a short high one) is followed by up to `HIATUS_REPAIRS` (3) firings of the catalogue's hiatus family (S125-S127,
+  S205-S207: hiatus glides, V1 elision, glide formation, Attic contraction, Portuguese j-epenthesis), each the candidate
+  with the highest weight x line preference (`hiatus_pref`: a lognormal, sigma `HIATUS_SPREAD` 1, keyed by the line's
+  proto, `Lect.hiatus_key`, so daughters keep their parent's strategy) among those that reduce the hiatus of the words that
+  have it and do not put most changed words back. Repairs are recorded changes, outside the re-fire memory.
 - `apply(rule, word) -> Word`, left to right, regular, on a tuple of Segments; `applies(rule, inv) -> bool` (the lect has
   a target segment).
 - `pick_rule(rng, lect) -> Rule | None`: weighted by `weight`, then vetoed by functional load: estimate the mergers the rule
@@ -237,8 +251,8 @@ Per-generation lexical events on a lect (`lexicon.step(rng, lect, gen_rate)`):
   The replacement source is drawn from `SOURCES` (2026-11-04): derive along the table 0.36, compound 0.22, renew 0.12,
   colexification shift from a CLICS neighbour 0.10, borrow from a contact lect 0.12 (only when one has the word), taboo
   0.05 (animals and dangerous concepts only), a fresh root 0.03. A source that cannot make a word falls back to the next
-  plausible one: derive, compound, shift, renew, a shift along a weaker CLICS edge (3-4 families), a loan
-  (`BORROW_FALLBACK` 0.5 when a contact lect has the word), and only then a fresh root. `Lexicon.counts` tallies the
+  plausible one: derive, compound, shift, renew, a loan (`BORROW_FALLBACK` 0.5 when a contact lect has the word), and
+  only then a fresh root (the weaker 4-family shift fallback was dropped 2026-11-04, compounds and shifts round). `Lexicon.counts` tallies the
   sources used (lineage totals, in `stats.replacements`).
 - **derivation is table-driven** (`data/derivations.tsv`, 2026-11-04): rows `relation, base, target, weight, example`,
   relation = the affix meaning: agent 'one who' (HUNT > HUNTER), thing 'instrument / result / object' (CUT > KNIFE,
@@ -258,9 +272,23 @@ Per-generation lexical events on a lect (`lexicon.step(rng, lect, gen_rate)`):
   (3) morphemes; a compound of two parts may hold MAX_MORPHEMES in all. So a lexicalised word (burden, no longer bear +
   -th) is a simple root again and may take new affixes, and nothing accretes past two live affixes. `AFFIX_CAP` (0.08)
   limits each affix to that share of the words whose outermost formation step it is (`affix_share`).
-- **compounds** (2026-11-04): the modifier is a CLICS neighbour or a base hint; plain qualities only for species
-  (`SPECIES`: animals, plants, foods); a person or kin term takes no person or kin modifier from CLICS (MAN + HUSBAND =
-  'person' is gone); same-class random modifiers are gone.
+- **compounds come only from recipes** (2026-11-04, compounds and shifts round): `data/compounds.tsv` (~200 rows: target,
+  head, modifier, weight, example; sources in its header: Urban 2012, Brown 1976/1999, Witkowski & Brown, Buck 1949, WOLD,
+  the Southeast Asian generic + specific compounds; CLICS3 counts of (target, head) and (target, modifier) added at load).
+  The head is the category the target is a kind or part of: SKIN + TREE = bark, HAIR + BIRD = feather, EYE + DAY = sun,
+  EYE + WATER = spring, CHILD + WOMAN = girl, MOTHER + BIG = grandmother, FIVE + ONE = six, DOG + BIG = horse; modifier
+  `SELF` is the target's own word (a generic + specific renewal, Thai plaa-X, rein-deer: it carries the old word's chain
+  and root). The ELABORATIONS table is the recipe of the elaborated concepts (MILK + SOUR); function words are reinforced
+  along derivations.tsv's 'reinforce' rows, never twice with the same reinforcer while it is felt. A concept with no
+  recipe (EGG, FLOWER, TREE, verbs, qualities) never compounds; its replacement comes from the other sources.
+- **semantic shifts** (same round): along a CLICS3 colexification of >= `SHIFT_MIN_FAMILIES` (5) families,
+  `SHIFT_MIN_CORE` (6) for the Swadesh-100 and frequency classes 1-2, between concepts of one semantic field
+  (concepts.tsv, else CLICS3's field for the gloss) and part of speech; or along an attested pathway of derivations.tsv's
+  `shift` rows (42: TREE > WOOD, SKIN > BARK, SKY > GOD, BREATH > SPIRIT, SEE > KNOW, HAND > FIVE, and grammaticalization
+  BELLY > IN, WITH > AND, ONE > SOME; Buck, Wilkins 1996, Sweetser 1990, Heine & Kuteva 2002). A word shifted within
+  `SHIFT_CHAIN_KYR` (3) is not taken again (`shift_candidates`, `shift_fits`). DOG ~ MOON, EGG ~ NAME, SEED ~ EYE,
+  TREE ~ FIRE are no longer paths. `RENEW_LITTLE` also covers tools, plants and kin (couteau < cultellus, abuelo <
+  aviolus).
 - **elaboration**: when a concept's weight in the deme's life passes a threshold (herder: milk words; coast: fish words;
   farmer: crop-stage words; from `inputs.md` niches), split it with a derived or compound word.
 - **borrowing on arrival**: `borrow(word, from_lect, to_lect, kyr, route_note)` = `hear_word` + repair + an `EtymStep`
@@ -272,10 +300,15 @@ on the proto's list is built from it with `PROTO_DERIVE[freq class]` (1: 0.15, 2
 ELDER, BABY, GIRL, BOY, KNIFE, AXE, NEEDLE, SPEAR, CUP, BURDEN, SEAT, BED, CAMP, GRAVE, STREAM, POND, PEBBLE, TWIG, PUPPY,
 CHICK, SONG, DREAM, BREATH, GIFT, HEAT), in passes so a base may itself be derived (up to MAX_AFFIXES); the rest are simple
 roots. About 22% of a proto's words are derived (11% of the core 100: core Swadesh items are mostly simple roots), so a
-root such as FIRE has BURN, COOK, HEARTH, HOT, RED among its words. Every word carries `roots`: `"<proto lect>:<CONCEPT>"` for
-a proto root (the root's meaning is the concept's), `"<lect>:<CONCEPT>@<kyr>"` for a later fresh coinage; derivation,
-taboo, shift, loan and substrate keep the base's roots, a compound has its head's then its modifier's, sound change keeps
-them. Daughters inherit the families and add members (a new derivation from an inherited word joins its root's family).
+root such as FIRE has BURN, COOK, HEARTH, HOT, RED among its words. Every word carries `roots`, the roots a speaker still feels (`felt_roots`, re-read
+after every `step` by `refresh_roots`; 2026-11-04, compounds and shifts round): a transparent derivation or taboo
+paraphrase has its base's roots, a transparent compound its head's then its modifier's (a part replaced since is not
+felt), a renewal keeps the word's own. A word is a root of its own from the step a speaker no longer analyses: a proto
+root, a coinage, a derivation or compound older than OPAQUE_KYR, a shift away from the old meaning, a loan, a substrate
+word. Ids: `"<proto lect>:<CONCEPT>"` for a word of the proto (made at its date), else `"<lect>:<CONCEPT>@<kyr>"` of that
+step; `root_step(w)` finds the step (output.py's root table points there). Daughters inherit the families while they are
+felt: a proto derivation is its own root once older than 3 kyr, so living lects' families are their recent derivations
+and compounds on inherited roots.
 The chain itself records the root too: a derived word's chain begins with its base's chain, so its first step is the
 root's (proto, coin) step.
 

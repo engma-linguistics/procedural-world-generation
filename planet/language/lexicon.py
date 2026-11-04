@@ -97,8 +97,19 @@ MAX_SEG = 12                  # and no new word is longer than this many segment
 LN_SIGMA_REF = 7.7      # median ln sigma of 300 human draw_inventory() protos (quartiles 6.7 and 8.6)
 LENGTH_EXP = 0.7
 LENGTH_SCALE_RANGE = (0.7, 2.0)
-BUILD_MIN_FAMILIES = 5        # CLICS edges a new word is built or shifted along (3-4 families is mostly chance)
+BUILD_MIN_FAMILIES = 5        # CLICS edges a derivation's weight is joined with (3-4 families is mostly chance)
 SHIFT_GAP = 50.0              # generations: a concept takes or passes on a word by colexification shift at most this often
+# Semantic shifts (2026-11-04, compounds and shifts round): a concept takes a neighbour's word only along a CLICS3
+# colexification of >= SHIFT_MIN_FAMILIES families (SHIFT_MIN_CORE for the core vocabulary: the Swadesh-100 and
+# frequency classes 1-2, whose shifts are rarest; Pagel 2007), between concepts of one semantic field (concepts.tsv /
+# CLICS3 field: HAND/ARM, SALTY/SOUR, GIRL/CHILD) and one part of speech, or along an attested pathway of
+# data/derivations.tsv's 'shift' rows across fields (TREE > WOOD, SKY > GOD, SEE > KNOW: Buck 1949, Wilkins 1996,
+# Sweetser 1990) or parts of speech (grammaticalization, Heine & Kuteva 2002: BELLY > IN, WITH > AND). The 4-family fallback is gone: DOG ~ MOON, EGG ~ NAME, SEED ~ EYE, TREE ~ FIRE are colexifications
+# of a few languages or of a sense we do not model (seed 'grain' ~ eyeball), not paths words travel. A word shifted
+# within SHIFT_CHAIN_KYR is not taken again (no PULL > SUCK > EAT > TREE in a few millennia).
+SHIFT_MIN_FAMILIES = 5
+SHIFT_MIN_CORE = 6
+SHIFT_CHAIN_KYR = 3.0
 HOMOPHONE_BOOST = 4.0         # replacement hazard x this for the rarer members of a homophone group of 3+ or of an
                               # accidental pair (repair by renewal)
 COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate pair (a shift; a proto pair: x1)
@@ -118,8 +129,11 @@ OPAQUE_KYR = 3.0
 # the expressive diminutive renewal: a word of these classes may be replaced by its own diminutive (Latin auricula >
 # French oreille 'ear', genuculum > genou 'knee', avicellus > oiseau 'bird', soliculus > soleil 'sun', vetulus > vieux
 # 'old', novellus > nouveau 'new'; Hasselrot 1957), and a verb by its frequentative or preverb form, the 'intens' affix
-# (Latin canere > cantare 'sing', iacere > iactare 'throw', edere > comedere > Spanish comer 'eat'; Vaananen 1981)
-RENEW_LITTLE = frozenset({"body", "animal", "nature", "quality"})
+# (Latin canere > cantare 'sing', iacere > iactare 'throw', edere > comedere > Spanish comer 'eat'; Vaananen 1981).
+# 2026-11-04 (compounds and shifts round): tools, plants and kin terms too (Latin cultellus > French couteau 'knife',
+# martellus > marteau 'hammer', feniculum > fenouil 'fennel', aviolus > Spanish abuelo 'grandfather', avunculus 'uncle'
+# < avus), now that compounds come only from recipes and a noun with none would otherwise fall to a fresh root.
+RENEW_LITTLE = frozenset({"body", "animal", "nature", "quality", "tool", "plant", "kin"})
 RENEW_INTENS = frozenset({"verb"})
 RENEW_WEIGHT = 1.0
 # Proto-languages grow from a root stock (PIE-style word families): a proto concept that derivations.tsv lets be built
@@ -738,7 +752,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
 _QUALITY = ("BLACK", "WHITE", "RED", "YELLOW", "GREEN", "BROWN", "BIG", "SMALL", "LONG", "OLD", "SHARP", "ROUND", "HEAVY")
 COLOURS = frozenset({"BLACK", "WHITE", "RED", "YELLOW", "GREEN", "BROWN", "BLUE"})
 
-# --- semantic classes: what a compound may be built from -----------------------------------------------------------------
+# --- semantic classes (homophony domains, renewal classes) ---------------------------------------------------------------
 
 _WATER_BODIES = {"RIVER", "LAKE", "SEA", "MARSH", "SPRING (OF WATER)", "FORD", "COAST"}
 _PERSON_ROLES = {"PEOPLE", "STRANGER", "ENEMY", "FRIEND", "CHIEF", "PERSON", "MAN", "WOMAN", "CHILD (YOUNG HUMAN)",
@@ -747,15 +761,6 @@ _SETTLEMENTS = {"VILLAGE", "TOWN", "HOUSE"}
 _GOD_DOMAIN_CLASS = {"HERD": "animal", "HEARTH": "settlement", "STORM": "nature", "FLOOD": "water", "HARVEST": "abstract",
                      "FERTILITY": "abstract", "SMITHING": "abstract", "DEATH": "abstract", "WAR": "abstract"}
 _TOOL_FIELDS = {"Basic actions and technology", "The house", "Clothing and grooming", "Warfare and hunting"}
-#: semantic plausibility: a compound for a concept of this class takes its head from this class word ("river" for a water
-#: body, "person" for a kin term or a role, "animal" for an animal ...), the modifier saying which kind
-COMPOUND_HEADS = {
-    "water": ("RIVER", "WATER"), "land": ("LAND", "EARTH (SOIL)"), "animal": ("ANIMAL",),
-    "plant": ("TREE", "GRASS"), "kin": ("PERSON",),
-    "person": ("PERSON", "MAN"), "food": ("FOOD",), "god": ("SPIRIT", "GOD"), "settlement": ("HOUSE", "VILLAGE"),
-}
-_FEMALE_KIN = {"MOTHER", "WIFE", "DAUGHTER", "SISTER", "GRANDMOTHER", "AUNT", "WOMAN", "GIRL"}
-_MALE_KIN = {"FATHER", "HUSBAND", "SON", "BROTHER", "GRANDFATHER", "UNCLE", "MAN", "MALE PERSON", "BOY"}
 #: the semantic class of the derived-vocabulary concepts (domain "derived")
 _DERIVED_CLASS = {
     **dict.fromkeys(("HUNTER", "FIGHTER", "GUEST", "HERDER", "FISHER", "SMITH", "ELDER", "BABY", "GIRL", "BOY"), "person"),
@@ -764,11 +769,6 @@ _DERIVED_CLASS = {
     "PUPPY": "animal", "CHICK": "animal", "SONG": "abstract", "DREAM": "abstract", "GIFT": "abstract",
     "BREATH": "nature", "HEAT": "nature",
 }
-#: classes whose compounds may take a plain quality modifier ('black-bird', 'big-river'); never kin, verbs, gods, abstracts
-CONCRETE = frozenset({"animal", "plant", "water", "land", "food", "tool", "nature", "body"})
-#: the classes a plain quality modifier names kinds of (2026-11-04: 'green land' for 'stone' and 'long water' were the
-#: review's winces; a quality picks out a species or a dish, not a landform or a body part)
-SPECIES = frozenset({"animal", "plant", "food"})
 
 
 @functools.cache
@@ -836,18 +836,6 @@ def clip(form: Form, n: int) -> Form:
     if len(syl) <= n:
         return tuple(form)
     return tuple(s for x in syl[:max(1, n)] for s in x.segments)
-
-
-def _related(lex: Lexicon, cid: str, exclude=()) -> list[tuple[str, float]]:
-    """Words a new word for `cid` can be built from: CLICS neighbours, then the concept's base hints, weighted."""
-    ex = {cid, *exclude}
-    out = [(n, float(f)) for n, f in clics_neighbours(cid, BUILD_MIN_FAMILIES) if n in lex.words and n not in ex
-           and lex.words[n].pos != "FUNC"]
-    for b in concept_info(cid).base:
-        b = resolve(b)
-        if b in lex.words and b not in ex and all(b != n for n, _ in out):
-            out.append((b, 10.0))
-    return out
 
 
 def _short(lex: Lexicon, items: list[tuple[str, float]]) -> list[tuple[str, float]]:
@@ -920,6 +908,101 @@ def reinforcers() -> dict[str, tuple[tuple[str, float], ...]]:
     return {k: tuple(v) for k, v in out.items()}
 
 
+SELF = "SELF"   # a compound recipe's modifier: the target's own current word (generic + specific: Thai plaa-X, rein-deer)
+
+
+@dataclass(frozen=True, slots=True)
+class CompRow:
+    target: str
+    head: str        # the semantic category the target is a kind or part of ('tree SKIN' = bark)
+    modifier: str    # which one; SELF = the target's own word
+    weight: float    # typicality 1-3, plus CLICS3 family count / 10 for a (target, head) or (target, modifier) colexification
+    example: str = ""
+
+
+def _clics_fam(a: str, b: str) -> int:
+    return max([f for n, f in clics_neighbours(a, 3) if n == b] or [0])
+
+
+@functools.cache
+def compound_rows() -> tuple[CompRow, ...]:
+    """data/compounds.tsv: the attested compound recipes (target = head + modifier), every row whose concepts are on the
+    list (the rest are skipped)."""
+    idx = concept_index()
+    out = []
+    for r in _read_tsv("compounds.tsv"):
+        t, h = resolve(r["target"]), resolve(r["head"])
+        m = r["modifier"] if r["modifier"] == SELF else resolve(r["modifier"])
+        if t not in idx or h not in idx or h == t or (m != SELF and (m not in idx or m in (t, h))):
+            continue
+        fam = _clics_fam(t, h) + (_clics_fam(t, m) if m != SELF else 0)
+        out.append(CompRow(_i(t), _i(h), _i(m), float(r["weight"]) + fam / 10.0, r.get("example", "")))
+    return tuple(out)
+
+
+@functools.cache
+def _comp_by_target() -> dict[str, tuple[CompRow, ...]]:
+    out: dict[str, list] = {}
+    for r in compound_rows():
+        out.setdefault(r.target, []).append(r)
+    # an elaborated concept (MILK (SOURED), CALF, PASTURE) is re-made as it was first made: ELABORATIONS is its recipe
+    for splits in ELABORATIONS.values():
+        for base, items in splits.items():
+            for sid, mod in items:
+                rows = out.setdefault(sid, [])
+                row = CompRow(_i(sid), _i(resolve(base)), _i(resolve(mod)), 2.0, "elaboration (lexicon.ELABORATIONS)")
+                if row not in rows:
+                    rows.append(row)
+    return {k: tuple(v) for k, v in out.items()}
+
+
+def compound_templates(target: str) -> tuple[CompRow, ...]:
+    """The compound recipes for `target` (data/compounds.tsv, and lexicon.ELABORATIONS for the elaborated concepts);
+    empty: the concept is never compounded."""
+    return _comp_by_target().get(resolve(target), ())
+
+
+@functools.cache
+def shift_paths() -> frozenset:
+    """{(base, target)}: the attested cross-field shift pathways of data/derivations.tsv ('shift' rows: TREE > WOOD,
+    SKY > GOD, SEE > KNOW): the target concept may take the base's word whatever the fields and CLICS counts."""
+    idx = concept_index()
+    return frozenset((resolve(r["base"]), resolve(r["target"])) for r in _read_tsv("derivations.tsv")
+                     if r["relation"] == "shift" and resolve(r["base"]) in idx and resolve(r["target"]) in idx)
+
+
+@functools.cache
+def _clics_fields() -> dict[str, str]:
+    out = {}
+    for r in _read_tsv("clics_edges.tsv"):
+        out[r["concept_a"]] = r["semantic_field_a"]
+        out[r["concept_b"]] = r["semantic_field_b"]
+    return out
+
+
+@functools.cache
+def semantic_field(cid: str) -> str:
+    """The concept's semantic field: concepts.tsv's (core concepts), else CLICS3's for its gloss (the IDS/WOLD fields:
+    'The body', 'Kinship', 'The physical world' ...), else ''."""
+    c = concept_info(cid)
+    return c.field or (_clics_fields().get(c.clics, "") if c.clics else "")
+
+
+def shift_fits(base: str, target: str, families: int) -> bool:
+    """May `target` take `base`'s word (a colexification edge of `families` CLICS3 families)? Along an attested pathway
+    (`shift_paths`), or along an edge of >= SHIFT_MIN_FAMILIES (SHIFT_MIN_CORE when the target is core vocabulary)
+    between concepts of one semantic field and one part of speech."""
+    b, t = resolve(base), resolve(target)
+    if (b, t) in shift_paths():
+        return True
+    ct, cb = concept_info(t), concept_info(b)
+    core = t in CORE100 or ct.freq_class <= 2
+    if families < (SHIFT_MIN_CORE if core else SHIFT_MIN_FAMILIES) or ct.pos != cb.pos:
+        return False
+    ft, fb = semantic_field(t), semantic_field(b)
+    return bool(ft) and ft == fb
+
+
 def affix_fits(meaning: str, target: str, base: str) -> bool:
     """Does the affix make sense from `base` to `target`? Only the pairs of data/derivations.tsv do (an agent noun from
     the verb it names: HUNT > HUNTER; a diminutive of a bigger thing: RIVER > STREAM; a place of an act: SLEEP > BED; an
@@ -948,14 +1031,146 @@ def _transparent(lex: "Lexicon", w: Word, kyr: float) -> tuple[list[str], int]:
         if p not in ("derive", "compound", "elaborate") or s.kyr - kyr > OPAQUE_KYR:
             break
         if p == "derive":
-            bc = resolve(s.note.split(" + '")[0]) if " + '" in s.note else None
-            bw = lex.words.get(bc) if bc else None
-            if bw is None or is_renewal(s) or not bw.roots or not w.roots or bw.roots[0] != w.roots[0]:
-                break   # (base gone or replaced; or a renewal, cantare for canere, bleached at once)
+            if is_renewal(s) or not _intact(lex, _derive_base(s), s.kyr, w.etym[:w.etym.index(s)]):
+                break   # (base gone or replaced since; or a renewal, cantare for canere, bleached at once)
             aff.append(s.process.split(":", 1)[1])
         else:
             extra += 1
     return aff, 1 + len(aff) + extra
+
+
+def _derive_base(st: EtymStep) -> str | None:
+    """The base concept of a derive step (its note: "<BASE> + '<affix>' ...")."""
+    return resolve(st.note.split(" + '")[0]) if " + '" in st.note else None
+
+
+def _intact(lex: "Lexicon", concept: str | None, since_kyr: float, chain: tuple | None = None) -> bool:
+    """Is `concept`'s word the one it had at `since_kyr` (not replaced since)? With `chain` (the chain the word had then:
+    a derivation's or compound's own chain up to that step), its latest word-formation step must be the chain's;
+    otherwise it must be older than `since_kyr`, or a proto word (the proto builds its stock at one date)."""
+    w = lex.words.get(concept) if concept else None
+    if w is None:
+        return False
+    if chain is not None:
+        a, b = _lexical_last(w), next((s for s in reversed(chain) if not s.process.startswith("sound_change:")), None)
+        return a is not None and a == b
+    return w.born_kyr > since_kyr + 1e-9 or w.born_kyr >= since_kyr - 1e-9 and _proto_word(w)
+
+
+# --- root families: the roots a speaker still feels ---------------------------------------------------------------------
+
+@functools.cache
+def _gloss_concept() -> dict[str, str]:
+    out: dict[str, str] = {}
+    for c in reversed(_all_concepts()):
+        out[c.gloss] = c.id
+    return out
+
+
+def _step_concept(st: EtymStep, fallback: str) -> str:
+    """The concept id a step's gloss names (`fallback` when it is that concept's gloss)."""
+    if concept_info(fallback).gloss == st.gloss and (fallback in concept_index() or concept_info(fallback).domain != "other"):
+        return fallback
+    return _gloss_concept().get(st.gloss) or next((k for k in _elaboration_bases() if k.lower() == st.gloss), fallback)
+
+
+def _root_id(st: EtymStep, etym: tuple, concept: str) -> str:
+    """The id of a root that starts at step `st` of chain `etym` (meaning `concept` there): "<lect>:<CONCEPT>" for a
+    word of the proto-language (made at its date, in its lect), else "<lect>:<CONCEPT>@<kyr>". A proto colexification
+    (TREE/WOOD, one word) is its source's root."""
+    if st.note.startswith("colexified with "):
+        concept = resolve(st.note[len("colexified with "):])
+    e0 = etym[0] if etym else st
+    if e0.process == "proto" and st.lect == e0.lect and st.kyr == e0.kyr:
+        return _i(f"{st.lect}:{concept}")
+    return _i(f"{st.lect}:{concept}@{float(st.kyr):g}")
+
+
+def _compound_parts_of(st: EtymStep) -> tuple[str, str] | None:
+    """(head, modifier) of a compound or elaboration step."""
+    if st.process.startswith("compound:"):
+        h, _, m = st.process[len("compound:"):].partition("+")
+        return resolve(h), resolve(m)
+    if st.process.startswith("elaborate:") and " + " in st.note:
+        h, _, m = st.note.split(" (clip ")[0].partition(" + ")
+        return resolve(h), resolve(m)
+    return None
+
+
+def felt_roots(lex: "Lexicon", w: Word, kyr: float, _depth: int = 0) -> tuple:
+    """The roots a speaker still feels in `w` at `kyr`, main root first: walking back from the word's latest step, a
+    transparent derivation (`word_layers`: younger than OPAQUE_KYR, its base word not replaced since) or taboo
+    paraphrase ('the brown one') has its base's felt roots; a transparent compound its head's then its modifier's (a
+    part replaced since is no longer felt; a generic + specific compound or a reinforced function word keeps the word's
+    own); a renewal (the word's own diminutive) keeps the word's root. Anything else starts a root at that step
+    (`_root_id`): a proto root or coinage, a derivation or compound older than OPAQUE_KYR (burden is no longer felt as
+    bear + -th), a shift away from the old meaning, a loan, a substrate word."""
+    etym = w.etym
+    concept = w.concept
+    i = len(etym) - 1
+    while i >= 0:
+        st = etym[i]
+        p = st.process.split(":", 1)[0]
+        if p == "sound_change":
+            i -= 1
+            continue
+        fresh = st.kyr - kyr <= OPAQUE_KYR and _depth < 8
+        if st.note.startswith("colexified with "):   # (a proto colexification: the source word's roots)
+            src = resolve(st.note[len("colexified with "):])
+            sw = lex.words.get(src)
+            if sw is not None and src != w.concept and sw.form == w.form and _depth < 8 and _proto_word(sw) \
+                    and sw.etym[0].lect == st.lect:   # (the source is still that proto word, not one shifted back since)
+                return felt_roots(lex, sw, kyr, _depth + 1)
+            return (_root_id(st, etym, src),)
+        if p == "derive":
+            if is_renewal(st):
+                i -= 1
+                concept = _step_concept(etym[i], concept) if i >= 0 else concept
+                continue
+            b = _derive_base(st)
+            if fresh and b != concept and _intact(lex, b, st.kyr, etym[:i]):
+                return felt_roots(lex, lex.words[b], kyr, _depth + 1)
+        elif p == "taboo" and fresh and st.note.startswith("'the ") and _intact(lex, st.note[5:-5].upper(), st.kyr):
+            return felt_roots(lex, lex.words[st.note[5:-5].upper()], kyr, _depth + 1)
+        elif p in ("compound", "elaborate") and fresh and _compound_parts_of(st):
+            h, m = _compound_parts_of(st)
+            own = _step_concept(st, concept)
+            out: list = []
+            for part in ((m, h) if m == own else (h, m)):   # (a generic + specific renewal: the word's own root first)
+                if part == own:   # (the word itself: SELF renewal or a reinforced function word)
+                    out += felt_roots(lex, replace(w, etym=etym[:i]), kyr, _depth + 1) if i else []
+                elif _intact(lex, part, st.kyr, etym[:i] if part == h and m != own else None):
+                    out += felt_roots(lex, lex.words[part], kyr, _depth + 1)
+                elif part == h:
+                    out.append(_root_id(st, etym, own))   # (the head replaced since: the compound is a root of its own)
+            return tuple(dict.fromkeys(out)) or (_root_id(st, etym, own),)
+        return (_root_id(st, etym, _step_concept(st, concept)),)
+    return (_root_id(etym[0], etym, concept),) if etym else ()
+
+
+def refresh_roots(lex: "Lexicon", kyr: float) -> int:
+    """Re-read every word's `roots` as felt at `kyr` (`felt_roots`); returns how many changed."""
+    n = 0
+    for k, w in list(lex.words.items()):
+        r = felt_roots(lex, w, kyr)
+        if r != w.roots:
+            lex.words[k] = replace(w, roots=r)
+            n += 1
+    return n
+
+
+def root_step(w: Word) -> EtymStep | None:
+    """The step of `w`'s chain its main root id names (the root word as its lect made it), else the first step."""
+    if not w.roots or not w.etym:
+        return w.etym[0] if w.etym else None
+    lect, _, rest = w.roots[0].partition(":")
+    concept, _, k = rest.partition("@")
+    gl = concept_info(concept).gloss
+    for st in w.etym:
+        if st.lect == lect and not st.process.startswith("sound_change:") and (not k or abs(st.kyr - float(k)) < 1e-6) \
+                and (st.gloss == gl or st.note == f"colexified with {concept}"):
+            return st
+    return w.etym[0]
 
 
 def is_renewal(st: EtymStep) -> bool:
@@ -1119,63 +1334,61 @@ def _worn(w: Word, gloss: str) -> bool:
     return any(st.gloss == gloss for st in w.etym)
 
 
-def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: str | None) -> tuple[str | None, str | None]:
-    """Head: the concept's class word (COMPOUND_HEADS) or a base hint of the same class, else a related noun. Modifier: a
-    CLICS neighbour, base hint or same-class concept (weight 3), or for concrete nouns a quality (weight 1). Neither part
-    may have meant the concept before (`_worn`), and the modifier may not share the head's root (FOOT + 'foot or leg')."""
-    cls = sem_class(c.id)
+def _self_renewed(w: Word, head: str, modifier: str) -> bool:
+    """Has `w` been renewed by this very compound before (anywhere in its chain)? No 'deer-animal-animal', no
+    'they-that-that': a generic + specific renewal or a reinforcement happens once per word."""
+    p = f"compound:{head}+{modifier}"
+    return any(st.process == p for st in w.etym)
+
+
+def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: str | None,
+                    kyr: float = 0.0) -> tuple[str | None, str | None]:
+    """(head, modifier) for a compound naming `c`: a recipe of data/compounds.tsv (`compound_templates`: SKIN + TREE =
+    bark, EYE + DAY = sun, CHILD + WOMAN = girl; modifier SELF = the concept's own word, a generic + specific renewal),
+    weighted by typicality over the parts' syllables; a function word is reinforced by another along the 'reinforce'
+    rows of data/derivations.tsv (THIS + HERE). A recipe is refused when a part is missing, has meant the concept before
+    (`_worn`, no round trips), shares the head's root or form, or (SELF) the word already is that compound. Explicit
+    parts (elaborations: MILK + SOUR) are taken as given; a given head or modifier narrows the recipes."""
+    if head is not None and modifier is not None:
+        return resolve(head), resolve(modifier)
     if head is None and modifier is None and c.pos == "FUNC":   # a function word reinforced by another (THIS + HERE)
-        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if m in lex.words and c.id in lex.words]
+        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if m in lex.words and c.id in lex.words
+              and not _self_renewed(lex.words[c.id], c.id, m)]   # (not 'they-that-that')
         if not rs:
             return None, None
         return c.id, _pick(rng, rs)
-    if head is None:
-        if c.pos != "N":
-            return None, None   # verbs and qualities are replaced by derivation, shift or coinage
-        heads = COMPOUND_HEADS.get(cls, ())
-        if cls in ("kin", "person"):   # 'woman' heads a female kin term, 'man' a male one
-            g = ("WOMAN",) if c.id in _FEMALE_KIN else ("MAN", "MALE PERSON") if c.id in _MALE_KIN else ()
-            heads = next(([h] for h in (*g, "PERSON") if h in lex.words and h != c.id), heads)
-        cands = [(h, 3.0) for h in heads if h in lex.words and h != c.id]
-        cands += [(resolve(b), 3.0) for b in c.base if resolve(b) in lex.words and resolve(b) != c.id
-                  and sem_class(resolve(b)) == cls and all(resolve(b) != h for h, _ in cands)]
-        if not cands:
-            cands = [(k, w) for k, w in _related(lex, c.id) if lex.words[k].pos == "N"]
-        cands = [(k, w) for k, w in cands if not _worn(lex.words[k], c.gloss)]
-        if not cands:
-            return None, None
-        head = _pick(rng, _short(lex, cands))
-    head = resolve(head)
-    if modifier is None:
-        ex = {c.id, head}
-        hints = {resolve(b) for b in c.base}
-        # a CLICS neighbour or a base hint says which kind; a near-synonym of a person or kin term does not (MAN +
-        # HUSBAND = 'person', MALE PERSON + FRIEND = 'man' were the review's examples), nor a random member of the
-        # same class (2026-11-04: dropped)
-        pool = [(k, 3.0) for k, _ in _related(lex, c.id, exclude=ex)
-                if k in hints or not (cls in ("person", "kin") and sem_class(k) in ("person", "kin"))]
-        if cls in SPECIES and lex.words[head].pos == "N":   # 'black bird', 'big deer': species names
-            pool += [(q, 1.0) for q in _QUALITY if q in lex.words and q not in ex and all(q != p for p, _ in pool)]
-        hw = lex.words.get(head)
-        hr = hw.roots[:1] if hw is not None else ()
-        pool = [(k, w) for k, w in pool if not _clash(k, head) and not _clash(k, c.id) and not _worn(lex.words[k], c.gloss)
-                and not (hr and lex.words[k].roots[:1] == hr) and (hw is None or lex.words[k].form != hw.form)]
-        if not pool:
-            return head, None
-        modifier = _pick(rng, _short(lex, pool))
-    return head, resolve(modifier)
+    cand = []
+    for r in compound_templates(c.id):
+        m = c.id if r.modifier == SELF else r.modifier
+        if head is not None and r.head != resolve(head) or modifier is not None and m != resolve(modifier):
+            continue
+        hw, mw = lex.words.get(r.head), lex.words.get(m)
+        if hw is None or mw is None or _worn(hw, c.gloss) or hw.form == mw.form:
+            continue
+        if r.modifier == SELF:
+            if _self_renewed(mw, r.head, c.id):
+                continue
+        elif _worn(mw, c.gloss) or (hw.roots[:1] and hw.roots[:1] == mw.roots[:1]):
+            continue
+        cand.append(((r.head, m), r.weight / max(1, syllables(hw.form) + syllables(mw.form) - 1)))
+    if not cand:
+        return None, None
+    w = np.array([x[1] for x in cand], float)
+    return cand[int(rng.choice(len(cand), p=w / w.sum()))][0]
 
 
 def compound(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None,
              head_first: bool | None = None, head: str | None = None, modifier: str | None = None,
              process: str | None = None, note: str | None = None) -> Word | None:
-    """A new word for `concept` from two existing words, in the lexicon's head order unless `head_first` says otherwise.
-    Head: the concept's class word (RIVER for a water body, PERSON for a kin term or role, ANIMAL for an animal ...) or a
-    related noun; modifier: a related or same-class word, or a plain quality for concrete nouns only. Only nouns compound
-    (None). Parts are clipped so the compound keeps to MAX_SYLL_COMPOUND syllables (noted 'clip')."""
+    """A new word for `concept` from two existing words, in the lexicon's head order unless `head_first` says otherwise,
+    after a recipe of data/compounds.tsv (`_compound_parts`): the head is the category the concept is a kind or part of
+    ('tree SKIN' = bark, 'day EYE' = sun), the modifier says which. None when no recipe fits (most concepts have none:
+    they are renewed by derivation, shift, a loan or a fresh root). Parts are clipped so the compound keeps to
+    MAX_SYLL_COMPOUND syllables (noted 'clip'). A generic + specific compound (modifier SELF) carries the old word's
+    chain and roots (it is that word, renewed: rein-deer); any other carries the head's chain, roots head then modifier."""
     c = concept_info(concept)
     lect_id = lect_id or lex.lect
-    head, modifier = _compound_parts(rng, lex, c, head, modifier)
+    head, modifier = _compound_parts(rng, lex, c, head, modifier, kyr)
     if head is None or modifier is None or head not in lex.words or modifier not in lex.words:
         return None
     h, m = lex.words[head], lex.words[modifier]
@@ -1187,8 +1400,10 @@ def compound(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | No
     nt = note or f"{head} + {modifier} ({m.ipa})"
     if clipped:
         nt += f" (clip {h.ipa} {m.ipa} > {word_ipa(hf_)} {word_ipa(mf_)})"
-    return Word(c.id, form, c.pos, c.freq_class, h.etym + (_step(kyr, lect_id, proc, form, c.gloss, nt),), float(kyr),
-                h.roots + tuple(r for r in m.roots if r not in h.roots))
+    renewal = modifier == c.id and process is None
+    base, other = (m, h) if renewal else (h, m)
+    return Word(c.id, form, c.pos, c.freq_class, base.etym + (_step(kyr, lect_id, proc, form, c.gloss, nt),), float(kyr),
+                base.roots + tuple(r for r in other.roots if r not in base.roots))
 
 
 def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None, how: str | None = None,
@@ -1259,19 +1474,46 @@ def _shift_ok(lex: Lexicon, k: str) -> bool:
     return t is None or lex.gen - t >= SHIFT_GAP
 
 
-def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None = None,
-               min_families: int = BUILD_MIN_FAMILIES) -> Word | None:
-    """Colexification shift: `concept` takes the word of a CLICS neighbour (which keeps it too, now colexified, until a
-    later replacement re-fills it). A concept takes or passes on a word this way at most once per SHIFT_GAP generations,
-    a word already shared by two concepts is not taken, and the step names the root of a shift chain (the note says through which neighbour)."""
+def _shifted_recently(w: Word, kyr: float) -> bool:
+    """Has `w` come to its meaning, or passed through one, by a shift within SHIFT_CHAIN_KYR?"""
+    return any(st.process.startswith("shift:") and st.kyr - kyr <= SHIFT_CHAIN_KYR for st in w.etym)
+
+
+def shift_candidates(lex: Lexicon, concept: str, kyr: float, min_families: int | None = None) -> list[tuple[str, float]]:
+    """The neighbours whose word `concept` may take by a colexification shift, as (concept, weight): a CLICS3 edge that
+    `shift_fits` (an attested pathway, or >= SHIFT_MIN_FAMILIES / SHIFT_MIN_CORE families inside one semantic field and
+    part of speech; `min_families` raises the floor), both concepts free of a shift for SHIFT_GAP generations, a word
+    not already shared by two concepts, not shifted within SHIFT_CHAIN_KYR, and never one that meant this concept
+    before (no PUSH > GRIND > PUSH). Function words shift only among themselves."""
     c = concept_info(concept)
     if not _shift_ok(lex, c.id):
-        return None
-    shared = {f for f, cs in lex.homophones().items()} if lex.words else set()
-    nb = [(n, float(f)) for n, f in clics_neighbours(c.id, min_families) if n in lex.words and _shift_ok(lex, n)
-          and lex.words[n].form not in shared    # a word already doing double duty is not taken on for a third
-          and not _worn(lex.words[n], c.gloss)   # nor one that meant this concept before (no PUSH > GRIND > PUSH)
-          and (c.pos != "FUNC") == (lex.words[n].pos != "FUNC")]   # function words shift only among themselves
+        return []
+    edges = dict(clics_neighbours(c.id, 3))
+    for b, t in shift_paths():
+        if t == c.id and b not in edges:
+            edges[b] = 0
+    shared = set(lex.homophones()) if lex.words else set()
+    out = []
+    for n, f in edges.items():
+        w = lex.words.get(n)
+        if w is None or not _shift_ok(lex, n) or w.form in shared or _worn(w, c.gloss) or _shifted_recently(w, kyr):
+            continue
+        if not shift_fits(n, c.id, f) or (n, c.id) not in shift_paths() and (c.pos == "FUNC") != (w.pos == "FUNC"):
+            continue
+        if min_families is not None and f < min_families and (n, c.id) not in shift_paths():
+            continue
+        out.append((n, float(max(f, 3))))
+    return out
+
+
+def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None = None,
+               min_families: int | None = None) -> Word | None:
+    """Colexification shift: `concept` takes the word of a neighbour (`shift_candidates`; which keeps it too, now
+    colexified, until a later replacement re-fills it). A concept takes or passes on a word this way at most once per
+    SHIFT_GAP generations, and the step names the root of a shift chain (the note says through which neighbour). The
+    shifted word starts a root of its own (`felt_roots`: a speaker no longer links it to the old meaning's family)."""
+    c = concept_info(concept)
+    nb = shift_candidates(lex, c.id, kyr, min_families)
     if not nb:
         return None
     via = _pick(rng, nb)
@@ -1280,9 +1522,8 @@ def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None 
     note = "" if root == via else f"via {via}"
     lex.shifted[c.id] = lex.gen
     lex.shifted[via] = lex.gen
-    return Word(c.id, src.form, c.pos, c.freq_class,
-                src.etym + (_step(kyr, lect_id or lex.lect, f"shift:{root}", src.form, c.gloss, note),), float(kyr),
-                src.roots)
+    st = _step(kyr, lect_id or lex.lect, f"shift:{root}", src.form, c.gloss, note)
+    return Word(c.id, src.form, c.pos, c.freq_class, src.etym + (st,), float(kyr), (_root_id(st, src.etym + (st,), c.id),))
 
 
 def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: float, note: str = "",
@@ -1302,8 +1543,8 @@ def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: fl
         form = _cap(form, limits(inv)[1], inv)
         note = (note + "; " if note else "") + "clipped"
     c = concept_info(word.concept)
-    w = Word(c.id, form, word.pos, c.freq_class,
-             word.etym + (_step(kyr, to_lex.lect, f"borrow:{from_lect_id}", form, c.gloss, note),), float(kyr), word.roots)
+    st = _step(kyr, to_lex.lect, f"borrow:{from_lect_id}", form, c.gloss, note)
+    w = Word(c.id, form, word.pos, c.freq_class, word.etym + (st,), float(kyr), (_root_id(st, word.etym + (st,), c.id),))
     if store:
         to_lex.set(w)
     return w
@@ -1496,7 +1737,7 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
     derivation the table has no fitting row for, or that would make a homophone, is not by itself a reason to coin.
     Returns (process actually used, word)."""
     order = [src] + [x for x in ("derive", "compound", "shift", "renew") if x in opts and x != src]
-    order += ["shift_weak"] + (["borrow"] if have and "borrow" not in order and rng.random() < BORROW_FALLBACK else []) + ["coin"]
+    order += (["borrow"] if have and "borrow" not in order and rng.random() < BORROW_FALLBACK else []) + ["coin"]
     for s in order:
         new = None
         if s == "borrow":
@@ -1521,9 +1762,6 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
                 new = None
         elif s == "shift":
             new = shift_word(rng, lex, k, kyr, lect_id)
-        elif s == "shift_weak":   # (an edge of 4 families: weaker, but an attested colexification still; 3 is mostly chance, DOG ~ MOON)
-            new = shift_word(rng, lex, k, kyr, lect_id, min_families=4)
-            s = "shift"
         else:
             for _ in range(3):
                 new = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
@@ -1539,7 +1777,7 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
          profile=None, head_first: bool | None = None) -> list[tuple[str, str]]:
     """Lexical events over `n_generations` (fractional is fine) in one batch: each word is replaced with probability
     1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class] (x HOMOPHONE_BOOST for the rarer members of a homophone
-    group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (not for verbs), a colexification
+    group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (data/compounds.tsv recipes only), a colexification
     shift, a fresh root, a loan (only if a contact lexicon has the concept) or a taboo paraphrase (animals and dangerous
     things only); an unusable compound or taboo source adds its weight to derivation, an unavailable loan or shift is
     dropped and the rest renormalised. A source that fails or would make a homophone falls back (`_replace_word`):
@@ -1575,10 +1813,9 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
                 opts["derive"] += opts.pop("taboo")
             if sem_class(k) not in RENEW_LITTLE | RENEW_INTENS:
                 opts["derive"] += opts.pop("renew")
-            if c.pos not in ("N", "FUNC") or c.pos == "FUNC" and c.id not in reinforcers():
-                opts["derive"] += opts.pop("compound")
-            if not _shift_ok(lex, k) or not any(n in lex.words and _shift_ok(lex, n)
-                                                for n, _ in clics_neighbours(k, BUILD_MIN_FAMILIES)):
+            if not compound_templates(k) and not (c.pos == "FUNC" and c.id in reinforcers()):
+                opts["derive"] += opts.pop("compound")   # (only concepts with a recipe compound, data/compounds.tsv)
+            if not shift_candidates(lex, k, kyr):
                 opts.pop("shift")
             # word length follows the syllable space over time too (Nettle 1998: mergers make homophones, and
             # speakers answer with longer words, aujourd'hui < hui, Chinese disyllabic compounds): a lect whose
@@ -1611,6 +1848,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
                 if resolve(base) in lex.words and any(s not in lex for s, _ in splits) and rng.random() < pe:
                     for w in elaborate(rng, lex, base, niche, inv, kyr, lect_id):
                         events.append((w.concept, f"elaborate:{niche}"))
+    if n_generations > 0:
+        refresh_roots(lex, kyr)   # (derivations and compounds turn opaque, bases are replaced: the families a speaker feels)
     return events
 
 
@@ -1639,9 +1878,8 @@ def substrate_transfer(old_lex: Lexicon, new_lex: Lexicon, local_concepts: Itera
             heard = tuple(profiles.hear_word(form, profile or profiles.HUMAN, _inv.segments(inv)))
             form = _inv.repair(heard, inv) or form
         c = concept_info(k)
-        new_lex.set(Word(c.id, form, w.pos, w.freq_class,
-                         w.etym + (_step(kyr, new_lex.lect, f"substrate:{old_lex.lect}", form, c.gloss),), float(kyr),
-                         w.roots))
+        st = _step(kyr, new_lex.lect, f"substrate:{old_lex.lect}", form, c.gloss)
+        new_lex.set(Word(c.id, form, w.pos, w.freq_class, w.etym + (st,), float(kyr), (_root_id(st, w.etym + (st,), c.id),)))
         out.append(c.id)
     return out
 

@@ -528,3 +528,133 @@ hubs, living sizes (C 11/16/20/24/39, 4.2% above 42), living segments (top-20 ov
 human horizon fails as before at 10.5 (smoothed 10.6; E4 10.67). Kenku tonal 85% (E4 70%), aarakocra 76% (84%; 25 lects
 from few protos); dragons keep 4.5 harsh units per lect (4.6). Still over-represented: ʁ (0.38, 10x), ɹ (0.28: with ɹ > ʋ
 rarer the r > ɹ sink shows), ɦ (0.27, 9x); under: ɡ 0.31 (0.56), d 0.30 (0.48), tʃ 0.28 (0.39).
+
+## Compounds and shifts round (2026-11-04)
+
+Goal (owner): compounds and semantic shifts a linguist believes. The shipped run (`runs/a24559`, = H2) built compounds
+from a class head plus a CLICS neighbour or a quality (halfling d646.2's family of 'tree': TREE + RED = 'fire', TREE +
+SHARP = 'grass', TREE + BONE = 'seed', GRASS + GREEN = 'bark', FOOD + TOOTH = 'egg') and shifted words along any CLICS
+edge of 4+ families, chained (SEED > EYE, EGG > NAME, PULL > SUCK > EAT > TREE); word families followed every link.
+
+Mechanism (architecture.md §6):
+- **Compounds only from recipes**: `data/compounds.tsv` (205 rows over 137 targets; 41 of them `SELF`, generic +
+  specific renewals; sources in its header: Urban 2012, Brown 1976 / 1999, Witkowski & Brown, Buck 1949, WOLD, the
+  Southeast Asian generic + specific compounds). The head is the category: SKIN + TREE = bark, HAIR + BIRD = feather, EYE
+  + DAY = sun, EYE + WATER = spring, SUN + NIGHT = moon, WATER + SALTY = sea, LAND + WATER = island, CHILD + WOMAN = girl,
+  MOTHER + BIG = grandmother, FATHER + SMALL = uncle, MAN + BIG = chief, FIVE + ONE = six, HAND + TWO = ten, DOG + BIG =
+  horse, FRUIT + EARTH = potato, DOG + SEA = seal. ELABORATIONS is the recipe of the elaborated concepts (soured milk,
+  calf, pasture: without it they fell to fresh roots, +2 points of coinage in the contact harness). No recipe, no
+  compound (EGG, FLOWER, TREE, GRASS, verbs, qualities). A generic + specific compound or a function-word reinforcement
+  happens once per word ('deer-animal-animal' and 'they-that-that' were in the first full run).
+- **Shifts**: a CLICS3 edge of >= 5 families (>= 6 for the Swadesh-100 and frequency classes 1-2) between concepts of one
+  semantic field and part of speech, or an attested pathway (42 `shift` rows in derivations.tsv: TREE > WOOD, SKIN >
+  BARK, SUN > DAY, BREAST > MILK, TONGUE > LANGUAGE, SKY > GOD, BREATH > SPIRIT, SEE > KNOW, HAND > FIVE, and
+  grammaticalization BELLY > IN, WITH > AND, ONE > SOME, SAY > BECAUSE; Buck, Wilkins 1996, Sweetser 1990, Heine & Kuteva
+  2002). The weak 4-family fallback is gone; a word shifted within SHIFT_CHAIN_KYR (3) is not taken again. Floors tried
+  in the contact-free harness (`scratchpad/compJ/harness.py`, 12 protos x 10 kyr): 6 / 10 -> coin 24% (HEAD 18%), 5 / 8 ->
+  23%, 5 / 6 -> 22%; with the tool / plant / kin diminutive renewals (RENEW_LITTLE: couteau < cultellus, abuelo <
+  aviolus) and the elaboration recipes, the 700-generation contact harness (`compJ/contact.py`) gives coin 10.8% (HEAD
+  10.4%).
+- **Felt roots**: `roots` are what a speaker still analyses (`felt_roots`, re-read every step): a transparent
+  derivation, compound or taboo paraphrase (younger than OPAQUE_KYR, parts not replaced since) has its parts' roots, a
+  renewal keeps the word's own; a proto root, coinage, old derivation, shift, loan or substrate word is a root of its own
+  from that step (`root_step`; output.py's root table points at that node of the word's chain, so no nodes are added).
+
+Isolated sister lineages (`compJ/sisters.py`, 24 protos, two daughters 1.5 kyr apart, no sound change): core words of
+identical form 0.682 (HEAD 0.669), same true root 0.789 (0.753): the round keeps sisters closer, not further apart.
+
+Full runs (8 workers, ~16 min):
+
+| run | sisters strict (loose) | horizon human (smoothed) | homophones, median per lect | coin share | file |
+| --- | --- | --- | --- | --- | --- |
+| shipped (H2) | 0.502 (0.563) | 10.5 (10.62) | 0.136 | 0.100 | 139 MB |
+| I, hiatus builder, HEAD lexicon (`scratchpad/runI`) | 0.438 (0.504) | 10.67 (11.11) | - | - | 139 MB |
+| J, this round (`scratchpad/runJ`) | 0.475 (0.534) | 10.67 (11.11) | 0.128 | 0.104 | 158 MB |
+| J2, + once-per-word renewals, root nodes reused (`scratchpad/runJ2`) | 0.479 (0.544) | 10.25 (10.49) | 0.125 | 0.104 | 149 MB |
+
+The sisters check fails on J and J2, but the uncommitted sound-change work in the same tree does it: run I (HEAD's
+lexicon with that work) is at 0.438, below J2, and the harness shows the lexicon change raising sister similarity. The
+horizon moves toward 10 (10.25). Replacements in living lects (J2): derive 0.22, renew 0.20, borrow 0.19, compound 0.15
+(0.18), shift 0.13 (0.18), coin 0.104 (0.100). Word families of living human lects: 321 roots per lect (211), 9 families
+of 3+ words (32), the largest 5 words (15), 25% of words in a family (62%): most proto derivations are older than 3 kyr,
+so a speaker no longer feels them (draft-language-felt-vs-etymological-roots asks whether to keep an etymological view
+too). The file grows 10 MB: 2.3x as many root-table entries (every opaque word is a root).
+
+Before (shipped, 15 random compounds of living human lects, seed 1): ANIMAL + FISH = seals, SEED + BROWN = peanuts, GRASS +
+ROUND = rye, STICK + SHARP = spear, VILLAGE + HOUSE = camp, GRASS + SHARP = tree, MOON + SEA = tide, WHO + PERSON = who,
+SMOKE + LAND = dust, BIRD + WHITE = animal, TREE + LONG = twig, GRASS + BONE = seed (twice), FEATHER + HEAD = hair, YOU +
+OTHER = you (three times in one word). Shifts: DIG > scratch, WHO > what, FOREST > grass (twice), THREE > four, GIRL >
+child, SALTY > sour, LAKE > water, WOOD > tree, SQUEEZE > grind (and chains such as SCRATCH + 'thing' = claw > hand).
+
+After (J2, same sampler): PERSON + NEW = guest, HOUSE + MANY = village, CHILD + TREE = fruit, HAND + LEFT = north, EYE +
+SKY = sun (twice; then SUN + FALL = west), STICK + SHARP = spear, FATHER + BIG = grandfather, STONE + SHARP = knife, HE +
+THAT = he, PERSON + GOOD = friend, ARM + BIRD = wing, SEED + ROUND = lentils, WATER + SALTY = sea, YOU + OTHER = you.
+Shifts: HE OR SHE OR IT > thou, TAKE > hold, DAUGHTER > girl, HEAR > smell, CLOUD > fog, FLOW > run, HAND > five, WASH
+> wipe, HORN > tooth, RUN > flow. Still thin: function words are often fresh roots (AT, BECAUSE, WITH;
+draft-language-function-words-coined).
+
+## Hiatus round (2026-11-04)
+
+Problem (shipped `runs/a24559/languages.json`): 14.6% of living-lect words held a run of 3+ vowels (human-voiced 15.5%,
+halfling 18%, hobgoblin 19%), 2.4% three identical vowels in a row (tiiin, niiiini, kuuuŋ). Baseline for every comparison
+below: the shipped run (same world, HEAD code).
+
+**Measure.** Isolated-lect harness (scratchpad `hiatusI/flow.py`, 48 human protos, 20 kyr, no wave): VVV share 0 at the
+proto, 0.035 at 4 kyr, 0.18 at 20 kyr. Hiatus made per lect per kyr (VV junctions): lenition.h_loss (h > ∅, context-free)
+11.4, S201 (j > ∅ / V_V) 8.2, S176/S179 (diphthongization, mostly real diphthongs) 3.9/3.7, S027 (w > ∅) 2.8, S022, S009,
+S008. Nothing resolved it: S126 (elision) and S175 (monophthongization) failed to parse and never fired; the only repairs,
+S125/S127 (hiatus glides, glide formation), were family "epenthesis", capped at two firings a line.
+
+**Changes.** (tools/language/knowledge_tables.py, tsv regenerated, ids stable, S205-S207 appended.)
+- Catalogue: S125-S127 become family "hiatus"; S126 rewritten so it parses, `V[−stress] > ∅ / _V[−high]` (V1 elision:
+  Greek ἀπ' ἐμοῦ, French l'ami; the commonest resolution, Casali 1997); S175 staged so it parses (`ai > eː ; then au > oː`,
+  Latin causa > cosa, Sanskrit sandhi a + i > e); S205 `e, ɛ > j / _V[−high]` (Vulgar Latin vinea > *vinja, palea >
+  *palja); S206 Attic contraction (*genea > genē, géneos > génous, timáomen > timômen); S207 `∅ > j / e_V[−high]` (Old
+  Portuguese chẽo > cheio, cẽa > ceia).
+- Repair path (architecture.md §5 "Hiatus"): `lect.normalize` fuses two vowels of one quality (long where the lect has long
+  vowels, short where not, as Old Portuguese door > dor; two level tones make a contour) and simplifies word-initial
+  geminates; `Lect.resolve_hiatus` fires the line's preferred hiatus repair once a change leaves >= HIATUS_MIN (8) new
+  hiatus junctions in the lexicon, HIATUS_REPAIRS (1) firing (preference: weight x a lognormal keyed by the proto line, so
+  daughters keep it). `inventory.legal` rejects VVV, identical VV and initial geminates; `repair` resolves them (fusion,
+  glide, V1 elision), so coinages, compounds and loans come out clean.
+- First version (3 repairs after any new hiatus, run I, `scratchpad/runI`, HEAD lexicon) cut VVV to 0.9% but put ~18 repair
+  firings into each human lect (1.5 before) and took sisters strict 0.502 > 0.438. A two-sister harness with a wave
+  (`hiatusI/sis.py`, 96 pairs, 6 + 2 kyr, 3 seeds) gave strict 0.382 (HEAD) / 0.346 (3 repairs) / 0.366 (1 repair,
+  HIATUS_MIN 8); fusion to long always, higher HIATUS_MIN, spreading repairs by wave and S175 off made no difference
+  inside the noise (~0.01).
+
+**Final run** (run I2, `scratchpad/runI2/a24559/languages.json`, the worktree with the compounds/shifts lexicon too):
+
+| measure | shipped | run I2 |
+| --- | --- | --- |
+| words with a 3+ vowel run, all living / human-voiced | 0.146 / 0.155 | 0.016 / 0.012 (halfling 0.007, hobgoblin 0.017, kenku 0.030) |
+| three identical vowels in a row | 0.0236 | 0.0002 |
+| words with any VV / identical VV | 0.525 / 0.200 | 0.260 / 0.010 |
+| word-initial geminates | 0.0007 | 0.0000 |
+| sisters strict / loose / true | 0.502 / 0.563 / 0.591 | **0.494** / 0.564 / 0.603 (FAIL, bar 0.5) |
+| human horizon | 10.5 | 12.0 (fails as before, now longer) |
+| living human-voiced p / k / t | 0.66 / 0.81 / 0.89 | 0.72 / 0.87 / 0.93 |
+| ʔ / ɲ / ŋ (x PHOIBLE) | 1.24 / 0.86 / 1.34 | 1.21 / 0.82 / 1.32 |
+| ɾ share | 0.55 | 0.61 (2.4x, the monoculture bar is 2.5x; run I had 2.58x and failed) |
+| long-vowel lects (human-voiced) / vowels p5-p95 | 0.58 / 4 6 8 11 15 | 0.76 / 5 7 9 12 15 |
+| kenku / aarakocra tonal | 0.85 / 0.76 | 0.89 / 0.76 |
+| dragons' harsh units per lect | 4.5 | 4.6 |
+| core syllables, all living; corr(length scale, syllables) | 2.69; 0.31 | 2.22; 0.28 |
+| core syllables by length scale <0.85 / 0.95-1.05 / 1.2-1.4 / >1.4 | 2.48 / 2.71 / 2.99 / 3.67 | 2.12 / 2.21 / 2.52 / 2.58 |
+
+Other checks pass (proto inventories, shift, long generations, hubs, living sizes, living segments, typology). Words are
+shorter by ~0.45 syllables everywhere: the old counts included hiatus vowels that were syllables only on paper (kaha >
+kaa counted 2). The slope with syllable space is kept; the small-space end is ~2.5 syllables, not 3+.
+
+## Final run (2026-11-04 evening)
+
+Baseline: the shipped run of the morning (same world). Code: all rounds of 11-04 together, plus two exits for the tap
+(S208 ɾ > r word-initially, Spanish; S209 ɾ > l, Polynesian). Without them the combined run read ɾ in 67% of living lects
+(2.7x PHOIBLE's 0.25) and failed the segment-frequency check; ɾ had one source (S013 flapping) and no exit. With them the
+check passes (no monoculture, top-20 overlap 18; p / t / k 0.72 / 0.89 / 0.82).
+
+Final `runs/a24559/languages.json` (two runs identical apart from timing): sisters strict 0.499 / loose 0.563 / true
+0.599 (bar 0.5 on strict: fail); human horizon 10.67 kyr (smoothed 11.11; target 6-10: fail), long-lived censored at 22;
+rules per kyr human 15.2, long-lived 4.1; living consonants p5-p95 11/17/21/24/37, vowels 5/7/9/12/16; tonal 38% (kenku
+67%, aarakocra 80%, human 40%); clicks 2.1%; words with a 3+ vowel run 1.7%; median homophone share 0.125; replacements
+derive 0.22, renew 0.20, borrow 0.19, compound 0.15, shift 0.13, coin 0.11.

@@ -264,6 +264,30 @@ class Doc:
             for lid in ent.get("lects", []):
                 self.scholars[lid] = ent
         self.paths = _gram_paths()
+        for l in self.lects.values():
+            self._bookify(l)
+
+    @staticmethod
+    def _bookify(l: dict) -> None:
+        """Spelling columns show the book spelling (romanize book=True from the IPA, the lect's contrasts and inventory); the
+        stored full spelling moves to `roman_full` (the Orthography section keeps full spellings)."""
+        segs = inv_segments(l)
+        try:
+            cs, iv = R.contrasts_of(segs), frozenset(segs)
+        except Exception:  # noqa: BLE001
+            return
+
+        def book(ipa):
+            try:
+                return R.romanize_word(R.from_ipa(ipa), cs, iv, book=True)
+            except Exception:  # noqa: BLE001 (a sketch must not die on one odd form)
+                return None
+        for e in (l.get("lexicon") or {}).values():
+            if "roman_full" not in e and e.get("ipa") and (b := book(e["ipa"])):
+                e["roman_full"], e["roman"] = e.get("roman"), b
+        for g in l.get("grams") or []:
+            if "roman_full" not in g and g.get("form_ipa") and (b := book(g["form_ipa"])):
+                g["roman_full"], g["form_roman"] = g.get("form_roman"), b
 
     # etymology
     def chain(self, idx) -> list:
@@ -786,7 +810,12 @@ def phonology(doc: Doc, l: dict) -> list[str]:
     out.append("")
     allo = inv.get("allophones") or l.get("allophones")
     out += ["### Allophony", ""]
-    if allo:
+    if allo and isinstance(allo, list) and all(isinstance(a, dict) and "ipa" in a for a in allo):
+        out += ["| allophone | phoneme | where |", "| --- | --- | --- |"]
+        for a in allo:
+            where = re.sub(r"\s*\([^)]*\)\s*$", "", str(a.get("where") or a.get("test") or "")).strip()
+            out.append(f"| [{a['ipa']}] | /{a.get('of', '?')}/ | {where} |")
+    elif allo:
         if isinstance(allo, dict):
             out += ["| phoneme | realisations |", "| --- | --- |"]
             for k, v in allo.items():
@@ -843,17 +872,19 @@ def orthography(l: dict) -> list[str]:
     return out
 
 
-CASE_FNS = {"ACC", "ERG", "DAT", "GEN", "LOC", "ABL", "INS", "COM"}
+CASE_FNS = {"ACC", "ERG", "DAT", "GEN", "LOC", "ABL", "ALL", "INS", "COM"}
 
 
 def _typology_clashes(t: dict, grams: list[dict]) -> list[str]:
     fns = {g["function"] for g in grams if g.get("form_ipa")}
+    # (WALS 49 counts inflectional case: a free case-function marker is an adposition, case from clitic level on)
+    case_fns = {g["function"] for g in grams if g.get("form_ipa") and (g.get("level") or 0) >= 1}
     out = []
     for feat, val, test, what in (
             ("number", "none", {"PL", "DU"}, "plural or dual marker"),
             ("definite_article", "none", {"DEF"}, "definite marker"),
             ("indefinite_article", "none", {"INDEF"}, "indefinite marker"),
-            ("case", "none", CASE_FNS, "case marker"),
+            ("case", "none", CASE_FNS & case_fns, "case marker"),
             ("evidentiality", "none", {"EVID.REP", "EVID.DIR"}, "evidential marker"),
             ("past", "none", {"PAST", "RECPST"}, "past marker"),
             ("future", "none", {"FUT"}, "future marker"),
@@ -976,31 +1007,57 @@ def _family_how(doc: Doc, e: dict, base: str) -> str:
     return " → ".join(tail if len(tail) <= 3 else tail[:2] + ["…", tail[-1]])
 
 
+def _root_family(doc: Doc, l: dict, lex: dict) -> list[str]:
+    """The family of the root with most living words in this lect (per-word `roots`, main first; document-level `roots`)."""
+    roots = doc.d.get("roots") or {}
+    count: Counter = Counter()
+    for e in lex.values():
+        for r in (e.get("roots") or [])[:1]:
+            count[r] += 1
+    cands = [(n, r) for r, n in count.items() if r in roots]
+    if not cands:
+        return []
+    n, rid = max(cands, key=lambda x: (x[0], x[1]))
+    if n < 2:
+        return []
+    members = sorted((c for c, e in lex.items() if rid in (e.get("roots") or [])),
+                     key=lambda c: (((lex[c].get("roots") or []).index(rid)), c))
+    r = roots[rid]
+    out = ["### A word family", ""]
+    out.append(f"Words built on one root: **{r.get('gloss') or cname(r.get('concept', '?'))}** *{r.get('ipa', '?')}* "
+               f"({r.get('pos', '?')}, coined {kyr(r.get('kyr'))} in {doc.label(r.get('lect'), True)}); {n} of this "
+               f"language's {len(lex)} recorded words have it as their main root, {len(members)} contain it "
+               "(from the root-family record of the output).")
+    out += ["", "| meaning | IPA | spelling | roots (main first) | how it was built |", "| --- | --- | --- | --- | --- |"]
+    for c in members[:14]:
+        e = lex[c]
+        others = ", ".join((roots.get(x) or {}).get("gloss") or x.split(":", 1)[-1].lower() for x in e.get("roots") or [])
+        out.append(f"| {cname(c)} | {e['ipa']} | {e['roman']} | {others} | {etym_short(doc, e, l['id'], 3)} |")
+    if len(members) > 14:
+        out.append(f"| … | | | | {len(members) - 14} more |")
+    out.append("")
+    return out
+
+
 def word_family(doc: Doc, l: dict) -> list[str]:
-    """Words built on one base. Uses a root-family field when the output has one, else the compound and derivation steps
-    in the etymologies (a word belongs to concept X's family when one of its steps compounds or derives from X)."""
+    """Words built on one root (the output's root families), else on one base, inferred from the compound and derivation
+    steps in the etymologies (a word belongs to concept X's family when one of its steps compounds or derives from X)."""
     lex = l.get("lexicon") or {}
-    fam_key = next((k for k in ("root_family", "family", "root") if any(k in e for e in lex.values())), None)
+    if doc.d.get("roots") and any("roots" in e for e in lex.values()):
+        return _root_family(doc, l, lex)
     groups: dict[str, list[str]] = defaultdict(list)
-    how = ""
-    if fam_key:
-        for c, e in lex.items():
-            if e.get(fam_key) is not None:
-                groups[str(e[fam_key])].append(c)
-        how = "grouped by the root-family field of the output"
-    else:
-        for c, e in lex.items():
-            for n in doc.chain(e.get("etym")):
-                pr = n[3]
-                bases = []
-                if pr.startswith("compound:"):
-                    bases = pr.split(":", 1)[1].split("+")
-                elif pr.startswith("derive:") and len(n) > 6 and n[6]:
-                    bases = [n[6].split(" + ")[0]]
-                for b in bases:
-                    if b and b != c and c not in groups[b]:
-                        groups[b].append(c)
-        how = "found through the compounds and derivations in the etymologies"
+    how = "found through the compounds and derivations in the etymologies"
+    for c, e in lex.items():
+        for n in doc.chain(e.get("etym")):
+            pr = n[3]
+            bases = []
+            if pr.startswith("compound:"):
+                bases = pr.split(":", 1)[1].split("+")
+            elif pr.startswith("derive:") and len(n) > 6 and n[6]:
+                bases = [n[6].split(" + ")[0]]
+            for b in bases:
+                if b and b != c and c not in groups[b]:
+                    groups[b].append(c)
     if not groups:
         return []
     base, members = max(groups.items(), key=lambda kv: (len(kv[1]), kv[0]))
@@ -1442,17 +1499,36 @@ def index_page(doc: Doc, picks, ranking, src: str) -> str:
                    f"({len(inv.get('vowels', []))}) | {inv.get('max_onset')}/{inv.get('max_coda')} | "
                    f"{len(inv.get('tones', [])) or 'none'} | {t.get('word_order')} | {t.get('adposition')} | "
                    f"def {t.get('definite_article')}, indef {t.get('indefinite_article')} | {t.get('case')} |")
-    out += ["", "## What the output does not record", "",
+    d = doc.d
+    inv_has = lambda k: any(k in ((l.get("inventory") or {})) and (l["inventory"].get(k)) for l in doc.living)  # noqa: E731
+    has_allo = inv_has("allophones")
+    has_roots = bool(d.get("roots")) and any("roots" in e for l in doc.living for e in (l.get("lexicon") or {}).values())
+    recorded = []
+    if has_allo:
+        n = sum(len((l.get("inventory") or {}).get("allophones") or []) for l in doc.living)
+        recorded.append(f"allophones ({n} rules across the living lects, shown under Allophony)")
+    if has_roots:
+        recorded.append(f"root families ({len(d['roots'])} roots; each word lists its roots, main first, and the word-family "
+                        "section uses them)")
+    else:
+        recorded.append("no root families (the word family is inferred from compound and derivation steps)")
+    missing = ["diphthongs as units", "intonation", "morphophonology beyond the four exemplar nouns and verbs",
+               "any sentence-level data (the phrases are assembled from word order and markers)",
+               "separate inclusive and exclusive 'we' forms, even where the typology says the language has the distinction",
+               "case forms of pronouns",
+               "speaker numbers beyond the deme's population estimate", "dialect-level variation inside a lect"]
+    if not has_allo:
+        missing.insert(0, "allophones and phonetic detail (sounds are phonemes only)")
+    out += ["", "## What the output does and does not record", "",
+            "Recorded and used by these pages: " + "; ".join(recorded) + ".", "",
             "Things a Wikipedia article would have that these pages cannot show, because the languages file does not hold "
-            "them: allophones and phonetic detail (sounds are phonemes only); diphthongs as units; intonation; "
-            "morphophonology beyond the four exemplar nouns and verbs; any sentence-level data (the phrases are assembled "
-            "from word order and markers); separate inclusive and exclusive 'we' forms, even where the typology says the "
-            "language has the distinction; case forms of pronouns; root families in the etymology (the word family is "
-            "inferred from compound and derivation steps); speaker numbers beyond the deme's population estimate; "
-            "dialect-level variation inside a lect.", "",
-            f"The typology features and the live grammatical markers disagree in {clashes} of the {len(doc.living)} living "
-            "lects (for example 'no case' with a live locative marker, or 'no number' with a live plural); the pages show "
-            "both as recorded and flag the clash under Grammar.", ""]
+            "them: " + "; ".join(missing) + ".", "",
+            ("The typology features and the live grammatical markers agree in all " + str(len(doc.living)) + " living lects "
+             "(the clash check counts a free case-function word as an adposition, case only from clitic level on)."
+             if not clashes else
+             f"The typology features and the live grammatical markers disagree in {clashes} of the {len(doc.living)} living "
+             "lects (the clash check counts a free case-function word as an adposition, case only from clitic level on); the "
+             "pages show both as recorded and flag the clash under Grammar."), ""]
     return "\n".join(out)
 
 

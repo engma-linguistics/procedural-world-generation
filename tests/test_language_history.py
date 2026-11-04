@@ -238,6 +238,46 @@ def test_inventory_cap():
     assert ph not in cons and th not in cons  # (rare aspirates folded into the plain stops, one axis away)
 
 
+def test_hiatus_is_repaired_after_a_change():
+    """A change that leaves hiatus (h > ∅) is followed by the line's hiatus repair (lect.resolve_hiatus): the words end
+    with no more hiatus than before it, identical vowels fused (normalize), the repair a recorded change of the hiatus
+    family outside the re-fire memory; a daughter keeps the line's preference."""
+    from planet.language import lect as LC, rules as RU, profiles as PR
+    from planet.language import lexicon as LX
+    from planet.language import inventory as INV
+    from planet.language.percepts import from_ipa
+    forms = ["kaho", "tihe", "puha", "maha", "sohe", "neha", "lihu", "kahi", "tuhe", "sahi"] * 3
+    lex = LX.Lexicon("x", {}, {}, True)
+    for k, f in enumerate(forms):
+        lex.words[f"W{k}"] = LX.Word(f"W{k}", tuple(from_ipa(f)), "N", 3, (), 0.0)
+    segs = sorted({x for f in forms for x in from_ipa(f)}, key=repr)
+    inv = INV.Inventory(consonants=[x for x in segs if x.kind == "C"] + list(from_ipa("jw")),
+                        vowels=[x for x in segs if x.kind == "V"], shapes={"CV": 1.0}, stress="initial")
+    l = LC.Lect(id="x", deme=0, people="human", parent=None, how="proto", born_kyr=1.0, lexicon=lex, inventory=inv,
+                profile=PR.HUMAN, profile_key="human")
+    h_loss = next(r for r in RU.DEMO_RULES if r.id == "lenition.h_loss")
+    assert LC.hiatus_count(w.form for w in lex.words.values()) == 0
+    made = LC.hiatus_count(LC.normalize(RU.apply(h_loss, w.form), False) for w in lex.words.values())
+    assert l.apply_rule(h_loss, 0.5) > 0
+    after = [w.form for w in lex.words.values()]
+    assert made >= LC.HIATUS_MIN and LC.hiatus_count(after) < made
+    assert any(tuple(f) == tuple(from_ipa("ma")) for f in after)  # maha > maa > ma: fused, short (no long vowels here)
+    reps = [c["rule"] for c in l.changes[1:]]
+    cat = {r.id: r for r in LC.catalogue_for(PR.HUMAN, "human")}
+    assert reps and all(cat[LC.base_id(r)].family == "hiatus" for r in reps)
+    assert set(l.fired) == {"lenition.h_loss"}
+    d = l.copy("y", 0, 0.4, "bud")
+    assert d.hiatus_key == "x" and d.hiatus_pref(cat["S126"]) == l.hiatus_pref(cat["S126"])
+
+
+def test_normalize_simplifies_initial_geminates():
+    from planet.language import lect as LC
+    from planet.language.percepts import from_ipa, word_ipa
+    assert word_ipa(LC.normalize(tuple(from_ipa("ppata")))) == "pata"
+    assert word_ipa(LC.normalize(tuple(from_ipa("nːata")))) == "nata"
+    assert word_ipa(LC.normalize(tuple(from_ipa("tapːa")))) == "tapːa"
+
+
 def test_size_steer_follows_phoible():
     """The size steer: growing a 21-consonant inventory is neutral-ish, growing a 70-consonant one is rare, shrinking a
     7-consonant one is rare; the anchor holds a line near its own proto size."""
@@ -309,7 +349,8 @@ _NOT_RULES = ("simplification", "koine", "koine.level")
 
 
 def test_rules_do_not_refire(result):
-    """The re-fire memory: no rule more than MAX_FIRES times in a lect's line (harmony once), never twice within REFIRE_KYR."""
+    """The re-fire memory: no rule more than MAX_FIRES times in a lect's line (harmony once), never twice within REFIRE_KYR.
+    Hiatus repairs (family "hiatus", fired after a change that leaves hiatus: lect.resolve_hiatus) are outside it."""
     from planet.language import lect as LC
     res, _, _ = result
     cat = {}
@@ -321,6 +362,8 @@ def test_rules_do_not_refire(result):
         for c in l.changes:
             rid = c["rule"]
             if rid in _NOT_RULES or rid.startswith(("accent:", "tone.phonemic")):
+                continue
+            if LC.base_id(rid) in cat and cat[LC.base_id(rid)].family == "hiatus":
                 continue
             line.setdefault(LC.base_id(rid), []).append(c["kyr"])
         for b, ks in line.items():
@@ -474,8 +517,9 @@ def test_l2_share_varies():
 
 
 def test_root_families_in_the_document(result):
-    """Every stored word names its roots; the document's root table has each main root with its first etymology node, and
-    sister lects of one proto share root ids (the families are inherited)."""
+    """Every stored word names its roots; the document's root table has each main root with the etymology node its root
+    starts at (a step of the word's chain: lexicon.root_step), and sister lects of one proto share root ids (the families
+    are inherited)."""
     _, doc, _ = result
     roots = doc["roots"]
     seen = 0
@@ -485,8 +529,8 @@ def test_root_families_in_the_document(result):
             r = roots[w["roots"][0]]
             assert {"node", "lect", "kyr", "concept", "gloss", "ipa", "pos"} <= set(r)
             if r["node"] is not None:
-                first = OU.etym_steps(doc, w["etym"])[0]
-                assert doc["etym_nodes"][r["node"]][3] == first[2] and r["ipa"] == first[3]
+                node = doc["etym_nodes"][r["node"]]
+                assert (node[3], r["ipa"]) in {(s[2], s[3]) for s in OU.etym_steps(doc, w["etym"])}
                 seen += 1
     assert seen > 100
     by = {l["id"]: l for l in doc["lects"]}

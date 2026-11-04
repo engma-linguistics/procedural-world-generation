@@ -6,7 +6,7 @@ from dataclasses import replace
 import pytest
 
 from planet.language import romanize as R
-from planet.language.percepts import core, from_ipa, is_nonhuman, symbols, to_ipa
+from planet.language.percepts import Segment, core, from_ipa, is_nonhuman, symbols, to_ipa
 
 
 def test_table_rows_parse():
@@ -201,3 +201,38 @@ def test_rhotics_and_book_affricates():
     assert not R.merged("ɹ", "ɾ") and R.merged("ɾː", "r")
     b = lambda x: R.romanize(x, book=True)
     assert b("aɟʝa") == "agya" and b("acça") == "akya" and b("aɹa") == "ara" and "gyyh" not in b("šẽɟʝo".replace("š", "ʃ"))
+
+
+def _ipa_block(s: str) -> list[str]:
+    return [ch for ch in s if "ɐ" <= ch <= "ʯ" or "ᴀ" <= ch <= "ᶿ"]
+
+
+def _vowel_space():
+    """Every vowel the percept space can produce: all height x back x round cells, plus every symbols.tsv vowel."""
+    out = {Segment("V", voice=1, height=h, back=b, round=r) for h in range(7) for b in range(5) for r in (0, 1)}
+    out |= {r.seg for r in symbols() if r.seg.kind == "V" and not is_nonhuman(r.seg) and r.seg.tone == 0}
+    return sorted(out, key=to_ipa)
+
+
+@pytest.mark.parametrize("cs", CONTRAST_SETS, ids=lambda c: "+".join(sorted(c)) or "none")
+def test_no_ipa_letters_in_spellings(cs):
+    """Every vowel (with its shift marks ̞ ̠ ̟, length, nasality) and every consonant the percept space makes has a Latin
+    spelling in both modes: no IPA-block letter leaks into a book or a workbench spelling."""
+    leaks = {}
+    for s in itertools.chain(_vowel_space(), _pool(), (r.seg for r in symbols() if r.seg.kind == "C" and not is_nonhuman(r.seg))):
+        for variant in (s, replace(s, length=1)) + ((replace(s, nasal=1),) if s.kind == "V" else ()):
+            for book in (False, True):
+                sp = R.spell(variant, cs, book=book)
+                if _ipa_block(sp):
+                    leaks[(to_ipa(variant), book)] = sp
+    assert not leaks, sorted(leaks.items())
+
+
+@pytest.mark.parametrize("cs", VOWEL_SETS, ids=lambda c: "+".join(sorted(c)) or "none")
+def test_injective_over_the_whole_vowel_space(cs):
+    """Full mode: two vowels share a spelling only by a documented merger (the shifted vowels keep their marks)."""
+    groups = collections.defaultdict(set)
+    for s in _vowel_space():
+        groups[R.spell(s, cs)].add(to_ipa(s))
+    bad = {k: v for k, v in groups.items() if any(not R.merged(a, b, cs) for a, b in itertools.combinations(sorted(v), 2))}
+    assert not bad, bad

@@ -73,6 +73,70 @@ def _strip_tone(v: Segment) -> Segment:
     return replace(v, tone=0) if v.tone else v
 
 
+# --- hiatus (shared with lect.normalize and lect.resolve_hiatus) --------------------------------------------------------
+
+_LEVEL = {7: 0, 1: 1, 2: 2, 3: 3, 6: 4}  # level tones low to high (4 rising, 5 falling are contours)
+
+
+def _fusible(a, b) -> bool:
+    return (a.kind == "V" and b.kind == "V" and a.height == b.height and a.back == b.back and a.round == b.round
+            and a.phonation == b.phonation and a.source2 == b.source2 and a.register == b.register)
+
+
+def _fused_tone(t1: int, t2: int) -> int:
+    """The tone of two tone-bearing vowels fused into one: kept when they agree, a contour from two levels (H + L falling,
+    L + H rising: tone stability, Goldsmith 1976; Yoruba and Bantu vowel contraction), else the first."""
+    if t1 == t2 or not t2:
+        return t1
+    if not t1:
+        return t2
+    if t1 in _LEVEL and t2 in _LEVEL:
+        return 4 if _LEVEL[t1] < _LEVEL[t2] else 5
+    return t1
+
+
+def fuse_vowels(f: tuple, long_ok: bool = True) -> tuple:
+    """Identical vowels side by side are one vowel (Casali 1997: identical-vowel hiatus is resolved nearly everywhere; Old
+    Portuguese door > dor 'pain', maa > má 'bad', leer > ler 'read'; Attic e + e > ē): long in a lect with long vowels
+    (`long_ok`; or when either was long), short in one without (Portuguese had lost Latin quantity). Nasality spreads to
+    the fused vowel; tones fuse by _fused_tone. Returns `f` itself when nothing fuses."""
+    n = len(f)
+    if n < 2 or not any(_fusible(f[i], f[i + 1]) for i in range(n - 1)):
+        return f
+    out = [f[0]]
+    for x in f[1:]:
+        y = out[-1]
+        if _fusible(y, x):
+            out[-1] = replace(y, length=1 if (long_ok or y.length or x.length) else 0, nasal=max(y.nasal, x.nasal),
+                              tone=_fused_tone(y.tone, x.tone))
+        else:
+            out.append(x)
+    return tuple(out)
+
+
+def _diphthong(a, b) -> bool:
+    """A falling diphthong (a non-high vowel + a short high vowel of another quality: ai, au, ei, oi, ou) is not hiatus."""
+    return b.height >= 5 and a.height < 5 and b.length == 0
+
+
+def hiatus_in(f) -> int:
+    """Hiatus junctions in a form: adjacent vowels that are not a falling diphthong."""
+    k = 0
+    prev = None
+    for x in f:
+        if x.kind == "V":
+            if prev is not None and not _diphthong(prev, x):
+                k += 1
+            prev = x
+        else:
+            prev = None
+    return k
+
+
+def hiatus_count(forms) -> int:
+    return sum(hiatus_in(f) for f in forms)
+
+
 # --- the inventory ------------------------------------------------------------------------------------------------------
 
 @dataclass
@@ -615,8 +679,12 @@ def _seg_ok(s: Segment, inv: Inventory) -> bool:
 
 def legal(word: tuple, inv: Inventory) -> bool:
     """Every segment in the inventory (vowels carry one of the lect's tones when it has tone), at least one vowel, and
-    every syllable within the templates: onsets rise, codas fall, sizes and coda class as the lect allows."""
+    every syllable within the templates: onsets rise, codas fall, sizes and coda class as the lect allows. No two vowels
+    of one quality side by side (that is a long vowel), no run of three vowels (V.V.V: rare in any language, and a lect's
+    templates seldom put two onsetless syllables in a row) and no word-initial geminate."""
     if not word or not all(_seg_ok(s, inv) for s in word):
+        return False
+    if _vowel_trouble(word) is not None or _initial_geminate(word):
         return False
     r = _runs(word)
     if len(r) < 3:
@@ -630,6 +698,74 @@ def legal(word: tuple, inv: Inventory) -> bool:
         if _split_medial(r[j], inv) is None:
             return False
     return True
+
+
+def _vowel_trouble(word: tuple):
+    """The first vowel problem legal() rejects: ("fuse", i) for two vowels of one quality at i, i + 1; ("run", i) for the
+    hiatus pair at i, i + 1 to resolve inside a run of three or more vowels (the first that is not a falling diphthong,
+    else the run's first pair); None when there is none."""
+    n = len(word)
+    for i in range(n - 1):
+        if _fusible(word[i], word[i + 1]):
+            return ("fuse", i)
+    i = 0
+    while i < n:
+        if word[i].kind != "V":
+            i += 1
+            continue
+        j = i
+        while j < n and word[j].kind == "V":
+            j += 1
+        if j - i >= 3:
+            k = next((k for k in range(i, j - 1) if not _diphthong(word[k], word[k + 1])), i)
+            return ("run", k)
+        i = j
+    return None
+
+
+_GLIDES = {k: from_ipa(k)[0] for k in ("j", "w")}
+
+
+def _initial_geminate(word: tuple) -> bool:
+    return len(word) > 1 and word[0].kind == "C" and (word[0].length == 1 or word[1] == word[0])
+
+
+def _resolve_vowels(w: list, inv: Inventory) -> list:
+    """Hiatus and initial geminates out of a word to be repaired, by the commonest resolutions (Casali 1997): identical
+    vowels fuse (long when the lect has that long vowel), a high vowel before another vowel in a long run becomes its
+    glide when the lect has it (i > j, u > w), else the first vowel of the pair is elided; a word-initial geminate is
+    simplified."""
+    for _ in range(2 * len(w) + 2):
+        bad = _vowel_trouble(tuple(w))
+        if bad is None:
+            break
+        kind, i = bad
+        a, b = w[i], w[i + 1]
+        if kind == "fuse":
+            v = replace(a, length=1, nasal=max(a.nasal, b.nasal), tone=_fused_tone(a.tone, b.tone))
+            if not _seg_ok(v, inv):
+                v = replace(v, length=0)
+            if not _seg_ok(v, inv):
+                v = a
+            w[i:i + 2] = [v]
+            continue
+        g = None
+        if a.height >= 5:
+            g = _GLIDES["w" if a.round else "j"]
+            g = g if g in inv._cset else None
+        if g is not None:
+            w[i] = g
+        else:
+            del w[i]
+    if len(w) > 1 and _initial_geminate(tuple(w)):
+        if w[1] == w[0]:
+            del w[0]
+        else:
+            s = replace(w[0], length=0)
+            w[0] = s if _seg_ok(s, inv) else w[0]
+            if w[0].length:
+                del w[0]
+    return w
 
 
 def epenthetic_vowel(inv: Inventory) -> Segment:
@@ -688,6 +824,9 @@ def repair(word: tuple, inv: Inventory) -> tuple:
     ev = epenthetic_vowel(inv)
     if not any(s.kind == "V" for s in w):
         w = w[:1] + [ev] + w[1:]
+    w = _resolve_vowels(list(w), inv)
+    if not w:
+        return ()
     for _ in range(4 * len(w) + 8):
         t = tuple(w)
         if legal(t, inv):

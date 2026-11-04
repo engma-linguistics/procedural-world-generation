@@ -1149,7 +1149,8 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
     if f == "indefinite_article":
         return "present" if has("INDEF") else "none"
     if f == "case":
-        cs = [x for x in CASE_FNS if x in lv]
+        # (WALS 49 counts inflectional case: a free case-function gram is an adposition, case only from clitic level on)
+        cs = [x for x in CASE_FNS if any(m.level >= CLITIC for m in lv.get(x, ()))]
         if not cs:
             return "none"
         return "many" if len(cs) >= 4 or any(x in RICH_CASE for x in cs) else "few"

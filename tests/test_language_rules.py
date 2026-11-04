@@ -434,3 +434,20 @@ def test_sinks_round_rows():
     for twin in ("S005", "S006", "S007", "S010", "S011", "S012", "S036"):
         assert twin not in ids, twin
     assert {"S037", "lenition.intervocalic_voicing", "lenition.spirantization", "S197", "S202"} <= ids
+
+
+# ------------------------------------------------------------------------------------------------ hiatus (hiatus round)
+def test_hiatus_rows_parse_and_do_what_their_examples_say():
+    """The hiatus family (S125-S127, S205-S207) and the staged S175 parse, and each does its attested change."""
+    rs, fails = R.load_tsv()
+    assert not {f[0] for f in fails} & {"S125", "S126", "S127", "S175", "S205", "S206", "S207"}
+    by = {r.id: r for r in rs}
+    assert {r.id for r in rs if r.family == "hiatus"} == {"S125a", "S125b", "S126", "S127", "S205", "S206", "S207"}
+    assert ipa(R.apply(by["S127"], w("filius"))) == "filjus"                   # Latin filius > *filjus
+    assert ipa(R.apply(by["S205"], w("winea"))) == "winja"                     # vinea > *vinja
+    assert ipa(R.apply(by["S206"], w("geneos"))) == "ɡenoːs"                   # Attic géneos > génous
+    assert ipa(R.apply(by["S206"], w("timaomen"))) == "timɔːmen"               # timáomen > timômen
+    assert ipa(R.apply(by["S207"], w("ʃeo"))) == "ʃejo"                        # Old Portuguese chẽo > cheio
+    assert ipa(R.apply(by["S175"], w("kausa"))) == "koːsa"                     # Latin causa > cosa
+    assert ipa(R.apply(by["S126"], w("kaeo"), "initial")) == "kao"             # V1 elision, the stressed vowel kept
+    assert ipa(R.apply(by["S126"], w("tai"), "penult")) == "tai"               # a falling diphthong is not hiatus

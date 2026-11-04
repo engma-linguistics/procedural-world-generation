@@ -170,3 +170,22 @@ the not-slow suite passed (1483) before the tidy-up round; the language tests (5
 
 **Open threads.** Koine has fired on real data (109 entries) but nobody has judged it; the knowledge tables' examples
 (`reference-data.md`) deserve a spot-check; `lang-time` screenshots show a complexity dip that may be a pass artefact.
+
+## Continuation (lane, 2026-11-04 evening)
+
+**State.** Everything is committed on `lang-design`; nothing is merged. Read `docs/review/language/demo.md` first (rewritten
+tonight; every number is from the shipped run). `runs/a24559/languages.json` is the shipped run (150 MB, deterministic:
+two runs identical apart from timing). Checks 7 of 9 pass: sisters strict 0.499 (bar 0.5) and the human horizon 10.7 kyr
+(target 6-10) fail by a hair. Language pages: `docs/review/language/sketches/` (`tools/language/sketch.py`). Rounds and
+trials: `calibration.md`. Tests: the not-slow suite passed (1,543) before the last catalogue edit (S208/S209); language
+tests after it.
+
+**Next steps, in order.**
+1. Daniel's rulings in `issue-tracking/inbox/draft-language-rulings-rates-roots.md`: sisters vs horizon, the generation
+   exponent, felt vs etymological word families (lean: store `etym_roots` too).
+2. `draft-language-realism-leftovers.md`: p rare, ʁ ɹ ɦ too common, growl share, function-word coinage via
+   grammaticalization paths.
+3. `draft-languages-json-size-and-cost.md`: sidecars and the three hot spots.
+
+**Open threads.** Small-inventory word length is about 2.5 syllables at under 300 syllables (Daniel asked for long words
+there); kenku tonal share varies 67-89% run to run; the scholars' "languages" can span true families through loans.

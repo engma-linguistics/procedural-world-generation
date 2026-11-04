@@ -65,8 +65,9 @@ class EtymTable:
         self.roots: dict = {}   # root id -> {"node", "lect", "kyr", "concept", "gloss", "ipa", "pos"} (lexicon.Word.roots)
 
     def note_roots(self, w) -> None:
-        """Record the words' roots: the main root's entry is the first step of the word's chain (the root word as the proto,
-        or the coining lect, made it; "node" is that step's node id, shared by every word of the family); a compound's
+        """Record the words' roots: the main root's entry is the step of the word's chain the root starts at
+        (`lexicon.root_step`: the root word as the proto or a coining lect made it, or the shift, loan or old derivation
+        a speaker no longer analyses; "node" is that step's node id, shared by every word of the family); a compound's
         modifier root gets an entry from the first word met that has it as its main root (else concept and lect only)."""
         for i, r in enumerate(w.roots):
             e = self.roots.get(r)
@@ -75,8 +76,9 @@ class EtymTable:
             lect, _, rest = r.partition(":")
             concept = rest.split("@", 1)[0]
             if i == 0 and w.etym:
-                st = w.etym[0]
-                self.roots[r] = {"node": self.chain((st,)), "lect": st.lect, "kyr": _r(st.kyr), "concept": concept,
+                st = LX.root_step(w)   # (the step the felt root starts at: a proto root, a coinage, a shift, a loan ...)
+                j = next((k for k, x in enumerate(w.etym) if x is st), 0)
+                self.roots[r] = {"node": self.chain(w.etym[:j + 1], cache=False), "lect": st.lect, "kyr": _r(st.kyr), "concept": concept,
                                  "gloss": LX.concept_info(concept).gloss, "ipa": st.form, "pos": LX.concept_info(concept).pos}
             elif e is None:
                 self.roots[r] = {"node": None, "lect": lect, "kyr": None, "concept": concept,
@@ -92,7 +94,9 @@ class EtymTable:
                 out.append([None, _r(st.kyr), st.lect, st.process, st.form, st.gloss, st.note])
         return out
 
-    def chain(self, etym) -> int:
+    def chain(self, etym, cache: bool = True) -> int:
+        """The node id of the chain's last step (adding the nodes it lacks); `cache=False` for a one-off prefix (a root's
+        step: its nodes are the word's own, so nothing new is added)."""
         k = id(etym)
         hit = self._by_obj.get(k)
         if hit is not None and hit[0] is etym:
@@ -110,7 +114,8 @@ class EtymTable:
                 self._gloss.append(st[5])
                 self.nodes.append(row)
             parent = nid
-        self._by_obj[k] = (etym, parent)
+        if cache:
+            self._by_obj[k] = (etym, parent)
         return parent
 
 
