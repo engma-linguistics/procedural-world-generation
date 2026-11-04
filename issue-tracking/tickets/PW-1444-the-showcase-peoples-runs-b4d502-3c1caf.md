@@ -2,7 +2,7 @@
 id: PW-1444
 title: "The showcase peoples runs (b4d502, 3c1caf, a24559) no longer parse: the viewer's whole-people Culinary brief fails on them"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: peoples
@@ -29,5 +29,6 @@ Fix (no code): re-run the showcase peoples on current code (minutes each) and po
 - [ ] a Seven Meals and a D&D showcase peoples run on current code; the whole-people brief builds on both
 
 ## Updates
+- 2026-11-04: Status todo -> done. Re-run on current code from finished worlds: Seven Meals 07c755 and D&D 0141d1 on 899985, D&D 3e0eb4 on dba204. Each has settlements, polities (empires, states, dragon realms) and a whole-people brief that returns 200. Old b4d502, a24559 and 3c1caf kept (Daniel's language run reads a24559).
 - 2026-11-04: Showcase re-runs restarted from finished world ids (899985 for A, dba204 for B); the first try passed the time zoom id, which skips the world's goods (no towns). cb0e0a deleted. delete --orphans also cleared 7 interrupted/orphan run folders and an orphan goods cache.
 - 2026-11-03: Created from inbox draft draft-showcase-peoples-runs-no-longer-parse.md (found by lane164).

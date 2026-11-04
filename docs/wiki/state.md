@@ -17,8 +17,7 @@
   and Earth check before merge. The NPP lever (branch `scout-173-npp`, 19512a3a) waits for it.
 - **Lane 176**: the peoples mechanisms ledger (docs plus tests; touches history/, spread.py, ladder.py).
 - **Lane 177**: invasions you schedule (PW-1433), polity level, rows in runs/<id>/authored.json; must not touch history/.
-- **Showcase re-runs** (coordinator, `scratchpad/showcase2.log`): Seven Meals and D&D on world 899985, D&D on dba204. Peoples runs
-  must start from a finished world id, never a time zoom id. Then close PW-1444 and update the showcase table below.
+- Peoples runs must start from a finished world id, never a time zoom id (no world means no goods, settlements or polities).
 - Daniel runs language sims in his own worktree (lang-design): lanes use at most ~24 cores and don't churn. Never delete runs
   a24559, b4d502, 3c1caf (his language run reads a24559).
 - Merged 11-03/04 (details in [decisions.md](decisions.md)): board triage (v2 382 -> 12), milestones v2-v5, crops cross the sea
@@ -47,8 +46,8 @@ All at L7, `--every 4`, built on main e55316ad.
 
 | Recipe | Run | World | Notes |
 |---|---|---|---|
-| Earth-like A (seed 11, 1 Gyr) | a19366 | 9459ad | time zoom fc5311, finished world 899985; peoples b4d502 (dnd), 3c1caf (seven_meals) |
-| Earth-like B (seed 12, 1.5 Gyr) | 10fd90 | 848662 | time zoom 56dee1, finished world dba204; peoples a24559 (dnd) |
+| Earth-like A (seed 11, 1 Gyr) | a19366 | 9459ad | time zoom fc5311, finished world 899985; peoples **07c755 (seven_meals), 0141d1 (dnd)** on current code; old b4d502, 3c1caf kept |
+| Earth-like B (seed 12, 1.5 Gyr) | 10fd90 | 848662 | time zoom 56dee1, finished world dba204; peoples **3e0eb4 (dnd)**; old a24559 kept (Daniel's language run reads it) |
 | Water world (seed 13, 2 Gyr) | f27dc1 | b76c8e | icehouse; soft fail (post-v1 kind) |
 | Land-heavy (seed 14, 1 Gyr) | fe954c | 036772 | |
 | Cold (seed 15, 1 Gyr) | c9f38c | 0c14eb | icehouse, -6.4 C (as meant) |
