@@ -2,7 +2,7 @@
 id: PW-1391
 title: "Per-culture brief and a cuisine sheet v0: answer 'what does this culture cook' before languages and polities"
 type: story
-status: todo
+status: done
 parent: PW-856
 milestone: v2
 subsystem: food
@@ -30,5 +30,6 @@ Scope if yes (effort M):
 - [ ] one culture's cuisine sheet v0 for a showcase people
 
 ## Updates
+- 2026-11-03: Status todo -> done. Lane 164: cuisine sheet v0. brief.build(..., culture=ID) takes a culture's cells at the era (a merged culture's heir); planet/lineages/cuisine.py answers fuel, staple, drink, who eats together, what outsiders get wrong (contrasts with neighbouring cultures) and what it won't eat; _suggested moved there (suggested()). CLI planet brief RUN --culture ID; GET /api/brief?culture=ID; viewer brief panel has a culture picker (cultures alive at the era). brief_version 17. Samples and weak spots: docs/review/food/cuisine-sheet/round1.md; stale 9a2aae samples deleted. PW-905 and PW-744 not folded in.
 - 2026-11-03: Status needs-decision -> todo. Owner D44 11-03 'food first' is the yes; v2 must-have (lane B).
 - 2026-11-03: Created.
