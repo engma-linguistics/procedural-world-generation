@@ -371,6 +371,7 @@
       case 'taboo': return `replaced under a taboo${rest ? ' (' + rest + ')' : ''}`;
       case 'elaborate': return `lengthened to keep it apart from a lookalike${rest ? ' (' + rest + ')' : ''}`;
       case 'coin': return 'coined';
+      case 'name': return `made into a name${rest ? ' (pattern ' + rest + ')' : ''}`;
       case 'accent': return `heard through the accent of ${rest}`;
       default: return s;
     }

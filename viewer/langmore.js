@@ -27,8 +27,13 @@
     if (!chain || !chain.length) return '<span class="muted">no etymology stored</span>';
     return `<div class="ety">${chain.map((s, k) => `<div class="st"><span class="ipa">${esc(s.ipa)}</span>${say(s.ipa, people)}
       ${s.gloss && (k === 0 || s.gloss !== chain[k - 1].gloss) ? ` <span>‘${esc(String(s.gloss).toLowerCase())}’</span>` : ''}
-      <div class="pr">${esc(ago(s.kyr))} · ${s.lect ? lk(s.lect, s.lect) : ''} · ${esc(LC.processText(s.process))}${s.note ? ` · ${esc(s.note)}` : ''}</div></div>`).join('')}</div>`;
+      <div class="pr">${[s.kyr != null ? esc(ago(s.kyr)) : '', s.lect ? lk(s.lect, s.lect) : '', esc(procText(S, s.process))].filter(Boolean).join(' · ')}${s.note ? ` · ${esc(s.note)}` : ''}</div></div>`).join('')}</div>`;
   }
+  // a step's process in plain words; a naming step (name:E2) also says what its pattern means (names.patterns)
+  const patText = (S, k) => { const P = (S.doc.names && S.doc.names.patterns) || {}; return k && P[k] ? `${k}: ${P[k]}` : k || ''; };
+  const procText = (S, p) => { const m = String(p || '').match(/^name:(.*)$/); return m ? `made into a name (${patText(S, m[1])})` : LC.processText(p); };
+  // a romanized name: the readable spelling, the full one (with tone and length marks) on hover and beside it when it differs
+  const rom = (n) => `<span class="rom" title="${esc(n.roman_full || n.roman || '')}">${esc(n.roman || '')}</span>${n.roman_full && n.roman_full !== n.roman ? ` <span class="muted" style="font-size:12px">(${esc(n.roman_full)})</span>` : ''}`;
   const chainOf = (S, x) => (x == null ? null : LC.etymChain(S.ix, x));
 
   // ================================================================== tab 4: names
@@ -45,18 +50,24 @@
       const p = S.people && living[S.people] ? S.people : peoples[0];
       const nm = (doc.names && doc.names.peoples && doc.names.peoples[p]) || null;
       const best = ix.living.map((id) => ix.by.get(id)).filter((l) => l.people === p).sort((a, b) => (b.population || 0) - (a.population || 0))[0];
-      const nameCard = (title, n) => (n ? `<div class="card"><h3>${esc(title)}: <span class="rom">${esc(n.roman || '')}</span> <span class="ipa">/${esc(n.ipa || '')}/</span>${say(n.ipa, p)}</h3>
-          <div class="muted" style="font-size:12px">${n.gloss ? `‘${esc(n.gloss)}’ · ` : ''}${n.pattern ? `pattern ${esc(n.pattern)} · ` : ''}${n.lect ? 'in ' + lk(n.lect) : ''}${n.basis ? ' · ' + esc(n.basis) : ''}</div>
+      const nameCard = (title, n) => (n ? `<div class="card"><h3>${esc(title)}: ${rom(n)} <span class="ipa">/${esc(n.ipa || '')}/</span>${say(n.ipa, p)}</h3>
+          <div class="muted" style="font-size:12px">${[n.gloss ? `‘${esc(n.gloss)}’` : '', n.pattern ? `pattern ${esc(patText(S, n.pattern))}` : '', n.how ? esc(n.how) : '', n.lect ? 'in ' + lk(n.lect) : '', n.basis ? esc(n.basis) : ''].filter(Boolean).join(' · ')}</div>
+          ${n.plain ? `<div style="font-size:12px;margin-top:3px">${esc(n.plain)}</div>` : ''}
           ${n.etym != null ? etymHtml(S, chainOf(S, n.etym), p) : ''}</div>` : '');
+      const common = doc.names && doc.names.common, inCommon = common && common.exonyms && common.exonyms[p];
+      const scholars = Object.entries((doc.names && doc.names.scholars) || {}).filter(([, x]) => (x.lects || []).some((id) => (ix.by.get(id) || {}).people === p));
       let names;
       if (nm) {
         const set = nm.set || {};
         names = `<div class="ngrid">${nameCard('Their own name (endonym)', nm.endonym)}${nameCard('Name of their speech (glossonym)', nm.glossonym)}
-          ${['land', 'people', 'person', 'language'].map((k) => nameCard(`The ${k}`, set[k])).join('')}</div>
+          ${['land', 'people', 'person', 'language'].map((k) => nameCard(`The ${k}`, set[k])).join('')}
+          ${inCommon ? nameCard(`In the Common (${V.peopleName(common.people)} ${common.lect}, ${common.why || 'the trade speech'})`, inCommon) : ''}</div>
+          ${scholars.length ? `<details class="sec"><summary>The scholars' names for the families this people's lects fall in (${scholars.length})</summary><table class="t"><tr><th>family</th><th>name</th><th>why</th><th>pattern</th><th>lects</th><th>ended</th></tr>
+            ${scholars.map(([id, x]) => `<tr><td class="muted">${esc(id)}</td><td>${rom(x)}</td><td style="font-size:12px">${esc(x.gloss || '')}</td><td>${esc(x.pattern || '')}</td><td style="font-size:11px">${(x.lects || []).slice(0, 12).map((l) => lk(l, l)).join(' ')}${(x.lects || []).length > 12 ? ' …' : ''}</td><td>${x.died_kyr != null ? esc(ago(x.died_kyr)) : '<span class="ok">spoken now</span>'}</td></tr>`).join('')}</table></details>` : ''}
           <h3>What others call them (exonyms)</h3>
           <table class="t"><tr><th>by</th><th>name</th><th>IPA</th><th>meaning</th><th>pattern</th><th>why</th><th>when</th><th>passed through</th><th></th></tr>
-          ${(nm.exonyms || []).map((x, k) => `<tr><td>${sw(V.peopleColor(x.by_people))}${esc(V.peopleName(x.by_people))}${x.by_lect ? ' ' + lk(x.by_lect, x.by_lect) : ''}</td><td class="rom">${esc(x.roman || '')}</td><td class="ipa">${esc(x.ipa || '')}${say(x.ipa, x.by_people)}</td>
-            <td>${esc(x.gloss || '')}</td><td>${esc(x.pattern || '')}</td><td class="muted">${esc(x.basis || '')}</td><td>${x.era_kyr != null ? esc(ago(x.era_kyr)) : ''}</td>
+          ${(nm.exonyms || []).map((x, k) => `<tr><td>${sw(V.peopleColor(x.by_people))}${esc(V.peopleName(x.by_people))}${x.by_lect ? ' ' + lk(x.by_lect, x.by_lect) : ''}</td><td>${rom(x)}</td><td class="ipa">${esc(x.ipa || '')}${say(x.ipa, x.by_people)}</td>
+            <td>${esc(x.gloss || '')}</td><td title="${esc(patText(S, x.pattern))}">${esc(x.pattern || '')}</td><td class="muted">${esc(x.basis || '')}</td><td>${x.era_kyr != null ? esc(ago(x.era_kyr)) : ''}</td>
             <td class="muted">${(x.relay || []).map((r) => esc(typeof r === 'string' ? r : r.lect || r.people || JSON.stringify(r))).join(' → ')}</td>
             <td>${x.etym != null ? `<span class="lk" data-ex="${k}">etymology</span>` : ''}</td></tr><tr class="exr" data-exr="${k}" hidden><td colspan="9">${x.etym != null ? etymHtml(S, chainOf(S, x.etym), x.by_people) : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">none recorded</td></tr>'}</table>`;
       } else {
@@ -73,8 +84,8 @@
       const drow = (d) => {
         const n = nd[d] || nd[String(d)], ls = land[String(d)] || {};
         const places = (n && n.places) || [];
-        return `<tr><td>${esc(demeName(S, d))}</td><td>${n && n.name ? `<span class="rom">${esc(n.name.roman || '')}</span> <span class="ipa">${esc(n.name.ipa || '')}</span>${say(n.name.ipa, p)}` : '<span class="muted">–</span>'}</td>
-          <td>${places.length ? places.map((x) => `<div>${esc(x.kind || '')}: <span class="rom">${esc(x.roman || '')}</span> <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, p)} <span class="muted">${x.gloss ? '‘' + esc(x.gloss) + '’ ' : ''}${x.lect ? 'from ' + esc(x.lect) : ''}${x.kyr != null ? ', ' + esc(ago(x.kyr)) : ''}${x.substrate_of ? ', kept from ' + esc(x.substrate_of) : ''}</span></div>`).join('')
+        return `<tr><td>${esc(demeName(S, d))}</td><td>${n && n.name ? `${rom(n.name)} <span class="ipa">${esc(n.name.ipa || '')}</span>${say(n.name.ipa, p)}${n.name.gloss ? ` <span class="muted">‘${esc(n.name.gloss)}’</span>` : ''}` : '<span class="muted">–</span>'}</td>
+          <td>${places.length ? places.map((x) => `<div>${esc(x.kind || '')}: ${rom(x)} <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, p)} <span class="muted">${x.gloss ? '‘' + esc(x.gloss) + '’ ' : ''}${x.lect ? 'from ' + esc(x.lect) : ''}${x.kyr != null ? ', ' + esc(ago(x.kyr)) : ''}${x.substrate_of ? ', kept from ' + esc(x.substrate_of) : ''}</span></div>`).join('')
             : `<span class="muted">${esc(ls.part || '')}${ls.river != null ? ` · river ${esc(ls.river)} (flow ${Math.round(ls.river_flow || 0)})` : ''}${ls.lake != null ? ` · lake ${esc(ls.lake)}` : ''}${ls.mountain_m ? ` · hills to ${Math.round(ls.mountain_m)} m` : ''}${ls.coast_share ? ` · ${Math.round(ls.coast_share * 100)}% coast` : ''}</span>`}</td></tr>`;
       };
       // any word's etymology in the picked lect
