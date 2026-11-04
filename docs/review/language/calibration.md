@@ -157,3 +157,19 @@ retention, not sound change, sets the strict horizon: across human splits at 6-8
 to the true shared-root share (0.13-0.30), so sound change rarely pushes a cognate past the distance threshold; what the
 strict test loses is regularity and sample size. The true share is still 0.13-0.20 at 7-9 kyr (Swadesh 86%/kyr: ~0.1) and
 0.59 for sisters <= 2 kyr (~0.7 expected): replacement is too fast young and too slow in the tail.
+
+## After the tidy-up round (2026-11-04 02:30, commit e0520b9f)
+
+The tidy-up (tone phonemic only with marks on 30% of core vowels; tone and reduction rules down-weighted; derivation affixes
+capped; shifts 6-kyr cooldown and 3 per deme; inventory cap 1.25x) made the languages more conservative, and the split-based
+human horizon moved from 9.0 to 11.0 kyr. The rule-rate lever does not move it:
+
+| LANG_RATE_SCALE | lects (living) | shifts | horizon human / all | sisters check | notes |
+| --- | --- | --- | --- | --- | --- |
+| 5 (default) | 1194 (623) | 159 | 11.0 / 10.0 | ok | tonal 48% of living lects; C quartiles 18/22/27, V 7/9/12; i 35% of vowel tokens |
+| 6 | 1196 (623) | 161 | 11.0 / 10.0 | **FAIL** (sisters drop under 0.5) | |
+| 7 | 1198 (622) | 163 | 11.0 / 12.0 | ok | |
+
+So the horizon is set by the lexical-replacement curve (how fast core words are replaced at 5-12 kyr), not by the sound-change
+rate, which only hurts the young sisters. The next lever is the replacement shape (faster rare end, slower core end) or the
+measure's tolerances; both are in the needs-decision draft. Shipped: RATE_SCALE 5, this run (`runs/a24559/languages.json`).

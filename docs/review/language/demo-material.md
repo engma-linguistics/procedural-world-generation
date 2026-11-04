@@ -1,10 +1,10 @@
-# Demo material: run a24559, final languages.json (2026-11-04)
+# Demo material: run a24559, final languages.json (2026-11-04, shipped run)
 
-Extracted from `runs/a24559/languages.json` (132 MB; 1,249 lects, 633 living, 600 languages, 260 true families, 214 shifts,
-98 food routes, 6/6 checks pass, human horizon 9.0 kyr). Every number was computed from the file; the scripts are in the session
-scratchpad, not the repo. IPA in plain text, book spelling in ‹›. Tags in cognate tables: `=` inherited from the family's proto;
-`N` a root coined inside the family; `L` a loan from outside the family; `+d` derived or compounded on the way; `~` a meaning shift
-on the way.
+Extracted from `runs/a24559/languages.json` (117 MB; 1,194 lects, 623 living, 596 languages, 261 true families, 159 shifts,
+85 food routes, 5/6 checks pass, human horizon 11.0 kyr against a 6-10 target). Every number was computed from the file; the
+scripts are in the session scratchpad, not the repo. Lect ids and words differ from the previous run, so all samples are new.
+IPA in plain text, book spelling in ‹›. Tags in cognate tables: `=` inherited from the family's proto; `N` a root coined
+inside the family; `L` a loan from outside the family; `+d` derived or compounded on the way; `~` a meaning shift on the way.
 
 ### INVENTORIES
 
@@ -17,364 +17,382 @@ on the way.
 | p255 | kobold | 21 | β tʰ d ts s n l ɻ tʃ dʒ j k kʰ ɡ x ɣ ŋ χ ʔ h hʲ | 10 | i iː e̞ ẽ̞ ə a aː ɑ o̞ u | no tone; up to CCVC |
 | p222 | aarakocra | 24 | m b t d s z r r‼ l tɬ ɮ ȶ ʈ ɖ tʃ ɟʝ j k kʰ ɡ w ʔ h ʕ | 6 | i iːᴖ ɪ ɛ o u | 5 tones; up to CCVCC; stress final |
 
-All three sit inside PHOIBLE's consonant IQR; the human and kobold vowel counts are at the upper end, the aarakocra one at the
-lower. **Avian labials are scarce, as ruled:** p222 has only m and b (p306 has six: p b ɓ f v m); over all protos the median is
-6 labials for humans, 3 for aarakocra, 2 for kobolds and dragons. **Second-source and harsh segments are there:** p222 has a
-second-voice vowel (iːᴖ) and a harsh trill (r‼); 52% of aarakocra protos carry a ᴖ segment and 57% a harsh one. They fade:
-among living aarakocra lects only 23% still have ᴖ and 35% a harsh segment (kobolds fall from 72% to 45% harsh; dragons stay at
-99%). Humans and elves have none, as they should.
+All three sit inside PHOIBLE's consonant IQR. **Avian labials are scarce, as ruled:** p222 has only m and b (p306 has six);
+over all protos the median is 6 labials for humans, 3 for aarakocra, 2 for kobolds and dragons. **Second-source and harsh
+segments are there and fade:** 52% of aarakocra protos carry a ᴖ segment and 57% a harsh one; among living aarakocra lects 24%
+and 36%. Kobolds fall from 72% to 43% harsh; dragons stay at 99%. Humans and elves have none.
 
 **Living inventories by species group** (quartiles q1 / median / q3):
 
 | group | living lects | consonants | vowels | tones |
 | --- | --- | --- | --- | --- |
-| human | 105 | 24 / 28 / 35 | 11 / 13 / 15 | 4 / 4 / 5 |
-| dragons (10 kinds) | 118 | 22 / 27 / 33 | 7 / 11 / 15 | 2 / 3 / 4 |
-| elves (elf, drow, sea elf) | 27 | 15 / 24 / 34.5 | 8 / 9 / 10.5 | 3.5 / 4 / 4 |
-| kobolds | 53 | 25 / 29 / 31 | 8 / 11 / 15 | 4 / 4 / 4 |
-| aarakocra | 26 | 22 / 27 / 33 | 7 / 9.5 / 13 | 4 / 4 / 5 |
+| human | 104 | 18 / 22 / 27 | 8 / 10 / 12 | 0 / 4 / 5 |
+| dragons (10 kinds) | 118 | 18 / 23 / 28.8 | 7 / 9 / 12 | 0 / 0 / 0 |
+| elves (elf, drow, sea elf) | 25 | 16 / 23 / 27 | 7 / 8 / 8 | 0 / 0 / 4 |
+| kobolds | 53 | 21 / 23 / 26 | 7 / 9 / 11 | 0 / 3 / 4 |
+| aarakocra | 25 | 17 / 21 / 27 | 7 / 8 / 9 | 3 / 4 / 5 |
 
-Protos start inside PHOIBLE's range (the check's 110 human-voiced protos: median 23 C, 8 V). After 20 kyr they have grown: **half
-of all living lects are above PHOIBLE's upper quartile for consonants (51% over 27) and nearly half for vowels (46% over 12)**,
-and 98% of living lects are tonal against 24% of protos (about 40% of the world's languages are tonal).
+**The inventory blow-up is gone.** All living lects: median 22 C and 9 V, PHOIBLE's own medians (previous run 28 and 13).
+20% of living lects are above PHOIBLE's upper quartile for consonants (was 51%) and 20% for vowels (was 46%); 36% are above it
+on one or the other. Only 1.4% exceed 1.25 times their proto's size (the cap is soft; the largest ratio is 1.31). **Tone is now
+in 48% of living lects** (was 98%; protos 24%; real languages about 40%), and it sits where it should: dragons and elves mostly
+toneless, aarakocra and humans mostly tonal.
 
 ### SAMPLES
 
-**(a) Human family p306** (proto 20 kyr; 42 living lects, many of them spoken by halflings, orcs and aarakocra after shifts). Five
-human lects of the d604 branch and one of the d561 branch. Split dates: d604-d856 1.5 kyr; d604-d702 12; d604-d691 13; d604-d666
-15; d774 against all the others 19.
+**(a) Human family p306** (proto 20 kyr; 35 living lects, 14 of them spoken by halflings and orcs after shifts). Five human
+lects of the d604 branch and one of the d774 branch. Split dates: d604-d856 1.5 kyr; d604-d702 12; d604-d691 13; d604-d666 15;
+d774 against all the others 19.
 
 | concept | proto p306 | d604 | d856 | d666 | d691 | d702 | d774 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| WATER | pjo˨˦dzku˨ | ʔə˦h ‹'ë́h› L | ʔə̃˦h ‹'ë̃́h› L | ʔje˦i˧ʒ ‹'yéiž› L | ʔɨ˦a˨ ‹'ḯà› = | mo̞˧ɨ˨i˨ ‹moï̀ì› =+d | ɨ˨ɹa˨˦ɨː˨˦hɛ˨ =+d |
-| FIRE | tja˦˨brɔ˧r | lɨː˨˦lɜ˨ɱa˨i˨ =+d~ | ə̃˦ʃɨ˨ə˨ʔ =+d~ | tʰĩ˦li˨ ‹thĩ́lì› N | lɨː˨˦ɹɔ˦ N+d | a˦˨ ‹â› N | ɛ˦ɲɨ˧ɨ˧ L~ |
-| HAND | ȶɨ˧ | ŋu˧ ‹ngu› N | ŋo˧ ‹ngo› N | ȶɨ˦ ‹ťḯ› = | ȶɨ˧ ‹ťï› = | lɨː˨˦le˨i˦˨ N+d~ | ȶɨ˦ ‹ťḯ› = |
-| EYE | daː˦˨p | dʱi˨˦ ‹dǐ› = | dʱĩ˨ʔ ‹dĩ̀'› = | mɛ˨lɨ˦ɨ˨v =~ | ʈɨ˦ɜ˨ɪ˨ N+d | lɨ˨˦li˨iː˦˨ʒe˧ =+d | lɨː˨˦nɨ˦˨ N+d |
-| ONE | ŋa˧ | ʂɨ˦ɜ˦v ‹ṣḯë́v› N+d | ʂɨ˦ə˦f ‹ṣḯë́f› N+d | lɨ˨˦ɫi˨a˨ N+d | ŋɨ˨ ‹ngï̀› = | lɨ˨˦i˧ɨ˨ N+d | ɲɨ˨ ‹nyï̀› = |
-| TWO | e˨ȶa˨ | lɨ˨˦ɫlɛː˨˦ N+d | laː˧ʔ ‹laa'› N+d~ | ɲi˨˦v ‹nyǐv› N | lɨː˨˦lɨ˨ =+d | lɨː˨˦lɨ̃˨ =+d | tʰɹa˨˦a˨˦u˨˦va˨ N |
-| STONE | mo˨˦mɔː˨tʃ | lɨː˨˦mi˧ə˦ =+d~ | lɨː˨˦my˧ə̃˦ =+d~ | lɪ˦ʁĩ˦ N | tʰɛ˦ ‹tẹ́› L | hɨː˧la˧ɨ˦a˨ N+d | ŋu˦nna˨˦ N |
-| TREE | mi˦so˦˨vʃa˧d | lɨː˨˦ləː˨ʔːi˨˦ =+d~ | lɨː˨˦lə˨ʔĩ˦ʔ =+d~ | lɨ˨˦ɫʼje˨ʈɨ˦ N+d~ | lɨ˨˦fɡla˨ɡaː˦ N+d | lɨː˧ʂaː˧ N+d | mɨ˦ɦɨː˨mɨ˨˦ =+d |
-| NIGHT | ze˦˨m | lɨː˨˦ʈɜ˦dʱ =+d | lɨː˨˦ʈə˦dʱ =+d | ɨ˦ʔɨ˦ɨ˨v =+d | lɨː˨˦lɨ˨ʈ =+d | lɨ˨˦ɛ˦ɨ˨ N+d~ | lɨ˨ɹʒɨ˨˦ɨ˨˦ N+d |
-| DOG | kɛ˦ru˨˦ | kxaː˦ʔi˨˦ L+d | kxaː˦ʔĩ˦ʔ L+d | ɲɨ˦˨f ‹nyï̂f› N | bʱɨː˨ɖɨː˦bʱɨ˨ =+d | ŋi˧ɨ˨ N+d | ɨ˧la˧mɨ˧ɛ˦ L+d |
-| FISH | su˨˦me˨˦w | lɨ˨˦v ‹lï̌v› =+d | lɨ˨˦v ‹lï̌v› =+d | ʔɨ˦ ‹'ḯ› L | lɨ˨˦fma˨v N+d | mi˨˦i˨ ‹mǐì› = | ɨ̃˦ɫɨ˨ɨː˦hɨ˨ N+d |
-| I | ŋa˨˦ɡ | lɨ˨˦ɫʃo˧laː˧ L+d | ɲ̟ĩ˦ʔ ‹ɲ̟ĩ́'› = | ɨ˦f ‹ḯf› =~ | kxhi˦ ‹kxhí› L | ɲ̟e˦ ‹ɲ̟é› = | lɨ˨˦ɨː˦ɹɨ˨ =+d |
-| THOU | sɨ˧vɔ˦p | lɨ˨˦ɫdʱɜ˨ɨ˨ =+d | ĩ˦l ‹ĩ́l› L | ʔɨ˦f ‹'ḯf› = | lɨː˨˦dʱɨ˨ɨ˨ =+d | ɲi˨˦ ‹nyǐ› =~ | ŋu˨ɲ̟a˨˦u˨˦ŋɛ˦˨ N |
-| WE | tʃɔ˦ | i˦ɫ ‹íll› L | ĩ˦ɫ ‹ĩ́ll› L | ʂi˨ɫi˨tʰ N | ɲi˨˦ ‹nyǐ› =~ | lɨ˨˦li˨ɛ˨ N+d | lɨ˨˦ɨː˦ɹɨ˨ =+d~ |
-| EAT | be˧bwo˧ | ʃo˧laː˧dʱe˧ L | ʔɨ̃˦tʰɨ˦ə˦x =+d | ɓa˨ŋɨ˧ɨ˦ɨ̃˦ L | mɛ˨˦ɛ˨ʔɨ˦ N+d~ | ʁe˨˦ ‹ġě› N | ɨː˦mɨ˦˨ N+d |
+| WATER | pjo˨˦dzku˨ | iː˨vːə˨tʰ ‹ìivvë̀t› =+d | i˨və˨tʰ ‹ìvë̀t› =+d | ɡa˦˨ɡ ‹gâg› N | ʒɛ˨˦ɪ˨ʃ ‹zhẹ̌ị̀sh› = | ʔa˨i˨ɹi˨bʱ ‹'àìrìb› = | ʔa˨i˨ȶ ‹'àìť› N+d |
+| FIRE | tja˦˨brɔ˧r | ʁːu˨˦ʈv ‹ġġǔṭv› N | ʁu˨˦ʈe˨ ‹ġǔṭè› N | kxu˧ ‹kxu› L | i˨˦ ‹ǐ› N | ʔɛː˨bʱi˨ ‹'ẹ̀ẹbì› = | ʔə̃ː˧ŋi˧ə˧f N+d |
+| HAND | ȶɨ˧ | ȶi˧ ‹ťi› = | ȶi˧ ‹ťi› = | lɛ˨˦ʒe˨i˦˨ N+d | li˨˦ʔa˦˨ɓu˨ N+d | ȶa˨˦ ‹ťǎ› N~ | ɣʷɪ˦ ‹ghwị́› N |
+| EYE | daː˦˨p | ʔe˨ə˨ʃ ‹'èë̀sh› = | ʔɛ˨ə˨ʒ ‹'ẹ̀ë̀zh› = | mi˨ɛ˨ɫ ‹mìẹ̀ll› =~ | ʔɛ˨ɪ˨ʃ ‹'ẹ̀ị̀sh› = | ʔi˨lə˧ɘ˨lɛ˦˨ L+d | li˨˦f ‹lǐf› =+d |
+| ONE | ŋa˧ | ʈru˦˨ŋĩ˨˦ŋtʰu˦˨ɓ N~ | li˨˦ɲ̟ʒe˦f N+d | ɲ̟ʒe˨˦ĩ˨˦ N | li˨˦ɛ˧ ‹lǐẹ› L+d~ | la˦ ‹lá› N~ | si˦ ‹sí› N |
+| TWO | e˨ȶa˨ | ʒə̃˦mː ‹zhë̃́mm› N~ | ʒə˦me˧ə˨˦ N~ | ɡɣʒe˨˦ ‹gɣžě› N | ʒʒi˨ʃ ‹zhzhìsh› N | ʔi˨ȶ ‹'ìť› = | li˨˦ ‹lǐ› =+d |
+| STONE | mo˨˦mɔː˨tʃ | ʈə˨˦ə˨ʒi˦ə˦ɓ =+d | ʈə˨˦ə˨ʒe˦ə˦ɓ =+d | ʔĩ˧ɛ˨ɓa˨ʒe˨i˨ɫ =~ | ʔu˧nʷu˧u˧lɲi˦ L+d~ | ʈi˦ə˨ɘ˨mi˨ =+d | la˧u˧ɹ ‹laur› N+d |
+| TREE | mi˦so˦˨vʃa˧d | ʈə˨˦bʱə˨iː˦˨mːə˨ʃ =+d | ʈə˨˦bʱe˨hɹə˦ɲi˨˦ =+d | ʈi˦ʔã˦˨ĩ˦˨ɲu˨ =+d~ | ʈi˧ʔa˧i˧ɲu˧ =+d~ | ʔi˦ʔaː˦fɛ˨ N+d | mu˨ʒi˦˨f N+d |
+| NIGHT | ze˦˨m | hru˦˨ʁːə˨˦ʃ N~ | ɛ˧ə˧ ‹ẹë› L | ʒʒe˨˦i˨˦ =+d~ | ʈvi˦˨ ‹ṭvî› =~ | ʈɛː˦xi˨x =~ | ʈʒi˦˨ ‹ṭzhî› =~ |
+| DOG | kɛ˦ru˨˦ | ɡi˨ ‹gì› N | mi˧lʷə˦ N+d | ʔĩ˧ɲɛ˧ɓa˧ɹi˧ =+d | vri˨˦ ‹vrrǐ› N | mu˧ŋɘ˨˦ȶə˦ʁ N+d | mi˧la˧ĩ˧m N+d~ |
+| FISH | su˨˦me˨˦w | lĩ˧ŋːə˦ʃ L+d | li˧ŋə˦ʃ L+d | ɲ̟ʒi˨˦ ‹ɲ̟žǐ› N | mu˧ɛ˦˨mi˧ N+d | mi˨i˨x ‹mììkh› N | i˨ ‹ì› L+d |
+| I | ŋa˨˦ɡ | na˦˨ɡla˨ɡu˧ N | ɲi˨˦ ‹nyǐ› =~ | ɲ̟ʒi˨ ‹ɲ̟žì› = | ʒrɛ˦˨mtʰi˨˦vi˧ɦ N | ʔi˧f ‹'if› =~ | vʒi˨˦f ‹vzhǐf› N~ |
+| THOU | sɨ˧vɔ˦p | ɲi˨˦ ‹nyǐ› =~ | ɲi˨˦ ‹nyǐ› =~ | ʔĩ˨vɛ˧ N~ | ʔi˧ ‹'i› = | ʔu˧ ‹'u› L | ʔə˦˨ɪ˨ə˦f N~ |
+| WE | tʃɔ˦ | ɲi˦˨ ‹nyî› N~ | ʁə˧ ‹ġë› L~ | tʰʒi˦˨ ‹thžî› N | mi˧mʊ˧ ‹mimụ› N | bʱwʒi˧ ‹bwzhi› L | ʒi˨ ‹zhì› N~ |
+| EAT | be˧bwo˧ | ʒi˧ ‹zhi› N~ | ʒi˧ ‹zhi› N~ | ɲĩ˧nĩ˨ N | tʰi˦ ‹tí› =~ | mu˧ɫ ‹mull› N | li˧f ‹lif› L |
 
-Correspondences that can be stated. **d604 : d856** (1.5 kyr, 73 of 100 core roots shared): d604 ɜ = d856 ə (14 tokens: BREAST,
-DIE, EAR, HEAD, DRINK, NIGHT ...); d604 v = d856 x or f (10: DIE, DRINK, EAR, MAN; HEAD, HEART, KILL); d604 ʒ = d856 ʃ and d604 ɦ
-= d856 h (d856 devoices fricatives); d604 oral i, ə = d856 nasal ĩ, ə̃ / ɨ̃ (19 tokens); d604 word-final high-toned vowel = d856
-vowel + ʔ (DOG kxaːʔi˨˦ : kxaːʔĩʔ, EYE, SEED, TREE). **From the proto:** *p and *ɡ > ʔ word-initially (WATER *pj- > ʔ in four
-lects; I *ŋaɡ > ɲ̟ĩʔ); voiced stops become breathy (EYE *d > dʱ); final consonants go (*-p, *-d, *-m, *-r); *a > ɨ (ONE *ŋa > ŋɨ,
-ɲɨ); *ȶ is the most stable consonant (HAND *ȶɨ unchanged in three lects after 13-19 kyr). Deeper pairs share little: d666 : d691
-(13 kyr) 11 roots. **What a linguist would stop on:** a prefix lɨ˨˦- (the 'thing' derivation) has eaten the vocabulary: 12% of
-all words in this family start with it, so TREE, NIGHT, STONE, FISH, TWO and THOU look alike across the family for a reason that
-is not inheritance; d774 has one word for I and WE.
+Correspondences that can be stated. **d604 : d856** (1.5 kyr, 59 of 100 core roots shared; shared new coinages FIRE ʁu˨˦ʈ-
+(2.0 kyr), TWO ʒəme- (3.5), EAT ʒi (11.0)): d604 ʃ = d856 ʒ (7 tokens: ASH, EYE, NAME, RAIN ...); d604 long consonants = d856
+short ones (ɖʱː : ɖʱ in ASH, HEART, KNEE, LIVER; ʁː : ʁ in BLACK, EGG, FIRE, SEED; vː : v; ŋː : ŋ): d856 degeminated; d604 long
+vowel = d856 short (iː : i in EGG, SMOKE, WATER); d604 nasal vowels = d856 oral ones (ə̃ : ə, ĩ : i): d856 denasalized.
+**From the proto:** *d- > ʔ and *-p > ʃ (EYE *daːp > d604 ʔeəʃ, d691 ʔɛɪʃ; ʒ in d856, f in d774); *ȶ is stable (HAND *ȶɨ >
+ȶi in d604 and d856, ȶa in d702; TWO *eȶa > d702 ʔiȶ); *z- > ʈ (NIGHT *zem > ʈvi, ʈɛːxix, ʈʒi in three lects 12-19 kyr
+apart); *ŋ before front vowels > ɲ (I *ŋaɡ > ɲi, ɲ̟ʒi). Deeper pairs share little (median true share at 12-15 kyr about
+0.1). **What a linguist would stop on:** ʒ everywhere (TWO, NIGHT, FISH, I, WE, EAT in several lects; see DEFECTS); THOU = I in
+d856 (ɲi˨˦ for both), THOU = WE in d604 (ɲi˨˦ / ɲi˦˨ differ only in tone). The old lɨ˨˦- prefix that faked cognates is gone (0
+words in this family start with lɨ).
 
-**(b) Dragonborn family p120** (proto 20 kyr; d148, d280, d308, d544 are first-generation daughters, d771 budded from d148 at 7.0
-kyr). Kobolds would have made a weaker table: the largest kobold family (p255, 16 living lects) keeps a median 1% of its proto
-core words, and 28% of living kobold lects keep none.
+**(b) Elvish family p301** (elf and drow; proto 20 kyr; d551 continues the proto in place, d835 budded 3.5 kyr ago, d688 13.5,
+the drow d689 12.0 and d725 from d689 at 10.0). Elves keep half their core after 20 kyr, so this is the most readable family
+in the run.
 
-| concept | proto p120 | d148 | d771 | d280 | d308 | d544 |
+| concept | proto p301 | d551 elf | d835 elf | d688 elf | d689 drow | d725 drow |
 | --- | --- | --- | --- | --- | --- | --- |
-| WATER | ti | ʂi˨t.si˦˨ ‹ṣìtsî› N | i˦ɛ˨i˨ N+d | ʔɘ˦ca˨a˦i˦ɘ˦ N+d | ʔje˦ɛ˦ ‹'yéẹ́› N | ʒi˨ə˨ L+d |
-| FIRE | tat | ɹa˦i˦ɛ˨i˨ɾ =+d | ɹi˦wa˨ɛ˨ɪ˦ɾ =+d | ʔɘ˦ɨ˨ɘ˦˨ =+d~ | tje˦ɛ˦ ‹tyéẹ́› = | ʃi˦ ‹shí› N |
-| HAND | li‼ | ʔi˦ɛ˨ ‹'íẹ̀› =+d | le̞˦ɛ˦ɪ˦ʔ =+d | ʔɨ˦cʼɘ˦lɘ˨ =+d | tĩ˦i˦ħ N | hɨ˦ ‹hḯ› L |
-| EYE | ruʔ | i˦ɛ˨˦ L+d | ʔe̞˨ʒɪ˨e̞˨ =+d | ʔi˦ʔɜ˦dʱ =+d~ | ɫje˦ʃɛ˨c =+d | ʔə˦ʒɨ˨ə˨ =+d |
-| ONE | titi‼t | ha˦ɛ˦i˨˦ ‹háẹ́ǐ› = | ta˦a˦ɛ˦ɪ˦ʔ = | ʔɨ˦ ‹'ḯ› = | ɫje˨ɛ˦ʃ N+d | hɜ˦ ‹hë́› N |
-| TWO | kĩkas | li˦ ‹lí› N | li˦ ‹lí› N | ʔɨ˦ca˨i˨i˦ N+d~ | ʔi˨je˦ɛ˨c N+d | ɨ˦ ‹ḯ› =+d |
-| STONE | ki‼ta | ɛ˨i˨ɹ ‹ẹ̀ìr› =+d | le̞˦i˨ɛ˨ɪ˦ N+d | ʔɘ˦cɘ˨ɜ˦i˦ N+d | ʔɛ˦je˨ctɛ˦ N+d | ʔɨ˦əː˦ʃɨ˨ L+d |
-| TREE | restse‼ | i˦dʱe˦˨qʰi˨˦ʈ N+d | ti˨txiː˨ɹ N~ | ʔɜ˦ɹɨ˨ʔi˦ɾ =+d | ɹiː˨χĩ˨ʃi˨ɛ˨ L+d~ | hɨ˦ʈʒi˦ =+d |
-| NIGHT | χarhalk | qʰi˦ ‹qí› N~ | i˦e̞˨ N+d | ʔɜ˦i˦ɘ˦˨ =+d | ʔje˦ɫ ‹'yéll› =~ | ʔi˨ʒɨ˨ə˨ N+d |
-| DOG | rik | ɛ˦i˦qʰ ‹ẹ́íq› N | ɪ˦qʰ ‹ị́qh› N | hħa˦i˨ɦɘ˦ʕɨ˨ɘ˨ʈ N+d | ʔɛ˦ɛ˨iː˨ʔɛ˦ N+d | hɨ˦ʒə˨i˨ =+d |
-| FISH | kerk | ʔɛ˦i˦ʔa˦i˦ L+d | e̞˦i˨˦ ‹éǐ› =+d | ʔɨ˦ca˦ L+d | ʔi˦ ‹'í› = | ʔi˦ʒɨ˨ə˨ N+d |
-| I | ʈik | i˦ʈi˨ ‹íṭì› =+d~ | ʈi˦dʱa˨a˦ɛ˦ɪ˦ɹ =~ | ʈi˦c ‹ṭíky› =~ | ʈje˦ ‹ṭyé› = | ʔʒi˦ə˨ =+d |
-| THOU | ʃau | i˦ʔi˦ɾ L+d | ʈi˨i˨ =+d~ | ʔi˦ɘ˦˨ ‹'íë̂› = | ɫje˨ʂti˨˦ N | ɗɨ˨ ‹'dï̀› N |
-| WE | ɖeːcrak | ʈi˦dʱa˨ɛ˦i˦ɹ = | ɹa˦ɛ˦ɪ˦ɹ =~ | ʈi˦c ‹ṭíky› = | ʔɛ˦ɛː˨ʔɛ˦ʃ L+d | ti˨˦ɹ ‹tǐr› N |
-| EAT | χeː | ʔi˦ɾ ‹'ír› L | i‼˨i˦ ‹ìrhí› L+d | dʱɘ˨i˦˨ L | ʈɨ˦ =+d | ʈʒi˦ =+d |
+| WATER | ɭə˨nmʷu˦cĩ˨ | ɲɨ˨vũ˨mɨ˨dʒi˧ʔu˨ N | ɲɨ˨vy˨ɲɨ˨ʒi˧ʔo˨ N | ɭə˨ɲĩ˨mĩ˦ɲɨ˨ = | ɭə˨nɨ˨mɨ˦ɲɨ˨ = | ɭə˨nɨ˨mɨ˦ɲɨ˨ = |
+| FIRE | dʒu˦ci˦˨m | dʒu˦ɟu˦˨ ‹júgyû› = | ʒu˦bʱu˦˨ ‹žúbhû› = | ʒũ˦ɲʷu˦˨ = | ʒu˦ɲu˦˨ ‹zhúnyû› = | ʒu˦ɲu˦˨ ‹žúnyû› = |
+| HAND | βlu˧ŋ | ku˨wi˦dʒu˦˨ =+d | ky˨hi˦ʒu˦˨ =+d | vu˨lũ˧ŋɨ˨ = | vu˨lu˧nɨ˨ = | vu˨lu˧nɨ˨ = |
+| EYE | mu˧ŋkʰə˨m | mũ˧ŋu˨ku˨ = | mu˧ŋu˨bʱo˨ = | mũ˧ŋʷu˨pʰo˨ = | mu˧ŋu˨ɡʱo˨ = | mu˧ŋu˨ɡo˨ = |
+| ONE | mi˦n̪ | tʃi˨i˦ ‹čìí› =+d | ʃi˨hi˦ ‹šìhí› =+d | mĩ˦n̪ɨ˨ = | mi˦n̪ɨ˨ = | mi˦n̪ɨ˨ = |
+| TWO | rũ˦˨ti˨m | hĩ˦ɲi˨ʔu˦ =+d | hi˦ɲi˨dʱu˦ =+d | ɹu˦˨dʱu˨ ‹rûdhù› = | ʁu˦˨dʱu˨ ‹ġûdù› = | ʁu˦˨du˨ ‹ġûdù› = |
+| STONE | fe˦lu˦˨ɣə˦˨ɲ | tʃe˨dʒĩ˦ŋi˨i˦ =+d | ʃe˨ʒi˦ŋi˨hi˦ =+d | ʃe˨ʒĩ˦ŋi˨ʒi˦ =+d | e˨ʒi˦ŋi˨ʒi˦ =+d | ʃe˨ʒi˦ŋi˨di˦˨mi˨ɲi˨ =+d~ |
+| TREE | ɲju˦ɳȶe˨ | he˦˨he˦˨ȶe˧ N | he˦˨he˦˨ȶe˧ N | ʃe˦˨e˦˨ȶe˧ N | e˦˨bʱe˦˨bʱe˨ N+d | ʃe˦˨be˦˨ȡe˧ N |
+| NIGHT | vi˨kʷlu˧ɲ | vi˨dʒi˨lĩ˧ɲɨ˨ = | vi˨ʒi˨li˧ɲɨ˨ = | vi˨ʒi˨lĩ˧ɲɨ˨ = | i˨i˦ ‹ìí› =+d | vi˨ʒi˨li˧ɲɨ˨ = |
+| DOG | su˨ɲ | ʈu˦˨wu˦ =+d | ʈu˦˨hu˦ =+d | ɾe˧i˨ ‹reì› N+d | ɡʱu˧ ‹gu› N | ɡu˧ ‹gu› N |
+| FISH | ju˨m | dʒu˨ ‹jù› = | ʒu˨ ‹žù› = | ʒu˨ ‹žù› = | ʒu˨ ‹zhù› = | ʒu˨ ‹žù› = |
+| I | ʃɭə˦˨ | hu˨ɭu˦˨ = | hu˨ɭo˦˨ = | ʒu˨ɭo˦˨ = | u˨ɭo˦˨ = | ʃu˨ɭo˦˨ = |
+| THOU | nĩ˧ri˨n | vũ˧ɲɨ˨ =~ | ɲi˧ri˨nɨ˨ = | vũ˧ɲɨ˨ =~ | ɲi˧ʁi˨nɨ˨ = | ɲi˧ʁi˨nɨ˨ = |
+| WE | di˧ | dʒi˧ ‹ji› = | ʒi˧ ‹ži› = | ʒi˧ ‹ži› = | ʒi˧ ‹zhi› = | ʒi˧ ‹ži› = |
+| EAT | βu˦ | vu˦vu˨lu˦ =+d | vu˦vu˨lu˦ =+d | vu˦vu˨lu˦ =+d | vu˦vu˨lu˦ =+d | vu˦vu˨lu˦ =+d |
 
-Correspondences: proto final stops are lost everywhere (*-t, *-k: ONE, I, DOG); the harsh vowel *i‼ becomes a plain mid vowel
-(ɛ, e̞, ɪ: HAND, ONE, STONE); *ʈ is kept in every lect (I: ʈi, ʈi˦c, ʈje); *t- gives h in d148 (ONE ha-), ʔ in d280, t in d771 and
-d308; d308 breaks *i after coronals into je (ʈje, tje, ɫje); *k > c in d280 (I ʈic). d148 : d771 (7 kyr) share 18 roots, with
-shared new coinages TWO li˦ (d148, 14.0 kyr) and DOG qʰiː (10.5 kyr); d280 : d308 (20 kyr) share 9. **Winces:** the descendants
-of a harsh, consonant-heavy proto have become vowel strings (FIRE ɹa˦i˦ɛ˨i˨ɾ, ONE ta˦a˦ɛ˦ɪ˦ʔ, DOG ʔɛ˦ɛ˨iː˨ʔɛ˦); d280 has one
-word ʈi˦c for both I and WE.
+Correspondences, all regular: d551 dʒ = ʒ in the four others (FIRE, NIGHT, FISH, WE, STONE: *j, *d > dʒ, then dʒ > ʒ outside
+d551); d551 tʃ = d835 ʃ (ONE, STONE); d551 w = d835 h (HAND kuwidʒu : kyhiʒu, DOG ʈuwu : ʈuhu); d551 u = d835 y after k (HAND).
+**Drow : drow** (d689 : d725, 10 kyr, 63 roots shared): d689 breathy stops = d725 plain (bʱ : b 9 tokens, ɡʱ : ɡ 7, dʱ : d 5):
+d725 lost breathiness; and d725 has ʃ or f where d689 has nothing (ʃ: BLOOD, CLAW, DRY; f: HEAD, MOON, SUN). **From the proto:** *r >
+ʁ in the drow lects, ɹ in d688 (TWO, THOU); final *-m, *-ŋ, *-n > paragogic -ɨ (HAND *βluŋ > vulunɨ, ONE *min̪ > min̪ɨ, THOU
+*nĩrin > ɲirinɨ); *β > v (HAND, EAT); *kʰ in EYE gives k, bʱ, pʰ, ɡʱ, ɡ across the five, a textbook set. Shared new coinage TREE
+(17 kyr, all five), DOG ɡu (11 kyr, both drow). **Winces:** EAT vu˦vu˨lu˦ is identical in all five lects after 3.5-13.5 kyr of
+separation (an old derived form that none of the sound changes touched); HAND, ONE, TWO in d551 and d835 are derived forms
+that replaced inherited words the other three keep.
 
 **(c) Four etymologies.**
 
-1. **SMALL in d636.1 (halfling), 15 steps, two loans.** 20 kyr blue-dragon proto p19 *kucɾɔʎzi* 'husband' > 12.0 d39 *tʃiː˦ɾɑ˦zi˨*
-   > 11.0 **borrowed by humans** (d561) *ʃeːɾadze* 'husband' > 10.0 *hiɾadzi* > 9.5 HUSBAND + 'thing' = *lɨ˨˦hiɾa* 'man' > 6.5
-   MAN + CHILD = 'male person', then MALE PERSON + FATHER = *lɨ˨˦ɦa˦ʈe˧ʂ* 'man' > 5.5 MAN + PEOPLE = *lɛ˨˦hɛː˨mɛ˧dʱɪ˨* 'person' >
-   5.0 into orcish d652.3 by shift *lɛ˨˦ɦmɛ˧dʱː* > 4.5 PERSON + MAN = 'child' > 4.0 CHILD + 'like' = *lɛ˨˦ɦmɛ˧ʔɪ˨* 'small' > 3.0
-   *lɛː˨˦mɛ˧* > 1.0 **borrowed by halflings** (d636.1 from d841) > now *lɛ˧mɛ˧* ‹lẹmẹ›. 'Child-like' for 'small' is good; the
-   man > male person > man > person > child loop in 2 kyr is not.
-2. **Rice, by food route** (route `crop:rice`, "tamed here" at d710, human, 9.5 kyr, *ɨ˨xɜ˦ɨ˨*; 54 hops). The chain to the triton
-   lect d767: 9.0 hill giant d26 *ɨ˨ɣɜ˨ɨ˨* (lenition: x > ɣ between vowels) > 7.5 copper dragon d71 *ʔɛ˨ɛ˨ɛ˨* > 5.5 orc d677
-   *ʔɛ˧ɛ˧ɛ˧* (tones levelled) > 2.0 human d604 *ʔĩ˧ɨ̃˧* > 0.5 tortle d206 *ʔɨ˨ɜ˨* (nasality lost, ɨ̃ pushed to ɜ) > 0.0 triton
-   d767 *ʔɨ˨ɜ˨* ‹'ï̀ë̀›. But the triton word's own etymology says something else: orcish d677 made it at 3.0 kyr as WATER +
-   'little' (*ʔĩ˦ɨ̃˦ʔɨ̃˦*, from a brass-dragon word for water borrowed at 9.5 kyr) and that word travelled d677 > d604 > d206 > d767.
-   The hop table splices two different words; in 28% of all hops the receiver's word shows no borrowing at all.
-3. **A substrate survivor: 'horses' in d148.1** (deme 148, dragonborn now speaking a human language; see (d)). 20 kyr proto p120
-   *sret.ʃsukqʰi‼k* > by 3.5 kyr in dragonborn d148, after 39 sound changes, *ʔa˦i˦i˨a˨i˨* > 2.0 kept through the shift as substrate
-   *ʔa˨i˨i˨a˨i˨* (high tones heard as low: accent) > 1.5 *ʔa˦i˨i˨a˨i˨*. 'Cattle' in the same lect is a substrate word reused:
-   d148 *e̞˦i˦ʔa˦i˦ɾ* 'animal' (BIRD + OLD) > substrate *e̞˨i˨ʔa˨i˨ɾ* > 1.5 ANIMAL + GREEN = *vi˨˦ʒʔa˨i˨ɾ* 'cattle'.
-4. **A compound: SMITHING in d806 (human).** 5.5 kyr d562 coins *me˦nɲi˦ɲh* 'fire' > 3.0 d806 *mɜ˦ɜ˦ɲɜ˦˨ɜ˦* > 1.0 FIRE + STRIKE,
-   both clipped, *mɨː˦ʔɜ˦mɜ˦ɜ˦* 'smithing' > now *mɨ˦ʔə˦mɜ˦ɜ˦* ‹mḯ'ë́më́ë́›. Also good: DAY = SUN + SKY in d570.1 from an elvish
-   'sun'; SPIRIT = GOD + BREATHE in d605 (though d605 cycles spirit > god > spirit > god > spirit five times in 18 kyr).
+1. **SMALL in d507 (human), 17 steps, three loans.** 20 kyr blue-dragon proto p28 *kɛje‼ː* 'vomit' > 19.0 d48 *dzaːja‼* > 14.5
+   VOMIT + 'do' = *pɛdzaːja‼* 'carry' > 9.5 **borrowed by halflings** (d479) *pʰædʒaːʒu* > 6.5 CARRY + 'agent' = 'male person' >
+   4.5 MALE PERSON + FRIEND = 'man', then MAN + HUSBAND = *ʒiʒilũɲpʰæ* 'person' > 3.0 PERSON + CHILD (DESCENDANT) = *æiʒiʒi*
+   'child' > 2.0 **borrowed by halflings** d636 *aiʒiʒi* > 1.5 **borrowed by humans** d507 *a˧i˧ʒi˧ʒi˧* > 1.0 CHILD + 'like' =
+   *ʔĩ˨˦a˧i˧* 'small' > now *ʔĩ˨˦e̞˧e̞˧* ‹'ĩee›. 'Child-like' for 'small' and 'carrier' for 'man' are good; vomit > carry is not.
+2. **Foxtail millet, by food route** (route `crop:foxtail_millet`, "first known here" at hobgoblin d514, 7.0 kyr; 65 hops).
+   The hobgoblins made the word as TREE + FLOWER, *ʔɛ̃ɳɛʔyʒə*, from a 'tree' that was itself GRASS + EAT. The chain to the gold
+   dragons: 7.0 leonin d456 *ʔa˨ɲa˨ʔi˨ʒe˨* (nasal vowel and retroflex lost, tones added) > 6.5 hill giant d25 *ʔã˨ɲa˨ʔi˨ʒ* >
+   6.0 bronze dragon d62 *ʔaɳaʔiʒ* (tones dropped) > 4.0 triton d767 *kaɲakiʒɨ* (ʔ heard as k) > 3.5 *haɲaiʒ* > 3.0 brass dragon
+   d51 *ʁaɲaiʒ* > 2.0 gold dragon d88 *ʁa˨ɲa˨i˨* ‹ġànyàì›, its present word. Six hops, seven peoples, and every hop is in the
+   receiver's own etymology. But the same route's hop to aarakocra d530 (2.0, *ʁa˨ɲa˨i˨*) does not match d530's present word
+   *pɛː˨˦ʈaː˦ɲi˨ʒi˦˨*: 27% of hops into living lects are like that (see DEFECTS).
+3. **A substrate survivor: STONE in d148.1** (dragonborn now speaking a human language; see (d)). 20 kyr dragonborn proto
+   p120 *ʔaɖkiːʈ* 'cloud' > 19.0 CLOUD + WHITE = 'fog' > 17.5 FOG + STAR = 'smoke' > 11.5 SMOKE + FOG = 'dust' > 11.0 DUST +
+   'place' = *lu‼ɫʔəɖʁə* 'land' > 8.5 LAND + GREEN = *luʔəːkuɫləː* 'stone' > 2.5 *lɛʔ* > 2.0 **kept through the shift** as
+   *ɹɛʔ* (accent: the human lect's l-less ear) > 0.5 *ɹɛ* ‹rè›. Each step is a real compounding type, but 'green land' for
+   'stone' is a wince. FISH, DEER, LAKE and 'cattle' in the same lect are substrate too ('cattle' = substrate ANIMAL + LONG).
+4. **A compound: MARSH in d806.1 (human).** p307 *wuneɡ* 'water' > 10.0 d562 *ɓʒiəʔ* > 3.0 d144.1 *ɗi˨*; WATER + YELLOW =
+   *ɗi˨ɲĩ˨ɲ* 'rain' > 1.0 RAIN + LONG = 'water' (a renewal), then WATER + EARTH = *ɗiː˨ɲi˨vyː˨ʒɜː˨ɗ* 'marsh'. Water-earth for
+   marsh is good. Also good: BERRY = TREE + SEED in d787. Odd: SOUTH in d584 is NORTH + WARM, where 'north' was once 'south'
+   (SUNRISE + 'place'), and DAY = THINK + 'thing' in d570.1.
 
 **(d) One shift in full: deme 148 (dragonborn 4, the west of Trojanel) to human, 2.0 kyr ago.**
-- **Trigger:** humans of deme 791 took 76 dragonborn sites, a town or city among them, about 2.2 kyr ago (`takeover`, strength
-  1.0, held to now; source settlements.json holders). The dragonborn stayed under human rule.
-- **Shares of the rulers' lect d791 among the dragonborn:** 2.5 kyr 0.23, **2.0 kyr 0.53: shift** (another human lect, d584, 0.05).
-  After the shift the old dragonborn lect keeps 0.38 (1.5 kyr), 0.31, 0.25, **0.21 now**, and d584 rises to 0.14.
-- **The old lect lives on:** d148 is alive, flagged `minority`.
-- **Old d148 (dragonborn):** 24 C `ʔ tʃ h ɹ ʈ ɾ l ʒ kʼ dʱ x qʰ ɫ kx ʃ ʁ ʂ c t ɦ k s ɖʱ χ`, 8 V `i i‼ ɛ e̞ e‼ a ɘ̠ e`: no labials,
-  no nasals. **New d148.1:** 26 C with f pf pʷ v bv ɱ ŋ ŋʷ ɲ̟, 16 V; the rulers' d791 has 28 and 14.
-- **Core words, old / new / rulers' now:** WATER ʂi˨t.si˦˨ / hi˨xi˨x / pfə˨pfə˨ɲɨ˦ʃə˨ʃ; FIRE ɹa˦i˦ɛ˨i˨ɾ / ŋi˦fi˨ʒx / ŋɨ˦pfŋi˦ɣfə˨dʱ;
-  HAND ʔi˦ɛ˨ / hɨ˦ / pfɨ˦; ONE ha˦ɛ˦i˨˦ / kxi˦ / ŋɛ˦pfi˨vʃe˨; I i˦ʈi˨ / kxɨ˦ / kxɨ˦; EAT ʔi˦ɾ / ʔi˦x / ʔy˦ʃ; NIGHT qʰi˦ / ʉ˦ / ʉ˦. The
-  new lect took the rulers' words of 2.0 kyr ago (WATER was *ɲɨːʒəːʒ* then) and both have moved since; I, NIGHT still match.
-- **Substrate kept:** 65 concepts: landscape (HILL, MOUNTAIN, RIVER, SEA, FORD, PASS, COAST, MARSH ...), wild and farm animals
-  (DEER, WOLF, BEAR, horses, cattle, goats, fowl), FISH, BIRD, DOG, LOUSE, TREE, STONE, and three crops.
-- **Accent (old sound for new):** m > v, n > ɹ, nʼ > ɹ, ɲ > ʒ, pf > f, ʍ > k, d > dʱ, ð > s, ø > e, y > i, ɨ > i, ə > e, u > ɘ̠.
-  Sensible for speakers with no labials and no nasals: those heard as the nearest sound they have.
-- **Calques from dragonborn:** no copula (rulers have one); polar question particle moved to the start.
+- **Trigger:** humans of deme 791 took 76 dragonborn sites, a town or city among them, from 2.2 kyr ago (`takeover`, strength
+  1.0, held to now; source settlements.json holders).
+- **Shares of the rulers' lect d791 among the dragonborn:** 2.5 kyr 0.23, **2.0 kyr 0.53: shift** (another human lect, d584,
+  0.05). After the shift the old dragonborn lect keeps 0.38 (1.5 kyr), 0.31, 0.25, **0.21 now**; d584 rises to 0.14.
+- **The old lect lives on:** d148 is alive, flagged `minority` (one of 50 minority lects in the run).
+- **Old d148 (dragonborn, family p120):** 20 C `c h ʃ l ʒ w ɹ ʔ ʁ ɫ ɖ ʈ k χ t ɾ qʰ s ts lː`, 10 V `u ɛ i ɪ ɛː e i‼ a ĩ eː`: no
+  nasal consonants, one labial (w). **New d148.1 (family p314):** 16 C `vʲ ŋ ʁ ʃ χ ɲ̟ ʒ kx ɹ ʔ ɲ k f n pʷ fʲ`, 15 V; the rulers'
+  d791 has 17 C and 13 V.
+- **Core words, old / new / rulers' now:** WATER ʔiliʒaiʃ / kxɛ̃ɲiʒĩɲ̟ʒṳ / ɛfʔɛ̃ɲi; FIRE ʒiɛɾɛʃ / ŋĩːɹĩn / vũvĩnũ; HAND i / i /
+  i; EYE ʁʒi / ŋṳʒiʒɛːʒi / ŋṳʒiʒɛʒi; I ʈɛʃ / kxiɐ / kxiɛ̠; WE ʈɛʃ / ɹaiχ / ɹɛiʁ; NIGHT ʒʒi / kxuɹ / kxũn; EAT kʒi / pʷɹĩnɛ / ũɣã.
+  EYE, I, WE, HAND, NIGHT match the rulers'; the new WATER is the substrate word LAKE + RAIN; ONE ʔaɹfeɹu is the rulers' 'few'
+  that shifted to 'one' at 1.0 kyr.
+- **Substrate kept:** 65 concepts: landscape (HILL, MOUNTAIN, RIVER, LAKE, SEA, FORD, PASS, COAST, MARSH ...), wild and farm
+  animals (DEER, WOLF, BEAR, horses, cattle, goats, fowl), FISH, BIRD, DOG, TREE, STONE, and the crops.
+- **Accent (new sound heard as old):** m, n > ɹ; pʷ > k; v, ɣ, ɡɣ > ʁ; fʲ > x; nasal vowels > oral (ã > a; õ, ũ > u; ỹ > ĩ);
+  i̤ > i. Sensible for speakers with no nasal consonants and almost no labials; later borrowing restored n, ŋ, f.
+- **Calque from dragonborn:** a diminutive (the rulers have none).
+- **Wince:** the old lect has one word ʈɛʃ for both I and WE, and a homophone share of 0.19 (median for dragonborn 0.13).
 
-**(e) Two paradigms from living lects** (`paradigms` per lect: nouns and verbs with cells, segmentation, irregular cells; history
-from the snapshots' `grams`).
+**(e) Two paradigms from living lects** (`paradigms` per lect; history from the snapshots' `grams`).
 
-*d691 (human 49, family p306, VSO, ergative, no case).* Nouns: WATER ʔɨ˦a˨, LOC **la˨˦**-ʔɨ˦a˨; PERSON ɔ˨, LOC la˨˦-ɔ˨, CLASS:3
-**u˦**-ɔ˨; TREE lɨ˨˦fɡla˨ɡaː˦, LOC la˨˦-lɨ˨˦fɡla˨ɡaː˦.
+*d690 (human 48, the west of Simath, SVO; 56 cells, the richest human lect).* Verbs are all prefixing:
 
-| verb | lemma | PROG | NEG | 3SG | 3PL | PROG.3PL |
-| --- | --- | --- | --- | --- | --- | --- |
-| GO | ʔɨ˦ɨ˨˦ | lɨ˨˦-ʔɨ˦ɨ˨˦ | ʔɛ˦-ʔɨ˦ɨ˨˦ | ʔɨ˦ɨ˨˦-ɲi˨˦ | ʔɨ˦ɨ˨˦-ʔɨ˦ | lɨ˨˦-ʔɨ˦ɨː˨˦-ʔɨ˦ (irregular) |
-| EAT | mɛ˨˦ɛ˨ʔɨ˦ | lɨ˨˦-mɛ˨˦ɛ˨ʔɨ˦ | ʔɛ˦-mɛ˨˦ɛ˨ʔɨ˦ | mɛ˨˦ɛ˨ʔɨ˦-ɲi˨˦ | mɛ˨˦ɛ˨ʔɨː˦-ʔɨ˦ (irregular) | lɨ˨˦-mɛ˨˦ɛ˨ʔɨː˦-ʔɨ˦ |
-| SEE | ʔɨ˦li˧ | lɨ˨˦-ʔɨ˦li˧ | ʔɛ˦-ʔɨ˦li˧ | ʔɨ˦li˧-ɲi˨˦ | ʔɨ˦li˧-ʔɨ˦ | lɨ˨˦-ʔɨ˦li˧-ʔɨ˦ |
+| verb | lemma | 3SG | 2SG | 1SG | 1PL | PAST | FUT | PAST.1SG | REFL |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GO | ɲi | ʔiɲ | ʔa | ʒiɲi | miɲ | ɓi | ɲɜ̠ɪɲ | ʒiɓɜ̠ɪɲ | ʒɑ̟ |
+| EAT | ŋaiɡʱaaɜ̠ɪn | ʔi- | ʔa- | ʒi- | mi- | ɓɜ̠ɪ- | ɲɜ̠ɪ- | ʒiɓɜ̠ɪ- | ʒa- |
+| SEE | nʊŋim | ʔi- | ʔa- | ʒi- | mi- | ɓɜ̠ɪ- | ɲɜ̠ɪ- | ʒiɓɜ̠ɪ- | ʒɑ̟- |
+| GIVE | maɡʱ | ʔimːaɡʱ | ʔamːaɡʱ | ʒimːaɡʱ | mimːaɡʱ | ɓɜ̠ɪmːaɡʱ | ɲɜ̠ɪmːaɡʱ | ʒiɓɜ̠ɪmːaɡʱ | ʒamːaɡʱ |
 
-The 3PL suffix lengthens a stem-final vowel before it (EAT, GIVE): a real, statable irregularity. Gram paths:
-- LOC from BELLY: free *liː˨˦bʱɛ˨˦* (18.0) > clitic *la˨˦ɨ˨˦bʱɛ˨* (14.5) > affix *la˨˦* (10.5). A body part to a locative: attested.
-- PROG from AT: free *li˨˦li˨* (16.0) > clitic (10.5) > affix *lɨ˨˦* (9.5). Locative to progressive: attested.
-- 3PL from THEY: *u˦* (11.5) > clitic *ʔy˦* (10.0) > *ʔĩ˦* > *ʔɨ˦* > affix (2.5). 3SG from HE/SHE/IT: *ɲi˨˦* (2.5) > affix (0.5).
-- NEG coined *ʃɔ˧* (10.5) > clitic (9.0) > *ha˧* > affix *hɛ˧* (6.5) > *ʔɛ˧* > fused *ʔe̞˦* (3.5) > *ʔɛ˦*: the erosion ʃ > h > ʔ again.
-- PAST (*ɡa˨˦* 20 kyr > ... > *ʔɨ˦*) and FUT (*ʃɨ˦ʐi˨* 14.0 > *ʔɨ˦ʐ*) both wore down and died at 3.5 kyr, unrenewed.
-- Defects: 3PL and CLASS:2 are both *ʔɨ˦*; PROG *lɨ˨˦-* is identical to the lexical 'thing' prefix in TREE.
+GO is suppletive-looking: its monosyllabic stem fuses with every prefix (11 of 13 cells marked irregular; 2SG is just ʔa, PAST
+just ɓi). GIVE geminates its m after any prefix; REFL is ʒɑ̟- before back-vowel stems (SEE) and ʒa- elsewhere: real, statable
+allomorphy. Nouns: one class suffix, CLASS:3 -m (WATER ʁaɓ, irregular). Gram paths:
+- PAST from YESTERDAY: *biki* (20 kyr, clitic) > *bihi* > *bi* > *ɓi* (17.0) > affix (13.5) > *ɓəɪ* > *ɓɜ̠ɪ*. Attested type.
+- FUT from GO: *ɲi* (14.5, free) > clitic (10.0) > affix (9.5) > *ɲəɪ* > *ɲɜ̠ɪ*. The go-future, attested; GO's own stem is ɲi.
+- REFL from HEAD: *ʒänɨ* (10.5) > clitic (10.0) > *ʒɑ̟̃* > affix *ʒɑ̟* (5.0). Head-reflexives are attested (Basque, Fula).
+- 3SG from HE/SHE/IT *ɨsrẽ* (20) > *ʔɨʁɨʁ* > *ʔɨ̃* (14.0, affix) > *ʔi*; 2SG from THOU (15.0) *ɜdʱɜ* > *ʔa*; 1SG from I *ʒe* (17.0)
+  > *ʒi*; 1PL from WE *mi* (11.0). Agreement from free pronouns: attested.
+- NEG *su* fused and died at 14.5, a new *ũk* (5.5) wore to *uf* and died at 3.5: the lect has no negator now.
+- Defects: 1SG ʒi- and REFL ʒa- differ by one vowel; 3SG ʔi- and 2SG ʔa- likewise (that alone is fine).
 
-*d726 (aarakocra 34, family p204; 68 cells, among the richest lects).* Nouns: WATER ʈi˦e˦˨ʊ˦˨, LOC **nɛ˨**-, DAT **ka˦**-;
-PERSON o˦ʔa˦o˦ʔa˦; DOG mi˨ʔa˦i˦; TREE mi˦ʔa˦ʔa˦. Verbs are all prefixing:
+*d726 (aarakocra 34, the north of Sothasor, family p204).* Nouns: WATER ɛ˨, COM **ɛ˦˨**-ɛ˨, DEF ɛ˨-**kʷɛ˨**, LOC
+**hɛ˦˨**-ɛ˨; PERSON tɛ˦nŋo˦to˦ɾy˦; DOG ɻe˨ni˨; TREE ɳi˨ʒi˨ko˨. Verbs are all prefixing:
 
-| verb | lemma | PROG | PERF | NEG | 1PL | 3PL | CAUS |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| GO | ŋa˦˨ɹɛ˦ny˨ | lẽ˨- | lɛ˦n- | i˦˨- | ta˦- | ɓy˨- | ka˦- |
-| EAT | dʱlo˦˨ɹɛ˦ny˨ | lẽ˨- | lɛ˦n- | i˦˨- | ta˦- | ɓy˨- | ka˦- |
-| GIVE | ka˦ɹɛ˦ny˨ | lẽ˨- | lɛ˦n- | i˦˨-**xa˨**ɹɛ˦ny˨ | ta˦- (PROG.1PL ta˦lẽ˨**a˦**ɹɛ˦ny˨) | ɓy˨- | ka˦- |
+| verb | lemma | CAUS | REFL | 2SG | 1SG | IPFV | 2PL | 1PL | IPFV.1SG |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GO | ka˦ɾe˦ | ʔe˦**h**a˦ɾe˦ | la˨**h**a˦ɾe˦ | ʔɛ˦**h**a˦ɾe˦ | ɻa˨ka˦ɾe˦ | ly˦˨ka˦ɾe˦ | tɾa˨ka˦ɾe˦ | ʔɛ˨**h**a˦ɾe˦ | ɻa˨ly˦˨**h**a˦ɾe˦ |
+| EAT | tʃi˨ɻɛ˨ | ʔe˦- | la˨- | ʔɛ˦- | ɻa˨- | ly˦˨- | tɾa˨- | ʔɛ˨- | ɻa˨ly˦˨- |
+| GIVE | ɣɛ˨i˨ʒi˨ʒa˨ | ʔe˦ɛ˨i˨ʒi˨ʒa˨ | la˨ɣɛ˨- | ʔɛ˦ɛ˨i˨- | ɻa˨ɣɛ˨- | ly˦˨ɣɛ˨- | tɾa˨ɣɛ˨- | ʔɛ˨ɣɛ˨- | ɻa˨ly˦˨ɣɛ˨- |
 
-GIVE alternates k ~ x ~ ∅ after prefixes: real stem allomorphy. Gram paths: PROG from AT (6.0, clitic *lẽ˨to˨ɳ* > fused *lẽ˨* 0.5);
-PERF from HOLD (1.0 *lɛ˦nɹɛ˦* > *lɛ˦n*); 3PL from THEY (*ɓo˨nni˦˨* 3.0 > *ɓy˨*), after an older 3PL *ʊ˦˨ɳe˦˨* died at 6.0; CAUS
-from GIVE, renewed three times (11.0, 5.5, 1.5); DAT from GIVE (*ka˦*, homophonous with CAUS); DEF from THAT, renewed at 1.0;
-3SG *kʷe˦ʔa˦* (7.0) > *ke˦* > *tʃe˦* > *ʃe˦* > *he˦* > *e˦*, then replaced by a free *sa˦* at 0.0. **Winces:** grammar churns (most
-grams here are under 6 kyr old, several renewed two or three times); DAT = CAUS = *ka˦*, AGENT = PERSON = *o˦ʔa˦*; the nouns are
-ʔa-strings (PERSON, DOG, TREE).
+GO alternates k ~ h after vowel-final prefixes and GIVE drops ɣ after ʔ-prefixes: lenition frozen into the paradigm, but not
+consistently (after ɻa˨-, ly˦˨-, tɾa˨- GO keeps k). Gram paths: FUT from GO (*ka˦ɾe˦* = the verb GO itself, a clitic at 0.0:
+the go-future again); REFL from HEAD (*la˨o˨* 11.5 > *la˨* affix 7.5); LOC from BELLY (*hɛ˦˨*, 1.0, after three earlier LOCs
+died); DEF from THAT (*kʷɛ˨*, renewed at 3.0); COM from FRIEND (6.0 > fused 1.0); IPFV from the PROG gram (3.0 > fused 0.0):
+a progressive becoming an imperfective, attested; CAUS from DO/MAKE (*ʔe˦*, 12.5, fused 1.5). **Winces:** grammar churns (DAT,
+PERF, PAST, NEG, 3PL all died in the last 1.5 kyr; 2PL renewed three times); 2SG ʔɛ˦- = AGENT ʔɛ˦-, and 1PL ʔɛ˨- differs only
+in tone; the lect now has no negator.
 
 **(f) Names.**
 
 | people | endonym | book spelling | gloss | pattern | made from |
 | --- | --- | --- | --- | --- | --- |
-| firbolg | ŋi˨le˦ ʔõ˦mo˨ | Ngile omo | the hunters | E8 way of life | ngile 'hunt' (coined 4 kyr ago) + particle omo |
-| lizardfolk | ʔʉ˦ɣːi˦ʔʉ˦ʔi˨hi˨ | Ugghi'u'ihi | the snake people | E11 totem | ugghi 'people' + u'h 'snake' |
-| tortle | ʔa˦ɲɨ˦ɛ˦la˨ | Anyïela | the old people (first on Simath) | E7 | ela'ïzhi 'people' + anyïï 'old' (ANCESTORS + 'like') |
-| kobold | dʱə˨ɪ˦βa˨ɾi˨ | Dheivari | the river people | E4 | varie 'people' (borrowed from d408) + dhei'i 'river' |
-| dwarf | ɬə˨ɪ˨lɾy˨ŋʔə˦ | Hleilrüng'e | the real people | E2 | hleilshïhliġi 'people' + rüng'ei 'real' |
+| firbolg | nʷomɪa | Nwomia | the hunters | E8 way of life | nwomi 'hunt' (coined 7.5 kyr ago) + -a, the plural |
+| gnome | ãɲynaf | Anyünaf | the real people | E2 | anyüran 'people' (compounded 8 kyr ago) + naf 'real' (9 kyr) |
+| goliath | ŋʷa˨i˨ŋi˨ | Ngwaingi | the river people | E4 | ngwaishi 'river' (once 'water') + -ngi, the plural |
+| lizardfolk | i‼˨dʱːə˨ʔy˦ə˨ | Irhdde'üe | the snake people | E11 totem | irhddezhen 'people' + üeeh 'snake' (17 kyr) |
+| tortle | ʔãɲiʔãʔy | Anyi'an'ü | the old people (first on Simath) | E7 | an'üü 'people' (3 kyr) + anyiza 'old' (1.5 kyr) |
 
 | by -> of | exonym | book spelling | gloss | pattern | basis |
 | --- | --- | --- | --- | --- | --- |
-| orc -> triton | ɨ˦lə˨˦mɨː˧l | Ïlemiil | the enemies (raiders) | X5 | tritons settled among orcs on 20 cells in 2 kyr |
-| green dragon -> hill giant | ɨ˦ʔə‼˦ŋxe˦ɗə˨ | Ï'erhngxe'de | the mutes | X3 | ï'erh 'mute' + class prefix |
-| elf -> dragonborn | ʔĩ˦ɭi˦ɲi˦ʔĩ˦ɲi˦ʔo˦a˦ | Inḷinyi'inyi'oa | the strangers | X2 | oaha 'stranger' + people class |
-| drow -> tortle | ʃi˦ʒi˨ɲi˨ŋi˨ɹi˦ | Shizhinyingiri | the beaked ones | X7 body | 'people' + 'bird' + 'mouth' |
-| aarakocra -> human | ʔɪ˨i˨ | Ii | their own name I izh, as aarakocra hear it | X1 | first met in deme 561 |
+| orc -> triton | u˧ɛ̃˧ | Uen | the enemies (raiders) | X5 | tritons settled among orcs on 20 cells in 2 kyr; en 'enemy' borrowed from a blue-dragon lect |
+| green dragon -> hill giant | dziɾa‼ɲiɗid̪ʱɨ‼ | Dzirarhnyi'didirh | the mutes | X3 | dzirarh 'mute' + people class |
+| elf -> dragonborn | ɡʷʱuɭud̪ʱuɡʷʱomuɛʒi | Gwuḷudugwomuezhi | the strangers | X2 | ezhizhi 'stranger' + people class |
+| drow -> tortle | ũ˨vo˦ŋi˨pʰɨ˨ | Unvongipï | the beaked ones (bird-mouths) | X7 body | 'people' + 'bird' + 'mouth' |
+| red dragon -> frost giant | a‼ː˧ɫi‼˨ɓi‼ː˨ʒi‼˨ | Aarh-llirh'birhzhirh | the big ones | X7 body | 'big' + plural |
 
 Place names, each with its chain:
-- **River Engengif, 'the long river' (deme 677, orc; P2, substrate).** Halfling d416: *ə˦˨tʃ* 'far' (coined 12.5 kyr) > *ɜ˦˨f*
-  > FAR + 'like' = *ə˦ŋɨ˨ɜ˦˨f* 'long' (8.5) > *ʔɜ˦ŋɜ˨ɜ˦˨f*; *a˨˦ŋi˨˦f* 'river' (4.5) > *ŋi˨˦f*; name *ʔɜ˦ŋɜ˨ŋi˨˦f* > kept by the orcs
-  when deme 416 shifted, *ʔɛ˧ŋɛ˧ŋi˧f* (tones levelled to mid).
-- **Peak Kxallïï, 'the black mountain' (deme 666, human).** p306 *ze˦˨m* 'night' (20 kyr) > *si˨* > *ɨ˦* > NIGHT + 'like' = *ɨ˦ɨ̃˦˨*
-  'black' (5.0) > *ɨ˦ɨ˦˨*; *ɡɣã˧l* 'mountain' (coined 7.0) > *kxa˦ɫ*; name *kxa˦ɫɨ˦ɨ˦˨*. 'Night-like' for 'black' is good.
-- **Lake Neðnitiʿnishwdhix, 'the stone lake' (deme 51, brass dragon; P2).** Kobold d239: *ɣri˦˨ɕsiː˦˨x* 'stone' (coined 0.5 kyr),
-  *ɾɛ˨sri˦t̪s* 'river' (1.0) > RIVER + 'thing' = 'lake'; name *ɾɛ˨sɹi˦t̪ɣri˦˨ɕsiː˦˨x*, which the brass dragons heard as
-  *nɛ˨ðni˨t̪i˨ʕni˨ʃʷði˨x* (13 segments). The name is dated 20 kyr, from words coined in the last 1 kyr.
+- **River Ich'e'iliaw, 'the big river' (deme 77, copper dragon; P2, substrate).** Kobold d442: *hi˦˨e˦˨kɛ˨˦* 'big' (coined 8.5
+  kyr) > *i˦˨tʃːɛ˨˦*; *slɪ˦a˦˨w* 'river' (7.5) > *hlɨ˦a˦˨w*; name *i˦˨tʃːɛ˨˦hɨ˨lɨ˦a˦˨w* > heard by the copper dragons, who came
+  later, as *itʃʼɛʔɪlɪaw* (tones dropped, h > ʔ, long tʃː as ejective tʃʼ). The name is dated 20 kyr, its words 7-8.5.
+- **Lake Aaïzha, 'the big lake' (deme 24, hill giant; P2).** Firbolg d197: SEA + 'little' = *ɛɑxʷy* 'lake' (6.0) > *ɛavi*;
+  *həʒjɛh* 'big' (4.0) > *əʒɛ*; name *ɛaəʒɛ* > the hill giants' *aaɨʒa*. 'Little sea' for 'lake' is good.
+- **Sea Finywizinwu, 'the cold sea' (deme 787, human).** p279 *e˨mt̪a˨b* 'sea' (20 kyr) > 8.5 d493 *i˨n̪ʷo˨t̪a˦bʱu˨* > now
+  *ĩ˨n̪ʷu˨d̪ʱa˦bʱu˨*; *fĩ˧ɲwi˦z* 'cold' (coined 0.0); name *fĩ˧ɲwi˦zĩ˨n̪ʷu˨*, both words clipped.
 
 ### CHANGELOG
 
-**d691 (human 49, the west of Ratal; p306 > d561 > d604 (19.0) > d691 (13.0)).** 332 sound changes in 20 kyr (16.6 per kyr): by
-cause effort 96, coarticulation 76, dispersion 61, prosody 43, perception 34, tonogenesis 22. 278 own, 54 adopted by wave (26 from
-d666, 13 from d375, the rest from 7 other lects). 93 rules fired more than once ('rare sounds merged' 24 times; h-loss, nasal place
-assimilation 6 each). In order (`[dX]` = adopted from lect dX; "rare sounds merged" entries left out):
+**d691 (human 49, the west of Ratal; p306 > d561 > d604 (19.0) > d691 (13.0)).** 332 sound changes in 20 kyr (16.6 per kyr):
+by cause effort 96, coarticulation 84, dispersion 61, perception 43, prosody 38, tonogenesis 10. 285 own, 47 adopted by wave
+(24 from d666, 11 from d375, 5 from d604). 77 rules fired more than once ('rare sounds merged' 32 times). In order (`[dX]` =
+adopted from lect dX; "rare sounds merged" left out):
 
-- 19.5 (d561): metathesis sk; pt > tt; r lost before C or finally with lengthening; long vowels shorten before CC; r > ɹ [d375]; n > ɲ before i, j [d375]; iː, uː > ai, au [d375]; s > ʃ before i [d381]; l > ɫ before C or finally [d381]; k, ɡ > tʃ, dʒ before front vowels [d381]; a > ɛ stressed open [d421]; z > r /V_V [d421]; w > b /#_ [d421]; j > dʒ /#_ [d432]; nasal place assimilation [d467]; b > β /V_V [d485]; k > tʃ before front vowels [d485]
-- 19.0 (d604): a > ɛ stressed open; back harmony; final devoicing; h lost in codas with lengthening; kt > jt; degemination; s > z /V_V; k, ɡ > tʃ, dʒ [d375]; dz > z [d375]; low tone before voiceless stop + C [d375]; t > ʔ /V_V or finally [d580]
-- 18.5: voiced stops > breathy; k > ʔ finally; p t k > ʔ finally; m lost finally; ɛ, ɔ > je, we stressed; n > ɲ before i, j; ts > s; k > h /V_V; VC > long V before C; w lost /#_ [d375]; aː > ɛː [d375]; k > tʃ [d375]; i˨ inserted between consonants [d375]; p lost /#_ or /V_V [d466]
-- 18.0: s lost finally; s > h /#_, /V_V; tʃ > ʃ; t > θ /V_V; θ > s; fricatives voiced after unstressed vowels; t > tʃ before i; h lost; p t k > f θ x [d375]
-- 17.5: x > h /#_; s > ʃ before i; i˨ added after final C; low tone after voiced obstruents; j inserted after i before V; umlaut; l > r after C
-- 17.0: w lost before u, o; nasal place assimilation; χ, x > h; s > ʂ after r u k i (ruki); e > i before nasals; o > a unstressed; eː, oː > iː, uː; l > w before C or finally; raising before i; s > r /V_V; liquid metathesis; tone becomes phonemic
-- 16.5: j > dʒ /#_; iː, uː > ai, au; k > ts before front vowels; intervocalic voicing; i˨ epenthesis; dʒ > ʒ; z > s; gemination after stressed short vowels; p t k > pf ts kx initially; m > n finally [d375]
-- 16.0: CrV > CVr; w > v; i, u > j, w before vowels; o > o̞; e, o > i, u stressed; f > h; θ > t
-- 15.5: k > ɡ /V_V; j > ʒ; l > ɫ before C or finally
-- 15.0: ts > s; palatalization of k, ɡ; final C lost; tʃ > ʃ; nasalization before nasals; nasal vowels denasalize; n > ɲ before i; breaking; labialization before u, o; r > ʁ
-- 14.5: stops voiced after nasals; h lost; b d ɡ > p t k; s > ʃ before i; w inserted after u; i > ɨ; long vowels shorten before CC; k > x after vowels; nasalization after h, ʔ; compensatory lengthening
-- 14.0: u > o before C(C)a; o > a unstressed; aː > ɛː; t > ʔ; e, o > i, u unstressed; degemination; low tone before voiceless stop; final unstressed vowel lost; m lost finally
-- 13.5: i˨ epenthesis (three rules); kʷ > k; regressive voicing; umlaut; eː, oː > iː, uː; low tone after voiced obstruents; iː, uː > ai, au; t > tʃ before i; ʃ > x; s > h; p t k > f θ x; f > h /#_ [d375]
-- 11.5 (d691): w > ɡw /#_; n > ɲ; breaking; devoicing of b d ɡ; y > i; j > dʒ; χ, x > h; h lost; j insertion; l > ɫ [d666]; k > tʃ [d666]; p t k > pf ts kx [d666]; ʔ lost in codas [d666]
-- 11.0: final C lost; tʃ > ʃ; intervocalic voicing; ts > θ; compensatory lengthening; iː, uː > əɪ, əʊ; tone phonemic; e > i before nasals [d666]
-- 10.5: j > ʒ; nasal place assimilation; dʒ > ʒ; umlaut; o > a unstressed; low tone after voiced obstruents; i, u > j, w before V; syncope [d666]; e, o > i, u stressed [d666]
-- 10.0: u > y; ʔ inserted before initial vowels; nasalization; θ > t; fricative voicing [d666]; voicing assimilation [d666]; p t k > f θ x [d666]; ŋ > n finally [d666]
-- 9.5: VCjV > VjCV; denasalization; a > ɛ; e, o > i, u unstressed; w > v [d604]; θ > s, s > z, f > h, z > r, r > ɹ [all d666]
-- 9.0: ɔ > ɑ; final devoicing; long vowels shorten; ts > s; s > ʃ before i; low tone [d666]; l > r after C [d666]; prothetic i˨ [d666]; ʃ > x [d666]; CrV > CVr [d666]; CCC simplified [d666]; r lost with lengthening [d666]; iː > ai [d666]
-- 8.5: y > i; h lost; nasalization after h, ʔ; χ, x > h; breaking [d666]; f > h [d666]
-- 8.0: voiced stops > breathy; lengthening of stressed vowels before CV
-- 7.5: s > h before C or finally; nasal place assimilation; gemination; e > i before nasals; j > ʒ; intervocalic voicing; n > ɲ; regressive voicing; h lost in codas; degemination; s > h /#_, /V_V
-- 7.0: iː, uː > əɪ, əʊ; tone phonemic
-- 6.5: compensatory lengthening; umlaut; e, o > i, u unstressed; final unstressed vowel lost; m > n, ŋ > n finally; labialization; o > a unstressed; a > ɛ; fricative voicing; eː, oː > iː, uː
-- 6.0: long vowels shorten; w > ɡw /#_; l > w; n > ŋ finally; nasal lost after nasal vowel; u > y; denasalization
-- 5.5: h lost; w > v; ʔ inserted before initial vowels
-- 5.0: z > s; low tone before voiceless stop; l > r after C; voiced stops > breathy; r > ɹ; prothetic i˨; ruki; y > i
-- 4.5: nasal place assimilation; stressed-vowel lengthening; low tone after voiced obstruents
-- 4.0: s > r /V_V; iː, uː > ai, au; ə > ɜ; s > h; f > h; e, o > i, u stressed; r > ʁ
-- 3.5: gemination; final devoicing; degemination; ŋ > n finally; ɛ > e̞; devoicing before voiceless; Cʔ > ejective
-- 3.0: l > w; ʔ lost in codas; ʃ > x; x > h /#_; x > f finally
-- 2.5: m > n finally; o > a unstressed; breaking; k > ʔ finally; aː > ɛː; h lost; w > v; e > i before nasals; w after u; k > ts before front vowels; long vowels shorten before CC
-- 2.0: eː, oː > iː, uː; stops voiced after nasals; a > ɛ; k > tʃ after i; k > x after vowels; e, o > i, u unstressed
-- 1.5: CCC simplified; umlaut; x lost before C with lengthening; p t k > f θ x; m lost finally; regressive voicing; long vowels shorten; nasal place assimilation; n > ŋ finally [d604]
-- 1.0: compensatory lengthening; low tone after voiced obstruents; nasalization; f > h (twice); nasal lost after nasal vowel; intervocalic voicing; w lost before u; iː, uː > əɪ, əʊ; tone phonemic (high default); h lost in codas [d604]
-- 0.5: low tone before voiceless stop; ɣ lost /V_V; χ, x > h; stressed-vowel lengthening
-- 0.0: e, o > i, u stressed
+- 19.5 (d561): ɨ˨ epenthesis; pt > tt; s lost finally; t > d /V_V; m lost finally [d467]; r > ɹ, s > ʃ before i, p t k > f θ x [d375]; l > ɫ [d381]; j > dʒ /#_ [d432]; d > ð, o > a unstressed [d485]
+- 19.0 (d604): labialization before u, o; back harmony; final devoicing; sk metathesis; z > s; a > ɛ stressed open; ɡ > dʒ before front V; e, o > i, u before Ci; n > ɲ, ɡ > ɣ, nasal place assimilation [d375]; ruki [d580]
+- 18.5: low tone before voiceless stop; j > dʒ /#_; final C lost; ɛ, ɔ > je, we stressed; kt > jt; w > ɡw /#_; p > b /V_V; aː > ɛː, d > ð [d375]; dʒ > ʒ [d466]
+- 18.0: b d ɡ > p t k; nasalization before nasals; j > ʒ; ð lost /V_V; s > z /V_V; r > ɹ; k > h /V_V; k > tʃ; h lost
+- 17.5: w after u; stops voiced after nasals; i, u > j, w before V; p lost; t > tʃ before i; kʷ > p; p > ɸ; l > w finally; u˨ epenthesis
+- 17.0: dz > z; ts > s; eː, oː > iː, uː; p t k > pf ts kx initially; u > o before Ca; long vowels shorten; w > v; f > h; intervocalic voicing [d375]
+- 16.5: tʃ > ʃ; u > y; voiced stops > breathy; s > ʃ before i; e > i before nasals; s > h; t > ʔ /V_V, finally [d375]
+- 16.0: a > ɛ; m lost finally; y > i; n > ɲ; gemination; i˨ epenthesis. 15.5: ts > θ; θ > f
+- 15.0: breaking (e > ea); k > x after V; palatalization before j; z > s; j > ʒ; dʒ > ʒ; labialization; h lost; **tone phonemic**
+- 14.5: k, ɡ > tʃ, dʒ; s > z; o > a unstressed; ʃ > x; l > r after C [d375]
+- 14.0: b d ɡ > p t k; r > ɹ; prothetic i˨; p t k > f θ x; ɛ, ɔ > je, we; degemination; w > b /#_
+- 13.5: l > ʎ; θ > s; w > v; s > h; final unstressed vowel lost (twice); final devoicing; i˨ epenthesis
+- 11.5 (d691): b, d > ɓ, ɗ; k > ʔ finally; m > n, x > f, n > ŋ finally; f > h; h lost; j > ʒ; ʃ > x; z > s, labialization [d666]
+- 11.0: k > x; p t k > f θ x; tʃ > ʃ; s > ʃ; s > r /V_V; ɛ, ɔ > je, we; r > ʁ; x > h, e, o > i, u, nasalization after h, ʔ [d666]
+- 10.5: CjV metathesis; nasal place assimilation; n > ɲ; CCC simplified; nasalization; ɛ > æ, ɔ > ɑ [d666]
+- 10.0: palatalization before j; aː > ɛː; o > a; f > h, iː > əɪ, low tone, w > b, æ > eə [d666]
+- 9.5: s > h; denasalization; ruki; e, o > i, u unstressed; **tone phonemic**; ə > ɜ̠ [d604]; l > ɫ, final C lost, w > v [d666]
+- 9.0: degemination; ɑ > a; intervocalic voicing; l > r after C; r > ɹ; dʒ > ʒ; regressive voicing, u˨ epenthesis [d666]
+- 8.5: labialization; b d ɡ > β ð ɣ /V_V; β > v; f > h; breathy voice, m lost finally [d666]. 8.0: dz > z; kʷ > p; p > f; s > h
+- 7.5: nasal place; n > ɲ; CCC simplified; w > ɡw; gemination; ʃ > x. 7.0: s > z /V_V
+- 6.5: x lost with lengthening; palatalization; f > h; w > v; j > dʒ; initial unstressed V lost; e, o > i, u
+- 6.0: stressed lengthening; dʒ > ʒ; regressive voicing; a > ɛ; m > n, n > ŋ finally; iː > əɪ; **tone phonemic**. 5.5: h lost; ŋ > n; r > ɹ; j > ʒ
+- 5.0: ɛ, ɔ > je, we; gemination; o > a. 4.5: nasal place; e > i before nasals; e, o > i, u stressed; breathy voice
+- 4.0: intervocalic voicing; degemination; s lost finally; z > r; nasalization. 3.5: denasalization; labialization; w > v
+- 3.0: regressive voicing; CjV metathesis; l > r; CrV > CVr; ə > ɜ̠. 2.5: r > ʁ; n > ŋ finally; final C lost; a > ɛ
+- 2.0: ɔ > ɑ; s > z; iː > ai; y > i. 1.5: aː > ɛː; prothetic ʔ; z > s; f > h; ʃ > x; final unstressed V lost [d604]
+- 1.0: m lost finally; long V shorten; x > h; s lost; j > ʒ; m > n; final devoicing; nasalization; k > ʔ; h lost; ʔ lost in codas; χ > ħ, s > h [d604]; n > ɲ [d666]
+- 0.5: ln > ll; nasal lost after nasal V; degemination; denasalization; intervocalic voicing. 0.0: s > h before C; h lost in codas; l > r
 
 Inventory of the line at four moments:
 
 | kyr | lect | C | consonants | V | vowels |
 | --- | --- | --- | --- | --- | --- |
-| 20 | p306/d561 | 26 | p b ɓ f v m t d tʰ ts dz s z ʃ tʃ n r l ȶ ʈ j k ɡ ŋ w h | 10 | i e ɛ a ɔ o u ɨ aː ɔː |
-| 10 | d691 | 26 | ʔ ʃ t dʱ ɲ ʈ tʰ n l m f ʂ ȶ ŋ ɓ bʱ w j kx ɖ ts ɲ̟ ŋʷ ŋ͡m ʒ ɱ | 15 | ɨ i a y ɛ ɨ̃ ɛː ĩ ɔː o̞ ã ɔ o e aː |
-| 5 | d691 | 32 | ʔ ʒ dʱ ɲ tʰ l ʈ ɦ ŋ m v ȶ ɡɣ ɖʱ ɓ n f ʐ ɹ ɡʱ ʂ kx ȡʱ s lʷ bʱ ɓ̥ ɲ̟ ɳ ŋʷ ŋ͡m ʒʷ | 9 | ɨ e i ə ɪ a ɛ o ɔ |
-| 0 | d691 | 36 | ʔ l tʰ ʐ dʱ m ʈ f ɡ v ʂ n kx h ɓ ŋ ȶ ɲ bʱ ɖ ɹ w s ʁ ɳ ɱ ts dz ɡɣ z ʃ ŋ͡m ʒ k tʃ ȡ | 15 | ɨ i ɨː iː ɛ a u ɜ ɪ aː ɔː e ɔ o ə |
+| 20 | p306/d561 | 26 | v l m j b n d t h z ȶ tʃ s ɡ p w ʃ ts ɓ f dz ʈ ŋ k tʰ r | 10 | e i a u ɛ ɔ o aː ɨ ɔː |
+| 10 | d691 | 25 | h ʒ ɲ l j s ȶ tʰ dʱ m ŋ ɡʱ bʱ ʃ f v ʈ w dz ɓ ɹ n ʁ kʷ z | 11 | i a ĩ e u æ iː ã ɑ ɔː o |
+| 5 | d691 | 28 | ʒ ɲː l ɦ ʒː ɲ m mː tʰ ŋ bʱ v vː ɹ ʈ ȶ ɓ n bʱː ɡ lː j z w s nʷː f ɡː | 12 | i ə ɪ ʊ a e u aː ɔ o ɛ ɔː |
+| 0 | d691 | 22 | ȶ ʒ ɲ l ɦ ʃ m tʰ ŋ bʱ ʔ v ʈ ɓ r f ɹ ɡʱ nʷ n h s | 8 | i ɛ ɪ ʊ u a ɑ e |
 
-Read as a linguist: each change is a real, attested type and the sequence has natural chains (s > h > ∅; p t k > f θ x > h;
-voiced stops > breathy > tone). Too much of it, though: 16 changes per kyr, the same handful recurring (h-loss six times, a > ɛ
-four), and the inventory ends with ŋ͡m, ɓ̥ (a voiceless implosive) and both ɖ and ȡ, at 36 C against PHOIBLE's 21.
+Read as a linguist: each change is an attested type and the chains are natural (s > h > ∅; p t k > f θ x > h; voiced stops >
+breathy; j > dʒ > ʒ). The inventory now stays the size of a real one (22 + 8, against 36 + 15 in the previous run). Still too
+much churn: 16.6 changes per kyr, the same few recurring (h-loss, j > ʒ, dʒ > ʒ, ɛ/ɔ breaking, a > ɛ four or five times each),
+and "tone becomes phonemic" fires three times on one line.
 
-**d726 (aarakocra 34, the north of Sothasor; p204 > d292 > d726 (9.5)), in brief.** 389 changes (19.5 per kyr; generation 5.8
-years): effort 148, coarticulation 93, dispersion 67, perception 34, tonogenesis 25, prosody 22. Only **10 adopted** (all from
-d180): aarakocra change on their own. 71 rules repeat (merges 21, s > h 7, h-loss 7). The first step (19.5) alone has 27 changes;
-at 10.0 and again at 1.0 the lect applies n > ŋ and ŋ > n finally in the same step; at 5.0 t > θ and θ > t. Inventory: 20 kyr
-19 C (with kʷ tʼ ɻ) / 12 V (with iːᴖ); 10 kyr 28 C (ɓ ħ ʕ ɳ ʂ bʱ dʱ gained) / 13 V, the second voice gone; 5 kyr 26 / 14; now
-25 C `ʔ l ɹ n ɾ ɻ k ɓ ʈ dʱ p t ŋ ʂ ɲ ʃ ħ m b tʃ ɣ x s h ɳ` / 13 V `ɛ a y ə ɪ i e o ʊ ɨ aː ẽ ɒ`. Labials p b m ɓ only.
+**d726 (aarakocra 34, the north of Sothasor; p204 > d292 > d726 (9.5)), in brief.** 394 changes (19.7 per kyr; generation 6
+years): effort 147, coarticulation 95, dispersion 73, perception 35, prosody 26, tonogenesis 18. Only **8 adopted** (all from
+d180, a hill-giant lect): aarakocra change on their own. 69 rules repeat (merges 30 times; s > h, k > h, h-loss 7 times each).
+The first step (19.5) alone has 23 changes. No change and its inverse fire in one step any more, but they alternate across
+steps: n > ŋ finally at 7.0, 3.5 and 0.5, ŋ > n finally at 8.0, 4.0 and 0.0. Inventory: 20 kyr 19 C (kʷ tʼ ɻ x ts) / 12 V
+(with iːᴖ, ẽ); 10 kyr 21 / 15, the second voice gone; 5 kyr 22 / 9; now 21 C `ʁ ʒ ɡʷʱ ʔ ɾ ŋ k h tʃ ɻ ɹ n l r ɣ ɳ dʱ t s x kʷ` /
+9 V `i a ɛ o e ə ɪ y ẽ`. No labials at all (p was lost in the first step): fine for a beaked people.
 
 ### CHECKS
 
 | check | measured | target | pass |
 | --- | --- | --- | --- |
 | proto inventories vs PHOIBLE | 110 human-voiced protos: median 23 C, 8 V; 51% inside the C IQR, 54% inside the V IQR, 23% both; top-20 segment overlap 19 | medians inside the IQR (C 17-27, V 6-12); 35-75% inside per measure; top-20 overlap >= 10 | yes |
-| sisters recognisable, distant not | blind cognate share: sisters parted <= 2 kyr 0.541 (182 pairs); different families 0.003 (197,692 pairs); chance floor 0.013 | sisters > 0.5, different families < 0.15 | yes |
-| scholars' horizon (human lects) | **9.0 kyr** (all lects 9.6; old per-pair measure 9.0, all 12.0) | 6-10 kyr | yes |
-| language shift happened | 214 shifts; 104 of 633 living lects speak outside their deme's descent | > 0 | yes |
-| long generations change less | humans 15.2 rules/kyr, long-lived peoples 4.5 (ratio 3.35) | long-lived < a third of humans | yes |
-| hubs simpler, isolated richer | complexity: hubs 1.47 (208 lects), isolated 3.35 (61) | hubs < isolated | yes |
+| sisters recognisable, distant not | blind cognate share: sisters parted <= 2 kyr 0.512 (207 pairs); different families 0.003 (191,691 pairs); chance floor 0.013 | sisters > 0.5, different families < 0.15 | yes |
+| scholars' horizon (human lects) | **11.0 kyr** (all lects 9.2; old per-pair measure 11.0, all 10.0) | 6-10 kyr | **no** |
+| language shift happened | 159 shifts (takeover 93, swamp 49, trade 11, elite 1, unrecorded 5); 96 of 623 living lects speak outside their deme's descent | > 0 | yes |
+| long generations change less | humans 15.2 rules/kyr, long-lived peoples 4.4 (ratio 3.49) | long-lived < a third of humans | yes |
+| hubs simpler, isolated richer | complexity: hubs 1.32 (204 lects), isolated 2.89 (60) | hubs < isolated | yes |
 
-**Horizon: share of true splits the scholars' tree recovers, by age (2-kyr windows, human lects).**
+**Horizon: share of true splits the scholars' tree recovers, by age (2-kyr windows, human lects, all splits scored).**
 
-| split age kyr | 0-2 | 1-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-8 | 7-9 | 8-10 | 9-11 | 10-12 | 11-13 | 12-14 | 14-22 |
+| split age kyr | 0-2 | 1-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-8 | 7-9 | 8-10 | 9-11 | 10-12 | 11-13 | 12-14 | 13-22 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| splits | 10 | 13 | 9 | 10 | 14 | 13 | 11 | 11 | 6 | 2 | 2 | 1 | 3 | 3-8 each |
-| recovered | 0.90 | 0.92 | 1.00 | 0.70 | 0.57 | 1.00* | 0.75* | 0.64 | 0.50 | 0.50 | 0.50 | 0 | 0 | 0 |
-| mean cognate share | 0.55 | 0.40 | 0.30 | 0.15 | 0.11 | 0.11 | 0.09 | 0.05 | 0.04 | 0.03 | 0.03 | 0.003 | 0.006 | <= 0.014 |
+| splits | 10 | 14 | 9 | 5 | 10 | 11 | 10 | 13 | 7 | 2 | 2 | 1 | 3 | 2-5 each |
+| recovered | 0.90 | 0.93 | 0.89 | 0.80 | 0.60 | 0.55 | 0.70 | 0.85 | 1.00 | 0 | 0 | 0 | 0 | 0 |
+| mean cognate share | 0.54 | 0.40 | 0.33 | 0.21 | 0.12 | 0.10 | 0.08 | 0.06 | 0.07 | 0.015 | 0.015 | 0.002 | 0.003 | <= 0.01 |
 
-\* scored on the big splits only (3 and 4 of them); counting all splits these bins give 0.69 and 0.82. The 9.0 reading rests on
-bins of 6, 2 and 2 splits, so it would move by a kyr or two on another seed.
+The fail is a near miss on thin data: the tree recovers every split up to 10 kyr (the 8-10 window, 7 splits, at 1.00) and
+none of the 2 splits in the 9-11 window, so the reading lands at 11.0, one kyr over the target. Splits at 4-7 kyr are the
+weak spot (0.55-0.60). On another seed this would move by a kyr or two either way. Over all lects the horizon is 9.2.
 
-**Shares, three ways:** sisters parted <= 2 kyr: loose 0.541, strict (aligned distance under the threshold and recurring
-correspondences) 0.462, true (same root in the etymologies) 0.572. Different families: loose 0.003, strict 0.000, true 0.0003.
+**Shares, three ways:** sisters parted <= 2 kyr: loose 0.512, strict (aligned distance under the threshold and recurring
+correspondences) 0.453, true (same root in the etymologies) 0.562. Different families: loose 0.003, strict 0.000, true 0.0003.
 
-**Intelligibility now** (`intelligibility.now`, 951 pairs):
+**Intelligibility now** (`intelligibility.now`, 874 pairs):
 
 | pair | pairs | 10th / median / 90th pct | share > 0.7 | share < 0.4 |
 | --- | --- | --- | --- | --- |
-| sisters parted <= 2 kyr | 182 | 0.24 / 0.42 / 0.71 | 0.11 | 0.46 |
-| parted 2-5 kyr | 288 | 0.07 / 0.16 / 0.36 | 0.01 | 0.93 |
-| parted 5-10 kyr | 362 | 0.06 / 0.12 / 0.26 | 0 | 0.99 |
-| parted > 10 kyr | 114 | 0.06 / 0.08 / 0.17 | 0 | 1.00 |
-| different families | 5 | 0.06 / 0.08 / 0.09 | 0 | 1.00 |
+| sisters parted <= 2 kyr | 207 | 0.22 / 0.42 / 0.70 | 0.10 | 0.47 |
+| parted 2-5 kyr | 170 | 0.08 / 0.15 / 0.39 | 0.02 | 0.91 |
+| parted 5-10 kyr | 357 | 0.06 / 0.09 / 0.21 | 0 | 0.99 |
+| parted > 10 kyr | 129 | 0.06 / 0.10 / 0.28 | 0 | 0.98 |
+| different families | 11 | 0.05 / 0.07 / 0.10 | 0 | 1.00 |
 
-Sisters parted under 2 kyr are only half intelligible (median 0.42); by 2-5 kyr
-they do not. **Continua found by the pass: 2.** Family p269: human d177.2 – gnome d470.2 – gnome d765.1 (links 0.66, 0.56; ends
-0.48), the west of Simath; family p300: halfling d543.3 – elf d550.2 – human d570.2 (0.53, 0.56; ends 0.36), the south of Ratal.
-Both are shifted peoples speaking one family's lects. The viewer's in-browser search finds more chains at earlier frames.
+Sisters parted under 2 kyr are half intelligible (median 0.42); by 2-5 kyr they are not. **Continua found by the pass: 1.**
+Family p269: human d177.1 – gnome d470.1 – gnome d765.1 (links 0.56, 0.54; ends 0.43), the west of Simath; the gnomes speak
+the lect after a shift. The viewer's in-browser search finds more chains at earlier frames.
 
 ### SPECIES
 
 | group | lects (living) | generation yr | rules per kyr (median, q1-q3) | inherited core share (median; living with 0) | mean word length (segments) | homophone share | inventory C+V | shifts as speakers / rulers | ʔ-initial core words |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| human | 136 (105) | 28 | 15.6 (10.8-18.6) | 0.10; 0% | 4.84 | 0.092 | 42 | 26 / 124 | 19% |
-| dragons | 131 (118) | 430 | 3.9 (3.2-4.7) | **0.77**; 0% | 4.72 | **0.144** | 38 | 2 / 18 | 7% |
-| elves | 36 (27) | 145 | 6.0 (4.1-8.6) | 0.46; 0% | 4.97 | 0.113 | 33 | 4 / 12 | 12% |
-| kobolds | 100 (53) | 12 | 19.6 (16.6-23.5) | 0.01; **28%** | 4.90 | 0.099 | 41 | 18 / 4 | 19% |
-| aarakocra | 50 (26) | 6 | **22.6** (16.1-28.8) | **0.00; 65%** | 5.32 | 0.106 | 39 | 20 / 0 | 12% |
-| dragonborn | 97 (56) | 25 | 15.7 (14.2-16.9) | 0.08; 2% | 4.88 | 0.081 | 42 | 24 / 3 | 21% |
-| all others | 378 (248) | 30 | 14.7 (8.9-19.0) | 0.11; 0% | 4.73 | 0.096 | 42 | 120 / 53 | 21% |
+| human | 131 (104) | 28 | 15.1 (11.8-18.4) | 0.10; 1% | 5.18 | 0.111 | 32 | 21 / 89 | 13% |
+| dragons | 131 (118) | 430 | 3.7 (3.0-4.5) | **0.78**; 0% | 5.00 | 0.142 | 32 | 2 / 13 | 5% |
+| elves | 34 (25) | 145 | 5.3 (4.5-8.0) | 0.51; 0% | 5.22 | 0.125 | 30 | 2 / 9 | 5% |
+| kobolds | 95 (53) | 12 | 20.9 (17.2-23.9) | 0.01; **34%** | 5.26 | 0.147 | 33 | 13 / 4 | 13% |
+| aarakocra | 44 (25) | 6 | **20.9** (16.0-29.1) | **0.00; 72%** | 5.50 | **0.155** | 31 | 14 / 0 | 8% |
+| dragonborn | 91 (55) | 25 | 15.5 (13.7-17.2) | 0.07; 0% | 5.15 | 0.133 | 34 | 18 / 4 | 16% |
+| all others | 347 (243) | 30 | 14.6 (8.8-19.2) | 0.12; 0% | 5.14 | 0.123 | 32 | 89 / 40 | 13% |
 
-("Rules per kyr" counts every change on the lect's line of descent over 20 kyr, wave-adopted ones included: dragons adopt 61% of
-theirs, aarakocra 12%.)
+("Rules per kyr" counts every change on the lect's line of descent over 20 kyr, wave-adopted ones included: dragons adopt 55%
+of theirs, elves 34%, humans 21%, aarakocra 11%.)
 
-- **Human:** the reference. One core word in ten survives 20 kyr, roughly what glottochronology would predict; sound change is fast.
-- **Aarakocra: not mush in sound, amnesiac in words.** Their inventories are normal (39 segments, few labials, 12% ʔ-initial
-  against 19% for humans), but at 23 changes per kyr and a 6-year generation 65% of living lects keep no proto core word at all,
-  so no family is visible after a few kyr. Some lexicons do turn into ʔa-strings (d726 PERSON o˦ʔa˦o˦ʔa˦, TREE mi˦ʔa˦ʔa˦).
-- **Elves: conservative, as wanted.** A third of the human rate and 46% of the core kept after 20 kyr.
-- **Dragons: very conservative, perhaps too much.** 77% of the core kept, but the highest homophone share (14%) and most of their
-  changes come from neighbours by wave. Almost never shift.
-- **Kobolds: as fast as aarakocra** (20 changes per kyr, 12-year generation): families barely visible (median 1% core kept).
-- **Dragonborn: human-like** in speed and retention; a quarter of their 97 lects arose by shifting to human or other rulers.
+- **Human:** the reference. One core word in ten survives 20 kyr, roughly what glottochronology predicts; sound change is fast.
+- **Aarakocra: normal in sound, amnesiac in words.** Inventories are ordinary (31 segments, few or no labials, 8% ʔ-initial),
+  but at 21 changes per kyr and a 6-year generation 72% of living lects keep no proto core word, so no family is visible
+  after a few kyr; they also have the most homophones (15.5%) and the longest words.
+- **Elves: conservative, as wanted.** A third of the human rate and half the core kept after 20 kyr (see the p301 table).
+- **Dragons: very conservative.** 78% of the core kept, most of their changes come by wave from neighbours, homophones high
+  (14%). Almost never shift.
+- **Kobolds: as fast as aarakocra** (21 changes per kyr, 12-year generation): families barely visible (a third keep nothing).
+- **Dragonborn: human-like** in speed and retention; 18 of their lects arose by shifting, mostly to human rulers.
+- Words are a little longer than before (about 5.2 segments, was 4.8) and homophone shares a little higher (0.11-0.16, was
+  0.08-0.14): the cost of smaller inventories.
 
 ### DEFECTS
 
-Measured over the 633 living lects (218,045 words):
+Measured over the 623 living lects (214,713 words):
 
-- **Largest living inventories** (C + V): human d721, d843 and dragonborn d363 at 45 + 20 = 65; human d465 45 + 19; green dragon
-  d91 45 + 17. d843: `ʔ m l h d̪ ŋ ɲ kʷʰ ɹ l̪ ɢʷ n̪ n qʷ t̪ tsʰ ɫ ɡʼ ʈʂʰ dʱ xʷ nʷ pʰ bʰ ʐ l̪ʷ ȵ ŋʷ ɡʰ bʱ ɬ d̪ʷ kʰ s kʼ ɮʷ t̪ʷ ɲʷ sʷ f ʂ z ɮ ɡʷʰ lʷ`
-  + 20 vowels (8 nasal). d363 has ɓ and ɓ̥, n‼ and r‼, and 20 vowels with a‼ and i‼. PHOIBLE's upper quartile is 27 + 12.
-- **Words over 12 segments:** 116 (0.05%); the longest are 16 segments, all CHILD (DESCENDANT) in elves and drow
-  (d835 ʃi˦ɲi˨ʒi˦ŋʷi˨bʱi˦bʱi˦vi˨ɲi˨).
-- **Brace segments `{`:** none (in words, inventories or grams). **Empty forms:** none in lexicons; 50 fused grams have a zero
-  form (zero marking, acceptable).
-- **Duplicate spellings:** in 513 of 633 lects two inventory segments get the same letter (ɜ and ə both ‹ë›, ɹ and ɾ both ‹r›,
-  a, ä, ɐ all ‹a›); 546 pairs of different words share one spelling, in 217 lects.
-- **Shifts per deme:** up to 6 (deme 168: hobgoblins of deme 289 rule it from 19 kyr, and it "shifts" at 19, 16, 13, 10, 7, 4).
-  103 of the 214 shifts are a deme moving to another lect of the same true family, and the gap between a deme's shifts is
-  never below, and has a median of, exactly 3.0 kyr: the cooldown sets the pace.
-- **Koine levelling:** 237 entries. Example: d468.2 (halfling) THIS ɲɨ˧ʃi˧i˧, "borrowed from d844, koine levelling in city 1136".
-- **Food routes:** 20 of 98 start at a taming site ("tamed here"), 22 "inherited by the donor", 56 "first known here". In 28% of
-  hops the receiver's present word shows no borrowing (see rice in SAMPLES c2).
-- **ʔ-initial words:** 15.6% of all words, 17.1% of core words (down from a third in the earlier run).
-- **Top 12 segments (token share):** ʔ 6.9%, i˨ 4.4, ɨ˦ 4.2, ɨ˨ 3.7, i˦ 3.4, l 2.9, n 2.7, ɲ 2.7, m 2.5, ŋ 2.4, a˦ 2.2, ə˨ 2.2. ɨ is
-  three of the top four vowels (i > ɨ "dispersion" fires everywhere); world languages favour a, i, u.
-- **Tone everywhere:** 98% of living lects are tonal against 24% of protos and about 40% of real languages.
-- **Same-step reversals:** in 1,315 lect-steps a change and its inverse fire together (n > ŋ and ŋ > n finally 656 times, s ~ z
-  348, t ~ θ 220, d ~ ð 152).
-- **Seen in the samples:** derivations with no sense behind them (EAT + 'thing' = 'tree', TREE + 'agent' = 'fire', WATER + 'agent'
-  = 'river', SALT + 'agent' = 'sea', LOUSE + 'thing' = 'this', EAR + 'thing' = 'fish'); 39% of living core words go back to a
-  coinage from nothing; I = WE in d774 and d280; homophonous grams (DAT = CAUS, 3PL = CLASS:2); dragonborn words as vowel strings;
-  half the place names (169 of 343) are dated before the words they are built from were coined; one people uses the same
-  exonym for different peoples 168 times (aarakocra call elves and dragonborn both Ehilanfï, 'the people of the east'); halflings
-  and humans share the endonym I izh because the halflings' lect is a human one; proto forms such as *sret.ʃsukqʰi‼k* are still
-  not possible words.
+- **Vowel quality: i leads but no longer swamps.** Among vowel tokens (tone and length set aside) i is 29.6%, a 14.4%, u 7.4%,
+  ɛ 7.3%, e 6.4%, ə 5.0%, ɨ only 3.2% (it was three of the top four vowels in the previous run). One vowel at twice the next
+  is still high for a world sample, where a usually leads; not a single-vowel monoculture any more.
+- **ʒ is the new monoculture.** Top segments by token: i 7.6%, **ʒ 6.0%**, ʔ 4.2, a 3.8, i˨ 3.2, n 3.1, l 2.9, m 2.7, ɲ 2.5, ŋ
+  2.4, u 2.1, v 2.1. ʒ is the commonest consonant in the world (j > ʒ, dʒ > ʒ, z > ʒ before j all fire again and again;
+  see the d691 log); it is visible in every sample above (ʒi for EAT, WE, FISH in two families).
+- **Tone:** 48% of living lects are tonal (protos 24%, real languages about 40%). Fixed, slightly high.
+- **ʔ-initial words:** 10.1% of all words, 11.1% of core words (was 15.6% and 17.1%).
+- **Inventories above PHOIBLE's upper quartile:** 20% for consonants (> 27), 20% for vowels (> 12), 36% on either (was 51%
+  and 46%). Largest: dragonborn d298 34 C + 16 V (ɡʷʱ, n‼, r‼ and three harsh vowels), dragonborn d281 35 + 14, green dragon
+  d95 32 + 16, orc d423 and human d465 32 + 16. PHOIBLE's upper quartile is 27 + 12, so these are large but not absurd.
+- **Same-spelling pairs:** in 279 of 623 lects two inventory segments get the same letter (ɹ and ɾ both ‹r›, ə and ɛ both
+  ‹e›, n‼ and n̪‼ both ‹nrh›); 145 pairs of different words share one spelling, in 87 lects (was 546 in 217).
+- **Shifts per deme:** at most 3 (6 demes), 35 demes with 2, 71 with 1 (was up to 6). The gap between a deme's shifts is
+  never below, and has a median of, exactly 6.0 kyr: the cooldown still sets the pace when shifts repeat. 53 of the 159
+  shifts are a deme moving to another lect of the same true family (the cap at 0.3 share lets them through).
+- **Koine levelling:** 109 entries (was 237). Example: d375.1 (halfling) borrows from d785.1, "koine levelling in city 31386".
+- **Food routes:** 85 routes, 2,900 hops (median 15 per route, the longest 193); 20 start at a taming site, 9 "inherited by
+  the donor", 56 "first known here". **In 27% of hops into living lects (717 of 2,626) the receiver's present word shows no
+  borrowing** (unchanged from 28%; see foxtail millet in SAMPLES c2).
+- **Derivation:** 24% of living words have a derivation in their history. The six affixes are now evenly used: 'do' 5.0% of
+  all words, 'little' 5.0, 'like' 4.6, 'thing' 4.4, 'agent' 4.0, 'place' 3.8. Per lect the commonest affix has a median share
+  of 5.5% and reaches 12.2%; 77% of lects have one affix above the 5% cap (the cap binds at coinage time, not on the result).
+  Sensible ones: SAY + 'thing' = 'word', TIE + 'thing' = 'rope', SAND + 'place' = 'desert', STONE + 'place' = 'cave', SUN +
+  'place' = 'sunset', HONEY + 'like' = 'sweet', FIVE + 'little' = 'four'. **Absurd ones still common:** RAIN + 'do' = 'burn'
+  (d792), TURN AROUND + 'like' = 'cold' (d481), THROW + 'thing' = 'skin' (d537), LAUGH + 'thing' = 'egg' (d622), SWELL +
+  'agent' = 'bird', now 'wolf' (d850), DIE + 'agent' = 'man' (d611) and 'claw' (d817), HIDE + 'thing' = 'head' (d797), FLOAT + 'thing' =
+  'night' (d437), BLOW + 'thing' = 'five' (d579), THINK + 'thing' = 'day' (d570.1), and the chain cloud > fog > smoke > dust >
+  land > stone in d148.
+- **Same-step reversals:** none (were 1,315). They now alternate across steps instead (d726: n > ŋ and ŋ > n finally three
+  times each, half a kyr apart).
+- **Words over 12 segments:** 214 (0.1%); the longest is kenku d474 BULL, 20 segments, a reduplicated string
+  (sə˨ɪ˨we˨ɛ˨ʒe˨ɛ˨ʒe˨ɛ˨ʔe˨ɛ˨ʒe˨ɛ˨we˨). No brace segments, no empty word forms; 38 fused grams with a zero form (acceptable).
+- **Names:** one people uses the same exonym form for different peoples 165 times (509 exonyms); some are fair (green dragons
+  call hill giants and fire giants both 'the mutes'), some are not (kenku call red dragons Wei'teuhi, 'the river people',
+  which is the kenku's own endonym). Place names are still dated 20 kyr when their words were coined 7-8 kyr ago (River
+  Ich'e'iliaw), or even 0.5 kyr ago (River Egii in deme 226, built on a green-dragon 'river' borrowed 0.5 kyr ago).
+- **Seen in the samples:** I = WE in d148 (ʈɛʃ), THOU = I in d856; elvish EAT identical in five lects after 13 kyr; grammar
+  churn in aarakocra (five grams died in the last 1.5 kyr) and two lects with no negator (d690, d726).
 
 **Fix first, in order:**
-1. **Tone and ɨ everywhere.** Tonogenesis and the i > ɨ push fire in almost every lect, so all species converge on the same
-   tonal, ɨ-heavy sound. Make them conditional and rarer.
-2. **Re-shifts on a 3-kyr clock.** Half the shifts are a deme re-adopting its rulers' family every 3.0 kyr; each one recopies the
-   lexicon. A deme that already speaks the rulers' family should level (koine) rather than shift.
-3. **Derivation semantics.** 'thing', 'agent' and 'like' produce absurd meanings and, in p306, a lɨ˨˦- prefix on 12% of words that
-   fakes cognates. Restrict each affix to plausible source-target meaning pairs.
-4. **Inventory growth and spelling.** Half the living lects end above PHOIBLE's upper quartile (to 65 segments), and 513 lects
-   spell two segments alike; tie inventory growth to losses and give each contrast its own letter.
-5. **Bookkeeping that contradicts itself:** food-route hops that splice different words, names dated before their words, a change
-   and its inverse in one step, exonyms reused across peoples. Each is small, but a reader sees all of them.
+1. **ʒ everywhere.** The palatalization and affrication rules (j > ʒ, dʒ > ʒ) fire repeatedly on every line; ʒ is now the
+   commonest consonant. Give these rules the same lifetime cap as prothesis and harmony, or make ʒ costlier to keep.
+2. **Derivation semantics.** The 5% cap fixed the lɨ- flood, but the source-meaning pairs are still free: half the sampled
+   derivations make no sense. Restrict each affix to plausible source-target pairs (instrument, agent of a verb, diminutive of
+   a thing) and apply the 5% cap to the final lexicon, not only at coinage.
+3. **Food-route bookkeeping.** A quarter of hops claim a loan the receiver's word does not show. Record a hop only when the
+   receiver's word for the crop actually comes from the donor, or mark the hop as "word replaced since".
+4. **Shift pacing.** Repeat shifts happen exactly at the 6-kyr cooldown; a deme already speaking the rulers' family should
+   level (koine) rather than shift, and the trigger, not the clock, should time the next one.
+5. **Small bookkeeping a reader sees:** names dated before their words; exonyms that equal the namer's own endonym; rule
+   pairs that undo each other half a kyr apart; the horizon reading resting on bins of 2 splits.
