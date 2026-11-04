@@ -4,7 +4,7 @@ title: The tech tree reshuffles when the history is nudged; key its draws per pe
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v3
 subsystem: culture
 effort: s
 impact: high
@@ -42,4 +42,5 @@ tech, step) for an invention test (zlib.crc32 keys, as `polities.draw` and `coun
 - [ ] nudge check re-run: the same people hold the largest states at 1,000 years ago and at the present, on 2 seeds
 
 ## Updates
+- 2026-11-04: Coordinator: v3, a slam dunk for the north star; lane 182 does it.
 - 2026-11-04: Created from inbox draft draft-techtree-keyed-draws.md (found by lane180).
