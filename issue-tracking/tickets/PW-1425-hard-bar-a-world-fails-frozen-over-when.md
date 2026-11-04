@@ -2,7 +2,7 @@
 id: PW-1425
 title: "Hard bar: a world fails 'frozen over' when it ends or stays frozen, not when its worst moment in 884-1000 Myr crosses 40%"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: climate
@@ -40,4 +40,5 @@ cold-yardstick draws still sit near the line.
 - [ ] Daniel's choice (a judging change)
 
 ## Updates
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: D47 C, approved: frozen over = ends frozen or stays frozen to the end; 40% line unchanged.
 - 2026-11-03: Created from inbox draft draft-hard-bar-ends-frozen-not-peak.md (found by lane158).

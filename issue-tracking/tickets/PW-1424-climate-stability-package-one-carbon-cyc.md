@@ -2,7 +2,7 @@
 id: PW-1424
 title: "Climate stability package: one carbon-cycle yardstick per grid level instead of each planet's dice roll, weathering on plant cover"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: climate
@@ -49,5 +49,6 @@ about the forecast.
 - [ ] confirming experiment (round1 section 7)
 
 ## Updates
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: D47 C it is (A + C package and PW-1425). Build after lane 160's full check reports.
 - 2026-11-03: Lane 158 lean: yes (A + C). Confirming experiment (pin.py on all 36 draws x2) started as lane 160 before Daniel decides.
 - 2026-11-03: Created from inbox draft draft-climate-yardstick-one-constant.md (found by lane158).
