@@ -5,7 +5,9 @@ earliest date (sources in the file) and a rate. It is read after a peoples histo
 (the lines with their start and end, the contact record, the first tamings of crops and animals, each people's present
 range and the world's goods), so it can be built in output.save and again for a stored run (`planet techtree RUN`).
 
-Rules, all seeded and simple:
+Rules, all seeded and simple. Every draw is keyed on what it is for (PW-1459, `keyed`): a pair's contact front on (seed, giver,
+taker), an invention test on (seed, people, tech, step). So a nudge elsewhere in the history meets the same luck here; one shared
+stream in loop order reshuffled every later people's dates.
 - A people may invent a tech once it knows the tech's needs, its country holds (its present range; a deposit, ore or salt, in a few
   cells) the goods the tech needs, it can hold the tool, and, for a gated tech, the time is past its floor. The invention model
   (PW-675 v1, lane 64; the evidence: docs/references/techtree/README.md) is a hazard per people, per tech, per kyr:
@@ -63,6 +65,7 @@ Megafauna (dragons, giants) count as peoples here; templates (tieflings) do not:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import tomllib
@@ -457,6 +460,13 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
     return 2 * math.log(2) * D["contact_speed_km_yr"] * 1e3 / width
 
 
+def keyed(seed: int, *key) -> float:
+    """A uniform draw in [0, 1) for one purpose (PW-1459): a hash of the seed and the key, so it does not depend on how many
+    draws came before it (common random numbers, as polities.draw)."""
+    d = hashlib.blake2b("|".join(map(str, (675, seed, *key))).encode(), digest_size=8).digest()
+    return (int.from_bytes(d, "little") >> 11) * 2.0 ** -53
+
+
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
           goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
           T: dict | None = None, gods_mode: str = "faith_made") -> dict:
@@ -470,7 +480,6 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
              and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
     order = [i for i in T["order"] if i in techs]
-    rng = np.random.default_rng((seed, 675))
     L = {l["id"]: l for l in lines}
     people = [l for l in lines if not (l.get("overlay") and l.get("origin") == "template")]
     idx = {l["id"]: l.get("index", k) for k, l in enumerate(lines)}
@@ -553,7 +562,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
     arrive: dict[tuple, float | None] = {}  # ((giver, taker, tech): when its front reaches the taker's middle, kyr; None: never)
     unit: dict[tuple, float] = {}  # ((giver, taker): the pair's front delay, in units of 1 / the contact rate)
     prev = grid[0]
-    for ago in grid:
+    for step, ago in enumerate(grid):
         dt = max(prev - ago, 1e-6) if ago != grid[0] else 0.0
         prev = ago
         alive = [l for l in people if start[l["id"]] >= ago and (end[l["id"]] < 0 or ago > end[l["id"]])]
@@ -611,7 +620,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                             cr = contact_rate(_area_at(series[y], ago), D) * w * op
                         r = cr * techs[tid].get("spread", D["spread"]) * domain_x(culture[y][1], techs[tid])
                         if (x, y) not in unit:  # (the pair's draw: one front, for all its techs, slower for a slow-spreading one)
-                            unit[(x, y)] = float(rng.exponential(1.0))
+                            unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (exponential, mean 1)
                         arrive[k3] = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
                     at = arrive[k3]
                     if at is not None and at >= ago and at > cand.get((y, tid), (-1.0,))[0]:
@@ -634,7 +643,7 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     tau = ready[lid].setdefault(tid, ago) - ago
                     h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
                 span = min(max(ago + dt - arr[0], 0.0), dt) if took else dt
-                if h > 0 and span > 0 and rng.random() < 1 - math.exp(-h * span):
+                if h > 0 and span > 0 and keyed(seed, "invent", lid, tid, step) < 1 - math.exp(-h * span):
                     give(lid, tid, ago, "invented", None)
                 elif took:
                     if lang:

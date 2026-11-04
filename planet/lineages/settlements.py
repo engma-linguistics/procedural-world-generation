@@ -56,6 +56,7 @@ from . import landuse as LU
 from .years import years_ago
 from .demes import _place, landmass_rank
 from .spread import graph_dist
+from .techtree import keyed
 
 # --- judgement constants (PW-1011 v0; see the docstring) -------------------------------------------------------------------
 CONST = {
@@ -347,7 +348,6 @@ def derive(run_dir: Path, **over) -> dict:
     dlv, mnr = np.maximum(_known_dates(m, nl, "delving"), _known_dates(m, nl, "fortifications")), _miner_lines(m, nl)
     tech[:, 2] = np.where(mnr & (dlv >= 0), np.maximum(tech[:, 2], dlv), tech[:, 2])
     mines = _mines_dates(m, nl)
-    rng = np.random.default_rng((int(m.get("try_seed") or 0), 1011))
     present_land = is_land(T.frame(run, arr, "elevation", len(run["frames"]) - 1), T.frame(run, arr, "ice", len(run["frames"]) - 1))
     rank = landmass_rank(g, present_land)
     lms = (m.get("present") or {}).get("landmasses") or []
@@ -384,7 +384,8 @@ def derive(run_dir: Path, **over) -> dict:
     last_site = np.full((4, n), -1, np.int64)
     line_of = np.full((4, n), NONE, np.int64)  # (the line a minority's place belongs to)
     seed = int(m.get("try_seed") or 0)
-    rngs = (rng, np.random.default_rng((seed, 1105)), np.random.default_rng((seed, 1105, 2)), np.random.default_rng((seed, 1105, 3)))  # (the chief places' draws as before)
+    def u(*key):  # (a draw keyed on its purpose, slot, cell and year, PW-1459: a nudge elsewhere leaves it alone)
+        return keyed(seed, "settle", *key)
     lead_since = np.full(n, np.inf)  # kyr ago the cell's lead line last changed
     cand_run = np.zeros(n, np.int64)  # steps the cell's second people has been the same one (PW-1117)
     prev_cand = np.full(n, NONE, np.int64)
@@ -457,11 +458,11 @@ def derive(run_dir: Path, **over) -> dict:
         tc = np.where(stage >= 3, c["CITY_MIN"] - 1, c["TOWN_CAP"])
         return (np.zeros(len(stage)), vc, tc, CITY_CAP[stage])
 
-    def spot(k, cell, e):
+    def spot(k, cell, e, ago):
         """A seeded spot in the cell: anywhere for a chief place or a mine; a mining people's own place leans to the
         cell's highest neighbour (the holds in the hills)."""
-        r_ = rngs[k]
-        ang, r = r_.uniform(0, 2 * np.pi), c["JITTER"] * np.sqrt(r_.uniform())
+        yr = int(round(ago * 1000))
+        ang, r = 2 * np.pi * u("spot", k, cell, yr, 0), c["JITTER"] * np.sqrt(u("spot", k, cell, yr, 1))
         la, lo = float(g.lat[cell]), float(g.lon[cell])
         cl = max(np.cos(np.radians(la)), 0.2)
         sp_ = np.degrees(g.spacing)
@@ -469,7 +470,7 @@ def derive(run_dir: Path, **over) -> dict:
             nb = g.nbr_idx[g.nbr_off[cell]:g.nbr_off[cell + 1]]
             top = int(nb[np.argmax(e["elev"][nb])])
             ang = float(np.arctan2(float(g.lat[top]) - la, ((float(g.lon[top]) - lo + 180) % 360 - 180) * cl))
-            r = c["JITTER"] * (0.6 + 0.4 * r_.uniform())
+            r = c["JITTER"] * (0.6 + 0.4 * u("spot", k, cell, yr, 2))
         la2 = float(np.clip(la + r * sp_ * np.sin(ang), -89.9, 89.9))
         lo2 = float(((lo + r * sp_ * np.cos(ang) / cl) + 180) % 360 - 180)
         return round(la2, 3), round(lo2, 3)
@@ -610,13 +611,12 @@ def derive(run_dir: Path, **over) -> dict:
         pl = np.where(pit_ok, lead, NONE)
 
         for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm), (3, target3, pl)):
-            r_ = rngs[k]
             free = active[k] < 0
             fnd, aban = (c["PIT_FOUND"], c["PIT_ABANDON"]) if k == 3 else (c["FOUND"], c["ABANDON"])
             streak[k] = np.where(free & (tgt >= fnd) & ready[k], streak[k] + 1, 0)
             for cell in np.flatnonzero(free & (streak[k] >= c["FOUND_STEPS"]) & (hl != NONE)).tolist():
                 h = people_of[int(hl[cell])]
-                la2, lo2 = spot(k, cell, e)
+                la2, lo2 = spot(k, cell, e, ago)
                 pop = float(max(fnd, min(tgt[cell], fnd * 2)))
                 s = {"id": len(sites), "kind": KINDS[k], "cell": cell, "lat": la2, "lon": lo2, "founded_kyr": float(ago), "founded_by": h,
                      "holder": h, "holders": [[float(ago), h]], "abandoned_kyr": None, "why": None,
@@ -673,7 +673,7 @@ def derive(run_dir: Path, **over) -> dict:
                     why = "the ice came"
                 elif k == 1 and same_people[min(int(lead[cell]), nl), min(int(line_of[1, cell]), nl)] and lead_since[cell] - ago >= c["HAND_KYR"] - 1e-9:
                     why = MERGED
-                elif k < 2 and W["river_nav"][cell] > 0 and e["elev"][cell] < c["RIVER_LOW_M"] and r_.random() < c["RIVER_SHIFT"] * dt:
+                elif k < 2 and W["river_nav"][cell] > 0 and e["elev"][cell] < c["RIVER_LOW_M"] and u("river", k, cell, int(round(ago * 1000))) < c["RIVER_SHIFT"] * dt:
                     why = "the river moved away"
                 elif low[k, cell] >= (c["MINORITY_ABANDON_STEPS"] if k == 1 else c["ABANDON_STEPS"]):
                     lp = plural.get(people_of[int(lead[cell])], "?") if has[cell] else "?"
