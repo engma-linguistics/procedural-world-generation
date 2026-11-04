@@ -4,7 +4,7 @@ title: "Owner call: PW-1202 B's home-ground edge is close to the 'first to hold 
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: s
 impact: med
@@ -33,5 +33,6 @@ Options:
 Lean: B, then C. With the stage-3 changes the blocs already appear in some seeds; an incumbency edge risks freezing the map.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dnd-only owner call; Seven Meals is the December world
 - 2026-11-03: Re-checked 11-03: no ruling on the incumbency edge; D31's pause on share tuning argues for option B (leave it), but that is Daniel's call. Left open.
 - 2026-10-31: Created from inbox draft draft-peoples-blocs-incumbency-vs-surge.md (found by lane83).

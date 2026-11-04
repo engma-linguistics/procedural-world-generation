@@ -4,7 +4,7 @@ title: "Settlements: owner check of the mine rule (ring size, orc/goblin kin wei
 type: task
 status: needs-decision
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: culture
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1116]
 refs: [planet/lineages/settlements.py, docs/overview.md]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ Lean: keep as is, look at one globe, then adjust MINING_KIN or the ring.
 - [ ] owner looks at the mines on the globe
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: settlement mine-rule check; not a must-have
 - 2026-10-30: Created from inbox draft draft-mines-ring-and-affinity-review.md (found by fun-lane-68).

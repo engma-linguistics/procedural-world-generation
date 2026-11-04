@@ -4,7 +4,7 @@ title: Gods mode (faith_made | belief_only | absolute) as a world-creation contr
 type: task
 status: todo
 parent: PW-1308
-milestone: later
+milestone: v2
 subsystem: viewer
 effort: s
 impact: med
@@ -30,5 +30,6 @@ To do:
 - [ ] The Cultures tab's gods column shows the run's mode and re-fetches `/api/gods?mode=` when the user flips it (the endpoint already supports it).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: later -> v2: v2 must-have: gods mode as a viewer control, with authored faiths
 - 2026-11-03: Triage 11-03: v2 -> later: viewer nicety, not needed for the culinary goal
 - 2026-11-02: Created from inbox draft draft-gods-mode-world-control.md (found by lane117).

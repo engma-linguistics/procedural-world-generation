@@ -4,7 +4,7 @@ title: "Speed pass: profile and optimise the run, world finishing, zooms and the
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: infra
 effort: l
 impact: high
@@ -13,13 +13,14 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-15
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
 Owner (2026-10-15): a lot is being calculated; a faster machine helps but optimisation should too. Profile an L7 run (per step: tectonics, isostasy, erosion, lakes, climate, vegetation, ice), world finishing, zoom build, time zoom and highlights; find hot spots (numpy temporaries, Python loops, repeated work across steps, climate recomputed more than needed, numba kernels not parallel or not cached, I/O). Rules: identical outputs (or bit-for-bit within float noise, checked against goldens) unless a change is explicitly agreed; keep numba parallel kernels deterministic (PW-215). Report before/after timings per stage at L6 and L7 on the new machine. Also check thread scaling on the bigger machine.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: speed pass; no milestone theme needs it
 - 2026-10-29: Owner 10-29: the GPU climate gain matters more now that the climate is ~75% of a run. Give it its own lane after the cadence experiments report (rebuild the PW-249 estimate on the current profile).
 - 2026-10-29: 2026-10-29: owner asked again about GPU. PW-249's study (docs/review/gpu/profile.md, 10-15): GPU kernels 8-16x, but only ~1.15-1.2x on a run, ~1.9-2x with the whole climate on the device (ceiling ~2.3x); owner chose no GPU path (PW-253). The climate's share is now ~75%, which would raise that ceiling to ~2.5-3x. Revisit only if the cadence options fail.
 - 2026-10-29: Lane 27b (docs/review/speed/README.md). The defaults are now an 8/4/2 Myr ramp: the owner's fine end, every 2 Myr step in the last 10 Myr before the finish window (climate_ramp_fine; 2 more updates a run). On 6 L6 draws it sits next to the 8/4 ramp (moment T -0.2 C, same passes and iceboxes). Arm E (climate every 2 Myr, 18 L6 draws): main's warm finish is mostly its own 4 Myr lag (E -4.1 C vs main, CI excludes 0; the 8/4 ramp is within 0.3 C of E). But E has 10 iceboxes in 18 against main's 2: the ice and the climate catch up one step per update, so how much ice a run grows depends on the update rate (inbox draft). At L7 (4 seeds, 1 Gyr): the L6-grid spin-up alone passes 4/4 like main, and the full default 3/4. The only consistent shift, less arid land in the spin-up records, is absent from the native finish window the worlds get. L7 wall 11591 s main, 6512 s grid alone, 3279 s full default (not under equal load; inbox draft for a fair timing).

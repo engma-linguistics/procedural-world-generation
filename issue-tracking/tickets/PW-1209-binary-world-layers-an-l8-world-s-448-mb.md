@@ -4,7 +4,7 @@ title: "Binary world layers: an L8 world's 448 MB JSON is 15% below Chrome's str
 type: task
 status: todo
 parent: PW-1198
-milestone: later
+milestone: v5
 subsystem: store
 effort: m
 impact: high
@@ -41,5 +41,6 @@ world_landmasses` (scans for the summary line), the viewer's `setWorld`, and any
 - [ ] an L9-sized world (synthetic is fine) opens
 
 ## Updates
+- 2026-11-03: Milestones 11-03: later -> v5: v5 must-have: binary world layers, so an L9 refined world opens in the viewer at all
 - 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-10-31: Created from inbox draft draft-binary-world-layers.md (found by lane91-viewer-l8).

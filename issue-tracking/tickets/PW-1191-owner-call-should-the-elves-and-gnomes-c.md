@@ -4,7 +4,7 @@ title: "Owner call: should the elves and gnomes come through wandering thinnings
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: xs
 impact: low
@@ -42,5 +42,6 @@ Your call: switch the Feywild peoples to wandering thinnings, or keep the fixed 
 - [ ] if wandering: screen elves', gnomes' and tritons' shares on a few rolls
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dnd-only owner call; Seven Meals is the December world
 - 2026-11-03: Re-checked 11-03: owner D21 (10-31) said wandering portals come later, but no ruling picks fixed or wandering for the preset. Left open (belongs with PW-1195).
 - 2026-10-30: Created from inbox draft draft-wandering-portals-for-the-feywild.md (found by lane78).

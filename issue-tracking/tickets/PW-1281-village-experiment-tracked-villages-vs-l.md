@@ -4,7 +4,7 @@ title: "Village experiment: tracked villages vs last-200-years only vs generated
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v3
 subsystem: culture
 effort: s
 impact: med
@@ -20,6 +20,7 @@ updated: 2026-11-03
 **In plain words.** Daniel worries tracking every village on the 100-year step is too granular. Test three arms on one L6 world (then one L7): A villages tracked throughout; B villages only in the last 200 years; C as B plus villages generated on demand from town data. Measure towns and cities (counts, sizes, founding steps), culture sizes and minorities in the ledger, polity seeds, generated vs tracked villages, and ledger size and wall time. Pass if B and C stay within the run-to-run noise of a re-seeded A. Design: docs/review/cultures-proposal/proposal-r2.md section 2.3. Needs Daniel's go (open decision O3).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: later -> v3: v3 must-have: village experiment, which the polities proposal runs before polities v0 reads the ledger
 - 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-01: Daniel 11-01: go (O3).
 - 2026-11-01: Created.

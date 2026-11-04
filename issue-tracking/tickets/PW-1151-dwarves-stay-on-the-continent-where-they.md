@@ -4,7 +4,7 @@ title: Dwarves stay on the continent where they split off, which holds 9% of the
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/lineages/history/origins.py, planet/lineages/samples/dnd.toml, "world 4360a3; peoples runs 488d7e 570701 097797 ae4d0b"]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -36,5 +36,6 @@ Options:
 - Lean: A as data, checked on 2-3 worlds, since the date is a placeholder.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: peoples tuning or owner call that no milestone theme needs
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-dwarves-stranded-in-hominid-cradle.md (found by lane73).

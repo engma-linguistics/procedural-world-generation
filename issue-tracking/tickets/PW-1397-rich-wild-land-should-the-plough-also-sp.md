@@ -4,7 +4,7 @@ title: "Rich wild land: should the plough also speed its farming up (needs a per
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -34,4 +34,5 @@ Lean: A now; B only if Daniel finds plough peoples leaving too much coast wild i
 - [ ] a per-hour (or per-worker) labour source for plough vs hoe farming, read in full, if B is chosen
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: rich-wild-land and forager-trade call; not a must-have
 - 2026-11-03: Created from inbox draft draft-rich-hold-plough-gain.md (found by lane 141).

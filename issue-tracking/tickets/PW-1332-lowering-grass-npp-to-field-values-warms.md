@@ -4,7 +4,7 @@ title: Lowering grass NPP to field values warms L6 runs by 3-5 C through the wea
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: high
@@ -32,5 +32,6 @@ Options:
 Lean: A, then two L6 seeds and the judge, as one change with PW-1261's plant patch and the fire fuel floor.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth; after D47's weathering change)
 - 2026-11-03: Owner 11-03: 'your call', with a north star: 'reasonably stable and not prone to exploding when nudged', here and elsewhere. Folded into the climate-stability diagnosis lane.
 - 2026-11-02: Created from inbox draft draft-weathering-npp-reference-after-grass-cue.md (found by lane123).

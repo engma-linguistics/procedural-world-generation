@@ -4,7 +4,7 @@ title: "Whole-world finish at L8/L9 (post-v1): refine the finished moment onto a
 type: epic
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: zoom
 effort: xl
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-316, PW-290, PW-100, PW-101]
 refs: []
 created: 2026-10-20
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,6 +28,7 @@ Viewer: chunked level of detail, like Cesium or Google Earth. The coarse L7 glob
 Gain: a sharper globe, and honest detail in large exports (today a 4096 px export is ~10 km/px over 56 km cells).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: the L7->L9 refine slice of the chosen world is v5 (PW-1209, PW-1263, PW-1264, PW-1265); the level-of-detail globe waits for after v1.0
 - 2026-10-31: 2026-10-31: first cut (refine a finished L7 world to L8) moves into the v2 epic PW-1198 (space-to-ground globe); the rest (L9, GPU synthesis) stays v3.
 - 2026-10-23: Milestone -> v3 (board triage 2026-10-24): deliberately far off, a system of its own after v2; see docs/review/board/triage-2026-10-24.md.
 - 2026-10-20: Created.

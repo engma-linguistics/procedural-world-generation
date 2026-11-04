@@ -4,7 +4,7 @@ title: A split whose stem has died out, or has no room nearby, is founded at the
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v5
 subsystem: peoples
 effort: s
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1151, PW-1152, PW-677]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, tools/peoples_robust.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -44,5 +44,6 @@ unstarted children as living; (3) the "no room" fallback founds at the best habi
 - [ ] fallback counts in the suite's origins ("why") drop to ~0 for parent-gone; the brittle peoples' swing (leonin, goblin, halfling) narrows
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: splits founded near their parents in Seven Meals
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-split-teleports-when-stem-gone.md (found by lane77).

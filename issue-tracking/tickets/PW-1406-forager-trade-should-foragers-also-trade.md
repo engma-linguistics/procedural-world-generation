@@ -4,7 +4,7 @@ title: "Forager trade: should foragers also trade with herders, and fishers with
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -37,4 +37,5 @@ unfarmed, which may already be dense enough. **My lean: A**, and source forager-
 herders) before doing B.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: rich-wild-land and forager-trade call; not a must-have
 - 2026-11-03: Created from inbox draft draft-barter-with-herders-and-fishers.md (found by lane 146).

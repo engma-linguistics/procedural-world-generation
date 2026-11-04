@@ -4,7 +4,7 @@ title: Techtree deposit test still reads ore as ore-bearing country (reach good 
 type: task
 status: needs-decision
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1146]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml, planet/lineages/mining.py, "run 488d7e"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,4 +35,5 @@ Lean: A until the next history re-run, then B with the scorecard.
 - [ ] Owner: A, B or C
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: tech-tree deposit test; not a must-have
 - 2026-10-30: Created from inbox draft draft-techtree-deposit-test-on-raw-ore.md (found by fun-lane-74).

@@ -4,7 +4,7 @@ title: Pull the placeholder war, in-fighting and state proxies out of counter.py
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v3
 subsystem: peoples
 effort: s
 impact: med
@@ -20,5 +20,6 @@ updated: 2026-11-03
 **In plain words.** Before polities can replace today's stand-ins, list and isolate them: the in-fighting term (FEUD_CUT, SOCIAL_Q), the state-pacification proxy G and the hostile-frontier share F in planet/lineages/history/counter.py. Put them behind one small interface so polities v0/v1 swap them without touching the rest. No behaviour change; golden outputs must not move. Prep lane for polities (cultures proposal round 2, section 3.3 and 7). Relates PW-1258 (which parks their sizes, not their extraction).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: later -> v3: v3 must-have: the seam polities v0 swaps the placeholder war and state proxies through
 - 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-11-01: Created.

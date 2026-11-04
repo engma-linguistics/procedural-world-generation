@@ -4,7 +4,7 @@ title: "World export targets: Minecraft, Dwarf Fortress, Valheim and engine pres
 type: epic
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: store
 effort: xl
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-475, PW-100, PW-099, PW-206]
 refs: [planet/export.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,4 +25,5 @@ updated: 2026-10-31
 Later (owner: "v4"): a walkable city-sized setting (Unity or web), which needs large asset work (trees, buildings); recorded as its own ticket.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: v3 is now states and war v0; this waits for after v1.0
 - 2026-10-31: Created from inbox draft draft-world-export-targets-epic.md (found by coordinator).

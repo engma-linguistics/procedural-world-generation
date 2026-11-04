@@ -4,7 +4,7 @@ title: "2 Gyr runs stay icebox after PW-859: the bare-ground weathering thermost
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-859, PW-865, PW-815, PW-895]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-14/README.md]
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -35,5 +35,6 @@ Options, all literature-sized; the owner picks:
   owner's call.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0
 - 2026-10-26: Status needs-decision -> todo. Owner 2026-10-26: v1 = 1 Gyr runs (option C); 2 Gyr is a post-v1 stretch goal. When it returns, judge 2 Gyr runs on their last 1 Gyr only (option A). PW-895 mantle heat held on hold/v1-finish-15-heat.
 - 2026-10-26: Created from inbox draft draft-faint-sun-thermostat-return-bare-ground.md (found by v1-finish-14).

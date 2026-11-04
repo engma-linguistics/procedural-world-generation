@@ -4,7 +4,7 @@ title: Some worlds finish too warm (+3.5 to +5.3 C) now that the finish-window C
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-865, PW-1091]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-16/pjudge.py]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -45,6 +45,7 @@ carbon-balance warmth with less ice to hide it.
 - [ ] A cause (or "chaos, accept") sent to the coordinator before any change
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 6; gates no tag (re-check after D47)
 - 2026-10-30: Lane 80 split (docs/review/base-climate/finish-drift-l80/README.md; coordinator: climate done for v1,
   so moved to v2). The warmth is physical red variance of a sound loop. End T has median +0.1 C and sd 3.7 C over
   the 18-draw K judge. F = ln source - ln erosion supply (last 10 Myr, against the references) explains R2 0.52 at

@@ -4,7 +4,7 @@ title: A contact hybrid with no population of its own (linger = false) for the o
 type: task
 status: in-progress
 parent: PW-692
-milestone: v2
+milestone: v5
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-730, PW-613]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,6 +28,7 @@ Two small spec items of PW-730 that `seven_meals.toml` could not use, so it leav
 - [ ] add both lines back to `seven_meals.toml` when built
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: half-elves as a contact hybrid in Seven Meals (status unchanged)
 - 2026-10-24: Status todo -> in-progress. Merged c80c766: linger=false, half-elves in seven_meals. Left: niche=false 'same land as' groups; overlay hybrids don't read explore/insularity yet (dnd half_orc values cosmetic).
 - 2026-10-24: fun16: `linger = false` built (spec + history._hybrid; test) and half_elf added to seven_meals.toml (run 4f82a4: 0.03 Mkm2, no lingers event). `niche = false` groups NOT built (still open). dnd.toml half_orc given explore 0.6 / insularity 0.3 (data only; overlays do not read them yet).
 - 2026-10-24: Created from inbox draft draft-half-elf-no-population-switch.md (found by fun13).

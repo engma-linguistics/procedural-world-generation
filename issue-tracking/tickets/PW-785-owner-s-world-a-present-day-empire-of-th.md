@@ -4,7 +4,7 @@ title: "Owner's world: a present-day empire of the antelope-kin ('infernal tiefl
 type: story
 status: todo
 parent: PW-692
-milestone: later
+milestone: v3
 subsystem: culture
 effort: l
 impact: med
@@ -20,6 +20,7 @@ updated: 2026-11-03
 Owner 2026-10-24: in seven_meals specifically they want a present-day Empire of the antelope-kin and a fallen Empire of the cervid-kin; other presets and runs may never form empires and that's fine. Needs polities (PW-661) or optional authored anchors ([[event]], back-fill only). The western-steppe/horse-nomad origin was only an example; the fiend-kin are mostly farmers who can milk. Standard D&D keeps ordinary tieflings.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: later -> v3: v3 must-have: the Seven Meals empires (emerge, or back-filled as polity anchors)
 - 2026-11-03: Triage 11-03: v2 -> later: languages, polities, religion and owner's-world empires wait until food is done (fresh-eyes review, D44)
 - 2026-10-26: Milestone v3 -> v2. (PW-900 backlog reorg).
 - 2026-10-25: fun-lane-24: re-read under PW-858 (owner dropped the fiend angle): see PW-858's update for how this ticket now reads.
