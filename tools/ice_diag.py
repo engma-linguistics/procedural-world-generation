@@ -125,6 +125,17 @@ def geo_sample(sim, v0) -> dict:
     return rec
 
 
+def hyps_sample(sim) -> dict:
+    """The bed's hypsometry (PW-1446): % of land above 2/3/4 km, cells above 5/6/7 km, the highest cell, and the
+    continent's highest crust."""
+    b = sim.bed()
+    land = b > 0
+    n = max(int(land.sum()), 1)
+    return {"t": sim.t, **{f"p{k}": round(100 * float((b > 1000 * k).sum()) / n, 3) for k in (2, 3, 4)},
+            **{f"n{k}": int((b > 1000 * k).sum()) for k in (5, 6, 7)}, "max": int(b.max()),
+            "thick_max": round(float(sim.w_thick[sim.w_cont].max()), 2) if sim.w_cont.any() else 0.0}
+
+
 def rift_cause(e, mantle: bool) -> str:
     """margin (new subduction), suture, or for rifts: without a mantle field heat / stress; with it, a
     continental rift over warm / cold / neutral mantle (cont-warm, cont-cold, cont) or an oceanic plate
@@ -257,6 +268,7 @@ def run(seed, myr, level, sets, out: Path, fields=False, moments=(), tect=False)
     todo = sorted(float(m) for m in moments)
     tag = f"seed{seed}_L{level}"
     t0 = time.time()
+    hyps = []
 
     def on_step(s):
         s.diag.step(s)
@@ -268,12 +280,14 @@ def run(seed, myr, level, sets, out: Path, fields=False, moments=(), tect=False)
             src["sea_ice_run"], src["sea_tect_run"] = float(s.sea_ice), float(s.sea_tect)
             (out / f"{tag}_at{s.t:g}.pkl").write_bytes(pickle.dumps(src))
             todo.pop(0)
+        if int(s.t) % 10 == 0 and abs(s.t - round(s.t)) < 1e-9:  # (hypsometry every 10 Myr, PW-1446)
+            hyps.append(hyps_sample(s))
         if int(s.t) % 100 == 0 and abs(s.t - round(s.t)) < 1e-9:
             print(f"  {tag} {s.t:g} Myr  {time.time() - t0:.0f} s  ice {s.sea_ice:.0f} m  dT {s.dT:+.1f}", flush=True)
 
     sim.run(myr, on_step)
     d = {"seed": seed, "myr": myr, "level": level, "params": sets, "seconds": round(time.time() - t0),
-         **sim.diag.as_dict(), **(tk.as_dict() if tk is not None else {})}
+         **sim.diag.as_dict(), **(tk.as_dict() if tk is not None else {}), "hyps": hyps}
     path = out / f"{tag}.json.gz"
     with gzip.open(path, "wt") as f:
         json.dump(d, f)
