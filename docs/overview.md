@@ -894,6 +894,7 @@ Output: `cultures.json` and `meta.cultures`. Run it with `planet cultures RUN [-
 run as it is, and `--redemes` cuts the demes afresh in memory first (for a run whose stored demes predate today's
 `demes.py`). `GET /api/cultures?run=` works it out on the fly for a run without the file. It is shown in the workbench's
 Cultures tab, which is separate from the species tree, and in the brief's "Cultures here".
+Key anything stored per culture (lects, notes) on the string **`uid`** (PW-1283), not the integer `id`: `id` is only the culture's position in this pass and shifts if the demes are re-cut. `uid` = `people:how:born_kyr:lat:lon` of the founding deme, so it is identical on every re-run of the cultures pass, or of gods and taboos (which only read `cultures.json`), over the same demes; a re-cut moves it only if it moves that founding deme's birth time (3 decimals) or place (0.1 degree). Gods and taboos still carry the integer `id`; map it through `cultures.json`.
 
 Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
 

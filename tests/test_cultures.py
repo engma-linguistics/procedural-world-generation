@@ -69,6 +69,9 @@ def test_an_inland_daughter_loses_the_sea_craft_and_the_coast_keeps_it(apart):
     assert x["traits"]["sea_craft"]["verdict"] == "lost" and any("lost the sea craft" in t for t in x["changes"])
     assert x["name"] == "folk of place 1" and doc["cultures"][0]["name"] == "first folk of place 0"
     assert x["traits"]["body"] == ["hardy"] and x["traits"]["cultural"] == ["seafaring"]
+    uids = [c["uid"] for c in doc["cultures"]]  # (PW-1283: a stable string id, unique, and the same on a second pass)
+    assert len(set(uids)) == len(uids) and all(isinstance(u, str) and u.startswith("folk:") for u in uids)
+    assert uids == [c["uid"] for c in CU.document(C, np.array([0, 1]), {"demes": D, "from_kyr": 6.0}, LINES, [], 1000.0)["doc"]["cultures"]]
 
 
 def test_a_skill_is_gained_only_with_the_technology_for_it(apart):
