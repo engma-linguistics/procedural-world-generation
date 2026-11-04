@@ -59,6 +59,26 @@ SERIES_KEEP = 24
 NONE = 65535
 
 
+def culture_uid(people: str, how: str, born: float, founding_deme: dict) -> str:
+    """A culture's stable uid (PW-1283) before de-duplication ('+' appended to a repeat, in culture order): its people, how and when it
+    began and where its founding deme was. uids() rebuilds them for a cultures.json made before PW-1283."""
+    return f"{people}:{how}:{born:.3f}:{founding_deme.get('lat') or 0:.1f}:{founding_deme.get('lon') or 0:.1f}"
+
+
+def uids(doc: dict, demes_doc: dict) -> list[str]:
+    """Each culture's uid in cultures.json order: its stored one, else built as derive() builds it (an older run's cultures.json)."""
+    D, seen, out = demes_doc["demes"], set(), []
+    for c in doc["cultures"]:
+        u = c.get("uid")
+        if not u:
+            u = culture_uid(c["people"], c["how"], c["born_kyr"], D[c["demes"][0]])
+            while u in seen:
+                u += "+"
+        seen.add(u)
+        out.append(u)
+    return out
+
+
 class Culture:
     __slots__ = ("id", "people", "demes", "parent", "how", "born", "adapted", "ended", "end", "into", "sea0", "open0", "sea", "open",
                  "ways0", "ways", "started", "last_ago", "series", "peak", "cells_now", "country", "fit_sea", "fit_open", "merged_at")
@@ -398,7 +418,7 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
     for u in cultures:
         l = idx[u.people]
         f0 = D[u.demes[0]]  # (the founding deme: the earliest id, and a deme's id order is its birth order)
-        uid = f"{u.people}:{u.how}:{u.born:.3f}:{f0.get('lat') or 0:.1f}:{f0.get('lon') or 0:.1f}"
+        uid = culture_uid(u.people, u.how, u.born, f0)
         while uid in uids:
             uid += "+"
         uids.add(uid)
