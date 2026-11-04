@@ -1,9 +1,10 @@
 ---
+id: PW-1427
 title: Crop table round 2 - unchecked rows, borderline dates and four more foods
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: lane-157
 blocked_by: []
 relates: []
 refs: [planet/lineages/crop_defs.py, planet/lineages/samples/techtree.toml, docs/review/food/crops-origins/round1.md, docs/review/food/crops-origins/round1_sources.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,3 +31,6 @@ refs: [planet/lineages/crop_defs.py, planet/lineages/samples/techtree.toml, docs
 - **Foods with no source opened yet:** citrus, mango, apple, fig, teff, finger millet, buckwheat.
 
 Each new row also needs a `crop_<id>` entry in techtree.toml, as the lane 157 rows have.
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-crop-rows-round2.md (found by lane-157).

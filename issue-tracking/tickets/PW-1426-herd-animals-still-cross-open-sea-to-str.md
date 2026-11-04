@@ -1,16 +1,19 @@
 ---
+id: PW-1426
 title: Herd animals still cross open sea to strangers before ocean ships, and never cross oceans after 1492
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: s
 impact: med
 found_by: lane-157
 blocked_by: []
 relates: []
-refs: [planet/lineages/animals.py::Stock._sail, planet/lineages/animals.py::Stock._sail_crop, planet/lineages/animals.py::Stock._ocean, planet/lineages/animal_defs.py::craft_ladder, docs/review/food/crops-origins/round1.md]
+refs: ["planet/lineages/animals.py::Stock._sail", "planet/lineages/animals.py::Stock._sail_crop", "planet/lineages/animals.py::Stock._ocean", "planet/lineages/animal_defs.py::craft_ladder", docs/review/food/crops-origins/round1.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Two related points:
 Candidate fix: apply `_sail_crop` / `_ocean` to animals too. For peoples, gate the craft rungs on the era.
 - [ ] animals follow the same colonist/strait/ocean-ship rules as crops
 - [ ] robust suite: no new brittle peoples
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-animals-ocean-exchange.md (found by lane-157).

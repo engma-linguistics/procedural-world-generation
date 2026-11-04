@@ -180,7 +180,7 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>157 · where foods come from</td><td>Your food ask. There are already 33 crops in the model (staples, cuisine plants, regional foods). This checks each one's homeland and date against published sources, adds missing ones (staples first), and fixes how foods spread: today crops cross oceans freely "by canoe", so New World foods can reach the Old World long before sailing ships. Tested on D&amp;D and Seven Meals runs.</td></tr>
+
 <tr><td>160 · checking the fix for the touchy climate</td><td>D47's option A, one yardstick for every planet, run on all 36 test planets twice each and compared with the same planets on the current code: does the spread between re-runs fall to 1.2 °C or less, and does any planet go too warm? About 1–2 hours. It measures; nothing is merged.</td></tr>
 </table></div>
 <p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
@@ -221,6 +221,13 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Where foods come from</b> (lane 157): <b>merged</b>, all 976 tests pass. Compared with the same worlds on the code before, crops no longer
+reach other peoples across open ocean before 1492. Before, beans and chilies crossed 2,300 km of sea on Seven Meals 2,000 years early. Now a crop crosses
+open sea only with its own colonists (as Lapita and Polynesian gardens did), crosses straits by trade, and spreads across every ocean
+after 1492. Sea landings on big landmasses before 1492 fell 62%. Bean and quinoa dates were corrected (Larson et al. 2014), and soybeans, cowpeas and date palms added (36 crops).
+Peoples' shares moved under 2.5 points. One limit: on these test worlds most continents touch by land or short straits at some point, so a true "New World"
+needs a world whose continents stay apart. Three follow-ups went to the backlog: herd animals still use the old sea rule, day length slowing crop fronts, and a second round of crop rows.
+Write-up: <code>docs/review/food/crops-origins/round1.md</code>.</li></ul>
 <ul><li><b>Your answers tonight</b>, on the tickets: orbits stay Earth's (D46: you said A or B; I picked A, since it adds nothing to an already touchy climate; varied orbits wait for weird worlds). Judging the cold worlds: B now, C later (D45), plus the deeper look (lane 158). Farm numbers: B (PW-1400). The fresh-eyes review (D44): Seven Meals is your campaign world; refactor the peoples mechanisms freely; far fewer tickets; food first. Your north star, "reasonably stable and not prone to exploding when nudged", now heads the briefs.</li>
 <li><b>Religion tab</b>: <b>fixed and merged</b>. It said "no faiths" when you opened a view while the faiths were still being worked out (about 25 s the first time); now it waits and says so. A picked faith's god tree now uses the full width, and its time axis runs to "now" (it was squeezed into a narrow card and cut off at 30 kyr).</li></ul>
 <ul><li><b>Run memory, part 2</b> (PW-801): <b>merged</b>, all 972 tests pass. A run now writes each viewer frame to disk as it makes it. Worlds come out byte-identical. Peak memory, compared with the current code on the same planet: level 7, 1 Gyr: 7.9 → 3.4 GB; level 6, 1 Gyr: 2.7 → 1.1 GB. A level 7 run now fits an 8 GB machine.</li></ul>
@@ -280,5 +287,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v136 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v137 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

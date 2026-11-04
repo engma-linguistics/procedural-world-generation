@@ -1,16 +1,19 @@
 ---
+id: PW-1428
 title: Crop fronts ignore day length and season regime (maize north, wheat into summer-rain lands)
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: med
 found_by: lane-157
 blocked_by: []
 relates: []
-refs: [planet/lineages/animals.py::Stock._front, planet/lineages/crop_defs.py::_range, docs/review/food/crops-origins/round1.md, docs/review/food/crops-origins/round1_sources.md]
+refs: ["planet/lineages/animals.py::Stock._front", "planet/lineages/crop_defs.py::_range", docs/review/food/crops-origins/round1.md, docs/review/food/crops-origins/round1_sources.md]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -21,3 +24,6 @@ In the model, a crop's front (`Stock._front`) moves at its own km/yr over people
 Candidate fix: a step cost on the front where the cell's season regime differs from the homeland's. That could be the Köppen dry-summer vs summer-rain class, or a latitude band, the way the contact animals already use `BARRIER_ENTER`. One sourced number would be the slowdown factor, for example from Merrill's 1.3 km/yr maize rate against the ~1 km/yr Neolithic front.
 - [ ] a crop entering the other season regime is slowed, with a sourced factor
 - [ ] dnd and seven_meals pass the robust suite with no new brittle peoples
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-crop-season-regime-gate.md (found by lane-157).
