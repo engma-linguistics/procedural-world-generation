@@ -1,4 +1,5 @@
 ---
+id: PW-1461
 title: "Tech tree: should writing cross a people's towns instead of its whole country?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-184
 blocked_by: []
 relates: [PW-1448]
 refs: ["planet/lineages/techtree.py::contact_rate", "planet/lineages/techtree.py::build", planet/lineages/samples/techtree.toml, "planet/lineages/techspread.py::derive", docs/review/culture/writing/round1.md, "run a2b637", "run 0141d1", "run 07c755"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -43,3 +46,7 @@ Options:
 
 **Lean: A for now, B if you want big urban peoples to stop waiting.** B keeps the rule "know-how crosses where its carriers live" and
 needs no new numbers. C is a dial turn.
+
+## Updates
+- 2026-11-04: Coordinator: desk D52. Lean B (writing crosses a people's towns, not its whole land) on Daniel's suspicion of a slow tail; it needs new peoples runs.
+- 2026-11-04: Created from inbox draft draft-writing-crosses-town-network.md (found by lane-184).
