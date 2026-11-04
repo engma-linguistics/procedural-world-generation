@@ -1,16 +1,19 @@
 ---
-title: "A polity keeps its founders' people in its name and card after another people holds its capital"
+id: PW-1451
+title: A polity keeps its founders' people in its name and card after another people holds its capital
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v3
 subsystem: peoples
 effort: s
 impact: med
 found_by: lane177
 blocked_by: []
 relates: [PW-1431, PW-1433]
-refs: [planet/lineages/polities.py::_new_record, planet/lineages/polities.py::derive, planet/lineages/polities.py::_name, viewer/globe/polities.js::polityRows, "run 3c1caf", planet/lineages/invasions.py]
+refs: ["planet/lineages/polities.py::_new_record", "planet/lineages/polities.py::derive", "planet/lineages/polities.py::_name", "viewer/globe/polities.js::polityRows", "run 3c1caf", planet/lineages/invasions.py]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -26,3 +29,7 @@ cervid-kin existed then") seems to contradict the map.
 What I'd try: when a record's ruling people changes (its `rulers` already track the culture), either start a new record (a new
 dynasty of another people) or keep `people` per tier span and name the polity by its ruling people at its peak.
 - [ ] a polity's name and card name the people ruling it then
+
+## Updates
+- 2026-11-04: Coordinator: milestone v3; the map should name the ruling people so it agrees with the invasion read-out.
+- 2026-11-04: Created from inbox draft draft-polity-named-for-founders-not-rulers.md (found by lane177).

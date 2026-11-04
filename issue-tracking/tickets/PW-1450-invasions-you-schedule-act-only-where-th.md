@@ -1,16 +1,19 @@
 ---
-title: "Invasions you schedule act only where the invaders' state already borders the victims, so most rows read 'it didn't'"
+id: PW-1450
+title: Invasions you schedule act only where the invaders' state already borders the victims, so most rows read 'it didn't'
 type: task
 status: needs-decision
 parent: null
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: m
 impact: med
 found_by: lane177
 blocked_by: []
 relates: [PW-1433, PW-1432]
-refs: [planet/lineages/invasions.py, planet/lineages/polities.py::war_v0, viewer/invasiontab.js, "run a2b637", "run 3c1caf", docs/review/culture/polities/round2.md]
+refs: [planet/lineages/invasions.py, "planet/lineages/polities.py::war_v0", viewer/invasiontab.js, "run a2b637", "run 3c1caf", docs/review/culture/polities/round2.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -30,3 +33,7 @@ Options:
 - C. A strong row seats a state for the invaders at their largest town in the window if they have only chiefdoms (a "war band"),
   then war proceeds as now.
 Lean: A for real campaigns, with B as a cheap v3 nudge if Daniel finds the read-outs too often negative.
+
+## Updates
+- 2026-11-04: Coordinator: milestone v4, with polities inside the history; desk card D50 asks Daniel whether a strong row should reach further sooner.
+- 2026-11-04: Created from inbox draft draft-invasions-need-a-shared-border.md (found by lane177).
