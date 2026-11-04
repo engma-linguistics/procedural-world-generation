@@ -1,4 +1,5 @@
 ---
+id: PW-1453
 title: "GROUP_MARGIN x667 leaves a dnd run bit-identical: the groups' found-and-diverge test may never bind"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane176
 blocked_by: []
 relates: []
 refs: [planet/lineages/history/groups.py, planet/lineages/history/habitat.py, docs/review/peoples/ledger/round1.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -26,3 +29,6 @@ mechanism that does nothing.
   habitat.py both import it): every people's share, range and population and the event counts were identical.
 - [ ] trace where dnd's groups actually found and grow (`groups._diverge`, the template or split paths)
 - [ ] if the margin test never binds at the defaults, retire it (a refactor, pre-approved under the ledger) or fix it
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-group-margin-never-binds.md (found by lane176).

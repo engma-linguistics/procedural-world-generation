@@ -1,6 +1,6 @@
 ---
 id: PW-1238
-title: "disease_resist is in the spec (dwarves 0.75) but nothing scales by it yet: the plague code (PW-1167) must read it"
+title: "Re-add disease_resist with the plague code (PW-1167): lane 176 removed the unread field"
 type: task
 status: todo
 parent: PW-917
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1192, PW-1167, PW-1194]
 refs: [planet/lineages/spec.py, planet/lineages/samples/dnd.toml, planet/lineages/history/counter.py]
 created: 2026-10-31
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 
 ## Description
@@ -30,5 +30,6 @@ still carry plague). The number is stored and passed down the tree, but the hist
 - [ ] shown on the peoples tab beside the life history (PW-1192's last box)
 
 ## Updates
+- 2026-11-04: Lane 176 removed the unread disease_resist field; re-add it with the plague code (PW-1167). Daniel's D25 ruling is kept as a comment in dnd.toml.
 - 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Created from inbox draft draft-disease-resist-needs-the-plague.md (found by lane97).

@@ -1,4 +1,5 @@
 ---
+id: PW-1452
 title: "The dnd dwarves are bistable on world 4360a3 seed 7 (about 4% or 16% of all people): a do-nothing nudge flips them"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane176
 blocked_by: []
 relates: [PW-1207]
 refs: [docs/review/peoples/ledger/round1.md, tools/peoples_robust.py, "world 4360a3"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -26,3 +29,6 @@ carry, den and LEARN_GAIN. A campaign world could also land on either outcome fr
   `HOLD_MIN` 0: 16.2%. Crowd exploration off: 16.3%. `CARRY` 0: 16.9%. Den 0: 15.7%. `LEARN_GAIN` x0.8: 14.0%.
 - [ ] find the branch point: which step the two outcomes part at (the dwarves' first contact with the humans in the mountains?)
 - [ ] say whether it is a real tipping point (fine, report it) or a threshold artefact (EST, HOLD_MIN, BRAKE_HOLD)
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-dwarves-bistable-on-4360a3.md (found by lane176).
