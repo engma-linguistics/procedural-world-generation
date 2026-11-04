@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-846, PW-048, PW-172, PW-451, PW-827]
 refs: [docs/review/tectonics/mountains/scout1.md, docs/review/tectonics/mountains/scout1_hyps.py, docs/review/tectonics/mountains/scout1_tops.py, docs/review/tectonics/mountains/scout1_highrock.py, "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::stack_collisions", "planet/tectonics/isostasy.py::elevation", "planet/tectonics/isostasy.py::MAX_KM", "planet/timeline.py::texture", "run 10fd90", "run fe954c", "run a19366", "run 2b53a0", "world dba204", "zoom 7d6c4d", "zoom f4db12", data/earth/L7.npz, data/earth/raw_hydrosheds_dem_30s.zip]
 created: 2026-11-03
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Risk: less high ground lowers the weathering CO2 sink (PW-451), so the climate m
 - [ ] zoom summits at or below about 9 km
 
 ## Updates
+- 2026-11-04: Scout 188 (docs/review/tectonics/mountains/scout2.md): not a craton effect on dba204. Half the zoom's detail grows with height (PW-1462); half the world's cells at the 80 km crust cap stand 1.0-1.3 km above Airy from sediment lift and swell (top cell 8,233 m; Earth L7 5,878). Run-physics candidate: no lift above Airy at the cap. Physics side track, after PW-1462.
 - 2026-11-03: Created from inbox draft draft-l7-relief-overshoot-craton.md (found by scout-171-pw846).

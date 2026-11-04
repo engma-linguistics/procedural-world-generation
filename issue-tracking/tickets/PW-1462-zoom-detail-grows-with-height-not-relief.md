@@ -1,4 +1,5 @@
 ---
+id: PW-1462
 title: "Zoom detail grows with height, not relief: flat 4 km plateaus drawn as mountains and 9-10 km massifs on 8 km plateaus"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: scout-188-pw1446
 blocked_by: []
 relates: [PW-1446, PW-846]
 refs: [docs/review/tectonics/mountains/scout2.md, docs/review/tectonics/mountains/scout2_land_amp.patch, docs/review/tectonics/mountains/scout2_subcell.py, docs/review/tectonics/mountains/scout2_peaks.py, docs/review/tectonics/mountains/scout2_earth_tail.py, docs/review/tectonics/mountains/scout2_trial.sh, docs/review/tectonics/mountains/pw846_fit.py, "planet/zoom/stage_terrain.py::detail", "planet/zoom/stage_terrain.py::coarse_fields", "planet/refine.py::terrain", "planet/zoom/stage_landscape.py::fit_setup", "planet/summit.py::sub_cell_relief", "planet/summit.py::local_relief", tests/test_zoom_landforms.py, tests/test_zoom_match.py, "world dba204", "zoom f4db12", "zoom fe600a", "zoom 3b412b", "zoom 0852e2", data/earth/raw_hydrosheds_dem_30s.zip]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Measured by scout 188 (docs/review/tectonics/mountains/scout2.md §3-4), against
 - [ ] patch applied; the three tests settled (rift: a ruling on the comparison; the other two re-rolled over 3+ seeds)
 - [ ] K = 1.5 checked on 2-3 zooms of a second world against the 4 km Earth table in scout2.md §3
 - [ ] goldens updated if they move
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-zoom-detail-amp-from-local-relief.md (found by scout-188-pw1446).
