@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Languages · Planet Viewer</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* (shared tokens in theme.css; like lineages.html, solid panels and the border called "line") */
+  :root { --panel: var(--panel-solid); --line: var(--border); --acc: var(--accent);
+          --ipa: "Charis SIL", "Doulos SIL", "Gentium Plus", "Noto Sans", "DejaVu Sans", "Segoe UI", "Lucida Grande", sans-serif;
+          --hi: #5fd17a; --mid: #f2b544; --lo: #ef5b5b; --na: #4a5466; }
+  body { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; height: 100vh; overflow: hidden; }
+  header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  header b { font-size: 15px; margin-right: 6px; }
+  nav { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); align-items: center; }
+  nav button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 7px 14px; color: var(--muted); cursor: pointer; font: inherit; }
+  nav button.on { color: var(--text); border-bottom-color: var(--acc); }
+  button, select, input { background: var(--ctl); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--acc); }
+  #lectbar { padding: 5px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; min-height: 32px; }
+  #lectbar .k { color: var(--muted); }
+  main { min-height: 0; overflow: hidden; position: relative; }
+  .tab { display: none; height: 100%; overflow: auto; padding: 10px 12px; }
+  .tab.on { display: block; }
+  footer { border-top: 1px solid var(--line); padding: 5px 12px; color: var(--muted); font-size: 12px; background: var(--panel); }
+  .ipa { font-family: var(--ipa); font-size: 14px; }
+  .rom { font-style: italic; color: #c9d4e3; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .card h3 { margin: 0 0 6px; font-size: 13px; }
+  h3 { font-size: 13px; margin: 10px 0 4px; }
+  table.t { border-collapse: collapse; font-size: 12px; }
+  table.t th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; z-index: 1; }
+  table.t td { padding: 3px 6px; border-bottom: 1px solid #1c2430; vertical-align: top; }
+  table.t td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  svg text { fill: var(--text); font-size: 11px; }
+  svg text.m { fill: var(--muted); font-size: 10px; }
+  a.lk, span.lk { color: var(--accent); cursor: pointer; text-decoration: none; } a.lk:hover, span.lk:hover { text-decoration: underline; }
+  .say { padding: 0 5px; font-size: 10px; line-height: 16px; border-radius: 8px; margin-left: 3px; color: var(--muted); }
+  .say.busy { opacity: .5; } body.noaudio .say { display: none; }
+  .pill { display: inline-block; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line); font-size: 11px; color: var(--muted); margin: 1px 2px; }
+  .pass { color: var(--ok); } .fail { color: var(--err); }
+  #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--muted); background: var(--bg); z-index: 5; }
+  #loading progress { width: 320px; }
+  .scrub { display: flex; gap: 8px; align-items: center; padding: 4px 0 8px; }
+  .scrub input[type=range] { flex: 1; min-width: 260px; }
+  .scrub .when { min-width: 110px; font-variant-numeric: tabular-nums; }
+  .help { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <b>Languages</b>
+  <span class="muted">peoples run</span><select id="run" title="The peoples run whose languages are shown (each run's languages.json)"></select>
+  <span id="status" class="muted"></span>
+  <span style="flex:1"></span>
+  <input id="find" list="findList" placeholder="find a lect or place…" size="26" title="Type a lect id (d12), a deme's name or a people, then pick from the list">
+  <datalist id="findList"></datalist>
+  <a id="toWorkbench" href="lineages.html" title="The peoples workbench of this run">Peoples workbench</a>
+  <a href="index.html" title="Back to the globe viewer">Viewer</a>
+</header>
+<nav id="tabs">
+  <button data-tab="families" title="The true family tree of every lect beside the tree a linguist would draw from the words alone">Families</button>
+  <button data-tab="time" title="One lect over the last 20,000 years: its sounds, words, grammar and sound changes">A language over time</button>
+  <button data-tab="continuum" title="A map of who understands whom at any moment, and chains of dialects whose ends no longer understand each other">Continuum &amp; intelligibility</button>
+  <button data-tab="names" title="Each people's names for itself and others, with where each name came from">Names &amp; etymologies</button>
+  <button data-tab="routes" title="How food words travelled from people to people, and the places that switched language">Food words &amp; shifts</button>
+  <button data-tab="checks" title="The pass's own checks and each species' voice">Checks &amp; voices</button>
+</nav>
+<div id="lectbar"><span class="muted">pick a lect in any tab (click a tree line, a dot on the map or a name)</span></div>
+<main>
+  <div id="loading"><div id="loadMsg">loading…</div><progress id="loadBar" max="1" value="0"></progress></div>
+  <section class="tab" id="tab-families"></section>
+  <section class="tab" id="tab-time"></section>
+  <section class="tab" id="tab-continuum"></section>
+  <section class="tab" id="tab-names"></section>
+  <section class="tab" id="tab-routes"></section>
+  <section class="tab" id="tab-checks"></section>
+</main>
+<footer id="foot"></footer>
+<script src="numfmt.js"></script>
+<script src="langcore.js"></script>
+<script src="langview.js"></script>
+<script src="langtime.js"></script>
+<script src="langmap.js"></script>
+<script src="langmore.js"></script>
+<script>LangView.start();</script>
+</body>
+</html>
