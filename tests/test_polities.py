@@ -22,7 +22,7 @@ def _claim(g, ekm, off, idx, seed, budget, owner, pid, sea=None, sea_x=-1.0, edz
     sea = np.zeros(n, bool) if sea is None else sea
     edz = np.zeros(len(ekm)) if edz is None else edz
     return PO._claim(seed, budget, 1.0, sea_x, PO.CLIMB_M, off, idx, ekm, edz, sea, np.zeros(n, bool), np.ones(n, bool), owner, pid,
-                     np.full(n, np.inf), np.zeros(n, np.int64))
+                     np.full(n, np.inf), np.zeros(n, np.int64), np.zeros(n, np.int64))
 
 
 def test_a_claim_reaches_its_budget_and_no_further():
@@ -61,13 +61,13 @@ def test_climbing_costs_reach():
     assert b < a
 
 
-def test_borders_and_the_war_seam_change_nothing_by_default():
+def test_borders_and_the_war_seam():
     g, ekm, off, idx = _setup()
     owner = np.full(g.n, -1, np.int64)
     owner[0] = 0
     owner[idx[off[0]]] = 1
     assert PO.borders(owner, g) == {(0, 1): 1}
-    assert PO.WAR(owner.copy(), {}).tolist() == owner.tolist()
+    assert PO.no_war(owner.copy(), {}).tolist() == owner.tolist() and PO.WAR is PO.war_v0
 
 
 def test_pack_round_trips_and_step_view_picks_the_nearest_step():
@@ -78,7 +78,7 @@ def test_pack_round_trips_and_step_view_picks_the_nearest_step():
     doc = {"tiers": list(PO.TIERS), "steps": [{"ago": 0.2}, {"ago": 0.1}, {"ago": 0.0}],
            "maps": [[], [[3, 1, runs, {"u": 10}, 500]], []]}
     v = PO.step_view(doc, 0.12)
-    assert v["step"] == 1 and v["polities"][0] == {"id": 3, "tier": "state", "cells": cells.tolist(), "subjects": {"u": 10}, "people": 500}
+    assert v["step"] == 1 and v["polities"][0] == {"id": 3, "tier": "state", "cells": cells.tolist(), "subjects": {"u": 10}, "people": 500, "provinces": {}}
     assert "maps" not in PO.summary(doc)
 
 
@@ -104,3 +104,57 @@ def test_server_needs_a_run():
     from planet import server
     body, code = server.polities("")
     assert code == 400 and "run" in body["error"]
+
+
+def _war_ctx(g, owner, S, people=("human", "orc"), ago=1.0, invasions=()):
+    seats = [{"key": f"s{i}", "tier": "state", "people": p} for i, p in enumerate(people)]
+    return {"seats": seats, "strength": list(S), "eligible": lambda p: True, "borders": lambda: PO.borders(owner, g),
+            "run": "test", "step": 3, "ago": ago, "invasions": list(invasions)}
+
+
+def test_war_v0_takes_a_weaker_neighbour_whole(monkeypatch):
+    g, ekm, off, idx = _setup()
+    owner = np.full(g.n, -1, np.int64)
+    owner[0] = 0
+    ring = idx[off[0]:off[1]]
+    owner[ring] = 1
+    monkeypatch.setattr(PO, "WAR_P", 1.0)
+    ctx = _war_ctx(g, owner, (3.0, 1.0))
+    out = PO.war_v0(owner.copy(), ctx)
+    assert ctx["taken"] == [(0, 1, "war")] and (out[ring] == 0).all() and out[0] == 0  # (all its cells change hands)
+    ctx = _war_ctx(g, owner, (1.2, 1.0))  # (not WAR_ODDS times stronger: no war)
+    assert PO.war_v0(owner.copy(), ctx).tolist() == owner.tolist() and ctx["taken"] == []
+    monkeypatch.setattr(PO, "WAR_P", 0.0)
+    ctx = _war_ctx(g, owner, (3.0, 1.0))
+    assert PO.war_v0(owner.copy(), ctx).tolist() == owner.tolist()
+
+
+def test_an_authored_invasion_raises_the_chance_and_a_strong_one_waives_the_odds(monkeypatch):
+    g, ekm, off, idx = _setup()
+    owner = np.full(g.n, -1, np.int64)
+    owner[0] = 0
+    owner[idx[off[0]:off[1]]] = 1
+    monkeypatch.setattr(PO, "WAR_P", 0.25)
+    row = {"who": "human", "whom": "orc", "from_kyr": 1.2, "to_kyr": 0.8, "strength": "strong"}
+    ctx = _war_ctx(g, owner, (1.0, 1.0), invasions=[row])  # (equal strength; a strong invasion: chance 1.0, odds waived)
+    PO.war_v0(owner.copy(), ctx)
+    assert ctx["taken"] == [(0, 1, "invasion")]
+    ctx = _war_ctx(g, owner, (1.0, 1.0), ago=2.0, invasions=[row])  # (outside its window: nothing)
+    PO.war_v0(owner.copy(), ctx)
+    assert ctx["taken"] == []
+
+
+def test_draws_are_seeded_and_strength_counts_military_edges():
+    a = PO.draw("r", "s1", 4, "fall")
+    assert a == PO.draw("r", "s1", 4, "fall") and 0 <= a < 1 and a != PO.draw("r", "s1", 5, "fall")
+    knows = lambda p, t, ago: t in ("iron", "riding")
+    assert PO.strength(1000.0, "human", knows, 0.0) == 1000.0 * PO.MIL_X ** 2
+
+
+def test_lifetimes_read_founding_to_fall_and_time_at_half_peak():
+    doc = {"step_kyr": 0.1, "polities": [
+        {"id": 0, "tier_peak": "state", "founded_kyr": 0.5, "fell_kyr": 0.2, "fell_how": "conquered"},
+        {"id": 1, "tier_peak": "empire", "founded_kyr": 0.3, "fell_kyr": None, "fell_how": None}],
+        "maps": [[[0, 1, [0, 10], {}, 5]], [[0, 1, [0, 4], {}, 5], [1, 2, [20, 2], {}, 5]], [[0, 1, [0, 6], {}, 5], [1, 2, [20, 2], {}, 5]]]}
+    L = PO.lifetimes(doc)["states and empires"]
+    assert L["fell"] == [300] and L["half"] == [200, 200] and L["standing"] == 1 and L["how"]["conquered"] == 1

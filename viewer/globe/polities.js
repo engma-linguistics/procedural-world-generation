@@ -2,7 +2,8 @@
 // The 'polities' layer colours each ruled cell by its polity (its ruling culture's colour, shaded per polity), darker on its
 // borders; chiefdoms (one town and its cell) paler; land no one rules grey. The map is the century step nearest the slider's frame,
 // fetched one step at a time (?ago=); the polities themselves (the state cards) come once per run. Clicking a cell shows its
-// polity's card in the info box (polityRows): name, tier, ruling culture, subject cultures, founded, fell, capital.
+// polity's card in the info box (polityRows): name, tier, ruling culture, subject cultures, founded, fell, capital; with war v0
+// (PW-1432) also "this land: taken from X", the fall ("conquered by Y" / "collapsed") and its conquests.
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
@@ -42,11 +43,15 @@ export function loadPolities() {
     if (S.V !== v) return;
     v.polStepF = null;
     if (j.error) { console.error(j.error); return; }
-    const owner = new Int32Array(v.n).fill(-1), here = new Map();
-    for (const p of j.polities) { for (const c of p.cells) owner[c] = p.id; here.set(p.id, { ...p, size: p.cells.length, cells: undefined }); }
+    const owner = new Int32Array(v.n).fill(-1), from = new Int32Array(v.n).fill(-1), here = new Map();
+    for (const p of j.polities) {
+      for (const c of p.cells) owner[c] = p.id;
+      for (const [r, cs] of Object.entries(p.provinces || {})) for (const c of cs) from[c] = +r;  // (land war took: the polity it was taken from)
+      here.set(p.id, { ...p, size: p.cells.length, cells: undefined, provinces: undefined });
+    }
     const nbr = v.grid.nbr, edge = new Uint8Array(v.n);
     for (let i = 0; i < v.n; i++) if (owner[i] >= 0) for (const b of nbr[i]) if (owner[b] !== owner[i]) { edge[i] = 1; break; }
-    v.polStep = { k, ago: j.ago, owner, edge, here };
+    v.polStep = { k, ago: j.ago, owner, from, edge, here };
     if (state.layer === 'polities') { paint(); renderLegend(); }
     loadPolities();  // (the slider may have moved on meanwhile)
   }).catch((e) => { v.polStepF = null; console.error(e); });
@@ -73,10 +78,12 @@ export function politiesLegend(sw) {
   if (!P) return '<span class="muted">loading this century\'s map…</span>';
   const st = D.steps[P.k], cnt = Object.entries(st.counts).filter(([, n]) => n).map(([t, n]) => `${n} ${t}${n > 1 ? 's' : ''}`).join(', ') || 'none yet';
   const big = [...P.here.values()].filter((h) => h.tier !== 'chiefdom').sort((a, b) => b.size - a.size).slice(0, 10);
-  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(D.polities[h.id].name)} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
+  const war = [st.taken ? `${st.taken} taken by war` : '', st.collapsed ? `${st.collapsed} fell apart` : ''].filter(Boolean).join(', ');
+  return `${esc(globalThis.NumFmt.ago(P.ago))}: ${esc(cnt)}${war ? `; this century ${esc(war)}` : ''}<br>` + big.map((h) => sw(D.polities[h.id].color, `${esc(D.polities[h.id].name)} (${h.tier}, ${n0(h.size * D.cell_km2)} km²)`)).join('') +
     sw('#5a5a52', 'no one rules here') + '<span class="muted">The century nearest this frame. A polity holds the peopled land within its reach (travel from its capital); ' +
     'the bigger, stronger seats claim first. Chiefdoms (one town and its cell) are pale; borders dark. An empire is a state where another culture holds a fifth or more of its people; ' +
-    'a dragon realm is ruled by a dragon culture. Click a cell for its card. (planet/lineages/polities.py, read after the run)</span>';
+    'a dragon realm is ruled by a dragon culture. War: a state at least half again as strong as a neighbour may take all of it (its farmers keep farming); ' +
+    'a state also falls apart by chance, about as often as history\'s (Arbesman 2011), and a dragon realm when its ruler dies. Click a cell for its card. (planet/lineages/polities.py, read after the run)</span>';
 }
 
 // the polity card: rows for the info box of cell i (describe.js cellInfo)
@@ -93,7 +100,11 @@ export function polityRows(i, R) {
   const subj = Object.entries(h.subjects || {}).sort((a, b) => b[1] - a[1]);
   if (subj.length) R('place', 'subjects', subj.slice(0, 6).map(([u, n]) => `${cname(u)}${n ? ` (~${n0(n)})` : ''}`).join(', ') + (subj.length > 6 ? `, + ${subj.length - 6} more` : ''), { ess: true });
   R('place', 'founded', ago(rec.founded_kyr), { ess: true });
-  R('place', 'fell', rec.fell_kyr != null ? `${ago(rec.fell_kyr)} (${rec.fell_why})` : 'still stands', { ess: true });
+  const fr = P.from[i];
+  if (fr >= 0 && D.polities[fr]) R('place', 'this land', `taken from ${D.polities[fr].name} ${ago(D.polities[fr].fell_kyr)}`, { ess: true });
+  R('place', 'fell', rec.fell_kyr != null ? `${ago(rec.fell_kyr)}: ${rec.fell_why}` : 'still stands', { ess: true });
+  const took = (rec.took || []).filter(([a]) => a >= P.ago - 1e-6);
+  if (took.length) R('place', 'conquests', took.slice(-6).reverse().map(([a, r, how]) => `${D.polities[r]?.name || r} ${ago(a)}${how === 'invasion' ? ' (an invasion)' : ''}`).join(', ') + (took.length > 6 ? `, + ${took.length - 6} earlier` : ''), { ess: true });
   const cap = rec.capital;
   R('place', 'capital', `${rec.kind === 'dragon' ? 'the dragons\' lair' : 'a town of the ' + (rec.people_name || rec.people)} in ${cap.place || 'cell ' + cap.cell} (cell ${cap.cell}, lat ${cap.lat}, lon ${cap.lon})`, { ess });
   if (rec.tiers.length > 1) R('place', 'tiers', rec.tiers.map(([a, t]) => `${t} ${ago(a)}`).join(', '), { ess: false });
