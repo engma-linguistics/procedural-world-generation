@@ -1,0 +1,6 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+# Owner 11-04: the one-people edge. Nothing foreign to meet, trade with, conquer or flee: contact, war, confederation and the
+# writing spread must all run on one people's own groups. Also the cleanest Earth-like read (no fantasy pressure).
+rationale = "Humans only: every other people, the dragons and the giants off; only the humans' stems kept."
+base = "dnd"
+keep = ["human"]
