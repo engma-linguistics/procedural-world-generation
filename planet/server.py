@@ -18,8 +18,8 @@
   GET    /api/brief?run=<id>&people=<id>|culture=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief()); a culture's has its cuisine sheet
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
-  GET    /api/authored?run=<id>      the faiths written in for a run and its saved gods mode (its authored.json, PW-1430)
-  POST   /api/authored {run, faiths, gods_mode}   check and save them (the run's authored.json, the only file this writes into a run)
+  GET    /api/authored?run=<id>[&choices=1]   the faiths written in for a run, its saved gods mode and the invasions scheduled (its authored.json, PW-1430, PW-1433); choices: the peoples and cultures (by uid) a row may name
+  POST   /api/authored {run, faiths, gods_mode, invasions}   check and save them (any left out are kept; the run's authored.json, the only file this writes into a run)
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
@@ -251,12 +251,19 @@ _gods_lock = threading.Lock()  # (the gods, taboos and map requests come togethe
 GODS_DIR = ".godscache"
 
 
-def _authored_key(d: Path) -> str:
-    """A run's authored.json as a short content hash ('' when it has none): it keys every cache of the gods and taboos."""
+def _authored_key(d: Path, part: str = "gods") -> str:
+    """A run's authored.json as a short content hash ('' when it has nothing for that part): part "gods" (the gods mode and faiths: it
+    keys every cache of the gods and taboos) or "invasions" (the invasions you schedule: it keys the polities doc, PW-1433), so an
+    edited invasion never remakes the gods, nor an edited faith the polities."""
     import hashlib
     from .lineages import gods as GD
-    f = d / GD.AUTHORED_FILE
-    return hashlib.sha1(f.read_bytes()).hexdigest()[:16] if f.exists() else ""
+    if not (d / GD.AUTHORED_FILE).exists():
+        return ""
+    A = GD.read_authored(d)
+    v = A["invasions"] if part == "invasions" else [A["gods_mode"], A["faiths"]]
+    if v in ([], [None, []]):
+        return ""
+    return hashlib.sha1(json.dumps(v, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def disk_cached(kind: str, d: Path, key: tuple, make):
@@ -318,6 +325,22 @@ def _authored_context(d: Path) -> tuple[int, set]:
     return n, {l["id"] for l in meta.get("lineages") or []}
 
 
+def _authored_choices(d: Path) -> dict:
+    """What an invasion row may name (PW-1433): the run's peoples {id, name} and its cultures {uid, name, people, born_kyr, ended_kyr}
+    (cultures keyed by their cultures.json uid, PW-1283, rebuilt from the demes for an older file)."""
+    from .lineages import cultures as CU
+    meta = json.loads((d / "run.json").read_text()).get("meta") or {}
+    C = json.loads((d / "cultures.json").read_text()) if (d / "cultures.json").exists() else {"cultures": []}
+    dm = (meta.get("demes") or {}).get("file")
+    try:
+        uids = CU.uids(C, json.loads((d / dm).read_text())) if dm and (d / dm).exists() else [c.get("uid") for c in C["cultures"]]
+    except (KeyError, IndexError, ValueError, TypeError):
+        uids = [c.get("uid") for c in C["cultures"]]
+    cul = [{"uid": u, "name": c.get("name"), "people": c.get("people"), "born_kyr": c.get("born_kyr"), "ended_kyr": c.get("ended_kyr")}
+           for c, u in zip(C["cultures"], uids) if u]
+    return {"peoples": [{"id": l["id"], "name": l.get("name") or l["id"]} for l in meta.get("lineages") or []], "cultures": cul}
+
+
 def authored_get(query: str) -> tuple[dict, int]:
     """GET /api/authored?run=<id>: the run's authored.json ({format, gods_mode, faiths}; empty when it has none)."""
     q = dict(parse_qsl(query))
@@ -325,7 +348,11 @@ def authored_get(query: str) -> tuple[dict, int]:
         from .lineages import gods as GD
         if not q.get("run"):
             raise ValueError("run= is required")
-        return GD.read_authored(S.find_run(q["run"])), 200
+        d = S.find_run(q["run"])
+        out = GD.read_authored(d)
+        if q.get("choices"):
+            out["choices"] = _authored_choices(d)
+        return out, 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -345,8 +372,8 @@ def authored_set(raw: bytes) -> tuple[dict, int]:
         old = GD.read_authored(d)
         mode = b.get("gods_mode", old["gods_mode"]) or None
         faiths = b["faiths"] if "faiths" in b else old["faiths"]
-        saved = GD.write_authored(d, faiths, mode, n, peoples)
-        return {"saved": len(saved["faiths"]), "authored": saved}, 200
+        saved = GD.write_authored(d, faiths, mode, n, peoples, b.get("invasions") if "invasions" in b else None)
+        return {"saved": len(saved["faiths"]), "invasions": len(saved["invasions"]), "authored": saved}, 200
     except (ValueError, TypeError, AttributeError) as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -420,11 +447,12 @@ def polities_doc(d: Path) -> dict:
     """A run's polities doc (lineages/polities.py, PW-1431): read after the run from its settlements, techs, cultures and presence
     (~30 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
     from .lineages import polities as PO
-    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION)
+    from .lineages import gods as GD
+    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, _authored_key(d, "invasions"))  # (an edited invasion remakes it, PW-1433)
     with _polities_lock:
         if key not in _polities_cache:
             _polities_cache.clear()
-            _polities_cache[key] = disk_cached("polities", d, key, lambda: PO.derive(d))
+            _polities_cache[key] = disk_cached("polities", d, key, lambda: PO.derive(d, invasions=GD.read_authored(d)["invasions"]))
         return _polities_cache[key]
 
 
