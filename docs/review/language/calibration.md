@@ -1,0 +1,97 @@
+# Language pass calibration on a24559 (PW-986, builder E, 2026-11-03)
+
+Target: the scholars' horizon for **human lects** lands in 6-10 kyr (architecture section 10, check 3). Levers:
+`history.RATE_SCALE` (multiplies `lect.RATE_RULE` sound-change events per generation at rate 1: 0.05 for t1-t3, 0.1 from t4 on, so t3's 6 equals 3 now) and
+`history.REPLACE_SCALE` (multiplies the generations handed to `lexicon.step`, i.e. C's `BASE_REPLACE` = 0.0016475 per
+generation, calibrated by C to 86% Swadesh-100 retention per millennium at 27.7-yr generations). Both are also read from the
+environment (`LANG_RATE_SCALE`, `LANG_REPLACE_SCALE`) for trials.
+
+**Horizon, as measured** (`families.analyse`): among living human lects, pairs are binned by true divergence (1 kyr bins);
+a pair is "reconstructable" when its blind core-100 cognate share (normalized percept edit distance < `COGNATE_DIST` 0.45)
+beats the pair's **own** chance level: its share with one lect's concepts shuffled (19 permutations, Kessler-style), by
+2 sd and by at least `MIN_EXCESS` = 5 of the 100 words. The horizon is the end of the oldest bin where at least half the
+pairs pass. (t1-t3 used one global floor from random lect pairs; see below why that was replaced.) `clade_all` is the oldest true clade (all lects) that
+the scholars' UPGMA reproduces exactly with its link above chance.
+
+Every trial: `planet languages a24559 --out <scratchpad>`, seed 12, a24559 frames 20 -> 0 kyr ago.
+
+## Trials
+
+| Trial | RATE_SCALE | REPLACE_SCALE | other | horizon human (kyr) | all / clade | sisters <=2 kyr | cross-family | chance floor | shifts | wall time |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| t1 | 1 | 1 | SHIFT_K 0.03, wave not scaled by generations | 21 | 21 / 20 | 0.68 | 0.001 | 0.014 | 613 | 394 s (12 workers, load ~90) |
+| t2 | 3 | 2 | wave x generation ratio, SHIFT_K 0.015 | 21 (11 by the per-pair test, offline) | 21 / - | 0.541 | 0.006 | 0.006 global; 0.015 per pair | 399 | 656 s (7 workers) |
+| t3 | 6 | 2.5 | as t2 | 21 (9 by the per-pair test, offline) | 17 / - | 0.473 | - | 0.011 per pair | - | 794 s (7 workers) |
+| t4 | 3 | 2 | RATE_RULE 0.1, per-pair floor (MIN_EXCESS 0.05) | **9** | 10 / 20 | 0.453 | 0.002 | 0.005 per pair | 399 | 1329 s (7 workers, load ~50) |
+| t5 | 4 | 2 | as t4 | - | - | - | - | - | - | stopped (romanizer crash, then superseded) |
+| t6 | 3 | 1.5 | as t4 | 11 | 11 / 20 | 0.471 (true 0.566) | 0.002 | 0.005 | 399 | 1243 s |
+| t7 | 4 | 1.25 | as t4 | 19 by the old rule, **11** contiguous | 15 / 20 | **0.531** (true 0.596) | 0.004 | 0.009 | 399 | 1400 s |
+| t8 | 4 | 1.25 | + inventory cap, new-segment weight 0.3, core_roman, rules table | 11 | 11 / 20 | 0.499 (true 0.577) | 0.004 | 0.014 | 399 | 1280 s |
+| t9 | 5 | 1.25 | as t8 | 11 | 11 / 20 | 0.497 (true 0.579) | 0.005 | 0.017 | 399 | ~1300 s |
+| **final** | 5 | 1.25 | as t9 + voiceless-breathy > aspirated tidy, stable simplification ids | 13 | 13 / 20 | **0.506** (true 0.585) | 0.005 | 0.016 | 399 | 855 s (12 workers) |
+
+t1 notes: blind shares stay above the floor at every depth (0.022 at 19 kyr against a floor of 0.014): lexical retention
+along human lines ran at ~92%/kyr (mean true share 0.134 at 12 kyr; Pagel's 86%/kyr gives 0.027), partly from borrowing
+between related lects (a loan shares the root), and sound change rarely hid a cognate (blind 0.33 vs true 0.29 at 6 kyr).
+Long-lived peoples showed *more* changes per kyr than humans (4.3 vs 2.8): the wave handed them their short-lived
+neighbours' rules at full rate. Fixed before t2: wave adoption x min(1, giver generation / receiver generation) (children
+carry a change); SHIFT_K 0.03 -> 0.015 (613 shifts, 22% of living lects off their deme's descent, was too many).
+
+t2 notes: shifts takeover 246, swamp 146, trade 6, elite 1; 83 living lects off their descent; long-lived ratio 4.0 (pass);
+hubs check failed narrowly; 0 koine changes; 201 MB.
+
+**Why the floor changed (after t3).** The global floor (random lect pairs, ~0.6%) is far below the chance resemblance of
+*related* lects, which share sound inventories and word shapes: at 19 kyr human pairs had a blind share of 1.6% against a
+true shared-root share of 0.3%, so every bin stayed "above chance" and the horizon pinned at the start (21). Recomputed
+offline from the stored t2/t3 files (`tools/language/horizon_offline.py`, current `families.horizon_pairs`) under the per-pair test:
+
+| file | COGNATE_DIST | MIN_EXCESS 0 | 0.03 | 0.05 |
+| --- | --- | --- | --- | --- |
+| t2 | 0.45 | 21 | 14 | 11 |
+| t2 | 0.6 | 21 | 21 | 21 |
+| t3 | 0.45 | 21 | 19 | 9 |
+| t3 | 0.6 | 20 | 20 | 13 |
+
+A pure 2-sd test (excess 0) still passes noise: with ~15-30 comparable words per old pair, one or two lookalikes beat a
+near-zero chance level. Requiring five words over chance is what a comparativist needs before claiming a family (a handful of
+regular correspondence sets), so `MIN_EXCESS` 0.05 and `COGNATE_DIST` 0.45 are kept. Sisters <= 2 kyr need REPLACE <= ~2
+(t3's 2.5 fell to 0.47), so the remaining lever is RATE_SCALE.
+
+t4 notes: the human horizon lands at 9 kyr (bins: 6-7 kyr 0.77, 7-8 0.82, 8-9 0.57, 10-11 0.0); human chain sound changes
+16.6/kyr against 4.4 for long-lived peoples (ratio 3.8, pass); hubs 1.25 vs isolated 2.20 (pass); shifts 399 (83 living
+lects off their descent); sisters <= 2 kyr 0.453 (fail). 0 koine changes: a24559's mixed cities (192 city-frames) are all
+humans with halflings, gnomes, elves or dragonborn, whose voices are human-like, so no sound is hard for a city majority
+(koine pressure is working as specified; it needs a city with non-human-voiced heads). 125 MB file. The run crashed once in
+romanization (non-human long vowels ə ɨ ɑ spelled as nothing); fixed in romanize.spell, and the output's Speller now falls back
+to IPA and counts failures (`romanization_failures`) instead of stopping the pass.
+
+t6-t7 notes: sisters <= 2 kyr are held down mostly by lexical replacement, not by hidden cognates (true shared-root share
+0.57 at REPLACE 1.5, blind 0.47), so REPLACE came down and RATE went up. t7's bins: 0-9 kyr all pass, 10-11 kyr 2 of 3 pairs,
+12-13 kyr 0 of 35, then 13-14 kyr 10 of 13 and 18-19 kyr 3 of 6: the old rule ("oldest bin with half passing") let a
+6-pair bin at 18 kyr set the horizon. **Horizon rule changed** (families._horizon): contiguous from the present, ending at
+the first bin of >= 5 pairs (MIN_BIN) where fewer than half pass; t4/t6/t7 recomputed: 9 / 11 / 11. Human pairs leave a gap
+between 9 and 12 kyr in a24559 (few splits at that depth), so the human horizon reads 9 or 11 depending on a 3-pair bin.
+
+**Inventory cap (coordinator, after t7).** Living lects at the present in t6 had consonants Q1/median/Q3 34/44/58 (max
+127) and "vowels" 34/49/67 (tone variants included): rules that phonemicize allophones (labialization, breathy voice,
+secondary articulations) added segments without limit. Now (lect.py): rules that would add a segment the lect lacks are
+drawn at 0.3 of their weight, and after each interval's rule events the consonants above min(1.5 x the proto count, 45) and
+vowel qualities (length and nasality count, tone not) above min(1.5 x, 20) fold, rarest new ones first, into their nearest
+remaining sound (`simplification:` change, cause "dispersion"). t8 on are with the cap.
+
+t8-t9 notes: with the cap, living inventories at the present are PHOIBLE-sized (t9: consonants min/Q1/median/Q3/max
+7/21/27/33/45, vowel qualities 4/9/13/17/20; ~14,000 `simplification` events over the run). A faster rate no longer hides
+cognates much (merged sounds come back together, and the chance level of a pair rises: 0.009 -> 0.017), so RATE 4 -> 5 left
+the horizon at 11 and sisters at 0.50. Human bins in t9: 0-11 kyr pass (the 10-11 bin is 3 pairs), 12-13 kyr 14 of 35.
+
+**Where it lands.** In a24559 the two targets pull against each other through the slow core words (lexicon's per-concept
+rates give a long tail of retention): sisters <= 2 kyr above 0.5 need REPLACE <= ~1.25, and at that replacement 40% of human
+pairs still beat chance at 12-13 kyr. Human pair depths have a gap between 9 and 12 kyr, so the horizon reads 9 (t4: sisters
+0.45) or 11 (t7-t9: sisters 0.50). **Final constants: RATE_SCALE 5, REPLACE_SCALE 1.25** (RATE_RULE 0.1, COGNATE_DIST 0.45,
+MIN_EXCESS 0.05, MIN_BIN 5): horizon 11 kyr, one bin outside 6-10, sisters at the 0.5 line. Moving a check's target is the
+owner's call, not a calibration step (reported as a judgement call).
+
+Final run (written to runs/a24559/languages.json): 5 of 6 checks pass; the human horizon reads 13 kyr this time (12-13 kyr
+bin: 20 of 35 pairs pass, 0.57; t9 at the same constants: 14 of 35, 0.40): the 12-13 kyr bin sits on the 50% line, so the
+reading flips between 11 and 13 between runs. The scholars clearly lose human families between ~11 and ~14 kyr in a24559.
+

@@ -1,0 +1,430 @@
+"""languages.json (PW-986, architecture section 11) and the placeholder export for the writing repo.
+
+`document(result)` turns history.generate's result into the json document: every lect (full lexicon for living lects, the
+Swadesh-100 and names for dead ones), the shifts, the food-word routes, the families (true tree, scholars' tree, languages,
+horizon), the checks, the landscape a names pass needs (rivers and lakes with the demes that lived on them, oldest first), a
+plain-words log, and the voice profiles. Romanized forms come from romanize.py with each lect's own contrasts. `names` is left
+for names.py (builder F) to fill."""
+from __future__ import annotations
+
+import numpy as np
+
+from . import inventory as INV
+from . import lexicon as LX
+from . import romanize as RO
+from . import inputs as I
+from . import names as NM
+from .percepts import from_ipa, word_ipa
+
+FORMAT = "procgen-languages/1"
+
+
+class Speller:
+    """Romanization with one lect's contrasts and inventory."""
+
+    def __init__(self, lect):
+        segs = lect.segments() if lect.lexicon is not None else []
+        self.inv = frozenset(segs)
+        self.cs = RO.contrasts_of(segs)
+
+    failures: dict = {}  # (romanizer errors, by segment IPA: the word falls back to its IPA rather than stopping the pass)
+
+    def form(self, form) -> str:
+        try:
+            return RO.romanize_word(form, self.cs, self.inv)
+        except Exception as e:
+            from .percepts import to_ipa
+            key = f"{type(e).__name__}: {' '.join(to_ipa(s) for s in form)}"
+            Speller.failures[key] = Speller.failures.get(key, 0) + 1
+            return "".join(to_ipa(s) for s in form)
+
+    def ipa(self, ipa: str) -> str:
+        try:
+            return RO.romanize_word(from_ipa(ipa), self.cs, self.inv)
+        except Exception:
+            return ipa
+
+
+def _r(x, k=3):
+    return None if x is None else round(float(x), k)
+
+
+class EtymTable:
+    """Etymologies stored once: a word's chain is a node id; node = [parent node | -1, kyr, lect, process, ipa, gloss(, note)],
+    where gloss 0 means "the same as the parent node's".
+    Within one lect, a run of successive sound changes is merged into one step ("sound_change:a+b+…n", the last form), and
+    sister lects share the nodes of their common past."""
+
+    MAX_IDS = 2
+
+    def __init__(self):
+        self.nodes: list = []
+        self._key: dict = {}
+        self._by_obj: dict = {}
+        self._gloss: list = []
+
+    def _merge(self, etym) -> list:
+        out = []
+        for st in etym:
+            if out and st.process.startswith("sound_change:") and out[-1][3].startswith("sound_change:") and out[-1][2] == st.lect:
+                ids = out[-1][3][len("sound_change:"):].split("+") + st.process[len("sound_change:"):].split("+")
+                out[-1] = [out[-1][0], _r(st.kyr), st.lect, "sound_change:" + _join_ids(ids, self.MAX_IDS), st.form, st.gloss, st.note]
+            else:
+                out.append([None, _r(st.kyr), st.lect, st.process, st.form, st.gloss, st.note])
+        return out
+
+    def chain(self, etym) -> int:
+        k = id(etym)
+        hit = self._by_obj.get(k)
+        if hit is not None and hit[0] is etym:
+            return hit[1]
+        parent = -1
+        for st in self._merge(etym):
+            st[0] = parent
+            key = tuple(st)
+            nid = self._key.get(key)
+            if nid is None:
+                nid = self._key[key] = len(self.nodes)
+                row = list(st if st[6] else st[:6])
+                if parent >= 0 and self._gloss[parent] == st[5]:
+                    row[5] = 0
+                self._gloss.append(st[5])
+                self.nodes.append(row)
+            parent = nid
+        self._by_obj[k] = (etym, parent)
+        return parent
+
+
+def _join_ids(ids: list, cap: int) -> str:
+    flat, more = [], 0
+    for x in ids:
+        if x.startswith("…"):
+            more += int(x[1:] or 1)
+        else:
+            flat.append(x)
+    if len(flat) > cap:
+        more += len(flat) - cap
+        flat = flat[:cap]
+    return "+".join(flat) + (f"+…{more}" if more else "")
+
+
+def _walk(nodes: list, node) -> list:
+    out = []
+    while node is not None and node >= 0:
+        n = nodes[node]
+        out.append(list(n[1:]))
+        node = n[0]
+    out.reverse()
+    for k in range(1, len(out)):
+        if out[k][4] == 0:
+            out[k][4] = out[k - 1][4]
+    return out
+
+
+def etym_list(table: EtymTable, node: int) -> list:
+    """A node's chain, oldest first, as [kyr, lect, process, ipa, gloss(, note)] steps (for readers of the json)."""
+    return _walk(table.nodes, node)
+
+
+def lexicon_json(lect, sp: Speller, full: bool, et: EtymTable) -> dict:
+    out = {}
+    for k, w in sorted(lect.lexicon.words.items()):
+        if not full and k not in LX.CORE100 and w.pos != "NAME":
+            continue
+        out[k] = {"ipa": w.ipa, "roman": sp.form(w.form), "pos": w.pos, "freq": w.freq_class, "etym": et.chain(w.etym)}
+    return out
+
+
+def grammar_json(lect, sp: Speller) -> dict:
+    from . import grammar as GR
+    g = lect.grammar
+    if g is None:
+        return {"typology": {}, "grams": [], "paradigms": {}, "complexity": {}}
+    grams = [{"function": gr.function, "form_ipa": GR.ipa(gr.form), "form_roman": sp.form(gr.form), "level": gr.level,
+              "level_name": GR.LEVELS[gr.level], "side": gr.side, "host": gr.host, "source": list(gr.source),
+              "born_kyr": _r(gr.born_kyr)} for gr in g.grams if gr.live]
+    pt = GR.paradigm_table(g)
+    for key in ("nouns", "verbs"):
+        for row in (pt.get(key) or {}).get("rows", []):
+            row["cells"] = {c: {"ipa": v, "roman": sp.ipa(v)} for c, v in row["cells"].items()}
+    for p in pt.get("periphrastic", []):
+        p["roman"] = sp.ipa(p["ipa"])
+    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g)}
+
+
+def thin_snapshots(snaps: list, every: int) -> list:
+    """Every `every`-th snapshot (and the last), with `core_roman` (the core forms in the house spelling under that frame's
+    inventory) added, re-encoded as deltas."""
+    if not snaps:
+        return snaps
+    from .history import snapshot_delta, snapshot_full
+    full = snapshot_full(snaps)
+    keep = full[::every] + ([full[-1]] if (len(full) - 1) % every else []) if every > 1 and len(full) > 2 else full
+    prev_key, prev_core, prev_rom, cs, invs = None, None, None, None, None
+    for _k, sn in keep:
+        key = (tuple(sn.get("c") or ()), tuple(sn.get("v") or ()))
+        if key != prev_key:
+            invs = frozenset(x for c in key[0] + key[1] for x in from_ipa(c))
+            cs = RO.contrasts_of(list(invs))
+            prev_core = None
+        rom = []
+        for j, ipa in enumerate(sn["core"]):
+            if prev_core is not None and prev_core[j] == ipa:
+                rom.append(prev_rom[j])
+            else:
+                rom.append(_roman(ipa, cs, invs))
+        sn["core_roman"] = rom
+        prev_key, prev_core, prev_rom = key, sn["core"], rom
+    out = [keep[0]]
+    for (_k0, a), (k1, b) in zip(keep, keep[1:]):
+        out.append([k1, snapshot_delta(a, b)])
+    return out
+
+
+def _roman(ipa, cs, invs):
+    if ipa is None:
+        return None
+    try:
+        return RO.romanize_word(from_ipa(ipa), cs, invs)
+    except Exception:
+        return ipa
+
+
+def rules_table(lects, h) -> dict:
+    """{rule id: plain words} for every rule id in the change logs (rules.describe), plus the made-up ones: dispersion
+    pushes, koine replacements and inventory simplifications (their ids say what moved)."""
+    from . import lect as LC, rules as RU
+    used = {c["rule"] for l in lects for c in l.changes}
+    known: dict = {}
+    for key in sorted({l.profile_key for l in lects}):
+        prof = h.profile(key)
+        try:
+            for r in LC.catalogue_for(prof, key):
+                if r.id in used and r.id not in known:
+                    known[r.id] = RU.describe(r)
+        except Exception:
+            continue
+    for l in lects:
+        for k, v in l.rule_text.items():
+            known.setdefault(k, v)
+    out = {}
+    for rid in sorted(used):
+        if rid in known:
+            out[rid] = known[rid]
+        elif rid == "simplification":
+            out[rid] = "rare sounds merged into their nearest neighbours, as listed in the change's 'merged' (dispersion: the inventory had grown past its cap)"
+        elif rid == "koine":
+            out[rid] = "sounds most of a mixed city's heads could not say replaced, as listed in the change's 'merged' (koine)"
+        else:
+            out[rid] = rid
+    return out
+
+
+def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
+    sp = Speller(lect)
+    inv = lect.inventory
+    gj = grammar_json(lect, sp)
+    return {"id": lect.id, "deme": lect.deme, "people": lect.people, "parent": lect.parent, "how": lect.how,
+            "substrate": lect.substrate, "born_kyr": _r(lect.born_kyr), "died_kyr": _r(lect.died_kyr), "end": lect.end,
+            "rate": _r(lect.rate), "gen_yr": _r(lect.gen_yr, 1), "language": lect.language, "family_true": lect.family_true,
+            "family_scholars": lect.family_scholars, "deme_name": lect.deme_name,
+            "inventory": None if inv is None else {"consonants": INV.to_json(inv)["consonants"], "vowels": INV.to_json(inv)["vowels"],
+                                                   "tones": list(inv.tones), "shapes": dict(inv.shapes), "stress": inv.stress,
+                                                   "max_onset": inv.max_onset, "max_coda": inv.max_coda},
+            "typology": gj["typology"], "grams": gj["grams"], "paradigms": gj["paradigms"], "complexity": gj["complexity"],
+            "lexicon": lexicon_json(lect, sp, full, et) if lect.lexicon is not None else {}, "lexicon_full": full,
+            "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
+            "changes": [[c["kyr"], c["rule"], c["cause"], c["origin_lect"]] + ([{k: c[k] for k in ("city", "peoples", "merged") if k in c}] if "merged" in c else [])
+                        for c in lect.changes], "rules_applied": lect.rules_applied, "generations": _r(lect.generations, 1),
+            "l2": _r(lect.l2), "population": _r(lect.population, 0), "isolation": _r(lect.isolation),
+            "shares_history": lect.shares_history,
+            "stats": _round_all(LX.stats(lect.lexicon)) if full and lect.lexicon is not None else None,
+            "snapshots": thin_snapshots(lect.snapshots, snap_every)}
+
+
+def landscape_json(R) -> dict:
+    """Rivers and lakes (fixed: the world's present ones) with the demes that lived on them, oldest first, for river and place
+    names (the conservative layer), and each deme's landscape at its first frame in the window."""
+    rivers = R.rivers()
+    lakes = R.lakes()
+    rid, lid = R.river_id(), R.lake_id()
+    on_r: dict = {}
+    on_l: dict = {}
+    first: dict = {}
+    for i in range(len(R.frames_kyr)):
+        fr = R.frame(i)
+        for d, cells in fr.cells.items():
+            if not R.alive_at(d, R.kyr(i)):
+                continue
+            first.setdefault(d, i)
+            for r in np.unique(rid[cells]).tolist():
+                if r >= 0:
+                    on_r.setdefault(int(r), {}).setdefault(d, R.kyr(i))
+            for k in np.unique(lid[cells]).tolist():
+                if k >= 0:
+                    on_l.setdefault(int(k), {}).setdefault(d, R.kyr(i))
+    lat, lon = R.g.lat, R.g.lon
+    rv = {}
+    for r, v in sorted(rivers.items(), key=lambda t: -t[1]["flow"]):
+        m = v["mouth_cell"]
+        rv[str(r)] = {**v, "lat": round(float(lat[m]), 2), "lon": round(float(lon[m]), 2),
+                      "demes": [[d, k] for d, k in sorted(on_r.get(r, {}).items(), key=lambda t: (-t[1], t[0]))]}
+    lk = {str(k): {**v, "lat": round(float(lat[k]), 2), "lon": round(float(lon[k]), 2),
+                   "demes": [[d, t] for d, t in sorted(on_l.get(k, {}).items(), key=lambda x: (-x[1], x[0]))]}
+          for k, v in lakes.items()}
+    dm = {}
+    for d, i in sorted(first.items()):
+        ls = R.deme_landscape(d, i)
+        dm[str(d)] = {"kyr": R.kyr(i), **{k: (round(v, 3) if isinstance(v, float) else v) for k, v in ls.items()}}
+    return {"rivers": rv, "lakes": lk, "demes": dm, "river_flow_floor": I.RIVER_FLOW}
+
+
+def document(result: dict, thin_dead: int = 1) -> dict:
+    Speller.failures.clear()
+    R = result["run"]
+    h = result["history"]
+    lects = result["lects"]
+    fam = dict(result.get("families") or {})
+    fam.pop("_matrices", None)
+    routes = []
+    for r in result["food_routes"]:
+        rr = dict(r)
+        o = h.lects.get(r["origin_lect"])
+        rr["roman"] = Speller(o).ipa(r["ipa"]) if o is not None else r["ipa"]
+        hops = []
+        for hp in r["hops"]:
+            l = h.lects.get(hp["lect"])
+            hops.append({**hp, "roman": Speller(l).ipa(hp["ipa"]) if l is not None else hp["ipa"]})
+        rr["hops"] = sorted(hops, key=lambda x: (-x["kyr"], x["deme"]))
+        routes.append(rr)
+    routes.sort(key=lambda r: (r["concept"], -(r["kyr"] or 0.0), r["origin_lect"]))
+    peoples = sorted({l.people for l in lects})
+    profiles = {}
+    for p in peoples:
+        pr = h.profile(p)
+        if pr is not None:
+            try:
+                profiles[p] = pr.to_json()
+            except Exception:
+                profiles[p] = {"source": getattr(pr, "source", None)}
+    no_demes = sorted(l["id"] for l in R.meta["lineages"] if (l.get("overlay") or l.get("origin") in ("hybrid", "template"))
+                      and not l.get("group_of"))
+    land = landscape_json(R)
+    et = EtymTable()
+    living_ids = {l.id for l in lects if l.alive and l.deme is not None}
+    lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead)
+          for l in sorted(lects, key=_lect_order)]
+    intel = intelligibility_json(R, h)
+    doc = {
+        "format": FORMAT, "run": R.id, "seed": result["seed"], "start_kyr": R.frames_kyr[0], "frames_kyr": R.frames_kyr,
+        "romanization": RO.ROMANIZATION,
+        "profiles": profiles,
+        "snapshot_concepts": list(_core_order()),
+        "etym_nodes": et.nodes,
+        "rules": rules_table(lects, h),
+        "lects": lj,
+        "names": NM.build_names(result, R, landscape=land),
+        "shifts": result["shifts"],
+        "food_routes": routes,
+        "families": fam,
+        "intelligibility": intel,
+        "continua": result.get("continua") or [],
+        "checks": result.get("checks") or [],
+        "landscape": land,
+        "peoples_without_lects": {"ids": no_demes, "why": "hybrids, templates and overlays have no demes in the run, so no lects yet"},
+        "log": result["log"],
+        "romanization_failures": dict(Speller.failures),
+        "timing": result.get("timing"),
+        "constants": constants(),
+    }
+    return doc
+
+
+def _core_order():
+    from .history import CORE
+    return CORE
+
+
+def intelligibility_json(R, h) -> dict:
+    """{"frames": [kyr...], "pairs": [[a, b, [v | null per frame]]], "now": [[a, b, v]] (living, v >= 0.05)}."""
+    nf = len(R.frames_kyr)
+    pairs = []
+    for (a, b), d in sorted(h.intel.items()):
+        pairs.append([a, b, [d.get(i) for i in range(nf)]])
+    return {"frames": R.frames_kyr, "pairs": pairs, "now": h.intel_now,
+            "note": "families.intelligibility: blind cognate share on the core-100 x (1 - half the cognates' mean distance "
+                    "over COGNATE_DIST) x (1 - grammar penalty: word order 0.15, adposition, case, number 0.05 each)"}
+
+
+def _lect_order(l):
+    return (0 if l.deme is None else 1, l.deme if l.deme is not None else -1, l.born_kyr * -1, l.id)
+
+
+def constants() -> dict:
+    from . import families as FA, history as HI, lect as LC
+    return {"RATE_RULE": LC.RATE_RULE, "RATE_SCALE": HI.RATE_SCALE, "REPLACE_SCALE": HI.REPLACE_SCALE,
+            "BASE_REPLACE": LX.BASE_REPLACE, "WAVE_K": HI.WAVE_K, "SHIFT_K": HI.SHIFT_K, "KIND_WEIGHT": HI.KIND_WEIGHT,
+            "CONTACT_MIN": HI.CONTACT_MIN, "PROTO_LINK": HI.PROTO_LINK, "LANG_SHARE": FA.LANG_SHARE,
+            "COGNATE_DIST": FA.COGNATE_DIST}
+
+
+def summary(doc: dict, file: str = "languages.json", seconds: float | None = None) -> dict:
+    """The meta.languages block."""
+    lects = doc["lects"]
+    living = [l for l in lects if l["died_kyr"] is None and l["deme"] is not None]
+    fam = doc["families"]
+    return {"file": file, "format": FORMAT, "seed": doc["seed"], "lects": len(lects), "living": len(living),
+            "protos": sum(1 for l in lects if l["deme"] is None), "shifts": len(doc["shifts"]),
+            "languages": len(fam.get("languages") or []), "families_true": fam.get("true_families"),
+            "families_scholars": fam.get("scholars_families"), "horizon_kyr": fam.get("horizon_kyr"),
+            "horizon_human_kyr": ((fam.get("horizon_by") or {}).get("human") or {}).get("horizon_kyr"),
+            "food_routes": len(doc["food_routes"]),
+            "checks": {c["name"]: c["pass"] for c in doc["checks"]}, "generated_in_s": seconds,
+            "lexicon_stats": _stats_summary(living)}
+
+
+def _stats_summary(living: list) -> dict:
+    """Run-wide means of the living lects' lexicon.stats."""
+    st = [l["stats"] for l in living if l.get("stats")]
+    if not st:
+        return {}
+    return {k: round(float(np.mean([x[k] for x in st])), 3) for k in ("mean_segments", "max_segments", "mean_syllables", "homophone_share")
+            if all(k in x for x in st)} | {"lects": len(st)}
+
+
+def etym_steps(doc: dict, node: int) -> list:
+    """A word's etymology from the document, oldest first: [kyr, lect, process, ipa, gloss(, note)] per step (gloss 0 in a
+    node resolved to its parent's)."""
+    return _walk(doc["etym_nodes"], node)
+
+
+def export_writing(doc: dict) -> dict:
+    """The placeholder hand-off to the writing repo: per living lect, each word's IPA, house spelling, gloss and morphemes
+    (from its last word-formation step; boundaries inside the form are not tracked yet). Nothing about scripts."""
+    out = {"format": "procgen-lexicon-export/0", "run": doc["run"], "lects": {}}
+    for l in doc["lects"]:
+        if l["died_kyr"] is not None or l["deme"] is None:
+            continue
+        words = []
+        for c, w in l["lexicon"].items():
+            steps = etym_steps(doc, w["etym"])
+            form_step = next((s for s in reversed(steps) if s[2].split(":", 1)[0] in ("derive", "compound", "proto", "coin", "shift",
+                                                                                            "taboo", "elaborate")), None)
+            parts = [c]
+            if form_step and form_step[2].startswith("compound:"):
+                parts = form_step[2].split(":", 1)[1].split("+")
+            elif form_step and form_step[2].startswith("derive:"):
+                parts = [steps[0][4], form_step[2].split(":", 1)[1]]
+            words.append({"concept": c, "ipa": w["ipa"], "roman": w["roman"], "pos": w["pos"], "morphemes": parts})
+        out["lects"][l["id"]] = {"people": l["people"], "language": l["language"], "words": words}
+    return out
+
+
+def _round_all(x, k: int = 3):
+    if isinstance(x, float):
+        return round(x, k)
+    if isinstance(x, dict):
+        return {a: _round_all(b, k) for a, b in x.items()}
+    if isinstance(x, list):
+        return [_round_all(b, k) for b in x]
+    return x

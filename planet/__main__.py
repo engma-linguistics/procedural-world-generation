@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from . import highlights as H
@@ -387,6 +388,17 @@ def cmd_religion(args):
         print(ref, json.dumps(sm))
 
 
+def cmd_languages(args):
+    """Adds (or redoes) a peoples run's languages (PW-986): languages.json and meta.languages; --out writes languages.json
+    elsewhere (one subfolder per run) and leaves the run untouched."""
+    from .language import run as LR
+    for ref in args.runs:
+        d = S.find_run(ref)
+        out = Path(args.out) / d.name if args.out else None
+        sm = LR.write(d, out_dir=out, seed=args.seed, workers=args.workers)
+        print(ref, "\n".join(LR.lines_for_report(sm)))
+
+
 def cmd_settlements(args):
     """Adds (or redoes) a peoples run's settlement ledger in place (PW-1011): settlements.json, meta.settlements."""
     from .lineages import settlements as ST
@@ -398,6 +410,23 @@ def cmd_settlements(args):
         d = S.find_run(ref)
         sm = ST.write(d, **over)
         print(ref, "\n".join(ST.lines_for_report(sm, json.loads((d / "settlements.json").read_text()))))
+
+
+def cmd_speak(args):
+    """Say an IPA string as a WAV (language lane audio, planet/language/speak.py): --people sets the voice profile."""
+    from .language import speak as SP
+    prof = SP.profile_for_people(args.people)
+    try:
+        b = SP.speak(args.ipa, prof, out_path=args.out, backend=args.backend)
+    except SP.BackendUnavailable as e:
+        raise SystemExit(str(e))
+    except ValueError as e:
+        raise SystemExit(str(e))
+    if args.out:
+        print(f"{args.out}: {len(b)} bytes, {(len(b) - 44) / 2 / SP.SR:.2f} s ({args.backend}, "
+              f"{prof.id if prof else 'human'})")
+    else:
+        sys.stdout.buffer.write(b)
 
 
 def cmd_brief(args):
@@ -801,6 +830,14 @@ def main():
     br.add_argument("--eras", metavar="KYR,KYR,...", help="with --all: the eras (default 0,0.5,1,2,3,6,9,12 kyr ago)")
     br.set_defaults(func=cmd_brief)
 
+    sp = sub.add_parser("speak", help="say an IPA string as a WAV (planet/language/speak.py; docs/review/language/audio.md)")
+    sp.add_argument("ipa", help="IPA, words separated by spaces (tone letters, ː, and the house symbols ‼ ᵣ ᴖ ˯ ˰ ʬ ʭ ʞ)")
+    sp.add_argument("--people", metavar="ID", help="a lineage id (dnd sample tree) whose voice profile sets register and rate")
+    sp.add_argument("--out", help="write the WAV here (default: WAV bytes to stdout)")
+    sp.add_argument("--backend", choices=("auto", "espeak", "piper"), default="auto",
+                    help="auto = piper when its voice is downloaded, else espeak")
+    sp.set_defaults(func=cmd_speak)
+
     lu = sub.add_parser("landuse", help="add or redo a peoples run's anthropogenic land cover (cropland, pasture, burned "
                                         "grassland, managed woods, settlement density; PW-662) in place")
     lu.add_argument("runs", nargs="+", help="peoples run ids")
@@ -830,6 +867,15 @@ def main():
     rl.add_argument("--mode", default="faith_made", choices=["faith_made", "belief_only", "absolute"], help="gods mode (default faith_made)")
     rl.add_argument("--rebuild-techtree", action="store_true", help="read the faith techs from a tech tree built afresh in memory (a run made before them)")
     rl.set_defaults(func=cmd_religion)
+
+    lg = sub.add_parser("languages", help="add or redo a peoples run's languages (PW-986): proto-languages 20 kyr ago, sound change, "
+                                          "words with etymologies, grammar, tree and wave over the demes and their contacts, language "
+                                          "shift with substrate, food-word routes, the scholars' tree: languages.json; in place unless --out")
+    lg.add_argument("runs", nargs="+", help="peoples run ids")
+    lg.add_argument("--out", help="write languages.json under this folder (one subfolder per run) and leave the runs untouched")
+    lg.add_argument("--seed", type=int, help="seed (default: the run's meta.seed)")
+    lg.add_argument("--workers", type=int, default=8, help="forked processes for the lect steps (default 8; 1 = this process; same output)")
+    lg.set_defaults(func=cmd_languages)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "
