@@ -348,7 +348,7 @@
 <div id="timeline" class="panel">
   <button id="play" title="Play / pause (space)">&#9654;</button>
   <div id="track"><canvas id="tint"></canvas><div id="marks"></div><input type="range" id="frame" min="0" max="0" value="0"><div id="taxis"></div></div>
-  <div id="tside"><span id="tlabel"></span><span id="tkeys" title="Keys: Space plays or pauses; the left and right arrows step one stored moment">Space play · ← → step</span></div>
+  <div id="tside"><span id="tlabel"></span><label id="presentBox" hidden class="muted" style="font-size:11px" title="Optional: the year the present is, so dates read as years ('year 1400') instead of '12,400 years ago'. Empty: years ago. Kept in this browser, per run.">present is year <input id="presentYear" type="number" step="1" style="width:64px" placeholder="(not set)"></label><span id="tkeys" title="Keys: Space plays or pauses; the left and right arrows step one stored moment">Space play · ← → step</span></div>
 </div>
 <div id="drop">Drop world .json</div>
 <div id="toast"></div>

@@ -16,7 +16,7 @@ const els = {};
 global.document = { head: { insertAdjacentHTML() {} }, getElementById: (id) => els[id] || (els[id] = mkEl()) };
 global.location = { hash: '#religion/trees', search: '?run=r1' };
 global.history = { replaceState() {} };
-global.window = global; global.NumFmt = { kyr: String };
+global.window = global; global.NumFmt = { kyr: String, ago: (k) => k + ' ago' };
 let release, mode = process.argv[2];
 global.fetch = (u) => new Promise((res) => {
   const reply = () => res(mode === 'err'
@@ -65,7 +65,7 @@ const els = {};
 global.document = { head: { insertAdjacentHTML() {} }, getElementById: (id) => els[id] || (els[id] = mkEl()) };
 global.location = { hash: '#religion/trees', search: '?run=r1' };
 global.history = { replaceState() {} };
-global.window = global; global.NumFmt = { kyr: (k) => k + ' kyr' };
+global.window = global; global.NumFmt = { kyr: (k) => k + ' kyr', ago: (k) => k + ' kyr ago' };
 const beings = [0, 1, 2, 3, 4].map((i) => ({ label: 'g' + i, born_kyr: 230 - i * 40, ended_kyr: null, parent: i ? 0 : null, history: [],
   individuation: 0.3, status: 'living', how: 'born', culture: 0, top: [] }));
 const faith = { id: 0, name: 'F', color: '#fff', how: 'founded', founded_kyr: 230, ended_kyr: null, beings: [0, 1, 2, 3, 4],

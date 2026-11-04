@@ -367,7 +367,7 @@ def stories(h: History, pres: dict) -> dict[str, str]:
                "where its way of life suits the land better than its people's":
                    "where its ways suited the land better than its people's",
                "at its people's range edge (no land suits it better there)": "at the edge of its people's land"}.get(o["why"], f"({o['why']})")
-        s = [f"{l.label()[0].upper()}{l.label()[1:]} {what} ~{_ago(o['ago_kyr'])} ago {why}, on {where}."]
+        s = [f"{l.label()[0].upper()}{l.label()[1:]} {what} ~{SP.years_ago(o['ago_kyr'])} {why}, on {where}."]
         for m, r in sorted(h.cross.reached.get(l.id, {}).items(), key=lambda x: -x[1]["ago_kyr"]):
             if r["how"] == "origin" or names[m]["area_mkm2"] < 0.05:
                 continue
@@ -375,16 +375,16 @@ def stories(h: History, pres: dict) -> dict[str, str]:
                    "overland": "spread overland (the land was joined then) to", "raft": "was carried on drift rafts to",
                    "coastal": "paddled to", "swims": "swam to", "flies": "flew to", "seafaring": "sailed to"}.get(r["how"], "reached")
             gap = f" over {r['gap_km']} km of open sea" if r.get("gap_km") else ""
-            s.append(f"~{_ago(r['ago_kyr'])} ago it {how} {names[m]['name']}{gap}.")
+            s.append(f"~{SP.years_ago(r['ago_kyr'])} it {how} {names[m]['name']}{gap}.")
         for e in h.events:
             if e["line"] == l.id and e["kind"] == "refuge":
-                s.append(f"~{_ago(e['ago_kyr'])} ago, at its lowest, it held out in a refuge near {e['lat']:.0f}, {e['lon']:.0f}.")
+                s.append(f"~{SP.years_ago(e['ago_kyr'])}, at its lowest, it held out in a refuge near {e['lat']:.0f}, {e['lon']:.0f}.")
             if e["line"] == l.id and e["kind"] == "lingers" and l.id in h._apart:  # (apart still at the present)
-                s.append(f"~{_ago(e['ago_kyr'])} ago its parents' lands drew apart; it lived on as a people of its own "
+                s.append(f"~{SP.years_ago(e['ago_kyr'])} its parents' lands drew apart; it lived on as a people of its own "
                          f"near {e['lat']:.0f}, {e['lon']:.0f}.")
         p = pres["lines"].get(l.id)
         if l.id in h.ended and not p:
-            s.append(f"It was gone by ~{_ago(h.ended[l.id])} ago" + (" (as its children took its land)." if h.tree.living_children(l.id) else "."))
+            s.append(f"It was gone by ~{SP.years_ago(h.ended[l.id])}" + (" (as its children took its land)." if h.tree.living_children(l.id) else "."))
         elif p:
             nb = [h.tree.lines[x].label() for x in list(p["neighbours"])[:4] if x in h.tree.lines]
             iso = "one land" if p["patches"] == 1 else f"{p['patches']} separate lands (the largest {round(100 * p['largest_patch_share'])}%)"
@@ -407,10 +407,10 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             if not tm:
                 continue
             if tm[0]["line"] == l.id:
-                s.append(f"It was the first to cultivate {hs['noun']}, ~{_ago(tm[0]['ago_kyr'])} ago on {tm[0]['landmass_name']}.")
+                s.append(f"It was the first to cultivate {hs['noun']}, ~{SP.years_ago(tm[0]['ago_kyr'])} on {tm[0]['landmass_name']}.")
             elif any(t["line"] == l.id for t in tm[1:]):
                 t = next(t for t in tm[1:] if t["line"] == l.id)
-                s.append(f"It cultivated {hs['label']} again on its own ~{_ago(t['ago_kyr'])} ago on {t['landmass_name']}.")
+                s.append(f"It cultivated {hs['label']} again on its own ~{SP.years_ago(t['ago_kyr'])} on {t['landmass_name']}.")
         if crops and not l.overlay and LU.shares(h.tree, l)["farm"] >= 0.2:
             grown = sorted(((hs["adoption"].get(l.id, 0.0) * hs["weight"], hs["label"]) for hs in crops.values() if hs["adoption"].get(l.id, 0.0) >= 0.25), reverse=True)
             if grown:
@@ -421,15 +421,15 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             if not tm:
                 continue
             if tm[0]["line"] == l.id:
-                s.append(f"It was the first to tame the {noun}, ~{_ago(tm[0]['ago_kyr'])} ago on {'the ' + tm[0]['country'] + ' of ' if aid == 'horse' else ''}{tm[0]['landmass_name']}.")
+                s.append(f"It was the first to tame the {noun}, ~{SP.years_ago(tm[0]['ago_kyr'])} on {'the ' + tm[0]['country'] + ' of ' if aid == 'horse' else ''}{tm[0]['landmass_name']}.")
             elif any(t["line"] == l.id for t in tm[1:]):
                 t = next(t for t in tm[1:] if t["line"] == l.id)
-                s.append(f"It tamed {hs['label']} again on its own ~{_ago(t['ago_kyr'])} ago on {t['landmass_name']}.")
+                s.append(f"It tamed {hs['label']} again on its own ~{SP.years_ago(t['ago_kyr'])} on {t['landmass_name']}.")
             if hs["took_up_kyr"].get(l.id) is not None and hs["propensity"].get(l.id, 0) >= 0.3 and tm[0]["line"] != l.id:
                 if aid == "horse":
-                    s.append(f"It took up riding ~{_ago(hs['took_up_kyr'][l.id])} ago and rides today across {round(100 * hs['users_share'].get(l.id, 0))}% of its land.")
+                    s.append(f"It took up riding ~{SP.years_ago(hs['took_up_kyr'][l.id])} and rides today across {round(100 * hs['users_share'].get(l.id, 0))}% of its land.")
                 else:
-                    keeps.append(f"{hs['label']} (~{_ago(hs['took_up_kyr'][l.id])} ago)")
+                    keeps.append(f"{hs['label']} (~{SP.years_ago(hs['took_up_kyr'][l.id])})")
         if keeps:
             s.append("It took up " + ", ".join(keeps[:-1]) + (" and " if len(keeps) > 1 else "") + keeps[-1] + ".")
         dy = ((pres.get("animals") or {}).get("dairy") or {}).get(l.id)
@@ -462,23 +462,23 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L += ["## Lines (letter on the map; '+' mixed, '.' unpeopled land, '#' ice)"]
     for k, l in enumerate(h.lines):
         o = h.origins.get(l.id)
-        where = f"from {o['lat']:.0f},{o['lon']:.0f} at {o['ago_kyr']:g} kyr ago ({o['why']})" if o else "never appeared"
+        where = f"from {o['lat']:.0f},{o['lon']:.0f} at {SP.years_ago(o['ago_kyr'])} ({o['why']})" if o else "never appeared"
         p = pres["lines"].get(l.id)
         now = f"now {p['area_mkm2']} Mkm2 in {p['patches']} patch(es)" if p else \
-            (f"ended {h.ended.get(l.id):g} kyr ago" if l.id in h.ended else "absent")
+            (f"ended {SP.years_ago(h.ended.get(l.id))}" if l.id in h.ended else "absent")
         L.append(f"  {LETTERS[k % len(LETTERS)]} {l.label():<22} {l.origin:<8} {where}; {now}")
     an = pres.get("animals")
     if an:
         L += ["", "## Animals (PW-691) and boats (PW-688)", "  craft that carry animals over the sea: " + "; ".join(
-            f"{c['name']} since {c['since_kyr']:g} kyr ago, {c['reach_km']:g} km, carries {c['carries_up_to']}" for c in an["craft"])]
+            f"{c['name']} since {SP.years_ago(c['since_kyr'])}, {c['reach_km']:g} km, carries {c['carries_up_to']}" for c in an["craft"])]
         for aid, hs in an["stocks"].items():
             tag = f" [{an['mode']} mode: {'fantasy animal' if hs['fantasy'] else 'real'}]" if hs["fantasy"] else ""
             L += [f"  {hs['label']}{tag}: {hs['wild_mkm2']} Mkm² of wild range at the present; known over {hs['known_mkm2']} Mkm² "
                   f"({hs['known_on_wild_mkm2']} Mkm² of it wild range); crossed the sea {hs['crossed']} time(s)"]
-            L += [f"    tamed ~{_ago(t['ago_kyr'])} ago by the {t['people']} on the {t['country']} of {t['landmass_name']} "
+            L += [f"    tamed ~{SP.years_ago(t['ago_kyr'])} by the {t['people']} on the {t['country']} of {t['landmass_name']} "
                   f"({t['lat']}, {t['lon']}; {t['wild_mkm2']} Mkm² of wild range there)" + ("" if t["first"] else " (again, on its own)")
-                  for t in hs["tamed"]] or [f"    never tamed: {hs['never']} (date drawn {hs['date_drawn_kyr']} kyr ago)"]
-            L += [f"    by boat: {c['landmass_name']}, {_ago(c['ago_kyr'])} ago, {c['craft']}, {c['gap_km']} km" for c in hs["crossings"][:6]]
+                  for t in hs["tamed"]] or [f"    never tamed: {hs['never']} (date drawn {SP.years_ago(hs['date_drawn_kyr'])})"]
+            L += [f"    by boat: {c['landmass_name']}, {SP.years_ago(c['ago_kyr'])}, {c['craft']}, {c['gap_km']} km" for c in hs["crossings"][:6]]
             L += ["    users (share of their land): " + ", ".join(f"{k} {round(100 * v)}%" for k, v in sorted(hs["users_share"].items(), key=lambda x: -x[1])[:8] if v > 0.01)]
         if an["dairy"]:
             L += ["  dairy (herd share x land with a dairy animal): " + ", ".join(
@@ -490,16 +490,16 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
             tag = f" [{cr['mode']} mode: fantasy crop]" if hs["fantasy"] else ""
             L += [f"  {hs['label']}{tag}: {hs['wild_mkm2']} Mkm² of wild range at the present; grown over {hs['grown_mkm2']} Mkm² "
                   f"(known over {hs['known_mkm2']}); crossed the sea {hs['crossed']} time(s)"]
-            L += [f"    {'first ' if t['first'] else ''}cultivated ~{_ago(t['ago_kyr'])} ago by the {t['people']} on {t['landmass_name']} "
+            L += [f"    {'first ' if t['first'] else ''}cultivated ~{SP.years_ago(t['ago_kyr'])} by the {t['people']} on {t['landmass_name']} "
                   f"({t['lat']}, {t['lon']}; {t['wild_mkm2']} Mkm² of wild range there)" + ("" if t["first"] else " (again, on its own)")
-                  for t in hs["tamed"]] or [f"    never cultivated: {hs['never']} (date drawn {hs['date_drawn_kyr']} kyr ago)"]
+                  for t in hs["tamed"]] or [f"    never cultivated: {hs['never']} (date drawn {SP.years_ago(hs['date_drawn_kyr'])})"]
     mf = pres.get("megafauna")
     if mf:
         L += ["", "## Megafauna (PW-924: counted, exempt from the peoples' range targets)"]
         L += [f"  {MG.line_text(lid, h.tree.lines[lid].label(), r)}" for lid, r in mf.items()]
         L += [f"  {t}" for t in MG.ages_text(pres.get("megafauna_ages") or {})]
     L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
-    L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
+    L += ["", "## Events"] + [f"  {SP.years_ago(e['ago_kyr']):>22}  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     mx = pres.get("mixing", {})
     L += ["", f"## Mixing at the present: {mx.get('area_mkm2')} Mkm2 ({mx.get('land_share')} of the land; corridor land "
               f"{mx.get('in_corridors')} mixed, closed land {mx.get('in_closed')}); empty continents: "
@@ -525,10 +525,10 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
             L.append(f"  {lid:<18} {w['population']:>12,} people  {w['area_mkm2']} Mkm² in {w['patches']} patch(es): "
                      + ", ".join(f"{x} {round(100 * v)}%" for x, v in w["shares"].items()))
     L += ["", "## Landmasses: who found them first"] + [
-        f"  {nm['name']}: held {nm['held_share']}; " + (f"first {nm['discovered']['by']} {_ago(nm['discovered']['ago_kyr'])} ago ({nm['discovered']['how']}"
+        f"  {nm['name']}: held {nm['held_share']}; " + (f"first {nm['discovered']['by']} {SP.years_ago(nm['discovered']['ago_kyr'])} ({nm['discovered']['how']}"
                                                          + (f", {nm['discovered']['gap_km']} km" if nm['discovered'].get('gap_km') else "") + ")"
                                                          if nm.get("discovered") else "never reached")
-        + (f"; of today's peoples {nm['settled_by']['by']} {_ago(nm['settled_by']['ago_kyr'])} ago ({nm['settled_by']['how']}"
+        + (f"; of today's peoples {nm['settled_by']['by']} {SP.years_ago(nm['settled_by']['ago_kyr'])} ({nm['settled_by']['how']}"
            + (f", {nm['settled_by']['gap_km']} km" if nm['settled_by'].get('gap_km') else "") + ")" if nm.get("settled_by") else "")
         for nm in pres.get("landmasses", [])[:16]]
     if pres.get("try_stats"):

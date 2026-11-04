@@ -70,7 +70,7 @@
     return (sp > n / 2 ? cut.slice(0, sp) : cut).replace(/[ ,;:-]+(and|or|of|the)?$/, '') + '…';
   };
   const fmt = NumFmt.kyr;  // (numfmt.js, loaded first by lineages.html)
-  const ago = (k) => (k <= 0 ? 'the present' : fmt(k) + ' ago');
+  const ago = (k) => NumFmt.ago(k);  // a date (numfmt.js, PW-1429)
   // how a people came to know a tech (the colours of the first tab and of the globe's 'technology' layer)
   const HOW_COL = { invented: '#ffd27a', contact: '#7fb0ff', kit: '#c79bff', inherited: '#8fa0b4', tamed: '#6bd6a0', shared: '#6bd6d0' };
   const howCol = (how) => HOW_COL[how] || (String(how).startsWith('with') ? '#6bd6a0' : '#aaa');
@@ -245,7 +245,7 @@
       s += `<g class="${cls}" data-id="${t.id}" transform="translate(${x},${y})"><rect class="bg" width="${BW}" height="${BH}" rx="4"/>
         <rect width="4" height="${BH}" rx="2" fill="${trackCol(t.track)}"/>
         <title>${esc(tname(t.id))}</title><text x="10" y="13">${esc(clipWords(tname(t.id), t.fantasy ? 24 : 26))}${t.fantasy ? ' ✦' : ''}</text>
-        <text class="when" x="10" y="25">${v ? `${fmt(v[0])} ago · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
+        <text class="when" x="10" y="25">${v ? `${ago(v[0])} · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
         <rect x="${BW - 26}" y="${BH - 7}" width="22" height="3" fill="#2a3446"/><rect x="${BW - 26}" y="${BH - 7}" width="${22 * share}" height="3" fill="${trackCol(t.track)}"/></g>`;
     }
     let lab = `<rect width="${LEFT}" height="${H}" fill="#0e1218" opacity=".92"/>`;  // (the lane names stay on the left)
@@ -427,14 +427,14 @@
       if (lack.length) return `all needs known; its country lacks ${lack.join(', ')}`;
       if (t.env_any.length && !t.env_any.some((e) => g.includes(e))) return `all needs known; its country has none of ${t.env_any.join(' / ')}`;
     }
-    return `all needs known${t.earliest_kyr != null ? `; not before ${fmt(t.earliest_kyr)} ago` : ''}; waits on invention or a neighbour`;
+    return `all needs known${t.earliest_kyr != null ? `; not before ${ago(t.earliest_kyr)}` : ''}; waits on invention or a neighbour`;
   }
   function invMount(bar) {
     const s = st.inv;
     if (!s.who || !D.LINE[s.who]) s.who = D.LINE.human?.in_tree ? 'human' : [...D.PEOPLES].filter(alive).sort((a, b) => Object.keys(D.known[b.id]).length - Object.keys(D.known[a.id]).length)[0]?.id;
     bar.innerHTML = `<span class="muted">people</span><select id="tt-iwho">${peopleOptions(s.who)}</select>
       <span class="muted">compare with</span><select id="tt-ivs"><option value="">nobody</option>${peopleOptions(s.vs)}</select>
-      <span class="muted">as at</span><select id="tt-iat">${[0, 1, 3, 6, 12, 25, 50, 100, 300, 1000].map((k) => `<option value="${k}" ${k === s.at ? 'selected' : ''}>${k ? fmt(k) + ' ago' : 'the present'}</option>`).join('')}</select>
+      <span class="muted">as at</span><select id="tt-iat">${[0, 1, 3, 6, 12, 25, 50, 100, 300, 1000].map((k) => `<option value="${k}" ${k === s.at ? 'selected' : ''}>${k ? ago(k) : 'the present'}</option>`).join('')}</select>
       <label class="muted"><input type="checkbox" id="tt-ifant" ${st.fant ? 'checked' : ''}> fantasy techs</label>
       <span class="key"><span><span class="sw" style="background:#1f2a3a;border-left:3px solid #ffd27a"></span>known (edge: how it came)</span><span><span class="sw" style="border:1px dashed #e3c26b"></span>could come next</span><span><span class="sw" style="background:#141a22;border:1px solid #2a3446"></span>out of reach</span>
       <span>hover: <span style="color:#e3c26b">needs</span> · <span style="color:#7cc4ff">leads to</span></span></span>`;
@@ -544,13 +544,13 @@
     bar.innerHTML = `<select id="tt-ttrack"><option value="all">all tracks</option>${D.tracks.map((k) => `<option value="${k.id}" ${k.id === s.track ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select>
       <label class="muted"><input type="checkbox" id="tt-tall" ${s.all ? 'checked' : ''}> lines gone by the present too</label>
       <span class="muted">known at</span><input type="range" id="tt-tat" min="0" max="1000" value="${s.toV(s.at)}" style="width:320px">
-      <b id="tt-tatlab">${s.at <= 0 ? 'the present' : fmt(s.at) + ' ago'}</b>
+      <b id="tt-tatlab">${s.at <= 0 ? 'the present' : ago(s.at)}</b>
       <span class="key">${keyHow()}</span>`;
     $('tt-ttrack').onchange = (e) => { s.track = e.target.value; update(); };
     $('tt-tall').onchange = (e) => { s.all = e.target.checked; mounted = ''; window.TechTab.draw(ROOT, D.result); };
     $('tt-tat').oninput = (e) => {  // (only the squares' opacity and the counts change: no redraw)
       s.at = s.toK(+e.target.value);
-      $('tt-tatlab').textContent = s.at <= 0 ? 'the present' : fmt(s.at) + ' ago';
+      $('tt-tatlab').textContent = s.at <= 0 ? 'the present' : ago(s.at);
       for (const tr of $('tt-mat').rows) {
         let n = 0;
         for (const q of tr.querySelectorAll('.tq')) { const on = +q.dataset.k >= s.at; q.style.opacity = on ? 1 : 0.12; n += on; }
@@ -580,11 +580,11 @@
         const edge = t.track !== lastTrack ? 'border-left:2px solid #3a4658;' : ''; lastTrack = t.track;
         const v = kn[t.id], on = v && v[0] >= s.at;
         if (on) n++;
-        h += v ? `<td style="padding:1px;${edge}" title="${esc(l.name)}: ${esc(t.name)} since ${fmt(v[0])} ago (${esc(v[1])}${v[2] ? ' from ' + esc(short(v[2])) : ''})"><div class="tq" data-k="${v[0]}" style="width:${cell}px;height:${cell}px;border-radius:2px;background:${howCol(v[1])};opacity:${on ? 1 : 0.12}"></div></td>`
+        h += v ? `<td style="padding:1px;${edge}" title="${esc(l.name)}: ${esc(t.name)} since ${ago(v[0])} (${esc(v[1])}${v[2] ? ' from ' + esc(short(v[2])) : ''})"><div class="tq" data-k="${v[0]}" style="width:${cell}px;height:${cell}px;border-radius:2px;background:${howCol(v[1])};opacity:${on ? 1 : 0.12}"></div></td>`
           : `<td style="padding:1px;${edge}"><div style="width:${cell}px;height:${cell}px;border-radius:2px;border:1px solid #1f2836;box-sizing:border-box"></div></td>`;
       }
       const lg = kn.language;
-      h += `<td class="n tn">${n}</td><td class="muted" style="white-space:nowrap;font-size:12px">${lg ? `${fmt(lg[0])} ago, ${esc(lg[1])}${lg[2] ? ' from ' + esc(short(lg[2])) : ''}` : 'none'}</td></tr>`;
+      h += `<td class="n tn">${n}</td><td class="muted" style="white-space:nowrap;font-size:12px">${lg ? `${ago(lg[0])}, ${esc(lg[1])}${lg[2] ? ' from ' + esc(short(lg[2])) : ''}` : 'none'}</td></tr>`;
     }
     h += '</table></div>';
     h += `<h2>Firsts</h2><div class="cards">${D.tracks.filter((k) => s.track === 'all' || k.id === s.track).map((k) => `<div class="card"><b>${esc(k.name)}</b>

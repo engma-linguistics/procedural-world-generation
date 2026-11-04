@@ -96,7 +96,7 @@ function peoplesRows(i, R) {
   const dm = demeOf(i);  // (the regional population, PW-981: when the demes layer is loaded)
   if (dm) {
     const D = S.V.demes.demes, par = dm.parent != null ? D[dm.parent] : null;
-    R('place', '', `${dm.name}, ${dm.how === 'first' ? `there when the cut starts (~${dm.born_kyr} kyr ago)` : `since ~${dm.born_kyr} kyr ago`}${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
+    R('place', '', `${dm.name}, ${dm.how === 'first' ? `there when the cut starts (${NumFmt.ago(dm.born_kyr)})` : `since ${NumFmt.ago(dm.born_kyr)}`}${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
       { lab: 'regional population', ess: true });
   }
   const all = demesAt(i);  // (every people's deme here, overlapping: lane 109)

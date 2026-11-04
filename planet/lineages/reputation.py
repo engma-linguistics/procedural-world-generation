@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import math
 
+from .years import years_ago
+
 EFOLD_KYR = 1.5  # e-folding time of a conquest's reputation (PW-731)
 ERA_FADE = {"stone age": 0.5, "bronze age": 0.7, "classical": 1.0, "medieval": 1.3, "renaissance": 1.6, "industrial": 2.0}  # (memory lasts longer with writing; meta.era is still a placeholder, PW-690)
 MIN_STRENGTH = 0.05  # a conquest memory weaker than this is gone: the pair reads by its contact
@@ -278,7 +280,7 @@ def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict, inc:
         own = (row or {}).get("efold_kyr")
         st = ev["strength"] * math.exp(-ev["at"] / (own or P["efold_kyr"] * P["era_scale"]))
         if st >= P["min_strength"]:
-            cands.append((st, "feared", f"conquest (authored): {s} overran {o} {ev['at']:g} kyr ago", ev["at"], own, None))
+            cands.append((st, "feared", f"conquest (authored): {s} overran {o} {years_ago(ev['at'])}", ev["at"], own, None))
     if cands:
         strength, val, basis, since, legend, came = max(cands, key=lambda c: c[:4])
     else:
@@ -340,7 +342,7 @@ def text(tree, o: str, s: str, r: dict) -> str:
     on, sn = tree.lines[o].label(), tree.lines[s].label()
     if r["valence"] == "neighbour":
         return f"{on} call {sn} by their own name ({r['basis']})."
-    when = f", {r['since_kyr']:g} kyr ago" if r["valence"] in ("feared", "despised") else ""
+    when = f", {years_ago(r['since_kyr'])}" if r["valence"] in ("feared", "despised") else ""
     if r.get("from_dir"):
         when += f", from the {r['from_dir']}"
     lump = f"; one name for {', '.join(r['lumped_with'])} too" if r["lumped_with"] else ""

@@ -665,7 +665,7 @@ def ages_text(a: dict) -> list[str]:
     out = []
     for kind, r in a.items():
         if r["peak"] > r["present"] and r["peak_kyr"] > 0:
-            out.append(f"The age of {kind}: ~{r['peak']:,} {kind} {r['peak_kyr']:g} kyr ago, before the peoples spread; ~{r['present']:,} now.")
+            out.append(f"The age of {kind}: ~{r['peak']:,} {kind} {SP.years_ago(r['peak_kyr'])}, before the peoples spread; ~{r['present']:,} now.")
     return out
 
 

@@ -97,6 +97,7 @@
     <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8" title="How many tries to make; the one that best meets the wishes is kept">
     <button id="run" class="primary">Run on world</button>
     <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
+    <label class="muted" title="Optional: the year the present is, so dates read as years ('year 1400') and can be typed that way. Empty: '12,400 years ago'. Kept in this browser, per run."><nobr>present is year <input id="presentYear" type="number" step="1" style="width:70px" placeholder="(not set)"></nobr></label>
   </div>
   <span style="flex:1"></span>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
@@ -179,12 +180,14 @@ const q = new URLSearchParams(location.search);
 function kyrOf(v) {  // "8 Myr" / "450 kyr" / "12000 yr" / a bare number (kyr) -> kyr (spec.parse_ago)
   if (v == null || v === '') return null;
   if (typeof v === 'number') return v;
+  const d = NumFmt.parseDate(v, 'kyr');  // (also "year 1400" / "300 before year 1" / "12,400 years ago" once the present is set, PW-1429)
+  if (d != null) return d;
   const m = String(v).trim().match(/^([0-9.eE+-]+)\s*(myr|ma|mya|kyr|ka|kya|yr|y|years?|bp)?/i);
   if (!m) return null;
   const x = +m[1], u = (m[2] || 'kyr').toLowerCase();
   return ['myr', 'ma', 'mya'].includes(u) ? x * 1000 : ['yr', 'y', 'year', 'years', 'bp'].includes(u) ? x / 1000 : x;
 }
-const { kyr: fmt, count: num } = NumFmt;  // (the viewer's shared number formats, numfmt.js)
+const { kyr: fmt, count: num, ago } = NumFmt;  // (the viewer's shared number formats, numfmt.js)
 const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.group_of ? [r.group_of] : r.parent ? [r.parent] : [];
 const groupsOf = (id) => T.lineage.filter((x) => originOf(x) === 'group' && parentsOf(x)[0] === id);  // (ways of life within a people, PW-665)
 const originOf = (r) => r.origin || (parentsOf(r).length ? 'split' : 'root');
@@ -388,9 +391,9 @@ function drawTimeline() {
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
       ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
-      ${kyrOf(r.sapient) != null ? `<path d="M${xOf(kyrOf(r.sapient))},${yy - 8} l5,8 l-5,8 l-5,-8 z" fill="#fff" stroke="#1b2230" stroke-width="1"><title>sapiens node: minds arrive for the whole ${esc(r.name || r.id)} stem ${fmt(kyrOf(r.sapient))} ago; its kinds split after it and inherit it</title></path>` : ''}
+      ${kyrOf(r.sapient) != null ? `<path d="M${xOf(kyrOf(r.sapient))},${yy - 8} l5,8 l-5,8 l-5,-8 z" fill="#fff" stroke="#1b2230" stroke-width="1"><title>sapiens node: minds arrive for the whole ${esc(r.name || r.id)} stem ${ago(kyrOf(r.sapient))}; its kinds split after it and inherit it</title></path>` : ''}
       ${r.animals && end != null ? animalsEnd(xOf(end), yy, r) : ''}
-      ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
+      ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${ago(res.started_kyr)}: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
     </g>`;
     ls += `<g class="lab${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.4 : 1}" style="cursor:pointer"><rect x="0" y="${yy - ROW / 2}" width="${W0 - 2}" height="${ROW}" fill="${sel === r.id ? '#233047' : 'transparent'}"/>` +
       `<text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}" clip-path="url(#labclip)"><title>${esc(label(r, d))}</title>${esc(label(r, d))}</text></g>`;
@@ -429,8 +432,8 @@ function withDemes(rows) {
 }
 function demeRow(x, y, d) {
   const yy = y['deme:' + x.id], D = result.demesDoc.demes, par = x.parent != null ? D[x.parent] : null, x0 = xOf(Math.max(x.born_kyr, 0.05)), x1 = xOf(Math.max(x.ended_kyr ?? 0.05, 0.05));
-  const tip = `${x.name}: ${DEME_HOW[x.how] || x.how}${par ? ' ' + par.name : ''} ~${fmt(Math.max(x.born_kyr, 0.05))} ago` + (x.settled_kyr != null ? ` (its land settled ~${fmt(x.settled_kyr)} ago)` : '') +
-    `; at most ${x.peak_cells} cells (~${fmt(x.peak_kyr || 0.05)} ago)` + (x.ended_kyr != null ? `; ${x.end === 'fused' ? 'fused into ' + (D[x.into]?.name || '?') : 'died out'} ~${fmt(Math.max(x.ended_kyr, 0.05))} ago` : `; ${x.cells_now} cells now`);
+  const tip = `${x.name}: ${DEME_HOW[x.how] || x.how}${par ? ' ' + par.name : ''} ~${ago(Math.max(x.born_kyr, 0.05))}` + (x.settled_kyr != null ? ` (its land settled ~${ago(x.settled_kyr)})` : '') +
+    `; at most ${x.peak_cells} cells (~${ago(x.peak_kyr || 0.05)})` + (x.ended_kyr != null ? `; ${x.end === 'fused' ? 'fused into ' + (D[x.into]?.name || '?') : 'died out'} ~${ago(Math.max(x.ended_kyr, 0.05))}` : `; ${x.cells_now} cells now`);
   let bar = `<g class="deme"><title>${esc(tip)}</title><rect x="${x0}" y="${yy - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="2" fill="${x.color}" opacity=".9"/>`;
   if (par && y['deme:' + par.id] != null) bar += `<path d="M${x0},${y['deme:' + par.id]} L${x0},${yy}" stroke="${par.color}" stroke-width="1" fill="none" opacity=".7" ${x.how === 'crossing' ? 'stroke-dasharray="2 2"' : ''}/>`;
   if (x.ended_kyr != null) bar += `<text x="${x1 + 3}" y="${yy + 4}" font-size="10">${x.end === 'fused' ? '→' : '†'}</text>`;
@@ -554,8 +557,8 @@ function drawSide() {
         const sc = (result?.present?.wishes || []).find((x) => x.a === w.a && x.want === w.want && (x.b || null) === (w.b || null));
         return `<div>${esc(w.a)} <b>${esc(w.want)}</b> ${esc(w.b || '')} <span class="muted">w ${w.weight ?? 1}${sc ? ` · score ${sc.score}` : ''}</span></div>`;
       }).join('') || '<div class="muted">none</div>'}
-      ${res ? `<h3>Last run</h3><div>${res.origin_place ? `from ${res.origin_place.lat}, ${res.origin_place.lon}, ${fmt(res.origin_place.ago_kyr)} ago: ${esc(res.origin_place.why)}` : 'never appeared'}<br>
-        ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${fmt(res.ended_kyr)} ago` : 'absent at the present'}</div>
+      ${res ? `<h3>Last run</h3><div>${res.origin_place ? `from ${res.origin_place.lat}, ${res.origin_place.lon}, ${ago(res.origin_place.ago_kyr)}: ${esc(res.origin_place.why)}` : 'never appeared'}<br>
+        ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${ago(res.ended_kyr)}` : 'absent at the present'}</div>
         ${res.story ? `<div class="muted" style="margin-top:4px">${esc(res.story)}</div>` : ''}` : ''}`;
   }
   const ANIMALS = [['horse', 'horses'], ['dog', 'dogs'], ['caprine', 'sheep and goats'], ['cattle', 'cattle'], ['fowl', 'fowl'], ['great_elk', 'great elk (fantasy, rare)'], ['riding_lizard', 'riding lizards (fantasy, rare)']];
@@ -576,6 +579,11 @@ function drawSide() {
 
 // shared edit handling: a field with data-k edits line data-id (or the selected line); data-m the tree's meta
 function editLine(r, el) {
+  if (['at', 'extinct', 'sapient'].includes(el.dataset.k) && /year|before/i.test(el.value)) {  // a typed calendar date ("year 1400", once the present is set, PW-1429): the tree keeps kyr ago
+    const k = NumFmt.parseDate(el.value);
+    if (k != null) el.value = k >= 1 ? `${+k.toFixed(3)} kyr` : `${Math.round(k * 1000)} yr`;
+    else status('Set "the present is year N" (top bar) before typing a date as a year.', true);
+  }
   if (el.dataset.b) {  // a body field: empty = inherit
     const k = el.dataset.b, o = BODY_FIELDS.find((f) => f[0] === k)[2], b = { ...(r.body || {}) };
     if (el.value === '') delete b[k]; else b[k] = o.find((v) => String(v) === el.value);
@@ -940,14 +948,14 @@ function drawResults() {
   const an = P.animals;
   if (an) {
     h += `<h2>Animals and boats <span class="muted" style="font-weight:normal;font-size:12px">(${esc(an.mode)} mode)</span></h2>
-      <div class="muted">Craft that carry animals over the sea: ${an.craft.map((c) => `${esc(c.name)} since ${fmt(c.since_kyr)} ago (${c.reach_km} km; ${esc(c.carries_up_to)})`).join('; ')}.</div>`;
+      <div class="muted">Craft that carry animals over the sea: ${an.craft.map((c) => `${esc(c.name)} since ${ago(c.since_kyr)} (${c.reach_km} km; ${esc(c.carries_up_to)})`).join('; ')}.</div>`;
     for (const [aid, hs] of Object.entries(an.stocks)) {
       const rs = Object.entries(hs.users_share || {}).filter(([, v]) => v >= 0.02).sort((a, b) => b[1] - a[1]);
       h += `<h3>${esc(hs.label)}${hs.fantasy ? ` <span class="muted">(fantasy animal, ${esc(an.mode)} mode only)</span>` : ''} <a href="index.html?run=${encodeURIComponent(result.id)}&layer=${encodeURIComponent('animal: ' + aid)}" target="_blank" style="font-weight:normal;font-size:12px">(on the globe)</a></h3>
-        <div class="muted">${hs.wild_mkm2} Mkm² of wild range at the present; known over ${hs.known_mkm2} Mkm² (${hs.known_on_wild_mkm2} Mkm² of it wild range); crossed the sea ${hs.crossed} times. Date drawn: ${fmt(hs.date_drawn_kyr)} ago (anchor ${fmt(hs.anchor_kyr)}).</div>
-        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'Tamed' : 'Tamed again, on their own,'} ~${fmt(t.ago_kyr)} ago by the ${sw(t.line)}${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon}; ${t.wild_mkm2} Mkm² of wild range on that land)</span></div>`).join('') || `<div class="err">Never tamed: ${esc(hs.never || '')}</div>`}
-        ${(hs.crossings || []).length ? `<div class="muted">By boat: ${hs.crossings.slice(0, 6).map((c) => `${esc(c.landmass_name)} ${fmt(c.ago_kyr)} ago (${esc(c.craft)}, ${c.gap_km} km)`).join('; ')}${hs.crossed > 6 ? '; ...' : ''}</div>` : ''}
-        ${rs.length ? `<div style="margin-top:4px">Known over: ${rs.map(([id, v]) => `${sw(id)}${nm(id)} ${Math.round(100 * v)}%${hs.took_up_kyr?.[id] != null ? ` <span class="muted">(from ${fmt(hs.took_up_kyr[id])} ago)</span>` : ''}`).join('; ')}</div>` : ''}`;
+        <div class="muted">${hs.wild_mkm2} Mkm² of wild range at the present; known over ${hs.known_mkm2} Mkm² (${hs.known_on_wild_mkm2} Mkm² of it wild range); crossed the sea ${hs.crossed} times. Date drawn: ${ago(hs.date_drawn_kyr)} (anchor ${fmt(hs.anchor_kyr)}).</div>
+        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'Tamed' : 'Tamed again, on their own,'} ~${ago(t.ago_kyr)} by the ${sw(t.line)}${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon}; ${t.wild_mkm2} Mkm² of wild range on that land)</span></div>`).join('') || `<div class="err">Never tamed: ${esc(hs.never || '')}</div>`}
+        ${(hs.crossings || []).length ? `<div class="muted">By boat: ${hs.crossings.slice(0, 6).map((c) => `${esc(c.landmass_name)} ${ago(c.ago_kyr)} (${esc(c.craft)}, ${c.gap_km} km)`).join('; ')}${hs.crossed > 6 ? '; ...' : ''}</div>` : ''}
+        ${rs.length ? `<div style="margin-top:4px">Known over: ${rs.map(([id, v]) => `${sw(id)}${nm(id)} ${Math.round(100 * v)}%${hs.took_up_kyr?.[id] != null ? ` <span class="muted">(from ${ago(hs.took_up_kyr[id])})</span>` : ''}`).join('; ')}</div>` : ''}`;
     }
     const dy = Object.entries(an.dairy || {});
     if (dy.length) h += `<h3>Dairy</h3><div>${dy.map(([id, v]) => `${sw(id)}${nm(id)}: ${Math.round(100 * v.lactase_share)}% digest milk, ${Math.round(100 * v.dairy_share)}% keep dairy herds of ${v.animals.map((x) => esc(an.stocks[x].label)).join(', ')}`).join('<br>')}</div>`;
@@ -958,8 +966,8 @@ function drawResults() {
     h += `<h2>Crops <span class="muted" style="font-weight:normal;font-size:12px">(${esc(cr.mode)} mode; staple share on peopled land ${Math.round(100 * cr.know_mean_peopled)}%)</span></h2>`;
     for (const [cid, hs] of Object.entries(cr.stocks)) {
       h += `<h3>${esc(hs.label)}${hs.fantasy ? ` <span class="muted">(fantasy crop, ${esc(cr.mode)} mode only)</span>` : ''} <a href="index.html?run=${encodeURIComponent(result.id)}&layer=${encodeURIComponent('crop: ' + cid)}" target="_blank" style="font-weight:normal;font-size:12px">(on the globe)</a></h3>
-        <div class="muted">${hs.wild_mkm2} Mkm² of wild range; grown over ${hs.grown_mkm2} Mkm² (known over ${hs.known_mkm2}); crossed the sea ${hs.crossed} times. Date drawn: ${fmt(hs.date_drawn_kyr)} ago (anchor ${fmt(hs.anchor_kyr)}).</div>
-        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'First cultivated' : 'Cultivated again, on its own,'} ~${fmt(t.ago_kyr)} ago by the ${sw(t.line)}${esc(t.people)} on ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon})</span></div>`).join('') || `<div class="err">Never cultivated: ${esc(hs.never || '')}</div>`}`;
+        <div class="muted">${hs.wild_mkm2} Mkm² of wild range; grown over ${hs.grown_mkm2} Mkm² (known over ${hs.known_mkm2}); crossed the sea ${hs.crossed} times. Date drawn: ${ago(hs.date_drawn_kyr)} (anchor ${fmt(hs.anchor_kyr)}).</div>
+        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'First cultivated' : 'Cultivated again, on its own,'} ~${ago(t.ago_kyr)} by the ${sw(t.line)}${esc(t.people)} on ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon})</span></div>`).join('') || `<div class="err">Never cultivated: ${esc(hs.never || '')}</div>`}`;
     }
   }
   const fu = result.meta?.fuels || result.fuels;
@@ -991,7 +999,7 @@ function drawResults() {
   h += kinship(result, nm, sw);
   // stories
   h += `<h2>Stories</h2><div class="cards">${lines.filter((l) => l.story).map((l) => `<div class="card"><b>${sw(l.id)}${esc(l.name)}</b>
-    <div class="muted" style="font-size:11px">${l.leaf ? 'lives today' : l.ended_kyr != null ? `gone ${fmt(l.ended_kyr)} ago` : ''} · ${esc(Object.entries(l.demography || {}).map(([k, v]) => `${k} ${v}`).join(', '))}</div>
+    <div class="muted" style="font-size:11px">${l.leaf ? 'lives today' : l.ended_kyr != null ? `gone ${ago(l.ended_kyr)}` : ''} · ${esc(Object.entries(l.demography || {}).map(([k, v]) => `${k} ${v}`).join(', '))}</div>
     <div style="margin-top:4px">${esc(l.story)}</div></div>`).join('')}</div>`;
   el.innerHTML = h;
   bind();
@@ -1041,12 +1049,12 @@ function drawCultures() {
   let h = `<div class="row" style="margin-bottom:8px"><span class="muted">people</span><select id="cuPeople"><option value="*" ${cultUI.people === '*' ? 'selected' : ''}>all peoples</option>
     ${peoples.map((p) => `<option value="${esc(p)}" ${p === cultUI.people ? 'selected' : ''}>${pname(p)}: ${living(p)} living of ${by[p].length}</option>`).join('')}</select>
     <label class="muted" title="Also list the cultures that died out or merged into another (otherwise only the living ones and the ancestors that join them up)"><input type="checkbox" id="cuAll" ${cultUI.all ? 'checked' : ''}> all, with those gone</label>
-    <span class="muted">${C.length} cultures since ${fmt(doc.from_kyr ?? 300)} ago, ${alive} living; ${doc.merges.length} merged (${doc.merges.filter((m) => m.why === 'states').length} under one state)</span></div>`;
+    <span class="muted">${C.length} cultures since ${ago(doc.from_kyr ?? 300)}, ${alive} living; ${doc.merges.length} merged (${doc.merges.filter((m) => m.why === 'states').length} under one state)</span></div>`;
   // the life bar: a log time axis from 50 yr to the start of the window
   const LO = Math.log10(0.05), HI = Math.log10(Math.max(doc.from_kyr || 300, 1)), BW = 200;
   const bx = (k) => Math.round((1 - (Math.log10(Math.max(k, 0.05)) - LO) / (HI - LO)) * BW);
   const bar = (c) => { const a = bx(c.born_kyr), b = bx(c.ended_kyr ?? 0.05);
-    return `<span style="position:relative;display:inline-block;width:${BW}px;height:8px;background:var(--line,#1f2836);vertical-align:middle" title="${esc(fmt(c.born_kyr))} ago to ${c.end ? esc(fmt(c.ended_kyr)) + ' ago' : 'now'}"><span style="position:absolute;left:${a}px;width:${Math.max(2, b - a)}px;top:0;bottom:0;background:${c.color};opacity:${c.end ? 0.45 : 1}"></span></span>`; };
+    return `<span style="position:relative;display:inline-block;width:${BW}px;height:8px;background:var(--line,#1f2836);vertical-align:middle" title="${esc(ago(c.born_kyr))} to ${c.end ? esc(ago(c.ended_kyr)) : 'now'}"><span style="position:absolute;left:${a}px;width:${Math.max(2, b - a)}px;top:0;bottom:0;background:${c.color};opacity:${c.end ? 0.45 : 1}"></span></span>`; };
   const skill = (s, what) => !s || s.verdict === 'never had' ? '' : `<span title="${esc(what)}: ${s.start} at its start, ${s.now} now (its land rewards ${s.fit_now})" style="${s.verdict === 'lost' ? 'color:var(--bad,#c33)' : ''}">${esc(what)} ${esc(s.verdict)}</span>`;
   const wayName = (c, w) => (w === c.people ? 'old ways' : esc(L[w]?.name || w));
   for (const p of cultUI.people === '*' ? peoples : [cultUI.people]) {
@@ -1056,14 +1064,14 @@ function drawCultures() {
     for (const c of cs) if (keep.has(c.id)) { const k = c.parent != null && ids.has(c.parent) ? c.parent : 'root'; (kids[k] = kids[k] || []).push(c); }
     const st = cs.reduce((o, c) => { o[c.how] = (o[c.how] || 0) + 1; return o; }, {});
     h += `<h2>${pname(p)} <span class="muted" style="font-weight:normal;font-size:12px">${living(p)} living of ${cs.length}: ${st.founding || 0} founding, ${st.adapted || 0} adapted, ${st.apart || 0} apart; ${cs.filter((c) => c.end === 'merged').length} merged, ${cs.filter((c) => c.end === 'died out').length} died out</span></h2>
-      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${fmt(doc.from_kyr ?? 300)} ago → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>gods <span class="muted">(${esc(gd?.gods_mode || '…')})</span></th><th>what changed</th><th></th></tr>`;
+      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${ago(doc.from_kyr ?? 300)} → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>gods <span class="muted">(${esc(gd?.gods_mode || '…')})</span></th><th>what changed</th><th></th></tr>`;
     const row = (c, d) => {
       const par = c.parent != null ? C[c.parent] : null;
       const from = par && par.people !== c.people ? ` <span class="muted">(from ${esc(par.name)})</span>` : '';
       const w = Object.entries(c.traits.ways_now || {})[0];
-      const ended = c.end ? ` <span class="muted">${c.end === 'merged' && c.into != null ? 'merged into ' + esc(C[c.into].name) : esc(c.end)} ${fmt(c.ended_kyr)} ago</span>` : '';
+      const ended = c.end ? ` <span class="muted">${c.end === 'merged' && c.into != null ? 'merged into ' + esc(C[c.into].name) : esc(c.end)} ${ago(c.ended_kyr)}</span>` : '';
       const t = -(c.end ? c.ended_kyr : 0);
-      const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&demes_of=${encodeURIComponent(c.people)}&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? fmt(c.ended_kyr) + ' ago' : 'the present'}, showing the regional populations of the ${esc(c.people)} (whose demes: theirs, over or beside other peoples)">map</a>` : '';
+      const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&demes_of=${encodeURIComponent(c.people)}&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? ago(c.ended_kyr) : 'the present'}, showing the regional populations of the ${esc(c.people)} (whose demes: theirs, over or beside other peoples)">map</a>` : '';
       return `<tr style="${c.end ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}<span class="sw" style="background:${c.color}"></span>${esc(c.name)}${from}${ended}</td>
         <td><span style="color:${HOW_COL[c.how] || '#ccc'}">${esc(c.how)}</span></td><td style="white-space:nowrap">${bar(c)} <span class="muted">${fmt(c.born_kyr)}</span></td><td class="n">${c.area_mkm2}</td>
         <td class="muted">${esc(c.country_now || '')}</td><td>${w ? `${wayName(c, w[0])} <span class="muted">${Math.round(100 * w[1])}%</span>` : ''}</td>
@@ -1111,7 +1119,7 @@ function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per 
   rows.forEach((m, i) => {
     const y = 24 + i * RH;
     s += `<text x="4" y="${y + 4}">${esc(m.name.replace(/^the /, '').replace(/ \(.*\)$/, '').slice(0, 24))}</text>`;
-    m.arrivals.forEach((a, j) => { s += `<circle cx="${x(a.ago_kyr)}" cy="${y}" r="${j ? 3 : 5}" fill="${L[a.by]?.color || '#888'}" opacity="${j ? 0.8 : 1}" ${j ? '' : 'stroke="#fff"'}><title>${esc(L[a.by]?.name || a.by)} ${fmt(a.ago_kyr)} ago (${esc(a.how)})</title></circle>`; });
+    m.arrivals.forEach((a, j) => { s += `<circle cx="${x(a.ago_kyr)}" cy="${y}" r="${j ? 3 : 5}" fill="${L[a.by]?.color || '#888'}" opacity="${j ? 0.8 : 1}" ${j ? '' : 'stroke="#fff"'}><title>${esc(L[a.by]?.name || a.by)} ${ago(a.ago_kyr)} (${esc(a.how)})</title></circle>`; });
   });
   return s + '</svg>';
 }
@@ -1168,6 +1176,7 @@ $('run').onclick = async () => {
 };
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
+  NumFmt.run = id; $('presentYear').value = NumFmt.present() ?? '';
   result = { id, ...run.meta };  // (result.culturesDoc: fetched by the Cultures tab when first shown, /api/cultures)
   if (run.meta.demes?.file) try { result.demesDoc = await (await fetch(`../runs/${id}/${run.meta.demes.file}`, { cache: 'no-store' })).json(); } catch { result.demesDoc = null; }  // (PW-981)
   status(`run ${id}`);
@@ -1191,6 +1200,8 @@ $('favBtn').onclick = async () => {
   await listWorlds(); $('world').value = id; syncFav();
 };
 $('favOnly').onchange = () => listWorlds();
+$('presentYear').value = NumFmt.present() ?? '';  // "the present is year N" (numfmt.js, PW-1429): every date reads as a year; kept per run
+$('presentYear').onchange = () => { NumFmt.setPresent($('presentYear').value); redraw(); };
 // the world picker: finished worlds whose time zoom is still stored, newest first; ?world= / ?timezoom= name one not listed
 async function listWorlds() {
   const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };

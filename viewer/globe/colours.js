@@ -503,7 +503,7 @@ export function techId() {  // the tech shown: state.tech if the run has it, els
   if (tt.techs.some((t) => t.id === state.tech)) return state.tech;
   return tt.techs.find((t) => t.id === 'pottery' && tt.firsts.pottery)?.id || tt.techs.find((t) => tt.firsts[t.id])?.id || tt.techs[0]?.id;
 }
-const techAgoText = (k) => (k >= 1000 ? `${+(k / 1000).toFixed(2)} Myr ago` : k >= 1 ? `${+k.toFixed(k >= 100 ? 0 : 2)} kyr ago` : k > 0 ? `${Math.round(k * 1000)} years ago` : 'the present');  // (finer than agoLabel: a frame and an event a few years apart)
+const techAgoText = (k) => NumFmt.ago(Math.max(k, 0));  // (a date, numfmt.js PW-1429; finer than agoLabel: a frame and an event a few years apart)
 export const techName = (id) => (techTree()?.techs.find((t) => t.id === id)?.name || id || '').split(' (')[0];
 export const techOldest = (id) => Math.max(0.1, ...Object.values(techTree().known).map((k) => k[id]?.[0] ?? 0));
 export function techFrameColors() {  // per line index: the colour of its land this frame
@@ -763,9 +763,9 @@ export function peoplesPanel() {
     const kind = sea + (l.origin === 'split' ? '' : l.origin === 'group' ? ' <span class="muted">(way of life)</span>'
       : ` <span class="muted">(${l.origin}${l.parents?.length && l.origin !== 'split' ? ' of ' + l.parents.join(' + ') : ''})</span>`);
     return `<div style="padding:1px 0 1px ${6 + 12 * depth}px;cursor:pointer;opacity:${alive ? 1 : 0.5}" data-people="${l.index}"
-      title="${esc(l.story || (o ? `from ${o.lat}, ${o.lon} at ${fmt(o.ago_kyr)} ago: ${o.why}` : 'not yet / never appeared'))}">
+      title="${esc(l.story || (o ? `from ${o.lat}, ${o.lon} ${NumFmt.ago(o.ago_kyr)}: ${o.why}` : 'not yet / never appeared'))}">
       <span style="display:inline-block;width:10px;height:10px;background:${l.color};margin-right:4px"></span>${esc(l.name)}${kind}
-      <span class="muted">${fmt(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${fmt(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}${alive && mf[l.id] ? ` · ~${mf[l.id].count} in ${mf[l.id].pockets} pockets` : ''}</span></div>`;
+      <span class="muted">${NumFmt.ago(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${NumFmt.ago(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}${alive && mf[l.id] ? ` · ~${mf[l.id].count} in ${mf[l.id].pockets} pockets` : ''}</span></div>`;
   };
   const seen = new Set(), out = [];
   const walk = (l, d) => { if (seen.has(l.id)) return; seen.add(l.id); out.push(row(l, d));
