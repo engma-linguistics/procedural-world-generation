@@ -7,7 +7,8 @@ spec overrides, key by key, down the first-parent chain. Anything unresolved is 
 
 Human cost per segment comes from PHOIBLE (planet/language/data/phoible_segments.tsv when present, else a built-in snapshot
 of its 120 commonest segments): cost = -ln(share of the world's inventories holding it), clamped to [0.1, 8]; never attested
--> 8; a non-human percept -> inf.
+-> 8; harsh (epiglottalized) phonation -> the modal sound's cost x HUMAN_HARSH plus the substitute surcharge
+(species_cost); any other non-human percept -> inf.
 
 Hearing: `hear` holds axis multipliers for distance, plus two audibility keys, `sub` and `ultra`: whether a percept carried in
 the sub-bass (register -1) or ultra (register +1) reaches the listener at all (0 = no). A segment the listener cannot hear is
@@ -77,11 +78,18 @@ class VoiceProfile:
                 "sources": list(self.sources), "chain": [list(c) for c in self.chain]}
 
 
+# Harsh (epiglottalized, ventricular) phonation: human voices make it and a few languages contrast it (the !Xóõ
+# epiglottalized vowels; Bai's harsh-voiced tones), so it is very dear rather than impossible. Purr, a second source and the
+# sub-bass / ultra registers stay impossible. 30, not 8: inventory adds harsh variants of the commonest sonorants and vowels
+# at 0.25 x their share / make_cost, so x8 put a growled sound in ~14% of human proto-inventories; x30 gives ~2%, near the
+# share of languages with epiglottalized or harsh-voiced phonemes.
+HUMAN_HARSH = 30.0
 HUMAN = VoiceProfile(
     id="human_default", source="human_default",
-    make_cost={k: INF for k in NONHUMAN_KEYS},
+    make_cost={**{k: INF for k in NONHUMAN_KEYS}, "harsh": HUMAN_HARSH},
     hear={"source2": 0.3, "sub": 0.0, "ultra": 0.0},
-    notes=["Human default: costs from PHOIBLE frequencies; no growl, purr, percussive, second voice or sub-bass/ultra speech; "
+    notes=["Human default: costs from PHOIBLE frequencies; harsh (epiglottalized) voice very dear (x30: contrastive in a few "
+           "languages, !Xóõ, Bai); no purr, percussive, second voice or sub-bass/ultra speech; "
            "a second simultaneous voice is heard only faintly, as timbre; nothing below ~20 Hz or above ~20 kHz is heard."],
     sources=["Moran & McCloy (eds.) 2019, PHOIBLE 2.0 (opened: phoible/dev data/phoible.csv via planet/language/data/phoible_segments.tsv)"])
 
@@ -221,8 +229,11 @@ def _freq_cost(f: float | None) -> float:
 
 
 def human_cost(seg: Segment) -> float:
-    """-ln(PHOIBLE share), clamped to [0.1, 8]; 8 if never attested; inf for a non-human percept. A toned vowel costs its
-    vowel plus its tone letter (PHOIBLE lists tones as separate segments)."""
+    """-ln(PHOIBLE share), clamped to [0.1, 8]; 8 if never attested; harsh phonation as species_cost(HUMAN) (x HUMAN_HARSH);
+    inf for any other non-human percept. A toned vowel costs its vowel plus its tone letter (PHOIBLE lists tones as separate
+    segments)."""
+    if seg.phonation == 3 and not (seg.source2 or seg.register or (seg.kind == "C" and seg.manner == 9)):
+        return species_cost(HUMAN, seg)  # harsh voice: rare in human languages, dear (HUMAN_HARSH), not impossible
     if is_nonhuman(seg):
         return INF
     freq, _ = human_freq()
@@ -284,11 +295,16 @@ def keys_of(seg: Segment) -> frozenset[str]:
 
 
 NONHUMAN_BASE = 2.0  # base cost of a percept with no human analogue (a percussive), before the species' multipliers
+# A dearer-than-human sound is a substitute (a beak-made labial, a nasal without a velum): it costs effort however common the
+# sound is among humans. So a multiplier m > 1 also adds SUBSTITUTE x (m - 1) to the cost; without it, x3 on m's near-floor
+# human cost (-ln 0.97 = 0.1 -> 0.3) would hardly change how often aarakocra languages have labials.
+SUBSTITUTE = 1.0
 
 
 def species_cost(profile: VoiceProfile, seg: Segment) -> float:
-    """human_cost of the segment's human-makeable core x the product of the profile's make_cost over keys_of(seg); inf wins.
-    For HUMAN this equals human_cost (its make_cost puts inf on every non-human key)."""
+    """human_cost of the segment's human-makeable core x m, the product of the profile's make_cost over keys_of(seg), plus
+    SUBSTITUTE x (m - 1) when m > 1; inf wins. For HUMAN this equals human_cost (m = 1 on every human sound; the human
+    make_cost is inf on the non-human keys and 8 on harsh phonation)."""
     core = _nonhuman_core(seg)
     base = NONHUMAN_BASE if (seg.kind == "C" and seg.manner == 9) else human_cost(core)
     m = 1.0
@@ -297,7 +313,7 @@ def species_cost(profile: VoiceProfile, seg: Segment) -> float:
         if math.isinf(c):
             return INF
         m *= c
-    return base * m
+    return base * m + SUBSTITUTE * max(0.0, m - 1.0)
 
 
 # ---- resolution along the tree ------------------------------------------------------------------------------------------------

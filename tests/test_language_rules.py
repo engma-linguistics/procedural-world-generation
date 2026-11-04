@@ -50,8 +50,9 @@ DEMO_CASES = [
     ("harmony.back", "kuteli", "kutolu", "ku", None),
     ("umlaut.i", "musi", "mysi", "musa", None),
     ("rhotic.rhotacism", "asa", "ara", "sa", None),
-    ("tone.voiced_coda_low", "tab", "tà", "taba", None),
-    ("tone.glottal_coda_high", "taʔ", "tá", "ʔa", None),
+    ("tone.onset_voicing_split", "dapa", "ta˨pa˦", "ama", None),
+    ("tone.glottal_coda_rising", "taʔ", "ta˨˦", "ʔa", None),
+    ("tone.h_coda_falling", "tah", "ta˦˨", "ha", None),
     ("chain_shift.raise_mid", "seta", "sita", "tase", "penult"),
     ("metathesis.cc", "aska", "aksa", "asa", None),
     ("epenthesis.cluster", "takt", "takət", "tak", None),
@@ -183,7 +184,7 @@ def test_catalogue_filters_by_articulators_and_scales_by_cost():
     cat = {r.id: r for r in R.catalogue(lipless)}
     assert "lenition.p_f" not in cat and "S001" not in cat and "rhotic.rhotacism" in cat
     atonal = VoiceProfile(id="atonal", source="spec", hear={"tone": 0.0})
-    assert "tone.voiced_coda_low" not in {r.id for r in R.catalogue(atonal)}
+    assert "tone.onset_voicing_split" not in {r.id for r in R.catalogue(atonal)}
     costly_labials = VoiceProfile(id="beaked", source="spec", make_cost={"labial": 10.0})
     beaked = {r.id: r for r in R.catalogue(costly_labials)}
     assert beaked["dental.theta_f"].weight < human["dental.theta_f"].weight  # produces a labial
@@ -218,3 +219,147 @@ def test_rules_pickle_for_spawned_workers():
     word = w("kastipenu")
     for a, b in zip(rules, back):
         assert R.apply(a, word) == R.apply(b, word), a.id
+
+
+# ---------------------------------------------------------------------------------------------- review fixes (2026-11-03)
+
+def tsv(rid):
+    return next(r for r in R.load_tsv()[0] if r.id == rid)
+
+
+def test_hear_axes_do_not_stand_in_for_articulators():
+    from planet.language.profiles import load_profiles, resolve_profile
+
+    from dataclasses import replace
+
+    # a made-up voiceless-source profile: a bird keeps its larynx (a valve) and voices with the syrinx, so the real avian
+    # profile qualifies for voicing rules; this one has neither
+    avian = resolve_profile("avian", lambda lid: [], data=load_profiles())
+    avian = replace(avian, articulators=frozenset(a for a in avian.articulators if a not in ("larynx", "syrinx")))
+    assert "larynx" not in avian.articulators
+    caps = R.profile_capabilities(avian)
+    assert "larynx" not in caps and "hear:larynx" in caps and "hear:tone" in caps
+    cat = R.catalogue(avian)
+    assert cat and not any("larynx" in r.needs for r in cat)
+    assert not any(r.cause == "tonogenesis" for r in cat)
+    words = [w(x) for x in ("ata", "tad", "aza", "akda", "taʔ", "dapa", "tah")]
+    for r in cat:
+        for f in words:
+            out = R.apply(r, f)
+            if len(out) == len(f):  # voicing changes only with a manner change (a flap, an approximant)
+                assert all(a.voice == b.voice or a.manner != b.manner for a, b in zip(out, f)), r.id
+            assert all(s.tone == 0 for s in out), r.id
+    # the legacy tokens land in the hear namespace
+    assert tsv("S166").needs == {"larynx", "hear:tone"} and "hear:length" in tsv("S113").needs
+    assert "tongue_tip" in tsv("S049").needs
+
+
+def test_catalogue_has_no_twins():
+    from collections import Counter
+
+    cat = R.catalogue(HUMAN)
+    counts = Counter(R.rule_key(r) for r in cat)
+    assert max(counts.values()) == 1
+    ids = {r.id for r in cat}
+    for twin in ("S015", "S018", "S095", "S115", "S075", "S049", "S088", "S140", "S020", "S113", "S135", "S130",
+                 "S069", "S151", "S166", "S167", "S168"):
+        assert twin not in ids, twin
+    assert ("S061" in ids) != ("S062" in ids)
+    assert "lenition.p_f" in ids and "devoicing.final" in ids
+
+
+def test_stressed_context_vowels():
+    r = tsv("S047")  # C > CC / V́[-long]_V: raddoppiamento after the stressed vowel only
+    assert r.env.ctx_stress
+    assert R.apply(r, w("patama"), "penult") == w("patamːa")
+    assert R.apply(r, w("patama"), "initial") == w("patːama")
+    assert R.apply(r, w("patama"), "none") == w("patama")
+    flap = tsv("S013")  # t, d > ɾ / V́_V: flapping after the stressed vowel, not everywhere
+    assert R.apply(flap, w("atata"), "penult") == w("ataɾa")
+    assert R.apply(flap, w("atata"), "final") == w("atata")
+    verner = tsv("S173")  # [-voice fricative] > [+voice] / [-stress]V_
+    assert R.apply(verner, w("afafa"), "penult") == w("avafa")
+    assert "stressed" in R.describe(r) and "unstressed" in R.describe(verner)
+
+
+def test_tonogenesis_pathways():
+    onset = demo("tone.onset_voicing_split")  # voiced onset -> low, voiceless -> high, then devoicing
+    out = R.apply(onset, w("bada"))
+    assert out == w("pa˨ta˨")
+    assert [s.tone for s in R.apply(onset, w("taka")) if s.kind == "V"] == [3, 3]
+    assert R.apply(demo("tone.glottal_coda_rising"), w("taʔ"))[-1].tone == 4  # sắc/nặng
+    assert R.apply(demo("tone.h_coda_falling"), w("tah"))[-1].tone == 5  # hỏi/ngã
+    assert R.apply(demo("tone.glottal_coda_rising"), w("ʔata")) == w("ʔata")
+    # the staged tsv rows parse and do the same
+    assert R.apply(tsv("S166"), w("dapa")) == R.apply(onset, w("dapa"))
+    assert R.apply(tsv("S167"), w("ʔataʔ")) == w("ʔata˨˦")  # the onset glottal stays
+    assert R.apply(tsv("S168"), w("tah")) == w("ta˦˨")
+    tones = [s.tone for s in R.apply(tsv("S169"), w("taʔpahkat")) if s.kind == "V"]
+    assert tones == [4, 5, 1]
+    assert len(tsv("S166").then) == 2 and "then" in R.describe(tsv("S166"))
+
+
+def test_glottals_and_glottalic_stops_are_left_alone():
+    voicing = demo("lenition.intervocalic_voicing")
+    assert R.apply(voicing, w("aʔa")) == w("aʔa") and R.apply(voicing, w("aha")) == w("aha")
+    assert R.apply(voicing, w("ata")) == w("ada")
+    assert R.apply(tsv("S077"), w("aʔda")) == w("aʔda") and R.apply(tsv("S077"), w("akda")) == w("aɡda")
+    for r in (demo("assimilation.nasal_place"), tsv("S075")):
+        assert R.apply(r, w("anʔa")) == w("anʔa") and R.apply(r, w("anħa")) == w("anħa")
+        assert R.apply(r, w("anka")) == w("aŋka")
+    for r in (demo("devoicing.final"), tsv("S095")):
+        assert R.apply(r, w("taɓ")) == w("taɓ") and R.apply(r, w("tad")) == w("tat")
+    assert R.apply(tsv("S165"), w("ɓa")) == w("ɓa") and R.apply(tsv("S165"), w("ba")) != w("ba")
+    lab = tsv("S068")
+    assert lab.weight <= 2
+    for x in ("wu", "ju", "pu", "mu", "ʔu", "hu"):
+        assert R.apply(lab, w(x)) == w(x), x
+    assert R.apply(lab, w("ku")) == w("kʷu")
+
+
+def test_harmony_is_root_controlled():
+    h = demo("harmony.back")
+    assert R.apply(h, w("mikutolu")) == w("mikiteli")  # no boundary given: the first vowel leads
+    assert R.apply(h, w("mikutolu"), stem_index=2) == w("mukutolu")  # the root ku- leads, the prefix agrees
+    assert R.apply(h, w("mikutolu"), stem_index=lambda f: 2) == w("mukutolu")
+    assert R.apply_all(h, [w("mikutolu")], None, 2) == [w("mukutolu")]
+
+
+def test_pick_rule_skips_rules_that_change_nothing():
+    dead = rule("p > f / _i", id="dead")  # p occurs, never before i
+    live = rule("t > d / a_a", id="live")
+    lex = [w(x) for x in ("apa", "pata", "tapa", "kapu", "pamo", "lata")]
+    inv = {s for f in lex for s in f}
+    before = R.PICK_STATS["noop_draws"]
+    picks = [R.pick_rule(np.random.default_rng(s), [dead, live], lex, inv) for s in range(60)]
+    assert all(p is None or p.id == "live" for p in picks) and any(p is not None for p in picks)
+    assert R.PICK_STATS["noop_draws"] > before
+    assert R.pick_rule(np.random.default_rng(0), [dead], lex, inv) is None
+
+
+def test_functional_load_counts_minimal_pairs():
+    voicing = demo("lenition.intervocalic_voicing")
+    base = [w(x) for x in ("tasi", "kelo", "monu", "ruka", "sefa", "lito", "naku", "fosa", "mika", "selu", "tura",
+                           "kano", "kiso", "tome", "ripa", "sula", "meta", "nopi")]  # the rule fires, no pairs
+    paired = base + [w("pala"), w("bala")]  # one p ~ b minimal pair, p initial: not in the rule's environment
+    plain = base + [w("pala"), w("sumi")]
+    assert R.functional_load(voicing, paired) == pytest.approx(0.1)  # the contrast's load, not just this context
+    assert R.functional_load(voicing, plain) == 0.0
+    many = base + [w(x) for x in ("pala", "bala", "pina", "bina", "apa", "aba", "pumo", "bumo")]
+    assert R.functional_load(voicing, many) > R.functional_load(voicing, paired)
+    vetoed = sum(R.pick_rule(np.random.default_rng(s), [voicing], paired, w("ptkbsfmnlraeiou")) is None
+                 for s in range(200))
+    vetoed_plain = sum(R.pick_rule(np.random.default_rng(s), [voicing], plain, w("ptkbsfmnlraeiou")) is None
+                       for s in range(200))
+    assert vetoed_plain == 0 and 120 < vetoed < 190  # load 0.1: veto 1 - exp(-1.5) = 78 %
+    assert R.veto_probability(0.05) == pytest.approx(0.53, abs=0.02)
+
+
+def test_describe_names_real_outputs():
+    d = R.describe(tsv("S163"))
+    assert "b > ɓ" in d and "became ɗ" not in d
+    d = R.describe(rule("D > ɓ"))  # a class to a literal keeps place: b > ɓ, d > ɗ
+    assert "b > ɓ" in d and "d > ɗ" in d and "became ɓ" not in d
+    assert "p > b" in R.describe(demo("lenition.intervocalic_voicing"))
+    assert "eschool" not in demo("epenthesis.cluster").example
+    assert R.apply(demo("epenthesis.cluster"), w("pokl")) == w("pokəl")  # anaptyxis, as the example says

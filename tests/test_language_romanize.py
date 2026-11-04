@@ -42,7 +42,7 @@ def test_hyphen_where_a_digraph_would_mislead():
 
 
 def test_title_name():
-    assert R.title_name("'aba") == "'Aba" and R.title_name("!xu") == "!Xu" and R.title_name("ǫrn") == "Ǫrn"
+    assert R.title_name("'aba") == "'Aba" and R.title_name("!xu") == "!Xu" and R.title_name("ørn") == "Ørn"
 
 
 def _pool():
@@ -60,7 +60,11 @@ def _pool():
     return pool
 
 
-@pytest.mark.parametrize("cs", [frozenset(), frozenset({"aspiration"}), R.ALL_CONTRASTS], ids=lambda c: "+".join(sorted(c)) or "none")
+CONTRAST_SETS = [frozenset(), frozenset({"aspiration"}), frozenset({"dark_l", "beta", "breathy_h"}),
+                 frozenset({"aspiration", "dark_l", "beta", "breathy_h"}), R.ALL_CONTRASTS - {"tone"}, R.ALL_CONTRASTS]
+
+
+@pytest.mark.parametrize("cs", CONTRAST_SETS, ids=lambda c: "+".join(sorted(c)) or "none")
 def test_injective_over_consonants(cs):
     """No two distinct consonants share a spelling under one contrast set, except the documented MERGES (and the contrasts
     the set says the lect lacks: aspiration not written, dentals not marked)."""
@@ -71,21 +75,61 @@ def test_injective_over_consonants(cs):
         if "dental" not in cs and s.place == 1 and to_ipa(core(s)) not in R.table():
             continue
         groups[R.spell(s, cs)].add(to_ipa(s))
-    bad = {k: v for k, v in groups.items() if any(not R.merged(a, b) for a, b in itertools.combinations(sorted(v), 2))}
+    bad = {k: v for k, v in groups.items() if any(not R.merged(a, b, cs) for a, b in itertools.combinations(sorted(v), 2))}
     assert not bad, bad
 
 
-def test_injective_over_vowels():
+VOWEL_SETS = [frozenset(), frozenset({"schwa"}), frozenset({"open_e", "open_o", "back_a", "lax_i", "lax_u"}),
+              frozenset({"open_e", "open_o", "back_a", "lax_i", "lax_u", "tone"}), R.ALL_CONTRASTS - {"tone"}, R.ALL_CONTRASTS]
+
+
+@pytest.mark.parametrize("cs", VOWEL_SETS, ids=lambda c: "+".join(sorted(c)) or "none")
+def test_injective_over_vowels(cs):
     groups = collections.defaultdict(set)
+    tones = (0, 1, 3) if "tone" in cs else (0,)
     for r in symbols():
-        if r.seg.kind == "V" and not is_nonhuman(r.seg) and r.seg.tone in (0, 3):
-            groups[R.spell(r.seg, R.ALL_CONTRASTS)].add(r.symbol)
-    bad = {k: v for k, v in groups.items() if any(not R.merged(a, b) for a, b in itertools.combinations(sorted(v), 2))}
+        if r.seg.kind == "V" and not is_nonhuman(r.seg) and r.seg.tone == 0:
+            for t in tones:
+                groups[R.spell(replace(r.seg, tone=t), cs)].add(r.symbol + str(t))
+    bad = {k: v for k, v in groups.items()
+           if any(not R.merged(a[:-1], b[:-1], cs) or a[-1] != b[-1] for a, b in itertools.combinations(sorted(v), 2))}
     assert not bad, bad
+
+
+def test_reader_spellings():
+    """ASCII first: the open, back and lax vowels and the odd consonants are plain letters unless the lect contrasts them."""
+    r = R.romanize
+    assert r("ɛ") == "e" and r("ɔ") == "o" and r("ɑ") == "a" and r("ɒ") == "a" and r("ɪ") == "i" and r("ʊ") == "u"
+    assert r("ɫa") == "la" and r("βa") == "va" and r("ɦa") == "ha"
+    assert r("eɛ") == "eè" and r("oɔ") == "oò" and r("aɑ") == "aå" and r("iɪ") == "iì" and r("uʊ") == "uù"
+    assert r("é ɛ̀ ɔ́ o") == "éẹ̀ọ́o"  # a tonal lect: dot below, so the grave stays a tone mark
+    assert r("lalɫa") == "lal-lla" and r("lːaɫa") == "l·lalla"  # ll = ɫ; a long l takes the Catalan middle dot
+    assert r("vaβa") == "vabha" and r("vaβapʰap", {"beta", "aspiration"}) == "vaḇaphap"
+    assert r("hɦa") == "h-hha" and r("hːaɦa") == "h·hahha"
+    assert r("ə") == "e" and r("eə") == "ea" and r("eəa") == "eëa"
+    assert r("ã") == "ã"  # nasal vowels: always a tilde
+
+
+def test_nonhuman_spellings_are_ascii_letters():
+    """The book reader must be able to say a non-human sound: ASCII letters only, the exact symbol stays in the IPA."""
+    seen = {}
+    for row in symbols():
+        if is_nonhuman(row.seg):
+            sp = R.romanize(row.symbol)
+            assert sp.isascii() and sp.isalpha(), (row.symbol, sp)
+            assert sp not in seen, (row.symbol, seen.get(sp), sp)
+            seen[sp] = row.symbol
+    assert R.romanize("a‼") == "arh" and R.romanize("aᵣ") == "arr" and R.romanize("aᴖ") == "awh"
+    assert R.romanize("a˯") == "amh" and R.romanize("i˰") == "iih" and R.romanize("ʞa") == "cka"
+    assert R.romanize("ma‼") == "marh" and R.romanize("ʁ‼a") == "grha"
+    assert R.romanize("ar", inventory=from_ipa("aᵣ a r")) == "a-rr"  # a + trill is not the purred a
 
 
 def test_contrasts_of():
     assert R.contrasts_of(from_ipa("ppʰa")) == {"aspiration"}
-    assert R.contrasts_of(from_ipa("eə")) == {"schwa"}
+    assert R.contrasts_of(from_ipa("eəa")) == {"schwa"} and R.contrasts_of(from_ipa("eə")) == {"schwa_a"}
+    assert R.contrasts_of(from_ipa("eɛ")) == {"open_e"} and R.contrasts_of(from_ipa("ɛ")) == set()
+    assert R.contrasts_of(from_ipa("lɫ")) == {"dark_l"} and R.contrasts_of(from_ipa("ɫ")) == set()
+    assert R.contrasts_of(from_ipa("á")) == {"tone"}
     assert "dental" in R.contrasts_of(from_ipa("t̪t"))
     assert R.contrasts_of(from_ipa("pʰa")) == set()

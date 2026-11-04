@@ -110,3 +110,39 @@ def test_syllabify():
     assert shapes("alpa") == [("", "a", "l"), ("p", "a", "")]
     assert [s.shape() for s in P.syllabify(from_ipa("ma˦ŋka"))] == ["CVC", "CV"]
     assert len(P.syllabify(from_ipa("mm̩"))) == 1  # no vowel: a sonority peak is the nucleus
+
+
+def _sweep():
+    """Every symbol-table segment and each single-axis perturbation of it (the percepts sound changes can reach)."""
+    from dataclasses import replace
+    vax = ("height", "back", "round", "nasal", "length", "tone", "phonation", "voice", "source2", "register")
+    cax = tuple(a for a in P.AXES if a not in ("height", "back", "round", "tone"))
+    table = [r.seg for r in P.symbols()]
+    pool = set(table)
+    for s in table:
+        for ax in vax if s.kind == "V" else cax if s.kind == "C" else ("tone",):
+            lo, hi = P.AXIS_RANGE[ax]
+            for v in range(lo, hi + 1):
+                if v != getattr(s, ax) and not (s.kind == "T" and v == 0):
+                    pool.add(replace(s, **{ax: v}))
+    return table, pool
+
+
+def test_to_ipa_injective_and_round_trips():
+    table, pool = _sweep()
+    seen = {}
+    for s in pool:
+        ipa = to_ipa(s)
+        assert ipa not in seen, (ipa, s, seen.get(ipa))
+        seen[ipa] = s
+        assert from_ipa(ipa) == [s], (s, ipa)
+    for s in table:
+        assert from_ipa(to_ipa(s)) == [s]
+
+
+def test_to_ipa_marks_for_missing_symbols():
+    S = P.Segment
+    assert to_ipa(S("C", place=8, manner=3, voice=1)) == "ʔ̃"  # glottal nasal
+    assert to_ipa(S("C", place=8, voice=1)) == "ʔ̬"  # voiced glottal stop, not ɦ
+    assert to_ipa(S("V", voice=1, height=5, back=0, round=1)) != to_ipa(one("y"))  # a fronted ʏ is not y
+    assert to_ipa(S("V", voice=1, height=6, back=1, length=1)) != "iː"

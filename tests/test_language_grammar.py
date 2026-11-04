@@ -108,7 +108,8 @@ def test_proto_starts_low():
         assert len([e for e in g.exemplars if e.pos == "N"]) == 4 and len([e for e in g.exemplars if e.pos == "V"]) == 4
 
 
-def test_go_future_binds_and_enters_verb_cells():
+def test_go_future_binds_and_enters_verb_cells(monkeypatch):
+    monkeypatch.setattr(G, "ABANDON", 0.0)   # (binding is the point here, not whether this periphrasis survives)
     rng, g = _grammar(5, word_order="SOV", future="marked")
     g.grams = [x for x in g.grams if x.function != "FUT"]
     gr = G.recruit(rng, g, lex(), kyr=20.0, function="FUT", source="GO")
@@ -299,3 +300,80 @@ def test_class_system_grows_from_classifiers(seed):
     rng, g = _grammar(200 + seed, gender="classes")
     assert g.class_system is not None and len(g.class_system.classes) == 3
     assert all(g.by_id(c.gram_id).level == G.FREE for c in g.class_system.classes)
+
+
+# --- review fixes: source kinds, recruitment paths, clipping, deletion, root-controlled harmony ------------------------
+
+def test_allative_concept_is_not_the_allative_marker():
+    """The concept ALL ('all') and the function ALL (allative) no longer collide in the description."""
+    rng, g = _grammar(3, number="sg-pl")
+    g.grams = [x for x in g.grams if x.function != "PL"]
+    gr = G.recruit(rng, g, lex(ALL=("wote", "FUNC"), MANY=("", "A")), kyr=20.0, function="PL", source="ALL")
+    assert gr is not None and gr.source[0] == "ALL" and gr.source[2] == "concept"
+    assert G._origin(gr) == "once the word for 'all'"
+    line = next(x for x in G.describe(g) if "plural" in x)
+    assert "allative" not in line and "'all'" in line
+    # a reanalysed gram names its old function
+    gr.source = ("PERF", "G0xx", "gram")
+    assert G._origin(gr) == "once the perfect marker"
+    back = G.from_json(json.loads(json.dumps(G.to_json(g))))
+    assert any(tuple(x.source) == ("PERF", "G0xx", "gram") for x in back.grams)
+
+
+def test_recruitment_paths_are_real():
+    T = G.load_tables()
+    for p in T.paths:
+        if p.target == "PASS" and not p.from_gram:
+            assert "TAKE" not in p.sources, p     # 'get' is not 'take'
+        if p.target == "NEG":
+            assert "NOT" not in p.sources, p      # no negator from the negator
+        if p.id == "G003":
+            assert p.target == "RECPST"
+    rng, g = _grammar(4, past="marked")
+    g.grams = []
+    lx = lex(COME=("tola", "V"))
+    assert G.recruit(rng, g, lx, kyr=20.0, function="RECPST") is None   # no past tense yet: no recent past
+    g.grams.append(G.Gram("PAST", tuple(from_ipa("ka")), "V", "post", G.CLITIC, ("?", "proto", "unknown"), 20.0, id="P#1"))
+    gr = G.recruit(rng, g, lx, kyr=20.0, function="RECPST")
+    assert gr is not None and gr.source[0] == "COME"
+    neg = G.recruit(rng, g, lx, kyr=20.0, function="NEG")             # no 'nothing/lack/refuse' word: coined
+    assert neg is not None and neg.source[2] == "coin" and G._origin(neg) == "a newly coined word"
+    neg2 = G.recruit(rng, g, lex(NOTHING=("hapana", "N")), kyr=20.0, function="NEG")
+    assert neg2 is None or neg2.source[0] == "NOTHING"
+
+
+def test_recruited_gram_clipped_to_two_syllables():
+    rng, g = _grammar(5, word_order="SOV", future="marked")
+    g.grams = [x for x in g.grams if x.function != "FUT"]
+    gr = G.recruit(rng, g, lex(GO=("kelemanito", "V")), kyr=20.0, function="FUT", source="GO")
+    assert gr is not None and tuple(gr.form) == tuple(from_ipa("kele"))
+    assert any("clipped" in h for _, h in gr.history)
+
+
+def test_rule_deleting_everything_keeps_minimal_stems_and_loses_grams():
+    rng, g = _pl_grammar()
+    G.apply_rule_to_grammar(g, lambda f: (), "wipe", 5.0)
+    for e in g.exemplars:
+        assert len(e.stem) == 1 and all(len(c) >= 1 for c in e.cells.values())
+    assert all(len(f) >= 1 for _, f in g.helpers.values())
+    pl = next(x for x in g.grams if x.function == "PL")
+    assert not pl.live and any("eroded to nothing" in t for _, t in g.events)
+    assert any("kept minimal" in t for _, t in g.events)
+
+
+def test_stem_index_passed_when_rule_accepts_it():
+    rng, g = _pl_grammar()
+    seen = []
+
+    def rule(form, stem_index=0):
+        seen.append((len(form), stem_index))
+        return form
+
+    G.apply_rule_to_grammar(g, rule, "harmony", 5.0)
+    nouns = [e for e in g.exemplars if e.pos == "N" and ("PL",) in e.cells]
+    assert nouns and seen
+    pre = g.gram("PL").side == "pre"
+    for e in nouns:
+        want = len(g.gram("PL").form) if pre else 0
+        assert (len(e.cells[("PL",)]), want) in seen
+    G.apply_rule_to_grammar(g, lambda f: f, "plain", 5.0)   # one-argument callables still work

@@ -90,6 +90,7 @@ FUNCS: dict[str, FuncInfo] = {
     "AGENT": FuncInfo("N", "head", 0.7, "deriv", "one who / person of"),
     "PLACE": FuncInfo("N", "head", 0.7, "deriv", "place of"),
     "PAST": FuncInfo("V", "aux", 1.5, "tense", "past"),
+    "RECPST": FuncInfo("V", "aux", 0.6, "tense", "recent past"),
     "FUT": FuncInfo("V", "aux", 1.2, "tense", "future"),
     "PERF": FuncInfo("V", "aux", 1.2, "aspect", "perfect"),
     "PROG": FuncInfo("V", "aux", 1.1, "aspect", "progressive"),
@@ -193,6 +194,40 @@ def first_syllable(form: Form) -> Form:
     return form[:2]
 
 
+def clip_syllables(form: Form, n: int = 2) -> Form:
+    """The first `n` syllables of a form (percepts.syllabify; without it, cut before the (n+1)th vowel's onset)."""
+    form = tuple(form)
+    p = _percepts()
+    if p is not None and hasattr(p, "syllabify"):
+        try:
+            syl = p.syllabify(form)
+            if len(syl) <= n:
+                return form
+            return tuple(x for sy in syl[:n] for x in sy.segments)
+        except Exception:  # noqa: BLE001 - duck-typed segments: fall through
+            pass
+    vs = [i for i, x in enumerate(form) if _is_v(x)]
+    if len(vs) <= n:
+        return form
+    return form[:vs[n] - 1] if vs[n] - 1 > vs[n - 1] else form[:vs[n]]
+
+
+MAX_GRAM_SYLL = 2   # a recruited gram keeps at most this many syllables of its source word
+
+
+def _recruited_form(form: Form, kyr: float) -> tuple[Form, list[tuple[float, str]]]:
+    f = clip_syllables(form, MAX_GRAM_SYLL)
+    return f, ([(kyr, f"clipped {ipa(form)} > {ipa(f)}")] if f != tuple(form) else [])
+
+
+def minimal_form(old: Form) -> Form:
+    """What a sound change leaves of a stem it would delete whole: the last vowel, else the last segment (as
+    lexicon.minimal_form, so stems stay in step with their words)."""
+    old = tuple(old)
+    v = [x for x in old if _is_v(x)]
+    return (v[-1],) if v else old[-1:]
+
+
 def _attach(stem: Form, gform: Form, side: str) -> Form:
     return tuple(gform) + tuple(stem) if side == "pre" else tuple(stem) + tuple(gform)
 
@@ -274,7 +309,7 @@ class GPath:
 
 #: map a path's target_function text to a function code (first matching prefix wins); None = not modelled
 _TARGET_MAP = (
-    ("RECENT PAST", "PAST"), ("PAST HABITUAL", "HAB"), ("FUTURE", "FUT"), ("PERFECTIVE / PAST", "PAST"),
+    ("RECENT PAST", "RECPST"), ("PAST HABITUAL", "HAB"), ("FUTURE", "FUT"), ("PERFECTIVE / PAST", "PAST"),
     ("PERFECT", "PERF"), ("COMPLETIVE > PERFECT", "PERF"), ("PROGRESSIVE", "PROG"), ("IMPERFECTIVE", "IPFV"),
     ("ABILITY > HABITUAL", "HAB"), ("DUMMY AUXILIARY / EMPHATIC / HABITUAL", "HAB"), ("DIRECT EVIDENTIAL", "EVID.DIR"),
     ("HEARSAY EVIDENTIAL", "EVID.REP"), ("BENEFACTIVE / DATIVE", "DAT"), ("DATIVE > ACCUSATIVE", "ACC"),
@@ -291,7 +326,10 @@ _GRAM_SOURCES = {"PERFECT": "PERF", "PROGRESSIVE": "PROG", "ALLATIVE": "ALL", "A
 _SOURCE_ALIASES = {
     "HAVE": ("HOLD",), "BE AT": ("AT",), "DEMONSTRATIVE": ("THAT", "THIS"), "THIRD PERSON PRONOUN": ("HE OR SHE OR IT", "HE"),
     "CHILD": ("CHILD (YOUNG HUMAN)", "CHILD"), "SON": ("CHILD (DESCENDANT)",), "KNOW": ("KNOW (SOMETHING)",),
-    "GET": ("TAKE",), "OBTAIN": ("TAKE",), "FEAR": ("FEAR (BE AFRAID)",), "NEGATIVE EXISTENTIAL": ("NOT",),
+    # 'get' is not 'take' (G019 get > past, G032 get > passive need a real 'get' word); a negator comes from a negative
+    # existential, 'lack' or 'nothing' (Croft 1991; Jespersen's minimizers), never from the negator 'not' itself
+    "FEAR": ("FEAR (BE AFRAID)",), "NEGATIVE EXISTENTIAL": ("NOTHING", "LACK", "NO"),
+    "MINIMIZER": ("NOTHING",),
     "NOUN": ("TREE", "BODY", "HEAD"), "COMPANION": ("FRIEND",), "LIE": ("LIE (REST)",), "PEOPLE": ("PERSON",),
     "MAN": ("MAN", "MALE PERSON"), "BASE": ("ROOT",), "WALK": ("WALK",), "BELLY": ("BELLY",),
     "MAKE": ("DO OR MAKE",), "DO": ("DO OR MAKE",), "ALL": ("ALL",),
@@ -299,7 +337,8 @@ _SOURCE_ALIASES = {
 #: built-in paths beyond the table (from memory: Givon 1976 pronoun > agreement; Heine & Kuteva 2002 entries for
 #: 'two' > dual, 'man' > agentive, 'place/house' > locative nominal, adpositions > case affixes (their ADPOSITION > CASE))
 _BUILTIN_PATHS = (
-    ("X01", ("NOT",), "NEG", "very common", "an existing negator particle (start of Jespersen's cycle)"),
+    ("X01", ("NOTHING", "LACK", "REFUSE"), "NEG", "very common",
+     "'nothing, lack, refuse' > negator (no such word: a coined negator particle)"),
     ("X02", ("MANY", "ALL"), "PL", "common", "quantifier > plural (as WLG MANY > PL)"),
     ("X03", ("TWO",), "DU", "attested", "'two' > dual"),
     ("X04", ("IN", "AT"), "LOC", "very common", "locative adposition > locative case"),
@@ -757,7 +796,7 @@ class Gram:
     host: str
     side: str
     level: int = 0
-    source: tuple[str, str] = ("?", "proto")      # (source concept or gram, path id)
+    source: tuple = ("?", "proto", "unknown")     # (source, path id, kind): kind concept | gram | coin | unknown
     born_kyr: float = 0.0
     history: list[tuple[float, str]] = field(default_factory=list)
     age_gens: float = 0.0
@@ -918,7 +957,7 @@ def _wanted(function: str, typ: Typology) -> bool:
         "DAT": t("case") != "none", "ABL": t("case") == "many", "ALL": t("case") == "many", "INS": t("case") == "many",
         "COM": t("case") == "many", "ACC": t("case") != "none" and t("alignment") in ("nom-acc", "split"),
         "ERG": t("case") != "none" and t("alignment") in ("erg-abs", "split"),
-        "PAST": t("past") == "marked", "FUT": t("future") == "marked", "PERF": t("perfective") == "marked",
+        "PAST": t("past") == "marked", "RECPST": t("past") == "marked", "FUT": t("future") == "marked", "PERF": t("perfective") == "marked",
         "IPFV": t("perfective") == "marked", "PROG": t("progressive") == "marked", "HAB": t("habitual") == "marked",
         "EVID.DIR": t("evidentiality") == "direct+indirect", "EVID.REP": t("evidentiality") != "none",
         "NEG": True, "CAUS": t("causative") == "bound", "PASS": t("passive") != "none", "REFL": True,
@@ -1236,11 +1275,12 @@ def add_class(g: Grammar, rng: np.random.Generator, inv, lexicon, kyr: float, gr
     fn = f"CLASS:{k}"
     key, w = _find(lexicon, _lex_index(lexicon), CLASS_SOURCES.get(group, ()))
     if w is not None:
-        form, src = _form(w), (str(key), "G066")
+        form, src = _form(w), (str(key), "G066", "concept")
     else:
-        form, src = _draw_morph(rng, inv), ("?", "proto")
-    gr = Gram(fn, form, "N", _side(fn, g.typology), level, src, kyr, [(kyr, f"recruited as classifier for {group}")],
-              id=g.new_id(fn))
+        form, src = _draw_morph(rng, inv), ("?", "proto", "unknown")
+    form, hist = _recruited_form(form, kyr)
+    gr = Gram(fn, form, "N", _side(fn, g.typology), level, src, kyr,
+              [(kyr, f"recruited as classifier for {group}"), *hist], id=g.new_id(fn))
     g.grams.append(gr)
     nc = NounClass(k, group, gr.id)
     cs.classes.append(nc)
@@ -1303,17 +1343,20 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
         chosen.append(f)
     for f in chosen:
         paths = [p for p in T.paths if p.target == f and not p.from_gram]
-        src, form = ("?", "proto"), ()
+        src, form = ("?", "proto", "unknown"), ()
         for p in sorted(paths, key=lambda p: -p.weight):
             key, w = _find(lexicon, idx, p.sources)
             if w is not None:
-                src, form = (str(key), p.id), _form(w)
+                src, form = (str(key), p.id, "concept"), _form(w)
                 break
         if not form:
             form = _draw_morph(rng, inv)
+            if f == "NEG":
+                src = ("?", "X01", "coin")
+        form, hist = _recruited_form(form, kyr)
         lvl = int(rng.choice([FREE, CLITIC], p=[0.6, 0.4]))
         info = func_info(f)
-        g.grams.append(Gram(f, form, info.host, _side(f, typ), lvl, src, kyr, [(kyr, "proto")], id=g.new_id(f)))
+        g.grams.append(Gram(f, form, info.host, _side(f, typ), lvl, src, kyr, [(kyr, "proto"), *hist], id=g.new_id(f)))
     gk = typ.get("gender", "none")
     if gk != "none" or typ.get("numeral_classifiers") == "yes":
         kind = gk if gk != "none" else "classifiers"
@@ -1389,6 +1432,8 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> 
     cands: list[tuple[float, GPath, Any, Any]] = []
     for p in T.paths:
         tgt = p.target
+        if tgt == "RECPST" and "PAST" not in live_by_fn:
+            continue   # 'come from' > recent past only beside a past tense (G003); never the plain past
         if tgt == "CLASS":
             if g.class_system is None:
                 continue
@@ -1411,6 +1456,8 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> 
         else:
             key, w = _find(lexicon, idx, p.sources)
             if w is None:
+                if p.id == "X01" and not live_by_fn.get("NEG"):
+                    cands.append((p.weight * w_mult, p, None, None))   # no 'nothing/lack' word: a coined negator
                 continue
             cands.append((p.weight * w_mult, p, key, w))
     if not cands:
@@ -1425,14 +1472,23 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> 
         old = a.function
         a.function = p.target
         a.host = func_info(p.target).host
+        a.source = (old, p.id, "gram")
         a.history.append((kyr, f"reanalysed {old} > {p.target} ({p.id})"))
         g.events.append((kyr, f"{old} gram {ipa(a.form)} became {p.target}"))
         return a
     info = func_info(p.target)
-    gr = Gram(p.target, _form(w), info.host, _side(p.target, g.typology), FREE, (str(a), p.id), kyr,
-              [(kyr, f"recruited from '{a}' ({p.id})")], id=g.new_id(p.target))
+    if w is None:   # coined (X01 with no source word)
+        form, hist = _recruited_form(_draw_morph(rng, inv), kyr)
+        gr = Gram(p.target, form, info.host, _side(p.target, g.typology), FREE, ("?", p.id, "coin"), kyr,
+                  [(kyr, f"coined ({p.id})"), *hist], id=g.new_id(p.target))
+        g.grams.append(gr)
+        g.events.append((kyr, f"coined a {p.target} marker: {ipa(gr.form)}"))
+        return gr
+    form, hist = _recruited_form(_form(w), kyr)
+    gr = Gram(p.target, form, info.host, _side(p.target, g.typology), FREE, (str(a), p.id, "concept"), kyr,
+              [(kyr, f"recruited from '{a}' ({p.id})"), *hist], id=g.new_id(p.target))
     g.grams.append(gr)
-    g.events.append((kyr, f"recruited {p.target} from '{a}': {ipa(gr.form)}"))
+    g.events.append((kyr, f"recruited {p.target} from '{a}': {ipa(gr.form)}" + (" (clipped)" if hist else "")))
     return gr
 
 
@@ -1584,33 +1640,69 @@ def _check_lost(g: Grammar, kyr: float) -> None:
         _sync_cells(g)
 
 
+@lru_cache(maxsize=256)
+def _takes_stem_index(fn) -> bool:
+    """Does a rule callable accept a second argument / `stem_index` keyword (root-controlled harmony)?"""
+    import inspect  # noqa: PLC0415
+    try:
+        ps = list(inspect.signature(fn).parameters.values())
+    except (TypeError, ValueError):
+        return False
+    if any(p.name == "stem_index" or p.kind == p.VAR_KEYWORD for p in ps):
+        return True
+    pos = [p for p in ps if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    return len(pos) >= 2 or any(p.kind == p.VAR_POSITIONAL for p in ps)
+
+
+def _stem_offset(parts: tuple[tuple[str, Form], ...]) -> int:
+    """Index of the stem's first segment in a cell's flat form."""
+    off = 0
+    for lab, f in parts:
+        if lab == "stem":
+            return off
+        off += len(f)
+    return 0
+
+
 def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rule_id: str = "?",
                           kyr: float = 0.0) -> int:
     """Run one sound change over every live gram form, exemplar stem and cell, and helper form. Cells change as wholes, so
-    a rule conditioned across the stem-affix boundary leaves the cell different from stem + affix: an alternation. Returns
-    the number of forms changed; the ids of grams whose form changed are in `g.last_changed` (and in each gram's
-    history)."""
+    a rule conditioned across the stem-affix boundary leaves the cell different from stem + affix: an alternation. When the
+    rule callable takes a second argument (`stem_index`, rules.apply), each cell passes the offset of its stem morph, so
+    vowel harmony is controlled by the root. A stem or helper the rule would delete whole keeps a minimal form
+    (`minimal_form`, as the lexicon does); a cell keeps minimal stem + affixes; a gram worn to nothing goes through the
+    loss path (`_check_lost`). Returns the number of forms changed; the ids of grams whose form changed are in
+    `g.last_changed` (and in each gram's history)."""
     changed = []
     n = 0
-    cache: dict[Form, Form] = {}
+    cache: dict[tuple, Form] = {}
+    with_stem = _takes_stem_index(rule_apply_fn)
 
-    def run(f: Form) -> Form:
+    def run(f: Form, stem_index: int = 0) -> Form:
         nonlocal n
         f = tuple(f)
-        out = cache.get(f)
+        key = (f, stem_index) if with_stem else (f,)
+        out = cache.get(key)
         if out is None:
-            out = cache[f] = tuple(rule_apply_fn(f))
+            out = cache[key] = tuple(rule_apply_fn(f, stem_index) if with_stem else rule_apply_fn(f))
         if out != f:
             n += 1
         return out
 
     for ex in g.exemplars:
-        new_stem = run(ex.stem)
-        ex.stem = new_stem if new_stem else ex.stem
+        old_stem = tuple(ex.stem)
+        new_stem = run(old_stem)
+        if not new_stem and old_stem:
+            new_stem = minimal_form(old_stem)
+            g.events.append((kyr, f"{ex.concept}: stem {ipa(old_stem)} kept minimal as {ipa(new_stem)} ({rule_id})"))
+        ex.stem = new_stem
         for k in list(ex.cells):
             old = ex.cells[k]
-            nf = run(old)
-            if nf and nf != old:
+            nf = run(old, _stem_offset(ex.parts[k]))
+            if not nf and old:   # the whole cell would vanish: the stem survives minimally, each affix as the rule leaves it
+                ex.set(k, tuple((lab, tuple(ex.stem) if lab == "stem" else tuple(rule_apply_fn(tuple(f))))
+                                for lab, f in ex.parts[k]))
+            elif nf != old:
                 ex.set(k, _resplit(ex.parts[k], nf))
     # gram forms: a free word or clitic changes on its own; a bound gram's form is the realisation its cells show most
     # (what a learner would extract), the isolated form breaking ties
@@ -1636,7 +1728,7 @@ def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rul
             changed.append(gr.id)
     for role, (c, f) in list(g.helpers.items()):
         nf = run(f)
-        g.helpers[role] = (c, nf if nf else f)
+        g.helpers[role] = (c, nf if nf or not f else minimal_form(f))
     g.last_changed = changed
     _check_lost(g, kyr)
     return n + len(changed)
@@ -1863,11 +1955,13 @@ _ORDER_WORDS = {
 
 
 def _origin(gr: Gram) -> str:
-    src, pid = gr.source
-    if src == "?":
+    src, pid, kind = (tuple(gr.source) + ("concept",))[:3]
+    if kind == "coin":
+        return "a newly coined word"
+    if src == "?" or kind == "unknown":
         return "of unknown origin"
-    if src in FUNCS:
-        return f"once the {FUNCS[src].gloss} marker"
+    if kind == "gram":
+        return f"once the {func_info(src).gloss} marker"
     return f"once the word for '{src.lower()}'"
 
 

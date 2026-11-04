@@ -63,7 +63,8 @@ Word = tuple  # tuple[Segment, ...]
 
 
 def is_nonhuman(seg: Segment) -> bool:
-    """A percept no human language makes: a second source, a sub-bass or ultra register, harsh or purr phonation, percussives."""
+    """A percept outside the ordinary human voice: a second source, a sub-bass or ultra register, harsh (growl) or purr
+    phonation, percussives. Harsh voice is the one humans make too (rarely contrastive; profiles.HUMAN_HARSH)."""
     return bool(seg.source2 or seg.register or seg.phonation in (3, 4) or (seg.kind == "C" and seg.manner == 9))
 
 
@@ -103,11 +104,11 @@ def symbols() -> tuple[Symbol, ...]:
 _COMBINING = {
     "̥": ("voice", 0), "̊": ("voice", 0), "̬": ("voice", 1), "̪": ("dental", 1),
     "̤": ("phonation", 1), "̰": ("phonation", 2), "̃": ("nasal", 1), "̴": ("secondary", 3),
-    "̞": ("lower", 1), "̝": ("raise", 1), "̈": ("centre", 1), "̠": ("retract", 1),
+    "̞": ("lower", 1), "̝": ("raise", 1), "̈": ("centre", 1), "̠": ("retract", 1), "̟": ("advance", 1),
     "́": ("tone", 3), "̀": ("tone", 1), "̄": ("tone", 2), "̌": ("tone", 4), "̂": ("tone", 5),
     "̋": ("tone", 6), "̏": ("tone", 7),
 }
-_COMBINING_IGNORED = set("̩̯̹̜̟̺̻̘̙̱̣̼̆̚͜͡")
+_COMBINING_IGNORED = set("̩̯̹̜̺̻̘̙̱̣̼̆̚͜͡")
 _SPACING = {"ʰ": ("larynx", 1), "ʼ": ("larynx", 2), "ʱ": ("phonation", 1), "ʷ": ("secondary", 1), "ʲ": ("secondary", 2),
             "ˠ": ("secondary", 3), "ˤ": ("secondary", 4), "ː": ("length", 1), "‼": ("phonation", 3), "ᵣ": ("phonation", 4),
             "ᴖ": ("source2", 1), "˯": ("register", -1), "˰": ("register", 1)}
@@ -156,10 +157,20 @@ def _normalize(s: str) -> str:
 
 
 def _apply(seg: Segment, what: str, v: int) -> Segment:
-    if what == "dental":
-        return replace(seg, place=1) if seg.kind == "C" and seg.place == 2 else seg
-    if what == "retract":
-        return replace(seg, place=3) if seg.kind == "C" and seg.place == 2 else seg
+    if what == "dental":  # t̪ dental; p̪ m̪ labiodental (the IPA's own use of the bridge on labials)
+        if seg.kind == "C" and seg.place == 2:
+            return replace(seg, place=1)
+        return replace(seg, labiodental=1) if seg.kind == "C" and seg.place == 0 else seg
+    if what in ("retract", "advance"):  # one step back / forward: place for consonants, backness for vowels
+        step = 1 if what == "retract" else -1
+        if seg.kind == "C":
+            return replace(seg, place=min(8, max(0, seg.place + step)))
+        if seg.kind == "V":
+            return replace(seg, back=min(4, max(0, seg.back + step)))
+        return seg
+    if what == "nasal" and seg.kind == "C" and seg.manner == 0:
+        # a nasalized stop is the (voiced) nasal of its place: ʔ̃ the glottal nasal; a ring above after it, ʔ̃̊, unvoices
+        return replace(seg, manner=3, voice=1)
     if what == "lower":
         if seg.kind == "V":
             return replace(seg, height=max(0, seg.height - 1))
@@ -175,6 +186,17 @@ def _apply(seg: Segment, what: str, v: int) -> Segment:
     if what == "tone" and seg.kind != "V":
         return seg
     return replace(seg, **{what: v})
+
+
+def _apply_escape(seg: Segment, body: str) -> Segment:
+    """{axis=value,...}: the house escape to_ipa writes for an axis no IPA mark carries (a sibilant stop, a lateral trill);
+    values are absolute."""
+    d = {}
+    for part in body.replace("ɡ", "g").split(","):  # _normalize turned g into IPA ɡ (lenɡth)
+        ax, _, val = part.strip().partition("=")
+        if ax in AXES and val.strip().lstrip("-").isdigit():
+            d[ax] = int(val)
+    return replace(seg, **d) if d else seg
 
 
 def _tone_of(levels: list[int]) -> int:
@@ -231,6 +253,14 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
                 out.append(Segment("T", tone=t))
                 attach = False
             i = j
+            continue
+        if ch == "{" and "}" in s[i:]:
+            j = s.index("}", i)
+            if attach and out:
+                out[-1] = _apply_escape(out[-1], s[i + 1:j])
+            elif strict:
+                raise ValueError(f"axis escape {s[i:j + 1]!r} with no segment before it in {s!r}")
+            i = j + 1
             continue
         if attach and out and (ch in _COMBINING or ch in _SPACING):
             what, v = _COMBINING.get(ch) or _SPACING[ch]
@@ -340,19 +370,25 @@ def _join(pre: str, base: str, comb: str, sp: str) -> str:
 @lru_cache(maxsize=4096)
 def to_ipa(seg: Segment) -> str:
     """The IPA for a segment: its table symbol, or a base symbol plus diacritics in a fixed order (prenasal, base, voicing,
-    dental, nasal, breathy/creaky, secondary, aspiration/ejection, ʱ, ‼/ᵣ, ː, tone letters, ᴖ, ˯/˰). A combination with no
-    notation at all falls back to the nearest symbol (lossy; rare)."""
+    dental, nasal, breathy/creaky, secondary, aspiration/ejection, ʱ, ‼/ᵣ, ː, tone letters, ᴖ, ˯/˰).
+
+    Injective: from_ipa(to_ipa(s)) == [s] for every Segment. A combination with no symbol takes the nearest base symbol plus
+    marks for the difference (̝ ̞ raised/lowered vowel or fricative/approximant, ̟ ̠ advanced/retracted place or
+    backness, ̃ nasal (on a stop: the nasal of that place, ʔ̃), ̥ ̬ voiceless/voiced, ̪ dental/labiodental), and
+    what no IPA mark carries as a house escape {axis=value,...} after it (a sibilant stop, a lateral trill: rare)."""
     _, _, rev, _ = _tables()
     if seg in rev:
         return rev[seg]
     cur, stripped = seg, []
+    first = None
     for ax in _STRIP:
         if getattr(cur, ax) and not (ax == "larynx" and cur.larynx == 3):
             cur = replace(cur, **{ax: 0})
             stripped.append(ax)
             if cur in rev:
-                return _join(*_parts(seg, rev[cur], stripped, False, False))
-    if seg.kind == "C":
+                first = _join(*_parts(seg, rev[cur], stripped, False, False))
+                break
+    if first is None and seg.kind == "C":
         for flip, dental in ((True, False), (False, True), (True, True)):
             c = cur
             if flip:
@@ -362,10 +398,72 @@ def to_ipa(seg: Segment) -> str:
                     continue
                 c = replace(c, place=2)
             if c in rev:
-                return _join(*_parts(seg, rev[c], stripped, flip, dental))
-    best = min((r for r in symbols() if r.seg.kind == seg.kind and not _has_mods(r.symbol)),
-               key=lambda r: distance(core(seg), r.seg))
-    return _join(*_parts(seg, best.symbol, stripped, False, False))
+                first = _join(*_parts(seg, rev[c], stripped, flip, dental))
+                break
+    if first is not None and from_ipa(first) == [seg]:
+        return first
+    pre, comb, sp = _marks(seg, stripped, False, False)
+    bases = _base_rows(seg.kind)
+    if not bases:  # a tone letter with a consonant axis set (never made by rules): escape everything
+        return "˧{" + ",".join(f"{a}={getattr(seg, a)}" for a in AXES if getattr(seg, a)) + "}"
+    ranked = sorted(bases, key=lambda r: distance(cur, r.seg))
+    best = None
+    for r in ranked[:24]:
+        extra = _delta_marks(r.seg, cur)
+        if extra is None:
+            continue
+        out = _join(pre, r.symbol, comb + extra, sp)
+        if from_ipa(out) == [seg]:
+            key = (len(extra), distance(cur, r.seg))
+            if best is None or key < best[0]:
+                best = (key, out)
+    if best is not None:
+        return best[1]
+    out = _join(pre, ranked[0].symbol, comb, sp)
+    got = from_ipa(out)
+    if len(got) != 1:
+        out, got = ranked[0].symbol, [ranked[0].seg]
+    diff = [a for a in AXES if getattr(got[0], a) != getattr(seg, a)]
+    out += "{" + ",".join(f"{a}={getattr(seg, a)}" for a in diff) + "}"
+    assert from_ipa(out) == [seg], (seg, out)
+    return out
+
+
+@lru_cache(maxsize=4)
+def _base_rows(kind: str) -> tuple[Symbol, ...]:
+    return tuple(r for r in symbols() if r.seg.kind == kind and not _has_mods(r.symbol) and r.seg == core(r.seg)
+                 and r.seg.larynx in (0, 3))
+
+
+def _delta_marks(base: Segment, target: Segment) -> str | None:
+    """IPA combining marks that turn `base` into `target` (both without strippable modifiers), or None when some axis has no
+    mark. Order follows the parser's application order after canonical reordering (marks below, then marks above)."""
+    below = above = ""
+    stop_to_nasal = base.kind == "C" and (base.manner, target.manner) == (0, 3)
+    if stop_to_nasal:  # ̃ also voices; the ring above (same canonical class, so it stays after) unvoices again
+        above = "̃" + ("" if target.voice else "̊")
+        base = replace(base, manner=3, voice=target.voice)
+    for ax in AXES:
+        x, y = getattr(base, ax), getattr(target, ax)
+        if x == y:
+            continue
+        if ax == "voice":
+            below += "̬" if y else "̥"
+        elif ax == "place" and base.kind == "C" and abs(y - x) <= 2:
+            below += ("̠" if y > x else "̟") * abs(y - x)
+        elif ax == "back" and base.kind == "V":
+            below += ("̠" if y > x else "̟") * abs(y - x)
+        elif ax == "height" and base.kind == "V":
+            below += ("̝" if y > x else "̞") * abs(y - x)
+        elif ax == "manner" and base.kind == "C" and (x, y) == (4, 2):
+            below += "̝"
+        elif ax == "manner" and base.kind == "C" and (x, y) == (2, 4):
+            below += "̞"
+        elif ax == "labiodental" and y == 1 and base.kind == "C":
+            below += "̪"
+        else:
+            return None
+    return below + above
 
 
 def _has_mods(sym: str) -> bool:

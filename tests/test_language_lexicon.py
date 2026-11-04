@@ -154,7 +154,8 @@ def test_etymology_append_only_oldest_first(concepts):
         assert procs[p] > 0, (p, procs)
     for p in ("derive", "compound", "shift", "borrow", "taboo", "elaborate"):
         assert events[p] > 0, (p, events)
-    assert events["derive"] > events["compound"] > events["borrow"] > events["taboo"]
+    assert events["derive"] > events["compound"] > events["taboo"] and events["derive"] > events["borrow"] > events["taboo"]
+    assert events["coin"] > 0
     assert "MILK (SOURED)" in lex and "FISH (SEA)" in lex
 
 
@@ -233,3 +234,119 @@ def test_proto_lexicon_robust_over_seeds(concepts):
                 assert w.form == lex.words[note[len("colexified with "):]].form
         lex.head_first = not lex.head_first
         assert lex.copy().head_first == lex.head_first
+
+
+# --- review fixes: length, compound semantics, deletion, homophony, shift chains -----------------------------------------
+
+def _run(seed, concepts, gens=700):
+    rng, inv, lex = _proto(seed, concepts)
+    other = _proto(seed + 50, concepts, "M")[2]
+    kyr, done = 20.0, 0.0
+    while done < gens:
+        n = min(18.0, gens - done)
+        done += n
+        kyr = round(kyr - 0.5, 3)
+        L.step(rng, lex, n, inv, contact_words={"M": other}, kyr=kyr, niche_weights={"herder": 1.0})
+    return lex
+
+
+@pytest.fixture(scope="module")
+def long_runs(concepts):
+    return [_run(s, concepts) for s in (1, 2, 3)]
+
+
+def test_word_length_stays_bounded(long_runs):
+    """700 generations (about 20 kyr of human history): replacement no longer grows words (derive/compound clip their
+    bases, prefer short ones, refuse a base that already has the affix; fresh roots have a share)."""
+    for lex in long_runs:
+        st = L.stats(lex)
+        assert 4.0 <= st["mean_segments"] <= 7.0, st
+        assert st["max_segments"] <= 12, st
+        assert st["latest"].get("coin", 0) > 0
+        for w in lex.words.values():
+            ds = collections.Counter(s.process for s in w.etym if s.process.startswith("derive:"))
+            assert all(v == 1 for v in ds.values()), (w.concept, ds)   # the same affix never stacks
+    notes = [s.note for lex in long_runs for w in lex.words.values() for s in w.etym]
+    assert any("(clip " in n for n in notes)
+
+
+def test_homophone_share_low(long_runs):
+    """Repair by renewal and redraws keep homophones (colexifications included) under 10% of concepts."""
+    for lex in long_runs:
+        assert L.stats(lex)["homophone_share"] < 0.10
+        assert all(len(v) <= 3 for v in lex.homophones().values())
+
+
+def test_compounds_are_plausible(concepts):
+    """200 compounds: no verb ever compounds or pairs with a colour, kin terms and animals take their class head."""
+    rng, inv, lex = _proto(71, concepts)
+    ks = sorted(lex.words)
+    made = []
+    while len(made) < 200:
+        k = ks[int(rng.integers(len(ks)))]
+        w = L.compound(rng, lex, k, inv, 10.0)
+        if w is None:
+            continue
+        head, mod = w.etym[-1].process[len("compound:"):].split("+")
+        made.append((k, head, mod, w))
+    for k, head, mod, w in made:
+        parts = {L.sem_class(x) for x in (k, head, mod)}
+        assert not ("verb" in parts and "colour" in parts), (k, head, mod)
+        assert L.concept_info(k).pos == "N"
+        assert L.syllables(w.form) <= L.MAX_SYLL_COMPOUND + 1 and len(w.form) <= L.MAX_SEG
+        if L.sem_class(k) == "animal" and "ANIMAL" in lex and k != "ANIMAL":
+            assert head in ("ANIMAL", *L.concept_info(k).base), (k, head)
+        if L.sem_class(k) == "kin":
+            assert head in ("PERSON", "MAN", "WOMAN", "MALE PERSON", *L.concept_info(k).base), (k, head)
+    assert L.compound(rng, lex, "HUNT", inv, 10.0) is None and L.compound(rng, lex, "RED", inv, 10.0) is None
+    w = L.compound(rng, lex, "MILK (SOURED)", inv, 10.0, head="MILK", modifier="SOUR")   # explicit parts still work
+    assert w is not None and w.etym[-1].process == "compound:MILK+SOUR"
+
+
+def test_derive_clips_long_base(concepts):
+    rng, inv, lex = _proto(72, concepts)
+    long = tuple(from_ipa("katupamilo"))
+    lex.set(replace(lex["DOG"], form=long))
+    w = L.derive(rng, lex, "WOLF", inv, 9.0, base="DOG", meaning="little")
+    assert w is not None and L.syllables(w.form) <= L.MAX_SYLL and "(clip " in w.etym[-1].note
+    lex.set(w)
+    assert L.derive(rng, lex, "BEAR", inv, 9.0, base="WOLF", meaning="little") is None   # already carries 'little'
+
+
+def test_shift_at_most_once_per_gap(concepts):
+    rng, inv, lex = _proto(73, concepts)
+    k = next(c for c in sorted(lex.words) if lex[c].pos == "N"
+             and any(n in lex.words and lex[n].pos == "N" for n, _ in L.clics_neighbours(c, L.BUILD_MIN_FAMILIES)))
+    lex.gen = 100.0
+    old = lex[k]
+    w = L.shift_word(rng, lex, k, 5.0)
+    assert w is not None and w.etym[-1].process.startswith("shift:")
+    lex.set(w)
+    assert L.shift_word(rng, lex, k, 5.0) is None          # not again within SHIFT_GAP generations
+    lex.set(old)                                           # (and not onto a word already doing double duty)
+    assert L.shift_word(rng, lex, k, 5.0) is None
+    lex.gen += L.SHIFT_GAP
+    assert L.shift_word(rng, lex, k, 4.0) is not None
+
+
+def test_deleted_word_kept_minimal_and_affix_renewed(concepts):
+    rng, inv, lex = _proto(74, concepts)
+    w0 = lex["WATER"]
+    n = L.apply_rule_to_lexicon(lex, lambda f: (), "wipe", 8.0)
+    assert n > 0
+    w = lex["WATER"]
+    assert len(w.form) == 1 and w.etym[-1].note == "kept minimal" and w.form[0] in w0.form
+    assert all(w.form for w in lex.words.values())
+    assert all(not af for af, _ in lex.affixes.values()) and any("worn to nothing" in t for _, t in lex.notes)
+    assert L.derive(rng, lex, "WOLF", inv, 8.0, base="DOG", meaning="little") is None
+    L.step(rng, lex, 2000, inv, kyr=7.0)
+    assert all(af for af, _ in lex.affixes.values()) and any("renewed" in t for _, t in lex.notes)
+
+
+def test_stats_and_state_round_trip(concepts):
+    rng, inv, lex = _proto(75, concepts)
+    L.step(rng, lex, 200, inv, kyr=19.0)
+    st = L.stats(lex)
+    assert st["words"] == len(lex) and st["processes"]["proto"] > 0 and 0 <= st["homophone_share"] < 1
+    back = L.from_json(L.to_json(lex))
+    assert back.gen == lex.gen == 200 and back.shifted == lex.shifted

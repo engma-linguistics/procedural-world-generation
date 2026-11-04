@@ -13,17 +13,18 @@
 
 # ---------------------------------------------------------------- avian line
 [avian]
-articulators = ["syrinx", "beak", "tongue_tip", "tongue_body", "pharynx"]
+articulators = ["syrinx", "beak", "tongue_tip", "tongue_body", "larynx", "pharynx"]
 register = 1
-make_cost = { labial = 2.5, labiodental = 4.0, dental = 2.0, nasal = 2.0, nasal_vowel = 3.0, round_vowel = 1.5, sibilant = 1.3, trill = 0.7, tone = 0.7, source2 = 1.5, harsh = 3.0, percussive = 1.0, ejective = 2.0, implosive = 2.0, aspirated = 1.5 }
-hear = { length = 1.5, source2 = 1.5, sibilant = 1.0, tone = 1.0, sub = 0.0, ultra = 0.0 }
+make_cost = { labial = 2.5, labiodental = 4.0, dental = 2.0, nasal = 3.5, nasal_vowel = 4.0, round_vowel = 1.5, sibilant = 1.3, trill = 0.7, tone = 0.7, source2 = 1.5, harsh = 3.0, percussive = 1.0, voiced = 1.3, ejective = 2.0, implosive = 2.0, aspirated = 1.5 }
+hear = { length = 1.0, source2 = 1.5, sibilant = 1.0, tone = 1.0, sub = 0.0, ultra = 0.0 }
 notes = [
-  "Sound comes from the syrinx, not a larynx; it is filtered by the trachea, the mouth with its tongue, and the beak.",
+  "Sound comes from the syrinx, not the larynx; it is filtered by the trachea, the mouth with its tongue, and the beak.",
+  "Birds do have a larynx at the top of the trachea: it opens and closes (so a glottal stop is possible) but does not vibrate. Voicing is the syrinx's: a voiced-voiceless contrast is a matter of syrinx timing, a little dear (voiced 1.3), not impossible.",
   "No lips and no teeth: a labial is heard as labial but made another way (beak closure, tongue against the beak); dental and lip-tooth sounds are substitutes too, dearer still.",
-  "No velum to shut off the nose cleanly, so nasals and nasal vowels are dear.",
+  "No velum: the nasal cavity opens to the mouth through the choanal slit in the palate, which the tongue can block but nothing lifts and lowers as a soft palate does. Keeping nasal and oral apart is hard, so nasals and nasal vowels are dear.",
   "Two voices at once are natural (each side of the syrinx can run on its own) and are heard, so a second voice can carry contrast.",
   "Pitch is controlled finely in song, so tone is cheap to make; it is heard about as well as by humans, not better.",
-  "Timing is heard more finely than by humans (birds resolve the fine time structure of sounds), so length contrasts are clear.",
+  "Durations are heard about as humans hear them. Birds resolve the fine time structure inside a sound (within one pitch period) better than we do, but that is not the same as telling a long sound from a short one.",
 ]
 sources = [
   "Patterson, D. K. & Pepperberg, I. M. 1994. A comparative study of human and parrot phonation: acoustic and articulatory correlates of vowels. JASA 96(2): 634-648.",
@@ -36,14 +37,15 @@ sources = [
 ]
 
 [aarakocra]
-make_cost = { labial = 3.0 }
+make_cost = { labial = 5.0 }
 notes = [
   "Ruling (Daniel, 2026-10-28): aarakocra labials are costly substitutes, heard as labial, made another way, as parrots do.",
+  "Labial 5: with the substitute surcharge (profiles.SUBSTITUTE) an aarakocra proto-language has about 2 labial consonants where a human one has about 5.",
   "Large raptor-like bodies: a lower voice than a parrot's, but the avian stem's mouth and ear.",
 ]
 
 [kenku]
-make_cost = { labial = 1.6, labiodental = 2.5, dental = 1.5, nasal = 1.5, nasal_vowel = 2.0 }
+make_cost = { labial = 1.6, labiodental = 2.5, dental = 1.5, nasal = 2.0, nasal_vowel = 2.5 }
 notes = [
   "Mimics: any sound they have heard is cheaper for them to reproduce than for other birds (lower substitute costs).",
   "The canon has kenku unable to invent new words; that is a note for the story, not a mechanism here: their languages change by the ordinary rules.",
@@ -53,11 +55,11 @@ sources = ["Kenku lore: Volo's Guide to Monsters (2016) / Monsters of the Multiv
 # ---------------------------------------------------------------- reptilian line
 [reptilian]
 articulators = ["teeth", "tongue_tip", "tongue_body", "larynx", "pharynx"]
-make_cost = { labial = 4.0, labiodental = 5.0, round_vowel = 3.0, nasal = 1.8, nasal_vowel = 3.0, fricative = 0.8, sibilant = 0.7, harsh = 2.0, aspirated = 0.8, tone = 1.3 }
+make_cost = { labial = 4.0, labiodental = 5.0, round_vowel = 3.0, nasal = 3.5, nasal_vowel = 4.0, fricative = 0.8, sibilant = 0.7, harsh = 2.0, aspirated = 0.8, tone = 1.3 }
 hear = { sibilant = 0.6, place = 0.9, sub = 0.0, ultra = 0.0 }
 notes = [
   "No mobile lips: labials and lip-rounding are dear substitutes (a rounded vowel's lowered resonances made by retracting the tongue and lowering the larynx).",
-  "No soft palate in the mammal sense: a nasal-oral contrast is harder to keep, so nasals are dear.",
+  "No velum: the internal nostrils (choanae) open into the roof of the mouth with nothing to lift and lower as a mammal's soft palate does (crocodilians seal the throat with a palatal valve, all or nothing). A nasal-oral contrast is hard to keep, so nasals are dear (3.5, nasal vowels 4).",
   "A hiss is the reptile default: voiceless fricatives and sibilants are cheap, breathy aspiration cheap.",
   "Reptile ears are tuned low (most below ~4-5 kHz), so the high hiss band that tells s from sh is heard coarsely.",
 ]
@@ -80,11 +82,11 @@ notes = ["No reason found to differ from the saurian stem; kept as inherited."]
 [tortle]
 articulators = ["-teeth", "+beak"]
 make_cost = { labial = 2.0, round_vowel = 2.0, dental = 2.0, sibilant = 1.5, fricative = 1.0 }
-hear = { sibilant = 0.2, place = 0.5, back = 0.6, height = 1.0, tone = 1.0, length = 1.2 }
+hear = { sibilant = 0.2, place = 0.4, back = 0.4, height = 1.0, tone = 1.0, length = 1.2 }
 notes = [
   "A beak instead of lips and teeth: closing the beak shuts the front of the tract as lips do, so a beak-made labial is a nearer substitute than a lipless reptile's (dear, but less so).",
   "No teeth: the incisor edge that makes s hiss sharply is missing, so sibilants are duller and dearer.",
-  "Turtle hearing is low and narrow (best around 300-500 Hz, little above ~1.2 kHz): vowel height (F1) is heard well, front-back (F2) and consonant place coarsely, the hiss band barely.",
+  "Turtle hearing is low and narrow (best around 300-500 Hz, little above ~1.2 kHz): vowel height (F1, 300-800 Hz) is heard well. Front-back (F2: ~2 kHz for a front vowel, ~0.8 kHz for a back one) and consonant place (bursts and transitions mostly above 1.5 kHz) are heard only from what reaches below the cut-off, so coarsely (0.4); the hiss band barely.",
 ]
 sources = [
   "Christensen-Dalsgaard, J., Brandt, C., Willis, K. L., Christensen, C. B., Ketten, D., Edds-Walton, P., Fay, R. R., Madsen, P. T. & Carr, C. E. 2012. Specialization for underwater hearing by the tympanic middle ear of the turtle, Trachemys scripta elegans. Proc R Soc B 279: 2816-2824. (ABR best sensitivity 300-500 Hz)",

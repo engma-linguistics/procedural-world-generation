@@ -52,7 +52,7 @@ S043	fortition	∅ > t / n_s (excrescent stop)	coarticulation	tongue_tip, velum	
 S044	fortition	∅ > b / m_r, m_l	coarticulation	lips, velum	4	Latin camera > French chambre; Latin numerus > French nombre
 S045	fortition	∅ > d / n_r	coarticulation	tongue_tip, velum	4	Old English þunor > thunder; Latin tenerum > French tendre
 S046	fortition	C > CC / V́_j (West Germanic gemination)	prosody	timing	3	Proto-Germanic *satjan > Old English settan 'set'
-S047	fortition	C > CC / V́_ (stressed short vowel)	prosody	timing, stress	3	Italian raddoppiamento: Latin femina > Italian femmina
+S047	fortition	C > CC / V́[−long]_V (stressed short vowel)	prosody	timing, stress	3	Italian raddoppiamento: Latin femina > Italian femmina
 S048	fortition	l > d / N_	coarticulation	tongue_tip, velum	4	Swahili -refu 'long' > ndefu (class 9/10, Bantu *l > d after nasal)
 S049	palatalization	k > tʃ / _[+front V]	coarticulation	tongue_body, tongue_blade	5	Latin centum [k] > Italian cento [tʃ]; Old English cirice > church
 S050	palatalization	g > dʒ / _[+front V]	coarticulation	tongue_body, tongue_blade	5	Latin gentem > Italian gente [dʒ]
@@ -73,16 +73,16 @@ S064	palatalization	a > ɛ / [+stress] open syllable	coarticulation	tongue_body	
 S065	labial	kʷ > p	perception	lips, tongue_body	3	Proto-Indo-European *kʷetwores > Welsh pedwar vs Old Irish cethair; Greek pente
 S066	labial	gʷ > b	perception	lips, tongue_body	3	Proto-Indo-European *gʷem- > Greek bainō 'go'
 S067	labial	kʷ > k	effort	lips	4	Latin quis > Spanish quién [kjen]; Latin quattuor > Portuguese quatro [kw] retained vs French quatre [k]
-S068	labial	C > Cʷ / _u, _o (labialization, phonologized when vowel lost)	coarticulation	lips	3	English coo [kʷuː] allophonic; Northwest Caucasian labialized consonants traced to lost rounded vowels (Colarusso)
+S068	labial	C[−labial −glottal −glide] > Cʷ / _u, _o (labialization, phonologized when vowel lost)	coarticulation	lips	2	English coo [kʷuː] allophonic; Northwest Caucasian labialized consonants traced to lost rounded vowels (Colarusso)
 S069	labial	w > v	effort	lips	4	Latin v [w] > Romance [v]; Old High German w > German [v]
 S070	labial	ɸ > f	perception	lips	4	Proto-Germanic *ɸ (< *p) > f
 S071	labial	θ > f	perception	tongue_tip, lips	3	London English think [fɪŋk]; Old Russian Fëdor < Greek Theodoros
 S072	labial	m > n / _#	dispersion	lips, tongue_tip	4	Proto-Indo-European *-om > Greek -on; Spanish álbum [alβun]
 S073	labial	u > y	dispersion	tongue_body	3	Latin murum > French mur [myʁ]; Attic Greek u > y
 S074	labial	y > i	effort	lips	4	Old English cyning [y] > king; Greek υ [y] > [i]
-S075	assimilation	N > [αplace] / _C[αplace]	coarticulation	velum, lips, tongue_tip, tongue_body	5	Latin in- + possibilis > impossibilis; English input [ɪmpʊt]
+S075	assimilation	N > [αplace] / _C[αplace −glottal −pharyngeal]	coarticulation	velum, lips, tongue_tip, tongue_body	5	Latin in- + possibilis > impossibilis; English input [ɪmpʊt]
 S076	assimilation	[−son] > [−voice] / _[−voice]	coarticulation	larynx	5	Russian lodka [lotkə]
-S077	assimilation	[−son] > [+voice] / _[+voice −son]	coarticulation	larynx	5	Russian vokzal [vɐɡzal]
+S077	assimilation	[−son −glottal] > [+voice] / _[+voice −son]	coarticulation	larynx	5	Russian vokzal [vɐɡzal]
 S078	assimilation	pt > tt	coarticulation	lips, tongue_tip, timing	5	Latin septem > Italian sette
 S079	assimilation	kt > tt	coarticulation	tongue_body, tongue_tip, timing	5	Latin noctem > Italian notte; factum > fatto
 S080	assimilation	ks > ss	coarticulation	tongue_body, timing	4	Latin saxum > Italian sasso
@@ -100,7 +100,7 @@ S091	dissimilation	r...r > l...r	perception	tongue_tip	3	Latin peregrinus > Ital
 S092	dissimilation	l...l > l...r	perception	tongue_tip	3	Latin -alis > -aris after l (militaris)
 S093	dissimilation	Cʰ...Cʰ > C...Cʰ (Grassmann's law)	perception	larynx	2	Proto-Indo-European *dʰidʰeh₁- > Sanskrit dadhāti, Greek tithēmi
 S094	dissimilation	n...n > l...n, r...n	perception	velum, tongue_tip	2	Latin Bononia > Italian Bologna; Latin anima > *anma > Spanish alma (nm > lm)
-S095	devoicing	[−son] > [−voice] / _# (final devoicing)	effort	larynx	5	German Rad [ʁaːt]; Dutch hond [ɦɔnt]; Russian, Polish, Turkish
+S095	devoicing	[−son +pulmonic] > [−voice] / _# (final devoicing)	effort	larynx	5	German Rad [ʁaːt]; Dutch hond [ɦɔnt]; Russian, Polish, Turkish
 S096	devoicing	z > s	effort	larynx	4	Old Spanish casa [z] > [s] (merger with s)
 S097	devoicing	b, d, g > p, t, k (Grimm)	dispersion	larynx	3	Latin decem vs English ten; genu vs knee
 S098	devoicing	bʰ, dʰ, gʰ > b, d, g (Grimm)	dispersion	larynx	3	Sanskrit bharati vs English bear; Proto-Indo-European *dʰwer- > door
@@ -168,13 +168,13 @@ S159	dental	θ > s	perception	tongue_tip	3	Urban Arabic θ > s in learned words 
 S160	dental	ts > θ (via s̪)	dispersion	tongue_tip	2	Old Spanish ç [ts] > Castilian [θ] (cinco [θiŋko])
 S161	dental	ʃ > x	dispersion	tongue_body	2	Old Spanish dixo [ʃ] > dijo [x]
 S162	laryngeal	tt > ʰt (preaspiration)	prosody	larynx, timing	2	Icelandic takka [tʰaʰka]; Scottish Gaelic mac [maʰk]
-S163	laryngeal	D > ɗ, ɓ (implosivization of voiced stops)	effort	larynx	2	Sindhi implosives from Prakrit geminate voiced stops (*bb > ɓ)
+S163	laryngeal	b, d > ɓ, ɗ (implosivization of voiced stops)	effort	larynx	2	Sindhi implosives from Prakrit geminate voiced stops (*bb > ɓ)
 S164	laryngeal	Cʔ > Cʼ (stop + glottal stop > ejective)	prosody	larynx	2	Ossetian ejectives (contact with Kartvelian); widely proposed in reconstructions
-S165	laryngeal	D > D̤ (voiced stops > breathy, register)	tonogenesis	larynx, pitch_ear	3	Khmer and Mon registers from Old Khmer voiced onsets
-S166	tone	V > V˩ / D_ ; V > V˥ / T_ ; then D > T (tone split from onset voicing)	tonogenesis	larynx, pitch_ear	4	Middle Chinese yin/yang tone split; Kammu dialects (voicing in Eastern Kammu, tone in Northern)
-S167	tone	V > V˧˥ / _ʔ ; then ʔ > ∅ (tone from glottal coda)	tonogenesis	larynx, pitch_ear	3	Vietnamese: final *-ʔ gave one tone pair (Haudricourt 1954)
-S168	tone	V > V˥˩ / _h ; then h > ∅ (tone from h coda, < s)	tonogenesis	larynx, pitch_ear	3	Vietnamese: final *-h (< *-s) gave a second tone pair (Haudricourt 1954)
-S169	tone	V > tone class by coda (open or sonorant = A, ʔ = B, h = C, stop = D), each split by onset voicing	tonogenesis	larynx, pitch_ear	3	Proto-Tai tones from coda type and onset voicing (Thai five tones)
+S165	laryngeal	D[+pulmonic] > D̤ (voiced stops > breathy, register)	tonogenesis	larynx, pitch_ear	3	Khmer and Mon registers from Old Khmer voiced onsets
+S166	tone	V > V˨ / D_ ; V > V˦ / T_ ; then D > T (tone split from onset voicing)	tonogenesis	larynx, pitch_ear	4	Middle Chinese yin/yang tone split; Kammu dialects (voicing in Eastern Kammu, tone in Northern)
+S167	tone	V > V˧˥ / _ʔ{C, #} ; then ʔ > ∅ / V_{C, #} (tone from glottal coda)	tonogenesis	larynx, pitch_ear	3	Vietnamese: final *-ʔ gave one tone pair (Haudricourt 1954)
+S168	tone	V > V˥˩ / _h{C, #} ; then h > ∅ / V_{C, #} (tone from h coda, < s)	tonogenesis	larynx, pitch_ear	3	Vietnamese: final *-h (< *-s) gave a second tone pair (Haudricourt 1954)
+S169	tone	V > V˨ / _T{C, #} ; V > V˧˥ / _ʔ{C, #} ; V > V˥˩ / _h{C, #} ; then ʔ, h > ∅ / V_{C, #} (Proto-Tai coda classes B, C and D, open and sonorant-final syllables stay unmarked as class A, the onset-voicing split is S166)	tonogenesis	larynx, pitch_ear	3	Proto-Tai tones from coda type and onset voicing (Thai five tones)
 S170	tone	1-syllable vs 2-syllable stress contours > lexical pitch accent	prosody	pitch_ear, stress	2	Swedish and Norwegian accent 1 vs accent 2 (anden 'the duck' vs 'the spirit')
 S171	tone	H > ∅ / H_ (Meeussen's rule, adjacent high tones dissimilate)	dispersion	pitch_ear	3	Bantu tonology (e.g. Shona, Kirundi)
 S172	tone	tone > stress (tone loss)	prosody	pitch_ear, stress	2	Swahili lost Proto-Bantu tone; stress fixed on penult

@@ -33,7 +33,7 @@ from typing import Callable, Iterable
 import numpy as np
 
 from . import inventory as _inv
-from .percepts import Segment, from_ipa, word_ipa
+from .percepts import Segment, from_ipa, syllabify, word_ipa
 
 DATA = Path(__file__).parent / "data"
 
@@ -50,10 +50,22 @@ RATE_BY_FREQ = {1: 1.0, 2: 10 ** 0.25, 3: 10 ** 0.5, 4: 10 ** 0.75, 5: 10.0}
 SWADESH_RETENTION_1KYR = 0.86
 BASE_REPLACE = 0.001437   # per generation; re-solve with calibrate_base_replace() if the table or RATE_BY_FREQ change
 
-SOURCES = {"derive": 0.40, "compound": 0.25, "shift": 0.20, "borrow": 0.10, "taboo": 0.05}
+# Where a replacement comes from. A fresh root ("coin", origin unknown) keeps a real share: in attested histories a good
+# part of the basic vocabulary has no known etymology, and without it every new word is built from old ones and words
+# only grow. Only nouns compound (for the rest the compound share goes to the rest); borrow needs a contact lect, taboo a taboo
+# concept, shift a CLICS neighbour with a word.
+SOURCES = {"derive": 0.35, "compound": 0.20, "shift": 0.15, "coin": 0.15, "borrow": 0.10, "taboo": 0.05}
 COLEX_MIN_FAMILIES = 12       # proto colexifications only from CLICS edges seen in at least this many families
 COLEX_P_PER_FAMILY = 0.008    # chance a proto-lexicon colexifies an edge, per family attesting it (TREE/WOOD 59 -> 0.47)
-MAX_SYLL = 4                  # a compound longer than this keeps only the first syllable of its modifier
+MAX_SYLL = 3                  # a derived word has at most this many syllables (the base is clipped to fit)
+MAX_SYLL_COMPOUND = 4         # a compound has at most this many (its parts are clipped to their first 1-2 syllables)
+MAX_SEG = 12                  # and no new word is longer than this many segments
+BUILD_MIN_FAMILIES = 5        # CLICS edges a new word is built or shifted along (3-4 families is mostly chance)
+SHIFT_GAP = 50.0              # generations: a concept takes or passes on a word by colexification shift at most this often
+HOMOPHONE_BOOST = 4.0         # replacement hazard x this for the rarer members of a homophone group of 3+ or of an
+                              # accidental pair (repair by renewal)
+COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate pair (a shift; a proto pair: x1)
+AFFIX_RENEW = 0.01            # per generation: a derivational affix worn to nothing is renewed from a word (or coined)
 ELAB_THRESHOLD = 0.5          # niche weight above which a concept starts to split
 ELAB_RATE = 0.02              # per generation, times the niche weight, once past the threshold
 AFFIX_MEANINGS = ("little", "place", "agent", "thing", "do", "like")  # derivational morphemes, one form each per lexicon
@@ -110,6 +122,7 @@ class Concept:
     taboo: bool = False           # may be replaced by a taboo paraphrase
     local: bool = False           # kept from a substrate on language shift
     base: tuple = ()              # related concepts a new word is built from when CLICS gives none
+    field: str = ""               # concepts.tsv semantic field (core concepts)
 
 
 def _i(s: str) -> str:
@@ -282,7 +295,7 @@ def _core_concepts() -> tuple[Concept, ...]:
         local = r["semantic_field"] in _LOCAL_FIELDS or g in _LOCAL_CORE
         taboo = r["semantic_field"] == "Animals" or g in _TABOO_CORE
         dom = "god" if g in GOD_DOMAIN_CONCEPT.values() else "core"
-        out.append(Concept(_i(g), g.lower(), pos, sc, dom, lists, g, True, taboo, local))
+        out.append(Concept(_i(g), g.lower(), pos, sc, dom, lists, g, True, taboo, local, (), r["semantic_field"]))
     return tuple(out)
 
 
@@ -392,6 +405,9 @@ class Lexicon:
     words: dict[str, Word] = field(default_factory=dict)
     affixes: dict[str, tuple] = field(default_factory=dict)   # meaning -> (Form, is_suffix)
     head_first: bool = False                                  # compound head order (grammar may overwrite)
+    gen: float = 0.0                                          # generations stepped so far (the shift clock)
+    shifted: dict[str, float] = field(default_factory=dict)  # concept -> `gen` of its last colexification shift
+    notes: list = field(default_factory=list)                 # (kyr, text): affixes lost and renewed
 
     def __contains__(self, concept: str) -> bool:
         return resolve(concept) in self.words
@@ -421,7 +437,8 @@ class Lexicon:
 
     def copy(self, lect: str | None = None) -> "Lexicon":
         """A cheap copy: Words and EtymSteps are immutable and shared."""
-        return Lexicon(lect or self.lect, dict(self.words), dict(self.affixes), self.head_first)
+        return Lexicon(lect or self.lect, dict(self.words), dict(self.affixes), self.head_first, self.gen,
+                       dict(self.shifted), [])
 
 
 def _step(kyr, lect, process, form, gloss, note="") -> EtymStep:
@@ -476,7 +493,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
             continue
         for _ in range(30):
             f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class))
-            if f not in used:
+            if f not in used and len(f) <= MAX_SEG:
                 break
         used.add(f)
         lex.words[c.id] = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "proto", f, c.gloss),), float(kyr))
@@ -495,15 +512,111 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     return lex
 
 
-# --- making new words ---------------------------------------------------------------------------------------------------
+# --- word-building vocabulary -------------------------------------------------------------------------------------------
 
 _QUALITY = ("BLACK", "WHITE", "RED", "YELLOW", "GREEN", "BROWN", "BIG", "SMALL", "LONG", "OLD", "SHARP", "ROUND", "HEAVY")
+COLOURS = frozenset({"BLACK", "WHITE", "RED", "YELLOW", "GREEN", "BROWN", "BLUE"})
+
+# --- semantic classes: what a compound may be built from -----------------------------------------------------------------
+
+_WATER_BODIES = {"RIVER", "LAKE", "SEA", "MARSH", "SPRING (OF WATER)", "FORD", "COAST"}
+_PERSON_ROLES = {"PEOPLE", "STRANGER", "ENEMY", "FRIEND", "CHIEF", "PERSON", "MAN", "WOMAN", "CHILD (YOUNG HUMAN)",
+                 "MALE PERSON"}
+_SETTLEMENTS = {"VILLAGE", "TOWN", "HOUSE"}
+_GOD_DOMAIN_CLASS = {"HERD": "animal", "HEARTH": "settlement", "STORM": "nature", "FLOOD": "water", "HARVEST": "abstract",
+                     "FERTILITY": "abstract", "SMITHING": "abstract", "DEATH": "abstract", "WAR": "abstract"}
+_TOOL_FIELDS = {"Basic actions and technology", "The house", "Clothing and grooming", "Warfare and hunting"}
+#: semantic plausibility: a compound for a concept of this class takes its head from this class word ("river" for a water
+#: body, "person" for a kin term or a role, "animal" for an animal ...), the modifier saying which kind
+COMPOUND_HEADS = {
+    "water": ("RIVER", "WATER"), "land": ("LAND", "EARTH (SOIL)"), "animal": ("ANIMAL",),
+    "plant": ("TREE", "GRASS"), "kin": ("PERSON",),
+    "person": ("PERSON", "MAN"), "food": ("FOOD",), "god": ("SPIRIT", "GOD"), "settlement": ("HOUSE", "VILLAGE"),
+}
+_FEMALE_KIN = {"MOTHER", "WIFE", "DAUGHTER", "SISTER", "GRANDMOTHER", "AUNT", "WOMAN"}
+_MALE_KIN = {"FATHER", "HUSBAND", "SON", "BROTHER", "GRANDFATHER", "UNCLE", "MAN", "MALE PERSON"}
+#: classes whose compounds may take a plain quality modifier ('black-bird', 'big-river'); never kin, verbs, gods, abstracts
+CONCRETE = frozenset({"animal", "plant", "water", "land", "food", "tool", "nature", "body"})
+
+
+@functools.cache
+def sem_class(cid: str) -> str:
+    """A coarse semantic class: verb | quality | colour | number | func | name | animal | plant | kin | person | god |
+    water | land | settlement | food | tool | body | nature | abstract."""
+    c = concept_info(cid)
+    if c.pos == "V":
+        return "verb"
+    if c.pos in ("FUNC", "NAME"):
+        return c.pos.lower()
+    if c.id in COLOURS:
+        return "colour"
+    if c.domain == "number":
+        return "number"
+    if c.pos == "A":
+        return "quality"
+    d, f = c.domain, c.field
+    if d in ("animal", "fauna") or f == "Animals":
+        return "animal"
+    if d == "crop" or f == "Agriculture and vegetation":
+        return "plant"
+    if c.id in _PERSON_ROLES:
+        return "person"
+    if d == "kin" or f == "Kinship":
+        return "kin"
+    if c.id in ("GOD", "SPIRIT", "ANCESTORS"):
+        return "god"   # (the other god-domain concepts, SEA, HARVEST, SMITHING ..., are plain things)
+    if c.id in _GOD_DOMAIN_CLASS:
+        return _GOD_DOMAIN_CLASS[c.id]
+    if c.id in _WATER_BODIES:
+        return "water"
+    if d == "landscape" or c.id in _LOCAL_CORE:
+        return "land"
+    if c.id in _SETTLEMENTS:
+        return "settlement"
+    if d == "food" or f == "Food and drink":
+        return "food"
+    if d in ("fuel", "good") or f in _TOOL_FIELDS:
+        return "tool"
+    if f == "The body":
+        return "body"
+    if f == "The physical world":
+        return "nature"
+    return "abstract"
+
+
+def _domain_key(cid: str) -> str:
+    """The domain used by homophony avoidance: the semantic class, verbs and qualities apart from nouns."""
+    return sem_class(cid)
+
+
+@functools.cache
+def _class_members() -> dict[str, tuple[str, ...]]:
+    out: dict[str, list[str]] = {}
+    for c in _all_concepts():
+        out.setdefault(sem_class(c.id), []).append(c.id)
+    return {k: tuple(v) for k, v in out.items()}
+
+
+# --- making new words ---------------------------------------------------------------------------------------------------
+
+def syllables(form: Form) -> int:
+    """Syllables of a form (percepts.syllabify)."""
+    return len(syllabify(form)) if form else 0
+
+
+def clip(form: Form, n: int) -> Form:
+    """The first `n` syllables of a form (as compounds clip their parts: Oxford < oxen-ford)."""
+    syl = syllabify(form)
+    if len(syl) <= n:
+        return tuple(form)
+    return tuple(s for x in syl[:max(1, n)] for s in x.segments)
 
 
 def _related(lex: Lexicon, cid: str, exclude=()) -> list[tuple[str, float]]:
     """Words a new word for `cid` can be built from: CLICS neighbours, then the concept's base hints, weighted."""
     ex = {cid, *exclude}
-    out = [(n, float(f)) for n, f in clics_neighbours(cid) if n in lex.words and n not in ex]
+    out = [(n, float(f)) for n, f in clics_neighbours(cid, BUILD_MIN_FAMILIES) if n in lex.words and n not in ex
+           and lex.words[n].pos != "FUNC"]
     for b in concept_info(cid).base:
         b = resolve(b)
         if b in lex.words and b not in ex and all(b != n for n, _ in out):
@@ -511,14 +624,14 @@ def _related(lex: Lexicon, cid: str, exclude=()) -> list[tuple[str, float]]:
     return out
 
 
+def _short(lex: Lexicon, items: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    """Prefer short bases: weight x 1/syllables."""
+    return [(k, w / max(1, syllables(lex.words[k].form))) for k, w in items]
+
+
 def _pick(rng, items: list[tuple[str, float]]) -> str:
     w = np.array([x[1] for x in items], float)
     return items[int(rng.choice(len(items), p=w / w.sum()))][0]
-
-
-def _any_word(rng, lex: Lexicon, exclude=(), max_class=3) -> str | None:
-    ks = [k for k, w in lex.words.items() if w.freq_class <= max_class and w.pos in ("N", "A", "V") and k not in exclude]
-    return ks[int(rng.integers(len(ks)))] if ks else None
 
 
 def _affix_meaning(c: Concept) -> str:
@@ -540,10 +653,17 @@ def _attach(lex: Lexicon, base: Form, meaning: str) -> Form:
     return base + af if suf else af + base
 
 
+def _carries(lex: Lexicon, w: Word, meaning: str) -> bool:
+    """Does `w` already carry the derivational affix for `meaning` (in its history, or visibly at its edge)?"""
+    p = f"derive:{meaning}"
+    if any(s.process == p for s in w.etym):
+        return True
+    af, suf = lex.affixes.get(meaning, ((), True))
+    return bool(af) and len(w.form) > len(af) and (w.form[-len(af):] == af if suf else w.form[:len(af)] == af)
+
+
 def _join(lex: Lexicon, head: Form, mod: Form, head_first: bool | None) -> Form:
     hf = lex.head_first if head_first is None else head_first
-    if _nsyl(head) + _nsyl(mod) > MAX_SYLL:
-        mod = _first_syllable(mod)
     return head + mod if hf else mod + head
 
 
@@ -558,62 +678,152 @@ def _first_syllable(form: Form) -> Form:
     return form
 
 
+def _fit_base(base: Form, affix: Form) -> tuple[Form, bool]:
+    """Clip a derivation's base so base + affix keeps to MAX_SYLL syllables and MAX_SEG segments."""
+    a = syllables(affix)
+    room = max(1, min(2, MAX_SYLL - a))
+    clipped = False
+    if syllables(base) + a > MAX_SYLL:
+        base, clipped = clip(base, room), True
+    if len(base) + len(affix) > MAX_SEG and syllables(base) > 1:
+        base, clipped = clip(base, 1), True
+    return base, clipped
+
+
+def _fit_parts(h: Form, m: Form) -> tuple[Form, Form, bool]:
+    """Clip a compound's parts (the modifier first) to their first 1-2 syllables until the whole keeps to
+    MAX_SYLL_COMPOUND syllables and MAX_SEG segments."""
+    clipped = False
+    for part, n in (("m", 2), ("h", 2), ("m", 1), ("h", 1)):
+        if syllables(h) + syllables(m) <= MAX_SYLL_COMPOUND and len(h) + len(m) <= MAX_SEG:
+            break
+        if part == "m" and syllables(m) > n:
+            m, clipped = clip(m, n), True
+        elif part == "h" and syllables(h) > n:
+            h, clipped = clip(h, n), True
+    return h, m, clipped
+
+
+def _cap(form: Form, n_syll: int, inv) -> Form:
+    """Last guard after repair: at most n_syll syllables and MAX_SEG segments."""
+    if syllables(form) > n_syll or len(form) > MAX_SEG:
+        f = clip(form, n_syll)
+        while len(f) > MAX_SEG and syllables(f) > 1:
+            f = clip(f, syllables(f) - 1)
+        form = _inv.repair(f[:MAX_SEG], inv) or form[:MAX_SEG]
+    return form
+
+
 def derive(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None, base: str | None = None,
            meaning: str | None = None) -> Word | None:
     """A new word for `concept`: a related word plus a derivational affix ('little', 'place of', 'one who', 'thing',
-    'do', 'like'), repaired to the phonotactics. Not stored; see `coin` / `step`."""
+    'do', 'like'), repaired to the phonotactics. Short bases are preferred (weight 1/syllables), a base that already
+    carries the same affix is refused, and the result keeps to MAX_SYLL syllables (the base is clipped to its first 1-2
+    syllables, noted 'clip'). None when no related word will do or the affix has worn away. Not stored; see `coin` /
+    `step`."""
     c = concept_info(concept)
     lect_id = lect_id or lex.lect
-    if base is None:
-        rel = _related(lex, c.id)
-        base = _pick(rng, rel) if rel else _any_word(rng, lex, exclude=(c.id,))
-    if base is None:
-        return None
     meaning = meaning or _affix_meaning(c)
-    b = lex.words[resolve(base)]
-    form = _inv.repair(_attach(lex, b.form, meaning), inv)
+    af, _ = lex.affixes.get(meaning, ((), True))
+    if not af:
+        return None
+    if base is None:
+        rel = [(k, w) for k, w in _related(lex, c.id) if not _carries(lex, lex.words[k], meaning)]
+        if not rel:
+            return None
+        base = _pick(rng, _short(lex, rel))
+    b = lex.words.get(resolve(base))
+    if b is None or _carries(lex, b, meaning):
+        return None
+    bf, clipped = _fit_base(b.form, af)
+    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), MAX_SYLL, inv)
+    note = f"{b.concept} + '{meaning}'" + (f" (clip {b.ipa} > {word_ipa(bf)})" if clipped else "")
     return Word(c.id, form, c.pos, c.freq_class,
-                b.etym + (_step(kyr, lect_id, f"derive:{meaning}", form, c.gloss, f"{b.concept} + '{meaning}'"),), float(kyr))
+                b.etym + (_step(kyr, lect_id, f"derive:{meaning}", form, c.gloss, note),), float(kyr))
+
+
+def _clash(a: str, b: str) -> bool:
+    """Pairs a compound never joins: a verb with a colour."""
+    ca, cb = sem_class(a), sem_class(b)
+    return {ca, cb} == {"verb", "colour"}
+
+
+def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: str | None) -> tuple[str | None, str | None]:
+    """Head: the concept's class word (COMPOUND_HEADS) or a base hint of the same class, else a related noun. Modifier: a
+    CLICS neighbour, base hint or same-class concept (weight 3), or for concrete nouns a quality (weight 1)."""
+    cls = sem_class(c.id)
+    if head is None:
+        if c.pos != "N":
+            return None, None   # verbs, qualities and function words are replaced by derivation, shift or coinage
+        heads = COMPOUND_HEADS.get(cls, ())
+        if cls in ("kin", "person"):   # 'woman' heads a female kin term, 'man' a male one
+            g = ("WOMAN",) if c.id in _FEMALE_KIN else ("MAN", "MALE PERSON") if c.id in _MALE_KIN else ()
+            heads = next(([h] for h in (*g, "PERSON") if h in lex.words and h != c.id), heads)
+        cands = [(h, 3.0) for h in heads if h in lex.words and h != c.id]
+        cands += [(resolve(b), 3.0) for b in c.base if resolve(b) in lex.words and resolve(b) != c.id
+                  and sem_class(resolve(b)) == cls and all(resolve(b) != h for h, _ in cands)]
+        if not cands:
+            cands = [(k, w) for k, w in _related(lex, c.id) if lex.words[k].pos == "N"]
+        if not cands:
+            return None, None
+        head = _pick(rng, _short(lex, cands))
+    head = resolve(head)
+    if modifier is None:
+        ex = {c.id, head}
+        pool = [(k, 3.0) for k, _ in _related(lex, c.id, exclude=ex)]
+        same = [k for k in _class_members().get(cls, ()) if k in lex.words and k not in ex
+                and all(k != p for p, _ in pool)] if cls not in ("abstract", "func", "name") else []
+        pool += [(k, 3.0 / max(3, len(same))) for k in same]
+        if cls in CONCRETE and lex.words[head].pos == "N":
+            pool += [(q, 1.0) for q in _QUALITY if q in lex.words and q not in ex and all(q != p for p, _ in pool)]
+        pool = [(k, w) for k, w in pool if not _clash(k, head) and not _clash(k, c.id)]
+        if not pool:
+            return head, None
+        modifier = _pick(rng, _short(lex, pool))
+    return head, resolve(modifier)
 
 
 def compound(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None,
              head_first: bool | None = None, head: str | None = None, modifier: str | None = None,
              process: str | None = None, note: str | None = None) -> Word | None:
-    """A new word for `concept` from two existing words (head: a related word; modifier: another related word or a
-    quality), in the lexicon's head order unless `head_first` says otherwise."""
+    """A new word for `concept` from two existing words, in the lexicon's head order unless `head_first` says otherwise.
+    Head: the concept's class word (RIVER for a water body, PERSON for a kin term or role, ANIMAL for an animal ...) or a
+    related noun; modifier: a related or same-class word, or a plain quality for concrete nouns only. Only nouns compound
+    (None). Parts are clipped so the compound keeps to MAX_SYLL_COMPOUND syllables (noted 'clip')."""
     c = concept_info(concept)
     lect_id = lect_id or lex.lect
-    if head is None:
-        rel = _related(lex, c.id)
-        head = _pick(rng, rel) if rel else _any_word(rng, lex, exclude=(c.id,))
-    if head is None:
+    head, modifier = _compound_parts(rng, lex, c, head, modifier)
+    if head is None or modifier is None or head not in lex.words or modifier not in lex.words:
         return None
-    head = resolve(head)
-    if modifier is None:
-        rel = _related(lex, c.id, exclude=(head,))
-        qual = [(q, 3.0) for q in _QUALITY if q in lex.words and q != head]
-        pool = rel + qual
-        modifier = _pick(rng, pool) if pool else _any_word(rng, lex, exclude=(c.id, head))
-    if modifier is None:
-        return None
-    modifier = resolve(modifier)
     h, m = lex.words[head], lex.words[modifier]
-    form = _inv.repair(_join(lex, h.form, m.form, head_first), inv)
+    hf_, mf_, clipped = _fit_parts(h.form, m.form)
+    form = _cap(_inv.repair(_join(lex, hf_, mf_, head_first), inv), MAX_SYLL_COMPOUND, inv)
     proc = process or f"compound:{head}+{modifier}"
-    return Word(c.id, form, c.pos, c.freq_class,
-                h.etym + (_step(kyr, lect_id, proc, form, c.gloss, note or f"{head} + {modifier} ({m.ipa})"),), float(kyr))
+    nt = note or f"{head} + {modifier} ({m.ipa})"
+    if clipped:
+        nt += f" (clip {h.ipa} {m.ipa} > {word_ipa(hf_)} {word_ipa(mf_)})"
+    return Word(c.id, form, c.pos, c.freq_class, h.etym + (_step(kyr, lect_id, proc, form, c.gloss, nt),), float(kyr))
 
 
 def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None, how: str | None = None,
          head_first: bool | None = None, store: bool = True) -> Word:
     """A word for a concept the lect has no word for (a crop arriving with no donor word, an elaboration): derive or
-    compound from related words, or a fresh root when nothing is related. Stored unless `store=False`."""
+    compound from related words, or a fresh root when nothing is related (`how="root"`: always a fresh root, origin
+    unknown). Stored unless `store=False`."""
     c = concept_info(concept)
     lect_id = lect_id or lex.lect
     how = how or ("derive" if rng.random() < 0.6 else "compound")
-    w = derive(rng, lex, c.id, inv, kyr, lect_id) if how == "derive" else compound(rng, lex, c.id, inv, kyr, lect_id, head_first)
-    if w is None or how == "root":
-        f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class))
+    w = None
+    if how == "derive":
+        w = derive(rng, lex, c.id, inv, kyr, lect_id)
+    elif how == "compound":
+        w = compound(rng, lex, c.id, inv, kyr, lect_id, head_first)
+    if w is None:
+        n = _n_syll_for(rng, c.freq_class)
+        for _ in range(10):
+            f = _inv.draw_word(rng, inv, n_syll=n)
+            if len(f) <= MAX_SEG:
+                break
         w = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "coin", f, c.gloss),), float(kyr))
     if store:
         lex.set(w)
@@ -623,29 +833,62 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
 def taboo_word(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None) -> Word | None:
     """A taboo paraphrase: a quality plus 'one who' / 'thing' ('the brown one', 'the long thing')."""
     c = concept_info(concept)
-    qual = [q for q in _QUALITY if q in lex.words]
-    if not qual:
-        return None
-    q = qual[int(rng.integers(len(qual)))]
     meaning = "agent" if c.domain in ("animal", "fauna") or c.taboo and c.pos == "N" else "thing"
     if c.pos == "V":
         meaning = "do"
+    af, _ = lex.affixes.get(meaning, ((), True))
+    qual = [q for q in _QUALITY if q in lex.words and not (c.pos == "V" and q in COLOURS)]
+    if not qual or not af:
+        return None
+    q = qual[int(rng.integers(len(qual)))]
     b = lex.words[q]
-    form = _inv.repair(_attach(lex, b.form, meaning), inv)
+    bf, _ = _fit_base(b.form, af)
+    form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), MAX_SYLL, inv)
     return Word(c.id, form, c.pos, c.freq_class,
                 b.etym + (_step(kyr, lect_id or lex.lect, "taboo", form, c.gloss, f"'the {q.lower()} one'"),), float(kyr))
 
 
+def _shift_root(lex: Lexicon, k: str) -> str:
+    """Follow a chain of shifts back to the concept the word was first coined for (A took B's word, B took C's: C)."""
+    seen = {k}
+    while True:
+        w = lex.words.get(k)
+        last = next((s for s in reversed(w.etym) if not s.process.startswith("sound_change:")), None) if w else None
+        if last is None or not last.process.startswith("shift:"):
+            return k
+        nxt = last.process[len("shift:"):]
+        if nxt in seen or nxt not in lex.words or lex.words[nxt].form != w.form:
+            return k
+        seen.add(nxt)
+        k = nxt
+
+
+def _shift_ok(lex: Lexicon, k: str) -> bool:
+    t = lex.shifted.get(k)
+    return t is None or lex.gen - t >= SHIFT_GAP
+
+
 def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None = None) -> Word | None:
     """Colexification shift: `concept` takes the word of a CLICS neighbour (which keeps it too, now colexified, until a
-    later replacement re-fills it)."""
+    later replacement re-fills it). A concept takes or passes on a word this way at most once per SHIFT_GAP generations,
+    a word already shared by two concepts is not taken, and the step names the root of a shift chain (the note says through which neighbour)."""
     c = concept_info(concept)
-    nb = [(n, float(f)) for n, f in clics_neighbours(c.id) if n in lex.words]
+    if not _shift_ok(lex, c.id):
+        return None
+    shared = {f for f, cs in lex.homophones().items()} if lex.words else set()
+    nb = [(n, float(f)) for n, f in clics_neighbours(c.id, BUILD_MIN_FAMILIES) if n in lex.words and _shift_ok(lex, n)
+          and lex.words[n].form not in shared    # a word already doing double duty is not taken on for a third
+          and (c.pos != "FUNC") == (lex.words[n].pos != "FUNC")]   # function words shift only among themselves
     if not nb:
         return None
-    src = lex.words[_pick(rng, nb)]
+    via = _pick(rng, nb)
+    src = lex.words[via]
+    root = _shift_root(lex, via)
+    note = "" if root == via else f"via {via}"
+    lex.shifted[c.id] = lex.gen
+    lex.shifted[via] = lex.gen
     return Word(c.id, src.form, c.pos, c.freq_class,
-                src.etym + (_step(kyr, lect_id or lex.lect, f"shift:{src.concept}", src.form, c.gloss),), float(kyr))
+                src.etym + (_step(kyr, lect_id or lex.lect, f"shift:{root}", src.form, c.gloss, note),), float(kyr))
 
 
 def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: float, note: str = "",
@@ -661,6 +904,9 @@ def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: fl
     form = _inv.repair(heard, inv)
     if not form:
         form = _inv.repair(tuple(_inv.segments(inv)[:1]), inv) or word.form
+    if len(form) > MAX_SEG:   # epenthesis can swell a cluster-heavy loan; long loans get clipped in use
+        form = _cap(form, MAX_SYLL_COMPOUND, inv)
+        note = (note + "; " if note else "") + "clipped"
     c = concept_info(word.concept)
     w = Word(c.id, form, word.pos, c.freq_class,
              word.etym + (_step(kyr, to_lex.lect, f"borrow:{from_lect_id}", form, c.gloss, note),), float(kyr))
@@ -760,19 +1006,85 @@ def calibrate_base_replace(classes: Iterable[int] | None = None, retention: floa
     return 0.5 * (lo + hi)
 
 
+#: words a worn-away derivational affix is renewed from (its first syllable); none present: a coined syllable
+_AFFIX_SOURCES = {"little": ("CHILD (YOUNG HUMAN)", "SMALL"), "place": ("EARTH (SOIL)", "LAND", "HOUSE"),
+                  "agent": ("PERSON", "MAN"), "thing": (), "do": ("DO OR MAKE",), "like": ("BODY",)}
+
+
+def _lexical_last(w: Word) -> EtymStep | None:
+    """The word's latest step that is not a sound change (how it came to mean what it means)."""
+    return next((s for s in reversed(w.etym) if not s.process.startswith("sound_change:")), None)
+
+
+def _deliberate(w: Word) -> bool:
+    """A colexification made on purpose (a proto colexification or a shift), not an accidental merger."""
+    last = _lexical_last(w)
+    return last is not None and (last.process.startswith("shift:") or last.note.startswith("colexified with "))
+
+
+def _renewal_boost(lex: Lexicon) -> dict[str, float]:
+    """Repair by renewal: the rarer members of a homophone group of 3+, or of an accidental pair, get HOMOPHONE_BOOST
+    times the replacement hazard; the rarer member of a deliberate colexification (a shift) COLEX_BOOST; a proto
+    colexification both words still carry is left alone. The most frequent member keeps the form."""
+    out = {}
+    for _, cs in lex.homophones().items():
+        b = HOMOPHONE_BOOST
+        if len(cs) < 3 and any(_deliberate(lex.words[k]) for k in cs):
+            if all(getattr(_lexical_last(lex.words[k]), "process", "") == "proto" for k in cs):
+                continue   # a proto colexification still in place: stable polysemy (TREE/WOOD), not a repair case
+            b = COLEX_BOOST
+        keep = min(cs, key=lambda k: (lex.words[k].freq_class, k))
+        for k in cs:
+            if k != keep:
+                out[k] = b
+    return out
+
+
+def _clashes(lex: Lexicon, k: str, form: Form, any_domain: bool = True) -> bool:
+    """Would `form` make `k` a homophone of another word (with `any_domain=False`: of a word in another domain, or join
+    a group of 2+)?"""
+    others = [c2 for c2, w in lex.words.items() if c2 != k and w.form == form]
+    if not others:
+        return False
+    return any_domain or len(others) >= 2 or any(_domain_key(o) != _domain_key(k) for o in others)
+
+
+def _renew_affixes(rng, lex: Lexicon, inv, n_generations: float, kyr: float) -> None:
+    p = 1.0 - (1.0 - AFFIX_RENEW) ** n_generations
+    for m in AFFIX_MEANINGS:
+        af, suf = lex.affixes.get(m, ((), True))
+        if af or rng.random() >= p:
+            continue
+        src = next((s for s in _AFFIX_SOURCES.get(m, ()) if s in lex.words), None)
+        f = _first_syllable(lex.words[src].form) if src else ()
+        if not f or len(f) > 3:
+            src = None
+            for _ in range(20):
+                f = _inv.draw_word(rng, inv, n_syll=1)
+                if len(f) <= 3:
+                    break
+        lex.affixes[m] = (tuple(f), suf)
+        lex.notes.append((float(kyr), f"'{m}' affix renewed as {word_ipa(f)} < {src.lower() if src else 'coined'}"))
+
+
 def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, Lexicon] | None = None,
          kyr: float = 0.0, lect_id: str | None = None, niche_weights: dict[str, float] | None = None,
          profile=None, head_first: bool | None = None) -> list[tuple[str, str]]:
     """Lexical events over `n_generations` (fractional is fine) in one batch: each word is replaced with probability
-    1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class], the new word coming from a derivation (40%), a compound
-    (25%), a colexification shift (20%), a loan (10%, only if a contact lexicon has the concept) or a taboo paraphrase (5%,
-    animals and dangerous things only); unavailable sources are dropped and the rest renormalised. Then elaboration by
-    niche. Mutates `lex`; returns [(concept, process)] for the events."""
+    1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class] (x HOMOPHONE_BOOST for the rarer members of a homophone
+    group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (not for verbs), a colexification
+    shift, a fresh root, a loan (only if a contact lexicon has the concept) or a taboo paraphrase (animals and dangerous
+    things only); unavailable sources are dropped and the rest renormalised. A new word that would be a homophone of a
+    word in another domain is redrawn. Then affix renewal and elaboration by niche. Mutates `lex`; returns
+    [(concept, process)] for the events."""
     lect_id = lect_id or lex.lect
     events: list[tuple[str, str]] = []
+    if n_generations > 0:
+        lex.gen += float(n_generations)
     if n_generations > 0 and lex.words:
         keys = list(lex.words)
-        h = np.array([hazard(lex.words[k].freq_class) for k in keys])
+        boost = _renewal_boost(lex)
+        h = np.array([min(1.0, hazard(lex.words[k].freq_class) * boost.get(k, 1.0)) for k in keys])
         p = 1.0 - (1.0 - h) ** n_generations
         hit = np.nonzero(rng.random(len(keys)) < p)[0]
         donors = sorted(contact_words) if contact_words else []
@@ -787,31 +1099,45 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
                 opts.pop("borrow")
             if not c.taboo:
                 opts.pop("taboo")
-            if not clics_neighbours(k) or not any(n in lex.words for n, _ in clics_neighbours(k)):
+            if c.pos != "N":
+                opts.pop("compound")
+            if not _shift_ok(lex, k) or not any(n in lex.words and _shift_ok(lex, n)
+                                                for n, _ in clics_neighbours(k, BUILD_MIN_FAMILIES)):
                 opts.pop("shift")
             names = list(opts)
             w = np.array([opts[s] for s in names])
             src = names[int(rng.choice(len(names), p=w / w.sum()))]
             new = None
-            if src in ("derive", "compound"):
-                taken = {w.form for c2, w in lex.words.items() if c2 != k}
-                for _ in range(3):   # avoid making a homophone when another base or modifier would do
-                    new = (derive(rng, lex, k, inv, kyr, lect_id) if src == "derive"
-                           else compound(rng, lex, k, inv, kyr, lect_id, head_first))
-                    if new is None or new.form not in taken:
+            if src in ("derive", "compound", "taboo", "coin"):
+                for _ in range(3):   # avoid a homophone when another base, modifier or root would do
+                    if src == "derive":
+                        new = derive(rng, lex, k, inv, kyr, lect_id)
+                    elif src == "compound":
+                        new = compound(rng, lex, k, inv, kyr, lect_id, head_first)
+                    elif src == "taboo":
+                        new = taboo_word(rng, lex, k, inv, kyr, lect_id)
+                    else:
+                        new = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
+                    if new is None or not _clashes(lex, k, new.form):
                         break
+                else:
+                    if src != "coin":
+                        new = None   # every try made a homophone: a fresh root instead
             elif src == "shift":
                 new = shift_word(rng, lex, k, kyr, lect_id)
-            elif src == "taboo":
-                new = taboo_word(rng, lex, k, inv, kyr, lect_id)
             elif src == "borrow":
                 d = have[int(rng.integers(len(have)))]
                 new = borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact")
             if new is None:
-                new = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
                 src = "coin"
+                for _ in range(2):
+                    new = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
+                    if not _clashes(lex, k, new.form):
+                        break
             lex.set(new)
             events.append((k, src))
+    if inv is not None and n_generations > 0:
+        _renew_affixes(rng, lex, inv, n_generations, kyr)
     if niche_weights and inv is not None:
         for niche, wt in sorted(niche_weights.items()):
             if wt < ELAB_THRESHOLD:
@@ -870,7 +1196,14 @@ def _merge_ids(ids: str, rule_id: str) -> str:
     return "+".join(parts + ([f"…{more}"] if more else []))
 
 
-def _sound_step(w: Word, form: Form, rule_id: str, kyr: float, lect_id: str) -> Word:
+def minimal_form(old: Form) -> Form:
+    """What is left of a word a sound change would delete whole: its last vowel (the nucleus that held out), else its last
+    segment. Words do not vanish; they wear down to a minimal form."""
+    v = [s for s in old if s.kind == "V"]
+    return (v[-1],) if v else tuple(old[-1:])
+
+
+def _sound_step(w: Word, form: Form, rule_id: str, kyr: float, lect_id: str, note: str = "") -> Word:
     """Append a sound-change step, or fold it into the last step when that is a sound change of the same interval (same
     kyr, same lect) or ends a run of MAX_SOUND_RUN sound changes (then the last step takes the new kyr and form)."""
     last = w.etym[-1] if w.etym else None
@@ -883,9 +1216,9 @@ def _sound_step(w: Word, form: Form, rule_id: str, kyr: float, lect_id: str) -> 
         if last.kyr == kyr or run >= MAX_SOUND_RUN:
             ids = _merge_ids(last.process[len("sound_change:"):], rule_id)
             merged = EtymStep(min(last.kyr, float(kyr)), last.lect, _i(f"sound_change:{ids}"), word_ipa(form), last.gloss,
-                              last.note)
+                              note or last.note)
             return replace(w, form=form, etym=w.etym[:-1] + (merged,))
-    return w.with_step(_step(kyr, lect_id, f"sound_change:{rule_id}", form, concept_info(w.concept).gloss), form)
+    return w.with_step(_step(kyr, lect_id, f"sound_change:{rule_id}", form, concept_info(w.concept).gloss, note), form)
 
 
 def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], rule_id: str, kyr: float,
@@ -893,7 +1226,9 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
     """Run a sound change (`rule_apply_fn(form) -> form`) over every word and the derivational affixes. Only words that
     changed get a `sound_change:<id>` step; successive changes at the same kyr in the same lect collapse into one step
     (ids joined by '+', '+…n' past four), and so does anything past a run of MAX_SOUND_RUN sound-change steps. Returns
-    the number of words changed."""
+    the number of words changed. A word the rule would delete whole keeps a minimal form (`minimal_form`, noted 'kept
+    minimal'); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
+    it."""
     lect_id = lect_id or lex.lect
     n = 0
     cache: dict[Form, Form] = {}
@@ -901,14 +1236,40 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
         f = cache.get(w.form)
         if f is None:
             f = cache[w.form] = tuple(rule_apply_fn(w.form))
-        if f != w.form and f:
-            lex.words[k] = _sound_step(w, f, rule_id, kyr, lect_id)
+        note = ""
+        if not f and w.form:
+            f, note = minimal_form(w.form), "kept minimal"
+        if f != w.form:
+            lex.words[k] = _sound_step(w, f, rule_id, kyr, lect_id, note)
             n += 1
     for m, (af, suf) in list(lex.affixes.items()):
+        if not af:
+            continue
         f = tuple(rule_apply_fn(af))
-        if f:
-            lex.affixes[m] = (f, suf)
+        if not f:
+            lex.notes.append((float(kyr), f"'{m}' affix {word_ipa(af)} worn to nothing by {rule_id}"))
+        lex.affixes[m] = (f, suf)
     return n
+
+
+def stats(lex: Lexicon) -> dict:
+    """Diagnostics: mean and max segments and syllables per word, the share of concepts in homophone groups, and counts
+    per etymology process (every step of every chain, and the latest non-sound-change step of each word)."""
+    import collections
+
+    words = list(lex.words.values())
+    if not words:
+        return {"words": 0, "mean_segments": 0.0, "max_segments": 0, "mean_syllables": 0.0, "homophone_share": 0.0,
+                "processes": {}, "latest": {}}
+    lens = [len(w.form) for w in words]
+    hom = sum(len(v) for v in lex.homophones().values())
+    procs = collections.Counter(s.process.split(":")[0] for w in words for s in w.etym)
+    latest = collections.Counter(
+        next((s.process.split(":")[0] for s in reversed(w.etym) if not s.process.startswith("sound_change:")), "?")
+        for w in words)
+    return {"words": len(words), "mean_segments": float(np.mean(lens)), "max_segments": int(max(lens)),
+            "mean_syllables": float(np.mean([syllables(w.form) for w in words])),
+            "homophone_share": hom / len(words), "processes": dict(procs), "latest": dict(latest)}
 
 
 # --- json ---------------------------------------------------------------------------------------------------------------
@@ -922,15 +1283,17 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
             continue
         words[k] = {"ipa": w.ipa, "pos": w.pos, "freq": w.freq_class, "born_kyr": w.born_kyr,
                     "etym": [s.to_list() for s in w.etym]}
-    return {"lect": lex.lect, "head_first": lex.head_first,
+    return {"lect": lex.lect, "head_first": lex.head_first, "gen": lex.gen, "shifted": dict(lex.shifted),
+            "notes": [list(x) for x in lex.notes],
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in lex.affixes.items()},
             "words": words}
 
 
 def from_json(d: dict) -> Lexicon:
-    lex = Lexicon(d["lect"], {}, {}, bool(d.get("head_first", False)))
+    lex = Lexicon(d["lect"], {}, {}, bool(d.get("head_first", False)), float(d.get("gen", 0.0)),
+                  {_i(k): float(v) for k, v in d.get("shifted", {}).items()}, [tuple(x) for x in d.get("notes", [])])
     for m, a in d.get("affixes", {}).items():
-        lex.affixes[m] = (tuple(from_ipa(a["ipa"])), bool(a["suffix"]))
+        lex.affixes[m] = (tuple(from_ipa(a["ipa"])) if a["ipa"] else (), bool(a["suffix"]))
     for k, v in d["words"].items():
         lex.words[_i(k)] = Word(_i(k), tuple(from_ipa(v["ipa"])), v["pos"], int(v["freq"]),
                                 tuple(EtymStep.from_list(s) for s in v["etym"]), float(v["born_kyr"]))

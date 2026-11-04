@@ -57,7 +57,7 @@ def test_species_cost_equals_human_for_human():
 def test_inheritance_stem_kind_and_flags(tree):
     aar = PR.profile_for(tree, "aarakocra")
     assert aar.source == "data_file" and [c[0] for c in aar.chain] == ["avian", "aarakocra"]
-    assert aar.make_cost["labial"] == 3.0  # the kind overrides the stem's 2.5
+    assert aar.make_cost["labial"] == 5.0  # the kind overrides the stem's 2.5
     assert aar.make_cost["source2"] == PR.load_profiles()["avian"]["make_cost"]["source2"]  # the stem's key survives
     assert "syrinx" in aar.articulators and "lips" not in aar.articulators
     tortle = PR.profile_for(tree, "tortle")
@@ -126,3 +126,44 @@ def test_validate_voice_errors():
     with pytest.raises(ValueError):
         PR.validate_voice({"articulators": ["tentacle"]}, "x")
     assert PR.validate_voice({"make_cost": {"labial": "inf"}}, "x")["make_cost"]["labial"] == math.inf
+
+
+def test_review_claims(tree):
+    avian = PR.profile_for(tree, "avian")
+    assert "larynx" in avian.articulators and "syrinx" in avian.articulators  # opens and closes, does not phonate
+    assert 1.0 < avian.make_cost["voiced"] < 2.0  # voicing is the syrinx's: a modest cost, not an impossibility
+    assert avian.hear["length"] == 1.0  # Dooling 2002 is temporal fine structure, not duration
+    assert avian.make_cost["nasal"] >= 3.0 and PR.profile_for(tree, "reptilian").make_cost["nasal"] >= 3.0  # no velum
+    tortle = PR.profile_for(tree, "tortle")
+    assert tortle.hear["back"] <= 0.4 and tortle.hear["place"] <= 0.4  # F2 and bursts above a ~1.2 kHz ear
+    assert math.isfinite(PR.HUMAN.make_cost["harsh"]) and PR.HUMAN.make_cost["harsh"] > 1  # !Xóõ, Bai: rare, not impossible
+    for k in ("purr", "source2", "sub_register", "ultra_register", "percussive"):
+        assert math.isinf(PR.HUMAN.make_cost[k]), k
+    a, ah = one("a"), one("a‼")
+    assert PR.human_cost(ah) == PR.species_cost(PR.HUMAN, ah) and PR.human_cost(a) < PR.human_cost(ah) < math.inf
+
+
+def test_aarakocra_rarely_have_labials(tree):
+    """The doc's claim: aarakocra proto-languages have labials at well under half the human rate."""
+    import numpy as np
+    from planet.language import inventory as I
+
+    def mean_labials(profile):
+        rng = np.random.default_rng(1423)
+        invs = [I.draw_inventory(rng, profile) for _ in range(200)]
+        return sum(sum(1 for c in inv.consonants if c.place == 0 or c.double) for inv in invs) / len(invs)
+    human, aar = mean_labials(PR.profile_for(tree, "human")), mean_labials(PR.profile_for(tree, "aarakocra"))
+    assert aar < 0.5 * human, (aar, human)
+
+
+def test_hear_word_ignores_unheard_axes_but_drops_unheard_registers():
+    inv = [one(x) for x in ("k", "a", "i")]
+    toneless = PR.VoiceProfile(id="t", source="spec", hear={"tone": 0.0, "sub": 0.0, "ultra": 0.0})
+    assert PR.hear_word(tuple(from_ipa("ká˥")), toneless, inv) == (one("k"), one("a"))  # tone ignored, vowel kept
+    assert PR.hear_word(tuple(from_ipa("ka˯")), toneless, inv) == (one("k"),)  # sub-bass never arrives
+    assert PR.hear_word(tuple(from_ipa("ki˰")), toneless, inv) == (one("k"),)  # nor does ultra
+
+
+def test_hear_word_growl_heard_by_human_as_modal():
+    inv = [one(x) for x in ("k", "ɣ", "r", "l", "a")]
+    assert PR.hear_word(tuple(from_ipa("ɣ‼ar‼")), PR.HUMAN, inv) == (one("ɣ"), one("a"), one("r"))
