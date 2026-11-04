@@ -43,6 +43,12 @@
   }
   const segLabel = (s) => String(s).replace(/\{[^}]*\}/g, '°');  // (features in braces: a degree sign, the full form on hover)
   function segsOf(snap) { return snap ? [...(snap.c || []), ...(snap.v || [])] : []; }
+  // allophone tests (inventory.ALLO_TESTS): short and long plain words
+  const ALLO_SHORT = { nasal_place: 'before a consonant of its place', palatal: 'before front vowels', intervocalic: 'between vowels',
+    final: 'word-finally', initial: 'word-initially', nasal_vowel: 'before a nasal', glottal_onset: 'before a word-initial vowel or between vowels' };
+  const ALLO = { nasal_place: 'nasal place assimilation', palatal: 'palatalized before front vowels and j', intervocalic: 'lenition between vowels',
+    final: 'final devoicing or voicing', initial: 'strengthened at the start of a word', nasal_vowel: 'a vowel nasalized before a nasal consonant',
+    glottal_onset: 'a glottal stop inserted before a vowel at the start of a word or between vowels' };
 
   V.TABS.time = {
     foot: 'One lect through time: drag the slider or press ▶ (before it was born you see its ancestors). Green sounds just appeared, red struck-out ones just went. The ladder shows how far each grammar word has worn down (a free word becomes a clitic, then an affix, then fuses into the stem). Click ▶ next to a word to hear it.',
@@ -92,7 +98,8 @@
       const segHtml = (it) => `<span class="sg ${it.cls}${it.p.special ? ' sp' : ''}" title="${esc(it.s)}${it.p.special ? ' (a sound with a part IPA has no letter for: features in braces, or a house symbol)' : ''}${it.cls === 'nw' ? ': new' : it.cls === 'gone' ? ': lost' : ''}">${esc(segLabel(it.s))}</span>`;
       const cg = `<table class="cg"><tr><th></th>${PL.map((p) => `<th title="${p}">${p.replace('postalveolar', 'post-alv.').replace('labiodental', 'labio-dent.').replace('pharyngeal', 'pharyng.')}</th>`).join('')}</tr>
         ${MN.map((m) => `<tr><th class="mn">${m}</th>${PL.map((p) => `<td>${(cells.get(m + '|' + p) || []).sort((a, b) => a.s.localeCompare(b.s)).map(segHtml).join('')}</td>`).join('')}</tr>`).join('')}</table>
-        ${others.length ? `<div style="margin-top:4px"><span class="muted">other sounds:</span> <span class="ipa">${others.map(segHtml).join(' ')}</span></div>` : ''}`;
+        ${others.length ? `<div style="margin-top:4px"><span class="muted">other sounds:</span> <span class="ipa">${others.map(segHtml).join(' ')}</span></div>` : ''}
+        ${(snap.al || []).length ? `<div style="margin-top:4px;font-size:12px"><span class="muted">allophones (said, but not separate sounds):</span> ${snap.al.map(([x, p, t]) => `<span class="ipa" title="${esc(ALLO[t] || t)}">[${esc(x)}]${p ? ` of /${esc(p)}/` : ' (inserted)'}</span> <span class="muted">${esc(ALLO_SHORT[t] || t)}</span>`).join(' · ')}</div>` : ''}`;
       const vt = vowelChart(vowels, segHtml);
       const nC = (snap.c || []).length, nV = (snap.v || []).length;
       // the core words

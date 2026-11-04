@@ -131,7 +131,18 @@ def test_crop_two_hops(result):
     borrows = [st.process for st in w.etym if st.process.startswith("borrow:")]
     assert borrows[-1] == "borrow:d3"  # (d3 may renew its loan from d0 before lending it on; the route still links them)
     route = [r for r in doc["food_routes"] if r["concept"] == "crop:wheat"]
-    assert len(route) == 1 and route[0]["origin_deme"] == 0 and [h["deme"] for h in route[0]["hops"]] == [3, 4]
+    first = [r for r in route if r["origin_deme"] == 0]
+    assert len(first) == 1 and [h["deme"] for h in first[0]["hops"]][:1] == [3]
+    if [h["deme"] for h in first[0]["hops"]] != [3, 4]:
+        # d3 replaced its loan before lending it on (`now: replaced`): the second hop starts a route of its own from d3
+        assert first[0]["hops"][0]["now"] == "replaced"
+        assert [[h["deme"] for h in r["hops"]] for r in route if r["origin_deme"] == 3] == [[4]]
+    # each hop says whether the receiver's own etymology still holds it (one source of truth: the receiver's word)
+    for hp in (h for r in route for h in r["hops"]):
+        assert hp["now"] in ("kept", "replaced", "lost")
+        lw = L[hp["lect"]].lexicon.get("crop:wheat")
+        held = lw is not None and any(st.process == f"borrow:{hp['from_lect']}" and st.lect == hp["lect"] for st in lw.etym)
+        assert (hp["now"] == "kept") == (held and hp["by"] is None)
 
 
 def test_schema(result):
@@ -252,6 +263,45 @@ def test_ease_drag_human_only():
     o = [LC.rule_factor(r, segs, units, False) for r in (pf, fp)]
     assert h[0] < 1.0 < h[1]
     assert o[0] == o[1]
+
+
+def test_stop_steer_leans_against_stop_loss():
+    """The stop steer (lect.STOP_*): with few oral stops in its words a human-voiced lect draws a lenition of stops less
+    and a fortition to stops more; at the norm, or for another voice, it does nothing; ʔ is not an oral stop."""
+    from planet.language import lect as LC, rules as RU
+    from planet.language.percepts import from_ipa
+    pf, _ = RU.parse_rule({"id": "a", "rule": "p > f", "cause": "effort", "articulators_or_axes_needed": "lips",
+                           "naturalness": "3", "example": "", "family": "lenition"})
+    fp, _ = RU.parse_rule({"id": "b", "rule": "f > p", "cause": "effort", "articulators_or_axes_needed": "lips",
+                           "naturalness": "3", "example": "", "family": "fortition"})
+    segs = frozenset(from_ipa("ptkbdgfvszʃmnŋlrjwhʔaeiou"))
+    units = frozenset(LC._unit(x) for x in segs)
+    low = LC.stop_bin(0.08)
+    assert low < 0 and LC.stop_bin(LC.STOP_NORM) == 0
+    base = [LC.rule_factor(r, segs, units, True) for r in (pf, fp)]
+    few = [LC.rule_factor(r, segs, units, True, sbin=low) for r in (pf, fp)]
+    assert few[0] < base[0] * 0.5 and few[1] > base[1] * 2
+    assert [LC.rule_factor(r, segs, units, True, sbin=0) for r in (pf, fp)] == base
+    assert [LC.rule_factor(r, segs, units, False, sbin=low) for r in (pf, fp)] == [LC.rule_factor(r, segs, units, False) for r in (pf, fp)]
+    assert LC.stop_share([tuple(from_ipa("ʔapa")), tuple(from_ipa("mana"))]) == 1 / 3
+
+
+def test_keep_steer_damps_losing_a_near_universal_phoneme():
+    """The keep steer (lect.KEEP_*): a rule that would leave no p (PHOIBLE 85%) in the lect's words is damped; one that
+    leaves some p (a split), or takes a rare sound, is not."""
+    from planet.language import lect as LC, rules as RU
+    from planet.language.percepts import from_ipa
+
+    def rule(notation):
+        r, _ = RU.parse_rule({"id": "x", "rule": notation, "cause": "effort", "articulators_or_axes_needed": "lips",
+                              "naturalness": "3", "example": "", "family": "lenition"})
+        return r
+    forms = [tuple(from_ipa(w)) for w in ("papa", "tapi", "aspa", "θamu")]
+    segs = frozenset(x for f in forms for x in f)
+    assert LC.keep_part(rule("p > f"), segs, forms) == LC.KEEP_FACTOR
+    assert LC.keep_part(rule("p > f / #_, V_"), segs, forms) == 1.0   # aspa keeps its p
+    assert LC.keep_part(rule("θ > f"), segs, forms) == 1.0             # θ is no near-universal sound
+    assert LC.common(from_ipa("k")[0]) and not LC.common(from_ipa("ʔ")[0])
 
 
 # ------------------------------------------------------------------------------------------- driver fixes (review 2026-11-04)
@@ -421,3 +471,26 @@ def test_l2_share_varies():
     v1, v2 = R.l2_share(1, 3), R.l2_share(2, 3)  # (human deme 1 and orc deme 2 share cells)
     assert 0.0 < v1 <= I.L2_MAX and v1 == pytest.approx(I.L2_SHARED * 1.2 / 4)
     assert v2 == pytest.approx(I.L2_SHARED * 1.2 / 4)
+
+
+def test_root_families_in_the_document(result):
+    """Every stored word names its roots; the document's root table has each main root with its first etymology node, and
+    sister lects of one proto share root ids (the families are inherited)."""
+    _, doc, _ = result
+    roots = doc["roots"]
+    seen = 0
+    for l in doc["lects"]:
+        for c, w in l["lexicon"].items():
+            assert w["roots"], (l["id"], c)
+            r = roots[w["roots"][0]]
+            assert {"node", "lect", "kyr", "concept", "gloss", "ipa", "pos"} <= set(r)
+            if r["node"] is not None:
+                first = OU.etym_steps(doc, w["etym"])[0]
+                assert doc["etym_nodes"][r["node"]][3] == first[2] and r["ipa"] == first[3]
+                seen += 1
+    assert seen > 100
+    by = {l["id"]: l for l in doc["lects"]}
+    sis = [(a, b) for a in by.values() for b in by.values() if a["id"] < b["id"] and a["family_true"] == b["family_true"]
+           and a["died_kyr"] is None and b["died_kyr"] is None and a["deme"] is not None and b["deme"] is not None]
+    assert sis and any(len({w["roots"][0] for w in by[a]["lexicon"].values()} & {w["roots"][0] for w in by[b]["lexicon"].values()}) > 20
+                       for a, b in ((x["id"], y["id"]) for x, y in sis))

@@ -252,3 +252,22 @@ def test_river_namer_weighted_by_population():
     assert picks == [P._first_on("river", r) for r in range(300)]  # deterministic
     landscape["rivers"]["9"] = {"demes": [[2, 1.0], [1, 2.0]]}  # the humans were there first: no draw
     assert P._first_on("river", 9) == (1, 2.0)
+
+
+def test_name_caps_follow_the_length_scale():
+    """A small-inventory CV language (long words) gets longer name parts and a higher name cap than MAX_SYLL; a
+    mid-sized one keeps 2 and MAX_SYLL; long parts are clipped to the scaled caps, not to 4 syllables."""
+    from dataclasses import replace
+    base = _mk("d0", "human", 0, 1)
+    assert NM._name_caps(base) == (2, NM.MAX_SYLL) or LX.length_scale(base.inventory) > 1.0
+    c, v = list(from_ipa("ptkbs")), list(from_ipa("aiu"))
+    small = replace(base.inventory, consonants=c, vowels=v, tones=[], shapes={"CV": 0.85, "V": 0.15}, max_onset=1,
+                    max_coda=0, coda_class="any", onset_required=False, cost={x: 0.0 for x in c + v},
+                    freq={x: 0.5 for x in c + v})
+    assert LX.length_scale(small) > 1.5
+    lc = LC.Lect(id="s0", deme=0, people="human", parent=None, how="proto", born_kyr=2.0, inventory=small,
+                 lexicon=base.lexicon, grammar=base.grammar, profile=PR.HUMAN, population=1000.0)
+    part, cap = NM._name_caps(lc)
+    assert part >= 3 and cap > NM.MAX_SYLL
+    long = tuple(from_ipa("pakatisubaki"))   # 6 syllables
+    assert LX.syllables(NM._clip(long, lc)) == part and LX.syllables(NM._clip(long)) == 2

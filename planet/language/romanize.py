@@ -21,7 +21,7 @@ vowels are written short; a long consonant is doubled (ll, no Catalan dot); ə �
 no diaeresis; front rounded vowels are ü (y ʏ) and ö (ø œ ɵ ɞ ɶ) only when the lect contrasts them with i and e ("round_i",
 "round_e"), else u and o; ɛ ɔ ɪ ʊ ɑ ɒ are always plain e o i u a; æ is ae; ʔ is ' but not word-initially; breathy and creaky
 marks, velarization and pharyngealization are not written; a sound with no house letter is folded to the nearest one (ɲ̟ ny,
-ʊ̞ u). Finally at most one letter with a diacritic per word: the first is kept, later ones lose their marks (š s, ṭ t, ð dh,
+ʊ̞ u); the IPA-kept affricates take their stop's letter (ɟʝ gy, cç ky: the table's `book` column) and ɹ is r. Finally at most one letter with a diacritic per word: the first is kept, later ones lose their marks (š s, ṭ t, ð dh,
 þ th), except the uvular ġ and x̣, which keep their own spelling (velar and uvular never share one).
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ RIVALS = {"open_e": ("e", "e̞"), "open_o": ("o", "o̞"), "back_a": ("a", "ä", 
 ALL_CONTRASTS = frozenset(("aspiration", "schwa", "dental", "tone", "round_i", "round_e", "central_i") + tuple(RIVALS))
 # documented mergers: sounds that share a spelling on purpose (near-identical as heard, or a contrast almost no language makes)
 MERGES = [frozenset(x) for x in (
-    ("ɹ", "ɾ", "r"),  # the approximant and the tap share r; a long tap is the trill rr
+    ("ɾ", "r"),  # a long tap is the trill rr (the approximant ɹ has its own ř, owner 11-04)
     ("ɱ", "m"), ("ʋ", "v"), ("ɬ", "l̥"), ("ʍ", "hʷ"),
     ("c", "kʲ"), ("ɟ", "ɡʲ"), ("ɲ", "nʲ"), ("ʎ", "lʲ"), ("ç", "hʲ", "j̊"),  # palatal = palatalized, as heard
     ("ʏ", "y"), ("ɘ", "ə", "ɜ"), ("ɵ", "ø", "ɞ"), ("e̞", "e"), ("o̞", "o"), ("ɐ", "a", "ä"), ("ɶ", "œ"), ("ɑ", "ɒ"))]
@@ -126,6 +126,13 @@ def _rows() -> tuple[dict, ...]:
 def table() -> dict[str, tuple[str, str]]:
     """IPA (NFC) -> (spelling, spelling when aspiration is written): the unmarked spellings."""
     return {r["ipa"]: (r["spelling"], r["alt"] or r["spelling"]) for r in _rows()}
+
+
+@lru_cache(maxsize=1)
+def book_table() -> dict[str, str]:
+    """IPA (NFC) -> the book-mode spelling of the base sounds whose full spelling folds badly letter by letter (the table's
+    `book` column: ɟʝ gy, not gyyh; ɹ r)."""
+    return {r["ipa"]: r["book"] for r in _rows() if r.get("book")}
 
 
 @lru_cache(maxsize=1)
@@ -303,8 +310,10 @@ def is_diacritic_letter(g: str) -> bool:
 
 
 def diacritics(sp: str) -> int:
-    """How many letters with a diacritic a spelling has (the book-mode measure)."""
-    return sum(is_diacritic_letter(g) for g in _graphemes(sp))
+    """How many letters with a diacritic a spelling has (the book-mode measure; a doubled one, üü, counts once, as in
+    _book_cap)."""
+    gs = [unicodedata.normalize("NFC", g) for g in _graphemes(sp)]
+    return sum(is_diacritic_letter(g) for i, g in enumerate(gs) if i == 0 or gs[i - 1] != g)
 
 
 def _book_cap(sp: str) -> str:
@@ -371,6 +380,8 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS, book: b
         else:
             sec = seg.secondary
         sp = _base_spelling(c, asp_letter, contrasts)
+        if book:
+            sp = book_table().get(unicodedata.normalize("NFC", to_ipa(c)), sp)
         if nh:
             sp = _ascii(sp)
         pre = ("n" if seg.manner == 8 else _PREN.get(seg.place, "n")) if seg.prenasal else ""

@@ -62,6 +62,25 @@ class EtymTable:
         self._key: dict = {}
         self._by_obj: dict = {}
         self._gloss: list = []
+        self.roots: dict = {}   # root id -> {"node", "lect", "kyr", "concept", "gloss", "ipa", "pos"} (lexicon.Word.roots)
+
+    def note_roots(self, w) -> None:
+        """Record the words' roots: the main root's entry is the first step of the word's chain (the root word as the proto,
+        or the coining lect, made it; "node" is that step's node id, shared by every word of the family); a compound's
+        modifier root gets an entry from the first word met that has it as its main root (else concept and lect only)."""
+        for i, r in enumerate(w.roots):
+            e = self.roots.get(r)
+            if e is not None and (i or e.get("node") is not None):
+                continue
+            lect, _, rest = r.partition(":")
+            concept = rest.split("@", 1)[0]
+            if i == 0 and w.etym:
+                st = w.etym[0]
+                self.roots[r] = {"node": self.chain((st,)), "lect": st.lect, "kyr": _r(st.kyr), "concept": concept,
+                                 "gloss": LX.concept_info(concept).gloss, "ipa": st.form, "pos": LX.concept_info(concept).pos}
+            elif e is None:
+                self.roots[r] = {"node": None, "lect": lect, "kyr": None, "concept": concept,
+                                 "gloss": LX.concept_info(concept).gloss, "ipa": None, "pos": LX.concept_info(concept).pos}
 
     def _merge(self, etym) -> list:
         out = []
@@ -131,7 +150,9 @@ def lexicon_json(lect, sp: Speller, full: bool, et: EtymTable) -> dict:
     for k, w in sorted(lect.lexicon.words.items()):
         if not full and k not in LX.CORE100 and w.pos != "NAME":
             continue
-        out[k] = {"ipa": w.ipa, "roman": sp.form(w.form), "pos": w.pos, "freq": w.freq_class, "etym": et.chain(w.etym)}
+        out[k] = {"ipa": w.ipa, "roman": sp.form(w.form), "pos": w.pos, "freq": w.freq_class, "etym": et.chain(w.etym),
+                  "roots": list(w.roots)}
+        et.note_roots(w)
     return out
 
 
@@ -233,7 +254,8 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             "family_scholars": lect.family_scholars, "deme_name": lect.deme_name,
             "inventory": None if inv is None else {"consonants": INV.to_json(inv)["consonants"], "vowels": INV.to_json(inv)["vowels"],
                                                    "tones": list(inv.tones), "shapes": dict(inv.shapes), "stress": inv.stress,
-                                                   "max_onset": inv.max_onset, "max_coda": inv.max_coda},
+                                                   "max_onset": inv.max_onset, "max_coda": inv.max_coda,
+                                                   "allophones": INV.allophones_json(inv)},
             "typology": gj["typology"], "grams": gj["grams"], "paradigms": gj["paradigms"], "complexity": gj["complexity"],
             "lexicon": lexicon_json(lect, sp, full, et) if lect.lexicon is not None else {}, "lexicon_full": full,
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
@@ -283,6 +305,7 @@ def landscape_json(R) -> dict:
 
 
 def document(result: dict, thin_dead: int = 1) -> dict:
+    from . import history as HI
     Speller.failures.clear()
     R = result["run"]
     h = result["history"]
@@ -297,7 +320,8 @@ def document(result: dict, thin_dead: int = 1) -> dict:
         hops = []
         for hp in r["hops"]:
             l = h.lects.get(hp["lect"])
-            hops.append({**hp, "roman": Speller(l).ipa(hp["ipa"]) if l is not None else hp["ipa"]})
+            hops.append({**hp, "roman": Speller(l).ipa(hp["ipa"]) if l is not None else hp["ipa"],
+                         **HI.hop_status(h, hp, r["concept"])})
         rr["hops"] = sorted(hops, key=lambda x: (-x["kyr"], x["deme"]))
         routes.append(rr)
     routes.sort(key=lambda r: (r["concept"], -(r["kyr"] or 0.0), r["origin_lect"]))
@@ -324,6 +348,7 @@ def document(result: dict, thin_dead: int = 1) -> dict:
         "profiles": profiles,
         "snapshot_concepts": list(_core_order()),
         "etym_nodes": et.nodes,
+        "roots": et.roots,
         "rules": rules_table(lects, h),
         "lects": lj,
         "names": NM.build_names(result, R, landscape=land),
@@ -338,7 +363,7 @@ def document(result: dict, thin_dead: int = 1) -> dict:
         "log": result["log"],
         "romanization_failures": dict(Speller.failures),
         "timing": result.get("timing"),
-        "constants": constants(),
+        "constants": {**constants(), "generation_overrides": dict(getattr(R, "generation_overrides", {}) or {})},
     }
     return doc
 

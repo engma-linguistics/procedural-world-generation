@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .percepts import SONORITY, Segment, distance, from_ipa, to_ipa
+from .percepts import AXES, SONORITY, Segment, distance, from_ipa, to_ipa
 
 DATA = Path(__file__).parent / "data"
 
@@ -90,10 +90,14 @@ class Inventory:
     repair_style: str = "epenthesis"                # epenthesis | deletion
     cost: dict = field(default_factory=dict)        # Segment -> species cost at draw time
     freq: dict = field(default_factory=dict)        # Segment -> PHOIBLE frequency (lexical commonness proxy)
+    # allophone (a surface sound in complementary distribution with a commoner close one) -> (its phoneme, or None for an
+    # inserted ʔ; the environment test, ALLO_TESTS): consonants and vowels list only the phonemes (phonemic(), observed())
+    allophones: dict = field(default_factory=dict)
 
     def __post_init__(self):
         self._cset = frozenset(self.consonants)
         self._vset = frozenset(self.vowels)
+        self._aset = frozenset(self.allophones)
 
     # phonotactics over natural classes
     def onset_ok(self, cl: tuple) -> bool:
@@ -568,7 +572,7 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
                 out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda, MAX_CODA), cw))
         w = tuple(out)
         if legal(w, inv):
-            return w
+            return realize(w, inv)
     return repair(w, inv)
 
 
@@ -598,12 +602,14 @@ def _split_medial(run: tuple, inv: Inventory):
 
 
 def _seg_ok(s: Segment, inv: Inventory) -> bool:
+    """A phoneme of the lect, or one of its allophones (a surface sound a word may hold where its environment calls for it)."""
     if s.kind == "C":
-        return s in inv._cset
+        return s in inv._cset or s in inv._aset
     if s.kind == "V":
+        q = _strip_tone(s)
         if inv.tones:
-            return _strip_tone(s) in inv._vset and s.tone in inv.tones
-        return s.tone == 0 and s in inv._vset
+            return (q in inv._vset or q in inv._aset) and s.tone in inv.tones
+        return s.tone == 0 and (s in inv._vset or s in inv._aset)
     return False
 
 
@@ -685,7 +691,7 @@ def repair(word: tuple, inv: Inventory) -> tuple:
     for _ in range(4 * len(w) + 8):
         t = tuple(w)
         if legal(t, inv):
-            return t
+            return realize(t, inv)
         r = _runs(t)
         # locate the first bad run; positions in w
         pos, fixed = 0, False
@@ -743,8 +749,8 @@ def repair(word: tuple, inv: Inventory) -> tuple:
             break
     t = tuple(w)
     if legal(t, inv):
-        return t
-    return _cv_fallback(t, inv)
+        return realize(t, inv)
+    return realize(_cv_fallback(t, inv), inv)
 
 
 def _cv_fallback(word: tuple, inv: Inventory) -> tuple:
@@ -793,9 +799,199 @@ def observed(inv: Inventory, forms, profile=None) -> Inventory:
             (cons if q.kind == "C" else vows).append(q)
     pool_f = _pool_freq()
     cost = {s: inv.cost.get(s) if s in inv.cost else _cost(profile, s) for s in cons + vows}
-    return replace(inv, consonants=cons or list(inv.consonants), vowels=vows or list(inv.vowels),
+    allo = phonemic(forms, cons + vows) if cons and vows else {}
+    pc = [x for x in cons if x not in allo] or list(inv.consonants)
+    pv = [x for x in vows if x not in allo] or list(inv.vowels)
+    return replace(inv, consonants=pc, vowels=pv,
                    tones=sorted(tones) if inv.tones else [], cost=cost,
-                   freq={s: inv.freq.get(s, pool_f.get(s, 0.01)) for s in cons + vows})
+                   freq={s: inv.freq.get(s, pool_f.get(s, 0.01)) for s in cons + vows}, allophones=allo)
+
+
+# --- phonemes and allophones -------------------------------------------------------------------------------------------
+# A surface sound is listed as an allophone, not a phoneme, when it stands only in a predictable environment and in
+# complementary distribution with a commoner sound close to it: the standard test (e.g. Hayes 2009, Introductory Phonology
+# ch. 2; Pike 1947), run on the lect's own word forms. Only the clear, common kinds are tested (ALLO_TESTS), each a pair
+# that differs in one feature group and an environment that conditions it; a pair that also contrasts (any shared
+# environment) stays two phonemes. The commoner sound is the phoneme (the elsewhere form). An allophone keeps its surface
+# place in the forms; new words (draw_word) and repaired loans (repair) are drawn from the phonemes and then realized
+# (realize), so coinages stay in the pattern instead of scattering the allophone into every environment.
+ALLO_TESTS = {
+    "nasal_place": "a nasal taking the place of the consonant after it (nasal place assimilation: [ŋ] before velars)",
+    "palatal": "palatalized before front vowels and j (as Italian [ɲ]-like n before i)",
+    "intervocalic": "between vowels only (lenition: intervocalic voicing or spirantization, Spanish [β ð ɣ])",
+    "final": "word-finally only (final devoicing or voicing)",
+    "initial": "word-initially only (aspirated or strengthened at the start of a word)",
+    "nasal_vowel": "a vowel nasalized before a nasal consonant",
+    "glottal_onset": "a glottal stop inserted before a vowel at the start of a word or between vowels (German-like onset)",
+}
+ALLO_MIN_PHONEME = 3  # tokens the phoneme (the commoner sound) needs before a complementary distribution counts
+
+
+def _rkey(n: Segment | None) -> str:
+    """The right-hand environment of a token, coarse: # (word end), Vf (front vowel), V, j (palatal glide), N<place> (nasal
+    consonant), C<place> (other consonant)."""
+    if n is None:
+        return "#"
+    if n.kind == "V":
+        return "Vf" if n.back <= 1 else "V"
+    if n.kind == "C":
+        if n.manner == 4 and n.place == 4:
+            return "j"
+        return ("N" if n.manner == 3 else "C") + str(n.place)
+    return "?"
+
+
+def _diff(a: Segment, b: Segment) -> frozenset:
+    return frozenset(ax for ax in AXES if ax != "tone" and getattr(a, ax) != getattr(b, ax))
+
+
+def _pair_tests(x: Segment, p: Segment) -> list[str]:
+    """The environment tests a rarer sound x could pass as an allophone of the commoner p (by how they differ)."""
+    if x.kind != p.kind:
+        return []
+    d = _diff(x, p)
+    out = []
+    if x.kind == "C":
+        if x.manner == 3 and p.manner == 3 and d <= {"place", "secondary"} and "place" in d:
+            out.append("nasal_place")
+        if x.manner == p.manner and ((d == {"place"} and x.place in (3, 4) and p.place in (1, 2, 5))
+                                     or (d == {"secondary"} and x.secondary == 2 and p.secondary == 0)):
+            out.append("palatal")
+        if (d == {"voice"} or (d <= {"manner", "voice"} and {x.manner, p.manner} <= {0, 1, 2} and "manner" in d)) \
+                and x.manner != 3:
+            out.append("intervocalic")
+        if d == {"voice"}:
+            out.append("final")
+        if d == {"larynx"} and x.larynx == 1 and p.larynx == 0:
+            out.append("initial")
+    elif x.kind == "V" and d == {"nasal"} and x.nasal and not p.nasal:
+        out.append("nasal_vowel")
+    return out
+
+
+def _env_ok(test: str, x: Segment, left: str, right: str) -> bool:
+    """Is a token (left key: # / V / C, right key: _rkey) in the conditioning environment of a test for allophone x?"""
+    if test == "nasal_place":
+        return right in (f"N{x.place}", f"C{x.place}") or (x.place == 4 and right == "j")
+    if test == "palatal":
+        return right in ("Vf", "j")
+    if test == "intervocalic":
+        return left == "V" and right in ("V", "Vf")
+    if test == "final":
+        return right == "#"
+    if test == "initial":
+        return left == "#"
+    if test == "nasal_vowel":
+        return right.startswith("N")
+    return False
+
+
+def _tokens(forms):
+    """(segment without tone, left key, right key) for every token of the forms; plus counts of word-initial vowels and of
+    vowel-vowel hiatus (the zero alternative of an inserted ʔ)."""
+    toks, init_v, hiatus = [], 0, 0
+    for f in forms:
+        n = len(f)
+        for i, s in enumerate(f):
+            if s.kind not in ("C", "V"):
+                continue
+            q = _strip_tone(s) if s.kind == "V" else s
+            lp = f[i - 1] if i else None
+            left = "#" if lp is None else ("V" if lp.kind == "V" else "C")
+            toks.append((q, left, _rkey(f[i + 1] if i + 1 < n else None)))
+            if s.kind == "V":
+                if i == 0:
+                    init_v += 1
+                elif lp.kind == "V":
+                    hiatus += 1
+    return toks, init_v, hiatus
+
+
+def phonemic(forms, segs) -> dict:
+    """The allophones among a lect's surface sounds `segs` (tone stripped), from its word forms: {allophone: (phoneme or
+    None, test)}. x is an allophone of p (p commoner, ALLO_MIN_PHONEME tokens or more, the pair one of _pair_tests) when every
+    token of x stands in the test's environment and no token of p does. A glottal stop is an inserted one (phoneme None)
+    when it stands only word-initially before a vowel or between vowels and the lect has no word-initial vowel (resp. no
+    hiatus) without it. Rarest sounds first; a phoneme is never itself an allophone (no chains), and two allophones of
+    one phoneme never share an environment (they would contrast with each other)."""
+    forms = list(forms)
+    toks, init_v, hiatus = _tokens(forms)
+    cnt: dict = {}
+    envs: dict = {}
+    for q, left, right in toks:
+        cnt[q] = cnt.get(q, 0) + 1
+        envs.setdefault(q, set()).add((left, right))
+    present = [q for q in segs if q in cnt]
+    out: dict = {}
+    phon: set = set()
+    for x in sorted(present, key=lambda q: (cnt[q], to_ipa(q), repr(q))):
+        if x.kind == "C" and x.manner == 0 and x.place == 8 and not x.voice and x.larynx == 0 and not x.secondary:
+            ev = envs[x]
+            if all(r in ("V", "Vf") and l in ("#", "V") for l, r in ev):
+                if (any(l == "#" for l, _r in ev) and init_v == 0 or not any(l == "#" for l, _r in ev)) and \
+                        (any(l == "V" for l, _r in ev) and hiatus == 0 or not any(l == "V" for l, _r in ev)):
+                    out[x] = (None, "glottal_onset")
+                    continue
+        best = None
+        for p in present:
+            if p is x or p in out or cnt[p] <= cnt[x] or cnt[p] < ALLO_MIN_PHONEME:
+                continue
+            if any(q == p and envs[y] & envs[x] for y, (q, _t) in out.items()):
+                continue  # (two allophones of one phoneme that share an environment contrast with each other)
+            for t in _pair_tests(x, p):
+                if all(_env_ok(t, x, l, r) for l, r in envs[x]) and not any(_env_ok(t, x, l, r) for l, r in envs[p]):
+                    if best is None or cnt[p] > cnt[best[0]]:
+                        best = (p, t)
+                    break
+        if best is not None and x not in phon:
+            out[x] = best
+            phon.add(best[0])
+    return out
+
+
+def realize(word: tuple, inv: Inventory) -> tuple:
+    """A word drawn from the phonemes as the lect says it: each phoneme with an allophone takes it in that allophone's
+    environment (an inserted ʔ goes before a word-initial vowel and between vowels); the plain word when the result would
+    break the phonotactics."""
+    if not inv.allophones or not word:
+        return word
+    by_p: dict = {}
+    glottal = None
+    for x, (p, t) in inv.allophones.items():
+        if p is None:
+            glottal = x
+        else:
+            by_p.setdefault(p, []).append((x, t))
+    out = list(word)
+    if by_p:
+        for i, s in enumerate(word):
+            q = _strip_tone(s) if s.kind == "V" else s
+            alts = by_p.get(q)
+            if not alts:
+                continue
+            lp = word[i - 1] if i else None
+            left = "#" if lp is None else ("V" if lp.kind == "V" else "C")
+            right = _rkey(word[i + 1] if i + 1 < len(word) else None)
+            for x, t in alts:
+                if _env_ok(t, x, left, right):
+                    out[i] = replace(x, tone=s.tone) if s.kind == "V" else x
+                    break
+    if glottal is not None:
+        g = []
+        for i, s in enumerate(out):
+            if s.kind == "V" and (i == 0 or out[i - 1].kind == "V"):
+                g.append(glottal)
+            g.append(s)
+        out = g
+    t = tuple(out)
+    return t if t == word or legal(t, inv) else word
+
+
+def allophones_json(inv: Inventory) -> list:
+    """[{"ipa", "of" (the phoneme's IPA; null for an inserted ʔ), "test", "where" (plain words)}], by phoneme then allophone."""
+    rows = [{"ipa": to_ipa(x), "of": to_ipa(p) if p is not None else None, "test": t, "where": ALLO_TESTS.get(t, t)}
+            for x, (p, t) in inv.allophones.items()]
+    return sorted(rows, key=lambda r: (r["of"] or "", r["ipa"]))
 
 
 # --- json ---------------------------------------------------------------------------------------------------------------
@@ -808,7 +1004,8 @@ def to_json(inv: Inventory) -> dict:
             "min_rise": inv.min_rise, "coda_class": inv.coda_class, "onset_required": inv.onset_required,
             "stress": inv.stress, "repair_style": inv.repair_style,
             "cost": {to_ipa(s): fin(c) for s, c in inv.cost.items()},
-            "freq": {to_ipa(s): f for s, f in inv.freq.items()}}
+            "freq": {to_ipa(s): f for s, f in inv.freq.items()},
+            "allophones": allophones_json(inv)}
 
 
 def _one(ipa: str) -> Segment:
@@ -825,4 +1022,5 @@ def from_json(d: dict) -> Inventory:
         coda_class=d.get("coda_class", "any"), onset_required=bool(d.get("onset_required", False)),
         stress=d.get("stress", "none"), repair_style=d.get("repair_style", "epenthesis"),
         cost={_one(k): (math.inf if v is None else float(v)) for k, v in d.get("cost", {}).items()},
-        freq={_one(k): float(v) for k, v in d.get("freq", {}).items()})
+        freq={_one(k): float(v) for k, v in d.get("freq", {}).items()},
+        allophones={_one(a["ipa"]): (_one(a["of"]) if a.get("of") else None, a["test"]) for a in d.get("allophones", [])})

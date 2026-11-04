@@ -1,11 +1,11 @@
 ---
-title: "Language rates: the scholars' horizon now reads 9 kyr by a split-based measure (the old pair measure read 11-13); rule whether the measure's tolerances stand, whether the sisters bar applies to the strict cognate test, and whether 6-year-generation peoples keep exponent 1"
+title: "Language rates: keep exponent 1 per generation for the shortest-generation peoples (kobolds 12 yr), or soften it to 0.7?"
 type: task
 status: needs-decision
 parent: PW-767
 subsystem: culture
 effort: s
-impact: high
+impact: med
 found_by: lang-design
 blocked_by: []
 relates: [PW-986, PW-982, PW-1423]
@@ -13,19 +13,25 @@ refs: [planet/language/history.py, planet/language/families.py, planet/language/
 ---
 
 ## Description
-In plain words: the engine's speed of change was tuned so that an automatic comparative method on the output goes blind
-near 6-10 kyr (the design check). The first measure (per-pair edit distance on 100 words) read 11-13 kyr and rested on one
-thin bin; the lane replaced it with a split-based measure under a stricter cognate test (aligned distance under 0.45 *and*
-recurring correspondences, a clade in the scholars' UPGMA tree matching the true split at Jaccard >= 0.8, beating chance by
-0.03). On a24559 it reads **9.0 kyr for human lects**, 9.6 for all. The check passes, but three choices inside it are
-judgement, and if nobody rules on them the green check is worth less than it looks:
-1. The tolerances: exact clades only (Jaccard 1) give 4.9 kyr; excess 0.05 gives 4.7; 0.02 gives 10.5. The lane chose
-   0.8 / 0.03 as "a scholar would accept a near-match".
-2. The sisters check (lects parted <= 2 kyr share > 0.5 of the core 100): sisters score 0.54 on the loose test, **0.46 on
-   the strict one**, 0.57 by true roots. The check passes on the loose share. Should the bar move to the strict share?
-3. Exponent 1 per generation (Daniel 11-03): aarakocra (5.8-yr generations) change ~5x faster per year than humans and
-   their sisters 5 kyr apart share almost no core roots; kobolds (11.7) ~2x; elves (145) look like ~3 kyr of human change
-   over 20 kyr; dragons keep most of their proto core words. Keep as ruled, or soften (0.7) for the short-generation peoples?
-Also: the lexical-replacement curve is probably the wrong shape (sisters share 0.57 of true roots where ~0.7 is expected,
-but 7-9 kyr pairs still 0.13-0.20 where ~0.10 is expected): a faster rare-word end and a slower core end would fix both.
-- [ ] Daniel's rulings on 1-3 recorded on PW-986; `checks.HORIZON_RANGE`, `SIBLING_MIN` and the measure's constants set
+In plain words: languages change once per generation, so a people with short generations changes faster per year. Daniel
+ruled exponent 1 (no softening) on 11-03. One question from that is still open: is that too fast for the shortest-lived
+peoples?
+
+Already ruled (Daniel, 11-04), recorded here so the draft holds only what is open:
+- **Horizon target** 6-10 kyr for human lects ("sounds right"); **longer for long-lived peoples** (dwarves, elves,
+  dragons): the horizon check now also asserts that the long-lived peoples' horizon is longer than the humans' (or that
+  their splits are still recovered as far back as they go).
+- **Smoothing:** the horizon is the start of the first two consecutive 2-kyr windows where fewer than half the true splits
+  are recovered; a smoothed read (split-weighted moving average over 3 windows) is reported beside it.
+- **Sisters bar:** the strict cognate share (aligned distance and recurring correspondences, a linguist's view), bar 0.5.
+- **Strictness inside the measure** (clade tolerance, chance excess): the lane's call, aiming at "real-looking". Kept at
+  Jaccard 0.8 and excess 0.03; windows with under 3 splits widen by up to 1 kyr per side instead of being skipped
+  (calibration.md, "Measures and phonemes round"). Run F reads human 10.25 kyr (just over 10), long-lived censored at
+  22 kyr or more.
+
+Still open:
+- With exponent 1, kobolds (11.7-yr generations) change about twice as fast per year as humans; a third of their living
+  lects keep no proto core word after 20 kyr, so their families are barely visible. Aarakocra are no longer the extreme
+  case: the preset now gives them 18.6-yr generations (adult 12, lifespan 60, like kenku 19.3), and the language pass uses
+  it. Keep exponent 1 for everyone, or soften it (rate x (28 / generation) ** 0.7) below human generation length?
+- [ ] Daniel's ruling recorded on PW-986; `history` / `lect` per-generation scaling set accordingly

@@ -27,9 +27,12 @@ RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
 # Sound change by itself pulls every inventory toward the middle (a big one has more to merge, a small one more to split),
 # which would turn PHOIBLE's wide proto draw into a narrow living one; so the steer also holds each line near its own proto
 # size, a lognormal of sigma SIZE_ANCHOR in ln n (inventory size runs in families: Khoisan big, Polynesian small).
+# (2026-11-04, measures and phonemes round: anchor 0.2 -> 0.12 and clamp (0.1, 2) -> (0.02, 3): a small inventory is offered
+# about five times as many splits as mergers, so lines from 7-8 consonant protos grew to 11-12 in 20 kyr and the living
+# small end stayed tame; in the isolated-lect harness 8 C protos now end at a median of 10, 35 C at 28; calibration.md)
 SIZE_K = 0.5
-SIZE_ANCHOR = 0.2
-SIZE_CLAMP = (0.1, 2.0)
+SIZE_ANCHOR = 0.12
+SIZE_CLAMP = (0.02, 3.0)
 INV_MAX = 1.0
 # Ease (markedness) drag, the owner's "light normalization toward easier consonants": a rule's weight is multiplied by
 # exp(EASE_K x the mean over the segments it rewrites of (cost before - cost after)), clamped to EASE_CLAMP. For a human vocal
@@ -40,6 +43,30 @@ INV_MAX = 1.0
 # Light on purpose: the clamp keeps an unusual change at a quarter of its weight, not out of reach.
 EASE_K = 0.5
 EASE_CLAMP = (0.25, 3.0)
+# Stop steer (2026-11-04, word families round; draft-language-plain-stops-erode): the catalogue wears oral stops down far
+# faster than it makes them (lenition, spirantization, Grimm, debuccalization against a few fortitions and devoicings), and
+# with fresh coinages rare (lexicon.SOURCES) nothing refilled them: in the isolated-lect harness p, t, k fell from 24% of
+# consonant tokens to 3.5% in 20 kyr and from ~95% of lects to under half. Real lexicons keep plosives the commonest manner
+# class (roughly a third of consonant tokens; written from knowledge of text counts, cf. Maddieson 1984 for inventories),
+# so, as the size steer does for inventory size, a human-voiced lect's rule weights lean against the drift: a rule that
+# turns stops into non-stops (or deletes them) is weighted (s / STOP_NORM) ** STOP_K, one that makes stops the inverse,
+# where s is the oral-stop share of consonant tokens in the lect's most frequent words (load_forms), binned by STOP_BIN in
+# log space so the weighted catalogue caches; clamped to STOP_CLAMP. Glottal ʔ does not count as a stop (k > ʔ is a loss).
+# Harness (96 human lects, 22-C protos, 20 kyr, no contact), p/t/k present at the end: no steer 0.48/0.50/0.43; K 1
+# 0.60/0.70/0.65; K 2 (clamp 0.1-4) 0.69/0.78/0.73; K 3 (0.05-6) 0.72/0.81/0.70, so K 2: the catalogue, not the steer,
+# limits it beyond that (the pick redraws among applicable rules, so a damped lenition gives way to another one).
+STOP_NORM = 0.33
+STOP_K = 2.0
+STOP_CLAMP = (0.1, 4.0)
+STOP_BIN = 0.1
+# Keep steer (2026-11-04, sinks round): a human-voiced lect seldom loses a near-universal phoneme outright. PHOIBLE has p in
+# 85% of languages, k in 90%, m in 97%: if the catalogue's mergers took them as readily as any other sound, they could not be
+# that common. A rule that would leave none of a phoneme with PHOIBLE share >= KEEP_SHARE in the lect's most frequent words
+# (load_forms; it had some) is drawn KEEP_FACTOR times as often; one that only thins it (a conditioned lenition) is not
+# touched. Before it, plain p and k were in under half the living lects (run H: 0.48/0.48, harness 0.66/0.64) with
+# lenition, spirantization and Grimm's law each taking the last p or k (draft-language-plain-stops-erode).
+KEEP_SHARE = 0.7
+KEEP_FACTOR = 0.25
 FOLD_RARE = 0.2  # a unit the proto lacked, under this fraction of an average unit's share of its kind's tokens (1% at 20
 # units, 0.33% at 60: a big inventory's units are each rarer) and one axis from a commoner unit, folds into it
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
@@ -317,21 +344,29 @@ class Lect:
         return frozenset(_unit(x) for x in self.segments() if x.kind in ("C", "V"))
 
     def weighted_rules(self, rules) -> list:
-        """The catalogue weighted for this lect's sounds (cached per segment set): rule_factor (new segments, ease drag,
-        inventory size)."""
+        """The catalogue weighted for this lect's sounds (cached per segment set and stop-share bin): rule_factor (new
+        segments, ease drag, stop steer, inventory size)."""
         segs = frozenset(self.segments())
-        hit = getattr(self, "_rw", None)
-        if hit is not None and hit[0] is rules and hit[1] == segs:
-            return hit[2]
+        inv = self.inventory
+        # (the size steer counts phonemes: the inventory lists them, its allophones aside; inventory.phonemic)
+        counts = None if inv is None else (len(inv.consonants), len({_unit(v) for v in inv.vowels}))
         from . import profiles as PR
         hv = PR.human_voiced(self.profile)
+        sb = stop_bin(stop_share(self.load_forms())) if hv and self.lexicon is not None else None
+        hit = getattr(self, "_rw", None)
+        if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == (counts, sb):
+            return hit[2]
         units = frozenset(_unit(x) for x in segs)
         base = {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
+        cn = None if counts is None else {"C": counts[0], "V": counts[1]}
         out = []
+        forms = self.load_forms() if hv else None
         for r in rules:
-            f = rule_factor(r, segs, units, hv, base)
+            f = rule_factor(r, segs, units, hv, base, cn, sb)
+            if hv and f > 0:
+                f *= keep_part(r, segs, forms, stress_of(inv))
             out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
-        self._rw = (rules, segs, out)
+        self._rw = (rules, segs, out, (counts, sb))
         return out
 
     def cap_inventory(self, kyr: float) -> int:
@@ -626,37 +661,111 @@ def _ease(touched) -> float:
     # order of a frozenset, which varies between processes with str hashing, cannot change a weight)
 
 
-def ease_factor(rule, lect) -> float:
-    """The ease drag alone for a lect (1 for a non-human voice): used to damp wave adoption of a change toward rarer sounds
-    (history.interval), so a hard sound does not spread by contact more readily than it arises at home."""
-    from . import profiles as PR
-    if not PR.human_voiced(lect.profile):
+def is_stop(x) -> bool:
+    """An oral stop (any larynx setting), not ʔ or a pharyngeal."""
+    return x.kind == "C" and x.manner == 0 and x.place < 7
+
+
+def stop_share(forms) -> float:
+    """Oral stops over the supralaryngeal consonant tokens in `forms` (ʔ, h and the pharyngeals left out: a prothetic ʔ
+    before every initial vowel is no reason to make more stops)."""
+    c = n = 0
+    for f in forms:
+        for x in f:
+            if x.kind == "C" and x.place < 7:
+                n += 1
+                c += is_stop(x)
+    return c / n if n else STOP_NORM
+
+
+def stop_bin(share: float) -> int:
+    return int(round(math.log(max(share, 0.02) / STOP_NORM) / STOP_BIN))
+
+
+def _stop_part(touched, sbin: int | None) -> float:
+    """The stop steer of a rule (STOP_K): the mean change in stop-ness over the segments it rewrites (+1 a non-stop made a
+    stop, -1 a stop made a non-stop or deleted), times -ln(share / STOP_NORM) at the lect's binned share."""
+    if sbin is None or not sbin or not touched:
         return 1.0
-    touched = []
-    for x in lect.segments():
-        o = single(rule, x)
-        if o is not None and o != (x,):
-            touched.append((x, o))
-    return _ease(touched) if touched else 1.0
+    ds = [(1 if any(is_stop(y) for y in o) else 0) - (1 if is_stop(x) else 0) for x, o in touched]
+    d = math.fsum(ds) / len(ds)
+    if not d:
+        return 1.0
+    return min(STOP_CLAMP[1], max(STOP_CLAMP[0], math.exp(-STOP_K * d * sbin * STOP_BIN)))
 
 
-def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None) -> float:
-    """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
-    lacks; the ease drag (EASE_K, human voices only: PHOIBLE commonness of what it makes vs what it rewrites); and the size
-    steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
-    the pull toward the line's proto count). A
-    context-free rule removes the units it rewrites; a conditioned one keeps them (a split)."""
-    touched = []
+def touched_by(rule, segs) -> list:
+    """[(segment, its output tuple)] for the segments of `segs` a rule rewrites. An assimilation ([αplace] and the like, whose
+    output depends on its neighbour; not vowel harmony) counts once per output it could make here: the target with the
+    assimilating axes of each consonant of the lect that could condition it (place assimilation: not glottal or pharyngeal), so the inventory
+    steer sees the homorganic nasals it brings in (before 2026-11-04 it saw nothing and nasal place assimilation, the most
+    drawn rule, grew small inventories unchecked)."""
+    out = []
+    ch = rule.change
+    if getattr(ch, "kind", None) == "assimilate" and getattr(ch, "source", None) in ("left", "right") and rule.target is not None:
+        axes = tuple(getattr(ch, "axes", ()) or ())
+        ctx = [y for y in segs if y.kind == "C" and not ("place" in axes and y.place in (7, 8))]
+        for x in segs:
+            if not rule.target(x):
+                continue
+            for y in sorted({replace(x, **{a: getattr(c, a) for a in axes}) for c in ctx} - {x}, key=repr):
+                out.append((x, (y,)))
+        return out
     for x in segs:
         o = single(rule, x)
         if o is None or o == (x,):
             continue
-        touched.append((x, o))
+        out.append((x, o))
+    return out
+
+
+_COMMON: dict = {}
+
+
+def common(x) -> bool:
+    """A near-universal human phoneme (PHOIBLE share >= KEEP_SHARE)."""
+    if x not in _COMMON:
+        _COMMON[x] = x.kind in ("C", "V") and math.exp(-human_cost(x)) >= KEEP_SHARE
+    return _COMMON[x]
+
+
+def keep_part(rule, segs, forms, stress=None) -> float:
+    """The keep steer: KEEP_FACTOR when the rule would leave no token of a near-universal phoneme (common()) that the lect's
+    frequent `forms` hold, else 1. Only rules that rewrite such a phoneme are tried on the forms that contain it."""
+    if not forms or rule.target is None:
+        return 1.0
+    hit = [x for x in segs if common(x) and rule.target(x)]
+    if not hit:
+        return 1.0
+    for x in sorted(hit, key=repr):
+        seen = False
+        for f in forms:
+            if x not in f:
+                continue
+            seen = True
+            if x in RU.apply(rule, f, stress):
+                break  # (some x survives: not a loss of the phoneme)
+        else:
+            if seen:
+                return KEEP_FACTOR
+    return 1.0
+
+
+def ease_factor(rule, lect) -> float:
+    """The ease drag and the stop steer for a lect (1 for a non-human voice): used to damp wave adoption of a change toward
+    rarer sounds (history.interval), so a hard sound does not spread by contact more readily than it arises at home."""
+    from . import profiles as PR
+    if not PR.human_voiced(lect.profile):
+        return 1.0
+    touched = touched_by(rule, lect.segments())
     if not touched:
         return 1.0
-    f = NEW_SEG_WEIGHT if any(y not in segs for _x, o in touched for y in o) else 1.0
-    if human_voice:
-        f *= _ease(touched)
+    forms = lect.load_forms()
+    return (_ease(touched) * _stop_part(touched, stop_bin(stop_share(forms)))
+            * keep_part(rule, frozenset(lect.segments()), forms, stress_of(lect.inventory)))
+
+
+def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts: dict | None) -> float:
     uncond = rule.target is not None and not rule.span and rule.env == RU.ANYWHERE and not rule.then
     outs = {_unit(y) for _x, o in touched for y in o}
     added = outs - units
@@ -665,11 +774,40 @@ def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base
     for kind, measure in (("C", "consonants"), ("V", "vowels")):
         d = sum(1 for u in added if u.kind == kind) - sum(1 for u in removed if u.kind == kind)
         if d:
-            n = sum(1 for u in units if u.kind == kind)
+            n = counts[kind] if counts else sum(1 for u in units if u.kind == kind)
             g *= size_steer(measure, n, d, (base or {}).get(kind, 0))
-    if g != 1.0:
-        f *= min(SIZE_CLAMP[1], max(SIZE_CLAMP[0], g))
-    return f
+    return min(SIZE_CLAMP[1], max(SIZE_CLAMP[0], g)) if g != 1.0 else 1.0
+
+
+def size_factor(rule, lect) -> float:
+    """The size steer alone for a lect (rule_factor's): used to damp wave adoption of a change that would take the lect's
+    inventory away from its line's size, as it would be at home."""
+    segs = frozenset(lect.segments())
+    touched = touched_by(rule, segs)
+    if not touched:
+        return 1.0
+    inv = lect.inventory
+    counts = None if inv is None else {"C": len(inv.consonants), "V": len({_unit(v) for v in inv.vowels})}
+    base = {k: sum(1 for u in lect.base_segs if u.kind == k) for k in ("C", "V")}
+    return _size_part(rule, touched, frozenset(_unit(x) for x in segs), base, counts)
+
+
+def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None,
+                counts: dict | None = None, sbin: int | None = None) -> float:
+    """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
+    lacks; the ease drag (EASE_K, human voices only: PHOIBLE commonness of what it makes vs what it rewrites); and the size
+    steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
+    the pull toward the line's proto count). A
+    context-free rule removes the units it rewrites; a conditioned one keeps them (a split). counts: {"C", "V"} phoneme
+    counts the size steer starts from (the inventory, allophones aside); default the surface units. sbin: the lect's binned
+    oral-stop share (stop_bin) for the stop steer (human voices only; None: none)."""
+    touched = touched_by(rule, segs)
+    if not touched:
+        return 1.0
+    f = NEW_SEG_WEIGHT if any(y not in segs for _x, o in touched for y in o) else 1.0
+    if human_voice:
+        f *= _ease(touched) * _stop_part(touched, sbin)
+    return f * _size_part(rule, touched, units, base, counts)
 
 
 def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:

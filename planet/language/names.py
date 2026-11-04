@@ -39,7 +39,9 @@ TICKET = 972
 BIG_RIVER = 300.0  # world flow (as stored) above which a river is big enough to name a people (E4/E6)
 COAST_SHARE = 0.25  # share of a deme's cells on the coast for a sea name
 PEAK_M = 1500.0  # highest cell for a peak name
-MAX_SYLL = 4  # an ethnonym or place name root keeps to this many syllables (parts clipped to 2 first)
+MAX_SYLL = 4  # an ethnonym or place name root keeps to this many syllables (parts clipped to 2 first), in a language of
+# the reference syllable space; both caps grow with the lexicon's length_scale (`_name_caps`), so a small-inventory
+# language, whose words are longer, does not have its names clipped harder than its compounds
 
 PATTERNS = {
     "E1": "the people", "E2": "the real people", "E3": "the speakers", "E4": "the river people", "E5": "named after an ancestor",
@@ -140,21 +142,35 @@ def _hear(form, listener) -> tuple:
     return tuple(rep or heard or form)
 
 
-def _clip(form) -> tuple:
-    return tuple(LX.clip(tuple(form), 2))
+def _name_caps(lect) -> tuple[int, int]:
+    """(syllables a part keeps, syllables a name keeps): 2 and MAX_SYLL times the lect's length scale (never less), the
+    scale measured on its inventory when it has one (lexicon.length_scale), else the one its lexicon last stored."""
+    inv = getattr(lect, "inventory", None)
+    if inv is not None:
+        sc = LX.length_scale(inv)
+    else:
+        sc = getattr(getattr(lect, "lexicon", None), "length_scale", 1.0) or 1.0
+    sc = max(1.0, float(sc))
+    return round(2 * sc), round(MAX_SYLL * sc)
+
+
+def _clip(form, lect=None) -> tuple:
+    return tuple(LX.clip(tuple(form), _name_caps(lect)[0] if lect is not None else 2))
 
 
 def _join(lect, head, mod) -> tuple:
-    """Compound of head and modifier in the lect's head order (grammar.compound), parts clipped to keep the name short."""
-    h, m = _clip(head), _clip(mod)
+    """Compound of head and modifier in the lect's head order (grammar.compound), parts clipped to keep the name short
+    (`_name_caps`: longer in a language with a small syllable space)."""
+    h, m = _clip(head, lect), _clip(mod, lect)
     g = getattr(lect, "grammar", None)
     if g is not None:
         f = tuple(GR.compound(h, m, g))
     else:
         hf = getattr(getattr(lect, "lexicon", None), "head_first", False)
         f = h + m if hf else m + h
-    if LX.syllables(f) > MAX_SYLL:
-        f = tuple(LX.clip(f, MAX_SYLL))
+    cap = _name_caps(lect)[1]
+    if LX.syllables(f) > cap:
+        f = tuple(LX.clip(f, cap))
     return _repair(lect, f)
 
 
@@ -237,7 +253,7 @@ def _people_name(lect, mods: list, gloss: str, pattern: str, root_override=None,
     if root_override is not None:
         root = tuple(root_override)
     elif mods:  # (the last word heads the root compound: [BIRD, MOUTH] -> 'bird-mouth')
-        root = _clip(mods[-1].form)
+        root = _clip(mods[-1].form, lect)
         for m in reversed(mods[:-1]):
             root = _join(lect, root, m.form)
     else:  # E1: the word for person (a class or plural makes it 'the people') or the word for people itself

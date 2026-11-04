@@ -123,7 +123,7 @@ lenition | h > ∅ | effort | larynx | 5 | Spanish hacer [aθer]; Cockney 'ouse;
 lenition | s > h / #_, V_V | effort | tongue_tip, larynx | 4 | Proto-Indo-European *septm > Greek hepta, Avestan hapta
 lenition | s > h / _C, _# | effort | tongue_tip, larynx | 5 | Andalusian and Caribbean Spanish los perros [loh pero]
 lenition | p, t, k > f, θ/h, x (initial mutation) | prosody | lips, tongue_tip, tongue_body | 4 | Irish lenition: cat 'cat' > a chat [ə xat] 'his cat'
-lenition | p > ∅ / #_, V_V (via ɸ > h) | effort | lips, larynx | 3 | Proto-Celtic *p loss: Latin pater vs Old Irish athair
+lenition | p > ∅ / #_, V_V (via ɸ > h) | effort | lips, larynx | 1 | Proto-Celtic *p loss: Latin pater vs Old Irish athair
 lenition | x > h / #_ | effort | tongue_body, larynx | 5 | Proto-Germanic *xundaz > Old English hund
 lenition | x > ∅ / _C (with compensatory lengthening) | effort | tongue_body, timing | 4 | Middle English night [nixt] > [niːt] > [naɪt]
 lenition | x > f / _# (after rounded vowel) | perception | tongue_body, lips | 2 | English laugh, enough [f] (< [x])
@@ -143,7 +143,7 @@ lenition | t > ʔ / _C, _# | effort | tongue_tip, larynx | 3 | London English bu
 fortition | w > gw / #_ | perception | lips, tongue_body | 3 | Frankish *werra > French guerre, Italian guerra; Welsh gw-
 fortition | w > b / #_ | perception | lips | 3 | Latin vivere > Spanish vivir [biβir]
 fortition | j > dʒ / #_ | perception | tongue_blade | 4 | Latin iam > Italian già; Latin iugum > Italian giogo
-fortition | ∅ > ʔ / #_V | prosody | larynx | 4 | German Apfel [ʔapfl̩]
+fortition | ∅ > ʔ / #_V́ (glottal onset before a stressed initial vowel) | prosody | larynx | 4 | German Apfel [ˈʔapfl̩], Abend [ˈʔaːbn̩t]: a boundary onset before stressed vowel-initial words, usually absent before unstressed ones (Kohler 1994)
 fortition | ∅ > t / n_s (excrescent stop) | coarticulation | tongue_tip, velum | 4 | English prince [prɪnts]
 fortition | ∅ > b / m_r, m_l | coarticulation | lips, velum | 4 | Latin camera > French chambre; Latin numerus > French nombre
 fortition | ∅ > d / n_r | coarticulation | tongue_tip, velum | 4 | Old English þunor > thunder; Latin tenerum > French tendre
@@ -157,9 +157,9 @@ palatalization | k > tʃ / i_ (progressive) | coarticulation | tongue_body, tong
 palatalization | t > tʃ / _i | coarticulation | tongue_tip, tongue_blade | 5 | Japanese *ti > chi; Brazilian Portuguese tia [tʃia]
 palatalization | d > dʒ / _i | coarticulation | tongue_tip, tongue_blade | 5 | Brazilian Portuguese dia [dʒia]; Japanese *di > ji
 palatalization | s > ʃ / _i | coarticulation | tongue_blade | 5 | Japanese *si > shi; Korean si [ɕi]
-palatalization | t, d, s, z > tʃ, dʒ, ʃ, ʒ / _j (yod coalescence) | coarticulation | tongue_blade | 5 | English nature, 'did you' [dɪdʒu], measure
-palatalization | n > ɲ / _j, _i | coarticulation | tongue_body, velum | 4 | Latin vinea > Spanish viña, Italian vigna
-palatalization | l > ʎ / _j | coarticulation | tongue_body | 5 | Latin palea > Italian paglia [ʎ]; Latin filia > Portuguese filha
+palatalization | t, d, s, z > tʃ, dʒ, ʃ, ʒ / _j ; then j > ∅ / [+sibilant]_ (yod coalescence: the j is absorbed) | coarticulation | tongue_blade | 5 | English nature [ˈneɪtʃə] < [ˈnaːtjuːr], 'did you' [dɪdʒu], measure, mission
+palatalization | n > ɲ / _j ; then j > ∅ / ɲ_ (nj coalescence) | coarticulation | tongue_body, velum | 4 | Latin vinea [ˈwinja] > Spanish viña, Italian vigna [ˈviɲɲa]; Latin seniorem > Spanish señor
+palatalization | l > ʎ / _j ; then j > ∅ / ʎ_ (lj coalescence) | coarticulation | tongue_body | 5 | Latin palea > Italian paglia [ˈpaʎʎa]; Latin filia > Portuguese filha [ˈfiʎɐ]
 palatalization | pl, kl, fl > ʎ / #_ | coarticulation | tongue_body | 3 | Latin plorare > Spanish llorar; clamare > llamar
 palatalization | pl, kl, fl > pj, kj, fj | coarticulation | tongue_body | 4 | Latin plenum > Italian pieno; florem > fiore
 palatalization | kt > jt > tʃ | coarticulation | tongue_body, tongue_blade | 3 | Latin factum > Spanish hecho; Latin noctem > noche
@@ -249,7 +249,7 @@ nasal | n > ŋ / _# | effort | tongue_body | 4 | Caribbean and Andalusian Spanis
 nasal | N > ∅ / _# with nasal vowel, then Ṽ > V (full nasal loss) | effort | velum | 3 | Proto-Germanic *-an infinitive > Old Norse -a
 rhotic | s > z / V_V | coarticulation | larynx | 5 | Latin rosa [z] in Romance; English houses [zɪz]
 rhotic | z > r / V_V (rhotacism) | effort | tongue_tip | 3 | Old Latin *flosis > floris; Proto-Germanic *wēzum > English were
-rhotic | r > ʁ, ʀ | perception | tongue_body | 2 | French, Standard German, Brazilian and European Portuguese (Lisbon) uvular r
+rhotic | r > ʁ, ʀ | perception | tongue_body | 1 | French, Standard German, Brazilian and European Portuguese (Lisbon) uvular r (one areal spread from 17th-century Paris; rare elsewhere)
 rhotic | r > ɹ | effort | tongue_tip | 3 | English approximant r (< trilled r)
 rhotic | l > r / C_ | perception | tongue_tip | 3 | Latin blancus > Portuguese branco; Latin clavum > Portuguese cravo
 rhotic | l > w, u / _C, _# (l-vocalization) | effort | tongue_tip, tongue_body | 4 | Latin altrum > French autre; London English milk [mɪʊk]; Polish ł [w]
@@ -296,8 +296,16 @@ deletion | ʔ > ∅ / V_C, _# | effort | larynx | 4 | loss of hamza in Arabic di
 devoicing | v, z, ɣ > f, s, x / #_ | effort | larynx | 3 | Netherlandic Dutch initial fricative devoicing: vis [fɪs] 'fish', zee [seː] 'sea'
 lenition | kx > x | effort | tongue_body | 3 | Swiss German: k > kx > x word-initially (Kind [xɪnd])
 cluster | pf > f / #_ | effort | lips | 3 | colloquial northern German Pfund [fʊnt], Pferd [feːɐ̯t]
-rhotic | ɹ > ʋ | perception | lips | 2 | labiodental /r/ in southern British English: red [ʋɛd], rabbit [ʋæbɪt] (Foulkes and Docherty 2000)
+rhotic | ɹ > ʋ | perception | lips | 1 | labiodental /r/ in southern British English: red [ʋɛd], rabbit [ʋæbɪt] (Foulkes and Docherty 2000)
 labial | v > b | perception | lips | 3 | Spanish betacism: Old Spanish /v/ merged with /b/ (vaca [baka], vino [bino])
+deletion | ʔ > ∅ / #_ (loss of the initial glottal stop) | effort | larynx | 3 | Middle Chinese ʔ- (the yǐng 影 initial) became zero in Mandarin: ʔan 安 > ān 'peace', ʔjet 一 > yī 'one'
+palatalization | n > ɲ / _i | coarticulation | tongue_body, velum | 2 | Polish nie [ɲɛ], niebo [ˈɲɛbɔ] 'sky' (n before front vowels); Japanese ni [ɲi] (allophonic there)
+depalatalization | ɲ > j / V_ | effort | tongue_body | 3 | Romanian (Muntenian), after vowels: Latin vinea > vie [ˈvi.e], cuneus > cui 'nail', calcaneum > călcâi, through *ɲ (Banat and Aromanian keep ɲ)
+depalatalization | ɲ > n / _C, _# | effort | tongue_tip, tongue_body | 3 | Slovene konj [ˈkɔːn] 'horse' (konja [ˈkɔːnja] 'of a horse'): ɲ and ʎ lost their palatality word-finally and before consonants
+deletion | j > ∅ / V_V | effort | tongue_body | 2 | Proto-Greek intervocalic *j lost: *trejes > Attic treîs 'three'; Latin *trejes > tres
+depalatalization | ɲ > n | perception | tongue_tip | 1 | Finnic: Proto-Uralic *ńëlɜ 'arrow' > Finnish nuoli (Hungarian nyíl, Mansi ńāl keep the palatal); Bulgarian kon 'horse' beside Serbian konj
+labial | ʋ > v | perception | lips | 3 | German w: Old High German wīn [w] > Middle High German [ʋ] > Wein [v]; Dutch w [ʋ] is [v] in many southern Dutch speakers
+labial | β > w / _C, _# (vocalization in the coda) | effort | lips | 3 | Catalan: Latin bibere > *beβre > beure 'drink', debitum > deute 'debt', civitate > ciutat 'city'
 """
 
 GRAM_COLUMNS = ["id", "source_concept", "target_function", "intermediate_stages", "fusion_endpoint",
@@ -366,7 +374,7 @@ def main() -> None:
         "source: WRITTEN FROM KNOWLEDGE of standard historical phonology (Campbell, Historical Linguistics; Hock 1991; "
         "Blevins 2004, Evolutionary Phonology; Kümmel 2007). The Index Diachronica (https://chridd.nfshost.com/diachronica/, a "
         "hobbyist compilation) was used only as inspiration for coverage; nothing was copied from it.",
-        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned)",
+        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j)",
         "licence: original text for this repository; examples are textbook cases.",
         f"script: {SCRIPT}",
         "rule notation: input > output / environment. V vowel, C consonant, N nasal, T voiceless stop, D voiced stop, "

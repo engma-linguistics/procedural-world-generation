@@ -37,7 +37,7 @@ from . import rules as RU
 
 START_KYR = I.START_KYR
 RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "5.0"))  # multiplies lect.RATE_RULE (calibration lever; calibration.md)
-REPLACE_SCALE = float(__import__("os").environ.get("LANG_REPLACE_SCALE", "1.25"))  # multiplies lexicon.BASE_REPLACE through the generations handed to lexicon.step (calibration lever)
+REPLACE_SCALE = float(__import__("os").environ.get("LANG_REPLACE_SCALE", "1.0"))  # (1.25 -> 1.0 with lexicon.FREQ_SPREAD 10 -> 4, 2026-11-04) multiplies lexicon.BASE_REPLACE through the generations handed to lexicon.step (calibration lever)
 PROTO_LINK = 0.05  # same-people contact that joins start demes into one proto-language
 CONTACT_MIN = 0.05  # contact for the wave
 CONTACT_BORROW = 0.1  # contact for lexical borrowing on replacement
@@ -100,7 +100,7 @@ class History:
         self.last_shift: dict[int, float] = {}  # deme -> kyr of its last shift
         self.shift_times: dict[int, list] = {}  # deme -> kyr of each shift (SHIFT_MAX)
         self.forced: dict = {}  # (giver lect, receiver lect) -> wave probability, for the next interval (strong contact, koine)
-        self.route_of: dict = {}  # (lect id, concept) -> food route key the lect's word for it came by
+        self.route_ev: dict = {}  # (lect, concept, kyr, process) of a route event's etymology step -> its food route key
         self._lang: dict = {}
 
     # ------------------------------------------------------------------ helpers
@@ -171,6 +171,9 @@ class History:
 
     def start(self) -> None:
         R = self.R
+        for p, ov in sorted(R.generation_overrides.items()):
+            self.say(START_KYR, f"generation length of {p}: {ov['stored_yr']} yr stored in the run, {ov['current_yr']} yr under the "
+                                f"current preset ({Path(ov['spec']).name if ov.get('spec') else '?'}); the current one is used")
         for comp in R.start_components(PROTO_LINK):
             people = R.people_of(comp[0])
             k0 = R.kyr(0)
@@ -282,6 +285,7 @@ class History:
                     if r.family == "tone" or r.cause == "tonogenesis":  # (an ear that hears tone coarsely takes it up less)
                         w *= min(1.0, (getattr(y.profile, "hear", None) or {}).get("tone", 1.0)) ** 2
                     w *= min(1.0, LC.ease_factor(r, y))  # (a change toward rarer sounds spreads as reluctantly as it arises)
+                    w *= min(1.0, LC.size_factor(r, y))  # (... and one that takes the receiver's inventory off its line's size)
                     if rng.random() < p * min(1.0, w):
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm
@@ -683,29 +687,34 @@ class History:
         self.routes[key] = {"concept": concept, "origin_deme": deme, "origin_lect": l.id, "kyr": kyr, "ipa": w.ipa,
                             "origin": "tamed here" if origin else ("first known here" if deme is not None else ""),
                             "hops": []}
-        self.route_of[(l.id, concept)] = key
+        if w.etym:
+            self.route_ev[_ev(w.etym[-1], concept)] = key
 
-    def route_key_of(self, l: LC.Lect, concept: str):
-        """The route a lect's word for a crop came by: its own, else its ancestors' (a bud or a shift daughter carries the
-        parent's word)."""
-        cur = l
-        while cur is not None:
-            k = self.route_of.get((cur.id, concept))
+    def route_key_of(self, word, concept: str):
+        """The route a word for a crop came by, read from its own etymology (the one source of truth, shared with the
+        receivers' etymology records): the latest step of its chain that was a route event (a coinage on arrival or a hop's
+        borrowing), looking through other borrowings (a loan renewed by contact is the same word). Stops at the first other
+        word-formation step (a later coinage, derivation, compound, shift of meaning, taboo): the word came another way, and
+        None is returned with that step."""
+        for st in reversed(word.etym):
+            k = self.route_ev.get(_ev(st, concept))
             if k is not None:
-                return k
-            cur = self.lects.get(cur.parent) if cur.parent else None
-        return None
+                return k, None
+            if st.process.split(":", 1)[0] in ROUTE_FORMATION:
+                return None, st
+        return None, None
 
     def route_hop(self, concept, src, w, l, dl, deme, donor, kyr, how: str = "land") -> None:
-        key = self.route_key_of(dl, concept)
+        key, st = self.route_key_of(src, concept)
         r = self.routes.get(key) if key is not None else None
         if r is None:  # (the donor's word came another way: inherited, substrate or coined outside a route)
-            key = (concept, dl.id, None)
+            okyr = round(float(st.kyr), 3) if st is not None else None
+            key = (concept, dl.id, okyr)
             r = self.routes.get(key)
             if r is None:
                 r = self.routes[key] = {"concept": concept, "origin_deme": dl.deme, "origin_lect": dl.id, "kyr": None,
-                                        "ipa": src.ipa, "origin": "inherited by the donor", "hops": []}
-            self.route_of[(dl.id, concept)] = key
+                                        "ipa": src.ipa, "origin": "inherited by the donor", "hops": [],
+                                        "word_from": ({"kyr": okyr, "lect": st.lect, "process": st.process} if st is not None else None)}
         since = []
         for s in reversed(src.etym):
             if s.process.startswith(("borrow:", "coin", "derive:", "compound:", "proto")):
@@ -713,7 +722,39 @@ class History:
             since.append(s.process)
         r["hops"].append({"deme": deme, "lect": l.id, "kyr": kyr, "ipa": w.ipa, "from_deme": donor, "from_lect": dl.id,
                           "from_ipa": src.ipa, "changes": since[::-1], "how": how})
-        self.route_of[(l.id, concept)] = key
+        if w.etym:
+            self.route_ev[_ev(w.etym[-1], concept)] = key
+
+
+# word-formation steps: a word whose chain has one of these after a route event did not come by that route (a borrowing
+# is not one: it hands the same word on, as a renewed loan does; nor is substrate:, a word kept through a shift)
+ROUTE_FORMATION = frozenset(("proto", "coin", "derive", "compound", "shift", "taboo", "elaborate"))
+
+
+def _ev(step, concept: str) -> tuple:
+    """A route event's key: the etymology step (lect, kyr, process) of the word it made, for the concept."""
+    return (step.lect, concept, round(float(step.kyr), 3), step.process)
+
+
+def hop_status(h: "History", hop: dict, concept: str) -> dict:
+    """Does the receiver's word for the concept still come from this hop? Read from the receiver lect's own word at its end
+    (now for a living lect, at its death or split for a dead one): {"now": "kept" | "replaced" | "lost", "by": {kyr,
+    process, lect} of the first word-formation step after the hop (replaced), or None}."""
+    l = h.lects.get(hop["lect"])
+    w = l.lexicon.words.get(concept) if l is not None else None
+    if w is None:
+        return {"now": "lost", "by": None}
+    proc = f"borrow:{hop['from_lect']}"
+    k = round(float(hop["kyr"]), 3)
+    for i, st in enumerate(w.etym):
+        if st.lect == hop["lect"] and st.process == proc and round(float(st.kyr), 3) == k:
+            later = [x for x in w.etym[i + 1:] if x.process.split(":", 1)[0] in ROUTE_FORMATION]
+            if not later:
+                return {"now": "kept", "by": None}
+            x = later[0]
+            return {"now": "replaced", "by": {"kyr": round(float(x.kyr), 3), "process": x.process, "lect": x.lect}}
+    x = next((x for x in reversed(w.etym) if x.process.split(":", 1)[0] in ROUTE_FORMATION), None)
+    return {"now": "replaced", "by": {"kyr": round(float(x.kyr), 3), "process": x.process, "lect": x.lect} if x is not None else None}
 
 
 _H: History | None = None
@@ -738,6 +779,9 @@ def snapshot(l: LC.Lect) -> dict:
     inv = l.inventory
     out = {"c": [to_ipa(x) for x in inv.consonants] if inv is not None else [],
            "v": [to_ipa(x) for x in inv.vowels] if inv is not None else []}
+    al = getattr(inv, "allophones", None) if inv is not None else None
+    if al:  # allophones beside the phonemes: [[allophone, phoneme (None: an inserted ʔ), test]]
+        out["al"] = sorted([to_ipa(x), to_ipa(p) if p is not None else None, t] for x, (p, t) in al.items())
     core = []
     for c in CORE:
         w = l.lexicon.get(c)
@@ -762,7 +806,7 @@ def snapshot_delta(prev: dict, cur: dict) -> dict:
     if "core_roman" in cur:
         pr = prev.get("core_roman") or [None] * len(cur["core_roman"])
         out["core_roman"] = {str(j): b for j, (a, b) in enumerate(zip(pr, cur["core_roman"])) if a != b}
-    for k in ("c", "v", "typ", "grams", "cx", "shares"):
+    for k in ("c", "v", "al", "typ", "grams", "cx", "shares"):
         if cur.get(k) != prev.get(k):
             out[k] = cur.get(k)
     return out

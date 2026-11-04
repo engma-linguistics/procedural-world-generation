@@ -955,13 +955,19 @@ def rule_key(rule: Rule) -> tuple:
             replace(rule.change, out_text=""), alts, env.stress, env.syll, tuple(rule_key(s) for s in rule.then))
 
 
-# Demo rules whose tsv twin is written differently (the structural key does not catch it). The demo rule is kept.
+# Rules whose tsv twin is written differently (the structural key does not catch it): the key's rule is kept, the listed
+# ids are dropped.
 SAME_AS = {
     "nasal.nasal_loss": ("S140",),
     "rhotic.l_vocalization": ("S151",),
     "tone.onset_voicing_split": ("S166",),
     "tone.glottal_coda_rising": ("S167",),
     "tone.h_coda_falling": ("S168",),
+    # (sinks round, 2026-11-04: single-stop rows that repeat part of a demo rule or of another row; drawn beside it they
+    # doubled the weight of that change for p, t, k and the voiced stops)
+    "lenition.intervocalic_voicing": ("S010", "S011", "S012"),  # p, t, k > b, d, g / V_V (Spanish lobo, vida, agudo)
+    "lenition.spirantization": ("S005", "S006", "S007"),  # b, d, g > β, ð, ɣ / V_V (Spanish lobo, nada, lago)
+    "S037": ("S036",),  # k > ʔ / _# (Malay budak) is S037's k > ʔ again, the commonest ʔ source
 }
 
 

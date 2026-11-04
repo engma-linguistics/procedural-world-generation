@@ -284,3 +284,247 @@ New checks: living sizes pass; living segments pass (no monoculture; p t k m n i
 
 Constants: EASE_K 0.5, EASE_CLAMP [0.25, 3]; SIZE_K 0.5, SIZE_ANCHOR 0.2, SIZE_CLAMP [0.1, 2]; FOLD_RARE 0.2 of the mean unit
 share; INV_MAX 1x PHOIBLE's largest count (130 C, 50 V); CLICK_SHARE 1.5%, CLICK_MIN_C 28, CLICK_PART 0.45.
+
+## Measures and phonemes round (2026-11-04)
+
+Owner rulings to implement: a horizon that needs two windows in a row, with a smoothed read beside it; per-people horizons
+(long-lived peoples longer); strict sisters at 0.5; generation length from the current preset; a phonemic inventory with
+allophones found by complementary distribution; a small end of inventories at roughly PHOIBLE's rate; food routes that agree
+with the receiver's etymology; romanization fixes. Baseline: the shipped run `runs/a24559/languages.json`. Full run F:
+`scratchpad/runF/a24559/languages.json` (832 s, 8 workers; it carries the parallel lexicon round's edits as they stood).
+
+**Horizon reads.** The horizon is now the crossing of one half into the first run of two consecutive scored windows under
+half (linear from the previous passing window's centre; a run cut short by the end of the curve counts; never failing =
+censored at the last scored window's end, a lower bound). Beside it: the former single-window read and a smoothed read
+(split-count-weighted moving average over 3 scored windows, first crossing). The measure's strictness (clade Jaccard 0.8,
+chance excess 0.03, strict cognates with REC_MIN 2) is unchanged: the failing young splits on the shipped file are real
+measure failures (one bud pair with a true share of 0.24 has a strict share of 0.02, its correspondences not recurring;
+two-lect splits misgrouped after shifts or contact), and loosening them would read lookalikes. Run F's human splits are thin
+at 9-13 kyr (1-3 per window): skipping those windows let the crossing be interpolated across 4 kyr with no evidence (11.0 in
+the run). Sparse windows now widen by 0.5 kyr per side, up to 1 kyr, before they are skipped (`SPLIT_WIDEN`,
+`widened_kyr` on the curve row).
+
+| file | human (two-window / smoothed / single) | long-lived (gen >= 60 yr) | elves | dragons | dwarves | all lects |
+| --- | --- | --- | --- | --- | --- | --- |
+| shipped | 4.25 / 4.35 / 4.25 | 15.3 | >= 16 (censored) | >= 22 (censored) | 3 splits | 9.0 |
+| run F, in the run | 11.0 / 13.2 / 11.0 | >= 22 (censored) | >= 14 | >= 21 | 3 splits | 13.0 |
+| run F, widened windows | 10.25 / 10.5 / 10.25 | >= 22 (censored) | >= 16 | >= 22 | 3 splits | 13.0 |
+
+The shipped file's 4-7 kyr dip (two overlapping windows at 0.20 and 0.36) is a genuine run of two, so it stays a fail
+there; in run F those windows recover 0.55-0.67 and the human curve holds 0.9-1.0 to 9 kyr and drops to 0 from 10 kyr. The
+human read moved from 4.25 to 10.25 between the two files with no change to the measure beyond the run rule; most of the
+move is the lexicon round's replacement sources (not calibrated here: replacement belongs to the lexicon builder). The
+check asserts human in 6-10 and the long-lived horizon longer than the human one or censored; the long-lived part passes on
+both files, the human part fails run F by 0.25 kyr.
+
+**Sisters.** `sister_distant` now scores the strict cognate share (bar 0.5) and reports loose and true beside it: shipped
+0.470 strict (0.533 loose); run F 0.495 strict (0.568 loose, 0.605 true), cross-family 0.0001. Fails by a hair; not
+calibrated here (replacement curve).
+
+**Generation length.** The language pass now takes each line's generation length from the current preset when it differs
+from the stored run by more than 5% (`inputs.generation_overrides`, mirrors the lineages code: life-history T, dragon ages
+for flying megafauna), logs it, and exposes it as `constants.generation_overrides`. On a24559 only aarakocra: 5.82 yr
+stored, 18.58 yr now (kenku 19.27). Check 5 passes in run F: human 12.9 rules per kyr, long-lived 3.7, ratio 3.45.
+
+**Phonemes and allophones.** `inventory.phonemic` reads the lect's own forms: a rarer sound is an allophone of a phoneme
+when they differ in one feature and never stand in the same environment, under one of seven tests (nasal place before a
+consonant, palatal before front vowels or j, intervocalic, word-final, word-initial, nasal vowel next to a nasal, ʔ before an
+initial vowel or in hiatus). A phoneme cannot itself be an allophone, and two allophones of one phoneme must not share an
+environment. The inventory keeps phonemes in `consonants`/`vowels` and allophones beside them; new words and repairs draw
+phonemes and then realize the allophones, so the allophony persists. Checks, the size steer (counts) and the output use the
+phonemic inventory. On the shipped forms almost nothing is allophonic: ŋ, ɲ and ʔ stand before vowels and word-initially
+(11,767 vowel-initial words), so they are genuinely contrastive on the surface. In run F, 92 of 313 living human-voiced lects
+have at least one allophone (mean 0.47): intervocalic voicing (d of t 12, z of s 9, ɡ of k 9, v of f 7), nasal vowels (ã 8,
+ũ 7, ĩ 5), final devoicing (p of b 5). ɲ/ŋ/ʔ stay phonemes at 90/86/75% (PHOIBLE 42/64/38%), now a catalogue and proto-draw
+question (draft-language-plain-stops-erode).
+
+**Small end.** PHOIBLE: 1.4% of languages have 10 or fewer consonants, 6.2% 12 or fewer. Protos matched it, but lines drifted
+up (harness: 7 -> 11, 10 -> 13 consonants in 20 kyr) because the catalogue offers a small inventory about five times as
+many splits as mergers and nasal place assimilation was not steered. Changes: assimilation counted by the outputs it makes
+(`lect.touched_by`), wave adoption damped by the size steer as well as the ease drag, SIZE_ANCHOR 0.2 -> 0.12, SIZE_CLAMP
+[0.1, 2] -> [0.02, 3]. Harness (isolated human lects, 20 kyr): 8-C protos end at a median of 10 (was 12), 22 at 20 (21), 35
+at 28 (26). Run F living human-voiced consonants p5/q1/med/q3/p95 11/16/19/23/39 (PHOIBLE 12/17/21/27/42; run D
+14/18/22/27/39), min 8; 3.2% have 10 or fewer, 11.2% 12 or fewer: the small end now arises, slightly more than PHOIBLE's.
+Vowels 4/6/9/11/15.
+
+**Plain stops (regression, not this round's).** Run F: p 42%, t 53%, k 44% (run D 68/85/78, PHOIBLE 85/72/90), so the
+segment-frequency check fails. Harness A/B: the size constants make no difference (k 0.38 vs 0.34); the lexicon's replacement
+sources (coin 0.15 -> 0.03) do (22-C protos, n = 96: t 0.50 vs 0.71, k 0.43 vs 0.64 with the old shares). A coinage refills
+the common stops from the inventory; without it lenition wears them away. Filed as draft-language-plain-stops-erode.
+
+**Food routes.** One source of truth: each route hop is keyed by the etymology step that made it (`route_ev`), and a hop's
+status is read from the receiver lect's own word (`now`: kept / replaced / lost, `by`: the step that replaced it). Run F:
+2911 hops, 1906 kept and 1005 replaced (into living lects 1792 and 867).
+
+**Romanization.** Full mode spells ɹ as ř, so ɹ and ɾ no longer share r (full mode stays injective up to MERGES). Book mode
+reads a `book` column: cç ky, ɟʝ gy, ɡɣ g, qχ q, dɮ dl (no more "gyyh"). No romanization failures in run F.
+
+Checks in run F: proto inventories, shift, long generations change less, hubs/isolated, living sizes pass; sisters (0.495),
+horizon (11.0 in the run, 10.25 with widened windows) and living segment frequencies (plain stops) fail.
+
+## Word families and derivation round (2026-11-04)
+
+Goal (owner): derivations a linguist believes (each affix has a meaning; base > target fits it), at most two felt affixes
+on a word, opaque old derivations read as simple roots, PIE-like root families that daughters inherit, coinage well under
+15% of replacements, and the replacement curve recalibrated (Swadesh 80-86%/kyr, frequent words several times slower,
+sisters >= 0.5, human horizon 6-10 kyr, cross-family < 0.15). Baseline: the shipped run `runs/a24559/languages.json`.
+
+Mechanism. `data/derivations.tsv` (new; ~200 rows over agent, thing, place, little, like, do, cause, plus renewals and
+function-word reinforcers; sources in its header: Buck 1949, Urban 2012, Koch 2008, Pokorny/LIV2, WOLD, Heine & Kuteva
+2002, CLICS3 counts joined at load) is the only way an affix meets a base. Felt layers (`word_layers`) stop at a
+derivation older than OPAQUE_KYR (3 kyr), a replaced base or a renewal; MAX_AFFIXES 2, MAX_MORPHEMES 3. A word never
+derives, compounds or shifts back into a meaning it had (`_worn`: SING > SONG > SING, KNIFE > CUT > KNIFE, LEG + CLAW =
+FOOT > FOOT + CLAW = LEG, PUSH > GRIND > PUSH were all common on run E1). Failed derivations fall back to compound, shift,
+a weaker CLICS shift (4 families; 3 is mostly chance: DOG ~ MOON), borrow, then coin. Protos derive part of their stock
+from their own roots, and every word carries `roots` (architecture.md §6, §11). Curve: FREQ_SPREAD 10 -> 3 (rare words 3x
+the rate of frequent ones), BASE_REPLACE re-solved to 0.0026726 for 86%/kyr, history.REPLACE_SCALE 1.25 -> 1.0.
+
+Harness (two sister lineages, no contact, 8-12 seeds): spread 4 / scale 1.0 kept 0.857/kyr and gave true shared roots
+0.64 at 1.5 kyr and 0.09 at 10 kyr (spread 10 / scale 1.25: 0.60 and 0.105). Analytically, at 86%/kyr spread 4 -> 3 keeps
+the 1.5-kyr share within 1% and cuts the 10-kyr share 17%; spread 2 at 86.5% would help both bars a little more, but that
+is no longer "several times slower".
+
+Plain stops (draft-language-plain-stops-erode, from the measures builder). With coinage down to 3% nothing refilled the
+stops that lenition, spirantization, Grimm and debuccalization wear down: in the isolated-lect harness (96 human lects,
+22-C protos, 20 kyr) p/t/k fell from 24% of consonant tokens to 3.5%, and lects with p/t/k from ~95% to 0.48/0.50/0.43.
+The lexicon alone keeps the shares (sound change off: unchanged after 20 kyr). New `lect` stop steer (STOP_NORM 0.33,
+STOP_K 2, clamp 0.1-4; architecture.md, rule weights): harness 0.69/0.78/0.73 (K 1: 0.60/0.70/0.65; K 3 saturates at
+0.72/0.81/0.70, because the pick redraws among applicable rules). Still open there: ʔ is 17% of consonant tokens at the
+end, mostly from S042 prothesis (#_V) that nothing removes, and j 10% from glide formation.
+
+Full runs (8 workers, ~14 min each; scratchpad `runE`..`runE4`):
+
+| run | change | sisters strict | horizon human (smoothed) | p/t/k living | coin share of replacements |
+| --- | --- | --- | --- | --- | --- |
+| shipped | - | 0.470 | (other measure) | 0.01/0.08/0.13 | 0.33 of latest steps |
+| E1 | table, roots, spread 4 | 0.512 | 10.6 (11.66) | 0.38/0.53/0.37 | 0.083 |
+| E2 | spread 3, no derive round trips | 0.509 | 11.0 (13.27) | - | - |
+| E3 | + stop steer | 0.498 | 10.25 (10.43) | 0.51/0.75/0.65 | - |
+| E4 | + no compound/shift round trips, weak shift 4 families | 0.504 | 10.67 (11.11) | 0.55/0.80/0.70 | 0.095 |
+
+E4 (the round's result, `scratchpad/runE4/a24559/languages.json`): cross-family strict 0.0001 (loose 0.003); replacement
+events in living lects derive 0.22, compound 0.18, borrow 0.18, shift 0.17, renew 0.16, coin 0.095; living segments and
+sisters pass; the horizon stays just over 10 (E1-E4: 10.6, 11.0, 10.25, 10.67, with single-window reads of 4.5-10.6: the
+bins near 10 kyr hold 2 splits each, so run-to-run noise is about the size of the gap). What holds deep sisters together
+(E2, pairs parted 5-9 kyr): of core concepts sharing a root, 38% are inherited untouched, 11% are later loans and 51% were
+re-formed after the split from a shared root (renewals 40% of those, compounds on a shared head 43%, shifts 31%,
+derivations 19%; several per word). Root families make words look related after their parts are replaced, so the
+horizon now leans on the cognate test's strictness more than on the replacement rate.
+
+Before (shipped, 10 random derived words of living human lects): ROUND + 'like' = sharp, RAIN + 'agent' = worm, HOUSE +
+'little' = snow, YESTERDAY + 'little' = belly, SAY + 'do' > SPEAK + 'thing' = village > house. After (E4): WIND + 'do' =
+blow; FLY + 'agent' = bird, later BIRD + 'little'; EAR + 'do' = hear > shift 'carry' > CARRY + 'thing' = burden; FOOT +
+'do' = walk > WALK + 'place' = road; DRINK + 'place' = spring; LAUGH, GIVE + 'intens' (renewals); WHO + PERSON = who >
+'what' > WHAT + 'place' = when > 'if'. Root families (E4, one true family each): *tjaʔnɛ 'dig' > dig, grave, scratch,
+claw, axe, split; *ɲamukna 'sky' > day, sun, moon, sunrise, hot; *rɔ̃phɔbnib 'burning' > burn, fire, heat, hot, red,
+smithing; E1 p286 *tɔ 'who' > who, what, where, when, how (and not). Living human lects average 209 roots, 34 of them with
+3+ words, the largest 14 words.
+
+## Typology and grams round (2026-11-04)
+
+Problem: the sketch generator found 320 of 621 living lects on the shipped run (272 of 623 on run E4) whose typology
+contradicted their live grams ('case: none' with a live locative, 'number: none' with a live plural, the negator on the
+other side from the negation feature, an inclusive/exclusive 'we' with one form). The two layers were drawn and drifted
+apart; drift had just been switched on.
+
+Mechanism (architecture.md §7, "One system"): the drift now moves `Grammar.aims`; the shown `Grammar.typology` reads every
+gram-realised feature from the live grams (`grammar.realise`, `grammar.REALISED`), so it cannot contradict them. The aims
+steer the ladder: per category the aims mark and no live gram realises, `PRESSURE` 0.03 per generation (x the social
+recruit factor) recruits from that category's attested paths; a bound gram the aims no longer want erodes
+(`UNWANTED_LOSS` 0.002 x social loss); an unwanted gram that binds anyway sets the aim (`_adopt`). After an order flip,
+free grams (level 0) move to the new side and bound ones stay (Givon); a negator stranded on the old side lets a
+reinforcer be recruited on the new one. Clusivity is set from what exists (two distinct 'we' forms in the lexicon; the
+lexicon has one 'WE', so 'no' everywhere); object agreement is 'none' (no gram marks the object). Calques on shift write
+the aim (`grammar.Shown`). `grammar.clashes` lists contradictions; `checks.typology_consistency` counts them per run.
+
+Harness (scratchpad `gramG/sim.py`: 40 human lects, 700 generations through `lect.step`, l2 0.5, 160k speakers): shown
+value = aim for number/past/future/progressive in 55-65% of lects at PRESSURE 0, ~80% at 0.02-0.04; median live functions
+6 at 0, 10-11 at 0.02-0.04. Aim retention is unchanged by the pressure (0.82-0.95 / 0.74-0.81 / 0.64-0.69 / 0.51-0.57).
+
+| run | clashes (sketch, any) | clashes (`grammar.clashes`) | human aims kept: very stable / stable / medium / fickle / very fickle | human shown kept | long-lived aims kept | median live functions |
+| --- | --- | --- | --- | --- | --- | --- |
+| shipped a24559 | 320 / 621 | - | (no drift) | - | - | 2 |
+| run E4 (scratchpad `runE4`) | 272 / 623 | - | 0.85 / 0.76 / 0.68 / 0.55 / 0.76 (runB, typology) | - | - | 5 |
+| run G (scratchpad `runG`, this round) | 0 / 622 | 0 / 622 | 0.89 / 0.73 / 0.64 / 0.56 / 0.74 (n 103) | 0.89 / 0.74 / 0.59 / 0.64 / 0.68 | 0.95 / 0.92 / 0.89 / 0.81 / 0.83 (n 241) | 10 |
+
+Run G shown values (living lects): number marked 66% (E4 58%), case none 28% (39%), definite article none 60% (71%), past
+marked 55% (57%), future 54% (56%), progressive 38% (36%), gender none 58% (63%), verb agreement none 44% (35%),
+clusivity no 100% (58%). Shown = aim for 72% of realised-feature values (alignment 0.94, negation 0.96, number 0.76, past
+0.81; low where the grams cannot yet carry the aim: verb agreement side 0.40, causative 'bound' 0.48, clusivity 0.55,
+object agreement 0.58). Gram load doubled (median live functions 5 > 10; languages.json 138 MB, as before). Other checks as
+on run F: sisters 0.48 (threshold 0.5, 0.495 on run F), human horizon 10.7 kyr (fails on E4 and F too), segment
+frequencies red (p/k, the other lane's), the rest green; the six sketches regenerate with no "Note on the data" line.
+
+Judgement calls: a free case-function gram (a postposition at level 0) counts as case marking, matching the sketch's
+checker; a stricter reading (clitic or tighter) would make 'a few cases' rarer and needs the sketch to agree. A lone
+witnessed evidential shows as 'direct+indirect'. Diminutive, agent noun and causative read the grams only, not the
+lexicon's derivational affixes (word formation, every lexicon has them).
+
+## Sinks round (2026-11-04)
+
+Problem (run E4, `scratchpad/runE4/a24559/languages.json`, living human-voiced lects vs PHOIBLE's share of languages): ŋ 86%
+(64%), ɲ 89% (42%), ʔ 71% (38%) too common; p 55% (85%) and k 70% (90%) too rare. A sink is a segment with a strong one-way
+path in and weak paths out. Baseline for every comparison below: run E4 (same world, the catalogue before this round).
+
+**Audit.** Isolated-lect harness (`scratchpad/sinkH/flow.py`: human protos drawn from PHOIBLE's size distribution, stepped
+20 kyr in 0.5-kyr intervals, no wave, shift or contact; every rule firing, fold and lexicon step diffed for consonant tokens).
+Flows are consonant tokens per lect per kyr; "lexicon" is replacement (net positive for most sounds: words grow longer over
+time); "lects" is the share of lects with the phoneme, proto -> end.
+
+| seg | before (E4 catalogue, 48 lects): lects; in / out; main paths | after (this round, 96 lects, seed 7) |
+| --- | --- | --- |
+| ʔ | 0.60 -> 0.94 (token share 1.4% -> 15.5%); in 11.8 / out 5.5; in: S042 prothesis 4.3 (88 tokens a firing, 31 of 48 lects), lexicon 4.6 (compounds of ʔ-initial words), S037 p t k > ʔ / _# 1.4, S038 0.9, S036 0.3 (S036 = S037's k part, drawn twice); out: S191 1.8, tone 0.8 | 0.56 -> 0.59 (2.7%); in 5.6 / out 5.1; S042 1.0, S037 1.3; out: S197 initial loss 1.9, S191 1.4 |
+| ɲ | 0.50 -> 0.83 (2.2% -> 6.4%); in 4.0 / out 2.4; in: S057 n > ɲ / _j, _i 1.6, lexicon 2.0; out: only S121 compensatory lengthening 0.6 and final C loss: no depalatalization at all | 0.51 -> 0.31; in 3.5 / out 4.4; S198 n > ɲ / _i 1.9; out: S199 1.8, S202 1.7, S200 0.4 |
+| ŋ | 0.67 -> 0.69; in 6.7 / out 6.8: S144 n > ŋ / _# 4.2 against S143 ŋ > n / _# 3.9 (they cycle, ~3 firings each per lect) | 0.74 -> 0.75, unchanged (balanced, not a sink; within 1.5x PHOIBLE) |
+| j | 0.83 -> 0.98 (4.4% -> 10.7%); in: S174 ɛ ɔ > je we 2.9, glide formation 1.6, hiatus glide 1.5; out: S121 2.0, S041 1.1. Coalescence rows (S056-S058) left the j behind (t > tʃ / _j gave tʃj) | 0.86 -> 0.95 (5.6%); out: S201 j > ∅ / V_V 7.7, coalescence absorbs the j |
+| p | 0.92 -> 0.65; in: S097 b d g > p t k 7.8; out: S022 p > ∅ 5.0, lenition.p_f 4.5, S010 p > b 2.6 (S010 = the demo intervocalic voicing again), Grimm S177 1.3 | 0.92 -> 0.74 |
+| k | 0.94 -> 0.62; out: S003 k > h 2.0, S012 k > g 1.9 (twin), S177 1.9, S004 k > x 1.1 | 0.92 -> 0.75 |
+| w | 0.77 -> 0.33; out: labial.w_v w > v 4.1 (context-free), S027; in: glide formation, l-vocalization | 0.82 -> 0.56 |
+| ʋ | 0.04 -> 0.40; in: S195 ɹ > ʋ 1.0; out: none (pure sink) | 0.03 -> 0.03 |
+| ʁ | 0.02 -> 0.44; in: S148 r > ʁ (context-free) 1.8; out: S102 coda loss 0.2 | 0.01 -> 0.22 |
+
+The catalogue view (expected firings per kyr of rules that can rewrite or make a segment, from the weighted pool at the
+lect's state; `HPATHS=1`) says the same in another unit, with one lesson: the engine draws ~13 changes per kyr, so in 20 kyr
+nearly every applicable rule fires one to four times per line, and a segment's presence is decided by whether a
+near-total exit (context-free, or "#_, V_") has fired since the last creation. Weight then matters little: S197 as a
+context-free ʔ > ∅ gave ʔ 0.14-0.16 at naturalness 1-2 and 0.74 at 0. Hence conditioned exits rather than weights.
+Proto draws are not the cause (600 draws: ʔ 0.49, ɲ 0.56, ŋ 0.81, about the 1.2-1.4x of every segment at a median of 23 C).
+
+**Changes** (tools/language/knowledge_tables.py, regenerated tsv; ids stable, new rows appended):
+- S042 prothetic ʔ: `∅ > ʔ / #_V́`, before a stressed initial vowel only (German Apfel, Abend; a boundary onset, usually
+  absent before unstressed vowels, Kohler 1994). Still naturalness 1 (rules.ROW_OVERRIDES) x 0.15 (history.RULE_WEIGHT).
+- S056/S057/S058 coalescence: `t, d, s, z > tʃ, dʒ, ʃ, ʒ / _j ; then j > ∅ / [+sibilant]_`, `n > ɲ / _j ; then j > ∅ / ɲ_`,
+  `l > ʎ / _j ; then j > ∅ / ʎ_` (Latin vinea > vigna, palea > paglia, English nature): the j is absorbed. S057 loses its
+  `_i` half, now S198 `n > ɲ / _i` at 2 (Polish nie, niebo; allophonic in Japanese).
+- S022 p > ∅ (Celtic, a one-step shortcut of p > ɸ > h > ∅ the catalogue has stepwise) 3 -> 1. S148 r > ʁ 2 -> 1 (one
+  areal spread from Paris), S195 ɹ > ʋ 2 -> 1 (one British innovation).
+- New exits: S197 `ʔ > ∅ / #_` 3 (Middle Chinese ʔ- > Mandarin zero initial: ʔan > ān); S199 `ɲ > j / V_` 3 (Romanian
+  vinea > vie, cuneus > cui); S200 `ɲ > n / _C, _#` 3 (Slovene konj [kɔːn]); S201 `j > ∅ / V_V` 2 (Proto-Greek *trejes >
+  treîs); S202 `ɲ > n` 1 (Finnic: Proto-Uralic *ńëlɜ > Finnish nuoli, Hungarian nyíl); S203 `ʋ > v` 3 (OHG w > German [v]);
+  S204 `β > w / _C, _#` 3 (Catalan bibere > beure, debitum > deute).
+- `rules.SAME_AS` (drawn once): S010-S012 (p t k > b d g / V_V, parts of the demo intervocalic voicing), S005-S007 (b d g >
+  β ð ɣ / V_V, parts of the demo spirantization), S036 (k > ʔ / _#, part of S037).
+- Keep steer (`lect.keep_part`, KEEP_SHARE 0.7, KEEP_FACTOR 0.25; architecture.md §5): a rule that would leave no token of
+  a near-universal phoneme (p t k m n l j w i u a) in the lect's frequent words is drawn a quarter as often, at home and by
+  wave. This is the mechanism draft-language-plain-stops-erode proposed. The catalogue changes alone gave p/k 0.48/0.48 on
+  run H (k worse than E4's 0.70; harness 0.66/0.64 against 0.67/0.65 on the E4 catalogue): with every applicable rule
+  firing a few times, the near-total stop lenitions (lenition.p_f and Grimm `#_, V_`, k > x / V_ with k > tʃ before front
+  vowels) take the last p or k in most lines whatever their weights; harness with the steer 0.68-0.81 / 0.72-0.76 (three
+  seeds), no slower (the check stops at the first surviving token).
+Not changed: S143/S144 (ŋ is balanced; they cycle, a churn of the final nasal, not a sink), the ease drag constants.
+
+**Full runs** (8 workers, ~15 min; living human-voiced lects, lect share / family-weighted share over 96 true families):
+
+| run | ʔ | ɲ | ŋ | p | t | k | w | ʁ | ʋ | ɹ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PHOIBLE | 0.38 | 0.42 | 0.64 | 0.85 | 0.72 | 0.90 | 0.85 | 0.04 | 0.02 | 0.03 |
+| E4 (baseline) | 0.71/0.81 | 0.89/0.88 | 0.86/0.84 | 0.55/0.53 | 0.80/0.76 | 0.70/0.64 | 0.41/0.45 | 0.49/0.47 | 0.30 | 0.16/0.21 |
+| H, catalogue only (`scratchpad/runH`) | 0.46/0.57 | 0.42/0.39 | 0.86/0.83 | 0.48/0.52 | 0.70/0.67 | 0.48/0.53 | 0.50/0.49 | 0.37/0.36 | 0.04 | 0.34/0.31 |
+| H2, + keep steer (`scratchpad/runH2`) | 0.47/0.52 | 0.36/0.39 | 0.86/0.82 | 0.66/0.71 | 0.89/0.88 | 0.81/0.84 | 0.71/0.70 | 0.38/0.32 | 0.01 | 0.28/0.30 |
+
+H2 (the round's result, `scratchpad/runH2/a24559/languages.json`): ʔ 1.24x, ɲ 0.86x, ŋ 1.34x PHOIBLE; p 0.66, k 0.81.
+Checks: proto inventories, sisters (strict 0.502, loose 0.563, cross-family 0.0001), shift, long generations (ratio 3.7),
+hubs, living sizes (C 11/16/20/24/39, 4.2% above 42), living segments (top-20 overlap 17, was 15) and typology pass; the
+human horizon fails as before at 10.5 (smoothed 10.6; E4 10.67). Kenku tonal 85% (E4 70%), aarakocra 76% (84%; 25 lects
+from few protos); dragons keep 4.5 harsh units per lect (4.6). Still over-represented: ʁ (0.38, 10x), ɹ (0.28: with ɹ > ʋ
+rarer the r > ɹ sink shows), ɦ (0.27, 9x); under: ɡ 0.31 (0.56), d 0.30 (0.48), tʃ 0.28 (0.39).

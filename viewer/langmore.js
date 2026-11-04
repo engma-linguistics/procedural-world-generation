@@ -35,6 +35,27 @@
   // a romanized name: the readable spelling, the full one (with tone and length marks) on hover and beside it when it differs
   const rom = (n) => `<span class="rom" title="${esc(n.roman_full || n.roman || '')}">${esc(n.roman || '')}</span>${n.roman_full && n.roman_full !== n.roman ? ` <span class="muted" style="font-size:12px">(${esc(n.roman_full)})</span>` : ''}`;
   const chainOf = (S, x) => (x == null ? null : LC.etymChain(S.ix, x));
+  // a word's root family (lexicon words' `roots`, the document's `roots` table): the root, its words in this lect, and
+  // the concepts built on it across the living lects that keep it
+  function rootHtml(S, sl, w) {
+    const r = w && w.roots && w.roots[0];
+    if (!r) return '';
+    const R = (S.doc.roots || {})[r] || {};
+    const here = Object.entries((sl && sl.lexicon) || {}).filter(([, x]) => x.roots && x.roots.includes(r)).map(([c]) => c).sort();
+    const across = new Map();
+    let lects = 0;
+    for (const l of S.doc.lects) {
+      if (l.died_kyr != null || l.deme == null) continue;
+      let hit = false;
+      for (const [c, x] of Object.entries(l.lexicon || {})) if (x.roots && x.roots[0] === r) { across.set(c, (across.get(c) || 0) + 1); hit = true; }
+      if (hit) lects++;
+    }
+    const fam = [...across.entries()].sort((a, b) => b[1] - a[1]);
+    return `<h3>Its root</h3><div><span class="ipa">*${esc(R.ipa || '?')}</span> ‘${esc(String(R.gloss || R.concept || r).toLowerCase())}’
+      <span class="muted">${R.lect ? 'in ' + lk(R.lect, R.lect) : ''}${R.kyr != null ? ', ' + esc(ago(R.kyr)) : ''} · ${esc(r)}</span></div>
+      <div class="muted" style="margin-top:4px">in this lect: ${here.map((c) => conceptText(c)).join(', ') || '–'}</div>
+      <div class="muted">across ${lects} living lects: ${fam.slice(0, 30).map(([c, n]) => `${conceptText(c)} (${n})`).join(', ')}</div>`;
+  }
 
   // ================================================================== tab 4: names
   const NM = { concept: 'WATER' };
@@ -100,7 +121,7 @@
         <h3>Trace a word of ${sl ? lk(sl.id) : 'the picked lect'}</h3>
         <div class="row"><select id="nmW">${concepts.map((c) => `<option ${c === NM.concept ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
           ${w ? `<span class="rom">${esc(w.roman)}</span> <span class="ipa">/${esc(w.ipa)}/</span>${say(w.ipa, sl.people)} <span class="muted">${esc(w.pos || '')}</span>` : ''}</div>
-        ${w ? etymHtml(S, chainOf(S, w.etym), sl.people) : ''}`;
+        ${w ? etymHtml(S, chainOf(S, w.etym), sl.people) : ''}${w ? rootHtml(S, sl, w) : ''}`;
       el.querySelector('#nmP').onchange = (e) => { S.people = e.target.value; V.writeHash(); this.draw(el, S); };
       const ws = el.querySelector('#nmW'); if (ws) ws.onchange = (e) => { NM.concept = e.target.value; V.writeHash(); this.draw(el, S); };
       el.querySelectorAll('[data-ex]').forEach((a) => (a.onclick = () => { const r = el.querySelector(`[data-exr="${a.dataset.ex}"]`); r.hidden = !r.hidden; }));
@@ -125,6 +146,9 @@
     },
   };
   const peopleOfLect = (S, id) => (S.ix.by.get(id) || {}).people;
+  // whether the receiver's word still comes from this hop (output.py hop_status, read from the receiver's own etymology)
+  const hopNow = (h) => (h.now === 'kept' ? 'kept' : h.now === 'lost' ? 'word lost'
+    : h.now === 'replaced' ? `replaced${h.by ? ` ${esc(ago(h.by.kyr))} (${esc(LC.processText(h.by.process))})` : ''}` : '');
   function food(el, S) {
     const all = S.doc.food_routes || [];
     const counts = {};
@@ -138,11 +162,12 @@
       const op = peopleOfLect(S, r.origin_lect);
       return `<details${k === 0 ? ' open' : ''}><summary><b>${conceptText(r.concept)}</b> <span class="rom">${esc(r.roman || '')}</span> <span class="ipa">${esc(r.ipa || '')}</span>${say(r.ipa, op)}
         <span class="muted">· ${esc(r.origin || 'from')} ${esc(demeName(S, r.origin_deme))} (${r.origin_lect ? esc(r.origin_lect) : ''}) ${r.kyr != null ? esc(ago(r.kyr)) : ''} · ${(r.hops || []).length} hops</span></summary>
-        <table class="t" style="margin:4px 0"><tr><th>when</th><th>from</th><th></th><th>to</th><th>form there</th><th>spelling</th><th>changes on the way</th></tr>
+        <table class="t" style="margin:4px 0"><tr><th>when</th><th>from</th><th></th><th>to</th><th>form there</th><th>spelling</th><th>changes on the way</th><th>word there later</th></tr>
         ${(r.hops || []).map((h) => `<tr><td class="n">${esc(ago(h.kyr))}</td><td>${esc(demeName(S, h.from_deme))} <span class="muted">${h.from_lect ? lk(h.from_lect, h.from_lect) : ''}</span></td><td class="muted">→</td>
           <td>${sw(V.peopleColor(peopleOfLect(S, h.lect)))}${esc(demeName(S, h.deme))} <span class="muted">${lk(h.lect, h.lect)}</span></td>
           <td class="ipa">${h.from_ipa && h.from_ipa !== h.ipa ? `<span class="muted">${esc(h.from_ipa)} →</span> ` : ''}${esc(h.ipa)}${say(h.ipa, peopleOfLect(S, h.lect))}</td><td class="rom">${esc(h.roman || '')}</td>
-          <td class="muted" style="font-size:11px">${(h.changes || []).map((c) => esc(LC.processText(c))).join('; ') || (h.from_ipa && h.from_ipa !== h.ipa ? 'heard and said its own way' : '')}</td></tr>`).join('')}</table></details>`;
+          <td class="muted" style="font-size:11px">${(h.changes || []).map((c) => esc(LC.processText(c))).join('; ') || (h.from_ipa && h.from_ipa !== h.ipa ? 'heard and said its own way' : '')}</td>
+          <td class="muted" style="font-size:11px">${hopNow(h)}</td></tr>`).join('')}</table></details>`;
     }).join('');
     el.querySelector('#rtBody').innerHTML = (html || '<p class="muted">no routes</p>') + (rs.length > RT.n ? `<p><span class="lk" id="rtMore">${rs.length - RT.n} more routes…</span></p>` : '');
     const m = el.querySelector('#rtMore'); if (m) m.onclick = () => { RT.n += 80; food(el, S); };

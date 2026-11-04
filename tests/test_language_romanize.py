@@ -192,3 +192,12 @@ def test_book_mode_diacritics_rare_on_generated_words():
     # (at most one outlier in 200: the palatal affricate ɟʝ spells 'gyyh' in book mode, šẽɟʝo > shen-gyyho, seen once
     # when word lengths started following the syllable space and the draws moved)
     assert sum(len(b) > len(f) + 4 for f, b in zip(full, book)) <= 1
+
+
+def test_rhotics_and_book_affricates():
+    """Full mode tells the approximant ɹ from the tap ɾ and the trill r (owner 11-04); book mode spells ɟʝ as gy, not gyyh."""
+    full = {x: R.romanize("a" + x + "a") for x in ("ɹ", "ɾ", "r")}
+    assert len(set(full.values())) == 3 and full["ɾ"] == "ara" and full["r"] == "arra" and full["ɹ"] == "ařa"
+    assert not R.merged("ɹ", "ɾ") and R.merged("ɾː", "r")
+    b = lambda x: R.romanize(x, book=True)
+    assert b("aɟʝa") == "agya" and b("acça") == "akya" and b("aɹa") == "ara" and "gyyh" not in b("šẽɟʝo".replace("š", "ʃ"))

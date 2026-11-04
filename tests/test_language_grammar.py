@@ -433,18 +433,19 @@ def test_grammar_holds_several_live_grams():
 # --- typology drift in the run (the 2026-11-04 round) -------------------------------------------------------------------
 
 def test_step_drifts_typology_at_the_lect_rate():
-    """grammar.step drifts the typology when asked (lect.grammar_step asks), per generation times the lect's rate: over
-    ~720 generations (20 kyr of human history) a good share of features change, at rate 0 none do."""
+    """grammar.step drifts the typology's aims when asked (lect.grammar_step asks), per generation times the lect's rate:
+    over ~720 generations (20 kyr of human history) a good share of features change, at rate 0 none drift (an aim can
+    still move when an unwanted gram binds: that is adoption, not drift)."""
     changed, frozen = [], []
+    drift_ev = lambda g: [e for e in g.events if e[1].startswith("typology ") and "marker bound" not in e[1]]  # noqa: E731
     for s in range(6):
         rng, g = _grammar(s)
-        t0 = dict(g.typology)
+        t0 = dict(G.aims(g))
         G.step(rng, g, 720, drift_typology=True, rate=1.0)
-        changed.append(sum(g.typology[f] != t0[f] for f, _ in G.FEATURES))
+        changed.append(sum(G.aims(g)[f] != t0[f] for f, _ in G.FEATURES))
         rng, g = _grammar(s)
-        t0 = dict(g.typology)
         G.step(rng, g, 720, drift_typology=True, rate=0.0)
-        frozen.append(sum(g.typology[f] != t0[f] for f, _ in G.FEATURES))
+        frozen.append(len(drift_ev(g)))
     assert np.mean(changed) >= 6 and not any(frozen), (changed, frozen)
 
 
@@ -500,3 +501,107 @@ def test_disharmonic_value_flips_faster():
     t["adposition"] = "pre"
     assert G._disharmony("adposition", t, T) > 5.0
     assert G._disharmony("case", t, T) == 1.0
+
+
+# --- typology and grams, one system (the 2026-11-04 round) --------------------------------------------------------------
+
+def test_steps_never_leave_a_typology_clash():
+    """Twelve lects drifting fast over 2000 generations in 40 steps: after every step the shown typology agrees with the
+    live grams (no 'number: none' beside a plural, no 'case: none' beside a locative, the negator on its side)."""
+    seen = 0
+    for s in range(12):
+        rng, g = _grammar(100 + s)
+        for _ in range(40):
+            G.step(rng, g, 50, inv=Inv(), lexicon=lex(), l2_share=0.3, drift_typology=True, rate=2.0)
+            assert G.clashes(g, lex()) == [], (s, G.clashes(g, lex()))
+        seen += len(g.live())
+    assert seen > 30
+
+
+def test_short_history_has_no_typology_clashes():
+    """The whole driver (shifts with calques, budding, sound change over the grams) on the tiny run: every living lect's
+    typology agrees with its grams, and the language pass's check says so."""
+    from test_language_history import TinyRun
+    from planet.language import checks as CK, history as H
+    old = (H.RATE_SCALE, H.WORKERS)
+    H.RATE_SCALE, H.WORKERS = 8.0, 1
+    try:
+        res = H.generate(None, run=TinyRun(), analyse=False)
+    finally:
+        H.RATE_SCALE, H.WORKERS = old
+    living = [l for l in res["lects"] if l.alive and l.grammar is not None]
+    assert len(living) >= 4
+    for l in living:
+        assert G.clashes(l.grammar, l.lexicon) == [], (l.id, G.clashes(l.grammar, l.lexicon))
+    row = CK.typology_consistency(res)
+    assert row["pass"] and row["value"]["lects_with_clashes"] == 0, row
+
+
+def test_typology_reads_the_grams():
+    rng, g = _pl_grammar()
+    G.realise(g)
+    assert g.typology["number"] == "sg-pl"
+    g.grams[0].level = G.LOST
+    G.realise(g)
+    assert g.typology["number"] == "none" and G.aims(g)["number"] == "sg-pl"   # the aim stays: the ladder will renew it
+    g.grams.append(G.Gram("LOC", tuple(from_ipa("ka")), "NP", "post", G.FREE, ("AT", "X"), 5.0, id="LOC#y"))
+    G.aims(g)["adposition"] = "pre"
+    G.realise(g)
+    assert g.typology["case"] == "few" and g.typology["adposition"] == "post"   # a free postposition: postpositions
+    G._follow_syntax(g, 5.0)
+    G.realise(g)
+    assert g.grams[-1].side == "pre" and g.typology["adposition"] == "pre"   # the free word moved with the syntax
+    assert G.clashes(g) == []
+
+
+def test_flip_toward_marking_recruits_and_flip_to_none_erodes():
+    """'number: none > sg-pl' pulls a plural onto the ladder within a few hundred generations; 'past: marked > none' lets
+    a bound past erode."""
+    got = lost = 0
+    for s in range(10):
+        rng, g = _grammar(200 + s, number="none", past="marked")
+        g.grams = [G.Gram("PAST", tuple(from_ipa("na")), "V", "post", G.AFFIX, ("X", "X"), 10.0, id="PAST#x")]
+        G._sync_cells(g)
+        G.aims(g)["number"], G.aims(g)["past"] = "sg-pl", "none"
+        G.step(rng, g, 400, inv=Inv(), lexicon=lex(), l2_share=0.3)
+        got += g.typology["number"] != "none"
+        lost += g.typology["past"] == "none"
+        assert G.clashes(g, lex()) == []
+    assert got >= 6 and lost >= 6, (got, lost)
+
+
+def test_unwanted_gram_that_binds_becomes_the_aim():
+    rng, g = _grammar(7, definite_article="none")
+    gr = G.Gram("DEF", tuple(from_ipa("nako")), "NP", "post", G.CLITIC, ("THAT", "X"), 10.0, id="DEF#x")
+    g.grams = [gr]
+    G.aims(g)["definite_article"] = "none"
+    old = (G.FUSE, G.ABANDON)
+    G.FUSE, G.ABANDON = 5.0, 0.0
+    try:
+        G.step(rng, g, 10, inv=Inv(), lexicon=lex())
+    finally:
+        G.FUSE, G.ABANDON = old
+    assert gr.level >= G.AFFIX and G.aims(g)["definite_article"] == "post" == g.typology["definite_article"]
+    assert any("marker bound" in e[1] for e in g.events)
+
+
+def test_outside_write_becomes_an_aim_and_clusivity_follows_the_lexicon():
+    rng, g = _grammar(8)
+    g.typology["number"] = "sg-du-pl"     # a calque on shift writes the shown typology
+    g.typology["word_order"] = "VSO"
+    G.realise(g, lex())
+    assert G.aims(g)["number"] == "sg-du-pl" and G.aims(g)["word_order"] == "VSO" == g.typology["word_order"]
+    assert G.clashes(g, lex()) == []
+    assert g.typology["clusivity"] == "no"
+    both = lex(**{"WE (INCLUSIVE)": ("tiso", "FUNC"), "WE (EXCLUSIVE)": ("kami", "FUNC")})
+    G.realise(g, both)
+    assert g.typology["clusivity"] == "yes"
+
+
+def test_json_keeps_the_aims():
+    rng, g = _grammar(9)
+    G.step(rng, g, 300, inv=Inv(), lexicon=lex(), drift_typology=True, rate=3.0)
+    h = G.from_json(json.loads(json.dumps(G.to_json(g))))
+    assert dict(G.aims(h)) == dict(G.aims(g)) and dict(h.typology) == dict(g.typology)
+    c = G.copy(g)
+    assert dict(G.aims(c)) == dict(G.aims(g)) and G.aims(c) is not G.aims(g)

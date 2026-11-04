@@ -69,6 +69,51 @@ class Frame:
     pairs: dict = field(default_factory=dict)  # (a, b) a < b -> [shared cells, border edges, share sum a, share sum b]
 
 
+GEN_TOL = 0.05  # yr: a current-spec generation length this close to the stored one is not an override
+
+
+def current_spec(meta: dict):
+    """The current preset spec (lineages.spec.Tree) of a run: the file of the stored tree_file's name in this checkout's
+    planet/lineages/samples, or None (a run built from a tree file that is not a preset keeps its stored lengths)."""
+    tf = meta.get("tree_file")
+    if not tf:
+        return None
+    from ..lineages import spec as SP
+    p = Path(__file__).resolve().parents[1] / "lineages" / "samples" / Path(tf).name
+    if not p.exists():
+        return None
+    try:
+        return SP.load(p, meta.get("mode"))
+    except Exception:  # noqa: BLE001 - a preset that no longer parses: keep the stored lengths
+        return None
+
+
+def line_generation_yr(tree, l) -> float:
+    """A line's generation length, yr, as lineages.history.peoples.PeoplesMixin.gen_yr computes it."""
+    if l.megafauna and "flies" in l.traits:
+        from ..lineages import dragon_ages as DA
+        return float(DA.generation_yr(tree.dragon_ages, tree.dragon_generation, l.generation_yr))
+    from ..lineages import life_history as LH
+    return float(LH.generation_yr(l))
+
+
+def generation_overrides(meta: dict, lines: dict, tree=None) -> dict:
+    """See Run.generation_overrides; `tree` (a spec.Tree) instead of the current preset, for tests."""
+    tree = tree if tree is not None else current_spec(meta)
+    if tree is None:
+        return {}
+    out = {}
+    for lid, ln in lines.items():
+        sl = tree.lines.get(lid)
+        stored = ln.get("generation_yr")
+        if sl is None or stored is None:
+            continue
+        cur = line_generation_yr(tree, sl)
+        if abs(cur - float(stored)) > GEN_TOL:
+            out[lid] = {"stored_yr": round(float(stored), 2), "current_yr": round(cur, 2), "spec": tree.source}
+    return out
+
+
 def _people_of_line(lines_by_id: dict, lid: str) -> str | None:
     """A group's or overlay's people for deme lookups (groups map to their people; overlays have no demes)."""
     l = lines_by_id.get(lid)
@@ -132,7 +177,22 @@ class Run:
         return self.lines[people]
 
     def generation_yr(self, people: str) -> float:
+        """The people's generation length, yr: the current preset's (generation_overrides) where it differs from the one the run
+        stored, else the stored one."""
+        ov = self.generation_overrides.get(people)
+        if ov is not None:
+            return float(ov["current_yr"])
         return float(self.lines[people].get("generation_yr") or 25.0)
+
+    @cached_property
+    def generation_overrides(self) -> dict:
+        """{people: {"stored_yr", "current_yr", "spec"}} for the peoples whose generation length under the current preset spec
+        differs from the run's stored one (by more than GEN_TOL): a preset change made after the peoples run (aarakocra adult 12,
+        lifespan 60, owner 11-04) reaches the language pass without rebuilding the run. Computed as the lineages code does
+        (history.peoples.PeoplesMixin.gen_yr): a flying megafauna line's from the dragons' age schedule, else the canon-age
+        life table's T under the forager schedule, else the line's own generation_yr. The spec is the preset of the same file
+        name in this checkout's planet/lineages/samples (the stored tree_file path may point at another checkout), else none."""
+        return generation_overrides(self.meta, self.lines)
 
     def density(self, people: str) -> float:
         """Heads per km2: the people's present population over its present area (meta.present.lines). The stored

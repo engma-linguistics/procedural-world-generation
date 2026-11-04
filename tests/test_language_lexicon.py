@@ -72,7 +72,7 @@ def test_proto_lexicon_shape(concepts):
 
 def test_calibration_constant():
     assert abs(L.BASE_REPLACE / L.calibrate_base_replace() - 1) < 0.01
-    assert L.RATE_BY_FREQ[5] / L.RATE_BY_FREQ[1] == pytest.approx(10.0)
+    assert L.RATE_BY_FREQ[5] / L.RATE_BY_FREQ[1] == pytest.approx(L.FREQ_SPREAD) and 3 <= L.FREQ_SPREAD <= 10
 
 
 def test_replacement_rate_matches_calibration(concepts):
@@ -96,7 +96,7 @@ def test_replacement_rate_matches_calibration(concepts):
     assert abs(replaced / (1 - L.SWADESH_RETENTION_1KYR) - 1) < 0.10, replaced
     r1 = 1 - by_class[1][0] / by_class[1][1]
     r5 = 1 - by_class[5][0] / by_class[5][1]
-    assert r5 > 4 * r1, (r1, r5)   # rare words go much faster (10x in hazard)
+    assert r5 > 2.5 * r1, (r1, r5)   # rare words go several times faster (FREQ_SPREAD in hazard)
 
 
 def _dummy_rule(form):
@@ -264,19 +264,22 @@ def test_word_length_stays_bounded(long_runs):
         assert 4.0 <= st["mean_segments"] <= 7.0 * max(1.0, lex.length_scale), st   # (longer in a small syllable space)
         assert st["max_segments"] <= round(L.MAX_SEG * max(1.0, lex.length_scale)), st   # (the cap follows the syllable space)
         assert st["latest"].get("coin", 0) > 0
+        kyr = min(s.kyr for w in lex.words.values() for s in w.etym)
         for w in lex.words.values():
-            ds = collections.Counter(s.process for s in w.etym if s.process.startswith("derive:"))
-            assert all(v == 1 for v in ds.values()), (w.concept, ds)   # the same affix never stacks
+            aff, morph = L._transparent(lex, w, kyr)
+            # the same affix never stacks while it is felt; at most MAX_AFFIXES / MAX_MORPHEMES transparent
+            assert len(aff) == len(set(aff)) and len(aff) <= L.MAX_AFFIXES and morph <= L.MAX_MORPHEMES + 1, (w.concept, aff)
     notes = [s.note for lex in long_runs for w in lex.words.values() for s in w.etym]
     assert any("(clip " in n for n in notes)
 
 
 def test_homophone_share_low(long_runs):
-    """Repair by renewal and redraws keep homophones (colexifications included) under 10% of concepts on average (one run
-    may reach 12%: the groups left after 700 generations are deliberate colexification shifts, whose count swings 5-12%
-    between draws, not accidental mergers)."""
+    """Repair by renewal and redraws keep homophones (colexifications included) under 12% of concepts on average (one run
+    may reach 14%: the groups left after 700 generations are deliberate colexification shifts, whose count swings 8-14%
+    between draws, not accidental mergers; 2026-11-04: 10% -> 12% with the shift fallback of the word-families round,
+    which turns would-be coinages into CLICS-attested polysemies)."""
     sh = [L.stats(lex)["homophone_share"] for lex in long_runs]
-    assert sum(sh) / len(sh) < 0.10 and max(sh) < 0.12, sh
+    assert sum(sh) / len(sh) < 0.12 and max(sh) < 0.14, sh
     for lex in long_runs:
         assert all(len(v) <= 3 for v in lex.homophones().values())
 
@@ -296,7 +299,12 @@ def test_compounds_are_plausible(concepts):
     for k, head, mod, w in made:
         parts = {L.sem_class(x) for x in (k, head, mod)}
         assert not ("verb" in parts and "colour" in parts), (k, head, mod)
-        assert L.concept_info(k).pos == "N"
+        # nouns compound; a function word only reinforced by another (THIS + HERE), data/derivations.tsv
+        assert L.concept_info(k).pos == "N" or head == k and mod in dict(L.reinforcers()[k]), (k, head, mod)
+        if L.sem_class(k) in ("person", "kin") and mod not in {L.resolve(b) for b in L.concept_info(k).base}:
+            assert L.sem_class(mod) not in ("person", "kin"), (k, head, mod)   # no MAN + HUSBAND = 'person'
+        if mod in L._QUALITY and mod not in dict(L._related(lex, k)):
+            assert L.sem_class(k) in L.SPECIES, (k, head, mod)   # no 'green land' for 'stone' (CLICS or a hint may)
         _, msc, mseg = L.limits(inv)   # (the caps follow the syllable space)
         assert L.syllables(w.form) <= msc + 1 and len(w.form) <= mseg
         if L.sem_class(k) == "animal" and "ANIMAL" in lex and k != "ANIMAL":
@@ -312,10 +320,11 @@ def test_derive_clips_long_base(concepts):
     rng, inv, lex = _proto(72, concepts)
     long = tuple(from_ipa("katupamilo"))
     lex.set(replace(lex["DOG"], form=long))
-    w = L.derive(rng, lex, "WOLF", inv, 9.0, base="DOG", meaning="little")
+    w = L.derive(rng, lex, "PUPPY", inv, 9.0, base="DOG", meaning="little")
     assert w is not None and L.syllables(w.form) <= L.MAX_SYLL and "(clip " in w.etym[-1].note
     lex.set(w)
-    assert L.derive(rng, lex, "BEAR", inv, 9.0, base="WOLF", meaning="little") is None   # already carries 'little'
+    assert L.derive(rng, lex, "PUPPY", inv, 9.0, base="PUPPY", meaning="little") is None   # already carries 'little'
+    assert L.derive(rng, lex, "WOLF", inv, 9.0, base="DOG", meaning="little") is None   # not a pair of the table
 
 
 def test_shift_at_most_once_per_gap(concepts):
@@ -343,7 +352,7 @@ def test_deleted_word_kept_minimal_and_affix_renewed(concepts):
     assert len(w.form) == 1 and w.etym[-1].note == "kept minimal" and w.form[0] in w0.form
     assert all(w.form for w in lex.words.values())
     assert all(not af for af, _ in lex.affixes.values()) and any("worn to nothing" in t for _, t in lex.notes)
-    assert L.derive(rng, lex, "WOLF", inv, 8.0, base="DOG", meaning="little") is None
+    assert L.derive(rng, lex, "PUPPY", inv, 8.0, base="DOG", meaning="little") is None
     L.step(rng, lex, 2000, inv, kyr=7.0)
     assert all(af for af, _ in lex.affixes.values()) and any("renewed" in t for _, t in lex.notes)
 
@@ -360,26 +369,27 @@ def test_stats_and_state_round_trip(concepts):
 # --- review of run a24559: coinage swamped derivation; inherited core share -------------------------------------------
 
 def test_coinage_does_not_swamp_derivation(long_runs):
-    """A derivation that clashes or finds no base retries with another base or affix, then compound, then shift, before
-    a fresh root. Since each affix is capped at AFFIX_CAP of the lexicon and must fit its base (lexicon.affix_fits), a
-    coinage is the latest non-sound step ~30-35% of the time over 700 generations (was 15-25% with uncapped affixes, when
-    one affix stood on 12-23% of the words); built words (derive, compound, shift) still outnumber coinages, and no affix
-    stands on much more than AFFIX_CAP of the words (derived words carry their base's affix too)."""
+    """A replacement falls back to the next plausible source (derive along the table, compound, colexification shift,
+    the word's own diminutive or frequentative, a weaker CLICS shift, a loan when a contact lect has the word) before
+    a fresh root: over 700 generations with a contact lect, coinage is well under 15% of the replacements (the review of
+    run a24559 measured ~33%), and no affix stands on much more than AFFIX_CAP of the words (renewals aside)."""
     tot = collections.Counter()
     for lex in long_runs:
-        tot.update({k: v for k, v in L.stats(lex)["latest"].items() if k != "proto"})
+        tot.update(lex.counts)
         for m in lex.affixes:
-            assert L.affix_share(lex, m) <= L.AFFIX_CAP + 0.02, (m, L.affix_share(lex, m))
+            # (+0.04: the cap binds at derivation time; compounds, shifts and loans built on a derived word carry its
+            # affix in their history too)
+            assert L.affix_share(lex, m) <= L.AFFIX_CAP + 0.04, (m, L.affix_share(lex, m))
     n = sum(tot.values())
-    assert 0.10 <= tot["coin"] / n <= 0.40, tot
-    # (built / coined is 1.50 on average over 8 draws of this fixture, range 1.30-1.84, with or without the syllable-space
-    # scaling: 1.5 sat on the mean and flipped with any change to the inventory draw)
-    assert tot["derive"] + tot["compound"] + tot["shift"] > 1.35 * tot["coin"], tot
+    assert 0.0 < tot["coin"] / n < 0.12, tot
+    assert tot["borrow"] / n < 0.35, tot   # (loans fill gaps, not every gap: BORROW_FALLBACK)
+    assert tot["derive"] + tot["renew"] + tot["compound"] + tot["shift"] > 3 * tot["coin"], tot
 
 
 def test_derive_retry_avoids_homophone(concepts):
     rng, inv, lex = _proto(81, concepts)
-    k = next(k for k in lex.words if L.concept_info(k).pos == "V" and len(L._related(lex, k)) >= 2)
+    k = next(k for k in lex.words if L.concept_info(k).pos == "V"
+             and sum(r.base in lex.words for r in L.derivation_sources(k) if r.base != k) >= 2)
     first = L.derive(rng, lex, k, inv, 19.0)
     base = first.etym[-1].note.split(" + '")[0]
     again = L.derive(rng, lex, k, inv, 19.0, exclude={base})
@@ -388,7 +398,7 @@ def test_derive_retry_avoids_homophone(concepts):
     c = L.concept_info(k)
     src, new = L._replace_word(rng, lex, k, c, "derive", {"derive": 1, "shift": 1, "coin": 1}, inv, 19.0, "L", None,
                                [], None, None)
-    assert src in ("derive", "shift", "coin") and new.concept == k
+    assert src in ("derive", "shift", "renew", "coin") and new.concept == k
 
 
 def test_inherited_core_share(concepts):
@@ -486,3 +496,103 @@ def test_mergers_lengthen_new_words_over_time(concepts):
         out[name] = np.mean([L.syllables(w.form) for w in new])
         assert lex.length_scale == pytest.approx(L.length_scale(iv))
     assert out["merged"] > out["full"] + 0.5, out
+
+
+# --- word families and derivation semantics (2026-11-04) -------------------------------------------------------------------
+
+def test_derivation_table_is_sound():
+    """Every row of data/derivations.tsv names concepts on the list; agent nouns are persons, gods or animals; 'do' and
+    'cause' make verbs, 'like' qualities; content words from function words are rare (three rows of weight 1)."""
+    rows = L.derivation_rows()
+    assert len(rows) >= 150
+    for r in rows:
+        t, b = L.concept_info(r.target), L.concept_info(r.base)
+        if r.relation == "agent":
+            assert L.sem_class(r.target) in ("person", "kin", "god", "animal"), r
+        if r.relation in ("do", "cause"):
+            assert t.pos == "V", r
+        if r.relation == "like":
+            assert t.pos in ("A", "FUNC"), r
+        if r.relation == "cause":
+            assert b.pos == "V", r
+        if b.pos == "FUNC" and t.pos != "FUNC":
+            assert r.weight < 2, r
+    assert sum(1 for r in rows if L.concept_info(r.base).pos == "FUNC" and L.concept_info(r.target).pos != "FUNC") <= 3
+    assert L.affix_fits("agent", "HUNTER", "HUNT") and L.affix_fits("little", "STREAM", "RIVER")
+    assert L.affix_fits("place", "BED", "SLEEP") and L.affix_fits("thing", "KNIFE", "CUT")
+    assert L.affix_fits("like", "RED", "BLOOD") and L.affix_fits("do", "SALT (FOOD)", "SALT")
+    assert L.affix_fits("cause", "KILL", "DIE") and L.affix_fits("little", "SUN", "SUN")   # (the diminutive renewal)
+    assert not L.affix_fits("agent", "MALE PERSON", "CARRY") and not L.affix_fits("do", "CARRY", "VOMIT")
+    assert not L.affix_fits("agent", "HUNTER", "WITH") and not L.affix_fits("thing", "DAY (NOT NIGHT)", "THINK")
+
+
+def test_derivations_follow_the_table_and_stack_at_most_twice(long_runs, concepts):
+    """Every derivation in the long runs is a table pair or a renewal; no agent noun from a function word; a living word
+    keeps at most MAX_AFFIXES transparent affixes; proto and daughters alike."""
+    n = func = 0
+    for lex in long_runs:
+        kyr = min(s.kyr for w in lex.words.values() for s in w.etym)
+        for w in lex.words.values():
+            prev = None
+            for st in w.etym:
+                if st.process.startswith("derive:") and " + '" in st.note:
+                    base = L.resolve(st.note.split(" + '")[0])
+                    m = st.process.split(":", 1)[1]
+                    n += 1
+                    tgt = next(c.id for c in concepts if c.gloss == st.gloss) if not L.is_renewal(st) else base
+                    assert L.is_renewal(st) or L.affix_fits(m, tgt, base) or "elaborate" in (prev or ""), (w.concept, st)
+                    if L.concept_info(base).pos == "FUNC" and L.concept_info(tgt).pos != "FUNC":
+                        func += 1
+                        assert m != "agent" or base in ("OTHER",), (w.concept, st)
+                if not st.process.startswith("sound_change:"):
+                    prev = st.process
+            assert L.word_layers(lex, w, kyr)[0] <= L.MAX_AFFIXES
+    assert n > 300 and func / n < 0.01, (n, func)
+
+
+def test_proto_root_families(concepts):
+    """A proto grows from a root stock: 15-40% of its words are built from another proto word along the table (core
+    Swadesh items mostly simple roots), every word records its root, and some roots carry families of 3+ words; a
+    daughter inherits the families (same root ids) and builds new members on them."""
+    shares, core_shares, big = [], [], 0
+    for seed in range(6):
+        rng, inv, lex = _proto(300 + seed, concepts, f"Q{seed}")
+        assert all(w.roots and w.roots[0].startswith(f"Q{seed}:") for w in lex.words.values())
+        built = [k for k, w in lex.words.items() if any(s.process.startswith("derive:") for s in w.etym)]
+        shares.append(len(built) / len(lex.words))
+        core_shares.append(sum(k in L.CORE100 for k in built) / len(L.CORE100))
+        fam = collections.Counter(w.roots[0] for w in lex.words.values())
+        big += sum(1 for v in fam.values() if v >= 3)
+        for k in built:
+            w = lex.words[k]
+            assert w.etym[0].process == "proto" and w.roots[0] == f"Q{seed}:" + L.resolve(w.etym[0].note[len("colexified with "):]
+                                                                                       if w.etym[0].note else next(c.id for c in concepts if c.gloss == w.etym[0].gloss))
+            assert L.inherited(w)
+    assert 0.15 <= np.mean(shares) <= 0.40, shares
+    assert np.mean(core_shares) < np.mean(shares) - 0.05, (core_shares, shares)
+    assert big >= 6, big
+    # daughters inherit the families and add to them
+    rng, inv, lex = _proto(310, concepts, "R")
+    d = lex.copy("R.1")
+    kyr = 20.0
+    for _ in range(10):
+        kyr = round(kyr - 0.5, 3)
+        L.step(rng, d, 18.0, inv, kyr=kyr)
+    shared = [k for k in lex.words if d.words[k].roots[:1] == lex.words[k].roots[:1]]
+    assert len(shared) > 0.4 * len(lex.words), len(shared)
+    new_members = [w for k, w in d.words.items() if w.roots and w.roots[0].startswith("R:") and not L.inherited(w)
+                   and any(s.process.startswith("derive:") and s.lect == "R.1" for s in w.etym)]
+    assert len(new_members) >= 5, len(new_members)
+    back = L.from_json(L.to_json(d))
+    assert all(back.words[k].roots == w.roots for k, w in d.words.items())
+
+
+def test_no_round_trips(long_runs):
+    """A word never derives, compounds or shifts back into a meaning it had before (SING > SONG > SING, LEG + CLAW = FOOT >
+    FOOT + CLAW = LEG, PUSH > GRIND > PUSH): `lexicon._worn`. Renewals and reinforcements keep the meaning they had."""
+    for lex in long_runs:
+        for w in lex.words.values():
+            steps = [s for s in w.etym if not s.process.startswith("sound_change")]
+            for i, s in enumerate(steps):
+                if s.process.split(":")[0] in ("derive", "compound", "shift") and i and steps[i - 1].gloss != s.gloss:
+                    assert s.gloss not in {t.gloss for t in steps[:i]}, (w.concept, [(t.process, t.gloss) for t in steps])

@@ -415,3 +415,22 @@ def test_epenthesis_uses_the_inventory_vowel():
     assert ipa(R.apply(cl, w("takt"), inventory=inv)) == "takit"
     s042 = next(q for q in rules if q.id == "S042")
     assert R.epenthesis_for(s042, inv) is s042   # only vowel epenthesis is re-pointed
+
+
+def test_sinks_round_rows():
+    """Sinks round (2026-11-04): prothetic ʔ only before a stressed initial vowel; coalescence absorbs the j; exits for ʔ, ɲ,
+    j and ʋ; single-stop twins of the demo lenitions and k > ʔ / _# are drawn once."""
+    s042 = tsv("S042")
+    assert ipa(R.apply(s042, w("apata"), "penult")) == "apata"
+    assert ipa(R.apply(s042, w("apa"), "penult")) == "ʔapa"
+    assert ipa(R.apply(tsv("S056"), w("atja"))) == "atʃa"
+    assert ipa(R.apply(tsv("S057"), w("anja"))) == "aɲa"
+    assert ipa(R.apply(tsv("S058"), w("alja"))) == "aʎa"
+    assert ipa(R.apply(tsv("S197"), w("ʔaʔa"))) == "aʔa"        # initial ʔ lost (Middle Chinese ʔ- > Mandarin zero)
+    assert ipa(R.apply(tsv("S199"), w("ɲaɲa"))) == "ɲaja"       # ɲ > j after vowels (Romanian)
+    assert ipa(R.apply(tsv("S200"), w("kaɲ"))) == "kan"         # final depalatalization (Slovene konj)
+    assert ipa(R.apply(tsv("S203"), w("ʋa"))) == "va"
+    ids = {r.id for r in R.catalogue(HUMAN)}
+    for twin in ("S005", "S006", "S007", "S010", "S011", "S012", "S036"):
+        assert twin not in ids, twin
+    assert {"S037", "lenition.intervocalic_voicing", "lenition.spirantization", "S197", "S202"} <= ids

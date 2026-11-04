@@ -106,3 +106,61 @@ def test_recurrence_rejects_chance_lookalike():
     lo, st = FA.strict_shares(tab, [0, 0], [1, 2])
     assert lo[0] > 0 and st[0] == 0.0  # the lookalike counts loosely, not strictly
     assert st[1] >= 0.6 and st[1] <= lo[1]  # regular correspondences survive
+
+
+def _w(a, b, n, r, big=0):
+    return {"from_kyr": a, "to_kyr": a + 2.0, "splits": n, "big_splits": big, "scored": "all", "recovered": r}
+
+
+def test_horizon_needs_two_windows_in_a_row():
+    """One unlucky window under half does not end the horizon; two in a row do (calibration.md, measures round)."""
+    curve = [_w(0, 1, 10, 1.0), _w(1, 2, 10, 0.9), _w(2, 3, 10, 0.3), _w(3, 4, 10, 0.8), _w(4, 5, 10, 0.7),
+             _w(5, 6, 10, 0.4), _w(6, 7, 10, 0.2), _w(7, 8, 10, 0.1)]
+    rd = FA.horizon_read(curve)
+    assert rd["single_window_kyr"] < 3.5  # the former rule stops at the lone bad window
+    assert 5.0 <= rd["horizon_kyr"] <= 6.5 and not rd["censored"]  # the run of two starts at 5-7 kyr
+    assert rd["smoothed_kyr"] is not None and rd["smoothed_kyr"] > rd["single_window_kyr"]
+    # windows of under MIN_SPLITS splits are skipped; a never-failing curve is censored at its last scored window
+    rd = FA.horizon_read([_w(0, 1, 10, 1.0), _w(1, 2, 2, 0.0), _w(2, 3, 10, 0.9)])
+    assert rd["censored"] and rd["horizon_kyr"] == 4.0
+    # a lone failing last window still counts (nothing after it to recover)
+    assert FA.horizon_read([_w(0, 1, 10, 1.0), _w(1, 2, 10, 0.2)])["horizon_kyr"] < 2.5
+
+
+def test_horizon_per_people_group():
+    """A slow-changing people's splits stay recoverable longer than a fast one's: the group measure sees it."""
+    import planet.language.families as FA2
+    fast = _world(seed=2, splits_per_family=20)
+    global KEEP
+    old = KEEP
+    try:
+        KEEP = 0.93
+        slow = _world(seed=3, splits_per_family=20)
+    finally:
+        KEEP = old
+    for l in slow:
+        l.id, l.parent = "s" + l.id, ("s" + l.parent) if l.parent else None
+        l.people, l.gen_yr = "elf", 145.0
+    for l in fast:
+        l.gen_yr = 28.0
+    lects = fast + slow
+    by = {l.id: l for l in lects}
+    out = FA2.horizon_from(lects, by, CONCEPTS, _form, lambda l, c: l.roots.get(c), people="human", seed=1, pool=POOL,
+                           groups={"long_lived": lambda l: l.gen_yr >= 60})
+    h, g = out["by"]["human"], out["by"]["long_lived"]
+    assert g["lects"] == len(slow) and h["lects"] == len(fast)
+    assert g["horizon_kyr"] > h["horizon_kyr"] or g["censored"], (h["horizon_kyr"], g["horizon_kyr"])
+
+
+def test_sparse_window_widens():
+    """A window with too few splits borrows from 0.5-1 kyr either side instead of being skipped (no crossing interpolated
+    across an empty stretch)."""
+    def row(k, rec):
+        return {"kyr": k, "big": False, "recovered": rec, "share": 0.5}
+    rows = [row(8.2 + 0.1 * i, True) for i in range(8)] + [row(9.5, False), row(10.4, False), row(11.6, False), row(12.3, False)]
+    curve = {w["from_kyr"]: w for w in FA.recovery_curve(rows)}
+    assert "widened_kyr" not in curve[8.0] and curve[8.0]["splits"] == 9
+    w = curve[10.0]  # 10-12 holds two splits; widened to 9.5-12.5 it holds four, none recovered
+    assert w["widened_kyr"] == [9.5, 12.5] and w["splits"] == 4 and w["recovered"] == 0.0
+    h = FA.horizon_read(list(curve.values()))["horizon_kyr"]
+    assert h is not None and h < 11.0

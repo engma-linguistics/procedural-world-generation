@@ -168,3 +168,65 @@ def test_proto_words_pronounceable(draws):
     inv = next(v for v in draws if v.max_onset == 2)
     assert not inv.onset_ok(pn) and not inv.onset_ok(vn)
     assert inv.onset_ok(st) or not set(st) <= set(inv.consonants)
+
+
+# ---------------------------------------------------------------------------------------------- phonemes and allophones
+def _forms(*ws):
+    return [tuple(from_ipa(w)) for w in ws]
+
+
+def _seg(ipa):
+    return from_ipa(ipa)[0]
+
+
+def test_assimilated_nasal_is_an_allophone():
+    """ŋ only before k and ɡ, n never there: ŋ is listed as an allophone of n (nasal place assimilation), not a phoneme."""
+    forms = _forms("naŋka", "taŋɡa", "ini", "nuta", "kina", "aŋki", "mana", "tan")
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    al = I.phonemic(forms, segs)
+    assert al.get(_seg("ŋ")) == (_seg("n"), "nasal_place")
+    assert _seg("n") not in al and _seg("m") not in al
+    # once ŋ also stands before a vowel (a contrast: ŋa vs na), it is a phoneme
+    forms2 = forms + _forms("ŋa")
+    assert _seg("ŋ") not in I.phonemic(forms2, segs)
+    # the observed inventory lists the phonemes and keeps ŋ beside them
+    inv = I.Inventory(consonants=[_seg(x) for x in "nmtk"] + [_seg("ɡ")], vowels=[_seg(x) for x in "aiu"],
+                      shapes={"CV": 0.6, "CVC": 0.4}, max_coda=1)
+    ob = I.observed(inv, forms)
+    assert _seg("ŋ") not in ob.consonants and _seg("ŋ") in ob.allophones and _seg("n") in ob.consonants
+    assert {"ipa": "ŋ", "of": "n", "test": "nasal_place", "where": I.ALLO_TESTS["nasal_place"]} in I.allophones_json(ob)
+    # new words are drawn from the phonemes and realized: n before k comes out as ŋ, and ŋ-words are legal
+    assert I.realize(tuple(from_ipa("anka")), ob) == tuple(from_ipa("aŋka"))
+    assert I.legal(tuple(from_ipa("aŋka")), ob)
+    rng = np.random.default_rng(1)
+    for _ in range(200):
+        w = I.draw_word(rng, ob, 2)
+        for j, s in enumerate(w):
+            if s == _seg("n") and j + 1 < len(w):
+                assert w[j + 1].place != 5  # (no unassimilated n before a velar)
+
+
+def test_inserted_glottal_stop():
+    """ʔ only word-initially before vowels, no vowel-initial words: an inserted onset, not a phoneme; with a vowel-initial
+    word beside it, a phoneme."""
+    forms = _forms("ʔata", "ʔiku", "tama", "ʔumi", "kita")
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    assert I.phonemic(forms, segs).get(_seg("ʔ")) == (None, "glottal_onset")
+    assert _seg("ʔ") not in I.phonemic(forms + _forms("aku"), segs)
+
+
+def test_intervocalic_voicing_allophone():
+    forms = _forms("tada", "pata", "tiku", "kadi", "tupa", "atu")
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    al = I.phonemic(forms, segs)
+    assert al.get(_seg("d")) is None  # (t also stands between vowels: atu, pata: d contrasts)
+    forms = _forms("tada", "padi", "tiku", "kadi", "tupi", "kat")
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    assert I.phonemic(forms, segs).get(_seg("d")) == (_seg("t"), "intervocalic")
+
+
+def test_two_allophones_of_one_phoneme_must_not_share_an_environment():
+    forms = _forms("kaɡa", "kiɣa", "kuta", "tik", "kat")  # ɡ and ɣ both between vowels, k never: only one can be k's
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    al = I.phonemic(forms, segs)
+    assert sum(1 for x in ("ɡ", "ɣ") if al.get(_seg(x), (None,))[0] == _seg("k")) == 1

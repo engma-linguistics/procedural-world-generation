@@ -137,6 +137,19 @@ long consonant tail, as in PHOIBLE (Nama, Zulu, !Xóõ).
 `draw_word(rng, inv, syllables=None) -> Word`, `repair(word, inv) -> Word` (make a word fit the phonotactics with the
 cheapest edit: epenthesis of the inventory's commonest high vowel, cluster simplification, coda deletion).
 
+**Phonemes and allophones** (2026-11-04). `observed(inv, forms)` lists only phonemes in `consonants` / `vowels`;
+`inv.allophones` maps each allophone to `(phoneme or None, test)`. `phonemic(forms, segs)` is the standard test
+(complementary distribution with a commoner close sound, from the lect's own word forms; Hayes 2009 ch. 2): x is an
+allophone of p when x and p differ in one feature group, p has >= 3 tokens and more than x, every token of x stands in the
+test's environment and no token of p does, and no other allophone of p shares an environment with x. Tests
+(`ALLO_TESTS`): nasal place assimilation (before a consonant of its place), palatalization (before front vowels and j),
+intervocalic lenition (voicing or stop/fricative), final (voicing), initial (aspiration), vowel nasalization (before a
+nasal), and an inserted glottal onset (ʔ only before a word-initial vowel or in hiatus, with no vowel-initial word or hiatus
+left without it; phoneme None). `legal` accepts allophones; `draw_word` and `repair` draw and fix with phonemes and then
+`realize` the allophones (p becomes x in x's environment; ʔ inserted), so coinages and loans keep the pattern. Checks,
+the size steer, snapshots (`al`) and the output (`inventory.allophones`) use the phonemic inventory; sound-change rules see
+the surface forms.
+
 ## 5. Sound change (`rules.py`)
 
 ```python
@@ -159,8 +172,23 @@ class Rule:
   `-ln share` as the cost, i.e. (share_out / share_in) ** 0.5, clamped to [0.25, 3] (light: drift still happens; a deletion
   makes nothing, an insertion is neutral; non-human voices get only their own make costs, through `cost_factor`, never
   PHOIBLE); and the **size steer**: (PHOIBLE size prior at the count the rule leaves / at the count now) ** `SIZE_K` (0.5)
-  x a lognormal pull (sigma `SIZE_ANCHOR` 0.2 in ln n) toward the line's own proto count, clamped to [0.1, 2]. A context-free
-  rule removes what it rewrites; a conditioned one is a split.
+  x a lognormal pull (sigma `SIZE_ANCHOR` 0.12 in ln n) toward the line's own proto count, clamped to [0.02, 3]
+  (2026-11-04, was 0.2 and [0.1, 2]); the counts are the phonemes (allophones aside). A context-free rule removes what it
+  rewrites; a conditioned one is a split; an assimilation (`[αplace]`) counts each output it could make from the lect's
+  consonants (`lect.touched_by`). Wave adoption is damped by the same size steer (`lect.size_factor`) and the ease drag.
+- The **stop steer** (human voices, 2026-11-04, word families round): s = oral stops over supralaryngeal consonant tokens in
+  the lect's most frequent words (`load_forms`; ʔ, h and pharyngeals left out), binned in ln(s / `STOP_NORM` 0.33) steps of
+  0.1 (part of the cache key); a rule's weight x exp(-`STOP_K` (2) x d x ln(s / 0.33)), d the mean change in stop-ness over
+  the segments it rewrites (-1 stop to non-stop or deleted, +1 non-stop to stop), clamped to [0.1, 4]. Below the norm a
+  lenition of stops is drawn less and a fortition or devoicing to stops more; above it the reverse. It replaced the refill
+  that fresh coinages used to give (`lexicon.SOURCES` coin 0.15 -> 0.03); the ease drag's wave factor carries it too.
+- The **keep steer** (human voices, 2026-11-04, sinks round): a rule that would leave no token of a near-universal phoneme
+  (PHOIBLE share >= `KEEP_SHARE` 0.7: p t k m n l j w i u a) in the lect's frequent words (`load_forms`), when it had some,
+  is weighted `KEEP_FACTOR` (0.25); a rule that only thins it (conditioned, some tokens survive) is untouched
+  (`lect.keep_part`, tried only on forms holding such a phoneme, stopping at the first survivor). It is part of the cached
+  weights and of the wave's ease factor. Catalogue sinks (one-way paths into ʔ, ɲ, ʋ) were balanced in the same round with
+  conditioned creators and attested exits (calibration.md "Sinks round"); twins of a change drawn under two ids are listed
+  in `rules.SAME_AS` and drawn once.
 - `apply(rule, word) -> Word`, left to right, regular, on a tuple of Segments; `applies(rule, inv) -> bool` (the lect has
   a target segment).
 - `pick_rule(rng, lect) -> Rule | None`: weighted by `weight`, then vetoed by functional load: estimate the mergers the rule
@@ -186,6 +214,7 @@ class Word:
     freq_class: int              # 1 (most frequent, slowest to replace) .. 5
     etym: list[EtymStep]         # oldest first
     born_kyr: float
+    roots: tuple[str, ...]       # root ids the word is built on, main root first (2026-11-04, see "Root families" below)
 @dataclass
 class EtymStep:
     kyr: float; lect: str; process: str   # proto | sound_change:<rule id> | replace | derive:<affix> | compound:<a>+<b> | shift:<from concept> | borrow:<lect> | taboo | substrate:<lect> | analogy | nativize
@@ -202,14 +231,53 @@ numbers 1-10, `people`, `person`, `real`, `speak`, `mute`, `stranger`, `enemy`, 
 `black`, `white`, `red`, and the god domains from `gods.py`. A few hundred in all.
 
 Per-generation lexical events on a lect (`lexicon.step(rng, lect, gen_rate)`):
-- **replacement**: each word's hazard = `BASE_REPLACE * rate_by_freq[freq_class]` per generation, calibrated so Swadesh-100
-  retention is about 86% per millennium at human generation length (Pagel 2007 shape: frequent words 10x slower than rare).
-  The replacement source is drawn: derive (40%), compound (25%), colexification shift from a CLICS neighbour (20%), borrow
-  from a contact lect if one is in contact (10%), taboo (5%, animals and dangerous concepts only).
+- **replacement**: each word's hazard = `BASE_REPLACE * RATE_BY_FREQ[freq_class]` per generation, calibrated so Swadesh-100
+  retention is 86% per millennium at human generation length (Pagel 2007 shape: frequent words `FREQ_SPREAD` = 4x slower
+  than rare, "several times"; it was 10x until 2026-11-04, with `history.REPLACE_SCALE` 1.25, now 1.0).
+  The replacement source is drawn from `SOURCES` (2026-11-04): derive along the table 0.36, compound 0.22, renew 0.12,
+  colexification shift from a CLICS neighbour 0.10, borrow from a contact lect 0.12 (only when one has the word), taboo
+  0.05 (animals and dangerous concepts only), a fresh root 0.03. A source that cannot make a word falls back to the next
+  plausible one: derive, compound, shift, renew, a shift along a weaker CLICS edge (3-4 families), a loan
+  (`BORROW_FALLBACK` 0.5 when a contact lect has the word), and only then a fresh root. `Lexicon.counts` tallies the
+  sources used (lineage totals, in `stats.replacements`).
+- **derivation is table-driven** (`data/derivations.tsv`, 2026-11-04): rows `relation, base, target, weight, example`,
+  relation = the affix meaning: agent 'one who' (HUNT > HUNTER), thing 'instrument / result / object' (CUT > KNIFE,
+  CARRY > BURDEN), place (SLEEP > BED, DIG > GRAVE), little (RIVER > STREAM, CHILD > BABY), like (BLOOD > RED), do (SALT >
+  SALT (FOOD), FIRE > BURN), cause (DIE > KILL), plus `reinforce` rows for function words (THIS + HERE > 'this', NOT + ONE >
+  'not': compounds of a function word with itself and its reinforcer). ~200 rows, written from knowledge after Buck 1949,
+  Urban 2012, Koch 2008, Pokorny / LIV2 and Heine & Kuteva 2002 (sources in the header); CLICS3's family count for a pair
+  is added to its weight at load. `affix_fits(meaning, target, base)` is true only for a table pair. Two renewals stand
+  beside the table: a noun, quality or natural thing replaced by its own diminutive (`RENEW_LITTLE`: Latin auricula >
+  oreille, vetulus > vieux) and a verb by its frequentative or preverb form (`RENEW_INTENS`, the eighth affix 'intens':
+  cantare < canere, comedere > comer); a renewal is bleached at once (it starts a new simple root for stacking) and is
+  outside `AFFIX_CAP`.
+- **stacking and re-analysis**: `word_layers(lex, w, kyr) -> (affixes, morphemes)` counts the derivations and compounds
+  still felt as such, walking back from the latest step; it stops at a proto root, a coinage, a loan, a shift, a taboo or
+  substrate step, a renewal, a derivation or compound older than `OPAQUE_KYR` (3), or a derivation whose base word has
+  been replaced since (its root differs). A derivation needs the base at < `MAX_AFFIXES` (2) affixes and < `MAX_MORPHEMES`
+  (3) morphemes; a compound of two parts may hold MAX_MORPHEMES in all. So a lexicalised word (burden, no longer bear +
+  -th) is a simple root again and may take new affixes, and nothing accretes past two live affixes. `AFFIX_CAP` (0.08)
+  limits each affix to that share of the words whose outermost formation step it is (`affix_share`).
+- **compounds** (2026-11-04): the modifier is a CLICS neighbour or a base hint; plain qualities only for species
+  (`SPECIES`: animals, plants, foods); a person or kin term takes no person or kin modifier from CLICS (MAN + HUSBAND =
+  'person' is gone); same-class random modifiers are gone.
 - **elaboration**: when a concept's weight in the deme's life passes a threshold (herder: milk words; coast: fish words;
   farmer: crop-stage words; from `inputs.md` niches), split it with a derived or compound word.
 - **borrowing on arrival**: `borrow(word, from_lect, to_lect, kyr, route_note)` = `hear_word` + repair + an `EtymStep`
   `borrow:<lect>`; the result is a normal word thereafter.
+
+**Root families** (2026-11-04). A proto-lexicon grows from a root stock: every concept with a table row whose base is
+on the proto's list is built from it with `PROTO_DERIVE[freq class]` (1: 0.15, 2: 0.3, 3: 0.55, 4: 0.7, 5: 0.75;
+`PROTO_DERIVE_DERIVED` 0.95 for the derived vocabulary, domain "derived": HUNTER, FIGHTER, GUEST, HERDER, FISHER, SMITH,
+ELDER, BABY, GIRL, BOY, KNIFE, AXE, NEEDLE, SPEAR, CUP, BURDEN, SEAT, BED, CAMP, GRAVE, STREAM, POND, PEBBLE, TWIG, PUPPY,
+CHICK, SONG, DREAM, BREATH, GIFT, HEAT), in passes so a base may itself be derived (up to MAX_AFFIXES); the rest are simple
+roots. About 22% of a proto's words are derived (11% of the core 100: core Swadesh items are mostly simple roots), so a
+root such as FIRE has BURN, COOK, HEARTH, HOT, RED among its words. Every word carries `roots`: `"<proto lect>:<CONCEPT>"` for
+a proto root (the root's meaning is the concept's), `"<lect>:<CONCEPT>@<kyr>"` for a later fresh coinage; derivation,
+taboo, shift, loan and substrate keep the base's roots, a compound has its head's then its modifier's, sound change keeps
+them. Daughters inherit the families and add members (a new derivation from an inherited word joins its root's family).
+The chain itself records the root too: a derived word's chain begins with its base's chain, so its first step is the
+root's (proto, coin) step.
 
 **Word length follows the syllable space** (2026-11-04). `syllable_space(inv)` is the effective number of distinct
 syllables the inventory and its templates allow (perplexity over templates: onsets x vowels x tones x codas legal under the
@@ -245,6 +313,22 @@ flips up to 1 + DISHARMONY (9) times faster, so OV with postpositions and VO wit
 a word-order change. Sources for the ranking and the size of the spread: Dediu 2011, Dediu & Cysouw 2013, Greenhill et al.
 2017, Dunn et al. 2011. `lect.grammar_step` runs it (`grammar.step(..., drift_typology=True, rate=lect.rate)`); before
 this round nothing called the drift and typology only changed by calques on shift.
+
+**One system** (2026-11-04, "Typology and grams round" in calibration.md). The drift above moves `Grammar.aims`, what the
+community's syntax leans toward; `Grammar.typology` (what output, pages and checks read) is the aims with every feature
+a gram realises read from the live grams (`grammar.realise`, `REALISED`): number (PL, DU), definite and indefinite article
+(DEF side, INDEF), case (any of GEN LOC ABL ALL DAT ACC ERG INS COM; 'many' with 4+ or an ABL/ALL/INS/COM), alignment
+(ACC/ERG fix it), past/future/perfective/progressive/habitual, evidentiality, negation (side of the main NEG), verb
+agreement (person grams at clitic or tighter), causative and passive (bound at affix level), diminutive, agent noun,
+gender and numeral classifiers (the class system: free classifiers, or gender once a class marker binds), clusivity
+(two distinct 'we' forms in the lexicon; none yet, so 'no'), object agreement ('none': no gram marks it). Adposition
+order stays an order feature but must agree with the side of the free and clitic case markers. The aims steer the
+ladder: `_wanted` and `_side` read them; each category the aims mark and no live gram realises gets a recruitment pull
+(`PRESSURE` 0.03 per generation, restricted to that category's paths); a bound gram the aims no longer want erodes
+(`UNWANTED_LOSS`); an unwanted gram that binds anyway makes the aim follow it (`_adopt`). After an order change free
+grams (level 0) move to the new side, bound ones stay; a NEG left on the old side lets a reinforcer be recruited on the
+new one (Jespersen). Writes into `g.typology` from outside (calques on shift) become aims (`grammar.Shown`).
+`grammar.clashes(g, lexicon)` lists contradictions; `checks.typology_consistency` counts living lects with any.
 
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
@@ -299,7 +383,10 @@ tree and wave simple:
   during the bilingual years are stored on the deme record for the workbench.
 - **Food routes**: for each crop or animal arrival at deme D from deme S at kyr t (from the spread history), if D's lexicon
   lacks the concept, `borrow` S's word with the route note; if S's lect also lacks it, S coins it first (derive or compound).
-  Hops chain by themselves; the etymology is the route.
+  Hops chain by themselves; the etymology is the route. One source of truth (2026-11-04): a hop's route is read from the
+  donor word's own etymology (the latest route event in its chain, through renewed loans; `route_key_of`), and each hop in
+  the output says whether the receiver's word still holds it (`now`: kept | replaced | lost, `by`: the step that replaced
+  it, from the receiver's etymology; `history.hop_status`).
 - **Death**: a deme's end ends its lect (`died_kyr`); names it gave to places stay in the place table.
 
 **Batch per frame interval, never loop per generation.** The last 20 kyr is 41 frames at 0.5 kyr (`inputs.md` §0); 452
@@ -349,14 +436,21 @@ independent lects within an interval with `planet.parallel`, never across interv
 - **Scholars' tree**: distance matrix of blind cognate shares over the living lects, UPGMA; a link is "reconstructable" when
   the share is above chance (`CHANCE_SHARE`, measured by shuffling); the horizon is the oldest true split that the scholars'
   tree still recovers. This is the 6-10 kyr check, and the calibration target for `RATE_RULE` and `BASE_REPLACE`.
+- **Split horizon** (`horizon`, calibration.md): splits recovered by a scholars' clade (Jaccard >= 0.8) under the strict
+  cognate test, in 2-kyr windows stepped 1 kyr; the horizon is the start of the first **two consecutive** scored windows
+  (>= 3 splits; a sparser window widens by 0.5 kyr per side up to 1 kyr first, `recovery_curve`, `widened_kyr`) under
+  half recovered (`horizon_read`; `censored` when it never happens, a lower bound), with a smoothed read
+  (split-weighted moving average over 3 windows) and the former single-window read beside it. `groups` runs the measure
+  per people group (checks: human, long-lived = generation >= 60 yr, dwarves, elves, dragons).
 
 ## 10. Checks (`checks.py`)
 
 Each returns `{"name", "value", "target", "pass", "note"}`:
 1. proto inventory sizes and segment frequencies vs PHOIBLE (sizes within the interquartile range for 70% of protos; top-20
    segments overlap);
-2. sister lects recognisable, distant not (blind cognate share: siblings > 0.5, cross-family < 0.15);
-3. horizon between 6 and 10 kyr;
+2. sister lects recognisable, distant not (STRICT cognate share, owner 11-04: siblings > 0.5, cross-family < 0.15);
+3. horizon between 6 and 10 kyr for human lects, and the long-lived peoples' longer (or censored: still recovered as far
+   back as their splits go);
 4. at least a few living lects differ in family from their deme's descent (shift count > 0);
 5. long-generation species' lects changed measurably less (rules applied per kyr vs humans);
 6. empire and trade-hub lects simpler, isolated small lects richer (measured complexity by category; across seeds later).
@@ -376,10 +470,11 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
   "profiles": { <lineage id>: {source, modality, articulators, make_cost, hear, notes} },
   "lects": [ { "id", "deme", "people", "parent", "how" (proto|bud|shift|arrival), "substrate", "born_kyr", "died_kyr",
                "rate", "language", "family_true", "family_scholars",
-               "inventory": {"consonants": [ipa], "vowels": [ipa], "tones": [...], "shapes": {...}},
+               "inventory": {"consonants": [ipa], "vowels": [ipa], "tones": [...], "shapes": {...},
+                             "allophones": [{"ipa", "of" (phoneme ipa | null), "test", "where"}]},
                "typology": {...}, "grams": [{function, form_ipa, form_roman, level, side, source, born_kyr}],
                "paradigms": {"noun": {"lemma", "gloss", "cells": {"SG.NOM": {"ipa","roman"}, ...}}, "verb": {...}},
-               "lexicon": { concept: {"ipa", "roman", "pos", "etym": [EtymStep...] } },   # full for living lects, core list only for dead
+               "lexicon": { concept: {"ipa", "roman", "pos", "freq", "etym": <node id>, "roots": [root id, ...]} },   # full for living lects, core list only for dead
                "changes": [{kyr, rule, cause, origin_lect (null if own)}],
                "complexity": {...},
                "shares_history": [[kyr, {lect_id: share}]] } ],
@@ -389,7 +484,11 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
              "demes": { deme_id: { "name": {...}, "places": [{kind, ipa, roman, gloss, lect, kyr, substrate_of}] } },
              "common": { "lect": id, "why": "...", "exonyms": {...} } },
   "shifts": [ {deme, kyr, from_lect, to_lect, trigger, ruler_deme, substrate_words: [concept...], accent: [[from_ipa, to_ipa]...]} ],
-  "food_routes": [ {concept, origin_deme, hops: [{deme, lect, kyr, ipa, roman, from_deme, changes: [...]}]} ],
+  "food_routes": [ {concept, origin_deme, hops: [{deme, lect, kyr, ipa, roman, from_deme, changes: [...], now, by}]} ],
+  "etym_nodes": [ [parent | -1, kyr, lect, process, ipa, gloss | 0(, note)] ],
+  "roots": { root id: {"node": etym node of the root's first step (shared by its whole family) | null, "lect", "kyr",
+                       "concept", "gloss", "ipa", "pos"} },   # every root a stored word names; a compound's modifier root
+                                                             # met only as a modifier has node/kyr/ipa null
   "families": { "true": tree, "scholars": tree, "horizon_kyr": x },
   "checks": [ ... ],
   "romanization": "house/1" }
@@ -397,6 +496,11 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
 
 Keep the file under ~40 MB: full lexicons for living lects only; dead lects keep the core 100 plus names. The brief gets a
 per-people summary; the workbench loads the whole file.
+
+**A root's family** (for the viewer's word trace and a language-page generator): the words whose `roots[0]` is the root
+id, in one lect or across a family (`family_true`); `roots[1:]` are a compound's other roots (list a compound under each
+for a Pokorny-style entry). The root's proto form and meaning are `doc.roots[id]` (`ipa`, `gloss`, `lect`, `kyr`); a
+word's path from it is its etymology chain (`etym_steps`), whose first step is the root's.
 
 ## 12. Romanization (`romanize.py`)
 
@@ -406,7 +510,9 @@ q for q, `qh` for χ (as in several Caucasian romanizations), `gq` or `ġ` for �
 ʔ `'`, long vowel doubled, tone as acute/grave, clicks `!` `|` `ǁ`, ejectives `'` after the letter, aspiration `h` only when
 contrastive in that lect, ə `e` with a note or `ë` when it contrasts with e. Non-human percepts take the house symbol from
 `symbols.tsv`. `romanize(ipa: str, lect: Lect | None) -> str` (the lect is needed for contrast-dependent choices).
-Proper names capitalized; hyphen only where a digraph would mislead.
+Proper names capitalized; hyphen only where a digraph would mislead. The tap ɾ is r, the trill rr, the approximant ɹ ř (2026-11-04: they
+shared r before; full mode is injective up to the documented MERGES). Book mode spells the IPA-kept affricates with their
+stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
 
 ## 13. Workbench and brief
 

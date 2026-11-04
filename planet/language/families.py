@@ -17,6 +17,7 @@ architecture section 9).
 from __future__ import annotations
 
 import math
+import zlib
 
 import numpy as np
 from numba import njit
@@ -537,13 +538,17 @@ def analyse(lects: list, concepts: list[str], seed: int, form_of=None, root_of=N
 #   recovered when the scholars' UPGMA over strict blind distances holds a clade matching the split's lects (Jaccard >=
 #   SPLIT_JACCARD), and the share across the split's groups beats the pairs' own shuffled chance level by SPLIT_EXCESS. The
 #   horizon is where the share of recovered splits, in 2-kyr windows stepped by 1 kyr from the present, first falls below half
-#   (linear between window centres); windows with fewer than MIN_SPLITS splits are skipped.
+#   (linear between window centres); windows with fewer than MIN_SPLITS splits are widened (SPLIT_WIDEN), else skipped.
 REC_MIN = 2  # each correspondence of a cognate pair must recur in this many other candidate pairs
 REC_ITERATE = False  # True: drop failing candidates and recount until stable (collapses small cognate sets; see calibration.md)
 SPLIT_JACCARD = 0.8  # a scholars' clade matches a true split's lects at this overlap (one stray lect in five)
 SPLIT_EXCESS = 0.03  # the share across a split must beat chance by three regular cognate sets in a hundred
 SPLIT_WINDOW, SPLIT_STEP = 2.0, 1.0
 MIN_SPLITS = 3
+# A window with fewer than MIN_SPLITS splits widens by SPLIT_WIDEN_STEP at each end, up to SPLIT_WIDEN per side, before it
+# is skipped (measures round, run F: human splits are thin at 9-12 kyr, and skipping those windows let the crossing be
+# interpolated across a 4-kyr gap with no evidence in it); its from/to stay the nominal window, "widened_kyr" the span used.
+SPLIT_WIDEN, SPLIT_WIDEN_STEP = 1.0, 0.5
 BIG_SIDE = 3  # "where possible", only splits with two groups of at least this many living lects are scored
 
 
@@ -760,7 +765,8 @@ def split_horizon(tab: "WordTable", T: np.ndarray, S_strict: np.ndarray, sel: li
     sel = list(sel)
     n = len(sel)
     if n < 3:
-        return {"horizon_kyr": None, "recovery_by_bin": [], "splits": 0}
+        return {"horizon_kyr": None, "censored": False, "single_window_kyr": None, "smoothed_kyr": None, "smoothed": [],
+                "recovery_by_bin": [], "splits": 0}
     order = rng.permutation(n)
     sub = np.asarray(sel)[order]
     D = 1.0 - S_strict[np.ix_(sub, sub)]
@@ -796,42 +802,108 @@ def split_horizon(tab: "WordTable", T: np.ndarray, S_strict: np.ndarray, sel: li
         rows.append({"kyr": float(s["kyr"]), "lects": len(s["leaves"]), "sides": sizes, "big": len(sizes) > 1 and sizes[1] >= BIG_SIDE,
                      "clade": bool(clade), "excess": round(exc, 4),
                      "share": round(float(obs[m].mean()), 4) if m.any() else None, "chance": round(float(ch[m].mean()), 4) if m.any() else None,
-                     "recovered": bool(rec)})
+                     "recovered": bool(rec), "ids": [getattr(tab.lects[sel[i]], "id", None) for i in sorted(s["leaves"])]})
         for name, X in (extra or {}).items():
             rows[-1][name] = round(float(X[pa[m], pb[m]].mean()), 4) if m.any() and X is not None else None
+    curve = recovery_curve(rows)
+    rd = horizon_read(curve)
+    return {"horizon_kyr": rd["horizon_kyr"], "censored": rd["censored"], "single_window_kyr": rd["single_window_kyr"],
+            "smoothed_kyr": rd["smoothed_kyr"], "smoothed": rd["smoothed"], "recovery_by_bin": curve, "splits": len(rows),
+            "split_rows": rows}
+
+
+def recovery_curve(rows: list[dict]) -> list[dict]:
+    """Split rows ({kyr, big, recovered, share}) into 2-kyr windows stepped by 1 kyr from the present: {from_kyr, to_kyr,
+    splits, big_splits, widened_kyr (only when widened), scored ("big" when MIN_SPLITS big splits, else "all"), recovered,
+    recovered_all, mean_share}. A window under MIN_SPLITS splits widens about its centre (SPLIT_WIDEN)."""
     curve = []
     top = max((r["kyr"] for r in rows), default=0.0)
     b0 = 0.0
     while b0 <= top:
-        inw = [r for r in rows if b0 <= r["kyr"] < b0 + SPLIT_WINDOW]
+        lo, hi = b0, b0 + SPLIT_WINDOW
+        inw = [r for r in rows if lo <= r["kyr"] < hi]
+        while len(inw) < MIN_SPLITS and b0 - lo < SPLIT_WIDEN - 1e-9:  # a sparse window widens about its centre
+            lo, hi = lo - SPLIT_WIDEN_STEP, hi + SPLIT_WIDEN_STEP
+            inw = [r for r in rows if lo <= r["kyr"] < hi]
         big = [r for r in inw if r["big"]]
         use = big if len(big) >= MIN_SPLITS else inw
         if inw:
             curve.append({"from_kyr": b0, "to_kyr": b0 + SPLIT_WINDOW, "splits": len(inw), "big_splits": len(big),
+                          **({"widened_kyr": [max(lo, 0.0), hi]} if lo < b0 else {}),
                           "scored": "big" if use is big else "all",
                           "recovered": round(float(np.mean([r["recovered"] for r in use])), 3),
                           "recovered_all": round(float(np.mean([r["recovered"] for r in inw])), 3),
                           "mean_share": round(float(np.mean([r["share"] for r in use if r["share"] is not None] or [0.0])), 4)})
         b0 += SPLIT_STEP
-    return {"horizon_kyr": _split_horizon(curve), "recovery_by_bin": curve, "splits": len(rows), "split_rows": rows}
+    return curve
 
 
-def _split_horizon(curve: list[dict]) -> float | None:
-    """From the present: the first window of MIN_SPLITS or more splits where fewer than half are recovered; the horizon is
-    the crossing of one half, linear between that window's centre and the previous scored window's (the window's start when
-    it is the first). Never failing: the end of the last scored window."""
-    prev = None
-    for w in curve:
-        if w["splits"] < MIN_SPLITS:
-            continue
-        c = (w["from_kyr"] + w["to_kyr"]) / 2.0
-        if w["recovered"] < HALF:
-            if prev is None:
-                return w["from_kyr"]
-            pc, pr = prev
-            return round(pc + (pr - HALF) / (pr - w["recovered"]) * (c - pc), 2)
-        prev = (c, w["recovered"])
-    return curve[-1]["to_kyr"] if prev is not None else None
+RUN_WINDOWS = 2  # the horizon needs this many consecutive scored windows under half (one unlucky window of 2-14 splits is noise)
+SMOOTH_WINDOWS = 3  # the smoothed read: split-count-weighted moving average over this many scored windows
+
+
+def _scored(curve: list[dict]) -> list[dict]:
+    return [w for w in curve if w["splits"] >= MIN_SPLITS]
+
+
+def _weight(w: dict) -> int:
+    return w["big_splits"] if w.get("scored") == "big" else w["splits"]
+
+
+def _crossing(prev, w, r_w) -> float:
+    """The age where recovery crosses one half, linear between the previous (passing) scored window's centre and this one's
+    (this window's start when it is the first)."""
+    if prev is None:
+        return w["from_kyr"]
+    pc, pr = prev
+    c = (w["from_kyr"] + w["to_kyr"]) / 2.0
+    return round(pc + (pr - HALF) / max(pr - r_w, 1e-9) * (c - pc), 2)
+
+
+def _split_horizon(curve: list[dict], run: int = RUN_WINDOWS) -> float | None:
+    """From the present: the start of the first run of `run` consecutive scored windows (MIN_SPLITS or more splits) where fewer
+    than half are recovered; the horizon is the crossing of one half into the run's first window, linear between its centre
+    and the previous scored window's (its start when it is the first). A run cut short by the end of the curve counts.
+    Never failing: the end of the last scored window (a lower bound; see horizon_read)."""
+    return horizon_read(curve, run)["horizon_kyr"]
+
+
+def horizon_read(curve: list[dict], run: int = RUN_WINDOWS) -> dict:
+    """The horizon of a recovery curve three ways: {"horizon_kyr" (two windows in a row under half), "censored" (True: never
+    under half for `run` windows, horizon_kyr is the end of the last scored window, a lower bound), "single_window_kyr" (the
+    first window under half, the former rule), "smoothed_kyr" (the first crossing of the split-count-weighted moving average
+    over SMOOTH_WINDOWS scored windows), "smoothed" (that average per scored window: [[from_kyr, value]])}."""
+    sc = _scored(curve)
+    out = {"horizon_kyr": None, "censored": False, "single_window_kyr": None, "smoothed_kyr": None, "smoothed": []}
+    if not sc:
+        return out
+    rec = [w["recovered"] for w in sc]
+    cen = [(w["from_kyr"] + w["to_kyr"]) / 2.0 for w in sc]
+
+    def first(vals, need):
+        prev = None
+        for k, w in enumerate(sc):
+            if vals[k] < HALF and all(vals[j] < HALF for j in range(k, min(k + need, len(sc)))):
+                return _crossing(prev, w, vals[k])
+            if vals[k] >= HALF:
+                prev = (cen[k], vals[k])
+        return None
+    h = first(rec, run)
+    if h is None:
+        out["horizon_kyr"], out["censored"] = sc[-1]["to_kyr"], True
+    else:
+        out["horizon_kyr"] = h
+    out["single_window_kyr"] = first(rec, 1) if first(rec, 1) is not None else sc[-1]["to_kyr"]
+    half = SMOOTH_WINDOWS // 2
+    sm = []
+    for k in range(len(sc)):
+        js = range(max(0, k - half), min(len(sc), k + half + 1))
+        wt = [_weight(sc[j]) for j in js]
+        sm.append(sum(wt[i] * rec[j] for i, j in enumerate(js)) / max(sum(wt), 1))
+    out["smoothed"] = [[w["from_kyr"], round(v, 3)] for w, v in zip(sc, sm)]
+    hs = first(sm, 1)
+    out["smoothed_kyr"] = hs if hs is not None else sc[-1]["to_kyr"]
+    return out
 
 
 def _doc_lects(doc: dict, concepts) -> tuple[list, dict]:
@@ -862,6 +934,7 @@ def _doc_lects(doc: dict, concepts) -> tuple[list, dict]:
     for x in doc["lects"]:
         l = _L()
         l.id, l.parent, l.born_kyr, l.died_kyr, l.deme, l.people = x["id"], x["parent"], x["born_kyr"], x["died_kyr"], x["deme"], x["people"]
+        l.gen_yr = float(x.get("gen_yr") or 25.0)
         l.forms, l.roots = {}, {}
         if l.died_kyr is None and l.deme is not None:
             for c, w in (x.get("lexicon") or {}).items():
@@ -882,13 +955,14 @@ def _pool(lexicons: list, core: list) -> list:
     return [c for c, k in sorted(n.items()) if k >= POOL_SHARE * len(lexicons) and c not in set(core)]
 
 
-def horizon(result_or_doc: dict, people: str | None = "human", seed: int = 12) -> dict:
+def horizon(result_or_doc: dict, people: str | None = "human", seed: int = 12, groups: dict | None = None) -> dict:
     """The scholars' horizon by splits under the strict cognate test, from the pass result (lects as objects) or a stored
     languages.json (lects as dicts): {"horizon_kyr" (lects of `people`, None = all), "method", "recovery_by_bin",
     "sisters", "cross_family", "by": {"human"|..., "all": the split measure among all living lects}}. Shares are scored on
     the core 100; correspondences are counted over the whole stored vocabulary the lects have in common (the comparativist
     works from every word, the lexicostatistician from the list). Sisters and cross-family shares are reported loose (the
-    old edit-distance test), strict and true."""
+    old edit-distance test), strict and true. groups: {name: predicate over a lect (people, gen_yr)}: the split measure is
+    also run among each group's living lects (by[name]), e.g. the long-lived peoples."""
     from . import lexicon as LX
     from .lect import word_form, word_root
     concepts = sorted(LX.CORE100)
@@ -904,11 +978,11 @@ def horizon(result_or_doc: dict, people: str | None = "human", seed: int = 12) -
         liv = [l for l in allx if l.died_kyr is None and l.deme is not None]
         pool = _pool([getattr(l.lexicon, "words", l.lexicon) or {} for l in liv], concepts)
     living = [l for l in allx if l.died_kyr is None and l.deme is not None]
-    return horizon_from(living, by, concepts, form_of, root_of, people, seed, pool=pool)
+    return horizon_from(living, by, concepts, form_of, root_of, people, seed, pool=pool, groups=groups)
 
 
 def horizon_from(living: list, by_id: dict, concepts, form_of, root_of=None, people: str | None = "human", seed: int = 12,
-                 pool=None) -> dict:
+                 pool=None, groups: dict | None = None) -> dict:
     """horizon() on lect objects (id, parent, born_kyr, died_kyr, people) with form_of/root_of accessors; shares scored on
     `concepts`, correspondences counted over concepts + pool."""
     concepts = list(concepts)
@@ -935,18 +1009,31 @@ def horizon_from(living: list, by_id: dict, concepts, form_of, root_of=None, peo
     by = {}
     extra = {"loose": Lo, "true": Tr}
     by["all"] = split_horizon(tab, T, St, range(len(living)), np.random.default_rng((seed, 986, 12)), extra=extra, scored=scored)
+    by["all"]["lects"] = len(living)
     if people is not None:
         sel = [k for k, l in enumerate(living) if l.people == people]
         by[people] = split_horizon(tab, T, St, sel, np.random.default_rng((seed, 986, 13)), extra=extra, scored=scored)
+        by[people]["lects"] = len(sel)
+    for name, pred in (groups or {}).items():
+        if name in by:
+            continue
+        sel = [k for k, l in enumerate(living) if pred(l)]
+        by[name] = split_horizon(tab, T, St, sel, np.random.default_rng((seed, 986, zlib.crc32(name.encode()))), extra=extra,
+                                 scored=scored)
+        by[name]["lects"] = len(sel)
     main = by[people] if people is not None else by["all"]
     return {"horizon_kyr": main["horizon_kyr"],
             "method": {"test": "strict: aligned distance < cognate_dist and every correspondence recurs in >= rec_min other close "
                                "pairs over the pooled vocabulary; splits recovered by UPGMA clade match and excess over chance",
                        "cognate_dist": COGNATE_DIST, "rec_min": REC_MIN, "jaccard": SPLIT_JACCARD, "split_excess": SPLIT_EXCESS,
-                       "window_kyr": SPLIT_WINDOW, "step_kyr": SPLIT_STEP, "min_splits": MIN_SPLITS, "big_side": BIG_SIDE,
+                       "window_kyr": SPLIT_WINDOW, "step_kyr": SPLIT_STEP, "min_splits": MIN_SPLITS, "widen_kyr": SPLIT_WIDEN, "big_side": BIG_SIDE,
                        "perm": PERM, "people": people, "lects": len(living), "scored_concepts": len(concepts),
                        "pool_concepts": len(allc)},
             "recovery_by_bin": main["recovery_by_bin"],
             "sisters": shares(sib), "cross_family": shares(cross),
-            "by": {k: {"horizon_kyr": v["horizon_kyr"], "splits": v["splits"], "recovery_by_bin": v["recovery_by_bin"],
-                       "split_rows": v.get("split_rows", [])} for k, v in by.items()}}
+            "censored": main.get("censored"), "single_window_kyr": main.get("single_window_kyr"),
+            "smoothed_kyr": main.get("smoothed_kyr"), "smoothed": main.get("smoothed"),
+            "by": {k: {"horizon_kyr": v["horizon_kyr"], "censored": v.get("censored"), "single_window_kyr": v.get("single_window_kyr"),
+                       "smoothed_kyr": v.get("smoothed_kyr"), "smoothed": v.get("smoothed"), "splits": v["splits"],
+                       "lects": v.get("lects"),
+                       "recovery_by_bin": v["recovery_by_bin"], "split_rows": v.get("split_rows", [])} for k, v in by.items()}}

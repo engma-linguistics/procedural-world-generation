@@ -58,6 +58,12 @@ LOSS = 0.002          # a fused gram (level 3) is lost outright
 L2_STRIP = 0.012       # bound gram (level >= 2) dropped by adult learners, x l2_share^2
 ANALOGY = 0.003        # one irregular cell levelled per generation (high-frequency exemplars: half-life ~ 230 gens)
 CLASS_GROW = 0.5       # chance a fusing class marker recruits a further class
+PRESSURE = 0.03        # per generation (x social recruit factor), for each category the aims mark and no live gram
+                       # realises (number, case, past, ...): one recruitment restricted to that category's functions, so a
+                       # typology flip toward marking pulls a gram onto the ladder. 40 human lects, 700 generations, l2 0.5:
+                       # shown value = aim in ~80% of lects for number/past/future/progressive (55-65% at 0), median 10 live
+                       # functions (6 at 0)
+UNWANTED_LOSS = 0.002  # a bound gram (level >= 2) whose category the aims no longer mark erodes away, x social loss
 CHUNK = 10.0           # generations per internal sub-step
 
 PATH_FREQ_WEIGHT = {"very common": 3.0, "common": 2.0, "attested": 1.0}
@@ -502,6 +508,18 @@ class Typology(dict):
         return self.get("head_direction", "final") == "final"
 
 
+class Shown(Typology):
+    """A grammar's shown typology. A value written into it from outside (a calque on shift, a test) sets the grammar's
+    aim, and the shown value is re-read from the grams at once, so no writer can leave the two layers disagreeing."""
+
+    def __setitem__(self, k, v):
+        g = self.__dict__.get("_g")
+        if g is None or g.__dict__.get("typology") is not self:   # (unattached, or mid-copy / unpickling)
+            return super().__setitem__(k, v)
+        aims(g)[k] = v
+        realise(g)
+
+
 #: draw order (fixed) and stability class per feature. Classes from memory of Dediu & Cysouw 2013 (PLoS ONE, "Some
 #: structural aspects of language are more stable than others") and Greenhill et al. 2017 (PNAS, "Evolutionary dynamics of
 #: language systems"): word order and adposition order among the slow features, gender and alignment slow, articles and
@@ -793,8 +811,11 @@ def drift(rng: np.random.Generator, typ: Typology, n_generations: float, l2_shar
         l2_share = float(kw["l2"])
     if isinstance(typ, Grammar):   # lect.py hands the whole grammar: drift its typology and log the flips
         gr = typ
-        ch = drift(rng, gr.typology, n_generations, l2_share, T)
+        ch = drift(rng, aims(gr), n_generations, l2_share, T)
         gr.events += [(kyr if kyr is not None else 0.0, f"typology {n}: {a} > {b}") for n, a, b in ch]
+        if ch:
+            _follow_syntax(gr, kyr or 0.0)
+        realise(gr)
         return ch
     l2 = min(max(float(l2_share), 0.0), 1.0)
     changes = []
@@ -898,6 +919,16 @@ class Grammar:
     events: list[tuple[float, str]] = field(default_factory=list)
     _n: int = 0
     last_changed: list[str] = field(default_factory=list)
+    #: the drifting typology (what the community's syntax leans toward); `typology` is what the grammar shows, the aims
+    #: with every gram-realised feature read from the live grams (`realise`). None until first needed (= typology).
+    aims: Typology | None = None
+    #: the typology as `realise` last wrote it: a later outside write (a calque on shift) is read as a new aim
+    shown: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not isinstance(self.typology, Shown):
+            self.typology = Shown(self.typology)
+        self.typology.__dict__["_g"] = self
 
     def live(self) -> list[Gram]:
         return [g for g in self.grams if g.live]
@@ -947,7 +978,8 @@ def copy(g: Grammar) -> Grammar:
         exemplars=[Exemplar(e.concept, e.pos, e.stem, dict(e.cells), dict(e.parts)) for e in g.exemplars],
         class_system=None if g.class_system is None else ClassSystem(
             g.class_system.kind, [dataclasses.replace(c) for c in g.class_system.classes]),
-        helpers=dict(g.helpers), events=[], _n=g._n)
+        helpers=dict(g.helpers), events=[], _n=g._n,
+        aims=None if g.aims is None else Typology(g.aims), shown=dict(g.shown))
 
 
 def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) -> str:
@@ -1005,6 +1037,264 @@ def _wanted(function: str, typ: Typology) -> bool:
     if f[0] in "123":
         return t("verb_agreement", "none") != "none" or t("pro_drop") == "yes"
     return True
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Typology from the grams (the 2026-11-04 "typology and grams" round)
+# --------------------------------------------------------------------------------------------------------------------
+# Two layers, one system. `Grammar.aims` is the drifting typology (`drift`, calibrated per stability class): what the
+# community's syntax leans toward. It steers the ladder: `_wanted` (recruitment weight, abandonment) and `_side` read it,
+# a flip toward marking raises the recruitment of a matching gram (PRESSURE), a flip to 'none' lets the bound grams
+# erode (UNWANTED_LOSS). `Grammar.typology` is what the grammar does: the aims, with every feature a gram realises read
+# from the live grams (`realise`), so a page never says "no grammatical number" above a plural suffix. A gram the aims did
+# not want that binds anyway becomes grammar: the aim takes the bound category (`_adopt`). Order features keep drifting as
+# before; free words (level 0) follow the syntax to the new side, bound morphology stays where it formed (Givon 1971).
+
+#: features a gram realises (the typology value is read from the live grams), and the functions behind each
+REALISED = ("definite_article", "indefinite_article", "case", "alignment", "number", "gender", "past", "future",
+            "perfective", "progressive", "habitual", "evidentiality", "negation", "numeral_classifiers", "clusivity",
+            "causative", "passive", "diminutive", "agent_noun", "verb_agreement", "object_agreement")
+#: order features the free grams constrain (a free locative postposition means the language has postpositions)
+CONSTRAINED = ("adposition",)
+CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM")
+RICH_CASE = ("ABL", "ALL", "INS", "COM")   # the oblique cases `_wanted` asks of a 'many' case system
+PERSON_FNS = ("1SG", "2SG", "3SG", "1PL", "2PL", "3PL")
+_TAM = {"past": ("PAST", "RECPST"), "future": ("FUT",), "perfective": ("PERF", "IPFV"), "progressive": ("PROG",),
+        "habitual": ("HAB",)}
+_PRE_NEG = ("preverbal", "clause_initial")
+#: the inclusive and exclusive 'we' concepts; the clusivity feature is 'yes' only when the lexicon holds both, apart
+CLUSIVE = ("WE (INCLUSIVE)", "WE (EXCLUSIVE)")
+
+
+def feature_of(function: str) -> tuple[str, ...]:
+    """The typology features a gram function realises."""
+    f = function
+    if f.startswith("CLASS"):
+        return ("gender", "numeral_classifiers")
+    if f in ("PL", "DU"):
+        return ("number",)
+    if f == "DEF":
+        return ("definite_article",)
+    if f == "INDEF":
+        return ("indefinite_article",)
+    if f in ("ACC", "ERG"):
+        return ("case", "alignment")
+    if f in CASE_FNS:
+        return ("case",)
+    for feat, fns in _TAM.items():
+        if f in fns:
+            return (feat,)
+    if f.startswith("EVID"):
+        return ("evidentiality",)
+    if f == "NEG":
+        return ("negation",)
+    if f in PERSON_FNS:
+        return ("verb_agreement",)
+    return {"CAUS": ("causative",), "PASS": ("passive",), "DIM": ("diminutive",), "AGENT": ("agent_noun",)}.get(f, ())
+
+
+def aims(g: Grammar) -> Typology:
+    """The grammar's drifting typology (set from the shown one the first time it is asked for)."""
+    if g.aims is None:
+        g.aims = Typology(g.typology)
+        g.shown = dict(g.typology)
+    return g.aims
+
+
+def _live_fns(g: Grammar) -> dict[str, list[Gram]]:
+    out: dict[str, list[Gram]] = {}
+    for gr in g.grams:
+        if gr.live:
+            out.setdefault(gr.function, []).append(gr)
+    return out
+
+
+def _adp_sides(lv: dict[str, list[Gram]]) -> set[str]:
+    """Sides of the free and clitic case markers (adpositions; a bound case affix says nothing about adposition order)."""
+    return {x.side for f in CASE_FNS for x in lv.get(f, ()) if x.level <= CLITIC}
+
+
+def _class_state(g: Grammar) -> tuple[str, str]:
+    """(gender, numeral_classifiers) from the class system: free classifier nouns are classifiers; once a class marker
+    has bound (clitic or tighter) the system is gender of its kind (classifiers grown into noun classes, as in Bantu)."""
+    cs = g.class_system
+    grams = [x for c in (cs.classes if cs else ()) if (x := g.by_id(c.gram_id)) is not None and x.live]
+    if not grams:
+        return "none", "no"
+    if any(x.level >= CLITIC for x in grams):
+        return ("classes" if cs.kind == "classifiers" else cs.kind), "no"
+    return "none", "yes"
+
+
+def _clusive(lexicon) -> str | None:
+    if lexicon is None:
+        return None
+    a, b = (_lex_get(lexicon, c) for c in CLUSIVE)
+    return "yes" if a is not None and b is not None and _form(a) != _form(b) else "no"
+
+
+def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = None) -> str:
+    """The value the live grams (or the lexicon, for clusivity) give a realised feature, nearest to the aim where the
+    grams leave a choice (negation: which side-compatible value; alignment and negation with no marker: the aim)."""
+    lv = _live_fns(g) if lv is None else lv
+    a = aims(g)
+    aim = a.get(feature)
+    has = lambda *fs: any(f in lv for f in fs)  # noqa: E731
+    f = feature
+    if f == "number":
+        return "sg-du-pl" if has("DU") else "sg-pl" if has("PL") else "none"
+    if f == "definite_article":
+        d = g.gram("DEF")
+        return d.side if d is not None else "none"
+    if f == "indefinite_article":
+        return "present" if has("INDEF") else "none"
+    if f == "case":
+        cs = [x for x in CASE_FNS if x in lv]
+        if not cs:
+            return "none"
+        return "many" if len(cs) >= 4 or any(x in RICH_CASE for x in cs) else "few"
+    if f == "alignment":
+        acc, erg = has("ACC"), has("ERG")
+        return "split" if acc and erg else "nom-acc" if acc else "erg-abs" if erg else aim
+    if f in _TAM:
+        return "marked" if has(*_TAM[f]) else "none"
+    if f == "evidentiality":
+        return "direct+indirect" if has("EVID.DIR") else "indirect" if has("EVID.REP") else "none"
+    if f == "negation":
+        n = g.gram("NEG")
+        if n is None:
+            return aim
+        if n.side == "pre":
+            return aim if aim in _PRE_NEG else "preverbal"
+        return aim if aim not in _PRE_NEG else "postverbal"
+    if f == "verb_agreement":
+        sides = {x.side for p in PERSON_FNS for x in lv.get(p, ()) if x.level >= CLITIC}
+        return "both" if len(sides) > 1 else "prefix" if "pre" in sides else "suffix" if sides else "none"
+    if f == "object_agreement":
+        return "none"   # no gram marks the object on the verb yet
+    if f == "gender":
+        return _class_state(g)[0]
+    if f == "numeral_classifiers":
+        return _class_state(g)[1]
+    if f == "clusivity":
+        c = _clusive(lexicon)
+        return c if c is not None else g.shown.get("clusivity", "no")   # (no lexicon at hand: the last verdict)
+    if f == "causative":
+        return "bound" if any(x.level >= AFFIX for x in lv.get("CAUS", ())) else "periphrastic"
+    if f == "passive":
+        ps = lv.get("PASS", ())
+        return "bound" if any(x.level >= AFFIX for x in ps) else "periphrastic" if ps else "none"
+    if f == "diminutive":
+        return "yes" if has("DIM") else "no"
+    if f == "agent_noun":
+        return "yes" if has("AGENT") else "no"
+    if f == "adposition":
+        s = _adp_sides(lv)
+        if not s:
+            return aim
+        if len(s) > 1:
+            return "mixed"
+        side = next(iter(s))
+        return aim if aim in (side, "mixed") else side
+    return aim
+
+
+def consistent(feature: str, value, g: Grammar, lexicon=None, lv: dict | None = None) -> bool:
+    """Does a typology value agree with the live grams? (alignment: a live ACC or ERG fixes it, else any value; negation:
+    the side of the main negator; adposition: the sides of the free and clitic case markers; clusivity: two distinct
+    'we' forms in the lexicon, or the last verdict when no lexicon is at hand)."""
+    lv = _live_fns(g) if lv is None else lv
+    if feature == "alignment":
+        acc, erg = "ACC" in lv, "ERG" in lv
+        return (value == ("split" if acc and erg else "nom-acc" if acc else "erg-abs")) if (acc or erg) else True
+    if feature == "negation":
+        n = g.gram("NEG")
+        return n is None or (value in _PRE_NEG) == (n.side == "pre")
+    if feature == "adposition":
+        s = _adp_sides(lv)
+        return not s or value == "mixed" or (len(s) == 1 and value in s)
+    return value == realised_value(feature, g, lexicon, lv)
+
+
+def clashes(g: Grammar, lexicon=None) -> list[str]:
+    """Every shown typology feature the live grams contradict ('number: none' with a live plural): empty when the two
+    layers agree. The language pass counts these in its checks (`checks.typology_consistency`)."""
+    lv = _live_fns(g)
+    out = []
+    for f in REALISED + CONSTRAINED:
+        v = g.typology.get(f)
+        if v is not None and not consistent(f, v, g, lexicon, lv):
+            out.append(f"{f}: {v} (the grams give {realised_value(f, g, lexicon, lv)})")
+    return out
+
+
+def realise(g: Grammar, lexicon=None) -> Typology:
+    """Write the shown typology: the aims, with each realised feature the aim where the grams agree and the grams' value
+    where they do not. A value written into `g.typology` from outside since the last call (a calque on shift) first
+    becomes the aim. Mutates and returns `g.typology`."""
+    a = aims(g)
+    for k, v in list(g.typology.items()):
+        if g.shown.get(k, None) != v and (k in g.shown or k not in a):
+            a[k] = v
+    lv = _live_fns(g)
+    new = {}
+    for k, v in a.items():
+        if k == "clusivity" and lexicon is None and k in g.shown:
+            new[k] = g.shown[k]   # (no lexicon to look in: keep the last verdict)
+        elif k in REALISED or k in CONSTRAINED:
+            new[k] = v if consistent(k, v, g, lexicon, lv) else realised_value(k, g, lexicon, lv)
+        else:
+            new[k] = v
+    g.typology.clear()
+    g.typology.update(new)
+    g.shown = dict(new)
+    return g.typology
+
+
+def _adopt(g: Grammar, gr: Gram, kyr: float) -> None:
+    """An unwanted gram that bound anyway is grammar now: the aims take the category it realises."""
+    a = aims(g)
+    lv = _live_fns(g)
+    for feat in feature_of(gr.function):
+        v = realised_value(feat, g, None, lv)
+        if a.get(feat) != v:
+            g.events.append((kyr, f"typology {feat}: {a.get(feat)} > {v} (the {gr.info.gloss} marker bound)"))
+            a[feat] = v
+
+
+_PULL_FNS = tuple(FUNCS) + ("CLASS",)
+
+
+def _unrealised(g: Grammar, a: Typology) -> dict[str, set[str]]:
+    """Feature -> the functions the aims want for it, for each realised feature no live gram marks at all (the
+    categories a typology flip asked for and the ladder has not yet supplied)."""
+    lv = _live_fns(g)
+    has_class = g.class_system is not None and any(
+        (x := g.by_id(c.gram_id)) is not None and x.live for c in g.class_system.classes)
+    marked = {feat for fn in lv for feat in feature_of(fn)}
+    if has_class:
+        marked |= {"gender", "numeral_classifiers"}
+    out: dict[str, set[str]] = {}
+    for fn in _PULL_FNS:
+        feats = feature_of(fn)
+        if not feats or fn == "NEG" or not _wanted(fn, a):
+            continue
+        if feats[0] in marked or (fn == "CLASS" and has_class):
+            continue
+        out.setdefault(feats[0], set()).add(fn)
+    return out
+
+
+def _follow_syntax(g: Grammar, kyr: float) -> None:
+    """After an order change, free grams (separate words) stand where the syntax now puts them; clitics and affixes stay
+    on the side they fused on (yesterday's syntax, Givon 1971)."""
+    a = aims(g)
+    for gr in g.grams:
+        if gr.live and gr.level == FREE:
+            side = _side(gr.function, a)
+            if side != gr.side:
+                gr.side = side
+                gr.history.append((kyr, f"now {'before' if side == 'pre' else 'after'} its host (word order)"))
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -1331,7 +1621,7 @@ def add_class(g: Grammar, rng: np.random.Generator, inv, lexicon, kyr: float, gr
     else:
         form, src = _draw_morph(rng, inv), ("?", "proto", "unknown")
     form, hist = _recruited_form(form, kyr)
-    gr = Gram(fn, form, "N", _side(fn, g.typology), level, src, kyr,
+    gr = Gram(fn, form, "N", _side(fn, aims(g)), level, src, kyr,
               [(kyr, f"recruited as classifier for {group}"), *hist], id=g.new_id(fn))
     g.grams.append(gr)
     nc = NounClass(k, group, gr.id)
@@ -1379,7 +1669,7 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
         typ = draw_typology(rng, inv=inv)
     typ = Typology(typ)
     _derive(typ, inv)
-    g = Grammar(typology=typ)
+    g = Grammar(typology=typ, aims=Typology(typ), shown=dict(typ))
     T = load_tables()
     idx = _lex_index(lexicon)
     for role, cands in _HELPER_ROLES.items():
@@ -1421,6 +1711,7 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     for concept, f in _pick_exemplars(rng, lexicon, "V", _VERB_PREF):
         g.exemplars.append(Exemplar(concept, "V", f))
     _sync_cells(g)
+    realise(g, lexicon)
     return g
 
 
@@ -1477,29 +1768,41 @@ def _sync_lexicon(g: Grammar, lexicon, kyr: float) -> None:
             g.helpers[role] = (concept, _form(w))
 
 
-def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> Gram | None:
+def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, targets: set | None = None) -> Gram | None:
+    """One recruitment draw over the attested paths. `targets`: the aims' pull (PRESSURE), restricted to these functions
+    (wanted ones no live gram marks yet: a flip to 'number: sg-pl' recruiting a plural word)."""
+    at = aims(g)
     live_by_fn: dict[str, list[Gram]] = {}
     for gr in g.live():
         live_by_fn.setdefault(gr.function, []).append(gr)
     cands: list[tuple[float, GPath, Any, Any]] = []
     for p in T.paths:
         tgt = p.target
+        if targets is not None and tgt not in targets:
+            continue
         if tgt == "RECPST" and "PAST" not in live_by_fn:
             continue   # 'come from' > recent past only beside a past tense (G003); never the plain past
         if tgt == "CLASS":
             if g.class_system is None:
-                continue
-            w_mult = 1.0
+                if not _wanted("CLASS", at):
+                    continue   # (a class system the aims now want starts from a first classifier, below)
+            w_mult = 1.0 if _wanted("CLASS", at) else 0.15
         else:
             cur = live_by_fn.get(tgt, [])
+            wanted = _wanted(tgt, at)
+            if targets is not None and cur:
+                continue
             if cur:
-                # renewal: only when the current marker is worn (fused, or down to one segment) and nothing new is pending
-                if any(c.level < AFFIX for c in cur) or not all(c.level >= FUSED or len(c.form) <= 1 for c in cur):
+                # renewal: only when the current marker is worn (fused, or down to one segment) and nothing new is
+                # pending; or a negator on the side the syntax has left (a Jespersen-cycle reinforcer on the new side)
+                moved = tgt == "NEG" and all(c.side != _side("NEG", at) for c in cur)
+                if not moved and (any(c.level < AFFIX for c in cur)
+                                  or not all(c.level >= FUSED or len(c.form) <= 1 for c in cur)):
                     continue
                 w_mult = 0.3
             else:
                 w_mult = 1.0
-            w_mult *= 1.0 if _wanted(tgt, g.typology) else 0.15
+            w_mult *= 1.0 if wanted else 0.15
         if p.from_gram:
             src = next((x for s in p.sources for x in live_by_fn.get(s, [])), None)
             if src is None:
@@ -1517,6 +1820,10 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> 
     ws = np.array([c[0] for c in cands], dtype=float)
     _, p, a, w = cands[int(rng.choice(len(cands), p=ws / ws.sum()))]
     if p.target == "CLASS":
+        if g.class_system is None:
+            gk = at.get("gender", "none")
+            g.class_system = ClassSystem(gk if gk != "none" else "classifiers")
+            g.events.append((kyr, f"a {g.class_system.kind} system begins with a first classifier"))
         nc = add_class(g, rng, inv, lexicon, kyr)
         return g.by_id(nc.gram_id) if nc else None
     if p.from_gram:
@@ -1531,13 +1838,13 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None) -> 
     info = func_info(p.target)
     if w is None:   # coined (X01 with no source word)
         form, hist = _recruited_form(_draw_morph(rng, inv), kyr)
-        gr = Gram(p.target, form, info.host, _side(p.target, g.typology), FREE, ("?", p.id, "coin"), kyr,
+        gr = Gram(p.target, form, info.host, _side(p.target, at), FREE, ("?", p.id, "coin"), kyr,
                   [(kyr, f"coined ({p.id})"), *hist], id=g.new_id(p.target))
         g.grams.append(gr)
         g.events.append((kyr, f"coined a {p.target} marker: {ipa(gr.form)}"))
         return gr
     form, hist = _recruited_form(_form(w), kyr)
-    gr = Gram(p.target, form, info.host, _side(p.target, g.typology), FREE, (str(a), p.id, "concept"), kyr,
+    gr = Gram(p.target, form, info.host, _side(p.target, at), FREE, (str(a), p.id, "concept"), kyr,
               [(kyr, f"recruited from '{a}' ({p.id})"), *hist], id=g.new_id(p.target))
     g.grams.append(gr)
     g.events.append((kyr, f"recruited {p.target} from '{a}': {ipa(gr.form)}" + (" (clipped)" if hist else "")))
@@ -1553,7 +1860,9 @@ def recruit(rng: np.random.Generator, g: Grammar, lexicon, kyr: float = 0.0, fun
         keep = [p for p in T.paths if (function is None or p.target == function)
                 and (source is None or source.upper() in p.sources)]
         T = dataclasses.replace(T, paths=keep)
-    return _recruit(rng, g, lexicon, kyr, T, _lex_index(lexicon), inv)
+    gr = _recruit(rng, g, lexicon, kyr, T, _lex_index(lexicon), inv)
+    realise(g, lexicon)
+    return gr
 
 
 def _lose(g: Grammar, gr: Gram, kyr: float, why: str) -> None:
@@ -1577,26 +1886,37 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
         l2_share = float(kw["l2"])
     if n_generations <= 0:
         return
+    realise(g, lexicon)   # (takes in any outside write to the shown typology, a calque on shift, as an aim)
+    a = aims(g)
     if lexicon is not None and hasattr(lexicon, "head_first"):
-        lexicon.head_first = not g.typology.head_final()   # lexicon compounds follow the head-direction feature
+        lexicon.head_first = not a.head_final()   # lexicon compounds follow the head-direction feature
     T = load_tables()
     soc = social_factors(l2_share, population, isolation)
     _sync_lexicon(g, lexicon, kyr)
     if inv is not None:
-        g.typology["tone"] = "yes" if getattr(inv, "tones", None) else "no"
+        a["tone"] = "yes" if getattr(inv, "tones", None) else "no"
     idx = None
     chunks = max(1, math.ceil(n_generations / CHUNK))
     dn = n_generations / chunks
     for _ in range(chunks):
         if drift_typology:
-            for name, old, new in drift(rng, g.typology, dn * max(float(rate), 0.0), l2_share, T):
+            ch = drift(rng, a, dn * max(float(rate), 0.0), l2_share, T)
+            for name, old, new in ch:
                 g.events.append((kyr, f"typology {name}: {old} > {new}"))
-        # recruit
+            if ch:
+                _follow_syntax(g, kyr)
+        # recruit: the ordinary draw, then the aims' pull toward each category they mark and no gram yet realises
         k = int(rng.poisson(dn * RECRUIT * soc["recruit"]))
         for _ in range(k):
             if idx is None:
                 idx = _lex_index(lexicon)
             _recruit(rng, g, lexicon, kyr, T, idx, inv)
+        if PRESSURE > 0:
+            for fns in _unrealised(g, a).values():
+                if rng.random() < _p(PRESSURE * soc["recruit"], dn):
+                    if idx is None:
+                        idx = _lex_index(lexicon)
+                    _recruit(rng, g, lexicon, kyr, T, idx, inv, targets=fns)
         # fuse / lose
         grew_class = False
         changed = False
@@ -1604,9 +1924,13 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
             if not gr.live:
                 continue
             gr.age_gens += dn
-            wanted = _wanted(gr.function, g.typology)
+            wanted = _wanted(gr.function, a)
             if gr.level <= CLITIC and rng.random() < _p(ABANDON * (1.0 if wanted else 4.0), dn):
                 _lose(g, gr, kyr, "the periphrasis fell out of use")
+                changed = True
+                continue
+            if gr.level >= AFFIX and not wanted and rng.random() < _p(UNWANTED_LOSS * soc["loss"], dn):
+                _lose(g, gr, kyr, "fell out of use (the grammar no longer marks it)")
                 changed = True
                 continue
             if gr.level >= AFFIX and rng.random() < _p(L2_STRIP * soc["strip"], dn):
@@ -1633,6 +1957,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                                 _lose(g, old, kyr, f"replaced by {ipa(gr.form)}")
                         if gr.function.startswith("CLASS"):
                             grew_class = True
+                        if not _wanted(gr.function, a):
+                            _adopt(g, gr, kyr)
                     g.events.append((kyr, f"{gr.function} {ipa(gr.form)} is now {LEVELS[gr.level]}"))
                     changed = True
         if grew_class and g.class_system is not None and rng.random() < CLASS_GROW:
@@ -1648,6 +1974,7 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 if rng.random() < _p(ANALOGY * soc["analogy"] * (0.3 if fused else 1.0), dn):
                     analogy(g, ex, key, kyr)
         _check_lost(g, kyr)
+    realise(g, lexicon)
 
 
 def analogy(g: Grammar, ex: Exemplar, key: tuple[str, ...], kyr: float) -> None:
@@ -1691,6 +2018,7 @@ def _check_lost(g: Grammar, kyr: float) -> None:
             seen.setdefault(key, gr)
     if changed:
         _sync_cells(g)
+        realise(g)
 
 
 @lru_cache(maxsize=256)
@@ -1964,6 +2292,7 @@ def _ff(lst) -> Form:
 def to_json(g: Grammar) -> dict:
     return {
         "typology": dict(g.typology),
+        "aims": dict(aims(g)),
         "grams": [{"id": gr.id, "function": gr.function, "form": _fj(gr.form), "form_ipa": ipa(gr.form), "host": gr.host,
                    "side": gr.side, "level": gr.level, "source": list(gr.source), "born_kyr": gr.born_kyr,
                    "age_gens": gr.age_gens, "history": [list(h) for h in gr.history]} for gr in g.grams],
@@ -1983,6 +2312,7 @@ def to_json(g: Grammar) -> dict:
 
 def from_json(d: dict) -> Grammar:
     g = Grammar(typology=Typology(d["typology"]))
+    g.aims, g.shown = Typology(d.get("aims") or d["typology"]), dict(d["typology"])
     for x in d["grams"]:
         g.grams.append(Gram(x["function"], _ff(x["form"]), x["host"], x["side"], x["level"], tuple(x["source"]),
                             x["born_kyr"], [tuple(h) for h in x["history"]], x.get("age_gens", 0.0), x["id"]))
