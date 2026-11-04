@@ -2,7 +2,7 @@
 id: PW-1424
 title: "Climate stability package: one carbon-cycle yardstick per grid level instead of each planet's dice roll, weathering on plant cover"
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: later
 subsystem: climate
@@ -49,6 +49,7 @@ about the forecast.
 - [ ] confirming experiment (round1 section 7)
 
 ## Updates
+- 2026-11-03: Status todo -> in-progress. Lane 160 (round2.md): A fails its 1.2 C re-run line (1.8 C vs 2.0 unpinned; plate chaos alone 1.4 C), but cuts the across-planet spread by a third, removes both tails, no new hard failures (ends-frozen 0/36), soft passes within chance. Built anyway per the owner's C, as lane 170 (physics side).
 - 2026-11-03: Lane 160 confirming experiment (round2.md): pin.py on all 36 draws x2 from 300 Myr. FAILS the pass line: between-re-run sd of late dT 1.8 C pinned vs 2.0 C unpinned (lane 140 main), line 1.2. Two pinned histories from one identical state already differ by 1.4 C sd (plate chaos), so no yardstick fix reaches 1.2. Across-planet sd 2.64 -> 1.7-1.9 C; cold six +2.5 C, peak ice -9 pts (forecast +2.7, -6.6). Hot side fine: no late mean > +5 C (unpinned had 2), no hell. Hard bar: 1/72 frozen-over by window peak (r0.001 l6c_p 733847, chaos; its twin 15.9%), 0/72 ends frozen, no boil/ocean/CO2. Soft passes 33 and 31/36 vs 30/36, within chance. A still worth building for the tails; single-draw judging keeps ~1.4-1.8 C (supports PW-1425/PW-994).
 - 2026-11-03: Status needs-decision -> todo. Owner 11-03: D47 C it is (A + C package and PW-1425). Build after lane 160's full check reports.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 1; gates no tag (D47, approved)

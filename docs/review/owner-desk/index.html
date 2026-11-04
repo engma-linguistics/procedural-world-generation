@@ -127,13 +127,15 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
-<tr><td>160 · checking the climate fix</td><td>Your D47 pick, C: the full check of "one yardstick for every planet" on all 36 test planets, twice each, compared with the same planets on the current code. When it reports, a physics side lane builds C.</td></tr>
+<tr><td>170 · building D47 (physics, side track)</td><td>Your pick, C: one carbon yardstick per grid level, weathering on plant cover, "frozen over" read at the end. Lane 160's full check, compared with the same 36 planets on the current code: re-runs of one planet still differ by about 1.8 °C (from 2.0), because plate chaos alone carries about 1.4 °C, so the 1.2 °C hope was wrong. But the spread across planets falls by a third (range &minus;7.5..+6.6 &rarr; &minus;4.2..+4.8 °C), both the cold and warm tails go, and no new hard failures appear. Worth building; judged on the paired test before merge.</td></tr>
+<tr><td>171 · scout: mountains too low</td><td>Why the tallest peaks are about 5.7 km and big ranges are rare. A diagnosis from stored runs, then at most 3 small runs measuring how much land is high, not temperature. Reports a lever; changes nothing.</td></tr>
+<tr><td>172 · scout: hot summers near the equator</td><td>Re-measures whether summers are still 3–4 °C too hot against Earth now that two of its causes are fixed. It may simply close the ticket.</td></tr>
 <tr><td>showcases</td><td>Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
 
 
 
 </table></div>
-<p><b>Physics, your idea:</b> once D47 is merged (it should halve the chance swing between re-runs, which is what makes small test runs believable), 4–6 physics scout lanes run side by side. Each uses 2–3 cores and at most 2–3 small runs, and reports what looks promising. Only promising ones go to the full check, one at a time. They start as your language jobs leave room. Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
+<p><b>Physics, your idea:</b> scouts run side by side now. One correction to what I told you: D47 doesn't make a few small runs believable for global temperature (chaos stays about 1.5 °C), so scouts measure regional, mostly deterministic things (mountain heights, summer heat by latitude, rain in one basin) and use paired forks. 4–6 at a time as room allows; Each uses 2–3 cores and at most 2–3 small runs, and reports what looks promising. Only promising ones go to the full check, one at a time. They start as your language jobs leave room. Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
 
 <h2 id="religion">Religion: the views are in</h2>
 <div class="card" id="rel2"><div class="id">GOD TREES, A FAITH MAP, A TIMELINE AND 13 KINDS OF TABOO (PW-1358, PW-1311, MERGED)</div>
@@ -252,5 +254,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v140 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v141 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
