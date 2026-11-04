@@ -37,7 +37,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 16  # 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 17  # 17: names and words per people from languages.json where the run has one (endonym, glossonym, two exonyms, three etymologies, food words with their routes; PW-972, PW-986); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -125,6 +125,7 @@ class Ctx:
         self._religion = False  # (gods.json and taboos.json, if the run has them: religion())
         self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
         self._presence = False  # (the presence table alone, on first use: presence_table())
+        self._languages = False  # (languages.json, if the run has one: languages())
 
     def presence_table(self) -> dict | None:
         """The run's presence table (output.read_presence: every people's cells per frame, PW-1259), None on a run made before it."""
@@ -164,6 +165,13 @@ class Ctx:
             else:
                 self._cultures = None
         return self._cultures
+
+    def languages(self) -> dict | None:
+        """The run's languages.json (PW-986, names by PW-972), None where the run has none (never derived here: the pass takes minutes)."""
+        if self._languages is False:
+            f = self.dir / "languages.json"
+            self._languages = json.loads(f.read_text()) if f.exists() else None
+        return self._languages
 
     def frame_at(self, era_kyr: float) -> int:
         return int(np.argmin(np.abs(self.ts - (-era_kyr))))
@@ -298,6 +306,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
     brief["cultures"] = _cultures(ctx, i, land, era)
+    brief["languages"] = _languages(ctx, brief)
     brief["sea_peoples"] = _sea_peoples(ctx, i, sel, sea, land_all)
     brief["megafauna"] = _megafauna(ctx, sel, era)
     brief["megafauna_ages"] = (MG.ages_text(ctx.meta["present"].get("megafauna_ages") or {}) or None) if abs(era) <= 1e-6 else None
@@ -1206,6 +1215,92 @@ def _cultures(ctx: Ctx, i: int, land: np.ndarray, era: float) -> list | None:
     return out
 
 
+LANG_NONE = "this run has no languages.json (run `planet languages RUN`)"
+
+
+def _languages(ctx: Ctx, brief: dict) -> dict:
+    return languages_section(ctx.languages(), [r["id"] for r in brief["peoples"]["list"]],
+                             [r["id"] for r in brief.get("crops") or []], [r["id"] for r in brief.get("animals") or []])
+
+
+def languages_section(doc: dict | None, peoples: list, crops: list, animals: list) -> dict:
+    """Per people on the region: headword, glossonym, two exonyms, three etymologies (names.names_for_brief), and the words for
+    the region's crops and animals in the people's largest living lect with the route each came by (languages.json
+    `food_routes`). {"file": False, "note"} without a languages.json."""
+    if doc is None:
+        return {"file": False, "note": LANG_NONE, "by_people": {}}
+    from ..language.names import names_for_brief
+    lects = {l["id"]: l for l in doc.get("lects") or []}
+    out = {}
+    for p in peoples:
+        nb = names_for_brief(doc.get("names") or {}, p)
+        food = _food_words(doc, lects, p, [f"crop:{c}" for c in crops] + [f"animal:{a}" for a in animals])
+        if nb is None and not food:
+            continue
+        out[p] = {**(nb or {"headword": None}), "food_words": food}
+    return {"file": True, "by_people": out}
+
+
+def _food_words(doc: dict, lects: dict, people: str, concepts: list) -> list:
+    living = [l for l in lects.values() if l.get("people") == people and l.get("died_kyr") is None and l.get("deme") is not None]
+    if not living:
+        return []
+    main = max(living, key=lambda l: (l.get("population") or 0.0, l["id"]))
+    who = lambda lid: (lects.get(lid) or {}).get("people") or lid  # noqa: E731
+    from ..language.lexicon import resolve
+    out = []
+    for c in concepts:
+        lx = main.get("lexicon") or {}
+        w = lx.get(c) or lx.get(resolve(c))  # (animal:dog is the core word DOG)
+        if w is None:
+            continue
+        route = next((r for r in doc.get("food_routes") or [] if r["concept"] == c and any(h["lect"] == main["id"] for h in r["hops"])), None)
+        own = next((r for r in doc.get("food_routes") or [] if r["concept"] == c and r["origin_lect"] == main["id"]), None)
+        row = {"concept": c, "roman": w["roman"], "ipa": w["ipa"], "lect": main["id"], "from_people": None, "kyr": None, "hops": []}
+        if route is not None:
+            by = {h["lect"]: h for h in route["hops"]}
+            chain, h, seen = [], by[main["id"]], set()
+            while h is not None and h["lect"] not in seen:
+                seen.add(h["lect"])
+                chain.append(h)
+                h = by.get(h["from_lect"])
+            chain.reverse()
+            first = route["origin_lect"]
+            steps = [f"'{route.get('roman') or route['ipa']}' ({who(first)}, {first}, {route['origin'] or 'origin'}"
+                     + (f", {route['kyr']:g} kyr ago)" if route.get("kyr") is not None else ")")]
+            steps += [f"'{x.get('roman') or x['ipa']}' ({who(x['lect'])}, {x['lect']}, {x['kyr']:g} kyr ago)" for x in chain]
+            last = chain[-1]
+            path = " > ".join([who(first)] + [who(x["lect"]) for x in chain])
+            row.update(from_people=who(last["from_lect"]), kyr=last["kyr"], hops=steps)
+            row["text"] = (f"'{w['roman']}' ({w['ipa']}), borrowed from the {who(last['from_lect'])} about {last['kyr']:g} kyr ago "
+                           f"along {path}; at each hop: " + " > ".join(steps))
+        elif own is not None:
+            row["text"] = f"'{w['roman']}' ({w['ipa']}), their own word ({own['origin'] or 'coined here'}" + (
+                f", {own['kyr']:g} kyr ago)" if own.get("kyr") is not None else ")")
+        else:
+            row["text"] = f"'{w['roman']}' ({w['ipa']}), an inherited word"
+        out.append(row)
+    return out
+
+
+def languages_md(sec: dict | None) -> list[str]:
+    t = ["", "## Names and words", ""]
+    if not sec or not sec.get("file"):
+        return t + [f"- {(sec or {}).get('note') or LANG_NONE}"]
+    if not sec["by_people"]:
+        return t + ["- no named people here"]
+    for p, v in sec["by_people"].items():
+        if v.get("headword"):
+            t += [f"- {p}: {v['headword']} ('{v['gloss']}', {v['pattern']}); their speech: {v['glossonym']['roman']} ('{v['glossonym']['gloss']}')"]
+            t += [f"  - called {x['name']} by the {x['said_by']} ('{x['gloss']}', {x['pattern']}): {x['why']}"
+                  + (f"; relayed through {', '.join(x['relay'])}" if x.get("relay") else "") for x in v.get("exonyms") or []]
+            t += [f"  - {e}" for e in v.get("etymologies") or []]
+        else:
+            t += [f"- {p}: no name yet (no living lect)"]
+        t += [f"  - food word: {f['text']}" for f in v.get("food_words") or []]
+    return t
+
+
 def _people(ctx: Ctx, pid: str) -> dict:
     l = ctx.lines[ctx.idx[pid]]
     p = ctx.meta["present"]
@@ -1422,6 +1517,7 @@ def markdown(b: dict) -> str:
         t += ["", "### Names (PW-731)", ""]
         t += [f"- calls {r['id']} \"{r['called']}\" ({r['valence']}, {r['basis']})" for r in rp["calls"]] or ["- calls nobody anything special"]
         t += [f"- is called \"{r['called']}\" by {r['id']} ({r['valence']}, {r['basis']})" for r in rp["called_by"]]
+    t += languages_md(b.get("languages"))
     t += ["", "## Suggested (rule-based, overrule freely)", ""] + [f"- {n}" for n in b["suggested"]["notes"]]
     t += ["", "## Not modelled yet (null in the JSON)", "", "- " + ", ".join(b["not_modelled"]), ""]
     return "\n".join(t)
