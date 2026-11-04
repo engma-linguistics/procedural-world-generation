@@ -394,8 +394,14 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
             while cultures[c].end == "merged" and cultures[c].into is not None:
                 c = cultures[c].into
             held[c] += d["cells_now"]
+    uids: set[str] = set()
     for u in cultures:
         l = idx[u.people]
+        f0 = D[u.demes[0]]  # (the founding deme: the earliest id, and a deme's id order is its birth order)
+        uid = f"{u.people}:{u.how}:{u.born:.3f}:{f0.get('lat') or 0:.1f}:{f0.get('lon') or 0:.1f}"
+        while uid in uids:
+            uid += "+"
+        uids.add(uid)
         per[u.people] = per.get(u.people, 0) + 1
         alive = [D[d] for d in u.demes if D[d]["ended_kyr"] is None and D[d]["cells_now"]]
         big = max(alive or [D[d] for d in u.demes], key=lambda d: (d["cells_now"], d["peak_cells"]))
@@ -423,7 +429,7 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
             nmw = lambda w: idx[w]["name"] if w in idx and w != u.people else f"the old ways of the {pn}"  # noqa: E731
             ch.append(f"took up the ways of the {nmw(w1)}" if w0 == u.people else f"founded mostly by {nmw(w0)}, now mostly {nmw(w1)}")
         out.append({
-            "id": u.id, "people": u.people, "n": per[u.people], "name": nm, "how": u.how,
+            "id": u.id, "uid": uid, "people": u.people, "n": per[u.people], "name": nm, "how": u.how,
             "parent": u.parent, "parent_people": par.people if par else None,
             "born_kyr": round(u.born, 3), "cohesion": coh.get(u.people, 0.0),
             "ended_kyr": u.ended, "end": u.end, "into": u.into,
