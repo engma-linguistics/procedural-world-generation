@@ -26,6 +26,7 @@
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
+import { loadPolities, politiesColor, politiesLegend } from './polities.js';
 import { ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demeOf, demesColor, loadDemesAll, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
 import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
@@ -319,6 +320,9 @@ const LAYERS = {
       return pick + rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
         sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations ${who ? `of the ${esc(who.name || who.id)}, wherever they live (over or beside other peoples)` : 'of the leading peoples here'}: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${NumFmt.ago(S.V.demes.from_kyr)}` : 'loading the tree…'}</span>`;
     } },
+  polities: { group: 'peoples', in: { tz: peoplesIn((V) => !!V.run?.meta?.settlements && !!V.run?.meta?.cultures) },
+    hint: 'Peoples runs: who rules where at the slider\'s century: chiefdoms, states, empires (states ruling other cultures) and dragon realms, read after the run from its towns, techs and cultures (planet/lineages/polities.py). Click a cell for its card.',
+    color: () => { loadPolities(); return (i, c) => politiesColor(i, c); }, legend: (sw) => politiesLegend(sw) },
   'peoples mix': { group: 'peoples', needs: ['peoples_mix'], in: { tz: peoplesIn() }, color: peoplesLayer,
     legend: (sw) => [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody') },
   'peoples overlay': { group: 'peoples', needs: ['peoples', 'peoples_overlay'], in: { tz: peoplesIn() }, color: peoplesLayer,
@@ -467,7 +471,7 @@ const MENUS = {
     'temperature', 'climate', 'landforms', 'vegetation', 'tree cover', 'NPP'],
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   tz: ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate', 'plates', 'crust age', 'glacial erosion', 'glacial till',
-    'glacial outwash', 'glacial loess', 'tree cover', 'peoples', 'peoples blend', 'demes', 'peoples mix', 'peoples overlay', '@body',
+    'glacial outwash', 'glacial loess', 'tree cover', 'peoples', 'peoples blend', 'demes', 'polities', 'peoples mix', 'peoples overlay', '@body',
     '@animal', '@crop', 'land use', 'fuels', 'technology'],
 };
 

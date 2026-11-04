@@ -22,6 +22,7 @@
   POST   /api/authored {run, faiths, gods_mode}   check and save them (the run's authored.json, the only file this writes into a run)
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
+  GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -30,7 +31,8 @@
 Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip). Derived gods and taboos docs are kept
-under <data root>/.godscache (disk_cached), so a restart doesn't pay again.
+under <data root>/.godscache (disk_cached), so a restart doesn't pay again; so is the polities
+doc (polities_doc), read after the run and never written into it.
 
 Every POST must say `Content-Type: application/json`, and one that carries an
 Origin must come from this server's own address (Handler.post_refused, PW-1037):
@@ -410,6 +412,46 @@ def faithmap(query: str) -> tuple[bytes | dict, int]:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
+_polities_cache: dict = {}  # (run id, run.json mtime, version) -> polities doc
+_polities_lock = threading.Lock()  # (the summary and the first map come together: one derive)
+
+
+def polities_doc(d: Path) -> dict:
+    """A run's polities doc (lineages/polities.py, PW-1431): read after the run from its settlements, techs, cultures and presence
+    (~30 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import polities as PO
+    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION)
+    with _polities_lock:
+        if key not in _polities_cache:
+            _polities_cache.clear()
+            _polities_cache[key] = disk_cached("polities", d, key, lambda: PO.derive(d))
+        return _polities_cache[key]
+
+
+def polities(query: str) -> tuple[dict, int]:
+    """GET /api/polities?run=<id>[&ago=<kyr ago>]: a peoples run's chiefdoms, states, empires and dragon realms (lineages/polities.py,
+    PW-1431). Without ago: the polities (the state cards), the cultures they name (by uid) and each century step's counts; with ago:
+    the nearest step's map ({step, ago, polities: [{id, tier, cells, subjects, people}]})."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import polities as PO
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        if json.loads((d / "run.json").read_text()).get("meta", {}).get("kind") != "peoples":
+            raise ValueError("polities are read from a peoples run")
+        doc = polities_doc(d)
+        if q.get("ago") not in (None, ""):
+            return PO.step_view(doc, float(q["ago"])), 200
+        return PO.summary(doc), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 def gods(query: str) -> tuple[dict, int]:
     """GET /api/gods?run=<id>[&mode=faith_made|belief_only|absolute]: the gods of a peoples run's cultures (lineages/gods.py, PW-1306): the
     run's gods.json if it has one (and no other mode is asked for), else worked out from its cultures (some seconds) and kept in memory,
@@ -712,6 +754,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*authored_get(url.query))
         if url.path == "/api/taboos":
             return self.send_json(*taboos(url.query))
+        if url.path == "/api/polities":
+            return self.send_json(*polities(url.query))
         if url.path == "/api/faithmap":
             body, code = faithmap(url.query)
             if isinstance(body, dict):
