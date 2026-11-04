@@ -46,8 +46,7 @@ def editor_schema() -> dict:
                      "brake_x": list(SP.BRAKE_X)},  # (lane 97: the raiders' brakes and war-torn land, meta.raiders / meta.war)
         "surge_x": list(SP.SURGE_X),  # (the momentum edge's dial per era, lane 73)
         "breeding": list(LH.BREEDING), "survival": list(LH.SURVIVAL), "life_stages": list(LH.STAGES),  # (lane 78: life history)
-        "life_defaults": {"wave_kyr": SP.WAVE_KYR, "portal_open_kyr": SP.PORTAL_OPEN_KYR, "portal_drift_kmkyr": SP.PORTAL_DRIFT_KMKYR,
-                          "band_rounds": SP.BAND_ROUNDS, "breeding": "mammal", "survival": "normal"},
+        "life_defaults": {"wave_kyr": SP.WAVE_KYR, "portal_open_kyr": SP.PORTAL_OPEN_KYR, "portal_drift_kmkyr": SP.PORTAL_DRIFT_KMKYR, "breeding": "mammal", "survival": "normal"},
     }
 
 

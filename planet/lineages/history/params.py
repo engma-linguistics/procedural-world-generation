@@ -137,9 +137,6 @@ BODY_C, BODY_OCT, BODY_ELEV_M = 8.0, 1.0, 1000.0  # the body envelope around the
 # then tolerates -2..34 C, from the boreal forest edge to hot desert margins, while the polar ice, the hottest deserts and the driest
 # land stay out of reach of a people whose comfort is temperate; a cold people (goliaths, -6..12 C) likewise stays out of the tropics.
 # Real peoples went further still with clothing, fire and herds (the Arctic, below), so the envelope is a floor on what culture can do
-ECTO_COLD_C = 1.0  # an ectotherm kind's (spec limits.cold_c: the saurian kin, tortles, lizardfolk, troglodytes) margin below its comfort
-# range, in place of BODY_C: a cold-blooded body cannot be clothed against the cold (owner 10-30: "tortles really don't like the frozen
-# north"). A design judgement; the heat side keeps BODY_C
 T_LEARN_KYR = 5.0  # learned acceptance grows as (1 - L) with this e-folding time, in full where the people lives on country its culture
 # finds marginal, and x its pressure on the ring of cells next to its range. Grounded on the human peopling of high and cold country
 # (sources read 2026-10-30): settlement at 4,355-4,480 m in the Peruvian Andes by 12.8-12.4 kyr ago, within ~2 kyr of the first entry

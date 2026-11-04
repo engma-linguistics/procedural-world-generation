@@ -930,11 +930,9 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
 - **One capacity per people** (`competition._compete`, `model._kin`, PW-1205 A): a people's groups (its farmers, herders, seafarers...)
   and the people itself share one capacity per cell. Each feels its kin's presence in full (alpha 1, before any edge or discount), so the
   ways of life split a people's land and its people instead of stacking (they had held ~1.3 K a cell at PW-665's GROUP_KIN 0.5).
-- **Density follows the era** (`growth._set_era_density`, `growth.ERA_DENSITY`, PW-1203 A): the tree's density is a people's number at
-  its own way of life. A farming people lives at most at forager density (0.35 /km², Binford 2001's upper quartile) until it has a staple
-  crop, and at most at 5 /km² (the top of the owner's range for forest gardeners) until it farms with the plough. Foragers and herders
-  keep their number, and so does every people when the history models no crops. Since the contest reads fit and not density, density
-  sets head counts, not who holds the land.
+- **Density follows the ladder** (`lineages/ladder.py`, PW-1275, `params.PEOPLE_PROD`): a people's number on a cell is its kind
+  factor x the rung of the way it lives there (foragers by the land's NPP, gardeners, plough farmers by age, irrigation, nomads,
+  holds, raiders), with forager-farmer trade and den peoples' raids as top-ups. It replaced the era densities of PW-1203.
 - **Densities by way of life in the dnd tree** (owner D20 (4), PW-1149 B): foragers at 0.3 /km² (Binford 2001 Table 5.01 via D-PLACE
   B008, upper quartile 0.35), arctic foragers 0.05, elves 4 (forest gardeners), dwarves 7 and hill dwarves 8. Kobolds and goblins are
   'denning': their density follows the **den ground** (PW-1382, `lineages/dens.py`, the `den` good, 0..1: karst and other carbonate,
@@ -976,8 +974,8 @@ The full design is `docs/proposals/lineages.md`; this is what decides where a pe
 - **Old enemies hunt each other** (`history.hunts`, lane 97, owner D26 B): a pair the tree names as enemies ('apart' wish of weight w)
   with a shared border logs a 'hunt' event at a border cell with chance `HUNT_PER_KYR` (0.5) x w a kyr, from its own generator. Story
   on the map only: no numbers change.
-- **Dwarves resist disease** (spec `disease_resist`, 0..1; dwarves 0.75, owner D25): inherited by groups and splits, a hybrid takes its
-  parents' mean. Read by nothing yet: the plague events are not built (inbox draft).
+- Every mechanism above, its knobs, what reads it and its effect at the defaults: the ledger, docs/review/peoples/ledger/round1.md
+  (lane 176, which retired the share bands, `disease_resist` and a dead constant).
 - Measured on the lane 77 stress suite (`tools/peoples_robust.py`, which now also reports continental blocs: per landmass of 1+ Mkm², its leading people and share): docs/review/peoples-d20/report.md; after D25-D27, docs/review/peoples-brakes/report.md (the commonest people's share per stage and per brake setting). The suite also reports owner D31 A (the commonest people usually under half, never over 70% with 5+ peoples) without failing on it: after lane 101, all tries median 53%, 48% under half, 86% of 5+ trees at or under 70% (charts in docs/review/peoples-leader/).
 
 ### 2.27 Megafauna: dragons, giants and their food chain (`lineages/history/megafauna.py`, `lineages/prey.py`, `lineages/dragon_ages.py`)

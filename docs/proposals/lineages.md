@@ -621,7 +621,8 @@ The deep folk stay authored: see the drafts for the viewer and habitat limits.
   - the small-patch fade (MVP_TAU_KYR / x);
   - the far jumps (JUMP_RATE x x).
   - SURGE_KYR stays in years. A line without ages has x = 1.
-- **Share bands** (`band_pct = [min, max]` per people; `history/bands.py`). These are soft targets, never a clamp.
+- **Share bands** (retired by lane 176, 2026-11-04: no preset set one, so they did nothing at the defaults; the code is in git
+  before that commit). `band_pct = [min, max]` per people; `history/bands.py`. These were soft targets, never a clamp.
   - When the best try lands a people outside its band, the run nudges that people's own density (an arrival's too: lane 78b found founders barely move a share). The nudge is x target/share, then a secant step over a real move of its own knob, held within x1/4..x4.
   - It re-runs the best seed up to `meta.band_rounds` times and keeps the round with the least miss.
   - `present.bands` reports the share, met or not, why, and the nudge.
