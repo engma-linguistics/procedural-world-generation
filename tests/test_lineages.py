@@ -3346,14 +3346,14 @@ def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
     h._deep_now = False
     step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
     K = np.where(env["land"], 0.8, 0.0)
-    assert h._hos[kb, fk] == pytest.approx(1.0) and h._hos[kb, h.idx["dw"]] == 0.0
-    h._hem[kb] = 0.0
+    assert h.rule.hostility[kb, fk] == pytest.approx(1.0) and h.rule.hostility[kb, h.idx["dw"]] == 0.0
+    h.rule.hem[kb] = 0.0
     Kb = h._brake(L[kb], kb, K, step, env, None)
-    F = h._frontier(kb)
+    F = h.rule.frontier(kb)
     border, home = int(np.argmax(np.where(h._pm[kb], F, -1))), int(np.argmin(np.where(h._pm[kb], F, 9)))
     assert F[border] > 0.3 and F[home] == 0.0
     assert Kb[border] < Kb[home] <= K[home] + 1e-12
-    h._hem[kb] = 1.0
+    h.rule.hem[kb] = 1.0
     Kh = h._brake(L[kb], kb, K, step, env, None)
     assert Kh[home] / K[home] <= 0.66  # (R 1.5 from in-fighting alone: 0.65, and a little war-torn land)
     assert set(h.lost["kob"]) >= {"raid", "feud"} and h.lost["kob"]["feud"] > 0
@@ -3384,7 +3384,7 @@ def _sync_pm(h):
     h._pm = h.p >= 0.12
     h._cntp = h._pm.sum(0, dtype=np.int16)
     h._cnt = h._cntp
-    h.__dict__.pop("_Fc", None)
+    h.rule._Fc = None
 
 
 def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
@@ -3402,7 +3402,7 @@ def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
         h.p[:] = 0.0
         h.p[k][land[:200]] = 0.8
         _sync_pm(h)
-        h._hem[k] = 1.0
+        h.rule.hem[k] = 1.0
         full = h._brake(L[k], k, K, step, env, None)
         h.p[k][land[:200]] = 0.2  # (the same land, a fifth as full: Chagnon's village before it grows to splitting size)
         thin = h._brake(L[k], k, K, step, env, None)
@@ -3416,14 +3416,51 @@ def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
     h.p[kb][land[:50]] = 0.8
     _sync_pm(h)
     room = K.copy()
-    h._K0[kb] = K
+    h.rule.K0[kb] = K
     held = h.p[kb] >= 0.12
-    open_c = h._circumscribed(L[kb], kb, held, room, 0.0)
+    open_c = h.rule.circumscribed(L[kb], kb, held, room, 0.0)
     ring = h._dilate(held, 1) & ~held & env["land"]
     h.p[fk][ring] = 0.8
     _sync_pm(h)
-    ringed = h._circumscribed(L[kb], kb, held, room, 0.0)
+    ringed = h.rule.circumscribed(L[kb], kb, held, room, 0.0)
     assert open_c < ringed <= HP.SOCIAL_Q + (1 - HP.SOCIAL_Q) * float((~env["land"][h._dilate(held, 1) & ~held]).mean()) + 1e-9
+
+
+def test_polities_swap_the_state_and_war_stand_ins_through_one_seam(faketz, monkeypatch):
+    """PW-1280: the brakes read a state's pacification G, the hostile frontier F and in-fighting's circumscription C only through
+    History.rule (history.rule.StandIns). A replacement Rule that answers 'no hostile frontier, full pacification, never hemmed in'
+    takes away the raid, frontier-war and in-fighting cuts without any other change to the history."""
+    from planet.lineages.history import counter as CT
+    from planet.lineages.history.rule import StandIns
+
+    class Peace(StandIns):
+        def frontier(self, k):
+            return np.zeros(self.h.grid.n)
+
+        def pacification(self, k, step):
+            return 0.0
+
+        def circumscription(self, k):
+            return 0.0
+
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[180:400]] = 0.8
+    _sync_pm(h)
+    assert isinstance(h.rule, StandIns) and CT.CounterMixin.Rule is StandIns
+    h.rule.hem[kb] = 1.0
+    stand_in = h._brake(L[kb], kb, K, step, env, None)
+    monkeypatch.setattr(type(h), "Rule", Peace)
+    h._counter_setup()
+    assert type(h.rule) is Peace
+    _sync_pm(h)
+    peace = h._brake(L[kb], kb, K, step, env, None)
+    held = h._pm[kb]
+    assert (stand_in[held] < peace[held]).any() and np.allclose(peace[held], K[held])  # (kobolds of normal canon losses: R 1)
 
 
 def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
@@ -3439,7 +3476,7 @@ def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
     h.p[kb][land[:200]] = 0.8
     h.p[fk][land[150:400]] = 0.8
     _sync_pm(h)
-    h._hem[kb] = 1.0
+    h.rule.hem[kb] = 1.0
     h.tree.raiders = 4.0
     Kb = h._brake(L[kb], kb, K, step, env, None)
     held = h._pm[kb]

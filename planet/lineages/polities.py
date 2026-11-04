@@ -751,7 +751,7 @@ def _lines_by_cell(F: dict, n: int) -> dict:
 
 
 def _hemmed(R: _Run, F: dict, ring: np.ndarray, people: str, here_lines: dict, social_q: float, ago: float) -> float:
-    """How hemmed in a seat is, 0..1 (Carneiro 2012, as counter._circumscribed reads it in the history): over the cells within
+    """How hemmed in a seat is, 0..1 (Carneiro 2012, as history.rule.StandIns.circumscribed reads it in the history): over the cells within
     HEMMED_RINGS of it, sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its
     own people do not bars SOCIAL_Q (social circumscription, "less tight"); the rest bars nothing."""
     if not len(ring):
