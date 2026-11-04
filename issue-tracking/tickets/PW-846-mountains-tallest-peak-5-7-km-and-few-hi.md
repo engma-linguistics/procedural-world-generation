@@ -20,6 +20,7 @@ updated: 2026-11-03
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner: are there enough ranges of Earth-like sizes, is anything capping them, is erosion flattening them too fast? Investigation pending; relates PW-826 (volcano cap).
 
 ## Updates
+- 2026-11-03: Scout 171 (docs/review/tectonics/mountains/scout1.md): not too low. The model stores cell averages; Earth averaged at L7 tops out at 5.9 km (Tibet) and its texture gives 5.7-6.3 km, the ticket's number. Current L7 has more high ground than Earth (1.6-3.7% above 4 km vs 1.7%). Re-scoped to presentation: summit height = cell mean + Earth's measured sub-cell relief for the peak highlight and labels. Physics gaps (craton overshoot, rare Andean ranges) are separate.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 2; gates no tag
 - 2026-10-25: Investigation: no elevation clamp; crust capped at 80 km (isostasy MAX_KM, ~6.9 km before swell); run 6b48f5's peaks are 5-8.5 km per frame (max 9.6), so 2a7385's 5.7 km is a low-relief moment. 2a7385 has 0.4% of land above 4 km against Earth's 1.5% (Earth at L6, smoothed); other L7 worlds 0.2-2.6%. Erosion doesn't look like the main cause; tie to PW-827 (sluggish late plates, fewer active collisions).
 - 2026-10-25: Created.

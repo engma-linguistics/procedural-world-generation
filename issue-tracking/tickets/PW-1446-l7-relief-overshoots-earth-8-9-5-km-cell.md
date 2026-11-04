@@ -1,4 +1,5 @@
 ---
+id: PW-1446
 title: "L7 relief overshoots Earth: 8-9.5 km cells at the 80 km cap, 2-3x Earth's land above 2 km, and 12 km zoom summits on stacked craton"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: scout-171-pw846
 blocked_by: []
 relates: [PW-846, PW-048, PW-172, PW-451, PW-827]
-refs: [docs/review/tectonics/mountains/scout1.md, docs/review/tectonics/mountains/scout1_hyps.py, docs/review/tectonics/mountains/scout1_tops.py, docs/review/tectonics/mountains/scout1_highrock.py, planet/tectonics/crust.py::flow_and_orogeny, planet/tectonics/crust.py::stack_collisions, planet/tectonics/isostasy.py::elevation, planet/tectonics/isostasy.py::MAX_KM, planet/timeline.py::texture, "run 10fd90", "run fe954c", "run a19366", "run 2b53a0", "world dba204", "zoom 7d6c4d", "zoom f4db12", data/earth/L7.npz, data/earth/raw_hydrosheds_dem_30s.zip]
+refs: [docs/review/tectonics/mountains/scout1.md, docs/review/tectonics/mountains/scout1_hyps.py, docs/review/tectonics/mountains/scout1_tops.py, docs/review/tectonics/mountains/scout1_highrock.py, "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::stack_collisions", "planet/tectonics/isostasy.py::elevation", "planet/tectonics/isostasy.py::MAX_KM", "planet/timeline.py::texture", "run 10fd90", "run fe954c", "run a19366", "run 2b53a0", "world dba204", "zoom 7d6c4d", "zoom f4db12", data/earth/L7.npz, data/earth/raw_hydrosheds_dem_30s.zip]
+created: 2026-11-03
+updated: 2026-11-03
 ---
 
 ## Description
@@ -29,3 +32,6 @@ What I'd try (L7 judge, 3-4 seeds x 1 Gyr, per-frame hypsometry against Earth L7
 Risk: less high ground lowers the weathering CO2 sink (PW-451), so the climate moves. Judge that on the two-tier bar, not on these seeds.
 - [ ] L7 land above 4 km within about 1-2.5% and the highest cell at or below about 7 km in most frames, over 3+ seeds
 - [ ] zoom summits at or below about 9 km
+
+## Updates
+- 2026-11-03: Created from inbox draft draft-l7-relief-overshoot-craton.md (found by scout-171-pw846).
