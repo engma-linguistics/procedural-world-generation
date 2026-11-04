@@ -17,6 +17,7 @@
 #tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; min-height: 100%; }
 #tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; }
 #tab-religion .rl-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; }
+#tab-religion .rl-cards.one { grid-template-columns: minmax(0, 1fr); }
 #tab-religion .rl-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--panel); overflow-x: auto; }
 #tab-religion .rl-card h3 { margin: 0 0 4px; font-size: 13px; }
 #tab-religion svg text { fill: var(--text); font-size: 11px; }
@@ -97,7 +98,8 @@
     const RH = 14, TOP = 18, LAB = 190, H = TOP + order.length * RH + 6;
     const oldest = Math.max(...f.beings.map((i) => B[i].born_kyr)), x = logX(oldest, 4, W - LAB - 8);
     const row = Object.fromEntries(order.map((i, k) => [i, TOP + k * RH + RH / 2]));
-    let h = TICKS.filter((k) => k <= oldest * 1.05).map((k) => `<line x1="${x(k)}" x2="${x(k)}" y1="12" y2="${H}" stroke="#1f2836"/><text class="m" x="${x(k)}" y="10" text-anchor="middle">${fmt(k)}</text>`).join('');
+    let h = TICKS.filter((k) => k > 0.1 && k <= oldest * 1.05).map((k) => `<line x1="${x(k)}" x2="${x(k)}" y1="12" y2="${H}" stroke="#1f2836"/><text class="m" x="${x(k)}" y="10" text-anchor="middle">${fmt(k)}</text>`).join('')
+      + `<line x1="${x(0)}" x2="${x(0)}" y1="12" y2="${H}" stroke="#3a4a63"/><text class="m" x="${x(0)}" y="10" text-anchor="end">now</text>`;
     for (const i of order) {
       const b = B[i], y = row[i], end = b.ended_kyr ?? 0.05;
       if (b.parent != null && row[b.parent] != null) h += `<path d="M${x(b.born_kyr)},${row[b.parent]} V${y}" stroke="#4a5b78" fill="none"/>`;
@@ -123,7 +125,7 @@
   function treesDraw(main) {
     const list = st.pick != null ? [st.pick] : D.examples;
     if (!list.length) { main.innerHTML = '<p class="muted">No faith in this run has gods yet.</p>'; return; }
-    main.innerHTML = `<div class="rl-cards">${list.map((id) => { const f = D.F[id];
+    main.innerHTML = `<div class="rl-cards${list.length === 1 ? ' one' : ''}">${list.map((id) => { const f = D.F[id];
       return `<div class="rl-card"><h3>${sw(f.color)}${esc(f.name)}</h3><div class="muted" style="margin-bottom:4px">${f.how === 'schism' ? 'broke away from ' + esc(D.F[f.parent]?.name) + ', ' : 'founded '}${ago(f.founded_kyr)};
         ${f.ended_kyr == null ? `${f.cultures_now.length} cultures of ${f.peoples_now.length} peoples now` : 'ended ' + ago(f.ended_kyr) + ' (' + esc(f.end) + ')'}; ${f.beings.length} gods and spirits ever</div>${treeSvg(f, st.pick != null ? Math.max(700, main.clientWidth - 40) : 560)}</div>`; }).join('')}</div>`;
   }
