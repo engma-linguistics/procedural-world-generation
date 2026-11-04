@@ -6,6 +6,9 @@
 # unmarked, caron rising, circumflex falling, double acute extra-high, double grave extra-low).
 # Nasal vowels: always a tilde (ã). A following n was considered and rejected: one rule for every lect, and it never reads as a
 # coda n, whatever the lect's syllables.
+# Book mode (romanize book=True; names.py `roman`): the book drops tone, writes a nasal vowel as vowel + n (plain before a
+# nasal), doubles one long vowel per word, writes ə e, ɛ ɔ ɪ ʊ ɑ plain, ü ö only beside i e, and keeps one diacritic letter
+# per word (uvular ġ x̣ always kept); lossy on purpose, the workbench and `roman_full` keep this table's full spelling.
 # alt = the spelling used when the lect writes aspiration (it contrasts aspirated and plain): th, dh, kh, gh, sh, zh, ch, qh
 # would then read as aspirates, so the fricatives take their single-letter forms. Velar and uvular never share a spelling
 # (uvulars: q, qh, gq, nq, rq, and ġ for ʁ).

@@ -133,3 +133,60 @@ def test_contrasts_of():
     assert R.contrasts_of(from_ipa("á")) == {"tone"}
     assert "dental" in R.contrasts_of(from_ipa("t̪t"))
     assert R.contrasts_of(from_ipa("pʰa")) == set()
+
+
+# ---------------------------------------------------------------------------------------------- book mode
+def test_book_mode_names_are_sayable():
+    """The names a book reader choked on (full spelling Müdhœ̃̀œ̃'áĩ́ĩ, Pë̀ġàkìʿà, Sǘpũ̀vò) come out short and nearly ASCII."""
+    b = lambda x: R.romanize(x, book=True)
+    assert b("my˧dʱœ̃ː˨ʔa˦ĩː˦") == "müdoon'ain"  # one doubled vowel, nasal = +n, ü beside i, one diacritic letter
+    assert b("pə˨ʁa˨ki˨ʕa˨") == "peġakiʿa"  # no tone, schwa e, the uvular ġ kept
+    assert b("sy˦pũ˨vo˨") == "supunvo"  # no i in the word: y is u
+    for x in ("my˧dʱœ̃ː˨ʔa˦ĩː˦", "pə˨ʁa˨ki˨ʕa˨", "sy˦pũ˨vo˨"):
+        assert R.diacritics(b(x)) <= 1 and len(b(x)) <= len(R.romanize(x))
+
+
+def test_book_mode_rules():
+    b = lambda x, cs=None, inv=None: R.romanize(x, cs, inv, book=True)
+    assert b("á à ǎ a˧") == "aaaa"  # no tone
+    assert b("ãta") == "anta" and b("ãma") == "ama" and b("ãŋa") == "anga"  # nasal: + n, plain before a nasal
+    assert "̃" not in b("ãẽĩõũ")
+    assert b("aːtaː") == "aata" and b("tːa") == "tta"  # one doubled vowel per word; a long consonant doubled
+    assert b("ənə") == "ene" and b("eəa") == "eea"  # schwa e, no diaeresis
+    assert b("ɛɔɪʊɑ") == "eoiua" and b("eɛ oɔ iɪ") == "eeooii"  # the open/lax/back vowels always plain
+    assert b("y") == "u" and b("iy") == "iü" and b("ø") == "o" and b("eø") == "eö" and b("eœ") == "eö"
+    assert b("ʔaʔa") == "a'a"  # no word-initial glottal stop
+    assert b("ʃaʈaʂa") == "shaṭasa"  # one diacritic letter per word: the first
+    assert b("ʃa", {"aspiration"}) == "sha"  # (book: the digraph even where the workbench writes š)
+    assert b("lːaɫa") == "llalla"  # no Catalan dot
+    assert b("ɲ̟a") == "nya" and b("ʊ̞ta") == "uta"  # no house letter: folded
+
+
+def test_book_mode_keeps_the_uvulars():
+    b = lambda x, cs=None: R.romanize(x, cs, book=True)
+    assert b("qa") == "qa" and b("χa") == "qha" and b("ʁa") == "ġa" and b("ɢa") == "gqa" and b("ɴa") == "nqa"
+    assert b("χa", {"aspiration"}) == "x̣a" and b("ʃaʁa") == "shaġa" and b("ṭaʁaʁa".replace("ṭ", "ʈ")) == "ṭaġaġa"
+    for cs in (set(), {"aspiration"}):
+        for v, u in (("x", "χ"), ("ɣ", "ʁ"), ("k", "q"), ("ɡ", "ɢ"), ("ŋ", "ɴ")):
+            assert b(v + "a", cs) != b(u + "a", cs)
+
+
+def test_book_mode_diacritics_rare_on_generated_words():
+    import numpy as np
+    from planet.language import inventory as INV
+    from planet.language import lexicon as LX
+    from planet.language import profiles as PR
+    full, book = [], []
+    for seed in range(10):
+        rng = np.random.default_rng(seed)
+        inv = INV.draw_inventory(rng, PR.HUMAN)
+        lex = LX.proto_lexicon(rng, inv, LX.concepts(None), 2.0, "d")
+        segs = list(INV.segments(inv))
+        cs = R.contrasts_of(segs)
+        for w in list(lex.words.values())[:20]:
+            full.append(R.romanize_word(tuple(w.form), cs, segs))
+            book.append(R.romanize_word(tuple(w.form), cs, segs, book=True))
+    assert len(book) == 200
+    assert sum(map(R.diacritics, book)) / len(book) < 0.3
+    assert all(R.diacritics(x) <= 1 or any(g in R.BOOK_KEEP for g in R._graphemes(x)) for x in book)
+    assert all(len(b) <= len(f) + 4 for f, b in zip(full, book))

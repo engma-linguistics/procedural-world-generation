@@ -14,7 +14,7 @@ result (living Lect objects, the shifts) and the run (reputation rows, deme land
   observer's ears (P5 when the row was relayed by a third people: heard twice); `feared`/`despised` -> X5 'the enemies' after
   incursions or raids, else X3 'the mutes'; `exotic`/`edge` -> X8 by the direction they came from, X9 by their land, X7 by
   their body (beak, teeth, horns, wings, size), X2 'the strangers' rarely. An E3 'speakers' people calls others X3 'mutes'.
-- **Places** per living deme: the largest river (named by the first lect that lived on it; inherited words follow the lect,
+- **Places** per living deme: the largest river (named by a lect that lived on it first, drawn by population; inherited words follow the lect,
   otherwise the old form is kept and heard by the newcomers: substrate, P2), the lake, the sea, a peak, the people's land.
 - **The Common**: the lect held by the most mixed cities (by heads), else the one with the most contacts.
 - **Scholars' names** (P8) for dead families: their oldest deme's river (else landmass) as the Common says it, with the
@@ -109,20 +109,22 @@ def _segs(lect) -> list:
         return list(INV.segments(lect.inventory)) if getattr(lect, "inventory", None) is not None else []
 
 
-def _roman_form(lect, form) -> str:
+def _roman_form(lect, form, book: bool = True) -> str:
+    """A form's spelling in its lect: the book spelling (romanize book mode) by default; book=False the full house spelling
+    (each name's `roman_full`, the workbench's)."""
     key = id(lect)
     sp = _SPELL.get(key)
     if sp is None or sp[0] is not lect:
         segs = _segs(lect)
         sp = _SPELL[key] = (lect, RO.contrasts_of(segs), frozenset(segs))
     try:
-        return RO.romanize_word(tuple(form), sp[1], sp[2] or None)
+        return RO.romanize_word(tuple(form), sp[1], sp[2] or None, book=book)
     except Exception:
         return word_ipa(form)
 
 
-def _roman_words(lect, words) -> str:
-    return RO.title_name(" ".join(_roman_form(lect, w) for w in words))
+def _roman_words(lect, words, book: bool = True) -> str:
+    return RO.title_name(" ".join(_roman_form(lect, w, book) for w in words))
 
 
 def _hear(form, listener) -> tuple:
@@ -260,7 +262,8 @@ def _people_name(lect, mods: list, gloss: str, pattern: str, root_override=None,
             _c, pw = _first(lect, ("PERSON", "MAN"))
             f = tuple(pw.form) if pw is not None else root
             s["person"] = {"form": f, "words": [f], "ipa": word_ipa(f), "pattern": "the word for person", "gloss": "a person"}
-    sset = {k: {"ipa": v["ipa"], "roman": _roman_words(lect, v["words"]), "how": v["pattern"]} for k, v in s.items()}
+    sset = {k: {"ipa": v["ipa"], "roman": _roman_words(lect, v["words"]), "roman_full": _roman_words(lect, v["words"], False),
+                "how": v["pattern"]} for k, v in s.items()}
     ppl = s["people"]
     etym = [st for w in parts for st in _merge_steps(w.etym)]
     etym.append([None, lect.id, f"name:{pattern}", ppl["ipa"], gloss, note or ppl["pattern"]])
@@ -274,8 +277,8 @@ def _people_name(lect, mods: list, gloss: str, pattern: str, root_override=None,
         plain_parts += f" + {'-' if mk.side == 'post' else ''}{_roman_form(lect, mk.form).lower()}{'-' if mk.side == 'pre' else ''}, {what}"
     elif "particle" in ppl["pattern"]:
         plain_parts += f" with the particle {_roman_form(lect, mk.form).lower()}"
-    return {"ipa": ppl["ipa"], "roman": roman, "gloss": gloss, "pattern": pattern, "lect": lect.id,
-            "parts": [w.concept for w in parts], "etym": etym, "set": sset, "root": root, "form": tuple(ppl["form"]),
+    return {"ipa": ppl["ipa"], "roman": roman, "roman_full": sset["people"]["roman_full"], "gloss": gloss, "pattern": pattern,
+            "lect": lect.id, "parts": [w.concept for w in parts], "etym": etym, "set": sset, "root": root, "form": tuple(ppl["form"]),
             "plain": f"{roman}, '{gloss}': from {plain_parts}" if plain_parts else f"{roman}, '{gloss}'"}
 
 
@@ -485,22 +488,38 @@ class _Pass:
 
     # -------------------------------------------------------------- places
     def _first_on(self, kind: str, rid: int) -> tuple[int | None, float | None]:
+        """The deme that named a river (lake) and when: among the demes on it at its first naming (landscape `demes`, oldest
+        first), a draw weighted by each deme's population at that frame (run.deme_population; else its cells on the water), so
+        numerous settled peoples usually name the water and a thinly spread one (dragons) only sometimes."""
         L = (self.landscape or {}).get("rivers" if kind == "river" else "lakes") or {}
         v = L.get(str(rid)) or L.get(rid)
         if not v or not v.get("demes"):
             return None, None
         k0 = max(float(k) for _d, k in v["demes"])
-        tied = sorted(int(d) for d, k in v["demes"] if float(k) == k0)
-        if len(tied) > 1:  # (all there at the window's start: the deme with most of the water in its cells named it)
+        tied = sorted({int(d) for d, k in v["demes"] if float(k) == k0})
+        if len(tied) == 1:
+            return tied[0], k0
+        w = None
+        try:
+            i = self.R.frame_of(k0)
+        except Exception:
+            i = None
+        if i is not None and hasattr(self.R, "deme_population"):
             try:
-                i = self.R.frame_of(k0)
+                w = [max(float(self.R.deme_population(d, i)), 0.0) ** 0.5 for d in tied]  # square root: a few dragons still name a river now and then
+            except Exception:
+                w = None
+        if (w is None or sum(w) <= 0) and i is not None:
+            try:
                 ids = self.R.river_id() if kind == "river" else self.R.lake_id()
                 cells = self.R.frame(i).cells
-                n = {d: int((ids[cells[d]] == int(rid)).sum()) if d in cells else 0 for d in tied}
-                return max(tied, key=lambda d: (n[d], -d)), k0
+                w = [float((ids[cells[d]] == int(rid)).sum()) if d in cells else 0.0 for d in tied]
             except Exception:
-                pass
-        return tied[0], k0
+                w = None
+        if w is None or sum(w) <= 0:
+            w = [1.0] * len(tied)
+        p = np.asarray(w, float) / sum(w)
+        return tied[int(_rng(self.seed, "namer", kind, rid).choice(len(tied), p=p))], k0
 
     def _base_name(self, namer, kind: str, rid) -> dict | None:
         head_c = "RIVER" if kind == "river" else "LAKE"
@@ -544,15 +563,18 @@ class _Pass:
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
         roman = RO.title_name(_roman_form(cur, form))
+        roman_full = RO.title_name(_roman_form(cur, form, False))
         plain = f"{roman}, '{base['gloss']}': " + " + ".join(_part_plain(namer, w) for w in base["words"])
         plain += f"; named by {namer.id} ({namer.people}) about {k0:g} kyr ago" + (f"; {via}" if via else "")
         etym = [st for w in words for st in _merge_steps(w.etym)]
         etym.append([k0, namer.id, f"name:{kind}", word_ipa(base["form"]), base["gloss"], ""])
         if sub:
             etym.append([None, cur.id, f"substrate:{sub}", word_ipa(form), base["gloss"], via or ""])
-        return {"kind": kind, "id": int(rid), "ipa": word_ipa(form), "roman": roman, "gloss": base["gloss"], "lect": cur.id,
+        return {"kind": kind, "id": int(rid), "ipa": word_ipa(form), "roman": roman, "roman_full": roman_full, "gloss": base["gloss"],
+                "lect": cur.id,
                 "named_by": namer.id, "kyr": round(float(k0), 3), "substrate_of": sub, "pattern": "P2" if sub else None,
-                "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"])},
+                "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"]),
+                                                      "roman_full": _roman_words(cur, loc["words"], False)},
                 "etym": etym, "plain": plain, "form": tuple(form)}
 
     def river_name(self, cur, rid):
@@ -573,9 +595,11 @@ class _Pass:
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
         etym = [st for w in words for st in _merge_steps(w.etym)] + [[None, cur.id, f"name:{kind}", word_ipa(form), gloss, ""]]
-        return {"kind": kind, "ipa": word_ipa(form), "roman": roman, "gloss": gloss, "lect": cur.id, "named_by": cur.id,
+        return {"kind": kind, "ipa": word_ipa(form), "roman": roman, "roman_full": RO.title_name(_roman_form(cur, form, False)),
+                "gloss": gloss, "lect": cur.id, "named_by": cur.id,
                 "kyr": None, "substrate_of": None, "pattern": None,
-                "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"])},
+                "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"]),
+                                                      "roman_full": _roman_words(cur, loc["words"], False)},
                 "etym": etym, "plain": f"{roman}, '{gloss}': " + " + ".join(_part_plain(cur, w) for w in words)}
 
     def places(self, l, endo: dict | None) -> list:
@@ -599,7 +623,7 @@ class _Pass:
                 out.append(r)
         if endo is not None:
             land = endo["set"]["land"]
-            out.append({"kind": "land", "ipa": land["ipa"], "roman": land["roman"], "gloss": f"the land of the {endo['gloss'].split(' (')[0].removeprefix('the ')}",
+            out.append({"kind": "land", "ipa": land["ipa"], "roman": land["roman"], "roman_full": land["roman_full"], "gloss": f"the land of the {endo['gloss'].split(' (')[0].removeprefix('the ')}",
                         "lect": l.id, "named_by": l.id, "kyr": None, "substrate_of": None, "pattern": endo["pattern"],
                         "locative": None, "etym": endo["etym"][-1:], "plain": f"{land['roman']}: their land ({land['how']})"})
         for p in out:
@@ -649,7 +673,8 @@ class _Pass:
                 heard = _hear(form, ol)
                 roman = RO.title_name(_roman_form(ol, heard))
                 g = f"their own name {src['roman']} ('{src['gloss']}'), as {observer} ears hear it" + (f" through the {bf}" if relay else "")
-                name = {"ipa": word_ipa(heard), "roman": roman, "gloss": g, "pattern": pat, "lect": ol.id,
+                name = {"ipa": word_ipa(heard), "roman": roman, "roman_full": RO.title_name(_roman_form(ol, heard, False)), "gloss": g,
+                        "pattern": pat, "lect": ol.id,
                         "parts": [], "etym": [[None, met.id, "name:endonym", src["ipa"], src["gloss"], ""]]
                         + [[None, r, "relay", word_ipa(form), src["gloss"], "P5: heard by a third people"] for r in relay]
                         + [[None, ol.id, f"name:{pat}", word_ipa(heard), "", "heard"]],
@@ -778,17 +803,20 @@ class _Pass:
                 if like and like[0]:
                     base = tuple(base) + tuple(like[0]) if like[1] else tuple(like[0]) + tuple(base)
                 stem = RO.title_name(_roman_form(common or old, base))
+                stem_full = RO.title_name(_roman_form(common or old, base, False))
             else:
                 place = (self.R.demes[old.deme].get("place") or "") if hasattr(self.R, "demes") else ""
                 lm = place.split(" of ")[-1].strip() or f"family {f}"
                 suf = _roman_form(common, like[0]).lower() if common is not None and like and like[0] else "ian"
                 stem = lm + suf
+                stem_full = lm + (_roman_form(common, like[0], False).lower() if common is not None and like and like[0] else "ian")
                 gl = f"after {lm}, the land where the oldest of them was spoken"
             n = used.get(stem, 0) + 1
             used[stem] = n
             if n > 1:  # (scholars number the families they name after the same river or land)
                 stem = f"{stem} {_ROMAN_NUM[min(n, len(_ROMAN_NUM)) - 1]}"
-            out[f] = {"name": f"the {stem} languages", "roman": stem, "gloss": gl, "pattern": "P8", "by_lect": common.id if common else None,
+                stem_full = f"{stem_full} {_ROMAN_NUM[min(n, len(_ROMAN_NUM)) - 1]}"
+            out[f] = {"name": f"the {stem} languages", "roman": stem, "roman_full": stem_full, "gloss": gl, "pattern": "P8", "by_lect": common.id if common else None,
                       "lects": sorted(x.id for x in ls), "oldest_deme": old.deme, "died_kyr": min((x.died_kyr or 0.0) for x in ls)}
         return out
 
@@ -810,10 +838,10 @@ class _Pass:
             if m is None:
                 continue
             gl = m["set"]["language"]
-            glossonym = {"ipa": gl["ipa"], "roman": gl["roman"], "gloss": f"the speech of {m['gloss'].split(' (')[0]}",
+            glossonym = {"ipa": gl["ipa"], "roman": gl["roman"], "roman_full": gl["roman_full"], "gloss": f"the speech of {m['gloss'].split(' (')[0]}",
                          "pattern": gl["how"], "lect": main.id}
             peoples[p] = {"endonym": _public(m), "glossonym": glossonym, "set": m["set"],
-                          "by_lect": {k: {"ipa": v["ipa"], "roman": v["roman"], "pattern": v["pattern"]} for k, v in sorted(by_lect.items())},
+                          "by_lect": {k: {"ipa": v["ipa"], "roman": v["roman"], "roman_full": v["roman_full"], "pattern": v["pattern"]} for k, v in sorted(by_lect.items())},
                           "exonyms": [], "why": {k: (v if isinstance(v, (str, int, float)) else list(v) if isinstance(v, tuple) else v)
                                                 for k, v in ctx.items() if k != "body"}}
         for l in self.living:
@@ -839,9 +867,10 @@ class _Pass:
                 if row is None:
                     src = self.endonyms[p]["main"]
                     heard = _hear(src["form"], common)
-                    row = {"ipa": word_ipa(heard), "roman": RO.title_name(_roman_form(common, heard)), "pattern": "X1",
+                    row = {"ipa": word_ipa(heard), "roman": RO.title_name(_roman_form(common, heard)),
+                           "roman_full": RO.title_name(_roman_form(common, heard, False)), "pattern": "X1",
                            "gloss": f"their own name {src['roman']}, as the Common says it"}
-                cx[p] = {k: row[k] for k in ("ipa", "roman", "gloss", "pattern")}
+                cx[p] = {k: row.get(k) for k in ("ipa", "roman", "roman_full", "gloss", "pattern")}
         out_common = None if common is None else {"lect": common.id, "people": self._people(common), "deme": common.deme, "why": why,
                                                   "exonyms": cx}
         return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common),

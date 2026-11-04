@@ -229,4 +229,26 @@ def test_on_the_tiny_driver_run():
     assert {str(l.deme) for l in living} == set(a["demes"]) and all(a["demes"][str(l.deme)]["name"] for l in living)
     assert set(a["peoples"]) == {res["run"].people_of(l.deme) for l in living}
     assert a["common"]["lect"] in {l.id for l in living}
+    from planet.language import romanize as RO
+    named = [v["endonym"] for v in a["peoples"].values()] + [pl for d in a["demes"].values() for pl in d["places"]]
+    assert named and all(n["roman_full"] for n in named)  # the book spelling in roman, the full one in roman_full
+    assert all(RO.diacritics(n["roman"]) <= RO.diacritics(n["roman_full"]) for n in named)
     json.dumps(a)  # (the block is plain json)
+
+
+def test_river_namer_weighted_by_population():
+    """Among the demes on a river at its first naming, the namer is drawn by population: a numerous people usually names the
+    water, a thin one (dragons) only sometimes."""
+    inv = INV.draw_inventory(np.random.default_rng(5), PR.HUMAN)
+    hum, drg = _mk("d1", "human", 1, 6, inv=inv), _mk("d2", "gold_dragon", 2, 7, inv=inv)
+    run = FakeRun([_deme(0, "x"), _deme(1, "human"), _deme(2, "gold_dragon")], {p: _line(p) for p in ("human", "gold_dragon")})
+    run.deme_population = lambda d, i: {1: 1000.0, 2: 100.0}[d]
+    landscape = {"rivers": {str(r): {"demes": [[2, 2.0], [1, 2.0]]} for r in range(300)}, "lakes": {}}
+    P = NM._Pass({"lects": [hum, drg], "seed": 2}, run, 2, landscape)
+    picks = [P._first_on("river", r) for r in range(300)]
+    assert all(k == 2.0 for _d, k in picks)
+    share = sum(d == 2 for d, _k in picks) / len(picks)
+    assert 0.1 < share < 0.4, share  # (expected sqrt(100)/(sqrt(1000)+sqrt(100)) = 0.24: the square-root weighting lets small peoples name a river now and then)
+    assert picks == [P._first_on("river", r) for r in range(300)]  # deterministic
+    landscape["rivers"]["9"] = {"demes": [[2, 1.0], [1, 2.0]]}  # the humans were there first: no draw
+    assert P._first_on("river", 9) == (1, 2.0)

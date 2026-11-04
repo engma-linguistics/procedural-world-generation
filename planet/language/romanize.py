@@ -12,6 +12,17 @@ Contrast-dependent choices take a set of contrast names (contrasts_of builds it 
 Non-human percepts are written in ASCII letters (growl rh, purr rr, second voice wh, sub-bass mh, ultra ih; table header).
 Within one word a hyphen goes between two spellings that would otherwise read as one (n-g vs ng, t-s vs ts, k-' vs k').
 The contract's n'g is written n-g here, because ' is the glottal stop.
+
+Book mode (`book=True` on spell, romanize_word, romanize): the spelling a book prints, for a reader who has to say the name.
+Display only (the IPA keeps every sound; a heavy cluster stays heavy) and lossy on purpose: the workbench shows the full
+spelling. Rules, in order: no tone marks (the IPA keeps tone); a nasal vowel is the plain vowel + n, or the plain vowel before
+a nasal consonant (an + na would read as a long n), never a tilde; a long vowel is doubled (aa) only once per word, later long
+vowels are written short; a long consonant is doubled (ll, no Catalan dot); ə ɘ ɜ (and the other mid-central vowels) are e,
+no diaeresis; front rounded vowels are ü (y ʏ) and ö (ø œ ɵ ɞ ɶ) only when the lect contrasts them with i and e ("round_i",
+"round_e"), else u and o; ɛ ɔ ɪ ʊ ɑ ɒ are always plain e o i u a; æ is ae; ʔ is ' but not word-initially; breathy and creaky
+marks, velarization and pharyngealization are not written; a sound with no house letter is folded to the nearest one (ɲ̟ ny,
+ʊ̞ u). Finally at most one letter with a diacritic per word: the first is kept, later ones lose their marks (š s, ṭ t, ð dh,
+þ th), except the uvular ġ and x̣, which keep their own spelling (velar and uvular never share one).
 """
 from __future__ import annotations
 
@@ -28,7 +39,7 @@ ROMANIZATION = "house/2"
 # the sounds whose presence makes a marked spelling necessary (contrast -> rivals, as IPA of the base sound)
 RIVALS = {"open_e": ("e", "e̞"), "open_o": ("o", "o̞"), "back_a": ("a", "ä", "ɐ"), "lax_i": ("i",), "lax_u": ("u",),
           "dark_l": ("l",), "beta": ("v", "ʋ"), "breathy_h": ("h",)}
-ALL_CONTRASTS = frozenset(("aspiration", "schwa", "dental", "tone") + tuple(RIVALS))
+ALL_CONTRASTS = frozenset(("aspiration", "schwa", "dental", "tone", "round_i", "round_e", "central_i") + tuple(RIVALS))
 # documented mergers: sounds that share a spelling on purpose (near-identical as heard, or a contrast almost no language makes)
 MERGES = [frozenset(x) for x in (
     ("ɹ", "ɾ", "r"),  # the approximant and the tap share r; a long tap is the trill rr
@@ -149,6 +160,13 @@ def contrasts_of(segments: Iterable[Segment]) -> set[str]:
             out.add(c)
     if any(s.tone or s.kind == "T" for s in segs):
         out.add("tone")
+    vows = [s for s in segs if s.kind == "V"]
+    if any(s.round and s.back <= 1 and s.height >= 5 for s in vows) and "i" in keys:
+        out.add("round_i")  # (book mode: ü only beside i)
+    if any(s.round and s.back <= 2 and s.height < 5 for s in vows) and keys & {"e", "e̞"}:
+        out.add("round_e")  # (book mode: ö only beside e)
+    if any(not s.round and s.back == 2 and s.height >= 5 for s in vows) and "i" in keys:
+        out.add("central_i")  # (book mode: ï only beside i)
     if any(s.kind == "C" and s.place == 1 and to_ipa(core(s)) not in table() and replace(core(s), place=2) in
            {core(x) for x in plain} for s in segs):
         out.add("dental")
@@ -236,17 +254,103 @@ def _double_first(sp: str) -> str:
     return sp + ":"
 
 
-def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS) -> str:
-    """One segment's house spelling under a contrast set."""
+# book mode: IPA letters that have no house letter of their own (fallback spellings), folded to the nearest book letter
+_BOOK_FOLD = {"ə": "e", "ɘ": "e", "ɜ": "e", "ɛ": "e", "ɔ": "o", "ɪ": "i", "ʊ": "u", "ɑ": "a", "ɒ": "a", "ɐ": "a", "ʉ": "u",
+              "ɵ": "o", "ɞ": "o", "ʏ": "u", "ø": "o", "œ": "o", "ɶ": "o", "æ": "ae", "ɤ": "o", "ɯ": "eu",
+              "ʌ": "eo", "ɨ": "i", "ɲ": "ny", "ŋ": "ng", "ʎ": "ly", "ʟ": "l", "ɫ": "l", "ʙ": "b", "ɺ": "l", "ⱱ": "v", "ɾ": "r",
+              "ɹ": "r", "ɻ": "r", "ɽ": "r", "ʀ": "rq", "ʁ": "ġ", "χ": "qh", "ɣ": "gh", "ʝ": "yh", "ɟ": "gy", "ɮ": "dl",
+              "ç": "hy", "ɬ": "hl", "ʋ": "v", "ɸ": "f", "β": "v", "θ": "th", "ʃ": "sh", "ʒ": "zh", "ɦ": "h", "ħ": "h",
+              "ʡ": "'", "ɢ": "gq", "ɴ": "nq", "ɕ": "sy", "ʑ": "zy", "ɰ": "w", "ɭ": "l", "ɳ": "n", "ʈ": "t", "ɖ": "d",
+              "ʂ": "s", "ʐ": "z", "ɓ": "'b", "ɗ": "'d", "ʄ": "'y", "ɠ": "'g", "ʛ": "'gq", "ʔ": "'", "ʕ": "ʿ", "ɡ": "g",
+              "ɱ": "m", "ʍ": "hw", "ȶ": "ty", "ȡ": "dy", "ȵ": "ny", "ȴ": "ly", "ɧ": "x"}
+BOOK_DIGRAPHS = frozenset(("ʃ", "ʒ", "tʃ"))  # book mode keeps their digraphs where the workbench writes š ž č
+BOOK_KEEP = frozenset(("ġ", "x̣"))  # the uvular letters keep their dot in book mode (velar and uvular never share a spelling)
+_BOOK_DROP = "·ˠˤ"  # the Catalan dot, velarized and pharyngealized
+# the combining marks a book letter may carry (ṭ ġ č ś ḇ ü ğ ŵ ơ ç); every other mark (tone, nasal, phonation, dental, voicing,
+# the IPA fallback's advanced/lowered/retracted) is dropped
+_BOOK_MARKS = frozenset("̧̛̣̱̇̌́̈̆̂")
+
+
+def _book_fold(sp: str) -> str:
+    out = []
+    for g in _graphemes(sp):
+        if g[0] in _BOOK_FOLD:
+            out.append(_BOOK_FOLD[g[0]])
+        else:
+            out.append("".join(ch for ch in g if ch not in _BOOK_DROP and (not unicodedata.combining(ch) or ch in _BOOK_MARKS)))
+    return unicodedata.normalize("NFC", "".join(out))
+
+
+def _book_vowel(c: Segment, asp: bool, contrasts) -> str:
+    if c.round and c.back <= 2 and not (c.back == 2 and c.height >= 5):
+        if c.height >= 5:
+            return "ü" if "round_i" in contrasts else "u"
+        return "ö" if "round_e" in contrasts else "o"
+    if not c.round and c.back == 2 and 2 <= c.height <= 4:
+        return "e"
+    if not c.round and c.back == 2 and c.height >= 5:
+        return "ï" if "central_i" in contrasts else "i"
+    plain = frozenset(contrasts) - set(RIVALS) - {"schwa", "schwa_a"}
+    return _book_fold(_base_spelling(c, asp, plain))
+
+
+def is_diacritic_letter(g: str) -> bool:
+    """A grapheme that is a letter with a diacritic (or a non-ASCII Latin letter: ð þ ƒ ŵ) for the book cap; ' ʿ | ! are not."""
+    g = unicodedata.normalize("NFC", g)
+    if g.isascii() or not unicodedata.category(g[0]).startswith("L") or unicodedata.category(g[0]) == "Lm":
+        return False
+    return g not in "ǀǁǃǂʘ"
+
+
+def diacritics(sp: str) -> int:
+    """How many letters with a diacritic a spelling has (the book-mode measure)."""
+    return sum(is_diacritic_letter(g) for g in _graphemes(sp))
+
+
+def _book_cap(sp: str) -> str:
+    """At most one diacritic letter per word (the first; a doubled one, üü, counts once); later ones are stripped to ASCII
+    (a doubled one doubles its first letter: þþ tth), except the uvular ġ and x̣."""
+    gs = [unicodedata.normalize("NFC", g) for g in _graphemes(sp)]
+    out, seen, i = [], False, 0
+    while i < len(gs):
+        g = gs[i]
+        n = 1
+        while i + n < len(gs) and gs[i + n] == g:
+            n += 1
+        if is_diacritic_letter(g):
+            if seen and g not in BOOK_KEEP and _ascii(g):
+                a = _ascii(g)
+                out.append(a if n == 1 else a[0] * (n - 1) + a)
+            else:
+                out.append(g * n)
+            seen = True
+        else:
+            out.append(g * n)
+        i += n
+    return unicodedata.normalize("NFC", "".join(out))
+
+
+def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS, book: bool = False) -> str:
+    """One segment's house spelling under a contrast set (book: the book-mode spelling, see the module docstring; the
+    word-level rules, one doubled vowel, no initial ', a nasal vowel before a nasal, the diacritic cap, are romanize_word's)."""
     if seg.kind == "T":
         return ""
     asp = "aspiration" in contrasts
     nh = is_nonhuman(seg)
     c = core(seg)
-    if seg.kind == "V":
+    if seg.kind == "V" and book:
+        sp = _book_vowel(c, asp, contrasts)
+        if nh:
+            sp = _ascii(sp) or sp
+        if seg.length:
+            g = _graphemes(sp)
+            sp = sp + g[-1]
+        if seg.nasal:
+            sp += "n"
+    elif seg.kind == "V":
         sp = _base_spelling(c, asp, contrasts)
         if nh:
-            sp = _ascii(sp)
+            sp = _ascii(sp) or sp  # (a vowel with no ASCII letter in its spelling, ə ɨ ɑ: keep it rather than spell nothing)
         if seg.nasal:
             sp = _mark_first_letter(sp, "̃")
         sp = _mark_first_letter(sp, _TONE.get(seg.tone, ""))
@@ -259,12 +363,14 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS) -> str:
         if seg.phonation in (1, 2):
             sp += "̤" if seg.phonation == 1 else "̰"
     else:
+        # (book: sh zh ch even where aspiration is written; a rare sʰ reads the same, lossy on purpose)
+        asp_letter = asp and not (book and unicodedata.normalize("NFC", to_ipa(c)) in BOOK_DIGRAPHS)
         keep = replace(c, secondary=seg.secondary)  # a base letter that has the secondary built in (ɕ ȶ ɥ ɫ)
         if seg.secondary and unicodedata.normalize("NFC", to_ipa(keep)) in table():
             c, sec = keep, 0
         else:
             sec = seg.secondary
-        sp = _base_spelling(c, asp, contrasts)
+        sp = _base_spelling(c, asp_letter, contrasts)
         if nh:
             sp = _ascii(sp)
         pre = ("n" if seg.manner == 8 else _PREN.get(seg.place, "n")) if seg.prenasal else ""
@@ -283,6 +389,8 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS) -> str:
             sp += "'"
         if seg.phonation == 2:
             sp += "̰"
+        if book:
+            sp = _book_fold(sp)
     # non-human percepts: readable ASCII marks after the sound (romanization.tsv header)
     sp += _NH_PHONATION.get(seg.phonation, "")
     if seg.source2:
@@ -293,20 +401,22 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS) -> str:
 
 
 @lru_cache(maxsize=256)
-def _tokens(contrasts: frozenset, segs: frozenset | None) -> frozenset[str]:
+def _tokens(contrasts: frozenset, segs: frozenset | None, book: bool = False) -> frozenset[str]:
     """The multi-character spellings that could be misread across a boundary: those of the given segments (a lect's
     inventory), or of every symbol-table sound and its long form when no inventory is given."""
     out = set()
+    if book and segs is not None:  # (a book nasal vowel's n is lossy on purpose: guarding an would hyphenate every a + n)
+        segs = frozenset(s if s.kind != "V" else replace(s, nasal=0) for s in segs)
     if segs is None:
-        pool = [s for row in symbols() for s in (row.seg, replace(row.seg, length=1))]
+        pool = [s for row in symbols() for s in (row.seg, replace(row.seg, length=1)) if not (book and s.kind == "V" and s.nasal)]
         for s in pool:
             for cs in (contrasts, contrasts | {"aspiration"}):
-                sp = spell(s, cs)
+                sp = spell(s, cs, book)
                 if len(_graphemes(sp)) >= 2:
                     out.add(sp)
     else:
         for s in segs:
-            sp = spell(s, contrasts)
+            sp = spell(s, contrasts, book)
             if len(_graphemes(sp)) >= 2:
                 out.add(sp)
     return frozenset(out)
@@ -323,21 +433,40 @@ def _join(parts: list[str], toks: frozenset) -> str:
     return out
 
 
-def romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None) -> str:
+def romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
+                  book: bool = False) -> str:
     """Segments -> house spelling. contrasts: the lect's contrast set; inventory: the lect's segments (decides where a hyphen
     is needed: n-g only if the lect has ŋ). Both None: derived from the word itself. With contrasts but no inventory, every
-    possible digraph is guarded (hyphens where any lect could misread)."""
+    possible digraph is guarded (hyphens where any lect could misread). book: the book-mode spelling (module docstring)."""
     segs = [s for s in word]
     inv = None if inventory is None else frozenset(inventory)
     if contrasts is None and inventory is None:
         inv = frozenset(segs)
     cs = frozenset(contrasts_of(inv if inv is not None else segs) if contrasts is None else contrasts)
-    return _join([spell(s, cs) for s in segs], _tokens(cs, inv))
+    if not book:
+        return _join([spell(s, cs) for s in segs], _tokens(cs, inv))
+    parts, doubled = [], False
+    real = [i for i, s in enumerate(segs) if s.kind != "T"]
+    for n, i in enumerate(real):
+        s = segs[i]
+        nxt = segs[real[n + 1]] if n + 1 < len(real) else None
+        if s.kind == "V":
+            if s.nasal and nxt is not None and nxt.kind == "C" and nxt.manner == 3:
+                s = replace(s, nasal=0)
+            if s.length:
+                s = replace(s, length=0) if doubled else s
+                doubled = True
+        sp = spell(s, cs, book=True)
+        if n == 0 and sp == "'":
+            sp = ""  # (no glottal stop written word-initially)
+        parts.append(sp)
+    return _book_cap(_join(parts, _tokens(cs, inv, True)))
 
 
-def romanize(ipa: str, contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None) -> str:
+def romanize(ipa: str, contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
+             book: bool = False) -> str:
     """IPA string -> house spelling (see romanize_word)."""
-    return romanize_word(from_ipa(ipa), contrasts, inventory)
+    return romanize_word(from_ipa(ipa), contrasts, inventory, book)
 
 
 def title_name(s: str) -> str:
