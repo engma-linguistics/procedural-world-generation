@@ -39,6 +39,7 @@ Options (set in one constant, `polities.WRITING_TECHS`):
 has cities.
 
 ## Updates
+- 2026-11-04: Lane 184 built D49: `WRITING_TECHS = ("proto_writing", "writing")` for chiefdoms (own or a neighbour's), `STATE_WRITING = "writing"` (own people) for states, empires and confederations; polities VERSION 7. a2b637: chiefdoms from 5,900 years ago, states from 1,100 (humans); 0141d1 chiefdoms 6,800, states 3,500; 07c755 chiefdoms 7,900, states 5,700. Writing spread measured (Technology tab, Spread view): half the settled people 800-1,300 years after the first, like Earth; docs/review/culture/writing/round1.md.
 - 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D49): B plus C. Chiefdoms need only writing's forerunners (proto_writing counts); real states and empires need writing. He also wants a picture of how fast writing spreads; he suspects it is far too slow. Lane 184.
 - 2026-11-04: D49 on the owner's desk; lean B (proto-writing counts), C close second.
 - 2026-11-04: Created from inbox draft draft-polities-writing-gate.md (found by lane-169).

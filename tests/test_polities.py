@@ -186,6 +186,11 @@ def test_a_confederation_needs_a_citys_people_in_reach_and_a_foreign_state_besid
     assert len(out) == 1 and out[0]["confed"] and out[0]["tier"] == "state" and out[0]["heads"] >= 10000 and out[0]["people"] == "herd"
     assert run(np.full(g.n, -1, np.int64)) == []  # (no foreign state: nothing to band together against)
     assert run(beside, city_min=20000.0) == []  # (too few of them within reach)
+    # owner D49 ("B plus C", PW-1448): a chiefdom's records may be writing's forerunner, but a state (a confederation's too) needs its
+    # own people's real writing
+    assert set(PO.WRITING_TECHS) == {"proto_writing", "writing"} and PO.STATE_WRITING == "writing"
+    R.knows = staticmethod(lambda p, t, ago: p == "herd" and t in ("chiefdoms", "kingship", "law", "bureaucracy", "proto_writing"))
+    assert run(beside) == []  # (kings and pictograms, but no writing of their own: no confederate state)
 
 
 def test_a_city_states_reach_stays_in_spencers_band_unless_conquest_or_the_frontier_widens_it():

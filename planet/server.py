@@ -23,6 +23,7 @@
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
+  GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -480,6 +481,34 @@ def polities(query: str) -> tuple[dict, int]:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
+_techspread_cache: dict = {}  # (run id, run.json mtime, version, tech) -> spread doc (a few seconds each; the last few kept)
+
+
+def techspread(query: str) -> tuple[dict, int]:
+    """GET /api/techspread?run=<id>[&tech=<tech id>]: how fast one tech (writing by default) spread through a peoples run
+    (lineages/techspread.py): per people and per culture the date it first knew it and how, and the share of settled people and of
+    town cells that knew it at each century step. Read from the run, never written into it."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import techspread as TS
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        tech = q.get("tech") or "writing"
+        key = (d.name, (d / "run.json").stat().st_mtime, TS.VERSION, tech)
+        if key not in _techspread_cache:
+            if len(_techspread_cache) > 8:
+                _techspread_cache.clear()
+            _techspread_cache[key] = TS.derive(d, tech)
+        return _techspread_cache[key], 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 def gods(query: str) -> tuple[dict, int]:
     """GET /api/gods?run=<id>[&mode=faith_made|belief_only|absolute]: the gods of a peoples run's cultures (lineages/gods.py, PW-1306): the
     run's gods.json if it has one (and no other mode is asked for), else worked out from its cultures (some seconds) and kept in memory,
@@ -784,6 +813,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*taboos(url.query))
         if url.path == "/api/polities":
             return self.send_json(*polities(url.query))
+        if url.path == "/api/techspread":
+            return self.send_json(*techspread(url.query))
         if url.path == "/api/faithmap":
             body, code = faithmap(url.query)
             if isinstance(body, dict):
