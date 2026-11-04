@@ -543,10 +543,14 @@ def legal(word: tuple, inv: Inventory) -> bool:
 
 
 def epenthetic_vowel(inv: Inventory) -> Segment:
-    """The commonest high vowel of the inventory (short, oral; with the lowest tone when tonal)."""
+    """The rarest of the inventory's high vowels (short, oral, not front- or central-rounded when another is there; with the
+    lowest tone when tonal). The commonest one, inserted in every lect and every repair, made i (earlier ə, ɨ) the vowel of
+    the run; the rarest spreads the insertions over the high vowels."""
     plain = [v for v in inv.vowels if v.length == 0 and v.nasal == 0] or list(inv.vowels)
     top = max(v.height for v in plain)
-    best = max((v for v in plain if v.height >= top - 1), key=lambda v: (v.height == top, inv.freq.get(v, 0.0)))
+    high = [v for v in plain if v.height == top]
+    high = [v for v in high if not (v.round and v.back < 3)] or high
+    best = min(high, key=lambda v: (inv.freq.get(v, 0.0), v.back, v.round))
     return replace(best, tone=min(inv.tones)) if inv.tones else best
 
 
@@ -686,10 +690,10 @@ def _cv_fallback(word: tuple, inv: Inventory) -> tuple:
 # --- inventory after change ---------------------------------------------------------------------------------------------
 
 def observed(inv: Inventory, forms, profile=None) -> Inventory:
-    """The inventory a lexicon actually uses after sound change: segments in `forms` (tones stripped into `tones`),
-    keeping `inv`'s phonotactics; costs and frequencies for new segments are computed."""
+    """The inventory a lexicon actually uses after sound change: segments in `forms` (tones stripped into `tones`; never two
+    with the same IPA spelling), keeping `inv`'s phonotactics; costs and frequencies for new segments are computed."""
     cons, vows, tones = [], [], set()
-    seen = set()
+    seen, spelt = set(), set()
     for f in forms:
         for s in f:
             q = _strip_tone(s) if s.kind == "V" else s
@@ -698,6 +702,10 @@ def observed(inv: Inventory, forms, profile=None) -> Inventory:
             if q in seen:
                 continue
             seen.add(q)
+            k = to_ipa(q)
+            if k in spelt:  # (two segments spelt alike are reported once)
+                continue
+            spelt.add(k)
             (cons if q.kind == "C" else vows).append(q)
     pool_f = _pool_freq()
     cost = {s: inv.cost.get(s) if s in inv.cost else _cost(profile, s) for s in cons + vows}

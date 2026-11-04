@@ -774,8 +774,11 @@ def dispersion_rule(rule: Rule, inventory_segments: Iterable) -> Rule | None:
         dh = (o.height > v.height) - (o.height < v.height)
         db = (o.back > v.back) - (o.back < v.back)
         moved = replace(o, height=min(6, max(0, o.height + dh)), back=min(4, max(0, o.back + db)))
-        if _tonekey(moved) == _tonekey(o):  # at the edge: centralize (i > ɨ, u > ʉ) or, if central, lower
-            moved = replace(o, back=2) if o.back != 2 else replace(o, height=max(0, o.height - 1))
+        if _tonekey(moved) == _tonekey(o):  # at the edge: a central vowel lowers; a peripheral one has nowhere to go (no push:
+            # centralizing i > ɨ, u > ʉ here, drawn in every lect, made ɨ three of the four commonest vowels of the run)
+            if o.back != 2:
+                continue
+            moved = replace(o, height=max(0, o.height - 1))
         if _tonekey(moved) == _tonekey(o):
             continue
         sets = tuple((a, getattr(moved, a)) for a in ("height", "back") if getattr(moved, a) != getattr(o, a))

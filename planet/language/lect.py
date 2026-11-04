@@ -20,16 +20,20 @@ from . import rules as RU
 RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
 RATE_SIGMA = 0.3  # lognormal sigma of a proto lect's rate
 RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
-INV_CAP_RATIO = 1.5  # consonants may grow to 1.5x the proto-language's count ...
-INV_CAP_V = 20  # vowel qualities (length and nasality count, tone does not), as PHOIBLE counts them
-INV_CAP_C = 45  # ... and never past 45 (PHOIBLE's 99th percentile is ~50); beyond, the rarest new ones fold (dispersion)
+INV_CAP_RATIO = 1.25  # consonants may grow to 1.25x the proto-language's count ...
+INV_CAP_V = 16  # vowel qualities (length and nasality count, tone does not), as PHOIBLE counts them
+INV_CAP_C = 35  # ... and never past 35 (half the run's lects ended above PHOIBLE's upper quartile at 1.5x / 45); beyond, the
+# rarest new ones fold (dispersion)
+FOLD_RARE = 0.01  # a unit the proto lacked, under this share of its kind's tokens and one axis from another unit, folds into it
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 3.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ...
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
-LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony"})  # families under the lifetime cap (the rest only wait REFIRE_KYR)
+LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
+# REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr)
 LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
+TONE_MIN_MARKED = 0.3  # tone phonemicizes only once marks stand on this share of the core-list vowels (else they are stripped)
 GLOTTAL = None  # (ʔ, set on first use)
 
 
@@ -138,6 +142,39 @@ def tidy_segment(x):
 def base_id(rid: str) -> str:
     """A rule's catalogue id (a lect's epenthesis variant `S123/i` is S123)."""
     return rid.split("/", 1)[0]
+
+
+def weight_override(weights: dict, rule):
+    """The driver's weight override for a rule (history.RULE_WEIGHT): by exact id, then catalogue id, then `family:<name>`;
+    None when there is none."""
+    if not weights:
+        return None
+    for k in (rule.id, base_id(rule.id), "family:" + (rule.family or "")):
+        if k in weights:
+            return weights[k]
+    return None
+
+
+def reduction_variant(rule, inv):
+    """A reduction to a central vowel (family "reduction", a `set` to back 2) re-pointed at the lect's own central-most
+    vowel (short, oral; ə when it has one), id `<id>/<vowel>`: reduction merges into what the lect has rather than
+    bringing in a new ə or ɨ (which, drawn in every lect, made ɨ the commonest vowel of the run)."""
+    ch = rule.change
+    if rule.family != "reduction" or ch.kind != "set" or len(ch.items) != 1 or inv is None:
+        return rule
+    sets = dict(ch.items[0][2])
+    if sets.get("back") != 2 or "height" not in sets:
+        return rule
+    vs = [v for v in getattr(inv, "vowels", ()) if v.length == 0 and v.nasal == 0]
+    if not vs:
+        return rule
+    v = min(vs, key=lambda q: (abs(q.back - 2), abs(q.height - 3), q.round, q.height, q.back))
+    if v.back == sets.get("back") and v.height == sets.get("height") and v.round == sets.get("round", v.round):
+        return rule
+    from .percepts import to_ipa
+    new = tuple((a, getattr(v, a)) if a in ("height", "back", "round") else (a, x) for a, x in ch.items[0][2])
+    items = ((ch.items[0][0], ch.items[0][1], new),)
+    return replace(rule, id=f"{base_id(rule.id)}/{to_ipa(replace(v, tone=0))}", change=replace(ch, items=items))
 
 
 def epenthesis_variant(rule, inv):
@@ -293,8 +330,6 @@ class Lect:
             units = sorted({_unit(x) for x in segs if x.kind == kind}, key=lambda q: (to_ipa(q), repr(q)))
             base = sum(1 for u in self.base_segs if u.kind == kind) or len(units)
             cap = int(min(absmax, max(INV_CAP_RATIO * base, base + 2)))
-            if len(units) <= cap:
-                continue
             cnt = dict.fromkeys(units, 0)
             for w in self.lexicon.words.values():
                 for x in w.form:
@@ -304,6 +339,22 @@ class Lect:
             keep = set(units)
             table = set(table_segments(kind))
             um = {}
+            ipa_of = {}
+            for x in sorted(units, key=lambda q: (-cnt[q], repr(q))):  # (two units spelt alike are one: the commoner stays)
+                k = to_ipa(x)
+                if k in ipa_of:
+                    um[x] = ipa_of[k]
+                    keep.discard(x)
+                else:
+                    ipa_of[k] = x
+            tot = sum(cnt.values()) or 1
+            for x in sorted(keep, key=lambda q: (cnt[q], to_ipa(q), repr(q))):  # (rare new units one axis from another fold)
+                if x in self.base_segs or cnt[x] >= FOLD_RARE * tot:
+                    continue
+                near = [q for q in keep if q != x and _axes_apart(x, q) == 1 and cnt[q] > cnt[x]]
+                if near:
+                    keep.discard(x)
+                    um[x] = max(near, key=lambda q: (cnt[q], to_ipa(q), repr(q)))
             while len(keep) > cap:
                 # (malformed or off-table units go first, then those the proto lacked; folds land on symbol-table segments)
                 pool = ([x for x in keep if malformed(x)] or [x for x in keep if x not in self.base_segs and x not in table]
@@ -390,8 +441,14 @@ class Lect:
     def apply_rule(self, rule, kyr: float, origin: str | None = None) -> int:
         """Run one sound change over every stored form; record it. Returns words changed."""
         self._last_kyr = float(kyr)
+        segs0 = self.all_segments()
+        memo = getattr(self, "_step_pairs", None)
+        if memo is None or memo[0] != round(float(kyr), 6):
+            memo = self._step_pairs = (round(float(kyr), 6), [])
+        if any(_undoes(rule, y, x) for x, y in memo[1]):  # (a change and its reverse never fire in one step)
+            return 0
         stress = stress_of(self.inventory)
-        fn = filtered_apply(rule, stress, self.all_segments(), self.inventory)
+        fn = filtered_apply(rule, stress, segs0, self.inventory)
         self.touch()
         n = LX.apply_rule_to_lexicon(self.lexicon, fn, rule.id, kyr, self.id)
         GR = _gr_mod()
@@ -403,6 +460,10 @@ class Lect:
         if n == 0:  # (a rule that changed nothing is not a change: no record)
             return 0
         self.changes.append({"kyr": round(float(kyr), 3), "rule": rule.id, "cause": rule.cause, "origin_lect": origin})
+        for x in segs0:
+            o = RU._single(rule, x)
+            if o and len(o) == 1 and o[0] != x:
+                memo[1].append((x, o[0]))
         if (rule.id.startswith("dispersion.") or "/" in rule.id) and rule.id not in self.rule_text:
             self.rule_text[rule.id] = RU.describe(rule)
         self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
@@ -420,10 +481,10 @@ class Lect:
         for r in self.weighted_rules(rules):
             if not self.may_fire(r, kyr):
                 continue
-            w = weights.get(r.id)
+            w = weight_override(weights, r)
             if w is not None:
                 r = replace(r, weight=r.weight * w)
-            v = epenthesis_variant(r, self.inventory)
+            v = reduction_variant(epenthesis_variant(r, self.inventory), self.inventory)
             out.append(v)
         return out
 
@@ -467,6 +528,18 @@ class Lect:
     def record_shares(self, kyr: float) -> None:
         if self.shares:
             self.shares_history.append([round(float(kyr), 3), {k: round(v, 3) for k, v in self.shares.items() if v > 0.005}])
+
+
+def _undoes(rule, y, x) -> bool:
+    """Does `rule` turn segment y (a lone segment, context aside) back into x?"""
+    o = RU._single(rule, y)
+    return bool(o) and len(o) == 1 and o[0] == x
+
+
+def _axes_apart(a, b) -> int:
+    """How many percept axes (tone aside) two segments differ on."""
+    from dataclasses import fields
+    return sum(1 for f in fields(a) if f.name != "tone" and getattr(a, f.name) != getattr(b, f.name))
 
 
 def _unit(x):
@@ -525,8 +598,9 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
 
 
 def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
-    """Tone marks and the tone inventory agree. No marks: no tones. Fewer than 2 distinct tones over the core-list vowels: no
-    contrast, so the stray marks are stripped everywhere (a `simplification`, cause "dispersion"). Otherwise the lect is
+    """Tone marks and the tone inventory agree. No marks: no tones. Fewer than 2 distinct tones over the core-list vowels, marks
+    on under TONE_MIN_MARKED of the core vowels, or a profile that does not hear tone: no contrast, so the stray marks are
+    stripped everywhere (a `simplification`, cause "dispersion"). Otherwise the lect is
     tonal, its tones the levels present, and a vowel left unmarked takes the commonest level (`tone.phonemic/<t>`, cause
     "tonogenesis"), since in a tone language every syllable carries one. Returns the tone list."""
     segs = lect.all_segments()
@@ -541,9 +615,12 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
                 if x.kind == "V" and x.tone:
                     cnt[x.tone] = cnt.get(x.tone, 0) + 1
     kyr = float(kyr if kyr is not None else lect.born_kyr)
-    if len(cnt) < 2:
+    nv = sum(1 for c in _core() if lect.lexicon.get(c) is not None for x in lect.lexicon.get(c).form if x.kind == "V")
+    hears = (getattr(lect.profile, "hear", None) or {}).get("tone", 1.0) > 0
+    if len(cnt) < 2 or not hears or sum(cnt.values()) < TONE_MIN_MARKED * nv:
         mapping = {x: replace(x, tone=0) for x in segs if x.kind == "V" and x.tone}
-        what = "tone marks dropped (" + ", ".join(sorted({_tone_name(x.tone) for x in mapping})) + "): no tone contrast"
+        what = ("tone marks dropped (" + ", ".join(sorted({_tone_name(x.tone) for x in mapping})) + "): "
+                + ("no tone contrast" if len(cnt) < 2 else "not heard" if not hears else "too few marked vowels to phonemicize"))
         _map_forms(lect, mapping, "simplification", kyr)
         lect.changes.append({"kyr": round(kyr, 3), "rule": "simplification", "cause": "dispersion", "origin_lect": None,
                              "merged": what})

@@ -159,9 +159,12 @@ def test_pick_rule_vetoes_heavy_mergers_and_offers_a_push_chain():
     assert R.functional_load(merge, lex) == 1.0
     picks = [R.pick_rule(np.random.default_rng(s), [merge], lex, inv) for s in range(40)]
     assert all(p is None or p.cause == "dispersion" for p in picks)
-    push = R.dispersion_rule(merge, inv)
+    # i is at the top of the space: it has nowhere to go, so no push (centralizing it to ɨ in every lect made ɨ the commonest
+    # vowel of the run); a central vowel in the way lowers
+    assert R.dispersion_rule(merge, inv) is None
+    merge2 = rule("ə > ɨ", id="raise_schwa")
+    push = R.dispersion_rule(merge2, list(w("əɨptk")))
     assert push is not None and push.cause == "dispersion"
-    assert R.apply(push, w("pi")) == w("pɨ")  # i is at the top of the space: it centralizes out of e's way
 
 
 def test_pick_rule_deterministic():

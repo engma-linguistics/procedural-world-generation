@@ -55,11 +55,18 @@ KOINE_MAJ = 0.5  # share of a mixed city's heads for whom a sound is hard before
 KOINE_RATE = 0.02  # per generation, x city weight x the hard share: chance a hard sound is replaced in the holder's lect
 KOINE_CITY = 20.0  # city weight = min(1, KOINE_CITY x city heads / the holding deme's heads)
 KIN_KYR = 4.0  # lects parted more recently than this are one speech for shift purposes
-SHIFT_COOLDOWN_KYR = 3.0  # a deme does not shift again within this long of its last shift
+SHIFT_COOLDOWN_KYR = 6.0  # a deme does not shift again within this long of its last shift
+SHIFT_MAX = 3  # ... and shifts at most this many times in SHIFT_MAX_KYR
+SHIFT_MAX_KYR = 20.0
+SHIFT_KIN_SHARE = 0.3  # a shift to a lect of the deme's own true family needs a blind core share under this (else it levels)
 MINORITY_MIN = 0.1  # a shifted-away lect lives on (a minority speech of its deme) until its share falls under this
 STRONG_WAVE = 1.0  # contact used for the wave while a shift trigger holds on a pair already speaking one language
 KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine receiver is borrowed from the majority lect
-RULE_WEIGHT = {"S042": 0.15}  # driver-side draw (and wave adoption) weight overrides by catalogue rule id: ʔ-prothesis is rare
+# driver-side draw (and wave adoption) weight overrides, by rule id, catalogue id or `family:<name>` (lect.weight_override):
+# ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
+# every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
+RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.3, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
+               "S073": 0.1}  # (u > y: with y > i after it, the u of every lect drained into i)
 
 
 def rng_for(seed: int, *key) -> np.random.Generator:
@@ -91,6 +98,7 @@ class History:
         self._snap: dict = {}
         self.minority: dict[int, list[str]] = {}  # deme -> shifted-away lects still spoken there (oldest first)
         self.last_shift: dict[int, float] = {}  # deme -> kyr of its last shift
+        self.shift_times: dict[int, list] = {}  # deme -> kyr of each shift (SHIFT_MAX)
         self.forced: dict = {}  # (giver lect, receiver lect) -> wave probability, for the next interval (strong contact, koine)
         self.route_of: dict = {}  # (lect id, concept) -> food route key the lect's word for it came by
         self._lang: dict = {}
@@ -269,7 +277,11 @@ class History:
             for y, p in offers:
                 rng = rng_for(self.seed, "wave", l.id, y.id, i)
                 for r in fired[l.id]:
-                    if rng.random() < p * min(1.0, RULE_WEIGHT.get(LC.base_id(r.id), 1.0)):
+                    w = LC.weight_override(RULE_WEIGHT, r)
+                    w = 1.0 if w is None else w
+                    if r.family == "tone" or r.cause == "tonogenesis":  # (an ear that hears tone coarsely takes it up less)
+                        w *= min(1.0, (getattr(y.profile, "hear", None) or {}).get("tone", 1.0)) ** 2
+                    if rng.random() < p * min(1.0, w):
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm
         tm = time.perf_counter()
@@ -556,8 +568,17 @@ class History:
                 best = max(cand, key=lambda k: (l.shares[k], k)) if cand else None
                 if (best is not None and l.shares[best] >= SHIFT_AT
                         and self.last_shift.get(d, math.inf) - t1 >= SHIFT_COOLDOWN_KYR - 1e-9
-                        and not self.same_language(l, self.lects[best], i)):
+                        and sum(1 for k in self.shift_times.get(d, ()) if k - t1 < SHIFT_MAX_KYR - 1e-9) < SHIFT_MAX
+                        and not self.same_language(l, self.lects[best], i) and not self.kin_close(l, self.lects[best])):
                     self.shift(d, l, self.lects[best], p.get(best, (0, None))[1], i)
+
+    def kin_close(self, a: LC.Lect, b: LC.Lect) -> bool:
+        """Two lects of one true family still sharing SHIFT_KIN_SHARE or more of the blind core list: a deme speaking one does
+        not shift to the other (the wave and koine level them instead); half the run's shifts were such re-shifts."""
+        if self.root(a) != self.root(b):
+            return False
+        from . import families as FA
+        return FA.cognate_share(a, b, CORE, blind=True) >= SHIFT_KIN_SHARE
 
     def shift(self, deme: int, old: LC.Lect, ruler: LC.Lect, trig, i: int) -> None:
         R = self.R
@@ -579,6 +600,7 @@ class History:
         old.shares = {}
         self.minority.setdefault(deme, []).append(old.id)
         self.last_shift[deme] = t1
+        self.shift_times.setdefault(deme, []).append(t1)
         rec = {"deme": deme, "kyr": t1, "from_lect": old.id, "to_lect": new.id, "ruler_lect": ruler.id,
                "ruler_deme": ruler.deme, "trigger": trig.to_json() if trig is not None else None,
                "substrate_words": kept, "accent": accent, "calques": calques,
@@ -787,10 +809,10 @@ def typology_summary(g) -> dict:
 
 def adopt(l: LC.Lect, offers: list) -> int:
     """Apply the rules offered by contacts, in order, where they apply to the lect's sounds and the lect's re-fire memory
-    allows them (an epenthesis inserts the receiver's own epenthetic vowel)."""
+    allows them (an epenthesis inserts the receiver's own epenthetic vowel, a reduction reduces to its own central vowel)."""
     n = 0
     for r, origin, kyr in offers:
-        r = LC.epenthesis_variant(r, l.inventory)
+        r = LC.reduction_variant(LC.epenthesis_variant(r, l.inventory), l.inventory)
         if not l.may_fire(r, kyr) or not RU.applies(r, l.segments()):
             continue
         if l.apply_rule(r, kyr, origin=origin) > 0:

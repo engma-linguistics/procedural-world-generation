@@ -61,7 +61,6 @@ MAX_SYLL = 3                  # a derived word has at most this many syllables (
 MAX_SYLL_COMPOUND = 4         # a compound has at most this many (its parts are clipped to their first 1-2 syllables)
 MAX_SEG = 12                  # and no new word is longer than this many segments
 BUILD_MIN_FAMILIES = 5        # CLICS edges a new word is built or shifted along (3-4 families is mostly chance)
-DERIVE_WEAK_FAMILIES = 2       # a derivation with no strong edge or base hint may use a CLICS edge seen in this many families
 SHIFT_GAP = 50.0              # generations: a concept takes or passes on a word by colexification shift at most this often
 HOMOPHONE_BOOST = 4.0         # replacement hazard x this for the rarer members of a homophone group of 3+ or of an
                               # accidental pair (repair by renewal)
@@ -665,6 +664,42 @@ def _pick(rng, items: list[tuple[str, float]]) -> str:
     return items[int(rng.choice(len(items), p=w / w.sum()))][0]
 
 
+AFFIX_CAP = 0.05  # a derivational affix is not used again once this share of the lexicon's words carry it (a lɨ- 'thing'
+# prefix on 12% of a family's words faked cognates)
+_SMALL = frozenset({"animal", "plant", "food", "tool", "body", "nature"})
+_PLACE = frozenset({"land", "water", "settlement"})
+
+
+def affix_fits(meaning: str, target: str, base: str) -> bool:
+    """Does the affix make sense from `base` to `target`? 'one who' only for persons or animals from verbs; 'place of' for
+    places from nouns or verbs; 'little' for small things from a noun; 'thing' only from a verb to its object or result;
+    'do' for verbs, 'like' for qualities."""
+    ct, cb = concept_info(target), concept_info(base)
+    kt = sem_class(target)
+    if meaning == "do":
+        return ct.pos == "V"
+    if meaning == "like":
+        return ct.pos == "A"
+    if ct.pos != "N":
+        return False
+    if meaning == "agent":
+        return kt in ("person", "kin", "god", "animal") and cb.pos == "V"
+    if meaning == "place":
+        return (kt in _PLACE or ct.domain in ("landscape", "direction")) and cb.pos in ("N", "V")
+    if meaning == "little":
+        return cb.pos == "N" and (kt in _SMALL or kt == sem_class(base))
+    if meaning == "thing":
+        return cb.pos == "V" and kt not in ("person", "kin", "god", "animal", "plant", "land", "water", "nature")
+    return False
+
+
+def affix_share(lex: Lexicon, meaning: str) -> float:
+    """The share of the lexicon's words whose history carries the derivational affix for `meaning`."""
+    p = f"derive:{meaning}"
+    n = len(lex.words)
+    return sum(1 for w in lex.words.values() if any(st.process == p for st in w.etym)) / n if n else 0.0
+
+
 def _affix_meaning(c: Concept) -> str:
     if c.pos == "V":
         return "do"
@@ -758,18 +793,21 @@ def derive(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None
     af, _ = lex.affixes.get(meaning, ((), True))
     if not af:
         return None
+    if affix_share(lex, meaning) + 1.0 / max(1, len(lex.words)) > AFFIX_CAP:
+        return None
     if base is None:
         ex = set(exclude)
-        rel = [(k, w) for k, w in _related(lex, c.id, exclude=ex) if not _carries(lex, lex.words[k], meaning)]
-        if not rel:   # no strong edge or base hint: a weaker CLICS edge (2-4 families) still names a related sense
-            rel = [(n, float(f)) for n, f in clics_neighbours(c.id, DERIVE_WEAK_FAMILIES) if n in lex.words
-                   and n != c.id and n not in ex and lex.words[n].pos != "FUNC"
-                   and not _carries(lex, lex.words[n], meaning)]
+        # (a strong CLICS edge or a base hint only: the weak edges gave EAT + 'thing' = 'tree', WATER + 'agent' = 'river')
+        rel = [(k, w) for k, w in _related(lex, c.id, exclude=ex) if not _carries(lex, lex.words[k], meaning)
+               and affix_fits(meaning, c.id, k)]
+        if not rel and c.domain:  # (else a word of the same domain the affix fits: FISH > 'to fish', COOK > 'cooked thing')
+            rel = [(k, 1.0) for k, w in lex.words.items() if k != c.id and k not in ex and w.pos != "FUNC"
+                   and concept_info(k).domain == c.domain and not _carries(lex, w, meaning) and affix_fits(meaning, c.id, k)]
         if not rel:
             return None
         base = _pick(rng, _short(lex, rel))
     b = lex.words.get(resolve(base))
-    if b is None or _carries(lex, b, meaning):
+    if b is None or _carries(lex, b, meaning) or not affix_fits(meaning, c.id, b.concept):
         return None
     bf, clipped = _fit_base(b.form, af)
     form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), MAX_SYLL, inv)

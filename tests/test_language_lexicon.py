@@ -154,7 +154,8 @@ def test_etymology_append_only_oldest_first(concepts):
         assert procs[p] > 0, (p, procs)
     for p in ("derive", "compound", "shift", "borrow", "taboo", "elaborate"):
         assert events[p] > 0, (p, events)
-    assert events["derive"] > events["compound"] > events["taboo"] and events["derive"] > events["borrow"] > events["taboo"]
+    # (derivation and compounding about even: a derivation whose affix does not fit its base is refused, lexicon.affix_fits)
+    assert min(events["derive"], events["compound"]) > events["taboo"] and events["derive"] > events["borrow"] > events["taboo"]
     assert events["coin"] > 0
     assert "MILK (SOURED)" in lex and "FISH (SEA)" in lex
 
@@ -356,13 +357,18 @@ def test_stats_and_state_round_trip(concepts):
 
 def test_coinage_does_not_swamp_derivation(long_runs):
     """A derivation that clashes or finds no base retries with another base or affix, then compound, then shift, before
-    a fresh root: over 700 generations the latest non-sound step is a coinage ~15-25% of the time, derivation leads."""
+    a fresh root. Since each affix is capped at AFFIX_CAP of the lexicon and must fit its base (lexicon.affix_fits), a
+    coinage is the latest non-sound step ~30-35% of the time over 700 generations (was 15-25% with uncapped affixes, when
+    one affix stood on 12-23% of the words); built words (derive, compound, shift) still outnumber coinages, and no affix
+    stands on much more than AFFIX_CAP of the words (derived words carry their base's affix too)."""
     tot = collections.Counter()
     for lex in long_runs:
         tot.update({k: v for k, v in L.stats(lex)["latest"].items() if k != "proto"})
+        for m in lex.affixes:
+            assert L.affix_share(lex, m) <= L.AFFIX_CAP + 0.02, (m, L.affix_share(lex, m))
     n = sum(tot.values())
-    assert 0.10 <= tot["coin"] / n <= 0.25, tot
-    assert tot["derive"] > 1.5 * tot["coin"], tot
+    assert 0.10 <= tot["coin"] / n <= 0.40, tot
+    assert tot["derive"] + tot["compound"] + tot["shift"] > 1.5 * tot["coin"], tot
 
 
 def test_derive_retry_avoids_homophone(concepts):
