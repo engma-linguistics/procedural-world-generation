@@ -46,8 +46,10 @@ Names (PW-1451): a polity is named for the people holding its capital (`names`, 
 takes the town the name and card follow them from then on, and `founded_by` keeps the first.
 
 Reach is a budget of foot-km (km on foot over flat ground): a chiefdom CHIEF_KM (its own cell at L7), a state STATE_KM, more with
-law and government at a distance; riding and roads make a km cheaper, climbing dearer; the sea needs boats. Every number below is
-sourced or labelled a judgement call.
+law and government at a distance; riding and roads make a km cheaper, climbing dearer; the sea needs boats. A city-state's techs move
+its reach inside Spencer's band and never past STATE_MAX_KM (PW-1449); only a polity that holds a conquered state, or a
+confederation (WIDE_BY), keeps the stacked reach, so the giants come from conquest and the frontier. Every number below is sourced
+or labelled a judgement call.
 """
 
 from __future__ import annotations
@@ -62,7 +64,7 @@ import numpy as np
 from numba import njit
 
 FORMAT = "procgen-polities/1"
-VERSION = 4  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 5  # (bump when the rules change: the server's cached docs are remade)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -71,6 +73,8 @@ LAW_X = 4 / 3  # judgement: written law (rule delegated by text) extends a state
 DISTANCE_X = 2.0  # judgement, checked against Taagepera 1997 (via 2.1.2: the largest polity's jump with "government at a distance"):
 DISTANCE_TECHS = ("bureaucracy", "postal_relay", "milestones_waystations")  # (any of these doubles the reach)
 RIDE_X, ROAD_X = 1.5, 1.5  # judgement: a ridden km and a km of road each cost two thirds of a walked one
+STATE_MAX_KM = 250.0  # sourced: the top of Spencer 2010's 50-250 km for six primary states (Indus ~400 km the outlier; via proposal.md 2.1.2), read as the reach of a city-state with its usual techs (PW-1449): law, distance, riding and roads move its reach inside that band and do not stack past it (0: no cap)
+WIDE_BY = ("conquest", "confederation")  # judgement form, sourced mechanisms (PW-1449; via proposal.md 2.1.2): who keeps the stacked reach past STATE_MAX_KM. "conquest": a polity holding a province that was a state when taken (Taagepera 1997: the largest polities' jumps came with "government at a distance"); "confederation": a confederation (1b; Turchin 2009's mirror empires, the frontier breeds empires)
 CLIMB_M = 1000.0  # judgement: a km of travel costs (1 + the climb in m / CLIMB_M) more (a 1,000 m climb doubles it)
 SAIL_X, BOAT_X = 0.5, 1.0  # judgement: a km by sail costs half a walked one, by small boats (coast-hugging) the same; no boats: no sea
 BOATS = ("canoes", "bark_canoes", "reed_boats", "skin_boats", "plank_boats", "rafts")
@@ -441,6 +445,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     claimed = np.zeros(g.n, np.int64)
     lord: dict = {}  # province key -> its conqueror's key (a seat taken by war claims for its conqueror: step 3b)
     prov_rec: dict = {}  # province key -> the record id of the polity it was when taken
+    prov_state: set = set()  # province keys that were states when taken (their conqueror rules at a distance: WIDE_BY, PW-1449)
     cool: dict = {}  # key -> the last step its seat is held one tier down (after a fall: step 0)
     run_id = R.dir.name
     from . import invasions as IV  # (invasions you schedule, PW-1433: the rows, as war_v0 reads them, and what it saw of each)
@@ -538,6 +543,8 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
             r = by_key.get(lord.get(s["key"]))
             return (r["cls"], -r["rank"], r["key"], 1, -s["rank"]) if r else (s["cls"], -s["rank"], s["key"], 0, 0.0)
         seats.sort(key=order)
+        wide = ({r for pk, r in lord.items() if pk in prov_state} if "conquest" in WIDE_BY else set()) | \
+            ({s["key"] for s in seats if s.get("confed")} if "confederation" in WIDE_BY else set())  # (who rules past STATE_MAX_KM, PW-1449)
         # 3. claims
         owner = np.full(g.n, -1, np.int64)
         from_rec = np.full(g.n, -1, np.int64)  # (a province's cells: the record id of the polity it was when taken)
@@ -559,7 +566,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                     del lord[s["key"]]
                     prov_rec.pop(s["key"], None)
                 else:
-                    b, lx, sx = _reach(R, s, ago)
+                    b, lx, sx = _reach(R, s, ago, root in wide)
                     got = _claim(s["cell"], b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], owner, pid_of[root], dist, touched, claimed)
                     from_rec[claimed[:got]] = prov_rec[s["key"]]
                     absorbed[s["key"]] = pid_of[root]
@@ -573,7 +580,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                     owner[claimed[:got]] = -1  # (a dragon realm needs settled subjects to take tribute from: judgement)
                     continue
             else:
-                b, lx, sx = _reach(R, s, ago)
+                b, lx, sx = _reach(R, s, ago, s["key"] in wide)
                 got = _claim(s["cell"], b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], owner, pid, dist, touched, claimed)
             if got:
                 pid_of[s["key"]] = pid
@@ -602,6 +609,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
             for pk in [pk for pk, r in lord.items() if r == lk]:
                 lord[pk] = wk
             lord[lk], prov_rec[lk] = wk, lrec["id"]
+            (prov_state.add if ruling[l]["tier"] == "state" else prov_state.discard)(lk)
             prev_cap.pop(lk, None)
             n_taken += 1
         ruling = [s if (s is not None and owner[s["cell"]] == p) else None for p, s in enumerate(ruling)]  # (a capital taken: it falls)
@@ -762,8 +770,9 @@ def _hemmed(R: _Run, F: dict, ring: np.ndarray, people: str, here_lines: dict, s
     return float(bar.mean())
 
 
-def _reach(R: _Run, s: dict, ago: float) -> tuple[float, float, float]:
-    """(budget in foot-km, cost per land km, cost per sea km or -1) of a town seat."""
+def _reach(R: _Run, s: dict, ago: float, wide: bool = False) -> tuple[float, float, float]:
+    """(budget in foot-km, cost per land km, cost per sea km or -1) of a town seat. A state's reach is capped at STATE_MAX_KM over flat
+    land and by sea unless `wide` (WIDE_BY: it holds a conquered state, or it is a confederation), PW-1449."""
     ppl = s["people"]
     if s["tier"] == "chiefdom":
         b = CHIEF_KM
@@ -771,6 +780,10 @@ def _reach(R: _Run, s: dict, ago: float) -> tuple[float, float, float]:
         b = STATE_KM * (LAW_X if R.knows(ppl, "law", ago) else 1.0) * (DISTANCE_X if any(R.knows(ppl, t, ago) for t in DISTANCE_TECHS) else 1.0)
     lx = (1 / RIDE_X if R.knows(ppl, "riding", ago) else 1.0) * (1 / ROAD_X if R.knows(ppl, "roads", ago) else 1.0)
     sx = SAIL_X if any(R.knows(ppl, t, ago) for t in SAILS) else (BOAT_X if any(R.knows(ppl, t, ago) for t in BOATS) else -1.0)
+    if s["tier"] != "chiefdom" and STATE_MAX_KM and not wide:  # (the techs move a city-state's reach inside Spencer's band, never past it)
+        b = min(b, STATE_MAX_KM * lx)
+        if sx > 0:
+            sx = max(sx, b / STATE_MAX_KM)
     return b, lx, sx
 
 
@@ -858,7 +871,7 @@ def _confederations(R: _Run, F: dict, seats: list, sites: list, popk: np.ndarray
             if not any(R.knows(p_, t, ago) for t in WRITING_TECHS for p_ in {ppl} | {R.lines[l]["id"] for l in near}):
                 continue  # (the same writing gate as any seat: the owner's P2, D49 open)
             tries += 1
-            b, lx, sx = _reach(R, {"people": ppl, "tier": "state"}, ago)
+            b, lx, sx = _reach(R, {"people": ppl, "tier": "state"}, ago, "confederation" in WIDE_BY)
             got = _claim(c, b, lx, sx, CLIMB_M, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], F["peopled"], scratch, 0, dist, touched, claimed)
             cells = claimed[:got].copy()
             scratch[cells] = -1

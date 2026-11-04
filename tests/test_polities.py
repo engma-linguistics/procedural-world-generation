@@ -188,6 +188,21 @@ def test_a_confederation_needs_a_citys_people_in_reach_and_a_foreign_state_besid
     assert run(beside, city_min=20000.0) == []  # (too few of them within reach)
 
 
+def test_a_city_states_reach_stays_in_spencers_band_unless_conquest_or_the_frontier_widens_it():
+    """PW-1449: law, distance, riding and roads move a city-state's reach inside Spencer's 50-250 km and never past it; a polity holding
+    a conquered state, or a confederation (WIDE_BY), keeps the stacked reach."""
+    class R:
+        knows = staticmethod(lambda p, t, ago: t in ("law", "bureaucracy", "riding", "roads", "sails"))
+    s = {"people": "x", "tier": "state"}
+    b, lx, sx = PO._reach(R, s, 0.0)
+    assert abs(b / lx - PO.STATE_MAX_KM) < 1e-6 and b / sx <= PO.STATE_MAX_KM + 1e-6  # (flat land and sea: at most the cap)
+    wb, wlx, wsx = PO._reach(R, s, 0.0, wide=True)
+    assert wb / wlx > 3 * PO.STATE_MAX_KM and wsx == PO.SAIL_X  # (150 x 4/3 x 2 / (2/3)^2 = 900 km: the stacked reach)
+    R.knows = staticmethod(lambda p, t, ago: False)
+    assert PO._reach(R, s, 0.0) == (PO.STATE_KM, 1.0, -1.0)  # (a bare state: the middle of the band, untouched)
+    assert PO._reach(R, {"people": "x", "tier": "chiefdom"}, 0.0)[0] == PO.CHIEF_KM
+
+
 def test_a_polity_is_named_for_the_people_holding_its_capital_then():
     """PW-1451: a capital another people took renames the polity from then on; 'founded by' stays the first people."""
     class R:

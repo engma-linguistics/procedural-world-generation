@@ -36,4 +36,5 @@ What I would try:
 - [ ] polities over 1 Mkm² at the present: under ~8 on 3c1caf and a2b637; the largest still inside 2.3-5.5 Mkm² on 3c1caf
 
 ## Updates
+- 2026-11-04: Lane 179: city-state reach capped at Spencer's 250 km (STATE_MAX_KM); conquerors of states and confederations keep the stacked reach (WIDE_BY). Over 1 Mkm² at the present: 3c1caf 30 -> 8 (median century 3), a2b637 14 -> 0, b4d502 14 -> 5, 07c755 33 -> 11. Largest on 3c1caf 2.86 -> 1.40 Mkm² (2.6 at most in the last 3 kyr): under Taagepera's floor, so the second half of the checkbox is not met (draft: war cannot chain conquests). docs/review/culture/polities/round4.md.
 - 2026-11-04: Created from inbox draft draft-polities-too-many-giant-states.md (found by lane-175).
