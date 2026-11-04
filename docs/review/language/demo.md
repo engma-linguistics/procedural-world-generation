@@ -7,10 +7,11 @@ up) and pick a24559.
 
 ## Rule on these first
 
-1. **The horizon target.** An automatic comparative method on the output goes blind at @@HORIZON@@ kyr; the design said 6-10.
-   Speeding the engine up to hit 6-10 makes sister dialects that split 2 kyr ago fall below "recognisably related". The
-   lane's lean: widen the target to 6-13 and keep sisters recognisable, because the blind measure (100 words, edit distance
-   plus recurrence) is more generous than a real comparative method with real data. Draft:
+1. **The horizon measure.** An automatic comparative method on the output goes blind at **9.0 kyr** for human lects (9.6 for
+   all), inside the 6-10 target, under a split-based measure with a strict cognate test (aligned distance plus recurring
+   correspondences; a clade in the scholars' tree matching the true split at Jaccard >= 0.8). The first, per-pair measure
+   read 11-13 kyr. Three choices inside the measure are judgement (the clade tolerance, the chance excess, and whether the
+   "sisters recognisable" bar of 0.5 should apply to the strict share, which is 0.46, or the loose one, 0.54). Draft:
    `issue-tracking/inbox/draft-language-rates-and-horizon.md` (needs-decision). Details in §6 and `calibration.md`.
 2. **Per-generation scaling at exponent 1** (your ruling) does what it says: aarakocra (5.8-year generations) change
    about five times faster per year than humans, kobolds (11.7) twice; aarakocra sister lects 5 kyr apart share almost no
