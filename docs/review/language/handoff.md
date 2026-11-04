@@ -112,6 +112,8 @@ starting point that Daniel has approved, not a spec to transcribe. Where it is t
   runs at merge. Update the golden files only for intended output changes, and say so.
 - **Commits.** Commit locally on `lang-design` only. Never push, and never merge to main: the coordinator merges. Don't commit
   the five symlinks (they show as untracked).
+- **Commit identity.** Git identity is missing in this worktree path, so commit with
+  `git -c user.name="Daniel Bishop" -c user.email="$(git -C /home/daniel/personal/repos/procedural-world-generation config user.email)" commit ...`.
 - **Machine.** Stay at or under about 32 cores and about 90 GB RAM; the machine is shared. `/tmp` is RAM, so keep scratch small.
 - **Waiting on long jobs.** Wait in the foreground, with `timeout 570 bash -c 'tail --pid=$P -f /dev/null'` repeated. Don't end
   your turn to wait.
