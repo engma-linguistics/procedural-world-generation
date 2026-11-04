@@ -1,4 +1,5 @@
 ---
+id: PW-1470
 title: Weathering is kinetically limited on every cell; slow-eroding land should be supply-limited
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: scout193
 blocked_by: []
 relates: [PW-1446, PW-451]
-refs: [planet/tectonics/earth.py::weathering, planet/tectonics/earth.py::climate_coef, docs/review/tectonics/mountains/scout4.md, "West, Galy & Bickle 2005, EPSL 235: 211-228"]
+refs: ["planet/tectonics/earth.py::weathering", "planet/tectonics/earth.py::climate_coef", docs/review/tectonics/mountains/scout4.md, "West, Galy & Bickle 2005, EPSL 235: 211-228"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -25,3 +28,6 @@ What misleads if it is never done: the CO2 thermostat is stronger than physics a
 cannot weaken when mountains are lowered (PW-1446 scout 193 found this by construction). Planets without big mountain
 belts get a climate steadier than they should. Fixing it is expected to widen the spread between planets, not narrow
 it, so it is a soundness item for after v1, not a fix for the spread bar.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-weathering-regime-erosion-dependent.md (found by scout193).

@@ -1,8 +1,10 @@
 ---
+id: PW-1469
 title: The late-dT spread bar reads one 36-draw sample of a 400 Myr mean; re-judge before chasing it
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: scout193
 blocked_by: []
 relates: [PW-1446, PW-1404]
 refs: [docs/review/tectonics/mountains/scout4.md, docs/review/tectonics/mountains/scout4_coupling.py, docs/review/tectonics/mountains/scout4_persist.py, docs/review/tectonics/mountains/scout3.md, docs/review/climate/npp/round2.md, tools/judge.py, "branch held/scout190-max-km"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -27,3 +31,6 @@ pass a statistic whose own sampling noise is about as large as the effect being 
 Do: re-judge main and the cap on a second, independent 36-draw roll set, or with the forked judge (forked main as the
 baseline, since forking narrows the spread by about 19%, lane 144). Read whether the cap's excess holds. Do not change
 the bar in this ticket.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-spread-bar-sampling-noise.md (found by scout193).
