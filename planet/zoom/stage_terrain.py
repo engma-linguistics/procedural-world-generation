@@ -21,6 +21,7 @@ from . import volcanoes as ZV
 from . import vegetation as ZVG
 from .. import coast
 from .. import icemass
+from .. import summit
 from . import regional as RG
 from ..geo import smoothstep
 
@@ -92,8 +93,8 @@ def coarse_fields(ctx):
     """The coarse cells round the region and their fields (heights, rain, ice, ruggedness, runoff) interpolated onto
     the pixels.
     Reads: L, cx, cy, e_c, elev, fr, g, ind, land_c, log, nx, ny, px, py, r_c, rock, sel, size_km, sp, t0.
-    Writes: cov_f, cx, cy, e_c, e_land, e_sea, elev, gc_sl, gw_sl, ice, ind, interior_c, jul_f, land_c, precip, r_c,
-    rel, rock, rug, runoff, sel."""
+    Writes: cov_f, cx, cy, e_c, e_land, e_sea, elev, gc_sl, gw_sl, ice, ind, interior_c, jul_f, land_c, lrel, precip,
+    r_c, rock, rug, runoff, sel."""
     # --- coarse cells around the region --------------------------------
     ctx.elev = ctx.L["elevation"].astype(float)
     ang = arc_km(ctx.g.centers @ ctx.fr.c)
@@ -106,7 +107,7 @@ def coarse_fields(ctx):
 
     # ruggedness per coarse cell
     ctx.rock = ctx.L["rock"].astype(int)
-    r_all, relief = ruggedness(ctx.g, ctx.L, ctx.sel)
+    r_all, _ = ruggedness(ctx.g, ctx.L, ctx.sel)
     ctx.r_c = r_all[ctx.sel]
     ice_c = ctx.L.get("ice", np.zeros(ctx.g.n))[ctx.sel].astype(float)
 
@@ -122,7 +123,8 @@ def coarse_fields(ctx):
     else:
         jul_c = np.full(len(ctx.sel), 0.5)
     vals = np.column_stack([np.maximum(ctx.e_c, 1.0), np.minimum(ctx.e_c, -1.0),
-                            ctx.L["precipitation"][ctx.sel].astype(float), ice_c, ctx.r_c, relief[ctx.sel],
+                            ctx.L["precipitation"][ctx.sel].astype(float), ice_c, ctx.r_c,
+                            summit.local_relief(ctx.g, ctx.elev)[ctx.sel],
                             gw + LAPSE * np.maximum(ctx.e_c, 0), gc + LAPSE * np.maximum(ctx.e_c, 0), cov_c,
                             np.asarray(ctx.L["runoff"] if "runoff" in ctx.L else ctx.L["precipitation"], float)[ctx.sel], jul_c])
     wts = np.ones_like(vals)
@@ -134,7 +136,8 @@ def coarse_fields(ctx):
     fine, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, vals, wts, sig)
     ctx.e_land = np.nan_to_num(fine[:, 0], nan=1.0)
     ctx.e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
-    ctx.precip, ctx.ice, ctx.rug, ctx.rel = (fine[:, k] for k in range(2, 6))
+    ctx.precip, ctx.ice, ctx.rug, ctx.lrel = (fine[:, k] for k in range(2, 6))
+    ctx.lrel = np.nan_to_num(ctx.lrel, nan=0.0)  # (local relief, summit.local_relief: the land detail's amplitude)
     ctx.gw_sl, ctx.gc_sl, ctx.cov_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(6, 9))
     ctx.jul_f = np.clip(np.nan_to_num(fine[:, 10], nan=0.5), 0, 1)
     # what feeds the streams: the world's runoff (rain minus what the land
@@ -273,7 +276,7 @@ def coastline(ctx):
 def detail(ctx):
     """The base surface from the coast indicator, plus the fractal detail (ruggedness-weighted), and the soft coast
     clamp.
-    Reads: P, Pk, S, amp_land, base, bi_island, clamp, detail, elev, g, h, ind_n, isl, land, own, rel, res, rug,
+    Reads: P, Pk, S, amp_land, base, bi_island, clamp, detail, elev, g, h, ind_n, isl, land, lrel, own, res, rug,
     s_land, s_sea, sea_floor, sp, taper, wD, wS.
     Writes: amp_land, clamp, detail, h, own, s_land, s_sea, sea_floor, taper."""
     # --- detail ----------------------------------------------------------
@@ -289,7 +292,7 @@ def detail(ctx):
     w_r = np.clip(ctx.rug, 0, 1) ** 2
     ctx.detail = (1 - w_r) * f1 + w_r * (0.4 * f1 + 0.9 * rr)
     ctx.detail = 2.2 * np.tanh(ctx.detail / 2.2) + 0.06 * tex  # no absurd spikes
-    ctx.amp_land = (ctx.rug * (0.36 * np.maximum(ctx.base, 0) + 0.3 * np.nan_to_num(ctx.rel) + 25) + 12) * (1 - 0.9 * ctx.wD)
+    ctx.amp_land = RG.land_amp(ctx.rug, ctx.lrel) * (1 - 0.9 * ctx.wD)
     amp_sea = (5 + 0.08 * np.abs(ctx.base)) * (1 - 0.7 * ctx.wS)
     ctx.taper = np.where(ctx.land, smoothstep(0.0, 0.35, ctx.ind_n), smoothstep(0.0, 0.25, -ctx.ind_n)) * ~ctx.bi_island
     ctx.h = ctx.base + ctx.taper * np.where(ctx.land, ctx.amp_land, amp_sea) * ctx.detail

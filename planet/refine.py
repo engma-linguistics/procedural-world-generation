@@ -27,6 +27,7 @@ import numpy as np
 
 from . import kernels
 from . import store as S
+from . import summit
 from . import vegetation as VEG
 from . import world as W
 from .climate import LAPSE
@@ -147,9 +148,9 @@ def terrain(nest: Nest, L: dict, seed: int = 1, log=print) -> dict:
 
     # detail (stage_terrain.detail): relief noise by ruggedness; the finest octave two fine cells (the zoom stops at
     # 6 px, leaving the valleys to its landscape pass; here the finish's erosion cuts them)
-    r7, rel7 = ruggedness(g, L)
+    r7, _ = ruggedness(g, L)
     rug = np.nan_to_num(nest.interp(r7, None, 0.5 * sp), nan=0.5)
-    rel = np.nan_to_num(nest.interp(rel7, None, 0.5 * sp), nan=0.0)
+    lrel = np.nan_to_num(nest.interp(summit.local_relief(g, e7), None, 0.5 * sp), nan=0.0)
     fine_l = 2 * res
     lam_f, lam_r = 0.8 * sp, 0.4 * sp
     f1 = ZK.fbm(Pk, lam_f, RG._octaves(lam_f, fine_l), 0.55, S_ + 2) / 0.17
@@ -157,7 +158,7 @@ def terrain(nest: Nest, L: dict, seed: int = 1, log=print) -> dict:
     w_r = np.clip(rug, 0, 1) ** 2
     detail = (1 - w_r) * f1 + w_r * (0.4 * f1 + 0.9 * rr)
     detail = 2.2 * np.tanh(detail / 2.2)
-    amp_land = rug * (0.36 * np.maximum(base, 0) + 0.3 * rel + 25) + 12
+    amp_land = RG.land_amp(rug, lrel)
     amp_sea = 5 + 0.08 * np.abs(base)
     taper = np.where(land, smoothstep(0.0, 0.35, ind_n), smoothstep(0.0, 0.25, -ind_n))
     h = base + taper * np.where(land, amp_land, amp_sea) * detail
