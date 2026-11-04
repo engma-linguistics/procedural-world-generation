@@ -2,9 +2,9 @@
 id: PW-1264
 title: "Refined worlds (planet refine): the landform classes' own terrain is not drawn, only the zoom's noise and means"
 type: task
-status: needs-decision
+status: todo
 parent: PW-1198
-milestone: v5
+milestone: later
 subsystem: zoom
 effort: l
 impact: med
@@ -35,5 +35,6 @@ Options:
 Lean: A for L8; B when L9 becomes a product (after PW-1209 makes L9 openable).
 
 ## Updates
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: agrees with the lean: A for L8 now; B is a stretch goal. L9 is not part of the December deliverable (a curiosity to chase eventually); L7->L8 is desired but not mandatory. Milestones 11-03: v5 -> later (stretch).
 - 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have decision: landform terrain on a refined L9 world
 - 2026-11-01: Created from inbox draft draft-refine-landform-synthesis-on-the-sphere.md (found by lane104-refine-l8).

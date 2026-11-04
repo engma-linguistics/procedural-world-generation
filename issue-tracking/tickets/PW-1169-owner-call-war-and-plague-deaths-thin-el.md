@@ -2,7 +2,7 @@
 id: PW-1169
 title: "Owner call: war and plague deaths thin elves and dwarves long before kobolds; the brake on fast breeders has to be land, not deaths"
 type: task
-status: needs-decision
+status: done
 parent: PW-917
 milestone: v4
 subsystem: peoples
@@ -46,5 +46,6 @@ Questions:
 Design and tables: docs/review/peoples-counterpressures/design.md.
 
 ## Updates
+- 2026-11-03: Status needs-decision -> done. Owner 11-03: mostly solved already by the density work (humans no longer at far higher density than everyone else). No v4 work.
 - 2026-11-03: Milestones 11-03: v2 -> v4: v4 must-have decision: the brake on fast breeders is land, not deaths, settles war in the history
 - 2026-10-30: Created from inbox draft draft-owner-thermostats-hit-slow-breeders.md (found by lane-82).
