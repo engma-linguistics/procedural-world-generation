@@ -119,9 +119,40 @@ def test_stock_is_stable_at_long_steps():
 
 
 def test_plants_weather_faster():
-    """Bare ground 1, fully planted ground PLANT_WEATHER (from NPP_WEATHER up)."""
-    f = earth.plant_factor(np.array([0.0, 0.5 * earth.NPP_WEATHER, earth.NPP_WEATHER, 3 * earth.NPP_WEATHER]))
+    """Bare ground 1, ground fully under rooted plants PLANT_WEATHER, in proportion to the cover between (PW-1424 C)."""
+    f = earth.plant_factor(np.array([0.0, 0.5, 1.0, 1.2]))
     assert np.allclose(f, [1.0, 0.5 * (1 + earth.PLANT_WEATHER), earth.PLANT_WEATHER, earth.PLANT_WEATHER])
+
+
+def test_rooted_cover_leaves_out_mosses():
+    """The weathering's plant factor reads the rooted (vascular) plants' cover: mosses and crusts don't count."""
+    from planet import vegetation as V
+    nu = np.zeros((V.NP, 3))
+    nu[V.IDX["C3G"], 0] = 0.6
+    nu[V.IDX["TeBS"], 0] = 0.3
+    nu[V.IDX["Moss"], 1] = 0.9
+    nu[V.IDX["TeBS"], 2], nu[V.IDX["C3G"], 2] = 0.7, 0.4  # (a sum over 1 is capped)
+    assert np.allclose(V.rooted_cover(nu), [0.9, 0.0, 1.0])
+
+
+def test_sink_reference_is_one_yardstick_after_the_spin_up():
+    """PW-1424 A: after REF_FREEZE the sink's reference is the source's over exp(YARDSTICK[level]), whatever was
+    learnt; up to it the learnt pair."""
+    class G:
+        level = 6
+
+    class S:
+        grid = G
+        refs = np.array([100.0, 40.0])
+        t = earth.REF_FREEZE
+    assert np.allclose(earth.references(S), [100.0, 40.0])
+    S.t = earth.REF_FREEZE + 2.0
+    assert np.allclose(earth.references(S), [100.0, 100.0 * np.exp(-earth.YARDSTICK[6])])
+    assert np.allclose(S.refs, [100.0, 40.0])  # (the learnt pair is kept)
+    G.level = 8  # (a level without its own: the nearest's)
+    assert np.isclose(earth.references(S)[1], 100.0 * np.exp(-earth.YARDSTICK[7]))
+    G.level = 3
+    assert np.isclose(earth.references(S)[1], 100.0 * np.exp(-earth.YARDSTICK[6]))
 
 
 def test_forcing_levels_off_smoothly():

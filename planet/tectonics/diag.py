@@ -54,9 +54,9 @@ class Recorder:
         """From earth.global_temperature, with its own numbers: this step's raw volcanic source and
         weathering sink (model units), the iced share it counted, the CO2 term as counted (clipped)
         and the ice albedo term (C, negative = cooling), and the target dT relaxes toward."""
-        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, star_forcing
+        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, references, star_forcing
         p = sim.params
-        rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)
+        rel = (sim.rates / references(sim)) if sim.rates is not None else np.ones(2)
         free = ghg_icefree(sim, ice_frac, earth_ice(sim.grid.level))
         self._pending = {
             "t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "target": round(float(target), 3),
@@ -91,8 +91,8 @@ class Recorder:
         if w.sum() > 0:  # the sink's share on bare ground and its CO2 log-slope there (earth.co2_law, v1-finish-11)
             out["w_bare"] = round(float(bare.sum() / w.sum()), 4)
             out["w_a"] = round(earth.co2_slope(float(np.exp(sim.co2)), out["w_bare"]), 4)
-        if sim.npp_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
-            out["w_pot"] = round(float((supply * earth.plant_factor(sim.npp_pot)).sum()) / s, 4)
+        if sim.cover_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
+            out["w_pot"] = round(float((supply * earth.plant_factor(sim.cover_pot)).sum()) / s, 4)
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None

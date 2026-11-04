@@ -1,6 +1,8 @@
 """usage: tools/hard_bar.py DIR_ROOT LEVEL (6|7) -> lane 92's hard-bar tally over DIR_ROOT/m_r<roll>_<tag>/seed*_L<LEVEL>.json.gz
 (paired.sh output). Per draw: the pass (tools/judge.py: the bar + finish_moment, as the paired judge), and the four hard failures:
-- frozen: judge.judge frozen (40%+ of the land under ice inside ice_criteria.hard_window); frozen_any is also shown
+- frozen: judge.judge frozen (the world ends frozen: 40%+ of the land under ice at the end, no finish-window moment passing
+  the land-ice check; owner 11-03, D47, PW-1425); frozen_peak (the old rule: 40%+ at some moment of ice_criteria.hard_window)
+  and frozen_any (some moment after 300 Myr) are also shown
 - boiled: judge.judge hell (dT median > +10.5 or max > +15.5 C)
 - ocean loss (operational definition, no owner-set number exists): sea-ice-free ocean share lost, i.e. the ocean's share
   of the surface (1 - land) after 300 Myr below 40% at any step (Earth 71%; the sim has no sink for ocean water, so this
@@ -47,7 +49,7 @@ for p in sorted(root.glob(f"m_r*_*/seed*_L{lvl}.json.gz")):
     ups = [u for u in raw["updates"] if 50 <= u["t"] <= 1000 and "arid_pct" in u]
     d = p.parent.name.split("_")
     rows.append(dict(roll=d[1][1:], tag="_".join(d[2:]), seed=p.name.split("_")[0][4:], ok=bool(bar["ok"] and fm["passes"]),
-                     bar=bool(bar["ok"]), fm=bool(fm["passes"]), frozen=bool(bar["frozen"]), frozen_any=bool(bar["frozen_any"]),
+                     bar=bool(bar["ok"]), fm=bool(fm["passes"]), frozen=bool(bar["frozen"]), frozen_any=bool(bar["frozen_any"]), frozen_peak=bool(bar["frozen_peak"]),
                      boiled=bool(bar["hell"]), ocean_min=float(ocean.min()), slmax=float(np.abs(sl).max()),
                      ocean_loss=bool(ocean.min() < 40 or np.abs(sl).max() > 1000), pco2_min=float(pc.min()), tmin_t=float(tl[i0]), tminT=float(Tmin), tmin_dT=float(dTmin), comp=comp, below_comp=crash_b, fall8=fall8, fall8s=fall8s, worst50=worst,
                      co2_crash=crash_b, co2_100=bool(pc.min() < 100), pco2_end=float(pc[-1]), pco2_end_out=bool(not 180 <= pc[-1] <= 600),
@@ -55,11 +57,11 @@ for p in sorted(root.glob(f"m_r*_*/seed*_L{lvl}.json.gz")):
                      icehouse=bool(bar["icehouse"]), arid=float(np.median([u["arid_pct"] for u in ups])) if ups else float("nan"),
                      trees=float(np.median([u["trees"] for u in ups if u.get("trees") is not None])) if ups else float("nan"),
                      seconds=raw.get("seconds")))
-print(f"{'roll':>6} {'tag':>6} {'seed':>7} {'pass':>4} {'bar':>3} {'fm':>3} {'FRZ':>3} {'frzAny':>6} {'BOIL':>4} {'OCN':>3} {'CO2x':>4} "
+print(f"{'roll':>6} {'tag':>6} {'seed':>7} {'pass':>4} {'bar':>3} {'fm':>3} {'FRZ':>3} {'frzPk':>5} {'frzAny':>6} {'BOIL':>4} {'OCN':>3} {'CO2x':>4} "
       f"{'oceanMin':>8} {'|sl|max':>7} {'pCO2min':>7} {'pCO2end':>7} {'endT':>5} {'pkIce':>5} {'arid':>5} {'trees':>5} {'min':>5}")
 for r in sorted(rows, key=lambda r: (r['roll'], r['tag'], r['seed'])):
     yn = lambda b: "Y" if b else "-"
-    print(f"{r['roll']:>6} {r['tag']:>6} {r['seed']:>7} {yn(r['ok']):>4} {yn(r['bar']):>3} {yn(r['fm']):>3} {yn(r['frozen']):>3} {yn(r['frozen_any']):>6} "
+    print(f"{r['roll']:>6} {r['tag']:>6} {r['seed']:>7} {yn(r['ok']):>4} {yn(r['bar']):>3} {yn(r['fm']):>3} {yn(r['frozen']):>3} {yn(r['frozen_peak']):>5} {yn(r['frozen_any']):>6} "
           f"{yn(r['boiled']):>4} {yn(r['ocean_loss']):>3} {yn(r['co2_crash']):>4} {r['ocean_min']:8.1f} {r['slmax']:7.0f} {r['pco2_min']:7.0f} "
           f"{r['pco2_end']:7.0f} {r['endT']:+5.1f} {r['peak_il']:5.1f} {r['arid']:5.1f} {r['trees']:5.1f} {(r['seconds'] or 0)/60:5.1f}")
 n = len(rows)
@@ -72,7 +74,7 @@ print(f"  CRASH (B): pCO2 below the compensation point of a step: {sum(r['below_
 print(f"  falls 8-fold strict (end <= 2x fall bottom): {sum(r['fall8s'] for r in rows)}/{n}")
 print(f"  falls 8-fold in <=50 Myr and end <= 1/4 of the pre-fall value: {sum(r['fall8'] for r in rows)}/{n}")
 print(f"\nL{lvl}: {n} draws")
-for k, lab in [("ok", "soft pass (bar + finish moment)"), ("frozen", "HARD frozen over in window"), ("boiled", "HARD boiled/hellhouse"),
+for k, lab in [("ok", "soft pass (bar + finish moment)"), ("frozen", "HARD frozen over at the end (PW-1425)"), ("frozen_peak", "(frozen over at some moment of the hard window, the old rule, reported)"), ("boiled", "HARD boiled/hellhouse"),
                ("ocean_loss", "HARD ocean loss"), ("co2_crash", "HARD CO2 crash (below plants' compensation point)"), ("co2_100", "(secondary: CO2 under 100 ppm)"), ("fall8", "(secondary: 8-fold fall in <=50 Myr, end <= 1/4 of pre-fall)"), ("fall8s", "(secondary: 8-fold fall in <=50 Myr, end <= 2x the fall bottom)"), ("frozen_any", "(frozen any time after 300, reported)"),
                ("pco2_end_out", "(end pCO2 outside 180-600, reported)"), ("icehouse", "(icehouse, reported)")]:
     print(f"  {lab}: {sum(r[k] for r in rows)}/{n}")

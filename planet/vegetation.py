@@ -1631,6 +1631,16 @@ def ground_cover(v: dict) -> np.ndarray:
     return 1 - (1 - g) * (1 - 0.6 * nu[GROUNDS].sum(0))
 
 
+def rooted_cover(nu) -> np.ndarray:
+    """0..1 per cell: the share of the ground under rooted (vascular) plants, the trees', shrubs' and herbs' cover
+    fractions nu (NP, n) summed; mosses, lichens and soil crusts (the GROUND types) left out. What the weathering's
+    plant factor reads (tectonics.earth.plant_factor, PW-1424 C): roots, their fungi and the soil CO2 they make are
+    there or not, whatever the plants' carbon budget (GEOCARB's f_E is about vascular plants being there)."""
+    if nu is None:
+        return None
+    return np.clip(np.asarray(nu, np.float64)[~GROUNDS].sum(0), 0.0, 1.0)
+
+
 # Surface albedo (snow-free) of each type's canopy, and the share of lying snow
 # its canopy hides (dark trees standing out of the snow: Bonan 1992; Betts &
 # Ball 1997), for climate.compute's feedbacks (section 4.2)

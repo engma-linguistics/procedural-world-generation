@@ -12,8 +12,10 @@ Command lines:
 usage: passrate4.py DIAG_DIR [...] -- the v1 icehouse bar as ruled on PW-865 (owner, option C, 2026-10-25).
 
 The bar, judged on 300 Myr to the run's end (and per forward window 300-1000, 1000-1500, 1500-2000 Myr):
-- FAIL on frozen over (owner 2026-10-30, PW-1091, replacing the old icebox rule): 40% or more of the LAND under ice
-  at any climate update (`iced_land`, the run's saved stat);
+- FAIL on frozen over (owner 2026-10-30, PW-1091, replacing the old icebox rule; owner 11-03, D47, PW-1425): the world
+  ENDS frozen: 40% or more of the LAND under ice (`iced_land`, the run's saved stat) at the last climate update, so
+  also a world that stays frozen to the end, and (paired judge, judge_draw) no finish-window moment passes the finish's
+  land-ice check. The peak in the hard window is reported (frozen_peak), not a failure;
 - FAIL on hellhole: dT median > +10.5 C or max > +15.5 C;
 - never-ice (icehouse share < 5%) and the old icebox rule (icehouse >= 90% of the time or deep ice < -150 m for 30%)
   are reported, not failures (owner 2026-10-27);
@@ -54,9 +56,10 @@ Measures (late = the window --late, default 600-1000 Myr, on the 2 Myr steps / t
 Add a measure: put a (name, function of the loaded record) pair in MEASURES.
 
 The pass definition is v1-finish-16's plus frozen over (PW-1091): a good finish moment (highlights.finish_moment passes) and no
-hellhouse and not frozen over (passrate4.judge; frozen over = 40%+ of the land under ice, owner 2026-10-30, PW-1091,
-counted only in ice_criteria.hard_window: the star within 2 C of its final forcing and the run's last 300 Myr,
-whichever is narrower, owner 2026-10-30, PW-1142; frozen spells under the dim young star are reported only).
+hellhouse and not frozen over (passrate4.judge; frozen over = the world ends frozen, 40%+ of the land under ice at the
+end with no finish-window moment passing the land-ice check, owner 11-03, D47, PW-1425; the 40% line is PW-1091's.
+The old rule, 40%+ at any moment of ice_criteria.hard_window, is reported as "frozen peak"; frozen spells under the dim
+young star are reported only).
 The three ice terms (icehouse, glacial maximum, frozen over) are counted per arm. The set-level check: at >= 80%
 frozen-over worlds or hellhouses in an arm, the sim is suspect. The pass table gives both / A only / B only / neither and an exact McNemar p on the discordant
 draws. Use 2 rolls (72 runs for two arms); use 4 rolls only when the pass count decides the merge (README).
@@ -82,11 +85,13 @@ WET_TREES = 20.0  # % trees on the wet equatorial lowland (PW-806)
 PCO2_DIAG = (180.0, 600.0)  # ppm at the end (diagnostic)
 
 
-def judge(t, si, dT, a, b, il=None, star=None):
+def judge(t, si, dT, a, b, il=None, star=None, fin_ice=False):
     """il: the share of land under ice (0..1) on the same samples (C.series(raw)["iced_land"]). Without it the
-    land terms are None and nothing is frozen over. star: the star's forcing on them (C.series(raw)["star"]):
-    frozen over fails only in C.hard_window (the star near its final brightness, the run's last 300 Myr at most;
-    owner 2026-10-30); before it, frozen_any is reported only."""
+    land terms are None and nothing is frozen over. Frozen over: the window's last sample is (the world ends frozen,
+    PW-1425), unless fin_ice (a finish-window moment passes the finish's land-ice check: judge_draw). star: the
+    star's forcing on them (C.series(raw)["star"]): frozen_peak (reported) is the old rule, 40%+ at any sample of
+    C.hard_window (the star near its final brightness, the run's last 300 Myr at most; owner 2026-10-30); frozen_any
+    (reported) any sample."""
     w = (t >= a) & (t < b)
     if not w.any():
         return None
@@ -95,12 +100,13 @@ def judge(t, si, dT, a, b, il=None, star=None):
     share, deep = ice["icehouse_pct"], ice["deep_pct"]
     med, mx = float(np.median(dT[w])), float(dT[w].max())
     hell = med > 10.5 or mx > 15.5
-    frozen = bool(ice["frozen_over"])
-    # owner 2026-10-30 (PW-1091): a world fails on hellhouse or on frozen over (>= 40% of the land under ice).
+    frozen = bool(ice["frozen_over"]) and not fin_ice
+    # owner 2026-10-30 (PW-1091): a world fails on hellhouse or on frozen over (>= 40% of the land under ice); owner
+    # 11-03 (D47, PW-1425): frozen over at the end, not at the window's worst moment.
     # Never-ice and the old icebox rule (icehouse >= 90% or deep >= 30%) are reported only. The set-level check
     # (fmtally, pjudge) flags the sim as wrong if nearly all worlds are frozen over or nearly all hellhouses.
     return dict(share=share, deep=deep, med=med, mx=mx, hell=hell, never=ice["never_ice"], frozen=frozen,
-                frozen_any=bool(ice["frozen_over_any"]), hard_from=h0, hard_by=which,
+                frozen_any=bool(ice["frozen_over_any"]), frozen_peak=bool(ice["frozen_peak"]), hard_from=h0, hard_by=which,
                 glacial_max=bool(ice["glacial_max"]), land_ice_peak=ice["land_ice_peak"],
                 icehouse=ice["icehouse"], always_icy=bool(share >= 90 or deep >= 30), ok=not hell and not frozen)
 
@@ -195,9 +201,12 @@ def judge_draw(raw):
     """One draw's bar and finish moment as pjudge and tools/hard_bar.py judge it: (series, bar, steps, finish_moment).
     pass = bar["ok"] and fm["passes"]."""
     s = C.series(raw)
-    bar = judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"], s["star"])
     steps = [r for r in raw["steps"] if r["t"] > 0]
-    fm = H.finish_moment([{"t": r["t"], "stats": r} for r in steps], float(raw["params"].get("finish_window", 10.0)))
+    window = float(raw["params"].get("finish_window", 10.0))
+    fm = H.finish_moment([{"t": r["t"], "stats": r} for r in steps], window)
+    end = steps[-1]["t"]  # (PW-1425: a world whose finish window has a moment that passes for ice is not frozen over)
+    fin_ice = any("land ice" not in H.habitable(r) for r in steps if r["t"] >= end - window - 1e-9)
+    bar = judge(s["t"], s["sea_ice"], s["dT"], 300, 1e9, s["iced_land"], s["star"], fin_ice)
     return s, bar, steps, fm
 
 
@@ -212,7 +221,8 @@ def load(p, t0=600.0, t1=1000.0):
     at = next(r for r in steps if abs(r["t"] - fm["t"]) < 1e-9)
     late = [r for r in steps if t0 <= r["t"] < t1 and abs(r["t"] - round(r["t"])) < 1e-9]
     ups = [u for u in raw["updates"] if t0 <= u["t"] <= t1]
-    return dict(ok=bool(bar["ok"] and fm["passes"]), frozen=bool(bar["frozen"]), frozen_any=bool(bar["frozen_any"]), gmax=bool(bar["glacial_max"]), ihouse=bool(bar["icehouse"]), hell=bool(bar["hell"]),
+    return dict(ok=bool(bar["ok"] and fm["passes"]), frozen=bool(bar["frozen"]), frozen_any=bool(bar["frozen_any"]),
+                frozen_peak=bool(bar["frozen_peak"]), gmax=bool(bar["glacial_max"]), ihouse=bool(bar["icehouse"]), hell=bool(bar["hell"]),
                 steps=steps, late=late, ups=ups, at=at, fm=fm)
 
 
@@ -327,10 +337,11 @@ def paired_main(argv=None):
             parts.append(f"r{r} {sum(R[k]['ok'] for k in ks)}/{len(ks)}")
         n_ice, n_hell = sum(R[k]["frozen"] for k in keys), sum(R[k]["hell"] for k in keys)
         n_dim = sum(R[k]["frozen_any"] and not R[k]["frozen"] for k in keys)
+        n_pk = sum(R[k]["frozen_peak"] for k in keys)
         n_gm, n_ih = sum(R[k]["gmax"] for k in keys), sum(R[k]["ihouse"] for k in keys)
         sus = max(n_ice, n_hell) >= 0.8 * len(keys)
-        pc[name] = dict(passes=sum(R[k]["ok"] for k in keys), frozen_over=n_ice, glacial_max=n_gm, icehouse=n_ih, hellhouse=n_hell, suspect=sus)
-        print(f"- {name}: {', '.join(parts)}; pooled {pc[name]['passes']}/{len(keys)}; icehouse {n_ih}, glacial maximum {n_gm}, frozen over {n_ice} (only under the dim star, reported: {n_dim}), hellhouse {n_hell}"
+        pc[name] = dict(passes=sum(R[k]["ok"] for k in keys), frozen_over=n_ice, frozen_peak=n_pk, glacial_max=n_gm, icehouse=n_ih, hellhouse=n_hell, suspect=sus)
+        print(f"- {name}: {', '.join(parts)}; pooled {pc[name]['passes']}/{len(keys)}; icehouse {n_ih}, glacial maximum {n_gm}, frozen over at the end {n_ice} (reported: 40%+ at some moment of the hard window {n_pk}, at some moment after 300 Myr but not at the end {n_dim}), hellhouse {n_hell}"
               + ("  << SIM SUSPECT (>= 80% frozen over or hellhouses)" if sus else ""))
     both = sum(ra[k]["ok"] and rb[k]["ok"] for k in keys)
     ao = sum(ra[k]["ok"] and not rb[k]["ok"] for k in keys)
