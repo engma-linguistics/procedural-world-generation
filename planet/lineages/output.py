@@ -151,7 +151,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     contacts = h.contacts.summary() if h.contacts is not None else None
     pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)
     # the technology tree (PW-675 v0): which people knew what, and since when (techtree.py)
-    techtree = TT.build(lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed)
+    techtree = TT.build(lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed, gods_mode=h.tree.gods_mode)
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -160,7 +160,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "format": "procgen-run/2", "kind": "peoples", "id": run_id, "name": label,
         "meta": {"kind": "peoples", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "thinnings": h.portal_report(),
-                 "growth_rates": h.tree.growth_rates, "draw_ranges": h.tree.draw_ranges, "range_draws": h.ladder.drawn, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
+                 "growth_rates": h.tree.growth_rates, "draw_ranges": h.tree.draw_ranges, "range_draws": h.ladder.drawn, "band_warnings": SP.band_warnings(h.tree), "era": h.tree.era, "gods_mode": h.tree.gods_mode, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
                  "contacts": contacts, "techtree": techtree, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
@@ -187,7 +187,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     CU.write(out)  # (emergent cultures from the demes: cultures.py, PW-670; cultures.json, meta.cultures)
     if (out / "cultures.json").exists():  # (gods and food taboos from the cultures: gods.py, taboos.py, PW-1306, PW-1305; readout only)
         from . import taboos as TB
-        TB.write_religion(out)  # (gods_mode: the default, faith_made, until the world-creation control exists)
+        TB.write_religion(out, mode=h.tree.gods_mode)  # (the run's gods mode, PW-1309: chosen where the run is made)
     if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
         ST.write(out)
     T.update_index()

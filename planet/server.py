@@ -284,7 +284,8 @@ def gods_doc(d: Path, mode: str | None = None) -> dict:
     new mode or an edited faith takes seconds) with its authored faiths (PW-1430)."""
     from .lineages import gods as GD
     A = GD.read_authored(d)
-    mode = mode or A["gods_mode"] or GD.MODE_DEFAULT
+    meta_mode = (json.loads((d / "run.json").read_text()).get("meta") or {}).get("gods_mode")  # (chosen where the run was made, PW-1309)
+    mode = mode or A["gods_mode"] or meta_mode or GD.MODE_DEFAULT
     f = d / "gods.json"
     if f.exists() and not A["faiths"]:
         doc = json.loads(f.read_text())
@@ -353,6 +354,24 @@ def authored_set(raw: bytes) -> tuple[dict, int]:
 _taboos_cache: dict = {}
 
 
+def taboos_doc(d: Path, mode: str | None = None) -> dict:
+    """A run's taboos doc: its taboos.json when it has every kind (format procgen-taboos/2, PW-1311) and no faith is written in, else worked
+    out from its gods doc (authored faiths and saved mode included, PW-1430) and cached in memory and on disk. Shared with the culinary brief."""
+    from .lineages import taboos as TB
+    from .lineages import gods as GD
+    f = d / "taboos.json"
+    if f.exists() and not GD.read_authored(d)["faiths"]:  # (faiths written in: their gods' taboos too, PW-1430)
+        doc = json.loads(f.read_text())
+        if doc.get("format") == "procgen-taboos/2":
+            return doc
+    gd = gods_doc(d, mode)
+    key = (d.name, (d / "run.json").stat().st_mtime, gd.get("gods_mode"), _authored_key(d))
+    if key not in _taboos_cache:
+        _taboos_cache.clear()
+        _taboos_cache[key] = disk_cached(f"taboos-{gd.get('gods_mode')}", d, key, lambda: TB.derive(d, gd))
+    return _taboos_cache[key]
+
+
 def taboos(query: str) -> tuple[dict, int]:
     """GET /api/taboos?run=<id>: the run's taboos.json when it has every kind (format procgen-taboos/2, PW-1311), else worked out from
     its gods doc and kept in memory, never written into the run."""
@@ -361,19 +380,7 @@ def taboos(query: str) -> tuple[dict, int]:
         from .lineages import taboos as TB
         if not q.get("run"):
             raise ValueError("run= is required")
-        d = S.find_run(q["run"])
-        from .lineages import gods as GD
-        f = d / "taboos.json"
-        if f.exists() and not GD.read_authored(d)["faiths"]:  # (faiths written in: their gods' taboos too, PW-1430)
-            doc = json.loads(f.read_text())
-            if doc.get("format") == "procgen-taboos/2":
-                return doc, 200
-        gd = gods_doc(d, q.get("mode"))
-        key = (d.name, (d / "run.json").stat().st_mtime, gd.get("gods_mode"), _authored_key(d))
-        if key not in _taboos_cache:
-            _taboos_cache.clear()
-            _taboos_cache[key] = disk_cached(f"taboos-{gd.get('gods_mode')}", d, key, lambda: TB.derive(d, gd))
-        return _taboos_cache[key], 200
+        return taboos_doc(S.find_run(q["run"]), q.get("mode")), 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:

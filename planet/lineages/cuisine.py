@@ -14,8 +14,8 @@ line, never the whole sheet; the culinary side overrules any of it. No number he
 
 Where the numbers come from: ways of life are the density ladder's per-cell farm and herd shares of heads (meta.eraq, landuse.frame_inputs:
 the last ~12 kyr), weighted by heads over the culture's cells; what a people knows (milking, fermentation, feasting) is meta.techtree.known
-with its date; crops and herds are the frame's known layers on the culture's land; taboos and faiths are the run's taboos.json and
-gods.json (present-day files: an earlier era shows the culture's present taboos, or none if it is gone).
+with its date; crops and herds are the frame's known layers on the culture's land; taboos and faiths are the Religion tab's taboos and gods docs (server.taboos_doc /
+gods_doc: authored faiths and the saved gods mode included, PW-1440; present-day: an earlier era shows the culture's present taboos, or none if it is gone).
 """
 
 from __future__ import annotations
@@ -484,7 +484,7 @@ def wont_eat(p: dict) -> dict:
     faith = [r for r in rows if r["origin"] == "divine"]
     own = [r for r in rows if r["origin"] != "divine"]
     return {"faith": faith, "own": own, "faith_name": (p["faith"] or {}).get("name"),
-            "basis": "taboos.json (present-day: the culture's taboos now)" if rows else "no food taboos (or no taboos.json in this run)"}
+            "basis": "the taboos doc (present-day: the culture's taboos now)" if rows else "no food taboos (or no cultures in this run)"}
 
 
 def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:

@@ -111,3 +111,19 @@ def test_neighbours_put_the_peoples_of_the_land_before_dragons():
     ctx = NS(g=g, _cult_cells={0: (cell, cu)}, cultures=lambda: {"cultures": C},
              meta={"present": {"lines": {"folk": {"ladder": {"farm": 1}}, "dragon": {"ladder": {}}}}})
     assert CZ.neighbours(ctx, 0, 0.0, 0, mask) == [2, 1, 3]
+
+
+def test_brief_religion_is_the_religion_tab_docs(monkeypatch, tmp_path):
+    """PW-1440: the brief and cuisine sheet read the same gods and taboos docs as the Religion tab (authored faiths, saved gods mode), not the
+    stored files; a run without cultures gives (None, None)."""
+    from planet import server
+    from planet.lineages import brief as BR
+    monkeypatch.setattr(server, "gods_doc", lambda d, mode=None: {"gods_mode": "belief_only", "faiths": {"list": []}})
+    monkeypatch.setattr(server, "taboos_doc", lambda d, mode=None: {"cultures": {"0": {"taboos": [{"label": "pigs"}]}}})
+    gd, tb = BR.Ctx.religion(NS(dir=tmp_path, _religion=False))
+    assert gd["gods_mode"] == "belief_only" and tb["cultures"]["0"]["taboos"][0]["label"] == "pigs"
+
+    def none(d, mode=None):
+        raise SystemExit("no cultures")
+    monkeypatch.setattr(server, "gods_doc", none)
+    assert BR.Ctx.religion(NS(dir=tmp_path, _religion=False)) == (None, None)
