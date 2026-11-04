@@ -128,11 +128,12 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <tr><th>Lane</th><th>What</th></tr>
 
 <tr><td>160 · checking the climate fix</td><td>Your D47 pick, C: the full check of "one yardstick for every planet" on all 36 test planets, twice each, compared with the same planets on the current code. When it reports, a physics side lane builds C.</td></tr>
-<tr><td>163 · years everywhere</td><td>v2: every peoples readout says "12,400 years ago" instead of "12.4 kyr", with an optional "the present is year N".</td></tr>
-<tr><td>164 · the food sheet</td><td>v2: for a picked culture, its fuel, staple, drink, who eats together, what outsiders get wrong, and its food taboos, in the brief panel.</td></tr>
-<tr><td>165 · stable culture ids</td><td>v2: makes sure a culture keeps its id when anything is re-derived, so your languages can key on it safely.</td></tr>
+<tr><td>showcases</td><td>Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
+
+
+
 </table></div>
-<p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
+<p><b>Physics, your idea:</b> once D47 is merged (it should halve the chance swing between re-runs, which is what makes small test runs believable), 4–6 physics scout lanes run side by side. Each uses 2–3 cores and at most 2–3 small runs, and reports what looks promising. Only promising ones go to the full check, one at a time. They start as your language jobs leave room. Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
 
 <h2 id="religion">Religion: the views are in</h2>
 <div class="card" id="rel2"><div class="id">GOD TREES, A FAITH MAP, A TIMELINE AND 13 KINDS OF TABOO (PW-1358, PW-1311, MERGED)</div>
@@ -170,6 +171,19 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>v2's code is all merged</b> (tag v0.2.0 waits on a last full test run and your look):
+<ul>
+<li><b>Faiths you write:</b> Religion tab &rarr; "Your faiths" &rarr; "✎ write a faith". Give it a name, a founder, a place, a year in any form, gods with their domains, and whether it spreads. It rebuilds in about 5 s, shows with a "✎ yours" badge in every view, and tells you whether it took hold, and why not if it didn't. Stored in the run as <code>authored.json</code>.</li>
+<li><b>The gods mode</b> (faith-made, belief only, absolute): a choice on the New planet form, in the workbench, and in the Religion tab.</li>
+<li><b>The food sheet:</b> in the Culinary brief panel, pick a culture next to the people. It answers fuel, staple, drink, who eats together and what outsiders get wrong, and lists its food taboos, including those of a faith you wrote. Type an era to read it then.</li>
+<li><b>Dates in years:</b> "12,400 years ago" everywhere. Set "the present is year N" (workbench header or globe time slider) to read and type "year 1400".</li>
+<li><b>Workbench tree:</b> a pinned time axis, controls in their own bar, no clipped names, and new "peoples only" and "species + cultures" views.</li>
+<li><b>Stable culture ids</b> for your languages: key on <code>uid</code> in <code>cultures.json</code>.</li>
+<li><b>Religion loads fast:</b> after the first build, under a second even after a restart. Dead gods no longer show as living.</li>
+<li><b>Dairy:</b> lactase alone no longer gives a people dairy herds; antelope-kin don't milk; herding humans' lactase rises with their years of dairying.</li>
+</ul>
+Known gaps, on the board: in the one D&amp;D test run, no people ever learns fermentation, so its sheets say "no beer yet" (PW-1441). A quarter of that run's farmland has no crop the sheet can name (PW-1443).</li>
+<li><b>Your answers</b>: the workbench fix works in both browsers (PW-841); land, not deaths, is already settled by the density work (PW-1169, closed); landform terrain on L9 is a stretch goal, and L9 isn't part of December (PW-1264 to the backlog).</li></ul>
 <ul><li><b>D47: C</b>, both parts. Every planet gets one carbon yardstick per grid level instead of its own dice roll, with the weathering reading plant cover rather than raw plant growth. And "frozen over" now means a world ends frozen or stays frozen to the end. Built after lane 160's check.</li>
 <li><b>D48: none of A–D; your plan instead.</b> v1.0 on 1 December, with v0.x milestones along the way. v2 within a week and mostly not physics. States and empires are a must (v3 is fine). Physics runs as one-to-three-pass side lanes, and anything landing before v1.0 is a bonus. Calendars: "X years ago" will do, or calendars that cultures found after notable dates, which may or may not catch on. Languages are in your own worktree. L7&rarr;L9 refine instead of a whole-planet fine map. Lane 162 is mapping it.</li></ul>
 <ul><li><b>Where foods come from</b> (lane 157): <b>merged</b>, all 976 tests pass. Compared with the same worlds on the code before, crops no longer
@@ -238,5 +252,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v139 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v140 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
