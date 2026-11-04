@@ -72,10 +72,37 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
   <h1>Owner's Desk</h1>
   <p class="lede">Your comments are all acted on: rulings on the tickets, both religion bugs fixed, the board cut from 382 to 89 in v2.
 Two lanes run: where foods come from, and why the climate is touchy.</p>
-  <nav class="toc"><a href="#answers">The board, your two questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <nav class="toc"><a href="#answers">D47, the board, your two questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d47"><div class="id">D47 · YOU WERE RIGHT TO ASK: THE CLIMATE ISN'T WHEELING OFF COURSE, THE DICE AND THE TEST ARE (PW-1424, PW-1425; LANE 158)</div>
+<p><b>In plain words:</b> the planet's own thermostat (rock weathering soaking up CO2 as it warms) is as strong as Earth's, and fast. Pushed
+8 °C colder for 60 Myr, the coldest test planet cooled only 1.4 °C, because CO2 rose 3–7&times;. Pushed either way, it came back to its unpushed
+history within 10 Myr of the push ending. Nothing locks in. Our thermostat sits between the classic models and the best current estimate for Earth (Walker et al. 1981,
+GEOCARB, Krissansen-Totton &amp; Catling 2017; all read). A stronger one would make planets <i>less</i> Earth-like.</p>
+<p>The touchiness has two causes that aren't physics:</p>
+<ul>
+<li><b>Each planet's "yardstick" is a dice roll.</b> In its first 300 Myr a planet learns its usual volcanic CO2 and weathering from a short,
+noisy sample. Each 0.1 of difference in that yardstick moves the whole later climate by about 1 °C. Re-running a planet re-rolls it.</li>
+<li><b>The frozen-over test reads the single worst moment.</b> On the coldest test planet, five equally valid histories differ only by chance. Two peak above 40% land ice
+in the test window and three don't, yet all five are below 21% by 980–990 Myr. None ends frozen.</li>
+</ul>
+<ol>
+<li><b>A. One yardstick per grid level</b> instead of each planet's sample. Forecast on the 36 test planets: the spread between re-runs of a
+planet falls from about 2.0 to 0.9 °C. A first check on three cold planets matched the forecast, and their worst ice fell from 16–43% to 3–27%. Two of them are
+the worlds the grass-roots change kept failing on. It also folds in the grass-and-weathering tie (PW-1332), so plant fixes stop moving the climate by degrees.
+The cost: a re-fit of one constant when a change moves the carbon cycle's size.</li>
+<li><b>B. "Frozen over" means the world ends frozen, or stays frozen to the end,</b> not that its worst moment crossed 40%. It's a change to
+the test, so it needs your yes. The 40% line itself stays.</li>
+<li><b>C. Both.</b></li>
+<li><b>D. Neither.</b> Keep judging around the chance (D45's B).</li>
+</ol>
+<p><i>My lean:</i> C, which is lane 158's lean too. A fits your north star exactly: it removes a dice roll rather than tuning around it. B
+asks the question we actually care about, whether a world ends up uninhabitable. Before you decide, lane 160 is running the full check of A on all 36 planets,
+twice each, including whether pinning pushes any warm planet over the +5 °C edge, which the first check couldn't see. Write-up:
+<code>docs/review/climate/stability/round1.md</code>.</p>
+</div>
 <div class="card" id="board"><div class="id">THE BOARD, CUT DOWN (LANE 156, MERGED) · FIVE CALLS YOU MAY WANT TO REVERSE</div>
 <p><b>In plain words:</b> v2 went from 382 open tickets to 89. Nothing was thrown away: 291 moved to the backlog (<code>later</code>), each with
 a one-line reason, and two clear duplicates were closed. From now on a lane may file at most 3 tickets, and each must say what breaks or misleads
@@ -111,7 +138,7 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>157 · where foods come from</td><td>Your food ask. There are already 33 crops in the model (staples, cuisine plants, regional foods). This checks each one's homeland and date against published sources, adds missing ones (staples first), and fixes how foods spread: today crops cross oceans freely "by canoe", so New World foods can reach the Old World long before sailing ships. Tested on D&amp;D and Seven Meals runs.</td></tr>
-<tr><td>158 · why the climate is touchy</td><td>Your "are we chasing the wrong thing?" question: how strong the planet's own thermostat is compared with Earth's, whether the ice or the CO2 yardsticks carry the chaos, and 2–4 structural fixes so a world settles back on its own. A write-up first, no sweeps. The grass-and-weathering tie (PW-1332) is part of it.</td></tr>
+<tr><td>160 · checking the fix for the touchy climate</td><td>D47's option A, one yardstick for every planet, run on all 36 test planets twice each and compared with the same planets on the current code: does the spread between re-runs fall to 1.2 °C or less, and does any planet go too warm? About 1–2 hours. It measures; nothing is merged.</td></tr>
 </table></div>
 <p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
 
@@ -210,5 +237,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v134 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v135 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
