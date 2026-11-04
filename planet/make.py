@@ -99,6 +99,10 @@ DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoo
             "require_ice": False, "tries": 3, "peoples": ""}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
 
 
+GODS_MODE_LABELS = [["faith_made", "faith-made (gods exist while worshipped)"], ["belief_only", "belief only (no gods are real, no divine magic)"],
+                    ["absolute", "absolute (gods outlive their worshippers)"]]  # (PW-1309; the ids are spec.GODS_MODES)
+
+
 def peoples_trees() -> list[str]:
     """The names of the peoples trees a make may use: the presets (dnd, seven_meals, ...) and the saved trees."""
     from .lineages import run as LR
@@ -150,6 +154,7 @@ def parse_make_request(req: dict) -> dict:
             raise api.BadRequest(f"peoples must be one of {peoples_trees()} (or empty for none)")
         if not (out["timezoom"] and out["finish"]):
             raise api.BadRequest("peoples need the time zoom and the finished world (they are built on both)")
+    out.update(api._gods_mode(req) if out["peoples"] else {})  # (PW-1309: the peoples run's gods mode)
     out["zooms"] = int(api._num(req, "zooms", DEFAULTS["zooms"]))
     if not 0 <= out["zooms"] <= 12:
         raise api.BadRequest("zooms must be within 0..12")
@@ -212,7 +217,7 @@ def options() -> dict:
     settings = [{**s, "default": d[s["key"]]} for s in SETTINGS]
     return {"presets": {k: {**v, "set": dict(v["set"])} for k, v in PRESETS.items()}, "default_preset": DEFAULT_PRESET,
             "settings": settings, "levels": [{"level": L, "cells": 10 * 4 ** L + 2, "run_s_per_gyr": RUN_S_PER_GYR[L]} for L in LEVELS],
-            "peoples": peoples_trees(), "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
+            "peoples": peoples_trees(), "gods_modes": GODS_MODE_LABELS, "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
 
 
 def reroll_seed(seed: int, k: int) -> int:
@@ -333,7 +338,7 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
             if "peoples" in out:
                 prog("peoples")(1.0, f"peoples run {out['peoples']} already made")
             else:
-                out["peoples"] = api.lineages_job({"type": "lineages", "world": out["world"], "tree": spec["peoples"]}, prog("peoples"))["run"]
+                out["peoples"] = api.lineages_job({"type": "lineages", "world": out["world"], "tree": spec["peoples"], **({"gods_mode": spec["gods_mode"]} if spec.get("gods_mode") else {})}, prog("peoples"))["run"]
                 save()
     except api.Cancelled:
         raise

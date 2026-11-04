@@ -1,7 +1,7 @@
 ---
 title: The culinary brief shows the run's stored gods and taboos, not the faiths Daniel wrote in or his saved gods mode
 type: task
-status: todo
+status: done
 parent: PW-1308
 milestone: later
 subsystem: food
@@ -21,4 +21,4 @@ reads a cuisine for a faith he has already replaced. Lane 166 left brief.py alon
 
 Fix: have `ctx.religion()` use the server's `gods_doc(d)` / taboos doc (memory and .godscache, keyed by the authored hash) when it runs in the
 server, or `gods.derive(d)` (which reads authored.json) otherwise.
-- [ ] the brief of the founding culture of an authored faith lists its named gods and their taboos
+- [x] (lane 167: done, Ctx.religion() uses server.gods_doc and taboos_doc) the brief of the founding culture of an authored faith lists its named gods and their taboos

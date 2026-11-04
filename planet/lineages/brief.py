@@ -38,7 +38,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 17  # 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 18  # 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -148,9 +148,16 @@ class Ctx:
         return self._overlap
 
     def religion(self) -> tuple[dict | None, dict | None]:
-        """(gods.json, taboos.json) of the run, each None where the run has no such file (never derived here: PW-1306, PW-1305)."""
+        """(gods doc, taboos doc) of the run as the Religion tab shows them: its authored faiths and saved gods mode included (server.gods_doc /
+        taboos_doc, with the .godscache disk cache; PW-1440). Each None where the run has no cultures to derive from."""
         if self._religion is False:
-            self._religion = tuple(json.loads((self.dir / f).read_text()) if (self.dir / f).exists() else None for f in ("gods.json", "taboos.json"))
+            from .. import server
+            try:
+                gd = server.gods_doc(self.dir)
+                tb = server.taboos_doc(self.dir)
+            except (SystemExit, FileNotFoundError, KeyError):
+                gd = tb = None
+            self._religion = (gd, tb)
         return self._religion
 
     def cultures(self) -> dict | None:

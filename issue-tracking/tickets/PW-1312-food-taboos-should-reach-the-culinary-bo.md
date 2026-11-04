@@ -27,5 +27,6 @@ crops, not from what a culture's land actually offers (seafood.py fish and shell
 - [ ] Source the straddle table (Douglas 1966) from a read copy; today it is my reading of the scheme, marked JUDGEMENT.
 
 ## Updates
+- 2026-11-03: Lane 167: points 2-4 left. 2 needs the per-culture land sampled against the seafood and prey layers inside taboos.derive, which today reads no layers (not small); 3 changes whether the culinary book says dogs are eaten, a content call for Daniel; 4 needs a read copy of Douglas 1966, none is held. Also: the brief and cuisine sheet now read the Religion tab's docs (PW-1440).
 - 2026-11-03: Status todo -> in-progress. Lane 164: point 1 done in the cuisine sheet: a culture's food taboos (scope everyone) drop out of its staple, herd and dairy lists, and the sheet lists what it won't eat, split into its faith's and its own (cuisine.py::profile, wont_eat). Points 2-4 (real fisheries and game as targets, the dog as a culture taboo, Douglas 1966 from a read copy) remain. docs/review/food/cuisine-sheet/round1.md
 - 2026-11-02: Created from inbox draft draft-taboos-feed-culinary-diet.md (found by lane117).

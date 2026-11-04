@@ -523,6 +523,7 @@ class Use:
 
 
 ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
+GODS_MODES = ("faith_made", "belief_only", "absolute")  # meta.gods_mode (PW-1304, PW-1309); techtree.GODS_MODES is the same tuple
 ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present (PW-690). The technology tree (techtree.py) caps what
 # the peoples know by the present at it; the history is not run forward past the present for it.
 
@@ -565,6 +566,7 @@ class Tree:
     crops: list[str] | None = None  # meta.crops: the cultivated plants (crop_defs.IDS) of the world; None: every real one; [] none
     crops_force: list[str] = field(default_factory=list)  # meta.crops_force: fantasy crops whose rare domestication is certain (tests)
     crops_at: dict = field(default_factory=dict)  # meta.crops_at: id -> anchor time of the first cultivation, kyr ago
+    gods_mode: str = "faith_made"  # meta.gods_mode (PW-1309): faith_made | belief_only (no divine magic) | absolute; saved with the run, read by techtree.build
     mode: str = MODE_DEFAULT  # meta.mode: 'fantasy' (all the peoples, the fantasy goods) or 'real' (only the lines marked real, real goods; PW-695)
     portal_mode: str = "off"  # meta.portal_mode: arrivals from outside: 'off' (each at its best habitat), 'random' or 'sites' (PW-697)
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
@@ -1151,6 +1153,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
     if t.era not in ERAS:
         raise ValueError(f"meta.era must be one of {list(ERAS)}")
+    t.gods_mode = str(meta.get("gods_mode") or "faith_made").strip().lower()
+    if t.gods_mode not in GODS_MODES:
+        raise ValueError(f"meta.gods_mode must be one of {list(GODS_MODES)}")
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
@@ -1274,7 +1279,7 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "surge_early": t.surge_early, "surge_late": t.surge_late, "raiders": t.raiders, "war": t.war,
-                     "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
+                     "era": t.era, "gods_mode": t.gods_mode, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
                      "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "draw_ranges": t.draw_ranges, "wave_kyr": t.wave_kyr,
