@@ -51,13 +51,13 @@
   let D = null, mounted = '';
 
   function load(result, done) {  // (gods, taboos and cultures of the run, fetched once)
-    if (D && D.id === result.id) return done();
+    if (D && D.id === result.id) { if (D.busy) D.waiters.push(done); else done(); return; }  // (a second draw while the first fetch is in flight waits for it)
     const id = result.id;
-    D = { id, gods: null, taboos: null, cultures: result.culturesDoc || null, busy: true };
-    const get = (u) => fetch(u, { cache: 'no-store' }).then((r) => r.json()).catch((e) => ({ error: e.message }));
+    D = { id, gods: null, taboos: null, cultures: result.culturesDoc || null, busy: true, waiters: [done] };
+    const get = (u) => fetch(u, { cache: 'no-store' }).then((r) => r.ok ? r.json() : r.text().then((t) => { let m = t; try { m = JSON.parse(t).error || t; } catch (e) {} return { error: `${r.status} ${String(m).slice(0, 200)}` }; })).catch((e) => ({ error: e.message }));
     Promise.all([get(`../api/gods?run=${encodeURIComponent(id)}`), get(`../api/taboos?run=${encodeURIComponent(id)}`),
       D.cultures ? Promise.resolve(D.cultures) : get(`../api/cultures?run=${encodeURIComponent(id)}`)])
-      .then(([g, t, c]) => { if (D.id !== id) return; D.gods = g; D.taboos = t; D.cultures = c; D.busy = false; prep(); done(); });
+      .then(([g, t, c]) => { if (D.id !== id) return; D.gods = g; D.taboos = t; D.cultures = c; D.busy = false; prep(); const w = D.waiters; D.waiters = []; for (const f of w) f(); });
   }
   function prep() {
     const g = D.gods;
@@ -236,7 +236,7 @@
   window.ReligionTab = {
     get view() { return st.view; },
     draw(el, result) {
-      if (!D || D.id !== result.id) { mounted = ''; el.innerHTML = `<p class="muted" style="padding:10px 12px">Working out the gods, faiths and taboos of ${esc(result.id)}…</p>`; }
+      if (!D || D.id !== result.id || D.busy) { mounted = ''; el.innerHTML = `<p class="muted" style="padding:10px 12px">Working out the gods, faiths and taboos of ${esc(result.id)}…</p>`; }
       load(result, () => {
         D.root = el; D.result = result;
         if (!D.gods || D.gods.error || !D.F) { el.innerHTML = `<p class="muted" style="padding:10px 12px">No religion for ${esc(result.id)}: ${esc(D.gods?.error || 'this run has no faiths')}</p>`; return; }
