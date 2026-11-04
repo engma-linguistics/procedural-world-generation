@@ -460,6 +460,60 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
     return 2 * math.log(2) * D["contact_speed_km_yr"] * 1e3 / width
 
 
+# ---- D52's experiment arms (lane 186, PW-1461; docs/review/culture/writing/round2.md): how urban and administrative know-how
+# crosses to a neighbour. One switch, `contact_arms` (the tree's [defaults], or build's `arms`): a string of letters; empty = off =
+# the plain front above, bit for bit. Each letter is a mechanism:
+#   B  town network: a tech that needs towns or cities crosses the width of the taker's town cells (sqrt of their area), not of
+#      its whole range. Needs the town footprint (`towns`, from the settlement ledger: techspread.town_footprint).
+#   C  trade contact: when both sides know towns, an urban tech's front runs at arm_trade_km_yr instead of contact_speed_km_yr:
+#      pottery's favoured corridors, Jordan et al. 2016: 1.2 (Asian zone) and 3.3 km/yr (African zone) against 0.2 and 0.5 off
+#      them (Table 1, read by lane 70); the supplement gives 1.46-5.51 along the Mediterranean corridor (lane 186). 2.2: between.
+#   E  elite uptake: a people with chiefdoms, kingship or towns takes an administrative tech (ARM_ADMIN, or `admin = true` in
+#      the tree) once the front reaches its nearest town: the width is its town spacing, sqrt(range / town cells). Needs `towns`.
+#   K  kin share: between a people and its parent, its daughter lines or a sibling line, begun within arm_kin_kyr (a language
+#      family's depth, a judgement), the taker's insularity does not apply (openness 1): its reserve is against Others.
+# A front's arrival is recomputed each step for the techs an arm touches and never moves later (a front that gains a road
+# speeds up from where it is; the pair's keyed draw is unchanged).
+ARM_ADMIN = ("writing", "alphabet", "law")
+ARM_URBAN_NEEDS = ("towns", "cities")
+ARM_ELITE = ("chiefdoms", "kingship", "towns")
+ARM_DEFAULTS = {"contact_arms": "", "arm_trade_km_yr": 2.2, "arm_kin_kyr": 15.0,
+                "arm_width_x": 1.0}  # (width_x: a factor on B's and E's width, for the nudge check)
+
+
+def _arm(D: dict, k: str):
+    return D.get(k, ARM_DEFAULTS[k])
+
+
+def kin_pairs(lines: list[dict], kin_kyr: float) -> set:
+    """Pairs (both ways) of lines that are kin for arm K: parent and daughter (a split, a hybrid and its parents, a group and its
+    people), or two daughters of one parent, where the daughter began within kin_kyr ago."""
+    out = set()
+    ids = {l["id"] for l in lines}
+    kids: dict = {}
+    for l in lines:
+        began = float(l.get("started_kyr") if l.get("started_kyr") is not None else l.get("ago_kyr", 1e9))
+        if began > kin_kyr:
+            continue
+        for q in ([l["group_of"]] if l.get("group_of") else (l.get("parents") or [])):
+            if q in ids:
+                out |= {(q, l["id"]), (l["id"], q)}
+                kids.setdefault(q, []).append(l["id"])
+    for ks in kids.values():
+        out |= {(a, b) for a in ks for b in ks if a != b}
+    return out
+
+
+def town_cells_at(tw, ago: float) -> float:
+    """A people's town cells at a time, from its footprint (agos oldest first, counts); 0 before it or without one."""
+    if tw is None:
+        return 0.0
+    a, c = tw
+    if ago > a[0] + 1e-9:
+        return 0.0
+    return float(np.interp(-ago, -np.asarray(a), np.asarray(c)))
+
+
 def keyed(seed: int, *key) -> float:
     """A uniform draw in [0, 1) for one purpose (PW-1459): a hash of the seed and the key, so it does not depend on how many
     draws came before it (common random numbers, as polities.draw)."""
@@ -469,13 +523,15 @@ def keyed(seed: int, *key) -> float:
 
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
           goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
-          T: dict | None = None, gods_mode: str = "faith_made") -> dict:
+          T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None) -> dict:
     """meta.techtree for a peoples run. gods_mode (PW-1304): "faith_made" (default), "belief_only" or "absolute"; a tech marked
     `gods = true` (divine magic) exists only in faith_made and absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
     ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
-    lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods."""
+    lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods. towns, arms:
+    D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2})."""
     T = T or load()
     D = T["defaults"]
+    arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEK")
     cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
     techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
              and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
@@ -558,6 +614,38 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
         s = specialist_share(T, known[lid])
         return strength(n, D), strength(n * s * density_x(dens, D), D), s
 
+    if arms:
+        urban = {i for i, t in techs.items() if set(t.get("needs", [])) & set(ARM_URBAN_NEEDS)}
+        admin = {i for i, t in techs.items() if t.get("admin") or i in ARM_ADMIN}
+        touched = (urban if arms & {"B", "C"} else set()) | (admin if "E" in arms else set())
+        kin = kin_pairs(lines, float(_arm(D, "arm_kin_kyr"))) if "K" in arms else set()
+        if arms & {"B", "E"} and not towns:  # (output.save builds the tree before the settlement ledger: no footprint there yet)
+            warnings.warn(f"tech tree arms {''.join(sorted(arms & {'B', 'E'}))} need a town footprint; without one they do nothing",
+                          stacklevel=2)
+        towns = towns or {}
+        cell_km2 = float(towns.get("_cell_km2") or 0.0)
+        v_trade = float(_arm(D, "arm_trade_km_yr"))
+        width_x = float(_arm(D, "arm_width_x"))
+
+    def knows(lid, tid, ago):
+        v = known[lid].get(tid)
+        return v is not None and v[0] >= ago - 1e-9
+
+    def arm_rate(x, y, tid, ago, op, w):
+        """The contact rate (before spread and culture) of an arm-touched front: width, speed and openness as the arms say."""
+        a = _area_at(series[y], ago) or D["anchor_pop"] / D["anchor_dens"] / 1e6
+        if (x, y) in kin:
+            op = 1.0
+        width = math.sqrt(a * 1e6)
+        n = town_cells_at(towns.get(y), ago) if tid in touched else 0.0
+        if "E" in arms and tid in admin and n >= 1 and any(knows(y, e, ago) for e in ARM_ELITE):
+            width = width_x * math.sqrt(a * 1e6 / n)  # (the court's reach: the front need only reach its nearest town)
+        elif "B" in arms and tid in urban and n >= 1 and cell_km2 > 0:
+            width = min(width_x * math.sqrt(n * cell_km2), width)  # (the town network's width)
+        urb = "C" in arms and tid in urban and knows(x, "towns", ago) and knows(y, "towns", ago)
+        v = v_trade if urb else D["contact_speed_km_yr"]
+        return 2 * math.log(2) * v * 1e3 / max(width, D["contact_width_min_km"]) * w * op
+
     began = set()
     arrive: dict[tuple, float | None] = {}  # ((giver, taker, tech): when its front reaches the taker's middle, kyr; None: never)
     unit: dict[tuple, float] = {}  # ((giver, taker): the pair's front delay, in units of 1 / the contact rate)
@@ -611,6 +699,16 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
                     if tid not in known[x] or tid in known[y] or known[x][tid][0] < ago:
                         continue
                     k3 = (x, y, tid)
+                    if arms and (tid in touched or (x, y) in kin) and not techs[tid].get("modern_contact") \
+                            and not (k3 in arrive and arrive[k3] is None):
+                        op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
+                        r = arm_rate(x, y, tid, ago, op, w) * techs[tid].get("spread", D["spread"]) \
+                            * domain_x(culture[y][1], techs[tid])
+                        if (x, y) not in unit:
+                            unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (the same keyed draw as the plain front)
+                        new = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
+                        if k3 not in arrive or (new is not None and new > arrive[k3]):
+                            arrive[k3] = new  # (never later: the front keeps what it has crossed)
                     if k3 not in arrive:
                         if techs[tid].get("modern_contact") and node[y] is None:  # (language: to any genetically modern people, PW-971)
                             arrive[k3] = None
@@ -757,8 +855,11 @@ def anchor_check(tids, seeds: int = 41, T: dict | None = None, peers: int | None
     return out
 
 
-def rebuild(run_dir: Path, gods_mode: str | None = None) -> dict:
-    """The tech tree of a stored peoples run, built afresh in memory (nothing written): today's tree file, the run's saved lines."""
+def rebuild(run_dir: Path, gods_mode: str | None = None, T: dict | None = None, arms: str | None = None,
+            seed: int | None = None) -> dict:
+    """The tech tree of a stored peoples run, built afresh in memory (nothing written): today's tree file, the run's saved lines.
+    T, arms: a tree and D52's arms to try; the town footprint is read from the run's settlement ledger when an arm needs it.
+    seed: another draw of the tree's luck over the same history (default: the run's own)."""
     from . import land as LD
     run = json.loads((Path(run_dir) / "run.json").read_text())
     m = run["meta"]
@@ -768,8 +869,14 @@ def rebuild(run_dir: Path, gods_mode: str | None = None) -> dict:
         present = np.frombuffer((Path(run_dir) / pp["file"]).read_bytes(), np.uint8).reshape(pp["shape"]) / 100.0
     goods = LD.goods(m.get("world")) if m.get("world") else None
     lines = with_generations(m["lineages"], m.get("tree"))
+    D = (T or load())["defaults"]
+    towns = None
+    if set(str(_arm(D, "contact_arms") if arms is None else arms)) & {"B", "E"} and m.get("settlements"):
+        from .techspread import town_footprint
+        towns = town_footprint(run_dir)
     return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
-                 m.get("era"), int(m.get("try_seed") or 0), gods_mode=gods_mode or m.get("gods_mode", "faith_made"))
+                 m.get("era"), int(m.get("try_seed") or 0) if seed is None else seed, T=T, gods_mode=gods_mode or m.get("gods_mode", "faith_made"),
+                 towns=towns, arms=arms)
 
 
 def for_run(run_dir: Path) -> dict:

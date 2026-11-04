@@ -3,6 +3,7 @@
 import math
 
 import numpy as np
+import pytest
 
 from planet.lineages import techtree as TT
 
@@ -426,3 +427,61 @@ def test_a_nudge_elsewhere_leaves_a_peoples_dates_alone():
         assert k0["b"] != k1["b"]  # (the nudged people itself does change)
     u = [TT.keyed(3, "invent", "a", "fire", k) for k in range(4000)]
     assert abs(np.mean(u) - 0.5) < 0.02 and 0.0 <= min(u) and max(u) < 1.0
+
+
+# ---- D52's experiment arms (lane 186, PW-1461) --------------------------------------------------------------------------------
+
+TOWNS_Y = {"y": (np.array([8.0, 0.0]), np.array([50.0, 50.0])), "_cell_km2": 3000.0}  # (50 town cells of 3,000 km2)
+
+
+def _writing_world(arms, towns=None, kin=False, ins=0.3, seeds=range(8), over=None):
+    """A big people y (49 Mkm2), ready for writing, beside a small writer src: the kyr y waits for writing, per seed."""
+    have = TT.closure(T, ["writing"])
+    techs = {**T["techs"], "writing": {**T["techs"]["writing"], "rate": 1e-9}}  # (y never invents it: only the front counts)
+    T2 = {**T, "techs": techs, "defaults": {**T["defaults"], **(over or {})},
+          "kind": [{"of": ["src"], "kit": sorted(have)}, {"of": ["y"], "kit": sorted(have - {"writing"})}]}
+    con = {"pairs": [{"a": "src", "b": "y", "first_contact_kyr": 8.0, "in_contact_now": True,
+                      "series": [[8.0, 3000, 0.0], [0.0, 3000, 0.0]]}]}
+    waits = []
+    for s in seeds:
+        kw = {"origin": "split", "parents": ["p"]} if kin else {}  # (kin: two daughter lines of one people)
+        src = line("src", at=8.0, track=_pop(1e7, 1.0, 8.0), **kw)
+        y = line("y", at=8.0, track=_pop(1e8, 49.0, 8.0), **kw)
+        y["demography"] = {"insularity": ins}
+        ls = [line("p", at=9.0, ended=8.0, track=_pop(1e7, 1.0, 9.0))] * kin + [src, y]
+        k = TT.build(ls, con, None, seed=s, T=T2, towns=towns, arms=arms)["known"]["y"].get("writing")
+        waits.append(8.0 - k[0] if k else 8.0)
+    return np.array(waits)
+
+
+def test_arms_off_is_the_plain_front_bit_for_bit():
+    """D52's switch off (the default, or an empty string) is today's rule exactly, with or without a town footprint."""
+    a = _writing_world(None)
+    assert (a == _writing_world("")).all() and (a == _writing_world("", towns=TOWNS_Y)).all()
+    assert TT.ARM_DEFAULTS["contact_arms"] == "" and "contact_arms" not in T["defaults"]
+
+
+def test_each_arm_speeds_writing_by_its_own_mechanism():
+    """B crosses the town network (50 cells of 3,000 km2: ~390 km, not 7,000), C runs at trade speed between town peoples, E
+    stops at the nearest town, K drops the taker's reserve against its own kin; each leaves the other cases alone."""
+    off = np.median(_writing_world(""))
+    assert np.median(_writing_world("B", towns=TOWNS_Y)) < off / 3
+    with pytest.warns(UserWarning, match="town footprint"):
+        assert np.median(_writing_world("B")) == off  # (no footprint: B has nothing to cross, and says so)
+    c = np.median(_writing_world("C"))
+    assert c < off / 1.5  # (both know towns: the front at 2.2 km/yr, not 1)
+    dense = {**TOWNS_Y, "y": (np.array([8.0, 0.0]), np.array([5000.0, 5000.0]))}  # (E crosses town spacing, B their summed width:
+    assert np.median(_writing_world("E", towns=dense)) < np.median(_writing_world("B", towns=dense)) / 3  # many towns favour E)
+    assert np.median(_writing_world("E", towns=TOWNS_Y)) < off / 3
+    kin_off, kin_on = np.median(_writing_world("", kin=True, ins=0.9)), np.median(_writing_world("K", kin=True, ins=0.9))
+    assert kin_on < kin_off / 2
+    assert np.median(_writing_world("K", ins=0.9)) == np.median(_writing_world("", ins=0.9))  # (strangers: no change)
+    assert np.median(_writing_world("C", over={"arm_trade_km_yr": 3.3})) < c  # (its number is read from the tree)
+
+
+def test_kin_pairs_are_recent_parents_daughters_and_sisters():
+    ls = [line("p", at=50.0), line("a", origin="split", at=10.0, parents=["p"]), line("b", origin="split", at=8.0, parents=["p"]),
+          line("old", origin="split", at=40.0, parents=["p"]), line("g", origin="group", at=5.0, group_of="a")]
+    k = TT.kin_pairs(ls, 15.0)
+    assert {("p", "a"), ("a", "p"), ("a", "b"), ("g", "a")} <= k
+    assert ("p", "old") not in k and ("a", "old") not in k
