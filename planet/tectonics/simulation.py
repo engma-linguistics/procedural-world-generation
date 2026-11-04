@@ -77,10 +77,10 @@ class Simulation:
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
         "npp",  # g C/m2/yr per cell
-        "npp_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
+        "cover_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
         # balance's CO2) the weathering reference is learnt with (earth.global_temperature; None after it)
-        "npp_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the NPP the weathering sink's
-        # plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law)
+        "cover_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the rooted cover the weathering
+        # sink's plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law; PW-1424 C)
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
@@ -162,8 +162,8 @@ class Simulation:
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
-        self.npp_pot = self.pot_frac = self.pot_lai = None
-        self.npp_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
+        self.cover_pot = self.pot_frac = self.pot_lai = None
+        self.cover_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
         self.veg_type = np.zeros(n, np.uint8)
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6

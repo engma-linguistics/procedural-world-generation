@@ -62,6 +62,11 @@ count as a check (coordinator ruling, PW-994).
    `free -g` ≥ `MINFREE` (40) GB). ~15 min per run at load ~25; 72 runs for two arms ≈ 2 h at 10 at once.
    A draw with a log is skipped, so delete the log of a draw that died and launch again to fill the gap.
 3. Judge: `uv run python tools/judge.py paired <scratch>/judge <armA> <armB> [--table] [--json out.json]`.
+   - A change that moves the weathering's or the outgassing's size (the weathering's factors, plant cover, outgassing
+     yields) also moves the learnt carbon yardstick: run `uv run python tools/yardstick.py <scratch>/judge/<armB>_*`
+     and, if the mean is off `earth.YARDSTICK[6]` by more than its standard error, re-fit the constant and re-run
+     the arm (PW-1424 A; `docs/review/climate/stability/round3.md`). The fork harness (`paired_fork.sh` spins) gives
+     the learnt y at 300 Myr first, before the arm continues.
    - Per measure: each arm's median, the median of the paired B − A differences, its bootstrap 95% interval
      (4000 resamples of the draws) and a two-sided sign test. "moved" (*) = the interval excludes 0.
    - Measures: end T and moment T (true mean − 13.8 C), late dT, late CO2, land %, the sink and source references

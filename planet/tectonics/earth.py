@@ -56,8 +56,9 @@ PLANT_WEATHER = 3.0  # fully planted ground weathers this many times faster than
 # CO2 (roots, mycorrhizae, soil CO2 and acids, wetter soils): field pairs 2-5x (Moulton & Berner 1998; Moulton, West
 # & Berner 2000, Iceland), ~10x in sandboxes (Bormann et al. 1998), < 2x (Drever 1994); GEOCARB's pre-vascular f_E
 # 0.25 is 4x (Berner 1994, 2004). 3 is the field pairs' middle
-NPP_WEATHER = 500.0  # g C/m2/yr: the NPP at which ground counts as fully planted for weathering (a temperate forest's,
-# ~500-700, Luyssaert et al. 2007); sparser plants enhance it in proportion
+# (how planted a cell counts for weathering is its rooted plant cover, vegetation.rooted_cover, not its NPP: PW-1424 C,
+# PW-1332 B. Until then ground counted fully planted at an NPP of 500 g C/m2/yr, so a fix to the plants' growth moved
+# the climate by 3-5 C through the weathering, PW-1332)
 CO2_MAX = 6.0  # e-folds of CO2 the log forcing levels off toward (+-; smoothly, tanh: ~400x / 0.0025x the
 # reference; snowball exits needed ~40-400x, 3.6-6 e-folds, Caldeira & Kasting 1992, Hoffman et al. 2017; was a hard
 # clip at 3, PW-558)
@@ -72,7 +73,15 @@ CO2_TAU = 0.4  # Myr: the CO2 stock's residence time at the reference, ocean-atm
 # few hundred kyr to ~1 Myr: Archer et al. 2009, Colbourn et al. 2015)
 REF_MYR = 100.0  # Myr: during the spin-up, the source's and sink's references follow the planet's rates over this
 REF_FREEZE = 300.0  # Myr: then they are kept (PW-558/559 B): the planet's own balance once the made-up start has
-# settled, the same spin-up the criteria skip
+# settled, the same spin-up the criteria skip. After it the sink's reference is not the learnt one but the source's
+# over exp(YARDSTICK) (references)
+YARDSTICK = {6: 1.377, 7: 1.542}  # per grid level: ln(source reference / sink reference) after REF_FREEZE (PW-1424
+# A). The learnt ratio was a dice roll: it varied about as much between re-runs of one planet (sd 0.16) as between
+# planets (0.18), and each 0.1 of it set the planet's whole later climate 1.1 C warmer or colder (docs/review/climate/
+# stability/round1.md, round2.md). One constant per level, the mean of the learnt ratio over the judge's draws
+# (tools/yardstick.py re-fits it; re-fit whenever a change moves the weathering's or the outgassing's size); the
+# source's reference stays the planet's own, so a planet outgassing more also weathers more at its balance. Levels
+# without their own take the nearest (round3.md: L7's from the store's stock runs plus L6's shift)
 # (a reference that kept following one part of the sink, the ice-free land's erosion, was tried and dropped on the
 # mature start: with no relief build-up left to forget, it forgot real changes in erosion; PW-576 stage 3)
 
@@ -198,7 +207,7 @@ def drift_source(p, drift: float) -> float:
 
 START_RESPONSE = 0.6  # C of weathering-land temperature per C of dT, for start_carbon's first guess and the drift's
 # size only (the land isn't made yet): temp_response's 0.5 in the tropics to ~0.8 at 40 deg, where most rock weathers
-START_PLANTED = 0.5  # the share of the weathering ground counted as fully planted (NPP_WEATHER) in start_carbon's
+START_PLANTED = 0.5  # the share of the weathering ground counted as fully planted (rooted cover 1) in start_carbon's
 # first guess (from the first step the carbon cycle itself sets the stock, within ~CO2_TAU)
 
 
@@ -323,10 +332,24 @@ def target_fraction(p, t: float) -> float:
         -t / p.continental_growth)
 
 
-def plant_factor(npp) -> np.ndarray:
-    """Per cell, how many times faster than bare ground its plants make it weather (1 bare, PLANT_WEATHER
-    fully planted at NPP_WEATHER and above; in proportion between)."""
-    return 1.0 + (PLANT_WEATHER - 1.0) * np.clip(np.asarray(npp, float) / NPP_WEATHER, 0.0, 1.0)
+def plant_factor(cover) -> np.ndarray:
+    """Per cell, how many times faster than bare ground its plants make it weather, from its rooted plant cover
+    (vegetation.rooted_cover, 0..1): 1 bare, PLANT_WEATHER fully covered, in proportion between (PW-1424 C)."""
+    return 1.0 + (PLANT_WEATHER - 1.0) * np.clip(np.asarray(cover, float), 0.0, 1.0)
+
+
+def references(sim):
+    """The carbon cycle's [source, sink] references as the stock reads them: the learnt sim.refs up to and at
+    REF_FREEZE; after it the source's (the planet's own outgassing) with the sink's set YARDSTICK below it (PW-1424
+    A). sim.refs keeps the learnt pair (tools/yardstick.py reads the learnt ratio)."""
+    if sim.refs is None or sim.t <= REF_FREEZE + 1e-9:
+        return sim.refs
+    return np.array([sim.refs[0], sim.refs[0] * np.exp(-yardstick(sim.grid.level))])
+
+
+def yardstick(level: int) -> float:
+    """YARDSTICK at a grid level, or the nearest level's."""
+    return YARDSTICK[min(YARDSTICK, key=lambda k: (abs(k - level), k))]
 
 
 def weathering(sim, land):
@@ -345,11 +368,12 @@ def weathering(sim, land):
     warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else np.ones_like(supply)
     if sim.runoff is not None:
         warm = warm * (np.maximum(sim.runoff, 0.0) / RUNOFF_REF) ** WEATHER_RUNOFF
-    # roots and soil CO2 speed it up, in proportion to how much grows there (GEOCARB's f_E, plant_factor)
-    # (on the run's plants grown at the balance's CO2, sim.npp_w: the CO2 acts on the planted ground through
-    # co2_law's FERT, GEOCARB's form of the plants' CO2 response, and counting the NPP's own CO2 response too made
+    # roots and soil CO2 speed it up, in proportion to the ground rooted plants cover (GEOCARB's f_E, plant_factor;
+    # PW-1424 C: was their NPP, so a plant-growth fix moved the climate)
+    # (on the run's plants grown at the balance's CO2, sim.cover_w: the CO2 acts on the planted ground through
+    # co2_law's FERT, GEOCARB's form of the plants' CO2 response, and counting the plants' own CO2 response too made
     # the planted sink's CO2 slope ~55% too steep, PW-880)
-    plants = plant_factor(sim.npp_w)
+    plants = plant_factor(sim.cover_w)
     v = (plants - 1.0) / (PLANT_WEATHER - 1.0)
     return supply * (warm * plants), supply, warm, plants, supply * warm * (1.0 - v)
 
@@ -478,9 +502,11 @@ def global_temperature(sim, growth, newc, rng, plume=None):
       CO2        a stock (co2_stock): volcanism at ridges, arcs and plumes
                  (PW-875) adds it (warming); fresh rock weathering in warm, wet mountains
                  removes it (cooling, e.g. the Himalaya since 40 Ma). Each
-                 is measured against the planet's own balance once its
-                 start has settled (REF_FREEZE), so lasting changes keep
-                 counting. A cold or icy planet weathers slower (the
+                 is measured against a reference: the source against the
+                 planet's own outgassing once its start has settled
+                 (REF_FREEZE), the sink against the source's over one
+                 constant per grid level (YARDSTICK, references), so
+                 lasting changes keep counting. A cold or icy planet weathers slower (the
                  weathering thermostat), so CO2 piles up and warms it back
       ice        ice sheets reflect sunlight (cooling feedback)
       star       the star brightens as it ages (star_forcing; the CO2
@@ -517,7 +543,7 @@ def global_temperature(sim, growth, newc, rng, plume=None):
         # The sink's reference is anchored where the star is, at the run's end (GEOCARB's frame, coordinator
         # ruling v1-finish-11): the planet's weatherability with land plants, at the balance climate. So
         #  - its plants are the potential vegetation of the spin-up's climate with every group there, at the
-        #    balance's CO2 (sim.npp_pot, update_vegetation), not the spin-up's own (bare before ~470 Ma), and
+        #    balance's CO2 (sim.cover_pot, update_vegetation), not the spin-up's own (bare before ~470 Ma), and
         #    bare early land weathers slower than the balance, holding more CO2, until the plants come;
         #  - its climate is the balance's (PW-809): the sink taken back to the balance's dT (co2_term(0), plus
         #    climate_offset, the world-builder's shift) through the weathering's temperature law, each cell by
@@ -527,7 +553,7 @@ def global_temperature(sim, growth, newc, rng, plume=None):
             # (the source's reference without its drift: the wander is not learnt as the balance either)
             shift = co2_term(p, 0.0) + p.climate_offset - sim.dT  # C of dT from here to the balance climate
             resp = WEATHER_K * temp_response(sim.grid) + RUNOFF_PER_C
-            pot = plant_factor(sim.npp_pot if sim.npp_pot is not None else sim.npp)
+            pot = plant_factor(sim.cover_pot if sim.cover_pot is not None else 0.0)
             at_bal = float((supply * warm * pot * np.exp(resp * shift)).sum()) / sim.scale**2
             learn = np.array([now[0] / noise, max(at_bal, 1e-12)])
             if sim.refs is None:
@@ -541,7 +567,8 @@ def global_temperature(sim, growth, newc, rng, plume=None):
         if sim.temp is not None:  # (the planted ground's cells, for its plants' starvation below their CO2 floor)
             on = sink_cells > bare_cells
             starve = ((sink_cells - bare_cells)[on] / tot, sim.temp[on])
-        sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / sim.refs[1], dt,
+        ref = references(sim)  # (after the spin-up: the source's own, the sink's one YARDSTICK below it, PW-1424 A)
+        sim.co2 = co2_stock(sim.co2, now[0] / ref[0], now[1] / ref[1], dt,
                             bare=float(bare_cells.sum()) / tot, starve=starve)
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
@@ -744,12 +771,12 @@ def update_vegetation(sim, e):
     update), and the plant groups that appear (vegetation.flora_update,
     on the niches measured at the last update, on Earth's calendar counted
     back from the run's end: vegetation.group_windows). Sets veg (ground
-    cover, which slows erosion), npp, npp_w (the same plants at the balance's
-    CO2, which speed weathering: PW-880), veg_frac,
+    cover, which slows erosion), npp, cover_w (the rooted cover of the same
+    plants at the balance's CO2, which speeds weathering: PW-880, PW-1424 C), veg_frac,
     veg_lai, veg_type, tree_cover, flora and veg_niche. Before the land
     pioneers arrive the land is bare. During the spin-up it also sets
-    npp_pot, the potential vegetation (every group, the balance's CO2) the
-    weathering reference is learnt with (global_temperature)."""
+    cover_pot, the rooted cover of the potential vegetation (every group, the
+    balance's CO2) the weathering reference is learnt with (global_temperature)."""
     p, g = sim.params, sim.grid
     n = g.n
     rng = np.random.default_rng([sim.seed, sim.step_no, 11])
@@ -762,12 +789,12 @@ def update_vegetation(sim, e):
         pv = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
                               sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.pot_frac, lai0=sim.pot_lai,
                               pco2=climate.PCO2_BALANCE, cheap=True, crown=False)
-        sim.npp_pot = pv["sm"]["npp"]
+        sim.cover_pot = vegetation.rooted_cover(pv["eq"]["nu"])
         sim.pot_frac, sim.pot_lai = pv["eq"]["nu"].astype(np.float32), pv["pot"]["lai"].astype(np.float32)
     else:
-        sim.npp_pot = sim.pot_frac = sim.pot_lai = None
+        sim.cover_pot = sim.pot_frac = sim.pot_lai = None
     if not vegetation.land_plants(sim.flora, sim.t):
-        sim.veg, sim.npp, sim.tree_cover, sim.npp_w = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
+        sim.veg, sim.npp, sim.tree_cover, sim.cover_w = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
         sim.veg_type = np.where(land, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
         sim.veg_niche = vegetation.bare_niches()
         return
@@ -782,7 +809,7 @@ def update_vegetation(sim, e):
                           sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.wv_frac, lai0=sim.wv_lai,
                           pco2=climate.PCO2_BALANCE, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
                           locked_potential=True, crown=False)
-    sim.npp_w = vw["sm"]["npp"]
+    sim.cover_w = vegetation.rooted_cover(vw["eq"]["nu"])
     sim.wv_frac, sim.wv_lai = vw["eq"]["nu"].astype(np.float32), vw["pot"]["lai"].astype(np.float32)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)
     sim.veg_lai = v["pot"]["lai"].astype(np.float32)
