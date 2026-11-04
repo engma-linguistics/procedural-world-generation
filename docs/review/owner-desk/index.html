@@ -76,6 +76,15 @@ Lanes stay within half the machine while your language jobs run.</p>
 </header>
 
 <h2 id="answers">Your questions</h2>
+<div class="card" id="d50"><div class="id">D50 · SHOULD A STRONG INVASION REACH FURTHER BEFORE V4? (PW-1450, FROM LANE 177)</div>
+<p><b>In plain words:</b> you can now schedule invasions in the peoples workbench (new "States &amp; war" tab). But an invasion only happens if, in that window, the invaders already rule a <i>state</i> whose border touches the victims' land. When that holds, a strong row happened every time (7 of 7 on run a2b637). It rarely holds: only 5 of 30 one-century rows on a2b637 and 2 of 42 on Seven Meals (3c1caf). Your own example, "the antelope-kin come down on the humans", reads "it didn't" on 3c1caf. The antelope-kin rule a state there for just one century, 1,500 years ago, and a newly founded state doesn't attack. Each row that didn't happen says when the invaders did rule a state, so you can move the window.</p>
+<ol>
+<li><b>A. Wait for v4,</b> when states live inside the history: peoples move where their states conquer, so borders and reach come from the sim.</li>
+<li><b>B. A strong row cuts a corridor:</b> the invaders' nearest state pushes through to the victims, even with no shared border. Works sooner, but it's a forced path.</li>
+<li><b>C. A strong row raises a war-band state</b> for invaders who have only chiefdoms, then conquers as usual.</li>
+</ol>
+<p><i>My lean:</i> A. It's the honest mechanism, and v4 lands before 1 December. B is a fallback if v4 slips. Use the tab now on windows when the invaders already hold a state.</p>
+</div>
 <div class="card" id="d49"><div class="id">D49 · DO RULERS NEED WRITING? (PW-1448, FROM POLITIES V0)</div>
 <p><b>In plain words:</b> you ruled that a chiefdom needs writing (P2), and the new Polities layer keeps that rule. On the D&amp;D test run, humans have
 cities from 5,000 years ago and kingship from 4,500, but get writing only 1,100 years ago. So for 4,000 years the map shows cities with no rulers,
@@ -143,7 +152,6 @@ change no world, so I'd leave it. One correction: an earlier card here called th
 
 <tr><td>170 · building D47 (physics, side track)</td><td>Your pick, C: one carbon yardstick per grid level, weathering on plant cover, "frozen over" read at the end. Lane 160's full check, compared with the same 36 planets on the current code: re-runs of one planet still differ by about 1.8 °C (from 2.0), because plate chaos alone carries about 1.4 °C, so the 1.2 °C hope was wrong. But the spread across planets falls by a third (range &minus;7.5..+6.6 &rarr; &minus;4.2..+4.8 °C), both the cold and warm tails go, and no new hard failures appear. Worth building; judged on the paired test before merge.</td></tr>
 <tr><td>176 · peoples ledger</td><td>A one-page account of every mechanism that moves peoples (spread, density, contact, decline): what drives each, its source, and a test that it still does what it says. Nothing changes in the history itself.</td></tr>
-<tr><td>177 · invasions you schedule</td><td>v3: in the peoples workbench, a "Your invasions" panel. Write "antelope-kin against humans, around 1400, strong" and the Polities layer rebuilds. Each row then says what came of it: who took what from whom and how much land, or why it didn't happen (no state then, no shared border, or the odds failed). Saved next to your written faiths.</td></tr>
 
 <tr><td>showcases</td><td>Restarted overnight (my mistake: the first try started from the ice-age zoom rather than the world, so it got no towns or goods; deleted). Re-running the three showcase peoples runs on current code: two D&amp;D, one Seven Meals. The old ones (b4d502, a24559, 3c1caf) predate the density ladder, so the whole-people food brief fails on them. The old runs are kept, since your languages run reads a24559.</td></tr>
 
@@ -188,7 +196,8 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
-<ul><li><b>War, first cut</b> (v3, PW-1432 and PW-1447): <b>merged</b>, and the viewer is restarted. On the Polities layer, borders now move: states take border land from weaker neighbours, a card says "taken from X", and a fallen state says "conquered by Y" or "collapsed". States fall at about the rate history shows (46% chance per century). On Seven Meals (3c1caf), median state life is 200 years, against 130 in the historical record, and today's largest empire is 2.86 million km².</li>
+<ul><li><b>Invasions you schedule</b> (v3, PW-1433): <b>merged</b>. The peoples workbench has a "States &amp; war" tab. Write who invades whom, when (a year, or "600 years ago"), optionally from where (a click on the map), and light or strong. Each row then says what happened (who took what, and how much land) or why not. A second list shows the incursions the sim found on its own. Rows are saved next to your written faiths. See D50 on why most rows read "it didn't" for now. Also filed for v3: polity cards keep the founders' people after another people takes over (PW-1451).</li>
+<li><b>War, first cut</b> (v3, PW-1432 and PW-1447): <b>merged</b>, and the viewer is restarted. On the Polities layer, borders now move: states take border land from weaker neighbours, a card says "taken from X", and a fallen state says "conquered by Y" or "collapsed". States fall at about the rate history shows (46% chance per century). On Seven Meals (3c1caf), median state life is 200 years, against 130 in the historical record, and today's largest empire is 2.86 million km².</li>
 <li><b>Mountain summits</b> (PW-846): <b>merged</b>. High cells show a summit height, so the Earth test world's top peak reads 7.7 km, not the 5.9 km cell average.</li>
 <li><b>States and empires, first cut</b> (v3, PW-1431): <b>merged</b>. Peoples runs have a "polities" button on the globe. It shows who rules where at the century nearest the time slider: chiefdoms, states, empires (a state where another culture holds a fifth of its people) and dragon realms. Click a cell for its card: ruler, subjects, founded, fell, capital. Names are placeholders until the names slot. Compared with history, settled people per tier fit (chiefdoms in thousands, states in hundreds of thousands); states last too long and the biggest empire is too small, because nothing conquers yet (lane 175).</li>
 <li><b>Physics scouts:</b>
@@ -279,5 +288,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v143 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v144 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
