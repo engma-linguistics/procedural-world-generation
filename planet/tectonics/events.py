@@ -454,6 +454,11 @@ def triple_split(sim, k, c, failed, rng, tries=4) -> bool:
         world = g.centers[refs] @ pl.Q[k].T
         cell = g.locate(world)
         lr = np.where(sim.owner[cell] == k, lab[cell], f(world))
+        # (the plate's cells don't map one to one onto the world cells the sectors were judged on, and on a
+        # plate that has turned a lot they can differ by half: check the pieces the split will really make)
+        real = np.array([(on & np.isin(sim.w_ref, refs[lr == m]) & sim.w_cont).sum() for m in range(npc)])
+        if any(sliver(sim, x) for x in real):
+            continue
         stay = int(size.argmax())
         new = []
         for m in range(npc):

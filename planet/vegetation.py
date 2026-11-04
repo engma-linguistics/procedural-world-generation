@@ -157,8 +157,17 @@ _TUNE = {  # (tuned on Earth with tools/veg_check.py; overrides of the table abo
     "TeBS": dict(eps=1.15, gamma=0.005, carbon=11000),
 }
 PIONEERS = ("BoBS", "BoNS")  # light-hungry trees that shade-tolerant ones crowd out (birch, aspen, larch)
+# Herbs' roots respire too (PW-1261, lane 123): the herbs carry no wood term (rw = 0), so their rl, the leaves' rate,
+# was all the maintenance a grass paid, and its NPP/GPP came out at ~0.7 (Earth's observed climate) against ~0.46 +- 0.12
+# measured over 200+ studies (Collalti & Prentice 2019, Tree Physiol, doi:10.1093/treephys/tpz034, abstract; forests: the grass value is
+# not sourced, an extrapolation). Their grass above-ground NPP ran 1.4-1.8x the field fits at the same rain (Deshmukh
+# 1984, Yang et al. 2020; docs/review/vegetation/npp-check/diagnosis.md). The live roots and rhizomes of a herb stand
+# respire with its leaves (x HERB_ROOT_RESP the leaves' rate while leaves are out: a judgement within 2-3, giving NPP/GPP ~0.55-0.65).
+HERB_ROOT_RESP = 2.5
 for _p in PFTS:
     _p.update(_TUNE.get(_p["code"], {}))
+    if _p["cls"] == HERB:
+        _p["rl"] = _p["rl"] * HERB_ROOT_RESP
     _p["wue"] = {"C4G": 4.0, "Succ": 4.0}.get(_p["code"], 3.0)
     _p["tw_max"] = {"HthS": 20.0, "DecS": 20.0, "TunH": 18.0}.get(_p["code"], 99.0)
     # mm/yr: succulents need rain (or fog) most years; the hyper-arid cores of deserts are barren
@@ -946,7 +955,10 @@ _C = _competition()
 
 
 FIRE_MAX, FIRE_MID, FIRE_WIDTH = 0.35, 0.45, 0.09
-FUEL_MIN, FUEL_SPAN = 250.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+FUEL_MIN, FUEL_SPAN = 200.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+# (FUEL_MIN: GlobFIRM's fuel threshold for fire occurrence, 200 g C/m2 of litter, Thonicke et al. 2001, as LPJmL's
+# fire module documents it (PIK-LPJmL wiki, "Fire", assumption 1); was 250, tuned while the herbs' NPP ran ~1.4x
+# the field values, PW-1328. FUEL_SPAN, the ramp to a fully fuelled cell, is the model's own: GlobFIRM is a step)
 # Fuel age (PW-234): shrubs keep their fine litter as dead twigs and leaves in
 # and under the crown, which decays like fine woody debris, about half as fast
 # as fallen leaf litter (Harmon et al. 1986: twigs k ~0.1-0.3/yr, leaves
