@@ -126,3 +126,15 @@ dT +1.10 C main, +1.40 C cand (mean paired difference +0.30, sd 2.68: the 1.4-1.
 C + A pass the bar: 0 hard failures under the ends-frozen rule, soft pass 30/36 against main's 28/36 (p 0.79),
 every draw's late dT inside -6..+5 C of today's Earth. The spread between planets narrows from 2.09 to 1.73 C sd,
 mostly by pulling in main's cold tail and its two hot outliers; the centre does not move beyond chaos.
+
+### Tests, Earth check, scorecard (commit ca715232)
+- `pytest -n 4 -m "not slow"` (golden deselected): 979 passed, 1 skipped. Climate-area slow tests (`test_envelopes.py`,
+  `test_sea_level.py`): 16 passed, 1 skipped. `test_golden.py --update-golden`: `sim_L4_s1_60myr.json` rewritten
+  (C moves it; A starts after 300 Myr), then 2 passed without the flag.
+- `tools/earth_check.py` (L6): Koppen main group 71%, exact code 37%, log-rain correlation 0.718, global mean T 13.9 C
+  against NCEP's 14.0. The same as main's last scorecard line (ceabe3ae: 71.4 / 37.5 / 0.718), as expected: the Earth
+  check runs the climate at dT 0 and never reaches the carbon cycle.
+- `tools/scorecard.py`: line appended for ca715232. Seed 1 at 1000 Myr: ice 5.8%, trees 31.8%, NPP 390; seed 2: ice
+  1.7%, trees 53.5%, NPP 546 (ceabe3ae: 0.5 / 41.4 / 427 and 6.6 / 32.4 / 331). Single seeds, inside the re-run chaos.
+- Scratch kept: `l170/judge/` (both arms' 72 runs), `ana.py`, `tails.py`, `yard_spins.txt`, logs. Spins and code copies
+  removed.
