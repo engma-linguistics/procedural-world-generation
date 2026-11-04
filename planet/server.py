@@ -15,7 +15,7 @@
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
-  GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
+  GET    /api/brief?run=<id>&people=<id>|culture=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief()); a culture's has its cuisine sheet
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
@@ -180,7 +180,7 @@ def landmass_names(query: str) -> tuple[dict, int]:
 
 
 def brief(query: str) -> tuple[dict, int]:
-    """GET /api/brief?run=<run>&people=<id>[&era=<kyr ago>] or &region=lat,lon[,radius_km]: the culinary brief
+    """GET /api/brief?run=<run>&people=<id>|culture=<id>[&era=<kyr ago>] or &region=lat,lon[,radius_km]: the culinary brief
     (lineages/brief.py, PW-728) as {markdown, brief} (PW-837: the viewer's Peoples panel shows it)."""
     q = dict(parse_qsl(query))
     try:
@@ -194,9 +194,10 @@ def brief(query: str) -> tuple[dict, int]:
             if len(v) not in (2, 3):
                 raise ValueError("region=lat,lon[,radius_km]")
             region = (v[0], v[1], v[2] if len(v) == 3 else BR.DEFAULT_RADIUS_KM)
-        elif not q.get("people"):
-            raise ValueError("give people=<id> or region=lat,lon[,radius_km]")
-        b = BR.build(run, region=region, people=q.get("people"), era_kyr=era)
+        culture = int(q["culture"]) if q.get("culture") not in (None, "") else None
+        if region is None and culture is None and not q.get("people"):
+            raise ValueError("give people=<id>, culture=<id> or region=lat,lon[,radius_km]")
+        b = BR.build(run, region=None if culture is not None else region, people=None if culture is not None else q.get("people"), era_kyr=era, culture=culture)
         return {"markdown": BR.markdown(b), "brief": b}, 200
     except ValueError as e:
         return {"error": str(e)}, 400

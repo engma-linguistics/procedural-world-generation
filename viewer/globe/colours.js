@@ -805,7 +805,7 @@ const briefBox = document.createElement('div');
 document.head.append(Object.assign(document.createElement('style'), { textContent: '[hidden]{display:none !important}' }));
 briefBox.hidden = true;
 briefBox.style.cssText = 'position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center';
-briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1">Culinary brief</b><select id="briefWho" title="Any people of this run"></select><label title="How long ago, in kyr (0: the present)">era <input id="briefEra" type="number" min="0" step="1" value="0" style="width:56px"> kyr ago</label><button id="briefGo">Show</button><button id="briefHere" title="The brief of the country around the picked cell (click a cell on the map first), all peoples there">Brief here</button><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
+briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1;min-width:180px">Culinary brief</b><select id="briefWho" title="Any people of this run" style="max-width:150px"></select><select id="briefCulture" style="max-width:220px" title="One culture of this people living at this era: its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won\'t eat; PW-1391). The whole people: its range"><option value="">whole people</option></select><label title="How long ago, in kyr (0: the present)">era <input id="briefEra" type="number" min="0" step="1" value="0" style="width:56px"> kyr ago</label><button id="briefGo">Show</button><button id="briefHere" title="The brief of the country around the picked cell (click a cell on the map first), all peoples there">Brief here</button><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
 document.body.append(briefBox);
 let briefData = null;
 briefBox.addEventListener('click', (e) => { if (e.target === briefBox || e.target.id === 'briefClose') briefBox.hidden = true; });
@@ -815,29 +815,53 @@ $('briefJson', briefBox).addEventListener('click', () => {
   a.download = `brief-${S.V.run.id}-${briefData.who}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
 // (people: one of the run's peoples; region: {lat, lon} of the picked cell for "brief here": the country around it, whoever lives there; era: kyr ago, PW-863)
-async function showBrief(pid, era = 0, region = null) {
+// (the run's cultures, fetched once per run for the culture picker: id, name, people, born and ended, land now; PW-1391)
+let briefCultures = { run: null, list: [] };
+async function cultureList(run) {
+  if (briefCultures.run === run) return briefCultures.list;
+  briefCultures = { run, list: [] };
+  try {
+    const r = await fetch(`/api/cultures?run=${encodeURIComponent(run)}`);
+    if (r.ok) briefCultures.list = ((await r.json()).cultures || []).map((c) => ({ id: c.id, name: c.name, people: c.people, born: c.born_kyr, ended: c.ended_kyr, cells: c.cells_now || 0 }));
+  } catch { /* (a run without cultures: the picker offers the whole people only) */ }
+  return briefCultures.list;
+}
+// (fill the culture picker with the picked people's cultures living at the era, the most land now first; keep the choice if it is still there)
+async function fillCultures(run, pid, era) {
+  const sel = $('briefCulture', briefBox), keep = sel.value;
+  const alive = (await cultureList(run)).filter((c) => c.people === pid && c.born >= era - 1e-9 && (c.ended == null || c.ended < era - 1e-9))
+    .sort((a, b) => b.cells - a.cells || a.id - b.id);
+  sel.innerHTML = '<option value="">whole people</option>' + alive.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  sel.value = alive.some((c) => String(c.id) === keep) ? keep : '';
+}
+async function showBrief(pid, era = 0, region = null, culture = null) {
   const run = S.V.run.id || S.V.dir, lines = (S.V.run.meta.lineages || []).filter((l) => !l.overlay);
-  const who = $('briefWho', briefBox), eraIn = $('briefEra', briefBox);
+  const who = $('briefWho', briefBox), eraIn = $('briefEra', briefBox), cu = $('briefCulture', briefBox);
   if (who.options.length !== lines.length) who.innerHTML = lines.map((l) => `<option value="${esc(l.id)}">${esc(l.name || l.id)}</option>`).join('');
   if (!pid && !who.value) pid = 'human';
   if (pid && [...who.options].some((o) => o.value === pid)) who.value = pid;
   eraIn.value = era;
+  await fillCultures(run, who.value, era);
+  if (culture != null && [...cu.options].some((o) => o.value === String(culture))) cu.value = String(culture);
+  const cid = region ? '' : cu.value;
   const line = lines.find((l) => l.id === who.value);
   const when = era > 0 ? `${era} kyr ago` : 'present';
-  $('briefTitle', briefBox).textContent = region ? `Culinary brief: around ${region.lat}, ${region.lon} (${when})` : `Culinary brief: ${line?.name || who.value} (${when})`;
+  const cname = cid ? cu.options[cu.selectedIndex].textContent : null;
+  $('briefTitle', briefBox).textContent = region ? `Culinary brief: around ${region.lat}, ${region.lon} (${when})` : cname ? `Cuisine sheet: ${cname} (${when})` : `Culinary brief: ${line?.name || who.value} (${when})`;
   $('briefText', briefBox).textContent = 'Building the brief…';
   briefBox.hidden = false;
   try {
-    const q = region ? `region=${region.lat},${region.lon}` : `people=${encodeURIComponent(who.value)}`;
+    const q = region ? `region=${region.lat},${region.lon}` : cid ? `culture=${cid}` : `people=${encodeURIComponent(who.value)}`;
     const r = await fetch(`/api/brief?run=${encodeURIComponent(run)}&${q}&era=${era}`), j = await r.json();
     if (!r.ok) throw new Error(j.error || r.status);
-    briefData = { ...j, who: region ? `here-${region.lat}_${region.lon}` : who.value };
+    briefData = { ...j, who: region ? `here-${region.lat}_${region.lon}` : cid ? `culture-${cid}` : who.value };
     $('briefText', briefBox).textContent = j.markdown;
   } catch (err) { $('briefText', briefBox).textContent = 'Could not build the brief: ' + err.message; }
 }
 const briefEra = () => Math.max(0, +$('briefEra', briefBox).value || 0);
-$('briefGo', briefBox).addEventListener('click', () => showBrief($('briefWho', briefBox).value, briefEra()));
-$('briefWho', briefBox).addEventListener('change', () => showBrief($('briefWho', briefBox).value, briefEra()));
+$('briefGo', briefBox).addEventListener('click', () => showBrief($('briefWho', briefBox).value, briefEra(), null, $('briefCulture', briefBox).value || null));
+$('briefWho', briefBox).addEventListener('change', () => { $('briefCulture', briefBox).value = ''; showBrief($('briefWho', briefBox).value, briefEra()); });
+$('briefCulture', briefBox).addEventListener('change', () => showBrief($('briefWho', briefBox).value, briefEra(), null, $('briefCulture', briefBox).value || null));
 $('briefHere', briefBox).addEventListener('click', () => {
   if (!S.picked) return toast('Pick a cell on the map first');
   showBrief($('briefWho', briefBox).value, briefEra(), { lat: S.picked.lat, lon: S.picked.lon });

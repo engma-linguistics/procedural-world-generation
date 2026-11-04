@@ -451,14 +451,16 @@ class Animals:
     def summary(self, P: np.ndarray) -> dict:
         h = self.h
         stocks = {s.a.id: s.summary(P) for s in self.stocks}
-        # dairy (PW-784): which dairy animals a people keeps (known on its land) x its way of life (herders milk, by their herd share; so do peoples with lactase)
-        # unless its body says `milks = false`; the lactase share (body.milk) only decides fresh milk or fermented (brief.py)
+        # dairy (PW-784): which dairy animals a people keeps (known on its land) x its way of life (herders milk, by their herd share)
+        # unless its body says `milks = false`; the lactase share (body.milk) only decides fresh milk or fermented (brief.py). PW-834:
+        # lactase alone no longer makes a dairy people (a forager with an authored lactase share kept dairy herds); cuisine.py lets the
+        # share rise with the herding a culture does (PW-1372)
         dairy = {}
         for k, l in enumerate(h.lines):
             f = l.body.get("milk")
             lac = 1.0 if f is True else float(f or 0.0)
             herd = float(self.stocks[0].sh["herd"][k]) if self.stocks else 0.0
-            milks = max(herd, lac)  # (herders milk by their herd share; a people with lactase milks, that is how it came to have it)
+            milks = herd  # (herders milk by their herd share; PW-834: not by their lactase)
             if l.overlay or not l.body.get("milks", True) or milks <= 0:
                 continue
             best = [(s.share[k], s.a.id) for s in self.stocks if s.a.dairy and s.share[k] > 0.05]

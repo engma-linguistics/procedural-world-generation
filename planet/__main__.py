@@ -413,7 +413,7 @@ def cmd_brief(args):
         BR.all_briefs(args.run, args.out or "briefs", eras=tuple(float(x) for x in args.eras.split(",")) if args.eras else BR.DEFAULT_ERAS)
         return
     ctx = BR.Ctx(args.run)
-    b = BR.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx)
+    b = BR.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx, culture=args.culture)
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -793,6 +793,7 @@ def main():
     br.add_argument("run", help="a peoples run id")
     br.add_argument("--region", metavar="LAT,LON[,RADIUS_KM]", help="a circle (default radius 500 km)")
     br.add_argument("--people", metavar="ID", help="a people's range (the cells where it is the lead or second people) in place of --region")
+    br.add_argument("--culture", type=int, metavar="ID", help="a culture's land (an id in the run's cultures.json) and its cuisine sheet (PW-1391)")
     br.add_argument("--era", type=float, default=0.0, help="kyr ago (default 0: the present); the nearest stored frame")
     br.add_argument("--format", choices=("md", "json"), default="md", help="what to print without --out")
     br.add_argument("--out", help="write NAME.json and NAME.md into this directory instead of printing")
