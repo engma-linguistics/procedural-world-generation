@@ -31,4 +31,5 @@ Open (in the doc): whether a lane drafts sourced numbers for the non-human profi
 - [ ] non-human profiles drafted with sources and set by Daniel
 
 ## Updates
+- 2026-11-03: Daniel 2026-11-03: the lane drafts the non-human profile numbers with sources and owns the reasoning; Daniel reacts afterwards (no gut-call gate before building).
 - 2026-11-03: Created.
