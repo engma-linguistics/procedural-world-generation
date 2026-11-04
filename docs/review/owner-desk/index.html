@@ -68,172 +68,52 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · Tuesday 3 November 2026 · morning</div>
+  <div class="kicker">procgen_world · Tuesday 3 November 2026 · evening</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Nothing needs a decision from you right now. Your answers from this afternoon are on the tickets;
-your temperature question is answered below. The religion views wait for you tonight.</p>
-  <nav class="toc"><a href="#answers">Your questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <p class="lede">Your comments are all acted on: rulings on the tickets, both religion bugs fixed, the board cut from 382 to 89 in v2.
+Two lanes run: where foods come from, and why the climate is touchy.</p>
+  <nav class="toc"><a href="#answers">The board, your two questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
 </header>
 
 <h2 id="answers">Your questions</h2>
-<div class="card" id="d46"><div class="id">D46 · HOW STRETCHED SHOULD A PLANET'S ORBIT BE? (PW-1415, from your eccentricity question, PW-1365)</div>
-<p><b>In plain words:</b> eccentricity is how stretched the orbit is. Earth's swings between almost 0 and about 0.06 over ~100,000-year
-cycles (Spiegel et al. 2010). Today every generated planet gets Earth's own cycle in its ice-age zoom (0.002–0.052), and a fixed 0.03 in its
-1 Gyr run, which otherwise ignores the orbit. Lane 148 tested 0 to 0.4.</p>
-<ul>
-<li><b>Earth's range is safe on every measure.</b> Up to 0.06, compared with the same seed at today's Earth value (0.017): the share of land with a
-35 °C+ warmest month goes 0.1 → 1.8% on a 14 °C world and 2.6 → 7.1% on a warm 19 °C one; 4 of 4 runs pass (3 of 4 on today's code), with less time in ice ages.</li>
-<li><b>Around 0.1 the model, not the planet, gives way.</b> The run's ice ages vanish on every seed, because the run's ice rule overreacts to sunlight
-(about 3× the land's real seasonal response). And the climate reads the orbit only in July and January, so the seasons start depending on the calendar:
-an e = 0.3 world with its near-sun point at an equinox gets <i>colder</i> summers (22.3 → 15.9 °C) despite 4.8% more sunlight a year.</li>
-<li><b>Real hard failure only at about 0.4</b> (boiled on 4 of 4). Published climate models keep Earth-like planets temperate up to about 0.3
-(Way &amp; Georgakarakos 2017), so our ceiling is the model's limit, not physics'.</li>
-</ul>
-<ol type="A">
-<li><b>Keep today's draw:</b> every planet gets Earth's cycle. No work; every world has the same orbit statistics.</li>
-<li><b>Each planet gets its own average within Earth's range</b> (say 0.005–0.04, keeping the swings, so the peak stays under about 0.07), and the 1 Gyr run uses the same
-number, so a more stretched orbit means shorter ice-age eras and hotter one-hemisphere summers. Small work.</li>
-<li><b>Allow up to 0.1–0.15 for v0.2:</b> more variety, but it needs three fixes first (the run takes the draw, the run's ice rule uses the real seasonal response, the
-seasons read the orbit's own extreme months).</li>
-<li><b>Strong-season worlds (0.1–0.3) as a post-v1 weird-world kind</b> (PW-443), built on C's three fixes.</li>
-</ol>
-<p><i>My lean:</i> B now, D later. B gives real variety at no risk. C's fixes are worth doing, but as part of the weird-worlds work, not to stretch Earth-likes.</p>
-</div>
-
-<div class="card" id="d45"><div class="id">D45 · WHY THE COLDEST TEST WORLDS ARE SO TOUCHY, AND HOW TO JUDGE AROUND IT (PW-1403, PW-1404; PW-1261 waits on this) · UPDATED OVERNIGHT</div>
-<p><b>In plain words:</b> in its first 300 Myr each planet learns two yardsticks: how much CO2 its volcanoes normally give off and how fast
-its rocks normally weather it away. They're learnt from about five samples' worth of wandering rates, so they come out a bit different every
-time a world is re-run. That carries 1.5 °C of the 1.7 °C spread between re-runs of the same planet (36 test worlds, current code).</p>
-<p><b>New overnight (lane 144):</b> I had leaned towards starting both versions from the same spin-up, so they share the yardstick.
-Lane 144 built that and checked it. It's exact (the same code gives bit-identical worlds), but <b>it doesn't calm the coldest worlds</b>. On the six
-coldest test worlds, a change that does nothing (it adds 0.00001 °C) still swings their land ice in the final window by 3–23 points. Without the
-shared spin-up the swing was 3–27. And one such do-nothing change <b>fails the frozen-over check on 2 of those 6 worlds</b>. The reason: a tiny difference has grown
-to full size by about 500–600 Myr, long before the window opens at 884 Myr, and the ice then depends on when the glacial eras happen to fall.
-So on the coldest worlds, the frozen-over check is reading chance, not the change. Those 2 worlds are the same 2 the grass-roots change (PW-1261)
-failed on. The shared start does narrow the temperature spread by about 19%, and it removes a warm bias from the earlier do-nothing comparisons.</p>
+<div class="card" id="board"><div class="id">THE BOARD, CUT DOWN (LANE 156, MERGED) · FIVE CALLS YOU MAY WANT TO REVERSE</div>
+<p><b>In plain words:</b> v2 went from 382 open tickets to 89. Nothing was thrown away: 291 moved to the backlog (<code>later</code>), each with
+a one-line reason, and two clear duplicates were closed. From now on a lane may file at most 3 tickets, and each must say what breaks or misleads
+if it's never done; everything else goes in its write-up. v2 now holds the food work (what each people eats, cooks and burns), what makes a
+planet or a people visibly broken, the land zoom in flight, and the speed pass.</p>
 <ol>
-<li><b>A. Learn the yardsticks over a longer stretch.</b> Sound, but weak: it narrows the spread only 8–16%.</li>
-<li><b>B. Keep today's test, and check failures against chance.</b> When a change freezes a world over, re-run that world with a few do-nothing
-changes from the same spin-up. If those freeze over too, the failure is the world's chance, not the change. The 40% line and the window stay
-as they are. But the rule changes from "no world frozen over" to "no world frozen over that a do-nothing change doesn't also freeze", so it's your call.
-Under it, the grass-roots change would pass the frozen-over check.</li>
-<li><b>C. Give the coldest worlds more room.</b> Warm main's coldest worlds through the ice lanes, so chance doesn't reach the line. It's the lasting fix, but it's ice-age
-physics, which you parked as a deep hole.</li>
-<li><b>D. A yardstick that isn't a sample:</b> a fixed, planet-generic link between outgassing and weathering. A redesign that needs its own diagnosis.</li>
-<li><b>E. Leave it.</b> Changes that cool even slightly keep failing on chance.</li>
+<li><b>Languages, polities, religion follow-ups and the empire on your world went to the backlog</b> (food first). Want any back in v2?</li>
+<li><b>War, plague, events and attitudes went to the backlog, not v3.</b> v3 is "wanted, but later"; backlog is "maybe". Your call which.</li>
+<li><b>Rain stays out of v2</b> (15 tickets), although Earth's mid-latitude interiors are about 1.7&times; too wet compared with measured rain. Rain has failed five tries.
+Pull it back if wet interiors make the crops look wrong.</li>
+<li><b>Getting the level 7 pass rate back to 70%+ went to the backlog</b>, as the fiddly chasing your north star argues against.</li>
+<li><b>32 tickets waiting on a decision still sit in v2</b>, mostly peoples and culture, many small. A short sitting on them is the fastest further cut.</li>
 </ol>
-<p><i>My lean:</i> B now, with C later. B changes a pass rule, which is why it waits for you; nothing is switched over. The shared-spin-up tool
-stays available for targeted checks, as the lane recommended (PW-1403).</p>
-</div>
-<div class="card" id="d44"><div class="id">D44 · THE FRESH-EYES REVIEW YOU ASKED FOR</div>
-<p><b>In plain words:</b> an agent with no history read the whole project. Its verdict: the physics is careful and well guarded, but
-<b>the cookbook is falling behind</b>. The peoples layer grows fast, while the output still answers "where does this species live"
-rather than "what does this culture cook". Languages, polities and gods are queued ahead of food. Full report:
-<code>docs/review/fresh-eyes/2026-11-03.md</code>.</p>
-<p><b>Where I need you</b> (my lean in each):</p>
-<ol>
-<li><b>Food before languages and polities.</b> Build a per-culture brief and a first "cuisine sheet" now. It would cover
-fuel, staple, drink, who eats together, and what outsiders get wrong (culinary-dnd's five questions). Two of those, drink and who eats
-together, have no model at all today, and the brief takes a species, not a culture. <i>Lean: yes.</i> It's the cheapest way to find
-what the book actually lacks.</li>
-<li><b>Stop the weathering reading raw plant growth</b> (PW-1332 B). Grassland grows too much and wet tropics too little, and the two errors
-cancel in the global total the climate is tuned on. So every plant fix moves the climate several degrees, which is exactly what tripped the
-grass-roots lane. Let the weathering read plant cover or roots instead. <i>Lean: yes</i>, after lane 140c's diagnosis, which is looking at the
-same tie.</li>
-<li><b>Fewer tickets.</b> About 65 are filed a day and 25 closed, with 689 open. Lanes would put observations in their write-ups and file
-at most about 3 tickets each. <i>Lean: yes.</i></li>
-<li><b>A ledger of the peoples' mechanisms before polities</b> (a refactor, so it needs your yes): measure each of the dozen stacked
-mechanisms on the stress suite and retire the ones that do nothing at the defaults. Some already do nothing: the share bands, and
-resistance to disease, which nothing reads. <i>Lean: yes</i>, but after the cuisine sheet.</li>
-<li><b>Which world is the book written on?</b> Seven Meals was ruled secondary on 10-29, yet it's the culinary repo's own world. Is the
-book meant for the D&amp;D preset?</li>
-</ol>
-<p><b>What I'll just do</b> (housekeeping, nothing it changes is yours to rule on):</p>
-<ul>
-<li>Close the tickets it found already built, after checking each one.</li>
-<li>Give the board peoples, culture and food categories (266 peoples tickets are filed under ice-age time zooms today).</li>
-<li>Park three groups: the ice-age long tail, the Earth-only regional residuals, and the dragon fine-tuning (keeping what dragons eat).</li>
-<li>Move the climate test's code out of the review folders, once no physics test is running.</li>
-<li>Check whether "farming can start 11.6 kyr ago" uses Earth's date rather than each planet's own last ice age.</li>
-<li>Refresh the stale docs.</li>
-</ul>
-<p>It also flags: world files at L8 are 440–450 MB of text and should move to a binary format (PW-1209) before more fine-grid work. The
-peoples step isn't in "make a planet" yet. And more rain-kernel tries, Earth-matching regional climate and dragon numbers aren't worth chasing.
-I agree with all of these.</p>
-</div>
-<div class="card" id="rung"><div class="id">SMALL ONE · ROLLED FARM NUMBERS CAN COME OUT OF ORDER (PW-1400)</div>
-<p><b>In plain words:</b> with the new range dice switched on, gardeners (published 2–20 people per km²) and the first plough farmers (2.5–14) roll separately. In one test world gardeners rolled 12.7 and the plough 6.9, so a people taking up the plough got thinner. The sources' ranges really do overlap, so a world could go either way.</p>
-<ol type="A"><li>Leave it: it only happens with the dice on, and the plough's gain still shows in the later plough stages and irrigation.</li>
-<li>Roll gardening and the first plough from one shared position in their ranges, the way the three plough stages already share one.</li>
-<li>After rolling, lift the plough to at least the gardening number.</li></ol>
-<p><b>My lean: B</b>, mildly. It keeps every number inside its published range and stops the odd step backwards, at no cost. Lane 145 leaned A; either is fine.</p>
+<p>The write-up also lists <b>candidates to drop entirely</b>, by subsystem, one line each, for you to strike: <code>docs/review/board/triage-2026-11-03.md</code>.
+137 tickets have no milestone at all; they're next.</p>
 </div>
 
-<div class="card" id="l9"><div class="id">WHY LEVEL 9 FROM SCRATCH NEEDS SO MUCH MEMORY, AND WHAT RUNS ON ONE CORE (PW-801, PW-1389, PW-1390)</div>
-<p><b>In plain words:</b> most of the memory isn't the planet, it's bookkeeping we can trim. The time is the real wall.</p>
-<p>Today an L9 run from scratch would need roughly 110–160 GB at its peak (an estimate: the measured L7 figure, 9.9 GB, times 16 for two
-levels). About three quarters of that is avoidable, and the fixes don't change the worlds at all:</p>
-<ul>
-<li><b>Viewer frames, ~38 GB per Gyr at L9, doubled at the save.</b> Every frame of the run is held in memory until the end and then copied
-once more to write it out (PW-801). Writing each frame to disk as it's made removes this.</li>
-<li><b>Empty plate slots, ~19 GB.</b> Each plate keeps a whole-planet copy of its crust in 48 fixed slots, but in a measured run only 14 slots
-were in use and about 2% of those cells held real crust. That's 90% of a run's memory (PW-1389).</li>
-<li><b>Checkpoint copies, ~22 GB for a moment every 100 Myr.</b> The run copies its whole state, empty slots included, before trimming it (PW-1390).</li>
-</ul>
-<p>With those three fixed, an L9 run might fit in 10–20 GB (estimate). The planet's own fields are only about 3–5 GB at L9.</p>
-<p><b>Why it's slow, and what can't be split across cores:</b></p>
-<ul>
-<li><b>The time steps.</b> Each 2 Myr step needs the one before it, so they can't run side by side; only separate worlds can.</li>
-<li><b>River and lake filling</b> works outward from the lowest point in strict order. Parallel versions exist but break ties
-differently, so rivers would come out slightly different.</li>
-<li><b>The ocean gyres' solver</b> sweeps east to west, and that order is part of the method.</li>
-<li>Some plate bookkeeping is kept in order on purpose, so that runs repeat exactly.</li>
-<li>Several solvers (winds, gyres, rain, sea-floor creep) need more passes on a finer grid, so cost grows about 6–10× per level
-against 4× the cells. An L9 Gyr would take 1–2+ days (estimate).</li>
-</ul>
-<p><b>The cheaper path you already have:</b> simulate at L7 and refine the finished moment to L9. That's measured at 38 minutes and 38.8 GB
-(<code>docs/review/refine-l8/report.md</code>), or the land zoom for regions. <i>My lean:</i> the three memory fixes are cheap and change
-nothing, so I'd do them when a lane is free, starting with the viewer frames (it also lets an L7 run fit on an 8 GB laptop). I wouldn't
-pursue L9 from scratch beyond that. Full write-up: <code>docs/review/speed/l9-memory.md</code>. I couldn't find the earlier "bonkers"
-estimate written down; it was most likely the L7 figure times 16.</p>
-</div>
-
-<h3>"0.6 °C warmer than what?"</h3>
-<div class="card" id="dt"><div class="id">WHAT THE CLIMATE TESTS COMPARE (PW-1364)</div>
-<p><b>In plain words:</b> two different things, and I ran them together.</p>
-<ul>
-<li><b>The planet's temperature itself</b> is kept as an offset from <b>today's Earth</b> (about 14 °C global mean): 0 means as warm as Earth
-now, positive warmer, negative colder (<code>planet/tectonics/earth.py::global_temperature</code>).</li>
-<li><b>"Late dT"</b> in a test is that offset's middle value over the second half of the run (600–1000 Myr). With the code before
-the rain fix, the 36 test worlds' middle value was +0.22 °C; with it, +1.77 °C.</li>
-<li><b>"+0.57 °C warmer"</b> is the change: each world is built twice, once with the old code and once with the new, on the same seed,
-and the difference is taken world by world. The middle value of those 36 differences is +0.57 °C. So it means "warmer than the same
-world under the old code", not warmer than Earth.</li>
-</ul>
-<p>You're right that the baseline matters. For a change, the baseline is always the same world under the current code, so that chance
-mostly cancels. For whether a world is plausible, it's today's Earth (the offset), and the hard checks (frozen over, boiled, the seas lost) are
-absolute, so they don't depend on either.</p>
-<p><b>The accepted range</b> (<code>planet/highlights.py</code>, <code>passrate4.py</code>), against Earth's pre-industrial 13.8 °C:</p>
-<ul>
-<li><b>The world you're given</b> (its finish moment) must be −6 to +5 °C, i.e. about 7.8–18.8 °C. The cold edge is the last ice age; the warm
-edge is yours (D19, raised from +3). It must also have 1–25% of its land under ice, and at least 20% tree cover on the wet equatorial lowland.</li>
-<li><b>Over the whole run, a world fails outright</b> if its middle offset is over +10.5 °C or it ever peaks over +15.5 °C ("hellhouse"),
-or if 40% or more of its land is under ice in its last 300 Myr ("frozen over").</li>
-<li>A change like +0.57 has no fixed limit of its own: the test asks whether it is beyond chance, and if so I explain it before merging.
-The test worlds' middle late value of +1.77 °C sits well inside the range.</li>
-</ul>
-<p><b>Where the warming came from:</b> no bug, and not the clouds. Now the rain sees the warmed sea, the North Atlantic storm track rains
-1.7× what's observed, because the model's sea there is about 3 °C too warm. The world's total rain is held fixed, so that extra rain comes out of
-everywhere else, the ice sheets included: they get 3–5% less snow, grow less, reflect less sun, and ice-age peaks fall from 23 to 13. Merged
-as a correct fix; the too-warm North Atlantic (PW-1381) is next in the physics queue, and should take most of the warming back out.</p>
+<div class="card" id="qa"><div class="id">YOUR TWO QUESTIONS FROM TONIGHT</div>
+<p><b>L10, and whether to step through L8.</b> The refine accepts any finer level, and a refined world can be refined again, so both
+L7&nbsp;&rarr;&nbsp;L9 and L7&nbsp;&rarr;&nbsp;L8&nbsp;&rarr;&nbsp;L9 run today (<code>planet/refine.py</code>). Nobody has compared them. My guess, unmeasured: stepping adds fine
+detail one level at a time, the way the zoom layers its relief, while the direct jump is cheaper. But L10 isn't worth it for the whole
+planet. A refined L9 already measured 38.8 GB of memory and a file 3.3&times; what the browser can open (<code>docs/review/refine-l8/report.md</code>).
+L10 has four times the cells, so it would be well beyond that. For that much detail the land zoom is the route: it does a region at 1–4 km. If you
+ever want L9, a one-off comparison of direct against stepped is cheap; say the word.</p>
+<p><b>Should 0 be pre-industrial instead of "today"?</b> Our 0 is Earth at 350 ppm CO2, the climate its data show for roughly 1960–2000
+(<code>planet/climate.py</code>, <code>PCO2_REF</code>). That sits only a few tenths of a degree above pre-industrial (my estimate, from the usual
+1850–1900 records), not 1–2 °C. Most of the warming climatologists plot came after 2000. Moving the zero would shift every number and threshold by the same amount and
+change no world, so I'd leave it. One correction: an earlier card here called the accepted range's anchor "pre-industrial 13.8 °C". It's this
+1960–2000 climate, about 14 °C, so the range (−6 to +5 °C) is about 8–19 °C.</p>
 </div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>—</td><td>Nothing running: spun down for your meeting.</td></tr>
+<tr><td>157 · where foods come from</td><td>Your food ask. There are already 33 crops in the model (staples, cuisine plants, regional foods). This checks each one's homeland and date against published sources, adds missing ones (staples first), and fixes how foods spread: today crops cross oceans freely "by canoe", so New World foods can reach the Old World long before sailing ships. Tested on D&amp;D and Seven Meals runs.</td></tr>
+<tr><td>158 · why the climate is touchy</td><td>Your "are we chasing the wrong thing?" question: how strong the planet's own thermostat is compared with Earth's, whether the ice or the CO2 yardsticks carry the chaos, and 2–4 structural fixes so a world settles back on its own. A write-up first, no sweeps. The grass-and-weathering tie (PW-1332) is part of it.</td></tr>
 </table></div>
-<p>Next, when you say go: resuming a stopped run (PW-508), which today's change made much easier. The next physics lane waits for your answers on D45 and D46. Prioritising the board (ticket bloat) is for us to do together.</p>
+<p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
 
 <h2 id="religion">Religion: the views are in</h2>
 <div class="card" id="rel2"><div class="id">GOD TREES, A FAITH MAP, A TIMELINE AND 13 KINDS OF TABOO (PW-1358, PW-1311, MERGED)</div>
@@ -271,6 +151,8 @@ settlements then sit in real valleys. Running the history itself at 1 km is out,
 </div>
 
 <h2 id="settled">Settled today</h2>
+<ul><li><b>Your answers tonight</b>, on the tickets: orbits stay Earth's (D46: you said A or B; I picked A, since it adds nothing to an already touchy climate; varied orbits wait for weird worlds). Judging the cold worlds: B now, C later (D45), plus the deeper look (lane 158). Farm numbers: B (PW-1400). The fresh-eyes review (D44): Seven Meals is your campaign world; refactor the peoples mechanisms freely; far fewer tickets; food first. Your north star, "reasonably stable and not prone to exploding when nudged", now heads the briefs.</li>
+<li><b>Religion tab</b>: <b>fixed and merged</b>. It said "no faiths" when you opened a view while the faiths were still being worked out (about 25 s the first time); now it waits and says so. A picked faith's god tree now uses the full width, and its time axis runs to "now" (it was squeezed into a narrow card and cut off at 30 kyr).</li></ul>
 <ul><li><b>Run memory, part 2</b> (PW-801): <b>merged</b>, all 972 tests pass. A run now writes each viewer frame to disk as it makes it. Worlds come out byte-identical. Peak memory, compared with the current code on the same planet: level 7, 1 Gyr: 7.9 → 3.4 GB; level 6, 1 Gyr: 2.7 → 1.1 GB. A level 7 run now fits an 8 GB machine.</li></ul>
 <ul><li><b>Peoples from the New planet form</b> (PW-1394): <b>merged</b>, all 972 tests pass. The New planet form has a "Peoples on the finished world" choice (none, D&amp;D or Seven Meals; it needs the ice-age zoom and the finished world ticked), so one click builds the planet through to its peoples. Peoples runs now have their own label instead of being filed as ice-age zooms; your 63 existing ones were relabelled in place, not deleted, and the religion links above still work.</li></ul>
 <ul><li><b>Rolled numbers in the workbench</b> (PW-1401): <b>merged</b>. A peoples run's Results tab now has a "Sourced numbers" section: each rolled number in plain words, its value, its published range and source, or "fixed values" when the dice were off.</li></ul>
@@ -328,5 +210,5 @@ it; off by default.</li>
 <li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
 </ul>
 
-<footer>Desk v133 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v134 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
