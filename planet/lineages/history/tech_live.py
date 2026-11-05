@@ -13,14 +13,13 @@ the history knows by then:
 - the goods each people's country holds now (its range at the last stored frame; the after-run tree reads the present range).
 At the end (output.save) the tree is fed the whole run, runs any steps left, and is written out as meta.techtree: one calendar for
 the history's polities and the after-run read-out.
-D52's town arms (B, E) need the settlement ledger, made after the run, so this tree runs without them (PW-1464 builds them after
-the run only).
+D52's town arms (B, E) need a town footprint. The settlement ledger is made after the run, so inside the history the footprint is
+the live polities' own central places of town size, counted each recent step (PW-1472, LivePolities.town_cells, note_towns).
 """
 
 from __future__ import annotations
 
 import time
-import warnings
 
 import numpy as np
 
@@ -39,11 +38,11 @@ class LiveTech:
         self._seen = None  # (the frames stored when the slow inputs were last read)
         self._G = None  # (the goods as cells over threshold: (names, deposit flags, goods x cells float32))
         T = TT.load()
-        if TT.town_arms(T):
-            warnings.warn(f"tech tree arms {TT.town_arms(T)} need the settlement ledger: the tree inside the history runs without them",
-                          stacklevel=2)
         self.T = T
-        self.arms = TT.arms_without_towns(T)
+        self.arms = TT.arms_of(T)
+        # (D52's town arms B, E: the ledger is made after the run, so the town footprint is the live seats' own, PW-1472: each recent
+        # step LivePolities.town_cells counts each people's town cells and note_towns adds them, as techspread.town_footprint does)
+        self.towns = {"_cell_km2": float(h.cell_mkm2 * 1e6)} if TT.town_arms(T) else None
 
     @property
     def known(self) -> dict:
@@ -123,6 +122,15 @@ class LiveTech:
             out[l["id"]] = {g for g, x in zip(names, ok) if x}
         return out
 
+    def note_towns(self, ago: float, cells: dict):
+        """Adds one step of each people's town cells ({people: cells}, LivePolities.town_cells) to the footprint the tree reads
+        ({people: (agos oldest first, cells)}, techtree.town_cells_at); a people seen before and not now has none now."""
+        tw = self.towns
+        for lid in [k for k in tw if k != "_cell_km2"] + [k for k in cells if k not in tw]:
+            a, c = tw.setdefault(lid, ([], []))
+            a.append(ago)
+            c.append(float(cells.get(lid, 0)))
+
     # ------------------------------------------------------------ the history's step
     def step(self, step):
         """Runs the tree's steps down to this history step's time, from what the history knows at its start."""
@@ -135,7 +143,7 @@ class LiveTech:
             if self.cal is None:
                 lines = self.lines()
                 tr = h.tree
-                self.cal = TT.Calendar(lines, tr.mode, tr.era, h.seed, self.T, tr.gods_mode, None, self.arms)
+                self.cal = TT.Calendar(lines, tr.mode, tr.era, h.seed, self.T, tr.gods_mode, self.towns, self.arms)
             cal = self.cal
             seen = (len(h.contacts.agos) if h.contacts is not None else 0, sum(len(v) for v in h.tracks.values()))
             if seen != self._seen:  # (a frame was stored: the tracks, contacts and ranges moved)
@@ -158,7 +166,7 @@ class LiveTech:
         if cal is None:
             tr = self.h.tree
             return TT.build(lines, contacts, pres, present, goods, tr.mode, tr.era, self.h.seed, T=self.T, gods_mode=tr.gods_mode,
-                            arms=self.arms)
+                            towns=self.towns, arms=self.arms)
         have = {l["id"]: TT.goods_held(cal.T, present, goods, cal.idx[l["id"]]) for l in cal.people}
         cal.feed(lines, TT.links_of(contacts, cal.kind), TT.forced_of(pres, cal.techs, cal.L), have, (pres or {}).get("lines") or {})
         cal.advance()

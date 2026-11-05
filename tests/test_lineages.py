@@ -3726,6 +3726,33 @@ def test_the_tech_tree_runs_inside_the_history_when_polities_do(faketz, monkeypa
     assert "inside_history" not in json.loads((O.save(h0, res0, pres0, name="after-run tech") / "run.json").read_text())["meta"]["techtree"]
 
 
+def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkeypatch):
+    """PW-1472 (lane 195, round9.md): with D52's town arm E switched on (a test override; D53 is the owner's call) and polities in the
+    history on, the tree inside the history reads each people's town cells from the history's own central places (no ledger yet), so
+    E acts there and nothing warns; a people whose towns go has none from then."""
+    import warnings
+    from planet.lineages import techtree as TT
+    from planet.lineages.history import tech_live as TL
+    T0 = TT.load()
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": "E"}})
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    cells = R.town_cells(1.0)
+    assert cells.get("folk", 0) > 0 and "kob" not in cells  # (folk's dense farmers hold towns; the kobolds' few heads do not)
+    h.started, h.ended = {l.id: 40.0 for l in h.lines}, {}  # (as History.run keeps them)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message=".*town footprint")  # (no "need a town footprint" warning)
+        lt = TL.LiveTech(h)
+        assert lt.arms == "E" and lt.towns is not None
+        lt.note_towns(1.0, cells)
+        lt.note_towns(0.9, {})
+        c = TT.Calendar(lt.lines(), seed=1, T=lt.T, towns=lt.towns, arms=lt.arms)
+    assert c.towns is lt.towns and TT.town_cells_at(c.towns["folk"], 1.0) == cells["folk"]
+    assert TT.town_cells_at(c.towns["folk"], 0.9) == 0 and TT.town_cells_at(c.towns["folk"], 1.1) == 0
+    monkeypatch.setattr(TT, "load", lambda path=None: T0)  # (arms off, the default: no footprint is kept, nothing counted)
+    assert TL.LiveTech(h).towns is None
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""

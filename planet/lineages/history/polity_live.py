@@ -105,6 +105,8 @@ class LivePolities(StandIns):
 
     # ------------------------------------------------------------ one polity step
     def begin_step(self, step):
+        if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:  # (D52's town arms B, E: the live seats' towns, PW-1472)
+            self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago)))
         self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
         if step.epoch != "recent":
             return
@@ -137,6 +139,40 @@ class LivePolities(StandIns):
             best[m] = hk[m]
             lead[m] = k
         return sed, lead, heads
+
+    def _places(self, sed):
+        """(the size of each cell's central place, town or city; the city size alone): settlements' SHARE on the hinterland's sedentary
+        heads (one ring for a town, two for a city) at a cell that is the best of its ring, else 0."""
+        from ..settlements import CONST
+        g = self.g
+        tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
+        H1 = (sed + nbr_reduce(g, np.add, sed[self.idx])) * tie
+        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=g.n) * tie
+        mx1 = np.maximum(H1, nbr_reduce(g, np.maximum, H1[self.idx]))
+        mx2 = np.maximum(H2, nbr_reduce(g, np.maximum, H2[self.idx]))
+        mx2 = np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
+        town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
+        city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
+        return np.maximum(town, city), city
+
+    def town_cells(self, ago: float) -> dict:
+        """Each people's town cells now (PW-1472: the town footprint D52's arms B and E read, techtree.Calendar.towns): the cells whose
+        central place (_places) is of town size for the stage its lead people knows (settlements' TOWN_MIN by stage, as the ledger
+        sizes a town), where that people knows towns. {people: cells}."""
+        from ..settlements import CONST
+        L, h = self.h.lines, self.h
+        sed, lead, _ = self._heads()
+        size = self._places(sed)[0]
+        land = np.asarray(h._env_now["land"], bool)
+        tm = CONST["TOWN_MIN"]
+        out: dict = {}
+        for k in np.unique(lead[(lead >= 0) & land & (size >= min(tm))]).tolist():
+            lid = L[k].id
+            if not self.knows(lid, "towns", ago):
+                continue
+            stage = 4 if self.knows(lid, "roads", ago) and self.knows(lid, "cities", ago) else 3 if self.knows(lid, "cities", ago) else 2
+            out[lid] = int(((lead == k) & land & (size >= tm[stage])).sum())
+        return out
 
     def _step(self, step):
         h, g = self.h, self.g
@@ -174,16 +210,8 @@ class LivePolities(StandIns):
             n_fell += 1
         # 1. town seats: the history's central places (settlements' SHARE on the hinterland's sedentary heads, the best of its ring)
         from ..settlements import CONST
-        tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
-        H1 = (sed + nbr_reduce(g, np.add, sed[self.idx])) * tie
-        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=g.n) * tie
-        mx1 = np.maximum(H1, nbr_reduce(g, np.maximum, H1[self.idx]))
-        mx2 = np.maximum(H2, nbr_reduce(g, np.maximum, H2[self.idx]))
-        mx2 = np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
-        town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
-        city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
+        size, city = self._places(sed)
         town_min, city_min = float(CONST["TOWN_MIN"][-1]), float(CONST["CITY_MIN"])
-        size = np.maximum(town, city)
         inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
         thr = np.full(g.n, town_min)
         thr[inc_cells] *= PO.HOLD
