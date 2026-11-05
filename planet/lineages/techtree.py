@@ -3,7 +3,11 @@
 The tree is data (samples/techtree.toml): tracks, techs with prerequisites, land the tech needs (land.GOODS), a real-world
 earliest date (sources in the file) and a rate. It is read after a peoples history has run, from what the history saved
 (the lines with their start and end, the contact record, the first tamings of crops and animals, each people's present
-range and the world's goods), so it can be built in output.save and again for a stored run (`planet techtree RUN`).
+range and the world's goods), so it can be built in output.save and again for a stored run (`planet techtree RUN`). It is a step
+function (`Calendar`, PW-1466): with polities in the history switched on, the history runs it century by century from what it knows
+by then (history.tech_live) and output.save writes that calendar out; `build` is the same steps fed the whole run at once.
+D52's town arms (B, E) read the settlement ledger, which reads the tree: output.save builds the tree without them, then the ledger,
+then the tree with them (PW-1464, output._towns_first).
 
 Rules, all seeded and simple. Every draw is keyed on what it is for (PW-1459, `keyed`): a pair's contact front on (seed, giver,
 taker), an invention test on (seed, people, tech, step). So a nudge elsewhere in the history meets the same luck here; one shared
@@ -485,6 +489,24 @@ def _arm(D: dict, k: str):
     return D.get(k, ARM_DEFAULTS[k])
 
 
+TOWN_ARMS = frozenset("BE")  # (the arms that read the town footprint)
+
+
+def arms_of(T: dict | None = None) -> str:
+    """The tree's D52 arms (its [defaults] contact_arms), as sorted letters."""
+    return "".join(sorted(set(str(_arm((T or load())["defaults"], "contact_arms"))) & set("BCEK")))
+
+
+def town_arms(T: dict | None = None) -> str:
+    """The tree's arms that need the settlement ledger's town footprint (B, E): output.save then builds the tree twice (PW-1464)."""
+    return "".join(sorted(set(arms_of(T)) & TOWN_ARMS))
+
+
+def arms_without_towns(T: dict | None = None) -> str:
+    """The tree's arms less B and E: the first tree output.save builds, before the ledger exists (PW-1464)."""
+    return "".join(sorted(set(arms_of(T)) - TOWN_ARMS))
+
+
 def kin_pairs(lines: list[dict], kin_kyr: float) -> set:
     """Pairs (both ways) of lines that are kin for arm K: parent and daughter (a split, a hybrid and its parents, a group and its
     people), or two daughters of one parent, where the daughter began within kin_kyr ago."""
@@ -521,41 +543,21 @@ def keyed(seed: int, *key) -> float:
     return (int.from_bytes(d, "little") >> 11) * 2.0 ** -53
 
 
-def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
-          goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
-          T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None) -> dict:
-    """meta.techtree for a peoples run. gods_mode (PW-1304): "faith_made" (default), "belief_only" or "absolute"; a tech marked
-    `gods = true` (divine magic) exists only in faith_made and absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
-    ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
-    lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods. towns, arms:
-    D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2})."""
-    T = T or load()
-    D = T["defaults"]
-    arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEK")
-    cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
-    techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
-             and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
-    order = [i for i in T["order"] if i in techs]
-    L = {l["id"]: l for l in lines}
-    people = [l for l in lines if not (l.get("overlay") and l.get("origin") == "template")]
-    idx = {l["id"]: l.get("index", k) for k, l in enumerate(lines)}
-    unmatched = [" | ".join(k["of"]) for k in T.get("kind", []) if not set(k["of"]) & set(L)]
-    if unmatched:  # (a rule none of whose ids is a line of this tree applies to nothing, PW-1041)
-        warnings.warn(f"tech tree [[kind]] rules name no line of this tree: {', '.join(unmatched)}", stacklevel=2)
-    kind = {l["id"]: _kind(T, l, L) for l in people}
-    node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
-    have = {l["id"]: goods_held(T, present, goods, idx[l["id"]]) for l in people}
-    pops = ((pres or {}).get("lines") or {})
-    series = {l["id"]: _series(l, pops) for l in people}  # (population and density through time, from the saved tracks)
-    gens = {l["id"]: _gen(l, L) for l in people}
-    learn = {lid: learners_x(g, D) for lid, g in gens.items()}
-    culture = {l["id"]: culture_of(T, l) for l in people}
-    rates = {i: rate_of(T, i) for i in techs}
-    pool = {i: pool_of(techs[i]) for i in techs}
-    ready: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (when each people first met a tech's conditions: the ramp)
-    start = {l["id"]: float(l.get("started_kyr") if l.get("started_kyr") is not None else l.get("ago_kyr", 0.0)) for l in people}
-    end = {l["id"]: float(l["ended_kyr"]) if l.get("ended_kyr") is not None else -1.0 for l in people}
-    # forced knowledge: the first tamings of the history (crops.py, animals.py)
+def links_of(contacts: dict | None, kind: dict) -> list[tuple]:
+    """meta.contacts' pairs as intervals (a, b, from kyr, to kyr, border km) between the tree's peoples."""
+    links = []
+    for p in (contacts or {}).get("pairs", []):
+        if p["a"] in kind and p["b"] in kind:
+            ser = p.get("series") or []
+            to = 0.0 if p.get("in_contact_now") else (min(q[0] for q in ser) if ser else p["first_contact_kyr"])
+            km = float(np.median([q[1] for q in ser])) if ser else float(p.get("border_km_peak", 0))
+            links.append((p["a"], p["b"], float(p["first_contact_kyr"]), to, km))
+    return links
+
+
+def forced_of(pres: dict | None, techs: dict, L: dict) -> dict[str, list[tuple[float, str]]]:
+    """Forced knowledge: the first tamings of the history (crops.py, animals.py), {line: [(kyr ago, tech)]}. `pres` as meta.present
+    (or anything with its "crops" and "animals" stocks' `tamed` and `took_up_kyr`)."""
     forced: dict[str, list[tuple[float, str]]] = {}
     stock_tech = {t.get("stock"): i for i, t in techs.items() if t.get("stock")}
     for key in ("crops", "animals"):  # (stock "crops": any crop; "crops:wheat": that one, PW-1122)
@@ -568,218 +570,316 @@ def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: 
             for lid, ago in (s.get("took_up_kyr") or {}).items():
                 if lid in L and ago is not None:
                     forced.setdefault(lid, []).extend((float(ago), tid) for tid in tids)
-    # contacts as intervals: (a, b, from kyr, to kyr, border km)
-    links = []
-    for p in (contacts or {}).get("pairs", []):
-        if p["a"] in kind and p["b"] in kind:
-            ser = p.get("series") or []
-            to = 0.0 if p.get("in_contact_now") else (min(q[0] for q in ser) if ser else p["first_contact_kyr"])
-            km = float(np.median([q[1] for q in ser])) if ser else float(p.get("border_km_peak", 0))
-            links.append((p["a"], p["b"], float(p["first_contact_kyr"]), to, km))
-    t0 = max(start.values(), default=1.0)
-    grid = np.concatenate([np.geomspace(max(t0, 1.0), NEAR_KYR, STEPS), [0.0]])
-    known: dict[str, dict[str, list]] = {l["id"]: {} for l in people}
+    return forced
 
-    def give(lid, tid, ago, how, frm=None):
-        if tid in techs and tid not in known[lid]:
-            known[lid][tid] = [round(float(ago), 3), how, frm]
 
-    def held(lid, tid, at):  # (PW-987: a line cannot inherit a tool it cannot hold: the cats take no found tools from the mammal root)
-        t = techs[tid]
-        return not t.get("hands", True) or _grips(t, kind[lid], node[lid], at)
+class Calendar:
+    """The tech tree as a step function (PW-1466): `advance(ago)` runs its steps down to a time, from what `feed` last gave it, so
+    the history can run it century by century (history.tech_live) and the polities in the history read the real calendar.
+    `build` is the same object fed once with the whole run and advanced to the present. The steps (log-spaced from the oldest
+    line, STEPS) and every draw (`keyed`: (seed, people, tech, step)) are the same either way, so a step run early meets the same
+    luck as one run after the history; only what it reads differs (the populations, contacts, tamings and goods known by then)."""
 
-    def can(lid, tid, ago, inventing, needs=True):
-        t = techs[tid]
-        k = kind[lid]
-        if tid in known[lid] or (needs and any(n not in known[lid] for n in t.get("needs", []))):
+    def __init__(self, lines: list[dict], mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
+                 T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None):
+        T = T or load()
+        D = T["defaults"]
+        self.T, self.D, self.seed, self.mode, self.era, self.gods_mode = T, D, seed, mode, era, gods_mode
+        self.arms = arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEK")
+        cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
+        self.techs = techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
+                              and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
+        self.order = [i for i in T["order"] if i in techs]
+        self.L = L = {l["id"]: l for l in lines}
+        self.people = people = [l for l in lines if not (l.get("overlay") and l.get("origin") == "template")]
+        self.idx = {l["id"]: l.get("index", k) for k, l in enumerate(lines)}
+        unmatched = [" | ".join(k["of"]) for k in T.get("kind", []) if not set(k["of"]) & set(L)]
+        if unmatched:  # (a rule none of whose ids is a line of this tree applies to nothing, PW-1041)
+            warnings.warn(f"tech tree [[kind]] rules name no line of this tree: {', '.join(unmatched)}", stacklevel=3)
+        self.kind = {l["id"]: _kind(T, l, L) for l in people}
+        self.node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
+        self.gens = {l["id"]: _gen(l, L) for l in people}
+        self.learn = {lid: learners_x(g, D) for lid, g in self.gens.items()}
+        self.culture = {l["id"]: culture_of(T, l) for l in people}
+        self.rates = {i: rate_of(T, i) for i in techs}
+        self.pool = {i: pool_of(techs[i]) for i in techs}
+        self.ready: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (when each people first met a tech's conditions: the ramp)
+        self.known: dict[str, dict[str, list]] = {l["id"]: {} for l in people}
+        if arms:
+            self.urban = {i for i, t in techs.items() if set(t.get("needs", [])) & set(ARM_URBAN_NEEDS)}
+            self.admin = {i for i, t in techs.items() if t.get("admin") or i in ARM_ADMIN}
+            self.touched = (self.urban if arms & {"B", "C"} else set()) | (self.admin if "E" in arms else set())
+            self.kin = kin_pairs(lines, float(_arm(D, "arm_kin_kyr"))) if "K" in arms else set()
+            if arms & {"B", "E"} and not towns:  # (no footprint: a tree built before the settlement ledger, or inside the history)
+                warnings.warn(f"tech tree arms {''.join(sorted(arms & {'B', 'E'}))} need a town footprint; without one they do nothing",
+                              stacklevel=3)
+            self.towns = towns or {}
+            self.cell_km2 = float(self.towns.get("_cell_km2") or 0.0)
+            self.v_trade = float(_arm(D, "arm_trade_km_yr"))
+            self.width_x = float(_arm(D, "arm_width_x"))
+        self.began: set = set()
+        self.arrive: dict[tuple, float | None] = {}  # ((giver, taker, tech): when its front reaches the taker's middle, kyr; None: never)
+        self.unit: dict[tuple, float] = {}  # ((giver, taker): the pair's front delay, in units of 1 / the contact rate)
+        self.grid = None
+        self.step = 0  # (the next step to run)
+        self.prev = None
+        self.have: dict = {l["id"]: None for l in people}
+        self.series: dict = {l["id"]: None for l in people}
+        self.start: dict = {}
+        self.end: dict = {}
+        self.forced: dict = {}
+        self.links: list = []
+
+    # ------------------------------------------------------------ what it reads
+    def feed(self, lines: list[dict] | None = None, links: list | None = None, forced: dict | None = None, have: dict | None = None,
+             pops: dict | None = None):
+        """What the tree reads, as known now: the lines' starts, ends and tracks (meta.lineages' fields), the contacts as intervals
+        (links_of), the tamings (forced_of) and the goods each people's country holds (goods_held). None keeps the last."""
+        if have is not None:
+            self.have = have
+        if lines is not None:
+            pops = pops or {}
+            self.series = {l["id"]: _series(l, pops) for l in lines if l["id"] in self.kind}  # (population and density through time, from the saved tracks)
+            self.start = {l["id"]: float(l.get("started_kyr") if l.get("started_kyr") is not None else l.get("ago_kyr", 0.0))
+                          for l in lines if l["id"] in self.kind}
+            self.end = {l["id"]: float(l["ended_kyr"]) if l.get("ended_kyr") is not None else -1.0 for l in lines if l["id"] in self.kind}
+        if forced is not None:
+            self.forced = forced
+        if links is not None:
+            self.links = links
+
+    # ------------------------------------------------------------ the rules
+    def give(self, lid, tid, ago, how, frm=None):
+        if tid in self.techs and tid not in self.known[lid]:
+            self.known[lid][tid] = [round(float(ago), 3), how, frm]
+
+    def held(self, lid, tid, at):  # (PW-987: a line cannot inherit a tool it cannot hold: the cats take no found tools from the mammal root)
+        t = self.techs[tid]
+        return not t.get("hands", True) or _grips(t, self.kind[lid], self.node[lid], at)
+
+    def can(self, lid, tid, ago, inventing, needs=True):
+        t = self.techs[tid]
+        k = self.kind[lid]
+        kn = self.known[lid]
+        if tid in kn or (needs and any(n not in kn for n in t.get("needs", []))):
             return False
-        if needs and t.get("needs_any") and not any(n in known[lid] for n in t["needs_any"]):  # (one of them: a mount, a milk beast)
+        if needs and t.get("needs_any") and not any(n in kn for n in t["needs_any"]):  # (one of them: a mount, a milk beast)
             return False
-        if node[lid] is not None and ago > node[lid] and not t.get("bare"):  # (PW-971: before its stem's minds only bare-bones tools)
+        node = self.node[lid]
+        if node is not None and ago > node and not t.get("bare"):  # (PW-971: before its stem's minds only bare-bones tools)
             return False
-        if t.get("hands", True) and not _grips(t, k, node[lid], ago):
+        if t.get("hands", True) and not _grips(t, k, node, ago):
             return False
-        if (inventing or not t.get("traded")) and not _env_ok(t, have[lid]):  # (a traded tech, bronze, comes without the ore)
+        if (inventing or not t.get("traded")) and not _env_ok(t, self.have[lid]):  # (a traded tech, bronze, comes without the ore)
             return False
         if inventing:
-            first = floor_of(T, tid, bool(k.get("elder")))  # (a gated tech's floor; a soft tech has none)
+            first = floor_of(self.T, tid, bool(k.get("elder")))  # (a gated tech's floor; a soft tech has none)
             return first is None or ago <= first
         return True
 
-    def strengths(lid, ago):
+    def strengths(self, lid, ago):
         """(S of the whole people, S of its specialists, s) now."""
-        ser = series[lid]
+        D = self.D
+        ser = self.series[lid]
         n, dens = _at(ser, ago) if ser is not None else (D["pool_default"], None)
-        n *= learn[lid]
-        s = specialist_share(T, known[lid])
+        n *= self.learn[lid]
+        s = specialist_share(self.T, self.known[lid])
         return strength(n, D), strength(n * s * density_x(dens, D), D), s
 
-    if arms:
-        urban = {i for i, t in techs.items() if set(t.get("needs", [])) & set(ARM_URBAN_NEEDS)}
-        admin = {i for i, t in techs.items() if t.get("admin") or i in ARM_ADMIN}
-        touched = (urban if arms & {"B", "C"} else set()) | (admin if "E" in arms else set())
-        kin = kin_pairs(lines, float(_arm(D, "arm_kin_kyr"))) if "K" in arms else set()
-        if arms & {"B", "E"} and not towns:  # (output.save builds the tree before the settlement ledger: no footprint there yet)
-            warnings.warn(f"tech tree arms {''.join(sorted(arms & {'B', 'E'}))} need a town footprint; without one they do nothing",
-                          stacklevel=2)
-        towns = towns or {}
-        cell_km2 = float(towns.get("_cell_km2") or 0.0)
-        v_trade = float(_arm(D, "arm_trade_km_yr"))
-        width_x = float(_arm(D, "arm_width_x"))
-
-    def knows(lid, tid, ago):
-        v = known[lid].get(tid)
+    def knows(self, lid, tid, ago):
+        v = self.known[lid].get(tid)
         return v is not None and v[0] >= ago - 1e-9
 
-    def arm_rate(x, y, tid, ago, op, w):
+    def arm_rate(self, x, y, tid, ago, op, w):
         """The contact rate (before spread and culture) of an arm-touched front: width, speed and openness as the arms say."""
-        a = _area_at(series[y], ago) or D["anchor_pop"] / D["anchor_dens"] / 1e6
-        if (x, y) in kin:
+        D, arms = self.D, self.arms
+        a = _area_at(self.series[y], ago) or D["anchor_pop"] / D["anchor_dens"] / 1e6
+        if (x, y) in self.kin:
             op = 1.0
         width = math.sqrt(a * 1e6)
-        n = town_cells_at(towns.get(y), ago) if tid in touched else 0.0
-        if "E" in arms and tid in admin and n >= 1 and any(knows(y, e, ago) for e in ARM_ELITE):
-            width = width_x * math.sqrt(a * 1e6 / n)  # (the court's reach: the front need only reach its nearest town)
-        elif "B" in arms and tid in urban and n >= 1 and cell_km2 > 0:
-            width = min(width_x * math.sqrt(n * cell_km2), width)  # (the town network's width)
-        urb = "C" in arms and tid in urban and knows(x, "towns", ago) and knows(y, "towns", ago)
-        v = v_trade if urb else D["contact_speed_km_yr"]
+        n = town_cells_at(self.towns.get(y), ago) if tid in self.touched else 0.0
+        if "E" in arms and tid in self.admin and n >= 1 and any(self.knows(y, e, ago) for e in ARM_ELITE):
+            width = self.width_x * math.sqrt(a * 1e6 / n)  # (the court's reach: the front need only reach its nearest town)
+        elif "B" in arms and tid in self.urban and n >= 1 and self.cell_km2 > 0:
+            width = min(self.width_x * math.sqrt(n * self.cell_km2), width)  # (the town network's width)
+        urb = "C" in arms and tid in self.urban and self.knows(x, "towns", ago) and self.knows(y, "towns", ago)
+        v = self.v_trade if urb else D["contact_speed_km_yr"]
         return 2 * math.log(2) * v * 1e3 / max(width, D["contact_width_min_km"]) * w * op
 
-    began = set()
-    arrive: dict[tuple, float | None] = {}  # ((giver, taker, tech): when its front reaches the taker's middle, kyr; None: never)
-    unit: dict[tuple, float] = {}  # ((giver, taker): the pair's front delay, in units of 1 / the contact rate)
-    prev = grid[0]
-    for step, ago in enumerate(grid):
-        dt = max(prev - ago, 1e-6) if ago != grid[0] else 0.0
-        prev = ago
-        alive = [l for l in people if start[l["id"]] >= ago and (end[l["id"]] < 0 or ago > end[l["id"]])]
-        for l in alive:  # (inheritance and kits, once, at the line's start)
-            lid = l["id"]
-            if lid in began:
-                continue
-            began.add(lid)
-            at = min(start[lid], grid[0])
-            if l.get("origin") in ("split", "group") or l.get("group_of"):
-                src = l.get("group_of") or (l.get("parents") or [None])[0]
-                for tid, v in (known.get(src) or {}).items():
-                    if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):  # (PW-971: a stem under a node inherits only bare tools from before it)
-                        give(lid, tid, at, "inherited", src)
-            elif l.get("origin") == "hybrid":
-                for src in l.get("parents") or []:
-                    for tid in list((known.get(src) or {})):
-                        if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):
-                            give(lid, tid, at, "inherited", src)
-            kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
-            for tid in [i for i in order if i in kit]:
-                give(lid, tid, at, "kit" if l.get("origin") == "arrival" else "inherited", None)
-        for l in alive:  # (tamings recorded by the history)
-            for when, tid in forced.get(l["id"], []):
-                if when >= ago and tid not in known[l["id"]]:
-                    for n in [i for i in order if i in closure(T, [tid]) and i != tid]:
-                        give(l["id"], n, when, "with " + tid, None)
-                    give(l["id"], tid, when, "tamed", None)
-        if dt <= 0:
-            continue
-        # taking up by contact (lane 70, PW-1137): a tech's know-how is a front that sets out into a neighbour's country when the
-        # giver knows it and they are in touch, and reaches its middle after a delay (median width / 2v, contact_rate) drawn once
-        # per pair, so the techs the giver knew alike arrive together (x 1 / spread: language lags, traded bronze leads);
-        # once it has, the neighbour takes it up as soon as it can use it, so a package travels together (the plough behind the
-        # ox) instead of the taker's clock restarting at each prerequisite
-        cand: dict[tuple, tuple] = {}
-        for a, b, fr, to, km in links:  # (diffusion over borders)
-            if not (fr >= ago >= to):
-                continue
-            w = min(km / D["contact_full_km"], 1.0)
-            for x, y in ((a, b), (b, a)):
-                if x not in began or y not in began:
+    # ------------------------------------------------------------ the steps
+    def advance(self, to: float | None = None) -> int:
+        """Runs the steps at `to` kyr ago or before it (None: to the present); returns how many it ran. The steps are fixed at the
+        first call, from the lines' starts then (the oldest line's start)."""
+        T, D, techs, order, L, people, seed = self.T, self.D, self.techs, self.order, self.L, self.people, self.seed
+        kind, node, culture, rates, pool, ready, known = self.kind, self.node, self.culture, self.rates, self.pool, self.ready, self.known
+        start, end, series, forced, links, arms = self.start, self.end, self.series, self.forced, self.links, self.arms
+        began, arrive, unit = self.began, self.arrive, self.unit
+        give, can, held, strengths = self.give, self.can, self.held, self.strengths
+        if self.grid is None:
+            t0 = max(start.values(), default=1.0)
+            self.grid = np.concatenate([np.geomspace(max(t0, 1.0), NEAR_KYR, STEPS), [0.0]])
+            self.prev = self.grid[0]
+        grid = self.grid
+        ran = 0
+        while self.step < len(grid):
+            step, ago = self.step, grid[self.step]
+            if to is not None and ago < to - 1e-9:
+                break
+            self.step += 1
+            ran += 1
+            prev = self.prev
+            dt = max(prev - ago, 1e-6) if ago != grid[0] else 0.0
+            self.prev = ago
+            alive = [l for l in people if l["id"] in start and start[l["id"]] >= ago and (end[l["id"]] < 0 or ago > end[l["id"]])]
+            for l in alive:  # (inheritance and kits, once, at the line's start)
+                lid = l["id"]
+                if lid in began:
                     continue
-                cr = None
-                for tid in order:
-                    if tid not in known[x] or tid in known[y] or known[x][tid][0] < ago:
-                        continue
-                    k3 = (x, y, tid)
-                    if arms and (tid in touched or (x, y) in kin) and not techs[tid].get("modern_contact") \
-                            and not (k3 in arrive and arrive[k3] is None):
-                        op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
-                        r = arm_rate(x, y, tid, ago, op, w) * techs[tid].get("spread", D["spread"]) \
-                            * domain_x(culture[y][1], techs[tid])
-                        if (x, y) not in unit:
-                            unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (the same keyed draw as the plain front)
-                        new = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
-                        if k3 not in arrive or (new is not None and new > arrive[k3]):
-                            arrive[k3] = new  # (never later: the front keeps what it has crossed)
-                    if k3 not in arrive:
-                        if techs[tid].get("modern_contact") and node[y] is None:  # (language: to any genetically modern people, PW-971)
-                            arrive[k3] = None
-                            continue
-                        if cr is None:
-                            op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
-                            cr = contact_rate(_area_at(series[y], ago), D) * w * op
-                        r = cr * techs[tid].get("spread", D["spread"]) * domain_x(culture[y][1], techs[tid])
-                        if (x, y) not in unit:  # (the pair's draw: one front, for all its techs, slower for a slow-spreading one)
-                            unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (exponential, mean 1)
-                        arrive[k3] = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
-                    at = arrive[k3]
-                    if at is not None and at >= ago and at > cand.get((y, tid), (-1.0,))[0]:
-                        cand[(y, tid)] = (at, x)
-        # inventing, and the arrivals: a tech that arrives within the step may still be invented first, over the part of the step
-        # before it arrived (neither is tried first)
-        for l in alive:
-            lid = l["id"]
-            rx = kind[lid].get("rate_x", 1.0)
-            s_all, s_spec, _ = strengths(lid, ago)
-            for tid in order:
-                arr = cand.get((lid, tid))
-                lang = bool(techs[tid].get("modern_contact"))
-                took = arr is not None and can(lid, tid, ago, False, needs=not lang)
-                h = 0.0
-                if can(lid, tid, ago, True):
-                    t = techs[tid]
-                    sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
-                    h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
-                    tau = ready[lid].setdefault(tid, ago) - ago
-                    h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
-                span = min(max(ago + dt - arr[0], 0.0), dt) if took else dt
-                if h > 0 and span > 0 and keyed(seed, "invent", lid, tid, step) < 1 - math.exp(-h * span):
-                    give(lid, tid, ago, "invented", None)
-                elif took:
-                    if lang:
+                began.add(lid)
+                at = min(start[lid], grid[0])
+                if l.get("origin") in ("split", "group") or l.get("group_of"):
+                    src = l.get("group_of") or (l.get("parents") or [None])[0]
+                    for tid, v in (known.get(src) or {}).items():
+                        if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):  # (PW-971: a stem under a node inherits only bare tools from before it)
+                            give(lid, tid, at, "inherited", src)
+                elif l.get("origin") == "hybrid":
+                    for src in l.get("parents") or []:
+                        for tid in list((known.get(src) or {})):
+                            if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):
+                                give(lid, tid, at, "inherited", src)
+                kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
+                for tid in [i for i in order if i in kit]:
+                    give(lid, tid, at, "kit" if l.get("origin") == "arrival" else "inherited", None)
+            for l in alive:  # (tamings recorded by the history)
+                for when, tid in forced.get(l["id"], []):
+                    if when >= ago and tid not in known[l["id"]]:
                         for n in [i for i in order if i in closure(T, [tid]) and i != tid]:
-                            give(lid, n, ago, "with " + tid, arr[1])  # (its roots, gesture, come with it)
-                    give(lid, tid, ago, "contact", arr[1])
-        for l in alive:  # (a group and its people share what they know as they go)
-            g = l.get("group_of")
-            if g and g in known:
-                for x, y in ((g, l["id"]), (l["id"], g)):
-                    for tid, v in list(known[x].items()):
-                        if v[0] >= ago and tid not in known[y] and can(y, tid, ago, False):
-                            give(y, tid, ago, "shared", x)
-    firsts = firsts_of(known)
-    drivers = {}  # (what drove each living people's inventing at the present: for the report and the viewer)
-    for l in people:
-        lid = l["id"]
-        if end[lid] >= 0:
-            continue
-        s_all, s_spec, s = strengths(lid, 0.0)
-        ser = series[lid]
-        drivers[lid] = {"population": int(_at(ser, 0.0)[0]) if ser is not None else None, "specialists": s,
-                        "strength_all": round(s_all, 3), "strength_specialists": round(s_spec, 3),
-                        "generation_yr": gens[lid], "learners_x": round(learn[lid], 2), "rate_x": kind[lid].get("rate_x", 1.0),
-                        "culture": {d: round(x, 2) for d, x in culture[lid][0].items()},
-                        "take": {d: round(x, 2) for d, x in culture[lid][1].items()}}
-    return {"file": str(T.get("_file", FILE.name)), "era": era, "mode": mode, "gods_mode": gods_mode,
-            "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
-            "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
-                       "needs_any": [n for n in techs[i].get("needs_any", []) if n in techs],
-                       "env": techs[i].get("env", []), "env_any": techs[i].get("env_any", []),
-                       "earliest_kyr": techs[i].get("earliest_kyr"), "elder_kyr": techs[i].get("elder_kyr"),
-                       "era": techs[i].get("era", "stone age"), "fantasy": techs[i].get("mode") == "fantasy",
-                       "source": techs[i].get("source", ""), "domains": domains_of(techs[i]), "pool": pool[i],
-                       "floor_kyr": floor_of(T, i), "rate": round(rates[i], 4),
-                       "anchor_lag_kyr": None if floor_of(T, i) is not None else anchor_lag(T, i)} for i in order],
-            "known": known, "firsts": firsts, "drivers": drivers,
-            "goods_checked": {lid: sorted(v) if v is not None else None for lid, v in have.items()}}
+                            give(l["id"], n, when, "with " + tid, None)
+                        give(l["id"], tid, when, "tamed", None)
+            if dt <= 0:
+                continue
+            # taking up by contact (lane 70, PW-1137): a tech's know-how is a front that sets out into a neighbour's country when the
+            # giver knows it and they are in touch, and reaches its middle after a delay (median width / 2v, contact_rate) drawn once
+            # per pair, so the techs the giver knew alike arrive together (x 1 / spread: language lags, traded bronze leads);
+            # once it has, the neighbour takes it up as soon as it can use it, so a package travels together (the plough behind the
+            # ox) instead of the taker's clock restarting at each prerequisite
+            cand: dict[tuple, tuple] = {}
+            for a, b, fr, to_, km in links:  # (diffusion over borders)
+                if not (fr >= ago >= to_):
+                    continue
+                w = min(km / D["contact_full_km"], 1.0)
+                for x, y in ((a, b), (b, a)):
+                    if x not in began or y not in began:
+                        continue
+                    cr = None
+                    for tid in order:
+                        if tid not in known[x] or tid in known[y] or known[x][tid][0] < ago:
+                            continue
+                        k3 = (x, y, tid)
+                        if arms and (tid in self.touched or (x, y) in self.kin) and not techs[tid].get("modern_contact") \
+                                and not (k3 in arrive and arrive[k3] is None):
+                            op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
+                            r = self.arm_rate(x, y, tid, ago, op, w) * techs[tid].get("spread", D["spread"]) \
+                                * domain_x(culture[y][1], techs[tid])
+                            if (x, y) not in unit:
+                                unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (the same keyed draw as the plain front)
+                            new = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
+                            if k3 not in arrive or (new is not None and new > arrive[k3]):
+                                arrive[k3] = new  # (never later: the front keeps what it has crossed)
+                        if k3 not in arrive:
+                            if techs[tid].get("modern_contact") and node[y] is None:  # (language: to any genetically modern people, PW-971)
+                                arrive[k3] = None
+                                continue
+                            if cr is None:
+                                op = 1 - 0.7 * float((L[y].get("demography") or {}).get("insularity", 0.3))
+                                cr = contact_rate(_area_at(series[y], ago), D) * w * op
+                            r = cr * techs[tid].get("spread", D["spread"]) * domain_x(culture[y][1], techs[tid])
+                            if (x, y) not in unit:  # (the pair's draw: one front, for all its techs, slower for a slow-spreading one)
+                                unit[(x, y)] = -math.log1p(-keyed(seed, "front", x, y))  # (exponential, mean 1)
+                            arrive[k3] = min(known[x][tid][0], fr) - unit[(x, y)] / r if r > 0 else None
+                        at = arrive[k3]
+                        if at is not None and at >= ago and at > cand.get((y, tid), (-1.0,))[0]:
+                            cand[(y, tid)] = (at, x)
+            # inventing, and the arrivals: a tech that arrives within the step may still be invented first, over the part of the step
+            # before it arrived (neither is tried first)
+            for l in alive:
+                lid = l["id"]
+                rx = kind[lid].get("rate_x", 1.0)
+                s_all, s_spec, _ = strengths(lid, ago)
+                for tid in order:
+                    arr = cand.get((lid, tid))
+                    lang = bool(techs[tid].get("modern_contact"))
+                    took = arr is not None and can(lid, tid, ago, False, needs=not lang)
+                    h = 0.0
+                    if can(lid, tid, ago, True):
+                        t = techs[tid]
+                        sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
+                        h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
+                        tau = ready[lid].setdefault(tid, ago) - ago
+                        h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
+                    span = min(max(ago + dt - arr[0], 0.0), dt) if took else dt
+                    if h > 0 and span > 0 and keyed(seed, "invent", lid, tid, step) < 1 - math.exp(-h * span):
+                        give(lid, tid, ago, "invented", None)
+                    elif took:
+                        if lang:
+                            for n in [i for i in order if i in closure(T, [tid]) and i != tid]:
+                                give(lid, n, ago, "with " + tid, arr[1])  # (its roots, gesture, come with it)
+                        give(lid, tid, ago, "contact", arr[1])
+            for l in alive:  # (a group and its people share what they know as they go)
+                g = l.get("group_of")
+                if g and g in known:
+                    for x, y in ((g, l["id"]), (l["id"], g)):
+                        for tid, v in list(known[x].items()):
+                            if v[0] >= ago and tid not in known[y] and can(y, tid, ago, False):
+                                give(y, tid, ago, "shared", x)
+        return ran
+
+    # ------------------------------------------------------------ meta.techtree
+    def result(self) -> dict:
+        """meta.techtree from the steps run so far (all of them, after advance())."""
+        T, techs, order, known, people, end = self.T, self.techs, self.order, self.known, self.people, self.end
+        firsts = firsts_of(known)
+        drivers = {}  # (what drove each living people's inventing at the present: for the report and the viewer)
+        for l in people:
+            lid = l["id"]
+            if self.end.get(lid, -1.0) >= 0:
+                continue
+            s_all, s_spec, s = self.strengths(lid, 0.0)
+            ser = self.series[lid]
+            drivers[lid] = {"population": int(_at(ser, 0.0)[0]) if ser is not None else None, "specialists": s,
+                            "strength_all": round(s_all, 3), "strength_specialists": round(s_spec, 3),
+                            "generation_yr": self.gens[lid], "learners_x": round(self.learn[lid], 2), "rate_x": self.kind[lid].get("rate_x", 1.0),
+                            "culture": {d: round(x, 2) for d, x in self.culture[lid][0].items()},
+                            "take": {d: round(x, 2) for d, x in self.culture[lid][1].items()}}
+        pool, rates = self.pool, self.rates
+        return {"file": str(T.get("_file", FILE.name)), "era": self.era, "mode": self.mode, "gods_mode": self.gods_mode,
+                "tracks": [{"id": k["id"], "name": k["name"]} for k in T["track"]],
+                "techs": [{"id": i, "name": techs[i]["name"], "track": techs[i]["track"], "needs": techs[i].get("needs", []),
+                           "needs_any": [n for n in techs[i].get("needs_any", []) if n in techs],
+                           "env": techs[i].get("env", []), "env_any": techs[i].get("env_any", []),
+                           "earliest_kyr": techs[i].get("earliest_kyr"), "elder_kyr": techs[i].get("elder_kyr"),
+                           "era": techs[i].get("era", "stone age"), "fantasy": techs[i].get("mode") == "fantasy",
+                           "source": techs[i].get("source", ""), "domains": domains_of(techs[i]), "pool": pool[i],
+                           "floor_kyr": floor_of(T, i), "rate": round(rates[i], 4),
+                           "anchor_lag_kyr": None if floor_of(T, i) is not None else anchor_lag(T, i)} for i in order],
+                "known": known, "firsts": firsts, "drivers": drivers,
+                "goods_checked": {lid: sorted(v) if v is not None else None for lid, v in self.have.items()}}
+
+
+def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
+          goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
+          T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None) -> dict:
+    """meta.techtree for a peoples run, after its history (a Calendar fed the whole run and run to the present). gods_mode (PW-1304):
+    "faith_made" (default), "belief_only" or "absolute"; a tech marked `gods = true` (divine magic) exists only in faith_made and
+    absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
+    ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
+    lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods. towns, arms:
+    D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2})."""
+    c = Calendar(lines, mode, era, seed, T, gods_mode, towns, arms)
+    have = {l["id"]: goods_held(c.T, present, goods, c.idx[l["id"]]) for l in c.people}
+    c.feed(lines, links_of(contacts, c.kind), forced_of(pres, c.techs, c.L), have, (pres or {}).get("lines") or {})
+    c.advance()
+    return c.result()
 
 
 def _source_rank(how: str) -> int:
