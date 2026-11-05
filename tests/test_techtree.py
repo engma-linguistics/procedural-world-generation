@@ -263,7 +263,8 @@ def test_small_peoples_rarely_invent_the_specialist_techs():
     big = band = 0
     for s in range(12):
         # (16 kyr, was 8: lane 70's first-of-anchor_peers rates make one isolated people slower than Earth's first finder)
-        lines = [line("big", at=16.0, track=_pop(5e7, 5.0, 16.0)), line("band", at=16.0, track=_pop(1000, 0.1, 16.0))]
+        # (60 kyr, was 16: lane 200b's anchor of 24 regional learners slows one isolated people again)
+        lines = [line("big", at=60.0, track=_pop(5e7, 5.0, 60.0)), line("band", at=60.0, track=_pop(1000, 0.1, 60.0))]
         tt = TT.build(lines, None, None, seed=s, T=T2)
         big += "writing" in tt["known"]["big"]
         band += "writing" in tt["known"]["band"]
@@ -347,7 +348,8 @@ def test_needs_any_one_of_them():
         got = 0
         for s in range(6):
             T2 = {**T, "kind": [{"of": ["x"], "kit": ["pack_animals"] + mount}]}
-            tt = TT.build([line("x", at=6.0, track=_pop(1e7, 1.0, 6.0))], None, None, seed=s, T=T2)
+            # (12 kyr, was 6: lane 200b's first-of-24 regional learners make one isolated people slower than Earth's first finder)
+            tt = TT.build([line("x", at=12.0, track=_pop(1e7, 1.0, 12.0))], None, None, seed=s, T=T2)
             got += "riding" in tt["known"]["x"]
         assert (got >= 5) if ok else got == 0, (mount, got)
     assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
@@ -461,9 +463,9 @@ def _writing_world(arms, towns=None, kin=False, ins=0.3, seeds=range(8), over=No
 
 def test_arms_off_is_the_plain_front_bit_for_bit():
     """D52's switch off (the default, or an empty string) is today's rule exactly, with or without a town footprint."""
-    a = _writing_world(None)
+    a = _writing_world(None, over={"contact_arms": ""})
     assert (a == _writing_world("")).all() and (a == _writing_world("", towns=TOWNS_Y)).all()
-    assert TT.ARM_DEFAULTS["contact_arms"] == "" and "contact_arms" not in T["defaults"]
+    assert TT.ARM_DEFAULTS["contact_arms"] == "" and T["defaults"]["contact_arms"] == "BT"  # (the tree's own: D53's arm T, lane 200b)
 
 
 def test_each_arm_speeds_writing_by_its_own_mechanism():
@@ -552,3 +554,30 @@ def test_town_arms_wait_for_the_ledger(monkeypatch):
     k0 = {"a": {"towns": [6.0, "invented", None], "writing": [3.0, "contact", "b"]}}
     k1 = {"a": {"towns": [6.0, "invented", None], "writing": [4.5, "contact", "b"]}}
     assert ST.ledger_dates(k0) == ST.ledger_dates(k1) != ST.ledger_dates({"a": {"towns": [5.0, "invented", None]}})
+
+
+def test_own_floor_lifts_the_slow_and_never_speeds_the_anchor():
+    """D55's floor (PW-1471, lane 200b): a learner is no slower than the anchor learner its rate is set on, so switching it on leaves
+    the anchor check exactly as it was and lifts only a smaller people; it is never above the anchor learner's own hazard."""
+    T1 = {**T, "defaults": {**T["defaults"], "own_floor": True}}
+    for tid in ("writing", "towns"):
+        assert TT.own_floor(T1, tid) <= TT.rate_of(T1, tid) * TT.anchor_strength(T1, tid) + 1e-12
+        assert TT.own_floor(T, tid) is None or not T["defaults"]["own_floor"]
+    assert TT.own_floor(T1, "bow") is None  # (a floored, Pleistocene tech: no own floor)
+    assert TT.anchor_check(["writing"], seeds=5, T=T1) == TT.anchor_check(["writing"], seeds=5, T=T)
+
+
+def test_region_learners_split_a_continent_by_area():
+    """D55 (lane 200b): each landmass with a tenth of a people's range is a region; with region_mkm2 a large one is several."""
+    n = 1000  # (cells of an Earth-sized sphere: ~510 Mkm2 / 1000)
+    lm = np.full(n, -1)
+    lm[:600], lm[600:700], lm[700:705] = 0, 1, 2
+    present = np.zeros((1, n))
+    present[0, :705] = 1.0
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1)["x"]
+    assert [k for k, _ in r] == [0, 1] and abs(sum(w for _, w in r) - 700 / 705) < 1e-9
+    cell = 4 * np.pi * 6371.0 ** 2 / n / 1e6
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1, region_mkm2=100.0)["x"]
+    k0 = int(np.ceil(600 * cell / 100.0))
+    assert [k for k, _ in r].count(0) == k0 and [k for k, _ in r].count(1) == int(np.ceil(100 * cell / 100.0))
+    assert abs(sum(w for _, w in r) - 700 / 705) < 1e-9

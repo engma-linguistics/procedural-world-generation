@@ -3749,7 +3749,7 @@ def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkey
         c = TT.Calendar(lt.lines(), seed=1, T=lt.T, towns=lt.towns, arms=lt.arms)
     assert c.towns is lt.towns and TT.town_cells_at(c.towns["folk"], 1.0) == cells["folk"]
     assert TT.town_cells_at(c.towns["folk"], 0.9) == 0 and TT.town_cells_at(c.towns["folk"], 1.1) == 0
-    monkeypatch.setattr(TT, "load", lambda path=None: T0)  # (arms off, the default: no footprint is kept, nothing counted)
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": ""}})  # (arms off: no footprint is kept, nothing counted)
     assert TL.LiveTech(h).towns is None
 
 

@@ -56,17 +56,27 @@ culture_cap = 1.5    # a culture's factor on a domain at most this (the evidence
 anchor_pop = 1e7     # the anchor people a soft tech's rate is set by: this many, at anchor_dens per km2, knowing what Earth knew
 anchor_dens = 10.0   # when the tech's prerequisites came; its median wait after them is then Earth's lag (techtree.rate_of)
 lag_min_kyr = 0.3    # Earth's lag after the prerequisites at least this (two techs dated the same: not at once)
-anchor_peers = 4     # Earth's date for a soft tech is the FIRST find among this many anchor peoples that could make it, not one
-                     # people's median wait (techtree.ramp_first; anchor_check builds that many). JUDGEMENT (lane 70, PW-1137): on
-                     # 4 runs x 2 draws, 4 puts the world firsts of copper, writing, iron, cities and the wheel within ~1 kyr of
-                     # Earth's; 10 makes them 1-2 kyr late; 1 (one people's median, the old rule) with this contact made them 1.4-4.6 kyr early
-own_floor = false    # OFF (lane 200): with Earth's numbers the floor for writing (median wait 4.35 kyr) is FASTER than the anchor rate
-                     # (the first of 4 anchor peoples in 3.3 kyr), so it would speed every big people, not floor the small: round1.md. D55 (PW-1471): a learner alone invents a soft tech with dated independent origins (origins_kyr) no slower than Earth's
-                     # median independent inventor did after Earth's prerequisites (techtree.own_floor); a hazard, never forced
-regions = false      # D55 (PW-1471): region learners. OFF until the anchor rates are set for them: on 0141d1 they bring the world's first
-                     # writing to 8,219 yr ago (median of 12 draws; main 4,153; Earth 5,300): docs/review/culture/techtree/round1.md
+anchor_peers = 24    # Earth's date for a soft tech is the FIRST find among this many anchor learners that could make it, not one
+                     # learner's median wait (techtree.ramp_first; anchor_check builds that many). With region learners (D55) a learner
+                     # is a region, so this is Earth's count of independent regional centres: "at least 11 regions of the Old and New
+                     # World were involved as independent centers of origin" (Larson et al. 2014, PNAS 111:6139), "perhaps more than 20"
+                     # (Fuller et al. 2014, PNAS 111:6147); both read 2026-11-05 by lane 200b. 24 is at the top of that range and is the one
+                     # of 11/16/20/24/32 that keeps both dnd showcases' first writing within main's 12-draw spread (round2.md).
+                     # (Lane 70's 4 was fitted for one learner per people.)
+own_floor = false    # OFF (lane 200b, round2.md): D55's floor (PW-1471, techtree.own_floor): a learner with any specialists invents a soft
+                     # tech no slower than the anchor learner (and no faster than Earth's median independent inventor, origins_kyr). It never
+                     # speeds the anchor, but it lifts most dnd regions (smaller than the anchor's 1e7) and brings the dnd world's first writing
+                     # ~1.5 kyr early, while the humans alone (bigger than the anchor) do not need it: needs-decision draft
+regions = true       # D55 (PW-1471): region learners: each region of a people (techtree.region_shares) learns on its own share of the pool
 region_min_share = 0.1  # D55 (PW-1471): each present-day landmass holding at least this share of a people's range, once reached, is a
                      # learner of its own (its share of the pool; techtree.region_shares). JUDGEMENT: under it a foothold, not a region
+region_mkm2 = 24     # D55 (lane 200b): a people's part of a landmass is ceil(its area / this) learners, so a region is a stretch of land, not a
+                     # whole continent. JUDGEMENT, measured (round2.md): 12-16 make the humans alone write in 8 of 8 draws (forced); 32 and
+                     # landmasses alone leave them without writing; 24 gives writing in 3 of 8, cities and kingship in 6 of 8
+contact_arms = "BT"  # D53 (PW-1461, lane 200b): a tech that needs towns (writing, the alphabet) crosses the taker's town network as the GIVER is
+                     # minded to trade (techtree.trade_of: 1 - insularity, + 0.1 cosmopolitan): (range width)^(1 - tau) x (towns' width)^tau.
+                     # On the final tree (regions on) the median lag from the world's first writing to each people taking it by contact:
+                     # 0141d1 1,221 yr off, 608 with B, 953 with T; a2b637 1,001, 409, 665 (12 draws each, round2.md)
 
 # the specialist ladder, s (the share of a people not getting food): JUDGEMENT after Childe 1950 (no full-time specialists while
 # everyone hunts, gathers or farms, p. 6; cities hold full-time craftsmen, merchants, officials and priests fed by the surplus,
@@ -258,7 +268,7 @@ name = "tally sticks"
 track = "communication"
 domains = ["know"]
 needs = ["marks", "counting"]
-earliest_kyr = 45
+earliest_kyr = 44  # (d'Errico et al. 2012's notched bones at Border Cave, ~44 kyr: was 45, which left the origins' band unused, band_wait)
 origins_kyr = [44, 30, 20]  # (the catalogue's dated origins: techtree.band_wait)
 elder_kyr = 800
 era = "stone age"

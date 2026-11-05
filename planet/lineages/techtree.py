@@ -400,27 +400,37 @@ def rate_of(T: dict, tid: str) -> float:
 
 
 def own_floor(T: dict, tid: str) -> float | None:
-    """D55's floor on a people's (a region's) own inventing, per kyr (PW-1471): a learner alone that meets a soft tech's conditions
-    invents it no slower than Earth's median independent inventor did after Earth's prerequisites, whatever its pool or culture:
-    RAMP_MEDIAN / (_anchor_ready - the median of the tech's dated independent origins, `origins_kyr`). A hazard, never a date: the
-    tech can still not come, and contact can still bring it first. None: a floored (Pleistocene) tech, fewer than two dated
-    origins, or the tree's [defaults] own_floor off."""
+    """D55's floor on a people's (a region's) own inventing, per kyr (PW-1471): a learner (a region, with regions on) that meets a
+    soft tech's conditions and has any specialists to spare invents it no slower than the anchor learner does, whatever its size,
+    pool or culture. The anchor learner is the one the tech's rate is calibrated on (anchor_pop at anchor_dens, knowing what Earth
+    knew; rate_of x anchor_strength): Earth's date is the first find among anchor_peers of them. So the floor lifts only learners
+    slower than that and never speeds up the anchor (anchor_check is unchanged by it). Where the tech has dated independent origins
+    (`origins_kyr`, at least two), the floor is no faster than Earth's median independent inventor either: RAMP_MEDIAN /
+    (_anchor_ready - their median). (Lane 200's first floor was that alone; for writing it was faster than the anchor learner, so it
+    sped up every big people.) A hazard, never a date: the tech can still not come, and contact can still bring it first. None: a
+    floored (Pleistocene) tech, a tech with its own rate, or the tree's [defaults] own_floor off."""
     t = T["techs"][tid]
     D = T["defaults"]
-    ks = [float(k) for k in t.get("origins_kyr") or []]
-    if not D.get("own_floor", False) or len(ks) < 2 or floor_of(T, tid) is not None:
+    if not D.get("own_floor", False) or "rate" in t or floor_of(T, tid) is not None:
         return None
     ready, e = _anchor_ready(T, tid), t.get("earliest_kyr")
-    if ready is None or e is None:
+    if ready is None or e is None or e >= D["gate_kyr"]:
         return None
-    wait = max(ready - float(np.median([min(k, float(e)) for k in ks])), D["lag_min_kyr"])
-    return RAMP_MEDIAN / wait
+    fl = rate_of(T, tid) * anchor_strength(T, tid)
+    ks = [float(k) for k in t.get("origins_kyr") or []]
+    if len(ks) >= 2:
+        wait = max(ready - float(np.median([min(k, float(e)) for k in ks])), D["lag_min_kyr"])
+        fl = min(fl, RAMP_MEDIAN / wait)
+    return fl if fl > 0 else None
 
 
-def region_shares(present: np.ndarray | None, landmass: np.ndarray | None, idx: dict, min_share: float) -> dict:
+def region_shares(present: np.ndarray | None, landmass: np.ndarray | None, idx: dict, min_share: float,
+                  region_mkm2: float = 0.0) -> dict:
     """{people: [(landmass rank, share of its range)]}: each people's regions (PW-1471, D55: a people over several landmasses is
     several learners), the present-day landmasses (crossing.Crossings' ranks) holding at least min_share of its range (presence >=
-    0.05, weighted by presence). Empty without a range or the landmasses."""
+    0.05, weighted by presence). With region_mkm2 > 0, a people's part of a landmass larger than that many Mkm2 is that many learners
+    (ceil(area / region_mkm2), the share split evenly): a region is a stretch of land, not a whole continent. Empty without a range
+    or the landmasses."""
     out: dict = {}
     if present is None or landmass is None or present.shape[1] != landmass.shape[0]:
         return out
@@ -435,7 +445,12 @@ def region_shares(present: np.ndarray | None, landmass: np.ndarray | None, idx: 
         if tot <= 0:
             continue
         w = np.bincount(lm[ok], weights=p[ok], minlength=nl) / tot
-        out[lid] = [(int(r), float(w[r])) for r in np.flatnonzero(w >= min_share)]
+        rs = [(int(r), float(w[r])) for r in np.flatnonzero(w >= min_share)]
+        if region_mkm2 > 0 and rs:
+            cell = 4 * math.pi * 6371.0 ** 2 / lm.shape[0] / 1e6
+            cells = np.bincount(lm[ok], weights=(p[ok] > 0).astype(float), minlength=nl)
+            rs = [(r, x / k) for r, x in rs for k in [max(1, math.ceil(cells[r] * cell / region_mkm2))] for _ in range(k)]
+        out[lid] = rs
     return out
 
 
@@ -761,7 +776,8 @@ class Calendar:
         """region_shares for this tree's peoples (its [defaults] region_min_share); {} with [defaults] regions off."""
         if not self.D.get("regions", False):
             return {}
-        return region_shares(present, landmass, {l["id"]: self.idx[l["id"]] for l in self.people}, float(self.D.get("region_min_share", 0.1)))
+        return region_shares(present, landmass, {l["id"]: self.idx[l["id"]] for l in self.people}, float(self.D.get("region_min_share", 0.1)),
+                             float(self.D.get("region_mkm2", 0.0)))
 
     def learners(self, lid, ago) -> list[tuple[float, float, float]]:
         """[(S of the whole, S of the specialists, share)] per region learner of a people now (PW-1471, D55): its regions reached by
