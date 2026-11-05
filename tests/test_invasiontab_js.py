@@ -24,8 +24,9 @@ const row = { id: 'i1', who: { people: 'antelope_folk' }, whom: { people: 'human
 const odd = { id: 'i2', who: { culture: 'cervid:1' }, whom: null, from_kyr: 5.5, to_kyr: 3.3, year_text: '5500 years ago to 3300 years ago', place: [10, 20], strength: 'light' };
 const authored = { faiths: [], gods_mode: null, invasions: [row, odd], choices: { peoples: [{ id: 'antelope_folk', name: 'antelope-kin' }, { id: 'human', name: 'humans' }],
   cultures: [{ uid: 'cervid:1', name: 'first cervid-kin', people: 'cervid_folk' }] } };
-const pol = { steps: [{ ago: 0, frame: 7 }], invasions: { rule: 'RULE TEXT', problems: [], rows: [
-  { id: 'i1', happened: true, took: [{ ago_kyr: 0.6, winner: 'Antelope State', loser: 'Human Chiefdom', km2: 3113 }], km2: 3113, states: { centuries: 3, from_kyr: 0.8, to_kyr: 0.5 } },
+const pol = { steps: [{ ago: 0, frame: 7 }], invasions: { rule: 'RULE TEXT', reach: 'REACH TEXT', problems: [], rows: [
+  { id: 'i1', happened: true, took: [{ ago_kyr: 0.6, winner: 'Antelope State', loser: 'Human Chiefdom', km2: 3113 }], km2: 3113, states: { centuries: 3, from_kyr: 0.8, to_kyr: 0.5 },
+    reach: [{ ago_kyr: 0.6, km: 616.9 }], war_band: [{ ago_kyr: 0.6, polity: 'Antelope State' }] },
   { id: 'i2', happened: false, took: [], km2: 0, why: 'no state of first cervid-kin existed then', states: { centuries: 0 } }] } };
 const posts = [];
 global.fetch = (u, o) => { if (o && o.method === 'POST') posts.push(JSON.parse(o.body));
@@ -60,6 +61,7 @@ def test_states_and_war_tab_reads_out_rows_lists_incursions_and_saves(tmp_path):
     assert "no state of first cervid-kin existed then" in L and "never ruled a state" in L
     assert "around 600 years ago" in L and "5,500 years ago to 3,300 years ago" in L  # (dates through NumFmt.ago)
     assert "Found by the sim" in L and "displacement" in L and "from the north" in L and "2,500 years ago" in L and "RULE TEXT" in L
+    assert "REACH TEXT" in L and "1 by expedition, the furthest 617 km across the gap" in L and "a war band ruled as a state for them in 1 century" in L  # (PW-1450)
     assert 'id="if-who"' in r["form"] and "faithmap" in r["form"] and "frame=7" in r["form"]  # (the editor, with a map to pick where from)
     assert r["msg1"] == "pick who invades"
     saved = [p for p in r["posts"] if "invasions" in p]

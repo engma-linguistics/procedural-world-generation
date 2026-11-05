@@ -451,7 +451,10 @@ def polities_doc(d: Path) -> dict:
     (~30 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
     from .lineages import polities as PO
     from .lineages import gods as GD
-    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, _authored_key(d, "invasions"))  # (an edited invasion remakes it, PW-1433)
+    from .lineages import invasions as IV
+    inv = _authored_key(d, "invasions")
+    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, inv) + ((IV.VERSION,) if inv else ())  # (an edited invasion remakes
+    # it, PW-1433; so does a change in what a row does, IV.VERSION, PW-1450, and only for a run with rows)
     with _polities_lock:
         if key not in _polities_cache:
             _polities_cache.clear()
