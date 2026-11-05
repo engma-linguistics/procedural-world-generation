@@ -1,3 +1,5 @@
+> Superseded in part by [round2.md](round2.md) (lane 200b): regions on with the anchor re-set, the floor redefined (off), arm T on.
+
 # Tech tree round 1: stable dates, region learners, trade-weighted town network (PW-1483, PW-1471, PW-1461; lane 200)
 
 ## In plain words
