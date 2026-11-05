@@ -1,4 +1,5 @@
 ---
+id: PW-1471
 title: "Humans alone (humans_only tree) never take up writing and rarely found chiefdoms: every urban step came by contact"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-192
 blocked_by: []
 relates: [PW-1466, PW-1461, PW-1448]
 refs: [tools/peoples_robust/trees/humans_only.toml, planet/lineages/samples/techtree.toml, "planet/lineages/techtree.py::rate_of", "planet/lineages/techtree.py::band_wait", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round8.md, "world 899985 (time zoom fc5311) L7, seed 7: scratch runs humans-only and dnd with polities in the history on (deleted)", "run 0141d1"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -47,3 +50,6 @@ alone never manage it once in 8 draws.
 one. C is right in the long run but is a project.
 - [ ] on humans_only, 899985 seed 7, over 8 draws of the tree's luck: writing in most draws, states possible
 - [ ] the dnd showcase's writing dates move by less than the 12-seed spread (round 6)
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-humans-alone-never-write.md (found by lane-192).

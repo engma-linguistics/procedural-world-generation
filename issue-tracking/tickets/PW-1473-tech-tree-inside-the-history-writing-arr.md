@@ -1,4 +1,5 @@
 ---
+id: PW-1473
 title: "Tech tree inside the history: writing arrives ~2,000 years late (or never) against the after-run tree of the same history"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-192
 blocked_by: []
 relates: [PW-1466, PW-1434, PW-1459]
 refs: [planet/lineages/history/tech_live.py, "planet/lineages/history/tech_live.py::LiveTech._links", "planet/lineages/techtree.py::Calendar.advance", "planet/lineages/techtree.py::links_of", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round8.md, "world 899985 (time zoom fc5311) L7, dnd seed 7, polities in the history on (scratch run, deleted)"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -32,3 +35,6 @@ front be re-timed (never later) when the pair's median border grows, which also 
 read the border at the step rather than the median.
 - [ ] writing's date per people within the 12-seed spread (round 6) of the after-run tree of the same history, on 899985 seeds 7 and 10
 - [ ] with the switch off, runs still byte-identical
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-live-tree-writing-arrives-late.md (found by lane-192).
