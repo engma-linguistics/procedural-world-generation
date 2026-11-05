@@ -1,0 +1,1066 @@
+  return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
+('hobgoblin', 'tortle', 'chiefdoms') 
+  live  {'step': 218.0, 'ago': 7.929, 'km': 3850.0, 'fr': 250.0, 'area': 3.24, 'giver_at': 8.219, 'arrive': 6.868, 'unit': 0.676} 
+  after {'step': 218.0, 'ago': 7.929, 'km': 3850.0, 'fr': 250.0, 'area': 3.237, 'giver_at': 8.219, 'arrive': 6.869, 'unit': 0.676}
+('hobgoblin', 'tortle', 'tokens') 
+  live  {'step': 218.0, 'ago': 7.929, 'km': 3850.0, 'fr': 250.0, 'area': 3.24, 'giver_at': 8.219, 'arrive': 6.868, 'unit': 0.676} 
+  after {'step': 218.0, 'ago': 7.929, 'km': 3850.0, 'fr': 250.0, 'area': 3.237, 'giver_at': 8.219, 'arrive': 6.869, 'unit': 0.676}
+('tabaxi', 'fire_giant', 'tokens') 
+  live  {'step': 218.0, 'ago': 7.929, 'km': 1113.0, 'fr': 42.0, 'area': 1.91, 'giver_at': 8.219, 'arrive': 7.202, 'unit': 0.307} 
+  after {'step': 218.0, 'ago': 7.929, 'km': 1444.0, 'fr': 42.0, 'area': 1.907, 'giver_at': 8.219, 'arrive': 7.435, 'unit': 0.307}
+('tabaxi', 'tortle', 'tokens') 
+  live  {'step': 218.0, 'ago': 7.929, 'km': 7460.0, 'fr': 266.0, 'area': 3.24, 'giver_at': 8.219, 'arrive': 6.078, 'unit': 1.072} 
+  after {'step': 218.0, 'ago': 7.929, 'km': 7610.5, 'fr': 266.0, 'area': 3.237, 'giver_at': 8.219, 'arrive': 6.079, 'unit': 1.072}
+('goblin', 'tortle', 'chiefdoms') 
+  live  {'step': 219.0, 'ago': 7.649, 'km': 4752.5, 'fr': 266.0, 'area': 3.24, 'giver_at': 7.929, 'arrive': 5.078, 'unit': 1.427} 
+  after {'step': 219.0, 'ago': 7.649, 'km': 4963.5, 'fr': 266.0, 'area': 3.226, 'giver_at': 7.929, 'arrive': 5.084, 'unit': 1.427}
+('goblin', 'tortle', 'tokens') 
+  live  {'step': 219.0, 'ago': 7.649, 'km': 4752.5, 'fr': 266.0, 'area': 3.24, 'giver_at': 7.929, 'arrive': 5.078, 'unit': 1.427} 
+  after {'step': 219.0, 'ago': 7.649, 'km': 4963.5, 'fr': 266.0, 'area': 3.226, 'giver_at': 7.929, 'arrive': 5.084, 'unit': 1.427}
+('orc', 'tortle', 'chiefdoms') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 962.5, 'fr': 262.0, 'area': 3.22, 'giver_at': 7.649, 'arrive': 0.014, 'unit': 2.46} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 1233.0, 'fr': 262.0, 'area': 3.23, 'giver_at': 7.649, 'arrive': 1.68, 'unit': 2.46}
+('orc', 'tortle', 'tokens') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 962.5, 'fr': 262.0, 'area': 3.22, 'giver_at': 7.649, 'arrive': 0.014, 'unit': 2.46} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 1233.0, 'fr': 262.0, 'area': 3.23, 'giver_at': 7.649, 'arrive': 1.68, 'unit': 2.46}
+('leonin', 'tortle', 'chiefdoms') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 2888.0, 'fr': 266.0, 'area': 3.22, 'giver_at': 7.649, 'arrive': 6.615, 'unit': 0.519} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 2918.0, 'fr': 266.0, 'area': 3.23, 'giver_at': 7.649, 'arrive': 6.614, 'unit': 0.519}
+('leonin', 'tortle', 'tokens') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 2888.0, 'fr': 266.0, 'area': 3.22, 'giver_at': 7.649, 'arrive': 6.615, 'unit': 0.519} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 2918.0, 'fr': 266.0, 'area': 3.23, 'giver_at': 7.649, 'arrive': 6.614, 'unit': 0.519}
+('leonin', 'fire_giant', 'chiefdoms') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 602.0, 'fr': 242.0, 'area': 1.89, 'giver_at': 7.649, 'arrive': 2.941, 'unit': 0.772} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 662.0, 'fr': 242.0, 'area': 1.892, 'giver_at': 7.649, 'arrive': 3.365, 'unit': 0.772}
+('leonin', 'fire_giant', 'tokens') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 602.0, 'fr': 242.0, 'area': 1.89, 'giver_at': 7.649, 'arrive': 2.941, 'unit': 0.772} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 662.0, 'fr': 242.0, 'area': 1.892, 'giver_at': 7.649, 'arrive': 3.365, 'unit': 0.772}
+('bugbear', 'human', 'chiefdoms') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 1143.0, 'fr': 86.0, 'area': 20.19, 'giver_at': 7.649, 'arrive': -10.688, 'unit': 3.406} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 1203.0, 'fr': 86.0, 'area': 20.217, 'giver_at': 7.649, 'arrive': -9.785, 'unit': 3.406}
+('bugbear', 'human', 'tokens') 
+  live  {'step': 220.0, 'ago': 7.379, 'km': 1143.0, 'fr': 86.0, 'area': 20.19, 'giver_at': 7.649, 'arrive': -10.688, 'unit': 3.406} 
+  after {'step': 220.0, 'ago': 7.379, 'km': 1203.0, 'fr': 86.0, 'area': 20.217, 'giver_at': 7.649, 'arrive': -9.785, 'unit': 3.406}
+('fire_giant', 'human', 'tokens') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 9144.5, 'fr': 198.0, 'area': 20.3, 'giver_at': 7.119, 'arrive': -3.47, 'unit': 2.574} 
+  after {'step': 221.0, 'ago': 7.119, 'km': 9355.0, 'fr': 198.0, 'area': 20.274, 'giver_at': 7.379, 'arrive': -3.203, 'unit': 2.574}
+('fire_giant', 'gnome', 'tokens') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 602.0, 'fr': 50.0, 'area': 0.85, 'giver_at': 7.119, 'arrive': 7.061, 'unit': 0.014} 
+  after {'step': 221.0, 'ago': 7.119, 'km': 602.0, 'fr': 50.0, 'area': 0.85, 'giver_at': 7.379, 'arrive': 7.321, 'unit': 0.014}
+('fire_giant', 'tortle', 'tokens') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 3880.5, 'fr': 250.0, 'area': 3.26, 'giver_at': 7.119, 'arrive': 5.977, 'unit': 0.57} 
+  after {'step': 221.0, 'ago': 7.119, 'km': 4001.0, 'fr': 250.0, 'area': 3.25, 'giver_at': 7.379, 'arrive': 6.239, 'unit': 0.57}
+('cloud_giant', 'human', 'chiefdoms') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 993.0, 'fr': 17.5, 'area': 20.3, 'giver_at': 7.119, 'arrive': 4.12, 'unit': 0.483} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 932.5, 'fr': 17.5, 'area': 20.284, 'giver_at': 7.119, 'arrive': 3.927, 'unit': 0.483}
+('tabaxi', 'fire_giant', 'chiefdoms') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 1143.0, 'fr': 42.0, 'area': 1.9, 'giver_at': 7.119, 'arrive': 6.131, 'unit': 0.307} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1444.0, 'fr': 42.0, 'area': 1.892, 'giver_at': 7.119, 'arrive': 6.338, 'unit': 0.307}
+('cloud_giant', 'gnome', 'chiefdoms') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 2466.5, 'fr': 50.0, 'area': 0.85, 'giver_at': 7.119, 'arrive': 6.075, 'unit': 0.636} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 2316.0, 'fr': 50.0, 'area': 0.845, 'giver_at': 7.119, 'arrive': 6.078, 'unit': 0.636}
+('gnome', 'storm_giant', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 1715.0, 'fr': 50.0, 'area': 6.7, 'giver_at': 6.868, 'arrive': -6.41, 'unit': 2.88} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1745.0, 'fr': 50.0, 'area': 6.618, 'giver_at': 7.119, 'arrive': -6.077, 'unit': 2.88}
+('cloud_giant', 'human', 'tokens') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 993.0, 'fr': 17.5, 'area': 20.3, 'giver_at': 7.119, 'arrive': 4.12, 'unit': 0.483} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 932.5, 'fr': 17.5, 'area': 20.284, 'giver_at': 7.119, 'arrive': 3.927, 'unit': 0.483}
+('gnome', 'brass_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 1654.5, 'fr': 50.0, 'area': 27.14, 'giver_at': 6.868, 'arrive': 3.298, 'unit': 0.385} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1685.0, 'fr': 50.0, 'area': 27.108, 'giver_at': 7.119, 'arrive': 3.551, 'unit': 0.385}
+('gnome', 'blue_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 541.0, 'fr': 50.0, 'area': 14.89, 'giver_at': 6.868, 'arrive': -35.825, 'unit': 2.24} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 541.0, 'fr': 50.0, 'area': 15.033, 'giver_at': 7.119, 'arrive': -35.778, 'unit': 2.24}
+('gnome', 'hill_giant', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 6046.0, 'fr': 50.0, 'area': 22.35, 'giver_at': 6.868, 'arrive': -19.984, 'unit': 3.189} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 5475.0, 'fr': 50.0, 'area': 22.252, 'giver_at': 7.119, 'arrive': -19.674, 'unit': 3.189}
+('cloud_giant', 'fire_giant', 'chiefdoms') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 752.0, 'fr': 242.0, 'area': 1.9, 'giver_at': 7.119, 'arrive': 5.791, 'unit': 0.271} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 722.0, 'fr': 242.0, 'area': 1.892, 'giver_at': 7.119, 'arrive': 5.738, 'unit': 0.271}
+('gnome', 'elf', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 5715.5, 'fr': 25.0, 'area': 9.63, 'giver_at': 6.868, 'arrive': 5.646, 'unit': 0.278} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 5835.5, 'fr': 25.0, 'area': 9.561, 'giver_at': 7.119, 'arrive': 5.902, 'unit': 0.278}
+('cloud_giant', 'gnome', 'tokens') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 2466.5, 'fr': 50.0, 'area': 0.85, 'giver_at': 7.119, 'arrive': 6.075, 'unit': 0.636} 
+  after None
+('gnome', 'copper_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 5324.0, 'fr': 50.0, 'area': 22.8, 'giver_at': 6.868, 'arrive': -0.405, 'unit': 0.855} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 5143.5, 'fr': 50.0, 'area': 22.877, 'giver_at': 7.119, 'arrive': -0.167, 'unit': 0.855}
+('gnome', 'red_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 4422.0, 'fr': 50.0, 'area': 6.61, 'giver_at': 6.868, 'arrive': 0.863, 'unit': 1.311} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 3549.5, 'fr': 50.0, 'area': 6.819, 'giver_at': 7.119, 'arrive': 1.02, 'unit': 1.311}
+('gnome', 'sea_elf', 'tokens') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 241.0, 'fr': 6.0, 'area': 0.17, 'giver_at': 6.868, 'arrive': 2.906, 'unit': 0.852} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 421.0, 'fr': 6.0, 'area': 0.172, 'giver_at': 7.119, 'arrive': 4.218, 'unit': 0.852}
+('gnome', 'bronze_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 2767.5, 'fr': 50.0, 'area': 14.98, 'giver_at': 6.868, 'arrive': 1.883, 'unit': 0.723} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 2557.0, 'fr': 50.0, 'area': 15.046, 'giver_at': 7.119, 'arrive': 2.123, 'unit': 0.723}
+('gnome', 'kobold', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 1444.0, 'fr': 17.5, 'area': 28.12, 'giver_at': 6.868, 'arrive': 6.169, 'unit': 0.114} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1474.0, 'fr': 17.5, 'area': 28.223, 'giver_at': 7.119, 'arrive': 6.433, 'unit': 0.114}
+('gnome', 'tortle', 'tokens') 
+  live  None 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1384.0, 'fr': 50.0, 'area': 3.26, 'giver_at': 7.119, 'arrive': 6.487, 'unit': 0.291}
+('gnome', 'white_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 1775.0, 'fr': 50.0, 'area': 12.28, 'giver_at': 6.868, 'arrive': 1.602, 'unit': 0.844} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 1654.5, 'fr': 50.0, 'area': 12.775, 'giver_at': 7.119, 'arrive': 1.748, 'unit': 0.844}
+('gnome', 'gold_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 361.0, 'fr': 50.0, 'area': 23.15, 'giver_at': 6.868, 'arrive': 2.387, 'unit': 0.126} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 361.0, 'fr': 50.0, 'area': 23.913, 'giver_at': 7.119, 'arrive': 2.565, 'unit': 0.126}
+('gnome', 'kenku', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 7821.0, 'fr': 50.0, 'area': 19.02, 'giver_at': 6.868, 'arrive': -1.007, 'unit': 1.627} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 7159.0, 'fr': 50.0, 'area': 19.012, 'giver_at': 7.119, 'arrive': -0.754, 'unit': 1.627}
+('tabaxi', 'tortle', 'chiefdoms') 
+  live  {'step': 222.0, 'ago': 6.868, 'km': 7610.0, 'fr': 266.0, 'area': 3.26, 'giver_at': 7.119, 'arrive': 4.972, 'unit': 1.072} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 7610.5, 'fr': 266.0, 'area': 3.26, 'giver_at': 7.119, 'arrive': 4.972, 'unit': 1.072}
+('gnome', 'silver_dragon', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 4392.0, 'fr': 50.0, 'area': 10.62, 'giver_at': 6.868, 'arrive': -1.27, 'unit': 1.402} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 4331.5, 'fr': 50.0, 'area': 10.644, 'giver_at': 7.119, 'arrive': -1.028, 'unit': 1.402}
+('gnome', 'drow', 'tokens') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 2647.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 6.868, 'arrive': 5.935, 'unit': 0.776} 
+  after {'step': 222.0, 'ago': 6.868, 'km': 2677.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 7.119, 'arrive': 6.186, 'unit': 0.776}
+('halfling', 'human', 'tokens') 
+  live  {'step': 225.0, 'ago': 6.166, 'km': 10107.0, 'fr': 98.0, 'area': 20.24, 'giver_at': 6.391, 'arrive': 6.311, 'unit': 0.02} 
+  after {'step': 223.0, 'ago': 6.625, 'km': 13115.0, 'fr': 98.0, 'area': 20.255, 'giver_at': 6.868, 'arrive': 6.788, 'unit': 0.02}
+('fire_giant', 'gnome', 'chiefdoms') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 602.0, 'fr': 50.0, 'area': 0.85, 'giver_at': 6.868, 'arrive': 6.81, 'unit': 0.014} 
+  after {'step': 223.0, 'ago': 6.625, 'km': 602.0, 'fr': 50.0, 'area': 0.835, 'giver_at': 6.868, 'arrive': 6.81, 'unit': 0.014}
+('tortle', 'gnome', 'chiefdoms') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 1444.0, 'fr': 50.0, 'area': 0.85, 'giver_at': 6.868, 'arrive': 6.676, 'unit': 0.112} 
+  after {'step': 223.0, 'ago': 6.625, 'km': 1384.0, 'fr': 50.0, 'area': 0.835, 'giver_at': 6.868, 'arrive': 6.67, 'unit': 0.112}
+('fire_giant', 'human', 'chiefdoms') 
+  live  {'step': 223.0, 'ago': 6.625, 'km': 9144.5, 'fr': 198.0, 'area': 20.3, 'giver_at': 6.868, 'arrive': -3.721, 'unit': 2.574} 
+  after {'step': 223.0, 'ago': 6.625, 'km': 9355.0, 'fr': 198.0, 'area': 20.255, 'giver_at': 6.868, 'arrive': -3.709, 'unit': 2.574}
+('aarakocra', 'human', 'tokens') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 11611.0, 'fr': 110.0, 'area': 20.24, 'giver_at': 6.625, 'arrive': -4.2, 'unit': 2.635} 
+  after {'step': 223.0, 'ago': 6.625, 'km': 11972.5, 'fr': 110.0, 'area': 20.255, 'giver_at': 6.868, 'arrive': -3.961, 'unit': 2.635}
+('gnome', 'storm_giant', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 1715.0, 'fr': 50.0, 'area': 6.39, 'giver_at': 6.625, 'arrive': -6.342, 'unit': 2.88} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 1745.0, 'fr': 50.0, 'area': 6.381, 'giver_at': 6.625, 'arrive': -6.333, 'unit': 2.88}
+('gnome', 'brass_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 1685.0, 'fr': 50.0, 'area': 27.02, 'giver_at': 6.625, 'arrive': 3.062, 'unit': 0.385} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 1685.0, 'fr': 50.0, 'area': 26.966, 'giver_at': 6.625, 'arrive': 3.066, 'unit': 0.385}
+('gnome', 'hill_giant', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 5956.0, 'fr': 50.0, 'area': 21.98, 'giver_at': 6.625, 'arrive': -20.004, 'unit': 3.189} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 5475.0, 'fr': 50.0, 'area': 21.906, 'giver_at': 6.625, 'arrive': -19.959, 'unit': 3.189}
+('gnome', 'elf', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 5625.0, 'fr': 25.0, 'area': 9.37, 'giver_at': 6.625, 'arrive': 5.42, 'unit': 0.278} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 5835.5, 'fr': 25.0, 'area': 9.277, 'giver_at': 6.625, 'arrive': 5.426, 'unit': 0.278}
+('gnome', 'blue_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 481.0, 'fr': 50.0, 'area': 15.43, 'giver_at': 6.625, 'arrive': -42.256, 'unit': 2.24} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 541.0, 'fr': 50.0, 'area': 15.365, 'giver_at': 6.625, 'arrive': -36.743, 'unit': 2.24}
+('gnome', 'copper_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 5294.0, 'fr': 50.0, 'area': 23.09, 'giver_at': 6.625, 'arrive': -0.695, 'unit': 0.855} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 5143.5, 'fr': 50.0, 'area': 23.055, 'giver_at': 6.625, 'arrive': -0.689, 'unit': 0.855}
+('gnome', 'sea_elf', 'chiefdoms') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 241.0, 'fr': 6.0, 'area': 0.17, 'giver_at': 6.625, 'arrive': 2.906, 'unit': 0.852} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 421.0, 'fr': 6.0, 'area': 0.172, 'giver_at': 6.625, 'arrive': 4.218, 'unit': 0.852}
+('gnome', 'bronze_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 2707.0, 'fr': 50.0, 'area': 15.23, 'giver_at': 6.625, 'arrive': 1.599, 'unit': 0.723} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 2557.0, 'fr': 50.0, 'area': 15.223, 'giver_at': 6.625, 'arrive': 1.6, 'unit': 0.723}
+('gnome', 'white_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 1715.0, 'fr': 50.0, 'area': 14.15, 'giver_at': 6.625, 'arrive': 0.972, 'unit': 0.844} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 1654.5, 'fr': 50.0, 'area': 14.372, 'giver_at': 6.625, 'arrive': 0.928, 'unit': 0.844}
+('gnome', 'gold_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 361.0, 'fr': 50.0, 'area': 26.03, 'giver_at': 6.625, 'arrive': 1.873, 'unit': 0.126} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 361.0, 'fr': 50.0, 'area': 26.019, 'giver_at': 6.625, 'arrive': 1.874, 'unit': 0.126}
+('gnome', 'red_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 4211.5, 'fr': 50.0, 'area': 7.4, 'giver_at': 6.625, 'arrive': 0.271, 'unit': 1.311} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 3549.5, 'fr': 50.0, 'area': 7.443, 'giver_at': 6.625, 'arrive': 0.253, 'unit': 1.311}
+('gnome', 'kenku', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 7911.0, 'fr': 50.0, 'area': 18.99, 'giver_at': 6.625, 'arrive': -1.243, 'unit': 1.627} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 7159.0, 'fr': 50.0, 'area': 18.914, 'giver_at': 6.625, 'arrive': -1.228, 'unit': 1.627}
+('gnome', 'kobold', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 1444.0, 'fr': 17.5, 'area': 28.51, 'giver_at': 6.625, 'arrive': 5.921, 'unit': 0.114} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 1474.0, 'fr': 17.5, 'area': 28.612, 'giver_at': 6.625, 'arrive': 5.934, 'unit': 0.114}
+('gnome', 'silver_dragon', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 4422.0, 'fr': 50.0, 'area': 10.71, 'giver_at': 6.625, 'arrive': -1.548, 'unit': 1.402} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 4331.5, 'fr': 50.0, 'area': 10.682, 'giver_at': 6.625, 'arrive': -1.537, 'unit': 1.402}
+('gnome', 'drow', 'chiefdoms') 
+  live  {'step': 224.0, 'ago': 6.391, 'km': 2647.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 6.625, 'arrive': 5.692, 'unit': 0.776} 
+  after {'step': 224.0, 'ago': 6.391, 'km': 2677.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 6.625, 'arrive': 5.692, 'unit': 0.776}
+('halfling', 'fire_giant', 'towns') 
+  live  None 
+  after {'step': 225.0, 'ago': 6.166, 'km': 632.0, 'fr': 94.0, 'area': 1.863, 'giver_at': 6.391, 'arrive': -4.003, 'unit': 1.801}
+('elf', 'tortle', 'towns') 
+  live  {'step': 225.0, 'ago': 6.166, 'km': 6497.5, 'fr': 25.0, 'area': 3.26, 'giver_at': 6.391, 'arrive': 3.635, 'unit': 1.376} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 5745.5, 'fr': 25.0, 'area': 3.26, 'giver_at': 6.391, 'arrive': 3.635, 'unit': 1.376}
+('gnome', 'storm_giant', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1745.0, 'fr': 50.0, 'area': 6.11, 'giver_at': 4.462, 'arrive': -8.218, 'unit': 2.88} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 1745.0, 'fr': 50.0, 'area': 6.363, 'giver_at': 6.391, 'arrive': -6.549, 'unit': 2.88}
+('gnome', 'elf', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 5866.0, 'fr': 25.0, 'area': 8.58, 'giver_at': 4.462, 'arrive': 3.309, 'unit': 0.278} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 5835.5, 'fr': 25.0, 'area': 9.083, 'giver_at': 6.391, 'arrive': 5.205, 'unit': 0.278}
+('gnome', 'cloud_giant', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 2406.5, 'fr': 50.0, 'area': 6.11, 'giver_at': 4.462, 'arrive': 4.384, 'unit': 0.018} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 2316.0, 'fr': 50.0, 'area': 6.986, 'giver_at': 6.391, 'arrive': 6.307, 'unit': 0.018}
+('gnome', 'brass_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1685.0, 'fr': 50.0, 'area': 26.6, 'giver_at': 4.462, 'arrive': 0.927, 'unit': 0.385} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 1685.0, 'fr': 50.0, 'area': 26.853, 'giver_at': 6.391, 'arrive': 2.839, 'unit': 0.385}
+('gnome', 'blue_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 481.0, 'fr': 50.0, 'area': 15.09, 'giver_at': 4.462, 'arrive': -43.878, 'unit': 2.24} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 541.0, 'fr': 50.0, 'area': 15.229, 'giver_at': 6.391, 'arrive': -36.786, 'unit': 2.24}
+('gnome', 'copper_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 5084.0, 'fr': 50.0, 'area': 22.38, 'giver_at': 4.462, 'arrive': -2.744, 'unit': 0.855} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 5143.5, 'fr': 50.0, 'area': 22.983, 'giver_at': 6.391, 'arrive': -0.912, 'unit': 0.855}
+('gnome', 'hill_giant', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 5956.0, 'fr': 50.0, 'area': 20.07, 'giver_at': 4.462, 'arrive': -20.984, 'unit': 3.189} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 5475.0, 'fr': 50.0, 'area': 21.753, 'giver_at': 6.391, 'arrive': -20.1, 'unit': 3.189}
+('elf', 'human', 'towns') 
+  live  {'step': 229.0, 'ago': 5.34, 'km': 301.0, 'fr': 5.5, 'area': 21.22, 'giver_at': 6.391, 'arrive': -154.403, 'unit': 7.629} 
+  after None
+('gnome', 'red_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 3880.5, 'fr': 50.0, 'area': 7.41, 'giver_at': 4.462, 'arrive': -1.896, 'unit': 1.311} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 3549.5, 'fr': 50.0, 'area': 7.534, 'giver_at': 6.391, 'arrive': -0.02, 'unit': 1.311}
+('gnome', 'sea_elf', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 271.0, 'fr': 6.0, 'area': 0.23, 'giver_at': 4.462, 'arrive': 1.261, 'unit': 0.852} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 421.0, 'fr': 6.0, 'area': 0.172, 'giver_at': 6.391, 'arrive': 4.218, 'unit': 0.852}
+('gnome', 'bronze_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 2707.0, 'fr': 50.0, 'area': 14.88, 'giver_at': 4.462, 'arrive': -0.506, 'unit': 0.723} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 2557.0, 'fr': 50.0, 'area': 15.21, 'giver_at': 6.391, 'arrive': 1.368, 'unit': 0.723}
+('gnome', 'kobold', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1384.0, 'fr': 17.5, 'area': 29.73, 'giver_at': 4.462, 'arrive': 3.712, 'unit': 0.114} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 1474.0, 'fr': 17.5, 'area': 28.824, 'giver_at': 6.391, 'arrive': 5.698, 'unit': 0.114}
+('gnome', 'tortle', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1444.0, 'fr': 50.0, 'area': 3.43, 'giver_at': 4.462, 'arrive': 3.841, 'unit': 0.291} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 1384.0, 'fr': 50.0, 'area': 3.26, 'giver_at': 6.391, 'arrive': 5.759, 'unit': 0.291}
+('elf', 'fire_giant', 'towns') 
+  live  {'step': 225.0, 'ago': 6.166, 'km': 1323.5, 'fr': 25.0, 'area': 1.87, 'giver_at': 6.391, 'arrive': 0.67, 'unit': 2.073} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 2256.0, 'fr': 25.0, 'area': 1.863, 'giver_at': 6.391, 'arrive': 1.352, 'unit': 2.073}
+('elf', 'gnome', 'towns') 
+  live  {'step': 225.0, 'ago': 6.166, 'km': 5625.0, 'fr': 25.0, 'area': 0.83, 'giver_at': 6.391, 'arrive': 4.63, 'unit': 1.085} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 5835.5, 'fr': 25.0, 'area': 0.83, 'giver_at': 6.391, 'arrive': 4.63, 'unit': 1.085}
+('gnome', 'white_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1745.0, 'fr': 50.0, 'area': 14.43, 'giver_at': 4.462, 'arrive': -1.247, 'unit': 0.844} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 1654.5, 'fr': 50.0, 'area': 14.832, 'giver_at': 6.391, 'arrive': 0.603, 'unit': 0.844}
+('gnome', 'gold_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 421.0, 'fr': 50.0, 'area': 25.7, 'giver_at': 4.462, 'arrive': 0.413, 'unit': 0.126} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 361.0, 'fr': 50.0, 'area': 25.997, 'giver_at': 6.391, 'arrive': 1.642, 'unit': 0.126}
+('gnome', 'kenku', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 7640.5, 'fr': 50.0, 'area': 18.01, 'giver_at': 4.462, 'arrive': -3.201, 'unit': 1.627} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 7159.0, 'fr': 50.0, 'area': 18.756, 'giver_at': 6.391, 'arrive': -1.429, 'unit': 1.627}
+('gnome', 'silver_dragon', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 4362.0, 'fr': 50.0, 'area': 10.18, 'giver_at': 4.462, 'arrive': -3.506, 'unit': 1.402} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 4331.5, 'fr': 50.0, 'area': 10.623, 'giver_at': 6.391, 'arrive': -1.748, 'unit': 1.402}
+('aarakocra', 'human', 'chiefdoms') 
+  live  {'step': 225.0, 'ago': 6.166, 'km': 11611.0, 'fr': 110.0, 'area': 20.24, 'giver_at': 6.391, 'arrive': -4.434, 'unit': 2.635} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 11972.5, 'fr': 110.0, 'area': 20.42, 'giver_at': 6.391, 'arrive': -4.482, 'unit': 2.635}
+('halfling', 'human', 'chiefdoms') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 10528.0, 'fr': 98.0, 'area': 20.51, 'giver_at': 6.166, 'arrive': 6.085, 'unit': 0.02} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 13115.0, 'fr': 98.0, 'area': 20.42, 'giver_at': 6.391, 'arrive': 6.31, 'unit': 0.02}
+('halfling', 'human', 'towns') 
+  live  None 
+  after {'step': 225.0, 'ago': 6.166, 'km': 13115.0, 'fr': 98.0, 'area': 20.42, 'giver_at': 6.391, 'arrive': 6.31, 'unit': 0.02}
+('gnome', 'drow', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 2587.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 4.462, 'arrive': 3.541, 'unit': 0.776} 
+  after {'step': 225.0, 'ago': 6.166, 'km': 2677.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 6.391, 'arrive': 5.458, 'unit': 0.776}
+('gnome', 'fire_giant', 'proto_writing') 
+  live  None 
+  after {'step': 225.0, 'ago': 6.166, 'km': 602.0, 'fr': 50.0, 'area': 1.863, 'giver_at': 6.391, 'arrive': -1.331, 'unit': 1.275}
+('cloud_giant', 'human', 'proto_writing') 
+  live  None 
+  after {'step': 226.0, 'ago': 5.948, 'km': 932.5, 'fr': 17.5, 'area': 20.584, 'giver_at': 6.166, 'arrive': 2.95, 'unit': 0.483}
+('hill_giant', 'human', 'chiefdoms') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 47046.0, 'fr': 198.0, 'area': 20.51, 'giver_at': 6.166, 'arrive': 5.927, 'unit': 0.058} 
+  after None
+('cloud_giant', 'fire_giant', 'proto_writing') 
+  live  None 
+  after {'step': 226.0, 'ago': 5.948, 'km': 722.0, 'fr': 242.0, 'area': 1.856, 'giver_at': 6.166, 'arrive': 4.799, 'unit': 0.271}
+('aarakocra', 'tortle', 'towns') 
+  live  None 
+  after {'step': 226.0, 'ago': 5.948, 'km': 662.0, 'fr': 150.0, 'area': 3.26, 'giver_at': 6.166, 'arrive': -5.313, 'unit': 2.528}
+('sea_elf', 'fire_giant', 'towns') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 60.0, 'fr': 6.0, 'area': 1.86, 'giver_at': 6.166, 'arrive': -78.239, 'unit': 1.387} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 421.0, 'fr': 6.0, 'area': 1.856, 'giver_at': 6.166, 'arrive': -5.992, 'unit': 1.387}
+('sea_elf', 'gnome', 'towns') 
+  live  {'step': 226.0, 'ago': 5.948, 'km': 241.0, 'fr': 6.0, 'area': 0.83, 'giver_at': 6.166, 'arrive': -41.252, 'unit': 4.679} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 421.0, 'fr': 6.0, 'area': 0.83, 'giver_at': 6.166, 'arrive': -21.049, 'unit': 4.679}
+('aarakocra', 'fire_giant', 'towns') 
+  live  {'step': 231.0, 'ago': 4.97, 'km': 902.0, 'fr': 190.0, 'area': 1.98, 'giver_at': 5.152, 'arrive': 4.973, 'unit': 0.043} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 902.0, 'fr': 190.0, 'area': 1.856, 'giver_at': 6.166, 'arrive': 5.992, 'unit': 0.043}
+('human', 'fire_giant', 'towns') 
+  live  {'step': 230.0, 'ago': 5.152, 'km': 8844.0, 'fr': 198.0, 'area': 1.82, 'giver_at': 5.34, 'arrive': 5.127, 'unit': 0.089} 
+  after {'step': 226.0, 'ago': 5.948, 'km': 9355.0, 'fr': 198.0, 'area': 1.856, 'giver_at': 6.166, 'arrive': 5.951, 'unit': 0.089}
+('dragonborn', 'fire_giant', 'towns') 
+  live  {'step': 227.0, 'ago': 5.738, 'km': 11460.5, 'fr': 250.0, 'area': 1.86, 'giver_at': 5.948, 'arrive': 4.327, 'unit': 0.667} 
+  after None
+('fire_giant', 'gnome', 'towns') 
+  live  None 
+  after {'step': 227.0, 'ago': 5.738, 'km': 602.0, 'fr': 50.0, 'area': 0.83, 'giver_at': 5.948, 'arrive': 5.89, 'unit': 0.014}
+('tortle', 'fire_giant', 'towns') 
+  live  {'step': 227.0, 'ago': 5.738, 'km': 3820.0, 'fr': 250.0, 'area': 1.86, 'giver_at': 5.948, 'arrive': -0.332, 'unit': 2.585} 
+  after None
+('tortle', 'gnome', 'towns') 
+  live  {'step': 227.0, 'ago': 5.738, 'km': 1444.0, 'fr': 50.0, 'area': 0.83, 'giver_at': 5.948, 'arrive': 5.759, 'unit': 0.112} 
+  after {'step': 227.0, 'ago': 5.738, 'km': 1384.0, 'fr': 50.0, 'area': 0.83, 'giver_at': 5.948, 'arrive': 5.75, 'unit': 0.112}
+('gnome', 'storm_giant', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 1715.0, 'fr': 50.0, 'area': 6.35, 'giver_at': 5.738, 'arrive': -7.188, 'unit': 2.88} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 1745.0, 'fr': 50.0, 'area': 6.294, 'giver_at': 5.738, 'arrive': -7.131, 'unit': 2.88}
+('gnome', 'cloud_giant', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 2436.5, 'fr': 50.0, 'area': 6.79, 'giver_at': 5.738, 'arrive': 5.656, 'unit': 0.018} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 2316.0, 'fr': 50.0, 'area': 6.595, 'giver_at': 5.738, 'arrive': 5.657, 'unit': 0.018}
+('gnome', 'brass_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 1685.0, 'fr': 50.0, 'area': 26.77, 'giver_at': 5.738, 'arrive': 2.192, 'unit': 0.385} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 1685.0, 'fr': 50.0, 'area': 25.962, 'giver_at': 5.738, 'arrive': 2.246, 'unit': 0.385}
+('gnome', 'hill_giant', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 5956.0, 'fr': 50.0, 'area': 21.64, 'giver_at': 5.738, 'arrive': -20.684, 'unit': 3.189} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 5475.0, 'fr': 50.0, 'area': 21.222, 'giver_at': 5.738, 'arrive': -20.428, 'unit': 3.189}
+('gnome', 'blue_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 481.0, 'fr': 50.0, 'area': 15.13, 'giver_at': 5.738, 'arrive': -42.666, 'unit': 2.24} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 541.0, 'fr': 50.0, 'area': 15.019, 'giver_at': 5.738, 'arrive': -37.139, 'unit': 2.24}
+('gnome', 'copper_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 5294.0, 'fr': 50.0, 'area': 22.93, 'giver_at': 5.738, 'arrive': -1.556, 'unit': 0.855} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 5143.5, 'fr': 50.0, 'area': 22.744, 'giver_at': 5.738, 'arrive': -1.527, 'unit': 0.855}
+('goliath', 'fire_giant', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 1985.0, 'fr': 250.0, 'area': 1.86, 'giver_at': 5.738, 'arrive': 3.319, 'unit': 0.996} 
+  after None
+('gnome', 'white_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 1715.0, 'fr': 50.0, 'area': 15.17, 'giver_at': 5.738, 'arrive': -0.115, 'unit': 0.844} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 1654.5, 'fr': 50.0, 'area': 15.439, 'giver_at': 5.738, 'arrive': -0.167, 'unit': 0.844}
+('gnome', 'gold_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 331.0, 'fr': 50.0, 'area': 25.98, 'giver_at': 5.738, 'arrive': 0.561, 'unit': 0.126} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 361.0, 'fr': 50.0, 'area': 25.887, 'giver_at': 5.738, 'arrive': 0.999, 'unit': 0.126}
+('gnome', 'red_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 4301.5, 'fr': 50.0, 'area': 7.6, 'giver_at': 5.738, 'arrive': -0.701, 'unit': 1.311} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 3549.5, 'fr': 50.0, 'area': 7.535, 'giver_at': 5.738, 'arrive': -0.673, 'unit': 1.311}
+('gnome', 'bronze_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 2677.0, 'fr': 50.0, 'area': 15.2, 'giver_at': 5.738, 'arrive': 0.717, 'unit': 0.723} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 2557.0, 'fr': 50.0, 'area': 15.116, 'giver_at': 5.738, 'arrive': 0.731, 'unit': 0.723}
+('gnome', 'kenku', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 7881.0, 'fr': 50.0, 'area': 18.64, 'giver_at': 5.738, 'arrive': -2.058, 'unit': 1.627} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 7159.0, 'fr': 50.0, 'area': 18.334, 'giver_at': 5.738, 'arrive': -1.993, 'unit': 1.627}
+('gnome', 'kobold', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 1564.0, 'fr': 17.5, 'area': 28.98, 'giver_at': 5.738, 'arrive': 5.055, 'unit': 0.114} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 1474.0, 'fr': 17.5, 'area': 29.231, 'giver_at': 5.738, 'arrive': 5.04, 'unit': 0.114}
+('tortle', 'human', 'proto_writing') 
+  live  None 
+  after {'step': 231.0, 'ago': 4.97, 'km': 16484.0, 'fr': 5.0, 'area': 21.912, 'giver_at': 5.738, 'arrive': 2.162, 'unit': 0.664}
+('gnome', 'silver_dragon', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 4392.0, 'fr': 50.0, 'area': 10.58, 'giver_at': 5.738, 'arrive': -2.385, 'unit': 1.402} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 4331.5, 'fr': 50.0, 'area': 10.487, 'giver_at': 5.738, 'arrive': -2.349, 'unit': 1.402}
+('gnome', 'drow', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 2647.0, 'fr': 12.0, 'area': 0.38, 'giver_at': 5.738, 'arrive': 4.805, 'unit': 0.776} 
+  after {'step': 228.0, 'ago': 5.536, 'km': 2677.0, 'fr': 12.0, 'area': 0.371, 'giver_at': 5.738, 'arrive': 4.816, 'unit': 0.776}
+('gnome', 'fire_giant', 'towns') 
+  live  {'step': 228.0, 'ago': 5.536, 'km': 602.0, 'fr': 50.0, 'area': 1.86, 'giver_at': 5.738, 'arrive': -1.977, 'unit': 1.275} 
+  after None
+('tortle', 'fire_giant', 'proto_writing') 
+  live  None 
+  after {'step': 228.0, 'ago': 5.536, 'km': 4001.0, 'fr': 250.0, 'area': 1.823, 'giver_at': 5.738, 'arrive': -0.479, 'unit': 2.585}
+('cloud_giant', 'human', 'towns') 
+  live  {'step': 229.0, 'ago': 5.34, 'km': 993.0, 'fr': 17.5, 'area': 21.22, 'giver_at': 5.536, 'arrive': 2.47, 'unit': 0.483} 
+  after None
+('kobold', 'fire_giant', 'proto_writing') 
+  live  None 
+  after {'step': 229.0, 'ago': 5.34, 'km': 2677.5, 'fr': 250.0, 'area': 1.871, 'giver_at': 5.536, 'arrive': 3.636, 'unit': 0.78}
+('cloud_giant', 'fire_giant', 'towns') 
+  live  {'step': 229.0, 'ago': 5.34, 'km': 722.0, 'fr': 242.0, 'area': 1.82, 'giver_at': 5.536, 'arrive': 4.182, 'unit': 0.271} 
+  after None
+('hill_giant', 'fire_giant', 'towns') 
+  live  {'step': 230.0, 'ago': 5.152, 'km': 13987.5, 'fr': 250.0, 'area': 1.82, 'giver_at': 5.34, 'arrive': 4.354, 'unit': 0.41} 
+  after None
+('aarakocra', 'human', 'proto_writing') 
+  live  None 
+  after {'step': 230.0, 'ago': 5.152, 'km': 11972.5, 'fr': 110.0, 'area': 21.666, 'giver_at': 5.34, 'arrive': -5.86, 'unit': 2.635}
+('aarakocra', 'fire_giant', 'proto_writing') 
+  live  {'step': 233.0, 'ago': 4.625, 'km': 902.0, 'fr': 190.0, 'area': 1.98, 'giver_at': 4.795, 'arrive': 4.616, 'unit': 0.043} 
+  after {'step': 230.0, 'ago': 5.152, 'km': 902.0, 'fr': 190.0, 'area': 1.931, 'giver_at': 5.34, 'arrive': 5.163, 'unit': 0.043}
+('triton', 'fire_giant', 'towns') 
+  live  {'step': 231.0, 'ago': 4.97, 'km': 722.0, 'fr': 6.0, 'area': 1.98, 'giver_at': 5.152, 'arrive': 1.349, 'unit': 0.73} 
+  after None
+('elf', 'human', 'proto_writing') 
+  live  None 
+  after {'step': 231.0, 'ago': 4.97, 'km': 21026.0, 'fr': 5.5, 'area': 21.912, 'giver_at': 5.152, 'arrive': -27.454, 'unit': 7.629}
+('leonin', 'fire_giant', 'towns') 
+  live  {'step': 231.0, 'ago': 4.97, 'km': 602.0, 'fr': 242.0, 'area': 1.98, 'giver_at': 5.152, 'arrive': 0.333, 'unit': 0.772} 
+  after None
+('fire_giant', 'human', 'proto_writing') 
+  live  None 
+  after {'step': 231.0, 'ago': 4.97, 'km': 9355.0, 'fr': 198.0, 'area': 21.912, 'giver_at': 5.152, 'arrive': -5.849, 'unit': 2.574}
+('tabaxi', 'fire_giant', 'proto_writing') 
+  live  {'step': 232.0, 'ago': 4.795, 'km': 1233.0, 'fr': 42.0, 'area': 1.98, 'giver_at': 4.97, 'arrive': 4.035, 'unit': 0.307} 
+  after None
+('human', 'tortle', 'proto_writing') 
+  live  {'step': 232.0, 'ago': 4.795, 'km': 1384.0, 'fr': 5.0, 'area': 3.26, 'giver_at': 4.97, 'arrive': 3.068, 'unit': 0.876} 
+  after None
+('tabaxi', 'tortle', 'proto_writing') 
+  live  {'step': 232.0, 'ago': 4.795, 'km': 7610.5, 'fr': 266.0, 'area': 3.26, 'giver_at': 4.97, 'arrive': 2.823, 'unit': 1.072} 
+  after None
+('human', 'fire_giant', 'proto_writing') 
+  live  {'step': 232.0, 'ago': 4.795, 'km': 9204.5, 'fr': 198.0, 'area': 1.98, 'giver_at': 4.97, 'arrive': 4.748, 'unit': 0.089} 
+  after None
+('hobgoblin', 'tortle', 'proto_writing') 
+  live  {'step': 233.0, 'ago': 4.625, 'km': 3549.0, 'fr': 250.0, 'area': 3.26, 'giver_at': 4.795, 'arrive': 3.44, 'unit': 0.676} 
+  after None
+('aarakocra', 'tortle', 'proto_writing') 
+  live  {'step': 233.0, 'ago': 4.625, 'km': 662.0, 'fr': 150.0, 'area': 3.26, 'giver_at': 4.795, 'arrive': -6.684, 'unit': 2.528} 
+  after None
+('fire_giant', 'gnome', 'proto_writing') 
+  live  {'step': 234.0, 'ago': 4.462, 'km': 602.0, 'fr': 50.0, 'area': 0.84, 'giver_at': 4.625, 'arrive': 4.567, 'unit': 0.014} 
+  after None
+('goblin', 'tortle', 'proto_writing') 
+  live  {'step': 234.0, 'ago': 4.462, 'km': 5505.0, 'fr': 266.0, 'area': 3.43, 'giver_at': 4.625, 'arrive': 1.691, 'unit': 1.427} 
+  after None
+('leonin', 'tortle', 'proto_writing') 
+  live  {'step': 234.0, 'ago': 4.462, 'km': 2827.5, 'fr': 266.0, 'area': 3.43, 'giver_at': 4.625, 'arrive': 3.558, 'unit': 0.519} 
+  after None
+('fire_giant', 'tortle', 'proto_writing') 
+  live  {'step': 234.0, 'ago': 4.462, 'km': 3730.0, 'fr': 250.0, 'area': 3.43, 'giver_at': 4.625, 'arrive': 3.454, 'unit': 0.57} 
+  after None
+('triton', 'tortle', 'proto_writing') 
+  live  {'step': 234.0, 'ago': 4.462, 'km': 361.0, 'fr': 6.0, 'area': 3.43, 'giver_at': 4.625, 'arrive': -2.43, 'unit': 0.826} 
+  after None
+('orc', 'tortle', 'proto_writing') 
+  live  {'step': 235.0, 'ago': 4.305, 'km': 1083.0, 'fr': 262.0, 'area': 3.43, 'giver_at': 4.462, 'arrive': -2.541, 'unit': 2.46} 
+  after None
+('gnome', 'bronze_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 2527.0, 'fr': 50.0, 'area': 14.37, 'giver_at': 0.665, 'arrive': -4.217, 'unit': 0.723} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 2557.0, 'fr': 50.0, 'area': 14.706, 'giver_at': 4.305, 'arrive': -0.634, 'unit': 0.723}
+('gnome', 'tortle', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1384.0, 'fr': 50.0, 'area': 3.79, 'giver_at': 0.665, 'arrive': -0.016, 'unit': 0.291} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 1384.0, 'fr': 50.0, 'area': 3.472, 'giver_at': 4.305, 'arrive': 3.653, 'unit': 0.291}
+('gnome', 'white_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1684.5, 'fr': 50.0, 'area': 14.47, 'giver_at': 0.665, 'arrive': -5.052, 'unit': 0.844} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 1654.5, 'fr': 50.0, 'area': 13.993, 'giver_at': 4.305, 'arrive': -1.316, 'unit': 0.844}
+('gnome', 'gold_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 391.0, 'fr': 50.0, 'area': 22.08, 'giver_at': 0.665, 'arrive': -3.375, 'unit': 0.126} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 361.0, 'fr': 50.0, 'area': 22.943, 'giver_at': 4.305, 'arrive': -0.156, 'unit': 0.126}
+('gnome', 'kenku', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 7189.5, 'fr': 50.0, 'area': 18.34, 'giver_at': 0.665, 'arrive': -7.068, 'unit': 1.627} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 7159.0, 'fr': 50.0, 'area': 18.003, 'giver_at': 4.305, 'arrive': -3.356, 'unit': 1.627}
+('gnome', 'kobold', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1504.0, 'fr': 17.5, 'area': 25.38, 'giver_at': 0.665, 'arrive': 0.026, 'unit': 0.114} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 1474.0, 'fr': 17.5, 'area': 29.563, 'giver_at': 4.305, 'arrive': 3.603, 'unit': 0.114}
+('gnome', 'silver_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 4271.5, 'fr': 50.0, 'area': 9.97, 'giver_at': 0.665, 'arrive': -7.22, 'unit': 1.402} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 4331.5, 'fr': 50.0, 'area': 9.999, 'giver_at': 4.305, 'arrive': -3.592, 'unit': 1.402}
+('gnome', 'human', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 4031.0, 'fr': 3.0, 'area': 55.6, 'giver_at': 0.665, 'arrive': -10.36, 'unit': 1.619} 
+  after {'step': 246.0, 'ago': 2.899, 'km': 4512.0, 'fr': 3.0, 'area': 33.193, 'giver_at': 4.305, 'arrive': -5.518, 'unit': 1.619}
+('gnome', 'drow', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 2647.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 0.665, 'arrive': -0.256, 'unit': 0.776} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 2677.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 4.305, 'arrive': 3.384, 'unit': 0.776}
+('gnome', 'fire_giant', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 602.0, 'fr': 50.0, 'area': 2.49, 'giver_at': 0.665, 'arrive': -8.261, 'unit': 1.275} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 602.0, 'fr': 50.0, 'area': 2.283, 'giver_at': 4.305, 'arrive': -4.243, 'unit': 1.275}
+('gnome', 'storm_giant', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1745.0, 'fr': 50.0, 'area': 6.21, 'giver_at': 0.665, 'arrive': -12.118, 'unit': 2.88} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 1745.0, 'fr': 50.0, 'area': 6.159, 'giver_at': 4.305, 'arrive': -8.425, 'unit': 2.88}
+('gnome', 'half_elf', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 782.0, 'fr': 2.5, 'area': 8.7, 'giver_at': 0.665, 'arrive': -0.523, 'unit': 0.23} 
+  after {'step': 251.0, 'ago': 2.423, 'km': 722.0, 'fr': 2.5, 'area': 5.382, 'giver_at': 4.305, 'arrive': 1.488, 'unit': 0.23}
+('gnome', 'cloud_giant', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 2316.0, 'fr': 50.0, 'area': 5.33, 'giver_at': 0.665, 'arrive': 0.592, 'unit': 0.018} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 2316.0, 'fr': 50.0, 'area': 5.895, 'giver_at': 4.305, 'arrive': 4.228, 'unit': 0.018}
+('gnome', 'brass_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1685.0, 'fr': 50.0, 'area': 26.65, 'giver_at': 0.665, 'arrive': -2.873, 'unit': 0.385} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 1685.0, 'fr': 50.0, 'area': 26.399, 'giver_at': 4.305, 'arrive': 0.784, 'unit': 0.385}
+('gnome', 'blue_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 541.0, 'fr': 50.0, 'area': 14.82, 'giver_at': 0.665, 'arrive': -41.927, 'unit': 2.24} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 541.0, 'fr': 50.0, 'area': 14.625, 'giver_at': 4.305, 'arrive': -38.006, 'unit': 2.24}
+('gnome', 'hill_giant', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 5565.0, 'fr': 50.0, 'area': 19.64, 'giver_at': 0.665, 'arrive': -24.507, 'unit': 3.189} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 5475.0, 'fr': 50.0, 'area': 19.903, 'giver_at': 4.305, 'arrive': -21.035, 'unit': 3.189}
+('gnome', 'triton', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 481.0, 'fr': 4.0, 'area': 3.67, 'giver_at': 0.665, 'arrive': -4.443, 'unit': 0.522} 
+  after {'step': 238.0, 'ago': 3.865, 'km': 602.0, 'fr': 4.0, 'area': 1.211, 'giver_at': 4.305, 'arrive': 1.655, 'unit': 0.522}
+('gnome', 'elf', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 5866.0, 'fr': 25.0, 'area': 9.4, 'giver_at': 0.665, 'arrive': -0.542, 'unit': 0.278} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 5835.5, 'fr': 25.0, 'area': 8.469, 'giver_at': 4.305, 'arrive': 3.159, 'unit': 0.278}
+('gnome', 'copper_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 5083.5, 'fr': 50.0, 'area': 21.95, 'giver_at': 0.665, 'arrive': -6.472, 'unit': 0.855} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 5143.5, 'fr': 50.0, 'area': 21.824, 'giver_at': 4.305, 'arrive': -2.811, 'unit': 0.855}
+('gnome', 'red_dragon', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 3519.0, 'fr': 50.0, 'area': 6.05, 'giver_at': 0.665, 'arrive': -5.08, 'unit': 1.311} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 3549.5, 'fr': 50.0, 'area': 6.993, 'giver_at': 4.305, 'arrive': -1.872, 'unit': 1.311}
+('gnome', 'sea_elf', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 421.0, 'fr': 6.0, 'area': 1.06, 'giver_at': 0.665, 'arrive': -3.758, 'unit': 0.852} 
+  after {'step': 236.0, 'ago': 4.153, 'km': 421.0, 'fr': 6.0, 'area': 0.258, 'giver_at': 4.305, 'arrive': 2.124, 'unit': 0.852}
+('cloud_giant', 'fire_giant', 'writing') 
+  live  {'step': 290.0, 'ago': 0.517, 'km': 662.0, 'fr': 242.0, 'area': 2.49, 'giver_at': 0.576, 'arrive': -1.152, 'unit': 0.271} 
+  after {'step': 237.0, 'ago': 4.006, 'km': 722.0, 'fr': 242.0, 'area': 2.319, 'giver_at': 4.153, 'arrive': 2.625, 'unit': 0.271}
+('cloud_giant', 'human', 'writing') 
+  live  {'step': 290.0, 'ago': 0.517, 'km': 932.5, 'fr': 17.5, 'area': 55.6, 'giver_at': 0.576, 'arrive': -4.709, 'unit': 0.483} 
+  after {'step': 237.0, 'ago': 4.006, 'km': 932.5, 'fr': 17.5, 'area': 25.377, 'giver_at': 4.153, 'arrive': 0.583, 'unit': 0.483}
+('dragonborn', 'tortle', 'proto_writing') 
+  live  {'step': 237.0, 'ago': 4.006, 'km': 3549.0, 'fr': 42.0, 'area': 3.43, 'giver_at': 4.153, 'arrive': 1.957, 'unit': 1.068} 
+  after None
+('halfling', 'tortle', 'proto_writing') 
+  live  {'step': 239.0, 'ago': 3.728, 'km': 1113.0, 'fr': 4.5, 'area': 3.49, 'giver_at': 3.865, 'arrive': 2.593, 'unit': 0.455} 
+  after None
+('tabaxi', 'fire_giant', 'cities') 
+  live  {'step': 241.0, 'ago': 3.47, 'km': 1383.5, 'fr': 42.0, 'area': 2.37, 'giver_at': 3.597, 'arrive': 2.685, 'unit': 0.307} 
+  after {'step': 241.0, 'ago': 3.47, 'km': 1444.0, 'fr': 42.0, 'area': 2.373, 'giver_at': 3.597, 'arrive': 2.723, 'unit': 0.307}
+('tortle', 'human', 'writing') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 16484.0, 'fr': 5.0, 'area': 29.109, 'giver_at': 3.597, 'arrive': 0.326, 'unit': 0.664}
+('tortle', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 4001.0, 'fr': 250.0, 'area': 2.373, 'giver_at': 3.597, 'arrive': -3.497, 'unit': 2.585}
+('human', 'tortle', 'cities') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 16484.0, 'fr': 5.0, 'area': 3.582, 'giver_at': 3.597, 'arrive': 1.757, 'unit': 0.876}
+('kobold', 'human', 'writing') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 13987.5, 'fr': 4.5, 'area': 29.109, 'giver_at': 3.597, 'arrive': -2.295, 'unit': 1.196}
+('kobold', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 2677.5, 'fr': 250.0, 'area': 2.373, 'giver_at': 3.597, 'arrive': 1.457, 'unit': 0.78}
+('tabaxi', 'tortle', 'cities') 
+  live  {'step': 241.0, 'ago': 3.47, 'km': 7730.5, 'fr': 266.0, 'area': 3.58, 'giver_at': 3.597, 'arrive': 1.347, 'unit': 1.072} 
+  after {'step': 241.0, 'ago': 3.47, 'km': 7610.5, 'fr': 266.0, 'area': 3.582, 'giver_at': 3.597, 'arrive': 1.346, 'unit': 1.072}
+('human', 'fire_giant', 'cities') 
+  live  None 
+  after {'step': 241.0, 'ago': 3.47, 'km': 9355.0, 'fr': 198.0, 'area': 2.373, 'giver_at': 3.597, 'arrive': 3.354, 'unit': 0.089}
+('tabaxi', 'human', 'cities') 
+  live  {'step': 241.0, 'ago': 3.47, 'km': 1444.0, 'fr': 5.0, 'area': 28.91, 'giver_at': 3.597, 'arrive': -1.368, 'unit': 0.974} 
+  after None
+('hobgoblin', 'human', 'cities') 
+  live  {'step': 242.0, 'ago': 3.347, 'km': 0.0, 'fr': 4.5, 'area': 28.91, 'giver_at': 3.47, 'arrive': None, 'unit': 0.383} 
+  after None
+('aarakocra', 'tortle', 'cities') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 662.0, 'fr': 150.0, 'area': 3.71, 'giver_at': 2.098, 'arrive': -10.148, 'unit': 2.528} 
+  after {'step': 242.0, 'ago': 3.347, 'km': 662.0, 'fr': 150.0, 'area': 3.592, 'giver_at': 3.47, 'arrive': -8.58, 'unit': 2.528}
+('aarakocra', 'fire_giant', 'cities') 
+  live  None 
+  after {'step': 242.0, 'ago': 3.347, 'km': 902.0, 'fr': 190.0, 'area': 2.385, 'giver_at': 3.47, 'arrive': 3.273, 'unit': 0.043}
+('hobgoblin', 'tortle', 'cities') 
+  live  {'step': 242.0, 'ago': 3.347, 'km': 3609.5, 'fr': 250.0, 'area': 3.58, 'giver_at': 3.47, 'arrive': 2.05, 'unit': 0.676} 
+  after {'step': 242.0, 'ago': 3.347, 'km': 3850.0, 'fr': 250.0, 'area': 3.592, 'giver_at': 3.47, 'arrive': 2.048, 'unit': 0.676}
+('fire_giant', 'gnome', 'cities') 
+  live  {'step': 250.0, 'ago': 2.511, 'km': 602.0, 'fr': 50.0, 'area': 0.75, 'giver_at': 2.603, 'arrive': 2.548, 'unit': 0.014} 
+  after {'step': 243.0, 'ago': 3.229, 'km': 602.0, 'fr': 50.0, 'area': 0.764, 'giver_at': 3.347, 'arrive': 3.292, 'unit': 0.014}
+('sea_elf', 'human', 'writing') 
+  live  None 
+  after {'step': 243.0, 'ago': 3.229, 'km': 7189.5, 'fr': 4.5, 'area': 30.697, 'giver_at': 3.347, 'arrive': -0.644, 'unit': 0.789}
+('triton', 'gnome', 'cities') 
+  live  None 
+  after {'step': 243.0, 'ago': 3.229, 'km': 602.0, 'fr': 4.0, 'area': 0.764, 'giver_at': 3.347, 'arrive': -0.57, 'unit': 1.01}
+('sea_elf', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 243.0, 'ago': 3.229, 'km': 421.0, 'fr': 6.0, 'area': 2.397, 'giver_at': 3.347, 'arrive': -10.282, 'unit': 1.387}
+('leonin', 'tortle', 'cities') 
+  live  {'step': 246.0, 'ago': 2.899, 'km': 2858.0, 'fr': 266.0, 'area': 3.62, 'giver_at': 3.005, 'arrive': 1.909, 'unit': 0.519} 
+  after {'step': 243.0, 'ago': 3.229, 'km': 2918.0, 'fr': 266.0, 'area': 3.602, 'giver_at': 3.347, 'arrive': 2.254, 'unit': 0.519}
+('halfling', 'tortle', 'cities') 
+  live  None 
+  after {'step': 243.0, 'ago': 3.229, 'km': 1985.0, 'fr': 4.5, 'area': 3.602, 'giver_at': 3.347, 'arrive': 2.388, 'unit': 0.455}
+('triton', 'tortle', 'cities') 
+  live  None 
+  after {'step': 243.0, 'ago': 3.229, 'km': 2226.0, 'fr': 6.0, 'area': 3.602, 'giver_at': 3.347, 'arrive': 1.607, 'unit': 0.826}
+('fire_giant', 'tortle', 'cities') 
+  live  {'step': 250.0, 'ago': 2.511, 'km': 3640.0, 'fr': 250.0, 'area': 3.62, 'giver_at': 2.603, 'arrive': 1.4, 'unit': 0.57} 
+  after {'step': 243.0, 'ago': 3.229, 'km': 4001.0, 'fr': 250.0, 'area': 3.602, 'giver_at': 3.347, 'arrive': 2.147, 'unit': 0.57}
+('goblin', 'tortle', 'cities') 
+  live  {'step': 243.0, 'ago': 3.229, 'km': 5144.0, 'fr': 266.0, 'area': 3.58, 'giver_at': 3.347, 'arrive': 0.35, 'unit': 1.427} 
+  after {'step': 243.0, 'ago': 3.229, 'km': 4963.5, 'fr': 266.0, 'area': 3.602, 'giver_at': 3.347, 'arrive': 0.341, 'unit': 1.427}
+('gnome', 'cloud_giant', 'cities') 
+  live  None 
+  after {'step': 244.0, 'ago': 3.115, 'km': 2316.0, 'fr': 50.0, 'area': 5.729, 'giver_at': 3.229, 'arrive': 3.153, 'unit': 0.018}
+('gnome', 'brass_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1624.0, 'fr': 50.0, 'area': 27.23, 'giver_at': 2.511, 'arrive': -1.065, 'unit': 0.385} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1685.0, 'fr': 50.0, 'area': 27.1, 'giver_at': 3.229, 'arrive': -0.339, 'unit': 0.385}
+('gnome', 'hill_giant', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 5685.5, 'fr': 50.0, 'area': 19.59, 'giver_at': 2.511, 'arrive': -22.629, 'unit': 3.189} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 5475.0, 'fr': 50.0, 'area': 19.4, 'giver_at': 3.229, 'arrive': -21.789, 'unit': 3.189}
+('gnome', 'elf', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 5835.5, 'fr': 25.0, 'area': 8.06, 'giver_at': 2.511, 'arrive': 1.393, 'unit': 0.278} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 5835.5, 'fr': 25.0, 'area': 8.292, 'giver_at': 3.229, 'arrive': 2.096, 'unit': 0.278}
+('orc', 'tortle', 'cities') 
+  live  {'step': 245.0, 'ago': 3.005, 'km': 1053.0, 'fr': 262.0, 'area': 3.58, 'giver_at': 3.115, 'arrive': -4.244, 'unit': 2.46} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1233.0, 'fr': 262.0, 'area': 3.611, 'giver_at': 3.229, 'arrive': -3.083, 'unit': 2.46}
+('gnome', 'blue_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 541.0, 'fr': 50.0, 'area': 15.16, 'giver_at': 2.511, 'arrive': -40.567, 'unit': 2.24} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 541.0, 'fr': 50.0, 'area': 14.795, 'giver_at': 3.229, 'arrive': -39.328, 'unit': 2.24}
+('gnome', 'copper_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 5264.0, 'fr': 50.0, 'area': 22.08, 'giver_at': 2.511, 'arrive': -4.647, 'unit': 0.855} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 5143.5, 'fr': 50.0, 'area': 22.072, 'giver_at': 3.229, 'arrive': -3.927, 'unit': 0.855}
+('gnome', 'tortle', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1414.0, 'fr': 50.0, 'area': 3.71, 'giver_at': 2.511, 'arrive': 1.851, 'unit': 0.291} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1384.0, 'fr': 50.0, 'area': 3.611, 'giver_at': 3.229, 'arrive': 2.564, 'unit': 0.291}
+('gnome', 'gold_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 361.0, 'fr': 50.0, 'area': 23.24, 'giver_at': 2.511, 'arrive': -1.979, 'unit': 0.126} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 361.0, 'fr': 50.0, 'area': 24.004, 'giver_at': 3.229, 'arrive': -1.334, 'unit': 0.126}
+('gnome', 'red_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 3639.5, 'fr': 50.0, 'area': 7.13, 'giver_at': 2.511, 'arrive': -3.726, 'unit': 1.311} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 3549.5, 'fr': 50.0, 'area': 7.306, 'giver_at': 3.229, 'arrive': -3.084, 'unit': 1.311}
+('gnome', 'sea_elf', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 421.0, 'fr': 6.0, 'area': 0.45, 'giver_at': 2.511, 'arrive': -0.371, 'unit': 0.852} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 421.0, 'fr': 6.0, 'area': 0.318, 'giver_at': 3.229, 'arrive': 0.808, 'unit': 0.852}
+('aarakocra', 'human', 'writing') 
+  live  None 
+  after {'step': 244.0, 'ago': 3.115, 'km': 11972.5, 'fr': 110.0, 'area': 31.449, 'giver_at': 3.229, 'arrive': -10.265, 'unit': 2.635}
+('gnome', 'bronze_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 2617.0, 'fr': 50.0, 'area': 14.56, 'giver_at': 2.511, 'arrive': -2.403, 'unit': 0.723} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 2557.0, 'fr': 50.0, 'area': 14.672, 'giver_at': 3.229, 'arrive': -1.704, 'unit': 0.723}
+('gnome', 'kenku', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 7159.0, 'fr': 50.0, 'area': 18.13, 'giver_at': 2.511, 'arrive': -5.177, 'unit': 1.627} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 7159.0, 'fr': 50.0, 'area': 17.771, 'giver_at': 3.229, 'arrive': -4.383, 'unit': 1.627}
+('gnome', 'kobold', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1504.0, 'fr': 17.5, 'area': 28.61, 'giver_at': 2.511, 'arrive': 1.832, 'unit': 0.114} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1474.0, 'fr': 17.5, 'area': 29.19, 'giver_at': 3.229, 'arrive': 2.531, 'unit': 0.114}
+('gnome', 'white_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1654.5, 'fr': 50.0, 'area': 14.49, 'giver_at': 2.511, 'arrive': -3.21, 'unit': 0.844} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1654.5, 'fr': 50.0, 'area': 14.645, 'giver_at': 3.229, 'arrive': -2.522, 'unit': 0.844}
+('aarakocra', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 244.0, 'ago': 3.115, 'km': 902.0, 'fr': 190.0, 'area': 2.408, 'giver_at': 3.229, 'arrive': 3.031, 'unit': 0.043}
+('gnome', 'drow', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 2647.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 2.511, 'arrive': 1.59, 'unit': 0.776} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 2677.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 3.229, 'arrive': 2.308, 'unit': 0.776}
+('gnome', 'silver_dragon', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 4181.0, 'fr': 50.0, 'area': 10.1, 'giver_at': 2.511, 'arrive': -5.425, 'unit': 1.402} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 4331.5, 'fr': 50.0, 'area': 9.968, 'giver_at': 3.229, 'arrive': -4.655, 'unit': 1.402}
+('gnome', 'storm_giant', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1715.0, 'fr': 50.0, 'area': 6.15, 'giver_at': 2.511, 'arrive': -10.21, 'unit': 2.88} 
+  after {'step': 244.0, 'ago': 3.115, 'km': 1745.0, 'fr': 50.0, 'area': 6.222, 'giver_at': 3.229, 'arrive': -9.567, 'unit': 2.88}
+('gnome', 'half_elf', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 782.0, 'fr': 2.5, 'area': 5.17, 'giver_at': 2.511, 'arrive': 1.584, 'unit': 0.23} 
+  after {'step': 251.0, 'ago': 2.423, 'km': 722.0, 'fr': 2.5, 'area': 5.382, 'giver_at': 3.229, 'arrive': 1.488, 'unit': 0.23}
+('goliath', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 245.0, 'ago': 3.005, 'km': 2075.5, 'fr': 250.0, 'area': 2.419, 'giver_at': 3.115, 'arrive': 0.356, 'unit': 0.996}
+('elf', 'human', 'writing') 
+  live  None 
+  after {'step': 245.0, 'ago': 3.005, 'km': 21026.0, 'fr': 5.5, 'area': 32.175, 'giver_at': 3.115, 'arrive': -36.396, 'unit': 7.629}
+('elf', 'fire_giant', 'writing') 
+  live  None 
+  after {'step': 245.0, 'ago': 3.005, 'km': 2256.0, 'fr': 25.0, 'area': 2.419, 'giver_at': 3.115, 'arrive': -2.627, 'unit': 2.073}
+('sea_elf', 'tortle', 'cities') 
+  live  None 
+  after {'step': 245.0, 'ago': 3.005, 'km': 1564.5, 'fr': 3.5, 'area': 3.62, 'giver_at': 3.115, 'arrive': -5.33, 'unit': 4.0}
+('orc', 'human', 'cities') 
+  live  {'step': 246.0, 'ago': 2.899, 'km': 30.0, 'fr': 4.5, 'area': 32.21, 'giver_at': 3.115, 'arrive': -226.353, 'unit': 0.886} 
+  after None
+('fire_giant', 'human', 'writing') 
+  live  None 
+  after {'step': 246.0, 'ago': 2.899, 'km': 9355.0, 'fr': 198.0, 'area': 33.193, 'giver_at': 3.005, 'arrive': -10.535, 'unit': 2.574}
+('leonin', 'human', 'cities') 
+  live  {'step': 246.0, 'ago': 2.899, 'km': 1324.0, 'fr': 5.0, 'area': 32.21, 'giver_at': 3.005, 'arrive': -2.757, 'unit': 0.981} 
+  after None
+('leonin', 'fire_giant', 'cities') 
+  live  {'step': 246.0, 'ago': 2.899, 'km': 541.5, 'fr': 242.0, 'area': 2.42, 'giver_at': 3.005, 'arrive': -2.918, 'unit': 0.772} 
+  after None
+('bugbear', 'human', 'writing') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 1233.5, 'fr': 86.0, 'area': 60.52, 'giver_at': 0.137, 'arrive': -29.282, 'unit': 3.406} 
+  after {'step': 247.0, 'ago': 2.797, 'km': 1203.0, 'fr': 86.0, 'area': 34.192, 'giver_at': 2.899, 'arrive': -19.774, 'unit': 3.406}
+('dragonborn', 'tortle', 'cities') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 3609.5, 'fr': 42.0, 'area': 3.71, 'giver_at': 2.175, 'arrive': -0.109, 'unit': 1.068} 
+  after {'step': 247.0, 'ago': 2.797, 'km': 3549.0, 'fr': 42.0, 'area': 3.657, 'giver_at': 2.899, 'arrive': 0.632, 'unit': 1.068}
+('bugbear', 'human', 'cities') 
+  live  {'step': 247.0, 'ago': 2.797, 'km': 1143.0, 'fr': 86.0, 'area': 32.21, 'giver_at': 2.899, 'arrive': -20.262, 'unit': 3.406} 
+  after None
+('tabaxi', 'human', 'kingship') 
+  live  {'step': 248.0, 'ago': 2.603, 'km': 1384.0, 'fr': 5.0, 'area': 32.21, 'giver_at': 2.698, 'arrive': -2.77, 'unit': 0.974} 
+  after {'step': 249.0, 'ago': 2.603, 'km': 1504.0, 'fr': 5.0, 'area': 36.084, 'giver_at': 2.698, 'arrive': -2.642, 'unit': 0.974}
+('tabaxi', 'fire_giant', 'kingship') 
+  live  {'step': 248.0, 'ago': 2.603, 'km': 1474.0, 'fr': 42.0, 'area': 2.42, 'giver_at': 2.698, 'arrive': 1.833, 'unit': 0.307} 
+  after {'step': 249.0, 'ago': 2.603, 'km': 1444.0, 'fr': 42.0, 'area': 2.563, 'giver_at': 2.698, 'arrive': 1.79, 'unit': 0.307}
+('halfling', 'human', 'writing') 
+  live  None 
+  after {'step': 249.0, 'ago': 2.603, 'km': 13115.0, 'fr': 98.0, 'area': 36.084, 'giver_at': 2.698, 'arrive': 2.591, 'unit': 0.02}
+('tabaxi', 'tortle', 'kingship') 
+  live  {'step': 248.0, 'ago': 2.603, 'km': 7760.5, 'fr': 266.0, 'area': 3.62, 'giver_at': 2.698, 'arrive': 0.435, 'unit': 1.072} 
+  after {'step': 249.0, 'ago': 2.603, 'km': 7610.5, 'fr': 266.0, 'area': 3.691, 'giver_at': 2.698, 'arrive': 0.413, 'unit': 1.072}
+('orc', 'human', 'writing') 
+  live  {'step': 302.0, 'ago': 0.301, 'km': 1985.0, 'fr': 4.5, 'area': 60.52, 'giver_at': 0.312, 'arrive': -5.979, 'unit': 0.886} 
+  after {'step': 250.0, 'ago': 2.511, 'km': 2526.5, 'fr': 4.5, 'area': 36.981, 'giver_at': 2.603, 'arrive': -2.315, 'unit': 0.886}
+('hobgoblin', 'tortle', 'kingship') 
+  live  {'step': 250.0, 'ago': 2.511, 'km': 3549.0, 'fr': 250.0, 'area': 3.62, 'giver_at': 2.603, 'arrive': 1.175, 'unit': 0.676} 
+  after {'step': 250.0, 'ago': 2.511, 'km': 3850.0, 'fr': 250.0, 'area': 3.708, 'giver_at': 2.603, 'arrive': 1.158, 'unit': 0.676}
+('hobgoblin', 'human', 'kingship') 
+  live  {'step': 250.0, 'ago': 2.511, 'km': 0.0, 'fr': 4.5, 'area': 32.21, 'giver_at': 2.603, 'arrive': None, 'unit': 0.383} 
+  after {'step': 250.0, 'ago': 2.511, 'km': 2767.0, 'fr': 4.5, 'area': 36.981, 'giver_at': 2.603, 'arrive': 0.477, 'unit': 0.383}
+('dragonborn', 'human', 'writing') 
+  live  None 
+  after {'step': 250.0, 'ago': 2.511, 'km': 6377.0, 'fr': 3.5, 'area': 36.981, 'giver_at': 2.603, 'arrive': -0.855, 'unit': 0.623}
+('triton', 'human', 'writing') 
+  live  {'step': 310.0, 'ago': 0.203, 'km': 5354.5, 'fr': 5.0, 'area': 60.52, 'giver_at': 0.226, 'arrive': -1.696, 'unit': 0.271} 
+  after {'step': 250.0, 'ago': 2.511, 'km': 6317.0, 'fr': 5.0, 'area': 36.981, 'giver_at': 2.603, 'arrive': 1.101, 'unit': 0.271}
+('fire_giant', 'human', 'cities') 
+  live  {'step': 250.0, 'ago': 2.511, 'km': 9325.0, 'fr': 198.0, 'area': 32.21, 'giver_at': 2.603, 'arrive': -10.735, 'unit': 2.574} 
+  after None
+('hobgoblin', 'human', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1052.5, 'fr': 4.5, 'area': 55.6, 'giver_at': 0.641, 'arrive': -3.074, 'unit': 0.383} 
+  after {'step': 250.0, 'ago': 2.511, 'km': 2767.0, 'fr': 4.5, 'area': 36.981, 'giver_at': 2.603, 'arrive': 0.477, 'unit': 0.383}
+('hill_giant', 'human', 'writing') 
+  live  None 
+  after {'step': 250.0, 'ago': 2.511, 'km': 52039.0, 'fr': 198.0, 'area': 36.981, 'giver_at': 2.603, 'arrive': 2.282, 'unit': 0.058}
+('bugbear', 'human', 'kingship') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 1113.0, 'fr': 86.0, 'area': 37.09, 'giver_at': 2.511, 'arrive': -23.013, 'unit': 3.406} 
+  after {'step': 251.0, 'ago': 2.423, 'km': 1203.0, 'fr': 86.0, 'area': 37.99, 'giver_at': 2.511, 'arrive': -21.388, 'unit': 3.406}
+('goblin', 'tortle', 'kingship') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 5023.5, 'fr': 266.0, 'area': 3.71, 'giver_at': 2.511, 'arrive': -0.54, 'unit': 1.427} 
+  after {'step': 251.0, 'ago': 2.423, 'km': 4963.5, 'fr': 266.0, 'area': 3.713, 'giver_at': 2.511, 'arrive': -0.542, 'unit': 1.427}
+('cloud_giant', 'human', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 963.0, 'fr': 17.5, 'area': 37.09, 'giver_at': 2.511, 'arrive': -1.669, 'unit': 0.483} 
+  after None
+('gnome', 'triton', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 451.0, 'fr': 4.0, 'area': 2.27, 'giver_at': 2.511, 'arrive': -1.774, 'unit': 0.522} 
+  after None
+('goblin', 'human', 'kingship') 
+  live  {'step': 265.0, 'ago': 1.413, 'km': 1564.0, 'fr': 1.5, 'area': 48.84, 'giver_at': 2.511, 'arrive': -8.064, 'unit': 1.499} 
+  after None
+('gnome', 'human', 'cities') 
+  live  {'step': 251.0, 'ago': 2.423, 'km': 2105.5, 'fr': 3.0, 'area': 37.09, 'giver_at': 2.511, 'arrive': -6.494, 'unit': 1.619} 
+  after None
+('fire_giant', 'gnome', 'kingship') 
+  live  {'step': 260.0, 'ago': 1.753, 'km': 602.0, 'fr': 50.0, 'area': 0.71, 'giver_at': 1.817, 'arrive': 1.764, 'unit': 0.014} 
+  after {'step': 252.0, 'ago': 2.337, 'km': 602.0, 'fr': 50.0, 'area': 0.723, 'giver_at': 2.423, 'arrive': 2.369, 'unit': 0.014}
+('fire_giant', 'tortle', 'kingship') 
+  live  {'step': 260.0, 'ago': 1.753, 'km': 3579.5, 'fr': 250.0, 'area': 3.73, 'giver_at': 1.817, 'arrive': 0.596, 'unit': 0.57} 
+  after {'step': 252.0, 'ago': 2.337, 'km': 4001.0, 'fr': 250.0, 'area': 3.717, 'giver_at': 2.423, 'arrive': 1.204, 'unit': 0.57}
+('fire_giant', 'human', 'kingship') 
+  live  {'step': 260.0, 'ago': 1.753, 'km': 9355.0, 'fr': 198.0, 'area': 42.9, 'giver_at': 1.817, 'arrive': -13.576, 'unit': 2.574} 
+  after {'step': 252.0, 'ago': 2.337, 'km': 9355.0, 'fr': 198.0, 'area': 38.984, 'giver_at': 2.423, 'arrive': -12.251, 'unit': 2.574}
+('gnome', 'storm_giant', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 1715.0, 'fr': 50.0, 'area': 6.2, 'giver_at': 1.753, 'arrive': -11.02, 'unit': 2.88} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 1745.0, 'fr': 50.0, 'area': 6.175, 'giver_at': 2.337, 'arrive': -10.409, 'unit': 2.88}
+('gnome', 'half_elf', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 511.5, 'fr': 2.5, 'area': 6.54, 'giver_at': 1.753, 'arrive': 0.178, 'unit': 0.23} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 722.0, 'fr': 2.5, 'area': 5.843, 'giver_at': 2.337, 'arrive': 1.282, 'unit': 0.23}
+('gnome', 'cloud_giant', 'kingship') 
+  live  None 
+  after {'step': 253.0, 'ago': 2.255, 'km': 2316.0, 'fr': 50.0, 'area': 5.695, 'giver_at': 2.337, 'arrive': 2.261, 'unit': 0.018}
+('gnome', 'brass_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 1685.0, 'fr': 50.0, 'area': 27.17, 'giver_at': 1.753, 'arrive': -1.819, 'unit': 0.385} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 1685.0, 'fr': 50.0, 'area': 27.201, 'giver_at': 2.337, 'arrive': -1.237, 'unit': 0.385}
+('gnome', 'hill_giant', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 5445.0, 'fr': 50.0, 'area': 19.72, 'giver_at': 1.753, 'arrive': -23.47, 'unit': 3.189} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 5475.0, 'fr': 50.0, 'area': 19.654, 'giver_at': 2.337, 'arrive': -22.844, 'unit': 3.189}
+('gnome', 'triton', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 481.0, 'fr': 4.0, 'area': 2.65, 'giver_at': 1.753, 'arrive': -2.588, 'unit': 0.522} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 602.0, 'fr': 4.0, 'area': 2.457, 'giver_at': 2.337, 'arrive': -1.002, 'unit': 0.522}
+('gnome', 'elf', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 5926.0, 'fr': 25.0, 'area': 8.74, 'giver_at': 1.753, 'arrive': 0.589, 'unit': 0.278} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 5835.5, 'fr': 25.0, 'area': 8.394, 'giver_at': 2.337, 'arrive': 1.197, 'unit': 0.278}
+('gnome', 'blue_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 541.0, 'fr': 50.0, 'area': 15.22, 'giver_at': 1.753, 'arrive': -41.41, 'unit': 2.24} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 541.0, 'fr': 50.0, 'area': 15.189, 'giver_at': 2.337, 'arrive': -40.783, 'unit': 2.24}
+('gnome', 'copper_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 5083.5, 'fr': 50.0, 'area': 22.15, 'giver_at': 1.753, 'arrive': -5.416, 'unit': 0.855} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 5143.5, 'fr': 50.0, 'area': 22.114, 'giver_at': 2.337, 'arrive': -4.826, 'unit': 0.855}
+('gnome', 'sea_elf', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 421.0, 'fr': 6.0, 'area': 0.65, 'giver_at': 1.753, 'arrive': -1.711, 'unit': 0.852} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 421.0, 'fr': 6.0, 'area': 0.548, 'giver_at': 2.337, 'arrive': -0.844, 'unit': 0.852}
+('gnome', 'bronze_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 2647.0, 'fr': 50.0, 'area': 14.59, 'giver_at': 1.753, 'arrive': -3.166, 'unit': 0.723} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 2557.0, 'fr': 50.0, 'area': 14.575, 'giver_at': 2.337, 'arrive': -2.58, 'unit': 0.723}
+('gnome', 'tortle', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 1414.0, 'fr': 50.0, 'area': 3.73, 'giver_at': 1.753, 'arrive': 1.092, 'unit': 0.291} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 1384.0, 'fr': 50.0, 'area': 3.72, 'giver_at': 2.337, 'arrive': 1.662, 'unit': 0.291}
+('gnome', 'white_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 1654.5, 'fr': 50.0, 'area': 14.69, 'giver_at': 1.753, 'arrive': -4.007, 'unit': 0.844} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 1654.5, 'fr': 50.0, 'area': 14.588, 'giver_at': 2.337, 'arrive': -3.403, 'unit': 0.844}
+('gnome', 'gold_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 361.0, 'fr': 50.0, 'area': 22.93, 'giver_at': 1.753, 'arrive': -2.707, 'unit': 0.126} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 361.0, 'fr': 50.0, 'area': 23.088, 'giver_at': 2.337, 'arrive': -2.138, 'unit': 0.126}
+('gnome', 'red_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 3639.5, 'fr': 50.0, 'area': 6.99, 'giver_at': 1.753, 'arrive': -4.422, 'unit': 1.311} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 3549.5, 'fr': 50.0, 'area': 7.061, 'giver_at': 2.337, 'arrive': -3.87, 'unit': 1.311}
+('gnome', 'kenku', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 7430.0, 'fr': 50.0, 'area': 18.24, 'giver_at': 1.753, 'arrive': -5.959, 'unit': 1.627} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 7159.0, 'fr': 50.0, 'area': 18.184, 'giver_at': 2.337, 'arrive': -5.363, 'unit': 1.627}
+('gnome', 'kobold', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 1504.0, 'fr': 17.5, 'area': 27.75, 'giver_at': 1.753, 'arrive': 1.085, 'unit': 0.114} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 1474.0, 'fr': 17.5, 'area': 28.188, 'giver_at': 2.337, 'arrive': 1.651, 'unit': 0.114}
+('gnome', 'silver_dragon', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 4361.5, 'fr': 50.0, 'area': 10.24, 'giver_at': 1.753, 'arrive': -6.238, 'unit': 1.402} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 4331.5, 'fr': 50.0, 'area': 10.169, 'giver_at': 2.337, 'arrive': -5.626, 'unit': 1.402}
+('gnome', 'human', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 2587.0, 'fr': 3.0, 'area': 42.9, 'giver_at': 1.753, 'arrive': -7.931, 'unit': 1.619} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 4512.0, 'fr': 3.0, 'area': 39.942, 'giver_at': 2.337, 'arrive': -7.007, 'unit': 1.619}
+('gnome', 'drow', 'kingship') 
+  live  {'step': 261.0, 'ago': 1.632, 'km': 2647.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 1.753, 'arrive': 0.832, 'unit': 0.776} 
+  after {'step': 253.0, 'ago': 2.255, 'km': 2677.0, 'fr': 12.0, 'area': 0.37, 'giver_at': 2.337, 'arrive': 1.416, 'unit': 0.776}
+('cloud_giant', 'human', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 963.0, 'fr': 17.5, 'area': 37.09, 'giver_at': 2.098, 'arrive': -2.082, 'unit': 0.483} 
+  after {'step': 254.0, 'ago': 2.175, 'km': 932.5, 'fr': 17.5, 'area': 40.867, 'giver_at': 2.255, 'arrive': -2.276, 'unit': 0.483}
+('orc', 'tortle', 'kingship') 
+  live  {'step': 254.0, 'ago': 2.175, 'km': 1203.0, 'fr': 262.0, 'area': 3.71, 'giver_at': 2.255, 'arrive': -4.302, 'unit': 2.46} 
+  after {'step': 254.0, 'ago': 2.175, 'km': 1233.0, 'fr': 262.0, 'area': 3.723, 'giver_at': 2.255, 'arrive': -4.154, 'unit': 2.46}
+('orc', 'human', 'kingship') 
+  live  {'step': 254.0, 'ago': 2.175, 'km': 60.0, 'fr': 4.5, 'area': 37.09, 'giver_at': 2.255, 'arrive': -120.864, 'unit': 0.886} 
+  after {'step': 254.0, 'ago': 2.175, 'km': 2526.5, 'fr': 4.5, 'area': 40.867, 'giver_at': 2.255, 'arrive': -2.914, 'unit': 0.886}
+('dragonborn', 'human', 'cities') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 2767.0, 'fr': 3.5, 'area': 37.09, 'giver_at': 2.175, 'arrive': -1.288, 'unit': 0.623} 
+  after None
+('cloud_giant', 'gnome', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 2346.0, 'fr': 50.0, 'area': 0.73, 'giver_at': 2.098, 'arrive': 1.13, 'unit': 0.636} 
+  after None
+('cloud_giant', 'fire_giant', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 812.0, 'fr': 242.0, 'area': 2.6, 'giver_at': 2.098, 'arrive': 0.659, 'unit': 0.271} 
+  after None
+('leonin', 'tortle', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 2888.0, 'fr': 266.0, 'area': 3.71, 'giver_at': 2.098, 'arrive': 0.989, 'unit': 0.519} 
+  after {'step': 256.0, 'ago': 2.024, 'km': 2918.0, 'fr': 266.0, 'area': 3.729, 'giver_at': 2.098, 'arrive': 0.986, 'unit': 0.519}
+('aarakocra', 'human', 'cities') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 11611.0, 'fr': 110.0, 'area': 37.09, 'giver_at': 2.098, 'arrive': -12.556, 'unit': 2.635} 
+  after None
+('leonin', 'human', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 1384.0, 'fr': 5.0, 'area': 37.09, 'giver_at': 2.098, 'arrive': -3.817, 'unit': 0.981} 
+  after {'step': 256.0, 'ago': 2.024, 'km': 2767.0, 'fr': 5.0, 'area': 42.619, 'giver_at': 2.098, 'arrive': -3.753, 'unit': 0.981}
+('leonin', 'fire_giant', 'kingship') 
+  live  {'step': 255.0, 'ago': 2.024, 'km': 602.0, 'fr': 242.0, 'area': 2.6, 'giver_at': 2.098, 'arrive': -3.424, 'unit': 0.772} 
+  after None
+('half_orc', 'tortle', 'kingship') 
+  live  None 
+  after {'step': 257.0, 'ago': 1.953, 'km': 0.0, 'fr': 3.5, 'area': 3.741, 'giver_at': 2.024, 'arrive': None, 'unit': 0.455}
+('half_orc', 'human', 'kingship') 
+  live  {'step': 273.0, 'ago': 1.023, 'km': 0.0, 'fr': 3.5, 'area': 48.84, 'giver_at': 1.099, 'arrive': None, 'unit': 1.112} 
+  after {'step': 257.0, 'ago': 1.953, 'km': 120.0, 'fr': 3.5, 'area': 43.462, 'giver_at': 2.024, 'arrive': -81.648, 'unit': 1.112}
+('tortle', 'human', 'cities') 
+  live  {'step': 257.0, 'ago': 1.953, 'km': 9987.0, 'fr': 5.0, 'area': 42.9, 'giver_at': 2.024, 'arrive': -1.947, 'unit': 0.664} 
+  after None
+('dragonborn', 'tortle', 'law') 
+  live  None 
+  after {'step': 257.0, 'ago': 1.953, 'km': 3549.0, 'fr': 42.0, 'area': 3.741, 'giver_at': 2.024, 'arrive': -0.269, 'unit': 1.068}
+('halfling', 'tortle', 'kingship') 
+  live  {'step': 271.0, 'ago': 1.139, 'km': 1745.0, 'fr': 4.5, 'area': 3.85, 'giver_at': 1.181, 'arrive': 0.19, 'unit': 0.455} 
+  after {'step': 257.0, 'ago': 1.953, 'km': 1985.0, 'fr': 4.5, 'area': 3.741, 'giver_at': 2.024, 'arrive': 1.047, 'unit': 0.455}
+('dragonborn', 'tortle', 'kingship') 
+  live  {'step': 267.0, 'ago': 1.315, 'km': 3549.0, 'fr': 42.0, 'area': 3.85, 'giver_at': 1.413, 'arrive': -0.913, 'unit': 1.068} 
+  after {'step': 257.0, 'ago': 1.953, 'km': 3549.0, 'fr': 42.0, 'area': 3.741, 'giver_at': 2.024, 'arrive': -0.269, 'unit': 1.068}
+('dragonborn', 'human', 'law') 
+  live  None 
+  after {'step': 257.0, 'ago': 1.953, 'km': 6377.0, 'fr': 3.5, 'area': 43.462, 'giver_at': 2.024, 'arrive': -1.725, 'unit': 0.623}
+('dragonborn', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 257.0, 'ago': 1.953, 'km': 11461.0, 'fr': 250.0, 'area': 2.588, 'giver_at': 2.024, 'arrive': 0.112, 'unit': 0.667}
+('halfling', 'human', 'kingship') 
+  live  {'step': 271.0, 'ago': 1.139, 'km': 12483.5, 'fr': 98.0, 'area': 48.84, 'giver_at': 1.181, 'arrive': 1.056, 'unit': 0.02} 
+  after {'step': 257.0, 'ago': 1.953, 'km': 13115.0, 'fr': 98.0, 'area': 43.462, 'giver_at': 2.024, 'arrive': 1.906, 'unit': 0.02}
+('dragonborn', 'human', 'kingship') 
+  live  {'step': 267.0, 'ago': 1.315, 'km': 5174.0, 'fr': 3.5, 'area': 48.84, 'giver_at': 1.413, 'arrive': -2.561, 'unit': 0.623} 
+  after {'step': 257.0, 'ago': 1.953, 'km': 6377.0, 'fr': 3.5, 'area': 43.462, 'giver_at': 2.024, 'arrive': -1.725, 'unit': 0.623}
+('aarakocra', 'tortle', 'kingship') 
+  live  {'step': 267.0, 'ago': 1.315, 'km': 662.0, 'fr': 150.0, 'area': 3.85, 'giver_at': 1.363, 'arrive': -11.111, 'unit': 2.528} 
+  after {'step': 258.0, 'ago': 1.884, 'km': 662.0, 'fr': 150.0, 'area': 3.758, 'giver_at': 1.953, 'arrive': -10.371, 'unit': 2.528}
+('halfling', 'human', 'cities') 
+  live  {'step': 258.0, 'ago': 1.817, 'km': 12483.5, 'fr': 98.0, 'area': 42.9, 'giver_at': 1.953, 'arrive': 1.836, 'unit': 0.02} 
+  after None
+('aarakocra', 'human', 'kingship') 
+  live  {'step': 267.0, 'ago': 1.315, 'km': 11912.0, 'fr': 110.0, 'area': 48.84, 'giver_at': 1.363, 'arrive': -15.453, 'unit': 2.635} 
+  after {'step': 258.0, 'ago': 1.884, 'km': 11972.5, 'fr': 110.0, 'area': 44.28, 'giver_at': 1.953, 'arrive': -14.059, 'unit': 2.635}
+('human', 'tortle', 'kingship') 
+  live  None 
+  after {'step': 259.0, 'ago': 1.817, 'km': 16484.0, 'fr': 5.0, 'area': 3.774, 'giver_at': 1.884, 'arrive': -0.005, 'unit': 0.876}
+('sea_elf', 'tortle', 'kingship') 
+  live  None 
+  after {'step': 260.0, 'ago': 1.753, 'km': 1564.5, 'fr': 3.5, 'area': 3.789, 'giver_at': 1.817, 'arrive': -6.824, 'unit': 4.0}
+('dwarf', 'human', 'law') 
+  live  None 
+  after {'step': 276.0, 'ago': 0.987, 'km': 2948.0, 'fr': 1.0, 'area': 55.732, 'giver_at': 1.518, 'arrive': -1.09, 'unit': 0.307}
+('firbolg', 'tortle', 'kingship') 
+  live  {'step': 265.0, 'ago': 1.413, 'km': 421.0, 'fr': 3.5, 'area': 3.85, 'giver_at': 1.465, 'arrive': -1.563, 'unit': 0.39} 
+  after None
+('firbolg', 'human', 'kingship') 
+  live  {'step': 265.0, 'ago': 1.413, 'km': 2918.0, 'fr': 14.5, 'area': 48.84, 'giver_at': 1.465, 'arrive': -7.494, 'unit': 1.404} 
+  after None
+('hill_giant', 'human', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 52039.0, 'fr': 198.0, 'area': 51.339, 'giver_at': 1.363, 'arrive': 0.985, 'unit': 0.058}
+('sea_elf', 'tortle', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 1564.5, 'fr': 3.5, 'area': 3.828, 'giver_at': 1.363, 'arrive': -7.322, 'unit': 4.0}
+('hill_giant', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 13897.5, 'fr': 250.0, 'area': 2.54, 'giver_at': 1.363, 'arrive': 0.198, 'unit': 0.41}
+('hill_giant', 'gnome', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 5475.0, 'fr': 50.0, 'area': 0.693, 'giver_at': 1.363, 'arrive': -2.5, 'unit': 2.606}
+('sea_elf', 'human', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 7189.5, 'fr': 4.5, 'area': 51.339, 'giver_at': 1.363, 'arrive': -3.799, 'unit': 0.789}
+('sea_elf', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 421.0, 'fr': 6.0, 'area': 2.54, 'giver_at': 1.363, 'arrive': -12.668, 'unit': 1.387}
+('sea_elf', 'gnome', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 421.0, 'fr': 6.0, 'area': 0.693, 'giver_at': 1.363, 'arrive': -23.346, 'unit': 4.679}
+('hill_giant', 'tortle', 'law') 
+  live  None 
+  after {'step': 268.0, 'ago': 1.315, 'km': 10318.0, 'fr': 600.0, 'area': 3.828, 'giver_at': 1.363, 'arrive': 0.458, 'unit': 0.417}
+('kobold', 'human', 'kingship') 
+  live  {'step': 271.0, 'ago': 1.139, 'km': 5715.0, 'fr': 4.5, 'area': 48.84, 'giver_at': 1.181, 'arrive': -6.451, 'unit': 1.196} 
+  after None
+('kobold', 'tortle', 'kingship') 
+  live  {'step': 271.0, 'ago': 1.139, 'km': 1624.5, 'fr': 34.0, 'area': 3.85, 'giver_at': 1.181, 'arrive': -1.678, 'unit': 1.313} 
+  after None
+('tortle', 'human', 'kingship') 
+  live  {'step': 273.0, 'ago': 1.023, 'km': 11822.0, 'fr': 5.0, 'area': 48.84, 'giver_at': 1.139, 'arrive': -3.098, 'unit': 0.664} 
+  after None
+('kenku', 'tortle', 'law') 
+  live  None 
+  after {'step': 274.0, 'ago': 1.06, 'km': 22199.5, 'fr': 400.0, 'area': 3.797, 'giver_at': 1.099, 'arrive': 0.088, 'unit': 0.468}
+('kenku', 'human', 'law') 
+  live  None 
+  after {'step': 274.0, 'ago': 1.06, 'km': 17206.0, 'fr': 5.0, 'area': 54.787, 'giver_at': 1.099, 'arrive': -7.6, 'unit': 1.287}
+('kenku', 'gnome', 'law') 
+  live  None 
+  after {'step': 274.0, 'ago': 1.06, 'km': 7159.0, 'fr': 50.0, 'area': 0.682, 'giver_at': 1.099, 'arrive': 0.167, 'unit': 0.633}
+('kenku', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 274.0, 'ago': 1.06, 'km': 10167.5, 'fr': 250.0, 'area': 2.5, 'giver_at': 1.099, 'arrive': -1.319, 'unit': 0.859}
+('triton', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 275.0, 'ago': 1.023, 'km': 2888.0, 'fr': 6.0, 'area': 2.494, 'giver_at': 1.06, 'arrive': -0.994, 'unit': 0.73}
+('triton', 'gnome', 'law') 
+  live  None 
+  after {'step': 275.0, 'ago': 1.023, 'km': 602.0, 'fr': 4.0, 'area': 0.681, 'giver_at': 1.06, 'arrive': -2.638, 'unit': 1.01}
+('triton', 'tortle', 'law') 
+  live  None 
+  after {'step': 275.0, 'ago': 1.023, 'km': 2226.0, 'fr': 6.0, 'area': 3.793, 'giver_at': 1.06, 'arrive': -0.725, 'unit': 0.826}
+('triton', 'human', 'law') 
+  live  None 
+  after {'step': 275.0, 'ago': 1.023, 'km': 6317.0, 'fr': 5.0, 'area': 55.293, 'giver_at': 1.06, 'arrive': -0.777, 'unit': 0.271}
+('goblin', 'human', 'law') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 1805.0, 'fr': 1.5, 'area': 60.52, 'giver_at': 0.114, 'arrive': -10.532, 'unit': 1.499} 
+  after {'step': 276.0, 'ago': 0.987, 'km': 2136.0, 'fr': 1.5, 'area': 55.732, 'giver_at': 1.023, 'arrive': -9.193, 'unit': 1.499}
+('goblin', 'tortle', 'law') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 5294.0, 'fr': 266.0, 'area': 3.85, 'giver_at': 0.114, 'arrive': -2.994, 'unit': 1.427} 
+  after {'step': 276.0, 'ago': 0.987, 'km': 4963.5, 'fr': 266.0, 'area': 3.792, 'giver_at': 1.023, 'arrive': -2.062, 'unit': 1.427}
+('tabaxi', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 1444.0, 'fr': 42.0, 'area': 2.477, 'giver_at': 0.952, 'arrive': 0.059, 'unit': 0.307}
+('orc', 'tortle', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 1233.0, 'fr': 262.0, 'area': 3.8, 'giver_at': 0.952, 'arrive': -5.523, 'unit': 2.46}
+('human', 'tortle', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 16484.0, 'fr': 5.0, 'area': 3.8, 'giver_at': 0.952, 'arrive': -0.943, 'unit': 0.876}
+('tabaxi', 'tortle', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 7610.5, 'fr': 266.0, 'area': 3.8, 'giver_at': 0.952, 'arrive': -1.366, 'unit': 1.072}
+('human', 'gnome', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 4512.0, 'fr': 3.0, 'area': 0.678, 'giver_at': 0.952, 'arrive': 0.719, 'unit': 0.159}
+('human', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 278.0, 'ago': 0.918, 'km': 9355.0, 'fr': 198.0, 'area': 2.477, 'giver_at': 0.952, 'arrive': 0.704, 'unit': 0.089}
+('drow', 'gnome', 'law') 
+  live  None 
+  after {'step': 279.0, 'ago': 0.886, 'km': 2677.0, 'fr': 12.0, 'area': 0.678, 'giver_at': 0.918, 'arrive': -0.219, 'unit': 0.775}
+('drow', 'tortle', 'law') 
+  live  None 
+  after {'step': 279.0, 'ago': 0.886, 'km': 331.0, 'fr': 9.5, 'area': 3.804, 'giver_at': 0.918, 'arrive': -0.518, 'unit': 0.146}
+('hobgoblin', 'tortle', 'law') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 3850.0, 'fr': 250.0, 'area': 3.85, 'giver_at': 0.147, 'arrive': -1.325, 'unit': 0.676} 
+  after {'step': 279.0, 'ago': 0.886, 'km': 3850.0, 'fr': 250.0, 'area': 3.804, 'giver_at': 0.918, 'arrive': -0.545, 'unit': 0.676}
+('aarakocra', 'tortle', 'law') 
+  live  None 
+  after {'step': 282.0, 'ago': 0.795, 'km': 662.0, 'fr': 150.0, 'area': 3.815, 'giver_at': 0.824, 'arrive': -11.593, 'unit': 2.528}
+('aarakocra', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 282.0, 'ago': 0.795, 'km': 902.0, 'fr': 190.0, 'area': 2.457, 'giver_at': 0.824, 'arrive': 0.624, 'unit': 0.043}
+('firbolg', 'tortle', 'law') 
+  live  None 
+  after {'step': 282.0, 'ago': 0.795, 'km': 842.0, 'fr': 3.5, 'area': 3.815, 'giver_at': 0.824, 'arrive': -0.683, 'unit': 0.39}
+('elf', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 283.0, 'ago': 0.767, 'km': 2256.0, 'fr': 25.0, 'area': 2.453, 'giver_at': 0.795, 'arrive': -4.986, 'unit': 2.073}
+('elf', 'gnome', 'law') 
+  live  None 
+  after {'step': 283.0, 'ago': 0.767, 'km': 5835.5, 'fr': 25.0, 'area': 0.675, 'giver_at': 0.795, 'arrive': -0.794, 'unit': 1.085}
+('elf', 'tortle', 'law') 
+  live  None 
+  after {'step': 283.0, 'ago': 0.767, 'km': 5745.5, 'fr': 25.0, 'area': 3.818, 'giver_at': 0.795, 'arrive': -2.188, 'unit': 1.376}
+('leonin', 'tortle', 'law') 
+  live  None 
+  after {'step': 284.0, 'ago': 0.74, 'km': 2918.0, 'fr': 266.0, 'area': 3.821, 'giver_at': 0.767, 'arrive': -0.359, 'unit': 0.519}
+('leonin', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 284.0, 'ago': 0.74, 'km': 662.0, 'fr': 242.0, 'area': 2.448, 'giver_at': 0.767, 'arrive': -4.106, 'unit': 0.772}
+('lizardfolk', 'tortle', 'law') 
+  live  None 
+  after {'step': 285.0, 'ago': 0.714, 'km': 10347.5, 'fr': 2500.0, 'area': 3.824, 'giver_at': 0.74, 'arrive': -1.667, 'unit': 1.109}
+('lizardfolk', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 285.0, 'ago': 0.714, 'km': 4723.0, 'fr': 246.0, 'area': 2.444, 'giver_at': 0.74, 'arrive': 0.453, 'unit': 0.103}
+('gnome', 'cloud_giant', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 2316.0, 'fr': 50.0, 'area': 5.33, 'giver_at': 0.714, 'arrive': 0.641, 'unit': 0.018}
+('gnome', 'brass_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 1685.0, 'fr': 50.0, 'area': 27.646, 'giver_at': 0.714, 'arrive': -2.89, 'unit': 0.385}
+('gnome', 'blue_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 541.0, 'fr': 50.0, 'area': 15.984, 'giver_at': 0.714, 'arrive': -43.519, 'unit': 2.24}
+('gnome', 'copper_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 5143.5, 'fr': 50.0, 'area': 22.211, 'giver_at': 0.714, 'arrive': -6.465, 'unit': 0.855}
+('gnome', 'red_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 3549.5, 'fr': 50.0, 'area': 6.666, 'giver_at': 0.714, 'arrive': -5.316, 'unit': 1.311}
+('gnome', 'bronze_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 2557.0, 'fr': 50.0, 'area': 14.638, 'giver_at': 0.714, 'arrive': -4.213, 'unit': 0.723}
+('gnome', 'kobold', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 1474.0, 'fr': 17.5, 'area': 24.322, 'giver_at': 0.714, 'arrive': 0.077, 'unit': 0.114}
+('gnome', 'tortle', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 1384.0, 'fr': 50.0, 'area': 3.827, 'giver_at': 0.714, 'arrive': 0.029, 'unit': 0.291}
+('gnome', 'white_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 1654.5, 'fr': 50.0, 'area': 14.202, 'giver_at': 0.714, 'arrive': -4.949, 'unit': 0.844}
+('gnome', 'gold_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 361.0, 'fr': 50.0, 'area': 22.223, 'giver_at': 0.714, 'arrive': -3.676, 'unit': 0.126}
+('gnome', 'silver_dragon', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 4331.5, 'fr': 50.0, 'area': 10.225, 'giver_at': 0.714, 'arrive': -7.271, 'unit': 1.402}
+('gnome', 'fire_giant', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 602.0, 'fr': 50.0, 'area': 2.44, 'giver_at': 0.714, 'arrive': -8.123, 'unit': 1.275}
+('gnome', 'storm_giant', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 1745.0, 'fr': 50.0, 'area': 6.254, 'giver_at': 0.714, 'arrive': -12.114, 'unit': 2.88}
+('gnome', 'half_elf', 'law') 
+  live  None 
+  after {'step': 286.0, 'ago': 0.689, 'km': 722.0, 'fr': 2.5, 'area': 9.285, 'giver_at': 0.714, 'arrive': -0.615, 'unit': 0.23}
+('fire_giant', 'tortle', 'law') 
+  live  None 
+  after {'step': 287.0, 'ago': 0.665, 'km': 4001.0, 'fr': 250.0, 'area': 3.83, 'giver_at': 0.689, 'arrive': -0.549, 'unit': 0.57}
+('tabaxi', 'tortle', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 7700.5, 'fr': 266.0, 'area': 3.79, 'giver_at': 0.665, 'arrive': -1.65, 'unit': 1.072} 
+  after None
+('tabaxi', 'human', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1504.0, 'fr': 5.0, 'area': 55.6, 'giver_at': 0.665, 'arrive': -5.963, 'unit': 0.974} 
+  after None
+('tabaxi', 'fire_giant', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 1594.0, 'fr': 42.0, 'area': 2.49, 'giver_at': 0.665, 'arrive': -0.197, 'unit': 0.307} 
+  after None
+('hobgoblin', 'tortle', 'writing') 
+  live  {'step': 286.0, 'ago': 0.618, 'km': 3910.0, 'fr': 250.0, 'area': 3.79, 'giver_at': 0.641, 'arrive': -0.82, 'unit': 0.676} 
+  after None
+('goblin', 'tortle', 'writing') 
+  live  {'step': 290.0, 'ago': 0.517, 'km': 5294.0, 'fr': 266.0, 'area': 3.79, 'giver_at': 0.597, 'arrive': -2.487, 'unit': 1.427} 
+  after None
+('goblin', 'human', 'writing') 
+  live  {'step': 290.0, 'ago': 0.517, 'km': 2075.5, 'fr': 1.5, 'area': 55.6, 'giver_at': 0.597, 'arrive': -9.607, 'unit': 1.499} 
+  after None
+('dwarf', 'human', 'writing') 
+  live  {'step': 302.0, 'ago': 0.301, 'km': 2346.5, 'fr': 1.0, 'area': 60.52, 'giver_at': 0.388, 'arrive': -1.79, 'unit': 0.307} 
+  after None
+('orc', 'tortle', 'writing') 
+  live  {'step': 302.0, 'ago': 0.301, 'km': 1173.0, 'fr': 262.0, 'area': 3.85, 'giver_at': 0.312, 'arrive': -6.539, 'unit': 2.46} 
+  after None
+('triton', 'tortle', 'writing') 
+  live  {'step': 310.0, 'ago': 0.203, 'km': 1714.5, 'fr': 6.0, 'area': 3.85, 'giver_at': 0.226, 'arrive': -1.573, 'unit': 0.826} 
+  after None
+('triton', 'fire_giant', 'writing') 
+  live  {'step': 310.0, 'ago': 0.203, 'km': 2557.0, 'fr': 6.0, 'area': 2.41, 'giver_at': 0.226, 'arrive': -1.793, 'unit': 0.73} 
+  after None
+('leonin', 'tortle', 'writing') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 2918.0, 'fr': 266.0, 'area': 3.85, 'giver_at': 0.189, 'arrive': -0.941, 'unit': 0.519} 
+  after None
+('leonin', 'human', 'writing') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 2135.5, 'fr': 5.0, 'area': 60.52, 'giver_at': 0.189, 'arrive': -6.783, 'unit': 0.981} 
+  after None
+('leonin', 'fire_giant', 'writing') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 662.0, 'fr': 242.0, 'area': 2.41, 'giver_at': 0.189, 'arrive': -4.646, 'unit': 0.772} 
+  after None
+('hobgoblin', 'human', 'law') 
+  live  {'step': 321.0, 'ago': 0.103, 'km': 2045.0, 'fr': 4.5, 'area': 60.52, 'giver_at': 0.147, 'arrive': -2.573, 'unit': 0.383} 
+  after None

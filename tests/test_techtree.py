@@ -506,6 +506,34 @@ def test_the_calendar_run_in_pieces_is_the_tree_built_at_once():
         assert c.result() == whole and whole["known"]["c"]
 
 
+def test_a_live_front_speeds_up_as_the_border_grows_and_never_slows():
+    """PW-1473 (round9.md): the tree inside the history re-times a front still on its way from the border known now
+    (history.tech_live.LiveTech._retime): the same border leaves it where advance put it (the same rate), a longer border brings it
+    earlier, a shorter one never makes it later."""
+    from types import SimpleNamespace
+    from planet.lineages.history import tech_live as TL
+    lines = [line("a", at=60.0, track=_pop(1e8, 0.5)), line("b", at=60.0, track=_pop(1e3, 50.0))]  # (a dense giver, a wide taker)
+    c = TT.Calendar(lines, seed=3, T=T)
+
+    def links(km):
+        return [("a", "b", 40.0, 0.0, float(km))]
+
+    c.feed(lines, links(150), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+    c.advance(5.0)
+    lt = SimpleNamespace(cal=c)
+    open_ = {k: v for k, v in c.arrive.items() if v is not None and v < 5.0 and k[2] not in c.known[k[1]]}
+    assert open_  # (a short border, a wide taker: fronts still on their way)
+    TL.LiveTech._retime(lt, 5.0)
+    assert {k: c.arrive[k] for k in open_} == open_  # (the same border: advance's own rate, nothing moves)
+    c.links = links(1500)
+    TL.LiveTech._retime(lt, 5.0)
+    assert all(c.arrive[k] > v for k, v in open_.items())  # (ten times the border: every open front earlier)
+    sped = dict(c.arrive)
+    c.links = links(50)
+    TL.LiveTech._retime(lt, 5.0)
+    assert c.arrive == sped  # (a shorter border: never later)
+
+
 def test_town_arms_wait_for_the_ledger(monkeypatch):
     """PW-1464: output.save builds the first tree without B and E (no town footprint yet, so no warning), and the ledger reads only
     LEDGER_TECHS, which E's techs (writing, the alphabet, law) are not among: one round settles it."""
