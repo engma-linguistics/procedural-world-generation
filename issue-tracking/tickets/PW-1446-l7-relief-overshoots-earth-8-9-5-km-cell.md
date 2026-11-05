@@ -2,7 +2,7 @@
 id: PW-1446
 title: "L7 relief overshoots Earth: 8-9.5 km cells at the 80 km cap, 2-3x Earth's land above 2 km, and 12 km zoom summits on stacked craton"
 type: task
-status: todo
+status: done
 parent: PW-244
 milestone: later
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-846, PW-048, PW-172, PW-451, PW-827]
 refs: [docs/review/tectonics/mountains/scout1.md, docs/review/tectonics/mountains/scout1_hyps.py, docs/review/tectonics/mountains/scout1_tops.py, docs/review/tectonics/mountains/scout1_highrock.py, "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::stack_collisions", "planet/tectonics/isostasy.py::elevation", "planet/tectonics/isostasy.py::MAX_KM", "planet/timeline.py::texture", "run 10fd90", "run fe954c", "run a19366", "run 2b53a0", "world dba204", "zoom 7d6c4d", "zoom f4db12", data/earth/L7.npz, data/earth/raw_hydrosheds_dem_30s.zip]
 created: 2026-11-03
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 
 ## Description
@@ -34,6 +34,7 @@ Risk: less high ground lowers the weathering CO2 sink (PW-451), so the climate m
 - [ ] zoom summits at or below about 9 km
 
 ## Updates
+- 2026-11-05: Status todo -> done. Scout 194 (pass 3 of 3) passed the bar on 36 fresh L6 draws vs main and is merged (docs/review/tectonics/mountains/scout5.md).
 - 2026-11-04: Scout 190 (pass 1 of 3), held, not merged: isostasy.max_km (cap thickening by the column's height, not thickness: Dewey 1988, England & Houseman 1989) brings the highest cell from 6,509 to 5,843 m median on the 8-draw screen (Earth L6 5,415) and cells above 7 km to 0. Full 36-draw judge vs main: 1 hard failure (958504 l6c_m frozen; that planet leans cold, 3 of 4 runs cooler), sd 1.80 vs 1.25 (1.71 without that draw), a broad widening at both tails. Code kept on branch held/scout190-max-km (59d774f3, e9e78e72); write-up docs/review/tectonics/mountains/scout3.md. Next pass: why lower mountains widen the spread (weathering's relief term as the thermostat?) before re-judging.
 - 2026-11-04: Scout 188 (docs/review/tectonics/mountains/scout2.md): not a craton effect on dba204. Half the zoom's detail grows with height (PW-1462); half the world's cells at the 80 km crust cap stand 1.0-1.3 km above Airy from sediment lift and swell (top cell 8,233 m; Earth L7 5,878). Run-physics candidate: no lift above Airy at the cap. Physics side track, after PW-1462.
 - 2026-11-03: Created from inbox draft draft-l7-relief-overshoot-craton.md (found by scout-171-pw846).

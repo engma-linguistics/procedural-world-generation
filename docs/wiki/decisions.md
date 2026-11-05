@@ -316,3 +316,6 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-05: suite after lane 196 merge: 1052 passed.
 - 2026-11-05: lanes 200/200b merged: PW-1483 one keyed waiting time per (people, tech) (first-writing move on a 10% border nudge 1,510 -> 232 yr, 0141d1, 12 draws); PW-1471 D55 regional learners ON (anchor_peers 24 from Larson/Fuller 2014; region_mkm2 24, a judgement), humans alone write 3/8 (main 0/8); floor redefined, off (PW-1485, desk D58); PW-1461 D53 arm T on (contact_arms BT). First writing medians 0141d1 4,716 (main 4,153), a2b637 4,006 (3,796). PW-1484, PW-1486 later.
 - 2026-11-05: suite after lanes 200/200b: 1054 passed; showcase trees (0141d1, 3e0eb4, 07c755, a2b637) rebuilt on the new tree; server restarted.
+- 2026-11-05: scout 194 merged (PW-1446 height cap, pass 3 of 3): 36 fresh L6 draws vs main: 0 hard fails both, soft 32/32 (McNemar p 1.0), late dT sd 1.36 vs 1.78; top cell 8.2 -> 7.0 km median. scout5.md.
+- 2026-11-05: scout 202 (grazing after the grass fix): no change; herds 0.74x Coe's parks, inside scatter; soil factor scoped onto PW-836.
+- 2026-11-05: suite after scout 194 merge: 1054 passed; earth_check on main ran clean (EXIT 0).

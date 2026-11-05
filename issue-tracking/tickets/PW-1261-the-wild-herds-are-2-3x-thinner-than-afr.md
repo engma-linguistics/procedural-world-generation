@@ -50,6 +50,7 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-05: Scout 202 (docs/review/climate/grazing/scout1.md): herds at 0.74x Coe's rich-soil parks (3.07 vs 3.78-4.39 t/km2 at 550-700 mm) are inside the scatter (-1.1 to -1.4 sd); accepted, no change.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth; status unchanged)
 - 2026-11-03: Lane 144 (fork judge, merged 558ce440): PW-1261's 2 frozen-over draws are the same two where a forked do-nothing change also froze over (PW-1404). Still parked on D45.
 - 2026-11-03: Lane 140d (5f5d6ddf, round1.md s8): main's cold-tail fragility is the carbon-cycle yardstick learnt from ~5 samples of the spin-up (carries 1.5 of 1.7 C within-seed late-dT sd); the herb change's own push ~-0.1 to -0.15 C. Parked pending D45 (judge from a shared spin-up?); harness being built in lane 144.
