@@ -40,7 +40,7 @@ from ..geo import is_land
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, VALLEY, elevation, sediment_km, subsidence
+from .isostasy import EXTRA, LAVA, LIFT, MIX, VALLEY, elevation, max_km, sediment_km, subsidence
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve, world_view, write_back
 from .plates import Plates
@@ -375,12 +375,12 @@ class Simulation:
 
     def _write_back(self, col, born):
         """Make the column the new world view and copy it to the plates.
-        Crust is kept between 1 km and MAX_KM, and the sediment cover can't
+        Crust is kept between 1 km and isostasy.max_km (MAX_KM less its sediment's and swell's lift), and the sediment cover can't
         be thicker than the crust (its rock mix shrinks with it). The strata
         are made to add up to the final cover (record.reconcile)."""
         x = col.x
         self.w_cont = col.cont | born
-        self.w_thick = np.clip(col.t, 1.0, MAX_KM)
+        self.w_thick = np.clip(col.t, 1.0, max_km(self.w_cont, col.cover, x))
         self.book("clip", col.t, self.w_thick, self.w_cont)
         self.w_cover = np.clip(col.cover, 0, self.w_thick)
         shrink = self.w_cover / np.maximum(col.cover, 1e-9)
