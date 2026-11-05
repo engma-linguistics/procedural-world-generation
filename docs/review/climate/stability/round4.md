@@ -24,15 +24,40 @@ every L7 world's later climate about 1.1 C, all in the same direction.
   0.042.
 - Verdict: within error. L6 stays at 1.377.
 
-## L7 (interim: 17 of 24 spins, paused about 11:50 for Daniel's quiet machine, still paused at 12:31)
-- Learnt y mean 1.621, sd 0.164, standard error 0.040, against YARDSTICK[7] 1.542 (+0.079, 2.0 standard errors).
-- With sd about 0.16, 24 spins give a standard error of about 0.033.
+## L7 (24 draws, current code; lane 187b)
+- Learnt y mean **1.618**, sd 0.178, standard error 0.036, against YARDSTICK[7] 1.542 (+0.076, 2.1 standard errors).
+  Range 1.327 (seed 267766) to 1.842 (seed 35471). Scratch `l187/l7_y_24.txt`.
+- Verdict: re-fit. **YARDSTICK[7] = 1.618** (`planet/tectonics/earth.py`). L6 stays at 1.377.
 
-## Status (lane 187, handoff section)
-- Done: L6 re-check (above). 17 L7 spins in scratch `l187/fork/L7_o0/` (each 21-27 min at 1 thread).
-- Running, SIGSTOPped by the coordinator: 6 spins (`drive2.sh b2.txt 6`, pid in `l187/b2.pid`). 1 draw is still
-  queued.
-- Next: when all 24 spins finish, `uv run python tools/yardstick.py <scratch>/l187/fork/L7_o0/*_at300.json.gz`. If the
-  mean is more than about 2 standard errors from 1.542, set YARDSTICK[7] and run the paired check: copy the code to
-  `l187/code/new` with the new value, then `cont_one.sh main SEED` and `cont_one.sh new SEED` for 4-6 spins, at most
-  4 at once. These continue the same 300-Myr spin under each value, so the comparison is exact.
+## Paired check (lane 187b): the same 300-Myr spins continued to 1 Gyr under 1.542 (old) and 1.618 (new)
+Four draws picked across the y range (low 267766, middle 170889 and 53669, high 35471). Each spin was continued
+twice from its 300-Myr checkpoint (`cont_one.sh main|new SEED`, 1 thread each). The two copies of the code differ
+only in YARDSTICK[7], so every difference below is the yardstick's. Baseline in every row: the same draw on the old
+YARDSTICK[7] 1.542. Late = 600-1000 Myr, as `tools/judge.py paired`.
+
+| draw (learnt y) | late dT old | late dT new | new - old | late CO2 index old / new | end T vs 13.8 C old / new | end pCO2 old / new |
+|---|---|---|---|---|---|---|
+| 267766 (1.327) | +3.02 | +3.88 | +0.86 | +0.83 / +0.97 | -0.6 / -0.9 | 318 / 268 |
+| 170889 (1.529) | +0.12 | -0.21 | -0.33 | +0.53 / +0.45 | -0.2 / -1.2 | 558 / 390 |
+| 53669 (1.627) | +2.75 | +1.91 | -0.84 | +0.88 / +0.73 | -3.9 / +2.8 | 288 / 494 |
+| 35471 (1.842) | +4.09 | +0.70 | -3.39 | +1.15 / +0.68 | +2.3 / -0.4 | 528 / 377 |
+
+- Late dT: paired median -0.59 C (95% interval -3.39 to +0.85, 3 of 4 cooler). The expected shift is about
+  -0.84 C (0.076 x 1.1 C per 0.1). With 4 draws the interval holds 0; the direction and size are as expected.
+- The sink's reference moves by exactly -0.076 in ln on every draw (the change itself); the source's is unchanged.
+- Hard failures, both arms (`tools/hard_bar.py`): frozen over 0/4, boiled 0/4, ocean loss 0/4, CO2 crash (below the
+  plants' compensation point) 0/4; CO2 under 100 ppm 0/4. Lowest pCO2 old 122-406, new 142-222 ppm. End pCO2 inside
+  180-600 on all 8 runs.
+- Soft passes (bar + finish moment): 4/4 both arms. Icehouse 4/4 and glacial maximum 2/4 in both.
+- Single-draw end temperatures swing several degrees either way (53669: -3.9 to +2.8) while the late means move
+  less: chaos, not signal, at one draw (the late-window mean is the measure).
+
+## Checks (lane 187b)
+- `NUMBA_NUM_THREADS=3 uv run pytest -q -n 2 -m "not slow"`: 1018 passed, 1 skipped (goldens included, unchanged:
+  the goldens and simulated test grids are all below L7, which still take L6's 1.377; test_co2_stock reads YARDSTICK[7] by name). Slow climate files
+  (test_envelopes, test_sea_level, test_soils) plus test_co2_stock and test_golden: 39 passed, 1 skipped.
+- `tools/scorecard.py` (L6 seeds 1 and 2, and the Earth climate): every number identical to the previous line
+  (38073e05), as expected: the change acts only at L7. `tools/earth_check.py` (L6, dT 0): global mean T 13.9 vs
+  NCEP 14.0 C, rain 997 vs GPCP 983 mm/yr; it does not use the carbon cycle.
+- Not done: a 36-draw L7 paired judge. 4 draws give the direction (3 of 4 cooler) and 0 hard failures, not a pass
+  rate.
