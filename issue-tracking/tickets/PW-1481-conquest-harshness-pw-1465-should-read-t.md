@@ -1,5 +1,6 @@
 ---
-title: "Conquest harshness (PW-1465) should read the winner's tolerance from attitudes, but attitudes are a read-out and the fates are in the history"
+id: PW-1481
+title: Conquest harshness (PW-1465) should read the winner's tolerance from attitudes, but attitudes are a read-out and the fates are in the history
 type: task
 status: todo
 parent: PW-661
@@ -11,6 +12,8 @@ found_by: lane199
 blocked_by: []
 relates: [PW-1465, PW-904, PW-1434]
 refs: ["planet/lineages/history/polity_live.py::FATE_AT", "planet/lineages/history/polity_live.py::FATE_CUT", "planet/lineages/attitudes.py::temperament", "planet/lineages/attitudes.py::Attitudes", docs/review/culture/attitudes/round1.md]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -29,3 +32,6 @@ presence). Then the fate thresholds read hostility x (1 - the winner's tolerance
 would then become a second copy of the same walk unless one of them reads the other's record.
 - [ ] polity_live steps an Attitudes of its own; the fate reads the winner culture's tolerance
 - [ ] one source of truth for the walk (the history's record read by gods.py, or the reverse)
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-conqueror-harshness-reads-attitudes.md (found by lane199).

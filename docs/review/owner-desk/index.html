@@ -70,7 +70,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · Thursday 5 November 2026 · after midnight</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Two things for you: the v0.2.0 tag, which is ready (the faith form and the food sheet are fixed, and the tag card says where to click), and D56, how far your written invasions may reach now that D50 is built.</p>
+  <p class="lede">Three things for you, none urgent: the v0.2.0 tag (ready, and the tag card says where to click), D56, how far your written invasions may reach, and D57, how many world faiths a planet should end up with, now that faiths really spread. Your faith on 3e0eb4 now holds 84 cultures.</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
@@ -82,6 +82,14 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>B (my lean).</b> A fixed campaign range of about 1,000 km (the same range the invasion form already uses for "from that part of the continent"), doubled for herders and nomads. Settled peoples strike within their region, and horde-like peoples reach 2,000 km.</li>
 <li><b>C.</b> No limit over land: a strong invasion always finds the victims unless an ocean is in the way (boats can cross that).</li>
 </ul></div>
+<div class="card" id="d57"><div class="id">D57 · PW-1482 · how many world faiths?</div>
+<p><b>In plain words:</b> faiths now spread (lane 199, merged), which answers your question. A neighbour with temples converts a culture over about 2,000 years (it was 30,000). A missionary faith wins a neighbour in about two centuries, from Stark's 40% a decade for early Christianity. Rulers press their faith on subjects: harsh ones within a generation, like Charlemagne's Saxons, middling ones over centuries, like Iran under Islam (Bulliet), and tolerant ones over millennia, like Cyrus. Each culture now has a tolerance and an aggression of its own, and both drift with its history. Your dwarf faith on <a href="http://localhost:8765/viewer/?run=3e0eb4&amp;layer=peoples">3e0eb4</a> now holds 84 cultures, against 1 on yesterday's code. It won 22 through missionaries and 63 under rulers, and reached its 10th culture in about 700 years. To see it: <b>Peoples workbench</b> &rarr; <b>Religion</b> &rarr; <b>Your faiths</b>. The form has a new <b>missionary</b> box, and each culture card shows its tolerance and aggression.</p>
+<p>One number is a taste call. A faith the world makes itself turns missionary with an even chance once its god becomes a moral high god. On D&amp;D 0141d1 none did, and the largest faith holds 13% of cultures (11% on yesterday's code). On Seven Meals five did: three faiths now hold 87% of cultures, against 34% on yesterday's code. No faith passes half the cultures within 2,000 years anywhere.</p>
+<ul>
+<li><b>A (my lean).</b> Keep the even chance: some worlds end with many local faiths and some with a few world faiths, by luck and by peoples.</li>
+<li><b>B.</b> A one-in-four chance: most high-god faiths stay with their own people.</li>
+<li><b>C.</b> A "world faiths: few / some / many" choice beside the gods mode in the viewer, defaulting to A.</li>
+</ul></div>
 <div class="card" id="tag"><div class="id">TAG v0.2.0 (V2 MILESTONE): READY WHEN YOU ARE</div>
 <p><b>In plain words:</b> both things you hit on your first look are fixed (lane 197, merged). Open the <a href="http://localhost:8765/viewer/lineages.html">Peoples workbench</a> (the "Viewer" link at its top right goes back to the globe) and refresh the page once:</p>
 <ul>
@@ -89,7 +97,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>The food sheet per culture:</b> the new <b>Culinary brief</b> tab. Pick a <b>people</b>, then a <b>culture</b>, and press <b>Show the brief</b>. It reads "Cuisine sheet: &lt;culture&gt;". It's also on the globe: <b>Peoples</b> box &rarr; <b>Culinary brief…</b>.</li>
 <li><b>"The workbench tree"</b> was my name for the first tab. It is now labelled <b>Peoples tree &amp; timeline</b>.</li>
 </ul>
-<p>Why your faith didn't spread: today a neighbour converts only from a faith with temples, on a 30,000-year time scale. There are no missionaries and no forced conversion yet (PW-1477, v4, built with attitudes). Showcase runs to try: <a href="http://localhost:8765/viewer/?run=0141d1&amp;layer=peoples">D&amp;D 0141d1</a> · <a href="http://localhost:8765/viewer/?run=3e0eb4&amp;layer=peoples">D&amp;D 3e0eb4</a> · <a href="http://localhost:8765/viewer/?run=07c755&amp;layer=peoples">Seven Meals 07c755</a>.</p>
+<p>Why your faith didn't spread, and what changed: see D57. Showcase runs to try: <a href="http://localhost:8765/viewer/?run=0141d1&amp;layer=peoples">D&amp;D 0141d1</a> · <a href="http://localhost:8765/viewer/?run=3e0eb4&amp;layer=peoples">D&amp;D 3e0eb4</a> · <a href="http://localhost:8765/viewer/?run=07c755&amp;layer=peoples">Seven Meals 07c755</a>.</p>
 <p>Say "tag it" and I'll tag v0.2.0.</p>
 </div>
 
@@ -109,14 +117,14 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
-<tr><td>199 · attitudes, first cut, and faiths that spread (v4)</td><td>Each culture gets a temperament: how tolerant it is of outsiders and other faiths, and how aggressive. It varies culture by culture and over time, not by era, so Cyrus-like rulers and Genghis-like ones can turn up in any age. Faiths then spread at real-world rates (centuries, from sources), not the 30,000 years they take today. A faith marked to spread to its neighbours spreads faster, and rulers press their faith on subjects: tolerant ones slowly, intolerant ones by force. A check makes sure no faith sweeps the world in a few centuries.</td></tr>
 <tr><td>196 · writing arrives late inside the history (v4)</td><td>Picks up from lane 195. The likely cause it named, neighbours fixing how fast they learn while their border is still short, isn't it. A test run that records what the tech tree sees at each step is running now, and it should show where the two calendars first part ways. That cause gets fixed. Lane 195's change, which lets town arms come from the states inside the history, gets committed too.</td></tr>
 <tr><td>194 · too-tall peaks, last try (physics, pass 3 of 3)</td><td>Scout 193 found no physical reason why lower peaks would unsettle the climate: the carbon thermostat pushes back just as hard. The wider spread looks like it may be a fluke of one sample (about a 1-in-60 result), and today's code itself sits under the spread bar. So this pass re-checks the fix against today's code (now with the grass fix) on 36 fresh test planets. If it passes, it merges; if not, it goes to the back of the line.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): Andes-type coastal ranges, a re-check of warm finishes after D47 and the grass fix, a source for the rainforest fix's leaf constant, and the grazing herds after the grass fix. Rain inland waits at the back of the line (three strikes).</p>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>Invasions that reach</b> (PW-1450, lane 198, merged, your D50): expeditions, war bands and far-reaching herders, read-out only, so worlds don't change. How far an expedition may go is D56 above.</li>
+<ul><li><b>Attitudes and faiths that spread</b> (PW-904 first cut and PW-1477, lane 199, merged). Faiths are worked out after the history, so the history itself doesn't change, but every run's faith map does. A peoples run takes about a minute longer. Details are on D57.</li>
+<li><b>Invasions that reach</b> (PW-1450, lane 198, merged, your D50): expeditions, war bands and far-reaching herders, read-out only, so worlds don't change. How far an expedition may go is D56 above.</li>
 <li><b>The faith form and the food sheet are fixed</b> (PW-1475/1476, lane 197, merged; details on the tag card). Viewer only, so worlds and runs are unchanged.</li>
 <li><b>Your rulings tonight:</b> D50 B and C (expeditions and war bands for written invasions), plus far-reaching mobile peoples for horde-like conquerors. D53: writing spreads by rulers (E) or trading towns (C), weighted by how trade-minded the spreading culture is; E if that doesn't hold up. D54: the conqueror numbers are placeholders, so attitudes (a culture's general tolerance and aggression, PW-904) move up into v4 and conquest will read them. D55: fix it both ways: a people's own chance to invent (no slower than a set rate, repeats allowed, never forced) and regional groups as separate learners.</li>
 <li><b>L7 carbon yardstick re-set</b> (PW-1458, lane 187b, merged). Measured on 24 test planets on today's code, it comes out at 1.618, against the 1.542 D47 took from six older runs. That gap is about two standard errors, so it's now 1.618. On 4 planets run on both values (baseline: the same planet on the old value), the later climate comes out 0.6 °C cooler at the median, near the 0.8 expected; none freeze, boil or crash on either. New L7 worlds will run slightly cooler; existing runs don't change, and L6 is untouched. A full 36-planet check at L7 hasn't been done.</li>
@@ -135,5 +143,5 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>Why the antelope-kin live thinly</b> (your D51 question). They are farmers in the preset, but their range is dry: 150–900 mm of rain a year, on steppe and savanna. Their "nomadic" trait also pulls them towards grazing land. On that land the density ladder gives them agro-pastoral numbers, 1–15 people per km² (Wilson 1986), against plough farming on fertile, well-watered land. They average 0.8, the humans 10. So their towns stay villages (the biggest ever was 7,925 people; a state seat needs a city of 10,000). That is how real steppe peoples could still build large states: as confederations of herders and villages facing a settled neighbour, Turchin's "mirror empires", which is what lane 178 added.</li>
 </ul>
 
-<footer>Desk v174 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v175 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

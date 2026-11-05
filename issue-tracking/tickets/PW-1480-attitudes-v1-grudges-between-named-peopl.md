@@ -1,4 +1,5 @@
 ---
+id: PW-1480
 title: "Attitudes v1: grudges between named peoples, xenophobia by species (difference x unfamiliarity), forgiveness and a stubbornness axis"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: lane199
 blocked_by: []
 relates: [PW-904, PW-1465, PW-1477]
 refs: [planet/lineages/attitudes.py, "planet/lineages/attitudes.py::Attitudes", "planet/lineages/attitudes.py::temperament", "planet/lineages/gods.py::Pantheons._links", planet/lineages/compose.py, docs/review/culture/attitudes/round1.md, docs/review/cultures-proposal/proposal-r2.md]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -31,3 +34,6 @@ wishes) are a seed.
 - [ ] per-pair grudge memory with a fading rate set by a stubbornness axis
 - [ ] species xenophobia from difference and unfamiliarity
 - [ ] PW-1465 and PW-1477 read the pair value instead of the general tolerance
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-attitudes-grudges-xenophobia-forgiveness.md (found by lane199).

@@ -1,4 +1,5 @@
 ---
+id: PW-1482
 title: "World faiths: how far should missionary faiths merge a world? (Seven Meals: three faiths hold 87% of cultures today, main 34%)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane199
 blocked_by: []
 relates: [PW-1477, PW-904]
 refs: ["planet/lineages/gods.py::MISSION_P", "planet/lineages/gods.py::MISSION_IND", "planet/lineages/gods.py::ETHNIC_RULE", "planet/lineages/gods.py::Pantheons._links", docs/review/culture/attitudes/round1.md, "run 07c755 (seven_meals)", "run 3e0eb4 (dnd)", "run 0141d1 (dnd)"]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -34,3 +37,6 @@ missionary faiths has a few world faiths holding most people, so neither result 
 - C. Make it a run choice beside the gods mode (a "world faiths" dial: few / some / many) shown in the viewer, default A.
 Lean: A, with C later if you find yourself wanting to steer it. The spread is a mechanism with sourced speeds; how often a faith
 turns missionary is the one free number.
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-world-faiths-how-much-merging.md (found by lane199).
