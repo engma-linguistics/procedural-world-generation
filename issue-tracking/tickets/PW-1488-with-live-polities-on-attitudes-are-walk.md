@@ -1,4 +1,5 @@
 ---
+id: PW-1488
 title: With live polities on, attitudes are walked twice (per people in the history, per culture in the religion read-out)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane201
 blocked_by: []
 relates: [PW-1481, PW-1465, PW-904, PW-1477]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._attitudes", "planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/attitudes.py::Attitudes", "planet/lineages/gods.py::Pantheons", docs/review/culture/polities/round10.md, docs/review/culture/attitudes/round1.md]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -31,3 +34,6 @@ intolerant winner would, or the reverse. Two numbers for one temperament, and Da
 - C. Keep both and label them: the read-out's per culture, the history's per people.
 Lean: A, when the read-out becomes the live map (round7.md section 3: derive reading polities_live.json). Until then C is honest.
 - [ ] one source for a people's temperament over time when the switch is on
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-two-attitude-walks-with-live-polities.md (found by lane201).

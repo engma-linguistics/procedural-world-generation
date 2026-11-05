@@ -2,7 +2,7 @@
 id: PW-1481
 title: Conquest harshness (PW-1465) should read the winner's tolerance from attitudes, but attitudes are a read-out and the fates are in the history
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -34,4 +34,5 @@ would then become a second copy of the same walk unless one of them reads the ot
 - [ ] one source of truth for the walk (the history's record read by gods.py, or the reverse)
 
 ## Updates
+- 2026-11-05: Status -> done. Lanes 201/201b/201c merged (docs/review/culture/polities/round10.md).
 - 2026-11-05: Created from inbox draft draft-conqueror-harshness-reads-attitudes.md (found by lane199).

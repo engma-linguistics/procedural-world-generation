@@ -1,4 +1,5 @@
 ---
+id: PW-1487
 title: With live attitudes, the history's conquerors are almost never harsh (no razing winner on seeds 7 or 10)
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane201b
 blocked_by: []
 relates: [PW-1465, PW-1481, PW-904]
 refs: ["planet/lineages/history/polity_live.py::TOL_X", "planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/attitudes.py::temperament", docs/review/culture/polities/round10.md, "run cbf74f", "run 4bd35e", "run 51916e", "run 70cf9f"]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -40,3 +43,6 @@ peaceful world, but it comes from two judgement numbers: TOL_X, and the temperam
   range of conquerors.)
 Lean: C, with A's TOL_X. It gives the razing conqueror a cause in the model, instead of turning the dial for everyone.
 - [ ] Daniel picks; then re-measure the fates by winner on seeds 7 and 10 (round10/measure.py)
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-live-conquerors-rarely-harsh.md (found by lane201b).

@@ -320,3 +320,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-05: scout 202 (grazing after the grass fix): no change; herds 0.74x Coe's parks, inside scatter; soil factor scoped onto PW-836.
 - 2026-11-05: suite after scout 194 merge: 1054 passed; earth_check on main ran clean (EXIT 0).
 - 2026-11-05: scout 203 (PW-1161 warm finishes): closed as chaos on today's code (warm fails 2/36, median end +0.11 C, L6); levers if ever wanted: PW-1158+1163 together, PW-1156.
+- 2026-11-05: lane 201 merged (PW-1479 live expeditions/war bands via shared code; PW-1481 conquest harshness reads winner attitudes, TOL_X 2; live step 4.0 -> 17.3 s seed 7; switch off byte-identical). PW-1487 conquerors rarely harsh (desk D59, lean C), PW-1488 two attitude walks. Suite 1057. Worktree agent-ad790cd0b661a901a kept: stray idle queue pids 528562/622682/623265 from lane 201b, kill denied to the subagent; asked Daniel.

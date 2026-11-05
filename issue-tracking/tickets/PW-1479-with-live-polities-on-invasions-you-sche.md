@@ -2,7 +2,7 @@
 id: PW-1479
 title: With live polities on, invasions you schedule still need a shared border (no war band, no expedition)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1450, PW-1434, PW-1433]
 refs: ["planet/lineages/history/polity_live.py::LivePolities", "planet/lineages/polities.py::_war_bands", "planet/lineages/polities.py::_expedition", "planet/lineages/polities.py::war_v0", planet/lineages/invasions.py, docs/review/culture/polities/invasions_reach.md, docs/review/culture/polities/round7.md]
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 
 ## Description
@@ -35,4 +35,5 @@ What to do (about ten lines in `LivePolities` step 2-4):
 - [ ] a test like tests/test_invasions.py's gap world, through LivePolities.
 
 ## Updates
+- 2026-11-05: Status -> done. Lanes 201/201b/201c merged (docs/review/culture/polities/round10.md).
 - 2026-11-04: Created from inbox draft draft-live-polities-invasions-reach.md (found by lane198).

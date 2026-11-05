@@ -9,7 +9,7 @@ subsystem: peoples
 effort: s
 impact: med
 found_by: lane183
-blocked_by: [PW-1481]
+blocked_by: []
 relates: [PW-1434, PW-1172]
 refs: ["planet/lineages/history/polity_live.py::FATE_AT", "planet/lineages/history/polity_live.py::FATE_CUT", "planet/lineages/history/polity_live.py::FATE_MAX", docs/review/culture/polities/round7.md, docs/review/cultures-proposal/proposal-r2.md]
 created: 2026-11-04
