@@ -75,13 +75,14 @@ REF_MYR = 100.0  # Myr: during the spin-up, the source's and sink's references f
 REF_FREEZE = 300.0  # Myr: then they are kept (PW-558/559 B): the planet's own balance once the made-up start has
 # settled, the same spin-up the criteria skip. After it the sink's reference is not the learnt one but the source's
 # over exp(YARDSTICK) (references)
-YARDSTICK = {6: 1.377, 7: 1.542}  # per grid level: ln(source reference / sink reference) after REF_FREEZE (PW-1424
+YARDSTICK = {6: 1.377, 7: 1.618}  # per grid level: ln(source reference / sink reference) after REF_FREEZE (PW-1424
 # A). The learnt ratio was a dice roll: it varied about as much between re-runs of one planet (sd 0.16) as between
 # planets (0.18), and each 0.1 of it set the planet's whole later climate 1.1 C warmer or colder (docs/review/climate/
 # stability/round1.md, round2.md). One constant per level, the mean of the learnt ratio over the judge's draws
 # (tools/yardstick.py re-fits it; re-fit whenever a change moves the weathering's or the outgassing's size); the
-# source's reference stays the planet's own, so a planet outgassing more also weathers more at its balance. Levels
-# without their own take the nearest (round3.md: L7's from the store's stock runs plus L6's shift)
+# source's reference stays the planet's own, so a planet outgassing more also weathers more at its balance. L7's is
+# the mean of 24 stock L7 spins to REF_FREEZE on D47 + KN_RESP (sd 0.178, standard error 0.036; lane 187b, round4.md;
+# L6's re-checked there, within error). Levels without their own take the nearest
 # (a reference that kept following one part of the sink, the ice-free land's erosion, was tried and dropped on the
 # mature start: with no relief build-up left to forget, it forgot real changes in erosion; PW-576 stage 3)
 
