@@ -158,7 +158,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     if live_tt is not None:
         techtree = live_tt.result(*tt_args[:5])
     else:
-        techtree = TT.build(*tt_args, gods_mode=h.tree.gods_mode, **({"arms": TT.arms_without_towns()} if town_arms else {}))
+        techtree = TT.build(*tt_args, gods_mode=h.tree.gods_mode, landmass=h.cross.label, **({"arms": TT.arms_without_towns()} if town_arms else {}))
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -186,7 +186,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         S.write_json(out / "polities_live.json", h.rule.doc())
     ledger_done = False
     if town_arms:
-        techtree = _towns_first(out, tt_args, h.tree.gods_mode, techtree)
+        techtree = _towns_first(out, tt_args, h.tree.gods_mode, techtree, h.cross.label)
         ledger_done = True
     report(out, h, res, pres)
     with open(out / "run.txt", "a") as f:
@@ -213,7 +213,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
 TOWN_PASSES = 3  # (_towns_first: at most this many ledger-and-tree rounds)
 
 
-def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict) -> dict:
+def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict, landmass=None) -> dict:
     """The tech tree with D52's town arms (B, E; PW-1464): the ledger from the tree made without them, then the tree again with the
     ledger's town footprint (techspread.town_footprint), until the techs the ledger reads (settlements.LEDGER_TECHS) stop moving,
     at most TOWN_PASSES rounds. Arm E touches only writing, the alphabet and law, which the ledger does not read, so it stops after
@@ -222,7 +222,7 @@ def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict) -> dict
     prev = tree0
     for i in range(TOWN_PASSES):
         ST.write(out, report=False)
-        tt = TT.build(*tt_args, gods_mode=gods_mode, towns=town_footprint(out))
+        tt = TT.build(*tt_args, gods_mode=gods_mode, towns=town_footprint(out), landmass=landmass)
         S.update_meta(out, lambda r, tt=tt: r["meta"].__setitem__("techtree", tt))
         if ST.ledger_dates(tt["known"]) == ST.ledger_dates(prev["known"]):
             return tt  # (the ledger just written is the one this tree makes)

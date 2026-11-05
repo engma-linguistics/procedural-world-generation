@@ -1,0 +1,64 @@
+run f72bf3 try_seed 7000 inside_history {'made_s': 25.2, 'arms': 'BT'}
+
+writing: people | live | after-run (same seed) | 12 seeds: known in, min-median-max | live in the spread
+  human | 3,728 | 3,865 | 12/12, 987-3,865-4,625 | yes
+  hobgoblin | 4,006 | 4,153 | 12/12, 918-3,865-4,305 | yes
+  halfling | 3,865 | 4,006 | 12/12, 855-3,472-4,305 | yes
+  orc | 4,153 | 4,153 | 12/12, 1,023-3,936-4,795 | yes
+  leonin | 3,728 | 3,865 | 12/12, 641-3,728-4,795 | yes
+  kenku | 4,006 | 4,153 | 12/12, 517-4,079-5,152 | yes
+  tabaxi | 3,728 | 3,865 | 12/12, 767-3,865-4,625 | yes
+  firbolg | 3,470 | 3,115 | 12/12, 795-3,115-4,970 | yes
+  bugbear | 4,305 | 4,462 | 12/12, 767-3,728-4,625 | yes
+  elf | 4,462 | 4,625 | 12/12, 987-3,936-6,391 | yes
+  half_orc | 1,465 | 2,797 | 12/12, 218-3,229-4,400 | yes
+  dragonborn | 3,597 | 3,728 | 12/12, 665-3,288-5,340 | yes
+  in the spread: 12/12
+
+kingship: people | live | after-run (same seed) | 12 seeds: known in, min-median-max | live in the spread
+  human | 1,139 | 1,413 | 12/12, 210-2,804-4,970 | yes
+  hobgoblin | 1,953 | 2,175 | 11/12, 1,518-2,603-4,462 | yes
+  halfling | 641 | 1,518 | 11/12, 1,518-2,797-4,006 | NO
+  orc | 1,817 | 1,953 | 12/12, 0-2,610-4,795 | yes
+  leonin | 1,817 | 1,817 | 12/12, 324-2,389-4,795 | yes
+  kenku | 795 | 1,632 | 12/12, 147-2,557-4,462 | yes
+  tabaxi | 1,632 | 1,691 | 11/12, 1,465-2,698-4,795 | yes
+  firbolg | 665 | 918 | 11/12, 918-2,511-4,625 | NO
+  bugbear | 1,753 | 1,884 | 11/12, 1,465-2,511-4,462 | yes
+  elf | 243 | 1,099 | 12/12, 336-2,654-4,462 | NO
+  half_orc | 714 | 987 | 10/12, 855-2,654-4,400 | NO
+  dragonborn | 499 | 740 | 12/12, 226-2,654-4,462 | yes
+  in the spread: 8/12
+
+law: people | live | after-run (same seed) | 12 seeds: known in, min-median-max | live in the spread
+  human | 3,229 | 3,470 | 11/12, 203-2,423-3,865 | yes
+  hobgoblin | 3,005 | 3,005 | 11/12, 281-1,953-3,115 | yes
+  halfling | 2,337 | 2,603 | 10/12, 536-2,215-3,115 | yes
+  orc | 3,597 | 3,597 | 10/12, 1,315-2,511-3,597 | yes
+  leonin | 3,229 | 3,229 | 10/12, 1,224-2,100-3,470 | yes
+  kenku | 2,255 | 2,423 | 10/12, 952-2,700-3,470 | yes
+  tabaxi | 3,115 | 3,115 | 10/12, 1,465-2,343-3,347 | yes
+  firbolg | 1,574 | 1,753 | 11/12, 92-1,753-2,698 | yes
+  bugbear | 2,423 | 2,423 | 10/12, 1,574-2,296-3,005 | yes
+  elf | 3,865 | 4,153 | 10/12, 1,099-3,350-4,305 | yes
+  half_orc | 1,465 | 2,797 | 9/12, 1,315-1,953-2,797 | yes
+  dragonborn | 2,423 | 2,698 | 10/12, 795-2,175-3,470 | yes
+  in the spread: 12/12
+
+cities: people | live | after-run (same seed) | 12 seeds: known in, min-median-max | live in the spread
+  human | 1,817 | 1,953 | 12/12, 886-3,288-5,340 | yes
+  hobgoblin | 2,603 | 2,797 | 12/12, 597-3,005-5,536 | yes
+  halfling | 1,465 | 2,024 | 12/12, 740-2,952-4,625 | yes
+  orc | 2,423 | 2,603 | 12/12, 714-2,952-5,152 | yes
+  leonin | 2,511 | 2,511 | 12/12, 987-3,176-5,152 | yes
+  kenku | 1,518 | 2,098 | 12/12, 795-3,231-5,340 | yes
+  tabaxi | 2,698 | 2,899 | 12/12, 234-3,117-5,152 | yes
+  firbolg | 1,413 | 1,363 | 12/12, 855-2,952-5,738 | yes
+  bugbear | 2,337 | 2,511 | 12/12, 555-3,123-4,970 | yes
+  elf | 987 | 1,518 | 12/12, 987-3,534-5,536 | yes
+  half_orc | 1,465 | 2,024 | 11/12, 2,024-2,899-4,400 | NO
+  dragonborn | 1,413 | 1,518 | 12/12, 767-3,060-4,795 | yes
+  in the spread: 11/12
+
+all 9 watched techs x 12 peoples, live - after-run (same seed), yr (+ = live earlier): median -163, mean -186, |move| mean 212; known in both 108, in one only 0
+live polities now: {'chiefdom': 455, 'state': 18, 'empire': 67, 'dragon realm': 0} states 85 largest 0.19 human | first state kyr 2.6 | tech_s 25.2
