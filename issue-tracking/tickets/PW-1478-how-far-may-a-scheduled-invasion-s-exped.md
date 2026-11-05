@@ -1,5 +1,6 @@
 ---
-title: "How far may a scheduled invasion's expedition go? One more state's reach crosses ~150 km, too short for most rows"
+id: PW-1478
+title: How far may a scheduled invasion's expedition go? One more state's reach crosses ~150 km, too short for most rows
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: lane198
 blocked_by: []
 relates: [PW-1450, PW-1433]
 refs: ["planet/lineages/polities.py::_expedition", "planet/lineages/invasions.py::expedition", "planet/lineages/invasions.py::mobility", docs/review/culture/polities/invasions_reach.md, docs/review/culture/polities/invasions_reach_score.py, "run a2b637", "run 3c1caf"]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options:
   finds the victims unless an ocean is in the way.
 Lean: B. It keeps distance meaningful, and mobile peoples still stand out. The read-out already says how far the nearest victim
 polity was, so a re-score is one constant and one run of invasions_reach_score.py.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-expedition-range.md (found by lane198).

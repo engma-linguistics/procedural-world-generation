@@ -1,5 +1,6 @@
 ---
-title: "With live polities on, invasions you schedule still need a shared border (no war band, no expedition)"
+id: PW-1479
+title: With live polities on, invasions you schedule still need a shared border (no war band, no expedition)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane198
 blocked_by: []
 relates: [PW-1450, PW-1434, PW-1433]
 refs: ["planet/lineages/history/polity_live.py::LivePolities", "planet/lineages/polities.py::_war_bands", "planet/lineages/polities.py::_expedition", "planet/lineages/polities.py::war_v0", planet/lineages/invasions.py, docs/review/culture/polities/invasions_reach.md, docs/review/culture/polities/round7.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## Description
@@ -30,3 +33,6 @@ What to do (about ten lines in `LivePolities` step 2-4):
   `edz`, `sea`, `ice`: pass a small dict of the live arrays as F), and turn each `exped` log entry's `w`/`l` into record ids
   after the war call, as derive does;
 - [ ] a test like tests/test_invasions.py's gap world, through LivePolities.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-live-polities-invasions-reach.md (found by lane198).
