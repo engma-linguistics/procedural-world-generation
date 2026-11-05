@@ -197,7 +197,7 @@ the founding arm "now", the switch POLITIES_LIVE on) was run on this branch (`ex
 
 `NUMBA_NUM_THREADS=4 uv run pytest -q -n 2 -m "not slow" tests/test_invasions.py tests/test_polities.py tests/test_lineages.py
 tests/test_techtree.py` on this branch with lane 201b's bound, before merging main: **207 passed**, 0 failed (127 s).
-After merging main (lanes 200 and 200b): see the status.
+After merging main (lanes 200 and 200b; the merge had no conflicts): **209 passed**, 0 failed (417 s).
 
 ## Status
 
