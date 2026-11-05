@@ -3704,6 +3704,88 @@ def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_toleran
     assert doc["steps"] and doc["polities"] and "inside the history" in doc["calendar"]
 
 
+def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch):
+    """PW-1481 / PW-1465 (lane 201, round10.md; Daniel D54): the history keeps each people's attitudes (attitudes.Attitudes, stepped
+    each century), and a conquered people's fate reads the winner's: harshness 1 - tolerance x (1 - old enmity). With no old quarrel a
+    tolerant winner keeps them and an intolerant one expels them; a more aggressive winner cuts harder."""
+    import types
+    from planet.lineages.history import polity_live as PL
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    for ago in (1.2, 1.1, 1.0):
+        R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    assert fk in R.att.x and kb in R.att.x and R.att_ago == 1.0
+    att = R.doc()["attitudes"]
+    assert str(fk) in att["cultures"] and att["cultures"][str(fk)]["people"] == "folk"
+    R.hostility[fk, kb] = 0.0  # (no old quarrel: only the winner's own temperament)
+    cells = np.flatnonzero(h.p[kb] > 0)
+    p0 = h.p[kb][cells].copy()
+    monkeypatch.setattr(PL, "FATE_MAX", 1.0)
+    out = {}
+    for ta in ((0.95, 0.3), (0.1, 0.3), (0.1, 0.6)):
+        h.p[kb][cells] = p0
+        R.att.x[fk] = np.array(ta)
+        R.k += 1
+        out[ta] = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"]
+    assert out[(0.95, 0.3)] == ["kept", 0]
+    assert out[(0.1, 0.3)][0] == "expelled" and out[(0.1, 0.6)][0] == "expelled"
+    assert 0 < out[(0.1, 0.3)][1] < out[(0.1, 0.6)][1]
+    R.hostility[fk, kb] = 0.5  # (an old quarrel: a very tolerant winner keeps them, a middling one thins as the old rule, an intolerant one expels)
+    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.5), "thinned"), ((0.1, 0.5), "expelled")):
+        h.p[kb][cells] = p0
+        R.att.x[fk] = np.array(ta)
+        R.k += 1
+        assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"][0] == want
+
+
+def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkeypatch):
+    """PW-1479 (lane 201, round10.md): with polities in the history on, a strong invasion row reaches victims across unruled land as
+    the read-out does (polities._expedition, the same code): only within the campaign budget (invasions.CAMPAIGN_KM, the one constant
+    both paths read; None: the state's own reach again), and the read-out says why not when it falls short."""
+    import types
+    from planet.lineages import invasions as IV, polities as PO
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    g = h.grid
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    env = dict(env, land=np.ones(g.n, bool), ice=np.zeros(g.n), elevation=np.zeros(g.n))  # (all flat land: the gap is open country)
+    h._env_now, h._land_now = env, env["land"]
+    c = np.asarray(g.centers, float)
+    sp = float(np.median(R.ekm)) / PO.R_EARTH_KM  # (one cell spacing, radians)
+    ang = lambda a: np.arccos(np.clip(c @ c[a], -1, 1))  # noqa: E731
+    a0 = int(land[0])
+    d0 = ang(a0)
+    b0 = int(np.argmin(np.abs(d0 - 14 * sp)))
+    h.p[:] = 0.0
+    h.p[fk][d0 < 6 * sp] = 0.9
+    h.p[kb][ang(b0) < 3 * sp] = 0.9
+    h.dens[kb] = 50.0
+    h._dmap = None
+    _sync_pm(h)
+    rows = IV.clean([{"id": "r", "who": {"people": "folk"}, "whom": {"people": "kob"}, "from_kyr": 1.0, "to_kyr": 0.6, "strength": "strong"}])[0]
+    p0, logs = h.p.copy(), {}
+    for km in (None, 1e5):
+        monkeypatch.setattr(IV, "CAMPAIGN_KM", km)
+        h.p[:] = p0
+        _sync_pm(h)
+        R.__init__(h)
+        R.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in ("chiefdoms", "proto_writing", "writing", "towns",
+                                                                                         "cities", "kingship", "law")} for l in h.lines},
+                                       step=lambda s: None, secs=0.0)
+        R.inv_in, R.inv_rows, R.inv_log = rows, IV.hook_rows(rows, R, 0.1), [IV.new_log()]
+        for ago in (1.2, 1.1, 1.0, 0.9, 0.8, 0.7):
+            R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+            _sync_pm(h)
+        logs[km] = R.inv_log[0]
+    assert logs[None]["took"] == [] and logs[None]["exped"] == [] and logs[None]["exped_fail"] > 0  # (one more reach: too short)
+    lg = logs[1e5]
+    assert lg["took"] and lg["exped"] and lg["exped"][0]["km"] > 0 and "winner_id" in lg["exped"][0]
+    doc = R.doc()
+    assert doc["invasions"][0]["log"]["took"] and doc["constants"]["CAMPAIGN_KM"] == 1e5
+
+
 def test_the_tech_tree_runs_inside_the_history_when_polities_do(faketz, monkeypatch):
     """PW-1466 (lane 192, round8.md): with polities in the history on, the tech tree runs step by step inside it (history.tech_live)
     and the run's meta.techtree is that calendar written out; the live polities' gates read it. Off, the tree is built after the run."""

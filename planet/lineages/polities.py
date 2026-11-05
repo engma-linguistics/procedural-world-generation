@@ -867,7 +867,7 @@ def _war_bands(R: _Run, seats: list, rows: list, ago: float, prev_cap: dict, ope
 
 def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic: set, ago: float, wide: set, off, idx):
     """D50 B and the mobile peoples (PW-1450): of the invaders' states `st`, the one whose expedition reaches a victim polity for the
-    least share of its budget (its own reach, _reach, x its people's mobility, invasions.mobility). Returns (the war_v0 hook's
+    least share of its budget (invasions.campaign_budget: its own reach, _reach, or CAMPAIGN_KM, x its people's mobility). Returns (the war_v0 hook's
     (winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried in foot-km, whether any was mobile)."""
     from . import invasions as IV
     best, top, mobile = None, 0.0, False
@@ -875,11 +875,12 @@ def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic
         s = ruling[p]
         b, lx, sx = _reach(R, s, ago, s["key"] in wide)
         mob = IV.mobility(R.lines[R.lidx[s["people"]]] if s["people"] in R.lidx else None)
-        top, mobile = max(top, b * mob), mobile or mob > 1.0
-        got = IV.expedition(np.flatnonzero(owner == p), b * mob, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"],
+        bud = IV.campaign_budget(b, mob)
+        top, mobile = max(top, bud), mobile or mob > 1.0
+        got = IV.expedition(np.flatnonzero(owner == p), bud, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"],
                             F["ice"], CLIMB_M)
-        if got is not None and (best is None or got[2] / (b * mob) < best[0]):
-            best = (got[2] / (b * mob), (p, got[0], got[1], got[2], got[3], mob))
+        if got is not None and (best is None or got[2] / bud < best[0]):
+            best = (got[2] / bud, (p, got[0], got[1], got[2], got[3], mob))
     if best is None:  # (how far the nearest victim polity was: the read-out's "why not", one unbounded search, only on a miss)
         need = min((g_[2] for g_ in (IV.expedition(np.flatnonzero(owner == p), np.inf, *_reach(R, ruling[p], ago, ruling[p]["key"] in wide)[1:],
                                                     IV.mobility(R.lines[R.lidx[ruling[p]["people"]]] if ruling[p]["people"] in R.lidx else None) > 1.0,

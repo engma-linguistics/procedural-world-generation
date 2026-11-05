@@ -7,8 +7,14 @@ hazard and war_v0), and then:
 - the brakes read the live polities through the seam (history.rule): a state pacifies the cells it rules (G), hostile peoples count
   as a frontier only across a polity's border or on unruled land (F), and land a foreign state rules bars a faction from splitting off
   (C);
-- a conquered people fares by the winner's tolerance, read from the tree's old enmities (StandIns.hostility): kept, thinned or
-  expelled from the land that changed hands (FATE_AT, FATE_CUT; judgements).
+- a conquered people fares by the winner's attitudes (PW-1481, PW-1465; Daniel D54: from Genghis Khan razing cities to Cyrus's
+  tolerance, in any era): the history keeps each people's tolerance and aggression (attitudes.Attitudes, stepped here each century
+  from the tree's temperament and the live polities' own wars, rule and contacts). A people on the land that changed hands is kept,
+  thinned or expelled by the winner's harshness to it: the tree's old enmity (StandIns.hostility) moved by the winner's tolerance,
+  + TOL_X x (0.5 - tolerance), and the winner's aggression sets how hard (FATE_AT, FATE_CUT, TOL_X, AGG_MID; judgements). A winner
+  of middling tolerance and aggression (0.5) fares exactly as the old placeholder (A);
+- invasions you schedule reach as in the read-out (PW-1479, PW-1450): a strong row seats a war band (polities._war_bands) and sends an
+  expedition across the gap (polities._expedition, invasions.campaign_budget), the same code as polities.derive.
 
 What the history lacks, and how this cut stands in (round7.md section 2):
 - towns: the settlement ledger is made after the run, so a seat is the history's own central place: the sedentary heads of a cell's
@@ -25,6 +31,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .. import attitudes as AT
+from .. import invasions as IV
 from .. import polities as PO
 from ..gridops import nbr_reduce
 from ..spread import EST
@@ -37,8 +45,10 @@ INVASIONS = None  # (invasions you schedule, as invasions.clean reads them, PW-1
 PACIFY = {"chiefdom": 1 / 3, "state": 1.0, "empire": 1.0, "dragon realm": 1 / 3}  # judgement: a chiefdom or a tribute-taking dragon keeps a third of a state's peace
 STATE_BAR = 1.0  # judgement (Carneiro 2012's social circumscription made tight): land a foreign state rules bars a faction from splitting off fully
 # ---- the loser's peoples (proposal-r2 3.3, "War is mostly a change of owner"; tolerance from the tree's enmities, judgement)
-FATE_AT = (0.25, 0.6)  # winner's hostility to a people on the taken land: under 0.25 kept, under 0.6 thinned, else expelled
-FATE_CUT = {"kept": 0.0, "thinned": 0.25, "expelled": 0.8}  # the share of its presence on the taken cells it loses (once, at the conquest)
+FATE_AT = (0.25, 0.6)  # the winner's harshness to a people on the taken land (_fates: hostility + TOL_X x (0.5 - tolerance)): under 0.25 kept, under 0.6 thinned, else expelled
+TOL_X = 2.0  # judgement (PW-1481): tolerance 0..1 spans the whole harshness scale: at 0.5 the old enmity alone, at 0 + 1 (strangers expelled), at 1 - 1 (even old enemies kept)
+FATE_CUT = {"kept": 0.0, "thinned": 0.25, "expelled": 0.8}  # the share of its presence on the taken cells it loses (once, at the conquest), for a winner of aggression AGG_MID
+AGG_MID = 0.5  # judgement (PW-1481): the cut scales with the winner's aggression / AGG_MID (attitudes: 0.3 a plain people, 0.5 a martial one), never past all of it
 FATE_MAX = 0.1  # guard: no people loses more than 10% of its heads to conquests in one step (the rest of the cut is waived)
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
@@ -69,13 +79,17 @@ class LivePolities(StandIns):
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if l.megafauna and "dragon" in l.id and l.trait("flies", 0.0)]
-        from .. import invasions as IV
         meta = [{"id": l.id, "group_of": l.group_of, "parents": list(l.parents or [])} for l in L]
         self.anc = IV.ancestors(meta)
         rows, self.inv_notes = IV.clean(INVASIONS, strict=False) if INVASIONS else ([], [])
         self.inv_in = rows
         self.inv_rows = IV.hook_rows(rows, self, 0.1)
         self.inv_log = [IV.new_log() for _ in rows]
+        # (what polities._expedition and attitudes.temperament read of each line, as the run's meta lineages hold it)
+        self.lines = [{"id": l.id, "traits": list(l.traits or []), "way": l.way, "demography": l.demos()} for l in L]
+        self.lidx = {l.id: i for i, l in enumerate(L)}
+        self.att = AT.Attitudes({m["id"]: m for m in self.lines}, h.seed)  # (PW-1481: each people's tolerance and aggression, keyed by line)
+        self.att_ago = None
         from . import megafauna as MG
         self.MG = MG
         # the polity state between steps (as polities.derive keeps it)
@@ -114,8 +128,24 @@ class LivePolities(StandIns):
         t0 = time.time()
         try:
             self._step(step)
+            self._attitudes(step)
         finally:
             self.secs += time.time() - t0
+
+    def _attitudes(self, step):
+        """Steps each people's attitudes one century (attitudes.Attitudes.step): the memories _step set (conquest, rule, subjection),
+        and its contacts now (the other peoples on or beside its land). No faiths in the history: no missionary term."""
+        h = self.h
+        ago = float(step.ago)
+        dt = 0.0 if self.att_ago is None else max(self.att_ago - ago, 0.0)
+        self.att_ago = ago
+        ks = [int(k) for k in self.ppl if h.active.get(h.lines[k].id) and (h.p[k] >= EST).any()]
+        if not ks:
+            return
+        M = np.stack([h.p[k] >= EST for k in ks]).astype(np.float32)
+        D = np.stack([h._dilate(m > 0, 1) for m in M]).astype(np.float32)
+        n = ((D @ M.T) > 0).sum(1) - 1  # (the other peoples on or beside its land)
+        self.att.step(ago, dt, {k: h.lines[k].id for k in ks}, {k: int(n[i]) for i, k in enumerate(ks)}, set())
 
     def _heads(self):
         """(sedentary heads per cell, all peoples; lead people per cell, -1 none; peopled cells)."""
@@ -258,6 +288,8 @@ class LivePolities(StandIns):
                 self.founded.setdefault(key, ago)
                 seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
                               "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
+        if IV.WAR_BAND and self.inv_rows:  # (PW-1479, D50 C: a strong row whose invaders rule only chiefdoms seats a war band, as derive)
+            PO._war_bands(self, seats, self.inv_rows, ago, self.prev_cap, self.open_, self.anc)
         by_key = {s["key"]: s for s in seats}
         for pk in [pk for pk, r in self.lord.items() if r not in by_key or pk not in by_key]:
             self.lord.pop(pk, None)
@@ -308,13 +340,24 @@ class LivePolities(StandIns):
                "eligible": lambda p: ruling[p] is not None and ruling[p]["tier"] != "dragon realm" and ruling[p]["key"] in self.prev_cap and ruling[p]["key"] in self.open_,
                "invasions": self.inv_rows, "inv_log": self.inv_log, "ancestors": lambda p: self.anc.get(p, (p,)),
                "borders": lambda o=owner: PO.borders(o, g)}
+        if IV.EXPEDITION and self.inv_rows:  # (PW-1479, D50 B: the expedition across the gap, the read-out's own hook)
+            F = {"edz": edz, "sea": sea, "ice": ice}
+            ctx["expedition"] = lambda o, st, vic, ruling=ruling, F=F: PO._expedition(self, F, ruling, o, st, vic, ago, wide, self.off, self.idx)
         before = owner.copy()
         owner = PO.war_v0(owner, ctx)
+        for lg in self.inv_log:  # (an expedition's two sides as record ids, as derive)
+            for e in lg["exped"]:
+                if "w" in e:
+                    e["winner_id"], e["loser_id"] = self.open_[ruling[e.pop("w")]["key"]], self.open_[ruling[e.pop("l")]["key"]]
+        for k in heads:  # (PW-1481: every people on the map has attitudes before a fate reads them)
+            self.att.ensure(k, L[k].id)
         taken_log = []
         for w, l_, how in ctx.get("taken", []):
             wk, lk = ruling[w]["key"], ruling[l_]["key"]
             cells = np.flatnonzero(before == l_)
             fates = self._fates(ruling[w], cells, heads)
+            if ruling[w]["line"] is not None:
+                self.att.won(int(ruling[w]["line"]))
             ri = ctx.get("taken_row", {}).get(l_)
             km2 = float(len(cells) * self.cell_km2)
             if ri is not None:
@@ -325,7 +368,8 @@ class LivePolities(StandIns):
                 lrec["fell_kyr"], lrec["fell_how"] = ago, ("invaded by " if how == "invasion" else "conquered by ") + ruling[w]["people"]
             if wrec is not None:
                 wrec["took"].append([round(ago, 3), ruling[l_]["people"], int(len(cells)), how, fates])
-            taken_log.append({"winner": ruling[w]["people"], "loser": ruling[l_]["people"], "cells": int(len(cells)), "how": how, "fates": fates})
+            taken_log.append({"winner": ruling[w]["people"], "loser": ruling[l_]["people"], "cells": int(len(cells)), "how": how, "fates": fates,
+                              "winner_att": [round(v, 3) for v in self.att.get(int(ruling[w]["line"]))] if ruling[w]["line"] is not None else None})
             for pk in [pk for pk, r in self.lord.items() if r == lk]:
                 self.lord[pk] = wk
             self.lord[lk] = wk
@@ -344,8 +388,13 @@ class LivePolities(StandIns):
             if not len(cells):
                 continue
             tier = s["tier"]
+            anc = self.anc.get(s["people"], {s["people"]})
+            if s["line"] is not None and tier != "dragon realm":  # (PW-1481: rule over many, and subjection, for the attitudes)
+                subj = [k for k in heads if not (L[k].id in anc or s["people"] in self.anc.get(L[k].id, ())) and heads[k][cells].any()]
+                self.att.ruled(int(s["line"]), len(subj))
+                for k in subj:
+                    self.att.subject(k)
             if tier == "state":
-                anc = self.anc.get(s["people"], {s["people"]})
                 own = sum(float(heads[k][cells].sum()) for k in heads if L[k].id in anc or s["people"] in self.anc.get(L[k].id, ()))
                 tot = sum(float(heads[k][cells].sum()) for k in heads)
                 if tot > 0 and (tot - own) >= SUBJECT_SHARE * tot:
@@ -359,6 +408,9 @@ class LivePolities(StandIns):
                 self.recs.append({"id": o, "key": s["key"], "people": s["people"], "cell": s["cell"], "founded_kyr": round(ago, 3), "tiers": [],
                                   "fell_kyr": None, "fell_how": None, "peak_mkm2": 0.0, "peak_kyr": None, "took": []})
             rec = self.recs[o]
+            if s.get("war_band") is not None:  # (PW-1479: the war band a row seated, on the record and in the row's log, as derive)
+                rec.setdefault("war_band", []).append(ago)
+                self.inv_log[s["war_band"]]["war_band"].append([ago, o])
             if not rec["tiers"] or rec["tiers"][-1][1] != tier:
                 rec["tiers"].append([round(ago, 3), tier])
             a = len(cells) * self.cell_km2 / 1e6
@@ -388,14 +440,18 @@ class LivePolities(StandIns):
             self.recs[o]["fell_kyr"], self.recs[o]["fell_how"] = round(ago, 3), how
 
     def _fates(self, win, cells, heads) -> dict:
-        """The peoples on the land war took fare by the winner's tolerance (its people's hostility to theirs): kept, thinned or expelled.
-        Cuts their presence there once (FATE_CUT), never more than FATE_MAX of a people's heads in one step. Returns {people: [fate, heads lost]}."""
+        """The peoples on the land war took fare by the winner's attitudes (PW-1481): its harshness to each, its people's old enmity to
+        theirs (hostility) + TOL_X x (0.5 - its tolerance), reads kept, thinned or expelled (FATE_AT); the cut (FATE_CUT) scales with its
+        aggression / AGG_MID. A tolerant winner keeps even an old enemy's people more often; an intolerant one thins or expels even a
+        people it had no quarrel with; an aggressive one cuts harder. Cuts their presence there once, never more than FATE_MAX of a
+        people's heads in one step. Returns {people: [fate, heads lost]}."""
         h = self.h
         wk = win["line"]
         if wk is None or not len(cells):
             return {}
         out = {}
         wanc = self.anc.get(win["people"], {win["people"]})
+        tol, agg = self.att.get(int(wk))
         for k, hk in heads.items():
             on = hk[cells]
             n = float(on.sum())
@@ -404,9 +460,9 @@ class LivePolities(StandIns):
             lid = h.lines[k].id
             if lid in wanc or win["people"] in self.anc.get(lid, ()):  # (the winner's own people and kin)
                 continue
-            z = float(self.hostility[wk, k])
+            z = float(self.hostility[wk, k]) + TOL_X * (0.5 - tol)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
-            cut = FATE_CUT[fate]
+            cut = min(1.0, FATE_CUT[fate] * agg / AGG_MID)
             if cut > 0:
                 tot = float(hk.sum())
                 done = self.__dict__.setdefault("_cut_now", {})
@@ -480,7 +536,9 @@ class LivePolities(StandIns):
         from .. import invasions as IV
         return {"format": "procgen-polities-live/1", "first_cut": True, "calendar": "the tech tree inside the history (PW-1466)",
                 "made_s": round(self.secs, 1), "tech_s": round(self.tech.secs, 1), "steps": self.steps, "polities": self.recs, "maps": self.maps,
+                "attitudes": self.att.doc() | {"keyed_by": "people (line index; the history has no cultures)"},
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
-                "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR,
+                "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X,
+                              "CAMPAIGN_KM": IV.CAMPAIGN_KM,
 }}
