@@ -1,5 +1,6 @@
 """Fates of the same conquests (ago, winner, loser) in two live-polities runs: a baseline and a branch; with a third arg, each non-kept
 fate with the winner's [tolerance, aggression]. argv: base_run branch_run [v]"""
+import json, sys
 from collections import Counter
 def rows(d):
     pl = json.load(open(f"{d}/polities_live.json"))
