@@ -1,8 +1,10 @@
 ---
+id: PW-1474
 title: earth_check and scorecard in a fresh lane worktree start re-downloading the Earth data
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: infra
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: lane 187b (worktree-agent-a176595bbea6d0de9)
 blocked_by: []
 relates: [PW-1458]
 refs: [tools/earth_data.py, tools/earth_check.py, tools/scorecard.py, docs/coordination.md]
+created: 2026-11-04
+updated: 2026-11-04
 ---
 
 ## In plain words
@@ -31,3 +35,6 @@ its Earth check.
 ## Acceptance
 - `uv run python tools/earth_check.py` in a new lane worktree runs from the cached data with no download, and nothing
   in the lane can write to or delete the main checkout's `data/earth`.
+
+## Updates
+- 2026-11-04: Created from inbox draft draft-worktree-earth-check-no-cache.md (found by lane 187b (worktree-agent-a176595bbea6d0de9)).

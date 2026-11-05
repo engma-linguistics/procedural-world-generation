@@ -2,7 +2,7 @@
 id: PW-1471
 title: "Humans alone (humans_only tree) never take up writing and rarely found chiefdoms: every urban step came by contact"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v4
 subsystem: culture
@@ -52,4 +52,5 @@ one. C is right in the long run but is a project.
 - [ ] the dnd showcase's writing dates move by less than the 12-seed spread (round 6)
 
 ## Updates
+- 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D55): fix it. Climbing the tech tree must happen no slower than a given rate, not only by catching up with neighbours; independent re-invention should happen but never be forced. Local groups should each be learners: all humans on all continents as one learner 'sounds very wrong'. So B (own-invention rates from Earth's independent origins) and C (regional learners, demes) both, C as the structural fix.
 - 2026-11-04: Created from inbox draft draft-humans-alone-never-write.md (found by lane-192).

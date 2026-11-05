@@ -2,7 +2,7 @@
 id: PW-1461
 title: "Tech tree: should writing cross a people's towns instead of its whole country?"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: later
 subsystem: culture
@@ -48,6 +48,7 @@ Options:
 needs no new numbers. C is a dial turn.
 
 ## Updates
+- 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D53): A (E, rulers take it up) or B (C, trading towns) keyed to the spreading culture: peoples more inclined to trade share it more and faster, if that's reasonable; otherwise A.
 - 2026-11-04: Lane 186 merged (switch off, identical): arms B/C/E/K measured (docs/review/culture/writing/round2.md). Medians, years to half: off 865, B 425, C 560, E 273, K 850; all inside Earth's 100-900. Lean E; it needs PW-1464 for new runs. Desk D53.
 - 2026-11-04: Daniel 11-04: B or C, wary of the halfway time; experiment lane 186 tries B, C, E (rulers take it up) and K (kin share faster).
 - 2026-11-04: Coordinator: desk D52. Lean B (writing crosses a people's towns, not its whole land) on Daniel's suspicion of a slow tail; it needs new peoples runs.
