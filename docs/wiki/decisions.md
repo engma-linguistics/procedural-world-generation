@@ -319,3 +319,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-05: scout 194 merged (PW-1446 height cap, pass 3 of 3): 36 fresh L6 draws vs main: 0 hard fails both, soft 32/32 (McNemar p 1.0), late dT sd 1.36 vs 1.78; top cell 8.2 -> 7.0 km median. scout5.md.
 - 2026-11-05: scout 202 (grazing after the grass fix): no change; herds 0.74x Coe's parks, inside scatter; soil factor scoped onto PW-836.
 - 2026-11-05: suite after scout 194 merge: 1054 passed; earth_check on main ran clean (EXIT 0).
+- 2026-11-05: scout 203 (PW-1161 warm finishes): closed as chaos on today's code (warm fails 2/36, median end +0.11 C, L6); levers if ever wanted: PW-1158+1163 together, PW-1156.

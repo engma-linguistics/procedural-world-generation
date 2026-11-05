@@ -2,7 +2,7 @@
 id: PW-1161
 title: Some worlds finish too warm (+3.5 to +5.3 C) now that the finish-window CO2 crash is fixed
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-865, PW-1091]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-16/pjudge.py]
 created: 2026-10-30
-updated: 2026-11-03
+updated: 2026-11-05
 ---
 
 ## Description
@@ -45,6 +45,7 @@ carbon-balance warmth with less ice to hide it.
 - [ ] A cause (or "chaos, accept") sent to the coordinator before any change
 
 ## Updates
+- 2026-11-05: Status -> done (chaos, accept). Scout 203 (docs/review/climate/warm_finishes/scout1.md): on today's code 36 fresh L6 draws: 0 hard, soft 32/36, warm-side fails 2/36, end T median +0.11 C; twins (same seed, tiny change) correlate -0.07. Reopen if a 36-draw judge shows warm fails >10% or median >+1.5 C. L7 not re-checked.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 6; gates no tag (re-check after D47)
 - 2026-10-30: Lane 80 split (docs/review/base-climate/finish-drift-l80/README.md; coordinator: climate done for v1,
   so moved to v2). The warmth is physical red variance of a sound loop. End T has median +0.1 C and sd 3.7 C over
