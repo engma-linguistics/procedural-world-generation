@@ -1,7 +1,7 @@
 """Paths at which two JSON files differ (after the run ids and code paths are swapped for placeholders). argv: a b"""
 import json, re, sys
 def load(p, rid):
-    s = open(p).read().replace(rid, "<ID>").replace("l196-offold", "<ID>").replace("l196-offnew", "<ID>")
+    s = re.sub(r"l\d+-off\w+", "<ID>", open(p).read().replace(rid, "<ID>"))  # (the runs' names: l196-offold, l201-offmain, ...)
     s = re.sub(r'/[^"\' ]*?/planet/', "<CODE>/planet/", s)
     return json.loads(s)
 a = load(sys.argv[1], sys.argv[1].split("/")[-2]); b = load(sys.argv[2], sys.argv[2].split("/")[-2])

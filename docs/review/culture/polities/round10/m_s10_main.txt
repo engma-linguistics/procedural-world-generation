@@ -1,0 +1,14 @@
+=== 70cf9f (l201-main-s10)
+live step s 3.2 tech s 14.5 constants - -
+  row orc_human      happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 0 victim 18 border 0
+  row hob_elf        happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 11 state 3 victim 11 border 0
+  row dwarf_hob      happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 0 victim 18 border 0
+  row leonin_human   happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 0 victim 18 border 0
+  row human_kenku    happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 13 state 1 victim 13 border 0
+  row elf_orc        happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 0 victim 18 border 0
+  conquests {'war': 40}
+  fates n/a (main)   {'kept': 25, 'thinned': 7} heads lost {'kept': 0, 'thinned': 24865}
+  states (ago: states, largest Mkm2 people, ruled Mkm2, collapsed this step) 3.0: 0, 0.0 None, 1.44; 2.0: 0, 0.0 None, 2.09; 1.0: 0, 0.0 None, 2.41; 0.5: 27, 0.14 hobgoblin, 8.31; 0.0: 125, 0.274 human, 18.57
+  shares % human 62.7, halfling 12.3, hobgoblin 5.2, elf 4.7, kenku 4.0, orc 2.7, leonin 2.4, tabaxi 1.7
+  first anyone (kyr ago) {'writing': 1.753, 'kingship': 3.229, 'law': None, 'cities': 3.47}
+  writing by people {'bugbear': 0.147, 'dragonborn': 0.281, 'fire_giant': 0.767, 'half_elf': 1.753, 'half_orc': 0.388, 'halfling': 0.597, 'hobgoblin': 0.714, 'human': 0.301, 'kenku': 0.118, 'leonin': 0.252, 'lizardfolk': 0.056, 'sea_elf': 0.597, 'tabaxi': 0.767, 'tortle': 0.189, 'triton': 0.665}
