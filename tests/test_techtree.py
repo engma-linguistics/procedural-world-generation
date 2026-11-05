@@ -485,3 +485,34 @@ def test_kin_pairs_are_recent_parents_daughters_and_sisters():
     k = TT.kin_pairs(ls, 15.0)
     assert {("p", "a"), ("a", "p"), ("a", "b"), ("g", "a")} <= k
     assert ("p", "old") not in k and ("a", "old") not in k
+
+
+# ---- the tree as a step function (lane 192, PW-1466) and the town arms after the ledger (PW-1464) ---------------------------------
+
+def test_the_calendar_run_in_pieces_is_the_tree_built_at_once():
+    """PW-1466: techtree.Calendar runs the same steps and keyed draws whether it is advanced once or a piece at a time (as the
+    history does), so fed the same inputs it makes the same calendar."""
+    lines = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(3e5)),
+             line("c", origin="split", at=20.0, parents=["a"], track=_pop(2e5, at=20.0))]
+    con = {"pairs": [{"a": "a", "b": "b", "first_contact_kyr": 40.0, "in_contact_now": True,
+                      "series": [[40.0, 800, 0.0], [0.0, 800, 0.0]]}]}
+    for s in (1, 2):
+        whole = TT.build(lines, con, None, seed=s, T=T)
+        c = TT.Calendar(lines, seed=s, T=T)
+        c.feed(lines, TT.links_of(con, c.kind), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        ran = sum(c.advance(t) for t in (59.0, 30.0, 12.0, 5.0, 1.0, 0.3))
+        ran += c.advance()
+        assert ran == TT.STEPS + 1
+        assert c.result() == whole and whole["known"]["c"]
+
+
+def test_town_arms_wait_for_the_ledger(monkeypatch):
+    """PW-1464: output.save builds the first tree without B and E (no town footprint yet, so no warning), and the ledger reads only
+    LEDGER_TECHS, which E's techs (writing, the alphabet, law) are not among: one round settles it."""
+    from planet.lineages import settlements as ST
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T, "defaults": {**T["defaults"], "contact_arms": "CE"}})
+    assert TT.arms_of() == "CE" and TT.town_arms() == "E" and TT.arms_without_towns() == "C"
+    assert not set(TT.ARM_ADMIN) & set(ST.LEDGER_TECHS)
+    k0 = {"a": {"towns": [6.0, "invented", None], "writing": [3.0, "contact", "b"]}}
+    k1 = {"a": {"towns": [6.0, "invented", None], "writing": [4.5, "contact", "b"]}}
+    assert ST.ledger_dates(k0) == ST.ledger_dates(k1) != ST.ledger_dates({"a": {"towns": [5.0, "invented", None]}})

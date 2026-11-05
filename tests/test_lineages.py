@@ -3649,8 +3649,10 @@ def _live_setup(faketz, monkeypatch):
     monkeypatch.setattr(HP, "POLITIES_LIVE", True)
     h, env, step = _brake_setup(faketz)
     assert type(h.rule) is PL.LivePolities
-    techs = ("chiefdoms", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
-    monkeypatch.setattr(PL, "CALENDAR", {l.id: {t: [100.0, "test", None] for t in techs} for l in h.lines})
+    import types  # (a lent calendar in place of the tech tree inside the history, history.tech_live)
+    techs = ("chiefdoms", "proto_writing", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
+    h.rule.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in techs} for l in h.lines}, step=lambda s: None,
+                                        secs=0.0)
     monkeypatch.setattr(PO, "WAR_P", 1.0)
     monkeypatch.setattr(PO, "STATE_KM", 1.0)  # (each seat rules its own cell: neighbours border, so war has somewhere to act)
     h._farm_share[:] = 1.0
@@ -3699,7 +3701,29 @@ def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_toleran
     ruled = R.owner >= 0
     assert np.all(G[~ruled] == 1.0) and np.all(G[ruled] < 1.0)
     doc = R.doc()
-    assert doc["steps"] and doc["polities"] and doc["calendar"] == "borrowed"
+    assert doc["steps"] and doc["polities"] and "inside the history" in doc["calendar"]
+
+
+def test_the_tech_tree_runs_inside_the_history_when_polities_do(faketz, monkeypatch):
+    """PW-1466 (lane 192, round8.md): with polities in the history on, the tech tree runs step by step inside it (history.tech_live)
+    and the run's meta.techtree is that calendar written out; the live polities' gates read it. Off, the tree is built after the run."""
+    from planet.lineages.history import params as HP, polity_live as PL
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    monkeypatch.setattr(HP, "POLITIES_LIVE", True)
+    h, res, pres = H.simulate(SP.parse(_raw()), ps, tries=1)
+    assert type(h.rule) is PL.LivePolities and h.rule.tech.cal is not None
+    cal = h.rule.tech.cal
+    assert cal.step == len(cal.grid)  # (the history's last step is the present: every step of the tree has run)
+    live = {lid: dict(kn) for lid, kn in cal.known.items()}
+    assert any(live.values())
+    out = O.save(h, res, pres, name="live tech")
+    tt = json.loads((out / "run.json").read_text())["meta"]["techtree"]
+    assert "inside_history" in tt and tt["known"] == json.loads(json.dumps(live))
+    assert h.rule.knows(next(l for l, kn in live.items() if kn), next(iter(next(kn for kn in live.values() if kn))), 0.0)
+    monkeypatch.setattr(HP, "POLITIES_LIVE", False)
+    h0, res0, pres0 = H.simulate(SP.parse(_raw()), ps, tries=1)
+    assert not hasattr(h0.rule, "tech")
+    assert "inside_history" not in json.loads((O.save(h0, res0, pres0, name="after-run tech") / "run.json").read_text())["meta"]["techtree"]
 
 
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
