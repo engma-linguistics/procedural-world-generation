@@ -2,7 +2,7 @@
 id: PW-1475
 title: Write-a-faith pane is squeezed to the far right and cut off (Chrome); owner had to scroll sideways to use it
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -21,3 +21,4 @@ In plain words: Daniel 11-04, first use of the Religion tab's 'write a faith' fo
 
 ## Updates
 - 2026-11-04: Created.
+- 2026-11-04: Status todo -> done. Lane 197 (merge 8c2c06cd).
