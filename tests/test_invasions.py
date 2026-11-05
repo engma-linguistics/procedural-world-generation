@@ -139,6 +139,98 @@ def test_readout_says_what_happened_or_why_and_never_crashes_on_odd_rows():
     assert "only chiefdoms" in out["nostate"]["why"] and out["nostate"]["states"]["centuries"] == 0
 
 
+def _gap_world():
+    """Invaders' state 0 on cell 0; the victims' polity 1 two rings out (ring 1 unruled, the gap); a third people's polity 2 on all
+    of ring 1 but one cell in the second variant."""
+    g = shared_grid(4)
+    off, idx = np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64)
+    ring1 = idx[off[0]:off[1]]
+    ring2 = np.setdiff1d(np.concatenate([idx[off[c]:off[c + 1]] for c in ring1]), np.concatenate([ring1, [0]]))
+    owner = np.full(g.n, -1, np.int64)
+    owner[0], owner[ring2] = 0, 1
+    seats = [{"key": f"s{i}", "tier": "state", "people": p, "uid": f"u{i}"} for i, p in enumerate(("antelope_steppe", "human", "orc"))]
+    c = np.asarray(g.centers, float)
+    ekm = np.linalg.norm(c[idx] - c[np.asarray(g.nbr_src)], axis=1) * 6371.0
+    return g, owner, seats, ring1, (off, idx, ekm)
+
+
+def _hook(G, budget, mob):
+    off, idx, ekm = G
+    z = np.zeros(len(off) - 1, bool)
+
+    def exp(o, st, vic):
+        got = IV.expedition(np.flatnonzero(o == st[0]), budget * mob, 1.0, -1.0, mob > 1.0, o, st[0], vic, off, idx, ekm, np.zeros(len(idx)), z, z, 0.0)
+        return ((st[0], got[0], got[1], got[2], got[3], mob) if got else None), budget * mob, mob > 1.0
+    return exp
+
+
+def test_a_strong_row_reaches_across_an_unruled_gap_and_a_light_one_does_not():
+    g, owner, seats, ring1, G = _gap_world()
+    ctx = _ctx(g, owner, seats, (1.0, 1.0, 1.0), [ROW])
+    PO.war_v0(owner.copy(), ctx)  # (no expedition hook: v0, a shared border only)
+    assert ctx["taken"] == [] and ctx["inv_log"][0]["border"] == 0
+    ctx = _ctx(g, owner, seats, (1.0, 1.0, 1.0), [ROW]) | {"expedition": _hook(G, 2000.0, 1.0)}
+    out = PO.war_v0(owner.copy(), ctx)
+    lg = ctx["inv_log"][0]
+    assert ctx["taken"] == [(0, 1, "invasion")] and (out[owner == 1] == 0).all() and len(lg["exped"]) == 1
+    e = lg["exped"][0]
+    assert e["corridor_cells"] == 1 and (out == 0).sum() == 2 + (owner == 1).sum() and 0 < e["km"] < 2000
+    ctx = _ctx(g, owner, seats, (1.0, 1.0, 1.0), [{**ROW, "strength": "light"}]) | {"expedition": _hook(G, 2000.0, 1.0)}
+    PO.war_v0(owner.copy(), ctx)
+    assert ctx["taken"] == [] and ctx["inv_log"][0]["exped"] == []
+    ctx = _ctx(g, owner, seats, (1.0, 1.0, 1.0), [ROW]) | {"expedition": _hook(G, 100.0, 1.0)}  # (too short a reach: why not, and how far)
+    PO.war_v0(owner.copy(), ctx)
+    assert ctx["taken"] == [] and ctx["inv_log"][0]["exped_fail"] == 1 and ctx["inv_log"][0]["exped_km"] == 100.0
+    o = IV.readout(IV.clean([ROW])[0], ctx["inv_log"] and [{**ctx["inv_log"][0], "state": 1, "victim": 1}], [], [1.0], _R())[0]
+    assert "none reached one on an expedition" in o["why"] and "100 km" in o["why"]
+
+
+def test_only_a_mobile_people_rides_through_a_third_polity_and_plain_war_never_uses_the_corridor():
+    g, owner, seats, ring1, G = _gap_world()
+    owner[ring1] = 2  # (the orcs hold the whole gap: no unruled way through)
+    for mob, want in ((1.0, []), (2.0, [(0, 1, "invasion")])):
+        ctx = _ctx(g, owner, seats, (1.0, 1.0, 0.1), [ROW]) | {"expedition": _hook(G, 2000.0, mob)}
+        PO.war_v0(owner.copy(), ctx)
+        assert [t for t in ctx["taken"] if t[2] == "invasion"] == want
+        assert ctx["inv_log"][0]["exped_mobile"] == (mob > 1.0 and not want)
+    # (the orcs border both and are far weaker than either: plain war is the same with or without the hook)
+    plain = []
+    for hook in (None, _hook(G, 2000.0, 2.0)):
+        ctx = _ctx(g, owner, seats, (5.0, 5.0, 0.1), []) | ({"expedition": hook} if hook else {})
+        PO.war_v0(owner.copy(), ctx)
+        plain.append(sorted(ctx["taken"]))
+    assert plain[0] == plain[1]
+
+
+def test_mobility_reads_the_models_own_numbers():
+    assert IV.mobility(None) == 1.0 and IV.mobility({"traits": ["agricultural"], "way": "farmer"}) == 1.0
+    assert IV.mobility({"traits": ["nomadic", "hardy"], "way": "farmer"}) == 2.0  # (spec.TRAITS nomadic speed x2)
+    assert IV.mobility({"traits": [], "way": "pastoral_nomad"}) == 2.0 and IV.mobility({"way": "transhumant"}) == 1.6
+
+
+def test_a_war_band_seats_a_state_only_for_a_strong_row_with_chiefdoms_that_stood_last_century():
+    R = SimpleNamespace(knows=lambda p, t, a: False)
+    anc = IV.ancestors(LINES)
+    g = shared_grid(4)
+
+    def seats_():
+        return [{"key": "s0", "tier": "chiefdom", "people": "antelope_steppe", "pop": 10.0, "cell": 0, "cls": 3},
+                {"key": "s1", "tier": "chiefdom", "people": "antelope_steppe", "pop": 50.0, "cell": 1, "cls": 3},
+                {"key": "s2", "tier": "state", "people": "human", "pop": 90.0, "cell": 2, "cls": 2}]
+    rows = IV.hook_rows(IV.clean([ROW])[0], SimpleNamespace(g=g), 0.1)
+    prev = {"s0": "chiefdom", "s1": "chiefdom", "s2": "state"}
+    s = seats_()
+    PO._war_bands(R, s, rows, 1.0, prev, prev, anc)
+    assert [x["tier"] for x in s] == ["chiefdom", "state", "state"] and s[1]["war_band"] == 0 and s[1]["cls"] == 2
+    for rws, pc, ago in ((IV.hook_rows(IV.clean([{**ROW, "strength": "light"}])[0], SimpleNamespace(g=g), 0.1), prev, 1.0),
+                         (rows, prev, 2.0), (rows, {"s0": "chiefdom", "s2": "state"}, 1.0)):
+        s = seats_()
+        PO._war_bands(R, s, rws, ago, pc, pc, anc)
+        assert s[1]["tier"] == "chiefdom" or pc is not prev  # (light, out of its window: none)
+        if pc is not prev:  # (the biggest town is new this century: the next one that stood is seated)
+            assert s[0]["tier"] == "state" and s[1]["tier"] == "chiefdom"
+
+
 @pytest.fixture
 def scratch(tmp_path):
     S.set_root(tmp_path)
