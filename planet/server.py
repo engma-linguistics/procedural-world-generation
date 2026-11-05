@@ -254,8 +254,8 @@ GODS_DIR = ".godscache"
 
 def _authored_key(d: Path, part: str = "gods") -> str:
     """A run's authored.json as a short content hash ('' when it has nothing for that part): part "gods" (the gods mode and faiths: it
-    keys every cache of the gods and taboos) or "invasions" (the invasions you schedule: it keys the polities doc, PW-1433), so an
-    edited invasion never remakes the gods, nor an edited faith the polities."""
+    keys every cache of the gods and taboos) or "invasions" (the invasions you schedule: it keys the polities doc, PW-1433, and the
+    gods, whose rulers push their faith, PW-1477), so an edited faith never remakes the polities."""
     import hashlib
     from .lineages import gods as GD
     if not (d / GD.AUTHORED_FILE).exists():
@@ -304,14 +304,16 @@ def gods_doc(d: Path, mode: str | None = None) -> dict:
     if not (d / "cultures.json").exists():
         raise SystemExit("this run has no cultures (it is older than PW-670): run the peoples again")
     rk = (d.name, (d / "run.json").stat().st_mtime)
-    key = (*rk, mode, _authored_key(d))
+    key = (*rk, mode, _authored_key(d), _authored_key(d, "invasions"))  # (the invasions too: rulers push their faith, PW-1477)
     with _gods_lock:
         if key not in _gods_cache:
             def make():
                 if rk not in _inputs_cache:
                     _inputs_cache.clear()
                     _inputs_cache[rk] = GD.inputs(d)
-                return GD.replay(_inputs_cache[rk], mode, A["faiths"])
+                inp = _inputs_cache[rk]
+                rule = GD.rule_table(polities_doc(d), inp["C"], inp["frames"]) if (d / "settlements.json").exists() else None
+                return GD.replay(inp, mode, A["faiths"], rule)
             _gods_cache.clear()
             _gods_cache[key] = disk_cached(f"gods-{mode}", d, key, make)
         return _gods_cache[key]
@@ -449,7 +451,10 @@ def polities_doc(d: Path) -> dict:
     (~30 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
     from .lineages import polities as PO
     from .lineages import gods as GD
-    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, _authored_key(d, "invasions"))  # (an edited invasion remakes it, PW-1433)
+    from .lineages import invasions as IV
+    inv = _authored_key(d, "invasions")
+    key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, inv) + ((IV.VERSION,) if inv else ())  # (an edited invasion remakes
+    # it, PW-1433; so does a change in what a row does, IV.VERSION, PW-1450, and only for a run with rows)
     with _polities_lock:
         if key not in _polities_cache:
             _polities_cache.clear()

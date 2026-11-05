@@ -14,9 +14,9 @@ What the history lacks, and how this cut stands in (round7.md section 2):
 - towns: the settlement ledger is made after the run, so a seat is the history's own central place: the sedentary heads of a cell's
   hinterland (farmers: heads x the people's farm share) x the ledger's SHARE, at a cell that is the best of its ring, as
   settlements.py sizes its towns and cities (no site factor);
-- the tech calendar: the tech tree is made after the run, so the gates (chiefdoms, writing, kingship, law, the military edges, boats)
-  come from CALENDAR when a harness lends one (another run's meta.techtree.known: a test of the rules, not a product), else from the
-  era's tech level (megafauna.tech_level) for a farming people (PROXY_LEV: a plainly labelled judgement);
+- the tech calendar: the tech tree runs inside the history (history.tech_live, PW-1466, round8.md): each step it runs down to the
+  history's time first, and the gates (chiefdoms, proto-writing or writing, kingship, law, the military edges, boats, a dragon's hoards)
+  read what each people knew by then. output.save writes the same calendar out as meta.techtree;
 - cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads.
 The after-run read-out (polities.derive) is unchanged and still reads the ledger; this module writes polities_live.json beside it.
 """
@@ -31,15 +31,8 @@ from ..spread import EST
 from . import params as PM
 from .rule import StandIns
 
-CALENDAR = None  # (a harness's borrowed calendar: {people: {tech: [kyr ago, how, from]}}, another run's meta.techtree.known; None: PROXY_LEV)
 INVASIONS = None  # (invasions you schedule, as invasions.clean reads them, PW-1433: they now act inside the history)
 
-# ---- the gates without a tech tree (judgement): the era's tech level (megafauna.tech_level, 0..1) at which a people knows each, for
-# the social techs only a farming people (farm share PROXY_FARM or more, past its forager era); a dragon people knows hoards
-PROXY_LEV = {"chiefdoms": 0.05, "writing": 0.1, "towns": 0.0, "cities": 0.1, "kingship": 0.15, "law": 0.4, "bronze": 0.1, "iron": 0.4,
-             "riding": 0.3, "standing_army": 0.75, "roads": 0.55, "bureaucracy": 0.55, "sails": 0.15, "canoes": 0.0, "hoards": 0.0}
-PROXY_SOCIAL = ("chiefdoms", "writing", "towns", "cities", "kingship", "law", "standing_army", "roads", "bureaucracy")
-PROXY_FARM = 0.3
 # ---- pacification by tier (G = 1 / (1 + STATE_Q x tech level x PACIFY[tier]) on the cells a polity rules, 1 on unruled land)
 PACIFY = {"chiefdom": 1 / 3, "state": 1.0, "empire": 1.0, "dragon realm": 1 / 3}  # judgement: a chiefdom or a tribute-taking dragon keeps a third of a state's peace
 STATE_BAR = 1.0  # judgement (Carneiro 2012's social circumscription made tight): land a foreign state rules bars a faction from splitting off fully
@@ -101,26 +94,20 @@ class LivePolities(StandIns):
         self.k = 0
         self.secs = 0.0
         self.run_key = f"try{h.seed}"
+        from .tech_live import LiveTech
+        self.tech = LiveTech(h)  # (the tech tree inside the history, PW-1466: output.save writes it out)
 
     # ------------------------------------------------------------ the gates
     def knows(self, people: str, tech: str, ago: float) -> bool:
-        if CALENDAR is not None:
-            x = (CALENDAR.get(people) or {}).get(tech)
-            return bool(x) and float(x[0]) >= ago - 1e-9
-        k = self.h.idx.get(people)
-        if k is None:
-            return False
-        if k in self.dragons:
-            return tech == "hoards"
-        lev = self.MG.tech_level(self.h.tree.era, ago)
-        if lev < PROXY_LEV.get(tech, 2.0):
-            return False
-        if tech in PROXY_SOCIAL:
-            return float(self.h._farm_share[k]) >= PROXY_FARM and self.h._era[k] != "forager"
-        return True
+        """Whether a people knew a tech by then: the tech tree inside the history (history.tech_live), as polities.Readout.knows."""
+        x = (self.tech.known.get(people) or {}).get(tech)
+        return bool(x) and float(x[0]) >= ago - 1e-9
 
     # ------------------------------------------------------------ one polity step
     def begin_step(self, step):
+        if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:  # (D52's town arms B, E: the live seats' towns, PW-1472)
+            self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago)))
+        self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
         if step.epoch != "recent":
             return
         import time
@@ -152,6 +139,40 @@ class LivePolities(StandIns):
             best[m] = hk[m]
             lead[m] = k
         return sed, lead, heads
+
+    def _places(self, sed):
+        """(the size of each cell's central place, town or city; the city size alone): settlements' SHARE on the hinterland's sedentary
+        heads (one ring for a town, two for a city) at a cell that is the best of its ring, else 0."""
+        from ..settlements import CONST
+        g = self.g
+        tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
+        H1 = (sed + nbr_reduce(g, np.add, sed[self.idx])) * tie
+        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=g.n) * tie
+        mx1 = np.maximum(H1, nbr_reduce(g, np.maximum, H1[self.idx]))
+        mx2 = np.maximum(H2, nbr_reduce(g, np.maximum, H2[self.idx]))
+        mx2 = np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
+        town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
+        city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
+        return np.maximum(town, city), city
+
+    def town_cells(self, ago: float) -> dict:
+        """Each people's town cells now (PW-1472: the town footprint D52's arms B and E read, techtree.Calendar.towns): the cells whose
+        central place (_places) is of town size for the stage its lead people knows (settlements' TOWN_MIN by stage, as the ledger
+        sizes a town), where that people knows towns. {people: cells}."""
+        from ..settlements import CONST
+        L, h = self.h.lines, self.h
+        sed, lead, _ = self._heads()
+        size = self._places(sed)[0]
+        land = np.asarray(h._env_now["land"], bool)
+        tm = CONST["TOWN_MIN"]
+        out: dict = {}
+        for k in np.unique(lead[(lead >= 0) & land & (size >= min(tm))]).tolist():
+            lid = L[k].id
+            if not self.knows(lid, "towns", ago):
+                continue
+            stage = 4 if self.knows(lid, "roads", ago) and self.knows(lid, "cities", ago) else 3 if self.knows(lid, "cities", ago) else 2
+            out[lid] = int(((lead == k) & land & (size >= tm[stage])).sum())
+        return out
 
     def _step(self, step):
         h, g = self.h, self.g
@@ -189,23 +210,15 @@ class LivePolities(StandIns):
             n_fell += 1
         # 1. town seats: the history's central places (settlements' SHARE on the hinterland's sedentary heads, the best of its ring)
         from ..settlements import CONST
-        tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
-        H1 = (sed + nbr_reduce(g, np.add, sed[self.idx])) * tie
-        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=g.n) * tie
-        mx1 = np.maximum(H1, nbr_reduce(g, np.maximum, H1[self.idx]))
-        mx2 = np.maximum(H2, nbr_reduce(g, np.maximum, H2[self.idx]))
-        mx2 = np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
-        town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
-        city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
+        size, city = self._places(sed)
         town_min, city_min = float(CONST["TOWN_MIN"][-1]), float(CONST["CITY_MIN"])
-        size = np.maximum(town, city)
         inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
         thr = np.full(g.n, town_min)
         thr[inc_cells] *= PO.HOLD
         cand = np.flatnonzero(peopled & land & (size >= thr))
-        wcell = np.zeros(g.n, bool)  # (cells where a people that knows writing lives, and their neighbours: the writing gate's lenience)
+        wcell = np.zeros(g.n, bool)  # (cells where a people that knows proto-writing or writing lives, and their neighbours: D49's lenience)
         for k in heads:
-            if self.knows(L[k].id, "writing", ago):
+            if any(self.knows(L[k].id, t, ago) for t in PO.WRITING_TECHS):
                 wcell |= h.p[k] >= EST
         wcell = wcell | (nbr_reduce(g, np.maximum, wcell[self.idx].astype(np.int8)) > 0)
         seats = []
@@ -218,7 +231,8 @@ class LivePolities(StandIns):
             if size[c] < town_min * (PO.HOLD if key in self.prev_cap else 1.0) or not self.knows(ppl, "towns", ago):
                 continue
             tier = "chiefdom"
-            if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.cool.get(key, -1) < k_ and self.knows(ppl, "cities", ago):
+            if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.knows(ppl, PO.STATE_WRITING, ago) \
+                    and self.cool.get(key, -1) < k_ and self.knows(ppl, "cities", ago):  # (D49: a state needs its own people's writing)
                 need = city_min * (1 - PO.HEMMED_X * float(self.hem[k])) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
                 if city[c] >= need:
                     tier = "state"
@@ -464,9 +478,9 @@ class LivePolities(StandIns):
     # ------------------------------------------------------------ the record
     def doc(self) -> dict:
         from .. import invasions as IV
-        return {"format": "procgen-polities-live/1", "first_cut": True, "calendar": "borrowed" if CALENDAR is not None else "era proxy",
-                "made_s": round(self.secs, 1), "steps": self.steps, "polities": self.recs, "maps": self.maps,
+        return {"format": "procgen-polities-live/1", "first_cut": True, "calendar": "the tech tree inside the history (PW-1466)",
+                "made_s": round(self.secs, 1), "tech_s": round(self.tech.secs, 1), "steps": self.steps, "polities": self.recs, "maps": self.maps,
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
                 "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR,
-                              "PROXY_LEV": PROXY_LEV, "PROXY_FARM": PROXY_FARM}}
+}}

@@ -9,20 +9,92 @@ twice the usual, strong: four times, which is certain at war v0's 1 in 4, and a 
 
 A row: {"id", "who": {"people": id} | {"culture": uid}, "whom": the same or None (anyone they border), "from_kyr", "to_kyr" (the
 window, kyr ago; one year is the century step around it), "year_text" (as typed, NumFmt.parseDate), "place": [lat, lon] or None (the
-invaders' land must reach within FROM_KM of it), "strength": "light" | "strong"}. A people names its groups and daughter lines too
+invaders' land must reach within FROM_KM of it), "strength": "light" | "strong"}. A strong row also reaches (PW-1450, owner D50: REACH_RULE): a war band if the invaders
+rule only chiefdoms, an expedition across the gap to the victims if no state of theirs borders them, further for mobile peoples
+(mobility()). A people names its groups and daughter lines too
 (the antelope-kin row covers the antelope-kin of the steppe); a culture is its cultures.json uid (PW-1283).
 """
 
 from __future__ import annotations
 
+import heapq
 import math
 
 import numpy as np
 
+VERSION = 2  # (bump when what a row does changes: the server's cached polities docs with rows are remade; polities.VERSION keys the rest)
 MAX_ROWS = 40  # (a sane cap per run)
 STRENGTHS = ("light", "strong")
 FROM_KM = 1000.0  # judgement: "from where" holds when the invading state has land within 1,000 km of the place picked (a state's reach is
 # ~150-300 km from its capital, an empire's a few times that: 1,000 km is "from that part of the continent", not "from that town")
+
+
+# ---- reach (PW-1450, owner D50: B, C and the mobile peoples). Only a strong row reaches; a light one keeps v0's shared border.
+WAR_BAND = True  # (C) a strong row whose invaders rule only chiefdoms seats a state at their largest town that stood last century
+EXPEDITION = True  # (B) a strong row whose invaders' states border no victim polity sends the nearest one across the gap
+FOREIGN_X = 2.0  # judgement: a km through a third people's polity costs a mobile people twice an open km (riding round its towns);
+# a settled people's expedition crosses only unruled land (and sea, with boats), as D50's B reads
+
+
+def mobility(line: dict | None) -> float:
+    """How far a people's expedition reaches, as a multiple of its state's own reach: the model's own mobility numbers, nothing new.
+    The best of its traits' speed in the spread (spec.TRAITS: nomadic x2, the history's own pace for them) and 1 + its way's
+    mobility (spec.WAY_MOBILE: pastoral nomads 1, transhumants 0.6, agro-pastoralists 0.3, owner on PW-936). A settled people: 1.
+    Riding is not here: _reach already makes a ridden km cost two thirds (RIDE_X), so a mounted horde has both."""
+    from .spec import TRAITS, WAY_MOBILE
+    if not line:
+        return 1.0
+    sp = [float((TRAITS.get(t) or {}).get("speed", 1.0)) for t in line.get("traits") or []]
+    return max([1.0, 1.0 + float(WAY_MOBILE.get(line.get("way") or "", 0.0))] + sp)
+
+
+def expedition(seeds, budget, land_x, sea_x, mobile, owner, me, targets, off, idx, ekm, edz, sea, blocked, climb_m):
+    """The nearest polity in `targets` an expedition reaches from the cells `seeds` (a state's land) within `budget` foot-km: a
+    Dijkstra like polities._claim's (land km x land_x x (1 + climb / climb_m), sea km x sea_x, no sea when sea_x < 0, never over
+    `blocked` (ice)), over unruled cells, and when `mobile` also through other polities' land at FOREIGN_X. Returns (target polity,
+    the corridor's unruled cells, its foot-km, its km) or None."""
+    dist: dict = {}
+    km: dict = {}
+    prev: dict = {}
+    h = []
+    for c in seeds:
+        c = int(c)
+        dist[c], km[c] = 0.0, 0.0
+        h.append((0.0, c))
+    heapq.heapify(h)
+    while h:
+        d, a = heapq.heappop(h)
+        if d > dist.get(a, np.inf):
+            continue
+        oa = owner[a]
+        if oa in targets:
+            path = []
+            c = a
+            while c in prev:
+                c = prev[c]
+                if owner[c] < 0:
+                    path.append(c)
+            return int(oa), np.asarray(path[::-1], np.int64), float(d), float(km[a])
+        for e in range(off[a], off[a + 1]):
+            b = int(idx[e])
+            ob = owner[b]
+            if blocked[b] or ob == me:
+                continue
+            if ob >= 0 and ob not in targets and not mobile:
+                continue
+            if sea[a] or sea[b]:
+                if sea_x < 0:
+                    continue
+                c = ekm[e] * sea_x
+            else:
+                c = ekm[e] * land_x * (1.0 + edz[e] / climb_m if climb_m > 0 else 1.0)
+            if ob >= 0 and ob not in targets:
+                c *= FOREIGN_X
+            nd = d + c
+            if nd <= budget and nd < dist.get(b, np.inf):
+                dist[b], km[b], prev[b] = nd, km[a] + ekm[e], a
+                heapq.heappush(h, (nd, b))
+    return None
 
 
 def _side(x, what: str, bad) -> dict | None:
@@ -148,7 +220,9 @@ def ancestors(lines: list) -> dict:
 def new_log() -> dict:
     """What war_v0 saw of one row, summed over the century steps of its window (polities.war_v0 fills it; readout() reads it)."""
     return {"steps": 0, "state": 0, "state_far": 0, "chief": 0, "state_new": 0, "victim": 0, "victim_dragon": 0, "border": 0, "odds": 0,
-            "outranked": 0, "shadowed": 0, "gone": 0, "chance": 0, "p": 0.0, "took": [], "state_kyr": []}
+            "outranked": 0, "shadowed": 0, "gone": 0, "chance": 0, "p": 0.0, "took": [], "state_kyr": [],
+            "exped": [], "exped_fail": 0, "exped_km": 0.0, "exped_mobile": False, "war_band": []}  # (PW-1450: each expedition {ago_kyr, winner_id, loser_id, km,
+    # foot_km, corridor_cells, mobility}; tries that reached nothing; the largest budget tried, foot-km; [ago, polity record] per war band)
 
 
 # ------------------------------------------------------------------ the read-out
@@ -189,12 +263,15 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
             why = f"its window ends before the first century the polities are read from ({first:g} kyr ago: before that no people has both chiefdoms and writing)"
         if why is None and L["steps"] == 0:
             why = "no century step of the polities falls in its window"
+        from .polities import name_at  # (each side as it was called then: the people holding its capital, PW-1451)
         if why is None and L["took"]:
             o["happened"] = True
-            from .polities import name_at  # (each side as it was called then: the people holding its capital, PW-1451)
             for ago, li, wi, km2 in L["took"]:
                 o["took"].append({"ago_kyr": ago, "winner": name_at(polities[wi], ago), "winner_id": wi, "loser": name_at(polities[li], ago), "loser_id": li, "km2": int(round(km2))})
             o["km2"] = int(round(sum(t["km2"] for t in o["took"])))
+            ex = [e for e in L.get("exped") or [] if any(t["ago_kyr"] == e["ago_kyr"] and t["loser_id"] == e["loser_id"] for t in o["took"])]
+            if ex:  # (PW-1450: how far it reached: the expeditions that led to a conquest)
+                o["reach"] = [{**e, "winner": name_at(polities[e["winner_id"]], e["ago_kyr"]), "loser": name_at(polities[e["loser_id"]], e["ago_kyr"])} for e in ex]
         elif why is None:
             them = f"the {who}" if "people" in r["who"] else who
             vic = "any polity" if r.get("whom") is None else (f"the {whom}" if "people" in r["whom"] else whom)
@@ -212,6 +289,11 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
                        else f"{vic} ruled no polity then (a people with no chiefdom or state cannot be conquered)")
             elif not L["border"]:
                 why = f"no state of {them} bordered a polity of {vic} then"
+                if L.get("exped_fail"):
+                    why += (f", and none reached one on an expedition (the furthest went {L['exped_km']:,.0f} km on foot over flat "
+                            "ground, more with riding and roads, across unruled land" + (" or through others' land" if L.get("exped_mobile") else "") + "; "
+                            + (f"the nearest polity of theirs lay {L['exped_need']:,.0f} km away on the same terms)" if math.isfinite(L.get("exped_need", math.inf))
+                               else "none could be reached at all that way)"))
             elif L["shadowed"] and not (L["outranked"] or L["gone"] or L["chance"]):
                 why = "another invasion you wrote, of the same invaders on the same victims in the same years, led every attack"
             elif L["odds"] and not (L["outranked"] or L["gone"] or L["chance"]):
@@ -223,10 +305,20 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
             else:
                 why = f"the chance failed: {L['chance']} tr{'y' if L['chance'] == 1 else 'ies'} at {L['p']:.0%} per century"
         o["why"] = why
+        if L.get("war_band"):  # (PW-1450: the centuries a war band ruled for the row)
+            o["war_band"] = [{"ago_kyr": a, "polity": name_at(polities[i], a), "polity_id": i} for a, i in L["war_band"]]
         sk = L["state_kyr"]  # (the hint for a better window: the centuries in which the invaders ruled a state at all)
         o["states"] = {"centuries": len(sk), "from_kyr": max(sk) if sk else None, "to_kyr": min(sk) if sk else None}
         out.append(o)
     return out
+
+
+REACH_RULE = ("A strong invasion also reaches (owner D50). If the invaders rule only chiefdoms, their largest town rules as a state for "
+              "the window (a war band). If none of their states borders the victims, the one nearest sends an expedition: it "
+              "crosses unruled land (and sea, with boats) within its own reach again, claims that corridor for the century and "
+              "attacks the first polity of the victims it meets. Mobile peoples reach further: nomads and pastoral nomads twice as "
+              "far (transhumant herders 1.6 times), and they may ride through other peoples' states at half pace; riding and roads "
+              "make every km cheaper on top. A light invasion still needs a shared border.")
 
 
 def step_of(agos: list) -> float:

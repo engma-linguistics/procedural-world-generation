@@ -149,8 +149,16 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     contacts = h.contacts.summary() if h.contacts is not None else None
     pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)
-    # the technology tree (PW-675 v0): which people knew what, and since when (techtree.py)
-    techtree = TT.build(lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed, gods_mode=h.tree.gods_mode)
+    # the technology tree (PW-675 v0): which people knew what, and since when (techtree.py). With polities in the history switched
+    # on (PW-1466) it is the calendar the history ran century by century (history.tech_live), finished here; else built now. D52's
+    # town arms (B, E) need the settlement ledger, which needs the tree: the first tree goes without them (PW-1464, _towns_first)
+    tt_args = (lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed)
+    live_tt = getattr(h.rule, "tech", None)
+    town_arms = TT.town_arms() if live_tt is None and world and eraq_meta else ""
+    if live_tt is not None:
+        techtree = live_tt.result(*tt_args[:5])
+    else:
+        techtree = TT.build(*tt_args, gods_mode=h.tree.gods_mode, landmass=h.cross.label, **({"arms": TT.arms_without_towns()} if town_arms else {}))
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -176,6 +184,10 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "events": events, "frames": out_frames})
     if hasattr(h.rule, "doc"):  # (polities in the history, when switched on, PW-1434: their record beside the read-out's)
         S.write_json(out / "polities_live.json", h.rule.doc())
+    ledger_done = False
+    if town_arms:
+        techtree = _towns_first(out, tt_args, h.tree.gods_mode, techtree, h.cross.label)
+        ledger_done = True
     report(out, h, res, pres)
     with open(out / "run.txt", "a") as f:
         f.write("\n".join(TT.lines_for_report(techtree, lines)) + "\n")
@@ -190,9 +202,35 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         from . import taboos as TB
         TB.write_religion(out, mode=h.tree.gods_mode)  # (the run's gods mode, PW-1309: chosen where the run is made)
     if world and eraq_meta:  # (the settlement ledger: settlements.py, PW-1011; settlements.json, meta.settlements)
-        ST.write(out)
+        if ledger_done:  # (made by _towns_first from the final tree: only its run.txt section is still to write)
+            ST.report_section(out)
+        else:
+            ST.write(out)
     T.update_index()
     return out
+
+
+TOWN_PASSES = 3  # (_towns_first: at most this many ledger-and-tree rounds)
+
+
+def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict, landmass=None) -> dict:
+    """The tech tree with D52's town arms (B, E; PW-1464): the ledger from the tree made without them, then the tree again with the
+    ledger's town footprint (techspread.town_footprint), until the techs the ledger reads (settlements.LEDGER_TECHS) stop moving,
+    at most TOWN_PASSES rounds. Arm E touches only writing, the alphabet and law, which the ledger does not read, so it stops after
+    one round; B also moves roads, copper and fortifications. Leaves meta.techtree and the ledger of the tree it returns."""
+    from .techspread import town_footprint
+    prev = tree0
+    for i in range(TOWN_PASSES):
+        ST.write(out, report=False)
+        tt = TT.build(*tt_args, gods_mode=gods_mode, towns=town_footprint(out), landmass=landmass)
+        S.update_meta(out, lambda r, tt=tt: r["meta"].__setitem__("techtree", tt))
+        if ST.ledger_dates(tt["known"]) == ST.ledger_dates(prev["known"]):
+            return tt  # (the ledger just written is the one this tree makes)
+        prev = tt
+    ST.write(out, report=False)  # (not settled after TOWN_PASSES: the ledger of the last tree, which a rebuild may still move)
+    import warnings
+    warnings.warn(f"tech tree town arms: the ledger still moved after {TOWN_PASSES} rounds", stacklevel=2)
+    return prev
 
 
 def write_presence(out: Path, frames: list, nlines: int, n: int) -> dict:

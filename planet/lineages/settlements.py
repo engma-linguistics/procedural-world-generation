@@ -130,6 +130,13 @@ PIT_ORE = 0.5  # a raw ore good from this, and under mining.ORE_MIN, is ordinary
 KINDS = ("chief", "minority", "mine", "pit")
 MERGED = "merged into the main place"  # (a minority's place whose people came to lead its cell: gone, but not a ruin)  # a cell's chief place, a second people's own place, a mine
 TECH = ("villages", "towns", "cities")
+LEDGER_TECHS = TECH + ("delving", "fortifications", "mines", "roads", "copper", "iron")  # (every tech the ledger reads: _tech_dates, _known_dates, _mines_dates)
+
+
+def ledger_dates(known: dict) -> dict:
+    """{line: {tech: kyr ago}} of the techs the ledger reads (LEDGER_TECHS), from meta.techtree.known: two trees with the same make the
+    same ledger (PW-1464)."""
+    return {lid: {t: kn[t][0] for t in LEDGER_TECHS if t in kn} for lid, kn in known.items()}
 NONE = 255
 
 
@@ -777,15 +784,26 @@ def write(run_dir: Path, report: bool = True, **over) -> dict:
     d = derive(run_dir, **over)
     S.write_atomic(run_dir / "settlements.json", json.dumps(d["doc"], separators=(",", ":")))
     S.update_meta(run_dir, lambda r: r["meta"].__setitem__("settlements", d["summary"]))
-    if report:  # (a redo replaces the section of run.txt it wrote before)
-        p = run_dir / "run.txt"
-        old = p.read_text() if p.exists() else ""
-        a = old.find("\n## Settlements (PW-1011")
-        if a >= 0:
-            b = old.find("\n## ", a + 1)
-            old = old[:a] + (old[b:] if b >= 0 else "\n")
-        S.write_atomic(p, old.rstrip("\n") + "\n" + "\n".join(lines_for_report(d["summary"], d["doc"])) + "\n")
+    if report:
+        report_section(run_dir, d["summary"], d["doc"])
     return d["summary"]
+
+
+def report_section(run_dir: Path, summary: dict | None = None, doc: dict | None = None) -> None:
+    """Writes the ledger's section of run.txt (a redo replaces the section it wrote before); summary and doc default to the run's own
+    meta.settlements and settlements.json."""
+    run_dir = Path(run_dir)
+    if summary is None:
+        summary = json.loads((run_dir / "run.json").read_text())["meta"]["settlements"]
+    if doc is None:
+        doc = json.loads((run_dir / "settlements.json").read_text())
+    p = run_dir / "run.txt"
+    old = p.read_text() if p.exists() else ""
+    a = old.find("\n## Settlements (PW-1011")
+    if a >= 0:
+        b = old.find("\n## ", a + 1)
+        old = old[:a] + (old[b:] if b >= 0 else "\n")
+    S.write_atomic(p, old.rstrip("\n") + "\n" + "\n".join(lines_for_report(summary, doc)) + "\n")
 
 
 def lines_for_report(sm: dict, doc: dict) -> list[str]:

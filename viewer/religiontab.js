@@ -17,8 +17,9 @@
 #tab-religion .rl-nav button.on { color: var(--text); border-bottom-color: var(--acc); }
 #tab-religion .rl-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
 #tab-religion .rl-main { min-height: 0; overflow: auto; padding: 10px 12px; }
-#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; min-height: 100%; }
-#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; }
+#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(400px, 40vw, 620px); gap: 10px; min-height: 100%; align-items: start; }
+#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; min-width: 0; }
+@media (max-width: 1100px) { #tab-religion .rl-split { grid-template-columns: minmax(0, 1fr); } #tab-religion .rl-side { order: -1; border-left: 0; padding-left: 0; border-bottom: 1px solid var(--line); padding-bottom: 10px; } }
 #tab-religion .rl-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; }
 #tab-religion .rl-cards.one { grid-template-columns: minmax(0, 1fr); }
 #tab-religion .rl-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--panel); overflow-x: auto; }
@@ -32,10 +33,11 @@
 #tab-religion tr[data-f] { cursor: pointer; }
 #tab-religion .kind { display: inline-block; min-width: 120px; color: var(--muted); }
 #tab-religion .rl-yours { font-size: 10px; color: var(--acc, #6fa8ff); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 4px; white-space: nowrap; }
-#tab-religion .rl-form { display: grid; gap: 8px; align-content: start; }
+#tab-religion .rl-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; }
+#tab-religion .rl-form input:not([type]), #tab-religion .rl-form input[type=text], #tab-religion .rl-form select { min-width: 0; max-width: 100%; box-sizing: border-box; }
 #tab-religion .rl-form label { display: grid; gap: 2px; }
 #tab-religion .rl-form .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-#tab-religion .rl-pick { position: relative; cursor: crosshair; }
+#tab-religion .rl-pick { position: relative; cursor: crosshair; max-width: 560px; }
 #tab-religion .rl-pick img { width: 100%; display: block; border-radius: 4px; }
 #tab-religion .rl-pick svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #tab-religion .ok { color: #6bd66b; } #tab-religion .no { color: #ff7b6b; } #tab-religion .err { color: #ff7b6b; }
@@ -59,8 +61,11 @@
     timeline: `One row per faith on a log time axis, schisms (faiths that broke away) under the faith they broke from. The bar runs from its founding to its end;
       green dots: cultures it won by conversion; red dots: cultures it lost to another faith. "No followers left": the faith ended while its cultures lived on.`,
     yours: `Faiths you write. Each is founded under the same rules as the rest, at the first stored moment from its year on at which its founder
-      is on the map and has gods (spirit ritual); after that its gods drift, fade, split and fuse like any, and it wins neighbours only if it spreads and is
-      organised enough (temples). The result column says whether it took hold, and why not. Saved with the run; nothing in the peoples history is re-run.`,
+      is on the map and has gods (spirit ritual); after that its gods drift, fade, split and fuse like any. A missionary faith sends preachers: it wins
+      neighbours whose faith is less organised and does not seek converts itself, over a century or two each (as early Christianity, Islam or Buddhism did);
+      a faith that only spreads wins neighbours slowly, over a millennium or two, and only from temples; a closed one takes no converts. Wherever its
+      cultures rule a state, they push it on their subjects: within a generation for a harsh ruler, hardly at all for a tolerant one (each culture's
+      tolerance is on its taboos card). The result column says whether it took hold, how it spread, and why not. Saved with the run; nothing in the peoples history is re-run.`,
     taboos: `Each living culture's taboos by kind. Food taboos come from its herds, crops, neighbours and gods; the other kinds from its way of life, its techs
       and its gods' domains (the tags shown). Every rule names its source; the catalogue below lists the sources and how far each was read.`,
   };
@@ -237,7 +242,9 @@
     const c = T.cultures[st.culture], K = T.kinds || {}, S = T.sources || {};
     const src = (k) => (S[k] ? `<a href="${esc(S[k].url)}" target="_blank" title="${esc(S[k].title)} (${esc(S[k].level)})">${esc(k)}</a>` : esc(k || ''));
     const fn = D.gods.cultures?.[st.culture]?.faith_now, cf = fn != null ? D.F[fn] : null;
-    let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faith: ${sw(cf.color)}${fname(cf)} · ` : ''}tags: ${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
+    const at = D.gods.attitudes?.cultures?.[st.culture]?.now;  // (PW-904: [tolerance, aggression] now, 0..1)
+    const atx = at ? `tolerance ${at[0].toFixed(2)}, aggression ${at[1].toFixed(2)} <span title="${esc(D.gods.attitudes.rule || '')}">(?)</span> · ` : '';
+    let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faith: ${sw(cf.color)}${fname(cf)}${cf.missionary ? ' (missionary)' : ''} · ` : ''}${atx}tags:${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
     for (const t of c.taboos) h += `<tr><td>${esc(K[t.kind]?.name || t.kind)}</td><td>${esc(t.kind === 'food' ? 'not eaten: ' + t.label : t.label)}</td><td>${esc(t.scope)}</td><td class="muted" style="max-width:360px">${esc(t.why)}</td><td>${t.kind === 'food' ? '<span class="muted">taboos.py (food)</span>' : src(t.source)}</td></tr>`;
     h += '</table><h3 style="margin-top:16px">The catalogue: kinds across all living cultures</h3><table class="t"><tr><th>kind</th><th>what</th><th>cultures with one</th><th>rules</th><th>sources</th></tr>';
     const all = Object.values(T.cultures);
@@ -252,7 +259,7 @@
   // ---- 5. your faiths (PW-1430) ----
   const dflt = () => (NumFmt.present && NumFmt.present() != null ? 'year' : 'ago');  // (a bare number: a calendar year once the present is set, else years ago)
   const readYear = (t) => { const k = NumFmt.parseDate ? NumFmt.parseDate(t, dflt()) : null; return k == null || !Number.isFinite(k) ? null : k; };
-  const blank = () => ({ id: null, name: '', culture: null, people: null, place: null, year_text: '', ago_kyr: null, gods: [{ name: '', domains: [] }], spreads: true });
+  const blank = () => ({ id: null, name: '', culture: null, people: null, place: null, year_text: '', ago_kyr: null, gods: [{ name: '', domains: [] }], spreads: true, missionary: true });
   function founderOpts(f) {
     const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
     const cs = D.C.map((c) => c).sort((a, b) => a.name.localeCompare(b.name));
@@ -280,7 +287,7 @@
           ? `<span class="ok">took hold</span> ${esc(ago(r.founded_kyr))} in ${esc(r.founded_in_name || D.cname(r.founded_in))}; ${esc(r.spread || '')}; ${r.ended_kyr != null ? `ended ${esc(ago(r.ended_kyr))} (${esc(r.end)})` : `${r.cultures_now} cultures now, ${r.cultures_ever} ever`}${r.note ? `<br><span class="muted">${esc(r.note)}</span>` : ''}`
           : `<span class="no">did not take hold</span>: ${esc(r.why || '')}`;
         h += `<tr><td>${F ? sw(F.color) : ''}${esc(f.name)}<span class="rl-yours">✎ yours</span></td><td>${esc(who(f))}</td><td>${esc(f.year_text || '')} <span class="muted">(${esc(ago(f.ago_kyr))})</span></td>
-          <td>${f.gods.map((g) => `${esc(g.name)} <span class="muted">(${esc(g.domains.join(', '))})</span>`).join('<br>')}</td><td style="max-width:420px">${res}<br><span class="muted">${f.spreads ? 'spreads' : 'stays closed'}</span></td>
+          <td>${f.gods.map((g) => `${esc(g.name)} <span class="muted">(${esc(g.domains.join(', '))})</span>`).join('<br>')}</td><td style="max-width:420px">${res}<br><span class="muted">${!f.spreads ? 'stays closed' : f.missionary === false ? 'spreads (no missionaries)' : 'missionary'}</span></td>
           <td style="white-space:nowrap"><button data-ed="${i}">edit</button> <button data-rm="${i}">remove</button>${F ? ` <button data-tree="${F.id}">its tree</button>` : ''}</td></tr>`; });
       h += '</table>';
     }
@@ -305,6 +312,7 @@
       <div><span class="muted">gods (name, then one to three domains)</span><div id="rf-gods">${f.gods.map((g, i) => `<div class="row" data-g="${i}"><input class="rf-gn" value="${esc(g.name)}" placeholder="name" maxlength="60" style="width:120px">
         ${[0, 1, 2].map((j) => `<select class="rf-gd">${domOpts(g.domains[j])}</select>`).join('')}<button data-gx="${i}" title="remove this god">×</button></div>`).join('')}</div><button id="rf-addg">+ a god</button></div>
       <label class="row"><input type="checkbox" id="rf-spr" ${f.spreads ? 'checked' : ''}> spreads to its neighbours (else it stays closed: it takes no converts)</label>
+      <label class="row"><input type="checkbox" id="rf-mis" ${f.spreads && f.missionary !== false ? 'checked' : ''}> missionary: it sends preachers and wins less organised neighbours within a century or two (else it spreads slowly, from temples)</label>
       <div class="row"><button id="rf-save">save</button><button id="rf-cancel">cancel</button><span id="rf-msg" class="err"></span></div></div>`;
   }
   function readForm() {  // (the form into st.edit, so a redraw keeps what was typed)
@@ -317,6 +325,7 @@
     f.year_text = $('rf-year').value.trim(); f.ago_kyr = readYear(f.year_text);
     f.gods = [...D.root.querySelectorAll('#rf-gods [data-g]')].map((r) => ({ name: r.querySelector('.rf-gn').value.trim(), domains: [...r.querySelectorAll('.rf-gd')].map((s) => s.value).filter(Boolean) }));
     f.spreads = $('rf-spr').checked;
+    f.missionary = f.spreads && $('rf-mis').checked;
     return f;
   }
   function problem(f) {  // (what the server would refuse, said before saving)

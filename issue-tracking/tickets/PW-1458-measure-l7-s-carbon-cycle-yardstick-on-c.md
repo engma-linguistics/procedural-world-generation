@@ -2,7 +2,7 @@
 id: PW-1458
 title: Measure L7's carbon-cycle yardstick on current code (it is derived, not measured)
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: climate
@@ -31,4 +31,5 @@ ONLY=l6fix), run `tools/yardstick.py` on them, and set YARDSTICK[7] to the mean 
 of the current value. About 6 x 300 Myr at L7 (~1.5 runs' worth).
 
 ## Updates
+- 2026-11-04: Status todo -> done. Merged (lane 187b, b4d1794b): YARDSTICK[7] 1.542 -> 1.618 (24 L7 spins, sd 0.178, SE 0.036); L6 stays 1.377. Paired 4-draw check vs old value: median late dT -0.59 C (expected ~-0.84), 0 hard failures both arms, soft 4/4 both. No 36-draw L7 judge (round4.md).
 - 2026-11-04: Created from inbox draft draft-l7-yardstick-measure.md (found by lane170).

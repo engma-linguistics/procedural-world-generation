@@ -263,7 +263,8 @@ def test_small_peoples_rarely_invent_the_specialist_techs():
     big = band = 0
     for s in range(12):
         # (16 kyr, was 8: lane 70's first-of-anchor_peers rates make one isolated people slower than Earth's first finder)
-        lines = [line("big", at=16.0, track=_pop(5e7, 5.0, 16.0)), line("band", at=16.0, track=_pop(1000, 0.1, 16.0))]
+        # (60 kyr, was 16: lane 200b's anchor of 24 regional learners slows one isolated people again)
+        lines = [line("big", at=60.0, track=_pop(5e7, 5.0, 60.0)), line("band", at=60.0, track=_pop(1000, 0.1, 60.0))]
         tt = TT.build(lines, None, None, seed=s, T=T2)
         big += "writing" in tt["known"]["big"]
         band += "writing" in tt["known"]["band"]
@@ -347,7 +348,8 @@ def test_needs_any_one_of_them():
         got = 0
         for s in range(6):
             T2 = {**T, "kind": [{"of": ["x"], "kit": ["pack_animals"] + mount}]}
-            tt = TT.build([line("x", at=6.0, track=_pop(1e7, 1.0, 6.0))], None, None, seed=s, T=T2)
+            # (12 kyr, was 6: lane 200b's first-of-24 regional learners make one isolated people slower than Earth's first finder)
+            tt = TT.build([line("x", at=12.0, track=_pop(1e7, 1.0, 12.0))], None, None, seed=s, T=T2)
             got += "riding" in tt["known"]["x"]
         assert (got >= 5) if ok else got == 0, (mount, got)
     assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
@@ -420,12 +422,17 @@ def test_a_nudge_elsewhere_leaves_a_peoples_dates_alone():
     people's dates exactly as they were; the old shared stream reshuffled them."""
     base = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(1e6))]
     nudged = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(2e3)), line("c", at=40.0, track=_pop(5e5))]
-    for s in (1, 2):
+    seen = 0
+    for s in range(1, 12):  # (the first two draws in which a invents something: PW-1483's keyed waits differ from the old per-step draws)
         k0 = TT.build(base, None, None, seed=s, T=T)["known"]
+        if not k0["a"] or seen == 2:
+            continue
+        seen += 1
         k1 = TT.build(nudged, None, None, seed=s, T=T)["known"]
         assert k0["a"] and k0["a"] == k1["a"]
         assert k0["b"] != k1["b"]  # (the nudged people itself does change)
-    u = [TT.keyed(3, "invent", "a", "fire", k) for k in range(4000)]
+    assert seen == 2
+    u = [TT.keyed(3, "wait", "a", f"t{k}") for k in range(4000)]
     assert abs(np.mean(u) - 0.5) < 0.02 and 0.0 <= min(u) and max(u) < 1.0
 
 
@@ -456,9 +463,9 @@ def _writing_world(arms, towns=None, kin=False, ins=0.3, seeds=range(8), over=No
 
 def test_arms_off_is_the_plain_front_bit_for_bit():
     """D52's switch off (the default, or an empty string) is today's rule exactly, with or without a town footprint."""
-    a = _writing_world(None)
+    a = _writing_world(None, over={"contact_arms": ""})
     assert (a == _writing_world("")).all() and (a == _writing_world("", towns=TOWNS_Y)).all()
-    assert TT.ARM_DEFAULTS["contact_arms"] == "" and "contact_arms" not in T["defaults"]
+    assert TT.ARM_DEFAULTS["contact_arms"] == "" and T["defaults"]["contact_arms"] == "BT"  # (the tree's own: D53's arm T, lane 200b)
 
 
 def test_each_arm_speeds_writing_by_its_own_mechanism():
@@ -485,3 +492,92 @@ def test_kin_pairs_are_recent_parents_daughters_and_sisters():
     k = TT.kin_pairs(ls, 15.0)
     assert {("p", "a"), ("a", "p"), ("a", "b"), ("g", "a")} <= k
     assert ("p", "old") not in k and ("a", "old") not in k
+
+
+# ---- the tree as a step function (lane 192, PW-1466) and the town arms after the ledger (PW-1464) ---------------------------------
+
+def test_the_calendar_run_in_pieces_is_the_tree_built_at_once():
+    """PW-1466: techtree.Calendar runs the same steps and keyed draws whether it is advanced once or a piece at a time (as the
+    history does), so fed the same inputs it makes the same calendar."""
+    lines = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(3e5)),
+             line("c", origin="split", at=20.0, parents=["a"], track=_pop(2e5, at=20.0))]
+    con = {"pairs": [{"a": "a", "b": "b", "first_contact_kyr": 40.0, "in_contact_now": True,
+                      "series": [[40.0, 800, 0.0], [0.0, 800, 0.0]]}]}
+    for s in (1, 2):
+        whole = TT.build(lines, con, None, seed=s, T=T)
+        c = TT.Calendar(lines, seed=s, T=T)
+        c.feed(lines, TT.links_of(con, c.kind), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        ran = sum(c.advance(t) for t in (59.0, 30.0, 12.0, 5.0, 1.0, 0.3))
+        ran += c.advance()
+        assert ran == TT.STEPS + 1
+        assert c.result() == whole and whole["known"]["c"]
+
+
+def test_a_live_front_speeds_up_as_the_border_grows_and_never_slows():
+    """PW-1473 (round9.md): the tree inside the history re-times a front still on its way from the border known now
+    (history.tech_live.LiveTech._retime): the same border leaves it where advance put it (the same rate), a longer border brings it
+    earlier, a shorter one never makes it later."""
+    from types import SimpleNamespace
+    from planet.lineages.history import tech_live as TL
+    lines = [line("a", at=60.0, track=_pop(1e8, 0.5)), line("b", at=60.0, track=_pop(1e3, 50.0))]  # (a dense giver, a wide taker)
+
+    def links(km):
+        return [("a", "b", 40.0, 0.0, float(km))]
+
+    for seed in range(3, 20):  # (the first draw with fronts still on their way at 5 kyr; PW-1483 changed which draws have them)
+        c = TT.Calendar(lines, seed=seed, T=T)
+        c.feed(lines, links(150), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        c.advance(5.0)
+        open_ = {k: v for k, v in c.arrive.items() if v is not None and v < 5.0 and k[2] not in c.known[k[1]]}
+        if open_:
+            break
+    lt = SimpleNamespace(cal=c)
+    assert open_  # (a short border, a wide taker: fronts still on their way)
+    TL.LiveTech._retime(lt, 5.0)
+    assert {k: c.arrive[k] for k in open_} == open_  # (the same border: advance's own rate, nothing moves)
+    c.links = links(1500)
+    TL.LiveTech._retime(lt, 5.0)
+    assert all(c.arrive[k] > v for k, v in open_.items())  # (ten times the border: every open front earlier)
+    sped = dict(c.arrive)
+    c.links = links(50)
+    TL.LiveTech._retime(lt, 5.0)
+    assert c.arrive == sped  # (a shorter border: never later)
+
+
+def test_town_arms_wait_for_the_ledger(monkeypatch):
+    """PW-1464: output.save builds the first tree without B and E (no town footprint yet, so no warning), and the ledger reads only
+    LEDGER_TECHS, which E's techs (writing, the alphabet, law) are not among: one round settles it."""
+    from planet.lineages import settlements as ST
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T, "defaults": {**T["defaults"], "contact_arms": "CE"}})
+    assert TT.arms_of() == "CE" and TT.town_arms() == "E" and TT.arms_without_towns() == "C"
+    assert not set(TT.ARM_ADMIN) & set(ST.LEDGER_TECHS)
+    k0 = {"a": {"towns": [6.0, "invented", None], "writing": [3.0, "contact", "b"]}}
+    k1 = {"a": {"towns": [6.0, "invented", None], "writing": [4.5, "contact", "b"]}}
+    assert ST.ledger_dates(k0) == ST.ledger_dates(k1) != ST.ledger_dates({"a": {"towns": [5.0, "invented", None]}})
+
+
+def test_own_floor_lifts_the_slow_and_never_speeds_the_anchor():
+    """D55's floor (PW-1471, lane 200b): a learner is no slower than the anchor learner its rate is set on, so switching it on leaves
+    the anchor check exactly as it was and lifts only a smaller people; it is never above the anchor learner's own hazard."""
+    T1 = {**T, "defaults": {**T["defaults"], "own_floor": True}}
+    for tid in ("writing", "towns"):
+        assert TT.own_floor(T1, tid) <= TT.rate_of(T1, tid) * TT.anchor_strength(T1, tid) + 1e-12
+        assert TT.own_floor(T, tid) is None or not T["defaults"]["own_floor"]
+    assert TT.own_floor(T1, "bow") is None  # (a floored, Pleistocene tech: no own floor)
+    assert TT.anchor_check(["writing"], seeds=5, T=T1) == TT.anchor_check(["writing"], seeds=5, T=T)
+
+
+def test_region_learners_split_a_continent_by_area():
+    """D55 (lane 200b): each landmass with a tenth of a people's range is a region; with region_mkm2 a large one is several."""
+    n = 1000  # (cells of an Earth-sized sphere: ~510 Mkm2 / 1000)
+    lm = np.full(n, -1)
+    lm[:600], lm[600:700], lm[700:705] = 0, 1, 2
+    present = np.zeros((1, n))
+    present[0, :705] = 1.0
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1)["x"]
+    assert [k for k, _ in r] == [0, 1] and abs(sum(w for _, w in r) - 700 / 705) < 1e-9
+    cell = 4 * np.pi * 6371.0 ** 2 / n / 1e6
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1, region_mkm2=100.0)["x"]
+    k0 = int(np.ceil(600 * cell / 100.0))
+    assert [k for k, _ in r].count(0) == k0 and [k for k, _ in r].count(1) == int(np.ceil(100 * cell / 100.0))
+    assert abs(sum(w for _, w in r) - 700 / 705) < 1e-9
