@@ -68,27 +68,35 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · Wednesday 4 November 2026 · late evening</div>
+  <div class="kicker">procgen_world · Thursday 5 November 2026 · after midnight</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Back up after your session. Nothing waits on you. Lane 197 is fixing the two viewer problems you found (the squeezed faith form, and the food sheet you couldn't find), and after that the v0.2.0 tag can go. Your D50 ruling on invasions is being built.</p>
+  <p class="lede">Two things for you: the v0.2.0 tag, which is ready (the faith form and the food sheet are fixed, and the tag card says where to click), and D56, how far your written invasions may reach now that D50 is built.</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
 <h2 id="answers">For you</h2>
-<div class="card" id="tag"><div class="id">TAG v0.2.0 (V2 MILESTONE): TWO FIXES FIRST</div>
-<p><b>In plain words:</b> from your first look: the write-a-faith form opens squeezed to the far right and cut off (PW-1475), and the food sheet per culture wasn't findable, nor was "the workbench tree" a name you'd know (PW-1476). Both get fixed before the tag. Your faith didn't spread because conversion today is very slow: a neighbour converts with a 30,000-year time scale, and only from a faith with temples. There is no missionary faith and no forced conversion yet (PW-1477, v4, with attitudes).</p>
-</div>
-<p><b>In plain words:</b> v2's code is all merged and the full test suite passes (1,029 tests). What to look at: faiths you write (Religion tab), the food sheet per culture (Culinary brief panel), dates in years, and the workbench tree. Try them on the new showcase runs:
-<a href="http://localhost:8765/viewer/?run=07c755&amp;layer=peoples">Seven Meals 07c755</a> ·
-<a href="http://localhost:8765/viewer/?run=0141d1&amp;layer=peoples">D&amp;D 0141d1</a> ·
-<a href="http://localhost:8765/viewer/?run=3e0eb4&amp;layer=peoples">D&amp;D 3e0eb4</a>.
-Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; its tag v0.3.0 can follow once D50 is settled.</p>
+<div class="card" id="d56"><div class="id">D56 · PW-1478 · how far may an invasion's expedition go?</div>
+<p><b>In plain words:</b> your D50 ruling is built (lane 198, merged). An invasion you write now acts even when the invaders don't border the victims. Their nearest state sends an expedition across empty land. If they have only chiefdoms, their biggest town seats a war band. Herding and nomad peoples go twice as far. To try it: <b>Peoples workbench</b> &rarr; <b>States &amp; war</b> tab, where a row that happened now says how it got there. It helps less than it should, though, because an expedition may go only one more of the state's own reach, about 150 km for most states. Scored against today's code on the same rows, the invasions that happen go from 9 to 11 of 30 on D&amp;D a2b637 and from 8 to 11 of 42 on Seven Meals 3c1caf. The rest are still too far away. Ordinary wars are unchanged.</p>
+<ul>
+<li><b>A.</b> Keep one more reach. Honest, but most of your invasions still say "it didn't".</li>
+<li><b>B (my lean).</b> A fixed campaign range of about 1,000 km (the same range the invasion form already uses for "from that part of the continent"), doubled for herders and nomads. Settled peoples strike within their region, and horde-like peoples reach 2,000 km.</li>
+<li><b>C.</b> No limit over land: a strong invasion always finds the victims unless an ocean is in the way (boats can cross that).</li>
+</ul></div>
+<div class="card" id="tag"><div class="id">TAG v0.2.0 (V2 MILESTONE): READY WHEN YOU ARE</div>
+<p><b>In plain words:</b> both things you hit on your first look are fixed (lane 197, merged). Open the <a href="http://localhost:8765/viewer/lineages.html">Peoples workbench</a> (the "Viewer" link at its top right goes back to the globe) and refresh the page once:</p>
+<ul>
+<li><b>Write a faith:</b> <b>Religion</b> tab &rarr; <b>Your faiths</b> &rarr; <b>✎ write a faith</b>. The form now sits in a wider pane on the right (about 510 px at a 1280-wide window, 620 at 1920) and moves above the list in a window 1,100 px wide or narrower. On a short screen, scroll down inside the tab for <b>save</b>.</li>
+<li><b>The food sheet per culture:</b> the new <b>Culinary brief</b> tab. Pick a <b>people</b>, then a <b>culture</b>, and press <b>Show the brief</b>. It reads "Cuisine sheet: &lt;culture&gt;". It's also on the globe: <b>Peoples</b> box &rarr; <b>Culinary brief…</b>.</li>
+<li><b>"The workbench tree"</b> was my name for the first tab. It is now labelled <b>Peoples tree &amp; timeline</b>.</li>
+</ul>
+<p>Why your faith didn't spread: today a neighbour converts only from a faith with temples, on a 30,000-year time scale. There are no missionaries and no forced conversion yet (PW-1477, v4, built with attitudes). Showcase runs to try: <a href="http://localhost:8765/viewer/?run=0141d1&amp;layer=peoples">D&amp;D 0141d1</a> · <a href="http://localhost:8765/viewer/?run=3e0eb4&amp;layer=peoples">D&amp;D 3e0eb4</a> · <a href="http://localhost:8765/viewer/?run=07c755&amp;layer=peoples">Seven Meals 07c755</a>.</p>
+<p>Say "tag it" and I'll tag v0.2.0.</p>
 </div>
 
 <div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER</div>
 <div class="tbl"><table>
 <tr><th>Tag</th><th>Target</th><th>What you can do</th><th>Where it is</th></tr>
-<tr><td>v0.2.0</td><td>Tue 10 Nov</td><td>Write your own faiths, read what a culture cooks, see dates in years.</td><td>merged; tag waits on you</td></tr>
+<tr><td>v0.2.0</td><td>Tue 10 Nov</td><td>Write your own faiths, read what a culture cooks, see dates in years.</td><td>fixes merged; tag waits on you</td></tr>
 <tr><td>v0.3.0</td><td>Tue 17 Nov</td><td>States and war, first cut: who rules where at any year, empires, invasions you schedule.</td><td>merged; the nudge check is half met (PW-1460, v4)</td></tr>
 <tr><td>v0.4.0</td><td>Mon 23 Nov</td><td>States fight inside the history; calendars; a name slot for your languages.</td><td>first cut of states inside the history merged (off); D50 and D54 wait on you</td></tr>
 <tr><td>v0.5.0</td><td>Sat 28 Nov</td><td>Your December world: pick from three candidates, refine from the viewer, every Seven Meals people right.</td><td>not started</td></tr>
@@ -101,15 +109,16 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
-<tr><td>197 · the two viewer fixes before v0.2.0 (v2)</td><td>The "write a faith" form on the Religion tab gets laid out so it fits the window instead of sitting squeezed at the right edge. The food sheet for each culture gets a button where you'd look for it, and whatever the desk called "the workbench tree" gets a name you can see on screen. From now on the desk will name things by their on-screen labels and say where to click.</td></tr>
-<tr><td>198 · invasions that reach (your D50 ruling)</td><td>An invasion you write gets to act even when the invaders don't border the victims. Their nearest state can send an expedition across the empty land between (B). If they have only chiefdoms, their biggest town becomes a war band's seat (C). Mounted and herding peoples, the horde-like ones, strike much further. It gets re-scored on the same 72 invasions that mostly read "it didn't", with a check that ordinary wars don't change.</td></tr>
+<tr><td>199 · attitudes, first cut, and faiths that spread (v4)</td><td>Each culture gets a temperament: how tolerant it is of outsiders and other faiths, and how aggressive. It varies culture by culture and over time, not by era, so Cyrus-like rulers and Genghis-like ones can turn up in any age. Faiths then spread at real-world rates (centuries, from sources), not the 30,000 years they take today. A faith marked to spread to its neighbours spreads faster, and rulers press their faith on subjects: tolerant ones slowly, intolerant ones by force. A check makes sure no faith sweeps the world in a few centuries.</td></tr>
 <tr><td>196 · writing arrives late inside the history (v4)</td><td>Picks up from lane 195. The likely cause it named, neighbours fixing how fast they learn while their border is still short, isn't it. A test run that records what the tech tree sees at each step is running now, and it should show where the two calendars first part ways. That cause gets fixed. Lane 195's change, which lets town arms come from the states inside the history, gets committed too.</td></tr>
 <tr><td>194 · too-tall peaks, last try (physics, pass 3 of 3)</td><td>Scout 193 found no physical reason why lower peaks would unsettle the climate: the carbon thermostat pushes back just as hard. The wider spread looks like it may be a fluke of one sample (about a 1-in-60 result), and today's code itself sits under the spread bar. So this pass re-checks the fix against today's code (now with the grass fix) on 36 fresh test planets. If it passes, it merges; if not, it goes to the back of the line.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): Andes-type coastal ranges, a re-check of warm finishes after D47 and the grass fix, a source for the rainforest fix's leaf constant, and the grazing herds after the grass fix. Rain inland waits at the back of the line (three strikes).</p>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>Your rulings tonight:</b> D50 B and C (expeditions and war bands for written invasions), plus far-reaching mobile peoples for horde-like conquerors. D53: writing spreads by rulers (E) or trading towns (C), weighted by how trade-minded the spreading culture is; E if that doesn't hold up. D54: the conqueror numbers are placeholders, so attitudes (a culture's general tolerance and aggression, PW-904) move up into v4 and conquest will read them. D55: fix it both ways: a people's own chance to invent (no slower than a set rate, repeats allowed, never forced) and regional groups as separate learners.</li>
+<ul><li><b>Invasions that reach</b> (PW-1450, lane 198, merged, your D50): expeditions, war bands and far-reaching herders, read-out only, so worlds don't change. How far an expedition may go is D56 above.</li>
+<li><b>The faith form and the food sheet are fixed</b> (PW-1475/1476, lane 197, merged; details on the tag card). Viewer only, so worlds and runs are unchanged.</li>
+<li><b>Your rulings tonight:</b> D50 B and C (expeditions and war bands for written invasions), plus far-reaching mobile peoples for horde-like conquerors. D53: writing spreads by rulers (E) or trading towns (C), weighted by how trade-minded the spreading culture is; E if that doesn't hold up. D54: the conqueror numbers are placeholders, so attitudes (a culture's general tolerance and aggression, PW-904) move up into v4 and conquest will read them. D55: fix it both ways: a people's own chance to invent (no slower than a set rate, repeats allowed, never forced) and regional groups as separate learners.</li>
 <li><b>L7 carbon yardstick re-set</b> (PW-1458, lane 187b, merged). Measured on 24 test planets on today's code, it comes out at 1.618, against the 1.542 D47 took from six older runs. That gap is about two standard errors, so it's now 1.618. On 4 planets run on both values (baseline: the same planet on the old value), the later climate comes out 0.6 °C cooler at the median, near the 0.8 expected; none freeze, boil or crash on either. New L7 worlds will run slightly cooler; existing runs don't change, and L6 is untouched. A full 36-planet check at L7 hasn't been done.</li>
 <li><b>Technology inside the history, first cut</b> (PW-1466 and PW-1464, lane 192, merged behind the switch, off, so runs are byte-identical). The tech tree now steps along with the history, so states inside it read what their people really know that century, and they follow your D49 writing rule. It costs about 1% of a history's time. Two findings: writing comes too late that way (lane 195), and humans alone never learn to write at all (D55).</li>
 <li><b>Grass roots pay upkeep: merged</b> (PW-1261, attempt 2 of 3, so not a strike). On the Earth test world, against yesterday's code: grass growth now matches the field data (it was 1.15–1.2 times too high), and land growth falls from 64 to 60 billion tonnes of carbon a year (observed about 56), which takes back the rainforest fix's 8% rise. On the same 36 test planets: no hard failures on either, 34 pass the soft scorecard against 31 (within chance), the spread between planets is unchanged (1.26 against 1.25 °C). Land tree cover falls 1.8 points, mostly on dry steppe where fire now reaches. Grazing herds fall with the grass (550–700 mm of rain: 4.1 to 3.1 tonnes per km², against 4.0–4.4 in African parks), so the herd numbers are next to check.</li>
@@ -126,5 +135,5 @@ Say "tag it" and I'll tag v0.2.0. v3's code (states, war, invasions) is in too; 
 <li><b>Why the antelope-kin live thinly</b> (your D51 question). They are farmers in the preset, but their range is dry: 150–900 mm of rain a year, on steppe and savanna. Their "nomadic" trait also pulls them towards grazing land. On that land the density ladder gives them agro-pastoral numbers, 1–15 people per km² (Wilson 1986), against plough farming on fertile, well-watered land. They average 0.8, the humans 10. So their towns stay villages (the biggest ever was 7,925 people; a state seat needs a city of 10,000). That is how real steppe peoples could still build large states: as confederations of herders and villages facing a settled neighbour, Turchin's "mirror empires", which is what lane 178 added.</li>
 </ul>
 
-<footer>Desk v171 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v174 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

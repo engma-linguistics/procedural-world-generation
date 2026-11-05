@@ -36,7 +36,8 @@
   const FOOT = `Invasions you schedule: "the antelope-kin come down on the humans around year 1400". Each changes only the states and wars
     read after the run (the Polities layer on the globe), never the peoples history: in its window a state of the invaders that borders a polity
     of the victims attacks it with twice war's usual chance per century (light) or for certain and with no edge in strength needed (strong).
-    The result says what came of it: who took what from whom, when, and how much land, or why nothing happened (no state of the invaders then,
+    A strong one also reaches: a war band if the invaders have only chiefdoms, an expedition across the gap if no state of theirs borders the
+    victims, and further for nomads and herders. The result says what came of it: who took what from whom, when, and how much land, or why nothing happened (no state of the invaders then,
     no border with the victims, the odds, or the chance). On the right, the incursions the peoples history found on its own (read-only).`;
   const st = { edit: null, err: '', who: '' };
   let D = null;
@@ -59,7 +60,10 @@
     const o = ((P.invasions || {}).rows || []).find((x) => x.id === r.id);
     if (!o) return '<span class="muted">not read yet (save again, or see the problems below)</span>';
     if (o.happened) {
-      return `<span class="ok">it happened</span>: ${o.took.map((t) => `${esc(t.winner)} took ${esc(t.loser)} ${esc(ago(t.ago_kyr))} (${km2(t.km2)})`).join('; ')}. <b>${km2(o.km2)}</b> in all.`;
+      const far = (o.reach || []).reduce((m, e) => Math.max(m, e.km), 0), nx = (o.reach || []).length, wb = (o.war_band || []).length;  // (PW-1450: how it reached)
+      const how = [nx ? `${nx} by expedition, the furthest ${Math.round(far).toLocaleString('en')} km across the gap` : '',
+        wb ? `a war band ruled as a state for them in ${wb} centur${wb === 1 ? 'y' : 'ies'}` : ''].filter(Boolean).join('; ');
+      return `<span class="ok">it happened</span>: ${o.took.map((t) => `${esc(t.winner)} took ${esc(t.loser)} ${esc(ago(t.ago_kyr))} (${km2(t.km2)})`).join('; ')}. <b>${km2(o.km2)}</b> in all.${how ? ` <span class="muted">(${esc(how)})</span>` : ''}`;
     }
     const s = o.states || {}, hint = s.centuries ? ` <span class="muted">(${esc(side(r.who))} ruled a state in ${s.centuries} centur${s.centuries === 1 ? 'y' : 'ies'} of this run, between ${esc(ago(s.from_kyr))} and ${esc(ago(s.to_kyr))})</span>`
       : (o.why || '').includes('no people') || (o.why || '').includes('no culture') ? '' : ` <span class="muted">(${esc(side(r.who))} never ruled a state in this run)</span>`;
@@ -180,7 +184,7 @@
     if (!el) return;
     if (D.busy) { el.innerHTML = `<p class="muted" style="padding:10px 12px">Reading the invasions of ${esc(D.id)}…</p>`; return; }
     if (D.authored?.error) { el.innerHTML = `<p class="muted" style="padding:10px 12px">No invasions for ${esc(D.id)}: ${esc(D.authored.error)}</p>`; return; }
-    const rule = (D.pol?.invasions || {}).rule || '';
+    const rule = [(D.pol?.invasions || {}).rule, (D.pol?.invasions || {}).reach].filter(Boolean).join(' ');  // (reach: PW-1450, beside rows only)
     el.innerHTML = `<div class="iv-bar"><button id="iv-add">✎ schedule an invasion</button><span class="muted" style="max-width:1000px">${esc(rule)}</span></div>
       <div class="iv-main" id="iv-main"><div class="iv-split"><div>${rowsHtml()}${foundHtml()}</div>
       <div class="iv-side">${st.edit ? formHtml(st.edit) : '<p class="muted">Pick "edit" on an invasion, or "schedule an invasion".</p>'}</div></div></div>`;

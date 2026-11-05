@@ -42,6 +42,12 @@ The one rule of a step (step()):
      An invasion you schedule (PW-1433: authored.json, invasions.py; derive(invasions=...)) raises the chance between the peoples or
      cultures it names in its window (x2 light; x4 strong, which also needs no edge in strength) and leads the attack on its victims
      over plain war; the doc's "invasions" reads each row out (it happened: what was taken, when, how much land; or why not).
+     A strong row also reaches (PW-1450, owner D50; invasions.REACH_RULE): if its invaders rule only chiefdoms, the largest that stood
+     last century rules as a state in the window (a war band, _war_bands, before the claims); if no state of theirs borders the
+     victims, the nearest sends an expedition (_expedition) across unruled land within its own reach x its people's mobility
+     (invasions.mobility: nomads and pastoral nomads x2, from the model's own spec.TRAITS and spec.WAY_MOBILE; a mobile people may
+     also ride through a third polity's land), claims that corridor for the century and attacks the first polity of the victims it
+     meets. Plain war never uses an expedition's pair, and a doc with no rows is unchanged.
 
 Names (PW-1451): a polity is named for the people holding its capital (`names`, one per span of `peoples`); when another people
 takes the town the name and card follow them from then on, and `founded_by` keeps the first.
@@ -211,7 +217,9 @@ def war_v0(owner: np.ndarray, ctx: dict) -> np.ndarray:
     """War v0 (PW-1432), one plain rule per century step (module docstring, step 4). ctx: "seats" (by polity index; None for one not
     ruling), "strength" (by index), "eligible" (index -> it stood last step and is a town polity), "borders", "run", "step", "ago",
     "invasions" (authored rows, PW-1433: invasions.hook_rows), "inv_log" (one invasions.new_log() per row: what this step saw of it),
-    "ancestors" (people -> the ids a row may name it by). Moves every cell of each conquered polity to its conqueror and lists the
+    "ancestors" (people -> the ids a row may name it by), "expedition" (optional, PW-1450: (owner, the invaders' states, the victims'
+    polities) -> ((winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried, whether any was mobile); without it a row acts only
+    across a shared border, as v0). Moves every cell of each conquered polity to its conqueror and lists the
     conquests as ctx["taken"] = [(winner index, loser index, how)], how "war" or "invasion"; ctx["taken_row"]: loser -> its row's "i".
     An invasion outranks plain war for the same loser (the row's invaders attack it, not its strongest neighbour)."""
     seats, S, ok = ctx["seats"], ctx["strength"], ctx["eligible"]
@@ -240,33 +248,60 @@ def war_v0(owner: np.ndarray, ctx: dict) -> np.ndarray:
         vic = [p for p, s in enumerate(seats) if s is not None and p not in mine and _names(r.get("whom"), s, anc)]
         lg["victim"] += any(ok(p) for p in vic)
         lg["victim_dragon"] += any(seats[p]["tier"] == "dragon realm" for p in vic)
+    B = ctx["borders"]()
+    pairs = [(w, l, None) for (a, b) in B for w, l in ((a, b), (b, a))]
+    exp = ctx.get("expedition")
+    if exp is not None:  # (PW-1450, D50 B: a strong row whose invaders' states border no victim polity sends the nearest across the gap)
+        for r in rows:
+            if r.get("strength") != "strong":
+                continue
+            mine = [p for p, s in enumerate(seats) if s is not None and _names(r["who"], s, anc)]
+            st = [p for p in mine if seats[p]["tier"] == "state" and ok(p) and (id(r) not in near or p in near[id(r)])]
+            vic = [p for p, s in enumerate(seats) if s is not None and p not in mine and ok(p) and _names(r.get("whom"), s, anc)]
+            if not st or not vic or any((min(a, b), max(a, b)) in B for a in st for b in vic):
+                continue
+            got = exp(owner, st, set(vic))  # ((winner, loser, corridor cells, foot-km, km, mobility) or None, largest budget, any mobile)
+            lg = L[id(r)]
+            if got[0] is None:
+                if lg is not None:
+                    lg["exped_fail"] += 1
+                    lg["exped_km"] = max(lg["exped_km"], got[1])
+                    lg["exped_mobile"] = lg["exped_mobile"] or got[2]
+                    if len(got) > 3 and got[3] is not None and np.isfinite(got[3]):
+                        lg["exped_need"] = min(lg.get("exped_need", np.inf), got[3])
+                continue
+            w, l, path, fkm, km, mob = got[0]
+            owner[path] = w  # (the corridor: the unruled land it crossed is the invaders' for this century)
+            pairs.append((w, l, r))
+            if lg is not None:
+                lg["exped"].append({"ago_kyr": ago, "w": w, "l": l, "km": round(km, 1), "foot_km": round(fkm, 1), "corridor_cells": int(len(path)),
+                                    "mobility": round(mob, 2)})
     best: dict = {}  # loser -> ((an invasion, winner's strength), winner, chance, how, row)
     tried: list = []  # (winner, loser, row): the pairs an invasion row named
-    for (a, b) in ctx["borders"]():
-        for w, l in ((a, b), (b, a)):
-            if not (ok(w) and ok(l)) or seats[w]["tier"] != "state":
-                continue
-            p, odds, how, row = WAR_P, WAR_ODDS, "war", None
-            hits = [r for r in rows if _names(r["who"], seats[w], anc) and not _names(r["who"], seats[l], anc)
-                    and _names(r.get("whom"), seats[l], anc) and (id(r) not in near or w in near[id(r)])]
-            for r in hits:  # (several rows on one pair: the strongest leads, the others are shadowed)
-                q = min(1.0, WAR_P * INVADE_X[r.get("strength", "light")])
-                if row is None or q > p:
-                    p, how, row = q, "invasion", r
-                    odds = 0.0 if r.get("strength") == "strong" else WAR_ODDS  # (strong: no strength needed at all)
-                if L[id(r)] is not None:
-                    L[id(r)]["border"] += 1
-            for r in hits:
-                if r is not row and L[id(r)] is not None:
-                    L[id(r)]["shadowed"] += 1
-            if row is not None:
-                tried.append((w, l, row))
-            if S[w] >= odds * S[l] and S[w] > 0:
-                rank = (how == "invasion", S[w])
-                if l not in best or rank > best[l][0]:
-                    best[l] = (rank, w, p, how, row)
-            elif row is not None and L[id(row)] is not None:
-                L[id(row)]["odds"] += 1
+    for w, l, via in pairs:
+        if not (ok(w) and ok(l)) or seats[w]["tier"] != "state":
+            continue
+        p, odds, how, row = WAR_P, WAR_ODDS, "war", None
+        hits = [r for r in rows if _names(r["who"], seats[w], anc) and not _names(r["who"], seats[l], anc)
+                and _names(r.get("whom"), seats[l], anc) and (id(r) not in near or w in near[id(r)])] if via is None else [via]
+        for r in hits:  # (several rows on one pair: the strongest leads, the others are shadowed)
+            q = min(1.0, WAR_P * INVADE_X[r.get("strength", "light")])
+            if row is None or q > p:
+                p, how, row = q, "invasion", r
+                odds = 0.0 if r.get("strength") == "strong" else WAR_ODDS  # (strong: no strength needed at all)
+            if L[id(r)] is not None:
+                L[id(r)]["border"] += 1
+        for r in hits:
+            if r is not row and L[id(r)] is not None:
+                L[id(r)]["shadowed"] += 1
+        if row is not None:
+            tried.append((w, l, row))
+        if S[w] >= odds * S[l] and S[w] > 0:
+            rank = (how == "invasion", S[w])
+            if l not in best or rank > best[l][0]:
+                best[l] = (rank, w, p, how, row)
+        elif row is not None and L[id(row)] is not None:
+            L[id(row)]["odds"] += 1
     for w, l, row in tried:
         lg = L[id(row)]
         if lg is not None and l in best and best[l][1] != w and best[l][4] is not row:
@@ -542,6 +577,8 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                 continue  # (a fallen dragon realm: no realm for COOL_STEPS)
             seats.append({"key": key, "site": None, "cell": core, "people": ppl, "culture": cu, "uid": R.uids[cu], "pop": 0.0, "tier": "dragon realm",
                           "cls": 1, "rank": len(cells) * (INCUMBENT if key in prev_cap else 1.0), "own": cells})
+        if IV.WAR_BAND and inv_rows:  # (PW-1450, D50 C: a strong row whose invaders rule only chiefdoms seats a war band)
+            _war_bands(R, seats, inv_rows, ago, prev_cap, open_, anc)
         by_key = {s["key"]: s for s in seats}
         for pk in [pk for pk, r in lord.items() if r not in by_key or pk not in by_key]:
             if lord[pk] not in by_key:  # (its conqueror rules no more this step: the province goes free)
@@ -601,8 +638,14 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
         ctx = {"grid": g, "seats": ruling, "ago": ago, "step": k, "run": run_id, "luck": luck, "prev_owner": prev_owner, "strength": S_pid,
                "eligible": lambda p: ruling[p] is not None and ruling[p]["tier"] != "dragon realm" and ruling[p]["key"] in prev_cap and ruling[p]["key"] in open_,
                "invasions": inv_rows, "inv_log": inv_log, "ancestors": lambda p: anc.get(p, (p,)), "borders": lambda o=owner: borders(o, g)}
+        if IV.EXPEDITION and inv_rows:
+            ctx["expedition"] = lambda o, st, vic, ruling=ruling, F=F, ago=ago, wide=wide: _expedition(R, F, ruling, o, st, vic, ago, wide, off, idx)
         before = owner.copy()
         owner = war(owner, ctx)
+        for lg in inv_log:  # (an expedition's two sides as polity records, PW-1450)
+            for e in lg["exped"]:
+                if "w" in e:
+                    e["winner_id"], e["loser_id"] = open_[ruling[e.pop("w")]["key"]]["i"], open_[ruling[e.pop("l")]["key"]]["i"]
         n_taken = 0
         for w, l, how in ctx.get("taken", []):
             wk, lk = ruling[w]["key"], ruling[l]["key"]
@@ -673,6 +716,9 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                 rec.setdefault("confed", []).append([ago, s["heads"]])
             for u in subj:
                 rec["_subjects"].add(u)
+            if s.get("war_band") is not None:  # (PW-1450: the war band a row seated, on the card and in the row's read-out)
+                rec.setdefault("war_band", []).append(ago)
+                inv_log[s["war_band"]]["war_band"].append([ago, rec["id"]])
             area = len(cells) * R.cell_km2 / 1e6
             if area > rec["peak_mkm2"]:
                 rec["peak_mkm2"], rec["peak_kyr"], rec["peak_cells"] = round(area, 4), ago, int(len(cells))
@@ -726,7 +772,8 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     return {"format": FORMAT, "version": VERSION, "run": R.dir.name, "step_kyr": step_kyr, "from_kyr": agos[0],
             "cell_km2": round(R.cell_km2, 1), "made_s": round(time.time() - t0, 1), "constants": constants(), "tiers": list(TIERS),
             "steps": steps, "polities": polities, "cultures": cult, "maps": maps,
-            "invasions": {"rule": IV.RULE, "rows": IV.readout(inv_in, inv_log, polities, agos, R, anc), "problems": inv_notes}}
+            "invasions": {"rule": IV.RULE, "rows": IV.readout(inv_in, inv_log, polities, agos, R, anc), "problems": inv_notes}
+            | ({"reach": IV.REACH_RULE} if inv_in else {})}  # (the reach's rule only beside rows: a doc with none stays as it was)
 
 
 # ------------------------------------------------------------------ helpers
@@ -794,6 +841,51 @@ def _reach(R: _Run, s: dict, ago: float, wide: bool = False) -> tuple[float, flo
         if sx > 0:
             sx = max(sx, b / STATE_MAX_KM)
     return b, lx, sx
+
+
+def _war_bands(R: _Run, seats: list, rows: list, ago: float, prev_cap: dict, open_: dict, anc: dict) -> None:
+    """D50 C (PW-1450): for each strong row in its window whose invaders rule no state that stood last century (inside its place's
+    FROM_KM, if it has one) but do rule chiefdoms that did, the largest of those towns rules as a state this century (a war band:
+    tier "state", so it claims a state's reach and may fight; marked "war_band" with the row's place in the rows). A town seated
+    this century for the first time is not one: a polity fights from its second century, as v0."""
+    from . import invasions as IV
+    A = lambda p: anc.get(p, (p,))
+    for r in rows:
+        if r.get("strength") != "strong" or not _in_window(r, ago):
+            continue
+        near = set(r["near"].tolist()) if r.get("near") is not None else None
+        mine = [s for s in seats if s["tier"] != "dragon realm" and _names(r["who"], s, A)
+                and s["key"] in prev_cap and s["key"] in open_ and (near is None or s["cell"] in near)]
+        if any(s["tier"] == "state" for s in mine):
+            continue
+        ch = [s for s in mine if s["tier"] == "chiefdom" and not s.get("confed")]
+        if not ch or not IV.WAR_BAND:
+            continue
+        s = max(ch, key=lambda s: (s["pop"], s["key"]))
+        s["tier"], s["cls"], s["war_band"] = "state", 0 if R.knows(s["people"], STRONG_TECH, ago) else 2, r["i"]
+
+
+def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic: set, ago: float, wide: set, off, idx):
+    """D50 B and the mobile peoples (PW-1450): of the invaders' states `st`, the one whose expedition reaches a victim polity for the
+    least share of its budget (its own reach, _reach, x its people's mobility, invasions.mobility). Returns (the war_v0 hook's
+    (winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried in foot-km, whether any was mobile)."""
+    from . import invasions as IV
+    best, top, mobile = None, 0.0, False
+    for p in st:
+        s = ruling[p]
+        b, lx, sx = _reach(R, s, ago, s["key"] in wide)
+        mob = IV.mobility(R.lines[R.lidx[s["people"]]] if s["people"] in R.lidx else None)
+        top, mobile = max(top, b * mob), mobile or mob > 1.0
+        got = IV.expedition(np.flatnonzero(owner == p), b * mob, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"],
+                            F["ice"], CLIMB_M)
+        if got is not None and (best is None or got[2] / (b * mob) < best[0]):
+            best = (got[2] / (b * mob), (p, got[0], got[1], got[2], got[3], mob))
+    if best is None:  # (how far the nearest victim polity was: the read-out's "why not", one unbounded search, only on a miss)
+        need = min((g_[2] for g_ in (IV.expedition(np.flatnonzero(owner == p), np.inf, *_reach(R, ruling[p], ago, ruling[p]["key"] in wide)[1:],
+                                                    IV.mobility(R.lines[R.lidx[ruling[p]["people"]]] if ruling[p]["people"] in R.lidx else None) > 1.0,
+                                                    owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], CLIMB_M) for p in st) if g_), default=np.inf)
+        return None, top, mobile, need
+    return best[1], top, mobile, None
 
 
 def _dragon_cultures(R: _Run, F: dict):

@@ -2,7 +2,7 @@
 id: PW-1476
 title: Owner couldn't find the culinary brief panel (food sheet per culture); the desk's 'workbench tree' meant nothing to him
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -21,3 +21,4 @@ In plain words: Daniel 11-04 looked for the 'food sheet per culture (Culinary br
 
 ## Updates
 - 2026-11-04: Created.
+- 2026-11-04: Status todo -> done. Lane 197 (merge 8c2c06cd).

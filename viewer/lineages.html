@@ -108,12 +108,13 @@
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
 </header>
 <nav id="tabs">
-  <button data-tab="tree">Tree &amp; timeline</button>
+  <button data-tab="tree" title="The peoples tree: every line of the family tree you are editing, on a time axis (the workbench tree)">Peoples tree &amp; timeline</button>
   <button data-tab="cultures" title="Cultures that grew out of the peoples as they spread: a part that took to new country, or lived apart long enough (PW-670). Kept apart from the species tree">Cultures</button>
   <button data-tab="peoples">Peoples</button>
   <button data-tab="places">Places &amp; land use</button>
   <button data-tab="wishes">Wishes</button>
   <button data-tab="results">Results</button>
+  <button data-tab="brief" title="The food sheet for a culture or a whole people: land, fuels, staples, drinks, who eats together, what it won't eat (the culinary brief, PW-728, PW-1391)">Culinary brief</button>
   <button data-tab="tech">Technology</button>
   <button data-tab="religion" title="Gods, faiths and taboos of the picked peoples run: small god trees, a map of where each faith arose and spread, a faith timeline, each culture's taboos (PW-1358, PW-1311)">Religion</button>
   <button data-tab="polities" title="States and war of the picked peoples run: the invasions you schedule (who comes down on whom, when, from where, how hard) and what came of them, beside the incursions the history found on its own (PW-1433)">States &amp; war</button>
@@ -129,6 +130,7 @@
   <section class="tab" id="tab-wishes"></section>
   <section class="tab" id="tab-results"></section>
   <section class="tab" id="tab-tech"></section>
+  <section class="tab" id="tab-brief"></section>
   <section class="tab" id="tab-religion"></section>
   <section class="tab" id="tab-polities"></section>
 </main>
@@ -280,6 +282,7 @@ const FOOT = {
     thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
+  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era.',
   religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
   polities: 'Invasions you schedule and what came of them, beside the incursions the history found (invasiontab.js writes the rest).',
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
@@ -313,6 +316,7 @@ function redraw() {
   else if (tab === 'places') drawPlaces();
   else if (tab === 'wishes') drawWishes();
   else if (tab === 'tech') drawTech();
+  else if (tab === 'brief') drawBrief();
   else if (tab === 'religion') drawReligion();
   else if (tab === 'polities') drawPolities();
   else if (tab === 'cultures') drawCultures();
@@ -1098,6 +1102,63 @@ function drawCultures() {
   $('cuAll').onchange = (e) => { cultUI.all = e.target.checked; drawCultures(); };
 }
 // ---- the religion tab (gods.py, taboos.py, faithmap.py; its four views: religiontab.js, PW-1358) ---------------------------------
+// ---- the culinary brief tab (GET /api/brief: planet/brief.py; the same sheet as the globe's "Culinary brief..." button, PW-1476) ----------
+const briefUI = { people: '', culture: '', era: 0, md: '', run: null, json: null };
+async function drawBrief() {
+  const el = $('tab-brief');
+  if (!result) {
+    const mine = worldRuns();
+    if (mine.length && !drawBrief.busy && !new URLSearchParams(location.search).get('run')) { drawBrief.busy = true; showResult(mine[0].dir).finally(() => { drawBrief.busy = false; }); }
+    el.innerHTML = '<p class="muted">Pick a peoples run in the Results tab (or run the tree on a world) to see its culinary brief.</p>'; return;
+  }
+  const doc = result.culturesDoc;
+  if (doc === undefined) {
+    el.innerHTML = `<p class="muted">Working out the cultures of ${esc(result.id)}…</p>`;
+    if (!drawBrief.busy) {
+      const id = result.id; drawBrief.busy = true;
+      fetch(`../api/cultures?run=${encodeURIComponent(id)}`, { cache: 'no-store' }).then((r) => r.json()).catch((e) => ({ error: e.message }))
+        .then((d) => { if (result?.id === id) result.culturesDoc = d; }).finally(() => { drawBrief.busy = false; if (tab === 'brief') drawBrief(); });
+    }
+    return;
+  }
+  const C = doc && !doc.error ? doc.cultures || [] : [];
+  const L = Object.fromEntries((result.lineages || []).map((l) => [l.id, l]));
+  const peoples = [...new Set(C.map((c) => c.people))].sort((a, b) => String(L[a]?.name || a).localeCompare(String(L[b]?.name || b)));
+  if (!peoples.length) { el.innerHTML = `<p class="muted">No peoples with cultures in ${esc(result.id)}: ${esc(doc?.error || 'nothing to write a brief about')}</p>`; return; }
+  if (briefUI.run !== result.id) Object.assign(briefUI, { run: result.id, culture: '', md: '', json: null });
+  if (!peoples.includes(briefUI.people)) briefUI.people = peoples.includes('human') ? 'human' : peoples[0];
+  const era = Math.max(0, +briefUI.era || 0);
+  const alive = C.filter((c) => c.people === briefUI.people && c.born_kyr >= era - 1e-9 && (c.ended_kyr == null || c.ended_kyr < era - 1e-9)).sort((a, b) => (b.cells_now || 0) - (a.cells_now || 0) || a.id - b.id);
+  if (!alive.some((c) => String(c.id) === String(briefUI.culture))) briefUI.culture = '';
+  el.innerHTML = `<div class="row" style="margin-bottom:8px;align-items:center">
+    <label class="muted">people <select id="brPeople">${peoples.map((p) => `<option value="${esc(p)}" ${p === briefUI.people ? 'selected' : ''}>${esc((L[p]?.name || p).replace(/ \(.*$/, ''))}</option>`).join('')}</select></label>
+    <label class="muted" title="One culture of this people living at that era: its food sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat). The whole people: its range">culture <select id="brCulture"><option value="">whole people</option>${alive.map((c) => `<option value="${c.id}" ${String(c.id) === String(briefUI.culture) ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
+    <label class="muted" title="How long ago, in kyr (0: the present)">era <input id="brEra" type="number" min="0" step="1" value="${era}" style="width:64px"> kyr ago</label>
+    <button id="brShow" class="primary">Show the brief</button><button id="brCopy">Copy text</button><button id="brJson">Download JSON</button>
+    <span class="muted">run ${esc(result.id)}</span></div>
+    <pre id="brText" style="white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace;max-width:1000px">${esc(briefUI.md || 'Press "Show the brief".')}</pre>`;
+  $('brPeople').onchange = (e) => { briefUI.people = e.target.value; briefUI.culture = ''; briefUI.md = ''; drawBrief(); };
+  $('brCulture').onchange = (e) => { briefUI.culture = e.target.value; loadBrief(); };
+  $('brEra').onchange = (e) => { briefUI.era = Math.max(0, +e.target.value || 0); briefUI.md = ''; drawBrief(); };
+  $('brShow').onclick = loadBrief;
+  $('brCopy').onclick = () => navigator.clipboard?.writeText(briefUI.md || '');
+  $('brJson').onclick = () => {
+    if (!briefUI.json) return;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(briefUI.json, null, 1)], { type: 'application/json' }));
+    a.download = `brief-${result.id}-${briefUI.culture ? 'culture-' + briefUI.culture : briefUI.people}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+}
+async function loadBrief() {
+  const id = result.id, q = briefUI.culture ? `culture=${briefUI.culture}` : `people=${encodeURIComponent(briefUI.people)}`;
+  $('brText').textContent = 'Building the brief…';
+  try {
+    const r = await fetch(`../api/brief?run=${encodeURIComponent(id)}&${q}&era=${Math.max(0, +$('brEra').value || 0)}`), j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    if (result?.id !== id) return;
+    briefUI.md = j.markdown; briefUI.json = j.brief; briefUI.era = Math.max(0, +$('brEra').value || 0);
+    if ($('brText')) $('brText').textContent = j.markdown;
+  } catch (err) { if ($('brText')) $('brText').textContent = 'Could not build the brief: ' + err.message; }
+}
 function drawReligion() {
   const el = $('tab-religion');
   if (!result) {
