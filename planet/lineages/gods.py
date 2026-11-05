@@ -27,11 +27,17 @@ Faiths (PW-1358): a faith is its own record, not a culture. JUDGEMENT throughout
 - Inherited: a culture born of another keeps its parent's faith; a merge leaves the survivor's faith (the lost culture leaves its own).
 - Schism: a culture whose most devoted being has had another top domain than its faith's core for SCHISM_KYR breaks off as a new faith
   (parent = the old one); a faith's last culture does not break off, the faith's core just moves (a change, logged).
-- Conversion: two cultures in contact (sharing or bordering cells in a frame) of different faiths; if the neighbour's leading being is at
-  least CONVERT_MIN individuated (temples) and CONVERT_GAP above this culture's, it converts with probability 1 - exp(-dt/TAU_CONVERT):
-  it takes the neighbour's faith and a copy of its leading being (how = "converted"), keeping its own old beings (syncretism). A converted
-  culture does not break away by drift (its old gods leading again would otherwise undo every conversion within SCHISM_KYR); it can
-  still convert again, and its daughter cultures can break away.
+- Conversion (PW-1477, rates sourced in docs/review/culture/attitudes/round1.md): a culture takes another faith whole, as an event in
+  continuous time, along one of three links: an ordinary neighbour whose leading god is at least CONVERT_MIN individuated (temples)
+  and CONVERT_GAP above its own (TAU_CONVERT); a missionary neighbour (a faith that seeks converts: written so, or a moralizing high
+  god's faith with MISSION_P's chance) when its own faith is not missionary and MISSION_GAP less organised (TAU_MISSION); or its
+  rulers (a state, empire or dragon realm of the polities read-out whose ruling culture holds the faith), at a rate set by the
+  ruler's tolerance (attitudes.py, PW-904: TAU_FORCED to TAU_TOLERANT; ETHNIC_RULE x for a faith that is not missionary). A
+  neighbour's pull is x the share of the taker's border facing it and x the taker's tolerance; a ruler's x the share of the
+  taker's land it rules. The convert takes a copy of the converter's leading god (how = "converted"), keeping its own old beings
+  (syncretism), and the church that converted it holds it (`held`) against faiths no better organised. A converted culture does not
+  break away by drift (its old gods leading again would otherwise undo every conversion within SCHISM_KYR); it can still convert
+  again, and its daughter cultures can break away.
 - A faith with no culture left ends: "no followers left" when its last culture converted or broke away, else "its cultures ended".
 
 Faiths you write (PW-1430): authored.json in the run (read_authored) holds faiths Daniel wrote in the viewer: a name, a founding culture,
@@ -87,8 +93,23 @@ RIVER_Q = 0.92  # the top 8 % of land by flow is a river (as crossing.corridor)
 WAY_WORDS = (("farm", "harvest"), ("herd", "herd"), ("nomad", "herd"), ("seafar", "sea"), ("hunt", "hunt"), ("arctic", "hunt"))
 NONE = 65535
 SCHISM_KYR = 20.0  # JUDGEMENT: a culture's leading being this long off its faith's core and the culture breaks away
-CONVERT_MIN, CONVERT_GAP = 0.45, 0.15  # JUDGEMENT: a faith spreads only from an organised one (temples) to a less individuated one
-TAU_CONVERT = 30.0  # kyr, JUDGEMENT: per contact, the e-folding time of a conversion
+CONVERT_MIN, CONVERT_GAP = 0.45, 0.15  # JUDGEMENT: an ordinary faith spreads only from an organised one (temples) to a less individuated one
+# Spread rates (PW-1477; sources and checks: docs/review/culture/attitudes/round1.md). A culture converts as a whole, with a hazard per
+# kyr from each neighbour (or ruler) that may convert it; the times below are the e-folding (mean waiting) times of one such link.
+TAU_CONVERT = 2.0  # kyr, JUDGEMENT within the sourced scale: an ordinary faith (no missionaries) wins a neighbour over a millennium or two, ten times slower than a missionary one (it was 30 kyr: PW-1477)
+TAU_MISSION = 0.2  # kyr, sourced scale, judged point: Stark 1996's ~40 %/decade (Fousek et al. 2018: 34 %/decade) takes a population from 1 % to a majority in ~110-130 years; one link's mean wait ~two centuries
+MISSION_MIN = 0.2  # JUDGEMENT: a missionary faith needs some organisation (burial's tier: keepers of the rites), not temples
+MISSION_GAP = 0.05  # JUDGEMENT: and wins only a culture whose own leading god is at least this much less individuated (no faith is left for one no better organised; CONVERT_GAP is 0.15)
+MISSION_IND = 0.7  # JUDGEMENT: a faith may turn missionary once one of its cultures' leading god is this individuated (past kingship's 0.6: the moralizing high god)
+MISSION_P = 0.5  # JUDGEMENT: the chance (a seeded draw per faith, once) that such a faith seeks converts; the rest stay ethnic faiths
+RECEPT_MID = 0.5  # JUDGEMENT: a culture takes a neighbour's faith at x (its tolerance / RECEPT_MID): 0..2, the insular resist (attitudes.py)
+TAU_FORCED = 0.03  # kyr, sourced: forced conversion by a ruler with no tolerance takes a generation (Saxon wars 772-804, 32 years; Lithuania 1387-1413, 26 years)
+TAU_TOLERANT = 2.0  # kyr, JUDGEMENT on the sourced side: a fully tolerant ruler barely pushes its faith (Cyrus's restored gods; the Mongols' tolerance, their khans taking their subjects' faiths instead)
+# a ruler's push: tau = TAU_FORCED^(1 - tolerance) x TAU_TOLERANT^tolerance (log between them): tolerance 0.6 gives ~0.37 kyr, Bulliet 1979's
+# Islamic rule (no forced conversion; a tax on unbelievers): ~40 % Muslim two centuries after the conquest, ~80 % in three to four
+SHARE_EDGES = 6  # (a cell two cultures share counts as its six edges between them: touch())
+ETHNIC_RULE = 0.1  # JUDGEMENT on a sourced contrast: rulers of a faith that seeks no converts push it at a tenth of the rate (the polytheist empires returned their subjects' gods to their temples, as Cyrus did at Babylon; forced conversion is the exclusive, missionary faiths' habit: the Saxons, Castile 1502)
+RULE_TIERS = ("state", "empire", "dragon realm")  # JUDGEMENT: a chiefdom (a town and its cell) pushes no faith; dragons are sapient and rule as any
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
 AUTHORED_FILE = "authored.json"
@@ -200,7 +221,8 @@ class Being:
 
 
 class Faith:
-    __slots__ = ("id", "origin", "founded", "parent", "how", "core", "ended", "end", "members", "track", "changes", "events", "name", "authored", "spreads")
+    __slots__ = ("id", "origin", "founded", "parent", "how", "core", "ended", "end", "members", "track", "changes", "events", "name", "authored", "spreads",
+                 "missionary", "decided")
 
     def __init__(self, id_, origin, founded, how, core, parent=None):
         self.id, self.origin, self.founded, self.how, self.core, self.parent = id_, origin, founded, how, core, parent
@@ -210,12 +232,14 @@ class Faith:
         self.changes: list = []
         self.events: list = []
         self.name, self.authored, self.spreads = None, None, True
+        self.missionary, self.decided = False, False  # (PW-1477: it seeks converts; decided: its one draw is made)
 
 
 class Pantheons:
     """The beings of every culture, followed frame by frame, oldest first. No I/O: feed it frames."""
 
-    def __init__(self, mode: str = MODE_DEFAULT, seed: int = 0):
+    def __init__(self, mode: str = MODE_DEFAULT, seed: int = 0, lines: dict | None = None):
+        from .attitudes import Attitudes
         if mode not in GODS_MODES:
             raise ValueError(f"gods_mode must be one of {GODS_MODES}")
         self.mode = mode
@@ -230,8 +254,12 @@ class Pantheons:
         self.off: dict[int, float] = {}  # culture -> kyr its leading being has been off its faith's core
         self.converted: set = set()  # cultures that took their faith by conversion (they do not break away by drift)
         self.rng = np.random.default_rng((int(seed), 1358))
-        self.counts = {"founded": 0, "schisms": 0, "conversions": 0, "core_changes": 0, "authored": 0}
+        self.counts = {"founded": 0, "schisms": 0, "conversions": 0, "core_changes": 0, "authored": 0, "by_contact": 0, "by_missionaries": 0, "by_rulers": 0}
         self.closed: set = set()  # faiths that take no converts (authored, "stays closed")
+        self.seed = int(seed)
+        self.held: dict = {}  # culture -> the individuation of the leading god of the church that converted it (PW-1477)
+        self.held_f: dict = {}  # culture -> the faith it was converted to (held counts only while it keeps that faith)
+        self.att = Attitudes(lines, seed)  # (PW-904: each culture's tolerance and aggression; a ruler's tolerance sets its push)
 
     # ---- faiths (PW-1358)
     def _join(self, c: int, f: int | None, ago: float):
@@ -296,32 +324,112 @@ class Pantheons:
             self._join(c, new[key], ago)
             self._check_end(f, ago, "no followers left")
 
-    def _conversions(self, ago: float, dt: float, contacts):
-        if dt <= 0 or not contacts:
-            return
-        p = 1.0 - math.exp(-dt / TAU_CONVERT)
-        done: set = set()
-        for a, b in sorted(contacts):
-            for x, y in ((a, b), (b, a)):
-                if x in done or x not in self.faith_of or y not in self.faith_of or self.faith_of[x] == self.faith_of[y] or self.faith_of[y] in self.closed:
+    def _decide_missions(self):
+        """A faith whose leading god has become a moralizing high god (MISSION_IND) seeks converts with MISSION_P's chance: one seeded
+        draw per faith, independent of every other draw (PW-1477). Faiths you write say so themselves."""
+        for c, f in self.faith_of.items():
+            F = self.faiths[f]
+            if F.decided:
+                continue
+            L = self.lead(c)
+            if L is not None and L.ind >= MISSION_IND:
+                F.decided = True
+                F.missionary = bool(np.random.default_rng((self.seed, 1477, F.id)).random() < MISSION_P)
+                if F.missionary:
+                    self._ev(self.prev, "missionary", f"faith {F.id} began to seek converts", faith=F.id)
+
+    def _links(self, contacts, rule, t: float | None = None) -> list:
+        """Every way a culture may take another faith now: [(rate per kyr, culture, faith, source culture, how)]. Neighbours (contacts)
+        of an ordinary faith convert only from an organised one (CONVERT_MIN) at least CONVERT_GAP more individuated, over TAU_CONVERT;
+        of a missionary faith, a culture of a faith that is not missionary and at least MISSION_GAP less individuated, over
+        TAU_MISSION (the gap is over the culture's own leading god, or over the church that converted it, `held`); a ruler (rule:
+        [(ruler culture, subject cultures, took)]) pushes its faith on its subjects over its tolerance's tau. Each is x the taker's
+        receptiveness (its tolerance / RECEPT_MID) but the ruler's push, which is not asked; a neighbour's pull is x the share of the
+        taker's border that faces it (touch(); contacts given as a plain set face fully), a ruler's push x the share of the subject
+        culture's land it rules. A faith pulls only from its founding on (t: the time now, kyr ago)."""
+        out = []
+        wts = contacts if isinstance(contacts, dict) else None
+        for a, b in sorted(contacts or ()):
+            wab = wts[(a, b)] if wts is not None else (1.0, 1.0)
+            for x, y, w in ((a, b, wab[0]), (b, a, wab[1])):
+                fx, fy = self.faith_of.get(x), self.faith_of.get(y)
+                if w <= 0 or fx is None or fy is None or fx == fy or fy in self.closed:
+                    continue
+                if t is not None and min(self.faiths[fy].founded, self.faiths[fx].founded) < t - 1e-9:  # (neither faith founded later)
                     continue
                 lx, ly = self.lead(x), self.lead(y)
-                if lx is None or ly is None or ly.ind < CONVERT_MIN or ly.ind - lx.ind < CONVERT_GAP:
+                if lx is None or ly is None:
                     continue
-                if self.rng.random() >= p:
-                    continue
-                done.add(x)
-                old, f = self.faith_of[x], self.faith_of[y]
-                self._join(x, f, ago)
-                self.converted.add(x)
-                nb = self._new(ly.w.copy(), ago, x, "converted", ly.id)
-                nb.dev = min(1.0, max(o.dev for o in self.by[x]) + 0.01)
-                nb.ind = lx.ind
-                self.off.pop(x, None)
-                self.counts["conversions"] += 1
-                self.faiths[f].events.append([round(float(ago), 3), "converted", x, old])
-                self._ev(ago, "conversion", f"culture {x} took faith {f} from culture {y}", culture=x, faith=f, faith_was=old, by=y)
-                self._check_end(old, ago, "no followers left")
+                gap = ly.ind - max(lx.ind, self.held.get(x, 0.0) if self.faith_of.get(x) == self.held_f.get(x) else 0.0)
+                if self.faiths[fy].missionary and not self.faiths[fx].missionary:
+                    if ly.ind < MISSION_MIN or gap < MISSION_GAP:
+                        continue
+                    out.append((w * self.att.tolerance(x) / RECEPT_MID / TAU_MISSION, x, fy, y, "missionaries"))
+                elif ly.ind >= CONVERT_MIN and gap >= CONVERT_GAP:
+                    out.append((w * self.att.tolerance(x) / RECEPT_MID / TAU_CONVERT, x, fy, y, "contact"))
+        for r, subs, _took in rule or ():
+            fr = self.faith_of.get(r)
+            if fr is None or fr in self.closed or self.lead(r) is None:
+                continue
+            if t is not None and self.faiths[fr].founded < t - 1e-9:
+                continue
+            tol = self.att.tolerance(r)
+            rate = (1.0 if self.faiths[fr].missionary else ETHNIC_RULE) / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
+            for x, share in subs:
+                fx = self.faith_of.get(x)
+                if x != r and share > 0 and fx not in (None, fr) and self.lead(x) is not None and (t is None or self.faiths[fx].founded >= t - 1e-9):
+                    out.append((rate * share, x, fr, r, "rulers"))
+        return out
+
+    def _convert(self, x: int, f: int, y: int, how: str, ago: float):
+        lx, ly = self.lead(x), self.lead(y)
+        old = self.faith_of[x]
+        self._join(x, f, ago)
+        self.converted.add(x)
+        nb = self._new(ly.w.copy(), ago, x, "converted", ly.id)
+        nb.dev = min(1.0, max(o.dev for o in self.by[x]) + 0.01)
+        nb.ind = lx.ind
+        self.held[x], self.held_f[x] = ly.ind, f  # (PW-1477: the church that converted it holds it: a faith no better organised than that one cannot take it back)
+        self.off.pop(x, None)
+        self.counts["conversions"] += 1
+        self.counts["by_" + how] += 1
+        tol = round(self.att.tolerance(y), 3) if how == "rulers" else None
+        self.faiths[f].events.append([round(float(ago), 3), "converted", x, old, how])
+        word = {"contact": "from", "missionaries": "from the missionaries of", "rulers": "under its rulers,"}[how]
+        self._ev(ago, "conversion", f"culture {x} took faith {f} {word} culture {y}", culture=x, faith=f, faith_was=old, by=y, how=how,
+                 **({"ruler_tolerance": tol} if tol is not None else {}))
+        self._check_end(old, ago, "no followers left")
+
+    def _conversions(self, ago: float, dt: float, contacts, rule_steps=(), step_kyr: float = 0.1):
+        """The conversions between the last frame and this one, as events in continuous time (each link a hazard: the waiting time
+        to the next conversion is exponential in the sum of the rates, and the links are worked out again after each one), so the
+        rates hold whatever the frames' spacing. rule_steps: [(ago, rule)] of the polity steps in this interval; a step's rule holds
+        for the century before its date."""
+        if dt <= 0:
+            return
+        hi0 = ago + dt
+        cuts = {hi0, ago}
+        for s, _ in rule_steps:
+            cuts.update(x for x in (s, s + step_kyr) if ago < x < hi0)
+        pts = sorted(cuts, reverse=True)
+        for hi, lo in zip(pts[:-1], pts[1:]):
+            mid = 0.5 * (hi + lo)
+            rule = next((r for s, r in rule_steps if s - 1e-9 <= mid <= s + step_kyr + 1e-9), None)
+            t = hi
+            while True:
+                L = self._links(contacts, rule, t)
+                if not L:
+                    break
+                rates = np.array([l[0] for l in L])
+                R = float(rates.sum())
+                if R <= 0:
+                    break
+                t -= float(self.rng.exponential(1.0 / R))
+                if t <= lo:
+                    break
+                k = int(np.searchsorted(np.cumsum(rates), self.rng.random() * R, side="right"))
+                _, x, f, y, how = L[min(k, len(L) - 1)]
+                self._convert(x, f, y, how, t)
 
     def found_authored(self, c: int, ago: float, spec: dict) -> int:
         """A faith Daniel wrote (PW-1430), founded in culture c now: c takes it (as a conversion: its own gods stay, the named ones lead,
@@ -334,6 +442,7 @@ class Pantheons:
         f = self._found_faith(c, ago, core, "authored")
         F = self.faiths[f]
         F.name, F.authored, F.spreads = spec["name"], spec["id"], bool(spec.get("spreads", True))
+        F.missionary, F.decided = F.spreads and bool(spec.get("missionary", F.spreads)), True  # (PW-1477: you say whether it seeks converts)
         if not F.spreads:
             self.closed.add(f)
         self._join(c, f, ago)
@@ -430,13 +539,23 @@ class Pantheons:
         self.by.pop(c, None)
         self._leave(c, ago, "its cultures ended")
 
-    def frame(self, ago: float, cultures: dict[int, dict], contacts=None, where: dict | None = None, found=None):
+    def frame(self, ago: float, cultures: dict[int, dict], contacts=None, where: dict | None = None, found=None, rule_steps=(), step_kyr: float = 0.1):
         """One frame. cultures: culture id -> {"sal": salience array, "know": set of techs, "place": str} for each culture with cells
         and a people that has spirit_ritual (the rest have no gods yet). contacts: pairs of cultures in touch this frame (faith spread);
         where: culture -> (cells, sum of their unit vectors) (the faiths' track). found: [(culture, authored spec)] founded this frame
-        (after the cultures' own gods are tended; each spec's "faith" is set to its new faith's id)."""
+        (after the cultures' own gods are tended; each spec's "faith" is set to its new faith's id). rule_steps: [(ago, [(ruler culture,
+        subject cultures, took land by war)])] of the polity steps since the last frame (rule_table; PW-1477: rulers push their faith)."""
         dt = 0.0 if self.prev is None else max(self.prev - ago, 0.0)
         self.prev = ago
+        for c, u in cultures.items():  # (attitudes, PW-904: every culture on the map with gods; a daughter starts from its parent)
+            self.att.ensure(c, u.get("people", "?"), u.get("parent"))
+        for _, rule in rule_steps:
+            for r, subs, took in rule:
+                self.att.ruled(r, len(subs))
+                if took:
+                    self.att.won(r)
+                for x, _ in subs:
+                    self.att.subject(x)
         for c, u in cultures.items():
             sal, bs = u["sal"], self.by.setdefault(c, [])
             if not bs:  # (founded: the BEING_MIN most salient domains; a culture with no faith yet founds one)
@@ -486,9 +605,16 @@ class Pantheons:
         for c, spec in found or ():
             if c in cultures:
                 spec["faith"] = self.found_authored(c, ago, spec)
+        n_in = {}
+        for a, b in contacts or ():
+            n_in[a] = n_in.get(a, 0) + 1
+            n_in[b] = n_in.get(b, 0) + 1
+        self.att.step(ago, dt, {c: u.get("people", "?") for c, u in cultures.items()}, n_in,
+                      {c for c, f in self.faith_of.items() if self.faiths[f].missionary})
         if dt > 0:
             self._schisms(ago, dt)
-            self._conversions(ago, dt, contacts)
+            self._decide_missions()
+            self._conversions(ago, dt, contacts, rule_steps, step_kyr)
         self.faith_track(ago, where)
 
     def _dedupe(self, c: int, ago: float):
@@ -654,30 +780,90 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
                 par = u.get("parent")
                 if par is not None:
                     first.append((c, res(par, ago), u["name"]))
-            cur[c] = {"sal": sal, "know": kn}
+            cur[c] = {"sal": sal, "know": kn, "people": u["people"], "parent": u.get("parent")}
         uv = np.stack([np.bincount(cul, weights=U[cell, k], minlength=nC) for k in range(3)], 1) if cur else None
-        frames.append({"j": j, "ago": ago, "ends": ends, "first": first, "cur": cur, "contacts": contacts(g.n, cell, cul, src, dst, nC),
+        frames.append({"j": j, "ago": ago, "ends": ends, "first": first, "cur": cur, "contacts": touch(g.n, cell, cul, src, dst, nC),
                        "where": {c: (int(n[c]), uv[c]) for c in cur} if cur else None, "present": {c: int(n[c]) for c in present},
                        "cell": cell.astype(np.int32), "cul": cul.astype(np.int32)})
     return {"C": C, "res": res, "known": known, "win": win, "seed": int(m.get("seed") or 0), "frames": frames, "after": endev[ei:],
-            "U": U, "lines": {k: v.get("name", k) for k, v in lines.items()}, "secs": round(time.time() - t0, 1)}
+            "U": U, "lines": {k: v.get("name", k) for k, v in lines.items()},
+            "temperament": {k: {"traits": v.get("traits") or [], "demography": v.get("demography") or {}, "way": v.get("way")} for k, v in lines.items()},
+            "secs": round(time.time() - t0, 1)}
 
 
-def derive(run_dir: Path, mode: str = MODE_DEFAULT, techtree: dict | None = None, authored: list | None = None) -> dict:
+def derive(run_dir: Path, mode: str = MODE_DEFAULT, techtree: dict | None = None, authored: list | None = None, rule: dict | None = None) -> dict:
     """gods.json of a stored peoples run that has cultures (read-only). techtree: a fresh techtree.build to use instead of the run's
     stored one (a run made before the faith nodes lacks them: gods_mode and the faith techs are read from it). authored: the faiths
-    written in (PW-1430); None reads the run's authored.json."""
+    written in (PW-1430); None reads the run's authored.json. rule: rule_table() of its polities; None derives them (polities.py,
+    with the invasions you scheduled) when the run has settlements, else no rulers."""
+    A = read_authored(run_dir)
     if authored is None:
-        authored = read_authored(run_dir)["faiths"]
-    return replay(inputs(run_dir, techtree), mode, authored)
+        authored = A["faiths"]
+    inp = inputs(run_dir, techtree)
+    if rule is None and (Path(run_dir) / "settlements.json").exists():
+        from . import polities as PO
+        rule = rule_table(PO.derive(Path(run_dir), invasions=A["invasions"]), inp["C"], inp["frames"])
+    return replay(inp, mode, authored, rule)
 
 
-def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None) -> dict:
-    """The gods and faiths from inputs(): the Pantheons fed frame by frame, the authored faiths founded when their founders are there."""
+def rule_table(po: dict, C: list, frames: list | None = None) -> dict:
+    """Who rules whom at each polity step (PW-1477), from a polities doc (polities.derive): {"step_kyr", "steps": [[ago, [[ruler
+    culture, [[subject culture, share of its land the polity holds], ...], took land by war this step], ...]], ...]}, oldest first,
+    for the states, empires and dragon realms (RULE_TIERS) that have a ruling culture. Cultures are cultures.json ids, followed
+    through their merges to that time. frames: inputs()["frames"], for the shares (each step reads the frame nearest it); without
+    them every share is 1."""
+    from .polities import _unpack
+    by_uid = {c["uid"]: c["id"] for c in C if c.get("uid")}
+    fagos = np.array([f["ago"] for f in frames]) if frames else None
+    tot_at: dict = {}
+    res = _resolver({"cultures": C})
+    tiers = po.get("tiers") or ["chiefdom", "state", "empire", "dragon realm"]
+    rec = po["polities"]
+    took = {(pid, round(float(a), 3)) for r in rec for pid in (r["id"],) for a, *_ in r.get("took") or ()}
+    steps = []
+    for st, mp in zip(po["steps"], po["maps"]):
+        ago = float(st["ago"])
+        rows = []
+        for e in mp:
+            pid, tier, subj = e[0], tiers[e[1]], e[3]
+            if tier not in RULE_TIERS:
+                continue
+            rs = [u for a, u in rec[pid]["rulers"] if a >= ago - 1e-9]
+            if not rs or rs[-1] not in by_uid:
+                continue
+            r = res(by_uid[rs[-1]], ago)
+            subs = sorted({res(by_uid[u], ago) for u in subj if u in by_uid} - {r})
+            if not subs:
+                continue
+            if fagos is not None:
+                fi = int(np.argmin(np.abs(fagos - ago)))
+                F = frames[fi]
+                if fi not in tot_at:
+                    tot_at[fi] = np.bincount(F["cul"], minlength=len(C))
+                cells = np.asarray(_unpack(e[2]), np.int64)
+                inside = np.isin(F["cell"], cells)
+                here = np.bincount(F["cul"][inside], minlength=len(C))
+                tot = tot_at[fi]
+                subs = [[x, round(float(min(1.0, here[x] / tot[x])), 4) if tot[x] else 0.0] for x in subs]
+            else:
+                subs = [[x, 1.0] for x in subs]
+            rows.append([r, subs, (pid, round(ago, 3)) in took])
+        steps.append([ago, rows])
+    steps.sort(key=lambda x: -x[0])
+    return {"step_kyr": float(po.get("step_kyr") or 0.1), "steps": steps}
+
+
+def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, rule: dict | None = None) -> dict:
+    """The gods and faiths from inputs(): the Pantheons fed frame by frame, the authored faiths founded when their founders are there.
+    rule: rule_table() (rulers push their faith on their subjects, PW-1477); None: no rulers."""
     t0 = time.time()
     C, res, known, win = inp["C"], inp["res"], inp["known"], inp["win"]
     place = {c["id"]: c.get("place") for c in C}
-    P = Pantheons(mode, inp["seed"])
+    P = Pantheons(mode, inp["seed"], inp.get("temperament"))
+    rsteps = (rule or {}).get("steps") or []
+    step_kyr = float((rule or {}).get("step_kyr") or 0.1)
+    ri = 0
+    prev_ago = None
     specs, notes = clean_authored(authored or [], len(C), set(inp["lines"]), strict=False)
     todo = [dict(s, faith=None, why=None, took=None) for s in specs]
     for s in todo:
@@ -699,7 +885,13 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None) ->
                 c = _founder(s, fr, inp)
                 if c is not None:
                     found.append((c, s))
-        P.frame(ago, fr["cur"], fr["contacts"], fr["where"], found)
+        here = []
+        while ri < len(rsteps) and rsteps[ri][0] >= ago - 1e-9:  # (the polity steps since the last frame; earlier ones are skipped)
+            if prev_ago is not None and rsteps[ri][0] < prev_ago - 1e-9:
+                here.append((rsteps[ri][0], [(r, subs, tk) for r, subs, tk in rsteps[ri][1]]))
+            ri += 1
+        prev_ago = ago
+        P.frame(ago, fr["cur"], fr["contacts"], fr["where"], found, here, step_kyr)
         for c, s in found:
             s["took"], s["culture_now"], s["founded_kyr"] = True, c, round(float(ago), 3)
             if s.get("first_why") and min(s["ago_kyr"], win) - ago > 0.5:
@@ -727,6 +919,7 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None) ->
                                  "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c),
                                  "ritual_since_kyr": (known.get(C[c]["people"]) or {}).get("spirit_ritual", [None])[0]} for c, ids in cl.items()},
            "authored": {"rule": AUTHORED_RULE, "faiths": [authored_readout(s, faiths, C) for s in todo], "problems": notes},
+           "attitudes": P.att.doc() | {"rulers_known": bool(rsteps)},
            "summary": summary(docs, mode, round(inp.get("secs", 0.0) + time.time() - t0, 1)) | {"faiths": {**P.counts, "ever": len(faiths),
                                                                                                      "living": sum(f["ended_kyr"] is None for f in faiths)}}}
     return out
@@ -785,13 +978,15 @@ def _founder(s: dict, fr: dict, inp: dict) -> int | None:
 AUTHORED_RULE = ("A faith you write is founded at the first stored moment from its year on at which its founder (the culture; else the "
                  "people's culture nearest the place, or its largest; else the culture nearest the place, within "
                  f"{PLACE_KM:g} km) is on the map and has gods (spirit ritual). That culture takes it as a conversion: its own gods stay, the "
-                 "named gods lead, its old faith may end. After that it lives under the same rules as every faith: its gods drift toward the "
-                 "land, may fade, are copied into daughter cultures and fuse at merges; it wins neighbours only if it spreads and its "
-                 f"leading god is at least {CONVERT_MIN:g} individuated (temples).")
+                 "named gods lead, its old faith may end. After that it lives under the same rules as every faith: its gods drift toward the land, may fade, are copied into daughter cultures and fuse at merges. "
+                 f"If it is missionary it wins neighbours whose faith is not missionary and no more organised (from {MISSION_MIN:g} individuation, about "
+                 f"{TAU_MISSION * 1000:g} years a link); if it only spreads, like any faith, from temples ({CONVERT_MIN:g}) over about {TAU_CONVERT:g} kyr; "
+                 "and its cultures' rulers push it on their subjects.")
 
 
 def clean_authored(faiths, n_cultures: int, peoples: set, strict: bool = True) -> tuple[list, list]:
-    """Authored faiths in a checked form: [{id, name, culture, people, place, ago_kyr, year_text, gods: [{name, domains}], spreads}].
+    """Authored faiths in a checked form: [{id, name, culture, people, place, ago_kyr, year_text, gods: [{name, domains}], spreads,
+    missionary}] (missionary, PW-1477: it seeks converts; a faith saved before it was asked is missionary when it spreads).
     strict: raise ValueError at the first problem (the POST); else skip what is broken and say so (a hand-edited file never crashes
     the read-out). Returns (faiths, problems)."""
     out, notes = [], []
@@ -871,13 +1066,14 @@ def clean_authored(faiths, n_cultures: int, peoples: set, strict: bool = True) -
             gods = gods[:AUTHORED_GODS_MAX]
         ids.add(fid)
         out.append({"id": fid, "name": nm, "culture": c, "people": pe, "place": pl, "ago_kyr": round(ago, 6),
-                    "year_text": str(f.get("year_text") or "")[:60], "gods": gods, "spreads": bool(f.get("spreads", True))})
+                    "year_text": str(f.get("year_text") or "")[:60], "gods": gods, "spreads": bool(f.get("spreads", True)),
+                    "missionary": bool(f.get("spreads", True)) and bool(f.get("missionary", f.get("spreads", True)))})
     return out, notes
 
 
 def authored_readout(s: dict, faiths: list, C: list) -> dict:
     """One authored faith for the viewer: what was asked, whether it took hold (and why not), and how it has fared."""
-    r = {k: s.get(k) for k in ("id", "name", "culture", "people", "place", "ago_kyr", "year_text", "gods", "spreads")}
+    r = {k: s.get(k) for k in ("id", "name", "culture", "people", "place", "ago_kyr", "year_text", "gods", "spreads", "missionary")}
     r |= {"took_hold": bool(s.get("took")), "faith": s.get("faith"), "founded_kyr": s.get("founded_kyr"), "why": s.get("why") if not s.get("took") else None,
           "note": s.get("note"), "founded_in": s.get("culture_now"),
           "founded_in_name": C[s["culture_now"]]["name"] if s.get("culture_now") is not None else None}
@@ -885,10 +1081,19 @@ def authored_readout(s: dict, faiths: list, C: list) -> dict:
         F = faiths[s["faith"]]
         won = sum(e[1] == "converted" for e in F["events"])
         top = max((t[5] for t in F["track"]), default=0.0)
+        ways = {}
+        for e in F["events"]:
+            if e[1] == "converted":
+                ways[e[4] if len(e) > 4 else "contact"] = ways.get(e[4] if len(e) > 4 else "contact", 0) + 1
+        how = ", ".join(f"{n} {dict(contact='from neighbours', missionaries='by its missionaries', rulers='under its rulers')[k]}" for k, n in sorted(ways.items()))
         if not s["spreads"]:
             spread = "stays closed: it takes no converts"
         elif won:
-            spread = f"won {won} culture{'s' if won != 1 else ''} by conversion"
+            spread = f"won {won} culture{'s' if won != 1 else ''} by conversion ({how})"
+        elif s.get("missionary", True) and top < MISSION_MIN:
+            spread = f"has not spread: its leading god reached {top:.2f} individuation, and missionaries need {MISSION_MIN:g} (burial rites)"
+        elif s.get("missionary", True):
+            spread = "has not spread: no neighbour of a faith that is not missionary and no more organised took it up yet (a chance per link)"
         elif top < CONVERT_MIN:
             spread = (f"has not spread: its leading god reached {top:.2f} individuation, and a faith spreads only from {CONVERT_MIN:g} "
                       "(its people needs temples)")
@@ -928,10 +1133,14 @@ def write_authored(run_dir: Path, faiths: list, gods_mode: str | None, n_culture
 
 
 FAITH_RULE = ("A culture with no faith founds one when it first has gods; daughter cultures keep their parent's faith; a culture whose leading "
-              f"god has turned to another domain than its faith's core for {SCHISM_KYR:g} kyr breaks away as a new faith; a culture in touch with "
-              f"a culture of another faith whose leading god is at least {CONVERT_MIN:g} individuated (temples) and {CONVERT_GAP:g} more than its own "
-              f"converts with chance 1 - exp(-dt/{TAU_CONVERT:g} kyr) per frame, taking a copy of that god (and does not break away by drift after); "
-              "a faith with no cultures left ends.")
+              f"god has turned to another domain than its faith's core for {SCHISM_KYR:g} kyr breaks away as a new faith. A culture takes another "
+              "faith in three ways, each a chance in time (the mean wait of one link): from a neighbour whose leading god is at least "
+              f"{CONVERT_MIN:g} individuated (temples) and {CONVERT_GAP:g} more than its own (about {TAU_CONVERT:g} kyr); from the missionaries of a "
+              f"neighbouring faith that seeks converts, when its own is not missionary and no more organised (about {TAU_MISSION * 1000:g} years); "
+              f"or from its rulers, who push their faith on their subjects (a generation, {TAU_FORCED * 1000:g} years, for a ruler with no "
+              f"tolerance; {TAU_TOLERANT:g} kyr for a fully tolerant one). The neighbours' pull is faster on a tolerant culture. A faith seeks "
+              f"converts when you write it so, or (a {MISSION_P:g} chance, once) when its leading god becomes a moralizing high god. A convert "
+              "takes a copy of the converting faith's leading god and does not break away by drift after; a faith with no cultures left ends.")
 
 
 def contacts(n_cells: int, cell: np.ndarray, cul: np.ndarray, src: np.ndarray, dst: np.ndarray, nC: int) -> set:
@@ -952,6 +1161,40 @@ def contacts(n_cells: int, cell: np.ndarray, cul: np.ndarray, src: np.ndarray, d
     return {(int(k // nC), int(k % nC)) for k in key}
 
 
+def touch(n_cells: int, cell: np.ndarray, cul: np.ndarray, src: np.ndarray, dst: np.ndarray, nC: int) -> dict:
+    """The pairs of contacts() with how much each faces the other (PW-1477): {(a, b): (share of a's border facing b, share of b's
+    facing a)}. A culture's border is every grid edge from its cells to a cell it does not hold (another culture's, empty land or the
+    sea: the sea is a border no one preaches across); a cell it shares with another culture counts as SHARE_EDGES edges between them."""
+    out: dict = {}
+    if not len(cell):
+        return out
+    lab = np.full(n_cells, -1, np.int64)
+    lab[cell] = cul
+    a, b = lab[src], lab[dst]
+    held = np.zeros(n_cells, bool)
+    held[cell] = True
+    e = (a >= 0) & (a != b)
+    border = np.bincount(a[e], minlength=nC).astype(float)
+    f = e & (b >= 0)
+    pair = a[f] * nC + b[f]
+    o = np.lexsort((cul, cell))
+    cs, us = cell[o], cul[o]
+    same = (cs[1:] == cs[:-1]) & (us[1:] != us[:-1])
+    sa, sb = us[:-1][same], us[1:][same]
+    pair = np.concatenate([pair, np.repeat(sa * nC + sb, SHARE_EDGES), np.repeat(sb * nC + sa, SHARE_EDGES)])
+    border += SHARE_EDGES * (np.bincount(sa, minlength=nC) + np.bincount(sb, minlength=nC))
+    k, n = np.unique(pair, return_counts=True)
+    cnt = {(int(x // nC), int(x % nC)): int(m) for x, m in zip(k, n)}
+    for (x, y), m in cnt.items():
+        lo, hi = min(x, y), max(x, y)
+        if (lo, hi) in out:
+            continue
+        wlo = cnt.get((lo, hi), 0) / max(border[lo], 1.0)
+        whi = cnt.get((hi, lo), 0) / max(border[hi], 1.0)
+        out[(lo, hi)] = (round(min(1.0, wlo), 4), round(min(1.0, whi), 4))
+    return out
+
+
 def faith_color(i: int) -> str:
     """A faith's colour: hues a golden angle apart, two lightnesses alternating."""
     import colorsys
@@ -969,7 +1212,7 @@ def faith_docs(P: Pantheons, C: list) -> list:
         bs = [b for b in P.beings if b.faith == F.id]
         lead = max((b for c in now for b in P.by.get(c, [])), key=lambda b: (b.ind, b.dev), default=None)  # (its cultures' most individuated god now)
         out.append({"id": F.id, "name": F.name or f"the {F.core} {word.get(F.how, 'faith')} of {oc['name']}", "how": F.how, "parent": F.parent,
-                    "color": faith_color(F.id), "authored": F.authored, "spreads": F.spreads,
+                    "color": faith_color(F.id), "authored": F.authored, "spreads": F.spreads, "missionary": F.missionary,
                     "origin_culture": F.origin, "origin_people": oc["people"], "founded_kyr": F.founded, "core": F.core,
                     "ended_kyr": F.ended, "end": F.end, "cultures_now": now, "peoples_now": sorted({C[c]["people"] for c in now}),
                     "cultures_ever": sorted({c for c, h in P.fhist.items() if any(x[1] == F.id for x in h)}),
