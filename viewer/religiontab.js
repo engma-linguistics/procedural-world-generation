@@ -17,8 +17,9 @@
 #tab-religion .rl-nav button.on { color: var(--text); border-bottom-color: var(--acc); }
 #tab-religion .rl-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
 #tab-religion .rl-main { min-height: 0; overflow: auto; padding: 10px 12px; }
-#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; min-height: 100%; }
-#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; }
+#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(400px, 40vw, 620px); gap: 10px; min-height: 100%; align-items: start; }
+#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; min-width: 0; }
+@media (max-width: 1100px) { #tab-religion .rl-split { grid-template-columns: minmax(0, 1fr); } #tab-religion .rl-side { order: -1; border-left: 0; padding-left: 0; border-bottom: 1px solid var(--line); padding-bottom: 10px; } }
 #tab-religion .rl-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; }
 #tab-religion .rl-cards.one { grid-template-columns: minmax(0, 1fr); }
 #tab-religion .rl-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--panel); overflow-x: auto; }
@@ -32,10 +33,11 @@
 #tab-religion tr[data-f] { cursor: pointer; }
 #tab-religion .kind { display: inline-block; min-width: 120px; color: var(--muted); }
 #tab-religion .rl-yours { font-size: 10px; color: var(--acc, #6fa8ff); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 4px; white-space: nowrap; }
-#tab-religion .rl-form { display: grid; gap: 8px; align-content: start; }
+#tab-religion .rl-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; }
+#tab-religion .rl-form input:not([type]), #tab-religion .rl-form input[type=text], #tab-religion .rl-form select { min-width: 0; max-width: 100%; box-sizing: border-box; }
 #tab-religion .rl-form label { display: grid; gap: 2px; }
 #tab-religion .rl-form .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-#tab-religion .rl-pick { position: relative; cursor: crosshair; }
+#tab-religion .rl-pick { position: relative; cursor: crosshair; max-width: 560px; }
 #tab-religion .rl-pick img { width: 100%; display: block; border-radius: 4px; }
 #tab-religion .rl-pick svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #tab-religion .ok { color: #6bd66b; } #tab-religion .no { color: #ff7b6b; } #tab-religion .err { color: #ff7b6b; }

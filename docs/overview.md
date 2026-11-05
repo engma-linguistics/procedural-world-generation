@@ -909,6 +909,7 @@ converts its less organised neighbours (`gods.FAITH_RULE`; each faith's cultures
 frequencies, women and birth, sacred places, sacred times, hunting and harvest, chiefly, sumptuary, caste), drawn per culture from its
 way of life, techs and gods. Shown in the workbench's Religion tab (`viewer/religiontab.js`: god trees, a faith map with a time slider
 from `GET /api/faithmap`, a faith timeline, taboos). Stats over several trees: `tools/religion_stats.py`, docs/review/religion/.
+The culinary brief (a people's range for a cook, or one culture's food sheet; `GET /api/brief`) has two doors: the workbench's **Culinary brief** tab (pick a people, a culture, an era), and the globe viewer's Peoples box, **Culinary brief…** button (PW-1476). "The workbench tree" is the **Peoples tree & timeline** tab, the first tab of the Peoples workbench.
 
 Faiths you write (PW-1430): the tab's "Your faiths" view saves faiths Daniel writes (name, founding culture, people or place, year,
 named gods with domains, spreads or closed) and the run's gods mode (PW-1309) as the run's `authored.json` (`POST /api/authored`, the
