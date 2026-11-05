@@ -1,4 +1,5 @@
 ---
+id: PW-1484
 title: "Tech tree: the after-run tree takes its region learners from today's range for all time, so kingship comes earlier than in the live tree"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane-200
 blocked_by: []
 relates: [PW-1471]
-refs: ["planet/lineages/techtree.py::rebuild", "planet/lineages/history/tech_live.py", docs/review/culture/techtree/round2.md, docs/review/culture/techtree/round2/check_f72bf3.txt]
+refs: ["planet/lineages/techtree.py::rebuild", planet/lineages/history/tech_live.py, docs/review/culture/techtree/round2.md, docs/review/culture/techtree/round2/check_f72bf3.txt]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -25,3 +28,6 @@ not: only 8 of 12 do. In all 12 peoples the live kingship is later than the afte
 **What breaks if never done.** With POLITIES_LIVE off, region learners make a people's urban techs a little early. The showcases'
 first writing still sits inside main's range (round2.md), so this is a fidelity gap, not a failure. The fix is to save each frame's
 regions (or their dated arrivals and shares) in meta and have `rebuild` read them, as the live tree does.
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-after-run-regions-from-present-range.md (found by lane-200).

@@ -2,7 +2,7 @@
 id: PW-1483
 title: "Tech tree: a small shift in one input can move a rare invention by thousands of years (one draw per step, not one waiting time)"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -37,4 +37,5 @@ Check: over 12 draws the median dates stay within the round 6 spread; a one-step
 a few steps.
 
 ## Updates
+- 2026-11-05: Status -> done. Lanes 200/200b merged (docs/review/culture/techtree/round2.md).
 - 2026-11-05: Created from inbox draft draft-tech-tree-dates-jump-on-small-nudges.md (found by lane-196).

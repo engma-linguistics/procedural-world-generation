@@ -1,4 +1,5 @@
 ---
+id: PW-1486
 title: "Tech tree: a people's regions invent apart but still know as one (knowledge and contact per region)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-200
 blocked_by: []
 relates: [PW-1471]
 refs: ["planet/lineages/techtree.py::Calendar.learners", planet/lineages/demes.py, docs/review/culture/techtree/round1.md, docs/review/culture/techtree/round2.md]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -26,3 +29,6 @@ state without any local writing.
 
 Lane 200b did not need this to pass the calibration check (round2.md): both dnd showcases' first writing is back within main's
 12-draw spread without it, so it stays a later ticket.
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-regions-know-apart.md (found by lane-200).

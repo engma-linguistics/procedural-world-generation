@@ -1,4 +1,5 @@
 ---
+id: PW-1485
 title: "Tech tree: D55's own-invention floor, now never faster than the anchor, still brings the dnd world's writing ~1.5 kyr early (off); keep it off?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane-200
 blocked_by: []
 relates: [PW-1471]
 refs: ["planet/lineages/techtree.py::own_floor", planet/lineages/samples/techtree.toml, docs/review/culture/techtree/round2.md]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -36,3 +39,6 @@ So it ships off (`[defaults] own_floor = false`).
 
 **Lean: A.** The floor lifts the small and leaves the big alone. On these worlds that is the opposite of what is needed: the slow one
 is the big lone people, and regions already fix it.
+
+## Updates
+- 2026-11-05: Created from inbox draft draft-own-floor-faster-than-anchor.md (found by lane-200).

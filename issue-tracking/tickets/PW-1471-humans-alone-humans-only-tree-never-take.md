@@ -2,7 +2,7 @@
 id: PW-1471
 title: "Humans alone (humans_only tree) never take up writing and rarely found chiefdoms: every urban step came by contact"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1466, PW-1461, PW-1448]
 refs: [tools/peoples_robust/trees/humans_only.toml, planet/lineages/samples/techtree.toml, "planet/lineages/techtree.py::rate_of", "planet/lineages/techtree.py::band_wait", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round8.md, "world 899985 (time zoom fc5311) L7, seed 7: scratch runs humans-only and dnd with polities in the history on (deleted)", "run 0141d1"]
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 
 ## Description
@@ -52,5 +52,6 @@ one. C is right in the long run but is a project.
 - [ ] the dnd showcase's writing dates move by less than the 12-seed spread (round 6)
 
 ## Updates
+- 2026-11-05: Status -> done. Lanes 200/200b merged (docs/review/culture/techtree/round2.md).
 - 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D55): fix it. Climbing the tech tree must happen no slower than a given rate, not only by catching up with neighbours; independent re-invention should happen but never be forced. Local groups should each be learners: all humans on all continents as one learner 'sounds very wrong'. So B (own-invention rates from Earth's independent origins) and C (regional learners, demes) both, C as the structural fix.
 - 2026-11-04: Created from inbox draft draft-humans-alone-never-write.md (found by lane-192).
