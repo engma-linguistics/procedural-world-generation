@@ -56,7 +56,8 @@ class LiveTech:
         return [{"index": k, "id": l.id, "origin": l.origin, "parents": l.parents, "ago_kyr": l.ago_kyr, "sapient_kyr": l.sapient_kyr,
                  "group_of": l.group_of, "overlay": l.overlay, "traits": l.traits, "way": l.way,
                  "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id), "track": h.tracks[l.id],
-                 "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "generation_yr": h.gen_yr(l)}
+                 "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "generation_yr": h.gen_yr(l),
+                 "reached": {str(m): v for m, v in h.cross.reached.get(l.id, {}).items()}}
                 for k, l in enumerate(h.lines)]
 
     def _links(self) -> list[tuple]:
@@ -180,7 +181,8 @@ class LiveTech:
             seen = (len(h.contacts.agos) if h.contacts is not None else 0, sum(len(v) for v in h.tracks.values()))
             if seen != self._seen:  # (a frame was stored: the tracks, contacts and ranges moved)
                 self._seen = seen
-                cal.feed(lines or self.lines(), links=self._links(), have=self._have())
+                cal.feed(lines or self.lines(), links=self._links(), have=self._have(),
+                         regions=cal.region_shares(h.p, h.cross.label))  # (its regions now, PW-1471: the range at the last stored frame)
                 self._retime(float(step.ago))
             for l in cal.people:  # (starts and ends move on any step; a line not yet started waits)
                 lid = l["id"]
@@ -199,9 +201,10 @@ class LiveTech:
         if cal is None:
             tr = self.h.tree
             return TT.build(lines, contacts, pres, present, goods, tr.mode, tr.era, self.h.seed, T=self.T, gods_mode=tr.gods_mode,
-                            towns=self.towns, arms=self.arms)
+                            towns=self.towns, arms=self.arms, landmass=self.h.cross.label)
         have = {l["id"]: TT.goods_held(cal.T, present, goods, cal.idx[l["id"]]) for l in cal.people}
-        cal.feed(lines, TT.links_of(contacts, cal.kind), TT.forced_of(pres, cal.techs, cal.L), have, (pres or {}).get("lines") or {})
+        cal.feed(lines, TT.links_of(contacts, cal.kind), TT.forced_of(pres, cal.techs, cal.L), have, (pres or {}).get("lines") or {},
+                 cal.region_shares(present, self.h.cross.label))
         cal.advance()
         out = cal.result()
         out["inside_history"] = {"made_s": round(self.secs, 1), "arms": self.arms}

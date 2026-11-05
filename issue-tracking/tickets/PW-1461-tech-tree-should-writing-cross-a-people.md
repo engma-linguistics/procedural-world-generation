@@ -2,7 +2,7 @@
 id: PW-1461
 title: "Tech tree: should writing cross a people's towns instead of its whole country?"
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1448]
 refs: ["planet/lineages/techtree.py::contact_rate", "planet/lineages/techtree.py::build", planet/lineages/samples/techtree.toml, "planet/lineages/techspread.py::derive", docs/review/culture/writing/round1.md, "run a2b637", "run 0141d1", "run 07c755"]
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 
 ## Description
@@ -48,6 +48,7 @@ Options:
 needs no new numbers. C is a dial turn.
 
 ## Updates
+- 2026-11-05: Status -> done. Lanes 200/200b merged (docs/review/culture/techtree/round2.md).
 - 2026-11-04: Status needs-decision -> todo. Daniel 11-04 (D53): A (E, rulers take it up) or B (C, trading towns) keyed to the spreading culture: peoples more inclined to trade share it more and faster, if that's reasonable; otherwise A.
 - 2026-11-04: Lane 186 merged (switch off, identical): arms B/C/E/K measured (docs/review/culture/writing/round2.md). Medians, years to half: off 865, B 425, C 560, E 273, K 850; all inside Earth's 100-900. Lean E; it needs PW-1464 for new runs. Desk D53.
 - 2026-11-04: Daniel 11-04: B or C, wary of the halfway time; experiment lane 186 tries B, C, E (rulers take it up) and K (kin share faster).

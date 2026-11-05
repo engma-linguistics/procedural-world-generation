@@ -1,0 +1,29 @@
+run 0141d1 draws 12
+
+human: tech | main: in, median yr ago (own inventions) | wait: in, median yr ago (own inventions) | floor: in, median yr ago (own inventions) | regions: in, median yr ago (own inventions) | regionsB: in, median yr ago (own inventions) | regionsBt: in, median yr ago (own inventions)
+  writing | 12/12, 3,007 (1) | 12/12, 3,084 (1) | 12/12, 4,156 (0) | 12/12, 7,119 (3) | 12/12, 7,119 (3) | 12/12, 7,119 (3)
+  towns | 12/12, 6,278 (4) | 12/12, 6,396 (5) | 12/12, 6,396 (5) | 12/12, 8,676 (6) | 12/12, 8,676 (6) | 12/12, 8,676 (6)
+  chiefdoms | 12/12, 6,746 (1) | 12/12, 6,057 (3) | 12/12, 6,057 (3) | 12/12, 8,219 (7) | 12/12, 8,219 (7) | 12/12, 8,219 (7)
+  cities | 12/12, 4,153 (2) | 12/12, 3,301 (6) | 12/12, 3,301 (6) | 12/12, 6,746 (7) | 12/12, 6,746 (5) | 12/12, 6,746 (6)
+  kingship | 12/12, 3,007 (4) | 12/12, 2,256 (5) | 12/12, 2,256 (5) | 12/12, 6,391 (9) | 12/12, 6,391 (7) | 12/12, 6,391 (8)
+
+dwarf: tech | main: in, median yr ago (own inventions) | wait: in, median yr ago (own inventions) | floor: in, median yr ago (own inventions) | regions: in, median yr ago (own inventions) | regionsB: in, median yr ago (own inventions) | regionsBt: in, median yr ago (own inventions)
+  writing | 12/12, 2,470 (0) | 12/12, 3,148 (2) | 12/12, 4,085 (2) | 12/12, 7,124 (1) | 12/12, 7,124 (0) | 12/12, 7,124 (1)
+  towns | 12/12, 6,278 (7) | 12/12, 5,843 (4) | 12/12, 5,843 (4) | 12/12, 8,074 (3) | 12/12, 8,074 (3) | 12/12, 8,074 (3)
+  chiefdoms | 12/12, 6,286 (2) | 12/12, 5,344 (1) | 12/12, 5,344 (1) | 12/12, 7,384 (0) | 12/12, 7,384 (0) | 12/12, 7,384 (0)
+  cities | 12/12, 3,802 (4) | 11/12, 3,229 (3) | 11/12, 3,229 (3) | 12/12, 5,843 (2) | 12/12, 5,843 (2) | 12/12, 5,843 (2)
+  kingship | 12/12, 3,100 (7) | 11/12, 2,337 (5) | 11/12, 2,337 (5) | 12/12, 5,536 (3) | 12/12, 5,536 (3) | 12/12, 5,536 (3)
+
+gnome: tech | main: in, median yr ago (own inventions) | wait: in, median yr ago (own inventions) | floor: in, median yr ago (own inventions) | regions: in, median yr ago (own inventions) | regionsB: in, median yr ago (own inventions) | regionsBt: in, median yr ago (own inventions)
+  writing | 12/12, 2,899 (0) | 12/12, 3,347 (6) | 12/12, 3,875 (4) | 12/12, 7,119 (2) | 12/12, 7,119 (1) | 12/12, 7,119 (1)
+  towns | 12/12, 6,391 (7) | 12/12, 6,166 (7) | 12/12, 6,166 (7) | 12/12, 8,520 (5) | 12/12, 8,520 (5) | 12/12, 8,520 (5)
+  chiefdoms | 12/12, 6,746 (3) | 12/12, 5,851 (3) | 12/12, 5,851 (3) | 12/12, 8,369 (5) | 12/12, 8,369 (5) | 12/12, 8,369 (5)
+  cities | 12/12, 4,153 (5) | 12/12, 3,408 (7) | 12/12, 3,408 (7) | 12/12, 6,391 (7) | 12/12, 6,746 (2) | 12/12, 6,625 (2)
+  kingship | 12/12, 3,060 (5) | 12/12, 2,705 (6) | 12/12, 2,705 (6) | 12/12, 6,166 (7) | 12/12, 6,391 (4) | 12/12, 6,166 (8)
+
+world first (any people): tech | main: median, min-max; peoples inventing it themselves, median | wait: median, min-max; peoples inventing it themselves, median | floor: median, min-max; peoples inventing it themselves, median | regions: median, min-max; peoples inventing it themselves, median | regionsB: median, min-max; peoples inventing it themselves, median | regionsBt: median, min-max; peoples inventing it themselves, median
+  writing | 4,153, 2,797-4,795; 2 | 4,562, 2,098-6,625; 2.5 | 5,246, 3,597-6,625; 5 | 8,219, 6,868-8,832; 4 | 8,219, 6,868-8,832; 4 | 8,219, 6,868-8,832; 4
+  towns | 7,649, 6,625-8,832; 6.5 | 6,994, 5,948-9,837; 6 | 6,994, 5,948-9,837; 6 | 9,490, 8,832-10,570; 4.5 | 9,490, 8,832-10,570; 4.5 | 9,490, 8,832-10,570; 4.5
+  chiefdoms | 7,929, 6,391-9,155; 4 | 7,249, 5,536-8,832; 3 | 7,249, 5,536-8,832; 3 | 9,155, 8,520-9,837; 5 | 9,155, 8,520-9,837; 5 | 9,155, 8,520-9,837; 5
+  cities | 5,061, 3,597-6,391; 3 | 4,384, 2,423-5,948; 5 | 4,384, 2,423-5,948; 5 | 7,119, 5,738-7,929; 4.5 | 7,119, 5,738-7,929; 3 | 7,119, 5,738-7,929; 3.5
+  kingship | 4,153, 1,953-5,948; 6 | 3,238, 1,953-5,536; 5 | 3,238, 1,953-5,536; 5 | 6,994, 5,340-7,649; 6 | 6,994, 5,340-7,649; 3 | 6,994, 5,340-7,649; 4.5

@@ -1,7 +1,8 @@
 ---
+id: PW-1483
 title: "Tech tree: a small shift in one input can move a rare invention by thousands of years (one draw per step, not one waiting time)"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -11,6 +12,8 @@ found_by: lane-196
 blocked_by: []
 relates: [PW-1473, PW-1459, PW-1471]
 refs: ["planet/lineages/techtree.py::Calendar.advance", docs/review/culture/polities/round9.md, docs/review/culture/polities/round9/fronts.txt, docs/review/culture/polities/round9/replay_7000.txt]
+created: 2026-11-05
+updated: 2026-11-05
 ---
 
 ## Description
@@ -32,3 +35,7 @@ way (one keyed draw per pair). A small shift in the ramp then moves the date by 
 date of every tree, so it needs the golden runs updated, and it should go after D55's lane (PW-1471), which edits the same code.
 Check: over 12 draws the median dates stay within the round 6 spread; a one-step nudge to one front moves no date by more than
 a few steps.
+
+## Updates
+- 2026-11-05: Status -> done. Lanes 200/200b merged (docs/review/culture/techtree/round2.md).
+- 2026-11-05: Created from inbox draft draft-tech-tree-dates-jump-on-small-nudges.md (found by lane-196).
