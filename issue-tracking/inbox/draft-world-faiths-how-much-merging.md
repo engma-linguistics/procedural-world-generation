@@ -18,8 +18,8 @@ refs: ["planet/lineages/gods.py::MISSION_P", "planet/lineages/gods.py::MISSION_I
 pushing their faith within a generation (harsh) to millennia (tolerant). A faith the world makes turns missionary with an even chance
 (MISSION_P 0.5, a judgement) once its god becomes a moralizing high god. What that does to a whole world depends on how many faiths
 turn missionary:
-- dnd 0141d1, none did: the largest faith holds 13% of cultures today (main: 10%);
-- dnd 3e0eb4, one did, plus your written dwarf faith (missionary): the largest holds 31% (main: under 10%);
+- dnd 0141d1, none did: the largest faith holds 13% of cultures today (main: 11%);
+- dnd 3e0eb4, none did, but your written dwarf faith is missionary: the largest (yours) holds 31% (main: 14%);
 - Seven Meals 07c755 (frozen, only measured), five did: the three largest hold 87% of the cultures today (main: 34%), the largest 43%
   (main: 22%), 21 faiths left (main: 84).
 None sweeps the world in centuries; Seven Meals' largest went from 17% to 43% over 2,000 years. Earth after ~2,000 years of
