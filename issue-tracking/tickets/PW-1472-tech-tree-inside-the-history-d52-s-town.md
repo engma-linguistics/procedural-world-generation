@@ -2,7 +2,7 @@
 id: PW-1472
 title: "Tech tree inside the history: D52's town arms (B, E) need a town footprint there, from the live seats"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1466, PW-1464, PW-1461, PW-1434]
 refs: [planet/lineages/history/tech_live.py, "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/techtree.py::Calendar.arm_rate", "planet/lineages/techspread.py::town_footprint", "planet/lineages/output.py::_towns_first", docs/review/culture/polities/round8.md, docs/review/culture/writing/round2.md]
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-05
 ---
 
 ## Description
@@ -36,4 +36,5 @@ the footprint is empty, which is right for writing (it needs towns). Check: on 8
 - [ ] writing's half-way time under E within the after-run E tree's spread on the same history
 
 ## Updates
+- 2026-11-05: Status -> done. Lane 196 merged (docs/review/culture/polities/round9.md).
 - 2026-11-04: Created from inbox draft draft-live-tree-town-arms-from-live-seats.md (found by lane-192).
