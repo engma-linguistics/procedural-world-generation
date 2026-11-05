@@ -399,6 +399,46 @@ def rate_of(T: dict, tid: str) -> float:
     return float(D["track_rate"].get(t["track"], D["rate"]))
 
 
+def own_floor(T: dict, tid: str) -> float | None:
+    """D55's floor on a people's (a region's) own inventing, per kyr (PW-1471): a learner alone that meets a soft tech's conditions
+    invents it no slower than Earth's median independent inventor did after Earth's prerequisites, whatever its pool or culture:
+    RAMP_MEDIAN / (_anchor_ready - the median of the tech's dated independent origins, `origins_kyr`). A hazard, never a date: the
+    tech can still not come, and contact can still bring it first. None: a floored (Pleistocene) tech, fewer than two dated
+    origins, or the tree's [defaults] own_floor off."""
+    t = T["techs"][tid]
+    D = T["defaults"]
+    ks = [float(k) for k in t.get("origins_kyr") or []]
+    if not D.get("own_floor", False) or len(ks) < 2 or floor_of(T, tid) is not None:
+        return None
+    ready, e = _anchor_ready(T, tid), t.get("earliest_kyr")
+    if ready is None or e is None:
+        return None
+    wait = max(ready - float(np.median([min(k, float(e)) for k in ks])), D["lag_min_kyr"])
+    return RAMP_MEDIAN / wait
+
+
+def region_shares(present: np.ndarray | None, landmass: np.ndarray | None, idx: dict, min_share: float) -> dict:
+    """{people: [(landmass rank, share of its range)]}: each people's regions (PW-1471, D55: a people over several landmasses is
+    several learners), the present-day landmasses (crossing.Crossings' ranks) holding at least min_share of its range (presence >=
+    0.05, weighted by presence). Empty without a range or the landmasses."""
+    out: dict = {}
+    if present is None or landmass is None or present.shape[1] != landmass.shape[0]:
+        return out
+    lm = np.asarray(landmass)
+    ok = lm >= 0
+    nl = int(lm.max()) + 1 if ok.any() else 0
+    for lid, k in idx.items():
+        if k >= present.shape[0]:
+            continue
+        p = np.where(present[k] >= 0.05, present[k], 0.0)
+        tot = float(p[ok].sum())
+        if tot <= 0:
+            continue
+        w = np.bincount(lm[ok], weights=p[ok], minlength=nl) / tot
+        out[lid] = [(int(r), float(w[r])) for r in np.flatnonzero(w >= min_share)]
+    return out
+
+
 def generations(tree_raw: dict | None) -> dict:
     """{line id: generation, yr} from a stored run's meta.tree (a dragon's from its age schedule, as history.gen_yr), for runs
     whose lines don't carry it."""
@@ -474,6 +514,8 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
 #      them (Table 1, read by lane 70); the supplement gives 1.46-5.51 along the Mediterranean corridor (lane 186). 2.2: between.
 #   E  elite uptake: a people with chiefdoms, kingship or towns takes an administrative tech (ARM_ADMIN, or `admin = true` in
 #      the tree) once the front reaches its nearest town: the width is its town spacing, sqrt(range / town cells). Needs `towns`.
+#   T  trade-weighted B (D53, PW-1461; with B): the width is the range's ^ (1 - tau) x the town network's ^ tau, tau the GIVER's
+#      trade-mindedness (trade_of): a trading people's writing crosses a taker's towns, an inward one's its whole land.
 #   K  kin share: between a people and its parent, its daughter lines or a sibling line, begun within arm_kin_kyr (a language
 #      family's depth, a judgement), the taker's insularity does not apply (openness 1): its reserve is against Others.
 # A front's arrival is recomputed each step for the techs an arm touches and never moves later (a front that gains a road
@@ -489,12 +531,20 @@ def _arm(D: dict, k: str):
     return D.get(k, ARM_DEFAULTS[k])
 
 
-TOWN_ARMS = frozenset("BE")  # (the arms that read the town footprint)
+TOWN_ARMS = frozenset("BET")  # (the arms that read the town footprint)
+
+
+def trade_of(line: dict) -> float:
+    """D53's trade-mindedness of a spreading people, 0..1 (PW-1461): its openness, 1 - insularity (the tree's own trade axis,
+    attitudes.py: "openness to trade is the insularity the tree already has"), + 0.1 for a cosmopolitan people (attitudes.TOL_COSMO)."""
+    tr = line.get("traits") or []
+    ins = float((line.get("demography") or {}).get("insularity", 0.85 if "insular" in tr else 0.3 if "cosmopolitan" in tr else 0.5))
+    return float(np.clip(1.0 - ins + (0.1 if "cosmopolitan" in tr else 0.0), 0.0, 1.0))
 
 
 def arms_of(T: dict | None = None) -> str:
     """The tree's D52 arms (its [defaults] contact_arms), as sorted letters."""
-    return "".join(sorted(set(str(_arm((T or load())["defaults"], "contact_arms"))) & set("BCEK")))
+    return "".join(sorted(set(str(_arm((T or load())["defaults"], "contact_arms"))) & set("BCEKT")))
 
 
 def town_arms(T: dict | None = None) -> str:
@@ -585,7 +635,7 @@ class Calendar:
         T = T or load()
         D = T["defaults"]
         self.T, self.D, self.seed, self.mode, self.era, self.gods_mode = T, D, seed, mode, era, gods_mode
-        self.arms = arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEK")
+        self.arms = arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEKT")
         cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
         self.techs = techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
                               and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
@@ -602,13 +652,18 @@ class Calendar:
         self.learn = {lid: learners_x(g, D) for lid, g in self.gens.items()}
         self.culture = {l["id"]: culture_of(T, l) for l in people}
         self.rates = {i: rate_of(T, i) for i in techs}
+        self.floors = {i: f for i in techs for f in [own_floor(T, i)] if f is not None}  # (D55's floor on own inventing, PW-1471)
+        self.regions: dict = {}  # ({people: [(landmass rank, share)]}: its regions, each a learner; none: the people is one)
+        self.reached = {l["id"]: {int(k): float(v["ago_kyr"]) for k, v in (l.get("reached") or {}).items()} for l in people}
         self.pool = {i: pool_of(techs[i]) for i in techs}
         self.ready: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (when each people first met a tech's conditions: the ramp)
         self.known: dict[str, dict[str, list]] = {l["id"]: {} for l in people}
+        self.hz: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (the invention hazard summed so far, per people and tech)
+        self.waits: dict[tuple, float] = {}  # ((people, tech): its keyed waiting time, in units of hazard: PW-1483)
         if arms:
             self.urban = {i for i, t in techs.items() if set(t.get("needs", [])) & set(ARM_URBAN_NEEDS)}
             self.admin = {i for i, t in techs.items() if t.get("admin") or i in ARM_ADMIN}
-            self.touched = (self.urban if arms & {"B", "C"} else set()) | (self.admin if "E" in arms else set())
+            self.touched = (self.urban if arms & {"B", "C", "T"} else set()) | (self.admin if "E" in arms else set())
             self.kin = kin_pairs(lines, float(_arm(D, "arm_kin_kyr"))) if "K" in arms else set()
             if arms & {"B", "E"} and not towns:  # (no footprint: a tree built before the settlement ledger, or inside the history)
                 warnings.warn(f"tech tree arms {''.join(sorted(arms & {'B', 'E'}))} need a town footprint; without one they do nothing",
@@ -632,12 +687,18 @@ class Calendar:
 
     # ------------------------------------------------------------ what it reads
     def feed(self, lines: list[dict] | None = None, links: list | None = None, forced: dict | None = None, have: dict | None = None,
-             pops: dict | None = None):
+             pops: dict | None = None, regions: dict | None = None):
         """What the tree reads, as known now: the lines' starts, ends and tracks (meta.lineages' fields), the contacts as intervals
-        (links_of), the tamings (forced_of) and the goods each people's country holds (goods_held). None keeps the last."""
+        (links_of), the tamings (forced_of), the goods each people's country holds (goods_held) and its regions (region_shares).
+        None keeps the last."""
         if have is not None:
             self.have = have
+        if regions is not None:
+            self.regions = regions
         if lines is not None:
+            for l in lines:  # (the landmasses each people has reached so far, dated: crossing.Crossings.reached)
+                if l["id"] in self.reached and l.get("reached") is not None:
+                    self.reached[l["id"]] = {int(k): float(v["ago_kyr"]) for k, v in l["reached"].items()}
             pops = pops or {}
             self.series = {l["id"]: _series(l, pops) for l in lines if l["id"] in self.kind}  # (population and density through time, from the saved tracks)
             self.start = {l["id"]: float(l.get("started_kyr") if l.get("started_kyr") is not None else l.get("ago_kyr", 0.0))
@@ -677,6 +738,16 @@ class Calendar:
             return first is None or ago <= first
         return True
 
+    def wait_of(self, lid, tid) -> float:
+        """The people's waiting time for a tech, in units of hazard (PW-1483): one keyed exponential draw (mean 1) per (seed, people,
+        tech); the people invents once the hazard summed since it could start reaches it (the inverse method). The chance of inventing
+        in a step is 1 - exp(-h dt), as one draw per step gave, but a small change in the hazard now moves the date a little instead
+        of re-rolling every later step's luck."""
+        k = (lid, tid)
+        if k not in self.waits:
+            self.waits[k] = -math.log1p(-keyed(self.seed, "wait", lid, tid))
+        return self.waits[k]
+
     def strengths(self, lid, ago):
         """(S of the whole people, S of its specialists, s) now."""
         D = self.D
@@ -685,6 +756,27 @@ class Calendar:
         n *= self.learn[lid]
         s = specialist_share(self.T, self.known[lid])
         return strength(n, D), strength(n * s * density_x(dens, D), D), s
+
+    def region_shares(self, present, landmass) -> dict:
+        """region_shares for this tree's peoples (its [defaults] region_min_share); {} with [defaults] regions off."""
+        if not self.D.get("regions", False):
+            return {}
+        return region_shares(present, landmass, {l["id"]: self.idx[l["id"]] for l in self.people}, float(self.D.get("region_min_share", 0.1)))
+
+    def learners(self, lid, ago) -> list[tuple[float, float, float]]:
+        """[(S of the whole, S of the specialists, share)] per region learner of a people now (PW-1471, D55): its regions reached by
+        now (region_shares, Crossings' dated arrivals), each with its share of the people (renormalised); one learner without them."""
+        rg = [(r, w) for r, w in self.regions.get(lid) or [] if self.reached[lid].get(r, -1.0) >= ago - 1e-9]
+        if len(rg) <= 1:
+            s_all, s_spec, _ = self.strengths(lid, ago)
+            return [(s_all, s_spec, 1.0)]
+        D = self.D
+        ser = self.series[lid]
+        n, dens = _at(ser, ago) if ser is not None else (D["pool_default"], None)
+        n *= self.learn[lid]
+        s = specialist_share(self.T, self.known[lid])
+        tot = sum(w for _, w in rg)
+        return [(strength(n * w / tot, D), strength(n * w / tot * s * density_x(dens, D), D), w / tot) for _, w in rg]
 
     def knows(self, lid, tid, ago):
         v = self.known[lid].get(tid)
@@ -701,7 +793,12 @@ class Calendar:
         if "E" in arms and tid in self.admin and n >= 1 and any(self.knows(y, e, ago) for e in ARM_ELITE):
             width = self.width_x * math.sqrt(a * 1e6 / n)  # (the court's reach: the front need only reach its nearest town)
         elif "B" in arms and tid in self.urban and n >= 1 and self.cell_km2 > 0:
-            width = min(self.width_x * math.sqrt(n * self.cell_km2), width)  # (the town network's width)
+            town = min(self.width_x * math.sqrt(n * self.cell_km2), width)  # (the town network's width)
+            if "T" in arms:  # (D53: as the giver is minded to trade; tau 0: its whole range, as off; 1: its towns, as B)
+                tau = trade_of(self.L[x])
+                width = width ** (1 - tau) * town ** tau
+            else:
+                width = town
         urb = "C" in arms and tid in self.urban and self.knows(x, "towns", ago) and self.knows(y, "towns", ago)
         v = self.v_trade if urb else D["contact_speed_km_yr"]
         return 2 * math.log(2) * v * 1e3 / max(width, D["contact_width_min_km"]) * w * op
@@ -713,7 +810,7 @@ class Calendar:
         T, D, techs, order, L, people, seed = self.T, self.D, self.techs, self.order, self.L, self.people, self.seed
         kind, node, culture, rates, pool, ready, known = self.kind, self.node, self.culture, self.rates, self.pool, self.ready, self.known
         start, end, series, forced, links, arms = self.start, self.end, self.series, self.forced, self.links, self.arms
-        began, arrive, unit = self.began, self.arrive, self.unit
+        began, arrive, unit, hz = self.began, self.arrive, self.unit, self.hz
         give, can, held, strengths = self.give, self.can, self.held, self.strengths
         if self.grid is None:
             t0 = max(start.values(), default=1.0)
@@ -805,7 +902,8 @@ class Calendar:
             for l in alive:
                 lid = l["id"]
                 rx = kind[lid].get("rate_x", 1.0)
-                s_all, s_spec, _ = strengths(lid, ago)
+                lrn = self.learners(lid, ago)  # (its region learners, PW-1471; one for a people on one landmass)
+                floors = self.floors
                 for tid in order:
                     arr = cand.get((lid, tid))
                     lang = bool(techs[tid].get("modern_contact"))
@@ -813,12 +911,21 @@ class Calendar:
                     h = 0.0
                     if can(lid, tid, ago, True):
                         t = techs[tid]
-                        sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all
-                        h = rates[tid] * rx * domain_x(culture[lid][0], t) * sp
+                        base = rates[tid] * rx * domain_x(culture[lid][0], t)
+                        fl = floors.get(tid, 0.0)
+                        for s_all, s_spec, _ in (lrn if pool[tid] != "none" else lrn[:1]):  # (each region learns on its own pool, no
+                            sp = 1.0 if pool[tid] == "none" else s_spec if pool[tid] == "specialists" else s_all  # slower than D55's floor)
+                            h += max(base * sp, fl if sp > 0 else 0.0)
                         tau = ready[lid].setdefault(tid, ago) - ago
                         h *= 1 - math.exp(-h * (tau + 0.5 * dt))  # (the ramp, at the middle of the step)
                     span = min(max(ago + dt - arr[0], 0.0), dt) if took else dt
-                    if h > 0 and span > 0 and keyed(seed, "invent", lid, tid, step) < 1 - math.exp(-h * span):
+                    got = False
+                    if h > 0 and span > 0:  # (PW-1483: one keyed waiting time per (people, tech), met by the hazard summed so far)
+                        acc = hz[lid].get(tid, 0.0)
+                        got = acc + h * span >= self.wait_of(lid, tid)
+                        if not got:
+                            hz[lid][tid] = acc + h * span
+                    if got:
                         give(lid, tid, ago, "invented", None)
                     elif took:
                         if lang:
@@ -868,16 +975,19 @@ class Calendar:
 
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
           goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
-          T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None) -> dict:
+          T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None,
+          landmass: np.ndarray | None = None) -> dict:
     """meta.techtree for a peoples run, after its history (a Calendar fed the whole run and run to the present). gods_mode (PW-1304):
     "faith_made" (default), "belief_only" or "absolute"; a tech marked `gods = true` (divine magic) exists only in faith_made and
     absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
     ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
-    lines: the populations), `present` the presence per line (lines x cells, 0..1) and `goods` the world's goods. towns, arms:
+    lines: the populations), `present` the presence per line (lines x cells, 0..1), `goods` the world's goods and `landmass` each
+    cell's present-day landmass (crossing.Crossings.label: the region learners, PW-1471; None: each people one learner). towns, arms:
     D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2})."""
     c = Calendar(lines, mode, era, seed, T, gods_mode, towns, arms)
     have = {l["id"]: goods_held(c.T, present, goods, c.idx[l["id"]]) for l in c.people}
-    c.feed(lines, links_of(contacts, c.kind), forced_of(pres, c.techs, c.L), have, (pres or {}).get("lines") or {})
+    c.feed(lines, links_of(contacts, c.kind), forced_of(pres, c.techs, c.L), have, (pres or {}).get("lines") or {},
+           c.region_shares(present, landmass))
     c.advance()
     return c.result()
 
@@ -976,7 +1086,21 @@ def rebuild(run_dir: Path, gods_mode: str | None = None, T: dict | None = None, 
         towns = town_footprint(run_dir)
     return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
                  m.get("era"), int(m.get("try_seed") or 0) if seed is None else seed, T=T, gods_mode=gods_mode or m.get("gods_mode", "faith_made"),
-                 towns=towns, arms=arms)
+                 towns=towns, arms=arms, landmass=landmass_of(run_dir, m))
+
+
+def landmass_of(run_dir: Path, m: dict) -> np.ndarray | None:
+    """Each cell's present-day landmass of a stored run (demes.landmass_rank on its last frame: Crossings' ranks), for rebuild."""
+    from .. import timeline as TL
+    from ..geo import is_land
+    from ..grid import shared_grid
+    from .demes import landmass_rank
+    try:
+        run, arr = TL.load_frames(Path(run_dir), ("elevation", "ice"))
+    except (KeyError, FileNotFoundError):
+        return None
+    j = len(run["frames"]) - 1
+    return landmass_rank(shared_grid(m["level"]), is_land(TL.frame(run, arr, "elevation", j), TL.frame(run, arr, "ice", j)))
 
 
 def for_run(run_dir: Path) -> dict:

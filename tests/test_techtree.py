@@ -420,12 +420,17 @@ def test_a_nudge_elsewhere_leaves_a_peoples_dates_alone():
     people's dates exactly as they were; the old shared stream reshuffled them."""
     base = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(1e6))]
     nudged = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(2e3)), line("c", at=40.0, track=_pop(5e5))]
-    for s in (1, 2):
+    seen = 0
+    for s in range(1, 12):  # (the first two draws in which a invents something: PW-1483's keyed waits differ from the old per-step draws)
         k0 = TT.build(base, None, None, seed=s, T=T)["known"]
+        if not k0["a"] or seen == 2:
+            continue
+        seen += 1
         k1 = TT.build(nudged, None, None, seed=s, T=T)["known"]
         assert k0["a"] and k0["a"] == k1["a"]
         assert k0["b"] != k1["b"]  # (the nudged people itself does change)
-    u = [TT.keyed(3, "invent", "a", "fire", k) for k in range(4000)]
+    assert seen == 2
+    u = [TT.keyed(3, "wait", "a", f"t{k}") for k in range(4000)]
     assert abs(np.mean(u) - 0.5) < 0.02 and 0.0 <= min(u) and max(u) < 1.0
 
 
@@ -513,15 +518,18 @@ def test_a_live_front_speeds_up_as_the_border_grows_and_never_slows():
     from types import SimpleNamespace
     from planet.lineages.history import tech_live as TL
     lines = [line("a", at=60.0, track=_pop(1e8, 0.5)), line("b", at=60.0, track=_pop(1e3, 50.0))]  # (a dense giver, a wide taker)
-    c = TT.Calendar(lines, seed=3, T=T)
 
     def links(km):
         return [("a", "b", 40.0, 0.0, float(km))]
 
-    c.feed(lines, links(150), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
-    c.advance(5.0)
+    for seed in range(3, 20):  # (the first draw with fronts still on their way at 5 kyr; PW-1483 changed which draws have them)
+        c = TT.Calendar(lines, seed=seed, T=T)
+        c.feed(lines, links(150), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        c.advance(5.0)
+        open_ = {k: v for k, v in c.arrive.items() if v is not None and v < 5.0 and k[2] not in c.known[k[1]]}
+        if open_:
+            break
     lt = SimpleNamespace(cal=c)
-    open_ = {k: v for k, v in c.arrive.items() if v is not None and v < 5.0 and k[2] not in c.known[k[1]]}
     assert open_  # (a short border, a wide taker: fronts still on their way)
     TL.LiveTech._retime(lt, 5.0)
     assert {k: c.arrive[k] for k in open_} == open_  # (the same border: advance's own rate, nothing moves)

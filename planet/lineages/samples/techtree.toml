@@ -60,6 +60,13 @@ anchor_peers = 4     # Earth's date for a soft tech is the FIRST find among this
                      # people's median wait (techtree.ramp_first; anchor_check builds that many). JUDGEMENT (lane 70, PW-1137): on
                      # 4 runs x 2 draws, 4 puts the world firsts of copper, writing, iron, cities and the wheel within ~1 kyr of
                      # Earth's; 10 makes them 1-2 kyr late; 1 (one people's median, the old rule) with this contact made them 1.4-4.6 kyr early
+own_floor = false    # OFF (lane 200): with Earth's numbers the floor for writing (median wait 4.35 kyr) is FASTER than the anchor rate
+                     # (the first of 4 anchor peoples in 3.3 kyr), so it would speed every big people, not floor the small: round1.md. D55 (PW-1471): a learner alone invents a soft tech with dated independent origins (origins_kyr) no slower than Earth's
+                     # median independent inventor did after Earth's prerequisites (techtree.own_floor); a hazard, never forced
+regions = false      # D55 (PW-1471): region learners. OFF until the anchor rates are set for them: on 0141d1 they bring the world's first
+                     # writing to 8,219 yr ago (median of 12 draws; main 4,153; Earth 5,300): docs/review/culture/techtree/round1.md
+region_min_share = 0.1  # D55 (PW-1471): each present-day landmass holding at least this share of a people's range, once reached, is a
+                     # learner of its own (its share of the pool; techtree.region_shares). JUDGEMENT: under it a foothold, not a region
 
 # the specialist ladder, s (the share of a people not getting food): JUDGEMENT after Childe 1950 (no full-time specialists while
 # everyone hunts, gathers or farms, p. 6; cities hold full-time craftsmen, merchants, officials and priests fed by the surplus,
@@ -276,6 +283,10 @@ track = "communication"
 domains = ["know"]
 needs = ["tokens", "towns", "proto_writing"]
 earliest_kyr = 5.3
+origins_kyr = [5.25, 5.25, 3.25, 2.0]  # (the four commonly recognised independent inventions, kyr before 2000 CE: Mesopotamia c. 3400-3100 BC,
+                     # Egypt c. 3250 BC, China before c. 1250 BC, Mesoamerica before c. 1 AD; en.wikipedia.org/wiki/History_of_writing, read
+                     # 2026-11-05 by lane 200; the Indus script left out, undeciphered). D55's floor (techtree.own_floor): a learner alone
+                     # with tokens, towns and proto-writing writes with a median wait of 8.6 - 4.25 = 4.35 kyr at most (PW-1471)
 era = "bronze age"
 earth_origins = 5
 source = "CDLI wiki 'proto-cuneiform' / 'The Late Uruk period' (cdli.ox.ac.uk): Uruk IV ca. 3350-3200 BCE; Englund 2015 ~3350, Nissen 2016 ~3300 BCE (as summarised by Wikipedia)."
