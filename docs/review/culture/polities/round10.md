@@ -25,7 +25,10 @@
 - **Cost.** The live step rose from 4.0 s (main) to 108.7 s with lane 201's code. Nearly all of that was one unbounded search on every
   missed expedition: how far was the nearest victim, for the read-out's "why not". Inside the history that search now looks only
   4 budgets out (`polity_live.NEED_X`); past that the why-not says "none lay within N km". The read-out still searches without limit.
-  After the bound: SEE6 (seed 7), 15.5 s on seed 10 (main 3.2 s).
+  After the bound: 17.3 s on seed 7 (main 4.0 s; run 49db46), 15.5 s on seed 10 (main 3.2 s).
+- **Seven Meals** (frozen tree, seed 7, measured only): against main with the switch on (run 0ea92b), the branch (run 647e2f) took land in
+  4 of 6 rows, the same as main. Its states 0 years ago were 209 against 219 on main, and its shares were within 0.1 point of main's.
+  Its writing dates were identical to main's. Its live step took 26.1 s against 5.8 s on main (section 5).
 - **Switch off:** a run is still byte-identical to main, apart from timings and the code's own hash (section 7).
 
 ## 1. What changed in the code
@@ -155,7 +158,7 @@ The live step is `made_s` in `polities_live.json` (the live polities' own time, 
 |---|---|---|
 | seed 7 main (51916e) | 4.0 | 1,162 |
 | seed 7 lane 201, unbounded why-not (cbf74f) | 108.7 | 1,245 |
-| SEE6 | | |
+| seed 7 lane 201b, bounded why-not (49db46) | 17.3 | 1,190 |
 | seed 7 CAMPAIGN_KM 1000, bounded (2b4817) | 40.3 | 1,289 |
 | seed 10 main (70cf9f) | 3.2 | 1,135 |
 | seed 10 bounded (4bd35e) | 15.5 | 1,240 |
@@ -175,12 +178,30 @@ flag (`round9/jsondiff.py`, output `round10/offcheck_json.txt`).
 
 ## 8. Robustness suite, switch on
 
-SEE8
+The same suite (`tools/peoples_robust.py`: authored trees humans_only and no_dragons, seeds 7 and 10, two worlds (4360a3 and af2677),
+the founding arm "now", the switch POLITIES_LIVE on) was run on this branch (`exports/robust_br`) and on main (01b03c34 code,
+`exports/robust_main2`), on the same data root. 8 runs each.
+- Branch: 8 of 8 runs counted, 0 failed, 0 crashed, 0 peoples lost, 0 with one people over 85%.
+- Main: the same: 8 counted, 0 failed, 0 crashed, 0 lost, 0 over 85%.
+- Every run's key line is identical on the two sides (peoples, top people, top share, monotonicity, most cells led). humans_only:
+  1 people, human 100%, in all 4 runs on both. no_dragons: 23 peoples in all 4 runs; top people and share human 28% (s10 on 4360a3),
+  hobgoblin 22% (s10 af2677), human 34% (s7 4360a3), hobgoblin 30% (s7 af2677), on both sides. The continental-bloc table is
+  identical too (for example no_dragons-s7 on 4360a3: 9 landmasses, 2 led by a non-human people, mix distance 0.51).
+- Only the wall times differ (branch 15.6 to 200.9 s a run, main 14.7 to 253.9 s; the machine was shared, so they vary).
+- The suite measures peoples, not polities, so this shows that the live polities with invasions do not disturb the peoples, not that
+  the polities are right (sections 2 to 5).
+- Note: the queue's own main run failed at once because the main checkout's script took the relative output path from a different
+  directory; it was re-run with absolute paths (the numbers above).
 
 ## 9. Tests
 
-SEE9
+`NUMBA_NUM_THREADS=4 uv run pytest -q -n 2 -m "not slow" tests/test_invasions.py tests/test_polities.py tests/test_lineages.py
+tests/test_techtree.py` on this branch with lane 201b's bound, before merging main: **207 passed**, 0 failed (127 s).
+After merging main (lanes 200 and 200b): see the status.
 
 ## Status
 
-SEE10
+Lane 201b's cost fix is done: the live step is 17.3 s on seed 7 (main 4.0 s; before the bound 108.7 s) and 15.5 s on seed 10 (main 3.2 s).
+Rows that happen, fates and states are unchanged by the bound (run 49db46: 1 of 6 rows took land, as on main and cbf74f; 118 of 118
+conquests by winners of tolerance 0.6 or more kept; 84 states now). The robustness suite is clean on both sides and the area tests
+pass. Left for Daniel: the two judgement calls (D56 expedition range, TOL_X / harsh conquerors; inbox drafts).

@@ -1,0 +1,17 @@
+=== 49db46 (l201-br3-s7)
+live step s 17.3 tech s 15.5 constants None 0.5
+  row orc_human      happened False took   0 km2            0 exped   0 (km ) exped_fail  18 need_km 842.589725490974 war_band 0 steps 18 state 18 victim 18 border 0
+  row hob_elf        happened False took   0 km2            0 exped   0 (km ) exped_fail  11 need_km - war_band 0 steps 11 state 11 victim 11 border 0
+  row dwarf_hob      happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 0 victim 18 border 0
+  row leonin_human   happened False took   0 km2            0 exped   0 (km ) exped_fail  17 need_km 373.9750120714353 war_band 1 steps 18 state 17 victim 18 border 0
+  row human_kenku    happened True  took   2 km2      108,960 exped   0 (km ) exped_fail  11 need_km 286.90628124323393 war_band 0 steps 13 state 13 victim 13 border 2
+  row elf_orc        happened False took   0 km2            0 exped   0 (km ) exped_fail  17 need_km - war_band 12 steps 18 state 17 victim 18 border 0
+  conquests {'war': 98, 'invasion': 2}
+  fates tol 0.4-0.6  {'kept': 41, 'thinned': 2} heads lost {'kept': 0, 'thinned': 2356}
+  fates tol < 0.4    {'kept': 3, 'thinned': 2, 'expelled': 1} heads lost {'kept': 0, 'thinned': 361, 'expelled': 28}
+  fates tol >= 0.6   {'kept': 118} heads lost {'kept': 0}
+  states (ago: states, largest Mkm2 people, ruled Mkm2, collapsed this step) 3.0: 0, 0.0 None, 0.88; 2.0: 39, 0.445 hobgoblin, 4.57; 1.0: 59, 0.308 tabaxi, 6.39; 0.5: 72, 0.193 hobgoblin, 9.61; 0.0: 84, 0.43 tabaxi, 13.07
+  shares % human 41.1, hobgoblin 13.4, halfling 9.0, orc 8.7, leonin 6.9, kenku 5.0, tabaxi 4.4, firbolg 3.2
+  first anyone (kyr ago) {'writing': 4.305, 'kingship': 2.698, 'law': 2.024, 'cities': 3.597}
+  writing by people {'aarakocra': 3.229, 'bugbear': 2.899, 'cloud_giant': 4.153, 'dragonborn': 2.603, 'drow': 3.347, 'dwarf': 2.698, 'elf': 3.115, 'firbolg': 2.024, 'fire_giant': 3.005, 'frost_giant': 3.005, 'gnome': 4.305, 'goblin': 2.511, 'goliath': 3.115, 'half_elf': 1.753, 'half_orc': 2.423, 'halfling': 2.423, 'hill_giant': 2.603, 'hobgoblin': 2.423, 'human': 2.255, 'kenku': 1.817, 'kobold': 3.597, 'leonin': 2.255, 'lizardfolk': 1.953, 'orc': 2.603, 'sea_elf': 3.005, 'tabaxi': 2.175, 'tortle': 3.347, 'triton': 2.603}
+  attitudes summary {'cultures': 22, 'tolerance_q10_50_90': [0.139, 0.488, 0.876], 'aggression_q10_50_90': [0.128, 0.324, 0.514]} peoples {'aarakocra': [0.5, 0.3], 'bugbear': [0.5, 0.3], 'dragonborn': [0.5, 0.3], 'drow': [0.26, 0.3], 'dwarf': [0.35, 0.5], 'elf': [0.38, 0.3], 'firbolg': [0.32, 0.3], 'gnome': [0.29, 0.3], 'goblin': [0.5, 0.3], 'goliath': [0.38, 0.3], 'halfling': [0.66, 0.3], 'hobgoblin': [0.5, 0.5], 'human': [0.72, 0.3], 'kenku': [0.5, 0.3], 'kobold': [0.5, 0.3], 'leonin': [0.5, 0.4], 'lizardfolk': [0.5, 0.3], 'orc': [0.5, 0.4], 'sea_elf': [0.38, 0.3], 'tabaxi': [0.78, 0.3], 'tortle': [0.5, 0.3], 'triton': [0.32, 0.3]}

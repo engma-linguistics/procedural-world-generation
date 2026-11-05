@@ -301,6 +301,7 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
                     why += (f", and none reached one on an expedition (the furthest went {L['exped_km']:,.0f} km on foot over flat "
                             "ground, more with riding and roads, across unruled land" + (" or through others' land" if L.get("exped_mobile") else "") + "; "
                             + (f"the nearest polity of theirs lay {L['exped_need']:,.0f} km away on the same terms)" if math.isfinite(L.get("exped_need", math.inf))
+                               else f"none lay within {L['exped_need_gt']:,.0f} km on the same terms)" if L.get("exped_need_gt")
                                else "none could be reached at all that way)"))
             elif L["shadowed"] and not (L["outranked"] or L["gone"] or L["chance"]):
                 why = "another invasion you wrote, of the same invaders on the same victims in the same years, led every attack"

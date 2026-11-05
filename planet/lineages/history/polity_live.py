@@ -50,6 +50,8 @@ TOL_X = 2.0  # judgement (PW-1481): tolerance 0..1 spans the whole harshness sca
 FATE_CUT = {"kept": 0.0, "thinned": 0.25, "expelled": 0.8}  # the share of its presence on the taken cells it loses (once, at the conquest), for a winner of aggression AGG_MID
 AGG_MID = 0.5  # judgement (PW-1481): the cut scales with the winner's aggression / AGG_MID (attitudes: 0.3 a plain people, 0.5 a martial one), never past all of it
 FATE_MAX = 0.1  # guard: no people loses more than 10% of its heads to conquests in one step (the rest of the cut is waived)
+NEED_X = 4.0  # cost (lane 201b): on an expedition's miss, how far the history looks for the nearest victim polity (the why-not's "lay N km
+# away"), in multiples of the largest budget tried; past it the why-not says "more than N km". The read-out (derive) still looks without limit
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
 
@@ -342,7 +344,8 @@ class LivePolities(StandIns):
                "borders": lambda o=owner: PO.borders(o, g)}
         if IV.EXPEDITION and self.inv_rows:  # (PW-1479, D50 B: the expedition across the gap, the read-out's own hook)
             F = {"edz": edz, "sea": sea, "ice": ice}
-            ctx["expedition"] = lambda o, st, vic, ruling=ruling, F=F: PO._expedition(self, F, ruling, o, st, vic, ago, wide, self.off, self.idx)
+            ctx["expedition"] = lambda o, st, vic, ruling=ruling, F=F: PO._expedition(self, F, ruling, o, st, vic, ago, wide, self.off, self.idx,
+                                                                                             need_x=NEED_X)
         before = owner.copy()
         owner = PO.war_v0(owner, ctx)
         for lg in self.inv_log:  # (an expedition's two sides as record ids, as derive)
@@ -540,5 +543,5 @@ class LivePolities(StandIns):
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
                 "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X,
-                              "CAMPAIGN_KM": IV.CAMPAIGN_KM,
+                              "CAMPAIGN_KM": IV.CAMPAIGN_KM, "NEED_X": NEED_X,
 }}
