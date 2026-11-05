@@ -34,6 +34,14 @@ WAR_BAND = True  # (C) a strong row whose invaders rule only chiefdoms seats a s
 EXPEDITION = True  # (B) a strong row whose invaders' states border no victim polity sends the nearest one across the gap
 FOREIGN_X = 2.0  # judgement: a km through a third people's polity costs a mobile people twice an open km (riding round its towns);
 # a settled people's expedition crosses only unruled land (and sea, with boats), as D50's B reads
+CAMPAIGN_KM = None  # OPEN (PW-1478, desk D56): an expedition's budget in foot-km before mobility. None: the state's own reach again
+# (option A, now); a number (D56's lean B: 1000.0) is a fixed campaign range. The one place both paths read it (campaign_budget):
+# the read-out (polities.derive) and the polities inside the history (history.polity_live)
+
+
+def campaign_budget(reach: float, mob: float) -> float:
+    """An expedition's budget in foot-km: the state's own reach (or CAMPAIGN_KM, PW-1478) x its people's mobility (mobility)."""
+    return (reach if CAMPAIGN_KM is None else float(CAMPAIGN_KM)) * mob
 
 
 def mobility(line: dict | None) -> float:
@@ -293,6 +301,7 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
                     why += (f", and none reached one on an expedition (the furthest went {L['exped_km']:,.0f} km on foot over flat "
                             "ground, more with riding and roads, across unruled land" + (" or through others' land" if L.get("exped_mobile") else "") + "; "
                             + (f"the nearest polity of theirs lay {L['exped_need']:,.0f} km away on the same terms)" if math.isfinite(L.get("exped_need", math.inf))
+                               else f"none lay within {L['exped_need_gt']:,.0f} km on the same terms)" if L.get("exped_need_gt")
                                else "none could be reached at all that way)"))
             elif L["shadowed"] and not (L["outranked"] or L["gone"] or L["chance"]):
                 why = "another invasion you wrote, of the same invaders on the same victims in the same years, led every attack"

@@ -185,6 +185,26 @@ def test_a_strong_row_reaches_across_an_unruled_gap_and_a_light_one_does_not():
     assert "none reached one on an expedition" in o["why"] and "100 km" in o["why"]
 
 
+def test_the_historys_bounded_why_not_search_says_more_than_the_bound():
+    """Lane 201b: inside the history the "how far was the nearest victim" search on a miss looks only NEED_X budgets out (cost);
+    past that the why-not says "none lay within N km" instead of the distance."""
+    g, owner, seats, ring1, G = _gap_world()
+    off, idx, ekm = G
+    z = np.zeros(len(off) - 1, bool)
+    near = IV.expedition(np.flatnonzero(owner == 0), np.inf, 1.0, -1.0, False, owner, 0, {1}, off, idx, ekm, np.zeros(len(idx)), z, z, 0.0)[2]
+    for cap, want_need in ((near * 2.0, True), (near / 2.0, False)):
+        def exp(o, st, vic, cap=cap):
+            got = IV.expedition(np.flatnonzero(o == st[0]), cap, 1.0, -1.0, False, o, st[0], vic, off, idx, ekm, np.zeros(len(idx)), z, z, 0.0)
+            return None, near / 4.0, False, (got[2] if got else np.inf), cap
+        ctx = _ctx(g, owner, seats, (1.0, 1.0, 1.0), [ROW]) | {"expedition": exp}
+        PO.war_v0(owner.copy(), ctx)
+        lg = ctx["inv_log"][0]
+        assert ctx["taken"] == [] and lg["exped_fail"] == 1
+        assert ("exped_need" in lg) == want_need and ("exped_need_gt" in lg) == (not want_need)
+        o = IV.readout(IV.clean([ROW])[0], [{**lg, "state": 1, "victim": 1}], [], [1.0], _R())[0]
+        assert ("polity of theirs lay" in o["why"]) == want_need and ("none lay within" in o["why"]) == (not want_need)
+
+
 def test_only_a_mobile_people_rides_through_a_third_polity_and_plain_war_never_uses_the_corridor():
     g, owner, seats, ring1, G = _gap_world()
     owner[ring1] = 2  # (the orcs hold the whole gap: no unruled way through)

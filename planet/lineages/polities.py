@@ -269,6 +269,8 @@ def war_v0(owner: np.ndarray, ctx: dict) -> np.ndarray:
                     lg["exped_mobile"] = lg["exped_mobile"] or got[2]
                     if len(got) > 3 and got[3] is not None and np.isfinite(got[3]):
                         lg["exped_need"] = min(lg.get("exped_need", np.inf), got[3])
+                    elif len(got) > 4:  # (the history's bounded search found none that near: "more than" the bound it searched)
+                        lg["exped_need_gt"] = max(lg.get("exped_need_gt", 0.0), got[4])
                 continue
             w, l, path, fkm, km, mob = got[0]
             owner[path] = w  # (the corridor: the unruled land it crossed is the invaders' for this century)
@@ -865,26 +867,32 @@ def _war_bands(R: _Run, seats: list, rows: list, ago: float, prev_cap: dict, ope
         s["tier"], s["cls"], s["war_band"] = "state", 0 if R.knows(s["people"], STRONG_TECH, ago) else 2, r["i"]
 
 
-def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic: set, ago: float, wide: set, off, idx):
+def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic: set, ago: float, wide: set, off, idx, need_x=None):
     """D50 B and the mobile peoples (PW-1450): of the invaders' states `st`, the one whose expedition reaches a victim polity for the
-    least share of its budget (its own reach, _reach, x its people's mobility, invasions.mobility). Returns (the war_v0 hook's
-    (winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried in foot-km, whether any was mobile)."""
+    least share of its budget (invasions.campaign_budget: its own reach, _reach, or CAMPAIGN_KM, x its people's mobility). Returns (the war_v0 hook's
+    (winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried in foot-km, whether any was mobile, and on a
+    miss how far the nearest victim polity lay in foot-km, the read-out's "why not"). `need_x` bounds that last search: None (the
+    read-out, once after the run) searches without limit; a number (the history, every century) searches only need_x budgets out
+    and, when nothing lies that near, returns inf and the bound it searched (a fifth item), so the why-not can say "more than N km"."""
     from . import invasions as IV
     best, top, mobile = None, 0.0, False
+    tried = []
     for p in st:
         s = ruling[p]
         b, lx, sx = _reach(R, s, ago, s["key"] in wide)
         mob = IV.mobility(R.lines[R.lidx[s["people"]]] if s["people"] in R.lidx else None)
-        top, mobile = max(top, b * mob), mobile or mob > 1.0
-        got = IV.expedition(np.flatnonzero(owner == p), b * mob, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"],
-                            F["ice"], CLIMB_M)
-        if got is not None and (best is None or got[2] / (b * mob) < best[0]):
-            best = (got[2] / (b * mob), (p, got[0], got[1], got[2], got[3], mob))
-    if best is None:  # (how far the nearest victim polity was: the read-out's "why not", one unbounded search, only on a miss)
-        need = min((g_[2] for g_ in (IV.expedition(np.flatnonzero(owner == p), np.inf, *_reach(R, ruling[p], ago, ruling[p]["key"] in wide)[1:],
-                                                    IV.mobility(R.lines[R.lidx[ruling[p]["people"]]] if ruling[p]["people"] in R.lidx else None) > 1.0,
-                                                    owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], CLIMB_M) for p in st) if g_), default=np.inf)
-        return None, top, mobile, need
+        bud = IV.campaign_budget(b, mob)
+        top, mobile = max(top, bud), mobile or mob > 1.0
+        seeds = np.flatnonzero(owner == p)
+        tried.append((seeds, bud, lx, sx, mob > 1.0, p))
+        got = IV.expedition(seeds, bud, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], CLIMB_M)
+        if got is not None and (best is None or got[2] / bud < best[0]):
+            best = (got[2] / bud, (p, got[0], got[1], got[2], got[3], mob))
+    if best is None:  # (how far the nearest victim polity was: the read-out's "why not", only on a miss)
+        cap = np.inf if need_x is None else float(need_x) * top
+        need = min((g_[2] for g_ in (IV.expedition(sd, cap, lx, sx, mv, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], CLIMB_M)
+                                     for sd, _b, lx, sx, mv, p in tried) if g_), default=np.inf)
+        return (None, top, mobile, need) if need_x is None else (None, top, mobile, need, cap)
     return best[1], top, mobile, None
 
 
