@@ -1,0 +1,52 @@
+# seeds 7000-7011 on run 89f217 (seed 7 history): none, km, now, now+retime
+
+writing: known in /12, median yr ago [min-max]; first writer of any people
+  km          first med 3349 | human 11 2255 | hobgo 12 2797 | halfl 11 1753 | orc 12 2700 | leoni 12 2705 | kenku 11 2255 | tabax 12 2603 | firbo 10 2136 | bugbe 12 2700 | elf 11 2511 | drago 11 1817 | gnome 12 2099
+  now         first med 3867 | human 12 2339 | hobgo 12 3072 | halfl 12 2180 | orc 12 2797 | leoni 12 2952 | kenku 12 2307 | tabax 12 2804 | firbo 11 2175 | bugbe 12 2952 | elf 12 2813 | drago 12 2467 | gnome 12 2296
+  now+retime  first med 3867 | human 12 2423 | hobgo 12 3072 | halfl 12 2467 | orc 12 2797 | leoni 12 2952 | kenku 12 2486 | tabax 12 2851 | firbo 12 2136 | bugbe 12 2952 | elf 12 3007 | drago 12 2557 | gnome 12 2424
+  after       first med 3867 | human 12 2604 | hobgo 12 3072 | halfl 12 2604 | orc 12 2901 | leoni 12 2952 | kenku 12 2577 | tabax 12 2952 | firbo 12 2136 | bugbe 12 2952 | elf 12 3007 | drago 12 2557 | gnome 12 2424
+
+proto_writing: known in /12, median yr ago [min-max]; first writer of any people
+  km          first med 6278 | human 12 4882 | hobgo 12 5152 | halfl 12 4006 | orc 12 5340 | leoni 12 5155 | kenku 12 5340 | tabax 12 5061 | firbo 12 4229 | bugbe 12 5061 | elf 12 4474 | drago 12 4543 | gnome 12 5155
+  now         first med 6391 | human 12 4797 | hobgo 12 5246 | halfl 12 4305 | orc 12 5438 | leoni 12 5155 | kenku 12 5340 | tabax 12 5061 | firbo 12 4229 | bugbe 12 5155 | elf 12 4888 | drago 12 4710 | gnome 12 5438
+  now+retime  first med 6391 | human 12 4797 | hobgo 12 5246 | halfl 12 4305 | orc 12 5438 | leoni 12 5155 | kenku 12 5340 | tabax 12 5061 | firbo 12 4229 | bugbe 12 5155 | elf 12 4888 | drago 12 4710 | gnome 12 5438
+  after       first med 6391 | human 12 5061 | hobgo 12 5246 | halfl 12 4389 | orc 12 5438 | leoni 12 5155 | kenku 12 5340 | tabax 12 5061 | firbo 12 4229 | bugbe 12 5155 | elf 12 4888 | drago 12 4710 | gnome 12 5536
+
+cities: known in /12, median yr ago [min-max]; first writer of any people
+  km          first med 5152 | human 12 3597 | hobgo 12 4085 | halfl 12 3072 | orc 12 4006 | leoni 12 4462 | kenku 12 3606 | tabax 12 3796 | firbo 12 2851 | bugbe 12 3667 | elf 12 3655 | drago 12 3184 | gnome 12 3349
+  now         first med 5061 | human 12 3472 | hobgo 12 3865 | halfl 12 2899 | orc 12 4006 | leoni 12 4163 | kenku 12 3676 | tabax 12 3662 | firbo 12 2650 | bugbe 12 3796 | elf 12 3117 | drago 12 3237 | gnome 12 3172
+  now+retime  first med 5152 | human 12 3597 | hobgo 12 4085 | halfl 12 3007 | orc 12 4006 | leoni 12 4543 | kenku 12 3676 | tabax 12 3867 | firbo 12 3022 | bugbe 12 3796 | elf 12 3655 | drago 12 3237 | gnome 12 3413
+  after       first med 5152 | human 12 3728 | hobgo 12 4085 | halfl 12 3231 | orc 12 4006 | leoni 12 4462 | kenku 12 3676 | tabax 12 3796 | firbo 12 2851 | bugbe 12 3667 | elf 12 3655 | drago 12 3349 | gnome 12 3413
+
+kingship: known in /12, median yr ago [min-max]; first writer of any people
+  km          first med 4085 | human 12 2705 | hobgo 12 3172 | halfl 12 2061 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 2899 | firbo 12 2436 | bugbe 12 3007 | elf 12 2661 | drago 12 2215 | gnome 12 2661
+  now         first med 4085 | human 12 2654 | hobgo 12 3013 | halfl 12 2061 | orc 12 3117 | leoni 12 3060 | kenku 12 2603 | tabax 12 2798 | firbo 12 2029 | bugbe 12 3007 | elf 12 2339 | drago 12 2215 | gnome 12 2423
+  now+retime  first med 4085 | human 12 2705 | hobgo 12 3231 | halfl 12 2136 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 2952 | firbo 12 2486 | bugbe 12 3064 | elf 12 2661 | drago 12 2255 | gnome 12 2661
+  after       first med 4085 | human 12 3060 | hobgo 12 3172 | halfl 12 2517 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 3064 | firbo 12 2436 | bugbe 12 3007 | elf 12 2661 | drago 12 2476 | gnome 12 2661
+
+# the same: now+retime (final form: also from a 0 rate), peak, peak+retime
+
+writing: known in /12, median yr ago [min-max]; first writer of any people
+  now+retime  first med 3867 | human 12 2423 | hobgo 12 3072 | halfl 12 2467 | orc 12 2797 | leoni 12 2952 | kenku 12 2486 | tabax 12 2851 | firbo 12 2136 | bugbe 12 2952 | elf 12 3007 | drago 12 2557 | gnome 12 2424
+  peak        first med 3867 | human 12 2560 | hobgo 12 3537 | halfl 12 2267 | orc 12 3060 | leoni 12 3060 | kenku 12 2410 | tabax 12 3176 | firbo 11 2175 | bugbe 12 3060 | elf 12 2813 | drago 12 2467 | gnome 12 2337
+  peak+retime first med 3867 | human 12 2747 | hobgo 12 3537 | halfl 12 2604 | orc 12 3060 | leoni 12 3060 | kenku 12 2486 | tabax 12 3176 | firbo 12 2136 | bugbe 12 3060 | elf 12 3007 | drago 12 2654 | gnome 12 2470
+  after       first med 3867 | human 12 2604 | hobgo 12 3072 | halfl 12 2604 | orc 12 2901 | leoni 12 2952 | kenku 12 2577 | tabax 12 2952 | firbo 12 2136 | bugbe 12 2952 | elf 12 3007 | drago 12 2557 | gnome 12 2424
+
+kingship: known in /12, median yr ago [min-max]; first writer of any people
+  now+retime  first med 4085 | human 12 2705 | hobgo 12 3231 | halfl 12 2136 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 2952 | firbo 12 2486 | bugbe 12 3064 | elf 12 2661 | drago 12 2255 | gnome 12 2661
+  peak        first med 4085 | human 12 2798 | hobgo 12 3288 | halfl 12 2215 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 2899 | firbo 12 2486 | bugbe 12 3064 | elf 12 2661 | drago 12 2215 | gnome 12 2661
+  peak+retime first med 4085 | human 12 2798 | hobgo 12 3288 | halfl 12 2215 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 2952 | firbo 12 2486 | bugbe 12 3064 | elf 12 2661 | drago 12 2255 | gnome 12 2661
+  after       first med 4085 | human 12 3060 | hobgo 12 3172 | halfl 12 2517 | orc 12 3229 | leoni 12 3421 | kenku 12 2859 | tabax 12 3064 | firbo 12 2436 | bugbe 12 3007 | elf 12 2661 | drago 12 2476 | gnome 12 2661
+
+# per-variant lines, draw 7000
+now+retime     vs after (0.0, 47.0, 1)  vs live (0.0, 395.0, 18)  writing: gnome=4305 human=2255 hobgoblin=2423 orc=2603 elf=3115 tabaxi=2175
+peak           vs after (0.0, 265.0, 1)  vs live (0.0, 543.0, 18)  writing: gnome=4305 human=3005 hobgoblin=3865 orc=4462 elf=3115 tabaxi=4006
+peak+retime    vs after (0.0, 239.0, 1)  vs live (0.0, 551.0, 18)  writing: gnome=4305 human=3005 hobgoblin=3865 orc=4462 elf=3115 tabaxi=4006
+live           writing: gnome=665 human=- hobgoblin=641 orc=312 elf=- tabaxi=665
+after          writing: gnome=4305 human=2511 hobgoblin=2603 orc=2603 elf=3115 tabaxi=2175
+none           vs after (0.0, 0.0, 0)  vs live (57.0, 424.0, 17)  writing: gnome=4305 human=2511 hobgoblin=2603 orc=2603 elf=3115 tabaxi=2175
+km             vs after (0.0, 258.0, 17)  vs live (0.0, 192.0, 0)  writing: gnome=665 human=- hobgoblin=641 orc=312 elf=- tabaxi=665
+now            vs after (0.0, 58.0, 0)  vs live (0.0, 402.0, 17)  writing: gnome=4305 human=2255 hobgoblin=2423 orc=2603 elf=3115 tabaxi=2175
+now+retime     vs after (0.0, 48.0, 1)  vs live (0.0, 395.0, 18)  writing: gnome=4305 human=2255 hobgoblin=2423 orc=2603 elf=3115 tabaxi=2175
+live           writing: gnome=665 human=- hobgoblin=641 orc=312 elf=- tabaxi=665
+after          writing: gnome=4305 human=2511 hobgoblin=2603 orc=2603 elf=3115 tabaxi=2175

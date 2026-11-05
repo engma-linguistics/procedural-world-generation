@@ -1,0 +1,7 @@
+none           vs after (0.0, 0.0, 0)  vs live (57.0, 424.0, 17)  writing: human=2511 hobgoblin=2603 leonin=2337 bugbear=2899 orc=2603 elf=3115 tabaxi=2175 gnome=4305
+km             vs after (0.0, 258.0, 17)  vs live (0.0, 192.0, 0)  writing: human=- hobgoblin=641 leonin=189 bugbear=137 orc=312 elf=- tabaxi=665 gnome=665
+ser            vs after (0.0, 9.0, 0)  vs live (57.0, 429.0, 17)  writing: human=2511 hobgoblin=2603 leonin=2337 bugbear=2899 orc=2603 elf=3115 tabaxi=2175 gnome=4305
+have           vs after (0.0, 0.0, 0)  vs live (57.0, 424.0, 17)  writing: human=2511 hobgoblin=2603 leonin=2337 bugbear=2899 orc=2603 elf=3115 tabaxi=2175 gnome=4305
+km+ser+have    vs after (0.0, 256.0, 17)  vs live (0.0, 170.0, 0)  writing: human=- hobgoblin=641 leonin=189 bugbear=137 orc=312 elf=- tabaxi=665 gnome=665
+live           writing: human=- hobgoblin=641 leonin=189 bugbear=137 orc=312 elf=- tabaxi=665 gnome=665
+after          writing: human=2511 hobgoblin=2603 leonin=2337 bugbear=2899 orc=2603 elf=3115 tabaxi=2175 gnome=4305
