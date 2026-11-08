@@ -61,6 +61,7 @@ import numpy as np
 
 from .techtree import GODS_MODES  # noqa: E402
 MODE_DEFAULT = "faith_made"
+GODS_FORMAT = "procgen-gods/2"  # (/2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489)
 GROUPS = {
     "water": ("sea", "river", "rain", "flood"),
     "sky": ("sky", "sun", "storm"),
@@ -109,6 +110,17 @@ TAU_TOLERANT = 2.0  # kyr, JUDGEMENT on the sourced side: a fully tolerant ruler
 # Islamic rule (no forced conversion; a tax on unbelievers): ~40 % Muslim two centuries after the conquest, ~80 % in three to four
 SHARE_EDGES = 6  # (a cell two cultures share counts as its six edges between them: touch())
 ETHNIC_RULE = 0.1  # JUDGEMENT on a sourced contrast: rulers of a faith that seeks no converts push it at a tenth of the rate (the polytheist empires returned their subjects' gods to their temples, as Cyrus did at Babylon; forced conversion is the exclusive, missionary faiths' habit: the Saxons, Castile 1502)
+# Minority faiths (PW-1489; docs/review/culture/faiths/minorities1.md). Each culture holds a share of each faith; its faith (faith_of, the
+# majority) is still flipped by the conversion events above, which are the moment the newcomer passes half (Bulliet 1979's conversion
+# curve: an S-curve, ~10 % Muslim in the Umayyad period, ~40 % by the mid-9th century, almost all by the end of the 11th). Between events a
+# share follows the logistic of the same links: every link that may convert a culture to a faith (or, once it holds that faith, every
+# neighbour and ruler of its own faith) grows that faith's share at k = rate x SHARE_SPAN, taken from the other faiths in proportion.
+SHARE_SEED = 0.01  # sourced scale: a faith reaching a culture starts with its first converts, 1 % (Stark 1996: ~1,000 Christians in 40 AD to ~6 million, 10 %, by 300 AD at ~40 %/decade)
+SHARE_SPAN = math.log((1.0 - SHARE_SEED) / SHARE_SEED)  # (so a link's mean wait, 1/rate, carries a share from SHARE_SEED to half: TAU_MISSION's own reading of Stark)
+SHARE_PLATEAU = 0.10  # sourced: before a culture tips, a pressing faith's converts level off at ~10 % (Bulliet's Umayyad-period plateau, ~10 % of non-Arab subjects, before the Abbasid take-off); the event is the take-off. (The conversion event is memoryless: a share that kept climbing to half while the event had not come would contradict it)
+ASSIM_RULE = 0.1  # JUDGEMENT on the sourced rulers' scale: a culture's own faith presses its minorities as an ethnic ruler of it would (ETHNIC_RULE x a ruler's push at the culture's own tolerance): ~2.5 kyr at tolerance 0.5, ~0.5 kyr intolerant, ~15 kyr at 0.9, so a remnant fades over a millennium or two unless the culture is tolerant (the dhimmi Christians of Egypt and Syria stayed large for centuries) or something keeps pressing it
+SHARE_MIN = 0.005  # a minority under half a percent is folded into the culture's faith (too few to name)
+SHARE_TOP = 4  # the faiths a culture or a state lists by name; the rest are pooled as "others"
 RULE_TIERS = ("state", "empire", "dragon realm")  # JUDGEMENT: a chiefdom (a town and its cell) pushes no faith; dragons are sapient and rule as any
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
@@ -260,9 +272,113 @@ class Pantheons:
         self.held: dict = {}  # culture -> the individuation of the leading god of the church that converted it (PW-1477)
         self.held_f: dict = {}  # culture -> the faith it was converted to (held counts only while it keeps that faith)
         self.att = Attitudes(lines, seed)  # (PW-904: each culture's tolerance and aggression; a ruler's tolerance sets its push)
+        self.comp: dict[int, dict] = {}  # culture -> {faith: share}, the shares summing to 1, its faith (faith_of) at least half (PW-1489)
+        self.cells: dict[int, int] = {}  # culture -> its cells at the last frame (weights a merge's shares)
+        self.share_counts = {"merge_capped": 0}
+
+    # ---- minority faiths (PW-1489)
+    def _comp_major(self, c: int, f: int | None, old: int | None, how: str):
+        """c's shares when its faith goes from old to f. "flip" (a conversion): f passes half (Bulliet's midpoint) and the old faith
+        stays as a minority; "rename" (founding, schism, a written faith, a merge or split taking a faith): the old faith's share becomes
+        f's (the culture moves as a body; its minorities stay)."""
+        if f is None:
+            self.comp.pop(c, None)
+            return
+        s = self.comp.get(c)
+        if not s or old is None:
+            self.comp[c] = {f: 1.0}
+            return
+        if how == "rename":
+            s[f] = s.get(f, 0.0) + s.pop(old, 0.0)
+            return
+        self._set_share(c, f, max(s.get(f, 0.0), 0.5))
+
+    def _set_share(self, c: int, f: int, v: float):
+        """c's share of f to v, the other faiths scaled to fill the rest."""
+        s = self.comp[c]
+        rest = 1.0 - s.get(f, 0.0)
+        k = (1.0 - v) / rest if rest > 1e-12 else 0.0
+        for g in s:
+            s[g] *= k
+        s[f] = v
+        maj = self.faith_of.get(c)
+        for g in [g for g, x in s.items() if x < SHARE_MIN and g != maj and g != f]:
+            s[maj if maj is not None else f] += s.pop(g)
+
+    def _pulls(self, contacts, rule) -> dict:
+        """The pull of a culture's own faith on its minorities: {culture: rate per kyr}, from the culture itself (ASSIM_RULE), each neighbour of the same faith (as a
+        link: x the share of its border facing it and its receptiveness, over TAU_MISSION or TAU_CONVERT) and its ruler of that faith
+        (as _links). Only cultures that hold minorities."""
+        mixed = {c for c, s in self.comp.items() if len(s) > 1 and c in self.faith_of}
+        out: dict = {}
+        if not mixed:
+            return out
+        for x in mixed:  # (its own faith, as an ethnic ruler of it: ASSIM_RULE)
+            tol = self.att.tolerance(x)
+            out[x] = ASSIM_RULE / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
+        wts = contacts if isinstance(contacts, dict) else None
+        for a, b in contacts or ():
+            if a not in mixed and b not in mixed:
+                continue
+            wab = wts[(a, b)] if wts is not None else (1.0, 1.0)
+            for x, y, w in ((a, b, wab[0]), (b, a, wab[1])):
+                f = self.faith_of.get(x)
+                if x in mixed and w > 0 and f is not None and self.faith_of.get(y) == f and f not in self.closed:
+                    tau = TAU_MISSION if self.faiths[f].missionary else TAU_CONVERT
+                    out[x] = out.get(x, 0.0) + w * self.att.tolerance(x) / RECEPT_MID / tau
+        for r, subs, _took in rule or ():
+            fr = self.faith_of.get(r)
+            if fr is None or fr in self.closed:
+                continue
+            tol = self.att.tolerance(r)
+            rate = (1.0 if self.faiths[fr].missionary else ETHNIC_RULE) / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
+            for x, share in subs:
+                if x in mixed and x != r and share > 0 and self.faith_of.get(x) == fr:
+                    out[x] = out.get(x, 0.0) + rate * share
+        return out
+
+    def _shares(self, links: list, pulls: dict, dt: float):
+        """Advance the shares by dt kyr under the links (_links: a faith that may convert a culture) and the pulls (_pulls): each pressed
+        faith's share follows a logistic at rate x SHARE_SPAN, from at least SHARE_SEED: the culture's own faith toward all, a faith
+        pressing it toward SHARE_PLATEAU (it passes that only by a conversion event, which takes it to half), and never so far that the
+        culture's faith would fall under half. A share already over the plateau (an old faith's remnant) is not pressed further."""
+        if dt <= 0:
+            return
+        k: dict = {}
+        for r, x, f, _y, _how in links:
+            if x in self.comp:
+                k[(x, f)] = k.get((x, f), 0.0) + r
+        for x, r in pulls.items():
+            k[(x, self.faith_of[x])] = k.get((x, self.faith_of[x]), 0.0) + r
+        for (x, f), r in sorted(k.items()):
+            s, maj = self.comp[x], self.faith_of.get(x)
+            v0 = max(s.get(f, 0.0), SHARE_SEED if f != maj else 0.0)
+            cap = 1.0 if f == maj else SHARE_PLATEAU
+            if v0 >= cap - 1e-12:
+                if v0 > s.get(f, 0.0):
+                    self._set_share(x, f, v0)
+                continue
+            v = cap / (1.0 + (cap - v0) / v0 * math.exp(-min(r * SHARE_SPAN * dt, 700.0)))  # (the logistic to cap: to the plateau, or to all)
+            if f != maj:
+                room = s.get(f, 0.0) + s.get(maj, 0.0) - 0.5  # (its own share, plus what the culture's faith holds over half)
+                v = min(v, max(room, s.get(f, 0.0)))
+            if v >= 1.0 - SHARE_MIN:
+                v = 1.0
+            self._set_share(x, f, v)
+
+    def shares_doc(self, c: int) -> list:
+        """c's faiths now, [[faith, share], ...]: its own faith first, then the largest SHARE_TOP - 1, then [None, the rest pooled]."""
+        s = self.comp.get(c)
+        if not s:
+            return []
+        maj = self.faith_of.get(c)
+        rows = sorted(((f, v) for f, v in s.items() if v >= SHARE_MIN or f == maj), key=lambda kv: (kv[0] != maj, -kv[1], kv[0]))
+        out = [[f, round(v, 4)] for f, v in rows[:SHARE_TOP]]
+        rest = sum(v for _, v in rows[SHARE_TOP:])
+        return out + ([[None, round(rest, 4)]] if rest > 0 else [])
 
     # ---- faiths (PW-1358)
-    def _join(self, c: int, f: int | None, ago: float):
+    def _join(self, c: int, f: int | None, ago: float, how: str = "rename"):
         old = self.faith_of.get(c)
         if old == f:
             return
@@ -273,6 +389,7 @@ class Pantheons:
         else:
             self.faith_of[c] = f
             self.faiths[f].members.add(c)
+        self._comp_major(c, f, old, how)
         self.fhist.setdefault(c, []).append([round(float(ago), 3), f])
 
     def _leave(self, c: int, ago: float, why: str):
@@ -384,7 +501,7 @@ class Pantheons:
     def _convert(self, x: int, f: int, y: int, how: str, ago: float):
         lx, ly = self.lead(x), self.lead(y)
         old = self.faith_of[x]
-        self._join(x, f, ago)
+        self._join(x, f, ago, "flip")
         self.converted.add(x)
         nb = self._new(ly.w.copy(), ago, x, "converted", ly.id)
         nb.dev = min(1.0, max(o.dev for o in self.by[x]) + 0.01)
@@ -418,13 +535,18 @@ class Pantheons:
             t = hi
             while True:
                 L = self._links(contacts, rule, t)
+                pulls = self._pulls(contacts, rule)  # (PW-1489: the shares move with the same links between the events)
                 if not L:
+                    self._shares(L, pulls, t - lo)
                     break
                 rates = np.array([l[0] for l in L])
                 R = float(rates.sum())
                 if R <= 0:
+                    self._shares(L, pulls, t - lo)
                     break
-                t -= float(self.rng.exponential(1.0 / R))
+                tn = t - float(self.rng.exponential(1.0 / R))
+                self._shares(L, pulls, t - max(tn, lo))
+                t = tn
                 if t <= lo:
                     break
                 k = int(np.searchsorted(np.cumsum(rates), self.rng.random() * R, side="right"))
@@ -504,6 +626,7 @@ class Pantheons:
         """A culture born of another copies its beings (cousins) and keeps its faith."""
         if parent in self.faith_of and child not in self.faith_of:
             self._join(child, self.faith_of[parent], ago)
+            self.comp[child] = dict(self.comp.get(parent) or {self.faith_of[parent]: 1.0})  # (its minorities too, PW-1489)
         for p in list(self.by.get(parent, [])):
             self._new(p.w.copy(), ago, child, "split", p.id).dev = p.dev
             self.by[child][-1].ind = p.ind
@@ -531,6 +654,19 @@ class Pantheons:
         self.by.pop(lose, None)
         if keep not in self.faith_of and lose in self.faith_of:
             self._join(keep, self.faith_of[lose], ago)
+            self.comp[keep] = dict(self.comp.get(lose) or {self.faith_of[lose]: 1.0})
+        elif keep in self.comp and lose in self.comp:  # (PW-1489: the merged culture holds both's shares, weighted by their land)
+            wk, wl = float(self.cells.get(keep, 1)), float(self.cells.get(lose, 1))
+            mix: dict = {}
+            for c, w in ((keep, wk), (lose, wl)):
+                for f, v in self.comp[c].items():
+                    mix[f] = mix.get(f, 0.0) + v * w / (wk + wl)
+            self.comp[keep] = mix
+            maj = self.faith_of[keep]
+            if mix.get(maj, 0.0) < 0.5:  # (the survivor's faith stays the merged culture's, as it always did: it keeps half)
+                self.share_counts["merge_capped"] += 1
+                self._set_share(keep, maj, 0.5)
+            self.cells[keep] = int(wk + wl)
         self._leave(lose, ago, "its cultures ended")
 
     def died(self, c: int, ago: float):
@@ -547,6 +683,8 @@ class Pantheons:
         subject cultures, took land by war)])] of the polity steps since the last frame (rule_table; PW-1477: rulers push their faith)."""
         dt = 0.0 if self.prev is None else max(self.prev - ago, 0.0)
         self.prev = ago
+        for c, (n, _v) in (where or {}).items():
+            self.cells[c] = int(n)
         for c, u in cultures.items():  # (attitudes, PW-904: every culture on the map with gods; a daughter starts from its parent)
             self.att.ensure(c, u.get("people", "?"), u.get("parent"))
         for _, rule in rule_steps:
@@ -820,7 +958,8 @@ def rule_table(po: dict, C: list, frames: list | None = None) -> dict:
     tiers = po.get("tiers") or ["chiefdom", "state", "empire", "dragon realm"]
     rec = po["polities"]
     took = {(pid, round(float(a), 3)) for r in rec for pid in (r["id"],) for a, *_ in r.get("took") or ()}
-    steps = []
+    steps, now = [], []
+    last = min((float(st["ago"]) for st in po["steps"]), default=None)
     for st, mp in zip(po["steps"], po["maps"]):
         ago = float(st["ago"])
         rows = []
@@ -845,12 +984,16 @@ def rule_table(po: dict, C: list, frames: list | None = None) -> dict:
                 here = np.bincount(F["cul"][inside], minlength=len(C))
                 tot = tot_at[fi]
                 subs = [[x, round(float(min(1.0, here[x] / tot[x])), 4) if tot[x] else 0.0] for x in subs]
+                if ago == last:  # (PW-1489: who lives in each state now, for its faiths)
+                    held = {int(x): int(here[x]) for x in np.flatnonzero(here)}
+                    now.append({"id": pid, "name": rec[pid].get("name") or f"polity {pid}", "tier": tier, "color": rec[pid].get("color"),
+                                "ruler": r, "cells": held})
             else:
                 subs = [[x, 1.0] for x in subs]
             rows.append([r, subs, (pid, round(ago, 3)) in took])
         steps.append([ago, rows])
     steps.sort(key=lambda x: -x[0])
-    return {"step_kyr": float(po.get("step_kyr") or 0.1), "steps": steps}
+    return {"step_kyr": float(po.get("step_kyr") or 0.1), "steps": steps, "now": now}
 
 
 def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, rule: dict | None = None) -> dict:
@@ -910,19 +1053,61 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
     cl = {}
     for b in docs:
         cl.setdefault(b["culture"], []).append(b["id"])
-    out = {"format": "procgen-gods/1", "gods_mode": mode, "from_kyr": win, "domains": list(DOMAINS), "groups": {k: list(v) for k, v in GROUPS.items()},
+    out = {"format": GODS_FORMAT, "gods_mode": mode, "from_kyr": win, "domains": list(DOMAINS), "groups": {k: list(v) for k, v in GROUPS.items()},
            "constants": {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float))} | {"tiers": dict(TIERS)},
            "beings": docs, "events": P.events, "faiths": {"rule": FAITH_RULE, "list": faiths},
            "frames": [[fr["j"], round(float(fr["ago"]), 3)] for fr in frames],
            "cultures": {str(c): {"name": C[c]["name"], "people": C[c]["people"], "beings": ids,
                                  "living": [i for i in ids if docs[i]["status"] == "living"],
-                                 "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c),
+                                 "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c), "shares": P.shares_doc(c),
                                  "ritual_since_kyr": (known.get(C[c]["people"]) or {}).get("spirit_ritual", [None])[0]} for c, ids in cl.items()},
+           "shares": share_rollup(P, C, (rule or {}).get("now") or []),
            "authored": {"rule": AUTHORED_RULE, "faiths": [authored_readout(s, faiths, C) for s in todo], "problems": notes},
            "attitudes": P.att.doc() | {"rulers_known": bool(rsteps)},
            "summary": summary(docs, mode, round(inp.get("secs", 0.0) + time.time() - t0, 1)) | {"faiths": {**P.counts, "ever": len(faiths),
                                                                                                      "living": sum(f["ended_kyr"] is None for f in faiths)}}}
     return out
+
+
+SHARE_RULE = ("Each culture holds a share of each faith. Its faith (the one named everywhere else) is its majority: a culture is converted "
+              "when a newcomer faith passes half (Bulliet's conversion curve), and the old faith stays on as a minority. Between conversions "
+              "a faith grows within a culture along an S-curve, from its first converts (1 %) to about a tenth (Bulliet's plateau before the "
+              "take-off), at the pace of the neighbour, missionaries or ruler pressing it; once a culture holds a faith, the culture itself (faster the less tolerant it is) and its neighbours and rulers of that faith "
+              "win over the minorities that remain, over a millennium or two. Daughter cultures carry their parent's minorities; merged cultures pool "
+              "theirs by land (the survivor's faith keeps at least half). States and peoples: their cultures' shares weighted by land.")
+
+
+def _mix(parts) -> list:
+    """[(weight, {faith: share})] pooled: [[faith, share], ...] largest first, the first SHARE_TOP, then [None, the rest]."""
+    tot: dict = {}
+    W = sum(w for w, _ in parts)
+    if W <= 0:
+        return []
+    for w, s in parts:
+        for f, v in s.items():
+            tot[f] = tot.get(f, 0.0) + v * w / W
+    rows = sorted(tot.items(), key=lambda kv: (-kv[1], kv[0]))
+    rest = sum(v for _, v in rows[SHARE_TOP:])
+    return [[f, round(v, 4)] for f, v in rows[:SHARE_TOP]] + ([[None, round(rest, 4)]] if rest > 1e-4 else [])
+
+
+def share_rollup(P: Pantheons, C: list, now: list) -> dict:
+    """The faiths of each state (rule_table()["now"]: its cells by culture) and each people (its living cultures by their cells at the
+    last frame), from the cultures' shares (PW-1489)."""
+    states = []
+    for e in now:
+        parts = [(n, P.comp[c]) for c, n in e["cells"].items() if c in P.comp]
+        if parts:
+            states.append({"id": e["id"], "name": e["name"], "tier": e["tier"], "color": e["color"], "ruler": e["ruler"],
+                           "cells": int(sum(n for n, _ in parts)), "faiths": _mix(parts)})
+    states.sort(key=lambda x: -x["cells"])
+    by: dict = {}
+    for c, s in P.comp.items():
+        by.setdefault(C[c]["people"], []).append((P.cells.get(c, 1), s))
+    mixed = [s for s in P.comp.values() if len(s) > 1]
+    return {"rule": SHARE_RULE, "states": states, "peoples": {p: _mix(v) for p, v in sorted(by.items())},
+            "summary": {"cultures": len(P.comp), "with_minority": len(mixed),
+                        "minority_over_10": sum(1 for c, s in P.comp.items() if any(v > 0.10 for f, v in s.items() if f != P.faith_of.get(c))), **P.share_counts}}
 
 
 def _founder(s: dict, fr: dict, inp: dict) -> int | None:
