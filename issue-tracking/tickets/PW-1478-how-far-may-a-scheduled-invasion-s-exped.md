@@ -2,7 +2,7 @@
 id: PW-1478
 title: How far may a scheduled invasion's expedition go? One more state's reach crosses ~150 km, too short for most rows
 type: task
-status: todo
+status: done
 parent: null
 milestone: v3
 subsystem: peoples
@@ -35,6 +35,7 @@ Lean: B. It keeps distance meaningful, and mobile peoples still stand out. The r
 polity was, so a re-score is one constant and one run of invasions_reach_score.py.
 
 ## Updates
+- 2026-11-07: Status todo -> done. Lane 204 (round11.md): invasions.campaign_budget = max(CAMPAIGN_KM 1000, EXTENT_X 1 x sqrt(state area / pi)) x mobility (D56 B, x2 nomads/pastoral nomads; the radius term for Rome: 5.0 Mkm2 in AD 117 per Taagepera 1979, radius 1,262 km; Trajan's 116 campaign Zeugma to Charax ~1,130 km). Read-out score on a2b637 against main 330b021b: 11 -> 15 of 30 rows; no-row doc identical; plain wars unchanged in every row's window. History (switch on, world 899985, seeds 7/10/3): rows that took land 2 -> 9 of 18; ordinary wars 95/94, 208/207, 250/251. 3c1caf (Seven Meals) not scored: stopped at the lane's tool budget (command in round11.md section 4).
 - 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D56 B (fixed campaign range ~1,000 km, doubled for herders/nomads, horses especially), AND something that lets settled empires campaign far too (the Roman Empire campaigned very far away; not only Mongols). Build B plus a reach that grows with a state's own size/organisation (roads, logistics), so a large settled empire can strike far.
 - 2026-11-05: Evidence from lane 201/201b (docs/review/culture/polities/round10.md section 4), polities in the history on, world 899985 L7 dnd tree seed 7, six strong rows. With option A (CAMPAIGN_KM None, run cbf74f) the expeditions' budgets were about 150 foot-km and the nearest victim polities lay 287, 374, 843, 5,802 and 6,795 foot-km away (human_kenku, leonin_human, orc_human, hob_elf, elf_orc); 1 of 6 rows happened, by a shared border (main with the switch on, run 51916e: also 1 of 6). Test arm CAMPAIGN_KM = 1000 (option B, run 2b4817; the default stays None): 2 of 6 rows took land (orc_human 6 times, human_kenku 13 times; leonin_human sent one expedition and lost), invasions 19 against 2, live states now 87 against 84 (cbf74f), shares within 0.1 point, writing dates unchanged. The live step cost 40.3 s of a 1,402 s run (cbf74f 108.7 s before lane 201b bounded the why-not search; main-on 51916e 4.0 s).
 - 2026-11-04: Created from inbox draft draft-expedition-range.md (found by lane198).
