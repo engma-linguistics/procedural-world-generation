@@ -1,15 +1,19 @@
 ---
+id: PW-1523
 title: Regional pantheons v0 - hubs, matched domain gods, peoples' patrons, a Pantheons subtab
 type: story
 status: todo
 parent: PW-1308
+milestone: null
 subsystem: culture
 effort: l
 impact: med
 found_by: scout220
 blocked_by: []
 relates: [PW-1308, PW-1489, PW-1477, PW-986]
-refs: [docs/review/culture/faiths/pantheon1.md, docs/review/culture/faiths/pantheon1/pantheons.py, planet/lineages/gods.py::replay, planet/lineages/gods.py::Pantheons.frame, planet/lineages/gods.py::rule_table, planet/lineages/gods.py::inputs, planet/lineages/attitudes.py, planet/lineages/settlements.py, planet/server.py::gods_doc, "run 0141d1", "run 3e0eb4"]
+refs: [docs/review/culture/faiths/pantheon1.md, docs/review/culture/faiths/pantheon1/pantheons.py, "planet/lineages/gods.py::replay", "planet/lineages/gods.py::Pantheons.frame", "planet/lineages/gods.py::rule_table", "planet/lineages/gods.py::inputs", planet/lineages/attitudes.py, planet/lineages/settlements.py, "planet/server.py::gods_doc", "run 0141d1", "run 3e0eb4"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -34,3 +38,6 @@ Scope, read-out only (own random stream; majority faiths and conversions identic
 - [ ] Calibration over 3+ runs (0141d1, 3e0eb4, 07c755): a polytheist D&D world gets a few regional pantheons covering under a third of
       the land; a world dominated by a missionary faith gets few or none. A slower hub test may need a `who` series in settlements.json
       (today only "now") or contact edges over time as a stand-in.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-regional-pantheons-build-v0.md (found by scout220).

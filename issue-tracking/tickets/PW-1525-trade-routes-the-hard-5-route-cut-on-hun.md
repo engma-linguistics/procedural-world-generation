@@ -1,4 +1,5 @@
 ---
+id: PW-1525
 title: "Trade routes: the hard 5% route cut on hundreds of stretches keeps the land-nudge steadiness near 0.5-0.65 whatever the source side does"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 218
 blocked_by: []
 relates: [PW-1514, PW-1515]
 refs: [docs/review/culture/trade/step3c.md, docs/review/culture/trade/step3b.md, docs/review/culture/trade/step3b/judge.py, "planet/lineages/trade_routes.py::Loads.finish", "planet/lineages/trade_routes.py::ROUTE_SHARE", "planet/lineages/trade_flow.py::_Frame.pools", "planet/lineages/trade_flow.py::TRUNK", "run 0141d1", "run 3e0eb4", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -34,3 +37,7 @@ Options for Daniel:
 - C: keep the cut and the bar, and keep looking on the source side (pool every settled cell, not only those within 1.5 spacings of a
   town).
 - [ ] a ruling on how route steadiness is drawn and judged
+
+## Updates
+- 2026-11-08: Desk D69 (lean A, judged on the long-haul layer lane 222 draws).
+- 2026-11-08: Created from inbox draft draft-trade-route-steadiness-measure.md (found by lane 218).

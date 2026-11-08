@@ -1,15 +1,19 @@
 ---
+id: PW-1524
 title: Regional pantheons (PW-1521) - five design choices before building
 type: task
 status: needs-decision
 parent: PW-1308
+milestone: null
 subsystem: culture
 effort: xs
 impact: med
 found_by: scout220
 blocked_by: []
 relates: [PW-1308, PW-1489, PW-1477, PW-986]
-refs: [docs/review/culture/faiths/pantheon1.md, docs/review/culture/faiths/pantheon1/pantheons.py, planet/lineages/gods.py, planet/lineages/gods.py::Pantheons.merge, planet/lineages/attitudes.py, "run 0141d1", "run 3e0eb4", "settlements.json who"]
+refs: [docs/review/culture/faiths/pantheon1.md, docs/review/culture/faiths/pantheon1/pantheons.py, planet/lineages/gods.py, "planet/lineages/gods.py::Pantheons.merge", planet/lineages/attitudes.py, "run 0141d1", "run 3e0eb4", "settlements.json who"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -59,3 +63,7 @@ fully, and those domains never lead. So the shared roster will be sea, sky, fire
 
 **My overall lean: 1A, 2B, 3A, 4A, 5A.** All of it is read-out only, like the minority faiths: the history and the majority faiths stay
 as they are.
+
+## Updates
+- 2026-11-08: Desk D68 (lean 1A 2B 3A 4A 5A).
+- 2026-11-08: Created from inbox draft draft-regional-pantheons-design-choices.md (found by scout220).
