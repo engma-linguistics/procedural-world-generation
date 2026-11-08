@@ -1,0 +1,100 @@
+diff --git a/planet/tectonics/crust.py b/planet/tectonics/crust.py
+index bd158cbd..2568d648 100644
+--- a/planet/tectonics/crust.py
++++ b/planet/tectonics/crust.py
+@@ -27,7 +27,7 @@ from ..surface import ARC, CRATON, FLOOD_BASALT, GRANITE, HOTSPOT, OCEAN, OROGEN
+ from . import record
+ from .isostasy import BECOMES_CONT_KM, LAVA, LAVA_MAX_KM, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X, max_km
+ from .plate_kernels import crust_flow
+-from .plates import P_MAX
++from .plates import CMYR, P_MAX
+ 
+ TUFF_SHARE = 0.1  # of the new arc crust on a continent that erupts as ash and ignimbrite sheets (cover)
+ GRANITE_KM = 4.0  # km of erosion since an arc went quiet that exposes its plutons (a batholith)
+@@ -188,6 +188,55 @@ def inner_edges(sim, cont, bd=None):
+     return ea, eb
+ 
+ 
++def andean_shortening(sim, bd, conv, col, thermostat):
++    """PW-1497 (scout 209 screen): km of crust per cell shortened into the belt behind each ocean-continent trench
++    this step, to be stacked like a collision's (stack_collisions). The slab pins the trench (Schellart 2008: an
++    advancing or stable trench goes with overriding-plate shortening, a retreating one with extension), so a share
++    `andean_shortening` of the overriding plate's own advance toward the trench (cm/yr, at most the convergence) is
++    taken up by shortening its edge (Medvedev et al. 2006: the central Andean foreland moves west ~3 cm/yr and the
++    Andes shorten 1-1.75 cm/yr of it). Each km of shortening stacks a continental_thickness column. 'thermo' mode
++    scales it by the volume thermostat (new volume, like the arcs on continents); 'conserve' takes the same volume
++    from the overriding plate's continental cells in proportion to their crust (the area the plate loses, kept as
++    thickness so the area thermostat isn't touched). 'budget' mode: the volume thermostat's signal without its 0.1 floor
++    and at most 1, so shortening stops while the continents hold more crust than their target. 'edge' mode: the
++    trench-edge cell itself pays (down to 10 km), so the volume is kept and the plate loses area at its leading edge."""
++    p, n = sim.params, sim.grid.n
++    out = np.zeros(n)
++    if p.andean_shortening <= 0 or not (bd.a_down.any() or bd.b_down.any()):
++        return out
++    from .motion import velocity
++    up = bd.overriding
++    toward = np.concatenate([-bd.d[bd.a_down], bd.d[bd.b_down]])  # from the overriding cell toward the trench
++    adv = (velocity(sim)[up] * toward).sum(1) * CMYR
++    rate = p.andean_shortening * np.clip(adv, 0.0, bd.at_trenches(conv)) * col.cont[up]
++    km = sim.edge_len * R_KM
++    gain = 1.0
++    if p.andean_mode == "thermo":
++        gain = thermostat
++    elif p.andean_mode == "budget":  # the volume thermostat's own signal, without its 0.1 floor and capped at 1
++        vol = max(float((sim.w_thick * sim.w_cont).mean()), 1e-3)
++        err = np.log(sim.target_fraction() * p.continental_thickness / vol)
++        gain = float(np.clip(np.exp(4 * (err + sim.thermo[0])), 0.0, 1.0))
++    np.maximum.at(out, up, rate * 10.0 * sim.dt_now * p.continental_thickness / km * gain)
++    if p.andean_mode == "edge" and out.any():
++        # the trench-edge cells pay: their crust is pushed into the belt, and an edge drained below 15 km becomes
++        # ocean in subduction_erosion (the plate loses that area at its leading edge; the area thermostat answers)
++        out = np.minimum(out, np.maximum(col.t - 10.0, 0.0) * col.cont)
++        t0 = col.t
++        col.t = col.t - out
++        sim.book("andean.source", t0, col.t, col.cont)
++    if p.andean_mode == "conserve" and out.any():
++        own = sim.owner
++        give = np.bincount(own, weights=out, minlength=P_MAX)
++        have = np.bincount(own, weights=col.t * col.cont, minlength=P_MAX)
++        f = np.minimum(give / np.maximum(have, 1e-9), 0.02)  # (at most 2% of a plate's continental crust a step)
++        out *= np.where(give > 0, f * have / np.maximum(give, 1e-9), 0.0)[own]
++        t0 = col.t
++        col.t = col.t * (1 - f[own] * col.cont)
++        sim.book("andean.source", t0, col.t, col.cont)
++    return out
++
++
+ def stack_collisions(sim, col, stacked, edges):
+     """Collisions: the crust that was shortened away (stacked: km per cell,
+     from plate_kernels.resolve) is stacked into a belt a few hundred km
+diff --git a/planet/tectonics/params.py b/planet/tectonics/params.py
+index 2c984138..c4de6528 100644
+--- a/planet/tectonics/params.py
++++ b/planet/tectonics/params.py
+@@ -69,6 +69,12 @@ class Params:
+     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
+     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
+     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
++    # PW-1497 scout 209 (screen arms; 0 = off): share of the overriding plate's trenchward advance (cm/yr, capped at the
++    # convergence) taken up by shortening behind an ocean-continent trench (Andes), stacked like a collision belt.
++    # andean_mode "thermo": the stacked volume is new, under the volume thermostat; "conserve": the overriding plate's
++    # continental crust gives it (area it loses, as thickness); "budget": the thermostat's signal with no floor, at most 1.
++    andean_shortening: float = 0.0
++    andean_mode: str = "thermo"
+     subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches (over a crust.FOREARC_KM wide forearc)
+     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
+     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
+diff --git a/planet/tectonics/simulation.py b/planet/tectonics/simulation.py
+index bdea224a..da3bd2b5 100644
+--- a/planet/tectonics/simulation.py
++++ b/planet/tectonics/simulation.py
+@@ -325,7 +325,8 @@ class Simulation:
+         plume = plume + vents  # (each vent capped itself)
+         crust.add_arcs_and_plumes(self, col, growth, plume)
+         edges = crust.inner_edges(self, col.cont, bd)
+-        stack_add = crust.stack_collisions(self, col, stacked, edges)
++        andes = crust.andean_shortening(self, bd, conv, col, thermostat)  # (booked with the collisions' stack)
++        stack_add = crust.stack_collisions(self, col, stacked + andes, edges)
+         crust.accrete(self, bd, conv, col)
+         crust.subduction_erosion(self, bd, conv, col, shrink)
+         arcky = crust.arc_rock(self, col, growth)
