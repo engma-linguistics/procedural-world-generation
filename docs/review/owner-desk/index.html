@@ -70,7 +70,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · Saturday 7 November 2026</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">v0.2.0 is tagged. Four lanes are building your answers. Nothing waits on you right now.</p>
+  <p class="lede">Minority faiths are in: open a run's Religion tab &rarr; Minorities. Lanes 204 (harsh conquerors, far campaigns) and 207 (who lags on the tech tree, a sea ladder) are still running. Nothing waits on you.</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
@@ -91,13 +91,13 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>204 · harsh conquerors and far campaigns (your D59 C and D56 B)</td><td>Aggression makes conquest harsher, not just more frequent, so a martial, intolerant winner expels or razes in any era. Campaigns reach about 1,000 km, twice that for herders and horse peoples, and a big settled empire reaches further with its own size, so a Rome can campaign far from home too. Scored against today's code on your written invasions.</td></tr>
-<tr><td>205 · minority faiths (your D57)</td><td>Each culture holds a share of each faith instead of one faith, so a conquered or missionary-touched people can be mostly one faith with minorities of others. Shown on the Religion tab and the culture cards, rolled up by region.</td></tr>
 <tr><td>207 · neighbours who lag, writing needs towns, a sea ladder (your D60 B)</td><td>First it measures your actual worry: how long a people in suitable land, with neighbours who hold a tech, takes to pick it up, by era. Then writing, law and kingship go only to peoples with towns or chiefdoms of their own; farming and metal spread as now. Then a small tech branch for sea peoples: hot vents, kelp and shellfish farming, shell and coral tools, pearl crafts, and on to their own metal, towns and records.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): Andes-type coastal ranges, a source for the rainforest fix's leaf constant. Rain inland waits at the back of the line (three strikes).</p>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>Who is behind on the tech tree: nobody without a reason</b> (scout 206, your D58, closed with the floor kept off). You chose B on D60: state techs need towns (lane 207).</li>
+<ul><li><b>Minority faiths</b> (PW-1489, lane 205, your D57, merged). Each culture now holds a share of each faith. A faith pressing on a culture grows slowly to about a tenth, as Islam did in Iran before its take-off (Bulliet); when the culture converts, the old faith stays on as a minority and fades over centuries, faster under intolerant rule. Which faith a culture follows is exactly as before on all three test runs. About 1 culture in 20 (D&amp;D) to 1 in 10 (Seven Meals) carries a minority above 10%, nearly all of them ones that converted. And most states rule over several faiths: on 0141d1 the ruler's faith is under half of its own realm in 227 of 258 states. To see it: Peoples workbench &rarr; Results, pick a run &rarr; Religion &rarr; Minorities; culture cards now read "faiths: X 94%, Y 6%".</li>
+<li><b>Who is behind on the tech tree: nobody without a reason</b> (scout 206, your D58, closed with the floor kept off). You chose B on D60: state techs need towns (lane 207).</li>
 <li><b>Your rulings today, and v0.2.0 is tagged.</b> D59 C (aggression makes conquest harsher), D56 B plus far reach for big settled empires, D58 A (no minimum invention rate) plus a look at who ends up behind, D57 A (the even missionary chance stays) plus minority faiths. All are being built or measured (lanes 204–206).</li>
 <li><b>Invasions and conquerors inside the history</b> (PW-1479, PW-1481, lane 201, merged behind the switch, still off). The states that form during the history now get the same expeditions, war bands and long-range herders as the summary, through the same code. How far an expedition reaches is one setting, waiting on your D56. With the switch off, runs are byte-identical. With it on, history takes about 15–20 seconds longer.</li>
 <li><b>Worlds that finish too warm: closed</b> (scout 203, one pass, from runs already made). On today's code, 36 fresh test planets end at a median of +0.1 °C against Earth before industry, with 2 failing warm (on older code, 5 of 18 ended more than 3.5 °C warm). Those warm finishes are chance: the same planet run with a tiny code change lands anywhere from 2.9 °C cold to 6.7 °C warm. Nothing is out of bounds, so nothing gets fixed. It reopens if a later check shows more than 10% failing warm. Checked on the quicker level-6 planets only.</li>
@@ -116,8 +116,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>States inside the history, first cut</b> (PW-1434, lane 183, merged behind a switch, off, so runs are unchanged). States now form, fight and change hands while the history runs, instead of being worked out afterwards. Two findings put two cards above: invasions still don't reach (D50) and a conqueror's harshness is three unsourced numbers (D54). Also filed for v4: the tech tree has to run inside the history too (PW-1466), since today these states read a stand-in for "what era is it".</li>
 <li><b>Aarakocra are now adult at 12 and live about 60</b> (your edit), in both presets. Compared with the old 3 and 30 in D&amp;D, a generation goes from 6 to 19 years (humans: 28), so they grow and pass on skills at near-human pace. "Adult year" in the model means when they start having children (first child just after it); where a book's social age differs, a separate "fertile years" field already overrides it (elves 100–200, dwarves 50–100).</li>
 <li><b>Seven Meals is frozen</b> (your call): it stays as a second, differently built set of peoples that the robustness checks run on, but nobody tunes it.</li>
-<li><b>Two new robustness worlds</b> (your idea): humans only, and D&amp;D without dragons. First try, one seed on each of the two test worlds against nothing (they're new): no crash, no people lost, no people over 85%. The humans-only world already found a real gap (D55).</li>
 </ul>
 
-<footer>Desk v185 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v186 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

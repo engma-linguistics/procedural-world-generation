@@ -1,5 +1,6 @@
 ---
-title: "Faith timeline says \"no followers left\" for faiths that still survive as minorities"
+id: PW-1492
+title: Faith timeline says \"no followers left\" for faiths that still survive as minorities
 type: task
 status: todo
 parent: null
@@ -10,7 +11,9 @@ impact: low
 found_by: lane205
 blocked_by: []
 relates: [PW-1489, PW-1358]
-refs: [planet/lineages/gods.py::Pantheons._check_end, planet/lineages/gods.py::faith_docs, viewer/religiontab.js, docs/review/culture/faiths/minorities1.md, "run 0141d1"]
+refs: ["planet/lineages/gods.py::Pantheons._check_end", "planet/lineages/gods.py::faith_docs", viewer/religiontab.js, docs/review/culture/faiths/minorities1.md, "run 0141d1"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Fix: in `faith_docs`, add `minority_in` (the cultures holding it as a minority n
 majority left; a minority in N cultures" when that list is not empty. Keep `ended_kyr` as it is (it drives the map and the counts).
 - [ ] faith records carry the cultures where the faith is a minority now
 - [ ] the timeline's end text says so
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-faith-end-ignores-minorities.md (found by lane205).
