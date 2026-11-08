@@ -2,7 +2,7 @@
 id: PW-1331
 title: "Wet tropical forest grows ~0.55x the measured NPP: its photosynthesis is low (EPS_SCALE cut to hide the grasses' surplus)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: surface
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1261, PW-228, PW-806]
 refs: ["planet/vegetation.py::_year", "planet/vegetation.py::EPS_SCALE", "planet/vegetation.py::_TUNE", "planet/vegetation.py::potential", tools/veg_check.py, docs/review/vegetation/npp-check/diagnosis.md, docs/review/vegetation/npp-check/npp_check.py, docs/review/vegetation/npp-check/pft_probe.py, "Malhi, Doughty & Galbraith 2011 Phil Trans R Soc B 366:3225, PMC3179639, Table 3", "MOD17A3 (tools/earth_data.py::earth_mod17_npp)", "world 506694 (Earth L6)"]
 created: 2026-11-02
-updated: 2026-11-04
+updated: 2026-11-08
 ---
 
 ## Description
@@ -32,6 +32,7 @@ land NPP to 60.5 Pg (with the herbs' fix) but shrinks savanna from 17.7 to 13.8 
 - [ ] fix the tropical GPP step; re-check savanna area, fire and potveg agreement (tools/veg_check.py)
 
 ## Updates
+- 2026-11-08: Status todo -> done. Scouts 210/210b merged (cb8374b0): sourced KN_RESP 0.15 (Lloyd 2010, Clark 2011) and TrBE LUE 1.43 (Yan 2017). 36-draw L6 judge vs main e6cb463c: hard 0/36 both; soft 34/36 vs 32/36; hot desert +0.95 pt of land, tracks late warmth (+0.82 C mean); wet-tropics tree cover unchanged. Earth check unchanged (Koppen 37/71%). Suite 1094 passed.
 - 2026-11-04: Lane 181 merged: KN_RESP 0.4 (leaf upkeep falls with canopy depth). Earth wet tropics 628 -> 831 g C/m2/yr (field ~1160); land NPP 59.6 -> 64.4 Pg (obs ~56) until the grass-root fix C1 lands; wet temperate 20% over MOD17. KN 0.4 still to be sourced (Lloyd 2010, Bonan 2011). Judge: docs/review/climate/npp/round2.md.
 - 2026-11-04: Scout 173 (docs/review/climate/npp/scout1.md): wet tropics limited by leaf area (LAI ~3.4 vs real ~5) because leaf upkeep is charged flat per LAI. Lever: canopy-integrated leaf respiration (KN_RESP, one constant), with lane 123's C1 herb root respiration; offline on Earth's observed climate: wet tropics 628 -> 827 g C/m2/yr (field ~1160), land total 59.6 -> 59.9 Pg. Candidate patch kept on branch scout-173-npp (commit 19512a3a). Build after D47 merges; KN value needs a sourced read.
 - 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth, with PW-1261 and PW-1332)

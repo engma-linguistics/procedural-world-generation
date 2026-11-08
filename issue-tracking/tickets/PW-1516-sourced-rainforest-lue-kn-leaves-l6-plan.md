@@ -1,4 +1,5 @@
 ---
+id: PW-1516
 title: "Sourced rainforest LUE/KN leaves L6 planets ~0.8 C warmer late with no weathering factor moved: find the path"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: scout210b
 blocked_by: []
 relates: [PW-1331]
 refs: [docs/review/climate/npp/scout2.md, docs/review/climate/npp/scout2b/mech.txt, docs/review/climate/npp/scout2b_mech.py, docs/review/climate/npp/scout2b/stats.txt, "planet/tectonics/earth.py::weathering", "planet/vegetation.py::KN_RESP", "exports/s210b/judge (scout 210b's worktree, scratch)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -28,3 +31,6 @@ which part of the carbon cycle carries plant growth into CO2.
 - [ ] list where NPP (not rooted cover) still enters the carbon cycle or the climate (soil CO2, litter, organic
   burial, albedo of leaf area) and log it in the diag if missing
 - [ ] if a path exists, check its size against the +0.10 e-fold; otherwise close as chaos
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-rainforest-lue-warm-shift.md (found by scout210b).

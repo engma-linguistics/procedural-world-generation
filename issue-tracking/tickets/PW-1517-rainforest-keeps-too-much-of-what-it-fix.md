@@ -1,4 +1,5 @@
 ---
+id: PW-1517
 title: "Rainforest keeps too much of what it fixes: NPP/GPP ~0.45 against ~0.30 measured"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: scout210
 blocked_by: []
 relates: [PW-1331, PW-1261]
 refs: ["planet/vegetation.py::_year", "planet/vegetation.py::_ROWS (TrBE rw, rl)", "planet/vegetation.py::KN_RESP", docs/review/climate/npp/scout2.md, docs/review/climate/npp/scout1.md, "exports/scout210/probe.py (scout 210's worktree, scratch)", "Malhi, Doughty & Galbraith 2011 Phil Trans R Soc B 366:3225 (NPP/GPP ~30% for tropical forest)", "Collalti & Prentice 2019 Tree Physiol doi:10.1093/treephys/tpz034 (forests 0.46 +- 0.12)", "Lloyd et al. 2010 Biogeosciences 7:1833", "world 506694 (Earth L6)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -26,3 +29,6 @@ root upkeep (rw, flat per stand) is the likely place: the leaf term now follows 
 - [ ] read a measured stem + root respiration for Amazon forest (Malhi 2009/2011 components) against rw x Q10
 - [ ] if rw is low, raise it with a source and re-check wet-tropics NPP with npp_check.py (needs a matching GPP lift,
   e.g. diffuse-light gain, Yan et al. 2017, or NPP falls back)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-tropical-forest-cue-high.md (found by scout210).
