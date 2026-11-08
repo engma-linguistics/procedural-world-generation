@@ -165,6 +165,9 @@ class Inventory:
     # allophone (a surface sound in complementary distribution with a commoner close one) -> (its phoneme, or None for an
     # inserted ʔ; the environment test, ALLO_TESTS): consonants and vowels list only the phonemes (phonemic(), observed())
     allophones: dict = field(default_factory=dict)
+    # the lect's live phonological rules in order, ((rules.Rule, level), ...), set by phonology.attach; run by realize on
+    # every word the lect makes (coinage, derivation, compound, loan, name). Not compared, not in the json.
+    live: tuple = field(default=(), compare=False, repr=False)
 
     def __post_init__(self):
         self._cset = frozenset(self.consonants)
@@ -1294,9 +1297,15 @@ def phonemic(forms, segs) -> dict:
 
 
 def realize(word: tuple, inv: Inventory) -> tuple:
-    """A word drawn from the phonemes as the lect says it: each phoneme with an allophone takes it in that allophone's
-    environment (an inserted ʔ goes before a word-initial vowel and between vowels); the plain word when the result would
-    break the phonotactics."""
+    """A word drawn from the phonemes as the lect says it: first the lect's live phonological rules (`inv.live`, set by
+    phonology.attach: they apply productively to every new word, affix join, compound and loan), then each phoneme with an
+    allophone takes it in that allophone's environment (an inserted ʔ goes before a word-initial vowel and between vowels);
+    each step is kept only when the result keeps the phonotactics."""
+    if inv.live and word:
+        from .phonology import apply_word
+        w2 = apply_word(word, inv.live, inv.stress)
+        if w2 != word and w2 and legal(w2, inv):
+            word = w2
     if not inv.allophones or not word:
         return word
     by_p: dict = {}

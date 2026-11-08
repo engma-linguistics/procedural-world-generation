@@ -110,6 +110,11 @@ class View:
             for r in (par.get(key) or {}).get("rows") or []:
                 self.cells[r["concept"]] = r
         self.classes = _classes(lj, self.t, self.grams)
+        # the lect's live phonological rules (phonology.py, sound lane): word-level ones run over affixed words, phrase-level
+        # ones across word joins
+        from . import phonology as PH
+        self.stress = inv.get("stress")
+        self.rules = PH.rules_from_json(lj.get("phonology"))
 
     def w(self, *concepts) -> str | None:
         """The first of the concepts the lexicon has."""
@@ -345,7 +350,15 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
     for i in range(1, len(ms)):
         fl += ms[i][2] + forms[i]
         gl += ms[i][2] + ms[i][1]
-    return fl, gl, "".join(forms)
+    surface = "".join(forms)
+    if len(ms) > 1 and getattr(v, "rules", None):   # (the lect's live rules at its morpheme joins: phonology.py)
+        from . import phonology as PH
+        stem_at = len(_segs("".join(forms[:len(w.pre)])))
+        f = tuple(_segs(surface))
+        g = PH.apply_word(f, [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=stem_at)  # (stem-level: word-making only)
+        if g and g != f:
+            surface = word_ipa(g)
+    return fl, gl, surface
 
 
 def _cell(v: View, w: Word) -> str | None:
@@ -602,6 +615,13 @@ def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = F
         fl, gl, s = render_word(v, w)
         rows.append([fl, gl])
         surf.append(s)
+    if getattr(v, "rules", None) and len(surf) > 1:   # (phrase-level live rules across word joins: phonology.py)
+        from . import phonology as PH
+        phr = [r for r in v.rules if r[1] in ("phrase", "phonetic")]
+        if phr:
+            fs = [tuple(_segs(x)) for x in surf]
+            gs = PH.apply_phrase(fs, phr, v.stress)
+            surf = [word_ipa(g) if g != f else x for x, f, g in zip(surf, fs, gs)]
     ipa = " ".join(surf)
     try:
         from . import romanize as RO

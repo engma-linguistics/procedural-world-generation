@@ -338,6 +338,9 @@ class Lect:
     glottal_phonetic: bool = False  # ʔ came only from prothesis (S042) in a lect without ʔ: not a phoneme (kept out of the inventory)
     minority: bool = False  # an old lect still spoken by part of its deme after the deme shifted (lives until its share < 0.1)
     hiatus_key: str = ""  # the line whose hiatus strategy this lect keeps (resolve_hiatus; its proto's id, inherited)
+    live: list = field(default_factory=list)  # phonology.Live: the live phonological rules (inherited; phonology.update)
+    dead_rules: list = field(default_factory=list)  # [ref, born, died, why] of the latest rules that died
+    sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -352,7 +355,8 @@ class Lect:
                     inventory=_copy_inv(self.inventory), lexicon=self.lexicon.copy(new_id) if self.lexicon is not None else None,
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
-                    glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id)
+                    glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
+                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn)
 
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
@@ -621,6 +625,8 @@ class Lect:
                 memo[1].append((x, o[0]))
         if (rule.id.startswith("dispersion.") or "/" in rule.id) and rule.id not in self.rule_text:
             self.rule_text[rule.id] = RU.describe(rule)
+        from . import phonology as PH
+        PH.on_change(self, rule, kyr)  # (a conditioned change lives on as a rule of the lect's phonology)
         if remember:  # (a hiatus repair is not drawn, so it keeps no re-fire memory)
             self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
         if base_id(rule.id) == "S042" and not had_glottal and not self.glottal_phonetic:
@@ -670,6 +676,8 @@ class Lect:
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
         self.touch()
+        from . import phonology as PH
+        PH.update(self, kyr)  # (age the live rules; the inventory carries them for the words made below)
         rs = ctx.get("replace_scale", 1.0)
         LX.step(rng, self.lexicon, n_generations * rs, self.inventory, contact_words=ctx.get("contact_words"), kyr=kyr,
                 lect_id=self.id, niche_weights=ctx.get("niche"), profile=self.profile,

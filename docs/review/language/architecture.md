@@ -16,6 +16,7 @@ run seed plus a stable string (`seed_for(run_seed, "lect", lect_id)`), never the
 | `profiles.py` | `VoiceProfile`, the human default from PHOIBLE, non-human profiles (`data/voice_profiles.toml`), inheritance along the lineage tree, nativization (hear a segment through a profile + inventory) | percepts |
 | `romanize.py` | IPA string -> house spelling (`data/romanization.tsv`) | percepts |
 | `inventory.py` | proto-inventory draw (PHOIBLE-weighted, feature economy, dispersion, make cost), phonotactics (sonority), word-shape draw | percepts, profiles |
+| `phonology.py` | the synchronic rule layer: live rules per lect, their life cycle, application to new words and word joins (section 5b) | rules, inventory |
 | `rules.py` | `Rule` (percept-class rewrite with environment, cause, needs, weight), the catalogue (`data/sound_changes.tsv` + hand-written demo set), rule application to a word, functional-load veto | percepts, profiles |
 | `lexicon.py` | concept list (`data/concepts.tsv` + food/landscape/kin/gods), `Word` with etymology, replacement by frequency, derivation, compounding, colexification shift (`data/clics_edges.tsv`), borrowing with nativization, taboo, substrate | inventory, profiles |
 | `grammar.py` | typology features with correlations (`data/grambank_*.tsv`, `data/wals_wordorder.tsv`), grams on the ladder (`data/grammaticalization_paths.tsv`), paradigm exemplars, name building (class prefixes, compound order, locatives) | lexicon, rules |
@@ -217,6 +218,27 @@ class Rule:
   `data/sound_changes.tsv` by a parser of the compact notation; parse failures are logged and skipped, not fatal.
 - Rules run on *inflected forms* too: the lect hands `apply` every stored form (stems, paradigm exemplar forms, gram forms,
   names).
+
+## 5b. The synchronic rule layer (`phonology.py`, sound lane 2026-11-08)
+
+Each lect keeps an ordered list of live phonological rules (`Lect.live`, inherited by daughters), as `rules.Rule`s with a
+level. A conditioned sound change that fires (own or by wave; `phonology.eligible`: not context-free, not staged, not a
+cluster rewrite or metathesis, not driver bookkeeping) starts as a **phrase**-level rule (harmony at **word** level). Each
+step `phonology.update` ages them on the life cycle of phonological processes (Bermúdez-Otero 2007): phrase until
+`PHRASE_KYR` (1), word until `WORD_KYR` (3), then **stem** (word-making only); it dies past a per-rule life (lognormal
+around `LIFE_KYR` 6, sigma 0.5), when opaque (it would change over `OPAQUE_MAX` 20% of the frequent forms it touches,
+checked once per kyr of age), or when more than `MAX_LIVE` (8) change-born rules are live (the oldest go). Each
+allophone (section 4) is also a rule (`/p/ → [b] / V_V`, level `phonetic`), rebuilt from the inventory. A tonal line draws
+one tone-sandhi rule once (`SANDHI`: Meeussen's rule, Mandarin-type low-low, high spread, contour simplification;
+`SANDHI_SHARE` 0.7). Order: stem and word rules oldest first, then phrase rules, then allophones.
+
+Where they apply: `phonology.attach` puts them on `Inventory.live`; `inventory.realize` (hence `repair`: coinages,
+derivations, compounds, loans, names) runs them over each new form, kept when the result stays legal;
+`sentences.render_word` runs all but stem rules over an affixed word (stem controls harmony), and `sentences.finish`
+runs phrase and phonetic rules across each word join (length-preserving rules only). Grammar's paradigm cells
+(`grammar._attach`) do not run them yet. `phonology.to_json` writes them with notation over the lect's own sounds and a
+worked example (a join of its frequent words, a word + one of its affixes, or a compound, where the rule changes
+something at the join and the parts obey it alone).
 
 ## 6. Words and etymologies (`lexicon.py`)
 
@@ -573,6 +595,10 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
                "lexicon": { concept: {"ipa", "roman", "pos", "freq", "etym": <node id>, "roots": [root id, ...],
                                          "etym_roots": [root id, ...]} },   # etym_roots: round 5, 2026-11-07   # full for living lects, core list only for dead
                "changes": [{kyr, rule, cause, origin_lect (null if own)}],
+               "phonology": {"rules": [{"r": ref ("c:<rule id>" | "a:<allophone>|<phoneme>|<test>" | "s:<sandhi kind>"),
+                                        "lv": phrase | word | stem | phonetic, "b": kyr born | null, "t": notation,
+                                        "w": plain words, "ex": [input, output, gloss] | null}],
+                             "dead": [[ref, born, died, why]]},               # living lects (section 5b)
                "complexity": {...},
                "shares_history": [[kyr, {lect_id: share}]] } ],
   "names": { "peoples": { people: { "endonym": {ipa, roman, gloss, pattern, lect}, "glossonym": {...},

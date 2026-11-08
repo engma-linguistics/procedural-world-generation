@@ -834,6 +834,40 @@ def phonology(doc: Doc, l: dict) -> list[str]:
     else:
         out.append("This output records no allophones (the engine stores sounds as phonemes only).")
     out.append("")
+    out += phonological_rules(l)
+    return out
+
+
+LEVEL_WORDS = {"phrase": "across words in a phrase and inside words", "word": "inside words: affixes and compounds",
+               "stem": "only where words are made (derivation, compounds, new words, loans)",
+               "phonetic": "everywhere (an allophone: how a sound is said)"}
+
+
+def phonological_rules(l: dict) -> list[str]:
+    """The lect's live phonological rules in order (planet/language/phonology.py), each with a worked example from its own
+    words, and the rules that died lately."""
+    ph = l.get("phonology")
+    if not ph:
+        return []
+    out = ["### Phonological rules", "",
+           "Rules the language applies today, in order. A new sound change starts as a rule applying across words; as it "
+           "ages it narrows to words, then to word-making, and in the end dies, leaving its alternations in single words.", ""]
+    rows = ph.get("rules") or []
+    if not rows:
+        out += ["No live rules: its recent changes have all run their course.", ""]
+    else:
+        out += ["| # | rule | applies | since | example |", "| --- | --- | --- | --- | --- |"]
+        for k, r in enumerate(rows, 1):
+            ex = r.get("ex")
+            ex_t = f"{ex[0]} → {ex[1]} '{ex[2]}'" if ex else "–"
+            since = "–" if r.get("b") is None else f"~{r['b']:g} kyr ago"
+            out.append(f"| {k} | {r['t'].replace('|', '/')} | {LEVEL_WORDS.get(r['lv'], r['lv'])} | {since} | "
+                       f"{ex_t.replace('|', '/')} |")
+        out.append("")
+    dead = ph.get("dead") or []
+    if dead:
+        out.append("Lately dead: " + "; ".join(f"{d[0].split(':', 1)[1]} ({d[3]}, {d[2]:g} kyr ago)" for d in dead) + ".")
+        out.append("")
     return out
 
 

@@ -131,8 +131,13 @@
       const desc = (r) => { const x = rules[r]; return x == null ? '' : typeof x === 'string' ? x : (x.describe || x.words || ''); };
       const logHtml = log.slice(0, st.logN).map((c) => `<div><span class="muted">${esc(ago(c.kyr))}</span> ${c.lect !== id ? `<span class="muted">(${esc(c.lect)})</span> ` : ''}<code>${esc(c.rule)}</code> ${esc(desc(c.rule))}
         <span class="muted">— ${esc(LC.causeText(c.cause))}${c.origin && c.origin !== c.lect ? `, spread from ${lk(c.origin)}` : ''}${c.extra && c.extra.city ? `, in the city ${esc(c.extra.city)}` : ''}</span></div>`).join('');
+      // the live phonological rules (today's; planet/language/phonology.py), in the order the language applies them
+      const lj = ix.by.get(id), ph = lj && lj.phonology;
+      const LV = { phrase: 'across words', word: 'inside words', stem: 'word-making only', phonetic: 'allophone' };
+      const phHtml = ph && (ph.rules || []).length ? `<h3>Phonological rules today <span class="muted" style="font-weight:normal">(in order)</span></h3>
+        <div style="font-size:12px">${ph.rules.map((r, k) => `<div>${k + 1}. <span class="ipa">${esc(r.t)}</span> <span class="muted">— ${esc(LV[r.lv] || r.lv)}${r.b != null ? `, since ~${r.b} kyr ago` : ''}</span>${r.ex ? `<div class="muted" style="margin-left:14px">e.g. <span class="ipa">${esc(r.ex[0])} → ${esc(r.ex[1])}</span> '${esc(r.ex[2])}'</div>` : ''}</div>`).join('')}</div>` : '';
       body.innerHTML = head + `<div class="tgrid">
-        <div class="card snd"><h3>Sounds at ${esc(ago(cur.kyr))} <span class="muted" style="font-weight:normal">${nC} consonants, ${nV} vowels${psnap ? '' : ''}</span></h3>${cg}<h3>Vowels</h3>${vt}</div>
+        <div class="card snd"><h3>Sounds at ${esc(ago(cur.kyr))} <span class="muted" style="font-weight:normal">${nC} consonants, ${nV} vowels${psnap ? '' : ''}</span></h3>${cg}<h3>Vowels</h3>${vt}${phHtml}</div>
         <div class="card"><h3>Core words</h3>${words}</div>
         <div class="card"><h3>Grammar words on the ladder</h3>${ladder}<div style="border-top:1px solid #3a475c;margin-bottom:6px"></div>
           <div style="font-size:12px">${tl || '<span class="muted">no typology recorded</span>'}</div>
