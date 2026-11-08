@@ -1010,9 +1010,12 @@ def _species_cost_fn(profile):
 def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
     """grammar.step, with the typology drift on (per generation, at the lect's own rate, as sound change). Until the
     2026-11-04 round no caller asked for the drift, so typology only changed by calques on shift."""
+    from . import phonology as PH
+    before = PH.cell_parts(lect.grammar)
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
             population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
             rate=getattr(lect, "rate", 1.0), lect=getattr(lect, "id", None))
+    PH.apply_new_cells(lect.grammar, lect.inventory, before)   # (new cells join under the live rules: phonology.py)
 
 
 def _accepted(fn, kw: dict) -> dict:

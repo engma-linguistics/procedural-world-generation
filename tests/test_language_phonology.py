@@ -93,3 +93,24 @@ def test_notation_over_own_sounds():
     t = PH.notation(r, list(from_ipa("ptm")))
     assert t == "p → b, t → d / V_V"
     assert PH.notation(r, list(from_ipa("pt")), allophone=True).startswith("/p/ → [b]")
+
+
+def test_new_paradigm_cells_join_under_the_live_rules():
+    """A cell a grammar step builds (stem + new affix) runs the word-level live rules at the join; a cell that was there
+    before is left alone (sound change already ran on it)."""
+    from planet.language import grammar as GR
+    inv = I.Inventory(consonants=list(from_ipa("pbtdkm")), vowels=list(from_ipa("aiu")), shapes={"CV": 1.0, "CVC": 1.0},
+                      max_coda=1)
+    L = _lect(inv)
+    PH.on_change(L, _rule("p > b / V_V"), 1.0)   # (a phrase-level rule: it runs inside words too)
+    PH.attach(L)
+    g = GR.Grammar(typology=GR.Typology({}))
+    ex = GR.Exemplar("DOG", "N", tuple(from_ipa("kap")))
+    ex.set(("PL",), (("stem", tuple(from_ipa("kap"))), ("PL", tuple(from_ipa("i")))))
+    old = GR.Exemplar("CAT", "N", tuple(from_ipa("mup")))
+    old.set(("PL",), (("stem", tuple(from_ipa("mup"))), ("PL", tuple(from_ipa("a")))))
+    g.exemplars = [ex, old]
+    before = {("CAT", "N", ("PL",)): old.parts[("PL",)]}
+    assert PH.apply_new_cells(g, inv, before) == 1
+    assert word_ipa(ex.cells[("PL",)]) == "kabi" and [word_ipa(m) for _, m in ex.parts[("PL",)]] == ["kab", "i"]
+    assert word_ipa(old.cells[("PL",)]) == "mupa"

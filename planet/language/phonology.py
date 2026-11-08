@@ -288,6 +288,45 @@ def apply_word(form: tuple, rules, stress=None, inventory=None, stem_index=None)
     return f
 
 
+def cell_parts(grammar) -> dict:
+    """{(concept, pos, cell key): parts} of a grammar's paradigm cells, to tell afterwards which cells a grammar step built
+    or rebuilt (apply_new_cells)."""
+    if grammar is None:
+        return {}
+    return {(ex.concept, ex.pos, k): p for ex in grammar.exemplars for k, p in ex.parts.items()}
+
+
+def apply_new_cells(grammar, inv, before: dict) -> int:
+    """The lect's live rules (all but the stem level, which belongs to word-making, as in the sample sentences) over every
+    paradigm cell a grammar step built or rebuilt since `before` (cell_parts): a new affix joins its stem under today's
+    phonology (harmony, assimilation, sandhi at the morpheme join), as new words and loans do in inventory.realize. A
+    result that breaks the phonotactics is not kept. Cells that only went through sound change are left alone: the change
+    itself already ran on them. Returns how many cells changed. (Sound lane pass 2; grammar.py is not touched: lect's
+    grammar_step calls this once after grammar.step.)"""
+    rules = [x for x in (getattr(inv, "live", None) or ()) if x[1] != "stem"]
+    if grammar is None or not rules:
+        return 0
+    from . import grammar as GR
+    from .inventory import legal
+    n = 0
+    for ex in grammar.exemplars:
+        for k, parts in list(ex.parts.items()):
+            if before.get((ex.concept, ex.pos, k)) == parts or len(parts) < 2:
+                continue
+            f = tuple(s for _, m in parts for s in m)
+            si = 0
+            for lab, m in parts:
+                if lab == "stem":
+                    break
+                si += len(m)
+            g = apply_word(f, rules, getattr(inv, "stress", None), stem_index=si)
+            if not g or g == f or not legal(g, inv):
+                continue
+            ex.set(k, GR._resplit(parts, g))
+            n += 1
+    return n
+
+
 def apply_phrase(forms: list, rules, stress=None) -> list:
     """Run phrase-level rules across each join of adjacent words: the pair is run as one string and split again where it
     was joined; a rule that would change the pair's length (an insertion, a deletion) is not run across the join."""
