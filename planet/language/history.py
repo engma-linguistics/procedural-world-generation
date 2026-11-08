@@ -33,6 +33,7 @@ import numpy as np
 from . import inputs as I
 from . import lect as LC
 from . import lexicon as LX
+from . import lexsys as LS
 from . import rules as RU
 
 START_KYR = I.START_KYR
@@ -47,7 +48,7 @@ SHIFT_K = 0.015  # per generation, at strength 1, kind weight 1, equal prestige,
 SHIFT_DECAY = 0.01  # per generation, of a share with no trigger behind it
 SHIFT_AT = 0.5
 KIND_WEIGHT = {"elite": 1.0, "takeover": 0.6, "swamp": 1.0, "city": 0.5, "trade": 0.08}
-ACCENT_P = 0.5  # share of the missing sounds the shifting speakers replace (consistently)
+ACCENT_P = 0.8  # share of the missing sounds the shifting speakers replace (consistently); 0.5 -> 0.8, 2026-11-08
 CALQUE_MAX = 2
 WORKERS = int(__import__("os").environ.get("LANG_WORKERS", "1"))  # forked processes for the steps (1 = this process)
 KOINE_HARD = 3.0  # a sound is hard for a people when its make cost is this many times the human cost (or impossible)
@@ -64,6 +65,39 @@ STRONG_WAVE = 1.0  # contact used for the wave while a shift trigger holds on a 
 SOFT_GEN_YR = 28.0  # owner 11-07: below this generation length change is softened (rate x (SOFT_GEN_YR / generation) ** SOFT_EXP)
 SOFT_EXP = 0.7  # ... per year; at and above SOFT_GEN_YR, per generation (exponent 1, owner 11-03)
 KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine receiver is borrowed from the majority lect
+# Lexical borrowing by contact intensity (lexicon & contact lane, 2026-11-08; contact-gaps.md rec. 1, architecture section 8):
+# a contact lect's pull on a lect's lexicon is LOAN_CONTACT x contact x (prestige ratio / PRESTIGE_CAP), the ratio clipped
+# to 1/PRESTIGE_CAP .. PRESTIGE_CAP (loans flow down the prestige slope), plus the deme's bilingual share in that lect
+# (the shift share: the generations before a shift borrow most); the old speech of a shifted deme borrows from the
+# dominant lect at MINORITY_PULL, the dominant lect from it at LOAN_CONTACT x its share. lexicon.step sums the pulls into
+# the contact intensity.
+LOAN_CONTACT = 0.1
+MINORITY_PULL = 1.0
+TECH_LOAN = 0.7  # chance a technology's word comes with it from the teaching people's lect in contact (history.tech_step)
+# Substrate on shift (contact-gaps.md rec. 2): each local word (landscape, plants, animals) survives with a chance drawn
+# per shift from SUBSTRATE_KEEP (a handful plus the names, like Celtic in English, not 18% of the lexicon); names always.
+# The accent replaces ACCENT_P of the sounds the old lect lacked, and the stress system carries over. Calques come from
+# the features that shift-induced interference is known to move (Thomason & Kaufman 1988, Matras 2009: word order and
+# the order features, aspect and tense marking, evidentiality, polar questions, articles), never ones that add gender or
+# case.
+SUBSTRATE_KEEP = (0.1, 0.3)
+SHIFT_PRONE = ("word_order", "adposition", "genitive", "adjective", "relative", "perfective", "progressive", "past",
+               "future", "evidentiality", "polar_question", "definite_article", "indefinite_article", "copula",
+               "predicative_possession", "comparative", "serial_verbs", "numeral_classifiers", "numeral_base")
+# Areal diffusion (contact-gaps.md rec. 3b): per generation, a lect copies one differing typology feature from a contact
+# lect with hazard AREAL_K x contact x (prestige ratio / PRESTIGE_CAP) x (1 + its bilingual share there), the feature drawn
+# by AREAL_WEIGHT (the areal features of the Balkans, Mainland Southeast Asia, Ethiopia and the Amazon: order, articles,
+# future and perfect, evidentials, classifiers, polar questions); gender, case and alignment almost never.
+# (lexcon pass 2: 0.0015 -> 0.015. At 0.0015 a lect line copied 0.57 features in 20 kyr, ~1/40 of the typology drift
+# (grammar.STABILITY: 1e-3 per feature per generation for a medium feature), and near cross-family pairs agreed no more
+# than far ones: near - far -0.0009)
+AREAL_K = 0.015
+AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjective": 1.5, "relative": 1.0,
+                "demonstrative": 1.0, "numeral": 1.0, "definite_article": 2.0, "indefinite_article": 1.5,
+                "future": 2.0, "perfective": 1.5, "progressive": 1.5, "past": 1.0, "evidentiality": 2.0,
+                "polar_question": 2.0, "numeral_classifiers": 2.0, "serial_verbs": 1.5, "comparative": 1.5,
+                "predicative_possession": 1.5, "copula": 1.0, "negation": 1.0, "numeral_base": 1.5, "pro_drop": 1.0,
+                "wh_in_situ": 1.0, "case": 0.2, "gender": 0.1, "alignment": 0.2, "number": 0.5}
 # driver-side draw (and wave adoption) weight overrides, by rule id, catalogue id or `family:<name>` (lect.weight_override):
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
@@ -149,6 +183,12 @@ class History:
             hf = head_first_of(GR, gram)
             if hf is not None:
                 lex.head_first = hf
+            nb = (getattr(gram, "typology", None) or {}).get("numeral_base")
+            if nb is not None:   # (the grammar drew the system; rebuilt now that the head order is known, or re-drawn)
+                from . import lexsys as LS
+                sy = lex.systems.get("numeral") or {}
+                LS.set_numerals(rng_for(self.seed, "numerals", key), lex, nb, inv, kyr, pid,
+                                system=sy if sy.get("label") == nb else None)
         rate = float(math.exp(rng.normal(0.0, LC.RATE_SIGMA)))
         p = LC.Lect(id=pid, deme=None, people=people, parent=None, how=how, born_kyr=float(kyr), rate=rate, inventory=inv,
                     lexicon=lex, grammar=gram, profile=prof, profile_key=people, gen_yr=self.R.generation_yr(people))
@@ -237,17 +277,11 @@ class History:
         tasks = []
         for l in living:
             n = change_generations((t0 - t1) * 1000.0, l.gen_yr)
-            cids = []
-            for o, c in contacts[l.deme].items():
-                ol = self.lect_of(o)
-                if ol is not None and ol.alive and c >= CONTACT_BORROW and ol.id != l.id:
-                    cids.append(ol.id)
-            for x in self.deme_speech(l.deme):  # (the other speech of the same deme: the dominant lect, its minorities)
-                if x.id != l.id:
-                    cids.append(x.id)
-            ctx = {"contact_ids": sorted(set(cids)), "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
+            cw = self.loan_weights(l, contacts[l.deme], i)
+            ctx = {"contact_ids": sorted(cw), "contact_weights": cw, "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
                    "population": R.deme_population(l.deme, i), "isolation": R.isolation(l.deme, i),
-                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT}
+                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT,
+                   "kin": LS.kin_pull(R.culture_rules(l.deme)), "speech_taboo": LS.speech_taboo(R.culture_rules(l.deme))}
             tasks.append((l.id, i, n, t1, ctx, self.pending.pop(l.id, [])))
         fired = self.run_steps(tasks)
         self.timing["steps"] = self.timing.get("steps", 0.0) + time.perf_counter() - tm
@@ -300,6 +334,9 @@ class History:
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm
         tm = time.perf_counter()
+        self.areal_step(i, living, contacts)
+        self.timing["areal"] = self.timing.get("areal", 0.0) + time.perf_counter() - tm
+        tm = time.perf_counter()
         self.koine_step(i)
         self.timing["koine"] = self.timing.get("koine", 0.0) + time.perf_counter() - tm
         tm = time.perf_counter()
@@ -308,6 +345,9 @@ class History:
         tm = time.perf_counter()
         self.food_step(i)
         self.timing["food"] = self.timing.get("food", 0.0) + time.perf_counter() - tm
+        tm = time.perf_counter()
+        self.tech_step(i, contacts)
+        self.timing["tech"] = self.timing.get("tech", 0.0) + time.perf_counter() - tm
         for absorbed, host in ev["fusions"]:
             l = self.lect_of(absorbed)
             self.end_minorities(absorbed, t1, "fused")
@@ -325,6 +365,64 @@ class History:
         tm = time.perf_counter()
         self.observe(i)
         self.timing["observe"] = self.timing.get("observe", 0.0) + time.perf_counter() - tm
+
+    def loan_weights(self, l: LC.Lect, contacts: dict, i: int) -> dict:
+        """{donor lect id: pull} for `l`'s lexical borrowing this interval (LOAN_CONTACT, MINORITY_PULL)."""
+        out: dict = {}
+        if l.deme is None:
+            return out
+        px = self.prestige(l.deme, i)
+        dom = self.lect_of(l.deme)
+        for o, c in sorted(contacts.items()):
+            ol = self.lect_of(o)
+            if ol is None or not ol.alive or c < CONTACT_BORROW or ol.id == l.id:
+                continue
+            ratio = min(max(self.prestige(o, i) / px, 1.0 / PRESTIGE_CAP), PRESTIGE_CAP)
+            w = LOAN_CONTACT * min(c, 1.0) * ratio / PRESTIGE_CAP + (dom.shares.get(ol.id, 0.0) if dom is not None else 0.0)
+            out[ol.id] = max(out.get(ol.id, 0.0), round(w, 4))
+        for x in self.deme_speech(l.deme):  # (the other speech of the same deme: the dominant lect, its minorities)
+            if x.id == l.id:
+                continue
+            if l.minority:
+                out[x.id] = MINORITY_PULL
+            else:
+                out[x.id] = round(LOAN_CONTACT * max(l.shares.get(x.id, 0.0), MINORITY_MIN), 4)
+        return out
+
+    def areal_step(self, i: int, living: list, contacts: dict) -> None:
+        """Areal diffusion of typology (AREAL_K, AREAL_WEIGHT): a lect copies one feature value a contact lect has and it
+        lacks, through the grammar's aim (as a calque does), logged as an `areal` change."""
+        R = self.R
+        t0, t1 = R.kyr(i - 1), R.kyr(i)
+        feats = sorted(AREAL_WEIGHT)
+        for l in sorted(living, key=lambda x: x.id):
+            l = self.lects[l.id]   # (the stepped lect: with workers, run_steps replaced the objects in `living`)
+            ty = getattr(l.grammar, "typology", None)
+            if l.deme is None or l.minority or not isinstance(ty, dict):
+                continue
+            n = change_generations((t0 - t1) * 1000.0, l.gen_yr)
+            px = self.prestige(l.deme, i)
+            rng = rng_for(self.seed, "areal", l.id, i)
+            for o, c in sorted(contacts[l.deme].items()):
+                y = self.lect_of(o)
+                if y is None or not y.alive or y.id == l.id or c < CONTACT_BORROW:
+                    continue
+                yt = getattr(y.grammar, "typology", None)
+                if not isinstance(yt, dict):
+                    continue
+                ratio = min(max(self.prestige(o, i) / px, 1.0 / PRESTIGE_CAP), PRESTIGE_CAP)
+                h = AREAL_K * min(c, 1.0) * ratio / PRESTIGE_CAP * (1.0 + l.shares.get(y.id, 0.0))
+                if rng.random() >= 1.0 - (1.0 - min(h, 1.0)) ** n:
+                    continue
+                diff = [f for f in feats if f in ty and f in yt and ty[f] != yt[f]]
+                if not diff:
+                    continue
+                w = np.array([AREAL_WEIGHT[f] for f in diff])
+                f = diff[int(rng.choice(len(diff), p=w / w.sum()))]
+                old = ty[f]
+                ty[f] = yt[f]
+                l.touch()
+                l.lexicon.systems.setdefault("areal", []).append([round(t1, 3), f, old, yt[f], y.id])
 
     def run_steps(self, tasks: list) -> dict:
         """Step every living lect (own events after the pending wave adoptions): in this process, or over WORKERS forked
@@ -606,9 +704,13 @@ class History:
         for m in self.minority.get(deme, ()):  # (older minority speech of the deme keeps its share)
             if m in old.shares and self.lects[m].alive:
                 new.shares[m] = old.shares[m]
-        kept = LX.substrate_transfer(old.lexicon, new.lexicon, kyr=t1, inv=new.inventory, profile=new.profile)
+        p_keep = float(rng.uniform(*SUBSTRATE_KEEP))
+        loc = [k for k in LX.local_concepts(old.lexicon) if old.lexicon.words[k].pos == "NAME" or rng.random() < p_keep]
+        kept = LX.substrate_transfer(old.lexicon, new.lexicon, loc, kyr=t1, inv=new.inventory, profile=new.profile)
         new.touch()
         accent = self.accent(rng, old, new, t1)
+        if old.inventory is not None and new.inventory is not None and old.inventory.stress != new.inventory.stress:
+            new.inventory.stress = old.inventory.stress   # (the shifting speakers keep their stress: Irish English, Indian English)
         calques = calque(rng, old, new)
         # (the old lect lives on as the deme's minority speech while its share holds: shift_step ends it under MINORITY_MIN)
         old.minority = True
@@ -618,7 +720,7 @@ class History:
         self.shift_times.setdefault(deme, []).append(t1)
         rec = {"deme": deme, "kyr": t1, "from_lect": old.id, "to_lect": new.id, "ruler_lect": ruler.id,
                "ruler_deme": ruler.deme, "trigger": trig.to_json() if trig is not None else None,
-               "substrate_words": kept, "accent": accent, "calques": calques,
+               "substrate_words": kept, "substrate_keep": round(p_keep, 3), "accent": accent, "calques": calques,
                "speakers": R.people_of(deme), "ruler_people": ruler.people}
         self.shifts.append(rec)
         self.say(t1, f"{self.deme_label(deme)} ({R.people_of(deme)}) shifted from {old.id} to the speech of "
@@ -690,6 +792,59 @@ class History:
             else:
                 self.coin_food(l, concept, t1, d, origin=origin)
             l.touch()
+
+    def tech_step(self, i: int, contacts: dict) -> None:
+        """Words that come with a technology (lexicon.TECH_CONCEPT: bread, beer, cheese, wine, ovens, querns ...; contact-gaps
+        rec. 6, lexicon-gaps rec. 2): once a deme's people knows one of the concept's technologies (the run's techtree), its
+        lect gets the word. Learned by contact from a people (techtree `from`) with a lect in contact here that has the
+        word, it is that lect's word with chance TECH_LOAN (a Wanderwort: wine, sugar, pepper); else any contact lect's
+        that has it, with chance TECH_LOAN x the contact intensity; else a word of its own (derived, compounded or a
+        fresh root). The loan is noted "with <technology> from <deme>"."""
+        R = self.R
+        t1 = R.kyr(i)
+        known = (((getattr(R, "meta", None) or {}).get("techtree") or {}).get("known") or {})
+        if not known:
+            return
+        ids = self._concept_ids
+        for d in sorted(R.demes_alive(i)):
+            l = self.lect_of(d)
+            if l is None or not l.alive:
+                continue
+            kp = known.get(R.people_of(d)) or {}
+            cw = None
+            for concept, techs in sorted(LX.TECH_CONCEPT.items()):
+                if concept in l.lexicon or concept not in ids:
+                    continue
+                hit = sorted((float(kp[t][0]), t, kp[t]) for t in techs if t in kp and float(kp[t][0]) >= t1 - 1e-9)
+                if not hit:
+                    continue
+                _, tech, v = hit[-1]   # (the earliest-known of the concept's technologies)
+                frm = v[2] if len(v) > 2 and v[1] == "contact" else None
+                if cw is None:
+                    cw = self.loan_weights(l, contacts.get(d) or R.contacts_of(d, i, CONTACT_MIN), i)
+                have = [x for x in sorted(cw) if x in self.lects and concept in self.lects[x].lexicon]
+                rng = rng_for(self.seed, "tech", l.id, concept)
+                pick = None
+                teach = [x for x in have if self.lects[x].people == frm]
+                if teach and rng.random() < TECH_LOAN:
+                    pick = max(teach, key=lambda x: (cw[x], x))
+                elif have and rng.random() < TECH_LOAN * min(1.0, sum(cw.values())):
+                    pick = max(have, key=lambda x: (cw[x], x))
+                if pick is not None:
+                    dl = self.lects[pick]
+                    LX.borrow(dl.lexicon[concept], dl.id, l.lexicon, l.profile, l.inventory, t1,
+                              note=f"with {tech.replace('_', ' ')} from "
+                                   f"{self.deme_label(dl.deme) if dl.deme is not None else dl.id}")
+                else:
+                    LX.coin(rng, l.lexicon, concept, l.inventory, t1, l.id)
+                l.touch()
+
+    @property
+    def _concept_ids(self) -> frozenset:
+        v = self.__dict__.get("_cids")
+        if v is None:
+            v = self.__dict__["_cids"] = frozenset(c.id for c in self.concepts)
+        return v
 
     def coin_food(self, l: LC.Lect, concept: str, kyr: float, deme: int, origin: bool) -> None:
         w = LX.coin(rng_for(self.seed, "coin", l.id, concept), l.lexicon, concept, l.inventory, kyr, l.id)
@@ -916,11 +1071,25 @@ def LC_root(h: History, l: LC.Lect) -> str:
 
 def niche_for(R: I.Run, deme: int, i: int) -> dict:
     """inputs.niche_weights mapped onto lexicon.ELABORATIONS niches (herder, coast, farmer, hunter), scaled so the leading
-    niche can pass lexicon.ELAB_THRESHOLD."""
+    niche can pass lexicon.ELAB_THRESHOLD; plus the landscape niches mountain and cold."""
     w = R.niche_weights(deme, i)
     m = {"herder": w["herd"], "coast": w["fish"], "farmer": w["crop"], "hunter": w["hunt"]}
     top = max(m.values()) or 1.0
-    return {k: round(v / top, 3) for k, v in m.items()}
+    out = {k: round(v / top, 3) for k, v in m.items()}
+    # (2026-11-08) the landscape niches lexicon.ELABORATIONS also has: mountain (the share of the deme's cells above
+    # MOUNTAIN_M, doubled) and cold (by latitude, from COLD_LAT to COLD_LAT + 20 degrees)
+    lat = abs(float(R.demes[deme].get("lat") or 0.0))
+    out["cold"] = round(min(1.0, max(0.0, (lat - COLD_LAT) / 20.0)), 3)
+    L = R.world
+    if L is not None and "elevation" in L:
+        cells, _ = R.deme_cells(deme, i)
+        if len(cells):
+            out["mountain"] = round(min(1.0, 2.0 * float((np.asarray(L["elevation"])[cells] > MOUNTAIN_M).mean())), 3)
+    return out
+
+
+MOUNTAIN_M = 1500.0
+COLD_LAT = 50.0
 
 
 def proto_grammar(GR, rng, lex, inv, prof, kyr, lid):
@@ -936,12 +1105,13 @@ def head_first_of(GR, gram):
 
 
 def calque(rng, old: LC.Lect, new: LC.Lect) -> list:
-    """One or two typology features of the old grammar carried into the new lect (calqued grammar)."""
+    """One or two typology features of the old grammar carried into the new lect (calqued grammar), from the features
+    shift interference moves (SHIFT_PRONE)."""
     ot = getattr(old.grammar, "typology", None)
     nt = getattr(new.grammar, "typology", None)
     if not isinstance(ot, dict) or not isinstance(nt, dict):
         return []
-    diff = sorted(k for k in ot if k in nt and ot[k] != nt[k])
+    diff = sorted(k for k in ot if k in nt and ot[k] != nt[k] and k in SHIFT_PRONE)
     if not diff:
         return []
     k = int(rng.integers(1, CALQUE_MAX + 1))
@@ -966,9 +1136,16 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         h.interval(i)
     # (adoptions decided in the last interval would land in the next one, which does not exist: they are dropped)
     h.timing["driver_s"] = round(time.perf_counter() - t, 1)
+    last = len(R.frames_kyr) - 1
     for l in h.lects.values():
         if l.alive and l.deme is not None:
-            l.population = R.deme_population(l.deme, len(R.frames_kyr) - 1)
+            l.population = R.deme_population(l.deme, last)
+    for l in sorted((x for x in h.lects.values() if x.alive and x.deme is not None and not x.minority), key=lambda x: x.id):
+        rules = R.culture_rules(l.deme) or ()
+        if "motherinlaw" in rules or "inlaw_words" in rules:   # (an avoidance register as it stands today: lexsys)
+            cw = {y.id: y.lexicon for y in (h.lect_of(o) for o in sorted(R.contacts_of(l.deme, last, CONTACT_BORROW)))
+                  if y is not None and y.alive and y.id != l.id}
+            LS.avoidance(rng_for(h.seed, "avoid", l.id), l.lexicon, l.inventory, R.kyr(last), l.id, cw, l.profile)
     out = {"history": h, "run": R, "seed": h.seed, "lects": list(h.lects.values()), "shifts": h.shifts,
            "food_routes": [r for r in h.routes.values()], "log": h.log, "timing": h.timing}
     if analyse:

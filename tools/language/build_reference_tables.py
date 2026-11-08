@@ -586,12 +586,34 @@ def wold_rows(raw: Path, conc: dict, have: set) -> list[list]:
     return out
 
 
+def build_borrowability(raw: Path, out: Path) -> None:
+    """WOLD's per-meaning borrowed score (lexicon & contact lane, 2026-11-08): how likely a meaning's word is a loan, averaged
+    over WOLD's 41 languages. lexicon.py scales the loan source by it (pronouns and body parts low, food and the house high)."""
+    rows = []
+    for r in read_tsv(raw / "wold" / "Haspelmath-2009-1460.tsv"):
+        if r["CONCEPTICON_GLOSS"]:
+            rows.append([r["CONCEPTICON_GLOSS"], r["CONCEPTICON_ID"], r["SEMANTIC_FIELD"], round(float(r["BORROWING_SCORE"]), 4)])
+    seen, uniq = set(), []
+    for x in sorted(rows, key=lambda x: (x[0], x[3])):
+        if x[0] not in seen:   # (a gloss twice: its lower score, conservatively)
+            seen.add(x[0])
+            uniq.append(x)
+    hdr = ["source: World Loanword Database, Haspelmath & Tadmor (eds.) 2009, via the Concepticon list Haspelmath-2009-1460 "
+           "(https://github.com/concepticon/concepticon-data, conceptlists/Haspelmath-2009-1460.tsv), column BORROWING_SCORE.",
+           f"version: {VERSIONS['concepticon']}; derived 2026-11-08",
+           "licence: WOLD data CC-BY 4.0 (Haspelmath & Tadmor 2009); Concepticon CC-BY 4.0.",
+           f"script: {SCRIPT} (build_borrowability)",
+           "borrowed_score: WOLD's borrowed score for the meaning, 0 (never a loan) .. 1 (always a loan), averaged over its 41 "
+           "languages; wold_field: WOLD semantic field number (1 the physical world .. 24 miscellaneous function words)."]
+    write_tsv(out / "borrowability.tsv", hdr, ["gloss", "concepticon_id", "wold_field", "borrowed_score"], uniq)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "language" / "raw")
     ap.add_argument("--out", type=Path, default=ROOT / "planet" / "language" / "data")
     ap.add_argument("--gb-vmin", type=float, default=GB_VMIN)
-    ap.add_argument("--only", nargs="*", default=["phoible", "grambank", "wals", "clics", "concepts"])
+    ap.add_argument("--only", nargs="*", default=["phoible", "grambank", "wals", "clics", "concepts", "borrowability"])
     a = ap.parse_args()
     globals()["GB_VMIN"] = a.gb_vmin
     for name in a.only:

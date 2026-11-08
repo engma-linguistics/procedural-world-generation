@@ -759,3 +759,105 @@ The full pass did not get faster on the wall clock. The non-human ease drag adds
 - p is rare overall because beaked and lipless mouths find labials dear (aarakocra labial cost 5, reptilian 4). In human lects p is 0.77 (PHOIBLE 0.85), so nothing was forced.
 
 **Sentences.** The templates now draw on the WOLD verbs (build, carve, bring, find, catch, sell, buy, dance, shout), kin terms (older brother, younger sibling), numbers (three, four), motion to a goal with the allative, and objects (boat, basket, pot). The English for the polar question now reads "Do you hear the thunder?".
+
+## Lexicon & contact lane (2026-11-08)
+
+One full pass of a24559 (10 workers, scratch output, a loaded machine: 1924 s) on the lane's task-1 code: intensity borrowing, WOLD borrowability, closed classes kept, numeral systems, colour stages, sound symbolism, substrate calibration, areal diffusion. The food/technology words and the kinship systems came after it and are not in these numbers. **Areal diffusion did not fire in this pass** (a bug: with workers the step wrote to the pre-step lect objects; fixed after), so the areal row is the old null. Baseline: the final run (finish lane).
+
+| measure (living lects) | final run | lexcon pass 1 |
+|---|---|---|
+| Spearman rho, loan share per meaning vs WOLD borrowed score (611 meanings) | -0.095 | **0.424** |
+| loan share: pronouns / ONE-FIVE / SIX-TEN | 0.28 / 0.39 / 0.11 | 0.05 / 0.18 / 0.10 |
+| loan share: body parts / cultural nouns (soup, butter, pot, shoe, door, house) | 0.20 / 0.14 | 0.15 / 0.27 |
+| loan share per lect, p10 / median / p90; r with l2 | 0.07 / 0.36 / 0.41; -0.11 | 0.10 / 0.29 / 0.52; +0.17 (r with intensity +0.36) |
+| core-100 loan share | 0.26 | 0.21 |
+| contact intensity p10 / median / p90 | - | 0.04 / 0.21 / 0.86 |
+| replacements: keep / borrow | 0.251 / 0.251 | 0.295 / 0.221 |
+| substrate words per shift, median (p10-p90) | 88 (83-96) | 17 (10-27) |
+| numeral systems | label only | decimal 333, quinary 96, restricted 60, hybrid 47, vigesimal 37 |
+| colour stages | every proto 7 terms, only merges | VI 131, V 97, IV 97, IIIb 47, IIIa 42, II 36, I 3, off-table 120 |
+| areal: cross-family typology agreement near - far | -0.0009 | -0.0013 (diffusion not run, see above) |
+| sisters strict | 0.554 | 0.620 |
+| scholars' horizon, human (target 6-10) | 10.67 FAIL | **17.63 FAIL** |
+| overused segments | pass | **FAIL: nʷ 0.105 (PHOIBLE 0.012)** |
+
+Open after this pass (for the next pass of this lane):
+- **The human horizon moved from 10.7 to 17.6 kyr** and sisters from 0.55 to 0.62: slower divergence. Part is the keep share (0.25 to 0.30: closed classes no longer fall back to a loan, and the loan fallback scales with intensity). Re-solve `BASE_REPLACE` with `KEEP_COMPENSATION` for the new keep share and re-measure; the "all" horizon fell to 4.6 at the same time, so the measure is noisy at 69 human splits.
+- **nʷ in 10.5% of lects** is new and not traced. Suspects: the accent (ACCENT_P 0.5 to 0.8), or a seed-moved sound-change cascade. Trace before the next merge.
+- Pronoun and numeral loans now come only from the drawn loan source (never the fallback); ONE-FIVE at 0.18 is still above WOLD (0.13-0.23 scores but rarely realised).
+
+## Lexicon & contact lane, pass 2 (2026-11-08): the horizon diagnosis
+
+**What the check measures.** `checks.horizon` reads `families.horizon`: every node of the true lect tree among the
+living human lects (69 splits in a24559) is "recovered" when the scholars' UPGMA (1 − strict cognate share on the core
+100) holds a matching clade and the split's strict share beats its shuffled chance level by 0.03. The splits go into
+2-kyr windows stepped by 1 kyr; the horizon is where two windows in a row recover fewer than half. Past 10 kyr the
+windows hold only 3-6 splits each, and their recovery hovers around one half (0.25-0.75) all the way to 20 kyr.
+
+**Noise, measured cheaply.** (1) The measure's own random draws (lect order, chance shuffles; seeds 12-17) do not move
+it at all. (2) A bootstrap over the 69 splits of the shipped run (finish lane, 10.67 kyr) gives p10 9.7, median 10.8,
+p90 16.7 kyr: bimodal, ~11 or ~17, because one split more or less recovered in the 10-12 kyr windows decides whether
+the two-window rule fires there or only at 17. (3) The same code (lang-design merged into lang-lexcon, before this
+pass's changes) on two pass seeds:
+
+| run | window read (the check) | bootstrap p10 / median / p90 | logistic 50% age (all splits) |
+|---|---|---|---|
+| shipped (finish lane), seed 12 | 10.67 | 9.7 / 10.8 / 16.7 | 13.8 (bootstrap 11.8-17.0) |
+| merged code, seed 12 | 17.63 | 11.7 / 17.0 / 22.0 | 17.9 (14.3-25.6) |
+| merged code, seed 13 | 10.67 | 3.7 / 4.9 / 14.4 | 17.1 (12.2-30.4) |
+| grammar B pass (lang-gram-b a2124a24: grammar A + B, lexicon as in the finish lane), seed 12 | 11.4 | 10.5 / 11.5 / 13.0 | 13.3 (11.8-15.7) |
+
+So the jump 10.7 → 17.6 that pass 1 and grammar A both saw is **mostly noise in the read**: the same code reads 10.7 or
+17.6 by seed. A logistic fit of recovered (0/1) on split age, every split counted once, is steady across the two seeds
+(17.9 / 17.1). It also shows a **real shift underneath, 13.3-13.8 → ~17.5 kyr**, which comes with this lane's pass 1 and not with grammar A or B (grammar B's pass, without the lexicon changes, fits 13.3), and that even the shipped run was outside
+6-10 on a robust reading (its 10.67 was a lucky draw).
+
+**The real shift.** Per-lineage retention is unchanged: the share of core-100 words whose last word-making step is older
+than t kyr, human lects, shipped vs merged: 1 kyr 0.868 / 0.872, 4 kyr 0.671 / 0.687, 8 kyr 0.514 / 0.531, 16 kyr 0.358 /
+0.339. What changed is what deep pairs share: for human pairs 9-15 kyr apart (63 pairs, the same splits in both runs),
+the share of word pairs that are both older than the split went 0.21 → 0.23-0.26, but of those the share with the same
+root went **0.26 → 0.73-0.76**. In the shipped run three quarters of the "old" words in deep pairs came from somewhere
+else: substrate words kept at a shift carry the old language's roots and ages, and the shipped code kept ~88 of them per
+shift (every local word). Pass 1's substrate calibration (10-30% of local words) removed that, and the deep pairs now
+share what they inherit. This is a correction, not a regression: the shipped horizon was helped by too much substrate.
+
+**Why it is long at all.** The per-lineage tail is fat: 36% of the core 100 survive 16 kyr in a line, where a constant 86%
+per kyr keeps 9%. In the isolated harness (`calibrate`-style, 24 seeds, contact weight 0.09, human generation) the core
+keeps 29.5% over 12 kyr (constant rate: 16%), and EGG, LEAF and SLEEP keep their proto word in 83-92% of runs: a
+frequent meaning with no derivation, compound or shift is renewed only by loans, and a lect with little contact
+(human median intensity 0.09) never renews it (round 5's "keep"). Fix: `lexicon.KEEP_COIN` (a frequent open-class
+meaning no source could renew takes a fresh root instead; harness 29.5% → 22%, no open-class meaning above 0.8, fresh
+roots 3% → 6% of replacements). Pronouns, numerals, deixis and wh-words still keep their word (they are the most stable
+meanings, Pagel et al. 2007).
+
+**Proposal (Daniel's call, for-daniel.md).** Report the logistic read beside the window read now (`logistic_kyr`, done:
+informative only) and make it the check's value, or take the median window read over several pass seeds. Either way
+the target 6-10 kyr is far from the model on a robust reading; see the pass-2 numbers below.
+
+### Pass-2 runs (a24559, 10 workers, scratch output)
+
+p2 = pass 1 plus grammar A, KEEP_COIN, S218 and the harmony fix (KEEP_COMPENSATION still 1.08). p3 = p2 plus
+KEEP_COMPENSATION 1.0, AREAL_K x10, kinship steered by the culture, name taboos, avoidance registers, and grammar
+phase B merged in.
+
+| measure (living lects) | merged, seed 12 (m12) | p2 | p3 |
+|---|---|---|---|
+| horizon, window read (the check) | 17.63 | 11.4 | 4.46 |
+| horizon, logistic (all splits; bootstrap p10-p90) | 17.9 | 12.8 (10.8-16.0) | 13.7 (11.4-16.1); check's own fit 13.0 |
+| human core kept after 1 / 4 / 16 kyr | 0.872 / 0.687 / 0.339 | 0.840 / 0.615 / 0.206 | 0.825 / 0.599 / 0.209 |
+| fresh roots ("coin") / keep, share of replacement draws | 0.029 / 0.291 | 0.046 / 0.270 | 0.046 / 0.272 |
+| sisters strict (bar 0.5) | 0.642 | 0.560 | 0.576 |
+| overused segments | FAIL (ɤ 0.117; nʷ 0.08) | pass (nʷ 0.017, ɤ 0.010) | pass |
+| areal: typology agreement near - far, cross-family (bar 0.01) | -0.0009 (0.57 copies per line) | +0.0046 | **+0.0122 pass** (5.3 copies per line) |
+| WOLD rho / pronoun loans | 0.42 / 0.045 | 0.43 / - | 0.43 / 0.063 |
+| kin systems | hawaiian 138, iroquois 131, eskimo 99, sudanese 82, omaha 75, crow 48 | | hawaiian 159, iroquois 123, eskimo 86, omaha 81, sudanese 78, crow 46 |
+| colour stages | IV 132, VI 111, V 89, II 64, IIIb 62, IIIa 26, I 5, other 84 | | IV 139, V 83, VI 82, IIIb 69, II 54, IIIa 52, I 7, other 87 |
+| avoidance registers | - | - | 162 living lects, ~20 words each (paraphrase 52%, loan 48%) |
+
+Reading. The window read swings 17.6 / 11.4 / 4.5 over three passes whose logistic reads are 17.9 / 12.8 / 13.7: the
+check's verdict on this measure is noise until it is read robustly (decision 7 in for-daniel.md). On the logistic
+reading KEEP_COIN brought the human horizon from ~17.5 to ~13 kyr, still above 6-10. Per-lineage retention after 1
+kyr fell to 0.825 in p3 (target 0.86): the name taboos add +20-30% hazard in the cultures that hold them, on purpose;
+KEEP_COMPENSATION could go to ~0.95 if the untabooed lects should sit at 0.86 exactly. Colour stages and kin shares
+look plausible against the WCS and Murdock shares, so COLOUR_SPLIT and KIN_CHANGE were left. The areal signal appears at
+AREAL_K 0.015 (5.3 copies of a feature per line over 20 kyr; drift is ~1e-3 per feature per generation).

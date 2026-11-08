@@ -12,7 +12,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 
 ## Weirdness noticed
 - **The demo page has glitches** (a full read before publishing found them). Merchants are glossed as things in two languages, a dual marker is described but missing from its example, one note quotes the wrong verb, and some agent jargon shows. None is in the data model's core. All are queued as the first item of grammar B in queue.md.
-- **Scholars' horizon jumped from about 11 to 16-18 thousand years** in both the grammar A and lexicon lanes' passes. Grammar A doesn't touch the words, so the measure may swing with any change to the random draws. The lexicon lane is checking that before it tunes anything.
+- **Scholars' horizon: mostly noise in the measure, and your call on how to read it.** The same code read 10.7 or 17.6 thousand years depending only on the random seed. The lexicon lane traced it (see its section, decision 7).
 - See each lane's section below for more.
 
 ## Demos waiting
@@ -282,3 +282,59 @@ not touch FUSE.
   say so in plain words now.
 
 Both are queued in grammar-gaps.md (phase B progress).
+
+## Lexicon & contact lane (lang-lexcon, 2026-11-08)
+
+**What changed, in plain words**
+- **Loans follow the contact and the meaning.** Each neighbour pulls on a lect's words by contact × prestige slope, plus the share of the deme already shifting toward it. The sum is the contact intensity. Loans are about 5% of replacements under casual contact and up to about half just before a shift. Each meaning's chance of being borrowed is scaled by its WOLD borrowed score, steeply under light contact and gently under heavy contact (Thomason & Kaufman's scale). Pronouns, numerals, deixis and question words never fall back to a loan; they keep their old word.
+- **Numerals are systems.** Each lect counts in one system read from its grammar's counting-base label: decimal (some with 6–9 as five-plus), vigesimal or vigesimal-below-a-hundred, a five-based system, or a restricted one (1–3, then 'two two', 'one hand', 'one person', 'many'). Teens and tens (ELEVEN, TWELVE, FIFTEEN, THIRTY, FORTY) are new concepts, always built by the system. A composite numeral is re-formed from its current parts when its word is renewed.
+- **Colour terms by Berlin & Kay stage.** A proto starts at a drawn stage (I–VI) with composite categories as one word. A composite splits over time in the B&K order; the new word comes from an object word ('grass-like', 'sky-like', 'earth-like') or a loan from a neighbour that has the term. Colour words no longer merge by CLICS shifts.
+- **Kinship systems.** Each proto draws one of Hawaiian, Eskimo, Iroquois, Sudanese, Crow or Omaha; its kin share words accordingly. New concepts: FATHER'S BROTHER, MOTHER'S BROTHER, FATHER'S SISTER, MOTHER'S SISTER, PARALLEL COUSIN, CROSS COUSIN. Systems drift slowly to a neighbouring type. Descriptive (Sudanese) terms are compounds ('mother-brother', Swedish morbror).
+- **Nursery words and sound symbolism.** MOTHER mostly with a nasal and an open vowel (mama, nana), FATHER mostly with a labial or dental stop (papa, tata). Mild Blasi et al. 2016 links (NOSE n, TONGUE l, SMALL i, ROUND r ...).
+- **Substrate after a shift** keeps 10–30% of the local words (drawn per shift) plus all names, not all of them. The accent replaces 80% of the missing sounds (was 50%), and the stress system carries over. Calques come only from features shift interference is known to move (word order, aspect, evidentials, articles ...), never gender or case.
+- **Areal diffusion.** A lect copies a typology feature from a contact lect now and then, weighted toward the areal features (articles, future, evidentials, classifiers, polar questions, order). The log is in each lect's `systems.areal`.
+- **Words that come with a technology.** Bread, beer, cheese, wine, mead, spirits, vinegar, oven, quern, sugar, steaming, pickling, yeast, griddle, fish sauce, porridge, dough and curd appear when the people knows the technology (the techtree). Learned from a neighbour, the word mostly comes with it (a Wanderwort). BREAD and BEER had no way into any lexicon before. Taste words (TASTE, TASTY, FRAGRANT, STINKING, PUNGENT, BE HUNGRY, MEAL, FEAST) are new proto concepts.
+- Tidy-ups: ROAST merged into ROAST OR FRY; the nagybátya gloss fixed; `Concept.base` now feeds borrowability; mountain and cold elaborations reachable (deme elevation, latitude); the unused `niche_weights_from` removed.
+
+**Defaults taken (your call when you are back)**
+1. **Loan levels.** LOAN_CONTACT 0.1, LOAN_MAX 1.0, the steepness of the borrowability curve (gamma 1.5 → 0.5). Change in `history.py` / `lexicon.py` (top of the borrowability section).
+2. **Numeral system weights inside the grammar labels.** "other" is 60% restricted, 40% five-based; restricted becomes five-based in a people past 20,000 speakers. The grammar's label distribution itself (about 28% "other" in the final run) is grammar A's; WALS has about 10% restricted.
+3. **Proto colour stages** (weights in `lexsys.STAGE_WEIGHTS`) and the split rate `COLOUR_SPLIT`. Tuned by eye, not to the World Color Survey.
+4. **Kinship weights** are Murdock's Ethnographic Atlas shares from memory (≈). Crow and Omaha are shown only on the cross cousin (one concept), not on the full skewing. The culture's descent and clan exogamy do not yet steer the draw.
+5. **Areal rate** AREAL_K 0.0015 per generation × contact × prestige slope.
+6. **Two test thresholds moved** (lexicon tests): the homophone share's one-run maximum 0.24 → 0.25, and the proto core-vs-all derivation margin 0.05 → 0.04. Both are diluted by the new system concepts, explained in the tests.
+
+**Weirdness noticed**
+- Hawaiian-type lects call cousins by the BROTHER word only; there is one word per sibling sex, and the sex split of cousins is not modelled.
+- A colour or kin category changes its word only when its focus (WHITE, GREEN, FATHER ...) is renewed; a hit on a non-focus member is kept.
+
+### Pass 2 (lang-lexcon, 2026-11-08)
+
+**Your call when you are back**
+7. **How to read the scholars' horizon.** The check takes the first two 2-kyr windows in a row where fewer than half of the true splits are recovered. Past 10 kyr each window holds only 3-6 splits and recovery hovers near one half, so one split more or less moves the reading by about 6 kyr: the same code reads 10.7 or 17.6 on two seeds, and a bootstrap of the shipped run spans 9.7-16.7. A logistic fit of "recovered" against split age, with every split counted once, stays put (17.9 and 17.1 on those two seeds). It is now reported beside the old reading as `human_logistic`; it does not decide pass or fail yet. My recommendation: make the logistic reading the check's value. The other option is a median over three pass seeds, which costs about 1.5 hours of compute per measurement.
+   - On the logistic reading the human horizon was about 13.5 thousand years before this lane, about 17.5 after pass 1, and **12.8 now**. The 6-10 target was never met on a robust reading; the shipped 10.7 was a lucky draw.
+8. **Fresh roots for meanings nothing can renew** (`lexicon.KEEP_COIN`, `KEEP_COIN_FREQ`). Round 5 let a replacement that no source could make keep the old word. Frequent meanings with no derivation, compound or semantic shift (EGG, STAR, LEAF, SLEEP, FISH) were therefore renewed only by loans. With little contact they never changed: 83-92% of them kept the proto word for 12 thousand years. Such a draw now takes a fresh root (a word of unknown origin) for frequency classes 1-2. Pronouns, numerals, deixis and question words still keep their word.
+   - Fresh roots are 4.6% of replacements in the full pass, up from 2.9%.
+   - The Swadesh rate is held by `KEEP_COMPENSATION` 1.08 → 1.0. The full pass replaced 16% of the human core per thousand years at the old value.
+   - The coinage test bound moved from 6% to 8% (reason in the test).
+9. **Kinship follows the culture's marriage rules** (`lexsys.KIN_PULL`). Clan exogamy weights Iroquois, Crow and Omaha by 2. Cross-cousin marriage weights Iroquois by 3 and Crow and Omaha by 1.5. A culture with neither weights Hawaiian and Eskimo by 1.5. A disfavoured system changes up to 3 times faster. These weights are my reading of Murdock 1949, not fitted.
+   - a24559's stored taboos.json predates the kinship and speech rules, so the pass re-derives it in memory (read-only) with the lineages code.
+10. **Name taboos speed word loss** (`lexsys.SPEECH_TABOO_X`): +30% on the open-class replacement rate for "words like a dead person's name" and +20% for the ruler's name. Dixon describes the effect in Australia as large but gives no rate, so these numbers are guesses.
+11. **Avoidance registers.** Where the culture has the mother-in-law or in-law word rules, the living lect gets a second word for 20 everyday meanings. Half are a neighbour's word, as Dyirbal Jalnguy often is; the rest are paraphrases ('the black one') or derivations. They are built for today only: they are not inherited and have no sound-change history. They appear in the sketches under "Avoidance words".
+12. **Areal rate ×10** (`AREAL_K` 0.0015 → 0.015). See the pass-2 numbers in calibration.md for whether the near/far signal appears.
+
+**Changed in the sound lane's files (minimal, flagged)**
+- New rule S218: the labialized coronals tʷ dʷ nʷ sʷ zʷ lʷ rʷ lose their labialization. nʷ had a source (S068, labialization before a lost rounded vowel) and no way out, so it built up to 10.5% of lects; PHOIBLE has 1.2%. It is now at 1.7%.
+  - I did not check one attested case. The rule rests on labialization being commonest on velars and uvulars (Ladefoged & Maddieson 1996).
+- Backness harmony in `rules._produce`: a front e going back now opens to ɑ, as in Turkish -ler/-lar and Hungarian -nek/-nak. Before, it became ɤ, and a rounded o after an unrounded back root also unrounded to ɤ. ɤ reached 11.7% of lects on one seed (PHOIBLE 2.2%) and is now at 1.0%. Central ə and ɐ are neutral.
+- `lect.py` passes two more context values to `lexicon.step`: `kin_weights` and `speech_taboo`.
+
+**Odd output noticed**
+- The overused-segment check also swings with the seed: one seed failed on nʷ, the other on ɤ. Both are fixed at the cause.
+- The counting base now drives the numeral words directly. Grammar A's proto numerals and the lexicon's numeral systems used to build twenty and the rest separately, and the lexicon's overwrote grammar A's. A decimal lect no longer renews six as 'five one' (`lexsys.recipe_fits`).
+- The sentence lane's numeral note still builds 11/15/30/40 as phrases even where the lect has its own word for ELEVEN or THIRTY.
+
+**Not done**
+- Liturgical language and god names from gods.json (contact-gaps rec. 5).
+- Segment borrowing at high contact intensity (contact-gaps 3d).
+- Polities: they need a polities document in the run.

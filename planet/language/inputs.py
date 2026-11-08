@@ -163,6 +163,32 @@ class Run:
         self._open_presence()
 
     # ------------------------------------------------------------------ basics
+    def culture_rules(self, deme: int | None) -> frozenset | None:
+        """The taboo rule ids (kinship, speech, ...; not food) of the deme's culture now (cultures.json deme_culture,
+        taboos.json). A taboos.json from before the non-food rules (format procgen-taboos/1) is re-derived in memory,
+        read-only (planet.lineages.taboos.derive). None when the run has no cultures."""
+        if not hasattr(self, "_culture_rules"):
+            self._culture_rules = {}
+            dc = (getattr(self, "cultures_doc", None) or {}).get("deme_culture") or []
+            doc = None
+            if dc and getattr(self, "dir", None) is not None:
+                tp = Path(self.dir) / "taboos.json"
+                try:
+                    doc = json.loads(tp.read_text()) if tp.exists() else None
+                    if doc is None or not any(t.get("kind") for c in doc.get("cultures", {}).values() for t in c.get("taboos") or []):
+                        from planet.lineages import taboos as TB
+                        gp = Path(self.dir) / "gods.json"
+                        doc = TB.derive(Path(self.dir), json.loads(gp.read_text()) if gp.exists() else None)
+                except Exception:   # noqa: BLE001 - no culture steering then
+                    doc = None
+            cu = (doc or {}).get("cultures") or {}
+            self._culture_rules = {"dc": dc, "by": {k: frozenset(t["target"] for t in v.get("taboos") or [] if t.get("kind") not in (None, "food"))
+                                                    for k, v in cu.items()}}
+        cr = self._culture_rules
+        if deme is None or not cr["by"] or deme >= len(cr["dc"]) or cr["dc"][deme] is None:
+            return None
+        return cr["by"].get(str(cr["dc"][deme]))
+
     def kyr(self, i: int) -> float:
         return self.frames_kyr[i]
 

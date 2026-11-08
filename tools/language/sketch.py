@@ -1246,7 +1246,50 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
         if made:
             s += " Several numerals began as other words: " + "; ".join(made[:8]) + "."
         out += [s.strip(), ""]
+    out += systems_section(l)
     out += word_family(doc, l)
+    return out
+
+
+KIN_ORDER = ("FATHER", "FATHER'S BROTHER", "MOTHER'S BROTHER", "UNCLE", "MOTHER", "MOTHER'S SISTER", "FATHER'S SISTER",
+             "AUNT", "BROTHER", "PARALLEL COUSIN", "CROSS COUSIN", "COUSIN")
+KIN_TYPES = {"hawaiian": "Hawaiian (generational: cousins are called brother and sister, uncles father)",
+             "eskimo": "Eskimo (lineal: one word for all cousins, parents kept apart from their siblings)",
+             "iroquois": "Iroquois (bifurcate merging: father's brother is 'father', mother's brother is not; parallel "
+                         "cousins are siblings, cross cousins are not)",
+             "sudanese": "Sudanese (descriptive: each relative has a word of its own, often 'mother-brother')",
+             "crow": "Crow (as Iroquois, and the father's sister's children are called by the 'father's sister' word)",
+             "omaha": "Omaha (as Iroquois, and the mother's brother's children are called by the 'mother's brother' word)"}
+
+
+def systems_section(l: dict) -> list[str]:
+    """The kin terms as the lect's kinship system groups them, the colour stage, and the avoidance register (lexsys)."""
+    lex = l.get("lexicon") or {}
+    sy = l.get("systems") or {}
+    out = []
+    kin = [c for c in KIN_ORDER if c in lex]
+    if kin:
+        ks = (sy.get("kin") or {}).get("system")
+        out += ["### Kin terms", ""]
+        if ks:
+            out += [f"Kinship terms of the {KIN_TYPES.get(ks, ks)} type.", ""]
+        out += ["| relative | IPA | spelling | same word as |", "| --- | --- | --- | --- |"]
+        for c in kin:
+            same = [cname(x) for x in kin if x != c and lex[x]["ipa"] == lex[c]["ipa"]]
+            out.append(f"| {cname(c)} | {lex[c]['ipa']} | {lex[c]['roman']} | {', '.join(same)} |")
+        out.append("")
+    col = sy.get("colour") or {}
+    if col.get("categories"):
+        cats = ["/".join(cname(c) for c in g) for g in col["categories"]]
+        out += ["### Colour terms", "", f"Berlin & Kay stage {col.get('stage')}: {len(cats)} basic colour words ("
+                + "; ".join(cats) + ").", ""]
+    av = sy.get("avoidance") or {}
+    if av:
+        out += ["### Avoidance words", "", "Said before the in-laws the culture's taboos keep apart (a 'mother-in-law "
+                "language', as Dyirbal Jalnguy).", "", "| meaning | everyday | avoidance | made as |", "| --- | --- | --- | --- |"]
+        for c, (ipa, how, _note) in sorted(av.items()):
+            out.append(f"| {cname(c)} | {lex.get(c, {}).get('ipa', '')} | {ipa} | {how} |")
+        out.append("")
     return out
 
 
