@@ -9,11 +9,11 @@ subsystem: peoples
 effort: s
 impact: high
 found_by: lane77
-blocked_by: []
+blocked_by: [PW-1558]
 relates: [PW-1151, PW-1152, PW-677]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, tools/peoples_robust.py]
 created: 2026-10-30
-updated: 2026-11-03
+updated: 2026-11-08
 ---
 
 ## In plain words
@@ -44,6 +44,7 @@ unstarted children as living; (3) the "no room" fallback founds at the best habi
 - [ ] fallback counts in the suite's origins ("why") drop to ~0 for parent-gone; the brittle peoples' swing (leonin, goblin, halfling) narrows
 
 ## Updates
+- 2026-11-08: Lane 228 (d01c4a08): the three asked-for fixes were already on main (4a01368b); added _take (a daughter taking the stem's last land saves it as the stem's last land) and relabelled the Seven Meals merfolk founding. Parent-gone fallbacks 2 -> 0. Swing on the dnd jitters unchanged; blocked by PW-1558 (stem refuge teleport).
 - 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: splits founded near their parents in Seven Meals
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-split-teleports-when-stem-gone.md (found by lane77).

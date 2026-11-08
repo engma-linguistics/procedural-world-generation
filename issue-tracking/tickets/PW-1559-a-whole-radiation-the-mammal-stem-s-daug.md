@@ -1,16 +1,19 @@
 ---
+id: PW-1559
 title: A whole radiation (the mammal stem's daughters) arises on one mid-sized continent; decide whether splits should spread by area within a radiation
 type: task
-status: needs-decision
+status: todo
 parent: null
-milestone: v5
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
 found_by: lane228
 blocked_by: []
 relates: [PW-888, PW-1184]
-refs: [planet/lineages/history/origins.py::_origin_split, planet/lineages/history/origins.py::_by_landmass, planet/lineages/history/params.py::SPECIES_AREA_Z, tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "world 4360a3 (time zoom cdc275)", "world af2677 (time zoom f2201f)"]
+refs: ["planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_by_landmass", "planet/lineages/history/params.py::SPECIES_AREA_Z", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "world 4360a3 (time zoom cdc275)", "world af2677 (time zoom f2201f)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## In plain words
@@ -36,3 +39,8 @@ Options:
 - C: an in-situ speciation area threshold (the island-radiation literature has one; to be sourced): a landmass too small for a
   radiation hosts daughters by founders from elsewhere only.
 Lean: A for v5; B if the owner sees one continent hosting most peoples in the viewer.
+
+Coordinator 11-08: A (owner ruling 10-27 covers kin clustering before boats; PW-888 bar met). Parked as later; B if the owner sees one continent hosting most peoples in the viewer.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-radiation-crowds-one-continent.md (found by lane228).

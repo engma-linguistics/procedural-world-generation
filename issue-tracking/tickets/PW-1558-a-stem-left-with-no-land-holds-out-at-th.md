@@ -1,4 +1,5 @@
 ---
+id: PW-1558
 title: A stem left with no land holds out at the world's best cell; that hidden jump is what gives leonins, goblins, hobgoblins and halflings their room on af2677
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: high
 found_by: lane228
 blocked_by: []
 relates: [PW-1184, PW-1152, PW-1181]
-refs: [planet/lineages/history/dispersal.py::_hold_out, planet/lineages/history/origins.py::_origin_split, planet/lineages/history/origins.py::_take, planet/lineages/history/model.py::_advance, tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
+refs: ["planet/lineages/history/dispersal.py::_hold_out", "planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_take", "planet/lineages/history/model.py::_advance", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## In plain words
@@ -34,3 +37,6 @@ What to try: keep the refuge near the stem's last land (exp(-d / FOUNDER_KM), as
 live in; or let the founding take leave the stem the cells outside the founders' own country. Judge on the suite's af2677 dnd runs.
 - [ ] no stem refuge lands further than ~20 x FOUNDER_KM from its last land; leonin/goblin/hobgoblin/halfling ranges on af2677 dnd
   not below main's median
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-stem-refuge-teleport-carries-peoples.md (found by lane228).
