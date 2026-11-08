@@ -2,7 +2,7 @@
 id: PW-1510
 title: "Trade: the foods flyers carry to new regions is an empty record on all three judge runs (no flying people knows a crop)"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -30,4 +30,5 @@ runs, and say which flyer kinds (aarakocra, kenku, ...) carry what.
 - [ ] the record is non-empty on at least one D&D run, and every entry points to a crop the flyer's range has
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 214: flyer_foods now also carries the crops growing wild on the flyer's own cells (crop_wild), to farming trading neighbours where the crop is neither known nor wild; each entry says from: known or wild. Non-empty on all three runs (eras with a record: 21 / 21 / 23 of 26 on 0141d1 / 3e0eb4 / 07c755); all entries are the aarakocra's, from wild plants (e.g. 3e0eb4: alliums, wheat, pulses, oil seeds, pseudograin). docs/review/culture/trade/step3.md, tests/test_trade_routes.py::test_flyers_carry_the_wild_foods_of_their_range.
 - 2026-11-08: Created from inbox draft draft-trade-flyer-foods-empty.md (found by lane 213).

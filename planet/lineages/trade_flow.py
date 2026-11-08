@@ -44,7 +44,7 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 1
+VERSION = 2  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510)
 FORMAT = "procgen-trade-flows/1"
 
 # --- cost per km of each mode, a pack animal = 1 (R§6). ORBIS (Scheidel, Meeks & Weiland 2012, from Diocletian's Price Edict), denarii per kg
@@ -87,6 +87,9 @@ TRIBUTE_GOODS = ("grain", "livestock", "gold", "gems")  # what a tribute-taking 
 # JUDGEMENT (D65: dragons take tribute; R§5: tribute is grain, cloth and luxuries); herds for a dragon's table
 CARRIERS = ("pack_saddle", "caravanserais", "sails", "plank_boats", "harbours", "navigation")  # merchants' carriers: caravans and ships (R§4)
 FOODS = ("grain", "livestock", "dried_fish")  # the goods that are food (for step 4d: food_bought)
+QUARTERS = True  # step 3 (PW-1504): a merchant quarter lifts its border's toll in the next frame (design1.md steps 2-3); False: no carry-over
+FETCH = False  # PW-1511 B (needs-decision): True: herders fetch grain with their own animals. Off: it met no more of their need on the judge runs (step3.md)
+FETCH_GOODS = ("grain",)  # PW-1511 B: what herders fetch with their own animals (Khazanov 2019: grain from the frontier markets)
 ROUNDS = 3  # a taker cut short by an emptied source looks for the next best source up to this many times (a compute bound)
 
 
@@ -108,10 +111,11 @@ def _allocate(order, org, ask, avail):
 def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
     """Multi-source least cost (Dijkstra) over the cells: edge e from cell i (nbr_off[i] <= e < nbr_off[i+1]) to nbr_idx[e] costs ecost[e]
     (< 0: closed). Each source s starts at d0. Returns (cost, origin source cell, km along the path, km per mode (n x 4), borders crossed);
-    cells beyond `limit` stay at inf with origin -1."""
+    cells beyond `limit` stay at inf with origin -1. Also the edge each cell was reached by (-1 at a source), for the routes (step 3)."""
     n = nbr_off.shape[0] - 1
     d = np.full(n, np.inf)
     org = np.full(n, -1, np.int64)
+    pe = np.full(n, -1, np.int64)
     km = np.zeros(n)
     mkm = np.zeros((n, 4))
     nb = np.zeros(n, np.int32)
@@ -122,6 +126,7 @@ def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
         if d0[k] < d[s]:
             d[s] = d0[k]
             org[s] = s
+            pe[s] = -1
             heapq.heappush(h, (d0[k], s))
     while len(h) > 0:
         di, i = heapq.heappop(h)
@@ -136,13 +141,14 @@ def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
             if nd < d[j] and nd <= limit:
                 d[j] = nd
                 org[j] = org[i]
+                pe[j] = e
                 km[j] = km[i] + ekm[e]
                 for m in range(4):
                     mkm[j, m] = mkm[i, m]
                 mkm[j, emode[e]] += ekm[e]
                 nb[j] = nb[i] + ebord[e]
                 heapq.heappush(h, (nd, j))
-    return d, org, km, mkm, nb
+    return d, org, km, mkm, nb, pe
 
 
 def _knows(kn: set, techs) -> bool:
@@ -159,6 +165,12 @@ def _tolerance(att: dict | None, c: int, era: float) -> float:
         if kyr >= era - 1e-9 and (best is None or kyr < best[0]):
             best = (kyr, tol)
     return float(best[1]) if best else float((r.get("now") or [TOL_MID])[0])
+
+
+def _herder(row: dict | None) -> bool:
+    """A herding culture: herding is the biggest of its ways of life (farm, herd, forage; as kind_of reads a forager band)."""
+    w = (row or {}).get("ways") or {}
+    return bool(w) and max(("farm", "herd", "forage"), key=lambda k: w.get(k, 0)) == "herd"
 
 
 def _polity_state(pol: dict | None, era: float, n: int, C: list) -> tuple[np.ndarray, set, dict]:
@@ -199,8 +211,10 @@ def _polity_state(pol: dict | None, era: float, n: int, C: list) -> tuple[np.nda
 class _Frame:
     """One frame's carriers, costs and per-good walks."""
 
-    def __init__(self, ctx, i: int, pol: dict | None, att: dict | None, scale: dict | None = None):
+    def __init__(self, ctx, i: int, pol: dict | None, att: dict | None, scale: dict | None = None, quarters: set | None = None,
+                 fetch: bool = False):
         self.ctx, self.i = ctx, i
+        self.fetch = fetch
         self.era = era = -float(ctx.ts[i])
         sc = scale or {}
         self.L = {k: v * sc.get("L", 1.0) for k, v in FALL_KM.items()}
@@ -221,7 +235,7 @@ class _Frame:
             boat = 3 if "navigation" in kn else 2 if _knows(kn, ("sails", "plank_boats")) else 1 if "canoes" in kn else 0
             info[c] = {"pid": pid, "know": kn, "mode": m["mode"], "via": m["via"], "flies": "flies" in (line.get("traits") or []) and m["mode"] == "trade",
                        "sea": line.get("realm", "land") != "land", "miner": "miner" in (line.get("traits") or []), "boat": boat,
-                       "tol": _tolerance(att, c, era), "people": (self.rows.get(c) or {}).get("people", 0)}
+                       "tol": _tolerance(att, c, era), "people": (self.rows.get(c) or {}).get("people", 0), "herder": _herder(self.rows.get(c))}
         from .animals import ocean_ships
         ships = ocean_ships(str(ctx.meta.get("era") or ""), era)
         X = TR.cells_at(ctx, i)
@@ -277,21 +291,36 @@ class _Frame:
         # edges
         a, b = srcs, nbr_idx
         hop = float(g.spacing * R_KM * ROUTE)
-        fa, fb = fcell[a], fcell[b]
-        open_ = (fa > 0) & (fb > 0)
-        fac = 0.5 * (fa + fb)
-        mode = np.where(sea[a] | sea[b], 2, 0)
         W = ctx.world or {}
         nav = np.asarray(W.get("river_nav", np.zeros(n))).astype(int)
         rv = land[a] & land[b] & (nav[a] >= 1) & (nav[b] >= 1) & canoes[a]
         rf = np.where(elev[b] < elev[a], M["down"], M["up"])
-        use = rv & (rf < fac)
-        fac = np.where(use, rf, fac)
-        mode = np.where(use, 1, mode)
+
+        def edges(fc):  # (open, factor per km, mode) per edge from the cells' factors
+            fa, fb = fc[a], fc[b]
+            fac = 0.5 * (fa + fb)
+            use = rv & (rf < fac)
+            return (fa > 0) & (fb > 0), np.where(use, rf, fac), np.where(use, 1, np.where(sea[a] | sea[b], 2, 0))
+        open_, fac, mode = edges(fcell)
+        fetch_e = None
+        if fetch:  # (PW-1511 B: herders fetch grain with their own animals, Khazanov: nomads drove their own herds to frontier markets;
+            # pack-animal cost on the land a herding culture carries for, and one cell beyond it, the farmers' edge, tech or not)
+            herder = attr(lambda r: r.get("herder", False))
+            near = herder.copy()
+            near[srcs[herder[nbr_idx]]] = True
+            f2 = np.where(near & land, np.minimum(f_land, M["pack"] * hm), f_land)
+            fetch_e = edges(np.where(land, f2, np.where(sea, f_sea, -1.0)))
         oa, ob = own[a], own[b]
         bord = (oa >= 0) & (ob >= 0) & (oa != ob)
         tol = tab(lambda r: r["tol"], TOL_MID).astype(float)[np.maximum(ob, 0)]
         toll = np.clip(TOLL * sc.get("toll", 1.0) * (1.0 - tol) / (1.0 - TOL_MID), 0.0, TOLL_MAX)
+        self.quarter_edges = 0
+        if quarters:  # (step 3, PW-1504: a merchant quarter of the giver's people in the taker's town last era lifts that border's toll,
+            # Curtin's trade diaspora; design1.md step 2: "A merchant quarter of the giver's people in the taker's town removes it")
+            qk = np.array([h * 1_000_003 + m for h, m in quarters], np.int64)
+            lift = bord & np.isin(ob * 1_000_003 + oa, qk)
+            toll = np.where(lift, 0.0, toll)
+            self.quarter_edges = int(lift.sum())
         self.pol_cell, wars, self.rules = _polity_state(pol, era, n, C)
         if wars:
             pa, pb = self.pol_cell[a], self.pol_cell[b]
@@ -299,6 +328,8 @@ class _Frame:
             wk = np.array([x * 1_000_003 + y for x, y in wars], np.int64)
             closed = bord & (pa >= 0) & (pb >= 0) & np.isin(key, wk)
             open_ &= ~closed
+            if fetch_e is not None:
+                fetch_e = (fetch_e[0] & ~closed, *fetch_e[1:])
             self.war_edges = int(closed.sum())
         else:
             self.war_edges = 0
@@ -307,27 +338,29 @@ class _Frame:
         fly[cell[fl]] = True
         self.fly = fly
         self.e = {"a": a, "b": b, "hop": hop, "open": open_, "fac": fac, "mode": mode, "bord": bord, "toll": toll,
-                  "fly": fly[a] | fly[b]}
+                  "fly": fly[a] | fly[b], "fetch": fetch_e}
         self.costs: dict = {}
 
-    def cost(self, cl: str):
-        """(edge cost, edge mode, edge km) for a value class (cached)."""
-        if cl not in self.costs:
+    def cost(self, cl: str, fetch: bool = False):
+        """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B)."""
+        if (cl, fetch) not in self.costs:
             e, L = self.e, self.L[cl]
-            c = np.where(e["open"], e["hop"] * e["fac"], -1.0)
-            mode = e["mode"].copy()
+            op, fac, mode = e["fetch"] if fetch and e["fetch"] is not None else (e["open"], e["fac"], e["mode"])
+            c = np.where(op, e["hop"] * fac, -1.0)
+            mode = mode.copy()
             if cl == "precious":  # (flyers carry light goods over anything)
                 air = e["hop"] * AIR
                 use = e["fly"] & ((c < 0) | (air < c))
                 c = np.where(use, air, c)
                 mode = np.where(use, 3, mode)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
-            self.costs[cl] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
-        return self.costs[cl]
+            self.costs[(cl, fetch)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
+        return self.costs[(cl, fetch)]
 
     def walk(self, good: str, live: np.ndarray | None = None):
         """The supply of a good over the map from its surplus cells (only the `live` ones, if given): (supply 0..1 per cell, origin cell,
-        km, km per mode, borders crossed, source culture per cell, carrying cost-km, source surplus per cell)."""
+        km, km per mode, borders crossed, source culture per cell, carrying cost-km, source surplus per cell, the edge each cell was reached by,
+        each edge's mode)."""
         P = self.P
         cl = FALL_CLASS.get(good, TR.GOODS[good][1])
         L = self.L[cl]
@@ -340,13 +373,13 @@ class _Frame:
         S[cell[order]] = sur[order]
         sc[cell[order]] = cu[order]
         src = np.flatnonzero((S >= TR.SHOW_MIN) & (True if live is None else live))
-        c, mode, km = self.cost(cl)
+        c, mode, km = self.cost(cl, self.fetch and good in FETCH_GOODS)
         g = self.ctx.g
-        d, org, kmv, mkm, nb = _walk(src.astype(np.int64), -L * np.log(S[src]), g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), c, km, mode,
+        d, org, kmv, mkm, nb, pe = _walk(src.astype(np.int64), -L * np.log(S[src]), g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), c, km, mode,
                                      self.e["bord"].astype(np.int32), L * math.log(1.0 / FLOOR))
         sup = np.where(np.isfinite(d), np.exp(-np.minimum(d, 700.0) / L), 0.0)
         carry = np.where(org >= 0, d + L * np.log(np.maximum(S[np.maximum(org, 0)], 1e-300)), 0.0)  # (the carrying cost alone, cost-km)
-        return sup, org, kmv, mkm, nb, sc, carry, S
+        return sup, org, kmv, mkm, nb, sc, carry, S, pe, mode
 
 
 def kind_of(fr: _Frame, giver: int, taker: int, borders: float) -> str:
@@ -378,12 +411,17 @@ def _sum_by(keys: np.ndarray, vals: np.ndarray) -> dict:
     return {int(a): float(b) for a, b in zip(u.tolist(), s.tolist()) if b > 0}
 
 
-def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None) -> dict | None:
+def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, quarters: set | None = None,
+             fetch: bool = False, routes: bool = True) -> dict | None:
     """Frame i's exchange: {"flows": [[giver, taker, good, share of the taker's people, people supplied, km, cost-km, mode, kind, via]],
-    "home": {culture: {good: share met from its own land elsewhere}}, "unmet": {culture: {good: share}}, "war_edges", "flyer_foods"}."""
+    "home": {culture: {good: share met from its own land elsewhere}}, "unmet": {culture: {good: share}}, "war_edges", "flyer_foods"}; with
+    routes (step 3, trade_routes.py) also "routes", "hubs", "quarters" and "volume". quarters: last era's merchant quarters (host, merchant
+    culture), whose borders charge no toll; fetch: herders fetch grain with their own animals (PW-1511 B)."""
     if TR.pairs_at(ctx, i) is None:
         return None
-    fr = _Frame(ctx, i, pol, att, scale)
+    fr = _Frame(ctx, i, pol, att, scale, quarters=quarters, fetch=fetch)
+    from . import trade_routes as RT
+    loads = RT.Loads(fr) if routes else None
     P = fr.P
     cell, cu, w = P["cell"], P["culture"], P["w"]
     wsum = P["wsum"]
@@ -409,7 +447,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
             p = np.flatnonzero(want & (rem > 0))
             if not len(p):
                 break
-            sup, org, km, mkm, nb, sc, carry, S = fr.walk(good, None if avail is None else avail > 1e-9 * np.maximum(avail0, 1e-12))
+            sup, org, km, mkm, nb, sc, carry, S, pe, emode = fr.walk(good, None if avail is None else avail > 1e-9 * np.maximum(avail0, 1e-12))
             if avail is None:
                 avail0 = S * heads
                 avail = avail0.copy()
@@ -425,6 +463,8 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
             cut = got < ask * (1 - 1e-9)
             rem[p] -= got / np.maximum(heads[cp], 1e-12)
             giver = sc[o]
+            if loads is not None:
+                loads.add(good, cp, got, giver, t, pe, emode)
             v = got / np.maximum(heads[cp], 1e-12) * w[p] / wsum_arr[t]
             hm = (v > 0) & (giver == t)
             for c, x in _sum_by(t[hm], v[hm]).items():
@@ -478,13 +518,19 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
                       mode, kind, via])
     flows.sort(key=lambda f: -f[3])
     rnd = lambda d: {str(c): {g: round(x, 4) for g, x in v.items() if x >= FLOW_MIN} for c, v in d.items()}  # noqa: E731
-    return {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr)}
+    out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr)}
+    if loads is not None:
+        out.update(loads.finish())
+        out["quarter_edges"] = fr.quarter_edges
+    return out
 
 
 def flyer_foods(ctx, fr: _Frame) -> list:
-    """Foods a flying people carries into land where they are not grown (Daniel, D65: as birds have carried seeds). Per flying culture
-    and crop it knows: the land cells in its range and one ring beyond where the crop is not known but another culture farms, and who
-    farms there. A record for the culinary brief (step 4a) and the crop spread to read later; nothing is spread here."""
+    """Foods a flying people carries into land where they are not grown (Daniel, D65: as birds have carried seeds). Per flying trading
+    culture: the crops it knows, and the crops growing wild on its own cells (PW-1510: a flyer that forages carries the wild plants of its
+    range; crops.py's crop_wild layer); for each, the land in its range and one ring beyond where another culture farms and the crop is
+    neither known nor wild, and who farms there. [{"culture", "crop", "from": "known" | "wild", "cells", "to": [[culture, cells]]}]: a
+    record for the culinary brief (step 4a) and the crop spread to read later (a flow of seed and food); nothing is spread here."""
     stocks = (ctx.meta.get("crops") or {}).get("stocks") or {}
     if not stocks or "crop_known" not in ctx.arr:
         return []
@@ -495,47 +541,64 @@ def flyer_foods(ctx, fr: _Frame) -> list:
         return []
     X = TR.cells_at(ctx, i)
     bits = np.asarray(ctx.f("crop_known", i)).astype(np.int64)
+    wild = np.asarray(ctx.f("crop_wild", i)).astype(np.int64) if "crop_wild" in ctx.arr else np.zeros(ctx.g.n, np.int64)
     g = ctx.g
     srcs = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
     farmed = np.zeros(g.n)
     np.maximum.at(farmed, cell, np.where(np.array([fr.info[c]["flies"] for c in cu.tolist()], bool), 0.0, X["farm"][cell]))
+    farmer_c = np.array([not r["flies"] and r["mode"] == "trade" and ((fr.rows.get(int(k)) or {}).get("ways") or {}).get("farm", 0) > 0
+                         for k, r in ((k, fr.info[k]) for k in cu.tolist())], bool) if len(cu) else np.zeros(0, bool)
     out = []
     for c in flyers:
-        crops = [s for s in stocks if f"crop_{s}" in fr.info[c]["know"] and stocks[s].get("enabled", True)]
-        if not crops:
-            continue
         mine = np.zeros(g.n, bool)
         mine[cell[cu == c]] = True
+        wild_here = int(np.bitwise_or.reduce(wild[mine])) if mine.any() else 0
+        crops = []
+        for s, st in stocks.items():
+            if not st.get("enabled", True):
+                continue
+            if f"crop_{s}" in fr.info[c]["know"]:
+                crops.append((s, "known"))
+            elif (wild_here >> int(st["bit"])) & 1:
+                crops.append((s, "wild"))
+        if not crops:
+            continue
         reach = mine.copy()
         reach[srcs[mine[g.nbr_idx]]] = True
-        for s in crops:
+        for s, how in crops:
             b = int(stocks[s]["bit"])
-            tgt = np.flatnonzero(reach & X["land"] & (((bits >> b) & 1) == 0) & (farmed > 0))
+            tgt = np.flatnonzero(reach & X["land"] & (((bits >> b) & 1) == 0) & (((wild >> b) & 1) == 0) & (farmed > 0))
             if not len(tgt):
                 continue
-            hit = np.isin(cell, tgt) & (cu != c)
+            hit = np.isin(cell, tgt) & farmer_c  # (the farming trading cultures there: who could take the crop up)
             who, cnt = np.unique(cu[hit], return_counts=True)
             top = sorted(zip(who.tolist(), cnt.tolist()), key=lambda x: -x[1])[:5]
-            out.append({"culture": int(c), "crop": s, "cells": tgt.tolist(), "to": [[int(a), int(b)] for a, b in top]})
+            out.append({"culture": int(c), "crop": s, "from": how, "cells": tgt.tolist(), "to": [[int(a), int(b)] for a, b in top]})
     return out
 
 
-def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, frames=None) -> dict:
+def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, frames=None,
+           quarters: bool | None = None, fetch: bool | None = None, routes: bool = True) -> dict:
     """The run's exchange over the land-use window. pol: the polities doc (server.polities_doc), att: the attitudes read-out (gods doc
     "attitudes"); without them no border is closed by war and every culture has the median tolerance. scale: a nudge for the judge
-    ({"L", "modes", "toll"} multipliers)."""
+    ({"L", "modes", "toll"} multipliers). routes: trace the routes and trading towns (step 3); quarters (default QUARTERS): last frame's
+    merchant quarters lift their border's toll; fetch (default FETCH): herders fetch grain with their own animals (PW-1511 B)."""
     from .brief import Ctx
     t0 = time.time()
     ctx = ctx or Ctx(run_dir)
     eq = ctx.meta.get("eraq")
     out = []
+    quarters = QUARTERS if quarters is None else quarters
+    fetch = FETCH if fetch is None else fetch
+    last_q: set = set()
     if eq and ctx.goods is not None and ctx.cultures() is not None and ctx.world is not None:
-        for i, ago in zip(eq["frames"], eq["ago_kyr"]):
+        for i, ago in zip(eq["frames"], eq["ago_kyr"]):  # (oldest first: a frame reads the merchant quarters of the one before)
             if frames is not None and i not in frames:
                 continue
-            f = flows_at(ctx, i, pol, att, scale)
+            f = flows_at(ctx, i, pol, att, scale, quarters=last_q if quarters and routes else None, fetch=fetch, routes=routes)
             if f is not None:
                 out.append({"frame": i, "ago_kyr": round(abs(float(ago)), 3), **f})
+                last_q = {(int(h), int(m)) for h, m in f.get("quarters") or []}
             for k in ("trade_cells", "trade_ledger", "trade_pairs"):
                 ctx._frame_cache.pop((k, i), None)
     C = (ctx.cultures() or {}).get("cultures") or []
@@ -547,7 +610,7 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                                            "river_down": round(RIVER_DOWN, 3), "river_up": round(RIVER_UP, 3), "sea": round(SEA, 3),
                                            "canoe_coast": round(CANOE_COAST, 3), "air": AIR},
                           "fall_km": FALL_KM, "toll": TOLL, "tol_mid": TOL_MID, "toll_max": TOLL_MAX, "floor": FLOOR, "flow_min": FLOW_MIN,
-                          "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS)},
+                          "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch)},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
 
@@ -566,7 +629,8 @@ def food_bought(doc: dict, c: int, ago_kyr: float) -> float:
 def culture_view(doc: dict, c: int, C: list) -> list:
     """Per frame for culture c (or whoever held its land then): per good where it comes from and where it goes, and its partners.
     [{"ago_kyr", "as", "from": {good: [[giver, name, share, km, mode, kind, via]]}, "to": {good: [[taker, name, people, km, mode, kind]]},
-    "home": {good: share}, "partners": [[culture, name, people in, people out, main kind]]}]"""
+    "home": {good: share}, "partners": [[culture, name, people in, people out, main kind]], "hubs": its trading towns (step 3,
+    trade_routes.culture_hubs)}]"""
     nm = lambda k: doc["cultures"][k]["name"] if 0 <= k < len(doc["cultures"]) else str(k)  # noqa: E731
     rows = []
     for f in doc["frames"]:
@@ -591,6 +655,7 @@ def culture_view(doc: dict, c: int, C: list) -> list:
             p[1] += x[4]
             p[2][x[8]] = p[2].get(x[8], 0) + x[4]
         partners = sorted(([k, nm(k), a, b, max(kd, key=kd.get) if kd else None] for k, (a, b, kd) in part.items()), key=lambda r: -(r[2] + r[3]))
+        from .trade_routes import culture_hubs
         rows.append({"ago_kyr": f["ago_kyr"], "as": h, "from": {g: v[:4] for g, v in frm.items()}, "to": {g: v[:4] for g, v in to.items()},
-                     "home": f["home"].get(str(h), {}), "unmet": f["unmet"].get(str(h), {}), "partners": partners[:8]})
+                     "home": f["home"].get(str(h), {}), "unmet": f["unmet"].get(str(h), {}), "partners": partners[:8], "hubs": culture_hubs(f, h)[:8]})
     return rows

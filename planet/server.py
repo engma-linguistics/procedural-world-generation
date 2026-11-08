@@ -24,7 +24,7 @@
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
-  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503)
+  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503); &routes=1&ago=<kyr>: that era's trade routes and trading towns (trade_routes.py, PW-1504)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -548,6 +548,9 @@ def trade(query: str) -> tuple[dict, int]:
         if not meta.get("eraq") or not meta.get("world"):
             raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
         doc = trade_doc(d)
+        if q.get("routes"):  # (step 3, PW-1504: the routes and trading towns of the frame nearest ago, for the globe's Trade routes overlay)
+            from .lineages import trade_routes as RT
+            return RT.frame_view(trade_flow_doc(d), float(q.get("ago") or 0.0)), 200
         if q.get("culture") not in (None, "") and q.get("flows"):
             from .lineages import trade_flow as TF
             c = int(q["culture"])
