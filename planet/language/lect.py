@@ -39,8 +39,13 @@ INV_MAX = 1.0
 # exp(EASE_K x the mean over the segments it rewrites of (cost before - cost after)), clamped to EASE_CLAMP. For a human vocal
 # tract (profiles.human_voiced) the cost is PHOIBLE's -ln(share of languages with the sound), so the factor is
 # (share_out / share_in) ** EASE_K: p > f (0.85 -> 0.43) is drawn 0.71x as often, f > p 1.4x; b > bʱ (0.62 -> 0.01) is held
-# at the floor; a deletion counts as making nothing (h > ∅ 1.3x, ʔ > ∅ 1.6x); insertions are neutral. For other voices the drag is their own make cost, already in the
-# catalogue weights (rules.cost_factor), never PHOIBLE: what is easy for a dragon or a kenku is not what is easy for a human.
+# at the floor; a deletion counts as making nothing (h > ∅ 1.3x, ʔ > ∅ 1.6x); insertions are neutral. For other voices the
+# cost is the species' own (profiles.species_cost: the human cost of the sound's human-makeable core x the profile's make
+# multipliers, the same cost their proto-inventories are drawn by), so what is easy for a dragon or a kenku counts, not
+# what is easy for a human. (Until 2026-11-07, finish lane, other voices had no drag at all, only the catalogue's make-cost
+# ratio (rules.cost_factor), which is neutral on a change between two equally dear sounds: u > y in a lipless reptilian or
+# avian mouth (both rounded, both dear) then ran unchecked and y reached 25 of 27 kenku and half the kobold and dragonborn
+# lects, ɫ likewise; calibration.md "Final run".)
 # Light on purpose: the clamp keeps an unusual change at a quarter of its weight, not out of reach.
 EASE_K = 0.5
 EASE_CLAMP = (0.25, 3.0)
@@ -387,7 +392,7 @@ class Lect:
         out = []
         forms = self.load_forms() if hv else None
         for r in rules:
-            f = rule_factor(r, segs, units, hv, base, cn, sb)
+            f = rule_factor(r, segs, units, hv, base, cn, sb, None if hv else self.profile)
             if hv and f > 0:
                 f *= keep_part(r, segs, forms, stress_of(inv))
             out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
@@ -752,8 +757,9 @@ def size_steer(measure: str, n: int, d: int, n0: int = 0) -> float:
     return g
 
 
-def _ease(touched) -> float:
-    ds = [human_cost(x) - math.fsum(human_cost(y) for y in o) for x, o in touched]
+def _ease(touched, cost=None) -> float:
+    cost = cost or human_cost
+    ds = [cost(x) - math.fsum(cost(y) for y in o) for x, o in touched]
     ds = [d for d in ds if math.isfinite(d)]
     if not ds:
         return 1.0
@@ -855,8 +861,9 @@ def ease_factor(rule, lect) -> float:
     """The ease drag and the stop steer for a lect (1 for a non-human voice): used to damp wave adoption of a change toward
     rarer sounds (history.interval), so a hard sound does not spread by contact more readily than it arises at home."""
     from . import profiles as PR
-    if not PR.human_voiced(lect.profile):
-        return 1.0
+    if not PR.human_voiced(lect.profile):   # (another voice: its own make costs, no stop or keep steer)
+        touched = touched_by(rule, lect.segments())
+        return _ease(touched, _species_cost_fn(lect.profile)) if touched and lect.profile is not None else 1.0
     touched = touched_by(rule, lect.segments())
     if not touched:
         return 1.0
@@ -893,9 +900,9 @@ def size_factor(rule, lect) -> float:
 
 
 def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None,
-                counts: dict | None = None, sbin: int | None = None) -> float:
+                counts: dict | None = None, sbin: int | None = None, profile=None) -> float:
     """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
-    lacks; the ease drag (EASE_K, human voices only: PHOIBLE commonness of what it makes vs what it rewrites); and the size
+    lacks; the ease drag (EASE_K: PHOIBLE commonness of what it makes vs what it rewrites for human voices, the species cost (`profile`) for others); and the size
     steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
     the pull toward the line's proto count). A
     context-free rule removes the units it rewrites; a conditioned one keeps them (a split). counts: {"C", "V"} phoneme
@@ -907,7 +914,29 @@ def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base
     f = NEW_SEG_WEIGHT if any(y not in segs for _x, o in touched for y in o) else 1.0
     if human_voice:
         f *= _ease(touched) * _stop_part(touched, sbin)
+    elif profile is not None:
+        f *= _ease(touched, _species_cost_fn(profile))
     return f * _size_part(rule, touched, units, base, counts)
+
+
+_SPECIES_COST: dict = {}
+
+
+def _species_cost_fn(profile):
+    """profiles.species_cost for one profile, memoized per segment (the ease drag of a non-human voice)."""
+    from .profiles import species_cost
+    key = id(profile)
+    hit = _SPECIES_COST.get(key)
+    if hit is None or hit[0] is not profile:
+        memo: dict = {}
+
+        def fn(x, _p=profile, _m=memo):
+            v = _m.get(x)
+            if v is None:
+                v = _m[x] = species_cost(_p, x)
+            return v
+        hit = _SPECIES_COST[key] = (profile, fn)
+    return hit[1]
 
 
 def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
