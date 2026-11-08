@@ -23,9 +23,11 @@ Everything is deterministic given the numpy Generator passed in. Segments are du
 
 from __future__ import annotations
 
+import copy as _copy
 import csv
 import dataclasses
 import math
+import zlib
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -139,12 +141,29 @@ FUNCS: dict[str, FuncInfo] = {
     **{f"{p}.POSS": FuncInfo("N", "gen", fr, "poss", f"{g} (possessor)") for p, fr, g in (
         ("1SG", 1.1, "my"), ("2SG", 0.9, "your"), ("3SG", 1.1, "his/her/its"), ("1PL", 0.7, "our"),
         ("2PL", 0.6, "your (pl.)"), ("3PL", 0.8, "their"))},
+    # grammar phase C (2026-11-08). Constructions as grams (item 10): the polar question particle, the copula, the
+    # relativizer, the complementizer, topic and focus markers (slot 'clause', outermost). Valence (item 14):
+    # applicative, reciprocal, antipassive. Switch-reference (item 17): same / different subject on a medial verb.
+    # Symmetrical voice (item 19): actor and patient voice on the verb (Austronesian).
+    "Q": FuncInfo("VP", "q", 0.9, "clause", "polar question"),
+    "COP": FuncInfo("VP", "aux", 1.0, "clause", "copula"),
+    "REL": FuncInfo("VP", "rel", 0.8, "clause", "relativizer"),
+    "COMP": FuncInfo("VP", "comp", 0.7, "clause", "complementizer ('that')"),
+    "TOP": FuncInfo("NP", "adp", 0.6, "clause", "topic"),
+    "FOC": FuncInfo("NP", "adp", 0.6, "clause", "focus"),
+    "APPL": FuncInfo("V", "aux", 0.7, "valence", "applicative"),
+    "RECP": FuncInfo("V", "aux", 0.6, "valence", "reciprocal"),
+    "ANTIP": FuncInfo("V", "aux", 0.6, "valence", "antipassive"),
+    "SS": FuncInfo("V", "comp", 0.8, "clause", "same subject (switch-reference)"),
+    "DS": FuncInfo("V", "comp", 0.8, "clause", "different subject (switch-reference)"),
+    "AV": FuncInfo("V", "head", 0.9, "valence", "actor voice"),
+    "PV": FuncInfo("V", "head", 0.9, "valence", "patient voice"),
 }
 CLASS_INFO = FuncInfo("N", "dem", 1.3, "class", "noun class")
 
 # affix order, innermost first (Bybee 1985 relevance: derivation, valence, aspect, tense, mood, person; number before case)
 SLOT_ORDER = ("deriv", "class", "number", "poss", "det", "case", "valence", "aspect", "tense", "mood", "polarity",
-              "person")   # ('poss' after number, before case: Turkish ev-ler-im-de 'house-PL-1SG.POSS-LOC')
+              "person", "clause")   # ('poss' after number, before case: Turkish ev-ler-im-de 'house-PL-1SG.POSS-LOC')
 
 #: noun-class groups, Bantu-like but generic, in the order a growing class system adds them
 CLASS_GROUPS = ("person", "people", "manner", "abstract", "plant", "animal", "liquid", "place", "small")
@@ -152,7 +171,7 @@ GROUP_GLOSS = {
     "person": "a single person", "people": "people (plural of persons)", "manner": "languages, ways and tools",
     "abstract": "lands, qualities and abstractions", "plant": "trees and plants", "animal": "animals",
     "liquid": "liquids and masses", "place": "places", "small": "small things",
-    "masculine": "men and male things", "feminine": "women and female things",
+    "masculine": "men, and by default most other nouns", "feminine": "women and female beings",
     "animate": "living beings", "inanimate": "things",
 }
 #: lexical sources for classifiers that become class markers (first concept the lexicon has wins)
@@ -353,10 +372,14 @@ _TARGET_MAP = (
     ("MIDDLE > PASSIVE", "PASS"),   # G060 reflexive > middle > passive (Russian -sja, Spanish se; mapped 2026-11-07)
     # grammar phase B (2026-11-08): mood from the written paths
     ("OBLIGATION", "OBLG"), ("PERMISSIVE > HORTATIVE", "HORT"), ("APPREHENSIVE", "APPR"),
+    # grammar phase C (2026-11-08): the constructions' written paths (G055 and G058 > relativizer, G023 'say' >
+    # complementizer, G056 demonstrative > copula, G057 copula > focus)
+    ("RELATIVE", "REL"), ("QUOTATIVE > COMPLEMENTIZER", "COMP"), ("QUOTATIVE / COMPLEMENTIZER", "COMP"),
+    ("COPULA", "COP"), ("FOCUS MARKER", "FOC"),
 )
 #: path source texts that are grams, not words (reanalysis: the gram changes function)
 _GRAM_SOURCES = {"PERFECT": "PERF", "PROGRESSIVE": "PROG", "ALLATIVE": "ALL", "ABLATIVE": "ABL", "DEFINITE ARTICLE": "DEF",
-                 "COMITATIVE": "COM", "REFLEXIVE": "REFL"}
+                 "COMITATIVE": "COM", "REFLEXIVE": "REFL", "COPULA": "COP"}
 #: source words -> lexicon concepts (Concepticon glosses as in concepts.tsv)
 _SOURCE_ALIASES = {
     "HAVE": ("HOLD",), "BE AT": ("AT",), "DEMONSTRATIVE": ("THAT", "THIS"), "THIRD PERSON PRONOUN": ("HE OR SHE OR IT", "HE"),
@@ -367,7 +390,7 @@ _SOURCE_ALIASES = {
     "MINIMIZER": ("NOTHING",),
     "NOUN": ("TREE", "BODY", "HEAD"), "COMPANION": ("FRIEND",), "LIE": ("LIE (REST)",), "PEOPLE": ("PERSON",),
     "MAN": ("MAN", "MALE PERSON"), "BASE": ("ROOT",), "WALK": ("WALK",), "BELLY": ("BELLY",),
-    "MAKE": ("DO OR MAKE",), "DO": ("DO OR MAKE",), "ALL": ("ALL",),
+    "MAKE": ("DO OR MAKE",), "DO": ("DO OR MAKE",), "ALL": ("ALL",), "WH-INTERROGATIVE": ("WHO", "WHAT"),
 }
 #: built-in paths beyond the table (from memory: Givon 1976 pronoun > agreement; Heine & Kuteva 2002 entries for
 #: 'two' > dual, 'man' > agentive, 'place/house' > locative nominal, adpositions > case affixes (their ADPOSITION > CASE))
@@ -432,7 +455,39 @@ _BUILTIN_PATHS = (
     ("X43", ("YOU",), "2PL.POSS", "set", "2pl possessive > possessor affix (with the series)"),
     ("X44", ("THEY",), "3PL.POSS", "set", "3pl possessive > possessor affix (with the series)"),
     ("X45", ("WE (INCLUSIVE)",), "1PL.INCL", "set", "inclusive 'we' > inclusive subject marker (with the series)"),
+    # 2026-11-08, grammar phase C. Constructions as grams: the question particle from 'if, whether' (Russian li,
+    # Kuteva et al. 2019 'conditional > polar question') or from a negator (Mandarin ma < 'not have'; A-not-A
+    # questions); the copula from a third-person pronoun (Hebrew hu; Li & Thompson 1977, beside G056's demonstrative)
+    # or a posture verb (Spanish estar < 'stand'); the topic marker from 'if, when' (Haiman 1978: conditionals are
+    # topics) or a demonstrative; the relativizer > complementizer (English that). Valence: 'give' > benefactive
+    # applicative and comitative > applicative (Peterson 2007), reflexive > reciprocal (G059; Maslova & Nedjalkov,
+    # WALS 106A), 'other' > reciprocal ('one ... the other'), reflexive > antipassive (Australian; Terrill 1997,
+    # Polinsky WALS 108A). Switch-reference: 'and' or a comitative > same subject, a locative or 'when' > different
+    # subject (Jacobsen 1967; Haiman & Munro 1983). Symmetrical voice: passive > patient voice (Ross 2002 on
+    # Austronesian), an actor-voice marker from 'do, make' (a guess: the source of Austronesian *-um- is unknown).
+    ("X46", ("IF",), "Q", "common", "'if, whether' > polar question particle (Russian li; Kuteva et al. 2019)"),
+    ("X47", ("NOT", "NOTHING"), "Q", "attested", "negator > question particle (Mandarin ma < 'not have')"),
+    ("X48", ("HE OR SHE OR IT", "HE"), "COP", "common", "3rd person pronoun > copula (Hebrew hu; Li & Thompson 1977)"),
+    ("X49", ("STAND", "SIT"), "COP", "attested", "posture verb > copula (Spanish estar < Latin stare 'stand')"),
+    ("X50", ("REL",), "COMP", "attested", "relativizer > complementizer (English that; Kuteva et al. 2019)"),
+    ("X51", ("IF", "WHEN"), "TOP", "attested", "'if, when' > topic marker (Haiman 1978: conditionals are topics)"),
+    ("X52", ("THAT", "THIS"), "TOP", "attested", "demonstrative > topic marker (Kuteva et al. 2019)"),
+    ("X53", ("GIVE",), "APPL", "attested", "serial 'give' > benefactive applicative (Peterson 2007)"),
+    ("X54", ("COM",), "APPL", "attested", "comitative > applicative (Peterson 2007)"),
+    ("X55", ("REFL",), "RECP", "common", "reflexive > reciprocal (G059; Maslova & Nedjalkov, WALS 106A)"),
+    ("X56", ("OTHER",), "RECP", "attested", "'other' > reciprocal ('one ... the other', French l'un l'autre)"),
+    ("X57", ("REFL",), "ANTIP", "common", "reflexive > antipassive (Terrill 1997; Polinsky, WALS 108A)"),
+    ("X58", ("AND",), "SS", "attested", "'and' > same-subject marker (Haiman & Munro 1983)"),
+    ("X59", ("COM",), "SS", "attested", "comitative > same-subject marker (Haiman & Munro 1983)"),
+    ("X60", ("LOC",), "DS", "attested", "locative > different-subject marker (Jacobsen 1967; Haiman & Munro 1983)"),
+    ("X61", ("WHEN",), "DS", "attested", "'when' > different-subject marker (Jacobsen 1967; a subordinator)"),
+    ("X62", ("PASS",), "PV", "attested", "passive > patient voice (Ross 2002; Austronesian)"),
+    ("X63", ("DO OR MAKE",), "AV", "attested", "'do, make' > actor voice (a guess: no catalogued source)"),
 )
+#: gram-to-gram paths whose source keeps its own function (polysemy: the copula stays a copula when a focus particle
+#: splits off it, the reflexive stays reflexive beside a reciprocal); the new gram starts with the source's form. Every
+#: other gram path is a reanalysis (the gram changes function: PERF > PAST).
+COPY_PATHS = {"G057", "X50", "X54", "X55", "X57", "X59", "X60"}
 
 
 def _parse_source(text: str) -> tuple[tuple[str, ...], bool]:
@@ -922,6 +977,10 @@ REDUP_LOSS = 0.002   # per generation (x social loss) once the aims no longer wa
 
 
 def func_info(function: str) -> FuncInfo:
+    if "+" in function:   # (a portmanteau, grammar C: the outer component's slot and side, both glosses)
+        a, b = function.split("+", 1)
+        ia, ib = func_info(a), func_info(b)
+        return FuncInfo(ib.host, ib.side_rule, min(ia.freq, ib.freq), ib.slot, f"{ia.gloss} and {ib.gloss}")
     if function.startswith("CLASS"):
         return CLASS_INFO
     if function in REDUP_INFO:
@@ -958,6 +1017,9 @@ class Gram:
     history: list[tuple[float, str]] = field(default_factory=list)
     age_gens: float = 0.0
     id: str = ""
+    #: grammar C: the second inflection class's form of this marker (empty: one class); which words take it is
+    #: `iclass_member(g.processes["iclass"][function], concept)`
+    alt: Form = ()
 
     @property
     def live(self) -> bool:
@@ -1066,6 +1128,7 @@ class Grammar:
     def host_forms(self) -> list[tuple[str, Form]]:
         """Every stored form the driver's sound change must reach: gram forms, exemplar stems and cells, helper forms."""
         out = [(f"gram:{g.id}", g.form) for g in self.grams if g.live]
+        out += [(f"alt:{g.id}", g.alt) for g in self.grams if g.live and g.alt]
         for ex in self.exemplars:
             out.append((f"stem:{ex.concept}", ex.stem))
             out += [(f"cell:{ex.concept}:{'.'.join(k)}", f) for k, f in ex.cells.items()]
@@ -1083,7 +1146,7 @@ def copy(g: Grammar) -> Grammar:
             g.class_system.kind, [dataclasses.replace(c) for c in g.class_system.classes]),
         helpers=dict(g.helpers), events=[], _n=g._n,
         aims=None if g.aims is None else Typology(g.aims), shown=dict(g.shown),
-        processes={k: (dict(v) if isinstance(v, dict) else v) for k, v in g.processes.items()})
+        processes=_copy.deepcopy(g.processes))
 
 
 def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) -> str:
@@ -1112,6 +1175,18 @@ def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) 
         if v in ("prefix", "suffix"):
             return "pre" if v == "prefix" else "post"
         rule = "agr"
+    if rule == "q":   # (a question particle stands where the aims put it; a verbal one with the auxiliaries)
+        v = typ.get("polar_question", "final_particle")
+        if v == "initial_particle":
+            return "pre"
+        if v == "verb_morph":
+            rule = "aux"
+        else:
+            return "post"
+    if rule == "rel":   # (a relativizer stands between noun and clause: before a following clause, after a preceding)
+        return "post" if typ.get("relative") == "RelN" else "pre"
+    if rule == "comp":  # (complementizers and clause-linkers: clause-final in head-final lects, Japanese to; else initial)
+        return "post" if hf else "pre"
     if rule == "gen":   # (a possessor affix forms where the possessive pronoun stood: GN before the noun)
         v = typ.get("genitive", "GN")
         return "pre" if v == "GN" else "post" if v == "NG" else ("pre" if hf else "post")
@@ -1150,6 +1225,19 @@ def _wanted(function: str, typ: Typology) -> bool:
         return t("object_agreement", "none") != "none"
     if f in POSS_FNS or f in MOOD_FNS:
         return True   # (no typology feature asks for them: they come and go with the ordinary draw)
+    # grammar phase C: constructions as grams, valence, switch-reference, symmetrical voice
+    if f == "Q":
+        return t("polar_question", "intonation") != "intonation"
+    if f == "COP":
+        return t("copula") == "yes"
+    if f == "REL":
+        return t("relative") != "RelN"   # (prenominal relatives mostly take no relativizer: participles, nominalizers)
+    if f == "ANTIP":
+        return t("alignment") in ("erg-abs", "split")   # (WALS 108A: antipassives are nearly all in ergative languages)
+    if f in ("SS", "DS"):
+        return typ.ov() == "OV"   # (switch-reference: overwhelmingly verb-final clause-chaining languages; Haiman & Munro)
+    if f in ("AV", "PV"):
+        return t("word_order", "SOV") in ("VSO", "VOS")   # (Philippine-type voice: verb-initial Austronesian)
     if f[0] in "123":
         return t("verb_agreement", "none") != "none" or t("pro_drop") == "yes"
     return True
@@ -1170,7 +1258,7 @@ def _wanted(function: str, typ: Typology) -> bool:
 REALISED = ("definite_article", "indefinite_article", "case", "alignment", "number", "gender", "past", "future",
             "perfective", "progressive", "habitual", "evidentiality", "negation", "numeral_classifiers", "clusivity",
             "causative", "passive", "diminutive", "agent_noun", "verb_agreement", "object_agreement",
-            "verb_reduplication")
+            "verb_reduplication", "polar_question", "copula")
 #: order features the free grams constrain (a free locative postposition means the language has postpositions)
 CONSTRAINED = ("adposition",)
 CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM")
@@ -1217,6 +1305,10 @@ def feature_of(function: str) -> tuple[str, ...]:
         return ("verb_agreement",)
     if f in OBJ_FNS:
         return ("object_agreement",)
+    if f == "Q":
+        return ("polar_question",)
+    if f == "COP":
+        return ("copula",)
     return {"CAUS": ("causative",), "PASS": ("passive",), "DIM": ("diminutive",), "AGENT": ("agent_noun",)}.get(f, ())
 
 
@@ -1330,6 +1422,15 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
         return "yes" if has("AGENT") else "no"
     if f == "verb_reduplication":
         return "yes" if g.processes.get("redup") else "no"
+    if f == "polar_question":   # (grammar C: a free or clitic particle by its side, a bound one is verbal morphology)
+        q = g.gram("Q")
+        if q is None:
+            return "intonation"
+        if q.level >= AFFIX:
+            return "verb_morph"
+        return "initial_particle" if q.side == "pre" else "final_particle"
+    if f == "copula":
+        return "yes" if has("COP") else "no"
     if f == "adposition":
         s = _adp_sides(lv)
         if not s:
@@ -1530,7 +1631,7 @@ def _cell_keys(ex: Exemplar, g: Grammar) -> list[tuple[str, ...]]:
         if gr.function.startswith("CLASS"):
             if own_class is not None and gr.id == own_class.gram_id:
                 fns.append(gr.function)
-        elif gr.info.slot != "deriv":
+        elif gr.info.slot != "deriv" and "+" not in gr.function:
             fns.append(gr.function)
     fns.sort(key=lambda f: (_slot_rank(f), f))
     keys = [(f,) for f in fns]
@@ -1560,7 +1661,19 @@ def _gram_for(g: Grammar, function: str) -> Gram | None:
 def build_parts(ex: Exemplar, key: tuple[str, ...], g: Grammar) -> tuple[tuple[str, Form], ...]:
     """The regular (agglutinative) morphs of a cell from today's lemma and gram forms: what analogy restores."""
     parts: list[tuple[str, Form]] = [("stem", tuple(ex.stem))]
+    pm = {tuple(x.function.split("+")): x for x in g.grams if x.live and "+" in x.function}
+    done: set = set()
+    infix = None
     for f in key:  # key is inner-first
+        if f in done:
+            continue
+        pair = next(((a, b) for (a, b) in pm if f in (a, b) and a in key and b in key), None)
+        if pair is not None:   # (a portmanteau stands for both, on the outer one's side)
+            done.update(pair)
+            x = pm[pair]
+            item = ("+".join(pair), tuple(gram_form(g, x, ex.concept)))
+            parts.insert(0, item) if x.side == "pre" else parts.append(item)
+            continue
         if f in REDUP_INFO:
             rd = g.processes.get("redup")
             if rd and rd["fn"] == f:
@@ -1573,11 +1686,41 @@ def build_parts(ex: Exemplar, key: tuple[str, ...], g: Grammar) -> tuple[tuple[s
         gr = _gram_for(g, f)
         if gr is None:
             continue
+        form = tuple(gram_form(g, gr, ex.concept))
+        if (g.processes.get("infix") or {}).get("fn") == f and gr.side == "pre":
+            infix = (f, form)
+            continue
         if gr.side == "pre":
-            parts.insert(0, (f, tuple(gr.form)))
+            parts.insert(0, (f, form))
         else:
-            parts.append((f, tuple(gr.form)))
+            parts.append((f, form))
+    if infix is not None:   # (after the stem's first consonants: Tagalog s<um>ulat; a vowel-initial stem takes a prefix)
+        si = next(i for i, (lab, _) in enumerate(parts) if lab == "stem")
+        stem = parts[si][1]
+        k = onset_len(stem)
+        parts[si:si + 1] = ([("stem", stem[:k]), infix, ("stem", stem[k:])] if 0 < k < len(stem) else [infix, parts[si]])
     return tuple(parts)
+
+
+def onset_len(stem: Form) -> int:
+    """How many segments stand before the stem's first vowel."""
+    return next((i for i, x in enumerate(stem) if _is_v(x)), len(stem))
+
+
+def iclass_member(ic: dict | None, concept) -> bool:
+    """Does a word belong to a marker's second inflection class? Lexically arbitrary and fixed (a stable hash of the
+    concept and the split's salt; never the str hash), as German plural or Latin declension classes are once the stem
+    shapes that first conditioned them have changed."""
+    if not ic or concept is None:
+        return False
+    return zlib.crc32(f"{concept}|{ic['salt']}".encode()) % 1000 < int(1000 * ic["share"])
+
+
+def gram_form(g: Grammar, gr: Gram, concept=None) -> Form:
+    """The marker's form on a given word: its second-class form for the words of that class."""
+    if gr.alt and iclass_member((g.processes.get("iclass") or {}).get(gr.function), concept):
+        return tuple(gr.alt)
+    return tuple(gr.form)
 
 
 def rebuild(ex: Exemplar, key: tuple[str, ...], g: Grammar) -> Form:
@@ -2048,6 +2191,16 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
             g.events.append((kyr, f"a {g.class_system.kind} system begins with a first classifier"))
         nc = add_class(g, rng, inv, lexicon, kyr)
         return g.by_id(nc.gram_id) if nc else None
+    if p.from_gram and p.id in COPY_PATHS:
+        # polysemy: a new gram splits off the source, which keeps its own function (copula > focus, reflexive >
+        # reciprocal); it starts free when the source is free or a clitic, else as an affix like its source
+        info = func_info(p.target)
+        lvl = min(a.level, AFFIX) if a.level >= AFFIX else FREE
+        gr = Gram(p.target, tuple(a.form), info.host, a.side if lvl else _side(p.target, at), lvl, (a.function, p.id, "gram"),
+                  kyr, [(kyr, f"split off the {a.info.gloss} marker ({p.id})")], id=g.new_id(p.target))
+        g.grams.append(gr)
+        g.events.append((kyr, f"{p.target} {ipa(gr.form)} split off the {a.function} marker"))
+        return gr
     if p.from_gram:
         # reanalysis: the gram takes the new function (PERF > PAST, ALL > DAT, DEF > class marker)
         old = a.function
@@ -2093,6 +2246,13 @@ def _lose(g: Grammar, gr: Gram, kyr: float, why: str) -> None:
     g.events.append((kyr, f"lost {gr.function} {ipa(gr.form)}: {why}"))
     if gr.function.startswith("CLASS") and g.class_system is not None:
         g.class_system.classes = [c for c in g.class_system.classes if c.gram_id != gr.id]
+    if g.gram(gr.function) is None:   # (no other marker of this function lives: its processes go with it)
+        for k in ("iclass", "stem_change"):
+            (g.processes.get(k) or {}).pop(gr.function, None)
+            if k in g.processes and not g.processes[k]:
+                del g.processes[k]
+        if (g.processes.get("infix") or {}).get("fn") == gr.function:
+            del g.processes["infix"]
 
 
 #: how a lect with both an accusative and an ergative divides them (Dixon 1979, 1994; Silverstein 1976): by the
@@ -2200,6 +2360,247 @@ def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, 
     p_make = _p(PRESSURE * soc.get("recruit", 1.0), dn)
     _clusivity(g, rng, kyr, p_make, _p(CLUSIVE_LOSS * soc.get("loss", 1.0), dn), lexicon, inv, lect_id)
     _redup(g, rng, kyr, p_make, _p(REDUP_LOSS * soc.get("loss", 1.0), dn))
+    # grammar phase C (2026-11-08)
+    fuse, loss = soc.get("fuse", 1.0), soc.get("loss", 1.0)
+    _concord(g, rng, kyr, _p(CONCORD_GROW * fuse, dn), _p(CONCORD_LOSS * loss, dn))
+    changed = _iclass(g, rng, kyr, _p(ICLASS_SPLIT * fuse, dn), _p(ICLASS_LEVEL * soc.get("analogy", 1.0), dn), lexicon, inv)
+    changed |= _cumulate(g, rng, kyr, _p(CUMUL * fuse, dn))
+    changed |= _infix(g, rng, kyr, _p(INFIX * fuse, dn))
+    _second(g, rng, kyr, dn, fuse, loss)
+    _incorp(g, rng, kyr, _p(INCORP * fuse, dn), _p(INCORP_LOSS * loss, dn))
+    if changed:
+        _sync_cells(g)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Grammar phase C processes (2026-11-08). Each hazard is per generation, scaled by the social factors (fusion-like
+# processes by `fuse`, losses by `loss`); all are first guesses, listed for Daniel in for-daniel.md "Grammar phase C".
+# --------------------------------------------------------------------------------------------------------------------
+
+#: concord (item 8): a bound class marker is copied onto the noun's dependents and onto the verb. Corbett's Agreement
+#: Hierarchy (attributive > predicate > relative > personal pronoun; Corbett 1979, 2006) orders the targets:
+#: demonstratives and adjectives agree first, the verb's subject slot later (Bantu alliterative concord, Givon 1971:
+#: the class prefixes and the subject concords come from the same old pronouns). Grows at CONCORD_GROW per generation
+#: while a class marker is bound (clitic or tighter), one target at a time; goes with the last bound class marker.
+CONCORD_TARGETS = {"dem": 1.0, "adj": 0.7, "verb": 0.5}
+CONCORD_GROW = 0.02
+CONCORD_LOSS = 0.0005
+
+
+def _concord(g: Grammar, rng, kyr: float, p_grow: float, p_loss: float) -> None:
+    cs = g.class_system
+    bound = cs is not None and any((x := g.by_id(c.gram_id)) is not None and x.live and x.level >= CLITIC
+                                   for c in cs.classes)
+    cur = list(g.processes.get("concord") or [])
+    if not bound:
+        if cur:
+            del g.processes["concord"]
+            g.events.append((kyr, "concord ends (no class marker is bound any more)"))
+        return
+    if cur and rng.random() < p_loss:
+        t = cur.pop(int(rng.integers(len(cur))))
+        g.events.append((kyr, f"the {'verb' if t == 'verb' else t + 'onstratives' if t == 'dem' else 'adjectives'} no "
+                              "longer agree in class"))
+    elif rng.random() < p_grow:
+        left = {k: w for k, w in CONCORD_TARGETS.items() if k not in cur}
+        if left:
+            t = _choice(rng, left)
+            cur.append(t)
+            g.events.append((kyr, f"class concord spreads to the {dict(dem='demonstratives', adj='adjectives', verb='verb (subject concord)')[t]}"))
+    if cur:
+        g.processes["concord"] = sorted(cur)
+    else:
+        g.processes.pop("concord", None)
+
+
+#: inflection classes (item 13): a bound marker splits into two lexically distributed forms, as old competing
+#: markers end up spread over the lexicon (English -s / -en plurals; Latin declensions from stem-vowel classes once the
+#: stem vowels changed). The second form comes from a competing source of the same function (another path's word),
+#: else from an unrelated small morph; the second class takes a share of the words (`iclass_member`). Levelling
+#: (analogy) removes the minority form again at ICLASS_LEVEL.
+ICLASS_SPLIT = 0.0006
+ICLASS_LEVEL = 0.0004
+ICLASS_SLOTS = ("number", "case", "tense", "aspect", "person")
+
+
+def _iclass(g: Grammar, rng, kyr: float, p_split: float, p_level: float, lexicon, inv) -> bool:
+    ic = g.processes.setdefault("iclass", {})
+    changed = False
+    for gr in sorted((x for x in g.grams if x.live and x.level >= AFFIX and "+" not in x.function
+                      and x.info.slot in ICLASS_SLOTS and x.host[0] in "NV"), key=lambda x: x.id):
+        if gr.alt:
+            if rng.random() < p_level:
+                gr.alt = ()
+                ic.pop(gr.function, None)
+                _rebuild_fn(g, gr.function)
+                g.events.append((kyr, f"analogy: the second {gr.info.gloss} form gave way to {ipa(gr.form)} in every word"))
+                changed = True
+            continue
+        if not gr.form or rng.random() >= p_split:
+            continue
+        T = load_tables()
+        idx = _lex_index(lexicon)
+        alt = ()
+        for path in T.paths:
+            if path.target == gr.function and not path.from_gram and path.weight > 0:
+                key, w = _find(lexicon, idx, path.sources)
+                if w is not None and first_syllable(_form(w)) != tuple(gr.form):
+                    alt = first_syllable(_form(w))
+                    break
+        if not alt:
+            alt = first_syllable(_draw_morph(rng, inv))
+        if not alt or alt == tuple(gr.form):
+            continue
+        gr.alt = alt
+        ic[gr.function] = {"salt": int(rng.integers(1 << 30)), "share": round(float(rng.uniform(0.2, 0.5)), 2)}
+        _rebuild_fn(g, gr.function)
+        gr.history.append((kyr, f"a second inflection class takes {ipa(alt)}"))
+        g.events.append((kyr, f"inflection classes: some words take the {gr.info.gloss} marker {ipa(alt)}, the rest "
+                              f"{ipa(gr.form)}"))
+        changed = True
+    if not ic:
+        g.processes.pop("iclass", None)
+    return changed
+
+
+def _rebuild_fn(g: Grammar, fn: str) -> None:
+    """Rebuild every exemplar cell that carries `fn` (its form on some words changed by fiat, not by sound change)."""
+    for ex in g.exemplars:
+        for k in list(ex.cells):
+            if fn in k:
+                ex.set(k, build_parts(ex, k, g))
+
+
+#: cumulative exponence (item 13): two bound markers side by side on one word (number and case on a noun, tense or
+#: aspect and person on a verb: the pairs the paradigm cells carry) wear into one morph that no longer splits, a
+#: portmanteau (Latin -orum GEN.PL, Spanish -o 1SG.PRS). Its form is the two run together; sound change then blurs it.
+#: The two markers live on alone elsewhere.
+CUMUL = 0.0008
+CUMUL_PAIRS = (("number", "case"), ("aspect", "person"), ("tense", "person"))
+
+
+def _cumulate(g: Grammar, rng, kyr: float, p: float) -> bool:
+    have = {tuple(x.function.split("+")) for x in g.grams if x.live and "+" in x.function}
+    by_slot: dict[str, list[Gram]] = {}
+    for x in sorted(g.grams, key=lambda x: x.id):
+        if x.live and x.level >= AFFIX and x.form and "+" not in x.function and not x.function.startswith("CLASS"):
+            by_slot.setdefault(x.info.slot, []).append(x)
+    for sa, sb in CUMUL_PAIRS:
+        for a in by_slot.get(sa, ()):
+            for b in by_slot.get(sb, ()):
+                if (a.function, b.function) in have or a.side != b.side or a.host[0] != b.host[0] or rng.random() >= p:
+                    continue
+                form = tuple(b.form) + tuple(a.form) if a.side == "pre" else tuple(a.form) + tuple(b.form)
+                fn = f"{a.function}+{b.function}"
+                g.grams.append(Gram(fn, form, b.host, b.side, FUSED, (fn, "cumul", "gram"), kyr,
+                                    [(kyr, f"{a.function} and {b.function} fused into one ending")], id=g.new_id(fn)))
+                g.events.append((kyr, f"cumulative exponence: {a.function} and {b.function} merge into one ending "
+                                      f"{ipa(form)}"))
+                _rebuild_fn(g, a.function)
+                return True
+    return False
+
+
+#: infixes (item 15): a vowel-initial prefix moves inside a consonant-initial stem, after its first consonants (Yu
+#: 2007, A Natural History of Infixation: metathesis of VC- prefixes, Tagalog um- > s<um>ulat, Chamorro). Only such
+#: prefixes can, so the share stays small.
+INFIX = 0.003
+
+
+def _infix(g: Grammar, rng, kyr: float, p: float) -> bool:
+    cur = g.processes.get("infix")
+    if cur:
+        return False
+    for gr in sorted(g.grams, key=lambda x: x.id):
+        if (gr.live and gr.level == AFFIX and gr.side == "pre" and gr.host == "V" and len(gr.form) >= 2
+                and _is_v(gr.form[0]) and not _is_v(gr.form[-1]) and "+" not in gr.function and rng.random() < p):
+            g.processes["infix"] = {"fn": gr.function}
+            _rebuild_fn(g, gr.function)
+            gr.history.append((kyr, "became an infix"))
+            g.events.append((kyr, f"the {gr.info.gloss} prefix {ipa(gr.form)}- moved inside the stem: an infix"))
+            return True
+    return False
+
+
+def _stem_change(g: Grammar, gr: Gram, kyr: float) -> None:
+    """A marker worn to nothing that still shows in the stem (umlaut, ablaut, mutation) becomes a stem change across
+    the lexicon (item 15): the vowel changes its exemplar cells show become a rule every word of the category follows
+    (German Gast/Gaeste, English foot/feet once the -i ending was gone)."""
+    sc = g.processes.setdefault("stem_change", {})
+    if gr.function in sc:
+        return
+    cnt: dict[tuple[str, str], int] = {}
+    for ex in g.exemplars:
+        for key, cell in ex.cells.items():
+            if gr.function not in key:
+                continue
+            base_key = tuple(f for f in key if f != gr.function)
+            base = ex.cells.get(base_key, tuple(ex.stem)) if base_key else tuple(ex.stem)
+            if len(base) != len(cell):
+                continue
+            for a, b in zip(base, cell):
+                if a != b and _is_v(a) and _is_v(b):
+                    cnt[(ipa((a,)), ipa((b,)))] = cnt.get((ipa((a,)), ipa((b,))), 0) + 1
+    if not cnt:
+        if not sc:
+            del g.processes["stem_change"]
+        return
+    best = sorted(cnt.items(), key=lambda x: (-x[1], x[0]))
+    vmap, seen = [], set()
+    for (a, b), _ in best:
+        if a not in seen:
+            vmap.append([a, b])
+            seen.add(a)
+    sc[gr.function] = vmap[:4]
+    g.events.append((kyr, f"the {gr.info.gloss} is now a stem change: " + ", ".join(f"{a} > {b}" for a, b in vmap[:4])))
+
+
+#: second-position clitics (item 16): a lect's verbal clitics (tense, mood, negation, person, question) gather after
+#: the first word or phrase of the clause (Wackernagel 1892; Slavic, Warlpiri, Tagalog, Pashto). Arises while the lect
+#: has a verbal clitic, three times faster under free word order, where 2P clitics are commonest (Hale 1973 on Warlpiri;
+#: Spencer & Luis 2012); goes when no verbal clitic is left.
+SECOND = 0.0015
+SECOND_LOSS = 0.0005
+
+
+def _second(g: Grammar, rng, kyr: float, dn: float, fuse: float, loss: float) -> None:
+    clit = any(x.live and x.level == CLITIC and x.host[0] == "V" for x in g.grams)
+    cur = g.processes.get("second")
+    if cur and (not clit or rng.random() < _p(SECOND_LOSS * loss, dn)):
+        del g.processes["second"]
+        g.events.append((kyr, "the verb's clitics no longer go to second position"))
+    elif not cur and clit:
+        h = SECOND * fuse * (3.0 if aims(g).get("word_order") == "free" else 1.0)
+        if rng.random() < _p(h, dn):
+            g.processes["second"] = True
+            g.events.append((kyr, "the verb's clitics move to second position in the clause (after the first word)"))
+
+
+#: noun incorporation (item 18): in a head-marking lect with rich verb morphology (an object marker bound and at least
+#: three bound verb categories) a generic object noun compounds into the verb (Mithun 1984, type I; Mohawk, Chukchi,
+#: Nahuatl). Goes at INCORP_LOSS, or when the lect stops being polysynthetic-leaning.
+INCORP = 0.003
+INCORP_LOSS = 0.0005
+
+
+def _verb_categories(g: Grammar) -> int:
+    cats = set()
+    for x in g.grams:
+        if x.live and x.level >= AFFIX and x.host[0] == "V" and "+" not in x.function:
+            sl = x.info.slot
+            cats.add("object" if x.function in OBJ_FNS else sl)
+    return len(cats)
+
+
+def _incorp(g: Grammar, rng, kyr: float, p_make: float, p_loss: float) -> None:
+    ok = any(x.live and x.level >= CLITIC and x.function in OBJ_FNS for x in g.grams) and _verb_categories(g) >= 3
+    cur = g.processes.get("incorp")
+    if cur and (not ok or rng.random() < p_loss):
+        del g.processes["incorp"]
+        g.events.append((kyr, "noun incorporation fell out of use"))
+    elif not cur and ok and rng.random() < p_make:
+        g.processes["incorp"] = True
+        g.events.append((kyr, "object nouns can be incorporated into the verb ('fish-eat')"))
 
 
 #: person agreement grows as a set (Givon 1976; Siewierska 2004 ch. 8; Fuss 2005): when one subject pronoun binds to the
@@ -2447,17 +2848,35 @@ def _check_lost(g: Grammar, kyr: float) -> None:
             if gr.level != FUSED:
                 gr.level = FUSED
                 gr.history.append((kyr, "affix gone; marked only by the stem"))
+            _stem_change(g, gr, kyr)
         else:
             _lose(g, gr, kyr, "eroded to nothing")
             changed = True
+    live = {x.function for x in g.grams if x.live}
+    for gr in g.grams:   # (a portmanteau lives only while both its categories do)
+        if gr.live and "+" in gr.function and not all(f in live for f in gr.function.split("+")):
+            _lose(g, gr, kyr, "one of its two categories is gone")
+            for f in gr.function.split("+"):
+                _rebuild_fn(g, f)
+            changed = True
     seen: dict[tuple, Gram] = {}
     for gr in sorted(g.live(), key=lambda x: -x.info.freq):
-        if gr.level < AFFIX or not gr.form:
+        if gr.level < AFFIX or not gr.form or "+" in gr.function:
             continue
         key = (gr.host[0], gr.side, gr.info.slot, tuple(gr.form))
         if key in seen and not gr.function.startswith("CLASS"):
-            _lose(g, gr, kyr, f"merged with {seen[key].function}")
-            changed = True
+            # syncretism (grammar C): the two categories keep one form, as Latin dative and ablative plural -is; the
+            # rarer is lost only half the time (before 2026-11-08 always)
+            first = seen[key]
+            tag = f"syncretic with {first.function}"
+            if any(tag in h[1] for h in gr.history):
+                continue
+            if zlib.crc32(f"{gr.id}|{first.id}".encode()) % 2:
+                gr.history.append((kyr, tag))
+                g.events.append((kyr, f"syncretism: {gr.function} and {first.function} share the form {ipa(gr.form)}"))
+            else:
+                _lose(g, gr, kyr, f"merged with {first.function}")
+                changed = True
         else:
             seen.setdefault(key, gr)
     if changed:
@@ -2541,7 +2960,10 @@ def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rul
         new = alone
         if gr.level >= AFFIX:
             seen: dict[Form, int] = {}
+            ic = (g.processes.get("iclass") or {}).get(gr.function) if gr.alt else None
             for ex in g.exemplars:
+                if ic and iclass_member(ic, ex.concept):
+                    continue   # (a second-class cell shows the other form)
                 for k in ex.parts:
                     f = ex.morph(k, gr.function)
                     if f is not None and _gram_for(g, gr.function) is gr:
@@ -2550,6 +2972,8 @@ def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rul
                 top = max(seen.values())
                 best = [f for f, c in seen.items() if c == top]
                 new = alone if alone in best else min(best, key=lambda f: (len(f), ipa(f)))
+        if gr.alt:
+            gr.alt = tuple(rule_apply_fn(tuple(gr.alt))) or tuple(gr.alt[-1:])
         if new != tuple(gr.form):
             gr.history.append((kyr, f"sound:{rule_id} {ipa(gr.form)} > {ipa(new)}"))
             gr.form = new
@@ -2572,12 +2996,15 @@ def complexity(g: Grammar) -> dict:
     allomorphy = exemplar cells that differ from today's stem + affixes (stem or affix alternants); classes = live class
     markers (bound ones counted apart); score = a scalar summary for checks."""
     live = g.live()
-    bound_fns = {gr.function for gr in live if gr.level >= AFFIX}
+    bound_fns = {gr.function for gr in live if gr.level >= AFFIX and "+" not in gr.function}
     n_cells = sum(len(ex.cells) for ex in g.exemplars)
     allo = sum(1 for ex in g.exemplars for k in ex.cells if _irregular(ex, k, g))
-    stem_alt = sum(1 for ex in g.exemplars for k in ex.cells if ex.morph(k, "stem") != tuple(ex.stem))
+    stem_alt = sum(1 for ex in g.exemplars for k in ex.cells
+                   if tuple(s for lab, f in ex.parts[k] if lab == "stem" for s in f) != tuple(ex.stem))
     cls = [gr for gr in live if gr.function.startswith("CLASS")]
-    mean_level = float(np.mean([gr.level for gr in live])) if live else 0.0
+    # (grammar C: free clause particles, a question word or a copula, are syntax: they leave the binding mean alone)
+    infl = [gr for gr in live if not (gr.level == FREE and gr.info.slot == "clause")]
+    mean_level = float(np.mean([gr.level for gr in infl])) if infl else 0.0
     out = {
         "obligatory": len(bound_fns),
         "live_grams": len(live),
@@ -2589,6 +3016,8 @@ def complexity(g: Grammar) -> dict:
         "allomorphy_share": round(allo / n_cells, 3) if n_cells else 0.0,
         "classes": len(cls),
         "classes_bound": sum(1 for gr in cls if gr.level >= AFFIX),
+        "portmanteaus": sum(1 for gr in live if "+" in gr.function),
+        "inflection_classes": sum(1 for gr in live if gr.alt),
     }
     out["score"] = round(out["obligatory"] + mean_level + 4.0 * out["allomorphy_share"] + 0.5 * out["classes_bound"], 3)
     return out
@@ -2741,7 +3170,8 @@ def to_json(g: Grammar) -> dict:
         "aims": dict(aims(g)),
         "grams": [{"id": gr.id, "function": gr.function, "form": _fj(gr.form), "form_ipa": ipa(gr.form), "host": gr.host,
                    "side": gr.side, "level": gr.level, "source": list(gr.source), "born_kyr": gr.born_kyr,
-                   "age_gens": gr.age_gens, "history": [list(h) for h in gr.history]} for gr in g.grams],
+                   "age_gens": gr.age_gens, "history": [list(h) for h in gr.history],
+                   **({"alt": _fj(gr.alt)} if gr.alt else {})} for gr in g.grams],
         "exemplars": [{"concept": e.concept, "pos": e.pos, "stem": _fj(e.stem),
                        "cells": [{"key": list(k), "ipa": ipa(f),
                                   "parts": [[lab, _fj(m)] for lab, m in e.parts[k]]} for k, f in e.cells.items()]}
@@ -2762,7 +3192,8 @@ def from_json(d: dict) -> Grammar:
     g.aims, g.shown = Typology(d.get("aims") or d["typology"]), dict(d["typology"])
     for x in d["grams"]:
         g.grams.append(Gram(x["function"], _ff(x["form"]), x["host"], x["side"], x["level"], tuple(x["source"]),
-                            x["born_kyr"], [tuple(h) for h in x["history"]], x.get("age_gens", 0.0), x["id"]))
+                            x["born_kyr"], [tuple(h) for h in x["history"]], x.get("age_gens", 0.0), x["id"],
+                            _ff(x.get("alt") or [])))
     for x in d["exemplars"]:
         ex = Exemplar(x["concept"], x["pos"], _ff(x["stem"]))
         for c in x["cells"]:
@@ -2773,7 +3204,7 @@ def from_json(d: dict) -> Grammar:
         g.class_system = ClassSystem(cs["kind"], [NounClass(c["k"], c["group"], c["gram_id"]) for c in cs["classes"]])
     g.helpers = {r: (v["concept"], _ff(v["form"])) for r, v in d.get("helpers", {}).items()}
     g.events = [tuple(e) for e in d.get("events", [])]
-    g.processes = dict(d.get("processes") or {})
+    g.processes = _copy.deepcopy(d.get("processes") or {})
     g._n = d.get("n", len(g.grams))
     return g
 

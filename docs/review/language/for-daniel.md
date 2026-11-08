@@ -282,3 +282,69 @@ not touch FUSE.
   say so in plain words now.
 
 Both are queued in grammar-gaps.md (phase B progress).
+
+
+## Grammar phase C (branch lang-gram-c, 2026-11-08)
+
+### Fixes from the read of phase B's demo
+Each fixed where it arose:
+- **Object-agreement examples on 'go'** ("he goes us"): the examples now take a transitive verb (see, eat, hit, hold).
+- **One verb, two stems** (kenku oː˧l vs u˦toː˧) and **plural stems that are not the noun** (gnome li-tej-nep for tuj):
+  a stored paradigm cell whose stem part is not today's stem has unreliable morph boundaries after thousands of years
+  of sound change. Such a cell is now shown as one unsegmented word with a fused gloss (tejnep 'dog.PL.M', as English
+  mice 'mouse.PL'), and the regular cells keep their breaks.
+- **Reduplication examples that were not copies** (red dragon kaː-ʔu‼iː, gnome nu-nep): reduplication is productive, so
+  the page now always copies today's stem rather than reading the stored, worn cell.
+- **"marked by the genitive a clitic"** now reads "the genitive marker, a clitic ..."; **"Dat is"** is DAT again (the
+  note's first letter is raised, the rest left alone).
+- **Numerals 30 'ten three' vs 11 'ten one'**: where multiplication puts the base first (numeral after the noun), the
+  page joins addition with the lect's 'and' (11 'ten and one'), and every numeral example says its arithmetic
+  ('ten three' = 3 × 10). The lexicon's own numeral words (lexsys, the lexicon lane's) are unchanged.
+- **Imperative with an object marker while the note said "no person marker"**: the note says "no subject or tense
+  marker" and adds "the verb still marks its object" where it does.
+- **Trudgill's "small, isolated societies" for 309,717 speakers**: that cause now also needs a population in the lower
+  half; an isolated but large community gets its own wording.
+- **Ancestry lines**: a deme's earlier language is "older speech of human 20" when the deme appears again later, and a
+  language shift is spelled out ("language shift: its speakers, fire giants, took up bronze dragon 8's language"); a step
+  where the people changed without a recorded shift says so too.
+- **Classifiers**: a system whose class markers have all worn away no longer prints an empty list; a free classifier
+  is described as "a separate word after the numeral", matching the examples; the masculine class is described as
+  "men, and by default most other nouns" (fish in the 'masculine' class read as "men and male things").
+- **Felt word families**: a two-sound root is heard only at a word's edge, a longer root needs three of its sounds; when
+  the root's own word is gone, a member must share three sounds (or its first two) with another member.
+- **Jargon**: no "of run a24559", "the window read", "the file does not keep them per frame" or "language d674" left.
+  The non-IPA mark key now also sits in each complexity card whose forms use a mark (the kenku ᴖ was first seen there).
+
+### Engine and pages: what phase C added, with the defaults I chose
+Each default is one constant in `planet/language/grammar.py`.
+- **Concord.** While a class marker is bound (clitic or tighter), class agreement spreads to demonstratives, adjectives
+  and the verb, one at a time (weights 1.0 / 0.7 / 0.5, Corbett's Agreement Hierarchy), at `CONCORD_GROW` 0.02 per
+  generation; each target goes again at 0.0005. The verb's agreement is Bantu-style: the subject's class marker stands
+  in the third-person slot. The copied marker has the noun marker's form (alliterative concord); real systems often
+  have separate agreement forms, which this does not model.
+- **Constructions as grams.** Question particle from 'if, whether' (Russian li) or a negator (Mandarin ma); copula from
+  a demonstrative (G056), a third-person pronoun (Hebrew hu) or a posture verb (Spanish estar); relativizer from a
+  demonstrative or 'who, what' (G055, G058); complementizer from 'say' (G023) or the relativizer; topic from 'if,
+  when' (Haiman 1978) or a demonstrative; focus split off the copula (G057). Polar question and copula are now read
+  from the grams, as case and number already were. A free or clitic question marker counts as a particle, a bound one
+  as verbal morphology.
+- **Copies, not reanalyses.** Copula > focus, reflexive > reciprocal and > antipassive, comitative > applicative and >
+  same-subject, locative > different-subject, relativizer > complementizer leave the source gram in place (`COPY_PATHS`).
+- **Inflection classes.** A bound number, case, tense, aspect or person marker gets a second form at 0.0006 per
+  generation, taken from another source word of the same function (or a fresh small morph); 20-50% of words take it,
+  chosen arbitrarily but fixed per word (a stable hash, never Python's). Levelling removes it at 0.0004.
+- **Portmanteaus.** Two bound neighbours (number + case, tense or aspect + person) on the same side fuse into one
+  ending at 0.0008 per generation; the two keep living alone. Syncretic markers (same slot, same form) are now kept half
+  the time instead of always losing the rarer.
+- **Stem change across the lexicon.** When a fused marker is worn to nothing but its cells still differ from the stem,
+  its vowel changes become a rule: the pages apply it to any word in that category (dog\PL). It is applied where a
+  word is inflected; the lexicon lane's files are untouched.
+- **Infixes** only from vowel-initial verb prefixes (Yu 2007), at 0.003 per generation: rare by construction.
+- **Second-position clitics**: 0.0015 per generation while the lect has a verbal clitic, x3 under free word order.
+- **Noun incorporation** in head-marking lects (a bound object marker and 3+ bound verb categories), at 0.003.
+- **Switch-reference** grams are wanted only in OV lects; **Austronesian voice** only in verb-initial ones, the patient
+  voice from the passive, the actor voice from 'do' (my guess: the source of Austronesian *-um- is not known), the pivot
+  marked by the old article (Tagalog ang), glossed PIV.
+- **Antipassive** is wanted only in ergative or split lects (WALS 108A).
+- **Complexity score**: free clause particles (a question word, a free copula) are left out of the mean binding level,
+  so the new grams do not lower it.

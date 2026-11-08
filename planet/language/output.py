@@ -193,7 +193,7 @@ def grammar_json(lect, sp: Speller) -> dict:
         return {"typology": {}, "grams": [], "paradigms": {}, "complexity": {}}
     grams = [{"function": gr.function, "form_ipa": GR.ipa(gr.form), "form_roman": sp.form(gr.form), "level": gr.level,
               "level_name": GR.LEVELS[gr.level], "side": gr.side, "host": gr.host, "source": list(gr.source),
-              "born_kyr": _r(gr.born_kyr)} for gr in g.grams if gr.live]
+              "born_kyr": _r(gr.born_kyr), **({"alt_ipa": GR.ipa(gr.alt)} if gr.alt else {})} for gr in g.grams if gr.live]
     pt = GR.paradigm_table(g)
     for key in ("nouns", "verbs"):
         for row in (pt.get(key) or {}).get("rows", []):

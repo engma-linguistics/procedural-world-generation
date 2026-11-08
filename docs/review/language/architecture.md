@@ -415,6 +415,33 @@ new one (Jespersen). Writes into `g.typology` from outside (calques on shift) be
   nouns (`noun_phrase`); `s_imperative` with IMP; `s_hortative`, `s_object`; notes Object agreement, Possessor marking,
   mood markers; `_shown_forms` makes a note name the joined shape of a marker its examples show.
 
+**Grammar phase C (2026-11-08, branch `lang-gram-c`; `grammar-gaps.md` Queue).**
+- *Constructions as grams* (slot 'clause', outermost): Q (X46 'if', X47 negator), COP (G056, X48 'he/she/it', X49
+  posture verb), REL (G055, G058 'who, what'), COMP (G023 'say', X50 REL > COMP), TOP (X51 'if, when', X52
+  demonstrative), FOC (G057 COP > FOC). `polar_question` and `copula` are realised features now (a free or clitic Q by
+  its side, a bound one 'verb_morph'; COP live = yes), pulled by their aims; REL is wanted unless RelN; COMP, TOP, FOC
+  come with the ordinary draw. Side rules 'q', 'rel', 'comp'. `COPY_PATHS`: a gram path whose source keeps its function
+  (COP > FOC, REFL > RECP, COM > APPL ...): the new gram splits off with the source's form.
+- *Valence, switch-reference, voice*: APPL (X53 'give', X54 COM), RECP (X55 REFL, X56 'other'), ANTIP (X57 REFL; wanted
+  only in ergative/split lects), SS/DS (X58-X61; wanted only in OV lects), PV (X62 PASS > PV, reanalysis) and AV (X63
+  'do', a guess; both wanted only in verb-initial lects).
+- *Processes* (`Grammar.processes`, deep-copied to daughters): `concord` (sorted subset of dem/adj/verb, `_concord`,
+  `CONCORD_GROW` while a class marker is bound at clitic+); `iclass` ({fn: {salt, share}}, `_iclass`: a bound marker gets a
+  second form `Gram.alt` for a lexically arbitrary class, `iclass_member` = crc32 of concept and salt; levelled at
+  `ICLASS_LEVEL`); portmanteau grams `A+B` (`_cumulate`, level fused, built into cells as one part, lost with either part);
+  `stem_change` ({fn: [[v, v'], ...]}, recorded by `_stem_change` when a fused marker with no form still shows in its
+  cells); `infix` ({fn}, `_infix`: a vowel-initial verb prefix goes after the stem's onset; cells carry two stem parts);
+  `second` (`_second`: verbal clitics after the clause's first word); `incorp` (`_incorp`). Syncretic same-slot grams
+  are kept half the time (before: the rarer always lost).
+- *Sentences*: concord on adjective, demonstrative and the verb's third-person slot (`_verb_concord`); `cop_phrase`;
+  Q, COP and REL grams before the lexical stand-ins (kept as fallbacks for older files); new `s_complement`, `s_topic`,
+  `s_focus`, `s_applicative`, `s_reciprocal`, `s_antipassive`, `s_chain`, `s_incorp`, `s_voice` (two sentences, pivot
+  marked by the article glossed PIV); infixes shown as k<um>ain / <PST>eat, stem changes as stem\PL, portmanteaus as one
+  morph PL.GEN (`_portmanteaus`), second-position clitics moved in `clause`. A stored cell whose stem piece is not today's
+  stem is shown unsegmented; reduplication is always a fresh copy of today's stem. Notes: Concord, Valence, Voice and
+  pivot, Linking clauses, Topic and focus, Word shapes. Gram records carry `alt_ipa` for a second class form.
+- `complexity`: free clause particles are left out of `mean_level`; new counts `portmanteaus`, `inflection_classes`.
+
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
 `level` (0 free, 1 clitic, 2 affix, 3 fused, 4 lost), `source` (the lexical word and the path id), `born_kyr`, `history`.

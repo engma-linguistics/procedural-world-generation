@@ -130,5 +130,26 @@ def test_demo_page_has_no_tool_jargon(tmp_path):
     src = tmp_path / "languages.json"
     src.write_text(json.dumps(_mini_doc()))
     page, _info = DP.build(str(src), None, 10, "auto", audio=False)
-    for bad in ("sketch.py", "demo_page.py", "the lane", "(G05", "<code>cx</code>", "grammar.complexity"):
+    for bad in ("sketch.py", "demo_page.py", "the lane", "(G05", "<code>cx</code>", "grammar.complexity", "of run r1",
+                "the file does not keep", "window read", "language d0"):
         assert bad not in page, bad
+
+
+def test_demo_page_second_read_fixes():
+    """Grammar C: the coordinator's read of phase B's demo: shifts explained in the ancestry line, no stage that looks
+    like its own ancestor, a cause that respects population, felt families that share more than chance."""
+    import demo_page as DP
+    import sketch as SK
+    d = _mini_doc()
+    a = d["lects"][0]
+    old = dict(copy.deepcopy(a), id="d0.old", parent=None, born_kyr=9.0)
+    mid = dict(copy.deepcopy(d["lects"][1]), id="d1.mid", parent="d0.old", born_kyr=7.0)
+    a.update(parent="d1.mid", how="shift")
+    d["lects"] += [old, mid]
+    doc = SK.Doc(d)
+    line = DP.lineage(doc, a).split("</div>")[0]
+    assert "older speech of human 0" in line and "language shift" in line
+    assert not SK.audibly_shares("ma˦ka", "puma˦lo") and SK.audibly_shares("ma˦", "ma˦lo")
+    big = dict(a, population=300000, l2=0.0, isolation=1.0)
+    doc.living[:] = [big] + [dict(x, population=10, l2=0.9, isolation=0.0) for x in doc.living[1:]]
+    assert "Trudgill" not in DP._cause(doc, big, True, 2.0)

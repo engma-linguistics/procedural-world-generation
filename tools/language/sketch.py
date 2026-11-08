@@ -1103,16 +1103,22 @@ def audibly_shares(root: str, word: str) -> bool:
     a, b = _bare(root), _bare(word)
     if not a:
         return True
-    if a in b:
-        return True
-    return len(a) >= 3 and (a[:2] in b or a[-2:] in b)
+    if len(a) <= 2:   # (a two-sound root heard only at a word's edge: 'ma' inside any word is chance)
+        return b.startswith(a) or b.endswith(a)
+    return a in b or a[:3] in b or a[-3:] in b
 
 
 def felt_members(doc: Doc, lex: dict, rid: str, members: list) -> list:
     """The words of a felt root family a speaker can still hear it in (all of them when the root's own word is gone)."""
     anchor = lex.get(((doc.d.get("roots") or {}).get(rid) or {}).get("concept") or "")
     if not anchor or rid not in (anchor.get("roots") or ()):
-        return members
+        # (the root's own word is gone: a member is felt only if it shares three sounds, or two at the start, with
+        # another member)
+        def near(a: str, b: str) -> bool:
+            a, b = _bare(a), _bare(b)
+            return a[:2] == b[:2] and len(a) >= 2 or any(a[i:i + 3] in b for i in range(max(0, len(a) - 2)))
+        keep = [c for c in members if any(near(lex[c]["ipa"], lex[o]["ipa"]) for o in members if o != c)]
+        return keep if len(keep) >= 2 else []
     return [c for c in members if audibly_shares(anchor["ipa"], lex[c]["ipa"])]
 
 
@@ -1625,7 +1631,7 @@ def fname(l: dict) -> str:
 def index_page(doc: Doc, picks, ranking, src: str) -> str:
     clashes = sum(bool(_typology_clashes(l.get("typology") or {}, l.get("grams") or [])) for l in doc.living)
     out = [MARKER, "", "# Language sketches", "",
-           f"Wikipedia-style pages for six living languages of run {doc.d.get('run', '?')} ({len(doc.living)} living lects), "
+           f"Wikipedia-style pages for six living languages of one simulated world ({len(doc.living)} living lects), "
            f"written by `tools/language/sketch.py` from `{src}` alone. Regenerate with:", "",
            f"    uv run python tools/language/sketch.py {src} --out docs/review/language/sketches --auto", "",
            "The languages are chosen by criteria, never by id, so a new run picks its own. Each pick must differ from the "
