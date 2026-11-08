@@ -659,7 +659,8 @@ def complexity_section(doc, k: int) -> str:
     return "".join(h)
 
 
-def build(src: str, run_json: str | None, n: int, backend: str, audio: bool) -> tuple[str, dict]:
+def build(src: str, run_json: str | None, n: int, backend: str, audio: bool, re_enrich: bool = False
+          ) -> tuple[str, dict]:
     from planet.language import output as OU
     d = OU.load(src)
     doc = SK.Doc(d)
@@ -668,8 +669,8 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool) -> 
         names = {x["id"]: x.get("name") or x["id"] for x in meta.get("lineages") or []}
         SK.people = lambda p, _n=names: (_n.get(p) or p.replace("_", " "))  # noqa: E731 (page-local people names)
     for l in doc.living:
-        if not l.get("sentences"):
-            SN.enrich(l)
+        if re_enrich or not l.get("sentences"):
+            SN.enrich(l)   # (re_enrich: the sentences and notes as today's sentences.py writes them, from the record)
     picks = pick(doc, n)
     au = Audio(backend, audio)
     try:
@@ -709,9 +710,11 @@ def main(argv=None) -> int:
     ap.add_argument("--n", type=int, default=10, help="how many languages (8-12 suits a phone)")
     ap.add_argument("--backend", default="auto", choices=["auto", "espeak", "piper"])
     ap.add_argument("--no-audio", action="store_true")
+    ap.add_argument("--re-enrich", action="store_true",
+                    help="rewrite every living lect's sentences and grammar notes with the current sentences.py")
     a = ap.parse_args(argv)
     run_json = a.run or str(Path(a.languages).with_name("run.json"))
-    page, info = build(a.languages, run_json, a.n, a.backend, not a.no_audio)
+    page, info = build(a.languages, run_json, a.n, a.backend, not a.no_audio, a.re_enrich)
     Path(a.out).write_text(page, encoding="utf-8")
     print(f"wrote {a.out}: {len(page.encode()) / 1e6:.1f} MB, {len(info['languages'])} languages, {info['clips']} clips "
           f"({info['backend'] or 'no audio'}{', ' + info['codec'] if info['codec'] else ''}; {info['failed']} unsayable)")

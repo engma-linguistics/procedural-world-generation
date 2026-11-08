@@ -236,11 +236,30 @@ Each was fixed where it arose, with a test where the fix is mechanical:
 | IMP / HORT / OBLG / APPR (any) | 0% | 17% / 39% / 30% / 19% | WALS 70A: 78% have a dedicated imperative (this counts the bare stem against a marked indicative, too) |
 | verb synthesis 0-1 bound categories (WALS 22A bins, harness) | 37% | 25% | about 3% |
 
-The full-pass figures are in the "Full pass" paragraph below.
+**Full pass** (a24559, 620 living lects; before = phase A's final pass on the same base, after = this branch):
+- genitive gram 0% > 56% (14% bound);
+- object agreement shown 0% > 35% (suffix 19%, prefix 16%; Grambank 34% and 22%);
+- possessor markers (clitic or tighter) 0% > 8% of lects;
+- inclusive subject marker 0% > 17%;
+- IMP 11%, HORT 26%, OBLG 16%, APPR 8%;
+- verb synthesis, WALS 22A bins: 0-1 categories 58% > 55%, 2-3 28% > 26%, 4-5 13% > 15%, 6-7 1% > 4%, 8+ 0%
+  (WALS about 3 / 17 / 36 / 21 / 23%).
 
-**Synthesis (your decision, not tuned).** Mood and object agreement add bound verb categories, and the harness's
-0-1 bin falls from 37% to 25%. It is still far above WALS. Phase A's advice stands: if the full pass is still above
-about 25%, the lever is `FUSE` (0.012 → about 0.02) and the L2 exponent on fusion. I did not touch FUSE.
+The full pass moves much less than the harness. Most living lects carry a high adult-learner share, and new grams
+stay free words there.
+
+Checks:
+- all pass except the scholars' horizon, which reads 11.0 kyr for human lects (phase A's pass: 16.0). Another lane is
+  on it. This branch changes no sound or lexicon code, so the move is run-to-run variation plus the grammar's effect
+  on intelligibility.
+- "Typology agrees with the live grams" is ok.
+
+**Synthesis (your decision, not tuned).** Mood and object agreement add bound verb categories. The harness's 0-1
+bin falls from 37% to 25%, but the full pass only from 58% to 55%, against WALS's 3%. So adding categories does not
+close the gap: the grams exist but stay free.
+
+Phase A's advice stands: the lever is `FUSE` (0.012 → about 0.02) and the L2 exponent on fusion ((1 - l2)^2). I did
+not touch FUSE.
 
 ### Odd or worth a look
 - The genitive is now common (63% of harness lects, about half of them still a free word, an adposition). That
@@ -248,6 +267,13 @@ about 25%, the lever is `FUSE` (0.012 → about 0.02) and the L2 exponent on fus
 - HORT (39%) outnumbers IMP (17%). This is plausible, since many languages have a 'let's' particle and a bare-stem
   imperative, but it rests on my guessed IMP sources.
 - Possessor marking has no aim behind it, so its share is set by the draw alone.
+
+### Demo page
+- The regenerated demo (not published; the coordinator publishes it) uses this branch's pass of a24559 with the
+  sentences and notes rewritten by today's sentences.py (`demo_page.py --re-enrich`, new).
+- After the pass I fixed two small note slips:
+  - an inalienable note said "no marker" beside a possessor marker;
+  - 'I' was written as 'i' in "from 'i'".
 
 ### Not done (left for the next grammar lane)
 - **Concord** (item 8): class or gender markers copied onto adjectives, demonstratives and the verb.

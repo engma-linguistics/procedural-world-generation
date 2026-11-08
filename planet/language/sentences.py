@@ -480,7 +480,9 @@ def noun_phrase(v: View, concept: str, det: str | None = None, adj: str | None =
         else:
             np_.words = np_.words + pw
         if inalienable and v.t.get("alienability") == "yes":
-            notes.append("kin are inalienably possessed: the possessor stands beside the noun with no marker")
+            notes.append("kin are inalienably possessed: no genitive marker" + (
+                "" if pm is not None and (pm.get("level") or 0) >= GR.CLITIC else
+                ", the possessor stands beside the noun with no marker"))
     return np_
 
 
@@ -1207,6 +1209,8 @@ def _src(g: dict) -> str:
     s = src[0]
     if len(src) > 2 and src[2] == "gram" and s in GR.FUNCS:
         return f"from the {GR.FUNCS[s].gloss} marker"
+    if s == "I":
+        return "from 'I'"
     return f"from '{en(s)}'" if s and s != "?" else "a coined form"
 
 
