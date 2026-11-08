@@ -17,6 +17,8 @@ How (design1.md step 2; numbers and sources in review1.md section 6, cited R§n)
   century, polities.py). The modes open with techs the tree already has, known by the culture that holds the cell.
 - L, the fall-off length, is one per value class (FALL_KM), each from a sourced distance; the class is the ledger's (trade.GOODS), except
   that tin falls off as a precious good (R§6: tin is among the light, valuable goods that go thousands of km; Kanesh, R§3).
+- At sea a km also costs a share of the cargo's value (HAND_KM per class, lane 225, step4b.md): the hands, time and risk
+  of a sea haul, which on land are in FALL_KM and the border tolls, while ORBIS's per-km sea cost is freight alone.
 - The kind of exchange is a label from the two sides (kind_of); it does not change the physics (R§1: fall-off curves separate valuable
   goods from bulky ones, not reciprocity from markets; review1.md "what the model takes" 4).
 - Peoples by body (D65 A + Daniel's additions, PW-1501): flyers carry only light (precious) goods, at a flat cost over any ground or sea
@@ -44,7 +46,7 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 7  # (7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+VERSION = 8  # (8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
 # PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
 # 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
@@ -75,6 +77,28 @@ DAY_KM = 0.1 / 0.001  # sea-km per ship-day (ORBIS: per day / per km)
 LOAD_DAYS, UNLOAD_DAYS = 2.0, 4.0  # Page 2026, P.Lond. 3.948
 HARBOUR_DUE = 0.025  # share of the cargo's value paid where it comes ashore: the Roman portorium, the quadragesima of 2.5% (2% earlier;
 # De Laet 1949 via ostia-antica.org; the Red Sea's 25% tetarte was a frontier tax, not a harbour's: the toll at a border stands for it)
+# --- the hands, time and risk of a sea haul (lane 225, step4b.md): a ship's freight per km is ORBIS's 1/28 of a donkey's, but what a long
+# sea haul cost a dear good was not freight. Each stage of it (a season's sail between emporia) passed the cargo to another merchant, who
+# was paid for a season of capital, the voyage's risk and his margin. On land these are in the fall-off length (FALL_KM is set from whole
+# overland markups, Cato's mill and Kanesh's tin, hands included) and in the toll at every border crossed, rivers included (a river runs
+# through the cultures' land). But the per-km cost at sea is ORBIS's freight alone, and a sea haul crosses no border. So a sea km also
+# takes a share of the cargo's value (value, not weight, like the toll): the value e-folds every HAND_KM km at sea, on top of the freight.
+# Sources (fetched; step4b.md section 1): pepper cost 1-2 g of silver a kilo where it grew, 10-14 at Alexandria, 14-18 at Venice, 20-30
+# in Europe's consumer lands (Pearson 1987, The Portuguese in India, p. 41): x8 over Malabar to Alexandria, ~6,000 km mostly by sea
+# [est.], one e-fold per ~2,900 km; x1.3 over Alexandria to Venice (~2,400 km, one hand: ~8,300 km); Pliny NH 6.101: India's wares sell
+# in Rome "at fully one hundred times their prime cost" (~8,200 km [est.]: ~1,800 km); an Athenian sea loan on a cargo of wine for the
+# Pontus round trip, capital and risk alone, 22.5% (30% late in the season; Dem. 35.10: ~3,600 km [est.]: ~17,700 km)
+HANDS = True  # False: freight alone at sea (main fe063817)
+HAND_KM = {
+    # (bulk: none. A bulk cargo went in one hull from port to port, and its sourced sea cost is freight: wheat by sea ~1.3% of its value
+    # per 100 Roman miles (Duncan-Jones, review1.md section 6), which ORBIS's freight already gives (~1.8% here). JUDGEMENT: the sea
+    # loan's capital and risk (Dem. 35.10, ~17,700 km) left out for bulk; with it, herders' grain met fell by a tenth on 0141d1, step4b.md)
+    # JUDGEMENT: Pearson's relayed Indian Ocean haul (~2,900), within the sourced 1,800 (Pliny, polemical) to 8,300 (Alexandria to Venice, one
+    # leg); middling goods with the dear ones, as cloth, glass and porcelain crossed the Indian Ocean by the same emporia (Zhao 2015,
+    # step4a.md section 1: porcelain reached the Swahili coast "primarily ... indirectly")
+    "middling": 3000.0,
+    "precious": 3000.0,
+}
 AIR = PACK  # a flyer's load per km over any ground, mountain or sea. JUDGEMENT (D65 A): a flying people carries a light load as a pack
 # animal does; no source
 ROUTE = 1.3  # path km per straight km between cell centres (as salt_reach.ROUTE and seafood.ROUTE)
@@ -654,6 +678,8 @@ class _Frame:
             if HANDLE:  # (a port call, PW-1529: loading where goods leave the land, unloading and the harbour's dues where they land)
                 c = np.where((c >= 0) & e["load"] & (mode == 2), c + LOAD_DAYS * DAY_KM * e["sea_f"], c)
                 c = np.where((c >= 0) & e["unload"] & (mode == 2), c + UNLOAD_DAYS * DAY_KM * e["sea_f"] - L * math.log1p(-HARBOUR_DUE), c)
+            if HANDS and cl in HAND_KM:  # (the hands, time and risk of a sea haul, per km, as a share of value: lane 225)
+                c = np.where((c >= 0) & (mode == 2), c + e["hop"] * L / HAND_KM[cl], c)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
             self.costs[(cl, fetch)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
         return self.costs[(cl, fetch)]
@@ -1069,7 +1095,8 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                           "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch),
                           "pool": POOL, "pool_hops": POOL_HOPS, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
                           "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
-                          "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE},
+                          "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE,
+                          "hands": HANDS, "hand_km": HAND_KM},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
 
