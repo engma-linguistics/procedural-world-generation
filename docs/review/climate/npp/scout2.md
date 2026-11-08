@@ -129,3 +129,92 @@ check unchanged for KN), `tools/scorecard.py`.
 Files: `exports/scout210/` (gitignored): npp_check JSONs per variant, `tab.py`, `probe.py`, `run.sh`, judge runs.
 Sources read: Lloyd et al. 2010 (bg-7-1833-2010.pdf), Clark et al. 2011 (gmd-4-701-2011.pdf), Yan et al. 2017
 (JGR Biogeosci 122:3014-3030, White Rose eprint 124617), CLM 6.0 photosynthesis technical note (fetched page).
+
+## Pass 2: judge (scout 210b, 2026-11-08)
+
+**In plain words.** The full test on 36 planets passes. With the rainforest change no planet ends frozen over, boils,
+loses its ocean or crashes its CO2, the same as main. 34 of 36 planets pass the softer checks against main's 32 (a
+difference chance easily makes). The planets end a little warmer: the late climate's median is 1.4 C above today's
+Earth against main's 0.8 C, all still inside the -6..+5 C bar, and the spread between planets is a little narrower.
+Hot desert grows by about 1 point of land (median 6.8% of land on main, 8.6% with the change). That comes from the
+warmth, not from the plants directly: in every planet the desert grows by about as much as main's own planets do per
+degree of warming. The rainforest itself (trees on the wet equatorial lowland) does not change. On Earth's real
+climate nothing visible moves (Koppen agreement 37%/71% on both). Verdict: merge-ready.
+
+Baselines: "main" is e6cb463c, whose physics is identical to current main e6343d92 (`git diff e6cb463c e6343d92 --
+planet tools` touches only planet/lineages and planet/server.py); "cand" is 419d5055 (this branch's physics). "Today's
+Earth" is the climate model's dT = 0. Both arms ran from frozen copies (`git archive`), v1-finish-16's `paired.sh`, 2
+rolls (0.0005, 0.001) x 18 draws, L6, 1 Gyr, 1 thread per run (as pass 1 and lane 185). Pass 1's 8 draws per arm (roll
+0.0005, l6fix + l6c_0) were reused: same commits (the frozen code directories compare identical with `diff -r`), same
+script, same thread count; main's 8th draw (l6c_0 958504) was finished by pass 1's still-running job and copied in.
+The other 28 per arm were run here. Outputs: `scout2b/` (judge.txt, stats.txt, hard_bar_*.txt, yardstick.txt,
+mech.txt); scripts `scout2b_stats.py` (scout 194's scout5_stats.py with the arms renamed and late cover read-outs
+added) and `scout2b_mech.py`. Runs in the worktree's `exports/s210b/` (gitignored).
+
+### The bar
+
+| check | main | cand | verdict |
+|---|---|---|---|
+| hard: frozen over at the end (PW-1425) | 0/36 | **0/36** | pass |
+| hard: boiled / hellhouse | 0/36 | **0/36** | pass |
+| hard: ocean loss | 0/36 | **0/36** | pass |
+| hard: CO2 crash (below the plants' compensation point) | 0/36 | **0/36** | pass |
+| soft pass (bar + finish moment) | 32/36 | **34/36** (both 30, main only 2, cand only 4; McNemar p 0.688) | not worse |
+| late dT (600-1000 Myr) range, against today's Earth (bar -6..+5) | -2.31..+4.07 | **-0.98..+4.26** | pass |
+| late dT sd between draws (D47 bar about 1.3-1.7) | 1.67 | **1.43** | pass |
+| learnt yardstick y, L6 (`tools/yardstick.py`; YARDSTICK 1.377) | 1.352 (se 0.028) | **1.352** (se 0.032) | no re-fit |
+| reported: frozen at some moment after 300 Myr | 0 | 1 | |
+| reported: CO2 under 100 ppm / end pCO2 outside 180-600 | 3 / 14 | 3 / 14 | |
+| reported: glacial maximum / icehouse | 18 / 36 | 13 / 36 | |
+
+### Paired measures (cand - main over the 36 draws; median, bootstrap 95% CI, draws up/down)
+
+| measure | main median | cand median | median diff | 95% CI | up / down | sign p |
+|---|---|---|---|---|---|---|
+| late dT, C | +0.77 | +1.42 | +0.77 | [-0.26, +1.87] | 22 / 14 | 0.243 |
+| (late dT, mean diff) | | | +0.82 | [+0.03, +1.55] | | |
+| end T, C | -0.33 | -0.62 | +0.23 | [-2.07, +2.70] | 18 / 18 | 1.000 |
+| late CO2, e-folds | +0.54 | +0.63 | +0.10 | **[+0.02, +0.22]** | 24 / 12 | 0.065 |
+| hot desert (BWh), % of land | 6.83 | 8.61 | +0.95 | **[+0.03, +2.33]** | 24 / 12 | 0.065 |
+| arid (B), % of land | 21.7 | 22.6 | +1.25 | [-0.25, +2.37] | 23 / 13 | 0.132 |
+| land rain, mm/yr | 1140 | 1134 | +6 | [-37, +47] | 18 / 18 | 1.000 |
+| trees, % of land | 39.8 | 38.6 | -0.05 | [-1.28, +2.16] | 18 / 18 | 1.000 |
+| **wet equatorial lowland trees, %** | 66.8 | 66.2 | -0.35 | [-1.57, +0.85] | 17 / 19 | 0.868 |
+| savanna trees, % | 55.1 | 53.6 | -1.36 | [-2.83, +0.34] | 13 / 23 | 0.132 |
+| steppe trees, % | 12.6 | 11.5 | -0.60 | **[-1.40, -0.26]** | 10 / 26 | 0.011 |
+| sink / source reference (ln) | 6.611 / 7.988 | 6.616 / 7.993 | -0.01 | [-0.03, +0.05] | 16 / 20 | 0.618 |
+
+Pass 1's +2.0 points of hot desert on 7 draws comes down to +0.95 on 36 (CI just off zero, sign p 0.065).
+
+### Why hot desert grows (scout2b_mech.py)
+- **It follows the warmth.** Across the 36 pairs the desert change tracks the late-dT change (r +0.71, +0.84 points per
+  C); at no warming the fit leaves +0.23 points. Main's own planets show the same relation between draws (+0.71 points
+  per C, r +0.66). A warmer planet has more of its dry land over the BWh/BWk line and a higher aridity threshold;
+  that is the Koppen rule working, not a plant artefact. Plausible, not a red flag.
+- **The warmth comes from CO2** (late dT against late CO2 change r +0.98; CO2 forcing term +0.45 C [+0.07, +0.93]),
+  and methane follows the warmth as its code says (`earth.ghg_conc` reads dT and runoff, not plants).
+- **No weathering pathway was found.** None of the weathering's factors moves beyond chance (plant factor w_plant
+  -0.0001 [-0.012, +0.012], bare 0.004 [-0.000, +0.009], temperature 0.04 [-0.01, +0.08], supply, area, the
+  references): D47 makes the weathering read rooted cover, and the change leaves cover where it was. So the +0.10
+  e-fold of late CO2 is either a small diffuse effect or chaos at the edge of the interval (the median late-dT
+  interval spans zero; the mean's just clears it). It is a modest warm shift within the bar, not a mechanism to chase
+  before merging. Draws colder than today's Earth over the late window: main 15, cand 5; warmer than +3 C: 3 and 7.
+- **Steppe trees** fall 0.6 points (of ~12.6) with a fit intercept of -0.6 at no warming: a direct, small plant effect.
+  The sourced KN 0.15 makes deep leaves dearer than lane 181's 0.4 did for every tree type, so marginal dry-land
+  stands carry a little less canopy. Pass 1's Earth screen saw the same in the temperate boxes (NPP back toward MOD17).
+
+### Scorecard and Earth check (on this branch, b5c85a97)
+- `tools/earth_check.py` (L6, worktree copy of the data/earth caches), cand against main (e6cb463c's frozen copy):
+  Koppen exact 37% / main group 71% on both; BWh 11.6% of land both (Kottek 14.8); land rain and the river mouths
+  move by under 1%; Amazon basin rain 3351 -> 3362 mm. Nothing climatic moves on Earth's real geography.
+- `tools/scorecard.py` (2 seeds, 1 Gyr L6): Earth group agreement 71.4%, exact 37.3%, log-rain corr 0.718 (last line
+  with an Earth part, 93ba6fb0: 71.4 / 37.4 / 0.718). Seeds: seed 1 land NPP 558 g C/m2/yr, trees 41.4%, ice 0.5%;
+  seed 2 land NPP 214, trees 26.7%, ice 11.3% (main's last line, a5de7a62, same physics as main: seed 1 552 / 45.0% /
+  3.3%; seed 2 422 / 39.6% / 1.0%). Single draws: seed 2 ends in a colder, icier state, which the 36-draw judge shows
+  is chaos (no shift to cold, frozen over 0/36).
+- Tests: `tests/test_vegetation.py` and `tests/test_golden.py` pass (16) on the merged branch (golden as pass 1 updated it).
+
+### Verdict
+Merge-ready: hard bar 0/36, soft 34 against 32 (not worse), late dT inside the bar with a narrower spread, the yardstick
+unmoved, the rainforest's trees unmoved. The hot-desert rise is real-looking but small (+1 point of land) and is the
+Koppen response to a +0.8 C warmer late climate, not a plant effect.
