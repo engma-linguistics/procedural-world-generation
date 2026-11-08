@@ -637,6 +637,11 @@ def cmd_serve(args):
     serve(args.port, open_browser=not args.no_open, jobs=args.jobs, threads=args.threads)
 
 
+def cmd_langserve(args):
+    from .langserve import serve
+    serve(args.run, args.languages, port=args.port, host=args.host, open_browser=args.open)
+
+
 def _jobs_args(p, help_jobs: str, default=None):
     p.add_argument("--jobs", "-j", type=int, default=default, metavar="J", help=help_jobs)
     p.add_argument("--threads", type=int, metavar="T",
@@ -970,6 +975,14 @@ def main():
     _jobs_args(v, f"jobs (zooms, time zooms, finished worlds) run at once, each in a worker process "
                   f"(default {JOBS})", default=JOBS)
     v.set_defaults(func=cmd_serve)
+
+    ls = sub.add_parser("langserve", help="the languages viewer on its own (beside `serve`; read-only, no jobs)")
+    ls.add_argument("run", help="the peoples run whose run.json/demes.json give names and places")
+    ls.add_argument("--languages", help="a languages.json to show (default: the run's own), e.g. an --out file")
+    ls.add_argument("--port", type=int, default=8790)
+    ls.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach it from a phone or another machine")
+    ls.add_argument("--open", action="store_true", help="open a browser")
+    ls.set_defaults(func=cmd_langserve)
 
     args = ap.parse_args()
     if getattr(args, "no_resources", False):

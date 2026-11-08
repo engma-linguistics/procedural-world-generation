@@ -172,3 +172,8 @@ starting another stops the first. The lect bar has **▶ hear a sample** (the le
 sentences** tab has **▶ play all sentences**. When the server has no backend at all, every ▶ and the voice picker are
 hidden and the state line says audio is unavailable.
 
+
+**Offline audio.** `tools/language/demo_page.py` renders each picked language's sentences (speak_utterance, with question
+intonation), pronouns and ten words once, with the people's voice profile, and embeds them in its HTML as MP3 data URIs
+(ffmpeg, 40 kb/s mono; 11 kHz 8-bit WAV without ffmpeg), about 250 clips and 2.5 MB for ten languages. The page names the
+backend that rendered them. `planet langserve` serves the live /api/speak beside the main viewer (viewer.md).

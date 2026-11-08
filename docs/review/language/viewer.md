@@ -13,6 +13,28 @@ peoples workbench header). Classic scripts, no build step, house look from `them
 | `viewer/langmap.js` | **Continuum & intelligibility** |
 | `viewer/langmore.js` | **Names & etymologies**, **Food words & shifts**, **Checks & voices** |
 | `viewer/langgram.js` | **Grammar & sentences** (round 5) |
+
+### Launch it on its own, or take it away as one file
+
+**Beside the main viewer** (`planet/langserve.py`): serves only this page, its scripts, `/api/speak` (words and sentences)
+and one languages.json. No job queue, no writes, so it runs next to `planet serve` on 8765 without touching it:
+
+    uv run python -m planet langserve a24559                      # the run's own languages.json, http://127.0.0.1:8790/
+    uv run python -m planet langserve a24559 --languages /path/to/out/languages.json   # a file written with --out
+    uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790              # reachable from a phone or remote desktop
+
+`<run>` still names the run whose `run.json` and `demes.json` give people names and places (read, never written). With
+`--host 0.0.0.0`, open `http://<this machine's address>:8790/` from the other device; anyone on that network can reach it.
+
+**As one offline page** (`tools/language/demo_page.py`): ten very different living languages (sketch.py's picks, the most
+English-like, then the most spoken, an elvish, a dwarvish, an ergative and the most synthetic) in one HTML file with
+inline CSS, script and MP3 audio (about 3 MB): charts, pronouns, grammar in short, glossed sentences, words, both
+word-family views and a line of descent. Works from a file, on a phone, or as a claude.ai artifact:
+
+    uv run python tools/language/demo_page.py runs/a24559/languages.json --out /tmp/languages-demo.html [--n 8] [--backend espeak]
+
+The page says which voice rendered its audio (Piper by default when installed, else eSpeak NG); ffmpeg makes MP3, and
+without it the clips fall back to 11 kHz WAV.
 | `tools/language/fake_languages_json.py` | a 30-lect, 10-frame synthetic file in output.py's shape (dev and tests) |
 | `tests/test_languages_viewer.py` | node tests of langcore.js, the helpers over the synthetic file, every script parses |
 
