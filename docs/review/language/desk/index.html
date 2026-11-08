@@ -63,6 +63,7 @@ td:last-child { font-family: var(--mono); font-size: 0.78rem; color: var(--muted
 .pick { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 0.95rem; cursor: pointer; }
 .pick input { margin-top: 5px; accent-color: var(--accent); }
 .pick small { font: 0.75rem var(--mono); color: var(--muted); }
+.reply { border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 5px 5px 0; padding: 8px 12px; display: grid; gap: 2px; font-size: 0.93rem; }
 .offline { font: 0.85rem var(--sans); color: var(--lean); background: var(--lean-soft); border-radius: 5px; padding: 8px 10px; }
 a { color: var(--accent); }
 @media (max-width: 480px) { body { font-size: 16px; } h1 { font-size: 1.7rem; } }
@@ -72,7 +73,7 @@ a { color: var(--accent); }
   <header>
     <span class="label">procgen_world · the language lane</span>
     <h1>Language Desk</h1>
-    <p class="lede">Everything in the language lane that waits on you. Pick an option or leave it alone: anything you don't touch keeps the default (marked <em>lean</em> where the lane had a preference). Notes are for "change X to Y" or anything else. Your answers save as you go and I read them from here.</p>
+    <p class="lede">Everything in the language lane that waits on you. Pick an option or leave it alone: anything you don't touch keeps the default (marked <em>lean</em> where the lane had a preference). Notes are for "change X to Y" or anything else, and save as you type, with or without a pick. I read everything from here and reply on the card.</p>
     <p class="meter" id="meter">Loading your answers…</p>
     <p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me your picks in chat.</p>
   </header>
@@ -81,6 +82,7 @@ a { color: var(--accent); }
     <span class="label">Under way now (no action needed)</span>
     <ul>
       <li><b>Bird two-voice tones.</b> The syrinx's second voice gets its own tone instead of a fixed fifth: level, rising or falling on each side, contrary and oblique contours, how it arises and merges, how humans hear it, and real two-line audio. Measured on a24559, including whether bird words get shorter as the syllable space grows.</li>
+      <li><b>Your rulings (11-08).</b> All 21 answers read; a lane is carrying them out now (sounds A/D/E, borrowing, grammar A-F, adult learners, long-lived grammar), with the rate-spread comparison you asked for. The blocklist words are back. The sound-change draw (PW-1551) comes after, as its own lane, since it recalibrates everything.</li>
       <li><b>Language finder: done, in main.</b> Ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>. Its 16 likeness profiles include Sindarin, Quenya, Klingon and Black Speech.</li>
       <li>Merged to main 11-08; leftovers are tickets PW-1536 to PW-1555. Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
     </ul>
@@ -264,6 +266,7 @@ function render() {
   const root = $("#sections");
   let html = "";
   for (const s of SECTIONS) {
+    if (s.hidden) continue;
     html += `<section><h2>${esc(s.title)}${s.tk ? ` <span class="tk">${esc(s.tk)}</span>` : ""}</h2><p class="intro">${esc(s.intro)}</p>`;
     for (const it of s.items) html += entry(it);
     html += `</section>`;
@@ -273,7 +276,8 @@ function render() {
     <div class="entry${(state.priority?.picks || []).length ? " done" : ""}" data-id="priority"><div class="picks">` +
     PRIORITY.map(([id, t, sz]) => `<label class="pick"><input type="checkbox" value="${id}" ${(state.priority?.picks || []).includes(id) ? "checked" : ""}>
       <span>${esc(t)} <small>${id} · ${sz}</small></span></label>`).join("") +
-    `</div><textarea id="note-priority" data-note="priority" placeholder="Anything else to prioritise, or an order">${esc(state.priority?.note || "")}</textarea></div></section>`;
+    `</div><textarea id="note-priority" data-note="priority" placeholder="Anything else to prioritise, or an order">${esc(state.priority?.note || "")}</textarea>` +
+    (state.priority?.reply ? `<div class="reply"><span class="label">Claude</span><p>${esc(state.priority.reply)}</p></div>` : "") + `</div></section>`;
   root.innerHTML = html;
   meter();
 }
@@ -290,6 +294,7 @@ function entry(it) {
     it.table.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("") + `</table></div></details>`;
   h += `<textarea id="note-${it.id}" data-note="${it.id}" placeholder="${it.table ? "Change any of these? e.g. 'clicks: add the c q x option'" : "Note (optional)"}">${esc(st.note || "")}</textarea>`;
   if (st.at) h += `<span class="saved">saved</span>`;
+  if (st.reply) h += `<div class="reply"><span class="label">Claude</span><p>${esc(st.reply)}</p></div>`;
   return h + `</div>`;
 }
 
