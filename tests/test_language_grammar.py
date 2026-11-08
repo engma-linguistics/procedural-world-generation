@@ -880,3 +880,99 @@ def test_inclusive_subject_marker_joins_only_with_an_inclusive_we():
         G.PERSON_JOIN.clear()
         G.PERSON_JOIN.update(old)
     assert G.feature_of(G.INCL_FN) == ("verb_agreement",)
+
+
+# --- grammar phase C (2026-11-08) -------------------------------------------------------------------------------------
+
+def test_question_and_copula_are_realised_from_grams():
+    rng, g = _grammar(3, polar_question="final_particle", copula="yes")
+    g.grams = [x for x in g.grams if x.function not in ("Q", "COP")]
+    G.realise(g)
+    assert g.typology["polar_question"] == "intonation" and g.typology["copula"] == "no"
+    assert "Q" in G._unrealised(g, G.aims(g)).get("polar_question", set())
+    g.grams.append(G.Gram("Q", tuple(from_ipa("li")), "VP", "post", G.FREE, ("IF", "X46", "concept"), 5.0, id="Q#1"))
+    g.grams.append(G.Gram("COP", tuple(from_ipa("jesu")), "VP", "post", G.FREE, ("HE OR SHE OR IT", "X48", "concept"),
+                          5.0, id="COP#1"))
+    G.realise(g)
+    assert g.typology["polar_question"] == "final_particle" and g.typology["copula"] == "yes"
+    g.by_id("Q#1").level = G.AFFIX
+    G.realise(g)
+    assert g.typology["polar_question"] == "verb_morph"
+    assert G.clashes(g) == []
+
+
+def test_copy_path_keeps_the_source_gram():
+    rng, g = _grammar(4)
+    g.grams = [G.Gram("COP", tuple(from_ipa("jesu")), "VP", "post", G.CLITIC, ("HE OR SHE OR IT", "X48", "concept"), 5.0,
+                      id="COP#1")]
+    gr = G.recruit(rng, g, lex(), 4.0, function="FOC")
+    assert gr is not None and gr.function == "FOC" and gr.source[1] == "G057"
+    assert g.by_id("COP#1").function == "COP" and g.by_id("COP#1").live
+
+
+def test_concord_grows_with_a_bound_class_marker_and_ends_without():
+    rng, g = _grammar(5, gender="classes")
+    for c in g.class_system.classes:
+        g.by_id(c.gram_id).level = G.AFFIX
+    for _ in range(200):
+        G._concord(g, rng, 1.0, 0.5, 0.0)
+    assert g.processes["concord"] == ["adj", "dem", "verb"]
+    for c in g.class_system.classes:
+        g.by_id(c.gram_id).level = G.FREE
+    G._concord(g, rng, 1.0, 0.5, 0.0)
+    assert "concord" not in g.processes
+
+
+def test_inflection_class_split_is_lexical_and_survives_json():
+    rng, g = _pl_grammar()
+    assert G._iclass(g, rng, 1.0, 1.0, 0.0, lex(), Inv())
+    pl = g.gram("PL")
+    assert pl.alt and pl.alt != pl.form
+    ic = g.processes["iclass"]["PL"]
+    members = [c for c in ("WATER", "PERSON", "DOG", "TREE", "HOUSE", "NAME", "TONGUE", "ANIMAL") if G.iclass_member(ic, c)]
+    assert members == [c for c in ("WATER", "PERSON", "DOG", "TREE", "HOUSE", "NAME", "TONGUE", "ANIMAL")
+                       if G.iclass_member(dict(ic), c)]   # (deterministic, no str hash)
+    G._sync_cells(g)
+    for ex in g.exemplars:
+        if ex.pos == "N" and ("PL",) in ex.parts:
+            want = pl.alt if G.iclass_member(ic, ex.concept) else pl.form
+            assert ex.morph(("PL",), "PL") == tuple(want)
+    g2 = G.from_json(json.loads(json.dumps(G.to_json(g))))
+    assert g2.gram("PL").alt == pl.alt and g2.processes["iclass"] == g.processes["iclass"]
+
+
+def test_portmanteau_merges_two_endings_in_cells_and_dies_with_a_part():
+    rng, g = _pl_grammar()
+    g.grams.append(G.Gram("LOC", tuple(from_ipa("ka")), "NP", "post", G.AFFIX, ("IN", "X04"), 10.0, id="LOC#x"))
+    G._sync_cells(g)
+    assert G._cumulate(g, rng, 1.0, 1.0)
+    G._sync_cells(g)
+    pm = g.gram("PL+LOC")
+    assert pm is not None and pm.level == G.FUSED
+    ex = next(e for e in g.exemplars if e.pos == "N")
+    assert [lab for lab, _ in ex.parts[("PL", "LOC")]] == ["stem", "PL+LOC"]
+    G._lose(g, g.by_id("LOC#x"), 1.0, "test")
+    G._check_lost(g, 1.0)
+    assert not pm.live
+
+
+def test_infix_goes_after_the_first_consonants():
+    rng, g = _grammar(7)
+    g.grams = [G.Gram("PAST", tuple(from_ipa("um")), "V", "pre", G.AFFIX, ("?", "proto", "unknown"), 5.0, id="PAST#1")]
+    G._sync_cells(g)
+    assert G._infix(g, rng, 1.0, 1.0)
+    G._sync_cells(g)
+    ex = next(e for e in g.exemplars if e.pos == "V" and e.concept == "GO")
+    assert [lab for lab, _ in ex.parts[("PAST",)]] == ["stem", "PAST", "stem"]
+    assert word_ipa(ex.cells[("PAST",)]) == "kumele"
+
+
+def test_stem_change_recorded_when_the_ending_is_gone():
+    rng, g = _pl_grammar()
+    pl = g.gram("PL")
+    pl.form, pl.level = (), G.FUSED
+    for ex in g.exemplars:
+        if ("PL",) in ex.cells:
+            ex.set(("PL",), (("stem", tuple(from_ipa(word_ipa(ex.stem).replace("a", "e")))), ("PL", ())))
+    G._check_lost(g, 1.0)
+    assert pl.live and ["a", "e"] in g.processes["stem_change"]["PL"]

@@ -255,8 +255,19 @@ def lineage(doc, l) -> str:
             continue
         line.append((nm, x))
     steps = []
-    for nm, x in line[-6:]:
-        steps.append(f"<span class='step'>{E(nm)} <span class='muted'>{E(SK.kyr(x.get('born_kyr')))}</span></span>")
+    names = [nm for nm, _x in line]
+    for i, (nm, x) in enumerate(line):
+        if i < len(line) - 6:
+            continue
+        lab = f"older speech of {nm}" if nm in names[i + 1:] else nm
+        why = ""
+        if x.get("how") == "shift" and i > 0:
+            why = (f" <span class='muted'>(language shift: its speakers, {E(SK.people(x['people']))}, took up "
+                   f"{E(line[i - 1][0])}'s language)</span>")
+        elif i > 0 and x.get("people") != line[i - 1][1].get("people"):
+            why = (f" <span class='muted'>(spoken now by {E(SK.people(x['people']))}, who took it from "
+                   f"{E(SK.people(line[i - 1][1]['people']))})</span>")
+        steps.append(f"<span class='step'>{E(lab)} <span class='muted'>{E(SK.kyr(x.get('born_kyr')))}</span>{why}</span>")
     hidden = f"<span class='muted'>… {len(line) - 6} older stages … </span>" if len(line) > 6 else ""
     sis = []
     for x in doc.living:
@@ -557,9 +568,12 @@ def _cause(doc, l, rising: bool, since: float) -> str:
              f"{_rank(popq).replace(' of all living languages', '').replace(' of living languages', '')}; isolation "
              f"{l.get('isolation') or 0:.2f}, {_rank(isoq).replace(' of all living languages', '').replace(' of living languages', '')}")
     if rising:
-        if l2q <= 0.4 and isoq >= 0.6:
-            bits.append("a tight-knit, isolated community with few adult learners: grams are worn down and bound and nobody "
-                        "simplifies them (Trudgill's small, isolated societies)")
+        if l2q <= 0.4 and isoq >= 0.6 and popq <= 0.5:
+            bits.append("a small, tight-knit, isolated community with few adult learners: grams are worn down and bound "
+                        "and nobody simplifies them (Trudgill's small, isolated societies)")
+        elif l2q <= 0.4 and isoq >= 0.6:
+            bits.append("an isolated community with few adult learners (though not a small one): what grammaticalization "
+                        "binds stays bound")
         elif l2q <= 0.4:
             bits.append("few adult second-language learners: what grammaticalization binds stays bound")
         elif popq <= 0.4:
@@ -621,9 +635,10 @@ def complexity_section(doc, k: int) -> str:
          "<p>Proto-languages start with few grams and mostly gain more, so a language whose grammar <b>shrinks</b> is the "
          "more telling case. The measure is the grammar's complexity score, stored every 500 years: bound functions + the mean bonding level of the live grams (free word 0, "
          "clitic 1, affix 2, fused 3) + 4 x the share of irregular paradigm cells + 0.5 per bound class marker. Each "
-         "line follows the language back through the ancestors it split from; the shaded part is the window read. The "
-         "events are differences between successive snapshots' live grams. Causes are read from the language's L2 share, "
-         "population and isolation (today's values; the file does not keep them per frame) and its language shifts.</p>"]
+         "line follows the language back through the ancestors it split from; the shaded part is the stretch the "
+         "change is measured over. The events below are the grams that came, went or bound further in that stretch. "
+         "The likely cause is read from the language's share of adult learners, its number of speakers and its "
+         "isolation as they are today, and from the language shifts in its history.</p>"]
     for title, rows, rising in (("Getting simpler", fall, False), ("Getting more complex", rise, True)):
         h.append(f"<h3>{title}</h3>")
         if not rows:
@@ -646,7 +661,7 @@ def complexity_section(doc, k: int) -> str:
                          f"<td class='ipa'>{E(_gform(g1[fn])) if fn in g1 else '(none)'}</td></tr>"
                          for fn in pairs)
             h.append(f"<div class='card' style='margin:8px 0'><h4>{E(name)} <span class='muted'>{E(SK.people(l['people']))}, "
-                     f"language {E(l['id'])}</span></h4>"
+                     "</span></h4>"
                      f"<div class='two'><div>{_spark(ser, since)}<div class='note'>score {c0:.2f} {since:g} kyr ago &rarr; "
                      f"{c1:.2f} now ({'+' if dlt > 0 else ''}{dlt:.2f})</div></div>"
                      f"<div><b>Likely cause.</b> {_cause(doc, l, rising, since)}</div></div>"
@@ -654,7 +669,7 @@ def complexity_section(doc, k: int) -> str:
                         "<p class='note'>No gram came or went: the score moved through paradigm irregularity (sound change "
                         "made or levelled alternants).</p>")
                      + (f"<div class='scroll'><table class='t'><tr><th>gram</th><th>{since:g} kyr ago</th><th>now</th></tr>{ba}</table></div>"
-                        if ba else "") + "</div>")
+                        if ba else "") + house_marks(l, evh + ba) + "</div>")
     h.append("</section>")
     return "".join(h)
 
@@ -691,7 +706,7 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool, re_
     clips = json.dumps(au.clips).replace("</", "<\\/")
     page = (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
             f"<title>Invented Languages Demo</title><style>{CSS}</style></head><body><main>"
-            f"<h1>{len(picks)} languages of run {E(str(d.get('run', '?')))}</h1>"
+            f"<h1>{len(picks)} invented languages from one simulated world</h1>"
             f"<p class='muted'>Very different living languages from a simulated world ({len(doc.living)} spoken now), each "
             f"grown by sound change, borrowing and grammaticalization from its people's history. Glosses follow the Leipzig "
             f"rules: - joins an affix, = a clitic, category labels in small caps. Press ▶ to hear a form. {E(voice)}</p>"

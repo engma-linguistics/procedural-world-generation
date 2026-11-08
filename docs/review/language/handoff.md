@@ -296,3 +296,19 @@ are in `scratchpad/lexcon/`:
 3. Faiths: a liturgical lect frozen at the founding, learned loans for GOD/SPIRIT/PRIEST/TEMPLE, and god names (gods.json; contact-gaps rec. 5).
 4. Segment borrowing at high intensity (contact-gaps 3d): the inventory areal signal is still ~0 (-0.003).
 5. The sentence lane's numeral note could use the lect's own ELEVEN/THIRTY words.
+
+## Continuation: grammar phase C (lang-gram-c, 2026-11-08)
+
+Done on `lang-gram-c` (from lang-design 3d239669): concord, constructions as grams (Q, COP, REL, COMP, TOP, FOC),
+phase C items 13-19, and the fixes from the coordinator's read of phase B's demo. See for-daniel.md "Grammar phase C"
+(defaults, measures, odd output) and architecture.md ("Grammar phase C" block, for the code). Not merged or pushed.
+
+Left for the next grammar lane (phase D is next in grammar-gaps.md):
+1. Intonation-only polar questions are 51% of the full pass (WALS about 14%): the Q pull is weak under high L2.
+2. Antipassive near 0% (one gram source only).
+3. Concord copies the class marker's own form; no separate agreement series. Daniel's call whether `gender` needs
+   concord to show.
+4. Synthesis is unchanged (55% in the 0-1 bin); FUSE is Daniel's decision.
+- Measuring: copy `scratchpad/gramc/sim.py`, `shares.py` and `shares_c.py` (the last counts the phase C grams and
+  processes). Run `PYTHONPATH=. NP=10 .venv/bin/python sim.py 300 out.json` from the worktree (about 1-2 minutes).
+- Commits: use `git -c user.name="Daniel Bishop" -c user.email=lolologist@gmail.com commit`.

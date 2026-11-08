@@ -339,3 +339,115 @@ Both are queued in grammar-gaps.md (phase B progress).
 - Liturgical language and god names from gods.json (contact-gaps rec. 5).
 - Segment borrowing at high contact intensity (contact-gaps 3d).
 - Polities: they need a polities document in the run.
+
+
+## Grammar phase C (branch lang-gram-c, 2026-11-08)
+
+### Fixes from the read of phase B's demo
+Each fixed where it arose:
+- **Object-agreement examples on 'go'** ("he goes us"): the examples now take a transitive verb (see, eat, hit, hold).
+- **One verb, two stems** (kenku oː˧l vs u˦toː˧) and **plural stems that are not the noun** (gnome li-tej-nep for tuj):
+  a stored paradigm cell whose stem part is not today's stem has unreliable morph boundaries after thousands of years
+  of sound change. Such a cell is now shown as one unsegmented word with a fused gloss (tejnep 'dog.PL.M', as English
+  mice 'mouse.PL'), and the regular cells keep their breaks.
+- **Reduplication examples that were not copies** (red dragon kaː-ʔu‼iː, gnome nu-nep): reduplication is productive, so
+  the page now always copies today's stem rather than reading the stored, worn cell.
+- **"marked by the genitive a clitic"** now reads "the genitive marker, a clitic ..."; **"Dat is"** is DAT again (the
+  note's first letter is raised, the rest left alone).
+- **Numerals 30 'ten three' vs 11 'ten one'**: where multiplication puts the base first (numeral after the noun), the
+  page joins addition with the lect's 'and' (11 'ten and one'), and every numeral example says its arithmetic
+  ('ten three' = 3 × 10). The lexicon's own numeral words (lexsys, the lexicon lane's) are unchanged.
+- **Imperative with an object marker while the note said "no person marker"**: the note says "no subject or tense
+  marker" and adds "the verb still marks its object" where it does.
+- **Trudgill's "small, isolated societies" for 309,717 speakers**: that cause now also needs a population in the lower
+  half; an isolated but large community gets its own wording.
+- **Ancestry lines**: a deme's earlier language is "older speech of human 20" when the deme appears again later, and a
+  language shift is spelled out ("language shift: its speakers, fire giants, took up bronze dragon 8's language"); a step
+  where the people changed without a recorded shift says so too.
+- **Classifiers**: a system whose class markers have all worn away no longer prints an empty list; a free classifier
+  is described as "a separate word after the numeral", matching the examples; the masculine class is described as
+  "men, and by default most other nouns" (fish in the 'masculine' class read as "men and male things").
+- **Felt word families**: a two-sound root is heard only at a word's edge, a longer root needs three of its sounds; when
+  the root's own word is gone, a member must share three sounds (or its first two) with another member.
+- **Jargon**: no "of run a24559", "the window read", "the file does not keep them per frame" or "language d674" left.
+  The non-IPA mark key now also sits in each complexity card whose forms use a mark (the kenku ᴖ was first seen there).
+
+### Engine and pages: what phase C added, with the defaults I chose
+Each default is one constant in `planet/language/grammar.py`.
+- **Concord.** While a class marker is bound (clitic or tighter), class agreement spreads to demonstratives, adjectives
+  and the verb, one at a time (weights 1.0 / 0.7 / 0.5, Corbett's Agreement Hierarchy), at `CONCORD_GROW` 0.02 per
+  generation; each target goes again at 0.0005. The verb's agreement is Bantu-style: the subject's class marker stands
+  in the third-person slot. The copied marker has the noun marker's form (alliterative concord); real systems often
+  have separate agreement forms, which this does not model.
+- **Constructions as grams.** Question particle from 'if, whether' (Russian li) or a negator (Mandarin ma); copula from
+  a demonstrative (G056), a third-person pronoun (Hebrew hu) or a posture verb (Spanish estar); relativizer from a
+  demonstrative or 'who, what' (G055, G058); complementizer from 'say' (G023) or the relativizer; topic from 'if,
+  when' (Haiman 1978) or a demonstrative; focus split off the copula (G057). Polar question and copula are now read
+  from the grams, as case and number already were. A free or clitic question marker counts as a particle, a bound one
+  as verbal morphology.
+- **Copies, not reanalyses.** Copula > focus, reflexive > reciprocal and > antipassive, comitative > applicative and >
+  same-subject, locative > different-subject, relativizer > complementizer leave the source gram in place (`COPY_PATHS`).
+- **Inflection classes.** A bound number, case, tense, aspect or person marker gets a second form at 0.0006 per
+  generation, taken from another source word of the same function (or a fresh small morph); 20-50% of words take it,
+  chosen arbitrarily but fixed per word (a stable hash, never Python's). Levelling removes it at 0.0004.
+- **Portmanteaus.** Two bound neighbours (number + case, tense or aspect + person) on the same side fuse into one
+  ending at 0.0008 per generation; the two keep living alone. Syncretic markers (same slot, same form) are now kept half
+  the time instead of always losing the rarer.
+- **Stem change across the lexicon.** When a fused marker is worn to nothing but its cells still differ from the stem,
+  its vowel changes become a rule: the pages apply it to any word in that category (dog\PL). It is applied where a
+  word is inflected; the lexicon lane's files are untouched.
+- **Infixes** only from vowel-initial verb prefixes (Yu 2007), at 0.003 per generation: rare by construction.
+- **Second-position clitics**: 0.0015 per generation while the lect has a verbal clitic, x3 under free word order.
+- **Noun incorporation** in head-marking lects (a bound object marker and 3+ bound verb categories), at 0.003.
+- **Switch-reference** grams are wanted only in OV lects; **Austronesian voice** only in verb-initial ones, the patient
+  voice from the passive, the actor voice from 'do' (my guess: the source of Austronesian *-um- is not known), the pivot
+  marked by the old article (Tagalog ang), glossed PIV.
+- **Antipassive** is wanted only in ergative or split lects (WALS 108A).
+- **Complexity score**: free clause particles (a question word, a free copula) are left out of the mean binding level,
+  so the new grams do not lower it.
+
+### Measured
+Isolated harness (300 human protos, ~20 kyr; before = lang-design 3d239669) and the full pass of a24559 (622 living
+lects; before = phase B's final pass). Shares are of lects with the gram at all / bound (affix or fused).
+
+| | harness before | harness after | full pass before | full pass after | reference |
+| --- | --- | --- | --- | --- | --- |
+| question gram (Q) | 0% | 62% / 26% | 0% | 49% / 9% | WALS 116A: about 60% particle, 17% verbal |
+| polar question shown: intonation only | 43% | 38% | 42% | 51% | WALS 116A: about 14% |
+| polar question shown: verb morphology | 10% | 26% | 6% | 9% | about 17% |
+| copula gram (COP) / copula shown | 0% / 56% | 69% / 69% | 0% / 62% | 56% / 56% | GB117 57% |
+| relativizer (REL) | 0% | 36% | 0% | 22% | (no single figure) |
+| complementizer / topic / focus | 0% | 29% / 21% / 9% | 0% | 12% / 6% / 8% | |
+| concord (any target) | 0% | 33% (70% of gender lects) | 0% | 20% (51% of gender lects) | gender is defined by agreement in Grambank |
+| applicative / reciprocal / antipassive | 0% | 12% / 16% / 1% | 0% | 9% / 7% / 0% | WALS 109A ~45% applicative; 108A ~25% antipassive |
+| switch-reference (SS or DS) | 0% | 13% | 0% | 3% | (Americas, New Guinea, Australia) |
+| actor / patient voice | 0% | 2% / 1% | 0% | 1% / 1% | rare (Philippine type) |
+| inflection classes | 0% | 27% | 0% | 9% | |
+| portmanteau endings | 0% | 13% | 0% | 3% | |
+| stem change across the lexicon | 0% | 5% | 0% | 8% | |
+| infix | 0% | 1% | 0% | 0% | rare |
+| second-position clitics | 0% | 17% | 0% | 10% | |
+| noun incorporation | 0% | 9% | 0% | 4% | |
+| verb synthesis, WALS 22A bins 0-1 / 2-3 / 4-5 / 6-7 / 8+ | 25 / 37 / 24 / 13 / 0% | 24 / 43 / 21 / 12 / 0% | 55 / 26 / 15 / 4 / 0% | 55 / 28 / 14 / 3 / 0% | about 3 / 17 / 36 / 21 / 23% |
+
+Full-pass checks: all pass except the scholars' horizon (human lects), which reads **19.0 kyr** this pass (phase B's
+read 11.0, phase A's 16.0); another lane is on it, and this branch changes no sound or lexicon code. "Typology agrees
+with the live grams" is ok with polar question and copula now realised. 2062 s at 10 workers on a loaded machine.
+
+**Synthesis (your decision, not tuned).** Still 55% of living lects in the 0-1 bin against WALS's about 3%. Phase C adds
+categories (valence, voice, switch-reference) but in the full pass they are mostly free words, as phase B found: the
+lever is still `FUSE` and the L2 exponent on fusion. I did not touch FUSE.
+
+### Odd or worth a look
+- **Intonation-only questions are 51% of the full pass** (WALS about 14%). The aims ask for a particle in about 58%
+  of lects, but the pull is slowed by the adult-learner share and a free particle is often abandoned. Raising the
+  pull for Q alone, or letting the lexical 'if' stand in when no gram lives (as before), would close it; I left it.
+- **Antipassive is near 0%**: its only source is a live reflexive in an ergative lect. WALS 108A has about a quarter
+  of languages with one. A lexical source would help, but I found none I could cite.
+- **Concord copies the class marker's own form** onto adjectives and the verb (alliterative). Separate agreement forms
+  (Swahili a- vs m-) are not modelled.
+- **Gender is still shown without concord** in about half of gender lects (Grambank's definition requires agreement).
+  Should `gender` read 'none' until concord reaches at least the demonstrative? Your call; it would cut the gender
+  share by about half.
+- **Infixes are vanishingly rare** (vowel-initial verb prefixes are rare, since recruitment keeps a word's onset).
+- **The actor-voice source 'do, make' is my guess.**
