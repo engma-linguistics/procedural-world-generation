@@ -519,9 +519,61 @@ def _unreserve(sp: str) -> str:
     return sp
 
 
+@lru_cache(maxsize=1)
+def blocklist() -> tuple[str, ...]:
+    """The offensive English substrings (data/offensive_substrings.txt, cold review 2026-11-08)."""
+    rows = (DATA / "offensive_substrings.txt").read_text(encoding="utf-8").splitlines()
+    return tuple(r.strip().lower() for r in rows if r.strip() and not r.lstrip().startswith("#"))
+
+
+def _plain(sp: str) -> tuple[str, list[int]]:
+    """A spelling as a reader of English skims it: lower case, diacritics dropped; with each plain letter's index in
+    NFD(sp)."""
+    d = unicodedata.normalize("NFD", sp)
+    out, idx = [], []
+    for i, ch in enumerate(d):
+        if unicodedata.combining(ch):
+            continue
+        out.append(ch.lower()[:1] or ch)
+        idx.append(i)
+    return "".join(out), idx
+
+
+def offensive(sp: str) -> str | None:
+    """The first blocklisted substring the spelling contains (case-folded, diacritics stripped), or None."""
+    p, _ = _plain(sp)
+    return next((b for b in blocklist() if b in p), None)
+
+
+#: spellings respelled by `unoffend` since the counter was last read (the pass reports it; a guard, not a model count)
+UNOFFEND_COUNT = [0]
+
+
+def unoffend(sp: str) -> str:
+    """The last resort for a spelling that reads as an English slur or obscenity and has no word to renew (an affixed or
+    joined form, a gram, a name built at a join): the same phonemes with a middle dot inside the match (na·zi), as
+    `_unreserve` does for null. Words are renewed at the source first (`lexicon.offense_repair`)."""
+    for _ in range(4):
+        b = offensive(sp)
+        if b is None:
+            return sp
+        p, idx = _plain(sp)
+        i0 = p.index(b)
+        # the dot goes before a vowel letter that follows a consonant letter (a segment boundary: a consonant's
+        # spelling never ends in a vowel letter, while sh, ng, an + nasal would be split inside), nearest the middle
+        cut = [j for j in range(i0 + 1, i0 + len(b)) if p[j] in "aeiouy" and p[j - 1] not in "aeiouy"]
+        at = min(cut, key=lambda j: (abs(j - (i0 + len(b) / 2)), -j)) if cut else i0 + len(b) // 2
+        d = unicodedata.normalize("NFD", sp)
+        sp = unicodedata.normalize("NFC", d[:idx[at]] + BOOK_GUARD + d[idx[at]:])
+        UNOFFEND_COUNT[0] += 1
+    return sp
+
+
 def romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
-                  book: bool = False, folds: dict | None = None) -> str:
-    return _unreserve(_romanize_word(word, contrasts, inventory, book, folds))
+                  book: bool = False, folds: dict | None = None, guard: bool = True) -> str:
+    """`_romanize_word`, with a reserved ending respelled and (guard) an offensive substring broken (`unoffend`)."""
+    sp = _unreserve(_romanize_word(word, contrasts, inventory, book, folds))
+    return unoffend(sp) if guard else sp
 
 
 def _romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
@@ -640,8 +692,13 @@ class Orthography:
                 out.append(q)
         return tuple(out)
 
-    def word(self, form, book: bool = False) -> str:
-        return romanize_word(self.phonemic(form), self.cs, self.inv, book=book, folds=self.folds if book else None)
+    def word(self, form, book: bool = False, guard: bool = True) -> str:
+        return romanize_word(self.phonemic(form), self.cs, self.inv, book=book, folds=self.folds if book else None,
+                             guard=guard)
+
+    def offends(self, form) -> str | None:
+        """The blocklisted substring the form's raw spelling holds in either register (no `unoffend`), or None."""
+        return offensive(self.word(form, guard=False)) or offensive(self.word(form, book=True, guard=False))
 
 
 def romanize(ipa: str, contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,

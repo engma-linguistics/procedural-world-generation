@@ -1151,6 +1151,44 @@ def calque(rng, old: LC.Lect, new: LC.Lect) -> list:
     return out
 
 
+def offense_pass(h: "History", R, last: int) -> None:
+    """Renew the words of every living lect whose spelling reads as an English slur or obscenity (lexicon.offense_repair,
+    romanize.blocklist), in up to LX.OFFENSE_ROUNDS rounds (a renewal re-ranks the book diacritics). Counts in
+    h.offense: words flagged before, renewed, still flagged after."""
+    from .output import orthography
+    P = FT._plan(h)
+    before = renewed = 0
+    after = 0
+    for l in sorted((x for x in h.lects.values() if x.alive and x.lexicon is not None), key=lambda x: x.id):
+        cw = {}
+        if l.deme is not None:
+            cw = {y.id: y.lexicon for y in (h.lect_of(o) for o in sorted(R.contacts_of(l.deme, last, CONTACT_BORROW)))
+                  if y is not None and y.alive and y.id != l.id}
+
+        def coiner(rng, k, l=l):
+            god = P.gods.get(int(k.rsplit(":", 1)[1])) if P is not None and FT.is_god(k) else None
+            return None if god is None else FT.coin_name(rng, l.lexicon, int(k.rsplit(":", 1)[1]), god, l.inventory,
+                                                          R.kyr(last), l.id, renew=True)
+        for r in range(LX.OFFENSE_ROUNDS):
+            orth = orthography(l)
+            n = sum(1 for w in l.lexicon.words.values() if orth.offends(w.form))
+            if r == 0:
+                before += n
+            if n == 0:
+                break
+            ev = LX.offense_repair(rng_for(h.seed, "offense", l.id, r), l.lexicon, l.inventory, R.kyr(last), l.id,
+                                   orth.offends, cw, None, l.profile, coiner)
+            renewed += len(ev)
+            l.touch()
+            if not ev:
+                break
+        orth = orthography(l)
+        after += sum(1 for w in l.lexicon.words.values() if orth.offends(w.form))
+    h.__dict__["offense"] = {"flagged": before, "renewed": renewed, "left": after}
+    h.say(R.kyr(last), f"offensive-looking spellings: {before} words flagged, {renewed} renewed, {after} left to the "
+                       f"spelling guard")
+
+
 def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse: bool = True, frames: int | None = None) -> dict:
     """The whole pass: {"history": History, "lects", "shifts", "food_routes", "families", "checks", "log", "timing"}."""
     from . import checks as CK
@@ -1177,6 +1215,7 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         lr = FT.learned_register(h, l)   # (the liturgy's sacred words beside the lect's own: faiths.py)
         if lr:
             l.lexicon.systems["learned"] = lr
+    offense_pass(h, R, last)
     out = {"history": h, "run": R, "seed": h.seed, "lects": list(h.lects.values()), "shifts": h.shifts,
            "food_routes": [r for r in h.routes.values()], "log": h.log, "timing": h.timing}
     if analyse:
