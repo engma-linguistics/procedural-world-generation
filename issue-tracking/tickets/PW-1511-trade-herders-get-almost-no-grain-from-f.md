@@ -40,4 +40,5 @@ Options:
 **My lean: B, then check it against C once step 3 has hubs.** B is a mechanism the source names. It costs nothing at runtime.
 
 ## Updates
+- 2026-11-08: Lane 214 measured A/B/C on 0141d1, 3e0eb4, 07c755 (docs/review/culture/trade/step3.md, herders' grain table). Share of herders' grain lack met by other cultures: A (today) 0.7 / 3.8 / 4.4%; B (own animals, trade_flow.FETCH) 0.7 / 3.9 / 4.2%; C (step 3's towns and merchant quarters) 0.7 / 3.9 / 4.6%; B+C 0.7 / 4.1 / 4.5%. B barely moves it because 100 / 86 / 59% of the herder snapshots already know pack_animals, so their own animals are no cheaper; C is a read-out plus quarters that lift a few tolls. Neither lands in a plausible range (Khazanov: nomads always need farm grain). The switch is built and tested (tests/test_trade_routes.py) and left off (FETCH = False). Status left for the coordinator.
 - 2026-11-08: Created from inbox draft draft-trade-herders-grain-far.md (found by lane 213).
