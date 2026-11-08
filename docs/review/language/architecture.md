@@ -466,6 +466,13 @@ adds the locative gram at its level.
 **Measured complexity** (`complexity(lect) -> dict`): obligatory categories count, mean fusion level, allomorphy count from
 the exemplars. Never stored as an input.
 
+**Phase D (2026-11-08)**: far demonstrative DIST (X64), remote past REMPST (X65), completive/inceptive/iterative
+(X66-X68), mirative (X69-X70, copies), honorific HON (X71), obviative OBV (X72), 'what' > Q (X73). Processes
+`_polite` (`processes["polite"]` = {kind: plural|third, concept}; `aims["politeness"]`), `_compare`
+(`processes["compare"]` follows the `comparative` aim) and `_dom` (`processes["dom"]`: ACC on animates only).
+`PULL_BOOST` / `KEEP` give per-function multipliers on the aims' pull and on abandonment. Texts (fable, recipe, the
+faith-myth hook) live in `texts.py`.
+
 ## 7b. Grammar notes and sample sentences (`sentences.py`, round 5)
 
 A pass over one living lect's **json record** (not the engine objects), so it runs in `output.document` and equally on an

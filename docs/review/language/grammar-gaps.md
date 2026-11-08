@@ -529,6 +529,9 @@ Against Wikipedia's grammatical-category list, after A-C:
   the culinary end-goal), not just isolated sentences.
 - **A last-pass "reviewing linguist" agent** reads the regenerated sketches cold and lists what looks fake.
 
+Status (lang-gram-d, 2026-11-08): all done except the species table (proposed in for-daniel.md, not applied) and the
+cold-review agent (the coordinator's, after merge).
+
 ### Texts (Daniel, 11-07 night)
 - Every glossed text shows four lines: book spelling (romanized), IPA, gloss and English.
 - **A Schleicher-style fable.** One fixed short English fable, in the spirit of Schleicher's "The Sheep and the Horses",

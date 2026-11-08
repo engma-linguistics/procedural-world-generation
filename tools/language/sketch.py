@@ -354,11 +354,15 @@ class Doc:
         return None
 
 
+#: how a concept's kind prefix reads after the word ('good:seals' is seals as a trade good, not 'good seals')
+_KIND = {"good": "trade good", "kin": "kin term"}
+
+
 def cname(c: str) -> str:
     """A concept as a reader sees it: WATER -> water, crop:foxtail_millet -> foxtail millet (crop)."""
     if ":" in c:
         kind, rest = c.split(":", 1)
-        return f"{rest.replace('_', ' ')} ({kind})"
+        return f"{rest.replace('_', ' ')} ({_KIND.get(kind, kind)})"
     return "I" if c == "I" else c.lower()
 
 
@@ -412,31 +416,9 @@ def inv_segments(l: dict) -> list:
     return [s for s in (seg(x) for x in inv.get("consonants", []) + inv.get("vowels", [])) if s is not None]
 
 
-_ORTH: dict = {}
-
-
 def orth_of(l: dict) -> R.Orthography:
-    """The lect's spelling (romanize.Orthography): its phonemes, its allophones spelled as their phonemes, its book folds
-    ranked by token counts in its lexicon (the same plan names.py and output.py use)."""
-    k = id(l)
-    if k in _ORTH and _ORTH[k][0] is l:
-        return _ORTH[k][1]
-    inv = l.get("inventory") or {}
-    allo = {}
-    for a in inv.get("allophones") or []:
-        if not isinstance(a, dict):
-            continue  # (an old or fake file lists bare symbols: nothing to map)
-        x = seg(a.get("ipa", ""))
-        if x is not None:
-            allo[x] = (seg(a["of"]) if a.get("of") else None, a.get("test"))
-    counts: dict = {}
-    for e in (l.get("lexicon") or {}).values():
-        for s in R.from_ipa(e.get("ipa") or ""):
-            counts[s] = counts.get(s, 0) + 1
-    segs = set(inv_segments(l)) | set(counts)
-    o = R.Orthography(segs, allo, counts)
-    _ORTH[k] = (l, o)
-    return o
+    """The lect's spelling (romanize.Orthography): sentences.orthography, the plan names.py and output.py use."""
+    return SN.orthography(l)
 
 
 def rule_text(doc: Doc, rid: str) -> str:
@@ -1004,6 +986,49 @@ def interlinear(form: str, gloss: str) -> list[str]:
     return ["| " + " | ".join(f"*{x}*" for x in fw) + " |", "|" + " --- |" * len(fw), "| " + " | ".join(gw) + " |"]
 
 
+def interlinear4(s: dict) -> list[str]:
+    """A text sentence in four lines: book spelling, IPA with morph breaks, gloss (a table, word by word), then the
+    English."""
+    fw, gw = [w[0] for w in s["w"]], [w[1] for w in s["w"]]
+    bw = (s.get("roman") or "").split(" ")
+    if len(bw) != len(fw):
+        bw = [""] * len(fw)
+    return ["| " + " | ".join(f"**{x}**" for x in bw) + " |", "|" + " --- |" * len(fw),
+            "| " + " | ".join(f"*{x}*" for x in fw) + " |", "| " + " | ".join(gw) + " |", "", f"‘{s['en']}’", ""]
+
+
+def texts_section(doc: "Doc", l: dict) -> list[str]:
+    """Connected texts (planet/language/texts.py): the fable in this language and in its proto-language."""
+    from planet.language import texts as TX
+    out = ["## Texts", "",
+           "Each sentence in four lines: the book spelling, the IPA with its morph breaks, the gloss, and the English.", "",
+           f"### A fable: {TX.FABLE_TITLE}", "",
+           "One fixed short fable, told in every language as August Schleicher told his in Proto-Indo-European (1868), so "
+           "that the same text shows what sound change and grammar change did. English: " + " ".join(TX.FABLE_EN), ""]
+    mine = TX.fable(l)
+    if not mine:
+        out += ["This language lacks the words to tell it.", ""]
+    for s in mine:
+        out += interlinear4(s)
+    x, seen = (l if mine else {}), set()
+    while x.get("parent") and x["parent"] in doc.lects and x["id"] not in seen:
+        seen.add(x["id"])
+        x = doc.lects[x["parent"]]
+    if x is not l:
+        theirs = TX.fable(x)
+        if theirs:
+            out += [f"The same fable in its proto-language ({doc.label(x['id'])}, {kyr(x.get('born_kyr'))}):", ""]
+            for s in theirs:
+                out += interlinear4(s)
+    title, rec = TX.recipe(l)
+    if rec:
+        out += [f"### A recipe: {title}", "", "A short connected text; the food is one of this people's own where the "
+                "language has a word for it.", ""]
+        for s in rec:
+            out += interlinear4(s)
+    return out
+
+
 def grammar_sketch(l: dict) -> list[str]:
     ensure_sentences(l)
     notes = l.get("grammar_notes") or []
@@ -1491,6 +1516,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += vocabulary(doc, l)
     out += personal_names(doc, l)
     out += sample_sentences(l)
+    out += texts_section(doc, l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"
 
