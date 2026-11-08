@@ -291,7 +291,9 @@ def test_homophone_share_low(long_runs):
     # (2026-11-07, WOLD extension: 0.16 / 0.18 -> 0.20 / 0.24: the ~700-meaning list has many more CLICS neighbours per
     # meaning (NOW / TODAY, POT / BOWL, LOW / SHALLOW); accidental homophones stay under 1%, the rest is polysemy)
     # (2026-11-08: max 0.24 -> 0.25: the lexical systems draw from a child stream and moved the seeds' draws; the mean holds)
-    assert sum(sh) / len(sh) < 0.20 and max(sh) < 0.25, sh
+    # (2026-11-08, lexcon pass 2: mean 0.20 -> 0.21: numerals now follow the counting system, which moved the draws; the
+    # three seeds read 0.201, while seeds 1-8 read 0.194 on average (0.167-0.223): a three-run mean swings by ~0.01)
+    assert sum(sh) / len(sh) < 0.21 and max(sh) < 0.25, sh
     for lex in long_runs:
         # (at most 3 senses, 5 since the WOLD extension: a sound merger can join two polysemy sets, GO / COME / LEAVE + DOG,
         # until the repair renews one)
@@ -360,7 +362,7 @@ def test_compounds_only_from_templates(long_runs):
                 k = L._step_concept(st, w.concept)
                 head, mod = st.process[len("compound:"):].split("+")
                 rows = {(r.head, k if r.modifier == L.SELF else r.modifier) for r in L.compound_templates(k)}
-                if st.note.startswith("numeral ("):   # (a composite numeral: its recipe is the numeral system's, lexsys)
+                if ": counting " in st.note:   # (a composite numeral: its recipe is the numeral system's, lexsys)
                     rows |= {(h, m) for sy in ("decimal", "hybrid", "vigesimal", "quinary", "restricted")
                              for c, (h, m, _) in LS._recipes(sy, True).items() if c == k}
                 assert (head, mod) in rows or head == k and mod in dict(L.reinforcers().get(k, ())), (k, head, mod)

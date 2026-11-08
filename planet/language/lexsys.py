@@ -85,11 +85,15 @@ def _num_word(rng, lex, k: str, rec: tuple, system: str, inv, kyr: float, lect_i
     if h not in lex.words or m not in lex.words:
         return None
     sign = "+" if op == "add" else "x"
-    # (a multiplier stands on the other side of its base from an addend, so twelve and twenty never meet: Mandarin
-    # shi-er 'ten two' 12 vs er-shi 'two ten' 20, Welsh deuddeg vs ugain)
-    hf = lex.head_first if op == "add" else not lex.head_first
+    # (a multiplier stands where the lect puts a numeral beside its noun: 'two ten' in a NumN lect, Mandarin er-shi 20;
+    # 'ten two' in an NNum lect, Swahili makumi mawili; Greenberg 1978. Without a grammar, on the other side of its base
+    # from an addend, so twelve and twenty never meet: Mandarin shi-er 'ten two' 12 vs er-shi 'two ten' 20)
+    hd = bool(lex.head_first) if lex.head_first is not None else True
+    mf = (lex.systems.get("numeral") or {}).get("mul_first")
+    hf = hd if op == "add" else (not mf if mf is not None else not hd)
+    said = f"{h} {m}" if hf else f"{m} {h}"
     return LX.compound(rng, lex, k, inv, kyr, lect_id, head_first=hf, head=h, modifier=m, process=f"compound:{h}+{m}",
-                       note=f"numeral ({system}): {h.lower()} {sign} {m.lower()}")
+                       note=f"{said.lower()}: counting {system} ({h.lower()} {sign} {m.lower()})")
 
 
 def draw_system(rng, label: str | None) -> dict:
@@ -100,10 +104,16 @@ def draw_system(rng, label: str | None) -> dict:
     return {"label": label or "decimal", "system": system, "quinary": quinary}
 
 
-def set_numerals(rng, lex, label: str | None, inv, kyr: float, lect_id: str, system: dict | None = None) -> list:
+def set_numerals(rng, lex, label: str | None, inv, kyr: float, lect_id: str, system: dict | None = None,
+                 mul_first: bool | None = None) -> list:
     """Give `lex` a numeral system for its typology label (or `system`) and build every composite numeral by its recipe
-    (in value order, so a part is rebuilt before the numbers made from it). Returns [(concept, "system")]."""
-    sy = system or draw_system(rng, label)
+    (in value order, so a part is rebuilt before the numbers made from it). mul_first: the grammar puts a numeral before
+    its noun (NumN), so a multiplier precedes its base ('two ten'); kept with the system. Returns [(concept, "system")]."""
+    sy = dict(system or draw_system(rng, label))
+    if mul_first is not None:
+        sy["mul_first"] = bool(mul_first)
+    elif "mul_first" not in sy and (lex.systems.get("numeral") or {}).get("mul_first") is not None:
+        sy["mul_first"] = lex.systems["numeral"]["mul_first"]
     lex.systems["numeral"] = sy
     out = []
     rec = _recipes(sy["system"], sy["quinary"])
@@ -122,6 +132,28 @@ def numeral_recipe(lex, k: str):
     if not sy:
         return None
     return _recipes(sy["system"], sy["quinary"]).get(k)
+
+
+def builds_on_five(lex) -> bool | None:
+    """Does the lect's counting system build on five (a 5-based or restricted count, or 6-9 as five + n)? None without a
+    system."""
+    sy = lex.systems.get("numeral")
+    if not sy:
+        return None
+    return sy["system"] in ("quinary", "restricted") or bool(sy.get("quinary"))
+
+
+def recipe_fits(lex, k: str, head: str, modifier: str) -> bool:
+    """May an ordinary compound recipe of data/compounds.tsv name the numeral `k` in this lect? A 'five + n' digit (six =
+    'five one') or 'two hands' for ten only where the counting system builds on five: a decimal lect renewing SIX does
+    not reach for five-one (grammar A's leftover, 2026-11-08). The subtractive and multiplicative ones (nine 'one from
+    ten', Finnish yhdeksän; eight 'two fours') fit any system. Every other concept: True."""
+    if k not in NUM_VALUE:
+        return True
+    five = builds_on_five(lex)
+    if five is None or five:
+        return True
+    return not (head == "FIVE" or (k == "TEN" and head == "HAND"))
 
 
 def system_word(rng, lex, k: str, inv, kyr: float, lect_id: str):

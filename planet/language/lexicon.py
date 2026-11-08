@@ -130,7 +130,7 @@ COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate 
 # often, and a contrast pair that does share a form is renewed like an accidental homophone (HOMOPHONE_BOOST), proto or
 # not. English you (< plural ye) for thou is the attested exception kept open.
 CONTRAST_DAMP = 0.1
-_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "YOU", "THEY")
+_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "WE (INCLUSIVE)", "YOU", "THEY")
 _NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND",
              "ELEVEN", "TWELVE", "FIFTEEN", "THIRTY", "FORTY")
 _WH = ("WHO", "WHAT", "WHERE", "WHEN", "HOW")
@@ -1577,6 +1577,7 @@ def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: s
         if not rs:
             return None, None
         return c.id, _pick(rng, rs)
+    from . import lexsys as LS
     cand = []
     for r in compound_templates(c.id):
         m = c.id if r.modifier == SELF else r.modifier
@@ -1584,6 +1585,8 @@ def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: s
             continue
         hw, mw = lex.words.get(r.head), lex.words.get(m)
         if hw is None or mw is None or _worn(hw, c.gloss) or hw.form == mw.form:
+            continue
+        if not LS.recipe_fits(lex, c.id, r.head, m):   # (a numeral recipe that does not fit the counting system)
             continue
         if r.modifier == SELF:
             if _self_renewed(mw, r.head, c.id):

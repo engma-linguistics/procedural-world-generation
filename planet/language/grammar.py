@@ -64,6 +64,13 @@ PRESSURE = 0.03        # per generation (x social recruit factor), for each cate
                        # shown value = aim in ~80% of lects for number/past/future/progressive (55-65% at 0), median 10 live
                        # functions (6 at 0)
 UNWANTED_LOSS = 0.002  # a bound gram (level >= 2) whose category the aims no longer mark erodes away, x social loss
+DEGRAM = 1 / 50        # degrammaticalization (Norde 2009): a clitic or affix climbs one level back up at this share of
+                       # the hazard of the step it undoes (English genitive -es > ='s, Irish -mid > muid 'we'); x
+                       # DEGRAM_EDGE for phrase-edge markers (case, articles: host NP) and x DEGRAM_ORPHAN when the
+                       # paradigm it belonged to is gone (it is the last bound marker of its slot, and an older one of
+                       # that slot was lost), as the English genitive outlived the rest of the case endings
+DEGRAM_EDGE = 3.0
+DEGRAM_ORPHAN = 3.0
 CHUNK = 10.0           # generations per internal sub-step
 
 PATH_FREQ_WEIGHT = {"very common": 3.0, "common": 2.0, "attested": 1.0}
@@ -328,6 +335,7 @@ _TARGET_MAP = (
     ("INDEFINITE ARTICLE", "INDEF"), ("DEFINITE ARTICLE", "DEF"), ("NOUN MARKER / GENDER-CLASS", "CLASS"),
     ("VERB AGREEMENT", "3SG"), ("DIMINUTIVE", "DIM"), ("PLURAL", "PL"), ("NUMERAL CLASSIFIER", "CLASS"),
     ("GENITIVE", "GEN"), ("NEGATION", "NEG"), ("STANDARD NEGATION", "NEG"), ("INDEFINITE PRONOUN > FIRST PERSON", "1PL"),
+    ("MIDDLE > PASSIVE", "PASS"),   # G060 reflexive > middle > passive (Russian -sja, Spanish se; mapped 2026-11-07)
 )
 #: path source texts that are grams, not words (reanalysis: the gram changes function)
 _GRAM_SOURCES = {"PERFECT": "PERF", "PROGRESSIVE": "PROG", "ALLATIVE": "ALL", "ABLATIVE": "ABL", "DEFINITE ARTICLE": "DEF",
@@ -366,6 +374,20 @@ _BUILTIN_PATHS = (
     ("X16", ("ONE",), "INDEF", "very common", "'one' > indefinite (WLG)"),
     ("X17", ("INS",), "ERG", "attested", "instrumental > ergative (Garrett 1990)"),
     ("X18", ("GIVE",), "DAT", "very common", "serial 'give' > dative (WLG)"),
+    # 2026-11-07, grammar phase A: the ergative's other attested sources (Kuteva et al. 2019, 'ablative > ergative',
+    # 'locative > ergative', 'genitive > ergative'; Dixon 1994 ch. 6; McGregor 2009), an agentive 'by' (the passive
+    # agent marker, English by < 'near', reanalysed as an ergative when the passive becomes the basic transitive, as in
+    # Indo-Iranian), the accusative from the dative (Hindi ko, Spanish a: differential object marking), and lexical
+    # sources for the oblique cases that had none: 'leave, come from' > ablative (Ewe tso, Mandarin cong), 'go' >
+    # allative, 'take, hold' > instrumental (Twi de, Akan de), 'use' > instrumental (G031 needs USE, which the lexicon lacks)
+    ("X19", ("ABL",), "ERG", "attested", "ablative > ergative (Tibeto-Burman, Australian; Kuteva et al. 2019)"),
+    ("X20", ("LOC",), "ERG", "attested", "locative > ergative (Kuteva et al. 2019; Dixon 1994)"),
+    ("X21", ("GEN",), "ERG", "attested", "genitive > ergative (Eskimo relative case; Garrett 1990)"),
+    ("X22", ("NEAR", "WITH"), "ERG", "attested", "agentive 'by, near' > passive agent > ergative (McGregor 2009)"),
+    ("X23", ("DAT",), "ACC", "common", "dative > accusative (differential object marking: Hindi ko, Spanish a)"),
+    ("X24", ("LEAVE", "COME"), "ABL", "common", "'leave, come from' > ablative (WLG: Ewe tso, Mandarin cong)"),
+    ("X25", ("GO",), "ALL", "attested", "'go' > allative (WLG: Thai pai, Ewe yi)"),
+    ("X26", ("TAKE", "HOLD"), "INS", "common", "serial 'take X and V' > instrumental (WLG: Twi de, Yoruba fi)"),
 )
 
 
@@ -841,10 +863,43 @@ def drift(rng: np.random.Generator, typ: Typology, n_generations: float, l2_shar
 # --------------------------------------------------------------------------------------------------------------------
 
 
+#: verbal reduplication (2026-11-07, grammar phase A): a process, not a gram on the ladder (no source word, no
+#: erosion step: it copies part of the stem it stands on). One meaning per lect, its gloss code the cell key: iterative /
+#: pluractional ('hit again and again', 'many hit': Hausa, Salish, Austronesian), intensive ('hit hard': Indonesian,
+#: Turkish emphatics) or continuous ('be hitting': Tagalog contemplated aspect, Yoruba, Ewe). Rubino (WALS 27A): 278 of
+#: 368 languages have productive full and partial reduplication, 35 full only, 55 none; partial copies are mostly
+#: prefixed CV- (Tagalog ka-kain, Ilocano ag-sa-sangit)
+REDUP = {"ITER": 0.45, "INTS": 0.20, "CONT": 0.35}
+REDUP_SHAPE = {"CV": 0.65, "full": 0.35}
+REDUP_INFO = {f: FuncInfo("V", "head", 0.8, "deriv", g) for f, g in
+              (("ITER", "iterative (reduplication)"), ("INTS", "intensive (reduplication)"),
+               ("CONT", "continuous (reduplication)"))}
+REDUP_LOSS = 0.002   # per generation (x social loss) once the aims no longer want it
+
+
 def func_info(function: str) -> FuncInfo:
     if function.startswith("CLASS"):
         return CLASS_INFO
+    if function in REDUP_INFO:
+        return REDUP_INFO[function]
     return FUNCS[function]
+
+
+def reduplicant(stem: Form, shape: str, side: str = "pre") -> Form:
+    """The copied part of a stem: all of it ('full'), or its first consonants and vowel ('CV', prefixed: Tagalog
+    kain > ka-kain), or its last consonants and vowel (a suffixed CV copy)."""
+    stem = tuple(stem)
+    if shape == "full" or not stem:
+        return stem
+    vs = [i for i, x in enumerate(stem) if _is_v(x)]
+    if not vs:
+        return stem[:1]
+    if side == "pre":
+        return stem[:vs[0] + 1]
+    i = vs[-1]
+    while i > 0 and not _is_v(stem[i - 1]):
+        i -= 1
+    return stem[i:vs[-1] + 1]
 
 
 @dataclass
@@ -924,6 +979,10 @@ class Grammar:
     aims: Typology | None = None
     #: the typology as `realise` last wrote it: a later outside write (a calque on shift) is read as a new aim
     shown: dict = field(default_factory=dict)
+    #: built constructions and processes that are not grams on the ladder (2026-11-07, grammar phase A): "split" (how a
+    #: split-ergative lect divides its alignment: "person" or "aspect"), "redup" (verbal reduplication: meaning, shape,
+    #: side). Set and dropped in `_processes`; read by `realise`, the paradigm cells and the sample sentences.
+    processes: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not isinstance(self.typology, Shown):
@@ -979,7 +1038,8 @@ def copy(g: Grammar) -> Grammar:
         class_system=None if g.class_system is None else ClassSystem(
             g.class_system.kind, [dataclasses.replace(c) for c in g.class_system.classes]),
         helpers=dict(g.helpers), events=[], _n=g._n,
-        aims=None if g.aims is None else Typology(g.aims), shown=dict(g.shown))
+        aims=None if g.aims is None else Typology(g.aims), shown=dict(g.shown),
+        processes={k: (dict(v) if isinstance(v, dict) else v) for k, v in g.processes.items()})
 
 
 def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) -> str:
@@ -1053,7 +1113,8 @@ def _wanted(function: str, typ: Typology) -> bool:
 #: features a gram realises (the typology value is read from the live grams), and the functions behind each
 REALISED = ("definite_article", "indefinite_article", "case", "alignment", "number", "gender", "past", "future",
             "perfective", "progressive", "habitual", "evidentiality", "negation", "numeral_classifiers", "clusivity",
-            "causative", "passive", "diminutive", "agent_noun", "verb_agreement", "object_agreement")
+            "causative", "passive", "diminutive", "agent_noun", "verb_agreement", "object_agreement",
+            "verb_reduplication")
 #: order features the free grams constrain (a free locative postposition means the language has postpositions)
 CONSTRAINED = ("adposition",)
 CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM")
@@ -1127,9 +1188,14 @@ def _class_state(g: Grammar) -> tuple[str, str]:
 
 
 def _clusive(lexicon) -> str | None:
+    """'yes' when the lexicon holds an inclusive 'we' apart from the exclusive one (the exclusive is plain WE unless a
+    WE (EXCLUSIVE) entry exists: a lect that grows the distinction keeps its old 'we' as the exclusive)."""
     if lexicon is None:
         return None
-    a, b = (_lex_get(lexicon, c) for c in CLUSIVE)
+    a = _lex_get(lexicon, CLUSIVE[0])
+    b = _lex_get(lexicon, CLUSIVE[1])
+    if b is None:
+        b = _lex_get(lexicon, "WE")
     return "yes" if a is not None and b is not None and _form(a) != _form(b) else "no"
 
 
@@ -1155,8 +1221,10 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
             return "none"
         return "many" if len(cs) >= 4 or any(x in RICH_CASE for x in cs) else "few"
     if f == "alignment":
+        # (of flagging, as WALS 98A: no accusative or ergative marker is neutral alignment, whatever the aims lean to;
+        # before 2026-11-07 the aim showed through, so 16% of lects were 'ergative' with no ergative anywhere)
         acc, erg = has("ACC"), has("ERG")
-        return "split" if acc and erg else "nom-acc" if acc else "erg-abs" if erg else aim
+        return "split" if acc and erg else "nom-acc" if acc else "erg-abs" if erg else "neutral"
     if f in _TAM:
         return "marked" if has(*_TAM[f]) else "none"
     if f == "evidentiality":
@@ -1189,6 +1257,8 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
         return "yes" if has("DIM") else "no"
     if f == "agent_noun":
         return "yes" if has("AGENT") else "no"
+    if f == "verb_reduplication":
+        return "yes" if g.processes.get("redup") else "no"
     if f == "adposition":
         s = _adp_sides(lv)
         if not s:
@@ -1201,13 +1271,10 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
 
 
 def consistent(feature: str, value, g: Grammar, lexicon=None, lv: dict | None = None) -> bool:
-    """Does a typology value agree with the live grams? (alignment: a live ACC or ERG fixes it, else any value; negation:
+    """Does a typology value agree with the live grams? (alignment: the live ACC and ERG fix it, neutral with neither; negation:
     the side of the main negator; adposition: the sides of the free and clitic case markers; clusivity: two distinct
     'we' forms in the lexicon, or the last verdict when no lexicon is at hand)."""
     lv = _live_fns(g) if lv is None else lv
-    if feature == "alignment":
-        acc, erg = "ACC" in lv, "ERG" in lv
-        return (value == ("split" if acc and erg else "nom-acc" if acc else "erg-abs")) if (acc or erg) else True
     if feature == "negation":
         n = g.gram("NEG")
         return n is None or (value in _PRE_NEG) == (n.side == "pre")
@@ -1266,23 +1333,39 @@ def _adopt(g: Grammar, gr: Gram, kyr: float) -> None:
 _PULL_FNS = tuple(FUNCS) + ("CLASS",)
 
 
+#: the pull groups: functions that answer one demand of the aims together. A function not listed answers its feature
+#: (`feature_of(fn)[0]`) with every other function of that feature, so any case gram answers 'case: few' and PAST or
+#: RECPST answers 'past: marked'; the listed ones are demands of their own: an accusative or ergative answers the
+#: alignment (a locative does not), a dual the 'sg-du-pl' number (a plural does not), an oblique case 'case: many', a
+#: witnessed evidential 'direct+indirect'. Before 2026-11-07 every function was grouped by its first feature, so any
+#: case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked the direct evidential.
+PULL_GROUP = {"ACC": "alignment:ACC", "ERG": "alignment:ERG", "DU": "number:DU", "EVID.DIR": "evidentiality:DIR",
+              **{f: "case:rich" for f in RICH_CASE}}
+
+
+def pull_group(fn: str) -> str:
+    if fn.startswith("CLASS"):
+        return "gender"
+    return PULL_GROUP.get(fn) or (feature_of(fn) or ("",))[0]
+
+
 def _unrealised(g: Grammar, a: Typology) -> dict[str, set[str]]:
-    """Feature -> the functions the aims want for it, for each realised feature no live gram marks at all (the
-    categories a typology flip asked for and the ladder has not yet supplied)."""
+    """Pull group -> the functions the aims want for it, for each demand of the aims no live gram answers yet (the
+    categories a typology flip asked for and the ladder has not yet supplied; `PULL_GROUP`)."""
     lv = _live_fns(g)
     has_class = g.class_system is not None and any(
         (x := g.by_id(c.gram_id)) is not None and x.live for c in g.class_system.classes)
-    marked = {feat for fn in lv for feat in feature_of(fn)}
+    answered = {pull_group(fn) for fn in lv} | {feature_of(fn)[0] for fn in lv if feature_of(fn)}
     if has_class:
-        marked |= {"gender", "numeral_classifiers"}
+        answered.add("gender")
     out: dict[str, set[str]] = {}
     for fn in _PULL_FNS:
-        feats = feature_of(fn)
-        if not feats or fn == "NEG" or not _wanted(fn, a):
+        if not feature_of(fn) or fn == "NEG" or not _wanted(fn, a):
             continue
-        if feats[0] in marked or (fn == "CLASS" and has_class):
+        grp = pull_group(fn)
+        if grp in answered:
             continue
-        out.setdefault(feats[0], set()).add(fn)
+        out.setdefault(grp, set()).add(fn)
     return out
 
 
@@ -1392,6 +1475,9 @@ def _cell_keys(ex: Exemplar, g: Grammar) -> list[tuple[str, ...]]:
         pairs += [(a, b) for a in tam[:1] for b in by_slot.get("polarity", [])]
     for a, b in pairs:
         keys.append(tuple(sorted((a, b), key=lambda f: (_slot_rank(f), f))))
+    rd = g.processes.get("redup")
+    if ex.pos == "V" and rd:
+        keys.append((rd["fn"],))
     return keys
 
 
@@ -1403,6 +1489,15 @@ def build_parts(ex: Exemplar, key: tuple[str, ...], g: Grammar) -> tuple[tuple[s
     """The regular (agglutinative) morphs of a cell from today's lemma and gram forms: what analogy restores."""
     parts: list[tuple[str, Form]] = [("stem", tuple(ex.stem))]
     for f in key:  # key is inner-first
+        if f in REDUP_INFO:
+            rd = g.processes.get("redup")
+            if rd and rd["fn"] == f:
+                red = reduplicant(ex.stem, rd["shape"], rd["side"])
+                if rd["side"] == "pre":
+                    parts.insert(0, (f, red))
+                else:
+                    parts.append((f, red))
+            continue
         gr = _gram_for(g, f)
         if gr is None:
             continue
@@ -1716,8 +1811,28 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     for concept, f in _pick_exemplars(rng, lexicon, "V", _VERB_PREF):
         g.exemplars.append(Exemplar(concept, "V", f))
     _sync_cells(g)
+    _clusivity(g, rng, kyr, 1.0, 0.0, lexicon, inv, None)   # (a proto that tells the two 'we's apart has both words)
+    _redup(g, rng, kyr, 1.0, 0.0)
+    _numerals(g, rng, lexicon, inv, kyr)
     realise(g, lexicon)
     return g
+
+
+def _numerals(g: Grammar, rng, lexicon, inv, kyr: float) -> None:
+    """The proto lexicon's counting system follows the grammar's counting base: lexsys.set_numerals draws the system
+    inside the label (decimal; vigesimal pure or hybrid; for "other" a 5-based or a restricted count) and builds the
+    composite numerals (twenty 'two ten', a hundred 'five twenties', six 'five one' ...), with a multiplier where the
+    grammar puts a numeral beside its noun (Greenberg 1978: 'two ten' NumN, 'ten two' NNum). Only on a real lexicon (one
+    with `systems`); the event lists what was built."""
+    if lexicon is None or not hasattr(lexicon, "systems"):
+        return
+    from planet.language import lexsys as LS   # noqa: PLC0415
+    base = aims(g).get("numeral_base", "decimal")
+    built = LS.set_numerals(rng, lexicon, base, inv, kyr, getattr(lexicon, "lect", None),
+                            mul_first=aims(g).get("numeral") != "NNum")
+    made = [f"{k.lower()} = {lexicon.words[k].etym[-1].note.split(':', 1)[0]}" for k, _ in built if k in lexicon.words]
+    sy = lexicon.systems.get("numeral") or {}
+    g.events.append((kyr, f"counting base {base} ({sy.get('system', base)})" + (": " + "; ".join(made) if made else "")))
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -1878,6 +1993,204 @@ def _lose(g: Grammar, gr: Gram, kyr: float, why: str) -> None:
         g.class_system.classes = [c for c in g.class_system.classes if c.gram_id != gr.id]
 
 
+#: how a lect with both an accusative and an ergative divides them (Dixon 1979, 1994; Silverstein 1976): by the
+#: nominal hierarchy (pronouns accusative, nouns ergative: Dyirbal) or by aspect (ergative in the perfective or past,
+#: accusative elsewhere: Hindi, Georgian, Mayan). NP-type splits are the commoner (Dixon 1994: 'the great majority').
+SPLIT_KIND = {"person": 0.6, "aspect": 0.4}
+SPLIT_ASPECT = ("PERF", "PAST")   # the clauses an aspect split makes ergative (the first the lect has)
+
+
+def _split(g: Grammar, rng, kyr: float, lv: dict) -> None:
+    """Choose (or drop) the way a split-ergative lect divides its alignment, once both an ACC and an ERG gram live."""
+    both = "ACC" in lv and "ERG" in lv
+    cur = g.processes.get("split")
+    if not both:
+        if cur is not None:
+            del g.processes["split"]
+            g.events.append((kyr, f"the {cur} split of the alignment ends (no longer both an accusative and an ergative)"))
+        return
+    if cur == "aspect" and not any(f in lv for f in SPLIT_ASPECT):
+        cur = None   # (the perfective it hung on is gone: re-chosen)
+    if cur is None:
+        kinds = dict(SPLIT_KIND)
+        if not any(f in lv for f in SPLIT_ASPECT):
+            kinds.pop("aspect")
+        k = _choice(rng, kinds)
+        g.processes["split"] = k
+        g.events.append((kyr, "split ergativity: " + ("pronouns accusative, nouns ergative" if k == "person"
+                                                     else "ergative in the perfective, accusative elsewhere")))
+
+
+#: how a lect that comes to tell inclusive from exclusive 'we' makes the inclusive (the old 'we' stays as the
+#: exclusive): a 'we + you' compound (Tok Pisin yumi < you + me, Bislama yumi; Cysouw 2003 on the 'we + you' type), an
+#: 'I + you' compound (the minimal inclusive: Tagalog kita, Ilocano ta), or a root of its own (Quechua -nchik vs -yku,
+#: Malay kita vs kami: the commonest outcome in old systems, where any compound has long since become opaque)
+INCLUSIVE_FROM = {"WE+THOU": 0.45, "I+THOU": 0.15, "root": 0.40}
+CLUSIVE_LOSS = 0.002   # per generation (x social loss) once the aims no longer tell the two apart
+
+
+def _clusivity(g: Grammar, rng, kyr: float, p_make: float, p_drop: float, lexicon, inv, lect_id: str | None) -> None:
+    """The aims ask for inclusive vs exclusive 'we' and the lexicon has one 'we': make the inclusive (`INCLUSIVE_FROM`);
+    they no longer ask and it has two: the distinction goes (the inclusive is dropped, or, a third of the time, takes
+    over as the only 'we', as French on and Tok Pisin yumi spread)."""
+    if lexicon is None or not hasattr(lexicon, "words") or _lex_get(lexicon, "WE") is None:
+        return
+    from planet.language import lexicon as LX   # noqa: PLC0415
+    want = aims(g).get("clusivity") == "yes"
+    has = _clusive(lexicon) == "yes"
+    lid = lect_id or getattr(lexicon, "lect", "?")
+    if want and not has and rng.random() < p_make:
+        how = _choice(rng, INCLUSIVE_FROM)
+        w = None
+        if how != "root":
+            head, mod = how.split("+")
+            if mod == "THOU" and _lex_get(lexicon, "THOU") is None:
+                mod = "YOU"
+            if _lex_get(lexicon, head) is not None and _lex_get(lexicon, mod) is not None:
+                w = LX.compound(rng, lexicon, CLUSIVE[0], inv, kyr, lid, head=head, modifier=mod,
+                                note=f"{head.lower()} + {mod.lower()}: 'we, you included'")
+        if w is None or _form(w) == _form(_lex_get(lexicon, "WE")):
+            w = LX.coin(rng, lexicon, CLUSIVE[0], inv, kyr, lid, how="root", store=False)
+            how = "root"
+        lexicon.set(w)
+        lexicon.words.pop(CLUSIVE[1], None)
+        g.events.append((kyr, f"inclusive 'we' {ipa(_form(w))} told apart from exclusive "
+                              f"{ipa(_form(_lex_get(lexicon, 'WE')))} ({'a new root' if how == 'root' else 'a compound'})"))
+    elif not want and has and rng.random() < p_drop:
+        inc = _lex_get(lexicon, CLUSIVE[0])
+        if rng.random() < 1 / 3:
+            we = _lex_get(lexicon, "WE")
+            lexicon.set(dataclasses.replace(inc.with_step(LX._step(kyr, lid, f"shift:{CLUSIVE[0]}", inc.form, "we")),
+                                            concept=we.concept, pos=we.pos, freq_class=we.freq_class))
+            what = f"the inclusive {ipa(_form(inc))} became the only 'we'"
+        else:
+            what = f"the inclusive {ipa(_form(inc))} fell out of use; {ipa(_form(_lex_get(lexicon, 'WE')))} is 'we'"
+        lexicon.words.pop(CLUSIVE[0], None)
+        lexicon.words.pop(CLUSIVE[1], None)
+        g.events.append((kyr, f"no more inclusive/exclusive 'we': {what}"))
+
+
+def _redup(g: Grammar, rng, kyr: float, p_make: float, p_drop: float) -> None:
+    """Verbal reduplication arises when the aims want it (`REDUP`, `REDUP_SHAPE`; a CV copy is prefixed three times in
+    four) and fades when they no longer do; the verb exemplars carry its cell, so sound change wears the copy down with
+    the rest of the word (Tagalog-style CV- copies that later lose their transparency)."""
+    want = aims(g).get("verb_reduplication") == "yes"
+    rd = g.processes.get("redup")
+    if want and rd is None and rng.random() < p_make:
+        fn = _choice(rng, REDUP)
+        shape = _choice(rng, REDUP_SHAPE)
+        side = "pre" if shape == "full" or rng.random() < 0.75 else "post"
+        g.processes["redup"] = {"fn": fn, "shape": shape, "side": side}
+        g.events.append((kyr, f"verbs reduplicate for the {REDUP_INFO[fn].gloss.split(' (')[0]} "
+                              f"({'the whole stem' if shape == 'full' else 'a CV copy ' + ('before' if side == 'pre' else 'after') + ' the stem'})"))
+        _sync_cells(g)
+    elif not want and rd is not None and rng.random() < p_drop:
+        del g.processes["redup"]
+        g.events.append((kyr, f"verbal reduplication ({REDUP_INFO[rd['fn']].gloss.split(' (')[0]}) fell out of use"))
+        _sync_cells(g)
+
+
+def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, inv=None, lect_id: str | None = None
+               ) -> None:
+    """The built constructions that are not grams on the ladder (`Grammar.processes`)."""
+    lv = _live_fns(g)
+    _split(g, rng, kyr, lv)
+    p_make = _p(PRESSURE * soc.get("recruit", 1.0), dn)
+    _clusivity(g, rng, kyr, p_make, _p(CLUSIVE_LOSS * soc.get("loss", 1.0), dn), lexicon, inv, lect_id)
+    _redup(g, rng, kyr, p_make, _p(REDUP_LOSS * soc.get("loss", 1.0), dn))
+
+
+#: person agreement grows as a set (Givon 1976; Siewierska 2004 ch. 8; Fuss 2005): when one subject pronoun binds to the
+#: verb, the rest of the series it belongs to binds with it, each member with PERSON_JOIN (the third singular less
+#: often: a zero 3SG is the commonest gap, Koryak, Hungarian, Turkish), from its own pronoun; a member that missed the
+#: moment is filled in later by analogy with the paradigm (PERSON_FILL per generation, x social recruit). Members whose
+#: pronouns share a form come out syncretic; a missing pronoun leaves a gap.
+PERSON_JOIN = {"1SG": 0.85, "2SG": 0.85, "3SG": 0.6, "1PL": 0.8, "2PL": 0.75, "3PL": 0.75}
+PERSON_FILL = 0.004
+
+
+def _degram_bias(g: Grammar, gr: Gram) -> float:
+    b = DEGRAM_EDGE if gr.host == "NP" else 1.0
+    slot = gr.info.slot
+    mates = [x for x in g.grams if x is not gr and x.info.slot == slot and x.host[0] == gr.host[0]]
+    if any(not x.live for x in mates) and not any(x.live and x.level >= CLITIC for x in mates):
+        b *= DEGRAM_ORPHAN
+    return b
+
+
+def _degram(g: Grammar, gr: Gram, kyr: float) -> None:
+    """One step back up the ladder (affix > clitic, clitic > free word), logged as a grammar event."""
+    old = gr.level
+    gr.level -= 1
+    if gr.level == FREE:
+        gr.side = _side(gr.function, aims(g))
+    what = f"{LEVELS[old]} > {LEVELS[gr.level]}"
+    gr.history.append((kyr, f"degrammaticalized: {what}"))
+    g.events.append((kyr, f"degrammaticalization: the {gr.info.gloss} marker {ipa(gr.form)} went from {what} "
+                          "(a rare climb back up the ladder; Norde 2009)"))
+
+
+def _person_member(g: Grammar, fn: str, level: int, side: str, lexicon, idx, kyr: float, T: Tables, why: str,
+                   rng=None, inv=None) -> Gram | None:
+    """Bind one person function at `level`: a live free person gram climbs down to it; else its pronoun is recruited."""
+    cur = [x for x in g.grams if x.live and x.function == fn]
+    if any(x.level >= CLITIC for x in cur):
+        return None
+    if cur:
+        gr = min(cur, key=lambda x: x.age_gens)
+        gr.level, gr.side = level, side
+        gr.history.append((kyr, f"now {LEVELS[level]} ({why})"))
+    else:
+        key = w = pid = None
+        for p in T.paths:
+            if p.target == fn and not p.from_gram:
+                key, w = _find(lexicon, idx, p.sources)
+                if w is not None:
+                    pid = p.id
+                    break
+        if w is None:
+            return None
+        form, hist = _recruited_form(_form(w), kyr)
+        if level >= AFFIX:
+            e = first_syllable(form)
+            if e != form:
+                hist.append((kyr, f"eroded {ipa(form)} > {ipa(e)}"))
+            form = e
+        gr = Gram(fn, form, "V", side, level, (str(key), pid, "concept"), kyr,
+                  [(kyr, f"recruited from '{key}' ({pid}), {why}"), *hist], id=g.new_id(fn))
+        g.grams.append(gr)
+    g.events.append((kyr, f"{fn} {ipa(gr.form)} joins the person paradigm as a {LEVELS[level]} ({why})"))
+    return gr
+
+
+def _person_set(g: Grammar, gr: Gram, rng, lexicon, kyr: float, T: Tables) -> None:
+    """`gr`, a person marker, has just bound (clitic or tighter): the rest of its series binds with it (PERSON_JOIN)."""
+    if lexicon is None:
+        return
+    idx = _lex_index(lexicon)
+    for fn in PERSON_FNS:
+        if fn != gr.function and rng.random() < PERSON_JOIN[fn]:
+            _person_member(g, fn, min(gr.level, AFFIX), gr.side, lexicon, idx, kyr, T,
+                           f"with {gr.function}: the pronoun series binds as a set")
+
+
+def _person_fill(g: Grammar, rng, lexicon, kyr: float, T: Tables, p: float) -> None:
+    """A paradigm with gaps fills one by analogy with its bound members (at their side and commonest level)."""
+    bound = [x for x in g.grams if x.live and x.function in PERSON_FNS and x.level >= CLITIC]
+    if not bound or lexicon is None:
+        return
+    have = {x.function for x in bound}
+    gaps = [f for f in PERSON_FNS if f not in have]
+    if not gaps or rng.random() >= p:
+        return
+    fn = gaps[int(rng.integers(len(gaps)))]
+    lv = sorted(x.level for x in bound)[len(bound) // 2]
+    side = max(("pre", "post"), key=lambda s: sum(x.side == s for x in bound))
+    if _person_member(g, fn, min(lv, AFFIX), side, lexicon, _lex_index(lexicon), kyr, T,
+                      "by analogy with the paradigm") is not None and lv >= AFFIX:
+        _sync_cells(g)
+
+
 def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, lexicon=None, l2_share: float = 0.0,
          population: float | None = None, isolation: float = 0.5, kyr: float = 0.0, drift_typology: bool = False,
          rate: float = 1.0, **kw) -> None:
@@ -1946,11 +2259,20 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 _lose(g, gr, kyr, "worn away")
                 changed = True
                 continue
+            if CLITIC <= gr.level <= AFFIX and gr.form and DEGRAM > 0:
+                h = (FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"]
+                     * FUSE_LEVEL[gr.level - 1] * DEGRAM * _degram_bias(g, gr))
+                if rng.random() < _p(h, dn):
+                    _degram(g, gr, kyr)
+                    changed = True
+                    continue
             if gr.level < FUSED:
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
                 if rng.random() < _p(h, dn):
                     gr.level += 1
                     gr.history.append((kyr, f"now {LEVELS[gr.level]}"))
+                    if gr.level == CLITIC and gr.function in PERSON_FNS:
+                        _person_set(g, gr, rng, lexicon, kyr, T)
                     if gr.level == AFFIX:
                         eroded = first_syllable(gr.form)
                         if eroded != tuple(gr.form):
@@ -1966,6 +2288,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                             _adopt(g, gr, kyr)
                     g.events.append((kyr, f"{gr.function} {ipa(gr.form)} is now {LEVELS[gr.level]}"))
                     changed = True
+        if PERSON_FILL > 0:
+            _person_fill(g, rng, lexicon, kyr, T, _p(PERSON_FILL * soc["recruit"], dn))
         if grew_class and g.class_system is not None and rng.random() < CLASS_GROW:
             add_class(g, rng, inv, lexicon, kyr)
         if changed:
@@ -1979,6 +2303,7 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 if rng.random() < _p(ANALOGY * soc["analogy"] * (0.3 if fused else 1.0), dn):
                     analogy(g, ex, key, kyr)
         _check_lost(g, kyr)
+        _processes(g, rng, kyr, dn, soc, lexicon, inv, kw.get("lect"))
     realise(g, lexicon)
 
 
@@ -2312,6 +2637,7 @@ def to_json(g: Grammar) -> dict:
             "classes": [{"k": c.k, "group": c.group, "gram_id": c.gram_id} for c in g.class_system.classes]},
         "helpers": {r: {"concept": c, "form": _fj(f)} for r, (c, f) in g.helpers.items()},
         "events": [list(e) for e in g.events],
+        "processes": {k: (dict(v) if isinstance(v, dict) else v) for k, v in g.processes.items()},
         "n": g._n,
         "complexity": complexity(g),
     }
@@ -2333,6 +2659,7 @@ def from_json(d: dict) -> Grammar:
         g.class_system = ClassSystem(cs["kind"], [NounClass(c["k"], c["group"], c["gram_id"]) for c in cs["classes"]])
     g.helpers = {r: (v["concept"], _ff(v["form"])) for r, v in d.get("helpers", {}).items()}
     g.events = [tuple(e) for e in d.get("events", [])]
+    g.processes = dict(d.get("processes") or {})
     g._n = d.get("n", len(g.grams))
     return g
 

@@ -180,9 +180,11 @@ class History:
             if hf is not None:
                 lex.head_first = hf
             nb = (getattr(gram, "typology", None) or {}).get("numeral_base")
-            if nb is not None and nb != (lex.systems.get("numeral") or {}).get("label"):
+            if nb is not None:   # (the grammar drew the system; rebuilt now that the head order is known, or re-drawn)
                 from . import lexsys as LS
-                LS.set_numerals(rng_for(self.seed, "numerals", key), lex, nb, inv, kyr, pid)
+                sy = lex.systems.get("numeral") or {}
+                LS.set_numerals(rng_for(self.seed, "numerals", key), lex, nb, inv, kyr, pid,
+                                system=sy if sy.get("label") == nb else None)
         rate = float(math.exp(rng.normal(0.0, LC.RATE_SIGMA)))
         p = LC.Lect(id=pid, deme=None, people=people, parent=None, how=how, born_kyr=float(kyr), rate=rate, inventory=inv,
                     lexicon=lex, grammar=gram, profile=prof, profile_key=people, gen_yr=self.R.generation_yr(people))
