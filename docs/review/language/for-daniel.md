@@ -541,8 +541,16 @@ All fixed where they arose, the mechanical ones with tests (`test_third_read_fix
   proto's).
 - **A recipe** per demo language, as commands ("How to cook X": take, grind or cut, put in the pot, cook on the fire,
   eat with salt, it is good). X is the people's first crop from the food data, else its first herd animal, else fish.
-- **The faith origin myth** is not built: the gods' names are the faiths lane's (lexicon/names). `texts.MYTH_HOOK` marks
-  where it goes; it needs a god's name in the lexicon and one or two facts from gods.json per sentence.
+- **The faith myth** (`texts.myth`, built after merging the faiths lane): "What the gods hold", told only from the
+  data: each of up to three gods holds its first domain ('Oanga holds the fire'), the high god gives its domain's gift
+  ('... gives us rain', faiths.GIFT), each divine food taboo becomes 'X holds the wild swine. We do not eat wild swine.'
+  (taboos.json, the god matched by label; targets with no word, like eels, are left out), and it ends with the
+  invocation ('X, hear us!'). gods.json has no creation story, sex or divine kinship (its `parent` is the god's descent
+  across cultures), so none is told. Shown on the demo page and in the sketches beside the recipe.
+- **Faith names**: the run names a founding culture "first tortles of the south of Simath" (planet/lineages/cultures.py
+  line 430) and its faith "the sea faith of first tortles of ...". The language pages now print "the sea faith of the
+  earliest tortles of ..." (`sketch.faith_label`); the cause is in the lineages code, not mine, and changing it would
+  rename the stored cultures of every run.
 
 ### Phase D: what I added, with the defaults I chose
 Each default is one constant in `planet/language/grammar.py`.
@@ -569,35 +577,35 @@ Each default is one constant in `planet/language/grammar.py`.
   Demonstratives, Polite address, Comparison, Obviation, and DOM in the Case note.
 
 ### Measured
-Isolated harness (300 human protos, ~20 kyr, `sim.py` from phase C) and the full pass of a24559 (618 living lects;
-"before" = phase C's final pass, 622 living lects).
+Isolated harness (300 human protos, ~20 kyr, `sim.py` from phase C) and the final full pass of a24559 (after merging
+the faiths lane: 612 living lects; "before" = phase C's final pass, 622 living lects).
 
 | | harness before | harness after | full pass before | full pass after | reference |
 | --- | --- | --- | --- | --- | --- |
-| polar question: intonation only | 39% | 32% | 51% | 39% | WALS 116A: about 14% |
-| question gram (Q), any | 61% | 68% | 49% | 61% | about 60% particle + 17% verbal |
+| polar question: intonation only | 39% | 32% | 51% | 36% | WALS 116A: about 14% |
+| question gram (Q), any | 61% | 68% | 49% | 64% | about 60% particle + 17% verbal |
 | far demonstrative (3-way distance) | 0% | 31% | 0% | 16% | WALS 41A: 3-way about 37% |
-| graded past, of lects with a past | 9% | 20% | (not measured) | 10% | WALS 66A: about 30% |
-| completive / inceptive / iterative | 0% | 22% / 8% / 10% | 0% | 15% / 7% / 5% | (no single figure) |
-| mirative | 0% | 8% | 0% | 5% | WALS 77/78 area: rare as a gram |
-| polite address (plural / third person) | 0% | 14% / 5% | 0% | 22% / 9% | WALS 45A: 24% binary + 10% more |
-| honorific verb marker | 0% | 2% | 0% | 3% | rare (Japanese, Korean, Tibetan) |
-| comparison: locational / exceed / particle / conjoined | none | 20 / 31 / 24 / 25% | none | 28 / 32 / 15 / 25% | WALS 121A: 47 / 20 / 13 / 20% |
-| DOM, of lects with an accusative | 0% | 17% | 0% | 9% | common in accusative languages (Bossong) |
-| obviative | 0% | 3% | 0% | 4% | rare (Algonquian, Kutenai) |
+| graded past, of lects with a past | 9% | 20% | (not measured) | 11% | WALS 66A: about 30% |
+| completive / inceptive / iterative | 0% | 22% / 8% / 10% | 0% | 8% / 6% / 6% | (no single figure) |
+| mirative | 0% | 8% | 0% | 6% | WALS 77/78 area: rare as a gram |
+| polite address (plural / third person) | 0% | 14% / 5% | 0% | 16% / 14% | WALS 45A: 24% binary + 10% more |
+| honorific verb marker | 0% | 2% | 0% | 1% | rare (Japanese, Korean, Tibetan) |
+| comparison: locational / exceed / particle / conjoined | none | 20 / 31 / 24 / 25% | none | 18 / 34 / 20 / 28% | WALS 121A: 47 / 20 / 13 / 20% |
+| DOM, of lects with an accusative | 0% | 17% | 0% | 8% | common in accusative languages (Bossong) |
+| obviative | 0% | 3% | 0% | 1% | rare (Algonquian, Kutenai) |
 
-Scholars' horizon (human lects), not chased: window reading 17.0 kyr (smoothed 16.25, the log line says 16.0),
-logistic `human_logistic` 14.68 kyr; still FAIL on the window reading. Phase C's pass read 13.5 on the window (no
-logistic then). Other checks all ok as before.
+Scholars' horizon (human lects), not chased: window reading 12.0 kyr, logistic `human_logistic` 13.3 kyr (the
+pre-merge pass of this branch read 17.0 / 14.7: the window reading swings, as noted before); still FAIL on the window
+reading. Other checks all ok as before.
 
 ### Odd output
 - **Far demonstrative worn back into 'that'** (red dragon on the demo: 'that' tɛ˨˦ɨ˨ and the far one tɛ˨˦ɨ˨): the
   reinforcing syllable eroded away, so the two distances now sound alike. Real systems do merge this way; the page
   reports it as it stands rather than hiding it.
-- **Full pass vs harness**: far demonstratives (16% vs 31%) and graded pasts (10% vs 20%) are half as common in the
+- **Full pass vs harness**: far demonstratives (16% vs 31%) and graded pasts (11% vs 20%) are half as common in the
   full pass as in the isolated harness; contact and adult learners strip optional free words. Below WALS on both; I
   did not chase it further.
-- **Comparison shares**: locational is 28% (WALS 121A 47%) and exceed 32% (20%), because the construction now follows
+- **Comparison shares**: locational is 18% (WALS 121A 47%) and exceed 34% (20%), because the construction now follows
   the typology's Grambank-drawn `comparative` aim; that draw (GB265/GB266) was there before phase D. Changing it is a
   one-line prior change if you want WALS shares.
 - **Recipes on crops**: "How to cook cane" and "How to cook alliums": the staple is the people's first crop, whatever

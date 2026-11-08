@@ -337,7 +337,8 @@ class Doc:
             sch = (self.names.get("scholars") or {}).get(lid)
             if sch:
                 return "Proto-" + sch["roman"]
-            return f"the {people(l['people'])} proto-language"
+            return f"the {l['people'].replace('_', ' ')} proto-language"   # (the people's key as an adjective: a page may
+            # name peoples in the plural, and "the humans proto-language" does not read)
         dn = l.get("deme_name") or f"{people(l['people'])} {l['deme']}"
         if short:
             return dn.split(" (")[0]
@@ -1509,7 +1510,7 @@ def faith_label(name: str) -> str:
     culture: planet/lineages/cultures.py) and a faith after it ("the sea faith of first tortles of ..."), which reads as
     if these were the first tortles anywhere: here "the sea faith of the earliest tortles of ...", and "the" before a
     culture named without it ("the sky faith of the giant-kin of ...")."""
-    m = re.match(r"^(.*? faith of )(first )?(.*)$", name or "")
+    m = re.match(r"^(the [^ ]+ [^ ]+ of )(first )?(.*)$", name or "")   # (faith, schism, ...)
     if not m:
         return name
     rest = m.group(3).replace("giant-kin stem", "giant-kin")

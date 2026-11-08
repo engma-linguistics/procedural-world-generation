@@ -181,3 +181,5 @@ def test_faith_label_reads_as_english():
         "the sea faith of the earliest tortles of the south of Simath"
     assert SK.faith_label("the sky faith of giant-kin stem of the west of Simath") == \
         "the sky faith of the giant-kin of the west of Simath"
+    assert SK.faith_label("the mountain schism of first kobolds of the west of Simath") == \
+        "the mountain schism of the earliest kobolds of the west of Simath"
