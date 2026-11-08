@@ -1,0 +1,25 @@
+# Reference profiles for tools/language/find.py --like. One row per profile; a blank cell means "not known or not
+# meaningful", and that feature is then left out of the distance. Counts are phonemes, PHOIBLE/WALS level (marginal loan
+# phonemes left out); vowels count qualities (length is the long_vowels series). max_onset/max_coda are the language's own
+# (find.py caps them at the engine's largest, 2). stress: initial|penult|final|weight|none (none = no stress accent: tone or
+# pitch accent). word_order/adposition/case use the engine's typology values (case: none|few|many). synthesis is a judgement on
+# the engine's 0-3 scale of complexity.mean_level (0 free words, 1 clitics, 2 affixes): isolating ~0.3, English ~0.8,
+# agglutinating ~1.8-2.0. series: the series present, from find.SERIES. Final-vowel share, word length and the sound texture
+# come from the profile's word list (reference_words.tsv; English uses tools/language/sketch.py ENGLISH_WORDS).
+profile	label	consonants	vowels	tones	max_onset	max_coda	stress	word_order	adposition	case	synthesis	series	sources
+hawaiian	Hawaiian	8	5	0	1	0	penult	VSO	pre	none	0.4	long_vowels	Elbert & Pukui, Hawaiian Grammar (1979) ch. 2; Pukui & Elbert, Hawaiian Dictionary (1986); WALS 'haw'
+japanese	Japanese	15	5	0	1	1	none	SOV	post	few	1.5	long_vowels	Vance, The Sounds of Japanese (2008); Okada, JIPA Handbook (1999); WALS 'jpn' (pitch accent, so no stress accent)
+english	English (General American)			0			initial	SVO	pre	none	0.8	interdental	inventory and syllable limits filled from tools/language/sketch.py ENGLISH_* (24 C, 12 V, CCCVCCCC): Ladefoged & Johnson (2015) ch. 2; Wells, Accents of English (1982); WALS 'eng'
+finnish	Finnish	13	8	0	1	1	initial	SVO	post	many	1.9	front_rounded,long_vowels	Suomi, Toivanen & Ylitalo, Finnish Sound Structure (2008); Karlsson, Finnish: An Essential Grammar (2008); WALS 'fin'
+arabic	Arabic (Modern Standard)	28	3	0	1	2	weight	VSO	pre	few	1.7	pharyngeal,uvular,interdental,long_vowels	Ryding, A Reference Grammar of Modern Standard Arabic (2005); Watson, The Phonology and Morphology of Arabic (2002); Thelwall & Sa'adeddin, JIPA (1990)
+mandarin	Mandarin (Standard)	22	5	4	1	1	none	SVO	mixed	none	0.3	retroflex,aspirated,front_rounded	Duanmu, The Phonology of Standard Chinese (2007); Lee & Zee, JIPA (2003); WALS 'mnd'
+georgian	Georgian	28	5	0	4	2	initial	SOV	post	many	1.9	ejectives,uvular,aspirated	Aronson, Georgian: A Reading Grammar (1990); Shosted & Chikovani, JIPA (2006); WALS 'geo'
+welsh	Welsh	26	7	0	3	2	penult	VSO	pre	none	1.0	interdental,lateral_obstruent,uvular,long_vowels	Hannahs, The Phonology of Welsh (2013); Ball & Müller, Mutation in Welsh (1992); WALS 'wel'
+sindarin	Sindarin (Tolkien)	22	6	0	2	2	weight		pre	none	1.0	interdental,front_rounded,lateral_obstruent,long_vowels	Tolkien, LotR Appendix E (1955); Salo, A Gateway to Sindarin (2004) ch. 2-4; word order left blank (corpus too small)
+quenya	Quenya (Tolkien)	20	5	0	1	1	weight	SVO	pre	many	1.8	long_vowels	Tolkien, LotR Appendix E (1955) and 'Namárië'; Fauskanger, Quenya Course (Ardalambion, 2004); 10 cases per the Plotz letter
+spanish	Spanish (Castilian)	19	5	0	2	1	penult	SVO	pre	none	1.3	interdental	Hualde, The Sounds of Spanish (2005); Martínez-Celdrán, Fernández-Planas & Carrera-Sabaté, JIPA (2003); WALS 'spa'
+swahili	Swahili	26	5	0	1	0	penult	SVO	pre	none	1.8		Mohammed, Modern Swahili Grammar (2001); Polomé, Swahili Language Handbook (1967); prenasalized stops count as one onset; WALS 'swa'
+zulu	Zulu	40	5	2	1	0	penult	SVO	pre	none	1.9	clicks,ejectives,implosives,lateral_obstruent,aspirated	Poulos & Bosch, Zulu (1997); Doke, The Phonetics of the Zulu Language (1926); WALS 'zul'
+turkish	Turkish	21	8	0	1	2	final	SOV	post	many	1.9	front_rounded	Göksel & Kerslake, Turkish: A Comprehensive Grammar (2005); Zimmer & Orgun, JIPA (1992); WALS 'tur'
+klingon	Klingon (Okrand)	21	5	0	1	2		OVS	post	few	1.8	uvular,retroflex,lateral_obstruent,aspirated	Okrand, The Klingon Dictionary (1985, 2nd ed. 1992) §1-3; stress rules differ for nouns and verbs, so left blank
+black_speech	Black Speech (Tolkien)	18	5	0	2	2							Tolkien, LotR (Ring inscription, Uglúk's curse) and Appendix F; Parma Eldalamberon 17 (2007); thin corpus: counts are estimates from ~25 attested words
