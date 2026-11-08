@@ -39,7 +39,14 @@
   svg text.m { fill: var(--muted); font-size: 10px; }
   a.lk, span.lk { color: var(--accent); cursor: pointer; text-decoration: none; } a.lk:hover, span.lk:hover { text-decoration: underline; }
   .say { padding: 0 5px; font-size: 10px; line-height: 16px; border-radius: 8px; margin-left: 3px; color: var(--muted); }
-  .say.busy { opacity: .5; } body.noaudio .say { display: none; }
+  .say.lab { font-size: 12px; padding: 1px 9px; color: var(--text); border-color: var(--acc); }
+  .say.busy { animation: saybusy 0.8s ease-in-out infinite alternate; cursor: progress; }
+  .say.playing { background: var(--acc); color: var(--bg); border-color: var(--acc); }
+  .say.err { border-color: var(--err); color: var(--err); }
+  @keyframes saybusy { from { opacity: 1; } to { opacity: .3; } }
+  body.noaudio .say, body.noaudio .playall, body.noaudio #audioCtl select { display: none; }
+  #audioCtl { display: inline-flex; gap: 6px; align-items: center; }
+  #audioState.on { color: var(--acc); } #audioState.err { color: var(--err); }
   .pill { display: inline-block; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line); font-size: 11px; color: var(--muted); margin: 1px 2px; }
   .pass { color: var(--ok); } .fail { color: var(--err); }
   #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--muted); background: var(--bg); z-index: 5; }
@@ -58,11 +65,15 @@
   <span style="flex:1"></span>
   <input id="find" list="findList" placeholder="find a lect or place…" size="26" title="Type a lect id (d12), a deme's name or a people, then pick from the list">
   <datalist id="findList"></datalist>
+  <span id="audioCtl" title="Every ▶ button says its word or sentence aloud. Pick the voice: Piper sounds like a person (an English speaker reading foreign words); eSpeak is robotic but has more of the world's sounds. Remembered in this browser.">
+    <span class="muted">voice</span><select id="voice"><option value="auto">best</option><option value="piper">Piper (natural)</option><option value="espeak">eSpeak (more sounds)</option></select>
+    <span id="audioState" class="muted">…</span></span>
   <a id="toWorkbench" href="lineages.html" title="The peoples workbench of this run">Peoples workbench</a>
   <a href="index.html" title="Back to the globe viewer">Viewer</a>
 </header>
 <nav id="tabs">
   <button data-tab="families" title="The true family tree of every lect beside the tree a linguist would draw from the words alone">Families</button>
+  <button data-tab="grammar" title="The picked language today: its grammar in short, sample sentences glossed word by word, pronouns, words and word families; every form can be heard">Grammar &amp; sentences</button>
   <button data-tab="time" title="One lect over the last 20,000 years: its sounds, words, grammar and sound changes">A language over time</button>
   <button data-tab="continuum" title="A map of who understands whom at any moment, and chains of dialects whose ends no longer understand each other">Continuum &amp; intelligibility</button>
   <button data-tab="names" title="Each people's names for itself and others, with where each name came from">Names &amp; etymologies</button>
@@ -73,6 +84,7 @@
 <main>
   <div id="loading"><div id="loadMsg">loading…</div><progress id="loadBar" max="1" value="0"></progress></div>
   <section class="tab" id="tab-families"></section>
+  <section class="tab" id="tab-grammar"></section>
   <section class="tab" id="tab-time"></section>
   <section class="tab" id="tab-continuum"></section>
   <section class="tab" id="tab-names"></section>
@@ -86,6 +98,7 @@
 <script src="langtime.js"></script>
 <script src="langmap.js"></script>
 <script src="langmore.js"></script>
+<script src="langgram.js"></script>
 <script>LangView.start();</script>
 </body>
 </html>

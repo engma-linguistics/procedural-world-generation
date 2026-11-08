@@ -35,26 +35,33 @@
   // a romanized name: the readable spelling, the full one (with tone and length marks) on hover and beside it when it differs
   const rom = (n) => `<span class="rom" title="${esc(n.roman_full || n.roman || '')}">${esc(n.roman || '')}</span>${n.roman_full && n.roman_full !== n.roman ? ` <span class="muted" style="font-size:12px">(${esc(n.roman_full)})</span>` : ''}`;
   const chainOf = (S, x) => (x == null ? null : LC.etymChain(S.ix, x));
-  // a word's root family (lexicon words' `roots`, the document's `roots` table): the root, its words in this lect, and
-  // the concepts built on it across the living lects that keep it
-  function rootHtml(S, sl, w) {
-    const r = w && w.roots && w.roots[0];
+  // a word's root family, two ways: `roots` (what a speaker still feels) and `etym_roots` (what a historian reconstructs:
+  // the family the word was made in, carried forward); each with the root (the document's `roots` table), its words in this
+  // lect, and the concepts built on it across the living lects that keep it. A file without etym_roots says so.
+  function rootView(S, sl, w, field, title, blurb) {
+    if (!w || !Array.isArray(w[field])) return field === 'etym_roots' ? `<h3>${esc(title)}</h3><div class="muted">This run's file has no etym_roots (it predates them).</div>` : '';
+    const r = w[field][0];
     if (!r) return '';
     const R = (S.doc.roots || {})[r] || {};
-    const here = Object.entries((sl && sl.lexicon) || {}).filter(([, x]) => x.roots && x.roots.includes(r)).map(([c]) => c).sort();
+    const here = Object.entries((sl && sl.lexicon) || {}).filter(([, x]) => Array.isArray(x[field]) && x[field].includes(r)).map(([c]) => c).sort();
     const across = new Map();
     let lects = 0;
     for (const l of S.doc.lects) {
       if (l.died_kyr != null || l.deme == null) continue;
       let hit = false;
-      for (const [c, x] of Object.entries(l.lexicon || {})) if (x.roots && x.roots[0] === r) { across.set(c, (across.get(c) || 0) + 1); hit = true; }
+      for (const [c, x] of Object.entries(l.lexicon || {})) if (Array.isArray(x[field]) && x[field][0] === r) { across.set(c, (across.get(c) || 0) + 1); hit = true; }
       if (hit) lects++;
     }
     const fam = [...across.entries()].sort((a, b) => b[1] - a[1]);
-    return `<h3>Its root</h3><div><span class="ipa">*${esc(R.ipa || '?')}</span> ‘${esc(String(R.gloss || R.concept || r).toLowerCase())}’
+    const c0 = String(r).split(':').slice(1).join(':').split('@')[0];
+    return `<h3>${esc(title)}</h3><div class="muted" style="font-size:12px">${esc(blurb)}</div><div><span class="ipa">*${esc(R.ipa || '?')}</span> ‘${esc(String(R.gloss || R.concept || c0 || r).toLowerCase())}’
       <span class="muted">${R.lect ? 'in ' + lk(R.lect, R.lect) : ''}${R.kyr != null ? ', ' + esc(ago(R.kyr)) : ''} · ${esc(r)}</span></div>
       <div class="muted" style="margin-top:4px">in this lect: ${here.map((c) => conceptText(c)).join(', ') || '–'}</div>
       <div class="muted">across ${lects} living lects: ${fam.slice(0, 30).map(([c, n]) => `${conceptText(c)} (${n})`).join(', ')}</div>`;
+  }
+  function rootHtml(S, sl, w) {
+    return rootView(S, sl, w, 'roots', 'The family a speaker feels', 'its root as speakers still hear it (a derivation or compound younger than 3 kyr whose parts are still in use)')
+      + rootView(S, sl, w, 'etym_roots', 'The family a historian reconstructs', 'its root as it was when the word was made, however opaque it has become since');
   }
 
   // ================================================================== tab 4: names

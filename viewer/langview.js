@@ -34,25 +34,87 @@
   function langColor(id) { const l = lect(id); return LC.hue((l && (l.language || l.family_true)) || id); }
   const lk = (id, text) => `<span class="lk" data-lect="${esc(id)}" title="${esc(lectLabel(id))}">${esc(text ?? lectShort(id))}</span>`;
   const sw = (c) => `<span class="sw" style="background:${c}"></span>`;
-  const say = (ipa, people) => (ipa ? `<button class="say" data-ipa="${esc(ipa)}" data-people="${esc(people || '')}" title="say it (eSpeak; a non-human voice gets its species' effects)">&#9654;</button>` : '');
+  // a play button: a word, or with o.sentence a whole sentence (word gaps and phrase intonation; o.q a yes/no question);
+  // o.label puts text beside the triangle (the header's "hear a sample")
+  const say = (ipa, people, o = {}) => (ipa ? `<button class="say${o.label ? ' lab' : ''}" data-ipa="${esc(ipa)}" data-people="${esc(people || '')}"${o.sentence ? ' data-sentence="1"' : ''}${o.q ? ' data-q="1"' : ''} title="${esc(o.title || (o.sentence ? 'hear the sentence' : 'hear it') + ' (voice: the picker at the top right; a non-human people gets its species\' effects)')}">&#9654;${o.label ? ' ' + esc(o.label) : ''}</button>` : '');
 
-  // ------------------------------------------------------------------ audio (GET /api/speak; a 503 hides every button)
+  // ------------------------------------------------------------------ audio (GET /api/speak; no backend hides every button)
+  // The voice picker (header) chooses the backend, remembered in this browser; /api/speak/backends says which exist.
   const audioCache = new Map();
+  const VOICE_KEY = 'lang.voice';
+  let current = null;   // { audio, button } while something plays
+  function voice() { try { return localStorage.getItem(VOICE_KEY) || 'auto'; } catch (e) { return 'auto'; } }
+  function setVoice(v) { try { localStorage.setItem(VOICE_KEY, v); } catch (e) { /* (private window: not remembered) */ } }
+  function audioState(text, cls) { const el = $('audioState'); if (el) { el.textContent = text; el.className = 'muted ' + (cls || ''); } }
   function probeAudio() {
-    fetch('../api/speak?ipa=a&people=human').then((r) => { S.audio = r.ok; document.body.classList.toggle('noaudio', !r.ok); }).catch(() => { S.audio = false; document.body.classList.add('noaudio'); });
+    const sel = $('voice');
+    fetch('../api/speak/backends').then((r) => (r.ok ? r.json() : { backends: [] })).then((info) => {
+      const have = info.backends || [];
+      S.audio = have.length > 0;
+      document.body.classList.toggle('noaudio', !S.audio);
+      if (!sel) return;
+      for (const o of sel.options) { o.disabled = o.value !== 'auto' && !have.includes(o.value); }
+      const autoOpt = sel.querySelector('option[value=auto]');
+      if (autoOpt) autoOpt.textContent = `best (${info.default || 'none'})`;
+      let v = voice();
+      if (v !== 'auto' && !have.includes(v)) v = 'auto';
+      sel.value = v;
+      audioState(S.audio ? 'ready' : 'audio unavailable on this server', S.audio ? '' : 'err');
+    }).catch(() => { S.audio = false; document.body.classList.add('noaudio'); audioState('audio unavailable', 'err'); });
+    if (sel) sel.onchange = () => { setVoice(sel.value); audioState(`voice: ${sel.value === 'auto' ? 'best available' : sel.value}`); };
+  }
+  function speakUrl(b) {
+    return LC.speakUrl('../api/speak', b.dataset.ipa, b.dataset.people, { backend: voice(), sentence: !!b.dataset.sentence, q: !!b.dataset.q });
+  }
+  function stop() {
+    if (current) { current.audio.pause(); current.button.classList.remove('playing'); current = null; }
+  }
+  // play one button's sound; resolves when it ends (or fails), so "play all" can chain
+  function playButton(b) {
+    return new Promise((resolve) => {
+      const url = speakUrl(b);
+      const go = (u) => {
+        stop();
+        const a = new Audio(u);
+        current = { audio: a, button: b };
+        b.classList.add('playing');
+        audioState('playing…', 'on');
+        const end = () => { b.classList.remove('playing'); if (current && current.audio === a) { current = null; audioState('ready'); } resolve(true); };
+        a.onended = end; a.onerror = end;
+        a.play().catch(end);
+      };
+      if (audioCache.has(url)) return go(audioCache.get(url));
+      b.classList.add('busy');
+      audioState('making the sound…', 'on');
+      fetch(url)
+        .then((r) => { if (r.status === 503) { document.body.classList.add('noaudio'); throw new Error('no audio backend'); } if (!r.ok) return r.json().then((j) => { throw new Error(j.error || r.status); }, () => { throw new Error(r.status); }); return r.blob(); })
+        .then((bl) => { const u = URL.createObjectURL(bl); audioCache.set(url, u); b.classList.remove('busy'); go(u); })
+        .catch((err) => { b.classList.remove('busy'); b.classList.add('err'); b.title = `could not say this: ${err.message}`; audioState('could not say that: ' + err.message, 'err'); resolve(false); });
+    });
+  }
+  // play buttons one after another (a "play all"); a second click stops
+  let chain = null;
+  async function playAll(buttons, ctl) {
+    if (chain) { chain.stop = true; stop(); return; }
+    chain = { stop: false };
+    if (ctl) ctl.classList.add('playing');
+    for (const b of buttons) { if (chain.stop) break; await playButton(b); await new Promise((r) => setTimeout(r, 350)); }
+    if (ctl) ctl.classList.remove('playing');
+    chain = null;
   }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.say');
     if (b) {
       e.stopPropagation();
-      const key = b.dataset.ipa + '|' + b.dataset.people;
-      const play = (url) => { new Audio(url).play().catch(() => {}); };
-      if (audioCache.has(key)) return play(audioCache.get(key));
-      b.classList.add('busy');
-      fetch(`../api/speak?ipa=${encodeURIComponent(b.dataset.ipa)}&people=${encodeURIComponent(b.dataset.people)}`)
-        .then((r) => { if (r.status === 503) { document.body.classList.add('noaudio'); throw new Error('no audio'); } if (!r.ok) throw new Error(r.status); return r.blob(); })
-        .then((bl) => { const u = URL.createObjectURL(bl); audioCache.set(key, u); play(u); })
-        .catch(() => {}).finally(() => b.classList.remove('busy'));
+      if (current && current.button === b) { stop(); audioState('ready'); return; }
+      playButton(b);
+      return;
+    }
+    const pa = e.target.closest('[data-playall]');
+    if (pa) {
+      e.stopPropagation();
+      const box = document.getElementById(pa.dataset.playall) || pa.closest('.tab');
+      playAll([...box.querySelectorAll('.say[data-sentence]')], pa);
       return;
     }
     const a = e.target.closest('[data-lect]');
@@ -121,7 +183,16 @@
       ${l.family_scholars ? `<span><span class="k">scholars' family</span> ${esc(l.family_scholars)}</span>` : ''}
       <span><span class="k">from</span> ${ago(l.born_kyr)}${l.parent ? `, ${how} ${lk(l.parent)}` : ''}${l.substrate ? `, over ${lk(l.substrate)} (substrate)` : ''}</span>
       <span>${l.died_kyr == null ? '<span class="ok">spoken now</span>' : `<span class="muted">${esc(l.end || 'ended')} ${ago(l.died_kyr)}</span>`}</span>
-      ${l.population ? `<span><span class="k">speakers</span> ~${NumFmt.count(l.population)}</span>` : ''}`;
+      ${l.population ? `<span><span class="k">speakers</span> ~${NumFmt.count(l.population)}</span>` : ''}
+      ${sampleButton(l)}`;
+  }
+  // the lect's short sample for the header: its first sample sentence, else its word for 'person' (or the first word it has)
+  function sampleButton(l) {
+    const s = (l.sentences || [])[0];
+    if (s) return say(s.ipa, l.people, { sentence: true, q: s.q, label: 'hear a sample', title: `hear a sample: ‘${s.en}’ (${s.ipa})` });
+    const lex = l.lexicon || {};
+    const c = ['PERSON', 'PEOPLE', 'WATER'].find((k) => lex[k]) || Object.keys(lex)[0];
+    return c ? say(lex[c].ipa, l.people, { label: 'hear a word', title: `hear its word for ‘${c.toLowerCase()}’ (${lex[c].ipa})` }) : '';
   }
   // a time scrubber over the frames, bound to the shared frame (S.f); ▶ plays from the oldest frame to now
   let player = null;
@@ -375,5 +446,5 @@
     if (selY != null) scrollTo(box, top + selY * ROW);
   }
 
-  globalThis.LangView = { start, S, TABS, esc, ago, lect, demeOf, lectShort, lectLabel, peopleName, peopleColor, langColor, lk, sw, say, select, setFrame, setTab, draw, writeHash, scrubber };
+  globalThis.LangView = { start, S, TABS, esc, ago, lect, demeOf, lectShort, lectLabel, peopleName, peopleColor, langColor, lk, sw, say, select, setFrame, setTab, draw, writeHash, scrubber, playAll, stop };
 })();

@@ -72,6 +72,12 @@ out.etym = L.etymChain(ix, 2);
 out.proc = ['proto', 'sound_change:S001+S002+…3', 'derive:thing', 'compound:FIRE+STONE', 'borrow:d31', 'shift:EAT', 'odd:thing'].map(L.processText);
 out.wrap = [L.wrapLon(10, 50), L.wrapLon(170, -170), L.wrapLon(-170, 170)];
 out.cmp = ['d100', 'd12.1', 'd12', 'd13', 'p2'].sort(L.cmpId);
+out.speak = [L.speakUrl('/api/speak', 'ka la', 'elf', { backend: 'auto', sentence: true, q: true }),
+             L.speakUrl('/api/speak', 'ka', '', { backend: 'piper', q: true })];
+out.surface = L.surfaceOf('iʂ=ly  t̪yʂ-a');
+const lexF = { A: { roots: ['r1'] }, B: { roots: ['r1', 'r2'] }, C: { roots: ['r2'] }, D: { roots: ['r1'], etym_roots: ['e1'] } };
+out.fam = L.rootFamilies(lexF, 'roots').map((f) => [f.root, f.main, f.all]);
+out.famNone = L.rootFamilies(lexF, 'nope');
 console.log(JSON.stringify(out));
 """
 
@@ -192,6 +198,14 @@ def test_etymology_and_words(R):
     assert pr[-1] == "odd:thing"
 
 
+def test_speech_and_family_helpers(R):
+    assert R["speak"][0] == "/api/speak?ipa=ka+la&people=elf&sentence=1&q=1"
+    assert R["speak"][1] == "/api/speak?ipa=ka&backend=piper"
+    assert R["surface"] == "iʂly t̪yʂa"
+    assert R["fam"] == [["r1", ["A", "B", "D"], ["A", "B", "D"]], ["r2", ["C"], ["B", "C"]]]
+    assert R["famNone"] is None
+
+
 def test_small_helpers(R):
     assert R["wrap"][0] == [[10, 50]] and len(R["wrap"][1]) == 2 and R["wrap"][1][0] == [170, 190]
     assert R["cmp"] == ["d12", "d12.1", "d13", "d100", "p2"]
@@ -212,13 +226,13 @@ def test_helpers_over_the_synthetic_file(tmp_path):
     assert all(c["adj"] is not None for c in r["cont"])
 
 
-@pytest.mark.parametrize("name", ["langcore.js", "langview.js", "langtime.js", "langmap.js", "langmore.js"])
+@pytest.mark.parametrize("name", ["langcore.js", "langview.js", "langtime.js", "langmap.js", "langmore.js", "langgram.js"])
 def test_viewer_scripts_parse(name):
     subprocess.run(["node", "--check", str(VIEWER / name)], check=True, capture_output=True)
 
 
 def test_page_loads_its_scripts():
     html = (VIEWER / "languages.html").read_text()
-    for s in ["numfmt.js", "langcore.js", "langview.js", "langtime.js", "langmap.js", "langmore.js", "theme.css"]:
+    for s in ["numfmt.js", "langcore.js", "langview.js", "langtime.js", "langmap.js", "langmore.js", "langgram.js", "theme.css"]:
         assert s in html
     assert 'href="languages.html"' in (VIEWER / "lineages.html").read_text()

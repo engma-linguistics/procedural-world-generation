@@ -12,6 +12,8 @@
 //   findContinua(...)        the same search as families.continua, at any frame
 //   ipaPlace(seg)            where a segment sits on the consonant grid (place x manner) or the vowel trapezoid
 //   etymChain(ix, node)      a word's etymology, oldest first; processText(step) its process in plain words
+//   speakUrl(...)            the /api/speak URL for a word or a sentence; surfaceOf(form) a glossed form line as IPA
+//   rootFamilies(lex, field) word families by per-word roots ('roots' felt, 'etym_roots' reconstructed)
 (function (g) {
   // ------------------------------------------------------------------ index
   const pairKey = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
@@ -396,9 +398,43 @@
     const b2 = b + (b < a ? 360 : -360);
     return [[a, b2], [a - (b2 - b), b]];
   }
+  // ------------------------------------------------------------------ speech, glosses, word families (round 5)
+  // the /api/speak URL for a word or (o.sentence) a whole sentence; o.backend 'auto' is left out
+  function speakUrl(base, ipa, people, o = {}) {
+    const q = new URLSearchParams({ ipa: String(ipa || '') });
+    if (people) q.set('people', people);
+    if (o.backend && o.backend !== 'auto') q.set('backend', o.backend);
+    if (o.sentence) q.set('sentence', '1');
+    if (o.sentence && o.q) q.set('q', '1');
+    return `${base}?${q.toString()}`;
+  }
+  // a glossed form line ('iʂ=ly t̪yʂ') as one sayable IPA string: the morpheme breaks dropped, words kept apart
+  const surfaceOf = (form) => String(form || '').replace(/[-=]/g, '').replace(/\s+/g, ' ').trim();
+  // word families in one lexicon by a per-word root field ('roots': what a speaker feels; 'etym_roots': what a historian
+  // reconstructs): [{root, main: [concepts whose first root it is], all: [concepts that contain it]}], biggest first;
+  // null when no word has the field (a file written before it existed)
+  function rootFamilies(lex, field) {
+    const fam = new Map();
+    let any = false;
+    for (const [c, w] of Object.entries(lex || {})) {
+      const rs = w && w[field];
+      if (!Array.isArray(rs)) continue;
+      any = true;
+      rs.forEach((r, k) => {
+        if (!fam.has(r)) fam.set(r, { root: r, main: [], all: [] });
+        const f = fam.get(r);
+        if (k === 0) f.main.push(c);
+        if (!f.all.includes(c)) f.all.push(c);
+      });
+    }
+    if (!any) return null;
+    return [...fam.values()].map((f) => ({ ...f, main: f.main.sort(), all: f.all.sort() }))
+      .sort((a, b) => b.main.length - a.main.length || b.all.length - a.all.length || (a.root < b.root ? -1 : 1));
+  }
   const API = { pairKey, index, cmpId, nearestFrame, alive, snapFull, ancestry, stitch, changeLog, layoutTree, layoutDendro,
     intelClass, intelColor, intelRamp, INTEL_GREEN, INTEL_RED, chainAt, chainBreak, findContinua,
-    PLACES, MANNERS, HEIGHTS, ipaPlace, vowelXY, etymChain, processText, causeText, hue, wrapLon };
+    PLACES, MANNERS, HEIGHTS, ipaPlace, vowelXY, etymChain, processText, causeText, hue, wrapLon, speakUrl, surfaceOf,
+    rootFamilies };
   g.LangCore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -109,3 +109,62 @@ def test_server_route_caches_wav():
     assert server.speak("ipa=kalima&people=elf")[0] is b
     assert server.speak("ipa=")[1] == 400
     assert server.speak("ipa=ka%E2%98%83")[1] == 400
+
+
+# ---- whole sentences (round 5) -------------------------------------------------------------------------------------------
+
+def _f0(x: np.ndarray, sr: int = S.SR) -> float:
+    """A crude pitch estimate (autocorrelation, 70-400 Hz) over the loudest 120 ms of a clip."""
+    x = x.astype(np.float64)
+    n = int(0.12 * sr)
+    e = np.convolve(x * x, np.ones(n), "valid")
+    a = int(np.argmax(e))
+    seg = x[a:a + n] - x[a:a + n].mean()
+    ac = np.correlate(seg, seg, "full")[n - 1:]
+    lo, hi = int(sr / 400), int(sr / 70)
+    return sr / (lo + int(np.argmax(ac[lo:hi])))
+
+
+def test_intonation_shapes():
+    st = [S.intonation(4, i, False, False) for i in range(4)]
+    q = [S.intonation(4, i, True, False) for i in range(4)]
+    assert st[0][0] > st[-1][0] and st[-1][1] < st[-1][0]          # declination, final fall
+    assert q[-1][1] > q[-1][0] and q[:-1] == st[:-1]                 # final rise, the rest as a statement
+    tq = [S.intonation(4, i, True, True) for i in range(4)]
+    assert all(a == b for a, b in tq) and tq[0][0] > tq[-1][0]       # tonal: level words, a gentle downdrift
+    assert S.is_tonal("ma˥˩ ka") and not S.is_tonal("kalima ta")
+
+
+@pytest.mark.parametrize("backend", S.BACKENDS)
+def test_speak_utterance(backend):
+    _backend_or_skip(backend)
+    one = _check_wav(S.speak("kalima", backend=backend))
+    st = _check_wav(S.speak_utterance("ta kalima nu sopa", backend=backend))
+    q = _check_wav(S.speak_utterance("ta kalima nu sopa", backend=backend, question=True))
+    assert len(st) > 2 * len(one) and len(st) <= S.MAX_UTTER_S * S.SR
+    assert not np.array_equal(st, q)
+    tail = int(0.35 * S.SR)
+    assert _f0(q[-tail:]) > _f0(st[-tail:])                          # the question ends higher
+    tonal = _check_wav(S.speak_utterance("ma˥ ka˩ nu˧", S.profile_for_people("red_dragon"), backend=backend))
+    assert len(tonal) > len(one)
+    with pytest.raises(ValueError):
+        S.render_utterance("ka " * (S.MAX_UTTER_WORDS + 1), None, backend)
+
+
+def test_server_sentence_route_and_backends():
+    from planet import server
+    info, code = server.speak_backends()
+    assert code == 200 and set(info["backends"]) <= set(S.BACKENDS)
+    if not info["backends"]:
+        pytest.skip("no speech backend available")
+    assert info["default"] in info["backends"]
+    b, code = server.speak("ipa=ta%20kalima%20nu&people=elf&sentence=1&q=1")
+    assert code == 200 and b[:4] == b"RIFF"
+    assert server.speak("ipa=ta%20kalima%20nu&people=elf&sentence=1&q=1")[0] is b
+    assert server.speak("ipa=ta%20kalima%20nu&people=elf&sentence=1")[0] is not b
+    assert server.speak("ipa=" + "ka%20" * 120 + "&sentence=1")[1] == 400
+
+
+def test_medial_prenasal_click_tokenizes():
+    w = S.tokenize("kəᵑǃəmä uŋu.ᵑǂu")
+    assert [x.ipa for x in w[0]][1:3] == ["ə", "ᵑǃ"] and "ᵑǂ" in [x.ipa for x in w[1]]

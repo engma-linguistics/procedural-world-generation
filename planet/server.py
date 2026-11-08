@@ -16,7 +16,9 @@
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
-  GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper]   a word said aloud: audio/wav (speak())
+  GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper][&sentence=1[&q=1]]   a word
+         (or, with sentence=1, a whole sentence with word gaps and phrase intonation; q=1 a yes/no question) said aloud: audio/wav
+  GET    /api/speak/backends          {"backends": [...available], "default": "piper"|"espeak"|null}
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
   GET    /api/gods?run=<id>[&mode=]  the gods of those cultures (lineages/gods.py, PW-1306) and their faiths (PW-1358): its gods.json, else worked out on the fly, not saved
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
@@ -184,24 +186,42 @@ _SPEAK_CACHE: dict = {}
 _SPEAK_LOCK = threading.Lock()
 SPEAK_CACHE_MAX = 512
 SPEAK_MAX_CHARS = 200
+SPEAK_MAX_SENTENCE_CHARS = 480   # (a sentence of up to 16 words; tone letters make tonal IPA long)
+
+
+def speak_backends() -> tuple[dict, int]:
+    """GET /api/speak/backends: which speech backends this server has, and the one 'auto' uses."""
+    try:
+        from .language import speak as SP
+        have = SP.available_backends()
+    except Exception as e:  # noqa: BLE001
+        return {"backends": [], "default": None, "error": f"{type(e).__name__}: {e}"}, 200
+    return {"backends": have, "default": "piper" if "piper" in have else ("espeak" if "espeak" in have else None)}, 200
 
 
 def speak(query: str) -> tuple[bytes | dict, int]:
-    """GET /api/speak?ipa=<IPA>&people=<lineage id>[&backend=]: the word rendered as WAV by language/speak.py (the people's
-    voice profile sets register and rate; at most 1 s of audio per word). Cached in memory by (ipa, people, backend)."""
+    """GET /api/speak?ipa=<IPA>&people=<lineage id>[&backend=][&sentence=1[&q=1]]: the word rendered as WAV by
+    language/speak.py (the people's voice profile sets register and rate; at most 1 s of audio per word), or with sentence=1
+    the whole sentence (speak_utterance: word gaps, declination and a final fall, or a final rise with q=1; capped at 16 words
+    and 9 s). Cached in memory by (ipa, people, backend, sentence, q)."""
     q = dict(parse_qsl(query))
     ipa, people, backend = (q.get("ipa") or "").strip(), q.get("people") or None, q.get("backend") or "auto"
+    sentence, question = q.get("sentence") in ("1", "true"), q.get("q") in ("1", "true")
     if not ipa:
         return {"error": "ipa= is required"}, 400
-    if len(ipa) > SPEAK_MAX_CHARS:
-        return {"error": f"ipa= is longer than {SPEAK_MAX_CHARS} characters"}, 400
-    key = (ipa, people, backend)
+    cap = SPEAK_MAX_SENTENCE_CHARS if sentence else SPEAK_MAX_CHARS
+    if len(ipa) > cap:
+        return {"error": f"ipa= is longer than {cap} characters"}, 400
+    key = (ipa, people, backend, sentence, question)
     with _SPEAK_LOCK:
         if key in _SPEAK_CACHE:
             return _SPEAK_CACHE[key], 200
     try:
         from .language import speak as SP
-        b = SP.speak(ipa, SP.profile_for_people(people), backend=backend)
+        if sentence:
+            b = SP.speak_utterance(ipa, SP.profile_for_people(people), backend=backend, question=question)
+        else:
+            b = SP.speak(ipa, SP.profile_for_people(people), backend=backend)
     except ValueError as e:
         return {"error": str(e)}, 400
     except Exception as e:  # a missing backend (SP.BackendUnavailable) or a synthesis failure
@@ -623,6 +643,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/brief":
             return self.send_json(*brief(url.query))
+        if url.path == "/api/speak/backends":
+            return self.send_json(*speak_backends())
         if url.path == "/api/speak":
             body, code = speak(url.query)
             if isinstance(body, dict):

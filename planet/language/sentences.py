@@ -8,8 +8,9 @@ lexical word the construction commonly grows from (Heine & Kuteva's paths in gra
 says so.
 
 `enrich(lj)` adds two compact fields to a living lect's record:
-- `grammar_notes`: [{topic, text, ex: [[form line, gloss line, English]]}], one per topic (nouns, verbs, agreement,
-  negation, questions, possession, relative clauses, copula);
+- `grammar_notes`: [{topic, text, ex: [[form line, gloss line, English] | sentence id]}], one per topic (nouns, verbs,
+  agreement, negation, questions, possession, relative clauses, copula); a sample sentence used as an example is named by
+  its id rather than copied (`example` resolves it);
 - `sentences`: [{id, en, w: [[form, gloss] per word], ipa, roman, q, note}], 5-10 interlinear-glossed sentences (Leipzig
   conventions: '-' between affix and stem, '=' before or after a clitic, the gloss line with the same breaks; category
   labels in capitals). `ipa` is the whole sentence after the simple joining rules, words separated by spaces, for audio;
@@ -1130,10 +1131,19 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
 
 
 def _sent_ex(sents: dict, sid: str) -> list:
-    s = sents.get(sid)
-    if not s:
-        return []
-    return [[" ".join(w[0] for w in s["w"]), " ".join(w[1] for w in s["w"]), s["en"]]]
+    """A sample sentence as a note's example: by its id (a string; `example` resolves it), not a copy."""
+    return [sid] if sid in sents else []
+
+
+def example(lj: dict, ex) -> list | None:
+    """A grammar note's example as [form line, gloss line, English, sentence or None]: a list as stored, or a sentence id
+    (a string) resolved against the lect's `sentences`."""
+    if isinstance(ex, str):
+        s = next((x for x in lj.get("sentences") or [] if x["id"] == ex), None)
+        if s is None:
+            return None
+        return [" ".join(w[0] for w in s["w"]), " ".join(w[1] for w in s["w"]), s["en"], s]
+    return [*ex[:3], None]
 
 
 def grammar_notes(lj: dict, sents: list | None = None) -> list[dict]:

@@ -1,6 +1,9 @@
 """Hear a generated word: IPA in, WAV out (audio lane, 2026-11-03; research and choices in docs/review/language/audio.md).
 
 speak(ipa, profile=None, out_path=None, backend="auto") -> WAV bytes (22.05 kHz mono, 16-bit).
+speak_utterance(ipa, profile=None, question=False, ...) -> WAV bytes: a whole sentence, word by word with short gaps and a
+phrase intonation (declination with a final fall, or a final rise for a yes/no question; for a tonal lect only a gentle
+downdrift, so lexical tones stay intact).
 
 1. Tokenize the IPA (longest match over data/ipa_to_speech.tsv base rows, prenasal prefixes before, modifiers after; input is
    NFD-normalized with percepts' aliases). Each segment gets a backend token and a set of effects.
@@ -145,8 +148,12 @@ def tokenize(ipa: str) -> list[list[Seg]]:
             attach = False
             i += 1
             continue
-        if r is not None and r.kind == "pre" and not attach:
-            pre += ch
+        if r is not None and r.kind == "pre":
+            # a prenasal letter starts the next segment (ᵑǃ, ⁿd) when a base follows it, even word-medially; else, just
+            # after a segment, it is a nasal release (ignored), as in percepts
+            nxt = next((L for L in range(min(maxlen, n - i - 1), 0, -1) if s[i + 1:i + 1 + L] in bases), None)
+            if not attach or nxt is not None:
+                pre += ch
             i += 1
             continue
         m = next((L for L in range(min(maxlen, n - i), 0, -1) if s[i:i + L] in bases), None)
@@ -623,6 +630,90 @@ def render(ipa: str, profile=None, backend: str = "auto") -> np.ndarray:
         y[-k:] *= np.linspace(1, 0, k)
     y = y / (np.abs(y).max() + 1e-9) * 0.9
     return y.astype(np.float32)
+
+
+# ---- whole sentences --------------------------------------------------------------------------------------------------------
+
+MAX_UTTER_WORDS = 16   # the longest sentence the server renders
+MAX_UTTER_S = 9.0      # cap on a sentence's audio
+WORD_GAP_S = 0.06      # silence between words (on top of each word's 40 ms margins)
+DECLINE_ST = 2.5       # declination over a statement, semitones (first word +1, last word -1.5)
+FINAL_FALL_ST = 3.0    # a statement's last word falls this far further
+FINAL_RISE_ST = 5.0    # a yes/no question's last word rises this far
+DOWNDRIFT_ST = 1.5     # tonal lects: a gentle downdrift only, so lexical tones stay readable
+QUESTION_LIFT_ST = 1.0  # tonal lects: a question lifts the whole register a little instead of a final rise
+
+
+def _contour(y: np.ndarray, s0: float, s1: float, steps: int = 6, sr: int = SR) -> np.ndarray:
+    """A pitch glide from s0 to s1 semitones over the clip, in crossfaded steps (length kept)."""
+    if abs(s1 - s0) < 0.05:
+        return pitch_shift(y, s0, sr)
+    out = np.zeros_like(y)
+    edges = np.linspace(0, len(y), steps + 1).astype(int)
+    fade = int(0.006 * sr)
+    for q in range(steps):
+        st = s0 + (s1 - s0) * (q + 0.5) / steps
+        lo, hi = max(0, edges[q] - fade), min(len(y), edges[q + 1] + fade)
+        seg = pitch_shift(y, st, sr)[lo:hi]
+        w = np.ones(hi - lo, np.float32)
+        if q > 0:
+            w[:2 * fade] = np.linspace(0, 1, 2 * fade)[: len(w[:2 * fade])]
+        if q < steps - 1:
+            k = len(w[-2 * fade:])
+            w[-2 * fade:] = np.linspace(1, 0, k)
+        out[lo:hi] += seg * w
+    return out
+
+
+def intonation(n: int, i: int, question: bool, tonal: bool) -> tuple[float, float]:
+    """(start, end) semitones of word i of n: statement declination with a final fall, a yes/no question's final rise; a
+    tonal lect keeps only a downdrift (and a slight lift for a question)."""
+    k = i / max(1, n - 1)
+    if tonal:
+        base = -DOWNDRIFT_ST * k + (QUESTION_LIFT_ST if question else 0.0)
+        return base, base
+    base = 1.0 - DECLINE_ST * k
+    if i == n - 1:
+        return (base, base + FINAL_RISE_ST) if question else (base, base - FINAL_FALL_ST)
+    return base, base
+
+
+def is_tonal(ipa: str) -> bool:
+    return any(x.tone for w in tokenize(ipa) for x in w)
+
+
+def render_utterance(ipa: str, profile=None, backend: str = "auto", question: bool = False) -> np.ndarray:
+    """A sentence (IPA words separated by spaces) -> float32 mono at SR: each word rendered as `render` does (the people's
+    register, at most 1 s), its pitch moved by `intonation`, joined with WORD_GAP_S silences and capped at MAX_UTTER_S."""
+    words = [w for w in ipa.split() if w.strip()]
+    if not words:
+        raise ValueError(f"nothing to say in {ipa!r}")
+    if len(words) > MAX_UTTER_WORDS:
+        raise ValueError(f"at most {MAX_UTTER_WORDS} words per sentence")
+    tonal = is_tonal(ipa)
+    gap = np.zeros(int(WORD_GAP_S * SR), np.float32)
+    parts = []
+    for i, w in enumerate(words):
+        y = render(w, profile, backend)
+        s0, s1 = intonation(len(words), i, question, tonal)
+        y = _contour(y, s0, s1)
+        y = y / (np.abs(y).max() + 1e-9) * (0.9 - 0.15 * i / max(1, len(words) - 1))
+        parts += [y, gap]
+    y = np.concatenate(parts[:-1]).astype(np.float32)
+    cap = int(MAX_UTTER_S * SR)
+    if len(y) > cap:
+        y = y[:cap]
+        k = int(0.08 * SR)
+        y[-k:] *= np.linspace(1, 0, k)
+    return (y / (np.abs(y).max() + 1e-9) * 0.9).astype(np.float32)
+
+
+def speak_utterance(ipa: str, profile=None, out_path=None, backend: str = "auto", question: bool = False) -> bytes:
+    """A whole sentence as WAV bytes (see render_utterance); also written to out_path if given."""
+    b = to_wav(render_utterance(ipa, profile, backend, question))
+    if out_path is not None:
+        Path(out_path).write_bytes(b)
+    return b
 
 
 def to_wav(y: np.ndarray, sr: int = SR) -> bytes:

@@ -202,3 +202,13 @@ def test_enrich_is_compact_json():
             "Possession", "Relative clauses", "Copula"} <= topics
     assert all(s["ipa"] and s["roman"] and s["en"] for s in lj["sentences"])
     assert len(json.dumps({"s": lj["sentences"], "n": lj["grammar_notes"]}, ensure_ascii=False)) < 9000
+
+
+def test_note_examples_name_sentences_by_id():
+    lj = SN.enrich(lect())
+    neg = next(n for n in lj["grammar_notes"] if n["topic"] == "Negation")
+    assert neg["ex"] == ["negation"]
+    form, gloss, en, s = SN.example(lj, "negation")
+    assert gloss == "1SG NEG drink water" and en == "I do not drink the water." and s["id"] == "negation"
+    poss = next(n for n in lj["grammar_notes"] if n["topic"] == "Possession")
+    assert SN.example(lj, poss["ex"][0])[3] is None and SN.example(lj, "nope") is None

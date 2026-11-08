@@ -143,3 +143,32 @@ Opened or read tonight:
 - Saeki et al. 2023, zero-shot multilingual TTS: https://arxiv.org/pdf/2301.12596.pdf
 
 [memory], not re-opened: Chatterbox / F5-TTS / Orpheus / Dia input formats beyond the tracker's blank phoneme column.
+
+## Whole sentences and the viewer (round 5, surface lane, 2026-11-07)
+
+- `speak_utterance(ipa, profile=None, out_path=None, backend="auto", question=False)` (`render_utterance` under it): the
+  sentence's words are rendered one by one exactly as `render` does (the people's register, 1 s cap a word), then each
+  word's pitch is moved by `intonation(n, i, question, tonal)` and the words are joined with 60 ms of silence (plus each
+  word's 40 ms margins). Statement: declination from +1 to -1.5 semitones across the words and a final fall of 3 more on
+  the last word; yes/no question (`q`): the same, but the last word rises 5 semitones instead. Tonal lects (any tone mark
+  in the IPA, `is_tonal`): no word-level contour at all, so lexical tones stay readable; only a gentle downdrift (0 to -1.5
+  st) and, for a question, the whole sentence 1 semitone higher. Pitch glides use the existing WSOLA `pitch_shift` in six
+  crossfaded steps (`_contour`). Loudness falls a little across the sentence (0.9 to 0.75 before the final normalize).
+  Caps: 16 words (`MAX_UTTER_WORDS`, a ValueError past it) and 9 s (`MAX_UTTER_S`, faded out).
+- Server: `GET /api/speak?ipa=…&people=…&sentence=1[&q=1][&backend=]` (sentence IPA up to 480 characters; the cache key
+  includes sentence and q); `GET /api/speak/backends` -> `{"backends": [...], "default": "piper" | "espeak" | null}`.
+- Checked by test (`tests/test_language_speak.py`): valid WAV on both backends, a sentence longer than two single words, a
+  question's last 350 ms higher in pitch than the statement's (autocorrelation F0), a tonal dragon sentence, the word cap;
+  the server route and its cache, the backends route.
+- No listening was possible here either. Expect a word-by-word reading with clear gaps (no coarticulation across words),
+  a falling statement and a rising question; the joins inside words are the sentence builder's (glides, nasal assimilation),
+  not the speech engine's.
+
+**In the viewer** (`viewer/languages.html`): every word, pronoun, name, etymology step, grammar example and sample sentence
+has a ▶ button. The header has a **voice** picker (best available / Piper / eSpeak; a backend the server lacks is greyed
+out), remembered in the browser (`localStorage` `lang.voice`), and a state line (ready, making the sound…, playing…, or
+why it failed). A button pulses while its sound is being made and lights up while it plays; clicking it again stops it;
+starting another stops the first. The lect bar has **▶ hear a sample** (the lect's first sample sentence). The **Grammar &
+sentences** tab has **▶ play all sentences**. When the server has no backend at all, every ▶ and the voice picker are
+hidden and the state line says audio is unavailable.
+
