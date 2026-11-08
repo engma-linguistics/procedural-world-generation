@@ -2,7 +2,7 @@
 id: PW-1525
 title: "Trade routes: the hard 5% route cut on hundreds of stretches keeps the land-nudge steadiness near 0.5-0.65 whatever the source side does"
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -39,5 +39,6 @@ Options for Daniel:
 - [ ] a ruling on how route steadiness is drawn and judged
 
 ## Updates
+- 2026-11-08: Status needs-decision -> wontdo. Moot (coordinator 11-08): lane 222's seeking and per-layer bars brought steadiness to 0.75-0.84 under the existing cut and bar. D69 withdrawn from the desk.
 - 2026-11-08: Desk D69 (lean A, judged on the long-haul layer lane 222 draws).
 - 2026-11-08: Created from inbox draft draft-trade-route-steadiness-measure.md (found by lane 218).
