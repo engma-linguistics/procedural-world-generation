@@ -17,7 +17,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 - See each lane's section below for more.
 
 ## Demos waiting
-- **Languages demo page** (version 2, 11-08 morning: grammar B, 10 languages, 294 audio clips, complexity tab; a full read found a few remaining slips, now with grammar C): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
+- **Languages demo page** (version 3, 11-08: grammar C, 10 languages, 308 audio clips, complexity tab; a full read's remaining slips are listed in demo-read-3.md and are grammar D's first item): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
 
 ## Finish lane (lang-finish, 2026-11-07)
 
@@ -451,6 +451,47 @@ lever is still `FUSE` and the L2 exponent on fusion. I did not touch FUSE.
   share by about half.
 - **Infixes are vanishingly rare** (vowel-initial verb prefixes are rare, since recruitment keeps a word's onset).
 - **The actor-voice source 'do, make' is my guess.**
+
+## Faiths & contact pass 3 (lang-lexcon, 2026-11-08)
+
+**What changed, in plain words**
+- **Gods have names, and the names are words.** Each culture's up to four most important gods (the high god first) get a name in the language of the people who hold them, made from that language's own words: a bare domain word used as a name ('Sea'), a kin title ('sky-father', 'mountain-grandmother'), a rank title ('lord of the sky', 'chief of the river'), an agent noun ('the one who stands'), or a kenning ('roof of the world', 'the water-road'). The name is a lexicon entry (`name:god:<key>`, part of speech NAME), so it goes through every sound change the lect goes through, is inherited by daughters (sisters keep cognate names when the faith is older than their split), survives a shift as substrate, and is borrowed by converts from the people who converted them. The faith readout comes from gods.json; a24559's stored copy is older than faiths, so the pass re-derives it in memory (read-only, ~2 min).
+- **Names get replaced by epithets** (the Germanic bear, 'the brown one'): a name has a half-life of 12 thousand years against a new epithet; avoidance titles ('the lord', 'the holy one', 'the old one') join the patterns there. The old name is in the new word's history.
+- **Liturgical languages.** When a faith's holders learn temples (the techtree), the liturgy freezes the speech of the faith's seat at that moment: a copy of the lect that never changes again (`lit<faith>`). It holds a small sacred vocabulary (god, spirit, soul, holy, pray, sacrifice, demon, priest, temple, plus death, peace, true, song, sing, hear, give, we, light, feast) and the god names as they were. Three formulas are built from it with the grammar of that frozen stage: an invocation ('The lord, hear us!'), a praise ('Holy is the lord.') and a petition ('The sky-father gives rain.').
+- **Learned loans.** Holders take sacred words back from their liturgy at a slow rate, as English took learned Latin beside its own words. Where the lect still has its own word the loan sits beside it as a doublet or synonym in a `learned` register; the sketches show it.
+- **PRIEST and TEMPLE** are new concepts (with temples in the techtree): 'god-person', 'god-house', 'one who prays', 'place of praying'.
+- **Segment borrowing.** Under heavy contact (intensity above 0.5) a loan can keep a consonant the receiver lacks, and the sound joins the receiver's inventory (as English kept /ʒ/ from French). At most 4 per line. Logged in each lexicon's `systems.seg_loans`.
+- **River and lake tautologies.** A water name kept from a substrate language can get the new language's own word for river or lake added ('Avon river' type), when the two words differ.
+- **The faith endonym (E10)** now uses the lect's own name for its high god ('the people of Mawidu (the sky god)').
+- Output: languages.json has a new `faiths` block (holders, gods and their names per lect with glosses and when each was coined, the liturgy's words and formulas). The sketches have a "Gods and liturgy" section.
+
+**Defaults taken (your call when you are back)**
+1. **Four gods per culture** (`faiths.GODS_PER_CULTURE`), ranked high god first, then by devotion.
+2. **Name half-life 12 kyr** (`NAME_HALF_KYR`). At 6 kyr, 72% of all names had been replaced by an epithet and 'the lord' was everywhere. Real god names can last 5-6 thousand years (Dyaus / Zeus / Jupiter), and many were replaced by titles (Baal 'lord', Adonai), so anything from 6 to 15 is defensible.
+3. **The liturgy freezes at temples.** Liturgies are therefore up to ~6.6 thousand years old in a24559 (temples come early in its techtree). Real liturgical languages are 1.5-4 thousand years old (Latin, Sanskrit, Ge'ez, Church Slavonic). Freezing at writing instead would make them younger; there is no writing in the techtree that I could use.
+4. **Learned loan rate** `LEARNED_RATE` 0.0025 per generation per sacred meaning.
+5. **Kin titles give a god a sex** ('sky-father', 'earth-mother') that gods.json does not have; I drew it 50/50 (grandmother/grandfather the same). If a god should be sexless the kin patterns can be dropped.
+6. **Separate families name a shared god independently at the start** (frame 0): when two unrelated peoples hold one faith from the beginning, each names its gods from its own words, so their names are calques ('sky-father' in both), not loans. Converts later borrow the name.
+7. **Segment borrowing** `SEG_BORROW_MIN` 0.5, `SEG_BORROW_K` 0.15, `SEG_BORROW_MAX` 4. Consonants only.
+8. **Petition gifts** per domain (`faiths.GIFT`): sea gives fish, sky and storm rain, mountain water, herd milk, war and smithing spears, death and ancestors peace. Mine, not from the data.
+
+**Changed in the sound lane's files (flagged)**
+- `history.take_segments` adds the borrowed consonant to the lect's `base_segs` and calls `lect._sync_inventory`. One call into lect.py; no change to lect.py itself.
+
+**Odd output noticed**
+- Many sister lects replace a name by the same kind of epithet ('the lord', 'roof of the world'), so a faith's god can be 'the lord' in four languages with four unrelated forms. This is plausible (Baal) but repetitive; it was much worse at the 6 kyr half-life.
+- Faith names from gods.json read "the sky faith of first halflings of …" (the culture label). Not mine to change.
+- gods.json has no myths, no god sex and no relations between gods beyond parent; I did not invent any. The kennings are chosen by domain from a small fixed table.
+- Some god names wear down to one vowel ('A', 'I', 'Ì') after 15-20 thousand years of sound change. Plausible for a short word, odd for a god.
+- A god whose domain has no word of its own borrows a neighbouring domain's word: a desert spirit is 'chief of the fire', a sun spirit 'lord of the sky'.
+- **Segment borrowing is frequent.** In the final pass 205 of 618 living lects carry a borrowed-segment log and 142 sit at the cap of 4 (the log is inherited, so daughters of a heavy-contact lect share it); 266 of the 697 logged consonants are still in today's inventories, the rest were lost to sound change or folded away as rare. The areal inventory signal went from -0.004 to +0.003 (near minus far), so the effect on that check is still small. If this reads as too much, lower `SEG_BORROW_K` (0.15) or raise `SEG_BORROW_MIN` (0.5).
+
+**Horizon (both readings, a24559, 8 workers).** p4 (god names and liturgy, half-life 6): window 12.0 kyr, logistic 13.2. p5 (everything here): window **4.3**, logistic **11.0**. The previous lexicon pass (p3): window 4.5, logistic 13.7. The check fails as it did before this lane, now on the low side of 6-10 (the window read is the noisy one; see item 7 of pass 2).
+
+**Not done (task 4 leftovers)**
+- River names through each lect's own sound-change history (they would need `name:river` words injected into the lexicons, like the gods).
+- Peaks get no tautologies: peak names have no substrate path.
+- X9 and the P-pattern names (P1, P3, P5-P7) not started.
 
 ## Grammar phase D and texts (branch lang-gram-d, 2026-11-08)
 

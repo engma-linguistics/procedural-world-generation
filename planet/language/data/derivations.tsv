@@ -384,3 +384,6 @@ place	FIRE	GRIDDLE	1	'fire place'
 do	SOUR	PICKLE	2	'to sour'
 do	SMOKE (EXHAUST)	STEAM (FOOD)	1	'to vapour'
 thing	EAT	MEAL	2	'eating'
+agent	PRAY	PRIEST	2	'one who prays' (faiths pass 3); Latin precator, Sanskrit hotr 'pourer'
+agent	SACRIFICE	PRIEST	2	'sacrificer': Latin sacerdos, Sanskrit yajaka
+place	PRAY	TEMPLE	2	'place of prayer': Greek proseukhe, Arabic masjid 'place of prostration'
