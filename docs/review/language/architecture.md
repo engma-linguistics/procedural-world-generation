@@ -559,7 +559,7 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
 ## 11. Output (`output.py`, `languages.json`)
 
 ```
-{ "format": "procgen-languages/1", "run": "a24559", "seed": ..., "start_kyr": 20,
+{ "format": "procgen-languages/1" (in memory; on disk /2, below), "run": "a24559", "seed": ..., "start_kyr": 20,
   "profiles": { <lineage id>: {source, modality, articulators, make_cost, hear, notes} },
   "lects": [ { "id", "deme", "people", "parent", "how" (proto|bud|shift|arrival), "substrate", "born_kyr", "died_kyr",
                "rate", "language", "family_true", "family_scholars",
@@ -591,8 +591,40 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
   "romanization": "house/1" }
 ```
 
-Keep the file under ~40 MB: full lexicons for living lects only; dead lects keep the core 100 plus names. The brief gets a
-per-people summary; the workbench loads the whole file.
+That is the doc **in memory** (format /1's shape), which every reader works on. **On disk** (procgen-languages/2, finish
+lane 2026-11-07) `output.save` packs it into three files, and `output.load(path, sidecars=True | False | ("etym",))` /
+`LangCore.expand(main, {etym, snapshots})` in viewer/langcore.js unpack them back to exactly that doc (`expand(*pack(doc))
+== doc`; tests/test_language_format.py checks both expanders). A /1 file still loads as it is.
+
+```
+languages.json            the main file: everything above except etym_nodes, roots and the lects' snapshots, plus
+  "format": "procgen-languages/2", "sidecars": {"etym": "-etym", "snapshots": "-snapshots"},
+  "lect_ids": [lect id ...]                       # interned lect ids (lects, etymology nodes, roots)
+  "concepts": [[concept, gloss, pos] ...]         # every concept of a lexicon or a root; pos is the default for a word
+  lects[i]."lexicon": {"c": [concept index ...], "ipa": [...], "roman": [...], "freq": [...],
+                       "pos": sparse {word index: pos} where it differs from the concept's, "x": sparse extra keys}
+languages-etym.json
+  "root_ids": {"lect": [lect index], "concept": [concept index], "kyr": [text after "@" | null], "odd": sparse {i: id}}
+                                                  # root id i = f"{lect}:{concept}" (+ "@kyr"); ids that do not parse whole
+  "processes": [process ...], "notes": [note ...] # interned
+  "nodes": {"up": [i - parent, 0 = none], "kyr": [...], "lect": [lect index | -1 = the parent's],
+            "process": [index], "ipa": [ipa | 0 = the parent's | 1 = the first word (lect, then lexicon order) whose
+            etym is this node], "gloss": [gloss | 0 = the parent's], "note": sparse {i: note index}}
+  "roots": {"node": [...], "lect": [lect index | -1 = the id's], "kyr": [kyr | 0 = its node's], "ipa": [ipa | 0 = its
+            node's], "absent": [root index with no table entry], "other": sparse {i: {concept, gloss, pos} not the
+            concept table's}}
+  "lexicons": {lect id: {"etym": [node], "roots": [[root index]], "er": sparse {word index: [root index]} where
+               etym_roots differs from roots, "no_er": [word index without etym_roots]}}
+languages-snapshots.json  {"format", "lects": {lect id: snapshots (section 8's delta encoding, unchanged)}}
+```
+
+A sparse column is `{"i": [gaps between successive indices], "v": [values]}`. The main file alone carries everything the
+brief, names and sentences need (`load(path, sidecars=False)` leaves the words' etym / roots / etym_roots out); the viewer
+fetches the two sidecars beside it in parallel and expands. Sizes on a24559 (round 5 vocabulary, 712 words per living
+lect): calibration.md "Final run".
+
+Full lexicons for living lects only; dead lects keep the core 100 plus names, and past ~60 MB unpacked their snapshots are
+thinned to every 4th (`output.thin_dead`). The brief gets a per-people summary; the workbench loads the whole file.
 
 **A root's family** (for the viewer's word trace and a language-page generator): the words whose `roots[0]` is the root
 id, in one lect or across a family (`family_true`); `roots[1:]` are a compound's other roots (list a compound under each

@@ -178,7 +178,8 @@ class Ctx:
         """The run's languages.json (PW-986, names by PW-972), None where the run has none (never derived here: the pass takes minutes)."""
         if self._languages is False:
             f = self.dir / "languages.json"
-            self._languages = json.loads(f.read_text()) if f.exists() else None
+            from ..language import output as LO   # (format /2: the main file and its etymology sidecar)
+            self._languages = LO.load(f, sidecars=("etym",)) if f.exists() else None
         return self._languages
 
     def frame_at(self, era_kyr: float) -> int:

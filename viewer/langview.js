@@ -261,7 +261,12 @@
       } catch (e) { /* (no demes: lects keep their deme_name, the map has no dots) */ }
       const file = (S.meta.languages && S.meta.languages.file) || 'languages.json';
       const t0 = performance.now();
-      const doc = await getJSON(`../runs/${id}/${file}`, (got, tot) => loading(`loading ${file}: ${(got / 1e6).toFixed(0)} MB${tot ? ' of ' + Math.round(tot / 1e6) + ' MB' : ''}`, tot ? got / tot : null));
+      let doc = await getJSON(`../runs/${id}/${file}`, (got, tot) => loading(`loading ${file}: ${(got / 1e6).toFixed(0)} MB${tot ? ' of ' + Math.round(tot / 1e6) + ' MB' : ''}`, tot ? got / tot : null));
+      if (doc.format === LC.FORMAT2) {  // (format /2: the etymologies and the snapshots sit in two sidecar files beside it)
+        loading('loading the etymologies and the snapshots…', null);
+        const [etym, snapshots] = await Promise.all(['etym', 'snapshots'].map((k) => getJSON(`../runs/${id}/${LC.sidecarName(file, k)}`).catch(() => null)));
+        doc = LC.expand(doc, { etym, snapshots });
+      }
       loading('reading the languages…', 1);
       await new Promise((r) => setTimeout(r, 0));
       S.doc = doc; S.ix = LC.index(doc);

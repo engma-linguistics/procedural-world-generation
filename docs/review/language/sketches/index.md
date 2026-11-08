@@ -2,7 +2,7 @@
 
 # Language sketches
 
-Wikipedia-style pages for six living languages of run a24559 (627 living lects), written by `tools/language/sketch.py` from `runs/a24559/languages.json` alone. Regenerate with:
+Wikipedia-style pages for six living languages of run a24559 (617 living lects), written by `tools/language/sketch.py` from `runs/a24559/languages.json` alone. Regenerate with:
 
     uv run python tools/language/sketch.py runs/a24559/languages.json --out docs/review/language/sketches --auto
 
@@ -10,12 +10,12 @@ The languages are chosen by criteria, never by id, so a new run picks its own. E
 
 | page | people | why it was picked |
 | --- | --- | --- |
-| [Choťoe](d725-drow.md) | drow | **the largest click (or ejective) inventory**: 51 consonants, 24 of them clicks and 5 ejectives; 9 vowels |
-| [Irhngiurh](d538-kenku.md) | kenku | **a tonal kenku or aarakocra language**: 5 tones, 5 sounds outside the human voice, 27 consonants and 11 vowels |
-| [Idźhenrh-hihhengrh](d48-blue-dragon.md) | blue dragon | **a dragon language with the most non-human sounds**: 22 of its 71 sounds are outside the human voice |
-| [Nateeitei](d196.2-fire-giant.md) | fire giant | **a tiny inventory with long words**: 8 consonants and 5 vowels; core words average 2.75 syllables |
-| [Nirhna ngirhngi](d111-silver-dragon.md) | silver dragon | **the most conservative language of a long-lived people**: generation 430 years; 90% of its core list inherited from the proto-language; 31 sound changes |
-| [Ruirey](d646.2-halfling.md) | halfling | **the most English-like language**: score 0.770 (below) |
+| [Pxeyag\|he](d835-elf.md) | elf | **the largest click (or ejective) inventory**: 55 consonants, 32 of them clicks and 7 ejectives; 9 vowels |
+| [Irrizewku](d137-kenku.md) | kenku | **a tonal kenku or aarakocra language**: 5 tones, 6 sounds outside the human voice, 21 consonants and 12 vowels |
+| [Ti ngiirhrrirh](d91-green-dragon.md) | green dragon | **a dragon language with the most non-human sounds**: 18 of its 71 sounds are outside the human voice |
+| [Teleseerhlerh](d249-kobold.md) | kobold | **a tiny inventory with long words**: 11 consonants and 4 vowels; core words average 2.75 syllables |
+| [Guguangi](d117-white-dragon.md) | white dragon | **the most conservative language of a long-lived people**: generation 430 years; 92% of its core list inherited from the proto-language; 31 sound changes |
+| [Kusan](d132-cloud-giant.md) | cloud giant | **the most English-like language**: score 0.755 (below) |
 
 ## The English-likeness score
 
@@ -47,16 +47,16 @@ No language in the run can reach English's CCCVCCCC syllable: the engine's large
 
 | rank | language | people | score | consonants | vowels | syllables | tone | order | adp. | articles | case |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Ruirey <sub>d646.2</sub> | halfling | 0.770 | 0.69 (17) | 0.77 (7) | 2/2 | none | SVO | pre | def post, indef none | none |
-| 2 | An sih <sub>d144.2</sub> | kobold | 0.743 | 0.66 (21) | 0.63 (8) | 2/2 | none | SVO | pre | def post, indef none | none |
-| 3 | Isui <sub>d562</sub> | human | 0.737 | 0.65 (20) | 0.62 (8) | 2/2 | none | SVO | pre | def post, indef none | none |
-| 4 | Mwan-yïf <sub>d445.1</sub> | gnome | 0.732 | 0.69 (32) | 0.58 (10) | 2/1 | none | SVO | pre | def post, indef none | none |
-| 5 | Iwenee <sub>d806</sub> | human | 0.722 | 0.69 (21) | 0.64 (7) | 2/2 | none | SVO | pre | def none, indef none | none |
+| 1 | Kusan <sub>d132</sub> | cloud giant | 0.755 | 0.66 (32) | 0.68 (9) | 2/1 | none | SVO | pre | def post, indef present | none |
+| 2 | Siu <sub>d649</sub> | gnome | 0.744 | 0.75 (19) | 0.67 (6) | 2/1 | none | SVO | pre | def post, indef none | none |
+| 3 | Yi it <sub>d623.1</sub> | human | 0.740 | 0.62 (13) | 0.63 (7) | 2/2 | none | SVO | pre | def post, indef none | none |
+| 4 | Guwuchingge <sub>d611</sub> | gnome | 0.737 | 0.65 (16) | 0.71 (6) | 2/2 | none | SVO | pre | def post, indef none | none |
+| 5 | Inebyige <sub>d334</sub> | goliath | 0.735 | 0.66 (39) | 0.67 (7) | 2/1 | none | SVO | pre | def post, indef none | none |
 
 ## What the output does and does not record
 
-Recorded and used by these pages: allophones (292 rules across the living lects, shown under Allophony); root families (194739 roots; each word lists its roots, main first, and the word-family section uses them).
+Recorded and used by these pages: allophones (259 rules across the living lects, shown under Allophony); root families (366643 roots; each word lists its roots, main first, and the word-family section uses them).
 
 Things a Wikipedia article would have that these pages cannot show, because the languages file does not hold them: diphthongs as units; intonation; morphophonology beyond the four exemplar nouns and verbs; any sentence-level data (the phrases are assembled from word order and markers); separate inclusive and exclusive 'we' forms, even where the typology says the language has the distinction; case forms of pronouns; speaker numbers beyond the deme's population estimate; dialect-level variation inside a lect.
 
-The typology features and the live grammatical markers agree in all 627 living lects (the clash check counts a free case-function word as an adposition, case only from clitic level on).
+The typology features and the live grammatical markers agree in all 617 living lects (the clash check counts a free case-function word as an adposition, case only from clitic level on).

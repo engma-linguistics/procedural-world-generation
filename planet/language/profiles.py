@@ -308,8 +308,8 @@ def species_cost(profile: VoiceProfile, seg: Segment) -> float:
     core = _nonhuman_core(seg)
     base = NONHUMAN_BASE if (seg.kind == "C" and seg.manner == 9) else human_cost(core)
     m = 1.0
-    for key in keys_of(seg):
-        c = profile.make_cost.get(key, 1.0)
+    for key in sorted(keys_of(seg)):   # (sorted: a float product in frozenset order varies with the str hash seed between
+        c = profile.make_cost.get(key, 1.0)   # processes, and the ease drag makes it a rule weight)
         if math.isinf(c):
             return INF
         m *= c

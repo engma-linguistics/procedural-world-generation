@@ -44,10 +44,11 @@ tables read as oddly uvular and breathy. Fix: condition those rows or add attest
 has the inflow/outflow audit method).
 - [x] ʁ, ɹ, ɦ each within ~3x PHOIBLE for humans (round 5: all lects ɹ 0.05, ʁ 0.19 (humans 0.10), ɦ 0.01, ʐ 0.01; new
   all-lect check "overused segments")
-- [ ] p within 0.15 of PHOIBLE (all lects 0.60, humans 0.71, PHOIBLE 0.85)
-- [ ] all-lect check passes: still over are ɒ 0.20 (humans 18%, PHOIBLE 1.7%, source not traced), ɖ 0.27, ɫ 0.11 and
-  y 0.18 (kobold, dragonborn, kenku, aarakocra: do their profiles mean to favour them? if so mark it in make_cost), and
-  the two-voiced vowel u‼ 0.12, which `species_cost(HUMAN, ...)` does not class as non-human
+- [ ] p within 0.15 of PHOIBLE (finish lane: humans 0.77, human-voiced 0.69, all lects 0.61; the all-lect share is low
+  because beaked and lipless mouths find labials dear, aarakocra labial 5, reptilian 4, which is intended. Left as is.)
+- [x] all-lect check passes (finish lane, 2026-11-08). ɒ 0.16 -> 0.01: rounding harmony now rounds only high vowels.
+  ɖ 0.24 -> 0.10: new exits S215-S217. y 0.19 -> 0.07 and ɫ 0.15 -> 0.07: non-human voices get the ease drag of their own
+  species cost; their profiles do not favour these sounds. u‼ is classed as non-human. calibration.md "Final run".
 
 **Non-human variants.** Each species' growled, purred or two-voiced variants get a per-candidate share over its 30
 commonest sounds. So 54% of avian, 78% of reptilian and 82% of tortle proto-inventories contain a growled sound,

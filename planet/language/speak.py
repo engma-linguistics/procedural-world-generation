@@ -316,8 +316,22 @@ class _Piper:
             if not cls.available():
                 raise BackendUnavailable(f"piper voice missing: uv add piper-tts onnx, then download {PIPER_VOICE} into "
                                          f"{PIPER_DIR} and patch it (docs/review/language/audio.md)")
+            import os
+            import onnxruntime as ort
             from piper import PiperVoice
-            cls.voice = PiperVoice.load(str(cls.model_path()))
+            # (onnxruntime takes a thread per core by default; PIPER_THREADS caps it, default 8, so a page build or the
+            # speech endpoint does not crowd a shared machine: piper.PiperVoice.load builds its own SessionOptions)
+            n, plain = int(os.environ.get("PIPER_THREADS", "8")), ort.SessionOptions
+
+            def capped():
+                o = plain()
+                o.intra_op_num_threads, o.inter_op_num_threads = n, 1
+                return o
+            ort.SessionOptions = capped
+            try:
+                cls.voice = PiperVoice.load(str(cls.model_path()))
+            finally:
+                ort.SessionOptions = plain
         return cls.voice
 
     @classmethod

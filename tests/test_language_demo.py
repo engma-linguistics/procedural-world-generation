@@ -23,8 +23,9 @@ def lang_server(tmp_path):
     (tmp_path / "data" / "runs" / "r1" / "run.json").write_text('{"meta": {}}')
     out = tmp_path / "elsewhere.json"
     out.write_text(json.dumps({"lects": [], "run": "r1"}))
+    (tmp_path / "elsewhere-etym.json").write_text(json.dumps({"nodes": "e"}))   # (a format /2 sidecar beside it)
     S.set_root(tmp_path / "data")
-    LS.LangHandler.run, LS.LangHandler.languages, LS.LangHandler._gz = "r1", out, None
+    LS.LangHandler.run, LS.LangHandler.languages, LS.LangHandler._gz = "r1", out, {}
     httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), LS.LangHandler)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     try:
@@ -54,6 +55,9 @@ def test_langserve_serves_only_the_languages_page_and_its_data(lang_server):
     assert code == 200 and json.loads(body)["run"] == "r1"             # the --languages file, not runs/r1/
     code, body, h = _get(lang_server + "/runs/r1/languages.json", **{"Accept-Encoding": "gzip"})
     assert h.get("Content-Encoding") == "gzip" and json.loads(gzip.decompress(body))["run"] == "r1"
+    code, body, _h = _get(lang_server + "/runs/r1/languages-etym.json")
+    assert code == 200 and json.loads(body) == {"nodes": "e"}          # the sidecar beside the --languages file
+    assert _get(lang_server + "/runs/r1/languages-snapshots.json")[0] == 404
     code, body, _h = _get(lang_server + "/api/speak/backends")
     assert code == 200 and "backends" in json.loads(body)
 
@@ -78,7 +82,8 @@ def test_demo_page_is_one_offline_file(tmp_path):
     page, info = DP.build(str(src), None, 10, "auto", audio=False)
     assert len(info["languages"]) == 4 and info["clips"] == 0
     assert "<script src" not in page and "<link" not in page and "fetch(" not in page
-    assert page.count("class='lang'") == 4 and "Sample sentences" in page and "Word families" in page
+    assert page.count("class='lang'") == 5 and "Sample sentences" in page and "Word families" in page   # (4 + the complexity tab)
+    assert "Languages getting more and less complex" in page
     assert "name='viewport'" in page and "localStorage" not in page
 
 

@@ -316,6 +316,9 @@ lenition | ʁ > h / #_, V_V (a uvular r weakened to h at the start of a word and
 rhotic | ɫ > w (dark l vocalized everywhere) | effort | tongue_body, lips | 2 | Polish ł: Old Polish [ɫ] > modern [w] in all positions (łapa [ˈwapa], mały [ˈmawɨ]); Brazilian Portuguese coda l > w (Brasil [bɾaˈziw])
 deletion | ɦ > ∅ / V_V (breathy h lost between vowels) | effort | larynx | 3 | Hindi kahnā [kɛːnaː], rahnā [rɛːnaː] (intervocalic ɦ lost, the vowels fused); Gujarati, Bengali colloquial h-loss
 dental | ʂ, ʐ > s, z (retroflex sibilants merge with the dental ones) | perception | tongue_tip | 3 | Prakrit and Pali: Sanskrit viṣa > Pali visa 'poison', śiṣya > sissa; Mandarin zh ch sh [ʈʂ ʂ] as [ts s] in southern Mandarin and Taiwan
+lenition | ɖ > ɽ / V_V (the retroflex stop flapped between vowels) | effort | tongue_tip | 3 | Hindi-Urdu: Middle Indo-Aryan ḍ between vowels is the flap ṛ, Prakrit ghoḍa > ghoṛā [ɡʱoːɽaː] 'horse', baḍa > baṛā 'big'; Vedic ḍ > ḷ between vowels (īḍe ~ īḷe)
+rhotic | ɽ > ɾ (the retroflex flap merges with the tap) | perception | tongue_tip | 2 | Eastern Bengali (Dhaka, Sylheti): ড় [ɽ] falls together with র [ɾ ~ r], so baṛi 'house' is said bari
+rhotic | ɖ > r / #_ (a word-initial retroflex stop became r) | perception | tongue_tip | 2 | Romani: Middle Indo-Aryan ḍomba > rom 'man, husband; Rom' (Matras 2002, Romani: A Linguistic Introduction)
 """
 
 GRAM_COLUMNS = ["id", "source_concept", "target_function", "intermediate_stages", "fusion_endpoint",
@@ -384,7 +387,7 @@ def main() -> None:
         "source: WRITTEN FROM KNOWLEDGE of standard historical phonology (Campbell, Historical Linguistics; Hock 1991; "
         "Blevins 2004, Evolutionary Phonology; Kümmel 2007). The Index Diachronica (https://chridd.nfshost.com/diachronica/, a "
         "hobbyist compilation) was used only as inspiration for coverage; nothing was copied from it.",
-        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j; hiatus round: S125-S127 and S205-S207 the hiatus family (fired as repairs, lect.resolve_hiatus), S126 written to parse, S175 staged; exits for the tap: S208 initial ɾ > r, S209 ɾ > l; revised 2026-11-07 (round 5, overused segments over all lects): S149 r > ɹ in the coda only, S173 Verner's law on f θ s x only (it also voiced h to ɦ), exits S210 ʁ > χ in the coda, S211 ʁ > h initially and between vowels, S212 ɫ > w, S213 ɦ > ∅ between vowels, S214 ʂ ʐ > s z)",
+        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j; hiatus round: S125-S127 and S205-S207 the hiatus family (fired as repairs, lect.resolve_hiatus), S126 written to parse, S175 staged; exits for the tap: S208 initial ɾ > r, S209 ɾ > l; revised 2026-11-07 (round 5, overused segments over all lects): S149 r > ɹ in the coda only, S173 Verner's law on f θ s x only (it also voiced h to ɦ), exits S210 ʁ > χ in the coda, S211 ʁ > h initially and between vowels, S212 ɫ > w, S213 ɦ > ∅ between vowels, S214 ʂ ʐ > s z; finish lane: exits for ɖ, S215 ɖ > ɽ between vowels, S216 ɽ > ɾ, S217 initial ɖ > r)",
         "licence: original text for this repository; examples are textbook cases.",
         f"script: {SCRIPT}",
         "rule notation: input > output / environment. V vowel, C consonant, N nasal, T voiceless stop, D voiced stop, "

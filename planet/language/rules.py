@@ -603,6 +603,13 @@ def _produce(ch: Change, w, i, end, out, trig=None):
         if src is None:
             return None
         axes = ch.axes + _PLACE_AXES if "place" in ch.axes else ch.axes
+        if ch.source == "first_vowel" and "round" in axes and w[i].kind == "V" and w[i].height < 5:
+            # (rounding harmony spreads rounding to the high vowels only, as in Turkish: göz-ün, kız-ın, but göz-ler, not
+            # *göz-lör; a non-high vowel takes the root's backness and may lose its rounding after an unrounded root,
+            # never gain it. Before 2026-11-07 a > ɒ here made ɒ a living vowel in a sixth of all lects)
+            axes = tuple(a for a in axes if a != "round")
+            if not src.round and w[i].round:
+                return [replace(w[i], round=0, **{a: getattr(src, a) for a in axes})]
         return [replace(w[i], **{a: getattr(src, a) for a in axes})]
     return _make(ch.items, w[i:end], w[i])
 
@@ -1398,7 +1405,7 @@ def _diff(intok: _Tok, out_seg) -> dict:
         from dataclasses import fields as _f
 
         return {f.name: getattr(out_seg, f.name) for f in _f(out_seg)
-                if f.name not in ("kind", "tone") and getattr(out_seg, f.name) != getattr(intok.seg, f.name)}
+                if f.init and f.name not in ("kind", "tone") and getattr(out_seg, f.name) != getattr(intok.seg, f.name)}
     axes = _V_QUALITY + ("nasal",) if out_seg.kind == "V" else _C_QUALITY
     d = {a: getattr(out_seg, a) for a in axes}
     if out_seg.length:
@@ -1768,7 +1775,7 @@ def _build_demo() -> tuple[Rule, ...]:
         _demo("harmony.back", "", "coarticulation", "tongue_body", 3,
               "Turkish ev-ler 'houses' vs at-lar 'horses' (suffix vowels agree in backness with the root)",
               target=V, change=Change("assimilate", axes=("back", "round"), source="first_vowel"),
-              text="V > [αback αround] of the root's first vowel"),
+              text="V > [αback] of the root's first vowel; [αround] for a high vowel, a non-high one only unrounds"),
         _demo("umlaut.i", "V[+back] > [−back] / _C(C)i", "coarticulation", "tongue_body", 4,
               "Proto-Germanic *mūsiz > Old English mȳs > mice"),
         _demo("rhotic.rhotacism", "s > r / V_V", "coarticulation", "tongue_tip", 3,
