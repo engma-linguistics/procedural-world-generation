@@ -496,3 +496,19 @@ merge, with concord (8) next.
   future-from-WANT shares may already have moved.
 - The WALS figures (22A, 24A, 49A, 87A, 98A) are from memory and rounded. Check them before quoting.
 - "Full" coverage means the mechanism exists and is shown. It does not mean the share matches real languages.
+
+## Queue (Daniel, 2026-11-07: "no particular hurry to merge, queue all of that work here")
+
+All 19 ranked items are queued on lang-design, plus degrammaticalization (a rare one-step climb for clitics/affixes,
+Norde 2009). Three phases, one lane at a time on grammar.py to avoid conflicts:
+
+- **Phase A (small, things the pages already claim):** 1 `_unrealised` per-function fix + ergative sources + split
+  ergativity; 2 inclusive/exclusive WE; 3 build serial verbs, reduplication, numeral base (or drop the labels);
+  4 passive (G060 mapping); 5 give + imperative sentences; 6 person paradigm recruited as a set; 11 measure synthesis
+  vs WALS 22A (decision for Daniel after the measure); degrammaticalization.
+- **Phase B (agreement and markers):** 7 object agreement; 8 concord (class/gender on adjectives, demonstratives,
+  verb); 9 possessor marking on the possessed noun; 10 question particle, copula, relativiser, complementiser,
+  topic/focus as real grams; 12 mood from the written paths.
+- **Phase C (morphology types):** 13 inflection classes and cumulative exponence (keep merged categories);
+  14 applicative, reciprocal, antipassive; 15 infixes, reduplication, stem change across the lexicon; 16 second-position
+  clitics and topic fronting; 17 switch-reference; 18 noun incorporation; 19 Austronesian-style voice.
