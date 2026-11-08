@@ -924,6 +924,90 @@ mountain gift WATER. p3 numbers from pass 2 above.
 
 All other checks pass in both. Run time 1644 s (p4, 10-core load) and 2087 s (p5, tests running beside it).
 
+## Sound lane pass 3 (2026-11-08 evening): coda drift and tone shares
+
+### The coda diagnosis (written before tuning)
+
+Measured on pass G (a24559, scratch output) with a WALS 12A-style reading of each lect's words (simple = under 3% of
+words with any coda and under 3% with an onset cluster; complex = 3% or more with a 3-consonant onset, a 2-consonant
+onset whose second member is not a liquid or glide, or a 2-consonant final coda; moderately complex otherwise), and
+with an isolated-lect harness (human protos stepped 20 kyr with budding at 15/10/5 kyr, no wave or grammar; per-rule
+flux of word-final consonants recorded at each firing; `scratchpad/sound3/codah.py`, 25 s for 32 protos).
+
+| reading | proto lects | living lects (pass G) | WALS 12A |
+|---|---|---|---|
+| simple / moderate / complex | 10 / 55 / 35% | 25 / 73 / 2% | 12 / 57 / 31% |
+| lects with under 5% of words ending in a consonant | 10% | 62% | (none; Italian-type languages are a minority) |
+| median share of words ending in a consonant | 0.40 | 0.03 | |
+
+So the protos are fine and history wrecks them: in the harness the median final-consonant share fell from 0.39 to 0.016
+in the first 5 kyr. Causes, in order of size:
+
+1. **44% of lects had no stress at all.** `inventory.STRESS` folded WALS 14A's "no fixed stress" (44%) into "none", which
+   the engine read as stressless, so no stress-conditioned change ever ran there: apocope (S103 and the demo
+   `deletion.final_vowel`, the only rows that make final consonants), syncope, reduction. Coda losses ran everywhere.
+   WALS's "no fixed stress" means weight-sensitive or lexical stress, not no stress.
+2. **The homophony veto over-counted vowel deletions.** `rules.functional_load` reads a merger's load context-free
+   (Wedel: the load is the contrast's, not this context's). For a deletion of a whole class that counted every vowel
+   minimal pair in every position (kata ~ kita) as merged, so apocope's load was 0.12-0.25 and it was vetoed 64-98% of the
+   time in proto lexicons, while paragoge (S124, a vowel added after every final consonant), merging nothing, was never
+   vetoed.
+3. **One-way catalogue.** About a dozen rows remove final consonants (S099 all of them, S124 paragoge, S145 nasal loss,
+   S102 r, S100 m, S101 s, S191 ʔ, h loss, the tonogenesis rows S167-S169 and their demo twins), two make them (apocope).
+   Per firing, S124 removed ~210 final consonants and S099 ~70 (whole-class rows, firing again every 4 kyr: lines
+   flip-flopped back to open syllables each time apocope had made codas). With line drift (lognormal row and family
+   liking) weight barely mattered for S124: 0.3 to 20 all gave ~100-190 firings over 48 harness lines.
+4. **Clusters only went one way too.** S121 was written `VC > Vː / _C`: every medial coda lost with compensatory
+   lengthening, the top destroyer of complex syllables; nothing but apocope made new clusters (no syncope next to a final
+   consonant, no pretonic syncope), and nothing simplified the final clusters apocope made.
+5. Lexical replacement (derivations with vowel-final affixes, coinages from the templates) took a further small net
+   share of final consonants; not a cause by itself.
+
+### Fixes (harness, 48 protos: share of leaves simple / moderate / complex; leaves under 5% final consonant)
+
+| step | classes | under 5% |
+|---|---|---|
+| base (pass G code) | 8 / 85 / 7% | 47% |
+| + S121 fricatives only, S124 weight 1, S236-S238 | 2 / 66 / 32% | 55% |
+| + deletion load counted only where the deletion applies | 1 / 54 / 45% | 54% |
+| + "weight" stress (the Latin rule) for 24 of WALS's 44% | 0 / 36 / 64% | 36% |
+| + S239 final cluster simplification, S099 and S124 once per line, S236 before a sonorant or s, S237 reduced vowels only | 0 / 58 / 42% | 18% |
+| + phonotactic resistance (PHONO_VETO 0.8) and the re-check (templates re-read from the words) | 6 / 61 / 33% | 27% |
+
+(protos in the harness: 6 / 60 / 33%.) Changing the draw itself (PICK_REDRAWS 1 with RATE_SCALE 12 or 25) did not move
+the coda picture, so the pick scheme is left alone.
+
+Tone shares (task 2). The proto draw was fine by PHOIBLE (2-5 tones 28/31/23/18% of tonal protos), but history pushed
+living tonal lects to four tones (pass G: 2/3/4/5 tones 8/14/60/16%). A tone-count trace in the harness showed the
+commonest way up was not tonogenesis but stray contours: a vowel shortening or a fusion left a rising or falling tone on
+a short vowel in a few words, and `lect.tonemes` counted it as a new toneme. Fixes: `lect.level_stray_contours` levels a
+short-vowel contour found on under CONTOUR_MIN (1%) of the toned vowels to high (as S227/S228 do); tonogenesis from codas
+marks many words and passes. The proto draw takes WALS 13A's simple share (TONE_SIMPLE 0.60 two-tone) and splits the
+complex rest by PHOIBLE.
+
+### Full passes (a24559, scratch output)
+
+| pass | code | simple / moderate / complex (living) | under 5% final C | median final-C share | tonal living: 2/3/4/5 tones | horizon human: reading / logistic | checks |
+|---|---|---|---|---|---|---|---|
+| G | pass 2 | 25 / 73 / 2% | 62% | 0.03 | 8/14/60/16% | 10.3 / 12.4 | all but horizon |
+| I | all of the above, after merging lang-design 3cf1889a | 15 / 60 / 25% | 29% | 0.40 | 46/33/16/4% (239 of 622 tonal) | 11.4 / 12.7 | horizon FAIL; segment frequencies FAIL (ɳ in 55% of human-voiced lects); overused FAIL (y 21%, ɫ 18%) |
+
+Living stress in pass I: none 157, initial 148, penult 126, weight 113, final 78. The new failures in I are the codas
+coming back: S152 (l > ɫ in the coda, weight 5) now had codas to work on, S086 (rt rd rn rs > retroflex) had clusters,
+and i-umlaut drawn twice (S135 and the demo `umlaut.i`, not deduplicated) phonemicized its front rounded vowels once
+apocope ran again (the Germanic story, but in a fifth of all lects). Pass J: S152 5 -> 2, S086 4 -> 2, umlaut.i the same as S135.
+
+| J | I + S152 5 -> 2, S086 4 -> 2, umlaut.i = S135 | 15 / 60 / 25% | 28% | 0.42 | 47/34/16/3% (227 of 618) | 12.0 / 13.1 | horizon FAIL; segment frequencies FAIL (ɳ 50.2%); overused FAIL (y 17%, ɫ 14%); loans FAIL (pronoun loans 0.082 against 0.08; passed in I, not touched by this lane) |
+
+The weight cuts hardly moved ɫ, y, ɳ (as the saturation note above predicts). The harness's per-rule trace of new
+segments showed ɳ came from S086c (rn > ɳ) and nasal place assimilation and had no way out: ɳ in 48% of harness leaves.
+S240 (ʈ, ɳ > t, n, the Assamese/Bengali merger) took it to 3% there. ɫ and y are 2-3% of harness leaves (they are
+introduced often, by S152 and umlaut, and fold back); their 14-17% in the full run comes from what the harness lacks
+(wave adoption between neighbours, longer lines), not found in this pass.
+| K | J + S240 (ʈ, ɳ > t, n) | 15 / 59 / 26% | 28% | 0.42 | 44/35/19/2% (250 of 623) | 14.6 / 12.1 (old pair measure 11.0) | horizon FAIL; overused FAIL (y 20%, ɫ 16.5%; inbox draft); segment frequencies ok (no monoculture); loans ok; sisters 0.56 |
+
+Pass K is the final code before the last lang-design merge (synthesis lane; grammar only, no new pass for it).
+
 ## Synthesis lane (2026-11-08, lang-synth): verb synthesis toward WALS 22A
 
 Bound verb categories per living lect (affix or fused; tense, aspect, mood/evidential, negation, valence/voice, subject

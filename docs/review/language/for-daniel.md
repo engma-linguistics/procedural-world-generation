@@ -150,6 +150,54 @@ written into runs/); passes E, F and G are in calibration.md "Pass 2". Baseline:
 - **Not done:** stress stored per word, lexical diffusion, stress marks in demo_page.py's IPA (that file is grammar C's
   now).
 
+### Sound lane pass 3 (lang-sound, 2026-11-08 evening)
+
+Numbers: calibration.md "Sound lane pass 3" (scratch passes on a24559, never written into runs/). Baseline: pass G, the
+pass 2 code. Unfinished work is in inbox drafts (lexical stress and diffusion; rule weights that barely matter).
+
+**Done**
+- **Codas are back.** Living lects with under 5% of words ending in a consonant: 62% -> 29%; median share of words ending
+  in a consonant 0.03 -> 0.40 (protos 0.40). Syllable types read from the words (WALS 12A classes): simple / moderate /
+  complex 25/73/2% -> 15/60/25% (WALS 12/57/31%). The causes, all fixed at the source:
+  - 44% of lects had no stress at all, so apocope (the only way a final consonant comes back) never ran in them, while
+    every coda loss did. WALS 14A's "no fixed stress" means weight-sensitive or lexical stress, not none. New stress
+    pattern **"weight"** (the Latin rule: the penult if heavy, else the antepenult) takes 24 of the 44 points; "none"
+    keeps 20 (tone languages, French-type phrase prominence).
+  - The homophony veto counted apocope as merging every pair of words that differ by any vowel (kata ~ kita); it was
+    turned down 64-98% of the time, while paragoge (a vowel added after every final consonant) merges nothing and never
+    was. A deletion now merges only the words it actually makes alike.
+  - The catalogue lost final consonants a dozen ways and made them two ways. New rows: S236 final-syllable syncope
+    (Old Norse dagr), S237 pretonic syncope of a reduced vowel (Slavic jer loss), S238 loss of final schwa, S239 final
+    cluster simplification. S121 compensatory lengthening only after fricatives (it removed every medial coda). Paragoge
+    S124 weight 4 -> 1; S099 (all final consonants lost) and S124 fire once per line.
+  - **Phonotactics.** A change that would give a fifth or more of the words it touches a syllable shape the language
+    lacks is turned down 80% of the time (PHONO_VETO, PHONO_MIN in lect.py), and the templates are re-read from the
+    words after each interval (the phonotactics re-check from pass 2, now kept), so a CV language mostly stays CV and a
+    coda once established is no longer resisted.
+- **Two-tone systems are the commonest again.** Tonal living lects with 2/3/4/5 tones: 8/14/60/16% -> 46/33/16/4%.
+  The main source of extra tones was a rising or falling tone left on a short vowel in a handful of words by a vowel
+  shortening; such strays (under 1% of the toned vowels) now level to high. Tonal protos draw two tones 60% of the time
+  (WALS 13A), the rest by PHOIBLE.
+- **Side effects of the codas coming back:** dark l (S152) and i-umlaut now phonemicized ɫ and y in 14-17% of living lects, and ɳ (from r + n) had no way out. S152 5 -> 2, the doubled umlaut row deduplicated, new exit S240 (ʈ, ɳ > t, n). See the checks below.
+- `tools/language/knowledge_tables.py` was out of step with `sound_changes.tsv` (pass 2 and the lexicon lane edited
+  the table directly); it is regenerated from the script again.
+
+**Checks (pass K, a24559 scratch):** every check passes except the scholars' horizon (reading 14.6 kyr, logistic 12.1;
+pass G 10.3 / 12.4; not tuned for) and overused segments: ɫ in 16.5% and y in 20% of living lects (draft
+`language-dark-l-and-y-overused`). Pass J also failed segment frequencies (ɳ in 50%; fixed by S240) and the loans check
+by a hair (pronoun loans 0.082 against 0.08; 0.073 in K).
+
+**Your call when you are back**
+- **The stress split** ("weight" 24%, "none" 20% of protos). WALS 15A would support more weight-sensitive systems; I kept
+  "none" large because tone languages often lack stress.
+- **Phonotactic resistance at 80%.** Stronger keeps families' syllable types more uniform; weaker lets them drift.
+
+**Odd output noticed**
+- Sound-change weights matter less than the table suggests: the draw picks among the changes that apply right now, so
+  a rare row fires on most lines unless capped (draft `language-rule-weights-saturate`).
+- Sketch pages describe the new "weight" stress; pages for lects with stress "none" still say there is no word-by-word
+  stress (draft `language-lexical-stress-and-diffusion`).
+
 ## Names & spelling lane (2026-11-08)
 
 ### Choices made for you (reasonable guesses)
