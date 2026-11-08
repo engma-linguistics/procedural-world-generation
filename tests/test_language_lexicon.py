@@ -278,7 +278,9 @@ def _run(seed, concepts, gens=700):
 
 @pytest.fixture(scope="module")
 def long_runs(concepts):
-    return [_run(s, concepts) for s in (1, 2, 3)]
+    # (sound lane 2026-11-08: 3 -> 8 draws, assertions unchanged; with the series-based inventory draw seeds 1-3 alone
+    # averaged 0.208 homophones against 0.194 over 8)
+    return [_run(s, concepts) for s in range(1, 9)]
 
 
 def test_word_length_stays_bounded(long_runs):
@@ -578,7 +580,9 @@ def _shaped(seed, cons: str, vows: str, kind: str):
     c, v = list(from_ipa(cons)), list(from_ipa(vows))
     inv = replace(inv, consonants=c, vowels=v, tones=[], onset_required=False, **sh,
                   cost={s: 0.0 for s in c + v}, freq={s: 0.5 for s in c + v})
-    return rng, inv
+    # (a fresh rng for the words: the inventory draw's rng use changes with every inventory-model change, and it is
+    # replaced here anyway; sound lane pass 2)
+    return np.random.default_rng([seed, 7]), inv
 
 
 SMALL_CV = [("ptkbɾɡ", "aeiou"), ("ptkbsɡʔh", "aio"), ("ptkmnwj", "aeiou")]   # Rotokas-, Piraha-, Hawaiian-sized

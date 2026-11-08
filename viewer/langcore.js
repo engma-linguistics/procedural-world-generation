@@ -408,6 +408,7 @@
     if (o.backend && o.backend !== 'auto') q.set('backend', o.backend);
     if (o.sentence) q.set('sentence', '1');
     if (o.sentence && o.q) q.set('q', '1');
+    if (o.stress && o.stress !== 'none') q.set('stress', o.stress);  // the lect's fixed stress, marked server-side
     return `${base}?${q.toString()}`;
   }
   // a glossed form line ('iʂ=ly t̪yʂ') as one sayable IPA string: the morpheme breaks dropped, words kept apart

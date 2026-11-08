@@ -47,6 +47,109 @@ Everything here has a working default in the code already. Nothing is blocked; c
 - **A click spelt "|" in names.** Elvish click names such as "Pxeyag|he" broke the markdown tables in the sketches. They are now escaped in tables only. The romanization itself is unchanged.
 - **The pass is not faster.** It still takes about 21 minutes. The file is much smaller: 36 MB main, 126 MB in three files, against 241 MB in one.
 
+## Sound lane (lang-sound, 2026-11-08)
+
+**Decisions taken by default**
+- **Series-based inventory draw.** A proto first draws which series it has (labial-velar, prenasal, retroflex, aspirated, ejective, implosive, uvular, labialized, long vowels, nasal vowels and so on). Each series is drawn with PHOIBLE's share among inventories of the same size, so a 12-consonant language almost never has ejectives. Then about 3/4 of PHOIBLE's mean member count for that series is filled, and the free picks follow.
+  - Table: `planet/language/data/phoible_series.tsv` (built by `tools/language/build_reference_tables.py`).
+  - Knobs: `SERIES_FILL` 0.75, `SERIES_BOOST_MAX` 12, `SERIES_FLOOR` 0.002 in `planet/language/inventory.py`.
+- **Tonemes.** A contour found only on long vowels counts as two level tones, not a toneme (`lect.tonemes`). Tone sets go up to 7.
+- **Dragon sub-bass.** Dragon vowels can carry a sub-bass register. Its make cost is `sub_register = 0.5` for the chromatic and metallic dragon profiles in `planet/language/data/voice_profiles.toml`. Most dragon protos now have at least one sub-bass vowel (about 9 in 10 in proto draws). Raise the cost if you want it rarer.
+- **Stress.** IPA in sketches and pages carries ˈ. Speech (`/api/speak?stress=`) puts the stress on the right syllable. Stress is the lect's pattern (initial, penult, final), not stored per word yet.
+- **Sound-change catalogue** (a helper did this on my branch):
+  - 14 of the 21 refused rows now parse. 7 stay refused with a reason: S106 haplology (needs two identical syllables), S132 and S133 suffix harmony (handled by the harmony machinery, not the catalogue), S170 and S172 (pitch accent and tone loss, which are not segment rewrites), S183 and S184 (analogy, which is not sound change).
+  - `X` means any segment (long-distance dissimilation `r > l / _X*r`, Grassmann).
+  - ATR harmony S134 is approximated on height (ɪ ʊ ɛ ɔ > i u e o in a word with i u e o). This is said in the row.
+- **Line drift.** Each proto line draws a lognormal liking per rule family (σ 0.7) and per row (σ 1.0). Daughters keep it, with a small jitter at budding (σ 0.2). Named laws (Grimm, Verner, Grassmann, the Great Vowel Shift and similar) fire at most once per line. Other rows wait 4 kyr before re-firing (was 3).
+  - Knobs: `LINE_FAMILY_SIGMA`, `LINE_ROW_SIGMA`, `LINE_BUD_SIGMA`, `ONE_OFF_IDS`, `ONE_OFF_MAX`, `REFIRE_KYR` in `planet/language/lect.py`. Chain shifts count half (`history.RULE_WEIGHT["family:chain_shift"]`).
+  - Effect in the helper's harness: rows found in at least 80% of lects 45 → 19; Grimm fires in about a quarter of lines, the whole Great Vowel Shift in 29%.
+- **Chain shifts are one staged event in drag order.** "a > b > c" now means a > b, then b > c. Grimm S177 (after sonorants too), High German S178, the Great Vowel Shift S179 (top down), Northern Cities S182.
+- **New common rows S218-S225.** t > k; k > ʔ; ŋ > n; secondary palatalization before front vowels; aː > ɔː; ɪ ʊ > i u; t k > s before i; k > tʃ before a. S174 diphthongizes only in stressed open syllables.
+- **The synchronic rule layer** (new `planet/language/phonology.py`; architecture.md 5b):
+  - Each lect keeps an ordered list of live rules, inherited by daughters. Rules come from its allophones (phonetic level) and its conditioned sound changes.
+  - A new sound change starts as a phrase-level rule. It narrows to the word level after `PHRASE_KYR` 1 kyr and to the stem level after `WORD_KYR` 3 kyr. This is Bermúdez-Otero's life cycle.
+  - A rule dies when it is old (lognormal life around `LIFE_KYR` 6 kyr), when it is opaque (more than `OPAQUE_MAX` 20% of the words it should touch break it), or when it is crowded out (more than `MAX_LIVE` 8 rules).
+  - 70% of tonal lines (`SANDHI_SHARE`) draw one tone-sandhi rule: Meeussen's rule, a Mandarin-type low-low rule, high spread, or contour simplification.
+  - Rules apply to new words, derivations, compounds, loans and names (`inventory.realize`). In sentences they apply at morpheme joins (word level) and across word joins (phrase level).
+  - Sketches have a "Phonological rules" section, and the viewer's time tab shows "Phonological rules today". Both use plain notation (e.g. "/t/ → [ɾ] / V_V") with a worked example from the lect's own words where one exists.
+
+**Your call when you are back**
+- **Rule death.** Is a 6 kyr median life and 8 live rules at most a sensible picture? Real languages keep some rules for very long (Celtic mutations, Sanskrit sandhi). I took the life-cycle reading: most rules end as stem-level or lexicalized.
+- **Dragon sub-bass.** About 9 in 10 dragon lines have it. Should it be rarer, or a hallmark of every dragon tongue?
+
+**Odd output noticed**
+- **Two checks fail on a24559 with the sound lane** (pass D, `planet languages a24559` into scratch, never into runs/). Before this lane: the horizon at 10.7 kyr already failed, and the overuse check passed.
+  - **Scholars' horizon (human lects): 12 kyr** (target 6-10; base 10.7). The rule rate is 11.2 per kyr against 14.6 at base. Line drift, the once-a-line named laws and the 4 kyr re-fire wait all mean fewer changes fire.
+    - I raised `rules.PICK_REDRAWS` from 8 to 16. That took the horizon from 17 to 12.
+    - `LANG_RATE_SCALE=7` alone only went from 17 to 13.5, so I left `RATE_SCALE` at 5.
+    - The horizon is thinly resolved: 3-6 splits per bin past 10 kyr. It read 9, 11 and 13 on base code in earlier rounds.
+  - **Overused segments: ɑ 26% (PHOIBLE 7%), lʲ 17% (2%), ɤ 13%, ä 12%, ɘ 10%.** The vowels come from the proto draw. With the series draw, a proto without a long-vowel or nasal-vowel series fills all its vowel slots with distinct qualities, so rarer qualities enter. In human proto draws ɑ is 0.18 against 0.10 on base code. History then spreads them through big families.
+    - The fix I would try next: draw the vowel count after the vowel series, or let the free vowel picks take a long or nasal partner of a chosen quality even without the series, as PHOIBLE's counts include those.
+    - lʲ is mostly one big family (16 living lects from proto p286) plus S221.
+  - Fixed on the way:
+    - prenasal stops: 43% of living lects → 27% (S142 weight 3 → 1);
+    - tʷ and lʷ: no longer overused (S068 weight 2 → 1);
+    - S221 (secondary palatalization) now fires before i only, at weight 1.
+- **Five-tone systems are still the commonest** among tonal living lects (53%; base 85%). Protos are fine: tone counts 2-5 are 28/31/23/18%. History adds contour tones on short vowels (tonogenesis rows), and nothing merges tones back. This is "tone evolution", task 4, not done.
+- **Line preferences are keyed by proto id** (`hiatus_key`), so two runs with the same proto ids share them. That is harmless within a run.
+- **Paradigm cells don't run the live rules.** Grammar paradigm cells (`grammar.py`, grammar A's file) don't apply them yet. Only new coinages, derivations, compounds, loans, names (`realize`) and sentences do.
+- **Viewer speech uses the selected lect's stress** pattern. Per-word stress is not stored.
+
+### Sound lane pass 2 (lang-sound, 2026-11-08 afternoon)
+
+Pass 1's notes above are kept as they were; this is what changed since. Numbers are from scratch passes on a24559 (never
+written into runs/); passes E, F and G are in calibration.md "Pass 2". Baseline: pass D, the same code without this pass.
+
+**Done**
+- **Overused vowels fixed at the cause.** PHOIBLE counts long and nasal vowels in a language's vowel total, but the
+  number of distinct vowel *qualities* hardly depends on them (median 6 with or without a long series). The draw now
+  gives vowel series their slots: with a long series, about half the vowel count goes to qualities and half to their long
+  partners. Qualities are also weighted by their PHOIBLE odds instead of their share, so i, a, u are near-universal and
+  rare ones stay rare. In proto draws ɑ went 0.18 → 0.13 (PHOIBLE 0.08); mean qualities 7.2 → 6.6 (PHOIBLE 6.4).
+- **Vowel harmony keeps to the language's own vowels.** A suffix vowel that harmony would turn into a vowel the language
+  lacks takes the nearest vowel it has on the right side (front or back); with none near, it stays as it is (a neutral
+  vowel, like Finnish e and i). Before, harmony coined new vowels (e > ɑ, o > ɤ) that spread through whole families.
+- **lʲ and the palatalized series.** lʲ was in 17% of living lects (PHOIBLE 2%). It came from S221, which palatalizes
+  every consonant before i and had no way back. New rows: S233 and S234 lose the palatalization before other vowels and
+  in the coda (Ukrainian hardening before e; Czech), S235 lʲ > ʎ (then the old S029 ʎ > j, yeísmo). S221's weight went
+  1 → 0.4, because a whole palatalized series is an areal rarity (Slavic, Irish, Saami). This is a judgement call, below.
+- **Paradigm cells run the live rules.** When grammar builds a new cell (a stem with a new affix), the lect's live rules
+  run at the join, as they already did for new words, loans and sentences. Cells that only went through sound change are
+  left alone. Hook: one call in `lect.grammar_step`; grammar.py is untouched.
+- **Tone systems shrink as well as grow.** New rows S227-S232: rising and falling tones level to high, mid merges with
+  high or with low, the extra-high and extra-low levels merge inward. The usual functional-load veto protects busy tones.
+  Human-voiced tonal living lects with 2/3/4/5 tones: 2/6/37/51% before (pass E, plus 4% with 7), 5/13/53/26% after
+  (pass G, plus 3% with 6); over all tonal living lects 8/14/60/16%. Five is no longer the commonest count; four is now,
+  and WALS 13A has simple (two-tone) systems commonest.
+- **Merge fixes on the way:** an onset cut down to a geminate (pʰrː- > rː-) is now repaired; the lexicon lane's S218
+  is renumbered S226; the flaky Piper question test now compares the final pitch (YIN, last voiced frames) as a median
+  over five renders (15 runs clean; it failed about 1 in 4 before).
+
+**Checks (pass G, the final code)**
+- Overused segments: **PASS**, none overused (pass D: ɑ, lʲ, ɤ, ä, ɘ). Now ɑ 6%, lʲ 3%, rʲ 6%, ɤ 6% of living lects.
+- Scholars' horizon (human lects): 10.3 kyr by the check's reading, 12.4 by the lexicon lane's logistic fit (target 6-10),
+  FAIL; 14.4 over all lects. Swings between passes on unrelated changes, as the lexicon lane found; not
+  tuned for.
+- Every other check passes (sisters 0.62, long generations change 3.75x less, inventory sizes and segment frequencies vs
+  PHOIBLE, loans, areal signal). Pass G ran on the code before the last lang-design merge (grammar D and texts); the
+  merged code passed the test suite, and the coordinator's in-place pass is the one to read.
+
+**Your call when you are back**
+- **S221 at weight 0.4.** That makes whole palatalized series rarer instead of giving them more exits. The alternative is
+  to count a palatalized consonant that only occurs before i as an allophone even after a later i appears elsewhere. I
+  took the weight because real languages do let these series phonemicize.
+- **Four-tone systems are now the commonest** among tonal lects (53-60%; two- and three-tone systems together 18-22%).
+  The proto draw is fine (2-5 tones at 28/31/23/18%); history adds tones faster than it merges them. More merger weight would push toward WALS's picture; I stopped at one nudge.
+
+**Odd output noticed**
+- **Most living lects end almost every word in a vowel.** In 64-70% of living lects fewer than 5% of core words end in a
+  consonant, against WALS 12A's 12% of languages with simple (C)V syllables. This is upstream of this pass (final
+  consonant loss outweighs the ways codas come back). I wrote a phonotactics re-check (the lect's templates re-read from
+  its words) and dropped it: it moved 419 of 620 lects to "no codas" and so fed this drift. It should come back after
+  the coda balance is fixed.
+- **Not done:** stress stored per word, lexical diffusion, stress marks in demo_page.py's IPA (that file is grammar C's
+  now).
+
 ## Names & spelling lane (2026-11-08)
 
 ### Choices made for you (reasonable guesses)
@@ -325,7 +428,7 @@ Both are queued in grammar-gaps.md (phase B progress).
 12. **Areal rate ×10** (`AREAL_K` 0.0015 → 0.015). See the pass-2 numbers in calibration.md for whether the near/far signal appears.
 
 **Changed in the sound lane's files (minimal, flagged)**
-- New rule S218: the labialized coronals tʷ dʷ nʷ sʷ zʷ lʷ rʷ lose their labialization. nʷ had a source (S068, labialization before a lost rounded vowel) and no way out, so it built up to 10.5% of lects; PHOIBLE has 1.2%. It is now at 1.7%.
+- New rule S218 (now S226: the sound lane already used S218-S225): the labialized coronals tʷ dʷ nʷ sʷ zʷ lʷ rʷ lose their labialization. nʷ had a source (S068, labialization before a lost rounded vowel) and no way out, so it built up to 10.5% of lects; PHOIBLE has 1.2%. It is now at 1.7%.
   - I did not check one attested case. The rule rests on labialization being commonest on velars and uvulars (Ladefoged & Maddieson 1996).
 - Backness harmony in `rules._produce`: a front e going back now opens to ɑ, as in Turkish -ler/-lar and Hungarian -nek/-nak. Before, it became ɤ, and a rounded o after an unrounded back root also unrounded to ɤ. ɤ reached 11.7% of lects on one seed (PHOIBLE 2.2%) and is now at 1.0%. Central ə and ɐ are neutral.
 - `lect.py` passes two more context values to `lexicon.step`: `kin_weights` and `speech_taboo`.

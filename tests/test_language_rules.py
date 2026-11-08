@@ -88,7 +88,7 @@ def test_parse_notation_kinds():
     assert rule("b, d, g > p, t, k").change.kind == "map"
     assert rule("N > [αplace] / _C[αplace]").change.kind == "assimilate"
     r = rule("k > ts > s / _[+front V]")
-    assert "chain" in r.notation and R.apply(r, w("ke")) == w("tse")
+    assert r.then and R.apply(r, w("ke")) == w("se") and R.apply(r, w("tse")) == w("se")  # a chain is staged (feeding)
 
 
 def test_parse_failures_reported_not_raised():
@@ -268,7 +268,7 @@ def test_catalogue_has_no_twins():
     for twin in ("S015", "S018", "S095", "S115", "S075", "S049", "S088", "S140", "S020", "S113", "S135", "S130",
                  "S069", "S151", "S166", "S167", "S168"):
         assert twin not in ids, twin
-    assert ("S061" in ids) != ("S062" in ids)
+    assert "S061" in ids and "S062" in ids  # kt > jt > tʃ (staged chain) is not kt > jt
     assert "lenition.p_f" in ids and "devoicing.final" in ids
 
 
@@ -453,3 +453,54 @@ def test_hiatus_rows_parse_and_do_what_their_examples_say():
     assert ipa(R.apply(by["S175"], w("kausa"))) == "koːsa"                     # Latin causa > cosa
     assert ipa(R.apply(by["S126"], w("kaeo"), "initial")) == "kao"             # V1 elision, the stressed vowel kept
     assert ipa(R.apply(by["S126"], w("tai"), "penult")) == "tai"               # a falling diphthong is not hiatus
+
+
+def test_chain_shifts_are_staged_in_drag_order():
+    """Grimm (S177) and the Great Vowel Shift (S179) run as one event each, in drag order: no two series merge."""
+    g = tsv("S177")
+    assert R.apply(g, w("pater")) == w("faθer") and R.apply(g, w("stella")) == w("stella")  # not after an obstruent
+    assert R.apply(g, w("dekem")) == w("texem") and R.apply(g, w("kaptos")) == w("xaftos")
+    assert R.apply(g, w("ɡenu")) == w("kenu")  # the old voiced stop takes the slot the voiceless one left
+    v = tsv("S179")
+    outs = {s: R.apply(v, w(s)) for s in ("tiːm", "meːt", "mɛːt", "naːm", "huːs", "moːn", "bɔːt")}
+    assert outs["tiːm"] == w("teim") and outs["meːt"] == w("miːt") and outs["naːm"] == w("nɛːm")
+    assert len(set(outs.values())) == len(outs)
+    # a chain a > b > c with commas is staged too, a > b then b > c
+    assert R.apply(tsv("S061"), w("fakto")) == w("fatʃo")
+    # parallel clusters and long-distance dissimilation
+    assert R.apply(tsv("S060"), w("plenum")) == w("pjenum") and R.apply(tsv("S091"), w("peregrinus")) == w("peleɡrinus")
+    assert R.apply(tsv("S093"), w("tʰitʰeːmi")) == w("titʰeːmi")
+
+
+def test_harmony_is_structure_preserving():
+    """A harmonized vowel takes the nearest vowel the language has on the target side; with none near, it stays (neutral)."""
+    class Inv:
+        vowels = from_ipa("ieaou")
+    f = lambda x: tuple(from_ipa(x))
+    assert R.harmony_onto(f("tole"), f("tolɑ"), Inv) == f("tole")     # (no back low vowel: e is neutral)
+    assert R.harmony_onto(f("tuli"), f("tulɯ"), Inv) == f("tulu")     # (ɯ is not there: u stands in)
+
+    class Inv2:
+        vowels = from_ipa("ieɛaɔou")
+    assert R.harmony_onto(f("tolɛ"), f("tolɑ"), Inv2) == f("tolɔ")
+
+
+def test_tone_mergers_parse_and_simplify():
+    """Tone evolution (sound lane pass 2): rising and falling level to high, mid merges up or down, the outer levels merge
+    inward, so tone systems shrink as well as grow."""
+    cat = {r.id: r for r in R.catalogue(HUMAN)}
+    w = tuple(from_ipa("ta˨˦ki˧mu˥po˦˨ŋa˩"))
+    want = {"S227": "ta˦ki˧mu˥po˦˨ŋa˩", "S228": "ta˨˦ki˧mu˥po˦ŋa˩", "S229": "ta˨˦ki˦mu˥po˦˨ŋa˩",
+            "S230": "ta˨˦ki˨mu˥po˦˨ŋa˩", "S231": "ta˨˦ki˧mu˦po˦˨ŋa˩", "S232": "ta˨˦ki˧mu˥po˦˨ŋa˨"}
+    for rid, out in want.items():
+        assert rid in cat, rid
+        assert word_ipa(R.apply(cat[rid], w)) == out, rid
+
+
+def test_palatalized_series_has_exits():
+    """S221 makes a palatalized series before i; S233-S235 take it away again (sound lane pass 2: lʲ had no exit)."""
+    cat = {r.id: r for r in R.catalogue(HUMAN)}
+    w = tuple(from_ipa("lʲalʲinʲetʲ"))
+    assert word_ipa(R.apply(cat["S233"], w)) == "lalʲinetʲ"
+    assert word_ipa(R.apply(cat["S234"], w)) == "lʲalʲinʲet"
+    assert word_ipa(R.apply(cat["S235"], w)) == "ʎaʎinʲetʲ"

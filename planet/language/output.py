@@ -15,6 +15,7 @@ from . import romanize as RO
 from . import inputs as I
 from . import names as NM
 from .percepts import from_ipa, word_ipa
+from . import phonology as PH
 
 FORMAT = "procgen-languages/1"
 
@@ -300,6 +301,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             "l2": _r(lect.l2), "population": _r(lect.population, 0), "isolation": _r(lect.isolation),
             "shares_history": lect.shares_history,
             "stats": _round_all(LX.stats(lect.lexicon)) if full and lect.lexicon is not None else None,
+            **({"phonology": PH.to_json(lect)} if full and lect.lexicon is not None else {}),   # (sound lane: live rules)
             "snapshots": thin_snapshots(lect.snapshots, snap_every)}
 
 

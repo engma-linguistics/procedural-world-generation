@@ -135,6 +135,11 @@ class View:
             for r in (par.get(key) or {}).get("rows") or []:
                 self.cells[r["concept"]] = r
         self.classes = _classes(lj, self.t, self.grams)
+        # the lect's live phonological rules (phonology.py, sound lane): word-level ones run over affixed words, phrase-level
+        # ones across word joins
+        from . import phonology as PH
+        self.stress = inv.get("stress")
+        self.rules = PH.rules_from_json(lj.get("phonology"))
         #: the number a reader sees for each class: 1..n in the engine's order (the engine never reuses a lost class's
         #: number, so its own numbers can have gaps)
         self.cl_num = {f: i + 1 for i, (_k, _g, f) in enumerate(sorted((self.classes or {}).get("classes") or [],
@@ -420,7 +425,18 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
     for i in range(1, len(ms)):
         fl += ms[i][2] + disp[i]
         gl += ms[i][2] + glo[i]
-    return fl, gl, "".join(surf)
+    surface = "".join(surf)
+    if len(ms) > 1 and getattr(v, "rules", None):   # (the lect's live rules at its morpheme joins: phonology.py)
+        from . import phonology as PH
+        pre, f = _segs("".join(surf[:len(w.pre)])) or (), _segs(surface)
+        if f:
+            try:
+                g = PH.apply_word(tuple(f), [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=len(pre))  # (stem-level: word-making only)
+                if g and g != tuple(f):
+                    surface = word_ipa(g)
+            except Exception:  # noqa: BLE001 - a rule that cannot run leaves the plain join
+                pass
+    return fl, gl, surface
 
 
 def _portmanteaus(v: View, w: Word) -> None:
@@ -867,6 +883,17 @@ def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = F
         fl, gl, s = render_word(v, w)
         rows.append([fl, gl])
         surf.append(s)
+    if getattr(v, "rules", None) and len(surf) > 1:   # (phrase-level live rules across word joins: phonology.py)
+        from . import phonology as PH
+        phr = [r for r in v.rules if r[1] in ("phrase", "phonetic")]
+        fs = [_segs(x) for x in surf]
+        if phr and all(fs):
+            try:
+                fs = [tuple(f) for f in fs]
+                gs = PH.apply_phrase(fs, phr, v.stress)
+                surf = [word_ipa(g) if g != f else x for x, f, g in zip(surf, fs, gs)]
+            except Exception:  # noqa: BLE001
+                pass
     ipa = " ".join(surf)
     roman = book_spelling(v.lj, surf)
     out = {"id": sid, "en": en_text, "w": rows, "ipa": ipa, "roman": roman}

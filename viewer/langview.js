@@ -64,7 +64,9 @@
     if (sel) sel.onchange = () => { setVoice(sel.value); audioState(`voice: ${sel.value === 'auto' ? 'best available' : sel.value}`); };
   }
   function speakUrl(b) {
-    return LC.speakUrl('../api/speak', b.dataset.ipa, b.dataset.people, { backend: voice(), sentence: !!b.dataset.sentence, q: !!b.dataset.q });
+    const l = S.ix && S.sel ? S.ix.by.get(S.sel) : null;
+    const stress = b.dataset.stress || (l && l.inventory && l.inventory.stress) || '';
+    return LC.speakUrl('../api/speak', b.dataset.ipa, b.dataset.people, { backend: voice(), sentence: !!b.dataset.sentence, q: !!b.dataset.q, stress });
   }
   function stop() {
     if (current) { current.audio.pause(); current.button.classList.remove('playing'); current = null; }

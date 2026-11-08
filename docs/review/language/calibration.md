@@ -760,6 +760,45 @@ The full pass did not get faster on the wall clock. The non-human ease drag adds
 
 **Sentences.** The templates now draw on the WOLD verbs (build, carve, bring, find, catch, sell, buy, dance, shout), kin terms (older brother, younger sibling), numbers (three, four), motion to a goal with the allative, and objects (boat, basket, pot). The English for the polar question now reads "Do you hear the thunder?".
 
+## Sound lane passes (2026-11-08, lang-sound; a24559, seed default, 10 workers, scratch output)
+
+| Pass | Code | human rules/kyr | horizon human (kyr) | sisters | overused segments | wall (s, machine load 60-130) |
+|---|---|---|---|---|---|---|
+| base | runs/a24559 (finish lane) | 14.6 | 10.7 FAIL | 0.55 | PASS | 1263 |
+| A | sound tasks 1 + 3 (series draw, tonemes, live rules) | 12.5 | 12.0 FAIL | 0.60 | i̠, tʷ, lʷ | 1716 |
+| B | + SC helper (line drift, one-offs, REFIRE_KYR 4, staged chains, S218-S225) | 10.1 | 17.0 FAIL | 0.62 | ɑ, lʲ, lʷ, tʷ, ä | 2395 |
+| C | B + S142/S221 weight 1, LANG_RATE_SCALE=7 | 11.4 | 13.5 FAIL | 0.61 | 9 segments | 1640 |
+| D | B + S142/S221/S068 weight 1, S221 before i only, PICK_REDRAWS 16 (committed) | 11.2 | 12.0 FAIL | 0.60 | ɑ, lʲ, ɤ, ä, ɘ | 2058 |
+
+Pass D also had:
+- living human lects with a series (PHOIBLE in brackets):
+  - prenasal 0.27 (0.13), labialized 0.26 (0.17), palatalized 0.35 (0.26);
+  - retroflex 0.56 (0.28), long vowels 0.49 (0.37), implosive 0.07 (0.12), aspirated 0.08 (0.19);
+- tonal 0.44, with tone counts 2/3/4/5/7 at 4/4/35/53/4%;
+- dragons with sub-bass 110/173;
+- live rules: 8.1 a lect (stem 2307, word 1718, phrase 798, phonetic 262), 46% with a worked example, 165 lects with tone sandhi.
+
+RATE_SCALE does not restore the rate on its own: from 5 to 7 moved the rate only from 10.1 to 11.4, because exhausted picks dominate. PICK_REDRAWS does better.
+
+### Pass 2 (2026-11-08, lang-sound after merging lang-design with grammar A/B, names, lexicon & contact)
+
+| Pass | Code | human rules/kyr | horizon human (kyr): reading / logistic | sisters | overused segments | tonal 2/3/4/5/6-7 tones (all living tonal lects) | wall (s) |
+|---|---|---|---|---|---|---|---|
+| E | merges + vowel series take slots, odds-weighted qualities, structure-preserving harmony | 12.5 | 16.0 / 14.6 FAIL | 0.64 | lʲ 17% | human-voiced: 2/6/37/51/4% | 1855 |
+| F | E + S233-S235 (exits for the palatalized series), paradigm cells under live rules, tone mergers S227-S232, phonotactic re-templating (dropped after F) | 12.3 | 14.8 / 15.0 FAIL | 0.62 | rʲ 15%, bʲ 13%, nʲ 12% | 11/18/47/22/1% | 1887 |
+| G | F without re-templating (code of commit 9f71705c, before the grammar D merge), S221 weight 1 -> 0.4, merged faiths lane (segment borrowing) | 13.1 | 10.3 / 12.4 FAIL (all lects 14.4) | 0.62 | PASS (none; ɑ 6%, lʲ 3%, rʲ 6%, ɤ 6%) | 8/14/60/16/1% (human-voiced 5/13/53/26/3%) | 1609 |
+
+- The vowel fix worked at once: ɑ, ɤ, ä, ɘ left the overused list in pass E (proto draws: ɑ 0.18 -> 0.13, mean
+  qualities 7.2 -> 6.6 against PHOIBLE 6.4).
+- lʲ was S221 (secondary palatalization of every consonant before i: 79 living lects in E, 71 of them with lʲ), which had
+  no way out. The exits in F removed lʲ but rʲ, bʲ, nʲ rose: once later changes put a plain consonant before i again,
+  Cʲ contrasts and stays. A whole phonemic palatalized series is an areal rarity, hence weight 0.4 in G.
+- Phonotactic re-templating (templates re-read from the words) was dropped after F: it is right in itself, but 64-70%
+  of living lects already end almost no words in a consonant (final-coda share under 5%; WALS 12A puts simple CV
+  syllable structure at 12%), so it moved 419 of 620 lects to max coda 0 and fed that drift. The coda-loss drift comes
+  first (for-daniel.md, Sound lane pass 2).
+- The horizon readings move by 1-3 kyr between passes on unrelated changes, as the lexicon lane found; not tuned for.
+
 ## Lexicon & contact lane (2026-11-08)
 
 One full pass of a24559 (10 workers, scratch output, a loaded machine: 1924 s) on the lane's task-1 code: intensity borrowing, WOLD borrowability, closed classes kept, numeral systems, colour stages, sound symbolism, substrate calibration, areal diffusion. The food/technology words and the kinship systems came after it and are not in these numbers. **Areal diffusion did not fire in this pass** (a bug: with workers the step wrote to the pre-step lect objects; fixed after), so the areal row is the old null. Baseline: the final run (finish lane).
@@ -836,7 +875,7 @@ the target 6-10 kyr is far from the model on a robust reading; see the pass-2 nu
 
 ### Pass-2 runs (a24559, 10 workers, scratch output)
 
-p2 = pass 1 plus grammar A, KEEP_COIN, S218 and the harmony fix (KEEP_COMPENSATION still 1.08). p3 = p2 plus
+p2 = pass 1 plus grammar A, KEEP_COIN, S218 (now S226) and the harmony fix (KEEP_COMPENSATION still 1.08). p3 = p2 plus
 KEEP_COMPENSATION 1.0, AREAL_K x10, kinship steered by the culture, name taboos, avoidance registers, and grammar
 phase B merged in.
 

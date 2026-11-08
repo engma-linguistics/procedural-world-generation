@@ -77,12 +77,40 @@ FOLD_RARE = 0.2  # a unit the proto lacked, under this fraction of an average un
 # units, 0.33% at 60: a big inventory's units are each rarer) and one axis from a commoner unit, folds into it
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
-REFIRE_KYR = 3.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ...
+REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
+# sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history)
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
 # REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr)
 LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
+# One-off rows (sound lane, 2026-11-08): named laws that are the signature of one branch fire at most ONE_OFF_MAX times per
+# line (wave adoptions included): every chain shift (family "chain_shift": Grimm S177, High German S178, the Great Vowel
+# Shift S179 and its diphthongs' opening S181, Northern Cities S182, the demo raise_mid; not the dispersion pushes made on
+# the fly; history.RULE_WEIGHT also halves the family), and these named
+# changes: S097 the merger of the voiced and voiceless stops (Tocharian), S098 loss of breathy voice, S173 Verner, S093
+# Grassmann, S046 West Germanic gemination, S047 raddoppiamento, S063 First Slavic palatalization, S064 French a > ɛ, S128
+# Slavic liquid metathesis, S139 Old English breaking, S148 uvular r, S174 Romance diphthongization, S176 high-vowel
+# diphthongization, S185 click replacement. Before, Grimm's T > F fired in 83% of the lects of a24559 and D > T in 93%.
+ONE_OFF_MAX = 1
+ONE_OFF_FAMILIES = frozenset({"chain_shift"})
+ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063", "S064", "S128", "S139", "S148", "S174",
+                         "S176", "S185"})
+# Line drift (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1, Sapir's drift): each proto line draws a standing
+# preference per rule family (lognormal sigma LINE_FAMILY_SIGMA) and per row (LINE_ROW_SIGMA), keyed like hiatus_pref by
+# the line's proto (hiatus_key) so every daughter keeps it, and each budded lect a small jitter of its own (LINE_BUD_SIGMA,
+# keyed by the lect's id: not cumulative down a line, a cheap stand-in for a re-draw at budding). Multiplied into the
+# weights in rule_pool, so a family has a sound personality (one line lenites, another palatalizes) and named laws stop
+# being universal. Isolated-lect harness (48 human lects, 24 protos each budding in two at 10 kyr, 20 kyr, no wave; scratchpad
+# sc/harness.py), before -> after (with REFIRE_KYR 3 -> 4 and the one-off cap): distinct rows fired per line 97.5 -> 87.5,
+# rows fired twice or more 49 -> 34, rows fired in >= 80% of lects 45 -> 19, fired-row overlap (Jaccard) of unrelated lects
+# 0.50 -> 0.40 with sisters 0.81 -> 0.84. Side effect: ~1/3 fewer changes fire after the split (106 -> 70 a lect), because
+# draws that land on a strongly preferred row that changes nothing are redrawn only rules.PICK_REDRAWS times; the horizon
+# (calibration.md) must be re-checked (raise history.RATE_SCALE, or PICK_REDRAWS 8 -> 16: 85 changes, distinct rows 97).
+# Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140 applicable rows.
+LINE_FAMILY_SIGMA = 0.7
+LINE_ROW_SIGMA = 1.0
+LINE_BUD_SIGMA = 0.2
 # Hiatus (2026-11-04, hiatus round). Consonant losses (h > ∅, j > ∅ / V_V, w > ∅, ð ɣ > ∅) leave vowels side by side, and
 # languages resolve such hiatus fast (Casali 1997, 2011): identical vowels fuse (normalize, below), and a change that leaves
 # new hiatus in the lect's words is followed at once by HIATUS_REPAIRS firing(s) of the catalogue's hiatus family
@@ -338,6 +366,9 @@ class Lect:
     glottal_phonetic: bool = False  # ʔ came only from prothesis (S042) in a lect without ʔ: not a phoneme (kept out of the inventory)
     minority: bool = False  # an old lect still spoken by part of its deme after the deme shifted (lives until its share < 0.1)
     hiatus_key: str = ""  # the line whose hiatus strategy this lect keeps (resolve_hiatus; its proto's id, inherited)
+    live: list = field(default_factory=list)  # phonology.Live: the live phonological rules (inherited; phonology.update)
+    dead_rules: list = field(default_factory=list)  # [ref, born, died, why] of the latest rules that died
+    sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -352,16 +383,19 @@ class Lect:
                     inventory=_copy_inv(self.inventory), lexicon=self.lexicon.copy(new_id) if self.lexicon is not None else None,
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
-                    glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id)
+                    glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
+                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn)
 
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
-        for harmony), is not drawn or adopted again."""
+        for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again."""
         h = self.fired.get(base_id(rule.id))
         if not h:
             return True
         # the lifetime cap holds only for the rules that pile up (prothesis, epenthesis, harmony: each firing feeds the next);
         # every other rule just waits REFIRE_KYR, so a fast-changing line does not use up the catalogue
+        if one_off(rule) and len(h) >= ONE_OFF_MAX:
+            return False
         capped = rule.family in LIFETIME_CAP_FAMILIES or base_id(rule.id) in LIFETIME_CAP_IDS
         if capped and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
@@ -583,6 +617,17 @@ class Lect:
             hs = _HIATUS_ROWS[id(rules)] = (rules, [r for r in rules if r.family == "hiatus"])
         return [r for r in self.weighted_rules(hs[1], cache=False) if r.weight > 0]
 
+    def line_pref(self, rule) -> float:
+        """The line's standing preference for a rule (line drift): its family's and its row's lognormal, keyed by the line
+        (hiatus_key, inherited from the proto), times this lect's own small jitter when it is a daughter."""
+        line = self.hiatus_key or self.id
+        b = base_id(rule.id)
+        fam = rule.family or b.split(".")[0]
+        f = _lognormal(f"{line}|fam|{fam}", LINE_FAMILY_SIGMA) * _lognormal(f"{line}|row|{b}", LINE_ROW_SIGMA)
+        if self.hiatus_key:
+            f *= _lognormal(f"{self.id}|bud|{b}", LINE_BUD_SIGMA)
+        return f
+
     def hiatus_pref(self, rule) -> float:
         """The line's standing preference for a hiatus repair: a lognormal (sigma HIATUS_SPREAD) keyed by the line
         (hiatus_key) and the rule, so daughters resolve hiatus as their parent did."""
@@ -621,6 +666,8 @@ class Lect:
                 memo[1].append((x, o[0]))
         if (rule.id.startswith("dispersion.") or "/" in rule.id) and rule.id not in self.rule_text:
             self.rule_text[rule.id] = RU.describe(rule)
+        from . import phonology as PH
+        PH.on_change(self, rule, kyr)  # (a conditioned change lives on as a rule of the lect's phonology)
         if remember:  # (a hiatus repair is not drawn, so it keeps no re-fire memory)
             self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
         if base_id(rule.id) == "S042" and not had_glottal and not self.glottal_phonetic:
@@ -631,15 +678,15 @@ class Lect:
 
     def rule_pool(self, rules, kyr: float, weights: dict | None = None) -> list:
         """The rules this lect may draw now: the down-weighted catalogue (weighted_rules) with the driver's weight overrides
-        (history.RULE_WEIGHT), epenthesis re-pointed at the lect's epenthetic vowel, and the re-fire memory applied."""
+        (history.RULE_WEIGHT) and the line's drift (line_pref), epenthesis re-pointed at the lect's epenthetic vowel, and the re-fire memory applied."""
         weights = weights or {}
         out = []
         for r in self.weighted_rules(rules):
             if not self.may_fire(r, kyr):
                 continue
             w = weight_override(weights, r)
-            if w is not None:
-                r = replace(r, weight=r.weight * w)
+            w = self.line_pref(r) * (1.0 if w is None else w)
+            r = replace(r, weight=r.weight * w)
             v = reduction_variant(epenthesis_variant(r, self.inventory), self.inventory)
             out.append(v)
         return out
@@ -670,6 +717,8 @@ class Lect:
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
         self.touch()
+        from . import phonology as PH
+        PH.update(self, kyr)  # (age the live rules; the inventory carries them for the words made below)
         rs = ctx.get("replace_scale", 1.0)
         typ = getattr(self.grammar, "typology", None)
         LX.step(rng, self.lexicon, n_generations * rs, self.inventory, contact_words=ctx.get("contact_words"), kyr=kyr,
@@ -687,6 +736,22 @@ class Lect:
     def record_shares(self, kyr: float) -> None:
         if self.shares:
             self.shares_history.append([round(float(kyr), 3), {k: round(v, 3) for k, v in self.shares.items() if v > 0.005}])
+
+
+def one_off(rule) -> bool:
+    """A named one-off row (ONE_OFF_IDS, family "chain_shift"; not a dispersion push): at most ONE_OFF_MAX firings a line."""
+    if rule.family in ONE_OFF_FAMILIES and not rule.id.startswith("dispersion."):
+        return True
+    return base_id(rule.id) in ONE_OFF_IDS
+
+
+def _lognormal(key: str, sigma: float) -> float:
+    """exp(sigma z), z a standard normal fixed by the key (crc32-seeded, so the same in every process and run)."""
+    v = _PREF.get((key, sigma))
+    if v is None:
+        import zlib
+        v = _PREF[(key, sigma)] = math.exp(sigma * float(np.random.default_rng(zlib.crc32(key.encode("utf-8"))).normal()))
+    return v
 
 
 def _undoes(rule, y, x) -> bool:
@@ -945,9 +1010,12 @@ def _species_cost_fn(profile):
 def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
     """grammar.step, with the typology drift on (per generation, at the lect's own rate, as sound change). Until the
     2026-11-04 round no caller asked for the drift, so typology only changed by calques on shift."""
+    from . import phonology as PH
+    before = PH.cell_parts(lect.grammar)
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
             population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
             rate=getattr(lect, "rate", 1.0), lect=getattr(lect, "id", None))
+    PH.apply_new_cells(lect.grammar, lect.inventory, before)   # (new cells join under the live rules: phonology.py)
 
 
 def _accepted(fn, kw: dict) -> dict:
@@ -1023,7 +1091,7 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
                              "merged": what})
         return []
     if not any(x.kind == "V" and not x.tone for x in segs):
-        return marked
+        return tonemes(segs)
     d = max(cnt, key=lambda t: (cnt[t], -t))
     mapping = {x: replace(x, tone=d) for x in segs if x.kind == "V" and not x.tone}
     if getattr(lect.inventory, "tones", None):
@@ -1033,13 +1101,33 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
         _map_forms(lect, mapping, rid, kyr)
         lect.rule_text.setdefault(rid, f"a vowel with no tone (from a loan, an epenthesis or a new vowel) took the "
                                        f"{_tone_name(d)} tone, the language's default")
-        return marked
+        return tonemes(lect.all_segments())
     rid = f"tone.phonemic/{d}"
     _map_forms(lect, mapping, rid, kyr)
     lect.rule_text.setdefault(rid, f"tone became phonemic: vowels with no tone mark took the {_tone_name(d)} tone, the commonest "
                                    "(tonogenesis: phonemicization)")
     lect.changes.append({"kyr": round(kyr, 3), "rule": rid, "cause": "tonogenesis", "origin_lect": None})
-    return marked
+    return tonemes(lect.all_segments())
+
+
+_CONTOUR_PARTS = {4: (1, 3), 5: (3, 1)}  # rising = low + high, falling = high + low
+
+
+def tonemes(segs) -> list:
+    """The lect's tonemes from the tones on its vowels: every level tone, and a contour (rising, falling) only where it
+    stands on a short vowel. A contour found only on long vowels is two level tones on two moras (Yoruba, Hausa: a long
+    vowel carries a sequence, as fusion makes them, H + L on aa), so it adds its levels, not a toneme. Before this (sound
+    lane, 2026-11-08) every fused long vowel added a contour toneme and 78% of tonal lects ended with 5 tones (WALS 13A
+    and PHOIBLE: two or three tones are the commonest systems)."""
+    out = set()
+    for x in segs:
+        if x.kind != "V" or not x.tone:
+            continue
+        if x.tone in _CONTOUR_PARTS and x.length:
+            out.update(_CONTOUR_PARTS[x.tone])
+        else:
+            out.add(x.tone)
+    return sorted(out)
 
 
 _CORE: list = []

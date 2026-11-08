@@ -238,6 +238,38 @@ The in-memory doc is unchanged (/1 shape).
 2. The scholars' horizon still fails (10.7 kyr against 6-10).
 3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.
 
+## Continuation (sound lane, 2026-11-08)
+
+**State.** Branch `lang-sound` (worktree `.claude/worktrees/lang-sound`). All work is committed: tasks 1-3 of the sound row in queue.md, plus the series-based draw from task 4. The helper branch `lang-sound-sc` is merged into it. Nothing is merged into lang-design or pushed. The defaults taken are in `for-daniel.md` "Sound lane".
+
+**New module.** `planet/language/phonology.py` holds the synchronic rule layer (architecture.md 5b). Its hooks:
+- `lect.Lect` fields `live`, `dead_rules` and `sandhi_drawn`;
+- `_apply_rule` calls `on_change`, and `step` calls `update`;
+- `inventory.realize` applies `apply_word`;
+- `sentences.View` gets `render_word` and `finish`;
+- `output.lect_json["phonology"]`.
+
+Readers use `phonology.rules_from_json`.
+
+**Still to do (task 4 and leftovers).**
+1. Tone evolution. Tonogenesis rules put contours on short vowels, so 5-tone systems are still the commonest living count. Tonemes are counted right in protos, but history inflates them. A tone-merger/simplification pressure is needed.
+2. Phonotactics re-check after history.
+3. Stress stored per form (now only the lect's pattern).
+4. Lexical diffusion.
+5. Grammar paradigm cells (`grammar.py`) do not run the live rules yet. Only realize and sentences do. That belongs to grammar A's file.
+6. `demo_page.py` IPA is not stress-marked yet.
+7. The scholars' horizon still fails. The overused-segments check: see below.
+
+**Checks on a24559** (pass D, scratch output; base = runs/a24559):
+- horizon (human): 12 kyr, FAIL (base 10.7, also FAIL);
+- overused segments: ɑ, lʲ, ɤ, ä, ɘ, FAIL (base PASS). Cause and next fix are in for-daniel.md "Sound lane";
+- every other check passes;
+- sisters 0.60 (base 0.55).
+
+**Worktrees.**
+- The helper branch `lang-sound-sc` is merged and deleted.
+- A duplicate helper's branch `worktree-agent-a394b320cf12664f2` was NOT merged. Its worktree is removed. It holds an alternative take on SC items 1-4 plus a draft on structural catalogue saturation. Delete it once nothing from it is wanted.
+
 ## Continuation: grammar phase B (lang-gram-b, 2026-11-08)
 
 Done on `lang-gram-b`: the demo-page bugs, then mood (IMP, HORT, OBLG, APPR), object agreement, genitive sources,
@@ -343,3 +375,26 @@ the fable (texts.py), recipe, faith myth (texts.myth + sketch.myth_of), phase D 
 MIR, HON, OBV, polite address, comparison following the `comparative` aim, DOM), the question-particle pull
 (PULL_BOOST/KEEP). Write-up: for-daniel.md "Grammar phase D and texts". Left: the species-leanings table (proposal
 only), sketches not regenerated (they track runs/a24559; regenerate after the merge rebuild), the cold-review agent.
+
+## Continuation (sound lane pass 2, 2026-11-08 afternoon)
+
+**State.** Branch `lang-sound`, everything committed, nothing pushed or merged into lang-design. lang-design is merged in
+up to grammar D and texts (aad150bf). Pass G (scratch, a24559, code before the grammar D merge) passes every check but the
+horizon: overused segments PASS, horizon 10.3 kyr (logistic 12.4). Numbers: calibration.md "Pass 2"; plain-words
+summary and Daniel's calls: for-daniel.md "Sound lane pass 2". Not-slow suite: 1783 passed on the final merge.
+
+**New since pass 1.**
+- `inventory._pick_vowels`: vowel series take slots (`v_ratios()`, rows `v_ratio` in phoible_series.tsv); qualities are
+  odds-weighted (`V_ODDS_CAP`).
+- `rules.harmony_onto` (`HARMONY_SNAP_MAX`): harmony is structure-preserving; called from `rules.apply` when an
+  inventory is given and the rule's family is harmony.
+- `phonology.cell_parts` / `apply_new_cells`, called once in `lect.grammar_step`: new paradigm cells run the live rules.
+- Catalogue rows S226 (lexcon's S218), S227-S232 tone mergers, S233-S235 exits for the palatalized series; S221 weight 0.4.
+- `inventory.repair` handles an onset cut down to a geminate.
+
+**Next steps.**
+1. The coda balance: 64-70% of living lects end under 5% of core words in a consonant (WALS 12A: 12% simple). Then
+   re-add the phonotactics re-check (re-read the templates from the words: written and dropped in this pass, see
+   calibration.md pass F).
+2. Tone: four-tone systems are 53-60% of tonal lects; tonogenesis outpaces the mergers.
+3. Stress per word, lexical diffusion, stress marks in demo_page.py (grammar C/D's file).

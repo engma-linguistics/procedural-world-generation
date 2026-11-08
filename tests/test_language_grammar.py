@@ -691,7 +691,7 @@ def _real_proto(seed, **typ_over):
 
 def test_clusivity_makes_an_inclusive_we_and_loses_it():
     kinds = set()
-    for s in range(6):
+    for s in range(12):   # (a window wide enough for both kinds under any inventory draw)
         rng, inv, lx, g = _real_proto(30 + s, clusivity="yes")
         inc = lx.get("WE (INCLUSIVE)")
         assert inc is not None and inc.form != lx["WE"].form
@@ -747,6 +747,7 @@ def test_counting_base_builds_the_higher_numerals():
     from planet.language import lexsys as LS
 
     def made(lx, c):
+        # (the step that makes the concept itself: a built TWENTY can sit inside HUNDRED's etymology)
         return next((st for st in reversed(lx[c].etym) if st.process.startswith("compound:")), None)
     rng, inv, lx, g = _real_proto(50, numeral_base="decimal", numeral="NumN")
     st = made(lx, "TWENTY")

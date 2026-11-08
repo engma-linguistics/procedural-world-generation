@@ -16,7 +16,7 @@
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>|culture=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief()); a culture's has its cuisine sheet
-  GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper][&sentence=1[&q=1]]   a word
+  GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper][&sentence=1[&q=1]][&stress=initial|penult|final]   a word
          (or, with sentence=1, a whole sentence with word gaps and phrase intonation; q=1 a yes/no question) said aloud: audio/wav
   GET    /api/speak/backends          {"backends": [...available], "default": "piper"|"espeak"|null}
   GET    /api/cultures?run=<id>      a peoples run's emergent cultures (cultures()): its cultures.json, else worked out on the fly, not saved
@@ -215,6 +215,9 @@ def speak(query: str) -> tuple[bytes | dict, int]:
     sentence, question = q.get("sentence") in ("1", "true"), q.get("q") in ("1", "true")
     if not ipa:
         return {"error": "ipa= is required"}, 400
+    if q.get("stress") in ("initial", "penult", "final", "antepenult"):  # the lect's fixed stress: marked, so it is heard
+        from .language.inventory import stressed_ipa
+        ipa = stressed_ipa(ipa, q["stress"])
     cap = SPEAK_MAX_SENTENCE_CHARS if sentence else SPEAK_MAX_CHARS
     if len(ipa) > cap:
         return {"error": f"ipa= is longer than {cap} characters"}, 400

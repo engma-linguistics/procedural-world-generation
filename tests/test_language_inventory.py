@@ -265,3 +265,87 @@ def test_fuse_vowels():
     assert f("kai") == "kai" and f("kãa") == "kãː"
     hl = I.fuse_vowels(tuple(from_ipa("ka˦a˨")))
     assert len(hl) == 2 and hl[1].tone == 5 and I.fuse_vowels(tuple(from_ipa("ka˨a˦")))[1].tone == 4
+
+
+# ---------------------------------------------------------------------------------------------- sound lane, 2026-11-08
+def test_pool_reads_multi_letter_phoible_rows():
+    """PHOIBLE writes k͡p as kp and ᵐb as mb: the pool reads them whole (they were dropped, so no proto had them)."""
+    pool = {to_ipa(s) for s, _ in I.phoible_pool()[0]}
+    assert {"k͡p", "ɡ͡b", "ᵐb", "ⁿd", "ᵑɡ"} <= pool
+
+
+def test_series_shares_near_phoible():
+    """Series come whole and at PHOIBLE's rate: the share of protos with any member (retroflex, long vowels, ejectives,
+    labial-velars, prenasalized stops) is near PHOIBLE's, not the 75% a segment-by-segment draw gave retroflexes."""
+    rng = np.random.default_rng(7)
+    n = 600
+    invs = [I.draw_inventory(rng, P.HUMAN) for _ in range(n)]
+    sh = I.series_shares()
+    for k in ("retroflex", "long_v", "ejective", "labial_velar", "prenasal", "implosive"):
+        got = sum(any(I.SERIES[k](s) for s in v.consonants + v.vowels) for v in invs) / n
+        assert abs(got - sh[k]) < max(0.06, 0.35 * sh[k]), (k, got, sh[k])
+    ej = [v for v in invs if any(I.SERIES["ejective"](s) for s in v.consonants)]
+    assert ej and sum(sum(I.SERIES["ejective"](s) for s in v.consonants) for v in ej) / len(ej) >= 3  # (pʼ tʼ kʼ, not a lone kʼ)
+
+
+def test_vowel_qualities_follow_phoible():
+    """Vowel series take slots: the number of distinct vowel qualities stays near PHOIBLE's (median 6) whether or not a
+    proto has long or nasal vowels, and each quality's share is near PHOIBLE's (i, a, u near-universal; ɑ not twice its
+    share), sound lane pass 2."""
+    rng = np.random.default_rng(11)
+    n = 800
+    invs = [I.draw_inventory(rng, P.HUMAN) for _ in range(n)]
+    nq = [len({I._quality(v) for v in inv.vowels}) for inv in invs]
+    assert 5.5 <= float(np.median(nq)) <= 6.5 and 5.8 < float(np.mean(nq)) < 7.0, (np.median(nq), np.mean(nq))
+    with_long = [q for q, inv in zip(nq, invs) if any(v.length for v in inv.vowels)]
+    assert with_long and float(np.median(with_long)) <= 6.5
+    cnt = collections.Counter(to_ipa(I._quality(v)) for inv in invs for v in {I._quality(x) for x in inv.vowels})
+    for q, lo, hi in (("i", 0.9, 1.0), ("a", 0.88, 1.0), ("u", 0.88, 1.0), ("ɑ", 0.03, 0.17), ("ə", 0.12, 0.36)):
+        assert lo <= cnt[q] / n <= hi, (q, cnt[q] / n)
+
+
+def test_small_inventories_use_common_sounds():
+    """Small inventories are built from common sounds (PHOIBLE: ~7% of the consonants of a <= 12-consonant inventory are
+    in fewer than 10% of languages)."""
+    rng = np.random.default_rng(8)
+    freq = I._pool_freq()
+    shares = []
+    for _ in range(400):
+        inv = I.draw_inventory(rng, P.HUMAN, size_hint=(int(rng.integers(7, 13)), 5))
+        shares.append(np.mean([freq.get(s, 0.0) < 0.1 for s in inv.consonants]))
+    assert np.mean(shares) < 0.12, np.mean(shares)
+
+
+def test_dragons_draw_sub_bass():
+    """The dragon profile's cheap sub-bass register appears in its protos (it was in none)."""
+    par = {"chromatic_dragon": ["draconic"], "draconic": ["reptilian"]}
+    prof = P.resolve_profile("chromatic_dragon", lambda l: par.get(l, []))
+    rng = np.random.default_rng(9)
+    invs = [I.draw_inventory(rng, prof) for _ in range(60)]
+    assert sum(any(v.register < 0 for v in inv.vowels) for inv in invs) > 20
+    assert not any(v.register for inv in [I.draw_inventory(rng, P.HUMAN) for _ in range(60)] for v in inv.vowels)
+
+
+def test_stress_marked():
+    w = tuple(from_ipa("patakan"))
+    assert I.stress_marked(w, "penult") == "paˈtakan"
+    assert I.stress_marked(w, "initial") == "ˈpatakan"
+    assert I.stress_marked(w, "final") == "pataˈkan"
+    assert I.stress_marked(w, "none") == "patakan"
+    assert I.stressed_ipa("ostro ta", "final") == "osˈtro ta"
+
+
+def test_contour_on_long_vowel_is_two_levels():
+    from planet.language.lect import tonemes
+    a = from_ipa("a")[0]
+    segs = [replace(a, tone=1), replace(a, tone=3), replace(a, tone=5, length=1)]
+    assert tonemes(segs) == [1, 3]
+    assert tonemes(segs + [replace(a, tone=4)]) == [1, 3, 4]
+
+
+def test_tonal_lect_hears_loans_with_tone():
+    inv = I.Inventory(consonants=list(from_ipa("ptk")), vowels=list(from_ipa("aiu")), tones=[1, 3])
+    a_hi = replace(from_ipa("a")[0], tone=3)
+    heard = P.hear_word((from_ipa("p")[0], a_hi), P.HUMAN, I.segments(inv))
+    assert heard[1].tone == 3
+

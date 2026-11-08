@@ -812,9 +812,14 @@ def phonology(doc: Doc, l: dict) -> list[str]:
         out.append(f"Syllable shapes (share of syllables in the word-shape model): {sh}. At most "
                    f"{inv.get('max_onset', '?')} consonant(s) before the vowel and {inv.get('max_coda', '?')} after it.")
     stress = inv.get("stress")
-    out.append({"none": "Stress is not phonemic (no fixed stress).", "penult": "Stress falls on the next-to-last syllable.",
-                "initial": "Stress falls on the first syllable.", "final": "Stress falls on the last syllable."
-                }.get(stress, f"Stress: {stress}."))
+    if stress == "none":
+        out.append("No fixed stress position: prominence is not tied to a syllable, so no stress mark is written "
+                   + ("(pitch is carried by the tones)." if tones else "(as in French phrases, Korean or many Austronesian "
+                      "languages; the engine has no word-by-word lexical stress yet)."))
+    else:
+        out.append({"penult": "Stress falls on the next-to-last syllable.", "initial": "Stress falls on the first syllable.",
+                    "final": "Stress falls on the last syllable.", "antepenult": "Stress falls on the third syllable from the end."
+                    }.get(stress, f"Stress: {stress}.") + " The IPA on this page marks it with ˈ before the stressed syllable.")
     stt = l.get("stats") or {}
     if stt:
         out.append(f"Core words average {stt.get('core_mean_syllables', 0):.2f} syllables "
@@ -839,6 +844,40 @@ def phonology(doc: Doc, l: dict) -> list[str]:
     else:
         out.append("This output records no allophones (the engine stores sounds as phonemes only).")
     out.append("")
+    out += phonological_rules(l)
+    return out
+
+
+LEVEL_WORDS = {"phrase": "across words in a phrase and inside words", "word": "inside words: affixes and compounds",
+               "stem": "only where words are made (derivation, compounds, new words, loans)",
+               "phonetic": "everywhere (an allophone: how a sound is said)"}
+
+
+def phonological_rules(l: dict) -> list[str]:
+    """The lect's live phonological rules in order (planet/language/phonology.py), each with a worked example from its own
+    words, and the rules that died lately."""
+    ph = l.get("phonology")
+    if not ph:
+        return []
+    out = ["### Phonological rules", "",
+           "Rules the language applies today, in order. A new sound change starts as a rule applying across words; as it "
+           "ages it narrows to words, then to word-making, and in the end dies, leaving its alternations in single words.", ""]
+    rows = ph.get("rules") or []
+    if not rows:
+        out += ["No live rules: its recent changes have all run their course.", ""]
+    else:
+        out += ["| # | rule | applies | since | example |", "| --- | --- | --- | --- | --- |"]
+        for k, r in enumerate(rows, 1):
+            ex = r.get("ex")
+            ex_t = f"{ex[0]} → {ex[1]} '{ex[2]}'" if ex else "–"
+            since = "–" if r.get("b") is None else f"~{r['b']:g} kyr ago"
+            out.append(f"| {k} | {r['t'].replace('|', '/')} | {LEVEL_WORDS.get(r['lv'], r['lv'])} | {since} | "
+                       f"{ex_t.replace('|', '/')} |")
+        out.append("")
+    dead = ph.get("dead") or []
+    if dead:
+        out.append("Lately dead: " + "; ".join(f"{d[0].split(':', 1)[1]} ({d[3]}, {d[2]:g} kyr ago)" for d in dead) + ".")
+        out.append("")
     return out
 
 
@@ -1247,17 +1286,22 @@ def word_family(doc: Doc, l: dict) -> list[str]:
 
 def vocabulary(doc: Doc, l: dict) -> list[str]:
     lex = l.get("lexicon") or {}
+    stress = (l.get("inventory") or {}).get("stress")
+
+    def st(ipa: str) -> str:  # the lect's fixed stress marked (ˈ)
+        from planet.language.inventory import stressed_ipa
+        return stressed_ipa(ipa, stress)
     out = ["## Vocabulary", "", "### Core sample", "",
            "| meaning | IPA | spelling | origin | etymology (sound changes left out) |", "| --- | --- | --- | --- | --- |"]
     shown = [c for c in SAMPLE if c in lex]
     for c in shown:
         e = lex[c]
-        out.append(f"| {cname(c)} | {e['ipa']} | {e['roman']} | {etym_origin(doc, e)} | {etym_short(doc, e, l['id'])} |")
+        out.append(f"| {cname(c)} | {st(e['ipa'])} | {e['roman']} | {etym_origin(doc, e)} | {etym_short(doc, e, l['id'])} |")
     rest = [c for c in doc.d.get("snapshot_concepts", []) if c in lex and c not in shown]
     if rest:
         out += ["", "<details><summary>The rest of the core 100</summary>", "", "| meaning | IPA | spelling | origin |",
                 "| --- | --- | --- | --- |"]
-        out += [f"| {cname(c)} | {lex[c]['ipa']} | {lex[c]['roman']} | {etym_origin(doc, lex[c])} |" for c in rest]
+        out += [f"| {cname(c)} | {st(lex[c]['ipa'])} | {lex[c]['roman']} | {etym_origin(doc, lex[c])} |" for c in rest]
         out += ["", "</details>"]
     stt = l.get("stats") or {}
     if stt.get("inherited_core_share") is not None:
