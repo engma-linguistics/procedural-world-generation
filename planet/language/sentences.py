@@ -35,12 +35,16 @@ ABBR = {"PL": "PL", "DU": "DU", "DEF": "DEF", "INDEF": "INDF", "GEN": "GEN", "LO
         "DAT": "DAT", "ACC": "ACC", "ERG": "ERG", "INS": "INS", "COM": "COM", "DIM": "DIM", "AGENT": "AGT",
         "PLACE": "PLACE", "PAST": "PST", "RECPST": "PST.RCT", "FUT": "FUT", "PERF": "PRF", "PROG": "PROG",
         "IPFV": "IPFV", "HAB": "HAB", "EVID.DIR": "DIR", "EVID.REP": "REP", "NEG": "NEG", "CAUS": "CAUS",
-        "PASS": "PASS", "REFL": "REFL", "Q": "Q", "REL": "REL", "COP": "COP", "CLF": "CLF"}
+        "PASS": "PASS", "REFL": "REFL", "Q": "Q", "REL": "REL", "COP": "COP", "CLF": "CLF", "ITER": "ITER",
+        "INTS": "INTS", "CONT": "CONT"}
 #: abbreviations that are not in the Leipzig list, explained on the pages
 EXTRA_ABBR = {"PST.RCT": "recent past", "DIR": "direct (witnessed) evidential", "REP": "reported evidential",
-              "AGT": "agent noun", "CL": "noun class", "CLF": "classifier", "ANIM": "animate", "INAN": "inanimate"}
+              "AGT": "agent noun", "CL": "noun class", "CLF": "classifier", "ANIM": "animate", "INAN": "inanimate",
+              "ITER": "iterative (reduplication)", "INTS": "intensive (reduplication)",
+              "CONT": "continuous (reduplication)"}
 #: English gloss of a pronoun concept
-PRON = {"I": "1SG", "THOU": "2SG", "HE OR SHE OR IT": "3SG", "WE": "1PL", "YOU": "2PL", "THEY": "3PL"}
+PRON = {"I": "1SG", "THOU": "2SG", "HE OR SHE OR IT": "3SG", "WE": "1PL", "YOU": "2PL", "THEY": "3PL",
+        "WE (INCLUSIVE)": "1PL"}
 CASE_EN = {"GEN": "of the {n}", "LOC": "in the {n}", "ABL": "from the {n}", "ALL": "to the {n}", "DAT": "to/for the {n}",
            "ACC": "the {n} (as object)", "ERG": "the {n} (as doer)", "INS": "with (using) the {n}", "COM": "with the {n}"}
 TAM_ORDER = ("PAST", "RECPST", "PERF", "FUT", "PROG", "IPFV", "HAB")
@@ -66,6 +70,8 @@ EN_VERB = {
     "BUY": ("buy", "buys", "bought", "bought", "buying"), "DANCE": ("dance", "dances", "danced", "danced", "dancing"),
     "SHOUT": ("shout", "shouts", "shouted", "shouted", "shouting"),
     "CARVE": ("carve", "carves", "carved", "carved", "carving"),
+    "TAKE": ("take", "takes", "took", "taken", "taking"), "CUT": ("cut", "cuts", "cut", "cut", "cutting"),
+    "BITE": ("bite", "bites", "bit", "bitten", "biting"), "FLY": ("fly", "flies", "flew", "flown", "flying"),
 }
 EN_NOUN = {"CHILD (YOUNG HUMAN)": "child", "LIE (REST)": "lie", "FLESH OR MEAT": "meat", "SMOKE (EXHAUST)": "smoke",
            "STONE OR ROCK": "stone", "kin:mother": "mother", "kin:brother": "brother", "kin:sister": "sister"}
@@ -110,6 +116,7 @@ class View:
             for r in (par.get(key) or {}).get("rows") or []:
                 self.cells[r["concept"]] = r
         self.classes = _classes(lj, self.t, self.grams)
+        self.proc = dict(lj.get("processes") or {})   # (grammar phase A: split ergativity, reduplication)
 
     def w(self, *concepts) -> str | None:
         """The first of the concepts the lexicon has."""
@@ -497,7 +504,12 @@ def _np_gram(v: View, np_: NP, fn: str) -> bool:
 def pronoun(v: View, concept: str) -> NP | None:
     if not v.w(concept):
         return None
-    return NP([Word(v.ipa(concept), PRON.get(concept, lgloss(concept)), concept)], 0, PRON.get(concept, "3SG"))
+    gl = PRON.get(concept, lgloss(concept))
+    if concept == "WE (INCLUSIVE)":
+        gl = "1PL.INCL"
+    elif concept == "WE" and v.w("WE (INCLUSIVE)"):
+        gl = "1PL.EXCL"
+    return NP([Word(v.ipa(concept), gl, concept)], 0, PRON.get(concept, "3SG"))
 
 
 def oblique(v: View, np_: NP, fn: str, word_concepts: tuple[str, ...]) -> tuple[NP, str] | None:
@@ -526,12 +538,19 @@ def oblique(v: View, np_: NP, fn: str, word_concepts: tuple[str, ...]) -> tuple[
 # ---- the verb -----------------------------------------------------------------------------------------------------------
 
 def verb(v: View, concept: str, person: str | None = None, tam: str | None = None, neg: bool = False,
-         gloss: str | None = None) -> tuple[list, int, list]:
+         gloss: str | None = None, redup: bool = False, voice: str | None = None) -> tuple[list, int, list]:
     """The verb with its grams: (words, index of the verb, notes). Bound grams go on the verb, free ones (auxiliaries,
-    particles) beside it on their side, inner ones nearest."""
+    particles) beside it on their side, inner ones nearest. `redup`: the lect's reduplication process (a copy of the
+    stem, innermost); `voice`: a valence gram (PASS)."""
     notes = []
     vw = Word(v.ipa(concept), gloss or lgloss(concept), concept)
     words = [vw]
+    rd = v.proc.get("redup")
+    if redup and rd:
+        red = word_ipa(GR.reduplicant(tuple(from_ipa(vw.form)), rd["shape"], rd["side"]))
+        vw.add(red, ABBR[rd["fn"]], GR.AFFIX, rd["side"], rd["fn"])
+    if voice:
+        attach(v, words, words.index(vw), voice)
     if tam:
         attach(v, words, words.index(vw), tam)
     if person:
@@ -565,16 +584,39 @@ def neg_gram(v: View, words: list, vw: Word, notes: list) -> None:
 
 # ---- the clause ---------------------------------------------------------------------------------------------------------
 
-def clause(v: View, S: NP | None, Vw: tuple, O: NP | None = None, X: NP | None = None, transitive: bool = True) -> list:
+def _is_pron(np_: NP | None) -> bool:
+    return np_ is not None and np_.words[np_.head].concept in PRON
+
+
+def flagging(v: View, S: NP | None, O: NP | None, tam: str | None = None) -> tuple[bool, bool]:
+    """(ERG on the transitive subject, ACC on the object) by alignment. A split lect (both markers live) divides them as
+    its grammar chose (`processes.split`): by person, pronouns accusative and nouns ergative (Dyirbal); by aspect, the
+    ergative in the perfective or past clause and the accusative elsewhere (Hindi)."""
+    al = v.t.get("alignment", "neutral")
+    acc, erg = v.g("ACC") is not None, v.g("ERG") is not None
+    if al == "nom-acc":
+        return False, acc
+    if al == "erg-abs":
+        return erg and S is not None, False
+    if al == "split":
+        if v.proc.get("split") == "aspect":
+            past = tam in GR.SPLIT_ASPECT
+            return erg and past and S is not None, acc and not past
+        return erg and S is not None and not _is_pron(S), acc and _is_pron(O)
+    return False, False
+
+
+def clause(v: View, S: NP | None, Vw: tuple, O: NP | None = None, X: NP | None = None, transitive: bool = True,
+           tam: str | None = None) -> list:
     """Order S, O and the verb complex by the basic word order (free order: by head direction, and the note says so); an
-    oblique X stands before the verb in OV lects and after the object in VO ones. Case by alignment: ACC on the object
-    (nominative-accusative), ERG on the transitive subject (ergative). Clause-edge negators move to the edge."""
+    oblique X stands before the verb in OV lects and after the object in VO ones. Case by alignment (`flagging`): ACC on
+    the object, ERG on the transitive subject, a split lect by person or aspect. Clause-edge negators move to the edge."""
     words, _vi, _n = Vw
     if transitive and O is not None:
-        al = v.t.get("alignment", "neutral")
-        if al in ("nom-acc", "split") and v.g("ACC") is not None:
+        e, a = flagging(v, S, O, tam)
+        if a:
             _np_gram(v, O, "ACC")
-        if al in ("erg-abs",) and S is not None and v.g("ERG") is not None:
+        if e:
             _np_gram(v, S, "ERG")
     parts = {"S": S.words if S else [], "O": O.words if O else [], "V": words}
     seq = []
@@ -700,7 +742,7 @@ def s_tense(v: View) -> dict | None:
     fn = _tam(v)
     s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _the(v))
     vw = verb(v, Vc, "3SG", fn)
-    words = clause(v, s, vw, o)
+    words = clause(v, s, vw, o, tam=fn)
     g = v.g(fn) if fn else None
     note = (f"{ABBR[fn]} is {_how(g)}"
             if g else "no tense or aspect marker: time is left to context")
@@ -912,8 +954,136 @@ def s_relative(v: View) -> dict | None:
     return finish(v, "relative", f"I know the {en(H)} who {_vf(R, 1)}.", words, [note] + vw[2])
 
 
+# ---- grammar phase A sentences (2026-11-08): give, imperative, passive, serial verbs, reduplication, split, clusivity -----
+
+def s_give(v: View) -> dict | None:
+    """A ditransitive: the recipient in the dative (case or adposition) when the lect has a DAT gram, else a serial
+    'give' after the theme when the lect serializes, else a double object (both bare)."""
+    S, G_, T, R = v.w("WOMAN", "MAN", "PERSON"), v.w("GIVE"), v.w("FISH", "FLESH OR MEAT", "EGG", "STONE"), \
+        v.w("CHILD (YOUNG HUMAN)", "BOY", "GIRL", "MAN")
+    if not (S and G_ and T and R) or R == S:
+        return None
+    s, o, r = noun_phrase(v, S, _the(v)), noun_phrase(v, T, _a(v)), noun_phrase(v, R, _the(v))
+    en_text = f"The {en(S)} gives the {en(R)} {'an' if en(T)[0] in 'aeiou' else 'a'} {en(T)}."
+    if v.g("DAT") is not None:
+        x = oblique(v, r, "DAT", ())
+        vw = verb(v, G_, "3SG")
+        return finish(v, "give", en_text, clause(v, s, vw, o, x[0]), [x[1] + ", on the recipient"] + vw[2])
+    if v.t.get("serial_verbs") == "yes" and v.w("TAKE"):
+        return _serial(v, "give", S, ("TAKE", T), (G_, R), en_text,
+                       "no dative: a serial construction, 'take the thing, give (it to) the person'")
+    vw = verb(v, G_, "3SG")
+    words = clause(v, s, vw, o, r)
+    return finish(v, "give", en_text, words, ["double object: theme and recipient both unmarked"] + vw[2])
+
+
+def s_imperative(v: View) -> dict | None:
+    """A command: the lect has no mood gram, so the imperative is the bare verb stem with no subject (the commonest
+    imperative in the world's languages: WALS 70A)."""
+    Vc, O = v.pair((("EAT", "DRINK"), ("FISH", "WATER", "FLESH OR MEAT")), (("TAKE", "CARRY", "HOLD"), ("STONE", "STICK")))
+    if not (Vc and O):
+        return None
+    o = noun_phrase(v, O, _the(v))
+    words, vi, _n = verb(v, Vc)
+    seq = (o.words + words) if v.ov() else (words + o.words)
+    return finish(v, "imperative", f"{_vf(Vc, 0).capitalize()} the {en(O)}!", seq,
+                  ["the imperative is the bare verb stem, with no subject and no person or tense marker"])
+
+
+def s_passive(v: View) -> dict | None:
+    g = v.g("PASS")
+    S, Vc = v.w("FISH", "DOG", "BIRD", "STONE"), v.w("SEE", "EAT", "CARRY", "HIT", "KILL")
+    if g is None or not (S and Vc):
+        return None
+    s = noun_phrase(v, S, _the(v))
+    vw = verb(v, Vc, "3SG", voice="PASS")
+    words = clause(v, s, vw, None, None, transitive=False)
+    return finish(v, "passive", f"The {en(S)} is {_vf(Vc, 3)}.", words,
+                  [f"the passive is {_how(g)} ({g['form_ipa']}, {_src(g)}); the doer is left out"] + vw[2])
+
+
+def _serial(v: View, sid: str, S: str, v1: tuple, v2: tuple, en_text: str, note: str) -> dict:
+    """S V1 O1 V2 (O2) as one clause with one subject: VO lects put each object after its verb, OV lects before; only
+    the first verb carries the subject's person marker."""
+    s = noun_phrase(v, S, _the(v))
+    w1 = verb(v, v1[0], "3SG")[0]
+    w2 = verb(v, v2[0])[0]
+    o1 = noun_phrase(v, v1[1], _the(v)).words if v1[1] else []
+    o2 = noun_phrase(v, v2[1], _the(v)).words if v2[1] else []
+    if v.ov():
+        vp = o1 + w1 + o2 + w2
+    else:
+        vp = w1 + o1 + w2 + o2
+    o = v.order()
+    words = (vp + s.words) if o.index("S") > o.index("V") else (s.words + vp)
+    return finish(v, sid, en_text, words, [note])
+
+
+def s_serial(v: View) -> dict | None:
+    """Serial verbs (`serial_verbs` yes): 'take X come' for bring (Yoruba mu ... wa, Mandarin na ... lai)."""
+    if v.t.get("serial_verbs") != "yes":
+        return None
+    S, T, C, O = v.w("MAN", "WOMAN", "PERSON"), v.w("TAKE", "HOLD"), v.w("COME"), v.w("FISH", "WATER", "STONE", "STICK")
+    if not (S and T and C and O):
+        return None
+    return _serial(v, "serial", S, (T, O), (C, None), f"The {en(S)} brings the {en(O)} (takes it and comes).",
+                   f"serial verbs: '{en(T)}' and '{en(C)}' in one clause make 'bring'")
+
+
+_REDUP_EN = {"ITER": ("{s} {v3} the {o} again and again", ("HIT", "CUT", "EAT")),
+             "INTS": ("{s} really {v3} the {o}", ("EAT", "HIT", "SEE")),
+             "CONT": ("{s} is {ving} the {o}", ("EAT", "CARRY", "SEE"))}
+
+
+def s_redup(v: View) -> dict | None:
+    rd = v.proc.get("redup")
+    if not rd:
+        return None
+    tmpl, verbs = _REDUP_EN[rd["fn"]]
+    S, Vc, O = v.w("MAN", "WOMAN", "CHILD (YOUNG HUMAN)"), v.w(*verbs), v.w("FISH", "STONE", "DOG", "BIRD")
+    if not (S and Vc and O):
+        return None
+    s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _the(v))
+    vw = verb(v, Vc, "3SG", redup=True)
+    words = clause(v, s, vw, o)
+    what = "the whole stem" if rd["shape"] == "full" else \
+        f"a CV copy {'before' if rd['side'] == 'pre' else 'after'} the stem"
+    en_text = "The " + tmpl.format(s=en(S), v3=_vf(Vc, 1), ving=_vf(Vc, 4), o=en(O)) + "."
+    return finish(v, "redup", en_text, words,
+                  [f"reduplication ({GR.REDUP_INFO[rd['fn']].gloss.split(' (')[0]}): {what}"] + vw[2])
+
+
+def s_split(v: View) -> dict | None:
+    """A split-ergative lect by person: a noun doer takes the ergative, a pronoun object the accusative ('the man sees
+    me'). (An aspect split shows in the transitive and tense sentences side by side.)"""
+    if v.t.get("alignment") != "split" or v.proc.get("split") != "person":
+        return None
+    S, Vc = v.w("MAN", "WOMAN", "PERSON"), v.w("SEE", "HIT", "HEAR")
+    o = pronoun(v, "I")
+    if not (S and Vc and o):
+        return None
+    s = noun_phrase(v, S, _the(v))
+    vw = verb(v, Vc, "3SG")
+    words = clause(v, s, vw, o)
+    return finish(v, "split", f"The {en(S)} {_vf(Vc, 1)} me.", words,
+                  ["split ergativity: the noun doer takes the ergative, the pronoun object the accusative"] + vw[2])
+
+
+def s_clusive(v: View) -> dict | None:
+    if not v.w("WE (INCLUSIVE)"):
+        return None
+    Vc, O = v.pair((("EAT",), ("FISH", "FLESH OR MEAT")), (("SEE",), ("DOG", "BIRD")))
+    if not (Vc and O):
+        return None
+    s, o = pronoun(v, "WE (INCLUSIVE)"), noun_phrase(v, O, _the(v))
+    vw = verb(v, Vc, "1PL")
+    words = clause(v, s, vw, o)
+    return finish(v, "clusive", f"We (you and I) {_vf(Vc, 0)} the {en(O)}.", words,
+                  [f"inclusive 'we' {v.ipa('WE (INCLUSIVE)')}; the exclusive (not you) is {v.ipa('WE')}"] + vw[2])
+
+
 SENTENCES = (s_transitive, s_locative, s_tense, s_polar, s_content, s_negation, s_possession, s_number, s_copula,
-             s_relative)
+             s_relative, s_give, s_imperative, s_passive, s_serial, s_redup, s_split, s_clusive)
 
 
 def utterances(lj: dict) -> list[dict]:
@@ -985,7 +1155,13 @@ def notes_nouns(v: View) -> list[dict]:
         al = {"nom-acc": "Alignment is accusative: the object is marked (ACC), subjects are not.",
               "erg-abs": "Alignment is ergative: the subject of a transitive verb is marked (ERG); the subject of an "
                          "intransitive verb and the object are not.",
-              "split": "Alignment is split: both an accusative and an ergative marker are live."}.get(alv, "")
+              "split": {"person": "Alignment is split by person: a noun doing a transitive action takes the ergative "
+                                  "(ERG), a pronoun object takes the accusative (ACC); pronoun doers and noun objects "
+                                  "are unmarked.",
+                        "aspect": "Alignment is split by aspect: in the perfective or past the doer of a transitive verb "
+                                  "takes the ergative (ERG); elsewhere the object takes the accusative (ACC)."
+                        }.get(v.proc.get("split"), "Alignment is split: both an accusative and an ergative marker "
+                                                   "are live.")}.get(alv, "")
     elif alv == "neutral":
         al = "Subject and object are not marked apart: word order tells them."
     else:
@@ -1120,6 +1296,9 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
         "stay where the questioned phrase would stand" if v.t.get("wh_in_situ") == "yes" else "move to the front") + \
         (": " + ", ".join(f"{en(c)} {v.ipa(c)}" for c in qw) if qw else "") + "."
     out.append({"topic": "Questions", "text": txt, "ex": _sent_ex(sents, "polar") + _sent_ex(sents, "content")})
+    if "imperative" in sents:
+        out.append({"topic": "Commands", "text": "There is no imperative marker: a command is the bare verb stem, with "
+                    "no subject and no person or tense marker.", "ex": _sent_ex(sents, "imperative")})
     gen = v.g("GEN")
     pp = {"have": "a 'have' verb ('my mother has a dog')", "locational": "a locational phrase ('at my mother is a dog')",
           "other": "'with' ('my mother is with a dog'; the lane's pick for Grambank's 'neither')"
@@ -1160,6 +1339,98 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     return out
 
 
+def notes_more(v: View, sents: dict) -> list[dict]:
+    """Grammar phase A notes: pronouns (clusivity), voice (passive), reduplication, serial verbs, ditransitives,
+    numerals. Each is written only from a live gram, a built process or a feature with its construction shown."""
+    out = []
+    if v.w("WE (INCLUSIVE)") and v.w("WE"):
+        out.append({"topic": "Pronouns", "text": f"'We' has two forms: inclusive {v.ipa('WE (INCLUSIVE)')} (you and I, "
+                    f"the hearer among us) and exclusive {v.ipa('WE')} (we, but not you).",
+                    "ex": [_ex(v, pronoun(v, "WE (INCLUSIVE)").words, "we (you included)"),
+                           _ex(v, pronoun(v, "WE").words, "we (not you)")] + _sent_ex(sents, "clusive")})
+    g = v.g("PASS")
+    if g is not None:
+        out.append({"topic": "Voice", "text": f"The passive is {_how(g)} ({g['form_ipa']}, {_src(g)}): the object of "
+                    "the active verb becomes its subject and the doer is left out.", "ex": _sent_ex(sents, "passive")})
+    rd = v.proc.get("redup")
+    if rd:
+        what = ("copying the whole stem" if rd["shape"] == "full" else
+                "copying the stem's first consonant and vowel before it" if rd["side"] == "pre" else
+                "copying the stem's last consonant and vowel after it")
+        mean = {"ITER": "an action done again and again, or by many", "INTS": "an action done intensely",
+                "CONT": "an action going on"}[rd["fn"]]
+        Vc = v.w("GO", "EAT", "SEE", "WALK")
+        ex = [_ex(v, verb(v, Vc, redup=True)[0], f"({mean})")] if Vc else []
+        out.append({"topic": "Reduplication", "text": f"Verbs reduplicate for {mean} ({ABBR[rd['fn']]}), by {what}.",
+                    "ex": ex + _sent_ex(sents, "redup")})
+    if "serial" in sents:
+        txt = "Verbs can be strung together in one clause with one subject (serial verbs): 'take X come' is 'bring'."
+        ex = _sent_ex(sents, "serial")
+        R, Gv = v.w("RUN", "WALK", "FLY"), v.w("GO")
+        if R and Gv:
+            txt += f" 'Go' after a motion verb gives its direction ('{en(R)} go' = {en(R)} away)."
+            ex.append(_ex(v, verb(v, R)[0] + verb(v, Gv)[0], f"{en(R)} away"))
+        out.append({"topic": "Serial verbs", "text": txt, "ex": ex})
+    gs = sents.get("give")
+    if gs is not None:
+        out.append({"topic": "Giving (two objects)", "text": (gs.get("note") or "").split(";")[0].capitalize() + ".",
+                    "ex": ["give"]})
+    num = numerals_note(v)
+    if num:
+        out.append(num)
+    return out
+
+
+def numeral_phrase(v: View, n: int) -> tuple[list, str] | None:
+    """A numeral above ten as the counting base builds it from the lect's own words: decimal 11 'ten one', 30 'three
+    ten'; vigesimal 30 'twenty ten', 40 'two twenty'. Addition puts the larger number first (Greenberg 1978);
+    multiplication follows the numeral's place beside a noun (NumN 'three ten', NNum 'ten three')."""
+    base = v.t.get("numeral_base", "decimal")
+    units = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE")
+    mult_first = v.t.get("numeral") != "NNum"
+
+    def mul(k, b):
+        return [k, b] if mult_first else [b, k]
+    if base == "vigesimal":
+        b, rest = divmod(n, 20)
+        parts = ([] if b == 0 else ["TWENTY"] if b == 1 else mul(units[b - 1], "TWENTY"))
+        if rest >= 10:
+            parts += ["TEN"] + ([units[rest - 11]] if rest > 10 else [])
+        elif rest:
+            parts.append(units[rest - 1])
+    else:
+        t, rest = divmod(n, 10)
+        parts = ([] if t == 0 else ["TEN"] if t == 1 else ["TWENTY"] if t == 2 and v.w("TWENTY") else mul(units[t - 1], "TEN"))
+        if rest:
+            parts.append(units[rest - 1])
+    if not parts or not all(v.w(c) for c in parts):
+        return None
+    words = [Word(v.ipa(c), lgloss(c), c) for c in parts]
+    return words, " ".join(en(c) for c in parts)
+
+
+def numerals_note(v: View) -> dict | None:
+    base = v.t.get("numeral_base")
+    if base not in ("decimal", "vigesimal", "other") or not v.w("TEN"):
+        return None
+    shown = (11, 15, 30, 40) if base != "vigesimal" else (11, 30, 40, 60)
+    ex = []
+    for n in shown:
+        r = numeral_phrase(v, n)
+        if r:
+            ex.append(_ex(v, r[0], f"{n} ('{r[1]}')"))
+    if not ex:
+        return None
+    lead = {"decimal": "Counting is decimal: numbers above ten are built from ten and the units",
+            "vigesimal": "Counting is vigesimal: numbers above twenty are counted in twenties, with ten and the units "
+                         "inside each twenty",
+            "other": "Numbers above ten are built from ten and the units"}[base]
+    words = [c for c in ("TWENTY", "HUNDRED") if v.w(c)]
+    tail = (" " + " and ".join(f"{('Twenty' if c == 'TWENTY' else 'a hundred')} is {v.ipa(c)}" for c in words) + "."
+            if words else "")
+    return {"topic": "Numerals", "text": lead + "." + tail, "ex": ex}
+
+
 def _sent_ex(sents: dict, sid: str) -> list:
     """A sample sentence as a note's example: by its id (a string; `example` resolves it), not a copy."""
     return [sid] if sid in sents else []
@@ -1185,10 +1456,11 @@ def grammar_notes(lj: dict, sents: list | None = None) -> list[dict]:
             out += fn(v)
         except (KeyError, IndexError, ValueError, StopIteration):
             continue
-    try:
-        out += notes_clause(v, by)
-    except (KeyError, IndexError, ValueError, StopIteration):
-        pass
+    for fn in (notes_clause, notes_more):
+        try:
+            out += fn(v, by)
+        except (KeyError, IndexError, ValueError, StopIteration):
+            continue
     return out
 
 

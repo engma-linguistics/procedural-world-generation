@@ -130,7 +130,7 @@ COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate 
 # often, and a contrast pair that does share a form is renewed like an accidental homophone (HOMOPHONE_BOOST), proto or
 # not. English you (< plural ye) for thou is the attested exception kept open.
 CONTRAST_DAMP = 0.1
-_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "YOU", "THEY")
+_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "WE (INCLUSIVE)", "YOU", "THEY")
 _NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND")
 _WH = ("WHO", "WHAT", "WHERE", "WHEN", "HOW")
 CONTRAST_SETS = (

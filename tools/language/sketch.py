@@ -87,7 +87,8 @@ ENGLISH_WORDS = {  # General American, broad phonemic (Wells 1982 lexical sets)
 ENGLISH_SHOW = ["I", "THOU", "WE", "WHO", "WHAT", "NOT", "ONE", "TWO", "THREE", "MAN", "WOMAN", "DOG", "FISH", "TREE",
                 "WATER", "FIRE", "STONE", "SUN", "MOON", "NIGHT", "HAND", "EYE", "NAME", "EAT", "DRINK", "SEE"]
 PRONOUNS = [("1st", "I", "WE"), ("2nd", "THOU", "YOU"), ("3rd", "HE OR SHE OR IT", "THEY")]
-NUMERALS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN"]
+NUMERALS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED"]
+NUMERAL_VALUE = {c: v for c, v in zip(NUMERALS, (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 100))}
 SAMPLE = ["I", "THOU", "WE", "THIS", "THAT", "WHO", "WHAT", "NOT", "ALL", "MANY", "ONE", "TWO", "BIG", "LONG", "SMALL",
           "WOMAN", "MAN", "PERSON", "FISH", "BIRD", "DOG", "TREE", "SEED", "LEAF", "BLOOD", "BONE", "EGG", "HEAD", "EYE",
           "MOUTH", "TONGUE", "HAND", "EAT", "DRINK", "SEE", "SLEEP", "DIE", "SUN", "MOON", "WATER", "FIRE", "STONE",
@@ -1029,10 +1030,13 @@ def pronouns(doc: Doc, l: dict) -> list[str]:
     lex = l.get("lexicon") or {}
     out = ["### Pronouns", "", "| person | singular | plural |", "| --- | --- | --- |"]
     forms = {}
-    for p, sg, pl in PRONOUNS:
+    rows = list(PRONOUNS)
+    if lex.get("WE (INCLUSIVE)"):   # (grammar phase A: a lect with the distinction keeps its old 'we' as the exclusive)
+        rows[0:1] = [("1st (exclusive)", "I", "WE"), ("1st + 2nd (inclusive)", None, "WE (INCLUSIVE)")]
+    for p, sg, pl in rows:
         cells = []
         for c in (sg, pl):
-            e = lex.get(c)
+            e = lex.get(c) if c else None
             if e:
                 forms[c] = e["ipa"]
                 cells.append(f"{e['ipa']} ‹{e['roman']}›")
@@ -1049,8 +1053,10 @@ def pronouns(doc: Doc, l: dict) -> list[str]:
     for f, cs in seen.items():
         if len(cs) > 1:
             notes.append(f"{' and '.join(cs)} are the same word ({f}).")
-    if (l.get("typology") or {}).get("clusivity") == "yes":
+    if (l.get("typology") or {}).get("clusivity") == "yes" and not lex.get("WE (INCLUSIVE)"):
         notes.append("The typology marks an inclusive/exclusive 'we', but the lexicon holds only one 'we' form.")
+    elif lex.get("WE (INCLUSIVE)"):
+        notes.append("'We' has two forms: an inclusive one (the hearer is among us) and an exclusive one (not you).")
     if (l.get("typology") or {}).get("pro_drop") == "yes":
         notes.append("Subject pronouns are usually dropped.")
     out += [""] + ([" ".join(notes), ""] if notes else [])
@@ -1192,7 +1198,7 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
     out.append("")
     nums = [c for c in NUMERALS if c in lex]
     if nums:
-        out += ["### Numerals", "", "| | " + " | ".join(str(i + 1) for i in range(len(nums))) + " |",
+        out += ["### Numerals", "", "| | " + " | ".join(str(NUMERAL_VALUE[c]) for c in nums) + " |",
                 "| --- |" + " --- |" * len(nums),
                 "| IPA | " + " | ".join(lex[c]["ipa"] for c in nums) + " |",
                 "| spelling | " + " | ".join(lex[c]["roman"] for c in nums) + " |", ""]
@@ -1200,12 +1206,16 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
         made = []
         for c in nums:
             ch = doc.chain(lex[c].get("etym"))
+            built = next((n for n in reversed(ch) if str(n[3]).startswith("compound:") and len(n) > 6
+                          and str(n[5]).upper() == c), None)
             first = next((n for n in ch if not n[3].startswith("sound_change")), None)
-            if first is not None and first[5] and str(first[5]).upper() != c:
+            if built is not None:   # (a numeral built from others: 'twenty = two ten', 'six = five one')
+                made.append(f"{c.lower()} = '{str(built[6]).split(':')[0].split(' (')[0].lower()}'")
+            elif first is not None and first[5] and str(first[5]).upper() != c:
                 made.append(f"{c.lower()} < '{first[5]}'")
         s = f"Counting base: {base}." if base else ""
         if made:
-            s += " Several numerals began as other words: " + "; ".join(made[:6]) + "."
+            s += " Several numerals began as other words: " + "; ".join(made[:8]) + "."
         out += [s.strip(), ""]
     out += word_family(doc, l)
     return out

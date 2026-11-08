@@ -202,7 +202,8 @@ def grammar_json(lect, sp: Speller) -> dict:
         p["roman"] = sp.ipa(p["ipa"])
     cs = g.class_system
     classes = {"kind": cs.kind, "classes": [[c.k, c.group, f"CLASS:{c.k}"] for c in cs.classes]} if cs and cs.classes else None
-    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g), "classes": classes}
+    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g), "classes": classes,
+            "processes": dict(getattr(g, "processes", None) or {})}
 
 
 def thin_snapshots(snaps: list, every: int) -> list:
@@ -290,6 +291,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
                                                    "allophones": INV.allophones_json(inv)},
             "typology": gj["typology"], "grams": gj["grams"], "paradigms": gj["paradigms"], "complexity": gj["complexity"],
             **({"classes": gj["classes"]} if gj.get("classes") else {}),
+            **({"processes": gj["processes"]} if gj.get("processes") else {}),   # (split ergativity, reduplication)
             "lexicon": lexicon_json(lect, sp, full, et) if lect.lexicon is not None else {}, "lexicon_full": full,
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
             "changes": [[c["kyr"], c["rule"], c["cause"], c["origin_lect"]] + ([{k: c[k] for k in ("city", "peoples", "merged") if k in c}] if "merged" in c else [])

@@ -366,6 +366,38 @@ grams (level 0) move to the new side, bound ones stay; a NEG left on the old sid
 new one (Jespersen). Writes into `g.typology` from outside (calques on shift) become aims (`grammar.Shown`).
 `grammar.clashes(g, lexicon)` lists contradictions; `checks.typology_consistency` counts living lects with any.
 
+**Grammar phase A (2026-11-07, branch `lang-gram-a`; `grammar-gaps.md` Queue).**
+- *The pull is per function* (`PULL_GROUP`, `pull_group`, `_unrealised`): an accusative or ergative answers the
+  alignment, a dual the 'sg-du-pl' number, an oblique case (ABL ALL INS COM) 'case: many', a witnessed evidential
+  'direct+indirect'; every other function answers its first feature with the rest of that feature's functions. Before,
+  any case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked EVID.DIR.
+- *More sources* (built-in paths X19-X26): ABL, LOC and GEN > ERG (gram reanalysis, Kuteva et al. 2019), an agentive
+  'near, with' (English *by*) > ERG, DAT > ACC (differential object marking), 'leave, come' > ABL, 'go' > ALL, 'take,
+  hold' > INS. G060 (reflexive > middle > passive) is mapped, so a REFL gram can become the passive; GET and BECOME
+  (round 5 vocabulary) feed G032/G033.
+- *Split ergativity* (`_split`, `Grammar.processes["split"]`): a lect with both a live ACC and a live ERG divides them
+  by person (pronouns accusative, nouns ergative; 60%) or by aspect (ergative in the PERF or PAST clause, accusative
+  elsewhere; only when it has one). Dropped when either case goes; logged as events.
+- *Clusivity* (`_clusivity`, `INCLUSIVE_FROM`): when the aims say yes and the lexicon has one 'we', the lexicon gets
+  WE (INCLUSIVE) from WE + THOU (45%), I + THOU (15%) or a root of its own (40%); plain WE is then the exclusive. At
+  proto time at once; later at the PRESSURE rate; when the aims say no it goes at `CLUSIVE_LOSS` (a third of the time
+  the inclusive becomes the only 'we'). `realised_value('clusivity')` reads the lexicon, as before. WE (INCLUSIVE) is in
+  the pronoun contrast set (lexicon.py `_PRONOUNS`).
+- *Verbal reduplication* (`_redup`, `REDUP`, `REDUP_SHAPE`, `reduplicant`): a process, not a gram: one meaning per lect
+  (ITER iterative/pluractional 45%, INTS intensive 20%, CONT continuous 35%), a CV copy (65%; prefixed 3 times in 4)
+  or the whole stem. The verb exemplars carry its cell (key `(ITER,)` etc.), so sound change wears the copy down with
+  the word. `verb_reduplication` is now a realised feature (yes iff the process exists).
+- *Counting base* (`_numerals`, `NUMERAL_WORDS`): at proto time a decimal lexicon builds TWENTY as 'two ten', a
+  vigesimal one HUNDRED as 'five twenty' (and TWENTY as 'one person' half the time), the 'other' base 6-9 as 'five one'
+  ... 'five four' (Comrie, WALS 131A). Multiplication follows the numeral's noun order, addition puts the larger first.
+- *Person agreement as a set* (`PERSON_JOIN`, `_person_set`, `_person_fill`): when a person gram binds (reaches clitic),
+  each other member of the series binds with it from its own pronoun (0.6-0.85 each; a zero 3SG is the commonest gap);
+  `PERSON_FILL` (0.004 per generation) fills a remaining gap by analogy, at the paradigm's side and median level.
+- *Degrammaticalization* (`DEGRAM` 1/50 of the hazard of the step undone, x3 `DEGRAM_EDGE` for NP-hosted markers, x3
+  `DEGRAM_ORPHAN` when the marker is the last bound one of a slot that lost others; Norde 2009): a clitic or affix
+  climbs one level; a grammar event.
+- `Grammar.processes` is copied to daughters and kept in `to_json`/`from_json`.
+
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
 `level` (0 free, 1 clitic, 2 affix, 3 fused, 4 lost), `source` (the lexical word and the path id), `born_kyr`, `history`.
@@ -433,6 +465,19 @@ word or gram the lect has, every order a typology feature.
   list and the pages explain them); lexical glosses lowercase with '.' joining a multi-word meaning; noun classes as M/F/N
   for sex genders, ANIM/INAN for animacy, CL*n* otherwise (and CL*n* whenever the noun's own class is missing and the
   engine falls back on another).
+
+- **Grammar phase A sentences** (2026-11-08): 'the woman gives the child a fish' (`s_give`: DAT case or adposition if
+  the lect has a DAT gram, else serial 'take X give R' if `serial_verbs` yes, else a double object); an imperative
+  (`s_imperative`: the bare stem, no subject; no mood gram exists); a passive where a PASS gram lives (`s_passive`);
+  serial 'take X come' = bring (`s_serial`, `serial_verbs` yes; one subject, the first verb carries the person marker;
+  OV puts each object before its verb); reduplication (`s_redup`, from `processes.redup`: the copy made by
+  `grammar.reduplicant`, glossed ITER/INTS/CONT; an exemplar verb takes its stored cell); split ergativity by person
+  (`s_split`: 'the man sees me', ERG on the noun doer, ACC on the pronoun object; `flagging` decides ERG/ACC for every
+  clause, so an aspect split shows ERG in the tense sentence when its TAM is PERF or PAST and ACC in the transitive one);
+  inclusive 'we' (`s_clusive`, glosses 1PL.INCL and 1PL.EXCL). Notes added: Commands, Pronouns, Voice, Reduplication,
+  Serial verbs, Giving (two objects), Numerals (`numeral_phrase`: decimal 11 'ten one', 30 'three ten' or 'ten three'
+  by the numeral's noun order; vigesimal 30 'twenty ten', 40 'two twenty'), and the Case note names the split. The lect
+  record carries `processes` (`{split?, redup?}`, only when non-empty). About +2.6 KB per living lect.
 
 Output, per living lect (`enrich`): `sentences: [{id, en, w: [[form, gloss]...], ipa, roman, q?, note?}]` (`ipa`: the whole
 sentence after joining, words separated by spaces, for `/api/speak?sentence=1`; `q`: 1 on a yes/no question) and

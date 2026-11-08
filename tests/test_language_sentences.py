@@ -196,7 +196,7 @@ def test_enrich_is_compact_json():
     lj = lect(alignment="nom-acc")
     lj["grams"] = [gram("ACC", "o", 2, "post", "NP"), gram("PAST", "bo", 1, "pre", "V"), gram("PL", "s", 2, "post", "N")]
     SN.enrich(lj)
-    assert 5 <= len(lj["sentences"]) <= 10
+    assert 5 <= len(lj["sentences"]) <= len(SN.SENTENCES)   # (17 since grammar phase A, each only where it applies)
     topics = {n["topic"] for n in lj["grammar_notes"]}
     assert {"Number", "Case", "Gender and noun classes", "Tense and aspect", "Person agreement", "Negation", "Questions",
             "Possession", "Relative clauses", "Copula"} <= topics
@@ -212,3 +212,105 @@ def test_note_examples_name_sentences_by_id():
     assert gloss == "1SG NEG drink water" and en == "I do not drink the water." and s["id"] == "negation"
     poss = next(n for n in lj["grammar_notes"] if n["topic"] == "Possession")
     assert SN.example(lj, poss["ex"][0])[3] is None and SN.example(lj, "nope") is None
+
+
+# --- grammar phase A (2026-11-08) ---------------------------------------------------------------------------------------
+
+def _more(**words):
+    lj = lect()
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": "V" if c in ("GIVE", "TAKE", "COME", "GO", "RUN") else "N"}
+                          for c, f in words.items()})
+    return lj
+
+
+def test_give_dative_serial_or_double_object():
+    base = dict(GIVE="beri", TAKE="ambil", COME="datan")
+    dat = _more(**base)
+    dat["grams"] = [gram("DAT", "ke", 0, "pre", "NP")]
+    s = by_id(dat)["give"]
+    assert line(s)[1] == "woman give fish DAT child" and "DAT" in s["note"]
+    ser = _more(**base)
+    ser["typology"]["serial_verbs"] = "yes"
+    assert line(by_id(ser)["give"])[1] == "woman take fish give child"
+    dbl = _more(**base)
+    s = by_id(dbl)["give"]
+    assert line(s)[1] == "woman give fish child" and "double object" in s["note"]
+    assert s["en"] == "The woman gives the child a fish."
+
+
+def test_imperative_and_passive():
+    lj = lect()
+    s = by_id(lj)["imperative"]
+    assert line(s)[1] in ("eat fish", "drink water") and s["en"].endswith("!")
+    assert "passive" not in by_id(lj)
+    lj["grams"] = [gram("PASS", "tər", 2, "pre", "V", ("BECOME", "G033", "concept"))]
+    s = by_id(lj)["passive"]
+    assert line(s)[1] == "fish PASS-see" and s["en"] == "The fish is seen."
+    assert any(n["topic"] == "Voice" and "become" in n["text"] for n in SN.grammar_notes(lj))
+
+
+def test_serial_verbs_only_when_drawn():
+    lj = _more(TAKE="ambil", COME="datan", GO="pergi", RUN="lari")
+    assert "serial" not in by_id(lj)
+    lj["typology"]["serial_verbs"] = "yes"
+    s = by_id(lj)["serial"]
+    assert line(s)[1] == "man take fish come"
+    lj["typology"].update(word_order="SOV", head_direction="final")
+    assert line(by_id(lj)["serial"])[1] == "man fish take come"
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Serial verbs")
+    assert "direction" in n["text"]
+
+
+def test_reduplication_sentence_and_note():
+    lj = lect()
+    assert "redup" not in by_id(lj)
+    lj["processes"] = {"redup": {"fn": "ITER", "shape": "CV", "side": "pre"}}
+    lj["lexicon"]["HIT"] = {"ipa": "pukul", "roman": "pukul", "pos": "V"}
+    s = by_id(lj)["redup"]
+    assert "pu-pukul" in line(s)[0] and "ITER-hit" in line(s)[1] and "again and again" in s["en"]
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Reduplication")
+    assert "again and again" in n["text"]
+
+
+def test_split_ergativity_by_person_and_by_aspect():
+    lj = lect(alignment="split")
+    lj["grams"] = [gram("ACC", "o", 2, "post", "NP"), gram("ERG", "ne", 2, "post", "NP"),
+                   gram("PAST", "ta", 2, "post", "V")]
+    lj["processes"] = {"split": "person"}
+    sp = by_id(lj)
+    assert line(sp["split"])[1] == "man-ERG see 1SG-ACC"
+    assert line(sp["transitive"])[1] == "woman-ERG see dog"
+    lj["processes"] = {"split": "aspect"}
+    sp = by_id(lj)
+    assert "split" not in sp
+    assert line(sp["transitive"])[1] == "woman see dog-ACC"
+    assert line(sp["tense"])[1] == "man-ERG eat-PST fish"
+    case = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Case")
+    assert "split by aspect" in case["text"]
+
+
+def test_inclusive_we_sentence_and_pronoun_note():
+    lj = lect()
+    lj["lexicon"]["WE"] = {"ipa": "kami", "roman": "kami", "pos": "FUNC"}
+    assert "clusive" not in by_id(lj)
+    lj["lexicon"]["WE (INCLUSIVE)"] = {"ipa": "kita", "roman": "kita", "pos": "FUNC"}
+    s = by_id(lj)["clusive"]
+    assert line(s)[1].startswith("1PL.INCL") and "kami" in s["note"]
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Pronouns")
+    assert "kita" in n["text"] and "kami" in n["text"]
+
+
+def test_numerals_by_base():
+    lj = lect(numeral_base="decimal", numeral="NumN")
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": "A"} for c, f in
+                          (("ONE", "sa"), ("THREE", "tiga"), ("FOUR", "empa"), ("FIVE", "lima"), ("TEN", "pulu"),
+                           ("TWENTY", "kawan"), ("TWO", "dua"))})
+    assert SN.numeral_phrase(SN.View(lj), 11)[1] == "ten one"
+    assert SN.numeral_phrase(SN.View(lj), 30)[1] == "three ten"
+    lj["typology"]["numeral"] = "NNum"
+    assert SN.numeral_phrase(SN.View(lj), 30)[1] == "ten three"
+    lj["typology"].update(numeral_base="vigesimal", numeral="NumN")
+    v = SN.View(lj)
+    assert SN.numeral_phrase(v, 30)[1] == "twenty ten" and SN.numeral_phrase(v, 40)[1] == "two twenty"
+    n = SN.numerals_note(v)
+    assert n["topic"] == "Numerals" and "vigesimal" in n["text"] and n["ex"]

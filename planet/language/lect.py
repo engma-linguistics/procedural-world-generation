@@ -944,7 +944,7 @@ def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
     2026-11-04 round no caller asked for the drift, so typology only changed by calques on shift."""
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
             population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
-            rate=getattr(lect, "rate", 1.0))
+            rate=getattr(lect, "rate", 1.0), lect=getattr(lect, "id", None))
 
 
 def _accepted(fn, kw: dict) -> dict:
