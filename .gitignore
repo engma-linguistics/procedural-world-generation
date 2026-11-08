@@ -13,6 +13,7 @@ exports/
 !.claude/skills/
 data/
 !planet/language/data/
+!tools/language/data/
 # the server's job state (api.Jobs)
 .jobs/
 .DS_Store
