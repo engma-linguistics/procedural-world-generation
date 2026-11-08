@@ -1333,6 +1333,44 @@ def comparison(doc: Doc, l: dict, roots_cache: dict) -> list[str]:
     return out
 
 
+def personal_names(doc: Doc, l: dict) -> list[str]:
+    """Personal names (names.personal: the lect's naming tradition, given names old and new, bynames) and the names of its
+    deme's settlements (names.demes[d].settlements), with their etymologies."""
+    x = (doc.names.get("personal") or {}).get(l["id"])
+    dn = (doc.names.get("demes") or {}).get(str(l.get("deme"))) or {}
+    sts = dn.get("settlements") or []
+    if not x and not sts:
+        return []
+    out = ["## Names of people and places", ""]
+    if x:
+        t = x["tradition"]
+        how = {"dithematic": "two themes from a closed pool, compounded (as Germanic *Wil-helm*, Slavic *Vladi-mir*)",
+               "phrase": "a short sentence about the birth run together (as Yoruba *Babatunde* 'father has returned')",
+               "single": "one meaningful word"}.get(t["given"], t["given"])
+        by = {"patronymic": "the father's name in the genitive with 'son' or 'daughter'",
+              "matronymic": "the mother's name in the genitive with 'son' or 'daughter'",
+              "epithet": "an epithet after the name", "clan": "an inherited clan name"}.get(t["byname"], t["byname"])
+        s = f"**Naming tradition.** Given names are {how}; the byname is {by}"
+        s += (", family name first" if t.get("order") == "family_first" and t["byname"] == "clan" else "") + "."
+        s += f" The tradition goes back to {doc.label(t['origin'], True)}"
+        if t.get("changed"):
+            s += f"; it changed ({t['changed'][1]}) in {doc.label(t['changed'][0], True)}"
+        s += "."
+        if t.get("themes"):
+            s += f" Themes: first {', '.join(t['themes'][0])}; second {', '.join(t['themes'][1])}."
+        out += [s, "", "| name | IPA | meaning | | etymology |", "|---|---|---|---|---|"]
+        for g in x.get("given") or []:
+            out.append(f"| **{g['roman']}** | /{g['ipa']}/ | '{g['gloss']}' | {g['age']}{', opaque' if g.get('opaque') else ''} "
+                       f"| {g['etym']} |")
+        for b in x.get("bynames") or []:
+            out.append(f"| **{b['roman']}** | /{b['ipa']}/ | '{b['gloss']}' | {b['kind']} | {b['etym']} |")
+        out.append("")
+    if sts:
+        out += ["**Settlements.** " + "; ".join(f"**{s['roman']}** /{s['ipa']}/ ({s.get('tier')}, {s.get('pop') or 0:,}): "
+                                                 f"{s['plain'].split(', ', 1)[-1]}" for s in sts) + ".", ""]
+    return out
+
+
 def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] | None = None) -> str:
     roots_cache = {} if roots_cache is None else roots_cache
     nm = doc.deme_name(l)
@@ -1350,6 +1388,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += orthography(l)
     out += grammar(doc, l)
     out += vocabulary(doc, l)
+    out += personal_names(doc, l)
     out += sample_sentences(l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"

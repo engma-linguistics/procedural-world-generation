@@ -246,6 +246,16 @@ def test_on_the_tiny_driver_run():
     assert named and all(n["roman_full"] for n in named)  # the book spelling in roman, the full one in roman_full
     assert all(RO.diacritics(n["roman"]) <= RO.diacritics(n["roman_full"]) for n in named)
     json.dumps(a)  # (the block is plain json)
+    # personal names: every living lect has a tradition, given names (old and new) with etymologies, and bynames
+    pn = a["personal"]
+    assert set(pn) == {l.id for l in living}
+    for lid, x in pn.items():
+        assert x["tradition"]["given"] in ("dithematic", "phrase", "single") and x["given"], lid
+        assert all(g["roman"][0].isupper() and g["ipa"] and g["etym"].startswith(g["roman"]) for g in x["given"])
+        assert {g["age"] for g in x["given"]} <= {"old", "new"}
+    # sister lects share their old names' tradition origin (inherited down the tree)
+    trad = {l.id: pn[l.id]["tradition"] for l in living}
+    assert len({v["origin"] for v in trad.values()}) < len(trad) or len(trad) == 1
 
 
 def test_river_namer_weighted_by_population():
@@ -283,3 +293,52 @@ def test_name_caps_follow_the_length_scale():
     assert part >= 3 and cap > NM.MAX_SYLL
     long = tuple(from_ipa("pakatisubaki"))   # 6 syllables
     assert LX.syllables(NM._clip(long, lc)) == part and LX.syllables(NM._clip(long)) == 2
+
+
+# ---------------------------------------------------------------------------------------------- faith, persons, settlements
+def _with_files(tmp_path, run):
+    gods = {"beings": [{"id": 0, "label": "god of sea and rain", "high": True, "devotion": 1.0, "individuation": 0.9,
+                        "first_domain": "sea", "top": [["sea", 0.5]]}],
+            "cultures": {"0": {"people": "human", "living": [0]}}}
+    (tmp_path / "gods.json").write_text(json.dumps(gods))
+    (tmp_path / "cultures.json").write_text(json.dumps({"deme_culture": [0, None, None]}))
+    sites = {"sites": [{"id": 7, "cell": 5, "kind": "chief", "tier_now": "town", "pop_now": 3000, "founded_kyr": 1.5,
+                        "founded_by": "orc", "abandoned_kyr": None},
+                       {"id": 8, "cell": 6, "kind": "chief", "tier_now": "village", "pop_now": 300, "founded_kyr": 0.5,
+                        "founded_by": "human", "abandoned_kyr": None}]}
+    (tmp_path / "settlements.json").write_text(json.dumps(sites))
+    run.dir = tmp_path
+    run.deme_cells = lambda d, i: (np.array([5, 6]) if d == 0 else np.array([], int), None)
+    run.river_id = lambda: np.zeros(10, int)
+    return run
+
+
+def test_faith_endonym_from_the_high_god(tmp_path):
+    """E10: a people whose culture has a living high god can call itself after it ('the people of the sea god')."""
+    res, run = _world()
+    run = _with_files(tmp_path, run)
+    P = NM._Pass(res, run, 11, None)
+    assert P.high_god("human", 0)[0] == "SEA"
+    n = P.endonym_in(P.main["human"], "human", "faith", {"faith": P.high_god("human", 0)})
+    assert n["pattern"] == "E10" and n["variant"] == "faith" and "sea god" in n["gloss"] and n["parts"][-1] == "GOD"
+    vs = {P.endonym_pattern("human")[0] for P.seed in range(60)}
+    assert "faith" in vs
+
+
+def test_patronymic_and_settlements(tmp_path):
+    """A patronymic is the parent's name + GEN + SON/DAUGHTER in the lect's order; a deme's towns get names from its own
+    words, and one founded by another people keeps their name as heard (P2)."""
+    from planet.language import personal as PE
+    res, run = _world()
+    run = _with_files(tmp_path, run)
+    a = NM.build_names(res, run)
+    P = NM._Pass(res, run, 11, None)
+    pe = PE.Personal(P)
+    l = P.main["human"]
+    t = dict(pe.tradition(l), byname="patronymic")
+    given = [g for g in (pe._given(l, t, "new", i) for i in range(4)) if g]
+    b = pe._byname(l, t, given, 0)
+    assert b["kind"] == "patronymic" and "son of" in b["gloss"] and given[1]["roman"] in b["etym"]
+    st = a["demes"]["0"]["settlements"]
+    assert [s["site"] for s in st] == [7, 8] and st[0]["pattern"] == "P2" and st[0]["substrate_of"] == "d1"
+    assert st[1]["pattern"] is None and st[1]["named_by"] == "d0" and all(s["roman"][0].isupper() for s in st)

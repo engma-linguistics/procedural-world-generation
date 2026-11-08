@@ -21,7 +21,9 @@ generator's own label (VARIANT_CODE), since several variants share a code.
   A 'speakers' (E3) people calls others X3 'mutes'.
 - **Places** per living deme: the largest river (named by a lect that lived on it first, drawn by population; inherited
   words follow the lect, otherwise the old form is kept and heard by the newcomers: substrate, P2), the lake, the sea, a
-  peak, the people's land.
+  peak, the people's land; and its settlements (personal.py).
+- **Personal names** per living lect (personal.py): a naming tradition inherited down the tree, given names old and new,
+  bynames.
 - **The Common**: the lect held by the most mixed cities (by heads), else the one with the most contacts.
 - **Scholars' names** ('scholarly') for dead families: their oldest deme's river (else landmass) as the Common says it,
   with the Common's 'like' suffix ("the Ratalish languages").
@@ -69,7 +71,13 @@ PATTERNS = {
 VARIANT_CODE = {"people": "E1", "real": "E2", "original": "E2", "speakers": "E3", "masters": "E4", "ancestor": "E5",
                 "river_people": "E6", "river_name": "E6", "way": "E8", "body": "E9", "totem": "E9", "many": "E11",
                 "met_first": "X1", "relay": "X4", "strangers": "X2", "mutes": "X3", "enemies": "X5", "by_body": "X7",
-                "by_dwelling": "X7", "by_direction": "X8"}
+                "by_dwelling": "X7", "by_direction": "X8", "faith": "E10"}
+# a god's first domain (gods.json) -> the concept its people's faith name is built on (E10)
+DOMAIN_CONCEPT = {"sea": "SEA", "river": "RIVER", "rain": "RAIN (PRECIPITATION)", "flood": "FLOOD", "sky": "SKY", "sun": "SUN",
+                  "storm": "STORM", "mountain": "MOUNTAIN", "fire": "FIRE", "forest": "FOREST", "desert": "DESERT",
+                  "herd": "HERD", "hunt": "HUNT", "harvest": "HARVEST", "fertility": "FERTILITY", "hearth": "HEARTH",
+                  "smithing": "SMITHING", "death": "DEATH", "war": "WAR", "ancestors": "ANCESTORS"}
+FAITH_W = (0.15, 0.6)  # E10 weight: base + this x the high god's individuation (rare, as the doc says: E9-E12 distinctive)
 ENDONYM_WEIGHTS = {"people": 3.0, "real": 3.0, "speakers": 0.8, "ancestor": 0.5, "masters": 0.3, "body": 0.4,
                    "many": 0.4}  # always available; river_people, river_name, original, way, totem by context
 WAY_CONCEPT = {"pastoral_nomad": ("HERD", "the herders"), "transhumant": ("HERD", "the herders"),
@@ -351,6 +359,28 @@ class _Pass:
         self.patterns: dict = {}
 
     # -------------------------------------------------------------- helpers
+    def _sites(self) -> tuple[dict, object]:
+        """settlements.json's sites by cell (none without the file) and the river id per cell (None without it)."""
+        import json
+        from pathlib import Path
+        doc = getattr(self.R, "settlements_doc", None)
+        if doc is None:
+            d = getattr(self.R, "dir", None)
+            f = Path(d) / "settlements.json" if d is not None else None
+            try:
+                doc = json.loads(f.read_text()) if f is not None and f.exists() else {}
+            except Exception:
+                doc = {}
+        by_cell: dict = {}
+        for s in doc.get("sites") or []:
+            if s.get("cell") is not None:
+                by_cell.setdefault(int(s["cell"]), []).append(s)
+        try:
+            rids = np.asarray(self.R.river_id())
+        except Exception:
+            rids = None
+        return by_cell, rids
+
     def _people_of_deme(self, d) -> str | None:
         try:
             return self.R.people_of(int(d))
@@ -421,6 +451,35 @@ class _Pass:
                 return lm["called"]
         return None
 
+    def high_god(self, p: str, deme: int) -> tuple[str, str, float] | None:
+        """(domain concept, label, individuation) of the living high god of the main deme's culture (gods.json and
+        cultures.json beside the run), else None."""
+        import json
+        from pathlib import Path
+        if not hasattr(self, "_gods"):
+            d = getattr(self.R, "dir", None)
+            try:
+                g = json.loads((Path(d) / "gods.json").read_text()) if d is not None else {}
+                c = json.loads((Path(d) / "cultures.json").read_text()) if d is not None else {}
+            except Exception:
+                g, c = {}, {}
+            self._gods = ({b["id"]: b for b in g.get("beings") or []}, g.get("cultures") or {}, c.get("deme_culture") or [])
+        beings, cults, dc = self._gods
+        if not beings or deme is None or deme >= len(dc) or dc[deme] is None:
+            return None
+        cu = cults.get(str(dc[deme])) or {}
+        if cu.get("people") not in (None, p):
+            return None
+        hi = [beings[i] for i in cu.get("living") or [] if i in beings and beings[i].get("high")]
+        if not hi:
+            return None
+        b = max(hi, key=lambda x: (float(x.get("devotion") or 0), -x["id"]))
+        dom = b.get("first_domain") or ((b.get("top") or [[None]])[0][0])
+        con = DOMAIN_CONCEPT.get(dom)
+        if con is None:
+            return None
+        return con, f"{dom} god", float(b.get("individuation") or 0.5)
+
     def taboo_animal(self, p: str) -> str | None:
         tab = getattr(self.R, "taboos_doc", None)
         if tab is None:
@@ -489,6 +548,10 @@ class _Pass:
         if wc is not None and _word(main, wc[0]) is not None:
             ctx["way"] = wc
             w["way"] = 2.0
+        fa = self.high_god(p, main.deme)
+        if fa and _word(main, "GOD") is not None and _word(main, fa[0]) is not None:
+            ctx["faith"] = fa
+            w["faith"] = FAITH_W[0] + FAITH_W[1] * fa[2]
         ta = self.taboo_animal(p)
         if ta and _word(main, ta) is not None:
             ctx["totem"] = ta
@@ -531,6 +594,8 @@ class _Pass:
             ws = [W(c) for c in ctx["body"][0]]
             if all(x is not None for x in ws):
                 return _people_name(lect, ws, ctx["body"][1], var)
+        if var == "faith" and ctx.get("faith") and W("GOD") is not None and W(ctx["faith"][0]) is not None:
+            return _people_name(lect, [W(ctx["faith"][0]), W("GOD")], f"the people of the {ctx['faith'][1]}", var)
         if var == "many" and W("MANY") is not None:
             return _people_name(lect, [W("MANY")], "the many", var)
         if var == "ancestor" and getattr(lect, "inventory", None) is not None:
@@ -901,6 +966,16 @@ class _Pass:
             p = self._people(l)
             n = (self.endonyms.get(p) or {}).get("by_lect", {}).get(l.id)
             demes[str(l.deme)] = {"name": _public(n), "people": p, "lect": l.id, "places": self.places(l, n)}
+        from .personal import Personal
+        PN = Personal(self)
+        personal = {l.id: PN.for_lect_cached(l) for l in self.living}
+        personal = {k: v for k, v in personal.items() if v}
+        by_cell, rids = self._sites()
+        if by_cell:
+            for l in self.living:
+                st = PN.settlements(l, by_cell, rids)
+                if st:
+                    demes[str(l.deme)]["settlements"] = st
         rows = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}
         for obs, subs in sorted((rows.get("rows") or {}).items()):
             for subj, row in sorted(subs.items()):
@@ -926,7 +1001,7 @@ class _Pass:
                 cx[p] = {k: row.get(k) for k in ("ipa", "roman", "roman_full", "gloss", "pattern")}
         out_common = None if common is None else {"lect": common.id, "people": self._people(common), "deme": common.deme, "why": why,
                                                   "exonyms": cx}
-        return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common),
+        return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common), "personal": personal,
                 "patterns": PATTERNS, "note": "PW-972: patterns from the owner's ethnonym taxonomy; forms from each lect's words "
                                               "and grammar (names.py)"}
 

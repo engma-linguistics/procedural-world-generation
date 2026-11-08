@@ -642,6 +642,36 @@ fold at least one contrastive diacritic (486 folds).
 - `brief.py` gains a short language section per people: the headword (romanized endonym), the glossonym, two exonyms, three
   etymologies, and the food words with their route.
 
+### 13b. Personal and settlement names (`personal.py`, names lane 2026-11-08)
+
+`names.personal[lect]` (every living lect): `{tradition: {given, byname, order, origin, changed?, themes?}, given: [{roman,
+ipa, gloss, age: old|new, opaque, etym}], bynames: [{roman, ipa, gloss, kind, etym}]}`; `names.demes[d].settlements`: up to
+three standing sites of the deme (settlements.json, sites in the deme's cells now, largest first): `{site, tier, pop, ipa,
+roman, gloss, lect, named_by, kyr, substrate_of, pattern (P2 or null), tautology, plain}`.
+
+- **Traditions** are drawn at each proto and inherited down the lect tree; each lect redraws one field with chance `DRIFT`
+  (0.12). Given names: `dithematic` (closed pools of 8 + 6 theme concepts fixed where the tradition began), `phrase`
+  (subject + verb in the lect's order, Yoruba-like), `single`. Bynames: `patronymic`/`matronymic` (parent's name + GEN gram
+  + SON/DAUGHTER, fused when GEN is bound and the lect head-final; with no GEN, as on a24559, the kin word compounds with
+  the parent's name), `epithet`, `clan` (family first or last).
+- **Old names**: three per lect are coined in the tradition's origin lect and carried down: a theme whose root the lect
+  still has (`etym_roots`) takes its reflex, a replaced one stays as the lect hears the old form (opaque), and an old name
+  is clipped toward two syllables with a chance that grows with age (`OPAQUE_KYR`, `OPAQUE_CAP`). **Approximation**: names
+  are not replayed through each lect's own rule history (the rule objects are not kept); the boundary sound changes a real
+  compound name undergoes (Wilhelm > William) are therefore missing. Three new names per lect are coined from today's words.
+- **Settlements**: a generic from the namer's words (FORD/BRIDGE on a river cell, else by tier: TOWN, MARKET, FENCE
+  'enclosure', VILLAGE, HOUSE, FIELD, WALL), eroded to one syllable (a suffix) after `SUFFIX_KYR`; a specific (a founder's
+  given name in the bound GEN, Kraków-style; else an adjective). A site founded by a people whose lect the current lect does
+  not descend from keeps the founder lect's name as heard (P2), and with chance `SUBSTRATE_TAUTOLOGY` (only when the generic's
+  root differs from the newcomers' own, so they no longer understand it) the newcomers add their own generic: a tautology
+  (River Avon). On a24559 (final run): 1430 towns in 488 demes, 970 kept from another people (P2), 213 tautologies; 920 of
+  1875 old given names opaque; 103 of 625 lects changed their tradition.
+- **E10 faith endonyms** (`names.high_god`): a people whose main deme's culture has a living high god (gods.json,
+  cultures.json beside the run) may call itself 'the people of the <domain> god' (weight `FAITH_W`, by the god's
+  individuation). No polity or state data reaches the language pass yet, so E11 confederations and X6 dynasty exonyms are
+  still missing.
+- Shown in the viewer's Names tab (with play buttons) and on the sketch pages ("Names of people and places").
+
 ## 14. Work split for tonight
 
 | Builder | Deliverables | Starts |
