@@ -68,6 +68,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-11-08 (owner): language lane merged to main (lang-design). Scholars' horizon reading (~11 kyr) accepted as close enough; heavier synthesis tried and kept (FUSE 0.02, L2 strip 0.008); spelling guard blocks slurs only, plain swearing inside a word is fine (offensive_substrings.txt); leftovers go to tickets, not more lane time. Commits with an empty author email are left as they are.
 - 2026-10-27 (owner): dragon density default 1 per 5,000 km² (user option; 10k rarer, 1k far too many by default).
 - 2026-10-27 (owner): gnomes arrive at 50 kyr (were 15 kyr, remnants into a full world). Half-elves (and hybrids generally) are exempt from the remnant check: few where parents rarely meet is fine, reported only. Low-density overlap of peoples is fine.
 - 2026-10-27 (owner): polycentric origins: a split people arises in several patches of its country, only where its parent lived at the split (dwarves in ranges the hominid stem reached). Walker jump reach ~800 km; far jumps rarer (small scouting bands), shorter ones preferred.

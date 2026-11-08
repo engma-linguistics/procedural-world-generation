@@ -1,0 +1,79 @@
+# source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. Modelled on the paths catalogued in Heine & Kuteva, World Lexicon of Grammaticalization (CUP 2002; 2nd ed. Kuteva, Heine, Hong, Long, Narrog & Rhee 2019), with Bybee, Perkins & Pagliuca 1994 (The Evolution of Grammar) and Hopper & Traugott 2003.
+# version: hand-authored 2026-11-03
+# licence: original text for this repository (no third-party data copied); cite the works above when using it.
+# script: tools/language/knowledge_tables.py
+# columns: source_concept = lexical or grammatical source meaning; target_function = the gram it becomes; intermediate_stages = typical bridging stages (' > ' ordered); fusion_endpoint = how bound the marker typically ends up; frequency_class = very common (many families on several continents) | common | attested (a handful of families); example = one or two real-language cases (romanized; tone marks and some diacritics dropped).
+# frequency classes are judgement, not counts. Paths are unidirectional in the normal case (lexical > grammatical).
+id	source_concept	target_function	intermediate_stages	fusion_endpoint	frequency_class	example
+G001	GO (motion toward)	FUTURE	intention ('be going to') > immediate future > future	auxiliary > proclitic/prefix	very common	English be going to > gonna; French je vais chanter
+G002	COME	FUTURE	motion toward speaker > future	auxiliary > affix	common	Swedish kommer att + inf. 'will'; Zulu -zo- future (< -za 'come')
+G003	COME (FROM)	RECENT PAST	'come from doing' > 'have just done'	auxiliary	common	French je viens de manger 'I have just eaten'
+G004	WANT / DESIRE	FUTURE	volition > intention > prediction	auxiliary > clitic > prefix	very common	English will (Old English willan 'want'); Modern Greek tha (< thelo na 'I want that'); Swahili -ta- (< -taka 'want')
+G005	HAVE TO / OWE (obligation)	FUTURE	obligation > intention > future	auxiliary > suffix	common	Latin cantare habeo 'I have to sing' > French chanterai; English shall (Old English sceal 'owe')
+G006	HAVE (possession)	PERFECT	resultative possessive ('have it written') > perfect	auxiliary	very common	English I have written; Spanish he cantado
+G007	HAVE (possession)	OBLIGATION	possession of a task > deontic necessity	auxiliary > clitic	common	English have to > hafta; Spanish tener que
+G008	BE AT (locative)	PROGRESSIVE	locative 'be at/in doing' > progressive > imperfective	auxiliary > affix	very common	Dutch ik ben aan het werken; Irish tá sé ag obair 'he is at working'; Mandarin zài
+G009	SIT / STAND / LIE (posture)	PROGRESSIVE	posture + action > continuous > progressive	serial verb > auxiliary	common	Dutch hij zit te lezen 'he sits to read' = is reading; Danish sidder og laeser
+G010	WALK / GO AROUND	PROGRESSIVE > PRESENT	continuous motion > progressive > present	suffix	attested	Turkish -iyor present/progressive (< Old Turkic yori- 'walk')
+G011	STAY / EXIST	PROGRESSIVE / RESULTATIVE	locative existence > continuous or resulting state	auxiliary suffix	common	Japanese tabete iru 'is eating' (iru 'exist, stay')
+G012	PROGRESSIVE	IMPERFECTIVE / PRESENT	progressive > general present/imperfective	affix	common	English -ing progressive spreading to statives; Turkish -iyor now the general present
+G013	FINISH / COMPLETE	COMPLETIVE > PERFECT > PERFECTIVE	'finish doing' > completive > perfect > perfective/past	serial verb > clitic/suffix	very common	Mandarin le (< liao 'finish'); Thai laeew 'already'
+G014	THROW AWAY / PUT AWAY	COMPLETIVE	'do and discard' > completive with regret	serial verb > auxiliary suffix	attested	Japanese -te shimau 'end up doing' (shimau 'put away'); Korean -a pelita 'throw away'
+G015	PERFECT	PERFECTIVE / PAST	perfect > past (perfect drift)	auxiliary > affix	very common	French passe compose replacing the simple past; southern German Perfekt as general past
+G016	PASS / CROSS OVER	EXPERIENTIAL PERFECT	'pass through' > 'have ever done'	suffix-like particle	attested	Mandarin qu-guo 'have been (there)' (guo 'pass')
+G017	ARRIVE / REACH	TERMINATIVE / ALLATIVE	'reach X' > 'up to, until' > 'to'	preposition	common	Mandarin dao 'arrive' > 'to'; Thai thueng 'reach' > 'until, to'
+G018	KNOW (how to)	ABILITY > HABITUAL	knowledge > ability > habitual	auxiliary > preverbal particle	attested	Tok Pisin save (< Portuguese sabe 'knows') ability and habitual
+G019	GET / OBTAIN	ABILITY / PERMISSION / PAST	'manage to get' > ability > permission; also > past	auxiliary > particle	common	Lao and Thai dai 'get' > 'can' and 'did'; Cantonese dak 'can'
+G020	ABILITY (CAN)	PERMISSION > EPISTEMIC POSSIBILITY	root ability > permission > possibility	auxiliary	common	English can/may (may < Old English magan 'be able')
+G021	SEE / LOOK	ATTEMPTIVE	'do and see' > 'try doing'	serial verb > suffix	attested	Japanese tabete miru 'try eating' (miru 'see'); Mandarin kan-kan
+G022	SEE	DIRECT EVIDENTIAL	perception verb > witnessed evidential	suffix / clitic	attested	Tibetan (Lhasa) -thong visual evidential (< mthong 'see')
+G023	SAY	QUOTATIVE > COMPLEMENTIZER > PURPOSE	'say' introducing speech > complementizer for cognition verbs > purpose	particle	very common	Ewe be 'say' > 'that'; Akan se; Tok Pisin (olsem) 'like that'
+G024	SAY	HEARSAY EVIDENTIAL	'they say' > reportative marker	clitic	common	Spanish dizque 'allegedly' (< dice que 'says that'); Estonian -vat reportative (via participle)
+G025	LIKE / SIMILAR (manner)	QUOTATIVE / COMPLEMENTIZER	'like' > approximation > quotative	particle	common	English 'she was like, no'; Swedish typ
+G026	GIVE	BENEFACTIVE / DATIVE	serial 'give to X' > 'for/to X'	serial verb > preposition / applicative	very common	Mandarin gei 'give' > 'for, to'; Thai hai 'give' > 'for'
+G027	GIVE	CAUSATIVE / PERMISSIVE	'give (someone) to do' > let > make	auxiliary	common	Thai hai 'give' > 'make, let'; Finnish antaa 'give, let'
+G028	MAKE / DO	CAUSATIVE	'make (him) do' > causative auxiliary > causative affix	auxiliary > affix	very common	French faire faire 'have done'; English make him go
+G029	DO	DUMMY AUXILIARY / EMPHATIC / HABITUAL	causative 'do' > periphrastic auxiliary	auxiliary	attested	English do-support (did you go?); southwest British English habitual 'I do go'
+G030	TAKE / HOLD	OBJECT MARKER (accusative) / INSTRUMENTAL	serial 'take X and V' > object or instrument marker	serial verb > preposition	common	Mandarin ba 'take' > object marker; Twi de 'take' > instrumental
+G031	USE	INSTRUMENTAL	serial 'use X to V' > 'with'	preposition	common	Mandarin yong 'use' > 'with (instrument)'
+G032	SUFFER / RECEIVE / GET	PASSIVE	adversative 'suffer X doing' > passive	auxiliary > particle	common	Mandarin bei (< 'suffer, cover'); Vietnamese bi 'suffer'; English get-passive
+G033	BECOME	PASSIVE / FUTURE	change of state > passive auxiliary	auxiliary	common	German er wird gesehen 'is seen' and er wird kommen 'will come' (werden 'become')
+G034	LET / LEAVE	PERMISSIVE > HORTATIVE	'let me' > 'let us' > hortative particle	particle	common	English let's > lets (go); Russian davai 'give' > hortative
+G035	FEAR	APPREHENSIVE ('lest')	'fear that' > negative purpose	conjunction / mood marker	attested	Latin timeo ne > ne 'lest'; Australian apprehensive markers (e.g. Dyirbal -bila)
+G036	LATER / AFTERWARD (adverb)	FUTURE	temporal adverb > preverbal future particle	particle > prefix	common	Tok Pisin bai (< baimbai 'by and by') future
+G037	BACK (body part)	BEHIND > AFTER	body part > spatial relational noun > adposition > temporal	relational noun > adposition	very common	Swahili nyuma 'back' > nyuma ya 'behind'; English (a)back; Mixtec sata 'back' > 'behind'
+G038	FACE / EYE / FOREHEAD	FRONT > BEFORE	body part > 'in front of' > 'before (time)'	relational noun > adposition	very common	Chalcatongo Mixtec nuu 'face' > 'in front of, at'; Swahili mbele 'front' (cf. 'breast')
+G039	HEAD	TOP > ON / ABOVE	body part > top region > 'on, over'	relational noun > adposition	very common	Mixtec sini 'head' > 'on top of'; Ewe ta 'head' > 'on, about'
+G040	BELLY / STOMACH	INSIDE > IN	body part > interior > 'in'	relational noun > adposition > case suffix	very common	Mixtec ini 'belly' > 'inside'; Ewe me 'inside' (relational noun)
+G041	BUTTOCKS / BASE / ROOT	BOTTOM > UNDER	body part or landmark > underside > 'under'	relational noun > adposition	common	K'iche' chuxe' 'under' (-xe' 'base, root'); Ewe te 'under' (relational noun)
+G042	SIDE / RIB / FLANK	BESIDE / NEAR	body part > lateral region > 'beside'	adposition	common	English beside (< by side); Swahili kando 'side, edge' > 'beside'
+G043	COMPANION / FRIEND	COMITATIVE > INSTRUMENTAL	'companion' > 'with' > instrumental case	postposition > case suffix	common	Estonian -ga comitative (< kaasa 'with' < kaas 'companion')
+G044	COMITATIVE (WITH)	INSTRUMENTAL > NP CONJUNCTION (AND)	'with X' > means > 'and'	preposition / conjunction	very common	English with (instrument); Swahili na 'with, and'
+G045	ALLATIVE (TO)	DATIVE > ACCUSATIVE (differential object)	direction > recipient > animate object	preposition > case	very common	Spanish a (< Latin ad 'to') marking animate objects; Hindi ko dative > object
+G046	ALLATIVE (TO)	PURPOSE > INFINITIVE MARKER	direction > purpose > infinitive	particle	common	English to + infinitive; German um zu / zu
+G047	ABLATIVE (FROM)	COMPARATIVE STANDARD (THAN)	source > standard of comparison	case suffix / postposition	common	Turkish senden buyuk 'bigger than you' (-den 'from'); Japanese yori 'from, than'
+G048	SURPASS / EXCEED	COMPARATIVE MARKER	'X surpass Y (in) big' > 'than'	serial verb > particle	common	Thai kwaa 'surpass' > 'more than'; Yoruba ju 'exceed'
+G049	ADPOSITION	CASE AFFIX	free postposition > clitic > case suffix	case suffix	very common	Hungarian -ban/-ben 'in' (< bel 'innards'); Estonian -ga
+G050	ONE	INDEFINITE ARTICLE	numeral > presentative > specific indefinite > general indefinite	clitic	very common	English a/an (< Old English an 'one'); French un; German ein
+G051	DEMONSTRATIVE (distal)	DEFINITE ARTICLE	demonstrative > anaphoric > definite > specific	clitic > affix	very common	Latin ille 'that' > French le, Spanish el; Romanian lupul 'the wolf' (suffixed -ul)
+G052	DEFINITE ARTICLE	NOUN MARKER / GENDER-CLASS MARKER	definite > specific > generic noun marker (Greenberg's stage III)	prefix / suffix	attested	Greenberg 1978: e.g. Bantu augment prefixes; Gur and Kordofanian class affixes
+G053	DEMONSTRATIVE	THIRD PERSON PRONOUN	demonstrative > anaphoric pronoun	pronoun > clitic	very common	Latin ille > French il, elle; Japanese kare 'that one' > 'he'
+G054	THIRD PERSON PRONOUN	VERB AGREEMENT	pronoun > clitic doubling > agreement affix	prefix / suffix	very common	Colloquial French moi je l'ai vu; Bantu subject concords; Tok Pisin predicate marker i (< he)
+G055	DEMONSTRATIVE	RELATIVE / COMPLEMENTIZER	demonstrative > relativizer > complementizer	particle	common	English that (relative and complementizer); German der (relative), dass
+G056	DEMONSTRATIVE	COPULA	topic pronoun 'X, this (is) Y' > copula	particle	common	Mandarin shi 'this' > copula; Hebrew hu 'he' used as copula
+G057	COPULA	FOCUS MARKER	cleft 'it is X that' > focus particle	particle	common	Mandarin shi...de clefts; Yoruba ni focus marker; Hausa ne/ce
+G058	WH-INTERROGATIVE	RELATIVE PRONOUN	question word > relative pronoun	pronoun	very common	English who/which as relatives; Latin qui; Russian kotoryj
+G059	BODY / HEAD / BONE / SOUL (self)	REFLEXIVE > RECIPROCAL	'his body' > emphatic 'himself' > reflexive	noun > pronoun > affix	very common	Basque bere burua 'his head' = himself; Hebrew atsmo 'his bone' = himself; Sanskrit atman 'soul, self'
+G060	REFLEXIVE	MIDDLE > PASSIVE	reflexive > middle (anticausative) > passive	clitic > suffix	common	Russian -sja (myt'sja 'wash oneself', stroit'sja 'be built'); Spanish se vende 'is sold'
+G061	PERSON / MAN (generic noun)	INDEFINITE PRONOUN > FIRST PERSON PLURAL	'a man' > 'one, people' > 'we'	pronoun > clitic	common	German man (< Mann); French on (< homo) now 'we' (on y va)
+G062	THING	INDEFINITE PRONOUN / NOMINALIZER	'thing' > 'something' > nominalizing particle	pronoun / suffix	common	English something; Japanese koto and mono as nominalizers
+G063	CHILD / SON	DIMINUTIVE	'child of X' > small X > diminutive affix	suffix	very common	Mandarin -zi (zi 'child'); Ewe -vi diminutive (vi 'child'); Akan -ba
+G064	ALL / PEOPLE / MANY	PLURAL MARKER	quantifier or group noun > plural marker	particle > affix	common	Tok Pisin ol (< all) plural marker; Indonesian para; Japanese -tachi (group)
+G065	HAND	FIVE (numeral)	body part > numeral 'five' > base of quinary counting	lexical	common	Austronesian lima 'five' (also 'hand'); many Papuan body-tally systems
+G066	NOUN (shape or kind: body, tree, fruit, head)	NUMERAL CLASSIFIER > NOUN CLASS	generic noun > classifier > (rarely) gender	particle > prefix	common	Thai tua 'body' (classifier for animals); Mandarin ge; Japanese -hon 'stem' for long things
+G067	BELONG / PROPERTY	GENITIVE MARKER	'X that belongs to Y' > possessive linker	preposition	attested	Tok Pisin bilong (< belong) 'of'; Hawaiian Creole fo
+G068	MINIMIZER (step, crumb, point, nothing)	NEGATION	emphatic 'not a step' > obligatory second negator > sole negator (Jespersen's cycle)	particle	very common	French ne...pas 'not...step' > colloquial pas; English not (< nawiht 'nothing')
+G069	NEGATIVE EXISTENTIAL ('there is not')	STANDARD NEGATION	negative existential > verbal negator (Croft's negative-existential cycle)	particle / auxiliary	common	Croft 1991: attested in Polynesian and Dravidian, among others
+G070	TIME / WHILE (noun)	TEMPORAL > CONCESSIVE / CAUSAL CONJUNCTION	'the time that' > 'while' > 'although'	conjunction	common	English while (< Old English hwil 'time'); German weil 'because' (< 'while')
+G071	SINCE (temporal)	CAUSAL	temporal sequence > cause (post hoc)	conjunction	common	English since; French puisque
+G072	USE / BE ACCUSTOMED	PAST HABITUAL	'be accustomed to' > past habitual	auxiliary	attested	English used to; Latin solere 'be wont'

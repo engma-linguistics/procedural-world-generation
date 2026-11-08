@@ -1,0 +1,589 @@
+# source: Concepticon conceptlists (https://github.com/concepticon/concepticon-data, concepticondata/conceptlists/): Tadmor-2009-100 (Leipzig-Jakarta list, Tadmor, Haspelmath & Taylor 2010), Swadesh-1952-200, Swadesh-1955-100, Pagel-2007-200 (Pagel, Atkinson & Meade 2007, Nature 449), Holman-2008-100 (Holman et al. 2008, ASJP stability).
+# version: concepticon/concepticon-data master @1d53585c (2026-11-03), conceptlists/; derived 2026-11-03
+# licence: Concepticon data CC-BY 4.0 (List et al., Concepticon 3.x); underlying list values from the cited papers.
+# script: tools/language/build_reference_tables.py
+# lists: LJ100 = Leipzig-Jakarta 100; SW207 = Swadesh 207, built as the union of Swadesh 1952 (200) and Swadesh 1955 (100) by Concepticon id (213 concepts after mapping; the Wikipedia '207' list is this union); SW200 / SW100 mark the source list.
+# lj_rank: Leipzig-Jakarta rank (1 = most borrowing-resistant/stable). pagel_rate: Pagel 2007 mean rate of lexical replacement in Indo-European (replacements per 10,000 yr, low = stable); pagel_english_freq: their English usage frequency per million.
+# holman_rank / holman_stability: ASJP stability rank and score (Holman et al. 2008, 100 items; rank 1 = most stable).
+# stability_class: 1 (most stable, slowest replacement) .. 5 (fastest). Derived, not published: quintile of the Pagel rate among the 200 Pagel concepts where available, else quintile of Holman stability among its 100, else quintile of the LJ rank, else (3 concepts: BERRY, MALE PERSON, HOT OR WARM) a class from general knowledge, marked 'knowledge'. Concepts with no class: 0.
+# WOLD1460 rows (2026-11-07): meanings of the World Loanword Database (Haspelmath & Tadmor 2009; Concepticon list Haspelmath-2009-1460, CC-BY 4.0) picked for sample sentences and grammar sketches (WOLD_EXTENSION in the script); stability_class 3-5 by tercile of WOLD's composite rank among them (wold_rank_tercile), pos from WOLD's part of speech.
+concepticon_id	gloss	semantic_field	lists	lj_rank	pagel_rate	pagel_english_freq	holman_rank	holman_stability	stability_class	stability_class_source	pos
+2	DUST	The physical world	SW207,SW200		3.63	26.00			4	pagel2007_rate_quintile	
+72	CLAW	Animals	SW207,SW100				62	20.5	4	holman2008_stability_quintile	
+78	THAT	Miscellaneous function words	SW207,SW200,SW100		1.88	3844.00	88	14.7	2	pagel2007_rate_quintile	
+98	ALL	Quantity	SW207,SW200,SW100		2.02	2629.00	92	14.1	2	pagel2007_rate_quintile	
+136	HERE	Miscellaneous function words	SW207,SW200		3.25	699.00			4	pagel2007_rate_quintile	
+156	RED	Sense perception	LJ100,SW207,SW200,SW100	64	2.26	126.00	65	20.2	2	pagel2007_rate_quintile	
+163	BLACK	Sense perception	LJ100,SW207,SW200,SW100	42	1.91	264.00	56	21.6	2	pagel2007_rate_quintile	
+175	BLOW (OF WIND)	Motion	LJ100,SW207,SW200	79	4.31	51.00			4	pagel2007_rate_quintile	
+197	OTHER	Miscellaneous function words	SW207,SW200		2.66	1336.00			3	pagel2007_rate_quintile	
+221	FIRE	The physical world	LJ100,SW207,SW200,SW100	1	1.75	145.00	36	25.7	2	pagel2007_rate_quintile	
+227	FISH	Animals	LJ100,SW207,SW200,SW100	38	1.45	105.00	12	33.4	1	pagel2007_rate_quintile	
+239	FLOWER	Agriculture and vegetation	SW207,SW200		2.29	76.00			2	pagel2007_rate_quintile	
+244	LEFT	Spatial relations	SW207,SW200		4.41	95.00			5	pagel2007_rate_quintile	
+249	FOG	The physical world	SW207,SW200		4.97	11.00			5	pagel2007_rate_quintile	
+262	HE OR SHE OR IT	Kinship	LJ100	34					2	lj_rank_quintile	
+323	FAT (ORGANIC SUBSTANCE)	The body	SW207,SW200,SW100		4.89	21.00	45	23.4	5	pagel2007_rate_quintile	
+379	BLUNT	Sense perception	SW207,SW200		6.79	18.00			5	pagel2007_rate_quintile	
+420	FOREST	The physical world	SW207,SW200		4.15	67.00			4	pagel2007_rate_quintile	
+471	UPPER LEG (THIGH)	The body	LJ100	76					4	lj_rank_quintile	
+492	THREE	Quantity	SW207,SW200		0.09	800.00			1	pagel2007_rate_quintile	
+493	FIVE	Quantity	SW207,SW200		0.09	409.00			1	pagel2007_rate_quintile	
+587	ANT	Animals	LJ100	71					4	lj_rank_quintile	
+606	GRASS	Agriculture and vegetation	SW207,SW200		2.73	45.00			3	pagel2007_rate_quintile	
+617	ICE	The physical world	SW207,SW200		2.58	41.00			3	pagel2007_rate_quintile	
+619	ANIMAL	Animals	SW207,SW200		3.40	153.00			4	pagel2007_rate_quintile	
+624	LAKE	The physical world	SW207,SW200		3.50	51.00			4	pagel2007_rate_quintile	
+628	LEAF	Agriculture and vegetation	LJ100,SW207,SW200,SW100	64	2.43	51.00	23	29.4	2	pagel2007_rate_quintile	
+639	MOUNTAIN	The physical world	SW207,SW200,SW100		2.75	68.00	35	26.2	3	pagel2007_rate_quintile	
+646	ASH	The physical world	LJ100,SW207,SW200,SW100	84	2.65	13.00	64	20.3	3	pagel2007_rate_quintile	
+658	RAIN (PRECIPITATION)	The physical world	LJ100	13					1	lj_rank_quintile	
+666	RIVER	The physical world	SW207,SW200		3.69	114.00			4	pagel2007_rate_quintile	
+667	ROAD	Motion	SW207,SW200,SW100		4.86	313.00			5	pagel2007_rate_quintile	
+670	ROOT	Agriculture and vegetation	LJ100,SW207,SW200,SW100	9	1.75	45.00	61	20.5	2	pagel2007_rate_quintile	
+671	SAND	The physical world	LJ100,SW207,SW200,SW100	59	4.26	34.00	87	14.9	4	pagel2007_rate_quintile	
+674	MOUTH	The body	LJ100,SW207,SW200,SW100	5	2.78	99.00	57	21.5	3	pagel2007_rate_quintile	
+683	PERSON	Kinship	SW207,SW200,SW100		4.81	290.00	28	28.7	5	pagel2007_rate_quintile	
+695	GO	Motion	LJ100	3					1	lj_rank_quintile	
+700	CARRY	Motion	LJ100	70					4	lj_rank_quintile	
+714	SEED	Agriculture and vegetation	SW207,SW200,SW100		2.56	32.00	74	18.2	3	pagel2007_rate_quintile	
+717	SWEET	Sense perception	LJ100	89					5	lj_rank_quintile	
+730	SNAKE	Animals	SW207,SW200		3.11	12.00			3	pagel2007_rate_quintile	
+744	EGG	Food and drink	LJ100,SW207,SW200,SW100	52	1.57	62.00	67	19.8	1	pagel2007_rate_quintile	
+763	SKIN	The body	LJ100,SW207,SW100	67			21	29.6	2	holman2008_stability_quintile	
+778	SMOKE (EXHAUST)	The physical world	LJ100,SW207,SW200,SW100	49	1.70	29.00	71	18.5	2	pagel2007_rate_quintile	
+784	SNOW	The physical world	SW207,SW200		1.62	31.00			2	pagel2007_rate_quintile	
+817	THEY	Kinship	SW207,SW200		2.75	6081.00			3	pagel2007_rate_quintile	
+857	STONE	The physical world	SW207,SW200,SW100		2.73	112.00	14	32.1	3	pagel2007_rate_quintile	
+887	BITTER	Sense perception	LJ100	28					2	lj_rank_quintile	
+904	BERRY	Agriculture and vegetation	SW207,SW200						4	knowledge	
+906	TREE	Agriculture and vegetation	SW207,SW200,SW100		3.58	147.00	11	33.6	4	pagel2007_rate_quintile	
+937	BIRD	Animals	LJ100,SW207,SW200,SW100	91	2.15	93.00	52	21.8	2	pagel2007_rate_quintile	
+946	BLOOD	The body	LJ100,SW207,SW200,SW100	7	2.19	102.00	26	29.0	2	pagel2007_rate_quintile	
+948	WATER	The physical world	LJ100,SW207,SW200,SW100	4	0.86	372.00	3	37.4	1	pagel2007_rate_quintile	
+960	WIND	The physical world	LJ100,SW207,SW200	48	1.78	85.00			2	pagel2007_rate_quintile	
+962	WOMAN	Kinship	SW207,SW200,SW100		2.75	631.00	75	17.9	3	pagel2007_rate_quintile	
+1019	RIGHT	Spatial relations	SW207,SW200		2.61	1000.00			3	pagel2007_rate_quintile	
+1033	GRIND	Food and drink	LJ100	100					5	lj_rank_quintile	
+1035	GOOD	Emotions and values	LJ100,SW207,SW200,SW100	56	3.04	1276.00	79	16.9	3	pagel2007_rate_quintile	
+1040	HAIR	The body	LJ100,SW207,SW200,SW100	31	3.61	150.00	70	18.6	4	pagel2007_rate_quintile	
+1157	BECAUSE	Cognition	SW207,SW200		7.11	852.00			5	pagel2007_rate_quintile	
+1174	YESTERDAY	Time	LJ100	41					3	lj_rank_quintile	
+1198	MANY	Quantity	SW207,SW200,SW100		5.60	902.00	91	14.2	5	pagel2007_rate_quintile	
+1199	WIFE	Kinship	SW207,SW200		4.12	190.00			4	pagel2007_rate_quintile	
+1200	HUSBAND	Kinship	SW207,SW200		4.74	123.00			5	pagel2007_rate_quintile	
+1201	FEATHER	The body	SW207,SW200,SW100		2.35	13.00	49	23.1	2	pagel2007_rate_quintile	
+1202	BIG	Spatial relations	LJ100,SW207,SW200,SW100	32	3.41	338.00	97	13.4	4	pagel2007_rate_quintile	
+1203	LONG	Spatial relations	LJ100,SW207,SW200,SW100	78	1.22	573.00	77	17.4	1	pagel2007_rate_quintile	
+1204	BARK	Agriculture and vegetation	SW207,SW200,SW100		3.79	5.00	40	24.5	4	pagel2007_rate_quintile	
+1205	TONGUE	The body	LJ100,SW207,SW200,SW100	6	0.49	28.00	20	30.1	1	pagel2007_rate_quintile	
+1209	I	Kinship	LJ100,SW207,SW200,SW100	14	0.09	10241.00	6	35.9	1	pagel2007_rate_quintile	
+1210	HEAVY	Sense perception	LJ100,SW207,SW200	71	2.89	105.00			3	pagel2007_rate_quintile	
+1211	HE	Kinship	SW207,SW200		2.45	8469.00			2	pagel2007_rate_quintile	
+1212	WE	Kinship	SW207,SW200,SW100		0.37	4202.00	37	25.4	1	pagel2007_rate_quintile	
+1213	YOU	Kinship	SW207,SW200		1.32	6984.00			1	pagel2007_rate_quintile	
+1214	THIS	Miscellaneous function words	LJ100,SW207,SW200,SW100	38	2.18	4623.00	73	18.2	2	pagel2007_rate_quintile	
+1215	THOU	Kinship	LJ100,SW207,SW200,SW100	9	0.64	6954.00	17	30.6	1	pagel2007_rate_quintile	
+1216	MOTHER	Kinship	SW207,SW200		2.36	295.00			2	pagel2007_rate_quintile	
+1217	FATHER	Kinship	SW207,SW200		2.30	252.00			2	pagel2007_rate_quintile	
+1218	ROPE	Basic actions and technology	LJ100,SW207,SW200	91	6.09	22.00			5	pagel2007_rate_quintile	
+1219	WORM	Animals	SW207,SW200		2.16	12.00			2	pagel2007_rate_quintile	
+1220	TAIL	The body	LJ100,SW207,SW200,SW100	84	4.16	32.00	86	14.9	4	pagel2007_rate_quintile	
+1221	NOSE	The body	LJ100,SW207,SW200,SW100	2	1.49	48.00	31	27.3	1	pagel2007_rate_quintile	
+1223	HEART	The body	SW207,SW200,SW100		1.69	152.00	48	23.2	2	pagel2007_rate_quintile	
+1224	LIVER	The body	LJ100,SW207,SW200,SW100	66	2.66	17.00	7	35.7	3	pagel2007_rate_quintile	
+1225	DAY (NOT NIGHT)	Time	SW207,SW200		1.04	940.00			1	pagel2007_rate_quintile	
+1226	YEAR	Time	SW207,SW200		2.78	1639.00			3	pagel2007_rate_quintile	
+1228	EARTH (SOIL)	The physical world	LJ100,SW207,SW200,SW100	63	3.52	97.00	54	21.7	4	pagel2007_rate_quintile	
+1229	OLD	Time	LJ100,SW207,SW200	74	2.53	648.00			3	pagel2007_rate_quintile	
+1230	DIRTY	Sense perception	SW207,SW200		9.27	27.00			5	pagel2007_rate_quintile	
+1231	NEW	Time	LJ100,SW207,SW200,SW100	53	0.60	1154.00	41	24.3	1	pagel2007_rate_quintile	
+1233	NIGHT	Time	LJ100,SW207,SW200,SW100	20	0.76	393.00	22	29.6	1	pagel2007_rate_quintile	
+1234	SMOOTH	Sense perception	SW207,SW200		6.23	30.00			5	pagel2007_rate_quintile	
+1235	WHO	Cognition	LJ100,SW207,SW200,SW100	34	0.09	2055.00	68	19.0	1	pagel2007_rate_quintile	
+1236	WHAT	Cognition	LJ100,SW207,SW200,SW100	50	0.69	2493.00	60	20.7	1	pagel2007_rate_quintile	
+1237	WHERE	Cognition	SW207,SW200		0.70	628.00			1	pagel2007_rate_quintile	
+1238	WHEN	Cognition	SW207,SW200		1.08	431.00			1	pagel2007_rate_quintile	
+1239	HOW	Cognition	SW207,SW200		0.41	1016.00			1	pagel2007_rate_quintile	
+1240	NOT	Miscellaneous function words	LJ100,SW207,SW200,SW100	56	0.82	7995.00	72	18.3	1	pagel2007_rate_quintile	
+1241	SOME	Quantity	SW207,SW200		2.57	1712.00			3	pagel2007_rate_quintile	
+1242	FEW	Quantity	SW207,SW200		4.45	450.00			5	pagel2007_rate_quintile	
+1243	WIDE	Spatial relations	LJ100,SW207,SW200	96	2.89	165.00			3	pagel2007_rate_quintile	
+1244	THICK	Spatial relations	LJ100,SW207,SW200	76	5.41	51.00			5	pagel2007_rate_quintile	
+1246	SMALL	Spatial relations	LJ100,SW207,SW200,SW100	91	3.70	518.00	100	6.3	4	pagel2007_rate_quintile	
+1247	EAR	The body	LJ100,SW207,SW200,SW100	22	0.88	59.00	4	37.2	1	pagel2007_rate_quintile	
+1248	EYE	The body	LJ100,SW207,SW200,SW100	83	0.93	392.00	8	35.4	1	pagel2007_rate_quintile	
+1251	BELLY	The body	SW207,SW200,SW100		4.39	10.00	96	13.5	5	pagel2007_rate_quintile	
+1252	HOUSE	The house	LJ100	26					2	lj_rank_quintile	
+1253	RAIN (RAINING)	The physical world	SW207,SW200		2.39	14.00			2	pagel2007_rate_quintile	
+1256	HEAD	The body	SW207,SW200,SW100		2.32	402.00	53	21.7	2	pagel2007_rate_quintile	
+1257	WING	The body	LJ100,SW207,SW200	17	2.66	53.00			3	pagel2007_rate_quintile	
+1261	SING	Speech and language	SW207,SW200		2.54	63.00			3	pagel2007_rate_quintile	
+1267	NARROW	Spatial relations	SW207,SW200		2.89	54.00			3	pagel2007_rate_quintile	
+1274	SALT	Food and drink	LJ100,SW207,SW200	91	1.01	33.00			1	pagel2007_rate_quintile	
+1277	HAND	The body	SW207,SW200,SW100		0.82	532.00	9	34.9	1	pagel2007_rate_quintile	
+1278	VOMIT	The body	SW207,SW200		5.02	4.00			5	pagel2007_rate_quintile	
+1280	FALL	Motion	LJ100,SW207,SW200	81	2.97	273.00			3	pagel2007_rate_quintile	
+1287	COLD	Sense perception	SW207,SW100				81	16.6	5	holman2008_stability_quintile	
+1291	BACK	The body	LJ100,SW207,SW200	46	4.29	212.00			4	pagel2007_rate_quintile	
+1292	BAD	Emotions and values	SW207,SW200		6.87	264.00			5	pagel2007_rate_quintile	
+1295	STICK	The physical world	SW207,SW200		8.02	26.00			5	pagel2007_rate_quintile	
+1297	LEG	The body	SW207,SW200		3.73	118.00			4	pagel2007_rate_quintile	
+1301	FOOT	The body	SW207,SW200,SW100		1.39	214.00	55	21.6	1	pagel2007_rate_quintile	
+1304	CHILD (YOUNG HUMAN)	Kinship	SW207,SW200		6.31	710.00			5	pagel2007_rate_quintile	
+1313	MOON	The physical world	SW207,SW100				46	23.4	3	holman2008_stability_quintile	
+1333	NECK	The body	LJ100,SW207,SW200,SW100	23	3.57	60.00	83	16.0	4	pagel2007_rate_quintile	
+1334	GUTS	The body	SW207,SW200		6.89	5.00			5	pagel2007_rate_quintile	
+1335	WHITE	Sense perception	SW207,SW200,SW100		2.22	207.00	50	22.7	2	pagel2007_rate_quintile	
+1336	EAT	Food and drink	LJ100,SW207,SW200,SW100	75	1.77	144.00	66	20.0	2	pagel2007_rate_quintile	
+1340	WITH	Miscellaneous function words	SW207,SW200		3.25	6575.00			4	pagel2007_rate_quintile	
+1343	SUN	The physical world	SW207,SW200,SW100		0.98	115.00	43	24.2	1	pagel2007_rate_quintile	
+1355	LAUGH	Emotions and values	LJ100,SW207,SW200	61	1.61	98.00			1	pagel2007_rate_quintile	
+1371	KNEE	The body	LJ100,SW207,SW100	59			29	28.0	2	holman2008_stability_quintile	
+1380	TOOTH	The body	LJ100,SW207,SW200,SW100	28	1.18	54.00	15	30.7	1	pagel2007_rate_quintile	
+1388	SHADE	The physical world	LJ100	91					5	lj_rank_quintile	
+1392	LOUSE	Animals	LJ100,SW207,SW200,SW100	15	1.74	2.00	1	42.8	2	pagel2007_rate_quintile	
+1393	HORN (ANATOMY)	The body	LJ100,SW207,SW100	38			27	28.8	2	holman2008_stability_quintile	
+1394	BONE	The body	LJ100,SW207,SW200,SW100	7	1.34	47.00	19	30.1	1	pagel2007_rate_quintile	
+1395	ROUND	Spatial relations	SW207,SW100				76	17.9	4	holman2008_stability_quintile	
+1396	SHARP	Sense perception	SW207,SW200		3.76	44.00			4	pagel2007_rate_quintile	
+1398	DRY	Sense perception	SW207,SW200,SW100		1.83	56.00	69	18.9	2	pagel2007_rate_quintile	
+1401	DRINK	Food and drink	LJ100,SW207,SW200,SW100	42	1.49	75.00	38	25.0	1	pagel2007_rate_quintile	
+1402	BREAST	The body	LJ100,SW207,SW100	12			16	30.7	1	holman2008_stability_quintile	
+1403	BITE	The body	LJ100,SW207,SW200,SW100	46	4.67	22.00	63	20.5	5	pagel2007_rate_quintile	
+1404	STRAIGHT	Spatial relations	SW207,SW200		4.08	32.00			4	pagel2007_rate_quintile	
+1405	NAME	Speech and language	LJ100,SW207,SW200,SW100	15	0.47	326.00	13	32.4	1	pagel2007_rate_quintile	
+1406	FAR	Spatial relations	LJ100,SW207,SW200	23	3.14	288.00			3	pagel2007_rate_quintile	
+1407	BREATHE	The body	SW207,SW200		2.48	35.00			3	pagel2007_rate_quintile	
+1408	HEAR	Sense perception	LJ100,SW207,SW200,SW100	61	2.35	367.00	10	33.8	2	pagel2007_rate_quintile	
+1409	SEE	Sense perception	LJ100,SW207,SW200,SW100	89	2.63	1920.00	39	24.7	3	pagel2007_rate_quintile	
+1410	KNOW (SOMETHING)	Cognition	SW207,SW200,SW100		2.11	1882.00			2	pagel2007_rate_quintile	
+1411	LIE (REST)	Spatial relations	SW207,SW200,SW100		3.56	187.00	99	11.2	4	pagel2007_rate_quintile	
+1413	PLAY	Emotions and values	SW207,SW200		3.18	386.00			3	pagel2007_rate_quintile	
+1414	SQUEEZE	Basic actions and technology	SW207,SW200		7.83	21.00			5	pagel2007_rate_quintile	
+1416	SIT	Spatial relations	SW207,SW200,SW100		1.25	300.00	90	14.3	1	pagel2007_rate_quintile	
+1417	KILL	The body	SW207,SW200,SW100		3.50	157.00	25	29.2	4	pagel2007_rate_quintile	
+1418	DIG	Agriculture and vegetation	SW207,SW200		3.86	28.00			4	pagel2007_rate_quintile	
+1419	FEAR (BE AFRAID)	Emotions and values	SW207,SW200		4.06	53.00			4	pagel2007_rate_quintile	
+1420	COUNT	Quantity	SW207,SW200		4.07	50.00			4	pagel2007_rate_quintile	
+1421	SUCK	Food and drink	LJ100,SW207,SW200	67	2.41	16.00			2	pagel2007_rate_quintile	
+1422	BE ALIVE	The body	SW207,SW200		1.10	329.00			1	pagel2007_rate_quintile	
+1423	FIGHT	Warfare and hunting	SW207,SW200		4.21	108.00			4	pagel2007_rate_quintile	
+1424	YELLOW	Sense perception	SW207,SW200,SW100		2.12	41.00	51	22.5	2	pagel2007_rate_quintile	
+1425	GREEN	Sense perception	SW207,SW200,SW100		2.46	101.00	58	21.1	2	pagel2007_rate_quintile	
+1428	BURNING	The physical world	LJ100,SW207,SW200	53	2.94	53.00			3	pagel2007_rate_quintile	
+1429	FULL	Quantity	SW207,SW100				32	26.9	2	holman2008_stability_quintile	
+1430	STAR	The physical world	LJ100,SW207,SW200,SW100	97	0.72	100.00	34	26.6	1	pagel2007_rate_quintile	
+1431	FREEZE	The physical world	SW207,SW200		2.69	20.00			3	pagel2007_rate_quintile	
+1432	CUT	Basic actions and technology	SW207,SW200		3.36	184.00			4	pagel2007_rate_quintile	
+1433	HIT	Basic actions and technology	SW207,SW200		5.51	107.00			5	pagel2007_rate_quintile	
+1434	STAB	Basic actions and technology	SW207,SW200		7.84	11.00			5	pagel2007_rate_quintile	
+1435	HUNT	Warfare and hunting	SW207,SW200		3.33	15.00			4	pagel2007_rate_quintile	
+1436	SCRATCH	The body	SW207,SW200		4.44	12.00			5	pagel2007_rate_quintile	
+1437	SPLIT	Basic actions and technology	SW207,SW200		5.58	32.00			5	pagel2007_rate_quintile	
+1439	SWIM	Motion	SW207,SW200,SW100		2.73	25.00	95	13.6	3	pagel2007_rate_quintile	
+1440	SPIT	The body	SW207,SW200		2.04	11.00			2	pagel2007_rate_quintile	
+1441	FLY (MOVE THROUGH AIR)	Motion	SW207,SW200,SW100		2.83	90.00	44	24.1	3	pagel2007_rate_quintile	
+1442	STAND	Spatial relations	LJ100,SW207,SW200,SW100	45	2.02	326.00	78	17.1	2	pagel2007_rate_quintile	
+1443	WALK	Motion	SW207,SW200,SW100		5.14	215.00	89	14.4	5	pagel2007_rate_quintile	
+1444	TURN AROUND	Motion	SW207,SW200		8.18	465.00			5	pagel2007_rate_quintile	
+1446	COME	Motion	LJ100,SW207,SW200,SW100	11	1.90	1512.00	33	26.8	2	pagel2007_rate_quintile	
+1447	GIVE	Possession	LJ100,SW207,SW200,SW100	53	0.76	1284.00	47	23.3	1	pagel2007_rate_quintile	
+1448	HOLD	Possession	SW207,SW200		4.48	481.00			5	pagel2007_rate_quintile	
+1449	RUB	Basic actions and technology	SW207,SW200		3.57	23.00			4	pagel2007_rate_quintile	
+1452	PUSH	Motion	SW207,SW200		8.06	107.00			5	pagel2007_rate_quintile	
+1453	WASH	Basic actions and technology	SW207,SW200		3.00	49.00			3	pagel2007_rate_quintile	
+1454	WIPE	Basic actions and technology	SW207,SW200		6.92	24.00			5	pagel2007_rate_quintile	
+1455	PULL	Basic actions and technology	SW207,SW200		4.53	140.00			5	pagel2007_rate_quintile	
+1456	THROW	Motion	SW207,SW200		7.52	115.00			5	pagel2007_rate_quintile	
+1457	SEW	Clothing and grooming	SW207,SW200		1.71	8.00			2	pagel2007_rate_quintile	
+1458	SAY	Speech and language	LJ100,SW207,SW200,SW100	28	3.64	3344.00	84	16.0	4	pagel2007_rate_quintile	
+1459	IF	Cognition	SW207,SW200		4.32	2369.00			4	pagel2007_rate_quintile	
+1460	IN	Spatial relations	LJ100,SW207,SW200	97	1.78	18214.00			2	pagel2007_rate_quintile	
+1461	AT	Spatial relations	SW207,SW200		5.69	4790.00			5	pagel2007_rate_quintile	
+1474	SEA	The physical world	SW207,SW200		2.53	139.00			3	pagel2007_rate_quintile	
+1489	CLOUD	The physical world	SW207,SW200,SW100		3.25	37.00	94	13.9	3	pagel2007_rate_quintile	
+1493	ONE	Quantity	LJ100,SW207,SW200,SW100	32	0.43	1962.00	30	27.4	1	pagel2007_rate_quintile	
+1494	DIE	The body	SW207,SW200,SW100		0.82	220.00	5	36.3	1	pagel2007_rate_quintile	
+1498	TWO	Quantity	SW207,SW200,SW100		0.09	1563.00	2	39.8	1	pagel2007_rate_quintile	
+1500	FOUR	Quantity	SW207,SW200		0.38	465.00			1	pagel2007_rate_quintile	
+1504	FLY (INSECT)	Animals	LJ100	20					1	lj_rank_quintile	
+1519	RUN	Motion	LJ100	81					5	lj_rank_quintile	
+1554	MAN	Kinship	SW207,SW100		3.38	1003.00	80	16.7	4	pagel2007_rate_quintile	
+1573	SWELL	Basic actions and technology	SW207,SW200		4.54	10.00			5	pagel2007_rate_quintile	
+1574	FLOAT	Motion	SW207,SW200		4.04	20.00			4	pagel2007_rate_quintile	
+1577	AND	Cognition	SW207,SW200		3.39	26817.00			4	pagel2007_rate_quintile	
+1585	SLEEP	The body	SW207,SW200,SW100		2.01	68.00	59	21.0	2	pagel2007_rate_quintile	
+1586	SMELL (PERCEIVE)	Sense perception	SW207,SW200		6.48	25.00			5	pagel2007_rate_quintile	
+1645	SHORT	Spatial relations	SW207,SW200		3.39	198.00			4	pagel2007_rate_quintile	
+1725	CORRECT (RIGHT)	Emotions and values	SW207,SW200		3.91	52.00			4	pagel2007_rate_quintile	
+1726	WET	Sense perception	SW207,SW200		4.45	37.00			5	pagel2007_rate_quintile	
+1728	ROTTEN	Agriculture and vegetation	SW207,SW200		4.76	8.00			5	pagel2007_rate_quintile	
+1732	SKY	The physical world	SW207,SW200		2.52	56.00			3	pagel2007_rate_quintile	
+1749	TAKE	Possession	LJ100	71					4	lj_rank_quintile	
+1801	CHILD (DESCENDANT)	Kinship	LJ100	51					3	lj_rank_quintile	
+1803	WOOD	The physical world	LJ100	80					4	lj_rank_quintile	
+1838	NAVEL	The body	LJ100	42					3	lj_rank_quintile	
+1839	CRY	Emotions and values	LJ100	87					5	lj_rank_quintile	
+1884	HARD	Sense perception	LJ100	99					5	lj_rank_quintile	
+1917	TIE	Basic actions and technology	LJ100,SW207,SW200	88	2.68	42.00			3	pagel2007_rate_quintile	
+1937	THERE	Miscellaneous function words	SW207,SW200		2.94	746.00			3	pagel2007_rate_quintile	
+1942	NEAR	Spatial relations	SW207,SW200		4.86	44.00			5	pagel2007_rate_quintile	
+2003	FLOW	Motion	SW207,SW200		3.40	26.00			4	pagel2007_rate_quintile	
+2009	DOG	Animals	LJ100,SW207,SW200,SW100	84	1.79	124.00	42	24.2	2	pagel2007_rate_quintile	
+2098	FOOT OR LEG	The body	LJ100	37					2	lj_rank_quintile	
+2102	BURN	Basic actions and technology	SW207,SW100				85	15.5	5	holman2008_stability_quintile	
+2106	MALE PERSON	Kinship	SW207,SW200						3	knowledge	
+2108	RAINING OR RAIN	The physical world	SW207,SW100				24	29.3	2	holman2008_stability_quintile	
+2110	WARM (OF WEATHER)	The physical world	SW207,SW200		2.35	70.00			2	pagel2007_rate_quintile	
+2121	ARM OR HAND	The body	LJ100	19					1	lj_rank_quintile	
+2125	STONE OR ROCK	The physical world	LJ100	27					2	lj_rank_quintile	
+2133	STRIKE OR BEAT	Basic actions and technology	LJ100	36					2	lj_rank_quintile	
+2271	THINK	Cognition	SW207,SW200		5.34	1520.00			5	pagel2007_rate_quintile	
+2272	HOT OR WARM	Sense perception	SW207,SW100						4	knowledge	
+2308	THIN	Spatial relations	SW207,SW200		2.99	56.00			3	pagel2007_rate_quintile	
+2483	COLD (OF WEATHER)	Sense perception	SW207,SW200		3.58	103.00			4	pagel2007_rate_quintile	
+2486	HIDE	Spatial relations	LJ100	67					4	lj_rank_quintile	
+2575	DO OR MAKE	Basic actions and technology	LJ100	25					2	lj_rank_quintile	
+2613	SKIN (HUMAN)	The body	SW207,SW200		2.73	75.00			3	pagel2007_rate_quintile	
+2615	FLESH OR MEAT	The body	LJ100,SW207,SW200,SW100	18					1	lj_rank_quintile	
+3626	KNOW	Cognition	LJ100	58			93	14.1	5	holman2008_stability_quintile	
+7	GATHER	Spatial relations	WOLD1460						5	wold_rank_tercile	V
+10	FIREWOOD	The physical world	WOLD1460						3	wold_rank_tercile	N
+11	DARKNESS	The physical world	WOLD1460						3	wold_rank_tercile	N
+24	PRAY	Religion and belief	WOLD1460						5	wold_rank_tercile	V
+27	AIR	The physical world	WOLD1460						3	wold_rank_tercile	N
+38	SPREAD OUT	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+43	LEAD (GUIDE)	Motion	WOLD1460						4	wold_rank_tercile	V
+55	WHISPER	Speech and language	WOLD1460						5	wold_rank_tercile	V
+66	KNEEL	Motion	WOLD1460						5	wold_rank_tercile	V
+73	BEAK	The body	WOLD1460						4	wold_rank_tercile	N
+76	YOUNG MAN	Kinship	WOLD1460						3	wold_rank_tercile	N
+77	YOUNG WOMAN	Kinship	WOLD1460						3	wold_rank_tercile	N
+82	ANGER	Emotions and values	WOLD1460						5	wold_rank_tercile	N
+97	THROUGH	Miscellaneous function words	WOLD1460						3	wold_rank_tercile	FUNC
+107	OMEN	Religion and belief	WOLD1460						4	wold_rank_tercile	N
+113	SHORE	The physical world	WOLD1460						4	wold_rank_tercile	N
+122	CART	Motion	WOLD1460						4	wold_rank_tercile	N
+123	FOREHEAD	The body	WOLD1460						4	wold_rank_tercile	N
+127	EXTINGUISH	The physical world	WOLD1460						3	wold_rank_tercile	V
+133	WEAVE	Clothing and grooming	WOLD1460						3	wold_rank_tercile	V
+138	BATHE	The body	WOLD1460						3	wold_rank_tercile	V
+141	BURN (SOMETHING)	The physical world	WOLD1460						3	wold_rank_tercile	V
+142	RETURN HOME	Motion	WOLD1460						5	wold_rank_tercile	V
+157	DYE	Clothing and grooming	WOLD1460						3	wold_rank_tercile	V
+161	MISS (A TARGET)	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+168	REST	The body	WOLD1460						4	wold_rank_tercile	V
+169	IT	Kinship	WOLD1460						3	wold_rank_tercile	FUNC
+178	RIPE	Agriculture and vegetation	WOLD1460						3	wold_rank_tercile	A
+183	BAKE	Food and drink	WOLD1460						4	wold_rank_tercile	V
+193	SHALLOW	Spatial relations	WOLD1460						5	wold_rank_tercile	A
+194	FAMILY	Kinship	WOLD1460						4	wold_rank_tercile	N
+195	MAT	Basic actions and technology	WOLD1460						5	wold_rank_tercile	N
+203	MARRY	Kinship	WOLD1460						5	wold_rank_tercile	V
+212	FIELD	Agriculture and vegetation	WOLD1460						4	wold_rank_tercile	N
+214	STRETCH	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+215	LIE DOWN	Spatial relations	WOLD1460						3	wold_rank_tercile	V
+224	MORTAR	Food and drink	WOLD1460						4	wold_rank_tercile	N
+228	CARVE	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+232	FLEA	Animals	WOLD1460						4	wold_rank_tercile	N
+234	PADDLE	Basic actions and technology	WOLD1460						5	wold_rank_tercile	N
+245	BROOM	Basic actions and technology	WOLD1460						5	wold_rank_tercile	N
+247	TAN	The house	WOLD1460						4	wold_rank_tercile	V
+255	SERVANT	Social and political relations	WOLD1460						5	wold_rank_tercile	N
+258	CALM	Emotions and values	WOLD1460						3	wold_rank_tercile	A
+266	SCALE	Animals	WOLD1460						3	wold_rank_tercile	N
+269	COOKED	Food and drink	WOLD1460						4	wold_rank_tercile	A
+270	JUG	Food and drink	WOLD1460						3	wold_rank_tercile	N
+274	KNEAD	Food and drink	WOLD1460						4	wold_rank_tercile	V
+285	THRESH	Agriculture and vegetation	WOLD1460						4	wold_rank_tercile	V
+297	CROOKED	Spatial relations	WOLD1460						3	wold_rank_tercile	A
+299	SCOLD	Speech and language	WOLD1460						4	wold_rank_tercile	V
+319	LICK	The body	WOLD1460						3	wold_rank_tercile	V
+321	CHEW	Food and drink	WOLD1460						3	wold_rank_tercile	V
+354	POUND	Basic actions and technology	WOLD1460						4	wold_rank_tercile	V
+355	CUT DOWN	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+357	HANG UP	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+363	DWELL (LIVE, RESIDE)	The house	WOLD1460						3	wold_rank_tercile	V
+367	RIDE	Motion	WOLD1460						3	wold_rank_tercile	V
+383	MASTER	Social and political relations	WOLD1460						3	wold_rank_tercile	N
+405	OLDER SIBLING	Kinship	WOLD1460						3	wold_rank_tercile	N
+427	YOUNGER SIBLING	Kinship	WOLD1460						3	wold_rank_tercile	N
+478	LIP	The body	WOLD1460						3	wold_rank_tercile	N
+479	GROW	Spatial relations	WOLD1460						4	wold_rank_tercile	V
+489	KIDNEY	The body	WOLD1460						3	wold_rank_tercile	N
+501	LIFT	Motion	WOLD1460						5	wold_rank_tercile	V
+503	FROG	Animals	WOLD1460						3	wold_rank_tercile	N
+504	LEARN	Cognition	WOLD1460						5	wold_rank_tercile	V
+505	PARENTS	Kinship	WOLD1460						4	wold_rank_tercile	N
+531	HOW MUCH	Cognition	WOLD1460						4	wold_rank_tercile	FUNC
+539	NEST	Animals	WOLD1460						3	wold_rank_tercile	N
+568	RISE (MOVE UPWARDS)	The physical world	WOLD1460						4	wold_rank_tercile	V
+580	FUR	The body	WOLD1460						3	wold_rank_tercile	N
+582	LEND	Possession	WOLD1460						4	wold_rank_tercile	V
+584	DIFFICULT	Cognition	WOLD1460						4	wold_rank_tercile	A
+594	PIECE	Quantity	WOLD1460						3	wold_rank_tercile	N
+602	HIDE (CONCEAL)	Spatial relations	WOLD1460						3	wold_rank_tercile	V
+605	GRAIN	Agriculture and vegetation	WOLD1460						3	wold_rank_tercile	N
+618	PRECIPICE	The physical world	WOLD1460						3	wold_rank_tercile	N
+620	INSECT	Animals	WOLD1460						3	wold_rank_tercile	N
+629	LEATHER	Clothing and grooming	WOLD1460						3	wold_rank_tercile	N
+630	LIGHT (RADIATION)	The physical world	WOLD1460						3	wold_rank_tercile	N
+633	MARKET	Possession	WOLD1460						4	wold_rank_tercile	N
+634	MEAT	Food and drink	WOLD1460						3	wold_rank_tercile	N
+640	MUD	The physical world	WOLD1460						4	wold_rank_tercile	N
+655	POISON	The body	WOLD1460						4	wold_rank_tercile	N
+665	BEE	Animals	WOLD1460						5	wold_rank_tercile	N
+680	BREAK (DESTROY OR GET DESTROYED)	Basic actions and technology	WOLD1460						4	wold_rank_tercile	V
+686	EASY	Cognition	WOLD1460						4	wold_rank_tercile	A
+687	NOTHING	Miscellaneous function words	WOLD1460						4	wold_rank_tercile	FUNC
+688	LUNG	The body	WOLD1460						3	wold_rank_tercile	N
+692	BRING	Motion	WOLD1460						5	wold_rank_tercile	V
+694	GET	Possession	WOLD1460						3	wold_rank_tercile	V
+702	CATCH	Motion	WOLD1460						4	wold_rank_tercile	V
+706	DARK	Sense perception	WOLD1460						3	wold_rank_tercile	A
+708	SHINE	Sense perception	WOLD1460						5	wold_rank_tercile	V
+709	TEACH	Cognition	WOLD1460						4	wold_rank_tercile	V
+710	WHEEL	Motion	WOLD1460						4	wold_rank_tercile	N
+711	TALL	Spatial relations	WOLD1460						3	wold_rank_tercile	A
+712	RICH	Possession	WOLD1460						5	wold_rank_tercile	A
+713	STEAL	Law	WOLD1460						4	wold_rank_tercile	V
+715	SHOUT	Speech and language	WOLD1460						5	wold_rank_tercile	V
+718	PAY	Possession	WOLD1460						5	wold_rank_tercile	V
+719	FIND	Possession	WOLD1460						5	wold_rank_tercile	V
+721	LOW	Spatial relations	WOLD1460						5	wold_rank_tercile	A
+723	PLACE (POSITION)	Spatial relations	WOLD1460						3	wold_rank_tercile	N
+728	FIRST	Quantity	WOLD1460						4	wold_rank_tercile	FUNC
+731	BEVERAGE	Food and drink	WOLD1460						3	wold_rank_tercile	N
+733	EARN	Possession	WOLD1460						4	wold_rank_tercile	V
+734	MAKE	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+737	LIGHT (IGNITE)	The physical world	WOLD1460						5	wold_rank_tercile	V
+742	END (OF SPACE)	Spatial relations	WOLD1460						4	wold_rank_tercile	N
+749	ENTER	Motion	WOLD1460						4	wold_rank_tercile	V
+761	COVER	Spatial relations	WOLD1460						3	wold_rank_tercile	V
+769	ROOF	The house	WOLD1460						5	wold_rank_tercile	N
+772	BELT	Clothing and grooming	WOLD1460						5	wold_rank_tercile	N
+779	PART	Quantity	WOLD1460						4	wold_rank_tercile	N
+781	FEAR (FRIGHT)	Emotions and values	WOLD1460						3	wold_rank_tercile	N
+785	STRONG	The body	WOLD1460						5	wold_rank_tercile	A
+787	SAIL	Motion	WOLD1460						5	wold_rank_tercile	V
+790	READY	Time	WOLD1460						4	wold_rank_tercile	A
+798	JAW	The body	WOLD1460						4	wold_rank_tercile	N
+801	RIB	The body	WOLD1460						3	wold_rank_tercile	N
+811	SOUL	Religion and belief	WOLD1460						3	wold_rank_tercile	N
+812	SLAVE	Social and political relations	WOLD1460						5	wold_rank_tercile	N
+813	DO	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+816	HALF	Quantity	WOLD1460						3	wold_rank_tercile	N
+819	STOMACH	The body	WOLD1460						3	wold_rank_tercile	N
+843	SPIDER	Animals	WOLD1460						4	wold_rank_tercile	N
+855	SEIZE	Possession	WOLD1460						3	wold_rank_tercile	V
+863	EDGE	Spatial relations	WOLD1460						3	wold_rank_tercile	N
+879	COUGH	The body	WOLD1460						4	wold_rank_tercile	V
+889	FLAME	The physical world	WOLD1460						3	wold_rank_tercile	N
+891	TIDE	The physical world	WOLD1460						5	wold_rank_tercile	N
+892	TIME	Time	WOLD1460						4	wold_rank_tercile	N
+913	CROW	Animals	WOLD1460						4	wold_rank_tercile	N
+923	LOVE	Emotions and values	WOLD1460						4	wold_rank_tercile	V
+933	WALL (OF HOUSE)	The house	WOLD1460						5	wold_rank_tercile	N
+964	WOOL	Clothing and grooming	WOLD1460						3	wold_rank_tercile	N
+965	WORLD	The physical world	WOLD1460						4	wold_rank_tercile	N
+977	ARROW	Warfare and hunting	WOLD1460						5	wold_rank_tercile	N
+978	WAVE	The physical world	WOLD1460						5	wold_rank_tercile	N
+984	WORK (LABOUR)	Basic actions and technology	WOLD1460						4	wold_rank_tercile	N
+987	REMAIN	Spatial relations	WOLD1460						4	wold_rank_tercile	V
+994	BOW	Warfare and hunting	WOLD1460						3	wold_rank_tercile	N
+996	DEAF	The body	WOLD1460						3	wold_rank_tercile	A
+998	PUT	Spatial relations	WOLD1460						5	wold_rank_tercile	V
+1008	BULL	Animals	WOLD1460						3	wold_rank_tercile	N
+1011	BRIDGE	Motion	WOLD1460						4	wold_rank_tercile	N
+1038	TEACHER	Cognition	WOLD1460						5	wold_rank_tercile	N
+1039	SHOW	Sense perception	WOLD1460						5	wold_rank_tercile	V
+1044	PILLOW	The house	WOLD1460						5	wold_rank_tercile	N
+1046	SHUT	Spatial relations	WOLD1460						4	wold_rank_tercile	V
+1052	LIGHT (WEIGHT)	Sense perception	WOLD1460						4	wold_rank_tercile	A
+1063	NEPHEW	Kinship	WOLD1460						4	wold_rank_tercile	N
+1064	SHIELD	Warfare and hunting	WOLD1460						5	wold_rank_tercile	N
+1075	TRAP (PITFALL)	Warfare and hunting	WOLD1460						4	wold_rank_tercile	N
+1082	MERCHANT	Possession	WOLD1460						3	wold_rank_tercile	N
+1084	CALL	Speech and language	WOLD1460						5	wold_rank_tercile	V
+1085	FOLLOW	Motion	WOLD1460						5	wold_rank_tercile	V
+1088	SINK (DESCEND)	Motion	WOLD1460						3	wold_rank_tercile	V
+1090	BE BORN	The body	WOLD1460						3	wold_rank_tercile	V
+1093	MIDDLE	Spatial relations	WOLD1460						3	wold_rank_tercile	N
+1102	CLIMB	Motion	WOLD1460						5	wold_rank_tercile	V
+1103	SACRIFICE	Religion and belief	WOLD1460						5	wold_rank_tercile	N
+1119	DIVIDE	Spatial relations	WOLD1460						4	wold_rank_tercile	V
+1127	SEND	Motion	WOLD1460						3	wold_rank_tercile	V
+1136	RABBIT	Animals	WOLD1460						3	wold_rank_tercile	N
+1149	ORPHAN	Kinship	WOLD1460						5	wold_rank_tercile	N
+1150	THUNDER	The physical world	WOLD1460						5	wold_rank_tercile	N
+1156	OPEN	Spatial relations	WOLD1460						4	wold_rank_tercile	V
+1160	THIEF	Law	WOLD1460						5	wold_rank_tercile	N
+1161	THREAD	Clothing and grooming	WOLD1460						3	wold_rank_tercile	N
+1169	OX	Animals	WOLD1460						3	wold_rank_tercile	N
+1172	SHOOT	Warfare and hunting	WOLD1460						5	wold_rank_tercile	V
+1183	PALM OF HAND	The body	WOLD1460						4	wold_rank_tercile	N
+1187	GOOSE	Animals	WOLD1460						3	wold_rank_tercile	N
+1193	STEAM	The physical world	WOLD1460						5	wold_rank_tercile	N
+1207	YOUNG	Time	WOLD1460						5	wold_rank_tercile	A
+1245	BUTTER	Food and drink	WOLD1460						5	wold_rank_tercile	N
+1258	FINGERNAIL	The body	WOLD1460						3	wold_rank_tercile	N
+1259	WEDDING	Kinship	WOLD1460						5	wold_rank_tercile	N
+1260	DAY (24 HOURS)	Time	WOLD1460						3	wold_rank_tercile	N
+1264	CHANGE	Spatial relations	WOLD1460						3	wold_rank_tercile	V
+1265	HIGH	Spatial relations	WOLD1460						4	wold_rank_tercile	A
+1268	YES	Cognition	WOLD1460						5	wold_rank_tercile	FUNC
+1269	NO	Cognition	WOLD1460						4	wold_rank_tercile	FUNC
+1275	ANSWER	Speech and language	WOLD1460						4	wold_rank_tercile	V
+1276	AUTUMN	Time	WOLD1460						5	wold_rank_tercile	N
+1283	TODAY	Time	WOLD1460						4	wold_rank_tercile	FUNC
+1300	COUNTRY	Social and political relations	WOLD1460						4	wold_rank_tercile	N
+1303	FINGER	The body	WOLD1460						5	wold_rank_tercile	N
+1309	ASK (INQUIRE)	Speech and language	WOLD1460						5	wold_rank_tercile	V
+1310	CLEVER	Cognition	WOLD1460						4	wold_rank_tercile	A
+1312	FOX	Animals	WOLD1460						4	wold_rank_tercile	N
+1326	DOWN	Spatial relations	WOLD1460						4	wold_rank_tercile	FUNC
+1329	TOMORROW	Time	WOLD1460						5	wold_rank_tercile	FUNC
+1331	SHEEP	Animals	WOLD1460						3	wold_rank_tercile	N
+1332	NEIGHBOUR	Social and political relations	WOLD1460						5	wold_rank_tercile	N
+1337	PIG	Animals	WOLD1460						4	wold_rank_tercile	N
+1338	PEACE	Warfare and hunting	WOLD1460						3	wold_rank_tercile	N
+1339	MORNING	Time	WOLD1460						5	wold_rank_tercile	N
+1342	SUMMER	Time	WOLD1460						3	wold_rank_tercile	N
+1346	THROAT	The body	WOLD1460						3	wold_rank_tercile	N
+1360	DUCK	Animals	WOLD1460						3	wold_rank_tercile	N
+1363	VOICE	Speech and language	WOLD1460						3	wold_rank_tercile	N
+1364	HEALTHY	The body	WOLD1460						3	wold_rank_tercile	A
+1370	MONTH	Time	WOLD1460						3	wold_rank_tercile	N
+1372	MEDICINE	The body	WOLD1460						4	wold_rank_tercile	N
+1374	RING	Clothing and grooming	WOLD1460						5	wold_rank_tercile	N
+1375	WINDOW	The house	WOLD1460						5	wold_rank_tercile	N
+1376	NOW	Time	WOLD1460						5	wold_rank_tercile	FUNC
+1381	SHOE	Clothing and grooming	WOLD1460						5	wold_rank_tercile	N
+1384	SECOND	Quantity	WOLD1460						4	wold_rank_tercile	FUNC
+1387	ARRIVE	Motion	WOLD1460						4	wold_rank_tercile	V
+1389	TOE	The body	WOLD1460						5	wold_rank_tercile	N
+1390	WRONG	Emotions and values	WOLD1460						4	wold_rank_tercile	A
+1399	CLAY	Basic actions and technology	WOLD1460						4	wold_rank_tercile	N
+1427	BEAUTIFUL	Emotions and values	WOLD1460						3	wold_rank_tercile	A
+1462	POT	Food and drink	WOLD1460						4	wold_rank_tercile	N
+1468	LOOK FOR	Possession	WOLD1460						3	wold_rank_tercile	V
+1470	FOLD	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+1471	WINTER	Time	WOLD1460						5	wold_rank_tercile	N
+1476	CHAIR	The house	WOLD1460						5	wold_rank_tercile	N
+1477	KEEP	Possession	WOLD1460						5	wold_rank_tercile	V
+1478	WITHOUT	Miscellaneous function words	WOLD1460						5	wold_rank_tercile	FUNC
+1480	BODY	The body	WOLD1460						4	wold_rank_tercile	N
+1481	HAMMER	Basic actions and technology	WOLD1460						5	wold_rank_tercile	N
+1482	SHOULDER	The body	WOLD1460						3	wold_rank_tercile	N
+1486	PLANT (SOMETHING)	Agriculture and vegetation	WOLD1460						3	wold_rank_tercile	V
+1487	POUR	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+1495	HAPPY	Emotions and values	WOLD1460						5	wold_rank_tercile	A
+1508	KING	Social and political relations	WOLD1460						5	wold_rank_tercile	N
+1510	CHIN	The body	WOLD1460						4	wold_rank_tercile	N
+1511	ROOSTER	Animals	WOLD1460						4	wold_rank_tercile	N
+1514	HEN	Animals	WOLD1460						3	wold_rank_tercile	N
+1523	FORGET	Cognition	WOLD1460						3	wold_rank_tercile	V
+1530	BOWL	Food and drink	WOLD1460						3	wold_rank_tercile	N
+1536	UNDERSTAND	Cognition	WOLD1460						4	wold_rank_tercile	V
+1539	BASKET	Basic actions and technology	WOLD1460						5	wold_rank_tercile	N
+1543	SNAIL	Animals	WOLD1460						4	wold_rank_tercile	N
+1547	SOUP	Food and drink	WOLD1460						4	wold_rank_tercile	N
+1548	UGLY	Emotions and values	WOLD1460						5	wold_rank_tercile	A
+1560	FACE	The body	WOLD1460						4	wold_rank_tercile	N
+1562	MIND	Cognition	WOLD1460						3	wold_rank_tercile	N
+1567	DOOR	The house	WOLD1460						3	wold_rank_tercile	N
+1571	SELL	Possession	WOLD1460						3	wold_rank_tercile	V
+1579	BE	Miscellaneous function words	WOLD1460						3	wold_rank_tercile	V
+1583	BRAIN	The body	WOLD1460						5	wold_rank_tercile	N
+1591	UP	Spatial relations	WOLD1460						4	wold_rank_tercile	FUNC
+1593	DEEP	Spatial relations	WOLD1460						4	wold_rank_tercile	A
+1594	FLOUR	Food and drink	WOLD1460						3	wold_rank_tercile	N
+1601	WEAK	The body	WOLD1460						5	wold_rank_tercile	A
+1607	HATE	Emotions and values	WOLD1460						5	wold_rank_tercile	V
+1608	LISTEN	Sense perception	WOLD1460						3	wold_rank_tercile	V
+1617	GRANDCHILD	Kinship	WOLD1460						5	wold_rank_tercile	N
+1618	GRANDSON	Kinship	WOLD1460						4	wold_rank_tercile	N
+1619	GRANDDAUGHTER	Kinship	WOLD1460						5	wold_rank_tercile	N
+1622	SHIRT	Clothing and grooming	WOLD1460						5	wold_rank_tercile	N
+1624	EMPTY	Quantity	WOLD1460						5	wold_rank_tercile	A
+1625	DEAD	The body	WOLD1460						3	wold_rank_tercile	A
+1629	EVENING	Time	WOLD1460						4	wold_rank_tercile	N
+1633	FLAT	Spatial relations	WOLD1460						5	wold_rank_tercile	A
+1634	HUNDRED	Quantity	WOLD1460						4	wold_rank_tercile	N
+1640	SIBLING	Kinship	WOLD1460						4	wold_rank_tercile	N
+1642	NIECE	Kinship	WOLD1460						5	wold_rank_tercile	N
+1643	COUSIN	Kinship	WOLD1460						5	wold_rank_tercile	N
+1653	BLIND	The body	WOLD1460						4	wold_rank_tercile	A
+1657	TRUE	Emotions and values	WOLD1460						4	wold_rank_tercile	A
+1664	RAFT	Motion	WOLD1460						4	wold_rank_tercile	N
+1674	POOR	Possession	WOLD1460						4	wold_rank_tercile	A
+1681	WAIST	The body	WOLD1460						4	wold_rank_tercile	N
+1685	AFTER	Spatial relations	WOLD1460						5	wold_rank_tercile	FUNC
+1686	BEHIND	Spatial relations	WOLD1460						5	wold_rank_tercile	FUNC
+1690	FENCE	Agriculture and vegetation	WOLD1460						3	wold_rank_tercile	N
+1702	HOLY	Religion and belief	WOLD1460						4	wold_rank_tercile	A
+1710	TWENTY	Quantity	WOLD1460						5	wold_rank_tercile	N
+1711	TELL	Speech and language	WOLD1460						5	wold_rank_tercile	V
+1719	BURY	Basic actions and technology	WOLD1460						4	wold_rank_tercile	V
+1730	CHEEK	The body	WOLD1460						4	wold_rank_tercile	N
+1733	RAINBOW	The physical world	WOLD1460						4	wold_rank_tercile	N
+1735	TEAR (SHRED)	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+1743	JOIN	Spatial relations	WOLD1460						3	wold_rank_tercile	V
+1745	HIP	The body	WOLD1460						4	wold_rank_tercile	N
+1750	CHOOSE	Emotions and values	WOLD1460						4	wold_rank_tercile	V
+1752	LEAVE	Motion	WOLD1460						5	wold_rank_tercile	V
+1753	TOP	Spatial relations	WOLD1460						4	wold_rank_tercile	N
+1756	WIDOW	Kinship	WOLD1460						3	wold_rank_tercile	N
+1757	TIRED	The body	WOLD1460						5	wold_rank_tercile	A
+1759	OLDER BROTHER	Kinship	WOLD1460						4	wold_rank_tercile	N
+1760	YOUNGER BROTHER	Kinship	WOLD1460						4	wold_rank_tercile	N
+1766	FINISH	Time	WOLD1460						5	wold_rank_tercile	V
+1767	SCRAPE	Basic actions and technology	WOLD1460						3	wold_rank_tercile	V
+1768	FOAM	The physical world	WOLD1460						4	wold_rank_tercile	N
+1775	TABLE	The house	WOLD1460						5	wold_rank_tercile	N
+1778	APPROACH	Motion	WOLD1460						4	wold_rank_tercile	V
+1779	DARE	Emotions and values	WOLD1460						5	wold_rank_tercile	V
+1783	PAIN	Emotions and values	WOLD1460						5	wold_rank_tercile	N
+1784	WANT	Emotions and values	WOLD1460						5	wold_rank_tercile	V
+1794	FURROW	Agriculture and vegetation	WOLD1460						3	wold_rank_tercile	N
+1806	BEGIN	Time	WOLD1460						5	wold_rank_tercile	V
+1807	AFTERNOON	Time	WOLD1460						4	wold_rank_tercile	N
+1819	LOOK	Sense perception	WOLD1460						5	wold_rank_tercile	V
+1823	BORROW	Possession	WOLD1460						4	wold_rank_tercile	V
+1828	ASK (REQUEST)	Speech and language	WOLD1460						4	wold_rank_tercile	V
+1829	JUMP	Motion	WOLD1460						4	wold_rank_tercile	V
+1831	MEET	Social and political relations	WOLD1460						5	wold_rank_tercile	V
+1834	SHE	Kinship	WOLD1460						3	wold_rank_tercile	FUNC
+1840	BUILD	Basic actions and technology	WOLD1460						4	wold_rank_tercile	V
+1843	THOUSAND	Quantity	WOLD1460						5	wold_rank_tercile	N
+1844	BOAT	Motion	WOLD1460						4	wold_rank_tercile	N
+1846	RULE	Social and political relations	WOLD1460						4	wold_rank_tercile	V
+1847	SICK	The body	WOLD1460						5	wold_rank_tercile	A
+1849	ROW	Motion	WOLD1460						5	wold_rank_tercile	V
+1853	DOVE	Animals	WOLD1460						3	wold_rank_tercile	N
+1856	SOFT	Sense perception	WOLD1460						4	wold_rank_tercile	A
+1869	BUY	Possession	WOLD1460						3	wold_rank_tercile	V
+1879	DANCE	Motion	WOLD1460						5	wold_rank_tercile	V
+1882	BEFORE	Time	WOLD1460						5	wold_rank_tercile	FUNC
+1888	PAIR	Quantity	WOLD1460						3	wold_rank_tercile	N
+1895	CLOTHES	Clothing and grooming	WOLD1460						3	wold_rank_tercile	N
+1897	HELP	Social and political relations	WOLD1460						5	wold_rank_tercile	V
+1905	EAGLE	Animals	WOLD1460						4	wold_rank_tercile	N
+1941	SOLDIER	Warfare and hunting	WOLD1460						5	wold_rank_tercile	N
+1959	RAW	Food and drink	WOLD1460						5	wold_rank_tercile	A
+1973	DEMON	Religion and belief	WOLD1460						4	wold_rank_tercile	N
+1977	DEW	The physical world	WOLD1460						3	wold_rank_tercile	N
+1981	WIDOWER	Kinship	WOLD1460						5	wold_rank_tercile	N
+1990	BECOME	Miscellaneous function words	WOLD1460						4	wold_rank_tercile	V
+1991	INTESTINES	The body	WOLD1460						3	wold_rank_tercile	N
+2004	BEND	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V
+2007	BOLT (OF LIGHTNING)	The physical world	WOLD1460						3	wold_rank_tercile	N
+2135	TRADE OR BARTER	Possession	WOLD1460						3	wold_rank_tercile	V
+2146	ROAST OR FRY	Food and drink	WOLD1460						3	wold_rank_tercile	V
+2252	PATH	Motion	WOLD1460						3	wold_rank_tercile	N
+2255	FATHER-IN-LAW (OF MAN)	Kinship	WOLD1460						5	wold_rank_tercile	N
+2257	MOTHER-IN-LAW (OF MAN)	Kinship	WOLD1460						5	wold_rank_tercile	N
+2265	DAUGHTER-IN-LAW (OF MAN)	Kinship	WOLD1460						3	wold_rank_tercile	N
+2267	SON-IN-LAW (OF MAN)	Kinship	WOLD1460						4	wold_rank_tercile	N
+2866	DROP (SOMETHING)	Basic actions and technology	WOLD1460						5	wold_rank_tercile	V

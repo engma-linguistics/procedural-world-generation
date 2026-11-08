@@ -1,0 +1,401 @@
+# source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. The base -> target pairs are the derivational and semantic relations historical linguists treat as ordinary: instrument, agent, result and place nouns from verbs; diminutives; denominal and deadjectival verbs; 'X-like' qualities; causatives. Modelled on Buck 1949 (A Dictionary of Selected Synonyms in the Principal Indo-European Languages, Chicago), Urban 2012 (Analyzability and Semantic Associations in Referring Expressions, Leiden; cross-linguistic motivation patterns of 160 meanings), Koch 2008 (lexical motivation), Pokorny 1959 / LIV2 2001 (PIE root families such as *bher- 'carry'), Haspelmath & Tadmor 2009 (WOLD, the IDS semantic fields) and Heine & Kuteva 2002 (the function-word rows).
+# version: hand-authored 2026-11-04 (procedural-language lane, word families and derivation round); extended 2026-11-07 (round 5, the WOLD extension of concepts.tsv: agents, instruments, causatives and kin-term shifts for the new meanings)
+# licence: original text for this repository (no third-party data copied); cite the works above when using it.
+# CLICS3: at load time lexicon.py joins each pair with data/clics_edges.tsv; a pair CLICS3 also attests as a colexification in >= 3 families (BLOOD/RED, MOUNTAIN/HILL, TREE/FOREST ...) gets its family count added to the weight (a motivated pair is often colexified too).
+# columns: relation = the affix meaning (agent 'one who', thing 'instrument / result / object', place 'place of', little 'small / young / diminutive', like 'X-like, having X', do 'make / do X, verb from a noun or quality', cause 'make (someone) V'), or reinforce (a function word renewed by compounding with the base: Latin ecce + iste > French ce 'this'; the Jespersen cycle, Old English na-wiht 'no thing' > not), or repair (the same, used only to renew a pronoun, numeral or deictic cell that sound change merged with another cell of its paradigm: lexicon.core_repair; Spanish nosotros, French il); base and target = concept ids of planet/language/lexicon.py; weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the bare motivation.
+# A target may sit on several rows; derivation picks among the rows whose base the lexicon has. Only these pairs derive (plus two renewals in lexicon.py: the expressive diminutive, lexicon.RENEW_LITTLE, a noun or quality replaced by its own diminutive: Latin auricula > French oreille 'ear', avicellus > oiseau 'bird', soliculus > soleil 'sun', vetulus > vieux 'old', novellus > nouveau 'new'; and the frequentative or preverb renewal of verbs, lexicon.RENEW_INTENS: Latin canere > cantare 'sing', iacere > iactare 'throw', edere > comedere > Spanish comer 'eat').
+# Content words from function words are kept to three rows of weight 1 (STRANGER < OTHER / FAR is a quality); function words derive among themselves (here < this + place).
+# shift rows (2026-11-04, compounds and shifts round): base > target = a semantic shift (the target concept takes the base's word) attested across families although the two concepts sit in different semantic fields (lexicon.shift_word otherwise allows a shift only along a CLICS3 colexification of >= 6 families, >= 10 for the core vocabulary, inside one concepts.tsv / CLICS3 semantic field and part of speech). Polysemies listed both ways where both directions are attested; sources: Buck 1949, Wilkins 1996 (Natural tendencies of semantic change and the search for cognates, in Durie & Ross eds., The Comparative Method Reviewed), Sweetser 1990 (From Etymology to Pragmatics: SEE > KNOW, HEAR > KNOW), Heine & Kuteva 2002 (World Lexicon of Grammaticalization: the content > function word rows, BELLY > IN, WITH > AND, ONE > SOME), Urban 2012, CLICS3 family counts. A pathway may cross parts of speech (grammaticalization); other shifts may not.
+relation	base	target	weight	example
+agent	HUNT	HUNTER	3	English hunt-er; Latin venator < venari 'hunt'
+agent	FIGHT	FIGHTER	3	English fight-er; Latin pugnator < pugnare
+agent	FIGHT	ENEMY	1	'the one who fights (us)'
+agent	COME	GUEST	2	Old English cuma 'guest, stranger' < cuman 'come'
+agent	COME	STRANGER	2	Old English cuma; 'newcomer'
+agent	FAR	STRANGER	1	'one from far away'
+agent	OTHER	STRANGER	1	'the other one' (function-word base: rare)
+agent	HERD	HERDER	3	English herd-er
+agent	FISH	FISHER	3	English fish-er; Latin piscator < piscis
+agent	SMITHING	SMITH	3	'the one who works metal'
+agent	STRIKE OR BEAT	SMITH	2	Russian kuznec < kovat' 'forge, beat'
+agent	OLD	ELDER	3	English eld-er; Latin senator < senex 'old'
+agent	OLD	ANCESTORS	1	'the old ones'
+agent	BE ALIVE	ANIMAL	2	Russian zhivotnoe < zhivoj 'alive'
+agent	BREATHE	ANIMAL	1	Latin animal < anima 'breath'
+agent	FLY (MOVE THROUGH AIR)	BIRD	2	'the flier'
+agent	FLY (MOVE THROUGH AIR)	FLY (INSECT)	3	English fly (n.) < fly (v.); German Fliege < fliegen
+agent	BROWN	BEAR	2	Germanic *bero 'the brown one' (Old English bera)
+agent	SKY	GOD	2	Latin deus < PIE *deywos 'heavenly one' < *dyew- 'sky'
+agent	HEAD	CHIEF	2	English chief < Old French chef < Latin caput 'head'; 'head-man'
+agent	SMALL	CHILD (YOUNG HUMAN)	1	'the little one'
+thing	CUT	KNIFE	3	'cutter' (instrument noun)
+thing	SPLIT	AXE	2	'splitter'
+thing	CUT	AXE	1	'cutter'
+thing	HIT	AXE	1	'striker'
+thing	SEW	NEEDLE	3	German Nadel < naehen 'sew' (PIE *(s)neh1- 'spin, sew')
+thing	STAB	SPEAR	2	'the stabbing thing'
+thing	THROW	SPEAR	2	'the thrown thing'
+thing	DRINK	CUP	2	'drinking thing'
+thing	CARRY	BURDEN	3	English burden < Old English byrthen < beran 'carry' (PIE *bher-)
+thing	CARRY	CHILD (DESCENDANT)	1	Scots bairn < Old English bearn < beran 'carry, bear'
+thing	SING	SONG	3	English song < sing; German Gesang < singen
+thing	SAY	WORD	3	Greek logos < lego 'say'
+thing	SPEAK	WORD	2	'the spoken'
+thing	SPEAK	LANGUAGE	3	German Sprache < sprechen 'speak'
+thing	SLEEP	DREAM	2	Latin somnium 'dream' < somnus 'sleep'
+thing	BREATHE	BREATH	3	English breath / breathe
+thing	BREATHE	SPIRIT	3	Latin spiritus < spirare 'breathe'
+thing	GIVE	GIFT	3	English gift < give
+thing	HOT OR WARM	HEAT	3	English heat < hot
+thing	EAT	FOOD	3	German Essen < essen 'eat'
+thing	COOK	FOOD	1	'the cooked'
+thing	BURN	ASH	1	'the burnt'
+thing	BURN	fuel:charcoal	1	'the burnt (wood)'
+thing	BURNING	FIRE	1	'the burning'
+thing	FLOW	RIVER	2	Rhine (Gaulish Renos) < PIE *reyH- 'flow'
+thing	FLOW	STREAM	3	English stream < PIE *srew- 'flow'
+thing	BLOW (OF WIND)	WIND	3	Latin ventus < PIE *h2weh1- 'blow'
+thing	BLOW (OF WIND)	BREATH	1	'the blowing'
+thing	FLY (MOVE THROUGH AIR)	WING	2	German Fluegel < fliegen 'fly'
+thing	FLY (MOVE THROUGH AIR)	FEATHER	2	Latin penna, English feather < PIE *pet- 'fly'
+thing	SCRATCH	CLAW	2	'the scratcher'
+thing	BITE	TOOTH	2	'the biter'
+thing	FREEZE	ICE	2	'the frozen'
+thing	FERMENT	BEER	2	'the fermented'
+thing	GRIND	BREAD	1	English meal and Latin molere 'grind' share PIE *melh2-
+thing	FIGHT	WAR	2	'fighting'
+thing	DIE	DEATH	3	English death < die (Germanic *dauthuz)
+thing	CUT	HARVEST	2	'the cutting (of grain)'
+thing	TIE	ROPE	2	'the tie'
+thing	SWEET	HONEY	1	'the sweet'
+thing	FALL	RAIN (PRECIPITATION)	1	'what falls'
+thing	SEE	EYE	1	'the seer'
+thing	HEAR	EAR	1	'the hearer'
+thing	SMELL (PERCEIVE)	NOSE	1	'the smeller'
+thing	HOLD	HAND	1	'the holder'
+thing	WALK	FOOT	1	'the walker'
+thing	SAY	NAME	1	'what one is called'
+thing	HIT	STICK	1	'the striker', cudgel
+place	SLEEP	BED	3	'sleeping place'
+place	LIE (REST)	BED	3	Latin cubile < cubare 'lie'; German Lager < liegen
+place	SLEEP	CAMP	2	'sleeping place'
+place	SIT	SEAT	3	English seat < sit; Latin sedes < sedere
+place	SIT	CAMP	1	'sitting place', settlement
+place	SIT	VILLAGE	1	English settle and seat share 'sit'
+place	DIG	GRAVE	3	English grave < Old English grafan 'dig'
+place	DIE	GRAVE	1	'dying place'
+place	GO	ROAD	2	Latin iter < ire 'go'
+place	WALK	ROAD	2	'walking place'
+place	GO	FORD	2	English ford < Germanic *furdu, PIE *per- 'go across'
+place	FIRE	HEARTH	3	'fire place'
+place	COOK	HEARTH	1	'cooking place'
+place	HIDE	CAVE	2	'hiding place'
+place	STONE	CAVE	1	'stone place'
+place	WATER	SPRING (OF WATER)	2	'water place'
+place	DRINK	SPRING (OF WATER)	1	'drinking place'
+place	SAND	DESERT	2	'sand place'
+place	DRY	DESERT	2	'dry place'
+place	WET	MARSH	2	'wet place'
+place	WATER	MARSH	1	'water place'
+place	SEA	COAST	2	'sea place'
+place	SUN	EAST	2	'sun place'
+place	SUN	SUNRISE	1	'sun place'
+place	TREE	FOREST	3	'tree place', a collective of 'tree'
+place	GRASS	PLAIN	1	'grass place'
+place	COLD	NORTH	1	'cold place'
+place	WARM (OF WEATHER)	SOUTH	1	'warm place'
+place	HOUSE	VILLAGE	1	'houses', a collective
+place	EARTH (SOIL)	LAND	1	'earth place'
+place	MOUNTAIN	PASS	1	'mountain place'
+place	THIS	HERE	3	Latin hic 'this' / hic 'here'; English here < demonstrative + locative
+place	THAT	THERE	3	English there < demonstrative *tha- + locative
+place	WHAT	WHERE	2	English where < interrogative *hw- + locative
+place	WHAT	WHEN	1	'at what (time)'
+little	RIVER	STREAM	3	Latin rivulus < rivus 'stream'
+little	LAKE	POND	3	'little lake'
+little	STONE	PEBBLE	3	Latin calculus < calx 'stone'
+little	STICK	TWIG	2	'little stick'
+little	TREE	TWIG	1	'little tree'
+little	CHILD (YOUNG HUMAN)	BABY	3	'little child'
+little	WOMAN	GIRL	3	German Maedchen < Magd 'maid' + -chen
+little	DAUGHTER	GIRL	1	'little daughter'
+little	MAN	BOY	2	'little man'
+little	SON	BOY	1	'little son'
+little	DOG	PUPPY	3	'little dog'
+little	BIRD	CHICK	3	'little bird'
+little	animal:fowl	CHICK	2	'little hen'
+little	MOUNTAIN	HILL	3	Latin monticulus < mons
+little	FRUIT	BERRY	2	'little fruit'
+little	SNAKE	WORM	2	'little snake'
+little	FLY (INSECT)	ANT	1	'little fly'
+little	MOTHER	AUNT	2	Swahili mama mdogo 'little mother' = mother's younger sister
+little	FATHER	UNCLE	2	Swahili baba mdogo 'little father' = father's younger brother
+little	LAND	ISLAND	1	'little land'
+like	BLOOD	RED	3	'blood-like'
+like	FIRE	RED	1	'fire-like'
+like	SNOW	WHITE	2	'snow-like'
+like	MILK	WHITE	1	'milk-like'
+like	NIGHT	BLACK	2	'night-like'
+like	fuel:charcoal	BLACK	2	'charcoal-like'
+like	GRASS	GREEN	3	English green and grass share Germanic *gro- 'grow'
+like	LEAF	GREEN	2	'leaf-like'
+like	EGG	YELLOW	1	'yolk-like'
+like	good:gold	YELLOW	1	'gold-like'
+like	SKY	BLUE	2	'sky-like'
+like	EARTH (SOIL)	BROWN	2	'earth-like'
+like	HONEY	SWEET	2	'honey-like'
+like	SALT	SALTY	3	English salt-y
+like	STONE	HARD	2	'stone-like'
+like	STONE	HEAVY	1	'stone-like'
+like	WATER	WET	2	'watery'
+like	SUN	WARM (OF WEATHER)	2	'sunny'
+like	SUN	HOT OR WARM	1	'sun-like'
+like	FIRE	HOT OR WARM	2	'fiery'
+like	BURNING	HOT OR WARM	1	'burning'
+like	ICE	COLD	2	'icy'
+like	ICE	COLD (OF WEATHER)	2	'icy'
+like	SNOW	COLD (OF WEATHER)	1	'snowy'
+like	FREEZE	COLD	1	'frozen'
+like	CHILD (YOUNG HUMAN)	SMALL	2	'child-like'
+like	SAND	DRY	1	'sandy'
+like	EARTH (SOIL)	DIRTY	2	'earthy'
+like	DUST	DIRTY	2	'dusty'
+like	CUT	SHARP	2	'cutting'
+like	TOOTH	SHARP	1	'tooth-like'
+like	TURN AROUND	ROUND	1	'turning'
+like	FERMENT	SOUR	1	'fermented'
+like	STICK	STRAIGHT	1	'rod-like'
+like	FAT (ORGANIC SUBSTANCE)	THICK	1	'fat'
+like	WHAT	HOW	1	'what-like'
+do	FIRE	BURN	3	'to fire'
+do	FIRE	COOK	2	'to fire (food)'
+do	FIRE	ROAST OR FRY	1	'to fire'
+do	SALT	SALT (FOOD)	3	English to salt
+do	SMOKE (EXHAUST)	SMOKE (FOOD)	3	English to smoke
+do	RAIN (PRECIPITATION)	RAIN (RAINING)	3	English to rain
+do	WIND	BLOW (OF WIND)	2	'to wind'
+do	SONG	SING	2	'to song'
+do	WORD	SAY	2	'to word'
+do	WORD	SPEAK	1	'to word'
+do	ROPE	TIE	2	'to rope'
+do	NEEDLE	SEW	2	'to needle'
+do	KNIFE	CUT	2	'to knife'
+do	STICK	HIT	2	'to cudgel'
+do	SPEAR	STAB	2	'to spear'
+do	FOOD	EAT	1	'to food'
+do	ICE	FREEZE	2	'to ice'
+do	COLD	FREEZE	1	'to become cold'
+do	WATER	WASH	1	'to water'
+do	WATER	BOIL	1	'to water'
+do	SOUR	FERMENT	2	'to sour'
+do	STREAM	FLOW	1	'to stream'
+do	WING	FLY (MOVE THROUGH AIR)	1	'to wing'
+do	FOOT	WALK	1	'to foot it'
+do	EYE	SEE	1	'to eye'
+do	EAR	HEAR	1	'to ear'
+do	NOSE	SMELL (PERCEIVE)	1	'to nose'
+do	TOOTH	BITE	2	'to tooth'
+do	HAND	HOLD	1	'to hand'
+do	BREATH	BREATHE	3	English breathe < breath
+do	GIFT	GIVE	1	'to gift'
+do	WAR	FIGHT	2	'to war'
+do	DEATH	DIE	1	'to death'
+cause	DIE	KILL	3	Turkish ol- 'die' > oldur- 'kill' (causative)
+cause	BURNING	BURN	3	'make burn', transitive from intransitive
+cause	FALL	THROW	1	'make fall'
+reinforce	HERE	THIS	3	French ce < Latin ecce + iste; English 'this here'
+reinforce	THERE	THAT	3	'that there'; Latin ecce + ille > French celui
+reinforce	THIS	HERE	2	'here this (place)'
+reinforce	THAT	THERE	2	'there that (place)'
+reinforce	ONE	NOT	2	Old English na-wiht 'no thing' > not; French ne ... pas 'not a step' (Jespersen cycle)
+reinforce	PERSON	WHO	1	'what person'
+reinforce	THAT	HE	1	'that one'
+reinforce	THAT	THEY	1	'those ones'
+reinforce	OTHER	WE	1	Spanish nosotros < nos + otros 'we others'
+reinforce	OTHER	YOU	1	'you others' (Spanish vosotros < vos + otros)
+repair	THAT	HE OR SHE OR IT	2	'that one': Latin ille > French il, Italian egli (a 3rd person renewed from the far demonstrative)
+repair	THAT	THEY	2	'those ones': Latin illi > French ils
+repair	ALL	YOU	2	'you all': Southern US y'all; Hindi aap log 'you people'
+repair	OTHER	YOU	2	Spanish vosotros < vos + otros, once vos also served one person
+repair	OTHER	WE	2	Spanish nosotros < nos + otros, once nos also served one person
+repair	ALL	WE	1	'we all'
+repair	ALL	WE (INCLUSIVE)	1	'we all (you and I)'
+repair	ALL	THEY	1	'they all'
+repair	PERSON	WHO	2	'what person' (Latin quis homo; many 'which person' interrogatives)
+repair	TEN	HUNDRED	2	'ten tens': Gothic taihuntaihund 'ten-ten' = 100
+repair	THERE	THAT	2	'that there'
+repair	THAT	THERE	2	'(at) that (place)'
+shift	TREE	WOOD	3	Buck 1949 1.42/1.43: Old English treow 'tree, wood', Russian drevo/drova; CLICS3 59 families
+shift	WOOD	TREE	3	Latin lignum; Malay kayu 'wood, tree'; CLICS3 59 families
+shift	STICK	TREE	1	CLICS3 23 families (tree ~ stick)
+shift	TREE	STICK	1	CLICS3 23 families
+shift	TREE	FOREST	2	Old Irish fid 'tree, wood, forest'; CLICS3 9 families
+shift	FOREST	TREE	1	CLICS3 9 families
+shift	WOOD	FOREST	2	English wood 'forest'; German Holz 'wood, copse'
+shift	FOREST	WOOD	1	CLICS3 5 families
+shift	SKIN	BARK	3	Wilkins 1996 (skin > bark); CLICS3 49 families
+shift	BARK	SKIN	2	CLICS3 49 families
+shift	SUN	DAY (NOT NIGHT)	3	Latin sol/dies, Malay hari 'sun; day'; Wilkins 1996; CLICS3 31 families
+shift	DAY (NOT NIGHT)	SUN	2	Malay hari; CLICS3 31 families
+shift	BREAST	MILK	3	Malay susu 'breast; milk'; CLICS3 26 families
+shift	MILK	BREAST	2	CLICS3 26 families
+shift	FRUIT	SEED	2	CLICS3 15 families
+shift	SEED	FRUIT	2	CLICS3 15 families
+shift	TONGUE	LANGUAGE	3	Latin lingua, Greek glossa, Russian jazyk 'tongue; language'; CLICS3 13 families
+shift	MOUTH	LANGUAGE	1	CLICS3 7 families ('mouth' = speech)
+shift	SKY	GOD	2	PIE *dyew- 'sky' > *deywos 'god' (Latin deus); Turkic tengri 'sky; god'; CLICS3 6 families
+shift	SUN	GOD	1	CLICS3 5 families
+shift	BREATH	SPIRIT	3	Latin spiritus, anima; Greek pneuma; Hebrew ruach; CLICS3 6 families
+shift	WIND	SPIRIT	1	Hebrew ruach 'wind, breath, spirit'
+shift	SEE	KNOW (SOMETHING)	3	PIE *weyd- 'see' > Greek oida 'know'; Sweetser 1990; CLICS3 15 families
+shift	HEAR	KNOW (SOMETHING)	1	Sweetser 1990 (hear > understand); CLICS3 13 families
+shift	HAND	FIVE	2	Wilkins 1996 / Urban 2012: 'hand' > 'five' (Austronesian lima); CLICS3 5 families
+shift	SALT	SEA	1	Greek hals 'salt; sea'; CLICS3 9 families
+shift	SEA	SALT	1	CLICS3 9 families
+shift	FAT (ORGANIC SUBSTANCE)	fuel:oil	3	Latin oleum / adeps; CLICS3 35 families (fat ~ oil)
+shift	fuel:oil	FAT (ORGANIC SUBSTANCE)	2	CLICS3 35 families
+shift	DUST	EARTH (SOIL)	1	CLICS3 14 families
+shift	EARTH (SOIL)	DUST	1	CLICS3 14 families
+shift	BELLY	IN	3	Heine & Kuteva 2002 STOMACH > IN (Swahili ndani < ndani 'interior', Mixtec 'belly' = in)
+shift	SIT	AT	1	Heine & Kuteva 2002 'be at, stay' > LOCATIVE (Mandarin zai 'be at' > 'at')
+shift	TAKE	WITH	1	Heine & Kuteva 2002 TAKE > INSTRUMENTAL
+shift	HOLD	WITH	1	Heine & Kuteva 2002 'hold, take' > INSTRUMENTAL / COMITATIVE
+shift	WITH	AND	3	Heine & Kuteva 2002 COMITATIVE > NP-AND (Swahili na 'with, and')
+shift	SAY	BECAUSE	1	Heine & Kuteva 2002 SAY > CAUSE
+shift	ONE	SOME	2	Heine & Kuteva 2002 ONE > INDEFINITE; CLICS3 7 families
+shift	FEW	SOME	2	CLICS3 18 families
+shift	MANY	ALL	2	CLICS3 17 families
+shift	ALL	MANY	1	CLICS3 17 families
+shift	TWO	OTHER	1	'second' > 'other' (Latin alter, English other < 'second of two')
+agent	TEACH	TEACHER	3	English teach-er; Latin doctor < docere 'teach'
+agent	STEAL	THIEF	2	Latin fur / furtum; Russian vor 'thief' < vorovat' 'steal'; Swahili m-wizi < -iba 'steal'
+agent	TRADE OR BARTER	MERCHANT	2	Latin mercator < mercari 'trade'; German Händler < handeln
+agent	RULE	KING	2	Latin rex < regere 'rule'; Sanskrit rājan < rāj- 'rule'
+thing	SHOOT	ARROW	2	Old Irish saiget; Russian strela beside streljat' 'shoot'; Yoruba ọfà
+thing	MARRY	WEDDING	2	Spanish casamiento < casarse; Russian svad'ba beside svat 'matchmaker'
+thing	COVER	ROOF	2	Latin tectum < tegere 'cover'; German Dach (*tegh- 'cover')
+thing	SIT	CHAIR	2	German Sessel < sitzen; Latin sella < *sed- 'sit'
+thing	POUND	MORTAR	2	Latin pila beside pinsere 'pound'; Swahili ki-nu
+thing	BURN (SOMETHING)	FIREWOOD	2	Swahili kuni; Russian drova beside dar 'gift' (Indo-European *dreu- 'tree' + burn)
+thing	FEAR (BE AFRAID)	FEAR (FRIGHT)	3	English fear (verb and noun); Latin timor < timere
+thing	SEE	FACE	2	Latin visage < videre (via French); Russian lico; Hungarian arc
+thing	BREATHE	SOUL	2	Latin anima 'breath, soul'; Greek psykhē < psykhein 'breathe'; Hebrew nefesh
+thing	BREATHE	LUNG	2	Polish płuca; Sanskrit; motivation 'breather'
+thing	THINK	MIND	2	Latin mens beside meminisse; Sanskrit manas < man- 'think'
+thing	SAY	VOICE	1	Latin vox beside vocare 'call'; German Stimme
+thing	CALL	VOICE	2	Latin vox < vocare 'call'
+thing	BE ALIVE	BODY	1	German Leib < leben 'live'
+thing	CARRY	CART	2	Latin carrus; German Wagen < wegan 'carry, move'
+thing	TURN AROUND	WHEEL	2	PIE *kʷékʷlos 'wheel' < *kʷel- 'turn, revolve'
+place	TRADE OR BARTER	MARKET	2	Latin mercatus < mercari 'trade'
+place	GO	PATH	3	Latin iter < ire 'go'; Russian put'
+place	WALK	PATH	2	German Pfad; Swahili njia
+thing	DARK	DARKNESS	3	English dark-ness; Latin obscuritas < obscurus
+thing	SICK	PAIN	1	motivation: sickness, hurt (German Weh, weh tun)
+cause	BURN	LIGHT (IGNITE)	2	English kindle; German anzünden 'make burn'
+cause	FALL	DROP (SOMETHING)	3	English fell < fall; German fällen 'make fall'
+cause	SIT	PUT	2	English set < sit; German setzen 'make sit, put'
+cause	LEARN	TEACH	3	Russian u-čit' / u-čit'-sja; Lithuanian mokyti / mokytis; Hebrew limed / lamad
+cause	LIE (REST)	LIE DOWN	1	English lay < lie
+cause	DIE	EXTINGUISH	1	Latin exstinguere; motivation 'make (the fire) die'
+little	DOG	FOX	1	motivation 'small dog' (Spanish zorro is unrelated; Japanese kitsune)
+little	BIRD	DOVE	1	motivation 'small bird'
+shift	BROTHER	OLDER BROTHER	2	the plain kin term narrowed: Hungarian bátya / öcs vs fivér; many East Asian systems
+shift	SISTER	OLDER SIBLING	1	the plain kin term widened or narrowed by birth order
+shift	CHILD (DESCENDANT)	GRANDCHILD	2	Latin nepos 'grandson, nephew'; motivation 'child's child'
+shift	FATHER	FATHER-IN-LAW (OF MAN)	1	Spanish suegro is unrelated; Japanese giri no chichi 'father by duty'
+shift	MOTHER	MOTHER-IN-LAW (OF MAN)	1	Japanese giri no haha 'mother by duty'
+shift	SON	SON-IN-LAW (OF MAN)	1	Japanese giri no musuko
+shift	DAUGHTER	DAUGHTER-IN-LAW (OF MAN)	1	Japanese giri no musume; German Schwiegertochter (compound)
+shift	MAN	YOUNG MAN	1	motivation
+shift	WOMAN	YOUNG WOMAN	1	motivation
+shift	FLAME	FIRE	2	Latin flamma > Romance 'fire' senses; motivation
+shift	FIRE	FLAME	2	motivation
+shift	SKY	WORLD	1	motivation
+shift	EARTH (SOIL)	COUNTRY	2	Latin terra 'earth, country'; Russian zemlja 'soil, land'
+shift	DAY (NOT NIGHT)	DAY (24 HOURS)	3	English day; most languages colexify
+shift	MOON	MONTH	3	English moon / month; Latin mensis; CLICS: MOON - MONTH in many families
+shift	SUN	TIME	1	motivation
+shift	STOMACH	BELLY	2	CLICS: BELLY - STOMACH
+shift	BELLY	STOMACH	2	CLICS: BELLY - STOMACH
+shift	MEAT	BODY	1	CLICS: MEAT - BODY (Tagalog laman)
+shift	WIND	AIR	2	CLICS: WIND - AIR
+shift	BREATH	SOUL	2	Latin anima; Greek pneuma; Hebrew ruach 'wind, breath, spirit'
+shift	MOUTH	LIP	2	CLICS: MOUTH - LIP
+shift	HAND	PALM OF HAND	2	CLICS: HAND - PALM OF HAND
+shift	FINGERNAIL	CLAW	2	CLICS: FINGERNAIL - CLAW
+agent	FIGHT	SOLDIER	2	German Krieger < Krieg 'war'; English fighter
+agent	WORK (LABOUR)	SLAVE	1	Old Church Slavonic rabъ 'slave' beside rabota 'work, servitude'
+agent	DWELL (LIVE, RESIDE)	NEIGHBOUR	2	Old English nēah-gebūr 'near dweller'; German Nachbar
+agent	SELL	MERCHANT	2	German Verkäufer < verkaufen; Swahili m-uzaji < -uza 'sell'
+thing	EYE	WINDOW	2	Russian okno < oko 'eye'; Old Norse vindauga 'wind-eye'
+thing	BURN	FLAME	2	Latin flamma < *bhleg- 'burn, shine'; German Flamme; motivation 'what burns'
+thing	DRINK	BEVERAGE	3	German Getränk < trinken; Latin potio < potare; English drink (noun)
+thing	TIE	BELT	2	German Gürtel < gürten 'gird'; Latin cingulum < cingere 'gird'
+thing	SHOOT	BOW	1	motivation 'shooter'; Hungarian íj; Swahili upinde
+thing	ROW	PADDLE	2	German Ruder < rudern; Latin remus beside remigare
+thing	WEAVE	BASKET	1	motivation 'woven thing'; Latin corbis; Swahili kikapu
+thing	OPEN	DOOR	1	motivation 'opening': Swahili mlango; Japanese to
+place	SELL	MARKET	2	German Markt is a loan; Swahili soko; motivation 'place of selling' (Turkish satış yeri)
+like	GOD	HOLY	2	Proto-Slavic svętъ; motivation 'of the gods' (Latin divinus < divus)
+like	COOK	COOKED	2	English cooked; Latin coctus < coquere
+cause	RISE (MOVE UPWARDS)	LIFT	3	English raise < rise; German heben / erheben; Gothic urraisjan
+cause	GO	SEND	2	Japanese ikaseru 'make go'; Turkish gönder- ; motivation 'make go'
+cause	COME	BRING	2	Turkish getir- < gel- 'come'; Japanese korasu; motivation 'make come'
+cause	SEE	SHOW	3	Japanese miseru < miru 'see'; Hebrew her'ā < rā'ā 'see'; Turkish göster- < gör-
+cause	ENTER	PUT	1	motivation 'make go in'
+cause	HEAR	TELL	1	motivation 'make hear'; Turkish duyur- 'announce' < duy- 'hear'
+agent	HELP	SERVANT	2	German Gehilfe < helfen; motivation 'helper'
+agent	RULE	MASTER	1	motivation 'ruler'; Latin dominus beside dominari
+thing	FALL	TRAP (PITFALL)	2	German Falle < fallen 'fall'; English pitfall
+thing	CATCH	TRAP (PITFALL)	2	motivation 'catcher'; Swahili mtego < -tega 'set a trap'
+thing	HIT	HAMMER	1	motivation 'striker'; Latin malleus
+thing	EAT	MEAT	2	English meat < Old English mete 'food'; Swedish mat 'food'
+thing	COVER	CLOTHES	1	motivation 'covering'; Latin vestis beside *wes- 'clothe'
+thing	SEW	THREAD	1	motivation 'what one sews with'
+like	DIE	DEAD	3	English dead beside die; Latin mortuus < mori; Russian mërtvyj < meret'
+like	CHILD (YOUNG HUMAN)	YOUNG	2	motivation 'childlike'; Latin iuvenis is simple
+like	MOUNTAIN	HIGH	1	motivation 'mountain-like'
+like	WORK (LABOUR)	TIRED	1	motivation; German müde is simple
+like	DARK	BLIND	1	Proto-Germanic *blinda- 'dim, dark'; Lithuanian blendžiasi 'grows dark'
+do	LIGHT (RADIATION)	SHINE	2	German leuchten < Licht; Latin lucere beside lux
+do	NAME	CALL	2	Latin nominare < nomen; German nennen < Name
+do	END (OF SPACE)	FINISH	3	English end (verb); German beenden < Ende; Latin finire < finis
+do	PIECE	DIVIDE	1	motivation 'make pieces'
+do	GOD	PRAY	1	motivation; Latin adorare < os 'mouth'
+cause	REMAIN	KEEP	2	motivation 'make stay'; Latin retinere < tenere
+cause	KNOW	TEACH	2	Sanskrit jñāpayati 'makes know'; Latin docere beside discere
+place	GATHER	MARKET	2	Greek agorā < ageirein 'gather'; Latin forum is simple
+place	PLANT (SOMETHING)	FIELD	2	motivation 'planting place'; Latin arvum < arare 'plough'
+thing	POUR	JUG	2	motivation 'pourer'; German Kanne is simple
+thing	COOK	POT	1	motivation 'cooker'
+thing	BOIL	SOUP	1	German Sud < sieden 'boil'; English broth < *bhreu- 'boil'
+thing	CARRY	BASKET	1	motivation 'carrier'
+thing	LIE (REST)	MAT	1	motivation 'thing to lie on'
+thing	SLEEP	PILLOW	1	motivation
+thing	COVER	SHIELD	2	Latin scutum < *skeu- 'cover'
+thing	BREATHE	AIR	1	motivation 'what is breathed'
+agent	LEAD (GUIDE)	KING	1	Latin dux < ducere 'lead'; Old English dryhten 'lord' < dryht 'host'
+like	BLOOD	RAW	2	Latin crudus < cruor 'blood'; Sanskrit krūra 'raw, bloody'
+like	NIGHT	DARK	2	motivation 'night-like'; Swahili giza is simple
+do	FIRE	BURN (SOMETHING)	2	motivation; German feuern < Feuer
+do	HOUSE	DWELL (LIVE, RESIDE)	2	German hausen < Haus 'house'; Latin habitare is simple
+do	PART	DIVIDE	3	Latin partiri < pars 'part'; German teilen < Teil
+do	BOAT	SAIL	1	motivation 'go by boat'
+do	TONGUE	TASTE	1	'to tongue'
+like	TASTE	TASTY	2	'tasty' < taste; Mandarin hao-chi 'good to eat'
+like	SMELL (PERCEIVE)	FRAGRANT	2	'smell-y' (good)
+like	ROTTEN	STINKING	2	'rotten-like'
+like	BURN	PUNGENT	2	'burning': Mandarin la, Spanish picante 'biting'
+thing	GRIND	QUERN	2	'grinder'
+thing	BAKE	BREAD	2	'baked thing'
+thing	FERMENT	BEER	2	'fermented thing'
+thing	FERMENT	YEAST	2	'what ferments'
+place	BAKE	OVEN	3	'place of baking'
+place	FIRE	GRIDDLE	1	'fire place'
+do	SOUR	PICKLE	2	'to sour'
+do	SMOKE (EXHAUST)	STEAM (FOOD)	1	'to vapour'
+thing	EAT	MEAL	2	'eating'
+agent	PRAY	PRIEST	2	'one who prays' (faiths pass 3); Latin precator, Sanskrit hotr 'pourer'
+agent	SACRIFICE	PRIEST	2	'sacrificer': Latin sacerdos, Sanskrit yajaka
+place	PRAY	TEMPLE	2	'place of prayer': Greek proseukhe, Arabic masjid 'place of prostration'

@@ -1,0 +1,205 @@
+# IPA -> speech backend tokens for planet/language/speak.py (audio lane, 2026-11-03). Reasoning: docs/review/language/audio.md.
+# One row per base symbol, modifier or prefix. speak.py tokenizes an IPA string by longest match on the base rows, then takes the
+# prefix rows before and the modifier rows after; every symbols.tsv row must tokenize fully (tests/test_language_speak.py).
+# kind: base | mod (follows a base) | pre (precedes a base: prenasalization) | sep (word or syllable punctuation).
+# espeak: eSpeak NG phoneme mnemonics, read inside [[ ]] with the 'hi' voice's phoneme table (base1 + consonants + Hindi:
+#   it has nasal vowels, breathy and aspirated stops, retroflexes, long vowels). A mod's espeak value is appended to the base's.
+# piper: IPA characters fed straight to a Piper voice's phoneme_id_map (en_US-lessac-medium: trained on English eSpeak IPA, so
+#   sounds English lacks go to the nearest sound it was trained on). '-' = nothing (the sound comes from an effect or is dropped).
+# fit: exact | near (a close sound the backend has) | sub (a different sound standing in) | effect (rendered in numpy afterwards).
+# effect: what speak.py adds in post-processing on that segment's time span (click, percussive_lip, percussive_teeth,
+#   percussive_beak, growl, purr, source2, sub, ultra, tone_<n>, breathy, creaky, ejective, implosive).
+ipa	kind	espeak	piper	fit	effect	note
+p	base	p	p	exact
+b	base	b	b	exact
+t̪	base	t	t	near		dental: hi 't' is dental already
+d̪	base	d	d	near
+t	base	t	t	exact
+d	base	d	d	exact
+ʈ	base	t.	t	exact		piper: English has no retroflex stop
+ɖ	base	d.	d	exact
+ȶ	base	c	tʲ	near		alveolo-palatal stop as palatal
+ȡ	base	J	dʲ	near
+c	base	c	tʲ	exact		piper tʲ: no trained palatal stop; t + j glide
+ɟ	base	J	dʲ	exact
+k	base	k	k	exact
+ɡ	base	g	ɡ	exact
+g	base	g	ɡ	exact		ASCII g alias of ɡ
+q	base	q	k	exact		piper: no uvular, nearest velar
+ɢ	base	g	ɡ	sub		voiced uvular stop: no backend has it
+ʡ	base	?	ʔ	sub		epiglottal stop as glottal stop
+ʔ	base	?	ʔ	exact
+k͡p	base	kp	kp	sub		labial-velar as a k-p sequence
+ɡ͡b	base	gb	ɡb	sub
+m	base	m	m	exact
+ɱ	base	m	m	near
+n̪	base	n	n	near
+n	base	n	n	exact
+ɳ	base	n.	n	exact
+ȵ	base	n^	nj	near
+ɲ	base	n^	nj	exact
+ŋ	base	N	ŋ	exact
+ɴ	base	N	ŋ	near		uvular nasal as velar
+ŋ͡m	base	Nm	ŋm	sub
+ʙ	base	br	bɾ	sub		bilabial trill: b + tap
+r	base	r	ɾ	near		trill: espeak 'r', piper flap (English has no trill)
+ʀ	base	R	ɹ	near		uvular trill
+ⱱ	base	v	v	sub		labiodental flap as v
+ɾ	base	r	ɾ	exact
+ɽ	base	r.	ɾ	near
+ɺ	base	l	l	sub		lateral flap as l
+ɸ	base	f	f	sub		bilabial fricative as f
+β	base	B	v	exact
+f	base	f	f	exact
+v	base	v	v	exact
+θ	base	T	θ	exact
+ð	base	D	ð	exact
+s	base	s	s	exact
+z	base	z	z	exact
+ʃ	base	S	ʃ	exact
+ʒ	base	Z	ʒ	exact
+ʂ	base	s.	ʃ	exact
+ʐ	base	z.	ʒ	exact
+ɕ	base	S;	ʃ	near
+ʑ	base	Z;	ʒ	near
+ç	base	C	h	exact		piper: English has no ç; h before a front vowel is close
+ʝ	base	j	j	sub		voiced palatal fricative as j
+x	base	x	h	exact		piper: nearest trained sound is h
+ɣ	base	Q	ɡ	exact		piper: no velar fricative
+χ	base	X	h	exact
+ʁ	base	R	ɹ	near
+ħ	base	H	h	near		hi 'H' sounds as h
+ʕ	base	Q	h	sub		pharyngeal approximant as a velar fricative
+h	base	h	h	exact
+ɦ	base	h	h	near
+ɬ	base	l#	ɬ	exact		piper: ɬ is in the id map (Welsh names in English eSpeak)
+ɮ	base	l	l	sub
+pf	base	pf	pf	exact
+bv	base	bv	bv	exact
+tθ	base	tT	tθ	exact
+dð	base	dD	dð	exact
+ts	base	ts	ts	exact
+dz	base	dz	dz	exact
+tʃ	base	tS	tʃ	exact
+dʒ	base	dZ	dʒ	exact
+ʈʂ	base	t.s.	tʃ	exact
+ɖʐ	base	d.z.	dʒ	exact
+tɕ	base	tS;	tʃ	near
+dʑ	base	dZ;	dʒ	near
+cç	base	cC	tʃ	near
+ɟʝ	base	Jj	dʒ	near
+kx	base	kx	kh	exact
+ɡɣ	base	gQ	ɡ	near
+qχ	base	qX	kh	near
+tɬ	base	tl#	tɬ	exact
+dɮ	base	dl	dl	sub
+ʋ	base	v	v	exact		hi 'v' is ʋ
+ɹ	base	r	ɹ	near
+ɻ	base	r.	ɹ	near
+j	base	j	j	exact
+ɥ	base	jw	jw	sub
+ɰ	base	Q	w	sub
+w	base	w	w	exact
+ʍ	base	hw	hw	sub
+l̪	base	l	l	near
+l	base	l	l	exact
+ɭ	base	l.	l	exact
+ȴ	base	l^	lj	near
+ʎ	base	l^	lj	exact
+ʟ	base	l	l	sub		velar lateral as l
+ɫ	base	l	l	near		piper: English l is dark anyway
+ɓ	base	b	b	sub	implosive	implosives as plain voiced stops plus a short low-pitch dip
+ɗ	base	d	d	sub	implosive
+ᶑ	base	d.	d	sub	implosive
+ʄ	base	J	dʲ	sub	implosive
+ɠ	base	g	ɡ	sub	implosive
+ʛ	base	g	ɡ	sub	implosive
+ʘ	base	?	ʔ	effect	click	clicks: no backend speaks them; a glottal closure from the backend plus a synthesized click burst
+ǀ	base	?	ʔ	effect	click	dental click
+ǁ	base	?	ʔ	effect	click	lateral click
+ǃ	base	?	ʔ	effect	click	alveolar (post-alveolar) click
+ǂ	base	?	ʔ	effect	click	palatal click
+ʬ	base	?	ʔ	effect	percussive_lip	lip smack: closure plus a soft low wet transient
+ʭ	base	?	ʔ	effect	percussive_teeth	teeth clack: closure plus a sharp bright transient
+ʞ	base	?	ʔ	effect	percussive_beak	beak clap: closure plus a hollow mid-spectrum knock
+i	base	i	i	exact
+y	base	i	i	sub		no front rounded vowels in either (hi 'y' renders as silence)
+ɨ	base	i	ᵻ	near		piper ᵻ: English eSpeak's reduced high central vowel
+ʉ	base	u	u	near
+ɯ	base	u	u	sub		unrounded back high as u
+u	base	u	u	exact
+ɪ	base	I	ɪ	exact
+ʏ	base	I	ɪ	sub
+ʊ	base	U	ʊ	exact
+e	base	e	e	exact
+ø	base	e	e	sub		front rounded mid as e
+ɘ	base	@	ə	near
+ɵ	base	@	ə	near
+ɤ	base	@	ʌ	sub
+o	base	o	o	exact
+e̞	base	e	e	exact
+ə	base	@	ə	exact
+o̞	base	o	o	exact
+ɛ	base	E	ɛ	exact
+œ	base	E	ɛ	sub
+ɜ	base	@	ɜ	near
+ɞ	base	@	ɜ	near
+ʌ	base	V	ʌ	exact
+ɔ	base	O	ɔ	exact
+æ	base	E	æ	near		hi lacks a short æ; ɛ is closest
+ɐ	base	@	ɐ	near
+a	base	a	a	exact
+ɶ	base	a	a	sub
+ä	base	a	a	exact
+ɑ	base	a	ɑ	near
+ɒ	base	O	ɒ	near
+ʰ	mod	h	h	near		aspiration: an h after the stop
+ʱ	mod	#	h	near		breathy-voiced release (hi b# d# g#); piper h
+ʼ	mod	?	ʔ	sub	ejective	ejective as stop + glottal stop, with a sharpened burst
+ʷ	mod	w	w	near
+ʲ	mod	j	ʲ	near		piper: ʲ is in the id map
+ˤ	mod			sub		pharyngealization dropped (no backend renders it)
+ˠ	mod			sub		velarization dropped
+̃	mod	~	̃	exact		nasal vowel (hi a~ e~ i~ o~ u~); piper's combining tilde (French names in English eSpeak)
+̥	mod			sub	breathy	voiceless sonorant / vowel: rendered breathy
+̊	mod			sub	breathy
+̤	mod			effect	breathy	breathy voice: noise mixed into the segment
+̰	mod			effect	creaky	creaky voice: slow irregular pulsing
+̪	mod			near		dental mark dropped (dentals rendered as alveolars)
+̞	mod			near		lowered mark dropped
+̈	mod			near		centralized mark dropped
+ː	mod	:	ː	exact
+ˑ	mod			near		half-long dropped
+͡	mod			near		tie bar (k͡p etc. are base rows; a stray tie is ignored)
+˥	mod			effect	tone_6	tone letters: pitch set on the segment in numpy
+˦	mod			effect	tone_3
+˧	mod			effect	tone_2
+˨	mod			effect	tone_1
+˩	mod			effect	tone_7
+̋	mod			effect	tone_6	tone diacritics: extra-high
+́	mod			effect	tone_3	high
+̄	mod			effect	tone_2	mid
+̀	mod			effect	tone_1	low
+̏	mod			effect	tone_7	extra-low
+̌	mod			effect	tone_4	rising
+̂	mod			effect	tone_5	falling
+‼	mod			effect	growl	VoQS harsh/ventricular phonation: ~80 Hz amplitude modulation plus noise
+ᵣ	mod			effect	purr	house purr: ~28 Hz amplitude modulation
+ᴖ	mod			effect	source2	house second source: a copy a fifth up mixed in
+˯	mod			effect	sub	house sub-bass register: octave down plus a sub-bass rumble (the real one is below hearing)
+˰	mod			effect	ultra	house ultra register: octave up plus a faint high whistle (the real one is above hearing)
+̬	mod			near		voiced mark dropped
+̴	mod			near		velarized/pharyngealized tilde dropped
+̝	mod			near		raised mark dropped
+̠	mod			near		retracted mark dropped
+̟	mod			near		advanced mark dropped
+ᵐ	pre	m	m	exact		prenasalization
+ⁿ	pre	n	n	exact
+ᵑ	pre	N	ŋ	exact
+ᶯ	pre	n.	n	exact
+ᶮ	pre	n^	n	exact
+ᶬ	pre	m	m	exact		prenasal (labiodental)
+ᶰ	pre	N	ŋ	near		prenasal (uvular)
+ˈ	sep	'	ˈ	exact		primary stress
+ˌ	sep	,	ˌ	exact		secondary stress
+.	sep			exact		syllable break dropped

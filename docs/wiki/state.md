@@ -18,8 +18,9 @@
 - **Lane 176**: the peoples mechanisms ledger (docs plus tests; touches history/, spread.py, ladder.py).
 - **Lane 177**: invasions you schedule (PW-1433), polity level, rows in runs/<id>/authored.json; must not touch history/.
 - Peoples runs must start from a finished world id, never a time zoom id (no world means no goods, settlements or polities).
-- Daniel runs language sims in his own worktree (lang-design): lanes use at most ~24 cores and don't churn. Never delete runs
-  a24559, b4d502, 3c1caf (his language run reads a24559).
+- **Languages merged 11-08** (lang-design folded into main, worktrees removed): `planet languages <run>` writes
+  languages.json + sidecars; viewer `planet langserve`; guide docs/review/language/ (for-daniel.md, sketches, calibration).
+  Leftovers are the language tickets taken in at the merge. Never delete runs a24559, b4d502, 3c1caf (a24559 is the language run).
 - Merged 11-03/04 (details in [decisions.md](decisions.md)): board triage (v2 382 -> 12), milestones v2-v5, crops cross the sea
   only with colonists or ocean ships, years-ago dates (NumFmt), stable culture uids, cuisine sheet per culture, written faiths and a
   gods disk cache, the workbench tree, polities v0 and war v0 (Polities globe layer, `/api/polities`), summit heights (PW-846),

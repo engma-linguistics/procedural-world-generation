@@ -1,0 +1,281 @@
+# Percept symbol table for planet/language/percepts.py (builder A, 2026-11-03). Sounds are stored as heard.
+# One row per symbol; axis columns as in percepts.AXES (blank = 0). Rows marked 'diacritic composition' are what the parser
+# composes from a base row plus diacritics (tests check that); they are listed for coverage and documentation.
+# source: ipa (IPA 2020 chart) | extipa (extIPA 2015/2024) | voqs (Voice Quality Symbols, Ball, Esling & Dickson 2018) | house.
+# vowel height: 0 open, 1 near-open, 2 open-mid, 3 mid, 4 close-mid, 5 near-close, 6 close (the IPA chart rows); back: 0 front .. 4 back.
+# tone: 1 low 2 mid 3 high 4 rising 5 falling 6 extra-high 7 extra-low. register: -1 sub-bass, +1 ultra.
+symbol	kind	place	manner	voice	larynx	phonation	secondary	sibilant	height	back	round	nasal	length	tone	source2	register	retroflex	labiodental	lateral	double	prenasal	source	note
+p	C																					ipa	
+b	C			1																		ipa	
+t̪	C	1																				ipa	dental
+d̪	C	1		1																		ipa	dental
+t	C	2																				ipa	
+d	C	2		1																		ipa	
+ʈ	C	3															1					ipa	
+ɖ	C	3		1													1					ipa	
+ȶ	C	3					2															ipa	alveolo-palatal stop (PHOIBLE); = palatalized postalveolar
+ȡ	C	3		1			2															ipa	alveolo-palatal stop
+c	C	4																				ipa	
+ɟ	C	4		1																		ipa	
+k	C	5																				ipa	
+ɡ	C	5		1																		ipa	U+0261 script g; ASCII g is an alias
+q	C	6																				ipa	
+ɢ	C	6		1																		ipa	
+ʡ	C	7																				ipa	epiglottal stop, stored as the pharyngeal stop
+ʔ	C	8																				ipa	
+k͡p	C	5																		1		ipa	labial-velar
+ɡ͡b	C	5		1																1		ipa	labial-velar
+m	C		3	1																		ipa	
+ɱ	C		3	1														1				ipa	
+n̪	C	1	3	1																		ipa	
+n	C	2	3	1																		ipa	
+ɳ	C	3	3	1													1					ipa	
+ȵ	C	3	3	1			2															ipa	alveolo-palatal nasal
+ɲ	C	4	3	1																		ipa	
+ŋ	C	5	3	1																		ipa	
+ɴ	C	6	3	1																		ipa	
+ŋ͡m	C	5	3	1																1		ipa	labial-velar nasal
+ʙ	C		6	1																		ipa	
+r	C	2	6	1																		ipa	
+ʀ	C	6	6	1																		ipa	
+ⱱ	C		7	1														1				ipa	
+ɾ	C	2	7	1																		ipa	
+ɽ	C	3	7	1													1					ipa	
+ɺ	C	2	7	1															1			ipa	
+ɸ	C		2																			ipa	
+β	C		2	1																		ipa	
+f	C		2															1				ipa	
+v	C		2	1														1				ipa	
+θ	C	1	2																			ipa	
+ð	C	1	2	1																		ipa	
+s	C	2	2					1														ipa	
+z	C	2	2	1				1														ipa	
+ʃ	C	3	2					1														ipa	
+ʒ	C	3	2	1				1														ipa	
+ʂ	C	3	2					1									1					ipa	
+ʐ	C	3	2	1				1									1					ipa	
+ɕ	C	3	2				2	1														ipa	alveolo-palatal = palatalized postalveolar sibilant
+ʑ	C	3	2	1			2	1														ipa	
+ç	C	4	2																			ipa	
+ʝ	C	4	2	1																		ipa	
+x	C	5	2																			ipa	
+ɣ	C	5	2	1																		ipa	
+χ	C	6	2																			ipa	
+ʁ	C	6	2	1																		ipa	
+ħ	C	7	2																			ipa	
+ʕ	C	7	2	1																		ipa	
+h	C	8	2																			ipa	
+ɦ	C	8	2	1																		ipa	
+ɬ	C	2	2																1			ipa	
+ɮ	C	2	2	1															1			ipa	
+pf	C		1															1				ipa	
+bv	C		1	1														1				ipa	
+tθ	C	1	1																			ipa	
+dð	C	1	1	1																		ipa	
+ts	C	2	1					1														ipa	
+dz	C	2	1	1				1														ipa	
+tʃ	C	3	1					1														ipa	
+dʒ	C	3	1	1				1														ipa	
+ʈʂ	C	3	1					1									1					ipa	
+ɖʐ	C	3	1	1				1									1					ipa	
+tɕ	C	3	1				2	1														ipa	
+dʑ	C	3	1	1			2	1														ipa	
+cç	C	4	1																			ipa	
+ɟʝ	C	4	1	1																		ipa	
+kx	C	5	1																			ipa	
+ɡɣ	C	5	1	1																		ipa	
+qχ	C	6	1																			ipa	
+tɬ	C	2	1																1			ipa	
+dɮ	C	2	1	1															1			ipa	
+ʋ	C		4	1														1				ipa	
+ɹ	C	2	4	1																		ipa	
+ɻ	C	3	4	1													1					ipa	
+j	C	4	4	1																		ipa	
+ɥ	C	4	4	1			1															ipa	labial-palatal; = labialized j
+ɰ	C	5	4	1																		ipa	
+w	C	5	4	1																1		ipa	labial-velar approximant
+ʍ	C	5	4																	1		ipa	
+l̪	C	1	5	1															1			ipa	
+l	C	2	5	1															1			ipa	
+ɭ	C	3	5	1													1		1			ipa	
+ȴ	C	3	5	1			2												1			ipa	alveolo-palatal lateral
+ʎ	C	4	5	1															1			ipa	
+ʟ	C	5	5	1															1			ipa	
+ɫ	C	2	5	1			3												1			ipa	velarized l; = lˠ
+ɓ	C			1	3																	ipa	
+ɗ	C	2		1	3																	ipa	
+ᶑ	C	3		1	3												1					ipa	
+ʄ	C	4		1	3																	ipa	
+ɠ	C	5		1	3																	ipa	
+ʛ	C	6		1	3																	ipa	
+ʘ	C		8																			ipa	
+ǀ	C	1	8																			ipa	
+ǁ	C	2	8																1			ipa	
+ǃ	C	3	8																			ipa	
+ǂ	C	4	8																			ipa	
+ʬ	C		9																			extipa	bilabial percussive (lip smack)
+ʭ	C	1	9																			extipa	bidental percussive (teeth clack)
+ʞ	C	5	9																			house	beak/mandible clap, heard as a hollow mid-spectrum knock; symbol is the IPA velar click letter withdrawn in 1970, reused
+pʰ	C				1																	ipa	diacritic composition
+tʰ	C	2			1																	ipa	diacritic composition
+t̪ʰ	C	1			1																	ipa	diacritic composition
+ʈʰ	C	3			1												1					ipa	diacritic composition
+cʰ	C	4			1																	ipa	diacritic composition
+kʰ	C	5			1																	ipa	diacritic composition
+qʰ	C	6			1																	ipa	diacritic composition
+tsʰ	C	2	1		1			1														ipa	diacritic composition
+tʃʰ	C	3	1		1			1														ipa	diacritic composition
+tɕʰ	C	3	1		1		2	1														ipa	diacritic composition
+bʱ	C			1		1																ipa	diacritic composition
+dʱ	C	2		1		1																ipa	diacritic composition
+ɡʱ	C	5		1		1																ipa	diacritic composition
+dʒʱ	C	3	1	1		1		1														ipa	diacritic composition
+pʼ	C				2																	ipa	diacritic composition
+tʼ	C	2			2																	ipa	diacritic composition
+kʼ	C	5			2																	ipa	diacritic composition
+qʼ	C	6			2																	ipa	diacritic composition
+tsʼ	C	2	1		2			1														ipa	diacritic composition
+tʃʼ	C	3	1		2			1														ipa	diacritic composition
+tɬʼ	C	2	1		2														1			ipa	diacritic composition
+sʼ	C	2	2		2			1														ipa	diacritic composition
+kʷ	C	5					1															ipa	diacritic composition
+ɡʷ	C	5		1			1															ipa	diacritic composition
+kʷʰ	C	5			1		1															ipa	diacritic composition
+kʷʼ	C	5			2		1															ipa	diacritic composition
+qʷ	C	6					1															ipa	diacritic composition
+xʷ	C	5	2				1															ipa	diacritic composition
+χʷ	C	6	2				1															ipa	diacritic composition
+ŋʷ	C	5	3	1			1															ipa	diacritic composition
+hʷ	C	8	2				1															ipa	diacritic composition
+pʲ	C						2															ipa	diacritic composition
+bʲ	C			1			2															ipa	diacritic composition
+tʲ	C	2					2															ipa	diacritic composition
+dʲ	C	2		1			2															ipa	diacritic composition
+kʲ	C	5					2															ipa	diacritic composition
+mʲ	C		3	1			2															ipa	diacritic composition
+nʲ	C	2	3	1			2															ipa	diacritic composition
+lʲ	C	2	5	1			2												1			ipa	diacritic composition
+rʲ	C	2	6	1			2															ipa	diacritic composition
+sʲ	C	2	2				2	1														ipa	diacritic composition
+tˤ	C	2					4															ipa	diacritic composition
+dˤ	C	2		1			4															ipa	diacritic composition
+sˤ	C	2	2				4	1														ipa	diacritic composition
+ðˤ	C	1	2	1			4															ipa	diacritic composition
+ᵐb	C			1																	1	ipa	diacritic composition
+ⁿd	C	2		1																	1	ipa	diacritic composition
+ᵑɡ	C	5		1																	1	ipa	diacritic composition
+ⁿdʒ	C	3	1	1				1													1	ipa	diacritic composition
+ⁿdz	C	2	1	1				1													1	ipa	diacritic composition
+ᶯɖ	C	3		1													1				1	ipa	diacritic composition
+ᶮɟ	C	4		1																	1	ipa	diacritic composition
+ᵑɡ͡b	C	5		1																1	1	ipa	diacritic composition
+ᵑǃ	C	3	8																		1	ipa	diacritic composition
+ᵑǀ	C	1	8																		1	ipa	diacritic composition
+ǃʰ	C	3	8		1																	ipa	diacritic composition
+m̥	C		3																			ipa	diacritic composition
+n̥	C	2	3																			ipa	diacritic composition
+ŋ̊	C	5	3																			ipa	diacritic composition
+l̥	C	2	5																1			ipa	diacritic composition
+r̥	C	2	6																			ipa	diacritic composition
+s̪	C	1	2					1														ipa	diacritic composition
+z̪	C	1	2	1				1														ipa	diacritic composition
+tː	C	2											1									ipa	diacritic composition
+kː	C	5											1									ipa	diacritic composition
+pː	C												1									ipa	diacritic composition
+sː	C	2	2					1					1									ipa	diacritic composition
+mː	C		3	1									1									ipa	diacritic composition
+nː	C	2	3	1									1									ipa	diacritic composition
+lː	C	2	5	1									1						1			ipa	diacritic composition
+ʔʷ	C	8					1															ipa	diacritic composition
+b̰	C			1		2																ipa	diacritic composition
+d̰	C	2		1		2																ipa	diacritic composition
+m̰	C		3	1		2																ipa	diacritic composition
+w̰	C	5	4	1		2														1		ipa	diacritic composition
+j̰	C	4	4	1		2																ipa	diacritic composition
+i	V			1					6													ipa	
+y	V			1					6		1											ipa	
+ɨ	V			1					6	2												ipa	
+ʉ	V			1					6	2	1											ipa	
+ɯ	V			1					6	4												ipa	
+u	V			1					6	4	1											ipa	
+ɪ	V			1					5	1												ipa	
+ʏ	V			1					5	1	1											ipa	
+ʊ	V			1					5	3	1											ipa	
+e	V			1					4													ipa	
+ø	V			1					4		1											ipa	
+ɘ	V			1					4	2												ipa	
+ɵ	V			1					4	2	1											ipa	
+ɤ	V			1					4	4												ipa	
+o	V			1					4	4	1											ipa	
+e̞	V			1					3													ipa	
+ə	V			1					3	2												ipa	
+o̞	V			1					3	4	1											ipa	
+ɛ	V			1					2													ipa	
+œ	V			1					2		1											ipa	
+ɜ	V			1					2	2												ipa	
+ɞ	V			1					2	2	1											ipa	
+ʌ	V			1					2	4												ipa	
+ɔ	V			1					2	4	1											ipa	
+æ	V			1					1													ipa	
+ɐ	V			1					1	2												ipa	
+a	V			1																		ipa	
+ɶ	V			1							1											ipa	
+ä	V			1						2												ipa	
+ɑ	V			1						4												ipa	
+ɒ	V			1						4	1											ipa	
+iː	V			1					6				1									ipa	diacritic composition
+uː	V			1					6	4	1		1									ipa	diacritic composition
+eː	V			1					4				1									ipa	diacritic composition
+oː	V			1					4	4	1		1									ipa	diacritic composition
+aː	V			1									1									ipa	diacritic composition
+ɛː	V			1					2				1									ipa	diacritic composition
+ɔː	V			1					2	4	1		1									ipa	diacritic composition
+əː	V			1					3	2			1									ipa	diacritic composition
+ɨː	V			1					6	2			1									ipa	diacritic composition
+yː	V			1					6		1		1									ipa	diacritic composition
+øː	V			1					4		1		1									ipa	diacritic composition
+ĩ	V			1					6			1										ipa	diacritic composition
+ũ	V			1					6	4	1	1										ipa	diacritic composition
+ẽ	V			1					4			1										ipa	diacritic composition
+õ	V			1					4	4	1	1										ipa	diacritic composition
+ã	V			1								1										ipa	diacritic composition
+ɛ̃	V			1					2			1										ipa	diacritic composition
+ɔ̃	V			1					2	4	1	1										ipa	diacritic composition
+ə̃	V			1					3	2		1										ipa	diacritic composition
+ɨ̃	V			1					6	2		1										ipa	diacritic composition
+ãː	V			1								1	1									ipa	diacritic composition
+a̤	V			1		1																ipa	diacritic composition
+i̤	V			1		1			6													ipa	diacritic composition
+a̰	V			1		2																ipa	diacritic composition
+i̥	V								6													ipa	diacritic composition
+ɯ̥	V								6	4												ipa	diacritic composition
+˩	T													7								ipa	extra-low
+˨	T													1								ipa	low
+˧	T													2								ipa	mid
+˦	T													3								ipa	high
+˥	T													6								ipa	extra-high
+˨˦	T													4								ipa	rising (any rising contour parses to 4)
+˦˨	T													5								ipa	falling (any falling contour parses to 5)
+a˦	V			1										3								ipa	vowel with tone letter
+a˨	V			1										1								ipa	vowel with tone letter
+a˧	V			1										2								ipa	vowel with tone letter
+a˨˦	V			1										4								ipa	vowel with tone letter
+a˦˨	V			1										5								ipa	vowel with tone letter
+a‼	V			1		3																voqs	harsh/growl phonation: VoQS ventricular V‼ as a segment suffix
+ɔ‼	V			1		3			2	4	1											voqs	harsh/growl phonation
+ɣ‼	C	5	2	1		3																voqs	growled velar fricative
+ʁ‼	C	6	2	1		3																voqs	growled uvular fricative (a snarl)
+r‼	C	2	6	1		3																voqs	growled trill
+aᵣ	V			1		4																house	purr phonation (ᵣ U+1D63, Phonetic Extensions): ~25 Hz pulsed voicing on both breath phases
+mᵣ	C		3	1		4																house	purred nasal
+ŋᵣ	C	5	3	1		4																house	purred velar nasal
+aᴖ	V			1											1							house	second simultaneous source (syrinx two-voice; ᴖ U+1D16)
+iᴖ	V			1					6						1							house	two-voice i
+uᴖ	V			1					6	4	1				1							house	two-voice u
+ɹᴖ	C	2	4	1											1							house	two-voice approximant (a warbled r)
+a˯	V			1												-1						house	sub-bass register (˯ U+02EF): carried below ~20 Hz
+u˯	V			1					6	4	1					-1						house	sub-bass u
+m˯	C		3	1												-1						house	sub-bass hum
+ŋ˯	C	5	3	1												-1						house	sub-bass velar hum (draconic rumble)
+i˰	V			1					6							1						house	ultra register (˰ U+02F0): above human hearing
+s˰	C	2	2					1								1						house	ultrasonic hiss

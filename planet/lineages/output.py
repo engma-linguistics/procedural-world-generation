@@ -206,6 +206,17 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             ST.report_section(out)
         else:
             ST.write(out)
+    if (out / "demes.json").exists():  # (languages over the demes: planet/language, PW-986; languages.json; a failure is logged, not fatal)
+        try:
+            from ..language import run as LR
+            sm = LR.write(out)
+            with open(out / "run.txt", "a") as f:
+                f.write("\n".join(LR.lines_for_report(sm)) + "\n")
+        except Exception as e:  # noqa: BLE001
+            import traceback
+            with open(out / "run.txt", "a") as f:
+                f.write(f"languages (PW-986): failed, {type(e).__name__}: {e}\n")
+            traceback.print_exc()
     T.update_index()
     return out
 

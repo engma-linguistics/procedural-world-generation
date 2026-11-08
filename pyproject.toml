@@ -4,8 +4,11 @@ version = "0.1.0"
 description = "Toy procedural planet generators + a browser globe viewer"
 requires-python = ">=3.14"
 dependencies = [
+    "espeakng-loader>=0.2.4",
     "numba>=0.68.0",
     "numpy>=1.24",
+    "onnx>=1.23.2",
+    "piper-tts>=1.8.0",
 ]
 
 [tool.uv]
