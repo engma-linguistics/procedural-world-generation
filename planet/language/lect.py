@@ -243,7 +243,7 @@ def tidy_segment(x):
     best = min(table_segments(x.kind), key=lambda q: (distance(u, q), to_ipa(q), repr(q)), default=None)
     if best is None:
         return x
-    return replace(best, tone=x.tone) if x.kind == "V" else best
+    return replace(best, tone=x.tone, tone2=x.tone2 if best.source2 else 0) if x.kind == "V" else best
 
 
 def base_id(rid: str) -> str:
@@ -495,7 +495,8 @@ class Lect:
             for x in segs:
                 u = _unit(x)
                 if u in um:
-                    mapping[x] = replace(um[u], tone=x.tone) if x.kind == "V" else um[u]
+                    mapping[x] = (replace(um[u], tone=x.tone, tone2=x.tone2 if um[u].source2 else 0) if x.kind == "V"
+                                  else um[u])
         if not mapping:
             return 0
 
@@ -800,12 +801,15 @@ _UNIT: dict = {}
 
 
 def _unit(x):
-    """What the inventory cap counts: a consonant, or a vowel with its tone set aside (memoized: millions of calls)."""
-    if not x.tone or x.kind != "V":
+    """What the inventory cap counts: a consonant, or a vowel with its tones set aside, the second voice's too
+    (memoized: millions of calls). (Syrinx lane: a second-voice tone made by a coda rule on a few words was a 'rare new
+    unit' and folded back at once, a gate the first voice's tone never met; pass C folded 30 that way. Both tones are now
+    left to the hygiene, tone_hygiene and voice2_hygiene.)"""
+    if (not x.tone and not x.tone2) or x.kind != "V":
         return x
     u = _UNIT.get(x)
     if u is None:
-        u = _UNIT[x] = replace(x, tone=0)
+        u = _UNIT[x] = replace(x, tone=0, tone2=0)
     return u
 
 
