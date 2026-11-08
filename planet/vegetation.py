@@ -152,10 +152,16 @@ T_GROWN = {"TrBE": 25.5, "TrBR": 25.5, "TeBE": 24.0, "TeBS": 22.0, "TeNE": 22.0,
 # type can't hold its own (heath: cool summers)
 _TUNE = {  # (tuned on Earth with tools/veg_check.py; overrides of the table above)
     "TeNE": dict(eps=0.95, gamma=0.005), "BoNS": dict(eps=0.95, lma=35),
-    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3, gamma=0.04, carbon=3000), "TrBE": dict(gamma=0.005),
+    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3, gamma=0.04, carbon=3000), "TrBE": dict(eps=1.43, gamma=0.005),
     "TrBR": dict(eps=1.0, carbon=13000, gamma=0.008, resist=0.93), "TeBE": dict(gamma=0.006), "BoNE": dict(gamma=0.005, carbon=10000),
     "TeBS": dict(eps=1.15, gamma=0.005, carbon=11000),
 }
+# TrBE's eps (scout 210, PW-1331): 1.43 x EPS_SCALE = 1.14 g C per MJ of absorbed PAR, the low end of the canopy light-use
+# efficiency measured by eddy covariance at Tapajos K67 (GPP / (PAR x FPAR): 1.1 in the dry season, up to 1.9 in the wet
+# season as the diffuse share of the light rises; Yan et al. 2017, JGR Biogeosci 122:3014, doi:10.1002/2017JG004008).
+# LPJ's 1.10 gave 0.88, below the measured dry-season floor, and tropical GPP ~2200 against ~3100 measured at the same
+# tower (Hutyra et al. 2007, as Lloyd et al. 2010 quote it: 262 mol C/m2/yr). The low end is taken because the model has
+# no diffuse-light gain (that is what lifts the wet-season value; not modelled, so not credited).
 PIONEERS = ("BoBS", "BoNS")  # light-hungry trees that shade-tolerant ones crowd out (birch, aspen, larch)
 # Herbs' roots respire too (PW-1261, lane 123): the herbs carry no wood term (rw = 0), so their rl, the leaves' rate,
 # was all the maintenance a grass paid, and its NPP/GPP came out at ~0.7 (Earth's observed climate) against ~0.46 +- 0.12
@@ -198,13 +204,15 @@ def _col(k):
 _K_COLS = ("eps", "t0", "t1", "t2", "t3", "amin", "top", "phen", "on", "rl", "rw", "lma", "tleaf", "kt", "wet",
            "laimax", "wue", "qy")
 EPS_SCALE = 0.8  # all efficiencies (tuned: Earth's land NPP)
-# Leaf enzyme (Vcmax) and with it leaf respiration fall exponentially with depth in a canopy, as the light does (Lloyd
-# et al. 2010; Bonan et al. 2011 use the same profile), so a stand's leaf respiration grows as (1 - exp(-KN L)) / KN
-# per unit of LAI L, not as L. Scout 173 (PW-1331): KN 0.4 is a scout value, not yet read against a measured profile;
-# lane 181 judged it on D47 main (docs/review/climate/npp/round2.md: 0/36 hard, soft 31 vs 30, spread kept).
-# It lifts wet tropical forest, whose optimum LAI is set by the leaf upkeep, from LAI 3.0 to 4.3 (field ~5; Malhi
-# et al. 2011). Herbs keep the linear form (a sward is one thin layer). 0 turns it off.
-KN_RESP = 0.4
+# Leaf enzyme (Vcmax) and with it leaf respiration fall exponentially with depth in a canopy (dark respiration a fixed
+# share of capacity, Rd = 0.08 Amax), so a stand's leaf respiration grows as (1 - exp(-KN L)) / KN per unit of LAI L,
+# not as L (scout 173, lane 181). KN per unit of cumulative LAI, read by scout 210 (docs/review/climate/npp/
+# scout2.md): ~0.15 observed at Tapajos with L 5.1, 0.12 at Lloyd et al.'s optimum (Biogeosciences 7:1833, 2010), their
+# 18-profile fit ln kV = 0.00963 Vmax(0) - 2.43 (0.13-0.28 for top-leaf Vmax 40-120); JULES kn 0.78 per relative depth
+# i/n, ~0.15 per unit LAI at L 5 (Clark et al. 2011, GMD 4:701, from Mercado et al. 2007's Amazon profile). Always well
+# under the light's own extinction (Lloyd: kI 0.7 for tropical forest). Herbs keep the linear form (one thin layer).
+# 0 turns it off.
+KN_RESP = 0.15
 C4, C3 = IDX["C4G"], IDX["C3G"]
 _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS], float) for j in range(4)), _col("amin"),
                 _col("top"), _col("phen"), _col("on"), _col("rl"), _col("rw"), _col("lma"), _col("tleaf"),

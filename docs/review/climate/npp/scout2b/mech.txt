@@ -1,0 +1,25 @@
+36 paired draws
+dbwh_pct vs d late dT: r +0.71, slope +0.84/C, intercept (at dT 0) +0.23
+darid_pct vs d late dT: r +0.45, slope +0.62/C, intercept (at dT 0) +0.35
+dsteppe_trees vs d late dT: r -0.46, slope -0.30/C, intercept (at dT 0) -0.60
+dsavanna_trees vs d late dT: r -0.40, slope -0.63/C, intercept (at dT 0) -1.06
+dtrees vs d late dT: r +0.66, slope +1.16/C, intercept (at dT 0) -0.81
+d late dT vs d late CO2: r +0.98
+main: BWh vs late dT across draws r +0.66, slope +0.71 pt/C
+cand: BWh vs late dT across draws r +0.63, slope +0.81 pt/C
+--- late means (600-1000 Myr steps), paired cand - main: median [bootstrap 95% CI of the median], draws up
+w_plant      main      2.295 cand      2.286  d -8.488e-05 [-0.01192, +0.01162] up 18/36
+w_bare       main     0.1436 cand     0.1484  d +0.004493 [-0.0002751, +0.008576] up 23/36
+w_temp       main       1.55 cand      1.581  d +0.03798 [-0.009019, +0.07546] up 23/36
+w_rate       main    0.02747 cand    0.02609  d -0.000712 [-0.002265, +0.0005538] up 16/36
+w_supply     main      170.2 cand      168.8  d +1.99 [-4.976, +4.794] up 19/36
+w_area       main     0.3108 cand     0.3144  d +0.00511 [-0.00449, +0.02024] up 22/36
+w_q          main      928.3 cand      951.4  d +12.01 [-22.82, +30.12] up 22/36
+w_a          main     0.2165 cand     0.2182  d -0.005469 [-0.01242, +0.004241] up 14/36
+w_T          main      12.05 cand      12.29  d -0.08659 [-0.3308, +0.5579] up 16/36
+sink         main      0.803 cand     0.8326  d +0.02764 [-0.004991, +0.052] up 22/36
+sink_raw     main        605 cand      610.1  d +10.5 [-10.24, +35.3] up 23/36
+source_raw   main       2654 cand       2758  d +74.01 [-2.162, +263.2] up 23/36
+albedo_term  main   0.005832 cand     0.2275  d +0.2783 [-0.02405, +0.6403] up 23/36
+co2_term     main      3.895 cand      4.256  d +0.4491 [+0.06694, +0.9334] up 24/36
+ch4_ppb      main      783.1 cand      867.2  d +64.02 [+11.22, +205.2] up 24/36
