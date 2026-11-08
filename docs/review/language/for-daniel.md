@@ -680,3 +680,23 @@ this section (filled in after the pass).
 - Instrument 'with' (a free word WITH) and comitative 'with' (the COM case) are different markers in one language;
   correct, but the page does not explain it.
 - The dwarf vowel ä missing from the chart is in the sound lane's inventory files; not touched.
+
+**Measured** (full pass of a24559 at commit c5a5c885, 8 workers, 1463 s, scratch output `scratchpad/polish/pass1/`;
+before = the grammar D pass the demo read 4 page came from; living lects 612 -> 624, the draws moved):
+
+| measure | before | after |
+| --- | --- | --- |
+| living lects with two core pronoun cells alike (I = WE, THOU = HE ...) | 156 (25.5%) | 1 (0.2%) |
+| living lects with two numerals alike (restricted hundred = thousand aside) | 339 (55.4%) | 5 (0.8%) |
+| living lects with two question words alike | 150 (24.5%) | 1 (0.2%) |
+| plural T-V where 'thou' = 'you' | 39 of 187 | 0 of 156 |
+| faith gods not named by every holder | 89 | 8 (a name coinage failed) |
+| faiths with their own food taboos in the record | 0 | 81 of 107 (first: swine 54, carrion birds 21, others 6) |
+| horizon, human, window / logistic | 12.0 / 13.3 kyr | 13.5 / 10.8 kyr (summary line 14.0) |
+| pronoun loans (WOLD check) | 0.049 | 0.069 (repairs by loan, as English they) |
+| sisters strict / cross-family | 0.593 / 0.0005 | 0.605 / 0.0005 |
+
+All 14 checks as before: 13 pass; the horizon check still fails (target 6-10 kyr). The horizon moves 1-2 kyr between
+passes on its own (bootstrap noise, calibration.md), so neither reading is a regression I can pin on the repair.
+Demo: `scratchpad/polish/languages-demo.html` (12 languages, 8.4 MB) and `languages-demo-stripped.html`. The fable now
+uses the triton proto-language, last spoken about 6,000 years ago, with 4 daughters ('bird' betʰi > bitʰi, biɾ, pini).

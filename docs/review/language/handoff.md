@@ -343,3 +343,12 @@ the fable (texts.py), recipe, faith myth (texts.myth + sketch.myth_of), phase D 
 MIR, HON, OBV, polite address, comparison following the `comparative` aim, DOM), the question-particle pull
 (PULL_BOOST/KEEP). Write-up: for-daniel.md "Grammar phase D and texts". Left: the species-leanings table (proposal
 only), sketches not regenerated (they track runs/a24559; regenerate after the merge rebuild), the cold-review agent.
+
+## Polish lane (lang-polish, 2026-11-08): state at hand-back
+Branch `lang-polish` from lang-design 703d4f81; committed locally, not merged. Every item of demo-read-4.md is fixed at
+the cause or listed under "Weirdness left" in for-daniel.md "Polish lane" (with the before/after table). New code:
+`lexicon.core_repair` (+ `repair` rows in derivations.tsv), `grammar.polite_contrast`, the pantheon and faith taboos in
+`faiths.Plan` (doc `faiths[*].taboos`), `texts.FABLE_DEPTH_KYR`, `romanize.BOOK_GUARD` / `RESERVED_SPELLINGS`,
+`sentences._resegment`, `dist_gram`, `default_class`, `_second_fix`, `numerals_note` from `systems.numeral`.
+Last pass: `scratchpad/polish/pass1/a24559/`; measures `scratchpad/polish/tools/meas.py <languages.json>`; text dump of
+the demo `scratchpad/polish/demo.txt`. Left: the items in "Weirdness left"; sketches not regenerated; the cold review.
