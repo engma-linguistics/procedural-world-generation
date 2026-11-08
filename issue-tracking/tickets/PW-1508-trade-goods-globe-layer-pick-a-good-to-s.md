@@ -1,4 +1,5 @@
 ---
+id: PW-1508
 title: "Trade goods globe layer: pick a good to see where it is spare and where it is lacking"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 212
 blocked_by: []
 relates: []
 refs: [docs/review/culture/trade/step1.md, "planet/lineages/trade.py::cells_at", "planet/lineages/trade.py::ledger_at", "planet/server.py::trade"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -25,4 +28,5 @@ a picker under Overlays.
 - [ ] Overlays > Trade goods: a good picker, green for surplus and red for lack, following the time slider
 
 ## Updates
+- 2026-11-08: Created from inbox draft draft-trade-goods-globe-layer.md (found by lane 212).
 - 2026-11-07: Drafted by lane 212.

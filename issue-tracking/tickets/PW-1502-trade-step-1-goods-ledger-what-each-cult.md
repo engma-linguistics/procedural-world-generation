@@ -2,7 +2,7 @@
 id: PW-1502
 title: "Trade step 1: goods ledger: what each culture's land gives in surplus and what it lacks, per era"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-744, PW-805, PW-728]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, "planet/lineages/land.py::GOODS", planet/lineages/seafood.py, planet/lineages/crop_defs.py, planet/lineages/animals.py, planet/lineages/fuels.py, "planet/lineages/landuse.py::frame_inputs", "planet/lineages/cuisine.py::culture_cells", planet/lineages/samples/techtree.toml]
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 ## Description
@@ -41,4 +41,5 @@ If it is never done, the brief keeps `trade_reach: null`, and none of the later 
   - steppe herders lack grain.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 212 merged (suite 1075): goods ledger read-out, step1.md.
 - 2026-11-07: Created from inbox draft draft-trade-step1-goods-ledger.md (found by lane 211).

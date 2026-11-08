@@ -1,7 +1,8 @@
 ---
+id: PW-1509
 title: Andes-type ranges need the overriding plate to contract; no thermostat-friendly shortcut exists
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 milestone: later
 subsystem: tectonics
@@ -10,7 +11,9 @@ impact: med
 found_by: scout 209
 blocked_by: []
 relates: [PW-1293, PW-1446, PW-846]
-refs: [docs/review/tectonics/mountains/scout6.md, docs/review/tectonics/mountains/scout6_andean.patch, docs/review/tectonics/mountains/scout6_measure.py, docs/review/tectonics/mountains/scout6_screen.sh, docs/review/tectonics/mountains/scout1.md, planet/tectonics/crust.py::arc_growth, planet/tectonics/crust.py::thermostats, planet/tectonics/crust.py::stack_collisions, planet/tectonics/crust.py::subduction_erosion, planet/tectonics/plate_kernels.py::resolve, "Medvedev et al. 2006 (The Andes, ch. 23)", "Gotberg, McQuarrie & Carlotto 2010 GSA Bull 122", "Schellart 2008 GSA Bull 120"]
+refs: [docs/review/tectonics/mountains/scout6.md, docs/review/tectonics/mountains/scout6_andean.patch, docs/review/tectonics/mountains/scout6_measure.py, docs/review/tectonics/mountains/scout6_screen.sh, docs/review/tectonics/mountains/scout1.md, "planet/tectonics/crust.py::arc_growth", "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::stack_collisions", "planet/tectonics/crust.py::subduction_erosion", "planet/tectonics/plate_kernels.py::resolve", "Medvedev et al. 2006 (The Andes, ch. 23)", "Gotberg, McQuarrie & Carlotto 2010 GSA Bull 122", "Schellart 2008 GSA Bull 120"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -41,3 +44,7 @@ Options:
 
 Lean: B for now (stable, not fiddly), A as a later physics side-track item if margin ranges matter to the culinary or
 peoples work.
+
+## Updates
+- 2026-11-08: Status needs-decision -> wontdo. Coordinator 11-08 (owner defers geophysics calls): option B for now. High ground stays mostly collisional, a known Earth difference. Option A (overriding plate truly contracts near an advancing trench, effort l) is the next attempt on the physics side track, tracked on PW-1497.
+- 2026-11-08: Created from inbox draft draft-andean-shortening-needs-plate-contraction.md (found by scout 209).
