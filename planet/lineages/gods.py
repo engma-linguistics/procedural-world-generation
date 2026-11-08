@@ -61,7 +61,7 @@ import numpy as np
 
 from .techtree import GODS_MODES  # noqa: E402
 MODE_DEFAULT = "faith_made"
-GODS_FORMAT = "procgen-gods/3"  # (/2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489; /3: the religious tolerance, towns and a faith's appeal, PW-1520)
+GODS_FORMAT = "procgen-gods/4"  # (/4: faiths that came through towns, each culture's "towns", PW-1528; /2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489; /3: the religious tolerance, towns and a faith's appeal, PW-1520)
 GROUPS = {
     "water": ("sea", "river", "rain", "flood"),
     "sky": ("sky", "sun", "storm"),
@@ -126,6 +126,34 @@ SHARE_TOP = 4  # the faiths a culture or a state lists by name; the rest are poo
 ORG_REF = TIERS[0][1]  # (0.9, the moralizing high god: the organisation the sourced rates TAU_MISSION (Stark's church) are for)
 FIT_W = 0.5  # JUDGEMENT: a better- or worse-fitting god moves the pull by up to half either way, never to nothing: a faith is its church and its promise as much as its god's domain (an even contest of fits is 1)
 APPEAL_ORG, APPEAL_FIT = True, True  # (switches, for the lane's before/after measures and the tests)
+# Faiths that come through towns (PW-1528; docs/review/culture/faiths/mixing1.md). Inside one realm (a state, empire or dragon realm), each
+# culture's towns draw people from the realm's other cultures, and under a tolerant ruler they keep their faiths: the Jewish, Christian and
+# Armenian quarters of Ottoman Istanbul, the Sogdian merchants of the Tang towns. A culture's share of such a faith settles toward
+# share-of-the-culture-in-the-realm x its town share (urban_reader) x TOWN_MIX x the ruler's protection (protection()) x its own religious tolerance x the faith's
+# share of the people its realm sends to its towns (land, x more from town-dwelling cultures, x less from cultures it does not touch),
+# over TAU_TOWN. Read-out only: no random draw, no link, the conversions draw exactly what they did.
+TOWN_MIX = 1.0  # sourced scale, judged point: a fully tolerant realm's towns draw from all its cultures as they are. Istanbul 1477, a generation after the conquest under a tolerant sultan of a half-Christian realm: 37 % of households not Muslim (3,743 Greek, 1,647 Jewish, 267 Crimean Christian of 15,174); 1.0 x protection ~0.7 (tolerance 0.9) x the town's own ~0.8 x ~0.6 of the realm of other faiths gives ~34 %
+TAU_TOWN = 0.1  # kyr, JUDGEMENT on a sourced direction: pre-modern towns were demographic sinks, kept up by migrants (Cambridge Group; Wrigley's ~8,000 a year into London), so a town's mix follows its realm within generations (Istanbul was resettled from across the empire within 24 years)
+TOWN_SEND = 1.0  # JUDGEMENT: a culture with URBAN_FULL of its people in towns sends twice as many per land (the trading diasporas come from town peoples: the Sogdians, the Jews, the Armenians)
+TOWN_NEAR = 0.5  # JUDGEMENT: a culture of the realm not in touch with the town's culture sends half as many (contact: migrants come mostly from near by)
+# From the town community out: a faith that has come through the towns presses the culture's land as a neighbour of that faith would (its
+# appeal, x the culture's receptiveness, over TAU_MISSION or TAU_CONVERT, from its first converts SHARE_SEED), x the ruler's protection x
+# the culture's land in the realm, from the town community's own share (the towns are the door: the seed is the town share's part,
+# and a logistic grows per convert, Stark's ~40 %/decade for a church), up to its part of SHARE_PLATEAU
+# only (the incoming faiths share Bulliet's plateau by their parts of the town draw): no conversion event comes of it. Christianity was a faith of the towns before the land (Stark
+# 1996: the urban diaspora communities); the first converts to Islam were townsmen (Bulliet 1979). A closed faith (one that takes no converts)
+# stays in its quarter.
+def protection(tol: float) -> float:
+    """How far a ruler of religious tolerance tol lets other faiths settle and spread in its realm (PW-1528), 0..1: the mirror of its push on its
+    own (a ruler's push: tau = TAU_FORCED^(1 - tol) x TAU_TOLERANT^tol), as the push at full tolerance over the push at tol: 1 when fully
+    tolerant, ~0.28 at 0.7, ~0.12 at 0.5, ~0.05 at 0.3, 0.015 when intolerant (the Almohads, Castile 1492: no quarter for another faith).
+    No new number: the sourced log scale of the rulers' push, read the other way."""
+    return (TAU_FORCED / TAU_TOLERANT) ** (1.0 - min(1.0, max(0.0, tol)))
+
+
+TOWN_FLOOR = 1e-4  # (a town community under a hundredth of a percent of the culture is no community: nothing settles or spreads from it)
+TOWNS_ON = True  # (switch, for the lane's before/after measures and the tests)
+TOWN_SPREAD = True  # (switch: the town community's spread to the land about it)
 RULE_TIERS = ("state", "empire", "dragon realm")  # JUDGEMENT: a chiefdom (a town and its cell) pushes no faith; dragons are sapient and rule as any
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
@@ -293,6 +321,10 @@ class Pantheons:
         self.cells: dict[int, int] = {}  # culture -> its cells at the last frame (weights a merge's shares)
         self.sal: dict[int, np.ndarray] = {}  # culture -> its salience at the last frame (a faith's fit to its life, appeal(); PW-1520)
         self.share_counts = {"merge_capped": 0}
+        self.town: dict[int, dict] = {}  # culture -> {faith: the share its towns settle toward}, the latest rule step's (PW-1528)
+        self.via: dict = {}  # culture -> {faith: the share it ever gained through towns} (towns_doc)
+        self.live: dict = {}  # culture -> {faith: town share} of this stretch (_towns; such a faith is not folded away, _set_share)
+        self.spread: dict = {}  # (culture, faith) -> the town community's pull on the land about it, per kyr, this stretch (PW-1528)
 
     # ---- minority faiths (PW-1489)
     def _comp_major(self, c: int, f: int | None, old: int | None, how: str):
@@ -320,7 +352,8 @@ class Pantheons:
             s[g] *= k
         s[f] = v
         maj = self.faith_of.get(c)
-        for g in [g for g, x in s.items() if x < SHARE_MIN and g != maj and g != f]:
+        keep = self.live.get(c) or ()  # (PW-1528: a faith with a community in the culture's towns now is too few to name, not gone)
+        for g in [g for g, x in s.items() if x < SHARE_MIN and g != maj and g != f and g not in keep]:
             s[maj if maj is not None else f] += s.pop(g)
 
     def _pulls(self, contacts, rule) -> dict:
@@ -332,7 +365,7 @@ class Pantheons:
         if not mixed:
             return out
         guard: dict = {}  # (PW-1520: a ruler more tolerant than its subject shields the subject's minorities, over the share of its land it rules)
-        for r, subs, _took in rule or ():
+        for r, subs, _took, *_ in rule or ():
             for x, share in subs:
                 if x in mixed and x != r and share > 0:
                     guard[x] = max(guard.get(x, 0.0), share * max(0.0, self.att.religious(r) - self.att.religious(x)))
@@ -349,7 +382,7 @@ class Pantheons:
                 if x in mixed and w > 0 and f is not None and self.faith_of.get(y) == f and f not in self.closed:
                     tau = TAU_MISSION if self.faiths[f].missionary else TAU_CONVERT
                     out[x] = out.get(x, 0.0) + w * self.att.religious(x) / RECEPT_MID / tau
-        for r, subs, _took in rule or ():
+        for r, subs, _took, *_ in rule or ():
             fr = self.faith_of.get(r)
             if fr is None or fr in self.closed:
                 continue
@@ -359,6 +392,101 @@ class Pantheons:
                 if x in mixed and x != r and share > 0 and self.faith_of.get(x) == fr:
                     out[x] = out.get(x, 0.0) + rate * share
         return out
+
+    def _towns(self, contacts, rule) -> dict:
+        """The faiths a realm's towns carry (PW-1528): {culture: {faith: the share it settles toward}}. For each realm (rule: [(ruler,
+        [(subject, share of its land in the realm)], took, ruler's share of its own land in the realm)]) each member culture x's towns
+        draw from the realm's members y in proportion to send(y) = y's land in the realm x (1 + TOWN_SEND x its town share over URBAN_FULL,
+        at most 1) x (1 if y is x or touches x, else TOWN_NEAR); faith g's part of that draw, but x's own faith, is pool(g). x settles
+        toward share(x) x urban(x) x TOWN_MIX x protection(religious(ruler)) x religious(x) x pool(g), summed over its realms. Also sets
+        self.spread: (x, g) -> (rate per kyr, cap) of each y's faith winning x's land from its town community (TOWN_SPREAD)."""
+        out: dict = {}
+        spread: dict = {}
+        self.spread = {}
+        if not TOWNS_ON or not rule:
+            return out
+        from .attitudes import URBAN_FULL
+        urb = self.att.urban
+        if not urb:
+            return out
+        near: set = set()
+        wts = contacts if isinstance(contacts, dict) else None
+        for a, b in contacts or ():
+            if wts is None or max(wts[(a, b)]) > 0:
+                near.add((a, b))
+                near.add((b, a))
+        for r, subs, _took, *rest in rule:
+            mem = [(r, float(rest[0]) if rest else 1.0)] + [(x, float(s)) for x, s in subs if x != r]
+            mem = [(x, s) for x, s in mem if s > 0 and x in self.comp and x in self.faith_of]
+            if len(mem) < 2:
+                continue
+            send = {x: s * self.cells.get(x, 0) * (1.0 + TOWN_SEND * min(1.0, urb.get(x, 0.0) / URBAN_FULL)) for x, s in mem}
+            pr = protection(self.att.religious(r))
+            for x, sx in mem:
+                ux = urb.get(x, 0.0)
+                if ux <= 0:
+                    continue
+                w = {y: v * (1.0 if y == x or (x, y) in near else TOWN_NEAR) for y, v in send.items()}
+                tot = sum(w.values())
+                inc = tot - w[x]
+                if inc <= 0:
+                    continue
+                rx = self.att.religious(x)
+                k = sx * ux * TOWN_MIX * pr * rx / tot
+                maj, o = self.faith_of[x], out.setdefault(x, {})
+                lx = self.lead(x)
+                for y, v in w.items():
+                    if y == x or v <= 0:
+                        continue
+                    for g, p in self.comp[y].items():
+                        if g != maj and p >= SHARE_MIN:  # (a faith too few to name in its own culture sends no one)
+                            o[g] = o.get(g, 0.0) + k * v * p
+                    g = self.faith_of[y]  # (the town community wins the land about it, PW-1528: Stark's urban church, Bulliet's urban converts first)
+                    ly = self.lead(y)
+                    if TOWN_SPREAD and g != maj and g not in self.closed and lx is not None and ly is not None:
+                        tau = TAU_MISSION if self.faiths[g].missionary else TAU_CONVERT
+                        r = sx * pr * rx / RECEPT_MID * self.appeal(x, lx, ly) / tau  # (the town share is in the seed: a logistic grows per convert)
+                        e = spread.setdefault((x, g), [0.0, 0.0])
+                        e[0] = max(e[0], r)
+                        e[1] = min(SHARE_PLATEAU, e[1] + SHARE_PLATEAU * v / inc)  # (the plateau, shared by the incoming faiths by their part of the draw)
+        out = {x: {g: v for g, v in o.items() if v >= TOWN_FLOOR} for x, o in out.items()}
+        out = {x: o for x, o in out.items() if o}
+        self.spread = {xg: tuple(e) for xg, e in spread.items() if xg[0] in out and xg[1] in out[xg[0]]}
+        return out
+
+    def _settle(self, town: dict, dt: float):
+        """The town-borne shares (_towns) over dt kyr: each below its target rises toward it over TAU_TOWN (never past the room the
+        culture's faith holds over half). A share already above (a remnant, a pressed faith) is left to the other pulls."""
+        if dt <= 0 or not town:
+            return
+        q = math.exp(-dt / TAU_TOWN)
+        for x, o in sorted(town.items()):
+            if x not in self.comp:
+                continue
+            maj = self.faith_of.get(x)
+            for g, tgt in sorted(o.items()):
+                s = self.comp[x]
+                v0 = s.get(g, 0.0)
+                if g == maj or v0 >= tgt:
+                    continue
+                v = min(tgt + (v0 - tgt) * q, v0 + max(0.0, s.get(maj, 0.0) - 0.5))
+                if v > v0:
+                    self._set_share(x, g, v)
+                    self._via(x, g, v - v0)
+        for (x, g), (r, cap) in sorted(self.spread.items()):  # (from the town community out, toward its part of the plateau, as a neighbour's pull would)
+            s = self.comp.get(x)
+            maj = self.faith_of.get(x)
+            tg = (town.get(x) or {}).get(g, 0.0)
+            if s is None or g == maj or tg <= 0:
+                continue
+            v0 = max(s.get(g, 0.0), tg, 1e-6)  # (from the town community itself: no jump to SHARE_SEED, so a faint quarter grows slowly)
+            if v0 >= cap:
+                continue
+            v = cap / (1.0 + (cap - v0) / v0 * math.exp(-min(r * SHARE_SPAN * dt, 700.0)))
+            v = min(v, s.get(g, 0.0) + max(0.0, s.get(maj, 0.0) - 0.5))
+            if v > s.get(g, 0.0):
+                self._via(x, g, v - s.get(g, 0.0))
+                self._set_share(x, g, v)
 
     def _shares(self, links: list, pulls: dict, dt: float):
         """Advance the shares by dt kyr under the links (_links: a faith that may convert a culture) and the pulls (_pulls): each pressed
@@ -399,6 +527,20 @@ class Pantheons:
         out = [[f, round(v, 4)] for f, v in rows[:SHARE_TOP]]
         rest = sum(v for _, v in rows[SHARE_TOP:])
         return out + ([[None, round(rest, 4)]] if rest > 0 else [])
+
+    def _via(self, c: int, g: int, dv: float):
+        """Book dv of c's share of g as come through towns (towns_doc)."""
+        d = self.via.setdefault(c, {})
+        d[g] = min(1.0, d.get(g, 0.0) + dv)
+
+    def towns_doc(self, c: int) -> list:
+        """The part of c's minority faiths that came through its realm's towns (PW-1528), settled there or spread from there: [[faith,
+        share], ...] largest first, each the lesser of its share now and all it ever gained that way."""
+        s, o = self.comp.get(c) or {}, self.via.get(c) or {}
+        maj = self.faith_of.get(c)
+        o = {g: v for g, v in o.items() if g != maj}
+        rows = sorted(((g, min(s.get(g, 0.0), v)) for g, v in o.items()), key=lambda kv: (-kv[1], kv[0]))
+        return [[g, round(v, 4)] for g, v in rows if v >= SHARE_MIN]
 
     # ---- faiths (PW-1358)
     def _join(self, c: int, f: int | None, ago: float, how: str = "rename"):
@@ -507,7 +649,7 @@ class Pantheons:
                     out.append((w * self.att.religious(x) / RECEPT_MID * self.appeal(x, lx, ly) / TAU_MISSION, x, fy, y, "missionaries"))
                 elif ly.ind >= CONVERT_MIN and gap >= CONVERT_GAP:
                     out.append((w * self.att.religious(x) / RECEPT_MID * self.appeal(x, lx, ly) / TAU_CONVERT, x, fy, y, "contact"))
-        for r, subs, _took in rule or ():
+        for r, subs, _took, *_ in rule or ():
             fr = self.faith_of.get(r)
             if fr is None or fr in self.closed or self.lead(r) is None:
                 continue
@@ -568,20 +710,27 @@ class Pantheons:
         for hi, lo in zip(pts[:-1], pts[1:]):
             mid = 0.5 * (hi + lo)
             rule = next((r for s, r in rule_steps if s - 1e-9 <= mid <= s + step_kyr + 1e-9), None)
+            town = self._towns(contacts, rule)  # (PW-1528: the faiths the realms' towns carry, for this stretch)
+            self.live = town
+            if rule:
+                self.town = town
             t = hi
             while True:
                 L = self._links(contacts, rule, t)
                 pulls = self._pulls(contacts, rule)  # (PW-1489: the shares move with the same links between the events)
                 if not L:
                     self._shares(L, pulls, t - lo)
+                    self._settle(town, t - lo)
                     break
                 rates = np.array([l[0] for l in L])
                 R = float(rates.sum())
                 if R <= 0:
                     self._shares(L, pulls, t - lo)
+                    self._settle(town, t - lo)
                     break
                 tn = t - float(self.rng.exponential(1.0 / R))
                 self._shares(L, pulls, t - max(tn, lo))
+                self._settle(town, t - max(tn, lo))
                 t = tn
                 if t <= lo:
                     break
@@ -726,7 +875,7 @@ class Pantheons:
         for c, u in cultures.items():  # (attitudes, PW-904: every culture on the map with gods; a daughter starts from its parent)
             self.att.ensure(c, u.get("people", "?"), u.get("parent"))
         for _, rule in rule_steps:
-            for r, subs, took in rule:
+            for r, subs, took, *_ in rule:
                 self.att.ruled(r, len(subs))
                 if took:
                     self.att.won(r)
@@ -1026,7 +1175,8 @@ def derive(run_dir: Path, mode: str = MODE_DEFAULT, techtree: dict | None = None
 
 def rule_table(po: dict, C: list, frames: list | None = None) -> dict:
     """Who rules whom at each polity step (PW-1477), from a polities doc (polities.derive): {"step_kyr", "steps": [[ago, [[ruler
-    culture, [[subject culture, share of its land the polity holds], ...], took land by war this step], ...]], ...]}, oldest first,
+    culture, [[subject culture, share of its land the polity holds], ...], took land by war this step, share of the ruler's own land
+    the polity holds], ...]], ...]}, oldest first,
     for the states, empires and dragon realms (RULE_TIERS) that have a ruling culture. Cultures are cultures.json ids, followed
     through their merges to that time. frames: inputs()["frames"], for the shares (each step reads the frame nearest it); without
     them every share is 1."""
@@ -1064,13 +1214,14 @@ def rule_table(po: dict, C: list, frames: list | None = None) -> dict:
                 here = np.bincount(F["cul"][inside], minlength=len(C))
                 tot = tot_at[fi]
                 subs = [[x, round(float(min(1.0, here[x] / tot[x])), 4) if tot[x] else 0.0] for x in subs]
+                rsh = round(float(min(1.0, here[r] / tot[r])), 4) if tot[r] else 0.0  # (PW-1528: the ruler's own land in the realm, for its towns)
                 if ago == last:  # (PW-1489: who lives in each state now, for its faiths)
                     held = {int(x): int(here[x]) for x in np.flatnonzero(here)}
                     now.append({"id": pid, "name": rec[pid].get("name") or f"polity {pid}", "tier": tier, "color": rec[pid].get("color"),
                                 "ruler": r, "cells": held})
             else:
-                subs = [[x, 1.0] for x in subs]
-            rows.append([r, subs, (pid, round(ago, 3)) in took])
+                subs, rsh = [[x, 1.0] for x in subs], 1.0
+            rows.append([r, subs, (pid, round(ago, 3)) in took, rsh])
         steps.append([ago, rows])
     steps.sort(key=lambda x: -x[0])
     return {"step_kyr": float(po.get("step_kyr") or 0.1), "steps": steps, "now": now}
@@ -1111,7 +1262,7 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
         here = []
         while ri < len(rsteps) and rsteps[ri][0] >= ago - 1e-9:  # (the polity steps since the last frame; earlier ones are skipped)
             if prev_ago is not None and rsteps[ri][0] < prev_ago - 1e-9:
-                here.append((rsteps[ri][0], [(r, subs, tk) for r, subs, tk in rsteps[ri][1]]))
+                here.append((rsteps[ri][0], [tuple(row) for row in rsteps[ri][1]]))
             ri += 1
         prev_ago = ago
         P.frame(ago, fr["cur"], fr["contacts"], fr["where"], found, here, step_kyr, fr.get("urban"))
@@ -1139,7 +1290,7 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
            "frames": [[fr["j"], round(float(fr["ago"]), 3)] for fr in frames],
            "cultures": {str(c): {"name": C[c]["name"], "people": C[c]["people"], "beings": ids,
                                  "living": [i for i in ids if docs[i]["status"] == "living"],
-                                 "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c), "shares": P.shares_doc(c),
+                                 "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c), "shares": P.shares_doc(c), "towns": P.towns_doc(c),
                                  "ritual_since_kyr": (known.get(C[c]["people"]) or {}).get("spirit_ritual", [None])[0]} for c, ids in cl.items()},
            "shares": share_rollup(P, C, (rule or {}).get("now") or []),
            "authored": {"rule": AUTHORED_RULE, "faiths": [authored_readout(s, faiths, C) for s in todo], "problems": notes},
@@ -1154,7 +1305,10 @@ SHARE_RULE = ("Each culture holds a share of each faith. Its faith (the one name
               "a faith grows within a culture along an S-curve, from its first converts (1 %) to about a tenth (Bulliet's plateau before the "
               "take-off), at the pace of the neighbour, missionaries or ruler pressing it; once a culture holds a faith, the culture itself (faster the less tolerant it is) and its neighbours and rulers of that faith "
               "win over the minorities that remain, over a millennium or two; a ruler more tolerant of other faiths than its subjects shields their minorities (the protected faiths of the caliphates). Daughter cultures carry their parent's minorities; merged cultures pool "
-              "theirs by land (the survivor's faith keeps at least half). States and peoples: their cultures' shares weighted by land.")
+              "theirs by land (the survivor's faith keeps at least half). Inside a realm, each culture's towns draw people from the realm's other "
+              "cultures, who keep their faiths as far as the ruler and the town are tolerant (the quarters of Ottoman Istanbul, the Sogdian "
+              "merchants of the Tang towns): a faith comes through towns up to the culture's town share x both tolerances x the faith's part "
+              "of the people its realm sends, more from town peoples and near neighbours. States and peoples: their cultures' shares weighted by land.")
 
 
 def _mix(parts) -> list:
@@ -1184,10 +1338,11 @@ def share_rollup(P: Pantheons, C: list, now: list) -> dict:
     by: dict = {}
     for c, s in P.comp.items():
         by.setdefault(C[c]["people"], []).append((P.cells.get(c, 1), s))
-    mixed = [s for s in P.comp.values() if len(s) > 1]
+    mixed = [c for c, s in P.comp.items() if any(v >= SHARE_MIN for f, v in s.items() if f != P.faith_of.get(c))]
     return {"rule": SHARE_RULE, "states": states, "peoples": {p: _mix(v) for p, v in sorted(by.items())},
             "summary": {"cultures": len(P.comp), "with_minority": len(mixed),
-                        "minority_over_10": sum(1 for c, s in P.comp.items() if any(v > 0.10 for f, v in s.items() if f != P.faith_of.get(c))), **P.share_counts}}
+                        "minority_over_10": sum(1 for c, s in P.comp.items() if any(v > 0.10 for f, v in s.items() if f != P.faith_of.get(c))),
+                        "with_town_faith": sum(1 for c in P.comp if P.towns_doc(c)), **P.share_counts}}
 
 
 def _founder(s: dict, fr: dict, inp: dict) -> int | None:
