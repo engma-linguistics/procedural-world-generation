@@ -61,6 +61,10 @@ NEED_X = 4.0  # cost (lane 201b): on an expedition's miss, how far the history l
 # away"), in multiples of the largest budget tried; past it the why-not says "more than N km". The read-out (derive) still looks without limit
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
+REVOLT = False  # switch (PW-1513, desk D67 option B; off until Daniel rules): a people that submitted to a ruler and later rises against
+# it (seats a polity of its own on land that ruler held last step, while that ruler still stands) has broken its terms: when the same
+# ruler next takes land it lives on, it may not submit again and meets the fate the winner's attitudes then give it (Herat, 1222).
+# No new number: the trigger is the polities' own seats and claims, the fate is _fates' own. Off: output byte-identical to before
 
 
 def harshness(hostility: float, tol: float, agg: float) -> float:
@@ -122,7 +126,13 @@ class LivePolities(StandIns):
         self.maps: list = []
         self.k = 0
         self.secs = 0.0
+        self._ago = 0.0
         self.run_key = f"try{h.seed}"
+        self.submitted: dict = {}  # (REVOLT: people -> the ruling peoples it submitted to)
+        self.revolted: dict = {}  # (REVOLT: (people, ruler) -> kyr ago of its rising, until the ruler next takes land it lives on)
+        self.submissions: list = []  # (REVOLT: [ago, people, ruler] per submission)
+        self.revolts: list = []  # (REVOLT: [ago, people, ruler, seat cell] per rising)
+        self.punished: list = []  # (REVOLT: [ago, people, ruler, fate, heads lost, heads moved] per retaking that found a revolt)
         from .tech_live import LiveTech
         self.tech = LiveTech(h)  # (the tech tree inside the history, PW-1466: output.save writes it out)
 
@@ -221,7 +231,7 @@ class LivePolities(StandIns):
 
     def _step(self, step):
         h, g = self.h, self.g
-        ago = float(step.ago)
+        ago = self._ago = float(step.ago)
         L = h.lines
         any_gate = any(self.knows(L[k].id, "chiefdoms", ago) for k in self.ppl if h.active.get(L[k].id)) or bool(self.prev_cap)
         if not any_gate:
@@ -348,6 +358,8 @@ class LivePolities(StandIns):
             if got:
                 pid_of[s["key"]] = pid
                 ruling.append(s)
+        if REVOLT and self.owner is not None:
+            self._risings(ruling, pid_of, ago)
         # 4. war (polities.war_v0, unchanged)
         ppl_pid = np.bincount(owner[owner >= 0], weights=sed[owner >= 0], minlength=len(ruling))
         S_pid = [PO.strength(float(ppl_pid[p]), s["people"], self.knows, ago) for p, s in enumerate(ruling)]
@@ -490,8 +502,12 @@ class LivePolities(StandIns):
                 continue
             z = harshness(float(self.hostility[wk, k]), tol, agg)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
-            if fate != "kept" and self.att.get(int(k))[1] < agg:  # (submits: less warlike than the winner, it yields and is kept)
+            rose = self.revolted.pop((lid, win["people"]), None) if REVOLT else None  # (REVOLT: it broke its terms to this ruler)
+            if fate != "kept" and rose is None and self.att.get(int(k))[1] < agg:  # (submits: less warlike than the winner, it yields and is kept)
                 out[lid] = ["submitted", 0, 0]
+                if REVOLT:
+                    self.submitted.setdefault(lid, set()).add(win["people"])
+                    self.submissions.append([round(self._ago, 3), lid, win["people"]])
                 continue
             if fate == "expelled" and agg >= AGG_MID:
                 fate = "razed"
@@ -514,7 +530,26 @@ class LivePolities(StandIns):
                         moved = self._refuge(k, hk, cells, ruled, gone)
                     done[(k, self.k)] = spent + (cut * n if fate != "expelled" else gone - moved)
             out[lid] = [fate, int(round(gone - moved)), int(round(moved))]
+            if rose is not None:
+                self.punished.append([round(self._ago, 3), lid, win["people"], *out[lid]])
         return out
+
+    def _risings(self, ruling, pid_of, ago):
+        """REVOLT (PW-1513, D67 B): a people that submitted to a ruling people and now seats a polity of its own on a cell that ruler's
+        polity held last step, while that polity still stands this step, has risen against it: (people, ruler) is marked until the
+        ruler next takes land the people lives on (_fates: no second submission)."""
+        for s in ruling:
+            rulers = self.submitted.get(s["people"])
+            if not rulers or s["tier"] == "dragon realm":
+                continue
+            o = int(self.owner[s["cell"]])
+            prev = self.ruling[o] if 0 <= o < len(self.ruling) else None
+            if prev is None or prev["people"] not in rulers or prev["people"] == s["people"] or prev["key"] not in pid_of:
+                continue
+            if (s["people"], prev["people"]) not in self.revolted:
+                self.revolted[(s["people"], prev["people"])] = round(ago, 3)
+                self.revolts.append([round(ago, 3), s["people"], prev["people"], int(s["cell"])])
+            rulers.discard(prev["people"])
 
     def _refuge(self, k, hk, cells, ruled, n) -> float:
         """PW-1496 (D61 C): n expelled heads of people k go to its nearest land the winner does not rule: the cells it holds off the
@@ -618,6 +653,8 @@ class LivePolities(StandIns):
                 "attitudes": self.att.doc() | {"keyed_by": "people (line index; the history has no cultures)"},
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
+                **({"revolt": {"rule": "PW-1513 D67 B", "revolts": self.revolts, "punished": self.punished,
+                               "submissions": self.submissions}} if REVOLT else {}),
                 "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X, "AGG_HARSH": AGG_HARSH,
                               "CAMPAIGN_KM": IV.CAMPAIGN_KM, "NEED_X": NEED_X,
 }}
