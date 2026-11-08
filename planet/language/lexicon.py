@@ -131,8 +131,10 @@ COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate 
 # not. English you (< plural ye) for thou is the attested exception kept open.
 CONTRAST_DAMP = 0.1
 _PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "YOU", "THEY")
-_NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND")
+_NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND",
+             "ELEVEN", "TWELVE", "FIFTEEN", "THIRTY", "FORTY")
 _WH = ("WHO", "WHAT", "WHERE", "WHEN", "HOW")
+_CLOSED = frozenset((*_PRONOUNS, *_NUMERALS, *_WH, "THIS", "THAT", "HERE", "THERE"))
 CONTRAST_SETS = (
     ("BROTHER", "SISTER"), ("SON", "DAUGHTER"), ("GRANDMOTHER", "GRANDFATHER"), ("UNCLE", "AUNT"), ("HUSBAND", "WIFE"),
     ("MOTHER", "FATHER"), ("MAN", "WOMAN"), ("BOY", "GIRL"), _PRONOUNS, _NUMERALS, _WH, ("THIS", "THAT"),
@@ -142,6 +144,9 @@ CONTRAST_SETS = (
     ("NEPHEW", "NIECE"), ("WIDOW", "WIDOWER"), ("FATHER-IN-LAW (OF MAN)", "MOTHER-IN-LAW (OF MAN)"),
     ("SON-IN-LAW (OF MAN)", "DAUGHTER-IN-LAW (OF MAN)"), ("YOUNG MAN", "YOUNG WOMAN"), ("BUY", "SELL"),
     ("SUMMER", "WINTER"), ("MORNING", "EVENING"), ("MASTER", "SERVANT"), ("TEACH", "LEARN"), ("LOVE", "HATE"),
+    # (2026-11-08) colour terms: a lect's colour categories come from its Berlin & Kay stage (lexsys), so a CLICS shift
+    # does not merge two of them (YELLOW ~ BLUE, RED ~ BLUE came from such shifts)
+    ("WHITE", "BLACK", "RED", "YELLOW", "GREEN", "BLUE", "BROWN"),
 )
 # pairs inside a set that many languages do say with one word (no T-V or number split in the 2nd person; no gender in the
 # 3rd: Finnish hän, Turkish o; Hungarian ő): not damped
@@ -190,7 +195,8 @@ class EtymStep:
     kyr: float
     lect: str
     process: str   # proto | coin | sound_change:<ids> | derive:<affix> | compound:<a>+<b> | shift:<from> | borrow:<lect>
-                   # | taboo | substrate:<lect> | elaborate:<niche> | analogy | nativize
+                   # | taboo | substrate:<lect> | elaborate:<niche> | analogy | nativize | colex:<focus> (a lexical
+                   # system's shared word, lexsys: colour category, kin group, HUNDRED = MANY)
     form: str      # IPA at that step
     gloss: str     # meaning at that step
     note: str = ""
@@ -240,7 +246,8 @@ class Concept:
     proto: bool = True            # has a word from the start (crops, metals, straw: only once known)
     taboo: bool = False           # may be replaced by a taboo paraphrase
     local: bool = False           # kept from a substrate on language shift
-    base: tuple = ()              # related concepts a new word is built from when CLICS gives none
+    base: tuple = ()              # related concepts: the compound fallback's parts for a late concept, and (2026-11-08)
+                                  # the concepts whose WOLD borrowed scores stand in for its own (`borrowability`)
     field: str = ""               # concepts.tsv semantic field (core concepts)
 
 
@@ -305,9 +312,19 @@ _EXTRA = [
         ("SISTER", 2, ("WOMAN",)), ("GRANDMOTHER", 3, ("MOTHER", "OLD")), ("GRANDFATHER", 3, ("FATHER", "OLD")),
         ("UNCLE", 3, ("FATHER",)), ("AUNT", 3, ("MOTHER",)),
     ]],
-    # numbers (ONE..FIVE are core)
+    # the kin a kinship system sorts (2026-11-08, lexsys.KIN_SYSTEMS: Hawaiian, Eskimo, Iroquois, Sudanese, Crow, Omaha);
+    # their words are shared with FATHER, UNCLE, BROTHER ... as the lect's system says
+    *[(g, "N", 3, "kin", c, True, False, False, b) for g, c, b in [
+        ("FATHER'S BROTHER", "FATHER'S BROTHER", ("FATHER", "BROTHER")), ("MOTHER'S BROTHER", "MOTHER'S BROTHER", ("MOTHER", "BROTHER")),
+        ("FATHER'S SISTER", "FATHER'S SISTER", ("FATHER", "SISTER")), ("MOTHER'S SISTER", "MOTHER'S SISTER", ("MOTHER", "SISTER")),
+        ("PARALLEL COUSIN", None, ("COUSIN",)), ("CROSS COUSIN", None, ("COUSIN",)),
+    ]],
+    # numbers (ONE..FIVE are core); the teens and tens (2026-11-08) are always built by the lect's numeral system (lexsys)
     *[(g, "A", 2, "number", c, True, False, False, ()) for g, c in [
         ("SIX", "SIX"), ("SEVEN", "SEVEN"), ("EIGHT", None), ("NINE", None), ("TEN", "TEN")]],
+    *[(g, "A", 4, "number", None, True, False, False, b) for g, b in [
+        ("ELEVEN", ("TEN", "ONE")), ("TWELVE", ("TEN", "TWO")), ("FIFTEEN", ("TEN", "FIVE")),
+        ("THIRTY", ("TEN", "THREE")), ("FORTY", ("TEN", "FOUR"))]],
     # social
     *[(g, p, f, "social", c, True, t, False, b) for g, p, f, c, t, b in [
         ("PEOPLE", "N", 3, "PEOPLE", False, ("PERSON",)), ("REAL", "A", 3, None, False, ("GOOD",)),
@@ -326,7 +343,7 @@ _EXTRA = [
     # cooking acts (GRIND is core)
     *[(g, "V", 4, "food", c, True, False, False, b) for g, c, b in [
         ("COOK", "COOK (SOMETHING)", ("FIRE",)), ("BOIL", "BOIL (SOMETHING)", ("WATER", "FIRE")),
-        ("ROAST", "ROAST (SOMETHING)", ("FIRE", "BURN")), ("SMOKE (FOOD)", None, ("SMOKE (EXHAUST)",)),
+        ("SMOKE (FOOD)", None, ("SMOKE (EXHAUST)",)),   # (ROAST merged into ROAST OR FRY, 2026-11-08: one meaning)
         ("FERMENT", None, ("ROTTEN", "SOUR")), ("SALT (FOOD)", None, ("SALT",)),
     ]],
     # food things
@@ -334,6 +351,28 @@ _EXTRA = [
         ("MILK", 3, "MILK", True, ("BREAST", "DRINK")), ("FRUIT", 3, "FRUIT", True, ("TREE", "SEED")),
         ("HONEY", 4, "HONEY", True, ("SWEET",)), ("BREAD", 4, "BREAD", False, ("GRIND", "EAT")),
         ("BEER", 4, "BEER", False, ("FERMENT", "DRINK")), ("FOOD", 3, "FOOD", True, ("EAT",)),
+    ]],
+    # taste, smell and the meal (2026-11-08, lexicon & contact lane: lexicon-gaps.md section 5.4; the CLICS glosses bring
+    # TASTE ~ TRY 16 families, ROTTEN ~ STINKING 15, FRAGRANT ~ SWEET 8, SWEET ~ TASTY)
+    *[(g, p_, f, "food", c, True, False, False, b) for g, p_, f, c, b in [
+        ("TASTE", "V", 3, "TASTE (SOMETHING)", ("TONGUE",)), ("TASTY", "A", 3, "TASTY", ("SWEET", "GOOD")),
+        ("FRAGRANT", "A", 4, "FRAGRANT", ("SMELL (PERCEIVE)", "SWEET")), ("STINKING", "A", 3, "STINKING", ("ROTTEN",)),
+        ("PUNGENT", "A", 4, None, ("BURN", "HOT OR WARM")), ("BE HUNGRY", "V", 3, "BE HUNGRY", ("BELLY", "EAT")),
+        ("MEAL", "N", 3, "MEAL", ("FOOD", "EAT")), ("FEAST", "N", 4, None, ("FOOD", "MANY")),
+    ]],
+    # foods, drinks and kitchen things a people has only once it knows how (TECH_CONCEPT: the techtree's technology makes
+    # them; history.tech_step brings the word with the technology, a loan from the people it learned it from when one
+    # of their lects is in contact, else a word of its own)
+    *[(g, p_, 4, "food", c, False, False, False, b) for g, p_, c, b in [
+        ("CHEESE", "N", "CHEESE", ("MILK", "HARD")), ("WINE", "N", "WINE", ("DRINK", "FRUIT")),
+        ("PALM WINE", "N", None, ("DRINK", "TREE")), ("RICE WINE", "N", None, ("DRINK", "crop:rice")),
+        ("MEAD", "N", "MEAD", ("HONEY", "DRINK")), ("SPIRITS", "N", None, ("WATER", "FIRE")),
+        ("VINEGAR", "N", None, ("SOUR", "WINE")), ("OVEN", "N", "OVEN", ("FIRE", "HOUSE")),
+        ("QUERN", "N", None, ("STONE", "GRIND")), ("SUGAR", "N", "SUGAR", ("SWEET", "SAND")),
+        ("STEAM (FOOD)", "V", None, ("WATER", "SMOKE (EXHAUST)")), ("PICKLE", "V", None, ("SOUR", "SALT")),
+        ("YEAST", "N", None, ("SOUR", "BREAD")), ("GRIDDLE", "N", None, ("STONE", "FIRE")),
+        ("FISH SAUCE", "N", None, ("FISH", "SALT")), ("PORRIDGE", "N", None, ("FLOUR", "WATER")),
+        ("DOUGH", "N", "DOUGH", ("FLOUR", "WATER")), ("CURD", "N", None, ("MILK", "SOUR")),
     ]],
     # wild fauna that taboo targets
     *[(g, "N", 3, "fauna", g, True, True, True, ("ANIMAL",)) for g in ("BEAR", "WOLF", "DEER")],
@@ -359,6 +398,20 @@ _EXTRA = [
         ("WAR", "WAR", False, ("FIGHT",)), ("ANCESTORS", "ANCESTORS", False, ("OLD", "FATHER")),
     ]],
 ]
+
+# concept -> the techtree technologies (any of them) that bring it (history.tech_step); BREAD and BEER had no way in
+# before 2026-11-08 (proto=False, and only crops and herds arrived)
+TECH_CONCEPT = {
+    "BREAD": ("bread", "griddle_bread", "leavened_bread", "bread_oven"), "BEER": ("beer", "chicha", "malting", "hopped_ale"),
+    "CHEESE": ("cheese",), "WINE": ("wine", "wine_press"), "PALM WINE": ("palm_wine",), "RICE WINE": ("rice_wine",),
+    "MEAD": ("mead",), "SPIRITS": ("distilling", "alembic_spirits"), "VINEGAR": ("vinegar",),
+    "OVEN": ("bread_oven", "earth_oven", "mud_oven_hearth", "sealed_bake", "ceramic_stove"),
+    "QUERN": ("saddle_quern", "rotary_quern"), "SUGAR": ("sugar_making", "sugar_refining", "maple_syrup"),
+    "STEAM (FOOD)": ("steaming",), "PICKLE": ("pickling",), "YEAST": ("leavened_bread",), "GRIDDLE": ("griddle_bread",),
+    "FISH SAUCE": ("fish_sauce",), "PORRIDGE": ("wild_cereal_harvest", "cultivation"), "DOUGH": ("bread", "griddle_bread"),
+    "CURD": ("cheese", "fermented_dairy"),
+}
+
 
 # gods.DOMAINS -> concept (planet/lineages/gods.py: water/sky/land/life/human groups)
 GOD_DOMAIN_CONCEPT = {
@@ -416,6 +469,7 @@ for _k, (_core, *_r) in _GOOD.items():
     if _core:
         ALIASES[f"good:{_k}"] = _core
 ALIASES["animal:dog"] = "DOG"
+ALIASES["ROAST"] = "ROAST OR FRY"   # (one meaning twice until 2026-11-08: CLICS ROAST (SOMETHING) and WOLD ROAST OR FRY)
 
 
 def resolve(concept: str) -> str:
@@ -573,6 +627,9 @@ class Lexicon:
     length_scale: float = 1.0                                 # `length_scale` of the inventory at the last step
     syllable_space: float = 0.0                               # and its `syllable_space` (0: not measured yet)
     counts: dict = field(default_factory=dict)                # replacement source -> events along the lineage
+    systems: dict = field(default_factory=dict)               # lexical systems (lexicon & contact lane, 2026-11-08):
+                                                              # "numeral" {label, system, quinary, recipes}, "colour"
+                                                              # {groups}, "intensity" (last contact intensity)
     share_cache: dict = field(default_factory=dict, repr=False, compare=False)   # affix_share's cache
 
     def __contains__(self, concept: str) -> bool:
@@ -602,9 +659,73 @@ class Lexicon:
         return {f: v for f, v in by.items() if len(v) > 1}
 
     def copy(self, lect: str | None = None) -> "Lexicon":
-        """A cheap copy: Words and EtymSteps are immutable and shared."""
+        """A cheap copy: Words and EtymSteps are immutable and shared (the areal log stays with its lect)."""
         return Lexicon(lect or self.lect, dict(self.words), dict(self.affixes), self.head_first, self.gen,
-                       dict(self.shifted), [], self.length_scale, self.syllable_space, dict(self.counts))
+                       dict(self.shifted), [], self.length_scale, self.syllable_space, dict(self.counts),
+                       {k: v for k, v in copy_systems(self.systems).items() if k != "areal"})
+
+
+def copy_systems(sy: dict) -> dict:
+    """A copy of a lexicon's `systems` deep enough that a daughter's changes never reach its parent."""
+    import copy as _copy
+    return _copy.deepcopy(sy) if sy else {}
+
+
+# --- borrowability and contact intensity (lexicon & contact lane, 2026-11-08) --------------------------------------------
+# Loans follow the contact (Thomason & Kaufman 1988's borrowing scale) and the meaning (Haspelmath & Tadmor 2009, WOLD):
+# - a donor is drawn by its contact weight (history: contact x prestige ratio, plus the bilingual share toward a shift),
+#   not uniformly;
+# - the intensity I = min(1, sum of the donors' weights) scales the loan source: about 5% of replacements under casual
+#   contact, up to about half in the generations before a shift (LOAN_MAX x I against the other sources' ~0.9);
+# - the meaning's WOLD borrowed score b scales it too, as (b / BORROW_REF) ** gamma, gamma falling from LOAN_GAMMA_LOW at
+#   low intensity to LOAN_GAMMA_HIGH at full: casual contact lends only the borrowable words (food, the house, religion),
+#   intense contact basic ones as well (the borrowing scale);
+# - a replacement no word-building source could make falls back to a loan with BORROW_FALLBACK x I x the same factor; a
+#   member of a closed paradigm (pronouns, numerals, deixis, interrogatives: CONTRAST_SETS) keeps its old word instead,
+#   which is what made pronouns and low numerals the most borrowed words (WOLD rho -0.13, lexicon-gaps.md section 5.3).
+LOAN_MAX = 1.0
+LOAN_GAMMA_LOW = 1.5
+LOAN_GAMMA_HIGH = 0.5
+LOAN_FACTOR_CAP = 4.0
+CONTACT_DEFAULT = 0.12  # a donor's weight when the caller gives contact lexicons but no weights (tests, old callers)
+# meanings WOLD lacks: the mean of their base concepts' scores (Concept.base), else by domain
+BORROW_DEFAULT = {"crop": 0.5, "animal": 0.35, "fuel": 0.3, "good": 0.4, "god": 0.25, "derived": 0.12, "kin": 0.1,
+                  "direction": 0.12, "landscape": 0.12, "colour": 0.15, "number": 0.2, "food": 0.3}
+
+
+@functools.cache
+def _wold_scores() -> dict[str, float]:
+    return {r["gloss"]: float(r["borrowed_score"]) for r in _read_tsv("borrowability.tsv")}
+
+
+@functools.cache
+def borrowability(cid: str) -> float:
+    """WOLD's borrowed score for a concept (by its id or CLICS gloss), else the mean of its base concepts' scores, else a
+    domain default (BORROW_DEFAULT)."""
+    sc = _wold_scores()
+    c = concept_info(cid)
+    for g in (c.id, c.clics, c.id.split(" (")[0]):
+        if g and g in sc:
+            return sc[g]
+    bs = [sc[b] for b in (resolve(x) for x in c.base) if b in sc]
+    if bs:
+        return float(np.mean(bs))
+    return BORROW_DEFAULT.get(c.domain, BORROW_REF)
+
+
+BORROW_REF = 0.19   # the mean WOLD score over the concept list (0.19 over the 635 meanings WOLD has, 2026-11-08)
+
+
+def loan_factor(cid: str, intensity: float) -> float:
+    """(b / BORROW_REF) ** gamma(I), capped: how much likelier than an average meaning `cid` is to be borrowed at contact
+    intensity I."""
+    g = LOAN_GAMMA_LOW + (LOAN_GAMMA_HIGH - LOAN_GAMMA_LOW) * min(1.0, max(0.0, intensity))
+    return min(LOAN_FACTOR_CAP, (max(borrowability(cid), 0.005) / BORROW_REF) ** g)
+
+
+def closed_class(cid: str) -> bool:
+    """A member of a closed paradigm (pronouns, numerals, deixis, interrogatives): no loan fallback."""
+    return cid in _CLOSED
 
 
 def _step(kyr, lect, process, form, gloss, note="") -> EtymStep:
@@ -702,7 +823,7 @@ def _draw_affixes(rng, inv) -> dict[str, tuple]:
 
 
 def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: str,
-                  head_first: bool | None = None, include_late: bool = False) -> Lexicon:
+                  head_first: bool | None = None, include_late: bool = False, numeral_label: str | None = None) -> Lexicon:
     """A proto-language's words, grown from a root stock (PIE-style word families). Each concept is either a simple
     root of 1-3 syllables (frequent concepts shorter; times `length_scale(inv)`, so a small syllable space gives longer
     roots) or, with PROTO_DERIVE[freq class] (PROTO_DERIVE_DERIVED for the derived vocabulary), built from another
@@ -712,6 +833,9 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     homophones where avoidable, and a few colexifications from strong CLICS edges (TREE/WOOD, HAND/ARM...) with one
     word for both. Concepts with `proto=False` (crops, metals, straw) are left out unless `include_late`."""
     cl = [c for c in concepts if include_late or c.proto]
+    from . import lexsys as LS
+    # (the lexical systems and sound symbolism draw from a child stream, so the rest of the proto is drawn as before)
+    srng = rng.spawn(1)[0]
     if head_first is None:
         head_first = bool(rng.random() < 0.4)
     lex = Lexicon(lect_id, {}, _draw_affixes(rng, inv), head_first)
@@ -720,7 +844,8 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     pair_of: dict[str, str] = {}
     for c in cl:
         for nb, fam in clics_neighbours(c.id, COLEX_MIN_FAMILIES):
-            if c.id < nb and nb in ids and c.id not in pair_of and nb not in pair_of:
+            if c.id < nb and nb in ids and c.id not in pair_of and nb not in pair_of \
+                    and c.id not in LS.SYSTEM_CONCEPTS and nb not in LS.SYSTEM_CONCEPTS:   # (theirs: lexsys)
                 damp = CONTRAST_DAMP if contrast_pair(c.id, nb) else 1.0
                 if rng.random() < min(0.6, COLEX_P_PER_FAMILY * fam) * damp:
                     pair_of[nb] = c.id   # nb takes c's word
@@ -739,6 +864,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     def root_word(c: Concept) -> Word:
         for _ in range(30):
             f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class, scale))
+            f = LS.symbolic(srng, f, c.id, inv)   # (nursery words, sound symbolism: lexsys)
             if f not in used and len(f) <= mseg:
                 break
         used.add(f)
@@ -789,6 +915,9 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
         lex.words[nb] = Word(nb, w.form, c.pos, c.freq_class,
                              w.etym[:-1] + (_step(kyr, lect_id, w.etym[-1].process, w.form, c.gloss,
                                                   f"colexified with {src}"),), float(kyr), w.roots, etym_roots(w))
+    LS.set_colours(srng, lex, kyr, lect_id)   # (the Berlin & Kay stage: composite colour categories share one word)
+    LS.set_kin(srng, lex, kyr, lect_id, inv)   # (the kinship system: which kin share a word)
+    LS.set_numerals(srng, lex, numeral_label, inv, kyr, lect_id)   # (the counting system; history re-sets it from the grammar)
     return lex
 
 
@@ -1516,8 +1645,9 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
     if w is None:
         n = _n_syll_for(rng, c.freq_class, length_scale(inv))   # (the current inventory: mergers lengthen coinages)
         mseg = limits(inv)[2]
+        from . import lexsys as LS
         for _ in range(10):
-            f = _inv.draw_word(rng, inv, n_syll=n)
+            f = LS.symbolic(rng, _inv.draw_word(rng, inv, n_syll=n), c.id, inv)
             if len(f) <= mseg:
                 break
         rid = (_i(f"{lect_id}:{c.id}@{float(kyr):g}"),)
@@ -1668,26 +1798,6 @@ ELABORATIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "cold": {"SNOW": [("SNOW (FALLING)", "FALL"), ("SNOW (LYING)", "LIE (REST)")], "ICE": [("ICE (SEA)", "SEA")]},
 }
 
-# way of life (spec.WAYS) and traits -> niche keys of ELABORATIONS
-NICHE_OF = {
-    "pastoral_nomad": "herder", "transhumant": "herder", "agro_pastoral": "herder", "fisher_forager": "coast",
-    "sea_nomad": "coast", "coastal": "coast", "seafaring": "coast", "sea_hunter": "coast", "swims": "coast",
-    "farmer": "farmer", "horticulturalist": "farmer", "agricultural": "farmer", "forager": "hunter", "hunter": "hunter",
-    "mountain": "mountain", "hardy": "cold",
-}
-
-
-def niche_weights_from(way: str | None, traits: Iterable[str] = ()) -> dict[str, float]:
-    """Niche weights from a people's way of life (1.0) and traits (0.7 each)."""
-    out: dict[str, float] = {}
-    if way and way in NICHE_OF:
-        out[NICHE_OF[way]] = 1.0
-    for t in traits:
-        if t in NICHE_OF:
-            out[NICHE_OF[t]] = max(out.get(NICHE_OF[t], 0.0), 0.7)
-    return out
-
-
 def elaborate(rng, lex: Lexicon, concept: str, how: str, inv=None, kyr: float = 0.0, lect_id: str | None = None,
               splits: list[tuple[str, str]] | None = None) -> list[Word]:
     """Split `concept` into finer concepts because the niche `how` ("herder", "coast", "farmer", "hunter", ...) makes the
@@ -1769,9 +1879,13 @@ def _renewal_boost(lex: Lexicon) -> dict[str, float]:
     """Repair by renewal: the rarer members of a homophone group of 3+, or of an accidental pair, get HOMOPHONE_BOOST
     times the replacement hazard; the rarer member of a deliberate colexification (a shift) COLEX_BOOST; a proto
     colexification both words still carry is left alone. The most frequent member keeps the form."""
+    from . import lexsys as LS
+
     out = {}
     for _, cs in lex.homophones().items():
         b = HOMOPHONE_BOOST
+        if LS.system_colex(lex, cs):
+            continue   # (a colour composite, HUNDRED = MANY in a restricted count: the system's, not a merger)
         if len(cs) == 2 and contrast_pair(*cs):
             pass   # (a neutralized contrast is renewed like an accidental homophone, proto or not)
         elif len(cs) < 3 and any(_deliberate(lex.words[k]) for k in cs):
@@ -1813,8 +1927,10 @@ def _renew_affixes(rng, lex: Lexicon, inv, n_generations: float, kyr: float) -> 
 
 
 LONGER_RENEWAL = 2.0   # a homophone's replacement: derivation and compounding weights x this (lexical expansion)
-BORROW_FALLBACK = 0.35  # (0.5 -> 0.35, 2026-11-07: with renewal out of the chain, 0.5 made 37% of replacements loans) a replacement no word-building source could make is a loan with this chance when a contact
-                       # lect has the concept (else a fresh root): loans fill gaps, but not every gap
+BORROW_FALLBACK = 2.0   # (0.5 -> 0.35, 2026-11-07; -> 2.0 x intensity x loan_factor, 2026-11-08) a replacement no word-
+                        # building source could make is a loan with chance min(1, this x I x loan_factor) when a contact
+                        # lect has the concept (else a fresh root): loans fill gaps, more of them the closer the contact
+REPAIR_FALLBACK = 0.35  # the loan fallback's floor for a word being renewed out of a homophone clash
 DERIVE_TRIES = 3   # a derivation that clashes (homophone) or finds no base is retried this often with another base or affix
 
 
@@ -1833,21 +1949,29 @@ def _derive_tries(rng, lex: Lexicon, k: str, c: Concept, inv, kyr: float, lect_i
 
 
 def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, inv, kyr: float, lect_id: str,
-                  head_first, have: list, contact_words, profile, repair: bool = False) -> tuple[str, Word | None]:
+                  head_first, have: list, contact_words, profile, repair: bool = False, weights: dict | None = None,
+                  intensity: float = 0.0) -> tuple[str, Word | None]:
     """The replacement for `k` from the drawn source, falling back to the next plausible one in the order derive
     (DERIVE_TRIES bases), compound, colexification shift, the word's own diminutive when it is a homophone being
     repaired (`repair`, Gilliéron's abeille), a loan from a contact lect (BORROW_FALLBACK); a fresh root only when it was
-    the drawn source. When nothing can be made the old word lives on: returns ("keep", None).
+    the drawn source. When nothing can be made the old word lives on: returns ("keep", None). The loan's donor is drawn
+    by its contact weight (`weights`); a closed-class word (`closed_class`) never falls back to a loan.
     Returns (process actually used, word)."""
     order = [src] + [x for x in ("derive", "compound", "shift") if x in opts and x != src]
     if repair and "renew" in opts and "renew" not in order:   # (a homonymic clash is repaired by the word's own
         order.append("renew")                                  # diminutive too: Latin apis > apicula > French abeille)
-    order += (["borrow"] if have and "borrow" not in order and rng.random() < BORROW_FALLBACK else [])
+    if have and "borrow" not in order and not closed_class(k):
+        pf = min(1.0, BORROW_FALLBACK * intensity * loan_factor(k, intensity))
+        if repair:   # (a homonymic clash is repaired by a neighbour's word as readily as before the intensity scaling)
+            pf = max(pf, REPAIR_FALLBACK)
+        if rng.random() < pf:
+            order.append("borrow")
     for s in order:
         new = None
         if s == "borrow":
             if have:
-                d = have[int(rng.integers(len(have)))]
+                wd = np.array([max((weights or {}).get(x, CONTACT_DEFAULT), 1e-9) for x in have])
+                d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
                 return s, borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact", store=False)
         elif s in ("derive", "renew"):
             new = _derive_tries(rng, lex, k, c, inv, kyr, lect_id, renew=s == "renew")
@@ -1879,7 +2003,8 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
 
 def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, Lexicon] | None = None,
          kyr: float = 0.0, lect_id: str | None = None, niche_weights: dict[str, float] | None = None,
-         profile=None, head_first: bool | None = None) -> list[tuple[str, str]]:
+         profile=None, head_first: bool | None = None, contact_weights: dict[str, float] | None = None,
+         numeral_base: str | None = None, population: float | None = None) -> list[tuple[str, str]]:
     """Lexical events over `n_generations` (fractional is fine) in one batch: each word is replaced with probability
     1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class] (x HOMOPHONE_BOOST for the rarer members of a homophone
     group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (data/compounds.tsv recipes only), a colexification
@@ -1887,7 +2012,15 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     things only); an unusable compound or taboo source adds its weight to derivation, an unavailable loan or shift is
     dropped and the rest renormalised. A source that fails or would make a homophone falls back (`_replace_word`):
     derivation with another base or affix, compound, shift, and a fresh root only last. Then affix renewal and elaboration by niche. Mutates `lex`; returns
-    [(concept, process)] for the events."""
+    [(concept, process)] for the events.
+
+    Loans (2026-11-08): `contact_weights` {lect id: weight} give each donor's pull (history: contact x prestige ratio plus
+    the bilingual share); their sum, capped at 1, is the contact intensity that scales the loan source with the
+    meaning's borrowability (`loan_factor`). The lexical systems (lexsys: numerals by base, colour terms by Berlin & Kay
+    stage) keep their words in line: a composite numeral is rebuilt by its system's recipe, a colour composite is
+    renewed as one word and splits by a loan or by `lexsys.colour_step`."""
+    from . import lexsys as LS
+
     lect_id = lect_id or lex.lect
     events: list[tuple[str, str]] = []
     if n_generations > 0:
@@ -1902,15 +2035,30 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
         p = 1.0 - (1.0 - h) ** n_generations
         hit = np.nonzero(rng.random(len(keys)) < p)[0]
         donors = sorted(contact_words) if contact_words else []
+        weights = {d: (float(contact_weights.get(d, 0.0)) if contact_weights is not None else CONTACT_DEFAULT) for d in donors}
+        intensity = min(1.0, sum(weights.values()))
+        lex.systems["intensity"] = round(intensity, 3)
         for i in hit:
             k = keys[int(i)]
             if k not in lex.words:
                 continue
             c = concept_info(k)
-            have = [d for d in donors if k in contact_words[d]]
+            sysw = LS.system_word(rng, lex, k, inv, kyr, lect_id)   # (a composite numeral: rebuilt by its recipe)
+            if sysw is not None:
+                if sysw is not LS.KEEP:
+                    lex.set(sysw)
+                    lex.counts["system"] = lex.counts.get("system", 0) + 1
+                    events.append((k, "system"))
+                continue
+            grp = LS.colour_group(lex, k)
+            if len(grp) > 1 and grp[0] != k:   # (a colour or kin category changes its word only through its focus)
+                continue
+            have = [d for d in donors if k in contact_words[d] and weights[d] > 0]
             opts = dict(SOURCES)
             if not have:
                 opts.pop("borrow")
+            else:
+                opts["borrow"] = LOAN_MAX * intensity * loan_factor(k, intensity)
             # a word-building source the concept cannot use (taboo for a harmless thing, compounding for a verb or
             # quality) hands its weight to derivation, the way verbs and qualities are mostly renewed; only borrowing
             # and shift are renormalised away, so a fresh root stays near its intended share
@@ -1938,15 +2086,18 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             w = np.array([opts[s] for s in names])
             src = names[int(rng.choice(len(names), p=w / w.sum()))]
             src, new = _replace_word(rng, lex, k, c, src, opts, inv, kyr, lect_id, head_first, have, contact_words,
-                                     profile, repair=k in boost)
+                                     profile, repair=k in boost, weights=weights, intensity=intensity)
             if new is None:   # (no competitor could be made: the old word lives on)
                 lex.counts["keep"] = lex.counts.get("keep", 0) + 1
                 continue
             lex.set(new)
+            LS.after_replace(lex, k, src, new, contact_words, kyr, lect_id, grp)   # (a colour composite moves as one word)
             lex.counts[src] = lex.counts.get(src, 0) + 1
             events.append((k, src))
     if inv is not None and n_generations > 0:
         _renew_affixes(rng, lex, inv, n_generations, kyr)
+        events += LS.systems_step(rng, lex, n_generations, inv, kyr, lect_id, numeral_base=numeral_base,
+                                  population=population, contact_words=contact_words, weights=contact_weights)
     if niche_weights and inv is not None:
         for niche, wt in sorted(niche_weights.items()):
             if wt < ELAB_THRESHOLD:
@@ -2064,6 +2215,24 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
     return n
 
 
+def systems_json(lex: Lexicon) -> dict:
+    """The lexicon's systems for the document: the numeral system, the colour stage and categories, the last contact
+    intensity, and the areal log ([kyr, feature, old, new, donor lect])."""
+    from . import lexsys as LS
+    sy = lex.systems
+    out: dict = {}
+    if sy.get("numeral"):
+        out["numeral"] = {k: sy["numeral"][k] for k in ("label", "system", "quinary") if k in sy["numeral"]}
+    if any(c in lex.words for c in LS.COLOUR_ORDER):
+        out["colour"] = {"stage": LS.colour_stage(lex), "categories": [list(g) for g in LS.colour_partition(lex)]}
+    if "intensity" in sy:
+        out["intensity"] = sy["intensity"]
+    for k in sorted(sy):
+        if k not in ("numeral", "intensity", "colour"):
+            out[k] = sy[k]
+    return out
+
+
 def stats(lex: Lexicon) -> dict:
     """Diagnostics: mean and max segments and syllables per word (all words, and the Swadesh-100 core), the
     syllable space and length scale last measured on the lect's inventory, the share of concepts in homophone groups, counts
@@ -2124,7 +2293,7 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
                     "etym": [s.to_list() for s in w.etym], "roots": list(w.roots), "etym_roots": list(w.etym_roots)}
     return {"lect": lex.lect, "head_first": lex.head_first, "gen": lex.gen, "shifted": dict(lex.shifted),
             "length_scale": lex.length_scale, "syllable_space": lex.syllable_space,
-            "notes": [list(x) for x in lex.notes], "counts": dict(lex.counts),
+            "notes": [list(x) for x in lex.notes], "counts": dict(lex.counts), "systems": copy_systems(lex.systems),
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in lex.affixes.items()},
             "words": words}
 
@@ -2132,7 +2301,8 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
 def from_json(d: dict) -> Lexicon:
     lex = Lexicon(d["lect"], {}, {}, bool(d.get("head_first", False)), float(d.get("gen", 0.0)),
                   {_i(k): float(v) for k, v in d.get("shifted", {}).items()}, [tuple(x) for x in d.get("notes", [])],
-                  float(d.get("length_scale", 1.0)), float(d.get("syllable_space", 0.0)), dict(d.get("counts", {})))
+                  float(d.get("length_scale", 1.0)), float(d.get("syllable_space", 0.0)), dict(d.get("counts", {})),
+                  copy_systems(d.get("systems") or {}))
     for m, a in d.get("affixes", {}).items():
         lex.affixes[m] = (tuple(from_ipa(a["ipa"])) if a["ipa"] else (), bool(a["suffix"]))
     for k, v in d["words"].items():

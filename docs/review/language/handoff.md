@@ -237,3 +237,16 @@ The in-memory doc is unchanged (/1 shape).
 1. Speed. The wall clock did not fall: steps are about 920 s at 12 workers. The next lever is the worker side (`rules._apply_one`, the Pattern memo dict, `dataclasses.replace`). Each interval forks a fresh Pool; a persistent pool would only save the fork, not the stepping.
 2. The scholars' horizon still fails (10.7 kyr against 6-10).
 3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.
+
+## Continuation (lexicon & contact lane, 2026-11-08)
+
+**State.** Branch `lang-lexcon` (worktree `.claude/worktrees/lang-lexcon`, from `lang-design` at 8871eb3f). Nothing merged or pushed. What changed and the defaults taken are in `for-daniel.md` "Lexicon & contact lane"; numbers in `calibration.md` "Lexicon & contact lane". New module `planet/language/lexsys.py` (numeral systems, colour stages, kinship systems, sound symbolism); new table `data/borrowability.tsv` (WOLD borrowed scores, `build_reference_tables.py --only borrowability`); new checks `borrowability` (WOLD rho, pronoun loans) and `areal` in `checks.py`. Lexicon entries can carry the process `colex:<focus>` (a system's shared word); lects carry `systems` {numeral, colour, kin, intensity, areal} in the document. `lect.py` passes `contact_weights`, `numeral_base` and `population` to `lexicon.step` (a three-line change in the sound lane's file).
+
+**The one full pass this lane ran** measured task 1 only (borrowing, numerals, colours, symbolism, substrate, areal); the food/technology words and the kinship systems were added after it and are tested on the tiny world and the lexicon tests only.
+
+**Next steps, in order.**
+1. A full pass of the current code (10 workers, scratch output), then re-tune: LOAN_CONTACT against the WOLD rho and the per-lect loan spread; AREAL_K against the areal check; COLOUR_SPLIT against the stage spread; KIN_CHANGE.
+2. Kinship: steer the draw by the culture's descent (`taboos.json` clan_exogamy, cousin_one_side) and show a kin table in the sketch (`tools/language/sketch.py`).
+3. Taboo and avoidance vocabulary from `runs/<id>/taboos.json` (dead_soundalike, ruler_name, inlaw_words, motherinlaw): a raised replacement hazard and an avoidance word list (lexicon-gaps rec. 6, contact-gaps rec. 7).
+4. Faiths (`gods.json`): a liturgical lect frozen at the founding, learned loans for GOD, SPIRIT, PRIEST, TEMPLE and god names (contact-gaps rec. 5). Polities need a polities doc in the run first (a24559 has none).
+5. Segment borrowing at high intensity (contact-gaps 3d) for an inventory areal signal.

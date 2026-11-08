@@ -382,11 +382,111 @@ def typology_consistency(result: dict) -> dict:
                 "onto the ladder (grammar.PRESSURE) or lets them erode, so the two differ while the ladder catches up")
 
 
+# --- lexicon & contact lane (2026-11-08) -------------------------------------------------------------------------------
+WOLD_RHO_MIN = 0.3   # Spearman rho between the living lects' loan share per meaning and WOLD's borrowed score
+CLOSED_LOAN_MAX = 0.08   # pronouns: mean living loan share (WOLD: a few percent; English they is the famous exception)
+
+
+def _spearman(a, b) -> float:
+    ra = np.argsort(np.argsort(np.asarray(a, float)))
+    rb = np.argsort(np.argsort(np.asarray(b, float)))
+    return float(np.corrcoef(ra, rb)[0, 1])
+
+
+def _is_loan(w) -> bool:
+    last = next((s for s in reversed(w.etym) if not s.process.startswith(("sound_change:", "accent:", "koine:"))), None)
+    return last is not None and last.process.startswith("borrow:")
+
+
+def borrowability(result: dict) -> dict:
+    """Loans follow borrowability: over the meanings WOLD scores, the share of living lects whose word is a loan,
+    against WOLD's borrowed score (Spearman rho); and pronouns kept (lexicon-gaps rec. 1: rho was -0.13, pronouns 11-16%
+    loans)."""
+    from . import lexicon as LX
+    living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
+    loans: dict = {}
+    per_lect = []
+    for l in living:
+        n = b = 0
+        for k, w in l.lexicon.words.items():
+            x = _is_loan(w)
+            loans.setdefault(k, []).append(x)
+            n += 1
+            b += x
+        per_lect.append(b / max(n, 1))
+    sc = LX._wold_scores()
+    ks = sorted(k for k, v in loans.items() if len(v) >= max(5, len(living) // 10) and k in sc)
+    share = [float(np.mean(loans[k])) for k in ks]
+    rho = _spearman(share, [sc[k] for k in ks]) if len(ks) > 10 else float("nan")
+    pron = [float(np.mean(loans[k])) for k in ("I", "THOU", "WE", "YOU", "THEY") if k in loans]
+    pr = float(np.mean(pron)) if pron else 0.0
+    q = [round(float(x), 3) for x in np.quantile(per_lect, [0.1, 0.5, 0.9])] if per_lect else []
+    return _row("loans follow borrowability (WOLD)", {"rho": round(rho, 3), "meanings": len(ks), "pronoun_loans": round(pr, 3),
+                                                      "lect_loan_share_p10_p50_p90": q},
+                f"rho >= {WOLD_RHO_MIN}; pronoun loans <= {CLOSED_LOAN_MAX}",
+                rho == rho and rho >= WOLD_RHO_MIN and pr <= CLOSED_LOAN_MAX,
+                "WOLD borrowed scores (Haspelmath & Tadmor 2009) per meaning; the share is of living lects whose current word "
+                "for the meaning is a loan (latest word-making step)")
+
+
+AREAL_NEAR_KM, AREAL_FAR_KM = 1000.0, 4000.0
+AREAL_MIN = 0.01   # near minus far agreement, cross-family pairs (typology share of features with the same value)
+
+
+def areal(result: dict) -> dict:
+    """An areal signal: lects of different true families agree more in typology (and inventories) when they are near
+    (< AREAL_NEAR_KM between their demes) than when they are far (> AREAL_FAR_KM). contact-gaps.md 3a: the agreement was
+    the same near and far (0.528 vs 0.529)."""
+    R = result["run"]
+    living = sorted((l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)),
+                    key=lambda l: l.id)
+    if len(living) < 3:
+        return _row("areal signal", None, "", True, "too few lects")
+    lat = np.radians([float(R.demes[l.deme]["lat"]) for l in living])
+    lon = np.radians([float(R.demes[l.deme]["lon"]) for l in living])
+    fam = np.array([l.family_true or l.id for l in living])
+    feats = sorted({k for l in living for k, v in (getattr(l.grammar, "typology", None) or {}).items()
+                    if isinstance(v, (str, bool, int))})
+    vals: dict = {}
+    T = np.array([[vals.setdefault((f, str((getattr(l.grammar, "typology", None) or {}).get(f))), len(vals)) for f in feats]
+                  for l in living])
+    segs = sorted({s for l in living for s in l.segments()}, key=repr)
+    si = {s: j for j, s in enumerate(segs)}
+    S = np.zeros((len(living), len(segs)), bool)
+    for a, l in enumerate(living):
+        S[a, [si[s] for s in l.segments()]] = True
+    near_t, far_t, near_i, far_i = [], [], [], []
+    for a in range(len(living) - 1):
+        b = np.arange(a + 1, len(living))
+        cosd = np.sin(lat[a]) * np.sin(lat[b]) + np.cos(lat[a]) * np.cos(lat[b]) * np.cos(lon[a] - lon[b])
+        dk = 6371.0 * np.arccos(np.clip(cosd, -1.0, 1.0))
+        cross = fam[b] != fam[a]
+        ag = (T[b] == T[a]).mean(axis=1) if feats else np.zeros(len(b))
+        inter = (S[b] & S[a]).sum(axis=1)
+        uni = np.maximum((S[b] | S[a]).sum(axis=1), 1)
+        ji = inter / uni
+        n_ = cross & (dk < AREAL_NEAR_KM)
+        f_ = cross & (dk > AREAL_FAR_KM)
+        near_t += ag[n_].tolist(); far_t += ag[f_].tolist(); near_i += ji[n_].tolist(); far_i += ji[f_].tolist()
+    if not near_t or not far_t:
+        return _row("areal signal", None, "", True, "no near or no far cross-family pairs")
+    dt = float(np.mean(near_t) - np.mean(far_t))
+    di = float(np.mean(near_i) - np.mean(far_i))
+    return _row("areal signal (cross-family, near vs far)",
+                {"typology_near": round(float(np.mean(near_t)), 4), "typology_far": round(float(np.mean(far_t)), 4),
+                 "typology_diff": round(dt, 4), "inventory_near": round(float(np.mean(near_i)), 4),
+                 "inventory_far": round(float(np.mean(far_i)), 4), "inventory_diff": round(di, 4),
+                 "pairs_near": len(near_t), "pairs_far": len(far_t)},
+                f"typology near - far >= {AREAL_MIN}", dt >= AREAL_MIN,
+                f"near < {AREAL_NEAR_KM:g} km, far > {AREAL_FAR_KM:g} km between the demes' places; inventories (Jaccard) "
+                "are shown, not judged")
+
+
 def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
-                    (living_overuse, result), (typology_consistency, result)):
+                    (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result)):
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)

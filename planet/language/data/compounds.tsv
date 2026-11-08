@@ -214,7 +214,7 @@ GRANDSON	SON	SON	2	'son's son': Swedish sonson, Danish sønnesøn
 GRANDDAUGHTER	DAUGHTER	SON	2	'son's daughter': Swedish sondotter; Danish sønnedatter
 GRANDDAUGHTER	DAUGHTER	DAUGHTER	1	'daughter's daughter': Swedish dotterdotter
 GRANDCHILD	CHILD (DESCENDANT)	CHILD (DESCENDANT)	2	'child's child': Swedish barnbarn, Danish barnebarn
-OLDER BROTHER	BROTHER	OLD	3	'old brother': Mandarin gēge vs dìdi by birth order; Hungarian nagybátya-type 'big brother'
+OLDER BROTHER	BROTHER	OLD	3	'old brother': Mandarin gēge vs dìdi by birth order; Hungarian báty 'older brother' (nagybátya 'uncle' is literally 'big older-brother')
 YOUNGER BROTHER	BROTHER	SMALL	3	'small brother': Indonesian adik laki-laki; German kleiner Bruder
 OLDER SIBLING	SIBLING	OLD	2	'old sibling': Indonesian kakak; Turkish ağabey/abla
 YOUNGER SIBLING	SIBLING	SMALL	2	'small sibling': Indonesian adik
@@ -272,3 +272,26 @@ PATH	ROAD	SMALL	2	'small road': motivation
 BRIDGE	ROAD	RIVER	2	'river road': motivation
 MARKET	PLACE (POSITION)	SELL	2	'selling place': Turkish satış yeri
 FIELD	EARTH (SOIL)	SEED	1	motivation 'sown earth'
+BREAD	FOOD	FLOUR	2	'flour food'; many words for bread are 'baked thing' or the staple's name (Urban 2012)
+CHEESE	MILK	HARD	2	'hard milk': Mongolian khuruud-type 'dried curd'; Latin caseus is a root
+WINE	BEVERAGE	FRUIT	2	'fruit drink'; Greek oinos and its loans spread with the vine
+PALM WINE	WINE	TREE	2	'tree wine': Malay tuak, West African 'palm drink'
+RICE WINE	WINE	crop:rice	2	'rice wine': Japanese sake is 'alcohol', Chinese mijiu 'rice wine'
+MEAD	BEVERAGE	HONEY	3	'honey drink': Old English medu < PIE *medhu 'honey, mead'
+SPIRITS	WATER	FIRE	3	'fire water': Ojibwe ishkodewaaboo, English 'firewater'; Latin aqua vitae 'water of life'
+VINEGAR	WINE	SOUR	3	'sour wine': French vinaigre < vin aigre
+OVEN	HOUSE	FIRE	2	'fire house'; English oven < 'pot'
+QUERN	STONE	GRIND	3	'grinding stone' (Urban 2012)
+SUGAR	SAND	SWEET	2	'sweet sand'; Sanskrit sarkara 'grit, gravel'
+GRIDDLE	STONE	FIRE	2	'fire stone' (baking stone)
+FISH SAUCE	WATER	FISH	2	'fish water': Vietnamese nuoc mam 'fish water', Thai nam pla
+PORRIDGE	SOUP	FLOUR	2	'flour soup': Russian kasha, Latin puls
+DOUGH	FLOUR	WATER	1	'wet flour'
+CURD	MILK	SOUR	2	'sour milk' (Urban 2012)
+FEAST	MEAL	BIG	2	'big meal'
+FATHER'S BROTHER	BROTHER	FATHER	3	'father-brother': Swedish farbror, Mandarin bofu/shushu are descriptive too (Sudanese-type)
+MOTHER'S BROTHER	BROTHER	MOTHER	3	'mother-brother': Swedish morbror
+FATHER'S SISTER	SISTER	FATHER	3	'father-sister': Swedish faster < fadersyster
+MOTHER'S SISTER	SISTER	MOTHER	3	'mother-sister': Swedish moster < modersyster
+PARALLEL COUSIN	CHILD (DESCENDANT)	FATHER'S BROTHER	2	'father's brother's child': Arabic ibn 'amm
+CROSS COUSIN	CHILD (DESCENDANT)	MOTHER'S BROTHER	2	'mother's brother's child': Arabic ibn khal

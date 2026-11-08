@@ -759,3 +759,29 @@ The full pass did not get faster on the wall clock. The non-human ease drag adds
 - p is rare overall because beaked and lipless mouths find labials dear (aarakocra labial cost 5, reptilian 4). In human lects p is 0.77 (PHOIBLE 0.85), so nothing was forced.
 
 **Sentences.** The templates now draw on the WOLD verbs (build, carve, bring, find, catch, sell, buy, dance, shout), kin terms (older brother, younger sibling), numbers (three, four), motion to a goal with the allative, and objects (boat, basket, pot). The English for the polar question now reads "Do you hear the thunder?".
+
+## Lexicon & contact lane (2026-11-08)
+
+One full pass of a24559 (10 workers, scratch output, a loaded machine: 1924 s) on the lane's task-1 code: intensity borrowing, WOLD borrowability, closed classes kept, numeral systems, colour stages, sound symbolism, substrate calibration, areal diffusion. The food/technology words and the kinship systems came after it and are not in these numbers. **Areal diffusion did not fire in this pass** (a bug: with workers the step wrote to the pre-step lect objects; fixed after), so the areal row is the old null. Baseline: the final run (finish lane).
+
+| measure (living lects) | final run | lexcon pass 1 |
+|---|---|---|
+| Spearman rho, loan share per meaning vs WOLD borrowed score (611 meanings) | -0.095 | **0.424** |
+| loan share: pronouns / ONE-FIVE / SIX-TEN | 0.28 / 0.39 / 0.11 | 0.05 / 0.18 / 0.10 |
+| loan share: body parts / cultural nouns (soup, butter, pot, shoe, door, house) | 0.20 / 0.14 | 0.15 / 0.27 |
+| loan share per lect, p10 / median / p90; r with l2 | 0.07 / 0.36 / 0.41; -0.11 | 0.10 / 0.29 / 0.52; +0.17 (r with intensity +0.36) |
+| core-100 loan share | 0.26 | 0.21 |
+| contact intensity p10 / median / p90 | - | 0.04 / 0.21 / 0.86 |
+| replacements: keep / borrow | 0.251 / 0.251 | 0.295 / 0.221 |
+| substrate words per shift, median (p10-p90) | 88 (83-96) | 17 (10-27) |
+| numeral systems | label only | decimal 333, quinary 96, restricted 60, hybrid 47, vigesimal 37 |
+| colour stages | every proto 7 terms, only merges | VI 131, V 97, IV 97, IIIb 47, IIIa 42, II 36, I 3, off-table 120 |
+| areal: cross-family typology agreement near - far | -0.0009 | -0.0013 (diffusion not run, see above) |
+| sisters strict | 0.554 | 0.620 |
+| scholars' horizon, human (target 6-10) | 10.67 FAIL | **17.63 FAIL** |
+| overused segments | pass | **FAIL: nʷ 0.105 (PHOIBLE 0.012)** |
+
+Open after this pass (for the next pass of this lane):
+- **The human horizon moved from 10.7 to 17.6 kyr** and sisters from 0.55 to 0.62: slower divergence. Part is the keep share (0.25 to 0.30: closed classes no longer fall back to a loan, and the loan fallback scales with intensity). Re-solve `BASE_REPLACE` with `KEEP_COMPENSATION` for the new keep share and re-measure; the "all" horizon fell to 4.6 at the same time, so the measure is noisy at 69 human splits.
+- **nʷ in 10.5% of lects** is new and not traced. Suspects: the accent (ACCENT_P 0.5 to 0.8), or a seed-moved sound-change cascade. Trace before the next merge.
+- Pronoun and numeral loans now come only from the drawn loan source (never the fallback); ONE-FIVE at 0.18 is still above WOLD (0.13-0.23 scores but rarely realised).

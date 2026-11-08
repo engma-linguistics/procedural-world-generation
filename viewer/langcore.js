@@ -374,6 +374,7 @@
       case 'taboo': return `replaced under a taboo${rest ? ' (' + rest + ')' : ''}`;
       case 'elaborate': return `lengthened to keep it apart from a lookalike${rest ? ' (' + rest + ')' : ''}`;
       case 'coin': return 'coined';
+      case 'colex': return `one word with ${rest.toLowerCase()} (the language's colour, kin or number system)`;
       case 'name': return `made into a name${rest ? ' (pattern ' + rest + ')' : ''}`;
       case 'accent': return `heard through the accent of ${rest}`;
       default: return s;
