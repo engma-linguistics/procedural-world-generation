@@ -241,6 +241,13 @@ class Rule:
 - Rules run on *inflected forms* too: the lect hands `apply` every stored form (stems, paradigm exemplar forms, gram forms,
   names).
 
+- **Impossible segments and the minimal word** (last-fixes lane, 2026-11-08; cold review R1, R2). `rules.impossible`: an
+  ejective that is voiced or prenasalised. A rule does not act where its output would be one and its input was not
+  (`_apply_one`, `_single`), and the cause rows act on pulmonic stops only (S077, S083, S142, the demo intervocalic
+  voicing); check `possible_segments` counts any left in the run. A change that would leave a lexicon word or paradigm
+  stem with no vowel passes it by (`lexicon.has_nucleus`), and the live rules over an affixed word in the sentences never
+  delete the stem's last vowel (`phonology.apply_word(stem_len=...)`).
+
 ## 5b. The synchronic rule layer (`phonology.py`, sound lane 2026-11-08)
 
 Each lect keeps an ordered list of live phonological rules (`Lect.live`, inherited by daughters), as `rules.Rule`s with a
@@ -812,6 +819,15 @@ Measured on a24559 (627 living lects, 235,255 words, old code vs new on the same
 spellings 618 -> 0; lects whose one aspirate flipped the fricatives 55 -> 46 (8 now pinyin); book homograph sets 6,266 ->
 5,990 (tone-only sets dominate); book diacritic letters per word 0.25 -> 0.28 (two kept per lect, not one per word); 246 lects
 fold at least one contrastive diacritic (486 folds).
+
+**Offensive-looking spellings** (last-fixes lane, 2026-11-08; cold review). `data/offensive_substrings.txt` is a short
+blocklist of English slurs and obscenities, matched case-folded with diacritics stripped (`romanize.offensive`); space,
+hyphen, middle dot and apostrophe break a match. After the history (`history.offense_pass`) every living lect's words whose
+raw spelling hits it in either register are renewed (`lexicon.offense_repair`: a contact loan, a derivation, a fresh root; a
+god's name takes an epithet, `faiths.coin_name`), in up to three rounds, and given names that hit it are redrawn
+(`personal._offends`). Since a phoneme is spelled one way per lect, a form with no word behind it (affixed and joined forms,
+grams, settlement joins) is respelled by `romanize.unoffend`: a middle dot before a vowel letter inside the match (naz·i,
+sh·it).
 
 ## 13. Workbench and brief
 
