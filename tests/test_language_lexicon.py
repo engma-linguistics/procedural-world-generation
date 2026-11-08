@@ -9,7 +9,7 @@ import pytest
 from planet.language import inventory as I
 from planet.language import lexicon as L
 from planet.language import lexsys as LS
-from planet.language.percepts import from_ipa
+from planet.language.percepts import from_ipa, word_ipa
 
 GEN = L.GEN_YR_HUMAN
 
@@ -907,3 +907,18 @@ def test_offense_repair_renews_rude_spellings(concepts):
     assert k in [e[0] for e in ev] and all(e[1].startswith("offense:") for e in ev)
     assert offends(lex.words[k].form) is None
     assert not [w for w in lex.words.values() if offends(w.form)]
+
+
+def test_minimal_word_keeps_a_vowel(concepts):
+    """Cold review 2026-11-08, R1: a sound change that would leave a word with no vowel ('you' /hu/ > /h/) passes that
+    word by; other words still change."""
+    rng, inv, lex = _proto(77, concepts)
+    ks = sorted(k for k in lex.words if lex.words[k].pos != "NAME")[:2]
+    lex.set(replace(lex.words[ks[0]], form=tuple(from_ipa("hu"))))
+    lex.set(replace(lex.words[ks[1]], form=tuple(from_ipa("hapu"))))
+
+    def apocope(f):
+        return f[:-1] if f and f[-1].kind == "V" else f
+    L.apply_rule_to_lexicon(lex, apocope, "test", 1.0, "L")
+    assert word_ipa(lex.words[ks[0]].form) == "hu"
+    assert word_ipa(lex.words[ks[1]].form) == "hap"

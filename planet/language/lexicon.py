@@ -2423,6 +2423,11 @@ def _merge_ids(ids: str, rule_id: str) -> str:
     return "+".join(parts + ([f"…{more}"] if more else []))
 
 
+def has_nucleus(form: Form) -> bool:
+    """Does the form have a syllable nucleus (a vowel; the percept space has no syllabic consonants)?"""
+    return any(s.kind == "V" for s in form)
+
+
 def minimal_form(old: Form) -> Form:
     """What is left of a word a sound change would delete whole: its last vowel (the nucleus that held out), else its last
     segment. Words do not vanish; they wear down to a minimal form."""
@@ -2454,7 +2459,7 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
     changed get a `sound_change:<id>` step; successive changes at the same kyr in the same lect collapse into one step
     (ids joined by '+', '+…n' past four), and so does anything past a run of MAX_SOUND_RUN sound-change steps. Returns
     the number of words changed. A word the rule would delete whole keeps a minimal form (`minimal_form`, noted 'kept
-    minimal'); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
+    minimal'), and one it would leave without a vowel is passed by (`has_nucleus`: the minimal word); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
     it."""
     lect_id = lect_id or lex.lect
     n = 0
@@ -2466,6 +2471,9 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
         note = ""
         if not f and w.form:
             f, note = minimal_form(w.form), "kept minimal"
+        elif f != w.form and not has_nucleus(f) and has_nucleus(w.form):
+            continue   # (minimal word: a change that would leave the word with no vowel passes it by, as apocope spares
+            #            monosyllables; cold review 2026-11-08, R1: 'you' /h/, 'I' /dʑ/)
         if f != w.form:
             lex.words[k] = _sound_step(w, f, rule_id, kyr, lect_id, note)
             n += 1

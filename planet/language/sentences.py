@@ -440,7 +440,8 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
         pre, f = _segs("".join(surf[:len(w.pre)])) or (), _segs(surface)
         if f:
             try:
-                g = PH.apply_word(tuple(f), [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=len(pre))  # (stem-level: word-making only)
+                g = PH.apply_word(tuple(f), [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=len(pre),
+                                  stem_len=len(_segs(surf[si]) or ()))  # (stem-level: word-making only; the stem keeps a vowel)
                 if g and g != tuple(f):
                     surface = word_ipa(g)
             except Exception:  # noqa: BLE001 - a rule that cannot run leaves the plain join

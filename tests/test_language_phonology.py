@@ -114,3 +114,16 @@ def test_new_paradigm_cells_join_under_the_live_rules():
     assert PH.apply_new_cells(g, inv, before) == 1
     assert word_ipa(ex.cells[("PL",)]) == "kabi" and [word_ipa(m) for _, m in ex.parts[("PL",)]] == ["kab", "i"]
     assert word_ipa(old.cells[("PL",)]) == "mupa"
+
+
+def test_apply_word_keeps_the_stem_nucleus():
+    """Cold review 2026-11-08, R1b: a word-level apocope over an affixed word cut a CV root to one consonant (aarakocra
+    'eats' /lu˦nʲ/). With the stem's span given, a rule that would delete the stem's last vowel passes the word by; an
+    affix still loses its vowel."""
+    apoc, _ = RU.parse_rule({"id": "A", "family": "deletion", "rule": "V > ∅ / _#", "cause": "prosody", "needs": "timing",
+                             "weight": "3", "example": ""})
+    f = tuple(from_ipa("luna"))          # (prefix lu- + root na)
+    assert word_ipa(PH.apply_word(f, [(apoc, "word")], stem_index=2, stem_len=2)) == "luna"
+    g = tuple(from_ipa("nalu"))          # (root na + suffix -lu)
+    assert word_ipa(PH.apply_word(g, [(apoc, "word")], stem_index=0, stem_len=2)) == "nal"
+    assert word_ipa(PH.apply_word(tuple(from_ipa("a")), [(apoc, "word")])) == "a"

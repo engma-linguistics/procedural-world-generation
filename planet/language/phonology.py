@@ -273,18 +273,50 @@ def _rule_of(x):
     return x[0] if isinstance(x, tuple) else getattr(x, "rule", x)
 
 
-def apply_word(form: tuple, rules, stress=None, inventory=None, stem_index=None) -> tuple:
-    """Run rules ((rule, level) pairs or Live) over one form, in order."""
+def _vowels(f) -> int:
+    return sum(1 for s in f if s.kind == "V")
+
+
+def _kept(f: tuple, g: tuple) -> list:
+    """For each index of f, its index in g (None where the rule deleted it), by alignment."""
+    from difflib import SequenceMatcher
+    out: list = [None] * len(f)
+    for tag, i1, i2, j1, j2 in SequenceMatcher(a=f, b=g, autojunk=False).get_opcodes():
+        if tag == "equal" or (tag == "replace" and i2 - i1 == j2 - j1):
+            for d in range(i2 - i1):
+                out[i1 + d] = j1 + d
+    return out
+
+
+def apply_word(form: tuple, rules, stress=None, inventory=None, stem_index=None, stem_len=None) -> tuple:
+    """Run rules ((rule, level) pairs or Live) over one form, in order. The minimal word (cold review 2026-11-08, R1): a
+    rule that would leave the form with no vowel, or (with `stem_len`, the stem's length from `stem_index`) delete the
+    stem's last vowel, passes it by: an affix may lose its vowel at a join, the root keeps a nucleus (aarakocra 'eats'
+    /lu˦nʲ/ was a root cut to one consonant inside its affixed word)."""
     from .inventory import fuse_vowels
     f = tuple(form)
+    s0 = stem_index if stem_len else None
     for x in rules:
         r = _rule_of(x)
         try:
             g = RU.apply(r, f, stress, stem_index=stem_index, inventory=inventory)
         except Exception:  # noqa: BLE001 - a rule that cannot run on this form is skipped
             continue
-        if g:
-            f = fuse_vowels(tuple(g))
+        if not g:
+            continue
+        g = fuse_vowels(tuple(g))
+        if _vowels(g) == 0 < _vowels(f):
+            continue
+        if s0 is not None and len(g) != len(f):
+            m = _kept(f, g)
+            span = range(s0, min(len(f), s0 + stem_len))
+            if any(f[i].kind == "V" for i in span) and not any(f[i].kind == "V" and m[i] is not None for i in span):
+                continue
+            kept = [m[i] for i in span if m[i] is not None]
+            if kept:
+                s0, stem_len = kept[0], kept[-1] - kept[0] + 1
+                stem_index = s0 if stem_index is not None else stem_index
+        f = g
     return f
 
 

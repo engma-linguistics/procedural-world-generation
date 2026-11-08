@@ -2984,6 +2984,8 @@ def apply_rule_to_grammar(g: Grammar, rule_apply_fn: Callable[[Form], Form], rul
         if not new_stem and old_stem:
             new_stem = minimal_form(old_stem)
             g.events.append((kyr, f"{ex.concept}: stem {ipa(old_stem)} kept minimal as {ipa(new_stem)} ({rule_id})"))
+        elif any(_is_v(x) for x in old_stem) and not any(_is_v(x) for x in new_stem):
+            new_stem = old_stem   # (minimal word, as lexicon.apply_rule_to_lexicon: a stem keeps its vowel)
         ex.stem = new_stem
         for k in list(ex.cells):
             old = ex.cells[k]
