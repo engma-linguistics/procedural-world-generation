@@ -215,6 +215,11 @@ class Rule:
   front vowels, nasalization + nasal loss, s>h, h>0, θ>f, cluster simplification, vowel harmony (one rule), umlaut, rhotacism,
   tonogenesis from coda loss, a chain shift step, metathesis of CC, and epenthesis. The full catalogue is loaded from
   `data/sound_changes.tsv` by a parser of the compact notation; parse failures are logged and skipped, not fatal.
+  (Sound lane, 2026-11-08) `X` is any segment, so `r > l / _X*r` reaches an r later in the word (dissimilation S091-S094,
+  Grassmann staged over aspirated and breathy stops, ATR harmony S134 approximated on height); a parallel list of clusters
+  ("pl, kl, fl > pj, kj, fj") is a staged rule, a step per pair. 7 of 217 rows stay refused: haplology (S106, identity),
+  suffix harmony (S132, S133, morphology), pitch accent (S170), tone loss (S172) and analogy (S183, S184). A staged rule
+  `applies` when any step can act, and `_single` runs its steps in order on a lone segment (the steers see every step).
 - Rules run on *inflected forms* too: the lect hands `apply` every stored form (stems, paradigm exemplar forms, gram forms,
   names).
 
