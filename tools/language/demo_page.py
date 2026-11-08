@@ -43,19 +43,26 @@ def _bound(l):
     return sum(1 for g in l.get("grams") or [] if g.get("level", 0) >= 2)
 
 
+def _proto_people(doc, l) -> str:
+    """The people whose proto-language the lect descends from (a shifted people speaks another people's line)."""
+    return doc.line(l["id"])[-1]["people"]
+
+
 DEMO_EXTRA = [
-    ("most_spoken", "the most spoken language", lambda l: True, lambda l: (l.get("population") or 0,),
+    ("most_spoken", "the most spoken language", lambda doc, l: True, lambda l: (l.get("population") or 0,),
      lambda l: f"about {_pop(l)} speakers"),
-    ("elvish", "an elvish language", lambda l: SK.group(l["people"]) == "elf", lambda l: (l.get("population") or 0,),
+    # (an elvish or dwarvish language is one spoken by that people AND descended from that people's own proto-language)
+    ("elvish", "an elvish language", lambda doc, l: SK.group(l["people"]) == "elf"
+     and SK.group(_proto_people(doc, l)) == "elf", lambda l: (l.get("population") or 0,),
      lambda l: f"spoken by {SK.people(l['people'])}"),
-    ("dwarvish", "a dwarvish language", lambda l: "dwar" in l["people"], lambda l: (l.get("population") or 0,),
-     lambda l: f"spoken by {SK.people(l['people'])}"),
-    ("ergative", "an ergative language", lambda l: (l.get("typology") or {}).get("alignment") == "erg-abs"
+    ("dwarvish", "a dwarvish language", lambda doc, l: "dwar" in l["people"] and "dwar" in _proto_people(doc, l),
+     lambda l: (l.get("population") or 0,), lambda l: f"spoken by {SK.people(l['people'])}"),
+    ("ergative", "an ergative language", lambda doc, l: (l.get("typology") or {}).get("alignment") == "erg-abs"
      and any(g["function"] == "ERG" for g in l.get("grams") or []), lambda l: (_bound(l),),
      lambda l: "the doer of a transitive verb is marked (ergative), the doer of an intransitive one is not"),
-    ("synthetic", "the most affixes", lambda l: True, lambda l: (_bound(l),),
+    ("synthetic", "the most affixes", lambda doc, l: True, lambda l: (_bound(l),),
      lambda l: f"{_bound(l)} live affixes"),
-    ("isolating", "the fewest affixes", lambda l: len(l.get("sentences") or []) >= 8, lambda l: (-_bound(l),),
+    ("isolating", "the fewest affixes", lambda doc, l: len(l.get("sentences") or []) >= 8, lambda l: (-_bound(l),),
      lambda l: f"{_bound(l)} live affixes: grammar by word order and separate words"),
 ]
 
@@ -73,14 +80,14 @@ def pick(doc, n: int) -> list[tuple[str, dict, str]]:
     used = {l["people"] for _h, l, _w in out}
     for s, l, _c in rank:
         if l["people"] not in used:
-            out.append(("the most English-like language", l, f"English-likeness score {s:.2f} (sketch.py)"))
+            out.append(("the most English-like language", l, f"English-likeness score {s:.2f}"))
             break
     for _k, head, ok, score, why in DEMO_EXTRA:
         if len(out) >= n:
             break
         used_p = {l["people"] for _h, l, _w in out}
         used_f = {l["family_true"] for _h, l, _w in out}
-        cands = [l for l in doc.living if ok(l) and l["people"] not in used_p and l.get("sentences")]
+        cands = [l for l in doc.living if ok(doc, l) and l["people"] not in used_p and l.get("sentences")]
         fresh = [l for l in cands if l["family_true"] not in used_f]
         cands = fresh or cands
         if cands:
@@ -218,11 +225,14 @@ def families(doc, l, field: str, au: Audio) -> str:
             f["all"].add(c)
     if not seen:
         return f"<p class='muted'>This languages file has no <code>{E(field)}</code> yet.</p>"
+    R = doc.d.get("roots") or {}
+    if field == "roots":   # (a speaker feels a family only while the shared part can be heard in each member)
+        for r, f in fam.items():
+            f["main"] = SK.felt_members(doc, lex, r, f["main"])
     big = sorted((x for x in fam.items() if len(x[1]["main"]) >= 2), key=lambda x: (-len(x[1]["main"]), str(x[0])))
     inside = {c for _r, f in big for c in f["main"]}
     out = [f"<p class='muted'>{sum(len(f['main']) >= 3 for _r, f in big)} families of 3+ words; "
            f"{round(100 * len(inside) / max(1, len(lex)))}% of the {len(lex)} words share a root with another.</p>"]
-    R = doc.d.get("roots") or {}
     for r, f in big[:5]:
         info = R.get(r) or {}
         head = info.get("gloss") or SK.cname(str(r).split(":", 1)[-1].split("@")[0])
@@ -237,10 +247,15 @@ def families(doc, l, field: str, au: Audio) -> str:
 
 
 def lineage(doc, l) -> str:
-    line = doc.line(l["id"])[::-1]  # oldest first
-    steps = []
-    for x in line[-6:]:
+    line = []   # oldest first; a stage named as the one before it (a split that kept the deme) is folded into it, so no
+    # language is listed as its own ancestor
+    for x in doc.line(l["id"])[::-1]:
         nm = doc.label(x["id"], short=True)
+        if line and line[-1][0] == nm:
+            continue
+        line.append((nm, x))
+    steps = []
+    for nm, x in line[-6:]:
         steps.append(f"<span class='step'>{E(nm)} <span class='muted'>{E(SK.kyr(x.get('born_kyr')))}</span></span>")
     hidden = f"<span class='muted'>… {len(line) - 6} older stages … </span>" if len(line) > 6 else ""
     sis = []
@@ -249,13 +264,35 @@ def lineage(doc, l) -> str:
             v = doc.intel.get((l["id"], x["id"]))
             sis.append((-(v or 0), x["id"], v))
     sis.sort()
-    rel = ", ".join(f"{E(doc.label(i, short=True))}{f' <span class=muted>({v:.0%} understood)</span>' if v else ''}"
-                    for _s, i, v in sis[:4])
+    rel = ", ".join(f"{E(doc.label(i, short=True))} <span class=muted>"
+                    f"({f'{v:.0%}' if v else 'under 5%'} understood)</span>" for _s, i, v in sis[:4])
+    # (the file keeps intelligibility only from 5% up: a missing pair is below that, not unknown)
     out = f"<div class='line'>{hidden}{' → '.join(steps)}</div>"
     fam_n = 1 + len(sis)
     out += (f"<p class='muted'>{fam_n} living languages in this true family. Closest living relatives: {rel}.</p>" if sis
             else "<p class='muted'>The only living language of its true family.</p>")
     return out
+
+
+#: marks for sounds no human makes, beyond the IPA (percepts.py, symbols.tsv): what each one means on the page
+HOUSE_MARKS = (("‼", "harsh, growled voice (the Voice Quality Symbols' mark)"),
+               ("ᵣ", "purred voice, about 25 pulses a second"),
+               ("ᴖ", "a second voice sounding at once, as a bird's syrinx makes two notes (house mark)"),
+               ("˯", "sub-bass register, below human hearing (house mark)"),
+               ("˰", "ultrasonic register, above human hearing (house mark)"),
+               ("ʞ", "a beak or mandible clap (the withdrawn IPA letter, reused)"))
+
+
+def house_marks(l, shown: str = "") -> str:
+    """A key to the non-human sound marks this language's sounds use, or its section shows (an old root reconstructed
+    from a people with other mouths can carry one), or ''."""
+    inv = l.get("inventory") or {}
+    segs = "".join((inv.get("consonants") or []) + (inv.get("vowels") or [])) + shown
+    used = [(m, t) for m, t in HOUSE_MARKS if m in segs]
+    if not used:
+        return ""
+    return ("<p class='muted'>Marks beyond the standard IPA in this language: "
+            + "; ".join(f"<span class='ipa'>{E(m)}</span> {E(t)}" for m, t in used) + ".</p>")
 
 
 def infobox(doc, l, why_head, why) -> str:
@@ -281,7 +318,7 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
     h = [f"<section class='lang' id='L{k}' data-k='{k}'><h2>{E(title)} <span class='muted'>{E(l.get('deme_name') or doc.label(l['id']))}</span></h2>",
          f"<div class='row'>{play(first, 'hear a sample')}"
          + (f"<button class='say lab all' data-k='{k}'>&#9654; play all sentences</button>" if len(sents) > 1 and first else "")
-         + "</div>", infobox(doc, l, why_head, why), "<h3>Where it comes from</h3>", lineage(doc, l)]
+         + "</div>", infobox(doc, l, why_head, why), "<!--MARKS-->", "<h3>Where it comes from</h3>", lineage(doc, l)]
     # sentences
     h.append("<h3>Sample sentences</h3>")
     for i, (s, cid) in enumerate(zip(sents, sc)):
@@ -296,7 +333,7 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
     h.append("<h3>The grammar in short</h3><div class='notes'>")
     for i, n in enumerate(l.get("grammar_notes") or []):
         exs = []
-        for x in (n.get("ex") or [])[:2]:
+        for x in (n.get("ex") or [])[:4]:   # (every marker a note names has its example: sg/pl/du, 4 classes)
             r = SN.example(l, x)
             if r:
                 exs.append(f"<div class='ex'>{interlinear(r[0], r[1])}<span class='muted'>‘{E(r[2])}’"
@@ -337,7 +374,8 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
              "parts are still words.</p>" + families(doc, l, "roots", au) + "</div><div class='card'><h4>Families a "
              "historian reconstructs</h4><p class='muted'>Every word's family as it was when the word was made, however "
              "opaque it has become since.</p>" + families(doc, l, "etym_roots", au) + "</div></div></section>")
-    return "".join(h)
+    out = "".join(h)
+    return out.replace("<!--MARKS-->", house_marks(l, out), 1)
 
 
 CSS = """
@@ -446,6 +484,11 @@ def _cx_change(ser) -> tuple[float, float, float] | None:
     return best
 
 
+def _lab(fn: str) -> str:
+    """A gram's function as the glosses write it (PAST -> PST, PERF -> PRF, EVID.REP -> REP, CLASS:2 -> CL2)."""
+    return fn.replace("CLASS:", "CL") if fn.startswith("CLASS:") else SN.ABBR.get(fn, fn)
+
+
 def _gform(g) -> str:
     """A gram [function, form, level] in words: '/li/, a clitic'; a fused gram with no segment of its own says so."""
     lv = LEVEL_WORD[min(g[2], 4)]
@@ -463,13 +506,13 @@ def _gram_events(ser, since: float) -> list:
         for fn in sorted(set(g0) | set(g1)):
             a, b = g0.get(fn), g1.get(fn)
             if a is None:
-                ev.append((k1, "+", fn, f"{fn} recruited: {_gform(b)}"))
+                ev.append((k1, "+", fn, f"{_lab(fn)} recruited: {_gform(b)}"))
             elif b is None:
-                ev.append((k1, "-", fn, f"{fn} lost (was {_gform(a)})"))
+                ev.append((k1, "-", fn, f"{_lab(fn)} lost (was {_gform(a)})"))
             elif b[2] > a[2]:
-                ev.append((k1, "+", fn, f"{fn} bound further: {_gform(a)} > {_gform(b)}"))
+                ev.append((k1, "+", fn, f"{_lab(fn)} bound further: {_gform(a)} > {_gform(b)}"))
             elif b[2] < a[2]:
-                ev.append((k1, "-", fn, f"{fn} came loose: {_gform(a)} > {_gform(b)}"))
+                ev.append((k1, "-", fn, f"{_lab(fn)} came loose: {_gform(a)} > {_gform(b)}"))
     return ev
 
 
@@ -499,7 +542,7 @@ def _q(vals: list, x) -> float:
 
 
 def _rank(q: float) -> str:
-    return "the highest of all living lects" if q >= 0.995 else f"above {q:.0%} of living lects"
+    return "the highest of all living languages" if q >= 0.995 else f"above {q:.0%} of living languages"
 
 
 def _cause(doc, l, rising: bool, since: float) -> str:
@@ -511,8 +554,8 @@ def _cause(doc, l, rising: bool, since: float) -> str:
     recent = [s for s in shifts if s.get("kyr") is not None and 0.1 <= s["kyr"] <= since + 0.5]   # (inside the window:
     # a shift after the decline cannot explain it)
     facts = (f"L2 share {l.get('l2') or 0:.2f}, {_rank(l2q)}; {int(l.get('population') or 0):,} speakers, "
-             f"{_rank(popq).replace(' of all living lects', '').replace(' of living lects', '')}; isolation "
-             f"{l.get('isolation') or 0:.2f}, {_rank(isoq).replace(' of all living lects', '').replace(' of living lects', '')}")
+             f"{_rank(popq).replace(' of all living languages', '').replace(' of living languages', '')}; isolation "
+             f"{l.get('isolation') or 0:.2f}, {_rank(isoq).replace(' of all living languages', '').replace(' of living languages', '')}")
     if rising:
         if l2q <= 0.4 and isoq >= 0.6:
             bits.append("a tight-knit, isolated community with few adult learners: grams are worn down and bound and nobody "
@@ -536,7 +579,8 @@ def _cause(doc, l, rising: bool, since: float) -> str:
             bits.append("a large, spread-out speech community")
         if not bits:
             bits.append("no strong outside pressure shows: erosion took markers faster than new ones were recruited")
-    return f"{'; '.join(bits)}. <span class='muted'>({E(facts)}, today's values)</span>"
+    txt = "; ".join(bits)
+    return f"{E(txt[:1].upper() + txt[1:])}. <span class='muted'>({E(facts)}, today's values)</span>"
 
 
 def complexity_cases(doc, n_each: int = 3) -> tuple[list, list]:
@@ -575,11 +619,10 @@ def complexity_section(doc, k: int) -> str:
     rise, fall = complexity_cases(doc)
     h = [f"<section class='lang' id='L{k}' data-k='{k}'><h2>Languages getting more and less complex</h2>",
          "<p>Proto-languages start with few grams and mostly gain more, so a language whose grammar <b>shrinks</b> is the "
-         "more telling case. The measure is the grammar's complexity score stored with each 0.5 kyr snapshot "
-         "(<code>cx</code>, grammar.complexity): bound functions + the mean bonding level of the live grams (free word 0, "
+         "more telling case. The measure is the grammar's complexity score, stored every 500 years: bound functions + the mean bonding level of the live grams (free word 0, "
          "clitic 1, affix 2, fused 3) + 4 x the share of irregular paradigm cells + 0.5 per bound class marker. Each "
          "line follows the language back through the ancestors it split from; the shaded part is the window read. The "
-         "events are differences between successive snapshots' live grams. Causes are read from the lect's L2 share, "
+         "events are differences between successive snapshots' live grams. Causes are read from the language's L2 share, "
          "population and isolation (today's values; the file does not keep them per frame) and its language shifts.</p>"]
     for title, rows, rising in (("Getting simpler", fall, False), ("Getting more complex", rise, True)):
         h.append(f"<h3>{title}</h3>")
@@ -598,12 +641,12 @@ def complexity_section(doc, k: int) -> str:
             g0 = {g[0]: g for g in (then or {}).get("grams") or []}
             g1 = {g[0]: g for g in now.get("grams") or []}
             pairs = [fn for fn in sorted(set(g0) | set(g1)) if g0.get(fn) != g1.get(fn)][:4]
-            ba = "".join(f"<tr><td class='sc'>{E(fn)}</td><td class='ipa'>"
+            ba = "".join(f"<tr><td class='sc'>{E(_lab(fn))}</td><td class='ipa'>"
                          f"{E(_gform(g0[fn])) if fn in g0 else '(none)'}</td>"
                          f"<td class='ipa'>{E(_gform(g1[fn])) if fn in g1 else '(none)'}</td></tr>"
                          for fn in pairs)
             h.append(f"<div class='card' style='margin:8px 0'><h4>{E(name)} <span class='muted'>{E(SK.people(l['people']))}, "
-                     f"lect {E(l['id'])}</span></h4>"
+                     f"language {E(l['id'])}</span></h4>"
                      f"<div class='two'><div>{_spark(ser, since)}<div class='note'>score {c0:.2f} {since:g} kyr ago &rarr; "
                      f"{c1:.2f} now ({'+' if dlt > 0 else ''}{dlt:.2f})</div></div>"
                      f"<div><b>Likely cause.</b> {_cause(doc, l, rising, since)}</div></div>"
@@ -652,7 +695,7 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool) -> 
             f"grown by sound change, borrowing and grammaticalization from its people's history. Glosses follow the Leipzig "
             f"rules: - joins an affix, = a clitic, category labels in small caps. Press ▶ to hear a form. {E(voice)}</p>"
             f"<nav>{''.join(nav)}</nav>{''.join(secs)}"
-            f"<p class='muted'>Written by tools/language/demo_page.py from {E(Path(src).name)}.</p></main>"
+            "</main>"
             f"<script type='application/json' id='clips'>{clips}</script><script>{JS}</script></body></html>")
     return page, {"languages": [(l["id"], l["people"], h) for h, l, _w in picks], "clips": len(au.clips),
                   "backend": au.backend, "codec": au.codec, "failed": au.failed}

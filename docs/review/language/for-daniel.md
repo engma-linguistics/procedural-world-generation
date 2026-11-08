@@ -152,3 +152,106 @@ hand. Your call.
   syncretism is not shown).
 - Demo candidates: d191 (split ergativity by person, VSO: 'see-3SG ERG-man DEF ACC-1SG'), d10 (inclusive/exclusive),
   d1 (whole-stem continuous reduplication), d2 (serial 'take ... come'), from the scratch pass, not the shipped run.
+
+
+## Grammar phase B (branch lang-gram-b, 2026-11-08)
+
+### Demo-page bugs fixed (the full read of the 11-08 demo)
+Each was fixed where it arose, with a test where the fix is mechanical:
+- **Merchants glossed as things.** Role and trade nouns (merchant, soldier, teacher, thief, king, servant and so on)
+  had no semantic field that says 'person', so they took the 'abstract' class. They are people now.
+- **Class numbers with gaps and twins** (tabaxi: no class 1, two class 3s). The engine gave a new class the number
+  "count + 1", so after a class was lost the next one took a number still in use. It now takes the next unused number,
+  and the pages number classes 1..n.
+- **The dual named in prose but missing from the examples.** The page showed only two examples per note. It now shows
+  up to four, and the Number note has a 'two dogs' example with the dual.
+- **The correlative note quoted 'sings' for a 'dance' sentence**, and **the 'have' note said dog for a boat sentence.**
+  Both now quote their own sentence.
+- **Classifier examples without the classifier.** A free classifier is now shown after a numeral ('two CLF dogs'),
+  and a free class marker in a bound system stands beside its noun. The example noun is not the marker's own source
+  noun when another will do.
+- **Prose forms that differ from the examples** (cloud giant PST iŋ vs in=, human e̞˧ʔ vs =je̞˧ʔ). The joining rules
+  change a marker next to its neighbour. The note now names both: "(e̞˧ʔ; je̞˧ʔ after a vowel; from …)", "(iŋ; in
+  before a stop)", or "where it has merged with the stem" for a stored word form.
+- **ᴖ in IPA.** It is not a leak: it is the house mark for a second simultaneous voice (the avian syrinx), from
+  `symbols.tsv`. In this pass only aarakocra and kenku lects have it. The kobold case would have been an old root
+  reconstructed from an avian ancestor. Each language section now has a key for any non-IPA mark it shows (‼ ᵣ ᴖ ˯
+  ˰ ʞ).
+- **'Felt' word families whose members do not share the root.** The lexicon keeps a felt root on a word after its
+  form has drifted away (aarakocra 'knee' wja˦ under 'head' le˧). The pages now list a felt family member only if the
+  root can still be heard in it. The lexicon's own `roots` field is the lexicon lane's (lexicon.py), so its data are
+  unchanged.
+- **A language listed as its own ancestor** (a split that kept its deme carries the same name). Such stages are now
+  folded into one. **The sea elves were "an elvish language" while descended from a gnome proto.** The elvish and
+  dwarvish picks now need the people's own proto-language.
+- **The relatives line dropped percentages.** The file keeps intelligibility only from 5% up, so a missing value
+  now reads "under 5% understood".
+- **Mixed gram labels** (PAST/PST, PERF/PRF, EVID.REP/REP): the complexity tab now uses the gloss labels too.
+  **"Likely cause." with a lowercase sentence** is capitalized. **Tool and agent jargon** is gone from the pages
+  ("(sketch.py)", "the lane picked…", bare "G055"/"G056", `cx`, the file-name footer). Path ids stay in the code.
+
+### Engine: what phase B added, with the defaults I chose
+- **Mood grams.** Four new functions, from the written paths and a few built-in ones:
+  - IMP (imperative);
+  - HORT ('let us': G034 'let, leave'; 'come, go'; 'give' as Russian *davai*);
+  - OBLG ('must': G007 'have', read as HOLD);
+  - APPR ('lest': G035 'fear').
+  - The imperative's own sources are my guess, since the catalogue has none: an attention word 'look!, come!' (X29),
+    or a hortative widened to commands (X30). Most languages use the bare stem (WALS 70A), and the bare stem stays
+    the default.
+  - None of these has a typology feature, so they come with the ordinary recruitment draw, with no pull.
+- **Object agreement** (1SG.O … 3PL.O, glossed 1SG.OBJ). It comes from the object pronouns (Givón). One lead path
+  (3rd person 'him/her' > 3SG.O). The rest of the series binds with it as a set, like subject agreement (`SERIES`,
+  `PERSON_JOIN`). The `object_agreement` aim pulls it. Its side follows the aim (prefix/suffix), and
+  `realised_value('object_agreement')` now reads the live grams.
+- **The genitive has sources now.**
+  - Ablative > genitive (X31, Latin *de* > French *de*).
+  - A demonstrative linker (X32, Albanian, Persian ezafe).
+  - A case language is pulled toward a genitive of its own (`PULL_GROUP['GEN']`).
+  - Patronymics will switch to the genitive automatically where one exists (names lane).
+- **The inclusive 'we' in agreement.** A 1PL.INCL marker joins a binding subject series when the lexicon has an
+  inclusive 'we' (join chance 0.7, `PERSON_JOIN['INCL']`). The old 1PL marker is then the exclusive.
+- **Possessor marking on the possessed noun** (1SG.POSS …, slot after number and before case, as Turkish
+  *ev-ler-im-de*). The lead path is 'I' > 1SG.POSS (X39), and the series binds as a set. Its side follows the
+  genitive order. There is no typology feature for it, so the ordinary draw brings it.
+- **'Set' paths** (frequency class `set`, weight 0). These paths are never drawn on their own; only a series' set
+  binding uses them. Without them, twelve more pronoun paths would dilute the draw for every other target.
+- **Sentences.**
+  - The imperative takes IMP where it lives.
+  - New 'Let us eat the fish!' (hortative) and 'The woman sees you.' (object agreement).
+  - Every transitive clause puts the object's marker on the verb when it is bound.
+  - The 'we (you and I)' sentence uses 1PL.INCL.
+  - Possessed nouns carry the possessor marker, and the possessor pronoun is dropped in pro-drop lects.
+  - New notes: Object agreement, Possessor marking. Mood markers go under "Mood and evidentiality", and the Commands
+    note names the imperative marker.
+
+### Measured (isolated-lect harness, 300 human protos, ~20 kyr, before = lang-design 7f10e12f)
+| | before | after | reference |
+| --- | --- | --- | --- |
+| genitive gram (any / bound) | 0% / 0% | 63% / 27% | (no single figure; most case languages mark the possessor) |
+| object agreement shown | 0% | 51% (suffix 34%, prefix 18%) | GB093 34% suffix, GB094 22% prefix |
+| object markers bound, of lects with any | n/a | median 3 of 6 | n/a |
+| possessor markers (clitic or tighter) | 0% | 19% of lects | GB430/431: roughly a quarter to a third |
+| inclusive subject marker (any) | 0% | 32% of lects (of 57% with an inclusive 'we') | n/a |
+| IMP / HORT / OBLG / APPR (any) | 0% | 17% / 39% / 30% / 19% | WALS 70A: 78% have a dedicated imperative (this counts the bare stem against a marked indicative, too) |
+| verb synthesis 0-1 bound categories (WALS 22A bins, harness) | 37% | 25% | about 3% |
+
+The full-pass figures are in the "Full pass" paragraph below.
+
+**Synthesis (your decision, not tuned).** Mood and object agreement add bound verb categories, and the harness's
+0-1 bin falls from 37% to 25%. It is still far above WALS. Phase A's advice stands: if the full pass is still above
+about 25%, the lever is `FUSE` (0.012 → about 0.02) and the L2 exponent on fusion. I did not touch FUSE.
+
+### Odd or worth a look
+- The genitive is now common (63% of harness lects, about half of them still a free word, an adposition). That
+  follows from the pull. Lower or remove `PULL_GROUP['GEN']` if you want fewer.
+- HORT (39%) outnumbers IMP (17%). This is plausible, since many languages have a 'let's' particle and a bare-stem
+  imperative, but it rests on my guessed IMP sources.
+- Possessor marking has no aim behind it, so its share is set by the draw alone.
+
+### Not done (left for the next grammar lane)
+- **Concord** (item 8): class or gender markers copied onto adjectives, demonstratives and the verb.
+- **Constructions as grams** (item 10): Q, COP, REL, COMP, FOC. These are still lexical stand-ins, and the notes
+  say so in plain words now.
+
+Both are queued in grammar-gaps.md (phase B progress).

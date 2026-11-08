@@ -73,7 +73,9 @@ DEGRAM_EDGE = 3.0
 DEGRAM_ORPHAN = 3.0
 CHUNK = 10.0           # generations per internal sub-step
 
-PATH_FREQ_WEIGHT = {"very common": 3.0, "common": 2.0, "attested": 1.0}
+PATH_FREQ_WEIGHT = {"very common": 3.0, "common": 2.0, "attested": 1.0, "set": 0.0}
+# ('set': a path only a paradigm's set-binding uses (`_person_set`), never drawn on its own: the rest of an object or
+# possessor series binds with its first member, so one lead path per series keeps the draw's other targets undiluted)
 
 # --------------------------------------------------------------------------------------------------------------------
 # Functions: host, which typology feature fixes the side a new gram stands on, frequency weight, paradigm slot, gloss
@@ -125,11 +127,24 @@ FUNCS: dict[str, FuncInfo] = {
     "1PL": FuncInfo("V", "agr", 1.0, "person", "we (subject)"),
     "2PL": FuncInfo("V", "agr", 0.8, "person", "you all (subject)"),
     "3PL": FuncInfo("V", "agr", 1.0, "person", "they (subject)"),
+    # grammar phase B (2026-11-08): the inclusive 'we' in the subject series; mood; object agreement; possessor marking
+    "1PL.INCL": FuncInfo("V", "agr", 0.9, "person", "we, you included (subject)"),
+    "IMP": FuncInfo("V", "aux", 1.0, "mood", "imperative"),
+    "HORT": FuncInfo("V", "aux", 0.6, "mood", "hortative ('let us')"),
+    "OBLG": FuncInfo("V", "aux", 0.7, "mood", "obligative ('must')"),
+    "APPR": FuncInfo("VP", "aux", 0.4, "mood", "apprehensive ('lest')"),
+    **{f"{p}.O": FuncInfo("V", "oagr", fr, "person", f"{g} (object)") for p, fr, g in (
+        ("1SG", 1.0, "me"), ("2SG", 0.9, "you"), ("3SG", 1.1, "him/her/it"), ("1PL", 0.7, "us"), ("2PL", 0.6, "you all"),
+        ("3PL", 0.8, "them"))},
+    **{f"{p}.POSS": FuncInfo("N", "gen", fr, "poss", f"{g} (possessor)") for p, fr, g in (
+        ("1SG", 1.1, "my"), ("2SG", 0.9, "your"), ("3SG", 1.1, "his/her/its"), ("1PL", 0.7, "our"),
+        ("2PL", 0.6, "your (pl.)"), ("3PL", 0.8, "their"))},
 }
 CLASS_INFO = FuncInfo("N", "dem", 1.3, "class", "noun class")
 
 # affix order, innermost first (Bybee 1985 relevance: derivation, valence, aspect, tense, mood, person; number before case)
-SLOT_ORDER = ("deriv", "class", "number", "det", "case", "valence", "aspect", "tense", "mood", "polarity", "person")
+SLOT_ORDER = ("deriv", "class", "number", "poss", "det", "case", "valence", "aspect", "tense", "mood", "polarity",
+              "person")   # ('poss' after number, before case: Turkish ev-ler-im-de 'house-PL-1SG.POSS-LOC')
 
 #: noun-class groups, Bantu-like but generic, in the order a growing class system adds them
 CLASS_GROUPS = ("person", "people", "manner", "abstract", "plant", "animal", "liquid", "place", "small")
@@ -336,6 +351,8 @@ _TARGET_MAP = (
     ("VERB AGREEMENT", "3SG"), ("DIMINUTIVE", "DIM"), ("PLURAL", "PL"), ("NUMERAL CLASSIFIER", "CLASS"),
     ("GENITIVE", "GEN"), ("NEGATION", "NEG"), ("STANDARD NEGATION", "NEG"), ("INDEFINITE PRONOUN > FIRST PERSON", "1PL"),
     ("MIDDLE > PASSIVE", "PASS"),   # G060 reflexive > middle > passive (Russian -sja, Spanish se; mapped 2026-11-07)
+    # grammar phase B (2026-11-08): mood from the written paths
+    ("OBLIGATION", "OBLG"), ("PERMISSIVE > HORTATIVE", "HORT"), ("APPREHENSIVE", "APPR"),
 )
 #: path source texts that are grams, not words (reanalysis: the gram changes function)
 _GRAM_SOURCES = {"PERFECT": "PERF", "PROGRESSIVE": "PROG", "ALLATIVE": "ALL", "ABLATIVE": "ABL", "DEFINITE ARTICLE": "DEF",
@@ -388,6 +405,33 @@ _BUILTIN_PATHS = (
     ("X24", ("LEAVE", "COME"), "ABL", "common", "'leave, come from' > ablative (WLG: Ewe tso, Mandarin cong)"),
     ("X25", ("GO",), "ALL", "attested", "'go' > allative (WLG: Thai pai, Ewe yi)"),
     ("X26", ("TAKE", "HOLD"), "INS", "common", "serial 'take X and V' > instrumental (WLG: Twi de, Yoruba fi)"),
+    # 2026-11-08, grammar phase B. Mood: 'come' and 'go' > hortative and 'give' > permissive/hortative (Heine & Kuteva
+    # 2002; Russian davai 'give' > 'let's'); the imperative's own marker from an attention word 'look!, come!' or from
+    # a hortative widened to the second person (a guess: the catalogue has no imperative source; most languages use
+    # the bare stem, WALS 70A). Genitive: ablative > genitive (Latin de > French de; Kuteva et al. 2019) and a
+    # demonstrative linker (Albanian i/e, the Persian ezafe; Kuteva et al. 2019), beside G067 'belong'. Object
+    # agreement: object pronoun > object marker on the verb (Givon 1976; Bantu object prefixes, Swahili a-ni-ona); a
+    # possessive pronoun > possessor affix on the noun (Turkish -im, Quechua -y). One lead path per series: the other
+    # members bind with it ('set' paths, `_person_set`). The inclusive 'we' joins a binding subject series.
+    ("X27", ("COME", "GO"), "HORT", "attested", "'come, go' > hortative particle (Heine & Kuteva 2002)"),
+    ("X28", ("GIVE",), "HORT", "attested", "'give' > permissive > hortative (Russian davai; Heine & Kuteva 2002)"),
+    ("X29", ("LOOK", "COME"), "IMP", "attested", "'look!, come!' > imperative particle (a guess; no catalogued path)"),
+    ("X30", ("HORT",), "IMP", "attested", "hortative > imperative (the 'let us' marker widened to commands)"),
+    ("X31", ("ABL",), "GEN", "common", "ablative > genitive (Latin de > French de; Kuteva et al. 2019)"),
+    ("X32", ("THAT", "THIS"), "GEN", "attested", "demonstrative > genitive linker (Albanian i/e, Persian ezafe)"),
+    ("X33", ("HE OR SHE OR IT", "HE"), "3SG.O", "common", "object pronoun > object agreement (Givon 1976; Swahili)"),
+    ("X34", ("I",), "1SG.O", "set", "1sg object pronoun > object marker (with the series)"),
+    ("X35", ("THOU", "YOU"), "2SG.O", "set", "2sg object pronoun > object marker (with the series)"),
+    ("X36", ("WE",), "1PL.O", "set", "1pl object pronoun > object marker (with the series)"),
+    ("X37", ("YOU",), "2PL.O", "set", "2pl object pronoun > object marker (with the series)"),
+    ("X38", ("THEY",), "3PL.O", "set", "3pl object pronoun > object marker (with the series)"),
+    ("X39", ("I",), "1SG.POSS", "common", "possessive pronoun > possessor affix (Turkish -im; Givon 1976)"),
+    ("X40", ("THOU", "YOU"), "2SG.POSS", "set", "2sg possessive > possessor affix (with the series)"),
+    ("X41", ("HE OR SHE OR IT", "HE"), "3SG.POSS", "set", "3sg possessive > possessor affix (with the series)"),
+    ("X42", ("WE",), "1PL.POSS", "set", "1pl possessive > possessor affix (with the series)"),
+    ("X43", ("YOU",), "2PL.POSS", "set", "2pl possessive > possessor affix (with the series)"),
+    ("X44", ("THEY",), "3PL.POSS", "set", "3pl possessive > possessor affix (with the series)"),
+    ("X45", ("WE (INCLUSIVE)",), "1PL.INCL", "set", "inclusive 'we' > inclusive subject marker (with the series)"),
 )
 
 
@@ -1063,6 +1107,14 @@ def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) 
     if rule == "neg":
         v = typ.get("negation", "preverbal")
         return "pre" if v in ("preverbal", "clause_initial") else "post"
+    if rule == "oagr":
+        v = typ.get("object_agreement", "none")
+        if v in ("prefix", "suffix"):
+            return "pre" if v == "prefix" else "post"
+        rule = "agr"
+    if rule == "gen":   # (a possessor affix forms where the possessive pronoun stood: GN before the noun)
+        v = typ.get("genitive", "GN")
+        return "pre" if v == "GN" else "post" if v == "NG" else ("pre" if hf else "post")
     if rule == "agr":
         v = typ.get("verb_agreement", "none")
         if v == "prefix":
@@ -1094,6 +1146,10 @@ def _wanted(function: str, typ: Typology) -> bool:
     }
     if f in table:
         return bool(table[f])
+    if f in OBJ_FNS:
+        return t("object_agreement", "none") != "none"
+    if f in POSS_FNS or f in MOOD_FNS:
+        return True   # (no typology feature asks for them: they come and go with the ordinary draw)
     if f[0] in "123":
         return t("verb_agreement", "none") != "none" or t("pro_drop") == "yes"
     return True
@@ -1120,6 +1176,14 @@ CONSTRAINED = ("adposition",)
 CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM")
 RICH_CASE = ("ABL", "ALL", "INS", "COM")   # the oblique cases `_wanted` asks of a 'many' case system
 PERSON_FNS = ("1SG", "2SG", "3SG", "1PL", "2PL", "3PL")
+INCL_FN = "1PL.INCL"
+OBJ_FNS = tuple(f"{p}.O" for p in PERSON_FNS)
+POSS_FNS = tuple(f"{p}.POSS" for p in PERSON_FNS)
+MOOD_FNS = ("IMP", "HORT", "OBLG", "APPR")
+#: the person series that bind as sets: subject agreement (with the inclusive 'we' when the lexicon has one), object
+#: agreement on the verb, possessor marking on the noun
+SERIES = {"S": PERSON_FNS + (INCL_FN,), "O": OBJ_FNS, "P": POSS_FNS}
+SERIES_OF = {f: k for k, fs in SERIES.items() for f in fs}
 _TAM = {"past": ("PAST", "RECPST"), "future": ("FUT",), "perfective": ("PERF", "IPFV"), "progressive": ("PROG",),
         "habitual": ("HAB",)}
 _PRE_NEG = ("preverbal", "clause_initial")
@@ -1149,8 +1213,10 @@ def feature_of(function: str) -> tuple[str, ...]:
         return ("evidentiality",)
     if f == "NEG":
         return ("negation",)
-    if f in PERSON_FNS:
+    if f in PERSON_FNS or f == INCL_FN:
         return ("verb_agreement",)
+    if f in OBJ_FNS:
+        return ("object_agreement",)
     return {"CAUS": ("causative",), "PASS": ("passive",), "DIM": ("diminutive",), "AGENT": ("agent_noun",)}.get(f, ())
 
 
@@ -1237,10 +1303,15 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
             return aim if aim in _PRE_NEG else "preverbal"
         return aim if aim not in _PRE_NEG else "postverbal"
     if f == "verb_agreement":
-        sides = {x.side for p in PERSON_FNS for x in lv.get(p, ()) if x.level >= CLITIC}
+        sides = {x.side for p in SERIES["S"] for x in lv.get(p, ()) if x.level >= CLITIC}
         return "both" if len(sides) > 1 else "prefix" if "pre" in sides else "suffix" if sides else "none"
-    if f == "object_agreement":
-        return "none"   # no gram marks the object on the verb yet
+    if f == "object_agreement":   # (Grambank GB093/GB094: a bound object marker on the verb; both sides read as the aim)
+        sides = {x.side for p in OBJ_FNS for x in lv.get(p, ()) if x.level >= CLITIC}
+        if not sides:
+            return "none"
+        if len(sides) > 1:
+            return aim if aim in ("prefix", "suffix") else "suffix"
+        return "prefix" if "pre" in sides else "suffix"
     if f == "gender":
         return _class_state(g)[0]
     if f == "numeral_classifiers":
@@ -1340,7 +1411,8 @@ _PULL_FNS = tuple(FUNCS) + ("CLASS",)
 #: witnessed evidential 'direct+indirect'. Before 2026-11-07 every function was grouped by its first feature, so any
 #: case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked the direct evidential.
 PULL_GROUP = {"ACC": "alignment:ACC", "ERG": "alignment:ERG", "DU": "number:DU", "EVID.DIR": "evidentiality:DIR",
-              **{f: "case:rich" for f in RICH_CASE}}
+              **{f: "case:rich" for f in RICH_CASE},
+              "GEN": "case:GEN"}   # (grammar B: a language with case marks the possessor too, nearly always: WALS 51A)
 
 
 def pull_group(fn: str) -> str:
@@ -1634,7 +1706,12 @@ _FEMALE = {"WOMAN", "MOTHER", "WIFE", "DAUGHTER", "SISTER", "GRANDMOTHER", "kin:
 #: people words outside concepts.tsv's Kinship field (kin terms from the kin list, roles and agent nouns): class 'person'
 _PERSONS = {"FATHER", "MOTHER", "BROTHER", "SISTER", "SON", "DAUGHTER", "HUSBAND", "WIFE", "AUNT", "UNCLE", "GRANDFATHER",
             "GRANDMOTHER", "ANCESTORS", "ELDER", "BABY", "BOY", "GIRL", "CHIEF", "GUEST", "HUNTER", "FISHER", "HERDER",
-            "SMITH", "FIGHTER"}
+            "SMITH", "FIGHTER",
+            # (roles and trades from the WOLD list, whose fields say 'Social and political relations', 'Possession',
+            # 'Law', 'Cognition' or 'Warfare': a merchant is a person, not a thing; grammar B, 2026-11-08)
+            "MERCHANT", "SOLDIER", "TEACHER", "THIEF", "SERVANT", "MASTER", "SLAVE", "NEIGHBOUR", "KING", "QUEEN",
+            "PRIEST", "HEALER", "WARRIOR", "TRADER", "SHEPHERD", "FARMER", "POTTER", "WEAVER", "SAILOR", "GUARD",
+            "WIDOW", "WIDOWER", "ORPHAN", "TWIN", "OWNER", "LEADER", "WITCH"}
 
 
 @lru_cache(maxsize=1)
@@ -1713,7 +1790,8 @@ def add_class(g: Grammar, rng: np.random.Generator, inv, lexicon, kyr: float, gr
         group = free[0]
     if cs.by_group(group) is not None:
         return cs.by_group(group)
-    k = len(cs.classes) + 1
+    k = 1 + max([int(x.function.split(":")[1]) for x in g.grams if x.function.startswith("CLASS:")] + [0])
+    # (never reuse a lost class's number: two live CLASS:3 grams would shadow each other)
     fn = f"CLASS:{k}"
     key, w = _find(lexicon, _lex_index(lexicon), CLASS_SOURCES.get(group, ()))
     if w is not None:
@@ -1922,8 +2000,8 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
     cands: list[tuple[float, GPath, Any, Any]] = []
     for p in T.paths:
         tgt = p.target
-        if targets is not None and tgt not in targets:
-            continue
+        if p.weight <= 0 or (targets is not None and tgt not in targets):
+            continue   # (a 'set' path binds only with its series)
         if tgt == "RECPST" and "PAST" not in live_by_fn:
             continue   # 'come from' > recent past only beside a past tense (G003); never the plain past
         if tgt == "CLASS":
@@ -2129,7 +2207,7 @@ def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, 
 #: often: a zero 3SG is the commonest gap, Koryak, Hungarian, Turkish), from its own pronoun; a member that missed the
 #: moment is filled in later by analogy with the paradigm (PERSON_FILL per generation, x social recruit). Members whose
 #: pronouns share a form come out syncretic; a missing pronoun leaves a gap.
-PERSON_JOIN = {"1SG": 0.85, "2SG": 0.85, "3SG": 0.6, "1PL": 0.8, "2PL": 0.75, "3PL": 0.75}
+PERSON_JOIN = {"1SG": 0.85, "2SG": 0.85, "3SG": 0.6, "1PL": 0.8, "2PL": 0.75, "3PL": 0.75, "INCL": 0.7}
 PERSON_FILL = 0.004
 
 
@@ -2180,31 +2258,43 @@ def _person_member(g: Grammar, fn: str, level: int, side: str, lexicon, idx, kyr
             if e != form:
                 hist.append((kyr, f"eroded {ipa(form)} > {ipa(e)}"))
             form = e
-        gr = Gram(fn, form, "V", side, level, (str(key), pid, "concept"), kyr,
+        gr = Gram(fn, form, func_info(fn).host, side, level, (str(key), pid, "concept"), kyr,
                   [(kyr, f"recruited from '{key}' ({pid}), {why}"), *hist], id=g.new_id(fn))
         g.grams.append(gr)
     g.events.append((kyr, f"{fn} {ipa(gr.form)} joins the person paradigm as a {LEVELS[level]} ({why})"))
     return gr
 
 
+def _join_p(fn: str) -> float:
+    return PERSON_JOIN.get(fn.split(".")[0] if fn != INCL_FN else "INCL", 0.7)
+
+
 def _person_set(g: Grammar, gr: Gram, rng, lexicon, kyr: float, T: Tables) -> None:
-    """`gr`, a person marker, has just bound (clitic or tighter): the rest of its series binds with it (PERSON_JOIN)."""
+    """`gr`, a person marker, has just bound (clitic or tighter): the rest of its series (subject, object or possessor;
+    `SERIES`) binds with it (PERSON_JOIN), each member from its own pronoun."""
     if lexicon is None:
         return
     idx = _lex_index(lexicon)
-    for fn in PERSON_FNS:
-        if fn != gr.function and rng.random() < PERSON_JOIN[fn]:
+    for fn in SERIES[SERIES_OF[gr.function]]:
+        if fn != gr.function and rng.random() < _join_p(fn):
             _person_member(g, fn, min(gr.level, AFFIX), gr.side, lexicon, idx, kyr, T,
                            f"with {gr.function}: the pronoun series binds as a set")
 
 
 def _person_fill(g: Grammar, rng, lexicon, kyr: float, T: Tables, p: float) -> None:
     """A paradigm with gaps fills one by analogy with its bound members (at their side and commonest level)."""
-    bound = [x for x in g.grams if x.live and x.function in PERSON_FNS and x.level >= CLITIC]
-    if not bound or lexicon is None:
+    if lexicon is None:
+        return
+    for ser in sorted(SERIES):
+        _fill_series(g, rng, lexicon, kyr, T, p, ser)
+
+
+def _fill_series(g: Grammar, rng, lexicon, kyr: float, T: Tables, p: float, ser: str) -> None:
+    bound = [x for x in g.grams if x.live and SERIES_OF.get(x.function) == ser and x.level >= CLITIC]
+    if not bound:
         return
     have = {x.function for x in bound}
-    gaps = [f for f in PERSON_FNS if f not in have]
+    gaps = [f for f in SERIES[ser] if f not in have and (f != INCL_FN or _lex_get(lexicon, "WE (INCLUSIVE)") is not None)]
     if not gaps or rng.random() >= p:
         return
     fn = gaps[int(rng.integers(len(gaps)))]
@@ -2295,7 +2385,7 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 if rng.random() < _p(h, dn):
                     gr.level += 1
                     gr.history.append((kyr, f"now {LEVELS[gr.level]}"))
-                    if gr.level == CLITIC and gr.function in PERSON_FNS:
+                    if gr.level == CLITIC and gr.function in SERIES_OF:
                         _person_set(g, gr, rng, lexicon, kyr, T)
                     if gr.level == AFFIX:
                         eroded = first_syllable(gr.form)
