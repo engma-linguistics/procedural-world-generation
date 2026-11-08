@@ -1,0 +1,15 @@
+== exports/s210b/judge: 36 paired draws
+  main late dT range -2.31..+4.07 (inside -6..+5: yes), sd 1.67, mean +0.72, median +0.77; <0: 15, >+3: 3
+  cand late dT range -0.98..+4.26 (inside -6..+5: yes), sd 1.43, mean +1.54, median +1.42; <0: 5, >+3: 7
+  paired cand - main late dT: mean +0.82 C (95% CI +0.03..+1.55), median +0.77, up/down 22/14
+  soft pass main 32/36, cand 34/36; main only 2, cand only 4; McNemar exact p 0.688
+  frozen over at the end main 0, cand 0; hellhouse main 0, cand 0
+  late wet_eq_trees: main median 66.82, cand 66.15; paired median -0.35 [-1.57, +0.85], mean -1.02, up/down 17/19, sign p 0.868
+  late savanna_trees: main median 55.09, cand 53.60; paired median -1.36 [-2.83, +0.34], mean -1.58, up/down 13/23, sign p 0.132
+  late steppe_trees: main median 12.60, cand 11.51; paired median -0.60 [-1.40, -0.26], mean -0.85, up/down 10/26, sign p 0.011
+  late trees: main median 39.83, cand 38.61; paired median -0.05 [-1.28, +2.16], mean +0.14, up/down 18/18, sign p 1.000
+  late bwh_pct: main median 6.83, cand 8.61; paired median +0.95 [+0.03, +2.33], mean +0.92, up/down 24/12, sign p 0.065
+  late arid_pct: main median 21.74, cand 22.58; paired median +1.25 [-0.25, +2.37], mean +0.86, up/down 23/13, sign p 0.132
+  late land_precip: main median 1140.49, cand 1133.80; paired median +5.77 [-37.33, +46.98], mean +6.86, up/down 18/18, sign p 1.000
+  late grass: main median 10.93, cand 11.33; paired median -0.17 [-0.81, +0.92], mean +0.24, up/down 17/19, sign p 0.868
+  spread: mean |dev from median| main 1.45, cand 1.14; permutation p 0.122

@@ -6,6 +6,7 @@ import { plateVelocity } from './geometry.js';
 import { timeLabel } from './timezoom.js';
 import { volcLine } from './load.js';
 import { settlementRows } from './settlements.js';
+import { tradeRows } from './trade.js';
 import { polityRows } from './polities.js';
 // ------------------------------------------------------------ the cell's description
 // cellInfo(i) lists what is known about cell i as rows { g: group, k: label, v: value,
@@ -146,7 +147,7 @@ function cellInfo(i) {
     : `${L.elevation[i]} m${S.V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (S.V.run?.kind === 'peoples' && L.peoples) { peoplesRows(i, R); polityRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
+  if (S.V.run?.kind === 'peoples' && L.peoples) { peoplesRows(i, R); polityRows(i, R); settlementRows(i, R); tradeRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
   if (S.V.kind === 'world' && S.V.wAnthro && state.anthro !== false) { anthroRows(i, R); fuelRows(i, R); }
   const vl = S.V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
