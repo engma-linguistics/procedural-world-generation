@@ -2,7 +2,7 @@
 id: PW-1485
 title: "Tech tree: D55's own-invention floor, now never faster than the anchor, still brings the dnd world's writing ~1.5 kyr early (off); keep it off?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1471]
 refs: ["planet/lineages/techtree.py::own_floor", planet/lineages/samples/techtree.toml, docs/review/culture/techtree/round2.md]
 created: 2026-11-05
-updated: 2026-11-05
+updated: 2026-11-07
 ---
 
 ## Description
@@ -41,4 +41,5 @@ So it ships off (`[defaults] own_floor = false`).
 is the big lone people, and regions already fix it.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D58 A, keep own_floor off. Before closing: analyse the end state of a few runs at the present-day finish: are some peoples far behind, and does the spread of technologies look vaguely realistic (some techs spread faster than others, not everyone has everything)? If realistic, call it solved for now.
 - 2026-11-05: Created from inbox draft draft-own-floor-faster-than-anchor.md (found by lane-200).

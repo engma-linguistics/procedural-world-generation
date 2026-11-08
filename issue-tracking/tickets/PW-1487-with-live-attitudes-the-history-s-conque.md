@@ -2,7 +2,7 @@
 id: PW-1487
 title: With live attitudes, the history's conquerors are almost never harsh (no razing winner on seeds 7 or 10)
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1465, PW-1481, PW-904]
 refs: ["planet/lineages/history/polity_live.py::TOL_X", "planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/attitudes.py::temperament", docs/review/culture/polities/round10.md, "run cbf74f", "run 4bd35e", "run 51916e", "run 70cf9f"]
 created: 2026-11-05
-updated: 2026-11-05
+updated: 2026-11-07
 ---
 
 ## Description
@@ -45,4 +45,5 @@ Lean: C, with A's TOL_X. It gives the razing conqueror a cause in the model, ins
 - [ ] Daniel picks; then re-measure the fates by winner on seeds 7 and 10 (round10/measure.py)
 
 ## Updates
+- 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D59 C. Let aggression make conquest harsher too, not just more frequent; a martial, intolerant winner expels or razes in any era.
 - 2026-11-05: Created from inbox draft draft-live-conquerors-rarely-harsh.md (found by lane201b).

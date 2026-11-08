@@ -2,7 +2,7 @@
 id: PW-1482
 title: "World faiths: how far should missionary faiths merge a world? (Seven Meals: three faiths hold 87% of cultures today, main 34%)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1477, PW-904]
 refs: ["planet/lineages/gods.py::MISSION_P", "planet/lineages/gods.py::MISSION_IND", "planet/lineages/gods.py::ETHNIC_RULE", "planet/lineages/gods.py::Pantheons._links", docs/review/culture/attitudes/round1.md, "run 07c755 (seven_meals)", "run 3e0eb4 (dnd)", "run 0141d1 (dnd)"]
 created: 2026-11-05
-updated: 2026-11-05
+updated: 2026-11-07
 ---
 
 ## Description
@@ -39,4 +39,5 @@ Lean: A, with C later if you find yourself wanting to steer it. The spread is a 
 turns missionary is the one free number.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> done. Daniel 11-07: D57 A, keep MISSION_P 0.5 (even chance). Follow-up: track minority religions per people/region (new ticket).
 - 2026-11-05: Created from inbox draft draft-world-faiths-how-much-merging.md (found by lane199).
