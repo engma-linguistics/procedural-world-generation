@@ -1,4 +1,5 @@
 ---
+id: PW-1514
 title: "Trade routes shift under the land nudge: route stretches keep only 0.57-0.73 of themselves (bar ~0.7)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 214
 blocked_by: []
 relates: [PW-1504, PW-1503]
 refs: [docs/review/culture/trade/step3.md, "planet/lineages/trade_routes.py::Loads.finish", "planet/lineages/trade_routes.py::ROUTE_SHARE", "planet/lineages/trade_flow.py::_Frame", "run 0141d1", "run 3e0eb4", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -28,3 +31,6 @@ real difference.
 What to try: draw strength continuously and judge with the load-weighted Jaccard; or keep a route whose share is between 1% and 2% if it was a
 route the era before (hysteresis); or pick a cell's carrier by the smoothed share of its people rather than the single biggest culture.
 - [ ] route stretches Jaccard ≥ ~0.7 under the land nudge on the three judge runs, with the cost-nudge numbers kept
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-routes-land-nudge.md (found by lane 214).

@@ -1,4 +1,5 @@
 ---
+id: PW-1515
 title: "Trade routes are nearly all salt: grain and metal make no routes, and no caravan town appears on the judge runs"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 214
 blocked_by: []
 relates: [PW-1504, PW-1505, PW-1511]
 refs: [docs/review/culture/trade/step3.md, docs/review/culture/trade/step2.md, "planet/lineages/trade_routes.py::Loads.finish", "planet/lineages/trade_routes.py::Loads._hubs", "planet/lineages/trade.py::ledger_at", "run 0141d1", "run 3e0eb4", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -30,3 +33,6 @@ What to try: compare against the review's cases (R§4: tin, spice, grain to citi
 should travel further by river; measure routes per kind against each kind's own top stretches rather than one shared 2% bar; check the
 caravan-town rule's inputs (Koppen B cells beside farmed towns on a land route).
 - [ ] the overlay shows at least food and one other kind besides salt in most eras with towns, or the doc explains why the worlds do not trade them far
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-routes-mostly-salt.md (found by lane 214).
