@@ -38,6 +38,7 @@ from .. import invasions as IV
 from .. import polities as PO
 from ..gridops import nbr_reduce
 from ..spread import EST
+from .gridops import _csr_gather
 from . import params as PM
 from .rule import StandIns
 
@@ -370,7 +371,7 @@ class LivePolities(StandIns):
         for w, l_, how in ctx.get("taken", []):
             wk, lk = ruling[w]["key"], ruling[l_]["key"]
             cells = np.flatnonzero(before == l_)
-            fates = self._fates(ruling[w], cells, heads)
+            fates = self._fates(ruling[w], cells, heads, owner == w)
             if ruling[w]["line"] is not None:
                 self.att.won(int(ruling[w]["line"]))
             ri = ctx.get("taken_row", {}).get(l_)
@@ -454,12 +455,21 @@ class LivePolities(StandIns):
         if o is not None:
             self.recs[o]["fell_kyr"], self.recs[o]["fell_how"] = round(ago, 3), how
 
-    def _fates(self, win, cells, heads) -> dict:
+    def _fates(self, win, cells, heads, ruled=None) -> dict:
         """The peoples on the land war took fare by the winner's attitudes (PW-1481, PW-1487): its harshness to each (harshness: its
         people's old enmity to theirs, moved by its tolerance and by its aggression gated by its intolerance) reads kept, thinned or
         expelled (FATE_AT); the cut (FATE_CUT) scales with its aggression / AGG_MID. A tolerant winner keeps even an old enemy's people more often; an intolerant one thins or expels even a
         people it had no quarrel with; an aggressive one cuts harder. Cuts their presence there once, never more than FATE_MAX of a
-        people's heads in one step. Returns {people: [fate, heads lost]}."""
+        people's heads lost in one step. Where the cut goes (PW-1496, Daniel D61 C): a thinning is lost (war deaths); an expulsion by
+        a winner at or above the martial mark (aggression AGG_MID, a martial people's own: attitudes AGG_BASE + AGG_CONTEST x 0.5) is
+        lost too ("razed": Genghis Khan's sacks); below it the expelled share moves to the same people's nearest land the winner does
+        not rule (ruled: the winner's cells after the step's wars, else the taken cells alone; _refuge), spread over its cells there
+        by its existing density (the Assyrian deportations' refugees), and is lost only if it has none ("expelled", heads lost).
+        Submit or resist (D61, Daniel 11-07: Genghis Khan's "submit and you are spared, resist and you are destroyed"): a people the
+        winner would thin, expel or raze submits, and is kept ("submitted"), if its own aggression is below the winner's (the less
+        warlike yields to the more); one at least as warlike resists and meets that fate. No new number: the two peoples' own
+        attitudes (attitudes.Attitudes) decide (round12.md).
+        Returns {people: [fate, heads lost, heads moved]}, fate kept, submitted, thinned, expelled or razed."""
         h = self.h
         wk = win["line"]
         if wk is None or not len(cells):
@@ -467,6 +477,9 @@ class LivePolities(StandIns):
         out = {}
         wanc = self.anc.get(win["people"], {win["people"]})
         tol, agg = self.att.get(int(wk))
+        if ruled is None:
+            ruled = np.zeros(self.g.n, bool)
+            ruled[cells] = True
         for k, hk in heads.items():
             on = hk[cells]
             n = float(on.sum())
@@ -477,20 +490,71 @@ class LivePolities(StandIns):
                 continue
             z = harshness(float(self.hostility[wk, k]), tol, agg)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
-            cut = min(1.0, FATE_CUT[fate] * agg / AGG_MID)
+            if fate != "kept" and self.att.get(int(k))[1] < agg:  # (submits: less warlike than the winner, it yields and is kept)
+                out[lid] = ["submitted", 0, 0]
+                continue
+            if fate == "expelled" and agg >= AGG_MID:
+                fate = "razed"
+            cut = min(1.0, FATE_CUT["expelled" if fate == "razed" else fate] * agg / AGG_MID)
+            gone = moved = 0.0
             if cut > 0:
                 tot = float(hk.sum())
                 done = self.__dict__.setdefault("_cut_now", {})
                 spent = done.get((k, self.k), 0.0)
                 cut = min(cut, max(0.0, (FATE_MAX * tot - spent) / n))
                 if cut > 0:
+                    gone = cut * n
+                    pb = h.p[k][cells].copy()
                     h.p[k][cells] *= (1.0 - cut)
                     h.p[k][cells[h.p[k][cells] < EST]] = 0.0
                     hk = heads[k] = hk.copy()
                     hk[cells] *= 1.0 - cut
-                    done[(k, self.k)] = spent + cut * n
-            out[lid] = [fate, int(round(cut * n))]
+                    if fate == "expelled":  # (the heads that left the taken cells, those whose presence fell under EST too)
+                        gone = float((on * (1.0 - np.divide(h.p[k][cells], pb, out=np.ones_like(pb), where=pb > 0))).sum())
+                        moved = self._refuge(k, hk, cells, ruled, gone)
+                    done[(k, self.k)] = spent + (cut * n if fate != "expelled" else gone - moved)
+            out[lid] = [fate, int(round(gone - moved)), int(round(moved))]
         return out
+
+    def _refuge(self, k, hk, cells, ruled, n) -> float:
+        """PW-1496 (D61 C): n expelled heads of people k go to its nearest land the winner does not rule: the cells it holds off the
+        taken land and off the winner's (hk > 0), the connected patch (or patches, at the same distance) first reached ring by ring
+        from the taken cells, spread there by its existing density (its presence there scaled up alike, never past full presence, 1).
+        Updates h.p[k] and hk in place; returns the heads moved (0 if it has no such land: they are lost)."""
+        h = self.h
+        cand = (hk > 0) & ~ruled
+        cand[cells] = False
+        if not cand.any():
+            return 0.0
+        seen = np.zeros(self.g.n, bool)
+        seen[cells] = True
+        front = np.asarray(cells, np.int64)
+        hit = front[:0]
+        while len(front):
+            nb = np.unique(self.idx[_csr_gather(self.off, front)])
+            nb = nb[~seen[nb]]
+            seen[nb] = True
+            hit = nb[cand[nb]]
+            if len(hit):
+                break
+            front = nb
+        if not len(hit):
+            return 0.0
+        patch = np.zeros(self.g.n, bool)
+        patch[hit] = True
+        front = hit
+        while len(front):  # (the connected patch of its land the first ring reached)
+            nb = np.unique(self.idx[_csr_gather(self.off, front)])
+            nb = nb[cand[nb] & ~patch[nb]]
+            patch[nb] = True
+            front = nb
+        at = np.flatnonzero(patch)
+        have = float(hk[at].sum())
+        p0 = h.p[k][at].copy()
+        h.p[k][at] = np.minimum(1.0, p0 * (1.0 + n / have))
+        add = hk[at] * (h.p[k][at] / p0 - 1.0)
+        hk[at] += add
+        return float(add.sum())
 
     # ------------------------------------------------------------ the seam's answers, from the live polities
     def pacification(self, k, step):
