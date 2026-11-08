@@ -1,5 +1,6 @@
 ---
-title: "Plants get no extra photosynthesis from diffuse (cloudy-sky) light; the rainforest's leaf upkeep waits on it"
+id: PW-1518
+title: Plants get no extra photosynthesis from diffuse (cloudy-sky) light; the rainforest's leaf upkeep waits on it
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: scout217
 blocked_by: []
 relates: [PW-1517, PW-1331]
 refs: ["planet/vegetation.py::_year", "planet/vegetation.py::_TUNE (TrBE eps 1.43)", "planet/vegetation.py::KN_RESP", "planet/climate.py::shade_from_hours", docs/review/climate/npp/scout3.md, docs/review/climate/npp/scout3_probe.py, docs/review/climate/npp/scout3/, docs/review/climate/npp/scout2.md, docs/review/vegetation/npp-check/npp_check.py, "Yan et al. 2017 JGR Biogeosci 122:3014 doi:10.1002/2017JG004008 (White Rose eprint 124617)", "Chambers et al. 2004 Ecol Appl 14:S72 (Table 2)", "Atkin et al. 2015 New Phytol 206:614", "Malhi et al. 2009 GCB 15:1255", "world 506694 (Earth L6)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -37,3 +40,6 @@ unit of light, so a cloudier world's forests are under-credited. The impact is l
 - [ ] Earth screens with scout3_probe.py and npp_check.py: wet-tropics NPP near 1011-1160, LAI, NPP/GPP; temperate
   boxes against MOD17 if the gain applies to all trees (EPS_SCALE is fitted there)
 - [ ] then an 8-draw L6 screen, then the 36-draw judge
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-diffuse-light-gain.md (found by scout217).

@@ -2,7 +2,7 @@
 id: PW-1516
 title: "Sourced rainforest LUE/KN leaves L6 planets ~0.8 C warmer late with no weathering factor moved: find the path"
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: later
 subsystem: climate
@@ -33,5 +33,6 @@ which part of the carbon cycle carries plant growth into CO2.
 - [ ] if a path exists, check its size against the +0.10 e-fold; otherwise close as chaos
 
 ## Updates
+- 2026-11-08: Status todo -> wontdo. Coordinator 11-08: closed as chaos (scout 217). Every plant-to-CO2 path flat; the volcanic source (tectonic, seeded drift) moved +2.8%, enough for +0.05-0.1 e-folds. scout2b_mech.py now prints CO2 vs source/sink so the next paired plant judge checks it directly.
 - 2026-11-08: Scout 217 (pass 1, docs/review/climate/npp/scout3.md section 6): enumerated every plant -> CO2 path in the code (co2_stock settles at sink x co2_law = source): rooted cover -> w_plant, ground cover -> erosion supply, woody/deep cover and leaf albedo -> runoff and temperature -> w_q/w_temp, the spin-up references, methane (reads dT and runoff only); NPP itself is not read since PW-1424 C. All flat in 210b's mech.txt; w_temp leans up, which would lower CO2, not raise it. The input that moved is the volcanic source (source_raw +74 [-2, +263], 23/36 up): ridges + arcs + plumes x a per-step seeded drift, reachable by the plants only through the runs' chaotic divergence; +2.8% source needs about the +0.05-0.1 e-folds seen. Verdict: chaos; lean close. Not fully proven because 210b's runs are deleted; scout2b_mech.py now prints the per-pair r of d late CO2 against d ln source_raw / sink_raw / w_*, so the next paired judge of a plant change settles it directly.
 - 2026-11-08: Created from inbox draft draft-rainforest-lue-warm-shift.md (found by scout210b).
