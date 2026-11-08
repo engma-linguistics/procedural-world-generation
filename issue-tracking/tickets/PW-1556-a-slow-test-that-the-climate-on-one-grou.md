@@ -1,4 +1,5 @@
 ---
+id: PW-1556
 title: A slow test that the climate on one ground gives the same arid share at L7 as on the nested L6 grid
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: scout221
 blocked_by: []
 relates: [PW-290, PW-015]
-refs: [docs/review/climate/levels/scout1.md, planet/nest.py::climate_coarse, planet/climate.py::compute, planet/climate.py::koppen, "run a19366", "commit 14165233", "commit 6926583"]
+refs: [docs/review/climate/levels/scout1.md, "planet/nest.py::climate_coarse", "planet/climate.py::compute", "planet/climate.py::koppen", "run a19366", "commit 14165233", "commit 6926583"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -30,3 +33,6 @@ ships drier L7 showcase worlds (as on 10-15), with nobody noticing until a healt
       ice-free land within 2 points and land rain within 5% between `climate.compute` on L7 and
       `nest.climate_coarse` to L6
 - [ ] confirm it fails on `6926583`'s `planet/` (the scout's `old.py` approach: `git archive` into a scratch dir)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-level-pair-climate-guard.md (found by scout221).

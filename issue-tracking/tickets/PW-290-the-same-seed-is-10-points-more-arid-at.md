@@ -2,7 +2,7 @@
 id: PW-290
 title: The same seed is ~10 points more arid at L7 than at L6 (Koppen B 38-42% of land against 28-30%), with less tree cover
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: climate
@@ -34,5 +34,6 @@ against 352-378 g C/m2/yr).
 - [ ] find the term that depends on cell size; arid share within a few points between L6 and L7
 
 ## Updates
+- 2026-11-08: Status todo -> done. Scout 221: fixed by PW-015 stage 1 (14165233, 10-16). Same ground L7 vs nested L6 on main: Koppen B +0.84 pt, land rain +0.9%; fresh 1 Gyr seeds 3199/21 now 1-5 pt LESS arid at L7. Residual is resolved relief. Guard test drafted.
 - 2026-10-15: Created from inbox draft draft-health-l7-drier-than-l6.md (found by health-sweep).
 - 2026-11-08: Scout 221 (pass 1, main c2e54f2b; docs/review/climate/levels/scout1.md): the gap is gone, fixed by PW-015 stage 1 (14165233, 10-16, which named this ticket but never updated it). Same L7 ground, climate on L7 against the nested L6 grid: today +0.84 points of Koppen B on average (+0.5 to +1.1 over 9 moments of 5 runs), land rain +0.9%; on the 10-15 code (6926583) +6 to +8 points with land rain -27%; just before PW-015 stage 1 (1b2f0800) land rain -17% at L7, just after (f0197064) +3%. Fresh 1 Gyr pairs of the ticket's seeds 3199 and 21: L7 is 1-5 points LESS arid than the same seed at L6, over the whole run and in the finish window alike. The last ~1 point on the same ground is resolved relief (rain shadows L6 averages away), not a grid constant. Recommend closing; a guard-test draft is filed.
