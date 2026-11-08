@@ -44,7 +44,8 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 2  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510)
+VERSION = 3  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
+# 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514)
 FORMAT = "procgen-trade-flows/1"
 
 # --- cost per km of each mode, a pack animal = 1 (R§6). ORBIS (Scheidel, Meeks & Weiland 2012, from Diocletian's Price Edict), denarii per kg
@@ -412,11 +413,12 @@ def _sum_by(keys: np.ndarray, vals: np.ndarray) -> dict:
 
 
 def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, quarters: set | None = None,
-             fetch: bool = False, routes: bool = True) -> dict | None:
+             fetch: bool = False, routes: bool = True, last_routes: set | None = None) -> dict | None:
     """Frame i's exchange: {"flows": [[giver, taker, good, share of the taker's people, people supplied, km, cost-km, mode, kind, via]],
     "home": {culture: {good: share met from its own land elsewhere}}, "unmet": {culture: {good: share}}, "war_edges", "flyer_foods"}; with
     routes (step 3, trade_routes.py) also "routes", "hubs", "quarters" and "volume". quarters: last era's merchant quarters (host, merchant
-    culture), whose borders charge no toll; fetch: herders fetch grain with their own animals (PW-1511 B)."""
+    culture), whose borders charge no toll; fetch: herders fetch grain with their own animals (PW-1511 B); last_routes: last era's route
+    stretches (a * n + b), which stay routes down to trade_routes.ROUTE_HOLD of the bar (PW-1514)."""
     if TR.pairs_at(ctx, i) is None:
         return None
     fr = _Frame(ctx, i, pol, att, scale, quarters=quarters, fetch=fetch)
@@ -520,7 +522,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
     rnd = lambda d: {str(c): {g: round(x, 4) for g, x in v.items() if x >= FLOW_MIN} for c, v in d.items()}  # noqa: E731
     out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr)}
     if loads is not None:
-        out.update(loads.finish())
+        out.update(loads.finish(last_routes))
         out["quarter_edges"] = fr.quarter_edges
     return out
 
@@ -591,14 +593,17 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
     quarters = QUARTERS if quarters is None else quarters
     fetch = FETCH if fetch is None else fetch
     last_q: set = set()
+    last_r: set = set()
     if eq and ctx.goods is not None and ctx.cultures() is not None and ctx.world is not None:
         for i, ago in zip(eq["frames"], eq["ago_kyr"]):  # (oldest first: a frame reads the merchant quarters of the one before)
             if frames is not None and i not in frames:
                 continue
-            f = flows_at(ctx, i, pol, att, scale, quarters=last_q if quarters and routes else None, fetch=fetch, routes=routes)
+            f = flows_at(ctx, i, pol, att, scale, quarters=last_q if quarters and routes else None, fetch=fetch, routes=routes,
+                         last_routes=last_r)
             if f is not None:
                 out.append({"frame": i, "ago_kyr": round(abs(float(ago)), 3), **f})
                 last_q = {(int(h), int(m)) for h, m in f.get("quarters") or []}
+                last_r = {int(a) * ctx.g.n + int(b) for a, b, *_ in f.get("routes") or []}
             for k in ("trade_cells", "trade_ledger", "trade_pairs"):
                 ctx._frame_cache.pop((k, i), None)
     C = (ctx.cultures() or {}).get("cultures") or []
