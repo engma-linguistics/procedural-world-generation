@@ -465,7 +465,11 @@ class LivePolities(StandIns):
         lost too ("razed": Genghis Khan's sacks); below it the expelled share moves to the same people's nearest land the winner does
         not rule (ruled: the winner's cells after the step's wars, else the taken cells alone; _refuge), spread over its cells there
         by its existing density (the Assyrian deportations' refugees), and is lost only if it has none ("expelled", heads lost).
-        Returns {people: [fate, heads lost, heads moved]}."""
+        Submit or resist (D61, Daniel 11-07: Genghis Khan's "submit and you are spared, resist and you are destroyed"): a people the
+        winner would thin, expel or raze submits, and is kept ("submitted"), if its own aggression is below the winner's (the less
+        warlike yields to the more); one at least as warlike resists and meets that fate. No new number: the two peoples' own
+        attitudes (attitudes.Attitudes) decide (round12.md).
+        Returns {people: [fate, heads lost, heads moved]}, fate kept, submitted, thinned, expelled or razed."""
         h = self.h
         wk = win["line"]
         if wk is None or not len(cells):
@@ -486,6 +490,9 @@ class LivePolities(StandIns):
                 continue
             z = harshness(float(self.hostility[wk, k]), tol, agg)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
+            if fate != "kept" and self.att.get(int(k))[1] < agg:  # (submits: less warlike than the winner, it yields and is kept)
+                out[lid] = ["submitted", 0, 0]
+                continue
             if fate == "expelled" and agg >= AGG_MID:
                 fate = "razed"
             cut = min(1.0, FATE_CUT["expelled" if fate == "razed" else fate] * agg / AGG_MID)

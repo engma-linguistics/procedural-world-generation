@@ -3685,6 +3685,7 @@ def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_toleran
     assert R.steps and R.steps[0]["states"] >= 1 and R.owner is not None and (R.owner >= 0).any()
     # the peoples on land a war took fare by the winner's hostility to them: the kobolds folk hate are expelled (FATE_CUT), but never
     # more than FATE_MAX of their heads in one step; folk's own people keep their land
+    R.att.x[kb] = np.array([0.5, 1.0])  # (the kobolds resist: at least as warlike as any winner here, D61 submit-or-resist)
     kob0, folk0 = h.p[kb].copy(), h.p[fk].copy()
     cells = np.flatnonzero((h.p[kb] > 0) | (h.p[fk] > 0))
     R.k += 1
@@ -3720,6 +3721,7 @@ def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch
     att = R.doc()["attitudes"]
     assert str(fk) in att["cultures"] and att["cultures"][str(fk)]["people"] == "folk"
     R.hostility[fk, kb] = 0.0  # (no old quarrel: only the winner's own temperament)
+    R.att.x[kb] = np.array([0.5, 1.0])  # (the kobolds resist: at least as warlike as any winner here, D61 submit-or-resist)
     cells = np.flatnonzero(h.p[kb] > 0)
     p0 = h.p[kb][cells].copy()
     monkeypatch.setattr(PL, "FATE_MAX", 1.0)
@@ -3744,7 +3746,8 @@ def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch
 def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_razes(faketz, monkeypatch):
     """PW-1496 (Daniel D61 C, round12.md): an expulsion by a winner below the martial mark (aggression AGG_MID) moves the cut share to
     the same people's nearest land the winner does not rule, by its existing density, so the people keeps its heads; at or above the
-    mark the share is lost (razed); with no such land the expelled are lost; a thinning is always a loss."""
+    mark the share is lost (razed); with no such land the expelled are lost; a thinning is always a loss. A people less warlike than
+    the winner submits and is kept (D61, Genghis Khan's terms)."""
     import types
     from planet.lineages.history import polity_live as PL
     h, env, step, land = _live_setup(faketz, monkeypatch)
@@ -3755,6 +3758,7 @@ def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_r
         _sync_pm(h)
     R.hostility[fk, kb] = 0.0
     monkeypatch.setattr(PL, "FATE_MAX", 1.0)
+    R.att.x[kb] = np.array([0.5, 1.0])  # (the kobolds resist: at least as warlike as any winner here, D61 submit-or-resist)
     kob = np.flatnonzero(h.p[kb] >= PL.EST)
     assert len(kob) >= 4
     h.p[kb] = np.where(h.p[kb] >= PL.EST, np.minimum(h.p[kb], 0.3), h.p[kb])  # (room to take the refugees in)
@@ -3786,6 +3790,9 @@ def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_r
     ruled[cells] = True
     f, b, a = run((0.5, 0.3))
     assert f[0] == "thinned" and f[1] > 0 and f[2] == 0
+    R.att.x[kb] = np.array([0.5, 0.2])  # (a less warlike people submits and is kept, even by a martial, intolerant winner)
+    f, b, a = run((0.1, 0.6))
+    assert f == ["submitted", 0, 0] and a == b and np.array_equal(h.p[kb], p0)
 
 
 def test_aggression_makes_an_intolerant_conqueror_harsher_not_a_tolerant_one():
