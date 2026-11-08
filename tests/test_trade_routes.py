@@ -64,6 +64,10 @@ def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_p
     ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
     ctx._arrs["climate"], ctx.arr["climate"] = np.array([6, 6, 7, 7, 7, 7]), 1
     assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "market town"  # (no pack animals: no caravans)
+    know["farmer"].append("pack_animals")
+    ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
+    ctx._arrs["climate"], ctx.arr["climate"] = np.array([6, 6, 6, 7, 7, 7]), 1  # (the town's own cell is dry and farmed, as an oasis: PW-1515)
+    assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "caravan town"
 
 
 def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path):
@@ -128,3 +132,26 @@ def test_views_frame_and_culture_hubs(tmp_path):
     C = [{"name": "a", "end": None, "into": None, "ended_kyr": None, "born_kyr": 100.0}] * 3
     assert TF.culture_view(doc, 1, C)[0]["hubs"][0][1] == "market town"
     assert doc["constants"]["quarters"] is TF.QUARTERS and doc["constants"]["fetch"] is TF.FETCH
+
+
+def test_last_eras_route_holds_down_to_the_lower_bar(tmp_path, monkeypatch):
+    """PW-1514: a stretch between ROUTE_HOLD x ROUTE_SHARE and ROUTE_SHARE is a route only if it was one the era before (or continues a
+    route, SPAN); one under the lower bar is never a route."""
+    ctx = _line_ctx(tmp_path)
+    r = TF.flows_at(ctx, 0)["routes"]
+    a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
+    monkeypatch.setattr(RT, "SPAN", False)
+    monkeypatch.setattr(RT, "ROUTE_SHARE", s * 1.5)  # (now it sits between the two bars)
+    key = min(a, b) * ctx.g.n + max(a, b)
+    assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0)["routes"])
+    assert (min(a, b), max(a, b)) in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
+    monkeypatch.setattr(RT, "ROUTE_SHARE", s * 2.5)  # (under the lower bar: last era's route does not hold it)
+    assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
+
+
+def test_a_route_is_judged_per_good_against_its_carried_volume(tmp_path):
+    """PW-1515: a stretch's strength is its share of one good's volume that travels (not of its group's, not counting goods passed
+    between cultures on one cell), so every stretch's strength is at most 1 and a lone good's only road carries all of it."""
+    f = TF.flows_at(_line_ctx(tmp_path), 0)
+    assert f["routes"] and max(r[2] for r in f["routes"]) <= 1 + 1e-9
+    assert max(r[2] for r in f["routes"]) > 0.5  # (a six-cell line: one road carries the whole of some good)
