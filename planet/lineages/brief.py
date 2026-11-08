@@ -351,16 +351,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
 SETTLE_TOP = 6  # places and ruins listed by name in the brief's towns-and-cities block
 
 
-def _pop_at(s: dict, ago: float) -> float:
-    """A ledger site's people at `ago` kyr (its series, oldest first), 0 before its founding or once it was left."""
-    if ago > s["founded_kyr"] + 1e-6 or (s["abandoned_kyr"] is not None and ago <= s["abandoned_kyr"] + 1e-6):
-        return 0.0
-    sr = s["series"]
-    for k in range(1, len(sr)):
-        if sr[k][0] <= ago:
-            (a0, p0), (a1, p1) = sr[k - 1], sr[k]
-            return float(p1 if a0 == a1 else p0 + (p1 - p0) * (a0 - ago) / (a0 - a1))
-    return float(sr[-1][1])
+from .settlements import pop_at as _pop_at  # noqa: E402 (moved to the ledger, PW-1520: gods.py reads it without the brief)
 
 
 def _holder_at(s: dict, ago: float) -> str:
