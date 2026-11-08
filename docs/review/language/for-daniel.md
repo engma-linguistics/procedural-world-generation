@@ -9,6 +9,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 4. **Merger veto / homophony; spread of change rates between lects:** current settings kept.
 5. **After a shift: how long minority speech lives, L2 share levels, how much dialect continuity:** current settings kept, with the reviews' numbers alongside.
 6. **A shifting people keeps the old language's sounds, or reshapes them by its own voice:** current behaviour (keeps them) kept.
+7. **How to read the scholars' horizon** (the one check still failing). The current reading swings between 4.5 and 17.6 thousand years on the same code with different seeds. Recommendation: use the logistic fit (about 13 on current code, steadier) as the check's value, and decide whether 6-10 stays the target. Details and decisions 8-12 (fresh roots, kinship weights, name-taboo rates, avoidance registers, areal rate) are in the Lexicon & contact section.
 
 ## Weirdness noticed
 - **The demo page has glitches** (a full read before publishing found them). Merchants are glossed as things in two languages, a dual marker is described but missing from its example, one note quotes the wrong verb, and some agent jargon shows. None is in the data model's core. All are queued as the first item of grammar B in queue.md.
