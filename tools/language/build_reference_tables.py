@@ -164,6 +164,102 @@ def build_phoible(raw: Path, out: Path) -> None:
     write_tsv(out / "phoible_inventory_sizes.tsv", hdr, ["measure", "kind", "key", "value", "fraction"], srows)
 
 
+SIZE_BINS = {"C": (("<=12", 0, 12), ("13-18", 13, 18), ("19-25", 19, 25), ("26+", 26, 10 ** 6)),
+             "V": (("<=5", 0, 5), ("6-8", 6, 8), ("9-13", 9, 13), ("14+", 14, 10 ** 6))}
+
+
+def size_bin(n: int, kind: str) -> str:
+    return next(b for b, lo, hi in SIZE_BINS[kind] if lo <= n <= hi)
+
+
+def build_phoible_series(raw: Path, out: Path) -> None:
+    """phoible_series.tsv: per series (planet.language.inventory.SERIES, read through percepts.parse_segment) the share of
+    inventories with at least one member and the mean member count where present; and per consonant-count bin the mean
+    share of an inventory's consonants that are rare world-wide (PHOIBLE frequency < 0.1), the target for small
+    inventories built from common sounds (sound lane, 2026-11-08)."""
+    sys.path.insert(0, str(ROOT))
+    from planet.language.inventory import SERIES, series_of
+    from planet.language.percepts import parse_segment
+
+    path = raw / "phoible" / "phoible.csv"
+    with path.open(encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        inv_rows: dict[int, list[tuple]] = defaultdict(list)
+        inv_glotto: dict[int, str] = {}
+        for r in reader:
+            iid = int(r["InventoryID"])
+            inv_rows[iid].append((r["Phoneme"], r["SegmentClass"]))
+            inv_glotto[iid] = r["Glottocode"]
+    chosen: dict[str, int] = {}
+    for iid in sorted(inv_rows):
+        g = inv_glotto[iid]
+        if g and g != "NA":
+            chosen.setdefault(g, iid)
+    invs = sorted(chosen.values())
+    n = len(invs)
+    parsed: dict = {}
+    seg_count: Counter = Counter()
+    for iid in invs:
+        for ph, _ in set(inv_rows[iid]):
+            seg_count[ph] += 1
+    has = Counter()
+    members = Counter()
+    bins = {"<=12": [], "13-18": [], "19-25": [], "26+": []}
+    has_bin = Counter()
+    n_bin = Counter()
+    for iid in invs:
+        got = Counter()
+        cons = [ph for ph, cls in set(inv_rows[iid]) if cls == "consonant"]
+        nvow = sum(cls == "vowel" for ph, cls in set(inv_rows[iid]))
+        for ph, cls in set(inv_rows[iid]):
+            if cls not in ("consonant", "vowel"):
+                continue
+            if ph not in parsed:
+                try:
+                    parsed[ph] = parse_segment(ph)
+                except Exception:
+                    parsed[ph] = None
+            sg = parsed[ph]
+            if sg is None:
+                continue
+            for k in series_of(sg):
+                got[k] += 1
+        for k, c in got.items():
+            has[k] += 1
+            members[k] += c
+        nc = len(cons)
+        cb = size_bin(nc, "C")
+        vb = size_bin(nvow, "V")
+        n_bin["C" + cb] += 1
+        n_bin["V" + vb] += 1
+        for k in got:
+            has_bin[(k, ("V" + vb) if k.endswith("_v") else ("C" + cb))] += 1
+        if nc:
+            b = "<=12" if nc <= 12 else "13-18" if nc <= 18 else "19-25" if nc <= 25 else "26+"
+            bins[b].append(sum(seg_count[ph] / n < 0.1 for ph in cons) / nc)
+    rows = [["series", k, fmt(has[k] / n), fmt(members[k] / has[k], 2) if has[k] else ""] for k in SERIES]
+    rows += [["rare_c_share", b, fmt(statistics.fmean(v)) if v else "", len(v)] for b, v in bins.items()]
+    for k in SERIES:
+        kind = "V" if k.endswith("_v") else "C"
+        for b in SIZE_BINS[kind]:
+            nb = n_bin[kind + b[0]]
+            rows.append(["series_bin", f"{k}|{kind}{b[0]}", fmt(has_bin[(k, kind + b[0])] / nb) if nb else "", nb])
+    hdr = common_header(
+        "phoible", "https://github.com/phoible/dev (data/phoible.csv); https://phoible.org",
+        "CC-BY-SA 3.0 (PHOIBLE 2.0); this derived table shares that licence.",
+        [
+            f"n = {n} inventories, one per Glottocode (first InventoryID), as phoible_segments.tsv.",
+            "kind=series: value = share of inventories with at least one member of the series (the predicates of "
+            "planet/language/inventory.py SERIES over percepts.parse_segment of each phoneme); extra = mean members where present.",
+            "kind=series_bin: the same share among inventories in one size bin (key series|C<bin> for consonant series by "
+            "consonant count, series|V<bin> for vowel series by vowel count); extra = inventories in the bin.",
+            "kind=rare_c_share: value = mean share of an inventory's consonants with PHOIBLE frequency < 0.1, by consonant count "
+            "bin; extra = inventories in the bin.",
+        ],
+    )
+    write_tsv(out / "phoible_series.tsv", hdr, ["kind", "key", "value", "extra"], rows)
+
+
 # ---------------------------------------------------------------- Grambank
 
 GB_STRUCTURAL = [
@@ -591,7 +687,7 @@ def main() -> None:
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "language" / "raw")
     ap.add_argument("--out", type=Path, default=ROOT / "planet" / "language" / "data")
     ap.add_argument("--gb-vmin", type=float, default=GB_VMIN)
-    ap.add_argument("--only", nargs="*", default=["phoible", "grambank", "wals", "clics", "concepts"])
+    ap.add_argument("--only", nargs="*", default=["phoible", "phoible_series", "grambank", "wals", "clics", "concepts"])
     a = ap.parse_args()
     globals()["GB_VMIN"] = a.gb_vmin
     for name in a.only:

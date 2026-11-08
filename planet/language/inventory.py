@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .percepts import AXES, SONORITY, Segment, distance, from_ipa, to_ipa
+from .percepts import AXES, SONORITY, Segment, distance, from_ipa, parse_segment, to_ipa
 
 DATA = Path(__file__).parent / "data"
 
@@ -206,8 +206,13 @@ class Inventory:
 
 
 def segments(inv: Inventory) -> list:
-    """Every segment of the inventory (consonants then vowels), for `profiles.hear_word`."""
-    return list(inv.consonants) + list(inv.vowels)
+    """Every segment of the inventory (consonants then vowels), for `profiles.hear_word`; in a tonal lect each vowel also
+    with each of its tones, so a loan or a name heard by a tone language keeps the nearest tone it has (before, the tone
+    was lost in hearing and the lect's default tone put back: sound lane, 2026-11-08)."""
+    vs = list(inv.vowels)
+    if inv.tones:
+        vs = vs + [replace(v, tone=t) for v in inv.vowels if not v.tone for t in inv.tones]
+    return list(inv.consonants) + vs
 
 
 # --- PHOIBLE tables -----------------------------------------------------------------------------------------------------
@@ -219,19 +224,20 @@ def _rows(name: str) -> list[dict]:
 
 @functools.cache
 def phoible_pool() -> tuple[tuple, tuple]:
-    """((Segment, freq) consonants, (Segment, freq) vowels) from phoible_segments.tsv, each PHOIBLE segment that parses
-    to exactly one Segment; duplicates (two symbols, one percept) keep the higher frequency."""
+    """((Segment, freq) consonants, (Segment, freq) vowels) from phoible_segments.tsv, each PHOIBLE segment read whole by
+    `parse_segment` (PHOIBLE writes k͡p as "kp" and ᵐb as "mb": read letter by letter they were two segments and the row was
+    dropped, so labial-velars and prenasalized stops never entered a proto; sound lane 2026-11-08); diphthongs (not one
+    segment) stay out; duplicates (two symbols, one percept) keep the higher frequency."""
     best: dict = {}
     for r in _rows("phoible_segments.tsv"):
         if r["class"] not in ("consonant", "vowel"):
             continue
         try:
-            segs = from_ipa(r["segment"])
+            s = parse_segment(r["segment"])
         except Exception:
             continue
-        if len(segs) != 1:
+        if s is None:
             continue
-        s = segs[0]
         if (r["class"] == "vowel") != (s.kind == "V"):
             continue
         f = float(r["frequency"])
@@ -340,7 +346,10 @@ def _cost(profile, seg) -> float:
 # non-human percepts PHOIBLE cannot list: variants of common segments a species may make (growl, purr, a second voice).
 # Their pseudo-frequency is NONHUMAN_SHARE x the base segment's, divided by the species' make cost for the key.
 NONHUMAN_SHARE = 0.25
-_NONHUMAN_VARIANTS = (("harsh", "phonation", 3, "CV"), ("purr", "phonation", 4, "V"), ("source2", "source2", 1, "V"))
+# A register variant (sub-bass ˯, ultra ˰) rides on vowels: the dragon profile's main claim, a voice partly carried below
+# ~20 Hz, appeared in no lect before (phonology-gaps.md 5.4; sound lane 2026-11-08).
+_NONHUMAN_VARIANTS = (("harsh", "phonation", 3, "CV"), ("purr", "phonation", 4, "V"), ("source2", "source2", 1, "V"),
+                      ("sub_register", "register", -1, "V"), ("ultra_register", "register", 1, "V"))
 
 
 def _pool_for(profile) -> tuple[tuple, tuple]:
@@ -376,6 +385,116 @@ def _quality(v: Segment) -> Segment:
     return replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0)
 
 
+# --- series (sound lane, 2026-11-08) ------------------------------------------------------------------------------------
+# Languages pick whole sets of sounds, not single sounds: a language has retroflexes (then usually several) or none.
+# Drawing segment by segment gets each sound's share right but makes "has at least one of the set" far too common
+# (phonology-gaps.md 5.3: any retroflex 75%, any long vowel 77%, implosives 29% of human lects). So the draw first decides
+# which series a proto has, each with PHOIBLE's share of inventories holding at least one member (phoible_series.tsv,
+# built by tools/language/build_reference_tables.py from the same predicates), then fills places inside the series it
+# has with the members' conditional frequency (freq / share). A segment in no series is drawn as before; one in several
+# needs all of them. Clicks are their own system (click_system) and are in no series.
+SERIES = {
+    "labial_velar": lambda s: s.kind == "C" and bool(s.double) and s.manner in (0, 3),
+    "prenasal": lambda s: s.kind == "C" and bool(s.prenasal) and s.manner != 8,
+    "retroflex": lambda s: s.kind == "C" and bool(s.retroflex),
+    "aspirated": lambda s: s.kind == "C" and s.larynx == 1 and s.manner != 8,
+    "ejective": lambda s: s.kind == "C" and s.larynx == 2 and s.manner != 8,
+    "implosive": lambda s: s.kind == "C" and s.larynx == 3,
+    "uvular": lambda s: s.kind == "C" and s.place == 6 and s.manner != 8,
+    "pharyngeal": lambda s: s.kind == "C" and s.place == 7,
+    "breathy_c": lambda s: s.kind == "C" and s.phonation == 1 and s.manner != 8,
+    "creaky_c": lambda s: s.kind == "C" and s.phonation == 2,
+    "labialized": lambda s: s.kind == "C" and s.secondary == 1,
+    "palatalized": lambda s: s.kind == "C" and s.secondary == 2,
+    "velarized": lambda s: s.kind == "C" and s.secondary in (3, 4),
+    "geminate": lambda s: s.kind == "C" and s.length == 1,
+    "long_v": lambda s: s.kind == "V" and s.length == 1,
+    "nasal_v": lambda s: s.kind == "V" and bool(s.nasal),
+    "phonation_v": lambda s: s.kind == "V" and s.phonation in (1, 2),
+}
+SERIES_FILL = 0.75        # share of PHOIBLE's mean member count picked first (the rest come from the free picks)
+SERIES_BOOST_MAX = 12.0   # cap on the in-series weight factor (1 / share, multiplied over a segment's series)
+
+
+def series_of(s: Segment) -> tuple:
+    return tuple(k for k, f in SERIES.items() if f(s))
+
+
+@functools.cache
+def series_shares() -> dict:
+    """series -> PHOIBLE share of inventories with at least one member (phoible_series.tsv); {} when the table is missing."""
+    try:
+        return {r["key"]: float(r["value"]) for r in _rows("phoible_series.tsv") if r["kind"] == "series"}
+    except FileNotFoundError:
+        return {}
+
+
+@functools.cache
+def series_members() -> dict:
+    """series -> PHOIBLE's mean member count where the series is present."""
+    try:
+        return {r["key"]: float(r["extra"]) for r in _rows("phoible_series.tsv") if r["kind"] == "series" and r["extra"]}
+    except FileNotFoundError:
+        return {}
+
+
+SIZE_BINS = {"C": (("<=12", 0, 12), ("13-18", 13, 18), ("19-25", 19, 25), ("26+", 26, 10 ** 6)),
+             "V": (("<=5", 0, 5), ("6-8", 6, 8), ("9-13", 9, 13), ("14+", 14, 10 ** 6))}   # as the table builder's
+SERIES_FLOOR = 0.002      # least share of a series in any size bin (PHOIBLE's empty bins are small samples, not zeros)
+
+
+def _size_bin(n: int, kind: str) -> str:
+    return kind + next(b for b, lo, hi in SIZE_BINS[kind] if lo <= n <= hi)
+
+
+@functools.cache
+def series_bin_shares() -> dict:
+    """(series, size bin) -> PHOIBLE share of inventories of that size holding a member: small inventories seldom have a
+    series at all (an ejective series in 0 of 134 inventories with at most 12 consonants), big ones often."""
+    try:
+        out = {}
+        for r in _rows("phoible_series.tsv"):
+            if r["kind"] == "series_bin" and r["value"]:
+                k, b = r["key"].split("|")
+                out[(k, b)] = float(r["value"])
+        return out
+    except FileNotFoundError:
+        return {}
+
+
+def draw_series(rng, nc: int = 21, nv: int = 7) -> frozenset:
+    """The series a proto of nc consonants and nv vowels has: each independently with PHOIBLE's share among inventories of
+    that size (a species that cannot make any member simply draws none, through the members' cost)."""
+    by_bin = series_bin_shares()
+    out = []
+    for k, sh in sorted(series_shares().items()):
+        b = _size_bin(nv, "V") if k.endswith("_v") else _size_bin(nc, "C")
+        p = max(by_bin.get((k, b), sh), SERIES_FLOOR)
+        if rng.random() < p:
+            out.append(k)
+    return frozenset(out)
+
+
+def _series_factor(segs, have: frozenset) -> np.ndarray:
+    """Weight factor per pool segment under the drawn series: 0 for a member of a series the proto lacks, 1 / share for
+    each series it has (capped), 1 outside every series."""
+    sh = series_shares()
+    out = np.ones(len(segs))
+    if not sh:
+        return out
+    for i, s in enumerate(segs):
+        f = 1.0
+        for k in series_of(s):
+            if k not in sh:
+                continue
+            if k not in have:
+                f = 0.0
+                break
+            f /= max(sh[k], 1e-3)
+        out[i] = min(f, SERIES_BOOST_MAX)
+    return out
+
+
 # --- drawing an inventory -----------------------------------------------------------------------------------------------
 
 @functools.cache
@@ -400,28 +519,57 @@ def _base_weights(pool, profile):
     return segs, base, cost
 
 
-def _pick_consonants(rng, n: int, profile) -> tuple[list, dict]:
+def _pick_consonants(rng, n: int, profile, have=None) -> tuple[list, dict]:
     pool, _ = _pool_for(profile)
     segs, base, cost = _base_weights(pool, profile)
+    if have is not None:
+        base = base * _series_factor(segs, have)
     places = np.array([s.place for s in segs])
     _, series = np.unique([f"{s.manner}.{s.voice}.{s.larynx}.{s.secondary}" for s in segs], return_inverse=True)
     cnt_place = np.zeros(places.max() + 1)
     cnt_series = np.zeros(series.max() + 1)
     avail = base > 0
     chosen: list[int] = []
-    for _ in range(min(n, int(avail.sum()))):
-        w = base * (1 + ECON * np.minimum(cnt_place[places], 3) / 3) * (1 + ECON * np.minimum(cnt_series[series], 3) / 3) * avail
+
+    def pick(mask) -> None:
+        w = base * (1 + ECON * np.minimum(cnt_place[places], 3) / 3) * (1 + ECON * np.minimum(cnt_series[series], 3) / 3) * avail * mask
+        if w.sum() <= 0:
+            return
         i = int(rng.choice(len(w), p=w / w.sum()))
         chosen.append(i)
         avail[i] = False
         cnt_place[places[i]] += 1
         cnt_series[series[i]] += 1
+
+    # the series first: each series the proto has gets about PHOIBLE's mean member count where present (scaled by the
+    # consonant count against PHOIBLE's median 21), so a series comes as a set (pʼ tʼ kʼ, ɓ ɗ), not a lone member
+    if have:
+        mem = series_members()
+        for k in sorted(have):
+            if k not in mem or k.endswith("_v"):
+                continue
+            mask = np.array([SERIES[k](x) for x in segs], float)
+            if not mask.any():
+                continue
+            m = max(1, min(int(round(SERIES_FILL * mem[k] * n / 21.0)), n // 3))
+            for _ in range(m):
+                if len(chosen) >= n:
+                    break
+                pick(mask)
+    one = np.ones(len(segs))
+    while len(chosen) < n and avail.any():
+        before = len(chosen)
+        pick(one)
+        if len(chosen) == before:
+            break
     return [segs[i] for i in chosen], {segs[i]: float(cost[i]) for i in chosen}
 
 
-def _pick_vowels(rng, n: int, profile) -> tuple[list, dict]:
+def _pick_vowels(rng, n: int, profile, have=None) -> tuple[list, dict]:
     _, pool = _pool_for(profile)
     segs, base, cost = _base_weights(pool, profile)
+    if have is not None:
+        base = base * _series_factor(segs, have)
     qual = [_quality(s) for s in segs]
     q_idx = {q: k for k, q in enumerate(dict.fromkeys(qual))}
     qi = np.array([q_idx[q] for q in qual])
@@ -485,7 +633,8 @@ def click_system(rng, nc: int) -> list:
     return out
 
 
-_TONE_SETS = {2: [1, 3], 3: [1, 2, 3], 4: [1, 2, 3, 5], 5: [1, 2, 3, 4, 5]}
+_TONE_SETS = {2: [1, 3], 3: [1, 2, 3], 4: [1, 2, 3, 5], 5: [1, 2, 3, 4, 5], 6: [1, 2, 3, 4, 5, 6],
+              7: [1, 2, 3, 4, 5, 6, 7]}   # (6 and 7: Cantonese- and Hmong-size systems, PHOIBLE 6+ about 7%)
 
 
 def _profile_get(profile, attr: str, key: str, default: float) -> float:
@@ -528,11 +677,12 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
     from .profiles import human_voiced
     if nc >= CLICK_MIN_C and human_voiced(profile) and rng.random() < _p_click():
         clicks = click_system(rng, nc)
-    cons, ccost = _pick_consonants(rng, nc - len(clicks), profile)
+    have = draw_series(rng, nc, nv)
+    cons, ccost = _pick_consonants(rng, nc - len(clicks), profile, have)
     if clicks:
         ccost.update({c: _cost(profile, c) for c in clicks})
         cons = cons + [c for c in clicks if c not in cons]
-    vows, vcost = _pick_vowels(rng, nv, profile)
+    vows, vcost = _pick_vowels(rng, nv, profile, have)
     # tone
     tones: list = []
     hear = _profile_get(profile, "hear", "tone", 1.0) if profile is not None else 1.0
@@ -542,7 +692,7 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         k, f = phoible_sizes()["tones"]["count"] if "tones" in phoible_sizes() else (np.array([2, 3]), np.array([.5, .5]))
         m = k >= 2
         nt = int(rng.choice(k[m], p=f[m] / f[m].sum()))
-        tones = list(_TONE_SETS[min(5, nt)])
+        tones = list(_TONE_SETS[min(7, nt)])
     sh = _draw_shapes(rng)
     coda = "any"
     if sh["max_coda"] >= 1 and sh["kind"] != "complex":
@@ -557,6 +707,47 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         repair_style="epenthesis" if rng.random() < 0.7 else "deletion",
         cost={**ccost, **vcost}, freq={s: (CLICK_LEX_FREQ if s in clicks else pool_f.get(s, 0.01)) for s in cons + vows})
     return inv
+
+
+# --- stress shown (sound lane, 2026-11-08) ------------------------------------------------------------------------------
+
+def stress_marked(word: tuple, stress: str | None) -> str:
+    """A form as IPA with ˈ before its stressed syllable (the lect's fixed stress: initial | penult | final; antepenult),
+    so pages show and speech plays the stress the lect has. A one-syllable word and a lect with no fixed stress ("none")
+    get no mark. The syllable starts at its onset (percepts.syllabify: maximal onset)."""
+    from .percepts import syllabify, word_ipa
+    from .rules import stressed_vowel
+    w = tuple(word)
+    if not stress or stress == "none":
+        return word_ipa(w)
+    vs = [i for i, x in enumerate(w) if x.kind == "V"]
+    if len(vs) < 2:
+        return word_ipa(w)
+    sv = stressed_vowel(w, stress)
+    if sv is None:
+        return word_ipa(w)
+    start = 0
+    for syl in syllabify(w):
+        n = len(syl.onset) + len(syl.nucleus) + len(syl.coda)
+        if start + len(syl.onset) == sv or start <= sv < start + n:
+            break
+        start += n
+    return word_ipa(w[:start]) + "ˈ" + word_ipa(w[start:])
+
+
+def stressed_ipa(ipa: str, stress: str | None) -> str:
+    """stress_marked over an IPA string, word by word (spaces kept); a string already holding ˈ is left alone."""
+    if not ipa or "ˈ" in ipa or not stress or stress == "none":
+        return ipa
+    out = []
+    for part in ipa.split(" "):
+        try:
+            segs = from_ipa(part)
+        except Exception:
+            out.append(part)
+            continue
+        out.append(stress_marked(tuple(segs), stress) if segs else part)
+    return " ".join(out)
 
 
 # --- words --------------------------------------------------------------------------------------------------------------

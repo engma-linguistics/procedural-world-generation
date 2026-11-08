@@ -1020,7 +1020,7 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
                              "merged": what})
         return []
     if not any(x.kind == "V" and not x.tone for x in segs):
-        return marked
+        return tonemes(segs)
     d = max(cnt, key=lambda t: (cnt[t], -t))
     mapping = {x: replace(x, tone=d) for x in segs if x.kind == "V" and not x.tone}
     if getattr(lect.inventory, "tones", None):
@@ -1030,13 +1030,33 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
         _map_forms(lect, mapping, rid, kyr)
         lect.rule_text.setdefault(rid, f"a vowel with no tone (from a loan, an epenthesis or a new vowel) took the "
                                        f"{_tone_name(d)} tone, the language's default")
-        return marked
+        return tonemes(lect.all_segments())
     rid = f"tone.phonemic/{d}"
     _map_forms(lect, mapping, rid, kyr)
     lect.rule_text.setdefault(rid, f"tone became phonemic: vowels with no tone mark took the {_tone_name(d)} tone, the commonest "
                                    "(tonogenesis: phonemicization)")
     lect.changes.append({"kyr": round(kyr, 3), "rule": rid, "cause": "tonogenesis", "origin_lect": None})
-    return marked
+    return tonemes(lect.all_segments())
+
+
+_CONTOUR_PARTS = {4: (1, 3), 5: (3, 1)}  # rising = low + high, falling = high + low
+
+
+def tonemes(segs) -> list:
+    """The lect's tonemes from the tones on its vowels: every level tone, and a contour (rising, falling) only where it
+    stands on a short vowel. A contour found only on long vowels is two level tones on two moras (Yoruba, Hausa: a long
+    vowel carries a sequence, as fusion makes them, H + L on aa), so it adds its levels, not a toneme. Before this (sound
+    lane, 2026-11-08) every fused long vowel added a contour toneme and 78% of tonal lects ended with 5 tones (WALS 13A
+    and PHOIBLE: two or three tones are the commonest systems)."""
+    out = set()
+    for x in segs:
+        if x.kind != "V" or not x.tone:
+            continue
+        if x.tone in _CONTOUR_PARTS and x.length:
+            out.update(_CONTOUR_PARTS[x.tone])
+        else:
+            out.add(x.tone)
+    return sorted(out)
 
 
 _CORE: list = []

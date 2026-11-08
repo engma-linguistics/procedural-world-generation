@@ -802,9 +802,14 @@ def phonology(doc: Doc, l: dict) -> list[str]:
         out.append(f"Syllable shapes (share of syllables in the word-shape model): {sh}. At most "
                    f"{inv.get('max_onset', '?')} consonant(s) before the vowel and {inv.get('max_coda', '?')} after it.")
     stress = inv.get("stress")
-    out.append({"none": "Stress is not phonemic (no fixed stress).", "penult": "Stress falls on the next-to-last syllable.",
-                "initial": "Stress falls on the first syllable.", "final": "Stress falls on the last syllable."
-                }.get(stress, f"Stress: {stress}."))
+    if stress == "none":
+        out.append("No fixed stress position: prominence is not tied to a syllable, so no stress mark is written "
+                   + ("(pitch is carried by the tones)." if tones else "(as in French phrases, Korean or many Austronesian "
+                      "languages; the engine has no word-by-word lexical stress yet)."))
+    else:
+        out.append({"penult": "Stress falls on the next-to-last syllable.", "initial": "Stress falls on the first syllable.",
+                    "final": "Stress falls on the last syllable.", "antepenult": "Stress falls on the third syllable from the end."
+                    }.get(stress, f"Stress: {stress}.") + " The IPA on this page marks it with ˈ before the stressed syllable.")
     stt = l.get("stats") or {}
     if stt:
         out.append(f"Core words average {stt.get('core_mean_syllables', 0):.2f} syllables "
@@ -1143,17 +1148,22 @@ def word_family(doc: Doc, l: dict) -> list[str]:
 
 def vocabulary(doc: Doc, l: dict) -> list[str]:
     lex = l.get("lexicon") or {}
+    stress = (l.get("inventory") or {}).get("stress")
+
+    def st(ipa: str) -> str:  # the lect's fixed stress marked (ˈ)
+        from planet.language.inventory import stressed_ipa
+        return stressed_ipa(ipa, stress)
     out = ["## Vocabulary", "", "### Core sample", "",
            "| meaning | IPA | spelling | origin | etymology (sound changes left out) |", "| --- | --- | --- | --- | --- |"]
     shown = [c for c in SAMPLE if c in lex]
     for c in shown:
         e = lex[c]
-        out.append(f"| {cname(c)} | {e['ipa']} | {e['roman']} | {etym_origin(doc, e)} | {etym_short(doc, e, l['id'])} |")
+        out.append(f"| {cname(c)} | {st(e['ipa'])} | {e['roman']} | {etym_origin(doc, e)} | {etym_short(doc, e, l['id'])} |")
     rest = [c for c in doc.d.get("snapshot_concepts", []) if c in lex and c not in shown]
     if rest:
         out += ["", "<details><summary>The rest of the core 100</summary>", "", "| meaning | IPA | spelling | origin |",
                 "| --- | --- | --- | --- |"]
-        out += [f"| {cname(c)} | {lex[c]['ipa']} | {lex[c]['roman']} | {etym_origin(doc, lex[c])} |" for c in rest]
+        out += [f"| {cname(c)} | {st(lex[c]['ipa'])} | {lex[c]['roman']} | {etym_origin(doc, lex[c])} |" for c in rest]
         out += ["", "</details>"]
     stt = l.get("stats") or {}
     if stt.get("inherited_core_share") is not None:

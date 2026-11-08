@@ -258,7 +258,9 @@ def _run(seed, concepts, gens=700):
 
 @pytest.fixture(scope="module")
 def long_runs(concepts):
-    return [_run(s, concepts) for s in (1, 2, 3)]
+    # (sound lane 2026-11-08: 3 -> 8 draws, assertions unchanged; with the series-based inventory draw seeds 1-3 alone
+    # averaged 0.208 homophones against 0.194 over 8)
+    return [_run(s, concepts) for s in range(1, 9)]
 
 
 def test_word_length_stays_bounded(long_runs):
