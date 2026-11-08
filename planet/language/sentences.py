@@ -353,11 +353,14 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
     surface = "".join(forms)
     if len(ms) > 1 and getattr(v, "rules", None):   # (the lect's live rules at its morpheme joins: phonology.py)
         from . import phonology as PH
-        stem_at = len(_segs("".join(forms[:len(w.pre)])))
-        f = tuple(_segs(surface))
-        g = PH.apply_word(f, [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=stem_at)  # (stem-level: word-making only)
-        if g and g != f:
-            surface = word_ipa(g)
+        pre, f = _segs("".join(forms[:len(w.pre)])) or (), _segs(surface)
+        if f:
+            try:
+                g = PH.apply_word(tuple(f), [r for r in v.rules if r[1] != "stem"], v.stress, stem_index=len(pre))  # (stem-level: word-making only)
+                if g and g != tuple(f):
+                    surface = word_ipa(g)
+            except Exception:  # noqa: BLE001 - a rule that cannot run leaves the plain join
+                pass
     return fl, gl, surface
 
 
@@ -618,10 +621,14 @@ def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = F
     if getattr(v, "rules", None) and len(surf) > 1:   # (phrase-level live rules across word joins: phonology.py)
         from . import phonology as PH
         phr = [r for r in v.rules if r[1] in ("phrase", "phonetic")]
-        if phr:
-            fs = [tuple(_segs(x)) for x in surf]
-            gs = PH.apply_phrase(fs, phr, v.stress)
-            surf = [word_ipa(g) if g != f else x for x, f, g in zip(surf, fs, gs)]
+        fs = [_segs(x) for x in surf]
+        if phr and all(fs):
+            try:
+                fs = [tuple(f) for f in fs]
+                gs = PH.apply_phrase(fs, phr, v.stress)
+                surf = [word_ipa(g) if g != f else x for x, f, g in zip(surf, fs, gs)]
+            except Exception:  # noqa: BLE001
+                pass
     ipa = " ".join(surf)
     try:
         from . import romanize as RO

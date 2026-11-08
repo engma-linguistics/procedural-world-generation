@@ -436,6 +436,13 @@ def example(lect, x: Live, inv) -> list | None:
     return None
 
 
+def _safe_example(lect, x, inv):
+    try:
+        return example(lect, x, inv)
+    except Exception:  # noqa: BLE001 - an example is a courtesy; never fail the pass for one
+        return None
+
+
 def to_json(lect) -> dict:
     """The lect's phonology for the output: its rules in order (with notation over its own sounds, plain words and a
     worked example) and its latest dead rules."""
@@ -448,7 +455,7 @@ def to_json(lect) -> dict:
         words = SANDHI[x.ref[2:]][3] if x.ref.startswith("s:") else RU.describe(x.rule)
         text = SANDHI[x.ref[2:]][0].replace(">", "→") if x.ref.startswith("s:") else notation(x.rule, segs, allo)
         rows.append({"r": x.ref, "lv": level, "b": None if allo else round(x.born, 3), "t": text,
-                     "w": words, "ex": example(lect, x, inv)})
+                     "w": words, "ex": _safe_example(lect, x, inv)})
     return {"rules": rows, "dead": list(getattr(lect, "dead_rules", None) or [])}
 
 
