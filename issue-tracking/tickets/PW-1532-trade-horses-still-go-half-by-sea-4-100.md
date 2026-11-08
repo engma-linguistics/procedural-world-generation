@@ -1,4 +1,5 @@
 ---
+id: PW-1532
 title: "Trade: horses still go half by sea, ~4,100-4,300 km far tenth; source a horse ship's cost"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 225
 blocked_by: []
 relates: [PW-1522]
 refs: [docs/review/culture/trade/step4c.md, docs/review/culture/trade/step4b.md, "planet/lineages/trade_flow.py::DROVE", "planet/lineages/trade_flow.py::DROVE_GOODS", "planet/lineages/trade_flow.py::_Frame.cost", "run 0141d1", "run 3e0eb4", "run 07c755", "Villehardouin, Treaty of Venice 1201 (Fordham sourcebook)", "Yule, The Book of Ser Marco Polo vol. 2 pp. 404-405 (Wassaf)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -34,3 +37,7 @@ and New Zealand horse shipments to India are the leads; fetch them. Check horses
 
 - [ ] a sourced sea cost (loss or fare against value) for live animals
 - [ ] horses' far tenth within ~3,000-3,500 km by sea on the three runs; land-nudge steadiness about 0.75 or above
+
+## Updates
+- 2026-11-08: Coordinator 11-08: milestone later/low; needs a sourced horse-ship cost first.
+- 2026-11-08: Created from inbox draft draft-trade-herds-walk-ships-dear.md (found by lane 225).

@@ -1,7 +1,8 @@
 ---
+id: PW-1533
 title: "Trade: river boats jump between neighbouring rivers and over watersheds; following the course costs herders' grain"
 type: task
-status: needs-decision
+status: todo
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -11,6 +12,8 @@ found_by: lane 226
 blocked_by: []
 relates: []
 refs: [docs/review/culture/trade/step4c.md, "planet/lineages/trade_flow.py::RIVER_COURSE", "planet/lineages/trade_flow.py::_Frame", "run 3e0eb4", "run 0141d1", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -35,3 +38,7 @@ Lean: B. Measure herders' grain with the portage cost, and take C only if B stil
 
 - [ ] owner's choice A/B/C
 - [ ] if B: a sourced portage cost; herders' grain and the land-nudge steadiness on the three runs
+
+## Updates
+- 2026-11-08: Status needs-decision -> todo. Coordinator 11-08: option B (river course on, with a sourced portage cost between basins so grain still crosses where people really portaged). Queued for a later trade lane.
+- 2026-11-08: Created from inbox draft draft-trade-river-course.md (found by lane 226).
