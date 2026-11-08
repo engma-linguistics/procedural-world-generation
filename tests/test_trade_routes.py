@@ -313,6 +313,27 @@ def test_a_port_call_costs_loading_unloading_and_dues(tmp_path, monkeypatch):
     assert np.array_equal(c1[~(ld | ul)], c0[~(ld | ul)])
 
 
+def test_a_sea_km_costs_a_share_of_value_for_the_hands(tmp_path, monkeypatch):
+    """Lane 225 (step4b.md): every km at sea also costs the cargo's value e-folding every HAND_KM km (the hands, time and risk of a sea
+    haul), a share of value per class (bulk: none); land and river edges are untouched; without HANDS the freight alone."""
+    import planet.lineages.trade_flow as TF2
+    from planet.lineages import trade as TR
+    monkeypatch.setattr(TR, "is_land", lambda e, ice: (np.asarray(e) > 0) & ~np.asarray(ice))  # (six cells are no sphere grid)
+    know = {"herder": ["herding", "animal_cattle", "salting", "sails"], "farmer": ["cultivation", "crop_wheat", "salting", "sails"],
+            "forager": ["ornament", "sails"]}
+    fr = TF._Frame(_line_ctx(tmp_path, elev=[100.0, 100.0, -200.0, 100.0, 100.0, 100.0], know=know), 0, None, None)  # (cell 2 is sea)
+    on = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    monkeypatch.setattr(TF2, "HANDS", False)
+    fr.costs = {}
+    off = {cl: fr.cost(cl)[0] for cl in ("bulk", "middling", "precious")}
+    sea_e = (fr.cost("bulk")[1] == 2) & (on["bulk"] >= 0)
+    assert sea_e.any()
+    for cl in ("middling", "precious"):
+        assert np.allclose((on[cl] - off[cl])[sea_e] / fr.L[cl], fr.e["hop"] / TF2.HAND_KM[cl])  # (a share of value, per class)
+        assert np.array_equal(on[cl][~sea_e], off[cl][~sea_e])
+    assert "bulk" not in TF2.HAND_KM and np.array_equal(on["bulk"], off["bulk"])  # (bulk: freight alone)
+
+
 def test_a_made_good_is_made_in_towns_where_its_know_how_and_input_are(tmp_path):
     """PW-1522: silk is made by a town's people (the town share) from farmland, once silk is known; a town that does not know it lacks
     it once someone can make it, and land without a town makes none."""
