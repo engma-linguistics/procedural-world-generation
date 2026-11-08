@@ -1,4 +1,5 @@
 ---
+id: PW-1534
 title: "Refine from the viewer: Cancel waits for the end of the current stage (up to ~15-20 min in an L9 refine's wave power)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 227
 blocked_by: []
 relates: [PW-1438, PW-1209]
 refs: [docs/review/viewer/refine-control.md, docs/review/refine-l8/report.md, "planet/api.py::Jobs.cancel", "planet/api.py::any_job", "planet/refine.py::STEPS", "planet/world.py::finish", "planet/coast.py::wave_power"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Fix options: a progress hook inside `coast.wave_power`'s loop over directions or
 seconds), or let `Jobs.cancel` terminate a refine's worker process (parallel.Pool would need to restart the worker).
 
 - [ ] Cancel frees an L8 refine's worker within ~30 s (measure on a mocked or L7 refine)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-refine-cancel-waits-a-stage.md (found by lane 227).
