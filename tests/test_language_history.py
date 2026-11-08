@@ -538,3 +538,28 @@ def test_root_families_in_the_document(result):
            and a["died_kyr"] is None and b["died_kyr"] is None and a["deme"] is not None and b["deme"] is not None]
     assert sis and any(len({w["roots"][0] for w in by[a]["lexicon"].values()} & {w["roots"][0] for w in by[b]["lexicon"].values()}) > 20
                        for a, b in ((x["id"], y["id"]) for x, y in sis))
+
+
+def test_generation_softening():
+    """Owner 11-07: per generation (exponent 1) from 28-yr generations up; below, rate x (28 / generation) ** 0.7 per
+    year."""
+    assert H.change_generations(1000.0, 28.0) == pytest.approx(1000.0 / 28.0)
+    assert H.change_generations(1000.0, 56.0) == pytest.approx(1000.0 / 56.0)
+    kob = H.change_generations(1000.0, 11.7) / H.change_generations(1000.0, 28.0)
+    assert kob == pytest.approx((28.0 / 11.7) ** 0.7) and kob < 28.0 / 11.7
+
+
+def test_tone_phonemic_once_per_line(result):
+    """'tone became phonemic' is recorded only when a lect becomes tonal, never while it already is (a toneless vowel
+    in a tone language takes the default tone silently)."""
+    res, _, _ = result
+    by = _lects(res)
+    for l in res["lects"]:
+        line, cur, until = [], l, 0.0
+        while cur is not None:
+            line += [c for c in cur.changes if c["kyr"] >= until - 1e-9 and (c["rule"].startswith("tone.")
+                     or str(c.get("merged", "")).startswith("tone marks dropped"))]
+            until = cur.born_kyr
+            cur = by.get(cur.parent)
+        line.sort(key=lambda c: -c["kyr"])
+        assert not any(a["rule"].startswith("tone.phonemic") and b["rule"].startswith("tone.phonemic") for a, b in zip(line, line[1:])), l.id

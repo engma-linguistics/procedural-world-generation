@@ -703,3 +703,45 @@ def test_no_round_trips(long_runs):
             for i, s in enumerate(steps):
                 if s.process.split(":")[0] in ("derive", "compound", "shift") and i and steps[i - 1].gloss != s.gloss:
                     assert s.gloss not in {t.gloss for t in steps[:i]}, (w.concept, [(t.process, t.gloss) for t in steps])
+
+
+def test_etym_roots_carried_through_derive_shift_and_loan(concepts):
+    """The historian's roots (owner 11-07): set when a word is made, carried through derivation, shift, loan and sound
+    change, while the felt `roots` start afresh at a shift or a loan."""
+    rng, inv, lex = _proto(61, concepts, "P")
+    for w in lex.words.values():
+        assert w.etym_roots, w.concept
+    hunt = lex["HUNT"] if "HUNT" in lex else None
+    d = L.derive(rng, lex, "HUNTER", inv, 10.0, "P", base="HUNT", meaning="agent") if hunt else None
+    if d is not None:
+        assert d.etym_roots == L.etym_roots(lex["HUNT"])
+    donor = _proto(62, concepts, "D")[2]
+    w = L.borrow(donor["DOG"], "D", lex, None, inv, 9.0, "trade")
+    assert w.roots != donor["DOG"].roots and w.etym_roots == donor["DOG"].etym_roots
+    # a shift: the felt root starts at the shift, the historian's stays the source word's
+    lex.words["WOOD"] = replace(lex["WOOD"], form=tuple(from_ipa("kalu")))
+    s = None
+    for k in range(40):
+        s = L.shift_word(np.random.default_rng(k), lex, "WOOD", 8.0, "P")
+        if s is not None:
+            break
+    if s is not None:
+        src = lex[s.etym[-1].process.split(":", 1)[1]]
+        assert s.roots != s.etym_roots and s.etym_roots == L.etym_roots(src) or s.etym_roots
+    back = L.from_json(L.to_json(lex))
+    assert back["DOG"].etym_roots == w.etym_roots
+
+
+def test_contrast_pairs_rarely_share_a_form(concepts):
+    """Shifts and proto colexifications between members of a contrast set (BROTHER / SISTER, I / WE) are damped, and a
+    neutralized pair is renewed: over long runs few lexicons put both on one form."""
+    assert L.contrast_pair("BROTHER", "SISTER") and L.contrast_pair("WE", "I") and L.contrast_pair("THREE", "FOUR")
+    assert not L.contrast_pair("THOU", "YOU") and not L.contrast_pair("TREE", "WOOD")
+    same = n = 0
+    for seed in range(40):
+        lex = _proto(seed, concepts)[2]
+        for a, b in (("BROTHER", "SISTER"), ("I", "WE")):
+            if a in lex and b in lex:
+                n += 1
+                same += lex[a].form == lex[b].form
+    assert same / n < 0.06, (same, n)

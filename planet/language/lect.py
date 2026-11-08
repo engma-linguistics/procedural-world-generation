@@ -986,6 +986,14 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
         return marked
     d = max(cnt, key=lambda t: (cnt[t], -t))
     mapping = {x: replace(x, tone=d) for x in segs if x.kind == "V" and not x.tone}
+    if getattr(lect.inventory, "tones", None):
+        # (already a tone language: a toneless vowel from a loan, an epenthesis or a new vowel quality just takes the
+        # default tone, as every syllable must; not a sound change and not tonogenesis, so no change record)
+        rid = f"tone.default/{d}"
+        _map_forms(lect, mapping, rid, kyr)
+        lect.rule_text.setdefault(rid, f"a vowel with no tone (from a loan, an epenthesis or a new vowel) took the "
+                                       f"{_tone_name(d)} tone, the language's default")
+        return marked
     rid = f"tone.phonemic/{d}"
     _map_forms(lect, mapping, rid, kyr)
     lect.rule_text.setdefault(rid, f"tone became phonemic: vowels with no tone mark took the {_tone_name(d)} tone, the commonest "

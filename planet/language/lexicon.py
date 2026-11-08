@@ -113,6 +113,24 @@ SHIFT_CHAIN_KYR = 3.0
 HOMOPHONE_BOOST = 4.0         # replacement hazard x this for the rarer members of a homophone group of 3+ or of an
                               # accidental pair (repair by renewal)
 COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate pair (a shift; a proto pair: x1)
+# Contrast sets (2026-11-07, round 5): closed paradigms whose members a language keeps apart by one feature (sex in kin
+# pairs, person and number in pronouns, the numerals, near/far deixis, paired directions, the interrogatives). A shift or
+# a proto colexification that would put two members on one form neutralizes that contrast, the lexical side of the
+# functional-load veto in rules.py: CLICS3 attests them (BROTHER ~ SISTER 29 families, I ~ WE, THIS ~ THAT) but in a few
+# percent of languages, not the 13-18% the unweighted edges gave. Such a shift or colexification is drawn CONTRAST_DAMP as
+# often, and a contrast pair that does share a form is renewed like an accidental homophone (HOMOPHONE_BOOST), proto or
+# not. English you (< plural ye) for thou is the attested exception kept open.
+CONTRAST_DAMP = 0.1
+_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "WE", "YOU", "THEY")
+_NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN")
+_WH = ("WHO", "WHAT", "WHERE", "WHEN", "HOW")
+CONTRAST_SETS = (
+    ("BROTHER", "SISTER"), ("SON", "DAUGHTER"), ("GRANDMOTHER", "GRANDFATHER"), ("UNCLE", "AUNT"), ("HUSBAND", "WIFE"),
+    ("MOTHER", "FATHER"), ("MAN", "WOMAN"), ("BOY", "GIRL"), _PRONOUNS, _NUMERALS, _WH, ("THIS", "THAT"),
+    ("HERE", "THERE"), ("LEFT", "RIGHT"), ("NORTH", "SOUTH"), ("EAST", "WEST"), ("UPSTREAM", "DOWNSTREAM"),
+    ("SUNRISE", "SUNSET"),
+)
+CONTRAST_OPEN = frozenset({frozenset({"THOU", "YOU"}), frozenset({"HE", "HE OR SHE OR IT"})})
 AFFIX_RENEW = 0.01            # per generation: a derivational affix worn to nothing is renewed from a word (or coined)
 ELAB_THRESHOLD = 0.5          # niche weight above which a concept starts to split
 ELAB_RATE = 0.02              # per generation, times the niche weight, once past the threshold
@@ -173,7 +191,11 @@ class Word:
     born_kyr: float = 0.0
     roots: tuple = ()             # root ids the word is built on, main root first: "<proto lect>:<CONCEPT>" for a proto
                                   # root, "<lect>:<CONCEPT>@<kyr>" for a later coinage (a compound has its head's and its
-                                  # modifier's); kept through sound change, derivation, shift, loan and substrate
+                                  # modifier's); the roots a speaker still feels (`felt_roots`, re-read every step)
+    etym_roots: tuple = ()        # the historian's roots (owner 11-07): set when the word is made and carried forward
+                                  # through sound change, shift, loan and substrate, never re-read: a derivation or
+                                  # taboo paraphrase has its base's, a compound its head's then its modifier's, a shift
+                                  # its source word's, a loan its donor word's, a proto root or coinage its own id
 
     @property
     def ipa(self) -> str:
@@ -677,7 +699,8 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     for c in cl:
         for nb, fam in clics_neighbours(c.id, COLEX_MIN_FAMILIES):
             if c.id < nb and nb in ids and c.id not in pair_of and nb not in pair_of:
-                if rng.random() < min(0.6, COLEX_P_PER_FAMILY * fam):
+                damp = CONTRAST_DAMP if contrast_pair(c.id, nb) else 1.0
+                if rng.random() < min(0.6, COLEX_P_PER_FAMILY * fam) * damp:
                     pair_of[nb] = c.id   # nb takes c's word
     # which concepts are built from the root stock (a row whose base is on this proto's list)
     built: dict[str, bool] = {}
@@ -697,8 +720,8 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
             if f not in used and len(f) <= mseg:
                 break
         used.add(f)
-        return Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "proto", f, c.gloss),), float(kyr),
-                    (_i(f"{lect_id}:{c.id}"),))
+        rid = (_i(f"{lect_id}:{c.id}"),)
+        return Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "proto", f, c.gloss),), float(kyr), rid, rid)
 
     for c in sorted(cl, key=lambda c: (c.freq_class, c.id)):
         if c.id not in pair_of and not built.get(c.id):
@@ -743,7 +766,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
             continue
         lex.words[nb] = Word(nb, w.form, c.pos, c.freq_class,
                              w.etym[:-1] + (_step(kyr, lect_id, w.etym[-1].process, w.form, c.gloss,
-                                                  f"colexified with {src}"),), float(kyr), w.roots)
+                                                  f"colexified with {src}"),), float(kyr), w.roots, etym_roots(w))
     return lex
 
 
@@ -988,6 +1011,25 @@ def semantic_field(cid: str) -> str:
     return c.field or (_clics_fields().get(c.clics, "") if c.clics else "")
 
 
+@functools.cache
+def _contrast_index() -> dict:
+    out: dict = {}
+    for i, grp in enumerate(CONTRAST_SETS):
+        for c in grp:
+            out.setdefault(c, set()).add(i)
+    return out
+
+
+def contrast_pair(a: str, b: str) -> bool:
+    """Are `a` and `b` two members of one contrast set (CONTRAST_SETS: BROTHER / SISTER, I / WE, THREE / FOUR, THIS /
+    THAT), which a language keeps apart?"""
+    a, b = resolve(a), resolve(b)
+    if a == b or frozenset({a, b}) in CONTRAST_OPEN:
+        return False
+    ix = _contrast_index()
+    return bool(ix.get(a, set()) & ix.get(b, set()))
+
+
 def shift_fits(base: str, target: str, families: int) -> bool:
     """May `target` take `base`'s word (a colexification edge of `families` CLICS3 families)? Along an attested pathway
     (`shift_paths`), or along an edge of >= SHIFT_MIN_FAMILIES (SHIFT_MIN_CORE when the target is core vocabulary)
@@ -1148,6 +1190,11 @@ def felt_roots(lex: "Lexicon", w: Word, kyr: float, _depth: int = 0) -> tuple:
     return (_root_id(etym[0], etym, concept),) if etym else ()
 
 
+def etym_roots(w: Word) -> tuple:
+    """The historian's roots of `w` (`Word.etym_roots`; a word made without them falls back to its felt roots)."""
+    return w.etym_roots or w.roots
+
+
 def refresh_roots(lex: "Lexicon", kyr: float) -> int:
     """Re-read every word's `roots` as felt at `kyr` (`felt_roots`); returns how many changed."""
     n = 0
@@ -1159,11 +1206,13 @@ def refresh_roots(lex: "Lexicon", kyr: float) -> int:
     return n
 
 
-def root_step(w: Word) -> EtymStep | None:
-    """The step of `w`'s chain its main root id names (the root word as its lect made it), else the first step."""
-    if not w.roots or not w.etym:
+def root_step(w: Word, root: str | None = None) -> EtymStep | None:
+    """The step of `w`'s chain its main root id (or `root`) names (the root word as its lect made it), else the first
+    step."""
+    root = root or (w.roots[0] if w.roots else None)
+    if not root or not w.etym:
         return w.etym[0] if w.etym else None
-    lect, _, rest = w.roots[0].partition(":")
+    lect, _, rest = root.partition(":")
     concept, _, k = rest.partition("@")
     gl = concept_info(concept).gloss
     for st in w.etym:
@@ -1319,7 +1368,8 @@ def derive(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None
     form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), limits(inv)[0], inv)
     note = f"{b.concept} + '{meaning}'" + (f" (clip {b.ipa} > {word_ipa(bf)})" if clipped else "")
     return Word(c.id, form, c.pos, c.freq_class,
-                b.etym + (_step(kyr, lect_id, f"derive:{meaning}", form, c.gloss, note),), float(kyr), b.roots)
+                b.etym + (_step(kyr, lect_id, f"derive:{meaning}", form, c.gloss, note),), float(kyr), b.roots,
+                etym_roots(b))
 
 
 def _clash(a: str, b: str) -> bool:
@@ -1403,7 +1453,8 @@ def compound(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | No
     renewal = modifier == c.id and process is None
     base, other = (m, h) if renewal else (h, m)
     return Word(c.id, form, c.pos, c.freq_class, base.etym + (_step(kyr, lect_id, proc, form, c.gloss, nt),), float(kyr),
-                base.roots + tuple(r for r in other.roots if r not in base.roots))
+                base.roots + tuple(r for r in other.roots if r not in base.roots),
+                etym_roots(base) + tuple(r for r in etym_roots(other) if r not in etym_roots(base)))
 
 
 def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None, how: str | None = None,
@@ -1428,8 +1479,8 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
             f = _inv.draw_word(rng, inv, n_syll=n)
             if len(f) <= mseg:
                 break
-        w = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "coin", f, c.gloss),), float(kyr),
-                 (_i(f"{lect_id}:{c.id}@{float(kyr):g}"),))
+        rid = (_i(f"{lect_id}:{c.id}@{float(kyr):g}"),)
+        w = Word(c.id, f, c.pos, c.freq_class, (_step(kyr, lect_id, "coin", f, c.gloss),), float(kyr), rid, rid)
     if store:
         lex.set(w)
     return w
@@ -1451,7 +1502,7 @@ def taboo_word(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | 
     form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), limits(inv)[0], inv)
     return Word(c.id, form, c.pos, c.freq_class,
                 b.etym + (_step(kyr, lect_id or lex.lect, "taboo", form, c.gloss, f"'the {q.lower()} one'"),), float(kyr),
-                b.roots)
+                b.roots, etym_roots(b))
 
 
 def _shift_root(lex: Lexicon, k: str) -> str:
@@ -1517,13 +1568,16 @@ def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None 
     if not nb:
         return None
     via = _pick(rng, nb)
+    if contrast_pair(via, c.id) and rng.random() >= CONTRAST_DAMP:
+        return None   # (a shift that would neutralize a contrast set: mostly not taken; the caller falls back)
     src = lex.words[via]
     root = _shift_root(lex, via)
     note = "" if root == via else f"via {via}"
     lex.shifted[c.id] = lex.gen
     lex.shifted[via] = lex.gen
     st = _step(kyr, lect_id or lex.lect, f"shift:{root}", src.form, c.gloss, note)
-    return Word(c.id, src.form, c.pos, c.freq_class, src.etym + (st,), float(kyr), (_root_id(st, src.etym + (st,), c.id),))
+    return Word(c.id, src.form, c.pos, c.freq_class, src.etym + (st,), float(kyr), (_root_id(st, src.etym + (st,), c.id),),
+                etym_roots(src))
 
 
 def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: float, note: str = "",
@@ -1544,7 +1598,8 @@ def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: fl
         note = (note + "; " if note else "") + "clipped"
     c = concept_info(word.concept)
     st = _step(kyr, to_lex.lect, f"borrow:{from_lect_id}", form, c.gloss, note)
-    w = Word(c.id, form, word.pos, c.freq_class, word.etym + (st,), float(kyr), (_root_id(st, word.etym + (st,), c.id),))
+    w = Word(c.id, form, word.pos, c.freq_class, word.etym + (st,), float(kyr), (_root_id(st, word.etym + (st,), c.id),),
+             etym_roots(word))
     if store:
         to_lex.set(w)
     return w
@@ -1672,7 +1727,9 @@ def _renewal_boost(lex: Lexicon) -> dict[str, float]:
     out = {}
     for _, cs in lex.homophones().items():
         b = HOMOPHONE_BOOST
-        if len(cs) < 3 and any(_deliberate(lex.words[k]) for k in cs):
+        if len(cs) == 2 and contrast_pair(*cs):
+            pass   # (a neutralized contrast is renewed like an accidental homophone, proto or not)
+        elif len(cs) < 3 and any(_deliberate(lex.words[k]) for k in cs):
             if all(_proto_word(lex.words[k]) for k in cs):
                 continue   # a proto colexification still in place: stable polysemy (TREE/WOOD), not a repair case
             b = COLEX_BOOST
@@ -1879,7 +1936,8 @@ def substrate_transfer(old_lex: Lexicon, new_lex: Lexicon, local_concepts: Itera
             form = _inv.repair(heard, inv) or form
         c = concept_info(k)
         st = _step(kyr, new_lex.lect, f"substrate:{old_lex.lect}", form, c.gloss)
-        new_lex.set(Word(c.id, form, w.pos, w.freq_class, w.etym + (st,), float(kyr), (_root_id(st, w.etym + (st,), c.id),)))
+        new_lex.set(Word(c.id, form, w.pos, w.freq_class, w.etym + (st,), float(kyr), (_root_id(st, w.etym + (st,), c.id),),
+                         etym_roots(w)))
         out.append(c.id)
     return out
 
@@ -2012,7 +2070,7 @@ def to_json(lex: Lexicon, full: bool = True) -> dict:
         if not full and k not in CORE100 and w.pos != "NAME":
             continue
         words[k] = {"ipa": w.ipa, "pos": w.pos, "freq": w.freq_class, "born_kyr": w.born_kyr,
-                    "etym": [s.to_list() for s in w.etym], "roots": list(w.roots)}
+                    "etym": [s.to_list() for s in w.etym], "roots": list(w.roots), "etym_roots": list(w.etym_roots)}
     return {"lect": lex.lect, "head_first": lex.head_first, "gen": lex.gen, "shifted": dict(lex.shifted),
             "length_scale": lex.length_scale, "syllable_space": lex.syllable_space,
             "notes": [list(x) for x in lex.notes], "counts": dict(lex.counts),
@@ -2029,5 +2087,5 @@ def from_json(d: dict) -> Lexicon:
     for k, v in d["words"].items():
         lex.words[_i(k)] = Word(_i(k), tuple(from_ipa(v["ipa"])), v["pos"], int(v["freq"]),
                                 tuple(EtymStep.from_list(s) for s in v["etym"]), float(v["born_kyr"]),
-                                tuple(_i(r) for r in v.get("roots", ())))
+                                tuple(_i(r) for r in v.get("roots", ())), tuple(_i(r) for r in v.get("etym_roots", ())))
     return lex

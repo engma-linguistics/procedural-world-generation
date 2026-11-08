@@ -69,14 +69,18 @@ class EtymTable:
         (`lexicon.root_step`: the root word as the proto or a coining lect made it, or the shift, loan or old derivation
         a speaker no longer analyses; "node" is that step's node id, shared by every word of the family); a compound's
         modifier root gets an entry from the first word met that has it as its main root (else concept and lect only)."""
-        for i, r in enumerate(w.roots):
+        for roots in (w.roots, w.etym_roots):   # (felt roots, then the historian's: one table for both)
+            self._note(w, roots)
+
+    def _note(self, w, roots) -> None:
+        for i, r in enumerate(roots):
             e = self.roots.get(r)
             if e is not None and (i or e.get("node") is not None):
                 continue
             lect, _, rest = r.partition(":")
             concept = rest.split("@", 1)[0]
             if i == 0 and w.etym:
-                st = LX.root_step(w)   # (the step the felt root starts at: a proto root, a coinage, a shift, a loan ...)
+                st = LX.root_step(w, r)   # (the step the root starts at: a proto root, a coinage, a shift, a loan ...)
                 j = next((k for k, x in enumerate(w.etym) if x is st), 0)
                 self.roots[r] = {"node": self.chain(w.etym[:j + 1], cache=False), "lect": st.lect, "kyr": _r(st.kyr), "concept": concept,
                                  "gloss": LX.concept_info(concept).gloss, "ipa": st.form, "pos": LX.concept_info(concept).pos}
@@ -156,7 +160,7 @@ def lexicon_json(lect, sp: Speller, full: bool, et: EtymTable) -> dict:
         if not full and k not in LX.CORE100 and w.pos != "NAME":
             continue
         out[k] = {"ipa": w.ipa, "roman": sp.form(w.form), "pos": w.pos, "freq": w.freq_class, "etym": et.chain(w.etym),
-                  "roots": list(w.roots)}
+                  "roots": list(w.roots), "etym_roots": list(LX.etym_roots(w))}
         et.note_roots(w)
     return out
 
@@ -220,7 +224,7 @@ def rules_table(lects, h) -> dict:
     """{rule id: plain words} for every rule id in the change logs (rules.describe), plus the made-up ones: dispersion
     pushes, koine replacements and inventory simplifications (their ids say what moved)."""
     from . import lect as LC, rules as RU
-    used = {c["rule"] for l in lects for c in l.changes}
+    used = {c["rule"] for l in lects for c in l.changes} | {k for l in lects for k in l.rule_text if k.startswith("tone.default/")}
     known: dict = {}
     for key in sorted({l.profile_key for l in lects}):
         prof = h.profile(key)
