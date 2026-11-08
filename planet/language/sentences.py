@@ -57,10 +57,20 @@ EN_VERB = {
     "HUNT": ("hunt", "hunts", "hunted", "hunted", "hunting"), "GO": ("go", "goes", "went", "gone", "going"),
     "HAVE": ("have", "has", "had", "had", "having"), "WALK": ("walk", "walks", "walked", "walked", "walking"),
     "COME": ("come", "comes", "came", "come", "coming"), "CRY": ("cry", "cries", "cried", "cried", "crying"),
+    # (round 5, finish lane: the WOLD verbs the templates now prefer)
+    "BRING": ("bring", "brings", "brought", "brought", "bringing"), "FIND": ("find", "finds", "found", "found", "finding"),
+    "BUILD": ("build", "builds", "built", "built", "building"), "GIVE": ("give", "gives", "gave", "given", "giving"),
+    "RUN": ("run", "runs", "ran", "run", "running"), "SWIM": ("swim", "swims", "swam", "swum", "swimming"),
+    "CLIMB": ("climb", "climbs", "climbed", "climbed", "climbing"), "CATCH": ("catch", "catches", "caught", "caught", "catching"),
+    "FOLLOW": ("follow", "follows", "followed", "followed", "following"), "SELL": ("sell", "sells", "sold", "sold", "selling"),
+    "BUY": ("buy", "buys", "bought", "bought", "buying"), "DANCE": ("dance", "dances", "danced", "danced", "dancing"),
+    "SHOUT": ("shout", "shouts", "shouted", "shouted", "shouting"),
+    "CARVE": ("carve", "carves", "carved", "carved", "carving"),
 }
 EN_NOUN = {"CHILD (YOUNG HUMAN)": "child", "LIE (REST)": "lie", "FLESH OR MEAT": "meat", "SMOKE (EXHAUST)": "smoke",
            "STONE OR ROCK": "stone", "kin:mother": "mother", "kin:brother": "brother", "kin:sister": "sister"}
-EN_PLURAL = {"CHILD (YOUNG HUMAN)": "children", "FISH": "fish", "PERSON": "people", "MAN": "men", "WOMAN": "women"}
+EN_PLURAL = {"CHILD (YOUNG HUMAN)": "children", "FISH": "fish", "PERSON": "people", "MAN": "men", "WOMAN": "women",
+             "SHEEP": "sheep", "GOOSE": "geese", "OX": "oxen"}
 
 
 def en(concept: str) -> str:
@@ -110,6 +120,15 @@ class View:
 
     def ipa(self, c: str) -> str:
         return self.lex[c]["ipa"]
+
+    def pair(self, *options) -> tuple[str, str] | tuple[None, None]:
+        """The first (verb, object) the lexicon has both words for, from (verb concepts, object concepts) options in order
+        of preference (a verb only meets objects that suit it: hear the thunder, not see it)."""
+        for verbs, objs in options:
+            a, b = self.w(*verbs), self.w(*objs)
+            if a and b:
+                return a, b
+        return None, None
 
     def g(self, fn: str) -> dict | None:
         return self.grams.get(fn)
@@ -656,19 +675,26 @@ def s_locative(v: View) -> dict | None:
     if not (S and Vc and L):
         return None
     s = noun_phrase(v, S, _the(v), adj=A)
-    x = oblique(v, noun_phrase(v, L, _the(v)), "LOC", ("IN", "AT"))
+    M = v.w("RUN", "WALK", "GO", "COME") if v.g("ALL") is not None else None
+    if M:   # (a lect with an allative shows it: motion to a place, the motion verbs of the WOLD list)
+        x = oblique(v, noun_phrase(v, L, _the(v)), "ALL", ("AT",))
+        Vc, prep = M, "to"
+    else:
+        x = oblique(v, noun_phrase(v, L, _the(v)), "LOC", ("IN", "AT"))
+        prep = "in"
     if x is None:
         return None
     vw = verb(v, Vc, "3SG")
     words = clause(v, s, vw, None, x[0], transitive=False)
     adj = f"{en(A)} " if A else ""
-    return finish(v, "locative", f"The {adj}{en(S)} {_vf(Vc, 1)} in the {en(L)}.", words,
+    return finish(v, "locative", f"The {adj}{en(S)} {_vf(Vc, 1)} {prep} the {en(L)}.", words,
                   [x[1], f"adjective {'before' if v.before('adjective', 'AN') else 'after'} the noun"] + vw[2])
 
 
 def s_tense(v: View) -> dict | None:
-    S, Vc, O = v.w("MAN", "PERSON", "HUNTER"), v.w("EAT", "COOK", "KILL", "CARRY"), v.w("FISH", "FLESH OR MEAT", "BIRD",
-                                                                                        "EGG")
+    S = v.w("MAN", "PERSON", "HUNTER")
+    Vc, O = v.pair((("BUILD",), ("BOAT", "RAFT", "HOUSE")), (("CARVE",), ("BOW", "PADDLE", "BOWL")),
+                   (("EAT", "COOK", "KILL", "CARRY"), ("FISH", "FLESH OR MEAT", "BIRD", "EGG")))
     if not (S and Vc and O):
         return None
     fn = _tam(v)
@@ -688,7 +714,8 @@ def _q_particle(v: View) -> str | None:
 
 
 def s_polar(v: View) -> dict | None:
-    Vc, O = v.w("SEE", "HEAR"), v.w("FIRE", "SMOKE (EXHAUST)", "RIVER", "SUN")
+    Vc, O = v.pair((("HEAR",), ("THUNDER", "VOICE")), (("SEE",), ("RAINBOW", "FIRE", "SMOKE (EXHAUST)", "RIVER", "SUN")),
+                   (("HEAR",), ("RIVER", "FIRE")))
     S = pronoun(v, "THOU")
     if not (Vc and O and S):
         return None
@@ -716,7 +743,7 @@ def s_polar(v: View) -> dict | None:
                      "tracked")
     else:
         notes.append("a yes/no question by rising intonation alone")
-    return finish(v, "polar", f"Do you see the {en(O)}?", words, notes, q=True)
+    return finish(v, "polar", f"Do you {_vf(Vc, 0)} the {en(O)}?", words, notes, q=True)
 
 
 def _first_syllable(ipa: str) -> str:
@@ -727,7 +754,7 @@ def _first_syllable(ipa: str) -> str:
 
 
 def s_content(v: View) -> dict | None:
-    S, Vc, Q = v.w("CHILD (YOUNG HUMAN)", "BOY", "GIRL", "PERSON"), v.w("EAT", "HOLD", "SEE"), v.w("WHAT")
+    S, Vc, Q = v.w("CHILD (YOUNG HUMAN)", "BOY", "GIRL", "PERSON"), v.w("BRING", "FIND", "EAT", "HOLD", "SEE"), v.w("WHAT")
     if not (S and Vc and Q):
         return None
     s = noun_phrase(v, S, _the(v))
@@ -745,7 +772,8 @@ def s_content(v: View) -> dict | None:
 
 
 def s_negation(v: View) -> dict | None:
-    Vc, O = v.w("DRINK", "SEE", "EAT"), v.w("WATER", "MILK", "BLOOD")
+    Vc, O = v.pair((("DRINK",), ("MILK", "SOUP", "WATER", "BLOOD")), (("EAT",), ("MEAT", "FLESH OR MEAT", "EGG")),
+                   (("SEE",), ("WATER", "BLOOD")))
     S = pronoun(v, "I")
     if not (Vc and O and S) or (v.g("NEG") is None and not v.w("NOT")):
         return None
@@ -763,7 +791,7 @@ def _my(v: View) -> NP | None:
 
 
 def s_possession(v: View) -> dict | None:
-    K, T = v.w("MOTHER", "kin:mother", "FATHER"), v.w("DOG", "HOUSE", "KNIFE")
+    K, T = v.w("MOTHER", "kin:mother", "FATHER"), v.w("BOAT", "BASKET", "POT", "DOG", "HOUSE", "KNIFE")
     me = _my(v)
     if not (K and T and me):
         return None
@@ -799,8 +827,9 @@ def s_possession(v: View) -> dict | None:
 
 
 def s_number(v: View) -> dict | None:
-    K, Vc, N, O = v.w("BROTHER", "SISTER", "kin:brother", "SON"), v.w("SEE", "HUNT", "HOLD"), v.w("TWO", "THREE"), \
-        v.w("BIRD", "FISH", "DOG", "DEER")
+    K, N = v.w("OLDER BROTHER", "YOUNGER SIBLING", "BROTHER", "SISTER", "kin:brother", "SON"), v.w("THREE", "FOUR", "TWO")
+    Vc, O = v.pair((("CATCH",), ("FISH", "RABBIT", "BIRD")), (("SELL", "BUY"), ("SHEEP", "GOOSE", "POT", "BASKET")),
+                   (("SEE", "HUNT", "HOLD"), ("BIRD", "FISH", "DOG", "DEER")))
     me = _my(v)
     if not (K and Vc and N and O and me):
         return None
@@ -826,7 +855,8 @@ def _copula(v: View) -> tuple[str, str] | None:
 
 
 def s_copula(v: View) -> dict | None:
-    D, S, P = v.w("THAT", "THIS"), v.w("MAN", "PERSON", "WOMAN"), v.w("HUNTER", "FISHER", "HERDER", "SMITH", "FIGHTER")
+    D, S, P = v.w("THAT", "THIS"), v.w("MAN", "PERSON", "WOMAN"), v.w("MERCHANT", "SOLDIER", "TEACHER", "HUNTER", "FISHER",
+                                                                                  "HERDER", "SMITH", "FIGHTER", "THIEF")
     if not (S and P):
         return None
     s = noun_phrase(v, S, dem=D)
@@ -870,7 +900,7 @@ def relative(v: View, head: str, rc_verb: str, det: str | None) -> tuple[NP, str
 
 
 def s_relative(v: View) -> dict | None:
-    Vc, H, R = v.w("KNOW", "KNOW (SOMETHING)", "SEE"), v.w("WOMAN", "MAN", "PERSON"), v.w("SING", "LAUGH", "HUNT", "CRY")
+    Vc, H, R = v.w("KNOW", "KNOW (SOMETHING)", "SEE"), v.w("WOMAN", "MAN", "PERSON"), v.w("DANCE", "SING", "LAUGH", "SHOUT", "HUNT", "CRY")
     S = pronoun(v, "I")
     if not (Vc and H and R and S):
         return None
@@ -1105,7 +1135,7 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     if O and P:
         ex.append(_ex(v, noun_phrase(v, O, poss=noun_phrase(v, P, _the(v))).words, f"the {en(P)}'s {en(O)}"))
     out.append({"topic": "Possession", "text": txt, "ex": ex + _sent_ex(sents, "possession")})
-    H, R = v.w("WOMAN", "MAN", "PERSON"), v.w("SING", "LAUGH", "HUNT", "CRY")
+    H, R = v.w("WOMAN", "MAN", "PERSON"), v.w("DANCE", "SING", "LAUGH", "SHOUT", "HUNT", "CRY")
     if H and R:
         np_, note = relative(v, H, R, _the(v))
         out.append({"topic": "Relative clauses", "text": note[0].upper() + note[1:] + ".",
