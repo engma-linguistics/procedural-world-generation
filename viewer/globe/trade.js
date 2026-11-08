@@ -11,9 +11,9 @@ import { $ } from './scene.js';
 import { cellPositions, llPos } from './geometry.js';
 import { esc } from '../planets.js';
 
-export const GROUP_COL = { food: '#f2c14e', salt: '#f4f4f4', metal: '#e07a3a', precious: '#c86be0', raw: '#7fbf5a' };
+export const GROUP_COL = { food: '#f2c14e', salt: '#f4f4f4', metal: '#e07a3a', precious: '#c86be0', raw: '#7fbf5a', craft: '#4f7fe0' };
 export const KIND_COL = { port: '#4fb3ff', 'caravan town': '#f5a301', 'river port': '#5ff0e6', 'market town': '#ffffff' };
-const GROUP_LAB = { food: 'food', salt: 'salt', metal: 'metal', precious: 'fine goods', raw: 'raw goods' };
+const GROUP_LAB = { food: 'food', salt: 'salt', metal: 'metal', precious: 'fine goods', raw: 'raw goods', craft: 'cloth, glass, wares, horses' };
 const agoNow = () => Math.max(0, -(S.V.run.frames[S.V.frame]?.t ?? 0));
 
 // the routes of the frame nearest the slider (fetched once per frame; the first fetch for a run works out its exchange, a minute or two)
@@ -58,8 +58,9 @@ export function tradeOverlays(globe, ribbonObj, onReady) {
   for (const [g, ws] of Object.entries(lines)) ws.forEach((pts, w) => { if (pts.length) out[`trade_${g}_${w}`] = ribbonObj(pts, col(g), 0.95, [2.5, 4, 6][w]); });
   const r0 = globe ? 1.014 : 1, rings = {};
   for (const h of D.hubs) {
-    const la = G.lat[h.cell], lo = G.lon[h.cell], cl = Math.max(Math.cos(la * Math.PI / 180), 0.2), rad = 0.5 + 2.5 * Math.min(h.strength, 0.3);
-    const arr = (rings[h.kind] ??= []);
+    const la = G.lat[h.cell], lo = G.lon[h.cell], cl = Math.max(Math.cos(la * Math.PI / 180), 0.2), trading = h.trading ?? h.long, rad = trading ? 0.5 + 2.5 * Math.min(h.strength, 0.3) : 0.35;
+    // (PW-1530: a trading town has a long-haul route through it; a town only the local web passes is a market town, drawn small)
+    const arr = (rings[trading ? h.kind : 'market'] ??= []);
     let p1 = llPos(la + rad, lo, r0);
     for (let k = 1; k <= 16; k++) {
       const t = k / 16 * 2 * Math.PI, p2 = llPos(la + rad * Math.cos(t), lo + rad * Math.sin(t) / cl, r0);
@@ -67,10 +68,11 @@ export function tradeOverlays(globe, ribbonObj, onReady) {
       p1 = p2;
     }
   }
-  for (const [k, pts] of Object.entries(rings)) out[`tradeHub_${k}`] = ribbonObj(pts, parseInt(KIND_COL[k].slice(1), 16), 1, 2.5);
-  const nk = (k) => D.hubs.filter((h) => h.kind === k).length;
+  for (const [k, pts] of Object.entries(rings)) out[`tradeHub_${k}`] = k === 'market' ? ribbonObj(pts, 0xffffff, 0.5, 1.2) : ribbonObj(pts, parseInt(KIND_COL[k].slice(1), 16), 1, 2.5);
+  const isT = (h) => h.trading ?? h.long, nT = D.hubs.filter(isT).length;
+  const nk = (k) => D.hubs.filter((h) => isT(h) && h.kind === k).length;
   const sw = (c, t) => `<span style="display:inline-block;width:10px;height:3px;background:${c};vertical-align:middle;margin-right:3px"></span>${t}`;
-  status(`${esc(globalThis.NumFmt?.ago ? globalThis.NumFmt.ago(D.ago_kyr || 0.0001) : D.ago_kyr + ' kyr ago')}: ${nl} long-haul stretches, ${nx} local (${local ? 'shown faint' : 'tick Local exchange'}), ${D.hubs.length} trading towns<br>`
+  status(`${esc(globalThis.NumFmt?.ago ? globalThis.NumFmt.ago(D.ago_kyr || 0.0001) : D.ago_kyr + ' kyr ago')}: ${nl} long-haul stretches, ${nx} local (${local ? 'shown faint' : 'tick Local exchange'}), ${nT} trading towns, ${D.hubs.length - nT} market towns on the local web (small rings)<br>`
     + Object.keys(GROUP_COL).map((g) => sw(GROUP_COL[g], GROUP_LAB[g])).join(' ') + '<br>'
     + Object.keys(KIND_COL).map((k) => sw(KIND_COL[k], `${k} ${nk(k)}`)).join(' '));
   return out;
@@ -84,6 +86,6 @@ export function tradeRows(i, R) {
   if (!h) return;
   const goods = h.goods.map((g) => g.replace(/_/g, ' ')).join(', ');
   const q = h.quarters.length ? `; a merchant quarter of the ${h.quarters.map((x) => esc(x[1])).join(', the ')}` : '';
-  R('place', '', `${esc(h.kind)}${h.long ? ' on the long-haul network' : ''} of the ${esc(h.culture_name || 'unknown')} (${esc(h.place || 'here')}, ~${Math.round(h.people).toLocaleString('en')} people): `
-    + `${esc(goods)} pass through, by ${esc(h.modes.join(', '))}${q}`, { lab: 'trading town', ess: true });
+  R('place', '', `${esc(h.kind)}${(h.trading ?? h.long) ? ' on the long-haul network' : ' on the local web'} of the ${esc(h.culture_name || 'unknown')} (${esc(h.place || 'here')}, ~${Math.round(h.people).toLocaleString('en')} people): `
+    + `${esc(goods)} pass through, by ${esc(h.modes.join(', '))}${q}`, { lab: (h.trading ?? h.long) ? 'trading town' : 'market town', ess: true });
 }

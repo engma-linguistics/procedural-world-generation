@@ -27,9 +27,10 @@ from numba import njit, types
 from numba.typed import Dict
 
 # the groups a route is coloured by (design1.md step 3: "coloured by leading good class (food, salt, metal, precious)"), plus raw goods
-GROUPS = ("food", "salt", "metal", "precious", "raw")
+GROUPS = ("food", "salt", "metal", "precious", "raw", "craft")  # (craft: the middling made goods and horses, PW-1522)
 GROUP_OF = {"grain": 0, "livestock": 0, "dried_fish": 0, "oil_wine": 0, "sugar": 0, "salt": 1, "copper": 2, "tin": 2, "iron": 2, "mithril": 2,
-            "spices": 3, "gold": 3, "gems": 3, "ornaments": 3, "timber": 4, "firewood": 4, "stone": 4, "toolstone": 4, "furs": 4, "seal_oil": 4}
+            "spices": 3, "gold": 3, "gems": 3, "ornaments": 3, "timber": 4, "firewood": 4, "stone": 4, "toolstone": 4, "furs": 4, "seal_oil": 4,
+            "silver": 3, "incense": 3, "silk": 3, "dyes": 3, "arms": 3, "cloth": 5, "glass": 5, "porcelain": 5, "horses": 5}
 ROUTE_SHARE = 0.05  # a stretch is a route when it carries this share of one good's carried volume between cultures in the world that frame
 # (carried: the deliveries that cross at least one stretch; goods passed between cultures sharing a cell travel no road: 65-84% of metal).
 # Per good, not per group (PW-1515): tin's road is a route though copper's volume dwarfs it (review1.md sections 3-4: Kanesh tin,
@@ -351,7 +352,12 @@ class Loads:
             s, pop = self.towns[c]
             host = int(fr.own[c])
             pack = host >= 0 and "pack_animals" in fr.info.get(host, {}).get("know", ())
+            # PW-1530 (coordinator's ruling A): a trading town needs a long-haul route through it, and merchant quarters follow it; a
+            # town only the local web passes stays a market town (drawn smaller)
+            trading = bool(on_long[c])
             kind = ("port" if touch[2, c] else "caravan town" if caravan_edge[c] and pack else "river port" if touch[1, c] else "market town")
+            if not trading:
+                kind = "market town"
             whole = float(norm[:, c].sum())
             sel = t_ix == t
             by: dict = {}
@@ -360,7 +366,7 @@ class Loads:
             # (merchants are a trading culture's, or a dragon realm's kobolds (D65); a kind that takes tribute sends no merchants)
             trader = lambda x: fr.info.get(x, {}).get("mode") == "trade" or bool(fr.info.get(x, {}).get("via"))  # noqa: E731
             q = sorted(((x, v / whole) for x, v in by.items() if x != host and x >= 0 and whole > 0 and trader(x)), key=lambda r: -r[1])
-            qs = [[int(x), round(float(v), 3)] for x, v in q if v >= QUARTER_SHARE]
+            qs = [[int(x), round(float(v), 3)] for x, v in q if v >= QUARTER_SHARE] if trading else []
             for x, _ in qs:
                 if host >= 0:
                     quarters.append([host, x])
@@ -369,7 +375,7 @@ class Loads:
             hubs.append({"site": s["id"], "cell": int(c), "place": s.get("place"), "people": int(round(pop)), "culture": host,
                          "culture_name": names[host]["name"] if 0 <= host < len(names) else None, "kind": kind,
                          "strength": round(float(norm[:, c].max()), 4), "goods": top,
-                         "modes": [MODES[m] for m in range(len(MODES)) if touch[m, c]], "long": bool(on_long[c]),
+                         "modes": [MODES[m] for m in range(len(MODES)) if touch[m, c]], "long": trading, "trading": trading,
                          "quarters": [[x, (names[x]["name"] if 0 <= x < len(names) else str(x)) + (f" ({fr.info[x]['via']})" if fr.info.get(x, {}).get("via") else ""), v]
                                       for x, v in qs]})
         hubs.sort(key=lambda h: -h["strength"])

@@ -41,8 +41,9 @@ def test_the_big_flows_become_routes_along_the_way_they_took(tmp_path):
     assert TF.flows_at(_line_ctx(tmp_path), 0, routes=False)["flows"] == f["flows"]  # (a read-out: tracing changes no flow)
 
 
-def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_path):
+def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_path, monkeypatch):
     """A ledger town on a route is a market town; on a river route a river port (review1.md section 5: central places)."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     h = TF.flows_at(_with_town(_line_ctx(tmp_path), tmp_path), 0)["hubs"]
     assert len(h) == 1 and h[0]["cell"] == 2 and h[0]["kind"] == "market town" and h[0]["place"] == "the ford"
     know = {"herder": ["herding", "animal_cattle", "salting", "copper", "native_copper", "bronze", "quarrying", "canoes"],
@@ -52,8 +53,9 @@ def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_
     assert h and h[0]["kind"] == "river port" and "river" in h[0]["modes"]
 
 
-def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_path):
+def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_path, monkeypatch):
     """review1.md section 4 (the Sahel towns, the Silk Road oases): pack animals, a farmed town, an unfarmed desert or steppe beyond."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     know = {"herder": ["herding", "animal_cattle", "salting", "pack_animals"], "farmer": ["cultivation", "crop_wheat", "salting", "pack_animals"],
             "forager": ["ornament"]}
     ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
@@ -71,9 +73,10 @@ def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_p
     assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "caravan town"
 
 
-def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path):
+def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path, monkeypatch):
     """Curtin's trade diasporas (review1.md section 5); design1.md step 2: a quarter of the giver's people in the taker's town removes the
     border's crossing cost."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     ctx = _line_ctx(tmp_path)
     fr0 = TF._Frame(ctx, 0, None, None)
     fr1 = TF._Frame(ctx, 0, None, None, quarters={(0, 1)})  # (the farmers' merchants in a herders' town)
@@ -270,3 +273,61 @@ def test_routes_split_into_long_haul_and_local(tmp_path, monkeypatch):
     assert all(isinstance(x["long"], bool) for x in f["hubs"])
     for x in f["hubs"]:
         assert all(len(y) == 7 for y in RT.culture_hubs(f, x["culture"]))
+
+
+def test_a_town_only_the_local_web_passes_is_a_market_town_without_quarters(tmp_path):
+    """PW-1530 (ruling A): a trading town needs a long-haul route through it, and merchant quarters follow it; a town on local routes only
+    stays a market town."""
+    ctx = _line_ctx(tmp_path)
+    town = _with_town(_line_ctx(tmp_path), tmp_path, cell=1)
+    h = TF.flows_at(town, 0)["hubs"]
+    assert h and all(not x["trading"] and x["kind"] == "market town" and not x["quarters"] for x in h)
+    del ctx
+
+
+def test_a_port_call_costs_loading_unloading_and_dues(tmp_path, monkeypatch):
+    """PW-1529: where goods go from land onto the sea they pay LOAD_DAYS of a ship's time, where they come ashore UNLOAD_DAYS and the
+    harbour's due; without HANDLE the per-km cost alone."""
+    import planet.lineages.trade_flow as TF2
+    from planet.lineages import trade as TR
+    monkeypatch.setattr(TR, "is_land", lambda e, ice: (np.asarray(e) > 0) & ~np.asarray(ice))  # (six cells are no sphere grid)
+    know = {"herder": ["herding", "animal_cattle", "salting", "sails"], "farmer": ["cultivation", "crop_wheat", "salting", "sails"],
+            "forager": ["ornament", "sails"]}
+    fr = TF._Frame(_line_ctx(tmp_path, elev=[100.0, 100.0, -200.0, 100.0, 100.0, 100.0], know=know), 0, None, None)  # (cell 2 is sea)
+    e = fr.e
+    assert not (e["load"] & e["unload"]).any()
+    c1 = fr.cost("bulk")[0].copy()
+    TF2.HANDLE = False
+    try:
+        fr.costs = {}
+        c0 = fr.cost("bulk")[0]
+    finally:
+        TF2.HANDLE = True
+    sea_e = (fr.cost("bulk")[1] == 2) & (c1 >= 0)
+    ld, ul = sea_e & e["load"], sea_e & e["unload"]
+    assert ld.any() and ul.any()
+    if ld.any():
+        assert np.allclose(c1[ld] - c0[ld], TF2.LOAD_DAYS * TF2.DAY_KM * TF2.SEA)
+    if ul.any():
+        assert np.allclose(c1[ul] - c0[ul], TF2.UNLOAD_DAYS * TF2.DAY_KM * TF2.SEA - fr.L["bulk"] * np.log1p(-TF2.HARBOUR_DUE))
+    assert np.array_equal(c1[~(ld | ul)], c0[~(ld | ul)])
+
+
+def test_a_made_good_is_made_in_towns_where_its_know_how_and_input_are(tmp_path):
+    """PW-1522: silk is made by a town's people (the town share) from farmland, once silk is known; a town that does not know it lacks
+    it once someone can make it, and land without a town makes none."""
+    from planet.lineages import trade as TR
+    know = {"herder": ["herding", "animal_cattle", "salting"], "farmer": ["cultivation", "crop_wheat", "salting", "silk", "weaving"],
+            "forager": ["ornament"]}
+    led = {}
+    other = {**know, "farmer": ["cultivation", "crop_wheat", "salting"], "herder": know["herder"] + ["silk", "weaving"]}  # (silk known, not by the town)
+    for k, kn in enumerate((know, other, {**know, "farmer": ["cultivation", "crop_wheat", "salting"]})):
+        d = tmp_path / str(k)
+        d.mkdir()
+        ctx = _with_town(_line_ctx(d, know=kn), d, cell=2, pop=10 ** 9)  # (a town that is most of its cell)
+        ctx.meta["techtree"]["techs"] += [{"id": "silk"}, {"id": "weaving"}]
+        led[k] = TR.ledger_at(ctx, 0)
+    assert led[0][1]["surplus"].get("silk", 0) > 0 and led[0][1]["lack"].get("silk", 0) == 0  # (the farmers' town makes it)
+    assert led[0][0]["surplus"].get("silk", 0) == 0 and led[0][2]["surplus"].get("silk", 0) == 0  # (no town, no workshop)
+    assert led[1][1]["surplus"].get("silk", 0) == 0 and led[1][1]["lack"].get("silk", 0) > 0  # (a town without the know-how wants it)
+    assert led[2][1]["lack"].get("silk", 0) == 0  # (nobody can make it yet: nobody wants it)
