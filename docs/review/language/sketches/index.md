@@ -2,7 +2,7 @@
 
 # Language sketches
 
-Wikipedia-style pages for six living languages of one simulated world (620 living lects), written by `tools/language/sketch.py` from `runs/a24559/languages.json` alone. Regenerate with:
+Wikipedia-style pages for six living languages of one simulated world (622 living lects), written by `tools/language/sketch.py` from `runs/a24559/languages.json` alone. Regenerate with:
 
     uv run python tools/language/sketch.py runs/a24559/languages.json --out docs/review/language/sketches --auto
 
@@ -10,12 +10,12 @@ The languages are chosen by criteria, never by id, so a new run picks its own. E
 
 | page | people | why it was picked |
 | --- | --- | --- |
-| [ǃ'Izoni](d551-elf.md) | elf | **the largest click (or ejective) inventory**: 60 consonants, 30 of them clicks and 8 ejectives; 6 vowels |
-| [Orruyekpuy](d292-aarakocra.md) | aarakocra | **a tonal kenku or aarakocra language**: 5 tones, 5 sounds outside the human voice, 18 consonants and 14 vowels |
-| [Seenrhii](d48-blue-dragon.md) | blue dragon | **a dragon language with the most non-human sounds**: 22 of its 69 sounds are outside the human voice |
-| [Miku](d704.2-halfling.md) | halfling | **a tiny inventory with long words**: 13 consonants and 4 vowels; core words average 2.45 syllables |
-| [Puk'i'yshamh](d261-silver-dragon.md) | silver dragon | **the most conservative language of a long-lived people**: generation 430 years; 91% of its core list inherited from the proto-language; 31 sound changes |
-| [Iiaeif](d760-hobgoblin.md) | hobgoblin | **the most English-like language**: score 0.737 (below) |
+| [Ialiiň](d776-halfling.md) | halfling | **the largest click (or ejective) inventory**: 54 consonants, 2 of them clicks and 0 ejectives; 12 vowels |
+| [Iulahad](d292-aarakocra.md) | aarakocra | **a tonal kenku or aarakocra language**: 4 tones, 4 sounds outside the human voice, 16 consonants and 12 vowels |
+| [Nrhi-he](d48-blue-dragon.md) | blue dragon | **a dragon language with the most non-human sounds**: 19 of its 65 sounds are outside the human voice |
+| [Nggabibila](d131-cloud-giant.md) | cloud giant | **a tiny inventory with long words**: 14 consonants and 3 vowels; core words average 2.77 syllables |
+| [Simhsyrhomhyrhwe](d116-white-dragon.md) | white dragon | **the most conservative language of a long-lived people**: generation 430 years; 90% of its core list inherited from the proto-language; 34 sound changes |
+| [Begbifuym](d478-hobgoblin.md) | hobgoblin | **the most English-like language**: score 0.744 (below) |
 
 ## The English-likeness score
 
@@ -47,16 +47,16 @@ No language in the run can reach English's CCCVCCCC syllable: the engine's large
 
 | rank | language | people | score | consonants | vowels | syllables | tone | order | adp. | articles | case |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Iiaeif <sub>d760</sub> | hobgoblin | 0.737 | 0.77 (23) | 0.52 (14) | 2/1 | none | SVO | pre | def post, indef none | none |
-| 2 | Iiwaeeyiw <sub>d576.1</sub> | hobgoblin | 0.736 | 0.74 (21) | 0.62 (12) | 2/1 | none | SVO | pre | def post, indef none | none |
-| 3 | Aeifiiviiy <sub>d269.1</sub> | hobgoblin | 0.734 | 0.78 (20) | 0.55 (11) | 1/1 | none | SVO | pre | def post, indef none | none |
-| 4 | Laarrafhuḷ <sub>d281</sub> | dragonborn | 0.726 | 0.54 (54) | 0.50 (8) | 1/2 | none | SVO | pre | def pre, indef present | none |
-| 5 | Hikimthi <sub>d257.2</sub> | bugbear | 0.726 | 0.70 (24) | 0.63 (13) | 1/2 | none | SVO | pre | def post, indef present | few |
+| 1 | Begbifuym <sub>d478</sub> | hobgoblin | 0.744 | 0.74 (21) | 0.55 (14) | 2/2 | none | SVO | pre | def post, indef none | none |
+| 2 | Le-Gbith <sub>d62</sub> | bronze dragon | 0.736 | 0.55 (25) | 0.60 (6) | 1/2 | none | SVO | pre | def post, indef present | none |
+| 3 | Maf Bef <sub>d230</sub> | hobgoblin | 0.717 | 0.73 (23) | 0.59 (14) | 1/2 | none | SVO | pre | def post, indef present | none |
+| 4 | Hiwmufnoo'if <sub>d452</sub> | hobgoblin | 0.716 | 0.71 (23) | 0.57 (12) | 2/2 | none | SVO | pre | def post, indef none | few |
+| 5 | Nyiyenafi' <sub>d641</sub> | hobgoblin | 0.713 | 0.64 (23) | 0.53 (14) | 2/2 | none | SVO | pre | def post, indef none | none |
 
 ## What the output does and does not record
 
-Recorded and used by these pages: allophones (253 rules across the living lects, shown under Allophony); root families (391228 roots; each word lists its roots, main first, and the word-family section uses them).
+Recorded and used by these pages: allophones (229 rules across the living lects, shown under Allophony); root families (391089 roots; each word lists its roots, main first, and the word-family section uses them).
 
 Things a Wikipedia article would have that these pages cannot show, because the languages file does not hold them: diphthongs as units; intonation; morphophonology beyond the four exemplar nouns and verbs; any sentence-level data (the phrases are assembled from word order and markers); separate inclusive and exclusive 'we' forms, even where the typology says the language has the distinction; case forms of pronouns; speaker numbers beyond the deme's population estimate; dialect-level variation inside a lect.
 
-The typology features and the live grammatical markers agree in all 620 living lects (the clash check counts a free case-function word as an adposition, case only from clitic level on).
+The typology features and the live grammatical markers agree in all 622 living lects (the clash check counts a free case-function word as an adposition, case only from clitic level on).
