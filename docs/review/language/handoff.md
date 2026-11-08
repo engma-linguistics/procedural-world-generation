@@ -407,3 +407,16 @@ the cause or listed under "Weirdness left" in for-daniel.md "Polish lane" (with 
 `sentences._resegment`, `dist_gram`, `default_class`, `_second_fix`, `numerals_note` from `systems.numeral`.
 Last pass: `scratchpad/polish/pass1/a24559/`; measures `scratchpad/polish/tools/meas.py <languages.json>`; text dump of
 the demo `scratchpad/polish/demo.txt`. Left: the items in "Weirdness left"; sketches not regenerated; the cold review.
+
+## Continuation (sound lane pass 3, 2026-11-08 evening)
+
+**State.** Branch `lang-sound`, lang-design merged in up to 3cf1889a (polish lane). Coda drift and tone shares done
+(calibration.md "Sound lane pass 3", for-daniel.md "Sound lane pass 3"). New pieces: `rules.weight_stress` and stress
+pattern "weight"; deletions in `rules.functional_load` merge only what they make alike; `inventory.syllable_profile`,
+`new_violations`, `retemplate` (called in `lect._sync_inventory`); `Lect.phonotactic_veto` (PHONO_VETO, PHONO_MIN);
+`lect.level_stray_contours` (CONTOUR_MIN); `inventory.TONE_SIMPLE`; rows S236-S239; S099/S124 one-offs;
+`knowledge_tables.py` resynced from the tsv (run it after editing rows: `uv run python -I tools/language/knowledge_tables.py`).
+Harness: `scratchpad/sound3/codah.py` (isolated human lines, per-rule flux of final consonants and clusters, tone counts),
+`coda.py` (measures a languages.json).
+
+**Left (inbox drafts):** lexical stress, stress shift and lexical diffusion; rule weights that the draw mostly ignores.

@@ -33,7 +33,11 @@ ECON = 0.6              # feature-economy bonus per shared place and per shared 
 V_ODDS_CAP = 0.98       # cap on a vowel quality's PHOIBLE frequency in its odds weight f / (1 - f)
 MIN_V_DIST = 1.5        # vowel quality floor in (height 0-6, back 0-4 x1.5, round) space
 TONAL_SHARE = None      # PHOIBLE share of inventories with tones (read from the sizes table)
-STRESS = {"none": 0.44, "initial": 0.19, "penult": 0.27, "final": 0.10}   # WALS 14A (Goedemans & van der Hulst), folded
+STRESS = {"none": 0.20, "weight": 0.24, "initial": 0.19, "penult": 0.27, "final": 0.10}   # WALS 14A (Goedemans & van der
+# Hulst), folded; its "no fixed stress" (44%) split (sound lane pass 3): "weight" for quantity-sensitive stress (the Latin
+# rule, rules.weight_stress; WALS 15A finds weight-sensitive stress common), "none" for no word stress at all (many tone
+# languages, French-type phrase prominence). Before the split "none" meant stressless, so no stress-conditioned change
+# (apocope, syncope, reduction) ever ran in 44% of lects while coda losses did.
 SYLLABLE_TYPES = {"simple": 0.12, "moderate": 0.56, "complex": 0.32}     # WALS 12A (Maddieson): 61 / 274 / 151 of 486
 
 
@@ -327,6 +331,11 @@ def size_quantiles(measure: str, qs=(0.05, 0.25, 0.5, 0.75, 0.95)) -> list[float
     k, f = phoible_sizes()[measure]["count"]
     c = np.cumsum(f)
     return [float(k[int(np.searchsorted(c, q - 1e-12))]) for q in qs]
+
+
+TONE_SIMPLE = 0.60   # share of tonal protos with a two-tone (simple) system: WALS 13A, 132 simple of 220 tonal languages; the
+# complex rest split by PHOIBLE's counts of 3+ tones (sound lane pass 3; PHOIBLE alone put two tones at 28%, as its sources
+# count contour tonemes that WALS folds into simple systems)
 
 
 def tonal_share() -> float:
@@ -733,7 +742,9 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
     if rng.random() < p_tone:
         k, f = phoible_sizes()["tones"]["count"] if "tones" in phoible_sizes() else (np.array([2, 3]), np.array([.5, .5]))
         m = k >= 2
-        nt = int(rng.choice(k[m], p=f[m] / f[m].sum()))
+        p = f[m] / f[m].sum()
+        p = np.where(k[m] == 2, TONE_SIMPLE, (1.0 - TONE_SIMPLE) * np.where(k[m] == 2, 0.0, p) / p[k[m] > 2].sum())
+        nt = int(rng.choice(k[m], p=p / p.sum()))
         tones = list(_TONE_SETS[min(7, nt)])
     sh = _draw_shapes(rng)
     coda = "any"
@@ -1163,6 +1174,70 @@ def _cv_fallback(word: tuple, inv: Inventory) -> tuple:
 
 
 # --- inventory after change ---------------------------------------------------------------------------------------------
+
+# --- phonotactics re-read from the words (sound lane pass 3) ---------------------------------------------------------------
+
+TEMPLATE_SHARE = 0.03   # a syllable structure counts as part of a lect's phonotactics when this share of its words have it
+_ALL_SHAPES = {"CV": 0.33, "CVC": 0.29, "V": 0.04, "VC": 0.03, "CCV": 0.13, "CCVC": 0.1, "CVCC": 0.06, "CCVCC": 0.02}
+
+
+def word_shape(f) -> tuple:
+    """(onset consonants, final coda consonants, has a medial coda) of a form, tone letters aside; None without a vowel. A
+    medial run of two or more consonants, or a geminate between vowels, closes the syllable before it."""
+    f = [s for s in f if s.kind != "T"]
+    vi = [i for i, s in enumerate(f) if s.kind == "V"]
+    if not vi:
+        return None
+    medial = any((b - a - 1) >= 2 or (b - a - 1 == 1 and f[a + 1].length) for a, b in zip(vi, vi[1:]))
+    return vi[0], len(f) - 1 - vi[-1], medial
+
+
+def syllable_profile(forms, share: float = TEMPLATE_SHARE) -> tuple:
+    """The phonotactics the words show: (largest onset, largest final coda, medial codas at all), each counted only when at
+    least `share` of the words have it (a stray loan or one odd form does not make a template)."""
+    sh = [x for x in (word_shape(f) for f in forms) if x is not None]
+    if not sh:
+        return 1, 0, False
+    n = len(sh)
+
+    def top(k):
+        best = 0
+        for m in range(1, 4):
+            if sum(1 for x in sh if x[k] >= m) >= share * n:
+                best = m
+        return best
+    return max(1, top(0)), top(1), sum(1 for x in sh if x[2]) >= share * n
+
+
+def new_violations(before, after, prof) -> float:
+    """Share of the forms a change rewrites whose new shape breaks the phonotactics `prof` (syllable_profile) where the old
+    one did not: a longer onset or final coda than the words allow, or a medial coda in a lect without them."""
+    changed = bad = 0
+    mo, mc, med = prof
+    for a, b in zip(before, after):
+        if a == b:
+            continue
+        changed += 1
+        sa, sb = word_shape(a), word_shape(b)
+        if sa is None or sb is None:
+            continue
+        if (sb[0] > mo and sb[0] > sa[0]) or (sb[1] > mc and sb[1] > sa[1]) or (sb[2] and not med and not sa[2]):
+            bad += 1
+    return bad / changed if changed else 0.0
+
+
+def retemplate(inv: Inventory, forms) -> Inventory:
+    """The phonotactics re-check: the lect's templates (max_onset, max_coda, shapes) re-read from its words after sound
+    change, so coinages and loans follow the syllables the language has now, not the proto's. Unchanged when they agree."""
+    mo, mc, med = syllable_profile(forms)
+    mo, mc = min(mo, MAX_ONSET), min(max(mc, 1 if med else 0), MAX_CODA)
+    if (mo, mc) == (inv.max_onset, inv.max_coda):
+        return inv
+    shapes = {k: v for k, v in _ALL_SHAPES.items() if len(k) - len(k.lstrip("C")) <= mo and len(k) - len(k.rstrip("C")) <= mc}
+    if mc == 0:
+        shapes = {"CV": 0.85, "V": 0.15}
+    return replace(inv, max_onset=mo, max_coda=mc, shapes=shapes)
+
 
 def observed(inv: Inventory, forms, profile=None) -> Inventory:
     """The inventory a lexicon actually uses after sound change: segments in `forms` (tones stripped into `tones`; never two

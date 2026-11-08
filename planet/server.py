@@ -215,7 +215,7 @@ def speak(query: str) -> tuple[bytes | dict, int]:
     sentence, question = q.get("sentence") in ("1", "true"), q.get("q") in ("1", "true")
     if not ipa:
         return {"error": "ipa= is required"}, 400
-    if q.get("stress") in ("initial", "penult", "final", "antepenult"):  # the lect's fixed stress: marked, so it is heard
+    if q.get("stress") in ("initial", "penult", "final", "antepenult", "weight"):  # the lect's fixed stress: marked, so it is heard
         from .language.inventory import stressed_ipa
         ipa = stressed_ipa(ipa, q["stress"])
     cap = SPEAK_MAX_SENTENCE_CHARS if sentence else SPEAK_MAX_CHARS

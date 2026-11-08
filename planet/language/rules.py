@@ -299,7 +299,7 @@ class Rule:
 # ------------------------------------------------------------------------------------------------------- application
 
 def stressed_vowel(word: Sequence, pattern: str | None = DEFAULT_STRESS) -> int | None:
-    """Index of the stressed vowel under a fixed stress pattern (initial | final | penult | none)."""
+    """Index of the stressed vowel under a stress pattern (initial | final | penult | antepenult | weight | none)."""
     vs = [i for i, s in enumerate(word) if s.kind == "V"]
     if not vs or pattern in (None, "none"):
         return None
@@ -311,7 +311,35 @@ def stressed_vowel(word: Sequence, pattern: str | None = DEFAULT_STRESS) -> int 
         return vs[-2] if len(vs) >= 2 else vs[0]
     if pattern == "antepenult":
         return vs[-3] if len(vs) >= 3 else vs[0]
+    if pattern == "weight":
+        return weight_stress(word, vs)
     raise ValueError(f"unknown stress pattern {pattern!r}")
+
+
+def heavy(word: Sequence, k: int, vs: Sequence[int]) -> bool:
+    """Is the syllable on vowel index vs[k] heavy: a long vowel, a diphthong's first half, or closed (two or more
+    consonants before the next vowel, or one or more at the end of the word)?"""
+    i = vs[k]
+    if word[i].length:
+        return True
+    nxt = vs[k + 1] if k + 1 < len(vs) else len(word)
+    if nxt == i + 1:
+        return k + 1 < len(vs) and word[nxt].kind == "V" and word[nxt].height > word[i].height + 2  # (a falling diphthong)
+    ncons = sum(1 for s in word[i + 1:nxt] if s.kind == "C") + sum(1 for s in word[i + 1:nxt] if s.kind == "C" and s.length)
+    return ncons >= (1 if k + 1 == len(vs) else 2)
+
+
+def weight_stress(word: Sequence, vs: Sequence[int] | None = None) -> int | None:
+    """Quantity-sensitive stress, the Latin rule (one of the commonest weight-sensitive systems; Hayes 1995, Metrical Stress
+    Theory, ch. 4): in a word of three or more syllables the penult if it is heavy, else the antepenult; otherwise the
+    first syllable. The stress of a WALS 14A 'no fixed stress' lect that has stress at all (stress pattern "weight")."""
+    if vs is None:
+        vs = [i for i, s in enumerate(word) if s.kind == "V"]
+    if not vs:
+        return None
+    if len(vs) < 3:
+        return vs[0]
+    return vs[-2] if heavy(word, len(vs) - 2, vs) else vs[-3]
 
 
 def _stress_of(word, stress_index) -> int | None:
@@ -713,8 +741,11 @@ def functional_load(rule: Rule, lexicon_forms: Sequence, stress_index=None, outp
     segment-level minimal pair the rule's segment mapping merges (the two forms differ at one position only, and the rule
     maps one side's segment onto the other's, or both onto one output, or deletes the segment that is the only
     difference), whether or not that pair stands in the rule's environment (the load is the contrast's, Wedel et al.
-    2013); or (b) applying the rule makes it a homophone of a form it was distinct from. ``outputs``: the forms after the
-    rule, if already computed."""
+    2013); or (b) applying the rule makes it a homophone of a form it was distinct from. A deletion is the exception to the
+    context-free reading: two segments it deletes, or a segment and zero, merge only in the forms it actually changes
+    (apocope does not merge kata and kita; counted context-free, it was vetoed ~90% while paragoge, merging nothing, never
+    was, and lects drifted to no final consonants; sound lane pass 3). ``outputs``: the forms after the rule, if already
+    computed."""
     forms = list(dict.fromkeys(tuple(f) for f in lexicon_forms))
     if not forms:
         return 0.0
@@ -746,7 +777,7 @@ def functional_load(rule: Rule, lexicon_forms: Sequence, stress_index=None, outp
     for f in forms:
         for i, seg in enumerate(f):
             buckets.setdefault((f[:i], f[i + 1:]), []).append((_tonekey(seg), f))
-            if m(seg) == () and (f[:i] + f[i + 1:]) in fset:  # deleting the one difference
+            if m(seg) == () and pairs[f] != f and (f[:i] + f[i + 1:]) in fset:  # deleting the one difference
                 hit.add(f)
                 hit.add(f[:i] + f[i + 1:])
     for members in buckets.values():
@@ -760,6 +791,8 @@ def functional_load(rule: Rule, lexicon_forms: Sequence, stress_index=None, outp
                 if xa == xb:
                     continue
                 mb = m(xb)
+                if ma == mb == ():
+                    continue  # (two segments a deletion removes merge only where it removes them: homophones, (b) above)
                 if (ma is not None and (ma == (xb,) or ma == mb)) or (mb is not None and mb == (xa,)):
                     hit.add(fa)
                     hit.add(fb)
@@ -1047,6 +1080,7 @@ SAME_AS = {
     "lenition.intervocalic_voicing": ("S010", "S011", "S012"),  # p, t, k > b, d, g / V_V (Spanish lobo, vida, agudo)
     "lenition.spirantization": ("S005", "S006", "S007"),  # b, d, g > β, ð, ɣ / V_V (Spanish lobo, nada, lago)
     "S037": ("S036",),  # k > ʔ / _# (Malay budak) is S037's k > ʔ again, the commonest ʔ source
+    "umlaut.i": ("S135",),  # (sound lane pass 3: the same i-umlaut twice; once apocope ran again, y was in 21% of living lects)
 }
 
 

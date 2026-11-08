@@ -76,6 +76,9 @@ KEEP_FACTOR = 0.25
 FOLD_RARE = 0.2  # a unit the proto lacked, under this fraction of an average unit's share of its kind's tokens (1% at 20
 # units, 0.33% at 60: a big inventory's units are each rarer) and one axis from a commoner unit, folds into it
 NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn this much less often (phonemicization is rare)
+PHONO_VETO = 0.8   # probability a change that breaks the lect's syllable phonotactics is turned down (Lect.phonotactic_veto)
+PHONO_MIN = 0.2    # ... when at least this share of the words it rewrites would get a shape the lect lacks
+PHONO_STATS = {"vetoed": 0}
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
 # sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history)
@@ -92,10 +95,13 @@ LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
 # Grassmann, S046 West Germanic gemination, S047 raddoppiamento, S063 First Slavic palatalization, S064 French a > ɛ, S128
 # Slavic liquid metathesis, S139 Old English breaking, S148 uvular r, S174 Romance diphthongization, S176 high-vowel
 # diphthongization, S185 click replacement. Before, Grimm's T > F fired in 83% of the lects of a24559 and D > T in 93%.
+# Sound lane pass 3 adds the two whole-class coda changes, S099 (every final consonant lost, Hawaiian-type) and S124
+# (paragoge: a vowel added after every final consonant): each re-firing undid the codas apocope had just made, so lines
+# flip-flopped to fully open syllables every few kyr (calibration.md, sound lane pass 3).
 ONE_OFF_MAX = 1
 ONE_OFF_FAMILIES = frozenset({"chain_shift"})
 ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063", "S064", "S128", "S139", "S148", "S174",
-                         "S176", "S185"})
+                         "S176", "S185", "S099", "S124"})
 # Line drift (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1, Sapir's drift): each proto line draws a standing
 # preference per rule family (lognormal sigma LINE_FAMILY_SIGMA) and per row (LINE_ROW_SIGMA), keyed like hiatus_pref by
 # the line's proto (hiatus_key) so every daughter keeps it, and each budded lect a small jitter of its own (LINE_BUD_SIGMA,
@@ -548,6 +554,28 @@ class Lect:
 
     def touch(self) -> None:
         self._segs = None
+        self._sylprof = None
+
+    def phonotactic_veto(self, rule, rng) -> bool:
+        """Phonotactic resistance (Kisseberth's conspiracies; the stability of syllable structure within families): a change
+        that would give PHONO_MIN or more of the words it rewrites a syllable shape the lect's words do not have (a longer
+        onset or final coda, or a medial coda; inventory.syllable_profile) is turned down with probability PHONO_VETO.
+        Changes that simplify syllables pass, and a change that gets through re-templates the lect (inventory.retemplate),
+        so a coda once established is no longer resisted."""
+        if PHONO_VETO <= 0 or self.lexicon is None or rule.family in ("tone", "hiatus"):
+            return False
+        inv_mod = _inv_mod()
+        prof = getattr(self, "_sylprof", None)
+        if prof is None:
+            prof = self._sylprof = inv_mod.syllable_profile(self.all_forms())
+        forms = self.load_forms()
+        outs = RU.apply_all(rule, forms, stress_of(self.inventory))
+        if inv_mod.new_violations(forms, outs, prof) < PHONO_MIN:
+            return False
+        if rng.random() < PHONO_VETO:
+            PHONO_STATS["vetoed"] += 1
+            return True
+        return False
 
     def all_forms(self) -> list:
         return [w.form for w in self.lexicon.words.values()]
@@ -708,6 +736,8 @@ class Lect:
             for _ in range(k):
                 r = RU.pick_rule(rng, pool, self.load_forms(), self.segments(), stress_of(self.inventory))
                 if r is None:
+                    continue
+                if self.phonotactic_veto(r, rng):
                     continue
                 if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue
@@ -1050,6 +1080,7 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
     ones on the vowels, and a ʔ that only prothesis put before initial vowels is left out (not a phoneme)."""
     tones = tone_hygiene(lect, kyr)
     inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
+    inv = _inv_mod().retemplate(inv, lect.all_forms())
     if hasattr(inv, "tones"):
         inv = replace(inv, tones=tones)
     if lect.glottal_phonetic:
@@ -1069,6 +1100,8 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
     tonal, its tones the levels present, and a vowel left unmarked takes the commonest level (`tone.phonemic/<t>`, cause
     "tonogenesis"), since in a tone language every syllable carries one. Returns the tone list."""
     segs = lect.all_segments()
+    if level_stray_contours(lect, segs, kyr):
+        segs = lect.all_segments()
     marked = sorted({x.tone for x in segs if x.kind == "V" and x.tone})
     if not marked:
         return []
@@ -1111,6 +1144,35 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
 
 
 _CONTOUR_PARTS = {4: (1, 3), 5: (3, 1)}  # rising = low + high, falling = high + low
+CONTOUR_MIN = 0.01  # a contour on short vowels stays a toneme only on this share of the toned vowel tokens or more
+
+
+def level_stray_contours(lect, segs, kyr=None) -> bool:
+    """A contour tone that stands on a short vowel in only a few words (under CONTOUR_MIN of the toned vowel tokens) is
+    levelled to high, as S227 and S228 do: a contour needs duration (Zhang 2002, The Effects of Duration and Sonority on
+    Contour Tone Distribution), and a handful of short contours left by a vowel shortening or a fusion is not learned as a
+    new toneme. Tonogenesis from codas marks many words at once and passes. Before this (sound lane pass 3) such strays were
+    the commonest way a tonal lect gained a toneme, and four-tone systems outnumbered two-tone ones 10 to 1 (WALS 13A: simple
+    systems are 60% of tonal languages). Returns whether anything changed."""
+    short = [x for x in segs if x.kind == "V" and x.tone in _CONTOUR_PARTS and not x.length]
+    if not short or lect.lexicon is None:
+        return False
+    cnt: dict = {}
+    toned = 0
+    for w in lect.lexicon.words.values():
+        for x in w.form:
+            if x.kind == "V" and x.tone:
+                toned += 1
+                if x.tone in _CONTOUR_PARTS and not x.length:
+                    cnt[x.tone] = cnt.get(x.tone, 0) + 1
+    stray = {t for t, n in cnt.items() if n < CONTOUR_MIN * toned}
+    if not stray:
+        return False
+    mapping = {x: replace(x, tone=3) for x in short if x.tone in stray}
+    rid = "tone.contour_levelled"
+    _map_forms(lect, mapping, rid, float(kyr if kyr is not None else lect.born_kyr))
+    lect.rule_text.setdefault(rid, "a rising or falling tone left on a short vowel in a few words levelled to high")
+    return True
 
 
 def tonemes(segs) -> list:

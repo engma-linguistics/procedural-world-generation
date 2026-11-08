@@ -405,7 +405,13 @@ def test_tone_inventory_matches_marks(result):
     for l in res["lects"]:
         if not l.alive or l.deme is None:
             continue
-        marks = {x.tone for w in l.lexicon.words.values() for x in w.form if x.kind == "V" and x.tone}
+        from planet.language import lect as LC
+        # (a contour on a long vowel is two level tones on two moras: lect.tonemes counts its parts, not the contour)
+        marks = set()
+        for w in l.lexicon.words.values():
+            for x in w.form:
+                if x.kind == "V" and x.tone:
+                    marks.update(LC._CONTOUR_PARTS[x.tone] if x.tone in LC._CONTOUR_PARTS and x.length else (x.tone,))
         assert marks <= set(l.inventory.tones), (l.id, marks, l.inventory.tones)
         assert len(l.inventory.tones) != 1, l.id  # (one tone is no contrast: stripped)
 

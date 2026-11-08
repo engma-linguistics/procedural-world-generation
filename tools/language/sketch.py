@@ -818,7 +818,10 @@ def phonology(doc: Doc, l: dict) -> list[str]:
                       "languages; the engine has no word-by-word lexical stress yet)."))
     else:
         out.append({"penult": "Stress falls on the next-to-last syllable.", "initial": "Stress falls on the first syllable.",
-                    "final": "Stress falls on the last syllable.", "antepenult": "Stress falls on the third syllable from the end."
+                    "final": "Stress falls on the last syllable.", "antepenult": "Stress falls on the third syllable from the end.",
+                    "weight": "Stress depends on syllable weight (the Latin rule): in longer words it falls on the next-to-last "
+                              "syllable when that is heavy (a long vowel or closed by a consonant), else on the one before; in "
+                              "shorter words on the first."
                     }.get(stress, f"Stress: {stress}.") + " The IPA on this page marks it with ˈ before the stressed syllable.")
     stt = l.get("stats") or {}
     if stt:
