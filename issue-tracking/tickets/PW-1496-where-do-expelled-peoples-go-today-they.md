@@ -1,4 +1,5 @@
 ---
+id: PW-1496
 title: "Where do expelled peoples go? Today they simply die (live polities: kept / thinned / expelled)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane204
 blocked_by: []
 relates: [PW-1465, PW-1487, PW-1481]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/history/polity_live.py::harshness", "planet/lineages/history/polity_live.py::FATE_CUT", "planet/lineages/history/polity_live.py::FATE_MAX", docs/review/culture/polities/round11.md, docs/review/culture/polities/round10.md, docs/review/cultures-proposal/proposal-r2.md, "world 899985"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -34,3 +37,7 @@ now matters more than before.
 Lean: C. It is B's mechanism (refugees), and keeps D59's "a martial winner razes" literal. The share moved needs no new number
 (the existing cut is the share). Effort small: one pass in `_fates` after the cut.
 - [ ] Daniel picks; then measure on seeds 7, 10, 3 (round11/measure.py) against the round 11 runs.
+
+## Updates
+- 2026-11-07: Desk D61 (lean C).
+- 2026-11-07: Created from inbox draft draft-expelled-peoples-go-where.md (found by lane204).
