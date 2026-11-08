@@ -295,6 +295,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             **({"processes": gj["processes"]} if gj.get("processes") else {}),   # (split ergativity, reduplication)
             "lexicon": lexicon_json(lect, sp, full, et) if lect.lexicon is not None else {}, "lexicon_full": full,
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
+            **({"systems": LX.systems_json(lect.lexicon)} if lect.lexicon is not None and lect.lexicon.systems else {}),
             "changes": [[c["kyr"], c["rule"], c["cause"], c["origin_lect"]] + ([{k: c[k] for k in ("city", "peoples", "merged") if k in c}] if "merged" in c else [])
                         for c in lect.changes], "rules_applied": lect.rules_applied, "generations": _r(lect.generations, 1),
             "l2": _r(lect.l2), "population": _r(lect.population, 0), "isolation": _r(lect.isolation),

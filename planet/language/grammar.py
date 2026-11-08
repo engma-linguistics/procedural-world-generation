@@ -1896,45 +1896,21 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     return g
 
 
-#: how the proto-language's counting base shapes its higher numerals (Comrie 2013, WALS 131A; Greenberg 1978's
-#: universals of numeral systems): a decimal language says 20 as 'two ten' (Mandarin er-shi; English twenty < twegen-tig);
-#: a vigesimal one has 20 as a base of its own, often 'one person' (fingers and toes: Mayan jun winik, Yoruba ogun is a
-#: root), and 100 as 'five twenties' (Yoruba ogorun, Basque ehun is a root, Maya 400 is a base); the commonest other
-#: base, a quinary-decimal hybrid, says 6-9 as 'five one' ... 'five four' (Wolof juroom-benn, Khmer pram-muoy). These
-#: words are compounds at the proto stage; 20 kyr of sound change usually leave them opaque, as twenty is.
-NUMERAL_WORDS = {
-    "decimal": (("TWENTY", "TEN", "TWO"),),
-    "vigesimal": (("TWENTY", "PERSON", "ONE"), ("HUNDRED", "TWENTY", "FIVE")),
-    "other": (("SIX", "FIVE", "ONE"), ("SEVEN", "FIVE", "TWO"), ("EIGHT", "FIVE", "THREE"), ("NINE", "FIVE", "FOUR"),
-              ("TWENTY", "TEN", "TWO")),
-}
-
-
 def _numerals(g: Grammar, rng, lexicon, inv, kyr: float) -> None:
-    """Rebuild the proto lexicon's higher numerals by its counting base (`NUMERAL_WORDS`); a vigesimal 'twenty' stays a
-    root half the time. Only on a real lexicon (one with `words`)."""
-    if lexicon is None or not hasattr(lexicon, "words"):
+    """The proto lexicon's counting system follows the grammar's counting base: lexsys.set_numerals draws the system
+    inside the label (decimal; vigesimal pure or hybrid; for "other" a 5-based or a restricted count) and builds the
+    composite numerals (twenty 'two ten', a hundred 'five twenties', six 'five one' ...), with a multiplier where the
+    grammar puts a numeral beside its noun (Greenberg 1978: 'two ten' NumN, 'ten two' NNum). Only on a real lexicon (one
+    with `systems`); the event lists what was built."""
+    if lexicon is None or not hasattr(lexicon, "systems"):
         return
-    from planet.language import lexicon as LX   # noqa: PLC0415
+    from planet.language import lexsys as LS   # noqa: PLC0415
     base = aims(g).get("numeral_base", "decimal")
-    made = []
-    for concept, head, mod in NUMERAL_WORDS.get(base, ()):
-        if concept not in lexicon or head not in lexicon or mod not in lexicon:
-            continue
-        if base == "vigesimal" and concept == "TWENTY" and rng.random() < 0.5:
-            continue
-        # addition puts the larger number first (Greenberg 1978: 'five one'); multiplication follows the numeral's
-        # place beside a noun ('two ten' where numerals precede nouns, 'ten two' as Swahili makumi mawili)
-        adds = concept in ("SIX", "SEVEN", "EIGHT", "NINE")
-        hf = True if adds else aims(g).get("numeral") == "NNum"
-        w = LX.compound(rng, lexicon, concept, inv, kyr, getattr(lexicon, "lect", None), head_first=hf, head=head,
-                        modifier=mod, note=f"{(head + ' ' + mod) if hf else (mod + ' ' + head)}".lower()
-                        + f": counting {base}")
-        if w is not None and all(w.form != x.form for k, x in lexicon.words.items() if k != concept):
-            lexicon.set(w)
-            made.append(f"{concept.lower()} = {(head + ' ' + mod) if hf else (mod + ' ' + head)}".lower())
-    if made:
-        g.events.append((kyr, f"counting base {base}: " + "; ".join(made)))
+    built = LS.set_numerals(rng, lexicon, base, inv, kyr, getattr(lexicon, "lect", None),
+                            mul_first=aims(g).get("numeral") != "NNum")
+    made = [f"{k.lower()} = {lexicon.words[k].etym[-1].note.split(':', 1)[0]}" for k, _ in built if k in lexicon.words]
+    sy = lexicon.systems.get("numeral") or {}
+    g.events.append((kyr, f"counting base {base} ({sy.get('system', base)})" + (": " + "; ".join(made) if made else "")))
 
 
 # --------------------------------------------------------------------------------------------------------------------

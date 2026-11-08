@@ -808,8 +808,31 @@ def split_horizon(tab: "WordTable", T: np.ndarray, S_strict: np.ndarray, sel: li
     curve = recovery_curve(rows)
     rd = horizon_read(curve)
     return {"horizon_kyr": rd["horizon_kyr"], "censored": rd["censored"], "single_window_kyr": rd["single_window_kyr"],
-            "smoothed_kyr": rd["smoothed_kyr"], "smoothed": rd["smoothed"], "recovery_by_bin": curve, "splits": len(rows),
+            "smoothed_kyr": rd["smoothed_kyr"], "smoothed": rd["smoothed"], "logistic_kyr": logistic_horizon(rows),
+            "recovery_by_bin": curve, "splits": len(rows),
             "split_rows": rows}
+
+
+def logistic_horizon(rows: list[dict]) -> float | None:
+    """The age where a logistic fit of recovered (0/1) on split age crosses one half: every split counts once, so one
+    split more or less moves it a little, where the window read (two windows of 3-6 splits under half) can jump by
+    6 kyr (lexcon pass 2, calibration.md: the same code on seeds 12 and 13 read 17.6 and 10.7 kyr by windows, 17.9 and
+    17.1 by this fit). Informative beside horizon_kyr; None when recovery does not fall with age."""
+    if len(rows) < 2 * MIN_SPLITS:
+        return None
+    x = np.array([r["kyr"] for r in rows], float)
+    y = np.array([float(r["recovered"]) for r in rows])
+    if y.min() == y.max():
+        return None
+    X = np.c_[np.ones_like(x), x]
+    b = np.zeros(2)
+    for _ in range(50):   # (Newton / IRLS, with a whisper of ridge so a perfectly separated set stays finite)
+        p = 1.0 / (1.0 + np.exp(-X @ b))
+        W = p * (1.0 - p) + 1e-9
+        b = b + np.linalg.solve(X.T @ (W[:, None] * X) + 1e-6 * np.eye(2), X.T @ (y - p))
+    if b[1] >= 0:
+        return None
+    return round(float(-b[0] / b[1]), 2)
 
 
 def recovery_curve(rows: list[dict]) -> list[dict]:
@@ -1035,5 +1058,6 @@ def horizon_from(living: list, by_id: dict, concepts, form_of, root_of=None, peo
             "smoothed_kyr": main.get("smoothed_kyr"), "smoothed": main.get("smoothed"),
             "by": {k: {"horizon_kyr": v["horizon_kyr"], "censored": v.get("censored"), "single_window_kyr": v.get("single_window_kyr"),
                        "smoothed_kyr": v.get("smoothed_kyr"), "smoothed": v.get("smoothed"), "splits": v["splits"],
+                       "logistic_kyr": v.get("logistic_kyr"),
                        "lects": v.get("lects"),
                        "recovery_by_bin": v["recovery_by_bin"], "split_rows": v.get("split_rows", [])} for k, v in by.items()}}

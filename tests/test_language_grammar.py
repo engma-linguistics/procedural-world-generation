@@ -742,18 +742,41 @@ def test_verb_reduplication_is_a_built_process_in_the_verb_cells():
 
 
 def test_counting_base_builds_the_higher_numerals():
+    """The grammar's counting base picks the lexicon's numeral system (lexsys), and the composites follow it: a
+    multiplier where the grammar puts a numeral beside its noun ('two ten' NumN, 'ten two' NNum)."""
+    from planet.language import lexsys as LS
+
     def made(lx, c):
         # (the step that makes the concept itself: a built TWENTY can sit inside HUNDRED's etymology)
         return next((st for st in reversed(lx[c].etym) if st.process.startswith("compound:")), None)
     rng, inv, lx, g = _real_proto(50, numeral_base="decimal", numeral="NumN")
     st = made(lx, "TWENTY")
-    assert st is not None and st.note.startswith("two ten") and made(lx, "HUNDRED") is None
+    assert lx.systems["numeral"]["system"] == "decimal" and st is not None and st.note.startswith("two ten")
+    assert made(lx, "HUNDRED") is None and any("counting base decimal" in e[1] for e in g.events)
     rng, inv, lx, g = _real_proto(51, numeral_base="vigesimal", numeral="NNum")
-    st = made(lx, "HUNDRED")
-    assert st is not None and st.note.startswith("twenty five")
+    assert lx.systems["numeral"]["system"] in ("vigesimal", "hybrid")
+    assert made(lx, "FORTY").process == "compound:TWENTY+TWO" and made(lx, "FORTY").note.startswith("twenty two")
+    if lx.systems["numeral"]["system"] == "vigesimal":
+        assert made(lx, "HUNDRED").note.startswith("twenty five")
     rng, inv, lx, g = _real_proto(52, numeral_base="other")
+    assert lx.systems["numeral"]["system"] in ("quinary", "restricted")
     assert all(made(lx, c) is not None for c in ("SIX", "SEVEN", "EIGHT", "NINE"))
-    assert made(lx, "SIX").note.startswith("five one")
+    assert made(lx, "SIX").process == "compound:FIVE+ONE"
+
+
+def test_decimal_lects_do_not_renew_digits_as_five_plus():
+    """An ordinary compound recipe (data/compounds.tsv) builds SIX as 'five one' or TEN as 'two hands' only where the
+    counting system builds on five (grammar A's leftover); subtractive NINE 'one from ten' fits any system."""
+    from planet.language import lexicon as LX
+    from planet.language import lexsys as LS
+    rng, inv, lx, g = _real_proto(53, numeral_base="decimal")
+    lx.systems["numeral"]["quinary"] = False
+    parts = {LX._compound_parts(np.random.default_rng(s), lx, LX.concept_info(k), None, None)[0]
+             for s in range(30) for k in ("SIX", "SEVEN", "EIGHT", "NINE", "TEN")}
+    assert "FIVE" not in parts and "HAND" not in parts
+    assert not LS.recipe_fits(lx, "SIX", "FIVE", "ONE") and LS.recipe_fits(lx, "NINE", "TEN", "ONE")
+    lx.systems["numeral"]["quinary"] = True
+    assert LS.recipe_fits(lx, "SIX", "FIVE", "ONE") and LS.recipe_fits(lx, "TEAR", "EYE", "WATER")
 
 
 def test_person_markers_bind_as_a_set():

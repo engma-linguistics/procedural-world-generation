@@ -720,9 +720,12 @@ class Lect:
         from . import phonology as PH
         PH.update(self, kyr)  # (age the live rules; the inventory carries them for the words made below)
         rs = ctx.get("replace_scale", 1.0)
+        typ = getattr(self.grammar, "typology", None)
         LX.step(rng, self.lexicon, n_generations * rs, self.inventory, contact_words=ctx.get("contact_words"), kyr=kyr,
                 lect_id=self.id, niche_weights=ctx.get("niche"), profile=self.profile,
-                head_first=getattr(self.lexicon, "head_first", None))
+                head_first=getattr(self.lexicon, "head_first", None), contact_weights=ctx.get("contact_weights"),
+                numeral_base=typ.get("numeral_base") if isinstance(typ, dict) else None, population=self.population,
+                kin_weights=ctx.get("kin"), speech_taboo=ctx.get("speech_taboo", 1.0))
         GR = _gr_mod()
         if GR is not None and self.grammar is not None:
             gctx = {"l2": self.l2, "population": self.population, "isolation": self.isolation, "kyr": kyr, "lect": self.id,

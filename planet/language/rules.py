@@ -610,9 +610,19 @@ def _produce(ch: Change, w, i, end, out, trig=None):
             # (rounding harmony spreads rounding to the high vowels only, as in Turkish: göz-ün, kız-ın, but göz-ler, not
             # *göz-lör; a non-high vowel takes the root's backness and may lose its rounding after an unrounded root,
             # never gain it. Before 2026-11-07 a > ɒ here made ɒ a living vowel in a sixth of all lects)
-            axes = tuple(a for a in axes if a != "round")
-            if not src.round and w[i].round:
-                return [replace(w[i], round=0, **{a: getattr(src, a) for a in axes})]
+            # (lexcon pass 2, 2026-11-08: going back, a front unrounded mid vowel opens to the low back vowel, as Turkish
+            # -ler/-lar and Hungarian -nek/-nak pair e with a, and a rounded one keeps its rounding; a central one (ə, ɐ)
+            # is neutral. Before, e > ɤ and o > ɤ (unrounded after a back unrounded root) made ɤ a living vowel in 12% of
+            # all lects, 5x PHOIBLE's share. Going front, a rounded vowel still unrounds after an unrounded root.)
+            if w[i].back == 2:
+                return [w[i]]
+            new = replace(w[i], back=src.back)
+            if src.back >= 3:
+                if not w[i].round and w[i].back < 2 and w[i].height >= 1:
+                    new = replace(new, height=0)
+            elif not src.round and w[i].round:
+                new = replace(new, round=0)
+            return [new]
         return [replace(w[i], **{a: getattr(src, a) for a in axes})]
     return _make(ch.items, w[i:end], w[i])
 
@@ -1828,7 +1838,8 @@ def _build_demo() -> tuple[Rule, ...]:
         _demo("harmony.back", "", "coarticulation", "tongue_body", 3,
               "Turkish ev-ler 'houses' vs at-lar 'horses' (suffix vowels agree in backness with the root)",
               target=V, change=Change("assimilate", axes=("back", "round"), source="first_vowel"),
-              text="V > [αback] of the root's first vowel; [αround] for a high vowel, a non-high one only unrounds"),
+              text="V > [αback] of the root's first vowel; [αround] for a high vowel; going back, e and ɛ open to ɑ (-ler/-lar) "
+                   "and o keeps its rounding; going front, a non-high vowel only unrounds; ə and ɐ are neutral"),
         _demo("umlaut.i", "V[+back] > [−back] / _C(C)i", "coarticulation", "tongue_body", 4,
               "Proto-Germanic *mūsiz > Old English mȳs > mice"),
         _demo("rhotic.rhotacism", "s > r / V_V", "coarticulation", "tongue_tip", 3,

@@ -96,8 +96,10 @@ def test_buds_inherit(result):
     bud = L["d3"]
     assert bud.how == "bud" and bud.parent == "d0"
     # (the bud's oldest words come from the same proto-language as its parent's)
-    w = next(iter(bud.lexicon.words))
-    assert bud.lexicon.words[w].etym[0].lect == L["d0"].lexicon.words[w].etym[0].lect
+    # (most of them: either line may have renewed any one word since; 2026-11-08, was the first word only)
+    pw = L["d0"].lexicon.words
+    same = [w for w, x in bud.lexicon.words.items() if w in pw and x.etym[0].lect == pw[w].etym[0].lect]
+    assert len(same) > 0.5 * len(bud.lexicon.words)
     assert L["d5"].how == "arrival" and L[L["d5"].parent].deme is None  # (an arrival's deme parent is ignored)
 
 

@@ -169,7 +169,7 @@ like	FAT (ORGANIC SUBSTANCE)	THICK	1	'fat'
 like	WHAT	HOW	1	'what-like'
 do	FIRE	BURN	3	'to fire'
 do	FIRE	COOK	2	'to fire (food)'
-do	FIRE	ROAST	1	'to fire'
+do	FIRE	ROAST OR FRY	1	'to fire'
 do	SALT	SALT (FOOD)	3	English to salt
 do	SMOKE (EXHAUST)	SMOKE (FOOD)	3	English to smoke
 do	RAIN (PRECIPITATION)	RAIN (RAINING)	3	English to rain
@@ -370,3 +370,17 @@ do	FIRE	BURN (SOMETHING)	2	motivation; German feuern < Feuer
 do	HOUSE	DWELL (LIVE, RESIDE)	2	German hausen < Haus 'house'; Latin habitare is simple
 do	PART	DIVIDE	3	Latin partiri < pars 'part'; German teilen < Teil
 do	BOAT	SAIL	1	motivation 'go by boat'
+do	TONGUE	TASTE	1	'to tongue'
+like	TASTE	TASTY	2	'tasty' < taste; Mandarin hao-chi 'good to eat'
+like	SMELL (PERCEIVE)	FRAGRANT	2	'smell-y' (good)
+like	ROTTEN	STINKING	2	'rotten-like'
+like	BURN	PUNGENT	2	'burning': Mandarin la, Spanish picante 'biting'
+thing	GRIND	QUERN	2	'grinder'
+thing	BAKE	BREAD	2	'baked thing'
+thing	FERMENT	BEER	2	'fermented thing'
+thing	FERMENT	YEAST	2	'what ferments'
+place	BAKE	OVEN	3	'place of baking'
+place	FIRE	GRIDDLE	1	'fire place'
+do	SOUR	PICKLE	2	'to sour'
+do	SMOKE (EXHAUST)	STEAM (FOOD)	1	'to vapour'
+thing	EAT	MEAL	2	'eating'

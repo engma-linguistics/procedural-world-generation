@@ -47,7 +47,8 @@ DEMO_CASES = [
     ("debuccalization.s_h", "past", "paht", "sa", None),
     ("dental.theta_f", "θa", "fa", "ta", None),
     ("cluster.simplification", "astra", "asra", "asta", None),
-    ("harmony.back", "kuteli", "kutɤlu", "ku", None),   # (a mid vowel takes backness, not rounding: Turkish göz-ler)
+    ("harmony.back", "kuteli", "kutɑlu", "ku", None),   # (a mid vowel takes backness, not rounding: Turkish göz-ler;
+    # going back e opens to ɑ as Turkish -ler/-lar, not ɤ: lexcon pass 2)
     ("umlaut.i", "musi", "mysi", "musa", None),
     ("rhotic.rhotacism", "asa", "ara", "sa", None),
     ("tone.onset_voicing_split", "dapa", "ta˨pa˦", "ama", None),

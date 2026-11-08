@@ -1033,6 +1033,11 @@ def repair(word: tuple, inv: Inventory) -> tuple:
         t = tuple(w)
         if legal(t, inv):
             return realize(t, inv)
+        if _initial_geminate(t):   # (an onset cut down to its geminate tail: pʰrː- > rː-; sound lane pass 2)
+            w = _resolve_vowels(w, inv)
+            if not w:
+                return ()
+            continue
         r = _runs(t)
         # locate the first bad run; positions in w
         pos, fixed = 0, False
