@@ -282,7 +282,7 @@ const FOOT = {
     thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era.',
+  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era. With a culture picked, "Trade: goods" below the sheet lists what its land gives beyond its own need and what it lacks (the goods ledger, PW-1502).',
   religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
   polities: 'Invasions you schedule and what came of them, beside the incursions the history found (invasiontab.js writes the rest).',
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
@@ -1138,7 +1138,9 @@ async function drawBrief() {
     <label class="muted" title="How long ago, in kyr (0: the present)">era <input id="brEra" type="number" min="0" step="1" value="${era}" style="width:64px"> kyr ago</label>
     <button id="brShow" class="primary">Show the brief</button><button id="brCopy">Copy text</button><button id="brJson">Download JSON</button>
     <span class="muted">run ${esc(result.id)}</span></div>
-    <pre id="brText" style="white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace;max-width:1000px">${esc(briefUI.md || 'Press "Show the brief".')}</pre>`;
+    <pre id="brText" style="white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace;max-width:1000px">${esc(briefUI.md || 'Press "Show the brief".')}</pre>
+    <div id="brTrade" style="margin-top:14px;max-width:1000px"></div>`;
+  drawTradeGoods();
   $('brPeople').onchange = (e) => { briefUI.people = e.target.value; briefUI.culture = ''; briefUI.md = ''; drawBrief(); };
   $('brCulture').onchange = (e) => { briefUI.culture = e.target.value; loadBrief(); };
   $('brEra').onchange = (e) => { briefUI.era = Math.max(0, +e.target.value || 0); briefUI.md = ''; drawBrief(); };
@@ -1160,6 +1162,45 @@ async function loadBrief() {
     briefUI.md = j.markdown; briefUI.json = j.brief; briefUI.era = Math.max(0, +$('brEra').value || 0);
     if ($('brText')) $('brText').textContent = j.markdown;
   } catch (err) { if ($('brText')) $('brText').textContent = 'Could not build the brief: ' + err.message; }
+  drawTradeGoods();
+}
+// ---- Trade: goods (GET /api/trade: planet/lineages/trade.py, the goods ledger, PW-1502) -----------------------------------------------
+const tradeUI = { key: '', doc: null, busy: false };
+async function drawTradeGoods() {
+  const el = $('brTrade');
+  if (!el || !result) return;
+  if (!briefUI.culture) { el.innerHTML = '<h3 style="margin:0 0 4px">Trade: goods</h3><p class="muted" style="margin:0">Pick one culture above to see what its land gives beyond its own need and what it lacks (the goods ledger, the last ~12,500 years).</p>'; return; }
+  const key = `${result.id}/${briefUI.culture}`;
+  if (tradeUI.key !== key) {
+    tradeUI.key = key; tradeUI.doc = null;
+    el.innerHTML = '<h3 style="margin:0 0 4px">Trade: goods</h3><p class="muted" style="margin:0">Working out the goods ledger (some seconds the first time for a run)…</p>';
+    try {
+      const r = await fetch(`../api/trade?run=${encodeURIComponent(result.id)}&culture=${encodeURIComponent(briefUI.culture)}`), j = await r.json();
+      if (tradeUI.key !== key) return;
+      if (!r.ok) throw new Error(j.error || r.status);
+      tradeUI.doc = j;
+    } catch (err) { if (tradeUI.key === key) el.innerHTML = `<h3 style="margin:0 0 4px">Trade: goods</h3><p class="muted" style="margin:0">No goods ledger: ${esc(err.message)}</p>`; return; }
+  }
+  const d = tradeUI.doc;
+  if (!d) return;
+  const era = Math.max(0, +briefUI.era || 0);
+  if (!d.rows.length) { el.innerHTML = `<h3 style="margin:0 0 4px">Trade: goods</h3><p class="muted" style="margin:0">${esc(d.name)} has no ledger row: it lived before the land-use window, or it is a kind that takes tribute rather than trading.</p>`; return; }
+  const row = d.rows.reduce((a, b) => (Math.abs(b.ago_kyr - era) < Math.abs(a.ago_kyr - era) ? b : a));
+  const G = d.goods, cls = { bulk: '#7a8a5a', middling: '#4f7fae', precious: '#b08a3a' };
+  const bar = (v, c) => `<span style="display:inline-block;width:${Math.round(80 * Math.min(1, v))}px;height:8px;background:${c};border-radius:2px;vertical-align:middle"></span>`;
+  const side = (o, title, c, tip) => {
+    const ks = Object.keys(o);
+    let h = `<table class="t" style="min-width:300px"><tr><th title="${esc(tip)}">${title}</th><th>class</th><th class="n">share</th><th></th></tr>`;
+    if (!ks.length) h += '<tr><td class="muted" colspan="4">nothing</td></tr>';
+    for (const g of ks) h += `<tr><td title="${esc(G[g].from + (G[g].need ? '. Wanted by: ' + G[g].need : ''))}">${esc(G[g].label)}</td><td><span style="color:${cls[G[g].class]}">${esc(G[g].class)}</span></td><td class="n">${Math.round(100 * o[g])}%</td><td>${bar(o[g], c)}</td></tr>`;
+    return h + '</table>';
+  };
+  const through = d.rows.filter((r, k) => !k || (r.lacks || []).join() !== (d.rows[k - 1].lacks || []).join()).map((r) => `<span title="${esc(r.line)}" style="white-space:nowrap">${esc(ago(r.ago_kyr))}: ${esc((r.lacks || []).map((g) => G[g].label).join(', ') || 'lacks nothing')}</span>`).join(' · ');
+  el.innerHTML = `<h3 style="margin:0 0 4px">Trade: goods <span class="muted" style="font-weight:normal;font-size:12px">${esc(d.name)}, ${esc(ago(row.ago_kyr))}${row.as !== d.culture ? ' (its land then held by culture ' + row.as + ')' : ''}</span></h3>
+    <p style="margin:0 0 6px">${esc(row.line)}</p>
+    <p class="muted" style="margin:0 0 6px;font-size:12px">Share: of the culture's people, weighted by how rich the land is. Surplus: what its own land gives beyond its own need. Lacks: what its ways of life want (herders grain, farmers salt and metal, towns grain, fuel and fine goods, foragers ornaments and, beside farmers, starch and salt) but do not have at home. Hover a good for the layer it comes from. Nothing is traded yet.</p>
+    <div class="row" style="gap:18px;align-items:flex-start">${side(row.surplus, 'Surplus', '#3f7d3a', 'beyond its own need')}${side(row.lack, 'Lacks', '#a04545', 'wanted but not at home')}</div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Lacks through time (where they change): ${through}</p>`;
 }
 function drawReligion() {
   const el = $('tab-religion');

@@ -24,6 +24,7 @@
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
+  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -33,7 +34,7 @@ Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip). Derived gods and taboos docs are kept
 under <data root>/.godscache (disk_cached), so a restart doesn't pay again; so is the polities
-doc (polities_doc), read after the run and never written into it.
+doc (polities_doc) and the goods ledger (trade_doc), read after the run and never written into it.
 
 Every POST must say `Content-Type: application/json`, and one that carries an
 Origin must come from this server's own address (Handler.post_refused, PW-1037):
@@ -486,6 +487,49 @@ def polities(query: str) -> tuple[dict, int]:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
+_trade_cache: dict = {}  # (run id, run.json mtime, version) -> goods ledger doc
+_trade_lock = threading.Lock()
+
+
+def trade_doc(d: Path) -> dict:
+    """A run's goods ledger (lineages/trade.py, PW-1502): read after the run from its land-use window, cultures, crops, herds, techs and
+    the world's goods (~10 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import trade as TR
+    key = (d.name, (d / "run.json").stat().st_mtime, TR.VERSION)
+    with _trade_lock:
+        if key not in _trade_cache:
+            _trade_cache.clear()
+            _trade_cache[key] = disk_cached("trade", d, key, lambda: TR.derive(d))
+        return _trade_cache[key]
+
+
+def trade(query: str) -> tuple[dict, int]:
+    """GET /api/trade?run=<id>[&culture=<id>]: a peoples run's goods ledger (lineages/trade.py, PW-1502). Without culture: per way of life,
+    the goods most often in surplus and lacking, and the frames; with culture: that culture's surplus and lacks at each frame of the
+    land-use window (the last ~12.5 kyr), its "has / lacks" line, and what every good is made from."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import trade as TR
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        meta = json.loads((d / "run.json").read_text()).get("meta", {})
+        if meta.get("kind") != "peoples":
+            raise ValueError("the goods ledger is read from a peoples run")
+        if not meta.get("eraq") or not meta.get("world"):
+            raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
+        doc = trade_doc(d)
+        if q.get("culture") not in (None, ""):
+            return TR.culture_view(doc, int(q["culture"])), 200
+        return TR.summary(doc), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 _techspread_cache: dict = {}  # (run id, run.json mtime, version, tech) -> spread doc (a few seconds each; the last few kept)
 
 
@@ -820,6 +864,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*polities(url.query))
         if url.path == "/api/techspread":
             return self.send_json(*techspread(url.query))
+        if url.path == "/api/trade":
+            return self.send_json(*trade(url.query))
         if url.path == "/api/faithmap":
             body, code = faithmap(url.query)
             if isinstance(body, dict):
