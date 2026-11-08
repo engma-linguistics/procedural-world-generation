@@ -302,6 +302,54 @@ def living_segments(result: dict) -> dict:
                 f"ɡ, h in over half its languages)")
 
 
+# Overused segments over every living lect (round 5, 2026-11-07). The human-voiced check above judged only human-voiced lects,
+# so a sound the sound changes over-produce everywhere (ɹ in half the living lects, PHOIBLE 1.7%) went unseen. Here every
+# living lect counts a segment unless its own voice profile favours it (make_cost below 1 over the segment's keys: a
+# reptilian lect may be full of sibilants); a segment fails when its share passes both OVERUSE_FLOOR and OVERUSE_FACTOR x
+# PHOIBLE's share of languages (segments PHOIBLE lacks count as share 0, so the floor alone bars them).
+OVERUSE_FLOOR, OVERUSE_FACTOR = 0.10, 3.0
+
+
+def _favoured(profile, seg) -> bool:
+    from . import profiles as PR
+    if profile is None:
+        return False
+    m = 1.0
+    for key in PR.keys_of(seg):
+        m *= profile.make_cost.get(key, 1.0)
+    return m < 1.0
+
+
+def living_overuse(result: dict) -> dict:
+    """Every living lect's segment shares vs PHOIBLE: no segment over OVERUSE_FLOOR and OVERUSE_FACTOR x PHOIBLE's share,
+    a lect not counting a segment its own voice profile favours (bars above)."""
+    from . import inventory as INV
+    from .percepts import to_ipa
+    ls = [l for l in result["lects"] if l.alive and l.deme is not None and l.inventory is not None]
+    if len(ls) < 10:
+        return _row("overused segments (all living lects)", None, "", False, f"only {len(ls)} living lects")
+    pc, pv = INV.phoible_pool()
+    ph = {to_ipa(s): f for s, f in list(pc) + list(pv)}
+    cnt: dict = {}
+    for l in ls:
+        prof = getattr(l, "profile", None)
+        for x in set(l.inventory.consonants) | set(l.inventory.vowels):
+            if not _favoured(prof, x):
+                s = to_ipa(x)
+                cnt[s] = cnt.get(s, 0) + 1
+    share = {s: c / len(ls) for s, c in cnt.items()}
+    over = {s: {"ours": round(v, 3), "phoible": round(ph.get(s, 0.0), 3)}
+            for s, v in sorted(share.items(), key=lambda t: (-t[1], t[0]))
+            if v > OVERUSE_FLOOR and v > OVERUSE_FACTOR * ph.get(s, 0.0)}
+    top = {s: round(v / max(ph.get(s, 0.0), 1e-3), 1) for s, v in sorted(share.items(), key=lambda t: (-t[1], t[0]))
+           if v >= OVERUSE_FLOOR}
+    worst = dict(sorted(top.items(), key=lambda t: -t[1])[:8])
+    return _row("overused segments (all living lects)", {"overused": over, "worst_ratio_vs_phoible": worst, "lects": len(ls)},
+                f"no segment in over {OVERUSE_FLOOR:.0%} of living lects and over {OVERUSE_FACTOR:.0f}x PHOIBLE's share "
+                f"(a lect skips segments its voice profile favours)", not over,
+                "worst_ratio_vs_phoible: our share / PHOIBLE's for segments in 10%+ of lects (informative)")
+
+
 def typology_consistency(result: dict) -> dict:
     """Typology vs grams (2026-11-04): no living lect's shown typology may contradict its live grams ('number: none' with a
     live plural, 'case: none' with a live locative, the negator on the wrong side; grammar.clashes). Also reports how
@@ -331,7 +379,7 @@ def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
-                    (typology_consistency, result)):
+                    (living_overuse, result), (typology_consistency, result)):
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)

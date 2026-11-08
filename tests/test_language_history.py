@@ -563,3 +563,25 @@ def test_tone_phonemic_once_per_line(result):
             cur = by.get(cur.parent)
         line.sort(key=lambda c: -c["kyr"])
         assert not any(a["rule"].startswith("tone.phonemic") and b["rule"].startswith("tone.phonemic") for a, b in zip(line, line[1:])), l.id
+
+
+def test_overuse_check_counts_every_lect_but_respects_the_voice():
+    """The all-lect overuse check fails a segment in most lects far above PHOIBLE (ɹ), and passes it when the lects' own
+    voice profile favours it."""
+    from types import SimpleNamespace as NS
+    from planet.language import checks as CK, inventory as INV, profiles as PR
+    from planet.language.percepts import from_ipa
+    cons = [from_ipa(x)[0] for x in "ptkmnl"]
+    vows = [from_ipa(x)[0] for x in "aiu"]
+    rr = from_ipa("ɹ")[0]
+
+    def lects(prof):
+        return [NS(alive=True, deme=i, profile=prof,
+                   inventory=INV.Inventory(consonants=cons + ([rr] if i % 2 else []), vowels=vows, shapes={"CV": 1.0}))
+                for i in range(20)]
+    human = PR.HUMAN
+    bad = CK.living_overuse({"lects": lects(human)})
+    assert not bad["pass"] and "ɹ" in bad["value"]["overused"]
+    import dataclasses
+    fond = dataclasses.replace(human, make_cost={**human.make_cost, "approximant": 0.7})
+    assert CK.living_overuse({"lects": lects(fond)})["pass"]

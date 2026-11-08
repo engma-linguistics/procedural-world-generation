@@ -250,7 +250,7 @@ nasal | N > ∅ / _# with nasal vowel, then Ṽ > V (full nasal loss) | effort |
 rhotic | s > z / V_V | coarticulation | larynx | 5 | Latin rosa [z] in Romance; English houses [zɪz]
 rhotic | z > r / V_V (rhotacism) | effort | tongue_tip | 3 | Old Latin *flosis > floris; Proto-Germanic *wēzum > English were
 rhotic | r > ʁ, ʀ | perception | tongue_body | 1 | French, Standard German, Brazilian and European Portuguese (Lisbon) uvular r (one areal spread from 17th-century Paris; rare elsewhere)
-rhotic | r > ɹ | effort | tongue_tip | 3 | English approximant r (< trilled r)
+rhotic | r > ɹ / _C, _# (approximant r in the coda) | effort | tongue_tip | 2 | Dutch coda r [ɹ] (maar, Gooise r); Brazilian Portuguese caipira porta [ˈpɔɹta]; English approximant r (< trilled r) took hold in the coda first
 rhotic | l > r / C_ | perception | tongue_tip | 3 | Latin blancus > Portuguese branco; Latin clavum > Portuguese cravo
 rhotic | l > w, u / _C, _# (l-vocalization) | effort | tongue_tip, tongue_body | 4 | Latin altrum > French autre; London English milk [mɪʊk]; Polish ł [w]
 rhotic | l > ɫ / _C, _# (velarization) | coarticulation | tongue_body | 5 | English dark l in feel, milk
@@ -274,7 +274,7 @@ tone | V > V˨ / _T{C, #} ; V > V˧˥ / _ʔ{C, #} ; V > V˥˩ / _h{C, #} ; then 
 tone | 1-syllable vs 2-syllable stress contours > lexical pitch accent | prosody | pitch_ear, stress | 2 | Swedish and Norwegian accent 1 vs accent 2 (anden 'the duck' vs 'the spirit')
 tone | H > ∅ / H_ (Meeussen's rule, adjacent high tones dissimilate) | dispersion | pitch_ear | 3 | Bantu tonology (e.g. Shona, Kirundi)
 tone | tone > stress (tone loss) | prosody | pitch_ear, stress | 2 | Swahili lost Proto-Bantu tone; stress fixed on penult
-prosody | [−voice fricative] > [+voice] / [−stress]V_ (Verner's law) | prosody | larynx, stress | 3 | Proto-Indo-European *ph₂tḗr > Proto-Germanic *fadēr (vs brother *brōþēr)
+prosody | f, θ, s, x > v, ð, z, ɣ / [−stress]V_ (Verner's law, h left alone) | prosody | larynx, stress | 3 | Proto-Indo-European *ph₂tḗr > Proto-Germanic *fadēr (vs brother *brōþēr)
 prosody | ɛ, ɔ > je, we / [+stress] (diphthongization) | prosody | tongue_body, stress | 4 | Latin petra > Spanish piedra; porta > puerta
 prosody | ai > eː ; then au > oː (monophthongization) | effort | tongue_body | 5 | Latin causa > Spanish cosa; Old High German ou > ō; Sanskrit sandhi a + i > e, a + u > o (na iti > neti)
 prosody | iː, uː > ai, au (diphthongization of high vowels) | dispersion | tongue_body | 4 | German Haus (< hūs); English Great Vowel Shift
@@ -311,6 +311,11 @@ hiatus | ea > ɛː ; then eo > oː ; then oe > oː ; then ao > ɔː ; then oa > 
 hiatus | ∅ > j / e_V[−high], ɛ_V[−high] (hiatus glide after a front vowel) | coarticulation | tongue_body | 3 | Portuguese: Latin plēnum > Old Portuguese chẽo > cheio [ˈʃeju] 'full', cēna > cẽa > ceia 'supper', frēnum > freo > freio 'brake'
 fortition | ɾ > r / #_ (a word-initial tap becomes a trill) | effort | tongue_tip | 3 | Spanish and Portuguese: the only rhotic allowed word-initially is the trill, so Latin rosa > Spanish rosa [ˈrosa]; Catalan likewise (roda [ˈrɔðə]); Albanian
 lateral | ɾ > l (the tap merges with l) | perception | tongue_tip | 3 | Polynesian: Proto-Polynesian *r merged with *l in Hawaiian (PPn *rua 'two' > Hawaiian lua) and in Tongan loss chains; Proto-Bantu *d > l ~ ɾ in many daughters; Japanese loans show the same r ~ l perception
+rhotic | ʁ > χ / _C, _# (the uvular r devoiced in the coda) | effort | larynx | 3 | Standard German Ort [ɔχt], Wort; Brazilian Portuguese (carioca) porta [ˈpɔχta]; then χ > h (S026)
+lenition | ʁ > h / #_ (a word-initial uvular r weakened to h) | effort | larynx | 2 | Brazilian Portuguese (Rio de Janeiro): rato [ˈhatu], rua [ˈhuɐ], after trilled r > ʁ ~ χ
+rhotic | ɫ > w (dark l vocalized everywhere) | effort | tongue_body, lips | 2 | Polish ł: Old Polish [ɫ] > modern [w] in all positions (łapa [ˈwapa], mały [ˈmawɨ]); Brazilian Portuguese coda l > w (Brasil [bɾaˈziw])
+deletion | ɦ > ∅ / V_V (breathy h lost between vowels) | effort | larynx | 3 | Hindi kahnā [kɛːnaː], rahnā [rɛːnaː] (intervocalic ɦ lost, the vowels fused); Gujarati, Bengali colloquial h-loss
+dental | ʂ, ʐ > s, z (retroflex sibilants merge with the dental ones) | perception | tongue_tip | 3 | Prakrit and Pali: Sanskrit viṣa > Pali visa 'poison', śiṣya > sissa; Mandarin zh ch sh [ʈʂ ʂ] as [ts s] in southern Mandarin and Taiwan
 """
 
 GRAM_COLUMNS = ["id", "source_concept", "target_function", "intermediate_stages", "fusion_endpoint",
@@ -379,7 +384,7 @@ def main() -> None:
         "source: WRITTEN FROM KNOWLEDGE of standard historical phonology (Campbell, Historical Linguistics; Hock 1991; "
         "Blevins 2004, Evolutionary Phonology; Kümmel 2007). The Index Diachronica (https://chridd.nfshost.com/diachronica/, a "
         "hobbyist compilation) was used only as inspiration for coverage; nothing was copied from it.",
-        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j; hiatus round: S125-S127 and S205-S207 the hiatus family (fired as repairs, lect.resolve_hiatus), S126 written to parse, S175 staged; exits for the tap: S208 initial ɾ > r, S209 ɾ > l)",
+        f"version: hand-authored {TODAY}; revised 2026-11-04 (return paths: loss of aspiration and breathy voice, fortition, depalatalization; S030 and S165 conditioned; sinks round: S042 before stressed initial vowels, yod coalescence absorbs the j, S022 down, exits for ʔ, ɲ, j; hiatus round: S125-S127 and S205-S207 the hiatus family (fired as repairs, lect.resolve_hiatus), S126 written to parse, S175 staged; exits for the tap: S208 initial ɾ > r, S209 ɾ > l; revised 2026-11-07 (round 5, overused segments over all lects): S149 r > ɹ in the coda only, S173 Verner's law on f θ s x only (it also voiced h to ɦ), exits S210 ʁ > χ in the coda, S211 initial ʁ > h, S212 ɫ > w, S213 ɦ > ∅ between vowels, S214 ʂ ʐ > s z)",
         "licence: original text for this repository; examples are textbook cases.",
         f"script: {SCRIPT}",
         "rule notation: input > output / environment. V vowel, C consonant, N nasal, T voiceless stop, D voiced stop, "

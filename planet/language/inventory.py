@@ -961,6 +961,7 @@ ALLO_TESTS = {
     "final": "word-finally only (final devoicing or voicing)",
     "initial": "word-initially only (aspirated or strengthened at the start of a word)",
     "nasal_vowel": "a vowel nasalized before a nasal consonant",
+    "coda": "in the coda only, before a consonant or at the end of a word (English dark [ɫ], Dutch approximant coda r)",
     "glottal_onset": "a glottal stop inserted before a vowel at the start of a word or between vowels (German-like onset)",
 }
 ALLO_MIN_PHONEME = 3  # tokens the phoneme (the commoner sound) needs before a complementary distribution counts
@@ -1003,6 +1004,9 @@ def _pair_tests(x: Segment, p: Segment) -> list[str]:
             out.append("final")
         if d == {"larynx"} and x.larynx == 1 and p.larynx == 0:
             out.append("initial")
+        if (d == {"secondary"} and x.manner == 5 and x.secondary == 3 and p.secondary == 0) \
+                or (d == {"manner"} and x.manner == 4 and p.manner in (6, 7) and not x.lateral):
+            out.append("coda")  # a velarized lateral or an approximant r beside the plain l or the trill / tap
     elif x.kind == "V" and d == {"nasal"} and x.nasal and not p.nasal:
         out.append("nasal_vowel")
     return out
@@ -1022,6 +1026,8 @@ def _env_ok(test: str, x: Segment, left: str, right: str) -> bool:
         return left == "#"
     if test == "nasal_vowel":
         return right.startswith("N")
+    if test == "coda":
+        return right == "#" or right == "j" or right[:1] in ("C", "N")
     return False
 
 

@@ -280,8 +280,9 @@ def test_stressed_context_vowels():
     flap = tsv("S013")  # t, d > ɾ / V́_V: flapping after the stressed vowel, not everywhere
     assert R.apply(flap, w("atata"), "penult") == w("ataɾa")
     assert R.apply(flap, w("atata"), "final") == w("atata")
-    verner = tsv("S173")  # [-voice fricative] > [+voice] / [-stress]V_
+    verner = tsv("S173")  # f, θ, s, x > v, ð, z, ɣ / [-stress]V_ (h is left alone)
     assert R.apply(verner, w("afafa"), "penult") == w("avafa")
+    assert R.apply(verner, w("ahaha"), "penult") == w("ahaha")
     assert "stressed" in R.describe(r) and "unstressed" in R.describe(verner)
 
 
