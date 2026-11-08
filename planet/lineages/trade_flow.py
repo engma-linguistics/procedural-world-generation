@@ -44,7 +44,8 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 6  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
+VERSION = 7  # (7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+# PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
 # 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
 # 6: every good looks on until none is left, in one shared walk, and the routes split into long-haul and local, lane 222)
@@ -63,6 +64,17 @@ RIVER_UP = 0.0068 / 0.028  # upstream: ORBIS
 SEA = 0.001 / 0.028  # ship along any coast (`sails` or `plank_boats`), over open sea (`navigation`, or ocean ships, animals.ocean_ships): ORBIS
 CANOE_COAST = RIVER_UP  # a canoe along the coast, one cell out (`canoes`). JUDGEMENT: paddled, as against a current; no coastal canoe cost
 # was found
+# --- a port call (PW-1529, step4a.md section 2): loading and unloading, and the harbour's dues, on top of the per-km cost, so a sea haul is
+# not almost free over distance. ORBIS prices sea carriage at 0.1 denarii per kg of wheat per day under sail (Scheidel, Meeks & Weiland
+# 2012, ORBIS v1 paper) and ~0.001 per km, so a day of a ship's time is ~100 sea-km; and ORBIS has no transshipment cost (Page 2026, J.
+# Maritime Archaeology 21: the price edict "does not include transhipment fees"). Page 2026, from P.Lond. 3.948: 9.5 t took 2 days to
+# load and 4 to unload. So loading costs 2 ship-days (200 sea-km) where goods go from land onto the sea, unloading 4 (400 sea-km) where
+# they come ashore. Page's papyri put harbour operations at 5-10% of a voyage's cost (P.Oxy. 3.522): 600 sea-km is that share of a
+# 6,000-12,000 km voyage, more of a short one (as P.Oxy. 14.1650's 51.5%)
+DAY_KM = 0.1 / 0.001  # sea-km per ship-day (ORBIS: per day / per km)
+LOAD_DAYS, UNLOAD_DAYS = 2.0, 4.0  # Page 2026, P.Lond. 3.948
+HARBOUR_DUE = 0.025  # share of the cargo's value paid where it comes ashore: the Roman portorium, the quadragesima of 2.5% (2% earlier;
+# De Laet 1949 via ostia-antica.org; the Red Sea's 25% tetarte was a frontier tax, not a harbour's: the toll at a border stands for it)
 AIR = PACK  # a flyer's load per km over any ground, mountain or sea. JUDGEMENT (D65 A): a flying people carries a light load as a pack
 # animal does; no source
 ROUTE = 1.3  # path km per straight km between cell centres (as salt_reach.ROUTE and seafood.ROUTE)
@@ -93,6 +105,7 @@ FOODS = ("grain", "livestock", "dried_fish")  # the goods that are food (for ste
 QUARTERS = True  # step 3 (PW-1504): a merchant quarter lifts its border's toll in the next frame (design1.md steps 2-3); False: no carry-over
 FETCH = False  # PW-1511 B (needs-decision): True: herders fetch grain with their own animals. Off: it met no more of their need on the judge runs (step3.md)
 FETCH_GOODS = ("grain",)  # PW-1511 B: what herders fetch with their own animals (Khazanov 2019: grain from the frontier markets)
+HANDLE = True  # PW-1529: a port call costs loading, unloading and the harbour's dues (above); False: the per-km cost only
 SEEK_CAP = 400  # every good's takers look on, from source to next best source, until none is left (PW-1519): one shared walk in which an
 # emptied source stops spreading and the land it held is walked again from the live sources (_seek, lane 222, step3d.md). This caps the
 # sources one taker draws from, a safety cap only. Before: grain ran round after round (lane 216b) and the other goods stopped after 3
@@ -585,7 +598,7 @@ class _Frame:
         fly[cell[fl]] = True
         self.fly = fly
         self.e = {"a": a, "b": b, "hop": hop, "open": open_, "fac": fac, "mode": mode, "bord": bord, "toll": toll,
-                  "fly": fly[a] | fly[b], "fetch": fetch_e}
+                  "fly": fly[a] | fly[b], "fetch": fetch_e, "load": land[a] & sea[b], "unload": sea[a] & land[b], "sea_f": M["sea"]}
         self.costs: dict = {}
         self.nbr_off, self.nbr_idx = g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64)
         # the stretches (each pair of neighbouring cells, both ways as one): esrc per directed edge, ukey (a * n + b, a < b), uid per edge
@@ -638,6 +651,9 @@ class _Frame:
                 use = e["fly"] & ((c < 0) | (air < c))
                 c = np.where(use, air, c)
                 mode = np.where(use, 3, mode)
+            if HANDLE:  # (a port call, PW-1529: loading where goods leave the land, unloading and the harbour's dues where they land)
+                c = np.where((c >= 0) & e["load"] & (mode == 2), c + LOAD_DAYS * DAY_KM * e["sea_f"], c)
+                c = np.where((c >= 0) & e["unload"] & (mode == 2), c + UNLOAD_DAYS * DAY_KM * e["sea_f"] - L * math.log1p(-HARBOUR_DUE), c)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
             self.costs[(cl, fetch)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
         return self.costs[(cl, fetch)]
@@ -1052,7 +1068,8 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                           "fall_km": FALL_KM, "toll": TOLL, "tol_mid": TOL_MID, "toll_max": TOLL_MAX, "floor": FLOOR, "flow_min": FLOW_MIN,
                           "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch),
                           "pool": POOL, "pool_hops": POOL_HOPS, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
-                          "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP},
+                          "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
+                          "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
 

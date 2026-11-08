@@ -44,6 +44,7 @@ GOODS = {
     "iron": ("iron", True),
     "copper": ("copper", True),
     "tin": ("tin", True),
+    "silver": ("silver (lead-silver and epithermal ores)", True),
     "gems": ("gems", True),
     "mithril": ("mithril and adamant (fantasy)", True),
     "coal": ("coal", True),
@@ -78,10 +79,11 @@ SEA_GOODS = ("shelf", "reef", "kelp_beds", "vents")
 SHELF_M = (-400.0, -200.0)  # shelf: full from the shore to -200 m, gone at -400 m (the shelf break, ~200 m)
 REEF_FULL, KELP_FULL = 5.0, 10.0  # % cover of reef framework, of kelp or seagrass, that counts in full (JUDGEMENT: a reef tract, a kelp bed)
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
-DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
+DISTRICTS = {"gold", "iron", "copper", "tin", "silver", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
              "volcanic", "salt", "salt_rock"}
 _ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe", "iron_ore"),
-         "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"), "gems": ("diamond", "gem_meta"),
+         "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"),
+         "silver": ("sed_pbzn", "vms", "epithermal_au"), "gems": ("diamond", "gem_meta"),
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
 LIVING = ("fertile", "grazing", "foraging", "timber", "fuel", "building")  # scaled to the world's best
 SEAFOOD = ("fish", "shellfish", "sea_mammals")  # scaled to the world's best, then reach inland

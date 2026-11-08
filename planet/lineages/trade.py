@@ -34,7 +34,7 @@ import numpy as np
 
 from ..geo import R_KM, is_land
 
-VERSION = 2  # (2: giants trade or take tribute by kind, GIANT_MODE; a mining kind's hold wants as a town does: PW-1503) (bump when the rules change: the server's cached docs are remade)
+VERSION = 3  # (3: craft and luxury goods made in towns, silver, incense and horses: PW-1522, step4a.md; 2: giants trade or take tribute by kind, GIANT_MODE; a mining kind's hold wants as a town does: PW-1503) (bump when the rules change: the server's cached docs are remade)
 CLASSES = ("bulk", "middling", "precious")
 # good: (label, value class, where it comes from). Classes per review1.md section 6 ("value per weight is the switch") and design1.md step 1.
 GOODS = {
@@ -58,15 +58,34 @@ GOODS = {
     "gems": ("gems", "precious", "gem ground"),
     "ornaments": ("shell and coral ornaments", "precious", "coral and shellfish shores (reef on sea cells), once ornament is known"),
     "mithril": ("mithril and adamant", "precious", "the fantasy metals, once mithril working is known"),
+    # PW-1522 (step4a.md): the goods worth carrying far were largely made goods, where only some places had the know-how. Each class is
+    # set from the ranges in step4a.md section 1
+    "silver": ("silver", "precious", "silver ore (lead-silver, sulphide and epithermal ores), once lead and silver mining is known"),
+    "incense": ("frankincense and myrrh", "precious", "hot dry scrub: hot steppe, or hot desert hills, gathered by whoever lives there"),
+    "horses": ("horses", "middling", "grazing x horses known on the cell x herd share"),
+    "silk": ("silk", "precious", "made in towns: the town share x farmland (mulberry) not frozen, once silk is known"),
+    "cloth": ("fine cloth (wool, linen, cotton)", "middling", "made in towns: the town share x farmland or pasture, once wool, linen or cotton is known"),
+    "dyes": ("purple and indigo dyes and dyed cloth", "precious", "made in towns: the town share x shellfish shores (purple) or farmland (indigo), once that dye is known"),
+    "glass": ("glass", "middling", "made in towns: the town share x fuel, once glass making is known"),
+    "porcelain": ("porcelain and stoneware", "middling", "made in towns: the town share x fuel, once porcelain is known"),
+    "arms": ("weapons and armour", "precious", "made in towns: the town share x iron or copper ore, once swords or armour are known"),
 }
+# made goods (PW-1522): made by a town's specialists from inputs on the town's cell or anywhere on its culture's land (the culture brings
+# its raw goods to its towns): output = the town share x the input (the cell's, or the culture's mean, the larger) x the know gate. A
+# making town meets its own want in proportion to its input, and what its workshops make is for sale (like with like, as above: one
+# making head against one wanting head). The input is a proxy, named in GOODS
+MADE = ("silk", "cloth", "dyes", "glass", "porcelain", "arms")
+SWORDS = ("bronze_sword", "iron_sword", "steel_sword", "scale_armour", "mail", "segmented_plate", "plate_armour")
 # the know gate per good: any one of these known opens it (a tech not in the tree is no gate)
 GATE = {"stone": ("quarrying", "stone_masonry"), "dried_fish": ("smoking_drying", "salting"), "salt": ("salting", "salt_mining", "solar_salt"),
         "copper": ("native_copper", "copper"), "tin": ("bronze", "tin_trade"), "iron": ("iron", "bloomery"), "toolstone": ("knapping",),
         "furs": ("trapping",), "seal_oil": ("harpoon", "whaling"), "gold": ("gold_silver",), "ornaments": ("ornament",),
-        "mithril": ("mithril_work",)}
+        "mithril": ("mithril_work",),
+        "silver": ("lead_silver_mining",), "silk": ("silk",), "cloth": ("wool", "flax_linen", "cotton"), "glass": ("glass", "glassblowing"),
+        "porcelain": ("porcelain",), "arms": SWORDS}  # (dyes: purple_dye or indigo_dyeing, each with its own input: ledger_at)
 # who works the land a good comes from (None: a deposit, everyone on it)
 WORK = {"grain": "farm", "timber": "wood", "firewood": "wood", "livestock": "herd", "oil_wine": "farm", "sugar": "farm", "spices": "farm",
-        "furs": "forage"}
+        "furs": "forage", "horses": "herd"}
 CROPS = {"grain": None, "oil_wine": ("olive", "vine", "oil_seeds", "date_palm", "coconut"), "sugar": ("cane", "sap_sugar"),
          "spices": ("spice_tree", "chili", "tea", "vanilla", "cacao")}  # (grain: any staple crop, crops.stocks weight > 0)
 # who needs what (review1.md "what the model takes" 1, design1.md step 1), each a share of a cell's people:
@@ -82,9 +101,14 @@ NEED = {
     "ornaments": "foragers who know ornament (hxaro beadwork, section 1)",
     "oil_wine": "farmers who know wine or the oil press (a drink or dish that uses it, design1.md; feasting alone does not need it)",
     "sugar": "farmers who know sugar making",
+    "silver": "towns (coin and plate)", "incense": "towns that know incense (temple offerings)",
+    "horses": "towns that know riding (cavalry and post)",
+    "silk": "towns (elite cloth)", "cloth": "towns", "dyes": "towns (elite cloth)", "glass": "towns", "porcelain": "towns",
+    "arms": "towns that know swords or armour",
 }  # dried fish, obsidian and sea-mammal oil: no need written yet (flint is not modelled, so want of edge stone would be overstated)
 NEED_GATE = {"copper": ("native_copper", "copper"), "tin": ("bronze",), "iron": ("iron", "bloomery"), "spices": ("feasting",),
-             "mithril": ("mithril_work",), "ornaments": ("ornament",), "oil_wine": ("wine", "oil_press"), "sugar": ("sugar_making",)}
+             "mithril": ("mithril_work",), "ornaments": ("ornament",), "oil_wine": ("wine", "oil_press"), "sugar": ("sugar_making",),
+             "incense": ("incense",), "horses": ("riding",), "arms": SWORDS}
 TRIBUTE_ROWS = True  # tribute-taking kinds keep a ledger row (marked mode "tribute"): D65 (PW-1501, owner): a dragon realm's needs and surplus
 # are traded on its behalf by its kobolds, so step 2 needs them; False leaves them out
 # D65 / PW-1507 (coordinator 11-08: the lane's lean B, a mode set by hand per giant kind; the trees' kind ids). A JUDGEMENT per kind, with
@@ -188,7 +212,16 @@ def cells_at(ctx, i: int) -> dict | None:
         "copper": z("copper"), "tin": z("tin"), "iron": z("iron"), "toolstone": z("volcanic"),
         "furs": np.maximum(z("frost"), z("timber") * cold), "seal_oil": z("sea_mammals"), "gold": z("gold"), "gems": z("gems"),
         "ornaments": np.where(sea, z("reef"), np.maximum(z("coral"), z("shellfish"))), "mithril": z("mithril"),
+        "silver": z("silver"), "horses": z("grazing") * _bits_any(ab, ast, ("horse",)),
+        # made goods' inputs (MADE): mulberry on unfrozen farmland; flax, cotton or wool; indigo on farmland (purple: _purple); glass and
+        # porcelain kilns burn fuel; smiths need ore
+        "silk": fert * (z("_temp") > 0.0 if "_temp" in G else 1.0), "cloth": np.maximum(fert, z("grazing") * _bits_any(ab, ast, tuple(ast))),
+        "dyes": fert, "_purple": np.maximum(z("shellfish"), z("coral")), "glass": z("fuel"), "porcelain": z("fuel"),
+        "arms": np.maximum(z("iron"), z("copper")),
     }
+    clim = np.asarray(ctx.f("climate", i)).astype(int) if "climate" in ctx.arr else np.full(n, -1)
+    # frankincense and myrrh: trees of hot dry scrub (Koppen BSh, or BWh in hills: the Dhofar and Somali escarpments, step4a.md)
+    val["incense"] = np.where(land, ((clim == 5) | ((clim == 3) & (z("hills") >= 0.3))).astype(float), 0.0)
     for g in ("oil_wine", "sugar", "spices"):
         val[g] = fert * _bits_any(cb, cst, CROPS[g])
     salt_own = np.where(sea, 1.0, (np.asarray(G["_salt_km"], float) <= SALT_TRADED_KM).astype(float)) if "_salt_km" in G else np.ones(n)
@@ -258,12 +291,13 @@ def ledger_at(ctx, i: int) -> dict | None:
     urban = np.where(np.array([m["off_ladder"] for m in modes], bool)[kc], 0.0, urban) if len(kc) else urban
     # a mining kind's hold trades as a town does (D65, PW-1501): its people want what a town's people want, at the share of their food a hold
     # buys (ladder.TRADE_CAP, the model's own placeholder until step 4d replaces it)
+    town = urban  # (the settlement ledger's towns alone: who makes the made goods, MADE; a hold's smiths make arms only)
     urban = np.where(miner[kc], np.maximum(urban, HOLD_TOWN), urban) if len(kc) else urban
     need = {
         "grain": np.clip(herd + urban + band * near_farm, 0.0, 1.0),
         "salt": np.where(land, np.clip(settled + band * near_farm, 0.0, 1.0), 0.0),
         "timber": urban, "stone": urban, "firewood": urban, "livestock": urban, "furs": urban, "gold": urban, "gems": urban,
-        "ornaments": band,
+        "ornaments": band, "silver": urban, "incense": urban, "horses": urban,
     }
     for g in ("copper", "tin", "iron"):
         need[g] = settled
@@ -271,7 +305,7 @@ def ledger_at(ctx, i: int) -> dict | None:
     need["mithril"] = urban
     need["oil_wine"] = farm
     need["sugar"] = farm
-    for g, techs in NEED_GATE.items():
+    for g, techs in ((g, t) for g, t in NEED_GATE.items() if g not in MADE):  # (made goods: gated in the loop below)
         need[g] = need[g] * gate(techs)
     # weights: the cell's people; a culture with no counted people (sea cells, a frame's empty cells) weighs its cells alike
     w = X["heads"][cell]
@@ -284,6 +318,22 @@ def ledger_at(ctx, i: int) -> dict | None:
     pair_sur, pair_lack = {}, {}  # (per (cell, culture) pair, for the exchange: trade_flow.py)
     for g in GOODS:
         v = X["val"][g][cell]
+        if g in MADE:  # (PW-1522: the town's specialists, from the cell's or the culture's input; see MADE)
+            inp = lambda a: np.maximum(a, mean(a)[kc]) if len(kc) else a  # noqa: E731
+            if g == "dyes":
+                made = np.maximum(inp(v) * gate(("indigo_dyeing",)), inp(X["val"]["_purple"][cell]) * gate(("purple_dye",)))
+            else:
+                made = inp(v) * gate(GATE[g])
+            made = np.clip(made, 0.0, 1.0)
+            nd = urban * gate(NEED_GATE[g]) if g in NEED_GATE else urban
+            techs = ("indigo_dyeing", "purple_dye") if g == "dyes" else GATE[g]
+            if not any(_gate(kn, techs, tree) for kn in know.values()):  # (nobody alive can make it yet: nobody wants it)
+                nd = nd * 0.0
+            pair_sur[g] = made * (urban if g == "arms" else town)  # (a mining kind's hold wants as a town does, but makes only arms)
+            pair_lack[g] = nd * (1.0 - made)
+            sur[g] = mean(pair_sur[g])
+            lack[g] = mean(pair_lack[g])
+            continue
         out = v * (work[WORK[g]] if g in WORK else 1.0)
         if g in GATE:
             out = out * gate(GATE[g])
