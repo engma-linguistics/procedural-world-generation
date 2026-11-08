@@ -64,6 +64,10 @@ def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_p
     ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
     ctx._arrs["climate"], ctx.arr["climate"] = np.array([6, 6, 7, 7, 7, 7]), 1
     assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "market town"  # (no pack animals: no caravans)
+    know["farmer"].append("pack_animals")
+    ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
+    ctx._arrs["climate"], ctx.arr["climate"] = np.array([6, 6, 6, 7, 7, 7]), 1  # (the town's own cell is dry and farmed, as an oasis: PW-1515)
+    assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "caravan town"
 
 
 def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path):
@@ -128,3 +132,54 @@ def test_views_frame_and_culture_hubs(tmp_path):
     C = [{"name": "a", "end": None, "into": None, "ended_kyr": None, "born_kyr": 100.0}] * 3
     assert TF.culture_view(doc, 1, C)[0]["hubs"][0][1] == "market town"
     assert doc["constants"]["quarters"] is TF.QUARTERS and doc["constants"]["fetch"] is TF.FETCH
+
+
+def test_last_eras_route_holds_down_to_the_lower_bar(tmp_path, monkeypatch):
+    """PW-1514: a stretch between ROUTE_HOLD x ROUTE_SHARE and ROUTE_SHARE is a route only if it was one the era before (or continues a
+    route, SPAN); one under the lower bar is never a route."""
+    ctx = _line_ctx(tmp_path)
+    r = TF.flows_at(ctx, 0)["routes"]
+    a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
+    monkeypatch.setattr(RT, "SPAN", False)
+    monkeypatch.setattr(RT, "ROUTE_SHARE", s * 1.5)  # (now it sits between the two bars)
+    key = min(a, b) * ctx.g.n + max(a, b)
+    assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0)["routes"])
+    assert (min(a, b), max(a, b)) in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
+    monkeypatch.setattr(RT, "ROUTE_SHARE", s * 2.5)  # (under the lower bar: last era's route does not hold it)
+    assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
+
+
+def test_a_route_is_judged_per_good_against_its_carried_volume(tmp_path):
+    """PW-1515: a stretch's strength is its share of one good's volume that travels (not of its group's, not counting goods passed
+    between cultures on one cell), so every stretch's strength is at most 1 and a lone good's only road carries all of it."""
+    f = TF.flows_at(_line_ctx(tmp_path), 0)
+    assert f["routes"] and max(r[2] for r in f["routes"]) <= 1 + 1e-9
+    assert max(r[2] for r in f["routes"]) > 0.5  # (a six-cell line: one road carries the whole of some good)
+
+
+def test_rewalk_matches_a_fresh_walk_without_the_dead_sources(tmp_path):
+    """Grain's rounds (trade_flow.SEEK_GOODS) re-walk only the land of the emptied sources (_rewalk); the costs and origins must be those
+    of a fresh walk from the live sources alone."""
+    ctx = _line_ctx(tmp_path)
+    fr = TF._Frame(ctx, 0, None, None)
+    fr.walk("grain")
+    src = np.unique(fr._last["org"][fr._last["org"] >= 0])
+    dead = np.zeros(N, bool)
+    dead[src[:1]] = True
+    fr.rewalk("grain", dead, view=False)
+    fr2 = TF._Frame(ctx, 0, None, None)
+    fr2.walk("grain", live=~dead)
+    for k in ("d", "org"):
+        a, b = fr._last[k], fr2._last[k]
+        assert np.array_equal(np.isfinite(a), np.isfinite(b)) and np.allclose(a[np.isfinite(a)], b[np.isfinite(b)])
+
+
+def test_grain_takers_look_on_until_a_round_finds_no_more(tmp_path, monkeypatch):
+    """Lane 216b: grain's allocation runs until no taker cut short reaches a live source (SEEK_GOODS); with it the grain still unmet is
+    never more than with the old 3-round bound, and the rounds used are recorded."""
+    f = TF.flows_at(_line_ctx(tmp_path), 0)
+    assert f["rounds"]["grain"] >= 1
+    monkeypatch.setattr(TF, "SEEK_GOODS", ())
+    g = TF.flows_at(_line_ctx(tmp_path), 0)
+    un = lambda x: sum(v.get("grain", 0.0) for v in x["unmet"].values())  # noqa: E731
+    assert un(f) <= un(g) + 1e-9 and g["rounds"]["grain"] <= TF.ROUNDS
