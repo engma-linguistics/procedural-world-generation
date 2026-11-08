@@ -17,7 +17,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 - See each lane's section below for more.
 
 ## Demos waiting
-- **Languages demo page** (version 3, 11-08: grammar C, 10 languages, 308 audio clips, complexity tab; a full read's remaining slips are listed in demo-read-3.md and are grammar D's first item): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
+- **Languages demo page** (version 4, 11-08: grammar D, 12 languages, fable tab, recipes, faith myths, 550 audio clips; a full read found no blockers, and its remaining slips (pronoun and numeral merges, myths, notes vs forms, fable depth) are in demo-read-4.md for the polish lane): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
 
 ## Finish lane (lang-finish, 2026-11-07)
 
