@@ -1,15 +1,19 @@
 ---
+id: PW-1531
 title: "Faiths that come through towns stay small (a culture's towns hold ~2 % of its people): keep, add country migration, or soften the ruler's protection?"
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lane223 (PW-1528; see also PW-1527)
 blocked_by: []
 relates: [PW-1520, PW-1489]
-refs: [planet/lineages/gods.py::Pantheons._towns, planet/lineages/gods.py::protection, planet/lineages/gods.py::urban_reader, docs/review/culture/faiths/mixing1.md]
+refs: ["planet/lineages/gods.py::Pantheons._towns", "planet/lineages/gods.py::protection", "planet/lineages/gods.py::urban_reader", docs/review/culture/faiths/mixing1.md]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -31,3 +35,7 @@ Options:
 
 What misleads if never decided: Daniel may read "tolerant rulers allow more intermixing" as large mixed populations and find only a few
 percent.
+
+## Updates
+- 2026-11-08: Folded into desk D70 with PW-1527 (both answer 'why don't minorities grow under tolerant rulers'). Lean A: keep.
+- 2026-11-08: Created from inbox draft draft-town-faiths-small-at-ledger-town-shares.md (found by lane223 (PW-1528; see also PW-1527)).

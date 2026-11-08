@@ -2,7 +2,7 @@
 id: PW-1528
 title: "Tolerant realms: let faiths move between the cultures of one realm (towns draw people from several cultures), so minorities grow under a tolerant ruler"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: culture
@@ -34,4 +34,5 @@ mixed court has no counterpart. Belongs with the towns-and-minorities model PW-1
 - [ ] measured over re-rolled draws: minorities above 10 % rise in tolerant realms against intolerant ones
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 223 merged (a1c019d4): town-borne faiths in tolerant realms; paired +1..+6 pts cultures with a minority >2% under tolerant rulers, ~0 under intolerant; leading faiths unchanged on every draw. Suite 1110 passed.
 - 2026-11-08: Created from inbox draft draft-tolerant-realms-mix-faiths-between-cultures.md (found by lane219).
