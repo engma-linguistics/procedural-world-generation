@@ -1050,7 +1050,9 @@ function drawCultures() {
     const bs = cu.living.map((i) => gd.beings[i]).sort((a, b) => b.individuation - a.individuation);
     if (!bs.length) return '';
     const tip = bs.map((b) => `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}${b.bound_to ? ', bound to ' + b.bound_to : ''}; ${b.top.map((t) => t[0]).join(', ')})`).join('\n');
-    return `<span title="${esc(tip)}">${esc(bs[0].label)}${bs.length > 1 ? ` <span class="muted">+${bs.length - 1}</span>` : ''}</span>`;
+    const fl = gd.faiths?.list || [], sh = (cu.shares || []).length > 1 ? cu.shares : null;  // (PW-1489: its faiths, when it holds minorities)
+    const faiths = sh ? `<br><span class="muted" title="${esc(gd.shares?.rule || '')}">faiths: ${sh.map(([f, v]) => `${f == null ? 'others' : esc(fl[f]?.name || 'faith ' + f)} ${Math.round(100 * v) || '<1'}%`).join(', ')}</span>` : '';
+    return `<span title="${esc(tip)}">${esc(bs[0].label)}${bs.length > 1 ? ` <span class="muted">+${bs.length - 1}</span>` : ''}</span>${faiths}`;
   };
   const C = doc.cultures, L = Object.fromEntries((result.lineages || []).map((l) => [l.id, l]));
   const pname = (p) => esc((L[p]?.name || p).replace(/ \(.*$/, ''));

@@ -124,3 +124,64 @@ def test_conquest_raises_aggression_and_wide_rule_tolerance():
     t1 = A.target(0, 3, False)
     assert t1[1] - t0[1] > 0.1 and t1[0] > t0[0]
     assert A.target(1, 3, True)[0] < A.target(1, 3, False)[0]  # (a missionary faith: a little less tolerant)
+
+
+# ---- minority faiths (PW-1489)
+def _ok(P):
+    for c, s in P.comp.items():
+        assert abs(sum(s.values()) - 1.0) < 1e-9 and s[P.faith_of[c]] >= 0.5 - 1e-9  # (its faith is the majority)
+
+
+def test_a_pressed_culture_gains_a_minority_up_to_the_plateau_and_a_conversion_leaves_a_remnant_that_fades():
+    grew = faded = 0
+    for seed in range(8):
+        P = G.Pantheons(seed=seed)
+        P.frame(10.0, {0: {"sal": S0, "know": KNOW, "people": "human"}, 1: {"sal": S1, "know": TEMPLE, "people": "human"}})
+        f1 = P.faith_of[1]
+        P.faiths[f1].missionary = P.faiths[f1].decided = True
+        seen_minor, flipped = [], None
+        for k in range(1, 80):
+            P.frame(10.0 - 0.05 * k, {0: {"sal": S0, "know": KNOW, "people": "human"}, 1: {"sal": S1, "know": TEMPLE, "people": "human"}}, contacts={(0, 1)})
+            _ok(P)
+            if P.faith_of[0] != f1:
+                seen_minor.append(P.comp[0].get(f1, 0.0))
+            elif flipped is None:
+                flipped = dict(P.comp[0])
+        assert max(seen_minor, default=0.0) <= G.SHARE_PLATEAU + 1e-9  # (converts, but at most a tenth before the take-off)
+        grew += max(seen_minor, default=0.0) > G.SHARE_SEED
+        if flipped is not None:
+            assert flipped[f1] >= 0.5 and len(flipped) == 2  # (the conversion: the newcomer passes half, the old faith stays)
+            faded += P.comp[0][f1] > flipped[f1]  # (the remnant fades: its own faith and its neighbour of that faith win it over)
+    assert grew >= 2 and faded >= 2
+
+
+def test_minorities_do_not_change_the_majority_history():
+    def hist(track):
+        P = G.Pantheons(seed=5)
+        if not track:
+            P._shares = lambda *a, **k: None  # (no share bookkeeping at all)
+        two(P, KNOW, TEMPLE, 2, contacts={(0, 1)})
+        P.faiths[P.faith_of[1]].missionary = P.faiths[P.faith_of[1]].decided = True
+        two(P, KNOW, TEMPLE, 30, contacts={(0, 1)}, start=9.0, dt=0.2)
+        return P.fhist, [e for e in P.events if e["kind"] == "conversion"]
+    a, b = hist(True), hist(False)
+    assert a == b and a[1]  # (no extra random draws: the conversions are today's)
+
+
+def test_daughters_carry_minorities_and_merges_pool_them_by_land():
+    P = G.Pantheons(seed=0)
+    two(P, KNOW, KNOW, 2)
+    f0, f1 = P.faith_of[0], P.faith_of[1]
+    P.comp[0] = {f0: 0.8, f1: 0.2}
+    P.split(2, 0, 8.0)
+    assert P.comp[2] == {f0: 0.8, f1: 0.2}
+    P.cells.update({0: 30, 1: 10})
+    P.merge(1, 0, 8.0)  # (1, all f1, merges into 0: 30 cells at 80/20 and 10 at 0/100)
+    assert abs(P.comp[0][f1] - 0.4) < 1e-9 and P.faith_of[0] == f0
+    P.cells.update({0: 10, 2: 90})
+    P.comp[2] = {f1: 1.0}
+    P._join(2, f1, 7.5)
+    P.merge(2, 0, 7.0)  # (a larger culture of another faith: the survivor's faith keeps half)
+    _ok(P)
+    assert P.share_counts["merge_capped"] == 1
+    assert P.shares_doc(0)[0][0] == f0

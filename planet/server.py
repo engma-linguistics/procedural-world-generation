@@ -299,12 +299,12 @@ def gods_doc(d: Path, mode: str | None = None) -> dict:
     f = d / "gods.json"
     if f.exists() and not A["faiths"]:
         doc = json.loads(f.read_text())
-        if doc.get("gods_mode") == mode and "faiths" in doc and "frames" in doc:
+        if doc.get("gods_mode") == mode and doc.get("format") == GD.GODS_FORMAT:  # (an older gods.json lacks what the viewer reads: replayed)
             return doc
     if not (d / "cultures.json").exists():
         raise SystemExit("this run has no cultures (it is older than PW-670): run the peoples again")
     rk = (d.name, (d / "run.json").stat().st_mtime)
-    key = (*rk, mode, _authored_key(d), _authored_key(d, "invasions"))  # (the invasions too: rulers push their faith, PW-1477)
+    key = (*rk, mode, GD.GODS_FORMAT, _authored_key(d), _authored_key(d, "invasions"))  # (the invasions too: rulers push their faith, PW-1477)
     with _gods_lock:
         if key not in _gods_cache:
             def make():
