@@ -334,6 +334,57 @@ def test_a_sea_km_costs_a_share_of_value_for_the_hands(tmp_path, monkeypatch):
     assert "bulk" not in TF2.HAND_KM and np.array_equal(on["bulk"], off["bulk"])  # (bulk: freight alone)
 
 
+_CANOES = {"herder": ["herding", "animal_cattle", "salting", "canoes"], "farmer": ["cultivation", "crop_wheat", "salting", "canoes"],
+           "forager": ["ornament", "canoes"]}
+
+
+def test_a_boat_follows_its_rivers_course_and_not_across_to_the_next_river(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): a river edge joins a cell to the next one down its river or up it; two neighbouring cells on different rivers
+    (here cells 2 and 3, each draining away from the other) are joined overland only. Without RIVER_COURSE (the model's setting) any two
+    navigable neighbours."""
+    elev = [10.0, 20.0, 30.0, 30.5, 20.0, 10.0]  # (one river runs 2 -> 1 -> 0, another 3 -> 4 -> 5)
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=elev, know=_CANOES)
+    a = np.repeat(np.arange(N), np.diff(ctx.g.nbr_off))
+    b = ctx.g.nbr_idx
+    monkeypatch.setattr(TF, "RIVER_COURSE", True)  # (off in the model, step4c.md: it cost herders' grain)
+    mode = TF._Frame(ctx, 0, None, None).cost("bulk")[1]
+    assert mode[(a == 2) & (b == 1)][0] == 1 and mode[(a == 1) & (b == 2)][0] == 1 and mode[(a == 4) & (b == 5)][0] == 1
+    assert mode[(a == 2) & (b == 3)][0] == 0 and mode[(a == 3) & (b == 2)][0] == 0  # (over the watershed: on foot)
+    c = TF._Frame(ctx, 0, None, None).cost("bulk")[0]
+    assert c[(a == 2) & (b == 1)][0] < c[(a == 1) & (b == 2)][0]  # (down its course cheaper than up)
+    monkeypatch.setattr(TF, "RIVER_COURSE", False)
+    assert TF._Frame(ctx, 0, None, None).cost("bulk")[1][(a == 2) & (b == 3)][0] == 1
+
+
+def test_a_river_km_costs_the_hands_as_a_sea_km_does(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): a river edge costs middling and dear goods the hands (hop / HAND_KM in value terms), bulk freight alone."""
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], know=_CANOES)
+    fr = TF._Frame(ctx, 0, None, None)
+    on = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    riv = fr.cost("bulk")[1] == 1
+    assert riv.any()
+    monkeypatch.setattr(TF, "RIVER_HANDS", False)
+    fr.costs = {}
+    off = {cl: fr.cost(cl)[0] for cl in ("bulk", "middling", "precious")}
+    for cl in ("middling", "precious"):
+        assert np.allclose((on[cl] - off[cl])[riv] / fr.L[cl], fr.e["hop"] / TF.HAND_KM[cl])
+        assert np.array_equal(on[cl][~riv], off[cl][~riv])
+    assert np.array_equal(on["bulk"], off["bulk"])
+
+
+def test_herds_and_horses_walk_as_a_drove_and_take_no_boat(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): livestock and horses cost DROVE per km on land (a pack animal = 1), whatever carriers the land's people know,
+    and go on foot beside a river, not by boat; other middling goods keep the carriers' cost; without DROVES as any middling cargo."""
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], know=_CANOES)
+    fr = TF._Frame(ctx, 0, None, None)
+    c, mode, _ = fr.cost_of("horses")
+    inside = ~fr.e["bord"]
+    assert (mode == 0).all() and np.allclose(c[inside], fr.e["hop"] * TF.DROVE)
+    assert fr.cost_of("livestock")[0] is c and (fr.cost_of("cloth")[1] == 1).any()  # (cloth still goes by boat)
+    monkeypatch.setattr(TF, "DROVES", False)
+    assert (fr.cost_of("horses")[1] == 1).any()
+
+
 def test_a_made_good_is_made_in_towns_where_its_know_how_and_input_are(tmp_path):
     """PW-1522: silk is made by a town's people (the town share) from farmland, once silk is known; a town that does not know it lacks
     it once someone can make it, and land without a town makes none."""

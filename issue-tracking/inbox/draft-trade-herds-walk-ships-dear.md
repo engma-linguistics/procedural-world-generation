@@ -1,5 +1,5 @@
 ---
-title: "Trade: horses and herds go by ship as cheaply as cloth; they should walk, and be dear to ship"
+title: "Trade: horses still go half by sea, ~4,100-4,300 km far tenth; source a horse ship's cost"
 type: task
 status: todo
 parent: PW-1498
@@ -10,20 +10,27 @@ impact: med
 found_by: lane 225
 blocked_by: []
 relates: [PW-1522]
-refs: [docs/review/culture/trade/step4b.md, docs/review/culture/trade/step4a.md, docs/review/culture/trade/review1.md, "planet/lineages/trade_flow.py::_Frame.cost", "planet/lineages/trade_flow.py::FALL_KM", "planet/lineages/trade.py::GOODS", "run 0141d1", "run 3e0eb4", "run 07c755", "Yule, The Book of Ser Marco Polo vol. 2 p. 405 (Wassaf)"]
+refs: [docs/review/culture/trade/step4c.md, docs/review/culture/trade/step4b.md, "planet/lineages/trade_flow.py::DROVE", "planet/lineages/trade_flow.py::DROVE_GOODS", "planet/lineages/trade_flow.py::_Frame.cost", "run 0141d1", "run 3e0eb4", "run 07c755", "Villehardouin, Treaty of Venice 1201 (Fordham sourcebook)", "Yule, The Book of Ser Marco Polo vol. 2 pp. 404-405 (Wassaf)"]
 ---
 
 ## Description
-In plain words: after lane 225, horses still travel a median 1,600-2,800 km between cultures (far tenth ~4,200-4,700 km) and herd
-animals 1,400-2,200 km, a third to a half of it by ship (step4b.md section 3). The sources say horses went mostly overland, driven on
-their own feet: the Tea Horse Road (over 1,000 km), the Nogai's 20,000-80,000 horses a year to Russia (review1.md). The sea case is the
-Gulf-to-India trade, ~10,000 horses a year at 220 dinars each (Wassaf, in Yule's notes to Marco Polo), ~3,000 km, a dear and special
-trade. A reader sees horses shipped across oceans as a routine middling cargo.
+In plain words: lane 226 made herds and horses walk. On land they move as droves, at a quarter of a pack animal's cost per km, sourced
+from the Texas cattle drives (step4c.md). They no longer take river boats. Horses' median fell to 2,308 / 1,284 / 1,549 km (main
+d8152d53: 2,814 / 1,717 / 1,561). But about half of the horse flows still run mainly by sea (0.42-0.49), and the far tenth is
+~4,100-4,300 km. The sourced sea case is the Gulf to Ma'bar, ~3,000-3,500 km (Wassaf).
 
-Why: the model carries live animals like any middling good: a porter's or pack animal's freight on land (they walk themselves, so it
-should be cheaper) and ORBIS's cargo freight at sea (a horse needs room, fodder and water, so it should be dearer).
+Why it is still open: no fetched source gives a horse ship's freight per head against cargo freight. Lane 226 found:
+- the Treaty of Venice of 1201: "four marks per horse and two marks per man" with nine months' food, but no horse value to set that
+  against;
+- transports of "8 to 20 horses" (taride 20-30), but no cargo tonnage to compare;
+- Wassaf: the treasury paid for horses that died, but gives no rate.
 
-What to try: a drove mode for livestock and horses on land (the herders' own pace and cost, as PW-1511 B's fetch uses pack-animal cost
-for herders) and a sea cost per head from a source on horse transports (the cost or capacity of a horse ship), not a tuned factor.
-Check horses' median and far tenth against step4b.md section 2 (mostly overland ~1,000 km; the sea case ~3,000 km) and the land-nudge
-steadiness on the three runs.
+A test factor of 3 on sea freight for herds moved horses' far tenth on 3e0eb4 only from 3,598 to 3,285 km, because at sea the hands
+(HAND_KM), not the freight, set the reach.
+
+What to try: a sourced per-voyage loss for live animals (deaths at sea as a share of the herd), charged where they are loaded, or a
+horse ship's fare against a horse's price from one source and era. Pryor 1982 (Mariner's Mirror 68) and the 19th-century Australian
+and New Zealand horse shipments to India are the leads; fetch them. Check horses' median and far tenth against step4b.md section 2.
+
+- [ ] a sourced sea cost (loss or fare against value) for live animals
+- [ ] horses' far tenth within ~3,000-3,500 km by sea on the three runs; land-nudge steadiness about 0.75 or above

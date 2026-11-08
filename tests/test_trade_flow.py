@@ -24,7 +24,8 @@ def _line_ctx(tmp_path, nav=None, elev=None, **kw):
     e = np.asarray(elev if elev is not None else [100.0] * N, float)
     arrs = {"elevation": e, "ice": np.zeros(N), "crop_known": np.array([0, 0, 1, 1, 1, 0]), "animal_known": np.array([2, 2, 2, 2, 0, 0])}
     ctx.f = lambda name, i: arrs[name]
-    ctx.world = {"river_nav": np.asarray(nav if nav is not None else [0] * N), "flow": np.zeros(N)}
+    dn = [min((j for j in (i - 1, i + 1) if 0 <= j < N and e[j] < e[i]), key=lambda j: e[j], default=-1) for i in range(N)]  # (rivers run downhill)
+    ctx.world = {"river_nav": np.asarray(nav if nav is not None else [0] * N), "flow": np.zeros(N), "downstream": np.array(dn, np.int64)}
     ctx.meta["era"] = "bronze age"
     ctx._arrs = arrs
     return ctx
