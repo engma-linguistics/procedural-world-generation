@@ -1,5 +1,6 @@
 ---
-title: "Trade allocation still stops after 3 tries for every good but grain, so their unmet shares are overstated"
+id: PW-1519
+title: Trade allocation still stops after 3 tries for every good but grain, so their unmet shares are overstated
 type: task
 status: todo
 parent: PW-1498
@@ -11,6 +12,8 @@ found_by: lane 216b
 blocked_by: []
 relates: [PW-1503, PW-1515]
 refs: ["planet/lineages/trade_flow.py::flows_at", "planet/lineages/trade_flow.py::SEEK_GOODS", "planet/lineages/trade_flow.py::ROUNDS", "planet/lineages/trade_flow.py::_rewalk", docs/review/culture/trade/step3b.md, docs/review/culture/trade/step3b/judge.py, "run 3e0eb4", "run 0141d1", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -30,3 +33,6 @@ What to try: a walk that keeps each cell's K best distinct sources (about K time
 moves to its next source without walking again; re-walk only when its K are all empty.
 - [ ] every good's allocation runs until a round finds no more, with only a safety cap
 - [ ] derive within ~3 minutes per D&D run (judge: docs/review/culture/trade/step3b/judge.py --quick)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-other-goods-cut-at-three-rounds.md (found by lane 216b).
