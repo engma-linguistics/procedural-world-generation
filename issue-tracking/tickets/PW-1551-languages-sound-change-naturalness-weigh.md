@@ -2,7 +2,7 @@
 id: PW-1551
 title: "Languages: sound-change naturalness weights barely set how often a change fires (the draw renormalises over the changes that apply)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -44,3 +44,4 @@ Lean: A, as its own lane with a full pass, since it removes caps rather than add
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-rule-weights-saturate.md (found by lang-sound (sound lane pass 3)).
+- 2026-11-08: RULING (owner, Language Desk 11-08): option A, draw without redraws and recalibrate, removing caps; its own lane with a full pass.

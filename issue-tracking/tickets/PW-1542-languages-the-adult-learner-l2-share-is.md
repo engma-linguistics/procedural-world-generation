@@ -2,7 +2,7 @@
 id: PW-1542
 title: "Languages: the adult-learner (L2) share is a co-presence proxy; a third of living lects sit at its 0.7 ceiling"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -43,3 +43,4 @@ synthesis bins and the hubs check re-measured (`scratchpad synth/fullan.py`).
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-l2-proxy-ceiling.md (found by lang-synth (synthesis lane, 2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk 11-08): option (b), a concave map with the median near 0.25; re-measure synthesis bins and hubs.

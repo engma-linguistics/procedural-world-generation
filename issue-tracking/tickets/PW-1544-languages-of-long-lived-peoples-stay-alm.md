@@ -2,7 +2,7 @@
 id: PW-1544
 title: Languages of long-lived peoples stay almost all isolating (93% with 0-1 bound verb categories)
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -43,3 +43,4 @@ generation. (b) is the cheapest and keeps the per-generation clock. Your call.
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-long-lived-isolating.md (found by lang-synth (synthesis lane, 2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk 11-08): option (b), long-lived protos start with a richer grammar.

@@ -2,7 +2,7 @@
 id: PW-1539
 title: "Decisions: language defaults to confirm, part 1 of 3: sounds, sound change and spelling"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -74,3 +74,4 @@ Numbers are from full scratch passes of run a24559 (the fantasy D&D run) on 11-0
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-defaults-sounds-spelling.md (found by lang-design (finish, sound, names lanes, 2026-11-07/08)).
+- 2026-11-08: RULING (owner, Language Desk 11-08): A long-tail rule life (b); B dragon sub-bass stays a hallmark; C settled (S221 0.3); D nativise partially, and let sounds spread into places of articulation the old speakers lacked (no gap-filling pull exists today); E try rate sigma 0.5 plus founder/shift bursts, compare with 0.5 alone, report both. Table rows kept.

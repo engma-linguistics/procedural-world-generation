@@ -68,6 +68,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-11-08 (owner, Language Desk): language defaults ruled on (PW-1538/1539/1540: mostly the leans; rate spread 0.5 + bursts vs 0.5 alone to compare; partial accent at shifts plus spread into unused places; all three species grammar leanings); L2 proxy concave (PW-1542); long-lived protos richer grammar (PW-1544); sound-change draw without redraws (PW-1551); blocklist = slurs + rape/whore/slut. Next tickets: PW-1537, 1549, 1545, 1546.
 - 2026-11-08 (owner): language lane merged to main (lang-design). Scholars' horizon reading (~11 kyr) accepted as close enough; heavier synthesis tried and kept (FUSE 0.02, L2 strip 0.008); spelling guard blocks slurs only, plain swearing inside a word is fine (offensive_substrings.txt); leftovers go to tickets, not more lane time. Commits with an empty author email are left as they are.
 - 2026-10-27 (owner): dragon density default 1 per 5,000 km² (user option; 10k rarer, 1k far too many by default).
 - 2026-10-27 (owner): gnomes arrive at 50 kyr (were 15 kyr, remnants into a full world). Half-elves (and hybrids generally) are exempt from the remnant check: few where parents rarely meet is fine, reported only. Low-density overlap of peoples is fine.

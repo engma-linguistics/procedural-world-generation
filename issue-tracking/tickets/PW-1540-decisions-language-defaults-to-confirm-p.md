@@ -2,7 +2,7 @@
 id: PW-1540
 title: "Decisions: language defaults to confirm, part 2 of 3: words, contact, faiths and names"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -76,3 +76,4 @@ Pass 2, Faiths & contact pass 3, Names & spelling lane, Polish lane).
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-defaults-words-contact-faiths.md (found by lang-design (core, lexicon & contact, faiths, names, polish lanes, 2026-11-07/08)).
+- 2026-11-08: RULING (owner, Language Desk 11-08): A polysemy accepted; B gods' kin titles kept; C liturgy freezes at first temples until writing exists; D after-shift settings kept; E halve SEG_BORROW_K; F substrate town names fine. Table rows kept.
