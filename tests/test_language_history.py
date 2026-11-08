@@ -551,3 +551,50 @@ def test_living_lects_get_sentences_and_grammar_notes(result):
     assert any(l["sentences"] for l in living)
     dead = [l for l in doc["lects"] if l["died_kyr"] is not None]
     assert all("sentences" not in l for l in dead)
+
+
+def test_generation_softening():
+    """Owner 11-07: per generation (exponent 1) from 28-yr generations up; below, rate x (28 / generation) ** 0.7 per
+    year."""
+    assert H.change_generations(1000.0, 28.0) == pytest.approx(1000.0 / 28.0)
+    assert H.change_generations(1000.0, 56.0) == pytest.approx(1000.0 / 56.0)
+    kob = H.change_generations(1000.0, 11.7) / H.change_generations(1000.0, 28.0)
+    assert kob == pytest.approx((28.0 / 11.7) ** 0.7) and kob < 28.0 / 11.7
+
+
+def test_tone_phonemic_once_per_line(result):
+    """'tone became phonemic' is recorded only when a lect becomes tonal, never while it already is (a toneless vowel
+    in a tone language takes the default tone silently)."""
+    res, _, _ = result
+    by = _lects(res)
+    for l in res["lects"]:
+        line, cur, until = [], l, 0.0
+        while cur is not None:
+            line += [c for c in cur.changes if c["kyr"] >= until - 1e-9 and (c["rule"].startswith("tone.")
+                     or str(c.get("merged", "")).startswith("tone marks dropped"))]
+            until = cur.born_kyr
+            cur = by.get(cur.parent)
+        line.sort(key=lambda c: -c["kyr"])
+        assert not any(a["rule"].startswith("tone.phonemic") and b["rule"].startswith("tone.phonemic") for a, b in zip(line, line[1:])), l.id
+
+
+def test_overuse_check_counts_every_lect_but_respects_the_voice():
+    """The all-lect overuse check fails a segment in most lects far above PHOIBLE (ɹ), and passes it when the lects' own
+    voice profile favours it."""
+    from types import SimpleNamespace as NS
+    from planet.language import checks as CK, inventory as INV, profiles as PR
+    from planet.language.percepts import from_ipa
+    cons = [from_ipa(x)[0] for x in "ptkmnl"]
+    vows = [from_ipa(x)[0] for x in "aiu"]
+    rr = from_ipa("ɹ")[0]
+
+    def lects(prof):
+        return [NS(alive=True, deme=i, profile=prof,
+                   inventory=INV.Inventory(consonants=cons + ([rr] if i % 2 else []), vowels=vows, shapes={"CV": 1.0}))
+                for i in range(20)]
+    human = PR.HUMAN
+    bad = CK.living_overuse({"lects": lects(human)})
+    assert not bad["pass"] and "ɹ" in bad["value"]["overused"]
+    import dataclasses
+    fond = dataclasses.replace(human, make_cost={**human.make_cost, "approximant": 0.7})
+    assert CK.living_overuse({"lects": lects(fond)})["pass"]

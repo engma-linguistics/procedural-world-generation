@@ -61,6 +61,8 @@ SHIFT_MAX_KYR = 20.0
 SHIFT_KIN_SHARE = 0.3  # a shift to a lect of the deme's own true family needs a blind core share under this (else it levels)
 MINORITY_MIN = 0.1  # a shifted-away lect lives on (a minority speech of its deme) until its share falls under this
 STRONG_WAVE = 1.0  # contact used for the wave while a shift trigger holds on a pair already speaking one language
+SOFT_GEN_YR = 28.0  # owner 11-07: below this generation length change is softened (rate x (SOFT_GEN_YR / generation) ** SOFT_EXP)
+SOFT_EXP = 0.7  # ... per year; at and above SOFT_GEN_YR, per generation (exponent 1, owner 11-03)
 KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine receiver is borrowed from the majority lect
 # driver-side draw (and wave adoption) weight overrides, by rule id, catalogue id or `family:<name>` (lect.weight_override):
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
@@ -234,7 +236,7 @@ class History:
         self._snap = {l.id: l.lexicon.copy() for l in living}  # (borrowing reads the lexicons as they were at the interval's start)
         tasks = []
         for l in living:
-            n = (t0 - t1) * 1000.0 / l.gen_yr
+            n = change_generations((t0 - t1) * 1000.0, l.gen_yr)
             cids = []
             for o, c in contacts[l.deme].items():
                 ol = self.lect_of(o)
@@ -850,6 +852,18 @@ def typology_summary(g) -> dict:
             n[slot] += 1
     return {"order": t.get("word_order"), "adp": t.get("adposition"), "case": t.get("case"), "number": t.get("number"),
             "gender": t.get("gender"), "n_case": n["case"], "n_number": n["number"], "n_class": n["class"]}
+
+
+def change_generations(years: float, gen_yr: float) -> float:
+    """The generations of language change in `years` (owner rulings 11-03 and 11-07): years / generation at and above
+    SOFT_GEN_YR (rates per generation, exponent 1); below it the per-year rate is softened to that of a SOFT_GEN_YR
+    generation times (SOFT_GEN_YR / generation) ** SOFT_EXP, so an 11.7-yr kobold generation changes 1.84x a human's per
+    year rather than 2.4x. Drives sound change, lexical replacement and grammar alike (not shift shares or koine, which
+    are social clocks)."""
+    g = max(float(gen_yr), 1e-6)
+    if g >= SOFT_GEN_YR:
+        return years / g
+    return years / SOFT_GEN_YR * (SOFT_GEN_YR / g) ** SOFT_EXP
 
 
 def adopt(l: LC.Lect, offers: list) -> int:

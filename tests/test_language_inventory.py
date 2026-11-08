@@ -215,6 +215,17 @@ def test_inserted_glottal_stop():
     assert _seg("ʔ") not in I.phonemic(forms + _forms("aku"), segs)
 
 
+def test_coda_liquids_are_allophones():
+    """Dark ɫ and approximant ɹ only before a consonant or word-finally, plain l and trilled r elsewhere: allophones (the
+    English and Dutch pattern), not extra phonemes; once ɹ stands before a vowel it contrasts."""
+    forms = _forms("lata", "ilu", "pali", "kaɫ", "taɫka", "rapa", "kira", "paɹ", "taɹku", "ruki")
+    segs = list(dict.fromkeys(s for f in forms for s in f))
+    al = I.phonemic(forms, segs)
+    assert al.get(_seg("ɫ")) == (_seg("l"), "coda")
+    assert al.get(_seg("ɹ")) == (_seg("r"), "coda")
+    assert _seg("ɹ") not in I.phonemic(forms + _forms("ɹa"), segs)
+
+
 def test_intervocalic_voicing_allophone():
     forms = _forms("tada", "pata", "tiku", "kadi", "tupa", "atu")
     segs = list(dict.fromkeys(s for f in forms for s in f))

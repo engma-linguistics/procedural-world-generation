@@ -26,4 +26,14 @@ Fix: (1) split the file: `languages.json` keeps lects, names, families, checks, 
 and `languages-etym.json` are fetched by the viewer on demand (the time tab and the etymology chains); (2) cache
 `hear_word` per (segment, inventory id); precompute a per-segment hash; make `functional_load` reuse one `apply` pass;
 (3) parallelize `inventory.observed` with the steps. Keep the output identical (determinism test).
+Round 5 (core lane, 2026-11-07) made it bigger: `etym_roots` (+8.5 MB) and lexicons of 712 words (was 376) bring the
+file to 236 MB (etym_nodes 70 MB, roots table 44 MB, lexicons 67 MB, snapshots 24 MB) and the pass to 1284 s (steps
+806 s, wave 117 s) on a loaded machine. Not started this round. Plan worked out: (a) shared tables: one doc-level
+concept table and interned root ids; a columnar lexicon per lect; `etym_roots` written only where it differs from
+`roots`; (b) sidecars `languages-etym.json` (etym_nodes, roots) and `languages-snapshots.json`; (c) one expander on each
+side (`output.load`/`expand` in Python for sketch.py, families.py's stored-json reader, horizon_offline.py and the
+tests; `LC.expand` in viewer/langcore.js, with langview.js fetching the sidecars) so readers keep today's in-memory
+shape; format procgen-languages/2 documented in architecture.md §11; (d) speed: memoize the wave's `ease_factor` /
+`size_factor` per (receiver, rule) per interval (they recompute `touched_by`, `load_forms`, `keep_part` per offer),
+and stop `load_forms` sorting the whole lexicon on every call; profile one worker with cProfile first.
 - [ ] main file under 40 MB, pass under 5 minutes with 12 workers on a24559, viewer unchanged for the owner

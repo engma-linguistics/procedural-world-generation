@@ -17,9 +17,9 @@ The network worked and every source downloaded. Only the two tables flagged belo
 | `grambank_correlations.tsv` | 388 (45 feature pairs) | download |
 | `wals_wordorder.tsv` | 207 | download |
 | `clics_edges.tsv` | 4228 | download |
-| `concepts.tsv` | 240 | download (3 classes from knowledge) |
+| `concepts.tsv` | 579 | download (3 classes from knowledge; the WOLD pick by hand) |
 | `grammaticalization_paths.tsv` | 72 | **knowledge** |
-| `sound_changes.tsv` | 185 | **knowledge** |
+| `sound_changes.tsv` | 214 | **knowledge** |
 
 ## PHOIBLE: `phoible_segments.tsv`, `phoible_inventory_sizes.tsv`
 
@@ -86,6 +86,7 @@ The network worked and every source downloaded. Only the two tables flagged belo
   - **`stability_class`:** 1 is most stable, 5 fastest. It is derived, not published: the quintile of the Pagel rate where available (200 concepts). Otherwise it is the quintile of Holman stability, otherwise the quintile of the Leipzig-Jakarta rank.
   - **From knowledge:** 3 concepts (BERRY, MALE PERSON, HOT OR WARM) have none of those values. I gave them classes from knowledge, marked `stability_class_source=knowledge`.
 - **Caveat:** the Pagel rates are Indo-European only. Holman's ASJP ranks are global but cover only 100 items, so classes from the two sources are not strictly comparable.
+- **WOLD extension (2026-11-07, round 5):** 339 more meanings from the WOLD 1460 list (Haspelmath & Tadmor 2009, Concepticon `Haspelmath-2009-1460.tsv`, raw copy in `data/language/raw/wold/`), picked by hand in `build_reference_tables.WOLD_EXTENSION`: motion and everyday verbs, exchange, qualities, kin by birth order and marriage, numbers to a thousand, body, nature and time, animals and food, house and tools. They are marked `lists=WOLD1460`; `stability_class` is 3, 4 or 5 by tercile of WOLD's own rank (`stability_class_source=wold_rank_tercile`), and a new `pos` column carries WOLD's part of speech (blank for the core rows, whose part of speech `lexicon.py` sets; numerals are nouns like ONE). The core 240 rows are unchanged. Word-building recipes for the new meanings were added by hand to `derivations.tsv` (~95 rows) and `compounds.tsv` (~60 rows).
 
 ## Grammaticalization paths: `grammaticalization_paths.tsv` (from knowledge)
 

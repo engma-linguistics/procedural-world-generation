@@ -1,5 +1,5 @@
 # source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. Each row is a compound recipe (head + modifier = target) that real languages use for the target meaning, after: Urban 2012 (Analyzability and Semantic Associations in Referring Expressions: a study in comparative lexicology, PhD Leiden; complex lexemes for 160 meanings in a 78-language sample, e.g. 'bark' = 'tree skin', 'sun' = 'eye of day', 'spring' = 'water eye', 'fruit' = 'tree child'); Brown 1976 and Witkowski & Brown 1978/1985 on body-part partonomy and plant life-forms; Brown 1999 (Lexical Acculturation in Native American Languages, Oxford: introduced animals and plants named 'big dog' = horse, 'foreign X' / 'X-like native analog'); Witkowski & Brown 1983 (marking reversals); Buck 1949 (A Dictionary of Selected Synonyms in the Principal Indo-European Languages); Haspelmath & Tadmor 2009 (WOLD 'analyzable' words); the generic + specific compounds of Mainland Southeast Asia (Thai nók-X 'bird-X', plaa-X 'fish-X', tôn-X 'tree-X'; Malay pohon X, burung X; Mandarin song-shu 'pine-tree', li-yu 'carp-fish'; Enfield 2003, Bisang 1999) and English reindeer < Old Norse hreinn + deer.
-# version: hand-authored 2026-11-04 (procedural-language lane, compounds and shifts round)
+# version: hand-authored 2026-11-04 (procedural-language lane, compounds and shifts round); extended 2026-11-07 (round 5: recipes for the WOLD meanings added to concepts.tsv: kin by birth order and marriage, body parts, weather, time, house)
 # licence: original text for this repository (no third-party data copied); cite the works above when using it.
 # CLICS3: at load time lexicon.py joins each (target, head) and (target, modifier) pair with data/clics_edges.tsv; a pair CLICS3 also attests as a colexification in >= 3 families (BARK/SKIN 49, MILK/BREAST 26, MOON/SUN 18 ...) adds family count / 10 to the weight (a motivated compound is often a colexification too).
 # columns: target = the concept named; head = the semantic category the target is a kind (or a part) of: 'tree SKIN' for bark, 'day EYE' for sun, 'mountain ROAD' for a pass, 'woman CHILD' for a girl; modifier = the word that says which one ('SELF' = the target's own current word: a generic + specific renewal, Thai plaa-X, English rein-deer); weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the source.
@@ -210,3 +210,65 @@ good:gold	good:metal	YELLOW	2	'yellow metal': Mandarin huang-jin
 good:gold	STONE	YELLOW	1	'yellow stone'
 good:tin	good:metal	WHITE	2	'white metal': Latin plumbum album 'white lead' = tin
 good:iron	good:metal	BLACK	1	'black metal': Mandarin wu-jin 'black metal' = iron
+GRANDSON	SON	SON	2	'son's son': Swedish sonson, Danish sønnesøn
+GRANDDAUGHTER	DAUGHTER	SON	2	'son's daughter': Swedish sondotter; Danish sønnedatter
+GRANDDAUGHTER	DAUGHTER	DAUGHTER	1	'daughter's daughter': Swedish dotterdotter
+GRANDCHILD	CHILD (DESCENDANT)	CHILD (DESCENDANT)	2	'child's child': Swedish barnbarn, Danish barnebarn
+OLDER BROTHER	BROTHER	OLD	3	'old brother': Mandarin gēge vs dìdi by birth order; Hungarian nagybátya-type 'big brother'
+YOUNGER BROTHER	BROTHER	SMALL	3	'small brother': Indonesian adik laki-laki; German kleiner Bruder
+OLDER SIBLING	SIBLING	OLD	2	'old sibling': Indonesian kakak; Turkish ağabey/abla
+YOUNGER SIBLING	SIBLING	SMALL	2	'small sibling': Indonesian adik
+FATHER-IN-LAW (OF MAN)	FATHER	WIFE	2	'wife's father': Swahili baba mkwe; German Schwiegervater (Schwieger- 'in-law')
+MOTHER-IN-LAW (OF MAN)	MOTHER	WIFE	2	'wife's mother': Swahili mama mkwe; German Schwiegermutter
+SON-IN-LAW (OF MAN)	SON	DAUGHTER	2	'daughter's man': Finnish vävy is simple; Malay menantu; motivation 'daughter's husband'
+DAUGHTER-IN-LAW (OF MAN)	DAUGHTER	SON	2	'son's woman': Turkish gelin is simple; German Schwiegertochter
+YOUNG MAN	MAN	YOUNG	3	'young man': Latin adulescens; German Jüngling < jung; Mandarin niánqīng rén
+YOUNG WOMAN	WOMAN	YOUNG	3	'young woman': Mandarin niánqīng nǚrén; English young woman
+WIDOW	WOMAN	DIE	2	'dead (one's) woman': motivation 'woman whose husband died'; Hindi vidhavā is simple
+WIDOWER	MAN	DIE	1	'dead (one's) man'; English widow-er is derived
+ORPHAN	CHILD (YOUNG HUMAN)	DIE	1	'child of the dead': motivation; Swahili yatima is a loan
+PARENTS	FATHER	MOTHER	2	'father-mother': Mandarin fùmǔ; Korean bumo; Sanskrit pitarau
+PALM OF HAND	BELLY	HAND	2	'hand belly': Urban 2012 (palm ~ belly of the hand); Malay tapak tangan 'hand sole'
+TOE	FINGER	FOOT	3	'foot finger': Spanish dedo del pie; Latin digitus pedis; Swahili kidole cha mguu
+FOREHEAD	FACE	HEAD	1	'head face' (front of the head): motivation
+WAIST	MIDDLE	BODY	1	'body middle': motivation
+CHIN	TOOTH	JAW	1	motivation; Malay dagu is simple
+RAINBOW	ROAD	SKY	2	'sky road / bow of the sky': Swahili upinde wa mvua 'bow of rain'; Finnish taivaankaari 'sky arc'
+RAINBOW	BOW	RAINING OR RAIN	3	'rain bow': English rainbow; German Regenbogen; Swahili upinde wa mvua
+STEAM	SMOKE (EXHAUST)	WATER	2	'water smoke': Malay asap air; Japanese yuge is simple
+FIREWOOD	WOOD	FIRE	3	'fire wood': English firewood; German Brennholz 'burn wood'
+FLAME	TONGUE	FIRE	2	'fire tongue': Hebrew lashon esh; Malay lidah api; Urban 2012
+THUNDER	VOICE	SKY	2	'sky voice': motivation; Malay guruh is simple; Urban 2012 (thunder ~ sky noise)
+BOLT (OF LIGHTNING)	FIRE	SKY	2	'sky fire': Urban 2012
+DEW	WATER	NIGHT	2	'night water': motivation
+TIDE	WATER	SEA	1	'sea water': motivation
+SHORE	EDGE	SEA	3	'sea edge': German Meeresrand; Malay tepi laut 'sea edge'
+SUMMER	TIME	HOT OR WARM	2	'warm time': Malay musim panas 'hot season'
+WINTER	TIME	COLD	2	'cold time': Malay musim dingin 'cold season'
+MORNING	TIME	SUNRISE	1	motivation
+EVENING	TIME	SUNSET	1	motivation
+AFTERNOON	MIDDLE	DAY (NOT NIGHT)	1	'mid-day' (and after): motivation
+TODAY	DAY (NOT NIGHT)	THIS	3	'this day': English today; German heute < *hiu tagu 'on this day'; Latin hodie < hoc die
+TOMORROW	DAY (NOT NIGHT)	OTHER	1	motivation 'the other day'
+WORLD	EARTH (SOIL)	ALL	1	'all land': motivation
+HEN	BIRD	WOMAN	1	'female bird': Malay ayam betina 'female chicken'
+ROOSTER	BIRD	MAN	1	'male bird': Malay ayam jantan 'male chicken'
+BULL	ANIMAL	MAN	1	'male cattle'
+OX	ANIMAL	WORK (LABOUR)	1	motivation 'work animal'
+BEE	FLY (INSECT)	HONEY	2	'honey fly': Dutch honingbij; German Honigbiene
+NEST	HOUSE	BIRD	3	'bird house': Urban 2012
+SOUP	WATER	MEAT	1	'meat water': motivation
+FLOUR	DUST	GRAIN	2	'grain dust': motivation (Latin farina < far 'emmer')
+BUTTER	FAT (ORGANIC SUBSTANCE)	MILK	2	'milk fat': motivation
+DOOR	MOUTH	HOUSE	2	'house mouth': Malay pintu is simple; Urban 2012 (door ~ mouth)
+WINDOW	EYE	HOUSE	2	'house eye': Old Norse vindauga 'wind eye'; Russian okno < oko 'eye'
+ROOF	HEAD	HOUSE	2	'house head': motivation; Swahili paa is simple
+CHAIR	SEAT	SELF	1	generic + specific: motivation
+PILLOW	SEAT	HEAD	2	'head seat / head rest': German Kopfkissen 'head cushion'
+SHOE	SKIN	FOOT	2	'foot skin': motivation; Urban 2012
+BOAT	HOUSE	WATER	1	motivation 'water house'
+CART	HOUSE	WHEEL	1	motivation
+PATH	ROAD	SMALL	2	'small road': motivation
+BRIDGE	ROAD	RIVER	2	'river road': motivation
+MARKET	PLACE (POSITION)	SELL	2	'selling place': Turkish satış yeri
+FIELD	EARTH (SOIL)	SEED	1	motivation 'sown earth'
