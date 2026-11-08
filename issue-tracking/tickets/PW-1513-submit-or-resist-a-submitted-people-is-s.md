@@ -1,4 +1,5 @@
 ---
+id: PW-1513
 title: "Submit or resist: a submitted people is spared for good; should revolt (Herat) or a broken promise (Merv) bring the harsh fate back?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane208
 blocked_by: []
 relates: [PW-1496, PW-1487, PW-1481]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/history/polity_live.py::LivePolities._refuge", "planet/lineages/attitudes.py::Attitudes", docs/review/culture/polities/round12.md, docs/review/culture/polities/round12/measure.py, docs/review/culture/polities/round12/live_run.py, docs/review/culture/polities/round11.md, "world 899985"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -41,3 +44,7 @@ pole of D54 then shows up only against warlike peoples. A reader would take the 
 **Lean: B.** It uses a mechanism already in the model, keeps submission as the first answer, and gives razings a cause the reader can
 follow ("they rose against the khan"). Effort is small: a lookup of the submitted peoples per ruler, read when a faction splits off.
 - [ ] Daniel picks; then measure on seeds 7, 10, 3 (round12/measure.py) against the round 12 runs.
+
+## Updates
+- 2026-11-08: Desk D67 (lean B: revolt brings the harsh fate back; no new number).
+- 2026-11-08: Created from inbox draft draft-submission-revocable.md (found by lane208).

@@ -1,7 +1,8 @@
 ---
+id: PW-1512
 title: "Writing without towns: 'towns or chiefdoms' cannot read the chiefdoms tech (everyone has it); read a chief seat of its own?"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v4
 subsystem: culture
@@ -11,6 +12,8 @@ found_by: lane208
 blocked_by: []
 relates: [PW-1495, PW-1490]
 refs: ["planet/lineages/techtree.py::Calendar.settled", "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techtree.py::Calendar.gated", "planet/lineages/techtree.py::Calendar.keeps", "planet/lineages/techspread.py::town_footprint", "planet/lineages/polities.py::derive", "planet/lineages/history/polity_live.py::LivePolities", docs/review/culture/techtree/round4.md, docs/review/culture/techtree/round4/chiefs.py, docs/review/culture/techtree/writing_without_towns.md, docs/review/culture/techtree/round3/lag.py, docs/review/culture/techtree/round3.md, "run 07c755", "run 0141d1", "run 3e0eb4"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -40,3 +43,7 @@ named them in the rule. Or, if the tech is read, nearly every band writes.
 
 **Lean: C.** It is your wording, read literally, and the model already seats chiefdoms. Measure as round4.md does (writing at 0.5 kyr
 ago, mobile peoples without towns), against main. Effort m: the read-out runs after the calendar, so the order needs care.
+
+## Updates
+- 2026-11-08: Status needs-decision -> todo. Coordinator: option C is Daniel's own 11-07 wording ('towns or chiefdoms'); no decision needed. Next culture lane builds it, checking derive's chiefdom tier is not near-universal.
+- 2026-11-08: Created from inbox draft draft-chiefdom-seat-uptake.md (found by lane208).
