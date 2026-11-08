@@ -558,6 +558,9 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
 #      founds a town takes up a tech already at its border at once. Without a footprint at all, the people's way of life decides
 #      (not a mobile one, MOBILE_WAYS). Foragers, herders and sea nomads without towns stay without states and writing, as the
 #      Ethnographic Atlas's mobile peoples did (docs/review/culture/techtree/round3.md).
+#      Lane 208 (D60 B's own wording "towns or chiefdoms of its own", D62 A; Calendar.may_take): a people holding chiefdoms
+#      may take up, share or keep a state tech without a town (runes, Ogham, the Tuareg's Tifinagh); inventing one still needs a
+#      town (docs/review/culture/techtree/writing_without_towns.md, round4.md).
 # A front's arrival is recomputed each step for the techs an arm touches and never moves later (a front that gains a road
 # speeds up from where it is; the pair's keyed draw is unchanged).
 ARM_ADMIN = ("writing", "alphabet", "law")
@@ -802,7 +805,7 @@ class Calendar:
             return False
         if t.get("sea") and not self.sea[lid] and (inventing or not t.get("traded")):  # (the sea branch: sea peoples; pearls by trade)
             return False
-        if gate and tid in self.state and not self.settled(lid, ago):  # (arm S, D60 B: a state tech needs towns of the people's own)
+        if gate and tid in self.state and not (self.settled(lid, ago) if inventing else self.may_take(lid, ago)):  # (arm S, D60 B / D62 A)
             return False
         if inventing:
             first = floor_of(self.T, tid, bool(k.get("elder")))  # (a gated tech's floor; a soft tech has none)
@@ -824,6 +827,13 @@ class Calendar:
                 h in self.L and h != lid and self.settled(h, ago, depth + 1) for h in hosts)
         return town_cells_within(tw, ago, self.memory(lid, tw)) >= 1
 
+    def may_take(self, lid, ago) -> bool:
+        """Arm S (D60 B "towns or chiefdoms of its own", D62 A; lane 208): whether a people may take up, share or keep a state tech
+        it did not invent: settled (settled()), or holding chiefdoms then (a chief and his kin to hold it, as the runes of Germanic
+        chiefdoms, Ogham's petty kingdoms and the Tuareg's confederations under an amenokal did, without towns:
+        docs/review/culture/techtree/writing_without_towns.md). Inventing one still needs a town (D62 A)."""
+        return "chiefdoms" in self.known[lid] or self.settled(lid, ago)
+
     def memory(self, lid, tw) -> float:
         """Living memory, kyr (round 3b): MEMORY_GENERATIONS of the people's generation, and at least its footprint's sampling step
         (a dip of one sample is below what the footprint resolves)."""
@@ -836,7 +846,7 @@ class Calendar:
         """Whether a line starting at `at` keeps a tech it inherits: it can hold the tool (PW-987), and a state tech only if settled
         (else it carries it: advance)."""
         t = self.techs[tid]
-        return self.held(lid, tid, at) and (tid not in self.state or self.settled(lid, at)) \
+        return self.held(lid, tid, at) and (tid not in self.state or self.may_take(lid, at)) \
             and (not t.get("sea") or self.sea[lid] or bool(t.get("traded")))  # (a land split of a sea people keeps no sea craft)
 
     def inherit(self, lid, src, tids, at):
@@ -865,7 +875,7 @@ class Calendar:
         if not self.state or tid in self.known[lid] or not (tid in self.state or any(n in cr for n in t.get("needs", []))
                                                              or any(n in cr for n in t.get("needs_any", []))):
             return False  # (no state tech in it: the gate is not what blocks it)
-        if self.settled(lid, ago):
+        if self.may_take(lid, ago):
             return False
         kn = self.known[lid]
         self.known[lid] = {**kn, **cr}

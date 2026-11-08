@@ -611,6 +611,17 @@ def test_arm_s_settled_over_living_memory_and_hosts():
     assert not c.settled("b", 6.0)  # (a people of its own with no places: not settled)
 
 
+def test_arm_s_a_chiefdom_takes_up_a_state_tech_but_does_not_invent_one():
+    """D60 B "towns or chiefdoms of its own", D62 A (lane 208, writing_without_towns.md): a people without a town that holds
+    chiefdoms may take up, share or keep a state tech (runes, Ogham, Tifinagh), but inventing one still needs a town of its own."""
+    ls = [line("a", at=9.0), line("b", at=9.0)]
+    c = TT.Calendar(ls, towns={"_cell_km2": 3000.0, "a": (np.array([9.0, 0.0]), np.array([2.0, 2.0]))}, arms="S")
+    assert c.may_take("a", 5.0) and not c.settled("b", 5.0) and not c.may_take("b", 5.0)
+    c.known["b"]["chiefdoms"] = [6.0, "test", None]
+    assert c.may_take("b", 5.0) and not c.settled("b", 5.0)
+    assert c.keeps("b", "writing", 5.0) == c.held("b", "writing", 5.0)  # (a chiefly split keeps what it inherits)
+
+
 def test_arm_s_carries_a_blocked_front_and_never_drops_knowledge():
     """Round 3b: a people without towns that writing's front crosses passes it on (z, settled, gets it through y) but does not hold
     it; without y's carrying z would never meet it. Once y founds a town it takes up what it carried."""
