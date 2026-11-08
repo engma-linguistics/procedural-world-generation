@@ -833,3 +833,31 @@ meanings, Pagel et al. 2007).
 **Proposal (Daniel's call, for-daniel.md).** Report the logistic read beside the window read now (`logistic_kyr`, done:
 informative only) and make it the check's value, or take the median window read over several pass seeds. Either way
 the target 6-10 kyr is far from the model on a robust reading; see the pass-2 numbers below.
+
+### Pass-2 runs (a24559, 10 workers, scratch output)
+
+p2 = pass 1 plus grammar A, KEEP_COIN, S218 and the harmony fix (KEEP_COMPENSATION still 1.08). p3 = p2 plus
+KEEP_COMPENSATION 1.0, AREAL_K x10, kinship steered by the culture, name taboos, avoidance registers, and grammar
+phase B merged in.
+
+| measure (living lects) | merged, seed 12 (m12) | p2 | p3 |
+|---|---|---|---|
+| horizon, window read (the check) | 17.63 | 11.4 | 4.46 |
+| horizon, logistic (all splits; bootstrap p10-p90) | 17.9 | 12.8 (10.8-16.0) | 13.7 (11.4-16.1); check's own fit 13.0 |
+| human core kept after 1 / 4 / 16 kyr | 0.872 / 0.687 / 0.339 | 0.840 / 0.615 / 0.206 | 0.825 / 0.599 / 0.209 |
+| fresh roots ("coin") / keep, share of replacement draws | 0.029 / 0.291 | 0.046 / 0.270 | 0.046 / 0.272 |
+| sisters strict (bar 0.5) | 0.642 | 0.560 | 0.576 |
+| overused segments | FAIL (ɤ 0.117; nʷ 0.08) | pass (nʷ 0.017, ɤ 0.010) | pass |
+| areal: typology agreement near - far, cross-family (bar 0.01) | -0.0009 (0.57 copies per line) | +0.0046 | **+0.0122 pass** (5.3 copies per line) |
+| WOLD rho / pronoun loans | 0.42 / 0.045 | 0.43 / - | 0.43 / 0.063 |
+| kin systems | hawaiian 138, iroquois 131, eskimo 99, sudanese 82, omaha 75, crow 48 | | hawaiian 159, iroquois 123, eskimo 86, omaha 81, sudanese 78, crow 46 |
+| colour stages | IV 132, VI 111, V 89, II 64, IIIb 62, IIIa 26, I 5, other 84 | | IV 139, V 83, VI 82, IIIb 69, II 54, IIIa 52, I 7, other 87 |
+| avoidance registers | - | - | 162 living lects, ~20 words each (paraphrase 52%, loan 48%) |
+
+Reading. The window read swings 17.6 / 11.4 / 4.5 over three passes whose logistic reads are 17.9 / 12.8 / 13.7: the
+check's verdict on this measure is noise until it is read robustly (decision 7 in for-daniel.md). On the logistic
+reading KEEP_COIN brought the human horizon from ~17.5 to ~13 kyr, still above 6-10. Per-lineage retention after 1
+kyr fell to 0.825 in p3 (target 0.86): the name taboos add +20-30% hazard in the cultures that hold them, on purpose;
+KEEP_COMPENSATION could go to ~0.95 if the untabooed lects should sit at 0.86 exactly. Colour stages and kin shares
+look plausible against the WCS and Murdock shares, so COLOUR_SPLIT and KIN_CHANGE were left. The areal signal appears at
+AREAL_K 0.015 (5.3 copies of a feature per line over 20 kyr; drift is ~1e-3 per feature per generation).

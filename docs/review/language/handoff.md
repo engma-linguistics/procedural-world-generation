@@ -272,3 +272,27 @@ Left for the next grammar lane, in this order:
 3. Taboo and avoidance vocabulary from `runs/<id>/taboos.json` (dead_soundalike, ruler_name, inlaw_words, motherinlaw): a raised replacement hazard and an avoidance word list (lexicon-gaps rec. 6, contact-gaps rec. 7).
 4. Faiths (`gods.json`): a liturgical lect frozen at the founding, learned loans for GOD, SPIRIT, PRIEST, TEMPLE and god names (contact-gaps rec. 5). Polities need a polities doc in the run first (a24559 has none).
 5. Segment borrowing at high intensity (contact-gaps 3d) for an inventory areal signal.
+
+## Continuation (lexicon & contact lane, pass 2, 2026-11-08)
+
+**State.** Branch `lang-lexcon`, with lang-design (grammar A and B, names, finish) merged in. Nothing is pushed. The
+not-slow suite passed (1734) on the merged tree. Numbers are in calibration.md "Lexicon & contact lane, pass 2" (the
+horizon diagnosis and the p2/p3 runs); decisions 7-12 and the sound-lane edits are in for-daniel.md "Pass 2". The last
+scratch pass (p3) is at `scratchpad/lexcon/p3/a24559/` (session scratchpad; delete it when done). Measurement scripts
+are in `scratchpad/lexcon/`:
+- `hnoise.py`: horizon read noise, bootstrap and logistic fit;
+- `retain.py`: in-pass core retention by age;
+- `tail2.py`: deep-pair shared roots;
+- `gainers.py`: which rules produce a segment;
+- `harness.py`: isolated-lineage retention and source mix;
+- `meas.py`: pass 1's measures.
+
+**New in the document:** horizon groups carry `logistic_kyr` and the check row carries `human_logistic`. Lects'
+`systems` may hold `avoidance` {concept: [ipa, how, note]}.
+
+**Next steps.**
+1. Daniel's decision 7 (how to read the horizon). If he picks the logistic fit, switch `checks.horizon` to `human_logistic`. It reads ~13 kyr against the 6-10 target. The remaining lever is the per-lineage tail: 21% of the core survives 16 kyr, where a constant rate keeps 9%. Look at FREQ_SPREAD and the keep share of class-3 words.
+2. Per-lineage retention after 1 kyr is 0.825 in p3, below the 0.86 target. The name taboos are part of it; consider KEEP_COMPENSATION ~0.95.
+3. Faiths: a liturgical lect frozen at the founding, learned loans for GOD/SPIRIT/PRIEST/TEMPLE, and god names (gods.json; contact-gaps rec. 5).
+4. Segment borrowing at high intensity (contact-gaps 3d): the inventory areal signal is still ~0 (-0.003).
+5. The sentence lane's numeral note could use the lect's own ELEVEN/THIRTY words.
