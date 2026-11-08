@@ -1,15 +1,19 @@
 ---
-title: "Founding cultures are named 'first halflings of ...', so faith names read 'the sea faith of first halflings of ...'"
+id: PW-1536
+title: Founding cultures are named 'first halflings of ...', so faith names read 'the sea faith of first halflings of ...'
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: culture
 effort: xs
 impact: low
 found_by: lang-design (grammar D lane, faiths pass 3, 2026-11-08)
 blocked_by: []
 relates: [PW-1249, PW-1436]
-refs: [planet/lineages/cultures.py::document, tools/language/sketch.py::faith_label, docs/review/language/for-daniel.md, "run a24559"]
+refs: ["planet/lineages/cultures.py::document", "tools/language/sketch.py::faith_label", docs/review/language/for-daniel.md, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -27,3 +31,6 @@ rule (rebuild cultures, or patch the readers).
 - [ ] founding cultures read "the first tortles of ..." (or "the earliest ...") at the source, faith names follow
 - [ ] `sketch.faith_label` patch removed
 - [ ] fold into PW-1249 (gloss names) if that lands first
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-culture-founding-name-wording.md (found by lang-design (grammar D lane, faiths pass 3, 2026-11-08)).

@@ -1,15 +1,19 @@
 ---
+id: PW-1548
 title: "Language pages: remaining slips after the polish lane (loan family shown as native, 'then' forms unmarked, gods without names, one-vowel god names, odd recipes)"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-design (polish lane, faiths pass 3, grammar D, finish lane, 2026-11-08)
 blocked_by: []
 relates: [PW-986]
-refs: [docs/review/language/for-daniel.md, docs/review/language/demo-read-4.md, tools/language/demo_page.py, tools/language/sketch.py, planet/language/sentences.py, planet/language/faiths.py::Plan, planet/language/faiths.py::coin_name, planet/language/texts.py, planet/language/inventory.py, "run a24559"]
+refs: [docs/review/language/for-daniel.md, docs/review/language/demo-read-4.md, tools/language/demo_page.py, tools/language/sketch.py, planet/language/sentences.py, "planet/language/faiths.py::Plan", "planet/language/faiths.py::coin_name", planet/language/texts.py, planet/language/inventory.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -38,3 +42,6 @@ bugs (a god with no name, a word family labelled native that is a loan). Numbers
 - [ ] many sister lects replace a god's name with the same kind of epithet ('the lord' in four languages)
 - [ ] recipes on a people's first crop whatever it is ("How to cook cane ... grind it with a stone")
 - [ ] Hawaiian-type kin: cousins called by the BROTHER word only (no sex split of cousins)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-page-slips.md (found by lang-design (polish lane, faiths pass 3, grammar D, finish lane, 2026-11-08)).

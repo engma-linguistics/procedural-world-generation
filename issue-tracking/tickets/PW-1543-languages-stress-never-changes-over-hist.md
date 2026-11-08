@@ -1,4 +1,5 @@
 ---
+id: PW-1543
 title: "Languages: stress never changes over history and is never stored per word; sound changes never spread word by word"
 type: task
 status: todo
@@ -9,8 +10,10 @@ effort: m
 impact: med
 found_by: lang-sound (sound lane pass 3)
 blocked_by: []
-relates: []
-refs: [planet/language/rules.py::stressed_vowel, planet/language/rules.py::weight_stress, planet/language/inventory.py::STRESS, planet/language/inventory.py::stress_marked, planet/language/lect.py::Lect.step, planet/language/lexicon.py, planet/language/history.py, tools/language/sketch.py, planet/server.py, docs/review/language/calibration.md#sound-lane-pass-3-2026-11-08-evening-coda-drift-and-tone-shares, docs/review/language/soundchange-gaps.md, docs/review/language/phonology-gaps.md, "Hayes 1995 Metrical Stress Theory", "Wang 1969 lexical diffusion"]
+relates: [PW-982]
+refs: ["planet/language/rules.py::stressed_vowel", "planet/language/rules.py::weight_stress", "planet/language/inventory.py::STRESS", "planet/language/inventory.py::stress_marked", "planet/language/lect.py::Lect.step", planet/language/lexicon.py, planet/language/history.py, tools/language/sketch.py, planet/server.py, "docs/review/language/calibration.md#sound-lane-pass-3-2026-11-08-evening-coda-drift-and-tone-shares", docs/review/language/soundchange-gaps.md, docs/review/language/phonology-gaps.md, "Hayes 1995 Metrical Stress Theory", "Wang 1969 lexical diffusion"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Work:
   file), used by rules.apply through the stress_index callable it already accepts, by stress_marked and by speech;
 - [ ] lexical diffusion: a change marked diffusing reaches a share of its words per step, frequent words first for
   reductions and lenitions, last for analogical levelling (Phillips 1984), finishing or stalling (residue).
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-lexical-stress-and-diffusion.md (found by lang-sound (sound lane pass 3)).

@@ -1,15 +1,19 @@
 ---
-title: "River names, old personal names and peak names should age through each language's own sound changes, as god names already do"
+id: PW-1547
+title: River names, old personal names and peak names should age through each language's own sound changes, as god names already do
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: med
 found_by: lang-design (names & spelling lane, faiths & contact pass 3, 2026-11-08)
 blocked_by: []
 relates: [PW-972, PW-1436]
-refs: [docs/review/language/names-spelling-gaps.md, docs/review/language/architecture.md, docs/review/language/for-daniel.md, planet/language/names.py, planet/language/personal.py, planet/language/faiths.py::coin_name, planet/language/lexicon.py, planet/language/history.py, "run a24559"]
+refs: [docs/review/language/names-spelling-gaps.md, docs/review/language/architecture.md, docs/review/language/for-daniel.md, planet/language/names.py, planet/language/personal.py, "planet/language/faiths.py::coin_name", planet/language/lexicon.py, planet/language/history.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -35,3 +39,6 @@ the workbench is missing.
 - [ ] peak names with a substrate path and tautologies ('Pendle Hill')
 - [ ] the workbench shows a name's history (coined as X 'meaning' at t, now Y)
 - [ ] sister lects show cognate names in regularly different shapes (spot-check two families)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-names-through-sound-history.md (found by lang-design (names & spelling lane, faiths & contact pass 3, 2026-11-08)).

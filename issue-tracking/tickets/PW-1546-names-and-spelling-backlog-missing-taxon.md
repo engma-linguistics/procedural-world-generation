@@ -1,4 +1,5 @@
 ---
+id: PW-1546
 title: "Names and spelling backlog: missing taxonomy patterns (X9, P1, P3, P5-P7), spelling traditions per family, name length by tradition, landmass and dish names"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-design (names & spelling lane, 2026-11-08)
 blocked_by: []
 relates: [PW-972, PW-1436, PW-984]
 refs: [docs/review/language/names-spelling-gaps.md, docs/review/language/architecture.md, docs/review/language/for-daniel.md, planet/language/names.py, planet/language/personal.py, planet/language/romanize.py, planet/language/data/romanization.tsv, planet/names.py]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Open items from names-spelling-gaps.md §7 (numbers are its ranks):
 - [ ] 19: scholars' names with more bases (type site, *Bantu*-type, *Indo-European*-type, *Proto-*)
 - [ ] 20: dish and food names (eponyms, toponyms, exonyms for foreign dishes along food routes; PW-692)
 - [ ] bilabial click ʘ still spelled `px`; a Bantu c q x click option
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-names-backlog.md (found by lang-design (names & spelling lane, 2026-11-08)).

@@ -1,4 +1,5 @@
 ---
+id: PW-1554
 title: "Words and contact backlog: pidgins, creoles and mixed languages, lingua francas, diglossia, dialect continua, per-language derivation, ideophones, frames of reference"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-design (lexicon and contact coverage reviews, lexicon & contact l
 blocked_by: []
 relates: [PW-982, PW-984, PW-1498]
 refs: [docs/review/language/contact-gaps.md, docs/review/language/lexicon-gaps.md, docs/review/language/grammar-gaps.md, docs/review/language/handoff.md, planet/language/history.py, planet/language/lexicon.py, planet/language/lexsys.py, planet/language/inputs.py, planet/language/grammar.py, planet/lineages/crossing.py]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -49,3 +52,6 @@ From lexicon-gaps.md §6:
 From grammar-gaps / grammar lanes:
 - [ ] concord with separate agreement forms (Swahili a- vs m-), not only copies of the noun marker
 - [ ] head-marked (verb-marked, Mayan-type) ergativity; clusive agreement beyond 1PL.INCL
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-words-contact-backlog.md (found by lang-design (lexicon and contact coverage reviews, lexicon & contact lanes, 2026-11-07/08)).

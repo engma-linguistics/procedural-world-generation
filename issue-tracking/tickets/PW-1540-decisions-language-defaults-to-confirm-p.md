@@ -1,15 +1,19 @@
 ---
+id: PW-1540
 title: "Decisions: language defaults to confirm, part 2 of 3: words, contact, faiths and names"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-design (core, lexicon & contact, faiths, names, polish lanes, 2026-11-07/08)
 blocked_by: []
 relates: [PW-982, PW-984, PW-1308]
-refs: [docs/review/language/for-daniel.md, docs/review/language/calibration.md, docs/review/language/lexicon-gaps.md, docs/review/language/contact-gaps.md, docs/review/language/names-spelling-gaps.md, planet/language/lexicon.py, planet/language/lexicon.py::core_repair, planet/language/lexsys.py, planet/language/history.py, planet/language/inputs.py, planet/language/faiths.py, planet/language/faiths.py::Plan, planet/language/names.py, planet/language/personal.py, "run a24559"]
+refs: [docs/review/language/for-daniel.md, docs/review/language/calibration.md, docs/review/language/lexicon-gaps.md, docs/review/language/contact-gaps.md, docs/review/language/names-spelling-gaps.md, planet/language/lexicon.py, "planet/language/lexicon.py::core_repair", planet/language/lexsys.py, planet/language/history.py, planet/language/inputs.py, planet/language/faiths.py, "planet/language/faiths.py::Plan", planet/language/names.py, planet/language/personal.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -69,3 +73,6 @@ Pass 2, Faiths & contact pass 3, Names & spelling lane, Polish lane).
 
 - [ ] Daniel answers A-F
 - [ ] Daniel confirms or changes the table rows (silence = keep)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-defaults-words-contact-faiths.md (found by lang-design (core, lexicon & contact, faiths, names, polish lanes, 2026-11-07/08)).

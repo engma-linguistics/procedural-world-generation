@@ -1,8 +1,10 @@
 ---
+id: PW-1555
 title: "The language pass takes 21-34 minutes on a24559: speed up rule application in the workers before it joins every peoples run (file size done)"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-design
 blocked_by: []
 relates: [PW-986, PW-1423]
 refs: [planet/language/output.py, planet/language/history.py, planet/language/percepts.py, planet/language/profiles.py, planet/language/rules.py, viewer/langview.js]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -53,3 +57,6 @@ speed work since the finish lane. Next lever (finish lane handoff): the worker s
 memo dict and `dataclasses.replace`; each interval forks a fresh Pool (a persistent pool saves only the fork). Profile
 one worker with cProfile first. If never done, any peoples run that includes languages costs an extra half hour.
 - [ ] pass under 5 minutes with 12 workers on a24559 (now ~21-34 min wall: worker-side rule application is next)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-languages-json-size-and-cost.md (found by lang-design).

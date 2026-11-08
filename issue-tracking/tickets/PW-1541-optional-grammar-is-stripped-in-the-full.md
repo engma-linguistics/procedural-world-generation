@@ -1,8 +1,10 @@
 ---
+id: PW-1541
 title: "Optional grammar is stripped in the full run: 3-way demonstratives and graded pasts at half the harness rate, questions by intonation alone 36% vs ~14%, core grams lost with no renewal"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-design (grammar C and D lanes, finish lane, 2026-11-08)
 blocked_by: []
 relates: [PW-985, PW-982]
 refs: [docs/review/language/for-daniel.md, docs/review/language/grammar-gaps.md, docs/review/language/calibration.md, planet/language/grammar.py, planet/language/inputs.py, planet/language/sentences.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -44,3 +48,6 @@ cycle) rather than lose it.
   (lever: L2 stripping of *wanted* grams, not of all free words)
 - [ ] an antipassive source that can be cited, or accept ~0% in writing
 - [ ] synthesis 0-1 bin under ~25% (if lang-synth did not reach it)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-grammar-shares-full-pass.md (found by lang-design (grammar C and D lanes, finish lane, 2026-11-08)).

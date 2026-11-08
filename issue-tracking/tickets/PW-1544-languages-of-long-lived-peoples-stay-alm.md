@@ -1,15 +1,19 @@
 ---
-title: "Languages of long-lived peoples stay almost all isolating (93% with 0-1 bound verb categories)"
+id: PW-1544
+title: Languages of long-lived peoples stay almost all isolating (93% with 0-1 bound verb categories)
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-synth (synthesis lane, 2026-11-08)
 blocked_by: []
 relates: []
-refs: [planet/language/grammar.py::step, planet/language/lect.py, docs/review/language/calibration.md, "run a24559"]
+refs: ["planet/language/grammar.py::step", planet/language/lect.py, docs/review/language/calibration.md, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -36,3 +40,6 @@ generation. (b) is the cheapest and keeps the per-generation clock. Your call.
 
 - [ ] decide (a), (b) or (c)
 - [ ] if (b) or (c): re-measure the WALS 22A bins by generation class (`scratchpad synth/fullan.py`)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-long-lived-isolating.md (found by lang-synth (synthesis lane, 2026-11-08)).

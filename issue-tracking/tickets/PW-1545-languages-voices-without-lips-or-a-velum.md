@@ -1,4 +1,5 @@
 ---
+id: PW-1545
 title: "Languages: voices without lips or a velum lose the sound changes that would undo their dear substitutes (exits barred by the needs filter)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-dark (dark l and y lane)
 blocked_by: []
 relates: []
-refs: [planet/language/rules.py::catalogue, planet/language/rules.py::cost_factor, planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, docs/review/language/calibration.md#dark-l-and-y-2026-11-08-lang-dark]
+refs: ["planet/language/rules.py::catalogue", "planet/language/rules.py::cost_factor", planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, "docs/review/language/calibration.md#dark-l-and-y-2026-11-08-lang-dark"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -33,3 +36,6 @@ show up as another overuse failure.
 - [ ] decide the rule: a row's needs should count only what its *output* requires (a change that removes a gesture needs
   nothing for it), or keep per-row needs and audit the exits above by hand
 - [ ] apply, re-run the species harness (scratchpad dark/sph.py: isolated protos per voice) and one full pass
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-missing-articulator-exits.md (found by lang-dark (dark l and y lane)).

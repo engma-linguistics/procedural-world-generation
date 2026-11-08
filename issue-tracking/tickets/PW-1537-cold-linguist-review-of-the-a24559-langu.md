@@ -1,8 +1,10 @@
 ---
+id: PW-1537
 title: "Cold linguist review of the a24559 languages demo and sketches: findings to fix (worn-down markers, impossible sounds, sound-less words, the fable, templated texts)"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: l
 impact: high
@@ -10,6 +12,8 @@ found_by: lang-design cold review (fresh agent, no lane history, 2026-11-08)
 blocked_by: []
 relates: [PW-986]
 refs: [docs/review/language/sketches/, docs/review/language/sketches/index.md, docs/review/language/sketches/d551-elf.md, docs/review/language/sketches/d292-aarakocra.md, docs/review/language/sketches/d48-blue-dragon.md, docs/review/language/sketches/d704.2-halfling.md, docs/review/language/sketches/d261-silver-dragon.md, docs/review/language/sketches/d760-hobgoblin.md, tools/language/demo_page.py, tools/language/sketch.py, planet/language/sentences.py, planet/language/grammar.py, planet/language/rules.py, planet/language/inventory.py, planet/language/lexicon.py, planet/language/romanize.py, planet/language/texts.py, planet/language/faiths.py, docs/review/language/queue.md, docs/review/language/grammar-gaps.md, "run a24559", "demo build: lang-design scratchpad final/languages-demo-stripped.html"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -196,3 +200,6 @@ All other checks pass except the scholars' horizon (accepted).
 - [ ] numeral composition notes only where the parts are visible; arithmetic labels right
 - [x] offensive-substring check passes on all book spellings in the demo
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-cold-review.md (found by lang-design cold review (fresh agent, no lane history, 2026-11-08)).

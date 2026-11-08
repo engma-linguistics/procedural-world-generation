@@ -1,4 +1,5 @@
 ---
+id: PW-1553
 title: "Sounds and sound-change backlog: richer allophony, geminates, vowel re-dispersion, bigger clusters, long-distance rules, a reconstruction step, phrase sandhi"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-design (phonology and sound-change coverage reviews, sound lanes,
 blocked_by: []
 relates: [PW-982, PW-1423, PW-983]
 refs: [docs/review/language/phonology-gaps.md, docs/review/language/soundchange-gaps.md, docs/review/language/audio.md, docs/review/language/for-daniel.md, planet/language/inventory.py, planet/language/rules.py, planet/language/lect.py, planet/language/phonology.py, planet/language/speak.py, tools/language/sketch.py]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -44,3 +47,6 @@ From soundchange-gaps.md §6:
 - [ ] 15 syllabic consonants (ṛ > ri/ru)
 - [ ] the unmerged helper branch `worktree-agent-a394b320cf12664f2` (an alternative take on SC items 1-4 and a draft on
   catalogue saturation): read once for anything worth keeping, then delete the branch
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-sound-backlog.md (found by lang-design (phonology and sound-change coverage reviews, sound lanes, 2026-11-07/08)).

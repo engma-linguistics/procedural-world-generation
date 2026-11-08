@@ -1,4 +1,5 @@
 ---
+id: PW-1551
 title: "Languages: sound-change naturalness weights barely set how often a change fires (the draw renormalises over the changes that apply)"
 type: task
 status: needs-decision
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-sound (sound lane pass 3)
 blocked_by: []
 relates: []
-refs: [planet/language/rules.py::pick_rule, planet/language/rules.py::PICK_REDRAWS, planet/language/lect.py::Lect.step, planet/language/lect.py::Lect.line_pref, planet/language/lect.py::REFIRE_KYR, planet/language/history.py::RATE_SCALE, planet/language/data/sound_changes.tsv, docs/review/language/calibration.md#sound-lane-pass-3-2026-11-08-evening-coda-drift-and-tone-shares, "scratchpad sound3/codah.py (isolated-lect harness)"]
+refs: ["planet/language/rules.py::pick_rule", "planet/language/rules.py::PICK_REDRAWS", "planet/language/lect.py::Lect.step", "planet/language/lect.py::Lect.line_pref", "planet/language/lect.py::REFIRE_KYR", "planet/language/history.py::RATE_SCALE", planet/language/data/sound_changes.tsv, "docs/review/language/calibration.md#sound-lane-pass-3-2026-11-08-evening-coda-drift-and-tone-shares", "scratchpad sound3/codah.py (isolated-lect harness)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
   which works inside saturation. Smaller change, but a new mechanism on top of line drift.
 - C. Leave it; keep adding one-off ids and caps where a row misbehaves.
 Lean: A, as its own lane with a full pass, since it removes caps rather than adding them.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-rule-weights-saturate.md (found by lang-sound (sound lane pass 3)).

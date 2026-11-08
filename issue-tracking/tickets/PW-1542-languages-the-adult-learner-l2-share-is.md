@@ -1,15 +1,19 @@
 ---
+id: PW-1542
 title: "Languages: the adult-learner (L2) share is a co-presence proxy; a third of living lects sit at its 0.7 ceiling"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: med
 found_by: lang-synth (synthesis lane, 2026-11-08)
 blocked_by: []
 relates: [PW-985]
-refs: [planet/language/inputs.py::l2_share, planet/language/grammar.py::social_factors, docs/review/language/calibration.md, "run a24559"]
+refs: ["planet/language/inputs.py::l2_share", "planet/language/grammar.py::social_factors", docs/review/language/calibration.md, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -36,3 +40,6 @@ synthesis bins and the hubs check re-measured (`scratchpad synth/fullan.py`).
 
 - [ ] decide the shape of the L2 proxy
 - [ ] re-measure WALS 22A bins and hub/isolated complexity after the change
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-l2-proxy-ceiling.md (found by lang-synth (synthesis lane, 2026-11-08)).

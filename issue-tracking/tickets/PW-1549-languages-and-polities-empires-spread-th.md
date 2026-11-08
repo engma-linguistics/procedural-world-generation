@@ -1,15 +1,19 @@
 ---
+id: PW-1549
 title: "Languages and polities: empires spread their language and loanwords, states and confederations get names, rank drives polite speech"
 type: story
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: l
 impact: high
 found_by: lang-design (lexicon & contact, names, grammar D lanes, 2026-11-08)
 blocked_by: []
 relates: [PW-1434, PW-1436, PW-756, PW-972]
-refs: [docs/review/language/contact-gaps.md, docs/review/language/names-spelling-gaps.md, docs/review/language/for-daniel.md, docs/review/language/architecture.md, planet/server.py::polities_doc, planet/lineages/polities.py, planet/language/history.py, planet/language/inputs.py, planet/language/names.py, planet/language/grammar.py, "run a24559"]
+refs: [docs/review/language/contact-gaps.md, docs/review/language/names-spelling-gaps.md, docs/review/language/for-daniel.md, docs/review/language/architecture.md, "planet/server.py::polities_doc", planet/lineages/polities.py, planet/language/history.py, planet/language/inputs.py, planet/language/names.py, planet/language/grammar.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -35,3 +39,6 @@ not a file in the run. a24559 predates polities. Politeness: `grammar.POLITE_MAK
 - [ ] horizon and sisters checks re-read (an empire's levelling moves both)
 
 Needs a run with polities and languages both (a24559 is too old: re-run or pick a newer D&D run).
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-polities.md (found by lang-design (lexicon & contact, names, grammar D lanes, 2026-11-08)).

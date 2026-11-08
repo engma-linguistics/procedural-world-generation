@@ -1,15 +1,19 @@
 ---
+id: PW-1552
 title: "Language lane rulings: sisters vs horizon (one rate, two checks), per-generation exponent for short-lived peoples, felt vs etymological word families"
 type: task
 status: done
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-design (rounds of 2026-11-04)
 blocked_by: []
 relates: [PW-986, PW-982, PW-1423]
-refs: [planet/language/history.py::RATE_SCALE, planet/language/lect.py::resolve_hiatus, planet/language/families.py::horizon_read, planet/language/checks.py, planet/language/lexicon.py::felt_roots, planet/language/lexicon.py::refresh_roots, planet/language/output.py::EtymTable.note_roots, tools/language/sketch.py, docs/review/language/calibration.md, docs/review/language/demo.md, "scratchpad hiatusI/sis.py (two-sister harness)", "scratchpad compJ/family.py", "run a24559 (runs/a24559/languages.json)"]
+refs: ["planet/language/history.py::RATE_SCALE", "planet/language/lect.py::resolve_hiatus", "planet/language/families.py::horizon_read", planet/language/checks.py, "planet/language/lexicon.py::felt_roots", "planet/language/lexicon.py::refresh_roots", "planet/language/output.py::EtymTable.note_roots", tools/language/sketch.py, docs/review/language/calibration.md, docs/review/language/demo.md, "scratchpad hiatusI/sis.py (two-sister harness)", "scratchpad compJ/family.py", "run a24559 (runs/a24559/languages.json)"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -68,3 +72,6 @@ audio in the UI (utterances, not only single words).
 
 All three rulings are carried out; this draft is a record. Intake can file it as done or reject it as recorded in
 `docs/review/language/for-daniel.md` and calibration.md.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-rulings-rates-roots.md (found by lang-design (rounds of 2026-11-04)).

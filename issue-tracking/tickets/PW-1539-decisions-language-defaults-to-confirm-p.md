@@ -1,15 +1,19 @@
 ---
+id: PW-1539
 title: "Decisions: language defaults to confirm, part 1 of 3: sounds, sound change and spelling"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-design (finish, sound, names lanes, 2026-11-07/08)
 blocked_by: []
 relates: [PW-982, PW-1423]
-refs: [docs/review/language/for-daniel.md, docs/review/language/calibration.md, docs/review/language/phonology-gaps.md, docs/review/language/soundchange-gaps.md, docs/review/language/names-spelling-gaps.md, planet/language/phonology.py, planet/language/rules.py::_produce, planet/language/rules.py, planet/language/lect.py, planet/language/inventory.py, planet/language/history.py, planet/language/romanize.py, planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, planet/language/data/phoible_series.tsv, tools/language/knowledge_tables.py, "run a24559"]
+refs: [docs/review/language/for-daniel.md, docs/review/language/calibration.md, docs/review/language/phonology-gaps.md, docs/review/language/soundchange-gaps.md, docs/review/language/names-spelling-gaps.md, planet/language/phonology.py, "planet/language/rules.py::_produce", planet/language/rules.py, planet/language/lect.py, planet/language/inventory.py, planet/language/history.py, planet/language/romanize.py, planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, planet/language/data/phoible_series.tsv, tools/language/knowledge_tables.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -67,3 +71,6 @@ Numbers are from full scratch passes of run a24559 (the fantasy D&D run) on 11-0
 
 - [ ] Daniel answers A-E
 - [ ] Daniel confirms or changes the table rows (silence = keep)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-defaults-sounds-spelling.md (found by lang-design (finish, sound, names lanes, 2026-11-07/08)).

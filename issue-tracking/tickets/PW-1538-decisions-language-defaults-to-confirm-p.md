@@ -1,15 +1,19 @@
 ---
+id: PW-1538
 title: "Decisions: language defaults to confirm, part 3 of 3: grammar, species leanings and the pages"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lang-design (grammar A-D, finish, polish lanes, 2026-11-07/08)
 blocked_by: []
 relates: [PW-982, PW-985]
-refs: [docs/review/language/for-daniel.md, docs/review/language/grammar-gaps.md, docs/review/language/architecture.md, planet/language/grammar.py, planet/language/grammar.py::polite_contrast, planet/language/sentences.py::default_class, planet/language/sentences.py, planet/language/texts.py, tools/language/demo_page.py, "run a24559"]
+refs: [docs/review/language/for-daniel.md, docs/review/language/grammar-gaps.md, docs/review/language/architecture.md, planet/language/grammar.py, "planet/language/grammar.py::polite_contrast", "planet/language/sentences.py::default_class", planet/language/sentences.py, planet/language/texts.py, tools/language/demo_page.py, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -67,3 +71,6 @@ the grammar-shares draft for a follow-up if it does not settle.
 
 - [ ] Daniel answers A-F
 - [ ] Daniel confirms or changes the table rows (silence = keep)
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-defaults-grammar-pages.md (found by lang-design (grammar A-D, finish, polish lanes, 2026-11-07/08)).
