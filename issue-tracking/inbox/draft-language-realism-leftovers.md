@@ -23,14 +23,15 @@ new and tooth are all ṭii-. The compounds and shifts round widened the renewal
 coinage down; coinage is still 10.6% of replacements (design weight 3%). Fix: count renewals against AFFIX_CAP, limit
 renewal to the classes where it is attested (body parts, small animals, kin), and find a non-coinage fallback (draft
 item "function words" below is one). Measured by `scratchpad/demo_meas/` (s4a.py, s8d.py).
-- [ ] 'X + little' renewals under ~3% of words; no lect with over 8% of words sharing one affix
+- [x] 'X + little' renewals under ~3% of words; no lect with over 8% of words sharing one affix (round 5 core lane: 1.7%,
+  0 lects; coinage 10.6% -> 2.9% of replacements; calibration.md "Round 5, core lane")
 
-**Same-word shifts.** 33.5% of shifted words are identical to their source concept's word in the same lect, so
+**Same-word shifts (done, round 5: contrast sets; brother = sister 0.18 -> 0.01, I = we 0.13 -> 0.03).** 33.5% of shifted words are identical to their source concept's word in the same lect, so
 brother = sister in 114 of 627 lects, I = we in 84, father = husband in 29. Real shifts mostly replace the old meaning's
 word rather than leave both on one form. Fix: a shift either vacates the source concept (which then renews) or is
 skipped for pairs that languages keep apart (kin gender pairs, pronoun persons).
 
-**Tone re-phonemicised.** "tone became phonemic" fires two or more times on 221 of 627 living lines, and on 137 lines
+**Tone re-phonemicised (done, round 5: 221 lines -> 0).** "tone became phonemic" fires two or more times on 221 of 627 living lines, and on 137 lines
 whose proto was already tonal. Fix: the tonogenesis rule needs "no tones yet" as a condition.
 
 **Sounds.** Over all 627 living lects (not just the human-voiced ones the check reads): ɹ 0.51 (PHOIBLE 0.017), ɫ 0.20
@@ -41,7 +42,12 @@ sounds are ʁ 0.38 (PHOIBLE 0.04), ɹ 0.28 (0.03) and ɦ 0.27 (0.03). They come 
 which have no exits in the catalogue. ɡ 0.31 (0.56) and d 0.30 (0.48) are rare. If this is never done, phonology
 tables read as oddly uvular and breathy. Fix: condition those rows or add attested exits (calibration.md "Sinks round"
 has the inflow/outflow audit method).
-- [ ] p within 0.15 of PHOIBLE; ʁ, ɹ, ɦ each within ~3x PHOIBLE
+- [x] ʁ, ɹ, ɦ each within ~3x PHOIBLE for humans (round 5: all lects ɹ 0.05, ʁ 0.19 (humans 0.10), ɦ 0.01, ʐ 0.01; new
+  all-lect check "overused segments")
+- [ ] p within 0.15 of PHOIBLE (all lects 0.60, humans 0.71, PHOIBLE 0.85)
+- [ ] all-lect check passes: still over are ɒ 0.20 (humans 18%, PHOIBLE 1.7%, source not traced), ɖ 0.27, ɫ 0.11 and
+  y 0.18 (kobold, dragonborn, kenku, aarakocra: do their profiles mean to favour them? if so mark it in make_cost), and
+  the two-voiced vowel u‼ 0.12, which `species_cost(HUMAN, ...)` does not class as non-human
 
 **Non-human variants.** Each species' growled, purred or two-voiced variants get a per-candidate share over its 30
 commonest sounds. So 54% of avian, 78% of reptilian and 82% of tortle proto-inventories contain a growled sound,
@@ -55,3 +61,10 @@ grammaticalize content words instead ('belly' > 'in', 'say' > 'because'). The pa
 origin" everywhere. Fix: let a function word's replacement draw from the content > function paths in
 grammaticalization_paths.tsv (shared with grammar.py) before coining.
 - [ ] function-word coinage share near the content-word share
+
+**Homophones after the vocabulary round (judgement call for Daniel).** With 712 words per lect (was 376) the median
+homophone share is 0.22 (was 0.125): nearly all CLICS-attested polysemy (NOW / TODAY, POT / BOWL, LOW / SHALLOW), the
+core 100 at 0.12, accidental homophones under 1%. The lexicon test bar moved 0.16 -> 0.20 mean. If the pages read as too
+polysemous, lower shift's draw weight for the WOLD meanings or have a shift vacate its source more often.
+- [ ] Daniel: is ~22% polysemy on a 700-meaning list acceptable?
+

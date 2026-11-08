@@ -62,4 +62,6 @@ languages.json size and pass speed; larger vocabulary, more grammar per language
 audio in the UI (utterances, not only single words).
 
 - [x] rulings recorded
-- [ ] generation softening, `etym_roots`, and the pages updated to match
+- [x] generation softening and `etym_roots` in the pass (round 5 core lane, commit eec089ac; per-word `etym_roots`
+  beside `roots` in lexicon entries, the doc `roots` table covers both)
+- [ ] the pages show both families (round 5 surface lane)

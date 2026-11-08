@@ -189,3 +189,27 @@ tests after it.
 
 **Open threads.** Small-inventory word length is about 2.5 syllables at under 300 syllables (Daniel asked for long words
 there); kenku tonal share varies 67-89% run to run; the scholars' "languages" can span true families through loans.
+
+## Continuation (round 5 core lane, 2026-11-07 night)
+
+**State.** Branch `lang-core` (worktree `.claude/worktrees/lang-core`, from `lang-design` at 8affd567), nothing merged or
+pushed. Tasks 1-4 of the round are committed; task 5 (file size and pass speed) is not started. Numbers per task are in
+calibration.md "Round 5, core lane"; the not-slow suite passed after task 4 (1549 passed). The last full run (task 4,
+scratch output, not in `runs/`) is 236 MB and 1284 s; determinism was not re-checked this round.
+
+**Schema change for the surface lane.** Lexicon entries carry `etym_roots` (list of root ids, same shape as `roots`; the
+historian's roots, set when the word is made); the doc-level `roots` table covers ids from both. Lexicons now hold ~712
+concepts (WOLD meanings, `lists=WOLD1460` in concepts.tsv). New check row "overused segments (all living lects)".
+New allophone test name "coda". Nothing else in the file changed shape.
+
+**Next steps.**
+1. Task 5, as planned in `issue-tracking/inbox/draft-languages-json-size-and-cost.md`: profile one worker first, then
+   the shared tables, sidecars and one expander per side (Python and viewer/langcore.js), `etym_roots` only where it
+   differs, format procgen-languages/2 in architecture.md §11; two runs identical apart from `timing`.
+2. `draft-language-realism-leftovers.md`: ɒ in 18% of human lects (untraced), ɫ / y in reptilian and avian lects (profile
+   intent), the u‼ vowel in the overuse check, p rare (0.60 of all lects), growl share, function-word coinage, and
+   Daniel's call on ~22% polysemy.
+
+**Measuring.** The lane's scratch scripts (`meas.py`, `runsnap.sh`) were in the session scratchpad and are gone with it;
+`meas.py` read a languages.json and reported same-form pairs, tone re-firings, renewal and affix shares, replacement
+shares, segment shares over all and human-voiced lects, checks, timing and bytes per key. Rewrite as needed.

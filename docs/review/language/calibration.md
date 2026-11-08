@@ -658,3 +658,55 @@ Final `runs/a24559/languages.json` (two runs identical apart from timing): siste
 rules per kyr human 15.2, long-lived 4.1; living consonants p5-p95 11/17/21/24/37, vowels 5/7/9/12/16; tonal 38% (kenku
 67%, aarakocra 80%, human 40%); clicks 2.1%; words with a 3+ vowel run 1.7%; median homophone share 0.125; replacements
 derive 0.22, renew 0.20, borrow 0.19, compound 0.15, shift 0.13, coin 0.11.
+
+## Round 5, core lane (2026-11-07)
+
+Baseline: the shipped `runs/a24559/languages.json` (same world, identical to the round-start code apart from timing).
+Each later column adds one task; runs on a snapshot of the lane's `planet/`, 12-14 workers, machine load 40-45 from
+other lanes (so timing is noisy; compare the pass's own `timing.total_s`).
+
+| measure (living lects) | shipped | task 1 (rulings) | task 2 (diminutives, coinage) | task 3 (segments) | task 4 (vocabulary; S211 widened) |
+|---|---|---|---|---|---|
+| BROTHER = SISTER same form | 0.182 | 0.035 | 0.055 | 0.063 | 0.010 |
+| I = WE same form | 0.134 | 0.011 | 0.021 | 0.032 | 0.026 |
+| lines where "tone became phonemic" fires twice or more | 221 | 0 | 0 | 1 (tone lost, then reborn) | 0 |
+| words that are "X + little" renewals | 9.1% | 9.3% | 1.5% | 1.5% | 1.7% |
+| busiest affix's share of a lexicon, median / max | 0.113 / 0.193 | 0.114 | 0.052 / 0.075 | 0.052 / 0.075 | 0.055 / 0.076 |
+| lects whose busiest affix is over 8% | 492 | 496 | 0 | 0 | 0 |
+| coinage share of replacements | 0.106 | 0.106 | 0.030 | 0.030 | 0.029 |
+| homophone share, median (polysemy included) | 0.125 | 0.117 | 0.174 | 0.166 | 0.224 (core 100: 0.12) |
+| sisters strict (bar 0.5) | 0.499 fail | 0.519 | 0.523 | 0.515 | 0.588 |
+| ɹ / ʁ / ɫ / ɦ / ʐ, share of all living lects (PHOIBLE 0.017 / 0.037 / 0.007 / 0.031 / 0.026) | 0.51 / 0.43 / 0.20 / 0.24 / 0.20 | | 0.54 / 0.35 / 0.23 / 0.27 / 0.23 | 0.05 / 0.54 / 0.14 / 0.01 / 0.02 | 0.05 / 0.19 (humans 0.10) / 0.11 / 0.01 / 0.01 |
+| words per living lect, median | 376 | 376 | 376 | 376 | 712 |
+| file size | 149.8 MB | 158.3 MB | 152.7 MB | 152.5 MB | 235.6 MB |
+| pass `timing.total_s` | 1041 | 947 | 886 | 791 | 1284 (steps 806 s) |
+
+Task 1. Generation softening (rate x (28/gen)^0.7 below 28-yr generations) changed little on this world (its short-lived
+peoples are few). `etym_roots` adds 8.5 MB (task 5 should store it only where it differs from `roots`). The contrast sets
+(kin sex pairs, pronouns, numerals, wh-words, deictics, directions) damp colexification and shifts between members to
+10%, and a homophone inside a pair is always repaired first.
+
+Task 2. The diminutive renewal is limited to body parts, small animals and kin (Latin auricula > oreille, avicellus >
+oiseau), capped at 2% of a lexicon, and no longer fills a draw nothing else could: a replacement that no source can make
+keeps the old word ("keep", 22% of draws) instead of coining a fresh root, and the hazard is raised by KEEP_COMPENSATION
+to hold 86% Swadesh retention per millennium. Coinage fell from 10.6% to 3.0%. The homophone share rose (0.125 -> 0.17):
+the extra groups are CLICS polysemies kept instead of being coined away (accidental homophones 4.1% -> 5.4%).
+
+Task 3. The over-produced sounds each came from one context-free rule with no way out: S149 r > ɹ, S148 r > ʁ, S152
+l > ɫ (coda), S173 Verner's law (it also voiced h to ɦ), S087 RUKI. S149 now applies in the coda only (Dutch, caipira
+Portuguese), where a new "coda" allophone test lists ɹ and ɫ as allophones of r and l (English, Dutch); S173 names
+f θ s x; new exits S210-S214 (ʁ > χ in the coda, ʁ > h, ɫ > w, intervocalic ɦ lost, ʂ ʐ > s z). ɹ fell from 0.54 to
+0.05, ɦ to 0.01, ʐ to 0.02; ʁ rose (0.35 -> 0.54, humans 0.47) because more r survives to meet S148: S211 is widened to
+between vowels (Brazilian carro [ˈkahu]) in the task-4 run. The new check "overused segments (all living lects)" counts
+every living lect, skipping a segment its own voice profile favours (make_cost below 1) or one humans cannot make.
+
+Task 4. 339 WOLD 1460 meanings (Haspelmath & Tadmor 2009) join the 240 Leipzig-Jakarta / Swadesh rows: lexicons go from
+376 to 712 words (1.9x). ~95 derivation rows and ~60 compound recipes were written for them, so they are built and
+renewed like the old meanings (else they fell to loans: borrowing reached 40% of replacements in the harness); the new
+pairs joined the contrast sets. Replacements: derive 0.17, compound 0.11, shift 0.15, borrow 0.25, keep 0.25, coin 0.03.
+The homophone share rose to 0.22: almost all of it CLICS polysemy (NOW / TODAY, POT / BOWL, LOW / SHALLOW), which a
+700-meaning list has more of per meaning; accidental homophones stay under 1% in the harness, and the core 100 hold at
+0.12. Sisters rose to 0.588 (more slow-changing vocabulary per lect). Size and time grew with the lexicon (236 MB,
+1284 s): task 5 is now more pressing. Still over in the all-lect check: ɫ 0.11 and y 0.18 (kobold, dragonborn, kenku,
+aarakocra lects; their profiles do not mark them as favoured), ɒ 0.20 (humans 18%, source not yet traced), ɖ 0.27 and a
+two-voiced vowel u‼ (0.12) that the human-cost test does not class as non-human.

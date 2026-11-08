@@ -148,7 +148,8 @@ allophone of p when x and p differ in one feature group, p has >= 3 tokens and m
 test's environment and no token of p does, and no other allophone of p shares an environment with x. Tests
 (`ALLO_TESTS`): nasal place assimilation (before a consonant of its place), palatalization (before front vowels and j),
 intervocalic lenition (voicing or stop/fricative), final (voicing), initial (aspiration), vowel nasalization (before a
-nasal), and an inserted glottal onset (ʔ only before a word-initial vowel or in hiatus, with no vowel-initial word or hiatus
+nasal), coda liquids (dark ɫ beside l and approximant ɹ beside the trill or tap, only before a consonant or word-finally;
+round 5), and an inserted glottal onset (ʔ only before a word-initial vowel or in hiatus, with no vowel-initial word or hiatus
 left without it; phoneme None). `legal` accepts allophones; `draw_word` and `repair` draw and fix with phonemes and then
 `realize` the allophones (p becomes x in x's environment; ʔ inserted), so coinages and loans keep the pattern. Checks,
 the size steer, snapshots (`al`) and the output (`inventory.allophones`) use the phonemic inventory; sound-change rules see
@@ -229,6 +230,8 @@ class Word:
     etym: list[EtymStep]         # oldest first
     born_kyr: float
     roots: tuple[str, ...]       # root ids the word is built on, main root first (2026-11-04, see "Root families" below)
+    etym_roots: tuple[str, ...]  # the historian's roots (owner 11-07): set when the word is made, never re-read; carried
+                                 # through sound change, shifts and loans (a loan keeps the donor's); `etym_roots(w)`
 @dataclass
 class EtymStep:
     kyr: float; lect: str; process: str   # proto | sound_change:<rule id> | replace | derive:<affix> | compound:<a>+<b> | shift:<from concept> | borrow:<lect> | taboo | substrate:<lect> | analogy | nativize
@@ -495,6 +498,9 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
    in at least half PHOIBLE's share of languages; no monoculture (no segment in over half the lects and over 2.5x PHOIBLE's
    share: ʒ, ɹ, the breathy stops). The segments in over half the lects outside PHOIBLE's top 12 are listed, not judged
    (PHOIBLE itself has e, ŋ, b, o, ɡ, h in over half its languages).
+9. overused segments over every living lect (`living_overuse`, round 5): no segment in over 10% of living lects and over
+   3x PHOIBLE's share; a lect does not count a segment its own voice profile favours (make_cost product below 1 over the
+   segment's keys) or a sound humans cannot make. Catches what check 8 cannot see (it reads human-voiced lects only).
 
 ## 11. Output (`output.py`, `languages.json`)
 
@@ -507,7 +513,8 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
                              "allophones": [{"ipa", "of" (phoneme ipa | null), "test", "where"}]},
                "typology": {...}, "grams": [{function, form_ipa, form_roman, level, side, source, born_kyr}],
                "paradigms": {"noun": {"lemma", "gloss", "cells": {"SG.NOM": {"ipa","roman"}, ...}}, "verb": {...}},
-               "lexicon": { concept: {"ipa", "roman", "pos", "freq", "etym": <node id>, "roots": [root id, ...]} },   # full for living lects, core list only for dead
+               "lexicon": { concept: {"ipa", "roman", "pos", "freq", "etym": <node id>, "roots": [root id, ...],
+                                         "etym_roots": [root id, ...]} },   # etym_roots: round 5, 2026-11-07   # full for living lects, core list only for dead
                "changes": [{kyr, rule, cause, origin_lect (null if own)}],
                "complexity": {...},
                "shares_history": [[kyr, {lect_id: share}]] } ],
@@ -519,7 +526,7 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
   "shifts": [ {deme, kyr, from_lect, to_lect, trigger, ruler_deme, substrate_words: [concept...], accent: [[from_ipa, to_ipa]...]} ],
   "food_routes": [ {concept, origin_deme, hops: [{deme, lect, kyr, ipa, roman, from_deme, changes: [...], now, by}]} ],
   "etym_nodes": [ [parent | -1, kyr, lect, process, ipa, gloss | 0(, note)] ],
-  "roots": { root id: {"node": etym node of the root's first step (shared by its whole family) | null, "lect", "kyr",
+  "roots": { root id (every id in any lexicon entry's roots or etym_roots): {"node": etym node of the root's first step (shared by its whole family) | null, "lect", "kyr",
                        "concept", "gloss", "ipa", "pos"} },   # every root a stored word names; a compound's modifier root
                                                              # met only as a modifier has node/kyr/ipa null
   "families": { "true": tree, "scholars": tree, "horizon_kyr": x },
