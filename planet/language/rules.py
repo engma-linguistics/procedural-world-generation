@@ -1398,7 +1398,7 @@ def _diff(intok: _Tok, out_seg) -> dict:
         from dataclasses import fields as _f
 
         return {f.name: getattr(out_seg, f.name) for f in _f(out_seg)
-                if f.name not in ("kind", "tone") and getattr(out_seg, f.name) != getattr(intok.seg, f.name)}
+                if f.init and f.name not in ("kind", "tone") and getattr(out_seg, f.name) != getattr(intok.seg, f.name)}
     axes = _V_QUALITY + ("nasal",) if out_seg.kind == "V" else _C_QUALITY
     d = {a: getattr(out_seg, a) for a in axes}
     if out_seg.length:

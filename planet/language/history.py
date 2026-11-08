@@ -260,6 +260,7 @@ class History:
                 if ml is not None and ml.alive and self.lects[m].alive:
                     forced.setdefault((ml.id, m), math.tanh(WAVE_K * STRONG_WAVE / 2.0))
         by_giver: dict = {}
+        steer: dict = {}   # (receiver id, rule id, notation) -> ease x size steer, this interval
         for (g, r), p in sorted(forced.items()):
             by_giver.setdefault(g, []).append((r, p))
         for l in living:
@@ -286,8 +287,15 @@ class History:
                     w = 1.0 if w is None else w
                     if r.family == "tone" or r.cause == "tonogenesis":  # (an ear that hears tone coarsely takes it up less)
                         w *= min(1.0, (getattr(y.profile, "hear", None) or {}).get("tone", 1.0)) ** 2
-                    w *= min(1.0, LC.ease_factor(r, y))  # (a change toward rarer sounds spreads as reluctantly as it arises)
-                    w *= min(1.0, LC.size_factor(r, y))  # (... and one that takes the receiver's inventory off its line's size)
+                    # (the ease drag: a change toward rarer sounds spreads as reluctantly as it arises; the size steer: nor
+                    # one that takes the receiver's inventory off its line's size. Both depend only on the receiver as it
+                    # stands this interval and the rule, so they are worked out once per pair: the receivers do not
+                    # change until the adoptions land next interval)
+                    mk = (y.id, r.id, r.notation)
+                    m = steer.get(mk)
+                    if m is None:
+                        m = steer[mk] = min(1.0, LC.ease_factor(r, y)) * min(1.0, LC.size_factor(r, y))
+                    w *= m
                     if rng.random() < p * min(1.0, w):
                         self.pending.setdefault(y.id, []).append((r, l.id, t1))
         self.timing["wave"] = self.timing.get("wave", 0.0) + time.perf_counter() - tm

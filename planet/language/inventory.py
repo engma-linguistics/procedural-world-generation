@@ -69,8 +69,16 @@ def _onset_pair_ok(a: Segment, b: Segment, min_rise: int) -> bool:
     return sb - sa >= min_rise
 
 
+_STRIPPED: dict = {}
+
+
 def _strip_tone(v: Segment) -> Segment:
-    return replace(v, tone=0) if v.tone else v
+    if not v.tone:
+        return v
+    u = _STRIPPED.get(v)
+    if u is None:
+        u = _STRIPPED[v] = replace(v, tone=0)
+    return u
 
 
 # --- hiatus (shared with lect.normalize and lect.resolve_hiatus) --------------------------------------------------------

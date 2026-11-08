@@ -78,6 +78,12 @@ Screens (run a24559 with builder E's test file of 2026-11-03 22:34): `docs/revie
 
 ## Fields read from `languages.json`
 
+Since format procgen-languages/2 (finish lane, 2026-11-07) the run holds three files: `languages.json`, and beside it
+`languages-etym.json` (etymology nodes, roots, each word's etym / roots / etym_roots) and `languages-snapshots.json`.
+`langview.js` loads the main file with progress, then the two sidecars in parallel (`LangCore.sidecarName`), and
+`LangCore.expand` rebuilds the one doc the tabs read (architecture.md section 11); a /1 file loads as before. `planet serve`
+serves the sidecars as ordinary run files (gzipped); `planet langserve` serves them beside its `--languages` file.
+
 Top: `frames_kyr`, `snapshot_concepts`, `etym_nodes`, `lects`, `families`, `intelligibility`, `continua`, `names`, `shifts`,
 `food_routes`, `checks`, `profiles`, `landscape`, `format`, `romanization`, `seed`, `romanization_failures`, `timing`; optional
 `rules` (see below). Run: `run.json` `meta.lineages[]` (`id`, `name`, `color`), `meta.demes.file`, `meta.languages.file`;
@@ -105,7 +111,8 @@ Top: `frames_kyr`, `snapshot_concepts`, `etym_nodes`, `lects`, `families`, `inte
 - **Feature braces in IPA** (`kʰ{voice=0}`, `cʰ{place=3,voice=0,secondary=2}`): percepts with no IPA letter come out with their
   features; the grid shows `°` with the full form on hover, words show them raw.
 - **File size**: E's test file is 125 MB (151 MB earlier); it loads and parses in ~1.3-2 s here, all tabs draw in < 0.2 s, scrubbing
-  < 40 ms a frame, so the viewer copes; the 40 MB target is still worth keeping for the owner's disk and the server.
+  < 40 ms a frame, so the viewer copes. Round 5's 712-word lexicons took the single file to 241 MB; format /2 brings the
+  main file under 40 MB and the three files to about half that in all (calibration.md "Final run").
 - No server route is needed: everything is static under `/runs/<id>/` plus `/api/speak` (buttons hidden on a 503) and `/api/thumb`.
 
 ## Audio (round 5)

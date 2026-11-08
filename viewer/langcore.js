@@ -14,6 +14,7 @@
 //   etymChain(ix, node)      a word's etymology, oldest first; processText(step) its process in plain words
 //   speakUrl(...)            the /api/speak URL for a word or a sentence; surfaceOf(form) a glossed form line as IPA
 //   rootFamilies(lex, field) word families by per-word roots ('roots' felt, 'etym_roots' reconstructed)
+//   expand(main, side)       a procgen-languages/2 file and its sidecars back as the doc above (output.py expand)
 (function (g) {
   // ------------------------------------------------------------------ index
   const pairKey = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
@@ -431,10 +432,90 @@
     return [...fam.values()].map((f) => ({ ...f, main: f.main.sort(), all: f.all.sort() }))
       .sort((a, b) => b.main.length - a.main.length || b.all.length - a.all.length || (a.root < b.root ? -1 : 1));
   }
+  // ------------------------------------------------------------------ the stored format (procgen-languages/2)
+  // The main file holds the lects with their words (each lexicon as columns over doc.concepts); languages-etym.json the
+  // etymology nodes, the roots table and each word's etym / roots / etym_roots; languages-snapshots.json each lect's
+  // snapshots. expand(main, {etym, snapshots}) rebuilds the doc every helper here reads (format /1's shape), exactly as
+  // planet/language/output.py expand does; a sidecar left out leaves its part out. A /1 doc comes back as it is.
+  const FORMAT2 = 'procgen-languages/2';
+  const SIDECARS = { etym: '-etym', snapshots: '-snapshots' };
+  function sidecarName(file, key) { const m = /^(.*?)(\.json)?$/.exec(file); return m[1] + SIDECARS[key] + (m[2] || ''); }
+  function unsp(s) {  // {"i": [gaps], "v": [values]} -> Map(index -> value)
+    const out = new Map();
+    if (!s) return out;
+    let at = 0;
+    for (let k = 0; k < (s.i || []).length; k++) { at += s.i[k]; out.set(at, s.v[k]); }
+    return out;
+  }
+  function expand(main, side) {
+    if (!main || main.format !== FORMAT2) return main;
+    side = side || {};
+    const lectIds = main.lect_ids, concepts = main.concepts, et = side.etym || null;
+    let rootIds = null;
+    if (et) {
+      const ri = et.root_ids, odd = unsp(ri.odd);
+      rootIds = ri.lect.map((a, i) => (odd.has(i) ? odd.get(i) : `${lectIds[a]}:${concepts[ri.concept[i]][0]}` + (ri.kyr[i] == null ? '' : '@' + ri.kyr[i])));
+    }
+    const doc = {};
+    for (const k of Object.keys(main)) if (!['lects', 'concepts', 'lect_ids', 'sidecars'].includes(k)) doc[k] = main[k];
+    doc.format = 'procgen-languages/1';
+    const snaps = side.snapshots ? side.snapshots.lects : null;
+    doc.lects = main.lects.map((x) => {
+      const l = Object.assign({}, x);
+      const col = x.lexicon;
+      if (col) {
+        const pos = unsp(col.pos), ex = unsp(col.x);
+        const ec = et ? et.lexicons[x.id] : null;
+        const er = ec ? unsp(ec.er) : new Map(), noEr = new Set(ec ? ec.no_er || [] : []);
+        const lex = {};
+        for (let j = 0; j < col.c.length; j++) {
+          const ci = col.c[j];
+          const w = { ipa: col.ipa[j], roman: col.roman[j], pos: pos.has(j) ? pos.get(j) : concepts[ci][2], freq: col.freq[j] };
+          if (ec) {
+            const rs = ec.roots[j].map((r) => rootIds[r]);
+            w.etym = ec.etym[j]; w.roots = rs;
+            if (er.has(j)) w.etym_roots = er.get(j).map((r) => rootIds[r]);
+            else if (!noEr.has(j)) w.etym_roots = rs.slice();
+          }
+          if (ex.has(j)) Object.assign(w, ex.get(j));
+          lex[concepts[ci][0]] = w;
+        }
+        l.lexicon = lex;
+      }
+      if (snaps && Object.prototype.hasOwnProperty.call(snaps, x.id)) l.snapshots = snaps[x.id];
+      return l;
+    });
+    if (et) {
+      const nc = et.nodes, procs = et.processes, notes = et.notes, note = unsp(nc.note);
+      const wordIpa = new Map();
+      for (const l of doc.lects) for (const w of Object.values(l.lexicon || {})) if (Number.isInteger(w.etym) && !wordIpa.has(w.etym)) wordIpa.set(w.etym, w.ipa);
+      const nodes = new Array(nc.kyr.length);
+      for (let i = 0; i < nc.kyr.length; i++) {
+        const up = nc.up[i], ipa = nc.ipa[i];
+        const n = [up ? i - up : -1, nc.kyr[i], nc.lect[i] >= 0 ? lectIds[nc.lect[i]] : nodes[i - up][2], procs[nc.process[i]],
+          ipa === 0 && up ? nodes[i - up][4] : ipa === 1 ? wordIpa.get(i) : ipa, nc.gloss[i]];
+        if (note.has(i)) n.push(notes[note.get(i)]);
+        nodes[i] = n;
+      }
+      doc.etym_nodes = nodes;
+      const rc = et.roots, ri = et.root_ids, absent = new Set(rc.absent || []), other = unsp(rc.other);
+      const roots = {};
+      rootIds.forEach((r, i) => {
+        if (absent.has(i)) return;
+        const lect = rc.lect[i] >= 0 ? lectIds[rc.lect[i]] : lectIds[ri.lect[i]], nd = rc.node[i];
+        const kyr = rc.kyr[i] === 0 && nd != null ? nodes[nd][1] : rc.kyr[i];
+        const ipa = rc.ipa[i] === 0 && nd != null ? nodes[nd][4] : rc.ipa[i];
+        if (other.has(i)) roots[r] = Object.assign({ node: nd, lect, kyr }, other.get(i), { ipa });
+        else { const cc = concepts[ri.concept[i]]; roots[r] = { node: nd, lect, kyr, concept: cc[0], gloss: cc[1], ipa, pos: cc[2] }; }
+      });
+      doc.roots = roots;
+    }
+    return doc;
+  }
   const API = { pairKey, index, cmpId, nearestFrame, alive, snapFull, ancestry, stitch, changeLog, layoutTree, layoutDendro,
     intelClass, intelColor, intelRamp, INTEL_GREEN, INTEL_RED, chainAt, chainBreak, findContinua,
     PLACES, MANNERS, HEIGHTS, ipaPlace, vowelXY, etymChain, processText, causeText, hue, wrapLon, speakUrl, surfaceOf,
-    rootFamilies };
+    rootFamilies, expand, sidecarName, FORMAT2 };
   g.LangCore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

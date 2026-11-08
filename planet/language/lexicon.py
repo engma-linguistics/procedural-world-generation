@@ -1584,11 +1584,15 @@ def shift_candidates(lex: Lexicon, concept: str, kyr: float, min_families: int |
     for b, t in shift_paths():
         if t == c.id and b not in edges:
             edges[b] = 0
-    shared = set(lex.homophones()) if lex.words else set()
-    out = []
+    shared = None   # (the homophones, worked out only when some neighbour passes the cheaper tests: ~8% of the steps'
+    out = []        # time went on building them for calls that found no candidate)
     for n, f in edges.items():
         w = lex.words.get(n)
-        if w is None or not _shift_ok(lex, n) or w.form in shared or _worn(w, c.gloss) or _shifted_recently(w, kyr):
+        if w is None or not _shift_ok(lex, n) or _worn(w, c.gloss) or _shifted_recently(w, kyr):
+            continue
+        if shared is None:
+            shared = set(lex.homophones()) if lex.words else set()
+        if w.form in shared:
             continue
         if not shift_fits(n, c.id, f) or (n, c.id) not in shift_paths() and (c.pos == "FUNC") != (w.pos == "FUNC"):
             continue

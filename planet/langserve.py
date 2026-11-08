@@ -4,7 +4,8 @@
   GET  /viewer/<file>                 the languages page and the scripts it loads (LANG_FILES), from the repository
   GET  /runs/index.json               just this run
   GET  /runs/<run>/run.json, demes.json   the run's own files, read from the data root (never written)
-  GET  /runs/<run>/languages.json     the --languages file (default: the run's own), gzipped when the browser takes it
+  GET  /runs/<run>/languages.json     the --languages file (default: the run's own), gzipped when the browser takes it;
+       /runs/<run>/languages-etym.json, languages-snapshots.json   its sidecars (format /2: output.sidecar_paths)
   GET  /api/speak, /api/speak/backends   words and whole sentences said aloud (server.speak, server.speak_backends)
   GET  /api/thumb                     the map tab's backdrop (server's thumbs.thumb)
 
@@ -36,7 +37,7 @@ TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
 class LangHandler(http.server.BaseHTTPRequestHandler):
     run: str = ""
     languages: Path | None = None  # the languages.json shown
-    _gz: tuple | None = None       # (mtime_ns, size, gzipped bytes) of `languages`
+    _gz: dict = {}                 # path -> (mtime_ns, size, gzipped bytes): `languages` and its sidecars
     _gz_lock = threading.Lock()
 
     def log_message(self, *a):
@@ -55,13 +56,22 @@ class LangHandler(http.server.BaseHTTPRequestHandler):
     def send_json(self, obj, code: int = 200) -> None:
         self.send(json.dumps(obj).encode(), "application/json", code)
 
-    def languages_gz(self) -> bytes:
-        """The languages file gzipped, once per version of the file (kept in memory; ~1/8 of the file)."""
-        st = self.languages.stat()
+    def languages_gz(self, p: Path) -> bytes:
+        """A languages file gzipped, once per version of the file (kept in memory; ~1/4 of the file)."""
+        st = p.stat()
         with self._gz_lock:
-            if LangHandler._gz is None or LangHandler._gz[:2] != (st.st_mtime_ns, st.st_size):
-                LangHandler._gz = (st.st_mtime_ns, st.st_size, gzip.compress(self.languages.read_bytes(), 6))
-            return LangHandler._gz[2]
+            hit = LangHandler._gz.get(p)
+            if hit is None or hit[:2] != (st.st_mtime_ns, st.st_size):
+                hit = LangHandler._gz[p] = (st.st_mtime_ns, st.st_size, gzip.compress(p.read_bytes(), 6))
+            return hit[2]
+
+    def languages_file(self, name: str) -> Path | None:
+        """languages.json -> the shown file; languages-<part>.json -> that sidecar beside it."""
+        if name == "languages.json":
+            return self.languages
+        part = name.removeprefix("languages").removesuffix(".json")
+        p = self.languages.with_name(self.languages.stem + part + self.languages.suffix)
+        return p if part and p.is_file() else None
 
     def do_GET(self):  # noqa: N802
         from . import server as SV
@@ -91,9 +101,12 @@ class LangHandler(http.server.BaseHTTPRequestHandler):
             return self.send_json([{"dir": self.run, "kind": "peoples", "name": "languages"}])
         if len(parts) == 3 and parts[0] == "runs" and parts[1] == self.run:
             if parts[2].endswith(".json") and parts[2].startswith("languages"):
+                p = self.languages_file(parts[2])
+                if p is None:
+                    return self.send_error(404)
                 if "gzip" in (self.headers.get("Accept-Encoding") or ""):
-                    return self.send(self.languages_gz(), "application/json", gz=True)
-                return self.send(self.languages.read_bytes(), "application/json")
+                    return self.send(self.languages_gz(p), "application/json", gz=True)
+                return self.send(p.read_bytes(), "application/json")
             if parts[2] in RUN_FILES:
                 p = S.root() / "runs" / self.run / parts[2]
                 if p.is_file():

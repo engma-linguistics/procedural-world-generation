@@ -13,7 +13,8 @@ silent, the page says so.
 
 --auto picks very different languages by criteria (never by id), plus the most English-like language by ENGLISH_WEIGHTS,
 writes one page each and an index.md explaining the picks and the English score. Only planet.language.percepts (segment
-features, distance) and planet.language.romanize (spellings) are imported from the engine.
+features, distance), planet.language.romanize (spellings) and planet.language.output (the file loader) are imported from the
+engine.
 """
 from __future__ import annotations
 
@@ -1605,7 +1606,8 @@ def main(argv=None) -> int:
     ap.add_argument("--english-top", type=int, default=0, help="print the top N English-like lects and exit")
     a = ap.parse_args(argv)
     src = a.languages
-    doc = Doc(json.loads(Path(src).read_text(encoding="utf-8")))
+    from planet.language import output as OU   # (format /2: the main file and its sidecars; /1 read as it is)
+    doc = Doc(OU.load(src))
     if a.english_top:
         for s, l, c in english_ranking(doc)[:a.english_top]:
             print(f"{l['id']:8s} {l['people']:14s} {s:.3f} " + " ".join(f"{k}={v:.2f}" for k, v in c.items()))

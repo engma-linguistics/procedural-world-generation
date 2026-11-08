@@ -690,12 +690,20 @@ def _undoes(rule, y, x) -> bool:
 def _axes_apart(a, b) -> int:
     """How many percept axes (tone aside) two segments differ on."""
     from dataclasses import fields
-    return sum(1 for f in fields(a) if f.name != "tone" and getattr(a, f.name) != getattr(b, f.name))
+    return sum(1 for f in fields(a) if f.compare and f.name != "tone" and getattr(a, f.name) != getattr(b, f.name))
+
+
+_UNIT: dict = {}
 
 
 def _unit(x):
-    """What the inventory cap counts: a consonant, or a vowel with its tone set aside."""
-    return replace(x, tone=0) if x.kind == "V" and x.tone else x
+    """What the inventory cap counts: a consonant, or a vowel with its tone set aside (memoized: millions of calls)."""
+    if not x.tone or x.kind != "V":
+        return x
+    u = _UNIT.get(x)
+    if u is None:
+        u = _UNIT[x] = replace(x, tone=0)
+    return u
 
 
 FOLD_SLACK = 1.0  # a fold may land up to this much farther (percepts.distance) than the nearest unit, to reach a cheaper one
